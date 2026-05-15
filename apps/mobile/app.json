@@ -4,12 +4,14 @@
     "slug": "laudousg-mobile",
     "version": "0.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/brand/expo/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "scheme": "laudousg",
     "splash": {
-      "backgroundColor": "#ffffff"
+      "image": "./assets/brand/expo/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ecfdf5"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -24,6 +26,7 @@
     "android": {
       "package": "com.laudousg.mobile",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/expo/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -31,7 +34,8 @@
       ]
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/brand/expo/favicon.png"
     },
     "plugins": [
       "expo-router",

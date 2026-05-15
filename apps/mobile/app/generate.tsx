@@ -35,6 +35,7 @@ import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
+import { LaudoUSGLogo } from "@/ui/LaudoUSGLogo";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -163,11 +164,13 @@ export default function GenerateScreen() {
       <View style={styles.navBar}>
         <Pressable
           onPress={() => setMenuOpen(true)}
-          style={styles.navBtn}
+          style={styles.navLeft}
           hitSlop={8}
+          accessibilityRole="button"
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={C.text} />
+          <LaudoUSGLogo size="sm" variant="auto" showTagline={false} />
         </Pressable>
         {__DEV__ ? (
           <Pressable onPress={cycleMock} style={styles.devChip}>
@@ -633,6 +636,13 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: "center",
     justifyContent: "center",
+  },
+  navLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
   },
   devChip: {
     paddingHorizontal: 10,

@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Banner } from "@/ui/Banner";
+import { LaudoUSGLogo } from "@/ui/LaudoUSGLogo";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 import { Eye, EyeOff } from "@/ui/icons";
@@ -77,13 +78,7 @@ export default function LoginScreen() {
       >
         <View style={styles.card}>
           <View style={styles.header}>
-            <View style={styles.logoMark}>
-              <Text style={styles.logoMarkText}>L</Text>
-            </View>
-            <Text style={styles.title}>LaudoUSG</Text>
-            <Text style={styles.subtitle}>
-              Laudos de ultrassonografia por IA.
-            </Text>
+            <LaudoUSGLogo size="lg" variant="auto" showTagline />
           </View>
 
           {error ? (
@@ -245,39 +240,6 @@ function makeStyles(t: ColorTokens) {
     header: {
       alignItems: "center",
       marginBottom: 28,
-    },
-    logoMark: {
-      width: 56,
-      height: 56,
-      borderRadius: 18,
-      backgroundColor: t.brand,
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 14,
-      shadowColor: t.brand,
-      shadowOpacity: 0.3,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 4,
-    },
-    logoMarkText: {
-      color: "#fff",
-      fontFamily: FONT.displayBold,
-      fontSize: 28,
-      letterSpacing: -0.5,
-    },
-    title: {
-      fontFamily: FONT.displayBold,
-      fontSize: 30,
-      color: t.text,
-      letterSpacing: -0.5,
-    },
-    subtitle: {
-      fontSize: 15,
-      color: t.textSec,
-      marginTop: 6,
-      fontFamily: FONT.body,
-      textAlign: "center",
     },
     field: {
       marginBottom: 16,

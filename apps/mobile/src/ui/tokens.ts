@@ -16,7 +16,15 @@ export type ColorTokens = {
   danger: string;
   warningBg: string;
   warningText: string;
+  /** "Laudo" — cor principal do wordmark (#18533F light / #6ee7b7 dark) */
+  wordmark: string;
+  /** "USG" — accent secundário do wordmark */
+  wordmarkAccent: string;
+  /** Tagline embaixo do wordmark (40-45% opacity do wordmark) */
+  wordmarkSub: string;
 };
+
+export const TAGLINE = "Laudos rápidos e inteligentes" as const;
 
 export const lightTokens: ColorTokens = {
   brand: "#059669",
@@ -36,6 +44,9 @@ export const lightTokens: ColorTokens = {
   danger: "#FF3B30",
   warningBg: "rgba(245,158,11,0.15)",
   warningText: "#B45309",
+  wordmark: "#18533F",
+  wordmarkAccent: "#4a8a6a",
+  wordmarkSub: "rgba(24,83,63,0.45)",
 };
 
 export const darkTokens: ColorTokens = {
@@ -56,6 +67,9 @@ export const darkTokens: ColorTokens = {
   danger: "#FF453A",
   warningBg: "rgba(255,159,10,0.15)",
   warningText: "#FF9F0A",
+  wordmark: "#6ee7b7",
+  wordmarkAccent: "rgba(110,231,183,0.65)",
+  wordmarkSub: "rgba(110,231,183,0.45)",
 };
 
 // Backwards compatibility: existing screens import `C` (light tokens).
