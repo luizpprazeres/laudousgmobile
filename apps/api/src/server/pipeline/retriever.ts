@@ -72,14 +72,24 @@ export async function runRetriever(args: {
   // postgres-js precisa do array como literal para `vector` — passamos como JSON
   const embeddingLiteral = `[${embedding.join(",")}]`;
 
+  // Fix QA codex: ${kinds} (array JS) era expandido pelo Drizzle como
+  // row constructor ($4, $5, ...), que Postgres interpreta como record,
+  // não como text[]. Resultado: "function match_knowledge_blocks(...) does
+  // not exist" porque a assinatura não bate. Solução: construir o array
+  // SQL explicitamente com array[...]::text[] cast.
+  const kindsArray = sql`array[${sql.join(
+    kinds.map((k) => sql`${k}`),
+    sql`, `,
+  )}]::text[]`;
+
   const rows = await db.execute(sql`
     select id, kind, title, content, priority
     from public.match_knowledge_blocks(
       p_query_embedding := ${embeddingLiteral}::vector(1536),
-      p_category_code   := ${args.categoryCode},
+      p_category_code   := ${args.categoryCode}::text,
       p_writing_style_id:= ${args.writingStyleId}::uuid,
-      p_kinds           := ${kinds},
-      p_limit_per_kind  := ${limitPerKind}
+      p_kinds           := ${kindsArray},
+      p_limit_per_kind  := ${limitPerKind}::integer
     )
   `);
 
