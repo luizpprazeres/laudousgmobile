@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -18,6 +17,7 @@ import {
   Barlow_800ExtraBold,
 } from "@expo-google-fonts/barlow";
 import { C } from "@/ui/tokens";
+import { BrandSplash } from "@/ui/BrandSplash";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* ignore */
@@ -42,18 +42,11 @@ export default function RootLayout() {
   }, [ready]);
 
   if (!ready) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: C.bg,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <ActivityIndicator color={C.brand} />
-      </View>
-    );
+    // Fontes ainda carregando — mostra o splash visual com o logo da marca,
+    // continuidade visual com o splash nativo (expo.splash em app.json).
+    // Não mostra spinner aqui: a carga de fontes é rápida e o spinner causa
+    // flicker. O spinner fica para o gate de auth (app/index.tsx).
+    return <BrandSplash showSpinner={false} />;
   }
 
   return (

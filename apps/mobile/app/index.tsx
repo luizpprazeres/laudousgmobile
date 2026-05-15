@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { C } from "@/ui/tokens";
+import { BrandSplash } from "@/ui/BrandSplash";
 
 /**
  * Gate de autenticação:
  *   sessão ativa → /generate (tela principal)
  *   sem sessão  → /(auth)/login
+ *
+ * Enquanto a sessão é consultada, exibe BrandSplash (logo + spinner) — dá
+ * continuidade visual ao splash nativo do Expo (mesma marca, mesmas cores).
  */
 export default function IndexGate() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -27,18 +29,7 @@ export default function IndexGate() {
   }, []);
 
   if (authed === null) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: C.bg,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <ActivityIndicator color={C.brand} />
-      </View>
-    );
+    return <BrandSplash />;
   }
   return authed ? <Redirect href="/generate" /> : <Redirect href="/(auth)/login" />;
 }

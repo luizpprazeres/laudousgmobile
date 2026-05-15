@@ -1,5 +1,6 @@
 import { useReducer, useRef, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -35,7 +36,6 @@ import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
-import { LaudoUSGLogo } from "@/ui/LaudoUSGLogo";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -85,6 +85,11 @@ export default function GenerateScreen() {
         {
           raw_input: text || "(input em branco — modo mock)",
           writing_style_id: DEFAULT_WRITING_STYLE_ID,
+          // Bug fix: enviar categoria selecionada como hint pra o structurer.
+          // Antes o app deixava o structurer inferir do texto (frágil pra
+          // input curto). Agora a categoria escolhida pelo usuário tem
+          // prioridade — structurer ainda pode reclassificar se discordar.
+          category_hint: cat.id,
         },
         ac.signal,
         mock ?? undefined,
@@ -170,7 +175,12 @@ export default function GenerateScreen() {
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={C.text} />
-          <LaudoUSGLogo size="sm" variant="auto" showTagline={false} />
+          <Image
+            source={require("../assets/brand/logos/logo-laudousg-main.png")}
+            style={{ height: 24, width: 110 }}
+            resizeMode="contain"
+            accessibilityLabel="LaudoUSG"
+          />
         </Pressable>
         {__DEV__ ? (
           <Pressable onPress={cycleMock} style={styles.devChip}>

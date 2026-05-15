@@ -85,16 +85,25 @@ export const FONT = {
   displayBold: "Barlow_800ExtraBold",
 } as const;
 
+/**
+ * IDs aqui devem bater EXATAMENTE com category_code da tabela `categories`
+ * do Supabase (ver packages/db/src/seeds/data.ts). Se trocar um ID, o
+ * /api/generate não acha RAG nem aceita a categoria.
+ *
+ * 9 listadas (cobertura piloto + comuns). DB tem 32 ativas — quando expandir
+ * pra cobertura completa, idealmente buscar de /api/categories ao invés
+ * de hardcoded.
+ */
 export const CATS = [
-  { id: "OBSTETRICA", label: "Obstétrica", color: "#EC4899", sub: "USG obstétrico — 2º trim." },
-  { id: "DOPPLER_OB", label: "Doppler Obstétrico", color: "#F97316", sub: "Avaliação hemodinâmica" },
-  { id: "MORFO", label: "Morfológico", color: "#8B5CF6", sub: "Anatomia fetal completa" },
-  { id: "ABDOMEN", label: "Abdome Total", color: "#059669", sub: "Fígado, vias biliares, pâncreas…" },
-  { id: "TIRE", label: "Tireoide", color: "#0EA5E9", sub: "Tireoide e paratireoides" },
-  { id: "MAMA", label: "Mamária", color: "#F43F5E", sub: "BI-RADS" },
-  { id: "PELVE", label: "Pelve Feminina", color: "#A855F7", sub: "Útero, ovários, anexos" },
-  { id: "VIAS", label: "Vias Urinárias", color: "#06B6D4", sub: "Rins, ureteres, bexiga" },
-  { id: "MUSCESQ", label: "Musculoesquelético", color: "#84CC16", sub: "Articulações e partes moles" },
+  { id: "ABDOMEN_TOTAL",         label: "Abdome Total",        color: "#059669", sub: "Fígado, vias biliares, pâncreas…" },
+  { id: "TIREOIDE",              label: "Tireoide",            color: "#0EA5E9", sub: "Tireoide e paratireoides" },
+  { id: "MAMARIA",               label: "Mamária",             color: "#F43F5E", sub: "BI-RADS" },
+  { id: "PELVE_FEMININA",        label: "Pelve",               color: "#A855F7", sub: "Útero, ovários, anexos" },
+  { id: "OBSTETRICA",            label: "Obstétrica",          color: "#EC4899", sub: "USG obstétrico" },
+  { id: "DOPPLER_OBSTETRICO",    label: "Doppler Obstétrico",  color: "#F97316", sub: "Avaliação hemodinâmica" },
+  { id: "MORFOLOGICO",           label: "Morfológico",         color: "#8B5CF6", sub: "Anatomia fetal completa" },
+  { id: "VIAS_URINARIAS",        label: "Vias Urinárias",      color: "#06B6D4", sub: "Rins, ureteres, bexiga" },
+  { id: "MUSCULOESQUELETICO_V2", label: "Musculoesquelético",  color: "#84CC16", sub: "Articulações e partes moles" },
 ] as const;
 
 export type Category = (typeof CATS)[number];
