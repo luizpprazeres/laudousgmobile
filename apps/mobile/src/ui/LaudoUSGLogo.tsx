@@ -46,7 +46,7 @@ export function LaudoUSGLogo({
   const dims = SIZE_MAP[size];
 
   // resolve variant
-  const isWhite = variant === "white" || (variant === "auto" && t.bg === "#0B0B0F");
+  const isWhite = variant === "white" || (variant === "auto" && t.mode === "dark");
 
   const mainColor = isWhite ? "#ffffff" : t.wordmark;
   const accentColor = isWhite ? "rgba(255,255,255,0.65)" : t.wordmarkAccent;

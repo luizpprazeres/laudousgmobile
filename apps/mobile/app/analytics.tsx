@@ -1,8 +1,15 @@
+import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { PageHeader } from "@/ui/PageHeader";
-import { C, FONT } from "@/ui/tokens";
+import { EmptyState } from "@/ui/EmptyState";
+import { Bar } from "@/ui/icons";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 
+// TODO(fase β): substituir por queries reais (Supabase aggregations).
+// Mantido como mock pra preservar visual da Fase α.
 const KPIS = [
   { val: "142", label: "laudos no mês", sub: "+18% vs. abril" },
   { val: "3,4h", label: "tempo economizado", sub: "vs. digitar manual" },
@@ -24,9 +31,33 @@ const CATS_DATA = [
 const BAR_CHART_HEIGHT = 110;
 
 export default function AnalyticsScreen() {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
+
+  // Sem laudos = sem analytics. Usa o primeiro KPI como sinal.
+  const monthly = parseInt(KPIS[0]?.val ?? "0", 10);
+  const isEmpty = !Number.isFinite(monthly) || monthly === 0;
+
+  if (isEmpty) {
+    return (
+      <View style={{ flex: 1, backgroundColor: t.bg }}>
+        <PageHeader title="Analytics" />
+        <EmptyState
+          icon={<Bar size={28} color={t.brand} />}
+          title="Sem dados ainda"
+          message="Faça seu primeiro laudo para começar a ver estatísticas de produtividade e top especialidades."
+          action={{
+            label: "Gerar laudo",
+            onPress: () => router.push("/generate"),
+          }}
+        />
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
       <PageHeader title="Analytics" />
 
       <ScrollView
@@ -60,7 +91,7 @@ export default function AnalyticsScreen() {
                       styles.barFill,
                       {
                         height: (h / 100) * BAR_CHART_HEIGHT,
-                        backgroundColor: i === 4 ? C.brand : C.fill1,
+                        backgroundColor: i === 4 ? t.brand : t.fill1,
                       },
                     ]}
                   />
@@ -100,134 +131,136 @@ export default function AnalyticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  sectionHeader: {
-    fontSize: 12,
-    color: C.textSec,
-    fontFamily: FONT.semibold,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginTop: 12,
-    marginBottom: 8,
-    marginHorizontal: 6,
-  },
-  kpiGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  kpiCard: {
-    backgroundColor: C.card,
-    padding: 14,
-    borderRadius: 14,
-    flexBasis: "48%",
-    flexGrow: 1,
-  },
-  kpiVal: {
-    fontFamily: FONT.displayBold,
-    fontSize: 28,
-    color: C.text,
-    lineHeight: 28,
-    letterSpacing: -0.7,
-  },
-  kpiLabel: {
-    fontSize: 12,
-    color: C.textSec,
-    marginTop: 4,
-    fontFamily: FONT.medium,
-  },
-  kpiSub: {
-    fontSize: 10.5,
-    color: C.textMute,
-    marginTop: 4,
-    fontFamily: FONT.body,
-  },
-  chartCard: {
-    backgroundColor: C.card,
-    padding: 16,
-    borderRadius: 14,
-  },
-  barsRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-    height: BAR_CHART_HEIGHT + 22, // chart + day labels gap
-  },
-  barCol: {
-    flex: 1,
-    alignItems: "center",
-    gap: 6,
-  },
-  barTrack: {
-    width: "100%",
-    height: BAR_CHART_HEIGHT,
-    justifyContent: "flex-end",
-  },
-  barFill: {
-    width: "100%",
-    borderRadius: 4,
-  },
-  barDay: {
-    fontSize: 10,
-    color: C.textSec,
-    fontFamily: FONT.medium,
-  },
-  chartFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
-  },
-  chartFooterLabel: {
-    fontSize: 11,
-    color: C.textSec,
-    fontFamily: FONT.body,
-  },
-  chartFooterValue: {
-    fontSize: 11,
-    color: C.brand,
-    fontFamily: FONT.semibold,
-  },
-  catsCard: {
-    backgroundColor: C.card,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-  },
-  catRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
-  },
-  catRowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.separator,
-  },
-  catBullet: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  catName: {
-    flex: 1,
-    fontSize: 14,
-    color: C.text,
-    fontFamily: FONT.medium,
-  },
-  catCount: {
-    fontSize: 14,
-    color: C.text,
-    fontFamily: FONT.semibold,
-    fontVariant: ["tabular-nums"],
-  },
-  catPct: {
-    fontSize: 12,
-    color: C.textSec,
-    minWidth: 32,
-    textAlign: "right",
-    fontFamily: FONT.body,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    sectionHeader: {
+      fontSize: 12,
+      color: t.textSec,
+      fontFamily: FONT.semibold,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginTop: 12,
+      marginBottom: 8,
+      marginHorizontal: 6,
+    },
+    kpiGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
+    kpiCard: {
+      backgroundColor: t.card,
+      padding: 14,
+      borderRadius: 14,
+      flexBasis: "48%",
+      flexGrow: 1,
+    },
+    kpiVal: {
+      fontFamily: FONT.displayBold,
+      fontSize: 28,
+      color: t.text,
+      lineHeight: 28,
+      letterSpacing: -0.7,
+    },
+    kpiLabel: {
+      fontSize: 12,
+      color: t.textSec,
+      marginTop: 4,
+      fontFamily: FONT.medium,
+    },
+    kpiSub: {
+      fontSize: 10.5,
+      color: t.textMute,
+      marginTop: 4,
+      fontFamily: FONT.body,
+    },
+    chartCard: {
+      backgroundColor: t.card,
+      padding: 16,
+      borderRadius: 14,
+    },
+    barsRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 8,
+      height: BAR_CHART_HEIGHT + 22,
+    },
+    barCol: {
+      flex: 1,
+      alignItems: "center",
+      gap: 6,
+    },
+    barTrack: {
+      width: "100%",
+      height: BAR_CHART_HEIGHT,
+      justifyContent: "flex-end",
+    },
+    barFill: {
+      width: "100%",
+      borderRadius: 4,
+    },
+    barDay: {
+      fontSize: 10,
+      color: t.textSec,
+      fontFamily: FONT.medium,
+    },
+    chartFooter: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 14,
+      paddingTop: 12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.separator,
+    },
+    chartFooterLabel: {
+      fontSize: 11,
+      color: t.textSec,
+      fontFamily: FONT.body,
+    },
+    chartFooterValue: {
+      fontSize: 11,
+      color: t.brand,
+      fontFamily: FONT.semibold,
+    },
+    catsCard: {
+      backgroundColor: t.card,
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 4,
+    },
+    catRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 12,
+    },
+    catRowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.separator,
+    },
+    catBullet: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    catName: {
+      flex: 1,
+      fontSize: 14,
+      color: t.text,
+      fontFamily: FONT.medium,
+    },
+    catCount: {
+      fontSize: 14,
+      color: t.text,
+      fontFamily: FONT.semibold,
+      fontVariant: ["tabular-nums"],
+    },
+    catPct: {
+      fontSize: 12,
+      color: t.textSec,
+      minWidth: 32,
+      textAlign: "right",
+      fontFamily: FONT.body,
+    },
+  });
+}

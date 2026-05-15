@@ -1,4 +1,7 @@
 export type ColorTokens = {
+  /** Identifies which palette is active — useful for components that need
+   *  different alphas/saturation in dark mode (Banner tints, etc). */
+  mode: "light" | "dark";
   brand: string;
   brandLight: string;
   brandDeep: string;
@@ -27,6 +30,7 @@ export type ColorTokens = {
 export const TAGLINE = "Laudos rápidos e inteligentes" as const;
 
 export const lightTokens: ColorTokens = {
+  mode: "light",
   brand: "#059669",
   brandLight: "#D1FAE5",
   brandDeep: "#047857",
@@ -50,6 +54,7 @@ export const lightTokens: ColorTokens = {
 };
 
 export const darkTokens: ColorTokens = {
+  mode: "dark",
   brand: "#10B981",
   brandLight: "rgba(16,185,129,0.18)",
   brandDeep: "#34D399",

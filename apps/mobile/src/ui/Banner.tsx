@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Animated,
   Easing,
@@ -7,7 +7,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { C, FONT } from "./tokens";
+import { FONT, type ColorTokens } from "./tokens";
+import { useColorTokens } from "./useColorTokens";
 import { AlertOctagon, AlertTriangle, CheckCircle, Info, X } from "./icons";
 
 export type BannerSeverity = "error" | "warning" | "success" | "info";
@@ -29,28 +30,31 @@ type Tone = {
   Icon: typeof Info;
 };
 
-const TONE: Record<BannerSeverity, Tone> = {
-  error: {
-    bg: "rgba(255,59,48,0.10)",
-    fg: C.danger,
-    Icon: AlertOctagon,
-  },
-  warning: {
-    bg: "rgba(245,158,11,0.12)",
-    fg: "#B45309",
-    Icon: AlertTriangle,
-  },
-  success: {
-    bg: C.brandLight,
-    fg: C.brandDeep,
-    Icon: CheckCircle,
-  },
-  info: {
-    bg: "rgba(10,132,255,0.10)",
-    fg: "#0A66C2",
-    Icon: Info,
-  },
-};
+function tones(t: ColorTokens): Record<BannerSeverity, Tone> {
+  const isDark = t.mode === "dark";
+  return {
+    error: {
+      bg: isDark ? "rgba(255,69,58,0.18)" : "rgba(255,59,48,0.10)",
+      fg: t.danger,
+      Icon: AlertOctagon,
+    },
+    warning: {
+      bg: t.warningBg,
+      fg: t.warningText,
+      Icon: AlertTriangle,
+    },
+    success: {
+      bg: t.brandLight,
+      fg: t.brandDeep,
+      Icon: CheckCircle,
+    },
+    info: {
+      bg: isDark ? "rgba(10,132,255,0.20)" : "rgba(10,132,255,0.10)",
+      fg: isDark ? "#64B5F6" : "#0A66C2",
+      Icon: Info,
+    },
+  };
+}
 
 export function Banner({
   severity = "info",
@@ -59,7 +63,9 @@ export function Banner({
   onDismiss,
   action,
 }: Props) {
-  const tone = TONE[severity];
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const tone = tones(t)[severity];
   const enter = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -122,43 +128,45 @@ export function Banner({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-  },
-  iconBox: {
-    paddingTop: 1,
-  },
-  body: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    fontSize: 14,
-    fontFamily: FONT.semibold,
-    letterSpacing: 0.1,
-  },
-  message: {
-    fontSize: 14,
-    color: C.text,
-    fontFamily: FONT.body,
-    lineHeight: 19,
-  },
-  actionBtn: {
-    marginTop: 8,
-    alignSelf: "flex-start",
-  },
-  actionText: {
-    fontSize: 14,
-    fontFamily: FONT.semibold,
-  },
-  closeBtn: {
-    paddingTop: 1,
-    paddingHorizontal: 2,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    wrap: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: 12,
+    },
+    iconBox: {
+      paddingTop: 1,
+    },
+    body: {
+      flex: 1,
+      gap: 2,
+    },
+    title: {
+      fontSize: 14,
+      fontFamily: FONT.semibold,
+      letterSpacing: 0.1,
+    },
+    message: {
+      fontSize: 14,
+      color: t.text,
+      fontFamily: FONT.body,
+      lineHeight: 19,
+    },
+    actionBtn: {
+      marginTop: 8,
+      alignSelf: "flex-start",
+    },
+    actionText: {
+      fontSize: 14,
+      fontFamily: FONT.semibold,
+    },
+    closeBtn: {
+      paddingTop: 1,
+      paddingHorizontal: 2,
+    },
+  });
+}

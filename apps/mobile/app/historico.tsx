@@ -1,8 +1,12 @@
+import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { PageHeader } from "@/ui/PageHeader";
-import { Chevron, Search } from "@/ui/icons";
-import { C, FONT } from "@/ui/tokens";
+import { EmptyState } from "@/ui/EmptyState";
+import { Chevron, Folder, Search } from "@/ui/icons";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 
 type HistItem = {
   id: string;
@@ -18,6 +22,8 @@ type HistGroup = {
   items: HistItem[];
 };
 
+// TODO(fase β): substituir por query real (Supabase: reports order by created_at desc).
+// Mantido como mock pra preservar visual da Fase α.
 const GROUPS: HistGroup[] = [
   {
     date: "Hoje",
@@ -44,21 +50,42 @@ const GROUPS: HistGroup[] = [
   },
 ];
 
-// Add 22 alpha = ~13% (0x22 = 34 / 255 ≈ 0.133)
 function withAlpha(hex: string) {
   return hex + "22";
 }
 
 export default function HistoricoScreen() {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
+
+  const isEmpty = GROUPS.every((g) => g.items.length === 0);
+
+  if (isEmpty) {
+    return (
+      <View style={{ flex: 1, backgroundColor: t.bg }}>
+        <PageHeader title="Histórico" />
+        <EmptyState
+          icon={<Folder size={28} color={t.brand} />}
+          title="Nenhum laudo ainda"
+          message="Os laudos que você gerar aparecem aqui, agrupados por data."
+          action={{
+            label: "Gerar laudo",
+            onPress: () => router.push("/generate"),
+          }}
+        />
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
       <PageHeader title="Histórico" />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}>
         <View style={styles.searchWrap}>
           <View style={styles.searchPill}>
-            <Search size={16} color={C.textMute} />
+            <Search size={16} color={t.textMute} />
             <Text style={styles.searchText}>Buscar paciente, ID, conteúdo…</Text>
           </View>
         </View>
@@ -100,7 +127,7 @@ export default function HistoricoScreen() {
                     )}
                   </View>
 
-                  <Chevron color={C.textGhost} />
+                  <Chevron color={t.textGhost} />
                 </View>
               ))}
             </View>
@@ -111,102 +138,104 @@ export default function HistoricoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  searchWrap: {
-    paddingTop: 6,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
-  searchPill: {
-    backgroundColor: C.fill1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  searchText: {
-    fontSize: 15,
-    color: C.textMute,
-    fontFamily: FONT.body,
-  },
-  groupHeader: {
-    fontSize: 12,
-    color: C.textSec,
-    fontFamily: FONT.semibold,
-    paddingHorizontal: 22,
-    paddingTop: 14,
-    paddingBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  list: {
-    backgroundColor: C.card,
-    marginHorizontal: 12,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  rowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.separator,
-  },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  avatarText: {
-    fontFamily: FONT.bold,
-    fontSize: 14,
-  },
-  rowMain: {
-    flex: 1,
-    minWidth: 0,
-  },
-  patient: {
-    fontSize: 15,
-    color: C.text,
-    fontFamily: FONT.semibold,
-  },
-  meta: {
-    fontSize: 12,
-    color: C.textSec,
-    marginTop: 1,
-    fontFamily: FONT.body,
-  },
-  metaMono: {
-    fontFamily: "Menlo",
-  },
-  rowRight: {
-    alignItems: "flex-end",
-    gap: 3,
-  },
-  time: {
-    fontSize: 12,
-    color: C.textSec,
-    fontFamily: FONT.body,
-    fontVariant: ["tabular-nums"],
-  },
-  badge: {
-    backgroundColor: C.warningBg,
-    color: C.warningText,
-    fontSize: 9.5,
-    fontFamily: FONT.bold,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    letterSpacing: 0.3,
-    overflow: "hidden",
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    searchWrap: {
+      paddingTop: 6,
+      paddingHorizontal: 16,
+      paddingBottom: 10,
+    },
+    searchPill: {
+      backgroundColor: t.fill1,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    searchText: {
+      fontSize: 15,
+      color: t.textMute,
+      fontFamily: FONT.body,
+    },
+    groupHeader: {
+      fontSize: 12,
+      color: t.textSec,
+      fontFamily: FONT.semibold,
+      paddingHorizontal: 22,
+      paddingTop: 14,
+      paddingBottom: 6,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    list: {
+      backgroundColor: t.card,
+      marginHorizontal: 12,
+      borderRadius: 12,
+      overflow: "hidden",
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.separator,
+    },
+    avatar: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    },
+    avatarText: {
+      fontFamily: FONT.bold,
+      fontSize: 14,
+    },
+    rowMain: {
+      flex: 1,
+      minWidth: 0,
+    },
+    patient: {
+      fontSize: 15,
+      color: t.text,
+      fontFamily: FONT.semibold,
+    },
+    meta: {
+      fontSize: 12,
+      color: t.textSec,
+      marginTop: 1,
+      fontFamily: FONT.body,
+    },
+    metaMono: {
+      fontFamily: "Menlo",
+    },
+    rowRight: {
+      alignItems: "flex-end",
+      gap: 3,
+    },
+    time: {
+      fontSize: 12,
+      color: t.textSec,
+      fontFamily: FONT.body,
+      fontVariant: ["tabular-nums"],
+    },
+    badge: {
+      backgroundColor: t.warningBg,
+      color: t.warningText,
+      fontSize: 9.5,
+      fontFamily: FONT.bold,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      letterSpacing: 0.3,
+      overflow: "hidden",
+    },
+  });
+}
