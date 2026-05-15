@@ -10,11 +10,19 @@
  */
 import { ABDOMEN_TOTAL_CONTRACT } from "./ABDOMEN_TOTAL";
 import { TIREOIDE_CONTRACT } from "./TIREOIDE";
+import { MAMARIA_CONTRACT } from "./MAMARIA";
+import { PELVE_FEMININA_CONTRACT } from "./PELVE_FEMININA";
+import { OBSTETRICA_CONTRACT } from "./OBSTETRICA";
 
 export const CATEGORY_CONTRACTS: Record<string, string> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT,
   TIREOIDE: TIREOIDE_CONTRACT,
-  // TODO: adicionar conforme integramos as outras 31 categorias
+  MAMARIA: MAMARIA_CONTRACT,
+  PELVE_FEMININA: PELVE_FEMININA_CONTRACT,
+  OBSTETRICA: OBSTETRICA_CONTRACT,
+  // Alpha 5×1 FECHADO (P3=A). Próximas fases:
+  // - β: DIRETO_OBJETIVO + DETALHADO_PROTOCOLAR pra estas 5 categorias
+  // - γ: expandir cobertura pra 28 categorias restantes
 };
 
 export function getCategoryContract(code: string): string | null {

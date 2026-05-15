@@ -1,6 +1,5 @@
 import { useReducer, useRef, useState } from "react";
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -36,6 +35,7 @@ import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
+import { LaudoUSGLogo } from "@/ui/LaudoUSGLogo";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -175,12 +175,11 @@ export default function GenerateScreen() {
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={C.text} />
-          <Image
-            source={require("../assets/brand/logos/logo-laudousg-main.png")}
-            style={{ height: 24, width: 110 }}
-            resizeMode="contain"
-            accessibilityLabel="LaudoUSG"
-          />
+          {/* logo-laudousg-main.png tem fundo branco opaco no canto (pixel 0,0
+              é RGB 249/251/250 alpha=255), aparecia com fundo na tela.
+              Volta pro composite do claude3 (transparent.png + texto inline)
+              com size="md" pra ficar visível e 100% transparente. */}
+          <LaudoUSGLogo size="md" variant="auto" showTagline={false} />
         </Pressable>
         {__DEV__ ? (
           <Pressable onPress={cycleMock} style={styles.devChip}>
