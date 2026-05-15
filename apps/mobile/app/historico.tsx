@@ -1,54 +1,37 @@
-import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { PageHeader } from "@/ui/PageHeader";
 import { EmptyState } from "@/ui/EmptyState";
 import { Chevron, Folder, Search } from "@/ui/icons";
-import { FONT, type ColorTokens } from "@/ui/tokens";
+import { CATS, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
+import { supabase } from "@/lib/supabase";
 
-type HistItem = {
+type ReportRow = {
   id: string;
-  patient: string;
-  cat: string;
-  catColor: string;
-  time: string;
-  status?: "Rascunho";
+  category_code: string;
+  status: "draft" | "awaiting_clarify" | "generated" | "blocked" | "published" | "discarded";
+  generated_output: string | null;
+  final_output: string | null;
+  raw_input: string;
+  created_at: string;
 };
 
-type HistGroup = {
-  date: string;
-  items: HistItem[];
+type Group = {
+  title: string;
+  items: ReportRow[];
 };
 
-// TODO(fase β): substituir por query real (Supabase: reports order by created_at desc).
-// Mantido como mock pra preservar visual da Fase α.
-const GROUPS: HistGroup[] = [
-  {
-    date: "Hoje",
-    items: [
-      { id: "OBS-0142", patient: "Maria S.", cat: "Obstétrica", catColor: "#EC4899", time: "14:32", status: "Rascunho" },
-      { id: "OBS-0141", patient: "Beatriz O.", cat: "Doppler OB", catColor: "#F97316", time: "09:21" },
-      { id: "ABD-0140", patient: "Roberto T.", cat: "Abdome", catColor: "#059669", time: "08:14" },
-    ],
-  },
-  {
-    date: "Ontem",
-    items: [
-      { id: "TIR-0139", patient: "Helena C.", cat: "Tireoide", catColor: "#0EA5E9", time: "17:48" },
-      { id: "MAM-0138", patient: "Ana Paula L.", cat: "Mamária", catColor: "#F43F5E", time: "16:02" },
-      { id: "OBS-0137", patient: "Sofia R.", cat: "Obstétrica", catColor: "#EC4899", time: "14:30" },
-    ],
-  },
-  {
-    date: "12 Mai",
-    items: [
-      { id: "PEL-0136", patient: "Renata B.", cat: "Pelve", catColor: "#A855F7", time: "11:55" },
-      { id: "MOR-0135", patient: "Camila D.", cat: "Morfológico", catColor: "#8B5CF6", time: "09:40" },
-    ],
-  },
-];
+const CATEGORY_MAP = new Map(CATS.map((cat) => [cat.id, cat]));
 
 function withAlpha(hex: string) {
   return hex + "22";
@@ -58,17 +41,57 @@ export default function HistoricoScreen() {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const isEmpty = GROUPS.every((g) => g.items.length === 0);
+  useEffect(() => {
+    let alive = true;
 
-  if (isEmpty) {
+    async function load() {
+      setLoading(true);
+      setError(null);
+      const { data, error: sbError } = await supabase
+        .from("reports")
+        .select("id, category_code, status, generated_output, final_output, raw_input, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (!alive) return;
+      if (sbError) {
+        setError(sbError.message);
+        setReports([]);
+      } else {
+        setReports((data ?? []) as ReportRow[]);
+      }
+      setLoading(false);
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const groups = useMemo(() => groupReports(reports), [reports]);
+
+  if (loading) {
+    return (
+      <View style={[styles.center, { backgroundColor: t.bg }]}>
+        <ActivityIndicator color={t.brand} />
+        <Text style={styles.centerText}>Carregando histórico...</Text>
+      </View>
+    );
+  }
+
+  if (reports.length === 0 && !error) {
     return (
       <View style={{ flex: 1, backgroundColor: t.bg }}>
         <PageHeader title="Histórico" />
         <EmptyState
           icon={<Folder size={28} color={t.brand} />}
           title="Nenhum laudo ainda"
-          message="Os laudos que você gerar aparecem aqui, agrupados por data."
+          message={'Nenhum laudo ainda. Toque em "Gerar laudo" pra começar.'}
           action={{
             label: "Gerar laudo",
             onPress: () => router.push("/generate"),
@@ -86,50 +109,65 @@ export default function HistoricoScreen() {
         <View style={styles.searchWrap}>
           <View style={styles.searchPill}>
             <Search size={16} color={t.textMute} />
-            <Text style={styles.searchText}>Buscar paciente, ID, conteúdo…</Text>
+            <Text style={styles.searchText}>Últimos 50 laudos da sua conta</Text>
           </View>
         </View>
 
-        {GROUPS.map((group) => (
-          <View key={group.date}>
-            <Text style={styles.groupHeader}>{group.date}</Text>
+        {error ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorTitle}>Erro ao carregar histórico</Text>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {groups.map((group) => (
+          <View key={group.title}>
+            <Text style={styles.groupHeader}>{group.title}</Text>
             <View style={styles.list}>
-              {group.items.map((it, i) => (
-                <View
-                  key={it.id}
-                  style={[
-                    styles.row,
-                    i < group.items.length - 1 && styles.rowDivider,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.avatar,
-                      { backgroundColor: withAlpha(it.catColor) },
+              {group.items.map((report, index) => {
+                const cat = categoryFor(report.category_code);
+                const text = report.final_output || report.generated_output || report.raw_input;
+                return (
+                  <Pressable
+                    key={report.id}
+                    onPress={() => router.push(`/report/${report.id}`)}
+                    style={({ pressed }) => [
+                      styles.row,
+                      index < group.items.length - 1 && styles.rowDivider,
+                      pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={[styles.avatarText, { color: it.catColor }]}>
-                      {it.cat[0]}
-                    </Text>
-                  </View>
+                    <View
+                      style={[
+                        styles.avatar,
+                        { backgroundColor: withAlpha(cat.color) },
+                      ]}
+                    >
+                      <Text style={[styles.avatarText, { color: cat.color }]}>
+                        {cat.label[0]}
+                      </Text>
+                    </View>
 
-                  <View style={styles.rowMain}>
-                    <Text style={styles.patient}>{it.patient}</Text>
-                    <Text style={styles.meta}>
-                      {it.cat} · <Text style={styles.metaMono}>{it.id}</Text>
-                    </Text>
-                  </View>
+                    <View style={styles.rowMain}>
+                      <Text style={styles.patient} numberOfLines={1}>
+                        {cat.label}
+                      </Text>
+                      <Text style={styles.meta} numberOfLines={1}>
+                        {excerpt(text)}
+                      </Text>
+                    </View>
 
-                  <View style={styles.rowRight}>
-                    <Text style={styles.time}>{it.time}</Text>
-                    {it.status === "Rascunho" && (
-                      <Text style={styles.badge}>RASCUNHO</Text>
-                    )}
-                  </View>
+                    <View style={styles.rowRight}>
+                      <Text style={styles.time}>{relativeTime(report.created_at)}</Text>
+                      <Text style={[styles.badge, badgeStyle(report.status, t)]}>
+                        {statusLabel(report.status)}
+                      </Text>
+                    </View>
 
-                  <Chevron color={t.textGhost} />
-                </View>
-              ))}
+                    <Chevron color={t.textGhost} />
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         ))}
@@ -138,8 +176,100 @@ export default function HistoricoScreen() {
   );
 }
 
+function categoryFor(code: string) {
+  return (
+    CATEGORY_MAP.get(code as (typeof CATS)[number]["id"]) ?? {
+      id: code,
+      label: code.replaceAll("_", " "),
+      color: "#9CA3AF",
+      sub: "",
+    }
+  );
+}
+
+function groupReports(reports: ReportRow[]): Group[] {
+  const buckets: Group[] = [
+    { title: "Hoje", items: [] },
+    { title: "Ontem", items: [] },
+    { title: "Últimos 7 dias", items: [] },
+    { title: "Anteriores", items: [] },
+  ];
+  const now = startOfDay(new Date());
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  for (const report of reports) {
+    const day = startOfDay(new Date(report.created_at));
+    if (day.getTime() === now.getTime()) buckets[0].items.push(report);
+    else if (day.getTime() === yesterday.getTime()) buckets[1].items.push(report);
+    else if (day >= weekAgo) buckets[2].items.push(report);
+    else buckets[3].items.push(report);
+  }
+
+  return buckets.filter((bucket) => bucket.items.length > 0);
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function excerpt(text: string) {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) return "Sem texto registrado";
+  return clean.length > 80 ? `${clean.slice(0, 80)}...` : clean;
+}
+
+function relativeTime(value: string) {
+  const date = new Date(value);
+  const diffMs = Date.now() - date.getTime();
+  const min = Math.floor(diffMs / 60_000);
+  if (min < 1) return "agora";
+  if (min < 60) return `${min}min`;
+  const hours = Math.floor(min / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+function statusLabel(status: ReportRow["status"]) {
+  const labels: Record<ReportRow["status"], string> = {
+    draft: "Draft",
+    awaiting_clarify: "Draft",
+    generated: "Done",
+    blocked: "Blocked",
+    published: "Done",
+    discarded: "Draft",
+  };
+  return labels[status];
+}
+
+function badgeStyle(status: ReportRow["status"], t: ColorTokens) {
+  if (status === "blocked") {
+    return { backgroundColor: t.warningBg, color: t.warningText };
+  }
+  if (status === "generated" || status === "published") {
+    return { backgroundColor: t.brandLight, color: t.brandDeep };
+  }
+  return { backgroundColor: t.fill1, color: t.textSec };
+}
+
 function makeStyles(t: ColorTokens) {
   return StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 32,
+    },
+    centerText: {
+      marginTop: 12,
+      fontFamily: FONT.body,
+      fontSize: 14,
+      color: t.textSec,
+    },
     searchWrap: {
       paddingTop: 6,
       paddingHorizontal: 16,
@@ -158,6 +288,25 @@ function makeStyles(t: ColorTokens) {
       fontSize: 15,
       color: t.textMute,
       fontFamily: FONT.body,
+    },
+    errorCard: {
+      backgroundColor: t.card,
+      marginHorizontal: 12,
+      borderRadius: 12,
+      padding: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.warningText,
+    },
+    errorTitle: {
+      fontFamily: FONT.semibold,
+      color: t.text,
+      fontSize: 14,
+    },
+    errorText: {
+      marginTop: 4,
+      fontFamily: FONT.body,
+      color: t.textSec,
+      fontSize: 12,
     },
     groupHeader: {
       fontSize: 12,
@@ -181,6 +330,9 @@ function makeStyles(t: ColorTokens) {
       gap: 12,
       paddingHorizontal: 14,
       paddingVertical: 12,
+    },
+    pressed: {
+      opacity: 0.72,
     },
     rowDivider: {
       borderBottomWidth: StyleSheet.hairlineWidth,
@@ -213,9 +365,6 @@ function makeStyles(t: ColorTokens) {
       marginTop: 1,
       fontFamily: FONT.body,
     },
-    metaMono: {
-      fontFamily: "Menlo",
-    },
     rowRight: {
       alignItems: "flex-end",
       gap: 3,
@@ -227,8 +376,6 @@ function makeStyles(t: ColorTokens) {
       fontVariant: ["tabular-nums"],
     },
     badge: {
-      backgroundColor: t.warningBg,
-      color: t.warningText,
       fontSize: 9.5,
       fontFamily: FONT.bold,
       paddingHorizontal: 6,

@@ -2,10 +2,12 @@ import {
   GenerateRequestSchema,
   GenerateSSEEventSchema,
   GenerationRunSchema,
+  ProfileSchema,
   ReportSchema,
   type GenerateRequest,
   type GenerateSSEEvent,
   type GenerationRun,
+  type Profile,
   type Report,
 } from "@laudousg/shared";
 import { z } from "zod";
@@ -49,16 +51,45 @@ export type ReportDetail = {
   }>;
 };
 
-export async function getReport(id: string): Promise<ReportDetail> {
+const AnalyticsResponseSchema = z.object({
+  total_reports: z.number().int(),
+  reports_last_7d: z.number().int(),
+  reports_last_30d: z.number().int(),
+  avg_latency_ms: z.number().int().nullable(),
+  top_categories: z.array(
+    z.object({
+      code: z.string(),
+      label: z.string(),
+      count: z.number().int(),
+    }),
+  ),
+  total_cost_usd: z.number(),
+  edits_ratio: z.number(),
+});
+
+export type MeAnalytics = z.infer<typeof AnalyticsResponseSchema>;
+
+const ProfileResponseSchema = z.object({
+  profile: ProfileSchema,
+});
+
+export type UpdateProfileInput = {
+  name?: string | null;
+  default_writing_style_id?: string | null;
+};
+
+async function authedFetch(path: string, init: RequestInit = {}) {
   const token = await getAccessToken();
-  const res = await fetch(`${API_URL}/api/reports/${encodeURIComponent(id)}`, {
-    method: "GET",
+  return fetch(`${API_URL}${path}`, {
+    ...init,
     headers: {
+      ...(init.headers ?? {}),
       authorization: `Bearer ${token}`,
-      accept: "application/json",
     },
   });
+}
 
+async function readJsonOrThrow(res: Response, label: string) {
   if (!res.ok) {
     let detail = "";
     try {
@@ -66,10 +97,56 @@ export async function getReport(id: string): Promise<ReportDetail> {
     } catch {
       /* ignore */
     }
-    throw new Error(`buscar laudo falhou: ${res.status} ${detail}`);
+    throw new Error(`${label} falhou: ${res.status} ${detail}`);
   }
+  return res.json();
+}
 
-  return ReportDetailResponseSchema.parse(await res.json());
+export async function getReport(id: string): Promise<ReportDetail> {
+  const res = await authedFetch(`/api/reports/${encodeURIComponent(id)}`, {
+    method: "GET",
+    headers: {
+      accept: "application/json",
+    },
+  });
+
+  return ReportDetailResponseSchema.parse(
+    await readJsonOrThrow(res, "buscar laudo"),
+  );
+}
+
+export async function getMeAnalytics(): Promise<MeAnalytics> {
+  const res = await authedFetch("/api/me/analytics", {
+    method: "GET",
+    headers: { accept: "application/json" },
+  });
+  return AnalyticsResponseSchema.parse(
+    await readJsonOrThrow(res, "buscar analytics"),
+  );
+}
+
+export async function getMeProfile(): Promise<Profile> {
+  const res = await authedFetch("/api/me/profile", {
+    method: "GET",
+    headers: { accept: "application/json" },
+  });
+  return ProfileResponseSchema.parse(
+    await readJsonOrThrow(res, "buscar perfil"),
+  ).profile;
+}
+
+export async function updateMeProfile(input: UpdateProfileInput): Promise<Profile> {
+  const res = await authedFetch("/api/me/profile", {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  return ProfileResponseSchema.parse(
+    await readJsonOrThrow(res, "salvar perfil"),
+  ).profile;
 }
 
 /**

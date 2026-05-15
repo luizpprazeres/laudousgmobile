@@ -1,52 +1,79 @@
-import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { getMeAnalytics, type MeAnalytics } from "@/lib/api";
 import { PageHeader } from "@/ui/PageHeader";
 import { EmptyState } from "@/ui/EmptyState";
 import { Bar } from "@/ui/icons";
-import { FONT, type ColorTokens } from "@/ui/tokens";
+import { CATS, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 
-// TODO(fase β): substituir por queries reais (Supabase aggregations).
-// Mantido como mock pra preservar visual da Fase α.
-const KPIS = [
-  { val: "142", label: "laudos no mês", sub: "+18% vs. abril" },
-  { val: "3,4h", label: "tempo economizado", sub: "vs. digitar manual" },
-  { val: "94%", label: "taxa de aprovação", sub: "pós-revisão" },
-  { val: "2,8s", label: "geração média", sub: "por laudo" },
-];
-
-const BARS = [40, 65, 85, 50, 95, 70, 30];
-const DAYS = ["S", "T", "Q", "Q", "S", "S", "D"];
-
-const CATS_DATA = [
-  { name: "Obstétrica", color: "#EC4899", count: 58, pct: 41 },
-  { name: "Abdome Total", color: "#059669", count: 32, pct: 22 },
-  { name: "Tireoide", color: "#0EA5E9", count: 24, pct: 17 },
-  { name: "Mamária", color: "#F43F5E", count: 18, pct: 13 },
-  { name: "Outros", color: "#9CA3AF", count: 10, pct: 7 },
-];
-
-const BAR_CHART_HEIGHT = 110;
+const CATEGORY_COLORS = new Map(CATS.map((cat) => [cat.id, cat.color]));
 
 export default function AnalyticsScreen() {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
+  const [data, setData] = useState<MeAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sem laudos = sem analytics. Usa o primeiro KPI como sinal.
-  const monthly = parseInt(KPIS[0]?.val ?? "0", 10);
-  const isEmpty = !Number.isFinite(monthly) || monthly === 0;
+  useEffect(() => {
+    let alive = true;
 
-  if (isEmpty) {
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await getMeAnalytics();
+        if (alive) setData(result);
+      } catch (err) {
+        if (alive) setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={[styles.center, { backgroundColor: t.bg }]}>
+        <ActivityIndicator color={t.brand} />
+        <Text style={styles.centerText}>Carregando analytics...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.center, { backgroundColor: t.bg }]}>
+        <Text style={styles.errorTitle}>Não foi possível carregar analytics</Text>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (!data || data.total_reports === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: t.bg }}>
         <PageHeader title="Analytics" />
         <EmptyState
           icon={<Bar size={28} color={t.brand} />}
           title="Sem dados ainda"
-          message="Faça seu primeiro laudo para começar a ver estatísticas de produtividade e top especialidades."
+          message="Faça seu primeiro laudo para começar a ver estatísticas reais da sua conta."
           action={{
             label: "Gerar laudo",
             onPress: () => router.push("/generate"),
@@ -55,6 +82,29 @@ export default function AnalyticsScreen() {
       </View>
     );
   }
+
+  const kpis = [
+    {
+      value: formatNumber(data.total_reports),
+      label: "laudos totais",
+      sub: `${formatNumber(data.reports_last_30d)} nos últimos 30 dias`,
+    },
+    {
+      value: formatNumber(data.reports_last_7d),
+      label: "últimos 7 dias",
+      sub: "produção recente",
+    },
+    {
+      value: data.avg_latency_ms === null ? "-" : formatDuration(data.avg_latency_ms),
+      label: "tempo médio",
+      sub: "até finalizar a geração",
+    },
+    {
+      value: `$${data.total_cost_usd.toFixed(4)}`,
+      label: "custo estimado",
+      sub: `${Math.round(data.edits_ratio * 100)}% com edição final`,
+    },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -67,72 +117,102 @@ export default function AnalyticsScreen() {
           paddingBottom: 32 + insets.bottom,
         }}
       >
-        {/* Este mês — KPIs grid 2x2 */}
-        <Text style={styles.sectionHeader}>Este mês</Text>
+        <Text style={styles.sectionHeader}>Sua produção</Text>
         <View style={styles.kpiGrid}>
-          {KPIS.map((k) => (
-            <View key={k.label} style={styles.kpiCard}>
-              <Text style={styles.kpiVal}>{k.val}</Text>
-              <Text style={styles.kpiLabel}>{k.label}</Text>
-              <Text style={styles.kpiSub}>{k.sub}</Text>
+          {kpis.map((kpi) => (
+            <View key={kpi.label} style={styles.kpiCard}>
+              <Text style={styles.kpiVal}>{kpi.value}</Text>
+              <Text style={styles.kpiLabel}>{kpi.label}</Text>
+              <Text style={styles.kpiSub}>{kpi.sub}</Text>
             </View>
           ))}
         </View>
 
-        {/* Esta semana — bar chart */}
-        <Text style={[styles.sectionHeader, { marginTop: 22 }]}>Esta semana</Text>
-        <View style={styles.chartCard}>
-          <View style={styles.barsRow}>
-            {BARS.map((h, i) => (
-              <View key={i} style={styles.barCol}>
-                <View style={styles.barTrack}>
-                  <View
-                    style={[
-                      styles.barFill,
-                      {
-                        height: (h / 100) * BAR_CHART_HEIGHT,
-                        backgroundColor: i === 4 ? t.brand : t.fill1,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.barDay}>{DAYS[i]}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={styles.chartFooter}>
-            <Text style={styles.chartFooterLabel}>Pico na sexta</Text>
-            <Text style={styles.chartFooterValue}>19 laudos</Text>
-          </View>
-        </View>
-
-        {/* Top especialidades */}
         <Text style={[styles.sectionHeader, { marginTop: 22 }]}>
-          Top especialidades
+          Categorias mais usadas
         </Text>
         <View style={styles.catsCard}>
-          {CATS_DATA.map((c, i) => (
-            <View
-              key={c.name}
-              style={[
-                styles.catRow,
-                i < CATS_DATA.length - 1 && styles.catRowDivider,
-              ]}
-            >
-              <View style={[styles.catBullet, { backgroundColor: c.color }]} />
-              <Text style={styles.catName}>{c.name}</Text>
-              <Text style={styles.catCount}>{c.count}</Text>
-              <Text style={styles.catPct}>{c.pct}%</Text>
-            </View>
-          ))}
+          {data.top_categories.length === 0 ? (
+            <Text style={styles.emptyInline}>Nenhuma categoria registrada.</Text>
+          ) : (
+            data.top_categories.map((category, index) => (
+              <View
+                key={category.code}
+                style={[
+                  styles.catRow,
+                  index < data.top_categories.length - 1 && styles.catRowDivider,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.catBullet,
+                    {
+                      backgroundColor:
+                        CATEGORY_COLORS.get(
+                          category.code as (typeof CATS)[number]["id"],
+                        ) ?? "#9CA3AF",
+                    },
+                  ]}
+                />
+                <Text style={styles.catName}>{category.label}</Text>
+                <Text style={styles.catCount}>{category.count}</Text>
+              </View>
+            ))
+          )}
         </View>
+
+        <Pressable
+          onPress={() => router.push("/historico")}
+          style={({ pressed }) => [styles.linkCard, pressed && styles.pressed]}
+        >
+          <Text style={styles.linkTitle}>Ver laudos recentes</Text>
+          <Text style={styles.linkText}>Abrir histórico completo da sua conta</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
 }
 
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("pt-BR").format(value);
+}
+
+function formatDuration(ms: number) {
+  if (ms < 1_000) return `${ms}ms`;
+  const seconds = Math.round(ms / 1_000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return rest ? `${minutes}m ${rest}s` : `${minutes}m`;
+}
+
 function makeStyles(t: ColorTokens) {
   return StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 32,
+    },
+    centerText: {
+      marginTop: 12,
+      fontFamily: FONT.body,
+      fontSize: 14,
+      color: t.textSec,
+    },
+    errorTitle: {
+      fontFamily: FONT.semibold,
+      color: t.text,
+      fontSize: 16,
+      textAlign: "center",
+    },
+    errorText: {
+      marginTop: 8,
+      fontFamily: FONT.body,
+      color: t.textSec,
+      fontSize: 13,
+      textAlign: "center",
+    },
     sectionHeader: {
       fontSize: 12,
       color: t.textSec,
@@ -159,8 +239,7 @@ function makeStyles(t: ColorTokens) {
       fontFamily: FONT.displayBold,
       fontSize: 28,
       color: t.text,
-      lineHeight: 28,
-      letterSpacing: -0.7,
+      lineHeight: 30,
     },
     kpiLabel: {
       fontSize: 12,
@@ -173,54 +252,6 @@ function makeStyles(t: ColorTokens) {
       color: t.textMute,
       marginTop: 4,
       fontFamily: FONT.body,
-    },
-    chartCard: {
-      backgroundColor: t.card,
-      padding: 16,
-      borderRadius: 14,
-    },
-    barsRow: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      gap: 8,
-      height: BAR_CHART_HEIGHT + 22,
-    },
-    barCol: {
-      flex: 1,
-      alignItems: "center",
-      gap: 6,
-    },
-    barTrack: {
-      width: "100%",
-      height: BAR_CHART_HEIGHT,
-      justifyContent: "flex-end",
-    },
-    barFill: {
-      width: "100%",
-      borderRadius: 4,
-    },
-    barDay: {
-      fontSize: 10,
-      color: t.textSec,
-      fontFamily: FONT.medium,
-    },
-    chartFooter: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginTop: 14,
-      paddingTop: 12,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: t.separator,
-    },
-    chartFooterLabel: {
-      fontSize: 11,
-      color: t.textSec,
-      fontFamily: FONT.body,
-    },
-    chartFooterValue: {
-      fontSize: 11,
-      color: t.brand,
-      fontFamily: FONT.semibold,
     },
     catsCard: {
       backgroundColor: t.card,
@@ -255,12 +286,31 @@ function makeStyles(t: ColorTokens) {
       fontFamily: FONT.semibold,
       fontVariant: ["tabular-nums"],
     },
-    catPct: {
-      fontSize: 12,
-      color: t.textSec,
-      minWidth: 32,
-      textAlign: "right",
+    emptyInline: {
       fontFamily: FONT.body,
+      color: t.textSec,
+      fontSize: 13,
+      paddingVertical: 14,
+    },
+    linkCard: {
+      backgroundColor: t.card,
+      borderRadius: 14,
+      padding: 16,
+      marginTop: 14,
+    },
+    pressed: {
+      opacity: 0.72,
+    },
+    linkTitle: {
+      fontFamily: FONT.semibold,
+      color: t.text,
+      fontSize: 14,
+    },
+    linkText: {
+      fontFamily: FONT.body,
+      color: t.textSec,
+      fontSize: 12,
+      marginTop: 3,
     },
   });
 }

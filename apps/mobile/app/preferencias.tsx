@@ -1,107 +1,229 @@
-import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getMeProfile, updateMeProfile } from "@/lib/api";
 import { PageHeader } from "@/ui/PageHeader";
-import { Chevron } from "@/ui/icons";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 
-type PrefItem = {
-  label: string;
-  value?: string;
-  badge?: string;
-  toggle?: boolean;
-  destructive?: boolean;
-};
+type ThemeMode = "auto" | "light" | "dark";
 
-type PrefSection = {
-  title: string;
-  items: PrefItem[];
-};
+const THEME_KEY = "laudousg.theme_mode";
 
-// TODO(fase β): hidratar com profile real do Supabase + persistir mudanças.
-const SECTIONS: PrefSection[] = [
+const WRITING_STYLES = [
   {
-    title: "Conta",
-    items: [
-      { label: "Perfil", value: "Dr. Luiz Prazeres" },
-      { label: "Email", value: "luizp02121@gmail.com" },
-      { label: "Plano", badge: "PRO" },
-    ],
+    id: "11111111-1111-4111-8111-111111111111",
+    label: "Clássico completo",
   },
   {
-    title: "Escrita",
-    items: [
-      { label: "Modelo padrão", value: "Padrão Dr. Luiz" },
-      { label: "Calibragem de estilo", value: "Médio" },
-      { label: "Auto-correção", toggle: true },
-      { label: "Sanity check clínico", toggle: true },
-    ],
+    id: "22222222-2222-4222-8222-222222222222",
+    label: "Direto objetivo",
   },
   {
-    title: "Aparência",
-    items: [
-      { label: "Tema", value: "Sistema" },
-      { label: "Tamanho do texto", value: "Padrão" },
-    ],
+    id: "33333333-3333-4333-8333-333333333333",
+    label: "Detalhado protocolar",
   },
-  {
-    title: "Privacidade",
-    items: [
-      { label: "Exportar meus laudos" },
-      { label: "Apagar dados locais", destructive: true },
-    ],
-  },
+] as const;
+
+const THEMES: Array<{ value: ThemeMode; label: string }> = [
+  { value: "auto", label: "Auto" },
+  { value: "light", label: "Claro" },
+  { value: "dark", label: "Escuro" },
 ];
 
 export default function PreferenciasScreen() {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [plan, setPlan] = useState("free");
+  const [name, setName] = useState("");
+  const [savedName, setSavedName] = useState("");
+  const [writingStyleId, setWritingStyleId] = useState<string | null>(null);
+  const [theme, setTheme] = useState<ThemeMode>("auto");
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [profile, storedTheme] = await Promise.all([
+          getMeProfile(),
+          AsyncStorage.getItem(THEME_KEY),
+        ]);
+        if (!alive) return;
+        setEmail(profile.email);
+        setPlan(profile.plan);
+        setName(profile.name ?? "");
+        setSavedName(profile.name ?? "");
+        setWritingStyleId(profile.default_writing_style_id);
+        if (storedTheme === "auto" || storedTheme === "light" || storedTheme === "dark") {
+          setTheme(storedTheme);
+        }
+      } catch (err) {
+        if (alive) setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function saveName() {
+    const clean = name.trim();
+    if (clean === savedName) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const profile = await updateMeProfile({ name: clean || null });
+      setName(profile.name ?? "");
+      setSavedName(profile.name ?? "");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function selectWritingStyle(id: string) {
+    if (id === writingStyleId) return;
+    const previous = writingStyleId;
+    setWritingStyleId(id);
+    setSaving(true);
+    setError(null);
+    try {
+      const profile = await updateMeProfile({ default_writing_style_id: id });
+      setWritingStyleId(profile.default_writing_style_id);
+    } catch (err) {
+      setWritingStyleId(previous);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function selectTheme(value: ThemeMode) {
+    setTheme(value);
+    await AsyncStorage.setItem(THEME_KEY, value);
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.center, { backgroundColor: t.bg }]}>
+        <ActivityIndicator color={t.brand} />
+        <Text style={styles.centerText}>Carregando preferências...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <PageHeader title="Preferências" />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}>
-        {SECTIONS.map((sec) => (
-          <View key={sec.title}>
-            <Text style={styles.sectionHeader}>{sec.title}</Text>
-            <View style={styles.list}>
-              {sec.items.map((it, i) => (
-                <View
-                  key={it.label}
-                  style={[
-                    styles.row,
-                    i < sec.items.length - 1 && styles.rowDivider,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.label,
-                      it.destructive && { color: t.danger },
-                    ]}
-                  >
-                    {it.label}
-                  </Text>
-
-                  {it.value && <Text style={styles.value}>{it.value}</Text>}
-
-                  {it.badge && <Text style={styles.badge}>{it.badge}</Text>}
-
-                  {it.toggle && (
-                    <View style={styles.toggle}>
-                      <View style={styles.toggleKnob} />
-                    </View>
-                  )}
-
-                  {!it.toggle && !it.destructive && (
-                    <Chevron color={t.textGhost} />
-                  )}
-                </View>
-              ))}
-            </View>
+        {error ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorTitle}>Não foi possível salvar</Text>
+            <Text style={styles.errorText}>{error}</Text>
           </View>
-        ))}
+        ) : null}
+
+        <Text style={styles.sectionHeader}>Conta</Text>
+        <View style={styles.list}>
+          <View style={[styles.row, styles.rowDivider]}>
+            <Text style={styles.label}>Nome de exibição</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              onBlur={saveName}
+              onSubmitEditing={saveName}
+              placeholder="Seu nome"
+              placeholderTextColor={t.textMute}
+              style={styles.input}
+              returnKeyType="done"
+            />
+          </View>
+          <View style={[styles.row, styles.rowDivider]}>
+            <Text style={styles.label}>Email</Text>
+            <Text style={styles.value} numberOfLines={1}>
+              {email}
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Plano</Text>
+            <Text style={styles.badge}>{plan.toUpperCase()}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionHeader}>Escrita</Text>
+        <View style={styles.list}>
+          {WRITING_STYLES.map((style, index) => (
+            <Pressable
+              key={style.id}
+              onPress={() => selectWritingStyle(style.id)}
+              disabled={saving}
+              style={({ pressed }) => [
+                styles.row,
+                index < WRITING_STYLES.length - 1 && styles.rowDivider,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.label}>{style.label}</Text>
+              <View
+                style={[
+                  styles.radio,
+                  writingStyleId === style.id && styles.radioActive,
+                ]}
+              >
+                {writingStyleId === style.id ? <View style={styles.radioDot} /> : null}
+              </View>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={styles.sectionHeader}>Aparência</Text>
+        <View style={styles.segmentCard}>
+          {THEMES.map((option) => (
+            <Pressable
+              key={option.value}
+              onPress={() => selectTheme(option.value)}
+              style={({ pressed }) => [
+                styles.segmentItem,
+                theme === option.value && styles.segmentItemActive,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.segmentText,
+                  theme === option.value && styles.segmentTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {saving ? <Text style={styles.savingText}>Salvando...</Text> : null}
       </ScrollView>
     </View>
   );
@@ -109,6 +231,18 @@ export default function PreferenciasScreen() {
 
 function makeStyles(t: ColorTokens) {
   return StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 32,
+    },
+    centerText: {
+      marginTop: 12,
+      fontFamily: FONT.body,
+      fontSize: 14,
+      color: t.textSec,
+    },
     sectionHeader: {
       fontSize: 12,
       color: t.textSec,
@@ -126,11 +260,15 @@ function makeStyles(t: ColorTokens) {
       overflow: "hidden",
     },
     row: {
+      minHeight: 50,
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
       paddingHorizontal: 16,
-      paddingVertical: 13,
+      paddingVertical: 10,
+    },
+    pressed: {
+      opacity: 0.72,
     },
     rowDivider: {
       borderBottomWidth: StyleSheet.hairlineWidth,
@@ -143,8 +281,17 @@ function makeStyles(t: ColorTokens) {
       fontFamily: FONT.body,
     },
     value: {
+      maxWidth: "58%",
       fontSize: 14,
       color: t.textSec,
+      fontFamily: FONT.body,
+    },
+    input: {
+      flex: 1,
+      minHeight: 34,
+      textAlign: "right",
+      fontSize: 15,
+      color: t.text,
       fontFamily: FONT.body,
     },
     badge: {
@@ -158,26 +305,75 @@ function makeStyles(t: ColorTokens) {
       letterSpacing: 0.3,
       overflow: "hidden",
     },
-    toggle: {
-      width: 44,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: t.brand,
-      position: "relative",
-    },
-    toggleKnob: {
-      position: "absolute",
-      top: 2,
-      left: 20,
+    radio: {
       width: 22,
       height: 22,
       borderRadius: 11,
-      backgroundColor: "#fff",
-      shadowColor: "#000",
-      shadowOpacity: 0.18,
-      shadowOffset: { width: 0, height: 1 },
-      shadowRadius: 3,
-      elevation: 2,
+      borderWidth: 2,
+      borderColor: t.textGhost,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    radioActive: {
+      borderColor: t.brand,
+    },
+    radioDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: t.brand,
+    },
+    segmentCard: {
+      flexDirection: "row",
+      gap: 6,
+      backgroundColor: t.card,
+      marginHorizontal: 12,
+      borderRadius: 12,
+      padding: 6,
+    },
+    segmentItem: {
+      flex: 1,
+      borderRadius: 9,
+      paddingVertical: 10,
+      alignItems: "center",
+    },
+    segmentItemActive: {
+      backgroundColor: t.brand,
+    },
+    segmentText: {
+      fontFamily: FONT.semibold,
+      fontSize: 13,
+      color: t.textSec,
+    },
+    segmentTextActive: {
+      color: "#fff",
+    },
+    savingText: {
+      fontFamily: FONT.body,
+      fontSize: 12,
+      color: t.textSec,
+      marginTop: 12,
+      textAlign: "center",
+    },
+    errorCard: {
+      backgroundColor: t.card,
+      marginHorizontal: 12,
+      marginTop: 8,
+      borderRadius: 12,
+      padding: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.warningText,
+    },
+    errorTitle: {
+      fontFamily: FONT.semibold,
+      color: t.text,
+      fontSize: 14,
+    },
+    errorText: {
+      marginTop: 4,
+      fontFamily: FONT.body,
+      color: t.textSec,
+      fontSize: 12,
     },
   });
 }
