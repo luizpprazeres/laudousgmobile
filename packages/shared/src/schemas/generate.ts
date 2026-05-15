@@ -79,6 +79,12 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     ...Base,
+    type: z.literal("warning"),
+    code: z.string(),
+    message: z.string(),
+  }),
+  z.object({
+    ...Base,
     type: z.literal("token"),
     delta: z.string(),
   }),

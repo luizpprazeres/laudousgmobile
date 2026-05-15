@@ -196,13 +196,19 @@ export async function POST(req: Request) {
         })),
       });
 
-      // Fix codex MÉDIO #6: warning de RAG vazio. Log + segue (não bloqueia
-      // por enquanto — categoria pode ter fallback no DEFAULT_SYSTEM_MESSAGE,
-      // e categorias-piloto SEMPRE têm RAG. Em prod, podemos endurecer aqui.)
+      // Fix codex T7 MÉDIO #2: emitir warning como SSE event E persistir
+      // em report.generation_metadata pra auditoria.
+      // (Em prod, podemos endurecer aqui — categoria-piloto sem RAG é red flag.)
+      const pipelineWarnings: { code: string; message: string }[] = [];
       if (warning) {
-        console.warn(
-          `[generate ${reportId}] RAG vazio: ${warning.message}`,
-        );
+        console.warn(`[generate ${reportId}] ${warning.code}: ${warning.message}`);
+        emit({
+          type: "warning",
+          ts: nowIso(),
+          code: warning.code,
+          message: warning.message,
+        });
+        pipelineWarnings.push(warning);
       }
 
       // ----- 4. Writer (stream) -----
@@ -250,6 +256,10 @@ export async function POST(req: Request) {
           status: "blocked",
           generatedOutput: finalText,
           sanityResult: sanity,
+          metadata:
+            pipelineWarnings.length > 0
+              ? { pipeline_warnings: pipelineWarnings }
+              : undefined,
         });
         emit({
           type: "blocked",
@@ -268,6 +278,10 @@ export async function POST(req: Request) {
         status: "generated",
         generatedOutput: finalText,
         sanityResult: sanity,
+        metadata:
+          pipelineWarnings.length > 0
+            ? { pipeline_warnings: pipelineWarnings }
+            : undefined,
       });
       emit({
         type: "done",

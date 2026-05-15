@@ -62,8 +62,12 @@ export function buildSystemMessage(args: {
 
   if (fewShots.length > 0) {
     sections.push(
-      "EXEMPLOS DE LAUDOS (few-shots — referência de estilo e estrutura,\n" +
-        "NÃO copie fatos clínicos. Use os ACHADOS ESTRUTURADOS reais do médico):\n" +
+      "EXEMPLOS DE LAUDOS (few-shots — APENAS referência de ESTILO, FORMATO e ESTRUTURA).\n" +
+        "REGRAS ABSOLUTAS sobre estes exemplos:\n" +
+        "- NUNCA copie diagnóstico, medidas, lateralidade, conclusão, datas, percentis ou QUALQUER dado clínico dos exemplos.\n" +
+        "- NUNCA mencione achados que estejam APENAS nos exemplos e não estejam nos ACHADOS ESTRUTURADOS do médico.\n" +
+        "- Use só para calibrar tom, ordem de seções, vocabulário e nível de detalhe.\n" +
+        "- Os dados clínicos vêm EXCLUSIVAMENTE da seção ACHADOS ESTRUTURADOS no user message.\n\n" +
         fewShots
           .map((b) => `--- ${b.title} ---\n${b.content}`)
           .join("\n\n"),

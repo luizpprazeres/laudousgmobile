@@ -129,7 +129,19 @@ function applySse(
       return { ...state, ragBlockIds: ev.blocks_used };
     case "token":
       return { ...state, streamedText: state.streamedText + ev.delta };
-    case "clarify":
+    case "clarify": {
+      // Fix codex T7 MÉDIO #4: defesa contra clarify durante token streaming.
+      // Backend NÃO deveria emitir clarify depois de tokens — se isso acontecer,
+      // é erro de protocolo. Tratamos como erro pra não perder texto parcial
+      // (que ficaria órfão no streamedText sem ser exibido).
+      if (state.streamedText && state.streamedText.length > 0) {
+        return {
+          kind: "error",
+          text: state.text,
+          message:
+            "Erro de protocolo: o servidor pediu esclarecimento depois de já ter começado a gerar o laudo. Tente novamente.",
+        };
+      }
       return {
         kind: "clarifying",
         text: state.text,
@@ -137,6 +149,7 @@ function applySse(
         questions: ev.questions,
         answers: {},
       };
+    }
     case "done":
       return {
         kind: "done",
@@ -158,6 +171,10 @@ function applySse(
     case "validator":
     case "sanity":
     case "heartbeat":
+    case "warning":
+      // warning é informativo (ex: RAG_EMPTY). Backend já registrou em
+      // generation_metadata. UI pode escutar via prop callback no futuro
+      // — por ora não muda state.
       return state;
   }
 }
