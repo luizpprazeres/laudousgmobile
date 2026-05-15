@@ -29,7 +29,6 @@ import {
   getKnownCategories,
   getWritingStyleById,
 } from "@/server/db/lookups";
-import type { WritingStyleCode } from "@laudousg/shared";
 
 // Recomendações do codex já incorporadas:
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
@@ -83,7 +82,8 @@ export async function POST(req: Request) {
 
       // Resolver writing_style_id → code/name antes (fix codex #4).
       // Carregar categorias conhecidas pro validator (fix codex #2).
-      const [styleRow, categoriesInfo] = await Promise.all([
+      let effectiveWritingStyleId = reqInput.writing_style_id;
+      let [styleRow, categoriesInfo] = await Promise.all([
         getWritingStyleById(reqInput.writing_style_id),
         getKnownCategories(),
       ]);
@@ -158,11 +158,8 @@ export async function POST(req: Request) {
             existing.writingStyleId,
           );
           if (persistedStyle) {
-            // mutate local var styleRow — pra usar pra frente
-            (styleRow as { code: WritingStyleCode; name: string }).code =
-              persistedStyle.code;
-            (styleRow as { code: WritingStyleCode; name: string }).name =
-              persistedStyle.name;
+            effectiveWritingStyleId = existing.writingStyleId;
+            styleRow = persistedStyle;
           }
         }
 
@@ -292,7 +289,7 @@ export async function POST(req: Request) {
       const { blocks, queryText, warning } = await runRetriever({
         findings,
         categoryCode: findings.categoria_detectada,
-        writingStyleId: reqInput.writing_style_id,
+        writingStyleId: effectiveWritingStyleId,
         signal,
       });
       await updateRunAfterRetriever({
