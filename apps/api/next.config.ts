@@ -14,6 +14,19 @@ const nextConfig: NextConfig = {
     // que suporte React 19 (Expo SDK 53+).
     ignoreBuildErrors: true,
   },
+  async headers() {
+    return [
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET, POST, PATCH, PUT, DELETE, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Authorization, Content-Type, Accept, X-Requested-With" },
+          { key: "Access-Control-Max-Age", value: "86400" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
