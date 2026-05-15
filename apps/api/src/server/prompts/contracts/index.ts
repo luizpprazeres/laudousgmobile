@@ -1,0 +1,20 @@
+/**
+ * Mapa categoria → contrato. O contrato é o primeiro bloco do system message,
+ * antes do GLOBAL_RULES_BLOCK. Ver ordem completa em prompts/global.ts.
+ *
+ * Categorias sem contrato disponível ainda caem no DEFAULT_SYSTEM_MESSAGE
+ * (apenas DOPPLER no original — sem prompt nativo).
+ *
+ * À medida que processarmos mais arquivos do _extraction/03-models-by-category/,
+ * adicionar novos imports aqui.
+ */
+import { ABDOMEN_TOTAL_CONTRACT } from "./ABDOMEN_TOTAL";
+
+export const CATEGORY_CONTRACTS: Record<string, string> = {
+  ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT,
+  // TODO: adicionar conforme integramos as outras 32 categorias
+};
+
+export function getCategoryContract(code: string): string | null {
+  return CATEGORY_CONTRACTS[code] ?? null;
+}

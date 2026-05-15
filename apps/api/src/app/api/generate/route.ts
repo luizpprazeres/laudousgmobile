@@ -1,0 +1,252 @@
+import { GenerateRequestSchema } from "@laudousg/shared";
+import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
+import { sseResponse, nowIso } from "@/server/sse/stream";
+import { runStructurer } from "@/server/pipeline/structurer";
+import { runValidator } from "@/server/pipeline/validator";
+import { runRetriever } from "@/server/pipeline/retriever";
+import { runWriterStream } from "@/server/pipeline/writer";
+import { runSanityCheck } from "@/server/pipeline/sanityCheck";
+import {
+  insertDraftReport,
+  updateReportStructured,
+  updateReportRagBlocks,
+  finalizeReport,
+  markReportStatus,
+} from "@/server/db/reportsRepo";
+import {
+  insertOpenRun,
+  updateRunAfterStructurer,
+  updateRunAfterRetriever,
+  updateRunAfterWriter,
+  updateRunAfterSanity,
+  finalizeRun,
+} from "@/server/db/runsRepo";
+
+// Recomendações do codex já incorporadas:
+//  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
+//  - maxDuration alto para acomodar o pipeline completo
+//  - persistência incremental em generation_runs
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
+export async function POST(req: Request) {
+  const user = await verifyJwt(req);
+  if (!user) return unauthorized();
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "invalid_json" }), {
+      status: 400,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  const parsed = GenerateRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return new Response(
+      JSON.stringify({
+        error: "invalid_body",
+        issues: parsed.error.format(),
+      }),
+      { status: 400, headers: { "content-type": "application/json" } },
+    );
+  }
+
+  const reportId = crypto.randomUUID();
+  const reqInput = parsed.data;
+  const t0 = Date.now();
+
+  return sseResponse(async ({ emit }, signal) => {
+    let runId: string | null = null;
+    let outcome: "success" | "clarify" | "blocked" | "error" | "aborted" =
+      "error";
+    let errorMessage: string | undefined;
+
+    try {
+      emit({ type: "open", ts: nowIso(), report_id: reportId });
+
+      // Persistir report=draft + run inicial (auditoria garantida mesmo se abortar)
+      await insertDraftReport({
+        id: reportId,
+        userId: user.id,
+        categoryCode: reqInput.category_hint ?? "ABDOMEN_TOTAL", // placeholder; structurer pode reclassificar
+        writingStyleId: reqInput.writing_style_id,
+        rawInput: reqInput.raw_input,
+        consolidatedTranscript: reqInput.consolidated_transcript ?? null,
+      });
+      runId = await insertOpenRun({
+        reportId,
+        rawInputForRagQuery:
+          reqInput.consolidated_transcript ?? reqInput.raw_input,
+      });
+
+      // ----- 1. Structurer -----
+      const { findings, latencyMs: structurerMs } = await runStructurer({
+        rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+        categoryHint: reqInput.category_hint,
+        signal,
+      });
+      await updateRunAfterStructurer({
+        runId,
+        structured: findings,
+        latencyMs: structurerMs,
+      });
+      await updateReportStructured({
+        reportId,
+        structured: findings,
+        categoryCode: findings.categoria_detectada,
+      });
+      emit({ type: "structured", ts: nowIso(), payload: findings });
+
+      // ----- 2. Validator -----
+      const validator = runValidator({
+        findings,
+        knownCategoryCodes: new Set(),
+      });
+      emit({
+        type: "validator",
+        ts: nowIso(),
+        ok: validator.ok,
+        issues_count: validator.issues.length,
+      });
+
+      if (!validator.ok && validator.questions.length > 0) {
+        outcome = "clarify";
+        await markReportStatus({ reportId, status: "awaiting_clarify" });
+        emit({
+          type: "clarify",
+          ts: nowIso(),
+          questions: validator.questions,
+        });
+        return;
+      }
+
+      // ----- 3. Retriever -----
+      const { blocks, queryText } = await runRetriever({
+        findings,
+        categoryCode: findings.categoria_detectada,
+        writingStyleId: reqInput.writing_style_id,
+        signal,
+      });
+      await updateRunAfterRetriever({
+        runId,
+        ragBlockIds: blocks.map((b) => b.id),
+        ragQueryText: queryText,
+      });
+      await updateReportRagBlocks({
+        reportId,
+        blockIds: blocks.map((b) => b.id),
+      });
+      emit({
+        type: "rag",
+        ts: nowIso(),
+        blocks_used: blocks.map((b) => b.id),
+        blocks_summary: blocks.map((b) => ({
+          id: b.id,
+          kind: b.kind,
+          title: b.title,
+          priority: b.priority,
+        })),
+      });
+
+      // ----- 4. Writer (stream) -----
+      const writerGen = runWriterStream({
+        findings,
+        ragBlocks: blocks,
+        writingStyleCode: "CLASSICO_COMPLETO", // TODO: lookup do DB pelo writing_style_id
+        categoryLabel: findings.categoria_detectada, // TODO: lookup do DB
+        signal,
+      });
+
+      let finalText = "";
+      let writerResult: { fullText: string; latencyMs: number } | undefined;
+      while (true) {
+        const next = await writerGen.next();
+        if (next.done) {
+          writerResult = next.value;
+          break;
+        }
+        finalText += next.value;
+        emit({ type: "token", ts: nowIso(), delta: next.value });
+      }
+      finalText = writerResult?.fullText ?? finalText;
+      await updateRunAfterWriter({
+        runId,
+        latencyMs: writerResult?.latencyMs ?? 0,
+      });
+
+      // ----- 5. Sanity check -----
+      const { result: sanity, latencyMs: sanityMs } = await runSanityCheck({
+        findings,
+        finalText,
+        signal,
+      });
+      await updateRunAfterSanity({ runId, sanity, latencyMs: sanityMs });
+      emit({ type: "sanity", ts: nowIso(), result: sanity });
+
+      if (sanity.verdict === "critical") {
+        outcome = "blocked";
+        await finalizeReport({
+          reportId,
+          status: "blocked",
+          generatedOutput: finalText,
+          sanityResult: sanity,
+        });
+        emit({
+          type: "blocked",
+          ts: nowIso(),
+          report_id: reportId,
+          reason: sanity.summary,
+          sanity,
+        });
+        return;
+      }
+
+      // Sucesso
+      outcome = "success";
+      await finalizeReport({
+        reportId,
+        status: "generated",
+        generatedOutput: finalText,
+        sanityResult: sanity,
+      });
+      emit({
+        type: "done",
+        ts: nowIso(),
+        report_id: reportId,
+        final_text: finalText,
+      });
+    } catch (err) {
+      // AbortError vem quando cliente fecha conexão
+      if ((err as Error).name === "AbortError") {
+        outcome = "aborted";
+        errorMessage = "client disconnected";
+      } else {
+        outcome = "error";
+        errorMessage = err instanceof Error ? err.message : String(err);
+        emit({
+          type: "error",
+          ts: nowIso(),
+          code: "PIPELINE_FAILURE",
+          message: errorMessage,
+        });
+      }
+    } finally {
+      // Sempre fechar a generation_run pra ter auditoria
+      if (runId) {
+        try {
+          await finalizeRun({
+            runId,
+            outcome,
+            latencyMsTotal: Date.now() - t0,
+            errorMessage,
+          });
+        } catch (e) {
+          console.error("finalizeRun failed:", e);
+        }
+      }
+    }
+  });
+}

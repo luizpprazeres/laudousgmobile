@@ -1,0 +1,29 @@
+{
+  "name": "laudousg-mobile",
+  "version": "0.0.1",
+  "private": true,
+  "description": "LaudoUSG Mobile — plataforma mobile-first para geração de laudos de ultrassonografia por IA",
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=10"
+  },
+  "packageManager": "pnpm@10.33.3",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @laudousg/db generate",
+    "db:migrate": "pnpm --filter @laudousg/db migrate",
+    "db:seed": "pnpm --filter @laudousg/db seed",
+    "api:dev": "pnpm --filter @laudousg/api dev",
+    "mobile:dev": "pnpm --filter @laudousg/mobile start"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "LaudoUSG",
+    "slug": "laudousg-mobile",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "laudousg",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.laudousg.mobile",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "O LaudoUSG precisa do microfone para ditar achados de exame."
+      }
+    },
+    "android": {
+      "package": "com.laudousg.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "O LaudoUSG precisa do microfone para ditar achados de exame."
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+.next/
+.turbo/
+.expo/
+.expo-shared/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Drizzle
+drizzle/meta/
+
+# Expo
+ios/
+android/
+web-build/
+
+# Vercel
+.vercel
+
+# Conteúdo extraído do LaudoUSG original (proprietário, dados clínicos
+# anonimizados — manter LOCAL, fora de repos públicos).
+# Inclui: prompts originais, modelos, regras, frases, few-shots,
+# laudos reais anonimizados de 30 dias.
+_extraction/
