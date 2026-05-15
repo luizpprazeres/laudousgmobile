@@ -1,9 +1,14 @@
 import {
   GenerateRequestSchema,
   GenerateSSEEventSchema,
+  GenerationRunSchema,
+  ReportSchema,
   type GenerateRequest,
   type GenerateSSEEvent,
+  type GenerationRun,
+  type Report,
 } from "@laudousg/shared";
+import { z } from "zod";
 import { supabase } from "./supabase";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -19,6 +24,53 @@ async function getAccessToken(): Promise<string> {
 }
 
 export type MockScenario = "happy" | "clarify" | "blocked" | "error" | "slow";
+
+const ReportDetailResponseSchema = z.object({
+  report: ReportSchema,
+  latest_run: GenerationRunSchema.nullable(),
+  rag_blocks: z.array(
+    z.object({
+      id: z.string().uuid(),
+      kind: z.string(),
+      title: z.string(),
+      priority: z.number().int(),
+    }),
+  ),
+});
+
+export type ReportDetail = {
+  report: Report;
+  latest_run: GenerationRun | null;
+  rag_blocks: Array<{
+    id: string;
+    kind: string;
+    title: string;
+    priority: number;
+  }>;
+};
+
+export async function getReport(id: string): Promise<ReportDetail> {
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/reports/${encodeURIComponent(id)}`, {
+    method: "GET",
+    headers: {
+      authorization: `Bearer ${token}`,
+      accept: "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    let detail = "";
+    try {
+      detail = await res.text();
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`buscar laudo falhou: ${res.status} ${detail}`);
+  }
+
+  return ReportDetailResponseSchema.parse(await res.json());
+}
 
 /**
  * Faz POST /api/generate e itera sobre os eventos SSE.
