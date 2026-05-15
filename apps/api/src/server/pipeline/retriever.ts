@@ -55,7 +55,12 @@ export async function runRetriever(args: {
   const embedding = embRes.data[0]?.embedding;
   if (!embedding) throw new Error("retriever: embedding vazio");
 
-  const quotas = { ...DEFAULT_QUOTAS, ...(args.quotas ?? {}) };
+  const quotasInput = { ...DEFAULT_QUOTAS, ...(args.quotas ?? {}) };
+  const quotas: Record<string, number> = Object.fromEntries(
+    Object.entries(quotasInput).filter(
+      (entry): entry is [string, number] => typeof entry[1] === "number",
+    ),
+  );
   const kinds = Object.keys(quotas);
   // Para simplicidade no esqueleto, usamos o maior limit_per_kind das quotas
   // e filtramos no TS depois. (Refinamento: chamar RPC uma vez por kind ou

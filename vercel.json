@@ -3,6 +3,5 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @laudousg/api build",
-  "outputDirectory": "apps/api/.next",
-  "ignoreCommand": "echo 'always build'"
+  "outputDirectory": "apps/api/.next"
 }
