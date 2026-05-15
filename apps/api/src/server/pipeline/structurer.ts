@@ -102,7 +102,17 @@ export async function runStructurer(args: {
   const raw = res.choices[0]?.message?.content;
   if (!raw) throw new Error("structurer: resposta vazia");
 
-  const rawObj = JSON.parse(raw);
+  // Fix codex MÉDIO #8: try-catch no JSON.parse pra ter erro descritivo
+  // (em vez de "Unexpected token" genérico que mata debug do SSE).
+  let rawObj: unknown;
+  try {
+    rawObj = JSON.parse(raw);
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `structurer: resposta do LLM não é JSON válido (${detail}). Início: ${raw.slice(0, 200)}`,
+    );
+  }
   const validated = StructurerRawOutputSchema.parse(rawObj);
 
   // Re-parse do `achados` (string) para objeto

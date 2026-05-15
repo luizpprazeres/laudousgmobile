@@ -53,17 +53,21 @@ export function buildSystemMessage(args: {
 
   if (styleOverlay) sections.push(styleOverlay);
 
+  // Fix codex MÉDIO #5: blocos RAG normativos (modelo/regra/frase/conclusao/
+  // excecao/comentario_tecnico) entram ANTES dos few-shots. Few-shots têm
+  // peso menor — vêm depois com aviso explícito de não copiar fatos clínicos.
+  if (otherBlocks.length > 0) {
+    sections.push(formatRagSection(otherBlocks));
+  }
+
   if (fewShots.length > 0) {
     sections.push(
-      "EXEMPLOS DE LAUDOS (few-shots):\n" +
+      "EXEMPLOS DE LAUDOS (few-shots — referência de estilo e estrutura,\n" +
+        "NÃO copie fatos clínicos. Use os ACHADOS ESTRUTURADOS reais do médico):\n" +
         fewShots
           .map((b) => `--- ${b.title} ---\n${b.content}`)
           .join("\n\n"),
     );
-  }
-
-  if (otherBlocks.length > 0) {
-    sections.push(formatRagSection(otherBlocks));
   }
 
   sections.push(GLOBAL_PROHIBITIONS);

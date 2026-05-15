@@ -169,7 +169,7 @@ export async function POST(req: Request) {
       }
 
       // ----- 3. Retriever -----
-      const { blocks, queryText } = await runRetriever({
+      const { blocks, queryText, warning } = await runRetriever({
         findings,
         categoryCode: findings.categoria_detectada,
         writingStyleId: reqInput.writing_style_id,
@@ -195,6 +195,15 @@ export async function POST(req: Request) {
           priority: b.priority,
         })),
       });
+
+      // Fix codex MÉDIO #6: warning de RAG vazio. Log + segue (não bloqueia
+      // por enquanto — categoria pode ter fallback no DEFAULT_SYSTEM_MESSAGE,
+      // e categorias-piloto SEMPRE têm RAG. Em prod, podemos endurecer aqui.)
+      if (warning) {
+        console.warn(
+          `[generate ${reportId}] RAG vazio: ${warning.message}`,
+        );
+      }
 
       // ----- 4. Writer (stream) -----
       // Fix codex #4: resolver writing_style code + category label do DB.

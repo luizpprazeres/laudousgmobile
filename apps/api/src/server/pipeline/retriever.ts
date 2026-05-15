@@ -40,6 +40,7 @@ export async function runRetriever(args: {
 }): Promise<{
   blocks: RagBlockForPrompt[];
   queryText: string;
+  warning: { code: "RAG_EMPTY"; message: string } | null;
 }> {
   // Texto de query: achados + comandos (compacto pra reduzir custo de embedding)
   const queryText = buildQueryText(args.findings);
@@ -105,7 +106,20 @@ export async function runRetriever(args: {
   }
 
   const blocks = Array.from(grouped.values()).flat();
-  return { blocks, queryText };
+
+  // Fix codex MÉDIO #6: emitir warning quando RAG vier vazio. Categoria pode
+  // não ter biblioteca embeddada ainda, ou similarity ficou abaixo do mínimo.
+  // O caller registra no run e pode escolher abortar (categoria sem RAG é
+  // perigoso em domínio médico).
+  const warning =
+    blocks.length === 0
+      ? {
+          code: "RAG_EMPTY" as const,
+          message: `Nenhum bloco RAG validado para categoria=${args.categoryCode} × writing_style_id=${args.writingStyleId}.`,
+        }
+      : null;
+
+  return { blocks, queryText, warning };
 }
 
 function buildQueryText(f: StructuredFindings): string {
