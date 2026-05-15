@@ -1,6 +1,5 @@
 import { useReducer, useRef, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import {
   initialGenerateState,
 } from "@/features/generate/state";
 import { generateReportStream, type MockScenario } from "@/lib/api";
+import { Banner, type BannerSeverity } from "@/ui/Banner";
 import { Segment } from "@/ui/Segment";
 import { Suggestion } from "@/ui/Suggestion";
 import { C, CATS, Category, FONT } from "@/ui/tokens";
@@ -59,6 +59,11 @@ export default function GenerateScreen() {
   const [catOpen, setCatOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
   const [mock, setMock] = useState<MockScenario | null>(__DEV__ ? "happy" : null);
+  const [notice, setNotice] = useState<{
+    severity: BannerSeverity;
+    title?: string;
+    message: string;
+  } | null>(null);
   const aborterRef = useRef<AbortController | null>(null);
 
   const text =
@@ -132,7 +137,11 @@ export default function GenerateScreen() {
       setTab("extra");
       return;
     }
-    Alert.alert("Em breve", "Análise de imagem chega na próxima sessão.");
+    setNotice({
+      severity: "info",
+      title: "Em breve",
+      message: "Análise de imagem por IA chega na próxima sessão.",
+    });
   };
 
   const cycleMock = () => {
@@ -184,6 +193,17 @@ export default function GenerateScreen() {
         />
       </View>
 
+      {notice ? (
+        <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
+          <Banner
+            severity={notice.severity}
+            title={notice.title}
+            message={notice.message}
+            onDismiss={() => setNotice(null)}
+          />
+        </View>
+      ) : null}
+
       {/* Body */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -228,10 +248,12 @@ export default function GenerateScreen() {
                 })
               }
               onResume={() => {
-                Alert.alert(
-                  "Resume",
-                  "TODO: integrar resume com clarify_answers (próxima sessão).",
-                );
+                setNotice({
+                  severity: "info",
+                  title: "Em breve",
+                  message:
+                    "Retomada com respostas do clarify chega na próxima sessão.",
+                });
               }}
               onOpenReport={(id) => router.push(`/report/${id}`)}
               onReset={() => {
@@ -319,7 +341,11 @@ export default function GenerateScreen() {
         current={cat.id}
         onPick={setCat}
       />
-      <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MenuSheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onNotice={(n) => setNotice(n)}
+      />
       <PlusSheet
         open={plusOpen}
         onClose={() => setPlusOpen(false)}

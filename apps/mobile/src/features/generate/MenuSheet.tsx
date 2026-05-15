@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Sheet } from "@/ui/Sheet";
 import { C, FONT } from "@/ui/tokens";
+import type { BannerSeverity } from "@/ui/Banner";
 import {
   Bar,
   Book,
@@ -14,9 +15,16 @@ import {
 } from "@/ui/icons";
 import { supabase } from "@/lib/supabase";
 
+type Notice = {
+  severity: BannerSeverity;
+  title?: string;
+  message: string;
+};
+
 type Props = {
   open: boolean;
   onClose: () => void;
+  onNotice?: (n: Notice) => void;
 };
 
 const NAV = [
@@ -27,7 +35,7 @@ const NAV = [
   { id: "preferencias", label: "Preferências", Icon: Sliders, route: "/preferencias" as const },
 ];
 
-export function MenuSheet({ open, onClose }: Props) {
+export function MenuSheet({ open, onClose, onNotice }: Props) {
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -89,7 +97,14 @@ export function MenuSheet({ open, onClose }: Props) {
         <View style={styles.footerRow}>
           <Pressable
             style={styles.footerBtn}
-            onPress={() => Alert.alert("Tema", "Em breve.")}
+            onPress={() => {
+              onClose();
+              onNotice?.({
+                severity: "info",
+                title: "Tema",
+                message: "Modo escuro chega na próxima sessão.",
+              });
+            }}
           >
             <Moon size={16} color={C.text2} />
             <Text style={styles.footerBtnText}>Tema</Text>

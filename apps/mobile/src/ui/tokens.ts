@@ -1,4 +1,24 @@
-export const C = {
+export type ColorTokens = {
+  brand: string;
+  brandLight: string;
+  brandDeep: string;
+  bg: string;
+  card: string;
+  text: string;
+  text2: string;
+  textSec: string;
+  textMute: string;
+  textGhost: string;
+  separator: string;
+  sep2: string;
+  fill1: string;
+  fill2: string;
+  danger: string;
+  warningBg: string;
+  warningText: string;
+};
+
+export const lightTokens: ColorTokens = {
   brand: "#059669",
   brandLight: "#D1FAE5",
   brandDeep: "#047857",
@@ -16,7 +36,31 @@ export const C = {
   danger: "#FF3B30",
   warningBg: "rgba(245,158,11,0.15)",
   warningText: "#B45309",
-} as const;
+};
+
+export const darkTokens: ColorTokens = {
+  brand: "#10B981",
+  brandLight: "rgba(16,185,129,0.18)",
+  brandDeep: "#34D399",
+  bg: "#0B0B0F",
+  card: "#1C1C1E",
+  text: "#FFFFFF",
+  text2: "rgba(235,235,245,0.78)",
+  textSec: "rgba(235,235,245,0.6)",
+  textMute: "rgba(235,235,245,0.42)",
+  textGhost: "rgba(235,235,245,0.28)",
+  separator: "rgba(84,84,88,0.45)",
+  sep2: "rgba(84,84,88,0.25)",
+  fill1: "rgba(118,118,128,0.24)",
+  fill2: "rgba(118,118,128,0.16)",
+  danger: "#FF453A",
+  warningBg: "rgba(255,159,10,0.15)",
+  warningText: "#FF9F0A",
+};
+
+// Backwards compatibility: existing screens import `C` (light tokens).
+// New screens should prefer `useColorTokens()` from "@/ui/useColorTokens".
+export const C = lightTokens;
 
 export const FONT = {
   body: "Inter_400Regular",
