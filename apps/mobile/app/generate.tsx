@@ -222,28 +222,29 @@ export default function GenerateScreen() {
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={C.text} />
-          {/* Luiz pediu explicitamente logo-laudousg-main.png aqui. Aspect
-              2816x1536 = 1.833 (paisagem). Tamanho calibrado: 132x72 fica
-              visível. PNG tem fundo levemente branco mas o bg do header
-              é quase branco, então a integração visual é OK na maioria dos
-              casos. Se aparecer retângulo branco notável, fazer pós-processamento
-              do PNG (claude2 ou skill image-enhancer). */}
+          {/* Logo sem fundo: PNG processado removendo branco opaco (alpha
+              real agora). Aspect 2816x1536 = 1.833. */}
           <Image
-            source={require("../assets/brand/logos/logo-laudousg-main.png")}
+            source={require("../assets/brand/logos/logo-laudousg-nobg.png")}
             style={{ width: 132, height: 72 }}
             resizeMode="contain"
             accessibilityLabel="LaudoUSG"
           />
         </Pressable>
-        {__DEV__ ? (
-          <Pressable onPress={cycleMock} style={styles.devChip}>
-            <Text style={styles.devChipText}>
-              mock: {mock ?? "real"}
-            </Text>
-          </Pressable>
-        ) : (
-          <View style={styles.navBtn} />
-        )}
+        {/* Chip da categoria: mostra a especialidade selecionada e abre o
+            CategorySheet ao tocar. Substitui o chip "mock" técnico antigo. */}
+        <Pressable
+          onPress={() => setCatOpen(true)}
+          style={[styles.catChip, { borderColor: cat.color + "55" }]}
+          accessibilityRole="button"
+          accessibilityLabel={`Categoria atual: ${cat.label}. Tocar para mudar.`}
+          hitSlop={6}
+        >
+          <View style={[styles.catChipDot, { backgroundColor: cat.color }]} />
+          <Text style={styles.catChipText} numberOfLines={1}>
+            {cat.label}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Tabs */}
@@ -471,6 +472,16 @@ export default function GenerateScreen() {
         onClose={() => setPlusOpen(false)}
         onPick={onPlusAction}
       />
+
+      {/* DEV-only: floating mock toggle (substitui o antigo chip do header).
+          Em build de produção (__DEV__ === false) isso some completamente. */}
+      {__DEV__ ? (
+        <Pressable onPress={cycleMock} style={styles.devMockFab} hitSlop={6}>
+          <Text style={styles.devMockFabText}>
+            mock: {mock ?? "real"}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -818,16 +829,42 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 4,
   },
-  devChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: "#FFF3CD",
+  // Chip da categoria atual no header (toca pra mudar)
+  catChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.03)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#F0BB31",
+    maxWidth: 180,
   },
-  devChipText: {
-    color: "#946700",
+  catChipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  catChipText: {
+    color: C.text,
+    fontSize: 13,
+    fontFamily: FONT.semibold,
+  },
+  // DEV-only floating mock toggle (canto inferior direito).
+  // Move o ruído de debug pra fora do header.
+  devMockFab: {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    zIndex: 50,
+  },
+  devMockFabText: {
+    color: "#FFD66B",
     fontSize: 11,
     fontFamily: FONT.semibold,
     letterSpacing: 0.3,
