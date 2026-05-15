@@ -89,12 +89,10 @@ export default function GenerateScreen() {
     try {
       for await (const ev of generateReportStream(
         {
-          raw_input: text || "(input em branco — modo mock)",
+          raw_input: text,
           writing_style_id: DEFAULT_WRITING_STYLE_ID,
-          // Bug fix: enviar categoria selecionada como hint pra o structurer.
-          // Antes o app deixava o structurer inferir do texto (frágil pra
-          // input curto). Agora a categoria escolhida pelo usuário tem
-          // prioridade — structurer ainda pode reclassificar se discordar.
+          // Categoria escolhida pelo médico tem prioridade — structurer ainda
+          // pode reclassificar se discordar do texto.
           category_hint: cat.id,
         },
         ac.signal,
@@ -104,10 +102,11 @@ export default function GenerateScreen() {
       }
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
-      dispatch({
-        type: "FAIL",
-        message: e instanceof Error ? e.message : String(e),
-      });
+      const raw = e instanceof Error ? e.message : String(e);
+      // Erro mais útil pro usuário, log completo no console pra debug
+      console.error("generate error:", e);
+      const message = humanizeGenerateError(raw);
+      dispatch({ type: "FAIL", message });
     }
   };
 
@@ -496,54 +495,107 @@ function AchadosBody({
   editable,
   cat,
 }: AchadosProps) {
-  if (hasContent) {
-    return (
+  // Bug fix crítico: o TextInput PRECISA estar sempre presente, antes era
+  // condicional ao hasContent → tela vazia ficava só com Suggestions e
+  // o médico não conseguia digitar livre. Agora textarea sempre disponível,
+  // com placeholder amigável; Suggestions ficam abaixo só quando vazio.
+  return (
+    <View>
       <TextInput
         value={text}
         onChangeText={onChangeText}
         editable={editable}
         multiline
         textAlignVertical="top"
-        placeholder="Continue digitando ou ditando…"
+        placeholder={
+          hasContent
+            ? "Continue digitando ou ditando…"
+            : `Digite os achados do exame de ${cat.label.toLowerCase()}…\nEx: "Fígado normal. Vesícula com cálculo de 1,2 cm. Rins normais."`
+        }
         placeholderTextColor={C.textMute}
         style={styles.editor}
       />
-    );
-  }
-  return (
-    <View>
-      <Text style={styles.emptyTitle}>
-        Toque o microfone para ditar ou comece a digitar.
-      </Text>
-      <Text style={styles.emptySub}>
-        A IA organiza no padrão de {cat.label}.
-      </Text>
 
-      <Text style={styles.sectionLabel}>Inserir</Text>
-      <Suggestion
-        icon={<Ruler size={18} color={C.textSec} />}
-        label="IG pela 1ª USG"
-        hint="calcular"
-        onPress={() => onSnippet("usg")}
-      />
-      <Suggestion
-        icon={<Quote size={18} color={C.textSec} />}
-        label="Frases salvas"
-        hint="12"
-        onPress={() => onSnippet("frase")}
-      />
-      <Suggestion
-        icon={<Layers size={18} color={C.textSec} />}
-        label="Trocar modelo"
-        hint={cat.label}
-        onPress={onChangeModel}
-      />
+      {!hasContent ? (
+        <>
+          <Text style={[styles.emptySub, { marginTop: 14 }]}>
+            A IA organiza no padrão de {cat.label}.
+          </Text>
 
-      <Text style={styles.emptyHint}>
-        Suas frases recentes e calculadoras aparecem aqui conforme você laudar.
-      </Text>
+          <Text style={styles.sectionLabel}>Inserir</Text>
+          {/* IG pela 1ª USG só faz sentido em categorias obstétricas.
+              Esconde nas demais pra não confundir o médico. */}
+          {isObstetrica(cat.id) ? (
+            <Suggestion
+              icon={<Ruler size={18} color={C.textSec} />}
+              label="IG pela 1ª USG (exemplo)"
+              hint="inserir"
+              onPress={() => onSnippet("usg")}
+            />
+          ) : null}
+          {/* Frases salvas — ainda não implementado, mostra estado real */}
+          <Suggestion
+            icon={<Layers size={18} color={C.textSec} />}
+            label="Trocar modelo"
+            hint={cat.label}
+            onPress={onChangeModel}
+          />
+
+          <Text style={styles.emptyHint}>
+            Toque o microfone para ditar ou comece a digitar acima.
+          </Text>
+        </>
+      ) : null}
     </View>
   );
+}
+
+function isObstetrica(catId: string): boolean {
+  return (
+    catId === "OBSTETRICA" ||
+    catId === "MORFOLOGICO" ||
+    catId === "DOPPLER_OBSTETRICO"
+  );
+}
+
+/**
+ * Converte erro técnico do generate em mensagem útil pro médico.
+ * Console ainda recebe stack completa pra debug.
+ */
+function humanizeGenerateError(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes("não autenticado") || lower.includes("nao autenticado")) {
+    return "Sua sessão expirou. Saia e entre de novo.";
+  }
+  if (lower.includes("401")) {
+    return "Não foi possível autenticar com o servidor. Saia e entre de novo.";
+  }
+  if (lower.includes("invalid_writing_style")) {
+    return "Estilo de escrita inválido. Verifique nas Preferências.";
+  }
+  if (lower.includes("resume_not_found")) {
+    return "Não foi possível retomar o laudo (não encontrado).";
+  }
+  if (lower.includes("resume_empty_answers")) {
+    return "Responda pelo menos uma das perguntas antes de continuar.";
+  }
+  if (lower.includes("resume_limit_reached")) {
+    return "Limite de retomadas atingido. Recomece o laudo.";
+  }
+  if (lower.includes("pipeline_failure")) {
+    return "O servidor encontrou um erro ao gerar. Tente novamente em alguns segundos.";
+  }
+  if (lower.includes("failed to fetch") || lower.includes("network")) {
+    return "Sem conexão com o servidor. Verifique sua internet.";
+  }
+  if (lower.includes("400")) {
+    return "Dados inválidos no pedido. Recarregue a página.";
+  }
+  if (lower.includes("500") || lower.includes("502") || lower.includes("503")) {
+    return "Servidor temporariamente indisponível. Tente em alguns segundos.";
+  }
+  // Erro desconhecido — mostra original pra debug
+  return raw.length > 200 ? raw.slice(0, 200) + "…" : raw;
 }
 
 // ─── Laudo (output / streaming) ───────────────────────────────────
@@ -714,23 +766,27 @@ function LaudoBody({
 
 // ─── Extra (calculadoras) ─────────────────────────────────────────
 function ExtraBody() {
+  // Por enquanto todas as calculadoras estão como placeholder.
+  // Implementação real virá em fase seguinte (P3 mínimo viável é o gerador).
+  // Marca claramente "em breve" pra não criar expectativa de funcionalidade.
   return (
     <View>
+      <Text style={[styles.emptyTitle, { marginTop: 8 }]}>
+        Calculadoras clínicas
+      </Text>
+      <Text style={styles.emptySub}>
+        Em desenvolvimento. Toque pra receber notificação quando estiver
+        disponível.
+      </Text>
+
       <Text style={styles.sectionLabel}>Obstétricas</Text>
-      <Suggestion
-        icon={<Cal size={18} color={C.textSec} />}
-        label="Idade gestacional (DUM)"
-        hint="28+4s"
-      />
-      <Suggestion
-        icon={<Ruler size={18} color={C.textSec} />}
-        label="Biometria fetal"
-      />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="FMF — Risco trissomias" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Doppler — IR, IP, S/D" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Anemia fetal (PVS-ACM)" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Restrição (RCF)" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Gemelaridade" />
+      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Idade gestacional (DUM)" hint="em breve" />
+      <Suggestion icon={<Ruler size={18} color={C.textSec} />} label="Biometria fetal" hint="em breve" />
+      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="FMF — Risco trissomias" hint="em breve" />
+      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Doppler — IR, IP, S/D" hint="em breve" />
+      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Anemia fetal (PVS-ACM)" hint="em breve" />
+      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Restrição (RCF)" hint="em breve" />
+      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Gemelaridade" hint="em breve" />
     </View>
   );
 }
