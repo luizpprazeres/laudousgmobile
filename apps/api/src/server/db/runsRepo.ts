@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { getDbClient, schema } from "@laudousg/db";
 import type {
   StructuredFindings,
@@ -103,6 +103,19 @@ export async function updateRunAfterSanity(args: {
       latencyMsSanity: args.latencyMs,
     })
     .where(eq(schema.generationRuns.id, args.runId));
+}
+
+/**
+ * Conta quantas runs existem pra um report. Usado pra limitar resumes
+ * (anti-loop de clarify).
+ */
+export async function countRunsByReport(reportId: string): Promise<number> {
+  const db = getDbClient();
+  const [row] = await db
+    .select({ value: count() })
+    .from(schema.generationRuns)
+    .where(eq(schema.generationRuns.reportId, reportId));
+  return row?.value ?? 0;
 }
 
 export async function finalizeRun(args: {

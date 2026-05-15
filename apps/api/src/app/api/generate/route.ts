@@ -12,7 +12,10 @@ import {
   updateReportRagBlocks,
   finalizeReport,
   markReportStatus,
+  loadReportForResume,
 } from "@/server/db/reportsRepo";
+import { applyClarifyAnswers } from "@/server/pipeline/clarifyMerge";
+import type { StructuredFindings } from "@laudousg/shared";
 import {
   insertOpenRun,
   updateRunAfterStructurer,
@@ -20,11 +23,13 @@ import {
   updateRunAfterWriter,
   updateRunAfterSanity,
   finalizeRun,
+  countRunsByReport,
 } from "@/server/db/runsRepo";
 import {
   getKnownCategories,
   getWritingStyleById,
 } from "@/server/db/lookups";
+import type { WritingStyleCode } from "@laudousg/shared";
 
 // Recomendações do codex já incorporadas:
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
@@ -58,8 +63,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const reportId = crypto.randomUUID();
   const reqInput = parsed.data;
+  const isResume = !!reqInput.resume_from_report_id;
+  // Quando resume, reutiliza o mesmo report_id pra ter UMA timeline de auditoria.
+  // Novo report_id apenas em fluxo normal.
+  const reportId = isResume
+    ? (reqInput.resume_from_report_id as string)
+    : crypto.randomUUID();
   const t0 = Date.now();
 
   return sseResponse(async ({ emit }, signal) => {
@@ -89,38 +99,148 @@ export async function POST(req: Request) {
         return;
       }
 
-      // Persistir report=draft + run inicial (auditoria garantida mesmo se abortar)
-      await insertDraftReport({
-        id: reportId,
-        userId: user.id,
-        categoryCode: reqInput.category_hint ?? "ABDOMEN_TOTAL", // placeholder; structurer pode reclassificar
-        writingStyleId: reqInput.writing_style_id,
-        rawInput: reqInput.raw_input,
-        consolidatedTranscript: reqInput.consolidated_transcript ?? null,
-      });
-      runId = await insertOpenRun({
-        reportId,
-        rawInputForRagQuery:
-          reqInput.consolidated_transcript ?? reqInput.raw_input,
-      });
+      let findings: StructuredFindings;
 
-      // ----- 1. Structurer -----
-      const { findings, latencyMs: structurerMs } = await runStructurer({
-        rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
-        categoryHint: reqInput.category_hint,
-        signal,
-      });
-      await updateRunAfterStructurer({
-        runId,
-        structured: findings,
-        latencyMs: structurerMs,
-      });
-      await updateReportStructured({
-        reportId,
-        structured: findings,
-        categoryCode: findings.categoria_detectada,
-      });
-      emit({ type: "structured", ts: nowIso(), payload: findings });
+      if (isResume) {
+        // RESUME: carregar report existente, pular structurer.
+        // Fix codex T-D #3: exigir pelo menos UMA answer com texto.
+        const validAnswers = (reqInput.clarify_answers ?? []).filter(
+          (a) => a.answer && a.answer.trim().length > 0,
+        );
+        if (validAnswers.length === 0) {
+          outcome = "error";
+          errorMessage =
+            "Resume requer pelo menos uma clarify_answer não-vazia. Sem isso o pipeline geraria as mesmas perguntas de novo.";
+          emit({
+            type: "error",
+            ts: nowIso(),
+            code: "RESUME_EMPTY_ANSWERS",
+            message: errorMessage,
+          });
+          return;
+        }
+
+        const existing = await loadReportForResume({
+          reportId,
+          userId: user.id,
+        });
+        if (!existing) {
+          outcome = "error";
+          errorMessage = `Report ${reportId} não encontrado ou sem permissão.`;
+          emit({
+            type: "error",
+            ts: nowIso(),
+            code: "RESUME_NOT_FOUND",
+            message: errorMessage,
+          });
+          return;
+        }
+        if (!existing.structuredFindings) {
+          outcome = "error";
+          errorMessage = `Report ${reportId} não tem structured_findings — não pode resumir.`;
+          emit({
+            type: "error",
+            ts: nowIso(),
+            code: "RESUME_NO_FINDINGS",
+            message: errorMessage,
+          });
+          return;
+        }
+
+        // Fix codex T-D resumo: usar writing_style_id PERSISTIDO no report
+        // (não o do request — pode ter sido alterado entre clarify e resume).
+        // Sobrescreve styleRow se necessário.
+        if (
+          existing.writingStyleId &&
+          existing.writingStyleId !== reqInput.writing_style_id
+        ) {
+          const persistedStyle = await getWritingStyleById(
+            existing.writingStyleId,
+          );
+          if (persistedStyle) {
+            // mutate local var styleRow — pra usar pra frente
+            (styleRow as { code: WritingStyleCode; name: string }).code =
+              persistedStyle.code;
+            (styleRow as { code: WritingStyleCode; name: string }).name =
+              persistedStyle.name;
+          }
+        }
+
+        // Fix codex T-D #2: limite de 2 resumes por report (proteção contra
+        // loop infinito teórico de clarify).
+        const previousRuns = await countRunsByReport(reportId);
+        if (previousRuns >= 3) {
+          outcome = "error";
+          errorMessage =
+            "Limite de retomadas atingido (3 tentativas). Recomece do zero ou ajuste o input.";
+          emit({
+            type: "error",
+            ts: nowIso(),
+            code: "RESUME_LIMIT_REACHED",
+            message: errorMessage,
+          });
+          return;
+        }
+
+        // Nova run pra auditar a retomada
+        runId = await insertOpenRun({
+          reportId,
+          rawInputForRagQuery:
+            existing.consolidatedTranscript ?? existing.rawInput,
+        });
+        // Aplica clarify_answers nos findings persistidos
+        findings = applyClarifyAnswers(
+          existing.structuredFindings,
+          validAnswers,
+        );
+        // Registra na run que veio de resume + os findings aplicados (auditoria)
+        await updateRunAfterStructurer({
+          runId,
+          structured: findings,
+          latencyMs: 0, // resume não tem structurer
+        });
+        await updateReportStructured({
+          reportId,
+          structured: findings,
+          categoryCode: findings.categoria_detectada,
+        });
+        await markReportStatus({ reportId, status: "draft" });
+        emit({ type: "structured", ts: nowIso(), payload: findings });
+      } else {
+        // FLUXO NORMAL: persistir report=draft + run inicial + structurer
+        await insertDraftReport({
+          id: reportId,
+          userId: user.id,
+          categoryCode: reqInput.category_hint ?? "ABDOMEN_TOTAL",
+          writingStyleId: reqInput.writing_style_id,
+          rawInput: reqInput.raw_input,
+          consolidatedTranscript: reqInput.consolidated_transcript ?? null,
+        });
+        runId = await insertOpenRun({
+          reportId,
+          rawInputForRagQuery:
+            reqInput.consolidated_transcript ?? reqInput.raw_input,
+        });
+
+        // ----- 1. Structurer -----
+        const structured = await runStructurer({
+          rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          categoryHint: reqInput.category_hint,
+          signal,
+        });
+        findings = structured.findings;
+        await updateRunAfterStructurer({
+          runId,
+          structured: findings,
+          latencyMs: structured.latencyMs,
+        });
+        await updateReportStructured({
+          reportId,
+          structured: findings,
+          categoryCode: findings.categoria_detectada,
+        });
+        emit({ type: "structured", ts: nowIso(), payload: findings });
+      }
 
       // ----- 2. Validator -----
       // Fix codex #2: passar categorias conhecidas do DB (não Set vazio).

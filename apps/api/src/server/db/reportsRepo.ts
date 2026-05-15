@@ -1,10 +1,11 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDbClient, schema } from "@laudousg/db";
 import type {
   StructuredFindings,
   SanityResult,
   ReportStatus,
 } from "@laudousg/shared";
+import { StructuredFindingsSchema } from "@laudousg/shared";
 
 /**
  * Insert inicial do report no `open` do pipeline. Garante auditoria mesmo
@@ -90,4 +91,52 @@ export async function markReportStatus(args: {
     .update(schema.reports)
     .set({ status: args.status, updatedAt: new Date() })
     .where(eq(schema.reports.id, args.reportId));
+}
+
+/**
+ * Carrega report pra resume após clarify. Valida ownership via user_id.
+ * Retorna null se não existir ou pertencer a outro usuário.
+ */
+export async function loadReportForResume(args: {
+  reportId: string;
+  userId: string;
+}): Promise<{
+  id: string;
+  categoryCode: string;
+  writingStyleId: string;
+  rawInput: string;
+  consolidatedTranscript: string | null;
+  structuredFindings: StructuredFindings | null;
+  status: ReportStatus;
+} | null> {
+  const db = getDbClient();
+  const [row] = await db
+    .select()
+    .from(schema.reports)
+    .where(
+      and(
+        eq(schema.reports.id, args.reportId),
+        eq(schema.reports.userId, args.userId),
+      ),
+    )
+    .limit(1);
+
+  if (!row) return null;
+
+  // Re-validar findings persistido (jsonb pode estar corrompido em prod antigo)
+  let findings: StructuredFindings | null = null;
+  if (row.structuredFindings) {
+    const parsed = StructuredFindingsSchema.safeParse(row.structuredFindings);
+    findings = parsed.success ? parsed.data : null;
+  }
+
+  return {
+    id: row.id,
+    categoryCode: row.categoryCode,
+    writingStyleId: row.writingStyleId,
+    rawInput: row.rawInput,
+    consolidatedTranscript: row.consolidatedTranscript,
+    structuredFindings: findings,
+    status: row.status,
+  };
 }
