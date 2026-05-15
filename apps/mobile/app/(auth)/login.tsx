@@ -17,7 +17,7 @@ export default function LoginScreen() {
           ? await supabase.auth.signInWithPassword({ email, password })
           : await supabase.auth.signUp({ email, password });
       if (error) throw error;
-      router.replace("/(tabs)");
+      router.replace("/generate");
     } catch (e) {
       Alert.alert("Erro", e instanceof Error ? e.message : String(e));
     } finally {

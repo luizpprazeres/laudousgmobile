@@ -22,11 +22,13 @@ export type SseRunner = (emit: SseEmitter, signal: AbortSignal) => Promise<void>
 const HEARTBEAT_MS = 15_000;
 
 export function sseResponse(runner: SseRunner): Response {
+  // ac fica fora do start() pra que cancel() consiga abortar quando o
+  // cliente fecha a conexão (fix codex review T4-#1).
+  const ac = new AbortController();
+  let closed = false;
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const ac = new AbortController();
-      let closed = false;
-
       const safeEnqueue = (chunk: Uint8Array) => {
         if (closed) return;
         try {
@@ -60,19 +62,28 @@ export function sseResponse(runner: SseRunner): Response {
       try {
         await runner({ emit, close }, ac.signal);
       } catch (err) {
-        emit({
-          type: "error",
-          ts: new Date().toISOString(),
-          code: "PIPELINE_FAILURE",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        // AbortError vem do próprio ac.abort() em cancel() — não emitir como erro
+        if ((err as Error).name === "AbortError") {
+          // nada — cliente já desconectou, controller pode estar fechado
+        } else {
+          emit({
+            type: "error",
+            ts: new Date().toISOString(),
+            code: "PIPELINE_FAILURE",
+            message: err instanceof Error ? err.message : String(err),
+          });
+        }
       } finally {
         clearInterval(heartbeat);
         close();
       }
     },
     cancel() {
-      // cliente fechou — runner já recebeu o signal e abortou OpenAI
+      // Cliente fechou a conexão. Propaga aborto pro runner que está aguardando
+      // OpenAI/Supabase — caso contrário OpenAI continua streaming e queimando
+      // tokens depois do app abandonar a tela.
+      closed = true;
+      ac.abort();
     },
   });
 

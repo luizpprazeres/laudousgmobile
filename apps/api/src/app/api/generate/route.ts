@@ -21,6 +21,10 @@ import {
   updateRunAfterSanity,
   finalizeRun,
 } from "@/server/db/runsRepo";
+import {
+  getKnownCategories,
+  getWritingStyleById,
+} from "@/server/db/lookups";
 
 // Recomendações do codex já incorporadas:
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
@@ -67,6 +71,24 @@ export async function POST(req: Request) {
     try {
       emit({ type: "open", ts: nowIso(), report_id: reportId });
 
+      // Resolver writing_style_id → code/name antes (fix codex #4).
+      // Carregar categorias conhecidas pro validator (fix codex #2).
+      const [styleRow, categoriesInfo] = await Promise.all([
+        getWritingStyleById(reqInput.writing_style_id),
+        getKnownCategories(),
+      ]);
+      if (!styleRow) {
+        outcome = "error";
+        errorMessage = `writing_style_id ${reqInput.writing_style_id} não existe`;
+        emit({
+          type: "error",
+          ts: nowIso(),
+          code: "INVALID_WRITING_STYLE",
+          message: errorMessage,
+        });
+        return;
+      }
+
       // Persistir report=draft + run inicial (auditoria garantida mesmo se abortar)
       await insertDraftReport({
         id: reportId,
@@ -101,9 +123,10 @@ export async function POST(req: Request) {
       emit({ type: "structured", ts: nowIso(), payload: findings });
 
       // ----- 2. Validator -----
+      // Fix codex #2: passar categorias conhecidas do DB (não Set vazio).
       const validator = runValidator({
         findings,
-        knownCategoryCodes: new Set(),
+        knownCategoryCodes: categoriesInfo.codes,
       });
       emit({
         type: "validator",
@@ -119,6 +142,28 @@ export async function POST(req: Request) {
           type: "clarify",
           ts: nowIso(),
           questions: validator.questions,
+        });
+        return;
+      }
+
+      // Fix codex #3: validator.ok=false sem questions = blocker real, parar.
+      if (!validator.ok) {
+        const blocker = validator.issues.find((i) => i.severity === "blocker");
+        const reason =
+          blocker?.message ?? "Validação determinística falhou sem detalhe.";
+        outcome = "blocked";
+        await finalizeReport({
+          reportId,
+          status: "blocked",
+          generatedOutput: "",
+          sanityResult: null,
+          metadata: { validator_issues: validator.issues },
+        });
+        emit({
+          type: "error",
+          ts: nowIso(),
+          code: "VALIDATOR_BLOCKED",
+          message: reason,
         });
         return;
       }
@@ -152,11 +197,14 @@ export async function POST(req: Request) {
       });
 
       // ----- 4. Writer (stream) -----
+      // Fix codex #4: resolver writing_style code + category label do DB.
       const writerGen = runWriterStream({
         findings,
         ragBlocks: blocks,
-        writingStyleCode: "CLASSICO_COMPLETO", // TODO: lookup do DB pelo writing_style_id
-        categoryLabel: findings.categoria_detectada, // TODO: lookup do DB
+        writingStyleCode: styleRow.code,
+        categoryLabel:
+          categoriesInfo.labels.get(findings.categoria_detectada) ??
+          findings.categoria_detectada,
         signal,
       });
 

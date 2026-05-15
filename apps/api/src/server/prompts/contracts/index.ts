@@ -9,10 +9,12 @@
  * adicionar novos imports aqui.
  */
 import { ABDOMEN_TOTAL_CONTRACT } from "./ABDOMEN_TOTAL";
+import { TIREOIDE_CONTRACT } from "./TIREOIDE";
 
 export const CATEGORY_CONTRACTS: Record<string, string> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT,
-  // TODO: adicionar conforme integramos as outras 32 categorias
+  TIREOIDE: TIREOIDE_CONTRACT,
+  // TODO: adicionar conforme integramos as outras 31 categorias
 };
 
 export function getCategoryContract(code: string): string | null {
