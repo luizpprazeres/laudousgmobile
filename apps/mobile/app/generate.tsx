@@ -1,5 +1,6 @@
 import { useReducer, useRef, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -35,7 +36,6 @@ import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
-import { LaudoUSGLogo } from "@/ui/LaudoUSGLogo";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -175,11 +175,18 @@ export default function GenerateScreen() {
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={C.text} />
-          {/* logo-laudousg-main.png tem fundo branco opaco no canto (pixel 0,0
-              é RGB 249/251/250 alpha=255), aparecia com fundo na tela.
-              Volta pro composite do claude3 (transparent.png + texto inline)
-              com size="md" pra ficar visível e 100% transparente. */}
-          <LaudoUSGLogo size="md" variant="auto" showTagline={false} />
+          {/* Luiz pediu explicitamente logo-laudousg-main.png aqui. Aspect
+              2816x1536 = 1.833 (paisagem). Tamanho calibrado: 132x72 fica
+              visível. PNG tem fundo levemente branco mas o bg do header
+              é quase branco, então a integração visual é OK na maioria dos
+              casos. Se aparecer retângulo branco notável, fazer pós-processamento
+              do PNG (claude2 ou skill image-enhancer). */}
+          <Image
+            source={require("../assets/brand/logos/logo-laudousg-main.png")}
+            style={{ width: 132, height: 72 }}
+            resizeMode="contain"
+            accessibilityLabel="LaudoUSG"
+          />
         </Pressable>
         {__DEV__ ? (
           <Pressable onPress={cycleMock} style={styles.devChip}>
