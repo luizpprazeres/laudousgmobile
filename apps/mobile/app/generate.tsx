@@ -1,4 +1,5 @@
 import { useReducer, useRef, useState } from "react";
+import type { Audio as AudioNS } from "expo-av";
 import {
   Image,
   KeyboardAvoidingView,
@@ -36,6 +37,11 @@ import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
+import {
+  ensureMicPermission,
+  startRecording,
+  stopAndUpload,
+} from "@/features/generate/transcribe";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -45,9 +51,6 @@ const SNIPPETS: Record<string, string> = {
   frase:
     "Feto único, vivo, em apresentação cefálica, dorso à esquerda. Batimentos cardíacos fetais de 142 bpm, regulares. Movimentos fetais ativos.\n\n",
 };
-
-const MOCK_TRANSCRIPTION =
-  "Feto único, vivo, em apresentação cefálica, dorso à esquerda. Batimentos cardíacos fetais de 142 bpm, regulares.\n\nBiometria:\n- DBP 7,2 cm\n- CC 26,8 cm\n- CA 24,1 cm\n- CF 5,4 cm\n\n";
 
 type Tab = "achados" | "laudo" | "extra";
 
@@ -66,13 +69,16 @@ export default function GenerateScreen() {
     message: string;
   } | null>(null);
   const aborterRef = useRef<AbortController | null>(null);
+  const recordingRef = useRef<AudioNS.Recording | null>(null);
 
   const text =
     "text" in state ? (state as { text: string }).text : "";
   const hasContent = text.trim().length > 0;
   const recording = state.kind === "recording";
+  const transcribing = state.kind === "transcribing";
   const generating = state.kind === "generating";
   const isStreaming = generating || state.kind === "done";
+  const micBusy = recording || transcribing;
 
   const startGenerate = async () => {
     if (state.kind !== "ready") return;
@@ -115,17 +121,59 @@ export default function GenerateScreen() {
     dispatch({ type: "EDIT_TEXT", text: text + SNIPPETS[key] });
   };
 
-  const onMicToggle = () => {
+  const onMicToggle = async () => {
+    // STOP path: para gravação, faz upload Whisper, dispatch transcript.
     if (recording) {
+      const rec = recordingRef.current;
+      recordingRef.current = null;
       dispatch({ type: "STOP_REC" });
-      // stub Deepgram: simula transcrição instantânea
-      setTimeout(() => {
-        dispatch({ type: "TRANSCRIPTION_DONE", text: MOCK_TRANSCRIPTION });
-      }, 250);
+      if (!rec) {
+        dispatch({ type: "FAIL", message: "Gravação perdida — tente de novo." });
+        return;
+      }
+      try {
+        const { transcript } = await stopAndUpload(rec);
+        dispatch({ type: "TRANSCRIPTION_DONE", text: transcript });
+      } catch (e) {
+        // Volta o usuário para o estado inicial (com texto preservado),
+        // e mostra o erro como notice em cima do composer.
+        dispatch({ type: "RESET" });
+        if (text) dispatch({ type: "EDIT_TEXT", text });
+        setNotice({
+          severity: "error",
+          title: "Não consegui transcrever",
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
       return;
     }
-    if (state.kind === "idle" || state.kind === "ready") {
+
+    // START path: gating + permissão + começa gravação.
+    if (state.kind !== "idle" && state.kind !== "ready") return;
+
+    if (Platform.OS === "web") {
+      // expo-av Recording não tem suporte sólido em web. Damos um fallback
+      // explícito até implementarmos MediaRecorder API nativo do browser.
+      setNotice({
+        severity: "warning",
+        title: "Gravação só no app",
+        message:
+          "A gravação por microfone está disponível apenas no app iOS/Android. Use o teclado para digitar os achados aqui no navegador.",
+      });
+      return;
+    }
+
+    try {
+      await ensureMicPermission();
+      const rec = await startRecording();
+      recordingRef.current = rec;
       dispatch({ type: "START_REC" });
+    } catch (e) {
+      setNotice({
+        severity: "error",
+        title: "Microfone indisponível",
+        message: e instanceof Error ? e.message : String(e),
+      });
     }
   };
 
@@ -266,13 +314,47 @@ export default function GenerateScreen() {
                   answer: ans,
                 })
               }
-              onResume={() => {
-                setNotice({
-                  severity: "info",
-                  title: "Em breve",
-                  message:
-                    "Retomada com respostas do clarify chega na próxima sessão.",
-                });
+              onResume={async () => {
+                // Retoma o pipeline após o médico responder o clarify.
+                // Envia resume_from_report_id + clarify_answers; backend
+                // pula o structurer e parte direto pro retriever com
+                // findings persistidos + answers mescladas.
+                if (state.kind !== "clarifying") return;
+                const answers = Object.entries(state.answers)
+                  .map(([qid, ans]) => ({ question_id: qid, answer: ans }))
+                  .filter((a) => a.answer.trim().length > 0);
+                if (answers.length === 0) {
+                  setNotice({
+                    severity: "warning",
+                    title: "Respostas vazias",
+                    message: "Responda pelo menos uma das perguntas antes de continuar.",
+                  });
+                  return;
+                }
+                dispatch({ type: "RESUME_AFTER_CLARIFY" });
+                const ac = new AbortController();
+                aborterRef.current = ac;
+                try {
+                  for await (const ev of generateReportStream(
+                    {
+                      raw_input: state.text,
+                      writing_style_id: DEFAULT_WRITING_STYLE_ID,
+                      category_hint: cat.id,
+                      resume_from_report_id: state.reportId,
+                      clarify_answers: answers,
+                    },
+                    ac.signal,
+                    mock ?? undefined,
+                  )) {
+                    dispatch({ type: "SSE_EVENT", event: ev });
+                  }
+                } catch (e) {
+                  if ((e as Error).name === "AbortError") return;
+                  dispatch({
+                    type: "FAIL",
+                    message: e instanceof Error ? e.message : String(e),
+                  });
+                }
               }}
               onOpenReport={(id) => router.push(`/report/${id}`)}
               onReset={() => {
@@ -297,10 +379,10 @@ export default function GenerateScreen() {
         <View style={styles.composerRow} pointerEvents="box-none">
           <Pressable
             onPress={() => setPlusOpen(true)}
-            disabled={recording}
+            disabled={micBusy}
             style={[
               styles.sideBtn,
-              { opacity: recording ? 0.35 : 1 },
+              { opacity: micBusy ? 0.35 : 1 },
             ]}
             accessibilityLabel="Mais ações"
           >
@@ -309,7 +391,7 @@ export default function GenerateScreen() {
 
           <Pressable
             onPress={onMicToggle}
-            disabled={isStreaming}
+            disabled={isStreaming || transcribing}
             style={[
               styles.recBtn,
               {
@@ -318,7 +400,13 @@ export default function GenerateScreen() {
                 opacity: isStreaming ? 0.6 : 1,
               },
             ]}
-            accessibilityLabel={recording ? "Parar gravação" : "Gravar achados"}
+            accessibilityLabel={
+              recording
+                ? "Parar gravação"
+                : transcribing
+                  ? "Transcrevendo"
+                  : "Gravar achados"
+            }
           >
             {recording ? (
               <Stop size={16} color="#fff" />
@@ -326,24 +414,28 @@ export default function GenerateScreen() {
               <Mic size={18} color="#fff" />
             )}
             <Text style={styles.recBtnText}>
-              {recording ? "Parar gravação" : "Gravar achados"}
+              {recording
+                ? "Parar gravação"
+                : transcribing
+                  ? "Transcrevendo…"
+                  : "Gravar achados"}
             </Text>
           </Pressable>
 
           <Pressable
-            onPress={hasContent && !generating && !recording ? startGenerate : undefined}
-            disabled={!hasContent || generating || recording}
+            onPress={hasContent && !generating && !micBusy ? startGenerate : undefined}
+            disabled={!hasContent || generating || micBusy}
             style={[
               styles.sideBtn,
               {
-                opacity: recording ? 0.35 : hasContent ? 1 : 0.55,
+                opacity: micBusy ? 0.35 : hasContent ? 1 : 0.55,
               },
             ]}
             accessibilityLabel="Gerar laudo"
           >
             <Send
               size={18}
-              color={hasContent && !recording ? C.brand : C.textGhost}
+              color={hasContent && !micBusy ? C.brand : C.textGhost}
             />
           </Pressable>
         </View>
@@ -351,7 +443,17 @@ export default function GenerateScreen() {
 
       {/* Overlays */}
       {recording ? (
-        <RecordingOverlay transcript="Aguardando microfone…" />
+        <RecordingOverlay
+          mode="recording"
+          transcript="Falando para o microfone…"
+        />
+      ) : null}
+      {transcribing ? (
+        <RecordingOverlay
+          mode="transcribing"
+          transcript="Transcrevendo seu áudio com Whisper…"
+          showCursor={false}
+        />
       ) : null}
 
       <CategorySheet

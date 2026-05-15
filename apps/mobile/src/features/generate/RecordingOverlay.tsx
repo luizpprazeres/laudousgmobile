@@ -1,18 +1,30 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Animated,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, FONT } from "@/ui/tokens";
 
 const BAR_COUNT = 32;
 
+type Mode = "recording" | "transcribing";
+
 type Props = {
   transcript?: string;
   showCursor?: boolean;
+  /** "recording" mostra timer + waveform animado; "transcribing" mostra
+   *  spinner + waveform mais quieto. */
+  mode?: Mode;
 };
 
 export function RecordingOverlay({
   transcript = "Aguardando áudio…",
   showCursor = true,
+  mode = "recording",
 }: Props) {
   const [bars, setBars] = useState<number[]>(() =>
     Array.from({ length: BAR_COUNT }, () => 0.3),
@@ -20,14 +32,19 @@ export function RecordingOverlay({
   const [seconds, setSeconds] = useState(0);
   const cursor = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
+  const isRecording = mode === "recording";
 
   useEffect(() => {
     const id = setInterval(() => {
-      setBars((prev) => prev.map(() => 0.2 + Math.random() * 0.8));
-      setSeconds((s) => s + 0.1);
+      setBars((prev) =>
+        prev.map(() =>
+          isRecording ? 0.2 + Math.random() * 0.8 : 0.15 + Math.random() * 0.25,
+        ),
+      );
+      if (isRecording) setSeconds((s) => s + 0.1);
     }, 80);
     return () => clearInterval(id);
-  }, []);
+  }, [isRecording]);
 
   useEffect(() => {
     Animated.loop(
@@ -56,12 +73,27 @@ export function RecordingOverlay({
     >
       <View style={styles.headerRow}>
         <View style={styles.live}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveLabel}>GRAVANDO</Text>
+          {isRecording ? (
+            <>
+              <View style={styles.liveDot} />
+              <Text style={[styles.liveLabel, { color: C.danger }]}>
+                GRAVANDO
+              </Text>
+            </>
+          ) : (
+            <>
+              <ActivityIndicator size="small" color={C.brand} />
+              <Text style={[styles.liveLabel, { color: C.brand }]}>
+                TRANSCREVENDO
+              </Text>
+            </>
+          )}
         </View>
-        <Text style={styles.timer}>
-          {mm}:{ss}
-        </Text>
+        {isRecording ? (
+          <Text style={styles.timer}>
+            {mm}:{ss}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.body}>
@@ -75,7 +107,9 @@ export function RecordingOverlay({
           ) : null}
         </Text>
         <Text style={styles.help}>
-          Toque em parar quando terminar. A IA estrutura automaticamente.
+          {isRecording
+            ? "Toque em parar quando terminar. A IA estrutura automaticamente."
+            : "Aguarde — pode levar alguns segundos."}
         </Text>
       </View>
 
@@ -89,7 +123,7 @@ export function RecordingOverlay({
               minHeight: 4,
               backgroundColor: C.brand,
               borderRadius: 2,
-              opacity: 0.85,
+              opacity: isRecording ? 0.85 : 0.4,
               marginHorizontal: 1.5,
             }}
           />
@@ -137,7 +171,6 @@ const styles = StyleSheet.create({
   liveLabel: {
     fontSize: 13,
     fontFamily: FONT.semibold,
-    color: C.danger,
     letterSpacing: 0.6,
   },
   timer: {
