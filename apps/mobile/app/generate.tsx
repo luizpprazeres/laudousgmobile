@@ -52,7 +52,10 @@ const SNIPPETS: Record<string, string> = {
     "Feto único, vivo, em apresentação cefálica, dorso à esquerda. Batimentos cardíacos fetais de 142 bpm, regulares. Movimentos fetais ativos.\n\n",
 };
 
-type Tab = "achados" | "laudo" | "extra";
+// Tab "extra" (calculadoras) escondida por enquanto: todas as calculadoras
+// ainda são placeholders "em breve" — mostrar 7 itens não-funcionais passa
+// impressão de mockup. Reabilitar quando alguma calc estiver real.
+type Tab = "achados" | "laudo";
 
 export default function GenerateScreen() {
   const insets = useSafeAreaInsets();
@@ -186,14 +189,20 @@ export default function GenerateScreen() {
       setTab("achados");
       return;
     }
+    // "calc" e "camera" ainda não implementadas — banner explícito
     if (a === "calc") {
-      setTab("extra");
+      setNotice({
+        severity: "info",
+        title: "Calculadoras em desenvolvimento",
+        message:
+          "IG, biometria fetal, percentis Doppler e demais calculadoras clínicas chegam em breve.",
+      });
       return;
     }
     setNotice({
       severity: "info",
-      title: "Em breve",
-      message: "Análise de imagem por IA chega na próxima sessão.",
+      title: "Análise de imagem em desenvolvimento",
+      message: "Em breve você poderá enviar prints de USG e a IA extrai medidas automaticamente.",
     });
   };
 
@@ -255,7 +264,6 @@ export default function GenerateScreen() {
           options={[
             { value: "achados", label: "Achados", dot: hasContent },
             { value: "laudo", label: "Laudo" },
-            { value: "extra", label: "Extra" },
           ]}
         />
       </View>
@@ -364,7 +372,7 @@ export default function GenerateScreen() {
             />
           )}
 
-          {tab === "extra" && <ExtraBody />}
+          {/* tab "extra" oculta por enquanto — ver type Tab no topo */}
         </ScrollView>
       </KeyboardAvoidingView>
 

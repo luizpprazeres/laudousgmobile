@@ -47,7 +47,7 @@ export function RecordingOverlay({
   }, [isRecording]);
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(cursor, {
           toValue: 0,
@@ -60,7 +60,12 @@ export function RecordingOverlay({
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    );
+    loop.start();
+    // Para o loop explicitamente no unmount — evita rodar em background
+    // depois do componente ser desmontado (acontece quando o usuário toca
+    // em parar gravação e o overlay sai de tela).
+    return () => loop.stop();
   }, [cursor]);
 
   const mm = Math.floor(seconds / 60).toString().padStart(2, "0");

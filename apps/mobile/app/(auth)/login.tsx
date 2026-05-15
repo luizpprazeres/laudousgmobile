@@ -193,21 +193,70 @@ export default function LoginScreen() {
 function humanizeAuthError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   const lower = msg.toLowerCase();
-  if (lower.includes("invalid login")) {
+
+  // Credenciais
+  if (lower.includes("invalid login") || lower.includes("invalid credentials")) {
     return "Email ou senha incorretos.";
   }
   if (lower.includes("email not confirmed")) {
     return "Confirme seu email antes de entrar — verifique a caixa de entrada.";
   }
-  if (lower.includes("user already registered")) {
+  if (lower.includes("user already registered") || lower.includes("already registered")) {
     return "Esse email já tem conta — toque em Entrar.";
   }
-  if (lower.includes("password should be")) {
-    return "Senha precisa ter pelo menos 6 caracteres.";
+  if (lower.includes("user not found")) {
+    return "Email não cadastrado. Toque em Criar conta.";
   }
-  if (lower.includes("network") || lower.includes("fetch")) {
+
+  // Senha
+  if (
+    lower.includes("password should be") ||
+    lower.includes("password is too short") ||
+    lower.includes("password is too weak") ||
+    lower.includes("weak password")
+  ) {
+    return "Senha fraca: use ao menos 6 caracteres, combinando letras e números.";
+  }
+  if (lower.includes("same password") || lower.includes("new password should be different")) {
+    return "A nova senha precisa ser diferente da anterior.";
+  }
+
+  // Email
+  if (
+    lower.includes("invalid email") ||
+    lower.includes("email address is invalid") ||
+    lower.includes("unable to validate email")
+  ) {
+    return "Email inválido. Confira se digitou certo.";
+  }
+
+  // Rate / quota
+  if (
+    lower.includes("rate limit") ||
+    lower.includes("too many requests") ||
+    lower.includes("over_email_send_rate_limit")
+  ) {
+    return "Muitas tentativas seguidas. Aguarde um minuto e tente de novo.";
+  }
+  if (lower.includes("signups not allowed") || lower.includes("signup is disabled")) {
+    return "Cadastro temporariamente fechado. Tente novamente mais tarde.";
+  }
+
+  // Sessão
+  if (lower.includes("jwt") || lower.includes("session") || lower.includes("token")) {
+    return "Sua sessão expirou. Entre novamente.";
+  }
+
+  // Rede
+  if (
+    lower.includes("network") ||
+    lower.includes("fetch") ||
+    lower.includes("failed to fetch") ||
+    lower.includes("offline")
+  ) {
     return "Sem conexão com o servidor. Tente de novo em alguns segundos.";
   }
+
   return msg;
 }
 
