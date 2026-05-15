@@ -7,6 +7,10 @@ import { runRetriever } from "@/server/pipeline/retriever";
 import { runWriterStream } from "@/server/pipeline/writer";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
 import {
+  runDeterministicSanity,
+  type DeterministicIssue,
+} from "@/server/pipeline/deterministicSanity";
+import {
   insertDraftReport,
   updateReportStructured,
   updateReportRagBlocks,
@@ -15,7 +19,11 @@ import {
   loadReportForResume,
 } from "@/server/db/reportsRepo";
 import { applyClarifyAnswers } from "@/server/pipeline/clarifyMerge";
-import type { StructuredFindings } from "@laudousg/shared";
+import type {
+  SanityIssue,
+  SanityResult,
+  StructuredFindings,
+} from "@laudousg/shared";
 import {
   insertOpenRun,
   updateRunAfterStructurer,
@@ -358,11 +366,18 @@ export async function POST(req: Request) {
       });
 
       // ----- 5. Sanity check -----
-      const { result: sanity, latencyMs: sanityMs } = await runSanityCheck({
+      // Primeiro roda checks determinísticos baratos (regex/consistência factual),
+      // depois combina com o juiz IA. Se o determinístico pegou critical, bloqueia.
+      const deterministicSanity = runDeterministicSanity({
+        findings,
+        finalText,
+      });
+      const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({
         findings,
         finalText,
         signal,
       });
+      const sanity = mergeSanityResults(aiSanity, deterministicSanity);
       await updateRunAfterSanity({ runId, sanity, latencyMs: sanityMs });
       emit({ type: "sanity", ts: nowIso(), result: sanity });
 
@@ -437,4 +452,47 @@ export async function POST(req: Request) {
       }
     }
   });
+}
+
+function mergeSanityResults(
+  aiSanity: SanityResult,
+  deterministic: ReturnType<typeof runDeterministicSanity>,
+): SanityResult {
+  const deterministicIssues = deterministic.issues.map(toSanityIssue);
+  const issues = [...aiSanity.issues, ...deterministicIssues];
+  const verdict = deterministic.hardBlocked
+    ? "critical"
+    : issues.some((issue) => issue.severity === "critical")
+      ? "critical"
+      : issues.some((issue) => issue.severity === "warning")
+        ? "warning"
+        : aiSanity.verdict;
+
+  const deterministicSummary =
+    deterministicIssues.length > 0
+      ? `Checks determinísticos: ${deterministicIssues.length} issue(s).`
+      : "Checks determinísticos: sem divergências.";
+
+  return {
+    verdict,
+    issues,
+    summary: [aiSanity.summary, deterministicSummary].filter(Boolean).join(" "),
+  };
+}
+
+function toSanityIssue(issue: DeterministicIssue): SanityIssue {
+  return {
+    type: mapDeterministicIssueType(issue.type),
+    severity: issue.severity,
+    detail: `[determinístico] ${issue.detail}`,
+    trecho_laudo: issue.trecho_laudo,
+    campo_achado: issue.campo_achado,
+  };
+}
+
+function mapDeterministicIssueType(
+  type: DeterministicIssue["type"],
+): SanityIssue["type"] {
+  if (type === "placeholder_vazado") return "formato_quebrado";
+  return type;
 }
