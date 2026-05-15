@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { C } from "@/ui/tokens";
 
 /**
- * Roteia para (tabs) ou (auth) baseado em sessão.
+ * Gate de autenticação:
+ *   sessão ativa → /generate (tela principal)
+ *   sem sessão  → /(auth)/login
  */
 export default function IndexGate() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -25,10 +28,17 @@ export default function IndexGate() {
 
   if (authed === null) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator />
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: C.bg,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator color={C.brand} />
       </View>
     );
   }
-  return authed ? <Redirect href="/(tabs)" /> : <Redirect href="/(auth)/login" />;
+  return authed ? <Redirect href="/generate" /> : <Redirect href="/(auth)/login" />;
 }
