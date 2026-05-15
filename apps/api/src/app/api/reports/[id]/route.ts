@@ -1,5 +1,6 @@
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { getDbClient, schema } from "@laudousg/db";
+export { OPTIONS } from "@/server/cors";
 import { GenerationRunSchema, ReportSchema } from "@laudousg/shared";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";

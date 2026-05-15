@@ -1,5 +1,6 @@
 import { forbidden, unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { getDbClient, schema } from "@laudousg/db";
+export { OPTIONS } from "@/server/cors";
 import { ProfileSchema } from "@laudousg/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";

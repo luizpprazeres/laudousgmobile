@@ -1,6 +1,7 @@
 import { GenerateRequestSchema } from "@laudousg/shared";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { sseResponse, nowIso } from "@/server/sse/stream";
+export { OPTIONS } from "@/server/cors";
 import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
 import { runRetriever } from "@/server/pipeline/retriever";

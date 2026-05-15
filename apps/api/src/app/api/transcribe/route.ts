@@ -1,5 +1,6 @@
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { openai } from "@/server/ai/openai";
+export { OPTIONS } from "@/server/cors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

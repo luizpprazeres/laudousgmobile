@@ -1,6 +1,7 @@
 import { GenerateRequestSchema } from "@laudousg/shared";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { sseResponse, nowIso } from "@/server/sse/stream";
+export { OPTIONS } from "@/server/cors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

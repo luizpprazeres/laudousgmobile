@@ -1,4 +1,5 @@
 import { forbidden, unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
+export { OPTIONS } from "@/server/cors";
 import {
   CreateBlockBodySchema,
   toRagBlock,
