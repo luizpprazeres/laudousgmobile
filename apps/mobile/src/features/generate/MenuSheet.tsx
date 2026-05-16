@@ -42,26 +42,35 @@ const NAV = [
   { id: "preferencias", label: "Preferências", Icon: Sliders, route: "/preferencias" as const },
 ];
 
-function initialsOf(identity: Identity): string {
-  const source = identity.name?.trim() || identity.email || "?";
-  const parts = source.split(/[\s@.]+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return source.slice(0, 2).toUpperCase();
-}
-
 function displayName(identity: Identity): string {
   if (identity.name?.trim()) return identity.name.trim();
   if (identity.email) return identity.email;
   return "Sua conta";
 }
 
-function planLabel(plan: string | null): string | null {
-  if (!plan) return null;
-  const normalized = plan.toLowerCase();
-  if (normalized === "free") return null;
-  return normalized.toUpperCase();
+type PlanBadge = {
+  label: string;
+  bg: string;
+  fg: string;
+};
+
+/**
+ * Mapeia o plano persistido em profiles.plan ("free" | "pro" | "clinic")
+ * para o badge mostrado no avatar.
+ *
+ * - free   → Gratuito (neutro cinza)
+ * - pro    → Essencial (verde brand — tier intermediário)
+ * - clinic → PRO (preto/dourado — tier top, conta clínica)
+ */
+function planBadge(plan: string | null): PlanBadge {
+  const normalized = (plan || "free").toLowerCase();
+  if (normalized === "pro") {
+    return { label: "Essencial", bg: "#10B981", fg: "#FFFFFF" };
+  }
+  if (normalized === "clinic") {
+    return { label: "PRO", bg: "#1A1A1A", fg: "#E5C265" };
+  }
+  return { label: "Gratuito", bg: "rgba(0,0,0,0.06)", fg: "#3C3C43" };
 }
 
 export function MenuSheet({ open, onClose, onNotice }: Props) {
@@ -139,17 +148,20 @@ export function MenuSheet({ open, onClose, onNotice }: Props) {
     setTimeout(() => router.push("/preferencias"), 220);
   };
 
-  const initials = initialsOf(identity);
   const name = displayName(identity);
-  const plan = planLabel(identity.plan);
+  const badge = planBadge(identity.plan);
   const showSubtitle = !!identity.email && identity.email !== name;
 
   return (
     <Sheet open={open} onClose={onClose} height={580}>
       <View style={{ paddingHorizontal: 22, paddingBottom: 24 }}>
         <View style={styles.profile}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
+          {/* Badge do plano no lugar do avatar com iniciais. Largura auto
+              pra acomodar 'Gratuito' (8 chars) sem cortar. */}
+          <View style={[styles.planBadge, { backgroundColor: badge.bg }]}>
+            <Text style={[styles.planBadgeText, { color: badge.fg }]}>
+              {badge.label}
+            </Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.profileName} numberOfLines={1}>
@@ -161,11 +173,6 @@ export function MenuSheet({ open, onClose, onNotice }: Props) {
               </Text>
             ) : null}
           </View>
-          {plan ? (
-            <View style={styles.proPill}>
-              <Text style={styles.proPillText}>{plan}</Text>
-            </View>
-          ) : null}
         </View>
 
         <View style={{ marginTop: 12 }}>
@@ -214,18 +221,18 @@ function makeStyles(t: ColorTokens) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: t.separator,
     },
-    avatar: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: t.brandLight,
+    planBadge: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
       alignItems: "center",
       justifyContent: "center",
+      minWidth: 64,
     },
-    avatarText: {
-      color: t.brandDeep,
+    planBadgeText: {
       fontFamily: FONT.bold,
-      fontSize: 17,
+      fontSize: 12,
+      letterSpacing: 0.4,
     },
     profileName: {
       fontSize: 17,
@@ -237,18 +244,6 @@ function makeStyles(t: ColorTokens) {
       color: t.textSec,
       marginTop: 1,
       fontFamily: FONT.body,
-    },
-    proPill: {
-      backgroundColor: t.brandLight,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 6,
-    },
-    proPillText: {
-      color: t.brandDeep,
-      fontSize: 11,
-      fontFamily: FONT.bold,
-      letterSpacing: 0.3,
     },
     navRow: {
       flexDirection: "row",

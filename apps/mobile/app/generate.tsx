@@ -539,7 +539,6 @@ function AchadosBody({
             A IA organiza no padrão de {cat.label}.
           </Text>
 
-          <Text style={styles.sectionLabel}>Inserir</Text>
           {/* IG pela 1ª USG só faz sentido em categorias obstétricas.
               Esconde nas demais pra não confundir o médico. */}
           {isObstetrica(cat.id) ? (
