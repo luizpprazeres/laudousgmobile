@@ -235,13 +235,17 @@ export default function GenerateScreen() {
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={C.text} />
-          {/* Logo transparente fornecida pelo usuário (PNG já sem fundo). */}
+          {/* Logo pequena (mini-marca) + texto bold "LaudoUSG" ao lado.
+              Híbrido: o ícone reforça reconhecimento visual da marca, o
+              texto dá peso editorial e harmoniza com a fonte do app
+              (CategorySheet, NavBar). */}
           <Image
             source={require("../assets/brand/logos/logo-laudousg-transparent.png")}
-            style={{ width: 80, height: 44 }}
+            style={{ width: 36, height: 24 }}
             resizeMode="contain"
             accessibilityLabel="LaudoUSG"
           />
+          <Text style={styles.brandText}>LaudoUSG</Text>
         </Pressable>
         {/* Chip da categoria: mostra a especialidade selecionada e abre o
             CategorySheet ao tocar. Substitui o chip "mock" técnico antigo. */}
@@ -836,9 +840,15 @@ const styles = StyleSheet.create({
   navLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     paddingVertical: 4,
     paddingHorizontal: 4,
+  },
+  brandText: {
+    fontSize: 17,
+    fontFamily: FONT.bold,
+    color: C.text,
+    letterSpacing: -0.2,
   },
   // Chip da categoria atual no header (toca pra mudar)
   catChip: {
