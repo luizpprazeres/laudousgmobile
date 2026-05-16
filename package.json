@@ -19,7 +19,8 @@
     "db:migrate": "pnpm --filter @laudousg/db migrate",
     "db:seed": "pnpm --filter @laudousg/db seed",
     "api:dev": "pnpm --filter @laudousg/api dev",
-    "mobile:dev": "pnpm --filter @laudousg/mobile start"
+    "mobile:dev": "pnpm --filter @laudousg/mobile start",
+    "validate:golden": "tsx scripts/golden-validation.ts"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
