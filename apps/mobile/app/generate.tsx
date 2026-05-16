@@ -238,7 +238,7 @@ export default function GenerateScreen() {
           {/* Logo transparente fornecida pelo usuário (PNG já sem fundo). */}
           <Image
             source={require("../assets/brand/logos/logo-laudousg-transparent.png")}
-            style={{ width: 132, height: 72 }}
+            style={{ width: 96, height: 52 }}
             resizeMode="contain"
             accessibilityLabel="LaudoUSG"
           />
