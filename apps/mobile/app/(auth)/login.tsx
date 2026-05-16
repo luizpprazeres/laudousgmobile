@@ -11,38 +11,36 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Banner } from "@/ui/Banner";
-import { PaperShowcase } from "@/ui/PaperShowcase";
 import { FONT } from "@/ui/tokens";
 import { Eye, EyeOff } from "@/ui/icons";
 
 type Mode = "signin" | "signup";
 
-// Paleta forçada (login ignora system theme — sempre dark dramático).
+// Preto puro OLED + paleta dark do form. Login ignora system theme.
 const LOGIN_PALETTE = {
   bg: "#000000",
-  card: "rgba(255,255,255,0.04)",
-  cardBorder: "rgba(255,255,255,0.10)",
   text: "#ffffff",
   textSec: "rgba(255,255,255,0.72)",
   textMute: "rgba(255,255,255,0.40)",
   inputBg: "rgba(255,255,255,0.06)",
   inputBorder: "rgba(255,255,255,0.14)",
-  inputBorderFocus: "#10B981",
   brand: "#10B981",
   brandDeep: "#34D399",
-  particleGreen: "#10B981",
 };
+
+// Cada elemento entra subindo (translateY 28 → 0) + fade-in.
+// Os delays escalonados criam uma cascata visual de baixo pra cima.
+const RISE_DURATION_MS = 520;
+const STAGGER_MS = 110;
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -50,44 +48,25 @@ export default function LoginScreen() {
   const [mode, setMode] = useState<Mode>("signin");
   const [error, setError] = useState<string | null>(null);
 
-  // Entrada coordenada: logo fade-in primeiro, depois form (delay 350ms).
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.85)).current;
-  const formOpacity = useRef(new Animated.Value(0)).current;
-  const formTranslate = useRef(new Animated.Value(20)).current;
+  // 6 elementos coreografados: logo, tagline, emailField, passwordField,
+  // cta, switchBtn. Cada um tem Animated.Value próprio com delay distinto.
+  const animValues = useRef(
+    Array.from({ length: 6 }, () => new Animated.Value(0)),
+  ).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 800,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoScale, {
-        toValue: 1,
-        duration: 900,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.sequence([
-        Animated.delay(350),
-        Animated.parallel([
-          Animated.timing(formOpacity, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(formTranslate, {
-            toValue: 0,
-            duration: 600,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    ]).start();
-  }, [logoOpacity, logoScale, formOpacity, formTranslate]);
+    Animated.stagger(
+      STAGGER_MS,
+      animValues.map((v) =>
+        Animated.timing(v, {
+          toValue: 1,
+          duration: RISE_DURATION_MS,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ),
+    ).start();
+  }, [animValues]);
 
   const trimmedEmail = email.trim();
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
@@ -120,16 +99,20 @@ export default function LoginScreen() {
 
   const styles = useMemo(() => makeStyles(), []);
 
+  const riseStyle = (idx: number) => ({
+    opacity: animValues[idx],
+    transform: [
+      {
+        translateY: animValues[idx].interpolate({
+          inputRange: [0, 1],
+          outputRange: [28, 0],
+        }),
+      },
+    ],
+  });
+
   return (
     <View style={styles.root}>
-      {/* PaperShowcase: cena de motion design coreografada (papéis caindo +
-          glow brand + hero paper com typewriter + stamp ✓). Absolute fill. */}
-      <PaperShowcase width={width} height={height} />
-
-      {/* Vignette radial sutil pra dar profundidade — feito com gradient
-          simulado via Views aninhadas (sem precisar de linear-gradient lib) */}
-      <View pointerEvents="none" style={styles.vignette} />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -145,35 +128,22 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View
-            style={[
-              styles.logoWrap,
-              {
-                opacity: logoOpacity,
-                transform: [{ scale: logoScale }],
-              },
-            ]}
-          >
+          <Animated.View style={[styles.logoWrap, riseStyle(0)]}>
             <Image
               source={require("../../assets/brand/logos/logo-laudousg-white.png")}
               style={styles.logo}
               resizeMode="contain"
               accessibilityLabel="LaudoUSG"
             />
-            <Text style={styles.tagline}>Laudos rápidos e inteligentes</Text>
           </Animated.View>
 
-          <Animated.View
-            style={[
-              styles.card,
-              {
-                opacity: formOpacity,
-                transform: [{ translateY: formTranslate }],
-              },
-            ]}
-          >
+          <Animated.Text style={[styles.tagline, riseStyle(1)]}>
+            LaudoUSG
+          </Animated.Text>
+
+          <View style={styles.form}>
             {error ? (
-              <View style={{ marginBottom: 16 }}>
+              <View style={{ marginBottom: 18 }}>
                 <Banner
                   severity="error"
                   title="Não foi possível entrar"
@@ -183,7 +153,7 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            <View style={styles.field}>
+            <Animated.View style={[styles.field, riseStyle(2)]}>
               <Text style={styles.label}>Email</Text>
               <TextInput
                 value={email}
@@ -197,9 +167,9 @@ export default function LoginScreen() {
                 editable={!busy}
                 style={styles.input}
               />
-            </View>
+            </Animated.View>
 
-            <View style={styles.field}>
+            <Animated.View style={[styles.field, riseStyle(3)]}>
               <Text style={styles.label}>Senha</Text>
               <View style={styles.inputRow}>
                 <TextInput
@@ -231,50 +201,54 @@ export default function LoginScreen() {
                   )}
                 </Pressable>
               </View>
-            </View>
+            </Animated.View>
 
-            <Pressable
-              onPress={submit}
-              disabled={!canSubmit}
-              style={[styles.cta, { opacity: canSubmit ? 1 : 0.4 }]}
-              accessibilityRole="button"
-            >
-              {busy ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.ctaText}>
-                  {mode === "signin" ? "Entrar" : "Criar conta"}
-                </Text>
-              )}
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                setMode((m) => (m === "signin" ? "signup" : "signin"));
-                setError(null);
-              }}
-              style={styles.switchBtn}
-              hitSlop={6}
-            >
-              <Text style={styles.switchText}>
-                {mode === "signin" ? (
-                  <>
-                    Ainda não tem conta?{" "}
-                    <Text style={styles.switchLink}>Criar conta</Text>
-                  </>
+            <Animated.View style={riseStyle(4)}>
+              <Pressable
+                onPress={submit}
+                disabled={!canSubmit}
+                style={[styles.cta, { opacity: canSubmit ? 1 : 0.4 }]}
+                accessibilityRole="button"
+              >
+                {busy ? (
+                  <ActivityIndicator color="#fff" />
                 ) : (
-                  <>
-                    Já tem conta? <Text style={styles.switchLink}>Entrar</Text>
-                  </>
+                  <Text style={styles.ctaText}>
+                    {mode === "signin" ? "Entrar" : "Criar conta"}
+                  </Text>
                 )}
-              </Text>
-            </Pressable>
+              </Pressable>
+            </Animated.View>
 
-            <Text style={styles.legal}>
-              Ao continuar, você concorda com os termos de uso e política de
-              privacidade.
-            </Text>
-          </Animated.View>
+            <Animated.View style={riseStyle(5)}>
+              <Pressable
+                onPress={() => {
+                  setMode((m) => (m === "signin" ? "signup" : "signin"));
+                  setError(null);
+                }}
+                style={styles.switchBtn}
+                hitSlop={6}
+              >
+                <Text style={styles.switchText}>
+                  {mode === "signin" ? (
+                    <>
+                      Ainda não tem conta?{" "}
+                      <Text style={styles.switchLink}>Criar conta</Text>
+                    </>
+                  ) : (
+                    <>
+                      Já tem conta? <Text style={styles.switchLink}>Entrar</Text>
+                    </>
+                  )}
+                </Text>
+              </Pressable>
+
+              <Text style={styles.legal}>
+                Ao continuar, você concorda com os termos de uso e política de
+                privacidade.
+              </Text>
+            </Animated.View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -343,14 +317,7 @@ function makeStyles() {
   return StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: LOGIN_PALETTE.bg,
-    },
-    vignette: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,0.35)",
-      // shadowInset não existe em RN — usamos border + shadow no card pra
-      // simular profundidade. Vignette aqui é overlay sutil pra escurecer
-      // cantos visualmente.
+      backgroundColor: LOGIN_PALETTE.bg, // #000 OLED true black
     },
     scroll: {
       flexGrow: 1,
@@ -360,36 +327,23 @@ function makeStyles() {
     },
     logoWrap: {
       alignItems: "center",
-      marginBottom: 36,
+      marginBottom: 14,
     },
     logo: {
       width: 220,
       height: 120,
     },
     tagline: {
-      color: LOGIN_PALETTE.textSec,
-      fontSize: 18,
-      fontFamily: FONT.semibold,
-      letterSpacing: 0.4,
-      marginTop: 16,
+      color: LOGIN_PALETTE.text,
+      fontSize: 28,
+      fontFamily: FONT.bold,
+      letterSpacing: -0.4,
+      marginBottom: 38,
       textAlign: "center",
     },
-    card: {
+    form: {
       width: "100%",
-      maxWidth: 440,
-      backgroundColor: LOGIN_PALETTE.card,
-      borderRadius: 20,
-      paddingHorizontal: 24,
-      paddingTop: 26,
-      paddingBottom: 22,
-      borderWidth: 1,
-      borderColor: LOGIN_PALETTE.cardBorder,
-      // Glow leve verde por trás do card
-      shadowColor: LOGIN_PALETTE.brand,
-      shadowOpacity: 0.18,
-      shadowRadius: 28,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 4,
+      maxWidth: 420,
     },
     field: {
       marginBottom: 16,
@@ -434,11 +388,6 @@ function makeStyles() {
       alignItems: "center",
       justifyContent: "center",
       marginTop: 6,
-      shadowColor: LOGIN_PALETTE.brand,
-      shadowOpacity: 0.45,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 5,
     },
     ctaText: {
       color: "#fff",
@@ -465,7 +414,7 @@ function makeStyles() {
       textAlign: "center",
       fontFamily: FONT.body,
       lineHeight: 16,
-      marginTop: 6,
+      marginTop: 4,
     },
   });
 }
