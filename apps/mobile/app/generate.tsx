@@ -235,17 +235,16 @@ export default function GenerateScreen() {
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={C.text} />
-          {/* Logo pequena (mini-marca) + texto bold "LaudoUSG" ao lado.
-              Híbrido: o ícone reforça reconhecimento visual da marca, o
-              texto dá peso editorial e harmoniza com a fonte do app
-              (CategorySheet, NavBar). */}
+          {/* Texto "LaudoUSG" verde + mini-marca à direita. Texto na cor
+              da brand (C.brand) reforça identidade; logo ao lado funciona
+              como pequena assinatura visual. */}
+          <Text style={styles.brandText}>LaudoUSG</Text>
           <Image
             source={require("../assets/brand/logos/logo-laudousg-transparent.png")}
             style={{ width: 36, height: 24 }}
             resizeMode="contain"
             accessibilityLabel="LaudoUSG"
           />
-          <Text style={styles.brandText}>LaudoUSG</Text>
         </Pressable>
         {/* Chip da categoria: mostra a especialidade selecionada e abre o
             CategorySheet ao tocar. Substitui o chip "mock" técnico antigo. */}
@@ -847,7 +846,7 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 17,
     fontFamily: FONT.bold,
-    color: C.text,
+    color: C.brand,
     letterSpacing: -0.2,
   },
   // Chip da categoria atual no header (toca pra mudar)
