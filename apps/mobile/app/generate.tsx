@@ -37,6 +37,9 @@ import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
+import { CalculatorsSheet, type CalcKey } from "@/features/generate/CalculatorsSheet";
+import { IGCalculatorSheet } from "@/features/generate/IGCalculatorSheet";
+import { DopplerCalculatorSheet } from "@/features/generate/DopplerCalculatorSheet";
 import {
   ensureMicPermission,
   startRecording,
@@ -67,6 +70,10 @@ export default function GenerateScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [igCalcOpen, setIgCalcOpen] = useState(false);
+  const [igCalcInitialTab, setIgCalcInitialTab] = useState<"dum" | "usg">("dum");
+  const [dopplerCalcOpen, setDopplerCalcOpen] = useState(false);
   // Mock OFF por default — antes era "happy" em DEV mas isso fazia toda
   // geração cair no /api/generate/mock, que retorna PELVE_FEMININA fixo
   // e não persiste no DB (laudo sumia do histórico). FAB DEV abaixo ainda
@@ -185,19 +192,22 @@ export default function GenerateScreen() {
     }
   };
 
-  const onPlusAction = (a: "calc" | "clear") => {
+  const onPlusAction = (a: "camera" | "calc" | "clear") => {
     if (a === "clear") {
       dispatch({ type: "RESET" });
       setTab("achados");
       return;
     }
-    // "calc" ainda não implementada — banner explícito
     if (a === "calc") {
+      setCalcOpen(true);
+      return;
+    }
+    if (a === "camera") {
       setNotice({
         severity: "info",
-        title: "Calculadoras em desenvolvimento",
+        title: "Análise de imagem em desenvolvimento",
         message:
-          "IG, biometria fetal, percentis Doppler e demais calculadoras clínicas chegam em breve.",
+          "Em breve você poderá anexar prints de USG e a IA extrai medidas e classificações automaticamente.",
       });
       return;
     }
@@ -303,6 +313,18 @@ export default function GenerateScreen() {
               hasContent={hasContent}
               onChangeText={(t) => dispatch({ type: "EDIT_TEXT", text: t })}
               onSnippet={insertSnippet}
+              onOpenIG={(tab) => {
+                setIgCalcInitialTab(tab);
+                setIgCalcOpen(true);
+              }}
+              onOpenFrasesSalvas={() =>
+                setNotice({
+                  severity: "info",
+                  title: "Frases nativas em desenvolvimento",
+                  message:
+                    "Em breve você poderá cadastrar e gerenciar suas frases personalizadas direto em Preferências.",
+                })
+              }
               onUnimplemented={(label) =>
                 setNotice({
                   severity: "info",
@@ -490,6 +512,34 @@ export default function GenerateScreen() {
         onClose={() => setPlusOpen(false)}
         onPick={onPlusAction}
       />
+      <CalculatorsSheet
+        open={calcOpen}
+        onClose={() => setCalcOpen(false)}
+        onPick={(key: CalcKey) => {
+          if (key === "ig") {
+            setIgCalcInitialTab("dum");
+            setIgCalcOpen(true);
+          } else if (key === "doppler") {
+            setDopplerCalcOpen(true);
+          }
+        }}
+      />
+      <IGCalculatorSheet
+        open={igCalcOpen}
+        initialTab={igCalcInitialTab}
+        onClose={() => setIgCalcOpen(false)}
+        onInsert={(bloco) =>
+          dispatch({ type: "EDIT_TEXT", text: text + bloco })
+        }
+      />
+      <DopplerCalculatorSheet
+        open={dopplerCalcOpen}
+        findingsText={text}
+        onClose={() => setDopplerCalcOpen(false)}
+        onInsert={(bloco) =>
+          dispatch({ type: "EDIT_TEXT", text: text + bloco })
+        }
+      />
 
       {/* DEV-only: floating mock toggle (substitui o antigo chip do header).
           Em build de produção (__DEV__ === false) isso some completamente. */}
@@ -510,6 +560,8 @@ type AchadosProps = {
   hasContent: boolean;
   onChangeText: (t: string) => void;
   onSnippet: (key: "dum" | "usg" | "frase") => void;
+  onOpenIG: (tab: "dum" | "usg") => void;
+  onOpenFrasesSalvas: () => void;
   onUnimplemented: (label: string) => void;
   editable: boolean;
   cat: Category;
@@ -523,19 +575,20 @@ type QuickAction = {
 
 function buildQuickActions(
   catId: string,
-  onSnippet: (key: "dum" | "usg" | "frase") => void,
+  onOpenIG: (tab: "dum" | "usg") => void,
+  onOpenFrasesSalvas: () => void,
   onUnimplemented: (label: string) => void,
 ): QuickAction[] {
   if (isObstetrica(catId)) {
     return [
-      { key: "dum", label: "IG pela DUM", onPress: () => onSnippet("dum") },
-      { key: "usg", label: "IG pela 1ª USG", onPress: () => onSnippet("usg") },
+      { key: "dum", label: "IG pela DUM", onPress: () => onOpenIG("dum") },
+      { key: "usg", label: "IG pela 1ª USG", onPress: () => onOpenIG("usg") },
       { key: "info", label: "Informações", onPress: () => onUnimplemented("Informações") },
-      { key: "frases", label: "Frases salvas", onPress: () => onUnimplemented("Frases salvas") },
+      { key: "frases", label: "Frases salvas", onPress: onOpenFrasesSalvas },
     ];
   }
   return [
-    { key: "frases", label: "Frases salvas", onPress: () => onUnimplemented("Frases salvas") },
+    { key: "frases", label: "Frases salvas", onPress: onOpenFrasesSalvas },
   ];
 }
 
@@ -543,12 +596,19 @@ function AchadosBody({
   text,
   hasContent,
   onChangeText,
-  onSnippet,
+  onSnippet: _onSnippet,
+  onOpenIG,
+  onOpenFrasesSalvas,
   onUnimplemented,
   editable,
   cat,
 }: AchadosProps) {
-  const quickActions = buildQuickActions(cat.id, onSnippet, onUnimplemented);
+  const quickActions = buildQuickActions(
+    cat.id,
+    onOpenIG,
+    onOpenFrasesSalvas,
+    onUnimplemented,
+  );
   return (
     <View>
       {/* Quick actions row: chips clicáveis com texto sublinhado, mesma

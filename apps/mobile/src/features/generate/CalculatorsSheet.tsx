@@ -1,68 +1,72 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Sheet } from "@/ui/Sheet";
 import { C, FONT } from "@/ui/tokens";
-import { Camera, Ruler, X } from "@/ui/icons";
+import { Cal, Layers, Ruler } from "@/ui/icons";
 
-/**
- * Ações secundárias do composer.
- *   - camera: anexar imagem do exame e extrair dados via IA (em desenvolvimento)
- *   - calc:   abre CalculatorsSheet com IG/Doppler/Anemia
- *   - clear:  reseta o editor
- */
-type Action = "camera" | "calc" | "clear";
+export type CalcKey = "ig" | "doppler" | "anemia";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onPick: (a: Action) => void;
+  onPick: (key: CalcKey) => void;
 };
 
 type Item = {
-  id: Action;
+  key: CalcKey;
   label: string;
   sub: string;
-  Icon: typeof Camera;
+  Icon: typeof Cal;
   color: string;
   comingSoon?: boolean;
 };
 
 const ITEMS: Item[] = [
   {
-    id: "camera",
-    label: "Anexar imagem",
-    sub: "Câmera ou galeria — extração de dados por IA",
-    Icon: Camera,
-    color: "#0EA5E9",
-    comingSoon: true,
+    key: "ig",
+    label: "Idade gestacional",
+    sub: "Por DUM ou pela 1ª USG (ACOG PB 700)",
+    Icon: Cal,
+    color: "#EC4899",
   },
   {
-    id: "calc",
-    label: "Calculadoras",
-    sub: "IG, Doppler obstétrico, anemia fetal",
+    key: "doppler",
+    label: "Doppler obstétrico",
+    sub: "Umbilical · ACM · uterinas · RCP (Barcelona FMF)",
     Icon: Ruler,
-    color: "#F59E0B",
+    color: "#F97316",
   },
   {
-    id: "clear",
-    label: "Limpar achados",
-    sub: "Começar do zero",
-    Icon: X,
-    color: "#EF4444",
+    key: "anemia",
+    label: "Anemia fetal (PSV-ACM)",
+    sub: "MoM e classificação Barcelona",
+    Icon: Layers,
+    color: "#8B5CF6",
+    comingSoon: true,
   },
 ];
 
-export function PlusSheet({ open, onClose, onPick }: Props) {
+/**
+ * Lista de calculadoras clínicas. Cada item abre seu próprio sheet.
+ * Calc com comingSoon ainda não tem UI implementada (lógica já portada
+ * em @laudousg/shared, falta o wrapper de UI).
+ */
+export function CalculatorsSheet({ open, onClose, onPick }: Props) {
   return (
-    <Sheet open={open} onClose={onClose} height={320}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}>
+    <Sheet open={open} onClose={onClose} title="Calculadoras" height={360}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 }}>
         {ITEMS.map((it) => (
           <Pressable
-            key={it.id}
+            key={it.key}
             onPress={() => {
-              onPick(it.id);
+              if (it.comingSoon) return;
+              onPick(it.key);
               onClose();
             }}
-            style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [
+              styles.row,
+              pressed && !it.comingSoon && { opacity: 0.7 },
+              it.comingSoon && { opacity: 0.55 },
+            ]}
           >
             <View style={[styles.iconBox, { backgroundColor: it.color + "18" }]}>
               <it.Icon size={20} color={it.color} />
