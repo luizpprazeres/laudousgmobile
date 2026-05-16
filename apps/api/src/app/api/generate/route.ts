@@ -495,5 +495,9 @@ function mapDeterministicIssueType(
   type: DeterministicIssue["type"],
 ): SanityIssue["type"] {
   if (type === "placeholder_vazado") return "formato_quebrado";
+  // rads_divergente é semanticamente equivalente a comando_ignorado:
+  // classificação ditada pelo médico foi substituída/inventada.
+  // Detalhe completo preservado em `detail`.
+  if (type === "rads_divergente") return "comando_ignorado";
   return type;
 }

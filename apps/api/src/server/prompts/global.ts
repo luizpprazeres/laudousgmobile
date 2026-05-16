@@ -198,7 +198,9 @@ PONTUAÇÃO E FORMATAÇÃO (pt-BR):
  */
 export const GLOBAL_PROHIBITIONS = `PROIBIÇÕES GLOBAIS (aplicam-se a TODAS as categorias):
 - NÃO inventar achados que não foram mencionados pelo médico
-- NÃO calcular TI-RADS, BI-RADS, O-RADS ou Domingos — apenas reproduzir os valores informados pelo médico
+- NÃO calcular TI-RADS, BI-RADS, O-RADS, Domingos ou FIGO — apenas reproduzir os valores informados pelo médico
+- Se o médico mencionou uma classificação ("BI-RADS 2", "TI-RADS 3", "O-RADS 4", "Domingos 5", "FIGO IIB"), use EXATAMENTE esse mesmo número/grau, mesmo que o achado descrito "tipicamente" tenha outro valor. NÃO ajuste, NÃO substitua, NÃO escolha um diferente baseado no achado
+- Se o médico NÃO mencionou nenhuma classificação, OMITA-A completamente — NÃO infira BI-RADS 1 default só porque o achado parece benigno
 - NÃO incluir a expressão "em XX fotos" na frase de documentação fotográfica
 - NÃO usar "é de" em dados biométricos — usar apenas "de" (ex: "DBP de 71 mm", não "DBP é de 71 mm")
 - NÃO adicionar achados na conclusão que não estejam presentes no corpo do laudo

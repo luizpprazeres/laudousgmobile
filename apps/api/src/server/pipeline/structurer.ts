@@ -28,13 +28,26 @@ Regras:
 - "categoria_detectada": SCREAMING_SNAKE_CASE (ex: ABDOMEN_TOTAL, PELVE_FEMININA, MAMARIA, TIREOIDE).
 - "tipo_exame": frase curta em português (ex: "Ultrassonografia do abdome total").
 - "achados": JSON ESTRUTURADO codificado como STRING (vai ser re-parseado). Use chaves em snake_case por estrutura/órgão. Inclua medidas como ditadas, com vírgula decimal.
-- "comandos_do_medico": frases imperativas do médico ("acrescente...", "compare com...", "item 1 da conclusão = ..."). NÃO repita esses textos em "achados".
+- "comandos_do_medico": frases do médico que ditam estrutura do laudo final. Inclui:
+   * IMPERATIVAS: "acrescente...", "compare com...", "remova...", "use a frase Y".
+   * POSICIONAIS: "item 1 da conclusão = ...", "no final coloque...", "antes de Z escreva W".
+   * DESCRITIVAS COM ALVO EXPLÍCITO: "na conclusão, X", "para o título use Y".
+   * CLASSIFICAÇÕES RADS/FIGO/Domingos DITADAS COM NÚMERO: "BI-RADS 2", "TI-RADS 3",
+     "O-RADS 4", "Domingos 5", "FIGO IIIB" — SEMPRE extrair como comando, mesmo
+     que apareça embutido em frase descritiva (ex: "na conclusão, cisto simples,
+     BI-RADS 2" → comando com texto preservado integral). Reproduzir o número
+     EXATO no campo texto. NUNCA repita esses textos em "achados".
 - "trechos_confusos": apenas se o input tiver ambiguidade real.
 - "nivel_de_confianca": baixa / media / alta.
 - "datas_referidas": datas mencionadas em formato como falado (string array). Use [] se nenhuma.
 - "lateralidades_mencionadas": ["direito"|"esquerdo"|"bilateral"|"nao_aplicavel"]. Use [] se inaplicável.
-- NUNCA invente. NUNCA calcule volumes/percentis (BI-RADS, TI-RADS, FIGO).
-- Se o médico falar APENAS um número de líquido amniótico sem ILA/MBV, deixe para a etapa seguinte resolver.`;
+- NUNCA invente. NUNCA calcule volumes nem classificações (BI-RADS, TI-RADS, O-RADS, FIGO, Domingos).
+- Se o médico falar APENAS um número de líquido amniótico sem ILA/MBV, deixe para a etapa seguinte resolver.
+
+Exemplo crítico:
+Input: "imagem anecoica de mama direita 0,8 x 0,7 x 1,0 cm. na conclusao, cisto simples de mama direita, BI-RADS 2"
+→ achado: { mama_direita: { nodulo: { tipo: "anecoico", medidas_cm: ["0,8", "0,7", "1,0"], ... } } }
+→ comandos_do_medico: [{ tipo: "adicionar_conclusao_final", texto: "na conclusão: cisto simples de mama direita, BI-RADS 2", trecho_original: "na conclusao, cisto simples de mama direita, BI-RADS 2" }]`;
 
 /**
  * Schema interno do structurer: aceita `achados` como string e faz parse.

@@ -6,7 +6,8 @@ export type DeterministicIssue = {
     | "lateralidade_divergente"
     | "data_divergente"
     | "comando_ignorado"
-    | "placeholder_vazado";
+    | "placeholder_vazado"
+    | "rads_divergente";
   severity: "critical" | "warning";
   detail: string;
   trecho_laudo?: string;
@@ -71,6 +72,7 @@ export function runDeterministicSanity(args: {
     ...checkDates(args.findings, args.finalText),
     ...checkCommands(args.findings, args.finalText),
     ...checkPlaceholders(args.finalText),
+    ...checkRadsClassifications(args.findings, args.finalText),
   ];
 
   return {
@@ -204,6 +206,110 @@ function checkCommands(
   }
 
   return issues;
+}
+
+/**
+ * Detecta classificações de imagem (BI-RADS, TI-RADS, O-RADS, Domingos, FIGO)
+ * ditadas pelo médico (em comandos OU achados) e verifica que aparecem
+ * IDÊNTICAS no laudo final. Divergência = CRITICAL (laudo médico errado
+ * pode levar a conduta clínica errada).
+ *
+ * Captura também o caso "médico não disse nada e laudo inventou" e
+ * "médico disse N e laudo virou M" — ambos hard block.
+ */
+function checkRadsClassifications(
+  findings: StructuredFindings,
+  finalText: string,
+): DeterministicIssue[] {
+  const issues: DeterministicIssue[] = [];
+
+  const inputSources: string[] = [];
+  for (const cmd of findings.comandos_do_medico) {
+    inputSources.push(cmd.texto);
+    if (cmd.trecho_original) inputSources.push(cmd.trecho_original);
+  }
+  for (const entry of flatten(findings.achados)) {
+    inputSources.push(String(entry.value));
+  }
+  const inputText = inputSources.join(" \n ");
+
+  const inputRads = extractRads(inputText);
+  const outputRads = extractRads(finalText);
+
+  // Map por sistema (BI-RADS, TI-RADS, etc.) — comparar valores.
+  const inputBySystem = groupBySystem(inputRads);
+  const outputBySystem = groupBySystem(outputRads);
+
+  for (const [system, inputValues] of inputBySystem) {
+    const outputValues = outputBySystem.get(system) ?? new Set<string>();
+    for (const value of inputValues) {
+      if (!outputValues.has(value)) {
+        const outputList = [...outputValues].join(", ");
+        issues.push({
+          type: "rads_divergente",
+          severity: "critical",
+          detail: outputValues.size === 0
+            ? `Médico ditou ${system} ${value}, mas o laudo não menciona essa classificação.`
+            : `Médico ditou ${system} ${value}, mas laudo gerou ${system} ${outputList}. Classificações NUNCA podem ser recalculadas.`,
+          campo_achado: "rads_classifications",
+        });
+      }
+    }
+  }
+
+  // Inverso: laudo tem RADS que médico não ditou. Crítico (invenção).
+  for (const [system, outputValues] of outputBySystem) {
+    if (!inputBySystem.has(system)) {
+      const outputList = [...outputValues].join(", ");
+      issues.push({
+        type: "rads_divergente",
+        severity: "critical",
+        detail: `Laudo contém ${system} ${outputList} mas médico não mencionou essa classificação. NUNCA inferir.`,
+        trecho_laudo: `${system} ${outputList}`,
+      });
+    }
+  }
+
+  return issues;
+}
+
+type RadsHit = { system: string; value: string };
+
+// Regex captura BI-RADS, TI-RADS, O-RADS (números 0-6, com sub-letra A/B/C
+// opcional — ex: 4A), Domingos (1-6) e FIGO (algarismos romanos I-IV com
+// sub-letra A/B/C opcional — ex: IIIB).
+const RADS_RE =
+  /\b(BI[- ]?RADS|TI[- ]?RADS|O[- ]?RADS|Domingos|FIGO)\s*[:\-]?\s*([0-6][ABC]?|IV[ABC]?|III[ABC]?|II[ABC]?|I[ABC]?|V)\b/giu;
+
+function extractRads(text: string): RadsHit[] {
+  const hits: RadsHit[] = [];
+  for (const match of text.matchAll(RADS_RE)) {
+    const rawSystem = (match[1] ?? "").replace(/\s+/g, "").replace(/-/g, "");
+    const value = (match[2] ?? "").toUpperCase();
+    const system = normalizeRadsSystem(rawSystem);
+    if (system && value) hits.push({ system, value });
+  }
+  return hits;
+}
+
+function normalizeRadsSystem(raw: string): string {
+  const upper = raw.toUpperCase();
+  if (upper === "BIRADS") return "BI-RADS";
+  if (upper === "TIRADS") return "TI-RADS";
+  if (upper === "ORADS") return "O-RADS";
+  if (upper === "DOMINGOS") return "Domingos";
+  if (upper === "FIGO") return "FIGO";
+  return "";
+}
+
+function groupBySystem(hits: RadsHit[]): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  for (const hit of hits) {
+    const set = map.get(hit.system) ?? new Set<string>();
+    set.add(hit.value);
+    map.set(hit.system, set);
+  }
+  return map;
 }
 
 function checkPlaceholders(finalText: string): DeterministicIssue[] {
