@@ -65,7 +65,11 @@ export default function GenerateScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
-  const [mock, setMock] = useState<MockScenario | null>(__DEV__ ? "happy" : null);
+  // Mock OFF por default — antes era "happy" em DEV mas isso fazia toda
+  // geração cair no /api/generate/mock, que retorna PELVE_FEMININA fixo
+  // e não persiste no DB (laudo sumia do histórico). FAB DEV abaixo ainda
+  // permite alternar manualmente pra testar cenários (clarify/blocked/etc).
+  const [mock, setMock] = useState<MockScenario | null>(null);
   const [notice, setNotice] = useState<{
     severity: BannerSeverity;
     title?: string;
@@ -231,10 +235,9 @@ export default function GenerateScreen() {
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={C.text} />
-          {/* Logo sem fundo: PNG processado removendo branco opaco (alpha
-              real agora). Aspect 2816x1536 = 1.833. */}
+          {/* Logo transparente fornecida pelo usuário (PNG já sem fundo). */}
           <Image
-            source={require("../assets/brand/logos/logo-laudousg-nobg.png")}
+            source={require("../assets/brand/logos/logo-laudousg-transparent.png")}
             style={{ width: 132, height: 72 }}
             resizeMode="contain"
             accessibilityLabel="LaudoUSG"
@@ -1059,8 +1062,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: 14,
-    paddingTop: 8,
+    paddingTop: 12,
     zIndex: 110,
+    // bg opaco evita o laudo gerado aparecer por baixo dos botões.
+    backgroundColor: C.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.separator,
   },
   composerRow: {
     flexDirection: "row",
