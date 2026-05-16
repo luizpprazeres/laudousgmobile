@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { supabase } from "@/lib/supabase";
 import { Banner } from "@/ui/Banner";
 import { FONT } from "@/ui/tokens";
@@ -23,16 +24,11 @@ import { Eye, EyeOff } from "@/ui/icons";
 type Mode = "signin" | "signup";
 type FocusField = "email" | "password" | null;
 
-// Preto puro OLED + paleta dark. Tier 1 polish:
-//  - tint sutil brand nos bg/border (em vez de white opacity puro) → coesão
-//  - selectionColor/cursorColor brand → cada digitação reforça marca
-//  - inputs underline-only (sem caixa) + linha verde animada crescendo L→R
 const LOGIN_PALETTE = {
   bg: "#000000",
   text: "#ffffff",
   textSec: "rgba(255,255,255,0.72)",
   textMute: "rgba(255,255,255,0.40)",
-  // Underline idle (cinza neutro frio) + foco brand.
   underlineIdle: "rgba(255,255,255,0.14)",
   brand: "#10B981",
   brandDeep: "#34D399",
@@ -41,6 +37,31 @@ const LOGIN_PALETTE = {
 const RISE_DURATION_MS = 520;
 const STAGGER_MS = 110;
 const FOCUS_TRANSITION_MS = 240;
+const LABEL_TRANSITION_MS = 200;
+
+/**
+ * Haptics: silenciosamente no-op em web (sem motor háptico). Cada chamada
+ * envolvida em try/catch defensivo porque alguns devices iOS antigos
+ * lançam quando o motor não está disponível (modo silencioso, etc.).
+ */
+const haptic = {
+  selection: () => {
+    Haptics.selectionAsync().catch(() => {});
+  },
+  light: () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  },
+  success: () => {
+    Haptics.notificationAsync(
+      Haptics.NotificationFeedbackType.Success,
+    ).catch(() => {});
+  },
+  error: () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+      () => {},
+    );
+  },
+};
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -52,12 +73,9 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState<FocusField>(null);
 
-  // Entrada coordenada (6 elementos sobem em cascata)
   const animValues = useRef(
     Array.from({ length: 6 }, () => new Animated.Value(0)),
   ).current;
-
-  // Focus animations: linha brand cresce L→R quando input está focused
   const emailFocusAnim = useRef(new Animated.Value(0)).current;
   const pwdFocusAnim = useRef(new Animated.Value(0)).current;
 
@@ -97,6 +115,7 @@ export default function LoginScreen() {
 
   async function submit() {
     if (!canSubmit) return;
+    haptic.light();
     setError(null);
     setBusy(true);
     try {
@@ -111,8 +130,10 @@ export default function LoginScreen() {
               password,
             });
       if (authErr) throw authErr;
+      haptic.success();
       router.replace("/generate");
     } catch (e) {
+      haptic.error();
       setError(humanizeAuthError(e));
     } finally {
       setBusy(false);
@@ -176,13 +197,16 @@ export default function LoginScreen() {
             ) : null}
 
             <Animated.View style={[styles.field, riseStyle(2)]}>
-              <Text style={styles.label}>Email</Text>
               <View style={styles.underlineWrap}>
+                <FloatingLabel
+                  label="Email"
+                  focused={focused === "email"}
+                  hasValue={email.length > 0}
+                />
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="seu@email.com"
-                  placeholderTextColor={LOGIN_PALETTE.textMute}
+                  placeholder=""
                   autoCapitalize="none"
                   autoComplete="email"
                   keyboardType="email-address"
@@ -205,14 +229,17 @@ export default function LoginScreen() {
             </Animated.View>
 
             <Animated.View style={[styles.field, riseStyle(3)]}>
-              <Text style={styles.label}>Senha</Text>
               <View style={styles.underlineWrap}>
+                <FloatingLabel
+                  label="Senha"
+                  focused={focused === "password"}
+                  hasValue={password.length > 0}
+                />
                 <View style={styles.inputRow}>
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="mínimo 6 caracteres"
-                    placeholderTextColor={LOGIN_PALETTE.textMute}
+                    placeholder=""
                     secureTextEntry={!showPwd}
                     autoCapitalize="none"
                     autoComplete={
@@ -229,7 +256,10 @@ export default function LoginScreen() {
                     returnKeyType={mode === "signin" ? "go" : "done"}
                   />
                   <Pressable
-                    onPress={() => setShowPwd((v) => !v)}
+                    onPress={() => {
+                      haptic.light();
+                      setShowPwd((v) => !v);
+                    }}
                     style={styles.eyeBtn}
                     hitSlop={8}
                     accessibilityLabel={showPwd ? "Esconder senha" : "Mostrar senha"}
@@ -271,6 +301,7 @@ export default function LoginScreen() {
             <Animated.View style={riseStyle(5)}>
               <Pressable
                 onPress={() => {
+                  haptic.selection();
                   setMode((m) => (m === "signin" ? "signup" : "signin"));
                   setError(null);
                 }}
@@ -300,6 +331,80 @@ export default function LoginScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
+  );
+}
+
+/**
+ * FloatingLabel — label dentro do input que sobe quando focused ou tem valor.
+ *
+ * Estados visuais:
+ *   - idle (sem foco, sem valor): label dentro do input, fontSize "natural" 17px,
+ *     cor cinza mute. Aparece no lugar do placeholder.
+ *   - elevado (focused OU tem valor): label acima do input, scale 0.72 (~12px),
+ *     cor brand quando focused, cinza textSec quando blur com valor.
+ *
+ * Animação: translateY + scale via useNativeDriver. Cor via re-render (state).
+ * Cor não anima suave mas a troca acontece DURANTE a transição translateY,
+ * então a mudança fica camuflada visualmente.
+ */
+function FloatingLabel({
+  label,
+  focused,
+  hasValue,
+}: {
+  label: string;
+  focused: boolean;
+  hasValue: boolean;
+}) {
+  const elevate = focused || hasValue;
+  const anim = useRef(new Animated.Value(elevate ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: elevate ? 1 : 0,
+      duration: LABEL_TRANSITION_MS,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [elevate, anim]);
+
+  const color = focused
+    ? LOGIN_PALETTE.brand
+    : hasValue
+      ? LOGIN_PALETTE.textSec
+      : LOGIN_PALETTE.textMute;
+
+  const translateY = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [12, -12], // dentro do input → acima dele
+  });
+  const scale = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.72],
+  });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: 0,
+        // Origin top-left pra que o scale "encolha pra esquerda+cima" em vez
+        // de encolher pro centro. Isso faz a label "subir" pro lugar certo.
+        transformOrigin: "left center",
+        transform: [{ translateY }, { scale }],
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 17,
+          fontFamily: FONT.body,
+          color,
+        }}
+      >
+        {label}
+      </Text>
+    </Animated.View>
   );
 }
 
@@ -394,19 +499,12 @@ function makeStyles() {
       maxWidth: 420,
     },
     field: {
-      marginBottom: 22,
+      marginBottom: 28,
     },
-    label: {
-      fontSize: 11,
-      color: LOGIN_PALETTE.textMute,
-      fontFamily: FONT.medium,
-      marginBottom: 8,
-      letterSpacing: 1.2,
-      textTransform: "uppercase",
-    },
-    // Wrapper que segura o input + as duas underlines (idle + focused)
     underlineWrap: {
       position: "relative",
+      // Espaço extra no topo pra acomodar label flutuante acima
+      paddingTop: 16,
     },
     inputRow: {
       flexDirection: "row",
@@ -417,10 +515,9 @@ function makeStyles() {
       color: LOGIN_PALETTE.text,
       fontFamily: FONT.body,
       backgroundColor: "transparent",
-      paddingVertical: 12,
+      paddingVertical: 10,
       paddingHorizontal: 0,
     },
-    // Linha idle (sempre visível) — base do underline
     underlineBase: {
       position: "absolute",
       left: 0,
@@ -429,8 +526,6 @@ function makeStyles() {
       height: 1,
       backgroundColor: LOGIN_PALETTE.underlineIdle,
     },
-    // Linha brand que cresce L→R com scaleX. transformOrigin: 'left' faz
-    // ela emergir do canto esquerdo em vez do centro.
     underlineFocus: {
       position: "absolute",
       left: 0,
