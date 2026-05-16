@@ -1,34 +1,38 @@
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { LaudoUSGLogo } from "./LaudoUSGLogo";
-import { useColorTokens } from "./useColorTokens";
+import { ActivityIndicator, Image, StyleSheet, View } from "react-native";
 
 type Props = {
   /** Mostra o spinner discreto sob o logo. Default: true. */
   showSpinner?: boolean;
 };
 
+const LOGO = require("../../assets/brand/logos/logo-laudousg-white.png");
+
+// Preto puro OLED — mesma cor do login pra eliminar flash visual entre
+// splash nativo → BrandSplash → /login. Splash nativo também é #000
+// (app.json → expo.splash.backgroundColor).
+const SPLASH_BG = "#000000";
+const SPINNER_COLOR = "#10B981"; // brand verde
+
 /**
- * Splash visual reutilizável — usado nas transições entre o splash nativo do Expo
- * e a primeira tela renderizada (loading de fontes em _layout, gate de auth em index).
+ * Splash visual reutilizável — usado nas transições entre o splash nativo
+ * do Expo e a primeira tela renderizada.
  *
- * Background combina com `expo.splash.backgroundColor` ("#ecfdf5") no app.json
- * para evitar flash de cor entre splash nativo → splash in-app → tela final.
- *
- * Em dark mode, o fundo vira o `bg` do tema e o logo automaticamente troca pra
- * variante "white" via `variant="auto"`.
+ * Usa o logo white (mesmo do login) — funciona ANTES das fontes carregarem
+ * (vide app/_layout.tsx). Fundo preto OLED em light e dark mode pra
+ * continuidade visual com /login.
  */
 export function BrandSplash({ showSpinner = true }: Props) {
-  const t = useColorTokens();
-  // Em light mode usa a cor exata do splash nativo (#ecfdf5 = emerald.50)
-  // pra não haver flash. Em dark mode usa o bg do tema.
-  const bg = t.bg === "#F2F2F7" ? "#ecfdf5" : t.bg;
-
   return (
-    <View style={[styles.root, { backgroundColor: bg }]}>
-      <LaudoUSGLogo size="lg" variant="auto" showTagline />
+    <View style={styles.root}>
+      <Image
+        source={LOGO}
+        style={styles.logo}
+        resizeMode="contain"
+        accessibilityLabel="LaudoUSG"
+      />
       {showSpinner ? (
         <ActivityIndicator
-          color={t.brand}
+          color={SPINNER_COLOR}
           style={styles.spinner}
           accessibilityLabel="Carregando"
         />
@@ -40,11 +44,19 @@ export function BrandSplash({ showSpinner = true }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: SPLASH_BG,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
   },
+  logo: {
+    // 1024×558 → aspect 1.83:1. Width 320 dá altura ~174 — bom equilíbrio mobile.
+    // maxWidth garante que em telas pequenas o logo não vaze.
+    width: 320,
+    maxWidth: "75%",
+    aspectRatio: 1024 / 558,
+  },
   spinner: {
-    marginTop: 32,
+    marginTop: 36,
   },
 });

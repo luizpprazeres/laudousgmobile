@@ -9,9 +9,9 @@
     "newArchEnabled": true,
     "scheme": "laudousg",
     "splash": {
-      "image": "./assets/brand/expo/splash-icon.png",
+      "image": "./assets/brand/logos/logo-laudousg-white.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ecfdf5"
+      "backgroundColor": "#000000"
     },
     "assetBundlePatterns": [
       "**/*"
