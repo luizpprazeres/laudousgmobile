@@ -183,17 +183,13 @@ export default function GenerateScreen() {
     }
   };
 
-  const onPlusAction = (a: "camera" | "model" | "calc" | "clear") => {
-    if (a === "model") {
-      setCatOpen(true);
-      return;
-    }
+  const onPlusAction = (a: "calc" | "clear") => {
     if (a === "clear") {
       dispatch({ type: "RESET" });
       setTab("achados");
       return;
     }
-    // "calc" e "camera" ainda não implementadas — banner explícito
+    // "calc" ainda não implementada — banner explícito
     if (a === "calc") {
       setNotice({
         severity: "info",
@@ -305,7 +301,6 @@ export default function GenerateScreen() {
               hasContent={hasContent}
               onChangeText={(t) => dispatch({ type: "EDIT_TEXT", text: t })}
               onSnippet={insertSnippet}
-              onChangeModel={() => setCatOpen(true)}
               editable={
                 state.kind === "idle" ||
                 state.kind === "ready" ||
@@ -505,7 +500,6 @@ type AchadosProps = {
   hasContent: boolean;
   onChangeText: (t: string) => void;
   onSnippet: (key: "usg" | "frase") => void;
-  onChangeModel: () => void;
   editable: boolean;
   cat: Category;
 };
@@ -515,7 +509,6 @@ function AchadosBody({
   hasContent,
   onChangeText,
   onSnippet,
-  onChangeModel,
   editable,
   cat,
 }: AchadosProps) {
@@ -557,14 +550,6 @@ function AchadosBody({
               onPress={() => onSnippet("usg")}
             />
           ) : null}
-          {/* Frases salvas — ainda não implementado, mostra estado real */}
-          <Suggestion
-            icon={<Layers size={18} color={C.textSec} />}
-            label="Trocar modelo"
-            hint={cat.label}
-            onPress={onChangeModel}
-          />
-
           <Text style={styles.emptyHint}>
             Toque o microfone para ditar ou comece a digitar acima.
           </Text>
@@ -897,6 +882,13 @@ const styles = StyleSheet.create({
     minHeight: 280,
     fontFamily: FONT.body,
     padding: 0,
+    // Em web (Expo Web) o <textarea> herda outline azul do browser ao focar
+    // — quebra a sensação de "fundo infinito". RN Web entende essas propriedades
+    // CSS-style direto via style. No iOS/Android nativo são no-ops, seguros.
+    // @ts-expect-error — outline* não está nos types do RN, mas funciona em web.
+    outlineStyle: "none",
+    outlineWidth: 0,
+    borderWidth: 0,
   },
 
   eyebrow: {

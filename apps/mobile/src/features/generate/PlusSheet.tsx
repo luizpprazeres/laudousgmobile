@@ -4,16 +4,14 @@ import { C, FONT } from "@/ui/tokens";
 import { Layers, Ruler, X } from "@/ui/icons";
 
 /**
- * Ações secundárias do composer. Mantemos só as que realmente funcionam:
- *   - model: troca a categoria/modelo (abre CategorySheet no parent)
- *   - calc: pula pra tab Extra (calculadoras ainda não implementadas — a tab
- *     já indica "em breve")
+ * Ações secundárias do composer. "Trocar modelo" foi removida — a troca
+ * de categoria já é feita pelo chip no header (mais direto). Mantemos:
+ *   - calc: calculadoras (ainda em breve)
  *   - clear: reseta o editor
  *
- * "camera" (análise por IA de imagem) foi removida: o backend ainda não
- * processa imagem, então a opção viraria promessa fake.
+ * "camera" também foi removida: backend ainda não processa imagem.
  */
-type Action = "model" | "calc" | "clear";
+type Action = "calc" | "clear";
 
 type Props = {
   open: boolean;
@@ -31,13 +29,6 @@ type Item = {
 };
 
 const ITEMS: Item[] = [
-  {
-    id: "model",
-    label: "Trocar modelo",
-    sub: "Mudar especialidade ou estilo",
-    Icon: Layers,
-    color: "#8B5CF6",
-  },
   {
     id: "calc",
     label: "Calculadoras",
