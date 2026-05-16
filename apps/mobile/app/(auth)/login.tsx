@@ -21,23 +21,26 @@ import { FONT } from "@/ui/tokens";
 import { Eye, EyeOff } from "@/ui/icons";
 
 type Mode = "signin" | "signup";
+type FocusField = "email" | "password" | null;
 
-// Preto puro OLED + paleta dark do form. Login ignora system theme.
+// Preto puro OLED + paleta dark. Tier 1 polish:
+//  - tint sutil brand nos bg/border (em vez de white opacity puro) → coesão
+//  - selectionColor/cursorColor brand → cada digitação reforça marca
+//  - inputs underline-only (sem caixa) + linha verde animada crescendo L→R
 const LOGIN_PALETTE = {
   bg: "#000000",
   text: "#ffffff",
   textSec: "rgba(255,255,255,0.72)",
   textMute: "rgba(255,255,255,0.40)",
-  inputBg: "rgba(255,255,255,0.06)",
-  inputBorder: "rgba(255,255,255,0.14)",
+  // Underline idle (cinza neutro frio) + foco brand.
+  underlineIdle: "rgba(255,255,255,0.14)",
   brand: "#10B981",
   brandDeep: "#34D399",
 };
 
-// Cada elemento entra subindo (translateY 28 → 0) + fade-in.
-// Os delays escalonados criam uma cascata visual de baixo pra cima.
 const RISE_DURATION_MS = 520;
 const STAGGER_MS = 110;
+const FOCUS_TRANSITION_MS = 240;
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -47,12 +50,16 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<Mode>("signin");
   const [error, setError] = useState<string | null>(null);
+  const [focused, setFocused] = useState<FocusField>(null);
 
-  // 6 elementos coreografados: logo, tagline, emailField, passwordField,
-  // cta, switchBtn. Cada um tem Animated.Value próprio com delay distinto.
+  // Entrada coordenada (6 elementos sobem em cascata)
   const animValues = useRef(
     Array.from({ length: 6 }, () => new Animated.Value(0)),
   ).current;
+
+  // Focus animations: linha brand cresce L→R quando input está focused
+  const emailFocusAnim = useRef(new Animated.Value(0)).current;
+  const pwdFocusAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.stagger(
@@ -67,6 +74,21 @@ export default function LoginScreen() {
       ),
     ).start();
   }, [animValues]);
+
+  useEffect(() => {
+    Animated.timing(emailFocusAnim, {
+      toValue: focused === "email" ? 1 : 0,
+      duration: FOCUS_TRANSITION_MS,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    Animated.timing(pwdFocusAnim, {
+      toValue: focused === "password" ? 1 : 0,
+      duration: FOCUS_TRANSITION_MS,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [focused, emailFocusAnim, pwdFocusAnim]);
 
   const trimmedEmail = email.trim();
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
@@ -155,51 +177,77 @@ export default function LoginScreen() {
 
             <Animated.View style={[styles.field, riseStyle(2)]}>
               <Text style={styles.label}>Email</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="seu@email.com"
-                placeholderTextColor={LOGIN_PALETTE.textMute}
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                textContentType="emailAddress"
-                editable={!busy}
-                style={styles.input}
-              />
+              <View style={styles.underlineWrap}>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="seu@email.com"
+                  placeholderTextColor={LOGIN_PALETTE.textMute}
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
+                  editable={!busy}
+                  onFocus={() => setFocused("email")}
+                  onBlur={() => setFocused(null)}
+                  selectionColor={LOGIN_PALETTE.brand}
+                  cursorColor={LOGIN_PALETTE.brand}
+                  style={styles.input}
+                />
+                <View style={styles.underlineBase} />
+                <Animated.View
+                  style={[
+                    styles.underlineFocus,
+                    { transform: [{ scaleX: emailFocusAnim }] },
+                  ]}
+                />
+              </View>
             </Animated.View>
 
             <Animated.View style={[styles.field, riseStyle(3)]}>
               <Text style={styles.label}>Senha</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="mínimo 6 caracteres"
-                  placeholderTextColor={LOGIN_PALETTE.textMute}
-                  secureTextEntry={!showPwd}
-                  autoCapitalize="none"
-                  autoComplete={
-                    mode === "signin" ? "current-password" : "new-password"
-                  }
-                  textContentType={mode === "signin" ? "password" : "newPassword"}
-                  editable={!busy}
-                  style={[styles.input, { flex: 1, paddingRight: 44 }]}
-                  onSubmitEditing={submit}
-                  returnKeyType={mode === "signin" ? "go" : "done"}
+              <View style={styles.underlineWrap}>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="mínimo 6 caracteres"
+                    placeholderTextColor={LOGIN_PALETTE.textMute}
+                    secureTextEntry={!showPwd}
+                    autoCapitalize="none"
+                    autoComplete={
+                      mode === "signin" ? "current-password" : "new-password"
+                    }
+                    textContentType={mode === "signin" ? "password" : "newPassword"}
+                    editable={!busy}
+                    onFocus={() => setFocused("password")}
+                    onBlur={() => setFocused(null)}
+                    selectionColor={LOGIN_PALETTE.brand}
+                    cursorColor={LOGIN_PALETTE.brand}
+                    style={[styles.input, { flex: 1, paddingRight: 44 }]}
+                    onSubmitEditing={submit}
+                    returnKeyType={mode === "signin" ? "go" : "done"}
+                  />
+                  <Pressable
+                    onPress={() => setShowPwd((v) => !v)}
+                    style={styles.eyeBtn}
+                    hitSlop={8}
+                    accessibilityLabel={showPwd ? "Esconder senha" : "Mostrar senha"}
+                  >
+                    {showPwd ? (
+                      <EyeOff size={18} color={LOGIN_PALETTE.textSec} />
+                    ) : (
+                      <Eye size={18} color={LOGIN_PALETTE.textSec} />
+                    )}
+                  </Pressable>
+                </View>
+                <View style={styles.underlineBase} />
+                <Animated.View
+                  style={[
+                    styles.underlineFocus,
+                    { transform: [{ scaleX: pwdFocusAnim }] },
+                  ]}
                 />
-                <Pressable
-                  onPress={() => setShowPwd((v) => !v)}
-                  style={styles.eyeBtn}
-                  hitSlop={8}
-                  accessibilityLabel={showPwd ? "Esconder senha" : "Mostrar senha"}
-                >
-                  {showPwd ? (
-                    <EyeOff size={18} color={LOGIN_PALETTE.textSec} />
-                  ) : (
-                    <Eye size={18} color={LOGIN_PALETTE.textSec} />
-                  )}
-                </Pressable>
               </View>
             </Animated.View>
 
@@ -317,7 +365,7 @@ function makeStyles() {
   return StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: LOGIN_PALETTE.bg, // #000 OLED true black
+      backgroundColor: LOGIN_PALETTE.bg,
     },
     scroll: {
       flexGrow: 1,
@@ -338,7 +386,7 @@ function makeStyles() {
       fontSize: 28,
       fontFamily: FONT.bold,
       letterSpacing: -0.4,
-      marginBottom: 38,
+      marginBottom: 44,
       textAlign: "center",
     },
     form: {
@@ -346,31 +394,51 @@ function makeStyles() {
       maxWidth: 420,
     },
     field: {
-      marginBottom: 16,
+      marginBottom: 22,
     },
     label: {
-      fontSize: 12,
-      color: LOGIN_PALETTE.textSec,
+      fontSize: 11,
+      color: LOGIN_PALETTE.textMute,
       fontFamily: FONT.medium,
-      marginBottom: 6,
-      letterSpacing: 0.4,
+      marginBottom: 8,
+      letterSpacing: 1.2,
       textTransform: "uppercase",
+    },
+    // Wrapper que segura o input + as duas underlines (idle + focused)
+    underlineWrap: {
+      position: "relative",
     },
     inputRow: {
       flexDirection: "row",
       alignItems: "center",
-      position: "relative",
     },
     input: {
-      fontSize: 16,
+      fontSize: 17,
       color: LOGIN_PALETTE.text,
       fontFamily: FONT.body,
-      backgroundColor: LOGIN_PALETTE.inputBg,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      borderWidth: 1,
-      borderColor: LOGIN_PALETTE.inputBorder,
+      backgroundColor: "transparent",
+      paddingVertical: 12,
+      paddingHorizontal: 0,
+    },
+    // Linha idle (sempre visível) — base do underline
+    underlineBase: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: 1,
+      backgroundColor: LOGIN_PALETTE.underlineIdle,
+    },
+    // Linha brand que cresce L→R com scaleX. transformOrigin: 'left' faz
+    // ela emergir do canto esquerdo em vez do centro.
+    underlineFocus: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: 2,
+      backgroundColor: LOGIN_PALETTE.brand,
+      transformOrigin: "left center",
     },
     eyeBtn: {
       position: "absolute",
@@ -387,7 +455,7 @@ function makeStyles() {
       paddingVertical: 16,
       alignItems: "center",
       justifyContent: "center",
-      marginTop: 6,
+      marginTop: 14,
     },
     ctaText: {
       color: "#fff",
