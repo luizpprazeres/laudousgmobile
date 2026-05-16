@@ -661,7 +661,6 @@ function LaudoBody({
         <Text style={[styles.eyebrow, { color: cat.color }]}>
           Ultrassonografia {cat.label.toLowerCase()}
         </Text>
-        <Text style={styles.laudoTitle}>Laudo gerado</Text>
         <Text style={styles.laudoMeta}>
           {today} · {time}
         </Text>
