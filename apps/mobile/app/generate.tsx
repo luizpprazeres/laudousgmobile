@@ -68,7 +68,7 @@ export default function GenerateScreen() {
   // Mock OFF por default — antes era "happy" em DEV mas isso fazia toda
   // geração cair no /api/generate/mock, que retorna PELVE_FEMININA fixo
   // e não persiste no DB (laudo sumia do histórico). FAB DEV abaixo ainda
-  // permite alternar manualmente pra testar cenários (clarify/blocked/etc).
+  // permite alternar manualmente pra testar cenários (clarify/error/slow).
   const [mock, setMock] = useState<MockScenario | null>(null);
   const [notice, setNotice] = useState<{
     severity: BannerSeverity;
@@ -214,7 +214,6 @@ export default function GenerateScreen() {
     const order: (MockScenario | null)[] = [
       "happy",
       "clarify",
-      "blocked",
       "error",
       "slow",
       null,
@@ -587,37 +586,6 @@ function isObstetrica(catId: string): boolean {
  * Converte erro técnico do generate em mensagem útil pro médico.
  * Console ainda recebe stack completa pra debug.
  */
-function humanizeSeverity(s: SanityIssue["severity"]): string {
-  if (s === "critical") return "CRÍTICO";
-  if (s === "warning") return "Atenção";
-  return "Info";
-}
-
-function humanizeIssueType(t: SanityIssue["type"]): string {
-  switch (t) {
-    case "medida_divergente":
-      return "Medida divergente";
-    case "lateralidade_divergente":
-      return "Lateralidade divergente";
-    case "data_divergente":
-      return "Data divergente";
-    case "comando_ignorado":
-      return "Comando do médico não respeitado";
-    case "achado_omitido":
-      return "Achado omitido no laudo";
-    case "achado_inventado":
-      return "Achado não solicitado adicionado";
-    case "categoria_divergente":
-      return "Categoria do exame divergente";
-    case "conclusao_inconsistente":
-      return "Conclusão inconsistente com o corpo do laudo";
-    case "formato_quebrado":
-      return "Formato do laudo quebrado";
-    case "outro":
-      return "Outra inconsistência";
-  }
-}
-
 function humanizeGenerateError(raw: string): string {
   const lower = raw.toLowerCase();
   if (lower.includes("não autenticado") || lower.includes("nao autenticado")) {
@@ -762,49 +730,6 @@ function LaudoBody({
           style={[styles.primaryBtn, { marginTop: 18 }]}
         >
           <Text style={styles.primaryBtnText}>Continuar</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  if (state.kind === "blocked") {
-    // Issues críticos primeiro (BI-RADS divergente, medida errada, etc.).
-    const critical = state.sanity.issues.filter((i) => i.severity === "critical");
-    const others = state.sanity.issues.filter((i) => i.severity !== "critical");
-    return (
-      <View>
-        <View style={styles.bannerCritical}>
-          <Text style={styles.bannerTitle}>
-            Laudo bloqueado — divergência clínica detectada
-          </Text>
-          <Text style={styles.bannerBody}>
-            O sistema detectou pelo menos uma inconsistência crítica entre o
-            que você ditou e o laudo gerado. Por segurança, o laudo NÃO foi
-            entregue. Revise os pontos abaixo e tente novamente, ajustando
-            os achados se necessário.
-          </Text>
-        </View>
-        {[...critical, ...others].map((i: SanityIssue, idx: number) => (
-          <View key={idx} style={styles.issueRow}>
-            <Text
-              style={[
-                styles.issueSev,
-                i.severity === "critical" && { color: C.danger },
-              ]}
-            >
-              {humanizeSeverity(i.severity)}
-            </Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.issueType}>{humanizeIssueType(i.type)}</Text>
-              <Text style={styles.issueDetail}>{i.detail}</Text>
-            </View>
-          </View>
-        ))}
-        <Pressable
-          onPress={onReset}
-          style={[styles.secondaryBtn, { marginTop: 18 }]}
-        >
-          <Text style={styles.secondaryBtnText}>Voltar e revisar achados</Text>
         </Pressable>
       </View>
     );

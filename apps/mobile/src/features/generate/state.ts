@@ -10,7 +10,7 @@ import type {
  *   idle → recording → transcribing → ready
  *                                   → generating
  *                                       → clarifying (Q&A inline)
- *                                       → done | blocked | error
+ *                                       → done | error
  */
 export type GenerateState =
   | { kind: "idle"; text: string }
@@ -39,13 +39,6 @@ export type GenerateState =
       finalText: string;
       structured?: StructuredFindings;
       sanity?: SanityResult;
-    }
-  | {
-      kind: "blocked";
-      text: string;
-      reportId: string;
-      sanity: SanityResult;
-      reason: string;
     }
   | { kind: "error"; text: string; message: string };
 
@@ -159,13 +152,9 @@ function applySse(
         structured: state.structured,
       };
     case "blocked":
-      return {
-        kind: "blocked",
-        text: state.text,
-        reportId: ev.report_id,
-        sanity: ev.sanity,
-        reason: ev.reason,
-      };
+      // Feature de bloqueio removida — backend não emite mais este evento,
+      // mas o schema SSE ainda o tipa por legado. Tratamos como no-op.
+      return state;
     case "error":
       return { kind: "error", text: state.text, message: ev.message };
     case "validator":

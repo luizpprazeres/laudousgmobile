@@ -366,9 +366,11 @@ export async function POST(req: Request) {
         latencyMs: writerResult?.latencyMs ?? 0,
       });
 
-      // ----- 5. Sanity check -----
-      // Primeiro roda checks determinísticos baratos (regex/consistência factual),
-      // depois combina com o juiz IA. Se o determinístico pegou critical, bloqueia.
+      // ----- 5. Sanity check (observabilidade, NÃO bloqueia) -----
+      // Roda checks determinísticos + IA pra registrar inconsistências em
+      // generation_runs. Não bloqueia mais a entrega: a feature de blocked
+      // foi removida por feedback do usuário (UX confusa + prefere investir
+      // em consertos preventivos via prompts).
       const deterministicSanity = runDeterministicSanity({
         findings,
         finalText,
@@ -381,28 +383,6 @@ export async function POST(req: Request) {
       const sanity = mergeSanityResults(aiSanity, deterministicSanity);
       await updateRunAfterSanity({ runId, sanity, latencyMs: sanityMs });
       emit({ type: "sanity", ts: nowIso(), result: sanity });
-
-      if (sanity.verdict === "critical") {
-        outcome = "blocked";
-        await finalizeReport({
-          reportId,
-          status: "blocked",
-          generatedOutput: finalText,
-          sanityResult: sanity,
-          metadata:
-            pipelineWarnings.length > 0
-              ? { pipeline_warnings: pipelineWarnings }
-              : undefined,
-        });
-        emit({
-          type: "blocked",
-          ts: nowIso(),
-          report_id: reportId,
-          reason: sanity.summary,
-          sanity,
-        });
-        return;
-      }
 
       // Sucesso
       outcome = "success";

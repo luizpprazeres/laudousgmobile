@@ -1,6 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -8,29 +11,83 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Banner } from "@/ui/Banner";
-import { LaudoUSGLogo } from "@/ui/LaudoUSGLogo";
-import { FONT, type ColorTokens } from "@/ui/tokens";
-import { useColorTokens } from "@/ui/useColorTokens";
+import { PaperShowcase } from "@/ui/PaperShowcase";
+import { FONT } from "@/ui/tokens";
 import { Eye, EyeOff } from "@/ui/icons";
 
 type Mode = "signin" | "signup";
 
+// Paleta forçada (login ignora system theme — sempre dark dramático).
+const LOGIN_PALETTE = {
+  bg: "#000000",
+  card: "rgba(255,255,255,0.04)",
+  cardBorder: "rgba(255,255,255,0.10)",
+  text: "#ffffff",
+  textSec: "rgba(255,255,255,0.72)",
+  textMute: "rgba(255,255,255,0.40)",
+  inputBg: "rgba(255,255,255,0.06)",
+  inputBorder: "rgba(255,255,255,0.14)",
+  inputBorderFocus: "#10B981",
+  brand: "#10B981",
+  brandDeep: "#34D399",
+  particleGreen: "#10B981",
+};
+
 export default function LoginScreen() {
-  const t = useColorTokens();
-  const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<Mode>("signin");
   const [error, setError] = useState<string | null>(null);
+
+  // Entrada coordenada: logo fade-in primeiro, depois form (delay 350ms).
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.85)).current;
+  const formOpacity = useRef(new Animated.Value(0)).current;
+  const formTranslate = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoScale, {
+        toValue: 1,
+        duration: 900,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.delay(350),
+        Animated.parallel([
+          Animated.timing(formOpacity, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(formTranslate, {
+            toValue: 0,
+            duration: 600,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ]).start();
+  }, [logoOpacity, logoScale, formOpacity, formTranslate]);
 
   const trimmedEmail = email.trim();
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
@@ -61,132 +118,166 @@ export default function LoginScreen() {
     }
   }
 
+  const styles = useMemo(() => makeStyles(), []);
+
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          {
-            paddingTop: insets.top + 24,
-            paddingBottom: insets.bottom + 24,
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.root}>
+      {/* PaperShowcase: cena de motion design coreografada (papéis caindo +
+          glow brand + hero paper com typewriter + stamp ✓). Absolute fill. */}
+      <PaperShowcase width={width} height={height} />
+
+      {/* Vignette radial sutil pra dar profundidade — feito com gradient
+          simulado via Views aninhadas (sem precisar de linear-gradient lib) */}
+      <View pointerEvents="none" style={styles.vignette} />
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <LaudoUSGLogo size="lg" variant="auto" showTagline />
-          </View>
-
-          {error ? (
-            <View style={{ marginBottom: 18 }}>
-              <Banner
-                severity="error"
-                title="Não foi possível entrar"
-                message={error}
-                onDismiss={() => setError(null)}
-              />
-            </View>
-          ) : null}
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="seu@email.com"
-              placeholderTextColor={t.textMute}
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              textContentType="emailAddress"
-              editable={!busy}
-              style={styles.input}
+        <ScrollView
+          contentContainerStyle={[
+            styles.scroll,
+            {
+              paddingTop: insets.top + 24,
+              paddingBottom: insets.bottom + 24,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View
+            style={[
+              styles.logoWrap,
+              {
+                opacity: logoOpacity,
+                transform: [{ scale: logoScale }],
+              },
+            ]}
+          >
+            <Image
+              source={require("../../assets/brand/logos/logo-laudousg-white.png")}
+              style={styles.logo}
+              resizeMode="contain"
+              accessibilityLabel="LaudoUSG"
             />
-          </View>
+            <Text style={styles.tagline}>Laudos rápidos e inteligentes</Text>
+          </Animated.View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Senha</Text>
-            <View style={styles.inputRow}>
+          <Animated.View
+            style={[
+              styles.card,
+              {
+                opacity: formOpacity,
+                transform: [{ translateY: formTranslate }],
+              },
+            ]}
+          >
+            {error ? (
+              <View style={{ marginBottom: 16 }}>
+                <Banner
+                  severity="error"
+                  title="Não foi possível entrar"
+                  message={error}
+                  onDismiss={() => setError(null)}
+                />
+              </View>
+            ) : null}
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Email</Text>
               <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="mínimo 6 caracteres"
-                placeholderTextColor={t.textMute}
-                secureTextEntry={!showPwd}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="seu@email.com"
+                placeholderTextColor={LOGIN_PALETTE.textMute}
                 autoCapitalize="none"
-                autoComplete={
-                  mode === "signin" ? "current-password" : "new-password"
-                }
-                textContentType={mode === "signin" ? "password" : "newPassword"}
+                autoComplete="email"
+                keyboardType="email-address"
+                textContentType="emailAddress"
                 editable={!busy}
-                style={[styles.input, { flex: 1, paddingRight: 44 }]}
-                onSubmitEditing={submit}
-                returnKeyType={mode === "signin" ? "go" : "done"}
+                style={styles.input}
               />
-              <Pressable
-                onPress={() => setShowPwd((v) => !v)}
-                style={styles.eyeBtn}
-                hitSlop={8}
-                accessibilityLabel={showPwd ? "Esconder senha" : "Mostrar senha"}
-              >
-                {showPwd ? (
-                  <EyeOff size={18} color={t.textSec} />
-                ) : (
-                  <Eye size={18} color={t.textSec} />
-                )}
-              </Pressable>
             </View>
-          </View>
 
-          <Pressable
-            onPress={submit}
-            disabled={!canSubmit}
-            style={[styles.cta, { opacity: canSubmit ? 1 : 0.45 }]}
-            accessibilityRole="button"
-          >
-            {busy ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.ctaText}>
-                {mode === "signin" ? "Entrar" : "Criar conta"}
-              </Text>
-            )}
-          </Pressable>
+            <View style={styles.field}>
+              <Text style={styles.label}>Senha</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="mínimo 6 caracteres"
+                  placeholderTextColor={LOGIN_PALETTE.textMute}
+                  secureTextEntry={!showPwd}
+                  autoCapitalize="none"
+                  autoComplete={
+                    mode === "signin" ? "current-password" : "new-password"
+                  }
+                  textContentType={mode === "signin" ? "password" : "newPassword"}
+                  editable={!busy}
+                  style={[styles.input, { flex: 1, paddingRight: 44 }]}
+                  onSubmitEditing={submit}
+                  returnKeyType={mode === "signin" ? "go" : "done"}
+                />
+                <Pressable
+                  onPress={() => setShowPwd((v) => !v)}
+                  style={styles.eyeBtn}
+                  hitSlop={8}
+                  accessibilityLabel={showPwd ? "Esconder senha" : "Mostrar senha"}
+                >
+                  {showPwd ? (
+                    <EyeOff size={18} color={LOGIN_PALETTE.textSec} />
+                  ) : (
+                    <Eye size={18} color={LOGIN_PALETTE.textSec} />
+                  )}
+                </Pressable>
+              </View>
+            </View>
 
-          <Pressable
-            onPress={() => {
-              setMode((m) => (m === "signin" ? "signup" : "signin"));
-              setError(null);
-            }}
-            style={styles.switchBtn}
-            hitSlop={6}
-          >
-            <Text style={styles.switchText}>
-              {mode === "signin" ? (
-                <>
-                  Ainda não tem conta?{" "}
-                  <Text style={styles.switchLink}>Criar conta</Text>
-                </>
+            <Pressable
+              onPress={submit}
+              disabled={!canSubmit}
+              style={[styles.cta, { opacity: canSubmit ? 1 : 0.4 }]}
+              accessibilityRole="button"
+            >
+              {busy ? (
+                <ActivityIndicator color="#fff" />
               ) : (
-                <>
-                  Já tem conta?{" "}
-                  <Text style={styles.switchLink}>Entrar</Text>
-                </>
+                <Text style={styles.ctaText}>
+                  {mode === "signin" ? "Entrar" : "Criar conta"}
+                </Text>
               )}
-            </Text>
-          </Pressable>
+            </Pressable>
 
-          <Text style={styles.legal}>
-            Ao continuar, você concorda com os termos de uso e política de
-            privacidade.
-          </Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <Pressable
+              onPress={() => {
+                setMode((m) => (m === "signin" ? "signup" : "signin"));
+                setError(null);
+              }}
+              style={styles.switchBtn}
+              hitSlop={6}
+            >
+              <Text style={styles.switchText}>
+                {mode === "signin" ? (
+                  <>
+                    Ainda não tem conta?{" "}
+                    <Text style={styles.switchLink}>Criar conta</Text>
+                  </>
+                ) : (
+                  <>
+                    Já tem conta? <Text style={styles.switchLink}>Entrar</Text>
+                  </>
+                )}
+              </Text>
+            </Pressable>
+
+            <Text style={styles.legal}>
+              Ao continuar, você concorda com os termos de uso e política de
+              privacidade.
+            </Text>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -194,7 +285,6 @@ function humanizeAuthError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   const lower = msg.toLowerCase();
 
-  // Credenciais
   if (lower.includes("invalid login") || lower.includes("invalid credentials")) {
     return "Email ou senha incorretos.";
   }
@@ -207,8 +297,6 @@ function humanizeAuthError(e: unknown): string {
   if (lower.includes("user not found")) {
     return "Email não cadastrado. Toque em Criar conta.";
   }
-
-  // Senha
   if (
     lower.includes("password should be") ||
     lower.includes("password is too short") ||
@@ -220,8 +308,6 @@ function humanizeAuthError(e: unknown): string {
   if (lower.includes("same password") || lower.includes("new password should be different")) {
     return "A nova senha precisa ser diferente da anterior.";
   }
-
-  // Email
   if (
     lower.includes("invalid email") ||
     lower.includes("email address is invalid") ||
@@ -229,8 +315,6 @@ function humanizeAuthError(e: unknown): string {
   ) {
     return "Email inválido. Confira se digitou certo.";
   }
-
-  // Rate / quota
   if (
     lower.includes("rate limit") ||
     lower.includes("too many requests") ||
@@ -241,13 +325,9 @@ function humanizeAuthError(e: unknown): string {
   if (lower.includes("signups not allowed") || lower.includes("signup is disabled")) {
     return "Cadastro temporariamente fechado. Tente novamente mais tarde.";
   }
-
-  // Sessão
   if (lower.includes("jwt") || lower.includes("session") || lower.includes("token")) {
     return "Sua sessão expirou. Entre novamente.";
   }
-
-  // Rede
   if (
     lower.includes("network") ||
     lower.includes("fetch") ||
@@ -256,49 +336,71 @@ function humanizeAuthError(e: unknown): string {
   ) {
     return "Sem conexão com o servidor. Tente de novo em alguns segundos.";
   }
-
   return msg;
 }
 
-function makeStyles(t: ColorTokens) {
+function makeStyles() {
   return StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: t.bg,
+      backgroundColor: LOGIN_PALETTE.bg,
+    },
+    vignette: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.35)",
+      // shadowInset não existe em RN — usamos border + shadow no card pra
+      // simular profundidade. Vignette aqui é overlay sutil pra escurecer
+      // cantos visualmente.
     },
     scroll: {
       flexGrow: 1,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 20,
+      paddingHorizontal: 22,
+    },
+    logoWrap: {
+      alignItems: "center",
+      marginBottom: 36,
+    },
+    logo: {
+      width: 220,
+      height: 120,
+    },
+    tagline: {
+      color: LOGIN_PALETTE.textSec,
+      fontSize: 18,
+      fontFamily: FONT.semibold,
+      letterSpacing: 0.4,
+      marginTop: 16,
+      textAlign: "center",
     },
     card: {
       width: "100%",
-      maxWidth: 460,
-      backgroundColor: t.card,
+      maxWidth: 440,
+      backgroundColor: LOGIN_PALETTE.card,
       borderRadius: 20,
-      paddingHorizontal: 26,
-      paddingTop: 36,
-      paddingBottom: 28,
-      shadowColor: "#000",
-      shadowOpacity: 0.05,
-      shadowRadius: 20,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 2,
-    },
-    header: {
-      alignItems: "center",
-      marginBottom: 28,
+      paddingHorizontal: 24,
+      paddingTop: 26,
+      paddingBottom: 22,
+      borderWidth: 1,
+      borderColor: LOGIN_PALETTE.cardBorder,
+      // Glow leve verde por trás do card
+      shadowColor: LOGIN_PALETTE.brand,
+      shadowOpacity: 0.18,
+      shadowRadius: 28,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 4,
     },
     field: {
       marginBottom: 16,
     },
     label: {
-      fontSize: 13,
-      color: t.textSec,
+      fontSize: 12,
+      color: LOGIN_PALETTE.textSec,
       fontFamily: FONT.medium,
       marginBottom: 6,
-      letterSpacing: 0.1,
+      letterSpacing: 0.4,
+      textTransform: "uppercase",
     },
     inputRow: {
       flexDirection: "row",
@@ -307,14 +409,14 @@ function makeStyles(t: ColorTokens) {
     },
     input: {
       fontSize: 16,
-      color: t.text,
+      color: LOGIN_PALETTE.text,
       fontFamily: FONT.body,
-      backgroundColor: t.bg,
+      backgroundColor: LOGIN_PALETTE.inputBg,
       borderRadius: 12,
       paddingHorizontal: 14,
       paddingVertical: 14,
       borderWidth: 1,
-      borderColor: t.separator,
+      borderColor: LOGIN_PALETTE.inputBorder,
     },
     eyeBtn: {
       position: "absolute",
@@ -326,44 +428,44 @@ function makeStyles(t: ColorTokens) {
       justifyContent: "center",
     },
     cta: {
-      backgroundColor: t.brand,
+      backgroundColor: LOGIN_PALETTE.brand,
       borderRadius: 12,
       paddingVertical: 16,
       alignItems: "center",
       justifyContent: "center",
-      marginTop: 8,
-      shadowColor: t.brand,
-      shadowOpacity: 0.25,
-      shadowRadius: 14,
+      marginTop: 6,
+      shadowColor: LOGIN_PALETTE.brand,
+      shadowOpacity: 0.45,
+      shadowRadius: 18,
       shadowOffset: { width: 0, height: 8 },
-      elevation: 3,
+      elevation: 5,
     },
     ctaText: {
       color: "#fff",
       fontSize: 16,
       fontFamily: FONT.semibold,
-      letterSpacing: 0.2,
+      letterSpacing: 0.3,
     },
     switchBtn: {
       alignItems: "center",
-      paddingVertical: 16,
+      paddingVertical: 14,
     },
     switchText: {
       fontSize: 14,
-      color: t.textSec,
+      color: LOGIN_PALETTE.textSec,
       fontFamily: FONT.body,
     },
     switchLink: {
-      color: t.brand,
+      color: LOGIN_PALETTE.brandDeep,
       fontFamily: FONT.semibold,
     },
     legal: {
-      fontSize: 12,
-      color: t.textMute,
+      fontSize: 11,
+      color: LOGIN_PALETTE.textMute,
       textAlign: "center",
       fontFamily: FONT.body,
-      lineHeight: 17,
-      marginTop: 8,
+      lineHeight: 16,
+      marginTop: 6,
     },
   });
 }
