@@ -376,11 +376,11 @@ function FloatingLabel({
 
   const translateY = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [12, -12], // dentro do input → acima dele
+    outputRange: [12, -22], // dentro do input → bem acima (longe da underline)
   });
   const scale = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 0.72],
+    outputRange: [1, 0.7],
   });
 
   return (
@@ -499,12 +499,12 @@ function makeStyles() {
       maxWidth: 420,
     },
     field: {
-      marginBottom: 28,
+      marginBottom: 32,
     },
     underlineWrap: {
       position: "relative",
       // Espaço extra no topo pra acomodar label flutuante acima
-      paddingTop: 16,
+      paddingTop: 24,
     },
     inputRow: {
       flexDirection: "row",
@@ -517,6 +517,12 @@ function makeStyles() {
       backgroundColor: "transparent",
       paddingVertical: 10,
       paddingHorizontal: 0,
+      // Web (Expo Web) herda outline azul/preto do browser ao focar.
+      // No iOS/Android nativo essas props viram no-op, seguras.
+      // @ts-expect-error — outline* não está nos types do RN.
+      outlineStyle: "none",
+      outlineWidth: 0,
+      borderWidth: 0,
     },
     underlineBase: {
       position: "absolute",
