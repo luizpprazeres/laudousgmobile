@@ -587,6 +587,37 @@ function isObstetrica(catId: string): boolean {
  * Converte erro técnico do generate em mensagem útil pro médico.
  * Console ainda recebe stack completa pra debug.
  */
+function humanizeSeverity(s: SanityIssue["severity"]): string {
+  if (s === "critical") return "CRÍTICO";
+  if (s === "warning") return "Atenção";
+  return "Info";
+}
+
+function humanizeIssueType(t: SanityIssue["type"]): string {
+  switch (t) {
+    case "medida_divergente":
+      return "Medida divergente";
+    case "lateralidade_divergente":
+      return "Lateralidade divergente";
+    case "data_divergente":
+      return "Data divergente";
+    case "comando_ignorado":
+      return "Comando do médico não respeitado";
+    case "achado_omitido":
+      return "Achado omitido no laudo";
+    case "achado_inventado":
+      return "Achado não solicitado adicionado";
+    case "categoria_divergente":
+      return "Categoria do exame divergente";
+    case "conclusao_inconsistente":
+      return "Conclusão inconsistente com o corpo do laudo";
+    case "formato_quebrado":
+      return "Formato do laudo quebrado";
+    case "outro":
+      return "Outra inconsistência";
+  }
+}
+
 function humanizeGenerateError(raw: string): string {
   const lower = raw.toLowerCase();
   if (lower.includes("não autenticado") || lower.includes("nao autenticado")) {
@@ -737,17 +768,34 @@ function LaudoBody({
   }
 
   if (state.kind === "blocked") {
+    // Issues críticos primeiro (BI-RADS divergente, medida errada, etc.).
+    const critical = state.sanity.issues.filter((i) => i.severity === "critical");
+    const others = state.sanity.issues.filter((i) => i.severity !== "critical");
     return (
       <View>
         <View style={styles.bannerCritical}>
-          <Text style={styles.bannerTitle}>Sanity check pediu revisão</Text>
-          <Text style={styles.bannerBody}>{state.reason}</Text>
+          <Text style={styles.bannerTitle}>
+            Laudo bloqueado — divergência clínica detectada
+          </Text>
+          <Text style={styles.bannerBody}>
+            O sistema detectou pelo menos uma inconsistência crítica entre o
+            que você ditou e o laudo gerado. Por segurança, o laudo NÃO foi
+            entregue. Revise os pontos abaixo e tente novamente, ajustando
+            os achados se necessário.
+          </Text>
         </View>
-        {state.sanity.issues.map((i: SanityIssue, idx: number) => (
+        {[...critical, ...others].map((i: SanityIssue, idx: number) => (
           <View key={idx} style={styles.issueRow}>
-            <Text style={styles.issueSev}>{i.severity}</Text>
+            <Text
+              style={[
+                styles.issueSev,
+                i.severity === "critical" && { color: C.danger },
+              ]}
+            >
+              {humanizeSeverity(i.severity)}
+            </Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.issueType}>{i.type}</Text>
+              <Text style={styles.issueType}>{humanizeIssueType(i.type)}</Text>
               <Text style={styles.issueDetail}>{i.detail}</Text>
             </View>
           </View>
@@ -756,7 +804,7 @@ function LaudoBody({
           onPress={onReset}
           style={[styles.secondaryBtn, { marginTop: 18 }]}
         >
-          <Text style={styles.secondaryBtnText}>Voltar e revisar</Text>
+          <Text style={styles.secondaryBtnText}>Voltar e revisar achados</Text>
         </Pressable>
       </View>
     );
