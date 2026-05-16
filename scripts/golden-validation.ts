@@ -25,9 +25,28 @@ import fs from "node:fs";
 import path from "node:path";
 import OpenAI from "openai";
 
-// Rodamos como bundle CJS (esbuild) — usa cwd() como raiz do monorepo
-// (pnpm é executado da raiz por convenção do package.json).
+// Prompts REAIS do pipeline (importa do api package). esbuild --bundle
+// resolve esses imports — assim o harness testa exatamente o que o
+// production usa, não um prompt simplificado.
+import {
+  GLOBAL_RULES_BLOCK,
+  GLOBAL_PROHIBITIONS,
+  buildCoTInstruction,
+} from "../apps/api/src/server/prompts/global";
+import { ABDOMEN_TOTAL_CONTRACT, ABDOMEN_TOTAL_MODELO_BASE } from "../apps/api/src/server/prompts/contracts/ABDOMEN_TOTAL";
+import { MAMARIA_CONTRACT } from "../apps/api/src/server/prompts/contracts/MAMARIA";
+import { TIREOIDE_CONTRACT } from "../apps/api/src/server/prompts/contracts/TIREOIDE";
+
 const ROOT = process.cwd();
+
+const CONTRACT_BY_CAT: Record<string, string> = {
+  ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT,
+  MAMARIA: MAMARIA_CONTRACT,
+  TIREOIDE: TIREOIDE_CONTRACT,
+};
+const MODELO_BASE_BY_CAT: Record<string, string | undefined> = {
+  ABDOMEN_TOTAL: ABDOMEN_TOTAL_MODELO_BASE,
+};
 
 // ─── CLI args ─────────────────────────────────────────────────────
 const args = Object.fromEntries(
@@ -152,16 +171,45 @@ async function runWriter(
   categoria: string,
   categoriaLabel: string,
 ): Promise<string> {
-  const sys = `Você é o gerador de laudos do LaudoUSG. Categoria: ${categoriaLabel} (${categoria}). Reproduza fielmente os achados, medidas e classificações do JSON. Use português técnico ABR. Estrutura padrão: título em caixa alta, ANÁLISE (corpo do laudo com seções por órgão), OPINIÃO/CONCLUSÃO. NÃO calcule BI-RADS/TI-RADS — só reproduza. NÃO invente achados.`;
+  const contract = CONTRACT_BY_CAT[categoria];
+  const modeloBase = MODELO_BASE_BY_CAT[categoria];
+
+  // System message com a MESMA ordem do production (buildSystemMessage):
+  //   1. categoryRules (contract da categoria)
+  //   2. GLOBAL_RULES_BLOCK
+  //   3. [futuro: subspecialty, style overlay]
+  //   4. RAG (aqui: só modelo-base como fallback se existir)
+  //   5. GLOBAL_PROHIBITIONS
+  //   6. buildCoTInstruction
+  const sections: string[] = [];
+  if (contract) sections.push(contract);
+  sections.push(GLOBAL_RULES_BLOCK);
+  if (modeloBase) {
+    sections.push(
+      "BIBLIOTECA RAG VALIDADA (referência ativa para este caso):\n\n## MODELO\n### Modelo-base padrão\n" +
+        modeloBase,
+    );
+  }
+  sections.push(GLOBAL_PROHIBITIONS);
+  sections.push(buildCoTInstruction(categoriaLabel));
+
+  const system = sections.join("\n\n");
+
+  const userMessage = [
+    "=== ACHADOS CLÍNICOS (estruturados) ===",
+    "```json",
+    JSON.stringify(structured, null, 2),
+    "```",
+    "",
+    "Retorne apenas o laudo técnico completo.",
+  ].join("\n");
+
   const res = await openai.chat.completions.create({
     model: MODEL,
     temperature: 0.2,
     messages: [
-      { role: "system", content: sys },
-      {
-        role: "user",
-        content: `Achados estruturados:\n\`\`\`json\n${JSON.stringify(structured, null, 2)}\n\`\`\`\n\nRetorne SOMENTE o laudo final.`,
-      },
+      { role: "system", content: system },
+      { role: "user", content: userMessage },
     ],
   });
   return res.choices[0]?.message?.content?.trim() ?? "";
