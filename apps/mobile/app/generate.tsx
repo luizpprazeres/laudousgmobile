@@ -46,6 +46,8 @@ import {
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
 const SNIPPETS: Record<string, string> = {
+  dum:
+    "IG pela DUM (DUM: __/__/____): __ semanas e __ dias.\nDPP: __/__/____.\n\n",
   usg:
     "IG pela 1ª USG (8s2d em 03/12/2025): 28 semanas e 6 dias.\nDPP corrigida: 17/07/2026.\n\n",
   frase:
@@ -301,6 +303,14 @@ export default function GenerateScreen() {
               hasContent={hasContent}
               onChangeText={(t) => dispatch({ type: "EDIT_TEXT", text: t })}
               onSnippet={insertSnippet}
+              onUnimplemented={(label) =>
+                setNotice({
+                  severity: "info",
+                  title: `${label} em desenvolvimento`,
+                  message:
+                    "Essa opção chega em breve — vai permitir reaproveitar templates e atalhos personalizados.",
+                })
+              }
               editable={
                 state.kind === "idle" ||
                 state.kind === "ready" ||
@@ -499,25 +509,73 @@ type AchadosProps = {
   text: string;
   hasContent: boolean;
   onChangeText: (t: string) => void;
-  onSnippet: (key: "usg" | "frase") => void;
+  onSnippet: (key: "dum" | "usg" | "frase") => void;
+  onUnimplemented: (label: string) => void;
   editable: boolean;
   cat: Category;
 };
+
+type QuickAction = {
+  key: string;
+  label: string;
+  onPress: () => void;
+};
+
+function buildQuickActions(
+  catId: string,
+  onSnippet: (key: "dum" | "usg" | "frase") => void,
+  onUnimplemented: (label: string) => void,
+): QuickAction[] {
+  if (isObstetrica(catId)) {
+    return [
+      { key: "dum", label: "IG pela DUM", onPress: () => onSnippet("dum") },
+      { key: "usg", label: "IG pela 1ª USG", onPress: () => onSnippet("usg") },
+      { key: "info", label: "Informações", onPress: () => onUnimplemented("Informações") },
+      { key: "frases", label: "Frases salvas", onPress: () => onUnimplemented("Frases salvas") },
+    ];
+  }
+  return [
+    { key: "frases", label: "Frases salvas", onPress: () => onUnimplemented("Frases salvas") },
+  ];
+}
 
 function AchadosBody({
   text,
   hasContent,
   onChangeText,
   onSnippet,
+  onUnimplemented,
   editable,
   cat,
 }: AchadosProps) {
-  // Bug fix crítico: o TextInput PRECISA estar sempre presente, antes era
-  // condicional ao hasContent → tela vazia ficava só com Suggestions e
-  // o médico não conseguia digitar livre. Agora textarea sempre disponível,
-  // com placeholder amigável; Suggestions ficam abaixo só quando vazio.
+  const quickActions = buildQuickActions(cat.id, onSnippet, onUnimplemented);
   return (
     <View>
+      {/* Quick actions row: chips clicáveis com texto sublinhado, mesma
+          tipografia do placeholder. Customizado por categoria (obstétricas
+          ganham IG pela DUM / 1ª USG / Informações). ScrollView horizontal
+          pra acomodar quando lista cresce sem quebrar layout. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.quickRow}
+      >
+        {quickActions.map((qa, i) => (
+          <Pressable
+            key={qa.key}
+            onPress={qa.onPress}
+            disabled={!editable}
+            style={({ pressed }) => [
+              i > 0 && { marginLeft: 18 },
+              pressed && { opacity: 0.5 },
+            ]}
+            hitSlop={6}
+          >
+            <Text style={styles.quickLink}>{qa.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
       <TextInput
         value={text}
         onChangeText={onChangeText}
@@ -538,17 +596,6 @@ function AchadosBody({
           <Text style={[styles.emptySub, { marginTop: 14 }]}>
             A IA organiza no padrão de {cat.label}.
           </Text>
-
-          {/* IG pela 1ª USG só faz sentido em categorias obstétricas.
-              Esconde nas demais pra não confundir o médico. */}
-          {isObstetrica(cat.id) ? (
-            <Suggestion
-              icon={<Ruler size={18} color={C.textSec} />}
-              label="IG pela 1ª USG (exemplo)"
-              hint="inserir"
-              onPress={() => onSnippet("usg")}
-            />
-          ) : null}
           <Text style={styles.emptyHint}>
             Toque o microfone para ditar ou comece a digitar acima.
           </Text>
@@ -873,6 +920,20 @@ const styles = StyleSheet.create({
     marginTop: 32,
     fontStyle: "italic",
     fontFamily: FONT.body,
+  },
+  // Linha horizontal de quick actions acima do textarea.
+  quickRow: {
+    paddingBottom: 14,
+    alignItems: "center",
+  },
+  // Mesma tipografia do placeholder do editor (fontSize 17, FONT.body, cor
+  // mute) só que com sublinhado pra deixar claro que é clicável.
+  quickLink: {
+    fontSize: 17,
+    lineHeight: 26,
+    color: C.textMute,
+    fontFamily: FONT.body,
+    textDecorationLine: "underline",
   },
   editor: {
     fontSize: 17,
