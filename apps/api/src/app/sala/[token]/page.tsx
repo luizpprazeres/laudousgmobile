@@ -9,9 +9,12 @@ type SalaReport = {
   createdAt: string;
 };
 
+type InvalidReason = "invalid_format" | "not_found" | "revoked" | "expired";
+
 type SalaResponse = {
   tokenValid: boolean;
   report: SalaReport | null;
+  reason?: InvalidReason;
 };
 
 const POLL_INTERVAL_MS = 5000;
@@ -21,6 +24,7 @@ export default function SalaTokenPage() {
   const token = (params?.token ?? "").toUpperCase();
 
   const [tokenValid, setTokenValid] = useState(true);
+  const [invalidReason, setInvalidReason] = useState<InvalidReason | null>(null);
   const [report, setReport] = useState<SalaReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
@@ -37,6 +41,7 @@ export default function SalaTokenPage() {
       setLoading(false);
       setLastFetch(new Date());
       setTokenValid(data.tokenValid);
+      setInvalidReason(data.tokenValid ? null : data.reason ?? "not_found");
       if (data.report) {
         const sig = data.report.outputText + (data.report.createdAt ?? "");
         if (lastSignatureRef.current && lastSignatureRef.current !== sig) {
@@ -75,6 +80,7 @@ export default function SalaTokenPage() {
       <Shell
         loading={loading}
         tokenValid={tokenValid}
+        invalidReason={invalidReason}
         report={report}
         secondsSinceFetch={secondsSinceFetch}
         updatedFlash={updatedFlash}
@@ -88,12 +94,14 @@ export default function SalaTokenPage() {
 function Shell({
   loading,
   tokenValid,
+  invalidReason,
   report,
   secondsSinceFetch,
   updatedFlash,
 }: {
   loading: boolean;
   tokenValid: boolean;
+  invalidReason: InvalidReason | null;
   report: SalaReport | null;
   secondsSinceFetch: number | null;
   updatedFlash: number;
@@ -118,7 +126,7 @@ function Shell({
       {loading ? (
         <LoadingState />
       ) : !tokenValid ? (
-        <RevokedState />
+        <InvalidState reason={invalidReason ?? "not_found"} />
       ) : !report ? (
         <WaitingState />
       ) : (
@@ -154,24 +162,65 @@ function LoadingState() {
   );
 }
 
-function RevokedState() {
+function InvalidState({ reason }: { reason: InvalidReason }) {
+  const copy = invalidCopy(reason);
   return (
     <section className="stage">
       <div className="card card--centered">
         <RevokedIllustration />
         <h1 className="state-title">
-          Sessão <em>encerrada</em>.
+          {copy.titlePrefix} <em>{copy.titleAccent}</em>.
         </h1>
-        <p className="state-body">
-          O médico revogou esta sessão ou o link expirou. Peça um código novo
-          pra acompanhar os próximos laudos do turno.
-        </p>
+        <p className="state-body">{copy.body}</p>
         <a href="/sala" className="ghost-button">
-          ← Inserir outro código
+          ← {copy.cta}
         </a>
       </div>
     </section>
   );
+}
+
+function invalidCopy(reason: InvalidReason): {
+  titlePrefix: string;
+  titleAccent: string;
+  body: string;
+  cta: string;
+} {
+  switch (reason) {
+    case "invalid_format":
+      return {
+        titlePrefix: "Código",
+        titleAccent: "inválido",
+        body:
+          "O código tem 6 caracteres e usa apenas letras maiúsculas (sem O, I, L) e números (sem 0, 1). Confira no celular do médico e digite de novo.",
+        cta: "Digitar de novo",
+      };
+    case "revoked":
+      return {
+        titlePrefix: "Sessão",
+        titleAccent: "revogada",
+        body:
+          "O médico encerrou esta sala. Peça o código novo do turno atual pra continuar acompanhando.",
+        cta: "Inserir outro código",
+      };
+    case "expired":
+      return {
+        titlePrefix: "Código",
+        titleAccent: "expirado",
+        body:
+          "Este código passou da validade. Peça pro médico gerar um código novo no aplicativo.",
+        cta: "Inserir outro código",
+      };
+    case "not_found":
+    default:
+      return {
+        titlePrefix: "Código",
+        titleAccent: "não encontrado",
+        body:
+          "Nenhuma sala ativa com esse código. Confira no celular do médico — é fácil confundir 8 com B, 6 com G, ou letras de mais.",
+        cta: "Digitar de novo",
+      };
+  }
 }
 
 function WaitingState() {

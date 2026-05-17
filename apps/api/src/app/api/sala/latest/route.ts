@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
   const code = raw.replace(/[\s\-_]/g, "").toUpperCase();
   if (!/^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/.test(code)) {
-    return json({ tokenValid: false, report: null });
+    return json({ tokenValid: false, report: null, reason: "invalid_format" });
   }
 
   const service = getServiceClient();
@@ -34,14 +34,17 @@ export async function GET(req: Request) {
   }
 
   if (!room) {
-    return json({ tokenValid: false, report: null });
+    return json({ tokenValid: false, report: null, reason: "not_found" });
   }
 
   const expiresAt = room.pairing_code_expires_at
     ? new Date(room.pairing_code_expires_at as string).getTime()
     : 0;
-  if (!room.active || room.revoked_at || expiresAt < Date.now()) {
-    return json({ tokenValid: false, report: null });
+  if (!room.active || room.revoked_at) {
+    return json({ tokenValid: false, report: null, reason: "revoked" });
+  }
+  if (expiresAt < Date.now()) {
+    return json({ tokenValid: false, report: null, reason: "expired" });
   }
 
   const { data: report, error: reportErr } = await service
