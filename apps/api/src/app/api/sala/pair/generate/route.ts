@@ -5,17 +5,14 @@ export { OPTIONS } from "@/server/cors";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PAIRING_CODE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — paridade com laudousg.com
+const CODE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
 
 /**
  * POST /api/sala/pair/generate
  *
- * Médico autenticado (app iOS) gera um código curto de pareamento da Sala.
- * - Se há sala ativa, reusa.
- * - Gera código via RPC SECURITY DEFINER `generate_pairing_code()` (alfabeto sem 0/O/1/I/L).
- * - Atualiza pairing_code + pairing_code_expires_at em room_tokens.
- *
- * Retorna: { code, token, expiresAt, salaUrl }
+ * Modelo "código fixo": o pairing_code É o token. Cada médico tem 1 código
+ * por vez, válido por 365 dias, regenerável a qualquer momento via revoke.
+ * Se já existe row ativa com código não expirado, reusa.
  */
 export async function POST(req: Request) {
   const user = await verifyJwt(req);
@@ -25,7 +22,7 @@ export async function POST(req: Request) {
 
   const { data: existing, error: lookupErr } = await service
     .from("room_tokens")
-    .select("id, token")
+    .select("id, pairing_code, pairing_code_expires_at")
     .eq("user_id", user.id)
     .eq("active", true)
     .is("revoked_at", null)
@@ -38,52 +35,57 @@ export async function POST(req: Request) {
     return json({ error: "lookup_failed" }, 500);
   }
 
-  let tokenRowId: string;
-  let tokenValue: string;
+  let code: string;
+  let expiresAt: string;
+  const now = Date.now();
 
-  if (existing) {
-    tokenRowId = existing.id as string;
-    tokenValue = existing.token as string;
+  if (
+    existing?.pairing_code &&
+    existing.pairing_code_expires_at &&
+    new Date(existing.pairing_code_expires_at).getTime() > now
+  ) {
+    code = existing.pairing_code as string;
+    expiresAt = existing.pairing_code_expires_at as string;
   } else {
-    const { data: created, error: createErr } = await service
-      .from("room_tokens")
-      .insert({ user_id: user.id })
-      .select("id, token")
-      .single();
-    if (createErr || !created) {
-      console.error("[sala/pair/generate] insert falhou", createErr);
-      return json({ error: "create_failed" }, 500);
+    const { data: codeData, error: codeErr } = await service.rpc(
+      "generate_pairing_code",
+    );
+    if (codeErr || !codeData) {
+      console.error("[sala/pair/generate] RPC falhou", codeErr);
+      return json({ error: "code_generation_failed" }, 500);
     }
-    tokenRowId = created.id as string;
-    tokenValue = created.token as string;
-  }
+    code = codeData as string;
+    expiresAt = new Date(now + CODE_TTL_MS).toISOString();
 
-  const { data: codeData, error: codeErr } = await service.rpc(
-    "generate_pairing_code",
-  );
-  if (codeErr || !codeData) {
-    console.error("[sala/pair/generate] RPC falhou", codeErr);
-    return json({ error: "code_generation_failed" }, 500);
-  }
-
-  const code = codeData as string;
-  const expiresAt = new Date(Date.now() + PAIRING_CODE_TTL_MS).toISOString();
-
-  const { error: updateErr } = await service
-    .from("room_tokens")
-    .update({ pairing_code: code, pairing_code_expires_at: expiresAt })
-    .eq("id", tokenRowId);
-
-  if (updateErr) {
-    console.error("[sala/pair/generate] update falhou", updateErr);
-    return json({ error: "save_failed" }, 500);
+    if (existing) {
+      const { error: updateErr } = await service
+        .from("room_tokens")
+        .update({ pairing_code: code, pairing_code_expires_at: expiresAt })
+        .eq("id", existing.id);
+      if (updateErr) {
+        console.error("[sala/pair/generate] update falhou", updateErr);
+        return json({ error: "save_failed" }, 500);
+      }
+    } else {
+      const { error: insertErr } = await service
+        .from("room_tokens")
+        .insert({
+          user_id: user.id,
+          pairing_code: code,
+          pairing_code_expires_at: expiresAt,
+        });
+      if (insertErr) {
+        console.error("[sala/pair/generate] insert falhou", insertErr);
+        return json({ error: "create_failed" }, 500);
+      }
+    }
   }
 
   return json({
     code,
-    token: tokenValue,
+    token: code,
     expires_at: expiresAt,
-    sala_url: `https://laudousgmobile.vercel.app/sala/${tokenValue}`,
+    sala_url: `https://laudousgmobile.vercel.app/sala/${code}`,
     sala_short_url: "https://laudousgmobile.vercel.app/sala",
   });
 }

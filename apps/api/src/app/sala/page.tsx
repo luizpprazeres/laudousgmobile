@@ -65,19 +65,7 @@ export default function SalaIndexPage() {
     }
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch(`/api/sala/pair/redeem?code=${encodeURIComponent(code)}`);
-      const data = await res.json();
-      if (!res.ok || !data.token) {
-        setError("Código inválido ou expirado.");
-        setLoading(false);
-        return;
-      }
-      router.push(`/sala/${data.token}`);
-    } catch {
-      setError("Erro de conexão. Tente novamente.");
-      setLoading(false);
-    }
+    router.push(`/sala/${code}`);
   }
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 type SalaReport = {
   outputText: string;
@@ -15,16 +15,10 @@ type SalaResponse = {
 };
 
 const POLL_INTERVAL_MS = 5000;
-const PAIRING_CODE_REGEX = /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/;
-
-function looksLikePairingCode(raw: string): boolean {
-  return PAIRING_CODE_REGEX.test(raw.toUpperCase());
-}
 
 export default function SalaTokenPage() {
   const params = useParams<{ token: string }>();
-  const router = useRouter();
-  const rawToken = params?.token ?? "";
+  const token = (params?.token ?? "").toUpperCase();
 
   const [tokenValid, setTokenValid] = useState(true);
   const [report, setReport] = useState<SalaReport | null>(null);
@@ -32,46 +26,11 @@ export default function SalaTokenPage() {
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [tick, setTick] = useState(0);
   const [updatedFlash, setUpdatedFlash] = useState(0);
-  const [resolving, setResolving] = useState(looksLikePairingCode(rawToken));
   const lastSignatureRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!rawToken) return;
-    if (!looksLikePairingCode(rawToken)) {
-      setResolving(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const code = rawToken.toUpperCase();
-        const res = await fetch(`/api/sala/pair/redeem?code=${encodeURIComponent(code)}`, {
-          cache: "no-store",
-        });
-        const data = await res.json();
-        if (cancelled) return;
-        if (res.ok && typeof data?.token === "string" && data.token.length > 6) {
-          router.replace(`/sala/${data.token}`);
-        } else {
-          setTokenValid(false);
-          setLoading(false);
-          setResolving(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setLoading(false);
-          setResolving(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [rawToken, router]);
 
   async function fetchLatest() {
     try {
-      const res = await fetch(`/api/sala/latest?token=${encodeURIComponent(rawToken)}`, {
+      const res = await fetch(`/api/sala/latest?token=${encodeURIComponent(token)}`, {
         cache: "no-store",
       });
       const data = (await res.json()) as SalaResponse;
@@ -94,8 +53,7 @@ export default function SalaTokenPage() {
   }
 
   useEffect(() => {
-    if (!rawToken) return;
-    if (resolving) return;
+    if (!token) return;
     fetchLatest();
     const intId = setInterval(fetchLatest, POLL_INTERVAL_MS);
     const tickId = setInterval(() => setTick((t) => t + 1), 1000);
@@ -104,7 +62,7 @@ export default function SalaTokenPage() {
       clearInterval(tickId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawToken, resolving]);
+  }, [token]);
 
   const secondsSinceFetch = useMemo(() => {
     void tick;
@@ -115,7 +73,7 @@ export default function SalaTokenPage() {
   return (
     <>
       <Shell
-        loading={loading || resolving}
+        loading={loading}
         tokenValid={tokenValid}
         report={report}
         secondsSinceFetch={secondsSinceFetch}
