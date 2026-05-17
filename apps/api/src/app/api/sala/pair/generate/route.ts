@@ -83,8 +83,8 @@ export async function POST(req: Request) {
     code,
     token: tokenValue,
     expires_at: expiresAt,
-    sala_url: `https://laudousg.com/sala/${tokenValue}`,
-    sala_short_url: "https://laudousg.com/sala",
+    sala_url: `https://laudousgmobile.vercel.app/sala/${tokenValue}`,
+    sala_short_url: "https://laudousgmobile.vercel.app/sala",
   });
 }
 
