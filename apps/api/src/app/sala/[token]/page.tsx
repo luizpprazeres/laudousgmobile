@@ -538,7 +538,7 @@ function RevokedIllustration() {
 
 function GlobalStyles() {
   return (
-    <style jsx global>{`
+    <style dangerouslySetInnerHTML={{ __html: `
       @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap");
 
       :root {
@@ -585,13 +585,13 @@ function GlobalStyles() {
         font-feature-settings: "ss01", "cv01";
         -webkit-font-smoothing: antialiased;
       }
-    `}</style>
+    `}} />
   );
 }
 
 function ScopedStyles() {
   return (
-    <style jsx>{`
+    <style dangerouslySetInnerHTML={{ __html: `
       .page {
         min-height: 100vh;
         display: flex;
@@ -1118,6 +1118,6 @@ function ScopedStyles() {
         .paper-pages { grid-template-columns: 1fr !important; gap: 0 !important; }
         .paper-flow { columns: 1 !important; padding: 32px 24px !important; }
       }
-    `}</style>
+    `}} />
   );
 }
