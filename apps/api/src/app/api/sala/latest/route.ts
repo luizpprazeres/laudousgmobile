@@ -47,38 +47,45 @@ export async function GET(req: Request) {
     return json({ tokenValid: false, report: null, reason: "expired" });
   }
 
-  const { data: report, error: reportErr } = await service
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const { data: reports, error: reportErr } = await service
     .from("reports")
     .select("final_output, generated_output, category_code, created_at")
     .eq("user_id", room.user_id as string)
+    .gte("created_at", startOfDay.toISOString())
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(50);
 
   if (reportErr) {
     console.error("[sala/latest] report lookup falhou", reportErr);
-    return json({ tokenValid: true, report: null });
+    return json({ tokenValid: true, report: null, reportsToday: [] });
   }
 
-  if (!report) {
-    return json({ tokenValid: true, report: null });
-  }
+  const list = reports ?? [];
+  const latest = list[0];
+  const latestOutput = latest
+    ? (latest.final_output as string | null) ??
+      (latest.generated_output as string | null)
+    : null;
 
-  const output =
-    (report.final_output as string | null) ??
-    (report.generated_output as string | null);
-
-  if (!output) {
-    return json({ tokenValid: true, report: null });
-  }
+  const reportsToday = list.map((r) => ({
+    category: r.category_code as string | null,
+    createdAt: r.created_at as string,
+  }));
 
   return json({
     tokenValid: true,
-    report: {
-      outputText: output,
-      category: report.category_code as string | null,
-      createdAt: report.created_at as string,
-    },
+    report:
+      latest && latestOutput
+        ? {
+            outputText: latestOutput,
+            category: latest.category_code as string | null,
+            createdAt: latest.created_at as string,
+          }
+        : null,
+    reportsToday,
   });
 }
 
