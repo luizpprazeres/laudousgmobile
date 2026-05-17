@@ -4,15 +4,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 type SalaReport = {
+  id: string;
   outputText: string;
   category: string | null;
   createdAt: string;
 };
 
 type TimelineEntry = {
+  id: string;
   category: string | null;
   createdAt: string;
 };
+
+type Theme = "light" | "dark";
+const HIDDEN_IDS_KEY = "sala-hidden-ids";
+const THEME_KEY = "sala-theme";
+const HIGHLIGHT_KEY = "sala-highlight";
 
 type InvalidReason = "invalid_format" | "not_found" | "revoked" | "expired";
 
@@ -37,7 +44,53 @@ export default function SalaTokenPage() {
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [tick, setTick] = useState(0);
   const [updatedFlash, setUpdatedFlash] = useState(0);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  const [theme, setTheme] = useState<Theme>("light");
+  const [highlightOn, setHighlightOn] = useState<boolean>(true);
+  const [copied, setCopied] = useState(false);
   const lastSignatureRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedTheme = localStorage.getItem(THEME_KEY);
+      if (storedTheme === "light" || storedTheme === "dark") {
+        setTheme(storedTheme);
+      } else if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+        setTheme("dark");
+      }
+      const storedHl = localStorage.getItem(HIGHLIGHT_KEY);
+      if (storedHl === "0") setHighlightOn(false);
+      const storedHidden = localStorage.getItem(HIDDEN_IDS_KEY);
+      if (storedHidden) {
+        const arr = JSON.parse(storedHidden) as string[];
+        setHiddenIds(new Set(arr));
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+  }, [theme]);
+
+  useEffect(() => {
+    try { localStorage.setItem(HIGHLIGHT_KEY, highlightOn ? "1" : "0"); } catch {}
+  }, [highlightOn]);
+
+  function hideEntry(id: string) {
+    setHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem(HIDDEN_IDS_KEY, JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  }
+
+  function toggleTheme() {
+    setTheme((t) => (t === "light" ? "dark" : "light"));
+  }
 
   async function fetchLatest() {
     try {
@@ -83,12 +136,20 @@ export default function SalaTokenPage() {
     return Math.max(0, Math.floor((Date.now() - lastFetch.getTime()) / 1000));
   }, [tick, lastFetch]);
 
-  const summary = useMemo(() => summarize(timeline), [timeline]);
+  const visibleTimeline = useMemo(
+    () => timeline.filter((e) => !hiddenIds.has(e.id)),
+    [timeline, hiddenIds],
+  );
+  const summary = useMemo(() => summarize(visibleTimeline), [visibleTimeline]);
+  const visibleReport = useMemo(
+    () => (report && !hiddenIds.has(report.id) ? report : null),
+    [report, hiddenIds],
+  );
   const status: "loading" | "invalid" | "waiting" | "live" = loading
     ? "loading"
     : !tokenValid
       ? "invalid"
-      : !report
+      : !visibleReport
         ? "waiting"
         : "live";
 
@@ -97,11 +158,23 @@ export default function SalaTokenPage() {
       <Shell
         status={status}
         invalidReason={invalidReason}
-        report={report}
-        timeline={timeline}
+        report={visibleReport}
+        timeline={visibleTimeline}
         summary={summary}
         secondsSinceFetch={secondsSinceFetch}
         updatedFlash={updatedFlash}
+        theme={theme}
+        highlightOn={highlightOn}
+        copied={copied}
+        onToggleTheme={toggleTheme}
+        onToggleHighlight={() => setHighlightOn((v) => !v)}
+        onCopy={async () => {
+          if (!visibleReport) return;
+          await copyReportToClipboard(visibleReport);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1800);
+        }}
+        onHide={hideEntry}
       />
       <GlobalStyles />
       <ScopedStyles />
@@ -117,6 +190,13 @@ function Shell({
   summary,
   secondsSinceFetch,
   updatedFlash,
+  theme,
+  highlightOn,
+  copied,
+  onToggleTheme,
+  onToggleHighlight,
+  onCopy,
+  onHide,
 }: {
   status: "loading" | "invalid" | "waiting" | "live";
   invalidReason: InvalidReason | null;
@@ -125,6 +205,13 @@ function Shell({
   summary: { label: string; count: number }[];
   secondsSinceFetch: number | null;
   updatedFlash: number;
+  theme: Theme;
+  highlightOn: boolean;
+  copied: boolean;
+  onToggleTheme: () => void;
+  onToggleHighlight: () => void;
+  onCopy: () => void;
+  onHide: (id: string) => void;
 }) {
   const pillState =
     status === "invalid" ? "off" : status === "live" ? "live" : "waiting";
@@ -145,9 +232,29 @@ function Shell({
           </span>
           <span className="brand-sub">Sala do Auxiliar</span>
         </div>
-        <div className="live-pill" data-state={pillState}>
-          <span className="live-dot" />
-          <span className="live-text">{pillLabel}</span>
+        <div className="topbar-actions">
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={onToggleTheme}
+            aria-label={theme === "light" ? "Ativar modo escuro" : "Ativar modo claro"}
+            title={theme === "light" ? "Modo escuro" : "Modo claro"}
+          >
+            {theme === "light" ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            )}
+          </button>
+          <div className="live-pill" data-state={pillState}>
+            <span className="live-dot" />
+            <span className="live-text">{pillLabel}</span>
+          </div>
         </div>
       </header>
 
@@ -177,7 +284,7 @@ function Shell({
                   const isLatest = i === 0;
                   return (
                     <li
-                      key={`${entry.createdAt}-${i}`}
+                      key={entry.id}
                       className={`timeline-item ${isLatest ? "is-latest" : ""}`}
                     >
                       <span className="timeline-time">
@@ -186,9 +293,15 @@ function Shell({
                       <span className="timeline-label">
                         {prettyCategory(entry.category ?? "")}
                       </span>
-                      {isLatest && status === "live" && (
-                        <span className="timeline-dot" />
-                      )}
+                      <button
+                        type="button"
+                        className="timeline-x"
+                        onClick={() => onHide(entry.id)}
+                        aria-label="Ocultar deste laudo da sala"
+                        title="Ocultar"
+                      >
+                        ×
+                      </button>
                     </li>
                   );
                 })}
@@ -226,6 +339,10 @@ function Shell({
               report={report}
               secondsSinceFetch={secondsSinceFetch}
               updatedFlash={updatedFlash}
+              highlightOn={highlightOn}
+              copied={copied}
+              onToggleHighlight={onToggleHighlight}
+              onCopy={onCopy}
             />
           )}
         </section>
@@ -343,10 +460,18 @@ function ReportView({
   report,
   secondsSinceFetch,
   updatedFlash,
+  highlightOn,
+  copied,
+  onToggleHighlight,
+  onCopy,
 }: {
   report: SalaReport;
   secondsSinceFetch: number | null;
   updatedFlash: number;
+  highlightOn: boolean;
+  copied: boolean;
+  onToggleHighlight: () => void;
+  onCopy: () => void;
 }) {
   const { heading, body } = useMemo(
     () => splitHeading(report.outputText),
@@ -365,21 +490,52 @@ function ReportView({
 
   return (
     <div key={updatedFlash} className="report-stage report-anim">
+      <div className="report-toolbar">
+        <div className="report-toolbar-meta">
+          {report.category && (
+            <span className="badge">{prettyCategory(report.category)}</span>
+          )}
+          <time className="meta-time">{formatStamp(report.createdAt)}</time>
+        </div>
+        <div className="report-toolbar-actions">
+          <button
+            type="button"
+            className={`tool-btn ${highlightOn ? "is-on" : ""}`}
+            onClick={onToggleHighlight}
+            aria-pressed={highlightOn}
+            title="Destacar títulos e seções"
+          >
+            <span className="tool-icon">H</span>
+            <span className="tool-label">Destacar</span>
+          </button>
+          <button
+            type="button"
+            className={`tool-btn ${copied ? "is-copied" : ""}`}
+            onClick={onCopy}
+            title="Copiar laudo mantendo formatação"
+          >
+            {copied ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            )}
+            <span className="tool-label">{copied ? "Copiado" : "Copiar"}</span>
+          </button>
+        </div>
+      </div>
       <article className="paper-spread" data-density={density}>
         <div className="paper-pages" aria-hidden="true">
           <div className="paper-page" />
           <div className="paper-page" />
         </div>
         <div className="paper-flow">
-          <div className="meta-line">
-            {report.category && (
-              <span className="badge">{prettyCategory(report.category)}</span>
-            )}
-            <span className="meta-sep">·</span>
-            <time className="meta-time">{formatStamp(report.createdAt)}</time>
-          </div>
           {heading && <h1 className="report-heading">{heading}</h1>}
-          <pre className="report-body">{body}</pre>
+          <div className="report-body">{renderBody(body, highlightOn)}</div>
         </div>
       </article>
       <div className="status-row">
@@ -398,6 +554,78 @@ function ReportView({
       </div>
     </div>
   );
+}
+
+function renderBody(text: string, highlightOn: boolean): React.ReactNode[] {
+  const lines = text.split(/\r?\n/);
+  return lines.map((line, i) => {
+    const trimmed = line.trim();
+    const isUpperHeading =
+      trimmed.length >= 4 &&
+      /^[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ0-9 \-():.,]+$/.test(trimmed) &&
+      /[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ]/.test(trimmed) &&
+      !/[a-záéíóúçãõâêôàèìòùü]/.test(trimmed);
+    const isLabeledHeading =
+      /^[A-ZÁÉÍÓÚÇÃÕ][A-Za-záéíóúçãõâêôàèìòùüÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ\s/-]{2,60}:$/.test(trimmed);
+    const isHeading = trimmed.length > 0 && (isUpperHeading || isLabeledHeading);
+    const cls = isHeading && highlightOn ? "doc-line doc-line--heading" : "doc-line";
+    return (
+      <span key={i} className={cls}>
+        {line}
+        {i < lines.length - 1 ? "\n" : ""}
+      </span>
+    );
+  });
+}
+
+async function copyReportToClipboard(report: SalaReport) {
+  const { heading, body } = splitHeading(report.outputText);
+  const headingHtml = heading
+    ? `<h2 style="font-family:Arial,sans-serif;font-size:14pt;font-weight:bold;margin:0 0 12px;">${escapeHtml(heading)}</h2>`
+    : "";
+  const bodyHtml = body
+    .split(/\r?\n/)
+    .map((line) => {
+      const trimmed = line.trim();
+      const isHeading =
+        trimmed.length >= 4 &&
+        /^[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ0-9 \-():.,]+$/.test(trimmed) &&
+        /[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ]/.test(trimmed) &&
+        !/[a-záéíóúçãõâêôàèìòùü]/.test(trimmed);
+      const isLabeled = /^[A-ZÁÉÍÓÚÇÃÕ][A-Za-záéíóúçãõâêôàèìòùüÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ\s/-]{2,60}:$/.test(trimmed);
+      if (trimmed === "") return "<br/>";
+      if (isHeading || isLabeled) {
+        return `<p style="font-family:Arial,sans-serif;font-size:11pt;font-weight:bold;margin:8px 0 4px;">${escapeHtml(line)}</p>`;
+      }
+      return `<p style="font-family:Arial,sans-serif;font-size:11pt;margin:0;">${escapeHtml(line)}</p>`;
+    })
+    .join("");
+  const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;">${headingHtml}${bodyHtml}</div>`;
+  const plain = (heading ? heading + "\n\n" : "") + body;
+
+  try {
+    if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([plain], { type: "text/plain" }),
+        }),
+      ]);
+      return;
+    }
+  } catch {}
+  try {
+    await navigator.clipboard.writeText(plain);
+  } catch {}
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function summarize(entries: TimelineEntry[]): { label: string; count: number }[] {
@@ -541,38 +769,42 @@ function GlobalStyles() {
     <style dangerouslySetInnerHTML={{ __html: `
       @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap");
 
-      :root {
-        --bg: #f7f6f1;
+      :root, [data-theme="light"] {
+        --bg: #f4f3ee;
         --ink: #15201a;
         --ink-soft: #5b675f;
         --ink-mute: #98a09a;
         --paper: #ffffff;
-        --line: #ece6d5;
-        --line-strong: #d9d2bd;
+        --paper-shade: #faf9f4;
+        --line: #e8e3d4;
+        --line-strong: #d6cfb8;
         --brand: #059669;
         --brand-deep: #047857;
         --brand-soft: #d1fae5;
         --brand-tint: #ecfdf5;
-        --amber: #b3801e;
-        --amber-soft: #fef3c7;
+        --amber: #a36c1f;
+        --amber-soft: #fde9b3;
+        --highlight: #fff5cc;
+        --highlight-ink: #6b4f00;
       }
 
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0d100e;
-          --ink: #f0ece2;
-          --ink-soft: #aab1a8;
-          --ink-mute: #6c736b;
-          --paper: #161a17;
-          --line: #232925;
-          --line-strong: #34403a;
-          --brand: #34d399;
-          --brand-deep: #6ee7b7;
-          --brand-soft: rgba(16, 185, 129, 0.18);
-          --brand-tint: rgba(16, 185, 129, 0.08);
-          --amber: #fbbf24;
-          --amber-soft: rgba(251, 191, 36, 0.15);
-        }
+      [data-theme="dark"] {
+        --bg: #0b0e0c;
+        --ink: #f0ece2;
+        --ink-soft: #b0b6ad;
+        --ink-mute: #6c736b;
+        --paper: #15191a;
+        --paper-shade: #1a1f1d;
+        --line: #232925;
+        --line-strong: #38423b;
+        --brand: #34d399;
+        --brand-deep: #6ee7b7;
+        --brand-soft: rgba(16, 185, 129, 0.22);
+        --brand-tint: rgba(16, 185, 129, 0.08);
+        --amber: #fbbf24;
+        --amber-soft: rgba(251, 191, 36, 0.18);
+        --highlight: rgba(251, 191, 36, 0.18);
+        --highlight-ink: #fbd97a;
       }
 
       * { box-sizing: border-box; }
@@ -632,6 +864,32 @@ function ScopedStyles() {
         border-left: 1px solid var(--line);
       }
 
+      .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .theme-toggle {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        color: var(--ink-soft);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+      }
+
+      .theme-toggle:hover {
+        color: var(--ink);
+        border-color: var(--line-strong);
+        background: var(--paper-shade);
+      }
+
       .live-pill {
         display: inline-flex;
         align-items: center;
@@ -680,20 +938,23 @@ function ScopedStyles() {
       .layout {
         flex: 1;
         display: grid;
-        grid-template-columns: 280px 1fr;
+        grid-template-columns: 256px 1fr;
         gap: 0;
-        max-width: 1280px;
         width: 100%;
-        margin: 0 auto;
       }
 
       .sidebar {
         border-right: 1px solid var(--line);
-        padding: 28px clamp(16px, 2vw, 24px);
+        padding: 28px clamp(16px, 1.4vw, 22px);
         display: flex;
         flex-direction: column;
         gap: 28px;
         background: var(--paper);
+        position: sticky;
+        top: 64px;
+        align-self: start;
+        max-height: calc(100vh - 64px);
+        overflow-y: auto;
       }
 
       .sidebar-section {
@@ -812,12 +1073,33 @@ function ScopedStyles() {
         flex: 1;
       }
 
-      .timeline-dot {
-        width: 6px;
-        height: 6px;
+      .timeline-x {
+        opacity: 0;
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--ink-mute);
+        width: 20px;
+        height: 20px;
         border-radius: 999px;
-        background: var(--brand);
-        animation: pulse-brand 2.2s ease-in-out infinite;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease;
+      }
+
+      .timeline-item:hover .timeline-x,
+      .timeline-x:focus-visible {
+        opacity: 1;
+      }
+
+      .timeline-x:hover {
+        color: #b3261e;
+        border-color: #b3261e;
+        background: rgba(179, 38, 30, 0.08);
       }
 
       .privacy-strip {
@@ -870,16 +1152,89 @@ function ScopedStyles() {
       }
 
       .report-stage {
-        max-width: 1120px;
+        max-width: 1320px;
         margin: 0 auto;
         width: 100%;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 14px;
       }
 
       .report-anim {
         animation: report-in 480ms cubic-bezier(0.2, 0.7, 0.2, 1);
+      }
+
+      .report-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding: 0 4px;
+      }
+
+      .report-toolbar-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+      }
+
+      .report-toolbar-actions {
+        display: inline-flex;
+        gap: 8px;
+      }
+
+      .tool-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 12px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink-soft);
+        font-family: "Inter Tight", sans-serif;
+        font-size: 12.5px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+      }
+
+      .tool-btn:hover {
+        color: var(--ink);
+        border-color: var(--line-strong);
+        background: var(--paper-shade);
+      }
+
+      .tool-btn.is-on {
+        color: var(--brand-deep);
+        border-color: var(--brand-soft);
+        background: var(--brand-tint);
+      }
+
+      .tool-btn.is-copied {
+        color: var(--brand-deep);
+        border-color: var(--brand-soft);
+        background: var(--brand-tint);
+      }
+
+      .tool-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border: 1px solid currentColor;
+        border-radius: 4px;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        font-size: 10px;
+        line-height: 1;
       }
 
       .paper-spread {
@@ -891,12 +1246,12 @@ function ScopedStyles() {
         inset: 0;
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: clamp(20px, 2vw, 32px);
+        gap: clamp(20px, 2vw, 36px);
         pointer-events: none;
       }
 
       .paper-spread[data-density="short"] {
-        max-width: 560px;
+        max-width: 640px;
         margin: 0 auto;
       }
       .paper-spread[data-density="short"] .paper-pages {
@@ -905,37 +1260,39 @@ function ScopedStyles() {
       }
       .paper-spread[data-density="short"] .paper-flow {
         columns: 1;
-        padding: clamp(36px, 4vw, 56px) clamp(32px, 4vw, 56px);
+        padding: clamp(56px, 6vw, 80px) clamp(56px, 6vw, 88px);
       }
 
       .paper-page {
         background: var(--paper);
         border: 1px solid var(--line);
-        border-radius: 6px;
+        border-radius: 4px;
         box-shadow:
-          0 1px 0 rgba(255, 255, 255, 0.8) inset,
-          0 22px 50px -28px rgba(15, 25, 18, 0.18),
-          0 8px 20px -14px rgba(15, 25, 18, 0.08);
+          0 1px 0 rgba(255, 255, 255, 0.6) inset,
+          0 28px 60px -32px rgba(15, 25, 18, 0.22),
+          0 10px 24px -16px rgba(15, 25, 18, 0.08);
+      }
+
+      [data-theme="dark"] .paper-page {
+        box-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.04) inset,
+          0 28px 60px -32px rgba(0, 0, 0, 0.5);
       }
 
       .paper-flow {
         position: relative;
         z-index: 1;
         columns: 2;
-        column-gap: clamp(56px, 6vw, 88px);
-        padding: clamp(40px, 4vw, 56px) clamp(36px, 4vw, 56px);
-        font-size: 14px;
-        line-height: 1.62;
-      }
-
-      .paper-flow .meta-line {
-        column-span: all;
+        column-gap: clamp(64px, 7vw, 112px);
+        padding: clamp(64px, 6vw, 88px) clamp(56px, 6vw, 88px);
+        font-size: 12.5px;
+        line-height: 1.55;
       }
 
       .paper-flow .report-heading {
         column-span: all;
-        margin-top: 8px;
-        margin-bottom: 18px;
+        margin-top: 0;
+        margin-bottom: 22px;
         padding-bottom: 14px;
       }
 
@@ -1042,10 +1399,11 @@ function ScopedStyles() {
       .meta-time { font-variant-numeric: tabular-nums; }
 
       .report-heading {
-        font-weight: 600;
-        font-size: clamp(17px, 1.6vw, 20px);
+        font-weight: 700;
+        font-size: clamp(14px, 1.2vw, 17px);
         line-height: 1.22;
-        letter-spacing: -0.018em;
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
         color: var(--ink);
         margin: 0 0 12px;
         padding-bottom: 12px;
@@ -1061,6 +1419,20 @@ function ScopedStyles() {
         word-break: break-word;
         margin: 0;
         font-weight: 400;
+      }
+
+      .doc-line {
+        white-space: pre-wrap;
+      }
+
+      .doc-line--heading {
+        font-weight: 700;
+        color: var(--ink);
+        background: var(--highlight);
+        padding: 1px 6px;
+        border-radius: 3px;
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
       }
 
       .status-row {

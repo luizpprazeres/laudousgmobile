@@ -52,7 +52,7 @@ export async function GET(req: Request) {
 
   const { data: reports, error: reportErr } = await service
     .from("reports")
-    .select("final_output, generated_output, category_code, created_at")
+    .select("id, final_output, generated_output, category_code, created_at")
     .eq("user_id", room.user_id as string)
     .gte("created_at", startOfDay.toISOString())
     .order("created_at", { ascending: false })
@@ -71,6 +71,7 @@ export async function GET(req: Request) {
     : null;
 
   const reportsToday = list.map((r) => ({
+    id: r.id as string,
     category: r.category_code as string | null,
     createdAt: r.created_at as string,
   }));
@@ -80,6 +81,7 @@ export async function GET(req: Request) {
     report:
       latest && latestOutput
         ? {
+            id: latest.id as string,
             outputText: latestOutput,
             category: latest.category_code as string | null,
             createdAt: latest.created_at as string,
