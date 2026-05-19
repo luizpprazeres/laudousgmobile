@@ -36,6 +36,7 @@ import {
 import { ABDOMEN_TOTAL_CONTRACT, ABDOMEN_TOTAL_MODELO_BASE } from "../apps/api/src/server/prompts/contracts/ABDOMEN_TOTAL";
 import { MAMARIA_CONTRACT } from "../apps/api/src/server/prompts/contracts/MAMARIA";
 import { TIREOIDE_CONTRACT } from "../apps/api/src/server/prompts/contracts/TIREOIDE";
+import { DOPPLER_OBSTETRICO_CONTRACT } from "../apps/api/src/server/prompts/contracts/DOPPLER_OBSTETRICO";
 
 const ROOT = process.cwd();
 
@@ -43,6 +44,7 @@ const CONTRACT_BY_CAT: Record<string, string> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT,
   MAMARIA: MAMARIA_CONTRACT,
   TIREOIDE: TIREOIDE_CONTRACT,
+  DOPPLER_OBSTETRICO: DOPPLER_OBSTETRICO_CONTRACT,
 };
 const MODELO_BASE_BY_CAT: Record<string, string | undefined> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_MODELO_BASE,
@@ -60,9 +62,10 @@ const args = Object.fromEntries(
 );
 const SAMPLES = Number(args.samples ?? 5);
 const CATEGORY_FILTER = (args.category as string | undefined)?.toUpperCase();
+const UPDATE_BASELINE = args["update-baseline"] === "true";
 
 // ─── Categorias suportadas ────────────────────────────────────────
-type Category = "ABDOMEN_TOTAL" | "MAMARIA" | "TIREOIDE";
+type Category = "ABDOMEN_TOTAL" | "MAMARIA" | "TIREOIDE" | "DOPPLER_OBSTETRICO";
 const CATEGORIES: { id: Category; file: string; label: string }[] = [
   {
     id: "ABDOMEN_TOTAL",
@@ -78,6 +81,11 @@ const CATEGORIES: { id: Category; file: string; label: string }[] = [
     id: "TIREOIDE",
     file: "_extraction/from-laudousg-original/07-laudos-reais-anonimizados/tireoide_30d.md",
     label: "Tireoide",
+  },
+  {
+    id: "DOPPLER_OBSTETRICO",
+    file: "_extraction/from-laudousg-original/07-laudos-reais-anonimizados/doppler_obstetrico_30d.md",
+    label: "Doppler Obstétrico",
   },
 ];
 
@@ -99,7 +107,8 @@ function extractMeasures(t: string): string[] {
   const out = new Set<string>();
   for (const m of t.matchAll(MEASURE_RE)) {
     const value = m[1].replace(",", ".");
-    const unit = m[2].toLowerCase().replace("³", "3");
+    let unit = m[2].toLowerCase().replace("³", "3");
+    if (unit === "cm3") unit = "ml";
     out.add(`${value}${unit}`);
   }
   return [...out];
@@ -112,6 +121,24 @@ function extractRads(t: string): string[] {
     out.add(`${sys}:${m[2].toUpperCase()}`);
   }
   return [...out];
+}
+
+// Filtra legendas/tabelas explicativas. Se um sistema RADS aparece com 4+
+// valores consecutivos (ex: TIRADS:1,2,3,4,5), provavelmente é legenda no
+// rodapé do laudo gabarito, não classificação real do caso.
+function filterRadsLegend(rads: string[]): string[] {
+  const bySystem = new Map<string, Set<string>>();
+  for (const r of rads) {
+    const [sys, val] = r.split(":");
+    if (!bySystem.has(sys)) bySystem.set(sys, new Set());
+    bySystem.get(sys)!.add(val);
+  }
+  const out: string[] = [];
+  for (const [sys, vals] of bySystem) {
+    if (vals.size >= 4) continue;
+    for (const v of vals) out.push(`${sys}:${v}`);
+  }
+  return out;
 }
 
 function extractConclusion(t: string): string {
@@ -227,9 +254,11 @@ type SampleResult = {
   measuresPerdidas: string[];
   measuresInventadas: string[];
   radsGabarito: string[];
+  radsGabaritoFiltered: string[];
   radsGerado: string[];
   radsDivergente: boolean;
   conclusionMatch: boolean;
+  violations: string[];
   durationMs: number;
 };
 
@@ -251,11 +280,12 @@ function diff(
   );
 
   const radsGabarito = extractRads(laudoGabarito);
+  const radsGabaritoFiltered = filterRadsLegend(radsGabarito);
   const radsGerado = extractRads(laudoGerado);
   const radsDivergente =
-    radsGabarito.length !== radsGerado.length ||
-    radsGabarito.some((r) => !radsGerado.includes(r)) ||
-    radsGerado.some((r) => !radsGabarito.includes(r));
+    radsGabaritoFiltered.length !== radsGerado.length ||
+    radsGabaritoFiltered.some((r) => !radsGerado.includes(r)) ||
+    radsGerado.some((r) => !radsGabaritoFiltered.includes(r));
 
   // Conclusion match: simplista — texto da conclusão tem keyword principal
   const conclGab = extractConclusion(laudoGabarito).toLowerCase();
@@ -264,6 +294,8 @@ function diff(
     conclGab.length > 0 &&
     conclGen.length > 0 &&
     sharedKeywordRatio(conclGab, conclGen) >= 0.4;
+
+  const violations = runDeterministicChecks(laudoGerado, categoria);
 
   return {
     categoria,
@@ -276,12 +308,84 @@ function diff(
     measuresPerdidas,
     measuresInventadas,
     radsGabarito,
+    radsGabaritoFiltered,
     radsGerado,
     radsDivergente,
     conclusionMatch,
+    violations,
     durationMs,
   };
 }
+
+// ─── Checks determinísticos zero-IA (regras do vault) ─────────────
+// Regras documentadas em laugousg-vault/LaudoUSG/docs-projeto/
+// few-shots-por-categoria.md §Regras Globais.
+function runDeterministicChecks(laudo: string, categoria: Category): string[] {
+  const violations: string[] = [];
+  const lower = laudo.toLowerCase();
+
+  // Banned phrases (todas as categorias)
+  if (/em\s+\d+\s+fotos/i.test(laudo))
+    violations.push(`banned_phrase: "em XX fotos"`);
+  if (/biometr[ií]a\s+é\s+de/i.test(laudo) || /medida\s+é\s+de/i.test(laudo))
+    violations.push(`banned_phrase: "é de" (use "de")`);
+
+  // Mandatory sections — Obstétrico/Morfológico/Doppler-obs
+  const obstetricos: Category[] = []; // categorias atuais não cobrem obstétrico
+  if (obstetricos.includes(categoria)) {
+    const hasPrimeiraUsg = /primeira usg/i.test(laudo) || /\bdum\b/i.test(laudo);
+    if (!hasPrimeiraUsg)
+      violations.push(`mandatory_missing: "Primeira USG" ou "DUM"`);
+    if (!/coment[áa]rios/i.test(laudo))
+      violations.push(`mandatory_missing: "COMENTÁRIOS"`);
+    if (!/os seguintes aspectos/i.test(laudo))
+      violations.push(`mandatory_missing: "OS SEGUINTES ASPECTOS"`);
+  }
+
+  // Format rule — ABDOMEN_TOTAL conclusão usa "1." (com ponto), outras "1)"
+  const conclMatch = laudo.match(/CONCLUS[ÃA]O:?[\s\S]*$/i);
+  if (conclMatch) {
+    const concl = conclMatch[0];
+    const itemsParens = (concl.match(/^\s*\d+\)/gm) || []).length;
+    const itemsPonto = (concl.match(/^\s*\d+\./gm) || []).length;
+    if (categoria === "ABDOMEN_TOTAL" && itemsParens > 0 && itemsPonto === 0)
+      violations.push(`format: ABDOMEN_TOTAL conclusão deveria usar "1." (com ponto)`);
+    if (categoria !== "ABDOMEN_TOTAL" && itemsPonto > 0 && itemsParens === 0)
+      violations.push(`format: ${categoria} conclusão deveria usar "1)" (com parêntese)`);
+  }
+
+  // Mamária — BI-RADS só na conclusão (não no corpo)
+  if (categoria === "MAMARIA") {
+    const bodyEnd = laudo.search(/CONCLUS[ÃA]O/i);
+    if (bodyEnd > 0) {
+      const body = laudo.slice(0, bodyEnd);
+      if (/bi[\s-]?rads/i.test(body))
+        violations.push(`format: BI-RADS aparece no corpo (deveria só na conclusão)`);
+    }
+  }
+
+  return violations;
+}
+
+// Stopwords médicas verbosas que aparecem em estilos antigos mas não nos
+// modelos novos (ou vice-versa). Filtrar antes de calcular overlap reduz
+// falso positivo de divergência de estilo.
+// Lista conservadora — só conectivos puros + termos verbosos do estilo antigo.
+// NÃO inclui terminologia clinicamente relevante (preservada, habitual, achados,
+// evidência, presença, ausência, sinais, característica, compatível, limite, etc),
+// que pode ser sinal verdadeiro de equivalência clínica entre dois laudos.
+const CLINICAL_STOPWORDS = new Set([
+  // Conectivos puros
+  "como", "tambem", "ainda", "alem", "este", "esta", "estes", "estas",
+  "pelo", "pela", "pelos", "pelas", "para", "que", "ente",
+  // Cópulas verbosas
+  "sendo", "feito", "feita", "tem", "ter",
+  // Verbosidade do estilo antigo
+  "comumente", "classificacao", "ecografica", "ecograficas", "ecografico", "ecograficos",
+  "caracterizada", "caracterizado", "caracterizadas", "caracterizados",
+  "considerando", "considerar", "considerada", "considerado",
+  "relacionado", "relacionada", "relacionados", "relacionadas",
+]);
 
 function sharedKeywordRatio(a: string, b: string): number {
   const tokenize = (s: string) =>
@@ -292,7 +396,7 @@ function sharedKeywordRatio(a: string, b: string): number {
         .toLowerCase()
         .replace(/[^\w\s]/g, " ")
         .split(/\s+/)
-        .filter((w) => w.length >= 4),
+        .filter((w) => w.length >= 4 && !CLINICAL_STOPWORDS.has(w)),
     );
   const A = tokenize(a);
   const B = tokenize(b);
@@ -302,8 +406,100 @@ function sharedKeywordRatio(a: string, b: string): number {
   return shared / A.size;
 }
 
+// ─── Baseline (regressão entre runs) ──────────────────────────────
+const BASELINE_PATH = path.resolve(ROOT, "scripts/golden-baseline.json");
+
+type CategorySummary = {
+  samples: number;
+  medidas_ok_pct: number;
+  rads_ok_pct: number;
+  conclusao_ok_pct: number;
+  violations_total: number;
+};
+
+type Baseline = {
+  version: number;
+  generated_at: string;
+  model: string;
+  by_category: Record<string, CategorySummary>;
+};
+
+function summarizeResults(results: SampleResult[]): Baseline["by_category"] {
+  const byCat = new Map<Category, SampleResult[]>();
+  for (const r of results) {
+    if (!byCat.has(r.categoria)) byCat.set(r.categoria, []);
+    byCat.get(r.categoria)!.push(r);
+  }
+  const out: Baseline["by_category"] = {};
+  for (const [cat, group] of byCat) {
+    const n = group.length;
+    out[cat] = {
+      samples: n,
+      medidas_ok_pct: group.filter((r) => r.measuresPerdidas.length === 0).length / n,
+      rads_ok_pct: group.filter((r) => !r.radsDivergente).length / n,
+      conclusao_ok_pct: group.filter((r) => r.conclusionMatch).length / n,
+      violations_total: group.reduce((s, r) => s + r.violations.length, 0),
+    };
+  }
+  return out;
+}
+
+function loadBaseline(): Baseline | null {
+  if (!fs.existsSync(BASELINE_PATH)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8")) as Baseline;
+  } catch {
+    return null;
+  }
+}
+
+function saveBaseline(by_category: Baseline["by_category"]): void {
+  const baseline: Baseline = {
+    version: 1,
+    generated_at: new Date().toISOString(),
+    model: MODEL,
+    by_category,
+  };
+  fs.writeFileSync(BASELINE_PATH, JSON.stringify(baseline, null, 2));
+}
+
+function pct(n: number): string {
+  const sign = n >= 0 ? "+" : "";
+  return `${sign}${(n * 100).toFixed(0)}%`;
+}
+
+function compareToBaseline(
+  current: Baseline["by_category"],
+  baseline: Baseline,
+): string[] {
+  const regressions: string[] = [];
+  for (const [cat, currStats] of Object.entries(current)) {
+    const baseStats = baseline.by_category[cat];
+    if (!baseStats) {
+      regressions.push(`${cat}: nova categoria (sem baseline pra comparar)`);
+      continue;
+    }
+    const dM = currStats.medidas_ok_pct - baseStats.medidas_ok_pct;
+    const dR = currStats.rads_ok_pct - baseStats.rads_ok_pct;
+    const dC = currStats.conclusao_ok_pct - baseStats.conclusao_ok_pct;
+    const dV = currStats.violations_total - baseStats.violations_total;
+    if (dM < -0.1)
+      regressions.push(`${cat} medidas: ${pct(baseStats.medidas_ok_pct)} → ${pct(currStats.medidas_ok_pct)} (Δ ${pct(dM)})`);
+    if (dR < -0.1)
+      regressions.push(`${cat} RADS: ${pct(baseStats.rads_ok_pct)} → ${pct(currStats.rads_ok_pct)} (Δ ${pct(dR)})`);
+    if (dC < -0.1)
+      regressions.push(`${cat} conclusão: ${pct(baseStats.conclusao_ok_pct)} → ${pct(currStats.conclusao_ok_pct)} (Δ ${pct(dC)})`);
+    if (dV > 2)
+      regressions.push(`${cat} violations: ${baseStats.violations_total} → ${currStats.violations_total} (+${dV})`);
+  }
+  return regressions;
+}
+
 // ─── Report ───────────────────────────────────────────────────────
-function buildReport(results: SampleResult[]): string {
+function buildReport(
+  results: SampleResult[],
+  baseline: Baseline | null,
+): string {
   const lines: string[] = [];
   const now = new Date().toISOString();
   lines.push(`# Golden Validation Report — ${now}`);
@@ -321,15 +517,61 @@ function buildReport(results: SampleResult[]): string {
 
   lines.push("## 📊 Stats por categoria");
   lines.push("");
-  lines.push("| Categoria | N | Medidas OK | RADS OK | Conclusão OK |");
-  lines.push("|---|---|---|---|---|");
+  lines.push("| Categoria | N | Medidas OK | RADS OK | Conclusão OK | Violations |");
+  lines.push("|---|---|---|---|---|---|");
   for (const [cat, group] of byCat) {
     const measuresOk = group.filter((r) => r.measuresPerdidas.length === 0).length;
     const radsOk = group.filter((r) => !r.radsDivergente).length;
     const conclOk = group.filter((r) => r.conclusionMatch).length;
+    const violations = group.reduce((s, r) => s + r.violations.length, 0);
     lines.push(
-      `| ${cat} | ${group.length} | ${measuresOk}/${group.length} | ${radsOk}/${group.length} | ${conclOk}/${group.length} |`,
+      `| ${cat} | ${group.length} | ${measuresOk}/${group.length} | ${radsOk}/${group.length} | ${conclOk}/${group.length} | ${violations} |`,
     );
+  }
+  lines.push("");
+
+  // Regressões vs baseline
+  if (baseline) {
+    const currentSummary = summarizeResults(results);
+    const regressions = compareToBaseline(currentSummary, baseline);
+    lines.push("## 📈 Regressões vs baseline");
+    lines.push("");
+    lines.push(`**Baseline:** ${baseline.generated_at} (modelo \`${baseline.model}\`)`);
+    lines.push("");
+    if (regressions.length === 0) {
+      lines.push("Nenhuma regressão detectada (threshold: -10pp em métricas, +2 violations).");
+    } else {
+      for (const reg of regressions) lines.push(`- ${reg}`);
+    }
+    lines.push("");
+  } else {
+    lines.push("## 📈 Regressões vs baseline");
+    lines.push("");
+    lines.push("Nenhum baseline em `scripts/golden-baseline.json`. Rode com `--update-baseline` pra salvar esta run como baseline futuro.");
+    lines.push("");
+  }
+
+  // Regras violadas
+  const allViolations = results.flatMap((r) =>
+    r.violations.map((v) => ({ cat: r.categoria, idx: r.index, v })),
+  );
+  lines.push("## 🚨 Regras violadas (zero-IA)");
+  lines.push("");
+  if (allViolations.length === 0) {
+    lines.push("Nenhuma regra do vault violada nesta run.");
+  } else {
+    const byRule = new Map<string, Array<{ cat: Category; idx: number }>>();
+    for (const { cat, idx, v } of allViolations) {
+      const key = v.split(":")[0];
+      if (!byRule.has(key)) byRule.set(key, []);
+      byRule.get(key)!.push({ cat, idx });
+    }
+    lines.push("| Regra | Ocorrências | Casos |");
+    lines.push("|---|---|---|");
+    for (const [rule, cases] of byRule) {
+      const caseList = cases.map((c) => `${c.cat}#${c.idx}`).join(", ");
+      lines.push(`| \`${rule}\` | ${cases.length} | ${caseList} |`);
+    }
   }
   lines.push("");
 
@@ -349,6 +591,8 @@ function buildReport(results: SampleResult[]): string {
       );
     if (!r.conclusionMatch && extractConclusion(r.laudoGabarito).length > 0)
       issues.push(`**Conclusão fora:** keyword overlap < 40%`);
+    if (r.violations.length > 0)
+      issues.push(`**Regras violadas:** ${r.violations.join(", ")}`);
     if (issues.length === 0) continue;
     gapCount++;
     lines.push(`### ${r.categoria} #${r.index}`);
@@ -441,7 +685,8 @@ async function main() {
     }
   }
 
-  const report = buildReport(results);
+  const baseline = loadBaseline();
+  const report = buildReport(results, baseline);
   const outDir = path.resolve(ROOT, "scripts/.golden-reports");
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
   const outFile = path.join(
@@ -450,6 +695,14 @@ async function main() {
   );
   fs.writeFileSync(outFile, report);
   console.log(`\n✅ Relatório: ${path.relative(ROOT, outFile)}`);
+
+  if (UPDATE_BASELINE) {
+    const summary = summarizeResults(results);
+    saveBaseline(summary);
+    console.log(`✅ Baseline atualizado: ${path.relative(ROOT, BASELINE_PATH)}`);
+  } else if (!baseline) {
+    console.log(`ℹ️  Sem baseline. Pra salvar esta run como baseline: pnpm validate:golden --update-baseline=true`);
+  }
 }
 
 function shuffleAndTake<T>(arr: T[], n: number): T[] {

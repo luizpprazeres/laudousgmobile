@@ -55,3 +55,6 @@ web-build/
 # Inclui: prompts originais, modelos, regras, frases, few-shots,
 # laudos reais anonimizados de 30 dias.
 _extraction/
+
+# Golden validation outputs (por run, não persistem)
+scripts/.golden-reports/

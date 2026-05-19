@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "generated_at": "2026-05-18T23:54:01.794Z",
+  "model": "gpt-4.1-mini",
+  "by_category": {
+    "ABDOMEN_TOTAL": {
+      "samples": 3,
+      "medidas_ok_pct": 0.3333333333333333,
+      "rads_ok_pct": 0.6666666666666666,
+      "conclusao_ok_pct": 0,
+      "violations_total": 0
+    },
+    "MAMARIA": {
+      "samples": 3,
+      "medidas_ok_pct": 1,
+      "rads_ok_pct": 0.6666666666666666,
+      "conclusao_ok_pct": 0.3333333333333333,
+      "violations_total": 0
+    },
+    "TIREOIDE": {
+      "samples": 3,
+      "medidas_ok_pct": 0.3333333333333333,
+      "rads_ok_pct": 0.6666666666666666,
+      "conclusao_ok_pct": 0,
+      "violations_total": 0
+    }
+  }
+}
