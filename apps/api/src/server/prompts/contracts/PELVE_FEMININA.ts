@@ -61,3 +61,48 @@ REGRAS FINAIS:
 - Preencher apenas com dados fornecidos. Não inventar.
 - Não reescrever frases fixas. Não mudar estrutura.
 - Entregar somente o laudo final, sem explicações.`;
+
+/**
+ * Modelo-base PELVE_FEMININA = Modelo A (TA+TV) — VERBATIM de
+ * lib/categoryDefaults.ts:817-838. Caso normal. Posição uterina default:
+ * anteversão (regra 13 do contract).
+ */
+export const PELVE_FEMININA_MODELO_BASE = `ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga de forma, contorno e ecotextura normais.
+Útero em ____, medindo ____ x ____ x ____ cm.
+Endométrio medindo ____ cm de espessura.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.
+Ovário esquerdo medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.
+
+CONCLUSÃO:
+1) Bexiga ecograficamente normal.
+2) Útero de volume normal (____ cm³).
+3) O endométrio tem espessura normal para a fase do ciclo menstrual.
+4) Ovários ecograficamente normais (o direito com ____ cm³ e o esquerdo com ____ cm³), ambos contendo folículos.`;
+
+/**
+ * Modelo TV (transvaginal isolado) = Modelo B — VERBATIM de
+ * lib/categoryDefaults.ts:840-859. Sem bexiga (não avaliada).
+ */
+export const PELVE_FEMININA_MODELO_TV = `ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Útero em ____, medindo ____ x ____ x ____ cm.
+Endométrio medindo ____ cm de espessura.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.
+Ovário esquerdo medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.
+
+CONCLUSÃO:
+1) Útero de volume normal (____ cm³).
+2) O endométrio tem espessura normal para a fase do ciclo menstrual.
+3) Ovários ecograficamente normais (o direito com ____ cm³ e o esquerdo com ____ cm³), ambos contendo folículos.`;

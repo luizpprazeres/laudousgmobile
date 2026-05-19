@@ -85,3 +85,51 @@ PROIBIÇÕES
 - NUNCA inserir item adicional sobre peso quando percentil entre 10-95 inclusive.
 
 ENTREGA: somente o laudo final, sem explicações.`;
+
+/**
+ * Modelo-base padrão de DOPPLER_OBSTETRICO — bloco RAG kind=modelo, priority alta.
+ *
+ * Template VERBATIM de lib/categoryDefaults.ts:159-198 do legacy. Reproduzir
+ * exatamente, sem qualquer alteração estrutural ou textual, exceto nos campos
+ * variáveis (preenchidos pelos achados do médico) e nos marcadores
+ * {LINHA_LIQUIDO_AMNIOTICO} / {CONCLUSAO_LIQUIDO_AMNIOTICO} (expandidos pelas
+ * GLOBAL_RULES_BLOCK § LÍQUIDO AMNIÓTICO).
+ */
+export const DOPPLER_OBSTETRICO_MODELO_BASE = `ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação __________________, com dorso __________________.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ____ bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de ____ mm.
+Circunferência da cabeça (CC) de ____ mm.
+Circunferência abdominal (CA) de ____ mm.
+Comprimento do fêmur (CF) de ____ mm.
+Peso aproximado de ____ g (+- ____ g, percentil ____).
+
+Placenta de localização __________________, com ecotextura __________________, de acordo com a fase da gestação.
+{LINHA_LIQUIDO_AMNIOTICO}
+
+DOPPLERVELOCIMETRIA:
+Artéria umbilical: IP ____ (percentil ____).
+Artéria cerebral média: IP ____ (percentil ____).
+Artéria uterina direita: IP ____.
+Artéria uterina esquerda: IP ____.
+IP médio das artérias uterinas mede ____ (percentil ____).
+
+CONCLUSÃO:
+1) Gestação em torno de ____ semanas e ____ dias.
+{CONCLUSAO_LIQUIDO_AMNIOTICO}
+3) Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.
+4) Ausência de sinais de incisuras.
+5) Não há sinais de pré-centralização ou de centralização.
+6) Perfil hemodinâmico fetal é normal, menor de 1.0.`;

@@ -34,9 +34,11 @@ import {
   buildCoTInstruction,
 } from "../apps/api/src/server/prompts/global";
 import { ABDOMEN_TOTAL_CONTRACT, ABDOMEN_TOTAL_MODELO_BASE } from "../apps/api/src/server/prompts/contracts/ABDOMEN_TOTAL";
-import { MAMARIA_CONTRACT } from "../apps/api/src/server/prompts/contracts/MAMARIA";
-import { TIREOIDE_CONTRACT } from "../apps/api/src/server/prompts/contracts/TIREOIDE";
-import { DOPPLER_OBSTETRICO_CONTRACT } from "../apps/api/src/server/prompts/contracts/DOPPLER_OBSTETRICO";
+import { MAMARIA_CONTRACT, MAMARIA_MODELO_BASE } from "../apps/api/src/server/prompts/contracts/MAMARIA";
+import { TIREOIDE_CONTRACT, TIREOIDE_MODELO_BASE } from "../apps/api/src/server/prompts/contracts/TIREOIDE";
+import { OBSTETRICA_CONTRACT, OBSTETRICA_MODELO_PADRAO } from "../apps/api/src/server/prompts/contracts/OBSTETRICA";
+import { PELVE_FEMININA_CONTRACT, PELVE_FEMININA_MODELO_BASE } from "../apps/api/src/server/prompts/contracts/PELVE_FEMININA";
+import { DOPPLER_OBSTETRICO_CONTRACT, DOPPLER_OBSTETRICO_MODELO_BASE } from "../apps/api/src/server/prompts/contracts/DOPPLER_OBSTETRICO";
 
 const ROOT = process.cwd();
 
@@ -44,10 +46,17 @@ const CONTRACT_BY_CAT: Record<string, string> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT,
   MAMARIA: MAMARIA_CONTRACT,
   TIREOIDE: TIREOIDE_CONTRACT,
+  OBSTETRICA: OBSTETRICA_CONTRACT,
+  PELVE_FEMININA: PELVE_FEMININA_CONTRACT,
   DOPPLER_OBSTETRICO: DOPPLER_OBSTETRICO_CONTRACT,
 };
 const MODELO_BASE_BY_CAT: Record<string, string | undefined> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_MODELO_BASE,
+  OBSTETRICA: OBSTETRICA_MODELO_PADRAO,
+  MAMARIA: MAMARIA_MODELO_BASE,
+  TIREOIDE: TIREOIDE_MODELO_BASE,
+  PELVE_FEMININA: PELVE_FEMININA_MODELO_BASE,
+  DOPPLER_OBSTETRICO: DOPPLER_OBSTETRICO_MODELO_BASE,
 };
 
 // ─── CLI args ─────────────────────────────────────────────────────
@@ -65,7 +74,13 @@ const CATEGORY_FILTER = (args.category as string | undefined)?.toUpperCase();
 const UPDATE_BASELINE = args["update-baseline"] === "true";
 
 // ─── Categorias suportadas ────────────────────────────────────────
-type Category = "ABDOMEN_TOTAL" | "MAMARIA" | "TIREOIDE" | "DOPPLER_OBSTETRICO";
+type Category =
+  | "ABDOMEN_TOTAL"
+  | "MAMARIA"
+  | "TIREOIDE"
+  | "OBSTETRICA"
+  | "PELVE_FEMININA"
+  | "DOPPLER_OBSTETRICO";
 const CATEGORIES: { id: Category; file: string; label: string }[] = [
   {
     id: "ABDOMEN_TOTAL",
@@ -81,6 +96,16 @@ const CATEGORIES: { id: Category; file: string; label: string }[] = [
     id: "TIREOIDE",
     file: "_extraction/from-laudousg-original/07-laudos-reais-anonimizados/tireoide_30d.md",
     label: "Tireoide",
+  },
+  {
+    id: "OBSTETRICA",
+    file: "_extraction/from-laudousg-original/07-laudos-reais-anonimizados/obstetrica_30d.md",
+    label: "Obstétrica",
+  },
+  {
+    id: "PELVE_FEMININA",
+    file: "_extraction/from-laudousg-original/07-laudos-reais-anonimizados/pelve_feminina_30d.md",
+    label: "Pelve Feminina",
   },
   {
     id: "DOPPLER_OBSTETRICO",
@@ -114,29 +139,44 @@ function extractMeasures(t: string): string[] {
   return [...out];
 }
 
-function extractRads(t: string): string[] {
-  const out = new Set<string>();
+// Retorna ARRAY com duplicatas (não Set). Usado pra distinguir legenda
+// (cada valor aparece 1x) de classificação real (valor aparece 2+ vezes,
+// no corpo e na conclusão).
+function extractRadsRaw(t: string): string[] {
+  const out: string[] = [];
   for (const m of t.matchAll(RADS_RE)) {
     const sys = m[1].replace(/[- ]/g, "").toUpperCase();
-    out.add(`${sys}:${m[2].toUpperCase()}`);
+    out.push(`${sys}:${m[2].toUpperCase()}`);
   }
-  return [...out];
+  return out;
 }
 
-// Filtra legendas/tabelas explicativas. Se um sistema RADS aparece com 4+
-// valores consecutivos (ex: TIRADS:1,2,3,4,5), provavelmente é legenda no
-// rodapé do laudo gabarito, não classificação real do caso.
-function filterRadsLegend(rads: string[]): string[] {
-  const bySystem = new Map<string, Set<string>>();
-  for (const r of rads) {
+function extractRads(t: string): string[] {
+  return [...new Set(extractRadsRaw(t))];
+}
+
+// Filtra legendas/tabelas explicativas preservando classificação real.
+// Se um sistema RADS aparece com 4+ valores distintos no texto, há legenda.
+// Mas a classificação real do CASO é tipicamente mencionada 2+ vezes
+// (no corpo e na conclusão) — preservar quem aparece com count >= 2.
+// Valores que aparecem 1x só num sistema com >=4 distinct são descartados
+// como legenda explicativa.
+function filterRadsLegend(t: string): string[] {
+  const raw = extractRadsRaw(t);
+  const bySystem = new Map<string, Map<string, number>>();
+  for (const r of raw) {
     const [sys, val] = r.split(":");
-    if (!bySystem.has(sys)) bySystem.set(sys, new Set());
-    bySystem.get(sys)!.add(val);
+    if (!bySystem.has(sys)) bySystem.set(sys, new Map());
+    const counts = bySystem.get(sys)!;
+    counts.set(val, (counts.get(val) ?? 0) + 1);
   }
   const out: string[] = [];
-  for (const [sys, vals] of bySystem) {
-    if (vals.size >= 4) continue;
-    for (const v of vals) out.push(`${sys}:${v}`);
+  for (const [sys, counts] of bySystem) {
+    const hasLegend = counts.size >= 4;
+    for (const [val, count] of counts) {
+      if (hasLegend && count < 2) continue;
+      out.push(`${sys}:${val}`);
+    }
   }
   return out;
 }
@@ -147,7 +187,16 @@ function extractConclusion(t: string): string {
   const idx2 = lower.indexOf("conclusão");
   const pos = Math.max(idx, idx2);
   if (pos < 0) return "";
-  return t.slice(pos).slice(0, 800).trim();
+  let conclusion = t.slice(pos).slice(0, 800);
+  // Cortar rodapés (asterisco no início de linha = convenção de rodapé/disclaimer:
+  // ex tireoide "*ESCORE DE NÓDULO TIREOIDEANO..."). Asterisco DENTRO de palavra
+  // não é cortado (ex: "BI-RADS®").
+  const footerStart = conclusion.search(/\n\s*\*/);
+  if (footerStart > 0) conclusion = conclusion.slice(0, footerStart);
+  // Rodapé BI-RADS mamária ("Breast Imaging Reporting and Data System...")
+  const birads = conclusion.toLowerCase().indexOf("breast imaging");
+  if (birads > 0) conclusion = conclusion.slice(0, birads);
+  return conclusion.trim();
 }
 
 // ─── OpenAI calls ─────────────────────────────────────────────────
@@ -280,7 +329,7 @@ function diff(
   );
 
   const radsGabarito = extractRads(laudoGabarito);
-  const radsGabaritoFiltered = filterRadsLegend(radsGabarito);
+  const radsGabaritoFiltered = filterRadsLegend(laudoGabarito);
   const radsGerado = extractRads(laudoGerado);
   const radsDivergente =
     radsGabaritoFiltered.length !== radsGerado.length ||

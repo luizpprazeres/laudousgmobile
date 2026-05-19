@@ -127,3 +127,30 @@ Não reescreva frases fixas.
 Não mude a estrutura.
 Não produza explicações.
 Entregue somente o laudo final.`;
+
+/**
+ * Modelo-base MAMARIA (caso normal, com axilas avaliadas) — sintetizado das
+ * frases canônicas de lib/categoryDefaults.ts:3183-3411. Estrutura fixa do
+ * protocolo: TÍTULO + COMENTÁRIOS + OS SEGUINTES ASPECTOS + CONCLUSÃO +
+ * RODAPÉ BI-RADS.
+ *
+ * Título dinâmico: usar "ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES" quando
+ * axilas avaliadas; substituir por "ULTRASSONOGRAFIA DAS MAMAS" quando médico
+ * pedir título sem axilas.
+ */
+export const MAMARIA_MODELO_BASE = `ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.
+A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Mamas com ecotextura de fundo com aspecto heterogêneo.
+Não há sinais evidentes de imagem nodular sólida, cística ou complexa.
+Imagens ovais, com a periferia hipoecoica e o centro hiperecoico nas axilas.
+
+CONCLUSÃO:
+Mamas ecograficamente normais (Categoria BI-RADS® 1).
+Linfonodos axilares normais.
+
+Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).`;

@@ -76,3 +76,51 @@ PROIBIÇÕES ESPECÍFICAS — TIREOIDE:
 - NÃO incluir linfonodos normais na conclusão (apenas no corpo, com linha em branco antes)
 - NÃO calcular ou alterar a Nota Final Domingos nem o TI-RADS — reproduzir exatamente como informado
 - NÃO omitir o rodapé com créditos Domingos e ACR quando houver avaliação de nódulo`;
+
+/**
+ * Modelo-base TIREOIDE (sem Doppler, caso normal) — sintetizado das frases
+ * canônicas de lib/categoryDefaults.ts:699-757. O legacy não tem bloco
+ * TEMPLATE: explícito — tem regras + frases-modelo embutidas (3.1 LOBOS NORMAL +
+ * 4.1 VOLUME TOTAL + 4.4 RODAPÉ FIXO). Esta constante consolida o caso normal.
+ *
+ * Sem Doppler: NÃO citar "vascularização" na descrição dos lobos (regra 3.1).
+ */
+export const TIREOIDE_MODELO_BASE = `ULTRASSONOGRAFIA DE TIREOIDE
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 12 MHz, abrangendo todos os segmentos da glândula tireoide, como também a cadeia ganglionar cervical de I a V. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Lobo direito medindo ____ x ____ x ____ cm (volume de ____ ml), de ecogenicidade e ecotextura normais.
+Lobo esquerdo medindo ____ x ____ x ____ cm (volume de ____ ml), de ecogenicidade e ecotextura normais.
+Istmo medindo ____ x ____ x ____ cm (volume de ____ ml), de ecogenicidade e ecotextura normais.
+
+CONCLUSÃO:
+Tireoide de volume normal (____ ml), sem evidência de alteração ecotextural ou de imagem nodular.
+
+*ESCORE DE NÓDULO TIREOIDEANO - Domingos Correia da Rocha - Material baseado em 2588 nódulos puncionados - 2003 | Atualizada em 2013 - Total de 5134 nódulos puncionados
+ACR - American College of Radiology*`;
+
+/**
+ * Modelo TIREOIDE COM DOPPLER (variante usada quando médico informa Doppler).
+ * Diferença vs base: título com "COM DOPPLER", "vascularização normais" nos lobos,
+ * e inclusão das medidas de pico sistólico das artérias tireoidianas inferiores.
+ */
+export const TIREOIDE_MODELO_DOPPLER = `ULTRASSONOGRAFIA DE TIREOIDE COM DOPPLER
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 12 MHz, abrangendo todos os segmentos da glândula tireoide, como também a cadeia ganglionar cervical de I a V. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Lobo direito medindo ____ x ____ x ____ cm (volume de ____ ml), de ecogenicidade, ecotextura e vascularização normais.
+Lobo esquerdo medindo ____ x ____ x ____ cm (volume de ____ ml), de ecogenicidade, ecotextura e vascularização normais.
+Istmo medindo ____ x ____ x ____ cm (volume de ____ ml), de ecogenicidade e ecotextura normais.
+
+Pico sistólico da artéria tireoidiana inferior direita de ____ cm/s.
+Pico sistólico da artéria tireoidiana inferior esquerda de ____ cm/s.
+
+CONCLUSÃO:
+Tireoide de volume normal (____ ml), sem evidência de alteração ecotextural ou de imagem nodular.
+
+*ESCORE DE NÓDULO TIREOIDEANO - Domingos Correia da Rocha - Material baseado em 2588 nódulos puncionados - 2003 | Atualizada em 2013 - Total de 5134 nódulos puncionados
+ACR - American College of Radiology*`;
