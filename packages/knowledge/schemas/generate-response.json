@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://laudousg.com/schemas/generate-response.json",
+  "title": "GenerateResponse",
+  "description": "Placeholder — contrato de saida do endpoint POST /api/generate (a ser detalhado)",
+  "type": "object",
+  "required": ["report_id", "content"],
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "description": "UUID do laudo gerado e persistido"
+    },
+    "content": {
+      "type": "string",
+      "description": "Texto final do laudo (markdown)"
+    },
+    "sanity_warnings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Avisos do sanity checker (ZERO IA, sincronos)"
+    }
+  },
+  "additionalProperties": true
+}

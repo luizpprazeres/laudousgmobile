@@ -1,0 +1,13 @@
+# packages/knowledge/normalizer/punctuation-rules.yaml
+# Pontuacao contextual aplicada apos substituicao literal e normalizacao de unidades
+# Placeholder
+version: 0.0.1
+status: draft
+last_review: 2026-05-20
+
+rules:
+  - description: "Capitalizar inicio de sentenca"
+    placeholder: true
+
+  - description: "Adicionar ponto final em paragrafos sem terminacao"
+    placeholder: true

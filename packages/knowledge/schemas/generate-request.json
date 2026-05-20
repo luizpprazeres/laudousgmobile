@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://laudousg.com/schemas/generate-request.json",
+  "title": "GenerateRequest",
+  "description": "Placeholder — contrato de entrada do endpoint POST /api/generate (a ser detalhado conforme pipeline v2 evolui)",
+  "type": "object",
+  "required": ["category", "input"],
+  "properties": {
+    "category": {
+      "type": "string",
+      "description": "Codigo da categoria (ex: OBSTETRICA, ABDOMEN_TOTAL)"
+    },
+    "input": {
+      "type": "string",
+      "description": "Texto ditado (apos transcricao Whisper)"
+    },
+    "style": {
+      "type": "string",
+      "enum": ["tradicional", "estruturado", "livre"],
+      "description": "Estilo de escrita selecionado pelo usuario"
+    }
+  },
+  "additionalProperties": true
+}

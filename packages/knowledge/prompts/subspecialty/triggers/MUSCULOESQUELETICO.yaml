@@ -1,0 +1,11 @@
+# packages/knowledge/prompts/subspecialty/triggers/MUSCULOESQUELETICO.yaml
+# Placeholder — keywords ativadoras a serem extraidas de /laudousg/lib/subspecialty.ts
+category: MUSCULOESQUELETICO
+version: 0.0.1
+status: draft
+source_extracted_at: 2026-05-20
+
+triggers:
+  - keyword: "placeholder-keyword"
+    weight: 1.0
+  # TODO: extrair lista real de keywords de subspecialty.ts

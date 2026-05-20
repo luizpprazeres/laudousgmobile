@@ -1,0 +1,19 @@
+# packages/knowledge/normalizer/unit-patterns.yaml
+# Regex de unidades para normalizacao de medidas ditadas
+# Placeholder — patterns reais serao expandidos
+version: 0.0.1
+status: draft
+last_review: 2026-05-20
+
+patterns:
+  - name: milimetros
+    regex: '(\d+(?:[.,]\d+)?)\s*(?:mm|milimetros?)'
+    replacement: '$1 mm'
+
+  - name: centimetros
+    regex: '(\d+(?:[.,]\d+)?)\s*(?:cm|centimetros?)'
+    replacement: '$1 cm'
+
+  - name: semanas_dias
+    regex: '(\d+)\s*semanas?\s*(?:e\s*)?(\d+)\s*dias?'
+    replacement: '$1 semanas e $2 dias'

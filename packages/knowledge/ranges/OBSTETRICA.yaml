@@ -1,0 +1,14 @@
+# packages/knowledge/ranges/OBSTETRICA.yaml
+# Placeholder — ranges reais a serem extraidos do conhecimento clinico consolidado
+category: OBSTETRICA
+version: 0.0.1
+status: draft
+last_review: 2026-05-20
+
+ila:
+  unit: cm
+  normal: { min: 8, max: 24 }
+  reduced_threshold: 8
+  increased_threshold: 24
+
+# TODO: biometria_por_ig, mbv, percentis Doppler, etc.

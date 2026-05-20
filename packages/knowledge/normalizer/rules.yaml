@@ -1,0 +1,27 @@
+# packages/knowledge/normalizer/rules.yaml
+# Substituicoes literais aplicadas na etapa 0 do pipeline (pre-Parser)
+# Placeholder — regras reais serao expandidas conforme golden cases revelarem padroes
+version: 0.0.1
+status: draft
+last_review: 2026-05-20
+
+rules:
+  - from: "eco textura"
+    to: "ecotextura"
+    case_insensitive: true
+
+  - from: "oito milimetros"
+    to: "8 mm"
+    case_insensitive: true
+
+  - from: "doze semanas"
+    to: "12 semanas"
+    case_insensitive: true
+
+  - from: "centimetros cubicos"
+    to: "cm3"
+    case_insensitive: true
+
+  - from: "decimo de mililitro"
+    to: "0.1 mL"
+    case_insensitive: true
