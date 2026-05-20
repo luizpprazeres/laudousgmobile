@@ -23,10 +23,12 @@ export const SanityIssueSchema = z.object({
   type: SanityIssueTypeSchema,
   severity: SanitySeveritySchema,
   detail: z.string().min(1),
-  // Trecho do laudo final que motivou o issue
-  trecho_laudo: z.string().optional(),
-  // Campo/path no JSON de achados que motivou o issue
-  campo_achado: z.string().optional(),
+  // Trecho do laudo final que motivou o issue. Aceita null pq o AI sanity
+  // (gpt-3.5-turbo) às vezes retorna `null` em vez de omitir o campo.
+  trecho_laudo: z.string().nullish(),
+  // Campo/path no JSON de achados que motivou o issue. nullish pelo mesmo
+  // motivo acima.
+  campo_achado: z.string().nullish(),
 });
 
 export type SanityIssue = z.infer<typeof SanityIssueSchema>;
