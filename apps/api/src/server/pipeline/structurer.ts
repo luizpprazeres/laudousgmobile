@@ -97,51 +97,77 @@ export async function runStructurer(args: {
     .filter((l) => l !== undefined)
     .join("\n");
 
-  const res = await openai().chat.completions.create(
-    {
-      model: e.OPENAI_MODEL_STRUCTURER,
-      temperature: 0.0,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "StructuredFindings",
-          strict: true,
-          schema: STRUCTURED_FINDINGS_JSON_SCHEMA as Record<string, unknown>,
+  // gpt-4.1-mini suporta até 16k output tokens. Sem max_tokens explícito,
+  // a API às vezes trunca outputs de json_schema strict no meio (especialmente
+  // com `achados` aninhado como string JSON-encoded). Setamos 16k pra evitar.
+  const callOpenAI = async (extraSystemNote?: string) => {
+    return openai().chat.completions.create(
+      {
+        model: e.OPENAI_MODEL_STRUCTURER,
+        temperature: 0.0,
+        max_tokens: 16000,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "StructuredFindings",
+            strict: true,
+            schema: STRUCTURED_FINDINGS_JSON_SCHEMA as Record<string, unknown>,
+          },
         },
+        messages: [
+          {
+            role: "system",
+            content: extraSystemNote
+              ? `${STRUCTURER_SYSTEM_PROMPT}\n\n${extraSystemNote}`
+              : STRUCTURER_SYSTEM_PROMPT,
+          },
+          { role: "user", content: userMessage },
+        ],
       },
-      messages: [
-        { role: "system", content: STRUCTURER_SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
-    },
-    { signal: args.signal },
-  );
-
-  const raw = res.choices[0]?.message?.content;
-  if (!raw) throw new Error("structurer: resposta vazia");
-
-  // Fix codex MÉDIO #8: try-catch no JSON.parse pra ter erro descritivo
-  // (em vez de "Unexpected token" genérico que mata debug do SSE).
-  let rawObj: unknown;
-  try {
-    rawObj = JSON.parse(raw);
-  } catch (e) {
-    const detail = e instanceof Error ? e.message : String(e);
-    throw new Error(
-      `structurer: resposta do LLM não é JSON válido (${detail}). Início: ${raw.slice(0, 200)}`,
+      { signal: args.signal },
     );
-  }
-  const validated = StructurerRawOutputSchema.parse(rawObj);
+  };
 
-  // Re-parse do `achados` (string) para objeto
-  let achados: Record<string, unknown>;
+  const parseStructurerResponse = (raw: string | null | undefined) => {
+    if (!raw) throw new Error("structurer: resposta vazia");
+    let rawObj: unknown;
+    try {
+      rawObj = JSON.parse(raw);
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `structurer: resposta do LLM não é JSON válido (${detail}). Início: ${raw.slice(0, 200)}`,
+      );
+    }
+    const validated = StructurerRawOutputSchema.parse(rawObj);
+    let achados: Record<string, unknown>;
+    try {
+      achados = JSON.parse(validated.achados);
+    } catch {
+      throw new Error(
+        `structurer: campo achados não é JSON válido: ${validated.achados.slice(0, 200)}`,
+      );
+    }
+    return { validated, achados };
+  };
+
+  // 1ª tentativa
+  let res = await callOpenAI();
+  let parsedOutput: ReturnType<typeof parseStructurerResponse>;
   try {
-    achados = JSON.parse(validated.achados);
-  } catch {
-    throw new Error(
-      `structurer: campo achados não é JSON válido: ${validated.achados.slice(0, 200)}`,
-    );
+    parsedOutput = parseStructurerResponse(res.choices[0]?.message?.content);
+  } catch (firstErr) {
+    // Retry 1x com instrução enfática contra truncamento. Acontece com inputs
+    // que geram JSON interno grande (obstetrica com biometria completa).
+    const note =
+      "ATENÇÃO: na resposta anterior o JSON do campo `achados` foi truncado. " +
+      "Seja CONCISO no `achados` (use apenas as chaves estritamente necessárias, " +
+      "sem campos vazios ou redundantes) e GARANTA fechar todas as chaves e colchetes. " +
+      "O JSON DEVE estar 100% completo e válido.";
+    res = await callOpenAI(note);
+    parsedOutput = parseStructurerResponse(res.choices[0]?.message?.content);
   }
+  const { validated, achados } = parsedOutput;
 
   const findings: StructuredFindings = StructuredFindingsSchema.parse({
     schema_version: validated.schema_version || e.FINDINGS_SCHEMA_VERSION,
