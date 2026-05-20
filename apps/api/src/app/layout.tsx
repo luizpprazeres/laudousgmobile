@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "LaudoUSG API",
   description: "Backend de geração de laudos por IA — sem UI",
