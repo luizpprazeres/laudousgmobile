@@ -1,41 +1,48 @@
 {
   "version": 1,
-  "generated_at": "2026-05-19T10:29:27.597Z",
+  "generated_at": "2026-05-20T00:27:30.090Z",
   "model": "gpt-4.1-mini",
   "by_category": {
     "ABDOMEN_TOTAL": {
       "samples": 5,
       "medidas_ok_pct": 0.8,
       "rads_ok_pct": 1,
-      "conclusao_ok_pct": 0.2,
+      "conclusao_ok_pct": 0,
       "violations_total": 0
     },
     "MAMARIA": {
       "samples": 5,
-      "medidas_ok_pct": 1,
+      "medidas_ok_pct": 0.8,
       "rads_ok_pct": 0.2,
-      "conclusao_ok_pct": 0.8,
+      "conclusao_ok_pct": 0.4,
       "violations_total": 5
     },
     "TIREOIDE": {
       "samples": 5,
       "medidas_ok_pct": 0.2,
-      "rads_ok_pct": 0.6,
+      "rads_ok_pct": 1,
       "conclusao_ok_pct": 0,
       "violations_total": 0
     },
     "OBSTETRICA": {
       "samples": 5,
-      "medidas_ok_pct": 1,
+      "medidas_ok_pct": 0.6,
       "rads_ok_pct": 1,
       "conclusao_ok_pct": 0.8,
       "violations_total": 0
     },
     "PELVE_FEMININA": {
-      "samples": 1,
+      "samples": 5,
+      "medidas_ok_pct": 0,
+      "rads_ok_pct": 1,
+      "conclusao_ok_pct": 0.8,
+      "violations_total": 0
+    },
+    "DOPPLER_OBSTETRICO": {
+      "samples": 5,
       "medidas_ok_pct": 1,
       "rads_ok_pct": 1,
-      "conclusao_ok_pct": 0,
+      "conclusao_ok_pct": 1,
       "violations_total": 0
     }
   }

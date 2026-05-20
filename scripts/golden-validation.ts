@@ -188,14 +188,13 @@ function extractConclusion(t: string): string {
   const pos = Math.max(idx, idx2);
   if (pos < 0) return "";
   let conclusion = t.slice(pos).slice(0, 800);
-  // Cortar rodapés (asterisco no início de linha = convenção de rodapé/disclaimer:
-  // ex tireoide "*ESCORE DE NÓDULO TIREOIDEANO..."). Asterisco DENTRO de palavra
-  // não é cortado (ex: "BI-RADS®").
-  const footerStart = conclusion.search(/\n\s*\*/);
-  if (footerStart > 0) conclusion = conclusion.slice(0, footerStart);
-  // Rodapé BI-RADS mamária ("Breast Imaging Reporting and Data System...")
-  const birads = conclusion.toLowerCase().indexOf("breast imaging");
-  if (birads > 0) conclusion = conclusion.slice(0, birads);
+  // Cortar SÓ rodapés específicos conhecidos (não usar /\n\s*\*/ genérico pq
+  // captura bullets legítimos da conclusão tipo "* Esteatose hepática" em
+  // gabaritos antigos do ABDOMEN_TOTAL).
+  const escoreIdx = conclusion.indexOf("*ESCORE");
+  if (escoreIdx > 0) conclusion = conclusion.slice(0, escoreIdx);
+  const biradsIdx = conclusion.toLowerCase().indexOf("breast imaging");
+  if (biradsIdx > 0) conclusion = conclusion.slice(0, biradsIdx);
   return conclusion.trim();
 }
 
