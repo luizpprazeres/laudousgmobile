@@ -79,7 +79,12 @@ export async function runStructurer(args: {
   rawInput: string;
   categoryHint?: string;
   signal?: AbortSignal;
-}): Promise<{ findings: StructuredFindings; latencyMs: number }> {
+}): Promise<{
+  findings: StructuredFindings;
+  latencyMs: number;
+  inputTokens?: number;
+  outputTokens?: number;
+}> {
   const t0 = Date.now();
   const e = env();
 
@@ -154,5 +159,10 @@ export async function runStructurer(args: {
     lateralidades_mencionadas: validated.lateralidades_mencionadas ?? undefined,
   });
 
-  return { findings, latencyMs: Date.now() - t0 };
+  return {
+    findings,
+    latencyMs: Date.now() - t0,
+    inputTokens: res.usage?.prompt_tokens,
+    outputTokens: res.usage?.completion_tokens,
+  };
 }

@@ -1,4 +1,5 @@
 import { GenerateRequestSchema } from "@laudousg/shared";
+import { after } from "next/server";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { sseResponse, nowIso } from "@/server/sse/stream";
 export { OPTIONS } from "@/server/cors";
@@ -38,6 +39,17 @@ import {
   getKnownCategories,
   getWritingStyleById,
 } from "@/server/db/lookups";
+import { env } from "@/server/env";
+import {
+  estimateCost,
+  persistAudit,
+  type GenerationAuditStage,
+  type GenerationAuditState,
+} from "@/server/db/auditRepo";
+import {
+  contractHashFor,
+  PROMPT_VERSION,
+} from "@/server/prompts/version";
 
 // Recomendações do codex já incorporadas:
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
@@ -72,6 +84,8 @@ export async function POST(req: Request) {
   }
 
   const reqInput = parsed.data;
+  const e = env();
+  const auditEnabled = e.GENERATION_AUDIT_ENABLED === "true";
   const isResume = !!reqInput.resume_from_report_id;
   // Quando resume, reutiliza o mesmo report_id pra ter UMA timeline de auditoria.
   // Novo report_id apenas em fluxo normal.
@@ -79,18 +93,52 @@ export async function POST(req: Request) {
     ? (reqInput.resume_from_report_id as string)
     : crypto.randomUUID();
   const t0 = Date.now();
+  const initialCategory = reqInput.category_hint ?? "ABDOMEN_TOTAL";
+  const auditState: GenerationAuditState = {
+    reportId: null,
+    userId: user.id,
+    category: initialCategory,
+    writingStyleId: reqInput.writing_style_id,
+    rawInput: reqInput.raw_input,
+    categoryHint: reqInput.category_hint ?? null,
+    structuredOutput: null,
+    validatorResult: null,
+    ragBlocksRetrieved: null,
+    systemMessageFull: null,
+    outputText: null,
+    sanityResult: null,
+    totalDurationMs: null,
+    structurerDurationMs: null,
+    validatorDurationMs: null,
+    ragDurationMs: null,
+    writerDurationMs: null,
+    sanityDurationMs: null,
+    openaiInputTokens: null,
+    openaiOutputTokens: null,
+    openaiCostUsd: null,
+    modelWriter: e.OPENAI_MODEL_WRITER,
+    modelStructurer: e.OPENAI_MODEL_STRUCTURER,
+    errorCode: null,
+    errorMessage: null,
+    errorStage: null,
+    promptVersion: PROMPT_VERSION,
+    pipelineVersion: "v1",
+    contractHash: contractHashFor(initialCategory, reqInput.writing_style_id),
+  };
 
   return sseResponse(async ({ emit }, signal) => {
     let runId: string | null = null;
     let outcome: "success" | "clarify" | "blocked" | "error" | "aborted" =
       "error";
     let errorMessage: string | undefined;
+    let currentStage: GenerationAuditStage = "request";
 
     try {
       emit({ type: "open", ts: nowIso(), report_id: reportId });
 
       // Resolver writing_style_id → code/name antes (fix codex #4).
       // Carregar categorias conhecidas pro validator (fix codex #2).
+      currentStage = "lookups";
       let effectiveWritingStyleId = reqInput.writing_style_id;
       let [styleRow, categoriesInfo] = await Promise.all([
         getWritingStyleById(reqInput.writing_style_id),
@@ -99,6 +147,9 @@ export async function POST(req: Request) {
       if (!styleRow) {
         outcome = "error";
         errorMessage = `writing_style_id ${reqInput.writing_style_id} não existe`;
+        auditState.errorCode = "INVALID_WRITING_STYLE";
+        auditState.errorMessage = errorMessage;
+        auditState.errorStage = currentStage;
         emit({
           type: "error",
           ts: nowIso(),
@@ -111,6 +162,7 @@ export async function POST(req: Request) {
       let findings: StructuredFindings;
 
       if (isResume) {
+        currentStage = "resume";
         // RESUME: carregar report existente, pular structurer.
         // Fix codex T-D #3: exigir pelo menos UMA answer com texto.
         const validAnswers = (reqInput.clarify_answers ?? []).filter(
@@ -120,6 +172,9 @@ export async function POST(req: Request) {
           outcome = "error";
           errorMessage =
             "Resume requer pelo menos uma clarify_answer não-vazia. Sem isso o pipeline geraria as mesmas perguntas de novo.";
+          auditState.errorCode = "RESUME_EMPTY_ANSWERS";
+          auditState.errorMessage = errorMessage;
+          auditState.errorStage = currentStage;
           emit({
             type: "error",
             ts: nowIso(),
@@ -136,6 +191,9 @@ export async function POST(req: Request) {
         if (!existing) {
           outcome = "error";
           errorMessage = `Report ${reportId} não encontrado ou sem permissão.`;
+          auditState.errorCode = "RESUME_NOT_FOUND";
+          auditState.errorMessage = errorMessage;
+          auditState.errorStage = currentStage;
           emit({
             type: "error",
             ts: nowIso(),
@@ -144,9 +202,13 @@ export async function POST(req: Request) {
           });
           return;
         }
+        auditState.reportId = reportId;
         if (!existing.structuredFindings) {
           outcome = "error";
           errorMessage = `Report ${reportId} não tem structured_findings — não pode resumir.`;
+          auditState.errorCode = "RESUME_NO_FINDINGS";
+          auditState.errorMessage = errorMessage;
+          auditState.errorStage = currentStage;
           emit({
             type: "error",
             ts: nowIso(),
@@ -169,6 +231,7 @@ export async function POST(req: Request) {
           if (persistedStyle) {
             effectiveWritingStyleId = existing.writingStyleId;
             styleRow = persistedStyle;
+            auditState.writingStyleId = effectiveWritingStyleId;
           }
         }
 
@@ -179,6 +242,9 @@ export async function POST(req: Request) {
           outcome = "error";
           errorMessage =
             "Limite de retomadas atingido (3 tentativas). Recomece do zero ou ajuste o input.";
+          auditState.errorCode = "RESUME_LIMIT_REACHED";
+          auditState.errorMessage = errorMessage;
+          auditState.errorStage = currentStage;
           emit({
             type: "error",
             ts: nowIso(),
@@ -199,6 +265,13 @@ export async function POST(req: Request) {
           existing.structuredFindings,
           validAnswers,
         );
+        auditState.reportId = reportId;
+        auditState.category = findings.categoria_detectada;
+        auditState.contractHash = contractHashFor(
+          findings.categoria_detectada,
+          effectiveWritingStyleId,
+        );
+        auditState.structuredOutput = findings;
         // Registra na run que veio de resume + os findings aplicados (auditoria)
         await updateRunAfterStructurer({
           runId,
@@ -227,14 +300,27 @@ export async function POST(req: Request) {
           rawInputForRagQuery:
             reqInput.consolidated_transcript ?? reqInput.raw_input,
         });
+        auditState.reportId = reportId;
 
         // ----- 1. Structurer -----
+        currentStage = "structurer";
         const structured = await runStructurer({
           rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
           categoryHint: reqInput.category_hint,
           signal,
         });
         findings = structured.findings;
+        auditState.category = findings.categoria_detectada;
+        auditState.contractHash = contractHashFor(
+          findings.categoria_detectada,
+          effectiveWritingStyleId,
+        );
+        auditState.structuredOutput = findings;
+        auditState.structurerDurationMs = structured.latencyMs;
+        auditState.openaiInputTokens =
+          (auditState.openaiInputTokens ?? 0) + (structured.inputTokens ?? 0);
+        auditState.openaiOutputTokens =
+          (auditState.openaiOutputTokens ?? 0) + (structured.outputTokens ?? 0);
         await updateRunAfterStructurer({
           runId,
           structured: findings,
@@ -250,10 +336,14 @@ export async function POST(req: Request) {
 
       // ----- 2. Validator -----
       // Fix codex #2: passar categorias conhecidas do DB (não Set vazio).
+      currentStage = "validator";
+      const validatorT0 = Date.now();
       const validator = runValidator({
         findings,
         knownCategoryCodes: categoriesInfo.codes,
       });
+      auditState.validatorDurationMs = Date.now() - validatorT0;
+      auditState.validatorResult = validator;
       emit({
         type: "validator",
         ts: nowIso(),
@@ -278,6 +368,9 @@ export async function POST(req: Request) {
         const reason =
           blocker?.message ?? "Validação determinística falhou sem detalhe.";
         outcome = "blocked";
+        auditState.errorCode = "VALIDATOR_BLOCKED";
+        auditState.errorMessage = reason;
+        auditState.errorStage = currentStage;
         await finalizeReport({
           reportId,
           status: "blocked",
@@ -295,12 +388,16 @@ export async function POST(req: Request) {
       }
 
       // ----- 3. Retriever -----
+      currentStage = "retriever";
+      const ragT0 = Date.now();
       const { blocks, queryText, warning } = await runRetriever({
         findings,
         categoryCode: findings.categoria_detectada,
         writingStyleId: effectiveWritingStyleId,
         signal,
       });
+      auditState.ragDurationMs = Date.now() - ragT0;
+      auditState.ragBlocksRetrieved = blocks;
       await updateRunAfterRetriever({
         runId,
         ragBlockIds: blocks.map((b) => b.id),
@@ -339,6 +436,7 @@ export async function POST(req: Request) {
 
       // ----- 4. Writer (stream) -----
       // Fix codex #4: resolver writing_style code + category label do DB.
+      currentStage = "writer";
       const writerGen = runWriterStream({
         findings,
         ragBlocks: blocks,
@@ -347,10 +445,21 @@ export async function POST(req: Request) {
           categoriesInfo.labels.get(findings.categoria_detectada) ??
           findings.categoria_detectada,
         signal,
+        onSystemMessage: (message) => {
+          auditState.systemMessageFull = message;
+        },
       });
 
       let finalText = "";
-      let writerResult: { fullText: string; latencyMs: number } | undefined;
+      let writerResult:
+        | {
+            fullText: string;
+            latencyMs: number;
+            systemMessage: string;
+            inputTokens?: number;
+            outputTokens?: number;
+          }
+        | undefined;
       while (true) {
         const next = await writerGen.next();
         if (next.done) {
@@ -361,9 +470,20 @@ export async function POST(req: Request) {
         emit({ type: "token", ts: nowIso(), delta: next.value });
       }
       finalText = writerResult?.fullText ?? finalText;
+      auditState.outputText = finalText;
+      auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
+      auditState.systemMessageFull =
+        writerResult?.systemMessage ?? auditState.systemMessageFull;
+      auditState.openaiInputTokens =
+        (auditState.openaiInputTokens ?? 0) + (writerResult?.inputTokens ?? 0);
+      auditState.openaiOutputTokens =
+        (auditState.openaiOutputTokens ?? 0) +
+        (writerResult?.outputTokens ?? 0);
       await updateRunAfterWriter({
         runId,
         latencyMs: writerResult?.latencyMs ?? 0,
+        tokensInput: writerResult?.inputTokens,
+        tokensOutput: writerResult?.outputTokens,
       });
 
       // ----- 5. Sanity check (observabilidade, NÃO bloqueia) -----
@@ -371,6 +491,7 @@ export async function POST(req: Request) {
       // generation_runs. Não bloqueia mais a entrega: a feature de blocked
       // foi removida por feedback do usuário (UX confusa + prefere investir
       // em consertos preventivos via prompts).
+      currentStage = "sanity";
       const deterministicSanity = runDeterministicSanity({
         findings,
         finalText,
@@ -381,6 +502,8 @@ export async function POST(req: Request) {
         signal,
       });
       const sanity = mergeSanityResults(aiSanity, deterministicSanity);
+      auditState.sanityDurationMs = sanityMs;
+      auditState.sanityResult = sanity;
       await updateRunAfterSanity({ runId, sanity, latencyMs: sanityMs });
       emit({ type: "sanity", ts: nowIso(), result: sanity });
 
@@ -407,9 +530,15 @@ export async function POST(req: Request) {
       if ((err as Error).name === "AbortError") {
         outcome = "aborted";
         errorMessage = "client disconnected";
+        auditState.errorCode = "ABORTED";
+        auditState.errorMessage = errorMessage;
+        auditState.errorStage = currentStage;
       } else {
         outcome = "error";
         errorMessage = err instanceof Error ? err.message : String(err);
+        auditState.errorCode = "PIPELINE_FAILURE";
+        auditState.errorMessage = errorMessage;
+        auditState.errorStage = currentStage;
         emit({
           type: "error",
           ts: nowIso(),
@@ -418,9 +547,15 @@ export async function POST(req: Request) {
         });
       }
     } finally {
+      auditState.totalDurationMs = Date.now() - t0;
+      auditState.openaiCostUsd = estimateCost(
+        auditState.openaiInputTokens ?? 0,
+        auditState.openaiOutputTokens ?? 0,
+      );
       // Sempre fechar a generation_run pra ter auditoria
       if (runId) {
         try {
+          currentStage = "finalize";
           await finalizeRun({
             runId,
             outcome,
@@ -430,6 +565,9 @@ export async function POST(req: Request) {
         } catch (e) {
           console.error("finalizeRun failed:", e);
         }
+      }
+      if (auditEnabled) {
+        scheduleAuditPersist(auditState);
       }
     }
   });
@@ -480,4 +618,12 @@ function mapDeterministicIssueType(
   // Detalhe completo preservado em `detail`.
   if (type === "rads_divergente") return "comando_ignorado";
   return type;
+}
+
+function scheduleAuditPersist(state: GenerationAuditState) {
+  try {
+    after(() => persistAudit(state));
+  } catch {
+    void persistAudit(state);
+  }
 }

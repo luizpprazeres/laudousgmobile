@@ -18,9 +18,10 @@ const ServerEnvSchema = z.object({
   DEEPGRAM_MODEL: z.string().default("nova-3"),
   DEEPGRAM_LANGUAGE: z.string().default("pt-BR"),
 
-  PROMPT_VERSION: z.string().default("v1"),
+  PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
   CONTRACT_VERSION: z.string().default("v1"),
+  GENERATION_AUDIT_ENABLED: z.string().default("false"),
 });
 
 let _env: z.infer<typeof ServerEnvSchema> | null = null;

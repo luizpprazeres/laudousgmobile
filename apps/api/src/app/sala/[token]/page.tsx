@@ -642,7 +642,7 @@ function summarize(entries: TimelineEntry[]): { label: string; count: number }[]
 function splitHeading(text: string): { heading: string | null; body: string } {
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = (lines[i] ?? "").trim();
     if (!line) continue;
     if (/^(ULTRASSONOGRAFIA|ECOGRAFIA|USG)/i.test(line)) {
       const rest = lines.slice(i + 1).join("\n").replace(/^\n+/, "");

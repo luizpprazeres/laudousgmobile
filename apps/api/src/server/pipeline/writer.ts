@@ -31,7 +31,18 @@ export async function* runWriterStream(args: {
   writingStyleCode: WritingStyleCode;
   categoryLabel: string;
   signal?: AbortSignal;
-}): AsyncGenerator<string, { fullText: string; latencyMs: number }, void> {
+  onSystemMessage?: (message: string) => void;
+}): AsyncGenerator<
+  string,
+  {
+    fullText: string;
+    latencyMs: number;
+    systemMessage: string;
+    inputTokens?: number;
+    outputTokens?: number;
+  },
+  void
+> {
   const t0 = Date.now();
 
   const systemMessage = buildSystemMessage({
@@ -40,6 +51,7 @@ export async function* runWriterStream(args: {
     writingStyleCode: args.writingStyleCode,
     ragBlocks: args.ragBlocks,
   });
+  args.onSystemMessage?.(systemMessage);
 
   const userMessage = buildUserMessage(args.findings);
 
@@ -49,6 +61,7 @@ export async function* runWriterStream(args: {
       // Temperatura por categoria — herdada do LaudoUSG original.
       temperature: temperatureForCategory(args.findings.categoria_detectada),
       stream: true,
+      stream_options: { include_usage: true },
       max_tokens: 2500, // mesmo limite do original
       messages: [
         { role: "system", content: systemMessage },
@@ -59,7 +72,13 @@ export async function* runWriterStream(args: {
   );
 
   let full = "";
+  let inputTokens: number | undefined;
+  let outputTokens: number | undefined;
   for await (const chunk of stream) {
+    if (chunk.usage) {
+      inputTokens = chunk.usage.prompt_tokens;
+      outputTokens = chunk.usage.completion_tokens;
+    }
     const delta = chunk.choices[0]?.delta?.content ?? "";
     if (delta) {
       full += delta;
@@ -67,7 +86,13 @@ export async function* runWriterStream(args: {
     }
   }
 
-  return { fullText: full, latencyMs: Date.now() - t0 };
+  return {
+    fullText: full,
+    latencyMs: Date.now() - t0,
+    systemMessage,
+    inputTokens,
+    outputTokens,
+  };
 }
 
 /**
