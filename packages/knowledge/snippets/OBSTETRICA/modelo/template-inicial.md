@@ -11,6 +11,11 @@ source_extracted_at: 2026-05-20
 source_lines: 82-99
 ---
 
+ORDEM OBRIGATÓRIA DAS SEÇÕES (NUNCA REORDENE):
+1) Título → 2) Linha de Primeira USG/DUM (opcional) → 3) COMENTÁRIOS → 4) OS SEGUINTES ASPECTOS FORAM OBSERVADOS → 5) CONCLUSÃO.
+
+NUNCA mova COMENTÁRIOS pra depois dos achados. NUNCA mova CONCLUSÃO pra antes dos achados. Mesmo se o usuário customizar os nomes das seções nas preferências, a ordem das seções permanece fixa.
+
 2. ULTRASSONOGRAFIA OBSTÉTRICA INICIAL (≤ 13 SEMANAS E 6 DIAS)
 
 ULTRASSONOGRAFIA OBSTÉTRICA

@@ -13,6 +13,11 @@ source_lines: 50-80
 
 TEMPLATES: Os templates abaixo devem ser reproduzidos exatamente, sem qualquer alteração estrutural ou textual, exceto nos campos variáveis.
 
+ORDEM OBRIGATÓRIA DAS SEÇÕES (NUNCA REORDENE):
+1) Título → 2) Linha de Primeira USG/DUM (opcional) → 3) COMENTÁRIOS → 4) OS SEGUINTES ASPECTOS FORAM OBSERVADOS → 5) CONCLUSÃO.
+
+NUNCA mova COMENTÁRIOS pra depois dos achados. NUNCA mova CONCLUSÃO pra antes dos achados. Mesmo se o usuário customizar os nomes das seções nas preferências (ex: "Achados:" no lugar de "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:"), a ordem das seções permanece fixa.
+
 1. ULTRASSONOGRAFIA OBSTÉTRICA (SEM DOPPLER) — PADRÃO (> 14 SEMANAS)
 
 ULTRASSONOGRAFIA OBSTÉTRICA
