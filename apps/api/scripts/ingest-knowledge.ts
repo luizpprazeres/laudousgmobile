@@ -220,7 +220,7 @@ async function ingestBlocks(blocks: KnowledgeBlock[]) {
             ${block.frontmatter.priority},
             ${versionToInteger(block.frontmatter.version)},
             ${buildTags(block)},
-            ${sql.unsafe(embeddingLiteral)}::vector(1536)
+            ${embeddingLiteral}::vector(1536)
           )
           on conflict (id) do update set
             category_code = excluded.category_code,
