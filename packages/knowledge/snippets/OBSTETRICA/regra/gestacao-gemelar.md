@@ -3,7 +3,7 @@ id: obstetrica-regra-gestacao-gemelar
 category: OBSTETRICA
 kind: regra
 tags: [obstetrica, gemelar, feto-a, feto-b, mbv, placenta]
-priority: 90
+priority: 70
 version: 1.0.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts

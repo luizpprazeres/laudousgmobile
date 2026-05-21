@@ -3,7 +3,7 @@ id: obstetrica-regra-modelo-inicial
 category: OBSTETRICA
 kind: regra
 tags: [obstetrica, inicial, primeiro-trimestre, ccn, placenta]
-priority: 90
+priority: 70
 version: 1.0.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts

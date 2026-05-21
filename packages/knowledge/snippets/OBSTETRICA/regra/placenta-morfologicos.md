@@ -3,7 +3,7 @@ id: obstetrica-regra-placenta-morfologicos
 category: OBSTETRICA
 kind: regra
 tags: [obstetrica, placenta, morfologico, ossos-longos]
-priority: 80
+priority: 70
 version: 1.0.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts

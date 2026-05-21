@@ -3,7 +3,7 @@ id: obstetrica-regra-calculo-dsm
 category: OBSTETRICA
 kind: regra
 tags: [obstetrica, dsm, saco-gestacional, calculo, inicial]
-priority: 95
+priority: 70
 version: 1.0.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts

@@ -23,9 +23,9 @@ import { env } from "../env";
 
 const DEFAULT_QUOTAS: Record<string, number> = {
   modelo: 1,
-  regra: 5,
+  regra: 8,
   frase: 8,
-  conclusao: 2,
+  conclusao: 3,
   excecao: 3,
   comentario_tecnico: 3,
   exemplo: 2,
