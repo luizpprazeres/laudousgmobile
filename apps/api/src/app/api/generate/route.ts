@@ -617,6 +617,7 @@ function mapDeterministicIssueType(
   // classificação ditada pelo médico foi substituída/inventada.
   // Detalhe completo preservado em `detail`.
   if (type === "rads_divergente") return "comando_ignorado";
+  if (type === "categoria_especifica") return "outro";
   return type;
 }
 

@@ -1,4 +1,12 @@
 import type { StructuredFindings } from "@laudousg/shared";
+import { checkAbdomenTotal } from "./deterministicSanity/abdomenTotal";
+import { checkDopplerObstetrico } from "./deterministicSanity/dopplerObstetrico";
+import { extractValues } from "./deterministicSanity/extractor";
+import { checkMamaria } from "./deterministicSanity/mamaria";
+import { checkObstetrica } from "./deterministicSanity/obstetrica";
+import { checkPelveFeminina } from "./deterministicSanity/pelveFeminina";
+import { checkTireoide } from "./deterministicSanity/tireoide";
+import type { ExtractedValues, SanityFlag } from "./deterministicSanity/types";
 
 export type DeterministicIssue = {
   type:
@@ -7,7 +15,8 @@ export type DeterministicIssue = {
     | "data_divergente"
     | "comando_ignorado"
     | "placeholder_vazado"
-    | "rads_divergente";
+    | "rads_divergente"
+    | "categoria_especifica";
   severity: "critical" | "warning";
   detail: string;
   trecho_laudo?: string;
@@ -35,6 +44,20 @@ const MEASURE_RE =
 const DATE_RE = /\b([0-3]?\d\/[01]?\d\/(?:\d{2}|\d{4}))\b/g;
 const PLACEHOLDER_RE =
   /{LINHA_LIQUIDO_AMNIOTICO}|{CONCLUSAO_LIQUIDO_AMNIOTICO}|____\b/g;
+
+type CategorySpecificCheck = (
+  extracted: ExtractedValues,
+  finalText: string,
+) => SanityFlag[];
+
+const CATEGORY_SPECIFIC_CHECKS: Partial<Record<string, CategorySpecificCheck>> = {
+  OBSTETRICA: (extracted) => checkObstetrica(extracted),
+  DOPPLER_OBSTETRICO: (extracted) => checkDopplerObstetrico(extracted),
+  TIREOIDE: (extracted) => checkTireoide(extracted),
+  MAMARIA: (extracted) => checkMamaria(extracted),
+  ABDOMEN_TOTAL: (extracted) => checkAbdomenTotal(extracted),
+  PELVE_FEMININA: (extracted, finalText) => checkPelveFeminina(extracted, finalText),
+};
 
 const STOPWORDS = new Set([
   "a",
@@ -66,6 +89,12 @@ export function runDeterministicSanity(args: {
   findings: StructuredFindings;
   finalText: string;
 }): DeterministicSanityResult {
+  const extracted = extractValues(args.finalText);
+  const categorySpecific = runCategorySpecificSanity(
+    args.findings.categoria_detectada,
+    extracted,
+    args.finalText,
+  );
   const issues: DeterministicIssue[] = [
     ...checkMeasurements(args.findings, args.finalText),
     ...checkLaterality(args.findings, args.finalText),
@@ -73,11 +102,31 @@ export function runDeterministicSanity(args: {
     ...checkCommands(args.findings, args.finalText),
     ...checkPlaceholders(args.finalText),
     ...checkRadsClassifications(args.findings, args.finalText),
+    ...categorySpecific,
   ];
 
   return {
     issues,
     hardBlocked: issues.some((issue) => issue.severity === "critical"),
+  };
+}
+
+function runCategorySpecificSanity(
+  category: string,
+  extracted: ExtractedValues,
+  finalText: string,
+): DeterministicIssue[] {
+  const check = CATEGORY_SPECIFIC_CHECKS[category];
+  if (!check) return [];
+  return check(extracted, finalText).map(sanityFlagToDeterministicIssue);
+}
+
+function sanityFlagToDeterministicIssue(flag: SanityFlag): DeterministicIssue {
+  return {
+    type: "categoria_especifica",
+    severity: flag.severity,
+    detail: flag.suggestion ? `${flag.message} Sugestão: ${flag.suggestion}` : flag.message,
+    campo_achado: flag.code,
   };
 }
 

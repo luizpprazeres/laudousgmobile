@@ -151,6 +151,78 @@ if (!figo.hardBlocked) {
   throw new Error("FIGO IIIB vs II: deveria bloquear");
 }
 
+const categoryCases: Array<{
+  name: string;
+  category: StructuredFindings["categoria_detectada"];
+  finalText: string;
+  expectedCode: string;
+}> = [
+  {
+    name: "OBSTETRICA peso incompatível com IG",
+    category: "OBSTETRICA",
+    finalText:
+      "ULTRASSONOGRAFIA OBSTÉTRICA. IG de 20 semanas. Peso fetal de 4000 g. BCF = 140 bpm. ILA de 12 cm.",
+    expectedCode: "WEIGHT_IG_MISMATCH",
+  },
+  {
+    name: "DOPPLER_OBSTETRICO IP umbilical extremo",
+    category: "DOPPLER_OBSTETRICO",
+    finalText:
+      "ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER. IP da artéria umbilical de 3,4. IP ACM de 1,4. Dopplervelocimetria normal.",
+    expectedCode: "IP_UMB_EXTREME_HIGH",
+  },
+  {
+    name: "TIREOIDE TI-RADS alto sem conduta",
+    category: "TIREOIDE",
+    finalText:
+      "ULTRASSONOGRAFIA DA TIREOIDE. Nódulo sólido medindo 18 mm, TI-RADS 4. Conclusão: nódulo tireoidiano.",
+    expectedCode: "TIRADS_ALTO_SEM_CONDUTA",
+  },
+  {
+    name: "MAMARIA BI-RADS baixo com descritor suspeito",
+    category: "MAMARIA",
+    finalText:
+      "ULTRASSONOGRAFIA MAMÁRIA. Nódulo hipoecogênico com margens irregulares e sombra acústica. BI-RADS 2.",
+    expectedCode: "BIRADS_LOW_WITH_SUSPECTS",
+  },
+  {
+    name: "ABDOMEN_TOTAL VBP dilatada sem causa",
+    category: "ABDOMEN_TOTAL",
+    finalText:
+      "ULTRASSONOGRAFIA DO ABDOME TOTAL. Via biliar principal de 12 mm. Fígado de 14 cm. Baço de 10 cm.",
+    expectedCode: "VBP_DILATADA_SEM_CAUSA",
+  },
+  {
+    name: "PELVE_FEMININA endométrio pós-menopausa alto",
+    category: "PELVE_FEMININA",
+    finalText:
+      "ULTRASSONOGRAFIA PÉLVICA. Paciente na pós-menopausa. Endométrio de 9 mm. Ovários sem alterações.",
+    expectedCode: "ENDOMETRIO_POSMENOP_ALTO",
+  },
+];
+
+for (const item of categoryCases) {
+  const result = runDeterministicSanity({
+    findings: {
+      ...baseFindings,
+      categoria_detectada: item.category,
+      achados: {},
+      comandos_do_medico: [],
+      datas_referidas: [],
+      lateralidades_mencionadas: [],
+    },
+    finalText: item.finalText,
+  });
+  const matched = result.issues.some(
+    (issue) =>
+      issue.type === "categoria_especifica" &&
+      issue.campo_achado === item.expectedCode,
+  );
+  if (!matched) {
+    throw new Error(`${item.name}: esperava ${item.expectedCode}, recebi ${JSON.stringify(result.issues)}`);
+  }
+}
+
 console.log("deterministicSanity.manual ok", {
   okIssues: ok.issues.length,
   badIssues: bad.issues.map((issue) => issue.type),
@@ -162,4 +234,5 @@ console.log("deterministicSanity.manual ok", {
     tireoideBlocked: tireoide.hardBlocked,
     figoBlocked: figo.hardBlocked,
   },
+  categorySpecific: categoryCases.map((item) => item.expectedCode),
 });
