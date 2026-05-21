@@ -3,7 +3,7 @@ id: pelve-feminina-regra-sindrome-ovarios-policisticos
 category: PELVE_FEMININA
 kind: regra
 tags: [pelve-feminina, sop, ovarios-policisticos, foliculos, fsh, lh]
-priority: 70
+priority: 75
 priority_tier: contextual
 version: 1.0.0
 status: published
@@ -12,11 +12,9 @@ source_extracted_at: 2026-05-21
 source_lines: 1017-1025
 ---
 
-GATILHOS DE APLICAÇÃO:
-- síndrome dos ovários policísticos
-- SOP
-- mais de 20 folículos
-- folículos antrais
+Esta regra trata especificamente de SOP (Síndrome dos Ovários Policísticos), também chamada de SOP, ovários policísticos, ovários micropolicísticos, padrão policístico, micropolicistose ovariana. Aplica quando o input do médico mencionar qualquer um destes termos OU descrever múltiplos folículos antrais sugestivos de SOP. SOP é o achado central.
+
+GATILHOS DE APLICAÇÃO (palavras-chave detectáveis no input): síndrome dos ovários policísticos, SOP, ovários policísticos, ovários micropolicísticos, padrão policístico, micropolicistose, micropolicistose ovariana, mais de 20 folículos, folículos antrais, múltiplos folículos antrais, FSH, LH.
 
 - Síndrome dos ovários policísticos (SOP) — suspeita morfológica
 Corpo (substitui a frase de cada ovário):

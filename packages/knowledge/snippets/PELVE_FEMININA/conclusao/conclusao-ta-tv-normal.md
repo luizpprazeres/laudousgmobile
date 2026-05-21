@@ -3,8 +3,8 @@ id: pelve-feminina-conclusao-conclusao-ta-tv-normal
 category: PELVE_FEMININA
 kind: conclusao
 tags: [pelve-feminina, conclusao, ta-tv, normal]
-priority: 90
-priority_tier: universal
+priority: 70
+priority_tier: contextual
 version: 1.0.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts

@@ -3,7 +3,7 @@ id: pelve-feminina-modelo-template-tv
 category: PELVE_FEMININA
 kind: modelo
 tags: [pelve-feminina, modelo, tv, transvaginal]
-priority: 96
+priority: 70
 priority_tier: contextual
 version: 1.0.0
 status: published

@@ -3,7 +3,7 @@ id: pelve-feminina-regra-miomas
 category: PELVE_FEMININA
 kind: regra
 tags: [pelve-feminina, mioma, miomas, miometrio, figo, utero-miomatoso]
-priority: 70
+priority: 75
 priority_tier: contextual
 version: 1.0.0
 status: published
@@ -12,12 +12,9 @@ source_extracted_at: 2026-05-21
 source_lines: 957-992
 ---
 
-GATILHOS DE APLICAÇÃO:
-- mioma
-- miomas
-- nódulo miomatoso
-- útero miomatoso
-- FIGO
+Esta regra trata especificamente de MIOMAS uterinos (mioma, miomas, nódulo miomatoso, útero miomatoso, mioma intramural, mioma subseroso, mioma submucoso, miomatoso, classificação FIGO de mioma). MIOMA é o achado central. Aplica quando o input do médico mencionar qualquer um destes termos.
+
+GATILHOS DE APLICAÇÃO (palavras-chave detectáveis no input): mioma, miomas, nódulo miomatoso, útero miomatoso, mioma intramural, mioma subseroso, mioma submucoso, miomatoso, FIGO 0, FIGO 1, FIGO 2, FIGO 3, FIGO 4, FIGO 5, FIGO 6, FIGO 7, FIGO 8.
 
 MODIFICAÇÕES PADRONIZADAS (APLICAR QUANDO SOLICITADO)
 

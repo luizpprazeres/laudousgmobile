@@ -3,8 +3,8 @@ id: pelve-feminina-regra-medidas-incompletas-com-aviso
 category: PELVE_FEMININA
 kind: regra
 tags: [pelve-feminina, medidas, incompletas, validacao, transcricao]
-priority: 88
-priority_tier: universal
+priority: 70
+priority_tier: contextual
 version: 1.0.0
 status: published
 source_path: knowledge_blocks (seed:pelve_feminina_v1, migrado de "Medidas incompletas — preservar com [?] + aviso final")

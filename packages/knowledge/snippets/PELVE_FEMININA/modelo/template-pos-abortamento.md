@@ -3,7 +3,7 @@ id: pelve-feminina-modelo-template-pos-abortamento
 category: PELVE_FEMININA
 kind: modelo
 tags: [pelve-feminina, modelo, pos-abortamento, produtos-retidos, abortamento]
-priority: 96
+priority: 70
 priority_tier: contextual
 version: 1.0.0
 status: published

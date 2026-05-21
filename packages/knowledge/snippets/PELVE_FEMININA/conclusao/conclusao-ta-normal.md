@@ -3,7 +3,7 @@ id: pelve-feminina-conclusao-conclusao-ta-normal
 category: PELVE_FEMININA
 kind: conclusao
 tags: [pelve-feminina, conclusao, ta, transabdominal, normal]
-priority: 88
+priority: 70
 priority_tier: contextual
 version: 1.0.0
 status: published

@@ -3,7 +3,7 @@ id: pelve-feminina-modelo-template-ta
 category: PELVE_FEMININA
 kind: modelo
 tags: [pelve-feminina, modelo, ta, transabdominal, endometrio]
-priority: 96
+priority: 70
 priority_tier: contextual
 version: 1.0.0
 status: published

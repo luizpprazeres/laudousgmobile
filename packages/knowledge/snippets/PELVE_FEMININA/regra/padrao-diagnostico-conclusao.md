@@ -3,8 +3,8 @@ id: pelve-feminina-regra-padrao-diagnostico-conclusao
 category: PELVE_FEMININA
 kind: regra
 tags: [pelve-feminina, conclusao, diagnostico, vocabulario-forcado]
-priority: 92
-priority_tier: universal
+priority: 70
+priority_tier: contextual
 version: 1.0.0
 status: published
 source_path: knowledge_blocks (seed:pelve_feminina_v1, migrado de "Padrão DIAGNÓSTICO em conclusão")
