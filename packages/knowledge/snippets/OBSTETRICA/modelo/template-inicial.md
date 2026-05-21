@@ -25,7 +25,8 @@ Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, a
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Saco gestacional de forma normal, com diâmetro médio de ____ mm.
-Embrião único, de situação ____, com polo cefálico à ____.
+{Embrião|Feto} único, de situação ____, com polo cefálico à ____.
+  ↑ Use "Embrião" OU "Feto" conforme o médico falou. NÃO substitua um pelo outro.
 Batimentos cardíacos ritmados (BCF = ____ bpm).
 Comprimento crânio-nádegas (CCN) de ____ mm.
 Vesícula vitelina de forma e dimensões normais.
@@ -33,4 +34,6 @@ Líquido amniótico de quantidade normal pela análise subjetiva.
 Ovários de aspecto normal.
 
 CONCLUSÃO:
-Gestação em torno de ____ semanas e ____ dias.
+Gestação em torno de ____ semanas{, e ____ dias se médico falou dias|}.
+  ↑ Se médico falou só semanas (sem dias): "Gestação em torno de X semanas." (OMITA a parte de dias)
+  ↑ Se médico falou semanas E dias: "Gestação em torno de X semanas e Y dias."

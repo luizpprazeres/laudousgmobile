@@ -45,5 +45,7 @@ Placenta de localização __________________, com ecotextura _________________.
 {LINHA_LIQUIDO_AMNIOTICO}
 
 CONCLUSÃO:
-1) Gestação em torno de ____ semanas e ____ dias.
+1) Gestação em torno de ____ semanas{, e ____ dias se médico falou dias|}.
+   ↑ Se médico falou só semanas (sem dias): "Gestação em torno de X semanas." (OMITA dias)
+   ↑ Se médico falou semanas E dias: "Gestação em torno de X semanas e Y dias."
 {CONCLUSAO_LIQUIDO_AMNIOTICO}
