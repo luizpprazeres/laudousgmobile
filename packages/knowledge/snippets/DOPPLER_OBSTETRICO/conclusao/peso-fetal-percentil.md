@@ -20,10 +20,22 @@ GATILHOS DE APLICAÇÃO:
 - RCIU
 - Gratacós
 
-REGRAS DE PESO FETAL (percentil do peso estimado)
-- Se o percentil do peso fetal for "<3", "menor que 3" ou qualquer valor numérico menor que 3: acrescentar dois novos itens na conclusão (após o item de líquido amniótico): "X) O peso fetal encontra-se abaixo do percentil 3 para a idade gestacional." e "X) Sinais de restrição do crescimento fetal, estágio I de Gratacós."
-- Se o percentil do peso fetal estiver entre 3 e 10 (≥ 3 e < 10):
-  • Caso padrão (sem menção a restrição do crescimento): acrescentar um novo item: "X) O peso fetal encontra-se abaixo do percentil 10 (pequeno para a idade gestacional - P.I.G.). Convém, a critério clínico, acompanhamento seriado com Doppler colorido."
-  • Se o usuário mencionar "restrição do crescimento" ou "RCIU": acrescentar dois itens (igual ao cenário <p3): "X) O peso fetal encontra-se abaixo do percentil 10 para a idade gestacional." e "X) Sinais de restrição do crescimento fetal, estágio I de Gratacós."
-- Se o percentil do peso fetal for maior que 95: acrescentar um novo item na conclusão: "X) O peso fetal encontra-se acima do percentil 95 (grande para a idade gestacional - G.I.G.)."
-- Se o percentil estiver entre 10 e 95 (inclusive): não acrescentar nenhum item adicional sobre peso.
+FRASES VERBATIM POR CENÁRIO — DOPPLER OBSTÉTRICO
+
+(Esta categoria JÁ É Doppler — NUNCA incluir a frase "Convém realizar nova ultrassonografia com Doppler em quatro semanas". Essa recomendação é exclusiva da OBSTETRICA simples.)
+
+CENÁRIO 1 (percentil ≤ 3) — usar EXATAMENTE estas 2 frases consecutivas:
+"X) O peso fetal encontra-se abaixo do percentil 3 para a idade gestacional."
+"X) Sinais de restrição do crescimento fetal, estágio I de Gratacós."
+
+CENÁRIO 2 (percentil ≥3 e <10, sem menção a restrição) — usar SOMENTE esta frase:
+"X) O peso fetal encontra-se abaixo do percentil 10 (pequeno para a idade gestacional - P.I.G.)."
+
+CENÁRIO 3 (percentil ≥3 e <10 + médico mencionou "restrição"/"RCIU") — usar EXATAMENTE estas 2 frases:
+"X) Feto abaixo do percentil 10 para a idade gestacional."
+"X) Sinais de restrição do crescimento fetal, estágio I de Gratacós."
+
+CENÁRIO 4 (percentil > 95) — usar SOMENTE esta frase:
+"X) O peso fetal encontra-se acima do percentil 95 (grande para a idade gestacional - G.I.G.)."
+
+CENÁRIO 5 (percentil entre 10 e 95) — não acrescentar item.
