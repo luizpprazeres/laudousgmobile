@@ -27,7 +27,12 @@ NÃO redija laudo. NÃO adicione informação que o médico não disse.
 Regras:
 - "categoria_detectada": SCREAMING_SNAKE_CASE (ex: ABDOMEN_TOTAL, PELVE_FEMININA, MAMARIA, TIREOIDE).
 - "tipo_exame": frase curta em português (ex: "Ultrassonografia do abdome total").
-- "achados": JSON ESTRUTURADO codificado como STRING (vai ser re-parseado). Use chaves em snake_case por estrutura/órgão. Inclua medidas como ditadas, com vírgula decimal.
+- "achados": JSON ESTRUTURADO codificado como STRING (vai ser re-parseado). Use chaves em snake_case por estrutura/órgão.
+  REGRA OBRIGATÓRIA DE MEDIDAS — pra não quebrar o JSON parser:
+  * TODA medida com vírgula decimal DEVE ser STRING entre aspas: "67,4" ✓ (válido), 67,4 ✗ (INVÁLIDO em JSON).
+  * Arrays de medidas: ["35,4", "30,3", "28,4"] ✓ (válido), [35,4, 30,3, 28,4] ✗ (INVÁLIDO em JSON).
+  * Números inteiros sem decimais podem ficar como número: "frequencia_cardiaca_bpm": 150 ✓.
+  * Em dúvida → use string com aspas. Preserva a vírgula decimal como o médico ditou, sem quebrar parser.
 - "comandos_do_medico": frases do médico que ditam estrutura do laudo final. Inclui:
    * IMPERATIVAS: "acrescente...", "compare com...", "remova...", "use a frase Y".
    * POSICIONAIS: "item 1 da conclusão = ...", "no final coloque...", "antes de Z escreva W".
@@ -157,13 +162,20 @@ export async function runStructurer(args: {
   try {
     parsedOutput = parseStructurerResponse(res.choices[0]?.message?.content);
   } catch (firstErr) {
-    // Retry 1x com instrução enfática contra truncamento. Acontece com inputs
-    // que geram JSON interno grande (obstetrica com biometria completa).
+    // Retry 1x com instrução enfática. Cobre 2 modos de falha conhecidos:
+    // (a) JSON truncado em inputs grandes (obstetrica com biometria completa)
+    // (b) vírgula decimal brasileira fora de string (67,4 em vez de "67,4")
+    const errMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
     const note =
-      "ATENÇÃO: na resposta anterior o JSON do campo `achados` foi truncado. " +
-      "Seja CONCISO no `achados` (use apenas as chaves estritamente necessárias, " +
-      "sem campos vazios ou redundantes) e GARANTA fechar todas as chaves e colchetes. " +
-      "O JSON DEVE estar 100% completo e válido.";
+      "ATENÇÃO: a resposta anterior falhou ao parse do campo `achados` " +
+      `(erro: ${errMsg.slice(0, 200)}). ` +
+      "Pontos de atenção pra esta tentativa:\n" +
+      "1. TODA medida com vírgula decimal DEVE ser STRING com aspas. " +
+      'Ex: "67,4" ✓ válido, 67,4 ✗ INVÁLIDO em JSON.\n' +
+      '2. Arrays de medidas: ["35,4", "30,3", "28,4"] ✓ válido, [35,4, 30,3, 28,4] ✗ INVÁLIDO.\n' +
+      "3. Seja CONCISO (use só chaves estritamente necessárias).\n" +
+      "4. GARANTA fechar todas as chaves e colchetes.\n" +
+      "O JSON DEVE estar 100% completo, válido e parseável.";
     res = await callOpenAI(note);
     parsedOutput = parseStructurerResponse(res.choices[0]?.message?.content);
   }
