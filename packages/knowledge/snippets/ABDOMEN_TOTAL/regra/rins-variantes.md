@@ -3,9 +3,9 @@ id: abdomen-total-regra-rins-variantes
 category: ABDOMEN_TOTAL
 kind: regra
 tags: [abdomen-total, rins, cisto-renal, litiase-renal, imagem-cistica]
-priority: 70
+priority: 75
 priority_tier: contextual
-version: 1.0.0
+version: 1.1.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts
 source_extracted_at: 2026-05-21

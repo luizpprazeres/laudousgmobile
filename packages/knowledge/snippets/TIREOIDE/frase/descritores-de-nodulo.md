@@ -3,9 +3,9 @@ id: tireoide-frase-descritores-de-nodulo
 category: TIREOIDE
 kind: frase
 tags: [tireoide, nodulo, descritores]
-priority: 70
+priority: 75
 priority_tier: contextual
-version: 1.0.0
+version: 1.1.0
 status: published
 source_path: knowledge_blocks (seed:tireoide_v1, migrado de "Descritores de nódulo")
 migrated_from_seed: true

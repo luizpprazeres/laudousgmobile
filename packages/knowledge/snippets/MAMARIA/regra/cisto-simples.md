@@ -3,9 +3,9 @@ id: mamaria-regra-cisto-simples
 category: MAMARIA
 kind: regra
 tags: [mamaria, cisto, imagem-anecoica, distancia, achado]
-priority: 70
+priority: 75
 priority_tier: contextual
-version: 1.0.0
+version: 1.1.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts
 source_extracted_at: 2026-05-21
