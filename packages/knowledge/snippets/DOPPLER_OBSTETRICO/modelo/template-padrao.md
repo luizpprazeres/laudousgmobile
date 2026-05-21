@@ -35,7 +35,12 @@ Diâmetro biparietal (DBP) de ____ mm.
 Circunferência da cabeça (CC) de ____ mm.
 Circunferência abdominal (CA) de ____ mm.
 Comprimento do fêmur (CF) de ____ mm.
-Peso aproximado de ____ g (+- ____ g, percentil ____).
+Peso aproximado de ____ g{ (+- ____ g SE médico falou variação)(, percentil ___ SE médico falou percentil)}.
+  ↑ Variação (+- X g) e percentil são OPCIONAIS. NÃO deixar placeholder se médico não falou.
+  ↑ Se médico falou só o peso: "Peso aproximado de X g." (sem parênteses)
+  ↑ Se médico falou peso + percentil: "Peso aproximado de X g (percentil Y)."
+  ↑ Se médico falou os 3: "Peso aproximado de X g (+- Y g, percentil Z)."
+  ↑ JAMAIS deixar "+- ___" ou "percentil ___" como placeholder.
 
 Placenta de localização __________________, com ecotextura __________________, de acordo com a fase da gestação.
 {LINHA_LIQUIDO_AMNIOTICO}
@@ -48,7 +53,9 @@ Artéria uterina esquerda: IP ____.
 IP médio das artérias uterinas mede ____ (percentil ____).
 
 CONCLUSÃO:
-1) Gestação em torno de ____ semanas e ____ dias.
+1) Gestação em torno de ____ semanas{ e ____ dias SE médico falou dias}.
+   ↑ Se médico falou só semanas (sem dias): "Gestação em torno de X semanas." (OMITA dias)
+   ↑ JAMAIS deixar "e ____ dias" como placeholder.
 {CONCLUSAO_LIQUIDO_AMNIOTICO}
 3) Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.
 4) Ausência de sinais de incisuras.

@@ -42,7 +42,14 @@ Diâmetro biparietal (DBP) de ____ mm.
 Circunferência da cabeça (CC) de ____ mm.
 Circunferência abdominal (CA) de ____ mm.
 Comprimento do fêmur (CF) de ____ mm.
-Peso aproximado de ____ gramas (+- ____ gramas, percentil ____).
+Peso aproximado de ____ gramas{ (+- ____ gramas SE médico falou variação)(, percentil ___ SE médico falou percentil)}.
+  ↑ Variação (+- X gramas) e percentil são OPCIONAIS. NÃO deixar placeholder se médico não falou.
+  ↑ Se médico falou só o peso: "Peso aproximado de X gramas." (sem parênteses)
+  ↑ Se médico falou peso + percentil (sem variação): "Peso aproximado de X gramas (percentil Y)."
+  ↑ Se médico falou peso + variação (sem percentil): "Peso aproximado de X gramas (+- Y gramas)."
+  ↑ Se médico falou os 3: "Peso aproximado de X gramas (+- Y gramas, percentil Z)."
+  ↑ Use VÍRGULA pra separar variação e percentil dentro do parêntese (NÃO use "e").
+  ↑ JAMAIS deixar "+-  ___" ou "percentil ___" como placeholder.
 
 Placenta {de localização ___[loc se médico falou]___, com ecotextura ___[ecotex se médico falou]___ | de aspecto normal SE TUDO omitido}.
   ↑ Se médico não falou localização nem ecotextura: "Placenta de aspecto normal."
