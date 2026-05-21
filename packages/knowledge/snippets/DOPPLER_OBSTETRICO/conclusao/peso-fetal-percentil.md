@@ -3,9 +3,9 @@ id: doppler-obstetrico-conclusao-peso-fetal-percentil
 category: DOPPLER_OBSTETRICO
 kind: conclusao
 tags: [doppler-obstetrico, conclusao, peso-fetal, percentil, rciu, gratacos]
-priority: 70
+priority: 80
 priority_tier: contextual
-version: 1.0.0
+version: 1.1.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts
 source_extracted_at: 2026-05-21
