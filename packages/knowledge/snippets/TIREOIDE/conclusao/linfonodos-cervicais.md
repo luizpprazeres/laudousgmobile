@@ -3,7 +3,7 @@ id: tireoide-conclusao-linfonodos-cervicais
 category: TIREOIDE
 kind: conclusao
 tags: [tireoide, conclusao, linfonodos, cervical]
-priority: 70
+priority: 60
 priority_tier: contextual
 version: 1.0.0
 status: published

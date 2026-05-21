@@ -3,7 +3,7 @@ id: tireoide-frase-linfonodos-cervicais-preservados
 category: TIREOIDE
 kind: frase
 tags: [tireoide, linfonodos, cervical, morfologia-preservada]
-priority: 70
+priority: 60
 priority_tier: contextual
 version: 1.0.0
 status: published
