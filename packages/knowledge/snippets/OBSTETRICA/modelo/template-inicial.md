@@ -25,8 +25,11 @@ Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, a
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Saco gestacional de forma normal, com diâmetro médio de ____ mm.
-{Embrião|Feto} único, de situação ____, com polo cefálico à ____.
-  ↑ Use "Embrião" OU "Feto" conforme o médico falou. NÃO substitua um pelo outro.
+{Embrião|Feto} único, em situação {transversa | OU OUTRO se médico falou}{, com polo cefálico à ___[lado se médico falou]___ | OU OMITIR ESSA PARTE}.
+  ↑ Use "Embrião" OU "Feto" conforme o médico falou (NÃO substitua um pelo outro).
+  ↑ Situação default: "transversa" (normal no 1º trimestre).
+  ↑ Polo cefálico: SÓ aparece se médico falou o lado. Se omitido, OMITIR essa sub-frase.
+  ↑ JAMAIS deixar "situação ___" com placeholder — usar "transversa" como default.
 Batimentos cardíacos ritmados (BCF = ____ bpm).
 Comprimento crânio-nádegas (CCN) de ____ mm.
 Vesícula vitelina de forma e dimensões normais.

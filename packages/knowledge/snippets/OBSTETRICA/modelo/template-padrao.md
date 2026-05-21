@@ -26,7 +26,10 @@ COMENTÁRIOS:
 Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem que possui várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
-Feto único, em apresentação __________________, com dorso __________________.
+Feto único, em apresentação {cefálica | OU OUTRO se médico falou}{, com dorso à ___[lado se médico falou]___ | OU OMITIR ESSA PARTE}.
+  ↑ Apresentação default (quando médico omite): "cefálica" (mais comum a termo).
+  ↑ Dorso: SÓ aparece se médico falou o lado. Se omitido, OMITIR essa sub-frase inteira.
+  ↑ JAMAIS deixar "apresentação ___" ou "dorso ___" com placeholder — usar default ou omitir.
 Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ____ bpm).
 Os movimentos fetais são ativos.
 
@@ -41,7 +44,10 @@ Circunferência abdominal (CA) de ____ mm.
 Comprimento do fêmur (CF) de ____ mm.
 Peso aproximado de ____ gramas (+- ____ gramas, percentil ____).
 
-Placenta de localização __________________, com ecotextura _________________.
+Placenta {de localização ___[loc se médico falou]___, com ecotextura ___[ecotex se médico falou]___ | de aspecto normal SE TUDO omitido}.
+  ↑ Se médico não falou localização nem ecotextura: "Placenta de aspecto normal."
+  ↑ Se médico falou só localização (sem ecotextura): manter localização + omitir parte de ecotextura.
+  ↑ JAMAIS deixar "localização ___" ou "ecotextura ___" com placeholder.
 {LINHA_LIQUIDO_AMNIOTICO}
 
 CONCLUSÃO:
