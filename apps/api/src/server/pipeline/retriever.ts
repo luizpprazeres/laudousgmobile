@@ -39,6 +39,7 @@ export async function runRetriever(args: {
   signal?: AbortSignal;
 }): Promise<{
   blocks: RagBlockForPrompt[];
+  skipped: RagBlockForPrompt[];
   queryText: string;
   warning: { code: "RAG_EMPTY"; message: string } | null;
 }> {
@@ -83,7 +84,7 @@ export async function runRetriever(args: {
   )}]::text[]`;
 
   const rows = await db.execute(sql`
-    select id, kind, title, content, priority
+    select id, kind, title, content, priority, similarity
     from public.match_knowledge_blocks(
       p_query_embedding := ${embeddingLiteral}::vector(1536),
       p_category_code   := ${args.categoryCode}::text,
@@ -95,22 +96,28 @@ export async function runRetriever(args: {
 
   // Aplica quota por kind exato (defesa em profundidade)
   const grouped = new Map<string, RagBlockForPrompt[]>();
+  const skipped: RagBlockForPrompt[] = [];
   for (const r of rows as unknown as Array<{
     id: string;
     kind: string;
     title: string;
     content: string;
     priority: number;
+    similarity: number | null;
   }>) {
     const list = grouped.get(r.kind) ?? [];
+    const block: RagBlockForPrompt = {
+      id: r.id,
+      kind: r.kind as RagBlockForPrompt["kind"],
+      title: r.title,
+      content: r.content,
+      priority: r.priority,
+      similarity: r.similarity ?? null,
+    };
     if (list.length < (quotas[r.kind] ?? 0)) {
-      list.push({
-        id: r.id,
-        kind: r.kind as RagBlockForPrompt["kind"],
-        title: r.title,
-        content: r.content,
-        priority: r.priority,
-      });
+      list.push(block);
+    } else {
+      skipped.push(block);
     }
     grouped.set(r.kind, list);
   }
@@ -129,7 +136,7 @@ export async function runRetriever(args: {
         }
       : null;
 
-  return { blocks, queryText, warning };
+  return { blocks, skipped, queryText, warning };
 }
 
 function buildQueryText(f: StructuredFindings): string {

@@ -33,6 +33,7 @@ export const generationAudit = pgTable(
     structuredOutput: jsonb("structured_output"),
     validatorResult: jsonb("validator_result"),
     ragBlocksRetrieved: jsonb("rag_blocks_retrieved"),
+    ragBlocksSkipped: jsonb("rag_blocks_skipped"),
     systemMessageFull: text("system_message_full"),
     outputText: text("output_text"),
     sanityResult: jsonb("sanity_result"),

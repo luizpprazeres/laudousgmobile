@@ -22,6 +22,7 @@ export type GenerationAuditState = {
   structuredOutput: unknown | null;
   validatorResult: unknown | null;
   ragBlocksRetrieved: unknown | null;
+  ragBlocksSkipped: unknown | null;
   systemMessageFull: string | null;
   outputText: string | null;
   sanityResult: unknown | null;
@@ -56,6 +57,7 @@ export async function persistAudit(state: GenerationAuditState): Promise<void> {
       structured_output: state.structuredOutput,
       validator_result: state.validatorResult,
       rag_blocks_retrieved: state.ragBlocksRetrieved,
+      rag_blocks_skipped: state.ragBlocksSkipped,
       system_message_full: state.systemMessageFull,
       output_text: state.outputText,
       sanity_result: state.sanityResult,

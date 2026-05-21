@@ -59,6 +59,7 @@ export const RagBlockForPromptSchema = z.object({
   title: z.string(),
   content: z.string(),
   priority: z.number().int(),
+  similarity: z.number().nullish(),
 });
 
 export type RagBlockForPrompt = z.infer<typeof RagBlockForPromptSchema>;

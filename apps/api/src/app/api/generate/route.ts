@@ -104,6 +104,7 @@ export async function POST(req: Request) {
     structuredOutput: null,
     validatorResult: null,
     ragBlocksRetrieved: null,
+    ragBlocksSkipped: null,
     systemMessageFull: null,
     outputText: null,
     sanityResult: null,
@@ -390,7 +391,7 @@ export async function POST(req: Request) {
       // ----- 3. Retriever -----
       currentStage = "retriever";
       const ragT0 = Date.now();
-      const { blocks, queryText, warning } = await runRetriever({
+      const { blocks, skipped, queryText, warning } = await runRetriever({
         findings,
         categoryCode: findings.categoria_detectada,
         writingStyleId: effectiveWritingStyleId,
@@ -398,6 +399,7 @@ export async function POST(req: Request) {
       });
       auditState.ragDurationMs = Date.now() - ragT0;
       auditState.ragBlocksRetrieved = blocks;
+      auditState.ragBlocksSkipped = skipped;
       await updateRunAfterRetriever({
         runId,
         ragBlockIds: blocks.map((b) => b.id),
