@@ -2,21 +2,31 @@
 id: pelve-feminina-regra-tabela-referencia-etaria
 category: PELVE_FEMININA
 kind: regra
-tags: [pelve-feminina, tabela-etaria, domingos-correia-da-rocha, referencia, pediatrica]
-priority: 70
-priority_tier: contextual
-version: 1.0.0
+tags: [pelve-feminina, tabela-etaria, domingos-correia-da-rocha, referencia, pediatrica, opcional]
+priority: 60
+priority_tier: optional
+version: 1.1.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts
 source_extracted_at: 2026-05-21
 source_lines: 1107-1113
 ---
 
-GATILHOS DE APLICAÇÃO:
-- adicione referência etária
-- tabela etária
-- Domingos Correia da Rocha
-- valores habituais
+⚠️ REGRA IMPORTANTE: tabela de referência etária NÃO é padrão no laudo de pelve feminina.
+
+SÓ aplicar QUANDO o médico EXPLICITAMENTE mencionar UM dos gatilhos abaixo no input. Caso contrário, NÃO incluir nada sobre tabela de referência no laudo.
+
+GATILHOS DE APLICAÇÃO (algum deve estar presente no input do médico):
+- "adicione referência etária"
+- "tabela etária"
+- "Domingos Correia da Rocha"
+- "valores habituais"
+
+ANTI-EXEMPLOS (NÃO APLICAR):
+✗ Médico não pediu tabela → NUNCA adicionar bloco "Valores habituais: útero..."
+✗ Mesmo se laudo tem útero/ovários medidos — se médico não pediu tabela, NÃO incluir
+
+QUANDO APLICAR (médico pediu):
 
 TABELA DE REFERÊNCIA ETÁRIA (DOMINGOS CORREIA DA ROCHA)
 - A tabela de referência etária é OPCIONAL e só deve ser incluída se o usuário pedir explicitamente ("adicione referência etária", "tabela etária" ou equivalente).
