@@ -3,6 +3,5 @@
   "framework": "nextjs",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @laudousg/lab build",
-  "outputDirectory": ".next",
-  "ignoreCommand": "cd ../.. && git diff HEAD^ HEAD --quiet ./apps/lab ./packages ./docs/changelog ./pnpm-lock.yaml"
+  "outputDirectory": ".next"
 }
