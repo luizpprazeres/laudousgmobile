@@ -3,9 +3,9 @@ id: pelve-feminina-regra-tabela-referencia-etaria
 category: PELVE_FEMININA
 kind: regra
 tags: [pelve-feminina, tabela-etaria, domingos-correia-da-rocha, referencia, pediatrica, opcional]
-priority: 60
+priority: 72
 priority_tier: optional
-version: 1.1.0
+version: 1.2.0
 status: published
 source_path: /Users/luizprazeres/laudousg/lib/categoryDefaults.ts
 source_extracted_at: 2026-05-21
