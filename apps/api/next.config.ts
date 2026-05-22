@@ -27,6 +27,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Quando o host é sala.laudousg.com, a raiz "/" serve a tela de pareamento
+  // da Sala do Auxiliar (que vive em /sala). Restantes rotas seguem normais.
+  async rewrites() {
+    return [
+      {
+        source: "/",
+        has: [{ type: "host", value: "sala.laudousg.com" }],
+        destination: "/sala",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
