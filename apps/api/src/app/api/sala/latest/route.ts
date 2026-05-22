@@ -52,9 +52,10 @@ export async function GET(req: Request) {
 
   const { data: reports, error: reportErr } = await service
     .from("reports")
-    .select("id, final_output, generated_output, category_code, created_at")
+    .select("id, final_output, generated_output, category_code, created_at, updated_at")
     .eq("user_id", room.user_id as string)
     .gte("created_at", startOfDay.toISOString())
+    .order("updated_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(50);
 
