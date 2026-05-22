@@ -81,12 +81,20 @@ export function BlocksClient({ categories, writable, rootPath }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: block.relPath, content }),
       });
+      const data = await res.json().catch(() => ({} as Record<string, unknown>));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? `status ${res.status}`);
+        throw new Error((data.error as string | undefined) ?? `status ${res.status}`);
       }
       setBlock({ ...block, raw: content });
-      window.alert("Salvo. Próximo passo (P7.5.B.6): re-ingest automático no Supabase.");
+      const target = data.target as string | undefined;
+      const commit = data.commit as { commitSha?: string; htmlUrl?: string } | undefined;
+      if (target === "github" && commit?.htmlUrl) {
+        window.alert(
+          `Salvo via commit no GitHub.\n\nSHA: ${commit.commitSha?.slice(0, 7) ?? "?"}\nVer: ${commit.htmlUrl}\n\nVercel vai re-buildar o Lab em ~2min. Re-ingest no Supabase ainda é manual (P7.5.B.6 futuro).`,
+        );
+      } else {
+        window.alert(`Salvo no filesystem local. Em prod (Vercel) cai no fallback GitHub.\n\nRe-ingest no Supabase ainda é manual (P7.5.B.6 futuro).`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "save falhou");
     } finally {
