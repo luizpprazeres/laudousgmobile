@@ -6,5 +6,6 @@ export * from "./knowledgeBlocks";
 export * from "./reports";
 export * from "./generationRuns";
 export * from "./generationAudit";
+export * from "./subscriptions";
 export * from "./goldenCases";
 export * from "./learningSuggestions";

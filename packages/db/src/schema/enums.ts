@@ -4,6 +4,7 @@ export const profileRoleEnum = pgEnum("profile_role", ["user", "admin"]);
 
 export const profilePlanEnum = pgEnum("profile_plan", [
   "free",
+  "essencial",
   "pro",
   "clinic",
 ]);

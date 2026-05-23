@@ -24,6 +24,8 @@ const ServerEnvSchema = z.object({
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
   CONTRACT_VERSION: z.string().default("v1"),
   GENERATION_AUDIT_ENABLED: z.string().default("false"),
+  APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
+  APPLE_NOTIFICATION_SECRET: z.string().optional(),
 });
 
 let _env: z.infer<typeof ServerEnvSchema> | null = null;
