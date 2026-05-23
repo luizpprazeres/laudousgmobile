@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const UpdateProfileSchema = z.object({
   name: z.string().trim().min(1).max(120).nullable().optional(),
   default_writing_style_id: z.string().uuid().nullable().optional(),
-  plan: z.enum(["free", "pro", "clinic"]).optional(),
+  plan: z.enum(["free", "essencial", "pro", "clinic"]).optional(),
 });
 
 export async function GET(req: Request) {
