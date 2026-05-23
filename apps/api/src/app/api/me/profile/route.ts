@@ -4,6 +4,7 @@ export { OPTIONS } from "@/server/cors";
 import { ProfileSchema } from "@laudousg/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { isBetaTester } from "@/server/iap/betaWhitelist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,12 +82,15 @@ async function loadProfile(userId: string) {
     .limit(1);
 
   if (!row) return null;
+  // Beta whitelist override: testers e Apple Reviewer veem plan='pro' sem tocar
+  // no DB. Lista controlada por env BETA_TESTER_EMAILS (CSV).
+  const effectivePlan = isBetaTester(row.email) ? "pro" : row.plan;
   return ProfileSchema.parse({
     id: row.id,
     email: row.email,
     name: row.name,
     role: row.role,
-    plan: row.plan,
+    plan: effectivePlan,
     default_writing_style_id: row.defaultWritingStyleId,
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
