@@ -8,6 +8,11 @@ import { EditorHeader } from "./EditorHeader";
 import { FrontmatterForm } from "./FrontmatterForm";
 import { MarkdownEditor } from "./MarkdownEditor";
 
+type BlockApiResponse = FsBlockContent & {
+  writable: boolean;
+  githubReady: boolean;
+};
+
 type Props = {
   categories: FsCategory[];
   writable: boolean;
@@ -27,6 +32,7 @@ export function BlocksClient({ categories, writable, rootPath }: Props) {
 
   const [selectedPath, setSelectedPath] = useState<string | null>(firstPath);
   const [block, setBlock] = useState<FsBlockContent | null>(null);
+  const [githubReady, setGithubReady] = useState(false);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,11 +46,12 @@ export function BlocksClient({ categories, writable, rootPath }: Props) {
     fetch(`/api/blocks/file?path=${encodeURIComponent(selectedPath)}`)
       .then(async (r) => {
         if (!r.ok) throw new Error(`status ${r.status}`);
-        return (await r.json()) as FsBlockContent;
+        return (await r.json()) as BlockApiResponse;
       })
       .then((data) => {
         if (cancelled) return;
         setBlock(data);
+        setGithubReady(!!data.githubReady);
         setContent(data.raw);
       })
       .catch((err: Error) => {
@@ -120,6 +127,7 @@ export function BlocksClient({ categories, writable, rootPath }: Props) {
               path={`${rootPath.split("/").slice(-3).join("/")}/${block.category}/${block.kind}/`}
               modified={dirty}
               writable={writable}
+              githubReady={githubReady}
               saving={saving}
               onRevert={handleRevert}
               onSave={handleSave}

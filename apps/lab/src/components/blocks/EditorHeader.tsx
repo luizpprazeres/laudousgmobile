@@ -8,13 +8,15 @@ type Props = {
   path: string;
   modified: boolean;
   writable: boolean;
+  githubReady?: boolean;
   saving?: boolean;
   onSave?: () => void;
   onRevert?: () => void;
 };
 
-export function EditorHeader({ filename, path, modified, writable, saving, onSave, onRevert }: Props) {
-  const canSave = modified && writable && !saving;
+export function EditorHeader({ filename, path, modified, writable, githubReady, saving, onSave, onRevert }: Props) {
+  const canPersist = writable || githubReady;
+  const canSave = modified && canPersist && !saving;
   const saveLabel = saving ? "Salvando…" : "Salvar";
 
   return (
@@ -29,10 +31,18 @@ export function EditorHeader({ filename, path, modified, writable, saving, onSav
                 ★ modified
               </span>
             )}
-            {!writable && (
+            {!writable && githubReady && (
+              <span
+                className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase text-emerald-800"
+                title="Save vai commitar direto no GitHub (main)"
+              >
+                via github
+              </span>
+            )}
+            {!writable && !githubReady && (
               <span
                 className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase text-stone-600"
-                title="Filesystem read-only — rode dev local pra editar"
+                title="Filesystem read-only e GitHub não configurado"
               >
                 read-only
               </span>
@@ -70,7 +80,7 @@ export function EditorHeader({ filename, path, modified, writable, saving, onSav
           )}
           disabled={!canSave}
           onClick={onSave}
-          title={!writable ? "Filesystem read-only" : undefined}
+          title={!canPersist ? "Filesystem read-only e GitHub não configurado" : undefined}
           type="button"
         >
           <Save aria-hidden className="h-3.5 w-3.5" />
