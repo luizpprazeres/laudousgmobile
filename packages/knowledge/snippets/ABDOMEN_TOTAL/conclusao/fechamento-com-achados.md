@@ -42,3 +42,5 @@ Exemplos:
 REGRA DE QUANDO INCLUIR O FECHAMENTO:
 - Há achados específicos na conclusão (≥1 item) → INCLUIR como último item numerado
 - TODOS os órgãos estão normais (conclusão genérica) → OMITIR o fechamento (a conclusão já é geral)
+
+
