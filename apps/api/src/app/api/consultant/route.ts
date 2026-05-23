@@ -44,21 +44,27 @@ function toGenerateEvent(event: ConsultantSSEEvent): GenerateSSEEvent {
   return event as unknown as GenerateSSEEvent;
 }
 
+// gpt-5*/o-series aceitam reasoning_effort; gpt-4.x/gpt-4o não.
+function supportsReasoningEffort(model: string): boolean {
+  return /^(gpt-5|o\d)/.test(model);
+}
+
 async function createConsultantStream(args: {
   model: string;
   messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
   signal: AbortSignal;
 }) {
-  return openai().chat.completions.create(
-    {
-      model: args.model,
-      messages: args.messages,
-      temperature: 0.3,
-      max_tokens: 4000,
-      stream: true,
-    },
-    { signal: args.signal },
-  );
+  const base: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
+    model: args.model,
+    messages: args.messages,
+    temperature: 0.3,
+    max_tokens: 4000,
+    stream: true,
+  };
+  const params = supportsReasoningEffort(args.model)
+    ? { ...base, reasoning_effort: "medium" as const }
+    : base;
+  return openai().chat.completions.create(params, { signal: args.signal });
 }
 
 export async function POST(req: Request) {

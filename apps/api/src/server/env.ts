@@ -12,7 +12,7 @@ const ServerEnvSchema = z.object({
   OPENAI_MODEL_STRUCTURER: z.string().default("gpt-4.1-mini"),
   OPENAI_MODEL_WRITER: z.string().default("gpt-4.1-mini"),
   OPENAI_MODEL_SANITY: z.string().default("gpt-4.1-mini"),
-  OPENAI_MODEL_CONSULTANT: z.string().default("gpt-5-thinking"),
+  OPENAI_MODEL_CONSULTANT: z.string().default("gpt-5"),
   OPENAI_MODEL_CONSULTANT_FALLBACK: z.string().default("gpt-4.1"),
   OPENAI_EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
 
