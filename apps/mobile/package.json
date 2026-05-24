@@ -8,8 +8,9 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "web": "expo start --web",
+    "web:build": "expo export --platform web --output-dir dist",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .expo node_modules/.cache"
+    "clean": "rm -rf .expo dist node_modules/.cache"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
@@ -21,6 +22,7 @@
     "@supabase/supabase-js": "^2.47.10",
     "expo": "~52.0.20",
     "expo-av": "~15.0.1",
+    "expo-clipboard": "^56.0.3",
     "expo-constants": "~17.0.3",
     "expo-font": "^13.0.4",
     "expo-haptics": "~14.0.1",

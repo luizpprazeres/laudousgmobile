@@ -149,6 +149,64 @@ export async function updateMeProfile(input: UpdateProfileInput): Promise<Profil
   ).profile;
 }
 
+// ============================================
+// Sala do Auxiliar — pareamento + push automático
+// ============================================
+
+export type SalaPairing = {
+  code: string;
+  expiresAt: string;
+  salaUrl: string;
+  salaShortUrl: string;
+};
+
+const SalaPairingSchema = z.object({
+  code: z.string(),
+  expiresAt: z.string(),
+  salaUrl: z.string().url(),
+  salaShortUrl: z.string().url(),
+});
+
+export async function generateSalaPairing(): Promise<SalaPairing> {
+  const res = await authedFetch("/api/sala/pair/generate", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: "{}",
+  });
+  return SalaPairingSchema.parse(await readJsonOrThrow(res, "gerar pareamento da sala"));
+}
+
+export async function revokeSalaPairing(): Promise<number> {
+  const res = await authedFetch("/api/sala/revoke", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: "{}",
+  });
+  const data = (await readJsonOrThrow(res, "revogar pareamento da sala")) as { revoked?: number };
+  return data.revoked ?? 0;
+}
+
+export async function pushReportToSala(reportId: string): Promise<void> {
+  const res = await authedFetch("/api/sala/push", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({ reportId }),
+  });
+  if (!res.ok) {
+    // Push é fire-and-forget — log mas não bloqueia geração de laudo
+    console.warn(`[mobile] push pra sala falhou: ${res.status}`);
+  }
+}
+
 /**
  * Faz POST /api/generate e itera sobre os eventos SSE.
  *

@@ -35,6 +35,7 @@ type Props = {
 };
 
 const NAV = [
+  { id: "sala", label: "Sala do Auxiliar", Icon: Folder, route: "/sala" as const },
   { id: "historico", label: "Histórico", Icon: Folder, route: "/historico" as const },
   { id: "analytics", label: "Analytics", Icon: Bar, route: "/analytics" as const },
   { id: "biblioteca", label: "Biblioteca", Icon: Book, route: "/biblioteca" as const },

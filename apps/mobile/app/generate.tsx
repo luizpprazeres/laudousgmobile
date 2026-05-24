@@ -17,7 +17,7 @@ import {
   generateReducer,
   initialGenerateState,
 } from "@/features/generate/state";
-import { generateReportStream, type MockScenario } from "@/lib/api";
+import { generateReportStream, pushReportToSala, type MockScenario } from "@/lib/api";
 import { Banner, type BannerSeverity } from "@/ui/Banner";
 import { Segment } from "@/ui/Segment";
 import { Suggestion } from "@/ui/Suggestion";
@@ -115,6 +115,10 @@ export default function GenerateScreen() {
         mock ?? undefined,
       )) {
         dispatch({ type: "SSE_EVENT", event: ev });
+        // Auxiliar pareado vê laudo automaticamente — fire-and-forget.
+        if (ev.type === "done" && ev.report_id) {
+          pushReportToSala(ev.report_id).catch(() => { /* ignore */ });
+        }
       }
     } catch (e) {
       if ((e as Error).name === "AbortError") return;

@@ -19,9 +19,9 @@ export type ColorTokens = {
   danger: string;
   warningBg: string;
   warningText: string;
-  /** "Laudo" — cor principal do wordmark (#18533F light / #6ee7b7 dark) */
+  /** "Laudo" — cor principal do wordmark, alinhado com iOS BrandColor.primaryDeep */
   wordmark: string;
-  /** "USG" — accent secundário do wordmark */
+  /** "USG" — accent secundário do wordmark, alinhado com iOS BrandColor.primary */
   wordmarkAccent: string;
   /** Tagline embaixo do wordmark (40-45% opacity do wordmark) */
   wordmarkSub: string;
@@ -48,9 +48,9 @@ export const lightTokens: ColorTokens = {
   danger: "#FF3B30",
   warningBg: "rgba(245,158,11,0.15)",
   warningText: "#B45309",
-  wordmark: "#18533F",
-  wordmarkAccent: "#4a8a6a",
-  wordmarkSub: "rgba(24,83,63,0.45)",
+  wordmark: "#065F46",
+  wordmarkAccent: "#059669",
+  wordmarkSub: "rgba(6,95,70,0.45)",
 };
 
 export const darkTokens: ColorTokens = {
@@ -86,6 +86,7 @@ export const FONT = {
   medium: "Inter_500Medium",
   semibold: "Inter_600SemiBold",
   bold: "Inter_700Bold",
+  black: "Inter_900Black",
   display: "Barlow_700Bold",
   displayBold: "Barlow_800ExtraBold",
 } as const;

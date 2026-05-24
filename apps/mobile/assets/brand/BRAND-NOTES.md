@@ -57,15 +57,37 @@ green.700:   #15803d  ← semantic success
 
 | ID | Arquivo | `useOn` (contexto) |
 |---|---|---|
-| `transparent` | `logos/logo-laudousg-transparent.png` | **light** (background claro) — **PRIMÁRIO** |
-| `white` | `logos/logo-laudousg-white.png` | **dark** (background escuro) |
-| `main` | `logos/logo-laudousg-main.png` | any (versão completa principal) |
-| `gold` | `logos/logo-gold.png` | premium (badges de plano pago / VIP) |
+| `transparent` | `logos/logo-laudousg-transparent.png` | **light** (background claro) — **PRIMÁRIO (só ícone)** |
+| `white` | `logos/logo-laudousg-white.png` | **dark** (background escuro — só ícone) |
+| `main` | `logos/logo-laudousg-main.png` | any (logo completo HORIZONTAL — **MAS tem fundo branco opaco**) |
+| `gold` | `logos/logo-gold.png` | premium (badges de plano pago / VIP — **tem fundo cinza opaco**) |
 | `mockup` | `logos/logo-laudousg-mockup.png` | context (apresentações) |
 | `mockups` | `logos/logo-mockups.png` | context (apresentações multi-device) |
 | `fundobranco` | `logos/logo-fundobranco.png` (PNG) + `logo-fundobranco-jpg.jpg` (JPG) | branco/sólido — útil em impressos |
 
 **`primaryLogoPath`** no original: `/brand/logo-laudousg-transparent.png`. No mobile, equivalente: `assets/brand/logos/logo-laudousg-transparent.png`.
+
+### ⚠️ Importante — versão "completa" (ícone + wordmark juntos)
+
+Os 7 arquivos acima do catálogo oficial NÃO incluem nenhuma versão com **ícone + wordmark "LaudoUSG" juntos em uma única imagem com fundo transparente**. O que existe:
+
+- `logo-laudousg-transparent.png` (450×581, 112 KB) = **só o ÍCONE visual**. O wordmark é renderizado SEPARADO (como texto HTML/RN) pelo componente `LaudoUSGLogo.tsx`.
+- `logo-laudousg-main.png` (2816×1536, 4 MB) = logo completo (ícone + nome horizontais), mas tem **fundo branco opaco** (pixel 0,0 = `rgb(249,251,250,255)`).
+- `logo-laudousg-white.png` (322×433, 56 KB) = **só o ÍCONE** versão branca (pra fundos escuros).
+
+### Variantes processadas LOCALMENTE (não vieram do original)
+
+Como o `main.png` é o único que tem o **logo completo (ícone + wordmark "LaudoUSG" juntos)**, mas tinha fundo branco opaco, foi processado com remoção de fundo via NumPy (máscara brightness+saturation com anti-alias preservado):
+
+| Arquivo | Dimensões | Tamanho | Qualidade | Quando usar |
+|---|---|---|---|---|
+| **`logos/logo-laudousg-main-nobg-1024.png`** | 1024×558 | 592 KB | **256 níveis alpha** (anti-alias suave) | **RECOMENDADO PRA MOBILE** — logo completo em fundo transparente, peso aceitável |
+| `logos/logo-laudousg-main-nobg.png` | 2816×1536 | 2.4 MB | 61 níveis alpha | Alta resolução pra impressos/web |
+| `logos/logo-laudousg-nobg.png` (tentativa anterior) | 2816×1536 | 1.5 MB | **2 níveis alpha** (bordas binárias) | NÃO recomendado — qualidade visual inferior |
+
+**Como o componente `LaudoUSGLogo.tsx` usa hoje:** carrega só o ÍCONE (`logo-laudousg-transparent.png`) e renderiza "Laudo" + "USG" como texto HTML/RN ao lado, com tipografia controlável (Inter Bold + Inter Regular). Essa abordagem é mais flexível (responsiva, dark mode, controle de tamanho) que usar a imagem `main-nobg` inteira.
+
+**Quando usar o `main-nobg-1024.png`:** se quiser o logo como uma única peça visual (ex: hero de marketing, share image, OG tag, splash screen com a marca pronta sem depender de fontes carregadas).
 
 ## Estrutura do diretório
 

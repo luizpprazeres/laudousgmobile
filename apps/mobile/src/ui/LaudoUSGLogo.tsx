@@ -66,7 +66,7 @@ export function LaudoUSGLogo({
         <Text
           style={{
             color: mainColor,
-            fontFamily: FONT.bold,
+            fontFamily: FONT.black,
             fontSize: dims.wordmark,
             letterSpacing: -0.4,
             includeFontPadding: false,
