@@ -4,10 +4,8 @@
   "private": true,
   "description": "LaudoUSG Mobile — plataforma mobile-first para geração de laudos de ultrassonografia por IA",
   "engines": {
-    "node": ">=20.11.0",
-    "pnpm": ">=10"
+    "node": ">=20.11.0"
   },
-  "packageManager": "pnpm@10.33.3",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
