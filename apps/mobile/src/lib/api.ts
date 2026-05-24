@@ -9,7 +9,7 @@ import {
   type GenerationRun,
   type Profile,
   type Report,
-} from "@laudousg/shared";
+} from "@/shared";
 import { z } from "zod";
 import { supabase } from "./supabase";
 

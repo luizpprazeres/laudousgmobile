@@ -11,7 +11,7 @@ import {
   calcByUSG,
   parseDateBR,
   type IGResult,
-} from "@laudousg/shared";
+} from "@/shared";
 import { Sheet } from "@/ui/Sheet";
 import { C, FONT } from "@/ui/tokens";
 import { Cal, Ruler } from "@/ui/icons";

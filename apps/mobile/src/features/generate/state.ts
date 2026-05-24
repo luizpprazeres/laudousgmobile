@@ -3,7 +3,7 @@ import type {
   StructuredFindings,
   ClarifyQuestion,
   SanityResult,
-} from "@laudousg/shared";
+} from "@/shared";
 
 /**
  * Máquina de estado da tela Generate.

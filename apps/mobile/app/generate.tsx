@@ -726,7 +726,7 @@ function humanizeGenerateError(raw: string): string {
 
 // ─── Laudo (output / streaming) ───────────────────────────────────
 import type { GenerateState } from "@/features/generate/state";
-import type { SanityIssue } from "@laudousg/shared";
+import type { SanityIssue } from "@/shared";
 
 type LaudoProps = {
   state: GenerateState;
