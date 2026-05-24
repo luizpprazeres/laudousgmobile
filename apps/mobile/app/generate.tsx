@@ -36,6 +36,7 @@ import {
 import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
+import { SalaPairingSheet } from "@/features/sala/SalaPairingSheet";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
 import { CalculatorsSheet, type CalcKey } from "@/features/generate/CalculatorsSheet";
 import { IGCalculatorSheet } from "@/features/generate/IGCalculatorSheet";
@@ -74,6 +75,7 @@ export default function GenerateScreen() {
   const [igCalcOpen, setIgCalcOpen] = useState(false);
   const [igCalcInitialTab, setIgCalcInitialTab] = useState<"dum" | "usg">("dum");
   const [dopplerCalcOpen, setDopplerCalcOpen] = useState(false);
+  const [salaOpen, setSalaOpen] = useState(false);
   // Mock OFF por default — antes era "happy" em DEV mas isso fazia toda
   // geração cair no /api/generate/mock, que retorna PELVE_FEMININA fixo
   // e não persiste no DB (laudo sumia do histórico). FAB DEV abaixo ainda
@@ -510,6 +512,11 @@ export default function GenerateScreen() {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         onNotice={(n) => setNotice(n)}
+        onOpenSala={() => setSalaOpen(true)}
+      />
+      <SalaPairingSheet
+        open={salaOpen}
+        onClose={() => setSalaOpen(false)}
       />
       <PlusSheet
         open={plusOpen}

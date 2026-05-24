@@ -9,6 +9,7 @@ import {
   Book,
   Chevron,
   Folder,
+  Layers,
   Moon,
   Shield,
   Sliders,
@@ -32,10 +33,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onNotice?: (n: Notice) => void;
+  /** Solicita abertura do SalaPairingSheet — renderizado pelo parent. */
+  onOpenSala?: () => void;
 };
 
 const NAV = [
-  { id: "sala", label: "Sala do Auxiliar", Icon: Folder, route: "/sala" as const },
   { id: "historico", label: "Histórico", Icon: Folder, route: "/historico" as const },
   { id: "analytics", label: "Analytics", Icon: Bar, route: "/analytics" as const },
   { id: "biblioteca", label: "Biblioteca", Icon: Book, route: "/biblioteca" as const },
@@ -74,7 +76,7 @@ function planBadge(plan: string | null): PlanBadge {
   return { label: "Gratuito", bg: "rgba(0,0,0,0.06)", fg: "#3C3C43" };
 }
 
-export function MenuSheet({ open, onClose, onNotice }: Props) {
+export function MenuSheet({ open, onClose, onNotice, onOpenSala }: Props) {
   // Sheet background usa tokens light fixos (C). Para evitar texto branco
   // sobre fundo claro quando o SO está em dark mode, fixamos os tokens do
   // conteúdo também em light. Quando o Sheet ganhar suporte a dark, trocar.
@@ -129,6 +131,13 @@ export function MenuSheet({ open, onClose, onNotice }: Props) {
     setTimeout(() => router.push(route), 220);
   };
 
+  // Fecha o menu e dispara a abertura do sheet de Sala no parent
+  // (não navega — Sala é um sheet, não uma rota).
+  const openSala = () => {
+    onClose();
+    setTimeout(() => onOpenSala?.(), 220);
+  };
+
   const signOut = async () => {
     onClose();
     try {
@@ -154,7 +163,7 @@ export function MenuSheet({ open, onClose, onNotice }: Props) {
   const showSubtitle = !!identity.email && identity.email !== name;
 
   return (
-    <Sheet open={open} onClose={onClose} height={580}>
+    <Sheet open={open} onClose={onClose} height={620}>
       <View style={{ paddingHorizontal: 22, paddingBottom: 24 }}>
         <View style={styles.profile}>
           {/* Badge do plano no lugar do avatar com iniciais. Largura auto
@@ -177,6 +186,22 @@ export function MenuSheet({ open, onClose, onNotice }: Props) {
         </View>
 
         <View style={{ marginTop: 12 }}>
+          {/* Sala do Auxiliar abre um sheet (callback) — não é rota. */}
+          <Pressable
+            onPress={openSala}
+            style={({ pressed }) => [
+              styles.navRow,
+              styles.navRowBorder,
+              pressed && { opacity: 0.6 },
+            ]}
+            accessibilityRole="button"
+          >
+            <View style={styles.navIcon}>
+              <Layers size={20} color={t.text2} />
+            </View>
+            <Text style={styles.navLabel}>Sala do Auxiliar</Text>
+            <Chevron size={14} color={t.textGhost} />
+          </Pressable>
           {NAV.map((it, i) => (
             <Pressable
               key={it.id}

@@ -33,7 +33,7 @@ export const lightTokens: ColorTokens = {
   mode: "light",
   brand: "#059669",
   brandLight: "#D1FAE5",
-  brandDeep: "#047857",
+  brandDeep: "#065F46",
   bg: "#F2F2F7",
   card: "#FFFFFF",
   text: "#000000",

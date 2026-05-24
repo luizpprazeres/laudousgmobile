@@ -1,14 +1,18 @@
-import { Image, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { StyleSheet, Text, View, type ViewStyle } from "react-native";
 import { FONT, TAGLINE } from "./tokens";
 import { useColorTokens } from "./useColorTokens";
 
 type LogoSize = "sm" | "md" | "lg";
 
 /**
- * Three variants:
- *   - "auto"     → follows the OS color scheme (transparent over light, white over dark)
- *   - "default"  → forces the dark wordmark + transparent PNG (use over light backgrounds)
- *   - "white"    → forces white wordmark + white PNG (use over dark backgrounds / photos)
+ * Wordmark "LaudoUSG" SEM bolinha — alinhado com web laudousg.com e iOS atual.
+ *   - "Laudo" Inter Black 900 cor wordmark (#065F46 light, verde-claro dark)
+ *   - "USG"   Inter Regular 400 cor wordmarkAccent (#059669 light)
+ *
+ * Variants:
+ *   - "auto"     → follows OS color scheme
+ *   - "default"  → forces dark wordmark (use over light backgrounds)
+ *   - "white"    → forces white wordmark (use over dark backgrounds / photos)
  */
 type LogoVariant = "auto" | "default" | "white";
 
@@ -22,19 +26,14 @@ type Props = {
 const SIZE_MAP: Record<
   LogoSize,
   {
-    iconPx: number;
     wordmark: number;
     tagline: number;
-    gap: number;
   }
 > = {
-  sm: { iconPx: 24, wordmark: 16, tagline: 8, gap: 8 },
-  md: { iconPx: 36, wordmark: 20, tagline: 9, gap: 10 },
-  lg: { iconPx: 48, wordmark: 30, tagline: 11, gap: 12 },
+  sm: { wordmark: 18, tagline: 8 },
+  md: { wordmark: 24, tagline: 9 },
+  lg: { wordmark: 34, tagline: 11 },
 };
-
-const TRANSPARENT_PNG = require("../../assets/brand/logos/logo-laudousg-transparent.png");
-const WHITE_PNG = require("../../assets/brand/logos/logo-laudousg-white.png");
 
 export function LaudoUSGLogo({
   size = "md",
@@ -45,67 +44,59 @@ export function LaudoUSGLogo({
   const t = useColorTokens();
   const dims = SIZE_MAP[size];
 
-  // resolve variant
   const isWhite = variant === "white" || (variant === "auto" && t.mode === "dark");
 
   const mainColor = isWhite ? "#ffffff" : t.wordmark;
-  const accentColor = isWhite ? "rgba(255,255,255,0.65)" : t.wordmarkAccent;
+  const accentColor = isWhite ? "rgba(255,255,255,0.7)" : t.wordmarkAccent;
   const subColor = isWhite ? "rgba(255,255,255,0.45)" : t.wordmarkSub;
 
   const renderTagline = showTagline ?? size !== "sm";
 
   return (
-    <View style={[styles.row, { gap: dims.gap }, style]}>
-      <Image
-        source={isWhite ? WHITE_PNG : TRANSPARENT_PNG}
-        style={{ width: dims.iconPx, height: dims.iconPx }}
-        resizeMode="contain"
+    <View style={[styles.col, style]}>
+      <Text
+        style={{
+          color: mainColor,
+          fontFamily: FONT.black,
+          fontSize: dims.wordmark,
+          letterSpacing: -0.6,
+          includeFontPadding: false,
+        }}
         accessibilityLabel="LaudoUSG"
-      />
-      <View>
+      >
+        Laudo
         <Text
           style={{
-            color: mainColor,
-            fontFamily: FONT.black,
+            color: accentColor,
+            fontFamily: FONT.body,
             fontSize: dims.wordmark,
-            letterSpacing: -0.4,
-            includeFontPadding: false,
           }}
         >
-          Laudo
-          <Text
-            style={{
-              color: accentColor,
-              fontFamily: FONT.body,
-              fontSize: dims.wordmark,
-            }}
-          >
-            USG
-          </Text>
+          USG
         </Text>
-        {renderTagline ? (
-          <Text
-            style={{
-              color: subColor,
-              fontFamily: FONT.medium,
-              fontSize: dims.tagline,
-              letterSpacing: 1.4,
-              textTransform: "uppercase",
-              marginTop: 2,
-            }}
-            numberOfLines={1}
-          >
-            {TAGLINE}
-          </Text>
-        ) : null}
-      </View>
+      </Text>
+      {renderTagline ? (
+        <Text
+          style={{
+            color: subColor,
+            fontFamily: FONT.medium,
+            fontSize: dims.tagline,
+            letterSpacing: 1.4,
+            textTransform: "uppercase",
+            marginTop: 2,
+          }}
+          numberOfLines={1}
+        >
+          {TAGLINE}
+        </Text>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
+  col: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
 });
