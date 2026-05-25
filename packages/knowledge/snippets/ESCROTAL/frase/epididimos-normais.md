@@ -11,4 +11,4 @@ source_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-05-25
 ---
 
-Epidídimos de morfologia e dimensões habituais, sem ectasia ductal nem imagens císticas significativas.
+Epidídimos apresentando contornos regulares e ecotextura homogênea.

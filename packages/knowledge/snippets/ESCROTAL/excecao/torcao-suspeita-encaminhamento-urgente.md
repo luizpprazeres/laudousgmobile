@@ -27,3 +27,16 @@ Linguagem correta:
 - "Avaliação cirúrgica imediata sugerida."
 
 Observação adicional: registrar no exame quando aplicável o tempo decorrido desde o início da dor (informado pelo paciente) — informação crítica para decisão de salvamento testicular.
+
+DOCUMENTAÇÃO DO TIMELINE — TORÇÃO E OUTRAS EMERGÊNCIAS:
+
+Em casos de suspeita de torção testicular ou outra emergência detectada durante o exame, estimular o usuário a documentar explicitamente o timeline com placeholders. Modelo de frase a oferecer (substituir os campos __:__ pelos horários reais e [Nome] pelo nome do paciente):
+
+"Exame solicitado às __:__ e realizado às __:__. Após o exame, o paciente foi orientado sobre a condição clínica e o médico assistente (ou setor assistencial) foi notificado às __:__. [Nome do paciente] ciente da orientação e da necessidade de avaliação urológica imediata."
+
+Esse registro é fundamental para:
+- Documentar a janela de viabilidade testicular (intervenção idealmente < 6h do início da dor).
+- Proteger juridicamente o médico ultrassonografista ao demonstrar comunicação adequada com o assistencial.
+- Permitir rastreabilidade da conduta no prontuário do paciente.
+
+Adaptar para outras emergências escrotais (trauma com hematocele expansiva, fratura testicular, abscesso) usando o mesmo modelo de timeline.

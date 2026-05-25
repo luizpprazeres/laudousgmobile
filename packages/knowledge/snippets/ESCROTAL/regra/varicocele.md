@@ -38,6 +38,6 @@ No corpo (exemplo grau II à esquerda):
 "À esquerda, observam-se veias do plexo pampiniforme com calibre aumentado, medindo cerca de 3,8 mm em repouso e 4,2 mm à manobra de Valsalva, com refluxo venoso ao Doppler espectral."
 
 Na conclusão:
-"Varicocele à esquerda."
+"Varicocele esquerda."
 
-Quando bilateral, descrever cada lado e na conclusão: "Varicocele bilateral, mais evidente à esquerda."
+Quando bilateral, descrever cada lado e na conclusão: "Varicocele bilateral, mais evidente esquerda."

@@ -24,8 +24,8 @@ Ordem de apresentação sugerida:
 
 Exemplo correto:
 "1) Nódulo sólido no testículo direito (vide texto).
- 2) Microlitíase testicular bilateral (padrão clássico).
- 3) Varicocele à esquerda.
+ 2) Microlitíase testicular bilateral.
+ 3) Varicocele esquerda.
  4) Demais estruturas escrotais examinadas sem evidência de alterações ecográficas."
 
 Exemplo com recomendação clínica obrigatória:

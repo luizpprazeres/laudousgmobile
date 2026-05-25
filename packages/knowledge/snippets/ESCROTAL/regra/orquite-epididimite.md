@@ -38,6 +38,6 @@ No corpo (exemplo orqui-epididimite à direita):
 "Testículo direito aumentado de volume, com ecotextura heterogênea e ecogenicidade reduzida. Epidídimo homolateral também aumentado. Ao Doppler colorido, observa-se hiperemia acentuada em ambas as estruturas. Discreta lâmina líquida reacional associada."
 
 Na conclusão:
-"Achados ecográficos compatíveis com orqui-epididimite à direita. Convém, a critério clínico, correlacionar com quadro clínico-laboratorial."
+"Sinais de orqui-epididimite à direita. Convém, a critério clínico, correlacionar com quadro clínico-laboratorial."
 
 Observação: descartar torção testicular como diagnóstico diferencial em quadros agudos — se houver dúvida, o achado de fluxo arterial preservado favorece orquite ao invés de torção.

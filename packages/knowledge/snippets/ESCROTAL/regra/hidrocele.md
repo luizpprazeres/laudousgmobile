@@ -28,7 +28,7 @@ Classificação por volume estimado:
 - Volumosa: envolve toda a circunferência, com distensão da bolsa.
 
 No corpo (hidrocele à direita, moderada):
-"À direita, observa-se coleção líquida anecoica entre os folhetos da túnica vaginal, envolvendo o testículo em sua maior parte, sem septações ou debris ecogênicos."
+"Imagens anecoicas entre os folhetes da túnica vaginal, envolvendo o testículo em sua maior parte, sem septações."
 
 Na conclusão:
 "Hidrocele à direita."

@@ -27,9 +27,9 @@ Classificação:
 - Difusa: distribuída por todo o parênquima.
 
 No corpo (exemplo clássica bilateral):
-"Os testículos apresentam múltiplos focos hiperecoicos puntiformes sem sombra acústica, distribuídos no parênquima, totalizando mais de 5 focos por campo em ambos os lados."
+"Múltiplas imagens hiperecoicas puntiformes que não ocasionam sombra acústica, distribuídas no parênquima testicular, totalizando mais de 5 focos por campo bilateralmente."
 
 Na conclusão:
-"Microlitíase testicular bilateral (padrão clássico)."
+"Microlitíase testicular bilateral."
 
 Significado clínico: pode estar associada a maior risco de tumor germinativo testicular. Convém, a critério clínico, correlacionar com exame físico e dosagem de marcadores tumorais, e considerar seguimento ecográfico periódico.

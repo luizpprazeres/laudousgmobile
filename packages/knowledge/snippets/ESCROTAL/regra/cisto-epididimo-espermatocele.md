@@ -28,7 +28,12 @@ Diferenciação:
 No corpo (exemplo):
 "Na cabeça do epidídimo direito, observa-se imagem cística anecoica, de paredes finas e contornos regulares, medindo 0,8 cm no maior eixo, com reforço acústico posterior."
 
-Na conclusão:
-"Cisto de epidídimo à direita." OU "Espermatocele à direita" (se ecos puntiformes em suspensão).
+Na conclusão — SEMPRE especificar a região do epidídimo (cabeça, corpo ou cauda) e o lado:
+- "Cisto da cabeça do epidídimo direito."
+- "Cisto da cauda do epidídimo esquerdo."
+- "Espermatocele da cabeça do epidídimo direito." (se ecos puntiformes em suspensão)
 
-Múltiplos cistos: descrever o maior e número aproximado.
+NÃO usar a forma genérica "Cisto de epidídimo à direita" — sempre especificar a porção anatômica.
+
+Múltiplos cistos: descrever o maior e número aproximado, mantendo especificação anatômica:
+"Múltiplos cistos da cabeça do epidídimo direito, o maior medindo 1,1 cm."

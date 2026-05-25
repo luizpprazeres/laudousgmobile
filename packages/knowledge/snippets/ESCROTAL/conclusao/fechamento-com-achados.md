@@ -24,14 +24,14 @@ NUNCA aparece "solta" sem número quando a conclusão tem itens numerados.
 
 Exemplos:
 ✓ Se a conclusão tem 2 achados, o fechamento vira o item 3):
-"1) Varicocele à esquerda.
- 2) Cisto de epidídimo à direita.
+"1) Varicocele esquerda.
+ 2) Cisto da cabeça do epidídimo direito.
  3) Demais estruturas escrotais examinadas sem evidência de alterações ecográficas."
 
 ✓ Se a conclusão tem 3 achados:
-"1) Microlitíase testicular bilateral (padrão clássico).
+"1) Microlitíase testicular bilateral.
  2) Hidrocele à direita.
- 3) Achados ecográficos compatíveis com epididimite à direita.
+ 3) Sinais de epididimite à direita.
  4) Demais estruturas escrotais examinadas sem evidência de alterações ecográficas."
 
 ✘ ERRADO (sem numeração no fechamento):
@@ -39,8 +39,8 @@ Exemplos:
  Demais estruturas escrotais examinadas sem evidência..."
 
 ✘ ERRADO (omitir o fechamento quando há achados específicos):
-"1) Varicocele à esquerda.
- 2) Cisto de epidídimo à direita.
+"1) Varicocele esquerda.
+ 2) Cisto da cabeça do epidídimo direito.
  [sem frase de fechamento]"
 
 REGRA DE QUANDO INCLUIR O FECHAMENTO:
