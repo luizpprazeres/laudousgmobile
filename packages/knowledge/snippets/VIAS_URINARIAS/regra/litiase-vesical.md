@@ -26,8 +26,8 @@ Descrição obrigatória no corpo:
 - Mobilidade à mudança de decúbito.
 - Número aproximado.
 
-No corpo (exemplo cálculo único):
-"No interior da bexiga, observa-se imagem hiperecoica móvel à mudança de decúbito, medindo 1,2 cm, que ocasiona sombra acústica posterior, compatível com cálculo vesical."
+No corpo (exemplo cálculo único — pattern: descrição genérica da bexiga → achado → volume):
+"Bexiga de forma, contorno e ecotextura normais, apresentando imagem hiperecoica, móvel à mudança de decúbito, medindo 1,2 cm no seu maior eixo, ocasionando sombra acústica. Volume pré-miccional de 300.0 ml."
 
 Na conclusão:
 - "Litíase vesical." (cálculo único)

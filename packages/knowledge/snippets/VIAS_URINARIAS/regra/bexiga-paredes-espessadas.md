@@ -28,10 +28,10 @@ Descrição obrigatória no corpo:
 - Presença de divertículos.
 - Grau de distensão vesical no momento da medida (a espessura é avaliada com bexiga repleta).
 
-No corpo (exemplo):
-"Bexiga adequadamente distendida (volume estimado em 320 mL), apresentando paredes difusamente espessadas, medindo até 6 mm, com trabeculação evidente da camada muscular. Ausência de divertículos significativos."
+No corpo (exemplo — pattern: descrição genérica da bexiga → achado → volume):
+"Bexiga de forma e contorno normais, apresentando paredes difusamente espessadas, medindo até 6 mm, com trabeculação evidente da camada muscular. Ausência de divertículos significativos. Volume pré-miccional de 320.0 ml."
 
-Na conclusão:
-"Espessamento difuso das paredes vesicais com trabeculação, sugerindo bexiga de esforço. Convém, a critério clínico, correlacionar com obstrução infravesical crônica (ex: hiperplasia prostática em homens, estenose uretral)."
+Na conclusão (numerada):
+"x) Espessamento difuso das paredes vesicais com trabeculação. Convém, a critério clínico, correlacionar com obstrução infravesical crônica (ex: hiperplasia prostática em homens, estenose uretral)."
 
-Achados focais (espessamento localizado) levantam suspeita de neoplasia vesical — descrever separadamente e sugerir cistoscopia.
+Achados focais (espessamento localizado) levantam suspeita de neoplasia vesical — descrever separadamente no corpo seguindo o mesmo pattern e na conclusão sugerir avaliação urológica complementar com cistoscopia.

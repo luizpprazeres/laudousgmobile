@@ -33,8 +33,9 @@ Descrição obrigatória no corpo:
 - Espessura cortical (preservada ou reduzida).
 - Identificar fator obstrutivo se visível (cálculo, massa, dilatação ureteral).
 
-No corpo (exemplo grau II à direita por cálculo ureteral):
-"Rim direito apresenta dilatação da pelve renal e dos grupamentos caliciais médio e inferior, com espessura cortical preservada, compatível com hidronefrose moderada. Identifica-se cálculo no terço médio do ureter homolateral, medindo 0,5 cm."
+No corpo (exemplo grau II à direita por cálculo ureteral — pattern: descrição genérica do rim → alteração):
+"Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco. Imagens anecoicas na topografia do sistema pielocalicinal, com espessura cortical preservada.
+Imagem hiperecoica no terço médio do ureter homolateral, medindo 0,5 cm no seu maior eixo, ocasionando discreta sombra acústica."
 
 Na conclusão:
 - "Hidronefrose leve direita."

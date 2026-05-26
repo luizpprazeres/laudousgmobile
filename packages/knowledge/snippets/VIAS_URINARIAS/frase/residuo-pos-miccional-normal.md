@@ -11,4 +11,7 @@ source_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-05-25
 ---
 
-Volume residual pós-miccional: cerca de 20 mL.
+Volume residual pós-miccional de 20,0 mL.
+
+(Variante quando o resíduo é mínimo / clinicamente insignificante:)
+Resíduo pós-miccional desprezível.

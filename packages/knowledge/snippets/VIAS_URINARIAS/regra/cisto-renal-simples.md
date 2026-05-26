@@ -19,21 +19,21 @@ GATILHOS DE APLICAÇÃO:
 
 REGRA — CISTO RENAL SIMPLES
 
-Imagem anecoica, de paredes finas e regulares, contornos bem definidos, com reforço acústico posterior, sem septações, calcificações ou componente sólido (Bosniak I).
+Imagem anecoica, de paredes finas e regulares, contornos bem definidos, com reforço acústico posterior, sem septações, calcificações ou componente sólido.
 
 Descrição obrigatória no corpo:
-- Localização (rim D/E, polo superior/médio/inferior).
-- Dimensões (maior eixo).
+- Localização (rim D/E, terço superior/médio/inferior).
+- Dimensões (3 eixos quando possível).
 - Confirmação da ausência de complexidade.
 
-No corpo (exemplo):
-"No polo inferior do rim direito, observa-se imagem cística anecoica, de paredes finas, contornos regulares e reforço acústico posterior, medindo 2,3 cm no maior eixo, sem septações ou conteúdo ecogênico — compatível com cisto simples (Bosniak I)."
+No corpo (exemplo — pattern: descrição genérica do rim → achado):
+"Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem anecoica, com margens regulares, medindo 2,3 x 2,1 x 2,0 cm, sem septações, situada no terço inferior, ocasionando reforço acústico."
 
 Na conclusão (sempre especificar localização):
-- "Cisto simples no polo inferior do rim direito."
-- "Cistos simples bilaterais (vide texto)."
+- "x) Cisto simples no terço inferior do rim direito."
+- "x) Cistos simples bilaterais (vide texto)."
 
 Múltiplos cistos: descrever o maior e número aproximado:
-"Múltiplos cistos simples no rim direito, o maior medindo 3,5 cm no polo médio."
+"Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando múltiplas imagens anecoicas, a maior medindo 3,5 x 3,2 x 3,0 cm, situadas em diferentes terços, ocasionando reforços acústicos."
 
-Atenção: imagens com septações, calcificações periféricas, paredes espessadas ou componente sólido NÃO devem ser classificadas como simples — vide bloco de exceção/achado-cistico-renal-complexo.
+IMPORTANTE: NÃO usar classificação Bosniak no ultrassom — a estratificação Bosniak é exclusiva de tomografia/ressonância (métodos com contraste). Vide bloco de exceção/achado-cistico-renal-complexo quando houver achados de complexidade.

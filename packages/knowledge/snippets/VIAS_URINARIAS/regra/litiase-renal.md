@@ -28,11 +28,11 @@ Descrição obrigatória no corpo:
 - Número de cálculos (único, múltiplos).
 - Presença/ausência de dilatação a montante.
 
-No corpo (exemplo cálculo único):
-"No grupamento calicial inferior do rim direito, observa-se imagem hiperecoica medindo 0,6 cm, que ocasiona sombra acústica posterior, compatível com cálculo renal. Não há dilatação pielocalicial associada."
+No corpo (exemplo cálculo único — pattern: descrição genérica → achado):
+"Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem hiperecoica, medindo 0,6 cm no seu maior eixo, situada em cálices inferiores, ocasionando sombra acústica."
 
 No corpo (exemplo múltiplos):
-"No rim esquerdo, identificam-se múltiplas imagens hiperecoicas com sombra acústica nos grupamentos caliciais, a maior medindo 0,9 cm."
+"Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando múltiplas imagens hiperecoicas, a maior medindo 0,9 cm no seu maior eixo, situadas nos cálices, ocasionando sombras acústicas."
 
 Na conclusão (sempre especificar lado):
 - "Litíase renal direita."

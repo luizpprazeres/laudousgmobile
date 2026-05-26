@@ -15,15 +15,14 @@ REGRA — EXAME NORMAL (SEM ACHADOS)
 
 Quando o exame estiver inteiramente dentro dos limites da normalidade, a conclusão deve seguir o modelo numerado padrão, organizado por estrutura:
 
-1) Rins ecograficamente normais.
-2) Bexiga ecograficamente normal.
-3) Volume residual pós-miccional dentro dos limites usuais.
+1)    Rins ecograficamente normais.
+2)    Não há sinais de dilatação ureteral.
+3)    Bexiga ecograficamente normal.
+4)    Volume residual pós-miccional de xx,x mL (opcional, em uma casa decimal).
 
-Esse formato é mais informativo que uma frase genérica única — confirma explicitamente cada estrutura avaliada (rins, bexiga, resíduo pós-miccional).
+O item 4 (resíduo pós-miccional) só aparece quando foi efetivamente medido. Quando o paciente vier com bexiga vazia ou sem condições de medir, omitir o item 4 — manter apenas 1, 2 e 3.
 
-Quando o exame foi realizado SEM avaliação do resíduo pós-miccional (ex: paciente que veio com bexiga vazia), omitir o item 3 e manter apenas:
-1) Rins ecograficamente normais.
-2) Bexiga ecograficamente normal.
+Esse formato é mais informativo que uma frase genérica única — confirma explicitamente cada estrutura avaliada (rins, ureteres, bexiga, resíduo).
 
 NÃO usar formas genéricas como:
 - "Ultrassonografia das vias urinárias sem evidência de alterações ecográficas." (pouco informativa)

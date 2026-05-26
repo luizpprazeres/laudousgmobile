@@ -34,10 +34,10 @@ Localizações típicas de impacção de cálculo:
 - Cruzamento dos vasos ilíacos.
 - Junção uretero-vesical (JUV) — ponto mais frequente.
 
-No corpo (exemplo cálculo no terço distal à direita):
-"À direita, identifica-se dilatação do ureter em seu terço distal, com calibre máximo de 8 mm, secundária a imagem hiperecoica com sombra acústica medindo 0,5 cm próximo à junção uretero-vesical. Ureterohidronefrose homolateral associada."
+No corpo (exemplo cálculo no terço distal à direita — pattern: descrição genérica do rim → achado ureteral):
+"Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando dilatação do sistema pielocalicinal. Identifica-se dilatação do ureter homolateral em seu terço distal, com calibre máximo de 8 mm, contendo imagem hiperecoica medindo 0,5 cm no seu maior eixo, próxima à junção uretero-vesical, ocasionando sombra acústica."
 
-Na conclusão:
-"Cálculo no terço distal do ureter direito, próximo à junção uretero-vesical, com ureterohidronefrose homolateral."
+Na conclusão (numerada):
+"x) Cálculo no terço distal do ureter direito, próximo à junção uretero-vesical, com ureterohidronefrose homolateral."
 
 Em pacientes com dor lombar aguda e dilatação significativa, considerar urgência — vide bloco de exceção/obstrucao-aguda.

@@ -5,7 +5,7 @@ kind: modelo
 tags: [vias-urinarias, template, modelo-base, rins, bexiga, ureteres]
 priority: 100
 priority_tier: universal
-version: 1.0.0
+version: 1.1.0
 status: published
 source_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-05-25
@@ -16,16 +16,22 @@ MODELO-BASE PADRÃO — ULTRASSONOGRAFIA DAS VIAS URINÁRIAS:
 ULTRASSONOGRAFIA DAS VIAS URINÁRIAS
 
 COMENTÁRIOS:
-Exame realizado com transdutor convexo de 3,5-5,0 MHz, abrangendo os rins (em decúbito dorsal e laterais) e a bexiga (com repleção adequada). A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes dos rins, em decúbito dorsal e ventral, com paciente em jejum. Após repleção vesical foram realizados cortes da pelve com o paciente em decúbito dorsal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
-Rim direito de topografia, contornos e dimensões habituais, medindo aproximadamente 10,5 x 5,0 x 4,2 cm, com ecotextura preservada do córtex e do seio renal. Espessura cortical preservada. Ausência de ectasia pielocalicial.
-Rim esquerdo de topografia, contornos e dimensões habituais, medindo aproximadamente 10,8 x 5,2 x 4,3 cm, com ecotextura preservada do córtex e do seio renal. Espessura cortical preservada. Ausência de ectasia pielocalicial.
-Ureteres não dilatados nos segmentos visualizados.
-Bexiga adequadamente distendida (volume estimado em aproximadamente 280 mL), de paredes finas e regulares, com conteúdo anecoico. Ausência de imagens hiperecoicas em seu interior.
-Volume residual pós-miccional: cerca de 20 mL.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Medida do rim direito:
+Medida da espessura do parênquima:
+
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Medida do rim esquerdo:
+Medida da espessura do parênquima:
+
+Bexiga de forma, contorno e ecotextura normais. Volume pré-miccional de 300.0 ml.
+Espessura da parede vesical de x cm.
 
 CONCLUSÃO:
-1) Rins ecograficamente normais.
-2) Bexiga ecograficamente normal.
-3) Volume residual pós-miccional dentro dos limites usuais.
+1)    Rins ecograficamente normais.
+2)    Não há sinais de dilatação ureteral.
+3)    Bexiga ecograficamente normal.
+4)    Resíduo pós-miccional de 0.2 ml.
