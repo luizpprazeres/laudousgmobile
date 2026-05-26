@@ -2,10 +2,10 @@
 id: prostata-transabdominal-regra-hiperplasia-prostatica-benigna
 category: PROSTATA_TRANSABDOMINAL
 kind: regra
-tags: [prostata, hpb, volume-aumentado, hiperplasia]
+tags: [prostata, hpb, volume-aumentado, peso-prostatico]
 priority: 88
 priority_tier: contextual
-version: 1.0.0
+version: 1.1.0
 status: published
 source_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-05-25
@@ -16,27 +16,31 @@ GATILHOS DE APLICAÇÃO:
 - hiperplasia prostática
 - próstata aumentada
 - volume aumentado
+- peso aumentado
 - adenomatosa
 - adenoma prostático
 
-REGRA — HIPERPLASIA PROSTÁTICA BENIGNA (HPB)
+REGRA — VOLUME / PESO PROSTÁTICO AUMENTADO
 
-Volume prostático calculado pela fórmula do elipsoide: anteroposterior × transverso × longitudinal × 0,523.
+Volume prostático calculado pela fórmula do elipsoide: AP × transverso × longitudinal × 0,523. O peso aproximado em gramas equivale ao volume em mL.
 
-Graduação por volume:
-- Normal (adulto): até 25 mL.
-- HPB leve: 25 - 40 mL.
-- HPB moderada: 40 - 60 mL.
-- HPB acentuada: acima de 60 mL.
+Referência:
+- Próstata de **volume normal**: até **30 gramas** (ou mL).
+- Acima desse limite: descrever como aumento de volume.
 
-Descrição obrigatória no corpo (pattern: descrição → medidas → volume):
-"Próstata de contornos regulares, com ecotextura levemente heterogênea por adenomatose central, sem nódulos focais.
-Medidas da próstata: 5,2 x 4,5 x 4,0 cm.
-Volume prostático estimado em 49,0 mL (fórmula do elipsoide)."
+IMPORTANTE: NÃO classificar grau de HPB no laudo. Apenas descrever o volume/peso e, quando aplicável, o IPP (Índice de Protrusão Prostática) — esse sim com classificação em algarismos romanos (vide bloco lobulo-medio-prostatico).
 
-Na conclusão (numerada):
-- "x) Próstata aumentada de volume (HPB leve)."
-- "x) Próstata aumentada de volume (HPB moderada)."
-- "x) Próstata aumentada de volume (HPB acentuada). Convém, a critério clínico, correlacionar com sintomas miccionais e dosagem de PSA."
+Descrição obrigatória no corpo:
+"Bexiga de forma, ecotextura e contornos regulares.
+Espessura da parede vesical preservada.
+Volume pré-miccional de 380,0 mL.
+Próstata medindo 5,2 x 4,5 x 4,0 cm.
+Vesículas seminais de dimensões, ecogenicidade e ecotextura normais."
 
-Em pacientes com sintomas urinários obstrutivos significativos, recomendar avaliação urológica complementar.
+Na conclusão (numerada — apenas mencionar aumento sem classificar HPB):
+"x)    Próstata de volume aumentado (peso aproximado de 49,0 gramas)."
+
+Quando houver IPP significativo associado, adicionar item separado:
+"x)    Índice de protrusão prostática (IPP) de 0,7 cm, grau II."
+
+Em pacientes com sintomas urinários obstrutivos, considerar avaliação urológica complementar — mas a recomendação fica no item específico (IPP, resíduo aumentado), não na descrição do volume.

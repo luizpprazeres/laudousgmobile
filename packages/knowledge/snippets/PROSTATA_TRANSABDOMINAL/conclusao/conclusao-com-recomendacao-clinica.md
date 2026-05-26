@@ -18,10 +18,10 @@ Achados que devem vir acompanhados de recomendação clínica explícita:
 1. **Nódulo prostático**:
    "Convém, a critério clínico, complementar com ultrassonografia prostática transretal e correlacionar com dosagem de PSA e avaliação urológica."
 
-2. **HPB acentuada** (volume > 60 mL) + sintomas:
+2. **Volume prostático aumentado** (peso > 30 gramas) + sintomas:
    "Convém, a critério clínico, correlacionar com sintomas miccionais, dosagem de PSA e avaliação urológica."
 
-3. **Lóbulo médio + resíduo aumentado**:
+3. **IPP grau II ou III + resíduo aumentado**:
    "Achados sugerem obstrução infravesical — convém avaliação urológica."
 
 4. **Suspeita de prostatite aguda**:
