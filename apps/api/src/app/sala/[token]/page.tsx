@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { useParams } from "next/navigation";
 
 type SalaReport = {
@@ -20,6 +21,24 @@ type Theme = "light" | "dark";
 const HIDDEN_IDS_KEY = "sala-hidden-ids";
 const THEME_KEY = "sala-theme";
 const HIGHLIGHT_KEY = "sala-highlight";
+const NOTES_KEY = "sala-notes";
+const SEEN_IDS_KEY = "sala-seen-ids";
+
+type ActivityKind =
+  | "received"
+  | "viewed"
+  | "copied"
+  | "highlight-on"
+  | "highlight-off"
+  | "note"
+  | "back-live";
+
+type ActivityEntry = {
+  id: string;
+  kind: ActivityKind;
+  at: number;
+  label?: string;
+};
 
 type InvalidReason = "invalid_format" | "not_found" | "revoked" | "expired";
 
@@ -48,7 +67,17 @@ export default function SalaTokenPage() {
   const [theme, setTheme] = useState<Theme>("light");
   const [highlightOn, setHighlightOn] = useState<boolean>(true);
   const [copied, setCopied] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<SalaReport | null>(null);
+  const [selectedLoading, setSelectedLoading] = useState(false);
+  const [clock, setClock] = useState<string>(() => formatClock(new Date()));
+  const [noteDraft, setNoteDraft] = useState("");
+  const [notes, setNotes] = useState<{ id: string; text: string; at: number }[]>([]);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const lastSignatureRef = useRef<string | null>(null);
+  const noteInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     try {
@@ -65,8 +94,68 @@ export default function SalaTokenPage() {
         const arr = JSON.parse(storedHidden) as string[];
         setHiddenIds(new Set(arr));
       }
+      const storedNotes = localStorage.getItem(NOTES_KEY);
+      if (storedNotes) {
+        const arr = JSON.parse(storedNotes) as { id: string; text: string; at: number }[];
+        setNotes(arr.slice(-50));
+      }
+      const storedSeen = localStorage.getItem(SEEN_IDS_KEY);
+      if (storedSeen) {
+        setSeenIds(new Set(JSON.parse(storedSeen) as string[]));
+      }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setClock(formatClock(new Date())), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  function pushActivity(kind: ActivityKind, label?: string) {
+    setActivity((prev) => [
+      { id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, kind, at: Date.now(), label },
+      ...prev,
+    ].slice(0, 40));
+  }
+
+  function persistNotes(next: { id: string; text: string; at: number }[]) {
+    try { localStorage.setItem(NOTES_KEY, JSON.stringify(next.slice(-50))); } catch {}
+  }
+
+  function persistSeen(next: Set<string>) {
+    try { localStorage.setItem(SEEN_IDS_KEY, JSON.stringify(Array.from(next))); } catch {}
+  }
+
+  function submitNote() {
+    const text = noteDraft.trim();
+    if (!text) return;
+    const entry = { id: `n-${Date.now()}`, text, at: Date.now() };
+    setNotes((prev) => {
+      const next = [...prev, entry];
+      persistNotes(next);
+      return next;
+    });
+    pushActivity("note", text.length > 40 ? `${text.slice(0, 40)}…` : text);
+    setNoteDraft("");
+  }
+
+  function removeNote(id: string) {
+    setNotes((prev) => {
+      const next = prev.filter((n) => n.id !== id);
+      persistNotes(next);
+      return next;
+    });
+  }
+
+  function markSeen(id: string) {
+    setSeenIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      persistSeen(next);
+      return next;
+    });
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -86,10 +175,59 @@ export default function SalaTokenPage() {
       } catch {}
       return next;
     });
+    if (selectedReportId === id) {
+      setSelectedReportId(null);
+      setSelectedReport(null);
+    }
+  }
+
+  async function selectReport(id: string) {
+    if (id === selectedReportId) return;
+    setSelectedReportId(id);
+    setSelectedReport(null);
+    setSelectedLoading(true);
+    let loadedReport: SalaReport | null = null;
+    try {
+      const res = await fetch(
+        `/api/sala/report?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`,
+        { cache: "no-store" },
+      );
+      const data = (await res.json()) as { report: SalaReport | null };
+      loadedReport = data.report ?? null;
+      setSelectedReport(loadedReport);
+    } catch {
+      setSelectedReport(null);
+    } finally {
+      setSelectedLoading(false);
+      if (loadedReport) {
+        pushActivity("viewed", prettyCategory(loadedReport.category ?? ""));
+      }
+    }
+  }
+
+  function backToLive() {
+    setSelectedReportId(null);
+    setSelectedReport(null);
+    pushActivity("back-live");
   }
 
   function toggleTheme() {
     setTheme((t) => (t === "light" ? "dark" : "light"));
+  }
+
+  function toggleHighlight() {
+    setHighlightOn((v) => {
+      pushActivity(v ? "highlight-off" : "highlight-on");
+      return !v;
+    });
+  }
+
+  async function onCopy() {
+    if (!displayReport) return;
+    await copyReportToClipboard(displayReport);
+    setCopied(true);
+    pushActivity("copied");
+    setTimeout(() => setCopied(false), 1800);
   }
 
   async function fetchLatest() {
@@ -107,6 +245,9 @@ export default function SalaTokenPage() {
         const sig = data.report.outputText + (data.report.createdAt ?? "");
         if (lastSignatureRef.current && lastSignatureRef.current !== sig) {
           setUpdatedFlash((n) => n + 1);
+          pushActivity("received", prettyCategory(data.report.category ?? ""));
+        } else if (!lastSignatureRef.current) {
+          pushActivity("received", prettyCategory(data.report.category ?? ""));
         }
         lastSignatureRef.current = sig;
         setReport(data.report);
@@ -141,40 +282,120 @@ export default function SalaTokenPage() {
     [timeline, hiddenIds],
   );
   const summary = useMemo(() => summarize(visibleTimeline), [visibleTimeline]);
-  const visibleReport = useMemo(
+  const latestReport = useMemo(
     () => (report && !hiddenIds.has(report.id) ? report : null),
     [report, hiddenIds],
   );
+  const isViewingPast = selectedReportId !== null && selectedReportId !== latestReport?.id;
+  const displayReport: SalaReport | null = isViewingPast ? selectedReport : latestReport;
+  const activeId = displayReport?.id ?? latestReport?.id ?? null;
   const status: "loading" | "invalid" | "waiting" | "live" = loading
     ? "loading"
     : !tokenValid
       ? "invalid"
-      : !visibleReport
-        ? "waiting"
-        : "live";
+      : selectedLoading
+        ? "loading"
+        : !displayReport
+          ? "waiting"
+          : "live";
+
+  useEffect(() => {
+    function isTypingTarget(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName.toLowerCase();
+      return tag === "input" || tag === "textarea" || target.isContentEditable;
+    }
+
+    function selectRelative(delta: number) {
+      if (visibleTimeline.length === 0) return;
+      const currentIndex = activeId
+        ? visibleTimeline.findIndex((entry) => entry.id === activeId)
+        : -1;
+      const nextIndex = Math.min(
+        Math.max(currentIndex + delta, 0),
+        visibleTimeline.length - 1,
+      );
+      const next = visibleTimeline[nextIndex];
+      if (next) selectReport(next.id);
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (isTypingTarget(e.target)) return;
+      if (e.key === "Escape") {
+        if (shortcutsOpen) {
+          setShortcutsOpen(false);
+          return;
+        }
+        if (isViewingPast) backToLive();
+        return;
+      }
+      if (e.key === "?" || (e.key === "/" && e.shiftKey)) {
+        e.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
+      if (e.key === "j" || e.key === "ArrowDown") {
+        e.preventDefault();
+        selectRelative(1);
+        return;
+      }
+      if (e.key === "k" || e.key === "ArrowUp") {
+        e.preventDefault();
+        selectRelative(-1);
+        return;
+      }
+      if (e.key === "c") {
+        e.preventDefault();
+        void onCopy();
+        return;
+      }
+      if (e.key === "h") {
+        e.preventDefault();
+        toggleHighlight();
+        return;
+      }
+      if (e.key === "n") {
+        e.preventDefault();
+        noteInputRef.current?.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeId, displayReport, isViewingPast, shortcutsOpen, visibleTimeline]);
 
   return (
     <>
       <Shell
         status={status}
         invalidReason={invalidReason}
-        report={visibleReport}
+        report={displayReport}
         timeline={visibleTimeline}
+        activeId={activeId}
+        isViewingPast={isViewingPast}
         summary={summary}
         secondsSinceFetch={secondsSinceFetch}
         updatedFlash={updatedFlash}
         theme={theme}
+        clock={clock}
         highlightOn={highlightOn}
         copied={copied}
+        notes={notes}
+        noteDraft={noteDraft}
+        activity={activity}
+        shortcutsOpen={shortcutsOpen}
+        noteInputRef={noteInputRef}
         onToggleTheme={toggleTheme}
-        onToggleHighlight={() => setHighlightOn((v) => !v)}
-        onCopy={async () => {
-          if (!visibleReport) return;
-          await copyReportToClipboard(visibleReport);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1800);
-        }}
+        onToggleHighlight={toggleHighlight}
+        onCopy={onCopy}
         onHide={hideEntry}
+        onSelect={selectReport}
+        onBackToLive={backToLive}
+        onSubmitNote={submitNote}
+        onNoteDraft={setNoteDraft}
+        onRemoveNote={removeNote}
+        onCloseShortcuts={() => setShortcutsOpen(false)}
+        formatClock={formatClock}
       />
       <GlobalStyles />
       <ScopedStyles />
@@ -187,31 +408,61 @@ function Shell({
   invalidReason,
   report,
   timeline,
+  activeId,
+  isViewingPast,
   summary,
   secondsSinceFetch,
   updatedFlash,
   theme,
+  clock,
   highlightOn,
   copied,
+  notes,
+  noteDraft,
+  activity,
+  shortcutsOpen,
+  noteInputRef,
   onToggleTheme,
   onToggleHighlight,
   onCopy,
   onHide,
+  onSelect,
+  onBackToLive,
+  onSubmitNote,
+  onNoteDraft,
+  onRemoveNote,
+  onCloseShortcuts,
+  formatClock,
 }: {
   status: "loading" | "invalid" | "waiting" | "live";
   invalidReason: InvalidReason | null;
   report: SalaReport | null;
   timeline: TimelineEntry[];
+  activeId: string | null;
+  isViewingPast: boolean;
   summary: { label: string; count: number }[];
   secondsSinceFetch: number | null;
   updatedFlash: number;
   theme: Theme;
+  clock: string;
   highlightOn: boolean;
   copied: boolean;
+  notes: { id: string; text: string; at: number }[];
+  noteDraft: string;
+  activity: ActivityEntry[];
+  shortcutsOpen: boolean;
+  noteInputRef: RefObject<HTMLTextAreaElement>;
   onToggleTheme: () => void;
   onToggleHighlight: () => void;
   onCopy: () => void;
   onHide: (id: string) => void;
+  onSelect: (id: string) => void;
+  onBackToLive: () => void;
+  onSubmitNote: () => void;
+  onNoteDraft: (value: string) => void;
+  onRemoveNote: (id: string) => void;
+  onCloseShortcuts: () => void;
+  formatClock: (date: Date) => string;
 }) {
   const pillState =
     status === "invalid" ? "off" : status === "live" ? "live" : "waiting";
@@ -251,6 +502,7 @@ function Shell({
               </svg>
             )}
           </button>
+          <time className="topbar-clock" aria-label="Hora atual">{clock}</time>
           <div className="live-pill" data-state={pillState}>
             <span className="live-dot" />
             <span className="live-text">{pillLabel}</span>
@@ -275,29 +527,42 @@ function Shell({
             )}
           </SidebarSection>
 
-          <SidebarSection title="Hoje">
+          <SidebarSection title={`HOJE · ${timeline.length}`}>
             {timeline.length === 0 ? (
               <p className="muted">A timeline aparece aqui durante o turno.</p>
             ) : (
               <ol className="timeline">
                 {timeline.map((entry, i) => {
                   const isLatest = i === 0;
+                  const isActive = entry.id === activeId;
                   return (
                     <li
                       key={entry.id}
-                      className={`timeline-item ${isLatest ? "is-latest" : ""}`}
+                      className={`timeline-item ${isLatest ? "is-latest" : ""} ${isActive ? "is-active" : ""}`}
                     >
-                      <span className="timeline-time">
-                        {formatTime(entry.createdAt)}
-                      </span>
-                      <span className="timeline-label">
-                        {prettyCategory(entry.category ?? "")}
-                      </span>
+                      <button
+                        type="button"
+                        className="timeline-row"
+                        onClick={() => onSelect(entry.id)}
+                        aria-current={isActive ? "true" : undefined}
+                        aria-label={`Visualizar ${prettyCategory(entry.category ?? "")} de ${formatTime(entry.createdAt)}`}
+                        title="Visualizar este laudo"
+                      >
+                        <span className="timeline-time">
+                          {formatTime(entry.createdAt)}
+                        </span>
+                        <span className="timeline-label">
+                          {prettyCategory(entry.category ?? "")}
+                        </span>
+                      </button>
                       <button
                         type="button"
                         className="timeline-x"
-                        onClick={() => onHide(entry.id)}
-                        aria-label="Ocultar deste laudo da sala"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onHide(entry.id);
+                        }}
+                        aria-label="Ocultar este laudo da sala"
                         title="Ocultar"
                       >
                         ×
@@ -321,10 +586,7 @@ function Shell({
             >
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
-            <span>
-              Link pessoal · não compartilhe publicamente. Conteúdo não fica
-              armazenado localmente.
-            </span>
+            <span>link pessoal · efêmero</span>
           </div>
         </aside>
 
@@ -341,12 +603,84 @@ function Shell({
               updatedFlash={updatedFlash}
               highlightOn={highlightOn}
               copied={copied}
+              isViewingPast={isViewingPast}
               onToggleHighlight={onToggleHighlight}
               onCopy={onCopy}
+              onBackToLive={onBackToLive}
             />
           )}
         </section>
+
+        <aside className="activity-panel">
+          <section className="panel-section">
+            <h2 className="panel-title">Anotações</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                onSubmitNote();
+              }}
+              className="note-form"
+            >
+              <textarea
+                ref={noteInputRef}
+                value={noteDraft}
+                onChange={(e) => onNoteDraft(e.target.value)}
+                placeholder="Acrescente uma observação..."
+                rows={3}
+                className="note-input"
+              />
+              <button type="submit" className="note-submit" disabled={!noteDraft.trim()}>
+                Adicionar
+              </button>
+            </form>
+            {notes.length > 0 && (
+              <ul className="notes-list">
+                {notes.slice().reverse().map((n) => (
+                  <li key={n.id} className="note-item">
+                    <time>{formatTime(new Date(n.at).toISOString())}</time>
+                    <p>{n.text}</p>
+                    <button type="button" onClick={() => onRemoveNote(n.id)} aria-label="Remover">×</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="panel-section">
+            <h2 className="panel-title">Atividade</h2>
+            {activity.length === 0 ? (
+              <p className="muted">Eventos aparecem aqui durante o turno.</p>
+            ) : (
+              <ol className="activity-list">
+                {activity.map((a) => (
+                  <li key={a.id} className={`activity-item activity-${a.kind}`}>
+                    <time>{formatClock(new Date(a.at))}</time>
+                    <span>{labelForActivity(a)}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </aside>
       </div>
+
+      <footer className="shortcut-footer">press ? for shortcuts</footer>
+
+      {shortcutsOpen && (
+        <div className="shortcut-backdrop" onClick={onCloseShortcuts}>
+          <div className="shortcut-popover" role="dialog" aria-label="Atalhos" onClick={(e) => e.stopPropagation()}>
+            <div className="shortcut-title">Atalhos</div>
+            <dl className="shortcut-list">
+              <div><dt>j / ↓</dt><dd>próximo laudo</dd></div>
+              <div><dt>k / ↑</dt><dd>laudo anterior</dd></div>
+              <div><dt>c</dt><dd>copiar laudo</dd></div>
+              <div><dt>h</dt><dd>destacar cabeçalhos</dd></div>
+              <div><dt>n</dt><dd>nova anotação</dd></div>
+              <div><dt>Esc</dt><dd>voltar ou fechar</dd></div>
+            </dl>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -462,16 +796,20 @@ function ReportView({
   updatedFlash,
   highlightOn,
   copied,
+  isViewingPast,
   onToggleHighlight,
   onCopy,
+  onBackToLive,
 }: {
   report: SalaReport;
   secondsSinceFetch: number | null;
   updatedFlash: number;
   highlightOn: boolean;
   copied: boolean;
+  isViewingPast: boolean;
   onToggleHighlight: () => void;
   onCopy: () => void;
+  onBackToLive: () => void;
 }) {
   const { heading, body } = useMemo(
     () => splitHeading(report.outputText),
@@ -490,12 +828,39 @@ function ReportView({
 
   return (
     <div key={updatedFlash} className="report-stage report-anim">
+      <article className="paper-spread" data-density={density}>
+        <div className="paper-pages" aria-hidden="true">
+          <div className="paper-page" />
+          <div className="paper-page" />
+        </div>
+        <div className="paper-flow">
+          {heading && (
+            <h1
+              className={`report-heading ${highlightOn ? "report-heading--highlight" : ""}`}
+            >
+              {heading}
+            </h1>
+          )}
+          <div className="report-body">{renderBody(body, highlightOn)}</div>
+        </div>
+      </article>
       <div className="report-toolbar">
         <div className="report-toolbar-meta">
           {report.category && (
             <span className="badge">{prettyCategory(report.category)}</span>
           )}
           <time className="meta-time">{formatStamp(report.createdAt)}</time>
+          {isViewingPast && (
+            <button
+              type="button"
+              className="past-pill"
+              onClick={onBackToLive}
+              title="Voltar ao laudo mais recente"
+            >
+              <span className="past-pill-dot" />
+              <span>Histórico · voltar ao vivo</span>
+            </button>
+          )}
         </div>
         <div className="report-toolbar-actions">
           <button
@@ -526,18 +891,16 @@ function ReportView({
             )}
             <span className="tool-label">{copied ? "Copiado" : "Copiar"}</span>
           </button>
+          <button
+            type="button"
+            className="tool-btn"
+            onClick={() => window.print()}
+            title="Imprimir laudo"
+          >
+            <span className="tool-label">Imprimir</span>
+          </button>
         </div>
       </div>
-      <article className="paper-spread" data-density={density}>
-        <div className="paper-pages" aria-hidden="true">
-          <div className="paper-page" />
-          <div className="paper-page" />
-        </div>
-        <div className="paper-flow">
-          {heading && <h1 className="report-heading">{heading}</h1>}
-          <div className="report-body">{renderBody(body, highlightOn)}</div>
-        </div>
-      </article>
       <div className="status-row">
         <span className="status-dot" />
         <span>
@@ -559,15 +922,7 @@ function ReportView({
 function renderBody(text: string, highlightOn: boolean): React.ReactNode[] {
   const lines = text.split(/\r?\n/);
   return lines.map((line, i) => {
-    const trimmed = line.trim();
-    const isUpperHeading =
-      trimmed.length >= 4 &&
-      /^[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ0-9 \-():.,]+$/.test(trimmed) &&
-      /[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ]/.test(trimmed) &&
-      !/[a-záéíóúçãõâêôàèìòùü]/.test(trimmed);
-    const isLabeledHeading =
-      /^[A-ZÁÉÍÓÚÇÃÕ][A-Za-záéíóúçãõâêôàèìòùüÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ\s/-]{2,60}:$/.test(trimmed);
-    const isHeading = trimmed.length > 0 && (isUpperHeading || isLabeledHeading);
+    const isHeading = isAllCapsHeading(line.trim());
     const cls = isHeading && highlightOn ? "doc-line doc-line--heading" : "doc-line";
     return (
       <span key={i} className={cls}>
@@ -578,6 +933,14 @@ function renderBody(text: string, highlightOn: boolean): React.ReactNode[] {
   });
 }
 
+function isAllCapsHeading(trimmed: string): boolean {
+  if (trimmed.length < 4) return false;
+  if (!/^[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ0-9 \-():.,/]+$/.test(trimmed)) return false;
+  if (!/[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ]/.test(trimmed)) return false;
+  if (/[a-záéíóúçãõâêôàèìòùü]/.test(trimmed)) return false;
+  return true;
+}
+
 async function copyReportToClipboard(report: SalaReport) {
   const { heading, body } = splitHeading(report.outputText);
   const headingHtml = heading
@@ -586,15 +949,8 @@ async function copyReportToClipboard(report: SalaReport) {
   const bodyHtml = body
     .split(/\r?\n/)
     .map((line) => {
-      const trimmed = line.trim();
-      const isHeading =
-        trimmed.length >= 4 &&
-        /^[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ0-9 \-():.,]+$/.test(trimmed) &&
-        /[A-ZÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ]/.test(trimmed) &&
-        !/[a-záéíóúçãõâêôàèìòùü]/.test(trimmed);
-      const isLabeled = /^[A-ZÁÉÍÓÚÇÃÕ][A-Za-záéíóúçãõâêôàèìòùüÁÉÍÓÚÇÃÕÂÊÔÀÈÌÒÙÜ\s/-]{2,60}:$/.test(trimmed);
-      if (trimmed === "") return "<br/>";
-      if (isHeading || isLabeled) {
+      if (line.trim() === "") return "<br/>";
+      if (isAllCapsHeading(line.trim())) {
         return `<p style="font-family:Arial,sans-serif;font-size:11pt;font-weight:bold;margin:8px 0 4px;">${escapeHtml(line)}</p>`;
       }
       return `<p style="font-family:Arial,sans-serif;font-size:11pt;margin:0;">${escapeHtml(line)}</p>`;
@@ -639,6 +995,16 @@ function summarize(entries: TimelineEntry[]): { label: string; count: number }[]
     .sort((a, b) => b.count - a.count);
 }
 
+function labelForActivity(a: ActivityEntry): string {
+  if (a.kind === "received") return a.label ? `laudo recebido · ${a.label}` : "laudo recebido";
+  if (a.kind === "viewed") return a.label ? `visualizou histórico · ${a.label}` : "visualizou histórico";
+  if (a.kind === "copied") return "copiou laudo";
+  if (a.kind === "highlight-on") return "destacou cabeçalhos: on";
+  if (a.kind === "highlight-off") return "destacou cabeçalhos: off";
+  if (a.kind === "note") return a.label ? `anotação: ${a.label}` : "anotação";
+  return "voltou ao vivo";
+}
+
 function splitHeading(text: string): { heading: string | null; body: string } {
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
@@ -679,6 +1045,13 @@ function prettyCategory(code: string): string {
   };
   if (!code) return "Sem categoria";
   return map[code] ?? code.replace(/_/g, " ").toLowerCase();
+}
+
+function formatClock(d: Date): string {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
 }
 
 function formatTime(iso: string): string {
@@ -881,13 +1254,28 @@ function ScopedStyles() {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, color 120ms ease, border-color 120ms ease;
       }
 
       .theme-toggle:hover {
         color: var(--ink);
         border-color: var(--line-strong);
         background: var(--paper-shade);
+      }
+
+      .theme-toggle:active {
+        transform: scale(0.96);
+      }
+
+      .topbar-clock {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12.5px;
+        color: var(--ink-soft);
+        font-variant-numeric: tabular-nums;
+        padding: 6px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper);
       }
 
       .live-pill {
@@ -938,17 +1326,17 @@ function ScopedStyles() {
       .layout {
         flex: 1;
         display: grid;
-        grid-template-columns: 256px 1fr;
+        grid-template-columns: 160px 1fr 280px;
         gap: 0;
         width: 100%;
       }
 
       .sidebar {
         border-right: 1px solid var(--line);
-        padding: 28px clamp(16px, 1.4vw, 22px);
+        padding: 20px 12px;
         display: flex;
         flex-direction: column;
-        gap: 28px;
+        gap: 22px;
         background: var(--paper);
         position: sticky;
         top: 64px;
@@ -992,7 +1380,7 @@ function ScopedStyles() {
       .summary-list li {
         display: flex;
         align-items: baseline;
-        gap: 10px;
+        gap: 8px;
         padding: 6px 0;
       }
 
@@ -1007,6 +1395,10 @@ function ScopedStyles() {
       .summary-label {
         font-size: 13.5px;
         color: var(--ink-soft);
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .timeline {
@@ -1031,23 +1423,35 @@ function ScopedStyles() {
       .timeline-item {
         position: relative;
         display: flex;
-        align-items: baseline;
-        gap: 14px;
-        padding: 8px 0 8px 26px;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 0 2px 26px;
         font-size: 13.5px;
         color: var(--ink-soft);
+        border-radius: 8px;
+        transition: background 140ms ease;
+      }
+
+      .timeline-item:hover {
+        background: var(--paper-shade);
+      }
+
+      .timeline-item.is-active {
+        background: var(--brand-tint);
       }
 
       .timeline-item::before {
         content: "";
         position: absolute;
         left: 4px;
-        top: 14px;
+        top: 50%;
+        transform: translateY(-50%);
         width: 7px;
         height: 7px;
         border-radius: 999px;
         background: var(--bg);
         border: 1.5px solid var(--line-strong);
+        transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
       }
 
       .timeline-item.is-latest::before {
@@ -1061,19 +1465,62 @@ function ScopedStyles() {
         font-weight: 500;
       }
 
+      .timeline-item.is-active::before {
+        background: var(--brand-deep);
+        border-color: var(--brand-deep);
+        box-shadow: 0 0 0 3px var(--brand-soft);
+      }
+
+      .timeline-item.is-active .timeline-label {
+        color: var(--brand-deep);
+        font-weight: 600;
+      }
+
+      .timeline-row {
+        flex: 1;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        background: transparent;
+        border: 0;
+        padding: 8px 6px 8px 0;
+        text-align: left;
+        cursor: pointer;
+        color: inherit;
+        font: inherit;
+        border-radius: 6px;
+        min-width: 0;
+        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, color 120ms ease, border-color 120ms ease;
+        transform-origin: left center;
+      }
+
+      .timeline-row:focus-visible {
+        outline: 2px solid var(--brand-soft);
+        outline-offset: 2px;
+      }
+
+      .timeline-row:active {
+        transform: scale(0.96);
+      }
+
       .timeline-time {
         font-family: "JetBrains Mono", monospace;
         font-size: 11.5px;
         color: var(--ink-mute);
         font-variant-numeric: tabular-nums;
-        min-width: 42px;
+        min-width: 38px;
+        flex-shrink: 0;
       }
 
       .timeline-label {
         flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .timeline-x {
+        flex-shrink: 0;
         opacity: 0;
         background: transparent;
         border: 1px solid var(--line);
@@ -1088,6 +1535,7 @@ function ScopedStyles() {
         line-height: 1;
         cursor: pointer;
         padding: 0;
+        margin-right: 4px;
         transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease;
       }
 
@@ -1102,22 +1550,48 @@ function ScopedStyles() {
         background: rgba(179, 38, 30, 0.08);
       }
 
+      .past-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--amber-soft);
+        background: var(--amber-soft);
+        color: var(--amber);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, color 120ms ease, border-color 120ms ease;
+      }
+
+      .past-pill:hover { filter: brightness(0.95); }
+      .past-pill:active { transform: scale(0.96); }
+
+      .past-pill-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--amber);
+      }
+
       .privacy-strip {
         margin-top: auto;
         display: flex;
+        align-items: center;
         gap: 8px;
-        padding: 12px;
+        padding: 9px 10px;
         border: 1px dashed var(--line-strong);
         border-radius: 10px;
-        font-size: 11.5px;
-        line-height: 1.45;
+        font-size: 11px;
+        line-height: 1;
         color: var(--ink-mute);
-        align-items: flex-start;
       }
 
       .privacy-strip svg {
         flex-shrink: 0;
-        margin-top: 2px;
       }
 
       .main {
@@ -1125,6 +1599,199 @@ function ScopedStyles() {
         display: flex;
         flex-direction: column;
         background: var(--bg);
+      }
+
+      .activity-panel {
+        border-left: 1px solid var(--line);
+        padding: 24px 18px;
+        background: var(--paper);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        position: sticky;
+        top: 64px;
+        align-self: start;
+        max-height: calc(100vh - 64px);
+        overflow-y: auto;
+      }
+
+      .panel-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .panel-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+        margin: 0;
+        font-weight: 500;
+      }
+
+      .note-form {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .note-input {
+        width: 100%;
+        resize: vertical;
+        min-height: 60px;
+        font: inherit;
+        font-size: 13px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper-shade);
+        color: var(--ink);
+        transition: border-color 120ms ease;
+      }
+
+      .note-input:focus {
+        outline: none;
+        border-color: var(--brand);
+      }
+
+      .note-submit {
+        align-self: flex-end;
+        padding: 6px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--brand-soft);
+        background: var(--brand-tint);
+        color: var(--brand-deep);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, color 120ms ease, border-color 120ms ease;
+      }
+
+      .note-submit:active {
+        transform: scale(0.96);
+      }
+
+      .note-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .note-submit:disabled:active {
+        transform: none;
+      }
+
+      .notes-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .note-item {
+        display: grid;
+        grid-template-columns: 42px 1fr 18px;
+        gap: 8px;
+        align-items: start;
+        padding: 8px 10px;
+        background: var(--paper-shade);
+        border-radius: 8px;
+      }
+
+      .note-item time {
+        font-family: "JetBrains Mono", monospace;
+        color: var(--ink-mute);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .note-item p {
+        color: var(--ink);
+        line-height: 1.4;
+        font-size: 12.5px;
+        margin: 0;
+      }
+
+      .note-item button {
+        opacity: 0;
+        border: 0;
+        background: transparent;
+        color: var(--ink-mute);
+        cursor: pointer;
+        padding: 0;
+        font-size: 16px;
+        line-height: 1;
+        transition: opacity 120ms ease, color 120ms ease;
+      }
+
+      .note-item:hover button,
+      .note-item button:focus-visible {
+        opacity: 1;
+      }
+
+      .note-item button:hover {
+        color: var(--ink);
+      }
+
+      .activity-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .activity-item {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding: 4px 0;
+        font-size: 12px;
+        color: var(--ink-soft);
+      }
+
+      .activity-item::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--ink-mute);
+        flex-shrink: 0;
+        margin-top: 5px;
+      }
+
+      .activity-item time {
+        font-family: "JetBrains Mono", monospace;
+        color: var(--ink-mute);
+        font-size: 11px;
+        min-width: 42px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .activity-received::before,
+      .activity-back-live::before {
+        background: var(--brand);
+      }
+
+      .activity-copied::before {
+        background: var(--amber);
+      }
+
+      .activity-highlight-on::before,
+      .activity-highlight-off::before {
+        background: var(--ink-mute);
+      }
+
+      .activity-note::before {
+        background: var(--brand-deep);
+      }
+
+      .activity-viewed::before {
+        background: var(--ink-soft);
       }
 
       .card {
@@ -1202,13 +1869,17 @@ function ScopedStyles() {
         font-size: 12.5px;
         font-weight: 500;
         cursor: pointer;
-        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, color 120ms ease, border-color 120ms ease;
       }
 
       .tool-btn:hover {
         color: var(--ink);
         border-color: var(--line-strong);
         background: var(--paper-shade);
+      }
+
+      .tool-btn:active {
+        transform: scale(0.96);
       }
 
       .tool-btn.is-on {
@@ -1400,14 +2071,28 @@ function ScopedStyles() {
 
       .report-heading {
         font-weight: 700;
-        font-size: clamp(14px, 1.2vw, 17px);
-        line-height: 1.22;
+        font-size: inherit;
+        line-height: 1.4;
         letter-spacing: 0.01em;
         text-transform: uppercase;
         color: var(--ink);
-        margin: 0 0 12px;
-        padding-bottom: 12px;
+        margin: 0 0 18px;
+        padding-bottom: 14px;
         border-bottom: 1px solid var(--line);
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        hyphens: auto;
+      }
+
+      .report-heading--highlight {
+        background: var(--highlight);
+        color: var(--highlight-ink);
+        padding: 6px 10px;
+        border-radius: 4px;
+        border-bottom: 0;
+        display: inline-block;
+        margin-bottom: 18px;
+        padding-bottom: 6px;
       }
 
       .report-body {
@@ -1453,6 +2138,76 @@ function ScopedStyles() {
         animation: pulse-brand 2.2s ease-in-out infinite;
       }
 
+      .shortcut-footer {
+        position: fixed;
+        right: 16px;
+        bottom: 12px;
+        z-index: 8;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10.5px;
+        color: var(--ink-mute);
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 9px;
+      }
+
+      .shortcut-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding: 72px 22px 22px;
+        background: transparent;
+      }
+
+      .shortcut-popover {
+        width: min(260px, calc(100vw - 44px));
+        background: var(--paper);
+        border: 1px solid var(--line-strong);
+        border-radius: 12px;
+        box-shadow: 0 24px 60px -36px var(--line-strong);
+        padding: 14px;
+      }
+
+      .shortcut-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+        margin-bottom: 10px;
+      }
+
+      .shortcut-list {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .shortcut-list div {
+        display: grid;
+        grid-template-columns: 64px 1fr;
+        gap: 10px;
+        align-items: baseline;
+      }
+
+      .shortcut-list dt {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--ink);
+        margin: 0;
+      }
+
+      .shortcut-list dd {
+        font-size: 12.5px;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
       .ghost {
         height: 14px;
         background: linear-gradient(
@@ -1476,14 +2231,34 @@ function ScopedStyles() {
         100% { background-position: -200% 0; }
       }
 
+      @media (max-width: 1100px) {
+        .layout {
+          grid-template-columns: 160px 1fr;
+        }
+        .activity-panel {
+          display: none;
+        }
+      }
+
       @media (max-width: 760px) {
         .layout {
           grid-template-columns: 1fr;
+        }
+        .topbar {
+          align-items: flex-start;
+          gap: 12px;
+          flex-direction: column;
+        }
+        .topbar-actions {
+          flex-wrap: wrap;
         }
         .sidebar {
           border-right: 0;
           border-bottom: 1px solid var(--line);
           padding: 20px clamp(16px, 4vw, 24px);
+          position: relative;
+          top: auto;
+          max-height: none;
         }
         .privacy-strip { margin-top: 12px; }
         .brand-sub { display: none; }
