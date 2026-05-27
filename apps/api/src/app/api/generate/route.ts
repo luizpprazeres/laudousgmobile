@@ -488,34 +488,54 @@ export async function POST(req: Request) {
         tokensOutput: writerResult?.outputTokens,
       });
 
-      // ----- 5. Sanity check (observabilidade, NÃO bloqueia) -----
-      // Roda checks determinísticos + IA pra registrar inconsistências em
-      // generation_runs. Não bloqueia mais a entrega: a feature de blocked
-      // foi removida por feedback do usuário (UX confusa + prefere investir
-      // em consertos preventivos via prompts).
       currentStage = "sanity";
       const deterministicSanity = runDeterministicSanity({
         findings,
         finalText,
       });
-      const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({
-        findings,
-        finalText,
-        signal,
-      });
-      const sanity = mergeSanityResults(aiSanity, deterministicSanity);
-      auditState.sanityDurationMs = sanityMs;
-      auditState.sanityResult = sanity;
-      await updateRunAfterSanity({ runId, sanity, latencyMs: sanityMs });
-      emit({ type: "sanity", ts: nowIso(), result: sanity });
+      const deterministicOnlySanity =
+        sanityResultFromDeterministic(deterministicSanity);
 
-      // Sucesso
+      if (deterministicSanity.hardBlocked) {
+        outcome = "blocked";
+        errorMessage = deterministicOnlySanity.summary;
+        auditState.errorCode = "DETERMINISTIC_SANITY_BLOCKED";
+        auditState.errorMessage = errorMessage;
+        auditState.errorStage = currentStage;
+        auditState.sanityDurationMs = 0;
+        auditState.sanityResult = deterministicOnlySanity;
+        await updateRunAfterSanity({
+          runId,
+          sanity: deterministicOnlySanity,
+          latencyMs: 0,
+        });
+        await finalizeReport({
+          reportId,
+          status: "blocked",
+          generatedOutput: finalText,
+          sanityResult: deterministicOnlySanity,
+          metadata:
+            pipelineWarnings.length > 0
+              ? { pipeline_warnings: pipelineWarnings }
+              : undefined,
+        });
+        emit({ type: "sanity", ts: nowIso(), result: deterministicOnlySanity });
+        emit({
+          type: "blocked",
+          ts: nowIso(),
+          report_id: reportId,
+          reason: deterministicOnlySanity.summary,
+          sanity: deterministicOnlySanity,
+        });
+        return;
+      }
+
       outcome = "success";
       await finalizeReport({
         reportId,
         status: "generated",
         generatedOutput: finalText,
-        sanityResult: sanity,
+        sanityResult: deterministicOnlySanity,
         metadata:
           pipelineWarnings.length > 0
             ? { pipeline_warnings: pipelineWarnings }
@@ -527,6 +547,38 @@ export async function POST(req: Request) {
         report_id: reportId,
         final_text: finalText,
       });
+
+      try {
+        const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({
+          findings,
+          finalText,
+        });
+        const sanity = mergeSanityResults(aiSanity, deterministicSanity);
+        auditState.sanityDurationMs = sanityMs;
+        auditState.sanityResult = sanity;
+        await updateRunAfterSanity({ runId, sanity, latencyMs: sanityMs });
+        await finalizeReport({
+          reportId,
+          status: "generated",
+          generatedOutput: finalText,
+          sanityResult: sanity,
+          metadata:
+            pipelineWarnings.length > 0
+              ? { pipeline_warnings: pipelineWarnings }
+              : undefined,
+        });
+        emit({ type: "sanity", ts: nowIso(), result: sanity });
+        if (sanity.verdict !== "ok") {
+          emit({
+            type: "sanity_warning",
+            ts: nowIso(),
+            issues: sanity.issues,
+            severity: sanity.verdict === "critical" ? "blocker" : "warning",
+          });
+        }
+      } catch (e) {
+        console.error("runSanityCheck failed after done:", e);
+      }
     } catch (err) {
       // AbortError vem quando cliente fecha conexão
       if ((err as Error).name === "AbortError") {
@@ -598,6 +650,26 @@ function mergeSanityResults(
     verdict,
     issues,
     summary: [aiSanity.summary, deterministicSummary].filter(Boolean).join(" "),
+  };
+}
+
+function sanityResultFromDeterministic(
+  deterministic: ReturnType<typeof runDeterministicSanity>,
+): SanityResult {
+  const issues = deterministic.issues.map(toSanityIssue);
+  const verdict = deterministic.hardBlocked
+    ? "critical"
+    : issues.some((issue) => issue.severity === "warning")
+      ? "warning"
+      : "ok";
+
+  return {
+    verdict,
+    issues,
+    summary:
+      issues.length > 0
+        ? `Checks determinísticos: ${issues.length} issue(s).`
+        : "Checks determinísticos: sem divergências.",
   };
 }
 

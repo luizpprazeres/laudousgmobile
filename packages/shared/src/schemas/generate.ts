@@ -95,6 +95,12 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     ...Base,
+    type: z.literal("sanity_warning"),
+    issues: z.array(SanityResultSchema.shape.issues.element),
+    severity: z.enum(["warning", "blocker"]),
+  }),
+  z.object({
+    ...Base,
     type: z.literal("done"),
     report_id: z.string().uuid(),
     final_text: z.string(),
