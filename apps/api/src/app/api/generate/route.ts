@@ -488,6 +488,11 @@ export async function POST(req: Request) {
         tokensOutput: writerResult?.outputTokens,
       });
 
+      // ----- 5. Sanity check (observabilidade, NÃO bloqueia) -----
+      // Decisão consolidada (commit 9045a09): sanity NÃO bloqueia a entrega.
+      // Apenas registra inconsistências em generation_runs pra correção
+      // preventiva via prompts. Bloqueio = UX confusa.
+      // S21: roda APÓS emit done — usuário não espera os ~2-5s da sanity IA.
       currentStage = "sanity";
       const deterministicSanity = runDeterministicSanity({
         findings,
@@ -495,40 +500,6 @@ export async function POST(req: Request) {
       });
       const deterministicOnlySanity =
         sanityResultFromDeterministic(deterministicSanity);
-
-      if (deterministicSanity.hardBlocked) {
-        outcome = "blocked";
-        errorMessage = deterministicOnlySanity.summary;
-        auditState.errorCode = "DETERMINISTIC_SANITY_BLOCKED";
-        auditState.errorMessage = errorMessage;
-        auditState.errorStage = currentStage;
-        auditState.sanityDurationMs = 0;
-        auditState.sanityResult = deterministicOnlySanity;
-        await updateRunAfterSanity({
-          runId,
-          sanity: deterministicOnlySanity,
-          latencyMs: 0,
-        });
-        await finalizeReport({
-          reportId,
-          status: "blocked",
-          generatedOutput: finalText,
-          sanityResult: deterministicOnlySanity,
-          metadata:
-            pipelineWarnings.length > 0
-              ? { pipeline_warnings: pipelineWarnings }
-              : undefined,
-        });
-        emit({ type: "sanity", ts: nowIso(), result: deterministicOnlySanity });
-        emit({
-          type: "blocked",
-          ts: nowIso(),
-          report_id: reportId,
-          reason: deterministicOnlySanity.summary,
-          sanity: deterministicOnlySanity,
-        });
-        return;
-      }
 
       outcome = "success";
       await finalizeReport({
