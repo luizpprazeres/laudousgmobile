@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties, RefObject } from "react";
 import { useParams } from "next/navigation";
 
 type SalaReport = {
@@ -50,6 +50,10 @@ type SalaResponse = {
 };
 
 const POLL_INTERVAL_MS = 5000;
+
+const A4_PAGE_WIDTH_PX = 794;
+const A4_PAGE_HEIGHT_PX = 1123;
+const A4_PAGE_GAP_PX = 24;
 
 export default function SalaTokenPage() {
   const params = useParams<{ token: string }>();
@@ -519,8 +523,8 @@ function Shell({
               <ul className="summary-list">
                 {summary.map((s) => (
                   <li key={s.label}>
-                    <span className="summary-count">{s.count}</span>
                     <span className="summary-label">{s.label}</span>
+                    <span className="summary-count">{s.count}</span>
                   </li>
                 ))}
               </ul>
@@ -816,34 +820,65 @@ function ReportView({
     [report.outputText],
   );
 
-  const charCount = body.length + (heading?.length ?? 0);
-  const density: "short" | "medium" | "long" | "xlong" =
-    charCount < 1200
-      ? "short"
-      : charCount < 2400
-        ? "medium"
-        : charCount < 3800
-          ? "long"
-          : "xlong";
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const [pageCount, setPageCount] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+    const measure = () => {
+      const h = el.scrollHeight;
+      const pages = Math.max(1, Math.ceil(h / A4_PAGE_HEIGHT_PX));
+      setPageCount((prev) => (prev !== pages ? pages : prev));
+    };
+    measure();
+    const obs = new ResizeObserver(measure);
+    obs.observe(el);
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      document.fonts.ready.then(measure).catch(() => {});
+    }
+    return () => obs.disconnect();
+  }, [body, heading, highlightOn]);
+
+  const flowStyle: CSSProperties | undefined =
+    pageCount > 1
+      ? {
+          columnCount: pageCount,
+          columnFill: "auto",
+          height: `${A4_PAGE_HEIGHT_PX}px`,
+          width: `${pageCount * A4_PAGE_WIDTH_PX + (pageCount - 1) * A4_PAGE_GAP_PX}px`,
+        }
+      : undefined;
 
   return (
     <div key={updatedFlash} className="report-stage report-anim">
-      <article className="paper-spread" data-density={density}>
-        <div className="paper-pages" aria-hidden="true">
-          <div className="paper-page" />
-          <div className="paper-page" />
-        </div>
-        <div className="paper-flow">
-          {heading && (
-            <h1
-              className={`report-heading ${highlightOn ? "report-heading--highlight" : ""}`}
-            >
-              {heading}
-            </h1>
-          )}
+      <div className="paper-scroll">
+        <article className="paper-spread" data-pages={pageCount}>
+          <div className="paper-pages-bg" aria-hidden="true">
+            {Array.from({ length: pageCount }, (_, i) => (
+              <div key={i} className="paper-page" />
+            ))}
+          </div>
+          <div className="paper-flow" style={flowStyle}>
+            {heading && (
+              <h1
+                className={`report-heading ${highlightOn ? "report-heading--highlight" : ""}`}
+              >
+                {heading}
+              </h1>
+            )}
+            <div className="report-body">{renderBody(body, highlightOn)}</div>
+          </div>
+        </article>
+        <div
+          ref={measureRef}
+          className="paper-flow paper-flow--measure"
+          aria-hidden="true"
+        >
+          {heading && <h1 className="report-heading">{heading}</h1>}
           <div className="report-body">{renderBody(body, highlightOn)}</div>
         </div>
-      </article>
+      </div>
       <div className="report-toolbar">
         <div className="report-toolbar-meta">
           {report.category && (
@@ -1143,20 +1178,20 @@ function GlobalStyles() {
       @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap");
 
       :root, [data-theme="light"] {
-        --bg: #f4f3ee;
+        --bg: #ffffff;
         --ink: #15201a;
-        --ink-soft: #5b675f;
-        --ink-mute: #98a09a;
+        --ink-soft: #475569;
+        --ink-mute: #94a3b8;
         --paper: #ffffff;
-        --paper-shade: #faf9f4;
-        --line: #e8e3d4;
-        --line-strong: #d6cfb8;
+        --paper-shade: #f8fafc;
+        --line: #e5e7eb;
+        --line-strong: #cbd5e1;
         --brand: #059669;
         --brand-deep: #047857;
         --brand-soft: #d1fae5;
         --brand-tint: #ecfdf5;
-        --amber: #a36c1f;
-        --amber-soft: #fde9b3;
+        --amber: #475569;
+        --amber-soft: #f1f5f9;
         --highlight: #fff5cc;
         --highlight-ink: #6b4f00;
       }
@@ -1207,7 +1242,7 @@ function ScopedStyles() {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 18px clamp(20px, 4vw, 40px);
+        padding: 12px clamp(16px, 3vw, 28px);
         border-bottom: 1px solid var(--line);
         background: var(--paper);
         position: sticky;
@@ -1333,15 +1368,15 @@ function ScopedStyles() {
 
       .sidebar {
         border-right: 1px solid var(--line);
-        padding: 20px 12px;
+        padding: 16px 12px;
         display: flex;
         flex-direction: column;
-        gap: 22px;
+        gap: 18px;
         background: var(--paper);
         position: sticky;
-        top: 64px;
+        top: 52px;
         align-self: start;
-        max-height: calc(100vh - 64px);
+        max-height: calc(100vh - 52px);
         overflow-y: auto;
       }
 
@@ -1380,20 +1415,21 @@ function ScopedStyles() {
       .summary-list li {
         display: flex;
         align-items: baseline;
-        gap: 8px;
-        padding: 6px 0;
+        gap: 10px;
+        padding: 4px 0;
       }
 
       .summary-count {
         font-weight: 600;
         color: var(--ink);
         font-variant-numeric: tabular-nums;
-        font-size: 16px;
-        min-width: 18px;
+        font-size: 13.5px;
+        margin-left: auto;
       }
 
       .summary-label {
-        font-size: 13.5px;
+        font-size: 13px;
+        flex: 1;
         color: var(--ink-soft);
         min-width: 0;
         overflow: hidden;
@@ -1423,10 +1459,10 @@ function ScopedStyles() {
       .timeline-item {
         position: relative;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 6px;
-        padding: 2px 0 2px 26px;
-        font-size: 13.5px;
+        padding: 1px 0 1px 24px;
+        font-size: 12px;
         color: var(--ink-soft);
         border-radius: 8px;
         transition: background 140ms ease;
@@ -1479,11 +1515,11 @@ function ScopedStyles() {
       .timeline-row {
         flex: 1;
         display: flex;
-        align-items: baseline;
-        gap: 8px;
+        align-items: flex-start;
+        gap: 7px;
         background: transparent;
         border: 0;
-        padding: 8px 6px 8px 0;
+        padding: 6px 4px 6px 0;
         text-align: left;
         cursor: pointer;
         color: inherit;
@@ -1505,18 +1541,19 @@ function ScopedStyles() {
 
       .timeline-time {
         font-family: "JetBrains Mono", monospace;
-        font-size: 11.5px;
+        font-size: 10.5px;
         color: var(--ink-mute);
         font-variant-numeric: tabular-nums;
-        min-width: 38px;
+        min-width: 34px;
         flex-shrink: 0;
+        padding-top: 1px;
       }
 
       .timeline-label {
         flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        line-height: 1.3;
+        word-break: break-word;
+        hyphens: auto;
       }
 
       .timeline-x {
@@ -1595,7 +1632,7 @@ function ScopedStyles() {
       }
 
       .main {
-        padding: clamp(28px, 4vw, 48px);
+        padding: clamp(20px, 3vw, 32px);
         display: flex;
         flex-direction: column;
         background: var(--bg);
@@ -1603,15 +1640,15 @@ function ScopedStyles() {
 
       .activity-panel {
         border-left: 1px solid var(--line);
-        padding: 24px 18px;
+        padding: 16px 14px;
         background: var(--paper);
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 18px;
         position: sticky;
-        top: 64px;
+        top: 52px;
         align-self: start;
-        max-height: calc(100vh - 64px);
+        max-height: calc(100vh - 52px);
         overflow-y: auto;
       }
 
@@ -1908,40 +1945,37 @@ function ScopedStyles() {
         line-height: 1;
       }
 
-      .paper-spread {
+      .paper-scroll {
+        width: 100%;
+        overflow-x: auto;
         position: relative;
+        padding-bottom: 8px;
       }
 
-      .paper-pages {
+      .paper-spread {
+        position: relative;
+        margin: 0 auto;
+        width: max-content;
+      }
+
+      .paper-pages-bg {
         position: absolute;
         inset: 0;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: clamp(20px, 2vw, 36px);
+        display: flex;
+        gap: 24px;
         pointer-events: none;
       }
 
-      .paper-spread[data-density="short"] {
-        max-width: 640px;
-        margin: 0 auto;
-      }
-      .paper-spread[data-density="short"] .paper-pages {
-        grid-template-columns: 1fr;
-        gap: 0;
-      }
-      .paper-spread[data-density="short"] .paper-flow {
-        columns: 1;
-        padding: clamp(56px, 6vw, 80px) clamp(56px, 6vw, 88px);
-      }
-
       .paper-page {
+        flex-shrink: 0;
+        width: 210mm;
+        height: 297mm;
         background: var(--paper);
         border: 1px solid var(--line);
-        border-radius: 4px;
+        border-radius: 6px;
         box-shadow:
-          0 1px 0 rgba(255, 255, 255, 0.6) inset,
-          0 28px 60px -32px rgba(15, 25, 18, 0.22),
-          0 10px 24px -16px rgba(15, 25, 18, 0.08);
+          0 1px 3px rgba(15, 23, 42, 0.08),
+          0 2px 8px rgba(15, 23, 42, 0.04);
       }
 
       [data-theme="dark"] .paper-page {
@@ -1953,18 +1987,23 @@ function ScopedStyles() {
       .paper-flow {
         position: relative;
         z-index: 1;
-        columns: 2;
-        column-gap: clamp(64px, 7vw, 112px);
-        padding: clamp(64px, 6vw, 88px) clamp(56px, 6vw, 88px);
+        width: 210mm;
+        min-height: 297mm;
+        padding: 56px 48px;
+        column-gap: 24px;
         font-size: 12.5px;
         line-height: 1.55;
       }
 
-      .paper-flow .report-heading {
-        column-span: all;
-        margin-top: 0;
-        margin-bottom: 22px;
-        padding-bottom: 14px;
+      .paper-flow--measure {
+        position: absolute;
+        left: -99999px;
+        top: 0;
+        visibility: hidden;
+        pointer-events: none;
+        user-select: none;
+        min-height: 0;
+        height: auto;
       }
 
       @keyframes report-in {
@@ -2070,29 +2109,23 @@ function ScopedStyles() {
       .meta-time { font-variant-numeric: tabular-nums; }
 
       .report-heading {
-        font-weight: 700;
+        font-weight: inherit;
         font-size: inherit;
-        line-height: 1.4;
-        letter-spacing: 0.01em;
-        text-transform: uppercase;
-        color: var(--ink);
-        margin: 0 0 18px;
-        padding-bottom: 14px;
-        border-bottom: 1px solid var(--line);
+        font-family: inherit;
+        line-height: inherit;
+        letter-spacing: normal;
+        text-transform: none;
+        color: inherit;
+        margin: 0 0 14px;
+        padding: 0;
+        border: 0;
         overflow-wrap: anywhere;
         word-break: break-word;
         hyphens: auto;
       }
 
       .report-heading--highlight {
-        background: var(--highlight);
-        color: var(--highlight-ink);
-        padding: 6px 10px;
-        border-radius: 4px;
-        border-bottom: 0;
-        display: inline-block;
-        margin-bottom: 18px;
-        padding-bottom: 6px;
+        font-weight: 700;
       }
 
       .report-body {
@@ -2112,12 +2145,6 @@ function ScopedStyles() {
 
       .doc-line--heading {
         font-weight: 700;
-        color: var(--ink);
-        background: var(--highlight);
-        padding: 1px 6px;
-        border-radius: 3px;
-        box-decoration-break: clone;
-        -webkit-box-decoration-break: clone;
       }
 
       .status-row {
@@ -2262,8 +2289,20 @@ function ScopedStyles() {
         }
         .privacy-strip { margin-top: 12px; }
         .brand-sub { display: none; }
-        .paper-pages { grid-template-columns: 1fr !important; gap: 0 !important; }
-        .paper-flow { columns: 1 !important; padding: 32px 24px !important; }
+        .paper-scroll { overflow-x: visible; padding-bottom: 0; }
+        .paper-spread { width: 100% !important; }
+        .paper-pages-bg { display: none !important; }
+        .paper-flow {
+          column-count: 1 !important;
+          width: 100% !important;
+          height: auto !important;
+          min-height: 0 !important;
+          padding: 28px 22px !important;
+          background: var(--paper);
+          border: 1px solid var(--line);
+          border-radius: 6px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
       }
     `}} />
   );
