@@ -1361,7 +1361,7 @@ function ScopedStyles() {
       .layout {
         flex: 1;
         display: grid;
-        grid-template-columns: 160px 1fr 280px;
+        grid-template-columns: 200px 1fr 280px;
         gap: 0;
         width: 100%;
       }
@@ -1461,8 +1461,8 @@ function ScopedStyles() {
         display: flex;
         align-items: flex-start;
         gap: 6px;
-        padding: 1px 0 1px 24px;
-        font-size: 12px;
+        padding: 4px 0 4px 24px;
+        font-size: 11.5px;
         color: var(--ink-soft);
         border-radius: 8px;
         transition: background 140ms ease;
@@ -1515,11 +1515,12 @@ function ScopedStyles() {
       .timeline-row {
         flex: 1;
         display: flex;
+        flex-direction: column;
         align-items: flex-start;
-        gap: 7px;
+        gap: 3px;
         background: transparent;
         border: 0;
-        padding: 6px 4px 6px 0;
+        padding: 5px 4px 5px 0;
         text-align: left;
         cursor: pointer;
         color: inherit;
@@ -1541,19 +1542,19 @@ function ScopedStyles() {
 
       .timeline-time {
         font-family: "JetBrains Mono", monospace;
-        font-size: 10.5px;
+        font-size: 10px;
         color: var(--ink-mute);
         font-variant-numeric: tabular-nums;
-        min-width: 34px;
+        letter-spacing: 0.04em;
         flex-shrink: 0;
-        padding-top: 1px;
       }
 
       .timeline-label {
-        flex: 1;
+        font-size: 11.5px;
         line-height: 1.3;
         word-break: break-word;
         hyphens: auto;
+        align-self: stretch;
       }
 
       .timeline-x {
@@ -2260,7 +2261,7 @@ function ScopedStyles() {
 
       @media (max-width: 1100px) {
         .layout {
-          grid-template-columns: 160px 1fr;
+          grid-template-columns: 200px 1fr;
         }
         .activity-panel {
           display: none;
