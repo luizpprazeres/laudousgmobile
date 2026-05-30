@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, RefObject } from "react";
 import { useParams } from "next/navigation";
+import { useMotivationalQuote } from "@/lib/useMotivationalQuote";
+import type { Quote } from "@/lib/motivationalQuotes";
 
 type SalaReport = {
   id: string;
@@ -487,6 +489,15 @@ export default function SalaTokenPage() {
     setInsertedPhrases([]);
   }, [displayReport?.id]);
 
+  const { quote: motivationalQuote, next: rotateMotivationalQuote } =
+    useMotivationalQuote();
+
+  useEffect(() => {
+    if (latestReport?.id) {
+      rotateMotivationalQuote();
+    }
+  }, [latestReport?.id, rotateMotivationalQuote]);
+
   useEffect(() => {
     if (!token) {
       setPhrases(EMPTY_PHRASES);
@@ -577,6 +588,7 @@ export default function SalaTokenPage() {
         insertedPhrases={insertedPhrases}
         persistedAnnotations={persistedAnnotations}
         annotationWarning={annotationWarning}
+        motivationalQuote={motivationalQuote}
         shortcutsOpen={shortcutsOpen}
         noteInputRef={noteInputRef}
         onToggleTheme={toggleTheme}
@@ -620,6 +632,7 @@ function Shell({
   insertedPhrases,
   persistedAnnotations,
   annotationWarning,
+  motivationalQuote,
   shortcutsOpen,
   noteInputRef,
   onToggleTheme,
@@ -656,6 +669,7 @@ function Shell({
   insertedPhrases: InsertedPhrase[];
   persistedAnnotations: PersistedAnnotation[];
   annotationWarning: string | null;
+  motivationalQuote: Quote | null;
   shortcutsOpen: boolean;
   noteInputRef: RefObject<HTMLTextAreaElement>;
   onToggleTheme: () => void;
@@ -696,6 +710,14 @@ function Shell({
           <span className="brand-sub">Sala do Auxiliar</span>
         </div>
         <div className="topbar-actions">
+          {motivationalQuote && (
+            <span
+              className="motivational-quote"
+              title={motivationalQuote.author ?? motivationalQuote.source ?? ""}
+            >
+              {motivationalQuote.text}
+            </span>
+          )}
           <button
             type="button"
             className="theme-toggle"
@@ -1740,6 +1762,23 @@ function ScopedStyles() {
         display: flex;
         align-items: center;
         gap: 10px;
+        min-width: 0;
+      }
+
+      .motivational-quote {
+        font-style: italic;
+        font-size: 10.5px;
+        font-weight: 400;
+        letter-spacing: 0.04em;
+        color: var(--ink-mute);
+        max-width: 380px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex-shrink: 1;
+        min-width: 0;
+        padding-right: 12px;
+        user-select: none;
       }
 
       .theme-toggle {
@@ -2960,6 +2999,10 @@ function ScopedStyles() {
         .activity-panel {
           display: none;
         }
+        .motivational-quote {
+          max-width: 240px;
+          font-size: 10px;
+        }
       }
 
       @media (max-width: 760px) {
@@ -2973,6 +3016,9 @@ function ScopedStyles() {
         }
         .topbar-actions {
           flex-wrap: wrap;
+        }
+        .motivational-quote {
+          display: none;
         }
         .sidebar {
           border-right: 0;
