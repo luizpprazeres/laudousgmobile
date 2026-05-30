@@ -22,19 +22,21 @@ MODIFICAÇÕES PADRONIZADAS (APLICAR QUANDO SOLICITADO)
 Corpo (substitui a frase do miométrio):
 Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares, medindo {a} x {b} x {c} cm, situada na {parede}, {relação serosa/mucosa}.
 Conclusão:
-Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso {intramural/subseroso/submucoso}{, com mais/menos de 50% intramural, se aplicável} (categoria FIGO {n}).
+Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso {intramural/subseroso/submucoso}{, com mais/menos de 50% intramural, se aplicável}{ (categoria FIGO {n}), SOMENTE quando o médico fornecer número FIGO explícito OU descrição totalmente unívoca conforme regra figo-nao-inferir.md}.
 
 - Dois miomas
 Corpo (substitui a frase do miométrio):
 Miométrio apresentando duas imagens hipoecoicas e heterogêneas, com margens regulares. A primeira medindo {a} x {b} x {c} cm, situada na {parede1}, {relação1}. A segunda medindo {a} x {b} x {c} cm, situada na {parede2}, {relação2}.
 Conclusão:
-Miométrio apresentando duas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos: o primeiro {classif1} (categoria FIGO {n1}), e o segundo {classif2} (categoria FIGO {n2}).
+Miométrio apresentando duas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos: o primeiro {classif1}{ (categoria FIGO {n1}), SOMENTE se fornecido explicitamente}, e o segundo {classif2}{ (categoria FIGO {n2}), SOMENTE se fornecido explicitamente}.
 
 - Três ou mais miomas mensuráveis individualmente
 Corpo (substitui a frase do miométrio):
 Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas. As maiores assim descritas: a primeira medindo {a} x {b} x {c} cm, situada na {parede1}; a segunda medindo {a} x {b} x {c} cm, situada na {parede2}; [a terceira medindo {a} x {b} x {c} cm, situada na {parede3}; ...]
 Conclusão:
-Miométrio apresentando múltiplas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos. Os maiores: {classif1} (categoria FIGO {n1}), {classif2} (categoria FIGO {n2})[, e {classif3} (categoria FIGO {n3})].
+Miométrio apresentando múltiplas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos. Os maiores: {classif1}{ (categoria FIGO {n1}), SOMENTE se fornecido}, {classif2}{ (categoria FIGO {n2}), SOMENTE se fornecido}[, e {classif3}{ (categoria FIGO {n3}), SOMENTE se fornecido}].
+
+REGRA CRÍTICA — FIGO CONDICIONAL: o item "(categoria FIGO {n})" é INCLUÍDO no laudo APENAS quando o médico fornecer o número FIGO explicitamente OU descrever a localização anatômica de forma TOTALMENTE UNÍVOCA (ver regra/figo-nao-inferir.md priority 97 universal). Quando o input do médico for genérico ("mioma intramural" sem detalhamento de % intramural ou contato endometrial), OMITIR a notação FIGO numérica e manter apenas a descrição anatômica. NUNCA inferir número FIGO automaticamente.
 
 - Útero miomatoso (múltiplos nódulos, não mensuráveis individualmente)
   Usar quando o volume uterino for acentuadamente aumentado e os nódulos forem tão numerosos ou volumosos que não permitem individualização ecográfica.
@@ -46,7 +48,8 @@ Conclusão (substitui o item de volume + miométrio):
   • Se o endométrio não for avaliável: acrescentar item "Não foi possível medir adequadamente a espessura endometrial devido aos artefatos projetos pelos nódulos miomatosos."
 
 REGRA TRANSVERSAL DE MIOMAS
-- Nota explicativa do FIGO: incluir uma única vez ao FINAL do laudo (após a CONCLUSÃO completa, separada por uma linha em branco), seja qual for o número de miomas: "FIGO: Federação Internacional de Ginecologia e Obstetrícia."
+- Nota explicativa do FIGO: incluir uma única vez ao FINAL do laudo (após a CONCLUSÃO completa, separada por uma linha em branco) APENAS quando uma classificação FIGO numérica (FIGO 0-8 ou híbrido X-Y) foi efetivamente emitida no laudo. Texto verbatim: "FIGO: Federação Internacional de Ginecologia e Obstetrícia."
+- Quando nenhuma classificação FIGO numérica aparecer no corpo ou conclusão (laudo usa apenas descrição anatômica), OMITIR completamente a nota FIGO — não fazer sentido definir sigla não utilizada.
 - NUNCA colocar a nota FIGO dentro de um item da conclusão. NUNCA repetir a nota FIGO no mesmo laudo.
 - Localização fúndica: usar SEMPRE "situada em região fúndica" — NUNCA "situada no fundo".
 - Para dois miomas: usar dois-pontos após "nódulos miomatosos" e letra minúscula em "o primeiro / o segundo".
