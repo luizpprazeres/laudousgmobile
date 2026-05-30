@@ -61,6 +61,8 @@ type Phrase = {
   id: string;
   title: string;
   body: string;
+  categoryCode?: string | null;
+  categoryCodes?: string[];
 };
 
 type InsertedPhrase = {
@@ -975,28 +977,32 @@ function Shell({
 
           <section className="panel-section">
             <h2 className="panel-title">Frases globais</h2>
-            <div className="phrase-list">
-              {phrases.globals.map((p, i) => (
-                <PhraseCard
-                  key={`global-${i}`}
-                  phrase={{ ...p, id: `global-${i}` }}
-                  source="global"
-                  insertedCount={
-                    insertedPhrases.filter(
-                      (ip) => ip.source === "global" && ip.text === p.body,
-                    ).length
-                  }
-                  onInsert={(placement) =>
-                    onInsertPhrase(
-                      { ...p, id: `global-${i}` },
-                      "global",
-                      placement,
-                    )
-                  }
-                  disabled={!report}
-                />
-              ))}
-            </div>
+            {phrases.globals.length === 0 ? (
+              <p className="muted">
+                {report
+                  ? "Nenhuma frase global pra esta categoria."
+                  : "Aguardando laudo pra sugerir frases."}
+              </p>
+            ) : (
+              <div className="phrase-list">
+                {phrases.globals.map((p) => (
+                  <PhraseCard
+                    key={p.id}
+                    phrase={p}
+                    source="global"
+                    insertedCount={
+                      insertedPhrases.filter(
+                        (ip) => ip.source === "global" && ip.text === p.body,
+                      ).length
+                    }
+                    onInsert={(placement) =>
+                      onInsertPhrase(p, "global", placement)
+                    }
+                    disabled={!report}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         </aside>
       </div>
