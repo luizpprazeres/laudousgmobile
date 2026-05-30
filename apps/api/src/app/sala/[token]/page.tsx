@@ -2680,7 +2680,7 @@ function ScopedStyles() {
         min-height: 297mm;
         padding: 56px 48px;
         column-gap: 24px;
-        font-size: 15px;
+        font-size: 17px;
         line-height: 1.55;
       }
 
