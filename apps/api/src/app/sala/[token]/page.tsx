@@ -115,6 +115,9 @@ export default function SalaTokenPage() {
   const [annotationWarning, setAnnotationWarning] = useState<string | null>(
     null,
   );
+  const [justAddedAnnotationId, setJustAddedAnnotationId] = useState<
+    string | null
+  >(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<SalaReport | null>(null);
   const [selectedLoading, setSelectedLoading] = useState(false);
@@ -125,6 +128,9 @@ export default function SalaTokenPage() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const lastSignatureRef = useRef<string | null>(null);
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
+  const annotationHighlightTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   useEffect(() => {
     try {
@@ -151,6 +157,14 @@ export default function SalaTokenPage() {
   useEffect(() => {
     const id = setInterval(() => setClock(formatClock(new Date())), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (annotationHighlightTimeoutRef.current) {
+        clearTimeout(annotationHighlightTimeoutRef.current);
+      }
+    };
   }, []);
 
   function pushActivity(kind: ActivityKind, label?: string) {
@@ -204,6 +218,16 @@ export default function SalaTokenPage() {
       const data = (await res.json()) as { annotation?: PersistedAnnotation };
       if (data.annotation) {
         setPersistedAnnotations((prev) => [...prev, data.annotation!]);
+        setJustAddedAnnotationId(data.annotation.id);
+        if (annotationHighlightTimeoutRef.current) {
+          clearTimeout(annotationHighlightTimeoutRef.current);
+        }
+        annotationHighlightTimeoutRef.current = setTimeout(() => {
+          setJustAddedAnnotationId((prev) =>
+            prev === data.annotation?.id ? null : prev,
+          );
+          annotationHighlightTimeoutRef.current = null;
+        }, 1400);
         setNoteDraft("");
       }
     } catch (e) {
@@ -587,6 +611,7 @@ export default function SalaTokenPage() {
         phrases={phrases}
         insertedPhrases={insertedPhrases}
         persistedAnnotations={persistedAnnotations}
+        justAddedAnnotationId={justAddedAnnotationId}
         annotationWarning={annotationWarning}
         motivationalQuote={motivationalQuote}
         shortcutsOpen={shortcutsOpen}
@@ -631,6 +656,7 @@ function Shell({
   phrases,
   insertedPhrases,
   persistedAnnotations,
+  justAddedAnnotationId,
   annotationWarning,
   motivationalQuote,
   shortcutsOpen,
@@ -668,6 +694,7 @@ function Shell({
   phrases: PhrasesState;
   insertedPhrases: InsertedPhrase[];
   persistedAnnotations: PersistedAnnotation[];
+  justAddedAnnotationId: string | null;
   annotationWarning: string | null;
   motivationalQuote: Quote | null;
   shortcutsOpen: boolean;
@@ -951,7 +978,10 @@ function Shell({
             {persistedAnnotations.length > 0 && (
               <ul className="notes-list">
                 {persistedAnnotations.slice().reverse().map((a) => (
-                  <li key={a.id} className="note-item">
+                  <li
+                    key={a.id}
+                    className={`note-item ${a.id === justAddedAnnotationId ? "annotation--just-added" : ""}`}
+                  >
                     <time>{formatTime(a.createdAt)}</time>
                     <p>{a.text}</p>
                     <button
@@ -1284,7 +1314,11 @@ function ReportView({
       : undefined;
 
   return (
-    <div key={updatedFlash} className="report-stage report-anim">
+    <div
+      key={report.id}
+      className="report-stage report-anim"
+      data-update={updatedFlash}
+    >
       <div className="paper-scroll">
         <article className="paper-spread" data-pages={pageCount}>
           <div className="paper-pages-bg" aria-hidden="true">
@@ -2470,6 +2504,10 @@ function ScopedStyles() {
         border-radius: 8px;
       }
 
+      .annotation--just-added {
+        animation: annotation-added 1400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      }
+
       .note-item time {
         font-family: "JetBrains Mono", monospace;
         color: var(--ink-mute);
@@ -2597,7 +2635,7 @@ function ScopedStyles() {
       }
 
       .report-anim {
-        animation: report-in 480ms cubic-bezier(0.2, 0.7, 0.2, 1);
+        animation: report-in 360ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
       }
 
       .report-toolbar {
@@ -2741,8 +2779,20 @@ function ScopedStyles() {
       }
 
       @keyframes report-in {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
+        from { opacity: 0; transform: translateY(16px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      @keyframes annotation-added {
+        0% {
+          background: transparent;
+        }
+        28% {
+          background: var(--brand-soft);
+        }
+        100% {
+          background: var(--paper-shade);
+        }
       }
 
       .illus { margin-bottom: 4px; }
