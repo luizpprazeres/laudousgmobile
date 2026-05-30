@@ -98,6 +98,57 @@ export async function commitFile(args: {
   };
 }
 
+/**
+ * Remove arquivo do GitHub via Contents API. Faz commit direto no branch.
+ * Retorna sha do commit; lança se 404 (arquivo já não existe) ou conflict.
+ */
+export async function deleteFile(args: {
+  repoPath: string;
+  message: string;
+}): Promise<{ commitSha: string; commitUrl: string }> {
+  const env = readEnv();
+  if (!env) throw new Error("github_not_configured");
+
+  const sha = await getCurrentSha(env, args.repoPath);
+  if (!sha) {
+    throw new Error("not_found: arquivo já não existe no repo");
+  }
+
+  const url = `${GH_API}/repos/${env.owner}/${env.repo}/contents/${encodeURIComponent(args.repoPath).replace(/%2F/g, "/")}`;
+  const body = {
+    message: args.message,
+    sha,
+    branch: env.branch,
+    committer: {
+      name: "LaudoUSG Lab",
+      email: "lab+bot@laudousg.com",
+    },
+  };
+
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: { ...authHeaders(env), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  if (res.status === 409) {
+    throw new Error("conflict: arquivo mudou no repo desde a leitura.");
+  }
+  if (!res.ok) {
+    const detail = await res.text().then((t) => t.slice(0, 300));
+    throw new Error(`GitHub DELETE ${res.status}: ${detail}`);
+  }
+
+  const data = (await res.json()) as {
+    commit?: { sha?: string; html_url?: string };
+  };
+  return {
+    commitSha: data.commit?.sha ?? "",
+    commitUrl: data.commit?.html_url ?? "",
+  };
+}
+
 export function repoSettings(): { owner: string; repo: string; branch: string } | null {
   const env = readEnv();
   if (!env) return null;

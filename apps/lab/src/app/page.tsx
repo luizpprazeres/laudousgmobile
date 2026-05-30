@@ -4,7 +4,9 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Sparkline } from "@/components/dashboard/Sparkline";
 import { CategoryHealthTable } from "@/components/dashboard/CategoryHealthTable";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { DraftsCard } from "@/components/dashboard/DraftsCard";
 import type { ActivityItem, CategoryHealth } from "@/lib/mock/dashboard";
+import { listDraftsByCategory, rootExists } from "@/lib/knowledge/fs";
 import { getDashboardData, type CategoryStat, type RecentActivity } from "@/lib/supabase/queries";
 
 const FMT = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -67,6 +69,9 @@ function deltaFloat(curr: number, prev: number): { text: string; tone: "positive
 
 export default async function DashboardPage() {
   const { metrics, categories, recent } = await getDashboardData();
+  // Drafts: só lê do filesystem (apenas dev local). Em prod (Vercel) retorna vazio
+  // graciosamente — sem quebrar a home.
+  const drafts = rootExists().ok ? listDraftsByCategory() : [];
 
   const sparklineSeries: number[] = (() => {
     const arr: number[] = [];
@@ -85,6 +90,8 @@ export default async function DashboardPage() {
   return (
     <div className="px-6 py-8 lg:px-10">
       <IntroBlock />
+
+      <DraftsCard drafts={drafts} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <MetricCard

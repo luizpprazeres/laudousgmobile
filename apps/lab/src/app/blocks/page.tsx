@@ -1,9 +1,31 @@
 import { BlocksClient } from "@/components/blocks/BlocksClient";
-import { listCategories, rootExists } from "@/lib/knowledge/fs";
+import { listCategories, rootExists, type BlockStatus } from "@/lib/knowledge/fs";
 
 export const dynamic = "force-dynamic";
 
-export default function BlocksPage() {
+type StatusFilter = BlockStatus | "all";
+
+const VALID_STATUS: StatusFilter[] = ["all", "published", "draft", "deprecated"];
+
+function parseStatusParam(value: string | string[] | undefined): StatusFilter {
+  if (typeof value !== "string") return "all";
+  return (VALID_STATUS as string[]).includes(value) ? (value as StatusFilter) : "all";
+}
+
+function parseStringParam(value: string | string[] | undefined): string | null {
+  if (typeof value === "string" && value.length > 0) return value;
+  return null;
+}
+
+export default async function BlocksPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    status?: string | string[];
+    cat?: string | string[];
+    path?: string | string[];
+  }>;
+}) {
   const root = rootExists();
   if (!root.ok) {
     return (
@@ -17,7 +39,21 @@ export default function BlocksPage() {
     );
   }
 
+  const sp = (await searchParams) ?? {};
+  const initialStatusFilter = parseStatusParam(sp.status);
+  const initialExpandedCategory = parseStringParam(sp.cat) ?? undefined;
+  const initialPath = parseStringParam(sp.path);
+
   const categories = listCategories();
 
-  return <BlocksClient categories={categories} writable={root.writable} rootPath={root.path} />;
+  return (
+    <BlocksClient
+      categories={categories}
+      writable={root.writable}
+      rootPath={root.path}
+      initialPath={initialPath}
+      initialStatusFilter={initialStatusFilter}
+      initialExpandedCategory={initialExpandedCategory}
+    />
+  );
 }

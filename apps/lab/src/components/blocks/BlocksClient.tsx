@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FsBlockContent, FsCategory } from "@/lib/knowledge/fs";
+import type { BlockStatus, FsBlockContent, FsCategory } from "@/lib/knowledge/fs";
 import { BlockTree } from "./BlockTree";
 import { EditorBottomBar } from "./EditorBottomBar";
 import { EditorHeader } from "./EditorHeader";
@@ -13,14 +13,27 @@ type BlockApiResponse = FsBlockContent & {
   githubReady: boolean;
 };
 
+type StatusFilter = BlockStatus | "all";
+
 type Props = {
   categories: FsCategory[];
   writable: boolean;
   rootPath: string;
+  initialPath?: string | null;
+  initialStatusFilter?: StatusFilter;
+  initialExpandedCategory?: string;
 };
 
-export function BlocksClient({ categories, writable, rootPath }: Props) {
+export function BlocksClient({
+  categories,
+  writable,
+  rootPath,
+  initialPath,
+  initialStatusFilter = "all",
+  initialExpandedCategory,
+}: Props) {
   const firstPath = (() => {
+    if (initialPath) return initialPath;
     for (const cat of categories) {
       for (const kind of cat.kinds) {
         const b = kind.blocks[0];
@@ -36,6 +49,7 @@ export function BlocksClient({ categories, writable, rootPath }: Props) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [promoting, setPromoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,9 +123,63 @@ export function BlocksClient({ categories, writable, rootPath }: Props) {
     }
   };
 
+  const handlePromote = async () => {
+    if (!block) return;
+    if (dirty) {
+      window.alert("Salve alterações pendentes antes de promover.");
+      return;
+    }
+    const moveLabel = block.isRev ? ` e mover de __rev__/ pro KIND pai` : "";
+    const ok = window.confirm(
+      `Promover ${block.filename} pra status: published${moveLabel}?\n\nEssa ação atualiza o frontmatter e ${
+        block.isRev ? "move o arquivo" : "salva direto"
+      } via ${writable ? "filesystem local" : "GitHub"}.`,
+    );
+    if (!ok) return;
+
+    setPromoting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/blocks/promote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: block.relPath }),
+      });
+      const data = await res.json().catch(() => ({} as Record<string, unknown>));
+      if (!res.ok) {
+        throw new Error((data.error as string | undefined) ?? `status ${res.status}`);
+      }
+      const newPath = (data.newPath as string | undefined) ?? block.relPath;
+      const warning = data.warning as string | undefined;
+      const target = data.target as string | undefined;
+      const putCommit = (data.commits as { put?: { htmlUrl?: string; commitSha?: string } } | undefined)?.put;
+      const lines = [
+        `Promovido pra published.${block.isRev ? `\nNovo path: ${newPath}` : ""}`,
+        target === "github" && putCommit?.htmlUrl
+          ? `\nCommit: ${putCommit.commitSha?.slice(0, 7) ?? "?"}\nVer: ${putCommit.htmlUrl}`
+          : "",
+        warning ? `\n\n⚠ ${warning}` : "",
+        "\n\nRecarregando a árvore…",
+      ];
+      window.alert(lines.filter(Boolean).join(""));
+      // Hard reload pra refletir o move (caso isRev) e re-fetchar listCategories
+      window.location.assign(`/blocks?path=${encodeURIComponent(newPath)}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "promote falhou");
+    } finally {
+      setPromoting(false);
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
-      <BlockTree categories={categories} selectedPath={selectedPath} onSelect={handleSelect} />
+      <BlockTree
+        categories={categories}
+        selectedPath={selectedPath}
+        onSelect={handleSelect}
+        initialStatusFilter={initialStatusFilter}
+        initialExpanded={initialExpandedCategory}
+      />
       <section className="flex flex-1 flex-col overflow-hidden">
         {!selectedPath && (
           <EmptyState message="Selecione um block na árvore à esquerda." />
@@ -124,13 +192,17 @@ export function BlocksClient({ categories, writable, rootPath }: Props) {
           <>
             <EditorHeader
               filename={block.filename}
-              path={`${rootPath.split("/").slice(-3).join("/")}/${block.category}/${block.kind}/`}
+              path={`${rootPath.split("/").slice(-3).join("/")}/${block.category}/${block.kind}/${block.isRev ? "__rev__/" : ""}`}
               modified={dirty}
               writable={writable}
               githubReady={githubReady}
               saving={saving}
+              status={block.status}
+              isRev={block.isRev}
+              promoting={promoting}
               onRevert={handleRevert}
               onSave={handleSave}
+              onPromote={handlePromote}
             />
             <FrontmatterForm block={mapToLegacy(block)} />
             <MarkdownEditor value={content} onChange={setContent} />
@@ -195,7 +267,7 @@ function mapToLegacy(b: FsBlockContent): LegacyBlock {
     version: b.version,
     modified: b.modified,
     filename: b.filename,
-    path: `${b.category}/${b.kind}/`,
+    path: `${b.category}/${b.kind}/${b.isRev ? "__rev__/" : ""}`,
     body: b.body,
     edits: [mtimeShort],
     gitHash: "—",

@@ -129,7 +129,18 @@ function collectChangedKnowledgeFiles(payload: PushPayload): string[] {
     for (const list of [commit.added, commit.modified]) {
       if (!list) continue;
       for (const file of list) {
-        if (file.startsWith(KNOWLEDGE_PREFIX) && file.endsWith(".md") && !file.includes("/_")) {
+        // Filtros:
+        //  - Path canônico packages/knowledge/snippets/...
+        //  - Apenas .md
+        //  - Pula arquivos com prefixo underline (convenção drafts/auxiliares: `_*.md`)
+        //  - Pula tudo sob `/__rev__/` (S26: blocks em revisão NÃO vão pra produção
+        //    até serem promovidos via /api/blocks/promote no Lab)
+        if (
+          file.startsWith(KNOWLEDGE_PREFIX) &&
+          file.endsWith(".md") &&
+          !file.includes("/_") &&
+          !file.includes("/__rev__/")
+        ) {
           set.add(file);
         }
       }
