@@ -3,7 +3,7 @@ import { z } from "zod";
 export const ProfileRoleSchema = z.enum(["user", "admin"]);
 export type ProfileRole = z.infer<typeof ProfileRoleSchema>;
 
-export const ProfilePlanSchema = z.enum(["free", "pro", "clinic"]);
+export const ProfilePlanSchema = z.enum(["free", "essencial", "pro", "clinic"]);
 export type ProfilePlan = z.infer<typeof ProfilePlanSchema>;
 
 export const ProfileSchema = z.object({
