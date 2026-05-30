@@ -1051,7 +1051,7 @@ function isAllCapsHeading(trimmed: string): boolean {
 async function copyReportToClipboard(report: SalaReport): Promise<boolean> {
   const { heading, body } = splitHeading(report.outputText);
   const headingHtml = heading
-    ? `<p><strong>${escapeHtml(heading)}</strong></p>`
+    ? `<p><strong>${escapeHtml(heading)}</strong></p><p>&nbsp;</p>`
     : "";
   const bodyHtml = body
     .split(/\r?\n/)
@@ -2173,7 +2173,7 @@ function ScopedStyles() {
         min-height: 297mm;
         padding: 56px 48px;
         column-gap: 24px;
-        font-size: 12.5px;
+        font-size: 15px;
         line-height: 1.55;
       }
 
