@@ -21,7 +21,6 @@ type Theme = "light" | "dark";
 const HIDDEN_IDS_KEY = "sala-hidden-ids";
 const THEME_KEY = "sala-theme";
 const HIGHLIGHT_KEY = "sala-highlight";
-const NOTES_KEY = "sala-notes";
 const SEEN_IDS_KEY = "sala-seen-ids";
 
 type ActivityKind =
@@ -55,6 +54,38 @@ const A4_PAGE_WIDTH_PX = 794;
 const A4_PAGE_HEIGHT_PX = 1123;
 const A4_PAGE_GAP_PX = 24;
 
+type Placement = "after-title" | "in-conclusion" | "footer";
+type PhraseSource = "native" | "global";
+
+type Phrase = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+type InsertedPhrase = {
+  id: string;
+  text: string;
+  title: string;
+  placement: Placement;
+  source: PhraseSource;
+};
+
+type PersistedAnnotation = {
+  id: string;
+  reportId: string | null;
+  text: string;
+  placement: Placement;
+  createdAt: string;
+};
+
+type PhrasesState = {
+  natives: Phrase[];
+  globals: Phrase[];
+};
+
+const EMPTY_PHRASES: PhrasesState = { natives: [], globals: [] };
+
 export default function SalaTokenPage() {
   const params = useParams<{ token: string }>();
   const token = (params?.token ?? "").toUpperCase();
@@ -72,12 +103,19 @@ export default function SalaTokenPage() {
   const [highlightOn, setHighlightOn] = useState<boolean>(true);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [phrases, setPhrases] = useState<PhrasesState>(EMPTY_PHRASES);
+  const [insertedPhrases, setInsertedPhrases] = useState<InsertedPhrase[]>([]);
+  const [persistedAnnotations, setPersistedAnnotations] = useState<
+    PersistedAnnotation[]
+  >([]);
+  const [annotationWarning, setAnnotationWarning] = useState<string | null>(
+    null,
+  );
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<SalaReport | null>(null);
   const [selectedLoading, setSelectedLoading] = useState(false);
   const [clock, setClock] = useState<string>(() => formatClock(new Date()));
   const [noteDraft, setNoteDraft] = useState("");
-  const [notes, setNotes] = useState<{ id: string; text: string; at: number }[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -99,11 +137,6 @@ export default function SalaTokenPage() {
         const arr = JSON.parse(storedHidden) as string[];
         setHiddenIds(new Set(arr));
       }
-      const storedNotes = localStorage.getItem(NOTES_KEY);
-      if (storedNotes) {
-        const arr = JSON.parse(storedNotes) as { id: string; text: string; at: number }[];
-        setNotes(arr.slice(-50));
-      }
       const storedSeen = localStorage.getItem(SEEN_IDS_KEY);
       if (storedSeen) {
         setSeenIds(new Set(JSON.parse(storedSeen) as string[]));
@@ -123,33 +156,94 @@ export default function SalaTokenPage() {
     ].slice(0, 40));
   }
 
-  function persistNotes(next: { id: string; text: string; at: number }[]) {
-    try { localStorage.setItem(NOTES_KEY, JSON.stringify(next.slice(-50))); } catch {}
-  }
-
   function persistSeen(next: Set<string>) {
     try { localStorage.setItem(SEEN_IDS_KEY, JSON.stringify(Array.from(next))); } catch {}
   }
 
-  function submitNote() {
-    const text = noteDraft.trim();
-    if (!text) return;
-    const entry = { id: `n-${Date.now()}`, text, at: Date.now() };
-    setNotes((prev) => {
-      const next = [...prev, entry];
-      persistNotes(next);
-      return next;
-    });
-    pushActivity("note", text.length > 40 ? `${text.slice(0, 40)}…` : text);
-    setNoteDraft("");
+  function flashAnnotationWarning(message: string) {
+    setAnnotationWarning(message);
+    setTimeout(() => {
+      setAnnotationWarning((prev) => (prev === message ? null : prev));
+    }, 4000);
   }
 
-  function removeNote(id: string) {
-    setNotes((prev) => {
-      const next = prev.filter((n) => n.id !== id);
-      persistNotes(next);
-      return next;
-    });
+  async function submitAnnotation() {
+    const text = noteDraft.trim();
+    if (!text || !displayReport?.id || !token) return;
+    try {
+      const res = await fetch(
+        `/api/sala/${encodeURIComponent(token)}/annotations`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            text,
+            reportId: displayReport.id,
+            placement: "in-conclusion",
+          }),
+        },
+      );
+      if (!res.ok) {
+        if (res.status === 429) {
+          flashAnnotationWarning(
+            "Muitas anotações em pouco tempo. Tente de novo em alguns segundos.",
+          );
+        } else if (res.status === 422) {
+          flashAnnotationWarning(
+            "Limite de anotações por laudo atingido (30). Remova alguma antes.",
+          );
+        } else {
+          flashAnnotationWarning("Não foi possível salvar a anotação.");
+        }
+        return;
+      }
+      const data = (await res.json()) as { annotation?: PersistedAnnotation };
+      if (data.annotation) {
+        setPersistedAnnotations((prev) => [...prev, data.annotation!]);
+        setNoteDraft("");
+      }
+    } catch (e) {
+      console.error("[sala] submitAnnotation falhou", e);
+      flashAnnotationWarning("Erro de conexão ao salvar anotação.");
+    }
+  }
+
+  async function deleteAnnotation(id: string) {
+    const snapshot = persistedAnnotations.find((a) => a.id === id);
+    if (!snapshot) return;
+    setPersistedAnnotations((prev) => prev.filter((a) => a.id !== id));
+    try {
+      const res = await fetch(
+        `/api/sala/${encodeURIComponent(token)}/annotations/${encodeURIComponent(id)}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      console.error("[sala] deleteAnnotation falhou — rollback", e);
+      setPersistedAnnotations((prev) =>
+        [...prev, snapshot].sort((a, b) =>
+          a.createdAt.localeCompare(b.createdAt),
+        ),
+      );
+      flashAnnotationWarning("Não foi possível remover anotação.");
+    }
+  }
+
+  function insertPhrase(
+    phrase: Phrase,
+    source: PhraseSource,
+    placement: Placement,
+  ) {
+    setInsertedPhrases((prev) => [
+      ...prev,
+      {
+        id: `${source}-${phrase.id}-${Date.now()}`,
+        text: phrase.body,
+        title: phrase.title,
+        placement,
+        source,
+      },
+    ]);
   }
 
   function markSeen(id: string) {
@@ -230,7 +324,7 @@ export default function SalaTokenPage() {
   async function onCopy() {
     if (!displayReport) return;
     setCopyError(false);
-    const ok = await copyReportToClipboard(displayReport);
+    const ok = await copyReportToClipboard(displayReport, persistedAnnotations);
     if (!ok) {
       setCopyError(true);
       setTimeout(() => setCopyError(false), 2400);
@@ -388,6 +482,60 @@ export default function SalaTokenPage() {
   }, [activeId, displayReport, isViewingPast, shortcutsOpen, visibleTimeline]);
 
   useEffect(() => {
+    setInsertedPhrases([]);
+  }, [displayReport?.id]);
+
+  useEffect(() => {
+    if (!token) {
+      setPhrases(EMPTY_PHRASES);
+      return;
+    }
+    const cat = displayReport?.category ?? "";
+    const url = `/api/sala/${encodeURIComponent(token)}/phrases${
+      cat ? `?categoryCode=${encodeURIComponent(cat)}` : ""
+    }`;
+    let cancelled = false;
+    fetch(url, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : EMPTY_PHRASES))
+      .then((data: PhrasesState) => {
+        if (!cancelled) {
+          setPhrases({
+            natives: data.natives ?? [],
+            globals: data.globals ?? [],
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPhrases(EMPTY_PHRASES);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, displayReport?.category]);
+
+  useEffect(() => {
+    if (!displayReport?.id || !token) {
+      setPersistedAnnotations([]);
+      return;
+    }
+    let cancelled = false;
+    const url = `/api/sala/${encodeURIComponent(token)}/annotations?reportId=${encodeURIComponent(displayReport.id)}`;
+    fetch(url, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { annotations: [] }))
+      .then((data: { annotations?: PersistedAnnotation[] }) => {
+        if (!cancelled) {
+          setPersistedAnnotations(data.annotations ?? []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPersistedAnnotations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, displayReport?.id]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const calcScale = () => {
       const isMobile = window.matchMedia("(max-width: 760px)").matches;
@@ -422,9 +570,11 @@ export default function SalaTokenPage() {
         highlightOn={highlightOn}
         copied={copied}
         copyError={copyError}
-        notes={notes}
         noteDraft={noteDraft}
-        activity={activity}
+        phrases={phrases}
+        insertedPhrases={insertedPhrases}
+        persistedAnnotations={persistedAnnotations}
+        annotationWarning={annotationWarning}
         shortcutsOpen={shortcutsOpen}
         noteInputRef={noteInputRef}
         onToggleTheme={toggleTheme}
@@ -434,9 +584,10 @@ export default function SalaTokenPage() {
         onHide={hideEntry}
         onSelect={selectReport}
         onBackToLive={backToLive}
-        onSubmitNote={submitNote}
+        onSubmitAnnotation={submitAnnotation}
         onNoteDraft={setNoteDraft}
-        onRemoveNote={removeNote}
+        onDeleteAnnotation={deleteAnnotation}
+        onInsertPhrase={insertPhrase}
         onCloseShortcuts={() => setShortcutsOpen(false)}
         formatClock={formatClock}
       />
@@ -462,9 +613,11 @@ function Shell({
   highlightOn,
   copied,
   copyError,
-  notes,
   noteDraft,
-  activity,
+  phrases,
+  insertedPhrases,
+  persistedAnnotations,
+  annotationWarning,
   shortcutsOpen,
   noteInputRef,
   onToggleTheme,
@@ -474,9 +627,10 @@ function Shell({
   onHide,
   onSelect,
   onBackToLive,
-  onSubmitNote,
+  onSubmitAnnotation,
   onNoteDraft,
-  onRemoveNote,
+  onDeleteAnnotation,
+  onInsertPhrase,
   onCloseShortcuts,
   formatClock,
 }: {
@@ -495,9 +649,11 @@ function Shell({
   highlightOn: boolean;
   copied: boolean;
   copyError: boolean;
-  notes: { id: string; text: string; at: number }[];
   noteDraft: string;
-  activity: ActivityEntry[];
+  phrases: PhrasesState;
+  insertedPhrases: InsertedPhrase[];
+  persistedAnnotations: PersistedAnnotation[];
+  annotationWarning: string | null;
   shortcutsOpen: boolean;
   noteInputRef: RefObject<HTMLTextAreaElement>;
   onToggleTheme: () => void;
@@ -507,9 +663,14 @@ function Shell({
   onHide: (id: string) => void;
   onSelect: (id: string) => void;
   onBackToLive: () => void;
-  onSubmitNote: () => void;
+  onSubmitAnnotation: () => void;
   onNoteDraft: (value: string) => void;
-  onRemoveNote: (id: string) => void;
+  onDeleteAnnotation: (id: string) => void;
+  onInsertPhrase: (
+    phrase: Phrase,
+    source: PhraseSource,
+    placement: Placement,
+  ) => void;
   onCloseShortcuts: () => void;
   formatClock: (date: Date) => string;
 }) {
@@ -718,6 +879,8 @@ function Shell({
               highlightOn={highlightOn}
               copied={copied}
               isViewingPast={isViewingPast}
+              insertedPhrases={insertedPhrases}
+              persistedAnnotations={persistedAnnotations}
               onToggleHighlight={onToggleHighlight}
               onCopy={onCopy}
               onBackToLive={onBackToLive}
@@ -728,10 +891,15 @@ function Shell({
         <aside className="activity-panel">
           <section className="panel-section">
             <h2 className="panel-title">Anotações</h2>
+            {annotationWarning && (
+              <p className="annotation-warning" role="alert">
+                {annotationWarning}
+              </p>
+            )}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                onSubmitNote();
+                onSubmitAnnotation();
               }}
               className="note-form"
             >
@@ -739,21 +907,36 @@ function Shell({
                 ref={noteInputRef}
                 value={noteDraft}
                 onChange={(e) => onNoteDraft(e.target.value)}
-                placeholder="Acrescente uma observação..."
+                placeholder={
+                  report
+                    ? "Acrescente uma observação..."
+                    : "Aguardando laudo do médico..."
+                }
                 rows={3}
                 className="note-input"
+                disabled={!report}
               />
-              <button type="submit" className="note-submit" disabled={!noteDraft.trim()}>
-                Adicionar
+              <button
+                type="submit"
+                className="note-submit"
+                disabled={!noteDraft.trim() || !report}
+              >
+                Adicionar à conclusão
               </button>
             </form>
-            {notes.length > 0 && (
+            {persistedAnnotations.length > 0 && (
               <ul className="notes-list">
-                {notes.slice().reverse().map((n) => (
-                  <li key={n.id} className="note-item">
-                    <time>{formatTime(new Date(n.at).toISOString())}</time>
-                    <p>{n.text}</p>
-                    <button type="button" onClick={() => onRemoveNote(n.id)} aria-label="Remover">×</button>
+                {persistedAnnotations.slice().reverse().map((a) => (
+                  <li key={a.id} className="note-item">
+                    <time>{formatTime(a.createdAt)}</time>
+                    <p>{a.text}</p>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteAnnotation(a.id)}
+                      aria-label="Remover anotação"
+                    >
+                      ×
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -761,19 +944,59 @@ function Shell({
           </section>
 
           <section className="panel-section">
-            <h2 className="panel-title">Atividade</h2>
-            {activity.length === 0 ? (
-              <p className="muted">Eventos aparecem aqui durante o turno.</p>
+            <h2 className="panel-title">Frases nativas</h2>
+            {phrases.natives.length === 0 ? (
+              <p className="muted">
+                {report
+                  ? "Nenhuma frase nativa cadastrada pra esta categoria."
+                  : "Aguardando laudo pra sugerir frases."}
+              </p>
             ) : (
-              <ol className="activity-list">
-                {activity.map((a) => (
-                  <li key={a.id} className={`activity-item activity-${a.kind}`}>
-                    <time>{formatClock(new Date(a.at))}</time>
-                    <span>{labelForActivity(a)}</span>
-                  </li>
+              <div className="phrase-list">
+                {phrases.natives.map((p) => (
+                  <PhraseCard
+                    key={`native-${p.id}`}
+                    phrase={p}
+                    source="native"
+                    insertedCount={
+                      insertedPhrases.filter(
+                        (ip) => ip.source === "native" && ip.text === p.body,
+                      ).length
+                    }
+                    onInsert={(placement) =>
+                      onInsertPhrase(p, "native", placement)
+                    }
+                    disabled={!report}
+                  />
                 ))}
-              </ol>
+              </div>
             )}
+          </section>
+
+          <section className="panel-section">
+            <h2 className="panel-title">Frases globais</h2>
+            <div className="phrase-list">
+              {phrases.globals.map((p, i) => (
+                <PhraseCard
+                  key={`global-${i}`}
+                  phrase={{ ...p, id: `global-${i}` }}
+                  source="global"
+                  insertedCount={
+                    insertedPhrases.filter(
+                      (ip) => ip.source === "global" && ip.text === p.body,
+                    ).length
+                  }
+                  onInsert={(placement) =>
+                    onInsertPhrase(
+                      { ...p, id: `global-${i}` },
+                      "global",
+                      placement,
+                    )
+                  }
+                  disabled={!report}
+                />
+              ))}
+            </div>
           </section>
         </aside>
       </div>
@@ -811,6 +1034,70 @@ function SidebarSection({
       <h2 className="sidebar-title">{title}</h2>
       {children}
     </div>
+  );
+}
+
+function PhraseCard({
+  phrase,
+  source,
+  insertedCount,
+  onInsert,
+  disabled,
+}: {
+  phrase: Phrase;
+  source: PhraseSource;
+  insertedCount: number;
+  onInsert: (placement: Placement) => void;
+  disabled?: boolean;
+}) {
+  const [placement, setPlacement] = useState<Placement>("in-conclusion");
+  return (
+    <article className={`phrase-card phrase-card--${source}`}>
+      <header className="phrase-card-head">
+        <h4 className="phrase-card-title">{phrase.title}</h4>
+        {insertedCount > 0 && (
+          <span className="phrase-card-badge" title="Vezes inserida no laudo atual">
+            ×{insertedCount}
+          </span>
+        )}
+      </header>
+      <p className="phrase-card-body">{phrase.body}</p>
+      <div
+        className="phrase-placement"
+        role="radiogroup"
+        aria-label="Onde inserir esta frase"
+      >
+        {(
+          [
+            { value: "after-title", label: "Após título" },
+            { value: "in-conclusion", label: "Na conclusão" },
+            { value: "footer", label: "Rodapé" },
+          ] as { value: Placement; label: string }[]
+        ).map((opt) => (
+          <label
+            key={opt.value}
+            className={`phrase-placement-chip ${placement === opt.value ? "is-selected" : ""}`}
+          >
+            <input
+              type="radio"
+              name={`placement-${source}-${phrase.id}`}
+              value={opt.value}
+              checked={placement === opt.value}
+              onChange={() => setPlacement(opt.value)}
+            />
+            <span>{opt.label}</span>
+          </label>
+        ))}
+      </div>
+      <button
+        type="button"
+        className="phrase-insert"
+        onClick={() => onInsert(placement)}
+        disabled={disabled}
+      >
+        + Inserir no laudo
+      </button>
+    </article>
   );
 }
 
@@ -911,6 +1198,8 @@ function ReportView({
   highlightOn,
   copied,
   isViewingPast,
+  insertedPhrases,
+  persistedAnnotations,
   onToggleHighlight,
   onCopy,
   onBackToLive,
@@ -921,13 +1210,19 @@ function ReportView({
   highlightOn: boolean;
   copied: boolean;
   isViewingPast: boolean;
+  insertedPhrases: InsertedPhrase[];
+  persistedAnnotations: PersistedAnnotation[];
   onToggleHighlight: () => void;
   onCopy: () => void;
   onBackToLive: () => void;
 }) {
-  const { heading, body } = useMemo(
+  const { heading, body: rawBody } = useMemo(
     () => splitHeading(report.outputText),
     [report.outputText],
+  );
+  const body = useMemo(
+    () => renderWithAnnotations(rawBody, insertedPhrases, persistedAnnotations),
+    [rawBody, insertedPhrases, persistedAnnotations],
   );
 
   const measureRef = useRef<HTMLDivElement | null>(null);
@@ -1048,8 +1343,15 @@ function isAllCapsHeading(trimmed: string): boolean {
   return true;
 }
 
-async function copyReportToClipboard(report: SalaReport): Promise<boolean> {
-  const { heading, body } = splitHeading(report.outputText);
+async function copyReportToClipboard(
+  report: SalaReport,
+  annotations: PersistedAnnotation[] = [],
+): Promise<boolean> {
+  const { heading, body: rawBody } = splitHeading(report.outputText);
+  const body =
+    annotations.length > 0
+      ? renderWithAnnotations(rawBody, [], annotations)
+      : rawBody;
   const headingHtml = heading
     ? `<p><strong>${escapeHtml(heading)}</strong></p><p>&nbsp;</p>`
     : "";
@@ -1182,6 +1484,68 @@ function formatTime(iso: string): string {
   } catch {
     return "--:--";
   }
+}
+
+function findConclusionInfo(body: string): {
+  lastN: number;
+  hasConclusion: boolean;
+} {
+  const match = body.match(/CONCLUS[ÃA]O\s*:/i);
+  if (!match || match.index === undefined) {
+    return { lastN: 0, hasConclusion: false };
+  }
+  const tail = body.slice(match.index);
+  const numberMatches = [...tail.matchAll(/^\s*(\d+)\)\s/gm)];
+  if (numberMatches.length === 0) return { lastN: 0, hasConclusion: true };
+  const last = Math.max(
+    ...numberMatches.map((m) => parseInt(m[1] ?? "0", 10)),
+  );
+  return { lastN: last, hasConclusion: true };
+}
+
+function renderWithAnnotations(
+  body: string,
+  inserted: InsertedPhrase[],
+  annotations: PersistedAnnotation[],
+): string {
+  const info = findConclusionInfo(body);
+
+  const afterTitle = inserted
+    .filter((p) => p.placement === "after-title")
+    .map((p) => p.text);
+  const inConclusionTexts: string[] = [
+    ...inserted.filter((p) => p.placement === "in-conclusion").map((p) => p.text),
+    ...annotations
+      .filter((a) => a.placement === "in-conclusion")
+      .map((a) => a.text),
+  ];
+  const footer: string[] = [
+    ...inserted.filter((p) => p.placement === "footer").map((p) => p.text),
+    ...annotations.filter((a) => a.placement === "footer").map((a) => a.text),
+  ];
+
+  let result = body;
+
+  if (afterTitle.length > 0) {
+    result = afterTitle.join("\n\n") + "\n\n" + result;
+  }
+
+  if (inConclusionTexts.length > 0) {
+    if (info.hasConclusion) {
+      const numbered = inConclusionTexts
+        .map((text, i) => `${info.lastN + i + 1}) ${text}`)
+        .join("\n");
+      result = result + "\n" + numbered;
+    } else {
+      footer.push(...inConclusionTexts);
+    }
+  }
+
+  if (footer.length > 0) {
+    result = result + "\n\n" + footer.join("\n\n");
+  }
+
+  return result;
 }
 
 function formatDuration(ms: number): string {
@@ -1824,12 +2188,155 @@ function ScopedStyles() {
         background: var(--paper);
         display: flex;
         flex-direction: column;
-        gap: 18px;
+        gap: 20px;
         position: sticky;
         top: 52px;
         align-self: start;
         max-height: calc(100vh - 52px);
         overflow-y: auto;
+      }
+
+      .annotation-warning {
+        margin: 0;
+        padding: 6px 10px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        color: #b91c1c;
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+
+      [data-theme="dark"] .annotation-warning {
+        background: rgba(220, 38, 38, 0.12);
+        border-color: rgba(220, 38, 38, 0.3);
+        color: #fca5a5;
+      }
+
+      .phrase-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .phrase-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--paper-shade);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        transition: border-color 140ms ease, background 140ms ease;
+      }
+
+      .phrase-card:hover {
+        border-color: var(--line-strong);
+      }
+
+      .phrase-card--native {
+        background: var(--brand-tint);
+        border-color: var(--brand-soft);
+      }
+
+      .phrase-card-head {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+
+      .phrase-card-title {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink);
+        flex: 1;
+        line-height: 1.3;
+      }
+
+      .phrase-card-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--brand-deep);
+        background: var(--brand-tint);
+        border: 1px solid var(--brand-soft);
+        border-radius: 999px;
+        padding: 1px 6px;
+        line-height: 1.3;
+      }
+
+      .phrase-card-body {
+        margin: 0;
+        font-size: 11.5px;
+        line-height: 1.4;
+        color: var(--ink-soft);
+      }
+
+      .phrase-placement {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .phrase-placement-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        font-size: 10.5px;
+        color: var(--ink-mute);
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        cursor: pointer;
+        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+        user-select: none;
+      }
+
+      .phrase-placement-chip input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        height: 0;
+      }
+
+      .phrase-placement-chip:hover {
+        color: var(--ink);
+        border-color: var(--line-strong);
+      }
+
+      .phrase-placement-chip.is-selected {
+        color: var(--brand-deep);
+        background: var(--brand-tint);
+        border-color: var(--brand-soft);
+        font-weight: 500;
+      }
+
+      .phrase-insert {
+        align-self: flex-end;
+        padding: 5px 12px;
+        border-radius: 7px;
+        border: 1px solid var(--brand-soft);
+        background: var(--brand-tint);
+        color: var(--brand-deep);
+        cursor: pointer;
+        font-size: 11.5px;
+        font-weight: 500;
+        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, border-color 120ms ease;
+      }
+
+      .phrase-insert:hover:not(:disabled) {
+        background: var(--brand-soft);
+      }
+
+      .phrase-insert:active:not(:disabled) {
+        transform: scale(0.96);
+      }
+
+      .phrase-insert:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
       }
 
       .panel-section {
