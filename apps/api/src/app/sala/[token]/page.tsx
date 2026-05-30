@@ -71,6 +71,7 @@ export default function SalaTokenPage() {
   const [theme, setTheme] = useState<Theme>("light");
   const [highlightOn, setHighlightOn] = useState<boolean>(true);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<SalaReport | null>(null);
   const [selectedLoading, setSelectedLoading] = useState(false);
@@ -228,7 +229,13 @@ export default function SalaTokenPage() {
 
   async function onCopy() {
     if (!displayReport) return;
-    await copyReportToClipboard(displayReport);
+    setCopyError(false);
+    const ok = await copyReportToClipboard(displayReport);
+    if (!ok) {
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 2400);
+      return;
+    }
     setCopied(true);
     pushActivity("copied");
     setTimeout(() => setCopied(false), 1800);
@@ -286,6 +293,18 @@ export default function SalaTokenPage() {
     [timeline, hiddenIds],
   );
   const summary = useMemo(() => summarize(visibleTimeline), [visibleTimeline]);
+  const stats = useMemo<{ total: number; avgMs: number | null } | null>(() => {
+    if (visibleTimeline.length === 0) return null;
+    const total = visibleTimeline.length;
+    if (total < 2) return { total, avgMs: null };
+    const newest = visibleTimeline[0];
+    const oldest = visibleTimeline[total - 1];
+    if (!newest || !oldest) return { total, avgMs: null };
+    const span =
+      new Date(newest.createdAt).getTime() -
+      new Date(oldest.createdAt).getTime();
+    return { total, avgMs: Math.max(0, Math.floor(span / (total - 1))) };
+  }, [visibleTimeline]);
   const latestReport = useMemo(
     () => (report && !hiddenIds.has(report.id) ? report : null),
     [report, hiddenIds],
@@ -368,6 +387,23 @@ export default function SalaTokenPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeId, displayReport, isViewingPast, shortcutsOpen, visibleTimeline]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const calcScale = () => {
+      const isMobile = window.matchMedia("(max-width: 760px)").matches;
+      if (isMobile) {
+        document.documentElement.style.setProperty("--paper-scale", "1");
+        return;
+      }
+      const useful = window.innerHeight - 120;
+      const scale = Math.min(1, Math.max(0.55, useful / A4_PAGE_HEIGHT_PX));
+      document.documentElement.style.setProperty("--paper-scale", scale.toFixed(3));
+    };
+    calcScale();
+    window.addEventListener("resize", calcScale);
+    return () => window.removeEventListener("resize", calcScale);
+  }, []);
+
   return (
     <>
       <Shell
@@ -378,12 +414,14 @@ export default function SalaTokenPage() {
         activeId={activeId}
         isViewingPast={isViewingPast}
         summary={summary}
+        stats={stats}
         secondsSinceFetch={secondsSinceFetch}
         updatedFlash={updatedFlash}
         theme={theme}
         clock={clock}
         highlightOn={highlightOn}
         copied={copied}
+        copyError={copyError}
         notes={notes}
         noteDraft={noteDraft}
         activity={activity}
@@ -392,6 +430,7 @@ export default function SalaTokenPage() {
         onToggleTheme={toggleTheme}
         onToggleHighlight={toggleHighlight}
         onCopy={onCopy}
+        onPrint={() => window.print()}
         onHide={hideEntry}
         onSelect={selectReport}
         onBackToLive={backToLive}
@@ -415,12 +454,14 @@ function Shell({
   activeId,
   isViewingPast,
   summary,
+  stats,
   secondsSinceFetch,
   updatedFlash,
   theme,
   clock,
   highlightOn,
   copied,
+  copyError,
   notes,
   noteDraft,
   activity,
@@ -429,6 +470,7 @@ function Shell({
   onToggleTheme,
   onToggleHighlight,
   onCopy,
+  onPrint,
   onHide,
   onSelect,
   onBackToLive,
@@ -445,12 +487,14 @@ function Shell({
   activeId: string | null;
   isViewingPast: boolean;
   summary: { label: string; count: number }[];
+  stats: { total: number; avgMs: number | null } | null;
   secondsSinceFetch: number | null;
   updatedFlash: number;
   theme: Theme;
   clock: string;
   highlightOn: boolean;
   copied: boolean;
+  copyError: boolean;
   notes: { id: string; text: string; at: number }[];
   noteDraft: string;
   activity: ActivityEntry[];
@@ -459,6 +503,7 @@ function Shell({
   onToggleTheme: () => void;
   onToggleHighlight: () => void;
   onCopy: () => void;
+  onPrint: () => void;
   onHide: (id: string) => void;
   onSelect: (id: string) => void;
   onBackToLive: () => void;
@@ -511,16 +556,81 @@ function Shell({
             <span className="live-dot" />
             <span className="live-text">{pillLabel}</span>
           </div>
+          {status === "live" && (
+            <div className="topbar-tools">
+              <button
+                type="button"
+                className={`topbar-tool ${highlightOn ? "is-on" : ""}`}
+                onClick={onToggleHighlight}
+                aria-pressed={highlightOn}
+                title="Destacar cabeçalhos (H)"
+              >
+                <span className="topbar-tool-icon" aria-hidden="true">H</span>
+                <span className="topbar-tool-label">Destacar</span>
+              </button>
+              <button
+                type="button"
+                className={`topbar-tool ${copied ? "is-copied" : ""} ${copyError ? "is-error" : ""}`}
+                onClick={onCopy}
+                title={copyError ? "Falha ao copiar — verifique permissão da área de transferência" : "Copiar laudo (C)"}
+              >
+                {copyError ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                ) : copied ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                )}
+                <span className="topbar-tool-label">
+                  {copyError ? "Falhou" : copied ? "Copiado" : "Copiar"}
+                </span>
+              </button>
+              <button
+                type="button"
+                className="topbar-tool"
+                onClick={onPrint}
+                title="Imprimir laudo"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="6 9 6 2 18 2 18 9" />
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                  <rect x="6" y="14" width="12" height="8" />
+                </svg>
+                <span className="topbar-tool-label">Imprimir</span>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
       <div className="layout">
         <aside className="sidebar">
           <SidebarSection title="Resumo">
-            {summary.length === 0 ? (
+            {summary.length === 0 || !stats ? (
               <p className="muted">Nenhum laudo hoje ainda.</p>
             ) : (
               <ul className="summary-list">
+                <li className="summary-stat">
+                  <span className="summary-label">Total</span>
+                  <span className="summary-count">{stats.total}</span>
+                </li>
+                <li className="summary-stat">
+                  <span className="summary-label">Média</span>
+                  <span className="summary-count">
+                    {stats.avgMs !== null ? formatDuration(stats.avgMs) : "—"}
+                  </span>
+                </li>
+                {summary.length > 0 && (
+                  <li className="summary-divider" aria-hidden="true" />
+                )}
                 {summary.map((s) => (
                   <li key={s.label}>
                     <span className="summary-label">{s.label}</span>
@@ -897,44 +1007,6 @@ function ReportView({
             </button>
           )}
         </div>
-        <div className="report-toolbar-actions">
-          <button
-            type="button"
-            className={`tool-btn ${highlightOn ? "is-on" : ""}`}
-            onClick={onToggleHighlight}
-            aria-pressed={highlightOn}
-            title="Destacar títulos e seções"
-          >
-            <span className="tool-icon">H</span>
-            <span className="tool-label">Destacar</span>
-          </button>
-          <button
-            type="button"
-            className={`tool-btn ${copied ? "is-copied" : ""}`}
-            onClick={onCopy}
-            title="Copiar laudo mantendo formatação"
-          >
-            {copied ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            )}
-            <span className="tool-label">{copied ? "Copiado" : "Copiar"}</span>
-          </button>
-          <button
-            type="button"
-            className="tool-btn"
-            onClick={() => window.print()}
-            title="Imprimir laudo"
-          >
-            <span className="tool-label">Imprimir</span>
-          </button>
-        </div>
       </div>
       <div className="status-row">
         <span className="status-dot" />
@@ -976,38 +1048,50 @@ function isAllCapsHeading(trimmed: string): boolean {
   return true;
 }
 
-async function copyReportToClipboard(report: SalaReport) {
+async function copyReportToClipboard(report: SalaReport): Promise<boolean> {
   const { heading, body } = splitHeading(report.outputText);
   const headingHtml = heading
-    ? `<h2 style="font-family:Arial,sans-serif;font-size:14pt;font-weight:bold;margin:0 0 12px;">${escapeHtml(heading)}</h2>`
+    ? `<p><strong>${escapeHtml(heading)}</strong></p>`
     : "";
   const bodyHtml = body
     .split(/\r?\n/)
     .map((line) => {
-      if (line.trim() === "") return "<br/>";
+      if (line.trim() === "") return "<p>&nbsp;</p>";
       if (isAllCapsHeading(line.trim())) {
-        return `<p style="font-family:Arial,sans-serif;font-size:11pt;font-weight:bold;margin:8px 0 4px;">${escapeHtml(line)}</p>`;
+        return `<p><strong>${escapeHtml(line)}</strong></p>`;
       }
-      return `<p style="font-family:Arial,sans-serif;font-size:11pt;margin:0;">${escapeHtml(line)}</p>`;
+      return `<p>${escapeHtml(line)}</p>`;
     })
     .join("");
-  const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;">${headingHtml}${bodyHtml}</div>`;
+  const html = `<div>${headingHtml}${bodyHtml}</div>`;
   const plain = (heading ? heading + "\n\n" : "") + body;
 
-  try {
-    if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.clipboard &&
+    typeof ClipboardItem !== "undefined"
+  ) {
+    try {
       await navigator.clipboard.write([
         new ClipboardItem({
           "text/html": new Blob([html], { type: "text/html" }),
           "text/plain": new Blob([plain], { type: "text/plain" }),
         }),
       ]);
-      return;
+      return true;
+    } catch (e) {
+      console.warn("Clipboard rich write failed, falling back to plain:", e);
     }
-  } catch {}
+  }
   try {
-    await navigator.clipboard.writeText(plain);
-  } catch {}
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      await navigator.clipboard.writeText(plain);
+      return true;
+    }
+  } catch (e) {
+    console.error("Clipboard write failed:", e);
+  }
+  return false;
 }
 
 function escapeHtml(s: string): string {
@@ -1100,6 +1184,16 @@ function formatTime(iso: string): string {
   }
 }
 
+function formatDuration(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  if (min < 60) return `${min}m`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m > 0 ? `${h}h${m}m` : `${h}h`;
+}
+
 function formatStamp(iso: string): string {
   try {
     const d = new Date(iso);
@@ -1175,7 +1269,7 @@ function RevokedIllustration() {
 function GlobalStyles() {
   return (
     <style dangerouslySetInnerHTML={{ __html: `
-      @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap");
 
       :root, [data-theme="light"] {
         --bg: #ffffff;
@@ -1347,6 +1441,78 @@ function ScopedStyles() {
         animation: pulse-brand 2.2s ease-in-out infinite;
       }
 
+      .topbar-tools {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding-left: 8px;
+        margin-left: 4px;
+        border-left: 1px solid var(--line);
+      }
+
+      .topbar-tool {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: var(--ink-soft);
+        font-family: "Inter Tight", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, color 120ms ease, border-color 120ms ease;
+      }
+
+      .topbar-tool:hover {
+        color: var(--ink);
+        background: var(--paper-shade);
+        border-color: var(--line);
+      }
+
+      .topbar-tool:active {
+        transform: scale(0.96);
+      }
+
+      .topbar-tool.is-on,
+      .topbar-tool.is-copied {
+        color: var(--brand-deep);
+        background: var(--brand-tint);
+        border-color: var(--brand-soft);
+      }
+
+      .topbar-tool.is-error {
+        color: #b91c1c;
+        background: #fef2f2;
+        border-color: #fecaca;
+      }
+
+      [data-theme="dark"] .topbar-tool.is-error {
+        color: #fca5a5;
+        background: rgba(220, 38, 38, 0.12);
+        border-color: rgba(220, 38, 38, 0.3);
+      }
+
+      .topbar-tool-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        border: 1px solid currentColor;
+        border-radius: 3px;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        font-size: 9px;
+        line-height: 1;
+      }
+
+      .topbar-tool-label {
+        font-size: 12px;
+      }
+
       @keyframes pulse-brand {
         0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
         70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
@@ -1371,7 +1537,7 @@ function ScopedStyles() {
         padding: 16px 12px;
         display: flex;
         flex-direction: column;
-        gap: 18px;
+        gap: 24px;
         background: var(--paper);
         position: sticky;
         top: 52px;
@@ -1388,12 +1554,12 @@ function ScopedStyles() {
 
       .sidebar-title {
         font-family: "JetBrains Mono", monospace;
-        font-size: 10.5px;
+        font-size: 10px;
         letter-spacing: 0.18em;
         text-transform: uppercase;
         color: var(--ink-mute);
         margin: 0;
-        font-weight: 500;
+        font-weight: 400;
       }
 
       .muted {
@@ -1435,6 +1601,19 @@ function ScopedStyles() {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      .summary-stat .summary-label {
+        color: var(--ink);
+        font-weight: 500;
+      }
+
+      .summary-divider {
+        list-style: none;
+        height: 1px;
+        background: var(--line);
+        margin: 6px 0 2px;
+        padding: 0;
       }
 
       .timeline {
@@ -1479,21 +1658,21 @@ function ScopedStyles() {
       .timeline-item::before {
         content: "";
         position: absolute;
-        left: 4px;
+        left: 5px;
         top: 50%;
         transform: translateY(-50%);
-        width: 7px;
-        height: 7px;
+        width: 5px;
+        height: 5px;
         border-radius: 999px;
-        background: var(--bg);
-        border: 1.5px solid var(--line-strong);
+        background: var(--paper);
+        border: 1px solid var(--line-strong);
         transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
       }
 
       .timeline-item.is-latest::before {
         background: var(--brand);
         border-color: var(--brand);
-        box-shadow: 0 0 0 3px var(--brand-tint);
+        box-shadow: 0 0 0 2px var(--brand-tint);
       }
 
       .timeline-item.is-latest .timeline-label {
@@ -1504,7 +1683,7 @@ function ScopedStyles() {
       .timeline-item.is-active::before {
         background: var(--brand-deep);
         border-color: var(--brand-deep);
-        box-shadow: 0 0 0 3px var(--brand-soft);
+        box-shadow: 0 0 0 2px var(--brand-soft);
       }
 
       .timeline-item.is-active .timeline-label {
@@ -1955,8 +2134,10 @@ function ScopedStyles() {
 
       .paper-spread {
         position: relative;
-        margin: 0 auto;
+        margin: 0 auto calc((var(--paper-scale, 1) - 1) * 297mm);
         width: max-content;
+        transform: scale(var(--paper-scale, 1));
+        transform-origin: top center;
       }
 
       .paper-pages-bg {
@@ -2126,7 +2307,7 @@ function ScopedStyles() {
       }
 
       .report-heading--highlight {
-        font-weight: 700;
+        font-weight: 800;
       }
 
       .report-body {
@@ -2145,7 +2326,7 @@ function ScopedStyles() {
       }
 
       .doc-line--heading {
-        font-weight: 700;
+        font-weight: 800;
       }
 
       .status-row {
@@ -2291,7 +2472,11 @@ function ScopedStyles() {
         .privacy-strip { margin-top: 12px; }
         .brand-sub { display: none; }
         .paper-scroll { overflow-x: visible; padding-bottom: 0; }
-        .paper-spread { width: 100% !important; }
+        .paper-spread {
+          width: 100% !important;
+          transform: none !important;
+          margin-bottom: 0 !important;
+        }
         .paper-pages-bg { display: none !important; }
         .paper-flow {
           column-count: 1 !important;
