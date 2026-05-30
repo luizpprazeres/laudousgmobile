@@ -1767,7 +1767,7 @@ function ScopedStyles() {
 
       .motivational-quote {
         font-style: italic;
-        font-size: 10.5px;
+        font-size: 11.5px;
         font-weight: 400;
         letter-spacing: 0.04em;
         color: var(--ink-mute);
