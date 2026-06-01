@@ -2,6 +2,7 @@ import { GenerateRequestSchema } from "@laudousg/shared";
 import { after } from "next/server";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { sseResponse, nowIso } from "@/server/sse/stream";
+import { getServiceClient } from "@/server/supabaseService";
 export { OPTIONS } from "@/server/cors";
 import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
@@ -518,6 +519,23 @@ export async function POST(req: Request) {
         report_id: reportId,
         final_text: finalText,
       });
+
+      // Apple Watch / clientes "publicação direta" — toca updated_at do report
+      // para empurrar pro topo do feed da Sala do Auxiliar imediatamente após
+      // o "done", antes da sanity check assíncrona. Trade-off conhecido: laudo
+      // pode ser visível na Sala e DEPOIS receber sanity:critical — aceitável
+      // no MVP pois a Sala é canal informativo (auxiliar pode aguardar
+      // confirmação verbal do médico antes de imprimir).
+      if (reqInput.auto_push_to_sala === true) {
+        try {
+          await getServiceClient()
+            .from("reports")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", reportId);
+        } catch (pushErr) {
+          console.error("[generate] auto_push_to_sala failed:", pushErr);
+        }
+      }
 
       try {
         const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({

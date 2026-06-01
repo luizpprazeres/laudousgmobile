@@ -25,6 +25,13 @@ export const GenerateRequestSchema = z.object({
       }),
     )
     .optional(),
+  // Origem do request — analytics + roteamento futuro. Default 'iphone'.
+  source: z.enum(["iphone", "watch", "web"]).optional(),
+  // Quando true e o laudo for finalizado com sucesso, faz touch no updated_at
+  // do report para que ele apareça imediatamente no feed da Sala do Auxiliar
+  // (via /api/sala/latest). Usado por clientes que querem o "publica direto na
+  // sala" sem etapa de revisão (caso de uso: Apple Watch dictation).
+  auto_push_to_sala: z.boolean().optional(),
 });
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
