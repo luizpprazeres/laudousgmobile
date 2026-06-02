@@ -513,29 +513,32 @@ export async function POST(req: Request) {
             ? { pipeline_warnings: pipelineWarnings }
             : undefined,
       });
+      // Apple Watch / clientes "publicação direta" — toca updated_at do report
+      // para empurrar pro topo do feed da Sala do Auxiliar antes do "done" e da
+      // sanity check assíncrona. Trade-off conhecido: laudo
+      // pode ser visível na Sala e DEPOIS receber sanity:critical — aceitável
+      // no MVP pois a Sala é canal informativo (auxiliar pode aguardar
+      // confirmação verbal do médico antes de imprimir).
+      if (reqInput.auto_push_to_sala === true) {
+        try {
+          const { error: pushError } = await getServiceClient()
+            .from("reports")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", reportId);
+          if (pushError) {
+            console.error("[generate] auto_push_to_sala failed:", pushError);
+          }
+        } catch (pushErr) {
+          console.error("[generate] auto_push_to_sala failed:", pushErr);
+        }
+      }
+
       emit({
         type: "done",
         ts: nowIso(),
         report_id: reportId,
         final_text: finalText,
       });
-
-      // Apple Watch / clientes "publicação direta" — toca updated_at do report
-      // para empurrar pro topo do feed da Sala do Auxiliar imediatamente após
-      // o "done", antes da sanity check assíncrona. Trade-off conhecido: laudo
-      // pode ser visível na Sala e DEPOIS receber sanity:critical — aceitável
-      // no MVP pois a Sala é canal informativo (auxiliar pode aguardar
-      // confirmação verbal do médico antes de imprimir).
-      if (reqInput.auto_push_to_sala === true) {
-        try {
-          await getServiceClient()
-            .from("reports")
-            .update({ updated_at: new Date().toISOString() })
-            .eq("id", reportId);
-        } catch (pushErr) {
-          console.error("[generate] auto_push_to_sala failed:", pushErr);
-        }
-      }
 
       try {
         const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({

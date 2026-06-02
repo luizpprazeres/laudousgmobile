@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         model: "whisper-1",
         language: "pt",
         prompt:
-          "Transcrição em português do Brasil de ditado médico para laudo de ultrassonografia. Preserve termos técnicos, medidas, lateralidade e pontuação quando possível.",
+          "Transcrição em português do Brasil de ditado médico para laudo de ultrassonografia. Glossário comum: litíase renal, cálculo renal, esteatose hepática, hepatomegalia, vesícula biliar, colelitíase, cálices renais, pelve renal, hidronefrose, hiperecoica, hipoecoica, anecoica, isoecogênica, ecogenicidade, parenquimatosa, miométrio, endométrio, ovário, anexo, útero, próstata, testículo, escrotal, tireoide, parótida, submandibular, linfonodo, nódulo, cisto, FIGO, BI-RADS, ITB, Doppler colorido, arterial, venoso, MMII, sombra acústica, reforço acústico, direito, esquerdo, bilateral. Preserve medidas e pontuação.",
         response_format: "json",
       },
       { signal: req.signal },
