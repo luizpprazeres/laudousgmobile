@@ -7,6 +7,7 @@ export { OPTIONS } from "@/server/cors";
 import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
 import { runRetriever } from "@/server/pipeline/retriever";
+import { applyPelveRouteSelection } from "@/server/pipeline/pelveRouteSelection";
 import { runWriterStream } from "@/server/pipeline/writer";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
 import {
@@ -428,12 +429,30 @@ export async function POST(req: Request) {
       // ----- 3. Retriever -----
       currentStage = "retriever";
       const ragT0 = Date.now();
-      const { blocks, skipped, queryText, warning } = await runRetriever({
+      const {
+        blocks: retrievedBlocks,
+        skipped,
+        queryText,
+        warning,
+      } = await runRetriever({
         findings,
         categoryCode: findings.categoria_detectada,
         writingStyleId: effectiveWritingStyleId,
+        // PELVE: amplia a quota de modelo p/ garantir que o template da via
+        // ditada seja recuperado (TA+TV tem priority 100 e dominava o top-2).
+        quotas:
+          findings.categoria_detectada === "PELVE_FEMININA"
+            ? { modelo: 12 }
+            : undefined,
         signal,
       });
+      // Seleção determinística da via de acesso da pelve: mantém só o modelo-base
+      // da via ditada (corrige laudo sempre saindo "transabdominal e transvaginal").
+      const blocks = applyPelveRouteSelection(
+        retrievedBlocks,
+        findings.categoria_detectada,
+        reqInput.raw_input,
+      );
       auditState.ragDurationMs = Date.now() - ragT0;
       auditState.ragBlocksRetrieved = blocks;
       auditState.ragBlocksSkipped = skipped;
