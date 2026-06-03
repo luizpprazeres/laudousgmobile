@@ -97,6 +97,8 @@ Biometria obstétrica e morfológica:
 LÍQUIDO AMNIÓTICO (ILA × MBV — protocolo determinístico):
 Aplique os passos abaixo na ORDEM, sem pular etapas. Quando o template contiver os marcadores {LINHA_LIQUIDO_AMNIOTICO} e/ou {CONCLUSAO_LIQUIDO_AMNIOTICO}, expanda-os usando este protocolo (passo 5).
 
+0) PRECEDÊNCIA DA CLASSIFICAÇÃO DO MÉDICO: se o médico JÁ classificou explicitamente a quantidade de líquido (normal/reduzida/aumentada/oligoâmnio/polidrâmnio), use essa quantidade — os passos 3-4 só valem quando o médico der o número SEM classificar. (Reforço determinístico desta regra é aplicado em código no pós-processamento — ver amnioticFluidGuard.ts.)
+
 1) DETECÇÃO: leia os achados e identifique se o médico citou ILA ou MBV.
    - Tokens que indicam ILA: "ILA", "índice de líquido", "soma dos quadrantes", "quatro quadrantes".
    - Tokens que indicam MBV: "MBV", "maior bolsão", "bolsão vertical", "bolsão único", "single deepest pocket", "SDP".

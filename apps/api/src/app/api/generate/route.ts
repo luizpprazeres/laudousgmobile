@@ -8,6 +8,7 @@ import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
 import { runRetriever } from "@/server/pipeline/retriever";
 import { applyPelveRouteSelection } from "@/server/pipeline/pelveRouteSelection";
+import { enforceStatedAmnioticClass } from "@/server/pipeline/amnioticFluidGuard";
 import { runWriterStream } from "@/server/pipeline/writer";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
 import {
@@ -531,6 +532,9 @@ export async function POST(req: Request) {
       if (styleRow.code === "OBJETIVO") {
         finalText = formatObjectiveEnumerations(finalText);
       }
+      // Guard determinístico: respeita a quantidade de líquido amniótico
+      // declarada pelo médico (nunca contradizê-la) — ver amnioticFluidGuard.ts.
+      finalText = enforceStatedAmnioticClass(finalText, reqInput.raw_input);
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
