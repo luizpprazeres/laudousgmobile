@@ -1,0 +1,1 @@
+ALTER TYPE writing_style_code ADD VALUE IF NOT EXISTS 'OBJETIVO';

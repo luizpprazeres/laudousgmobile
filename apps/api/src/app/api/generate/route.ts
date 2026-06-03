@@ -21,6 +21,10 @@ import {
   markReportStatus,
   loadReportForResume,
 } from "@/server/db/reportsRepo";
+import {
+  recordProductEvent,
+  surfaceFromRequest,
+} from "@/server/db/productEventsRepo";
 import { applyClarifyAnswers } from "@/server/pipeline/clarifyMerge";
 import type {
   SanityIssue,
@@ -60,6 +64,20 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+function formatObjectiveEnumerations(text: string) {
+  return text
+    .replace(/([^\n])\s+(\d+[-)]\s)/g, "$1\n$2")
+    .split("\n")
+    .filter((line) => !line.includes("____"))
+    .filter(
+      (line) =>
+        !/Breast Imaging Reporting|Domingos Correia da Rocha|American College of Radiology/i.test(
+          line,
+        ),
+    )
+    .join("\n");
+}
+
 export async function POST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
@@ -85,6 +103,14 @@ export async function POST(req: Request) {
   }
 
   const reqInput = parsed.data;
+  const eventSurface = surfaceFromRequest(
+    req,
+    reqInput.source === "watch"
+      ? "watch"
+      : reqInput.source === "iphone"
+        ? "ios"
+        : "web",
+  );
   const e = env();
   const auditEnabled = e.GENERATION_AUDIT_ENABLED === "true";
   const isResume = !!reqInput.resume_from_report_id;
@@ -297,6 +323,16 @@ export async function POST(req: Request) {
           rawInput: reqInput.raw_input,
           consolidatedTranscript: reqInput.consolidated_transcript ?? null,
         });
+        await recordProductEvent({
+          userId: user.id,
+          surface: eventSurface,
+          eventName: "report.created",
+          metadata: {
+            report_id: reportId,
+            category_code: reqInput.category_hint ?? "ABDOMEN_TOTAL",
+            writing_style_id: reqInput.writing_style_id,
+          },
+        });
         runId = await insertOpenRun({
           reportId,
           rawInputForRagQuery:
@@ -473,6 +509,9 @@ export async function POST(req: Request) {
         emit({ type: "token", ts: nowIso(), delta: next.value });
       }
       finalText = writerResult?.fullText ?? finalText;
+      if (styleRow.code === "OBJETIVO") {
+        finalText = formatObjectiveEnumerations(finalText);
+      }
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =

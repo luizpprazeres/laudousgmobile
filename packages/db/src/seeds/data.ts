@@ -7,6 +7,7 @@ export const WRITING_STYLE_IDS = {
   CLASSICO_COMPLETO: "11111111-1111-4111-8111-111111111111",
   DIRETO_OBJETIVO: "22222222-2222-4222-8222-222222222222",
   DETALHADO_PROTOCOLAR: "33333333-3333-4333-8333-333333333333",
+  OBJETIVO: "44444444-4444-4444-8444-444444444444",
 } as const;
 
 /**
@@ -36,6 +37,13 @@ export const WRITING_STYLES_SEED = [
     name: "Detalhado protocolar",
     description:
       "Segue rigorosamente protocolos institucionais, com seções fixas e terminologia padronizada.",
+  },
+  {
+    id: WRITING_STYLE_IDS.OBJETIVO,
+    code: "OBJETIVO" as const,
+    name: "Objetivo",
+    description:
+      "Estrutura técnica concisa, frases curtas e preservação integral dos dados clínicos relevantes.",
   },
 ];
 

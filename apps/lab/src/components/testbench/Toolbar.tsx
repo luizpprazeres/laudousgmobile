@@ -14,7 +14,7 @@ const CATEGORIES = [
   "ABDOMEN_TOTAL",
 ];
 
-const STYLES = ["CLÁSSICO_COMPLETO", "DIRETO_OBJETIVO", "DETALHADO_PROTOCOLAR"];
+const STYLES = ["CLÁSSICO_COMPLETO", "DIRETO_OBJETIVO", "DETALHADO_PROTOCOLAR", "OBJETIVO"];
 
 export function Toolbar({ category, style, onCategoryChange, onStyleChange }: Props) {
   return (

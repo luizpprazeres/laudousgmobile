@@ -154,3 +154,25 @@ Mamas ecograficamente normais (Categoria BI-RADS® 1).
 Linfonodos axilares normais.
 
 Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).`;
+
+export const MAMARIA_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
+
+TÉCNICA:
+Exame realizado com transdutor de 12 MHz.
+
+ANÁLISE:
+Composição mamária: [tipo informado].
+
+Mama direita apresentando os seguintes achados:
+1- [natureza, localização, medida]. [BI-RADS se informado].
+2- [se houver outro achado no mesmo lado].
+
+Mama esquerda apresentando os seguintes achados:
+1- [natureza, localização, medida]. [BI-RADS se informado].
+2- [se houver outro achado no mesmo lado].
+
+Regiões axilares: [descrever somente se avaliadas ou informadas].
+
+OPINIÃO DO RELATÓRIO:
+1- [conclusão principal].
+2- [se houver outro diagnóstico ou categoria relevante].`;

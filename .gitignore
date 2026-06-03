@@ -58,3 +58,4 @@ _extraction/
 
 # Golden validation outputs (por run, não persistem)
 scripts/.golden-reports/
+tests/golden-objetivo/report.html

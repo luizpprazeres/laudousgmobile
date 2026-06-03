@@ -2,6 +2,7 @@
   "name": "laudousg-mobile",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "pnpm@10.33.3",
   "description": "LaudoUSG Mobile — plataforma mobile-first para geração de laudos de ultrassonografia por IA",
   "engines": {
     "node": ">=20.11.0"
@@ -18,7 +19,8 @@
     "db:seed": "pnpm --filter @laudousg/db seed",
     "api:dev": "pnpm --filter @laudousg/api dev",
     "mobile:dev": "pnpm --filter @laudousg/mobile start",
-    "validate:golden": "tsx scripts/golden-validation.ts"
+    "validate:golden": "tsx scripts/golden-validation.ts",
+    "validate:golden:objetivo": "tsx tests/golden-objetivo/runner.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

@@ -22,6 +22,8 @@ async function main() {
   const sqlFiles = [
     "0001_extensions_and_triggers.sql",
     "0002_retriever_rpc.sql",
+    "0006_s27_objective_style_enum.sql",
+    "0007_s27_objective_style_and_product_events.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

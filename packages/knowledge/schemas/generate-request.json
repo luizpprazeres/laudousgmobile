@@ -16,7 +16,7 @@
     },
     "style": {
       "type": "string",
-      "enum": ["tradicional", "estruturado", "livre"],
+      "enum": ["tradicional", "estruturado", "livre", "objetivo"],
       "description": "Estilo de escrita selecionado pelo usuario"
     }
   },

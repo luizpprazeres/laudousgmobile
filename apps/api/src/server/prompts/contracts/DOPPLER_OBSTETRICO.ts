@@ -133,3 +133,23 @@ CONCLUSÃO:
 4) Ausência de sinais de incisuras.
 5) Não há sinais de pré-centralização ou de centralização.
 6) Perfil hemodinâmico fetal é normal, menor de 1.0.`;
+
+export const DOPPLER_OBSTETRICO_MODELO_OBJETIVO = `ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO
+
+TÉCNICA:
+Exame realizado com transdutor de 4.0 MHz e Doppler colorido.
+
+ANÁLISE:
+Dados fetais: [apresentação, BCF, placenta, líquido e biometria se informados].
+
+Dopplervelocimetria:
+1- Artéria umbilical: [IP, percentil e interpretação se informados].
+2- Artéria cerebral média: [IP, percentil e interpretação se informados].
+3- Artérias uterinas: [IP direito, IP esquerdo, IP médio e percentil se informados].
+4- Ducto venoso: [onda A e padrão espectral se informados].
+5- Relação cérebro-placentária: [valor e interpretação se informados].
+
+OPINIÃO DO RELATÓRIO:
+1- [idade gestacional ou conclusão obstétrica principal].
+2- [conclusão Doppler relevante].
+3- [se houver outra alteração hemodinâmica].`;

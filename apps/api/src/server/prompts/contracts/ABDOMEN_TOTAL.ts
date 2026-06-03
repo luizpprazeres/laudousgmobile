@@ -310,3 +310,21 @@ export const ABDOMEN_TOTAL_AJUSTES = [
     tags: ["conclusao", "fechamento"],
   },
 ];
+
+export const ABDOMEN_TOTAL_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+TÉCNICA:
+Exame realizado com transdutor convexo multifrequencial.
+
+ANÁLISE:
+Fígado: [achado direto, medida/localização se informadas].
+Vesícula biliar e vias biliares: [achado direto, medida se informada].
+Pâncreas e baço: [descrever somente se informados].
+Rins:
+1- Rim direito: [achado direto, medida se informada].
+2- Rim esquerdo: [achado direto, medida se informada].
+Bexiga, aorta e demais estruturas: [descrever somente se informadas].
+
+OPINIÃO DO RELATÓRIO:
+1- [diagnóstico principal].
+2- [se houver outro diagnóstico relevante].`;

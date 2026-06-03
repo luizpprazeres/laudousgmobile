@@ -9,3 +9,4 @@ export * from "./generationAudit";
 export * from "./subscriptions";
 export * from "./goldenCases";
 export * from "./learningSuggestions";
+export * from "./productEvents";

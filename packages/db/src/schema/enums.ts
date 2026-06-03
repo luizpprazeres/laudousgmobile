@@ -13,6 +13,7 @@ export const writingStyleCodeEnum = pgEnum("writing_style_code", [
   "CLASSICO_COMPLETO",
   "DIRETO_OBJETIVO",
   "DETALHADO_PROTOCOLAR",
+  "OBJETIVO",
 ]);
 
 export const ragBlockKindEnum = pgEnum("rag_block_kind", [

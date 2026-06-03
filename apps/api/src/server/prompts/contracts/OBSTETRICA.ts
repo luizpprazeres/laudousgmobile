@@ -19,8 +19,10 @@ export const OBSTETRICA_CONTRACT = `FUNÇÃO: Gerar e editar laudos de ultrasson
 
 - Se houver imagens em anexo: extrair biometria (DBP/CC/CA/CF) e peso fetal.
 - Se houver mais de um feto: individualizar (FETO A / FETO B / ...) + parágrafo com peso médio e discordância ponderal.
-- Se médico informar Primeira USG: "Primeira USG: dd/mm/aaaa, com X semanas e X dias. Hoje com X semanas e X dias." Se não informar, OMITIR.
-- Se médico informar DUM: "DUM: dd/mm/aaaa. Hoje com X semanas e X dias." Se não informar, OMITIR.
+- Se médico informar Primeira USG COM DATA: "Primeira USG: dd/mm/aaaa, com X semanas e X dias. Hoje com X semanas e X dias." Se não informar, OMITIR.
+- Se médico informar DUM COM DATA: "DUM: dd/mm/aaaa. Hoje com X semanas e X dias." Se não informar a data, OMITIR esta linha.
+- Se a idade gestacional vier em SEMANAS sem data (ex.: "IG por DUM de 24 semanas", "gestação de 24 semanas", "idade gestacional de 24 semanas"): NÃO emita linha de DUM/Primeira USG com data. Registre a IG diretamente — "Idade gestacional de X semanas" (acrescente "e Y dias" SOMENTE se informado) — e leve a IG para a CONCLUSÃO ("Gestação em torno de X semanas e Y dias", omitindo os dias se não informados).
+- NUNCA emita datas em placeholder (__/__/____, dd/mm/aaaa literal) nem "____ dias". Se faltar o dado, OMITA a linha inteira.
 - Placenta: "homogênea" ou "heterogênea, de acordo com a fase da gestação".
 - Priorizar informação por áudio/texto sobre dados extraídos de imagens.
 
@@ -130,3 +132,27 @@ Ovários de aspecto normal.
 
 CONCLUSÃO:
 Gestação em torno de ____ semanas e ____ dias.`;
+
+export const OBSTETRICA_MODELO_OBJETIVO = `ULTRASSONOGRAFIA OBSTÉTRICA
+
+TÉCNICA:
+Exame realizado com transdutor de 4.0 MHz.
+
+ANÁLISE:
+Idade gestacional: [semanas e dias informados — obrigatório se ditado].
+Gestação: [única ou múltipla, apresentação e BCF].
+Placenta: [localização e aspecto se informados].
+Líquido amniótico: [descrição se informada].
+Colo uterino: [medida se informada].
+
+Feto 1:
+1- [apresentação, BCF e demais dados informados].
+2- [biometria ou achado adicional se houver].
+
+Feto 2:
+1- [usar somente em gestação múltipla].
+2- [biometria ou achado adicional se houver].
+
+OPINIÃO DO RELATÓRIO:
+1- [conclusão principal, incluindo idade gestacional se informada].
+2- [se houver outra conclusão obstétrica relevante].`;

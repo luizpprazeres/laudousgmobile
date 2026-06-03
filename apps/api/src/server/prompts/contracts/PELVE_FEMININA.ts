@@ -106,3 +106,24 @@ CONCLUSÃO:
 1) Útero de volume normal (____ cm³).
 2) O endométrio tem espessura normal para a fase do ciclo menstrual.
 3) Ovários ecograficamente normais (o direito com ____ cm³ e o esquerdo com ____ cm³), ambos contendo folículos.`;
+
+export const PELVE_FEMININA_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
+
+TÉCNICA:
+Exame realizado pelas técnicas transabdominal e transvaginal.
+
+ANÁLISE:
+Útero: [posição, medidas e volume se informados].
+Miométrio:
+1- [mioma/alteração, localização, medida, FIGO se informado].
+2- [se houver outro mioma ou alteração miometrial].
+Endométrio: [espessura e achado se informados].
+Ovário direito:
+1- [achado, medida e classificação se informados].
+Ovário esquerdo:
+1- [achado, medida e classificação se informados].
+Líquido livre pélvico ou DIU: [descrever somente se informado].
+
+OPINIÃO DO RELATÓRIO:
+1- [conclusão principal].
+2- [se houver outro diagnóstico pélvico relevante].`;

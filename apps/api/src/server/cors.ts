@@ -2,7 +2,7 @@ const HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers":
-    "Authorization, Content-Type, Accept, X-Requested-With",
+    "Authorization, Content-Type, Accept, X-Requested-With, X-LaudoUSG-Surface",
   "Access-Control-Max-Age": "86400",
 };
 

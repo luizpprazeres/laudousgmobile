@@ -8,11 +8,26 @@
  * À medida que processarmos mais arquivos do _extraction/03-models-by-category/,
  * adicionar novos imports aqui.
  */
-import { ABDOMEN_TOTAL_CONTRACT } from "./ABDOMEN_TOTAL";
-import { TIREOIDE_CONTRACT } from "./TIREOIDE";
-import { MAMARIA_CONTRACT } from "./MAMARIA";
-import { PELVE_FEMININA_CONTRACT } from "./PELVE_FEMININA";
-import { OBSTETRICA_CONTRACT } from "./OBSTETRICA";
+import type { WritingStyleCode } from "@laudousg/shared";
+import {
+  ABDOMEN_TOTAL_CONTRACT,
+  ABDOMEN_TOTAL_MODELO_OBJETIVO,
+} from "./ABDOMEN_TOTAL";
+import {
+  DOPPLER_OBSTETRICO_CONTRACT,
+  DOPPLER_OBSTETRICO_MODELO_OBJETIVO,
+} from "./DOPPLER_OBSTETRICO";
+import { MAMARIA_CONTRACT, MAMARIA_MODELO_OBJETIVO } from "./MAMARIA";
+import {
+  OBSTETRICA_CONTRACT,
+  OBSTETRICA_MODELO_OBJETIVO,
+} from "./OBSTETRICA";
+import {
+  PELVE_FEMININA_CONTRACT,
+  PELVE_FEMININA_MODELO_OBJETIVO,
+} from "./PELVE_FEMININA";
+import { TIREOIDE_CONTRACT, TIREOIDE_MODELO_OBJETIVO } from "./TIREOIDE";
+import { toObjectiveContract, toObjectiveHeaders } from "./objective";
 
 export const CATEGORY_CONTRACTS: Record<string, string> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT,
@@ -25,6 +40,46 @@ export const CATEGORY_CONTRACTS: Record<string, string> = {
   // - γ: expandir cobertura pra 28 categorias restantes
 };
 
-export function getCategoryContract(code: string): string | null {
-  return CATEGORY_CONTRACTS[code] ?? null;
+const OBJECTIVE_ONLY_CONTRACTS: Record<string, string> = {
+  DOPPLER_OBSTETRICO: DOPPLER_OBSTETRICO_CONTRACT,
+};
+
+const OBJECTIVE_MODELS: Record<string, string> = {
+  ABDOMEN_TOTAL: ABDOMEN_TOTAL_MODELO_OBJETIVO,
+  DOPPLER_OBSTETRICO: DOPPLER_OBSTETRICO_MODELO_OBJETIVO,
+  MAMARIA: MAMARIA_MODELO_OBJETIVO,
+  OBSTETRICA: OBSTETRICA_MODELO_OBJETIVO,
+  PELVE_FEMININA: PELVE_FEMININA_MODELO_OBJETIVO,
+  TIREOIDE: TIREOIDE_MODELO_OBJETIVO,
+};
+
+export function getCategoryContract(
+  code: string,
+  writingStyleCode: WritingStyleCode,
+): string | null {
+  const contract =
+    CATEGORY_CONTRACTS[code] ??
+    (writingStyleCode === "OBJETIVO" ? OBJECTIVE_ONLY_CONTRACTS[code] : null);
+  if (!contract) return null;
+  if (writingStyleCode !== "OBJETIVO") return contract;
+
+  const objectiveModel = OBJECTIVE_MODELS[code];
+  const objectiveContract = toObjectiveContract(contract);
+  if (!objectiveModel) return objectiveContract;
+  return `${objectiveContract}
+
+MODELO BASE OBJETIVO — USE ESTES CABEÇALHOS:
+${objectiveModel}
+
+REGRAS DO MODELO OBJETIVO:
+- O modelo acima substitui integralmente o modelo-base clássico.
+- Preencha ANÁLISE e OPINIÃO DO RELATÓRIO somente com dados ditados pelo médico.
+- NÃO emita placeholders "____".
+- NÃO copie frases normais do modelo clássico quando o médico não as informou.
+- Use exatamente a TÉCNICA curta do modelo objetivo. Não acrescente documentação fotográfica.
+- Não inclua rodapés explicativos ou créditos bibliográficos no modo objetivo.
+- Preserve todas as medidas, lateralidades, classificações e negações relevantes informadas.
+- Quando o input trouxer Feto 1/Feto 2, nódulo 1/nódulo 2, dois miomas, dois cistos ou outro padrão múltiplo, use linhas iniciadas literalmente por 1- e 2-.
+- Cada linha enumerada deve começar em nova linha. Não escreva "1- ... 2- ..." na mesma linha.
+- Nunca mantenha dois achados do mesmo tipo na mesma frase separados por "e".`;
 }

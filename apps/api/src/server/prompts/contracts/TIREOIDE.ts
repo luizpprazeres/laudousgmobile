@@ -101,6 +101,28 @@ Tireoide de volume normal (____ ml), sem evidência de alteração ecotextural o
 *ESCORE DE NÓDULO TIREOIDEANO - Domingos Correia da Rocha - Material baseado em 2588 nódulos puncionados - 2003 | Atualizada em 2013 - Total de 5134 nódulos puncionados
 ACR - American College of Radiology*`;
 
+export const TIREOIDE_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DE TIREOIDE
+
+TÉCNICA:
+Exame realizado com transdutor de 12 MHz.
+
+ANÁLISE:
+Lobo direito: [medidas e volume se informados].
+1- [nódulo/achado, localização, medida, TI-RADS ou nota se informados].
+2- [se houver outro achado no lobo direito].
+
+Lobo esquerdo: [medidas e volume se informados].
+1- [nódulo/achado, localização, medida, TI-RADS ou nota se informados].
+2- [se houver outro achado no lobo esquerdo].
+
+Istmo: [medida e achados se informados].
+
+Linfonodos cervicais: [descrever somente se informados].
+
+OPINIÃO DO RELATÓRIO:
+1- [conclusão principal].
+2- [se houver outro achado ou recomendação informada].`;
+
 /**
  * Modelo TIREOIDE COM DOPPLER (variante usada quando médico informa Doppler).
  * Diferença vs base: título com "COM DOPPLER", "vascularização normais" nos lobos,

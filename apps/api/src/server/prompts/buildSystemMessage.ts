@@ -9,6 +9,7 @@ import {
   DEFAULT_SYSTEM_MESSAGE,
 } from "./global";
 import { getCategoryContract } from "./contracts";
+import { toObjectiveHeaders } from "./contracts/objective";
 import { getStyleOverlay } from "./styles";
 
 /**
@@ -32,24 +33,34 @@ export function buildSystemMessage(args: {
   writingStyleCode: WritingStyleCode;
   ragBlocks: RagBlockForPrompt[];
 }): string {
-  const contract = getCategoryContract(args.categoryCode);
+  const contract = getCategoryContract(
+    args.categoryCode,
+    args.writingStyleCode,
+  );
   const styleOverlay = getStyleOverlay(args.writingStyleCode);
+  const formatSection =
+    args.writingStyleCode === "OBJETIVO" ? toObjectiveHeaders : (text: string) => text;
 
   const fewShots = args.ragBlocks.filter((b) => b.kind === "exemplo");
   const otherBlocks = args.ragBlocks.filter((b) => b.kind !== "exemplo");
 
-  // Fallback minimalista se categoria não tem contract nem RAG
-  if (!contract && otherBlocks.length === 0 && fewShots.length === 0) {
+  // Fallback minimalista se categoria não tem contract, RAG nem overlay
+  if (
+    !contract &&
+    otherBlocks.length === 0 &&
+    fewShots.length === 0 &&
+    !styleOverlay
+  ) {
     return DEFAULT_SYSTEM_MESSAGE;
   }
 
   const sections: string[] = [];
 
-  if (contract) sections.push(contract);
+  sections.push(formatSection(contract ?? DEFAULT_SYSTEM_MESSAGE));
 
   // 2. subspecialty — TODO
 
-  sections.push(GLOBAL_RULES_BLOCK);
+  sections.push(formatSection(GLOBAL_RULES_BLOCK));
 
   if (styleOverlay) sections.push(styleOverlay);
 
@@ -74,8 +85,8 @@ export function buildSystemMessage(args: {
     );
   }
 
-  sections.push(GLOBAL_PROHIBITIONS);
-  sections.push(buildCoTInstruction(args.categoryLabel));
+  sections.push(formatSection(GLOBAL_PROHIBITIONS));
+  sections.push(formatSection(buildCoTInstruction(args.categoryLabel)));
 
   return sections.join("\n\n");
 }
