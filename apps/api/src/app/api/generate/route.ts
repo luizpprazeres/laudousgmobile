@@ -8,7 +8,18 @@ import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
 import { runRetriever } from "@/server/pipeline/retriever";
 import { applyPelveRouteSelection } from "@/server/pipeline/pelveRouteSelection";
-import { enforceStatedAmnioticClass } from "@/server/pipeline/amnioticFluidGuard";
+import { resolveMorfologicoCategory } from "@/server/pipeline/morfologicoRouteSelection";
+import { normalizeCategoryCode } from "@/server/pipeline/categoryNormalization";
+import {
+  extractDopplerData,
+  applyDopplerOverlay,
+  correctDopplerConclusion,
+} from "@/server/pipeline/dopplerOverlay";
+import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
+import {
+  enforceStatedAmnioticClass,
+  ensureAmnioticConclusionLine,
+} from "@/server/pipeline/amnioticFluidGuard";
 import { stripSpuriousMagnitudeFlags } from "@/server/pipeline/magnitudeGuard";
 import { runWriterStream } from "@/server/pipeline/writer";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
@@ -79,6 +90,40 @@ function formatObjectiveEnumerations(text: string) {
         ),
     )
     .join("\n");
+}
+
+/**
+ * Resolve a categoria EFETIVA em 2 passos determinísticos:
+ *  1. Guard morfológico (morfológico+Doppler → MORFOLOGICO).
+ *  2. Normalização contra a lista de categorias válidas (clampa códigos
+ *     não-canônicos inventados pelo structurer → código real; evita crash de FK).
+ * Loga override e normalização pra auditoria em prod. Devolve só a categoria.
+ */
+function resolveEffectiveCategory(
+  detectedCategory: string,
+  rawText: string,
+  reportId: string,
+  knownCodes: Set<string>,
+  categoryHint?: string,
+): string {
+  const morf = resolveMorfologicoCategory(detectedCategory, rawText);
+  if (morf.overridden) {
+    console.warn(
+      `[generate ${reportId}] category_override: ${detectedCategory} -> ${morf.category} (reason=${morf.reason})`,
+    );
+  }
+  const norm = normalizeCategoryCode(
+    morf.category,
+    knownCodes,
+    rawText,
+    categoryHint,
+  );
+  if (norm.normalized) {
+    console.warn(
+      `[generate ${reportId}] category_normalized: ${morf.category} -> ${norm.category}`,
+    );
+  }
+  return norm.category;
 }
 
 export async function POST(req: Request) {
@@ -191,6 +236,12 @@ export async function POST(req: Request) {
       }
 
       let findings: StructuredFindings;
+      // Categoria EFETIVA para roteamento (retriever/writer/persistência). Pode
+      // divergir de findings.categoria_detectada quando o guard morfológico
+      // sobrescreve. Computada em cada branch ANTES da 1ª persistência, pois o
+      // structurer pode emitir códigos não-canônicos (que quebrariam a FK de
+      // reports.category_code se gravados crus). Ver morfologicoRouteSelection.
+      let effectiveCategory = "";
 
       if (isResume) {
         currentStage = "resume";
@@ -297,31 +348,48 @@ export async function POST(req: Request) {
           validAnswers,
         );
         auditState.reportId = reportId;
-        auditState.category = findings.categoria_detectada;
-        auditState.contractHash = contractHashFor(
+        effectiveCategory = resolveEffectiveCategory(
           findings.categoria_detectada,
+          reqInput.consolidated_transcript ?? reqInput.raw_input,
+          reportId,
+          categoriesInfo.codes,
+          reqInput.category_hint,
+        );
+        auditState.category = effectiveCategory;
+        auditState.contractHash = contractHashFor(
+          effectiveCategory,
           effectiveWritingStyleId,
         );
         auditState.structuredOutput = findings;
-        // Registra na run que veio de resume + os findings aplicados (auditoria)
+        // Registra na run que veio de resume + os findings aplicados (auditoria).
+        // Antes da mutação → preserva a categoria CRUA na run.
         await updateRunAfterStructurer({
           runId,
           structured: findings,
           latencyMs: 0, // resume não tem structurer
         });
+        // Normaliza a categoria efetiva no findings (ver branch normal).
+        findings.categoria_detectada = effectiveCategory;
         await updateReportStructured({
           reportId,
           structured: findings,
-          categoryCode: findings.categoria_detectada,
+          categoryCode: effectiveCategory,
         });
         await markReportStatus({ reportId, status: "draft" });
         emit({ type: "structured", ts: nowIso(), payload: findings });
       } else {
-        // FLUXO NORMAL: persistir report=draft + run inicial + structurer
+        // FLUXO NORMAL: persistir report=draft + run inicial + structurer.
+        // Clampa o category_hint do client a um código VÁLIDO — hint inválido
+        // quebraria a FK reports.category_code já no insert do rascunho, antes
+        // do structurer/normalizador.
+        const draftCategory =
+          reqInput.category_hint && categoriesInfo.codes.has(reqInput.category_hint)
+            ? reqInput.category_hint
+            : "ABDOMEN_TOTAL";
         await insertDraftReport({
           id: reportId,
           userId: user.id,
-          categoryCode: reqInput.category_hint ?? "ABDOMEN_TOTAL",
+          categoryCode: draftCategory,
           writingStyleId: reqInput.writing_style_id,
           rawInput: reqInput.raw_input,
           consolidatedTranscript: reqInput.consolidated_transcript ?? null,
@@ -332,7 +400,7 @@ export async function POST(req: Request) {
           eventName: "report.created",
           metadata: {
             report_id: reportId,
-            category_code: reqInput.category_hint ?? "ABDOMEN_TOTAL",
+            category_code: draftCategory,
             writing_style_id: reqInput.writing_style_id,
           },
         });
@@ -348,12 +416,23 @@ export async function POST(req: Request) {
         const structured = await runStructurer({
           rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
           categoryHint: reqInput.category_hint,
+          knownCategories: [...categoriesInfo.codes],
           signal,
         });
         findings = structured.findings;
-        auditState.category = findings.categoria_detectada;
-        auditState.contractHash = contractHashFor(
+        // Roteamento determinístico de categoria (morfológico+Doppler + clamp
+        // pra código válido). Computa a categoria EFETIVA ANTES de persistir — o
+        // structurer pode emitir um código não-canônico que quebraria a FK.
+        effectiveCategory = resolveEffectiveCategory(
           findings.categoria_detectada,
+          reqInput.consolidated_transcript ?? reqInput.raw_input,
+          reportId,
+          categoriesInfo.codes,
+          reqInput.category_hint,
+        );
+        auditState.category = effectiveCategory;
+        auditState.contractHash = contractHashFor(
+          effectiveCategory,
           effectiveWritingStyleId,
         );
         auditState.structuredOutput = findings;
@@ -362,15 +441,47 @@ export async function POST(req: Request) {
           (auditState.openaiInputTokens ?? 0) + (structured.inputTokens ?? 0);
         auditState.openaiOutputTokens =
           (auditState.openaiOutputTokens ?? 0) + (structured.outputTokens ?? 0);
+        // updateRunAfterStructurer roda ANTES da mutação → preserva a categoria
+        // CRUA detectada pelo structurer em generation_runs (auditoria honesta
+        // do que o LLM inferiu, mesmo quando não-canônica).
         await updateRunAfterStructurer({
           runId,
           structured: findings,
           latencyMs: structured.latencyMs,
         });
+        // Defesa final: NUNCA persistir categoria inválida (quebraria a FK
+        // reports.category_code). Se a resolução não chegou num código válido,
+        // bloqueia com erro controlado em vez de derrubar o pipeline com
+        // PIPELINE_FAILURE de FK. (A run acima já preservou o cru pra auditoria.)
+        if (!categoriesInfo.codes.has(effectiveCategory)) {
+          outcome = "blocked";
+          const reason = `Não foi possível identificar a categoria do exame (detectado: ${findings.categoria_detectada}).`;
+          auditState.errorCode = "CATEGORY_UNRESOLVED";
+          auditState.errorMessage = reason;
+          auditState.errorStage = currentStage;
+          await finalizeReport({
+            reportId,
+            status: "blocked",
+            generatedOutput: "",
+            sanityResult: null,
+            metadata: { detected_category: findings.categoria_detectada },
+          });
+          emit({
+            type: "error",
+            ts: nowIso(),
+            code: "CATEGORY_UNRESOLVED",
+            message: reason,
+          });
+          return;
+        }
+        // Normaliza a categoria efetiva no findings: todo o downstream
+        // (validator, retriever, writer, sanity) passa a ler a categoria
+        // canônica/roteada, sem threading vaso-a-vaso. O cru fica na run acima.
+        findings.categoria_detectada = effectiveCategory;
         await updateReportStructured({
           reportId,
           structured: findings,
-          categoryCode: findings.categoria_detectada,
+          categoryCode: effectiveCategory,
         });
         emit({ type: "structured", ts: nowIso(), payload: findings });
       }
@@ -438,12 +549,15 @@ export async function POST(req: Request) {
         warning,
       } = await runRetriever({
         findings,
-        categoryCode: findings.categoria_detectada,
+        categoryCode: effectiveCategory,
         writingStyleId: effectiveWritingStyleId,
         // PELVE: amplia a quota de modelo p/ garantir que o template da via
         // ditada seja recuperado (TA+TV tem priority 100 e dominava o top-2).
+        // MORFOLOGICO: 1t/2t/3t × 3 estilos competem no top — amplia a quota
+        // de modelo pra garantir que o template do trimestre certo apareça.
         quotas:
-          findings.categoria_detectada === "PELVE_FEMININA"
+          effectiveCategory === "PELVE_FEMININA" ||
+          effectiveCategory === "MORFOLOGICO"
             ? { modelo: 12 }
             : undefined,
         signal,
@@ -452,7 +566,7 @@ export async function POST(req: Request) {
       // da via ditada (corrige laudo sempre saindo "transabdominal e transvaginal").
       const blocks = applyPelveRouteSelection(
         retrievedBlocks,
-        findings.categoria_detectada,
+        effectiveCategory,
         reqInput.raw_input,
       );
       auditState.ragDurationMs = Date.now() - ragT0;
@@ -502,8 +616,7 @@ export async function POST(req: Request) {
         ragBlocks: blocks,
         writingStyleCode: styleRow.code,
         categoryLabel:
-          categoriesInfo.labels.get(findings.categoria_detectada) ??
-          findings.categoria_detectada,
+          categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
         signal,
         onSystemMessage: (message) => {
           auditState.systemMessageFull = message;
@@ -533,12 +646,46 @@ export async function POST(req: Request) {
       if (styleRow.code === "OBJETIVO") {
         finalText = formatObjectiveEnumerations(finalText);
       }
+      // Morfológico: garante a frase de líquido na conclusão (item 2). A regra
+      // do banco manda SEMPRE incluir, mas o LLM omite — determinístico vence.
+      if (effectiveCategory === "MORFOLOGICO") {
+        finalText = ensureAmnioticConclusionLine(finalText);
+      }
       // Guard determinístico: respeita a quantidade de líquido amniótico
       // declarada pelo médico (nunca contradizê-la) — ver amnioticFluidGuard.ts.
-      finalText = enforceStatedAmnioticClass(finalText, reqInput.raw_input);
+      // Usa o transcript consolidado (áudio) quando houver — o médico pode ter
+      // ditado a classe ali e não no raw_input (F5a, review dex1).
+      finalText = enforceStatedAmnioticClass(
+        finalText,
+        reqInput.consolidated_transcript ?? reqInput.raw_input,
+      );
       // Remove flags "[REVISAR — magnitude]" espúrios em biometria dentro da
       // faixa fisiológica (LLM super-flagava valores normais a termo).
       finalText = stripSpuriousMagnitudeFlags(finalText);
+      // Guard determinístico de PESO FETAL: o LLM descarta o item de conclusão
+      // do peso (<P10/P.I.G., <P3+Gratacós, >P95/G.I.G.) mesmo capturado pelo
+      // structurer. Roda APÓS o líquido e ANTES do Doppler (ordem da conclusão:
+      // IG, líquido, peso, Doppler).
+      const dopplerInput =
+        reqInput.consolidated_transcript ?? reqInput.raw_input;
+      if (
+        effectiveCategory === "DOPPLER_OBSTETRICO" ||
+        effectiveCategory === "OBSTETRICA" ||
+        effectiveCategory === "MORFOLOGICO"
+      ) {
+        finalText = ensurePesoFetalConclusion(finalText, dopplerInput);
+      }
+      // Overlay Doppler determinístico (morfológico+Doppler): insere a seção
+      // DOPPLERVELOCIMETRIA + itens de conclusão a partir dos valores ditados,
+      // seguindo o spec (umbilical/ACM manual, uterinas auto, perfil=1/RCP).
+      // Roda APÓS a linha de líquido pra os itens Doppler virem na sequência.
+      if (effectiveCategory === "MORFOLOGICO" && /\bdoppler\b/i.test(dopplerInput)) {
+        finalText = applyDopplerOverlay(finalText, extractDopplerData(dopplerInput));
+      } else if (effectiveCategory === "DOPPLER_OBSTETRICO") {
+        // Fix B (bug D2): a seção já vem do template; só corrige a conclusão
+        // pra o vaso certo (umbilical/ACM manual, uterinas auto, perfil=1/RCP).
+        finalText = correctDopplerConclusion(finalText, extractDopplerData(dopplerInput));
+      }
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =

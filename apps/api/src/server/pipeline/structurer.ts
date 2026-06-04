@@ -83,6 +83,13 @@ const StructurerRawOutputSchema = z.object({
 export async function runStructurer(args: {
   rawInput: string;
   categoryHint?: string;
+  /**
+   * Lista de category_code VÁLIDOS (da tabela categories). Quando fornecida, o
+   * structurer é instruído a escolher EXATAMENTE um deles — evita que o LLM
+   * invente códigos não-canônicos (ex.: ULTRASSONOGRAFIA_FETAL) que quebram a
+   * FK de reports.category_code. Defesa adicional: normalizeCategoryCode.
+   */
+  knownCategories?: string[];
   signal?: AbortSignal;
 }): Promise<{
   findings: StructuredFindings;
@@ -92,6 +99,14 @@ export async function runStructurer(args: {
 }> {
   const t0 = Date.now();
   const e = env();
+
+  // Restringe a categoria à lista canônica (tabela categories). Sem isso, o LLM
+  // às vezes inventa códigos (ULTRASSONOGRAFIA_FETAL/OBSTETRICA) que quebram a FK.
+  const categoryConstraint =
+    args.knownCategories && args.knownCategories.length > 0
+      ? `\n\nCATEGORIA — REGRA OBRIGATÓRIA:\n"categoria_detectada" DEVE ser EXATAMENTE um destes códigos canônicos (copie literal, sem inventar variações):\n${args.knownCategories.join(", ")}\nEscolha o mais adequado ao exame. Se nenhum servir perfeitamente, use o mais próximo da lista. NUNCA crie um código fora desta lista.`
+      : "";
+  const systemPrompt = STRUCTURER_SYSTEM_PROMPT + categoryConstraint;
 
   const userMessage = [
     args.categoryHint ? `Hint de categoria: ${args.categoryHint}` : "",
@@ -123,8 +138,8 @@ export async function runStructurer(args: {
           {
             role: "system",
             content: extraSystemNote
-              ? `${STRUCTURER_SYSTEM_PROMPT}\n\n${extraSystemNote}`
-              : STRUCTURER_SYSTEM_PROMPT,
+              ? `${systemPrompt}\n\n${extraSystemNote}`
+              : systemPrompt,
           },
           { role: "user", content: userMessage },
         ],

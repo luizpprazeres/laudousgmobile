@@ -14,6 +14,7 @@
  * classificação. Quando o médico só dá o número (sem classificar), o protocolo
  * do prompt continua valendo (este guard é no-op).
  */
+import { parseConclusion, renderWithConclusion } from "./conclusionUtils";
 
 export type AmnioticClass = "normal" | "reduzida" | "aumentada";
 
@@ -70,4 +71,40 @@ export function enforceStatedAmnioticClass(
     /(Líquido amniótico (?:de|em) quantidade )(normal|reduzida|aumentada)/gi,
     (_match, prefix: string) => `${prefix}${cls}`,
   );
+}
+
+/**
+ * Garante a frase de líquido amniótico na CONCLUSÃO como item 2 (após a IG),
+ * default "Líquido amniótico de quantidade normal." — a regra do banco manda
+ * SEMPRE incluir, mas o LLM às vezes omite (prompt não vence → determinístico).
+ *
+ * No-op se a conclusão já tiver a frase de líquido. A classe (normal/reduzida/
+ * aumentada) é ajustada depois por enforceStatedAmnioticClass se o médico ditou.
+ * Renumera os itens da conclusão em sequência.
+ */
+const LIQUIDO_RE = /Líquido amniótico (?:de|em) quantidade/i;
+const DEFAULT_LIQUIDO = "Líquido amniótico de quantidade normal.";
+const VALID_AMNIOTIC_CLASS =
+  /quantidade\s+(?:normal|reduzid|aumentad|adequad|preservad)/i;
+
+export function ensureAmnioticConclusionLine(output: string): string {
+  const parsed = parseConclusion(output);
+  if (!parsed.found) return output;
+
+  const hasIg = parsed.items.some((it) => /Gesta[çc][ãa]o em torno de/i.test(it));
+  if (!hasIg) return output; // estrutura inesperada → não mexe
+
+  // Preserva o conteúdo existente da frase de líquido SOMENTE se tiver classe
+  // válida (normal/reduzida/aumentada). Se o LLM deixou placeholder
+  // ("quantidade ____") ou classe inválida, usa o default "normal".
+  const existing = parsed.items.find((it) => LIQUIDO_RE.test(it));
+  const liquidoText =
+    existing && VALID_AMNIOTIC_CLASS.test(existing) ? existing : DEFAULT_LIQUIDO;
+
+  // Remove a frase de líquido de onde estiver e reinsere após a IG (item 2).
+  const without = parsed.items.filter((it) => !LIQUIDO_RE.test(it));
+  const igIdx = without.findIndex((it) => /Gesta[çc][ãa]o em torno de/i.test(it));
+  without.splice(igIdx + 1, 0, liquidoText);
+
+  return renderWithConclusion(parsed, without);
 }
