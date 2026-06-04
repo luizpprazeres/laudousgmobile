@@ -16,6 +16,7 @@ import {
   correctDopplerConclusion,
 } from "@/server/pipeline/dopplerOverlay";
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
+import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -662,6 +663,13 @@ export async function POST(req: Request) {
       // Remove flags "[REVISAR — magnitude]" espúrios em biometria dentro da
       // faixa fisiológica (LLM super-flagava valores normais a termo).
       finalText = stripSpuriousMagnitudeFlags(finalText);
+      // Política de VOLUME: padrão é NUNCA calcular (o LLM auto-calculava sem
+      // ser pedido). Só calcula quando o médico pede explicitamente; senão zera
+      // volumes inventados pra placeholder. Ver volumeGuard.ts.
+      finalText = applyVolumePolicy(
+        finalText,
+        reqInput.consolidated_transcript ?? reqInput.raw_input,
+      );
       // Guard determinístico de PESO FETAL: o LLM descarta o item de conclusão
       // do peso (<P10/P.I.G., <P3+Gratacós, >P95/G.I.G.) mesmo capturado pelo
       // structurer. Roda APÓS o líquido e ANTES do Doppler (ordem da conclusão:

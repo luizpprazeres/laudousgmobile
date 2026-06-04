@@ -21,9 +21,17 @@ import { env } from "../env";
  * ingênua.
  */
 
+// P0 "cortar contexto" (2026-06-04): `regra` era o único kind que saturava a
+// quota (9,4 de 10 por laudo ≈ 5k tokens, 72% do orçamento RAG). Reduzir o
+// top-10 → top-8 corta as ~2 regras menos relevantes (priority 70, o piso),
+// mantendo todas as de prioridade alta + as críticas (já impostas por guards
+// determinísticos). Validado com diff before/after em abdome/pelve/doppler:
+// estrutura clínica preservada e MENOS alucinação (pelve parou de inventar
+// achado em ovário). Corte mais agressivo (top-6) aguarda suíte golden.
+// Os demais kinds não saturavam (frase 4,4 de 8, conclusao 2,7 de 3).
 const DEFAULT_QUOTAS: Record<string, number> = {
   modelo: 2,
-  regra: 10,
+  regra: 8,
   frase: 8,
   conclusao: 3,
   excecao: 3,
