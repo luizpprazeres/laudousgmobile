@@ -9,6 +9,7 @@ import { runValidator } from "@/server/pipeline/validator";
 import { runRetriever } from "@/server/pipeline/retriever";
 import { applyPelveRouteSelection } from "@/server/pipeline/pelveRouteSelection";
 import { enforceStatedAmnioticClass } from "@/server/pipeline/amnioticFluidGuard";
+import { stripSpuriousMagnitudeFlags } from "@/server/pipeline/magnitudeGuard";
 import { runWriterStream } from "@/server/pipeline/writer";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
 import {
@@ -535,6 +536,9 @@ export async function POST(req: Request) {
       // Guard determinístico: respeita a quantidade de líquido amniótico
       // declarada pelo médico (nunca contradizê-la) — ver amnioticFluidGuard.ts.
       finalText = enforceStatedAmnioticClass(finalText, reqInput.raw_input);
+      // Remove flags "[REVISAR — magnitude]" espúrios em biometria dentro da
+      // faixa fisiológica (LLM super-flagava valores normais a termo).
+      finalText = stripSpuriousMagnitudeFlags(finalText);
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
