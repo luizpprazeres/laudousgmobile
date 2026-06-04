@@ -17,6 +17,7 @@ import {
 } from "@/server/pipeline/dopplerOverlay";
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
+import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -667,6 +668,12 @@ export async function POST(req: Request) {
       // ser pedido). Só calcula quando o médico pede explicitamente; senão zera
       // volumes inventados pra placeholder. Ver volumeGuard.ts.
       finalText = applyVolumePolicy(
+        finalText,
+        reqInput.consolidated_transcript ?? reqInput.raw_input,
+      );
+      // DSM (Diâmetro Médio do Saco Gestacional): mesma política — só calcula
+      // quando o médico pede ("calcule o DSM"). Ver dsmGuard.ts.
+      finalText = applyDsmPolicy(
         finalText,
         reqInput.consolidated_transcript ?? reqInput.raw_input,
       );
