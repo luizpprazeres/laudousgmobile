@@ -98,9 +98,21 @@ export function extractConclusionCommands(rawInput: string): ConclusionCommand[]
     // (a menos que "na conclusão" esteja explícito no próprio comando).
     const explicitConclusao = /na\s+conclus[ãa]o/i.test(m[0]);
     if (!explicitConclusao) {
+      // Alvo é OUTRA seção (título, cabeçalho, FINAL DOS ACHADOS / corpo, antes
+      // da conclusão)? Então não é comando de conclusão — deixa o LLM posicionar.
       const before = rawInput.slice(Math.max(0, (m.index ?? 0) - 50), m.index ?? 0);
-      if (/t[íi]tulo|cabe[çc]alho/i.test(before)) continue;
-      if (/^\s*(?:n[oa]s?\s+achados|n[oa]\s+corpo\b)/i.test(m[1] ?? "")) continue;
+      if (
+        /t[íi]tulo|cabe[çc]alho|(?:final|fim)\s+dos\s+achados|antes\s+d[ao]\s+conclus|no\s+corpo/i.test(
+          before,
+        )
+      )
+        continue;
+      if (
+        /^\s*(?:n[oa]s?\s+achados|n[oa]\s+corpo\b|antes\s+d[ao]\s+conclus|n[oa]\s+(?:final|fim)\s+dos\s+achados)/i.test(
+          m[1] ?? "",
+        )
+      )
+        continue;
     }
     push(m[1]);
   }

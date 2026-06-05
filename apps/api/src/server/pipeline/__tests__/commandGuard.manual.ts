@@ -111,5 +111,17 @@ check(
   extractConclusionCommands("acrescente na conclusão que deve repetir em 30 dias").length === 1,
 );
 
+// ── Alvo no CORPO (final dos achados / antes da conclusão) NÃO vira conclusão ──
+check(
+  "'no final dos achados acrescente X' NÃO é comando de conclusão",
+  extractConclusionCommands("No final dos achados acrescente nota sobre artefato técnico.").length === 0,
+  JSON.stringify(extractConclusionCommands("No final dos achados acrescente nota sobre artefato técnico.")),
+);
+check(
+  "'acrescente antes da conclusão X' NÃO é comando de conclusão",
+  extractConclusionCommands("acrescente antes da conclusão a observação do equipamento.").length === 0,
+  JSON.stringify(extractConclusionCommands("acrescente antes da conclusão a observação do equipamento.")),
+);
+
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));
 if (fail) process.exit(1);
