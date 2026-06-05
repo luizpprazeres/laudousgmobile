@@ -47,8 +47,18 @@ export async function GET(req: Request) {
     return json({ tokenValid: false, report: null, reason: "expired" });
   }
 
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  // Início do dia em BRT (UTC-3) — o servidor (Vercel) roda em UTC, então
+  // setHours daria meia-noite UTC (= 21h BRT). Aqui o "hoje" reseta à meia-noite
+  // LOCAL (Brasília), pra contagem bater com o dia de trabalho do médico.
+  const BRT_OFFSET_MS = -3 * 60 * 60 * 1000;
+  const nowBRT = new Date(Date.now() + BRT_OFFSET_MS);
+  const brtMidnight = Date.UTC(
+    nowBRT.getUTCFullYear(),
+    nowBRT.getUTCMonth(),
+    nowBRT.getUTCDate(),
+    0, 0, 0, 0,
+  );
+  const startOfDay = new Date(brtMidnight - BRT_OFFSET_MS);
 
   const { data: reports, error: reportErr } = await service
     .from("reports")

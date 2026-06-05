@@ -62,7 +62,7 @@ type SalaSchema = {
 
 type ActiveMainTab = "report" | "schemas";
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 3000;
 
 const A4_PAGE_WIDTH_PX = 794;
 const A4_PAGE_HEIGHT_PX = 1123;
@@ -437,17 +437,37 @@ export default function SalaTokenPage() {
     [timeline, hiddenIds],
   );
   const summary = useMemo(() => summarize(visibleTimeline), [visibleTimeline]);
-  const stats = useMemo<{ total: number; avgMs: number | null } | null>(() => {
+  const stats = useMemo<
+    { total: number; avgMs: number | null; buckets: { label: string; count: number }[] } | null
+  >(() => {
     if (visibleTimeline.length === 0) return null;
     const total = visibleTimeline.length;
-    if (total < 2) return { total, avgMs: null };
+    // Subtotais por faixa de horário (BRT, UTC-3) — facilita a contagem do dia.
+    const brtHour = (iso: string) =>
+      new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000).getUTCHours();
+    let manha = 0,
+      tarde = 0,
+      noite = 0;
+    for (const e of visibleTimeline) {
+      const h = brtHour(e.createdAt);
+      if (h < 13) manha++;
+      else if (h < 20) tarde++;
+      else noite++;
+    }
+    const buckets = [
+      { label: "até 13h", count: manha },
+      { label: "13h–20h", count: tarde },
+      { label: "após 20h", count: noite },
+    ].filter((b) => b.count > 0);
+
+    if (total < 2) return { total, avgMs: null, buckets };
     const newest = visibleTimeline[0];
     const oldest = visibleTimeline[total - 1];
-    if (!newest || !oldest) return { total, avgMs: null };
+    if (!newest || !oldest) return { total, avgMs: null, buckets };
     const span =
       new Date(newest.createdAt).getTime() -
       new Date(oldest.createdAt).getTime();
-    return { total, avgMs: Math.max(0, Math.floor(span / (total - 1))) };
+    return { total, avgMs: Math.max(0, Math.floor(span / (total - 1))), buckets };
   }, [visibleTimeline]);
   const latestReport = useMemo(
     () => (report && !hiddenIds.has(report.id) ? report : null),
@@ -718,7 +738,7 @@ function Shell({
   activeId: string | null;
   isViewingPast: boolean;
   summary: { label: string; count: number }[];
-  stats: { total: number; avgMs: number | null } | null;
+  stats: { total: number; avgMs: number | null; buckets: { label: string; count: number }[] } | null;
   secondsSinceFetch: number | null;
   updatedFlash: number;
   theme: Theme;
@@ -896,6 +916,24 @@ function Shell({
                   <span className="summary-label">Total</span>
                   <span className="summary-count">{stats.total}</span>
                 </li>
+                {stats.buckets.length > 1 && (
+                  <li
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "4px 12px",
+                      padding: "2px 0 6px",
+                      fontSize: "12px",
+                      color: "var(--ink-mute)",
+                    }}
+                  >
+                    {stats.buckets.map((b) => (
+                      <span key={b.label}>
+                        <strong style={{ color: "var(--ink)" }}>{b.count}</strong> {b.label}
+                      </span>
+                    ))}
+                  </li>
+                )}
                 <li className="summary-stat">
                   <span className="summary-label">Média</span>
                   <span className="summary-count">
