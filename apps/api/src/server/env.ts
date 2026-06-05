@@ -27,6 +27,9 @@ const ServerEnvSchema = z.object({
   // devolve a key direta na hora — economiza ~0,3-0,5s no início da gravação.
   // Quando o grant for habilitado na conta, setar "false".
   DEEPGRAM_SKIP_GRANT: z.string().default("true"),
+  // Keyterm Prompting (boost de vocabulário médico no STT). Controlado pelo
+  // servidor pra ligar/desligar/tunar SEM rebuild do app. Setar "false" desliga.
+  DEEPGRAM_KEYTERMS_ENABLED: z.string().default("true"),
 
   PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
