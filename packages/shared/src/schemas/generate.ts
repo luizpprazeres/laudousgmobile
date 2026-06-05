@@ -27,6 +27,9 @@ export const GenerateRequestSchema = z.object({
     .optional(),
   // Origem do request — analytics + roteamento futuro. Default 'iphone'.
   source: z.enum(["iphone", "watch", "web"]).optional(),
+  // FAST-PATH (experimental): pula o structurer (categoria vem do hint), o
+  // writer escreve direto do ditado cru. Tira ~4,8s do caminho bloqueante.
+  fast_path: z.boolean().optional(),
   // Quando true e o laudo for finalizado com sucesso, faz touch no updated_at
   // do report para que ele apareça imediatamente no feed da Sala do Auxiliar
   // (via /api/sala/latest). Usado por clientes que querem o "publica direto na

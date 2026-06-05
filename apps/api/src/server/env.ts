@@ -24,6 +24,10 @@ const ServerEnvSchema = z.object({
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
   CONTRACT_VERSION: z.string().default("v1"),
   GENERATION_AUDIT_ENABLED: z.string().default("false"),
+  // FAST-PATH como padrão do servidor (pula o structurer, ~5s mais rápido).
+  // Revert instantâneo: setar "false" na env (Vercel) — sem mexer em código.
+  // O request pode sobrescrever via campo fast_path.
+  FAST_PATH_DEFAULT: z.string().default("true"),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),

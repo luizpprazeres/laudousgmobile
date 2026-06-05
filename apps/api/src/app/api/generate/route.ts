@@ -153,6 +153,9 @@ export async function POST(req: Request) {
   }
 
   const reqInput = parsed.data;
+  // FAST-PATH: o request pode pedir explicitamente; senão usa o default do
+  // servidor (env FAST_PATH_DEFAULT, "true" = ligado pra todos). Revert via env.
+  const fastPath = reqInput.fast_path ?? env().FAST_PATH_DEFAULT === "true";
   const eventSurface = surfaceFromRequest(
     req,
     reqInput.source === "watch"
@@ -413,8 +416,44 @@ export async function POST(req: Request) {
         });
         auditState.reportId = reportId;
 
-        // ----- 1. Structurer -----
+        // ----- 1. Structurer (ou FAST-PATH determinístico) -----
         currentStage = "structurer";
+        if (fastPath) {
+          // FAST-PATH: a categoria vem do hint (98,5% dos requests trazem; em
+          // 99,5% bate com a detecção do structurer). Pula a chamada do
+          // structurer (~4,8s) — o writer escreve direto do ditado cru e os
+          // guards pós-writer protegem as regras. effectiveCategory já é válido
+          // (draftCategory foi clampado a um código conhecido).
+          effectiveCategory = resolveEffectiveCategory(
+            draftCategory,
+            reqInput.consolidated_transcript ?? reqInput.raw_input,
+            reportId,
+            categoriesInfo.codes,
+            reqInput.category_hint,
+          );
+          findings = {
+            schema_version: "v1",
+            categoria_detectada: effectiveCategory,
+            tipo_exame:
+              categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
+            achados: {},
+            comandos_do_medico: [],
+            trechos_confusos: [],
+            nivel_de_confianca: "alta",
+          } as StructuredFindings;
+          auditState.category = effectiveCategory;
+          auditState.contractHash = contractHashFor(
+            effectiveCategory,
+            effectiveWritingStyleId,
+          );
+          auditState.structuredOutput = findings;
+          await updateReportStructured({
+            reportId,
+            structured: findings,
+            categoryCode: effectiveCategory,
+          });
+          emit({ type: "structured", ts: nowIso(), payload: findings });
+        } else {
         const structured = await runStructurer({
           rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
           categoryHint: reqInput.category_hint,
@@ -486,16 +525,21 @@ export async function POST(req: Request) {
           categoryCode: effectiveCategory,
         });
         emit({ type: "structured", ts: nowIso(), payload: findings });
+        }
       }
 
       // ----- 2. Validator -----
       // Fix codex #2: passar categorias conhecidas do DB (não Set vazio).
       currentStage = "validator";
       const validatorT0 = Date.now();
-      const validator = runValidator({
-        findings,
-        knownCategoryCodes: categoriesInfo.codes,
-      });
+      // FAST-PATH não tem achados estruturados pra validar (o writer lê o cru);
+      // categoria já é válida (clampada). Pula o validator pra não gerar clarify.
+      const validator = fastPath
+        ? { ok: true as const, questions: [], issues: [] }
+        : runValidator({
+            findings,
+            knownCategoryCodes: categoriesInfo.codes,
+          });
       auditState.validatorDurationMs = Date.now() - validatorT0;
       auditState.validatorResult = validator;
       emit({
@@ -553,6 +597,10 @@ export async function POST(req: Request) {
         findings,
         categoryCode: effectiveCategory,
         writingStyleId: effectiveWritingStyleId,
+        // FAST-PATH: sem achados estruturados → embedding a partir do ditado cru.
+        queryTextOverride: fastPath
+          ? reqInput.consolidated_transcript ?? reqInput.raw_input
+          : undefined,
         // PELVE: amplia a quota de modelo p/ garantir que o template da via
         // ditada seja recuperado (TA+TV tem priority 100 e dominava o top-2).
         // MORFOLOGICO: 1t/2t/3t × 3 estilos competem no top — amplia a quota
@@ -617,8 +665,13 @@ export async function POST(req: Request) {
         findings,
         ragBlocks: blocks,
         writingStyleCode: styleRow.code,
+        categoryCode: effectiveCategory,
         categoryLabel:
           categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
+        // FAST-PATH: writer escreve direto do ditado cru (sem achados estruturados).
+        rawUserMessage: fastPath
+          ? reqInput.consolidated_transcript ?? reqInput.raw_input
+          : undefined,
         signal,
         onSystemMessage: (message) => {
           auditState.systemMessageFull = message;

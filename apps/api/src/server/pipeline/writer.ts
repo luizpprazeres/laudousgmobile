@@ -30,6 +30,16 @@ export async function* runWriterStream(args: {
   ragBlocks: RagBlockForPrompt[];
   writingStyleCode: WritingStyleCode;
   categoryLabel: string;
+  /**
+   * Categoria EFETIVA p/ contrato + temperatura. Default = findings.categoria_
+   * detectada. No fast-path (sem structurer) vem do category_hint resolvido.
+   */
+  categoryCode?: string;
+  /**
+   * FAST-PATH: quando fornecido, o user message é o DITADO CRU do médico (em vez
+   * dos achados estruturados). Tira o structurer do caminho bloqueante.
+   */
+  rawUserMessage?: string;
   signal?: AbortSignal;
   onSystemMessage?: (message: string) => void;
 }): AsyncGenerator<
@@ -45,21 +55,26 @@ export async function* runWriterStream(args: {
 > {
   const t0 = Date.now();
 
+  const effectiveCategoryCode =
+    args.categoryCode ?? args.findings.categoria_detectada;
+
   const systemMessage = buildSystemMessage({
-    categoryCode: args.findings.categoria_detectada,
+    categoryCode: effectiveCategoryCode,
     categoryLabel: args.categoryLabel,
     writingStyleCode: args.writingStyleCode,
     ragBlocks: args.ragBlocks,
   });
   args.onSystemMessage?.(systemMessage);
 
-  const userMessage = buildUserMessage(args.findings);
+  const userMessage = args.rawUserMessage
+    ? buildRawUserMessage(args.rawUserMessage)
+    : buildUserMessage(args.findings);
 
   const stream = await openai().chat.completions.create(
     {
       model: env().OPENAI_MODEL_WRITER,
       // Temperatura por categoria — herdada do LaudoUSG original.
-      temperature: temperatureForCategory(args.findings.categoria_detectada),
+      temperature: temperatureForCategory(effectiveCategoryCode),
       stream: true,
       stream_options: { include_usage: true },
       max_tokens: 2500, // mesmo limite do original
@@ -124,4 +139,29 @@ function buildUserMessage(f: StructuredFindings): string {
   parts.push("Retorne apenas o laudo técnico completo.");
 
   return parts.join("\n");
+}
+
+/**
+ * FAST-PATH user message: o ditado CRU do médico vira o input do writer,
+ * sem a etapa estruturadora. Instrui o modelo a tratar o texto como o ditado
+ * (achados + comandos juntos) e seguir as regras/modelo do system message.
+ */
+function buildRawUserMessage(rawInput: string): string {
+  return [
+    "=== DITADO DO MÉDICO (achados + instruções) ===",
+    rawInput.trim(),
+    "",
+    "REGRAS DE GERAÇÃO (siga TODAS):",
+    "1. Use o MODELO da categoria (no system) na ÍNTEGRA — reproduza TODAS as",
+    "   seções e TODOS os itens da conclusão, na ordem do modelo, MESMO os que o",
+    "   médico não ditou. Para campos/itens sem valor ditado, mantenha o",
+    "   placeholder \"____\" (NUNCA omita o item nem a linha).",
+    "   Ex.: se o modelo tem \"1) Gestação em torno de ____ semanas\" e o médico",
+    "   não disse a idade, mantenha o item com \"____\".",
+    "2. Aplique as INSTRUÇÕES do médico no ditado (ex.: \"na conclusão",
+    "   acrescente...\", \"compare com...\", classificações RADS/FIGO ditadas).",
+    "3. Preserve TODAS as medidas, lateralidades e negações exatamente como ditadas.",
+    "4. NÃO invente achados que o médico não mencionou.",
+    "Retorne apenas o laudo técnico completo.",
+  ].join("\n");
 }

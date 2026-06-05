@@ -44,6 +44,8 @@ export async function runRetriever(args: {
   categoryCode: CategoryCode;
   writingStyleId: string;
   quotas?: Partial<typeof DEFAULT_QUOTAS>;
+  /** FAST-PATH: query de embedding a partir do input cru (sem structurer). */
+  queryTextOverride?: string;
   signal?: AbortSignal;
 }): Promise<{
   blocks: RagBlockForPrompt[];
@@ -52,7 +54,7 @@ export async function runRetriever(args: {
   warning: { code: "RAG_EMPTY"; message: string } | null;
 }> {
   // Texto de query: achados + comandos (compacto pra reduzir custo de embedding)
-  const queryText = buildQueryText(args.findings);
+  const queryText = args.queryTextOverride ?? buildQueryText(args.findings);
 
   // Embedding
   const embRes = await openai().embeddings.create(
