@@ -23,6 +23,22 @@ export async function POST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
+  // FAST-PATH: a conta não suporta /auth/grant (403). Pula a ida ao Deepgram e
+  // devolve a key direta na hora — corta ~0,3-0,5s do início da gravação.
+  if (
+    env().DEEPGRAM_SKIP_GRANT === "true" &&
+    env().DEEPGRAM_ALLOW_DIRECT_KEY === "true"
+  ) {
+    return json({
+      token: env().DEEPGRAM_API_KEY,
+      scheme: "Token",
+      temporary: false,
+      expires_in: 0,
+      model: env().DEEPGRAM_MODEL,
+      language: env().DEEPGRAM_LANGUAGE,
+    });
+  }
+
   let resp: Response;
   try {
     resp = await fetch("https://api.deepgram.com/v1/auth/grant", {

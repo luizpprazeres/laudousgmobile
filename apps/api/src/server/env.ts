@@ -23,6 +23,10 @@ const ServerEnvSchema = z.object({
   // /api/deepgram/token devolve a API key direta. ⚠️ inseguro — desligar
   // ("false") quando o token temporário funcionar. Default "true" só pro teste.
   DEEPGRAM_ALLOW_DIRECT_KEY: z.string().default("true"),
+  // A conta não tem permissão de /auth/grant (403). PULA a ida ao Deepgram e
+  // devolve a key direta na hora — economiza ~0,3-0,5s no início da gravação.
+  // Quando o grant for habilitado na conta, setar "false".
+  DEEPGRAM_SKIP_GRANT: z.string().default("true"),
 
   PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
