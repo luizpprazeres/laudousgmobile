@@ -50,6 +50,18 @@ type SalaResponse = {
   reason?: InvalidReason;
 };
 
+type SalaSchema = {
+  id: string;
+  examType: string;
+  examLabel: string;
+  png: string;
+  hasPdf: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type ActiveMainTab = "report" | "schemas";
+
 const POLL_INTERVAL_MS = 5000;
 
 const A4_PAGE_WIDTH_PX = 794;
@@ -126,6 +138,8 @@ export default function SalaTokenPage() {
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [schemas, setSchemas] = useState<SalaSchema[]>([]);
+  const [activeMainTab, setActiveMainTab] = useState<ActiveMainTab>("report");
   const lastSignatureRef = useRef<string | null>(null);
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
   const annotationHighlightTimeoutRef = useRef<ReturnType<
@@ -365,10 +379,18 @@ export default function SalaTokenPage() {
 
   async function fetchLatest() {
     try {
-      const res = await fetch(`/api/sala/latest?token=${encodeURIComponent(token)}`, {
-        cache: "no-store",
-      });
-      const data = (await res.json()) as SalaResponse;
+      const [latestRes, schemasData] = await Promise.all([
+        fetch(`/api/sala/latest?token=${encodeURIComponent(token)}`, {
+          cache: "no-store",
+        }),
+        fetch(`/api/sala/${encodeURIComponent(token)}/schemas`, {
+          cache: "no-store",
+        })
+          .then((r) => (r.ok ? r.json() : { schemas: [] }))
+          .catch(() => ({ schemas: [] })),
+      ]);
+      const data = (await latestRes.json()) as SalaResponse;
+      setSchemas((schemasData as { schemas?: SalaSchema[] }).schemas ?? []);
       setLoading(false);
       setLastFetch(new Date());
       setTokenValid(data.tokenValid);
@@ -443,6 +465,12 @@ export default function SalaTokenPage() {
         : !displayReport
           ? "waiting"
           : "live";
+
+  useEffect(() => {
+    if (schemas.length === 0 && activeMainTab === "schemas") {
+      setActiveMainTab("report");
+    }
+  }, [activeMainTab, schemas.length]);
 
   useEffect(() => {
     function isTypingTarget(target: EventTarget | null): boolean {
@@ -616,6 +644,9 @@ export default function SalaTokenPage() {
         motivationalQuote={motivationalQuote}
         shortcutsOpen={shortcutsOpen}
         noteInputRef={noteInputRef}
+        schemas={schemas}
+        activeMainTab={activeMainTab}
+        salaToken={token}
         onToggleTheme={toggleTheme}
         onToggleHighlight={toggleHighlight}
         onCopy={onCopy}
@@ -628,6 +659,7 @@ export default function SalaTokenPage() {
         onDeleteAnnotation={deleteAnnotation}
         onInsertPhrase={insertPhrase}
         onCloseShortcuts={() => setShortcutsOpen(false)}
+        onActiveMainTab={setActiveMainTab}
         formatClock={formatClock}
       />
       <GlobalStyles />
@@ -661,6 +693,9 @@ function Shell({
   motivationalQuote,
   shortcutsOpen,
   noteInputRef,
+  schemas,
+  activeMainTab,
+  salaToken,
   onToggleTheme,
   onToggleHighlight,
   onCopy,
@@ -673,6 +708,7 @@ function Shell({
   onDeleteAnnotation,
   onInsertPhrase,
   onCloseShortcuts,
+  onActiveMainTab,
   formatClock,
 }: {
   status: "loading" | "invalid" | "waiting" | "live";
@@ -699,6 +735,9 @@ function Shell({
   motivationalQuote: Quote | null;
   shortcutsOpen: boolean;
   noteInputRef: RefObject<HTMLTextAreaElement>;
+  schemas: SalaSchema[];
+  activeMainTab: ActiveMainTab;
+  salaToken: string;
   onToggleTheme: () => void;
   onToggleHighlight: () => void;
   onCopy: () => void;
@@ -715,6 +754,7 @@ function Shell({
     placement: Placement,
   ) => void;
   onCloseShortcuts: () => void;
+  onActiveMainTab: (tab: ActiveMainTab) => void;
   formatClock: (date: Date) => string;
 }) {
   const pillState =
@@ -737,6 +777,28 @@ function Shell({
           <span className="brand-sub">Sala do Auxiliar</span>
         </div>
         <div className="topbar-actions">
+          {schemas.length > 0 && (
+            <div className="main-tabs" role="tablist" aria-label="Conteúdo da sala">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeMainTab === "report"}
+                className={`main-tab ${activeMainTab === "report" ? "is-active" : ""}`}
+                onClick={() => onActiveMainTab("report")}
+              >
+                Laudo
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeMainTab === "schemas"}
+                className={`main-tab ${activeMainTab === "schemas" ? "is-active" : ""}`}
+                onClick={() => onActiveMainTab("schemas")}
+              >
+                Esquemas visuais
+              </button>
+            </div>
+          )}
           {motivationalQuote && (
             <span
               className="motivational-quote"
@@ -768,7 +830,7 @@ function Shell({
             <span className="live-dot" />
             <span className="live-text">{pillLabel}</span>
           </div>
-          {status === "live" && (
+          {status === "live" && activeMainTab === "report" && (
             <div className="topbar-tools">
               <button
                 type="button"
@@ -921,8 +983,14 @@ function Shell({
           {status === "invalid" && (
             <InvalidState reason={invalidReason ?? "not_found"} />
           )}
-          {status === "waiting" && <WaitingState />}
-          {status === "live" && report && (
+          {status !== "loading" &&
+            status !== "invalid" &&
+            activeMainTab === "schemas" &&
+            schemas.length > 0 && (
+            <SchemasGallery token={salaToken} schemas={schemas} />
+          )}
+          {status === "waiting" && activeMainTab === "report" && <WaitingState />}
+          {status === "live" && activeMainTab === "report" && report && (
             <ReportView
               report={report}
               secondsSinceFetch={secondsSinceFetch}
@@ -1244,6 +1312,53 @@ function WaitingState() {
       <div className="poll-strip">
         <span className="poll-blip" />
         <span>Sincronizando a cada 5 segundos</span>
+      </div>
+    </div>
+  );
+}
+
+function SchemasGallery({
+  token,
+  schemas,
+}: {
+  token: string;
+  schemas: SalaSchema[];
+}) {
+  return (
+    <div className="schemas-stage report-anim">
+      <div className="schemas-header">
+        <div>
+          <h1>Esquemas visuais</h1>
+          <p>{schemas.length} esquema{schemas.length === 1 ? "" : "s"} disponível{schemas.length === 1 ? "" : "eis"} nesta sala.</p>
+        </div>
+      </div>
+      <div className="schemas-grid">
+        {schemas.map((schema) => (
+          <article key={schema.id} className="schema-card">
+            <div className="schema-image-wrap">
+              <img
+                src={`data:image/png;base64,${schema.png}`}
+                alt={`Esquema visual de ${schema.examLabel}`}
+                className="schema-image"
+              />
+            </div>
+            <div className="schema-meta">
+              <div>
+                <h2>{schema.examLabel}</h2>
+                <time>{formatStamp(schema.updatedAt)}</time>
+              </div>
+              {schema.hasPdf && (
+                <a
+                  className="schema-download"
+                  href={`/api/sala/${encodeURIComponent(token)}/schemas/${encodeURIComponent(schema.id)}/pdf`}
+                  download
+                >
+                  Baixar PDF
+                </a>
+              )}
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   );
@@ -1797,6 +1912,40 @@ function ScopedStyles() {
         align-items: center;
         gap: 10px;
         min-width: 0;
+      }
+
+      .main-tabs {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper-shade);
+      }
+
+      .main-tab {
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--ink-soft);
+        cursor: pointer;
+        font-family: "Inter Tight", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 7px 11px;
+        transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+        white-space: nowrap;
+      }
+
+      .main-tab:hover {
+        color: var(--ink);
+      }
+
+      .main-tab.is-active {
+        background: var(--paper);
+        color: var(--brand-deep);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
       }
 
       .motivational-quote {
@@ -2634,6 +2783,116 @@ function ScopedStyles() {
         gap: 14px;
       }
 
+      .schemas-stage {
+        max-width: 1320px;
+        margin: 0 auto;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .schemas-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 16px;
+        padding: 0 4px;
+      }
+
+      .schemas-header h1 {
+        margin: 0;
+        color: var(--ink);
+        font-size: clamp(24px, 3vw, 34px);
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+
+      .schemas-header p {
+        margin: 6px 0 0;
+        color: var(--ink-mute);
+        font-size: 13px;
+      }
+
+      .schemas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
+        gap: 18px;
+      }
+
+      .schema-card {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-shadow:
+          0 1px 3px rgba(15, 23, 42, 0.08),
+          0 12px 28px -24px rgba(15, 23, 42, 0.34);
+        overflow: hidden;
+      }
+
+      .schema-image-wrap {
+        background: var(--paper-shade);
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+      }
+
+      .schema-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--paper);
+      }
+
+      .schema-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px 16px;
+      }
+
+      .schema-meta h2 {
+        margin: 0 0 4px;
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 650;
+      }
+
+      .schema-meta time {
+        color: var(--ink-mute);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .schema-download {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        padding: 8px 13px;
+        border: 1px solid var(--brand-soft);
+        border-radius: 8px;
+        background: var(--brand-tint);
+        color: var(--brand-deep);
+        font-size: 12.5px;
+        font-weight: 650;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 120ms ease, background 120ms ease;
+      }
+
+      .schema-download:hover {
+        border-color: var(--brand);
+      }
+
+      .schema-download:active {
+        transform: scale(0.97);
+      }
+
       .report-anim {
         animation: report-in 360ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
       }
@@ -3067,6 +3326,12 @@ function ScopedStyles() {
         .topbar-actions {
           flex-wrap: wrap;
         }
+        .main-tabs {
+          width: 100%;
+        }
+        .main-tab {
+          flex: 1;
+        }
         .motivational-quote {
           display: none;
         }
@@ -3097,6 +3362,10 @@ function ScopedStyles() {
           border: 1px solid var(--line);
           border-radius: 6px;
           box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        .schema-meta {
+          align-items: flex-start;
+          flex-direction: column;
         }
       }
     `}} />
