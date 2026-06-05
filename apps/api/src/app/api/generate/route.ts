@@ -18,6 +18,7 @@ import {
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
+import { applyCommandGuard } from "@/server/pipeline/commandGuard";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -727,6 +728,13 @@ export async function POST(req: Request) {
       // DSM (Diâmetro Médio do Saco Gestacional): mesma política — só calcula
       // quando o médico pede ("calcule o DSM"). Ver dsmGuard.ts.
       finalText = applyDsmPolicy(
+        finalText,
+        reqInput.consolidated_transcript ?? reqInput.raw_input,
+      );
+      // COMANDOS: garante que diretivas explícitas do médico pra conclusão ("na
+      // conclusão recomendar X", "recomende Y") entrem no laudo se o LLM ignorou.
+      // Roda por último — comandos entram ao final da conclusão. Ver commandGuard.
+      finalText = applyCommandGuard(
         finalText,
         reqInput.consolidated_transcript ?? reqInput.raw_input,
       );
