@@ -2762,7 +2762,7 @@ function ScopedStyles() {
         width: 210mm;
         min-height: 297mm;
         padding: 56px 48px;
-        column-gap: 24px;
+        column-gap: 120px; /* 24px gap entre páginas + 48px de margem interna de cada lado */
         font-size: 18.5px;
         line-height: 1.55;
       }
