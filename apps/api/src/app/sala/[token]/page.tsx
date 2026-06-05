@@ -438,17 +438,42 @@ export default function SalaTokenPage() {
   );
   const summary = useMemo(() => summarize(visibleTimeline), [visibleTimeline]);
   const stats = useMemo<
-    { total: number; avgMs: number | null; buckets: { label: string; count: number }[] } | null
+    {
+      total: number;
+      rawCount: number;
+      avgMs: number | null;
+      buckets: { label: string; count: number }[];
+    } | null
   >(() => {
     if (visibleTimeline.length === 0) return null;
-    const total = visibleTimeline.length;
-    // Subtotais por faixa de horário (BRT, UTC-3) — facilita a contagem do dia.
+    const rawCount = visibleTimeline.length;
+
+    // Conta EXAMES, não versões: agrupa regeração/correção do MESMO exame
+    // (mesma categoria + intervalo < 3 min) num exame só. Representante = a versão
+    // mais recente.
+    const GAP_MS = 3 * 60 * 1000;
+    const sorted = [...visibleTimeline].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    const exams: TimelineEntry[] = [];
+    let prev: TimelineEntry | null = null;
+    for (const e of sorted) {
+      const sameExam =
+        prev !== null &&
+        prev.category === e.category &&
+        Math.abs(new Date(prev.createdAt).getTime() - new Date(e.createdAt).getTime()) < GAP_MS;
+      if (!sameExam) exams.push(e);
+      prev = e;
+    }
+    const total = exams.length;
+
+    // Subtotais por faixa de horário (BRT, UTC-3) dos EXAMES.
     const brtHour = (iso: string) =>
       new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000).getUTCHours();
     let manha = 0,
       tarde = 0,
       noite = 0;
-    for (const e of visibleTimeline) {
+    for (const e of exams) {
       const h = brtHour(e.createdAt);
       if (h < 13) manha++;
       else if (h < 20) tarde++;
@@ -460,14 +485,13 @@ export default function SalaTokenPage() {
       { label: "após 20h", count: noite },
     ].filter((b) => b.count > 0);
 
-    if (total < 2) return { total, avgMs: null, buckets };
-    const newest = visibleTimeline[0];
-    const oldest = visibleTimeline[total - 1];
-    if (!newest || !oldest) return { total, avgMs: null, buckets };
+    if (total < 2) return { total, rawCount, avgMs: null, buckets };
+    const newest = exams[0];
+    const oldest = exams[total - 1];
+    if (!newest || !oldest) return { total, rawCount, avgMs: null, buckets };
     const span =
-      new Date(newest.createdAt).getTime() -
-      new Date(oldest.createdAt).getTime();
-    return { total, avgMs: Math.max(0, Math.floor(span / (total - 1))), buckets };
+      new Date(newest.createdAt).getTime() - new Date(oldest.createdAt).getTime();
+    return { total, rawCount, avgMs: Math.max(0, Math.floor(span / (total - 1))), buckets };
   }, [visibleTimeline]);
   const latestReport = useMemo(
     () => (report && !hiddenIds.has(report.id) ? report : null),
@@ -738,7 +762,7 @@ function Shell({
   activeId: string | null;
   isViewingPast: boolean;
   summary: { label: string; count: number }[];
-  stats: { total: number; avgMs: number | null; buckets: { label: string; count: number }[] } | null;
+  stats: { total: number; rawCount: number; avgMs: number | null; buckets: { label: string; count: number }[] } | null;
   secondsSinceFetch: number | null;
   updatedFlash: number;
   theme: Theme;
@@ -913,9 +937,20 @@ function Shell({
             ) : (
               <ul className="summary-list">
                 <li className="summary-stat">
-                  <span className="summary-label">Total</span>
+                  <span className="summary-label">Exames</span>
                   <span className="summary-count">{stats.total}</span>
                 </li>
+                {stats.rawCount > stats.total && (
+                  <li
+                    style={{
+                      padding: "0 0 4px",
+                      fontSize: "11.5px",
+                      color: "var(--ink-mute)",
+                    }}
+                  >
+                    {stats.rawCount} laudos (com correções)
+                  </li>
+                )}
                 {stats.buckets.length > 1 && (
                   <li
                     style={{
