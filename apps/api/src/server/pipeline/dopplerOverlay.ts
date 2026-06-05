@@ -38,6 +38,8 @@ export interface DopplerData {
   /** Uterinas (automático): incisura, ectasia ou IP médio > P95. */
   incisura?: boolean;
   ectasia?: boolean;
+  /** Uterinas >P95 por comando/explícito ("uterinas acima do percentil 95"). */
+  uterinasAcimaP95?: boolean;
 }
 
 const numFmt = (n: number): string =>
@@ -121,6 +123,14 @@ export function extractDopplerData(rawInput: string): DopplerData {
     /incisura/i.test(t) && !new RegExp(NEG + "incisura", "i").test(t);
   // Ectasia das uterinas = automático (F4).
   d.ectasia = /ectasia/i.test(t) && !new RegExp(NEG + "ectasia", "i").test(t);
+  // Uterinas >P95 por COMANDO/explícito ("uterinas acima do percentil 95",
+  // "uterinas >P95", "uterinas alteradas/elevadas") — cobre o caso em que o
+  // médico ACRESCENTA o item das uterinas em vez de ditar o valor do percentil.
+  // Resolve o bug de "acima do percentil 95" (número 95) não passar no `> 95`.
+  d.uterinasAcimaP95 =
+    /uterinas?[^.]{0,55}(?:acima\s+d[eo]\s+(?:percentil\s*)?9[0-9]|maior\s+que\s+(?:o\s+)?percentil\s*9[0-9]|>\s*p?\.?\s*9[0-9]|percentil\s+9[6-9]|alterad|elevad|aumentad)/i.test(
+      t,
+    ) && !new RegExp(NEG + "(?:alteraç|elevaç)", "i").test(t);
 
   const isPre = /pr[ée][\s-]?centraliza/i.test(t);
   d.preCentralizacao =
@@ -224,18 +234,17 @@ export function buildDopplervelocimetriaSection(d: DopplerData): string {
   return lines.join("\n");
 }
 
-/** Uterinas alteradas automaticamente? (IP médio >P95 OU incisura OU ectasia) */
-function uterinasAlteradas(d: DopplerData): boolean {
+/** Uterinas >P95? (valor numérico OU comando/explícito "acima do percentil 95"). */
+function uterinasAcimaP95(d: DopplerData): boolean {
   return (
-    d.incisura === true ||
-    d.ectasia === true ||
+    d.uterinasAcimaP95 === true ||
     (d.percMedioUterinas !== undefined && d.percMedioUterinas > 95)
   );
 }
 
-/** Uterinas alteradas POR IP médio >P95 (item textual específico). */
-function uterinasAcimaP95(d: DopplerData): boolean {
-  return d.percMedioUterinas !== undefined && d.percMedioUterinas > 95;
+/** Uterinas alteradas automaticamente? (>P95 OU incisura OU ectasia) */
+function uterinasAlteradas(d: DopplerData): boolean {
+  return d.incisura === true || d.ectasia === true || uterinasAcimaP95(d);
 }
 
 /** Itens de conclusão do Doppler (sem numeração — o caller renumera). */

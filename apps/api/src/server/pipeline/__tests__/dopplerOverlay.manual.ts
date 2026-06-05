@@ -228,5 +228,44 @@ const dPos = extractDopplerData("doppler com incisura protodiastólica bilateral
 check("F3: incisura positiva ainda detectada", dPos.incisura === true);
 check("F3: brain sparing → centralizacao true", dPos.centralizacao === true);
 
+// ── 13. Comando de vaso: "uterinas acima do percentil 95" (conflito) ──
+const dCmd = extractDopplerData(
+  "doppler obstétrico, acrescente um item das artérias uterinas acima do percentil 95, ajuste os demais. IP umbilical 0,9, ACM 1,8.",
+);
+check("comando: uterinas >P95 detectado", dCmd.uterinasAcimaP95 === true, JSON.stringify(dCmd));
+const cmdItems = buildDopplerConclusionItems(dCmd);
+check(
+  "comando: frase normal vira só umbilical+ACM (tira uterinas)",
+  cmdItems.some((i) => /normais nas artérias umbilical e cerebral média/.test(i)),
+  JSON.stringify(cmdItems),
+);
+check(
+  "comando: item das uterinas >P95 adicionado",
+  cmdItems.some((i) => /uterinas acima do percentil 95/.test(i)),
+);
+// cirurgia por vaso na conclusão real (remove a linha multi-vaso normal)
+const laudoNormalMultivaso = `ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER
+
+DOPPLERVELOCIMETRIA:
+Artéria umbilical: IP 0,9.
+
+CONCLUSÃO:
+1) Gestação em torno de 30 semanas.
+2) Líquido amniótico de quantidade normal.
+3) Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.
+4) Ausência de sinais de incisuras.`;
+const fixed = correctDopplerConclusion(laudoNormalMultivaso, dCmd);
+check(
+  "cirurgia: NÃO sobra 'normal nas uterinas, umbilical e cerebral' (multi-vaso)",
+  !/pulsatilidade normal nas artérias uterinas, umbilical/i.test(fixed),
+  fixed,
+);
+check(
+  "cirurgia: mantém umbilical+ACM normais + item uterinas >P95",
+  /normais nas artérias umbilical e cerebral média/.test(fixed) &&
+    /uterinas acima do percentil 95/.test(fixed),
+  fixed,
+);
+
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));
 if (fail) process.exit(1);
