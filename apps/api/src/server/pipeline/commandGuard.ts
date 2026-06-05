@@ -93,6 +93,15 @@ export function extractConclusionCommands(rawInput: string): ConclusionCommand[]
   for (const m of rawInput.matchAll(
     /\b(?:acrescent\w+|adicion\w+|inclu\w+|coloc\w+)\s+(?:na\s+conclus[ãa]o[,:\s]+)?(.+?)(?:[.;\n]|$)/gi,
   )) {
+    // Só conta como comando de CONCLUSÃO. Pula quando o alvo é outra seção:
+    // "após o título acrescente X", "no cabeçalho", "nos achados", "no corpo"
+    // (a menos que "na conclusão" esteja explícito no próprio comando).
+    const explicitConclusao = /na\s+conclus[ãa]o/i.test(m[0]);
+    if (!explicitConclusao) {
+      const before = rawInput.slice(Math.max(0, (m.index ?? 0) - 50), m.index ?? 0);
+      if (/t[íi]tulo|cabe[çc]alho/i.test(before)) continue;
+      if (/^\s*(?:n[oa]s?\s+achados|n[oa]\s+corpo\b)/i.test(m[1] ?? "")) continue;
+    }
     push(m[1]);
   }
   // "recomendar/recomende X" (recomendação → conclusão), se não já capturado.

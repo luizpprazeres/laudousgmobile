@@ -89,5 +89,27 @@ check(
   cmp,
 );
 
+// ── Regressão: "após o título acrescente X" NÃO é comando de conclusão ──
+const tituloRaw =
+  "Ultrassonografia obstétrica. Após o título acrescente a 1ª ultrassonografia realizada 4 de março de 2026 com 20 semanas, hoje com 37 semanas e 3 dias. Feto cefálico.";
+check(
+  "'após o título acrescente X' NÃO vira comando de conclusão",
+  extractConclusionCommands(tituloRaw).length === 0,
+  JSON.stringify(extractConclusionCommands(tituloRaw)),
+);
+const tituloConc = `CONCLUSÃO:
+1) Gestação em torno de 37 semanas e 3 dias.
+2) Líquido amniótico de quantidade normal.`;
+check(
+  "guard não duplica a frase do título na conclusão",
+  applyCommandGuard(tituloConc, tituloRaw) === tituloConc,
+  applyCommandGuard(tituloConc, tituloRaw),
+);
+// mas "acrescente na conclusão X" continua funcionando
+check(
+  "'acrescente na conclusão X' ainda é capturado",
+  extractConclusionCommands("acrescente na conclusão que deve repetir em 30 dias").length === 1,
+);
+
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));
 if (fail) process.exit(1);
