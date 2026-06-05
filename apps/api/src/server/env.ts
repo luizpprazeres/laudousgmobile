@@ -19,6 +19,10 @@ const ServerEnvSchema = z.object({
   DEEPGRAM_API_KEY: z.string().min(20),
   DEEPGRAM_MODEL: z.string().default("nova-3"),
   DEEPGRAM_LANGUAGE: z.string().default("pt-BR"),
+  // FALLBACK PROTÓTIPO: se /auth/grant falhar (conta sem permissão), o endpoint
+  // /api/deepgram/token devolve a API key direta. ⚠️ inseguro — desligar
+  // ("false") quando o token temporário funcionar. Default "true" só pro teste.
+  DEEPGRAM_ALLOW_DIRECT_KEY: z.string().default("true"),
 
   PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
