@@ -76,10 +76,13 @@ export async function GET(req: Request) {
 
   const list = reports ?? [];
   const latest = list[0];
-  const latestOutput = latest
+  const rawOutput = latest
     ? (latest.final_output as string | null) ??
       (latest.generated_output as string | null)
     : null;
+  // Defesa: remove marcadores "[REVISAR …]" (anotação pro médico conferir; não
+  // deve aparecer pro auxiliar). Cobre qualquer cliente que não fez o strip.
+  const latestOutput = rawOutput?.replace(/\s*\[REVISAR\b[^\]]*\]/g, "") ?? null;
 
   const reportsToday = list.map((r) => ({
     id: r.id as string,
