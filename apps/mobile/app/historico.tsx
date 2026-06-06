@@ -15,6 +15,7 @@ import { Chevron, Folder, Search } from "@/ui/icons";
 import { CATS, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 import { supabase } from "@/lib/supabase";
+import { stripReviewMarkers } from "@/features/generate/reviewMarkers";
 
 type ReportRow = {
   id: string;
@@ -126,7 +127,9 @@ export default function HistoricoScreen() {
             <View style={styles.list}>
               {group.items.map((report, index) => {
                 const cat = categoryFor(report.category_code);
-                const text = report.final_output || report.generated_output || report.raw_input;
+                const text = stripReviewMarkers(
+                  report.final_output || report.generated_output || report.raw_input,
+                );
                 return (
                   <Pressable
                     key={report.id}

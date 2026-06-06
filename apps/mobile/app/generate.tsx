@@ -17,7 +17,12 @@ import {
   generateReducer,
   initialGenerateState,
 } from "@/features/generate/state";
-import { generateReportStream, pushReportToSala, type MockScenario } from "@/lib/api";
+import {
+  generateReportStream,
+  pushReportToSala,
+  updateReportFinalOutput,
+  type MockScenario,
+} from "@/lib/api";
 import { Banner, type BannerSeverity } from "@/ui/Banner";
 import { Segment } from "@/ui/Segment";
 import { Suggestion } from "@/ui/Suggestion";
@@ -46,6 +51,10 @@ import {
   startRecording,
   stopAndUpload,
 } from "@/features/generate/transcribe";
+import {
+  renderReviewHighlighted,
+  stripReviewMarkers,
+} from "@/features/generate/reviewMarkers";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -119,7 +128,7 @@ export default function GenerateScreen() {
         dispatch({ type: "SSE_EVENT", event: ev });
         // Auxiliar pareado vê laudo automaticamente — fire-and-forget.
         if (ev.type === "done" && ev.report_id) {
-          pushReportToSala(ev.report_id).catch(() => { /* ignore */ });
+          publishCleanReportToSala(ev.report_id, ev.final_text);
         }
       }
     } catch (e) {
@@ -393,6 +402,9 @@ export default function GenerateScreen() {
                     mock ?? undefined,
                   )) {
                     dispatch({ type: "SSE_EVENT", event: ev });
+                    if (ev.type === "done" && ev.report_id) {
+                      persistCleanFinalOutput(ev.report_id, ev.final_text);
+                    }
                   }
                 } catch (e) {
                   if ((e as Error).name === "AbortError") return;
@@ -577,6 +589,26 @@ type AchadosProps = {
   editable: boolean;
   cat: Category;
 };
+
+function persistCleanFinalOutput(reportId: string, output: string) {
+  const clean = stripReviewMarkers(output);
+  if (clean === output) return;
+  updateReportFinalOutput(reportId, clean).catch((err) => {
+    console.warn("[mobile] salvar final_output limpo falhou:", err);
+  });
+}
+
+function publishCleanReportToSala(reportId: string, output: string) {
+  const clean = stripReviewMarkers(output);
+  const persist = clean === output
+    ? Promise.resolve()
+    : updateReportFinalOutput(reportId, clean);
+  persist
+    .then(() => pushReportToSala(reportId))
+    .catch((err) => {
+      console.warn("[mobile] preparar push limpo pra sala falhou:", err);
+    });
+}
 
 type QuickAction = {
   key: string;
@@ -776,7 +808,11 @@ function LaudoBody({
         ) : null}
 
         <Text style={styles.laudoText}>
-          {text || (isStreaming ? "Estruturando achados…" : "")}
+          {text
+            ? renderReviewHighlighted(text, styles.reviewMarker)
+            : isStreaming
+              ? "Estruturando achados…"
+              : ""}
           {isStreaming ? <Text style={styles.cursor}> ▎</Text> : null}
         </Text>
 
@@ -1046,6 +1082,10 @@ const styles = StyleSheet.create({
     lineHeight: 25,
     color: C.text,
     fontFamily: FONT.body,
+  },
+  reviewMarker: {
+    color: "#7C3AED",
+    fontFamily: FONT.bold,
   },
   laudoEmpty: {
     fontSize: 17,

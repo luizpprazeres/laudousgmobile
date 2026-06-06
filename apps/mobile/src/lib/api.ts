@@ -207,6 +207,22 @@ export async function pushReportToSala(reportId: string): Promise<void> {
   }
 }
 
+export async function updateReportFinalOutput(
+  reportId: string,
+  finalOutput: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("reports")
+    .update({
+      final_output: finalOutput,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", reportId);
+  if (error) {
+    throw new Error(`salvar final_output falhou: ${error.message}`);
+  }
+}
+
 /**
  * Faz POST /api/generate e itera sobre os eventos SSE.
  *

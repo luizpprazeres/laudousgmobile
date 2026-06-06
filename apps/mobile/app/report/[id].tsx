@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
@@ -13,6 +14,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getReport, type ReportDetail } from "@/lib/api";
+import {
+  renderReviewHighlighted,
+  stripReviewMarkers,
+} from "@/features/generate/reviewMarkers";
 import { Segment } from "@/ui/Segment";
 import { C, FONT } from "@/ui/tokens";
 
@@ -62,17 +67,19 @@ export default function ReportDetailScreen() {
 
   async function copyReport() {
     if (!finalText) return;
+    const cleanText = stripReviewMarkers(finalText);
     if (Platform.OS === "web" && navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText(finalText);
+      await navigator.clipboard.writeText(cleanText);
       Alert.alert("Texto copiado");
       return;
     }
-    Alert.alert("Cópia indisponível", "Use Compartilhar para enviar o texto neste dispositivo.");
+    await Clipboard.setStringAsync(cleanText);
+    Alert.alert("Texto copiado");
   }
 
   async function shareReport() {
     if (!finalText) return;
-    await Share.share({ message: finalText });
+    await Share.share({ message: stripReviewMarkers(finalText) });
   }
 
   if (loading) {
@@ -156,7 +163,9 @@ function ReportTab({ text }: { text: string }) {
   return (
     <View style={styles.card}>
       <Text selectable style={styles.reportText}>
-        {text || "Laudo ainda não gerado."}
+        {text
+          ? renderReviewHighlighted(text, styles.reviewMarker)
+          : "Laudo ainda não gerado."}
       </Text>
     </View>
   );
@@ -393,6 +402,10 @@ const styles = StyleSheet.create({
     fontSize: 15.5,
     lineHeight: 23,
     fontFamily: FONT.body,
+  },
+  reviewMarker: {
+    color: "#7C3AED",
+    fontFamily: FONT.bold,
   },
   codeWrap: {
     paddingRight: 24,
