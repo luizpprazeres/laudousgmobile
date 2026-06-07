@@ -6,7 +6,7 @@ tags: [doppler, renal, modelo, template, aorta, estenose, intrarrenal]
 priority: 95
 priority_tier: universal
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM 2023 — Practice Parameter for the Performance of Native Renal Artery Duplex Sonography
 source_extracted_at: 2026-05-30
 ---

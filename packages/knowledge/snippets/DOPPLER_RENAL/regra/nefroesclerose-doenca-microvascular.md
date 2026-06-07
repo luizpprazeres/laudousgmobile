@@ -6,7 +6,7 @@ tags: [doppler, renal, ir-elevado, nefroesclerose, doenca-microvascular, parenqu
 priority: 75
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM 2023 — Native Renal Artery Duplex §5 (intrarrenal hemodynamics) + Radiopaedia — Renal Doppler parameters
 source_extracted_at: 2026-05-30
 ---
@@ -17,7 +17,7 @@ REGRA — IR INTRARRENAL ELEVADO BILATERAL (≥ 0,80)
 
 Quando médico mencionar IR ≥ 0,80 BILATERAL (não unilateral), adicionar na conclusão:
 
-"X) Índices de resistência intrarrenais bilateralmente elevados (IR ___ à direita e ___ à esquerda), achado inespecífico que pode estar associado a nefroesclerose hipertensiva, doença renal crônica de etiologia microvascular ou outras nefropatias parenquimatosas. Recomenda-se correlação clínico-laboratorial."
+"X) Índices de resistência intrarrenais bilateralmente elevados (IR ___ à direita e ___ à esquerda), achado inespecífico que pode estar associado a nefroesclerose hipertensiva, doença renal crônica de etiologia microvascular ou outras nefropatias parenquimatosas. Convém, a critério clínico, complementar com correlação clínico-laboratorial para esclarecimento etiológico."
 
 ═══════════════════════════════════════════════════
 CONTEXTOS QUE REFORÇAM O ACHADO (mas NÃO determinam diagnóstico)

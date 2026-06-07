@@ -6,7 +6,7 @@ tags: [doppler, renal, medidas, vps, rar, ir, protocolo]
 priority: 75
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM 2023 — Native Renal Artery Duplex §2 (protocolo técnico)
 source_extracted_at: 2026-05-30
 ---

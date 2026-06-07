@@ -6,7 +6,7 @@ tags: [doppler, renal, exame-limitado, gases, obesidade, falha-tecnica]
 priority: 60
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM 2023 Native Renal Artery Duplex §2.5 (technical limitations) + convenção radiológica brasileira (laudos com limitação técnica)
 source_extracted_at: 2026-05-30
 ---
@@ -34,7 +34,7 @@ CONCLUSÃO — frase verbatim
 
 "X) Exame parcialmente limitado por [interposição gasosa abundante / biotipo desfavorável / movimentação respiratória / janela acústica precária]. Foi possível caracterizar [SEGMENTOS AVALIADOS], com [achados ou normalidade nesses segmentos]. Os segmentos [SEGMENTOS NÃO CARACTERIZADOS — ex: terço médio da artéria renal esquerda / artéria renal acessória] não foram adequadamente avaliados nesta janela.
 
-X) Sugere-se complementação com angiotomografia ou angiorressonância das artérias renais caso a suspeita clínica persista, a critério do médico assistente."
+X) Convém, a critério clínico, complementar com angiotomografia ou angiorressonância das artérias renais, caso a suspeita clínica persista, para caracterização vascular."
 
 ═══════════════════════════════════════════════════
 QUANDO ADICIONAR ESTE BLOCO À CONCLUSÃO

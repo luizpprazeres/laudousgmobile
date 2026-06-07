@@ -6,7 +6,7 @@ tags: [aorta, abdominal, normal, frase-inserivel]
 priority: 50
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: Convenção radiológica brasileira (frase comum em Doppler renal)
 source_extracted_at: 2026-05-30
 ---

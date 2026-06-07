@@ -6,7 +6,7 @@ tags: [doppler, renal, conclusao, estenose, hipertensao-renovascular]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM 2023 — Native Renal Artery Duplex §4.1 (criteria for significant stenosis ≥60%) + JVB 2005 — Estenose artéria renal, validação de critérios
 source_extracted_at: 2026-05-30
 ---
@@ -27,7 +27,7 @@ CENÁRIO 3 — Padrão tardus-parvus distal (IR < 0,55):
 "X) Padrão espectral intrarrenal compatível com estenose proximal (padrão tardus-parvus à [DIREITA/ESQUERDA], com IR de ___)."
 
 RECOMENDAÇÃO (incluir SOMENTE se médico mencionou contexto clínico de avaliação para intervenção):
-"X) Sugere-se correlação clínica e, a critério do médico assistente, avaliação para angiotomografia ou arteriografia renal."
+"X) Convém, a critério clínico, complementar com angiotomografia ou arteriografia renal para confirmação diagnóstica e planejamento terapêutico."
 
 CRITÉRIOS DIAGNÓSTICOS (referência):
 - VPS > 250 cm/s na artéria renal principal: critério primário (acurácia 87% — JVB 2005).
