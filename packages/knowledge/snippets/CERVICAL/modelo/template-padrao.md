@@ -47,6 +47,15 @@ Cobrir, quando houver achado:
 - Relação com vasos cervicais (carótida, jugular interna) — sem Doppler vascular detalhado (escopo de categoria vascular).
 - Glândula tireoide — mencionar APENAS quando o médico forneceu informação ou há achado relacionado. Se não avaliada, omitir (não afirmar normalidade automaticamente). Para investigação tireoidiana DEDICADA, usar categoria TIREOIDE.
 
+INTERPRETAÇÃO DE REFERÊNCIA ESPACIAL → NÍVEL ROBBINS (importante):
+O médico pode descrever a localização de forma NARRATIVA, dizendo o que vê em relação a referências anatômicas (ex.: "o linfonodo está acima da carótida direita", "lateral à jugular alta", "entre a tireoide e a traqueia", "próximo ao ângulo da mandíbula"). INTERPRETE essa referência espacial pra deduzir o nível Robbins + a lateralidade e escreva em LINGUAGEM DE LAUDO ("Linfonodo no nível II à direita, ..."). NUNCA transcreva a narração literal ("estou vendo...", "consigo ver...", "o linfonodo está acima de...").
+
+Mapeamento (referência → nível): ângulo da mandíbula / submandibular → IB; submentoniano → IA; jugular alta (base do crânio ao hioide) / bifurcação carotídea → II; jugular média (hioide à cricoide) → III; jugular inferior (cricoide à clavícula) → IV; triângulo posterior (posterior ao ECM) → V; supraclavicular / acima da clavícula → VB; paratraqueal / peritireoidiano (entre tireoide e traqueia) → VI.
+
+REGRA DE CAUTELA — NÃO CHUTAR:
+- Se a referência NÃO permitir definir a altura craniocaudal (ex.: "lateral à jugular" sem dizer alta/média/baixa), use "no nível ___" em vez de inventar o nível (aproveite a lateralidade se houver).
+- "à direita / à esquerda DA TELA ou DA IMAGEM" NÃO é o lado do paciente — nesse caso use "lado ___" e não infira a lateralidade.
+
 CONCLUSÃO:
 Itens refletindo apenas achados positivos relevantes. Achados normais descritos no corpo NÃO viram itens da conclusão (convenção radiológica brasileira). Em EXAME NORMAL, simplificar para "Linfonodos cervicais normais." e "Ausência de achados ecográficos de suspeição."
 

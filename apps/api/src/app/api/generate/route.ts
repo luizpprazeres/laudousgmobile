@@ -24,6 +24,8 @@ import {
   ensureAmnioticConclusionLine,
 } from "@/server/pipeline/amnioticFluidGuard";
 import { stripSpuriousMagnitudeFlags } from "@/server/pipeline/magnitudeGuard";
+import { applyCervicalLevelSuggestions } from "@/server/pipeline/cervicalLevelGuard";
+import { stripObservationNarration } from "@/server/pipeline/cervicalNarrationGuard";
 import { runWriterStream } from "@/server/pipeline/writer";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
 import {
@@ -738,6 +740,14 @@ export async function POST(req: Request) {
         finalText,
         reqInput.consolidated_transcript ?? reqInput.raw_input,
       );
+      // CERVICAL: (3) remove narração de observação vazada ("estou vendo...") que
+      // o LLM transcreveu literal em vez de interpretar; (2) sugere o nível Robbins
+      // de referência anatômica inequívoca (ângulo mandíbula→IB, supraclavicular→VB),
+      // marcando com [REVISAR] pra o médico confirmar. Ver cervical*Guard.
+      if (effectiveCategory === "CERVICAL") {
+        finalText = stripObservationNarration(finalText);
+        finalText = applyCervicalLevelSuggestions(finalText);
+      }
       // Guard determinístico de PESO FETAL: o LLM descarta o item de conclusão
       // do peso (<P10/P.I.G., <P3+Gratacós, >P95/G.I.G.) mesmo capturado pelo
       // structurer. Roda APÓS o líquido e ANTES do Doppler (ordem da conclusão:
