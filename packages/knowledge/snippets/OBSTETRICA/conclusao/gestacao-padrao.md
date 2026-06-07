@@ -11,6 +11,5 @@ source_extracted_at: 2026-05-20
 source_lines: 78-80
 ---
 
-CONCLUSÃO:
 1) Gestação em torno de ____ semanas e ____ dias.
 {CONCLUSAO_LIQUIDO_AMNIOTICO}

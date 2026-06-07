@@ -22,7 +22,7 @@ GATILHOS DE APLICAÇÃO:
 
 Na conclusão: "Litíase da vesícula biliar."
 
-Na conclusão: "Canal colédoco acima dos limites usuais em sua porção intrapática, sem evidência de cálculos."
+Na conclusão: "Canal colédoco acima dos limites habituais, sem evidência de cálculos."
 
 Na conclusão: "Placas de ateromas na aorta abdominal."
 

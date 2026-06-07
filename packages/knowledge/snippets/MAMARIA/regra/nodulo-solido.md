@@ -21,6 +21,6 @@ GATILHOS DE APLICAÇÃO:
 
 3. NÓDULO SÓLIDO
 Usar exatamente este padrão:
-Imagem hipoecoica/isoecoica em mama [direita/esquerda], com margem regular/lobulada/circunscrita, maior eixo paralelo à pele, medindo X x Y x Z cm, situada [localização], às "HH horas", distando A cm do seu centro até a pele e B cm até o mamilo.
+Imagem hipoecoica/isoecoica em mama [direita/esquerda], com margem circunscrita/microlobulada/irregular/espiculada, maior eixo paralelo à pele, medindo X x Y x Z cm, situada [localização], às "HH horas", distando A cm do seu centro até a pele e B cm até o mamilo.
 
 Se o usuário não informar "maior eixo paralelo à pele", não escrever isso.

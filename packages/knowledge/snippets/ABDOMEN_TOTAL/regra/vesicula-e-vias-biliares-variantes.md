@@ -27,7 +27,7 @@ Na conclusão: "Litíase da vesícula biliar."
 
 7. COLÉDOCO ALARGADO
 No corpo: "Canal hepático de calibre normal e canal colédoco medindo 0.8 centímetros."
-Na conclusão: "Canal colédoco acima dos limites usuais em sua porção intrapática, sem evidência de cálculos."
+Na conclusão: "Canal colédoco acima dos limites habituais, sem evidência de cálculos."
 
 16. COLECISTECTOMIA
 No corpo: Ausência da imagem da vesícula biliar (paciente submetida a colecistectomia).

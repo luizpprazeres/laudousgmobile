@@ -20,7 +20,9 @@ GATILHOS DE APLICAÇÃO:
 - BI-RADS
 
 Imagem sólida unilateral:
-Imagem sólida em mama esquerda (Categoria BI-RADS® 3).
+Imagem sólida em mama esquerda (Categoria BI-RADS® {N}).
 
 Imagens sólidas bilaterais:
-Imagens sólidas bilaterais, de características semelhantes, sendo a maior localizada no quadrante inferolateral da mama direita (Categoria BI-RADS® 4A).
+Imagens sólidas bilaterais, de características semelhantes, sendo a maior localizada no quadrante inferolateral da mama direita (Categoria BI-RADS® {N}).
+
+[{N} = categoria informada pelo médico. NUNCA inferir/inventar — incluir o BI-RADS apenas quando o médico ditou (ver regra birads-nao-inferir). Sem categoria ditada: omitir o parêntese.]

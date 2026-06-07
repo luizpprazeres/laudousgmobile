@@ -11,5 +11,4 @@ source_extracted_at: 2026-05-20
 source_lines: 98-99
 ---
 
-CONCLUSÃO:
 Gestação em torno de ____ semanas e ____ dias.
