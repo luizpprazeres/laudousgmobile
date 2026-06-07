@@ -23,24 +23,27 @@ USAR ESTA CONCLUSÃO quando o médico DOCUMENTOU achados ecográficos que JUSTIF
 
 A presença de SINAIS DE ALTA RELEVÂNCIA (microcalcificações, necrose central, vascularização aberrante, extravasamento extracapsular, perda completa do hilo associada a outros achados) habitualmente leva a essa conclusão. SINAIS COMPLEMENTARES (eixo curto aumentado, forma arredondada, cortical espessada) sozinhos raramente justificam — a integração é juízo clínico.
 
-ATENÇÃO: a conclusão diz "características SUSPEITAS de atipia/malignidade" — NUNCA diz "linfonodo metastático" ou "linfomatoso" (decisão histopatológica). Diagnóstico definitivo requer histopatologia.
+ATENÇÃO: a conclusão diz "características ecográficas suspeitas" — NUNCA diz "linfonodo metastático" ou "linfomatoso" (decisão histopatológica). Diagnóstico definitivo requer histopatologia.
 
 ═══════════════════════════════════════════════════
 FRASE VERBATIM
 ═══════════════════════════════════════════════════
 
 CENÁRIO 1 — Linfonodo único suspeito:
-"X) Linfonodo em [LADO] cervical, nível [Robbins], medindo ___ x ___ mm, com características ecográficas suspeitas de atipia, caracterizadas por [LISTAR ACHADOS: perda do hilo / forma arredondada (razão S/L = ___) / microcalcificações / necrose central / vascularização periférica / outro]."
+"X) Linfonodo com características ecográficas suspeitas no nível ___, à direita/à esquerda, caracterizado por ___ [DESCREVER OS ACHADOS PRINCIPAIS conforme presentes: perda do hilo ecogênico, forma arredondada, microcalcificações, necrose central, entre outros]."
 
-"X) Recomenda-se avaliação clínica e correlação com exames complementares para definição diagnóstica."
+"X) Convém, a critério clínico, complementar com exames laboratoriais com o objetivo de continuar a investigação."
 
 CENÁRIO 2 — Múltiplos linfonodos suspeitos (conglomerado):
-"X) Múltiplos linfonodos cervicais aumentados em [LADO/BILATERAL], predominantes nos níveis [N], com características ecográficas suspeitas de atipia (descrever critérios principais). O maior medindo ___ x ___ mm."
+"X) Múltiplos linfonodos cervicais aumentados, com características ecográficas suspeitas, predominantemente nos níveis ___, à direita, à esquerda ou bilateralmente, apresentando ___."
+(Evitar repetir o termo "caracterizados por" mais de uma vez na mesma frase.)
 
-"X) Recomenda-se avaliação clínica e correlação com exames complementares (TC/RNM cervical, citologia ou biópsia) conforme conduta da equipe assistente."
+"X) Convém, a critério clínico, complementar com tomografia computadorizada da região cervical ou biópsia por agulha fina, com o objetivo de continuar a investigação."
 
 CENÁRIO 3 — Achado supraclavicular (alto risco mesmo < 10 mm):
-"X) Linfonodo supraclavicular à [esquerda/direita] (nível VB), medindo ___ x ___ mm, com características [DESCRITAS]. Localização anatômica de relevância clínica reforça necessidade de investigação."
+"X) Linfonodo supraclavicular à direita/à esquerda (nível VB), com características ecográficas suspeitas, apresentando ___. A localização anatômica de relevância clínica reforça a necessidade de investigação."
+
+"X) Convém, a critério clínico, complementar com tomografia computadorizada da região cervical ou biópsia por agulha fina, com o objetivo de continuar a investigação."
 
 ═══════════════════════════════════════════════════
 LISTAR ACHADOS POSITIVOS (entre os critérios encontrados)
@@ -60,9 +63,9 @@ Critérios a citar conforme presentes nos achados do médico:
 NÃO INVENTAR
 ═══════════════════════════════════════════════════
 
-- NÃO afirmar "linfonodo metastático" ou "linfomatoso" — usar APENAS "suspeito de atipia/malignidade".
+- NÃO afirmar "linfonodo metastático" ou "linfomatoso" — usar APENAS "características ecográficas suspeitas".
 - NÃO sugerir tipo histológico ("provável carcinoma papilar", "linfoma") sem dado clínico/histológico.
-- NÃO recomendar tipo específico de biópsia (PAAF, core, exérese) — sugerir "avaliação clínica para definição diagnóstica" genérica.
+- A recomendação segue as frases dos cenários (correlação clínica; TC cervical ou biópsia por agulha fina quando aplicável). NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).
 - NÃO estimar grau de risco em porcentagem.
 
 ═══════════════════════════════════════════════════

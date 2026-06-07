@@ -35,10 +35,10 @@ FRASE VERBATIM
 ═══════════════════════════════════════════════════
 
 CENÁRIO 1 — Linfonodos cervicais bilaterais reacionais:
-"X) Linfonodos cervicais bilaterais aumentados, predominantes em [NÍVEIS — ex: níveis II e III], com características ecográficas reacionais (hilo preservado, forma oval, padrão vascular hilar). Achados ecográficos sugestivos de etiologia inflamatória/reacional, sem critérios de atipia."
+"X) Linfonodos cervicais aumentados bilateralmente, mais evidentes nos níveis ___, porém mantendo forma habitual e vascularização normal. O diagnóstico mais provável é de linfadenopatia reacional/inflamatória, sem sinais ecográficos de suspeição."
 
-CENÁRIO 2 — Linfonodos unilaterais reacionais com contexto clínico:
-"X) Linfonodo proeminente em [LADO] cervical, nível [N], medindo ___ x ___ mm, com hilo ecogênico preservado e padrão vascular hilar. Achado compatível com padrão reacional. Sugere-se correlação clínica."
+CENÁRIO 2 — Linfonodo unilateral reacional:
+"X) Linfonodo cervical acima das dimensões habituais no nível ___, à direita/à esquerda, com hilo ecogênico preservado e padrão vascular hilar. O diagnóstico mais provável é padrão reacional, devendo ser correlacionado com a história clínica."
 
 CENÁRIO 3 — Múltiplos linfonodos, alguns reacionais e outros borderline:
 "X) Múltiplos linfonodos cervicais, predominantemente com características reacionais. Recomenda-se seguimento ecográfico em 3-6 meses para acompanhamento dimensional, conforme avaliação clínica."
@@ -58,4 +58,4 @@ NÃO INVENTAR
 - Não atribuir etiologia específica ("provável tuberculose", "provável mononucleose") sem dado clínico explícito.
 - Não recomendar antibiótico ou tratamento específico (decisão clínica).
 - Não classificar como "sem doença ativa" — usar "padrão reacional".
-- Não estender essa conclusão a linfonodos com QUALQUER critério de atipia (forma arredondada, perda do hilo, microcalcificações).
+- Não estender essa conclusão a linfonodos com QUALQUER critério ecográfico de suspeição (forma arredondada, perda do hilo, microcalcificações).

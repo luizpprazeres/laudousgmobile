@@ -15,12 +15,13 @@ GATILHOS DE APLICAÇÃO: "exame cervical normal", "sem linfonodomegalia", "linfo
 
 CONCLUSÃO — ULTRASSONOGRAFIA CERVICAL SEM ALTERAÇÕES SIGNIFICATIVAS
 
-Use a frase verbatim quando todos os parâmetros estão dentro da normalidade:
+Use as frases verbatim (itens separados) quando todos os parâmetros estão dentro da normalidade:
 
-"X) Ultrassonografia cervical sem alterações significativas. Não foram identificados linfonodos com características ecográficas atípicas, massas ou coleções na região cervical avaliada."
+"X) Linfonodos cervicais normais, sem achados ecográficos de suspeição."
+"X) Não foram identificadas massas ou coleções nas regiões cervicais avaliadas."
 
 Variante quando houver linfonodos reacionais (não-suspeitos):
-"X) Discretos linfonodos cervicais bilaterais, com características ecográficas reacionais (hilo preservado, forma oval, padrão vascular hilar, eixo curto < 10 mm), sem critérios de atipia."
+"X) Discretos linfonodos cervicais bilaterais, com características ecográficas reacionais (hilo preservado, forma oval, padrão vascular hilar, eixo curto < 10 mm), sem critérios ecográficos de suspeição."
 
 ═══════════════════════════════════════════════════
 CRITÉRIOS PARA CONSIDERAR NORMAL
@@ -50,7 +51,7 @@ QUANDO O EXAME É TECNICAMENTE LIMITADO
 
 Se o médico mencionou limitação técnica (cicatriz cirúrgica, biotipo desfavorável, edema), declarar honestamente em vez de afirmar normalidade plena:
 
-"X) Avaliação ultrassonográfica da região cervical, parcialmente limitada por [LIMITAÇÃO], sem identificação de linfonodos com características atípicas nas regiões adequadamente caracterizadas. Sugere-se correlação clínica e, se a suspeita clínica persistir, considerar complementação com tomografia ou ressonância cervical."
+"X) Avaliação ultrassonográfica da região cervical, parcialmente limitada por [LIMITAÇÃO], sem identificação de linfonodos com características ecográficas suspeitas nas regiões adequadamente caracterizadas. Sugere-se correlação clínica e, se a suspeita clínica persistir, considerar complementação com tomografia ou ressonância cervical."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

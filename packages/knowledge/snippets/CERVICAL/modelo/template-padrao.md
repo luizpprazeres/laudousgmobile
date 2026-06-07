@@ -37,16 +37,18 @@ ESTRUTURA OBRIGATÓRIA DO LAUDO
 COMENTÁRIOS:
 Exame realizado com transdutor linear de alta frequência (7-15 MHz) em modos B e Doppler colorido. Avaliados os linfonodos cervicais bilateralmente segundo a classificação de Robbins (níveis I a VI), com análise de tamanho, forma, ecotextura, hilo, padrão vascular e relação com estruturas adjacentes. Estudo correlacional com a história clínica.
 
-OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
-1. Linfonodos cervicais por nível (Robbins I-VI), bilateral.
-2. Para cada linfonodo suspeito: dimensões, eixo curto, relação eixo curto/longo (S/L), presença/ausência de hilo, padrão vascular Doppler, ecogenicidade cortical, microcalcificações, necrose central.
-3. Massas extra-linfonodais cervicais: localização anatômica, dimensões, ecotextura, padrão Doppler.
-4. Cistos cervicais: localização, dimensões, conteúdo (anecoico/turvo), parede.
-5. Relação com vasos cervicais (carótida, jugular interna) — sem caracterizar Doppler vascular detalhado (escopo de categoria vascular).
-6. Glândula tireoide: APENAS quando explicitamente examinada e ditada pelo médico. NÃO afirmar normalidade da tireoide automaticamente — se não foi avaliada, omitir do laudo. Para investigação tireoidiana DEDICADA, usar categoria TIREOIDE.
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS (texto descritivo corrido — SEM numeração e SEM títulos de campo):
+
+Gerar o corpo em PARÁGRAFOS DESCRITIVOS diretos, conforme ditado pelo médico. NÃO usar rótulos como "Massas extranodais cervicais:", "Cistos cervicais:" ou "Tireoide:" no corpo — esse formato induz a IA a reproduzir os títulos literalmente. Descrever o achado direto; o diagnóstico/classificação aparece na CONCLUSÃO (ex.: corpo descreve o achado → conclusão "Cisto cervical no nível IIA à direita").
+
+Cobrir, quando houver achado:
+- Linfonodos cervicais por nível (Robbins I-VI), bilateral — dimensões, eixo curto, relação eixo curto/longo (S/L), hilo, padrão vascular Doppler, ecogenicidade cortical, microcalcificações, necrose central.
+- Massas extra-linfonodais e cistos cervicais — descrever diretamente (localização, dimensões, ecotextura, conteúdo, parede, padrão Doppler), sem título de seção.
+- Relação com vasos cervicais (carótida, jugular interna) — sem Doppler vascular detalhado (escopo de categoria vascular).
+- Glândula tireoide — mencionar APENAS quando o médico forneceu informação ou há achado relacionado. Se não avaliada, omitir (não afirmar normalidade automaticamente). Para investigação tireoidiana DEDICADA, usar categoria TIREOIDE.
 
 CONCLUSÃO:
-Estruturada com numeração de itens (1, 2, 3...) refletindo apenas achados positivos relevantes. Achados normais descritos no corpo NÃO viram itens da conclusão (convenção radiológica brasileira).
+Itens refletindo apenas achados positivos relevantes. Achados normais descritos no corpo NÃO viram itens da conclusão (convenção radiológica brasileira). Em EXAME NORMAL, simplificar para "Linfonodos cervicais normais." e "Ausência de achados ecográficos de suspeição."
 
 ═══════════════════════════════════════════════════
 INDICAÇÕES CLÍNICAS COMUNS (orientam ênfase do laudo)
@@ -65,5 +67,5 @@ NÃO INVENTAR
 
 - Não classificar linfonodo como "metastático" ou "linfomatoso" sem dado clínico/histopatológico — usar "suspeito de malignidade" com base em critérios ecográficos.
 - Não atribuir nível Robbins sem localização anatômica clara.
-- Não recomendar conduta cirúrgica/biópsia específica — sugerir avaliação clínica e correlação com a equipe assistente.
+- Seguir as recomendações das conclusões (correlação clínica; exames laboratoriais; TC cervical ou biópsia por agulha fina quando aplicável). NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).
 - Não estender achados a glândulas salivares ou tireoide se essas estruturas não foram detalhadamente avaliadas — apontar limitação técnica quando aplicável.
