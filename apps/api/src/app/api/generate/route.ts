@@ -19,6 +19,7 @@ import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import { applyCommandGuard } from "@/server/pipeline/commandGuard";
+import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionItemsGuard";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -772,6 +773,9 @@ export async function POST(req: Request) {
         // pra o vaso certo (umbilical/ACM manual, uterinas auto, perfil=1/RCP).
         finalText = correctDopplerConclusion(finalText, extractDopplerData(dopplerInput));
       }
+      // Guard transversal: remove itens numerados de conclusão cujo conteúdo é
+      // só placeholder ("____"). Preserva placeholders dentro de itens reais.
+      finalText = removeEmptyConclusionItems(finalText);
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
