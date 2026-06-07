@@ -6,7 +6,7 @@ tags: [venoso, mmii, insuficiencia, refluxo, varizes, safena, ceap]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §6 (superficial venous insufficiency) + CEAP 2020 + JVB Avaliação refluxo
 source_extracted_at: 2026-05-30
 ---
@@ -17,22 +17,10 @@ CONCLUSÃO — INSUFICIÊNCIA VENOSA CRÔNICA / REFLUXO
 
 Estrutura:
 
-1. CARACTERIZAÇÃO DO ACHADO PRINCIPAL:
-"X) Sinais ecográficos de insuficiência venosa do sistema [superficial/perfurante] em membro inferior [DIREITO/ESQUERDO/BILATERAL], caracterizado por:"
+"X) Sinais ecográficos de insuficiência venosa do sistema [superficial/perfurante] em membro inferior [DIREITO/ESQUERDO/BILATERAL]. Junção safeno-femoral [DIREITA/ESQUERDA] com refluxo de ___ segundos (incompetência). Safena magna [DIREITA/ESQUERDA] com refluxo em todo o trajeto desde a JSF até [terço médio/distal/perna], calibre máximo de ___ mm. [Safena parva [DIREITA/ESQUERDA] com refluxo de ___ segundos.] [Veia perfurante incompetente identificada na face [medial/lateral/posterior] da [coxa/joelho/perna], com refluxo de ___ segundos e diâmetro de ___ mm.] [Tributárias varicosas identificadas na face [medial/lateral] da [coxa/perna].] O diagnóstico mais provável é insuficiência venosa crônica do sistema [superficial/perfurante]."
 
-2. SEGMENTOS COMPROMETIDOS (descrever cada):
-
-- "Junção safeno-femoral [DIREITA/ESQUERDA] com refluxo de ___ segundos (incompetência)."
-- "Safena magna direita com refluxo em todo o trajeto desde a JSF até [terço médio/distal/perna]; calibre máximo de ___ mm."
-- "Safena magna esquerda: idem com valores."
-- "Safena parva [DIREITA/ESQUERDA] com refluxo de ___ segundos."
-- "Veia perfurante incompetente identificada na face [medial/lateral/posterior] da [coxa/joelho/perna], com refluxo de ___ segundos e diâmetro de ___ mm."
-
-3. VARIZES TRIBUTÁRIAS (se mencionadas):
-"Tributárias varicosas identificadas na face [medial/lateral] da [coxa/perna]."
-
-4. RECOMENDAÇÃO (apenas se médico mencionou contexto pré-operatório):
-"X) Achados compatíveis com doença venosa crônica do sistema superficial. Sugere-se avaliação por cirurgião vascular para definição de conduta."
+RECOMENDAÇÃO (apenas se médico mencionou contexto pré-operatório):
+"X) Convém, a critério clínico, prosseguir a avaliação com cirurgião vascular para definição de conduta terapêutica."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

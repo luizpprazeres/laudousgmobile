@@ -6,7 +6,7 @@ tags: [venoso, mmii, medidas, cartografia, mapeamento, pre-operatorio, safena]
 priority: 95
 priority_tier: universal
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §6 (pre-operative mapping) + JVB Identificação diâmetros safenas magnas
 source_extracted_at: 2026-05-30
 ---

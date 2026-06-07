@@ -6,7 +6,7 @@ tags: [refluxo, criterios, manobras, valsalva, compressao]
 priority: 75
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §4 (reflux measurement) + Coleridge-Smith criteria
 source_extracted_at: 2026-05-30
 ---

@@ -6,7 +6,7 @@ tags: [venoso, mmii, modelo, tvp, protocolo-restrito, dimero-d, urgencia]
 priority: 85
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §5 (DVT diagnostic protocol) + AIUM Practice Parameter for Peripheral Venous Ultrasound + ACR Appropriateness Criteria — Suspected Lower-Extremity DVT
 source_extracted_at: 2026-05-30
 ---

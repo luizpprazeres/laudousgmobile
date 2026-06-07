@@ -66,7 +66,7 @@ Quando o médico documentar dilatação ductal e juízo clínico de processo obs
 "Ducto de [Stensen/Wharton] de [glândula] dilatado, com calibre máximo de ___ mm. [Quando aplicável: associado a [cálculo / processo inflamatório a jusante / outro], sugerindo processo obstrutivo.]"
 
 Quando só houver dilatação leve sem causa identificada:
-"Ducto de [Stensen/Wharton] de [glândula] com calibre de ___ mm. Sugere-se correlação clínica."
+"Ducto de [Stensen/Wharton] de [glândula] com calibre de ___ mm. Convém, a critério clínico, complementar com correlação clínica."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

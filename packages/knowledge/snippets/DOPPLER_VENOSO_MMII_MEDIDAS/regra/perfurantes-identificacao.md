@@ -6,7 +6,7 @@ tags: [perfurantes, incompetentes, localizacao, mapeamento, ressecciap]
 priority: 75
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §6.3 (perforator veins) + JVB Localização perfurantes
 source_extracted_at: 2026-05-30
 ---

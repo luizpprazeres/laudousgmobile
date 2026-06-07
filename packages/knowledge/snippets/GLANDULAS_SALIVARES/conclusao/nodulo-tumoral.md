@@ -6,7 +6,7 @@ tags: [glandulas-salivares, nodulo, tumor, warthin, pleomorfico, conclusao]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM/ACR Practice Parameter for the Performance of an Ultrasound Examination of the Extracranial Head and Neck + Bialek EJ et al — US of the Major Salivary Glands: Anatomy and Spatial Relationships, Pathologic Conditions, and Pitfalls (RadioGraphics 2006;26:745-763; doi 10.1148/rg.263055024) + ESR Salivary Gland Imaging Guidelines
 source_extracted_at: 2026-05-30
 ---
@@ -49,7 +49,7 @@ FRASES VERBATIM
 CENÁRIO 1 — Nódulo único de aspecto benigno (sem rotular tipo específico):
 "X) Nódulo sólido em [lobo superficial / profundo] da glândula parótida [direita / esquerda], medindo ___ x ___ x ___ mm, com contornos regulares e bem definidos, ecotextura [hipo/iso]ecoica homogênea, vascularização periférica preservada ao Doppler. Características ecográficas predominantemente benignas, podendo estar relacionado a etiologias como adenoma pleomórfico ou outras lesões sólidas benignas."
 
-"X) Sugere-se correlação clínica e avaliação por especialista em cabeça/pescoço para definição diagnóstica."
+"X) Convém, a critério clínico, prosseguir a avaliação com especialista em cabeça/pescoço para definição diagnóstica e etiológica."
 
 CENÁRIO 2 — Nódulo com características sugestivas de Warthin (parotídeo, com áreas císticas):
 "X) Nódulo em [lobo superficial] de glândula parótida [lado], medindo ___ x ___ x ___ mm, com contornos regulares, ecotextura heterogênea com áreas císticas/anecoicas internas, vascularização ao Doppler. Características ecográficas compatíveis com lesão de comportamento benigno, podendo corresponder a tumor de Warthin (especialmente em correlação clínica com tabagismo, sexo masculino, idade > 50 anos)."
@@ -60,7 +60,7 @@ CENÁRIO 3 — Múltiplos nódulos (suspeita Warthin bilateral ou outras):
 CENÁRIO 4 — Nódulo com características suspeitas de malignidade:
 "X) Nódulo em [glândula], [lobo se parótida], medindo ___ x ___ x ___ mm, com contornos IRREGULARES e/ou mal definidos, ecotextura heterogênea, [com/sem] áreas císticas/necróticas internas, vascularização [aumentada/caótica] ao Doppler. Características ecográficas suspeitas de atipia, sem permitir definição diagnóstica por imagem isoladamente."
 
-"X) Recomenda-se avaliação imediata por especialista em cabeça/pescoço para definição diagnóstica conforme conduta da equipe assistente."
+"X) Convém, a critério clínico, prosseguir a avaliação com especialista em cabeça/pescoço para definição diagnóstica, dado o padrão ecográfico suspeito."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

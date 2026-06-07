@@ -6,7 +6,7 @@ tags: [glandulas-salivares, sialolitiase, calculo, ducto-stensen, ducto-wharton,
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM Practice Parameter Head and Neck + Yousem DM Kraut MA Chalian AA — Major salivary gland imaging (Radiology 2000;216:19-29)
 source_extracted_at: 2026-05-30
 ---
@@ -33,13 +33,13 @@ CENÁRIO 1 — Cálculo intraductal isolado (sem inflamação ativa):
 CENÁRIO 2 — Cálculo + sialoadenite obstrutiva:
 "X) Cálculo no ducto de [Stensen / Wharton] de glândula [parótida / submandibular] [lado], medindo ___ mm, associado a sinais de sialoadenite obstrutiva (glândula aumentada, ecotextura hipoecoica, hipervascularização, dilatação ductal de ___ mm)."
 
-"X) Sugere-se correlação clínica e avaliação por especialista em cabeça/pescoço ou cirurgião buco-maxilo-facial para definição da conduta."
+"X) Convém, a critério clínico, prosseguir a avaliação com especialista em cabeça/pescoço ou cirurgião buco-maxilo-facial para definição da conduta sobre o cálculo e o processo obstrutivo associado."
 
 CENÁRIO 3 — Múltiplos cálculos:
 "X) Múltiplos cálculos em [ducto / corpo glandular de] glândula [salivar], o maior medindo ___ mm. Dilatação ductal segmentar com calibre máximo de ___ mm."
 
 CENÁRIO 4 — Cálculo pequeno SEM sombra acústica clara:
-"X) Imagem hiperecogênica em [ducto / corpo glandular] medindo ___ mm, sem sombra acústica posterior definida, sugestiva de cálculo de pequenas dimensões. Sugere-se correlação clínica e, se necessária confirmação, sialotomografia ou sialorressonância."
+"X) Imagem hiperecogênica em [ducto / corpo glandular] medindo ___ mm, sem sombra acústica posterior definida, sugestiva de cálculo de pequenas dimensões. Convém, a critério clínico, complementar com sialotomografia ou sialorressonância para confirmação e melhor caracterização do cálculo."
 
 ═══════════════════════════════════════════════════
 ATENÇÃO TÉCNICA

@@ -6,7 +6,7 @@ tags: [glandulas-salivares, conclusao, normal, parotida-normal, submandibular-no
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM Practice Parameter Head and Neck §3 (normal salivary glands criteria)
 source_extracted_at: 2026-05-30
 ---
@@ -64,7 +64,7 @@ EXAME TECNICAMENTE LIMITADO
 ═══════════════════════════════════════════════════
 
 Quando médico mencionou limitação técnica:
-"X) Glândulas salivares avaliadas sem evidência de alteração ecográfica nas regiões adequadamente caracterizadas. Atenção: o lobo profundo da parótida é parcialmente inacessível ao US convencional [se aplicável: e, no presente exame, achados nessa topografia não puderam ser caracterizados]. Sugere-se complementação com tomografia computadorizada ou ressonância se a suspeita clínica persistir."
+"X) Glândulas salivares avaliadas sem evidência de alteração ecográfica nas regiões adequadamente caracterizadas. Atenção: o lobo profundo da parótida é parcialmente inacessível ao US convencional [se aplicável: e, no presente exame, achados nessa topografia não puderam ser caracterizados]. Convém, a critério clínico, complementar com tomografia computadorizada ou ressonância magnética para avaliação do lobo profundo caso a suspeita clínica persista."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

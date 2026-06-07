@@ -6,7 +6,7 @@ tags: [venoso, tvp, cronica, sequela, recanalizacao, sindrome-pos-trombotica]
 priority: 60
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §7 (chronic venous changes post-DVT)
 source_extracted_at: 2026-05-30
 ---

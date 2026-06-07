@@ -6,7 +6,7 @@ tags: [venoso, mmii, conclusao, normal, sem-tvp, sem-refluxo]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §3 (normal study criteria)
 source_extracted_at: 2026-05-30
 ---

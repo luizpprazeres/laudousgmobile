@@ -6,7 +6,7 @@ tags: [doppler, venoso, mmii, modelo, tvp, insuficiencia, ceap]
 priority: 95
 priority_tier: universal
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 — Varicose Vein Clinical Practice Guidelines + CEAP 2020 + AIUM Practice Parameters
 source_extracted_at: 2026-05-30
 ---

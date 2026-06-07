@@ -6,7 +6,7 @@ tags: [venoso, tvp, trombose, aguda, urgencia]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §5 (DVT diagnosis) + AIUM Practice Parameter for Peripheral Venous Ultrasound
 source_extracted_at: 2026-05-30
 ---
@@ -26,17 +26,10 @@ Se a idade do trombo NÃO estiver clara nos achados (sem cronologia clínica E s
 
 Estrutura quando critérios de TVP aguda são atendidos:
 
-1. CARACTERIZAÇÃO:
-"X) Sinais ecográficos de trombose venosa profunda aguda em membro inferior [DIREITO/ESQUERDO/BILATERAL], envolvendo [listar segmentos: ex: veia femoral comum, femoral e poplítea].
+"X) Sinais ecográficos de trombose venosa profunda aguda em membro inferior [DIREITO/ESQUERDO/BILATERAL], envolvendo [listar segmentos: ex: veia femoral comum, femoral e poplítea]. Veia não compressível ao toque do transdutor, com material trombótico hipoecogênico intraluminal, distensão venosa, parede venosa fina e ausência de fluxo espontâneo — achados compatíveis com evento agudo/recente. [Topografia: trombose proximal, envolvendo veias femoral, ilíaca ou poplítea / trombose distal isolada, envolvendo apenas tibiais ou fibulares.] O diagnóstico mais provável é trombose venosa profunda aguda."
 
-Características: veia não compressível ao toque do transdutor, com material trombótico hipoecogênico intraluminal, distensão venosa, parede venosa fina e ausência de fluxo espontâneo — achados compatíveis com evento agudo/recente."
-
-2. EXTENSÃO:
-- TVP proximal: envolve veias femoral, ilíaca ou poplítea.
-- TVP distal isolada (apenas tibiais ou fibulares).
-
-3. RECOMENDAÇÃO:
-"X) Sugere-se avaliação médica URGENTE para definição de conduta terapêutica, conforme protocolo clínico do médico assistente."
+RECOMENDAÇÃO:
+"X) Convém, com caráter de urgência, avaliação médica para definição de conduta terapêutica, conforme protocolo clínico do médico assistente."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

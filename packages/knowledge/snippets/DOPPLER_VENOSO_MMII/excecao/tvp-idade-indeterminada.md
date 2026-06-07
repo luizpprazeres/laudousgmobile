@@ -6,7 +6,7 @@ tags: [venoso, tvp, idade-indeterminada, sem-datar, achado-isolado, ecogenicidad
 priority: 65
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SVS/AVF/AVLS 2023 §5.3 (trombose de idade indeterminada) + AIUM Practice Parameter for Peripheral Venous Ultrasound
 source_extracted_at: 2026-05-30
 ---
@@ -37,7 +37,7 @@ CONCLUSÃO — frase verbatim
 
 "X) Sinais ecográficos de trombose venosa profunda em [SEGMENTO — ex: veia femoral direita], caracterizada por incompressibilidade ao toque do transdutor e presença de material trombótico intraluminal, sem critérios ecográficos específicos para datação do evento (idade indeterminada nesta avaliação isolada).
 
-X) Sugere-se correlação clínica para avaliar cronologia (sintomatologia, exames prévios) e definição de conduta pelo médico assistente."
+X) Convém, a critério clínico, complementar com correlação de sintomatologia e exames prévios para estabelecer a cronologia do evento e orientar a definição de conduta pelo médico assistente."
 
 ═══════════════════════════════════════════════════
 QUANDO USAR vs OUTROS BLOCOS DE TVP

@@ -6,7 +6,7 @@ tags: [glandulas-salivares, abscesso, colecao, parotidite, urgencia, complicacao
 priority: 85
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM/ACR Practice Parameter for the Performance of an Ultrasound Examination of the Extracranial Head and Neck + Bialek EJ et al — US of the Major Salivary Glands (RadioGraphics 2006;26:745-763; doi 10.1148/rg.263055024)
 source_extracted_at: 2026-05-30
 ---
@@ -43,17 +43,17 @@ CONCLUSÃO — frase verbatim
 CENÁRIO 1 — Abscesso bem definido:
 "X) Coleção líquida com debris e septações em glândula [parótida / submandibular] [direita / esquerda], medindo ___ x ___ x ___ mm, com parede espessada e hipervascularização periférica ao Doppler, em glândula com sinais de sialoadenite aguda associada (aumento volumétrico, ecotextura hipoecoica difusa, edema periglandular)."
 
-"X) Achados ecográficos compatíveis com ABSCESSO glandular. Sugere-se avaliação clínica URGENTE para definição de conduta."
+"X) Achados ecográficos compatíveis com ABSCESSO glandular. Convém, com caráter de urgência, avaliação clínica dirigida para definição de conduta."
 
 CENÁRIO 2 — Sialoadenite supurativa sem abscesso franco (fase inicial):
 "X) Glândula [parótida / submandibular] [lado] com sinais ecográficos de sialoadenite aguda, apresentando áreas focais hipoecoicas mal definidas, hipervascularização intensa e edema periglandular pronunciado. Sem coleção líquida organizada definida no presente exame."
 
-"X) Achados ecográficos compatíveis com sialoadenite supurativa/inflamatória ativa. Sugere-se avaliação clínica URGENTE — em pacientes diabéticos ou imunocomprometidos, considerar reavaliação seriada para identificar evolução para abscesso."
+"X) Achados ecográficos compatíveis com sialoadenite supurativa/inflamatória ativa. Convém, com caráter de urgência, avaliação clínica dirigida para definição de conduta — em pacientes diabéticos ou imunocomprometidos, considerar reavaliação seriada para identificar evolução para abscesso."
 
 CENÁRIO 3 — Abscesso + cálculo obstrutivo associado:
 "X) Coleção líquida com debris em glândula [submandibular / parótida] [lado], medindo ___ x ___ x ___ mm, associada a cálculo ductal [no ducto de Wharton / Stensen] medindo ___ mm e dilatação ductal a montante."
 
-"X) Achados compatíveis com abscesso glandular secundário a sialoadenite obstrutiva por cálculo. Sugere-se avaliação clínica URGENTE por especialista (cabeça/pescoço ou cirurgião buco-maxilo-facial) para definição de conduta."
+"X) Achados compatíveis com abscesso glandular secundário a sialoadenite obstrutiva por cálculo. Convém, com caráter de urgência, avaliação por especialista em cabeça/pescoço ou cirurgião buco-maxilo-facial para definição de conduta sobre o abscesso e o cálculo obstrutivo."
 
 ═══════════════════════════════════════════════════
 DIFERENCIAR DE

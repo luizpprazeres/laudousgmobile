@@ -6,7 +6,7 @@ tags: [safena-magna, calibre, segmentos, jsf, mapeamento]
 priority: 75
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: JVB 2018 — Identificação diâmetros safena magna sem refluxo + SVS/AVF/AVLS 2023
 source_extracted_at: 2026-05-30
 ---
