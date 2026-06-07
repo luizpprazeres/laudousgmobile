@@ -6,7 +6,7 @@ tags: [cervical, linfonodo, criterios, malignidade, normal, suspeito]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: Ying M Ahuja A — Sonography of neck lymph nodes (Clin Radiol 2003;58:351-358) + Khanna R Sharma AD — Usefulness of US in evaluation of cervical lymphadenopathy + AIUM Practice Parameter Head and Neck §4
 source_extracted_at: 2026-05-30
 ---

@@ -6,7 +6,7 @@ tags: [cervical, modelo, template, linfonodos, regiao-cervical]
 priority: 95
 priority_tier: universal
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM Practice Parameter for the Performance of an Ultrasound Examination of the Head and Neck (2019) + Som PM Curtin HD imaging classification of cervical lymph nodes (Radiology 1999;212:749-756 — Robbins levels I-VI)
 source_extracted_at: 2026-05-30
 ---

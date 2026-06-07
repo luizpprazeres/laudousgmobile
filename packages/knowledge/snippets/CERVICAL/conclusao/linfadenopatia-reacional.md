@@ -6,7 +6,7 @@ tags: [cervical, conclusao, linfadenopatia, reacional, inflamatorio]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM Practice Parameter Head and Neck + Ying M Ahuja A — Sonography of neck lymph nodes (Clin Radiol 2003)
 source_extracted_at: 2026-05-30
 ---

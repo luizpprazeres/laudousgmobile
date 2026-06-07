@@ -6,7 +6,7 @@ tags: [cervical, linfonodos, robbins, niveis-cervicais, anatomia]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: Som PM Curtin HD Mancuso AA — Imaging-based classification for the cervical nodes (Radiology 1999;212:749-756) + AAO-HNS modified classification + AIUM Practice Parameter Head and Neck
 source_extracted_at: 2026-05-30
 ---

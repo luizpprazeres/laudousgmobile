@@ -6,7 +6,7 @@ tags: [cervical, conclusao, suspeito, malignidade, metastase, linfoma]
 priority: 85
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: Ying M Ahuja A — Sonography of neck lymph nodes (Clin Radiol 2003) + Khanna R Sharma AD — Cervical lymphadenopathy evaluation + AIUM Practice Parameter Head and Neck
 source_extracted_at: 2026-05-30
 ---

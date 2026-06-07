@@ -6,7 +6,7 @@ tags: [cervical, cisto, massa-cistica, adulto, branquial, neoplasia, atencao]
 priority: 85
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AAO-HNS Clinical Practice Guideline — Evaluation of the Neck Mass in Adults (Pynnonen MA et al, Otolaryngol Head Neck Surg 2017) + AIUM Practice Parameter Head and Neck
 source_extracted_at: 2026-05-30
 ---

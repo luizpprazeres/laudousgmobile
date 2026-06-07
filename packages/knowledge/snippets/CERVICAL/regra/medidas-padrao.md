@@ -6,7 +6,7 @@ tags: [cervical, medidas, eixo-curto, eixo-longo, dimensoes]
 priority: 75
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM Practice Parameter for Head and Neck §2 (mensuração linfonodal) + Ying M Ahuja A — Sonography of neck lymph nodes (Clin Radiol 2003)
 source_extracted_at: 2026-05-30
 ---
