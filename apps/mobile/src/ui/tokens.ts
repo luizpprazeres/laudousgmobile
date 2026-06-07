@@ -111,6 +111,10 @@ export const CATS = [
   { id: "VIAS_URINARIAS",        label: "Vias Urinárias",      color: "#06B6D4", sub: "Rins, ureteres, bexiga" },
   { id: "MUSCULOESQUELETICO_V2", label: "Musculoesquelético",  color: "#84CC16", sub: "Articulações e partes moles" },
   { id: "CERVICAL",              label: "Cervical",            color: "#0EA5E9", sub: "Linfonodos, massas e cistos cervicais" },
+  { id: "DOPPLER_VENOSO_MMII",   label: "Doppler Venoso MMII", color: "#3B82F6", sub: "TVP / insuficiência venosa" },
+  { id: "DOPPLER_ARTERIAL_MMII", label: "Doppler Arterial MMII", color: "#EF4444", sub: "Doença arterial periférica" },
+  { id: "DOPPLER_RENAL",         label: "Doppler Renal",       color: "#06B6D4", sub: "Artérias renais" },
+  { id: "GLANDULAS_SALIVARES",   label: "Glândulas Salivares", color: "#14B8A6", sub: "Parótidas e submandibulares" },
 ] as const;
 
 export type Category = (typeof CATS)[number];
