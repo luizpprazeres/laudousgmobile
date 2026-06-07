@@ -58,7 +58,7 @@ Para cada linfonodo significativo (não-normal), descrever:
 4. CARACTERÍSTICAS (presença/ausência de hilo, forma, ecogenicidade cortical, padrão vascular, microcalcificações).
 
 Exemplo verbatim:
-"Linfonodo em nível IIB à direita, medindo ___ x ___ mm, com hilo conservado, forma oval, padrão vascular hilar predominante."
+"Linfonodo no nível IIB à direita, medindo ___ x ___ mm, com hilo conservado, forma oval, padrão vascular hilar predominante."
 
 ═══════════════════════════════════════════════════
 GANGLIONAR PADRÃO DE DRENAGEM (referência — não inserir no laudo)

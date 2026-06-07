@@ -40,18 +40,18 @@ Aplicar SEMPRE que houver massa cística cervical em adulto, especialmente:
 CONCLUSÃO — frase verbatim
 ═══════════════════════════════════════════════════
 
-CENÁRIO 1 — Massa cística em adulto sem outros achados de atipia:
-"X) Lesão cística em região cervical [LADO], nível [Robbins], medindo ___ x ___ x ___ mm, com [PAREDE FINA E REGULAR / PAREDE ESPESSA / CONTEÚDO ANECOICO / CONTEÚDO HETEROGÊNEO / DEBRIS / SEPTAÇÕES — selecionar conforme descrição do médico]."
+CENÁRIO 1 — Massa cística em adulto sem outros achados de suspeição:
+"X) Lesão cística no nível [Robbins], à direita/à esquerda, medindo ___ x ___ x ___ mm, com [PAREDE FINA E REGULAR / PAREDE ESPESSA / CONTEÚDO ANECOICO / CONTEÚDO HETEROGÊNEO / DEBRIS / SEPTAÇÕES — selecionar conforme descrição do médico]."
 
 "X) Em adultos, massas císticas cervicais merecem investigação dirigida pois podem corresponder a diversas etiologias, incluindo lesões linfáticas metastáticas císticas (carcinoma de orofaringe ou tireoidiano). Sugere-se avaliação por especialista em cabeça/pescoço."
 
 CENÁRIO 2 — Massa cística com sinais suspeitos associados (parede espessa, componente sólido, debris):
-"X) Lesão cística em região cervical [LADO], nível [Robbins], medindo ___ x ___ x ___ mm, com características que justificam investigação dirigida ([listar sinais: parede espessa / componente sólido / debris / septações])."
+"X) Lesão cística no nível [Robbins], à direita/à esquerda, medindo ___ x ___ x ___ mm, com características que justificam investigação dirigida ([listar sinais: parede espessa / componente sólido / debris / septações])."
 
 "X) Recomenda-se avaliação por especialista em cabeça/pescoço para definição diagnóstica, incluindo pesquisa de sítio primário em orofaringe e tireoide quando indicado."
 
 CENÁRIO 3 — Cisto branquial / tireoglosso típico em jovem (< 35 anos, contexto clínico congruente):
-"X) Lesão cística cervical [LATERAL/MEDIAL] em nível [Robbins], medindo ___ x ___ x ___ mm, com características compatíveis com cisto [branquial / tireoglosso]. Em paciente jovem com apresentação clínica típica, achado de comportamento benigno."
+"X) Lesão cística cervical [LATERAL/MEDIAL] no nível [Robbins], medindo ___ x ___ x ___ mm, com características compatíveis com cisto [branquial / tireoglosso]. Em paciente jovem com apresentação clínica típica, achado de comportamento benigno."
 
 "X) Sugere-se correlação clínica e seguimento conforme conduta da equipe assistente."
 

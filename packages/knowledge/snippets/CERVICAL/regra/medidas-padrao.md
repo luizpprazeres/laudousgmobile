@@ -31,11 +31,11 @@ APRESENTAÇÃO NO CORPO DO LAUDO
 ═══════════════════════════════════════════════════
 
 Para linfonodos individualmente caracterizáveis:
-"Linfonodo em [LADO] nível [Robbins], medindo ___ x ___ mm (eixo curto x eixo longo), [DESCRIÇÃO DE CARACTERÍSTICAS]."
+"Linfonodo no nível [Robbins], à direita/à esquerda, medindo ___ x ___ mm (eixo curto x eixo longo), [DESCRIÇÃO DE CARACTERÍSTICAS]."
 
 Exemplos verbatim:
-- Linfonodo reacional: "Linfonodo em região cervical direita, nível IIA, medindo 8 x 18 mm, com hilo ecogênico preservado, padrão vascular hilar — sem critérios de atipia."
-- Linfonodo suspeito: "Linfonodo em região cervical esquerda, nível IV, medindo 14 x 19 mm, com perda do hilo, cortical hipoecoica difusa, padrão vascular periférico — características ecográficas suspeitas."
+- Linfonodo reacional: "Linfonodo no nível IIA à direita, medindo 8 x 18 mm, com hilo ecogênico preservado, padrão vascular hilar — sem critérios ecográficos de suspeição."
+- Linfonodo suspeito: "Linfonodo no nível IV à esquerda, medindo 14 x 19 mm, com perda do hilo, cortical hipoecoica difusa, padrão vascular periférico — características ecográficas suspeitas."
 
 ═══════════════════════════════════════════════════
 RAZÃO S/L (calculada quando aplicável)
@@ -46,7 +46,7 @@ S/L = eixo curto ÷ eixo longo
 
 INTERPRETAÇÃO:
 - S/L < 0,5: forma oval/alongada (típica de linfonodo normal).
-- S/L ≥ 0,5: forma arredondada (suspeita de atipia).
+- S/L ≥ 0,5: forma arredondada (sinal de suspeição).
 
 APRESENTAÇÃO: incluir como observação adicional somente quando S/L ≥ 0,5 OU quando o médico explicitamente mencionar o achado:
 "...razão eixo curto/longo de ___ (forma arredondada)."
@@ -58,10 +58,10 @@ LINFONODOS MÚLTIPLOS — COMO DESCREVER
 Quando houver vários linfonodos no mesmo nível:
 
 OPÇÃO A — Múltiplos com características semelhantes:
-"Múltiplos linfonodos em [LADO], nível [N], todos com características reacionais (hilo preservado, forma oval). O maior medindo ___ x ___ mm."
+"Múltiplos linfonodos no nível [N], à direita/à esquerda, todos com características reacionais (hilo preservado, forma oval). O maior medindo ___ x ___ mm."
 
 OPÇÃO B — Um suspeito + outros reacionais:
-"Linfonodo principal em [LADO], nível [N], medindo ___ x ___ mm, com características suspeitas (descrever). Adicionais linfonodos no mesmo nível, com aspecto reacional."
+"Linfonodo principal no nível [N], à direita/à esquerda, medindo ___ x ___ mm, com características suspeitas (descrever). Adicionais linfonodos no mesmo nível, com aspecto reacional."
 
 ═══════════════════════════════════════════════════
 NÃO MEDIR (REGRA)

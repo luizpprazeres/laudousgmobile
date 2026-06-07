@@ -61,7 +61,7 @@ SINAIS COMPLEMENTARES (sozinhos têm baixa especificidade):
 - Cortical espessada.
 - Crescimento documentado em estudo prévio (mencionar apenas se houver comparativo).
 
-REGRA: a integração desses achados é JUÍZO CLÍNICO do médico. Esta regra documenta os sinais; a conclusão final ("características reacionais" vs "características suspeitas de atipia") segue o que o médico declarou nos achados.
+REGRA: a integração desses achados é JUÍZO CLÍNICO do médico. Esta regra documenta os sinais; a conclusão final ("características reacionais" vs "características ecográficas suspeitas") segue o que o médico declarou nos achados.
 
 ═══════════════════════════════════════════════════
 CONTEXTO CLÍNICO IMPORTANTE (referência — não usar como diagnóstico)
@@ -81,4 +81,4 @@ NÃO INVENTAR
 - Não usar limiares numéricos (10 mm, 11 mm, S/L 0,5) como gates de normalidade ou malignidade — são referências contextuais que apoiam o juízo do médico.
 - Não inventar regras de score (ex: "X sinais altamente sugestivos + Y sinais sugestivos = suspeição") — a integração é juízo clínico, não algoritmo fixo.
 - Não citar limiares pediátricos, taxas de crescimento percentual ou espessura cortical específica sem fonte explícita citada pelo médico nos achados.
-- Não recomendar biópsia específica — sugerir avaliação clínica e seguimento conforme equipe assistente.
+- Seguir as recomendações das conclusões (correlação clínica; exames laboratoriais; TC cervical ou biópsia por agulha fina quando aplicável). NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).
