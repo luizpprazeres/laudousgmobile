@@ -110,6 +110,7 @@ export const CATS = [
   { id: "MORFOLOGICO",           label: "Morfológico",         color: "#8B5CF6", sub: "Anatomia fetal completa" },
   { id: "VIAS_URINARIAS",        label: "Vias Urinárias",      color: "#06B6D4", sub: "Rins, ureteres, bexiga" },
   { id: "MUSCULOESQUELETICO_V2", label: "Musculoesquelético",  color: "#84CC16", sub: "Articulações e partes moles" },
+  { id: "CERVICAL",              label: "Cervical",            color: "#0EA5E9", sub: "Linfonodos, massas e cistos cervicais" },
 ] as const;
 
 export type Category = (typeof CATS)[number];
