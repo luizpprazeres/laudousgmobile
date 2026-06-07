@@ -12,7 +12,7 @@ source_extracted_at: 2026-05-21
 source_lines: 568-570
 ---
 
-17. CONCLUSÃO FINAL
+FECHAMENTO DA CONCLUSÃO
 A conclusão deve refletir SOMENTE os achados informados.
 
 Se houver achados específicos, terminar com a frase de fechamento:
@@ -42,5 +42,4 @@ Exemplos:
 REGRA DE QUANDO INCLUIR O FECHAMENTO:
 - Há achados específicos na conclusão (≥1 item) → INCLUIR como último item numerado
 - TODOS os órgãos estão normais (conclusão genérica) → OMITIR o fechamento (a conclusão já é geral)
-
 
