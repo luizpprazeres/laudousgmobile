@@ -6,7 +6,7 @@ tags: [doppler, arterial, mmii, itb, limitrofe, daop-inicial, seguimento]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: ACC/AHA 2024 PAD Guidelines + SBACV consenso DAOP MMII + AIUM 2025 Peripheral Arterial §3
 source_extracted_at: 2026-05-30
 ---
@@ -21,7 +21,7 @@ Use verbatim quando ITB cai nesta faixa SEM oclusões/estenoses hemodinamicament
 
 "X) Índice tornozelo-braquial em faixa limítrofe (___ à direita e ___ à esquerda), considerado fator de risco cardiovascular independente, ainda que aquém do critério diagnóstico de doença arterial obstrutiva periférica estabelecida (ITB ≤ 0,89).
 
-X) Sugere-se correlação clínica para estratificação de risco cardiovascular global; a critério do médico assistente, considerar ITB pós-exercício para investigação de DAOP precoce."
+X) Convém, a critério clínico, complementar com correlação clínica para estratificação de risco cardiovascular global e, quando indicado, com ITB pós-exercício para investigação de doença arterial obstrutiva periférica precoce."
 
 ═══════════════════════════════════════════════════
 DIFERENCIAÇÃO IMPORTANTE

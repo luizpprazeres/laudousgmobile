@@ -6,7 +6,7 @@ tags: [itb-alto, incompressibilidade, calcificacao, diabetes, drc, tbi]
 priority: 60
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SBACV consenso DAOP + Hirsch et al. ACC/AHA 2005 PAD guidelines (incompressible vessels)
 source_extracted_at: 2026-05-30
 ---
@@ -26,7 +26,7 @@ CONCLUSÃO — frase verbatim:
 
 "X) Índice tornozelo-braquial elevado (___ à direita e ___ à esquerda), compatível com incompressibilidade arterial por calcificações de parede. Limitação técnica conhecida em pacientes com diabetes mellitus, doença renal crônica ou idosos.
 
-X) Recomenda-se complementação com índice hálux-braquial (TBI), pressões segmentares ou avaliação direta dos padrões espectrais arteriais para caracterização da doença arterial obstrutiva."
+X) Convém, a critério clínico, complementar com índice hálux-braquial (TBI), pressões segmentares ou avaliação direta dos padrões espectrais arteriais para caracterização da doença arterial obstrutiva."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR / CUIDADOS

@@ -6,7 +6,7 @@ tags: [doppler, arterial, mmii, isquemia-critica, urgencia, daop-grave]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SBACV consenso DAOP MMII + Global Vascular Guidelines (CLI/CLTI 2019)
 source_extracted_at: 2026-05-30
 ---
@@ -19,15 +19,11 @@ REQUISITO OBRIGATÓRIO: SÓ aplicar este bloco quando médico mencionou EXPLICIT
 
 Se houver apenas DAOP grave hemodinâmica sem clínica de CLTI mencionada, usar bloco "oclusao-sem-clti" em vez deste.
 
-Use estrutura abaixo quando critérios clínicos + hemodinâmicos forem atendidos:
+FRASE VERBATIM — conclusão em PROSA CORRIDA (sem bullets/itens no laudo), quando critérios clínicos + hemodinâmicos forem atendidos:
 
-"X) Sinais ecográficos de doença arterial obstrutiva grave em membro inferior [DIREITO/ESQUERDO/BILATERAL], com:
-- Oclusão/estenose hemodinamicamente significativa em ___ (descrever segmentos).
-- Padrão espectral monofásico em segmentos distais à obstrução.
-- Índice tornozelo-braquial reduzido (___ à direita, ___ à esquerda).
-- Achados hemodinâmicos compatíveis com o quadro clínico de [dor isquêmica em repouso / úlcera arterial / gangrena] referido."
+"X) Oclusão/estenose hemodinamicamente significativa em ___, com padrão espectral monofásico nos segmentos distais à obstrução e índice tornozelo-braquial reduzido (___ à direita, ___ à esquerda). O diagnóstico mais provável é doença arterial obstrutiva grave, com achados hemodinâmicos compatíveis com o quadro clínico de [dor isquêmica em repouso / úlcera arterial / gangrena] referido (isquemia crônica ameaçadora do membro)."
 
-"X) Recomenda-se avaliação URGENTE por cirurgião vascular para definição de conduta."
+"X) Convém prosseguir, com caráter de urgência, a avaliação por cirurgião vascular para definição de conduta."
 
 ═══════════════════════════════════════════════════
 QUANDO USAR (TODOS os critérios abaixo)

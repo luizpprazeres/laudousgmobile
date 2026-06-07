@@ -6,7 +6,7 @@ tags: [doppler, arterial, mmii, daop, claudicacao, rutherford]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SBACV consenso DAOP MMII + AIUM 2025 §4 (stenosis criteria)
 source_extracted_at: 2026-05-30
 ---
@@ -20,23 +20,11 @@ SE FALTAR CLÍNICA DE CLAUDICAÇÃO documentada (apenas achados hemodinâmicos):
 
 CONCLUSÃO — DAOP COM CLAUDICAÇÃO (ITB 0,40-0,89 + queixa clínica documentada)
 
-Estrutura:
+FRASE VERBATIM — conclusão em PROSA CORRIDA (sem itens numerados, bullets ou cabeçalhos no laudo):
 
-1. CARACTERIZAÇÃO DO ACHADO PRINCIPAL:
-"X) Sinais ecográficos de doença arterial obstrutiva periférica em membro inferior [DIREITO/ESQUERDO/BILATERAL], caracterizado por:"
+"X) Estenose hemodinamicamente significativa em ___ (VPS ___ cm/s, razão ___ em relação ao segmento proximal)[, com oclusão de ___ e circulação colateral evidente], padrão espectral [bifásico/monofásico] nos segmentos distais e índice tornozelo-braquial de ___ à direita e ___ à esquerda. O diagnóstico mais provável é doença arterial obstrutiva periférica, em correlação com o quadro de claudicação intermitente referido."
 
-2. SEGMENTOS COMPROMETIDOS (descrever cada estenose significativa):
-- "Estenose hemodinamicamente significativa em ___ (VPS ___ cm/s, razão ___ vs proximal)."
-- "Oclusão de ___ com circulação colateral evidente." (se aplicável)
-
-3. ITB:
-"Índice tornozelo-braquial: ___ à direita e ___ à esquerda."
-
-4. PADRÃO ESPECTRAL DISTAL:
-"Padrão espectral [bifásico/monofásico] em ___ (segmentos distais)."
-
-5. CORRELAÇÃO CLÍNICA (apenas se médico mencionar contexto):
-"Achados compatíveis com doença arterial obstrutiva sintomática. Sugere-se correlação clínica e avaliação por cirurgião vascular."
+"X) Convém, a critério clínico, prosseguir a avaliação com cirurgião vascular para definição de conduta."
 
 ═══════════════════════════════════════════════════
 CLASSIFICAÇÃO RUTHERFORD/FONTAINE — referência (NÃO incluir no laudo sem dado clínico)

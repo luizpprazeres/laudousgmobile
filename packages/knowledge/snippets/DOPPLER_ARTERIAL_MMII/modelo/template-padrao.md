@@ -6,7 +6,7 @@ tags: [doppler, arterial, mmii, modelo, itb, daop]
 priority: 95
 priority_tier: universal
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM 2025 — Practice Parameter for the Performance of Peripheral Arterial Ultrasound + SBACV — DAOP MMII consenso
 source_extracted_at: 2026-05-30
 ---

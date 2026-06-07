@@ -6,7 +6,7 @@ tags: [itb, indice-tornozelo-braquial, calculo, protocolo]
 priority: 75
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: SBACV consenso DAOP + AIUM 2025 §2.4 (ABI protocol)
 source_extracted_at: 2026-05-30
 ---

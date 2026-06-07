@@ -6,7 +6,7 @@ tags: [doppler, arterial, mmii, oclusao, daop-grave, sem-clti]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: ACC/AHA 2024 PAD Guidelines + SBACV consenso DAOP + Global Vascular Guidelines 2019 (CLTI definition)
 source_extracted_at: 2026-05-30
 ---
@@ -20,14 +20,11 @@ USE ESTE BLOCO quando há achado hemodinâmico grave (oclusão, ITB < 0,40 ou m�
 DAOP grave + clínica de CLTI documentada → bloco "isquemia-critica".
 DAOP grave sem clínica de CLTI documentada → este bloco.
 
-Estrutura:
+FRASE VERBATIM — conclusão em PROSA CORRIDA (sem bullets/itens no laudo):
 
-"X) Sinais ecográficos de doença arterial obstrutiva periférica grave em membro inferior [DIREITO/ESQUERDO/BILATERAL], caracterizado por:
-- Oclusão/estenose hemodinamicamente significativa em ___ (descrever segmentos).
-- Padrão espectral monofásico em segmentos distais à obstrução.
-- Índice tornozelo-braquial reduzido (___ à direita, ___ à esquerda)."
+"X) Oclusão/estenose hemodinamicamente significativa em ___, com padrão espectral monofásico nos segmentos distais à obstrução e índice tornozelo-braquial reduzido (___ à direita, ___ à esquerda). O diagnóstico mais provável é doença arterial obstrutiva periférica grave."
 
-"X) Recomenda-se avaliação por cirurgião vascular para correlação clínica e definição de conduta."
+"X) Convém, a critério clínico, prosseguir a avaliação com cirurgião vascular para correlação clínica e definição de conduta."
 
 ═══════════════════════════════════════════════════
 JUSTIFICATIVA PARA SEPARAÇÃO

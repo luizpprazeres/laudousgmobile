@@ -6,7 +6,7 @@ tags: [doppler, arterial, mmii, conclusao, normal, itb-normal]
 priority: 80
 priority_tier: contextual
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM 2025 Peripheral Arterial §3 + SBACV consenso DAOP
 source_extracted_at: 2026-05-30
 ---
