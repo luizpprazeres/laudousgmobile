@@ -6,7 +6,7 @@ tags: [glandulas-salivares, parotida, submandibular, sublingual, modelo, templat
 priority: 95
 priority_tier: universal
 version: 0.1.0
-status: draft
+status: published
 source_path: AIUM Practice Parameter for the Performance of an Ultrasound Examination of the Head and Neck (2019) + ESR Salivary Gland Imaging Guidelines + convenção radiológica brasileira pra estudo de salivares
 source_extracted_at: 2026-05-30
 ---
