@@ -1,6 +1,6 @@
 # Plano — Migração para Laudos Determinísticos
 
-> **Status geral:** 🟢 Aprovado — próximo trabalho: **DET-1** (mão na massa)
+> **Status geral:** 🟢 Em execução — DET-1 ✅ em prod; próximo trabalho: **DET-2** (expansão às 13 categorias ativas)
 > **Última atualização:** 2026-06-11
 > **Decisão formal:** `docs/adr/0004-montagem-deterministica-laudos.md`
 > **Origem:** análise Claude Code + validação crítica Codex/dex1 (2026-06-11), aprovada pelo Luiz
@@ -21,7 +21,7 @@
 
 | Sprint | Nome | Status |
 |---|---|---|
-| DET-1 | Bundle determinístico mão na massa (piloto ABDOMEN_TOTAL) | 🟡 pronto p/ deploy — implementado, reviews dex1+dex2 aplicados, golden 18/18 local com flag ligada, caching confirmado. Falta: @devops commit/push + deploy Vercel com `DETERMINISTIC_BUNDLE_CATEGORIES=ABDOMEN_TOTAL`. Saneamento: `docs/det-1-saneamento-abdomen-total.md` |
+| DET-1 | Bundle determinístico mão na massa (piloto ABDOMEN_TOTAL) | ✅ concluído 2026-06-11 — commit `a6e7c52` em prod com flag `DETERMINISTIC_BUNDLE_CATEGORIES=ABDOMEN_TOTAL`; golden 18/18; caching ~99%; laudo real validado pelo Luiz em prod (run `[deterministic_bundle]`, success). Saneamento: `docs/det-1-saneamento-abdomen-total.md` |
 | DET-2 | Expansão a todas as categorias + desligar retrieval vetorial normativo | ⬜ não iniciado |
 | DET-3 | Variantes de máscara (entidade 1ª classe + preferências da conta) | ⬜ não iniciado |
 | DET-4 | iOS: seletor de máscara nas Preferências | ⬜ não iniciado |
