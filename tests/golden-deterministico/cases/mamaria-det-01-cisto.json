@@ -1,0 +1,1 @@
+{"id":"mamaria-det-01-cisto","category":"MAMARIA","rawInput":"Mamas. Mama direita com cisto simples anecoico de 1,2 cm no quadrante superior lateral, BI-RADS 2. Mama esquerda sem alterações.","expectedHeadersInOrder":["CONCLUSÃO:"],"criticalFindings":["cisto","1,2"],"forbiddenPatterns":["BI-RADS 5"]}

@@ -1,0 +1,1 @@
+{"id":"obstetrica-det-01-inicial","category":"OBSTETRICA","rawInput":"Ultrassom obstétrico, gestação inicial. Saco gestacional com embrião, CCN 8 mm, BCF presente.","expectedHeadersInOrder":["CONCLUSÃO:"],"criticalFindings":["CCN","8"],"forbiddenPatterns":[]}

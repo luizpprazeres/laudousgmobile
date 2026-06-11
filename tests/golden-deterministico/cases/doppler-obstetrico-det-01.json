@@ -1,0 +1,1 @@
+{"id":"doppler-obstetrico-det-01","category":"DOPPLER_OBSTETRICO","rawInput":"Doppler obstétrico. Feto 32 semanas. Artéria umbilical com IP 0,9. Artéria cerebral média IP 1,8. Relação cerebroplacentária normal.","expectedHeadersInOrder":["CONCLUSÃO:"],"criticalFindings":["umbilical","cerebral"],"forbiddenPatterns":[]}

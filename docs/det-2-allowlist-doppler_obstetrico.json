@@ -1,0 +1,77 @@
+[
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-funcao-e-extracao",
+    "reason": "Manter ate DOPPLER_OBSTETRICO_CONTRACT ser injetado em todos os estilos classicos; evita gap de funcao/extracao."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-ordem-secoes",
+    "reason": "Curadoria mobile: garante DOPPLERVELOCIMETRIA antes da CONCLUSAO."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-dias-da-ig-omitir-quando-zero",
+    "reason": "Curadoria mobile cross-category: conclusao sem zero dias/placeholders."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-liquido-amniotico-marcadores",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte original em conflito: corpo tecnico-bruto e conclusao interpretativa para ILA/MBV."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-correcoes-transcricao",
+    "reason": "Curadoria mobile para siglas e erros de transcricao Doppler."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-dum-primeiraUSG-opcional",
+    "reason": "Curadoria mobile: matriz de omissao/inclusao de DUM e primeira USG."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-ip-medio-uterinas-auto-calculo",
+    "reason": "Curadoria mobile: calcula IP medio quando direita+esquerda foram informadas."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-percentis-opcionais",
+    "reason": "Curadoria mobile: percentis apenas quando medico informou ou calculadora estruturada trouxe."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile: preservar IP/IR, lados, diastole e Gratacos."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile: defaults qualitativos sem inventar medidas/percentis."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-unidades-biometria-fetal",
+    "reason": "Curadoria mobile: unidades fetais e medidas Doppler adimensionais."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-peso-fetal-percentil",
+    "reason": "Curadoria mobile validada prevalece em conflito: regra operacional detalhada para percentil do peso."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-placenta-por-idade-gestacional",
+    "reason": "Complemento da fonte viva mantido como bloco operacional ate renderer."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-gestacao-gemelar",
+    "reason": "Complemento da fonte viva mantido como bloco operacional para gemelar."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-ip-medio-uterinas-percentil",
+    "reason": "Complemento da fonte viva para conclusao quando IP medio das uterinas > p95."
+  }
+]

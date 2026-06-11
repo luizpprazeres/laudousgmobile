@@ -1,0 +1,27 @@
+[
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte viva — preserva termos ditados e classificacoes informadas. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile validada — define normalidade default quando descritores qualitativos sao omitidos. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-regra-nodulos-com-classificacao",
+    "reason": "Curadoria mobile validada — formato operacional de conclusao por lobo, com proibicao de calcular Domingos/TI-RADS. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-regra-linfonodos-cervicais",
+    "reason": "Curadoria mobile validada — linfonodos cervicais so entram quando explicitamente mencionados. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-excecao-linfonodos-normais-no-corpo-nao-conclusao",
+    "reason": "Curadoria mobile validada — reforca que linfonodos normais ficam no corpo, nao na conclusao. Decisao mesclar DET-2."
+  }
+]

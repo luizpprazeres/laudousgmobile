@@ -1,0 +1,62 @@
+[
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-selecao-automatica-trimestre",
+    "reason": "Curadoria/fonte viva: selecao de template 1T/2T/3T ate virar seletor deterministico em codigo."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-dias-da-ig-omitir-quando-zero",
+    "reason": "Curadoria mobile cross-category: conclusao sem zero dias/placeholders."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-liquido-amniotico-marcadores",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte original em conflito: corpo tecnico-bruto e conclusao interpretativa para ILA/MBV."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-correcoes-transcricao",
+    "reason": "Curadoria mobile para erros de transcricao."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-dum-primeiraUSG-opcional",
+    "reason": "Curadoria mobile: matriz de omissao/inclusao de DUM e primeira USG."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-ossos-longos-bilaterais",
+    "reason": "Curadoria mobile/fonte viva: repetir valor bilateral quando medico dita apenas um lado."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-proibicoes-termos",
+    "reason": "Curadoria mobile: proibicoes terminologicas e estruturas fora do template."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile: preservar vocabulario ditado."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-unidades-biometria-fetal",
+    "reason": "Curadoria mobile: unidades de biometria fetal."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-doppler-acessorio",
+    "reason": "Fonte viva/curadoria: morfologico com Doppler preserva modelo morfologico e adiciona overlay."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-peso-fetal-percentil",
+    "reason": "Curadoria obstetrica compartilhada: conclusoes por percentil do peso fetal."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-gestacao-gemelar",
+    "reason": "Complemento da fonte viva para gestacao gemelar."
+  }
+]

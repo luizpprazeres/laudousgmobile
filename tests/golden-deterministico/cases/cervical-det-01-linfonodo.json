@@ -1,0 +1,1 @@
+{"id":"cervical-det-01-linfonodo","category":"CERVICAL","rawInput":"Ultrassom cervical. Linfonodo aumentado no nível IIA à direita, medindo 1,5 x 0,9 cm, arredondado, sem hilo identificável.","expectedHeadersInOrder":["ULTRASSONOGRAFIA CERVICAL","COMENTÁRIOS:","OS SEGUINTES ASPECTOS FORAM OBSERVADOS:","CONCLUSÃO:"],"criticalFindings":["nível IIA","1,5"],"forbiddenPatterns":[]}

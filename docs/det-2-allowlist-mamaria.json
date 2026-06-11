@@ -1,0 +1,52 @@
+[
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte viva — preserva termos ditados, BI-RADS e escopo axilar. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile validada — define normalidade default quando descritores qualitativos sao omitidos. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-regra-nodulo-solido",
+    "reason": "Curadoria mobile validada — troca margem regular por vocabulario mamario aceito e mantem BI-RADS apenas quando ditado. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-conclusao-imagens-solidas-birads",
+    "reason": "Curadoria mobile validada — parametriza BI-RADS para nao fixar 3/4A da fonte, mantendo proibicao de inferir. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-excecao-margens-circunscritas-nunca-regulares",
+    "reason": "Curadoria mobile validada — margens de nodulos mamarios devem ser circunscritas quando esse for o termo correto; evita 'regulares'. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-excecao-birads-nao-inferir",
+    "reason": "Reforco de seguranca deliberado; apesar de duplicar o contrato, prevalece por risco clinico de inferencia de BI-RADS. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "fragmentPrefix": "3. NÓDULO SÓLIDO Usar exatamente este padrão",
+    "reason": "Trecho da fonte nao coberto verbatim porque curadoria mobile substitui 'regular' por vocabulario mamario mais seguro. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "fragmentPrefix": "Imagem sólida unilateral: Imagem sólida em mama esquerda",
+    "reason": "Trecho da fonte nao coberto verbatim porque curadoria mobile parametriza BI-RADS para nao fixar categoria. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "fragmentPrefix": "Imagens sólidas bilaterais: Imagens sólidas bilaterais",
+    "reason": "Trecho da fonte nao coberto verbatim porque curadoria mobile parametriza BI-RADS para nao fixar categoria. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "fragmentPrefix": "REGRAS FINAIS DE EXECUÇÃO Preencha apenas com os dados fornecidos",
+    "reason": "Trecho da fonte coberto por contrato hardcoded e regras globais; nao precisa ser semeado como knowledge_block. Decisao mesclar DET-2."
+  }
+]

@@ -1,0 +1,1 @@
+{"id":"pelve-det-02-ta-tv","category":"PELVE_FEMININA","rawInput":"Ultrassom pélvico por via transabdominal e transvaginal. Útero normal. Endométrio fino. Ovários sem alterações.","expectedHeadersInOrder":["CONCLUSÃO:"],"criticalFindings":["transvaginal"],"forbiddenPatterns":[],"_nota":"Seletor de via: TA+TV → variante ta-tv."}

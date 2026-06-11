@@ -1,0 +1,47 @@
+[
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte viva — preservar terminologia ditada pelo medico. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile validada — define normalidade default quando descritores qualitativos sao omitidos. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-posicao-uterina-vocabulario",
+    "reason": "Curadoria mobile validada — protege contra distorcao de transcricao de posicao uterina. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-medidas-incompletas-com-aviso",
+    "reason": "Curadoria mobile validada — reforco operacional para medidas incompletas/invalidas. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-padrao-diagnostico-conclusao",
+    "reason": "Curadoria mobile validada — reforco curto do padrao de diagnostico em conclusao. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-padrao-recomendacao-clinica",
+    "reason": "Curadoria mobile validada — reforco curto do padrao de recomendacao clinica. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-conclusao-adenomiose-conclusao-variantes",
+    "reason": "Curadoria mobile validada — variantes de conclusao de adenomiose preservadas. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "fragmentPrefix": "FUNÇÃO: Gerar laudos de ultrassonografia da pelve feminina",
+    "reason": "Trecho da fonte coberto pelo contrato hardcoded PELVE_FEMININA_CONTRACT, nao precisa ser semeado como knowledge_block. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "fragmentPrefix": "SAÍDA Retornar apenas o laudo final",
+    "reason": "Trecho da fonte coberto pelo contrato hardcoded e regras globais de output, nao precisa ser semeado como knowledge_block. Decisao mesclar DET-2."
+  }
+]

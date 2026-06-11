@@ -298,5 +298,318 @@
     "category": "VIAS_URINARIAS",
     "blockTitle": "vias-urinarias-excecao-achado-cistico-renal-complexo",
     "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-ordem-secoes",
+    "reason": "Curadoria mobile validada por bug real: impede COMENTARIOS/ACHADOS/CONCLUSAO fora de ordem."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-dias-da-ig-omitir-quando-zero",
+    "reason": "Curadoria mobile: omite dias quando o medico dita apenas semanas ou zero dias."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-liquido-amniotico-marcadores",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte original em conflito: corpo tecnico-bruto e conclusao interpretativa para ILA/MBV."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-correcoes-transcricao",
+    "reason": "Curadoria mobile para erros do ditado/Apple Speech."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-dum-primeiraUSG-opcional",
+    "reason": "Curadoria mobile: matriz de omissao/inclusao de DUM e primeira USG."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile cross-category: preservar vocabulario ditado pelo medico."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile: defaults qualitativos sem inventar medidas."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-unidades-biometria-fetal",
+    "reason": "Curadoria mobile: conversao segura cm->mm para biometria fetal."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-peso-fetal-percentil",
+    "reason": "Curadoria mobile validada prevalece em conflito: regra operacional detalhada para PIG/RCIU/GIG e guard deterministico."
+  },
+  {
+    "category": "OBSTETRICA",
+    "blockTitle": "obstetrica-regra-gestacao-gemelar",
+    "reason": "Curadoria mobile preserva detalhes gemelares que complementam a fonte viva."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-funcao-e-extracao",
+    "reason": "Manter ate DOPPLER_OBSTETRICO_CONTRACT ser injetado em todos os estilos classicos; evita gap de funcao/extracao."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-ordem-secoes",
+    "reason": "Curadoria mobile: garante DOPPLERVELOCIMETRIA antes da CONCLUSAO."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-dias-da-ig-omitir-quando-zero",
+    "reason": "Curadoria mobile cross-category: conclusao sem zero dias/placeholders."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-liquido-amniotico-marcadores",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte original em conflito: corpo tecnico-bruto e conclusao interpretativa para ILA/MBV."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-correcoes-transcricao",
+    "reason": "Curadoria mobile para siglas e erros de transcricao Doppler."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-dum-primeiraUSG-opcional",
+    "reason": "Curadoria mobile: matriz de omissao/inclusao de DUM e primeira USG."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-ip-medio-uterinas-auto-calculo",
+    "reason": "Curadoria mobile: calcula IP medio quando direita+esquerda foram informadas."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-percentis-opcionais",
+    "reason": "Curadoria mobile: percentis apenas quando medico informou ou calculadora estruturada trouxe."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile: preservar IP/IR, lados, diastole e Gratacos."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile: defaults qualitativos sem inventar medidas/percentis."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-unidades-biometria-fetal",
+    "reason": "Curadoria mobile: unidades fetais e medidas Doppler adimensionais."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-peso-fetal-percentil",
+    "reason": "Curadoria mobile validada prevalece em conflito: regra operacional detalhada para percentil do peso."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-placenta-por-idade-gestacional",
+    "reason": "Complemento da fonte viva mantido como bloco operacional ate renderer."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-gestacao-gemelar",
+    "reason": "Complemento da fonte viva mantido como bloco operacional para gemelar."
+  },
+  {
+    "category": "DOPPLER_OBSTETRICO",
+    "blockTitle": "doppler-obstetrico-regra-ip-medio-uterinas-percentil",
+    "reason": "Complemento da fonte viva para conclusao quando IP medio das uterinas > p95."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-selecao-automatica-trimestre",
+    "reason": "Curadoria/fonte viva: selecao de template 1T/2T/3T ate virar seletor deterministico em codigo."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-dias-da-ig-omitir-quando-zero",
+    "reason": "Curadoria mobile cross-category: conclusao sem zero dias/placeholders."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-liquido-amniotico-marcadores",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte original em conflito: corpo tecnico-bruto e conclusao interpretativa para ILA/MBV."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-correcoes-transcricao",
+    "reason": "Curadoria mobile para erros de transcricao."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-dum-primeiraUSG-opcional",
+    "reason": "Curadoria mobile: matriz de omissao/inclusao de DUM e primeira USG."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-ossos-longos-bilaterais",
+    "reason": "Curadoria mobile/fonte viva: repetir valor bilateral quando medico dita apenas um lado."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-proibicoes-termos",
+    "reason": "Curadoria mobile: proibicoes terminologicas e estruturas fora do template."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile: preservar vocabulario ditado."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-unidades-biometria-fetal",
+    "reason": "Curadoria mobile: unidades de biometria fetal."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-doppler-acessorio",
+    "reason": "Fonte viva/curadoria: morfologico com Doppler preserva modelo morfologico e adiciona overlay."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-peso-fetal-percentil",
+    "reason": "Curadoria obstetrica compartilhada: conclusoes por percentil do peso fetal."
+  },
+  {
+    "category": "MORFOLOGICO",
+    "blockTitle": "morfologico-regra-gestacao-gemelar",
+    "reason": "Complemento da fonte viva para gestacao gemelar."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte viva — preservar terminologia ditada pelo medico. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile validada — define normalidade default quando descritores qualitativos sao omitidos. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-posicao-uterina-vocabulario",
+    "reason": "Curadoria mobile validada — protege contra distorcao de transcricao de posicao uterina. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-medidas-incompletas-com-aviso",
+    "reason": "Curadoria mobile validada — reforco operacional para medidas incompletas/invalidas. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-padrao-diagnostico-conclusao",
+    "reason": "Curadoria mobile validada — reforco curto do padrao de diagnostico em conclusao. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-regra-padrao-recomendacao-clinica",
+    "reason": "Curadoria mobile validada — reforco curto do padrao de recomendacao clinica. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "blockTitle": "pelve-feminina-conclusao-adenomiose-conclusao-variantes",
+    "reason": "Curadoria mobile validada — variantes de conclusao de adenomiose preservadas. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "fragmentPrefix": "FUNÇÃO: Gerar laudos de ultrassonografia da pelve feminina",
+    "reason": "Trecho da fonte coberto pelo contrato hardcoded PELVE_FEMININA_CONTRACT, nao precisa ser semeado como knowledge_block. Decisao mesclar DET-2."
+  },
+  {
+    "category": "PELVE_FEMININA",
+    "fragmentPrefix": "SAÍDA Retornar apenas o laudo final",
+    "reason": "Trecho da fonte coberto pelo contrato hardcoded e regras globais de output, nao precisa ser semeado como knowledge_block. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte viva — preserva termos ditados e classificacoes informadas. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile validada — define normalidade default quando descritores qualitativos sao omitidos. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-regra-nodulos-com-classificacao",
+    "reason": "Curadoria mobile validada — formato operacional de conclusao por lobo, com proibicao de calcular Domingos/TI-RADS. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-regra-linfonodos-cervicais",
+    "reason": "Curadoria mobile validada — linfonodos cervicais so entram quando explicitamente mencionados. Decisao mesclar DET-2."
+  },
+  {
+    "category": "TIREOIDE",
+    "blockTitle": "tireoide-excecao-linfonodos-normais-no-corpo-nao-conclusao",
+    "reason": "Curadoria mobile validada — reforca que linfonodos normais ficam no corpo, nao na conclusao. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria mobile validada prevalece sobre a fonte viva — preserva termos ditados, BI-RADS e escopo axilar. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria mobile validada — define normalidade default quando descritores qualitativos sao omitidos. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-regra-nodulo-solido",
+    "reason": "Curadoria mobile validada — troca margem regular por vocabulario mamario aceito e mantem BI-RADS apenas quando ditado. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-conclusao-imagens-solidas-birads",
+    "reason": "Curadoria mobile validada — parametriza BI-RADS para nao fixar 3/4A da fonte, mantendo proibicao de inferir. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-excecao-margens-circunscritas-nunca-regulares",
+    "reason": "Curadoria mobile validada — margens de nodulos mamarios devem ser circunscritas quando esse for o termo correto; evita 'regulares'. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "blockTitle": "mamaria-excecao-birads-nao-inferir",
+    "reason": "Reforco de seguranca deliberado; apesar de duplicar o contrato, prevalece por risco clinico de inferencia de BI-RADS. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "fragmentPrefix": "3. NÓDULO SÓLIDO Usar exatamente este padrão",
+    "reason": "Trecho da fonte nao coberto verbatim porque curadoria mobile substitui 'regular' por vocabulario mamario mais seguro. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "fragmentPrefix": "Imagem sólida unilateral: Imagem sólida em mama esquerda",
+    "reason": "Trecho da fonte nao coberto verbatim porque curadoria mobile parametriza BI-RADS para nao fixar categoria. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "fragmentPrefix": "Imagens sólidas bilaterais: Imagens sólidas bilaterais",
+    "reason": "Trecho da fonte nao coberto verbatim porque curadoria mobile parametriza BI-RADS para nao fixar categoria. Decisao mesclar DET-2."
+  },
+  {
+    "category": "MAMARIA",
+    "fragmentPrefix": "REGRAS FINAIS DE EXECUÇÃO Preencha apenas com os dados fornecidos",
+    "reason": "Trecho da fonte coberto por contrato hardcoded e regras globais; nao precisa ser semeado como knowledge_block. Decisao mesclar DET-2."
+  },
+  {
+    "blockTitle": "cervical-regra-niveis-cervicais-robbins",
+    "reason": "Curadoria mobile preservada por decisao do Luiz: regra de niveis Robbins usada como referencia pelo cervicalLevelGuard.ts."
+  },
+  {
+    "blockTitle": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "reason": "Curadoria mobile preservada por decisao do Luiz: criterios de linfonodo normal versus suspeito continuam validos para o fluxo cervical."
   }
 ]

@@ -1,0 +1,1 @@
+{"id":"pelve-det-03-default","category":"PELVE_FEMININA","rawInput":"Ultrassom pélvico feminino. Útero de dimensões normais, endométrio regular. Ovários tópicos sem alterações.","expectedHeadersInOrder":["CONCLUSÃO:"],"criticalFindings":["útero"],"forbiddenPatterns":[],"_nota":"Via não ditada → default ta-tv (mais completo)."}
