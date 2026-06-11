@@ -51,6 +51,18 @@ const MODELO_VARIANT_SELECTORS: Record<
   string,
   { variantTag: string; trigger: RegExp; negation: RegExp }
 > = {
+  // DOPPLER_VENOSO_MMII: protocolo COMPLETO (padrão) × protocolo TVP-only
+  // (variante, tag protocolo-restrito). Gatilho = pedido EXPLÍCITO de exame
+  // para TVP (investigar/suspeita/afastar/protocolo/urgência/d-dímero/Wells).
+  // Achado negativo no ditado ("sem sinais de trombose") NÃO é gatilho — o
+  // trigger exige o verbo/contexto de solicitação.
+  DOPPLER_VENOSO_MMII: {
+    variantTag: "protocolo-restrito",
+    trigger:
+      /(?:investigar|pesquisa(?:r)?\s+de|suspeita\s+de|afastar|descartar|protocolo\s+(?:de\s+)?|exame\s+(?:para|restrito\s+a?)\s*(?:de\s+)?)\s*(?:tvp|trombose)|d[-\s]?d[íi]mero|\bwells\b|urg[êe]ncia\s+venosa|\bpara\s+tvp\b/i,
+    negation:
+      /n[ãa]o\s+(?:é|sendo)?\s*(?:exame\s+)?(?:para|de)\s+tvp|sem\s+protocolo\s+(?:de\s+)?tvp/i,
+  },
   ABDOMEN_TOTAL: {
     variantTag: "doppler",
     trigger: /doppler|espl[âa]ncnico/i,

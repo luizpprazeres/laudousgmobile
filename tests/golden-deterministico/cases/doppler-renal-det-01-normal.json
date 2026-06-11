@@ -1,0 +1,9 @@
+{
+  "id": "doppler-renal-det-01-normal",
+  "category": "DOPPLER_RENAL",
+  "rawInput": "Doppler de artérias renais. Aorta abdominal com VPS 90. Artéria renal direita VPS 120, esquerda VPS 110. RAR direita 1,3, esquerda 1,2. IR intrarrenal 0,62 bilateral. Sem estenose.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA COM DOPPLER COLORIDO DAS ARTÉRIAS RENAIS", "CONCLUSÃO"],
+  "criticalFindings": ["VPS", "sem evidência ecográfica de estenose"],
+  "forbiddenPatterns": ["nefroesclerose"],
+  "_nota": "Modelo curado do mobile (lab) usa cabeçalhos próprios — não os COMENTÁRIOS/ASPECTOS da fonte viva. Output validado em prod."
+}

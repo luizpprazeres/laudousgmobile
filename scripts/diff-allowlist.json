@@ -1,0 +1,302 @@
+[
+  {
+    "category": "GLOBAL",
+    "fragmentPrefix": "",
+    "reason": "GLOBAL_RULES_BLOCK/PROHIBITIONS do mobile ESTENDEM deliberadamente o globalRules.ts original (comandos posicionais, fidelidade total, magnitude, medidas ambíguas — validados em prod). Fonte original é subconjunto."
+  },
+  {
+    "category": "ABDOMEN_TOTAL",
+    "blockTitle": "abdomen-total-regra-preservar-terminologia-do-medico",
+    "reason": "Curadoria própria do mobile (padrão cross-category) — não vem da fonte viva. Decisão DET-1."
+  },
+  {
+    "category": "ABDOMEN_TOTAL",
+    "blockTitle": "abdomen-total-regra-frases-normais-quando-omitido",
+    "reason": "Curadoria própria do mobile (padrão cross-category) — não vem da fonte viva. Decisão DET-1."
+  },
+  {
+    "category": "ABDOMEN_TOTAL",
+    "blockTitle": "abdomen-total-conclusao-fechamento-com-achados",
+    "reason": "Estende o ajuste 17 da fonte com regra de numeração do fechamento (curadoria validada). Decisão DET-1."
+  },
+  {
+    "category": "ABDOMEN_TOTAL",
+    "fragmentPrefix": "7. COLÉDOCO ALARGADO",
+    "reason": "Colédoco: bloco usa 'acima dos limites habituais' no lugar de 'limites usuais em sua porção intrapática' (termo truncado no original). Divergência deliberada — DET-1 §Divergências."
+  },
+  {
+    "category": "ABDOMEN_TOTAL",
+    "fragmentPrefix": "17. CONCLUSÃO FINAL",
+    "reason": "Coberto pelo bloco conclusao-fechamento-com-achados em forma estendida (não-verbatim). Decisão DET-1."
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "blockTitle": "doppler-renal-modelo-template-padrao",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "blockTitle": "doppler-renal-regra-medidas-padrao",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "blockTitle": "doppler-renal-regra-nefroesclerose",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "blockTitle": "doppler-renal-frase-aorta-abdominal-normal",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "blockTitle": "doppler-renal-conclusao-estenose-significativa",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "blockTitle": "doppler-renal-conclusao-exame-normal",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "blockTitle": "doppler-renal-excecao-exame-tecnicamente-limitado",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "FUNÇÃO: Gerar laudos de dopplervelocimetria das artérias ren",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "REGRAS GERAIS (OBRIGATÓRIAS): - Estrutura fixa e imutável, s",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "COMENTÁRIOS (MODELO FIXO – NÃO ALTERAR): Exame realizado com",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "COMENTÁRIOS: Exame realizado com transdutor convexo de 4,0 M",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Aorta abdominal de c",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "CONCLUSÃO: Dopplervelocimetria das artérias renais sem sinai",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "Estenose de artéria renal: Achados: \"Artéria renal [direita/",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "Nefropatia parenquimatosa: Achados: \"Artérias intraparenquim",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_RENAL",
+    "fragmentPrefix": "DADOS INCOMPLETOS: - Se faltar dado crítico, fazer 1 pergunt",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "blockTitle": "doppler-venoso-mmii-modelo-template-padrao",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "blockTitle": "doppler-venoso-mmii-modelo-protocolo-tvp-only",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "blockTitle": "doppler-venoso-mmii-regra-refluxo-criterios",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "blockTitle": "doppler-venoso-mmii-conclusao-exame-normal",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "blockTitle": "doppler-venoso-mmii-conclusao-insuficiencia-venosa",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "blockTitle": "doppler-venoso-mmii-conclusao-tvp-aguda",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "blockTitle": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "blockTitle": "doppler-venoso-mmii-excecao-tvp-cronica",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "fragmentPrefix": "FUNÇÃO: Gerar laudos de Doppler venoso do membro inferior SE",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "fragmentPrefix": "COMENTÁRIOS — MAPEAMENTO DE VARIZES / ELETIVO (MODELO FIXO):",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "fragmentPrefix": "COMENTÁRIOS — PESQUISA DE TROMBOSE / URGÊNCIA: Exame realiza",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "fragmentPrefix": "MEDIDAS: - Não incluir seção de medidas nesta categoria. - Q",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "fragmentPrefix": "CONCLUSÃO — MAPEAMENTO DE VARIZES / ELETIVO: - Item único → ",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "fragmentPrefix": "CONCLUSÃO — PESQUISA DE TROMBOSE: - Sem trombose: \"Não foram",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII",
+    "fragmentPrefix": "DADOS INCOMPLETOS: - Se faltar dado crítico, fazer 1 pergunt",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII_MEDIDAS",
+    "blockTitle": "doppler-venoso-mmii-medidas-modelo-template-padrao",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII_MEDIDAS",
+    "blockTitle": "doppler-venoso-mmii-medidas-regra-calibres-safena-magna",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII_MEDIDAS",
+    "blockTitle": "doppler-venoso-mmii-medidas-regra-perfurantes",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII_MEDIDAS",
+    "blockTitle": "doppler-venoso-mmii-medidas-conclusao-mapeamento-completo",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII_MEDIDAS",
+    "fragmentPrefix": "FUNÇÃO: Gerar laudos de Doppler venoso do membro inferior CO",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII_MEDIDAS",
+    "fragmentPrefix": "COMENTÁRIOS: Realizado estudo ultrassonográfico do sistema v",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII_MEDIDAS",
+    "fragmentPrefix": "CONCLUSÃO: - Item único → sem numeração. - Múltiplos itens →",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "DOPPLER_VENOSO_MMII_MEDIDAS",
+    "fragmentPrefix": "DADOS INCOMPLETOS: - Se faltar lateralidade ou localização d",
+    "reason": "Trecho da fonte não semeado deliberadamente: FUNÇÃO/COMENTÁRIOS/CONCLUSÃO conflitam com curadoria mobile equivalente; DADOS INCOMPLETOS é política do pipeline (clarify). Decisão mesclar, DET-2"
+  },
+  {
+    "category": "ESCROTAL",
+    "blockTitle": "escrotal-frase-epididimos-normais",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "ESCROTAL",
+    "blockTitle": "escrotal-conclusao-numeracao-obrigatoria",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "ESCROTAL",
+    "blockTitle": "escrotal-conclusao-fechamento-com-achados",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "ESCROTAL",
+    "blockTitle": "escrotal-conclusao-exame-sem-alteracoes",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "ESCROTAL",
+    "blockTitle": "escrotal-conclusao-com-recomendacao-clinica",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "ESCROTAL",
+    "blockTitle": "escrotal-excecao-torcao-suspeita-encaminhamento-urgente",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "ESCROTAL",
+    "blockTitle": "escrotal-excecao-criptorquidia-testiculo-nao-localizado",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "VIAS_URINARIAS",
+    "blockTitle": "vias-urinarias-modelo-template-padrao",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "VIAS_URINARIAS",
+    "blockTitle": "vias-urinarias-frase-rins-normais",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "VIAS_URINARIAS",
+    "blockTitle": "vias-urinarias-frase-residuo-pos-miccional-normal",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "VIAS_URINARIAS",
+    "blockTitle": "vias-urinarias-conclusao-numeracao-obrigatoria",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "VIAS_URINARIAS",
+    "blockTitle": "vias-urinarias-conclusao-fechamento-com-achados",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "VIAS_URINARIAS",
+    "blockTitle": "vias-urinarias-conclusao-exame-sem-alteracoes",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "VIAS_URINARIAS",
+    "blockTitle": "vias-urinarias-conclusao-com-recomendacao-clinica",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  },
+  {
+    "category": "VIAS_URINARIAS",
+    "blockTitle": "vias-urinarias-excecao-achado-cistico-renal-complexo",
+    "reason": "Curadoria mobile validada no lab — prevalece sobre a fonte (decisão mesclar, DET-2 2026-06-11)"
+  }
+]

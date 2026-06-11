@@ -1,0 +1,9 @@
+{
+  "id": "doppler-venoso-det-02-completo",
+  "category": "DOPPLER_VENOSO_MMII",
+  "rawInput": "Doppler venoso do membro inferior esquerdo, mapeamento de varizes. Sistema profundo pérvio. Safena magna com refluxo patológico à manobra de Valsalva. Presença de varicosidades.",
+  "expectedHeadersInOrder": ["COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["safena magna", "refluxo"],
+  "forbiddenPatterns": ["urgência", "caráter de urgência"],
+  "_nota": "Negação do gatilho TVP: 'mapeamento de varizes' não dispara protocolo-restrito → usa modelo completo."
+}

@@ -1,0 +1,8 @@
+{
+  "id": "doppler-venoso-det-01-tvp-only",
+  "category": "DOPPLER_VENOSO_MMII",
+  "rawInput": "Doppler venoso membro inferior direito para investigar TVP, suspeita de trombose, paciente com edema agudo. Sistema profundo pérvio e compressível, sem trombose.",
+  "expectedHeadersInOrder": ["COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["trombose"],
+  "forbiddenPatterns": ["cartografia", "MEDIDAS:"]
+}

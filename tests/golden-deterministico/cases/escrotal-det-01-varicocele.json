@@ -1,0 +1,8 @@
+{
+  "id": "escrotal-det-01-varicocele",
+  "category": "ESCROTAL",
+  "rawInput": "Ultrassom da bolsa escrotal. Testículos normais. Veias do plexo pampiniforme esquerdo dilatadas até 3 mm com acentuação à manobra de Valsalva.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DA BOLSA ESCROTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["plexo pampiniforme", "Valsalva", "Varicocele à esquerda"],
+  "forbiddenPatterns": ["microlitíase"]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "vias-urinarias-det-01-litiase",
+  "category": "VIAS_URINARIAS",
+  "rawInput": "Vias urinárias. Rim direito 10,2 por 4,5 por 5,0 cm com imagem hiperecóica de 0,7 cm em cálice inferior, ocasionando sombra acústica. Bexiga normal.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DAS VIAS URINÁRIAS", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["hiperec", "sombra acústica", "Litíase renal direita"],
+  "forbiddenPatterns": ["hidronefrose"]
+}
