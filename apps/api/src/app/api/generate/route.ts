@@ -615,18 +615,22 @@ export async function POST(req: Request) {
           rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
         });
         // Bundle inválido = erro ALTO e CLARO (sem fallback RAG_EMPTY no
-        // caminho determinístico). 3 gates (review dex1):
+        // caminho determinístico). Gates (reviews dex1/dex2):
         //  - BUNDLE_EMPTY: nenhum bloco validado pra (categoria × estilo)
         //  - BUNDLE_NO_TEMPLATE: há blocos mas nenhum kind=modelo — laudo
         //    sem máscara é proibido
-        //  - BUNDLE_VARIANT_EMPTY: ditado pediu a variante e ela não existe
-        //    validada — NUNCA cair silenciosamente pro modelo padrão
+        //  - BUNDLE_VARIANT_EMPTY: a variante escolhida não tem modelo —
+        //    NUNCA cair silenciosamente pra outra máscara
+        //  - BUNDLE_MODEL_AMBIGUOUS: >1 modelo após seleção (config faltando
+        //    seletor/tag variant:) — máscaras conflitantes no prompt
         if (bundle.error) {
           outcome = "blocked";
           const reason =
             bundle.error.code === "BUNDLE_VARIANT_EMPTY"
               ? `A variante de modelo solicitada (${bundle.error.variantTag}) não está disponível para ${effectiveCategory}. Geração bloqueada por segurança.`
-              : `Biblioteca da categoria ${effectiveCategory} indisponível para o estilo selecionado. Geração bloqueada por segurança.`;
+              : bundle.error.code === "BUNDLE_MODEL_AMBIGUOUS"
+                ? `Mais de uma máscara aplicável para ${effectiveCategory} sem desambiguação. Geração bloqueada por segurança.`
+                : `Biblioteca da categoria ${effectiveCategory} indisponível para o estilo selecionado. Geração bloqueada por segurança.`;
           auditState.errorCode = bundle.error.code;
           auditState.errorMessage = reason;
           auditState.errorStage = currentStage;
