@@ -20,7 +20,8 @@
     "api:dev": "pnpm --filter @laudousg/api dev",
     "mobile:dev": "pnpm --filter @laudousg/mobile start",
     "validate:golden": "tsx scripts/golden-validation.ts",
-    "validate:golden:objetivo": "tsx tests/golden-objetivo/runner.ts"
+    "validate:golden:objetivo": "tsx tests/golden-objetivo/runner.ts",
+    "validate:golden:deterministico": "tsx tests/golden-deterministico/runner.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

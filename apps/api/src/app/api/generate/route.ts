@@ -7,6 +7,10 @@ export { OPTIONS } from "@/server/cors";
 import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
 import { runRetriever } from "@/server/pipeline/retriever";
+import {
+  isDeterministicBundleCategory,
+  loadDeterministicBundle,
+} from "@/server/pipeline/bundleLoader";
 import { applyPelveRouteSelection } from "@/server/pipeline/pelveRouteSelection";
 import { resolveMorfologicoCategory } from "@/server/pipeline/morfologicoRouteSelection";
 import { normalizeCategoryCode } from "@/server/pipeline/categoryNormalization";
@@ -47,6 +51,7 @@ import {
 } from "@/server/db/productEventsRepo";
 import { applyClarifyAnswers } from "@/server/pipeline/clarifyMerge";
 import type {
+  RagBlockForPrompt,
   SanityIssue,
   SanityResult,
   StructuredFindings,
@@ -589,40 +594,98 @@ export async function POST(req: Request) {
         return;
       }
 
-      // ----- 3. Retriever -----
+      // ----- 3. BUNDLE determinístico (DET-1) ou Retriever vetorial -----
+      // Categorias na flag DETERMINISTIC_BUNDLE_CATEGORIES carregam TODOS os
+      // blocos validados por chave fixa (categoria × estilo) — sem embedding,
+      // sem quota. Mesmo input → mesmo bundle → prefixo de prompt estável
+      // (prompt caching). Demais categorias: caminho RAG intocado (rollback
+      // trivial = tirar da flag).
       currentStage = "retriever";
       const ragT0 = Date.now();
-      const {
-        blocks: retrievedBlocks,
-        skipped,
-        queryText,
-        warning,
-      } = await runRetriever({
-        findings,
-        categoryCode: effectiveCategory,
-        writingStyleId: effectiveWritingStyleId,
-        // FAST-PATH: sem achados estruturados → embedding a partir do ditado cru.
-        queryTextOverride: fastPath
-          ? reqInput.consolidated_transcript ?? reqInput.raw_input
-          : undefined,
-        // PELVE: amplia a quota de modelo p/ garantir que o template da via
-        // ditada seja recuperado (TA+TV tem priority 100 e dominava o top-2).
-        // MORFOLOGICO: 1t/2t/3t × 3 estilos competem no top — amplia a quota
-        // de modelo pra garantir que o template do trimestre certo apareça.
-        quotas:
-          effectiveCategory === "PELVE_FEMININA" ||
-          effectiveCategory === "MORFOLOGICO"
-            ? { modelo: 12 }
+      const useDeterministicBundle =
+        isDeterministicBundleCategory(effectiveCategory);
+      let blocks: RagBlockForPrompt[];
+      let skipped: RagBlockForPrompt[] = [];
+      let queryText = "[deterministic_bundle]";
+      let warning: { code: string; message: string } | null = null;
+      if (useDeterministicBundle) {
+        const bundle = await loadDeterministicBundle({
+          categoryCode: effectiveCategory,
+          writingStyleId: effectiveWritingStyleId,
+          rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+        });
+        // Bundle inválido = erro ALTO e CLARO (sem fallback RAG_EMPTY no
+        // caminho determinístico). 3 gates (review dex1):
+        //  - BUNDLE_EMPTY: nenhum bloco validado pra (categoria × estilo)
+        //  - BUNDLE_NO_TEMPLATE: há blocos mas nenhum kind=modelo — laudo
+        //    sem máscara é proibido
+        //  - BUNDLE_VARIANT_EMPTY: ditado pediu a variante e ela não existe
+        //    validada — NUNCA cair silenciosamente pro modelo padrão
+        if (bundle.error) {
+          outcome = "blocked";
+          const reason =
+            bundle.error.code === "BUNDLE_VARIANT_EMPTY"
+              ? `A variante de modelo solicitada (${bundle.error.variantTag}) não está disponível para ${effectiveCategory}. Geração bloqueada por segurança.`
+              : `Biblioteca da categoria ${effectiveCategory} indisponível para o estilo selecionado. Geração bloqueada por segurança.`;
+          auditState.errorCode = bundle.error.code;
+          auditState.errorMessage = reason;
+          auditState.errorStage = currentStage;
+          console.error(
+            `[generate ${reportId}] ${bundle.error.code}: categoria=${effectiveCategory} writing_style_id=${effectiveWritingStyleId} (flag DETERMINISTIC_BUNDLE_CATEGORIES).`,
+          );
+          await finalizeReport({
+            reportId,
+            status: "blocked",
+            generatedOutput: "",
+            sanityResult: null,
+            metadata: {
+              bundle_error: {
+                code: bundle.error.code,
+                category_code: effectiveCategory,
+                writing_style_id: effectiveWritingStyleId,
+              },
+            },
+          });
+          emit({
+            type: "error",
+            ts: nowIso(),
+            code: bundle.error.code,
+            message: reason,
+          });
+          return;
+        }
+        blocks = bundle.blocks;
+      } else {
+        const retrieved = await runRetriever({
+          findings,
+          categoryCode: effectiveCategory,
+          writingStyleId: effectiveWritingStyleId,
+          // FAST-PATH: sem achados estruturados → embedding a partir do ditado cru.
+          queryTextOverride: fastPath
+            ? reqInput.consolidated_transcript ?? reqInput.raw_input
             : undefined,
-        signal,
-      });
-      // Seleção determinística da via de acesso da pelve: mantém só o modelo-base
-      // da via ditada (corrige laudo sempre saindo "transabdominal e transvaginal").
-      const blocks = applyPelveRouteSelection(
-        retrievedBlocks,
-        effectiveCategory,
-        reqInput.raw_input,
-      );
+          // PELVE: amplia a quota de modelo p/ garantir que o template da via
+          // ditada seja recuperado (TA+TV tem priority 100 e dominava o top-2).
+          // MORFOLOGICO: 1t/2t/3t × 3 estilos competem no top — amplia a quota
+          // de modelo pra garantir que o template do trimestre certo apareça.
+          quotas:
+            effectiveCategory === "PELVE_FEMININA" ||
+            effectiveCategory === "MORFOLOGICO"
+              ? { modelo: 12 }
+              : undefined,
+          signal,
+        });
+        // Seleção determinística da via de acesso da pelve: mantém só o modelo-base
+        // da via ditada (corrige laudo sempre saindo "transabdominal e transvaginal").
+        blocks = applyPelveRouteSelection(
+          retrieved.blocks,
+          effectiveCategory,
+          reqInput.raw_input,
+        );
+        skipped = retrieved.skipped;
+        queryText = retrieved.queryText;
+        warning = retrieved.warning;
+      }
       auditState.ragDurationMs = Date.now() - ragT0;
       auditState.ragBlocksRetrieved = blocks;
       auditState.ragBlocksSkipped = skipped;
@@ -638,6 +701,9 @@ export async function POST(req: Request) {
       emit({
         type: "rag",
         ts: nowIso(),
+        // Prova explícita do caminho usado (review dex1) — o runner golden
+        // exige "deterministic_bundle" pra evitar falso-verde contra o RAG.
+        source: useDeterministicBundle ? "deterministic_bundle" : "rag",
         blocks_used: blocks.map((b) => b.id),
         blocks_summary: blocks.map((b) => ({
           id: b.id,
@@ -690,6 +756,7 @@ export async function POST(req: Request) {
             systemMessage: string;
             inputTokens?: number;
             outputTokens?: number;
+            cachedInputTokens?: number;
           }
         | undefined;
       while (true) {
@@ -785,6 +852,12 @@ export async function POST(req: Request) {
       auditState.openaiOutputTokens =
         (auditState.openaiOutputTokens ?? 0) +
         (writerResult?.outputTokens ?? 0);
+      // DET-1 critério de aceite: confirmar prompt caching ativo via logs.
+      // cached_tokens cresce quando o prefixo (system message estável do
+      // bundle) é reaproveitado entre requests da mesma categoria/estilo.
+      console.log(
+        `[generate ${reportId}] writer usage: input=${writerResult?.inputTokens ?? "?"} cached=${writerResult?.cachedInputTokens ?? 0} output=${writerResult?.outputTokens ?? "?"} bundle=${useDeterministicBundle}`,
+      );
       await updateRunAfterWriter({
         runId,
         latencyMs: writerResult?.latencyMs ?? 0,

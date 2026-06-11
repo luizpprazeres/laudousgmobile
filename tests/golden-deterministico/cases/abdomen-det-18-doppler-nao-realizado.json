@@ -1,0 +1,9 @@
+{
+  "id": "abdomen-det-18-doppler-nao-realizado",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. O estudo Doppler não foi realizado. Fígado com aumento difuso da ecogenicidade e atenuação sonora, esteatose moderada. Demais órgãos sem alterações.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["Esteatose hepática, grau moderado"],
+  "forbiddenPatterns": ["DOPPLER DO SISTEMA ESPLÂNCNICO", "Veia mesentérica superior", "Hepatopetal"],
+  "_nota": "Negação PÓS-POSTA ('Doppler não foi realizado') deve usar o modelo padrão (review dex2)."
+}

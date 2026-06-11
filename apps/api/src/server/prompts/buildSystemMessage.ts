@@ -26,6 +26,15 @@ import { getStyleOverlay } from "./styles";
  *   8. CoT instruction
  *
  * Se não houver categoryRules nem RAG, fallback para DEFAULT_SYSTEM_MESSAGE.
+ *
+ * INVARIANTE DET-1 (prompt caching): esta montagem é uma função PURA dos
+ * inputs e toda a ordem é fixa. Para categorias no bundle determinístico
+ * (bundleLoader.ts), os blocos chegam em ordem total estável (kind →
+ * priority DESC → id), logo o system message INTEIRO é byte-idêntico entre
+ * requests da mesma (categoria, estilo, variante de modelo) — o dado
+ * variável (ditado/achados) vai SEMPRE no user message, depois do prefixo.
+ * Não introduzir aqui nada não-determinístico (timestamps, ordem de Map não
+ * ordenada, etc.) sem revisar o impacto no cached_tokens.
  */
 export function buildSystemMessage(args: {
   categoryCode: string;

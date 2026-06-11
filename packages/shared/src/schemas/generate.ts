@@ -77,6 +77,10 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
   z.object({
     ...Base,
     type: z.literal("rag"),
+    // DET-1: prova explícita do caminho de montagem do contexto. Opcional
+    // (compat com clients antigos); "deterministic_bundle" quando a categoria
+    // está na flag DETERMINISTIC_BUNDLE_CATEGORIES.
+    source: z.enum(["deterministic_bundle", "rag"]).optional(),
     blocks_used: z.array(z.string().uuid()),
     blocks_summary: z.array(
       z.object({

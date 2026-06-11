@@ -1,0 +1,10 @@
+{
+  "id": "abdomen-det-14-medida-ausente-placeholder",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Rim direito com cisto simples no terço médio, não medi o cisto. Demais órgãos sem alterações.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["Cisto simples no rim direito", "terço médio"],
+  "forbiddenPatterns": ["não medi", "(não informado)", "N/A"],
+  "forbiddenRegex": ["medindo\\s*\\d", "\\d+\\s*x\\s*\\d+\\s*(cm|cent)"],
+  "_nota": "Ideal pela curadoria: manter 'medindo ____' (regra frases-normais p93). O writer LLM omite a cláusula — aceito no DET-1 desde que NÃO invente medida (forbiddenRegex). Garantia por construção vem no DET-5 (renderer)."
+}

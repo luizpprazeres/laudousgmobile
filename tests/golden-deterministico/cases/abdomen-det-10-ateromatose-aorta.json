@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-10-ateromatose-aorta",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Aorta abdominal de calibre normal com imagens hiperecoicas aderidas às suas paredes. Demais órgãos sem alterações.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["imagens hiperecoicas aderidas às suas paredes", "Placas de ateromas na aorta abdominal"],
+  "forbiddenPatterns": ["aneurisma", "ectasia"]
+}

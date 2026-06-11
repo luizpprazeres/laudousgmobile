@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-15-doppler-esplancnico",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome superior com Doppler do sistema esplâncnico. Veia porta de calibre normal com fluxo hepatopetal, velocidades normais. Demais órgãos sem alterações. Inclua a tabela do Doppler esplâncnico.",
+  "expectedHeadersInOrder": ["COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "DOPPLER DO SISTEMA ESPLÂNCNICO", "CONCLUSÃO:"],
+  "criticalFindings": ["fluxo hepatopetal", "Tronco da veia porta", "Veia esplênica", "Veia mesentérica superior"],
+  "forbiddenPatterns": ["posteriormente com a bexiga repleta do abdome inferior"]
+}

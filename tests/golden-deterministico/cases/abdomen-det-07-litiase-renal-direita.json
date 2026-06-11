@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-07-litiase-renal-direita",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Rim direito com imagem hiperecoica medindo 0,6 centímetros no maior eixo, situada em cálices superiores. Restante do exame normal.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["imagem hiperecoica", "0,6", "cálices superiores", "Litíase renal direita"],
+  "forbiddenPatterns": ["Litíase renal esquerda", "hidronefrose"]
+}

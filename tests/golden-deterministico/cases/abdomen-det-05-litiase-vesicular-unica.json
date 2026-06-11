@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-05-litiase-vesicular-unica",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Vesícula biliar de parede fina com imagem hiperecoica, móvel, medindo 1,4 centímetros no maior eixo, ocasionando sombra acústica. Restante normal.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["imagem hiperecoica", "1,4", "sombra acústica", "Litíase da vesícula biliar"],
+  "forbiddenPatterns": ["múltiplas imagens hiperecoicas", "colecistectomia"]
+}

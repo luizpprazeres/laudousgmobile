@@ -1,0 +1,9 @@
+{
+  "id": "abdomen-det-17-sem-doppler",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total, sem Doppler. Fígado com discreto aumento da ecogenicidade, esteatose leve. Demais órgãos sem alterações.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["Esteatose hepática, grau leve"],
+  "forbiddenPatterns": ["DOPPLER DO SISTEMA ESPLÂNCNICO", "fluxo hepatopetal", "Veia mesentérica superior"],
+  "_nota": "Negação tem precedência sobre o gatilho da variante: 'sem Doppler' DEVE usar o modelo padrão (review dex1)."
+}

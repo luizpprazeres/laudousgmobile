@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-11-cistico-renal-complexo",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Rim esquerdo com imagem cística com calcificação periférica puntiforme, medindo 1,5 centímetros. Demais órgãos normais.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["calcificação periférica puntiforme", "1,5", "Imagem cística no rim esquerdo"],
+  "forbiddenPatterns": ["cisto simples"]
+}

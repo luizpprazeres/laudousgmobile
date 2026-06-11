@@ -1,0 +1,10 @@
+{
+  "id": "abdomen-det-13-multiplos-achados",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Fígado com discreto aumento da ecogenicidade, esteatose leve. Rim direito com cisto simples, imagem anecoica homogênea de margem regular medindo 1,0 centímetro no terço médio. Aorta com imagens hiperecoicas aderidas às paredes. Restante normal.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["Esteatose hepática, grau leve", "Cisto simples no rim direito", "Placas de ateromas na aorta abdominal", "Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas"],
+  "forbiddenPatterns": ["Cisto simples no rim esquerdo"],
+  "canonicalConclusionNumbering": true,
+  "minConclusionItems": 4
+}

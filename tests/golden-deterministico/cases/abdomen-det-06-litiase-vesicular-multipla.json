@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-06-litiase-vesicular-multipla",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Vesícula com múltiplas imagens hiperecoicas, móveis, a menor medindo aproximadamente 0,9 centímetros, ocasionando sombras acústicas. Demais órgãos sem alterações.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["múltiplas imagens hiperecoicas", "0,9", "sombras acústicas", "Litíase da vesícula biliar"],
+  "forbiddenPatterns": []
+}

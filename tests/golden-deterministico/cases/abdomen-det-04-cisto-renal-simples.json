@@ -1,0 +1,10 @@
+{
+  "id": "abdomen-det-04-cisto-renal-simples",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Rim esquerdo com cisto simples, imagem anecoica homogênea, margem regular, medindo 2,1 por 1,8 por 1,6 centímetros, situada no polo superior. Demais órgãos normais.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["imagem anecoica homogênea", "2,1", "polo superior", "Cisto simples no rim esquerdo", "Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas"],
+  "forbiddenPatterns": ["cisto simples no rim direito", "imagem cística complexa"],
+  "canonicalConclusionNumbering": true,
+  "minConclusionItems": 2
+}

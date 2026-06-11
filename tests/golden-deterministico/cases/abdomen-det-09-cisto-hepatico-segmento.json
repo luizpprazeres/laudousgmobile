@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-09-cisto-hepatico-segmento",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Fígado com imagem anecoica homogênea, margem regular, medindo 1,2 por 1,0 centímetros, sem septações, situada no segmento sete. Restante normal.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["imagem anecoica homogênea", "1,2", "segmento VII", "Cisto hepático"],
+  "forbiddenPatterns": ["segmento 7", "segmento sete"]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "abdomen-det-16-anti-invencao",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Fígado normal.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["Fígado de dimensões", "sem evidência de alterações ecográficas"],
+  "forbiddenPatterns": ["esteatose", "litíase", "cisto", "derrame", "ateroma", "hidronefrose", "nódulo"],
+  "maxConclusionItems": 1
+}

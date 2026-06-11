@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-02-esteatose-leve",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Fígado com discreto aumento da ecogenicidade parenquimatosa, esteatose grau leve. Restante do exame normal.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["discreto aumento da ecogenicidade parenquimatosa", "Esteatose hepática, grau leve"],
+  "forbiddenPatterns": ["grau moderado", "atenuação sonora"]
+}

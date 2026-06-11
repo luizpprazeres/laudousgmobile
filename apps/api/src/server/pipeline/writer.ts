@@ -50,6 +50,8 @@ export async function* runWriterStream(args: {
     systemMessage: string;
     inputTokens?: number;
     outputTokens?: number;
+    /** DET-1: tokens do prefixo servidos pelo prompt caching da OpenAI. */
+    cachedInputTokens?: number;
   },
   void
 > {
@@ -89,10 +91,14 @@ export async function* runWriterStream(args: {
   let full = "";
   let inputTokens: number | undefined;
   let outputTokens: number | undefined;
+  let cachedInputTokens: number | undefined;
   for await (const chunk of stream) {
     if (chunk.usage) {
       inputTokens = chunk.usage.prompt_tokens;
       outputTokens = chunk.usage.completion_tokens;
+      // cached_tokens > 0 confirma o prompt caching ativo (critério de aceite
+      // DET-1: prefixo estável do system message sendo reaproveitado).
+      cachedInputTokens = chunk.usage.prompt_tokens_details?.cached_tokens;
     }
     const delta = chunk.choices[0]?.delta?.content ?? "";
     if (delta) {
@@ -107,6 +113,7 @@ export async function* runWriterStream(args: {
     systemMessage,
     inputTokens,
     outputTokens,
+    cachedInputTokens,
   };
 }
 
