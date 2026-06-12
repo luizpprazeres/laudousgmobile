@@ -38,9 +38,11 @@ export const MorfologicoFindingsSchema = z.object({
   radio_mm: z.number().nullable(),
   ulna_mm: z.number().nullable(),
   peso_g: z.number().nullable(),
+  peso_variacao_g: z.number().nullable(),
   percentil: z.number().nullable(),
   genitalia: z.string().nullable(),
   placenta_localizacao: z.string().nullable(),
+  placenta_grau: z.string().nullable(),
   ila_cm: z.number().nullable(),
   // comum
   ig_semanas: z.number().nullable(),
@@ -60,7 +62,8 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "uterina_ip_direita", "uterina_ip_esquerda",
     "dbp_mm", "cc_mm", "cerebelo_mm", "cisterna_magna_mm", "binocular_mm", "ca_mm",
     "femur_mm", "tibia_mm", "fibula_mm", "umero_mm", "radio_mm", "ulna_mm",
-    "peso_g", "percentil", "genitalia", "placenta_localizacao", "ila_cm",
+    "peso_g", "peso_variacao_g", "percentil", "genitalia",
+    "placenta_localizacao", "placenta_grau", "ila_cm",
     "ig_semanas", "ig_dias", "dum", "achados_adicionais",
   ],
   properties: {
@@ -72,7 +75,8 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     uterina_ip_direita: num, uterina_ip_esquerda: num,
     dbp_mm: num, cc_mm: num, cerebelo_mm: num, cisterna_magna_mm: num, binocular_mm: num, ca_mm: num,
     femur_mm: num, tibia_mm: num, fibula_mm: num, umero_mm: num, radio_mm: num, ulna_mm: num,
-    peso_g: num, percentil: num, genitalia: str, placenta_localizacao: str, ila_cm: num,
+    peso_g: num, peso_variacao_g: num, percentil: num, genitalia: str,
+    placenta_localizacao: str, placenta_grau: str, ila_cm: num,
     ig_semanas: num, ig_dias: num, dum: str, achados_adicionais: str,
   },
 } as const;
@@ -93,11 +97,15 @@ REGRAS:
    reversa = alterado; onda A positiva/trifásica = normal).
 4. uterina_ip_direita/esquerda: IP das artérias uterinas (1t).
 5. apresentacao/dorso (2t/3t): só se ditados.
-6. peso_g/percentil: só se ditados. genitalia: se ditada. placenta_localizacao,
+6. peso_g/peso_variacao_g/percentil: só se ditados. genitalia: se ditada.
+   placenta_localizacao e placenta_grau (Grannum: 0/1/2/3 — capture o número),
    ila_cm: se ditados.
 7. ig_semanas/ig_dias; dum como DD/MM/AAAA (converta extenso).
-8. achados_adicionais: malformações/observações fora do padrão, nas palavras do
-   médico; null se normal.`;
+8. achados_adicionais: SOMENTE malformações ou ALTERAÇÕES patológicas reais, nas
+   palavras do médico. NUNCA coloque aqui frases de NORMALIDADE redundantes
+   ("sem descolamentos", "movimentos e tônus presentes", "líquido normal",
+   "placenta grau 2") — dados estruturados vão nos campos próprios; frases de
+   normalidade já estão no modelo. null se o exame for normal.`;
 
 // ---------------------------------------------------------------------------
 function ptBr(n: number): string {
@@ -110,6 +118,41 @@ function formatIg(semanas: number | null, dias: number | null): string {
   if (semanas === null) return "____ semanas";
   if (dias === null || dias === 0) return `${ptBr(semanas)} semanas`;
   return `${ptBr(semanas)} semanas e ${ptBr(dias)} dias`;
+}
+
+/** Peso fetal com variação (+- g) e percentil — ambos OPCIONAIS. */
+function pesoLinhaMorfo(f: MorfologicoFindings): string {
+  const extras: string[] = [];
+  if (f.peso_variacao_g !== null) extras.push(`+- ${ptBr(f.peso_variacao_g)} g`);
+  if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
+  const sufixo = extras.length > 0 ? ` (${extras.join(", ")})` : "";
+  return `Peso fetal estimado em ${f.peso_g !== null ? ptBr(f.peso_g) : "____"} g${sufixo}.`;
+}
+
+/** Concordância: "apresentação" feminina → cefálica/pélvica/córmica. */
+function apresentacaoFmt(s: string | null): string {
+  if (!s) return "cefálica";
+  const map: Record<string, string> = {
+    cefálico: "cefálica", cefalico: "cefálica", pélvico: "pélvica",
+    pelvico: "pélvica", córmico: "córmica", cormico: "córmica", transverso: "transversa",
+  };
+  return map[s.trim().toLowerCase()] ?? s.trim();
+}
+
+/** Dorso: adiciona "à" quando o lado vem sem preposição. */
+function dorsoFmt(s: string | null): string | null {
+  if (!s) return null;
+  const t = s.trim();
+  if (/^(direita|esquerda)$/i.test(t)) return `à ${t.toLowerCase()}`;
+  return t;
+}
+
+/** Grau de placenta (Grannum) → romano. */
+function grauPlacenta(s: string | null): string | null {
+  if (!s) return null;
+  const t = s.trim().replace(/^grau\s*/i, "");
+  const romano: Record<string, string> = { "0": "0", "1": "I", "2": "II", "3": "III" };
+  return `grau ${romano[t] ?? t}`;
 }
 
 const COMENTARIOS_1T =
@@ -159,9 +202,10 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean): string {
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
-  const apres = f.apresentacao ?? "cefálica";
-  const linhaFeto = f.dorso
-    ? `Feto único, em apresentação ${apres}, com dorso ${f.dorso}.`
+  const apres = apresentacaoFmt(f.apresentacao);
+  const dorso = dorsoFmt(f.dorso);
+  const linhaFeto = dorso
+    ? `Feto único, em apresentação ${apres}, com dorso ${dorso}.`
     : `Feto único, em apresentação ${apres}.`;
 
   const aspectos: string[] = [
@@ -183,7 +227,8 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean): string {
     `Circunferência da cabeça (CC) de ${mm(f.cc_mm)} mm.`,
     `Cerebelo mede ${mm(f.cerebelo_mm)} mm.`,
     `Cisterna magna mede ${mm(f.cisterna_magna_mm)} mm.`,
-    `Distância binocular de ${mm(f.binocular_mm)} mm.`,
+    // Distância binocular: 2º trimestre apenas (removida no 3º, decisão Luiz).
+    ...(terceiro ? [] : [`Distância binocular de ${mm(f.binocular_mm)} mm.`]),
     `Circunferência abdominal (CA) de ${mm(f.ca_mm)} mm.`,
     // Ossos longos bilaterais — mesmo valor p/ ambos os lados (regra curada).
     `Comprimento do fêmur direito de ${mm(f.femur_mm)} mm.`,
@@ -198,13 +243,14 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean): string {
     `Comprimento do rádio esquerdo de ${mm(f.radio_mm)} mm.`,
     `Comprimento da ulna direita de ${mm(f.ulna_mm)} mm.`,
     `Comprimento da ulna esquerda de ${mm(f.ulna_mm)} mm.`,
-    `Peso fetal estimado em ${f.peso_g !== null ? ptBr(f.peso_g) : "____"} g${f.percentil !== null ? ` (percentil ${ptBr(f.percentil)})` : ""}.`,
+    pesoLinhaMorfo(f),
     "",
     "Análise extra-fetal:",
     "Cordão umbilical com duas artérias e uma veia.",
-    `Placenta de localização ${f.placenta_localizacao ?? "____"}, com ecotextura ${terceiro ? "heterogênea, de acordo com a fase da gestação" : "homogênea"}.`,
+    `Placenta de localização ${f.placenta_localizacao ?? "____"}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}, com ecotextura ${terceiro ? "heterogênea, de acordo com a fase da gestação" : "homogênea"}.`,
     `Índice do líquido amniótico de ${f.ila_cm !== null ? ptBr(f.ila_cm) : "____"} cm.`,
-    "Orifício interno do colo uterino encontra-se fechado.",
+    // Orifício interno do colo: 2º trimestre apenas (removido no 3º, decisão Luiz).
+    ...(terceiro ? [] : ["Orifício interno do colo uterino encontra-se fechado."]),
   ];
 
   const conclusao = [

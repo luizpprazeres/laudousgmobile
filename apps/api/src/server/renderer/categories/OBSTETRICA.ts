@@ -162,8 +162,11 @@ REGRAS:
     "alterado" (com liquido_classe = oligoâmnio/polidrâmnio).
 11. apresentacao/dorso/polo_cefalico só quando ditados (senão null — o renderer
     usa defaults clínicos).
-12. achados_adicionais: malformações ou observações fora do padrão, nas palavras
-    do médico; null se exame normal.`;
+12. achados_adicionais: SOMENTE malformações ou ALTERAÇÕES patológicas reais,
+    nas palavras do médico. NUNCA coloque aqui frases de NORMALIDADE redundantes
+    ("sem descolamentos", "vesícula vitelínica presente", "saco gestacional
+    tópico/regular", "líquido normal") — essas já estão no modelo padrão. null
+    se o exame for normal.`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos
