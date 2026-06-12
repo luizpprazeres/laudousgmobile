@@ -43,7 +43,7 @@ export const SHOWCASE_SAMPLES: ShowcaseSample[] = [
     "ABDOMEN_TOTAL:doppler",
     "ABDOMEN_TOTAL",
     "Doppler esplâncnico (renderer)",
-    "Abdome superior com Doppler do sistema esplâncnico. Veia porta de calibre normal com fluxo hepatopetal, velocidades normais. Demais órgãos sem alterações. Inclua a tabela do Doppler esplâncnico.",
+    "Abdome total com Doppler do sistema esplâncnico. Veia porta de calibre normal com fluxo hepatopetal, velocidades normais. Demais órgãos sem alterações.",
   ),
   s(
     "ABDOMEN_SUPERIOR:padrao",
