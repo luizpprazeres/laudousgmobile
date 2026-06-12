@@ -100,6 +100,7 @@ export async function POST(req: Request) {
       name: input.name,
       version: input.version ?? 1,
       status: input.status ?? "draft",
+      preferenceEligible: input.preference_eligible ?? false,
       templateBody: input.template_body ?? null,
       rendererSchema: input.renderer_schema ?? null,
       rules: input.rules ?? null,

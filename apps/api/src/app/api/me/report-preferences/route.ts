@@ -41,7 +41,9 @@ export async function GET(req: Request) {
     )
     .where(eq(schema.accountReportPreferences.userId, user.id));
 
-  // Catálogo de variantes validadas (todas as categorias/estilos).
+  // Catálogo p/ o picker: só variantes validadas E elegíveis como preferência.
+  // Variantes contextuais (1t/2t/3t, ta/tv, doppler…) ficam de fora — o
+  // contexto do ditado é soberano (decisão Luiz, follow-up do DET-4).
   const availableVariants = await db
     .select({
       id: schema.reportTemplateVariants.id,
@@ -51,7 +53,12 @@ export async function GET(req: Request) {
       name: schema.reportTemplateVariants.name,
     })
     .from(schema.reportTemplateVariants)
-    .where(eq(schema.reportTemplateVariants.status, "validated"));
+    .where(
+      and(
+        eq(schema.reportTemplateVariants.status, "validated"),
+        eq(schema.reportTemplateVariants.preferenceEligible, true),
+      ),
+    );
 
   return json({ preferences, available_variants: availableVariants });
 }
@@ -82,10 +89,14 @@ export async function PATCH(req: Request) {
     .limit(1);
   if (!cat) return json({ error: "invalid_category" }, 400);
 
-  // Se vier uma variante, precisa existir, ser validada e ser DA categoria.
+  // Se vier uma variante, precisa existir, ser validada, ser DA categoria e
+  // ser elegível como preferência (contextuais não podem ser fixadas).
   if (default_variant_id) {
     const [variant] = await db
-      .select({ id: schema.reportTemplateVariants.id })
+      .select({
+        id: schema.reportTemplateVariants.id,
+        preferenceEligible: schema.reportTemplateVariants.preferenceEligible,
+      })
       .from(schema.reportTemplateVariants)
       .where(
         and(
@@ -96,6 +107,8 @@ export async function PATCH(req: Request) {
       )
       .limit(1);
     if (!variant) return json({ error: "invalid_variant" }, 400);
+    if (!variant.preferenceEligible)
+      return json({ error: "variant_not_preference_eligible" }, 400);
   }
 
   await db

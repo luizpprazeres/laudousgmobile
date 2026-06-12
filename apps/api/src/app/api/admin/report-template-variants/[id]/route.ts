@@ -34,22 +34,29 @@ export async function PATCH(req: Request, context: Context) {
   const input = parsed.data;
   const db = getDbClient();
 
-  // Promover a validated exige modelo correspondente no bundle (review dex1).
-  if (input.status === "validated") {
-    const [current] = await db
-      .select({
-        categoryCode: schema.reportTemplateVariants.categoryCode,
-        writingStyleId: schema.reportTemplateVariants.writingStyleId,
-        variantKey: schema.reportTemplateVariants.variantKey,
-      })
-      .from(schema.reportTemplateVariants)
-      .where(eq(schema.reportTemplateVariants.id, id))
-      .limit(1);
-    if (!current) return json({ error: "not_found" }, 404);
+  const [current] = await db
+    .select({
+      categoryCode: schema.reportTemplateVariants.categoryCode,
+      writingStyleId: schema.reportTemplateVariants.writingStyleId,
+      variantKey: schema.reportTemplateVariants.variantKey,
+      status: schema.reportTemplateVariants.status,
+    })
+    .from(schema.reportTemplateVariants)
+    .where(eq(schema.reportTemplateVariants.id, id))
+    .limit(1);
+  if (!current) return json({ error: "not_found" }, 404);
+
+  // Variante validated DEVE ter modelo correspondente no bundle (review dex1).
+  // Vale tanto ao promover quanto ao trocar variant_key de uma já validada —
+  // sem isso o PATCH só do key publicava no picker variante sem modelo
+  // (achado dex2, follow-up DET-4).
+  const effectiveStatus = input.status ?? current.status;
+  const keyChanged =
+    input.variant_key !== undefined && input.variant_key !== current.variantKey;
+  if (effectiveStatus === "validated" && (input.status === "validated" || keyChanged)) {
     const ok = await hasMatchingModel({
       categoryCode: current.categoryCode,
       writingStyleId: current.writingStyleId,
-      // variant_key pode estar sendo alterado no mesmo PATCH.
       variantKey: input.variant_key ?? current.variantKey,
     });
     if (!ok) {
@@ -67,6 +74,9 @@ export async function PATCH(req: Request, context: Context) {
       ...(input.name !== undefined && { name: input.name }),
       ...(input.version !== undefined && { version: input.version }),
       ...(input.status !== undefined && { status: input.status }),
+      ...(input.preference_eligible !== undefined && {
+        preferenceEligible: input.preference_eligible,
+      }),
       ...(input.template_body !== undefined && {
         templateBody: input.template_body,
       }),
@@ -84,6 +94,18 @@ export async function PATCH(req: Request, context: Context) {
     .returning();
 
   if (!row) return json({ error: "not_found" }, 404);
+
+  // Despromover do picker limpa preferências salvas que apontam pra variante —
+  // senão a geração seguiria aplicando uma preferência que a UI mostra como
+  // "Automático" (achado dex1+dex2, follow-up DET-4). NULL = volta ao padrão,
+  // mesmo comportamento do ON DELETE SET NULL da FK.
+  if (input.preference_eligible === false) {
+    await db
+      .update(schema.accountReportPreferences)
+      .set({ defaultVariantId: null, updatedAt: new Date() })
+      .where(eq(schema.accountReportPreferences.defaultVariantId, id));
+  }
+
   return json({ item: toVariant(row) });
 }
 

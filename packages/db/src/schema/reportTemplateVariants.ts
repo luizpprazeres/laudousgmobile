@@ -4,6 +4,7 @@ import {
   uuid,
   text,
   integer,
+  boolean,
   jsonb,
   timestamp,
   pgPolicy,
@@ -41,6 +42,10 @@ export const reportTemplateVariants = pgTable(
     name: text("name").notNull(),
     version: integer("version").notNull().default(1),
     status: ragBlockStatusEnum("status").notNull().default("draft"),
+    // Decisão Luiz (DET-4 follow-up): só variantes de ESTILO entram no picker de
+    // preferências do app. Variantes contextuais (1t/2t/3t, ta/tv, doppler,
+    // pos-abortamento…) ficam de fora — o contexto do ditado é soberano.
+    preferenceEligible: boolean("preference_eligible").notNull().default(false),
     // Fonte primária do conteúdo a partir do DET-5 (renderer). Nullable no DET-3.
     templateBody: text("template_body"),
     rendererSchema: jsonb("renderer_schema"),

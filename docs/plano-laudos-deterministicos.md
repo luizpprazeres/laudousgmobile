@@ -1,10 +1,11 @@
 # Plano — Migração para Laudos Determinísticos
 
-> **Status geral:** 🟢 Em execução — DET-1 ✅ em prod; próximo trabalho: **DET-2** (expansão às 13 categorias ativas)
-> **Última atualização:** 2026-06-11
+> **Status geral:** 🟢 Em execução — DET-1 a DET-4 ✅ (bundle determinístico é o caminho ÚNICO; RAG vetorial aposentado; seletor de máscara no iOS implementado e testado E2E). **Próximo trabalho: DET-5** (structured extraction + renderer).
+> **Última atualização:** 2026-06-12
 > **Decisão formal:** `docs/adr/0004-montagem-deterministica-laudos.md`
 > **Origem:** análise Claude Code + validação crítica Codex/dex1 (2026-06-11), aprovada pelo Luiz
 > **Repos envolvidos:** este monorepo (`apps/api/` — quase tudo) + `~/laudousg-swift/LaudoUSG` (só DET-4)
+> **Processo validado:** implementar → review dex1 + verificação adversarial cruzada dex2 → corrigir → golden + E2E → @devops push/deploy. Token de teste em prod: usuário `golden-runner@laudousg.dev` (senha resetável via admin API).
 
 ---
 
@@ -22,11 +23,30 @@
 | Sprint | Nome | Status |
 |---|---|---|
 | DET-1 | Bundle determinístico mão na massa (piloto ABDOMEN_TOTAL) | ✅ concluído 2026-06-11 — commit `a6e7c52` em prod com flag `DETERMINISTIC_BUNDLE_CATEGORIES=ABDOMEN_TOTAL`; golden 18/18; caching ~99%; laudo real validado pelo Luiz em prod (run `[deterministic_bundle]`, success). Saneamento: `docs/det-1-saneamento-abdomen-total.md` |
-| DET-2 | Expansão a todas as categorias + desligar retrieval vetorial normativo | ✅ substancialmente concluído 2026-06-11 — 13 categorias ativas no bundle em prod (commits `17b6387`/`70bb9ab`/`6371492`, flag com 13 categorias); seletor de variante generalizado (multi-way por `variant:`); 35/35 golden; caching ~99%. Saneamento: `docs/det-2-ondas-pequenas.md` + `docs/det-2-categorias-grandes.md`. **Pendente (deferido p/ após estabilidade em prod):** remoção física do caminho vetorial normativo (quotas/overrides/RPC) — hoje é o fallback de rollback. |
-| DET-3 | Variantes de máscara (entidade 1ª classe + preferências da conta) | ⬜ não iniciado |
-| DET-4 | iOS: seletor de máscara nas Preferências | ⬜ não iniciado |
-| DET-5 | Structured extraction + renderer (piloto 1 categoria) | ⬜ não iniciado |
+| DET-2 | Expansão a todas as categorias + desligar retrieval vetorial normativo | ✅ **concluído** 2026-06-12 — 16 categorias no bundle (13 ativas + 3 com uso: prostata/partes_moles/MSK), bundle é o caminho ÚNICO. **RAG vetorial REMOVIDO** (commit `7755f0a`): retriever.ts/pelveRouteSelection.ts deletados, flag removida, embedding fora da geração. Seletor de variante generalizado por tag `variant:`. 38/38 golden; caching ~99%. Validado em prod pelo Luiz. Docs: `det-2-ondas-pequenas.md`, `det-2-categorias-grandes.md`, `det-2-remocao-rag.md`, `det-2-followups.md`. |
+| DET-3 | Variantes de máscara (entidade 1ª classe + preferências da conta) | ✅ **concluído** 2026-06-12 — backend completo em prod (commits `4e9da03`/`bd2e710`). Tabelas `report_template_variants` (catálogo) + `account_report_preferences` (RLS própria); bundleLoader resolve por preferência (precedência contexto > preferência > default); APIs `/api/me/report-preferences` + `/api/admin/report-template-variants`. Piloto demo MAMARIA "enxuta": E2E prova que trocar a preferência muda o laudo. 38/38 golden regressão. Reviews dex1+dex2 aplicados. Doc: `det-3-variantes-preferencia.md`. |
+| DET-4 | iOS: seletor de máscara nas Preferências | ✅ **concluído** 2026-06-12 — repo `~/laudousg-swift/LaudoUSG` (uncommitted, aguardando @devops). Seção "Modelos de laudo" no `SettingsView` (picker por categoria com >1 variante **no estilo atual**, opção "Automático"); `ProfileService` GET/PATCH `/api/me/report-preferences`; `AppState` + load pós-login. Reviews dex1+dex2 aplicados (3 fixes: filtro por writing style atual evita `BUNDLE_VARIANT_EMPTY`; guard race de signOut; guard double-tap). Build verde; E2E no Simulator (dex1/xcodebuildmcp): Enxuta→"LAUDO RESUMIDO", Automático→padrão (critério DET-3), confirmado nos reports salvos no DB. Doc: `det-4-ios-seletor-mascara.md`. |
+| DET-5 | Structured extraction + renderer (piloto 1 categoria) | ⬜ **PRÓXIMO** |
 | DET-6 | Comandos como operações + vocabulário pessoal curado | ⬜ não iniciado |
+
+> **O que já está em produção (2026-06-12):** todo laudo é montado pelo bundle
+> determinístico (SELECT por chave: categoria × estilo × validated), sem
+> embedding/RAG. A máscara é escolhida por: (1) **contexto do exame** — gatilho no
+> ditado (trimestre, via TA/TV, com/sem Doppler), imperativo clínico; (2)
+> **preferência do médico** quando o ditado não decide (DET-3); (3) **default**.
+> Categoria ativa sem modelo curado → erro claro `BUNDLE_EMPTY` (nunca laudo sem
+> estrutura). Suíte golden: `tests/golden-deterministico/` (38 casos) + E2E de
+> preferência `tests/det3/preference-e2e.mjs`.
+
+> **Pendências/follow-ups (não bloqueiam o DET-4):**
+> - **App iOS com build antigo** mostrava quebras de linha "coladas" no Doppler
+>   obstétrico — é o app, não o backend (provado). Resolve atualizando o app.
+> - **Categorias órfãs** (TÓRAX, OCULAR, etc., 0 uso, sem modelo) dão
+>   `BUNDLE_EMPTY` se usadas — sanear sob demanda.
+> - **Conteúdo real das variantes de preferência** (a máscara "enxuta" do DET-3 é
+>   demonstração) — o Luiz fornece via lab quando quiser.
+> - **UI no lab** p/ CRUD de variantes (só a API admin entrou no DET-3).
+> - **Função SQL órfã** `match_knowledge_blocks` (não chamada) — drop opcional.
 
 ---
 
@@ -215,43 +235,61 @@ caminho vetorial normativo morto no código (não só desligado).
 
 ---
 
-### DET-3 — Variantes de máscara como entidade de 1ª classe 🗂️
+### DET-3 — Variantes de máscara como entidade de 1ª classe 🗂️ ✅ CONCLUÍDO (2026-06-12)
 
-**Objetivo:** habilitar 1-2+ máscaras alternativas por categoria, selecionáveis por conta.
-Máscara deixa de ser "bloco kind=modelo" e vira entidade própria com chave fixa.
+**Entregue (ver `docs/det-3-variantes-preferencia.md`):** tabelas
+`report_template_variants` (catálogo) + `account_report_preferences` (RLS própria),
+seed espelhando todas as variantes existentes, `bundleLoader` resolvendo por
+preferência com precedência **contexto > preferência da conta > default**, APIs
+`/api/me/report-preferences` (GET/PATCH) e `/api/admin/report-template-variants`
+(CRUD). Piloto demo **MAMARIA "enxuta"** prova o critério de aceite (E2E:
+`tests/det3/preference-e2e.mjs`). Reviews dex1+dex2 aplicados.
 
-**Entregáveis:**
-- Migration `report_template_variants`: `id, category_code, writing_style_id, variant_key,
-  name, version, status (draft|validated|archived), template_body, renderer_schema (jsonb,
-  nullable — usado a partir do DET-5), rules, created_by, approved_at`.
-- Migration `account_report_preferences`: `user_id, category_code, default_variant_id`
-  (RLS: user lê/escreve só o próprio).
-- Seed: variante `padrao` para cada categoria ativa (conteúdo = modelo canônico atual).
-- `bundleLoader.ts` resolve variante: preferência da conta → senão variante `padrao`.
-  **Por chave fixa, nunca por similaridade.**
-- Admin no lab (lab.laudousg.com): CRUD de variantes (criar "máscara 2" = INSERT validado).
-- API: `GET/PATCH /api/me/report-preferences` (ou extensão do `/api/me/profile`).
-
-**Critério de aceite:** 2 variantes reais em 1 categoria (sugestão: TIREOIDE ou ABDOME);
-trocar a preferência via API muda o laudo gerado de forma determinística; casos golden para
-ambas as variantes.
+**Diferenças vs o plano original (decisões do Luiz na execução):**
+- Variante de 2 categorias é por **CONTEXTO** (1t/2t/3t, TA/TV, Doppler — já
+  existiam como tag `variant:` desde o DET-2) e o DET-3 ADICIONA a camada de
+  **PREFERÊNCIA** (escolha do médico) por cima, sem conflito.
+- O catálogo é registro + chave; o **conteúdo do modelo continua em
+  `knowledge_blocks`** (tag `variant:<chave>`) no DET-3 — `template_body` vira
+  fonte primária só no DET-5 (renderer).
+- Piloto = **demonstração** ("enxuta"), não conteúdo clínico real (Luiz fornece
+  via lab depois). **Só a API admin** entrou; UI do lab fica para depois.
 
 ---
 
-### DET-4 — iOS: seletor de máscara nas Preferências 📱
+### DET-4 — iOS: seletor de máscara nas Preferências 📱 ⬅️ PRÓXIMO
 
 **Objetivo:** o médico escolhe a máscara no app, uma vez, nas preferências da conta.
 
 **Repo:** `~/laudousg-swift/LaudoUSG` (este é o ÚNICO sprint fora do monorepo).
+O **backend já está 100% pronto e em prod** (DET-3) — este sprint é só iOS/SwiftUI.
+
+**Backend a consumir (já no ar em `https://laudousgmobile.vercel.app`):**
+- `GET /api/me/report-preferences` → `{ preferences: [{category_code, default_variant_id,
+  variant_key}], available_variants: [{id, category_code, writing_style_id, variant_key,
+  name}] }`. Filtrar `available_variants` por categoria que tenha **>1** variante para
+  decidir quais categorias mostram picker.
+- `PATCH /api/me/report-preferences` body `{ category_code, default_variant_id }`
+  (`default_variant_id: null` limpa a preferência → volta ao padrão).
+- Geração: **NENHUMA mudança** no `GenerateRequest` — o backend resolve a variante
+  pela preferência da conta automaticamente.
 
 **Entregáveis:**
-- `SettingsView`: seção "Modelos de laudo" — por categoria que tenha >1 variante, um picker
-  (mesmo padrão do picker de Writing Style já existente).
-- Consumo do endpoint do DET-3 (`ProfileService` + `AppState`).
-- Sem mudança no fluxo de geração do app: o backend resolve a variante pela preferência.
+- `SettingsView` (`LaudoUSG/Features/Settings/SettingsView.swift`): seção "Modelos de
+  laudo" — por categoria com >1 variante, um picker (mesmo padrão do picker de Writing
+  Style já existente, linhas ~178-239).
+- `ProfileService` (`LaudoUSG/Services/ProfileService.swift`): `fetchReportPreferences()`
+  + `updateReportPreference(categoryCode, variantId)` — espelha
+  `updateDefaultWritingStyle()` (PATCH `/api/me/profile`).
+- `AppState` (`LaudoUSG/Core/AppState.swift`): `reportPreferences` + `availableVariants`
+  + `refreshReportPreferences()`.
 
 **Critério de aceite:** trocar a máscara no Settings → próximo laudo gerado usa a variante
-escolhida; build verde; testado E2E no Simulator.
+escolhida; build verde; testado E2E no Simulator. **Pré-requisito de teste:** a categoria
+precisa ter ≥2 variantes no catálogo (hoje só MAMARIA tem, com a "enxuta" demo).
+
+**Delegação:** o repo iOS tem padrão de delegar UI bem-escopada ao dex1/Codex (ver
+`~/laudousg-swift/LaudoUSG/CLAUDE.md` §Delegação Maestri/Codex — brief de 5 seções).
 
 ---
 
