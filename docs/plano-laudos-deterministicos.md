@@ -22,7 +22,7 @@
 | Sprint | Nome | Status |
 |---|---|---|
 | DET-1 | Bundle determinístico mão na massa (piloto ABDOMEN_TOTAL) | ✅ concluído 2026-06-11 — commit `a6e7c52` em prod com flag `DETERMINISTIC_BUNDLE_CATEGORIES=ABDOMEN_TOTAL`; golden 18/18; caching ~99%; laudo real validado pelo Luiz em prod (run `[deterministic_bundle]`, success). Saneamento: `docs/det-1-saneamento-abdomen-total.md` |
-| DET-2 | Expansão a todas as categorias + desligar retrieval vetorial normativo | ⬜ não iniciado |
+| DET-2 | Expansão a todas as categorias + desligar retrieval vetorial normativo | ✅ substancialmente concluído 2026-06-11 — 13 categorias ativas no bundle em prod (commits `17b6387`/`70bb9ab`/`6371492`, flag com 13 categorias); seletor de variante generalizado (multi-way por `variant:`); 35/35 golden; caching ~99%. Saneamento: `docs/det-2-ondas-pequenas.md` + `docs/det-2-categorias-grandes.md`. **Pendente (deferido p/ após estabilidade em prod):** remoção física do caminho vetorial normativo (quotas/overrides/RPC) — hoje é o fallback de rollback. |
 | DET-3 | Variantes de máscara (entidade 1ª classe + preferências da conta) | ⬜ não iniciado |
 | DET-4 | iOS: seletor de máscara nas Preferências | ⬜ não iniciado |
 | DET-5 | Structured extraction + renderer (piloto 1 categoria) | ⬜ não iniciado |
