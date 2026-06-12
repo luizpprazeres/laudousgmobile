@@ -24,6 +24,7 @@ async function main() {
     "0002_retriever_rpc.sql",
     "0006_s27_objective_style_enum.sql",
     "0007_s27_objective_style_and_product_events.sql",
+    "0008_det3_template_variants.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

@@ -165,13 +165,21 @@ function variantOf(tags: string[]): string | null {
   return t ? t.slice(VARIANT_TAG_PREFIX.length) : null;
 }
 
-function resolveVariant(selector: ModelVariantSelector, rawInput: string): string {
+/**
+ * Variante imposta pelo CONTEXTO do exame (gatilho positivo no ditado).
+ * Retorna a variante OU null quando nenhum gatilho casa — distinção essencial
+ * para a precedência do DET-3: contexto > preferência da conta > default.
+ */
+function resolveContextVariant(
+  selector: ModelVariantSelector,
+  rawInput: string,
+): string | null {
   for (const rule of selector.rules) {
     if (rule.trigger.test(rawInput) && !(rule.negation?.test(rawInput) ?? false)) {
       return rule.variant;
     }
   }
-  return selector.defaultVariant;
+  return null;
 }
 
 
@@ -194,6 +202,12 @@ export async function loadDeterministicBundle(args: {
   writingStyleId: string;
   /** Ditado cru/transcript — usado SÓ pra seleção condicional de variante de modelo. */
   rawInput: string;
+  /**
+   * DET-3: variante preferida pela conta (account_report_preferences), resolvida
+   * no route via lookups.resolveAccountVariantKey. Usada quando o CONTEXTO do
+   * exame não decide a variante (sem gatilho positivo). null = sem preferência.
+   */
+  accountVariantKey?: string | null;
 }): Promise<
   | { blocks: RagBlockForPrompt[]; error: null }
   | { blocks: []; error: BundleLoadError }
@@ -226,6 +240,7 @@ export async function loadDeterministicBundle(args: {
     rows,
     args.categoryCode,
     args.rawInput,
+    args.accountVariantKey ?? null,
   );
   if (selection.error) return { blocks: [], error: selection.error };
   const selected = selection.rows;
@@ -276,19 +291,40 @@ function applyModeloVariantSelection<
   rows: T[],
   categoryCode: string,
   rawInput: string,
+  accountVariantKey: string | null,
 ): { rows: T[]; error: null } | { rows: []; error: BundleLoadError } {
   const selector = MODEL_VARIANT_SELECTORS[categoryCode];
   const modelos = rows.filter((r) => r.kind === "modelo");
-  // Sem seletor: só passa direto se a categoria tem no máximo 1 modelo. Com
-  // 2+ modelos e nenhum seletor, o gate BUNDLE_MODEL_AMBIGUOUS bloqueia depois
-  // (defesa em profundidade — categoria multi-modelo SEM seletor é erro de
-  // config, não pode virar laudo conflitante).
-  if (!selector) return { rows, error: null };
+  const modeloVariants = new Set(
+    modelos.map((r) => variantOf(r.tags)).filter((v): v is string => v !== null),
+  );
 
-  const chosen = resolveVariant(selector, rawInput);
+  // Categoria de modelo único sem tag variant: (a maioria) — não há variante a
+  // escolher; o gate de "exatamente 1 modelo" abaixo cuida. A preferência não
+  // se aplica a categorias sem variantes.
+  if (modeloVariants.size === 0) {
+    return { rows, error: null };
+  }
+
+  // Precedência DET-3 (contexto > preferência da conta > default):
+  //  1. CONTEXTO: gatilho positivo no ditado (1t/2t/3t, ta/tv, com Doppler) —
+  //     imperativo clínico, a preferência NUNCA sobrescreve.
+  //  2. PREFERÊNCIA DA CONTA: quando o ditado não decide e o médico tem uma
+  //     máscara preferida. NÃO checa existência aqui — se a preferência aponta
+  //     pra variante inexistente NESTE estilo, o gate hasChosenModelo dispara
+  //     BUNDLE_VARIANT_EMPTY (erro alto e claro, nunca fallback silencioso —
+  //     review dex1). Evita o médico achar que a preferência está ativa.
+  //  3. DEFAULT: defaultVariant do seletor, senão "padrao".
+  const contextVariant = selector
+    ? resolveContextVariant(selector, rawInput)
+    : null;
+  const chosen: string =
+    contextVariant ??
+    accountVariantKey ??
+    selector?.defaultVariant ??
+    "padrao";
+
   const hasChosenModelo = modelos.some((r) => variantOf(r.tags) === chosen);
-  // Variante escolhida sem modelo correspondente = erro alto e claro, NUNCA
-  // fallback silencioso pra outra máscara.
   if (!hasChosenModelo) {
     return {
       rows: [],

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDbClient, schema } from "@laudousg/db";
 import type { WritingStyleCode } from "@laudousg/shared";
 
@@ -57,6 +57,41 @@ export async function getWritingStyleById(
     stylesCache = m;
   }
   return stylesCache.get(id) ?? null;
+}
+
+/**
+ * DET-3 — variante de máscara preferida pela conta para uma categoria.
+ * JOIN account_report_preferences × report_template_variants (só validated).
+ * Retorna a `variant_key` (que o bundleLoader casa com a tag variant:<chave>)
+ * ou null se o médico não tem preferência registrada / a variante não é válida.
+ *
+ * NÃO cacheado — preferência muda por usuário e a query é por (user, categoria)
+ * com índice PK; barata.
+ */
+export async function resolveAccountVariantKey(
+  userId: string,
+  categoryCode: string,
+): Promise<string | null> {
+  const db = getDbClient();
+  const [row] = await db
+    .select({ variantKey: schema.reportTemplateVariants.variantKey })
+    .from(schema.accountReportPreferences)
+    .innerJoin(
+      schema.reportTemplateVariants,
+      eq(
+        schema.accountReportPreferences.defaultVariantId,
+        schema.reportTemplateVariants.id,
+      ),
+    )
+    .where(
+      and(
+        eq(schema.accountReportPreferences.userId, userId),
+        eq(schema.accountReportPreferences.categoryCode, categoryCode),
+        eq(schema.reportTemplateVariants.status, "validated"),
+      ),
+    )
+    .limit(1);
+  return row?.variantKey ?? null;
 }
 
 /**

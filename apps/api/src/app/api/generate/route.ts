@@ -63,6 +63,7 @@ import {
 import {
   getKnownCategories,
   getWritingStyleById,
+  resolveAccountVariantKey,
 } from "@/server/db/lookups";
 import { env } from "@/server/env";
 import {
@@ -599,10 +600,17 @@ export async function POST(req: Request) {
       const ragT0 = Date.now();
       const skipped: RagBlockForPrompt[] = [];
       const queryText = "[deterministic_bundle]";
+      // DET-3: variante preferida pela conta (usada só quando o ditado não
+      // decide a variante por contexto — ver precedência no bundleLoader).
+      const accountVariantKey = await resolveAccountVariantKey(
+        user.id,
+        effectiveCategory,
+      );
       const bundle = await loadDeterministicBundle({
         categoryCode: effectiveCategory,
         writingStyleId: effectiveWritingStyleId,
         rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+        accountVariantKey,
       });
       // Bundle inválido = erro ALTO e CLARO (laudo médico NUNCA sai sem
       // estrutura). Gates (reviews dex1/dex2):
