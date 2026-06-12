@@ -67,7 +67,10 @@ import {
   resolveAccountVariantKey,
 } from "@/server/db/lookups";
 import { runRendererStream } from "@/server/pipeline/renderer";
-import { RENDERER_SUPPORTED_CATEGORIES } from "@/server/renderer/extraction";
+import {
+  RENDERER_SUPPORTED_CATEGORIES,
+  RENDERER_PROGRAMMATIC_CATEGORIES,
+} from "@/server/renderer/extraction";
 import { env } from "@/server/env";
 import {
   estimateCost,
@@ -699,23 +702,27 @@ export async function POST(req: Request) {
         .RENDERER_CATEGORIES.split(",")
         .map((s) => s.trim())
         .filter((s) => s !== "");
-      let rendererTemplateBody: string | null = null;
-      if (
+      const rendererEligible =
         rendererCategories.includes(effectiveCategory) &&
-        RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory)
-      ) {
+        RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory);
+      // Categorias programáticas (ex: OBSTETRICA) montam o laudo em código e não
+      // precisam de template_body; as demais (ABDOMEN_TOTAL) exigem o template.
+      const programmatic =
+        rendererEligible && RENDERER_PROGRAMMATIC_CATEGORIES.has(effectiveCategory);
+      let rendererTemplateBody: string | null = null;
+      if (rendererEligible && !programmatic) {
         rendererTemplateBody = await getVariantTemplateBody({
           categoryCode: effectiveCategory,
           writingStyleId: effectiveWritingStyleId,
           variantKey: bundle.variantKey ?? "padrao",
         });
       }
-      const useRenderer = rendererTemplateBody !== null;
+      const useRenderer = programmatic || rendererTemplateBody !== null;
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
             rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
-            templateBody: rendererTemplateBody as string,
+            templateBody: rendererTemplateBody ?? "",
             signal,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;

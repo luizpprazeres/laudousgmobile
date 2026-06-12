@@ -15,6 +15,10 @@ import {
   CONCLUSAO_TODOS_NORMAIS,
   CONCLUSAO_FECHAMENTO,
 } from "../renderer/phrases/ABDOMEN_TOTAL";
+import {
+  renderObstetrica,
+  type ObstetricaFindings,
+} from "../renderer/categories/OBSTETRICA";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -151,7 +155,27 @@ export async function* runRendererStream(args: {
     rawInput: args.rawInput,
     signal: args.signal,
   });
-  const findings = extraction.findings;
+
+  // Categorias com render programático auto-contido (sem slots de órgão nem
+  // free-slot LLM) — laudo 100% determinístico a partir dos achados tipados.
+  if (args.categoryCode === "OBSTETRICA") {
+    const fullText = renderObstetrica(extraction.findings as ObstetricaFindings);
+    const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;
+    args.onSystemMessage?.(systemMessage);
+    yield fullText;
+    return {
+      fullText,
+      latencyMs: Date.now() - t0,
+      systemMessage,
+      inputTokens: extraction.inputTokens,
+      outputTokens: extraction.outputTokens,
+      cachedInputTokens: undefined,
+      extraction,
+      freeSlotCount: 0,
+    };
+  }
+
+  const findings = extraction.findings as import("../renderer/findingsSchemas/ABDOMEN_TOTAL").AbdomenTotalFindings;
 
   // 2. Render por órgão (determinístico) + coleta de slots livres.
   const organRenders = new Map<AbdomenOrganKey, ReturnType<typeof renderOrgan>>();

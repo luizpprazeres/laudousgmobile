@@ -5,6 +5,11 @@ import {
   AbdomenTotalFindingsSchema,
   type AbdomenTotalFindings,
 } from "./findingsSchemas/ABDOMEN_TOTAL";
+import {
+  OBSTETRICA_JSON_SCHEMA,
+  OBSTETRICA_EXTRACTION_PROMPT,
+  ObstetricaFindingsSchema,
+} from "./categories/OBSTETRICA";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -13,18 +18,24 @@ import {
  * FECHADO e específico da categoria: o LLM só preenche dados; quem escreve o
  * laudo é o renderer (código). Temp 0 + structured outputs strict.
  *
- * Categorias suportadas: registro abaixo (piloto: ABDOMEN_TOTAL).
+ * Registry abaixo: cada categoria suportada tem schema strict + prompt + parse.
  */
+
+type Extractor = {
+  schemaName: string;
+  jsonSchema: Record<string, unknown>;
+  prompt: string;
+  parse: (raw: unknown) => unknown;
+};
 
 /**
- * Categorias com schema de extração registrado. O route SÓ entra no caminho
- * renderer se a categoria estiver aqui — flag ligada + template_body sem
- * schema NUNCA pode derrubar a geração (fallback writer, nunca throw).
+ * Categorias cujo render é PROGRAMÁTICO (montam o laudo em código, sem
+ * template_body com slots). Entram no renderer mesmo sem template no catálogo.
  */
-export const RENDERER_SUPPORTED_CATEGORIES = new Set(["ABDOMEN_TOTAL"]);
+export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set(["OBSTETRICA"]);
 
 export type RendererExtractionResult = {
-  findings: AbdomenTotalFindings;
+  findings: unknown;
   latencyMs: number;
   inputTokens?: number;
   outputTokens?: number;
@@ -120,12 +131,35 @@ function normalizeFindings(f: AbdomenTotalFindings): AbdomenTotalFindings {
   };
 }
 
+const EXTRACTORS: Record<string, Extractor> = {
+  ABDOMEN_TOTAL: {
+    schemaName: "AbdomenTotalFindings",
+    jsonSchema: ABDOMEN_TOTAL_FINDINGS_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: ABDOMEN_EXTRACTION_PROMPT,
+    parse: (raw) => normalizeFindings(AbdomenTotalFindingsSchema.parse(raw)),
+  },
+  OBSTETRICA: {
+    schemaName: "ObstetricaFindings",
+    jsonSchema: OBSTETRICA_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: OBSTETRICA_EXTRACTION_PROMPT,
+    parse: (raw) => ObstetricaFindingsSchema.parse(raw),
+  },
+};
+
+/**
+ * Categorias com schema de extração registrado. O route SÓ entra no caminho
+ * renderer se a categoria estiver aqui — flag ligada sem schema NUNCA pode
+ * derrubar a geração (fallback writer, nunca throw).
+ */
+export const RENDERER_SUPPORTED_CATEGORIES = new Set(Object.keys(EXTRACTORS));
+
 export async function runRendererExtraction(args: {
   categoryCode: string;
   rawInput: string;
   signal?: AbortSignal;
 }): Promise<RendererExtractionResult> {
-  if (args.categoryCode !== "ABDOMEN_TOTAL") {
+  const extractor = EXTRACTORS[args.categoryCode];
+  if (!extractor) {
     throw new Error(
       `renderer extraction: categoria sem schema registrado: ${args.categoryCode}`,
     );
@@ -141,16 +175,13 @@ export async function runRendererExtraction(args: {
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "AbdomenTotalFindings",
+          name: extractor.schemaName,
           strict: true,
-          schema: ABDOMEN_TOTAL_FINDINGS_JSON_SCHEMA as unknown as Record<
-            string,
-            unknown
-          >,
+          schema: extractor.jsonSchema,
         },
       },
       messages: [
-        { role: "system", content: ABDOMEN_EXTRACTION_PROMPT },
+        { role: "system", content: extractor.prompt },
         { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
       ],
     },
@@ -159,9 +190,7 @@ export async function runRendererExtraction(args: {
 
   const raw = res.choices[0]?.message?.content;
   if (!raw) throw new Error("renderer extraction: resposta vazia");
-  const findings = normalizeFindings(
-    AbdomenTotalFindingsSchema.parse(JSON.parse(raw)),
-  );
+  const findings = extractor.parse(JSON.parse(raw));
 
   return {
     findings,
