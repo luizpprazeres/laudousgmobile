@@ -115,7 +115,7 @@ export const SHOWCASE_SAMPLES: ShowcaseSample[] = [
     "OBSTETRICA:gemelar",
     "OBSTETRICA",
     "GEMELAR dicoriônica",
-    "Obstétrica gemelar. Gestação gemelar dicoriônica diamniótica. Primeiro gemelar cefálico, batimentos de 144 por minuto, BPD 4,8 HC 17,9 AC 16,2 FL 3,1 centímetros, líquido normal. Segundo gemelar pélvico, batimentos de 152 por minuto, BPD 4,9 HC 18,1 AC 16,5 FL 3,2 centímetros, líquido normal. Placentas anterior e posterior, ambas grau 1.",
+    "Obstétrica gemelar, gestação gemelar dicoriônica e diamniótica. Dois fetos: feto A à direita, cefálico, dorso à direita, batimentos de 144, peso estimado 2400 gramas, maior bolsão 4,2 centímetros. Feto B à esquerda, pélvico, dorso à esquerda, batimentos de 152, peso estimado 2250 gramas, maior bolsão 4 centímetros. Duas placentas, anterior e posterior, ambas grau 1. Idade gestacional 34 semanas e 2 dias.",
   ),
   s(
     "DOPPLER_OBSTETRICO:padrao",
@@ -145,7 +145,7 @@ export const SHOWCASE_SAMPLES: ShowcaseSample[] = [
     "MUSCULOESQUELETICO_V2:padrao",
     "MUSCULOESQUELETICO_V2",
     "padrão",
-    "Ultrassom do ombro direito. Tendinopatia do supraespinhal com pequena rotura parcial intrassubstancial de 4 milímetros na zona crítica, sem retração. Demais tendões do manguito íntegros. Bursa subacromial sem distensão.",
+    "Ultrassom do ombro direito. Tendinopatia do supraespinhal, com imagem hiperecoica de calcificação de 0,4 centímetros, ocasionando sombra acústica, sem sinais de ruptura. Demais tendões do manguito íntegros. Bursa subacromial sem distensão.",
   ),
   s(
     "DOPPLER_VENOSO_MMII:completo",
@@ -169,7 +169,7 @@ export const SHOWCASE_SAMPLES: ShowcaseSample[] = [
     "DOPPLER_ARTERIAL_MMII:padrao",
     "DOPPLER_ARTERIAL_MMII",
     "padrão",
-    "Doppler arterial do membro inferior esquerdo. Ateromatose difusa sem estenoses significativas. Fluxo trifásico em femoral comum, femoral superficial e poplítea. Tibiais com fluxo bifásico distal. Sem oclusões.",
+    "Doppler arterial do membro inferior esquerdo. Ateromatose difusa, com imagens hiperecoicas aderidas às paredes, sem estenoses hemodinamicamente significativas. Fluxo multifásico em femoral comum, femoral e poplítea, velocidades de pico sistólico preservadas. Tibiais e fibular pérvios. Sem oclusões.",
   ),
   s(
     "DOPPLER_RENAL:padrao",

@@ -53,7 +53,10 @@ CONCLUSÃO:            ← itens diagnósticos numerados (1, 2, …)
 | ABDOMEN_SUPERIOR | parcial (herda abdome) | ⬜ writer | aplicar lógica vesícula |
 | TIREOIDE | ✅ | ⬜ writer | — |
 | PROSTATA_SUPRAPUBICA | ✅ | ⬜ writer | cálculo volume/peso → renderer |
-| DOPPLER_ARTERIAL_MMII | ⬜ | ⬜ writer | rework S2 (pendente) |
+| DOPPLER_ARTERIAL_MMII | ✅ | ⬜ writer | — |
+| MORFOLOGICO (1t/2t/3t) | ✅ | ⬜ **renderer prioritário** | writer teima na estrutura |
+| OBSTETRICA (+ gemelar) | ✅ | ⬜ **renderer prioritário** | peso médio/divergência = cálculo |
+| MUSCULOESQUELETICO_V2 | ✅ | ⬜ writer | antiga inativa (consolidada) |
 | DOPPLER_RENAL | ✅ | ⬜ writer | doc nos comentários (writer ainda usa o longo) |
 | DOPPLER_VENOSO (completo/TVP) | ✅ | ⬜ writer | revalidar amostra (429 OpenAI) |
 | DOPPLER_OBSTETRICO | ✅ | ⬜ writer | — |
@@ -276,6 +279,39 @@ cadeia ganglionar cervical I a V.
 - **DOPPLER_OBSTETRICO** — frase opcional pós-título: "Primeira ultrassonografia
   realizada em DD/MM/AAAA com X semanas e Y dias. Hoje com Z semanas e W dias."
   (data numérica; omitir "e zero dias" quando zero).
+
+---
+
+# Lote B (reworks) — resumo das regras aplicadas
+
+- **DOPPLER_ARTERIAL_MMII** — título individualizado por membro
+  ("ULTRASSONOGRAFIA COM DOPPLER COLORIDO ARTERIAL DO MEMBRO INFERIOR
+  {DIREITO/ESQUERDO}"); COMENTÁRIOS; corpo descritivo por vaso (placas,
+  velocidades, padrão espectral); conclusão SÓ diagnóstico ("Doença
+  aterosclerótica difusa no membro inferior {lado}, sem estenoses
+  hemodinamicamente significativas."). **ITB removido** (blocos arquivados).
+- **MORFOLOGICO (1t/2t/3t)** — estrutura fixa COMENTÁRIOS / OS SEGUINTES
+  ASPECTOS / CONCLUSÃO (writer omitia COMENTÁRIOS e vazava a doc fotográfica
+  para a conclusão — corrigido com reforço de estrutura + título exato por
+  trimestre, e correção da regra de DUM que herdava o título obstétrico).
+  Modelos validados = fonte viva (CCN/TN/osso nasal/ducto venoso no 1t;
+  biometria completa + ossos longos bilaterais no 2t).
+- **OBSTETRICA gemelar** — título "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR"; 1ª
+  frase com quantidade de fetos + individualização (apresentação/dorso/polo);
+  BCF/anatomia/biometria por feto (Feto A/Feto B); peso de cada feto + médio +
+  divergência (g e %); placentas por quantidade; conclusão item 1 com IG +
+  corionicidade ("Gestação gemelar dicoriônica e diamniótica em torno de X
+  semanas e Y dias."); comparação ponderal no lugar de item de placentas;
+  líquido válido p/ ambos.
+- **MUSCULOESQUELETICO** — categoria antiga inativada; V2 é o padrão
+  ("Musculoesquelético"). Conclusão RESUME o diagnóstico (nunca copia o
+  corpo); regra da tranquilização do manguito com lógica estrita ("Não há
+  sinais de ruptura do manguito rotador{lat}." SÓ quando não há ruptura).
+
+> **Nota de arquitetura:** morfológico e obstétrica gemelar expõem o limite do
+> caminho writer (LLM teima na estrutura/título e não calcula peso médio/
+> divergência). São os **candidatos prioritários ao renderer** (DET-5) —
+> estrutura e cálculos por construção resolvem isso de vez.
 
 ---
 
