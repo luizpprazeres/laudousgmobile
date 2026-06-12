@@ -19,6 +19,10 @@ import {
   renderObstetrica,
   type ObstetricaFindings,
 } from "../renderer/categories/OBSTETRICA";
+import {
+  renderMorfologico,
+  type MorfologicoFindings,
+} from "../renderer/categories/MORFOLOGICO";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -158,8 +162,11 @@ export async function* runRendererStream(args: {
 
   // Categorias com render programático auto-contido (sem slots de órgão nem
   // free-slot LLM) — laudo 100% determinístico a partir dos achados tipados.
-  if (args.categoryCode === "OBSTETRICA") {
-    const fullText = renderObstetrica(extraction.findings as ObstetricaFindings);
+  if (args.categoryCode === "OBSTETRICA" || args.categoryCode === "MORFOLOGICO") {
+    const fullText =
+      args.categoryCode === "OBSTETRICA"
+        ? renderObstetrica(extraction.findings as ObstetricaFindings)
+        : renderMorfologico(extraction.findings as MorfologicoFindings);
     const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;
     args.onSystemMessage?.(systemMessage);
     yield fullText;

@@ -1,1 +1,18 @@
-{"id":"prostata-suprapubica-det-01","category":"PROSTATA_SUPRAPUBICA","rawInput":"Próstata via suprapúbica. Próstata de dimensões aumentadas, peso estimado 45 gramas, contornos regulares. Resíduo pós-miccional de 30 mL.","expectedHeadersInOrder":["ULTRASSONOGRAFIA DA PRÓSTATA","COMENTÁRIOS:","CONCLUSÃO:"],"criticalFindings":["suprapúbica","próstata"],"forbiddenPatterns":["(VIA TRANSRETAL"],"_nota":"1 modelo (suprapúbica). 'transretal' pode aparecer em recomendação legítima — proíbe só o título do modelo transretal."}
+{
+  "id": "prostata-suprapubica-det-01",
+  "category": "PROSTATA_SUPRAPUBICA",
+  "rawInput": "Próstata via suprapúbica. Próstata de dimensões aumentadas, peso estimado 45 gramas, contornos regulares. Resíduo pós-miccional de 30 mL.",
+  "expectedHeadersInOrder": [
+    "ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL)",
+    "COMENTÁRIOS:",
+    "CONCLUSÃO:"
+  ],
+  "criticalFindings": [
+    "transabdominal",
+    "peso"
+  ],
+  "forbiddenPatterns": [
+    "(VIA TRANSRETAL"
+  ],
+  "_nota": "1 modelo (suprapúbica). 'transretal' pode aparecer em recomendação legítima — proíbe só o título do modelo transretal."
+}

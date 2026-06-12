@@ -10,6 +10,11 @@ import {
   OBSTETRICA_EXTRACTION_PROMPT,
   ObstetricaFindingsSchema,
 } from "./categories/OBSTETRICA";
+import {
+  MORFOLOGICO_JSON_SCHEMA,
+  MORFOLOGICO_EXTRACTION_PROMPT,
+  MorfologicoFindingsSchema,
+} from "./categories/MORFOLOGICO";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -32,7 +37,7 @@ type Extractor = {
  * Categorias cujo render é PROGRAMÁTICO (montam o laudo em código, sem
  * template_body com slots). Entram no renderer mesmo sem template no catálogo.
  */
-export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set(["OBSTETRICA"]);
+export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set(["OBSTETRICA", "MORFOLOGICO"]);
 
 export type RendererExtractionResult = {
   findings: unknown;
@@ -143,6 +148,12 @@ const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: OBSTETRICA_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: OBSTETRICA_EXTRACTION_PROMPT,
     parse: (raw) => ObstetricaFindingsSchema.parse(raw),
+  },
+  MORFOLOGICO: {
+    schemaName: "MorfologicoFindings",
+    jsonSchema: MORFOLOGICO_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: MORFOLOGICO_EXTRACTION_PROMPT,
+    parse: (raw) => MorfologicoFindingsSchema.parse(raw),
   },
 };
 
