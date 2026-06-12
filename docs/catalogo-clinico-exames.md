@@ -53,9 +53,12 @@ CONCLUSÃO:            ← itens diagnósticos numerados (1, 2, …)
 | ABDOMEN_SUPERIOR | parcial (herda abdome) | ⬜ writer | aplicar lógica vesícula |
 | TIREOIDE | ✅ | ⬜ writer | — |
 | PROSTATA_SUPRAPUBICA | ✅ | ⬜ writer | cálculo volume/peso → renderer |
-| DOPPLER_ARTERIAL_MMII | ⬜ | ⬜ writer | rework S2 |
-| DOPPLER_RENAL / VENOSO / OBSTETRICO | ⬜ | ⬜ writer | revisão S2 |
-| ESCROTAL / GLANDULAS_SALIVARES | ⬜ | ⬜ writer | revisão S2 |
+| DOPPLER_ARTERIAL_MMII | ⬜ | ⬜ writer | rework S2 (pendente) |
+| DOPPLER_RENAL | ✅ | ⬜ writer | doc nos comentários (writer ainda usa o longo) |
+| DOPPLER_VENOSO (completo/TVP) | ✅ | ⬜ writer | revalidar amostra (429 OpenAI) |
+| DOPPLER_OBSTETRICO | ✅ | ⬜ writer | — |
+| ESCROTAL | ✅ | ⬜ writer | — |
+| GLANDULAS_SALIVARES | ✅ | ⬜ writer | — |
 | MORFOLOGICO (1t/2t/3t) | ⬜ | ⬜ writer | rework S2 |
 | OBSTETRICA (+ gemelar) | ⬜ | ⬜ writer | spec gemelar S2 |
 | MUSCULOESQUELETICO | ⬜ | ⬜ writer | consolidar V2 |
@@ -247,6 +250,32 @@ cadeia ganglionar cervical I a V.
    com 3 medidas — candidato a renderer p/ cálculo determinístico.)
 4. (se IPP) Protrusão prostática intravesical de X cm (Grau N).
 5. Vesículas seminais ecograficamente normais.
+
+---
+
+---
+
+# Outras categorias (Lote A — resumo das regras aplicadas)
+
+- **ESCROTAL** — varicocele individualiza os DOIS lados em linhas separadas:
+  "Veias do plexo pampiniforme {lado} de calibre aumentado, medindo até X mm,
+  com refluxo à manobra de Valsalva com duração maior do que um segundo." +
+  "Veias do plexo pampiniforme {outro lado} de calibres normais." Conclusão
+  "Varicocele à {lado}." Default normal: testículos + epidídimos + plexo normais.
+- **GLANDULAS_SALIVARES** — estrutura COMENTÁRIOS → parótidas/submandibulares
+  (dimensões/ecotextura/ductos/nódulos/cálculos) → linfonodos. Conclusão de
+  item único sem "1)": "Glândulas salivares maiores ecograficamente normais."
+- **DOPPLER_RENAL** — doc fotográfica nos COMENTÁRIOS (nunca no fim). Conclusão
+  normal: 1) "Artérias renais com fluxo preservado bilateralmente, sem
+  evidência ecográfica de estenose hemodinamicamente significativa." 2)
+  "Índices de resistência intrarrenais dentro dos limites da normalidade."
+- **DOPPLER_VENOSO completo** — comentários encerram em "compressão distal
+  manual aplicada." (sem a lista repetitiva). **TVP-only** — conclusão de item
+  único sem "1)"; corpo em frase fluida (segmentos pérvios/compressíveis), não
+  fragmentado.
+- **DOPPLER_OBSTETRICO** — frase opcional pós-título: "Primeira ultrassonografia
+  realizada em DD/MM/AAAA com X semanas e Y dias. Hoje com Z semanas e W dias."
+  (data numérica; omitir "e zero dias" quando zero).
 
 ---
 
