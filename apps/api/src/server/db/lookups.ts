@@ -95,6 +95,33 @@ export async function resolveAccountVariantKey(
 }
 
 /**
+ * DET-5 — template_body da variante resolvida (caminho RENDERER).
+ * Retorna null se a variante não tem template_body — o route cai no writer
+ * (fallback automático). NÃO cacheado: chamada única por geração, barata.
+ */
+export async function getVariantTemplateBody(args: {
+  categoryCode: string;
+  writingStyleId: string;
+  variantKey: string;
+}): Promise<string | null> {
+  const db = getDbClient();
+  const [row] = await db
+    .select({ templateBody: schema.reportTemplateVariants.templateBody })
+    .from(schema.reportTemplateVariants)
+    .where(
+      and(
+        eq(schema.reportTemplateVariants.categoryCode, args.categoryCode),
+        eq(schema.reportTemplateVariants.writingStyleId, args.writingStyleId),
+        eq(schema.reportTemplateVariants.variantKey, args.variantKey),
+        eq(schema.reportTemplateVariants.status, "validated"),
+      ),
+    )
+    .limit(1);
+  const body = row?.templateBody;
+  return body && body.trim() !== "" ? body : null;
+}
+
+/**
  * Limpa o cache. Chamar quando admin atualizar categorias/estilos
  * (futuro endpoint admin).
  */

@@ -78,6 +78,8 @@ export async function updateRunAfterWriter(args: {
   latencyMs: number;
   tokensInput?: number;
   tokensOutput?: number;
+  /** DET-5: "renderer/v1" quando o laudo foi montado pelo renderer. */
+  modelWriter?: string;
 }): Promise<void> {
   const db = getDbClient();
   await db
@@ -86,6 +88,7 @@ export async function updateRunAfterWriter(args: {
       latencyMsWriter: args.latencyMs,
       tokensInput: args.tokensInput,
       tokensOutput: args.tokensOutput,
+      ...(args.modelWriter !== undefined && { modelWriter: args.modelWriter }),
     })
     .where(eq(schema.generationRuns.id, args.runId));
 }

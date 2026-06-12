@@ -26,6 +26,7 @@ async function main() {
     "0007_s27_objective_style_and_product_events.sql",
     "0008_det3_template_variants.sql",
     "0009_det4_preference_eligible.sql",
+    "0010_det5_template_body_abdomen.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

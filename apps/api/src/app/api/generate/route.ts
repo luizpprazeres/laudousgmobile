@@ -63,8 +63,11 @@ import {
 import {
   getKnownCategories,
   getWritingStyleById,
+  getVariantTemplateBody,
   resolveAccountVariantKey,
 } from "@/server/db/lookups";
+import { runRendererStream } from "@/server/pipeline/renderer";
+import { RENDERER_SUPPORTED_CATEGORIES } from "@/server/renderer/extraction";
 import { env } from "@/server/env";
 import {
   estimateCost,
@@ -686,25 +689,54 @@ export async function POST(req: Request) {
       // Mantido como array vazio para compat com a auditoria/metadata abaixo.
       const pipelineWarnings: { code: string; message: string }[] = [];
 
-      // ----- 4. Writer (stream) -----
+      // ----- 4. Writer (stream) OU Renderer (DET-5) -----
       // Fix codex #4: resolver writing_style code + category label do DB.
       currentStage = "writer";
-      const writerGen = runWriterStream({
-        findings,
-        ragBlocks: blocks,
-        writingStyleCode: styleRow.code,
-        categoryCode: effectiveCategory,
-        categoryLabel:
-          categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
-        // FAST-PATH: writer escreve direto do ditado cru (sem achados estruturados).
-        rawUserMessage: fastPath
-          ? reqInput.consolidated_transcript ?? reqInput.raw_input
-          : undefined,
-        signal,
-        onSystemMessage: (message) => {
-          auditState.systemMessageFull = message;
-        },
-      });
+      // DET-5: caminho RENDERER quando a categoria está na flag E a variante
+      // resolvida tem template_body. Qualquer outra condição → writer
+      // (fallback automático; rollback trivial = tirar da flag).
+      const rendererCategories = env()
+        .RENDERER_CATEGORIES.split(",")
+        .map((s) => s.trim())
+        .filter((s) => s !== "");
+      let rendererTemplateBody: string | null = null;
+      if (
+        rendererCategories.includes(effectiveCategory) &&
+        RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory)
+      ) {
+        rendererTemplateBody = await getVariantTemplateBody({
+          categoryCode: effectiveCategory,
+          writingStyleId: effectiveWritingStyleId,
+          variantKey: bundle.variantKey ?? "padrao",
+        });
+      }
+      const useRenderer = rendererTemplateBody !== null;
+      const writerGen = useRenderer
+        ? runRendererStream({
+            categoryCode: effectiveCategory,
+            rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+            templateBody: rendererTemplateBody as string,
+            signal,
+            onSystemMessage: (message) => {
+              auditState.systemMessageFull = message;
+            },
+          })
+        : runWriterStream({
+            findings,
+            ragBlocks: blocks,
+            writingStyleCode: styleRow.code,
+            categoryCode: effectiveCategory,
+            categoryLabel:
+              categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
+            // FAST-PATH: writer escreve direto do ditado cru (sem achados estruturados).
+            rawUserMessage: fastPath
+              ? reqInput.consolidated_transcript ?? reqInput.raw_input
+              : undefined,
+            signal,
+            onSystemMessage: (message) => {
+              auditState.systemMessageFull = message;
+            },
+          });
 
       let finalText = "";
       let writerResult:
@@ -727,6 +759,10 @@ export async function POST(req: Request) {
         emit({ type: "token", ts: nowIso(), delta: next.value });
       }
       finalText = writerResult?.fullText ?? finalText;
+      // DET-5: no caminho RENDERER os post-processors NÃO rodam — a estrutura
+      // (cabeçalhos, ordem, numeração, placeholders) é garantida por
+      // construção; os guards existem pra consertar o que o writer LLM quebra.
+      if (!useRenderer) {
       if (styleRow.code === "OBJETIVO") {
         finalText = formatObjectiveEnumerations(finalText);
       }
@@ -801,6 +837,17 @@ export async function POST(req: Request) {
       // Guard transversal: remove itens numerados de conclusão cujo conteúdo é
       // só placeholder ("____"). Preserva placeholders dentro de itens reais.
       finalText = removeEmptyConclusionItems(finalText);
+      } else {
+        // RENDERER (DET-5): único guard que roda é o de COMANDOS do médico —
+        // diretivas explícitas ("na conclusão recomendar X") precisam entrar
+        // até o DET-6 tratar comandos como operações (review dex1). É
+        // determinístico: não quebra a byte-stability (mesmo input → mesmo
+        // comando → mesmo texto).
+        finalText = applyCommandGuard(
+          finalText,
+          reqInput.consolidated_transcript ?? reqInput.raw_input,
+        );
+      }
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
@@ -821,6 +868,9 @@ export async function POST(req: Request) {
         latencyMs: writerResult?.latencyMs ?? 0,
         tokensInput: writerResult?.inputTokens,
         tokensOutput: writerResult?.outputTokens,
+        // DET-5: prova de rollout/auditoria — qual caminho montou o laudo
+        // (review dex2). O modelo da extração continua em model_structurer.
+        modelWriter: useRenderer ? "renderer/v1" : undefined,
       });
 
       // ----- 5. Sanity check (observabilidade, NÃO bloqueia) -----

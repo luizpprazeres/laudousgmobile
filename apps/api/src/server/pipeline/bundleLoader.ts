@@ -209,7 +209,7 @@ export async function loadDeterministicBundle(args: {
    */
   accountVariantKey?: string | null;
 }): Promise<
-  | { blocks: RagBlockForPrompt[]; error: null }
+  | { blocks: RagBlockForPrompt[]; variantKey: string | null; error: null }
   | { blocks: []; error: BundleLoadError }
 > {
   const db = getDbClient();
@@ -281,6 +281,9 @@ export async function loadDeterministicBundle(args: {
       priority: r.priority,
       similarity: null,
     })),
+    // DET-5: variante resolvida (contexto > preferência > default) — o route
+    // usa pra buscar o template_body da variante no caminho renderer.
+    variantKey: selection.variantKey,
     error: null,
   };
 }
@@ -292,7 +295,9 @@ function applyModeloVariantSelection<
   categoryCode: string,
   rawInput: string,
   accountVariantKey: string | null,
-): { rows: T[]; error: null } | { rows: []; error: BundleLoadError } {
+):
+  | { rows: T[]; variantKey: string | null; error: null }
+  | { rows: []; variantKey: null; error: BundleLoadError } {
   const selector = MODEL_VARIANT_SELECTORS[categoryCode];
   const modelos = rows.filter((r) => r.kind === "modelo");
   const modeloVariants = new Set(
@@ -303,7 +308,7 @@ function applyModeloVariantSelection<
   // escolher; o gate de "exatamente 1 modelo" abaixo cuida. A preferência não
   // se aplica a categorias sem variantes.
   if (modeloVariants.size === 0) {
-    return { rows, error: null };
+    return { rows, variantKey: null, error: null };
   }
 
   // Precedência DET-3 (contexto > preferência da conta > default):
@@ -328,6 +333,7 @@ function applyModeloVariantSelection<
   if (!hasChosenModelo) {
     return {
       rows: [],
+      variantKey: null,
       error: { code: "BUNDLE_VARIANT_EMPTY", variantTag: chosen },
     };
   }
@@ -337,6 +343,7 @@ function applyModeloVariantSelection<
       if (r.kind !== "modelo") return true;
       return variantOf(r.tags) === chosen;
     }),
+    variantKey: chosen,
     error: null,
   };
 }

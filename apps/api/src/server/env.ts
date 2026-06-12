@@ -39,6 +39,12 @@ const ServerEnvSchema = z.object({
   // Revert instantâneo: setar "false" na env (Vercel) — sem mexer em código.
   // O request pode sobrescrever via campo fast_path.
   FAST_PATH_DEFAULT: z.string().default("true"),
+  // DET-5: categorias que usam o RENDERER (extração tipada + montagem em
+  // código) em vez do writer. Lista CSV de category_codes (ex:
+  // "ABDOMEN_TOTAL,TIREOIDE"). Vazio = renderer desligado. A categoria também
+  // precisa de template_body na variante resolvida — senão cai no writer
+  // (fallback automático, rollback trivial = tirar da lista).
+  RENDERER_CATEGORIES: z.string().default(""),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),
