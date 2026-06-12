@@ -51,8 +51,8 @@ CONCLUSÃO:            ← itens diagnósticos numerados (1, 2, …)
 |---|---|---|---|
 | ABDOMEN_TOTAL | ✅ completa | ✅ prod | velocidades na tabela doppler |
 | ABDOMEN_SUPERIOR | parcial (herda abdome) | ⬜ writer | aplicar lógica vesícula |
-| TIREOIDE | ⬜ | ⬜ writer | revisão S2 |
-| PROSTATA_SUPRAPUBICA | ⬜ | ⬜ writer | revisão S2 |
+| TIREOIDE | ✅ | ⬜ writer | — |
+| PROSTATA_SUPRAPUBICA | ✅ | ⬜ writer | cálculo volume/peso → renderer |
 | DOPPLER_ARTERIAL_MMII | ⬜ | ⬜ writer | rework S2 |
 | DOPPLER_RENAL / VENOSO / OBSTETRICO | ⬜ | ⬜ writer | revisão S2 |
 | ESCROTAL / GLANDULAS_SALIVARES | ⬜ | ⬜ writer | revisão S2 |
@@ -175,6 +175,78 @@ Ordem de decisão (o renderer segue exatamente esta árvore):
 - ≥1 achado → itens na ordem do corpo, numerados, + fechamento final "Demais
   órgãos e estruturas abdominais estudadas sem evidência de alterações
   ecográficas."
+
+---
+
+---
+
+# TIREOIDE
+
+**Título:** ULTRASSONOGRAFIA DE TIREOIDE (variante com Doppler: + picos
+sistólicos das artérias tireoidianas inferiores).
+**Comentários (fixo):** transdutor de 12 MHz, todos os segmentos da glândula +
+cadeia ganglionar cervical I a V.
+**Rodapé fixo:** escore de nódulo Domingos Correia da Rocha + ACR.
+
+## Estruturas: lobo direito · lobo esquerdo · istmo (+ linfonodos cervicais)
+
+### Lobo (direito/esquerdo) e istmo
+- **Default (normal):** "Lobo {lado} medindo X x X x X cm (volume de X ml), de
+  ecogenicidade, ecotextura e vascularização normais." (sem Doppler: omitir
+  "vascularização"). Istmo: "...de ecogenicidade e ecotextura normais."
+- **Com achado (imagem nodular)** — ⚠️ NÃO usar a palavra "nódulo" no corpo:
+  "Lobo {lado} medindo X x X x X cm, com volume de X ml, apresentando imagem
+  {ecogenicidade}, de contornos {regulares/lobulados/irregulares}, mais larga
+  do que alta (ou mais alta do que larga), sem calcificações (ou com…),
+  medindo X x X x X cm, situada {no terço médio/…}."
+  - NÃO escrever "parênquima homogêneo" no lobo que tem achado.
+  - **Campos:** ecogenicidade (anecoica/hipoecoica/isoecoica/hiperecoica/
+    heterogênea/anecoica com finos ecos), contornos, formato (mais larga do que
+    alta = sinal de benignidade), calcificações, localização, medidas.
+- **Vascularização (Chammas):** NÃO descrever a classificação de Chammas no
+  laudo, mesmo se ditada.
+
+### Conclusão (condicional)
+- **Sem nódulo/cisto:** item único "Tireoide de volume normal (VT ml), sem
+  evidência de alteração ecotextural ou de imagem nodular." (VT = lobos + istmo)
+- **Com nódulo/cisto:**
+  1. "Tireoide de volume normal (VT ml)." (SEM a frase de normalidade)
+  2. (por lobo) "Lobo {lado} apresentando imagem {ecogenicidade} com NOTA FINAL
+     {N} ({característica clínica}), equivalente ao TI-RADS {Z} ACR." — Nota
+     Domingos e TI-RADS reproduzidos EXATAMENTE como ditados, nunca calculados.
+     Característica por nota: 1-2 benignas; 3 provavelmente benignas; 4
+     intermediárias; 5 provavelmente malignas; 6+ malignas.
+- **Linfonodos cervicais** (quando descritos): "Linfonodos cervicais com
+  morfologia preservada…sem sinais de infiltração neoplásica ao método."
+
+---
+
+# PROSTATA (transabdominal)
+
+**Título:** ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL).
+**Comentários (fixo):** transdutor convexo de 4,0 MHz, por via transabdominal.
+
+## Estruturas (ordem no corpo): bexiga · próstata · vesículas seminais
+- **Bexiga (default):** "Bexiga de paredes finas, ecotextura homogênea e
+  contornos regulares." + "Volume pré-miccional de X ml." (quando informado).
+- **Próstata:** "Próstata medindo X x X x X cm." (formato pt-BR: 5,1 x 4,4 x
+  3,9 cm).
+- **IPP (índice de protrusão prostática)** — OPCIONAL, substitui "lobo médio
+  protruso": corpo "Índice de protrusão prostática (IPP) mede X cm."; conclusão
+  "Protrusão prostática intravesical de X cm (Grau N)." — Grau 1 ≤0,5cm; Grau 2
+  >0,5–1,0cm; Grau 3 >1,0–1,5cm.
+- **Vesículas seminais (default):** "de dimensões, ecogenicidade e ecotextura
+  normais."
+
+## Conclusão
+1. Bexiga ecograficamente normal.
+2. Resíduo pós-miccional de X mL.
+3. "Próstata de dimensões normais (peso aproximado de X gramas)." OU "…de
+   volume aumentado (peso aproximado de X gramas)." — **só o peso, nunca o
+   volume em cm³**. (Cálculo V = D1×D2×D3×0,5233; Peso ≈ V×1,05; só calcular
+   com 3 medidas — candidato a renderer p/ cálculo determinístico.)
+4. (se IPP) Protrusão prostática intravesical de X cm (Grau N).
+5. Vesículas seminais ecograficamente normais.
 
 ---
 

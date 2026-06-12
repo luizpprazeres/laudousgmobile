@@ -61,13 +61,13 @@ export const SHOWCASE_SAMPLES: ShowcaseSample[] = [
     "TIREOIDE:padrao",
     "TIREOIDE",
     "padrão",
-    "Tireoide. Lobo direito com nódulo sólido isoecoico de margens regulares, mais largo do que alto, medindo 1,2 por 0,9 por 0,8 centímetros, no terço médio. Chammas 2. Demais parênquima homogêneo. Na conclusão, TI-RADS 3.",
+    "Tireoide. Lobo direito medindo 4,5 por 1,4 por 1,3 centímetros, volume 4,0 ml, com imagem isoecoica de contornos regulares, mais larga do que alta, sem calcificações, medindo 1,2 por 0,9 por 0,8 centímetros, no terço médio, Nota Domingos 3, TI-RADS 3. Lobo esquerdo medindo 4,4 por 1,3 por 1,2, volume 3,5 ml, sem alterações. Istmo de 0,3 centímetros.",
   ),
   s(
     "TIREOIDE:doppler",
     "TIREOIDE",
     "com Doppler",
-    "Tireoide com Doppler. Glândula de dimensões normais, ecotextura homogênea, vascularização preservada ao estudo Doppler, padrão Chammas 1. Sem nódulos.",
+    "Tireoide com Doppler. Glândula de dimensões normais, ecotextura homogênea, vascularização preservada ao estudo Doppler. Pico sistólico da artéria tireoidiana inferior direita de 22 cm/s e esquerda de 20 cm/s. Sem nódulos.",
   ),
   s(
     "CERVICAL:padrao",
@@ -193,6 +193,6 @@ export const SHOWCASE_SAMPLES: ShowcaseSample[] = [
     "PROSTATA_SUPRAPUBICA:padrao",
     "PROSTATA_SUPRAPUBICA",
     "padrão",
-    "Próstata por via suprapúbica. Próstata de contornos regulares medindo 5,1 por 4,4 por 3,9 centímetros, com peso estimado de 46 gramas. Lobo médio protruso na base vesical. Bexiga de paredes finas. Resíduo pós-miccional de 35 mililitros.",
+    "Próstata transabdominal. Próstata de contornos regulares medindo 5,1 por 4,4 por 3,9 centímetros, calcule o peso. Protrusão prostática intravesical, IPP de 0,8 centímetros. Bexiga de paredes finas. Volume pré-miccional de 280 ml. Resíduo pós-miccional de 35 mililitros.",
   ),
 ];
