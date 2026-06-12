@@ -55,14 +55,23 @@ export async function hasMatchingModel(args: {
         eq(schema.knowledgeBlocks.status, "validated"),
       ),
     );
-  // A maioria dos modelos tem a tag variant:<key>; modelos sem tag são
-  // tratados como "padrao" (espelha variantOf do bundleLoader).
-  return rows.some((r) => {
-    const key =
-      r.tags.find((t) => t.startsWith("variant:"))?.slice("variant:".length) ??
-      "padrao";
-    return key === args.variantKey;
-  });
+  // Espelha EXATAMENTE a seleção do bundleLoader (review dex2):
+  // tags variant:<key> definem as variantes; modelo SEM tag retorna null.
+  const variantKeys = new Set(
+    rows
+      .map((r) => r.tags.find((t) => t.startsWith("variant:"))?.slice("variant:".length))
+      .filter((v): v is string => v !== undefined),
+  );
+  // Sem nenhum modelo tagueado: o loader serve o modelo único sem filtrar por
+  // variante (early-return modeloVariants.size===0). A convenção é "padrao" —
+  // só essa key é coerente com esse caso.
+  if (variantKeys.size === 0) {
+    return rows.length > 0 && args.variantKey === "padrao";
+  }
+  // Com modelos tagueados: a variante validada DEVE ter tag explícita — modelo
+  // untagged NÃO conta como "padrao" (senão o catálogo prometeria uma máscara
+  // que o loader bloquearia com BUNDLE_VARIANT_EMPTY).
+  return variantKeys.has(args.variantKey);
 }
 
 type VariantRow = typeof schema.reportTemplateVariants.$inferSelect;
