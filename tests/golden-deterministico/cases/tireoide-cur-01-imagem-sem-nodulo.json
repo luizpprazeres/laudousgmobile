@@ -1,0 +1,21 @@
+{
+  "id": "tireoide-cur-01-imagem-sem-nodulo",
+  "category": "TIREOIDE",
+  "rawInput": "Tireoide. Lobo direito medindo 4,5 por 1,4 por 1,3 cm, volume 4 ml, com imagem isoecoica de contornos regulares, mais larga do que alta, sem calcificações, medindo 1,2 por 0,9 por 0,8 cm, no terço médio, Nota Domingos 3, TI-RADS 3. Lobo esquerdo e istmo normais.",
+  "expectedHeadersInOrder": [
+    "COMENTÁRIOS:",
+    "OS SEGUINTES ASPECTOS",
+    "CONCLUSÃO:"
+  ],
+  "criticalFindings": [
+    "imagem isoecoica",
+    "mais larga do que alta",
+    "NOTA FINAL 3",
+    "TI-RADS 3"
+  ],
+  "forbiddenRegex": [
+    "par[êe]nquima homog[êe]neo",
+    "Chammas"
+  ],
+  "forbiddenPatterns": []
+}

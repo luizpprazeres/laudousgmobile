@@ -1,0 +1,19 @@
+{
+  "id": "prostata-cur-01-transabdominal",
+  "category": "PROSTATA_SUPRAPUBICA",
+  "rawInput": "Próstata transabdominal. Próstata medindo 5,1 por 4,4 por 3,9 cm, calcule o peso. Bexiga de paredes finas. Volume pré-miccional de 280 ml. Resíduo pós-miccional de 35 ml.",
+  "expectedHeadersInOrder": [
+    "ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL)",
+    "COMENTÁRIOS:",
+    "CONCLUSÃO:"
+  ],
+  "criticalFindings": [
+    "peso aproximado",
+    "Volume pré-miccional"
+  ],
+  "forbiddenRegex": [
+    "volume de \\d+[.,]?\\d*\\s*cm³, peso",
+    "VIA SUPRAP[ÚU]BICA"
+  ],
+  "forbiddenPatterns": []
+}

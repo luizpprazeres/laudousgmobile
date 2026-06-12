@@ -1,0 +1,16 @@
+{
+  "id": "morfologico-cur-01-1t-titulo",
+  "category": "MORFOLOGICO",
+  "rawInput": "Morfológico de primeiro trimestre. Feto único, CCN 6,2 cm, translucência nucal 1,4 mm, osso nasal presente, ducto venoso onda A positiva. Batimentos 158. Placenta anterior. Líquido normal.",
+  "expectedHeadersInOrder": [
+    "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
+    "CONCLUSÃO:"
+  ],
+  "criticalFindings": [
+    "translucência nucal"
+  ],
+  "forbiddenRegex": [
+    "ULTRASSONOGRAFIA OBST[ÉE]TRICA\\b"
+  ],
+  "forbiddenPatterns": []
+}

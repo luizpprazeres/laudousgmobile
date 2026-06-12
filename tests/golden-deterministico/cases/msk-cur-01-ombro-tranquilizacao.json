@@ -1,0 +1,17 @@
+{
+  "id": "msk-cur-01-ombro-tranquilizacao",
+  "category": "MUSCULOESQUELETICO_V2",
+  "rawInput": "Ultrassom do ombro direito. Tendinopatia do supraespinhal com imagem hiperecoica de calcificação de 0,4 cm, ocasionando sombra acústica, sem sinais de ruptura. Demais tendões íntegros. Bursa subacromial sem distensão.",
+  "expectedHeadersInOrder": [
+    "OMBRO DIREITO",
+    "COMENTÁRIOS:",
+    "OS SEGUINTES ASPECTOS",
+    "CONCLUSÃO:"
+  ],
+  "criticalFindings": [
+    "Tendinopatia do tendão supraespinhal",
+    "Não há sinais de ruptura do manguito rotador"
+  ],
+  "minConclusionItems": 2,
+  "forbiddenPatterns": []
+}

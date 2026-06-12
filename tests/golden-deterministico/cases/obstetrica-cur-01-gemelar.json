@@ -1,0 +1,21 @@
+{
+  "id": "obstetrica-cur-01-gemelar",
+  "category": "OBSTETRICA",
+  "rawInput": "Obstétrica gemelar, dicoriônica e diamniótica. Dois fetos: feto A à direita cefálico dorso à direita, batimentos 144. Feto B à esquerda pélvico dorso à esquerda, batimentos 152. Duas placentas anterior e posterior. Idade gestacional 34 semanas e 2 dias.",
+  "expectedHeadersInOrder": [
+    "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR",
+    "COMENTÁRIOS:",
+    "OS SEGUINTES ASPECTOS",
+    "CONCLUSÃO:"
+  ],
+  "criticalFindings": [
+    "Dois fetos",
+    "feto A",
+    "feto B",
+    "Gestação gemelar dicoriônica e diamniótica"
+  ],
+  "forbiddenRegex": [
+    "Feto [úu]nico"
+  ],
+  "forbiddenPatterns": []
+}

@@ -1,0 +1,21 @@
+{
+  "id": "doppler-arterial-cur-01-membro-individualizado",
+  "category": "DOPPLER_ARTERIAL_MMII",
+  "rawInput": "Doppler arterial do membro inferior esquerdo. Ateromatose difusa com imagens hiperecoicas aderidas às paredes, sem estenoses significativas. Fluxo multifásico em femoral comum, femoral e poplítea. Tibiais e fibular pérvios. Sem oclusões.",
+  "expectedHeadersInOrder": [
+    "MEMBRO INFERIOR ESQUERDO",
+    "COMENTÁRIOS:",
+    "OS SEGUINTES ASPECTOS",
+    "CONCLUSÃO:"
+  ],
+  "criticalFindings": [
+    "aterosclerótica difusa",
+    "membro inferior esquerdo"
+  ],
+  "forbiddenRegex": [
+    "tornozelo[- ]braquial",
+    "\\bITB\\b",
+    "DE MEMBROS INFERIORES"
+  ],
+  "forbiddenPatterns": []
+}
