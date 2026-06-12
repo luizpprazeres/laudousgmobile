@@ -39,11 +39,6 @@ const ServerEnvSchema = z.object({
   // Revert instantâneo: setar "false" na env (Vercel) — sem mexer em código.
   // O request pode sobrescrever via campo fast_path.
   FAST_PATH_DEFAULT: z.string().default("true"),
-  // DET-1: categorias (CSV de category_codes) que usam o BUNDLE determinístico
-  // em vez do retriever vetorial (plano docs/plano-laudos-deterministicos.md).
-  // Rollback trivial: tirar a categoria da lista na env (Vercel), sem deploy.
-  // Ex: "ABDOMEN_TOTAL" ou "ABDOMEN_TOTAL,TIREOIDE".
-  DETERMINISTIC_BUNDLE_CATEGORIES: z.string().default(""),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),

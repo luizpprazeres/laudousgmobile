@@ -18,6 +18,10 @@ const CATS = {
   obstetrica: "OBSTETRICA",
   pelve_feminina: "PELVE_FEMININA",
   morfologico: "MORFOLOGICO",
+  // DET-2 final (remoção do RAG): categorias com uso que faltavam no bundle
+  prostata_suprapubica: "PROSTATA_SUPRAPUBICA",
+  partes_moles: "PARTES_MOLES",
+  musculoesqueletico_v2: "MUSCULOESQUELETICO_V2",
 };
 
 const args = process.argv.slice(2);

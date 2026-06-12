@@ -1,11 +1,10 @@
 import type { RagBlockForPrompt } from "@laudousg/shared";
 import { getDbClient, schema } from "@laudousg/db";
 import { and, eq } from "drizzle-orm";
-import { env } from "../env";
 
 /**
- * DET-1 — Bundle determinístico (substitui o retriever vetorial para as
- * categorias listadas em DETERMINISTIC_BUNDLE_CATEGORIES).
+ * Bundle determinístico — caminho ÚNICO de montagem de contexto (DET-2 final:
+ * o retriever vetorial foi aposentado).
  *
  * Carrega TODOS os blocos validados da (categoria, estilo) por chave fixa:
  * SEM embedding, SEM quota por kind, SEM RPC vetorial. Conhecimento de
@@ -175,18 +174,6 @@ function resolveVariant(selector: ModelVariantSelector, rawInput: string): strin
   return selector.defaultVariant;
 }
 
-export function categoriesWithDeterministicBundle(): Set<string> {
-  return new Set(
-    env()
-      .DETERMINISTIC_BUNDLE_CATEGORIES.split(",")
-      .map((c) => c.trim())
-      .filter(Boolean),
-  );
-}
-
-export function isDeterministicBundleCategory(categoryCode: string): boolean {
-  return categoriesWithDeterministicBundle().has(categoryCode);
-}
 
 export type BundleLoadError =
   /** Nenhum bloco validado para (categoria × estilo). */

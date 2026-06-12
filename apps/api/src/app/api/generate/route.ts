@@ -6,12 +6,7 @@ import { getServiceClient } from "@/server/supabaseService";
 export { OPTIONS } from "@/server/cors";
 import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
-import { runRetriever } from "@/server/pipeline/retriever";
-import {
-  isDeterministicBundleCategory,
-  loadDeterministicBundle,
-} from "@/server/pipeline/bundleLoader";
-import { applyPelveRouteSelection } from "@/server/pipeline/pelveRouteSelection";
+import { loadDeterministicBundle } from "@/server/pipeline/bundleLoader";
 import { resolveMorfologicoCategory } from "@/server/pipeline/morfologicoRouteSelection";
 import { normalizeCategoryCode } from "@/server/pipeline/categoryNormalization";
 import {
@@ -594,102 +589,64 @@ export async function POST(req: Request) {
         return;
       }
 
-      // ----- 3. BUNDLE determinístico (DET-1) ou Retriever vetorial -----
-      // Categorias na flag DETERMINISTIC_BUNDLE_CATEGORIES carregam TODOS os
-      // blocos validados por chave fixa (categoria × estilo) — sem embedding,
-      // sem quota. Mesmo input → mesmo bundle → prefixo de prompt estável
-      // (prompt caching). Demais categorias: caminho RAG intocado (rollback
-      // trivial = tirar da flag).
+      // ----- 3. BUNDLE determinístico (caminho ÚNICO) -----
+      // DET-2 final: o retriever vetorial foi APOSENTADO. Toda categoria carrega
+      // TODOS os blocos validados por chave fixa (categoria × estilo) — sem
+      // embedding, sem quota, sem RPC. Mesmo input → mesmo bundle → prefixo de
+      // prompt estável (prompt caching). A seleção de variante de máscara é
+      // determinística por gatilho (ver bundleLoader MODEL_VARIANT_SELECTORS).
       currentStage = "retriever";
       const ragT0 = Date.now();
-      const useDeterministicBundle =
-        isDeterministicBundleCategory(effectiveCategory);
-      let blocks: RagBlockForPrompt[];
-      let skipped: RagBlockForPrompt[] = [];
-      let queryText = "[deterministic_bundle]";
-      let warning: { code: string; message: string } | null = null;
-      if (useDeterministicBundle) {
-        const bundle = await loadDeterministicBundle({
-          categoryCode: effectiveCategory,
-          writingStyleId: effectiveWritingStyleId,
-          rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
-        });
-        // Bundle inválido = erro ALTO e CLARO (sem fallback RAG_EMPTY no
-        // caminho determinístico). Gates (reviews dex1/dex2):
-        //  - BUNDLE_EMPTY: nenhum bloco validado pra (categoria × estilo)
-        //  - BUNDLE_NO_TEMPLATE: há blocos mas nenhum kind=modelo — laudo
-        //    sem máscara é proibido
-        //  - BUNDLE_VARIANT_EMPTY: a variante escolhida não tem modelo —
-        //    NUNCA cair silenciosamente pra outra máscara
-        //  - BUNDLE_MODEL_AMBIGUOUS: >1 modelo após seleção (config faltando
-        //    seletor/tag variant:) — máscaras conflitantes no prompt
-        if (bundle.error) {
-          outcome = "blocked";
-          const reason =
-            bundle.error.code === "BUNDLE_VARIANT_EMPTY"
-              ? `A variante de modelo solicitada (${bundle.error.variantTag}) não está disponível para ${effectiveCategory}. Geração bloqueada por segurança.`
-              : bundle.error.code === "BUNDLE_MODEL_AMBIGUOUS"
-                ? `Mais de uma máscara aplicável para ${effectiveCategory} sem desambiguação. Geração bloqueada por segurança.`
-                : `Biblioteca da categoria ${effectiveCategory} indisponível para o estilo selecionado. Geração bloqueada por segurança.`;
-          auditState.errorCode = bundle.error.code;
-          auditState.errorMessage = reason;
-          auditState.errorStage = currentStage;
-          console.error(
-            `[generate ${reportId}] ${bundle.error.code}: categoria=${effectiveCategory} writing_style_id=${effectiveWritingStyleId} (flag DETERMINISTIC_BUNDLE_CATEGORIES).`,
-          );
-          await finalizeReport({
-            reportId,
-            status: "blocked",
-            generatedOutput: "",
-            sanityResult: null,
-            metadata: {
-              bundle_error: {
-                code: bundle.error.code,
-                category_code: effectiveCategory,
-                writing_style_id: effectiveWritingStyleId,
-              },
-            },
-          });
-          emit({
-            type: "error",
-            ts: nowIso(),
-            code: bundle.error.code,
-            message: reason,
-          });
-          return;
-        }
-        blocks = bundle.blocks;
-      } else {
-        const retrieved = await runRetriever({
-          findings,
-          categoryCode: effectiveCategory,
-          writingStyleId: effectiveWritingStyleId,
-          // FAST-PATH: sem achados estruturados → embedding a partir do ditado cru.
-          queryTextOverride: fastPath
-            ? reqInput.consolidated_transcript ?? reqInput.raw_input
-            : undefined,
-          // PELVE: amplia a quota de modelo p/ garantir que o template da via
-          // ditada seja recuperado (TA+TV tem priority 100 e dominava o top-2).
-          // MORFOLOGICO: 1t/2t/3t × 3 estilos competem no top — amplia a quota
-          // de modelo pra garantir que o template do trimestre certo apareça.
-          quotas:
-            effectiveCategory === "PELVE_FEMININA" ||
-            effectiveCategory === "MORFOLOGICO"
-              ? { modelo: 12 }
-              : undefined,
-          signal,
-        });
-        // Seleção determinística da via de acesso da pelve: mantém só o modelo-base
-        // da via ditada (corrige laudo sempre saindo "transabdominal e transvaginal").
-        blocks = applyPelveRouteSelection(
-          retrieved.blocks,
-          effectiveCategory,
-          reqInput.raw_input,
+      const skipped: RagBlockForPrompt[] = [];
+      const queryText = "[deterministic_bundle]";
+      const bundle = await loadDeterministicBundle({
+        categoryCode: effectiveCategory,
+        writingStyleId: effectiveWritingStyleId,
+        rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+      });
+      // Bundle inválido = erro ALTO e CLARO (laudo médico NUNCA sai sem
+      // estrutura). Gates (reviews dex1/dex2):
+      //  - BUNDLE_EMPTY: nenhum bloco validado pra (categoria × estilo) —
+      //    categoria sem biblioteca curada (ex: ainda não saneada)
+      //  - BUNDLE_NO_TEMPLATE: há blocos mas nenhum kind=modelo
+      //  - BUNDLE_VARIANT_EMPTY: a variante escolhida não tem modelo
+      //  - BUNDLE_MODEL_AMBIGUOUS: >1 modelo após seleção (falta seletor/tag)
+      if (bundle.error) {
+        outcome = "blocked";
+        const reason =
+          bundle.error.code === "BUNDLE_VARIANT_EMPTY"
+            ? `A variante de modelo solicitada (${bundle.error.variantTag}) não está disponível para ${effectiveCategory}. Geração bloqueada por segurança.`
+            : bundle.error.code === "BUNDLE_MODEL_AMBIGUOUS"
+              ? `Mais de uma máscara aplicável para ${effectiveCategory} sem desambiguação. Geração bloqueada por segurança.`
+              : `A categoria ${effectiveCategory} ainda não tem biblioteca de laudo curada. Geração bloqueada por segurança — avise o suporte.`;
+        auditState.errorCode = bundle.error.code;
+        auditState.errorMessage = reason;
+        auditState.errorStage = currentStage;
+        console.error(
+          `[generate ${reportId}] ${bundle.error.code}: categoria=${effectiveCategory} writing_style_id=${effectiveWritingStyleId}.`,
         );
-        skipped = retrieved.skipped;
-        queryText = retrieved.queryText;
-        warning = retrieved.warning;
+        await finalizeReport({
+          reportId,
+          status: "blocked",
+          generatedOutput: "",
+          sanityResult: null,
+          metadata: {
+            bundle_error: {
+              code: bundle.error.code,
+              category_code: effectiveCategory,
+              writing_style_id: effectiveWritingStyleId,
+            },
+          },
+        });
+        emit({
+          type: "error",
+          ts: nowIso(),
+          code: bundle.error.code,
+          message: reason,
+        });
+        return;
       }
+      const blocks = bundle.blocks;
       auditState.ragDurationMs = Date.now() - ragT0;
       auditState.ragBlocksRetrieved = blocks;
       auditState.ragBlocksSkipped = skipped;
@@ -707,7 +664,7 @@ export async function POST(req: Request) {
         ts: nowIso(),
         // Prova explícita do caminho usado (review dex1) — o runner golden
         // exige "deterministic_bundle" pra evitar falso-verde contra o RAG.
-        source: useDeterministicBundle ? "deterministic_bundle" : "rag",
+        source: "deterministic_bundle",
         blocks_used: blocks.map((b) => b.id),
         blocks_summary: blocks.map((b) => ({
           id: b.id,
@@ -717,20 +674,9 @@ export async function POST(req: Request) {
         })),
       });
 
-      // Fix codex T7 MÉDIO #2: emitir warning como SSE event E persistir
-      // em report.generation_metadata pra auditoria.
-      // (Em prod, podemos endurecer aqui — categoria-piloto sem RAG é red flag.)
+      // Bundle determinístico não tem warning de recall (sem retriever).
+      // Mantido como array vazio para compat com a auditoria/metadata abaixo.
       const pipelineWarnings: { code: string; message: string }[] = [];
-      if (warning) {
-        console.warn(`[generate ${reportId}] ${warning.code}: ${warning.message}`);
-        emit({
-          type: "warning",
-          ts: nowIso(),
-          code: warning.code,
-          message: warning.message,
-        });
-        pipelineWarnings.push(warning);
-      }
 
       // ----- 4. Writer (stream) -----
       // Fix codex #4: resolver writing_style code + category label do DB.
@@ -860,7 +806,7 @@ export async function POST(req: Request) {
       // cached_tokens cresce quando o prefixo (system message estável do
       // bundle) é reaproveitado entre requests da mesma categoria/estilo.
       console.log(
-        `[generate ${reportId}] writer usage: input=${writerResult?.inputTokens ?? "?"} cached=${writerResult?.cachedInputTokens ?? 0} output=${writerResult?.outputTokens ?? "?"} bundle=${useDeterministicBundle}`,
+        `[generate ${reportId}] writer usage: input=${writerResult?.inputTokens ?? "?"} cached=${writerResult?.cachedInputTokens ?? 0} output=${writerResult?.outputTokens ?? "?"}`,
       );
       await updateRunAfterWriter({
         runId,
