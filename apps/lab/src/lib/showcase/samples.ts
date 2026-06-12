@@ -133,13 +133,13 @@ export const SHOWCASE_SAMPLES: ShowcaseSample[] = [
     "MORFOLOGICO:2t",
     "MORFOLOGICO",
     "2º trimestre",
-    "Morfológico de segundo trimestre. DUM 20 de dezembro de 2025. Feto único cefálico, batimentos de 145 por minuto. BPD 5,4 HC 20,1 AC 18,3 FL 3,8 centímetros. Crânio, coluna, coração com 4 câmaras, estômago, rins e bexiga de aspecto habitual. Placenta posterior grau 1. Maior bolsão de 5 centímetros. Colo uterino de 3,8 centímetros.",
+    "Morfológico de segundo trimestre. DUM 20 de dezembro de 2025. Feto único cefálico, dorso posterior, batimentos de 145 por minuto. BPD 5,4 HC 20,1 AC 18,3 FL 3,8 centímetros, cerebelo 2,1, cisterna magna 0,5, distância binocular 3,2. Peso estimado de 650 gramas, variação 90 gramas, percentil 50. Crânio, coluna, coração com 4 câmaras, estômago, rins e bexiga de aspecto habitual. Placenta posterior grau 1. ILA 12 centímetros. Colo uterino fechado.",
   ),
   s(
     "MORFOLOGICO:3t",
     "MORFOLOGICO",
     "3º trimestre",
-    "Morfológico de terceiro trimestre. Feto único cefálico, dorso à direita, batimentos de 138 por minuto. BPD 8,9 HC 31,2 AC 30,5 FL 6,8 centímetros, peso estimado de 2350 gramas. Placenta fúndica grau 2. Maior bolsão de 4,2 centímetros. Movimentos e tônus presentes.",
+    "Morfológico de terceiro trimestre. Feto único cefálico, dorso à direita, batimentos de 138 por minuto. BPD 8,9 HC 31,2 AC 30,5 FL 6,8 centímetros, peso estimado de 2350 gramas, variação 320 gramas, percentil 40. Placenta fúndica grau 2. ILA 4,2 centímetros.",
   ),
   s(
     "MUSCULOESQUELETICO_V2:padrao",
