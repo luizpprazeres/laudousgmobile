@@ -233,7 +233,7 @@ function assemble(
   return [
     titulo,
     dumLinha,
-    f.trimestre === "1t" ? COMENTARIOS_1T : COMENTARIOS_1T,
+    COMENTARIOS_1T,
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     aspectos.join("\n"),

@@ -54,8 +54,8 @@ CONCLUSÃO:            ← itens diagnósticos numerados (1, 2, …)
 | TIREOIDE | ✅ | ⬜ writer | — |
 | PROSTATA_SUPRAPUBICA | ✅ | ⬜ writer | cálculo volume/peso → renderer |
 | DOPPLER_ARTERIAL_MMII | ✅ | ⬜ writer | — |
-| MORFOLOGICO (1t/2t/3t) | ✅ | ⬜ **renderer prioritário** | writer teima na estrutura |
-| OBSTETRICA (+ gemelar) | ✅ | ⬜ **renderer prioritário** | peso médio/divergência = cálculo |
+| MORFOLOGICO (1t/2t/3t) | ✅ | ✅ renderer (programático) | byte-estável |
+| OBSTETRICA (+ gemelar) | ✅ | ✅ renderer (programático) | peso médio/divergência calculados em código |
 | MUSCULOESQUELETICO_V2 | ✅ | ⬜ writer | antiga inativa (consolidada) |
 | DOPPLER_RENAL | ✅ | ⬜ writer | doc nos comentários (writer ainda usa o longo) |
 | DOPPLER_VENOSO (completo/TVP) | ✅ | ⬜ writer | revalidar amostra (429 OpenAI) |
@@ -308,10 +308,13 @@ cadeia ganglionar cervical I a V.
   corpo); regra da tranquilização do manguito com lógica estrita ("Não há
   sinais de ruptura do manguito rotador{lat}." SÓ quando não há ruptura).
 
-> **Nota de arquitetura:** morfológico e obstétrica gemelar expõem o limite do
-> caminho writer (LLM teima na estrutura/título e não calcula peso médio/
-> divergência). São os **candidatos prioritários ao renderer** (DET-5) —
-> estrutura e cálculos por construção resolvem isso de vez.
+> **Nota de arquitetura:** morfológico e obstétrica gemelar foram **portados ao
+> renderer** (DET-5) — render PROGRAMÁTICO (100% em código, sem template_body,
+> só a extração usa LLM). Estrutura byte-estável por construção e cálculos
+> determinísticos (peso médio + divergência ponderal gemelar, IP médio das
+> uterinas no 1t). Resolve de vez o writer omitindo seções / errando título /
+> não calculando. Próximas categorias podem seguir o mesmo padrão de módulo
+> auto-contido em `renderer/categories/`.
 
 ---
 
