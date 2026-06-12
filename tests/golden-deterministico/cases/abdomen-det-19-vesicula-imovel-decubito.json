@@ -1,0 +1,8 @@
+{
+  "id": "abdomen-det-19-vesicula-imovel-decubito",
+  "category": "ABDOMEN_TOTAL",
+  "rawInput": "Abdome total. Vesícula biliar com imagem hiperecoica, imóvel à mudança de decúbito, medindo 1,1 centímetros no maior eixo, ocasionando sombra acústica. Demais órgãos sem alterações.",
+  "expectedHeadersInOrder": ["ULTRASSONOGRAFIA DO ABDOME TOTAL", "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", "CONCLUSÃO:"],
+  "criticalFindings": ["imagem hiperecoica", "imóvel à mudança de decúbito", "1,1", "ocasionando sombra acústica", "Litíase da vesícula biliar"],
+  "forbiddenPatterns": ["com sombra acústica", "em 12 fotos"]
+}

@@ -54,11 +54,15 @@ REGRAS OBRIGATÓRIAS:
    - esteatose (fígado; grau leve/moderado/acentuado)
    - cisto_simples (fígado ou rins; medidas, localizacao)
    - imagem_cistica_complexa (rins; descreva calcificações etc em descricao_livre)
-   - litiase (vesicula ou rins; quantidade unica/multiplas; medidas; localizacao)
+   - litiase (vesicula ou rins; quantidade unica/multiplas; medidas; localizacao;
+     mobilidade "movel"/"imovel" quando o médico disser se os cálculos se movem
+     à mudança de decúbito — senão deixe mobilidade null)
+   - parede_espessada (vesicula; espessura da parede em medidas_cm[0] em cm)
    - ateromatose (aorta)
    - derrame_pleural (extra abdominal)
    - volume_pre_miccional (bexiga; valor_ml)
    - outro (qualquer outra coisa)
+   "mobilidade" só se aplica a litíase de vesícula; deixe null nos demais.
    GATILHOS CANÔNICOS (da biblioteca curada — o médico raramente fala o nome
    do diagnóstico; classifique pelo padrão descrito):
    - rim + "imagem hiperecoica" (sem aspecto cístico/anecoico) → litiase

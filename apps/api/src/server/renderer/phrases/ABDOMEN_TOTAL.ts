@@ -105,26 +105,68 @@ function renderFigado(state: AbdomenOrganState): OrganRender {
   return out;
 }
 
+function mobilidadeLabel(m: AbdomenFinding["mobilidade"], plural: boolean): string {
+  // Default clínico quando o médico não diz: cálculo de vesícula é móvel.
+  if (m === "imovel") return plural ? "imóveis à mudança de decúbito" : "imóvel à mudança de decúbito";
+  return plural ? "móveis à mudança de decúbito" : "móvel à mudança de decúbito";
+}
+
 function renderVesicula(state: AbdomenOrganState): OrganRender {
   const out: OrganRender = { body: null, conclusao: [], freeSlotFindings: [] };
   if (state.status === "ausente_cirurgico") {
     out.body =
-      "Ausência da imagem da vesícula biliar (paciente submetida a colecistectomia).";
+      "Ausência da imagem da vesícula biliar (paciente submetida à colecistectomia).";
     // Regra curada: colecistectomia NÃO entra na conclusão.
     return out;
   }
   if (state.status !== "alterado") return out;
 
-  for (const raw of state.achados) {
-    const f = { ...raw, tipo: canonicalTipo("vesicula", raw) };
-    if (f.tipo === "litiase") {
-      if (f.quantidade === "multiplas") {
-        out.body = `Vesícula biliar de topografia usual e parede fina, apresentando múltiplas imagens hiperecoicas, a menor medindo aproximadamente ${maiorEixoCentimetros(f.medidas_cm)}, móveis, ocasionando sombras acústicas.`;
-      } else {
-        out.body = `Vesícula biliar de topografia usual e parede fina, apresentando imagem hiperecoica, móvel, medindo ${maiorEixoCentimetros(f.medidas_cm)} no seu maior eixo, ocasionando sombra acústica.`;
-      }
-      out.conclusao.push("Litíase da vesícula biliar.");
+  const achados = state.achados.map((raw) => ({
+    ...raw,
+    tipo: canonicalTipo("vesicula", raw),
+  }));
+
+  // Prefixo da vesícula: topografia usual SEMPRE; parede fina por padrão,
+  // espessada (com espessura) só quando o médico informa alteração da parede.
+  const paredeEspessada = achados.find((f) => f.tipo === "parede_espessada");
+  let prefixo: string;
+  if (paredeEspessada) {
+    const esp = maiorEixoCentimetros(paredeEspessada.medidas_cm).replace(
+      "centímetros",
+      "cm",
+    );
+    prefixo = `Vesícula biliar de topografia usual, com parede espessada, medindo ${esp} no seu maior diâmetro`;
+    out.conclusao.push(
+      "Espessamento da parede da vesícula biliar. Convém, a critério clínico, correlacionar com exames laboratoriais para investigação da possibilidade de colecistite.",
+    );
+  } else {
+    prefixo = "Vesícula biliar de topografia usual e parede fina";
+  }
+
+  const litiases = achados.filter((f) => f.tipo === "litiase");
+  for (const f of litiases) {
+    const mobil = mobilidadeLabel(f.mobilidade, f.quantidade === "multiplas");
+    if (f.quantidade === "multiplas") {
+      // "a menor medindo X" é OPCIONAL — omite a cláusula se não há medida.
+      const menor =
+        f.medidas_cm && f.medidas_cm.length > 0
+          ? `, a menor medindo aproximadamente ${maiorEixoCentimetros(f.medidas_cm)}`
+          : "";
+      out.body = `${prefixo}, apresentando múltiplas imagens hiperecoicas, ${mobil}${menor}, ocasionando sombras acústicas.`;
     } else {
+      out.body = `${prefixo}, apresentando imagem hiperecoica, ${mobil}, medindo ${maiorEixoCentimetros(f.medidas_cm)} no seu maior eixo, ocasionando sombra acústica.`;
+    }
+    out.conclusao.push("Litíase da vesícula biliar.");
+  }
+
+  // Parede espessada sem cálculo: a frase do prefixo é o corpo.
+  if (out.body === null && paredeEspessada) {
+    out.body = `${prefixo}.`;
+  }
+
+  // Achados de vesícula fora do catálogo (ex: pólipo) → free-slot.
+  for (const f of achados) {
+    if (f.tipo !== "litiase" && f.tipo !== "parede_espessada") {
       out.freeSlotFindings.push(f);
     }
   }
@@ -194,7 +236,14 @@ function canonicalTipo(organ: AbdomenOrganKey, f: AbdomenFinding): AbdomenFindin
   ) {
     return "litiase";
   }
-  if (organ === "vesicula" && /hiperecoic/.test(d) && /(sombra|móve|movel)/.test(d)) {
+  if (organ === "vesicula" && /(parede\s+espessad|espessamento\s+(d[ao]\s+)?parede)/.test(d)) {
+    return "parede_espessada";
+  }
+  if (
+    organ === "vesicula" &&
+    /hiperecoic/.test(d) &&
+    /(sombra|m[óo]ve|c[áa]lcul|lit[íi]ase)/.test(d)
+  ) {
     return "litiase";
   }
   if (

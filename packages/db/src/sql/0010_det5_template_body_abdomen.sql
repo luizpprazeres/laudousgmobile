@@ -8,7 +8,7 @@ UPDATE report_template_variants
 SET template_body = $tpl$ULTRASSONOGRAFIA DO ABDOME TOTAL
 
 COMENTÁRIOS:
-Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida em 12 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 {{orgao:figado|Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
@@ -31,8 +31,10 @@ WHERE category_code = 'ABDOMEN_TOTAL'
   AND writing_style_id = '11111111-1111-4111-8111-111111111111';
 
 UPDATE report_template_variants
-SET template_body = $tpl$COMENTÁRIOS:
-Exame realizado com transdutor convexo multifrequencial, abrangendo todo o abdome superior com paciente em jejum. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal, em decúbitos laterais, como também em ortostase. A documentação fotográfica foi obtida em 16 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+SET template_body = $tpl$ULTRASSONOGRAFIA DO ABDOME TOTAL COM DOPPLER COLORIDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor convexo multifrequencial, abrangendo todo o abdome superior com paciente em jejum. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal, em decúbitos laterais, como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 {{orgao:figado|Fígado de margem regular, dimensões e ecotextura normais. Os vasos intra-hepáticos são bem visíveis e de calibre anatômico. Ausência de sinais evidentes de processo expansivo hepático.}}
