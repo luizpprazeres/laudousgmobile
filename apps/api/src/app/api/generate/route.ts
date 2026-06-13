@@ -64,7 +64,7 @@ import {
   getKnownCategories,
   getWritingStyleById,
   getVariantTemplateBody,
-  resolveAccountVariantKey,
+  resolveAccountReportPreference,
 } from "@/server/db/lookups";
 import { runRendererStream } from "@/server/pipeline/renderer";
 import {
@@ -606,12 +606,11 @@ export async function POST(req: Request) {
       const ragT0 = Date.now();
       const skipped: RagBlockForPrompt[] = [];
       const queryText = "[deterministic_bundle]";
-      // DET-3: variante preferida pela conta (usada só quando o ditado não
-      // decide a variante por contexto — ver precedência no bundleLoader).
-      const accountVariantKey = await resolveAccountVariantKey(
-        user.id,
-        effectiveCategory,
-      );
+      // DET-3 + DET-5 ONDA 2: numa única query, a variante preferida pela conta
+      // (usada só quando o ditado não decide por contexto) E os toggles do
+      // renderer (consumidos no caminho renderer, mais abaixo).
+      const { variantKey: accountVariantKey, rendererPreferences } =
+        await resolveAccountReportPreference(user.id, effectiveCategory);
       const bundle = await loadDeterministicBundle({
         categoryCode: effectiveCategory,
         writingStyleId: effectiveWritingStyleId,
@@ -724,6 +723,8 @@ export async function POST(req: Request) {
             rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
             templateBody: rendererTemplateBody ?? "",
             signal,
+            // DET-5 ONDA 2 — toggles resolvidos junto da variante (sem 2ª query).
+            rendererPreferences,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
             },

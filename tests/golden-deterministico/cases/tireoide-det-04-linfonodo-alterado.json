@@ -1,0 +1,11 @@
+{
+  "id": "tireoide-det-04-linfonodo-alterado",
+  "category": "TIREOIDE",
+  "rawInput": "Tireoide. Lobos e istmo de dimensões e ecotextura normais, sem nódulos. Linfonodo cervical no nível IV à direita arredondado, com perda do hilo ecogênico, medindo 1,5 cm.",
+  "expectedHeadersInOrder": ["COMENTÁRIOS:", "OS SEGUINTES ASPECTOS", "CONCLUSÃO:"],
+  "criticalFindings": ["perda do hilo", "aspecto alterado"],
+  "forbiddenPatterns": ["morfologia preservada", "sem sinais de infiltração"],
+  "forbiddenRegex": ["par[êe]nquima homog[êe]neo", "Chammas"],
+  "canonicalConclusionNumbering": true,
+  "minConclusionItems": 2
+}

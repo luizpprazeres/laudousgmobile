@@ -15,6 +15,11 @@ import {
   MORFOLOGICO_EXTRACTION_PROMPT,
   MorfologicoFindingsSchema,
 } from "./categories/MORFOLOGICO";
+import {
+  TIREOIDE_JSON_SCHEMA,
+  TIREOIDE_EXTRACTION_PROMPT,
+  TireoideFindingsSchema,
+} from "./categories/TIREOIDE";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -37,7 +42,11 @@ type Extractor = {
  * Categorias cujo render é PROGRAMÁTICO (montam o laudo em código, sem
  * template_body com slots). Entram no renderer mesmo sem template no catálogo.
  */
-export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set(["OBSTETRICA", "MORFOLOGICO"]);
+export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
+  "OBSTETRICA",
+  "MORFOLOGICO",
+  "TIREOIDE",
+]);
 
 export type RendererExtractionResult = {
   findings: unknown;
@@ -154,6 +163,12 @@ const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: MORFOLOGICO_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: MORFOLOGICO_EXTRACTION_PROMPT,
     parse: (raw) => MorfologicoFindingsSchema.parse(raw),
+  },
+  TIREOIDE: {
+    schemaName: "TireoideFindings",
+    jsonSchema: TIREOIDE_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: TIREOIDE_EXTRACTION_PROMPT,
+    parse: (raw) => TireoideFindingsSchema.parse(raw),
   },
 };
 

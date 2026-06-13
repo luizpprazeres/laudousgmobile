@@ -23,6 +23,11 @@ import {
   renderMorfologico,
   type MorfologicoFindings,
 } from "../renderer/categories/MORFOLOGICO";
+import {
+  renderTireoide,
+  type TireoideFindings,
+  type TireoidePreferences,
+} from "../renderer/categories/TIREOIDE";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -150,6 +155,8 @@ export async function* runRendererStream(args: {
   templateBody: string;
   signal?: AbortSignal;
   onSystemMessage?: (message: string) => void;
+  /** DET-5 ONDA 2 — toggles do renderer da conta (hoje: TIREOIDE). */
+  rendererPreferences?: Partial<TireoidePreferences> | null;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
 
@@ -162,11 +169,20 @@ export async function* runRendererStream(args: {
 
   // Categorias com render programático auto-contido (sem slots de órgão nem
   // free-slot LLM) — laudo 100% determinístico a partir dos achados tipados.
-  if (args.categoryCode === "OBSTETRICA" || args.categoryCode === "MORFOLOGICO") {
+  if (
+    args.categoryCode === "OBSTETRICA" ||
+    args.categoryCode === "MORFOLOGICO" ||
+    args.categoryCode === "TIREOIDE"
+  ) {
     const fullText =
       args.categoryCode === "OBSTETRICA"
         ? renderObstetrica(extraction.findings as ObstetricaFindings)
-        : renderMorfologico(extraction.findings as MorfologicoFindings);
+        : args.categoryCode === "MORFOLOGICO"
+          ? renderMorfologico(extraction.findings as MorfologicoFindings)
+          : renderTireoide(
+              extraction.findings as TireoideFindings,
+              args.rendererPreferences,
+            );
     const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;
     args.onSystemMessage?.(systemMessage);
     yield fullText;

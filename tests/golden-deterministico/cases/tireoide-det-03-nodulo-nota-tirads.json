@@ -1,0 +1,17 @@
+{
+  "id": "tireoide-det-03-nodulo-nota-tirads",
+  "category": "TIREOIDE",
+  "rawInput": "Tireoide. Lobo direito normal. Lobo esquerdo medindo 4,6 por 1,5 por 1,4 cm, volume 4,8 ml, com imagem hipoecoica de contornos irregulares, mais alta do que larga, com microcalcificações, medindo 1,1 por 0,8 por 0,7 cm, no terço inferior, Nota Domingos 4, TI-RADS 4. Istmo normal.",
+  "expectedHeadersInOrder": ["COMENTÁRIOS:", "OS SEGUINTES ASPECTOS", "CONCLUSÃO:"],
+  "criticalFindings": [
+    "imagem hipoecoica",
+    "mais alta do que larga",
+    "com microcalcificações",
+    "NOTA FINAL 4",
+    "TI-RADS 4"
+  ],
+  "forbiddenRegex": ["par[êe]nquima homog[êe]neo", "Chammas"],
+  "forbiddenPatterns": [],
+  "canonicalConclusionNumbering": true,
+  "minConclusionItems": 2
+}

@@ -1,0 +1,8 @@
+{
+  "id": "tireoide-det-05-bocio",
+  "category": "TIREOIDE",
+  "rawInput": "Tireoide com bócio difuso, glândula de volume aumentado. Lobo direito medindo 6,2 por 2,3 por 2,0 cm, volume 15 ml. Lobo esquerdo medindo 6,0 por 2,1 por 1,9 cm, volume 13 ml. Istmo medindo 2,0 por 0,6 por 0,5 cm, volume 1 ml. Sem nódulos.",
+  "expectedHeadersInOrder": ["COMENTÁRIOS:", "OS SEGUINTES ASPECTOS", "CONCLUSÃO:"],
+  "criticalFindings": ["volume aumentado"],
+  "forbiddenPatterns": ["volume normal"]
+}

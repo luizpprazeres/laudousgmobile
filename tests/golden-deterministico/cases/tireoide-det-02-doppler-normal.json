@@ -1,0 +1,20 @@
+{
+  "id": "tireoide-det-02-doppler-normal",
+  "category": "TIREOIDE",
+  "rawInput": "Ultrassonografia de tireoide com Doppler. Lobo direito 5 por 1,5 por 1,4 cm, volume 5 ml. Lobo esquerdo 4,8 por 1,4 por 1,3 cm, volume 4,5 ml. Istmo 2 por 0,3 por 0,3 cm, volume 0,5 ml. Pico sistólico da artéria tireoidiana inferior direita de 22 cm/s, esquerda de 20 cm/s. Sem nódulos.",
+  "expectedHeadersInOrder": [
+    "COMENTÁRIOS:",
+    "OS SEGUINTES ASPECTOS",
+    "CONCLUSÃO:"
+  ],
+  "criticalFindings": [
+    "ULTRASSONOGRAFIA DA TIREOIDE COM DOPPLER COLORIDO",
+    "ecogenicidade, ecotextura e vascularização normais",
+    "Pico sistólico da artéria tireoidiana inferior direita de 22 cm/s",
+    "Tireoide de volume normal"
+  ],
+  "forbiddenPatterns": [
+    "parênquima homogêneo",
+    "Chammas"
+  ]
+}

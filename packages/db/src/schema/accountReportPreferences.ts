@@ -6,6 +6,7 @@ import {
   timestamp,
   pgPolicy,
   primaryKey,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { authenticatedRole, profiles } from "./profiles";
 import { categories } from "./categories";
@@ -16,7 +17,7 @@ import { reportTemplateVariants } from "./reportTemplateVariants";
  * categoria. Uma row por (user_id, category_code). RLS: cada médico lê/escreve
  * só as próprias preferências.
  *
- * Resolvido no bundleLoader (via lookups.resolveAccountVariantKey): quando o
+ * Resolvido no route (via lookups.resolveAccountReportPreference): quando o
  * ditado NÃO decide a variante por contexto, usa a `default_variant_id` daqui.
  * `default_variant_id` null ou ausente → fallback para `padrao`.
  */
@@ -33,6 +34,9 @@ export const accountReportPreferences = pgTable(
       () => reportTemplateVariants.id,
       { onDelete: "set null" },
     ),
+    // DET-5 ONDA 2 — toggles do renderer (ex: TIREOIDE
+    // { show_domingos_score, show_conduct_recommendation }). null → defaults.
+    rendererPreferences: jsonb("renderer_preferences"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
