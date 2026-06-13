@@ -20,6 +20,11 @@ import {
   TIREOIDE_EXTRACTION_PROMPT,
   TireoideFindingsSchema,
 } from "./categories/TIREOIDE";
+import {
+  MAMARIA_JSON_SCHEMA,
+  MAMARIA_EXTRACTION_PROMPT,
+  MamariaFindingsSchema,
+} from "./categories/MAMARIA";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -46,6 +51,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "OBSTETRICA",
   "MORFOLOGICO",
   "TIREOIDE",
+  "MAMARIA",
 ]);
 
 export type RendererExtractionResult = {
@@ -169,6 +175,12 @@ const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: TIREOIDE_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: TIREOIDE_EXTRACTION_PROMPT,
     parse: (raw) => TireoideFindingsSchema.parse(raw),
+  },
+  MAMARIA: {
+    schemaName: "MamariaFindings",
+    jsonSchema: MAMARIA_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: MAMARIA_EXTRACTION_PROMPT,
+    parse: (raw) => MamariaFindingsSchema.parse(raw),
   },
 };
 

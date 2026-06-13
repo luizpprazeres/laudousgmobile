@@ -1,19 +1,67 @@
 # Plano — Migração para Laudos Determinísticos
 
-> **Status geral:** 🟢 Em execução — DET-1 a DET-5 ✅ em prod. RAG vetorial aposentado; seletor de máscara no iOS (DET-4); **renderer determinístico (DET-5) cobre 4 categorias LIVE em prod: ABDOMEN_TOTAL, OBSTETRICA, MORFOLOGICO, TIREOIDE** (TIREOIDE com escore Domingos calculável — shipped 2026-06-13, `renderer/v1` confirmado em prod). Curadoria clínica do showcase (S2) aplicada em todas as categorias. **Próximo trabalho: portar MAMARIA ao renderer; UI lab/iOS dos toggles da tireoide** + **DET-6** (comandos como operações).
-> **Última atualização:** 2026-06-13
+> **Status geral:** 🟢 Em execução — DET-1 a DET-5 ✅ em prod. RAG vetorial aposentado; **renderer determinístico (DET-5) cobre 4 categorias LIVE em prod: ABDOMEN_TOTAL, OBSTETRICA, MORFOLOGICO, TIREOIDE** (TIREOIDE com escore Domingos calculável — shipped 2026-06-13). **MAMARIA renderer v1 (CLÁSSICO) codado + Dex2 revisado (flag OFF, aguardando validação clínica + golden).** Saneamento dos writing styles em prod (2 estilos). Curadoria S2 aplicada. **Próximo: validar MAMARIA + ligar flag; backlog de UX/bugs (ver tarefas) + DET-6.**
+> **Última atualização:** 2026-06-13 (sessão longa: tireoide shipped + saneamento styles + mamaria v1 + backlog)
 > **Decisão formal:** `docs/adr/0004-montagem-deterministica-laudos.md`
 > **Origem:** análise Claude Code + validação crítica Codex/dex1 (2026-06-11), aprovada pelo Luiz
-> **Repos envolvidos:** este monorepo (`apps/api/` — backend; `apps/lab/` — showcase) + `~/laudousg-swift/LaudoUSG` (DET-4 iOS)
+
+> **🗂️ REPOS E BANCOS (nuances — não misturar):**
+> - **`~/laudousgmobile-def`** (ESTE) — monorepo do backend mobile + lab. `apps/api/`
+>   = engine/API (Next.js, SSE, renderer DET-5); `apps/lab/` = showcase/testbench;
+>   `apps/mobile/` = app RN antigo (o iOS Swift é o oficial). DB: **MOBILE**
+>   `yldtkqrsbgcnwlydrrot.supabase.co` (MCP `supabase-db` ✅ — migrations SÓ aqui).
+> - **`~/laudousg-swift/LaudoUSG`** — app iOS oficial (Swift/SwiftUI). Consome a API
+>   deste monorepo (`https://laudousgmobile.vercel.app`) + Supabase REST do DB MOBILE.
+>   Repo git: `LaudoUSG/`. Build no Xcode (delegar a dex1 — não buildo Swift daqui).
+>   **Uncommitted/tratado pelo Luiz/@devops.**
+> - **`~/laudousg`** — produto ORIGINAL web (Next.js, em PROD em laudousg.com).
+>   **NÃO TOCAR** (leitura/diagnóstico apenas). É a FONTE VIVA dos prompts
+>   (`lib/categoryDefaults.ts` 34 cat + `lib/globalRules.ts`). DB: **ORIGINAL**
+>   `gimxiyjfuaqptahssqgb.supabase.co` (MCP `supabase-original-readonly` — só leitura).
+> - **Deploy:** Vercel projeto `laudousgmobile` (team `prazeresapp`); flag
+>   `RENDERER_CATEGORIES` (env, **não-sensitive** desde 2026-06-13) liga o renderer
+>   DET-5 por categoria. Migrations: `packages/db/src/sql/00NN_*.sql` registradas em
+>   `packages/db/src/migrate.ts` (aplicar ANTES do código).
 > **Processo validado:** implementar → review dex1 + verificação adversarial dex2 (OU auto-revisão Fable quando o Luiz pedir só este terminal) → golden + byte-stability → push → deploy Vercel → regenerar showcase. Token de teste prod: `golden-runner@laudousg.dev` (senha em `/tmp/golden-runner-pw.txt`; expira em ~1h, renovar via `/auth/v1/token?grant_type=password`).
 >
 > **⚠️ DOCS-CHAVE PARA RECUPERAR ESTADO (ler nesta ordem ao retomar):**
-> 1. Este plano (quadro de status + seção "Estado em 2026-06-13" abaixo).
+> 1. Este plano (quadro de status + seção "Feito na sessão 2026-06-13" + "Estado em 2026-06-13" abaixo).
 > 2. `docs/catalogo-clinico-exames.md` — ⭐ catálogo clínico de opções/variações por exame (fonte do modelo web SEM IA + do renderer).
-> 3. `docs/curadoria-showcase-2026-06-12.md` — backlog dos ajustes clínicos do Luiz (Lotes A+B, todos aplicados).
-> 4. `docs/det-5-design.md` — design técnico do renderer.
-> 5. `docs/sprints-30min.md` — plano de sprints intensivos.
-> 6. `docs/det-4-ios-seletor-mascara.md` — sprint iOS.
+> 3. `docs/det-5-design.md` — design técnico do renderer (ABDOMEN piloto).
+> 4. `docs/det-5-tireoide-domingos.md` — escore Domingos calculável (tireoide).
+> 5. `docs/det-5-mamaria.md` + `docs/det-5-mamaria-birads-pesquisa.md` — MAMARIA (spec + Atlas BI-RADS US).
+> 6. `docs/saneamento-writing-styles.md` — consolidação para 2 estilos (Clássico + Objetivo).
+> 7. `docs/curadoria-showcase-2026-06-12.md` — backlog clínico do Luiz (Lotes A+B).
+> 8. **Tarefas (TaskList)** — backlog vivo de UX/bugs (iOS login/Pelve, "A)" no título, percentil doppler, etc).
+
+## Feito na sessão 2026-06-13 (longa) — resumo para recuperar
+
+1. **TIREOIDE → renderer + escore Domingos CALCULÁVEL** (extração classifica enums
+   por eixo → código soma NOTA → TI-RADS → características → conduta; ditado vence;
+   2 toggles `show_domingos_score`/`show_conduct_recommendation` fiados ponta-a-ponta
+   via coluna JSONB `renderer_preferences`). **SHIPPED em prod** (PR #1; flag ligada;
+   smoke test `renderer/v1` ok). 3 rodadas dex1+dex2.
+2. **Saneamento writing styles** — descoberto que havia 4 estilos ativos (só 2
+   reais: CLÁSSICO + OBJETIVO; os outros 2 eram overlays extras; "enxuta" = OBJETIVO,
+   não variante). Migration `0013` aplicada em prod (2 estilos; remove `enxuta`);
+   backend valida `active` + fallback CLÁSSICO; **iOS `fetchWritingStyles` estava
+   QUEBRADO** (colunas inexistentes → picker vazio) — corrigido (compila; pendente
+   build/funcional). PR #2 merged.
+3. **MAMARIA renderer v1 (CLÁSSICO)** — `apps/api/src/server/renderer/categories/
+   MAMARIA.ts`: 10 tipos+NML, léxico US do Atlas em enums, BI-RADS calculável
+   (maior-vence + ditado-vence + heurística 4A/4B/4C), título dinâmico, axilas,
+   elastografia, correlação com exames prévios, toggle conduta. Dex2 revisou (9
+   achados corrigidos). **flag OFF — aguardando validação clínica do Luiz + golden.**
+4. **Backlog de ressalvas do Luiz** capturado nas TAREFAS (UX iOS login/Pelve, "A)"
+   no título da Pelve, IG errada nos percentis do doppler, preferência de percentil).
+
+### Próximos passos (ordem sugerida)
+- MAMARIA: Luiz valida gradação 4A/4B/4C + regras de escalada do sólido → golden →
+  ligar flag em prod → ONDA 2 (formato OBJETIVO no renderer).
+- Backlog UX/bugs (tarefas): "A)" no título Pelve (backend, rápido); percentil
+  doppler IG (iOS); ajustes de UI iOS (login logo/rodapé, botões Pelve).
+- Toggles: UI no lab/iOS (tireoide Domingos/conduta; mamaria conduta).
+- DET-6 (comandos como operações).
 
 ---
 
