@@ -1,11 +1,19 @@
 # Plano — Migração para Laudos Determinísticos
 
-> **Status geral:** 🟢 Em execução — DET-1 a DET-4 ✅ (bundle determinístico é o caminho ÚNICO; RAG vetorial aposentado; seletor de máscara no iOS implementado e testado E2E). **Próximo trabalho: DET-5** (structured extraction + renderer).
-> **Última atualização:** 2026-06-12
+> **Status geral:** 🟢 Em execução — DET-1 a DET-5 ✅ em prod. RAG vetorial aposentado; seletor de máscara no iOS (DET-4); **renderer determinístico (DET-5) cobre 3 categorias: ABDOMEN_TOTAL, OBSTETRICA, MORFOLOGICO** (estrutura byte-estável por construção). Curadoria clínica do showcase (S2) aplicada em todas as categorias. **Próximo trabalho: DET-5 ondas seguintes** (portar MAMARIA/TIREOIDE ao renderer) + **DET-6** (comandos como operações).
+> **Última atualização:** 2026-06-13
 > **Decisão formal:** `docs/adr/0004-montagem-deterministica-laudos.md`
 > **Origem:** análise Claude Code + validação crítica Codex/dex1 (2026-06-11), aprovada pelo Luiz
-> **Repos envolvidos:** este monorepo (`apps/api/` — quase tudo) + `~/laudousg-swift/LaudoUSG` (só DET-4)
-> **Processo validado:** implementar → review dex1 + verificação adversarial cruzada dex2 → corrigir → golden + E2E → @devops push/deploy. Token de teste em prod: usuário `golden-runner@laudousg.dev` (senha resetável via admin API).
+> **Repos envolvidos:** este monorepo (`apps/api/` — backend; `apps/lab/` — showcase) + `~/laudousg-swift/LaudoUSG` (DET-4 iOS)
+> **Processo validado:** implementar → review dex1 + verificação adversarial dex2 (OU auto-revisão Fable quando o Luiz pedir só este terminal) → golden + byte-stability → push → deploy Vercel → regenerar showcase. Token de teste prod: `golden-runner@laudousg.dev` (senha em `/tmp/golden-runner-pw.txt`; expira em ~1h, renovar via `/auth/v1/token?grant_type=password`).
+>
+> **⚠️ DOCS-CHAVE PARA RECUPERAR ESTADO (ler nesta ordem ao retomar):**
+> 1. Este plano (quadro de status + seção "Estado em 2026-06-13" abaixo).
+> 2. `docs/catalogo-clinico-exames.md` — ⭐ catálogo clínico de opções/variações por exame (fonte do modelo web SEM IA + do renderer).
+> 3. `docs/curadoria-showcase-2026-06-12.md` — backlog dos ajustes clínicos do Luiz (Lotes A+B, todos aplicados).
+> 4. `docs/det-5-design.md` — design técnico do renderer.
+> 5. `docs/sprints-30min.md` — plano de sprints intensivos.
+> 6. `docs/det-4-ios-seletor-mascara.md` — sprint iOS.
 
 ---
 
@@ -26,8 +34,8 @@
 | DET-2 | Expansão a todas as categorias + desligar retrieval vetorial normativo | ✅ **concluído** 2026-06-12 — 16 categorias no bundle (13 ativas + 3 com uso: prostata/partes_moles/MSK), bundle é o caminho ÚNICO. **RAG vetorial REMOVIDO** (commit `7755f0a`): retriever.ts/pelveRouteSelection.ts deletados, flag removida, embedding fora da geração. Seletor de variante generalizado por tag `variant:`. 38/38 golden; caching ~99%. Validado em prod pelo Luiz. Docs: `det-2-ondas-pequenas.md`, `det-2-categorias-grandes.md`, `det-2-remocao-rag.md`, `det-2-followups.md`. |
 | DET-3 | Variantes de máscara (entidade 1ª classe + preferências da conta) | ✅ **concluído** 2026-06-12 — backend completo em prod (commits `4e9da03`/`bd2e710`). Tabelas `report_template_variants` (catálogo) + `account_report_preferences` (RLS própria); bundleLoader resolve por preferência (precedência contexto > preferência > default); APIs `/api/me/report-preferences` + `/api/admin/report-template-variants`. Piloto demo MAMARIA "enxuta": E2E prova que trocar a preferência muda o laudo. 38/38 golden regressão. Reviews dex1+dex2 aplicados. Doc: `det-3-variantes-preferencia.md`. |
 | DET-4 | iOS: seletor de máscara nas Preferências | ✅ **concluído** 2026-06-12 — repo `~/laudousg-swift/LaudoUSG` (uncommitted, aguardando @devops). Seção "Modelos de laudo" no `SettingsView` (picker por categoria com >1 variante **no estilo atual**, opção "Automático"); `ProfileService` GET/PATCH `/api/me/report-preferences`; `AppState` + load pós-login. Reviews dex1+dex2 aplicados (3 fixes: filtro por writing style atual evita `BUNDLE_VARIANT_EMPTY`; guard race de signOut; guard double-tap). Build verde; E2E no Simulator (dex1/xcodebuildmcp): Enxuta→"LAUDO RESUMIDO", Automático→padrão (critério DET-3), confirmado nos reports salvos no DB. Doc: `det-4-ios-seletor-mascara.md`. |
-| DET-5 | Structured extraction + renderer (piloto 1 categoria) | ⬜ **PRÓXIMO** |
-| DET-6 | Comandos como operações + vocabulário pessoal curado | ⬜ não iniciado |
+| DET-5 | Structured extraction + renderer | ✅ **em prod (3 categorias)** 2026-06-12/13 — piloto ABDOMEN_TOTAL (template_body com slots + LLM secundário p/ achados livres) + **OBSTETRICA e MORFOLOGICO** (render PROGRAMÁTICO 100% em código, sem template, só extração usa LLM). Arquitetura: `apps/api/src/server/renderer/categories/<CAT>.ts` + registry em `extraction.ts` + dispatcher em `pipeline/renderer.ts`. Flag prod `RENDERER_CATEGORIES=ABDOMEN_TOTAL,OBSTETRICA,MORFOLOGICO`. `model_writer='renderer/v1'`. Cálculos determinísticos: peso médio + divergência ponderal gemelar, IP médio uterinas (morfo 1t). Golden: abdome 19/19, obstétrica 3/3, morfo 3/3; byte-estável. Doc: `det-5-design.md`. **PRÓXIMO: ondas MAMARIA/TIREOIDE no mesmo padrão.** |
+| DET-6 | Comandos como operações + vocabulário pessoal curado | ⬜ não iniciado (design no S11 de `sprints-30min.md`) |
 
 > **O que já está em produção (2026-06-12):** todo laudo é montado pelo bundle
 > determinístico (SELECT por chave: categoria × estilo × validated), sem
@@ -38,15 +46,91 @@
 > estrutura). Suíte golden: `tests/golden-deterministico/` (38 casos) + E2E de
 > preferência `tests/det3/preference-e2e.mjs`.
 
-> **Pendências/follow-ups (não bloqueiam o DET-4):**
-> - **App iOS com build antigo** mostrava quebras de linha "coladas" no Doppler
->   obstétrico — é o app, não o backend (provado). Resolve atualizando o app.
-> - **Categorias órfãs** (TÓRAX, OCULAR, etc., 0 uso, sem modelo) dão
->   `BUNDLE_EMPTY` se usadas — sanear sob demanda.
-> - **Conteúdo real das variantes de preferência** (a máscara "enxuta" do DET-3 é
->   demonstração) — o Luiz fornece via lab quando quiser.
-> - **UI no lab** p/ CRUD de variantes (só a API admin entrou no DET-3).
-> - **Função SQL órfã** `match_knowledge_blocks` (não chamada) — drop opcional.
+---
+
+## ⭐ Estado em 2026-06-13 (sessões 12-13/jun) — leia para recuperar tudo
+
+### Arquitetura do renderer (DET-5) — como funciona hoje
+Dois modos, escolhidos por categoria via flag `RENDERER_CATEGORIES` (env Vercel):
+- **ABDOMEN_TOTAL** = render por TEMPLATE: `report_template_variants.template_body`
+  com slots `{{orgao:chave|default}}`, `{{extra_abdominais}}`, `{{conclusao}}`;
+  achados fora do catálogo ("outro") viram 1 chamada LLM secundária (free-slot).
+- **OBSTETRICA + MORFOLOGICO** = render PROGRAMÁTICO: laudo montado 100% em
+  código (`renderer/categories/OBSTETRICA.ts` e `MORFOLOGICO.ts`), SEM
+  template_body, SÓ a extração usa LLM. Registradas em
+  `RENDERER_PROGRAMMATIC_CATEGORIES` (extraction.ts) — o gate no route não exige
+  template_body para elas.
+- **Fluxo comum:** route → `runRendererStream` (pipeline/renderer.ts, dispatcher)
+  → extração tipada (`runRendererExtraction`, registry `EXTRACTORS` em
+  extraction.ts, schema strict por categoria, temp 0) → render da categoria →
+  SSE. `generation_runs.model_writer = "renderer/v1"`.
+- **Adicionar categoria nova ao renderer:** criar módulo em
+  `renderer/categories/<CAT>.ts` (schema JSON strict + prompt + parse + render),
+  registrar no `EXTRACTORS` de extraction.ts, adicionar ao dispatcher de
+  renderer.ts, (se programática) a `RENDERER_PROGRAMMATIC_CATEGORIES`, e à flag.
+- **Cálculos determinísticos já feitos em código** (o writer LLM não fazia):
+  peso fetal médio + divergência ponderal (g e %) no gemelar; IP médio das
+  artérias uterinas no morfo 1t; grau de placenta romano; concordância pt-BR.
+
+### Curadoria clínica do showcase (S2) — TODA aplicada e em prod
+O Luiz revisou o showcase e mandou ajustes (backlog íntegro em
+`docs/curadoria-showcase-2026-06-12.md`). Aplicado por categoria:
+- **ABDOMEN_TOTAL** (renderer): vesícula com árvore completa (ausência/colecistectomia
+  → parede fina ou espessada+colecistite → cálculo único/múltiplo, móvel/imóvel
+  À MUDANÇA DE DECÚBITO, "ocasionando sombra(s) acústica(s)", medida menor
+  opcional); título "ABDOME TOTAL COM DOPPLER COLORIDO" na variante doppler;
+  comentários sem "em N fotos".
+- **ABDOMEN_SUPERIOR** (writer/bloco): mesma lógica de vesícula espelhada no
+  bloco `abdomen-superior-regra-colelitiase` (normalização "ocasionando", mobilidade,
+  parede espessada).
+- **TIREOIDE** (writer): corpo sem "nódulo" (usa "imagem ... mais larga do que
+  alta, sem calcificações"); sem "parênquima homogêneo" no lobo alterado;
+  conclusão condicional (item 1 volume; item 2+ achado por lobo); sem Chammas.
+- **PROSTATA_SUPRAPUBICA** (writer): título "(TRANSABDOMINAL)"; corpo com volume
+  pré-miccional; IPP (índice de protrusão, graus I/II/III); conclusão só peso (sem cm³).
+- **ESCROTAL**: varicocele individualiza os dois lados (esq. aumentado + dir. normal).
+- **GLANDULAS_SALIVARES**: estrutura COMENTÁRIOS + conclusão item único sem "1)".
+- **DOPPLER_RENAL/VENOSO/OBSTETRICO** (writer): conclusões simplificadas,
+  comentários enxutos, frase 1ª USG opcional.
+- **DOPPLER_ARTERIAL_MMII** (writer): título por membro, COMENTÁRIOS, conclusão só
+  diagnóstico ("Doença aterosclerótica difusa..."), ITB removido (blocos archived).
+- **MUSCULOESQUELETICO**: categoria antiga inativa; V2 é o padrão; conclusão resume
+  (não copia corpo) + tranquilização do manguito com lógica estrita.
+- **MORFOLOGICO** (renderer): 1t/2t/3t estrutura por construção; peso com variação(+-g)
+  e percentil opcionais; 3t SEM distância binocular e SEM "orifício interno do colo";
+  placenta com grau; achados_adicionais só patológico (sem frases normais soltas).
+- **OBSTETRICA** (renderer): feto único + gemelar; gestação inicial sem "Sem
+  descolamentos" solto; gemelar com individualização por feto + peso médio/divergência.
+
+### Suíte golden de regressão da curadoria (writer)
+`tests/golden-deterministico/cases/*-cur-*.json` (6 casos): travam as DECISÕES
+(proibições: sem ITB, sem "nódulo" no corpo de tireoide, sem "via suprapúbica",
+sem "Feto único" no gemelar, título morfológico ≠ obstétrico). Asserções de
+PROIBIÇÃO são determinísticas; estrutura completa (headers) é flaky no writer
+(some no renderer). Rodar: `GOLDEN_API_URL=http://localhost:3000
+GOLDEN_AUTH_TOKEN=... pnpm validate:golden:deterministico` (filtro `-cur-`).
+
+### Aprendizado-chave (decide a fila do renderer)
+O caminho WRITER (LLM escreve seguindo o bundle) é **flaky na estrutura**: omite
+seções, erra título, não calcula. Reforço de prompt não resolve. **O renderer
+resolve por construção.** Por isso MORFOLOGICO/OBSTETRICA foram portados primeiro;
+MAMARIA/TIREOIDE são as próximas (alto volume).
+
+### Pendências/follow-ups (não bloqueiam)
+> - **ABDOMEN_SUPERIOR ainda é writer** — candidato fácil ao renderer (é o abdome
+>   total sem a parte inferior).
+> - **commandGuard no caminho renderer** pode transformar instrução de estrutura
+>   ("inclua a tabela") em item de conclusão espúrio — ajustado por ditado, mas
+>   a causa raiz fica para o DET-6 (comandos como operações).
+> - **Variantes contextuais** (1t/2t/3t, ta/tv, pos-abortamento) saíram do picker
+>   de preferências via `preference_eligible` (decisão Luiz) — só variantes de
+>   estilo são elegíveis; hoje só MAMARIA padrao/enxuta.
+> - **Conteúdo real das variantes** (a "enxuta" da MAMARIA é demo) — Luiz fornece via lab.
+> - **UI no lab** p/ CRUD de variantes (só a API admin entrou).
+> - **OpenAI 429** em rajadas de geração (showcase) — Luiz recarrega o billing.
+> - **Categorias órfãs** sem modelo → `BUNDLE_EMPTY`; **`match_knowledge_blocks`** órfã (drop opcional).
+
+---
 
 ---
 
