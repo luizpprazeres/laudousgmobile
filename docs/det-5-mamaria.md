@@ -200,6 +200,17 @@ reclassifica/biopsia_benigna/discordante/necessaria_indisponivel), birads_final 
 Frases em `det-5-mamaria-birads-pesquisa.md §5`.
 
 ## Status
-🟢 **Spec COMPLETO** (workflow do Luiz + léxico do Atlas + 10 decisões finais).
-Pronto para codar `apps/api/src/server/renderer/categories/MAMARIA.ts`. Pesquisa
-de apoio: `det-5-mamaria-birads-pesquisa.md`.
+🟢 **Renderer v1 (CLÁSSICO) CODADO** 2026-06-13 — `apps/api/src/server/renderer/
+categories/MAMARIA.ts` (registrado em extraction.ts + dispatcher; `tsc` limpo;
+8 cenários locais OK). **Review dex2 aplicado** (9 achados: calcificações por
+subtipo, lado nunca inventado, BI-RADS 6 frase própria, empate rotula todos,
+NML "de mama", cisto complicado preserva característica, heurística 4A/4B/4C
+ponderada, casos especiais → achados_adicionais, tipo RendererPreferences comum).
+**Aguardando validação clínica do Luiz (gradação 4A/4B/4C) + golden + flag em prod.**
+- **Implementado:** 10 tipos (7 + microcistos/cisto_complicado + NML), léxico US
+  em enums, BI-RADS calculável (heurística + ditado-vence + maior-vence), título
+  dinâmico, comentários (padrão/masculina/prótese), axilas sempre quando título
+  inclui, elastografia (só frase), correlação com exames prévios, toggle de conduta.
+- **ONDA 2 / a validar:** formato OBJETIVO (precisa passar o writing style ao
+  renderer); heurística 4A/4B/4C (validação clínica do Luiz); formatação de medida
+  (2,0 vs 2); fidelidade das frases do corpo vs fonte viva.

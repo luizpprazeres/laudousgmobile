@@ -28,6 +28,10 @@ import {
   type TireoideFindings,
   type TireoidePreferences,
 } from "../renderer/categories/TIREOIDE";
+import {
+  renderMamaria,
+  type MamariaFindings,
+} from "../renderer/categories/MAMARIA";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -46,6 +50,12 @@ import {
  */
 
 export const RENDERER_VERSION = "renderer/v1";
+
+/** Toggles do renderer (estrutural; cada categoria usa só as chaves que entende). */
+export type RendererPreferences = {
+  show_domingos_score?: boolean;
+  show_conduct_recommendation?: boolean;
+};
 
 const ORGAN_SLOT_RE = /\{\{orgao:([a-z_]+)\|([\s\S]*?)\}\}/g;
 
@@ -155,8 +165,9 @@ export async function* runRendererStream(args: {
   templateBody: string;
   signal?: AbortSignal;
   onSystemMessage?: (message: string) => void;
-  /** DET-5 ONDA 2 — toggles do renderer da conta (hoje: TIREOIDE). */
-  rendererPreferences?: Partial<TireoidePreferences> | null;
+  /** DET-5 ONDA 2 — toggles do renderer da conta (TIREOIDE: Domingos; MAMARIA:
+   * conduta). Tipo comum (estrutural) por categoria — review dex2 #9. */
+  rendererPreferences?: RendererPreferences | null;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
 
@@ -172,17 +183,23 @@ export async function* runRendererStream(args: {
   if (
     args.categoryCode === "OBSTETRICA" ||
     args.categoryCode === "MORFOLOGICO" ||
-    args.categoryCode === "TIREOIDE"
+    args.categoryCode === "TIREOIDE" ||
+    args.categoryCode === "MAMARIA"
   ) {
     const fullText =
       args.categoryCode === "OBSTETRICA"
         ? renderObstetrica(extraction.findings as ObstetricaFindings)
         : args.categoryCode === "MORFOLOGICO"
           ? renderMorfologico(extraction.findings as MorfologicoFindings)
-          : renderTireoide(
-              extraction.findings as TireoideFindings,
-              args.rendererPreferences,
-            );
+          : args.categoryCode === "TIREOIDE"
+            ? renderTireoide(
+                extraction.findings as TireoideFindings,
+                args.rendererPreferences,
+              )
+            : renderMamaria(
+                extraction.findings as MamariaFindings,
+                args.rendererPreferences,
+              );
     const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;
     args.onSystemMessage?.(systemMessage);
     yield fullText;
