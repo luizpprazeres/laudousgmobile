@@ -15,8 +15,17 @@ export const dynamic = "force-dynamic";
 
 const UpdateSchema = z.object({
   category_code: z.string().min(1),
-  // null limpa a preferência (volta ao padrão de contexto/default).
-  default_variant_id: z.string().uuid().nullable(),
+  // Opcional: undefined = não mexe na variante; null limpa (volta ao default);
+  // uuid fixa a variante. (PATCH parcial — permite atualizar SÓ os toggles.)
+  default_variant_id: z.string().uuid().nullable().optional(),
+  // DET-5 ONDA 2 — toggles do renderer (opcional; só as chaves enviadas mudam).
+  renderer_preferences: z
+    .object({
+      show_domingos_score: z.boolean().optional(),
+      show_conduct_recommendation: z.boolean().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export async function GET(req: Request) {
@@ -30,6 +39,7 @@ export async function GET(req: Request) {
       category_code: schema.accountReportPreferences.categoryCode,
       default_variant_id: schema.accountReportPreferences.defaultVariantId,
       variant_key: schema.reportTemplateVariants.variantKey,
+      renderer_preferences: schema.accountReportPreferences.rendererPreferences,
     })
     .from(schema.accountReportPreferences)
     .leftJoin(
@@ -77,7 +87,7 @@ export async function PATCH(req: Request) {
   if (!parsed.success) {
     return json({ error: "invalid_body", issues: parsed.error.format() }, 400);
   }
-  const { category_code, default_variant_id } = parsed.data;
+  const { category_code, default_variant_id, renderer_preferences } = parsed.data;
 
   const db = getDbClient();
 
@@ -111,22 +121,64 @@ export async function PATCH(req: Request) {
       return json({ error: "variant_not_preference_eligible" }, 400);
   }
 
+  // Merge dos toggles do renderer com o que já existe (PATCH parcial: só as
+  // chaves enviadas mudam; default_variant_id continua governado acima).
+  // `undefined` = não tocar; `null` = limpar (grava SQL null, não {}).
+  let mergedRendererPrefs: Record<string, unknown> | null | undefined;
+  if (renderer_preferences === null) {
+    mergedRendererPrefs = null;
+  } else if (renderer_preferences !== undefined) {
+    const [existing] = await db
+      .select({ prefs: schema.accountReportPreferences.rendererPreferences })
+      .from(schema.accountReportPreferences)
+      .where(
+        and(
+          eq(schema.accountReportPreferences.userId, user.id),
+          eq(schema.accountReportPreferences.categoryCode, category_code),
+        ),
+      )
+      .limit(1);
+    const base =
+      existing?.prefs && typeof existing.prefs === "object"
+        ? (existing.prefs as Record<string, unknown>)
+        : {};
+    mergedRendererPrefs = { ...base, ...renderer_preferences };
+  }
+
   await db
     .insert(schema.accountReportPreferences)
     .values({
       userId: user.id,
       categoryCode: category_code,
-      defaultVariantId: default_variant_id,
+      defaultVariantId: default_variant_id ?? null,
+      rendererPreferences: mergedRendererPrefs ?? null,
     })
     .onConflictDoUpdate({
       target: [
         schema.accountReportPreferences.userId,
         schema.accountReportPreferences.categoryCode,
       ],
-      set: { defaultVariantId: default_variant_id, updatedAt: new Date() },
+      // PATCH parcial: só atualiza o que o body enviou (undefined = não mexe no
+      // que já estava gravado).
+      set: {
+        updatedAt: new Date(),
+        ...(default_variant_id !== undefined
+          ? { defaultVariantId: default_variant_id }
+          : {}),
+        ...(mergedRendererPrefs !== undefined
+          ? { rendererPreferences: mergedRendererPrefs }
+          : {}),
+      },
     });
 
-  return json({ ok: true, category_code, default_variant_id });
+  return json({
+    ok: true,
+    category_code,
+    ...(default_variant_id !== undefined ? { default_variant_id } : {}),
+    ...(mergedRendererPrefs !== undefined
+      ? { renderer_preferences: mergedRendererPrefs }
+      : {}),
+  });
 }
 
 function json(body: unknown, status = 200) {

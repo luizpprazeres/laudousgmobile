@@ -59,40 +59,6 @@ export async function getWritingStyleById(
   return stylesCache.get(id) ?? null;
 }
 
-/**
- * DET-3 — variante de máscara preferida pela conta para uma categoria.
- * JOIN account_report_preferences × report_template_variants (só validated).
- * Retorna a `variant_key` (que o bundleLoader casa com a tag variant:<chave>)
- * ou null se o médico não tem preferência registrada / a variante não é válida.
- *
- * NÃO cacheado — preferência muda por usuário e a query é por (user, categoria)
- * com índice PK; barata.
- */
-export async function resolveAccountVariantKey(
-  userId: string,
-  categoryCode: string,
-): Promise<string | null> {
-  const db = getDbClient();
-  const [row] = await db
-    .select({ variantKey: schema.reportTemplateVariants.variantKey })
-    .from(schema.accountReportPreferences)
-    .innerJoin(
-      schema.reportTemplateVariants,
-      eq(
-        schema.accountReportPreferences.defaultVariantId,
-        schema.reportTemplateVariants.id,
-      ),
-    )
-    .where(
-      and(
-        eq(schema.accountReportPreferences.userId, userId),
-        eq(schema.accountReportPreferences.categoryCode, categoryCode),
-        eq(schema.reportTemplateVariants.status, "validated"),
-      ),
-    )
-    .limit(1);
-  return row?.variantKey ?? null;
-}
 
 /**
  * DET-5 — template_body da variante resolvida (caminho RENDERER).
@@ -119,6 +85,54 @@ export async function getVariantTemplateBody(args: {
     .limit(1);
   const body = row?.templateBody;
   return body && body.trim() !== "" ? body : null;
+}
+
+/**
+ * DET-5 ONDA 2 — resolve, numa ÚNICA query (review dex1), a preferência de
+ * laudo da conta para uma categoria: a `variant_key` (DET-3) E os toggles do
+ * renderer (`renderer_preferences`). LEFT JOIN em report_template_variants para
+ * NÃO perder os toggles quando `default_variant_id` é null (toggle-only).
+ *
+ * `variantKey` só vale se a variante existir e estiver `validated` (mesma regra
+ * do antigo resolveAccountVariantKey, agora avaliada em código por causa do
+ * leftJoin). NÃO cacheado: query por PK (user, categoria), barata.
+ */
+export async function resolveAccountReportPreference(
+  userId: string,
+  categoryCode: string,
+): Promise<{
+  variantKey: string | null;
+  rendererPreferences: Record<string, unknown> | null;
+}> {
+  const db = getDbClient();
+  const [row] = await db
+    .select({
+      variantKey: schema.reportTemplateVariants.variantKey,
+      variantStatus: schema.reportTemplateVariants.status,
+      rendererPreferences: schema.accountReportPreferences.rendererPreferences,
+    })
+    .from(schema.accountReportPreferences)
+    .leftJoin(
+      schema.reportTemplateVariants,
+      eq(
+        schema.accountReportPreferences.defaultVariantId,
+        schema.reportTemplateVariants.id,
+      ),
+    )
+    .where(
+      and(
+        eq(schema.accountReportPreferences.userId, userId),
+        eq(schema.accountReportPreferences.categoryCode, categoryCode),
+      ),
+    )
+    .limit(1);
+  const prefs = row?.rendererPreferences;
+  return {
+    variantKey:
+      row && row.variantStatus === "validated" ? (row.variantKey ?? null) : null,
+    rendererPreferences:
+      prefs && typeof prefs === "object" ? (prefs as Record<string, unknown>) : null,
+  };
 }
 
 /**

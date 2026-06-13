@@ -204,7 +204,7 @@ export async function loadDeterministicBundle(args: {
   rawInput: string;
   /**
    * DET-3: variante preferida pela conta (account_report_preferences), resolvida
-   * no route via lookups.resolveAccountVariantKey. Usada quando o CONTEXTO do
+   * no route via lookups.resolveAccountReportPreference. Usada quando o CONTEXTO do
    * exame não decide a variante (sem gatilho positivo). null = sem preferência.
    */
   accountVariantKey?: string | null;

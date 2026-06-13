@@ -1,0 +1,13 @@
+{
+  "id": "tireoide-det-01-normal",
+  "category": "TIREOIDE",
+  "rawInput": "Ultrassonografia de tireoide. Lobo direito medindo 5 por 1,5 por 1,4 cm, volume de 5 ml. Lobo esquerdo medindo 4,8 por 1,4 por 1,3 cm, volume de 4,5 ml. Istmo medindo 2 por 0,3 por 0,3 cm, volume de 0,5 ml. Glândula de aspecto normal, sem nódulos.",
+  "expectedHeadersInOrder": ["COMENTÁRIOS:", "OS SEGUINTES ASPECTOS", "CONCLUSÃO:"],
+  "criticalFindings": [
+    "de ecogenicidade e ecotextura normais",
+    "Tireoide de volume normal",
+    "sem evidência de alteração ecotextural ou de imagem nodular"
+  ],
+  "forbiddenPatterns": ["COM DOPPLER", "vascularização", "parênquima homogêneo"],
+  "requiredPatterns": ["10 ml"]
+}

@@ -51,7 +51,7 @@ CONCLUSÃO:            ← itens diagnósticos numerados (1, 2, …)
 |---|---|---|---|
 | ABDOMEN_TOTAL | ✅ completa | ✅ prod | velocidades na tabela doppler |
 | ABDOMEN_SUPERIOR | parcial (herda abdome) | ⬜ writer | aplicar lógica vesícula |
-| TIREOIDE | ✅ | ⬜ writer | — |
+| TIREOIDE | ✅ | ✅ renderer (programático) | VT somado em código; difusa/Graves via `ecotextura_alterada`; bócio via `volume_glandular` ditado; reviews dex1+dex2 aplicados |
 | PROSTATA_SUPRAPUBICA | ✅ | ⬜ writer | cálculo volume/peso → renderer |
 | DOPPLER_ARTERIAL_MMII | ✅ | ⬜ writer | — |
 | MORFOLOGICO (1t/2t/3t) | ✅ | ✅ renderer (programático) | byte-estável |
@@ -188,8 +188,9 @@ Ordem de decisão (o renderer segue exatamente esta árvore):
 
 # TIREOIDE
 
-**Título:** ULTRASSONOGRAFIA DE TIREOIDE (variante com Doppler: + picos
-sistólicos das artérias tireoidianas inferiores).
+**Título:** ULTRASSONOGRAFIA DA TIREOIDE (variante com Doppler:
+ULTRASSONOGRAFIA DA TIREOIDE COM DOPPLER COLORIDO + picos sistólicos das
+artérias tireoidianas inferiores ou superiores conforme ditado).
 **Comentários (fixo):** transdutor de 12 MHz, todos os segmentos da glândula +
 cadeia ganglionar cervical I a V.
 **Rodapé fixo:** escore de nódulo Domingos Correia da Rocha + ACR.
@@ -217,13 +218,56 @@ cadeia ganglionar cervical I a V.
   evidência de alteração ecotextural ou de imagem nodular." (VT = lobos + istmo)
 - **Com nódulo/cisto:**
   1. "Tireoide de volume normal (VT ml)." (SEM a frase de normalidade)
-  2. (por lobo) "Lobo {lado} apresentando imagem {ecogenicidade} com NOTA FINAL
-     {N} ({característica clínica}), equivalente ao TI-RADS {Z} ACR." — Nota
-     Domingos e TI-RADS reproduzidos EXATAMENTE como ditados, nunca calculados.
-     Característica por nota: 1-2 benignas; 3 provavelmente benignas; 4
-     intermediárias; 5 provavelmente malignas; 6+ malignas.
+  2. (UM item por lobo; imagens do mesmo lobo no MESMO item, separadas por ";")
+     "Lobo {lado} apresentando imagem {ecogenicidade} {localização} com NOTA FINAL
+     {N} (características {benignas/provavelmente benignas/intermediárias/
+     suspeitas}), equivalente ao TI-RADS {Z} ACR." — **NOTA e TI-RADS CALCULADOS**
+     pelo escore Domingos (ver `det-5-tireoide-domingos.md`); ditados pelo médico
+     vencem o cálculo (override verbatim).
 - **Linfonodos cervicais** (quando descritos): "Linfonodos cervicais com
   morfologia preservada…sem sinais de infiltração neoplásica ao método."
+
+### Renderer (DET-5, programático) — notas de implementação
+`apps/api/src/server/renderer/categories/TIREOIDE.ts`. **Spec do escore:
+`docs/det-5-tireoide-domingos.md`.** Decisões:
+- **Escore Domingos CALCULADO em código** (≠ v1 que reproduzia): a extração
+  classifica cada imagem em enums por eixo (ecogenicidade/margem/halo/forma/
+  calcificações/vascularização-Chammas) + dimensão pela maior medida; o código
+  SOMA → NOTA FINAL → TI-RADS (≤3=1 · 4-5=2 · 6-9=3 · ≥10=4) → características →
+  conduta. Vascularização (Chammas) SÓ pontua, nunca escrita. Override: nota/
+  TI-RADS ditados vencem o cálculo.
+- **Toggles (preferência da conta)** — `show_domingos_score` (default ON; OFF →
+  conclusão só "imagem … - TI-RADS Z") e `show_conduct_recommendation` (default
+  OFF → quando ON, append da conduta do maior TI-RADS). Renderer já aceita o
+  objeto de preferências; wiring DB(JSONB)+route+UI = ONDA 2.
+- **VT (volume total)** = soma determinística dos volumes ditados (lobos +
+  istmo); `____` se algum faltar (nunca calcula volume de lobo a partir das
+  medidas — o médico dita o volume).
+- **Corpo do lobo com achado** mantém o volume em parênteses; imagens separadas
+  por ";"; ordem ecogenicidade → margem → halo → medida → calcificações → forma →
+  localização; terminologia "margem"; Chammas nunca aparece.
+- **Título** "ULTRASSONOGRAFIA DA TIREOIDE" / "...DA TIREOIDE COM DOPPLER
+  COLORIDO"; artéria tireoidiana inferior OU superior conforme ditado.
+- **Alteração difusa** (tireoidite/Graves): campo `ecotextura_alterada` por lobo
+  recebe a descrição verbatim do médico e substitui a frase "de ecotextura
+  normais" (evita o laudo afirmar lobo normal + glândula heterogênea). Nesse
+  caso a conclusão item 1 omite "sem evidência de alteração ecotextural"; a
+  síntese diagnóstica fica com o médico (achados_adicionais).
+- **Volume glandular** (`volume_glandular`): bócio/aumentado/reduzido conforme
+  DITADO pelo médico → "Tireoide de volume {aumentado/reduzido} (VT ml)". Nunca
+  inferido por limiar de VT (seria inventar) — silêncio → "normal".
+- **Linfonodo alterado:** vai à conclusão como "Linfonodos cervicais de aspecto
+  alterado (descrição do médico)." — NUNCA a frase de "morfologia preservada"
+  (seria contradição). Normais ficam só no corpo.
+- **Vascularização do achado** (`nodulo.vascularizacao`): descrição simples
+  (periférica/central/aumentada) entra no corpo; Chammas continua ignorado.
+- **Reviews dex1+dex2 (2026-06-13):** 3 bloqueantes corrigidos (linfonodo
+  alterado contraditório; bócio saindo "normal"; nota Domingos inválida "0"
+  virando "(benigna)") + 2 menores (conclusão distingue múltiplos nódulos por
+  localização/medida; vascularização do achado).
+- **Limitações conhecidas (v1):** volume só é classificado quando o médico dita
+  bócio/aumentado (medidas grandes sem comentário seguem "normal" — decisão
+  No-Invention); diagnóstico de tireoidite não é inferido (só descrição verbatim).
 
 ---
 

@@ -1,0 +1,17 @@
+{
+  "id": "tireoide-det-06-domingos-calculado",
+  "category": "TIREOIDE",
+  "rawInput": "Tireoide com Doppler colorido. Lobo direito medindo 4,0 por 1,5 por 1,4 cm, volume 5 ml, apresentando imagem isoecoica, margem regular, mais larga do que alta, sem calcificações, vascularização periférica maior que a central, medindo 1,2 por 1,0 por 1,0 cm, no terço médio. Lobo esquerdo e istmo normais. Pico sistólico da artéria tireoidiana inferior direita de 22, esquerda de 20.",
+  "expectedHeadersInOrder": ["COMENTÁRIOS:", "OS SEGUINTES ASPECTOS", "CONCLUSÃO:"],
+  "criticalFindings": [
+    "ULTRASSONOGRAFIA DA TIREOIDE COM DOPPLER COLORIDO",
+    "apresentando imagem isoecoica, com margem regular",
+    "NOTA FINAL 5",
+    "características provavelmente benignas",
+    "equivalente ao TI-RADS 2 ACR"
+  ],
+  "forbiddenRegex": ["Chammas", "par[êe]nquima homog[êe]neo", "vasculariza[çc][ãa]o perif"],
+  "forbiddenPatterns": [],
+  "canonicalConclusionNumbering": true,
+  "minConclusionItems": 2
+}

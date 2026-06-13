@@ -28,6 +28,7 @@ async function main() {
     "0009_det4_preference_eligible.sql",
     "0010_det5_template_body_abdomen.sql",
     "0011_showcase_samples.sql",
+    "0012_det5_tireoide_renderer_prefs.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);
