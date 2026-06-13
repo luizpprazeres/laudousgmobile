@@ -12,8 +12,10 @@ import type { WritingStyleCode } from "@laudousg/shared";
 
 let categoriesCache: { codes: Set<string>; labels: Map<string, string> } | null =
   null;
-let stylesCache: Map<string, { code: WritingStyleCode; name: string }> | null =
-  null;
+let stylesCache: Map<
+  string,
+  { code: WritingStyleCode; name: string; active: boolean }
+> | null = null;
 
 export async function getKnownCategories(): Promise<{
   codes: Set<string>;
@@ -40,7 +42,7 @@ export async function getKnownCategories(): Promise<{
 
 export async function getWritingStyleById(
   id: string,
-): Promise<{ code: WritingStyleCode; name: string } | null> {
+): Promise<{ code: WritingStyleCode; name: string; active: boolean } | null> {
   if (!stylesCache) {
     const db = getDbClient();
     const rows = await db
@@ -48,11 +50,12 @@ export async function getWritingStyleById(
         id: schema.writingStyles.id,
         code: schema.writingStyles.code,
         name: schema.writingStyles.name,
+        active: schema.writingStyles.active,
       })
       .from(schema.writingStyles);
-    const m = new Map<string, { code: WritingStyleCode; name: string }>();
+    const m = new Map<string, { code: WritingStyleCode; name: string; active: boolean }>();
     for (const r of rows) {
-      m.set(r.id, { code: r.code as WritingStyleCode, name: r.name });
+      m.set(r.id, { code: r.code as WritingStyleCode, name: r.name, active: r.active });
     }
     stylesCache = m;
   }

@@ -250,6 +250,14 @@ export async function POST(req: Request) {
         });
         return;
       }
+      // Saneamento writing styles: estilo desativado (ex: DIRETO_OBJETIVO /
+      // DETALHADO_PROTOCOLAR) → cai no CLÁSSICO (cinto de segurança; hoje 0
+      // perfis usam esses, mas evita gerar com estilo aposentado).
+      if (!styleRow.active) {
+        const CLASSICO_ID = "11111111-1111-4111-8111-111111111111";
+        effectiveWritingStyleId = CLASSICO_ID;
+        styleRow = (await getWritingStyleById(CLASSICO_ID)) ?? styleRow;
+      }
 
       let findings: StructuredFindings;
       // Categoria EFETIVA para roteamento (retriever/writer/persistência). Pode

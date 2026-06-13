@@ -52,12 +52,14 @@ export async function PATCH(req: Request) {
   if ("default_writing_style_id" in parsed.data) {
     const styleId = parsed.data.default_writing_style_id ?? null;
     if (styleId) {
+      // Saneamento writing styles: só aceita fixar estilo ATIVO (Clássico/Objetivo).
       const [style] = await db
-        .select({ id: schema.writingStyles.id })
+        .select({ id: schema.writingStyles.id, active: schema.writingStyles.active })
         .from(schema.writingStyles)
         .where(eq(schema.writingStyles.id, styleId))
         .limit(1);
       if (!style) return json({ error: "invalid_writing_style" }, 400);
+      if (!style.active) return json({ error: "writing_style_inactive" }, 400);
     }
     patch.defaultWritingStyleId = styleId;
   }
