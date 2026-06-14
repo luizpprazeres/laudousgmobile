@@ -32,7 +32,8 @@ const feto = (p: Partial<Feto>): Feto => ({
 const F = (p: Partial<ObstetricaFindings>): ObstetricaFindings => ({
   numero_fetos: 1, corionicidade: null, gestacao_inicial: false,
   fetos: [feto({})], ig_semanas: 30, ig_dias: 0, dum: null,
-  saco_gestacional_mm: null, placenta_quantidade: null, placenta_localizacao: null,
+  saco_gestacional_mm: null, saco_gestacional_medidas_mm: null,
+  placenta_quantidade: null, placenta_localizacao: null,
   placenta_ecotextura: null, placenta_grau: null, liquido_tipo: null,
   liquido_ila_cm: null, liquido_mbv_por_feto_cm: null, liquido_classe: null,
   achados_adicionais: null,
@@ -103,6 +104,28 @@ const F = (p: Partial<ObstetricaFindings>): ObstetricaFindings => ({
   check(
     "A1: saco gestacional com valor quando ditado",
     /Saco gestacional de forma normal, com diâmetro médio de 25 mm\./.test(laudo),
+    laudo,
+  );
+}
+// ── DSM calculado das 3 medidas: (20,3+10,4+15,4)/3 = 15,4 ──
+{
+  const laudo = renderObstetrica(
+    F({ gestacao_inicial: true, ig_semanas: 8, fetos: [feto({ ccn_mm: 12 })], saco_gestacional_medidas_mm: [20.3, 10.4, 15.4] }),
+  );
+  check(
+    "DSM: média das 3 medidas → 15,4 mm",
+    /com diâmetro médio de 15,4 mm\./.test(laudo),
+    laudo,
+  );
+}
+// ── DSM ditado direto vence ──
+{
+  const laudo = renderObstetrica(
+    F({ gestacao_inicial: true, ig_semanas: 8, fetos: [feto({ ccn_mm: 12 })], saco_gestacional_mm: 15.3 }),
+  );
+  check(
+    "DSM: ditado direto '15,3' usado verbatim",
+    /com diâmetro médio de 15,3 mm\./.test(laudo),
     laudo,
   );
 }

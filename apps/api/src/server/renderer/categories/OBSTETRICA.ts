@@ -42,7 +42,10 @@ export const ObstetricaFindingsSchema = z.object({
   ig_semanas: z.number().nullable(),
   ig_dias: z.number().nullable(),
   dum: z.string().nullable(), // DD/MM/AAAA
-  saco_gestacional_mm: z.number().nullable(), // inicial
+  saco_gestacional_mm: z.number().nullable(), // DSM ditado direto ("DSM de 15,3")
+  // As 3 medidas do saco gestacional, quando ditadas ("saco medindo A x B x C"
+  // ou "calcule o DSM pelas medidas A x B x C") — o código calcula a média.
+  saco_gestacional_medidas_mm: z.array(z.number()).nullable(),
   placenta_quantidade: z.number().nullable(),
   placenta_localizacao: z.string().nullable(),
   placenta_ecotextura: z.string().nullable(),
@@ -108,6 +111,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "ig_dias",
     "dum",
     "saco_gestacional_mm",
+    "saco_gestacional_medidas_mm",
     "placenta_quantidade",
     "placenta_localizacao",
     "placenta_ecotextura",
@@ -127,6 +131,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     ig_dias: num,
     dum: str,
     saco_gestacional_mm: num,
+    saco_gestacional_medidas_mm: { type: ["array", "null"], items: { type: "number" } },
     placenta_quantidade: num,
     placenta_localizacao: str,
     placenta_ecotextura: str,
@@ -157,6 +162,14 @@ REGRAS:
      que o médico falou a unidade certa; não "corrija".
    - DBP→dbp_mm, HC/CC→cc_mm, AC/CA→ca_mm, FL/CF→cf_mm, CCN→ccn_mm. Valor não
      ditado → null (NUNCA inventar).
+4b. SACO GESTACIONAL / DSM (gestação inicial) — o CÓDIGO calcula a média, você só
+    extrai:
+    - "saco gestacional medindo A x B x C" OU "calcule o DSM pelas medidas A x B x C"
+      → saco_gestacional_medidas_mm = [A, B, C] (as 3 medidas); saco_gestacional_mm = null.
+    - "DSM de X" / "diâmetro médio do saco gestacional de X" → saco_gestacional_mm = X;
+      saco_gestacional_medidas_mm = null.
+    - Mesma regra de unidade/decimal da BIOMETRIA (não assuma unidade; preserve a
+      casa decimal). Nada ditado → ambos null.
 5. peso_g em gramas; percentil e peso_variacao_g só se ditados.
 6. ig_semanas/ig_dias: idade gestacional ditada.
 7. dum: data da última menstruação como DD/MM/AAAA (converta extenso → numérico).
@@ -237,6 +250,18 @@ export function calcPonderal(fetos: ObstetricaFindings["fetos"]): PonderalCalc {
   const divergenciaG = maior - menor;
   const divergenciaPct = Math.round((divergenciaG / maior) * 1000) / 10; // 1 casa
   return { pesoMedio, divergenciaG, divergenciaPct };
+}
+
+/**
+ * DSM (diâmetro médio do saco gestacional) = (a+b+c)/3, 1 casa decimal.
+ * O DSM ditado direto ("DSM de 15,3") vence; senão calcula da média das medidas
+ * ditadas ("saco medindo 20,3 x 10,4 x 15,4"). null = nenhum dado (placeholder).
+ */
+export function calcDsm(f: ObstetricaFindings): number | null {
+  if (f.saco_gestacional_mm !== null) return f.saco_gestacional_mm;
+  const m = (f.saco_gestacional_medidas_mm ?? []).filter((n) => Number.isFinite(n));
+  if (m.length === 0) return null;
+  return Math.round((m.reduce((a, b) => a + b, 0) / m.length) * 10) / 10;
 }
 
 // ---------------------------------------------------------------------------
@@ -424,8 +449,9 @@ export function renderObstetrica(f: ObstetricaFindings): string {
     aspectos.push(fetoApresentacaoFrase(ft, f.gestacao_inicial));
     if (f.gestacao_inicial) {
       // P1 — no obstétrico inicial a linha do saco gestacional é OBRIGATÓRIA;
-      // nunca some. Sem valor → placeholder "____" (mm(null)).
-      aspectos.unshift(`Saco gestacional de forma normal, com diâmetro médio de ${mm(f.saco_gestacional_mm)} mm.`);
+      // nunca some. DSM calculado das 3 medidas (ou ditado direto); sem dado →
+      // placeholder "____".
+      aspectos.unshift(`Saco gestacional de forma normal, com diâmetro médio de ${mm(calcDsm(f))} mm.`);
     }
     aspectos.push(
       f.gestacao_inicial
