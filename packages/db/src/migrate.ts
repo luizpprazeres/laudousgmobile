@@ -30,6 +30,7 @@ async function main() {
     "0011_showcase_samples.sql",
     "0012_det5_tireoide_renderer_prefs.sql",
     "0013_saneamento_writing_styles.sql",
+    "0014_fix_pelve_title_prefix.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

@@ -12,7 +12,7 @@ source_extracted_at: 2026-05-21
 source_lines: 817-838
 ---
 
-A) ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
+ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
 
 COMENTÁRIOS:
 Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
