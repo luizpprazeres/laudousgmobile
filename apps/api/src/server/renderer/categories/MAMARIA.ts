@@ -330,14 +330,33 @@ function biradsDoAchado(a: MamariaAchado): string | null {
 function ptBr(n: number): string {
   return String(n).replace(".", ",");
 }
+/** Medida em cm — SEMPRE 1 casa decimal (P3): 1 → "1,0", 2,4 → "2,4". */
+function med(n: number): string {
+  return n.toFixed(1).replace(".", ",");
+}
 function medidasFmt(a: MamariaAchado): string {
   if (a.medida_invalida && a.medida_invalida.trim() !== "") {
     return `${a.medida_invalida.trim()} [?] cm`;
   }
   const arr = a.medidas_cm;
   if (!arr || arr.length === 0) return "____ x ____ x ____ cm";
-  const vals = [0, 1, 2].map((i) => (Number.isFinite(arr[i]) ? ptBr(arr[i] as number) : "____"));
+  const vals = [0, 1, 2].map((i) => (Number.isFinite(arr[i]) ? med(arr[i] as number) : "____"));
   return `${vals.join(" x ")} cm`;
+}
+/** 2 medidas com "por" — usado em achado não-nodular (NML), que só tem 2 dimensões. */
+function medidasFmt2(a: MamariaAchado): string {
+  if (a.medida_invalida && a.medida_invalida.trim() !== "") {
+    return `${a.medida_invalida.trim()} [?] cm`;
+  }
+  const arr = a.medidas_cm;
+  if (!arr || arr.length === 0) return "____ por ____ cm";
+  const vals = [0, 1].map((i) => (Number.isFinite(arr[i]) ? med(arr[i] as number) : "____"));
+  return `${vals.join(" por ")} cm`;
+}
+/** Maior eixo < 1 cm? (para "subcentimétricos" na conclusão de cistos). */
+function isSubcentimetrico(a: MamariaAchado): boolean {
+  const m = (a.medidas_cm ?? []).filter((n) => Number.isFinite(n)) as number[];
+  return m.length > 0 && Math.max(...m) < 1.0;
 }
 /** "mama direita/esquerda" | "ambas as mamas" | "mama ____" (lado null → revisar,
  *  NUNCA inventa direita — review dex2). */
@@ -356,11 +375,11 @@ function ladoSimples(l: Lado | null): string {
 }
 
 const COMENTARIOS_PADRAO =
-  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.\nA documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
 const COMENTARIOS_MASCULINA =
-  "Exame realizado com transdutor de 12 MHz, abrangendo a região retroareolar e todos os quadrantes de ambas as mamas, bem como as regiões axilares.\nA documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+  "Exame realizado com transdutor de 12 MHz, abrangendo a região retroareolar e todos os quadrantes de ambas as mamas, bem como as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
 const COMENTARIOS_PROTESE =
-  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas, bem como as regiões axilares. Paciente com próteses mamárias.\nA documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas, bem como as regiões axilares. Paciente com próteses mamárias.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
 
 const TEXTO_FUNDO_PADRAO = "Mamas com ecotextura de fundo com aspecto heterogêneo.";
 const AUSENCIA_LESAO = "Não há sinais evidentes de imagem nodular sólida, cística ou complexa.";
@@ -370,17 +389,18 @@ const AXILAR_NORMAL_CONCLUSAO = "Linfonodos axilares normais.";
 const RODAPE = "Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).";
 
 /** Sufixo de localização + horário + distâncias (comum a vários tipos). */
-function localizacaoSufixo(a: MamariaAchado): string {
+function localizacaoSufixo(a: MamariaAchado, plural = false): string {
   const partes: string[] = [];
-  if (a.localizacao) partes.push(`situada no ${a.localizacao.replace(/^no\s+/i, "")}`);
+  const situada = plural ? "situadas" : "situada";
+  if (a.localizacao) partes.push(`${situada} no ${a.localizacao.replace(/^no\s+/i, "")}`);
   if (a.horario) partes.push(`às "${a.horario.replace(/"/g, "").replace(/\s*horas?$/i, "")} horas"`);
   // Distâncias: pele e mamilo numa única cláusula (sem vírgula antes do "e").
   if (a.dist_pele_cm !== null) {
-    let d = `distando ${ptBr(a.dist_pele_cm)} cm do seu centro até a pele`;
-    if (a.dist_mamilo_cm !== null) d += ` e ${ptBr(a.dist_mamilo_cm)} cm até o mamilo`;
+    let d = `distando ${med(a.dist_pele_cm)} cm do seu centro até a pele`;
+    if (a.dist_mamilo_cm !== null) d += ` e ${med(a.dist_mamilo_cm)} cm até o mamilo`;
     partes.push(d);
   } else if (a.dist_mamilo_cm !== null) {
-    partes.push(`distando ${ptBr(a.dist_mamilo_cm)} cm até o mamilo`);
+    partes.push(`distando ${med(a.dist_mamilo_cm)} cm até o mamilo`);
   }
   return partes.length ? `, ${partes.join(", ")}` : "";
 }
@@ -389,13 +409,18 @@ function localizacaoSufixo(a: MamariaAchado): string {
 function maiorEixoCm(a: MamariaAchado): string {
   if (a.medida_invalida && a.medida_invalida.trim() !== "") return `${a.medida_invalida.trim()} [?] cm`;
   const m = (a.medidas_cm ?? []).filter((n) => Number.isFinite(n)) as number[];
-  return m.length ? `${ptBr(Math.max(...m))} cm` : "____ cm";
+  return m.length ? `${med(Math.max(...m))} cm` : "____ cm";
 }
 
 /** Frase de calcificações no corpo, POR SUBTIPO (review dex2 #1). */
 function calcificacoesCorpo(a: MamariaAchado): string {
   const mama = mamaTxt(a.lado);
   const loc = a.localizacao ? ` no ${a.localizacao.replace(/^no\s+/i, "")}` : "";
+  const emMama = a.lado === "bilateral" ? "em ambas as mamas" : `na ${mama}`;
+  // Horário (mesma formatação do localizacaoSufixo).
+  const hora = a.horario
+    ? `, às "${a.horario.replace(/"/g, "").replace(/\s*horas?$/i, "")} horas"`
+    : "";
   switch (a.calcificacoes) {
     case "em_nodulo":
       return `Calcificações no interior de imagem nodular${loc} de ${mama}, medindo até ${maiorEixoCm(a)}.`;
@@ -404,9 +429,11 @@ function calcificacoesCorpo(a: MamariaAchado): string {
     case "intraductais":
       return `Calcificações de distribuição intraductal${loc} de ${mama}.`;
     case "microcalcificacoes":
-      return `Microcalcificações agrupadas${loc} de ${mama}.`;
+      // Corpo descritivo, sem repetir a conclusão (P4).
+      return `Imagens hiperecoicas puntiformes, que não ocasionam sombras acústicas, agrupadas em ${mama}${loc}${hora}.`;
     default: // grosseiras_benignas / sem
-      return `Calcificações grosseiras medindo até ${maiorEixoCm(a)} em seu maior eixo, ocasionando sombra acústica posterior, mais evidentes${loc} de ${mama}.`;
+      // Corpo descritivo (P4): "Imagens hiperecoicas, medindo até X cm…".
+      return `Imagens hiperecoicas, medindo até ${maiorEixoCm(a)} no seu maior eixo, ocasionando sombra acústica, mais evidentes ${emMama}.`;
   }
 }
 
@@ -415,17 +442,27 @@ function achadoCorpo(a: MamariaAchado): string {
   const mama = mamaTxt(a.lado);
   switch (a.tipo) {
     case "ginecomastia":
-      return `${mama.charAt(0).toUpperCase()}${mama.slice(1)} com aumento do tecido fibroglandular retroareolar, compatível com ginecomastia.`;
-    case "proteses":
-      return "Próteses mamárias em topografia habitual, de contornos regulares, sem sinais ecográficos evidentes de rotura intracapsular ou extracapsular.";
+      // Sem "compatível com ginecomastia" no corpo — o diagnóstico fica na conclusão (P4).
+      return `${mama.charAt(0).toUpperCase()}${mama.slice(1)} com aumento do tecido fibroglandular retroareolar.`;
+    case "proteses": {
+      // Plano cirúrgico OPCIONAL (via descritores: "predominantemente retromusculares" etc).
+      const plano = a.descritores?.trim() ? `, ${a.descritores.trim()}` : "";
+      return `Próteses mamárias em topografia habitual${plano}, de contornos regulares, sem sinais ecográficos evidentes de rotura intracapsular ou extracapsular.`;
+    }
     case "linfonodo_intramamario":
       return `Imagem oval, com a periferia hipoecoica e o centro hiperecoico, de maior eixo paralelo à pele, medindo ${medidasFmt(a)}, de ${mama}${localizacaoSufixo(a)}.`;
     case "calcificacoes":
       return calcificacoesCorpo(a);
     case "achado_nao_nodular": {
-      const desc = (a.descricao_nao_nodular?.trim() || "área heterogênea, sem configuração nodular");
-      const descCap = desc.charAt(0).toUpperCase() + desc.slice(1);
-      return `${descCap} de ${mama}, medindo aproximadamente ${medidasFmt(a)}${localizacaoSufixo(a)}.`;
+      // Formato Luiz #16: "Área heterogênea de mama X, sem configuração nodular,
+      // medindo aproximadamente A por B cm…" (2 dimensões). Se o médico ditar uma
+      // descrição custom (que não seja a de "configuração nodular"), respeita.
+      const desc = a.descricao_nao_nodular?.trim();
+      const prefixo =
+        desc && !/configura[çc][ãa]o nodular/i.test(desc)
+          ? `${desc.charAt(0).toUpperCase()}${desc.slice(1)} de ${mama}`
+          : `Área heterogênea de ${mama}, sem configuração nodular`;
+      return `${prefixo}, medindo aproximadamente ${medidasFmt2(a)}${localizacaoSufixo(a)}.`;
     }
     case "cisto_simples": {
       const eco = a.ecogenicidade ? ecoTxt[a.ecogenicidade] : "anecoica";
@@ -436,10 +473,14 @@ function achadoCorpo(a: MamariaAchado): string {
       const desc = a.descritores?.trim() || "com finos ecos internos";
       return `Imagem anecoica, ${desc}, de ${mama}, com margem circunscrita, medindo ${medidasFmt(a)}${localizacaoSufixo(a)}.`;
     }
-    case "multiplos_cistos":
-    case "microcistos_agrupados": {
+    case "multiplos_cistos": {
       const desc = a.descritores ? `, ${a.descritores.trim()}` : "";
       return `Imagens anecoicas${desc} de ${mama}, com margens circunscritas, a maior medindo ${medidasFmt(a)}${localizacaoSufixo(a)}.`;
+    }
+    case "microcistos_agrupados": {
+      // Coalescentes, medindo EM CONJUNTO (decisão Luiz #4).
+      const desc = a.descritores?.trim() || "coalescentes";
+      return `Imagens anecoicas de ${mama}, ${desc}, com margens circunscritas, medindo em conjunto ${medidasFmt(a)}${localizacaoSufixo(a, true)}.`;
     }
     case "nodulo_solido": {
       const eco = a.ecogenicidade ? ecoTxt[a.ecogenicidade] : "hipoecoica";
@@ -484,7 +525,7 @@ function achadoConclusaoBase(a: MamariaAchado): string {
     case "microcistos_agrupados":
       return `Microcistos agrupados em ${mama}${loc}`;
     case "cisto_complicado":
-      return `Cisto complicado em ${mama}${loc}`;
+      return `Cisto de conteúdo espesso em ${mama}${loc}`;
     case "nodulo_solido":
       return `Imagem sólida em ${mama}${loc}`;
     case "linfonodo_intramamario":
@@ -509,17 +550,18 @@ function conclusao6(a: MamariaAchado): string {
   return `Lesão com malignidade comprovada por biópsia em ${mama}${loc}`;
 }
 
-/** Conduta por categoria BI-RADS (toggle). Reaproveita a tabela do iOS. */
+/** Conduta por categoria BI-RADS (toggle). Vai na seção "Conduta sugerida:",
+ *  então SEM "Recomenda-se" (o rótulo já dá o sentido — sem redundância, #20). */
 function condutaDoBirads(b: string): string | null {
   const t = b.trim().toUpperCase();
   if (t.startsWith("6")) return "Manejo conforme protocolo oncológico vigente";
-  if (t.startsWith("5")) return "Recomenda-se biópsia e encaminhamento à mastologia/oncologia";
-  if (t.startsWith("4")) return "Recomenda-se biópsia para avaliação histopatológica";
-  if (t.startsWith("3")) return "Recomenda-se controle por imagem em 6 meses";
+  if (t.startsWith("5")) return "Biópsia e encaminhamento à mastologia/oncologia";
+  if (t.startsWith("4")) return "Biópsia para avaliação histopatológica";
+  if (t.startsWith("3")) return "Controle por imagem em 6 meses";
   if (t.startsWith("0"))
-    return "Recomenda-se avaliação complementar (mamografia/ressonância/US adicional)";
+    return "Avaliação complementar (mamografia/ressonância/US adicional)";
   if (t.startsWith("1") || t.startsWith("2"))
-    return "Recomenda-se seguimento de rotina conforme idade da paciente";
+    return "Seguimento de rotina conforme idade da paciente";
   return null;
 }
 
@@ -572,11 +614,16 @@ export function renderMamaria(
   // ----- Corpo -----
   const aspectos: string[] = [f.texto_fundo?.trim() || TEXTO_FUNDO_PADRAO];
   const achados = f.achados ?? [];
-  if (achados.length === 0) {
-    aspectos.push(AUSENCIA_LESAO);
-  } else {
-    for (const a of achados) aspectos.push(achadoCorpo(a));
-  }
+  // P1 — "Não há sinais evidentes de imagem nodular sólida, cística ou complexa."
+  // é OBRIGATÓRIA quando não há lesão nodular/cística descrita (exame normal E
+  // também próteses/ginecomastia/calcificações isoladas — nunca remover).
+  const TIPOS_LESAO = new Set<Tipo>([
+    "cisto_simples", "multiplos_cistos", "microcistos_agrupados",
+    "cisto_complicado", "nodulo_solido", "achado_nao_nodular",
+  ]);
+  const temLesao = achados.some((a) => TIPOS_LESAO.has(a.tipo));
+  if (!temLesao) aspectos.push(AUSENCIA_LESAO);
+  for (const a of achados) aspectos.push(achadoCorpo(a));
   // Elastografia (frase adicional, sem cálculo).
   for (const a of achados) {
     if (a.elasticidade)
@@ -603,10 +650,28 @@ export function renderMamaria(
   if (achados.length === 0) {
     conclusao.push("Mamas ecograficamente normais (Categoria BI-RADS® 1).");
   } else {
+    // #3 — cistos simples em ambos os lados (ou um achado bilateral) agregam num
+    // único item "Cistos mamários simples bilateralmente[, subcentimétricos]".
+    const CISTO = new Set<Tipo>(["cisto_simples", "multiplos_cistos"]);
+    const cistos = achados.filter((a) => CISTO.has(a.tipo));
+    const ladosCisto = new Set(cistos.map((a) => a.lado));
+    const cistoBilateral =
+      cistos.length >= 1 &&
+      (ladosCisto.has("bilateral") ||
+        (ladosCisto.has("direita") && ladosCisto.has("esquerda")));
+    const sub = cistoBilateral && cistos.every(isSubcentimetrico) ? ", subcentimétricos" : "";
+    let cistoEmitido = false;
     for (const a of achados) {
       const b = biradsDoAchado(a);
-      const base = b && biradsRank(b) === 9 ? conclusao6(a) : achadoConclusaoBase(a);
       const isMaior = b !== null && biradsRank(b) === maiorRank;
+      if (cistoBilateral && CISTO.has(a.tipo)) {
+        if (cistoEmitido) continue;
+        cistoEmitido = true;
+        const base = `Cistos mamários simples bilateralmente${sub}`;
+        conclusao.push(isMaior ? `${base} (Categoria BI-RADS® ${b}).` : `${base}.`);
+        continue;
+      }
+      const base = b && biradsRank(b) === 9 ? conclusao6(a) : achadoConclusaoBase(a);
       conclusao.push(isMaior ? `${base} (Categoria BI-RADS® ${b}).` : `${base}.`);
     }
   }
@@ -623,10 +688,13 @@ export function renderMamaria(
     const cf = correlacaoFrase(f.correlacao);
     if (cf) conclusao.push(cf);
   }
-  // Conduta (toggle) — pelo MAIOR BI-RADS.
+  // Conduta (toggle) — seção PRÓPRIA após a conclusão, fora da numeração (#20).
+  // Sem redundância "Conduta sugerida" + "recomenda-se" (condutaDoBirads já vem
+  // sem "Recomenda-se").
+  let condutaSecao = "";
   if (prefs.show_conduct_recommendation && maiorB) {
     const cond = condutaDoBirads(maiorB);
-    if (cond) conclusao.push(`Conduta sugerida (BI-RADS ${maiorB}): ${cond}.`);
+    if (cond) condutaSecao = `Conduta sugerida:\nBI-RADS ${maiorB}. ${cond}.`;
   }
 
   const conclusaoTxt =
@@ -645,6 +713,7 @@ export function renderMamaria(
     "",
     "CONCLUSÃO:",
     conclusaoTxt,
+    ...(condutaSecao ? ["", condutaSecao] : []),
     "",
     RODAPE,
   ].join("\n");

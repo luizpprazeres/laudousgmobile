@@ -2,6 +2,7 @@ export * from "./categories";
 export * from "./writingStyles";
 export * from "./profile";
 export * from "./findings";
+export * from "./operations";
 export * from "./ragBlock";
 export * from "./validator";
 export * from "./sanity";

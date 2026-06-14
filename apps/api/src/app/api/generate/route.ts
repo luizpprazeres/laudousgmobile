@@ -18,6 +18,7 @@ import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import { applyCommandGuard } from "@/server/pipeline/commandGuard";
+import { applyCommandOperations } from "@/server/pipeline/commandOperations";
 import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionItemsGuard";
 import {
   enforceStatedAmnioticClass,
@@ -814,7 +815,8 @@ export async function POST(req: Request) {
       // COMANDOS: garante que diretivas explícitas do médico pra conclusão ("na
       // conclusão recomendar X", "recomende Y") entrem no laudo se o LLM ignorou.
       // Roda por último — comandos entram ao final da conclusão. Ver commandGuard.
-      finalText = applyCommandGuard(
+      // DET-6: a flag COMMAND_OPERATIONS roteia pelo aplicador de operações.
+      finalText = applyConfiguredCommands(
         finalText,
         reqInput.consolidated_transcript ?? reqInput.raw_input,
       );
@@ -858,8 +860,8 @@ export async function POST(req: Request) {
         // diretivas explícitas ("na conclusão recomendar X") precisam entrar
         // até o DET-6 tratar comandos como operações (review dex1). É
         // determinístico: não quebra a byte-stability (mesmo input → mesmo
-        // comando → mesmo texto).
-        finalText = applyCommandGuard(
+        // comando → mesmo texto). DET-6: COMMAND_OPERATIONS roteia pelas ops.
+        finalText = applyConfiguredCommands(
           finalText,
           reqInput.consolidated_transcript ?? reqInput.raw_input,
         );
@@ -1093,4 +1095,15 @@ function scheduleAuditPersist(state: GenerationAuditState) {
   } catch {
     void persistAudit(state);
   }
+}
+
+/**
+ * DET-6 — roteia as diretivas de conclusão do médico pelo aplicador de
+ * OPERAÇÕES tipadas quando a flag COMMAND_OPERATIONS está ligada; senão usa o
+ * commandGuard legado. Drop-in determinístico (mesma assinatura).
+ */
+function applyConfiguredCommands(laudo: string, rawInput: string): string {
+  return env().COMMAND_OPERATIONS === "true"
+    ? applyCommandOperations(laudo, rawInput)
+    : applyCommandGuard(laudo, rawInput);
 }

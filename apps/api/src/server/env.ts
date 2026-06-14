@@ -45,6 +45,11 @@ const ServerEnvSchema = z.object({
   // precisa de template_body na variante resolvida — senão cai no writer
   // (fallback automático, rollback trivial = tirar da lista).
   RENDERER_CATEGORIES: z.string().default(""),
+  // DET-6: quando "true", as diretivas de conclusão do médico são aplicadas
+  // como OPERAÇÕES tipadas (pipeline/operations.ts) em vez do commandGuard
+  // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
+  // golden + review. Ver pipeline/commandOperations.ts.
+  COMMAND_OPERATIONS: z.string().default("false"),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),
