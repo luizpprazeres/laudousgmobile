@@ -88,11 +88,16 @@ REGRAS:
 1. trimestre: detecte "1t" (CCN, translucência nucal, osso nasal, ducto venoso,
    IG ≤ 14 semanas, sem biometria DBP/CC), "2t" (15–28 sem; biometria completa)
    ou "3t" (≥ 29 sem). Se o médico disser explicitamente, respeite.
-2. BIOMETRIA em MILÍMETROS: converta cm→mm. CCN→ccn_mm, TN→tn_mm (em mm),
-   DBP→dbp_mm, HC/CC→cc_mm, AC/CA→ca_mm, fêmur→femur_mm, tíbia→tibia_mm,
-   fíbula→fibula_mm, úmero→umero_mm, rádio→radio_mm, ulna→ulna_mm,
-   cerebelo→cerebelo_mm, cisterna magna→cisterna_magna_mm, distância
-   binocular→binocular_mm. Valor não ditado → null (NUNCA inventar).
+2. BIOMETRIA — NÃO ASSUMA UNIDADE. Extraia o número EXATAMENTE como ditado:
+   PRESERVE a casa decimal (vírgula → ponto: "2,4" → 2.4); NUNCA remova a vírgula
+   (jamais 24 para "2,4"). Só converta cm→mm (×10) quando a unidade "cm" for
+   EXPLICITAMENTE dita (ex.: "CCN 5,2 cm" → ccn_mm 52); sem unidade explícita, use
+   o número como foi dito ("CCN 2,4" → ccn_mm 2.4). Assuma que o médico falou a
+   unidade certa; não "corrija". Campos: CCN→ccn_mm, TN→tn_mm, DBP→dbp_mm,
+   HC/CC→cc_mm, AC/CA→ca_mm, fêmur→femur_mm, tíbia→tibia_mm, fíbula→fibula_mm,
+   úmero→umero_mm, rádio→radio_mm, ulna→ulna_mm, cerebelo→cerebelo_mm,
+   cisterna magna→cisterna_magna_mm, distância binocular→binocular_mm. Valor não
+   ditado → null (NUNCA inventar).
 3. osso_nasal: "presente"/"ausente". ducto_venoso: "normal"/"alterado" (onda A
    reversa = alterado; onda A positiva/trifásica = normal).
 4. uterina_ip_direita/esquerda: IP das artérias uterinas (1t).

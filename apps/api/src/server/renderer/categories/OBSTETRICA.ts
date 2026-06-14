@@ -148,9 +148,15 @@ REGRAS:
    ou houver saco gestacional/CCN/vesícula vitelina sem biometria DBP/CC/CA/CF).
 3. fetos[]: um objeto por feto. Para gemelar, rotulo "A","B"... e posicao_relativa
    ("à direita"/"à esquerda") conforme ditado.
-4. BIOMETRIA em MILÍMETROS: converta cm→mm (ex.: "BPD 5,2 cm" → dbp_mm 52;
-   "FL 3,6" → cf_mm 36). DBP→dbp_mm, HC/CC→cc_mm, AC/CA→ca_mm, FL/CF→cf_mm,
-   CCN→ccn_mm. Valor não ditado → null (NUNCA inventar).
+4. BIOMETRIA — NÃO ASSUMA UNIDADE. Extraia o número EXATAMENTE como ditado:
+   - PRESERVE a casa decimal (vírgula → ponto): "2,4" → 2.4; "4,1" → 4.1.
+     NUNCA remova a vírgula decimal (jamais 24 para "2,4", nem 41 para "4,1").
+   - Só converta cm→mm (×10) quando a unidade "cm" for EXPLICITAMENTE dita no
+     ditado (ex.: "BPD 5,2 cm" → dbp_mm 52). SEM unidade explícita, use o número
+     como foi dito (ex.: "CCN 2,4" → ccn_mm 2.4; "DBP 85" → dbp_mm 85). Assuma
+     que o médico falou a unidade certa; não "corrija".
+   - DBP→dbp_mm, HC/CC→cc_mm, AC/CA→ca_mm, FL/CF→cf_mm, CCN→ccn_mm. Valor não
+     ditado → null (NUNCA inventar).
 5. peso_g em gramas; percentil e peso_variacao_g só se ditados.
 6. ig_semanas/ig_dias: idade gestacional ditada.
 7. dum: data da última menstruação como DD/MM/AAAA (converta extenso → numérico).
@@ -158,8 +164,10 @@ REGRAS:
    "monocoriônica e diamniótica"...). null se único.
 9. placenta: quantidade (gemelar pode ter 2+), localização, ecotextura, grau.
 10. líquido: liquido_tipo "normal" (subjetivo normal), "ila" (com ILA em cm),
-    "mbv" (maior bolsão; gemelar usa liquido_mbv_por_feto_cm na ordem dos fetos),
-    "alterado" (com liquido_classe = oligoâmnio/polidrâmnio).
+    "mbv" (maior bolsão; FETO ÚNICO usa liquido_mbv_por_feto_cm com 1 valor;
+    gemelar usa um valor por feto na ordem dos fetos), "alterado" (com
+    liquido_classe = oligoâmnio/polidrâmnio). PRESERVE a casa decimal do ILA/MBV
+    em cm ("4,1 cm" → 4.1; NUNCA 41).
 11. apresentacao/dorso/polo_cefalico só quando ditados (senão null — o renderer
     usa defaults clínicos).
 12. achados_adicionais: SOMENTE malformações ou ALTERAÇÕES patológicas reais,
@@ -290,6 +298,16 @@ function placentaFrase(f: ObstetricaFindings): string | null {
 function liquido(f: ObstetricaFindings): { corpo: string; conclusao: string } {
   const tipo = f.liquido_tipo ?? "normal";
   if (tipo === "mbv" && f.liquido_mbv_por_feto_cm && f.liquido_mbv_por_feto_cm.length > 0) {
+    // Feto único: NUNCA rotular "(feto A)" nem "ambos os fetos" (P5 — sem
+    // alucinação gemelar). Só o gemelar (≥2 fetos) individualiza por feto.
+    if (f.numero_fetos < 2) {
+      const v = f.liquido_mbv_por_feto_cm[0];
+      const mbvTxt = v !== undefined ? `${ptBr(v)} cm` : "____ cm";
+      return {
+        corpo: `Maior bolsão vertical de ${mbvTxt}.`,
+        conclusao: `Líquido amniótico em quantidade normal (maior bolsão vertical de ${mbvTxt}).`,
+      };
+    }
     const labels = f.liquido_mbv_por_feto_cm
       .map((v, i) => `${ptBr(v)} cm (feto ${rotuloFeto(f, i)})`)
       .join(" e ");
@@ -404,7 +422,9 @@ export function renderObstetrica(f: ObstetricaFindings): string {
     // Feto único.
     const ft = f.fetos[0] ?? EMPTY_FETO;
     aspectos.push(fetoApresentacaoFrase(ft, f.gestacao_inicial));
-    if (f.gestacao_inicial && f.saco_gestacional_mm !== null) {
+    if (f.gestacao_inicial) {
+      // P1 — no obstétrico inicial a linha do saco gestacional é OBRIGATÓRIA;
+      // nunca some. Sem valor → placeholder "____" (mm(null)).
       aspectos.unshift(`Saco gestacional de forma normal, com diâmetro médio de ${mm(f.saco_gestacional_mm)} mm.`);
     }
     aspectos.push(
