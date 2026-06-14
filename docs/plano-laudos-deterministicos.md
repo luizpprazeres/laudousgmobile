@@ -1,7 +1,7 @@
 # Plano — Migração para Laudos Determinísticos
 
-> **Status geral:** 🟢 Em execução — DET-1 a DET-5 ✅ em prod. RAG vetorial aposentado; **renderer determinístico (DET-5) cobre 4 categorias LIVE em prod: ABDOMEN_TOTAL, OBSTETRICA, MORFOLOGICO, TIREOIDE** (TIREOIDE com escore Domingos calculável — shipped 2026-06-13). **MAMARIA renderer v1 (CLÁSSICO) codado + Dex2 revisado (flag OFF, aguardando validação clínica + golden).** Saneamento dos writing styles em prod (2 estilos). Curadoria S2 aplicada. **Próximo: validar MAMARIA + ligar flag; backlog de UX/bugs (ver tarefas) + DET-6.**
-> **Última atualização:** 2026-06-13 (sessão longa: tireoide shipped + saneamento styles + mamaria v1 + backlog)
+> **Status geral:** 🟢 Em execução — DET-1 a DET-5 ✅ em prod. RAG vetorial aposentado; **renderer determinístico (DET-5) cobre 4 categorias LIVE em prod: ABDOMEN_TOTAL, OBSTETRICA, MORFOLOGICO, TIREOIDE** (TIREOIDE com escore Domingos calculável — shipped 2026-06-13). **MAMARIA renderer v1 (CLÁSSICO) APROVADO pelo Luiz (2026-06-14) + golden 28/28 (`mamaria-golden.manual.ts`); flag OFF, pronta p/ @devops ligar em prod.** Bugs obstétricos de prod corrigidos (DSM obrigatório, conversão de unidade, alucinação gemelar) — aguardam deploy.** Saneamento dos writing styles em prod (2 estilos). Curadoria S2 aplicada. **Próximo: validar MAMARIA + ligar flag; backlog de UX/bugs (ver tarefas) + DET-6.**
+> **Última atualização:** 2026-06-14 (MAMARIA aprovada + golden 28/28 → pronta p/ flag; bugs obstétricos de prod corrigidos [DSM/unidade/gemelar]; Pelve "A)" fix; toggles UI no lab; DET-6 fundação+integração atrás de flag)
 > **Decisão formal:** `docs/adr/0004-montagem-deterministica-laudos.md`
 > **Origem:** análise Claude Code + validação crítica Codex/dex1 (2026-06-11), aprovada pelo Luiz
 
@@ -55,6 +55,59 @@
 4. **Backlog de ressalvas do Luiz** capturado nas TAREFAS (UX iOS login/Pelve, "A)"
    no título da Pelve, IG errada nos percentis do doppler, preferência de percentil).
 
+## Feito na sessão 2026-06-14 — backlog UX + toggles + DET-6 fundação
+
+1. **Pelve "A)" no título — CORRIGIDO em prod.** Os 3 blocos `modelo` da
+   PELVE_FEMININA TA+TV (um por writing style) começavam com o prefixo `A) `
+   (resíduo do separador A/B/C/D do prompt original) que vazava pro TÍTULO do
+   laudo. Migration `0014_fix_pelve_title_prefix.sql` (idempotente; remove só os
+   3 chars) aplicada no DB MOBILE + registrada no `migrate.ts` + snippet-fonte
+   alinhado. Era o ÚNICO caso de prefixo de letra em `knowledge_blocks`.
+2. **Toggles UI no lab — FEITO.** `apps/lab` ganhou seção "Preferências de
+   renderer" em `/settings` (TIREOIDE: Domingos + conduta; MAMARIA: conduta) +
+   proxy `apps/lab/src/app/api/me/report-preferences/route.ts` (admin token,
+   mesmo padrão do testbench). Decisão: prefs PERSISTENTES da conta admin (usa o
+   endpoint pronto do DET-5), não override por-request — evita mexer no contrato
+   de produção do `/api/generate`. Validado E2E em dev: GET→PATCH→persiste→null
+   restaura; defaults espelham o backend (Domingos ON / conduta OFF). Typecheck
+   limpo. **Falta:** UI equivalente no iOS (dex1).
+3. **DET-6 — FUNDAÇÃO + INTEGRAÇÃO atrás de flag (default OFF).**
+   - `packages/shared/src/schemas/operations.ts`: `ReportOperation` (union
+     fechada: `replace_phrase`, `add_conclusion_item`, `remove_conclusion_item`,
+     `insert_before`, `insert_after`).
+   - `apps/api/src/server/pipeline/operations.ts`: `applyOperations(laudo, ops)`
+     — função PURA, aplica em ordem, reusa `conclusionUtils` (renumeração),
+     retorna auditoria (applied + reason por op). 16 testes verdes.
+   - `apps/api/src/server/pipeline/commandOperations.ts`: ponte
+     `comandos do ditado → ReportOperation[]` (reusa o detector regex do
+     commandGuard; `insertAt` 0-based → `position` 1-based). Drop-in
+     `applyCommandOperations(laudo, rawInput)`. 6 testes verdes.
+   - Plugado em `generate/route.ts` (writer + renderer) via helper
+     `applyConfiguredCommands`, atrás da flag **`COMMAND_OPERATIONS`** (env,
+     default "false"). Flag OFF → commandGuard legado intocado (15/15 regressão).
+   - **Falta:** ligar a flag após golden + review; depois o salto de capacidade
+     (replace_phrase/insert com `from/to`/`anchor` exige EXTRAÇÃO de operações —
+     structurer estendido ou endpoint conversacional).
+
+### Pendências iOS (próxima rodada com dex1)
+- **Bug percentil Doppler × IG (iOS).** Investigado: no BACKEND o percentil é
+  sempre número DITADO; a IG (`ig_semanas/ig_dias`) só alimenta a frase "Gestação
+  em torno de X sem" e NUNCA cruza com percentil (`dopplerOverlay.ts`,
+  `MORFOLOGICO/OBSTETRICA.ts`). Logo o bug "percentil usa IG errada" é no APP iOS
+  (cálculo/exibição do percentil contra IG) — não há nada a corrigir no backend.
+- UI iOS: login (logo/rodapé), botões da Pelve, + a UI de toggles do item 2.
+
+### Próximos passos DET-6 (fatias que faltam — envolvem decisão/produção, review dex1/dex2)
+- **Ligar a flag `COMMAND_OPERATIONS`** após golden + review (comparar dedup
+  conservador das ops vs. heurística 60% do commandGuard). Integração já codada.
+- **Extração de operações tipadas** (habilita replace_phrase/insert ricos): o
+  structurer estendido (campo `operacoes`) OU o endpoint conversacional abaixo
+  precisam produzir `from/to`/`anchor` — exige chamada LLM com json_schema strict
+  (validar com chave OpenAI, não testável local).
+- **Endpoint de edição conversacional:** laudo atual + comando → operações → laudo
+  atualizado (decisões: persiste? streaming? auth).
+- **`user_phrases`:** tabela + aplicador de substituição determinística opt-in.
+
 ### Próximos passos (ordem sugerida)
 - MAMARIA: Luiz valida gradação 4A/4B/4C + regras de escalada do sólido → golden →
   ligar flag em prod → ONDA 2 (formato OBJETIVO no renderer).
@@ -83,7 +136,7 @@
 | DET-3 | Variantes de máscara (entidade 1ª classe + preferências da conta) | ✅ **concluído** 2026-06-12 — backend completo em prod (commits `4e9da03`/`bd2e710`). Tabelas `report_template_variants` (catálogo) + `account_report_preferences` (RLS própria); bundleLoader resolve por preferência (precedência contexto > preferência > default); APIs `/api/me/report-preferences` + `/api/admin/report-template-variants`. Piloto demo MAMARIA "enxuta": E2E prova que trocar a preferência muda o laudo. 38/38 golden regressão. Reviews dex1+dex2 aplicados. Doc: `det-3-variantes-preferencia.md`. |
 | DET-4 | iOS: seletor de máscara nas Preferências | ✅ **concluído** 2026-06-12 — repo `~/laudousg-swift/LaudoUSG` (uncommitted, aguardando @devops). Seção "Modelos de laudo" no `SettingsView` (picker por categoria com >1 variante **no estilo atual**, opção "Automático"); `ProfileService` GET/PATCH `/api/me/report-preferences`; `AppState` + load pós-login. Reviews dex1+dex2 aplicados (3 fixes: filtro por writing style atual evita `BUNDLE_VARIANT_EMPTY`; guard race de signOut; guard double-tap). Build verde; E2E no Simulator (dex1/xcodebuildmcp): Enxuta→"LAUDO RESUMIDO", Automático→padrão (critério DET-3), confirmado nos reports salvos no DB. Doc: `det-4-ios-seletor-mascara.md`. |
 | DET-5 | Structured extraction + renderer | ✅ **em prod (3 categorias) + TIREOIDE pronta p/ flag (2026-06-13)** — piloto ABDOMEN_TOTAL (template_body com slots + LLM secundário) + **OBSTETRICA e MORFOLOGICO** (render PROGRAMÁTICO). **TIREOIDE portada + escore Domingos CALCULÁVEL** 2026-06-13: a extração classifica enums por eixo, o código SOMA → NOTA FINAL → TI-RADS → características → conduta (spec `docs/det-5-tireoide-domingos.md`). 2 toggles (Domingos on/off, conduta on/off) **fiados ponta-a-ponta (ONDA 2)**: coluna JSONB `renderer_preferences` em `account_report_preferences` (migration `0012`), lookup consolidado (1 query resolve variante+toggles), endpoint GET/PATCH parcial. Reviews dex1+dex2 nas 3 rodadas. **SHIPPED em prod 2026-06-13** (PR #1 merged; migration `0012` aplicada; flag `RENDERER_CATEGORIES` com TIREOIDE; smoke test prod = `renderer/v1` + NOTA Domingos 5→TI-RADS 2 calculado; OBSTETRICA sem regressão). **Resta: UI lab/iOS dos toggles** (coluna nasce null → defaults Domingos ON / conduta OFF). Arquitetura: `renderer/categories/<CAT>.ts` + `extraction.ts` + `pipeline/renderer.ts`. Flag `RENDERER_CATEGORIES=ABDOMEN_TOTAL,OBSTETRICA,MORFOLOGICO` (+`,TIREOIDE` ao promover). Cálculos: peso médio/divergência (obst.), IP uterinas (morfo), **VT + escore Domingos→TI-RADS (tireoide)**. Golden: abdome 19/19, obst. 3/3, morfo 3/3, tireoide 8 casos (render local 100%). Doc: `det-5-design.md`, `det-5-tireoide-domingos.md`. **PRÓXIMO: MAMARIA.** |
-| DET-6 | Comandos como operações + vocabulário pessoal curado | ⬜ não iniciado (design no S11 de `sprints-30min.md`) |
+| DET-6 | Comandos como operações + vocabulário pessoal curado | 🟡 **fundação + integração atrás de flag (2026-06-14)** — schema `ReportOperation` + aplicador puro `applyOperations` (16 testes) + ponte `commandOperations` (6 testes) plugada em `generate/route.ts` via flag **`COMMAND_OPERATIONS`** (default OFF; commandGuard legado intocado, 15/15 regressão). Faltam: ligar flag (golden+review); extração de operações tipadas (replace/insert ricos); endpoint de edição conversacional; `user_phrases`. |
 
 > **O que já está em produção (2026-06-12):** todo laudo é montado pelo bundle
 > determinístico (SELECT por chave: categoria × estilo × validated), sem
