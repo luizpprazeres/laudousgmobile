@@ -734,6 +734,8 @@ export async function POST(req: Request) {
             signal,
             // DET-5 ONDA 2 — toggles resolvidos junto da variante (sem 2ª query).
             rendererPreferences,
+            // Sprint 1 — estilo de redação despacha clássico vs objetivo (TIREOIDE).
+            writingStyleId: effectiveWritingStyleId,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
             },

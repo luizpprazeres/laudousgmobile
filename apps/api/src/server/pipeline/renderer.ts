@@ -51,6 +51,15 @@ import {
 
 export const RENDERER_VERSION = "renderer/v1";
 
+/** Writing style IDs conhecidos (fonte: writing_styles seed). */
+export const WRITING_STYLE_CLASSICO_ID = "11111111-1111-4111-8111-111111111111";
+export const WRITING_STYLE_OBJETIVO_ID = "44444444-4444-4444-8444-444444444444";
+
+/** Estilo OBJETIVO (TÉCNICA/ACHADOS/IMPRESSÃO + ACR TI-RADS)? */
+export function isEstiloObjetivo(writingStyleId?: string | null): boolean {
+  return writingStyleId === WRITING_STYLE_OBJETIVO_ID;
+}
+
 /** Toggles do renderer (estrutural; cada categoria usa só as chaves que entende). */
 export type RendererPreferences = {
   show_domingos_score?: boolean;
@@ -168,6 +177,9 @@ export async function* runRendererStream(args: {
   /** DET-5 ONDA 2 — toggles do renderer da conta (TIREOIDE: Domingos; MAMARIA:
    * conduta). Tipo comum (estrutural) por categoria — review dex2 #9. */
   rendererPreferences?: RendererPreferences | null;
+  /** Estilo de redação (writing_style). Despacha clássico vs objetivo por
+   * categoria. Atualmente só a TIREOIDE tem caminho objetivo (Sprint 1). */
+  writingStyleId?: string;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
 
@@ -195,6 +207,7 @@ export async function* runRendererStream(args: {
             ? renderTireoide(
                 extraction.findings as TireoideFindings,
                 args.rendererPreferences,
+                { objetivo: isEstiloObjetivo(args.writingStyleId) },
               )
             : renderMamaria(
                 extraction.findings as MamariaFindings,

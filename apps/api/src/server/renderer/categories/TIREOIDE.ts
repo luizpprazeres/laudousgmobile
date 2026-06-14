@@ -20,16 +20,18 @@ import { z } from "zod";
 // Tabela Domingos — pontos por eixo (docs/det-5-tireoide-domingos.md §1)
 // ---------------------------------------------------------------------------
 
+// txt = feminino (concorda com "imagem", estilo Clássico);
+// txtM = masculino (concorda com "Nódulo"/"Cisto", estilo Objetivo).
 const ECOGENICIDADE = {
-  anecoica_homogenea: { pts: 0, txt: "anecoica homogênea" },
-  anecoica_finos_ecos: { pts: 0, txt: "anecoica com finos ecos" },
-  anecoica_septos: { pts: 1, txt: "anecoica com septos" },
-  anecoica_componentes_solidos: { pts: 1, txt: "anecoica com componentes sólidos" },
-  hipoecoica: { pts: 3, txt: "hipoecoica" },
-  isoecoica: { pts: 2, txt: "isoecoica" },
-  hiperecoica: { pts: 1, txt: "hiperecoica" },
-  solida_areas_anecoicas: { pts: 1, txt: "sólida com áreas anecoicas" },
-  solida_calcificacao_parede: { pts: 0, txt: "sólida com calcificação parietal (casca de ovo)" },
+  anecoica_homogenea: { pts: 0, txt: "anecoica homogênea", txtM: "anecoico homogêneo" },
+  anecoica_finos_ecos: { pts: 0, txt: "anecoica com finos ecos", txtM: "anecoico com finos ecos" },
+  anecoica_septos: { pts: 1, txt: "anecoica com septos", txtM: "anecoico com septos" },
+  anecoica_componentes_solidos: { pts: 1, txt: "anecoica com componentes sólidos", txtM: "anecoico com componentes sólidos" },
+  hipoecoica: { pts: 3, txt: "hipoecoica", txtM: "hipoecoico" },
+  isoecoica: { pts: 2, txt: "isoecoica", txtM: "isoecoico" },
+  hiperecoica: { pts: 1, txt: "hiperecoica", txtM: "hiperecoico" },
+  solida_areas_anecoicas: { pts: 1, txt: "sólida com áreas anecoicas", txtM: "sólido com áreas anecoicas" },
+  solida_calcificacao_parede: { pts: 0, txt: "sólida com calcificação parietal (casca de ovo)", txtM: "sólido com calcificação parietal (casca de ovo)" },
 } as const;
 type EcoKey = keyof typeof ECOGENICIDADE;
 
@@ -48,8 +50,8 @@ const HALO = {
 type HaloKey = keyof typeof HALO;
 
 const FORMA = {
-  mais_alta_que_larga: { pts: 3, txt: "mais alta do que larga" },
-  mais_larga_que_alta: { pts: 0, txt: "mais larga do que alta" },
+  mais_alta_que_larga: { pts: 3, txt: "mais alta do que larga", txtM: "mais alto do que largo" },
+  mais_larga_que_alta: { pts: 0, txt: "mais larga do que alta", txtM: "mais largo do que alto" },
 } as const;
 type FormaKey = keyof typeof FORMA;
 
@@ -291,6 +293,21 @@ function volFmt(v: number | null): string {
   return v === null ? "____" : ptBr(v);
 }
 
+// Versões com 1 casa decimal SEMPRE (P3) — usadas só no estilo OBJETIVO.
+function ptBr1(n: number): string {
+  return n.toFixed(1).replace(".", ",");
+}
+function medidasFmt1(arr: number[] | null): string {
+  if (!arr || arr.length === 0) return "____ x ____ x ____ cm";
+  const vals = [0, 1, 2].map((i) =>
+    Number.isFinite(arr[i]) ? ptBr1(arr[i] as number) : "____",
+  );
+  return `${vals.join(" x ")} cm`;
+}
+function volFmt1(v: number | null): string {
+  return v === null ? "____" : ptBr1(v);
+}
+
 /** Pontos da dimensão pelo diâmetro transverso (maior medida como fallback). */
 function dimensaoPts(nod: TireoideNodulo): number {
   const transv =
@@ -471,13 +488,24 @@ function noduloConclusao(nod: TireoideNodulo, showDomingos: boolean): string {
 // Render
 // ---------------------------------------------------------------------------
 
+/**
+ * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
+ * o comportamento anterior; objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO + ACR TI-RADS.
+ */
 export function renderTireoide(
   f: TireoideFindings,
   prefsInput?: Partial<TireoidePreferences> | null,
+  opts?: { objetivo?: boolean },
 ): string {
-  // Mescla com os defaults — aceita o JSONB cru/parcial da preferência da conta
-  // (chaves faltando ou null caem no default seguro: Domingos ON, conduta OFF).
-  const prefs: TireoidePreferences = {
+  if (opts?.objetivo) return renderTireoideObjetivo(f, prefsInput);
+  return renderTireoideClassico(f, prefsInput);
+}
+
+/** Mescla prefs cruas/parciais (JSONB da conta) com os defaults seguros. */
+function mergeTireoidePrefs(
+  prefsInput?: Partial<TireoidePreferences> | null,
+): TireoidePreferences {
+  return {
     ...TIREOIDE_DEFAULT_PREFERENCES,
     ...(prefsInput && typeof prefsInput === "object"
       ? {
@@ -490,6 +518,15 @@ export function renderTireoide(
         }
       : {}),
   };
+}
+
+function renderTireoideClassico(
+  f: TireoideFindings,
+  prefsInput?: Partial<TireoidePreferences> | null,
+): string {
+  // Mescla com os defaults — aceita o JSONB cru/parcial da preferência da conta
+  // (chaves faltando ou null caem no default seguro: Domingos ON, conduta OFF).
+  const prefs = mergeTireoidePrefs(prefsInput);
   const titulo = f.com_doppler
     ? "ULTRASSONOGRAFIA DA TIREOIDE COM DOPPLER COLORIDO"
     : "ULTRASSONOGRAFIA DA TIREOIDE";
@@ -616,4 +653,355 @@ function volumeTotal(f: TireoideFindings): number | null {
   if (vols.some((v) => v === null)) return null;
   const total = (vols as number[]).reduce((a, b) => a + b, 0);
   return Math.round(total * 100) / 100;
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO + ACR TI-RADS
+// ===========================================================================
+//
+// O objetivo NÃO usa o escore de Domingos. Usa ACR TI-RADS (American College of
+// Radiology), pontuando 5 eixos a partir dos MESMOS enums extraídos do ditado e
+// derivando a categoria (TR1-TR5) e a conduta por diâmetro. Override: ti_rads_ditado
+// vence o cálculo (reproduz verbatim a categoria ditada do médico).
+
+/** Pontos ACR — COMPOSIÇÃO (derivada da ecogenicidade): cístico 0, misto 1, sólido 2. */
+function acrComposicaoPts(eco: EcoKey): number {
+  switch (eco) {
+    case "anecoica_homogenea":
+    case "anecoica_finos_ecos":
+      return 0; // cístico/espongiforme
+    case "anecoica_septos":
+    case "anecoica_componentes_solidos":
+    case "solida_areas_anecoicas":
+      return 1; // misto cístico-sólido
+    default:
+      return 2; // sólido (hipo/iso/hiper/calcificação parietal)
+  }
+}
+
+/** Pontos ACR — ECOGENICIDADE. */
+function acrEcogenicidadePts(eco: EcoKey): number {
+  if (eco.startsWith("anecoica")) return 0; // anecoico
+  if (eco === "hiperecoica" || eco === "isoecoica") return 1;
+  if (eco === "hipoecoica") return 2;
+  return 1; // solida_* → default iso
+}
+
+/** Pontos ACR — FORMA. */
+function acrFormaPts(forma: FormaKey | null): number {
+  return forma === "mais_alta_que_larga" ? 3 : 0;
+}
+
+/** Pontos ACR — MARGEM. */
+function acrMargemPts(margem: MargemKey | null): number {
+  if (margem === "irregular" || margem === "espiculada") return 2;
+  return 0; // regular | null → lisa/regular
+}
+
+/** Pontos ACR — FOCOS ECOGÊNICOS (a partir das calcificações). */
+function acrFocosPts(calc: CalcKey | null): number {
+  switch (calc) {
+    case "grosseiras":
+      return 1; // macrocalcificações
+    case "casca_ovo":
+      return 2; // calcificações periféricas (em casca de ovo)
+    case "micro":
+      return 3; // focos ecogênicos puntiformes (microcalcificações)
+    default:
+      return 0; // sem | null
+  }
+}
+
+/** Categoria ACR (1-5) a partir da soma de pontos. */
+function acrCategoriaDosPontos(pts: number): number {
+  if (pts < 2) return 1;
+  if (pts === 2) return 2;
+  if (pts === 3) return 3;
+  if (pts <= 6) return 4; // 4..6
+  return 5; // >=7
+}
+
+const ACR_TEXTO: Record<number, string> = {
+  1: "benigno",
+  2: "provavelmente benigno",
+  3: "características intermediárias",
+  4: "características suspeitas",
+  5: "altamente suspeitas",
+};
+
+/**
+ * Calcula o ACR TI-RADS de um nódulo a partir dos enums do escore.
+ * Retorna null se a ecogenicidade for null (sem ecogenicidade não pontua).
+ * Override: ti_rads_ditado (1-5) vence o cálculo (categoria ditada do médico).
+ */
+export function calcAcrTirads(
+  nod: TireoideNodulo,
+): { pontos: number; categoria: number } | null {
+  const ditado = nod.ti_rads_ditado?.trim();
+  if (ditado && /^[1-5]$/.test(ditado)) {
+    return { pontos: NaN, categoria: Number(ditado) };
+  }
+  if (!nod.ecogenicidade) return null;
+  const pontos =
+    acrComposicaoPts(nod.ecogenicidade) +
+    acrEcogenicidadePts(nod.ecogenicidade) +
+    acrFormaPts(nod.forma) +
+    acrMargemPts(nod.margem) +
+    acrFocosPts(nod.calcificacoes);
+  return { pontos, categoria: acrCategoriaDosPontos(pontos) };
+}
+
+/** Maior diâmetro do nódulo em cm: diametro_transverso_cm ou max(medidas_cm). */
+function maiorDiametroCm(nod: TireoideNodulo): number | null {
+  if (nod.diametro_transverso_cm !== null && Number.isFinite(nod.diametro_transverso_cm)) {
+    return nod.diametro_transverso_cm;
+  }
+  if (nod.medidas_cm && nod.medidas_cm.length > 0) {
+    const finitas = nod.medidas_cm.filter((n) => Number.isFinite(n));
+    if (finitas.length > 0) return Math.max(...finitas);
+  }
+  return null;
+}
+
+/**
+ * Conduta ACR por categoria + maior diâmetro. null = sem conduta a sugerir.
+ * TR1/TR2: sem indicação. Limiares de PAAF/controle por categoria.
+ */
+function condutaAcr(categoria: number, diametroCm: number | null): string | null {
+  if (categoria <= 2) return null;
+  if (diametroCm === null) return null;
+  if (categoria === 3) {
+    if (diametroCm >= 2.5) return "punção aspirativa por agulha fina (PAAF)";
+    if (diametroCm >= 1.5) return "acompanhamento (controle ultrassonográfico)";
+    return null;
+  }
+  if (categoria === 4) {
+    if (diametroCm >= 1.5) return "punção aspirativa por agulha fina (PAAF)";
+    if (diametroCm >= 1.0) return "acompanhamento (controle ultrassonográfico)";
+    return null;
+  }
+  // categoria 5
+  if (diametroCm >= 1.0) return "punção aspirativa por agulha fina (PAAF)";
+  if (diametroCm >= 0.5) return "acompanhamento (controle ultrassonográfico)";
+  return null;
+}
+
+/** É cisto (ecogenicidade anecoica)? Cisto simples → ACR TI-RADS 1. */
+function isCisto(nod: TireoideNodulo): boolean {
+  return nod.ecogenicidade !== null && nod.ecogenicidade.startsWith("anecoica");
+}
+
+/** Frase enxuta (objetivo) de um nódulo no ACHADOS. */
+function noduloAchadoObjetivo(nod: TireoideNodulo): string {
+  if (isCisto(nod)) {
+    const partes = [
+      `Cisto ${nod.ecogenicidade ? ECOGENICIDADE[nod.ecogenicidade].txtM : "simples"}`,
+    ];
+    partes.push(`medindo ${medidasFmt1(nod.medidas_cm)}`);
+    if (nod.localizacao) partes.push(`situado ${nod.localizacao}`);
+    return `${partes.join(", ")}.`;
+  }
+  const partes = [
+    `Nódulo ${nod.ecogenicidade ? ECOGENICIDADE[nod.ecogenicidade].txtM : "sólido"}`,
+  ];
+  if (nod.margem) partes.push(MARGEM[nod.margem].txt);
+  if (nod.forma) partes.push(FORMA[nod.forma].txtM);
+  if (nod.calcificacoes && nod.calcificacoes !== "sem")
+    partes.push(CALCIFICACOES[nod.calcificacoes].txt);
+  partes.push(`medindo ${medidasFmt1(nod.medidas_cm)}`);
+  if (nod.localizacao) partes.push(`situado ${nod.localizacao}`);
+  return `${partes.join(", ")}.`;
+}
+
+/** Render do estilo OBJETIVO: TÉCNICA / ACHADOS / IMPRESSÃO + ACR TI-RADS. */
+function renderTireoideObjetivo(
+  f: TireoideFindings,
+  prefsInput?: Partial<TireoidePreferences> | null,
+): string {
+  const prefs = mergeTireoidePrefs(prefsInput);
+
+  const titulo = "ULTRASSONOGRAFIA DA TIREOIDE";
+  const tecnica = "Exame realizado com transdutor linear de alta frequência.";
+
+  // ----- estado da glândula -----
+  const lobos: { rotulo: string; lobo: TireoideLobo }[] = [
+    { rotulo: "Lobo direito da tireoide", lobo: f.lobo_direito },
+    { rotulo: "Lobo esquerdo da tireoide", lobo: f.lobo_esquerdo },
+    { rotulo: "Istmo", lobo: f.istmo },
+  ];
+  const lobosComNodulo = lobos.filter((l) => l.lobo.nodulos.length > 0);
+  const temDifusa = lobos.some((l) => !!l.lobo.ecotextura_alterada);
+  const volStatus = f.volume_glandular; // "aumentado" | "reduzido" | "normal" | null
+
+  // ----- ACHADOS -----
+  const achados: string[] = [];
+
+  // Linha de dimensões/contornos (reflete bócio/atrofia).
+  if (volStatus === "aumentado") {
+    achados.push("Glândula tireoide tópica, de dimensões aumentadas e contornos preservados.");
+  } else if (volStatus === "reduzido") {
+    achados.push("Glândula tireoide tópica, de dimensões reduzidas e contornos preservados.");
+  } else {
+    achados.push("Glândula tireoide tópica, de dimensões normais e contornos preservados.");
+  }
+
+  // Linha de ecotextura / lesões.
+  if (temDifusa) {
+    const difusa = lobos
+      .map((l) => l.lobo.ecotextura_alterada?.trim())
+      .find((t) => !!t);
+    achados.push(
+      `Parênquima tireoidiano ${(difusa ?? "com ecotextura difusamente heterogênea").replace(/\.+$/, "")}.`,
+    );
+  } else if (lobosComNodulo.length === 0) {
+    achados.push(
+      "Parênquima tireoidiano com ecotextura homogênea. Não foram caracterizadas lesões sólidas ou císticas.",
+    );
+  } else {
+    achados.push("Parênquima tireoidiano com ecotextura homogênea.");
+  }
+
+  // Linhas de lobos/istmo + VT (medidas quando ditadas; ____ quando não).
+  for (const { rotulo, lobo } of lobos) {
+    achados.push(
+      `${rotulo}: ${medidasFmt1(lobo.medidas_cm)} (volume de ${volFmt1(lobo.volume_ml)} ml).`,
+    );
+  }
+  const vt = volumeTotal(f);
+  achados.push(`Volume total: ${vt === null ? "____" : ptBr1(vt)} ml.`);
+
+  // Nódulos/cistos descritos no ACHADOS.
+  for (const { lobo } of lobosComNodulo) {
+    for (const nod of lobo.nodulos) {
+      achados.push(noduloAchadoObjetivo(nod));
+    }
+  }
+
+  // Doppler (picos sistólicos) quando aplicável.
+  if (f.com_doppler) {
+    const ad = f.pico_arteria_direita ?? "inferior";
+    const ae = f.pico_arteria_esquerda ?? "inferior";
+    achados.push(
+      `Pico sistólico da artéria tireoidiana ${ad} direita de ${
+        f.pico_sistolico_direito_cms !== null ? ptBr1(f.pico_sistolico_direito_cms) : "____"
+      } cm/s.`,
+    );
+    achados.push(
+      `Pico sistólico da artéria tireoidiana ${ae} esquerda de ${
+        f.pico_sistolico_esquerdo_cms !== null ? ptBr1(f.pico_sistolico_esquerdo_cms) : "____"
+      } cm/s.`,
+    );
+  }
+
+  // Linfonodos.
+  if (f.linfonodos_descritos && f.linfonodos_alterados && f.linfonodos_descricao) {
+    achados.push(f.linfonodos_descricao.trim());
+  } else {
+    achados.push("Não há evidência de linfonodomegalias.");
+  }
+
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    achados.push(f.achados_adicionais.trim());
+  }
+
+  // ----- IMPRESSÃO -----
+  const impressao: string[] = [];
+
+  if (volStatus === "aumentado") {
+    impressao.push("Bócio (aumento difuso do volume glandular).");
+  } else if (volStatus === "reduzido") {
+    impressao.push("Glândula tireoide de dimensões reduzidas.");
+  }
+
+  if (temDifusa) {
+    const difusa = lobos
+      .map((l) => l.lobo.ecotextura_alterada?.trim())
+      .find((t) => !!t);
+    impressao.push(
+      difusa
+        ? `Tireoidopatia difusa (${difusa.replace(/\.+$/, "")}).`
+        : "Tireoidopatia difusa.",
+    );
+  }
+
+  // Item por nódulo com a categoria ACR calculada/ditada.
+  for (const { lobo } of lobosComNodulo) {
+    for (const nod of lobo.nodulos) {
+      const eco = nod.ecogenicidade ? ECOGENICIDADE[nod.ecogenicidade].txtM : "sólido";
+      const loc = nod.localizacao ? ` ${nod.localizacao}` : "";
+      if (isCisto(nod)) {
+        impressao.push(`Cisto simples${loc} (ACR TI-RADS 1).`);
+        continue;
+      }
+      const acr = calcAcrTirads(nod);
+      if (acr !== null) {
+        const txt = ACR_TEXTO[acr.categoria];
+        const sufixo = txt ? `, ${txt}` : "";
+        impressao.push(
+          `Nódulo ${eco}${loc} (ACR TI-RADS ${acr.categoria}${sufixo}).`,
+        );
+      } else {
+        impressao.push(`Nódulo ${eco}${loc}.`);
+      }
+    }
+  }
+
+  if (f.linfonodos_descritos && f.linfonodos_alterados) {
+    const desc = f.linfonodos_descricao?.trim();
+    impressao.push(
+      desc
+        ? `Linfonodos cervicais de aspecto alterado (${desc.replace(/\.+$/, "")}).`
+        : "Linfonodos cervicais de aspecto alterado.",
+    );
+  }
+
+  if (impressao.length === 0) {
+    impressao.push("Estudo ultrassonográfico dentro dos padrões da normalidade.");
+  }
+
+  const impressaoTxt =
+    impressao.length === 1
+      ? (impressao[0] as string)
+      : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
+
+  // ----- Conduta (toggle) — maior categoria entre os nódulos (não-cistos) -----
+  let condutaSecao = "";
+  if (prefs.show_conduct_recommendation) {
+    const candidatos = lobosComNodulo
+      .flatMap((l) => l.lobo.nodulos)
+      .filter((nod) => !isCisto(nod))
+      .map((nod) => ({ acr: calcAcrTirads(nod), diam: maiorDiametroCm(nod) }))
+      .filter((x): x is { acr: { pontos: number; categoria: number }; diam: number | null } =>
+        x.acr !== null,
+      );
+    if (candidatos.length > 0) {
+      const maxCat = Math.max(...candidatos.map((c) => c.acr.categoria));
+      // Maior diâmetro entre os nódulos da maior categoria.
+      const diamMax = candidatos
+        .filter((c) => c.acr.categoria === maxCat)
+        .map((c) => c.diam)
+        .filter((d): d is number => d !== null)
+        .reduce<number | null>((acc, d) => (acc === null ? d : Math.max(acc, d)), null);
+      const conduta = condutaAcr(maxCat, diamMax);
+      if (conduta) {
+        condutaSecao = `\nConduta sugerida:\nACR TI-RADS ${maxCat}. ${conduta}.`;
+      }
+    }
+  }
+
+  const corpo = [
+    titulo,
+    "",
+    "TÉCNICA:",
+    tecnica,
+    "",
+    "ACHADOS:",
+    achados.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressaoTxt,
+    condutaSecao,
+  ].join("\n");
+
+  return corpo.replace(/\n{3,}/g, "\n\n").trim();
 }

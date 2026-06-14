@@ -269,6 +269,67 @@ cadeia ganglionar cervical I a V.
   bócio/aumentado (medidas grandes sem comentário seguem "normal" — decisão
   No-Invention); diagnóstico de tireoidite não é inferido (só descrição verbatim).
 
+### Estilo OBJETIVO (TÉCNICA/ACHADOS/IMPRESSÃO + ACR TI-RADS) — Sprint 1
+Estilo de redação alternativo (writing_style OBJETIVO = `44444444-4444-4444-8444-444444444444`),
+despachado por `renderTireoide(f, prefs, { objetivo: true })`. Estrutura enxuta
+em 3 seções, e **escore ACR TI-RADS** (American College of Radiology) no lugar do
+escore de Domingos (Domingos NÃO aparece no objetivo).
+
+**Cabeçalhos:** título `ULTRASSONOGRAFIA DA TIREOIDE` + `TÉCNICA:` + `ACHADOS:` +
+`IMPRESSÃO:`.
+
+**Base NORMAL (verbatim do nReport):**
+- TÉCNICA: "Exame realizado com transdutor linear de alta frequência."
+- ACHADOS: "Glândula tireoide tópica, de dimensões normais e contornos
+  preservados." + "Parênquima tireoidiano com ecotextura homogênea. Não foram
+  caracterizadas lesões sólidas ou císticas." + linhas de lobos/istmo (medidas +
+  volume; `____` quando não ditados) + "Volume total: X ml." + "Não há evidência
+  de linfonodomegalias."
+- IMPRESSÃO: "Estudo ultrassonográfico dentro dos padrões da normalidade."
+
+**Estados alterados:** bócio/atrofia (`volume_glandular`) refletem em ACHADOS +
+IMPRESSÃO; tireoidopatia difusa (`ecotextura_alterada`) descrita em ACHADOS +
+IMPRESSÃO "Tireoidopatia difusa"; cada nódulo vira uma frase enxuta no ACHADOS e
+um item na IMPRESSÃO com "(ACR TI-RADS N, <texto>)"; cisto (ecogenicidade
+anecoica) → "(ACR TI-RADS 1)". VT (volume total) somado dos volumes (lobos+istmo),
+igual ao clássico.
+
+**ACR TI-RADS — pontos por eixo (some todos):**
+
+| Eixo | Valor (enum Domingos) | Pontos |
+|------|----------------------|--------|
+| COMPOSIÇÃO | anecoica_homogenea, anecoica_finos_ecos (cístico) | 0 |
+| | anecoica_septos, anecoica_componentes_solidos, solida_areas_anecoicas (misto) | 1 |
+| | hipoecoica, isoecoica, hiperecoica, solida_calcificacao_parede (sólido) | 2 |
+| ECOGENICIDADE | anecoica_* | 0 |
+| | hiperecoica, isoecoica (e solida_* default iso) | 1 |
+| | hipoecoica | 2 |
+| FORMA | mais_alta_que_larga | 3 |
+| | mais_larga_que_alta, null | 0 |
+| MARGEM | regular, null | 0 |
+| | irregular, espiculada | 2 |
+| FOCOS ECOGÊNICOS (calcificações) | sem, null | 0 |
+| | grosseiras (macrocalcificações) | 1 |
+| | casca_ovo (periféricas) | 2 |
+| | micro (puntiformes) | 3 |
+
+**Categoria pela soma:** <2 → TR1 · ==2 → TR2 · ==3 → TR3 · 4-6 → TR4 · ≥7 → TR5.
+**Texto:** TR1 "benigno" · TR2 "provavelmente benigno" · TR3 "características
+intermediárias" · TR4 "características suspeitas" · TR5 "altamente suspeitas".
+
+**Override:** `ti_rads_ditado` (1-5) vence o cálculo (categoria ditada do médico).
+Sem ecogenicidade → não pontua (nódulo sai sem categoria).
+
+**Conduta ACR (por categoria + maior diâmetro = max(medidas_cm) ou
+diametro_transverso_cm):** TR1/TR2 sem indicação · TR3 PAAF ≥2,5 cm, controle
+≥1,5 cm · TR4 PAAF ≥1,5 cm, controle ≥1,0 cm · TR5 PAAF ≥1,0 cm, controle ≥0,5 cm.
+Conduta só com toggle `show_conduct_recommendation` ON → seção própria
+"Conduta sugerida:" após a IMPRESSÃO (igual à MAMARIA), usando a maior categoria
+entre os nódulos.
+
+**Verificação:** golden `tireoide-objetivo-golden.manual.ts` + boletim
+`docs/tireoide-objetivo-boletim.html`.
+
 ---
 
 # PROSTATA (transabdominal)
