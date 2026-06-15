@@ -169,7 +169,9 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
     },
   }));
   check("cisto: corpo descreve imagem no ovário direito", /Ovário direito medindo 4 x 3,5 x 3 cm, apresentando imagem anecoica de paredes finas e regulares, medindo 3 x 2,8 x 2,5 cm\./.test(l), l);
+  check("cisto: conclusão OD coleção líquida (O-RADS 2) c/ classe+volume", /Ovário direito de volume aumentado \(22 cm³\), apresentando coleção líquida \(O-RADS 2\)\./.test(l), l);
   check("cisto: conclusão separa OD alterado e OE normal", /Ovário direito de volume[\s\S]*Ovário esquerdo ecograficamente normal/.test(l), l);
+  check("cisto: NÃO usa 'apresentando alteração' genérico", !/apresentando alteração/.test(l), l);
   check("cisto: SEM item único 'Ovários ecograficamente normais'", !/Ovários ecograficamente normais \(o direito/.test(l), l);
 }
 

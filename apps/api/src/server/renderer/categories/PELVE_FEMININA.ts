@@ -402,6 +402,27 @@ function volClasseFmt(s: string | null): string {
   return s.trim();
 }
 
+/**
+ * Classe do volume ovariano derivada do valor (cm³) para a CONCLUSÃO.
+ * Limiares dos valores habituais (ovários 6–12 cm³ na menacme): acima de 12 →
+ * "aumentado", abaixo de 6 → "reduzido", entre 6–12 → "normal". Sem volume
+ * calculável → placeholder "____".
+ */
+function classeVolumeOvario(vol: number | null): string {
+  if (vol === null || !Number.isFinite(vol)) return "____";
+  if (vol > 12) return "aumentado";
+  if (vol < 6) return "reduzido";
+  return "normal";
+}
+
+/** Achado ovariano anecoico (cisto simples / coleção líquida funcional). */
+function achadoOvarioAnecoico(a: z.infer<typeof OvarioAchadoSchema> | undefined): boolean {
+  if (!a) return false;
+  if (a.tipo === "cisto_simples" || a.tipo === "funcional") return true;
+  // Princípio: toda imagem anecoica = coleção líquida; detecta verbatim anecoico.
+  return !!a.descricao && /anec[oó]ic/i.test(a.descricao);
+}
+
 /** Posição uterina; default "anteversão". */
 function posicaoFmt(s: string | null): string {
   return s && s.trim() !== "" ? s.trim() : "anteversão";
@@ -666,17 +687,24 @@ function ovariosConclusao(f: PelveFemininaFindings): string[] {
     if (alt) {
       const achados = ov.achados ?? [];
       const primeiro = achados[0];
+      // TODO ovário alterado leva o volume + classe na conclusão (decisão Luiz).
+      const classe = classeVolumeOvario(vol);
+      const vc = `de volume ${classe} (${volFmt(vol)} cm³)`;
       if (primeiro?.tipo === "endometrioma") {
-        return `Ovário ${nome} apresentando imagem hipoecoica que tem como diagnóstico mais provável endometrioma (O-RADS 2).`;
+        return `Ovário ${nome} ${vc}, apresentando imagem de baixa ecogenicidade que tem como diagnóstico mais provável endometrioma (O-RADS 2).`;
       }
       if (primeiro?.tipo === "funcional") {
-        return `Ovário ${nome} de volume ${volFmt(vol)} cm³, às custas de coleção líquida provavelmente funcional (O-RADS 2).`;
+        return `Ovário ${nome} ${vc}, apresentando coleção líquida provavelmente funcional (O-RADS 2).`;
       }
       if (primeiro?.tipo === "sop") {
         return `Ovário ${nome} de volume aumentado (${volFmt(vol)} cm³), contendo mais de 20 folículos.`;
       }
+      // Imagem anecoica (cisto simples / coleção) → coleção líquida (O-RADS 2).
+      if (achadoOvarioAnecoico(primeiro)) {
+        return `Ovário ${nome} ${vc}, apresentando coleção líquida (O-RADS 2).`;
+      }
       const desc = primeiro?.descricao ? ` (${primeiro.descricao.trim().replace(/\.+$/, "")})` : "";
-      return `Ovário ${nome} de volume ${volFmt(vol)} cm³, apresentando alteração${desc}.`;
+      return `Ovário ${nome} ${vc}, apresentando${desc || " alteração"}.`;
     }
     if (atrof) {
       return `Ovário ${nome} ecograficamente normal (${volFmt(vol)} cm³), praticamente sem folículos.`;
