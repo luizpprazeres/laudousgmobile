@@ -388,10 +388,27 @@ function concluiLesao(les: PartesMolesLesao): string {
 }
 
 // ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+
+/**
+ * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
+ * o comportamento anterior; objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO reusando a
+ * MESMA extração e a MESMA lógica/frases de achados (descreveLesao/concluiLesao).
+ */
+export function renderPartesMoles(
+  f: PartesMolesFindings,
+  opts?: { objetivo?: boolean },
+): string {
+  if (opts?.objetivo) return renderPartesMolesObjetivo(f);
+  return renderPartesMolesClassico(f);
+}
+
+// ---------------------------------------------------------------------------
 // Render (Clássico)
 // ---------------------------------------------------------------------------
 
-export function renderPartesMoles(f: PartesMolesFindings): string {
+function renderPartesMolesClassico(f: PartesMolesFindings): string {
   const lesoes = Array.isArray(f.lesoes) ? f.lesoes : [];
 
   // ----- OS SEGUINTES ASPECTOS FORAM OBSERVADOS -----
@@ -437,6 +454,80 @@ export function renderPartesMoles(f: PartesMolesFindings): string {
     "",
     "CONCLUSÃO:",
     conclusaoTxt,
+  ].join("\n");
+
+  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO
+// ===========================================================================
+//
+// Reusa 100% a extração e a MESMA lógica/frases por tipo de lesão do clássico
+// (descreveLesao no ACHADOS, concluiLesao na IMPRESSÃO). Estrutura enxuta
+// inspirada no modelo "Partes moles" do nReport (TÉCNICA/ANÁLISE/OPINIÃO →
+// aqui TÉCNICA/ACHADOS/IMPRESSÃO). Silêncio → normalidade (nunca inventa lesão);
+// 1 casa decimal nas medidas; concordância de gênero — tudo herdado do clássico.
+
+const TECNICA_OBJETIVO =
+  "Exame realizado com transdutor linear de alta frequência.";
+
+/** Linhas de normalidade do ACHADOS quando não há lesão focal (silêncio → normalidade). */
+const ACHADOS_NORMAIS_OBJETIVO = [
+  "Pele e tecido celular subcutâneo de espessura e ecogenicidade preservadas.",
+  "Planos musculares sem alterações significativas.",
+  "Não foram caracterizadas coleções organizadas.",
+  "Ausência de formações expansivas ao estudo.",
+];
+
+const IMPRESSAO_NORMAL_OBJETIVO = "Exame sem alterações significativas.";
+
+function renderPartesMolesObjetivo(f: PartesMolesFindings): string {
+  const lesoes = Array.isArray(f.lesoes) ? f.lesoes : [];
+
+  // ----- ACHADOS -----
+  const achados: string[] = [];
+  if (lesoes.length === 0) {
+    achados.push(...ACHADOS_NORMAIS_OBJETIVO);
+  } else {
+    achados.push("Pele e tecido celular subcutâneo de espessura e ecogenicidade preservadas.");
+    // Mesma descrição morfológica por tipo do clássico (sem diagnóstico).
+    for (const les of lesoes) {
+      const linha = descreveLesao(les);
+      if (linha) achados.push(linha);
+    }
+  }
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    achados.push(f.achados_adicionais.trim());
+  }
+
+  // ----- IMPRESSÃO (mesma interpretação por tipo do clássico) -----
+  const impressaoItens: string[] = [];
+  for (const les of lesoes) {
+    const item = concluiLesao(les);
+    if (item) impressaoItens.push(item);
+  }
+
+  let impressaoTxt: string;
+  if (impressaoItens.length === 0) {
+    impressaoTxt = IMPRESSAO_NORMAL_OBJETIVO;
+  } else if (impressaoItens.length === 1) {
+    impressaoTxt = impressaoItens[0] as string;
+  } else {
+    impressaoTxt = impressaoItens.map((it, i) => `${i + 1}. ${it}`).join("\n");
+  }
+
+  const corpo = [
+    TITULO,
+    "",
+    "TÉCNICA:",
+    TECNICA_OBJETIVO,
+    "",
+    "ACHADOS:",
+    achados.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressaoTxt,
   ].join("\n");
 
   return corpo.replace(/\n{3,}/g, "\n\n").trim();

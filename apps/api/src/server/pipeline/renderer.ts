@@ -227,19 +227,19 @@ export async function* runRendererStream(args: {
         break;
       // Categorias clássico-só (Sprint clássico 2026-06-15) — sem variante objetivo ainda.
       case "PARTES_MOLES":
-        fullText = renderPartesMoles(fnd as Parameters<typeof renderPartesMoles>[0]);
+        fullText = renderPartesMoles(fnd as Parameters<typeof renderPartesMoles>[0], { objetivo });
         break;
       case "CERVICAL":
-        fullText = renderCervical(fnd as Parameters<typeof renderCervical>[0]);
+        fullText = renderCervical(fnd as Parameters<typeof renderCervical>[0], { objetivo });
         break;
       case "PELVE_FEMININA":
-        fullText = renderPelveFeminina(fnd as Parameters<typeof renderPelveFeminina>[0]);
+        fullText = renderPelveFeminina(fnd as Parameters<typeof renderPelveFeminina>[0], { objetivo });
         break;
       case "ABDOMEN_SUPERIOR":
-        fullText = renderAbdomenSuperior(fnd as Parameters<typeof renderAbdomenSuperior>[0]);
+        fullText = renderAbdomenSuperior(fnd as Parameters<typeof renderAbdomenSuperior>[0], { objetivo });
         break;
       default:
-        fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0]);
+        fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });
         break;
     }
     const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;

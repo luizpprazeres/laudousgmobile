@@ -300,10 +300,27 @@ const ORGAO_ORDEM: AbdomenSuperiorOrganKey[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Render — dispatcher (Clássico default; Objetivo via opts)
+// ---------------------------------------------------------------------------
+
+/**
+ * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
+ * o comportamento anterior (LIVE-adjacente); objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO
+ * reusando a MESMA clínica por órgão (renderOrgan do ABDOMEN_TOTAL), sem rins/bexiga.
+ */
+export function renderAbdomenSuperior(
+  f: AbdomenSuperiorFindings,
+  opts?: { objetivo?: boolean },
+): string {
+  if (opts?.objetivo) return renderAbdomenSuperiorObjetivo(f);
+  return renderAbdomenSuperiorClassico(f);
+}
+
+// ---------------------------------------------------------------------------
 // Render (Clássico)
 // ---------------------------------------------------------------------------
 
-export function renderAbdomenSuperior(f: AbdomenSuperiorFindings): string {
+export function renderAbdomenSuperiorClassico(f: AbdomenSuperiorFindings): string {
   const aspectos: string[] = [];
   const conclusaoItens: string[] = [];
 
@@ -349,6 +366,99 @@ export function renderAbdomenSuperior(f: AbdomenSuperiorFindings): string {
     "",
     "CONCLUSÃO:",
     conclusaoTxt,
+  ].join("\n");
+
+  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO
+// ===========================================================================
+//
+// O objetivo monta o laudo PROGRAMATICAMENTE no estilo TÉCNICA/ACHADOS/IMPRESSÃO,
+// SEM depender do template_body (clássico). A clínica por órgão é a MESMA do
+// clássico: para órgãos alterados/gases/colecistectomia reusa o `body` produzido
+// por renderOrgan (ABDOMEN_TOTAL, LIVE — não tocado); para órgãos normais usa a
+// frase normal abaixo (transcrita do modelo "Abdome Superior" do nReport —
+// /tmp/nreport/captures/abdome-superior.txt). A conclusão (renderOrgan.conclusao)
+// vira a IMPRESSÃO. É o abdome total objetivo SEM rins/bexiga (mesmo subconjunto
+// de órgãos do andar superior do estilo clássico). Não toca o caminho clássico.
+
+const TITULO_OBJETIVO = "ULTRASSONOGRAFIA DE ABDOME SUPERIOR";
+
+const TECNICA_OBJETIVO = "Exame realizado com transdutor convexo multifrequencial.";
+
+/** Frase NORMAL de cada órgão (modelo Abdome Superior — nReport). */
+const ORGAO_NORMAL_OBJETIVO: Record<AbdomenSuperiorOrganKey, string> = {
+  figado:
+    "Fígado com forma, dimensões e contornos preservados. Parênquima hepático com ecotextura homogênea. Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.",
+  veia_porta: "Veia porta pérvia, de calibre preservado.",
+  vesicula:
+    "Vesícula biliar de topografia usual e parede fina, com conteúdo anecoico. Não há imagens sugestivas de cálculos no seu interior.",
+  vias_biliares: "Vias biliares intra e extra-hepáticas sem sinais de dilatação.",
+  pancreas: "Pâncreas com morfologia e ecotextura normais.",
+  baco:
+    "Baço com forma, dimensões e contornos preservados. Ecotextura esplênica homogênea.",
+  aorta: "Aorta com trajeto, calibre e contornos preservados.",
+  veia_cava: "Veia cava inferior de calibre normal.",
+};
+
+/** Ordem fixa dos órgãos no ACHADOS objetivo (clínica, modelo nReport). */
+const ORGAO_ORDEM_OBJETIVO: AbdomenSuperiorOrganKey[] = [
+  "figado",
+  "veia_porta",
+  "vias_biliares",
+  "vesicula",
+  "pancreas",
+  "baco",
+  "aorta",
+  "veia_cava",
+];
+
+export function renderAbdomenSuperiorObjetivo(f: AbdomenSuperiorFindings): string {
+  const achadosLinhas: string[] = [];
+  const impressaoItens: string[] = [];
+
+  for (const organ of ORGAO_ORDEM_OBJETIVO) {
+    const state = f.orgaos[organ] as AbdomenOrganState | undefined;
+    if (!state) {
+      achadosLinhas.push(ORGAO_NORMAL_OBJETIVO[organ]);
+      continue;
+    }
+    // Reusa a clínica por órgão do ABDOMEN_TOTAL (frases byte-a-byte; mesmas do
+    // clássico). Órgão normal → frase normal objetiva (nReport).
+    const rendered: OrganRender = renderOrgan(organ as AbdomenOrganKey, state);
+    const base = rendered.body !== null ? rendered.body : ORGAO_NORMAL_OBJETIVO[organ];
+    achadosLinhas.push(base);
+    impressaoItens.push(...rendered.conclusao);
+    // Achados fora do catálogo determinístico (free-slot): preserva o termo do
+    // médico no corpo para não perder o achado silenciosamente (espelha o clássico).
+    for (const fs of rendered.freeSlotFindings) {
+      const txt = fs.descricao_livre ?? fs.termo_do_medico;
+      if (txt && txt.trim() !== "") {
+        achadosLinhas.push(`${txt.trim().replace(/\.+$/, "")}.`);
+      }
+    }
+  }
+
+  const impressao =
+    impressaoItens.length === 0
+      ? "Estudo ultrassonográfico do abdome superior sem alterações significativas."
+      : impressaoItens.length === 1
+        ? (impressaoItens[0] as string)
+        : impressaoItens.map((it, i) => `${i + 1}. ${it}`).join("\n");
+
+  const corpo = [
+    TITULO_OBJETIVO,
+    "",
+    "TÉCNICA:",
+    TECNICA_OBJETIVO,
+    "",
+    "ACHADOS:",
+    achadosLinhas.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressao,
   ].join("\n");
 
   return corpo.replace(/\n{3,}/g, "\n\n").trim();

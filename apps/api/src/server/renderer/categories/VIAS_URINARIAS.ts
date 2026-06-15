@@ -537,10 +537,27 @@ function concluiAchado(ach: ViasUrinariasAchado, lado: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+
+/**
+ * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
+ * o comportamento anterior; objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO reusando a
+ * MESMA extração + lógica de achados do clássico.
+ */
+export function renderViasUrinarias(
+  f: ViasUrinariasFindings,
+  opts?: { objetivo?: boolean },
+): string {
+  if (opts?.objetivo) return renderViasUrinariasObjetivo(f);
+  return renderViasUrinariasClassico(f);
+}
+
+// ---------------------------------------------------------------------------
 // Render (Clássico)
 // ---------------------------------------------------------------------------
 
-export function renderViasUrinarias(f: ViasUrinariasFindings): string {
+function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
   // ----- OS SEGUINTES ASPECTOS FORAM OBSERVADOS -----
   const aspectos: string[] = [];
   aspectos.push(rimCorpo("direito", f.rim_direito));
@@ -667,6 +684,204 @@ export function renderViasUrinarias(f: ViasUrinariasFindings): string {
     "",
     "CONCLUSÃO:",
     conclusaoTxt,
+  ].join("\n");
+
+  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO
+// ===========================================================================
+//
+// Reusa 100% a extração + a lógica de achados do clássico: o achado segue
+// INCORPORADO na frase principal do rim (após "apresentando"), com a MESMA
+// sequência (imagem → ecogenicidade → tamanho → localização → fenômeno) e os
+// mesmos mapeamentos (cálices p/ litíase, terço p/ cisto; múltiplos com ";";
+// cisto complexo "de aspecto inespecífico"; situação baixa/rotação; DRC com
+// item único na bilateral). Difere só na ESTRUTURA (cabeçalhos) e na TÉCNICA.
+// Tom inspirado no nReport (/tmp/nreport/captures/rins-vias-urinarias.txt):
+// TÉCNICA/ANÁLISE/OPINIÃO → aqui TÉCNICA/ACHADOS/IMPRESSÃO.
+
+const TECNICA_OBJETIVO =
+  "Exame realizado com transdutor convexo multifrequencial. Estudo dos rins em decúbito dorsal e ventral e da bexiga após repleção vesical.";
+
+/**
+ * Corpo do rim no estilo OBJETIVO (decisão Luiz): frase ENXUTA do rim (sem
+ * "diâmetros longitudinal e anteroposterior, medidos pelo flanco"), achados em
+ * LINHAS SEPARADAS (um por linha, capitalizados), e por fim as medidas do rim
+ * e da espessura do parênquima — cada uma em sua linha.
+ */
+function rimCorpoObjetivo(lado: string, rim: ViasUrinariasRim): string {
+  const cap = (s: string) => (s ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s);
+  const partes: string[] = [];
+  const sit: string[] = [];
+  if (rim.situacao_baixa) sit.push("de situação baixa");
+  if (rim.rotacao) sit.push("com rotação");
+  const sitTxt = sit.length ? `${sit.join(" e ")}, ` : "";
+
+  if (rim.drc) {
+    partes.push(
+      `Rim ${lado} ${sitTxt}de dimensões reduzidas, com redução da diferenciação corticomedular.`,
+    );
+  } else {
+    const dimTxt =
+      rim.dimensao === "reduzida_discreta"
+        ? "de dimensões discretamente reduzidas, "
+        : rim.dimensao === "reduzida"
+          ? "de dimensões reduzidas, "
+          : "";
+    partes.push(
+      `Rim ${lado} ${dimTxt}${sitTxt}de topografia, ecotextura do seio renal e ecotextura corticomedular normais.`,
+    );
+  }
+
+  // Hidronefrose / achados focais / alteração difusa — cada um em sua linha.
+  if (rim.hidronefrose && rim.hidronefrose !== "ausente") {
+    partes.push("Imagens anecóicas no sistema pielocalicial.");
+  }
+  for (const ach of rim.achados) {
+    const d = descreveAchado(ach);
+    if (d) partes.push(`${cap(d)}.`);
+  }
+  if (!rim.drc && rim.alteracao_difusa && rim.alteracao_difusa.trim() !== "") {
+    partes.push(`${cap(limpa(rim.alteracao_difusa))}.`);
+  }
+
+  // Medidas (sempre — placeholder se ausente).
+  partes.push(`Medida do rim ${lado}: ${medidasFmt(rim.medidas_cm)}.`);
+  partes.push(
+    `Medida da espessura do parênquima do rim ${lado}: ${espFmt(rim.espessura_parenquima_cm)} cm.`,
+  );
+  return partes.join("\n");
+}
+
+function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
+  // ----- ACHADOS (estilo objetivo: frase enxuta + achados em linhas separadas) -----
+  const achados: string[] = [];
+  achados.push(rimCorpoObjetivo("direito", f.rim_direito));
+  achados.push("");
+  achados.push(rimCorpoObjetivo("esquerdo", f.rim_esquerdo));
+  achados.push("");
+
+  if (f.dilatacao_ureteral && f.dilatacao_ureteral_descricao) {
+    achados.push(limpa(f.dilatacao_ureteral_descricao).concat("."));
+  } else {
+    achados.push("Não há sinais de dilatação ureteral.");
+  }
+
+  achados.push(bexigaCorpo(f.bexiga));
+
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    achados.push("");
+    achados.push(f.achados_adicionais.trim());
+  }
+
+  // ----- IMPRESSÃO (mesma lógica do clássico, sem numeração com ")" — usa "N.") -----
+  const impressao: string[] = [];
+
+  const ladosRim: { lado: string; rim: ViasUrinariasRim }[] = [
+    { lado: "direito", rim: f.rim_direito },
+    { lado: "esquerdo", rim: f.rim_esquerdo },
+  ];
+  const rimAlterado = (r: ViasUrinariasRim): boolean =>
+    r.achados.length > 0 ||
+    !!r.alteracao_difusa ||
+    r.drc ||
+    r.situacao_baixa ||
+    r.rotacao ||
+    !!(r.hidronefrose && r.hidronefrose !== "ausente");
+
+  const rinsAlterados = ladosRim.some(({ rim }) => rimAlterado(rim));
+  if (!rinsAlterados) {
+    impressao.push("Rins ecograficamente normais.");
+  } else {
+    // DRC nos DOIS rins → item único (decisão Luiz; preservada).
+    const drcBilateral = f.rim_direito.drc && f.rim_esquerdo.drc;
+    if (drcBilateral) impressao.push("Sinais de doença renal crônica.");
+    for (const { lado, rim } of ladosRim) {
+      const ladoConcl = lado === "direito" ? "direito" : "esquerdo";
+      const ladoFem = ladoConcl === "direito" ? "direita" : "esquerda";
+
+      if (rim.drc && !drcBilateral) {
+        impressao.push(
+          `Rim ${ladoConcl} de dimensões reduzidas, com redução da diferenciação corticomedular, podendo corresponder a doença renal crônica.`,
+        );
+      }
+
+      if (rim.situacao_baixa || rim.rotacao) {
+        const sit: string[] = [];
+        if (rim.situacao_baixa) sit.push("de situação baixa");
+        if (rim.rotacao) sit.push("com rotação");
+        impressao.push(`Rim ${ladoConcl} ${sit.join(" e ")}.`);
+      }
+
+      if (
+        !rim.drc &&
+        rim.alteracao_difusa &&
+        rim.alteracao_difusa.trim() !== ""
+      ) {
+        impressao.push(
+          `Alteração difusa do rim ${ladoConcl} (${limpa(rim.alteracao_difusa)}).`,
+        );
+      }
+
+      if (rim.hidronefrose && rim.hidronefrose !== "ausente") {
+        const h = HIDRONEFROSE[rim.hidronefrose];
+        impressao.push(`Hidronefrose ${h.txt} ${h.grau} à ${ladoFem}.`);
+      }
+
+      for (const ach of rim.achados) {
+        const item = concluiAchado(ach, lado);
+        if (item) impressao.push(item);
+      }
+    }
+  }
+
+  // Ureteres.
+  if (f.dilatacao_ureteral) {
+    const desc = f.dilatacao_ureteral_descricao?.trim();
+    impressao.push(
+      desc ? `Dilatação ureteral (${limpa(desc)}).` : "Dilatação ureteral.",
+    );
+  } else {
+    impressao.push("Não há sinais de dilatação ureteral.");
+  }
+
+  // Bexiga.
+  if (!f.bexiga.avaliada) {
+    impressao.push("Bexiga com repleção insuficiente para adequada avaliação.");
+  } else if (f.bexiga.parede_alterada || f.bexiga.conteudo_alterado) {
+    const sub: string[] = [];
+    if (f.bexiga.parede_alterada) sub.push(limpa(f.bexiga.parede_alterada));
+    if (f.bexiga.conteudo_alterado) sub.push(limpa(f.bexiga.conteudo_alterado));
+    impressao.push(`Bexiga ${sub.join(", ")}.`);
+  } else {
+    impressao.push("Bexiga ecograficamente normal.");
+  }
+
+  // Resíduo pós-miccional (quando informado).
+  if (f.bexiga.residuo_pos_miccional_ml !== null) {
+    impressao.push(
+      `Resíduo pós-miccional de ${ptBr1(f.bexiga.residuo_pos_miccional_ml)} cm³.`,
+    );
+  }
+
+  const impressaoTxt =
+    impressao.length === 1
+      ? (impressao[0] as string)
+      : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
+
+  const corpo = [
+    TITULO,
+    "",
+    "TÉCNICA:",
+    TECNICA_OBJETIVO,
+    "",
+    "ACHADOS:",
+    achados.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressaoTxt,
   ].join("\n");
 
   return corpo.replace(/\n{3,}/g, "\n\n").trim();

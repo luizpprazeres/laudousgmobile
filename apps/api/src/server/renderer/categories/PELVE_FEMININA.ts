@@ -728,10 +728,22 @@ function numerar(itens: string[]): string {
 }
 
 /**
+ * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
+ * o comportamento anterior; objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO (mais enxuto).
+ */
+export function renderPelveFeminina(
+  f: PelveFemininaFindings,
+  opts?: { objetivo?: boolean },
+): string {
+  if (opts?.objetivo) return renderPelveFemininaObjetivo(f);
+  return renderPelveFemininaClassico(f);
+}
+
+/**
  * Monta o laudo de PELVE FEMININA por construção (estilo CLÁSSICO).
  * Estrutura/cabeçalhos/numeração garantidos; silêncio → normalidade.
  */
-export function renderPelveFeminina(f: PelveFemininaFindings): string {
+function renderPelveFemininaClassico(f: PelveFemininaFindings): string {
   const via = resolveVia(f.via);
   const titulo = tituloDaVia(via);
   const comentarios = comentariosDaVia(via);
@@ -906,6 +918,249 @@ export function renderPelveFeminina(f: PelveFemininaFindings): string {
     "",
     "CONCLUSÃO:",
     numerar(conclusao),
+    rodapes.length > 0 ? `\n${rodapes.join("\n\n")}` : "",
+  ].join("\n");
+
+  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO (mais enxuto)
+// ===========================================================================
+//
+// O objetivo REUSA 100% a extração, os cálculos (volume uterino/ovariano pela
+// fórmula do elipsóide) e a lógica de achados do clássico (útero, endométrio,
+// ovários com volume+classe, miomas/FIGO, cistos/O-RADS, endometrioma, SOP,
+// pós-aborto). Muda só a redação: cabeçalhos TÉCNICA/ACHADOS/IMPRESSÃO, frases
+// mais curtas, sem o ritual do clássico. Mantém os ajustes clínicos já feitos:
+// ovário alterado leva "de volume {classe} ({X} cm³)"; imagem anecoica → "coleção
+// líquida (O-RADS 2)"; endometrioma "imagem de baixa ecogenicidade". 1 casa
+// decimal, concordância. A TÉCNICA varia pela VIA (ta/tv/ta_tv/pos_abortamento).
+
+/** Frase de TÉCNICA do objetivo, derivada da VIA (inspirado no nReport). */
+function tecnicaObjetivo(via: Via): string {
+  switch (via) {
+    case "tv":
+      return "Exame realizado com transdutor endocavitário multifrequencial, pela técnica transvaginal.";
+    case "ta":
+      return "Exame realizado com transdutor convexo multifrequencial, pela técnica transabdominal com a bexiga repleta.";
+    case "pos_abortamento":
+      return "Exame realizado com transdutor endocavitário multifrequencial, pela técnica transvaginal, para avaliação pós-abortamento.";
+    case "ta_tv":
+    default:
+      return "Exame realizado com transdutores convexo e endocavitário multifrequenciais, pelas técnicas transabdominal (com a bexiga repleta) e transvaginal.";
+  }
+}
+
+/** Frase enxuta (objetivo) de um ovário no ACHADOS — reusa cálculos do clássico. */
+function ovarioAchadoObjetivo(lado: "direito" | "esquerdo", ov: PelveOvario): string {
+  const nome = lado === "direito" ? "Ovário direito" : "Ovário esquerdo";
+  if (!ov.visualizado) return `${nome} não caracterizado pela técnica empregada.`;
+  const vol = calcVolume(ov.medidas_cm, ov.volume_ml);
+  const medVol = `medindo ${medidasFmt(ov.medidas_cm)} (volume de ${volFmt(vol)} cm³)`;
+  const achados = ov.achados ?? [];
+  if (achados.length > 0) {
+    const descr = achados
+      .map((a) => (a.descricao ? a.descricao.trim().replace(/\.+$/, "") : descreveAchadoOvario(a)))
+      .filter((s) => s !== "")
+      .join("; ");
+    return `${nome} ${medVol}, apresentando ${descr}.`;
+  }
+  if (ov.atrofico) {
+    return `${nome} ${medVol}, com poucas imagens anecoicas (aspecto atrófico).`;
+  }
+  return `${nome} ${medVol}, com folículos de permeio.`;
+}
+
+/**
+ * Render do estilo OBJETIVO: TÉCNICA / ACHADOS / IMPRESSÃO.
+ * Reusa extração + cálculos + lógica de achados do clássico (conclusão).
+ */
+function renderPelveFemininaObjetivo(f: PelveFemininaFindings): string {
+  const via = resolveVia(f.via);
+  const titulo = tituloDaVia(via);
+  const tecnica = tecnicaObjetivo(via);
+  const comBexiga = temBexiga(via);
+
+  // ----- ACHADOS -----
+  const achados: string[] = [];
+
+  if (comBexiga) {
+    achados.push("Bexiga de paredes regulares e finas, com conteúdo anecoico.");
+  }
+
+  // Útero (posição, medidas, volume calculado/ditado).
+  const volUtero = calcVolume(f.utero_medidas_cm, f.utero_volume_ml);
+  achados.push(
+    `Útero em ${posicaoFmt(f.utero_posicao)}, medindo ${medidasFmt(f.utero_medidas_cm)} (volume de ${volFmt(volUtero)} cm³).`,
+  );
+
+  // Istmocele.
+  if (f.istmocele) {
+    achados.push(
+      f.istmocele_descricao && f.istmocele_descricao.trim() !== ""
+        ? f.istmocele_descricao.trim().replace(/\.+$/, "") + "."
+        : "Imagem anecoica de forma triangular no istmo (nicho de cicatriz).",
+    );
+  }
+
+  // Endométrio (reusa a mesma lógica do corpo clássico).
+  const endoCorpo = endometrioCorpo(f, via);
+  if (endoCorpo) achados.push(endoCorpo);
+
+  // DIU.
+  if (f.diu) {
+    achados.push(
+      f.diu_descricao && f.diu_descricao.trim() !== ""
+        ? f.diu_descricao.trim().replace(/\.+$/, "") + "."
+        : "Imagem hiperecoica linear na cavidade endometrial, compatível com DIU.",
+    );
+  }
+
+  // Cavidade (pós-abortamento).
+  if (via === "pos_abortamento") {
+    if (f.produtos_retidos) {
+      achados.push("Imagens hiperecoicas amorfas na cavidade endometrial.");
+    }
+    achados.push("Ausência de saco gestacional.");
+  }
+
+  // Miométrio (+ miomas) — reusa a frase do clássico.
+  achados.push(miometrioCorpo(f));
+
+  // Cistos de Naboth.
+  if (f.cistos_naboth) {
+    achados.push("Imagens anecoicas na topografia do colo uterino (cistos de Naboth).");
+  }
+
+  // Ovários (frase enxuta com volume calculado).
+  achados.push(ovarioAchadoObjetivo("direito", f.ovario_direito));
+  achados.push(ovarioAchadoObjetivo("esquerdo", f.ovario_esquerdo));
+
+  // Líquido livre.
+  if (f.liquido_livre) {
+    achados.push(
+      f.liquido_livre_descricao && f.liquido_livre_descricao.trim() !== ""
+        ? `Líquido livre na cavidade pélvica (${f.liquido_livre_descricao.trim().replace(/\.+$/, "")}).`
+        : "Líquido livre na cavidade pélvica.",
+    );
+  } else {
+    achados.push("Ausência de líquido livre na cavidade pélvica.");
+  }
+
+  // Observações livres do corpo.
+  if (f.observacoes_corpo && f.observacoes_corpo.trim() !== "") {
+    achados.push(f.observacoes_corpo.trim());
+  }
+
+  // ----- IMPRESSÃO -----
+  // Reusa a MESMA lógica de conclusão do clássico (volume uterino/ovariano,
+  // miomas/FIGO, O-RADS, endometrioma, SOP, pós-aborto) — só sem a bexiga e sem
+  // numerar com ")" (a impressão objetiva numera com ".").
+  const impressao: string[] = [];
+
+  // Útero.
+  if (f.utero_miomatoso) {
+    const classe = volClasseFmt(f.utero_volume_classe || "acentuadamente aumentado");
+    impressao.push(`Útero globoso (miomatoso), de volume ${classe} (${volFmt(volUtero)} cm³).`);
+  } else if (f.calcificacao_arqueadas) {
+    impressao.push(
+      `Útero de dimensões normais (volume de ${volFmt(volUtero)} cm³), com calcificação das artérias arqueadas sem significado patológico.`,
+    );
+  } else {
+    impressao.push(`Útero de volume ${volClasseFmt(f.utero_volume_classe)} (${volFmt(volUtero)} cm³).`);
+  }
+
+  // Endométrio / pós-aborto.
+  if (via === "pos_abortamento") {
+    if (f.produtos_retidos) {
+      const qtd = (f.produtos_retidos_quantidade && f.produtos_retidos_quantidade.trim()) || "moderada";
+      impressao.push(`${qtd.charAt(0).toUpperCase()}${qtd.slice(1)} quantidade de produtos retidos da concepção.`);
+    } else {
+      impressao.push("Ausência de produtos retidos da concepção.");
+    }
+  } else {
+    impressao.push(endometrioConclusao(f, via));
+  }
+
+  // Miomas (itens próprios, quando individualizados).
+  impressao.push(...miomasConclusao(f));
+
+  // Istmocele.
+  if (f.istmocele) {
+    const tipo = f.istmocele_tipo && f.istmocele_tipo.trim() !== "" ? f.istmocele_tipo.trim() : "simples";
+    impressao.push(`Nicho de cicatriz cesárea, tipo ${tipo}.`);
+  }
+
+  // Adenomiose.
+  if (f.adenomiose) {
+    impressao.push(
+      f.adenomiose_conclusao && f.adenomiose_conclusao.trim() !== ""
+        ? f.adenomiose_conclusao.trim().replace(/\.+$/, "") + "."
+        : "Achados compatíveis com adenomiose.",
+    );
+  }
+
+  // Cistos de Naboth.
+  if (f.cistos_naboth) {
+    impressao.push("Cistos de Naboth (provável sequela de cervicite).");
+  }
+
+  // Ovários (reusa a MESMA lógica do clássico: item único se ambos normais;
+  // separados com volume+classe se alteração; O-RADS/endometrioma/SOP).
+  impressao.push(...ovariosConclusao(f));
+
+  // SOP: recomendação de FSH/LH.
+  const temSop = [f.ovario_direito, f.ovario_esquerdo].some((ov) =>
+    (ov.achados ?? []).some((a) => a.tipo === "sop"),
+  );
+  if (temSop) {
+    impressao.push(
+      "Convém, a critério clínico, correlacionar com as dosagens laboratoriais de FSH e LH com objetivo de investigar síndrome dos ovários policísticos.",
+    );
+  }
+
+  // DIU.
+  if (f.diu) {
+    impressao.push(f.diu === "bem_posicionado" ? "DIU bem posicionado." : "DIU deslocado.");
+  }
+
+  // Líquido livre.
+  if (f.liquido_livre) {
+    impressao.push(
+      f.liquido_livre_descricao && f.liquido_livre_descricao.trim() !== ""
+        ? `Líquido livre na cavidade pélvica (${f.liquido_livre_descricao.trim().replace(/\.+$/, "")}).`
+        : "Líquido livre na cavidade pélvica.",
+    );
+  }
+
+  // Achados adicionais.
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    impressao.push(f.achados_adicionais.trim());
+  }
+
+  const impressaoTxt =
+    impressao.length === 1
+      ? (impressao[0] as string)
+      : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
+
+  // ----- Rodapés (mantém FIGO + tabela quando aplicável) -----
+  const rodapes: string[] = [];
+  if (temMiomasComFigo(f)) rodapes.push(NOTA_FIGO);
+  if (f.tabela_referencia === "adulta") rodapes.push(TABELA_ADULTA);
+  else if (f.tabela_referencia === "pediatrica") rodapes.push(TABELA_PEDIATRICA);
+
+  const corpo = [
+    titulo,
+    "",
+    "TÉCNICA:",
+    tecnica,
+    "",
+    "ACHADOS:",
+    achados.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressaoTxt,
     rodapes.length > 0 ? `\n${rodapes.join("\n\n")}` : "",
   ].join("\n");
 

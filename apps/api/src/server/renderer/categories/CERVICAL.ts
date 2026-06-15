@@ -314,10 +314,26 @@ function glandulaCorpo(
 }
 
 // ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+
+/**
+ * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
+ * o comportamento anterior; objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO (estilo nReport).
+ */
+export function renderCervical(
+  f: CervicalFindings,
+  opts?: { objetivo?: boolean },
+): string {
+  if (opts?.objetivo) return renderCervicalObjetivo(f);
+  return renderCervicalClassico(f);
+}
+
+// ---------------------------------------------------------------------------
 // Render (estilo CLÁSSICO)
 // ---------------------------------------------------------------------------
 
-export function renderCervical(f: CervicalFindings): string {
+function renderCervicalClassico(f: CervicalFindings): string {
   const titulo = f.com_doppler
     ? "ULTRASSONOGRAFIA CERVICAL COM DOPPLER COLORIDO"
     : "ULTRASSONOGRAFIA CERVICAL";
@@ -448,4 +464,177 @@ export function renderCervical(f: CervicalFindings): string {
   ].join("\n");
 
   return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO
+// ===========================================================================
+//
+// Reusa a MESMA extração (CervicalFindings) e a MESMA lógica clínica do clássico
+// (níveis de Robbins normais/alterados, suspeição, glândulas salivares, tireoide,
+// Doppler). Texto mais enxuto, inspirado no nReport (/tmp/nreport/captures/
+// cervical.txt): TÉCNICA / ACHADOS / IMPRESSÃO, frases diretas, 1 casa decimal,
+// concordância de gênero. Mantém a fidelidade clínica (suspeição, reacional,
+// alterações glandulares/tireoidianas e achados adicionais nunca são omitidos).
+
+/** Frase de um linfonodo ALTERADO no ACHADOS (objetivo, mais enxuto). */
+function linfonodoAlteradoObjetivo(
+  l: CervicalLinfonodoAlterado,
+  comDoppler: boolean,
+): string {
+  if (l.descricao_raw && l.descricao_raw.trim() !== "") {
+    return l.descricao_raw.trim().replace(/\.*$/, ".");
+  }
+  const partes: string[] = [
+    `Linfonodo de dimensões aumentadas no nível ${l.nivel}`,
+    `medindo ${medidasFmt(l.medidas_cm)}`,
+  ];
+  if (l.forma) partes.push(FORMA_LINFONODO[l.forma].txt);
+  if (l.hilo) partes.push(HILO[l.hilo].txt);
+  if (comDoppler && l.vascularizacao) {
+    partes.push(`${VASCULARIZACAO[l.vascularizacao].txt} ao Doppler colorido`);
+  }
+  return `${partes.join(", ")}.`;
+}
+
+/** Render do estilo OBJETIVO: TÉCNICA / ACHADOS / IMPRESSÃO. */
+function renderCervicalObjetivo(f: CervicalFindings): string {
+  const titulo = "ULTRASSONOGRAFIA DA REGIÃO CERVICAL";
+  const tecnica = f.com_doppler
+    ? "Exame realizado com transdutor linear de alta frequência, com avaliação ao Doppler colorido."
+    : "Exame realizado com transdutor linear de alta frequência.";
+
+  const temNiveisNormais = f.niveis_normais.length > 0;
+  const temAlterados = f.linfonodos_alterados.length > 0;
+  const exameLinfonodalNormal = !temNiveisNormais && !temAlterados;
+
+  // ----- ACHADOS -----
+  const achados: string[] = [];
+
+  // Bloco linfonodal (níveis de Robbins).
+  if (exameLinfonodalNormal) {
+    achados.push(
+      "Cadeias ganglionares cervicais (níveis IA a VI) sem evidência de linfonodomegalias ou de linfonodos de aspecto suspeito.",
+    );
+  } else {
+    if (temNiveisNormais) {
+      achados.push(nivelNormalObjetivo([...f.niveis_normais]));
+    }
+    for (const l of f.linfonodos_alterados) {
+      achados.push(linfonodoAlteradoObjetivo(l, f.com_doppler));
+    }
+    if (niveisRestantes(f).length > 0) {
+      achados.push(
+        "Demais níveis da cadeia ganglionar cervical sem alterações ecográficas.",
+      );
+    }
+  }
+
+  // Glândulas salivares (opcionais — só quando descritas; mais enxuto: omite
+  // listagem de normais somente se nenhuma foi avaliada).
+  const temGlandulas = f.submandibulares.length > 0 || f.parotidas.length > 0;
+  if (temGlandulas) {
+    for (const g of f.submandibulares) {
+      achados.push(glandulaCorpo("submandibular", g));
+    }
+    for (const g of f.parotidas) {
+      achados.push(glandulaCorpo("parótida", g));
+    }
+  }
+
+  // Tireoide (opcional).
+  if (f.tireoide_descrita) {
+    const desc =
+      f.tireoide_descricao && f.tireoide_descricao.trim() !== ""
+        ? f.tireoide_descricao.trim().replace(/\.*$/, ".")
+        : f.tireoide_alterada
+          ? "Glândula tireoide com alterações ao método (vide descrição)."
+          : "Glândula tireoide tópica, de dimensões normais e ecotextura preservada.";
+    achados.push(desc);
+  }
+
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    achados.push((f.achados_adicionais as string).trim().replace(/\.*$/, "."));
+  }
+
+  // ----- IMPRESSÃO -----
+  const impressao: string[] = [];
+  const suspeitos = f.linfonodos_alterados.filter((l) => l.suspeito);
+  const alteradosNaoSuspeitos = f.linfonodos_alterados.filter((l) => !l.suspeito);
+
+  for (const l of suspeitos) {
+    impressao.push(
+      `Linfonodo de aspecto suspeito no nível ${l.nivel}. Correlacionar com achados clínicos.`,
+    );
+  }
+  if (alteradosNaoSuspeitos.length > 0) {
+    const niveis = listaNiveis(alteradosNaoSuspeitos.map((l) => l.nivel));
+    const plural = alteradosNaoSuspeitos.length > 1;
+    impressao.push(
+      `Linfonodo${plural ? "s" : ""} proeminente${plural ? "s" : ""} de aspecto reacional ${
+        plural ? "nos níveis" : "no nível"
+      } ${niveis}.`,
+    );
+  }
+
+  for (const g of f.submandibulares.filter((x) => x.alterada)) {
+    const d = g.descricao?.trim();
+    impressao.push(
+      d
+        ? `Alteração da glândula submandibular ${ladoFmt(g.lado)} (${d.replace(/\.+$/, "")}).`
+        : `Alteração da glândula submandibular ${ladoFmt(g.lado)}.`,
+    );
+  }
+  for (const g of f.parotidas.filter((x) => x.alterada)) {
+    const d = g.descricao?.trim();
+    impressao.push(
+      d
+        ? `Alteração da glândula parótida ${ladoFmt(g.lado)} (${d.replace(/\.+$/, "")}).`
+        : `Alteração da glândula parótida ${ladoFmt(g.lado)}.`,
+    );
+  }
+
+  if (f.tireoide_descrita && f.tireoide_alterada) {
+    const d = f.tireoide_descricao?.trim();
+    impressao.push(
+      d ? `Alteração tireoidiana (${d.replace(/\.+$/, "")}).` : "Alteração tireoidiana ao método.",
+    );
+  }
+
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    impressao.push((f.achados_adicionais as string).trim().replace(/\.+$/, "") + ".");
+  }
+
+  if (impressao.length === 0) {
+    impressao.push("Estudo ultrassonográfico dentro dos padrões da normalidade.");
+  }
+
+  const impressaoTxt =
+    impressao.length === 1
+      ? (impressao[0] as string)
+      : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
+
+  const corpo = [
+    titulo,
+    "",
+    "TÉCNICA:",
+    tecnica,
+    "",
+    "ACHADOS:",
+    achados.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressaoTxt,
+  ].join("\n");
+
+  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** Frase de linfonodo NORMAL em nível específico (objetivo, mais enxuto). */
+function nivelNormalObjetivo(niveis: NivelKey[]): string {
+  const lista = listaNiveis(niveis);
+  const plural = niveis.length > 1;
+  return `Linfonodos de aspecto ecográfico normal ${
+    plural ? "nos níveis" : "no nível"
+  } ${lista} (imagens ovais, com periferia hipoecoica e centro hiperecoico).`;
 }
