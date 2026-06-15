@@ -385,8 +385,22 @@ function numberConclusao(itens: string[]): string {
   return itens.map((it, i) => `${i + 1}) ${it}`).join("\n");
 }
 
+/**
+ * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
+ * o comportamento anterior; objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO (Sprint 2),
+ * reusando a MESMA extração e os MESMOS cálculos determinísticos.
+ */
+export function renderObstetrica(
+  f: ObstetricaFindings,
+  _prefs?: unknown,
+  opts?: { objetivo?: boolean },
+): string {
+  if (opts?.objetivo) return renderObstetricaObjetivo(f);
+  return renderObstetricaClassico(f);
+}
+
 /** Monta o laudo obstétrico (estrutura por construção). */
-export function renderObstetrica(f: ObstetricaFindings): string {
+export function renderObstetricaClassico(f: ObstetricaFindings): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
 
@@ -499,6 +513,209 @@ export function renderObstetrica(f: ObstetricaFindings): string {
     "",
     "CONCLUSÃO:",
     numberConclusao(conclusao),
+  ].join("\n");
+
+  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO (Sprint 2)
+// ===========================================================================
+//
+// Mais enxuto que o clássico (sem COMENTÁRIOS/OS SEGUINTES ASPECTOS). 1 casa
+// decimal em TODAS as medidas. Reusa 100% a extração e os cálculos
+// determinísticos (calcPonderal, calcDsm, liquido). Feto único NUNCA recebe
+// "(feto A)"/"ambos os fetos" (P5). Percentil é só reproduzido (nunca cruzado
+// com a IG).
+
+const TECNICA_OBJ =
+  "Exame realizado com transdutor convexo multifrequencial.";
+
+/** 1 casa decimal SEMPRE (P3) — vírgula decimal. */
+function ptBr1(n: number): string {
+  return n.toFixed(1).replace(".", ",");
+}
+/** Medida em mm com 1 casa decimal; placeholder se null. */
+function mm1(v: number | null): string {
+  return v === null ? "____" : ptBr1(v);
+}
+/** Peso em gramas: inteiro (gramas não levam casa decimal). */
+function g0(v: number | null): string {
+  return v === null ? "____" : String(Math.round(v));
+}
+
+/** Biometria objetiva (1 casa decimal) — só as 4 medidas padrão. */
+function biometriaLinhasObj(f: ObstetricaFindings["fetos"][number]): string[] {
+  return [
+    `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`,
+    `Circunferência cefálica (CC): ${mm1(f.cc_mm)} mm.`,
+    `Circunferência abdominal (CA): ${mm1(f.ca_mm)} mm.`,
+    `Comprimento femoral (CF): ${mm1(f.cf_mm)} mm.`,
+  ];
+}
+
+/** Linha de peso objetiva: peso + (variação, percentil) só se ditados. */
+function pesoLinhaObj(f: ObstetricaFindings["fetos"][number]): string {
+  const extras: string[] = [];
+  if (f.peso_variacao_g !== null) extras.push(`+- ${g0(f.peso_variacao_g)} g`);
+  if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
+  const sufixo = extras.length > 0 ? ` (${extras.join(", ")})` : "";
+  return `Peso fetal estimado: ${g0(f.peso_g)} g${sufixo}.`;
+}
+
+/** Placenta objetiva (frase enxuta). null = não descrita. */
+function placentaFraseObj(f: ObstetricaFindings): string | null {
+  const g = grauFmt(f.placenta_grau);
+  const grauTxt = g ? `${g} de Grannum et al.` : null;
+  if (f.numero_fetos >= 2) {
+    const qtd = f.placenta_quantidade ?? f.numero_fetos;
+    const base =
+      qtd >= 2
+        ? `${qtd === 2 ? "Duas" : qtd === 3 ? "Três" : qtd} placentas`
+        : "Placenta única";
+    const loc = f.placenta_localizacao ? `, ${f.placenta_localizacao}` : "";
+    const grau = grauTxt ? `, ${grauTxt}` : "";
+    return `${base}${loc}${grau}.`;
+  }
+  if (!f.placenta_localizacao && !grauTxt) return "Placenta de aspecto normal.";
+  let frase = "Placenta";
+  if (f.placenta_localizacao) frase += ` de localização ${f.placenta_localizacao}`;
+  if (grauTxt) frase += `, ${grauTxt}`;
+  return `${frase}.`;
+}
+
+/** Render objetivo do laudo obstétrico. */
+export function renderObstetricaObjetivo(f: ObstetricaFindings): string {
+  const gemelar = f.numero_fetos >= 2;
+  const titulo = gemelar
+    ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR"
+    : "ULTRASSONOGRAFIA OBSTÉTRICA";
+
+  const achados: string[] = [];
+  const impressao: string[] = [];
+
+  if (gemelar) {
+    const qtdLabel =
+      f.numero_fetos === 2
+        ? "Dois fetos"
+        : f.numero_fetos === 3
+          ? "Três fetos"
+          : `${f.numero_fetos} fetos`;
+    const descricoes = f.fetos.map((ft, i) => {
+      const rot = ft.rotulo ?? String.fromCharCode(65 + i);
+      const pos = ft.posicao_relativa
+        ? `feto ${ft.posicao_relativa} (feto ${rot})`
+        : `feto ${rot}`;
+      const apresFmt = apresentacaoFmt(ft.apresentacao);
+      const apres = apresFmt ? `, em apresentação ${apresFmt}` : "";
+      const dorso = ft.dorso ? `, com dorso ${ft.dorso}` : "";
+      return `${pos}${apres}${dorso}`;
+    });
+    achados.push(`${qtdLabel}: ${descricoes.join("; ")}.`);
+    for (let i = 0; i < f.fetos.length; i++) {
+      const ft = f.fetos[i];
+      if (!ft) continue;
+      const rot = ft.rotulo ?? String.fromCharCode(65 + i);
+      achados.push(`\nFeto ${rot}:`);
+      achados.push(
+        `Batimentos cardíacos fetais (BCF): ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm.`,
+      );
+      if (f.gestacao_inicial) {
+        achados.push(`Comprimento crânio-nádegas (CCN): ${mm1(ft.ccn_mm)} mm.`);
+      } else {
+        achados.push(...biometriaLinhasObj(ft));
+      }
+      achados.push(pesoLinhaObj(ft));
+    }
+    const pond = calcPonderal(f.fetos);
+    if (pond.pesoMedio !== null) {
+      achados.push(
+        `\nPeso fetal médio: ${g0(pond.pesoMedio)} g. Divergência ponderal: ${g0(pond.divergenciaG)} g (${ptBr1(pond.divergenciaPct ?? 0)}%).`,
+      );
+    }
+    const plc = placentaFraseObj(f);
+    if (plc) achados.push(plc);
+    const liq = liquido(f);
+    achados.push(liq.corpo);
+
+    const corion = f.corionicidade ? `${f.corionicidade} ` : "";
+    impressao.push(
+      `Gestação gemelar ${corion}em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
+    );
+    impressao.push(liq.conclusao);
+    if (pond.divergenciaG !== null) {
+      const significativa = (pond.divergenciaPct ?? 0) >= 20;
+      impressao.push(
+        significativa
+          ? `Divergência ponderal significativa entre os fetos (${ptBr1(pond.divergenciaPct ?? 0)}%).`
+          : "Fetos com pesos concordantes, sem divergência ponderal significativa.",
+      );
+    }
+  } else {
+    const ft = f.fetos[0] ?? EMPTY_FETO;
+    if (f.gestacao_inicial) {
+      // Saco gestacional obrigatório no inicial (P1) — DSM determinístico.
+      achados.push(
+        `Saco gestacional de forma normal, diâmetro médio (DSM): ${mm1(calcDsm(f))} mm.`,
+      );
+      const apres = apresentacaoFmt(ft.apresentacao) ?? "transversa";
+      let fetoFrase = `Embrião único, em situação ${apres}`;
+      if (ft.dorso) fetoFrase += `, com dorso ${ft.dorso}`;
+      achados.push(`${fetoFrase}.`);
+      achados.push(
+        `Batimentos cardíacos fetais (BCF): ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm.`,
+      );
+      achados.push(`Comprimento crânio-nádegas (CCN): ${mm1(ft.ccn_mm)} mm.`);
+      achados.push("Vesícula vitelina de forma e dimensões normais.");
+      const liq = liquido(f);
+      achados.push(liq.corpo);
+      achados.push("Ovários de aspecto normal.");
+
+      impressao.push(`Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`);
+    } else {
+      const apres = apresentacaoFmt(ft.apresentacao) ?? "cefálica";
+      let fetoFrase = `Feto único, em apresentação ${apres}`;
+      if (ft.dorso) fetoFrase += `, com dorso ${ft.dorso}`;
+      achados.push(`${fetoFrase}.`);
+      achados.push(
+        `Batimentos cardíacos fetais (BCF): ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
+      );
+      achados.push("\nBiometria fetal:");
+      achados.push(...biometriaLinhasObj(ft));
+      achados.push(pesoLinhaObj(ft));
+      const plc = placentaFraseObj(f);
+      if (plc) achados.push(plc);
+      const liq = liquido(f);
+      achados.push(liq.corpo);
+
+      impressao.push(`Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`);
+      impressao.push(liq.conclusao);
+    }
+  }
+
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    achados.push(`\n${f.achados_adicionais.trim()}`);
+  }
+
+  const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
+
+  const impressaoTxt =
+    impressao.length === 1
+      ? impressao[0] ?? ""
+      : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
+
+  const corpo = [
+    titulo,
+    dumLinha,
+    "",
+    "TÉCNICA:",
+    TECNICA_OBJ,
+    "",
+    "ACHADOS:",
+    achados.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressaoTxt,
   ].join("\n");
 
   return corpo.replace(/\n{3,}/g, "\n\n").trim();

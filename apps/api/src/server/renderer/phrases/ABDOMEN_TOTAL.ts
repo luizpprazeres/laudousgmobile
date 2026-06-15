@@ -363,3 +363,149 @@ export const CONCLUSAO_TODOS_NORMAIS =
 
 export const CONCLUSAO_FECHAMENTO =
   "Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.";
+
+// ===========================================================================
+// ESTILO OBJETIVO — ACHADOS por órgão (ordem fixa), reusando renderOrgan
+// ===========================================================================
+//
+// O objetivo monta o laudo PROGRAMATICAMENTE no estilo TÉCNICA/ACHADOS/IMPRESSÃO
+// SEM depender do template_body (clássico). As frases CLÍNICAS por órgão são as
+// MESMAS: para órgãos alterados reusa o `body` produzido por renderOrgan; para
+// órgãos normais usa a frase normal abaixo (transcrita do modelo "Abdome Total"
+// do nReport). A conclusão (renderOrgan.conclusao + free-slots) vira a IMPRESSÃO.
+
+export const ABDOMEN_TECNICA_OBJETIVO =
+  "Exame realizado com transdutor convexo multifrequencial.";
+
+/** Frase NORMAL de cada órgão (modelo Abdome Total — nReport). */
+const ORGAO_NORMAL_OBJETIVO: Record<AbdomenOrganKey, string> = {
+  figado:
+    "Fígado com forma, dimensões e contornos preservados. Parênquima hepático com ecotextura homogênea. Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.",
+  veia_porta: "Veia porta pérvia, de calibre preservado.",
+  vias_biliares: "Vias biliares intra e extra-hepáticas sem sinais de dilatação.",
+  vesicula:
+    "Vesícula biliar de topografia usual e parede fina, com conteúdo anecoico. Não há imagens sugestivas de cálculos no seu interior.",
+  pancreas: "Pâncreas com morfologia e ecotextura normais.",
+  baco:
+    "Baço com forma, dimensões e contornos preservados. Ecotextura esplênica homogênea.",
+  rim_direito:
+    "Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco. Ausência de imagens sugestivas de cálculos renais e de sinais de hidronefrose.",
+  rim_esquerdo:
+    "Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco. Ausência de imagens sugestivas de cálculos renais e de sinais de hidronefrose.",
+  veia_cava: "Veia cava inferior de calibre normal.",
+  aorta: "Aorta com trajeto, calibre e contornos preservados.",
+  bexiga:
+    "Bexiga com adequada repleção, paredes regulares e finas. O conteúdo vesical é anecoico e homogêneo.",
+};
+
+/**
+ * Linha de um órgão no ACHADOS (objetivo): se o renderOrgan produziu corpo
+ * (alterado / gases / colecistectomia), usa-o; senão, a frase normal.
+ * `freeBodies` são as frases de achados fora do catálogo já redigidas pelo LLM
+ * secundário (renderFreeSlots), inseridas após o corpo do órgão.
+ */
+export function organAchadoObjetivo(
+  organ: AbdomenOrganKey,
+  rendered: OrganRender,
+  freeBodies: string[],
+): string {
+  const base =
+    rendered.body !== null ? rendered.body : ORGAO_NORMAL_OBJETIVO[organ];
+  const extras = freeBodies.filter((s) => s.trim() !== "");
+  return [base, ...extras].filter((s): s is string => !!s).join("\n");
+}
+
+/** Ordem fixa dos órgãos no ACHADOS objetivo (clínica, modelo nReport). */
+export const ABDOMEN_ORGAO_ORDEM_OBJETIVO: AbdomenOrganKey[] = [
+  "figado",
+  "veia_porta",
+  "vias_biliares",
+  "vesicula",
+  "pancreas",
+  "baco",
+  "rim_direito",
+  "rim_esquerdo",
+  "veia_cava",
+  "aorta",
+  "bexiga",
+];
+
+export type FreeSlotRenderedAbdomen = { corpo: string; conclusao: string | null };
+
+/**
+ * Monta o laudo OBJETIVO de ABDOME TOTAL (TÉCNICA/ACHADOS/IMPRESSÃO) a partir
+ * dos `renderOrgan` já produzidos, dos free-slots já redigidos (por órgão e
+ * extra-abdominais) e dos `renderExtraAbdominal`. Pura/determinística — o LLM já
+ * rodou antes (free-slots); aqui é só montagem. Reusada pelo pipeline e testável
+ * isoladamente (golden). Não toca o caminho clássico (template_body).
+ */
+export function assembleAbdomenObjetivo(args: {
+  organRenders: Map<AbdomenOrganKey, OrganRender>;
+  freeByOrgan: Map<string, FreeSlotRenderedAbdomen[]>;
+  extraRenders: OrganRender[];
+  allOrganKeys: readonly AbdomenOrganKey[];
+}): string {
+  const { organRenders, freeByOrgan, extraRenders, allOrganKeys } = args;
+  const achadosLinhas: string[] = [];
+  const impressaoItens: string[] = [];
+
+  for (const organ of ABDOMEN_ORGAO_ORDEM_OBJETIVO) {
+    const r = organRenders.get(organ);
+    if (!r) continue;
+    const free = freeByOrgan.get(organ) ?? [];
+    achadosLinhas.push(organAchadoObjetivo(organ, r, free.map((x) => x.corpo)));
+    impressaoItens.push(
+      ...r.conclusao,
+      ...free.map((x) => x.conclusao).filter((c): c is string => !!c),
+    );
+  }
+
+  // Salvaguarda: órgão com achados fora da ordem fixa (não acontece nos 11 do
+  // schema) — conclusão nunca se perde.
+  for (const organ of allOrganKeys) {
+    if (ABDOMEN_ORGAO_ORDEM_OBJETIVO.includes(organ)) continue;
+    const r = organRenders.get(organ);
+    if (!r) continue;
+    const free = freeByOrgan.get(organ) ?? [];
+    if (r.body) achadosLinhas.push(r.body);
+    achadosLinhas.push(...free.map((x) => x.corpo).filter((s) => s.trim() !== ""));
+    impressaoItens.push(
+      ...r.conclusao,
+      ...free.map((x) => x.conclusao).filter((c): c is string => !!c),
+    );
+  }
+
+  // Extra-abdominais (derrame pleural etc).
+  const extraFree = freeByOrgan.get("extra_abdominal") ?? [];
+  for (const r of extraRenders) {
+    if (r.body) achadosLinhas.push(r.body);
+    impressaoItens.push(...r.conclusao);
+  }
+  for (const x of extraFree) {
+    if (x.corpo.trim() !== "") achadosLinhas.push(x.corpo);
+    if (x.conclusao) impressaoItens.push(x.conclusao);
+  }
+
+  const impressao =
+    impressaoItens.length === 0
+      ? "Estudo ultrassonográfico do abdome sem alterações significativas."
+      : impressaoItens.length === 1
+        ? (impressaoItens[0] as string)
+        : impressaoItens.map((it, i) => `${i + 1}. ${it}`).join("\n");
+
+  return [
+    "ULTRASSONOGRAFIA DE ABDOME TOTAL",
+    "",
+    "TÉCNICA:",
+    ABDOMEN_TECNICA_OBJETIVO,
+    "",
+    "ACHADOS:",
+    achadosLinhas.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressao,
+  ]
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}

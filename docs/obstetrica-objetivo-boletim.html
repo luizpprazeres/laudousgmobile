@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"/>
+<title>OBSTETRICA OBJETIVO — Boletim de avaliação (Sprint 2)</title>
+<style>
+  body{font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;max-width:880px;margin:0 auto;padding:32px;color:#1c1917;background:#fafaf9}
+  h1{font-size:24px}
+  .intro{background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:16px 20px}
+  .card{background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:18px 20px;margin:18px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card header{border-bottom:1px solid #f5f5f4;padding-bottom:8px}
+  .card h2{font-size:16px;margin:0}
+  .meta{font-size:13px;color:#57534e;margin:10px 0}
+  pre{white-space:pre-wrap;background:#fafaf9;border:1px solid #f0efee;border-radius:8px;padding:14px;font:13px/1.55 ui-monospace,Menlo,monospace;margin:0}
+</style></head><body>
+<h1>OBSTETRICA OBJETIVO — Boletim de avaliação (Sprint 2, render determinístico)</h1>
+<div class="intro"><p>Cada caso: <b>achados montados à mão</b> → <b>laudo objetivo</b>
+(TÉCNICA / ACHADOS / IMPRESSÃO). Valide: (1) <b>1 casa decimal</b> em todas as medidas;
+(2) cálculos reusados (<b>peso médio / divergência ponderal, DSM, líquido</b>);
+(3) <b>sem alucinação gemelar</b> (feto único nunca recebe "(feto A)"); (4) concordância de gênero.</p></div>
+
+  <section class="card">
+    <header><h2>1. Feto único — 2º trimestre</h2></header>
+    <p class="meta">Cefálica, dorso à esquerda, biometria completa, ILA, placenta.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+TÉCNICA:
+Exame realizado com transdutor convexo multifrequencial.
+
+ACHADOS:
+Feto único, em apresentação cefálica, com dorso à esquerda.
+Batimentos cardíacos fetais (BCF): 148 bpm. Movimentos fetais ativos.
+
+Biometria fetal:
+Diâmetro biparietal (DBP): 60,4 mm.
+Circunferência cefálica (CC): 220,1 mm.
+Circunferência abdominal (CA): 190,7 mm.
+Comprimento femoral (CF): 42,3 mm.
+Peso fetal estimado: 680 g (percentil 50).
+Placenta de localização anterior, grau I de Grannum et al..
+Índice de líquido amniótico (ILA) de 12,4 cm.
+
+IMPRESSÃO:
+1. Gestação em torno de 24 semanas e 3 dias.
+2. Líquido amniótico em quantidade normal (ILA de 12,4 cm).</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>2. Feto único — 3º trimestre (MBV, sem alucinação)</h2></header>
+    <p class="meta">Único com maior bolsão vertical — NUNCA '(feto A)'.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+TÉCNICA:
+Exame realizado com transdutor convexo multifrequencial.
+
+ACHADOS:
+Feto único, em apresentação cefálica.
+Batimentos cardíacos fetais (BCF): 138 bpm. Movimentos fetais ativos.
+
+Biometria fetal:
+Diâmetro biparietal (DBP): 85,0 mm.
+Circunferência cefálica (CC): 316,2 mm.
+Circunferência abdominal (CA): 300,5 mm.
+Comprimento femoral (CF): 67,1 mm.
+Peso fetal estimado: 2350 g (+- 350 g).
+Placenta de localização posterior, grau II de Grannum et al..
+Maior bolsão vertical de 4,1 cm.
+
+IMPRESSÃO:
+1. Gestação em torno de 34 semanas.
+2. Líquido amniótico em quantidade normal (maior bolsão vertical de 4,1 cm).</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>3. Gemelar dicoriônica (peso médio + divergência)</h2></header>
+    <p class="meta">Dois fetos, divergência ponderal calculada.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR
+
+TÉCNICA:
+Exame realizado com transdutor convexo multifrequencial.
+
+ACHADOS:
+Dois fetos: feto à direita (feto A), em apresentação cefálica; feto à esquerda (feto B), em apresentação pélvica.
+
+Feto A:
+Batimentos cardíacos fetais (BCF): 145 bpm.
+Diâmetro biparietal (DBP): 70,2 mm.
+Circunferência cefálica (CC): 260,4 mm.
+Circunferência abdominal (CA): 240,1 mm.
+Comprimento femoral (CF): 52,3 mm.
+Peso fetal estimado: 1200 g.
+
+Feto B:
+Batimentos cardíacos fetais (BCF): 150 bpm.
+Diâmetro biparietal (DBP): 68,1 mm.
+Circunferência cefálica (CC): 255,0 mm.
+Circunferência abdominal (CA): 230,5 mm.
+Comprimento femoral (CF): 50,0 mm.
+Peso fetal estimado: 1050 g.
+
+Peso fetal médio: 1125 g. Divergência ponderal: 150 g (12,5%).
+Duas placentas, anterior e posterior, grau I de Grannum et al..
+Maior bolsão vertical de 4,2 cm (feto A) e 3,8 cm (feto B).
+
+IMPRESSÃO:
+1. Gestação gemelar dicoriônica e diamniótica em torno de 28 semanas.
+2. Líquido amniótico em quantidade normal para ambos os fetos (maior bolsão vertical de 4,2 cm (feto A) e 3,8 cm (feto B)).
+3. Fetos com pesos concordantes, sem divergência ponderal significativa.</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>4. Gemelar com divergência significativa (&gt;=20%)</h2></header>
+    <p class="meta">Divergência ponderal acima de 20% — impressão alerta.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR
+
+TÉCNICA:
+Exame realizado com transdutor convexo multifrequencial.
+
+ACHADOS:
+Dois fetos: feto A, em apresentação cefálica; feto B, em apresentação cefálica.
+
+Feto A:
+Batimentos cardíacos fetais (BCF): 144 bpm.
+Diâmetro biparietal (DBP): ____ mm.
+Circunferência cefálica (CC): ____ mm.
+Circunferência abdominal (CA): ____ mm.
+Comprimento femoral (CF): ____ mm.
+Peso fetal estimado: 1500 g.
+
+Feto B:
+Batimentos cardíacos fetais (BCF): 148 bpm.
+Diâmetro biparietal (DBP): ____ mm.
+Circunferência cefálica (CC): ____ mm.
+Circunferência abdominal (CA): ____ mm.
+Comprimento femoral (CF): ____ mm.
+Peso fetal estimado: 1100 g.
+
+Peso fetal médio: 1300 g. Divergência ponderal: 400 g (26,7%).
+Duas placentas.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+
+IMPRESSÃO:
+1. Gestação gemelar monocoriônica e diamniótica em torno de 30 semanas.
+2. Líquido amniótico em quantidade normal.
+3. Divergência ponderal significativa entre os fetos (26,7%).</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>5. Gestação inicial (saco gestacional / CCN)</h2></header>
+    <p class="meta">DSM calculado das 3 medidas; embrião único.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+TÉCNICA:
+Exame realizado com transdutor convexo multifrequencial.
+
+ACHADOS:
+Saco gestacional de forma normal, diâmetro médio (DSM): 15,4 mm.
+Embrião único, em situação transversa.
+Batimentos cardíacos fetais (BCF): 165 bpm.
+Comprimento crânio-nádegas (CCN): 16,4 mm.
+Vesícula vitelina de forma e dimensões normais.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+Ovários de aspecto normal.
+
+IMPRESSÃO:
+Gestação em torno de 8 semanas e 2 dias.</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>6. Gestação inicial — DSM ditado direto</h2></header>
+    <p class="meta">DSM ditado ('15,3') vence as medidas.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+TÉCNICA:
+Exame realizado com transdutor convexo multifrequencial.
+
+ACHADOS:
+Saco gestacional de forma normal, diâmetro médio (DSM): 15,3 mm.
+Embrião único, em situação transversa.
+Batimentos cardíacos fetais (BCF): 158 bpm.
+Comprimento crânio-nádegas (CCN): 11,2 mm.
+Vesícula vitelina de forma e dimensões normais.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+Ovários de aspecto normal.
+
+IMPRESSÃO:
+Gestação em torno de 7 semanas.</pre>
+  </section>
+</body></html>

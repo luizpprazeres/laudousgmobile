@@ -590,16 +590,37 @@ function correlacaoFrase(c: NonNullable<MamariaFindings["correlacao"]>): string 
 // Render
 // ---------------------------------------------------------------------------
 
-export function renderMamaria(
-  f: MamariaFindings,
+/** Mescla prefs cruas/parciais (JSONB da conta) com os defaults seguros. */
+function mergeMamariaPrefs(
   prefsInput?: Partial<MamariaPreferences> | null,
-): string {
-  const prefs: MamariaPreferences = {
+): MamariaPreferences {
+  return {
     ...MAMARIA_DEFAULT_PREFERENCES,
     ...(prefsInput && typeof prefsInput.show_conduct_recommendation === "boolean"
       ? { show_conduct_recommendation: prefsInput.show_conduct_recommendation }
       : {}),
   };
+}
+
+/**
+ * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
+ * o comportamento anterior (LIVE em prod); objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO
+ * reusando a MESMA extração, o BI-RADS calculável e o toggle de conduta.
+ */
+export function renderMamaria(
+  f: MamariaFindings,
+  prefsInput?: Partial<MamariaPreferences> | null,
+  opts?: { objetivo?: boolean },
+): string {
+  if (opts?.objetivo) return renderMamariaObjetivo(f, prefsInput);
+  return renderMamariaClassico(f, prefsInput);
+}
+
+function renderMamariaClassico(
+  f: MamariaFindings,
+  prefsInput?: Partial<MamariaPreferences> | null,
+): string {
+  const prefs = mergeMamariaPrefs(prefsInput);
 
   const titulo = f.titulo_com_axilas
     ? "ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES"
@@ -713,6 +734,151 @@ export function renderMamaria(
     "",
     "CONCLUSÃO:",
     conclusaoTxt,
+    ...(condutaSecao ? ["", condutaSecao] : []),
+    "",
+    RODAPE,
+  ].join("\n");
+
+  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO + BI-RADS calculável
+// ===========================================================================
+//
+// Reusa 100% da extração + o cálculo de BI-RADS (maior-vence, ditado-vence) + o
+// toggle de conduta. Estrutura enxuta inspirada no modelo "Mama" do nReport
+// (TÉCNICA/DESCRIÇÃO/OPINIÃO → aqui TÉCNICA/ACHADOS/IMPRESSÃO). Mantém: margens
+// NUNCA "regulares", "de mama direita/esquerda", BI-RADS só no item de maior
+// categoria, conduta em seção própria quando o toggle estiver ativo.
+
+const TECNICA_OBJETIVO =
+  "Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas.";
+const TECNICA_OBJETIVO_AXILAS =
+  "Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas e as regiões axilares.";
+
+/** Frase do achado no ACHADOS (estilo objetivo, enxuto). */
+function achadoAchadoObjetivo(a: MamariaAchado): string {
+  // Calcificações e os tipos especiais reusam exatamente as frases do clássico
+  // (já enxutas e clinicamente validadas) — não há ganho em reescrevê-las.
+  return achadoCorpo(a);
+}
+
+/** Render do estilo OBJETIVO: TÉCNICA / ACHADOS / IMPRESSÃO. */
+function renderMamariaObjetivo(
+  f: MamariaFindings,
+  prefsInput?: Partial<MamariaPreferences> | null,
+): string {
+  const prefs = mergeMamariaPrefs(prefsInput);
+
+  const titulo = f.titulo_com_axilas
+    ? "ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES"
+    : "ULTRASSONOGRAFIA DAS MAMAS";
+  const tecnica = f.titulo_com_axilas ? TECNICA_OBJETIVO_AXILAS : TECNICA_OBJETIVO;
+
+  const achados = f.achados ?? [];
+
+  // ----- ACHADOS -----
+  const linhas: string[] = [];
+  linhas.push("Pele e tecido celular subcutâneo de aspecto preservado.");
+  linhas.push(f.texto_fundo?.trim() || TEXTO_FUNDO_PADRAO);
+
+  const TIPOS_LESAO = new Set<Tipo>([
+    "cisto_simples", "multiplos_cistos", "microcistos_agrupados",
+    "cisto_complicado", "nodulo_solido", "achado_nao_nodular",
+  ]);
+  const temLesao = achados.some((a) => TIPOS_LESAO.has(a.tipo));
+  if (!temLesao) linhas.push(AUSENCIA_LESAO);
+  for (const a of achados) linhas.push(achadoAchadoObjetivo(a));
+  for (const a of achados) {
+    if (a.elasticidade)
+      linhas.push(
+        `À elastografia, a imagem apresenta elasticidade ${a.elasticidade === "intermediaria" ? "intermediária" : a.elasticidade}.`,
+      );
+  }
+  if (f.titulo_com_axilas) {
+    linhas.push(
+      f.axilas_alteradas && f.axilas_descricao
+        ? f.axilas_descricao.trim()
+        : AXILAR_NORMAL_CORPO,
+    );
+  }
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "")
+    linhas.push(f.achados_adicionais.trim());
+
+  // ----- IMPRESSÃO (mesma lógica BI-RADS do clássico: maior vence; só o de
+  // maior categoria leva o rótulo) -----
+  const maiorRank = achados.reduce(
+    (m, a) => Math.max(m, biradsRank(biradsDoAchado(a))),
+    -1,
+  );
+  const maiorB =
+    achados.map(biradsDoAchado).find((b) => b !== null && biradsRank(b) === maiorRank) ??
+    null;
+
+  const impressao: string[] = [];
+  if (achados.length === 0) {
+    impressao.push("Mamas ecograficamente normais (Categoria BI-RADS® 1).");
+  } else {
+    const CISTO = new Set<Tipo>(["cisto_simples", "multiplos_cistos"]);
+    const cistos = achados.filter((a) => CISTO.has(a.tipo));
+    const ladosCisto = new Set(cistos.map((a) => a.lado));
+    const cistoBilateral =
+      cistos.length >= 1 &&
+      (ladosCisto.has("bilateral") ||
+        (ladosCisto.has("direita") && ladosCisto.has("esquerda")));
+    const sub =
+      cistoBilateral && cistos.every(isSubcentimetrico) ? ", subcentimétricos" : "";
+    let cistoEmitido = false;
+    for (const a of achados) {
+      const b = biradsDoAchado(a);
+      const isMaior = b !== null && biradsRank(b) === maiorRank;
+      if (cistoBilateral && CISTO.has(a.tipo)) {
+        if (cistoEmitido) continue;
+        cistoEmitido = true;
+        const base = `Cistos mamários simples bilateralmente${sub}`;
+        impressao.push(isMaior ? `${base} (Categoria BI-RADS® ${b}).` : `${base}.`);
+        continue;
+      }
+      const base = b && biradsRank(b) === 9 ? conclusao6(a) : achadoConclusaoBase(a);
+      impressao.push(isMaior ? `${base} (Categoria BI-RADS® ${b}).` : `${base}.`);
+    }
+  }
+  if (f.titulo_com_axilas) {
+    impressao.push(
+      f.axilas_alteradas && f.axilas_descricao
+        ? `Linfonodos axilares de aspecto alterado (${f.axilas_descricao.trim().replace(/\.+$/, "")}).`
+        : AXILAR_NORMAL_CONCLUSAO,
+    );
+  }
+  if (f.correlacao) {
+    const cf = correlacaoFrase(f.correlacao);
+    if (cf) impressao.push(cf);
+  }
+
+  // ----- Conduta (toggle) — seção própria -----
+  let condutaSecao = "";
+  if (prefs.show_conduct_recommendation && maiorB) {
+    const cond = condutaDoBirads(maiorB);
+    if (cond) condutaSecao = `Conduta sugerida:\nBI-RADS ${maiorB}. ${cond}.`;
+  }
+
+  const impressaoTxt =
+    impressao.length === 1
+      ? (impressao[0] as string)
+      : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
+
+  const corpo = [
+    titulo,
+    "",
+    "TÉCNICA:",
+    tecnica,
+    "",
+    "ACHADOS:",
+    linhas.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressaoTxt,
     ...(condutaSecao ? ["", condutaSecao] : []),
     "",
     RODAPE,

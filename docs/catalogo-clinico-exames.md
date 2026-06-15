@@ -182,6 +182,39 @@ Ordem de decisão (o renderer segue exatamente esta árvore):
   órgãos e estruturas abdominais estudadas sem evidência de alterações
   ecográficas."
 
+## Estilo OBJETIVO (TÉCNICA/ACHADOS/IMPRESSÃO) — Sprint 3
+
+Estilo alternativo (writing_style OBJETIVO = `44444444-4444-4444-8444-444444444444`),
+montado **programaticamente** por `assembleAbdomenObjetivo(...)`
+(`renderer/phrases/ABDOMEN_TOTAL.ts`), despachado em `pipeline/renderer.ts` quando
+`isEstiloObjetivo(writingStyleId)`. **NÃO usa o `template_body`** (que é clássico e
+fica LIVE em prod — 744 laudos/dia — intocado). O fluxo do abdome continua igual
+(extração tipada → `renderOrgan` por órgão → `renderFreeSlots` para achados fora
+do catálogo); só ao FINAL, se objetivo, monta-se TÉCNICA/ACHADOS/IMPRESSÃO em vez
+de preencher o template.
+
+- **Reuso total das frases clínicas:** órgão ALTERADO usa o `body` do `renderOrgan`
+  (as MESMAS frases do clássico — o conteúdo clínico não muda, só os cabeçalhos/
+  estrutura); órgão NORMAL usa a frase normal por órgão (`ORGAO_NORMAL_OBJETIVO`,
+  transcrita do modelo "Abdome Total" do nReport); free-slots (LLM secundário)
+  continuam sendo chamados e inseridos no ACHADOS após o corpo do órgão.
+- **Cabeçalhos:** `ULTRASSONOGRAFIA DE ABDOME TOTAL` + `TÉCNICA:` + `ACHADOS:` +
+  `IMPRESSÃO:`.
+- **TÉCNICA:** "Exame realizado com transdutor convexo multifrequencial."
+- **ACHADOS:** frases dos órgãos na **ordem fixa** (fígado, veia porta, vias
+  biliares, vesícula, pâncreas, baço, rim D, rim E, veia cava, aorta, bexiga) +
+  free-slots por órgão + extra-abdominais.
+- **IMPRESSÃO:** os itens de conclusão (`renderOrgan.conclusao` + conclusões dos
+  free-slots + extra-abdominais), numerados quando >1; 0 itens → "Estudo
+  ultrassonográfico do abdome sem alterações significativas." (sem o fechamento
+  "Demais órgãos..." do clássico). Colecistectomia descreve no corpo mas NÃO
+  entra na impressão (regra curada preservada).
+- 1 casa decimal nas medidas (herdada das frases compartilhadas).
+
+**Verificação:** golden `abdomen-objetivo-golden.manual.ts` (testa
+`assembleAbdomenObjetivo` + `renderOrgan`, casos só catálogo — sem LLM) + boletim
+`docs/abdomen-objetivo-boletim.html`.
+
 ---
 
 ---
@@ -386,6 +419,111 @@ entre os nódulos.
   (data numérica; omitir "e zero dias" quando zero).
 
 ---
+
+# OBSTETRICA — Estilo OBJETIVO (TÉCNICA/ACHADOS/IMPRESSÃO) — Sprint 2
+
+Estilo de redação alternativo (writing_style OBJETIVO =
+`44444444-4444-4444-8444-444444444444`), despachado por
+`renderObstetrica(f, null, { objetivo: true })`. Estrutura enxuta em 3 seções
+(sem COMENTÁRIOS / OS SEGUINTES ASPECTOS). **Reusa 100% a extração e os cálculos
+determinísticos do clássico** (peso médio/divergência ponderal via `calcPonderal`,
+DSM via `calcDsm`, líquido via `liquido`). Decisões: **1 casa decimal em TODAS as
+medidas** (mm); peso em gramas inteiras; concordância de gênero; **feto único
+NUNCA recebe "(feto A)" nem "ambos os fetos"** (sem alucinação gemelar);
+**percentil só é reproduzido** (nunca cruzado/calculado com a IG).
+
+**Cabeçalhos:** título (`ULTRASSONOGRAFIA OBSTÉTRICA` ou `... GEMELAR`) + `TÉCNICA:`
++ `ACHADOS:` + `IMPRESSÃO:`. DUM opcional logo após o título.
+
+**Frases-base (futura versão web sem IA):**
+- **TÉCNICA:** "Exame realizado com transdutor convexo multifrequencial."
+- **Feto único (2º/3º tri):** "Feto único, em apresentação {cefálica|pélvica|...}
+  [, com dorso {lado}]." · "BCF: X bpm. Movimentos fetais ativos." · "Biometria
+  fetal:" + "DBP/CC/CA/CF: X mm." (1 casa) · "Peso fetal estimado: X g
+  [(+- Y g, percentil Z)]." · placenta · líquido.
+- **Gestação inicial (≤13s6d):** "Saco gestacional de forma normal, diâmetro médio
+  (DSM): X mm." (DSM determinístico) · "Embrião único, em situação {transversa}." ·
+  "BCF: X bpm." · "CCN: X mm." · "Vesícula vitelina de forma e dimensões normais."
+  · líquido · "Ovários de aspecto normal."
+- **Gemelar (≥2 fetos):** "{Dois|Três|N} fetos: feto {pos} (feto A), em
+  apresentação ...; ...." · bloco por feto (BCF + biometria + peso) · "Peso fetal
+  médio: X g. Divergência ponderal: Y g (Z%)." · placentas por quantidade ·
+  líquido por feto.
+- **IMPRESSÃO:** item IG ("Gestação [gemelar {corionicidade}] em torno de X
+  semanas e Y dias."); líquido; gemelar acrescenta divergência (significativa se
+  ≥20%, senão "pesos concordantes").
+
+**Verificação:** golden `obstetrica-objetivo-golden.manual.ts` + boletim
+`docs/obstetrica-objetivo-boletim.html`.
+
+# MORFOLOGICO — Estilo OBJETIVO (TÉCNICA/ACHADOS/IMPRESSÃO) — Sprint 2
+
+Despachado por `renderMorfologico(f, null, { objetivo: true })`. Estrutura enxuta
+em 3 seções. **Reusa os mesmos dados/cálculos do clássico** (IP médio das uterinas
+no 1t). Decisões: **1 casa decimal nas medidas** (mm/cm); peso em gramas inteiras;
+concordância de gênero; trimestres **1t / 2t / 3t**; **percentil só reproduzido**.
+
+**Cabeçalhos:** título por trimestre (`... DO PRIMEIRO|SEGUNDO|TERCEIRO TRIMESTRE`)
++ `TÉCNICA:` + `ACHADOS:` + `IMPRESSÃO:`.
+
+**Frases-base (futura versão web sem IA):**
+- **TÉCNICA:** "Exame realizado com transdutor convexo multifrequencial."
+- **1º trimestre:** "Feto único de situação variável." · "BCF: X bpm. Movimentos
+  fetais ativos." · "CCN: X mm." · "Translucência nucal (TN): X mm." · "Osso nasal
+  {presente|ausente}." · "Ducto venoso com onda trifásica (onda A positiva)." (ou
+  "onda A reversa") · placenta · líquido · "Artéria uterina direita/esquerda: IP
+  X." + "IP médio das artérias uterinas: X." (calculado). IMPRESSÃO: IG; líquido;
+  Doppler do ducto venoso normal|alterado; "Morfologia fetal normal para esta fase
+  da gestação."; Dopplervelocimetria das uterinas se aferida.
+- **2º/3º trimestre:** "Feto único, em apresentação {cefálica}[, com dorso à
+  {lado}]." · "BCF: X bpm. Movimentos fetais ativos." · frase única de anatomia
+  normal · "Biometria fetal:" + DBP/CC/Cerebelo/Cisterna magna/[Distância binocular
+  só 2t]/CA/Fêmur/Tíbia/Fíbula/Úmero/Rádio/Ulna: X mm. · peso · "Genitália externa
+  {sexo|não avaliada}." · "Anexos:" + cordão (2 artérias/1 veia) + placenta
+  ({homogênea 2t | heterogênea 3t}) + "Índice de líquido amniótico (ILA): X cm." +
+  ["Orifício interno do colo uterino fechado." só 2t]. IMPRESSÃO: IG; líquido;
+  "Morfologia fetal sem evidência de alteração detectável pelo método."
+
+**Verificação:** golden `morfologico-objetivo-golden.manual.ts` + boletim
+`docs/morfologico-objetivo-boletim.html`.
+
+# MAMARIA — Estilo OBJETIVO (TÉCNICA/ACHADOS/IMPRESSÃO) — Sprint 3
+
+Despachado por `renderMamaria(f, prefs, { objetivo: true })`
+(`renderer/categories/MAMARIA.ts`); `renderMamaria` virou um dispatcher fino →
+`renderMamariaClassico` (corpo LIVE intocado) ou `renderMamariaObjetivo`. Estrutura
+enxuta em 3 seções, inspirada no modelo "Mama" do nReport. **Reusa 100% a extração,
+o BI-RADS calculável (maior-vence, ditado-vence) e o toggle de conduta do clássico.**
+
+**Cabeçalhos:** título (`ULTRASSONOGRAFIA DAS MAMAS` ou `... E REGIÕES AXILARES`) +
+`TÉCNICA:` + `ACHADOS:` + `IMPRESSÃO:` + rodapé BI-RADS®.
+
+**Decisões (idênticas ao clássico, herdadas):**
+- **Margem NUNCA "regular"** (circunscrita/indistinta/angular/microlobulada/
+  espiculada).
+- **"de mama direita/esquerda"** / "ambas as mamas".
+- **BI-RADS só no item de MAIOR categoria** (maior-vence; ditado do médico vence o
+  cálculo); cistos bilaterais agregam num único item.
+- **1 casa decimal** em todas as medidas.
+- **Conduta em seção própria** "Conduta sugerida:" após a IMPRESSÃO, só quando o
+  toggle `show_conduct_recommendation` estiver ON (default OFF) — usa a conduta da
+  maior categoria BI-RADS.
+
+**Frases-base:**
+- **TÉCNICA:** "Exame realizado com transdutor linear de alta frequência, abrangendo
+  todos os quadrantes das mamas[ e as regiões axilares]."
+- **ACHADOS:** "Pele e tecido celular subcutâneo de aspecto preservado." + textura de
+  fundo + (sem lesão → "Não há sinais evidentes de imagem nodular sólida, cística ou
+  complexa.") + frases dos achados (reusa `achadoCorpo` do clássico) + elastografia +
+  axilas (se no título) + achados adicionais.
+- **IMPRESSÃO:** itens de conclusão por achado (reusa `achadoConclusaoBase`/
+  `conclusao6`) com o rótulo "(Categoria BI-RADS® N)" só no de maior categoria; 0
+  achados → "Mamas ecograficamente normais (Categoria BI-RADS® 1)."; axilas;
+  correlação com exame prévio.
+
+**Verificação:** golden `mamaria-objetivo-golden.manual.ts` + boletim
+`docs/mamaria-objetivo-boletim.html`. Não-regressão do clássico:
+`mamaria-golden.manual.ts` (28/28).
 
 # Lote B (reworks) — resumo das regras aplicadas
 

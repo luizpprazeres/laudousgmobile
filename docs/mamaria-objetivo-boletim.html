@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"/>
+<title>MAMARIA OBJETIVO — Boletim de avaliação (Sprint 3)</title>
+<style>
+  body{font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;max-width:880px;margin:0 auto;padding:32px;color:#1c1917;background:#fafaf9}
+  h1{font-size:24px}
+  .intro{background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:16px 20px}
+  .card{background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:18px 20px;margin:18px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card header{border-bottom:1px solid #f5f5f4;padding-bottom:8px}
+  .card h2{font-size:16px;margin:0}
+  .meta{font-size:13px;color:#57534e;margin:10px 0}
+  pre{white-space:pre-wrap;background:#fafaf9;border:1px solid #f0efee;border-radius:8px;padding:14px;font:13px/1.55 ui-monospace,Menlo,monospace;margin:0}
+</style></head><body>
+<h1>MAMARIA OBJETIVO — Boletim de avaliação (Sprint 3, render determinístico)</h1>
+<div class="intro"><p>Cada caso: <b>achados montados à mão</b> → <b>laudo objetivo</b>
+(TÉCNICA / ACHADOS / IMPRESSÃO). Valide: (1) <b>BI-RADS calculável</b> (maior-vence, ditado-vence,
+rótulo só no item de maior categoria); (2) <b>margens nunca "regulares"</b>; (3) "de mama direita/esquerda";
+(4) <b>1 casa decimal</b>; (5) <b>conduta</b> em seção própria quando o toggle estiver ON.</p></div>
+
+  <section class="card">
+    <header><h2>1. Mamas normais (rastreamento)</h2></header>
+    <p class="meta">Sem lesões, com axilas → BI-RADS 1.</p>
+    <pre>ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
+
+TÉCNICA:
+Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas e as regiões axilares.
+
+ACHADOS:
+Pele e tecido celular subcutâneo de aspecto preservado.
+Mamas com ecotextura de fundo com aspecto heterogêneo.
+Não há sinais evidentes de imagem nodular sólida, cística ou complexa.
+Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.
+
+IMPRESSÃO:
+1. Mamas ecograficamente normais (Categoria BI-RADS® 1).
+2. Linfonodos axilares normais.
+
+Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>2. Cisto simples</h2></header>
+    <p class="meta">Cisto simples em mama esquerda → BI-RADS 2.</p>
+    <pre>ULTRASSONOGRAFIA DAS MAMAS
+
+TÉCNICA:
+Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas.
+
+ACHADOS:
+Pele e tecido celular subcutâneo de aspecto preservado.
+Mamas com ecotextura de fundo com aspecto heterogêneo.
+Imagem anecoica de mama esquerda, com margem circunscrita, medindo 1,2 x 0,9 x 0,8 cm, situada no quadrante superolateral, às "10 horas".
+
+IMPRESSÃO:
+Cisto simples em mama esquerda no quadrante superolateral (Categoria BI-RADS® 2).
+
+Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>3. Nódulo sólido suspeito → BI-RADS 4B (ditado vence)</h2></header>
+    <p class="meta">Nódulo hipoecoico microlobulado + cisto: maior vence (só o nódulo leva rótulo).</p>
+    <pre>ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
+
+TÉCNICA:
+Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas e as regiões axilares.
+
+ACHADOS:
+Pele e tecido celular subcutâneo de aspecto preservado.
+Mamas com ecotextura de fundo com aspecto heterogêneo.
+Imagem anecoica de mama direita, com margem circunscrita, medindo 0,9 x 0,7 x 0,6 cm.
+Imagem hipoecoica de mama esquerda, com margem microlobulada, medindo 1,4 x 1,1 x 1,0 cm, situada no quadrante superolateral.
+Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.
+
+IMPRESSÃO:
+1. Cisto simples em mama direita.
+2. Imagem sólida em mama esquerda no quadrante superolateral (Categoria BI-RADS® 4B).
+3. Linfonodos axilares normais.
+
+Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>4. Calcificações suspeitas em nódulo → BI-RADS 4</h2></header>
+    <p class="meta">Calcificações no interior de imagem nodular.</p>
+    <pre>ULTRASSONOGRAFIA DAS MAMAS
+
+TÉCNICA:
+Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas.
+
+ACHADOS:
+Pele e tecido celular subcutâneo de aspecto preservado.
+Mamas com ecotextura de fundo com aspecto heterogêneo.
+Não há sinais evidentes de imagem nodular sólida, cística ou complexa.
+Calcificações no interior de imagem nodular no quadrante inferomedial de mama direita, medindo até 0,3 cm.
+
+IMPRESSÃO:
+Calcificações no interior de imagem nodular em mama direita no quadrante inferomedial (Categoria BI-RADS® 4).
+
+Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).</pre>
+  </section>
+
+  <section class="card">
+    <header><h2>5. Nódulo altamente suspeito + conduta ON</h2></header>
+    <p class="meta">Espiculada + irregular → BI-RADS 5, com seção de conduta sugerida.</p>
+    <pre>ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
+
+TÉCNICA:
+Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas e as regiões axilares.
+
+ACHADOS:
+Pele e tecido celular subcutâneo de aspecto preservado.
+Mamas com ecotextura de fundo com aspecto heterogêneo.
+Imagem hipoecoica de mama direita, com margem espiculada, medindo 2,2 x 1,8 x 1,5 cm, com sombra acústica posterior, situada no quadrante superolateral.
+Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.
+
+IMPRESSÃO:
+1. Imagem sólida em mama direita no quadrante superolateral (Categoria BI-RADS® 5).
+2. Linfonodos axilares normais.
+
+Conduta sugerida:
+BI-RADS 5. Biópsia e encaminhamento à mastologia/oncologia.
+
+Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).</pre>
+  </section>
+</body></html>

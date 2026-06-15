@@ -14,6 +14,7 @@ import {
   renderExtraAbdominal,
   CONCLUSAO_TODOS_NORMAIS,
   CONCLUSAO_FECHAMENTO,
+  assembleAbdomenObjetivo,
 } from "../renderer/phrases/ABDOMEN_TOTAL";
 import {
   renderObstetrica,
@@ -198,20 +199,26 @@ export async function* runRendererStream(args: {
     args.categoryCode === "TIREOIDE" ||
     args.categoryCode === "MAMARIA"
   ) {
+    const objetivo = isEstiloObjetivo(args.writingStyleId);
     const fullText =
       args.categoryCode === "OBSTETRICA"
-        ? renderObstetrica(extraction.findings as ObstetricaFindings)
+        ? renderObstetrica(extraction.findings as ObstetricaFindings, null, {
+            objetivo,
+          })
         : args.categoryCode === "MORFOLOGICO"
-          ? renderMorfologico(extraction.findings as MorfologicoFindings)
+          ? renderMorfologico(extraction.findings as MorfologicoFindings, null, {
+              objetivo,
+            })
           : args.categoryCode === "TIREOIDE"
             ? renderTireoide(
                 extraction.findings as TireoideFindings,
                 args.rendererPreferences,
-                { objetivo: isEstiloObjetivo(args.writingStyleId) },
+                { objetivo },
               )
             : renderMamaria(
                 extraction.findings as MamariaFindings,
                 args.rendererPreferences,
+                { objetivo },
               );
     const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;
     args.onSystemMessage?.(systemMessage);
@@ -258,6 +265,34 @@ export async function* runRendererStream(args: {
     list.push(rendered);
     freeByOrgan.set(item.organ, list);
   });
+
+  // 3b. ESTILO OBJETIVO (ABDOMEN_TOTAL) — monta TÉCNICA/ACHADOS/IMPRESSÃO
+  // PROGRAMATICAMENTE, sem o template_body (que é clássico). Reusa o texto por
+  // órgão de renderOrgan (alterado) ou a frase normal (objetivo), os free-slots
+  // já renderizados e os itens de conclusão (→ IMPRESSÃO). O caminho clássico
+  // abaixo (template_body) fica INTACTO — só este `return` antecipado muda.
+  if (isEstiloObjetivo(args.writingStyleId)) {
+    const fullTextObj = assembleAbdomenObjetivo({
+      organRenders,
+      freeByOrgan,
+      extraRenders,
+      allOrganKeys: ABDOMEN_ORGAN_KEYS,
+    });
+
+    const systemMessageObj = `[${RENDERER_VERSION}] render objetivo determinístico (${args.categoryCode})`;
+    args.onSystemMessage?.(systemMessageObj);
+    yield fullTextObj;
+    return {
+      fullText: fullTextObj,
+      latencyMs: Date.now() - t0,
+      systemMessage: systemMessageObj,
+      inputTokens: (extraction.inputTokens ?? 0) + freeSlots.inputTokens,
+      outputTokens: (extraction.outputTokens ?? 0) + freeSlots.outputTokens,
+      cachedInputTokens: undefined,
+      extraction,
+      freeSlotCount: freeItems.length,
+    };
+  }
 
   // 4. Conclusão coletada NA ORDEM DOS SLOTS DO TEMPLATE (= ordem do corpo),
   // antes da substituição — itens de conclusão seguem a ordem de leitura.

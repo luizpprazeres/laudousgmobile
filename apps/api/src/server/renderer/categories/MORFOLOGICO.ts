@@ -225,7 +225,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean): string {
     "Coração com quatro câmaras visíveis.",
     "O estômago, a bexiga e os rins foram bem identificados e com ecotextura homogênea.",
     "A aorta abdominal fetal apresenta calibre normal.",
-    `Genitália externa ${f.genitalia ?? "não avaliada"}.`,
+    `Genitália externa ${genitaliaFmt(f.genitalia)}.`,
     "",
     "A biometria fetal é a seguinte:",
     `Diâmetro biparietal (DBP) de ${mm(f.dbp_mm)} mm.`,
@@ -297,7 +297,196 @@ function assemble(
     .trim();
 }
 
-export function renderMorfologico(f: MorfologicoFindings): string {
+/**
+ * Dispatcher fino: clássico (default) preserva 100% o comportamento anterior;
+ * objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO (Sprint 2), reusando os MESMOS dados
+ * extraídos e os MESMOS cálculos determinísticos (IP médio uterinas, etc.).
+ */
+export function renderMorfologico(
+  f: MorfologicoFindings,
+  _prefs?: unknown,
+  opts?: { objetivo?: boolean },
+): string {
+  if (opts?.objetivo) return renderMorfologicoObjetivo(f);
   if (f.trimestre === "1t") return render1t(f);
   return render2t3t(f, f.trimestre === "3t");
+}
+
+// ===========================================================================
+// ESTILO OBJETIVO — TÉCNICA / ACHADOS / IMPRESSÃO (Sprint 2)
+// ===========================================================================
+//
+// Mais enxuto que o clássico. 1 casa decimal em TODAS as medidas. Reusa os
+// mesmos dados/cálculos (IP médio das uterinas). Trimestres 1t / 2t / 3t.
+// Percentil é só reproduzido (nunca cruzado com a IG).
+
+const TECNICA_OBJ =
+  "Exame realizado com transdutor convexo multifrequencial.";
+
+/** 1 casa decimal SEMPRE (P3) — vírgula decimal. */
+function ptBr1(n: number): string {
+  return n.toFixed(1).replace(".", ",");
+}
+/** Medida em mm com 1 casa decimal; placeholder se null. */
+function mm1(v: number | null): string {
+  return v === null ? "____" : ptBr1(v);
+}
+/** Peso fetal objetivo (gramas inteiras) com variação/percentil opcionais. */
+function pesoLinhaObj(f: MorfologicoFindings): string {
+  const extras: string[] = [];
+  if (f.peso_variacao_g !== null)
+    extras.push(`+- ${String(Math.round(f.peso_variacao_g))} g`);
+  if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
+  const sufixo = extras.length > 0 ? ` (${extras.join(", ")})` : "";
+  return `Peso fetal estimado: ${f.peso_g !== null ? String(Math.round(f.peso_g)) : "____"} g${sufixo}.`;
+}
+
+function assembleObj(
+  titulo: string,
+  f: MorfologicoFindings,
+  achados: string[],
+  impressao: string[],
+): string {
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    achados.push(`\n${f.achados_adicionais.trim()}`);
+  }
+  const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
+  const impressaoTxt =
+    impressao.length === 1
+      ? impressao[0] ?? ""
+      : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
+  return [
+    titulo,
+    dumLinha,
+    "",
+    "TÉCNICA:",
+    TECNICA_OBJ,
+    "",
+    "ACHADOS:",
+    achados.join("\n"),
+    "",
+    "IMPRESSÃO:",
+    impressaoTxt,
+  ]
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Concordância de "genitália" (feminino): masculino→masculina, feminino→feminina. */
+function genitaliaFmt(g: string | null): string {
+  if (!g || !g.trim()) return "não avaliada";
+  const t = g.trim().toLowerCase();
+  if (/masculin/.test(t)) return "masculina";
+  if (/feminin/.test(t)) return "feminina";
+  return g.trim();
+}
+
+function render1tObj(f: MorfologicoFindings): string {
+  const achados: string[] = [
+    "Feto único de situação variável.",
+    `Batimentos cardíacos fetais (BCF): ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
+    `Comprimento cabeça-nádegas (CCN): ${mm1(f.ccn_mm)} mm.`,
+    `Translucência nucal (TN): ${mm1(f.tn_mm)} mm.`,
+    f.osso_nasal === "ausente" ? "Osso nasal ausente." : "Osso nasal presente.",
+    f.ducto_venoso === "alterado"
+      ? "Ducto venoso com onda A reversa."
+      : "Ducto venoso com onda trifásica (onda A positiva).",
+  ];
+  if (f.placenta_localizacao) {
+    achados.push(
+      `Placenta de localização ${f.placenta_localizacao}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}, com ecotextura homogênea.`,
+    );
+  }
+  achados.push("Líquido amniótico de quantidade normal pela análise subjetiva.");
+  if (f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null) {
+    achados.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBr(f.uterina_ip_direita) : "____"}.`);
+    achados.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBr(f.uterina_ip_esquerda) : "____"}.`);
+    if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
+      const medio = (f.uterina_ip_direita + f.uterina_ip_esquerda) / 2;
+      achados.push(
+        `IP médio das artérias uterinas: ${ptBr(Math.round(medio * 100) / 100)}.`,
+      );
+    }
+  }
+
+  const impressao = [
+    `Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
+    "Líquido amniótico de quantidade normal.",
+    f.ducto_venoso === "alterado"
+      ? "Doppler do ducto venoso alterado (onda A reversa)."
+      : "Doppler do ducto venoso normal.",
+    "Morfologia fetal normal para esta fase da gestação.",
+  ];
+  if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
+    impressao.push("Dopplervelocimetria normal das artérias uterinas.");
+  }
+
+  return assembleObj(
+    "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
+    f,
+    achados,
+    impressao,
+  );
+}
+
+function render2t3tObj(f: MorfologicoFindings, terceiro: boolean): string {
+  const titulo = terceiro
+    ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
+    : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
+  const apres = apresentacaoFmt(f.apresentacao);
+  const dorso = dorsoFmt(f.dorso);
+  const linhaFeto = dorso
+    ? `Feto único, em apresentação ${apres}, com dorso ${dorso}.`
+    : `Feto único, em apresentação ${apres}.`;
+
+  const achados: string[] = [
+    linhaFeto,
+    `Batimentos cardíacos fetais (BCF): ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
+    "Anatomia fetal sem alterações detectáveis pelo método (crânio, SNC, face, tórax, coração com quatro câmaras, abdome, rins, bexiga e extremidades).",
+    "",
+    "Biometria fetal:",
+    `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`,
+    `Circunferência cefálica (CC): ${mm1(f.cc_mm)} mm.`,
+    `Cerebelo: ${mm1(f.cerebelo_mm)} mm.`,
+    `Cisterna magna: ${mm1(f.cisterna_magna_mm)} mm.`,
+    // Distância binocular: 2º trimestre apenas (decisão Luiz no clássico).
+    ...(terceiro ? [] : [`Distância binocular: ${mm1(f.binocular_mm)} mm.`]),
+    `Circunferência abdominal (CA): ${mm1(f.ca_mm)} mm.`,
+    // Ossos longos repetidos por membro (decisão Luiz, 2º/3º trimestre).
+    `Comprimento do fêmur direito: ${mm1(f.femur_mm)} mm.`,
+    `Comprimento do fêmur esquerdo: ${mm1(f.femur_mm)} mm.`,
+    `Comprimento da tíbia direita: ${mm1(f.tibia_mm)} mm.`,
+    `Comprimento da tíbia esquerda: ${mm1(f.tibia_mm)} mm.`,
+    `Comprimento da fíbula direita: ${mm1(f.fibula_mm)} mm.`,
+    `Comprimento da fíbula esquerda: ${mm1(f.fibula_mm)} mm.`,
+    `Comprimento do úmero direito: ${mm1(f.umero_mm)} mm.`,
+    `Comprimento do úmero esquerdo: ${mm1(f.umero_mm)} mm.`,
+    `Comprimento do rádio direito: ${mm1(f.radio_mm)} mm.`,
+    `Comprimento do rádio esquerdo: ${mm1(f.radio_mm)} mm.`,
+    `Comprimento da ulna direita: ${mm1(f.ulna_mm)} mm.`,
+    `Comprimento da ulna esquerda: ${mm1(f.ulna_mm)} mm.`,
+    pesoLinhaObj(f),
+    `Genitália externa ${genitaliaFmt(f.genitalia)}.`,
+    "",
+    "Anexos:",
+    "Cordão umbilical com duas artérias e uma veia.",
+    `Placenta de localização ${f.placenta_localizacao ?? "____"}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}, com ecotextura ${terceiro ? "heterogênea, de acordo com a fase da gestação" : "homogênea"}.`,
+    `Índice de líquido amniótico (ILA): ${f.ila_cm !== null ? ptBr1(f.ila_cm) : "____"} cm.`,
+    // Orifício interno do colo: 2º trimestre apenas (decisão Luiz no clássico).
+    ...(terceiro ? [] : ["Orifício interno do colo uterino fechado."]),
+  ];
+
+  const impressao = [
+    `Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
+    "Líquido amniótico de quantidade normal.",
+    "Morfologia fetal sem evidência de alteração detectável pelo método.",
+  ];
+
+  return assembleObj(titulo, f, achados, impressao);
+}
+
+export function renderMorfologicoObjetivo(f: MorfologicoFindings): string {
+  if (f.trimestre === "1t") return render1tObj(f);
+  return render2t3tObj(f, f.trimestre === "3t");
 }
