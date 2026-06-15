@@ -383,6 +383,11 @@ function genitaliaFmt(g: string | null): string {
 }
 
 function render1tObj(f: MorfologicoFindings): string {
+  // Doppler das uterinas = presença de IP. Só então o título leva "COM DOPPLER
+  // COLORIDO" e entram as frases de IP + a conclusão de dopplervelocimetria.
+  const comDoppler =
+    f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null;
+
   const achados: string[] = [
     "Feto único de situação variável.",
     `Batimentos cardíacos fetais (BCF): ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
@@ -395,11 +400,11 @@ function render1tObj(f: MorfologicoFindings): string {
   ];
   if (f.placenta_localizacao) {
     achados.push(
-      `Placenta de localização ${f.placenta_localizacao}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}, com ecotextura homogênea.`,
+      `Placenta de localização ${f.placenta_localizacao}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : ""}.`,
     );
   }
   achados.push("Líquido amniótico de quantidade normal pela análise subjetiva.");
-  if (f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null) {
+  if (comDoppler) {
     achados.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBr(f.uterina_ip_direita) : "____"}.`);
     achados.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBr(f.uterina_ip_esquerda) : "____"}.`);
     if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
@@ -418,12 +423,14 @@ function render1tObj(f: MorfologicoFindings): string {
       : "Doppler do ducto venoso normal.",
     "Morfologia fetal normal para esta fase da gestação.",
   ];
-  if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
+  if (comDoppler) {
     impressao.push("Dopplervelocimetria normal das artérias uterinas.");
   }
 
   return assembleObj(
-    "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
+    comDoppler
+      ? "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE COM DOPPLER COLORIDO"
+      : "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
     f,
     achados,
     impressao,
@@ -471,7 +478,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean): string {
     "",
     "Anexos:",
     "Cordão umbilical com duas artérias e uma veia.",
-    `Placenta de localização ${f.placenta_localizacao ?? "____"}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}, com ecotextura ${terceiro ? "heterogênea, de acordo com a fase da gestação" : "homogênea"}.`,
+    `Placenta de localização ${f.placenta_localizacao ?? "____"}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : ""}.`,
     `Índice de líquido amniótico (ILA): ${f.ila_cm !== null ? ptBr1(f.ila_cm) : "____"} cm.`,
     // Orifício interno do colo: 2º trimestre apenas (decisão Luiz no clássico).
     ...(terceiro ? [] : ["Orifício interno do colo uterino fechado."]),

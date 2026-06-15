@@ -25,6 +25,31 @@ import {
   MAMARIA_EXTRACTION_PROMPT,
   MamariaFindingsSchema,
 } from "./categories/MAMARIA";
+import {
+  PARTES_MOLES_JSON_SCHEMA,
+  PARTES_MOLES_EXTRACTION_PROMPT,
+  PartesMolesFindingsSchema,
+} from "./categories/PARTES_MOLES";
+import {
+  CERVICAL_JSON_SCHEMA,
+  CERVICAL_EXTRACTION_PROMPT,
+  CervicalFindingsSchema,
+} from "./categories/CERVICAL";
+import {
+  PELVE_FEMININA_JSON_SCHEMA,
+  PELVE_FEMININA_EXTRACTION_PROMPT,
+  PelveFemininaFindingsSchema,
+} from "./categories/PELVE_FEMININA";
+import {
+  ABDOMEN_SUPERIOR_JSON_SCHEMA,
+  ABDOMEN_SUPERIOR_EXTRACTION_PROMPT,
+  AbdomenSuperiorFindingsSchema,
+} from "./categories/ABDOMEN_SUPERIOR";
+import {
+  VIAS_URINARIAS_JSON_SCHEMA,
+  VIAS_URINARIAS_EXTRACTION_PROMPT,
+  ViasUrinariasFindingsSchema,
+} from "./categories/VIAS_URINARIAS";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -52,6 +77,11 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "MORFOLOGICO",
   "TIREOIDE",
   "MAMARIA",
+  "PARTES_MOLES",
+  "CERVICAL",
+  "PELVE_FEMININA",
+  "ABDOMEN_SUPERIOR",
+  "VIAS_URINARIAS",
 ]);
 
 export type RendererExtractionResult = {
@@ -181,6 +211,36 @@ const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: MAMARIA_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: MAMARIA_EXTRACTION_PROMPT,
     parse: (raw) => MamariaFindingsSchema.parse(raw),
+  },
+  PARTES_MOLES: {
+    schemaName: "PartesMolesFindings",
+    jsonSchema: PARTES_MOLES_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: PARTES_MOLES_EXTRACTION_PROMPT,
+    parse: (raw) => PartesMolesFindingsSchema.parse(raw),
+  },
+  CERVICAL: {
+    schemaName: "CervicalFindings",
+    jsonSchema: CERVICAL_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: CERVICAL_EXTRACTION_PROMPT,
+    parse: (raw) => CervicalFindingsSchema.parse(raw),
+  },
+  PELVE_FEMININA: {
+    schemaName: "PelveFemininaFindings",
+    jsonSchema: PELVE_FEMININA_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: PELVE_FEMININA_EXTRACTION_PROMPT,
+    parse: (raw) => PelveFemininaFindingsSchema.parse(raw),
+  },
+  ABDOMEN_SUPERIOR: {
+    schemaName: "AbdomenSuperiorFindings",
+    jsonSchema: ABDOMEN_SUPERIOR_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: ABDOMEN_SUPERIOR_EXTRACTION_PROMPT,
+    parse: (raw) => AbdomenSuperiorFindingsSchema.parse(raw),
+  },
+  VIAS_URINARIAS: {
+    schemaName: "ViasUrinariasFindings",
+    jsonSchema: VIAS_URINARIAS_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: VIAS_URINARIAS_EXTRACTION_PROMPT,
+    parse: (raw) => ViasUrinariasFindingsSchema.parse(raw),
   },
 };
 

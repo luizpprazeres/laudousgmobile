@@ -33,6 +33,11 @@ import {
   renderMamaria,
   type MamariaFindings,
 } from "../renderer/categories/MAMARIA";
+import { renderPartesMoles } from "../renderer/categories/PARTES_MOLES";
+import { renderCervical } from "../renderer/categories/CERVICAL";
+import { renderPelveFeminina } from "../renderer/categories/PELVE_FEMININA";
+import { renderAbdomenSuperior } from "../renderer/categories/ABDOMEN_SUPERIOR";
+import { renderViasUrinarias } from "../renderer/categories/VIAS_URINARIAS";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -197,29 +202,46 @@ export async function* runRendererStream(args: {
     args.categoryCode === "OBSTETRICA" ||
     args.categoryCode === "MORFOLOGICO" ||
     args.categoryCode === "TIREOIDE" ||
-    args.categoryCode === "MAMARIA"
+    args.categoryCode === "MAMARIA" ||
+    args.categoryCode === "PARTES_MOLES" ||
+    args.categoryCode === "CERVICAL" ||
+    args.categoryCode === "PELVE_FEMININA" ||
+    args.categoryCode === "ABDOMEN_SUPERIOR" ||
+    args.categoryCode === "VIAS_URINARIAS"
   ) {
     const objetivo = isEstiloObjetivo(args.writingStyleId);
-    const fullText =
-      args.categoryCode === "OBSTETRICA"
-        ? renderObstetrica(extraction.findings as ObstetricaFindings, null, {
-            objetivo,
-          })
-        : args.categoryCode === "MORFOLOGICO"
-          ? renderMorfologico(extraction.findings as MorfologicoFindings, null, {
-              objetivo,
-            })
-          : args.categoryCode === "TIREOIDE"
-            ? renderTireoide(
-                extraction.findings as TireoideFindings,
-                args.rendererPreferences,
-                { objetivo },
-              )
-            : renderMamaria(
-                extraction.findings as MamariaFindings,
-                args.rendererPreferences,
-                { objetivo },
-              );
+    const fnd = extraction.findings;
+    let fullText: string;
+    switch (args.categoryCode) {
+      case "OBSTETRICA":
+        fullText = renderObstetrica(fnd as ObstetricaFindings, null, { objetivo });
+        break;
+      case "MORFOLOGICO":
+        fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo });
+        break;
+      case "TIREOIDE":
+        fullText = renderTireoide(fnd as TireoideFindings, args.rendererPreferences, { objetivo });
+        break;
+      case "MAMARIA":
+        fullText = renderMamaria(fnd as MamariaFindings, args.rendererPreferences, { objetivo });
+        break;
+      // Categorias clássico-só (Sprint clássico 2026-06-15) — sem variante objetivo ainda.
+      case "PARTES_MOLES":
+        fullText = renderPartesMoles(fnd as Parameters<typeof renderPartesMoles>[0]);
+        break;
+      case "CERVICAL":
+        fullText = renderCervical(fnd as Parameters<typeof renderCervical>[0]);
+        break;
+      case "PELVE_FEMININA":
+        fullText = renderPelveFeminina(fnd as Parameters<typeof renderPelveFeminina>[0]);
+        break;
+      case "ABDOMEN_SUPERIOR":
+        fullText = renderAbdomenSuperior(fnd as Parameters<typeof renderAbdomenSuperior>[0]);
+        break;
+      default:
+        fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0]);
+        break;
+    }
     const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;
     args.onSystemMessage?.(systemMessage);
     yield fullText;

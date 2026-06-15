@@ -39,6 +39,9 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
 {
   const l = render(F({ trimestre: "1t", ig_semanas: 12, ig_dias: 3, ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: "presente", ducto_venoso: "normal" }));
   check("1t: título 'PRIMEIRO TRIMESTRE'", /ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE/.test(l), l);
+  check("1t SEM doppler: título sem 'COM DOPPLER'", !/COM DOPPLER COLORIDO/.test(l), l);
+  check("1t SEM doppler: sem frases de IP uterina", !/Artéria uterina/.test(l), l);
+  check("1t SEM doppler: sem dopplervelocimetria", !/Dopplervelocimetria/.test(l), l);
   check("1t: cabeçalho 'TÉCNICA:'", /\nTÉCNICA:\n/.test(l), l);
   check("1t: cabeçalho 'ACHADOS:'", /\nACHADOS:\n/.test(l), l);
   check("1t: cabeçalho 'IMPRESSÃO:'", /\nIMPRESSÃO:\n/.test(l), l);
@@ -56,6 +59,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   // médio = (1.2+1.4)/2 = 1.3
   check("1t: IP médio uterinas 1,3", /IP médio das artérias uterinas: 1,3\./.test(l), l);
   check("1t: impressão Dopplervelocimetria normal", /Dopplervelocimetria normal das artérias uterinas/.test(l), l);
+  check("1t COM doppler: título 'COM DOPPLER COLORIDO'", /PRIMEIRO TRIMESTRE COM DOPPLER COLORIDO/.test(l), l);
 }
 
 // ── 1º trimestre: ducto venoso alterado ──
@@ -85,7 +89,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   check("2t: orifício interno do colo presente (2t)", /Orifício interno do colo uterino fechado\./.test(l), l);
   check("2t: peso inteiro '480 g'", /Peso fetal estimado: 480 g \(percentil 45\)\./.test(l), l);
   check("2t: genitália feminino", /Genitália externa feminina\./.test(l), l);
-  check("2t: placenta ecotextura homogênea (2t)", /com ecotextura homogênea\./.test(l), l);
+  check("2t: placenta 'grau I de Grannum et al.'", /grau I de Grannum et al\./.test(l), l);
 }
 
 // ── 3º trimestre: SEM distância binocular nem colo; placenta heterogênea ──
@@ -100,7 +104,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   check("3t: título 'TERCEIRO TRIMESTRE'", /ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE/.test(l), l);
   check("3t: SEM distância binocular", !/Distância binocular/.test(l), l);
   check("3t: SEM orifício do colo", !/Orifício interno do colo/.test(l), l);
-  check("3t: placenta heterogênea (3t)", /ecotextura heterogênea, de acordo com a fase/.test(l), l);
+  check("3t: placenta 'grau II de Grannum et al.'", /grau II de Grannum et al\./.test(l), l);
   check("3t: apresentação pélvica", /em apresentação pélvica/.test(l), l);
 }
 
