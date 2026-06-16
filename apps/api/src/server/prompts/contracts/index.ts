@@ -13,10 +13,6 @@ import {
   ABDOMEN_TOTAL_CONTRACT,
   ABDOMEN_TOTAL_MODELO_OBJETIVO,
 } from "./ABDOMEN_TOTAL";
-import {
-  DOPPLER_OBSTETRICO_CONTRACT,
-  DOPPLER_OBSTETRICO_MODELO_OBJETIVO,
-} from "./DOPPLER_OBSTETRICO";
 import { MAMARIA_CONTRACT, MAMARIA_MODELO_OBJETIVO } from "./MAMARIA";
 import {
   OBSTETRICA_CONTRACT,
@@ -40,13 +36,13 @@ export const CATEGORY_CONTRACTS: Record<string, string> = {
   // - γ: expandir cobertura pra 28 categorias restantes
 };
 
-const OBJECTIVE_ONLY_CONTRACTS: Record<string, string> = {
-  DOPPLER_OBSTETRICO: DOPPLER_OBSTETRICO_CONTRACT,
-};
+// DOPPLER_OBSTETRICO saiu daqui (2026-06-16): seu estilo objetivo agora vem do
+// bundle (clássico convertido — migration 0015), igual ao DOPPLER_RENAL/VENOSO,
+// em vez de um modelo objetivo "abstrato" próprio que conflitava com o bundle.
+const OBJECTIVE_ONLY_CONTRACTS: Record<string, string> = {};
 
 const OBJECTIVE_MODELS: Record<string, string> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_MODELO_OBJETIVO,
-  DOPPLER_OBSTETRICO: DOPPLER_OBSTETRICO_MODELO_OBJETIVO,
   MAMARIA: MAMARIA_MODELO_OBJETIVO,
   OBSTETRICA: OBSTETRICA_MODELO_OBJETIVO,
   PELVE_FEMININA: PELVE_FEMININA_MODELO_OBJETIVO,
@@ -73,7 +69,7 @@ ${objectiveModel}
 
 REGRAS DO MODELO OBJETIVO:
 - O modelo acima substitui integralmente o modelo-base clássico.
-- Preencha ANÁLISE e OPINIÃO DO RELATÓRIO somente com dados ditados pelo médico.
+- Preencha ACHADOS e IMPRESSÃO somente com dados ditados pelo médico.
 - NÃO emita placeholders "____".
 - NÃO copie frases normais do modelo clássico quando o médico não as informou.
 - Use exatamente a TÉCNICA curta do modelo objetivo. Não acrescente documentação fotográfica.

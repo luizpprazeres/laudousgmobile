@@ -139,7 +139,7 @@ export const DOPPLER_OBSTETRICO_MODELO_OBJETIVO = `ULTRASSONOGRAFIA OBSTÉTRICA 
 TÉCNICA:
 Exame realizado com transdutor de 4.0 MHz e Doppler colorido.
 
-ANÁLISE:
+ACHADOS:
 Dados fetais: [apresentação, BCF, placenta, líquido e biometria se informados].
 
 Dopplervelocimetria:
@@ -149,7 +149,7 @@ Dopplervelocimetria:
 4- Ducto venoso: [onda A e padrão espectral se informados].
 5- Relação cérebro-placentária: [valor e interpretação se informados].
 
-OPINIÃO DO RELATÓRIO:
+IMPRESSÃO:
 1- [idade gestacional ou conclusão obstétrica principal].
 2- [conclusão Doppler relevante].
 3- [se houver outra alteração hemodinâmica].`;

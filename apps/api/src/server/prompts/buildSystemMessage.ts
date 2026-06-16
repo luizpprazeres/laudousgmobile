@@ -50,8 +50,18 @@ export function buildSystemMessage(args: {
   const formatSection =
     args.writingStyleCode === "OBJETIVO" ? toObjectiveHeaders : (text: string) => text;
 
-  const fewShots = args.ragBlocks.filter((b) => b.kind === "exemplo");
-  const otherBlocks = args.ragBlocks.filter((b) => b.kind !== "exemplo");
+  // No estilo OBJETIVO, os blocos RAG (templates/modelos curados no DB) ainda
+  // trazem cabeçalhos clássicos (COMENTÁRIOS / OS SEGUINTES ASPECTOS / CONCLUSÃO).
+  // Converte-os para TÉCNICA / ACHADOS / IMPRESSÃO ANTES de injetar — senão o LLM
+  // copia o cabeçalho clássico do template e ignora o overlay (ex.: DOPPLER_VENOSO
+  // saindo com "CONCLUSÃO:" em vez de "IMPRESSÃO:").
+  const ragBlocks =
+    args.writingStyleCode === "OBJETIVO"
+      ? args.ragBlocks.map((b) => ({ ...b, content: toObjectiveHeaders(b.content) }))
+      : args.ragBlocks;
+
+  const fewShots = ragBlocks.filter((b) => b.kind === "exemplo");
+  const otherBlocks = ragBlocks.filter((b) => b.kind !== "exemplo");
 
   // Fallback minimalista se categoria não tem contract, RAG nem overlay
   if (

@@ -1,8 +1,8 @@
 export function toObjectiveHeaders(template: string): string {
   return template
-    .replaceAll("OS SEGUINTES ASPECTOS FORAM OBSERVADOS", "ANÁLISE")
+    .replaceAll("OS SEGUINTES ASPECTOS FORAM OBSERVADOS", "ACHADOS")
     .replaceAll("COMENTÁRIOS", "TÉCNICA")
-    .replaceAll("CONCLUSÃO", "OPINIÃO DO RELATÓRIO");
+    .replaceAll("CONCLUSÃO", "IMPRESSÃO");
 }
 
 export function toObjectiveContract(template: string): string {
@@ -24,7 +24,7 @@ export function toObjectiveModel(template: string, technique: string): string {
 TÉCNICA:
 ${technique}
 
-ANÁLISE:
+ACHADOS:
 
-OPINIÃO DO RELATÓRIO:`;
+IMPRESSÃO:`;
 }

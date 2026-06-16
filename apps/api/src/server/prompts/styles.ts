@@ -36,10 +36,10 @@ const OBJETIVO_OVERLAY = `ESTILO ATIVO: OBJETIVO — INSTRUÇÃO PRIORITÁRIA QU
 
 ESTRUTURA OBRIGATÓRIA — use EXATAMENTE estes 3 cabeçalhos em maiúsculas, nesta ordem, seguidos de dois-pontos:
 1. TÉCNICA:
-2. ANÁLISE:
-3. OPINIÃO DO RELATÓRIO:
+2. ACHADOS:
+3. IMPRESSÃO:
 
-PROIBIDO usar cabeçalhos alternativos como "OS SEGUINTES ASPECTOS FORAM OBSERVADOS", "COMENTÁRIOS", "CONCLUSÃO", "ACHADOS", "DESCRIÇÃO", "IMPRESSÃO DIAGNÓSTICA". A presença desses cabeçalhos é falha de execução.
+PROIBIDO usar cabeçalhos alternativos como "OS SEGUINTES ASPECTOS FORAM OBSERVADOS", "COMENTÁRIOS", "CONCLUSÃO", "ANÁLISE", "OPINIÃO DO RELATÓRIO", "DESCRIÇÃO", "IMPRESSÃO DIAGNÓSTICA". A presença desses cabeçalhos é falha de execução.
 
 CONTEÚDO — NUNCA OMITIR (a omissão é falha grave, ainda que estilo seja conciso):
 - TODAS as medidas numéricas mencionadas no input (mm, cm, ml, gramas, semanas, dias).
@@ -55,7 +55,7 @@ TOM:
 - Sem redundância entre seções.
 - Omitir estruturas não mencionadas no input. Não completar o laudo com normalidades presumidas.
 - Nunca emitir placeholders "____". Não inventar dados ausentes para preencher modelos.
-- OPINIÃO DO RELATÓRIO: sentença única quando todos achados normais; itens numerados quando múltiplos achados.
+- IMPRESSÃO: sentença única quando todos achados normais; itens numerados quando múltiplos achados.
 
 REGRAS DE ENUMERAÇÃO:
 - Quando houver MÚLTIPLOS achados do mesmo tipo (nódulos, cistos, miomas, linfonodos), enumere cada um como 1-, 2-, 3-, com 1 achado por linha.
@@ -63,12 +63,12 @@ REGRAS DE ENUMERAÇÃO:
 - Cada item enumerado contém: natureza, localização, medida e escore quando aplicável (BI-RADS, TI-RADS, FIGO etc).
 - NÃO use conjunções prosaicas entre itens ("apresentando", "classificado como", "que se caracteriza por", "evidenciando").
 - Se houver achado ÚNICO, escreva em frase direta sem enumeração.
-- OPINIÃO DO RELATÓRIO: lista numerada quando houver múltiplos diagnósticos.
+- IMPRESSÃO: lista numerada quando houver múltiplos diagnósticos.
 
 EXEMPLO CANÔNICO (Abdome total — esteatose):
 TÉCNICA: Exame realizado com transdutor convexo multifrequencial.
-ANÁLISE: Fígado de dimensões normais. Hiperecogenicidade difusa do parênquima, compatível com esteatose hepática leve. Vesícula biliar sem cálculos. Rins sem dilatação pielocalicial.
-OPINIÃO DO RELATÓRIO: Esteatose hepática leve.`;
+ACHADOS: Fígado de dimensões normais. Hiperecogenicidade difusa do parênquima, compatível com esteatose hepática leve. Vesícula biliar sem cálculos. Rins sem dilatação pielocalicial.
+IMPRESSÃO: Esteatose hepática leve.`;
 
 export function getStyleOverlay(code: WritingStyleCode): string | null {
   switch (code) {

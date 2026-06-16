@@ -31,6 +31,7 @@ async function main() {
     "0012_det5_tireoide_renderer_prefs.sql",
     "0013_saneamento_writing_styles.sql",
     "0014_fix_pelve_title_prefix.sql",
+    "0015_doppler_obstetrico_objetivo.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

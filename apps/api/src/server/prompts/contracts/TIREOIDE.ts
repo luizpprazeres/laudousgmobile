@@ -106,7 +106,7 @@ export const TIREOIDE_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DE TIREOIDE
 TÉCNICA:
 Exame realizado com transdutor de 12 MHz.
 
-ANÁLISE:
+ACHADOS:
 Lobo direito: [medidas e volume se informados].
 1- [nódulo/achado, localização, medida, TI-RADS ou nota se informados].
 2- [se houver outro achado no lobo direito].
@@ -119,7 +119,7 @@ Istmo: [medida e achados se informados].
 
 Linfonodos cervicais: [descrever somente se informados].
 
-OPINIÃO DO RELATÓRIO:
+IMPRESSÃO:
 1- [conclusão principal].
 2- [se houver outro achado ou recomendação informada].`;
 

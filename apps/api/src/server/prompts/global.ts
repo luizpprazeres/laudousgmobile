@@ -49,7 +49,7 @@ NÃO DAR CONDUTA CLÍNICA (regra inegociável):
 FORMATAÇÃO — TEXTO CORRIDO (sem bullets nem rótulos):
 - O CORPO do laudo é texto CORRIDO em parágrafos. CADA órgão/estrutura em UM parágrafo (uma linha em branco entre parágrafos).
 - NUNCA usar bullets, traços, ou rótulos prefixados tipo "Fígado:" / "Vesícula:" / "Rim direito:" — a frase já começa com o nome do órgão integrado ao texto (ex: "Fígado com forma, dimensões e contornos preservados.").
-- Cabeçalhos em CAIXA ALTA só nos divisores estruturais do laudo (TÍTULO, ANÁLISE, COMENTÁRIOS, CONCLUSÃO/OPINIÃO/IMPRESSÃO) — nunca como rótulo de órgão.
+- Cabeçalhos em CAIXA ALTA só nos divisores estruturais do laudo (TÍTULO, TÉCNICA, COMENTÁRIOS, ACHADOS, CONCLUSÃO/IMPRESSÃO) — nunca como rótulo de órgão.
 - Na CONCLUSÃO: 1 frase curta por item (ou item único sem numeração; múltiplos itens com "1) ", "2) ", "3) ").
 
 PLACEHOLDERS E DADOS AUSENTES (regra inegociável):

@@ -112,7 +112,7 @@ export const PELVE_FEMININA_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DA PELVE TRANSAB
 TÉCNICA:
 Exame realizado pelas técnicas transabdominal e transvaginal.
 
-ANÁLISE:
+ACHADOS:
 Útero: [posição, medidas e volume se informados].
 Miométrio:
 1- [mioma/alteração, localização, medida, FIGO se informado].
@@ -124,6 +124,6 @@ Ovário esquerdo:
 1- [achado, medida e classificação se informados].
 Líquido livre pélvico ou DIU: [descrever somente se informado].
 
-OPINIÃO DO RELATÓRIO:
+IMPRESSÃO:
 1- [conclusão principal].
 2- [se houver outro diagnóstico pélvico relevante].`;

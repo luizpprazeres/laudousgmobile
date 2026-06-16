@@ -316,7 +316,7 @@ export const ABDOMEN_TOTAL_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DO ABDOME TOTAL
 TÉCNICA:
 Exame realizado com transdutor convexo multifrequencial.
 
-ANÁLISE:
+ACHADOS:
 Fígado: [achado direto, medida/localização se informadas].
 Vesícula biliar e vias biliares: [achado direto, medida se informada].
 Pâncreas e baço: [descrever somente se informados].
@@ -325,6 +325,6 @@ Rins:
 2- Rim esquerdo: [achado direto, medida se informada].
 Bexiga, aorta e demais estruturas: [descrever somente se informadas].
 
-OPINIÃO DO RELATÓRIO:
+IMPRESSÃO:
 1- [diagnóstico principal].
 2- [se houver outro diagnóstico relevante].`;

@@ -138,7 +138,7 @@ export const OBSTETRICA_MODELO_OBJETIVO = `ULTRASSONOGRAFIA OBSTÉTRICA
 TÉCNICA:
 Exame realizado com transdutor de 4.0 MHz.
 
-ANÁLISE:
+ACHADOS:
 Idade gestacional: [semanas e dias informados — obrigatório se ditado].
 Gestação: [única ou múltipla, apresentação e BCF].
 Placenta: [localização e aspecto se informados].
@@ -153,6 +153,6 @@ Feto 2:
 1- [usar somente em gestação múltipla].
 2- [biometria ou achado adicional se houver].
 
-OPINIÃO DO RELATÓRIO:
+IMPRESSÃO:
 1- [conclusão principal, incluindo idade gestacional se informada].
 2- [se houver outra conclusão obstétrica relevante].`;

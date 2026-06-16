@@ -160,7 +160,7 @@ export const MAMARIA_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AX
 TÉCNICA:
 Exame realizado com transdutor de 12 MHz.
 
-ANÁLISE:
+ACHADOS:
 Composição mamária: [tipo informado].
 
 Mama direita apresentando os seguintes achados:
@@ -173,6 +173,6 @@ Mama esquerda apresentando os seguintes achados:
 
 Regiões axilares: [descrever somente se avaliadas ou informadas].
 
-OPINIÃO DO RELATÓRIO:
+IMPRESSÃO:
 1- [conclusão principal].
 2- [se houver outro diagnóstico ou categoria relevante].`;
