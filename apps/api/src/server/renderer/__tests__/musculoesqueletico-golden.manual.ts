@@ -97,5 +97,20 @@ const F = (laudos: MusculoesqueleticoFindings["laudos"]): MusculoesqueleticoFind
   check("Rizartrose preservada", /Rizartrose\./.test(r), r);
 }
 
+// 8) Tornozelo (antes sem roteiro): normal cobre estruturas; com coleção descreve + cobre.
+{
+  const norm = renderMusculoesqueletico(F([{ segmento: "tornozelo", lado: "esquerdo", alteracoes: [] }]));
+  check("tornozelo normal: corpo NÃO vazio (cobre Aquiles)", /Tendão calcâneo \(de Aquiles\)/.test(norm), norm);
+  check("tornozelo normal: corpo cobre recesso tibiotalar", /Recesso articular tibiotalar sem coleções ou derrame\./.test(norm), norm);
+  check("tornozelo normal: conclusão sintética", /CONCLUSÃO:\nTornozelo esquerdo ecograficamente normal\.$/.test(norm), norm);
+
+  const alt = renderMusculoesqueletico(F([{
+    segmento: "tornozelo", lado: "direito",
+    alteracoes: [{ estrutura: "recesso", descricao_corpo: "Pequena coleção líquida no recesso articular anterior do tornozelo.", diagnostico_conclusao: "Derrame articular no tornozelo direito." }],
+  }]));
+  check("tornozelo c/ coleção: descreve a alteração no recesso", /Pequena coleção líquida no recesso articular anterior/.test(alt), alt);
+  check("tornozelo c/ coleção: ainda cobre Aquiles normal", /Tendão calcâneo \(de Aquiles\)/.test(alt), alt);
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

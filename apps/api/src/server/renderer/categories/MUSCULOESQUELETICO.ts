@@ -108,11 +108,48 @@ export const ROTEIRO: Record<Segmento, SegmentoRoteiro> = {
     ],
     fechamentoNormal: (l) => `Mão ${l} ecograficamente normal.`,
   },
-  // Segmentos a completar (fase 3b — em curadoria): caem no writer até terem roteiro.
-  punho: { titulo: "DO PUNHO", estruturas: [], fechamentoNormal: (l) => `Punho ${l} ecograficamente normal.` },
-  cotovelo: { titulo: "DO COTOVELO", estruturas: [], fechamentoNormal: (l) => `Cotovelo ${l} ecograficamente normal.` },
-  tornozelo: { titulo: "DO TORNOZELO", estruturas: [], fechamentoNormal: (l) => `Tornozelo ${l} ecograficamente normal.` },
-  quadril: { titulo: "DO QUADRIL", estruturas: [], fechamentoNormal: (l) => `Quadril ${l} ecograficamente normal.` },
+  punho: {
+    titulo: "DO PUNHO",
+    estruturas: [
+      { chave: "flexores", normal: "Tendões flexores e retináculo dos flexores de aspecto preservado." },
+      { chave: "extensores", normal: "Compartimentos extensores de aspecto preservado." },
+      { chave: "nervo_mediano", normal: "Nervo mediano de calibre e ecotextura preservados ao nível do túnel do carpo." },
+      { chave: "geral", normal: "Não há sinais de coleções, cistos sinoviais ou efusão articular no segmento avaliado." },
+    ],
+    fechamentoNormal: (l) => `Punho ${l} ecograficamente normal.`,
+  },
+  cotovelo: {
+    titulo: "DO COTOVELO",
+    estruturas: [
+      { chave: "extensores", normal: "Tendões extensores comuns (epicôndilo lateral) de espessura e ecotextura preservadas." },
+      { chave: "flexores", normal: "Tendões flexores comuns (epicôndilo medial) de espessura e ecotextura preservadas." },
+      { chave: "biceps_triceps", normal: "Tendões distais do bíceps e do tríceps de aspecto preservado." },
+      { chave: "derrame", normal: "Ausência de derrame articular ou coleções." },
+    ],
+    fechamentoNormal: (l) => `Cotovelo ${l} ecograficamente normal.`,
+  },
+  tornozelo: {
+    titulo: "DO TORNOZELO",
+    estruturas: [
+      { chave: "aquiles", normal: "Tendão calcâneo (de Aquiles) de espessura, continuidade e ecotextura preservadas." },
+      { chave: "tibial_posterior", normal: "Tendão tibial posterior de espessura e ecotextura preservadas." },
+      { chave: "fibulares", normal: "Tendões fibulares de espessura e ecotextura preservadas." },
+      { chave: "tibial_anterior", normal: "Tendão tibial anterior de espessura e ecotextura preservadas." },
+      { chave: "recesso", normal: "Recesso articular tibiotalar sem coleções ou derrame." },
+      { chave: "geral", normal: "Não há sinais de coleções, lesões expansivas ou alterações ecográficas relevantes no segmento avaliado." },
+    ],
+    fechamentoNormal: (l) => `Tornozelo ${l} ecograficamente normal.`,
+  },
+  quadril: {
+    titulo: "DO QUADRIL",
+    estruturas: [
+      { chave: "coxofemoral", normal: "Articulação coxofemoral sem derrame ou coleções." },
+      { chave: "gluteos", normal: "Tendões glúteo médio e mínimo de espessura e ecotextura preservadas." },
+      { chave: "bursa_trocanterica", normal: "Bursa trocantérica sem distensão." },
+      { chave: "iliopsoas", normal: "Tendão iliopsoas de aspecto preservado." },
+    ],
+    fechamentoNormal: (l) => `Quadril ${l} ecograficamente normal.`,
+  },
 };
 
 /** Segmentos já cobertos pelo renderer determinístico (têm roteiro). */
