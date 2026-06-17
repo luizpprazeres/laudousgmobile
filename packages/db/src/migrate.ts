@@ -32,6 +32,7 @@ async function main() {
     "0013_saneamento_writing_styles.sql",
     "0014_fix_pelve_title_prefix.sql",
     "0015_doppler_obstetrico_objetivo.sql",
+    "0016_msk_reforco_cobertura.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

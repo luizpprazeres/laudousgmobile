@@ -20,6 +20,7 @@ import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import { applyCommandGuard } from "@/server/pipeline/commandGuard";
 import { applyCommandOperations } from "@/server/pipeline/commandOperations";
 import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionItemsGuard";
+import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -857,6 +858,13 @@ export async function POST(req: Request) {
       // Guard transversal: remove itens numerados de conclusão cujo conteúdo é
       // só placeholder ("____"). Preserva placeholders dentro de itens reais.
       finalText = removeEmptyConclusionItems(finalText);
+      // Fase 3 (determinismo): normaliza o espaçamento de seções do MSK — quebra
+      // simples entre achados, linha em branco só antes de cabeçalhos/títulos.
+      // Garante por construção o formato que o writer LLM não entrega de forma
+      // consistente (ver sectionSpacingGuard.ts).
+      if (effectiveCategory === "MUSCULOESQUELETICO_V2") {
+        finalText = normalizeSectionSpacing(finalText);
+      }
       } else {
         // RENDERER (DET-5): único guard que roda é o de COMANDOS do médico —
         // diretivas explícitas ("na conclusão recomendar X") precisam entrar

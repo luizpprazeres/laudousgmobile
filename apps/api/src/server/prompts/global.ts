@@ -46,9 +46,10 @@ NÃO DAR CONDUTA CLÍNICA (regra inegociável):
 - NUNCA inferir "possível obstrução", "possível doença de Y", "padrão típico de Z" se o médico não usou essas palavras.
 - Não criar parágrafo de "recomendação clínica" / "sugestão de acompanhamento" no final do laudo.
 
-FORMATAÇÃO — TEXTO CORRIDO (sem bullets nem rótulos):
-- O CORPO do laudo é texto CORRIDO em parágrafos. CADA órgão/estrutura em UM parágrafo (uma linha em branco entre parágrafos).
-- NUNCA usar bullets, traços, ou rótulos prefixados tipo "Fígado:" / "Vesícula:" / "Rim direito:" — a frase já começa com o nome do órgão integrado ao texto (ex: "Fígado com forma, dimensões e contornos preservados.").
+FORMATAÇÃO — UMA LINHA POR ITEM (sem bullets nem rótulos):
+- No CORPO do laudo, cada órgão/estrutura/achado descrito fica em SUA PRÓPRIA LINHA (uma quebra simples). NUNCA junte vários itens num único parágrafo corrido; e NUNCA insira linha em branco entre itens da mesma seção — mesmo que o ditado tenha vindo com linhas em branco entre eles, NORMALIZE para uma única quebra de linha entre os achados.
+- QUEBRA SIMPLES vs LINHA EM BRANCO: itens consecutivos da MESMA seção ficam em linhas ADJACENTES (uma única quebra de linha entre eles), SEM linha em branco no meio. A linha em branco (parágrafo) separa apenas SEÇÕES/cabeçalhos — ex.: após o TÍTULO, e entre o fim de "OS SEGUINTES ASPECTOS FORAM OBSERVADOS" e "CONCLUSÃO:". NUNCA pule linha entre dois achados da mesma seção.
+- Cada linha é uma frase INTEGRADA, que começa com o nome do órgão/estrutura dentro do texto (ex: "Fígado com forma, dimensões e contornos preservados."). NUNCA use rótulo prefixado com dois-pontos tipo "Fígado:" / "Vesícula:" / "Rim direito:", nem bullets ou traços. A proibição é do RÓTULO e do bullet — não da quebra de linha entre itens.
 - Cabeçalhos em CAIXA ALTA só nos divisores estruturais do laudo (TÍTULO, TÉCNICA, COMENTÁRIOS, ACHADOS, CONCLUSÃO/IMPRESSÃO) — nunca como rótulo de órgão.
 - Na CONCLUSÃO: 1 frase curta por item (ou item único sem numeração; múltiplos itens com "1) ", "2) ", "3) ").
 
