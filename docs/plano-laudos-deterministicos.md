@@ -1,7 +1,7 @@
 # Plano — Migração para Laudos Determinísticos
 
-> **Status geral:** 🟢 Em execução — DET-1 a DET-5 ✅ em prod. RAG vetorial aposentado; **renderer determinístico (DET-5) cobre 4 categorias LIVE em prod: ABDOMEN_TOTAL, OBSTETRICA, MORFOLOGICO, TIREOIDE** (TIREOIDE com escore Domingos calculável — shipped 2026-06-13). **MAMARIA LIVE em prod (deploy 2026-06-14, commit c738eca, PR #4) — 5ª categoria do renderer (flag `RENDERER_CATEGORIES` += MAMARIA); golden 28/28. Bugs obstétricos de prod (DSM/unidade/gemelar) deployados.** Pendente: validação E2E pelo Luiz (extração ditado→findings; A2/unidade só confirmável em prod).** Saneamento dos writing styles em prod (2 estilos). Curadoria S2 aplicada. **Próximo: validar MAMARIA + ligar flag; backlog de UX/bugs (ver tarefas) + DET-6.**
-> **Última atualização:** 2026-06-14 (MAMARIA aprovada + golden 28/28 → pronta p/ flag; bugs obstétricos de prod corrigidos [DSM/unidade/gemelar]; Pelve "A)" fix; toggles UI no lab; DET-6 fundação+integração atrás de flag)
+> **Status geral:** 🟢 Em execução — **renderer determinístico (DET-5) LIVE em prod para 11 categorias**: ABDOMEN_TOTAL, OBSTETRICA, MORFOLOGICO, TIREOIDE, MAMARIA, PARTES_MOLES, CERVICAL, PELVE_FEMININA, ABDOMEN_SUPERIOR, VIAS_URINARIAS, **MUSCULOESQUELETICO_V2** (flag `RENDERER_CATEGORIES`). Estilo **Objetivo unificado** (TÉCNICA/ACHADOS/IMPRESSÃO) em todo o sistema. DOPPLER (writer) de alto uso nos 2 estilos. **Benchmark de modelos feito → MANTER gpt-4.1-mini** (renderer é a alavanca, não o modelo). **Próximo: épico IG determinística (docs/plano-ig-deterministica.md), depois S6.**
+> **Última atualização:** 2026-06-17 (ver seção "Sessão 2026-06-17" abaixo — S5 DOPPLER, unificação cabeçalhos Objetivo, benchmark de modelos, MSK fases 1-3b LIVE).
 > **Decisão formal:** `docs/adr/0004-montagem-deterministica-laudos.md`
 > **Origem:** análise Claude Code + validação crítica Codex/dex1 (2026-06-11), aprovada pelo Luiz
 
@@ -33,6 +33,38 @@
 > 6. `docs/saneamento-writing-styles.md` — consolidação para 2 estilos (Clássico + Objetivo).
 > 7. `docs/curadoria-showcase-2026-06-12.md` — backlog clínico do Luiz (Lotes A+B).
 > 8. **Tarefas (TaskList)** — backlog vivo de UX/bugs (iOS login/Pelve, "A)" no título, percentil doppler, etc).
+
+## ⭐ Sessão 2026-06-17 — leia PRIMEIRO para retomar (S5 DOPPLER + Objetivo unificado + benchmark de modelos + MSK)
+
+### O que foi feito (tudo em prod salvo onde indicado)
+1. **S5 — DOPPLER de alto uso nos 2 estilos** (caminho writer):
+   - **DOPPLER_OBSTETRICO objetivo DESTRAVADO**: faltava biblioteca objetivo no DB (só existia clássico/estilos 2-3) → `BUNDLE_EMPTY` bloqueava a geração em prod. Migration **0015** criou o objetivo (copiado do clássico) e recriou o **DOPPLER_RENAL** objetivo (= clássico convertido, técnica enxuta — o modelo objetivo anterior foi reprovado). DOPPLER_VENOSO objetivo corrigido (vazava "CONCLUSÃO").
+   - DOPPLER_OBSTETRICO saiu de OBJECTIVE_ONLY_CONTRACTS — objetivo vem do bundle, igual RENAL/VENOSO.
+2. **Cabeçalhos do estilo Objetivo UNIFICADOS** = `TÉCNICA / ACHADOS / IMPRESSÃO` em TODO o sistema (o writer usava ANÁLISE / OPINIÃO DO RELATÓRIO). `styles.ts`, `contracts/objective.ts`, `global.ts`, 8 contracts. `buildSystemMessage` agora aplica `toObjectiveHeaders` também aos blocos RAG no objetivo (antes o template do DB vazava CONCLUSÃO). Ver memória [[cabecalhos-estilo-objetivo]].
+3. **Benchmark de modelos** (gpt-4.1-mini × gpt-5.4-mini/nano × gpt-5.3-chat-latest × deepseek-v4-flash) sobre casos REAIS (reaproveita `system_message_full` da auditoria). **Decisão: MANTER gpt-4.1-mini.** Os GPT-5 ou são rápidos-e-ruins (reasoning none/low alucinam) ou bons-e-lentos (12-43s; reasoning estoura o token budget e trunca). Custo: 4.1-mini é o mais barato. Suporte a reasoning models adicionado ao writer (`writer.ts`, env `OPENAI_WRITER_REASONING_EFFORT`). Harness: `pipeline/__tests__/model-benchmark.manual.ts`.
+4. **MUSCULOESQUELETICO_V2 — curadoria completa (fases 1→3b), LIVE no renderer**:
+   - **Fase 1**: regra global "uma linha por item" (`global.ts`) — quebra simples entre achados, linha em branco só antes de cabeçalhos. Conserta MSK **e** obstétrico (mesmo bug de quebra de linha).
+   - **Fase 2** (migration **0016**): REGRA #1 de cobertura no modelo writer V2 (descrever TODAS as estruturas mesmo normais; corpo descreve / conclusão diagnostica; polias A1/A2; multi-segmento). Categoria `MUSCULOESQUELETICO` antiga REMOVIDA (inativa, 0 uso).
+   - **Fase 3a**: `sectionSpacingGuard.ts` — formato garantido por construção (determinístico).
+   - **Fase 3b**: renderer determinístico `categories/MUSCULOESQUELETICO.ts` — código monta título + técnica fixa + **cobertura das estruturas do roteiro (8 segmentos: ombro/joelho/pé/mão/punho/cotovelo/tornozelo/quadril)** + conclusão + formato; LLM extrai SÓ as alterações (preserva a redação do médico). Normalização determinística de nomenclatura (polia A2, quirodáctilo, artrose→alterações degenerativas, preservando Rizartrose). Golden **28/28**. **Flag ligada (RENDERER_CATEGORIES += MUSCULOESQUELETICO_V2), LIVE em prod.** Ver doutrina em memória [[doutrina-msk]].
+
+### Próximos passos (ordem)
+1. **Validar em prod** (uso real) os DOPPLER objetivo e o renderer MSK.
+2. **Épico IG determinística** (`docs/plano-ig-deterministica.md`) — regra Dr. Domingos (biometria atual é âncora; correção pela US precoce/DUM só na divergência), frase da 1ª US como **dado estruturado** (não texto que a IA re-padroniza), percentis Doppler usando a IG de referência. VEM ANTES do S6. Memória [[epico-ig-deterministica]].
+3. **S6** — lote writer restante (PROSTATA/ESCROTAL/GLANDULAS/DOPPLER_ARTERIAL) + criar objetivo onde falta.
+4. **MSK**: (a) rename do `code` `MUSCULOESQUELETICO_V2`→`MUSCULOESQUELETICO` — exige **release coordenado do app** (o app publicado envia o hint `_V2`; renomear só no DB mandaria laudos para ABDOMEN_TOTAL); (b) afinar frases de normalidade dos 4 segmentos novos com o Luiz.
+5. **Latência** (quick-wins, opcional): prompt-cache warming ao abrir o app/selecionar categoria; o gargalo é ~94% inferência LLM (~6s) — fast-path já remove o structurer.
+
+### ⚠️ Recomendações/armadilhas aprendidas
+- **Estilo Objetivo = TÉCNICA/ACHADOS/IMPRESSÃO.** Nunca ANÁLISE/OPINIÃO DO RELATÓRIO.
+- **Não trocar de modelo** — gpt-4.1-mini é o sweet-spot; a alavanca de latência+qualidade é o **renderer determinístico**, não o modelo.
+- **Categorias onde o médico traz o laudo pronto (MSK)**: PRESERVAR, não regerar. Determinismo de formato (sectionSpacingGuard) + de cobertura (renderer com roteiro) > prompt.
+- **Vercel env var ENCRIPTADA**: o GET da REST API retorna o valor ENCRIPTADO. NUNCA concatenar ao valor lido — setar o **plaintext completo** e confirmar com `vercel env pull`. (project `prj_lQ4WF9L9lHfDw0NnPu4qCk1LqFT7`, team `team_JFGRLFfKNTqoMuDUiwwmsSAT`, token em `~/Library/Application Support/com.vercel.cli/auth.json`.)
+- **Mudar flag/env var exige NOVO DEPLOY** para a função serverless pegar o valor.
+- **Mudanças são server-side**: o app Swift NÃO precisa rebuildar — consome a API; deploy do Vercel basta.
+- **OPENAI_API_KEY local**: vem via `apps/api/.env.local` → symlink `../../.env` (raiz). Não está em `apps/api/.env`.
+- **medmaestri/Dex**: o CLI temporário (`$MEDMAESTRI_CLI`) só existe enquanto a sessão que o criou está ativa — pode estar inacessível.
+- **Showcases/harnesses**: `docs/{doppler-writer-showcase,model-benchmark,msk-antes-depois,msk-renderer-3b}.html`; harnesses `.manual.ts` rodam com `tsx` (caminho absoluto; cwd reseta entre Bash).
 
 ## Feito na sessão 2026-06-13 (longa) — resumo para recuperar
 
