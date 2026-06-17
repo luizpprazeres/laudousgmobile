@@ -53,6 +53,12 @@ const ServerEnvSchema = z.object({
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
   // golden + review. Ver pipeline/commandOperations.ts.
   COMMAND_OPERATIONS: z.string().default("false"),
+  // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
+  // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
+  // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =
+  // comportamento atual (só biometria, byte-idêntico). Liga após validação do
+  // Luiz em prod. Ver renderer/ig.ts + docs/epico-ig-deterministica-design.md.
+  IG_REFERENCE_CORRECTION: z.string().default("false"),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),

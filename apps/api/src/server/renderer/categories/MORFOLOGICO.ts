@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { buildIgInput, computeIg, type IgRawFields, type IgComputed } from "../ig";
 
 /**
  * DET-5 — Renderer de MORFOLOGICO (1º, 2º e 3º trimestre).
@@ -48,6 +49,15 @@ export const MorfologicoFindingsSchema = z.object({
   ig_semanas: z.number().nullable(),
   ig_dias: z.number().nullable(),
   dum: z.string().nullable(),
+  // Épico IG determinística (Domingos) — referência precoce + data do exame.
+  data_exame: z.string().nullable(),
+  primeira_us_data: z.string().nullable(),
+  primeira_us_ig_semanas: z.number().nullable(),
+  primeira_us_ig_dias: z.number().nullable(),
+  ig_referencia_hoje_semanas: z.number().nullable(),
+  ig_referencia_hoje_dias: z.number().nullable(),
+  referencia_fonte: z.enum(["usg_precoce", "dum"]).nullable(),
+  corrigir_ig: z.boolean().nullable(),
   achados_adicionais: z.string().nullable(),
 });
 
@@ -64,7 +74,10 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "femur_mm", "tibia_mm", "fibula_mm", "umero_mm", "radio_mm", "ulna_mm",
     "peso_g", "peso_variacao_g", "percentil", "genitalia",
     "placenta_localizacao", "placenta_grau", "ila_cm",
-    "ig_semanas", "ig_dias", "dum", "achados_adicionais",
+    "ig_semanas", "ig_dias", "dum",
+    "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
+    "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
+    "achados_adicionais",
   ],
   properties: {
     trimestre: { type: "string", enum: ["1t", "2t", "3t"] },
@@ -77,7 +90,13 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     femur_mm: num, tibia_mm: num, fibula_mm: num, umero_mm: num, radio_mm: num, ulna_mm: num,
     peso_g: num, peso_variacao_g: num, percentil: num, genitalia: str,
     placenta_localizacao: str, placenta_grau: str, ila_cm: num,
-    ig_semanas: num, ig_dias: num, dum: str, achados_adicionais: str,
+    ig_semanas: num, ig_dias: num, dum: str,
+    data_exame: str, primeira_us_data: str,
+    primeira_us_ig_semanas: num, primeira_us_ig_dias: num,
+    ig_referencia_hoje_semanas: num, ig_referencia_hoje_dias: num,
+    referencia_fonte: { type: ["string", "null"], enum: ["usg_precoce", "dum", null] },
+    corrigir_ig: { type: ["boolean", "null"] },
+    achados_adicionais: str,
   },
 } as const;
 
@@ -105,7 +124,14 @@ REGRAS:
 6. peso_g/peso_variacao_g/percentil: só se ditados. genitalia: se ditada.
    placenta_localizacao e placenta_grau (Grannum: 0/1/2/3 — capture o número),
    ila_cm: se ditados.
-7. ig_semanas/ig_dias; dum como DD/MM/AAAA (converta extenso).
+7. ig_semanas/ig_dias (IG ATUAL da biometria); dum como DD/MM/AAAA (extenso → numérico).
+7b. ÉPICO IG — referência precoce (só quando DITADO; senão null): data_exame
+   (data/"hoje"); primeira_us_data + primeira_us_ig_semanas/dias (1ª US: data + IG
+   NAQUELA data); ig_referencia_hoje_semanas/dias (IG da referência já corrigida
+   p/ hoje, se ditada); referencia_fonte ("usg_precoce"|"dum" — a fonte que o médico
+   mandou USAR p/ corrigir; ESSENCIAL quando cita DUM e 1ª US juntas; senão null);
+   corrigir_ig (true="corrija/correlacione", false="não
+   corrigir/manter biometria", null se não mencionar). NUNCA inventar.
 8. achados_adicionais: SOMENTE malformações ou ALTERAÇÕES patológicas reais, nas
    palavras do médico. NUNCA coloque aqui frases de NORMALIDADE redundantes
    ("sem descolamentos", "movimentos e tônus presentes", "líquido normal",
@@ -123,6 +149,33 @@ function formatIg(semanas: number | null, dias: number | null): string {
   if (semanas === null) return "____ semanas";
   if (dias === null || dias === 0) return `${ptBr(semanas)} semanas`;
   return `${ptBr(semanas)} semanas e ${ptBr(dias)} dias`;
+}
+
+/**
+ * IG determinística (Domingos). Flag OFF (enabled=false) neutraliza a referência
+ * → computeIg devolve só a biometria (byte-idêntico ao formatIg legado). Morfo
+ * é sempre feto único → lead simples "Gestação em torno de ".
+ */
+function igResultMorfo(f: MorfologicoFindings, enabled: boolean): IgComputed {
+  const raw: IgRawFields = {
+    biometriaSemanas: f.ig_semanas,
+    biometriaDias: f.ig_dias,
+    dataExame: enabled ? f.data_exame : null,
+    dum: enabled ? f.dum : null,
+    primeiraUsData: enabled ? f.primeira_us_data : null,
+    primeiraUsIgSemanas: enabled ? f.primeira_us_ig_semanas : null,
+    primeiraUsIgDias: enabled ? f.primeira_us_ig_dias : null,
+    igRefHojeSemanas: enabled ? f.ig_referencia_hoje_semanas : null,
+    igRefHojeDias: enabled ? f.ig_referencia_hoje_dias : null,
+    referenciaFonte: enabled ? f.referencia_fonte : null,
+    corrigirComando: enabled ? f.corrigir_ig : null,
+  };
+  return computeIg(
+    buildIgInput(raw, {
+      leadAncora: "Gestação em torno de ",
+      leadBase: "Gestação em torno de ",
+    }),
+  );
 }
 
 /** Peso fetal com variação (+- g) e percentil — ambos OPCIONAIS. */
@@ -163,7 +216,8 @@ function grauPlacenta(s: string | null): string | null {
 const COMENTARIOS_1T =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
-function render1t(f: MorfologicoFindings): string {
+function render1t(f: MorfologicoFindings, igCorrection = false): string {
+  const ig = igResultMorfo(f, igCorrection);
   const aspectos: string[] = [
     "Feto único de situação variável.",
     `Batimentos cardíacos presentes, bem caracterizados pelo modo Doppler (FC = ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm).`,
@@ -189,7 +243,7 @@ function render1t(f: MorfologicoFindings): string {
   }
 
   const conclusao = [
-    `Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
+    ig.conclusaoClassico,
     "Líquido amniótico de quantidade normal.",
     f.ducto_venoso === "alterado"
       ? "Doppler do ducto venoso alterado (onda A reversa)."
@@ -200,10 +254,11 @@ function render1t(f: MorfologicoFindings): string {
     conclusao.push("Dopplervelocimetria normal das artérias uterinas.");
   }
 
-  return assemble("ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE", f, aspectos, conclusao);
+  return assemble("ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE", f, aspectos, conclusao, ig.fraseReferencia);
 }
 
-function render2t3t(f: MorfologicoFindings, terceiro: boolean): string {
+function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false): string {
+  const ig = igResultMorfo(f, igCorrection);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
@@ -259,12 +314,12 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean): string {
   ];
 
   const conclusao = [
-    `Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
+    ig.conclusaoClassico,
     "Líquido amniótico de quantidade normal.",
     "Morfologia fetal sem evidência de alteração detectável pelo método.",
   ];
 
-  return assemble(titulo, f, aspectos, conclusao);
+  return assemble(titulo, f, aspectos, conclusao, ig.fraseReferencia);
 }
 
 function assemble(
@@ -272,11 +327,13 @@ function assemble(
   f: MorfologicoFindings,
   aspectos: string[],
   conclusao: string[],
+  fraseReferencia: string | null = null,
 ): string {
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
   }
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
+  const igProse = fraseReferencia ? `${fraseReferencia}\n` : "";
   const conclTxt =
     conclusao.length === 1
       ? conclusao[0] ?? ""
@@ -284,6 +341,7 @@ function assemble(
   return [
     titulo,
     dumLinha,
+    igProse,
     COMENTARIOS_1T,
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
@@ -305,11 +363,12 @@ function assemble(
 export function renderMorfologico(
   f: MorfologicoFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean },
+  opts?: { objetivo?: boolean; igCorrection?: boolean },
 ): string {
-  if (opts?.objetivo) return renderMorfologicoObjetivo(f);
-  if (f.trimestre === "1t") return render1t(f);
-  return render2t3t(f, f.trimestre === "3t");
+  const igc = opts?.igCorrection ?? false;
+  if (opts?.objetivo) return renderMorfologicoObjetivo(f, igc);
+  if (f.trimestre === "1t") return render1t(f, igc);
+  return render2t3t(f, f.trimestre === "3t", igc);
 }
 
 // ===========================================================================
@@ -346,11 +405,13 @@ function assembleObj(
   f: MorfologicoFindings,
   achados: string[],
   impressao: string[],
+  fraseReferencia: string | null = null,
 ): string {
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push(`\n${f.achados_adicionais.trim()}`);
   }
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
+  const igProse = fraseReferencia ? `\n${fraseReferencia}` : "";
   const impressaoTxt =
     impressao.length === 1
       ? impressao[0] ?? ""
@@ -358,6 +419,7 @@ function assembleObj(
   return [
     titulo,
     dumLinha,
+    igProse,
     "",
     "TÉCNICA:",
     TECNICA_OBJ,
@@ -382,7 +444,8 @@ function genitaliaFmt(g: string | null): string {
   return g.trim();
 }
 
-function render1tObj(f: MorfologicoFindings): string {
+function render1tObj(f: MorfologicoFindings, igCorrection = false): string {
+  const ig = igResultMorfo(f, igCorrection);
   // Doppler das uterinas = presença de IP. Só então o título leva "COM DOPPLER
   // COLORIDO" e entram as frases de IP + a conclusão de dopplervelocimetria.
   const comDoppler =
@@ -416,7 +479,7 @@ function render1tObj(f: MorfologicoFindings): string {
   }
 
   const impressao = [
-    `Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
+    ...ig.conclusaoObjetivo,
     "Líquido amniótico de quantidade normal.",
     f.ducto_venoso === "alterado"
       ? "Doppler do ducto venoso alterado (onda A reversa)."
@@ -434,10 +497,12 @@ function render1tObj(f: MorfologicoFindings): string {
     f,
     achados,
     impressao,
+    ig.fraseReferencia,
   );
 }
 
-function render2t3tObj(f: MorfologicoFindings, terceiro: boolean): string {
+function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false): string {
+  const ig = igResultMorfo(f, igCorrection);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
@@ -485,15 +550,18 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean): string {
   ];
 
   const impressao = [
-    `Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
+    ...ig.conclusaoObjetivo,
     "Líquido amniótico de quantidade normal.",
     "Morfologia fetal sem evidência de alteração detectável pelo método.",
   ];
 
-  return assembleObj(titulo, f, achados, impressao);
+  return assembleObj(titulo, f, achados, impressao, ig.fraseReferencia);
 }
 
-export function renderMorfologicoObjetivo(f: MorfologicoFindings): string {
-  if (f.trimestre === "1t") return render1tObj(f);
-  return render2t3tObj(f, f.trimestre === "3t");
+export function renderMorfologicoObjetivo(
+  f: MorfologicoFindings,
+  igCorrection = false,
+): string {
+  if (f.trimestre === "1t") return render1tObj(f, igCorrection);
+  return render2t3tObj(f, f.trimestre === "3t", igCorrection);
 }

@@ -36,6 +36,9 @@ const F = (p: Partial<ObstetricaFindings>): ObstetricaFindings => ({
   placenta_quantidade: null, placenta_localizacao: null,
   placenta_ecotextura: null, placenta_grau: null, liquido_tipo: null,
   liquido_ila_cm: null, liquido_mbv_por_feto_cm: null, liquido_classe: null,
+  data_exame: null, primeira_us_data: null, primeira_us_ig_semanas: null,
+  primeira_us_ig_dias: null, ig_referencia_hoje_semanas: null,
+  ig_referencia_hoje_dias: null, referencia_fonte: null, corrigir_ig: null,
   achados_adicionais: null,
   ...p,
 });

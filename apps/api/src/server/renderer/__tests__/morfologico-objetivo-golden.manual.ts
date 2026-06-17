@@ -30,7 +30,10 @@ const F = (p: Partial<MorfologicoFindings>): MorfologicoFindings => ({
   femur_mm: null, tibia_mm: null, fibula_mm: null, umero_mm: null, radio_mm: null, ulna_mm: null,
   peso_g: null, peso_variacao_g: null, percentil: null, genitalia: null,
   placenta_localizacao: null, placenta_grau: null, ila_cm: null,
-  ig_semanas: null, ig_dias: null, dum: null, achados_adicionais: null,
+  ig_semanas: null, ig_dias: null, dum: null,
+  data_exame: null, primeira_us_data: null, primeira_us_ig_semanas: null,
+  primeira_us_ig_dias: null, ig_referencia_hoje_semanas: null,
+  ig_referencia_hoje_dias: null, referencia_fonte: null, corrigir_ig: null, achados_adicionais: null,
   ...p,
 });
 const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo: true });

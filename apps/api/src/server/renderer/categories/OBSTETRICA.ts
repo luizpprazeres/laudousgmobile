@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { buildIgInput, computeIg, type IgRawFields } from "../ig";
 
 /**
  * DET-5 — Renderer de OBSTETRICA (feto único + gemelar).
@@ -42,6 +43,15 @@ export const ObstetricaFindingsSchema = z.object({
   ig_semanas: z.number().nullable(),
   ig_dias: z.number().nullable(),
   dum: z.string().nullable(), // DD/MM/AAAA
+  // Épico IG determinística (Domingos): referência precoce + data do exame.
+  data_exame: z.string().nullable(), // DD/MM/AAAA — "hoje"/data do exame, se ditada
+  primeira_us_data: z.string().nullable(), // DD/MM/AAAA da 1ª US
+  primeira_us_ig_semanas: z.number().nullable(), // IG na data da 1ª US
+  primeira_us_ig_dias: z.number().nullable(),
+  ig_referencia_hoje_semanas: z.number().nullable(), // "hoje está com X" (já corrigido)
+  ig_referencia_hoje_dias: z.number().nullable(),
+  referencia_fonte: z.enum(["usg_precoce", "dum"]).nullable(), // fonte atribuída pelo médico
+  corrigir_ig: z.boolean().nullable(), // comando de voz explícito (true/false) ou null
   saco_gestacional_mm: z.number().nullable(), // DSM ditado direto ("DSM de 15,3")
   // As 3 medidas do saco gestacional, quando ditadas ("saco medindo A x B x C"
   // ou "calcule o DSM pelas medidas A x B x C") — o código calcula a média.
@@ -110,6 +120,14 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "ig_semanas",
     "ig_dias",
     "dum",
+    "data_exame",
+    "primeira_us_data",
+    "primeira_us_ig_semanas",
+    "primeira_us_ig_dias",
+    "ig_referencia_hoje_semanas",
+    "ig_referencia_hoje_dias",
+    "referencia_fonte",
+    "corrigir_ig",
     "saco_gestacional_mm",
     "saco_gestacional_medidas_mm",
     "placenta_quantidade",
@@ -130,6 +148,14 @@ export const OBSTETRICA_JSON_SCHEMA = {
     ig_semanas: num,
     ig_dias: num,
     dum: str,
+    data_exame: str,
+    primeira_us_data: str,
+    primeira_us_ig_semanas: num,
+    primeira_us_ig_dias: num,
+    ig_referencia_hoje_semanas: num,
+    ig_referencia_hoje_dias: num,
+    referencia_fonte: { type: ["string", "null"], enum: ["usg_precoce", "dum", null] },
+    corrigir_ig: { type: ["boolean", "null"] },
     saco_gestacional_mm: num,
     saco_gestacional_medidas_mm: { type: ["array", "null"], items: { type: "number" } },
     placenta_quantidade: num,
@@ -171,8 +197,22 @@ REGRAS:
     - Mesma regra de unidade/decimal da BIOMETRIA (não assuma unidade; preserve a
       casa decimal). Nada ditado → ambos null.
 5. peso_g em gramas; percentil e peso_variacao_g só se ditados.
-6. ig_semanas/ig_dias: idade gestacional ditada.
+6. ig_semanas/ig_dias: idade gestacional ATUAL (da biometria deste exame) ditada.
 7. dum: data da última menstruação como DD/MM/AAAA (converta extenso → numérico).
+7b. ÉPICO IG — referência precoce (só quando DITADO; senão null):
+   - data_exame: data do exame / "hoje" (DD/MM/AAAA), se o médico disser.
+   - primeira_us_data + primeira_us_ig_semanas/dias: "primeira ultrassonografia/US
+     realizada em DD/MM com X semanas e Y dias" (a IG NAQUELA data, não a de hoje).
+   - ig_referencia_hoje_semanas/dias: quando o médico já dá a IG da referência
+     CORRIGIDA para hoje ("pela primeira US hoje está com 20 e 3").
+   - referencia_fonte: "usg_precoce" se a referência citada for a 1ª ultrassonografia;
+     "dum" se for a data da última menstruação. ESSENCIAL quando o médico cita as
+     DUAS (ex.: "DUM 01/01, mas pela primeira US hoje está com 20") — preencha com a
+     que ele mandou USAR para corrigir. null se não houver referência ou for óbvia.
+   - corrigir_ig: true se o médico mandar corrigir/correlacionar ("corrija pela
+     primeira US", "correlacione com a DUM"); false se disser para NÃO corrigir
+     ("manter a biometria", "não corrigir"); null se não mencionar.
+   - NUNCA invente datas/IG de referência. Tudo null no exame obstétrico comum.
 8. corionicidade (gemelar): texto ditado ("dicoriônica e diamniótica",
    "monocoriônica e diamniótica"...). null se único.
 9. placenta: quantidade (gemelar pode ter 2+), localização, ecotextura, grau.
@@ -386,6 +426,37 @@ function numberConclusao(itens: string[]): string {
 }
 
 /**
+ * Campos brutos de IG (épico Domingos). Quando `enabled` é false (flag OFF), a
+ * referência precoce é NEUTRALIZADA → computeIg devolve só a biometria, frase
+ * byte-idêntica ao formatIg legado. Único caminho de código (sem branch duplo).
+ */
+function igRawFromFindings(f: ObstetricaFindings, enabled: boolean): IgRawFields {
+  return {
+    biometriaSemanas: f.ig_semanas,
+    biometriaDias: f.ig_dias,
+    dataExame: enabled ? f.data_exame : null,
+    dum: enabled ? f.dum : null,
+    primeiraUsData: enabled ? f.primeira_us_data : null,
+    primeiraUsIgSemanas: enabled ? f.primeira_us_ig_semanas : null,
+    primeiraUsIgDias: enabled ? f.primeira_us_ig_dias : null,
+    igRefHojeSemanas: enabled ? f.ig_referencia_hoje_semanas : null,
+    igRefHojeDias: enabled ? f.ig_referencia_hoje_dias : null,
+    referenciaFonte: enabled ? f.referencia_fonte : null,
+    corrigirComando: enabled ? f.corrigir_ig : null,
+  };
+}
+
+/** computeIg com o lead da conclusão (gemelar passa o lead com corionicidade). */
+function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string) {
+  return computeIg(
+    buildIgInput(igRawFromFindings(f, enabled), {
+      leadAncora,
+      leadBase: "Gestação em torno de ",
+    }),
+  );
+}
+
+/**
  * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
  * o comportamento anterior; objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO (Sprint 2),
  * reusando a MESMA extração e os MESMOS cálculos determinísticos.
@@ -393,16 +464,27 @@ function numberConclusao(itens: string[]): string {
 export function renderObstetrica(
   f: ObstetricaFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean },
+  opts?: { objetivo?: boolean; igCorrection?: boolean },
 ): string {
-  if (opts?.objetivo) return renderObstetricaObjetivo(f);
-  return renderObstetricaClassico(f);
+  const igc = opts?.igCorrection ?? false;
+  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc);
+  return renderObstetricaClassico(f, igc);
 }
 
 /** Monta o laudo obstétrico (estrutura por construção). */
-export function renderObstetricaClassico(f: ObstetricaFindings): string {
+export function renderObstetricaClassico(
+  f: ObstetricaFindings,
+  igCorrection = false,
+): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
+
+  // IG determinística (Domingos). Lead leva a corionicidade no gemelar.
+  const corionLead = f.corionicidade ? `${f.corionicidade} ` : "";
+  const leadAncora = gemelar
+    ? `Gestação gemelar ${corionLead}em torno de `
+    : "Gestação em torno de ";
+  const ig = igResultFor(f, igCorrection, leadAncora);
 
   const aspectos: string[] = [];
   const conclusao: string[] = [];
@@ -443,11 +525,8 @@ export function renderObstetricaClassico(f: ObstetricaFindings): string {
     const liq = liquido(f);
     aspectos.push(liq.corpo);
 
-    // Conclusão gemelar.
-    const corion = f.corionicidade ? `${f.corionicidade} ` : "";
-    conclusao.push(
-      `Gestação gemelar ${corion}em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
-    );
+    // Conclusão gemelar — IG determinística (Domingos).
+    conclusao.push(ig.conclusaoClassico);
     conclusao.push(liq.conclusao);
     if (pond.divergenciaG !== null) {
       const significativa = (pond.divergenciaPct ?? 0) >= 20;
@@ -490,7 +569,7 @@ export function renderObstetricaClassico(f: ObstetricaFindings): string {
     aspectos.push(liq.corpo);
     if (f.gestacao_inicial) aspectos.push("Ovários de aspecto normal.");
 
-    conclusao.push(`Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`);
+    conclusao.push(ig.conclusaoClassico);
     if (!f.gestacao_inicial) conclusao.push(liq.conclusao);
   }
 
@@ -502,10 +581,13 @@ export function renderObstetricaClassico(f: ObstetricaFindings): string {
 
   // Linha opcional de DUM (logo após o título).
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
+  // Frase-prosa da referência precoce (1ª US/DUM corrigida p/ hoje), se houver.
+  const igProse = ig.fraseReferencia ? `${ig.fraseReferencia}\n` : "";
 
   const corpo = [
     titulo,
     dumLinha,
+    igProse,
     COMENTARIOS,
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
@@ -585,11 +667,21 @@ function placentaFraseObj(f: ObstetricaFindings): string | null {
 }
 
 /** Render objetivo do laudo obstétrico. */
-export function renderObstetricaObjetivo(f: ObstetricaFindings): string {
+export function renderObstetricaObjetivo(
+  f: ObstetricaFindings,
+  igCorrection = false,
+): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar
     ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR"
     : "ULTRASSONOGRAFIA OBSTÉTRICA";
+
+  // IG determinística (Domingos). Lead leva a corionicidade no gemelar.
+  const corionLead = f.corionicidade ? `${f.corionicidade} ` : "";
+  const leadAncora = gemelar
+    ? `Gestação gemelar ${corionLead}em torno de `
+    : "Gestação em torno de ";
+  const ig = igResultFor(f, igCorrection, leadAncora);
 
   const achados: string[] = [];
   const impressao: string[] = [];
@@ -638,10 +730,7 @@ export function renderObstetricaObjetivo(f: ObstetricaFindings): string {
     const liq = liquido(f);
     achados.push(liq.corpo);
 
-    const corion = f.corionicidade ? `${f.corionicidade} ` : "";
-    impressao.push(
-      `Gestação gemelar ${corion}em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`,
-    );
+    impressao.push(...ig.conclusaoObjetivo);
     impressao.push(liq.conclusao);
     if (pond.divergenciaG !== null) {
       const significativa = (pond.divergenciaPct ?? 0) >= 20;
@@ -671,7 +760,7 @@ export function renderObstetricaObjetivo(f: ObstetricaFindings): string {
       achados.push(liq.corpo);
       achados.push("Ovários de aspecto normal.");
 
-      impressao.push(`Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`);
+      impressao.push(...ig.conclusaoObjetivo);
     } else {
       const apres = apresentacaoFmt(ft.apresentacao) ?? "cefálica";
       let fetoFrase = `Feto único, em apresentação ${apres}`;
@@ -688,7 +777,7 @@ export function renderObstetricaObjetivo(f: ObstetricaFindings): string {
       const liq = liquido(f);
       achados.push(liq.corpo);
 
-      impressao.push(`Gestação em torno de ${formatIg(f.ig_semanas, f.ig_dias)}.`);
+      impressao.push(...ig.conclusaoObjetivo);
       impressao.push(liq.conclusao);
     }
   }
@@ -698,6 +787,7 @@ export function renderObstetricaObjetivo(f: ObstetricaFindings): string {
   }
 
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
+  const igProse = ig.fraseReferencia ? `\n${ig.fraseReferencia}` : "";
 
   const impressaoTxt =
     impressao.length === 1
@@ -707,6 +797,7 @@ export function renderObstetricaObjetivo(f: ObstetricaFindings): string {
   const corpo = [
     titulo,
     dumLinha,
+    igProse,
     "",
     "TÉCNICA:",
     TECNICA_OBJ,
