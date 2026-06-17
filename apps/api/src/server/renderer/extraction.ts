@@ -50,6 +50,11 @@ import {
   VIAS_URINARIAS_EXTRACTION_PROMPT,
   ViasUrinariasFindingsSchema,
 } from "./categories/VIAS_URINARIAS";
+import {
+  MUSCULOESQUELETICO_JSON_SCHEMA,
+  MUSCULOESQUELETICO_EXTRACTION_PROMPT,
+  parseMusculoesqueletico,
+} from "./categories/MUSCULOESQUELETICO";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -82,6 +87,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "PELVE_FEMININA",
   "ABDOMEN_SUPERIOR",
   "VIAS_URINARIAS",
+  "MUSCULOESQUELETICO_V2",
 ]);
 
 export type RendererExtractionResult = {
@@ -241,6 +247,12 @@ export const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: VIAS_URINARIAS_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: VIAS_URINARIAS_EXTRACTION_PROMPT,
     parse: (raw) => ViasUrinariasFindingsSchema.parse(raw),
+  },
+  MUSCULOESQUELETICO_V2: {
+    schemaName: "MusculoesqueleticoFindings",
+    jsonSchema: MUSCULOESQUELETICO_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: MUSCULOESQUELETICO_EXTRACTION_PROMPT,
+    parse: (raw) => parseMusculoesqueletico(raw),
   },
 };
 

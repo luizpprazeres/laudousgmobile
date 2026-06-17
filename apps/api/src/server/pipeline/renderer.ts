@@ -38,6 +38,7 @@ import { renderCervical } from "../renderer/categories/CERVICAL";
 import { renderPelveFeminina } from "../renderer/categories/PELVE_FEMININA";
 import { renderAbdomenSuperior } from "../renderer/categories/ABDOMEN_SUPERIOR";
 import { renderViasUrinarias } from "../renderer/categories/VIAS_URINARIAS";
+import { renderMusculoesqueletico } from "../renderer/categories/MUSCULOESQUELETICO";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -207,7 +208,8 @@ export async function* runRendererStream(args: {
     args.categoryCode === "CERVICAL" ||
     args.categoryCode === "PELVE_FEMININA" ||
     args.categoryCode === "ABDOMEN_SUPERIOR" ||
-    args.categoryCode === "VIAS_URINARIAS"
+    args.categoryCode === "VIAS_URINARIAS" ||
+    args.categoryCode === "MUSCULOESQUELETICO_V2"
   ) {
     const objetivo = isEstiloObjetivo(args.writingStyleId);
     const fnd = extraction.findings;
@@ -237,6 +239,10 @@ export async function* runRendererStream(args: {
         break;
       case "ABDOMEN_SUPERIOR":
         fullText = renderAbdomenSuperior(fnd as Parameters<typeof renderAbdomenSuperior>[0], { objetivo });
+        break;
+      case "MUSCULOESQUELETICO_V2":
+        // Fase 3b: parte normal montada por construção; LLM extrai só alterações.
+        fullText = renderMusculoesqueletico(fnd as Parameters<typeof renderMusculoesqueletico>[0]);
         break;
       default:
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });
