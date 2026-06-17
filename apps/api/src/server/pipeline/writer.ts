@@ -72,19 +72,33 @@ export async function* runWriterStream(args: {
     ? buildRawUserMessage(args.rawUserMessage)
     : buildUserMessage(args.findings);
 
+  const writerModel = env().OPENAI_MODEL_WRITER;
+  // GPT-5 (reasoning models) não aceitam temperature custom nem max_tokens —
+  // usam max_completion_tokens + reasoning_effort. gpt-4.1-mini e chat-latest
+  // seguem o caminho clássico (temperature por categoria + max_tokens).
+  const isReasoningModel =
+    /gpt-5/.test(writerModel) && !/chat-latest/.test(writerModel);
+  const reqParams: Record<string, unknown> = {
+    model: writerModel,
+    stream: true,
+    stream_options: { include_usage: true },
+    messages: [
+      { role: "system", content: systemMessage },
+      { role: "user", content: userMessage },
+    ],
+  };
+  if (isReasoningModel) {
+    reqParams.max_completion_tokens = 2500;
+    reqParams.reasoning_effort = env().OPENAI_WRITER_REASONING_EFFORT;
+  } else {
+    // Temperatura por categoria — herdada do LaudoUSG original.
+    reqParams.temperature = temperatureForCategory(effectiveCategoryCode);
+    reqParams.max_tokens = 2500; // mesmo limite do original
+  }
   const stream = await openai().chat.completions.create(
-    {
-      model: env().OPENAI_MODEL_WRITER,
-      // Temperatura por categoria — herdada do LaudoUSG original.
-      temperature: temperatureForCategory(effectiveCategoryCode),
-      stream: true,
-      stream_options: { include_usage: true },
-      max_tokens: 2500, // mesmo limite do original
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: userMessage },
-      ],
-    },
+    reqParams as unknown as Parameters<
+      ReturnType<typeof openai>["chat"]["completions"]["create"]
+    >[0] & { stream: true },
     { signal: args.signal },
   );
 

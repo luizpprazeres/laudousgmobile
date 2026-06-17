@@ -1,0 +1,338 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Benchmark pontual — tempo + custo</title>
+<style>
+body{font:14px/1.5 -apple-system,system-ui,sans-serif;margin:24px;background:#f5f5f7;color:#1d1d1f}
+h1{font-size:22px} h2{margin-top:28px;color:#0071e3}
+pre.resumo{background:#1d1d1f;color:#0f0;padding:14px;border-radius:8px;overflow:auto;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap}
+.nota{font-size:12px;color:#888}
+.caso{background:#fff;border-radius:12px;padding:16px;margin:14px 0;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.ditado{background:#f0f4ff;border-radius:8px;padding:10px;font-size:13px;color:#444;margin-bottom:12px}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.col h4{margin:0 0 2px;font-size:12px;color:#0071e3} .col.real h4{color:#1d7a35}
+.col.real pre{background:#f0fff4;border-color:#bfe9cc}
+.col .lat{font-size:11px;color:#666;margin-bottom:6px}
+pre{white-space:pre-wrap;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:10px;font:12px/1.45 ui-monospace,Menlo,monospace;margin:0;max-height:440px;overflow:auto}
+.erro{color:#c00} @media(max-width:1200px){.cols{grid-template-columns:1fr 1fr}}
+</style>
+<h1>Benchmark pontual — tempo + custo + qualidade (casos reais)</h1>
+<p class="nota">Preços usados: gpt-4.1-mini: $0.4/$1.6 por 1M in/out (confirmado) · gpt-5.4-nano: $0.05/$0.4 por 1M in/out (ESTIMATIVA — confirmar) · deepseek-v4-flash: $0.28/$0.42 por 1M in/out (ESTIMATIVA — confirmar). Custo/laudo = in×preço_in + out×preço_out (reasoning tokens contam como output).</p>
+<h2>Resumo</h2>
+<pre class="resumo">ATUAL em prod (auditoria): total médio 8540ms
+atual · 4.1-mini | total=5806ms | in=4513 out=359 (reason 0) | ~$0.00238/laudo · ~$2.38/1000 laudos
+5.4-nano · xhigh | total=42730ms | in=4512 out=6840 (reason 6786) | ~$0.00296/laudo · ~$2.96/1000 laudos
+deepseek-v4-flash · max | total=41453ms | in=5053 out=4820 (reason 4440) | ~$0.00344/laudo · ~$3.44/1000 laudos</pre>
+<h2>Caso a caso (verde = laudo real de produção)</h2>
+<div class="caso"><div class="ditado"><b>ABDOMEN_TOTAL</b><br>Rim direito presentando imagem anecóica com margem regular medindo 0.8 por 0.8 por 0.5 centímetros, situada no terço superior, cisto simples, Rim esquerdo apresentando imagem hiperecoico com margem, medindo 0.5 centímetros no seu maior eixo, ocasionando sombra acústica, situada no terço inferior, na litiase renal esquerda.</div><div class="cols"><div class="col real"><h4>LAUDO REAL — gpt-4.1-mini</h4><div class="lat">total 6048ms (prod)</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem anecoica homogênea, com margem regular, medindo 0,8 x 0,8 x 0,5 cm, situada no terço superior.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem hiperecoica, medindo 0,5 cm no seu maior eixo, situada em terço inferior.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+CONCLUSÃO:
+1. Cisto simples no rim direito.
+2. Litíase renal esquerda.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div><div class="col"><h4>atual · 4.1-mini</h4><div class="lat">total 2.9s · in 139 / out 101 · ≈$0.00022</div><pre>RIM DIREITO: Presença de imagem anecóica com margem regular, medindo 0,8 x 0,8 x 0,5 cm, situada no terço superior, compatível com cisto simples.
+
+RIM ESQUERDO: Presença de imagem hiperecóica com margem definida, medindo 0,5 cm no seu maior eixo, localizada no terço inferior, associada a sombra acústica, compatível com litíase renal.</pre></div><div class="col"><h4>5.4-nano · xhigh</h4><div class="lat">total 21.7s · in 138 / out 3360 (reason 3142) · ≈$0.00135</div><pre>**LAUDO TÉCNICO – ULTRASSONOGRAFIA DE ABDOME TOTAL**
+
+**Achados:**
+- **Rim direito:** imagem **anecóica**, com **margem regular**, medindo **0,8 x 0,8 x 0,5 cm**, localizada no **terço superior**, com aspecto de **cisto simples**.  
+- **Rim esquerdo:** imagem **hiperecóica**, com **margem**, medindo **0,5 cm** no **maior eixo**, localizada no **terço inferior**, **ocasionando sombra acústica**, compatível com **litiase renal esquerda**.
+
+**Impressão diagnóstica:**
+1. **Cisto simples renal direito** (0,8 x 0,8 x 0,5 cm), no terço superior.  
+2. **Litiase renal esquerda** (0,5 cm no maior eixo), no terço inferior, com sombra acústica.</pre></div><div class="col"><h4>deepseek-v4-flash · max</h4><div class="lat">total 16.9s · in 231 / out 1784 (reason 1631) · ≈$0.00081</div><pre>**LAUDO DE ULTRASSONOGRAFIA DE RINS E VIAS URINÁRIAS**
+
+**Rim Direito:** Apresenta imagem anecogênica, de contornos regulares, medindo 0,8 x 0,8 x 0,5 cm, localizada no terço superior, compatível com cisto simples.
+
+**Rim Esquerdo:** Apresenta imagem hiperecogênica, medindo 0,5 cm no maior eixo, com sombra acústica posterior, localizada no terço inferior, compatível com litíase renal.
+
+**Conclusão:** Cisto simples no rim direito. Litíase renal no rim esquerdo.</pre></div></div></div><div class="caso"><div class="ditado"><b>OBSTETRICA</b><br>Biometria fetal:
+DBP: 9.21 cm
+CC: 32.85 cm
+CA: 32.00 cm
+CF: 6.82 cm
+Peso fetal estimado: 2820 g
+Variação do peso: ±412 g
+Percentil: 29.12
+IG pela DUM: 37s
+IG pela biometria: 36s
+
+Fonografia obstétrica com feto em apresentação com dorso à direita, a frequência cardíaca de 130, paciente posterior, com a textura com maior mede 5.7 centímetros após o título acrescente a 1º ultrassonografia realizada 11 do 11 de 2025 com 6 semanas, hoje com 37 semanas. Na conclusão e tem 1 gestação em torno de 36 semanas pela biometria atual vírgula, devendo ser corrigida pela ultrassonografia precoce compatível com 37 semanas. Aí no final da conclusão, adicione 1 item, o exame atual comparado ao anterior, realizado 19 de maio de 2026 mostra a evolução normal da gestação.</div><div class="cols"><div class="col real"><h4>LAUDO REAL — gpt-4.1-mini</h4><div class="lat">total 6246ms (prod)</div><pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+DUM: 11/11/2025.
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação apresentação, com dorso à direita.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 130 bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 92,1 mm.
+Circunferência da cabeça (CC) de 328,5 mm.
+Circunferência abdominal (CA) de 320 mm.
+Comprimento do fêmur (CF) de 68,2 mm.
+Peso aproximado de 2820 gramas (+- 412 gramas, percentil 29,1).
+
+Placenta, com ecotextura textura com maior mede 5.7 centímetros.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+
+exame atual comparado ao anterior, realizado 19 de maio de 2026 mostra a evolução normal da gestação
+
+CONCLUSÃO:
+1) Gestação em torno de 36 semanas.
+2) Líquido amniótico em quantidade normal.
+3) E tem 1 gestação em torno de 36 semanas pela biometria atual vírgula, devendo ser corrigida pela ultrassonografia precoce compatível com 37 semanas.
+4) 1 item, o exame atual comparado ao anterior, realizado 19 de maio de 2026 mostra a evolução normal da gestação.</pre></div><div class="col"><h4>atual · 4.1-mini</h4><div class="lat">total 6.4s · in 291 / out 285 · ≈$0.00057</div><pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+Biometria fetal:
+- Diâmetro Biparietal (DBP): 9,21 cm
+- Circunferência Cefálica (CC): 32,85 cm
+- Circunferência Abdominal (CA): 32,00 cm
+- Comprimento Femural (CF): 6,82 cm
+- Peso fetal estimado: 2820 g (variação ± 412 g)
+- Percentil: 29,12
+
+Idade Gestacional (IG):
+- Pela Data da Última Menstruação (DUM): 37 semanas
+- Pela biometria: 36 semanas
+
+Fonografia obstétrica:
+- Feto em apresentação com dorso à direita
+- Frequência cardíaca fetal: 130 bpm
+- Posição fetal: paciente posterior
+- Textura placentária com maior medida de 5,7 cm
+
+Ultrassonografia realizada em 11/11/2025 com 6 semanas. Hoje com 37 semanas.
+
+Conclusão:
+1. Gestação em torno de 36 semanas pela biometria atual, devendo ser corrigida pela ultrassonografia precoce compatível com 37 semanas.
+2. O exame atual comparado ao anterior, realizado em 19/05/2026, mostra evolução normal da gestação.</pre></div><div class="col"><h4>5.4-nano · xhigh</h4><div class="lat">total 50.2s · in 290 / out 8000 (reason 8000) · ≈$0.00321</div><pre>(sem texto)</pre></div><div class="col"><h4>deepseek-v4-flash · max</h4><div class="lat">total 61.9s · in 384 / out 7164 (reason 6896) · ≈$0.00312</div><pre>FONOGRAFIA OBSTÉTRICA
+
+A 1ª ultrassonografia realizada em 11/11/2025 com 6 semanas, hoje com 37 semanas.
+
+**Descrição:**
+- Biometria fetal:
+  - DBP: 9,21 cm
+  - CC: 32,85 cm
+  - CA: 32,00 cm
+  - CF: 6,82 cm
+  - Peso fetal estimado: 2820 g ± 412 g (percentil 29,12)
+  - Idade gestacional pela DUM: 37 semanas
+  - Idade gestacional pela biometria: 36 semanas
+- Feto em apresentação com dorso à direita, frequência cardíaca de 130 bpm.
+- Placenta posterior.
+- Maior bolsão de líquido amniótico mede 5,7 cm.
+
+**Conclusão:**
+1. Gestação em torno de 36 semanas pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 37 semanas.
+2. O exame atual comparado ao anterior, realizado em 19 de maio de 2026, mostra evolução normal da gestação.</pre></div></div></div><div class="caso"><div class="ditado"><b>DOPPLER_OBSTETRICO</b><br>Ultrassonografia obstétrica com doppler com fé em apresentação cefálica com dorso à esquerda, cardíaca de 147, placenta posterior com ecotextura heterogênea e, o maior bolsão vertical mede 4 5 centímetros após o título acrescente a 1º ultrassonografia realizada 6 de janeiro de 2026 com 6 semanas e 3 dias, hoje com 29 semanas e 3 dias e, item 1 da conclusão a gestação em torno de 28 semanas e 3 dias pela biometria atual, vírgula, devendo ser corrigida pela precoce compatível com, 29 semanas e 3 dias.
+
+
+Biometria fetal:
+DBP: 7.47 cm
+CC: 27.81 cm
+CA: 24.72 cm
+CF: 5.18 cm
+Peso fetal estimado: 1274 g
+Variação do peso: ±186 g
+Percentil: 15.87
+IG pela DUM: 29s3d
+IG pela biometria: 28s3d
+
+Doppler obstétrico:
+IP uterina direita: 0.90
+IP uterina esquerda: 0.92
+IP artéria umbilical: 0.87
+IP artéria cerebral média: 1.81
+
+
+→ Percentis (27s5d, Gratacós/FMF): AU IP 0,87 (P17) · ACM IP 1,81 (P26) · Uterinas média IP 0,91 (P64)</div><div class="cols"><div class="col real"><h4>LAUDO REAL — gpt-4.1-mini</h4><div class="lat">total 10525ms (prod)</div><pre>ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO
+
+1ª ultrassonografia realizada em 06/01/2026 com 6 semanas e 3 dias, hoje com 29 semanas e 3 dias.
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação cefálica, com dorso à esquerda.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 147 bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 74,7 mm.
+Circunferência da cabeça (CC) de 278,1 mm.
+Circunferência abdominal (CA) de 247,2 mm.
+Comprimento do fêmur (CF) de 51,8 mm.
+Peso aproximado de 1274 g (+- 186 g, percentil 16).
+
+Placenta de localização posterior, com ecotextura heterogênea, de acordo com a fase da gestação.
+O maior bolsão vertical mede 4,5 cm.
+
+DOPPLERVELOCIMETRIA:
+Artéria umbilical: IP 0,87 (percentil 17).
+Artéria cerebral média: IP 1,81 (percentil 26).
+Artéria uterina direita: IP 0,90.
+Artéria uterina esquerda: IP 0,92.
+IP médio das artérias uterinas mede 0,91 (percentil 64).
+
+CONCLUSÃO:
+1) Gestação em torno de 28 semanas e 3 dias pela biometria atual, devendo ser corrigida pela precoce compatível com 29 semanas e 3 dias.
+2) Líquido amniótico de quantidade normal (MBV mede 4,5 cm).
+3) Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.
+4) Ausência de sinais de incisuras.
+5) Não há sinais de pré-centralização ou de centralização.
+6) Perfil hemodinâmico fetal é normal, menor de 1.0.</pre></div><div class="col"><h4>atual · 4.1-mini</h4><div class="lat">total 8.7s · in 17187 / out 574 · ≈$0.00779</div><pre>ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO
+
+Primeira ultrassonografia realizada em 06/01/2026 com 6 semanas e 3 dias. Hoje com 29 semanas e 3 dias.
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação cefálica, com dorso à esquerda.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 147 bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 74 mm.
+Circunferência da cabeça (CC) de 278 mm.
+Circunferência abdominal (CA) de 247 mm.
+Comprimento do fêmur (CF) de 52 mm.
+Peso aproximado de 1274 g (+- 186 g, percentil 16).
+
+Placenta de localização posterior, com ecotextura heterogênea, de acordo com a fase da gestação.
+O maior bolsão vertical mede 4,5 cm.
+
+DOPPLERVELOCIMETRIA:
+Artéria umbilical: IP 0,87 (percentil 17).
+Artéria cerebral média: IP 1,81 (percentil 26).
+Artéria uterina direita: IP 0,90.
+Artéria uterina esquerda: IP 0,92.
+IP médio das artérias uterinas mede 0,91 (percentil 64).
+
+CONCLUSÃO:
+1) Gestação em torno de 28 semanas e 3 dias pela biometria atual, devendo ser corrigida pela precoce compatível com 29 semanas e 3 dias.
+2) Líquido amniótico de quantidade normal (MBV mede 4,5 cm).
+3) Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.
+4) Ausência de sinais de incisuras.
+5) Não há sinais de pré-centralização ou de centralização.
+6) Perfil hemodinâmico fetal é normal, menor de 1.0.</pre></div><div class="col"><h4>5.4-nano · xhigh</h4><div class="lat">total 50.8s · in 17186 / out 8000 (reason 8000) · ≈$0.00406</div><pre>(sem texto)</pre></div><div class="col"><h4>deepseek-v4-flash · max</h4><div class="lat">total 42.3s · in 19046 / out 5120 (reason 4533) · ≈$0.00748</div><pre>ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO
+
+Primeira ultrassonografia realizada em 06/01/2026 com 6 semanas e 3 dias. Hoje com 29 semanas e 3 dias.
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação cefálica, com dorso à esquerda. Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 147 bpm). Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes: As estruturas cranianas e da coluna vertebral são normais. O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 74,7 mm.
+Circunferência da cabeça (CC) de 278,1 mm.
+Circunferência abdominal (CA) de 247,2 mm.
+Comprimento do fêmur (CF) de 51,8 mm.
+Peso aproximado de 1274 g (±186 g, percentil 16).
+
+Placenta de localização posterior, com ecotextura heterogênea.
+
+O maior bolsão vertical mede 4,5 cm.
+
+DOPPLERVELOCIMETRIA:
+Artéria umbilical: IP 0,87 (P17). Artéria cerebral média: IP 1,81 (P26). Artéria uterina direita: IP 0,90. Artéria uterina esquerda: IP 0,92. IP médio das artérias uterinas mede 0,91 (P64).
+
+CONCLUSÃO:
+1) Gestação em torno de 28 semanas e 3 dias pela biometria atual, devendo ser corrigida pela precoce compatível com 29 semanas e 3 dias.
+2) Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.
+3) Ausência de sinais de incisuras.
+4) Não há sinais de pré-centralização ou de centralização.
+5) Perfil hemodinâmico fetal é normal, menor de 1.0.</pre></div></div></div><div class="caso"><div class="ditado"><b>TIREOIDE</b><br>Lobo direito, ultrassonografia da tireoide com doppler colorido com lobo direito medindo 4.2 por 1.4 por 1.4 com volume de 4.3, apresentando Mão logo direita apresentando Imagem ISO com margem regular, mais larga do que medindo 1.1 por 0.5 por 1.1 centímetros. Situada no terço superior, Além disso o pico sistólico da artéria tireoidiana inferior direita de 35.6 centímetros por 2º,
+Além disso, apresentandoo imagem anecoica com finos ecos, com margem regular medindo 0.3 por 0.3 por 0.4 centímetros, situada no terço médio,
+Além disso, imagem hipoecoica com margem regular, mais larga do que alta, medindo 0.2 para o 0.1 0.2 centímetros, sem calcificação, acentuada no terço superior,
+Lobo esquerdo medindo 4.4 por 1.4 por 1.5 com 1 volume de 4.5,
+Apresentando imagem isoecoica com halo hipoecoico fino, com margem regular, medindo 1.9 por 1.5 por 1.9 centímetros, situado em 1 terço inferior, Convascularização periférica maior do que a central.
+Sistólico, artéria, tireoidiano inferior, esquerda de 23.5 centímetros por 2º, além disso imagem logo logo esquerdo apresentando também imagem, anequoica com margem regular, medindo 0.2 para 0.1 por 0.2 centímetros, situada no terço médio.
+
+Istimo medindo 2 ponto por 0.5 por 1.8 com volume de 1.4</div><div class="cols"><div class="col real"><h4>LAUDO REAL — gpt-4.1-mini</h4><div class="lat">total 11342ms (prod)</div><pre>ULTRASSONOGRAFIA DA TIREOIDE COM DOPPLER COLORIDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 12 MHz, abrangendo todos os segmentos da glândula tireoide, como também a cadeia ganglionar cervical de I a V. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Lobo direito medindo 4,2 x 1,4 x 1,4 cm (volume de 4,3 ml), apresentando imagem isoecoica, com margem regular, medindo 1,1 x 0,5 x 1,1 cm, mais larga do que alta, situada terço superior; imagem anecoica com finos ecos, com margem regular, medindo 0,3 x 0,3 x 0,4 cm, situada terço médio; imagem hipoecoica, com margem regular, medindo 0,2 x 0,1 x 0,2 cm, sem calcificações, mais larga do que alta, situada terço superior.
+Lobo esquerdo medindo 4,4 x 1,4 x 1,5 cm (volume de 4,5 ml), apresentando imagem isoecoica, com margem regular, com halo fino e regular, medindo 1,9 x 1,5 x 1,9 cm, situada terço inferior; imagem anecoica homogênea, com margem regular, medindo 0,2 x 0,1 x 0,2 cm, situada terço médio.
+Istmo medindo 2 x 0,5 x 1,8 cm (volume de 1,4 ml), de ecogenicidade e ecotextura normais.
+
+Pico sistólico da artéria tireoidiana inferior direita de 35,6 cm/s.
+Pico sistólico da artéria tireoidiana inferior esquerda de 23,5 cm/s.
+
+CONCLUSÃO:
+1. Tireoide de volume normal (10,2 ml).
+2. Lobo direito apresentando imagem isoecoica terço superior com NOTA FINAL 3 (características benignas), equivalente ao TI-RADS 1 ACR; imagem anecoica com finos ecos terço médio com NOTA FINAL 0 (características benignas), equivalente ao TI-RADS 1 ACR; imagem hipoecoica terço superior com NOTA FINAL 3 (características benignas), equivalente ao TI-RADS 1 ACR.
+3. Lobo esquerdo apresentando imagem isoecoica terço inferior com NOTA FINAL 5 (características provavelmente benignas), equivalente ao TI-RADS 2 ACR; imagem anecoica homogênea terço médio com NOTA FINAL 0 (características benignas), equivalente ao TI-RADS 1 ACR.
+
+*ESCORE DE NÓDULO TIREOIDEANO - Domingos Correia da Rocha - Material baseado em 2588 nódulos puncionados - 2003 | Atualizada em 2013 - Total de 5134 nódulos puncionados
+ACR - American College of Radiology*</pre></div><div class="col"><h4>atual · 4.1-mini</h4><div class="lat">total 5.2s · in 436 / out 474 · ≈$0.00093</div><pre>Laudo Ultrassonográfico da Tireoide com Doppler Colorido
+
+Lobo Direito:
+- Medidas: 4,2 x 1,4 x 1,4 cm; volume: 4,3 cm³.
+- Nódulo isoecoico com margem regular, maior dimensão 1,1 x 0,5 x 1,1 cm, localizado no terço superior.
+- Pico sistólico da artéria tireoidiana inferior direita: 35,6 cm/s.
+- Imagem anecoica com finos ecos, margem regular, medindo 0,3 x 0,3 x 0,4 cm, situada no terço médio.
+- Imagem hipoecoica com margem regular, mais larga que alta, medindo 0,2 x 0,1 x 0,2 cm, sem calcificações, localizada no terço superior.
+
+Lobo Esquerdo:
+- Medidas: 4,4 x 1,4 x 1,5 cm; volume: 4,5 cm³.
+- Nódulo isoecoico com halo hipoecoico fino e margem regular, medindo 1,9 x 1,5 x 1,9 cm, situado no terço inferior, com maior vascularização periférica em relação à central.
+- Pico sistólico da artéria tireoidiana inferior esquerda: 23,5 cm/s.
+- Imagem anecoica com margem regular, medindo 0,2 x 0,1 x 0,2 cm, localizada no terço médio.
+
+Istmo:
+- Medidas: 2,0 x 0,5 x 1,8 cm; volume: 1,4 cm³.
+
+Conclusão:
+- Presença de múltiplos nódulos tireoidianos, predominantemente isoecoicos e anecoicos, com margens regulares e sem calcificações.
+- Vascularização aumentada periférica em nódulo do lobo esquerdo.
+- Fluxo arterial dentro dos limites esperados.
+
+Recomendações:
+- Avaliação clínica correlacionada.
+- Considerar acompanhamento ultrassonográfico periódico.
+- Avaliação citológica por punção aspirativa por agulha fina (PAAF) se houver indicação clínica.</pre></div><div class="col"><h4>5.4-nano · xhigh</h4><div class="lat">total 48.2s · in 435 / out 8000 (reason 8000) · ≈$0.00322</div><pre>(sem texto)</pre></div><div class="col"><h4>deepseek-v4-flash · max</h4><div class="lat">total 44.7s · in 552 / out 5213 (reason 4700) · ≈$0.00234</div><pre>EXAME: Ultrassonografia de Tireoide com Doppler Colorido
+
+LOBO DIREITO: Mede 4,2 x 1,4 x 1,4 cm, volume 4,3 ml. Apresenta imagem isoecoica, de margens regulares, mais larga do que alta, medindo 1,1 x 0,5 x 1,1 cm, localizada no terço superior. Imagem anecoica com finos ecos, margens regulares, medindo 0,3 x 0,3 x 0,4 cm, situada no terço médio. Imagem hipoecoica, margens regulares, mais larga do que alta, medindo 0,2 x 0,1 x 0,2 cm, sem calcificações, localizada no terço superior. Pico sistólico da artéria tireoidiana inferior direita: 35,6 cm/s.
+
+LOBO ESQUERDO: Mede 4,4 x 1,4 x 1,5 cm, volume 4,5 ml. Apresenta imagem isoecoica com halo hipoecoico fino, margens regulares, medindo 1,9 x 1,5 x 1,9 cm, localizada no terço inferior, com vascularização periférica maior do que a central. Imagem anecoica, margens regulares, medindo 0,2 x 0,1 x 0,2 cm, situada no terço médio. Pico sistólico da artéria tireoidiana inferior esquerda: 23,5 cm/s.
+
+ISTMO: Mede 2,0 x 0,5 x 1,8 cm, volume 1,4 ml.
+
+CONCLUSÃO: Nódulos tireoidianos bilaterais, com características ultrassonográficas sugestivas de benignidade (nódulos anecoicos compatíveis com cistos simples – TIRADS 2; nódulos isoecoicos com margens regulares – TIRADS 3; pequeno nódulo hipoecoico com margens regulares – TIRADS 3). Fluxos das artérias tireoidianas inferiores dentro dos parâmetros habituais. Recomenda-se correlação clínico-laboratorial e seguimento ultrassonográfico conforme protocolo.</pre></div></div></div>
+</html>

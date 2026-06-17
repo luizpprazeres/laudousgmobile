@@ -11,6 +11,9 @@ const ServerEnvSchema = z.object({
   // gpt-4.1-mini: modelo do LaudoUSG original, A/B-validado vs Llama 3.3 70B
   OPENAI_MODEL_STRUCTURER: z.string().default("gpt-4.1-mini"),
   OPENAI_MODEL_WRITER: z.string().default("gpt-4.1-mini"),
+  // Esforço de raciocínio quando OPENAI_MODEL_WRITER é um reasoning model (GPT-5):
+  // none/low/medium/high/xhigh. Ignorado por modelos não-reasoning (gpt-4.1-mini).
+  OPENAI_WRITER_REASONING_EFFORT: z.string().default("none"),
   OPENAI_MODEL_SANITY: z.string().default("gpt-4.1-mini"),
   OPENAI_MODEL_CONSULTANT: z.string().default("gpt-5"),
   OPENAI_MODEL_CONSULTANT_FALLBACK: z.string().default("gpt-4.1"),

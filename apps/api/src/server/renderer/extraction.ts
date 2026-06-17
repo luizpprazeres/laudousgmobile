@@ -181,7 +181,7 @@ function normalizeFindings(f: AbdomenTotalFindings): AbdomenTotalFindings {
   };
 }
 
-const EXTRACTORS: Record<string, Extractor> = {
+export const EXTRACTORS: Record<string, Extractor> = {
   ABDOMEN_TOTAL: {
     schemaName: "AbdomenTotalFindings",
     jsonSchema: ABDOMEN_TOTAL_FINDINGS_JSON_SCHEMA as unknown as Record<string, unknown>,
