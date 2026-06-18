@@ -189,15 +189,23 @@ export async function* runRendererStream(args: {
   /** Estilo de redação (writing_style). Despacha clássico vs objetivo por
    * categoria. Atualmente só a TIREOIDE tem caminho objetivo (Sprint 1). */
   writingStyleId?: string;
+  /** UX (flag RENDERER_PROGRESS): recebe os eventos de progresso da extração
+   * (interpretando → achado → montando) para o route emitir via SSE. Quando
+   * presente, a extração é STREAMADA. */
+  onProgress?: (e: { stage: "interpretando" | "achado" | "calculando" | "montando"; label: string }) => void;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
 
   // 1. Extração tipada (única chamada LLM obrigatória do caminho).
+  args.onProgress?.({ stage: "interpretando", label: "Interpretando o ditado…" });
   const extraction = await runRendererExtraction({
     categoryCode: args.categoryCode,
     rawInput: args.rawInput,
     signal: args.signal,
+    stream: !!args.onProgress,
+    onProgress: args.onProgress,
   });
+  args.onProgress?.({ stage: "montando", label: "Montando o laudo…" });
 
   // Categorias com render programático auto-contido (sem slots de órgão nem
   // free-slot LLM) — laudo 100% determinístico a partir dos achados tipados.

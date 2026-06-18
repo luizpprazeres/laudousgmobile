@@ -275,10 +275,31 @@ export const EXTRACTORS: Record<string, Extractor> = {
  */
 export const RENDERER_SUPPORTED_CATEGORIES = new Set(Object.keys(EXTRACTORS));
 
+/**
+ * Milestones de progresso (UX): quando o nome do campo aparece no JSON parcial
+ * (streaming), emite "achado: <label>" para o app mostrar o que já foi entendido.
+ * Heurístico e transversal às categorias — campo ausente simplesmente não dispara.
+ */
+const PROGRESS_MILESTONES: { field: string; label: string }[] = [
+  { field: '"bcf_bpm"', label: "batimentos" },
+  { field: '"dbp_mm"', label: "biometria fetal" },
+  { field: '"peso_g"', label: "peso fetal" },
+  { field: '"ig_semanas"', label: "idade gestacional" },
+  { field: '"primeira_us_data"', label: "1ª ultrassonografia" },
+  { field: '"prostata_d1_cm"', label: "medidas da próstata" },
+  { field: '"ipp_cm"', label: "índice de protrusão" },
+  { field: '"birads"', label: "categoria BI-RADS" },
+  { field: '"tirads"', label: "categoria TI-RADS" },
+  { field: '"achados_adicionais"', label: "observações" },
+];
+
 export async function runRendererExtraction(args: {
   categoryCode: string;
   rawInput: string;
   signal?: AbortSignal;
+  /** UX: streama a extração e emite "achado" por campo que aparece (flag). */
+  stream?: boolean;
+  onProgress?: (e: { stage: "achado"; label: string }) => void;
 }): Promise<RendererExtractionResult> {
   const extractor = EXTRACTORS[args.categoryCode];
   if (!extractor) {
@@ -288,36 +309,63 @@ export async function runRendererExtraction(args: {
   }
   const t0 = Date.now();
   const e = env();
-
-  const res = await openai().chat.completions.create(
-    {
-      model: e.OPENAI_MODEL_STRUCTURER,
-      temperature: 0.0,
-      max_tokens: 8000,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: extractor.schemaName,
-          strict: true,
-          schema: extractor.jsonSchema,
-        },
+  const base = {
+    model: e.OPENAI_MODEL_STRUCTURER,
+    temperature: 0.0,
+    max_tokens: 8000,
+    response_format: {
+      type: "json_schema" as const,
+      json_schema: {
+        name: extractor.schemaName,
+        strict: true,
+        schema: extractor.jsonSchema,
       },
-      messages: [
-        { role: "system", content: extractor.prompt },
-        { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
-      ],
     },
-    { signal: args.signal },
-  );
+    messages: [
+      { role: "system" as const, content: extractor.prompt },
+      { role: "user" as const, content: `Ditado do médico:\n${args.rawInput}` },
+    ],
+  };
 
-  const raw = res.choices[0]?.message?.content;
+  let raw: string | undefined;
+  let inputTokens: number | undefined;
+  let outputTokens: number | undefined;
+
+  if (args.stream) {
+    // STREAMING: acumula deltas, dispara milestones, parseia o JSON completo no
+    // fim (resultado idêntico ao não-streaming, temp 0).
+    const s = await openai().chat.completions.create(
+      { ...base, stream: true, stream_options: { include_usage: true } },
+      { signal: args.signal },
+    );
+    let acc = "";
+    const seen = new Set<string>();
+    for await (const chunk of s) {
+      const delta = chunk.choices[0]?.delta?.content ?? "";
+      if (delta) {
+        acc += delta;
+        for (const m of PROGRESS_MILESTONES) {
+          if (!seen.has(m.label) && acc.includes(m.field)) {
+            seen.add(m.label);
+            args.onProgress?.({ stage: "achado", label: m.label });
+          }
+        }
+      }
+      if (chunk.usage) {
+        inputTokens = chunk.usage.prompt_tokens;
+        outputTokens = chunk.usage.completion_tokens;
+      }
+    }
+    raw = acc;
+  } else {
+    const res = await openai().chat.completions.create(base, { signal: args.signal });
+    raw = res.choices[0]?.message?.content ?? undefined;
+    inputTokens = res.usage?.prompt_tokens;
+    outputTokens = res.usage?.completion_tokens;
+  }
+
   if (!raw) throw new Error("renderer extraction: resposta vazia");
   const findings = extractor.parse(JSON.parse(raw));
 
-  return {
-    findings,
-    latencyMs: Date.now() - t0,
-    inputTokens: res.usage?.prompt_tokens,
-    outputTokens: res.usage?.completion_tokens,
-  };
+  return { findings, latencyMs: Date.now() - t0, inputTokens, outputTokens };
 }

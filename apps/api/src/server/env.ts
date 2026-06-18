@@ -59,6 +59,12 @@ const ServerEnvSchema = z.object({
   // comportamento atual (só biometria, byte-idêntico). Liga após validação do
   // Luiz em prod. Ver renderer/ig.ts + docs/epico-ig-deterministica-design.md.
   IG_REFERENCE_CORRECTION: z.string().default("false"),
+  // UX: quando "true", o caminho RENDERER emite eventos SSE de progresso
+  // (stage: interpretando → achado → montando) e STREAMA a extração, para o app
+  // mostrar status em vez de tela muda durante os ~5s da extração. OFF = SSE
+  // idêntico ao atual (sem stage events, extração não-streaming). Ver
+  // pipeline/renderer.ts + renderer/extraction.ts.
+  RENDERER_PROGRESS: z.string().default("false"),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),

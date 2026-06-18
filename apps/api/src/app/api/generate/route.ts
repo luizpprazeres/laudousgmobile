@@ -727,6 +727,9 @@ export async function POST(req: Request) {
         });
       }
       const useRenderer = programmatic || rendererTemplateBody !== null;
+      // UX (flag RENDERER_PROGRESS): emite progresso da extração via SSE para o
+      // app mostrar status em vez de tela muda. OFF = sem stage events.
+      const progressEnabled = env().RENDERER_PROGRESS === "true";
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
@@ -737,6 +740,9 @@ export async function POST(req: Request) {
             rendererPreferences,
             // Sprint 1 — estilo de redação despacha clássico vs objetivo (TIREOIDE).
             writingStyleId: effectiveWritingStyleId,
+            onProgress: progressEnabled
+              ? (e) => emit({ type: "stage", ts: nowIso(), stage: e.stage, label: e.label })
+              : undefined,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
             },

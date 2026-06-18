@@ -102,6 +102,16 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
     type: z.literal("token"),
     delta: z.string(),
   }),
+  // Progresso do caminho RENDERER (UX): "interpretando" → "achado" (campo
+  // extraído) → "montando". Permite ao app mostrar status em vez de tela muda
+  // durante a extração. Atrás da flag RENDERER_PROGRESS (server). Aditivo:
+  // clientes que não tratam o tipo simplesmente ignoram.
+  z.object({
+    ...Base,
+    type: z.literal("stage"),
+    stage: z.enum(["interpretando", "achado", "calculando", "montando"]),
+    label: z.string(),
+  }),
   z.object({
     ...Base,
     type: z.literal("sanity"),
