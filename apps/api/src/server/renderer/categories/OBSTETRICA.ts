@@ -197,7 +197,10 @@ REGRAS:
     - Mesma regra de unidade/decimal da BIOMETRIA (não assuma unidade; preserve a
       casa decimal). Nada ditado → ambos null.
 5. peso_g em gramas; percentil e peso_variacao_g só se ditados.
-6. ig_semanas/ig_dias: idade gestacional ATUAL (da biometria deste exame) ditada.
+6. ig_semanas/ig_dias: idade gestacional ATUAL (da biometria deste exame). PREFIRA
+   o valor FALADO COM DIAS quando houver (ex.: "em torno de 26 semanas e 5 dias pela
+   biometria atual" → ig_semanas 26, ig_dias 5), em vez do valor arredondado de um
+   campo estruturado tipo "IG pela biometria: 26s" (que perde os dias).
 7. dum: data da última menstruação como DD/MM/AAAA (converta extenso → numérico).
 7b. ÉPICO IG — referência precoce (só quando DITADO; senão null):
    - data_exame: data do exame / "hoje" (DD/MM/AAAA), se o médico disser.
