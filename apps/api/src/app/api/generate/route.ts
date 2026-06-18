@@ -627,6 +627,24 @@ export async function POST(req: Request) {
         rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
         accountVariantKey,
       });
+      // Categorias renderer PROGRAMÁTICO (PELVE, OBSTETRICA, MORFOLOGICO...) montam
+      // o laudo 100% em código a partir da extração e NÃO usam o modelo do bundle.
+      // Um erro de bundle/variante (ex.: ASR sujo "transaginal" que não resolve
+      // TA/TV) NÃO deve bloquear — o renderer gera mesmo assim. (Boletim 2026-06-17:
+      // PELVE bloqueava 10×/dia exatamente por isso, antes de chegar ao renderer.)
+      const rendererCatsEarly = env()
+        .RENDERER_CATEGORIES.split(",")
+        .map((s) => s.trim())
+        .filter((s) => s !== "");
+      const isProgrammaticRenderer =
+        rendererCatsEarly.includes(effectiveCategory) &&
+        RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory) &&
+        RENDERER_PROGRAMMATIC_CATEGORIES.has(effectiveCategory);
+      if (bundle.error && isProgrammaticRenderer) {
+        console.warn(
+          `[generate ${reportId}] bundle ${bundle.error.code} ignorado: ${effectiveCategory} é renderer programático (monta em código). Segue p/ o renderer.`,
+        );
+      }
       // Bundle inválido = erro ALTO e CLARO (laudo médico NUNCA sai sem
       // estrutura). Gates (reviews dex1/dex2):
       //  - BUNDLE_EMPTY: nenhum bloco validado pra (categoria × estilo) —
@@ -634,7 +652,7 @@ export async function POST(req: Request) {
       //  - BUNDLE_NO_TEMPLATE: há blocos mas nenhum kind=modelo
       //  - BUNDLE_VARIANT_EMPTY: a variante escolhida não tem modelo
       //  - BUNDLE_MODEL_AMBIGUOUS: >1 modelo após seleção (falta seletor/tag)
-      if (bundle.error) {
+      if (bundle.error && !isProgrammaticRenderer) {
         outcome = "blocked";
         const reason =
           bundle.error.code === "BUNDLE_VARIANT_EMPTY"
@@ -669,7 +687,9 @@ export async function POST(req: Request) {
         });
         return;
       }
-      const blocks = bundle.blocks;
+      // bundle.blocks pode vir vazio quando ignoramos um bundle.error de renderer
+      // programático acima — o renderer não usa o bundle, então [] é seguro.
+      const blocks = bundle.blocks ?? [];
       auditState.ragDurationMs = Date.now() - ragT0;
       auditState.ragBlocksRetrieved = blocks;
       auditState.ragBlocksSkipped = skipped;
