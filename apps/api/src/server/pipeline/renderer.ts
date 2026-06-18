@@ -225,11 +225,13 @@ export async function* runRendererStream(args: {
     const objetivo = isEstiloObjetivo(args.writingStyleId);
     // Épico IG determinística (Domingos) — atrás de flag (default OFF).
     const igCorrection = env().IG_REFERENCE_CORRECTION === "true";
+    // Camada flexível (itens livres na conclusão) — atrás de flag (default OFF).
+    const flexivel = env().FLEXIBLE_CONCLUSION === "true";
     const fnd = extraction.findings;
     let fullText: string;
     switch (args.categoryCode) {
       case "OBSTETRICA":
-        fullText = renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection });
+        fullText = renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection, flexivel });
         break;
       case "MORFOLOGICO":
         fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo, igCorrection });

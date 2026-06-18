@@ -30,7 +30,7 @@ const O = (p: Partial<ObstetricaFindings> = {}): ObstetricaFindings => ({
   saco_gestacional_mm: null, saco_gestacional_medidas_mm: null,
   placenta_quantidade: null, placenta_localizacao: null, placenta_ecotextura: null,
   placenta_grau: null, liquido_tipo: null, liquido_ila_cm: null,
-  liquido_mbv_por_feto_cm: null, liquido_classe: null, achados_adicionais: null, ...p,
+  liquido_mbv_por_feto_cm: null, liquido_classe: null, achados_adicionais: null, itens_conclusao_livres: [], ...p,
 });
 const P = (p: Partial<ProstataSuprapubicaFindings> = {}): ProstataSuprapubicaFindings => ({
   prostata_d1_cm: null, prostata_d2_cm: null, prostata_d3_cm: null,

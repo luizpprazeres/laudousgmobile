@@ -65,6 +65,10 @@ export const ObstetricaFindingsSchema = z.object({
   liquido_mbv_por_feto_cm: z.array(z.number()).nullable(),
   liquido_classe: z.string().nullable(), // "oligoâmnio", "polidrâmnio"...
   achados_adicionais: z.string().nullable(),
+  // Camada flexível: conteúdo clínico LIVRE que o médico quer na conclusão e que
+  // NÃO cabe em campo estruturado (ex.: comparação com exame anterior). Passa por
+  // guard de dedup determinístico antes de entrar (nunca duplica IG/líquido/peso).
+  itens_conclusao_livres: z.array(z.string()),
 });
 
 export type ObstetricaFindings = z.infer<typeof ObstetricaFindingsSchema>;
@@ -139,6 +143,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "liquido_mbv_por_feto_cm",
     "liquido_classe",
     "achados_adicionais",
+    "itens_conclusao_livres",
   ],
   properties: {
     numero_fetos: { type: "integer" },
@@ -167,6 +172,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     liquido_mbv_por_feto_cm: { type: ["array", "null"], items: { type: "number" } },
     liquido_classe: str,
     achados_adicionais: str,
+    itens_conclusao_livres: { type: "array", items: { type: "string" } },
   },
 } as const;
 
@@ -230,7 +236,19 @@ REGRAS:
     nas palavras do médico. NUNCA coloque aqui frases de NORMALIDADE redundantes
     ("sem descolamentos", "vesícula vitelínica presente", "saco gestacional
     tópico/regular", "líquido normal") — essas já estão no modelo padrão. null
-    se o exame for normal.`;
+    se o exame for normal.
+13. itens_conclusao_livres (CAMADA FLEXÍVEL): APENAS conteúdo clínico que o médico
+    quer NA CONCLUSÃO e que NÃO cabe em NENHUM outro campo deste schema — ex.:
+    comparação com exame anterior ("comparado ao anterior de DD/MM, evolução
+    normal"), observação clínica solta. Regras ESTRITAS:
+    - Coloque a SUBSTÂNCIA LIMPA, nas palavras do médico, SEM palavras de comando
+      ("adicione um item", "no final coloque", "acrescente", "item 1 da conclusão")
+      e SEM ruído ("é", "deixa eu ver").
+    - NUNCA repita aqui o que já tem campo próprio: IG, correção pela referência
+      ("X pela biometria atual, devendo ser corrigida..."), 1ª US/DUM, líquido,
+      peso — MESMO que o médico tenha ditado a frase inteira. Isso já é montado
+      pelo sistema.
+    - NUNCA invente. Array VAZIO [] se não houver conteúdo extra.`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos
@@ -429,6 +447,29 @@ function numberConclusao(itens: string[]): string {
 }
 
 /**
+ * Guard de dedup determinístico (camada flexível): remove itens livres que
+ * DUPLICAM conteúdo já montado pelo renderer (IG/correção/1ªUS/líquido/peso) — o
+ * médico às vezes dita a frase inteira e a extração a captura como "extra". O
+ * código não deixa sair duas vezes. Mantém o extra GENUÍNO (ex.: comparação com
+ * exame anterior). Cinto-de-segurança do PoC (docs/camada-flexivel-design.md).
+ */
+const DETERMINISTIC_CONCL_PATTERNS: RegExp[] = [
+  /gesta[çc][ãa]o\s+em\s+torno\s+de/i,
+  /pela\s+biometria\s+atual/i,
+  /devendo\s+ser\s+corrigida|corrigid[oa]\s+pela/i,
+  /l[íi]quido\s+amni[óo]tico/i,
+  /peso\s+(?:aproximado|fetal)/i,
+  /maior\s+bols[ãa]o|\bila\b|índice\s+de\s+l[íi]quido/i,
+  /(?:primeira|1[ªº])\s*ultrassonograf|[úu]ltima\s+menstrua|\bdum\b/i,
+  /diverg[êe]ncia\s+ponderal/i,
+];
+export function filterFreeConclusionItems(items: string[] | null | undefined): string[] {
+  return (items ?? [])
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && !DETERMINISTIC_CONCL_PATTERNS.some((re) => re.test(s)));
+}
+
+/**
  * Campos brutos de IG (épico Domingos). Quando `enabled` é false (flag OFF), a
  * referência precoce é NEUTRALIZADA → computeIg devolve só a biometria, frase
  * byte-idêntica ao formatIg legado. Único caminho de código (sem branch duplo).
@@ -467,17 +508,19 @@ function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string
 export function renderObstetrica(
   f: ObstetricaFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean },
 ): string {
   const igc = opts?.igCorrection ?? false;
-  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc);
-  return renderObstetricaClassico(f, igc);
+  const flx = opts?.flexivel ?? false;
+  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx);
+  return renderObstetricaClassico(f, igc, flx);
 }
 
 /** Monta o laudo obstétrico (estrutura por construção). */
 export function renderObstetricaClassico(
   f: ObstetricaFindings,
   igCorrection = false,
+  flexivel = false,
 ): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
@@ -582,6 +625,9 @@ export function renderObstetricaClassico(
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
   }
 
+  // Camada flexível (flag): itens livres (após dedup determinístico) ao fim da conclusão.
+  if (flexivel) conclusao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
+
   // Linha opcional de DUM (logo após o título).
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   // Frase-prosa da referência precoce (1ª US/DUM corrigida p/ hoje), se houver.
@@ -673,6 +719,7 @@ function placentaFraseObj(f: ObstetricaFindings): string | null {
 export function renderObstetricaObjetivo(
   f: ObstetricaFindings,
   igCorrection = false,
+  flexivel = false,
 ): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar
@@ -788,6 +835,9 @@ export function renderObstetricaObjetivo(
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push(`\n${f.achados_adicionais.trim()}`);
   }
+
+  // Camada flexível (flag): itens livres (após dedup determinístico) ao fim da impressão.
+  if (flexivel) impressao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
 
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = ig.fraseReferencia ? `\n${ig.fraseReferencia}` : "";

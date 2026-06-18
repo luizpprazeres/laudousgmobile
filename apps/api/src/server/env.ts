@@ -65,6 +65,12 @@ const ServerEnvSchema = z.object({
   // idêntico ao atual (sem stage events, extração não-streaming). Ver
   // pipeline/renderer.ts + renderer/extraction.ts.
   RENDERER_PROGRESS: z.string().default("false"),
+  // Camada flexível: quando "true", o renderer insere os `itens_conclusao_livres`
+  // (conteúdo clínico extra que o médico ditou e não cabe em campo estruturado —
+  // ex.: comparação com exame anterior), após guard de dedup determinístico. OFF =
+  // itens livres extraídos mas NÃO inseridos (byte-idêntico). Ver OBSTETRICA.ts +
+  // docs/camada-flexivel-design.md.
+  FLEXIBLE_CONCLUSION: z.string().default("false"),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),
