@@ -55,6 +55,11 @@ import {
   MUSCULOESQUELETICO_EXTRACTION_PROMPT,
   parseMusculoesqueletico,
 } from "./categories/MUSCULOESQUELETICO";
+import {
+  PROSTATA_SUPRAPUBICA_JSON_SCHEMA,
+  PROSTATA_SUPRAPUBICA_EXTRACTION_PROMPT,
+  ProstataSuprapubicaFindingsSchema,
+} from "./categories/PROSTATA_SUPRAPUBICA";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -88,6 +93,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "ABDOMEN_SUPERIOR",
   "VIAS_URINARIAS",
   "MUSCULOESQUELETICO_V2",
+  "PROSTATA_SUPRAPUBICA",
 ]);
 
 export type RendererExtractionResult = {
@@ -253,6 +259,12 @@ export const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: MUSCULOESQUELETICO_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: MUSCULOESQUELETICO_EXTRACTION_PROMPT,
     parse: (raw) => parseMusculoesqueletico(raw),
+  },
+  PROSTATA_SUPRAPUBICA: {
+    schemaName: "ProstataSuprapubicaFindings",
+    jsonSchema: PROSTATA_SUPRAPUBICA_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: PROSTATA_SUPRAPUBICA_EXTRACTION_PROMPT,
+    parse: (raw) => ProstataSuprapubicaFindingsSchema.parse(raw),
   },
 };
 

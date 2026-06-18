@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"/>
+<title>Exemplos — IG determinística + Próstata</title>
+<style>
+  body{font:15px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;max-width:900px;margin:0 auto;padding:32px;color:#1c1917;background:#fafaf9}
+  h1{font-size:25px} h2{font-size:16px;margin:0}
+  .sec{font-size:20px;margin:34px 0 6px;border-bottom:2px solid #e7e5e4;padding-bottom:6px}
+  .intro{background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:16px 20px}
+  .intro ul{margin:8px 0 0;padding-left:20px} .intro li{margin:4px 0}
+  .card{background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card header{border-bottom:1px solid #f5f5f4;padding-bottom:8px;margin-bottom:10px}
+  .dit{font-size:13.5px;color:#374151;background:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;border-radius:4px;margin:0 0 8px}
+  .nota{font-size:13px;color:#57534e;margin:6px 0 10px;font-style:italic}
+  pre{white-space:pre-wrap;background:#fafaf9;border:1px solid #f0efee;border-radius:8px;padding:14px;font:13px/1.6 ui-monospace,Menlo,monospace;margin:0}
+  .concl{margin-top:10px} .concl span{font-size:12px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.04em}
+  .concl pre{background:#f0fdf4;border-color:#bbf7d0;margin-top:4px}
+</style></head><body>
+<h1>Exemplos para validação — IG determinística + Próstata</h1>
+
+<h2 class="sec">Parte 1 — Idade Gestacional determinística (regra Dr. Domingos)</h2>
+<div class="intro"><p><b>A regra:</b> a âncora é <b>sempre a biometria atual</b>. A referência precoce
+(1ª US ou DUM) só aparece na conclusão quando a diferença passa de <b>5 dias</b>.</p>
+<ul>
+<li><b>Igual</b> ou diferença <b>≤ 5 dias</b> → conclusão só com a biometria.</li>
+<li>Diferença <b>&gt; 5 dias</b> → "...pela biometria atual, devendo ser corrigida pela {fonte}, compatível com {referência}".</li>
+<li>A frase da 1ª US/DUM aparece no <b>corpo</b> do laudo como dado, não inventada pela IA.</li>
+</ul>
+<p style="margin:8px 0 0;font-size:13px;color:#92400e">⚠️ Tudo isto está atrás de uma chave (flag) <b>desligada</b> em produção — liga quando você validar.</p></div>
+
+  <section class="card">
+    <header><h2>A. Exame normal — sem 1ª US/DUM</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Biometria de hoje: 19 semanas e 4 dias. Nenhuma referência anterior.</p>
+    <p class="nota">Sem referência → só a biometria atual. (Idêntico ao comportamento de hoje.)</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação cefálica.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 145 bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 48 mm.
+Circunferência da cabeça (CC) de 175 mm.
+Circunferência abdominal (CA) de 150 mm.
+Comprimento do fêmur (CF) de 30 mm.
+Peso aproximado de 280 gramas.
+
+Placenta de aspecto normal.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+
+CONCLUSÃO:
+1) Gestação em torno de 19 semanas e 4 dias.
+2) Líquido amniótico em quantidade normal.</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1) Gestação em torno de 19 semanas e 4 dias.
+2) Líquido amniótico em quantidade normal.</pre></div>
+  </section>
+
+  <section class="card">
+    <header><h2>B. 1ª US CONCORDANTE com a biometria</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Biometria de hoje 17s1d. 1ª US em 12/01/2026 com 8s2d; hoje pela 1ª US dá 17s1d (igual).</p>
+    <p class="nota">Biometria = referência → conclusão só com a biometria. A prosa da 1ª US fica no corpo.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+Primeira ultrassonografia realizada 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dias.
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação cefálica.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 145 bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 48 mm.
+Circunferência da cabeça (CC) de 175 mm.
+Circunferência abdominal (CA) de 150 mm.
+Comprimento do fêmur (CF) de 30 mm.
+Peso aproximado de 280 gramas.
+
+Placenta de aspecto normal.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+
+CONCLUSÃO:
+1) Gestação em torno de 17 semanas e 1 dias.
+2) Líquido amniótico em quantidade normal.</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1) Gestação em torno de 17 semanas e 1 dias.
+2) Líquido amniótico em quantidade normal.</pre></div>
+  </section>
+
+  <section class="card">
+    <header><h2>C. Divergência LEVE (≤ 5 dias) — NÃO corrige</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Biometria de hoje 17s4d. 1ª US dá 17s1d hoje (diferença de 3 dias).</p>
+    <p class="nota">Diferença ≤ 5 dias → âncora na biometria, sem mencionar correção (regra Domingos).</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+Primeira ultrassonografia realizada 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dias.
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação cefálica.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 145 bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 48 mm.
+Circunferência da cabeça (CC) de 175 mm.
+Circunferência abdominal (CA) de 150 mm.
+Comprimento do fêmur (CF) de 30 mm.
+Peso aproximado de 280 gramas.
+
+Placenta de aspecto normal.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+
+CONCLUSÃO:
+1) Gestação em torno de 17 semanas e 4 dias.
+2) Líquido amniótico em quantidade normal.</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1) Gestação em torno de 17 semanas e 4 dias.
+2) Líquido amniótico em quantidade normal.</pre></div>
+  </section>
+
+  <section class="card">
+    <header><h2>D. Divergência RELEVANTE (&gt; 5 dias) — CORRIGE (clássico)</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Biometria de hoje 19s4d. 1ª US em 12/01 com 8s2d → hoje 17s1d (diferença de 17 dias). Corrija pela 1ª US.</p>
+    <p class="nota">Diferença &gt; 5 dias → sinaliza a correção pela referência precoce, mantendo a biometria como âncora.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+Primeira ultrassonografia realizada 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dias.
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação cefálica.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 145 bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 48 mm.
+Circunferência da cabeça (CC) de 175 mm.
+Circunferência abdominal (CA) de 150 mm.
+Comprimento do fêmur (CF) de 30 mm.
+Peso aproximado de 280 gramas.
+
+Placenta de aspecto normal.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+
+CONCLUSÃO:
+1) Gestação em torno de 19 semanas e 4 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dias.
+2) Líquido amniótico em quantidade normal.</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1) Gestação em torno de 19 semanas e 4 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dias.
+2) Líquido amniótico em quantidade normal.</pre></div>
+  </section>
+
+  <section class="card">
+    <header><h2>E. Mesmo caso D, estilo OBJETIVO (2 itens)</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Idem D, mas com o estilo de redação Objetivo (TÉCNICA/ACHADOS/IMPRESSÃO).</p>
+    <p class="nota">No objetivo, a correção vira 2 itens separados na IMPRESSÃO.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+Primeira ultrassonografia realizada 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dias.
+
+TÉCNICA:
+Exame realizado com transdutor convexo multifrequencial.
+
+ACHADOS:
+Feto único, em apresentação cefálica.
+Batimentos cardíacos fetais (BCF): 145 bpm. Movimentos fetais ativos.
+
+Biometria fetal:
+Diâmetro biparietal (DBP): 48,0 mm.
+Circunferência cefálica (CC): 175,0 mm.
+Circunferência abdominal (CA): 150,0 mm.
+Comprimento femoral (CF): 30,0 mm.
+Peso fetal estimado: 280 g.
+Placenta de aspecto normal.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+
+IMPRESSÃO:
+1. Gestação em torno de 19 semanas e 4 dias pela biometria atual.
+2. Gestação em torno de 17 semanas e 1 dias corrigido pela ultrassonografia precoce.
+3. Líquido amniótico em quantidade normal.</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1. Gestação em torno de 19 semanas e 4 dias pela biometria atual.
+2. Gestação em torno de 17 semanas e 1 dias corrigido pela ultrassonografia precoce.
+3. Líquido amniótico em quantidade normal.</pre></div>
+  </section>
+
+  <section class="card">
+    <header><h2>F. Referência por DUM (em vez de 1ª US)</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Biometria de hoje 19s4d. DUM 01/01/2026 → hoje 19s5d... (exemplo divergente). Corrija pela DUM.</p>
+    <p class="nota">A fonte vira 'data da última menstruação' na conclusão.</p>
+    <pre>ULTRASSONOGRAFIA OBSTÉTRICA
+
+DUM: 01/01/2026.
+
+Data da última menstruação em 01/01/2026, correspondente a 17 semanas e 1 dias na data do exame.
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Feto único, em apresentação cefálica.
+Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = 145 bpm).
+Os movimentos fetais são ativos.
+
+As considerações sobre a anatomia fetal são as seguintes:
+As estruturas cranianas e da coluna vertebral são normais.
+O estômago e a bexiga foram bem identificados e com ecotextura homogênea.
+
+A biometria fetal é a seguinte:
+Diâmetro biparietal (DBP) de 48 mm.
+Circunferência da cabeça (CC) de 175 mm.
+Circunferência abdominal (CA) de 150 mm.
+Comprimento do fêmur (CF) de 30 mm.
+Peso aproximado de 280 gramas.
+
+Placenta de aspecto normal.
+Líquido amniótico de quantidade normal pela análise subjetiva.
+
+CONCLUSÃO:
+1) Gestação em torno de 22 semanas pela biometria atual, devendo ser corrigida pela data da última menstruação, compatível com 17 semanas e 1 dias.
+2) Líquido amniótico em quantidade normal.</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1) Gestação em torno de 22 semanas pela biometria atual, devendo ser corrigida pela data da última menstruação, compatível com 17 semanas e 1 dias.
+2) Líquido amniótico em quantidade normal.</pre></div>
+  </section>
+
+<h2 class="sec">Parte 2 — Próstata (via transabdominal) — curadoria A10</h2>
+<div class="intro"><p>Renderer determinístico: o código calcula o <b>peso</b> (fórmula do elipsoide) e
+gradua o <b>IPP</b>; a estrutura sai garantida. Aplica seu feedback A10: título TRANSABDOMINAL,
+conclusão só com o peso, IPP por grau (cm), sem graduar a HPB.</p></div>
+
+  <section class="card">
+    <header><h2>1. Próstata normal</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Próstata 4,0 x 3,2 x 2,8 cm. Bexiga normal, volume pré-miccional 280 ml, resíduo desprezível.</p>
+    <p class="nota">Peso calculado pela fórmula do elipsoide; conclusão traz só o peso (sem volume redundante).</p>
+    <pre>ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL)
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta com o paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais abrangendo toda a pelve.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga de forma, ecotextura e contornos regulares. Volume pré-miccional de 280 mL.
+Próstata medindo 4,0 x 3,2 x 2,8 cm.
+Vesículas seminais de dimensões, ecogenicidade e contornos normais.
+
+CONCLUSÃO:
+1) Bexiga ecograficamente normal.
+2) Resíduo pós-miccional desprezível.
+3) Próstata de dimensões normais (peso aproximado de 19,7 gramas).
+4) Vesículas seminais ecograficamente normais.
+
+Observação: a avaliação por via transabdominal não detalha adequadamente lesões focais do parênquima prostático; havendo suspeita clínica, recomenda-se correlação com PSA e avaliação urológica (complementação por via transretal ou ressonância multiparamétrica).</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1) Bexiga ecograficamente normal.
+2) Resíduo pós-miccional desprezível.
+3) Próstata de dimensões normais (peso aproximado de 19,7 gramas).
+4) Vesículas seminais ecograficamente normais.</pre></div>
+  </section>
+
+  <section class="card">
+    <header><h2>2. Hiperplasia (HPB) + IPP Grau 3 + resíduo elevado</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Próstata aumentada, 5,5 x 4,8 x 4,5 cm. IPP 1,2 cm. Vol pré-miccional 320 ml, resíduo 150 ml.</p>
+    <p class="nota">HPB não é graduada (leve/mod/acent) — só o IPP é graduado. Resíduo &gt; 100 ml vira alerta.</p>
+    <pre>ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL)
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta com o paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais abrangendo toda a pelve.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga de forma, ecotextura e contornos regulares. Volume pré-miccional de 320 mL.
+Próstata aumentada de volume, medindo 5,5 x 4,8 x 4,5 cm.
+Índice de protrusão prostática (IPP) mede 1,2 cm.
+Vesículas seminais de dimensões, ecogenicidade e contornos normais.
+
+CONCLUSÃO:
+1) Bexiga ecograficamente normal.
+2) Resíduo pós-miccional elevado (150 mL).
+3) Próstata de volume aumentado (peso aproximado de 65,3 gramas).
+4) Protrusão prostática intravesical de 1,2 cm (Grau 3).
+5) Vesículas seminais ecograficamente normais.
+
+Observação: a avaliação por via transabdominal não detalha adequadamente lesões focais do parênquima prostático; havendo suspeita clínica, recomenda-se correlação com PSA e avaliação urológica (complementação por via transretal ou ressonância multiparamétrica).</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1) Bexiga ecograficamente normal.
+2) Resíduo pós-miccional elevado (150 mL).
+3) Próstata de volume aumentado (peso aproximado de 65,3 gramas).
+4) Protrusão prostática intravesical de 1,2 cm (Grau 3).
+5) Vesículas seminais ecograficamente normais.</pre></div>
+  </section>
+
+  <section class="card">
+    <header><h2>3. Calcificações + bexiga alterada</h2></header>
+    <p class="dit"><b>O que o médico ditou:</b> Próstata 4,0 x 3,2 x 2,8 cm com calcificações. Bexiga com paredes espessadas e trabeculadas.</p>
+    <p class="nota">Alteração vesical → correlação com obstrução infravesical na conclusão.</p>
+    <pre>ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL)
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta com o paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais abrangendo toda a pelve.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga com paredes espessadas e trabeculadas.
+Próstata medindo 4,0 x 3,2 x 2,8 cm.
+Calcificações prostáticas.
+Vesículas seminais de dimensões, ecogenicidade e contornos normais.
+
+CONCLUSÃO:
+1) Alterações vesicais (paredes espessadas e trabeculadas), a correlacionar com obstrução infravesical.
+2) Próstata de dimensões normais (peso aproximado de 19,7 gramas).
+3) Calcificações prostáticas.
+4) Vesículas seminais ecograficamente normais.
+
+Observação: a avaliação por via transabdominal não detalha adequadamente lesões focais do parênquima prostático; havendo suspeita clínica, recomenda-se correlação com PSA e avaliação urológica (complementação por via transretal ou ressonância multiparamétrica).</pre>
+    <div class="concl"><span>Conclusão →</span><pre>1) Alterações vesicais (paredes espessadas e trabeculadas), a correlacionar com obstrução infravesical.
+2) Próstata de dimensões normais (peso aproximado de 19,7 gramas).
+3) Calcificações prostáticas.
+4) Vesículas seminais ecograficamente normais.</pre></div>
+  </section>
+
+</body></html>

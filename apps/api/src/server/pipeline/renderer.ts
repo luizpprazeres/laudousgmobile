@@ -38,6 +38,8 @@ import { renderCervical } from "../renderer/categories/CERVICAL";
 import { renderPelveFeminina } from "../renderer/categories/PELVE_FEMININA";
 import { renderAbdomenSuperior } from "../renderer/categories/ABDOMEN_SUPERIOR";
 import { renderViasUrinarias } from "../renderer/categories/VIAS_URINARIAS";
+import { renderProstataSuprapubica } from "../renderer/categories/PROSTATA_SUPRAPUBICA";
+import type { ProstataSuprapubicaFindings } from "../renderer/categories/PROSTATA_SUPRAPUBICA";
 import { renderMusculoesqueletico } from "../renderer/categories/MUSCULOESQUELETICO";
 
 /**
@@ -209,7 +211,8 @@ export async function* runRendererStream(args: {
     args.categoryCode === "PELVE_FEMININA" ||
     args.categoryCode === "ABDOMEN_SUPERIOR" ||
     args.categoryCode === "VIAS_URINARIAS" ||
-    args.categoryCode === "MUSCULOESQUELETICO_V2"
+    args.categoryCode === "MUSCULOESQUELETICO_V2" ||
+    args.categoryCode === "PROSTATA_SUPRAPUBICA"
   ) {
     const objetivo = isEstiloObjetivo(args.writingStyleId);
     // Épico IG determinística (Domingos) — atrás de flag (default OFF).
@@ -245,6 +248,10 @@ export async function* runRendererStream(args: {
       case "MUSCULOESQUELETICO_V2":
         // Fase 3b: parte normal montada por construção; LLM extrai só alterações.
         fullText = renderMusculoesqueletico(fnd as Parameters<typeof renderMusculoesqueletico>[0]);
+        break;
+      case "PROSTATA_SUPRAPUBICA":
+        // S6: peso por fórmula + IPP por grau (A10). category_code = alias.
+        fullText = renderProstataSuprapubica(fnd as ProstataSuprapubicaFindings);
         break;
       default:
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });
