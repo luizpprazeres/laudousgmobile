@@ -59,7 +59,7 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
     produtos_retidos_quantidade: null,
     observacoes_corpo: null,
     achados_adicionais: null,
-    tabela_referencia: null,
+    referencia_idade_anos: null, referencia_grande_multipara: false,
   };
   return { ...base, ...over };
 }

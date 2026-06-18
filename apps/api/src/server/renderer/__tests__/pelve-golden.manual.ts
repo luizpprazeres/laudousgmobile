@@ -68,7 +68,7 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
     produtos_retidos_quantidade: null,
     observacoes_corpo: null,
     achados_adicionais: null,
-    tabela_referencia: null,
+    referencia_idade_anos: null, referencia_grande_multipara: false,
   };
   return { ...base, ...over };
 }
@@ -207,9 +207,16 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
 // ── Tabela de referência (só quando pedida) ──
 {
   const semTab = renderPelveFeminina(F({}));
-  check("tabela: omitida por padrão", !/Valores habituais/.test(semTab));
-  const comTab = renderPelveFeminina(F({ tabela_referencia: "adulta" }));
-  check("tabela: presente quando pedida", /Valores habituais: útero 30–90 cm³/.test(comTab));
+  check("referência: omitida por padrão", !/Valores de referência/.test(semTab));
+  // 40 anos → faixa 18–50: útero 110, ovários 11,0, endométrio 0,3–1,5.
+  const comTab = renderPelveFeminina(F({ referencia_idade_anos: 40, referencia_grande_multipara: true }));
+  check("referência: linha única canônica por idade", /Valores de referência \(Domingos\) — paciente de 40 anos: útero até 110 cm³; ovários até 11,0 cm³; endométrio 0,3–1,5 cm\./.test(comTab), comTab);
+  // 55 anos grande multípara → faixa 50–60: útero 130.
+  const com55 = renderPelveFeminina(F({ referencia_idade_anos: 55, referencia_grande_multipara: true }));
+  check("referência: grande multípara 50–60 → útero 130", /paciente de 55 anos: útero até 130 cm³/.test(com55), com55);
+  // 8 anos → pediátrica.
+  const ped = renderPelveFeminina(F({ referencia_idade_anos: 8, referencia_grande_multipara: false }));
+  check("referência: pediátrica (8 anos)", /paciente de 8 anos: útero até 5,0 cm³; ovários até 1,5 cm³/.test(ped), ped);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

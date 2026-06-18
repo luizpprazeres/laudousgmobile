@@ -124,7 +124,11 @@ export const PelveFemininaFindingsSchema = z.object({
 
   observacoes_corpo: z.string().nullable(), // texto livre p/ o corpo
   achados_adicionais: z.string().nullable(), // texto livre p/ a conclusão
-  tabela_referencia: z.enum(["adulta", "pediatrica"]).nullable(), // só se pedida
+  // Referência etária (Domingos): SÓ por comando. A idade dispara uma LINHA única
+  // de valores de referência no rodapé (não a tabela inteira). grande_multipara
+  // afeta o útero na faixa 50–60 anos.
+  referencia_idade_anos: z.number().nullable(),
+  referencia_grande_multipara: z.boolean(),
 });
 
 export type PelveFemininaFindings = z.infer<typeof PelveFemininaFindingsSchema>;
@@ -223,7 +227,8 @@ export const PELVE_FEMININA_JSON_SCHEMA = {
     "produtos_retidos_quantidade",
     "observacoes_corpo",
     "achados_adicionais",
-    "tabela_referencia",
+    "referencia_idade_anos",
+    "referencia_grande_multipara",
   ],
   properties: {
     via: enumNull(ViaEnum),
@@ -263,7 +268,8 @@ export const PELVE_FEMININA_JSON_SCHEMA = {
     produtos_retidos_quantidade: str,
     observacoes_corpo: str,
     achados_adicionais: str,
-    tabela_referencia: enumNull(["adulta", "pediatrica"]),
+    referencia_idade_anos: num,
+    referencia_grande_multipara: { type: "boolean" },
   },
 } as const;
 
@@ -342,8 +348,11 @@ REGRAS:
 8. achados_adicionais: SOMENTE alterações reais que devam ir à CONCLUSÃO, nas
    palavras do médico; null se exame normal. NUNCA frases de normalidade
    redundantes.
-9. tabela_referencia: "adulta" ou "pediatrica" SOMENTE se o médico pedir
-   explicitamente a tabela/referência etária; senão null.`;
+9. referencia_idade_anos: SOMENTE se o médico pedir a REFERÊNCIA etária para uma
+   paciente de idade específica (ex.: "coloque a referência para uma paciente de
+   40 anos com 3 filhos") → a idade em anos (40). null se não pedir.
+   referencia_grande_multipara: true se mencionar "grande multípara" ou ≥3 partos/
+   filhos junto do pedido de referência; senão false.`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos
@@ -471,10 +480,27 @@ function temBexiga(via: Via): boolean {
   return via !== "tv";
 }
 
-const TABELA_ADULTA =
-  "*Valores habituais: útero 30–90 cm³ (até 100–110 cm³ em pacientes com partos prévios); ovários 6–12 cm³ na menacme, até 6 cm³ na pós-menopausa; folículos dominantes até 2,5 cm, cistos funcionais até 4,0 cm.*";
-const TABELA_PEDIATRICA =
-  "*Valores habituais pediátricos: útero pré-puberal 0,3–3,0 cm³ (morfologia tubular esperada); ovários pré-puberais 0,5–1,5 cm³, sem folículos dominantes.*";
+/**
+ * Linha ÚNICA de referência etária (tabela Domingos Correia da Rocha) — valores
+ * canônicos do docx, selecionados pela idade (+ paridade na faixa 50–60). Só é
+ * renderada por comando (referencia_idade_anos != null). Rodapé enxuto, 1 linha.
+ */
+export function domingosReferenceLine(idade: number, grandeMultipara: boolean): string {
+  const i = Math.round(idade);
+  const p = `*Valores de referência (Domingos) — paciente de ${i} anos: `;
+  // ≤ 14 anos (pediátrica) — útero + ovários.
+  if (i <= 2) return `${p}útero até 2,0 cm³; ovários até 1,0 cm³.*`;
+  if (i <= 8) return `${p}útero até 5,0 cm³; ovários até 1,5 cm³.*`;
+  if (i <= 11) return `${p}útero até 10,0 cm³; ovários até 2,0 cm³.*`;
+  if (i <= 13) return `${p}útero até 25,0 cm³; ovários até 5,0 cm³.*`;
+  if (i <= 14) return `${p}útero até 50,0 cm³; ovários até 6,0 cm³.*`;
+  // ≥ 15 anos (adulta).
+  if (i < 18) return `${p}ovários até 8,0 cm³; endométrio 0,3–1,5 cm.*`; // 15–18: útero não tabelado
+  if (i < 50) return `${p}útero até 110 cm³; ovários até 11,0 cm³; endométrio 0,3–1,5 cm.*`;
+  if (i < 60)
+    return `${p}útero até ${grandeMultipara ? "130" : "110"} cm³; ovários até 8,0 cm³.*`;
+  return `${p}útero até 80 cm³; ovários até 6,0 cm³; endométrio até 0,4 cm.*`; // > 60 (menopausa)
+}
 
 const NOTA_FIGO = "FIGO: Federação Internacional de Ginecologia e Obstetrícia.";
 
@@ -905,8 +931,8 @@ function renderPelveFemininaClassico(f: PelveFemininaFindings): string {
   // ----- Rodapés -----
   const rodapes: string[] = [];
   if (temMiomasComFigo(f)) rodapes.push(NOTA_FIGO);
-  if (f.tabela_referencia === "adulta") rodapes.push(TABELA_ADULTA);
-  else if (f.tabela_referencia === "pediatrica") rodapes.push(TABELA_PEDIATRICA);
+  if (f.referencia_idade_anos !== null)
+    rodapes.push(domingosReferenceLine(f.referencia_idade_anos, f.referencia_grande_multipara));
 
   const corpo = [
     titulo,
@@ -1147,8 +1173,8 @@ function renderPelveFemininaObjetivo(f: PelveFemininaFindings): string {
   // ----- Rodapés (mantém FIGO + tabela quando aplicável) -----
   const rodapes: string[] = [];
   if (temMiomasComFigo(f)) rodapes.push(NOTA_FIGO);
-  if (f.tabela_referencia === "adulta") rodapes.push(TABELA_ADULTA);
-  else if (f.tabela_referencia === "pediatrica") rodapes.push(TABELA_PEDIATRICA);
+  if (f.referencia_idade_anos !== null)
+    rodapes.push(domingosReferenceLine(f.referencia_idade_anos, f.referencia_grande_multipara));
 
   const corpo = [
     titulo,
