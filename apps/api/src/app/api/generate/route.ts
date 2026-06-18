@@ -21,6 +21,7 @@ import { applyCommandGuard } from "@/server/pipeline/commandGuard";
 import { applyCommandOperations } from "@/server/pipeline/commandOperations";
 import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionItemsGuard";
 import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
+import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -943,6 +944,11 @@ export async function POST(req: Request) {
           reqInput.consolidated_transcript ?? reqInput.raw_input,
         );
       }
+      // Guard de sanitização (universal): remove artefatos de ditado/ASR que
+      // vazaram para o texto clínico — "vírgula" falada, "Você vai escrever ...",
+      // "Item dos ovários:", despedidas. Preserva conteúdo + placeholders ____.
+      // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
+      finalText = sanitizeDictationArtifacts(finalText);
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
