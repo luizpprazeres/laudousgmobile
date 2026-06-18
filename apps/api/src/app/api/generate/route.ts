@@ -743,7 +743,7 @@ export async function POST(req: Request) {
         rendererTemplateBody = await getVariantTemplateBody({
           categoryCode: effectiveCategory,
           writingStyleId: effectiveWritingStyleId,
-          variantKey: bundle.variantKey ?? "padrao",
+          variantKey: (bundle.error ? null : bundle.variantKey) ?? "padrao",
         });
       }
       // `let` (não const): no fallback gracioso abaixo, se o RENDERER falhar
