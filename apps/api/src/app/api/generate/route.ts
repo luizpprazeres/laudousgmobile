@@ -726,7 +726,9 @@ export async function POST(req: Request) {
           variantKey: bundle.variantKey ?? "padrao",
         });
       }
-      const useRenderer = programmatic || rendererTemplateBody !== null;
+      // `let` (não const): no fallback gracioso abaixo, se o RENDERER falhar
+      // (ex.: extração não valida o schema), cai para o writer e marca como writer.
+      let useRenderer = programmatic || rendererTemplateBody !== null;
       // UX (flag RENDERER_PROGRESS): emite progresso da extração via SSE para o
       // app mostrar status em vez de tela muda. OFF = sem stage events.
       const progressEnabled = env().RENDERER_PROGRESS === "true";
@@ -775,14 +777,53 @@ export async function POST(req: Request) {
             cachedInputTokens?: number;
           }
         | undefined;
-      while (true) {
-        const next = await writerGen.next();
-        if (next.done) {
-          writerResult = next.value;
-          break;
+      try {
+        while (true) {
+          const next = await writerGen.next();
+          if (next.done) {
+            writerResult = next.value;
+            break;
+          }
+          finalText += next.value;
+          emit({ type: "token", ts: nowIso(), delta: next.value });
         }
-        finalText += next.value;
-        emit({ type: "token", ts: nowIso(), delta: next.value });
+      } catch (rendererErr) {
+        // NEVER-BLOCK (graceful degradation): se o RENDERER falhar (ex.: a extração
+        // não validou o schema — caso Pelve/0 fetos) ANTES de emitir o laudo, cai
+        // no writer em vez de bloquear a geração. Só o caminho renderer; só se nada
+        // do laudo saiu ainda (a extração é a 1ª etapa, então no erro finalText="").
+        if (!useRenderer || finalText !== "") throw rendererErr;
+        console.error(
+          `[generate ${reportId}] renderer falhou (${(rendererErr as Error).message}); fallback → writer.`,
+        );
+        useRenderer = false; // pós-processadores + auditoria tratam como writer
+        emit({
+          type: "warning",
+          ts: nowIso(),
+          code: "RENDERER_FALLBACK",
+          message: "Estrutura determinística indisponível para este ditado; gerando pelo modo padrão.",
+        });
+        const fallbackGen = runWriterStream({
+          findings,
+          ragBlocks: blocks,
+          writingStyleCode: styleRow.code,
+          categoryCode: effectiveCategory,
+          categoryLabel: categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
+          rawUserMessage: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          signal,
+          onSystemMessage: (message) => {
+            auditState.systemMessageFull = message;
+          },
+        });
+        for (;;) {
+          const next = await fallbackGen.next();
+          if (next.done) {
+            writerResult = next.value;
+            break;
+          }
+          finalText += next.value;
+          emit({ type: "token", ts: nowIso(), delta: next.value });
+        }
       }
       finalText = writerResult?.fullText ?? finalText;
       // DET-5: no caminho RENDERER os post-processors NÃO rodam — a estrutura
