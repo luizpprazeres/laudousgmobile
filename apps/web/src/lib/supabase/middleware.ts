@@ -13,8 +13,17 @@ export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Sem config de Supabase, segue sem auth (skeleton/landing pública).
-  if (!url || !key) return response;
+  const { pathname } = request.nextUrl;
+
+  // Sem config de Supabase: protege /app mesmo assim (redireciona ao login).
+  if (!url || !key) {
+    if (pathname.startsWith("/app")) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      return NextResponse.redirect(redirectUrl);
+    }
+    return response;
+  }
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -34,7 +43,25 @@ export async function updateSession(request: NextRequest) {
   });
 
   // IMPORTANTE: não rodar lógica entre createServerClient e getUser().
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Protege a área logada.
+  if (!user && pathname.startsWith("/app")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    redirectUrl.search = `?redirect=${pathname}`;
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Usuário logado não vê login/signup — manda para o destino ou /app.
+  if (user && (pathname === "/login" || pathname === "/signup")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = request.nextUrl.searchParams.get("redirect") || "/app";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
 
   return response;
 }
