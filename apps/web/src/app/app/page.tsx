@@ -32,9 +32,16 @@ export default async function AppHomePage() {
 
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Você está logado 🎉</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          Esta é a área logada (versão inicial). O gerador de laudos e o painel completo chegam nos
-          próximos sprints.
+          Área logada (versão inicial). O gerador determinístico já está disponível abaixo; o modo
+          com IA e o painel completo chegam nos próximos sprints.
         </p>
+
+        <Link
+          href="/app/gerar"
+          className="block w-full text-center bg-emerald-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors mb-6"
+        >
+          Gerar laudo (sem IA) — Abdome Total / Tireoide
+        </Link>
 
         <dl className="text-sm border border-gray-100 dark:border-gray-800 rounded-xl divide-y divide-gray-100 dark:divide-gray-800 mb-6">
           <div className="flex justify-between px-4 py-3">
