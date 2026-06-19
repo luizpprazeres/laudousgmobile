@@ -32,20 +32,37 @@ function parseNum(v: unknown): number | null {
 function limpa(s: string): string {
   return s.trim().replace(/\.+$/, '')
 }
-/** "10,2 x 4,8 x 5,1" → "10,2 x 4,8 x 5,1 cm" (placeholder ____ por eixo ausente). */
+/** parse de medida em cm, convertendo de mm quando o usuário digita a unidade. */
+function parseCmAware(v: unknown): number | null {
+  const s = String(v ?? '').trim().toLowerCase().replace(',', '.')
+  if (!s) return null
+  const isMm = s.includes('mm')
+  const m = s.match(/-?\d+(\.\d+)?/)
+  if (!m) return null
+  let n = Number(m[0])
+  if (!Number.isFinite(n)) return null
+  if (isMm) n = n / 10
+  return n
+}
+/** "10,2 x 4,8 x 5,1" → "10,2 x 4,8 x 5,1 cm" (placeholder ____ por eixo ausente; mm→cm). */
 function medidas3(raw: unknown): string {
-  const parts = String(raw ?? '')
-    .split(/[x×]/i)
-    .map((p) => parseNum(p))
-  const vals = [0, 1, 2].map((i) => (parts[i] != null ? ptBr1(parts[i] as number) : '____'))
+  const rawStr = String(raw ?? '').toLowerCase()
+  const isMm = rawStr.includes('mm')
+  const parts = rawStr.split(/[x×]/i).map((p) => parseNum(p))
+  const vals = [0, 1, 2].map((i) => {
+    let n = parts[i]
+    if (n == null) return '____'
+    if (isMm) n = n / 10
+    return ptBr1(n)
+  })
   return `${vals.join(' x ')} cm`
 }
 function medidaUnica(raw: unknown): string {
-  const n = parseNum(raw)
+  const n = parseCmAware(raw)
   return n != null ? `${ptBr1(n)} cm` : '____ cm'
 }
 function espessura(raw: unknown): string {
-  const n = parseNum(raw)
+  const n = parseCmAware(raw)
   return n != null ? ptBr1(n) : '____'
 }
 /** "situada {prep} {loc}" com preposição correta (concordância feminino: imagem). */
@@ -140,6 +157,7 @@ function rimSchema(lado: 'direito' | 'esquerdo'): OrganSchema {
         ],
       },
       { key: 'achados', label: 'Achados focais', kind: 'checklist', hint: 'marque se houver', options: achadoOptions },
+      { key: 'alteracao_difusa', label: 'Alteração difusa (texto livre)', kind: 'text', placeholder: 'ex.: aumento difuso da ecogenicidade cortical' },
       { key: 'medidas', label: 'Medidas do rim (L x AP x T cm)', kind: 'text', placeholder: '10,2 x 4,8 x 5,1' },
       { key: 'espessura', label: 'Espessura do parênquima (cm)', kind: 'text', placeholder: '1,6' },
     ],
@@ -147,7 +165,7 @@ function rimSchema(lado: 'direito' | 'esquerdo'): OrganSchema {
 }
 
 function rimInitial(): OrganState {
-  return { dimensao: 'normal', estrutura: [], hidronefrose: 'ausente', achados: [], medidas: '', espessura: '' }
+  return { dimensao: 'normal', estrutura: [], hidronefrose: 'ausente', achados: [], alteracao_difusa: '', medidas: '', espessura: '' }
 }
 
 function descreveAchado(tipo: string, st: OrganState): string {
@@ -200,6 +218,7 @@ function rimCompose(lado: 'direito' | 'esquerdo', st: OrganState): OrganComposit
   const rotacao = estrutura.includes('rotacao')
   const achados = (st.achados as string[]) || []
   const hidro = (st.hidronefrose as string) || 'ausente'
+  const altDifusa = limpa(String(st.alteracao_difusa ?? ''))
 
   const dimKey = drc ? 'reduzida' : (st.dimensao as string) || 'normal'
   const dim = DIMENSAO[dimKey] ?? DIMENSAO.normal
@@ -220,6 +239,8 @@ function rimCompose(lado: 'direito' | 'esquerdo', st: OrganState): OrganComposit
     final = 'ecotextura do seio renal e diferenciação corticomedular reduzidas'
   } else if (situacao || rotacao) {
     final = 'ecotextura do seio renal e ecotextura corticomedular normais'
+  } else if (altDifusa) {
+    final = altDifusa
   } else {
     final = RIM_FINAL_NORMAL
   }
@@ -232,10 +253,13 @@ function rimCompose(lado: 'direito' | 'esquerdo', st: OrganState): OrganComposit
 
   // conclusão por rim
   const conclusion: string[] = []
-  const alterado = achados.length > 0 || drc || situacao || rotacao || hidro !== 'ausente'
+  const alterado = achados.length > 0 || drc || situacao || rotacao || hidro !== 'ausente' || !!altDifusa
   if (!alterado) {
     conclusion.push(`Rim ${lado} ecograficamente normal.`)
   } else {
+    if (!drc && altDifusa) {
+      conclusion.push(`Alteração difusa do rim ${lado} (${altDifusa}).`)
+    }
     if (drc) {
       conclusion.push(
         `Rim ${lado} de dimensões reduzidas, com redução da diferenciação corticomedular, podendo corresponder a doença renal crônica.`
@@ -366,9 +390,10 @@ const bexigaModule: OrganModule = {
       conclusion.push('Bexiga ecograficamente normal.')
     }
 
-    if (volume != null) body.push(`Volume pré-miccional de ${ptBr1(volume)} mL.`)
-    if (espParede != null) body.push(`Espessura da parede vesical de aproximadamente ${ptBr1(espParede)} mm.`)
-    if (residuo != null) conclusion.push(`Resíduo pós-miccional de ${ptBr1(residuo)} cm³.`)
+    // Volume/espessura/resíduo só fazem sentido com a bexiga avaliada.
+    if (avaliada && volume != null) body.push(`Volume pré-miccional de ${ptBr1(volume)} mL.`)
+    if (avaliada && espParede != null) body.push(`Espessura da parede vesical de aproximadamente ${ptBr1(espParede)} mm.`)
+    if (avaliada && residuo != null) conclusion.push(`Resíduo pós-miccional de ${ptBr1(residuo)} cm³.`)
 
     return { body: body.join('\n'), conclusion, isNormal: avaliada && parede.length === 0 && conteudo.length === 0 }
   },
