@@ -67,20 +67,23 @@ export function composeReport(
     conclusionBlock = category.conclusionNormal
   } else {
     const items = conclusion.map((c, i) => `${i + 1}. ${c}`)
-    // Quando há alteração, fecha lembrando que o restante está normal.
-    if (alteredCount > 0) {
-      items.push(`${conclusion.length + 1}. Demais estruturas abdominais sem alterações ecográficas.`)
+    // Quando há alteração, fecha lembrando que o restante está normal (se a
+    // categoria definir um fechamento genérico — próstata, p.ex., não usa).
+    if (alteredCount > 0 && category.conclusionClosing) {
+      items.push(`${conclusion.length + 1}. ${category.conclusionClosing}`)
     }
     conclusionBlock = items.join('\n')
   }
 
-  const text = [
+  const parts = [
     category.title,
     `COMENTÁRIOS: ${category.tecnica}`,
     category.achadosHeader,
     ...bodyParts,
     `CONCLUSÃO:\n${conclusionBlock}`,
-  ].join('\n\n')
+  ]
+  if (category.footer) parts.push(category.footer)
+  const text = parts.join('\n\n')
 
   return { text, conclusion, alteredCount }
 }

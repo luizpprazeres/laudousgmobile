@@ -41,6 +41,12 @@ export interface ExamCategory {
   sections: ExamSection[]
   /** Frase de fechamento quando não há nenhuma alteração para a conclusão. */
   conclusionNormal: string
+  /** Item extra de fechamento da conclusão quando HÁ alteração (ex.: "Demais
+   *  estruturas abdominais sem alterações ecográficas."). Omitido = sem fechamento
+   *  genérico (categorias que já listam todas as estruturas, ex.: próstata). */
+  conclusionClosing?: string
+  /** Texto livre após a CONCLUSÃO (ex.: observação da via transabdominal). */
+  footer?: string
 }
 
 export const abdomeTotal: ExamCategory = {
@@ -90,8 +96,5 @@ export const abdomeTotal: ExamCategory = {
     },
   ],
   conclusionNormal: 'Exame ultrassonográfico do abdome total dentro dos limites da normalidade.',
-}
-
-export const CATEGORIES: Record<string, ExamCategory> = {
-  [abdomeTotal.id]: abdomeTotal,
+  conclusionClosing: 'Demais estruturas abdominais sem alterações ecográficas.',
 }

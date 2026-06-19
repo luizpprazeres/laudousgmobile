@@ -5,10 +5,26 @@
  * o que é conhecido por clique não passa pela IA.
  */
 
+import { abdomeTotal } from './organs/abdomeTotal'
+import { prostataSuprapubica } from './organs/prostataSuprapubica'
+import type { ExamCategory } from './organs/abdomeTotal'
+
 export * from './types'
-export { abdomeTotal, CATEGORIES } from './organs/abdomeTotal'
+export { abdomeTotal } from './organs/abdomeTotal'
+export { prostataSuprapubica } from './organs/prostataSuprapubica'
 export type { ExamCategory, ExamSection } from './organs/abdomeTotal'
 export { vesiculaModule } from './organs/vesicula'
+
+/**
+ * Registro das categorias GENÉRICAS (compostas via composeReport). Adicionar uma
+ * categoria nova = criar o módulo em organs/ e incluí-la aqui. A UI
+ * (LaudarWebExperience) lê este registro — não precisa mexer no componente.
+ * (Tireoide tem motor próprio — composeTireoide — e não entra aqui.)
+ */
+export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, prostataSuprapubica]
+export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
+  GENERIC_CATEGORIES.map((c) => [c.id, c])
+)
 export {
   composeReport,
   initialExamState,

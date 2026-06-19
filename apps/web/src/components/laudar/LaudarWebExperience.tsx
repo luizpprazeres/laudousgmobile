@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Calculator, ChevronDown, Image, Mic, RotateCcw, Sparkles } from 'lucide-react'
 import {
-  abdomeTotal,
+  CATEGORIES,
+  GENERIC_CATEGORIES,
   appendInitials,
   composeReport,
   composeTireoide,
@@ -20,11 +21,11 @@ import { LaudoPreview } from './LaudoPreview'
 import { OrganFormPanel } from './OrganFormPanel'
 import { TireoideFormPanel } from './TireoideFormPanel'
 
-type CategoriaLaudar = 'ABDOMEN_TOTAL' | 'TIREOIDE'
+const TIREOIDE_ID = 'TIREOIDE'
 type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
 
 const TIREOIDE_CATEGORY = {
-  id: 'TIREOIDE',
+  id: TIREOIDE_ID,
   name: 'Tireoide',
 }
 
@@ -74,39 +75,46 @@ function completedTireoideSections(state: TireoideState) {
 }
 
 export function LaudarWebExperience() {
-  const [categoria, setCategoria] = useState<CategoriaLaudar>('ABDOMEN_TOTAL')
-  const [examState, setExamState] = useState<ExamState>(() => initialExamState(abdomeTotal))
+  const [categoria, setCategoria] = useState<string>(GENERIC_CATEGORIES[0]?.id ?? 'ABDOMEN_TOTAL')
+  // Um ExamState por categoria genérica (preserva o preenchimento ao alternar).
+  const [examStates, setExamStates] = useState<Record<string, ExamState>>(() =>
+    Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, initialExamState(c)]))
+  )
   const [tireoideState, setTireoideState] = useState<TireoideState>(() => initialTireoideState())
-  const [activeAbdomeSectionId, setActiveAbdomeSectionId] = useState('vesicula')
-  const [activeTireoideSectionId, setActiveTireoideSectionId] = useState('lobo_direito')
+  // Seção ativa por categoria.
+  const [activeByCat, setActiveByCat] = useState<Record<string, string>>(() => ({
+    ...Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, c.sections[0]?.id ?? ''])),
+    [TIREOIDE_ID]: 'lobo_direito',
+  }))
   const [initialsOn, setInitialsOn] = useState(true)
   const initials = 'ha'
 
-  const isTireoide = categoria === 'TIREOIDE'
-  const sections: UiSection[] = isTireoide ? tireoideSections : abdomeTotal.sections
-  const activeSectionId = isTireoide ? activeTireoideSectionId : activeAbdomeSectionId
-  const setActiveSectionId = isTireoide ? setActiveTireoideSectionId : setActiveAbdomeSectionId
+  const isTireoide = categoria === TIREOIDE_ID
+  const genericCategory = isTireoide ? null : CATEGORIES[categoria]
+  const sections: UiSection[] = isTireoide ? tireoideSections : genericCategory?.sections ?? []
+  const activeSectionId = activeByCat[categoria] ?? sections[0]?.id ?? ''
+  const setActiveSectionId = (id: string) => setActiveByCat((s) => ({ ...s, [categoria]: id }))
   const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0]
-  const currentCategory = isTireoide ? TIREOIDE_CATEGORY : abdomeTotal
+  const currentCategory = isTireoide ? TIREOIDE_CATEGORY : genericCategory!
+  const examState = isTireoide ? undefined : examStates[categoria]
   const tireoideCompleted = useMemo(() => completedTireoideSections(tireoideState), [tireoideState])
 
   const composedText = useMemo(() => {
     if (isTireoide) return composeTireoide(tireoideState).text
-    return composeReport(abdomeTotal, examState).text
-  }, [examState, isTireoide, tireoideState])
-  const preview = useMemo(() => appendInitials(composedText, initialsOn ? initials : undefined), [composedText, initialsOn])
+    const cat = CATEGORIES[categoria]
+    return cat ? composeReport(cat, examStates[categoria]).text : ''
+  }, [categoria, examStates, isTireoide, tireoideState])
+  const preview = useMemo(
+    () => appendInitials(composedText, initialsOn ? initials : undefined),
+    [composedText, initialsOn]
+  )
 
-  const currentIndex = sectionIndex(sections, activeSection.id)
+  const currentIndex = sectionIndex(sections, activeSection?.id ?? '')
   const previous = sections[Math.max(0, currentIndex - 1)]
   const next = sections[Math.min(sections.length - 1, currentIndex + 1)]
 
-  const changeCategory = (nextCategory: CategoriaLaudar) => {
-    setCategoria(nextCategory)
-    if (nextCategory === 'ABDOMEN_TOTAL') setActiveAbdomeSectionId((value) => value || 'vesicula')
-    if (nextCategory === 'TIREOIDE') setActiveTireoideSectionId((value) => value || 'lobo_direito')
-  }
-
   const resetActive = () => {
+    if (!activeSection) return
     if (isTireoide) {
       if (activeSection.id === 'nodulos') {
         setTireoideState((state) => ({ ...state, nodulos: [] }))
@@ -129,7 +137,11 @@ export function LaudarWebExperience() {
     }
 
     if (!activeSection.module) return
-    setExamState((state) => ({ ...state, [activeSection.id]: activeSection.module!.initialState() }))
+    const mod = activeSection.module
+    setExamStates((all) => ({
+      ...all,
+      [categoria]: { ...all[categoria], [activeSection.id]: mod.initialState() },
+    }))
   }
 
   return (
@@ -146,12 +158,16 @@ export function LaudarWebExperience() {
         <label className="relative inline-flex h-10 items-center rounded-full border border-rose-200 bg-rose-50 px-4 pr-9 text-sm font-bold text-rose-500">
           <select
             value={categoria}
-            onChange={(event) => changeCategory(event.target.value as CategoriaLaudar)}
+            onChange={(event) => setCategoria(event.target.value)}
             className="absolute inset-0 cursor-pointer opacity-0"
             aria-label="Selecionar categoria"
           >
-            <option value="ABDOMEN_TOTAL">Abdome Total</option>
-            <option value="TIREOIDE">Tireoide</option>
+            {GENERIC_CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+            <option value={TIREOIDE_ID}>Tireoide</option>
           </select>
           {currentCategory.name}
           <ChevronDown className="absolute right-3 h-4 w-4" />
@@ -171,10 +187,6 @@ export function LaudarWebExperience() {
         <ToolbarPill><Image className="h-4 w-4" />Imagem</ToolbarPill>
         <ToolbarPill tone="purple">Múltiplos</ToolbarPill>
         <div className="flex-1" />
-        <div className="hidden items-center gap-3 rounded-full border border-gray-200 bg-white/80 py-1 pl-1 pr-4 shadow-sm md:flex">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-amber-500 text-xs font-bold text-white">HA</span>
-          <span className="text-sm font-semibold text-gray-700">Helena Almeida <span className="font-normal text-gray-400">· auxiliar</span></span>
-        </div>
         <ToolbarPill tone="primary"><Sparkles className="h-4 w-4" />Gerar com IA</ToolbarPill>
       </header>
 
@@ -183,7 +195,7 @@ export function LaudarWebExperience() {
         <div className="ml-16 grid h-full grid-cols-[220px_minmax(420px,1fr)_minmax(460px,1fr)]">
           <ExamSectionNav
             sections={sections}
-            activeId={activeSection.id}
+            activeId={activeSection?.id ?? ''}
             onSelect={setActiveSectionId}
             examState={isTireoide ? undefined : examState}
             completedIds={isTireoide ? tireoideCompleted : undefined}
@@ -195,7 +207,7 @@ export function LaudarWebExperience() {
               <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">{currentCategory.name}</div>
               <div className="mt-1.5 flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="font-barlow text-[26px] font-bold leading-tight tracking-tight text-gray-950">{activeSection.label}</h1>
+                  <h1 className="font-barlow text-[26px] font-bold leading-tight tracking-tight text-gray-950">{activeSection?.label}</h1>
                   <p className="mt-0.5 text-[13px] text-gray-500">
                     {isTireoide
                       ? 'Preencha medidas, nódulos e classificações informadas pelo médico.'
@@ -207,31 +219,31 @@ export function LaudarWebExperience() {
                   Reset
                 </button>
               </div>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {['Frases prontas', 'Inserir medida', 'Carregar modelo'].map((label) => (
-                  <button key={label} type="button" className="rounded-full border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-gray-500 shadow-sm hover:bg-gray-50">{label}</button>
-                ))}
-              </div>
             </div>
 
             <div className="px-6 py-5">
               {isTireoide ? (
                 <TireoideFormPanel
-                  section={activeSection.id}
+                  section={activeSection?.id ?? ''}
                   state={tireoideState}
                   onChange={setTireoideState}
                 />
-              ) : activeSection.module ? (
+              ) : activeSection?.module ? (
                 <OrganFormPanel
                   schema={activeSection.module.schema}
-                  state={examState[activeSection.id] ?? activeSection.module.initialState()}
-                  onChange={(nextState) => setExamState((state) => ({ ...state, [activeSection.id]: nextState }))}
+                  state={examState?.[activeSection.id] ?? activeSection.module.initialState()}
+                  onChange={(nextState) =>
+                    setExamStates((all) => ({
+                      ...all,
+                      [categoria]: { ...all[categoria], [activeSection.id]: nextState },
+                    }))
+                  }
                 />
               ) : (
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div className="font-barlow text-xl font-bold text-gray-900">Seção de texto padrão</div>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-500">Este trecho entra automaticamente no laudo normal. Em breve fica interativo como a vesícula.</p>
-                  {activeSection.normalBody ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-gray-600">{activeSection.normalBody}</p> : null}
+                  <p className="mt-2 text-sm leading-relaxed text-gray-500">Este trecho entra automaticamente no laudo normal.</p>
+                  {activeSection?.normalBody ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-gray-600">{activeSection.normalBody}</p> : null}
                 </div>
               )}
             </div>
@@ -241,10 +253,10 @@ export function LaudarWebExperience() {
               <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500">⌘K</kbd>
               <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500">Tab</kbd>
               <div className="flex-1" />
-              <button type="button" onClick={() => setActiveSectionId(previous.id)} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40" disabled={previous.id === activeSection.id}>
+              <button type="button" onClick={() => previous && setActiveSectionId(previous.id)} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40" disabled={!previous || previous.id === activeSection?.id}>
                 <ArrowLeft className="h-4 w-4" /> anterior
               </button>
-              <button type="button" onClick={() => setActiveSectionId(next.id)} className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={next.id === activeSection.id}>
+              <button type="button" onClick={() => next && setActiveSectionId(next.id)} className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={!next || next.id === activeSection?.id}>
                 próxima <ArrowRight className="h-4 w-4" />
               </button>
             </footer>
