@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, Minus, ChevronDown, ChevronUp, Zap, ArrowLeft } from 'lucide-react'
+import { Check, Minus, ChevronDown, ChevronUp, Zap, ArrowLeft, Loader2 } from 'lucide-react'
 
 // Preços mensais (decisão Luiz 2026-06-19). Free = 10 laudos vitalício (sem cobrança).
 const PRICES = {
@@ -57,8 +57,9 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   )
 }
 
-// Botão "assinar": no S3 leva ao cadastro com o plano escolhido.
-// No S5 o checkout AbacatePay (/api/checkout → url) será ligado a partir daqui.
+// Botão "assinar": cria a assinatura na AbacatePay (/api/checkout → url) e
+// redireciona ao checkout. Se não estiver logado (401), manda ao cadastro
+// preservando o plano escolhido.
 function SubscribeButton({
   plan,
   label,
@@ -68,16 +69,51 @@ function SubscribeButton({
   label: string
   variant: 'primary' | 'secondary'
 }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubscribe() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+
+      if (res.status === 401) {
+        window.location.href = `/signup?plan=${plan}&redirect=/precos`
+        return
+      }
+
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.url) {
+        window.location.href = data.url
+        return
+      }
+      setError('Não foi possível iniciar o checkout. Tente novamente.')
+      setLoading(false)
+    } catch {
+      setError('Não foi possível iniciar o checkout. Tente novamente.')
+      setLoading(false)
+    }
+  }
+
   const baseClass =
-    'w-full min-h-[2.75rem] flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-150 btn-press touch-manipulation'
+    'w-full min-h-[2.75rem] flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-150 btn-press touch-manipulation disabled:opacity-60'
   const variantClass =
     variant === 'primary'
       ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md'
       : 'border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 hover:shadow-sm'
+
   return (
-    <Link href={`/signup?plan=${plan}&redirect=/precos`} className={`${baseClass} ${variantClass}`}>
-      {label}
-    </Link>
+    <div className="flex flex-col gap-2">
+      <button onClick={handleSubscribe} disabled={loading} className={`${baseClass} ${variantClass}`}>
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : label}
+      </button>
+      {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+    </div>
   )
 }
 
