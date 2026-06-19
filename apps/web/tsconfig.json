@@ -9,6 +9,8 @@
     "moduleResolution": "Bundler",
     "jsx": "preserve",
     "plugins": [{ "name": "next" }],
+    // noUncheckedIndexedAccess desligado: a landing foi portada 1:1 de ~/laudousg, que não usa essa flag.
+    "noUncheckedIndexedAccess": false,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
