@@ -101,6 +101,18 @@ export function OrganFormPanel({ schema, state, onChange }: Props) {
               )
             })}
           </div>
+          {(field.options ?? []).map((option) =>
+            isSelected(state, field, option.value) && option.subFields?.length ? (
+              <div
+                key={`sub-${option.value}`}
+                className="mt-2.5 grid gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2.5"
+              >
+                {option.subFields.map((subField) =>
+                  renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`)
+                )}
+              </div>
+            ) : null
+          )}
         </section>
       )
     }

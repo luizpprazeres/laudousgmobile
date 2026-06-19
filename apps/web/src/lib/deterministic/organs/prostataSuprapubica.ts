@@ -15,10 +15,15 @@ import type { OrganModule, OrganSchema, OrganState, OrganComposition } from '../
 
 // ── helpers (espelham o renderer) ────────────────────────────────────────────
 function parseCm(v: unknown): number | null {
-  const s = String(v ?? '').trim().replace(',', '.')
+  const s = String(v ?? '').trim().toLowerCase().replace(',', '.')
   if (!s) return null
-  const n = Number(s)
-  return Number.isFinite(n) ? n : null
+  const isMm = s.includes('mm')
+  const m = s.match(/-?\d+(\.\d+)?/)
+  if (!m) return null
+  let n = Number(m[0])
+  if (!Number.isFinite(n)) return null
+  if (isMm) n = n / 10 // usuário digitou em mm → converte p/ cm
+  return n
 }
 function ptBr1(n: number): string {
   return n.toFixed(1).replace('.', ',')
@@ -198,13 +203,11 @@ function prostataCompose(state: OrganState): OrganComposition {
 
   const conclusion: string[] = []
   const peso = calcPesoProstatico(d1, d2, d3)
-  const pesoTxt = peso
-    ? `peso aproximado de ${ptBr1(peso)} gramas`
-    : 'peso não calculável (medidas incompletas)'
+  const pesoSuffix = peso ? ` (peso aproximado de ${ptBr1(peso)} gramas)` : ''
   conclusion.push(
     aumentada
-      ? `Próstata de volume aumentado (${pesoTxt}).`
-      : `Próstata de dimensões normais (${pesoTxt}).`
+      ? `Próstata de volume aumentado${pesoSuffix}.`
+      : `Próstata de dimensões normais${pesoSuffix}.`
   )
   if (aumentada && ipp !== null) {
     conclusion.push(`Protrusão prostática intravesical de ${ptBr1(ipp)} cm (${ippGrau(ipp)}).`)
@@ -221,6 +224,8 @@ const prostataModule: OrganModule = {
 }
 
 // ── Vesículas seminais ───────────────────────────────────────────────────────
+// Na via transabdominal o renderer sempre descreve as vesículas seminais como
+// normais (não há extração de alteração). Mantemos fixo normal (fidelidade).
 const vesiculasSchema: OrganSchema = {
   id: 'vesiculas_seminais',
   name: 'Vesículas seminais',
@@ -230,31 +235,17 @@ const vesiculasSchema: OrganSchema = {
       key: 'estado',
       label: 'Estado',
       kind: 'segmented',
-      hint: 'default: normais',
-      options: [
-        { value: 'normal', label: 'Normais', isDefault: true },
-        { value: 'alterado', label: 'Alteradas', subFields: [{ key: 'desc', label: 'Descrição', kind: 'text', placeholder: 'assimétricas, dilatadas…' }] },
-      ],
+      hint: 'descritas como normais nesta via',
+      options: [{ value: 'normal', label: 'Normais', isDefault: true }],
     },
   ],
 }
 
 function vesiculasInitial(): OrganState {
-  return { estado: 'normal', 'estado.alterado.desc': '' }
+  return { estado: 'normal' }
 }
 
-function vesiculasCompose(state: OrganState): OrganComposition {
-  const estado = (state.estado as string) || 'normal'
-  if (estado === 'alterado') {
-    const desc = String(state['estado.alterado.desc'] ?? '').trim()
-    return {
-      body: desc
-        ? `Vesículas seminais ${desc}.`
-        : 'Vesículas seminais com alterações.',
-      conclusion: ['Vesículas seminais com alterações, a correlacionar clinicamente.'],
-      isNormal: false,
-    }
-  }
+function vesiculasCompose(_state: OrganState): OrganComposition {
   return {
     body: 'Vesículas seminais de dimensões, ecogenicidade e contornos normais.',
     conclusion: ['Vesículas seminais ecograficamente normais.'],
