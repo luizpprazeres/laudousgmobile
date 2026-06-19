@@ -113,10 +113,12 @@ REGRAS:
    EXPLICITAMENTE dita (ex.: "CCN 5,2 cm" → ccn_mm 52); sem unidade explícita, use
    o número como foi dito ("CCN 2,4" → ccn_mm 2.4). Assuma que o médico falou a
    unidade certa; não "corrija". Campos: CCN→ccn_mm, TN→tn_mm, DBP→dbp_mm,
-   HC/CC→cc_mm, AC/CA→ca_mm, fêmur→femur_mm, tíbia→tibia_mm, fíbula→fibula_mm,
+   HC/CC→cc_mm, AC/CA→ca_mm, CF/FL/fêmur/comprimento femoral→femur_mm,
+   tíbia→tibia_mm, fíbula→fibula_mm,
    úmero→umero_mm, rádio→radio_mm, ulna→ulna_mm, cerebelo→cerebelo_mm,
    cisterna magna→cisterna_magna_mm, distância binocular→binocular_mm. Valor não
-   ditado → null (NUNCA inventar).
+   ditado → null (NUNCA inventar). ATENÇÃO: "CF" no bloco de biometria fetal é o
+   comprimento femoral (femur_mm) — NUNCA o deixe null se "CF: X" foi ditado.
 3. osso_nasal: "presente"/"ausente". ducto_venoso: "normal"/"alterado" (onda A
    reversa = alterado; onda A positiva/trifásica = normal).
 4. uterina_ip_direita/esquerda: IP das artérias uterinas (1t).
