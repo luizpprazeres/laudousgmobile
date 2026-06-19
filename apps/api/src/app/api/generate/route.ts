@@ -22,6 +22,7 @@ import { applyCommandOperations } from "@/server/pipeline/commandOperations";
 import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionItemsGuard";
 import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
 import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
+import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -949,6 +950,10 @@ export async function POST(req: Request) {
       // "Item dos ovários:", despedidas. Preserva conteúdo + placeholders ____.
       // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
       finalText = sanitizeDictationArtifacts(finalText);
+      // Sanity de medidas: sinaliza [REVISAR] em valores fisiologicamente
+      // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
+      // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
+      finalText = flagImplausibleMeasures(finalText);
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
