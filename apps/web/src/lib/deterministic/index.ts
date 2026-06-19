@@ -7,11 +7,13 @@
 
 import { abdomeTotal } from './organs/abdomeTotal'
 import { prostataSuprapubica } from './organs/prostataSuprapubica'
+import { viasUrinarias } from './organs/viasUrinarias'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
 export { abdomeTotal } from './organs/abdomeTotal'
 export { prostataSuprapubica } from './organs/prostataSuprapubica'
+export { viasUrinarias } from './organs/viasUrinarias'
 export type { ExamCategory, ExamSection } from './organs/abdomeTotal'
 export { vesiculaModule } from './organs/vesicula'
 
@@ -21,7 +23,7 @@ export { vesiculaModule } from './organs/vesicula'
  * (LaudarWebExperience) lê este registro — não precisa mexer no componente.
  * (Tireoide tem motor próprio — composeTireoide — e não entra aqui.)
  */
-export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, prostataSuprapubica]
+export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, prostataSuprapubica, viasUrinarias]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
 )

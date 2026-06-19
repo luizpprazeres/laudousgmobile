@@ -53,7 +53,7 @@ export function composeReport(
     if (section.module) {
       const s = state[section.id] ?? section.module.initialState()
       const c = section.module.compose(s)
-      bodyParts.push(c.body)
+      if (c.body) bodyParts.push(c.body) // pula seções sem corpo (ex.: ureteres normal)
       conclusion.push(...c.conclusion)
       if (!c.isNormal) alteredCount += 1
     } else if (section.normalBody) {
