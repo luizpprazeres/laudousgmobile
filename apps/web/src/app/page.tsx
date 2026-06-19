@@ -251,9 +251,6 @@ export default function LandingPage() {
             <a href="#precos" className={`hidden sm:inline text-[0.82rem] font-medium transition-colors ${navOnDark ? 'text-slate-300 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}>
               Preços
             </a>
-            <Link href="/blog" className={`hidden sm:inline text-[0.82rem] font-medium transition-colors ${navOnDark ? 'text-slate-300 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}>
-              Blog
-            </Link>
             <Link href="/login" className={`text-[0.82rem] font-medium transition-colors ${navOnDark ? 'text-slate-300 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}>
               Entrar
             </Link>
@@ -461,7 +458,7 @@ export default function LandingPage() {
               <h4 className="text-[0.7rem] font-bold uppercase tracking-[0.12em] text-slate-400 mb-4">Produto</h4>
               <ul className="flex flex-col gap-2.5 text-[0.85rem] text-slate-500">
                 <li><a href="#precos" className="hover:text-slate-900 transition-colors">Preços</a></li>
-                <li><Link href="/blog" className="hover:text-slate-900 transition-colors">Blog</Link></li>
+                <li><Link href="/precos" className="hover:text-slate-900 transition-colors">Planos e preços</Link></li>
                 <li><Link href="/login" className="hover:text-slate-900 transition-colors">Entrar</Link></li>
                 <li><Link href="/signup" className="hover:text-slate-900 transition-colors">Criar conta</Link></li>
               </ul>
