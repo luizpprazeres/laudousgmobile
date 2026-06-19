@@ -247,6 +247,55 @@ function uterinasAlteradas(d: DopplerData): boolean {
   return d.incisura === true || d.ectasia === true || uterinasAcimaP95(d);
 }
 
+/** Quais vasos foram REALMENTE medidos (têm IP). */
+function vasoMedido(d: DopplerData): { uterinas: boolean; umbilical: boolean; acm: boolean } {
+  return {
+    uterinas:
+      d.ipMedioUterinas !== undefined ||
+      d.ipUterinaDir !== undefined ||
+      d.ipUterinaEsq !== undefined,
+    umbilical: d.ipUmbilical !== undefined,
+    acm: d.ipACM !== undefined,
+  };
+}
+
+/**
+ * Frase de normalidade do IP listando SÓ os vasos MEDIDOS (segurança: nunca
+ * afirmar normalidade de vaso não medido — boletim 2026-06-17, 8c39aca6). null
+ * se nenhum vaso candidato foi medido.
+ */
+function fraseNormalIP(d: DopplerData, incluirUterinas: boolean): string | null {
+  const v = vasoMedido(d);
+  const ut = incluirUterinas && v.uterinas;
+  // Frases CANÔNICAS exatas (byte-stability) para os casos completos:
+  if (ut && v.umbilical && v.acm)
+    return "Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.";
+  if (!ut && v.umbilical && v.acm)
+    return "Índices de pulsatilidade normais nas artérias umbilical e cerebral média.";
+  // Subconjuntos (vaso não medido): frase enxuta só com o que foi medido.
+  const partes: string[] = [];
+  if (ut) partes.push("uterinas");
+  if (v.umbilical) partes.push("umbilical");
+  if (v.acm) partes.push("cerebral média");
+  if (partes.length === 0) return null;
+  const lista =
+    partes.length === 1
+      ? partes[0]
+      : `${partes.slice(0, -1).join(", ")} e ${partes[partes.length - 1]}`;
+  // Singular só para vaso ÚNICO não-uterino (uterinas = 2 artérias → plural).
+  return partes.length === 1 && partes[0] !== "uterinas"
+    ? `Índice de pulsatilidade normal na artéria ${lista}.`
+    : `Índice de pulsatilidade normal nas artérias ${lista}.`;
+}
+
+/** Remove linhas de vaso em branco ("Artéria X: IP ____.") — vaso não medido. */
+export function removeBlankVesselLines(laudo: string): string {
+  return laudo
+    .replace(/^[ \t]*art[ée]ria[^\n:]*:\s*IP\s*_{2,}\.?[ \t]*\n?/gim, "")
+    .replace(/^[ \t]*IP\s+m[ée]dio[^\n]*_{2,}[^\n]*\n?/gim, "")
+    .replace(/\n{3,}/g, "\n\n");
+}
+
 /** Itens de conclusão do Doppler (sem numeração — o caller renumera). */
 export function buildDopplerConclusionItems(d: DopplerData): string[] {
   const items: string[] = [];
@@ -263,14 +312,13 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
       items.push("Índice de pulsatilidade alterado na artéria cerebral média.");
     }
   } else if (utAlt) {
-    // umbilical/ACM normais, uterinas alteradas → remove uterinas da frase normal
-    items.push(
-      "Índices de pulsatilidade normais nas artérias umbilical e cerebral média.",
-    );
+    // umbilical/ACM normais, uterinas alteradas → só os vasos MEDIDOS (sem uterinas).
+    const f = fraseNormalIP(d, false);
+    if (f) items.push(f);
   } else {
-    items.push(
-      "Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.",
-    );
+    // Tudo normal → afirma normalidade SÓ dos vasos que foram medidos (8c39aca6).
+    const f = fraseNormalIP(d, true);
+    if (f) items.push(f);
   }
 
   // ── Item de uterinas >P95 — INDEPENDENTE do estado de umbilical/ACM (F3) ──
@@ -367,8 +415,10 @@ export function applyDopplerOverlay(laudo: string, d: DopplerData): string {
  */
 export function correctDopplerConclusion(laudo: string, d: DopplerData): string {
   if (!hasDopplerData(d)) return laudo;
-  const parsed = parseConclusion(laudo);
-  if (!parsed.found) return laudo;
+  // Remove linhas de vaso em branco (IP ____) do corpo — vaso não medido.
+  const limpo = removeBlankVesselLines(laudo);
+  const parsed = parseConclusion(limpo);
+  if (!parsed.found) return limpo;
   const finalItems = rebuildDopplerItems(parsed.items, d);
   return renderWithConclusion(parsed, finalItems);
 }
