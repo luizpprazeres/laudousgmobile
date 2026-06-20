@@ -12,6 +12,7 @@
 
 import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
+import { oRadsSpec, figoMiomaSpec } from '../../calculators/specs'
 
 // ── Via do exame (controle de categoria) ─────────────────────────────────────
 const VIA_TITULO: Record<string, string> = {
@@ -305,4 +306,5 @@ export const pelveFeminina: ExamCategory = {
     { id: 'bexiga', label: 'Bexiga', group: 'orgaos', module: bexigaModule },
   ],
   conclusionNormal: 'Exame ultrassonográfico da pelve dentro dos limites da normalidade.',
+  calculators: [oRadsSpec, figoMiomaSpec],
 }

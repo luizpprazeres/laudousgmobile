@@ -5,6 +5,7 @@
  */
 import { calcularTiRads, formatarBlocoTiRads, type TiRadsInput } from './tiRads'
 import { calcularBiRads, formatarBlocosBiRads, type BiRadsInput } from './biRads'
+import { calcularORads, formatarBlocoORads, type ORadsInput } from './oRads'
 
 export type CalcField = {
   key: string
@@ -95,5 +96,84 @@ export const biRadsSpec: CalcSpec = {
     const r = calcularBiRads(input)
     if (!r) return null
     return { headline: `BI-RADS ${r.category} — ${r.risk}`, block: formatarBlocosBiRads(input, r) }
+  },
+}
+
+// ── O-RADS US (ovariano-anexial) ─────────────────────────────────────────────
+export const oRadsSpec: CalcSpec = {
+  id: 'o-rads',
+  name: 'O-RADS (US)',
+  fields: [
+    { key: 'ascite', label: 'Ascite/implantes', options: [
+      { value: 'nao', label: 'Não' }, { value: 'sim', label: 'Sim' },
+    ] },
+    { key: 'morfologia', label: 'Morfologia', options: [
+      { value: 'puramente_cistico', label: 'Puramente cístico' }, { value: 'componente_solido', label: 'C/ comp. sólido' }, { value: 'predominantemente_solido', label: 'Predom. sólido' },
+    ] },
+    { key: 'rampaA', label: 'Cístico — tipo', options: [
+      { value: 'unilocular_simples', label: 'Unilocular simples' }, { value: 'unilocular_com_debris', label: 'Unilocular c/ debris' }, { value: 'multilocular_simples', label: 'Multilocular' }, { value: 'multilocular_com_debris', label: 'Multiloc. c/ debris' },
+    ] },
+    { key: 'numPapilas', label: 'Nº de papilas', options: [
+      { value: '0', label: '0' }, { value: '1', label: '1' }, { value: '2', label: '2' }, { value: '3', label: '≥3' },
+    ] },
+    { key: 'componenteSolidoInterno', label: 'Comp. sólido interno', options: [
+      { value: 'ausente', label: 'Ausente' }, { value: 'presente', label: 'Presente' },
+    ] },
+    { key: 'bordasSolido', label: 'Sólido — bordas', options: [
+      { value: 'regulares', label: 'Regulares' }, { value: 'irregulares', label: 'Irregulares' },
+    ] },
+    { key: 'ecogenicidadeSolido', label: 'Sólido — ecogenicidade', options: [
+      { value: 'hiperecóico', label: 'Hiper' }, { value: 'isoecóico', label: 'Iso' }, { value: 'hipoecóico', label: 'Hipo' }, { value: 'sombra_acustica', label: 'Sombra' },
+    ] },
+    { key: 'colorScore', label: 'Color Score', options: [
+      { value: 'CS1', label: 'CS1' }, { value: 'CS2', label: 'CS2' }, { value: 'CS3', label: 'CS3' }, { value: 'CS4', label: 'CS4' },
+    ] },
+    { key: 'statusMenopausico', label: 'Status', options: [
+      { value: 'pre', label: 'Pré-menopausa' }, { value: 'pos', label: 'Pós-menopausa' },
+    ] },
+  ],
+  compute: (v) => {
+    const input: ORadsInput = {
+      asciteImplantes: v.ascite === 'sim' ? true : v.ascite === 'nao' ? false : undefined,
+      morfologia: v.morfologia as ORadsInput['morfologia'],
+      rampaA: v.rampaA as ORadsInput['rampaA'],
+      numPapilas: v.numPapilas ? (Number(v.numPapilas) as ORadsInput['numPapilas']) : undefined,
+      componenteSolidoInterno: v.componenteSolidoInterno as ORadsInput['componenteSolidoInterno'],
+      bordasSolido: v.bordasSolido as ORadsInput['bordasSolido'],
+      ecogenicidadeSolido: v.ecogenicidadeSolido as ORadsInput['ecogenicidadeSolido'],
+      colorScore: v.colorScore as ORadsInput['colorScore'],
+      statusMenopausico: v.statusMenopausico as ORadsInput['statusMenopausico'],
+    }
+    const r = calcularORads(input)
+    if (!r) return null
+    return { headline: `O-RADS ${r.category} — ${r.risk}`, block: formatarBlocoORads(input, r) }
+  },
+}
+
+// ── FIGO — classificação de mioma (0–8) ──────────────────────────────────────
+const FIGO_DESC: Record<string, string> = {
+  '0': 'Submucoso pediculado, 100% intracavitário',
+  '1': 'Submucoso, < 50% intramural',
+  '2': 'Submucoso, ≥ 50% intramural',
+  '3': '100% intramural, em contato com o endométrio',
+  '4': 'Intramural',
+  '5': 'Subseroso, ≥ 50% intramural',
+  '6': 'Subseroso, < 50% intramural',
+  '7': 'Subseroso pediculado',
+  '8': 'Outro (cervical, parasitário)',
+}
+export const figoMiomaSpec: CalcSpec = {
+  id: 'figo-mioma',
+  name: 'FIGO (mioma)',
+  fields: [
+    { key: 'figo', label: 'Tipo FIGO', options: Object.keys(FIGO_DESC).map((k) => ({ value: k, label: k })) },
+  ],
+  compute: (v) => {
+    if (!v.figo) return null
+    const desc = FIGO_DESC[v.figo]
+    return {
+      headline: `FIGO ${v.figo}`,
+      block: `Nódulo miomatoso — categoria FIGO ${v.figo}: ${desc}.\n(FIGO: Federação Internacional de Ginecologia e Obstetrícia)`,
+    }
   },
 }
