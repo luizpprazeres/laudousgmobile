@@ -271,17 +271,6 @@ const schema: OrganSchema = {
     },
     mamaTipoField('md'),
     mamaTipoField('me'),
-    {
-      key: 'axilas',
-      label: 'Axilas',
-      kind: 'segmented',
-      hint: 'default: não avaliadas',
-      options: [
-        { value: 'nao', label: 'Não avaliadas', isDefault: true },
-        { value: 'normais', label: 'Normais' },
-        { value: 'alteradas', label: 'Alteradas', subFields: [{ key: 'desc', label: 'Descrição', kind: 'text', placeholder: 'linfonodo axilar de cortical espessada…' }] },
-      ],
-    },
   ],
 }
 
@@ -290,12 +279,49 @@ function initialState(): OrganState {
     fundo: 'heterogeneo',
     md_tipo: 'nenhum',
     me_tipo: 'nenhum',
-    axilas: 'nao',
-    'axilas.alteradas.desc': '',
   }
 }
 
 const AXILAR_NORMAL_CORPO = 'Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.'
+
+// ── Axilas (seção própria) ───────────────────────────────────────────────────
+const axilasModule: OrganModule = {
+  schema: {
+    id: 'axilas',
+    name: 'Axilas',
+    category: 'MAMARIA',
+    fields: [
+      {
+        key: 'axilas',
+        label: 'Axilas',
+        kind: 'segmented',
+        hint: 'default: não avaliadas',
+        options: [
+          { value: 'nao', label: 'Não avaliadas', isDefault: true },
+          { value: 'normais', label: 'Normais' },
+          { value: 'alteradas', label: 'Alteradas', subFields: [{ key: 'desc', label: 'Descrição', kind: 'text', placeholder: 'linfonodo axilar de cortical espessada…' }] },
+        ],
+      },
+    ],
+  },
+  initialState: (): OrganState => ({ axilas: 'nao', 'axilas.alteradas.desc': '' }),
+  compose: (state): OrganComposition => {
+    const axilas = String(state.axilas ?? 'nao')
+    if (axilas === 'normais') {
+      return { body: AXILAR_NORMAL_CORPO, conclusion: ['Linfonodos axilares normais.'], isNormal: false }
+    }
+    if (axilas === 'alteradas') {
+      const d = String(state['axilas.alteradas.desc'] ?? '').trim()
+      const dc = d.replace(/\.+$/, '')
+      return {
+        body: d || 'Linfonodos axilares de aspecto alterado.',
+        conclusion: [dc ? `Linfonodos axilares de aspecto alterado (${dc}).` : 'Linfonodos axilares de aspecto alterado.'],
+        isNormal: false,
+      }
+    }
+    return { body: '', conclusion: [], isNormal: true } // não avaliadas → não entra no laudo
+  },
+}
 
 function compose(state: OrganState): OrganComposition {
   const achados: Achado[] = []
@@ -312,16 +338,8 @@ function compose(state: OrganState): OrganComposition {
     const c = achadoCorpo(a)
     if (c) aspectos.push(c)
   }
-  const axilas = String(state.axilas ?? 'nao')
-  if (axilas === 'normais') aspectos.push(AXILAR_NORMAL_CORPO)
-  else if (axilas === 'alteradas') {
-    const d = String(state['axilas.alteradas.desc'] ?? '').trim()
-    aspectos.push(d || 'Linfonodos axilares de aspecto alterado.')
-  }
-
   // ── conclusão (BI-RADS: maior vence; só o maior leva o rótulo) ──
   const conclusion: string[] = []
-  const comAxila = axilas !== 'nao'
   if (achados.length === 0) {
     conclusion.push('Mamas ecograficamente normais (Categoria BI-RADS® 1).')
   } else {
@@ -338,13 +356,7 @@ function compose(state: OrganState): OrganComposition {
       }
     }
   }
-  if (axilas === 'normais') conclusion.push('Linfonodos axilares normais.')
-  else if (axilas === 'alteradas') {
-    const d = String(state['axilas.alteradas.desc'] ?? '').trim().replace(/\.+$/, '')
-    conclusion.push(d ? `Linfonodos axilares de aspecto alterado (${d}).` : 'Linfonodos axilares de aspecto alterado.')
-  }
-
-  return { body: aspectos.join('\n'), conclusion, isNormal: achados.length === 0 && !comAxila }
+  return { body: aspectos.join('\n'), conclusion, isNormal: achados.length === 0 }
 }
 
 const mamasModule: OrganModule = { schema, initialState, compose }
@@ -356,7 +368,10 @@ export const mamaria: ExamCategory = {
   tecnica:
     'Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.',
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
-  sections: [{ id: 'mamas', label: 'Mamas', group: 'orgaos', module: mamasModule }],
+  sections: [
+    { id: 'mamas', label: 'Mamas', group: 'orgaos', module: mamasModule },
+    { id: 'axilas', label: 'Axilas', group: 'orgaos', module: axilasModule },
+  ],
   conclusionNormal: 'Mamas ecograficamente normais (Categoria BI-RADS® 1).',
   footer: RODAPE,
 }

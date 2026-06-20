@@ -192,7 +192,7 @@ export function LaudarWebExperience() {
 
       <main className="relative h-[calc(100vh-64px)]">
         <LaudarRail />
-        <div className="ml-16 grid h-full grid-cols-[220px_minmax(420px,1fr)_minmax(460px,1fr)]">
+        <div className="ml-16 grid h-full grid-cols-[196px_minmax(420px,1fr)_minmax(460px,1fr)]">
           <ExamSectionNav
             sections={sections}
             activeId={activeSection?.id ?? ''}
@@ -203,18 +203,14 @@ export function LaudarWebExperience() {
           />
 
           <section className="min-h-0 overflow-y-auto bg-gray-50">
-            <div className="border-b border-gray-200 bg-white px-6 py-4">
-              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">{currentCategory.name}</div>
-              <div className="mt-1.5 flex items-start justify-between gap-4">
-                <div>
-                  <h1 className="font-barlow text-[26px] font-bold leading-tight tracking-tight text-gray-950">{activeSection?.label}</h1>
-                  <p className="mt-0.5 text-[13px] text-gray-500">
-                    {isTireoide
-                      ? 'Preencha medidas, nódulos e classificações informadas pelo médico.'
-                      : 'Tudo pré-marcado como normal. Mude só o que estiver alterado.'}
-                  </p>
-                </div>
-                <button type="button" onClick={resetActive} className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-50">
+            <div className="border-b border-gray-200 bg-white px-6 py-3">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-[13px] text-gray-500">
+                  {isTireoide
+                    ? 'Preencha medidas, nódulos e classificações informadas pelo médico.'
+                    : 'Tudo pré-marcado como normal. Mude só o que estiver alterado.'}
+                </p>
+                <button type="button" onClick={resetActive} className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-50">
                   <RotateCcw className="h-3.5 w-3.5" />
                   Reset
                 </button>

@@ -34,12 +34,7 @@ export function ExamSectionNav({ sections, activeId, onSelect, examState, catego
   const progress = organSections.length ? Math.round((completed / organSections.length) * 100) : 0
 
   return (
-    <aside className="flex h-full w-[220px] flex-col border-r border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-5 py-4">
-        <div className="font-barlow text-lg font-bold tracking-tight text-gray-900">{category.name}</div>
-        <div className="mt-1 text-xs text-gray-400">Modo auxiliar · determinístico</div>
-      </div>
-
+    <aside className="flex h-full w-[196px] flex-col border-r border-gray-200 bg-white">
       <nav className="min-h-0 flex-1 overflow-y-auto py-4">
         {groups.map((group) => {
           const groupSections = sections.filter((section) => section.group === group)

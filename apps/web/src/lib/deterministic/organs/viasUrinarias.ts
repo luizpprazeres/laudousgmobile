@@ -356,7 +356,7 @@ const bexigaModule: OrganModule = {
         { value: 'trabeculada', label: 'Trabeculada' },
       ] },
       { key: 'conteudo', label: 'Conteúdo', kind: 'checklist', hint: 'marque se alterado', options: [
-        { value: 'debris', label: 'Debris' },
+        { value: 'debris', label: 'Ecos (Debris)' },
         { value: 'calculo', label: 'Cálculo' },
         { value: 'sonda', label: 'Sonda' },
       ] },
