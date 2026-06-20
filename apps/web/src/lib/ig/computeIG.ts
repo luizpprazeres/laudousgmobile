@@ -48,8 +48,9 @@ export function daysToSD(days: number): SemanasDias {
 }
 export function fmtSD(sd: SemanasDias): string {
   const s = `${sd.semanas} ${sd.semanas === 1 ? 'semana' : 'semanas'}`
-  const d = `${sd.dias} ${sd.dias === 1 ? 'dia' : 'dias'}`
-  return `${s} e ${d}`
+  // Fonte (renderer/ig.ts) omite "e Y dias" quando dias = 0.
+  if (sd.dias === 0) return s
+  return `${s} e ${sd.dias} ${sd.dias === 1 ? 'dia' : 'dias'}`
 }
 function daysBetween(aISO: string, bISO: string): number {
   return Math.round((Date.parse(bISO) - Date.parse(aISO)) / DIA_MS)
@@ -99,8 +100,8 @@ export function computeIG(input: IGInput): IGResult {
     const dataFmt = formatBR(referencia.dataISO)
     frase1aUS =
       referencia.tipo === 'us'
-        ? `Primeira ultrassonografia realizada em ${dataFmt} com ${fmtSD(referencia.ig)}. Hoje com ${fmtSD(refSD)}.`
-        : `Data da última menstruação em ${dataFmt}, compatível com ${fmtSD(refSD)} na presente data.`
+        ? `Primeira ultrassonografia realizada ${dataFmt} com ${fmtSD(referencia.ig)}. Hoje com ${fmtSD(refSD)}.`
+        : `Data da última menstruação em ${dataFmt}, correspondente a ${fmtSD(refSD)} na data do exame.`
   }
 
   return {

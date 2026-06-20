@@ -14,14 +14,14 @@ import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { computeIG, type Referencia } from '../../ig/computeIG'
 
 const TECNICA =
-  'Exame realizado com transdutor convexo multifrequencial. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
+  'Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+/** Parse ESTRITO (review dex2): rejeita lixo após número ("5abc" → null). */
 function numOrNull(v: unknown): number | null {
   const s = String(v ?? '').trim().replace(',', '.')
-  if (!s) return null
-  const n = parseFloat(s)
-  return Number.isFinite(n) ? n : null
+  if (!/^\d+(\.\d+)?$/.test(s)) return null
+  return parseFloat(s)
 }
 function ptBr(n: number): string {
   return (Number.isInteger(n) ? String(n) : n.toFixed(1)).replace('.', ',')
@@ -29,10 +29,14 @@ function ptBr(n: number): string {
 function mm(v: number | null): string {
   return v === null ? '____' : ptBr(v)
 }
-/** "DD/MM/AAAA" → "AAAA-MM-DD" (ISO). null se inválido. */
+/** "DD/MM/AAAA" → "AAAA-MM-DD" (ISO). Parse ESTRITO: rejeita data inexistente
+ *  (31/02) — review dex2; espelha o parse estrito da engine (renderer/ig.ts). */
 function brToISO(v: unknown): string | null {
   const m = String(v ?? '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!m) return null
+  const d = Number(m[1]), mo = Number(m[2]), y = Number(m[3])
+  const dt = new Date(y, mo - 1, d)
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null
   return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
 }
 
@@ -60,7 +64,7 @@ const igModule: OrganModule = {
               { key: 'us_ig_sem', label: 'IG na 1ª US — semanas', kind: 'text', placeholder: '8' },
               { key: 'us_ig_dias', label: 'IG na 1ª US — dias', kind: 'text', placeholder: '2' },
               { key: 'exame_data', label: 'Data do exame (DD/MM/AAAA)', kind: 'text', placeholder: '20/06/2026' },
-              { key: 'corrigir', label: 'Sinalizar correção na conclusão', kind: 'checklist', options: [{ value: 'sim', label: 'Sim' }] },
+              { key: 'corrigir', label: 'Sinalizar correção (se divergir > 5 dias)', kind: 'segmented', options: [{ value: 'sim', label: 'Sim', isDefault: true }, { value: 'nao', label: 'Não' }] },
             ],
           },
           {
@@ -69,7 +73,7 @@ const igModule: OrganModule = {
             subFields: [
               { key: 'dum_data', label: 'DUM (DD/MM/AAAA)', kind: 'text', placeholder: '01/01/2026' },
               { key: 'exame_data', label: 'Data do exame (DD/MM/AAAA)', kind: 'text', placeholder: '20/06/2026' },
-              { key: 'corrigir', label: 'Sinalizar correção na conclusão', kind: 'checklist', options: [{ value: 'sim', label: 'Sim' }] },
+              { key: 'corrigir', label: 'Sinalizar correção (se divergir > 5 dias)', kind: 'segmented', options: [{ value: 'sim', label: 'Sim', isDefault: true }, { value: 'nao', label: 'Não' }] },
             ],
           },
         ],
@@ -93,7 +97,8 @@ const igModule: OrganModule = {
       const exame = brToISO(st['referencia.usg.exame_data'])
       const usSem = numOrNull(st['referencia.usg.us_ig_sem'])
       const usDias = numOrNull(st['referencia.usg.us_ig_dias']) ?? 0
-      corrigir = (Array.isArray(st['referencia.usg.corrigir']) ? (st['referencia.usg.corrigir'] as string[]) : []).includes('sim')
+      // Default ON (espelha prod: default true; médico pode optar por "Não").
+      corrigir = String(st['referencia.usg.corrigir'] ?? 'sim') !== 'nao'
       if (usData && exame && usSem !== null) {
         referencia = { tipo: 'us', dataISO: usData, ig: { semanas: usSem, dias: usDias } }
         hojeISO = exame
@@ -101,7 +106,7 @@ const igModule: OrganModule = {
     } else if (tipo === 'dum') {
       const dumData = brToISO(st['referencia.dum.dum_data'])
       const exame = brToISO(st['referencia.dum.exame_data'])
-      corrigir = (Array.isArray(st['referencia.dum.corrigir']) ? (st['referencia.dum.corrigir'] as string[]) : []).includes('sim')
+      corrigir = String(st['referencia.dum.corrigir'] ?? 'sim') !== 'nao'
       if (dumData && exame) {
         referencia = { tipo: 'dum', dataISO: dumData }
         hojeISO = exame
@@ -253,27 +258,26 @@ const liquidoModule: OrganModule = {
   initialState: (): OrganState => ({ tipo: 'subjetivo' }),
   compose: (st): OrganComposition => {
     const tipo = String(st.tipo || 'subjetivo')
-    if (tipo === 'mbv') {
-      const v = numOrNull(st['tipo.mbv.cm'])
-      if (v === null) return { body: 'Maior bolsão vertical de ____ cm.', conclusion: ['Líquido amniótico em quantidade normal (maior bolsão vertical de ____ cm).'], isNormal: true }
-      const c = classeMBV(v)
-      const medida = `maior bolsão vertical de ${ptBr(v)} cm`
-      const conclusao = c.classe === 'normal' ? `${c.conclusao} (${medida}).` : `${c.conclusao} (${medida}).`
-      return { body: `Maior bolsão vertical de ${ptBr(v)} cm.`, conclusion: [conclusao], isNormal: c.classe === 'normal' }
-    }
-    if (tipo === 'ila') {
-      const v = numOrNull(st['tipo.ila.cm'])
-      if (v === null) return { body: 'Índice de líquido amniótico (ILA) de ____ cm.', conclusion: ['Líquido amniótico em quantidade normal (ILA de ____ cm).'], isNormal: true }
-      const c = classeILA(v)
-      const medida = `ILA de ${ptBr(v)} cm`
-      const conclusao = `${c.conclusao} (${medida}).`
-      return { body: `Índice de líquido amniótico (ILA) de ${ptBr(v)} cm.`, conclusion: [conclusao], isNormal: c.classe === 'normal' }
-    }
-    return {
+    // Subjetivo normal (também é o fallback quando a medida está em branco — NUNCA
+    // afirmar normalidade atrelada a um "____" cm; review dex2).
+    const subjetivo: OrganComposition = {
       body: 'Líquido amniótico de quantidade normal pela análise subjetiva.',
       conclusion: ['Líquido amniótico em quantidade normal.'],
       isNormal: true,
     }
+    if (tipo === 'mbv') {
+      const v = numOrNull(st['tipo.mbv.cm'])
+      if (v === null) return subjetivo
+      const c = classeMBV(v)
+      return { body: `Maior bolsão vertical de ${ptBr(v)} cm.`, conclusion: [`${c.conclusao} (maior bolsão vertical de ${ptBr(v)} cm).`], isNormal: c.classe === 'normal' }
+    }
+    if (tipo === 'ila') {
+      const v = numOrNull(st['tipo.ila.cm'])
+      if (v === null) return subjetivo
+      const c = classeILA(v)
+      return { body: `Índice de líquido amniótico (ILA) de ${ptBr(v)} cm.`, conclusion: [`${c.conclusao} (ILA de ${ptBr(v)} cm).`], isNormal: c.classe === 'normal' }
+    }
+    return subjetivo
   },
 }
 

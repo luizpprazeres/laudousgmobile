@@ -22,7 +22,7 @@ const b = computeIG({
   corrigir: true,
 })
 check('US div ≤5 → só biometria', b.igConclusao === 'Gestação em torno de 28 semanas e 1 dia.', `${b.igConclusao} (div=${b.divergenciaDias})`)
-check('US → frase 1ª US presente', /Primeira ultrassonografia realizada em 12\/01\/2026 com 8 semanas e 2 dias\. Hoje com /.test(b.frase1aUS ?? ''), b.frase1aUS)
+check('US → frase 1ª US presente', /Primeira ultrassonografia realizada 12\/01\/2026 com 8 semanas e 2 dias\. Hoje com /.test(b.frase1aUS ?? ''), b.frase1aUS)
 
 // 3) US precoce, divergência > 5 dias, corrigir=true → frase com correção.
 //    US 12/01/2026 com 8s2d; hoje 30/05/2026 → ref hoje 28s0d. biometria 26s0d (182d) → div 14 dias > 5.
@@ -34,12 +34,12 @@ const inputC = {
 }
 const c = computeIG(inputC)
 check('US div >5 + corrigir → frase de correção',
-  c.igConclusao === 'Gestação em torno de 26 semanas e 0 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 28 semanas e 0 dias.',
+  c.igConclusao === 'Gestação em torno de 26 semanas pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 28 semanas.',
   `${c.igConclusao} (div=${c.divergenciaDias})`)
 
 // 4) Mesma divergência, corrigir=false → só biometria (toggle off).
 const d = computeIG({ ...inputC, corrigir: false })
-check('US div >5 + corrigir=false → só biometria', d.igConclusao === 'Gestação em torno de 26 semanas e 0 dias.', d.igConclusao)
+check('US div >5 + corrigir=false → só biometria', d.igConclusao === 'Gestação em torno de 26 semanas.', d.igConclusao)
 
 // 5) DUM: hoje - DUM. DUM 01/01/2026; hoje 30/05/2026 = 149 dias = 21s2d.
 const e = computeIG({
