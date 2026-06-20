@@ -92,7 +92,12 @@ export function LaudarWebExperience() {
     [TIREOIDE_ID]: 'lobo_direito',
   }))
   const [initialsOn, setInitialsOn] = useState(true)
-  const initials = 'ha'
+  // Iniciais configuráveis nas Preferências (localStorage 'laudousg.initials').
+  const [initials, setInitials] = useState('ha')
+  useEffect(() => {
+    const v = typeof window !== 'undefined' ? window.localStorage.getItem('laudousg.initials') : null
+    if (v) setInitials(v)
+  }, [])
 
   const isTireoide = categoria === TIREOIDE_ID
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]

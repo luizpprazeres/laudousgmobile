@@ -42,12 +42,20 @@ export default async function AppHomePage() {
         >
           Gerar laudo (sem IA) — 12 categorias
         </Link>
-        <Link
-          href="/app/historico"
-          className="block w-full text-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors mb-6"
-        >
-          Histórico de laudos
-        </Link>
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <Link
+            href="/app/historico"
+            className="text-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            Histórico
+          </Link>
+          <Link
+            href="/app/preferencias"
+            className="text-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            Preferências
+          </Link>
+        </div>
 
         <dl className="text-sm border border-gray-100 dark:border-gray-800 rounded-xl divide-y divide-gray-100 dark:divide-gray-800 mb-6">
           <div className="flex justify-between px-4 py-3">
