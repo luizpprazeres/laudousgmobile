@@ -10,6 +10,8 @@ import { prostataSuprapubica } from './organs/prostataSuprapubica'
 import { viasUrinarias } from './organs/viasUrinarias'
 import { mamaria } from './organs/mamaria'
 import { pelveFeminina } from './organs/pelveFeminina'
+import { abdomeSuperior } from './organs/abdomeSuperior'
+import { cervical } from './organs/cervical'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
@@ -18,6 +20,8 @@ export { prostataSuprapubica } from './organs/prostataSuprapubica'
 export { viasUrinarias } from './organs/viasUrinarias'
 export { mamaria } from './organs/mamaria'
 export { pelveFeminina } from './organs/pelveFeminina'
+export { abdomeSuperior } from './organs/abdomeSuperior'
+export { cervical } from './organs/cervical'
 export type { ExamCategory, ExamSection } from './organs/abdomeTotal'
 export { vesiculaModule } from './organs/vesicula'
 
@@ -27,7 +31,7 @@ export { vesiculaModule } from './organs/vesicula'
  * (LaudarWebExperience) lê este registro — não precisa mexer no componente.
  * (Tireoide tem motor próprio — composeTireoide — e não entra aqui.)
  */
-export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina]
+export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina, cervical]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
 )
