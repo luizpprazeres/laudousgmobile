@@ -45,6 +45,22 @@ function normalizeCommand(content: string): string {
   return asItem(c);
 }
 
+/**
+ * Heurística anti-vazamento (boletim 2026-06-19): em ASR SEM pontuação, a captura
+ * lazy `(.+?)(?:[.;\n]|$)` engole o restante do ditado (medidas, datas, biometria)
+ * e isso ia parar na conclusão como item. Rejeita conteúdo que claramente é
+ * transcrição crua, NÃO uma diretiva curta de conclusão.
+ */
+function looksLikeTranscription(text: string): boolean {
+  const t = text.toLowerCase();
+  if (/\b\d+[.,]?\d*\s*(?:por|x|×|cm|mm|cent[íi]metr)\b/.test(t)) return true; // medidas
+  if (/\bhoje com\b|\bsemanas? e \d|\bmedindo\b|\brim (?:direito|esquerdo)\b|\bbols[ãa]o\b|ultrassonografia\s+realizada/.test(t)) return true;
+  if (/\d+\s+(?:d[eo]|do)\s+\d+\s+de\s+\d{4}/.test(t)) return true; // datas ditadas
+  const words = t.split(/\s+/).filter(Boolean).length;
+  if (words > 18 || t.length > 160) return true; // captura longa = transcrição engolida
+  return false;
+}
+
 export interface ConclusionCommand {
   /** Frase já normalizada pra item de conclusão. */
   text: string;
@@ -77,7 +93,8 @@ export function extractConclusionCommands(rawInput: string): ConclusionCommand[]
     if (!raw) return;
     const { insertAt, rest } = parsePosition(raw.trim());
     const text = normalizeCommand(rest);
-    if (text.length > 4 && !seen.has(text)) {
+    // Rejeita transcrição crua engolida (boletim P0 #1) — só diretivas reais entram.
+    if (text.length > 4 && !looksLikeTranscription(text) && !seen.has(text)) {
       seen.add(text);
       out.push({ text, insertAt });
     }
@@ -102,13 +119,13 @@ export function extractConclusionCommands(rawInput: string): ConclusionCommand[]
       // da conclusão)? Então não é comando de conclusão — deixa o LLM posicionar.
       const before = rawInput.slice(Math.max(0, (m.index ?? 0) - 50), m.index ?? 0);
       if (
-        /t[íi]tulo|cabe[çc]alho|(?:final|fim)\s+dos\s+achados|antes\s+d[ao]\s+conclus|no\s+corpo/i.test(
+        /t[íi]tulo|cabe[çc]alho|coment[áa]rio|t[ée]cnica|(?:final|fim)\s+dos\s+achados|antes\s+d[ao]\s+conclus|no\s+corpo/i.test(
           before,
         )
       )
         continue;
       if (
-        /^\s*(?:n[oa]s?\s+achados|n[oa]\s+corpo\b|antes\s+d[ao]\s+conclus|n[oa]\s+(?:final|fim)\s+dos\s+achados)/i.test(
+        /^\s*(?:n[oa]s?\s+achados|n[oa]s?\s+coment[áa]rios?|n[oa]\s+t[ée]cnica|n[oa]\s+corpo\b|antes\s+d[ao]\s+conclus|n[oa]\s+(?:final|fim)\s+dos\s+achados)/i.test(
           m[1] ?? "",
         )
       )

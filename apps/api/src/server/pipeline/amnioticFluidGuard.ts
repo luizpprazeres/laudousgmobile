@@ -74,6 +74,70 @@ export function enforceStatedAmnioticClass(
 }
 
 /**
+ * Boletim 2026-06-19 (P0 — falso oligoâmnio): o médico dita só uma MEDIDA
+ * (ex.: "maior bolsão vertical 5,6 cm") sem classificar; o writer rotula como
+ * "ILA" e aplica o limiar de ILA (<8 → reduzida) → FALSO OLIGOÂMNIO. MBV e ILA
+ * têm faixas DIFERENTES: MBV 2–8 cm normal; ILA 5–25 cm normal.
+ *
+ * Fix determinístico: detecta o TIPO da medida ditada e reclassifica pela faixa
+ * correta, corrigindo o rótulo (MBV vs ILA) no laudo. A classe explicitamente
+ * dita pelo médico (detectStatedAmnioticClass) ainda tem precedência.
+ */
+export type AmnioticMeasure = { type: "mbv" | "ila"; valueCm: number };
+
+export function detectAmnioticMeasure(rawInput: string): AmnioticMeasure | null {
+  const t = rawInput.toLowerCase();
+  let m = t.match(
+    /(?:mbv|maior\s+bols[ãa]o(?:\s+vertical)?|bols[ãa]o\s+(?:[úu]nico|vertical|maior))[^\d]{0,25}(\d+[.,]?\d*)\s*(?:cm|cent)?/,
+  );
+  if (m?.[1]) return { type: "mbv", valueCm: parseFloat(m[1].replace(",", ".")) };
+  m = t.match(
+    /(?:\bila\b|[íi]ndice\s+de\s+l[íi]quido(?:\s+amni[óo]tico)?|\bafi\b)[^\d]{0,25}(\d+[.,]?\d*)/,
+  );
+  if (m?.[1]) return { type: "ila", valueCm: parseFloat(m[1].replace(",", ".")) };
+  return null;
+}
+
+/** Classe pela faixa correta do tipo de medida. MBV: 2–8; ILA: 5–25 (normais). */
+export function classifyAmnioticMeasure(meas: AmnioticMeasure): AmnioticClass {
+  if (meas.type === "mbv") {
+    if (meas.valueCm < 2) return "reduzida";
+    if (meas.valueCm > 8) return "aumentada";
+    return "normal";
+  }
+  if (meas.valueCm < 5) return "reduzida";
+  if (meas.valueCm > 25) return "aumentada";
+  return "normal";
+}
+
+/**
+ * Corrige a frase de líquido amniótico quando o médico ditou uma MEDIDA com tipo
+ * (MBV/bolsão ou ILA): reclassifica pela faixa correta e corrige o rótulo, salvo
+ * se o médico declarou a classe explicitamente (essa vence).
+ */
+export function enforceAmnioticMeasureType(
+  output: string,
+  rawInput: string,
+): string {
+  const meas = detectAmnioticMeasure(rawInput);
+  if (!meas) return output;
+  const stated = detectStatedAmnioticClass(rawInput);
+  const cls = stated ?? classifyAmnioticMeasure(meas);
+  const label = meas.type === "mbv" ? "maior bolsão vertical" : "ILA";
+
+  return output.replace(
+    /Líquido amni[óo]tico\s+(?:de|em)\s+quantidade\s+(?:normal|reduzida|aumentada|diminu[íi]da|escassa)([^.\n]*)/gi,
+    (_full, tail: string) => {
+      // Corrige o rótulo da medida no parêntese, se houver.
+      const fixedTail = (tail as string)
+        .replace(/\b(?:ILA|AFI|MBV|maior\s+bols[ãa]o(?:\s+vertical)?)\b\s*(?:mede|de|=)?\s*/i, `${label} mede `)
+        .replace(/\s{2,}/g, " ");
+      return `Líquido amniótico de quantidade ${cls}${fixedTail}`;
+    },
+  );
+}
+
+/**
  * Garante a frase de líquido amniótico na CONCLUSÃO como item 2 (após a IG),
  * default "Líquido amniótico de quantidade normal." — a regra do banco manda
  * SEMPRE incluir, mas o LLM às vezes omite (prompt não vence → determinístico).

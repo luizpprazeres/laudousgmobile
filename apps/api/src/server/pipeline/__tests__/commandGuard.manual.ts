@@ -123,5 +123,23 @@ check(
   JSON.stringify(extractConclusionCommands("acrescente antes da conclusão a observação do equipamento.")),
 );
 
+// ── Boletim 2026-06-19 (P0 #1): transcrição crua NÃO vaza pra conclusão ──
+check(
+  "a905d849: 'acrescente a 1ª US realizada 22 do 4 de 2026...' NÃO vira item",
+  extractConclusionCommands(
+    "Após o acrescente a 1º ultrassonografia realizada 22 do 4 de 2026 com 10 semanas e 5 dias, hoje com 19 semanas, item 1 da conclusão a gestação em torno de 19 semanas",
+  ).length === 0,
+);
+check(
+  "9e81643f: 'nos comentários acrescente ... rim direito medindo 3.7 por 2' NÃO vira item",
+  extractConclusionCommands(
+    "nos comentários acrescente que o exame foi realizado em 1 dia de vida, Rim direito medindo 3.7 por 2 por 2.1",
+  ).length === 0,
+);
+check(
+  "legítimo curto preservado: 'recomende controle em 6 meses'",
+  extractConclusionCommands("recomende controle ecográfico em 6 meses").length === 1,
+);
+
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));
 if (fail) process.exit(1);
