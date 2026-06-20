@@ -75,6 +75,54 @@ export function OrganFormPanel({ schema, state, onChange }: Props) {
   }
 
   const renderField = (field: Field) => {
+    if (field.kind === 'volume') {
+      const factor = field.factor ?? 0.523
+      const unit = field.unit ?? 'mL'
+      const dimKey = (i: number) => `${field.key}.d${i}`
+      const calc = () => {
+        const d = [1, 2, 3].map((i) => parseFloat(String(state[dimKey(i)] ?? '').replace(',', '.')))
+        if (d.every((n) => Number.isFinite(n) && n > 0)) {
+          setValue(field.key, String(Math.round((d[0] as number) * (d[1] as number) * (d[2] as number) * factor)))
+        }
+      }
+      const dimInput = (i: number) => (
+        <input
+          key={i}
+          value={(state[dimKey(i)] as string) ?? ''}
+          onChange={(event) => setValue(dimKey(i), event.target.value)}
+          placeholder={['L', 'AP', 'T'][i - 1]}
+          className="h-8 w-14 rounded-lg border border-gray-200 bg-white px-2 text-center text-[13px] text-gray-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+        />
+      )
+      return (
+        <section key={field.key} className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500">{field.label}</h3>
+            {field.hint ? <span className="text-[11px] text-gray-400">{field.hint}</span> : null}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              value={(state[field.key] as string) ?? ''}
+              onChange={(event) => setValue(field.key, event.target.value)}
+              placeholder={field.placeholder}
+              className="h-9 w-24 rounded-lg border border-gray-200 bg-white px-2.5 text-[13px] text-gray-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+            />
+            <span className="text-[12px] text-gray-400">{unit}</span>
+          </div>
+          <div className="mt-2 flex items-center gap-1.5">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-gray-400">ou calcular:</span>
+            {dimInput(1)}<span className="text-gray-400">×</span>{dimInput(2)}<span className="text-gray-400">×</span>{dimInput(3)}
+            <button
+              type="button"
+              onClick={calc}
+              className="ml-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[12px] font-semibold text-emerald-700 hover:bg-emerald-100"
+            >
+              = calcular
+            </button>
+          </div>
+        </section>
+      )
+    }
     if (field.kind === 'segmented') {
       return (
         <section key={field.key} className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm">

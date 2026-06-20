@@ -13,8 +13,10 @@
  * interna. Mesma convenção do ReportEditor/ReportRenderer (ver globals.css §Editor).
  */
 
-/** Tipos de campo que a UI sabe renderizar. */
-export type FieldKind = 'segmented' | 'checklist' | 'text' | 'mini-segmented'
+/** Tipos de campo que a UI sabe renderizar.
+ *  - 'volume': input direto do valor + 3 medidas opcionais com botão "calcular"
+ *    (elipsoide: D1×D2×D3×factor). O valor calculado é gravado em state[key]. */
+export type FieldKind = 'segmented' | 'checklist' | 'text' | 'mini-segmented' | 'volume'
 
 /** Uma opção dentro de um campo segmented/checklist. */
 export interface FieldOption {
@@ -41,6 +43,10 @@ export interface Field {
   options?: FieldOption[]
   /** Placeholder/unidade para campos de texto (ex.: "8 mm"). */
   placeholder?: string
+  /** Fator do elipsoide para kind 'volume' (default 0,523). */
+  factor?: number
+  /** Unidade exibida no campo 'volume' (ex.: 'mL', 'cm³'). */
+  unit?: string
 }
 
 /** Schema declarativo de um órgão — a UI renderiza a partir disto. */

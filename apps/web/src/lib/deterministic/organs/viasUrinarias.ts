@@ -360,7 +360,7 @@ const bexigaModule: OrganModule = {
         { value: 'calculo', label: 'Cálculo' },
         { value: 'sonda', label: 'Sonda' },
       ] },
-      { key: 'volume_pre', label: 'Volume pré-miccional (mL)', kind: 'text', placeholder: '250' },
+      { key: 'volume_pre', label: 'Volume pré-miccional', kind: 'volume', unit: 'mL', placeholder: '250' },
       { key: 'espessura_parede', label: 'Espessura da parede (mm)', kind: 'text', placeholder: '3' },
       { key: 'residuo', label: 'Resíduo pós-miccional (mL)', kind: 'text', placeholder: '20' },
     ],
