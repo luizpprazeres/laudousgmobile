@@ -38,5 +38,21 @@ check("3) ACM p50 → normal preservado", /normais nas artérias umbilical e cer
 const c4 = joined("Centralização fetal.");
 check("4) centralização → sem 'Perfil hemodinâmico fetal é normal'", !/Perfil hemodin[âa]mico fetal é normal/i.test(c4), c4);
 
+// 5) RCP < 1 (review dex2): umbilical 1,2 + ACM 0,9 → RCP 0,75 → não afirma ACM normal.
+const c5 = joined("IP da artéria umbilical 1,2. IP da artéria cerebral média 0,9.");
+check("5) RCP<1 → não afirma ACM normal", !/normais nas artérias umbilical e cerebral m[ée]dia/i.test(c5), c5);
+
+// 6) "menor que o percentil 5" textual (captura o número 5).
+const c6 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,8 menor que o percentil 5.");
+check("6) 'menor que percentil 5' → ACM não-normal", !/normais nas artérias umbilical e cerebral m[ée]dia/i.test(c6), c6);
+
+// 7) ACM P≤5 sem palavra centralização → NÃO afirma 'Não há centralização'.
+const c7 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,1 percentil 4.");
+check("7) ACM P≤5 → sem 'Não há ... centralização'", !/Não há sinais de pr[ée]-centraliza/i.test(c7), c7);
+
+// 8) ACM P≤5 sem RCP calculável (só ACM) → não afirma perfil normal.
+const c8 = joined("IP da artéria cerebral média 1,1 percentil 4.");
+check("8) ACM P≤5 sem RCP → sem perfil normal", !/Perfil hemodin[âa]mico fetal é normal/i.test(c8), c8);
+
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));
 if (fail) process.exit(1);

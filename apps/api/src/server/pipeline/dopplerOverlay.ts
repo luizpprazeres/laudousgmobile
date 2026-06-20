@@ -141,7 +141,7 @@ export function extractDopplerData(rawInput: string): DopplerData {
     !new RegExp(NEG + "(?:pr[ée][\\s-]?)?centraliza", "i").test(t) &&
     !/sem\s+(?:brain\s*sparing|sinais\s+de\s+redistribui)/i.test(t);
   d.umbilicalAlterado = /umbilical[^.]{0,40}(?:elevad|alterad|aumentad|acima)/i.test(t);
-  d.acmAlterado = /(?:acm|cerebral\s+m[eé]dia)[^.]{0,40}(?:reduzid|baixo|alterad|diminu)/i.test(t);
+  d.acmAlterado = /(?:acm|cerebral\s+m[eé]dia)[^.]{0,40}(?:reduzid|baixo|menor|inferior|alterad|diminu)/i.test(t);
 
   return d;
 }
@@ -270,11 +270,15 @@ function vasoMedido(d: DopplerData): { uterinas: boolean; umbilical: boolean; ac
  * alterada, ou percentil < 5. Risco clínico crítico (falsa tranquilização).
  */
 function acmComprometida(d: DopplerData): boolean {
+  const rcp = computeRCP(d);
   return (
     d.acmAlterado === true ||
     d.centralizacao === true ||
     d.preCentralizacao === true ||
-    (d.percACM !== undefined && d.percACM < 5)
+    // percentil ≤ 5 (inclui "menor que o percentil 5", que captura o número 5).
+    (d.percACM !== undefined && d.percACM <= 5) ||
+    // RCP < 1 = redistribuição (review dex2): ACM baixa relativa à umbilical.
+    (rcp !== undefined && rcp < 1)
   );
 }
 
@@ -320,7 +324,7 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
   // ACM. (Centralização sozinha não duplica: já tem o item de redistribuição;
   // mas continua excluindo a ACM da frase de normalidade via acmComprometida.)
   const acmAltExplicita =
-    d.acmAlterado === true || (d.percACM !== undefined && d.percACM < 5);
+    d.acmAlterado === true || (d.percACM !== undefined && d.percACM <= 5);
   const umbOuAcmAlt = d.umbilicalAlterado || acmAltExplicita;
 
   // ── Frase do índice de pulsatilidade (umbilical/ACM) ──
@@ -334,7 +338,7 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
     } else {
       // ACM alterada. Percentil < 5 → IP reduzido (brain sparing).
       items.push(
-        d.percACM !== undefined && d.percACM < 5
+        d.percACM !== undefined && d.percACM <= 5
           ? "Índice de pulsatilidade reduzido na artéria cerebral média."
           : "Índice de pulsatilidade alterado na artéria cerebral média.",
       );
@@ -372,7 +376,9 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
     items.push(
       "Achados compatíveis com sinais iniciais de centralização fetal (pré-centralização).",
     );
-  } else {
+  } else if (!acmComprometida(d)) {
+    // Só afirma ausência de centralização quando a ACM NÃO está comprometida
+    // (ACM P≤5 / RCP<1 são a fisiologia inicial do brain sparing — review dex2).
     items.push("Não há sinais de pré-centralização ou de centralização.");
   }
 
@@ -384,9 +390,9 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
     } else {
       items.push(`Perfil hemodinâmico fetal alterado, maior de 1.0.`);
     }
-  } else if (!d.centralizacao && !d.preCentralizacao) {
-    // Sem RCP calculável: só afirma perfil normal se NÃO houver centralização
-    // (boletim: centralização ditada não pode coexistir com perfil "normal").
+  } else if (!acmComprometida(d)) {
+    // Sem RCP calculável: só afirma perfil normal se a ACM NÃO estiver comprometida
+    // (centralização / P≤5 / RCP<1 não podem coexistir com perfil "normal" — dex2).
     items.push("Perfil hemodinâmico fetal é normal, menor de 1.0.");
   }
 
