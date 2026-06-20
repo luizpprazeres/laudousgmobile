@@ -15,6 +15,7 @@ import { cervical } from './organs/cervical'
 import { partesMoles } from './organs/partesMoles'
 import { musculoesqueletico } from './organs/musculoesqueletico'
 import { obstetrica } from './organs/obstetrica'
+import { morfologico } from './organs/morfologico'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
@@ -28,6 +29,7 @@ export { cervical } from './organs/cervical'
 export { partesMoles } from './organs/partesMoles'
 export { musculoesqueletico } from './organs/musculoesqueletico'
 export { obstetrica } from './organs/obstetrica'
+export { morfologico } from './organs/morfologico'
 export type { ExamCategory, ExamSection } from './organs/abdomeTotal'
 export { vesiculaModule } from './organs/vesicula'
 
@@ -37,7 +39,7 @@ export { vesiculaModule } from './organs/vesicula'
  * (LaudarWebExperience) lê este registro — não precisa mexer no componente.
  * (Tireoide tem motor próprio — composeTireoide — e não entra aqui.)
  */
-export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina, cervical, partesMoles, musculoesqueletico, obstetrica]
+export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina, cervical, partesMoles, musculoesqueletico, obstetrica, morfologico]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
 )

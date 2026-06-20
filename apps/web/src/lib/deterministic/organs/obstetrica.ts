@@ -16,17 +16,17 @@ import { computeIG, type Referencia } from '../../ig/computeIG'
 const TECNICA =
   'Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── helpers (compartilhados com morfológico) ─────────────────────────────────
 /** Parse ESTRITO (review dex2): rejeita lixo após número ("5abc" → null). */
-function numOrNull(v: unknown): number | null {
+export function numOrNull(v: unknown): number | null {
   const s = String(v ?? '').trim().replace(',', '.')
   if (!/^\d+(\.\d+)?$/.test(s)) return null
   return parseFloat(s)
 }
-function ptBr(n: number): string {
+export function ptBr(n: number): string {
   return (Number.isInteger(n) ? String(n) : n.toFixed(1)).replace('.', ',')
 }
-function mm(v: number | null): string {
+export function mm(v: number | null): string {
   return v === null ? '____' : ptBr(v)
 }
 /** "DD/MM/AAAA" → "AAAA-MM-DD" (ISO). Parse ESTRITO: rejeita data inexistente
@@ -41,7 +41,7 @@ function brToISO(v: unknown): string | null {
 }
 
 // ── IG e datas (âncora = biometria atual; referência só corrige se >5 dias) ───
-const igModule: OrganModule = {
+export const igModule: OrganModule = {
   schema: {
     id: 'ig',
     name: 'Idade gestacional',
@@ -232,7 +232,7 @@ function classeMBV(v: number): { classe: string; conclusao: string } {
   if (v > 8) return { classe: 'aumentada', conclusao: 'Polidrâmnio' }
   return { classe: 'normal', conclusao: 'Líquido amniótico em quantidade normal' }
 }
-function classeILA(v: number): { classe: string; conclusao: string } {
+export function classeILA(v: number): { classe: string; conclusao: string } {
   if (v < 5) return { classe: 'reduzida', conclusao: 'Oligoâmnio' }
   if (v > 25) return { classe: 'aumentada', conclusao: 'Polidrâmnio' }
   return { classe: 'normal', conclusao: 'Líquido amniótico em quantidade normal' }
