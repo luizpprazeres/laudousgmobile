@@ -1,12 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy } from 'lucide-react'
-import type { CalcSpec } from '@/lib/calculators/specs'
+import { Copy, Wand2 } from 'lucide-react'
+import type { CalcSpec, ExamStateLike } from '@/lib/calculators/specs'
 
-export function CalcPanel({ spec }: { spec: CalcSpec }) {
+export function CalcPanel({ spec, examState }: { spec: CalcSpec; examState?: ExamStateLike }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: s[k] === v ? '' : v }))
+
+  const extract = () => {
+    if (!spec.extract || !examState) return
+    const v = spec.extract(examState)
+    if (v) setValues(v)
+  }
 
   let result: ReturnType<CalcSpec['compute']> = null
   try {
@@ -23,7 +29,18 @@ export function CalcPanel({ spec }: { spec: CalcSpec }) {
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm">
-      <h3 className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500">{spec.name}</h3>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500">{spec.name}</h3>
+        {spec.extract && examState ? (
+          <button
+            type="button"
+            onClick={extract}
+            className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-600 hover:bg-violet-100"
+          >
+            <Wand2 className="h-3 w-3" /> Extrair dos achados
+          </button>
+        ) : null}
+      </div>
 
       <div className="space-y-3">
         {spec.fields.map((field) => (

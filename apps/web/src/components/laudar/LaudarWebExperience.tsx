@@ -239,7 +239,7 @@ export function LaudarWebExperience() {
               {activeSection?.id?.startsWith('calc:') ? (
                 (() => {
                   const spec = calculators.find((c) => `calc:${c.id}` === activeSection.id)
-                  return spec ? <CalcPanel spec={spec} /> : null
+                  return spec ? <CalcPanel spec={spec} examState={isTireoide ? undefined : examState} /> : null
                 })()
               ) : isTireoide ? (
                 <TireoideFormPanel

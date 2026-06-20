@@ -17,11 +17,16 @@ export type CalcField = {
 
 export type CalcResult = { headline: string; block: string } | null
 
+/** Estado do exame (por seção) — usado pelo "Extrair dos achados". */
+export type ExamStateLike = Record<string, Record<string, string | string[]> | undefined>
+
 export type CalcSpec = {
   id: string
   name: string
   fields: CalcField[]
   compute: (v: Record<string, string>) => CalcResult
+  /** Preenche a calculadora a partir do estado já marcado nos órgãos. */
+  extract?: (examState: ExamStateLike) => Record<string, string> | null
 }
 
 // ── ACR TI-RADS ──────────────────────────────────────────────────────────────
@@ -96,6 +101,29 @@ export const biRadsSpec: CalcSpec = {
     const r = calcularBiRads(input)
     if (!r) return null
     return { headline: `BI-RADS ${r.category} — ${r.risk}`, block: formatarBlocosBiRads(input, r) }
+  },
+  // Extrai do nódulo sólido da mama (md/me) já preenchido nos achados.
+  extract: (examState) => {
+    const m = examState['mamas']
+    if (!m) return null
+    const prefix = m.md_tipo === 'nodulo' ? 'md' : m.me_tipo === 'nodulo' ? 'me' : null
+    if (!prefix) return null
+    const g = (k: string) => String(m[`${prefix}_${k}`] ?? '')
+    const margemMap: Record<string, string> = {
+      circunscrita: 'circunscrita', indistinta: 'nao_circunscrita_indistinta', angular: 'nao_circunscrita_angular',
+      microlobulada: 'nao_circunscrita_microlobulada', espiculada: 'espiculada',
+    }
+    const ecoMap: Record<string, string> = { anecoico: 'anecoica', hipoecoico: 'hipoecóica', isoecoico: 'isoecoica', hiperecoico: 'hiperecoica' }
+    const postMap: Record<string, string> = { nenhuma: 'nenhum', reforco: 'reforço', sombra: 'sombra' }
+    const calc = Array.isArray(m[`${prefix}_calc`]) ? (m[`${prefix}_calc`] as string[]) : []
+    return {
+      forma: g('forma'),
+      orientacao: g('orientacao'),
+      margem: margemMap[g('margem')] ?? '',
+      ecogenicidade: ecoMap[g('eco')] ?? '',
+      reforcoPosterior: postMap[g('posterior')] ?? '',
+      calcificacao: calc.includes('microcalc') ? 'microcalcificações_suspeitas' : '',
+    }
   },
 }
 
