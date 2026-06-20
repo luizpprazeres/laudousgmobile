@@ -1,12 +1,32 @@
 'use client'
 
-import { Copy, RotateCcw, WandSparkles } from 'lucide-react'
+import { Check, Copy, RotateCcw, Save, WandSparkles } from 'lucide-react'
+import type { SaveState } from './LaudarWebExperience'
 
 type Props = {
   text: string
   initialsOn: boolean
   onToggleInitials: () => void
   initials: string
+  saveState?: SaveState
+  saveError?: string | null
+  onSave?: () => void
+}
+
+/** Status honesto de persistência (substitui o "salvo há 2s" falso). */
+function SaveStatus({ state, error }: { state: SaveState; error?: string | null }) {
+  const map = {
+    idle: { dot: 'bg-gray-300', text: 'Não salvo' },
+    saving: { dot: 'bg-amber-500 animate-pulse', text: 'Salvando…' },
+    saved: { dot: 'bg-emerald-600', text: 'Salvo no histórico' },
+    error: { dot: 'bg-red-500', text: error || 'Erro ao salvar' },
+  }[state]
+  return (
+    <div className="mt-1 flex items-center gap-2 text-xs font-semibold text-gray-500">
+      <span className={`h-2 w-2 rounded-full ${map.dot}`} />
+      {map.text}
+    </div>
+  )
 }
 
 function HeaderPrefix({ paragraph }: { paragraph: string }) {
@@ -21,7 +41,7 @@ function HeaderPrefix({ paragraph }: { paragraph: string }) {
   )
 }
 
-export function LaudoPreview({ text, initialsOn, onToggleInitials, initials }: Props) {
+export function LaudoPreview({ text, initialsOn, onToggleInitials, initials, saveState = 'idle', saveError, onSave }: Props) {
   const paragraphs = text.split('\n\n')
 
   const copy = async () => {
@@ -35,11 +55,19 @@ export function LaudoPreview({ text, initialsOn, onToggleInitials, initials }: P
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Preview · laudo</div>
-            <div className="mt-1 flex items-center gap-2 text-xs font-semibold text-gray-500">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-600" />
-              Atualizando · salvo há 2s
-            </div>
+            <SaveStatus state={saveState} error={saveError} />
           </div>
+          {onSave ? (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saveState === 'saving' || saveState === 'saved'}
+              className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-default disabled:bg-gray-300"
+            >
+              {saveState === 'saved' ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
+              {saveState === 'saved' ? 'Salvo' : saveState === 'saving' ? 'Salvando…' : 'Salvar laudo'}
+            </button>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {['B', 'I', 'U'].map((label) => (

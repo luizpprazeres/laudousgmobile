@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Calculator, ChevronDown, Image, Mic, RotateCcw, Sparkles } from 'lucide-react'
 import {
   CATEGORIES,
@@ -20,6 +20,9 @@ import { CalcPanel } from './CalcPanel'
 import { ExamSectionNav } from './ExamSectionNav'
 import { LaudarRail } from './LaudarRail'
 import { LaudoPreview } from './LaudoPreview'
+import { saveWebReport } from '@/lib/webReports'
+
+export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
 import { TireoideFormPanel } from './TireoideFormPanel'
 
@@ -127,6 +130,31 @@ export function LaudarWebExperience() {
     () => appendInitials(composedText, initialsOn ? initials : undefined),
     [composedText, initialsOn]
   )
+
+  // Persistência real (S9) — substitui o status falso. Volta a "idle" quando o
+  // laudo muda (o salvo anterior fica desatualizado).
+  const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [saveError, setSaveError] = useState<string | null>(null)
+  useEffect(() => {
+    setSaveState('idle')
+    setSaveError(null)
+  }, [preview])
+  const onSave = async () => {
+    setSaveState('saving')
+    setSaveError(null)
+    try {
+      await saveWebReport({
+        categoryCode: categoria,
+        title: currentCategory.name,
+        laudoText: preview,
+        examState: isTireoide ? tireoideState : examStates[categoria],
+      })
+      setSaveState('saved')
+    } catch (e) {
+      setSaveState('error')
+      setSaveError(e instanceof Error ? e.message : 'Erro ao salvar.')
+    }
+  }
 
   const currentIndex = sectionIndex(sections, activeSection?.id ?? '')
   const previous = sections[Math.max(0, currentIndex - 1)]
@@ -290,6 +318,9 @@ export function LaudarWebExperience() {
             initialsOn={initialsOn}
             onToggleInitials={() => setInitialsOn((value) => !value)}
             initials={initials}
+            saveState={saveState}
+            saveError={saveError}
+            onSave={onSave}
           />
         </div>
       </main>

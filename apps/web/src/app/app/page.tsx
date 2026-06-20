@@ -38,9 +38,15 @@ export default async function AppHomePage() {
 
         <Link
           href="/app/gerar"
-          className="block w-full text-center bg-emerald-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors mb-6"
+          className="block w-full text-center bg-emerald-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors mb-3"
         >
-          Gerar laudo (sem IA) — Abdome Total / Tireoide
+          Gerar laudo (sem IA) — 12 categorias
+        </Link>
+        <Link
+          href="/app/historico"
+          className="block w-full text-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors mb-6"
+        >
+          Histórico de laudos
         </Link>
 
         <dl className="text-sm border border-gray-100 dark:border-gray-800 rounded-xl divide-y divide-gray-100 dark:divide-gray-800 mb-6">
