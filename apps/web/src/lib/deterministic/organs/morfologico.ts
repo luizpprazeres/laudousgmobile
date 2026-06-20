@@ -5,10 +5,9 @@
  * fundação de IG (lib/ig/computeIG) + lógica ILA segura do boletim. Reusa o
  * igModule e helpers de [[organs/obstetrica]].
  *
- * Escopo v1: feto único, 2º/3º trimestre (controle). PENDENTE: 1º trimestre (CCN),
- * gemelar, percentil de peso, achados anatômicos alterados (hoje anatomia é fixa
- * normal — o médico edita o texto quando há alteração; próximo incremento: toggles
- * por sistema, como o MSK).
+ * Escopo: feto único, 2º/3º trimestre (controle), com anatomia por sistema (toggle
+ * normal/alterado — quando alterado, a conclusão deixa de ser "sem evidência" e
+ * passa ao diagnóstico). PENDENTE: 1º trimestre (CCN), gemelar, percentil de peso.
  */
 
 import type { ExamCategory, ExamSection } from './abdomeTotal'
@@ -31,7 +30,7 @@ function genitaliaFmt(g: string): string {
 const fetoModule: OrganModule = {
   schema: {
     id: 'feto',
-    name: 'Feto e anatomia',
+    name: 'Feto',
     category: 'MORFOLOGICO',
     fields: [
       {
@@ -46,6 +45,56 @@ const fetoModule: OrganModule = {
       },
       { key: 'dorso', label: 'Dorso (opcional)', kind: 'text', placeholder: 'à esquerda' },
       { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '145' },
+    ],
+  },
+  initialState: (): OrganState => ({ apresentacao: 'cefálica', dorso: '', bcf: '' }),
+  compose: (st): OrganComposition => {
+    const apres = String(st.apresentacao || 'cefálica')
+    const dorso = String(st.dorso || '').trim()
+    const bcf = numOrNull(st.bcf)
+    const linhas = [
+      `Feto único, em apresentação ${apres}${dorso ? `, com dorso ${dorso}` : ''}.`,
+      `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`,
+      'Os movimentos fetais são ativos.',
+    ]
+    return { body: linhas.join('\n'), conclusion: [], isNormal: true }
+  },
+}
+
+// ── Anatomia fetal por sistema (normal por default; alterado → corpo + diagnóstico)
+// Padrão MSK: cada sistema normal emite a frase canônica; se alterado, o médico
+// descreve no corpo e o diagnóstico vai à conclusão (que deixa de ser "sem
+// evidência de alteração"). Genitália é campo à parte (não é normal/alterado).
+const ANATOMIA_SISTEMAS: { id: string; label: string; normal: string }[] = [
+  { id: 'snc', label: 'Crânio / SNC / coluna', normal: 'As estruturas cranianas e da coluna vertebral são normais.' },
+  { id: 'face', label: 'Face', normal: 'Nariz e narinas presentes. Lábio superior sem solução de continuidade.' },
+  { id: 'coracao', label: 'Coração', normal: 'Coração com quatro câmaras visíveis.' },
+  { id: 'visceras', label: 'Vísceras / aorta', normal: 'O estômago, a bexiga e os rins foram bem identificados e com ecotextura homogênea. A aorta abdominal fetal apresenta calibre normal.' },
+]
+
+const anatomiaModule: OrganModule = {
+  schema: {
+    id: 'anatomia',
+    name: 'Anatomia fetal',
+    category: 'MORFOLOGICO',
+    fields: [
+      ...ANATOMIA_SISTEMAS.map((s) => ({
+        key: s.id,
+        label: s.label,
+        kind: 'segmented' as const,
+        hint: 'default: normal',
+        options: [
+          { value: 'normal', label: 'Normal', isDefault: true },
+          {
+            value: 'alterado',
+            label: 'Alterado',
+            subFields: [
+              { key: 'corpo', label: 'Descrição (achado)', kind: 'text' as const, placeholder: 'descrição do achado' },
+              { key: 'diag', label: 'Diagnóstico (conclusão)', kind: 'text' as const, placeholder: 'diagnóstico' },
+            ],
+          },
+        ],
+      })),
       {
         key: 'genitalia',
         label: 'Genitália externa',
@@ -58,26 +107,30 @@ const fetoModule: OrganModule = {
       },
     ],
   },
-  initialState: (): OrganState => ({ apresentacao: 'cefálica', dorso: '', bcf: '', genitalia: 'na' }),
+  initialState: (): OrganState => ({
+    ...Object.fromEntries(ANATOMIA_SISTEMAS.map((s) => [s.id, 'normal'])),
+    genitalia: 'na',
+  }),
   compose: (st): OrganComposition => {
-    const apres = String(st.apresentacao || 'cefálica')
-    const dorso = String(st.dorso || '').trim()
-    const bcf = numOrNull(st.bcf)
-    const linhas = [
-      `Feto único, em apresentação ${apres}${dorso ? `, com dorso ${dorso}` : ''}.`,
-      `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`,
-      'Os movimentos fetais são ativos.',
-      '',
-      'As considerações sobre a anatomia fetal são as seguintes:',
-      'As estruturas cranianas e da coluna vertebral são normais.',
-      'Nariz e narinas presentes.',
-      'Lábio superior sem solução de continuidade.',
-      'Coração com quatro câmaras visíveis.',
-      'O estômago, a bexiga e os rins foram bem identificados e com ecotextura homogênea.',
-      'A aorta abdominal fetal apresenta calibre normal.',
-      `Genitália externa ${genitaliaFmt(String(st.genitalia || 'na'))}.`,
-    ]
-    return { body: linhas.join('\n'), conclusion: [], isNormal: true }
+    const body: string[] = ['As considerações sobre a anatomia fetal são as seguintes:']
+    const diagnosticos: string[] = []
+    for (const s of ANATOMIA_SISTEMAS) {
+      if (String(st[s.id]) === 'alterado') {
+        const corpo = String(st[`${s.id}.alterado.corpo`] ?? '').trim()
+        const diag = String(st[`${s.id}.alterado.diag`] ?? '').trim()
+        body.push(corpo ? `${corpo.charAt(0).toUpperCase()}${corpo.slice(1).replace(/\.+$/, '')}.` : s.normal)
+        if (diag) diagnosticos.push(`${diag.charAt(0).toUpperCase()}${diag.slice(1).replace(/\.+$/, '')}.`)
+      } else {
+        body.push(s.normal)
+      }
+    }
+    body.push(`Genitália externa ${genitaliaFmt(String(st.genitalia || 'na'))}.`)
+    const alterado = diagnosticos.length > 0
+    return {
+      body: body.join('\n'),
+      conclusion: alterado ? diagnosticos : ['Morfologia fetal sem evidência de alteração detectável pelo método.'],
+      isNormal: !alterado,
+    }
   },
 }
 
@@ -166,11 +219,9 @@ const extraFetalModule: OrganModule = {
       ilaV === null
         ? 'Líquido amniótico de quantidade normal.'
         : `${classeILA(ilaV).conclusao} (ILA de ${ptBr(ilaV)} cm).`
-    return {
-      body: linhas.join('\n'),
-      conclusion: [liquidoConcl, 'Morfologia fetal sem evidência de alteração detectável pelo método.'],
-      isNormal: true,
-    }
+    // A conclusão de morfologia ("sem evidência" ou diagnósticos) vem do
+    // anatomiaModule. Aqui só o líquido.
+    return { body: linhas.join('\n'), conclusion: [liquidoConcl], isNormal: true }
   },
 }
 
@@ -190,7 +241,8 @@ const achadosModule: OrganModule = {
 
 const SECTIONS: ExamSection[] = [
   { id: 'ig', label: 'IG e datas', group: 'orgaos', module: igModule },
-  { id: 'feto', label: 'Feto e anatomia', group: 'orgaos', module: fetoModule },
+  { id: 'feto', label: 'Feto', group: 'orgaos', module: fetoModule },
+  { id: 'anatomia', label: 'Anatomia fetal', group: 'orgaos', module: anatomiaModule },
   { id: 'biometria', label: 'Biometria', group: 'orgaos', module: biometriaModule },
   { id: 'extrafetal', label: 'Extra-fetal', group: 'orgaos', module: extraFetalModule },
   { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
