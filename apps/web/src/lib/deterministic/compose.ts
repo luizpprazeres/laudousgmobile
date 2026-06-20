@@ -52,7 +52,10 @@ export function composeReport(
   // Controles de categoria (via, menopausa…) — estado reservado em '__opts'.
   const optsState: OrganState = state['__opts'] ?? {}
 
-  for (const section of category.sections) {
+  // Seções ativas (ex.: MSK filtra pelo segmento). Default = todas.
+  const sections = category.resolveSections?.(optsState) ?? category.sections
+
+  for (const section of sections) {
     if (section.module) {
       const s = state[section.id] ?? section.module.initialState()
       const c = section.module.compose(s, optsState)

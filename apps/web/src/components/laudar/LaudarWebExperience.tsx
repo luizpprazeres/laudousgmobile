@@ -93,7 +93,12 @@ export function LaudarWebExperience() {
 
   const isTireoide = categoria === TIREOIDE_ID
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
-  const baseSections: UiSection[] = isTireoide ? tireoideSections : genericCategory?.sections ?? []
+  // Controles de categoria (estado reservado em '__opts') — lido antes das seções
+  // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
+  const opts = (examStates[categoria]?.['__opts'] as ExamState[string] | undefined) ?? {}
+  const baseSections: UiSection[] = isTireoide
+    ? tireoideSections
+    : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
   // Calculadoras pertinentes → seção "Cálculos".
   const calculators = isTireoide ? [tiRadsSpec] : genericCategory?.calculators ?? []
   const calcSections: UiSection[] = calculators.map((c) => ({ id: `calc:${c.id}`, label: c.name, group: 'calculos' as const }))
@@ -105,9 +110,8 @@ export function LaudarWebExperience() {
   const examState = isTireoide ? undefined : examStates[categoria]
   const tireoideCompleted = useMemo(() => completedTireoideSections(tireoideState), [tireoideState])
 
-  // Controles de categoria (via, menopausa…) — estado reservado em '__opts'.
+  // Controles de categoria (via, menopausa, segmento…).
   const controls = isTireoide ? [] : genericCategory?.controls ?? []
-  const opts = (examStates[categoria]?.['__opts'] as ExamState[string] | undefined) ?? {}
   const onOpts = (key: string, value: string | string[]) =>
     setExamStates((all) => ({
       ...all,

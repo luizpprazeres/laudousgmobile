@@ -57,6 +57,9 @@ export interface ExamCategory {
   resolveTitle?: (opts: OrganState) => string
   /** Técnica dinâmica conforme os controles. */
   resolveTecnica?: (opts: OrganState) => string
+  /** Seções visíveis conforme os controles (ex.: segmento do MSK). `sections`
+   *  é a UNIÃO de todas; este filtra para a seleção atual. */
+  resolveSections?: (opts: OrganState) => ExamSection[]
 }
 
 export const abdomeTotal: ExamCategory = {
