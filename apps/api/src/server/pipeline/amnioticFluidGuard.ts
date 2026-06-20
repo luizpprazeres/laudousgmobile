@@ -85,16 +85,25 @@ export function enforceStatedAmnioticClass(
  */
 export type AmnioticMeasure = { type: "mbv" | "ila"; valueCm: number };
 
+/** Número → cm: converte de mm quando a unidade dita for mm (review dex2). */
+function toCm(numStr: string, unit: string | undefined): number {
+  let v = parseFloat(numStr.replace(",", "."));
+  if ((unit ?? "").toLowerCase().startsWith("mm")) v = v / 10;
+  return Math.round(v * 10) / 10;
+}
+
 export function detectAmnioticMeasure(rawInput: string): AmnioticMeasure | null {
   const t = rawInput.toLowerCase();
-  let m = t.match(
-    /(?:mbv|maior\s+bols[ãa]o(?:\s+vertical)?|bols[ãa]o\s+(?:[úu]nico|vertical|maior))[^\d]{0,25}(\d+[.,]?\d*)\s*(?:cm|cent)?/,
+  const mbv = t.match(
+    /(?:mbv|maior\s+bols[ãa]o(?:\s+vertical)?|bols[ãa]o\s+(?:[úu]nico|vertical|maior))[^\d]{0,25}(\d+[.,]?\d*)\s*(cm|mm|cent\w*)?/,
   );
-  if (m?.[1]) return { type: "mbv", valueCm: parseFloat(m[1].replace(",", ".")) };
-  m = t.match(
-    /(?:\bila\b|[íi]ndice\s+de\s+l[íi]quido(?:\s+amni[óo]tico)?|\bafi\b)[^\d]{0,25}(\d+[.,]?\d*)/,
+  const ila = t.match(
+    /(?:\bila\b|[íi]ndice\s+de\s+l[íi]quido(?:\s+amni[óo]tico)?|\bafi\b)[^\d]{0,25}(\d+[.,]?\d*)\s*(cm|mm|cent\w*)?/,
   );
-  if (m?.[1]) return { type: "ila", valueCm: parseFloat(m[1].replace(",", ".")) };
+  // Médico citou AS DUAS medidas → ambíguo, não auto-corrige (review dex2).
+  if (mbv?.[1] && ila?.[1]) return null;
+  if (mbv?.[1]) return { type: "mbv", valueCm: toCm(mbv[1], mbv[2]) };
+  if (ila?.[1]) return { type: "ila", valueCm: toCm(ila[1], ila[2]) };
   return null;
 }
 
@@ -124,16 +133,14 @@ export function enforceAmnioticMeasureType(
   const stated = detectStatedAmnioticClass(rawInput);
   const cls = stated ?? classifyAmnioticMeasure(meas);
   const label = meas.type === "mbv" ? "maior bolsão vertical" : "ILA";
+  const valStr = (Math.round(meas.valueCm * 10) / 10).toString().replace(".", ",");
 
+  // Reconstrói a frase a partir da medida ditada — corrige classe + rótulo + valor
+  // (o writer podia ter rotulado ILA e mantido valor em mm como cm). Se não houver
+  // parêntese, o da medida é adicionado.
   return output.replace(
-    /Líquido amni[óo]tico\s+(?:de|em)\s+quantidade\s+(?:normal|reduzida|aumentada|diminu[íi]da|escassa)([^.\n]*)/gi,
-    (_full, tail: string) => {
-      // Corrige o rótulo da medida no parêntese, se houver.
-      const fixedTail = (tail as string)
-        .replace(/\b(?:ILA|AFI|MBV|maior\s+bols[ãa]o(?:\s+vertical)?)\b\s*(?:mede|de|=)?\s*/i, `${label} mede `)
-        .replace(/\s{2,}/g, " ");
-      return `Líquido amniótico de quantidade ${cls}${fixedTail}`;
-    },
+    /Líquido amni[óo]tico\s+(?:de|em)\s+quantidade\s+(?:normal|reduzida|aumentada|diminu[íi]da|escassa)(\s*\([^)]*\))?/gi,
+    () => `Líquido amniótico de quantidade ${cls} (${label} mede ${valStr} cm)`,
   );
 }
 

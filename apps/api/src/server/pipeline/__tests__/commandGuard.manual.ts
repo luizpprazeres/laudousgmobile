@@ -140,6 +140,24 @@ check(
   "legítimo curto preservado: 'recomende controle em 6 meses'",
   extractConclusionCommands("recomende controle ecográfico em 6 meses").length === 1,
 );
+// review dex2: NÃO pode rejeitar comando legítimo só por citar uma medida/semanas
+check(
+  "FP: 'recomende controle do nódulo de 2 cm em 6 meses' é mantido",
+  extractConclusionCommands("na conclusão recomende controle do nódulo de 2 cm em 6 meses").length === 1,
+  JSON.stringify(extractConclusionCommands("na conclusão recomende controle do nódulo de 2 cm em 6 meses")),
+);
+check(
+  "FP: 'correlacionar com idade gestacional de 20 semanas e 3 dias' é mantido",
+  extractConclusionCommands("na conclusão correlacionar com a idade gestacional de 20 semanas e 3 dias").length === 1,
+  JSON.stringify(extractConclusionCommands("na conclusão correlacionar com a idade gestacional de 20 semanas e 3 dias")),
+);
+// imperativo 2ª pessoa → infinitivo
+check(
+  "'na conclusão correlacione com X' → 'Correlacionar com X.'",
+  extractConclusionCommands("na conclusão correlacione com a ultrassonografia precoce")[0]?.text ===
+    "Correlacionar com a ultrassonografia precoce.",
+  JSON.stringify(extractConclusionCommands("na conclusão correlacione com a ultrassonografia precoce")),
+);
 
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));
 if (fail) process.exit(1);

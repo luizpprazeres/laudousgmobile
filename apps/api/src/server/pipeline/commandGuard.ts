@@ -42,6 +42,20 @@ function normalizeCommand(content: string): string {
   // "recomendar/recomende/recomendo X" → "Recomenda-se X."
   const rec = c.match(/^recomend(?:ar|e|o|a-se|amos)?\s+(.+)$/i);
   if (rec?.[1]) return asItem(`Recomenda-se ${rec[1]}`);
+  // Imperativos (2ª pessoa) → infinitivo, estilo laudo (review dex2 boletim):
+  // "correlacione com X" → "Correlacionar com X."
+  const IMP: [RegExp, string][] = [
+    [/^correlacion(?:e|ar|a-se|amos)?\b/i, "Correlacionar"],
+    [/^compar(?:e|ar|amos)?\b/i, "Comparar"],
+    [/^consider(?:e|ar|amos)?\b/i, "Considerar"],
+    [/^avali(?:e|ar|amos)?\b/i, "Avaliar"],
+    [/^(?:mantenh(?:a|amos)|manter)\b/i, "Manter"],
+    [/^repit(?:a|amos)?\b|^repetir\b/i, "Repetir"],
+  ];
+  for (const [re, inf] of IMP) {
+    const m = c.match(re);
+    if (m) return asItem(`${inf} ${c.slice(m[0].length).trim()}`.trim());
+  }
   return asItem(c);
 }
 
@@ -53,11 +67,16 @@ function normalizeCommand(content: string): string {
  */
 function looksLikeTranscription(text: string): boolean {
   const t = text.toLowerCase();
-  if (/\b\d+[.,]?\d*\s*(?:por|x|×|cm|mm|cent[íi]metr)\b/.test(t)) return true; // medidas
-  if (/\bhoje com\b|\bsemanas? e \d|\bmedindo\b|\brim (?:direito|esquerdo)\b|\bbols[ãa]o\b|ultrassonografia\s+realizada/.test(t)) return true;
-  if (/\d+\s+(?:d[eo]|do)\s+\d+\s+de\s+\d{4}/.test(t)) return true; // datas ditadas
   const words = t.split(/\s+/).filter(Boolean).length;
-  if (words > 18 || t.length > 160) return true; // captura longa = transcrição engolida
+  // Captura longa = transcrição engolida (comandos legítimos são curtos).
+  if (words > 18 || t.length > 160) return true;
+  // Assinaturas FORTES de transcrição crua (independem de tamanho). Não basta uma
+  // medida isolada — um comando legítimo pode citar "nódulo de 2 cm" ou "20 semanas".
+  if (/\d+\s+(?:d[eo]|do)\s+(?:do\s+)?\d+\s+de\s+\d{4}/.test(t)) return true; // data ditada completa
+  if (/ultrassonografia\s+realizada|\bhoje com\b|\brim (?:direito|esquerdo)\s+medindo|bols[ãa]o\s+vertical\s+mede/.test(t)) return true;
+  // Múltiplas medidas (biometria crua) — 2+ tokens "X por Y", "X x Y", "X cm".
+  const measures = (t.match(/\b\d+[.,]?\d*\s*(?:por|x|×|cm|mm|cent[íi]metr)\b/g) ?? []).length;
+  if (measures >= 2) return true;
   return false;
 }
 

@@ -54,5 +54,21 @@ check("detecta MBV", detectAmnioticMeasure("maior bolsão 7,2 cm")?.type === "mb
 check("detecta ILA", detectAmnioticMeasure("ILA 12 cm")?.type === "ila");
 check("classifica MBV 8,5 → aumentada", classifyAmnioticMeasure({ type: "mbv", valueCm: 8.5 }) === "aumentada");
 
+// review dex2: mm → cm.
+const c5 = enforceAmnioticMeasureType(
+  "Líquido amniótico de quantidade aumentada (ILA mede 56 cm).",
+  "maior bolsão vertical 56 mm",
+);
+check("MBV 56 mm → 5,6 cm → normal", /quantidade normal \(maior bols[ãa]o vertical mede 5,6 cm\)/.test(c5), c5);
+check("detecta mm e converte", detectAmnioticMeasure("MBV 56 mm")?.valueCm === 5.6);
+
+// review dex2: MBV e ILA juntos → ambíguo → no-op.
+check("MBV + ILA juntos → não detecta (no-op)", detectAmnioticMeasure("MBV 3 cm, ILA 4 cm") === null);
+const c6 = enforceAmnioticMeasureType(
+  "Líquido amniótico de quantidade reduzida (ILA mede 4 cm).",
+  "MBV 3 cm, ILA 4 cm",
+);
+check("MBV+ILA juntos → output inalterado", c6 === "Líquido amniótico de quantidade reduzida (ILA mede 4 cm).", c6);
+
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));
 if (fail) process.exit(1);
