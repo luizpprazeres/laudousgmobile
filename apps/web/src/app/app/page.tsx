@@ -1,90 +1,120 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Clock, FilePlus2, History, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import LaudoUSGLogo from '@/components/LaudoUSGLogo'
 
 export const dynamic = 'force-dynamic'
 
-// Stub autenticado do S4 — prova o fluxo de login ponta a ponta.
-// A área logada completa (dashboard, histórico, gerador) chega no S8/S9.
+const CAT_LABEL: Record<string, string> = {
+  ABDOMEN_TOTAL: 'Abdome total', ABDOME_SUPERIOR: 'Abdome superior', PROSTATA_SUPRAPUBICA: 'Próstata',
+  VIAS_URINARIAS: 'Vias urinárias', MAMARIA: 'Mamária', PELVE_FEMININA: 'Pelve feminina', CERVICAL: 'Cervical',
+  PARTES_MOLES: 'Partes moles', TIREOIDE: 'Tireoide', MUSCULOESQUELETICO: 'Musculoesquelético',
+  OBSTETRICA: 'Obstétrica', MORFOLOGICO: 'Morfológica', DOPPLER_OBSTETRICO: 'Doppler obstétrico',
+}
+const catLabel = (c: string) => CAT_LABEL[c] ?? c
+const dataFmt = (iso: string) => {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return m ? `${m[3]}/${m[2]}` : ''
+}
+
 export default async function AppHomePage() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
   if (!user) redirect('/login?redirect=/app')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('plan')
-    .eq('id', user.id)
-    .maybeSingle()
-
+  const [{ data: profile }, web, ia] = await Promise.all([
+    supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle(),
+    supabase.from('web_reports').select('id, category_code, title, created_at').order('created_at', { ascending: false }).limit(5),
+    supabase.from('reports').select('id, category_code, created_at').not('final_output', 'is', null).order('created_at', { ascending: false }).limit(5),
+  ])
   const plan = profile?.plan ?? 'free'
+  const recentes = [
+    ...(web.data ?? []).map((r) => ({ id: r.id as string, origin: 'web' as const, label: (r.title as string | null) ?? catLabel(r.category_code as string), date: r.created_at as string })),
+    ...(ia.data ?? []).map((r) => ({ id: r.id as string, origin: 'ia' as const, label: catLabel(r.category_code as string), date: r.created_at as string })),
+  ]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 w-full max-w-md">
-        <div className="mb-6">
-          <LaudoUSGLogo size="md" />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <header className="border-b border-gray-200 bg-white px-5 py-4 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+          <LaudoUSGLogo size="sm" />
+          <div className="flex items-center gap-4">
+            <div className="hidden text-right sm:block">
+              <div className="text-xs text-gray-400 dark:text-gray-500">{user.email}</div>
+              <div className="text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Plano {plan}</div>
+            </div>
+            <form action="/auth/signout" method="post">
+              <button type="submit" className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                Sair
+              </button>
+            </form>
+          </div>
         </div>
+      </header>
 
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Você está logado 🎉</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          Área logada (versão inicial). O gerador determinístico já está disponível abaixo; o modo
-          com IA e o painel completo chegam nos próximos sprints.
-        </p>
+      <main className="mx-auto max-w-4xl px-4 py-8">
+        <h1 className="mb-1 font-barlow text-2xl font-bold text-gray-900 dark:text-gray-100">Olá 👋</h1>
+        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">Gere um laudo determinístico ou retome um do histórico.</p>
 
+        {/* CTA primária */}
         <Link
           href="/app/gerar"
-          className="block w-full text-center bg-emerald-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors mb-3"
+          className="mb-4 flex items-center gap-4 rounded-2xl bg-emerald-600 px-6 py-5 text-white shadow-sm transition hover:bg-emerald-700"
         >
-          Gerar laudo (sem IA) — 12 categorias
+          <FilePlus2 className="h-7 w-7 shrink-0" />
+          <div>
+            <div className="text-base font-bold">Gerar laudo (sem IA)</div>
+            <div className="text-sm text-emerald-50">12 categorias · por cliques, sem digitar</div>
+          </div>
         </Link>
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <Link
-            href="/app/historico"
-            className="text-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Histórico
+
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Link href="/app/historico" className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
+            <History className="h-4 w-4 text-gray-400" /> Histórico
           </Link>
-          <Link
-            href="/app/preferencias"
-            className="text-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Preferências
+          <Link href="/app/preferencias" className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
+            <Settings className="h-4 w-4 text-gray-400" /> Preferências
+          </Link>
+          <Link href="/precos" className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
+            Planos
           </Link>
         </div>
 
-        <dl className="text-sm border border-gray-100 dark:border-gray-800 rounded-xl divide-y divide-gray-100 dark:divide-gray-800 mb-6">
-          <div className="flex justify-between px-4 py-3">
-            <dt className="text-gray-400 dark:text-gray-500">Email</dt>
-            <dd className="font-medium text-gray-800 dark:text-gray-200">{user.email}</dd>
-          </div>
-          <div className="flex justify-between px-4 py-3">
-            <dt className="text-gray-400 dark:text-gray-500">Plano</dt>
-            <dd className="font-medium text-emerald-600 dark:text-emerald-400 uppercase">{plan}</dd>
-          </div>
-        </dl>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/precos"
-            className="flex-1 text-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Ver planos
-          </Link>
-          <form action="/auth/signout" method="post" className="flex-1">
-            <button
-              type="submit"
-              className="w-full bg-gray-900 dark:bg-gray-700 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
-            >
-              Sair
-            </button>
-          </form>
+        {/* Últimos laudos */}
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-gray-800 dark:text-gray-200">
+            <Clock className="h-4 w-4 text-gray-400" /> Últimos laudos
+          </h2>
+          {recentes.length > 0 ? (
+            <Link href="/app/historico" className="text-xs font-semibold text-emerald-600 hover:underline dark:text-emerald-400">Ver tudo</Link>
+          ) : null}
         </div>
-      </div>
+
+        {recentes.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-900">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum laudo ainda. Gere o primeiro e clique em “Salvar laudo”.</p>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {recentes.map((r) => (
+              <li key={`${r.origin}-${r.id}`}>
+                <Link href="/app/historico" className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800">
+                  <span className="flex-1 truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{r.label}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${r.origin === 'web' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
+                    {r.origin === 'web' ? 'Web' : 'IA'}
+                  </span>
+                  <span className="shrink-0 text-xs text-gray-400">{dataFmt(r.date)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes'
 import { ArrowLeft, Check, Moon, Sun } from 'lucide-react'
 
 /** Chave de localStorage das iniciais (lida pelo gerador). */
-export const INITIALS_KEY = 'laudousg.initials'
+const INITIALS_KEY = 'laudousg.initials'
 
 export default function PreferenciasPage() {
   const { theme, setTheme } = useTheme()
