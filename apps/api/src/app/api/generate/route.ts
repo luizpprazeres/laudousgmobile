@@ -25,6 +25,7 @@ import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import {
   enforceStatedAmnioticClass,
+  enforceAmnioticMeasureType,
   ensureAmnioticConclusionLine,
 } from "@/server/pipeline/amnioticFluidGuard";
 import { stripSpuriousMagnitudeFlags } from "@/server/pipeline/magnitudeGuard";
@@ -865,6 +866,12 @@ export async function POST(req: Request) {
       // Usa o transcript consolidado (áudio) quando houver — o médico pode ter
       // ditado a classe ali e não no raw_input (F5a, review dex1).
       finalText = enforceStatedAmnioticClass(
+        finalText,
+        reqInput.consolidated_transcript ?? reqInput.raw_input,
+      );
+      // Boletim P0 #2: corrige MBV rotulado/classificado como ILA (falso
+      // oligoâmnio). MBV 2–8 normal; ILA 5–25 normal. Reclassifica pela medida.
+      finalText = enforceAmnioticMeasureType(
         finalText,
         reqInput.consolidated_transcript ?? reqInput.raw_input,
       );
