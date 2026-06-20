@@ -458,3 +458,75 @@ export function correctDopplerConclusion(laudo: string, d: DopplerData): string 
   const finalItems = rebuildDopplerItems(parsed.items, d);
   return renderWithConclusion(parsed, finalItems);
 }
+
+// ── IG duplicada (boletim 2026-06-19, f715875c) ──────────────────────────────
+// No DOPPLER_OBSTETRICO (sem renderer Domingos) o LLM às vezes emite a IG DUAS
+// vezes — "Gestação em torno de X" (biometria) E "Gestação ... pela ultrassono-
+// grafia precoce" (referência) — em itens separados. Combinamos num único item
+// pela regra Domingos (correção só se divergir > 5 dias).
+type IgItem = { sd: { semanas: number; dias: number }; isRef: boolean; fonte: string };
+function parseGestacaoItem(item: string): IgItem | null {
+  const m = item.match(/gesta[çc][ãa]o\s+em\s+torno\s+de\s+(\d+)\s+semanas?(?:\s+e\s+(\d+)\s+dias?)?/i);
+  if (!m) return null;
+  const isRef = /pela\s+(?:ultrassonograf|data|[úu]ltima\s+menstrua|\bdum\b)/i.test(item);
+  const fonte = /menstrua|\bdum\b/i.test(item) ? "data da última menstruação" : "ultrassonografia precoce";
+  return { sd: { semanas: Number(m[1]), dias: m[2] ? Number(m[2]) : 0 }, isRef, fonte };
+}
+function fmtSemanas(sd: { semanas: number; dias: number }): string {
+  const s = `${sd.semanas} ${sd.semanas === 1 ? "semana" : "semanas"}`;
+  if (sd.dias === 0) return s;
+  return `${s} e ${sd.dias} ${sd.dias === 1 ? "dia" : "dias"}`;
+}
+export function mergeIgConclusionItems(laudo: string): string {
+  const parsed = parseConclusion(laudo);
+  if (!parsed.found) return laudo;
+  const igs = parsed.items
+    .map((it, i) => ({ i, p: parseGestacaoItem(it) }))
+    .filter((x): x is { i: number; p: IgItem } => x.p !== null);
+  if (igs.length < 2) return laudo; // 0/1 item de IG → nada a combinar
+
+  const bio = igs.find((x) => !x.p.isRef) ?? igs[0]!;
+  const ref = igs.find((x) => x.p.isRef);
+  const bioSd = bio.p.sd;
+  let merged: string;
+  if (ref) {
+    const div = Math.abs(
+      bioSd.semanas * 7 + bioSd.dias - (ref.p.sd.semanas * 7 + ref.p.sd.dias),
+    );
+    merged =
+      div > 5
+        ? `Gestação em torno de ${fmtSemanas(bioSd)} pela biometria atual, devendo ser corrigida pela ${ref.p.fonte}, compatível com ${fmtSemanas(ref.p.sd)}.`
+        : `Gestação em torno de ${fmtSemanas(bioSd)}.`;
+  } else {
+    merged = `Gestação em torno de ${fmtSemanas(bioSd)}.`;
+  }
+
+  const firstIdx = igs[0]!.i;
+  const drop = new Set(igs.slice(1).map((x) => x.i));
+  const items = parsed.items
+    .map((it, i) => (i === firstIdx ? merged : it))
+    .filter((_, i) => !drop.has(i));
+  return renderWithConclusion(parsed, items);
+}
+
+// ── Alucinação de gemelaridade (boletim 2026-06-19, c53bbc1f) ────────────────
+// O writer às vezes afirma "Dois fetos"/"gestação gemelar" por ruído de áudio,
+// sem o médico ter ditado gemelaridade (uma só biometria). Reescrever prosa
+// gemelar→único é frágil; sinalizamos com [REVISAR] (padrão da engine) sem tocar
+// no texto clínico — o médico confirma o número de fetos.
+const GEMELAR_REVISAR = "[REVISAR — gemelaridade não foi ditada; confirmar número de fetos] ";
+export function flagGemelarHallucination(output: string, rawInput: string): string {
+  const rawHasGemelar =
+    /gemelar|dois\s+fetos|tr[êe]s\s+fetos|g[êe]meos?|dupla\s+gesta|bicori|dicori|tricori|monocori|diamni|dois\s+sacos/i.test(
+      rawInput,
+    );
+  if (rawHasGemelar) return output;
+  if (output.includes(GEMELAR_REVISAR)) return output;
+  const m = output.match(/\b(?:Dois|Tr[êe]s)\s+fetos\b/);
+  const assertsGemelar = m !== null || /gesta[çc][ãa]o\s+gemelar|ambos\s+os\s+fetos/i.test(output);
+  if (!assertsGemelar) return output;
+  if (m && m.index !== undefined) {
+    return output.slice(0, m.index) + GEMELAR_REVISAR + output.slice(m.index);
+  }
+  return GEMELAR_REVISAR + output;
+}

@@ -13,6 +13,8 @@ import {
   extractDopplerData,
   applyDopplerOverlay,
   correctDopplerConclusion,
+  mergeIgConclusionItems,
+  flagGemelarHallucination,
 } from "@/server/pipeline/dopplerOverlay";
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
@@ -930,6 +932,10 @@ export async function POST(req: Request) {
         // Fix B (bug D2): a seção já vem do template; só corrige a conclusão
         // pra o vaso certo (umbilical/ACM manual, uterinas auto, perfil=1/RCP).
         finalText = correctDopplerConclusion(finalText, extractDopplerData(dopplerInput));
+        // Boletim f715875c: combina IG biometria + IG referência num único item.
+        finalText = mergeIgConclusionItems(finalText);
+        // Boletim c53bbc1f: sinaliza gemelaridade alucinada (não ditada).
+        finalText = flagGemelarHallucination(finalText, dopplerInput);
       }
       // Guard transversal: remove itens numerados de conclusão cujo conteúdo é
       // só placeholder ("____"). Preserva placeholders dentro de itens reais.
