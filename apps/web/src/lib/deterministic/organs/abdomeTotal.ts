@@ -8,6 +8,7 @@
  */
 
 import type { OrganModule } from '../types'
+import type { CalcSpec } from '../../calculators/specs'
 import { bacoModule } from './baco'
 import { figadoModule } from './figado'
 import { pancreasModule } from './pancreas'
@@ -21,8 +22,8 @@ export interface ExamSection {
   id: string
   /** Rótulo na sub-nav. */
   label: string
-  /** Grupo na sub-nav (Cabeçalho / Órgãos / Conclusão). */
-  group: 'cabecalho' | 'orgaos' | 'conclusao'
+  /** Grupo na sub-nav (Cabeçalho / Órgãos / Conclusão / Cálculos). */
+  group: 'cabecalho' | 'orgaos' | 'conclusao' | 'calculos'
   /** Módulo interativo (Estado/Conteúdo/Paredes). Ausente = seção de frase fixa. */
   module?: OrganModule
   /** Frase normal padrão (para seções ainda não interativas). */
@@ -47,6 +48,8 @@ export interface ExamCategory {
   conclusionClosing?: string
   /** Texto livre após a CONCLUSÃO (ex.: observação da via transabdominal). */
   footer?: string
+  /** Calculadoras pertinentes (seção "Cálculos"). */
+  calculators?: CalcSpec[]
 }
 
 export const abdomeTotal: ExamCategory = {

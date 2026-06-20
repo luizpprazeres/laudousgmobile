@@ -15,6 +15,8 @@ import {
   type ExamState,
   type TireoideState,
 } from '@/lib/deterministic'
+import { tiRadsSpec } from '@/lib/calculators/specs'
+import { CalcPanel } from './CalcPanel'
 import { ExamSectionNav } from './ExamSectionNav'
 import { LaudarRail } from './LaudarRail'
 import { LaudoPreview } from './LaudoPreview'
@@ -91,7 +93,11 @@ export function LaudarWebExperience() {
 
   const isTireoide = categoria === TIREOIDE_ID
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
-  const sections: UiSection[] = isTireoide ? tireoideSections : genericCategory?.sections ?? []
+  const baseSections: UiSection[] = isTireoide ? tireoideSections : genericCategory?.sections ?? []
+  // Calculadoras pertinentes → seção "Cálculos".
+  const calculators = isTireoide ? [tiRadsSpec] : genericCategory?.calculators ?? []
+  const calcSections: UiSection[] = calculators.map((c) => ({ id: `calc:${c.id}`, label: c.name, group: 'calculos' as const }))
+  const sections: UiSection[] = [...baseSections, ...calcSections]
   const activeSectionId = activeByCat[categoria] ?? sections[0]?.id ?? ''
   const setActiveSectionId = (id: string) => setActiveByCat((s) => ({ ...s, [categoria]: id }))
   const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0]
@@ -218,7 +224,12 @@ export function LaudarWebExperience() {
             </div>
 
             <div className="px-6 py-5">
-              {isTireoide ? (
+              {activeSection?.id?.startsWith('calc:') ? (
+                (() => {
+                  const spec = calculators.find((c) => `calc:${c.id}` === activeSection.id)
+                  return spec ? <CalcPanel spec={spec} /> : null
+                })()
+              ) : isTireoide ? (
                 <TireoideFormPanel
                   section={activeSection?.id ?? ''}
                   state={tireoideState}

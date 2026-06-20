@@ -17,6 +17,7 @@ const GROUP_LABELS: Record<NavSection['group'], string> = {
   cabecalho: 'Cabeçalho',
   orgaos: 'Órgãos',
   conclusao: 'Conclusão',
+  calculos: 'Cálculos',
 }
 
 function sectionDone(section: NavSection, examState?: ExamState, completedIds?: Set<string>) {
@@ -28,7 +29,7 @@ function sectionDone(section: NavSection, examState?: ExamState, completedIds?: 
 }
 
 export function ExamSectionNav({ sections, activeId, onSelect, examState, category, completedIds }: Props) {
-  const groups: NavSection['group'][] = ['cabecalho', 'orgaos', 'conclusao']
+  const groups: NavSection['group'][] = ['cabecalho', 'orgaos', 'conclusao', 'calculos']
   const organSections = sections.filter((section) => section.group === 'orgaos')
   const completed = organSections.filter((section) => sectionDone(section, examState, completedIds)).length
   const progress = organSections.length ? Math.round((completed / organSections.length) * 100) : 0

@@ -16,6 +16,7 @@
 
 import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
+import { biRadsSpec } from '../../calculators/specs'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function med(n: number): string {
@@ -374,4 +375,5 @@ export const mamaria: ExamCategory = {
   ],
   conclusionNormal: 'Mamas ecograficamente normais (Categoria BI-RADS® 1).',
   footer: RODAPE,
+  calculators: [biRadsSpec],
 }
