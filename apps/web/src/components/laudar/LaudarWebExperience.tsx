@@ -105,6 +105,15 @@ export function LaudarWebExperience() {
   const examState = isTireoide ? undefined : examStates[categoria]
   const tireoideCompleted = useMemo(() => completedTireoideSections(tireoideState), [tireoideState])
 
+  // Controles de categoria (via, menopausa…) — estado reservado em '__opts'.
+  const controls = isTireoide ? [] : genericCategory?.controls ?? []
+  const opts = (examStates[categoria]?.['__opts'] as ExamState[string] | undefined) ?? {}
+  const onOpts = (key: string, value: string | string[]) =>
+    setExamStates((all) => ({
+      ...all,
+      [categoria]: { ...all[categoria], __opts: { ...((all[categoria]?.['__opts'] as Record<string, string | string[]>) ?? {}), [key]: value } },
+    }))
+
   const composedText = useMemo(() => {
     if (isTireoide) return composeTireoide(tireoideState).text
     const cat = CATEGORIES[categoria]
@@ -206,6 +215,9 @@ export function LaudarWebExperience() {
             examState={isTireoide ? undefined : examState}
             completedIds={isTireoide ? tireoideCompleted : undefined}
             category={currentCategory}
+            controls={controls}
+            opts={opts}
+            onOpts={onOpts}
           />
 
           <section className="min-h-0 overflow-y-auto bg-gray-50">

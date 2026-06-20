@@ -13,6 +13,26 @@
 import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
 
+// ── Via do exame (controle de categoria) ─────────────────────────────────────
+const VIA_TITULO: Record<string, string> = {
+  ta_tv: 'ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL',
+  tv: 'ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL',
+  ta: 'ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL',
+}
+const VIA_TECNICA: Record<string, string> = {
+  ta_tv:
+    'Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
+  tv: 'Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
+  ta: 'Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
+}
+function viaDe(opts?: OrganState): string {
+  const v = String(opts?.via ?? 'ta_tv')
+  return VIA_TITULO[v] ? v : 'ta_tv'
+}
+function isMenopausa(opts?: OrganState): boolean {
+  return ((opts?.menopausa as string[]) || []).includes('sim')
+}
+
 function ptBr(n: number): string {
   const r = Math.round(n * 100) / 100
   return String(r).replace('.', ',')
@@ -57,11 +77,15 @@ const bexigaModule: OrganModule = {
     { key: 'estado', label: 'Estado', kind: 'segmented', hint: 'default: normal', options: [{ value: 'normal', label: 'Normal', isDefault: true }] },
   ] },
   initialState: () => ({ estado: 'normal' }),
-  compose: (): OrganComposition => ({
-    body: 'Bexiga de forma, contorno e ecotextura normais.',
-    conclusion: ['Bexiga ecograficamente normal.'],
-    isNormal: true,
-  }),
+  compose: (_state, opts): OrganComposition => {
+    // Na via transvaginal pura a bexiga não é avaliada.
+    if (viaDe(opts) === 'tv') return { body: '', conclusion: [], isNormal: true }
+    return {
+      body: 'Bexiga de forma, contorno e ecotextura normais.',
+      conclusion: ['Bexiga ecograficamente normal.'],
+      isNormal: true,
+    }
+  },
 }
 
 // ── Útero ────────────────────────────────────────────────────────────────────
@@ -141,7 +165,8 @@ const endometrioModule: OrganModule = {
     { key: 'diu', label: 'DIU', kind: 'checklist', options: [{ value: 'sim', label: 'DIU tópico' }] },
   ] },
   initialState: () => ({ espessura: '', eco: 'homogeneo', frase: 'padrao', achado: '', diu: [] }),
-  compose: (st): OrganComposition => {
+  compose: (st, opts): OrganComposition => {
+    const menopausa = isMenopausa(opts)
     const esp = parseNum(st.espessura)
     const ecoTxt: Record<string, string> = { homogeneo: 'homogêneo', heterogeneo: 'heterogêneo' }
     const achado = limpa(String(st.achado ?? ''))
@@ -156,7 +181,8 @@ const endometrioModule: OrganModule = {
     if (achado) {
       conclusion.push(`${achado.charAt(0).toUpperCase()}${achado.slice(1)}.`)
     } else {
-      const frase = String(st.frase || 'padrao')
+      // Menopausa global força a frase de menopausa.
+      const frase = menopausa ? 'menopausa' : String(st.frase || 'padrao')
       if (frase === 'menopausa') conclusion.push('O endométrio tem espessura normal para a faixa etária da menopausa.')
       else if (frase === 'reposicao_hormonal') conclusion.push('O endométrio tem espessura normal para a paciente submetida a terapêutica de reposição hormonal.')
       else conclusion.push('O endométrio tem espessura normal para a fase do ciclo menstrual.')
@@ -213,13 +239,14 @@ function makeOvarioModule(lado: 'direito' | 'esquerdo'): OrganModule {
   return {
     schema: ovarioSchema(lado),
     initialState: () => ({ visualizado: 'sim', medidas: '', achado: 'nenhum', atrofico: [], [`achado.cisto_simples.medidas`]: '', [`achado.cisto_complexo.medidas`]: '', [`achado.endometrioma.medidas`]: '', [`achado.funcional.medidas`]: '' }),
-    compose: (st): OrganComposition => {
+    compose: (st, opts): OrganComposition => {
       const vol = volume(st.medidas)
       if ((st.visualizado as string) === 'nao') {
         return { body: `${rotulo} não visualizado.`, conclusion: [`Ovário ${lado} não visualizado pela técnica empregada.`], isNormal: false }
       }
       const tipo = String(st.achado || 'nenhum')
-      const atrofico = ((st.atrofico as string[]) || []).includes('sim')
+      // Menopausa global → ovários atróficos (quando sem achado focal).
+      const atrofico = ((st.atrofico as string[]) || []).includes('sim') || (isMenopausa(opts) && tipo === 'nenhum')
       let body: string
       const conclusion: string[] = []
       if (tipo !== 'nenhum') {
@@ -247,12 +274,35 @@ export const pelveFeminina: ExamCategory = {
   tecnica:
     'Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
+  // Controles de categoria (acima dos órgãos): via + menopausa global.
+  controls: [
+    {
+      key: 'via',
+      label: 'Via do exame',
+      kind: 'segmented',
+      options: [
+        { value: 'ta_tv', label: 'TA + TV', isDefault: true },
+        { value: 'tv', label: 'Transvaginal' },
+        { value: 'ta', label: 'Transabdominal' },
+      ],
+    },
+    {
+      key: 'menopausa',
+      label: 'Menopausa',
+      kind: 'checklist',
+      hint: 'aplica alterações de ovários + endométrio',
+      options: [{ value: 'sim', label: 'Paciente na menopausa' }],
+    },
+  ],
+  resolveTitle: (opts) => VIA_TITULO[viaDe(opts)] ?? VIA_TITULO.ta_tv,
+  resolveTecnica: (opts) => VIA_TECNICA[viaDe(opts)] ?? VIA_TECNICA.ta_tv,
+  // Útero primeiro (mais útil); bexiga no fim.
   sections: [
-    { id: 'bexiga', label: 'Bexiga', group: 'orgaos', module: bexigaModule },
     { id: 'utero', label: 'Útero', group: 'orgaos', module: uteroModule },
     { id: 'endometrio', label: 'Endométrio', group: 'orgaos', module: endometrioModule },
     { id: 'ovario_direito', label: 'Ovário direito', group: 'orgaos', module: makeOvarioModule('direito') },
     { id: 'ovario_esquerdo', label: 'Ovário esquerdo', group: 'orgaos', module: makeOvarioModule('esquerdo') },
+    { id: 'bexiga', label: 'Bexiga', group: 'orgaos', module: bexigaModule },
   ],
   conclusionNormal: 'Exame ultrassonográfico da pelve dentro dos limites da normalidade.',
 }

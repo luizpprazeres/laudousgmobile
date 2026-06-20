@@ -1,6 +1,6 @@
 'use client'
 
-import type { ExamCategory, ExamSection, ExamState } from '@/lib/deterministic'
+import type { ExamCategory, ExamSection, ExamState, Field, OrganState } from '@/lib/deterministic'
 
 type NavSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
 
@@ -11,6 +11,55 @@ type Props = {
   examState?: ExamState
   category: Pick<ExamCategory, 'name'>
   completedIds?: Set<string>
+  /** Controles de categoria (via, menopausa…) renderizados acima dos órgãos. */
+  controls?: Field[]
+  opts?: OrganState
+  onOpts?: (key: string, value: string | string[]) => void
+}
+
+function ControlsBlock({ controls, opts, onOpts }: { controls: Field[]; opts: OrganState; onOpts: (k: string, v: string | string[]) => void }) {
+  const toggle = (key: string, value: string) => {
+    const cur = Array.isArray(opts[key]) ? (opts[key] as string[]) : []
+    onOpts(key, cur.includes(value) ? cur.filter((x) => x !== value) : [...cur, value])
+  }
+  return (
+    <div className="border-b border-gray-200 px-4 py-3">
+      <div className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Opções</div>
+      <div className="space-y-3">
+        {controls.map((f) => (
+          <div key={f.key}>
+            <div className="mb-1 text-[11px] font-semibold text-gray-500">{f.label}</div>
+            {f.kind === 'checklist' ? (
+              <div className="flex flex-wrap gap-1">
+                {(f.options ?? []).map((o) => {
+                  const active = (Array.isArray(opts[f.key]) ? (opts[f.key] as string[]) : []).includes(o.value)
+                  return (
+                    <button key={o.value} type="button" onClick={() => toggle(f.key, o.value)}
+                      className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${active ? 'bg-emerald-600 text-white' : 'border border-gray-200 bg-white text-gray-600 hover:bg-emerald-50'}`}>
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {(f.options ?? []).map((o) => {
+                  const current = (opts[f.key] as string) ?? (f.options ?? []).find((x) => x.isDefault)?.value
+                  const active = current === o.value
+                  return (
+                    <button key={o.value} type="button" onClick={() => onOpts(f.key, o.value)}
+                      className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${active ? 'bg-emerald-600 text-white' : 'border border-gray-200 bg-white text-gray-600 hover:bg-emerald-50'}`}>
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 const GROUP_LABELS: Record<NavSection['group'], string> = {
@@ -28,7 +77,7 @@ function sectionDone(section: NavSection, examState?: ExamState, completedIds?: 
   return JSON.stringify(examState[section.id] ?? {}) !== JSON.stringify(section.module.initialState())
 }
 
-export function ExamSectionNav({ sections, activeId, onSelect, examState, category, completedIds }: Props) {
+export function ExamSectionNav({ sections, activeId, onSelect, examState, completedIds, controls, opts, onOpts }: Props) {
   const groups: NavSection['group'][] = ['cabecalho', 'orgaos', 'conclusao', 'calculos']
   const organSections = sections.filter((section) => section.group === 'orgaos')
   const completed = organSections.filter((section) => sectionDone(section, examState, completedIds)).length
@@ -36,6 +85,9 @@ export function ExamSectionNav({ sections, activeId, onSelect, examState, catego
 
   return (
     <aside className="flex h-full w-[196px] flex-col border-r border-gray-200 bg-white">
+      {controls && controls.length && opts && onOpts ? (
+        <ControlsBlock controls={controls} opts={opts} onOpts={onOpts} />
+      ) : null}
       <nav className="min-h-0 flex-1 overflow-y-auto py-4">
         {groups.map((group) => {
           const groupSections = sections.filter((section) => section.group === group)

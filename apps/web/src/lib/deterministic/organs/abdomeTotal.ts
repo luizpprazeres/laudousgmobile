@@ -7,7 +7,7 @@
  * canônico completo a partir disto.
  */
 
-import type { OrganModule } from '../types'
+import type { Field, OrganModule, OrganState } from '../types'
 import type { CalcSpec } from '../../calculators/specs'
 import { bacoModule } from './baco'
 import { figadoModule } from './figado'
@@ -50,6 +50,13 @@ export interface ExamCategory {
   footer?: string
   /** Calculadoras pertinentes (seção "Cálculos"). */
   calculators?: CalcSpec[]
+  /** Controles de categoria (acima dos órgãos): ex.: via, menopausa. Estado vive
+   *  sob a chave reservada '__opts' e é passado ao compose de cada módulo. */
+  controls?: Field[]
+  /** Título dinâmico conforme os controles (ex.: via da pelve). */
+  resolveTitle?: (opts: OrganState) => string
+  /** Técnica dinâmica conforme os controles. */
+  resolveTecnica?: (opts: OrganState) => string
 }
 
 export const abdomeTotal: ExamCategory = {

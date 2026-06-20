@@ -49,10 +49,13 @@ export function composeReport(
   const conclusion: string[] = []
   let alteredCount = 0
 
+  // Controles de categoria (via, menopausa…) — estado reservado em '__opts'.
+  const optsState: OrganState = state['__opts'] ?? {}
+
   for (const section of category.sections) {
     if (section.module) {
       const s = state[section.id] ?? section.module.initialState()
-      const c = section.module.compose(s)
+      const c = section.module.compose(s, optsState)
       if (c.body) bodyParts.push(c.body) // pula seções sem corpo (ex.: ureteres normal)
       conclusion.push(...c.conclusion)
       if (!c.isNormal) alteredCount += 1
@@ -75,9 +78,11 @@ export function composeReport(
     conclusionBlock = items.join('\n')
   }
 
+  const titulo = category.resolveTitle?.(optsState) ?? category.title
+  const tecnica = category.resolveTecnica?.(optsState) ?? category.tecnica
   const parts = [
-    category.title,
-    `COMENTÁRIOS:\n${category.tecnica}`,
+    titulo,
+    `COMENTÁRIOS:\n${tecnica}`,
     category.achadosHeader,
     ...bodyParts,
     `CONCLUSÃO:\n${conclusionBlock}`,

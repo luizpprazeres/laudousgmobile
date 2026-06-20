@@ -86,6 +86,7 @@ export interface OrganModule {
   schema: OrganSchema
   /** Estado inicial (defaults aplicados). */
   initialState: () => OrganState
-  /** Compõe a frase de laudo a partir do estado. */
-  compose: (state: OrganState) => OrganComposition
+  /** Compõe a frase de laudo a partir do estado.
+   *  `opts` = estado dos controles de categoria (ex.: via, menopausa) — opcional. */
+  compose: (state: OrganState, opts?: OrganState) => OrganComposition
 }
