@@ -264,19 +264,35 @@ function vasoMedido(d: DopplerData): { uterinas: boolean; umbilical: boolean; ac
  * afirmar normalidade de vaso não medido — boletim 2026-06-17, 8c39aca6). null
  * se nenhum vaso candidato foi medido.
  */
+/**
+ * ACM COMPROMETIDA → NUNCA afirmar normalidade da cerebral média (boletim
+ * 2026-06-19, brain sparing): centralização/pré-centralização, ACM ditada
+ * alterada, ou percentil < 5. Risco clínico crítico (falsa tranquilização).
+ */
+function acmComprometida(d: DopplerData): boolean {
+  return (
+    d.acmAlterado === true ||
+    d.centralizacao === true ||
+    d.preCentralizacao === true ||
+    (d.percACM !== undefined && d.percACM < 5)
+  );
+}
+
 function fraseNormalIP(d: DopplerData, incluirUterinas: boolean): string | null {
   const v = vasoMedido(d);
+  // ACM só pode entrar como NORMAL se medida E não comprometida.
+  const acmOk = v.acm && !acmComprometida(d);
   const ut = incluirUterinas && v.uterinas;
   // Frases CANÔNICAS exatas (byte-stability) para os casos completos:
-  if (ut && v.umbilical && v.acm)
+  if (ut && v.umbilical && acmOk)
     return "Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.";
-  if (!ut && v.umbilical && v.acm)
+  if (!ut && v.umbilical && acmOk)
     return "Índices de pulsatilidade normais nas artérias umbilical e cerebral média.";
-  // Subconjuntos (vaso não medido): frase enxuta só com o que foi medido.
+  // Subconjuntos (vaso não medido / ACM comprometida): frase só com o normal.
   const partes: string[] = [];
   if (ut) partes.push("uterinas");
   if (v.umbilical) partes.push("umbilical");
-  if (v.acm) partes.push("cerebral média");
+  if (acmOk) partes.push("cerebral média");
   if (partes.length === 0) return null;
   const lista =
     partes.length === 1
@@ -300,16 +316,28 @@ export function removeBlankVesselLines(laudo: string): string {
 export function buildDopplerConclusionItems(d: DopplerData): string[] {
   const items: string[] = [];
   const utAlt = uterinasAlteradas(d);
-  const umbOuAcmAlt = d.umbilicalAlterado || d.acmAlterado;
+  // ACM alterada EXPLÍCITA (ditada alterada ou percentil < 5) → item próprio de
+  // ACM. (Centralização sozinha não duplica: já tem o item de redistribuição;
+  // mas continua excluindo a ACM da frase de normalidade via acmComprometida.)
+  const acmAltExplicita =
+    d.acmAlterado === true || (d.percACM !== undefined && d.percACM < 5);
+  const umbOuAcmAlt = d.umbilicalAlterado || acmAltExplicita;
 
   // ── Frase do índice de pulsatilidade (umbilical/ACM) ──
   if (umbOuAcmAlt) {
-    if (d.umbilicalAlterado && d.acmAlterado) {
+    if (d.umbilicalAlterado && acmAltExplicita) {
       items.push("Índices de pulsatilidade alterados na artéria umbilical e na ACM.");
     } else if (d.umbilicalAlterado) {
       items.push("Índice de pulsatilidade elevado na artéria umbilical.");
+      // ACM comprometida (ex.: centralização) mas não explicitamente alterada →
+      // não afirma ACM normal (acmComprometida já a excluiu da frase normal).
     } else {
-      items.push("Índice de pulsatilidade alterado na artéria cerebral média.");
+      // ACM alterada. Percentil < 5 → IP reduzido (brain sparing).
+      items.push(
+        d.percACM !== undefined && d.percACM < 5
+          ? "Índice de pulsatilidade reduzido na artéria cerebral média."
+          : "Índice de pulsatilidade alterado na artéria cerebral média.",
+      );
     }
   } else if (utAlt) {
     // umbilical/ACM normais, uterinas alteradas → só os vasos MEDIDOS (sem uterinas).
@@ -356,7 +384,9 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
     } else {
       items.push(`Perfil hemodinâmico fetal alterado, maior de 1.0.`);
     }
-  } else {
+  } else if (!d.centralizacao && !d.preCentralizacao) {
+    // Sem RCP calculável: só afirma perfil normal se NÃO houver centralização
+    // (boletim: centralização ditada não pode coexistir com perfil "normal").
     items.push("Perfil hemodinâmico fetal é normal, menor de 1.0.");
   }
 

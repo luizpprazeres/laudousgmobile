@@ -462,6 +462,12 @@ const DETERMINISTIC_CONCL_PATTERNS: RegExp[] = [
   /maior\s+bols[ãa]o|\bila\b|índice\s+de\s+l[íi]quido/i,
   /(?:primeira|1[ªº])\s*ultrassonograf|[úu]ltima\s+menstrua|\bdum\b/i,
   /diverg[êe]ncia\s+ponderal/i,
+  // Imperativo META de correção/posição (boletim 2026-06-19): "correlacione com a
+  // ultrassonografia precoce", "corrija pela DUM", "no item 1 da conclusão...". É
+  // redundante com a correção Domingos já montada — NÃO vira item. Mantém o item
+  // clínico genuíno ("correlacionar com exame anterior/clínica" não casa).
+  /^(?:correlacion|corrij|corrig)\w*\b[^.]*\b(?:ultrassonograf|precoce|\bdum\b|biometria|idade\s+gestacional|item\s+\d)/i,
+  /\bno\s+item\s+\d/i,
 ];
 export function filterFreeConclusionItems(items: string[] | null | undefined): string[] {
   return (items ?? [])
