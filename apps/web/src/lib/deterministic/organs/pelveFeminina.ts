@@ -103,6 +103,8 @@ const uteroModule: OrganModule = {
       const partes = ['Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares', `medindo ${medidasFmt(st['mioma.sim.medidas'])}`]
       if (st['mioma.sim.parede']) partes.push(`situada na ${limpa(String(st['mioma.sim.parede']))}`)
       body.push(`${partes.join(', ')}.`)
+    } else if (adenomiose) {
+      body.push('Miométrio de ecotextura heterogênea, com estrias e/ou pequenos cistos miometriais, sugestivos de adenomiose.')
     } else {
       body.push('Miométrio com ecogenicidade e ecotextura normais.')
     }
@@ -113,7 +115,8 @@ const uteroModule: OrganModule = {
     } else {
       conclusion.push(`Útero de volume ${classe} (${volFmt(vol)} cm³).`)
     }
-    if (temMioma) {
+    // Útero miomatoso difuso já tem item próprio; não lista mioma individualizado junto.
+    if (temMioma && !miomatoso) {
       const cls = st['mioma.sim.classificacao'] ? `nódulo miomatoso ${st['mioma.sim.classificacao']}` : 'nódulo miomatoso'
       const figo = st['mioma.sim.figo'] ? ` (categoria FIGO ${limpa(String(st['mioma.sim.figo']))})` : ''
       conclusion.push(`Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável ${cls}${figo}.`)
