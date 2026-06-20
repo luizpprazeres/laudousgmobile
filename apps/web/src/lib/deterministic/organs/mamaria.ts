@@ -102,7 +102,7 @@ type Achado = {
 function biradsCalc(a: Achado): string | null {
   const g = (k: string) => a.st[`${a.prefix}_${k}`]
   const ditado = String(g('birads') ?? '').trim()
-  if (ditado) return ditado
+  if (ditado) return ditado.toUpperCase() // canônico: "4a" → "4A"
   switch (a.tipo) {
     case 'cisto_simples':
     case 'multiplos_cistos':
@@ -110,10 +110,13 @@ function biradsCalc(a: Achado): string | null {
     case 'calcificacoes':
       return g('calc_sub') === 'em_nodulo' || g('calc_sub') === 'microcalcificacoes' || g('calc_sub') === 'intraductais' ? '4' : '2'
     case 'nodulo': {
-      const forma = g('forma')
+      // Defaults materializados (o subcampo só entra no state ao ser tocado):
+      // forma oval, orientação paralela, sem fenômeno posterior. Margem NÃO tem
+      // default (é o discriminador) — sem margem circunscrita explícita não é benigno.
+      const forma = g('forma') || 'oval'
       const margem = g('margem')
-      const orient = g('orientacao')
-      const posterior = g('posterior')
+      const orient = g('orientacao') || 'paralela'
+      const posterior = g('posterior') || 'nenhuma'
       const micro = ((g('calc') as string[]) || []).includes('microcalc')
       const benigno = forma === 'oval' && margem === 'circunscrita' && orient === 'paralela' && posterior !== 'sombra' && !micro
       if (benigno) return '3'
@@ -324,13 +327,12 @@ function compose(state: OrganState): OrganComposition {
   } else {
     const ranks = achados.map((a) => biradsRank(biradsCalc(a)))
     const maiorRank = Math.max(...ranks)
-    let labeled = false
+    // TODOS os achados empatados no maior rank levam o rótulo (igual ao renderer).
     for (const a of achados) {
       const b = biradsCalc(a)
       const base = achadoConclusao(a)
-      if (!labeled && biradsRank(b) === maiorRank && b) {
+      if (b && biradsRank(b) === maiorRank) {
         conclusion.push(`${base} (Categoria BI-RADS® ${b}).`)
-        labeled = true
       } else {
         conclusion.push(`${base}.`)
       }
