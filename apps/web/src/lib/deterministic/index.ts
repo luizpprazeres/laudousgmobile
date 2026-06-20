@@ -53,8 +53,10 @@ export {
   MARGENS,
   NOTAS_DOMINGOS,
   TIRADS_VALUES,
+  TIREOIDITES,
   type TireoideState,
   type LoboState,
   type LoboId,
   type NoduloTireoide,
+  type TireoiditeTipo,
 } from './organs/tireoide'

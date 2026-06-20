@@ -6,11 +6,13 @@ import {
   MARGENS,
   NOTAS_DOMINGOS,
   TIRADS_VALUES,
+  TIREOIDITES,
   volumeLobo,
   type LoboId,
   type LoboState,
   type NoduloTireoide,
   type TireoideState,
+  type TireoiditeTipo,
 } from '@/lib/deterministic'
 
 type Props = {
@@ -188,6 +190,10 @@ function LoboPanel({ section, state, onChange }: Props & { section: LoboId }) {
             placeholder="24"
             onChange={(value) => onChange({ ...state, [picoKey]: value })}
           />
+          <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400">
+            Referência: artéria tireoidiana inferior normal ≈ 15–30 cm/s. Valores elevados
+            (&gt; 40–50 cm/s) sugerem hipervascularização (ex.: doença de Graves).
+          </p>
         </section>
       ) : null}
     </div>
@@ -326,24 +332,59 @@ function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
   )
 }
 
-function LinfonodosPanel({ state, onChange }: Omit<Props, 'section'>) {
+function ParenquimaPanel({ state, onChange }: Omit<Props, 'section'>) {
   return (
     <section className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm">
       <Segmented
-        label="Linfonodos"
-        value={state.linfonodos}
-        onChange={(value) => onChange({ ...state, linfonodos: value as TireoideState['linfonodos'] })}
-        options={[
-          { value: 'preservados', label: 'Preservados' },
-          { value: 'suspeitos', label: 'Suspeitos' },
-        ]}
+        label="Tireoidite (difusa)"
+        value={state.tireoidite}
+        onChange={(value) => onChange({ ...state, tireoidite: value as TireoiditeTipo })}
+        options={TIREOIDITES}
       />
+      <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+        Quando selecionada, descreve o parênquima difuso nos achados e inclui a hipótese na conclusão.
+      </p>
     </section>
+  )
+}
+
+function LinfonodosPanel({ state, onChange }: Omit<Props, 'section'>) {
+  return (
+    <div className="space-y-2.5">
+      <section className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm">
+        <Segmented
+          label="Avaliar linfonodos cervicais?"
+          value={state.avaliarLinfonodos ? 'sim' : 'nao'}
+          onChange={(value) => onChange({ ...state, avaliarLinfonodos: value === 'sim' })}
+          options={[
+            { value: 'sim', label: 'Sim' },
+            { value: 'nao', label: 'Não avaliar' },
+          ]}
+        />
+        <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+          Opcional — quando desativado, os linfonodos não entram nos achados nem na conclusão.
+        </p>
+      </section>
+      {state.avaliarLinfonodos ? (
+        <section className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm">
+          <Segmented
+            label="Linfonodos"
+            value={state.linfonodos}
+            onChange={(value) => onChange({ ...state, linfonodos: value as TireoideState['linfonodos'] })}
+            options={[
+              { value: 'preservados', label: 'Preservados' },
+              { value: 'suspeitos', label: 'Suspeitos' },
+            ]}
+          />
+        </section>
+      ) : null}
+    </div>
   )
 }
 
 export function TireoideFormPanel({ section, state, onChange }: Props) {
   if (section === 'nodulos') return <NodulosPanel state={state} onChange={onChange} />
+  if (section === 'parenquima') return <ParenquimaPanel state={state} onChange={onChange} />
   if (section === 'linfonodos') return <LinfonodosPanel state={state} onChange={onChange} />
   if (section === 'lobo_direito' || section === 'lobo_esquerdo' || section === 'istmo') {
     return <LoboPanel section={section} state={state} onChange={onChange} />

@@ -33,15 +33,51 @@ export interface NoduloTireoide {
   tirads: string // '1' | '2' | '3' | '4a' | '4b' | '4c' | '5'
 }
 
+export type TireoiditeTipo = 'nenhuma' | 'hashimoto' | 'linfocitica' | 'granulomatosa' | 'riedel'
+
 export interface TireoideState {
   doppler: boolean
   lobo_direito: LoboState
   lobo_esquerdo: LoboState
   istmo: LoboState
   nodulos: NoduloTireoide[]
+  /** Avaliação dos linfonodos cervicais (opcional — nem todo exame inclui). */
+  avaliarLinfonodos: boolean
   linfonodos: 'preservados' | 'suspeitos'
   picoDireito: string
   picoEsquerdo: string
+  /** Tireoidite difusa selecionada (modifica achados + conclusão). */
+  tireoidite: TireoiditeTipo
+}
+
+export const TIREOIDITES: { value: TireoiditeTipo; label: string }[] = [
+  { value: 'nenhuma', label: 'Nenhuma' },
+  { value: 'hashimoto', label: 'Hashimoto (autoimune)' },
+  { value: 'linfocitica', label: 'Linfocítica' },
+  { value: 'granulomatosa', label: 'Granulomatosa (De Quervain)' },
+  { value: 'riedel', label: 'Riedel (fibrosante)' },
+]
+
+// Frases clínicas padrão (radiologia) — ponto de partida p/ curadoria do Luiz.
+const TIREOIDITE_CORPO: Record<Exclude<TireoiditeTipo, 'nenhuma'>, string> = {
+  hashimoto:
+    'O parênquima tireoidiano apresenta-se difusamente heterogêneo e hipoecogênico, com micronodulações e traves ecogênicas (septos fibrosos).',
+  linfocitica:
+    'O parênquima tireoidiano apresenta heterogeneidade difusa, de grau leve a moderado.',
+  granulomatosa:
+    'Observam-se áreas hipoecogênicas mal definidas e confluentes no parênquima tireoidiano, com redução da vascularização ao estudo Doppler.',
+  riedel:
+    'A glândula tireoide apresenta-se difusamente hipoecogênica e de aspecto endurecido, com possível extensão fibrosa aos tecidos adjacentes.',
+}
+const TIREOIDITE_CONCLUSAO: Record<Exclude<TireoiditeTipo, 'nenhuma'>, string> = {
+  hashimoto:
+    'Aspecto ecográfico sugestivo de tireoidite crônica autoimune (Hashimoto). Sugere-se correlação com a dosagem de anticorpos antitireoidianos (anti-TPO e anti-tireoglobulina)',
+  linfocitica:
+    'Achados sugestivos de tireoidite linfocítica. Correlacionar com dados clínicos e laboratoriais',
+  granulomatosa:
+    'Achados que podem corresponder a tireoidite subaguda granulomatosa (De Quervain), sobretudo em contexto de dor cervical. Correlacionar clinicamente',
+  riedel:
+    'Achados que podem corresponder a tireoidite de Riedel (fibrosante). Correlacionar clinicamente',
 }
 
 export const ECOGENICIDADES: { value: string; label: string }[] = [
@@ -99,9 +135,11 @@ export function initialTireoideState(): TireoideState {
     lobo_esquerdo: loboEmptyState(),
     istmo: loboEmptyState(),
     nodulos: [],
+    avaliarLinfonodos: true,
     linfonodos: 'preservados',
     picoDireito: '',
     picoEsquerdo: '',
+    tireoidite: 'nenhuma',
   }
 }
 
@@ -110,6 +148,7 @@ export const tireoideSections = [
   { id: 'lobo_direito', label: 'Lobo direito', group: 'orgaos' as const },
   { id: 'lobo_esquerdo', label: 'Lobo esquerdo', group: 'orgaos' as const },
   { id: 'istmo', label: 'Istmo', group: 'orgaos' as const },
+  { id: 'parenquima', label: 'Parênquima', group: 'orgaos' as const },
   { id: 'nodulos', label: 'Nódulos', group: 'orgaos' as const },
   { id: 'linfonodos', label: 'Linfonodos', group: 'conclusao' as const },
 ]
@@ -200,12 +239,17 @@ export function composeTireoide(state: TireoideState): ComposedReport {
     ? 'ULTRASSONOGRAFIA DE TIREOIDE COM DOPPLER'
     : 'ULTRASSONOGRAFIA DE TIREOIDE'
 
+  const tireoidite = state.tireoidite && state.tireoidite !== 'nenhuma' ? state.tireoidite : null
+
   // Corpo — lobos e istmo (com nódulos embutidos por lobo).
   const corpo: string[] = [
     loboFraseCorpo('lobo_direito', state.lobo_direito, state.nodulos, state.doppler),
     loboFraseCorpo('lobo_esquerdo', state.lobo_esquerdo, state.nodulos, state.doppler),
     loboFraseCorpo('istmo', state.istmo, state.nodulos, state.doppler),
   ]
+
+  // Tireoidite difusa (após os lobos).
+  if (tireoidite) corpo.push(TIREOIDITE_CORPO[tireoidite])
 
   if (state.doppler && (state.picoDireito.trim() || state.picoEsquerdo.trim())) {
     if (state.picoDireito.trim())
@@ -214,13 +258,12 @@ export function composeTireoide(state: TireoideState): ComposedReport {
       corpo.push(`Pico sistólico da artéria tireoidiana inferior esquerda de ${state.picoEsquerdo.trim()} cm/s.`)
   }
 
-  if (state.linfonodos === 'preservados') {
+  // Linfonodos cervicais (opcional — só quando avaliados).
+  if (state.avaliarLinfonodos) {
     corpo.push(
-      'Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.',
-    )
-  } else {
-    corpo.push(
-      'Adicionalmente, evidenciam-se linfonodos cervicais de aspecto atípico (perda do hilo ecogênico e/ou morfologia arredondada), a esclarecer.',
+      state.linfonodos === 'preservados'
+        ? 'Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.'
+        : 'Adicionalmente, evidenciam-se linfonodos cervicais de aspecto atípico (perda do hilo ecogênico e/ou morfologia arredondada), a esclarecer.',
     )
   }
 
@@ -230,16 +273,19 @@ export function composeTireoide(state: TireoideState): ComposedReport {
     (volumeLobo(state.lobo_direito) ?? 0) +
     (volumeLobo(state.lobo_esquerdo) ?? 0) +
     (volumeLobo(state.istmo) ?? 0)
-  const semNodulos = state.nodulos.length === 0
+  const semAlteracao = state.nodulos.length === 0 && !tireoidite
   if (volTotal > 0) {
     conclusion.push(
-      semNodulos
+      semAlteracao
         ? `Tireoide de volume normal (${fmtVol(volTotal)} ml), sem evidência de alteração ecotextural ou de imagem nodular`
         : `Tireoide de volume normal (${fmtVol(volTotal)} ml)`,
     )
-  } else if (semNodulos) {
+  } else if (semAlteracao) {
     conclusion.push('Tireoide sem evidência de alteração ecotextural ou de imagem nodular')
   }
+
+  // Tireoidite (conclusão).
+  if (tireoidite) conclusion.push(TIREOIDITE_CONCLUSAO[tireoidite])
 
   // Nódulos agrupados por lobo, formato exato.
   for (const loboId of ['lobo_direito', 'lobo_esquerdo', 'istmo'] as LoboId[]) {
@@ -249,19 +295,24 @@ export function composeTireoide(state: TireoideState): ComposedReport {
     conclusion.push(`${LOBO_NOME[loboId]} apresentando ${lista}`)
   }
 
-  if (state.linfonodos === 'preservados') {
+  if (state.avaliarLinfonodos) {
     conclusion.push(
-      'Linfonodos cervicais com morfologia preservada, com predomínio nos níveis I e II, sem sinais de infiltração neoplásica ao método',
+      state.linfonodos === 'preservados'
+        ? 'Linfonodos cervicais com morfologia preservada, com predomínio nos níveis I e II, sem sinais de infiltração neoplásica ao método'
+        : 'Linfonodos cervicais de aspecto atípico, a esclarecer',
     )
-  } else {
-    conclusion.push('Linfonodos cervicais de aspecto atípico, a esclarecer')
   }
 
   const conclusionBlock = conclusion.map((c, i) => `${i + 1}. ${c}.`).join('\n')
 
+  // Comentários: menciona a cadeia cervical só quando os linfonodos são avaliados.
+  const comentarios = state.avaliarLinfonodos
+    ? COMENTARIOS
+    : 'Exame realizado com transdutor de 12 MHz, abrangendo todos os segmentos da glândula tireoide. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
+
   const text = [
     titulo,
-    `COMENTÁRIOS: ${COMENTARIOS}`,
+    `COMENTÁRIOS:\n${comentarios}`,
     'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
     ...corpo,
     `CONCLUSÃO:\n${conclusionBlock}`,

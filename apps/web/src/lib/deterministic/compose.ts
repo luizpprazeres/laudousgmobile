@@ -77,7 +77,7 @@ export function composeReport(
 
   const parts = [
     category.title,
-    `COMENTÁRIOS: ${category.tecnica}`,
+    `COMENTÁRIOS:\n${category.tecnica}`,
     category.achadosHeader,
     ...bodyParts,
     `CONCLUSÃO:\n${conclusionBlock}`,
