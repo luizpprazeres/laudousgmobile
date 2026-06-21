@@ -12,7 +12,6 @@ import {
   History,
   LogOut,
   Moon,
-  PanelLeft,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -26,11 +25,10 @@ type NavItem = { label: string; icon: IconType; href?: string; soon?: boolean }
 // feature existir. Tema e Sair são tratados à parte (toggle de tema / signout).
 const ITEMS: NavItem[] = [
   { label: 'Laudar', icon: FileText, href: '/app/gerar' },
-  { label: 'Modelos', icon: PanelLeft, soon: true },
   { label: 'Histórico', icon: History, href: '/app/historico' },
-  { label: 'Analytics', icon: BarChart3, soon: true },
+  { label: 'Analytics', icon: BarChart3, href: '/app/analytics' },
   { label: 'Biblioteca', icon: BookOpen, soon: true },
-  { label: 'Segurança', icon: ShieldCheck, soon: true },
+  { label: 'Segurança', icon: ShieldCheck, href: '/app/seguranca' },
   { label: 'Preferências', icon: SlidersHorizontal, href: '/app/preferencias' },
 ]
 
