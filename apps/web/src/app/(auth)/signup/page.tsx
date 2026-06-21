@@ -12,7 +12,7 @@ import LaudoUSGLogo from '@/components/LaudoUSGLogo'
 function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') ?? '/app'
+  const redirectTo = searchParams.get('redirect') ?? '/app/gerar'
   // plan vem de /precos (?plan=essencial|profissional) — usado no checkout (S5).
   const plan = searchParams.get('plan')
   const next = plan ? `${redirectTo}?plan=${plan}` : redirectTo

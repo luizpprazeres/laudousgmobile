@@ -44,11 +44,11 @@ function ToolbarPill({
   onClick?: () => void
 }) {
   const styles = {
-    neutral: 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
-    category: 'border-rose-200 bg-rose-50 font-bold text-rose-500',
-    purple: 'border-violet-200 bg-violet-50 font-bold text-violet-600',
-    primary: 'border-emerald-600 bg-emerald-600 font-bold text-white shadow-sm hover:bg-emerald-700',
-    toggleOn: 'border-emerald-600 bg-emerald-600 font-bold text-white shadow-sm hover:bg-emerald-700',
+    neutral: 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
+    category: 'border-rose-200 bg-rose-50 font-bold text-rose-500 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300',
+    purple: 'border-violet-200 bg-violet-50 font-bold text-violet-600 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-300',
+    primary: 'border-emerald-600 bg-emerald-600 font-bold text-white shadow-sm hover:bg-emerald-700 dark:hover:bg-emerald-500',
+    toggleOn: 'border-emerald-600 bg-emerald-600 font-bold text-white shadow-sm hover:bg-emerald-700 dark:hover:bg-emerald-500',
   }
   return (
     <button
@@ -197,17 +197,17 @@ export function LaudarWebExperience() {
   }
 
   return (
-    <div className="min-h-screen overflow-hidden bg-gray-100 text-gray-900">
-      <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/70 px-5 backdrop-blur-xl">
+    <div className="min-h-screen overflow-hidden bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/70 px-5 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/70">
         <div className="flex items-end gap-0.5 font-barlow text-[22px] leading-none tracking-tight">
-          <span className="font-extrabold text-emerald-700">Laudo</span>
-          <span className="font-normal text-emerald-600">USG</span>
+          <span className="font-extrabold text-emerald-700 dark:text-emerald-500">Laudo</span>
+          <span className="font-normal text-emerald-600 dark:text-emerald-400">USG</span>
           <span className="mb-1 ml-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
         </div>
-        <div className="h-6 w-px bg-gray-200" />
-        <span className="font-barlow text-base font-medium text-gray-400">Web</span>
+        <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
+        <span className="font-barlow text-base font-medium text-gray-500 dark:text-gray-400">Web</span>
 
-        <label className="relative inline-flex h-10 items-center rounded-full border border-rose-200 bg-rose-50 px-4 pr-9 text-sm font-bold text-rose-500">
+        <label className="relative inline-flex h-10 items-center rounded-full border border-rose-200 bg-rose-50 px-4 pr-9 text-sm font-bold text-rose-500 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
           <select
             value={categoria}
             onChange={(event) => setCategoria(event.target.value)}
@@ -257,15 +257,15 @@ export function LaudarWebExperience() {
             onOpts={onOpts}
           />
 
-          <section className="min-h-0 overflow-y-auto bg-gray-50">
-            <div className="border-b border-gray-200 bg-white px-6 py-3">
+          <section className="min-h-0 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+            <div className="border-b border-gray-200 bg-white px-6 py-3 dark:border-gray-800 dark:bg-gray-950">
               <div className="flex items-center justify-between gap-4">
-                <p className="text-[13px] text-gray-500">
+                <p className="text-[13px] text-gray-500 dark:text-gray-400">
                   {isTireoide
                     ? 'Preencha medidas, nódulos e classificações informadas pelo médico.'
                     : 'Tudo pré-marcado como normal. Mude só o que estiver alterado.'}
                 </p>
-                <button type="button" onClick={resetActive} className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-50">
+                <button type="button" onClick={resetActive} className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800">
                   <RotateCcw className="h-3.5 w-3.5" />
                   Reset
                 </button>
@@ -296,23 +296,23 @@ export function LaudarWebExperience() {
                   }
                 />
               ) : (
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                  <div className="font-barlow text-xl font-bold text-gray-900">Seção de texto padrão</div>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-500">Este trecho entra automaticamente no laudo normal.</p>
-                  {activeSection?.normalBody ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-gray-600">{activeSection.normalBody}</p> : null}
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <div className="font-barlow text-xl font-bold text-gray-900 dark:text-gray-100">Seção de texto padrão</div>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">Este trecho entra automaticamente no laudo normal.</p>
+                  {activeSection?.normalBody ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-gray-600 dark:bg-gray-950 dark:text-gray-300">{activeSection.normalBody}</p> : null}
                 </div>
               )}
             </div>
 
-            <footer className="sticky bottom-0 flex items-center gap-3 border-t border-gray-200 bg-white/90 px-7 py-4 backdrop-blur-xl">
-              <span className="text-xs text-gray-400">Atalhos</span>
-              <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500">⌘K</kbd>
-              <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500">Tab</kbd>
+            <footer className="sticky bottom-0 flex items-center gap-3 border-t border-gray-200 bg-white/90 px-7 py-4 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/90">
+              <span className="text-xs text-gray-500 dark:text-gray-400">Atalhos</span>
+              <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">⌘K</kbd>
+              <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">Tab</kbd>
               <div className="flex-1" />
-              <button type="button" onClick={() => previous && setActiveSectionId(previous.id)} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40" disabled={!previous || previous.id === activeSection?.id}>
+              <button type="button" onClick={() => previous && setActiveSectionId(previous.id)} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" disabled={!previous || previous.id === activeSection?.id}>
                 <ArrowLeft className="h-4 w-4" /> anterior
               </button>
-              <button type="button" onClick={() => next && setActiveSectionId(next.id)} className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={!next || next.id === activeSection?.id}>
+              <button type="button" onClick={() => next && setActiveSectionId(next.id)} className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900" disabled={!next || next.id === activeSection?.id}>
                 próxima <ArrowRight className="h-4 w-4" />
               </button>
             </footer>

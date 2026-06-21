@@ -47,7 +47,7 @@ export default function UpdatePasswordPage() {
 
     setDone(true)
     setTimeout(() => {
-      router.push('/app')
+      router.push('/app/gerar')
       router.refresh()
     }, 1500)
   }

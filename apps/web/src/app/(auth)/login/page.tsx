@@ -15,7 +15,7 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const redirectTo = searchParams.get('redirect') ?? '/app'
+  const redirectTo = searchParams.get('redirect') ?? '/app/gerar'
   const [error, setError] = useState(
     searchParams.get('error') === 'link_invalido'
       ? 'O link expirou ou é inválido. Solicite um novo.'
