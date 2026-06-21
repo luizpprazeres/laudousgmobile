@@ -6,29 +6,40 @@
 > **Você é o chefe (Fable). Pode delegar código denso ao dex1/dex2 via medmaestri.**
 
 ---
-## ⏯️ ESTADO ATUAL (2026-06-20) — LER PRIMEIRO AO RETOMAR
-**Branch web:** `web-v2` (não mexer no main com coisa de web). **Engine:** `main` (prod).
+## ⏯️ ESTADO ATUAL (2026-06-21) — LER PRIMEIRO AO RETOMAR
+**Branch web:** `web-v2` (não mexer no main com coisa de web; só docs). **Engine:** `main` (prod).
 
 **FEITO e no ar (web.laudousg.com):**
 - **S0–S7 ✅:** scaffold, landing, AbacatePay, /precos, auth, checkout/webhook, gerador determinístico.
-  **12 categorias** determinísticas + calculadoras (TI-RADS/BI-RADS/O-RADS/FIGO + "Extrair dos achados")
-  + **fundação de IG** (`lib/ig/computeIG`, golden 9/9).
-- **S9 ✅ (completo):** persistência (tabela `web_reports` no Supabase, RLS *_own) + `/app/historico`
-  (web+IA unificado, selo de origem) + `/app/preferencias` (tema claro/escuro + iniciais) + `/app`
-  dashboard (hub + últimos laudos). Status de salvamento agora é REAL.
-- **Boletim da engine (prod) ✅ ENCERRADO:** todos os P0/riscos clínicos corrigidos (vazamento de
-  comando, falso oligoâmnio MBV↔ILA, brain sparing, placeholders, imperativo, IG duplicada Doppler,
-  gemelar alucinado). Ver memória `boletim-engine-p0`.
+  **12 categorias** + calculadoras (TI-RADS/BI-RADS/O-RADS/FIGO) + **fundação de IG** (golden 9/9).
+- **S9 ✅:** persistência (`web_reports` + RLS *_own) + `/app/historico` (web+IA) + `/app/preferencias`
+  (tema + iniciais) + `/app` dashboard.
+- **Polish ✅ (2026-06-21):** dark-mode completo do GERADOR (8 arq. `components/laudar/*`) + contraste
+  (25× `text-gray-400`→AA). Review Dex1+Dex2 sem achados. Folha do laudo fica branca nos 2 temas.
+- **Rail funcional + fluxo ✅ (2026-06-21):** login cai **direto no `/app/gerar`** (intermediária fora do
+  fluxo); rail com Tema (dark toggle), Histórico, Analytics, Segurança, Preferências, Sair reais;
+  **"Modelos" removido** (decisão Luiz: não fazer); Biblioteca segue "em breve".
+- **Analytics ✅ (2026-06-21):** `/app/analytics` somando **reports (IA) + web_reports (determinístico)**,
+  recharts, métricas só-IA onde web não tem dado, "Tempo economizado (estimado)" honesto, totais por
+  count exato, MSK unificado (`MUSCULOESQUELETICO_V2`↔base). Dex2 implementou, Dex1 revisou (4 P2 corrigidos).
+- **Segurança ✅ (2026-06-21):** `/app/seguranca` (LGPD + Termos), portada do original.
+- **`0018_web_reports.sql` ✅:** versiona a tabela + RLS (já existia no banco; policies de isolamento
+  por usuário confirmadas).
+- **Boletim da engine (prod) ✅ ENCERRADO** (P0 clínicos). Ver memória `boletim-engine-p0`.
 
 **PRÓXIMO (quando retomar):**
-- **S8** (adiado pelo Luiz): gerador com IA + ditado Deepgram + editor B/I/U + **export DOCX**.
-  *Os "botões inertes" do /critique (B/I/U, Refazer-IA, pills) ganham função aqui.* Sugestão: começar
-  pela fatia isolada de **export DOCX** (radiologista tirar o laudo pro PACS/RIS).
-- **Polish visual** (adiado no /critique): contraste gray-on-color (9×), dark-mode no GERADOR
-  (/app/gerar segue claro), empty/error states. Rodar `/critique` de novo depois (nota atual 23/40).
-- **Validação do Luiz:** logar no site e confirmar salvar→histórico ponta a ponta.
+- **S8** — gerador com IA + ditado Deepgram + **editor** (B/I/U, Destacar, "Refazer com IA") + **export DOCX**.
+  *QA confirmou que esses controles do header/preview estão inertes hoje;* **"Copiar com formatação"
+  entrega texto puro (enganoso)** — corrigir no editor S8. Sugestão: começar por export DOCX.
+- **Biblioteca golden cases** — planejada (ver `docs/plano-biblioteca-golden-cases.md`); manter "em breve".
+  Depende de popular `golden_cases` (hoje 0 rows) + isolamento canônico↔cópia.
+- **`user_feedback`** — não existe no banco MOBILE e o app Swift não coleta. Planejado p/ **S10**
+  (tabela + UI Swift juntas). Ver `docs/plano-user-feedback.md`.
+- **S10** (iOS sem IAP), **S11** (cutover laudousg.com), **S12** (polish final).
 - **Boletim operacional** (não-clínico): geração duplicada, MORFOLÓGICO 39,5s, DOPPLER >13s.
-- Restam S10 (iOS sem IAP), S11 (cutover laudousg.com), S12 (polish final).
+
+**⚠️ Segurança a tratar:** `quality_bulletins` está com **RLS DESABILITADO** no banco MOBILE (exposto à
+anon key) — habilitar com policy adequada.
 
 **Pendências manuais já documentadas:** Supabase redirect URLs (S4) + registrar webhook AbacatePay (S5).
 ---
