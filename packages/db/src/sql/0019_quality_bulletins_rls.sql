@@ -1,0 +1,11 @@
+-- 0019_quality_bulletins_rls.sql
+-- Correção de segurança: `quality_bulletins` foi criada na 0017 SEM RLS, ficando
+-- exposta à anon key (qualquer um com a chave pública lia/escrevia os boletins).
+--
+-- A tabela é DADO INTERNO: escrita pelo agente do boletim diário via Supabase
+-- Execute SQL (admin) e lida pelo Lab v2 via service role — ambos BYPASSAM RLS.
+-- Nenhum cliente anon/authenticated do app deve acessá-la. Por isso habilitamos
+-- RLS SEM policies: bloqueia anon + authenticated, mantém o acesso backend.
+--
+-- (Idempotente: enable RLS é seguro de reaplicar.)
+alter table public.quality_bulletins enable row level security;
