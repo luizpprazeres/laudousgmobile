@@ -149,6 +149,18 @@ export async function updateMeProfile(input: UpdateProfileInput): Promise<Profil
   ).profile;
 }
 
+export async function deleteMeAccount(): Promise<void> {
+  const res = await authedFetch("/api/me/delete-account", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: "{}",
+  });
+  await readJsonOrThrow(res, "excluir conta");
+}
+
 // ============================================
 // Sala do Auxiliar — pareamento + push automático
 // ============================================

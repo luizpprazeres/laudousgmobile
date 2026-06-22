@@ -25,16 +25,13 @@ import {
 } from "@/lib/api";
 import { Banner, type BannerSeverity } from "@/ui/Banner";
 import { Segment } from "@/ui/Segment";
-import { Suggestion } from "@/ui/Suggestion";
 import { C, CATS, Category, FONT } from "@/ui/tokens";
 import {
-  Cal,
   Layers,
   Menu,
   Mic,
   Plus,
   Quote,
-  Ruler,
   Send,
   Stop,
 } from "@/ui/icons";
@@ -55,6 +52,7 @@ import {
   renderReviewHighlighted,
   stripReviewMarkers,
 } from "@/features/generate/reviewMarkers";
+import { SHORT_MEDICAL_DISCLAIMER } from "@/legal/documents";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -67,9 +65,6 @@ const SNIPPETS: Record<string, string> = {
     "Feto único, vivo, em apresentação cefálica, dorso à esquerda. Batimentos cardíacos fetais de 142 bpm, regulares. Movimentos fetais ativos.\n\n",
 };
 
-// Tab "extra" (calculadoras) escondida por enquanto: todas as calculadoras
-// ainda são placeholders "em breve" — mostrar 7 itens não-funcionais passa
-// impressão de mockup. Reabilitar quando alguma calc estiver real.
 type Tab = "achados" | "laudo";
 
 export default function GenerateScreen() {
@@ -207,7 +202,7 @@ export default function GenerateScreen() {
     }
   };
 
-  const onPlusAction = (a: "camera" | "calc" | "clear") => {
+  const onPlusAction = (a: "calc" | "clear") => {
     if (a === "clear") {
       dispatch({ type: "RESET" });
       setTab("achados");
@@ -217,20 +212,6 @@ export default function GenerateScreen() {
       setCalcOpen(true);
       return;
     }
-    if (a === "camera") {
-      setNotice({
-        severity: "info",
-        title: "Análise de imagem em desenvolvimento",
-        message:
-          "Em breve você poderá anexar prints de USG e a IA extrai medidas e classificações automaticamente.",
-      });
-      return;
-    }
-    setNotice({
-      severity: "info",
-      title: "Análise de imagem em desenvolvimento",
-      message: "Em breve você poderá enviar prints de USG e a IA extrai medidas automaticamente.",
-    });
   };
 
   const cycleMock = () => {
@@ -333,20 +314,10 @@ export default function GenerateScreen() {
                 setIgCalcOpen(true);
               }}
               onOpenFrasesSalvas={() =>
-                setNotice({
-                  severity: "info",
-                  title: "Frases nativas em desenvolvimento",
-                  message:
-                    "Em breve você poderá cadastrar e gerenciar suas frases personalizadas direto em Preferências.",
-                })
+                undefined
               }
               onUnimplemented={(label) =>
-                setNotice({
-                  severity: "info",
-                  title: `${label} em desenvolvimento`,
-                  message:
-                    "Essa opção chega em breve — vai permitir reaproveitar templates e atalhos personalizados.",
-                })
+                undefined
               }
               editable={
                 state.kind === "idle" ||
@@ -619,20 +590,16 @@ type QuickAction = {
 function buildQuickActions(
   catId: string,
   onOpenIG: (tab: "dum" | "usg") => void,
-  onOpenFrasesSalvas: () => void,
-  onUnimplemented: (label: string) => void,
+  _onOpenFrasesSalvas: () => void,
+  _onUnimplemented: (label: string) => void,
 ): QuickAction[] {
   if (isObstetrica(catId)) {
     return [
       { key: "dum", label: "IG pela DUM", onPress: () => onOpenIG("dum") },
       { key: "usg", label: "IG pela 1ª USG", onPress: () => onOpenIG("usg") },
-      { key: "info", label: "Informações", onPress: () => onUnimplemented("Informações") },
-      { key: "frases", label: "Frases salvas", onPress: onOpenFrasesSalvas },
     ];
   }
-  return [
-    { key: "frases", label: "Frases salvas", onPress: onOpenFrasesSalvas },
-  ];
+  return [];
 }
 
 function AchadosBody({
@@ -656,7 +623,7 @@ function AchadosBody({
     <View>
       {/* Quick actions row: chips clicáveis com texto sublinhado, mesma
           tipografia do placeholder. Customizado por categoria (obstétricas
-          ganham IG pela DUM / 1ª USG / Informações). ScrollView horizontal
+          ganham IG pela DUM / 1ª USG). ScrollView horizontal
           pra acomodar quando lista cresce sem quebrar layout. */}
       <ScrollView
         horizontal
@@ -816,6 +783,14 @@ function LaudoBody({
           {isStreaming ? <Text style={styles.cursor}> ▎</Text> : null}
         </Text>
 
+        {state.kind === "done" && text ? (
+          <View style={styles.disclaimerCard}>
+            <Text style={styles.disclaimerText}>
+              {SHORT_MEDICAL_DISCLAIMER}
+            </Text>
+          </View>
+        ) : null}
+
         {state.kind === "generating" ? (
           <Pressable onPress={onCancel} style={styles.secondaryBtn}>
             <Text style={styles.secondaryBtnText}>Cancelar geração</Text>
@@ -896,33 +871,6 @@ function LaudoBody({
       <Text style={{ color: C.brand, fontFamily: FONT.semibold }}>Gerar</Text>{" "}
       com achados preenchidos para ver o laudo aqui.
     </Text>
-  );
-}
-
-// ─── Extra (calculadoras) ─────────────────────────────────────────
-function ExtraBody() {
-  // Por enquanto todas as calculadoras estão como placeholder.
-  // Implementação real virá em fase seguinte (P3 mínimo viável é o gerador).
-  // Marca claramente "em breve" pra não criar expectativa de funcionalidade.
-  return (
-    <View>
-      <Text style={[styles.emptyTitle, { marginTop: 8 }]}>
-        Calculadoras clínicas
-      </Text>
-      <Text style={styles.emptySub}>
-        Em desenvolvimento. Toque pra receber notificação quando estiver
-        disponível.
-      </Text>
-
-      <Text style={styles.sectionLabel}>Obstétricas</Text>
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Idade gestacional (DUM)" hint="em breve" />
-      <Suggestion icon={<Ruler size={18} color={C.textSec} />} label="Biometria fetal" hint="em breve" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="FMF — Risco trissomias" hint="em breve" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Doppler — IR, IP, S/D" hint="em breve" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Anemia fetal (PVS-ACM)" hint="em breve" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Restrição (RCF)" hint="em breve" />
-      <Suggestion icon={<Cal size={18} color={C.textSec} />} label="Gemelaridade" hint="em breve" />
-    </View>
   );
 }
 
@@ -1082,6 +1030,18 @@ const styles = StyleSheet.create({
     lineHeight: 25,
     color: C.text,
     fontFamily: FONT.body,
+  },
+  disclaimerCard: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: C.warningBg,
+  },
+  disclaimerText: {
+    color: C.warningText,
+    fontFamily: FONT.semibold,
+    fontSize: 12,
+    lineHeight: 17,
   },
   reviewMarker: {
     color: "#7C3AED",

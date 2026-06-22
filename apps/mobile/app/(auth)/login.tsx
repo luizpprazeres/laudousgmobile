@@ -322,10 +322,16 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
 
-              <Text style={styles.legal}>
-                Ao continuar, você concorda com os termos de uso e política de
-                privacidade.
-              </Text>
+              <Pressable
+                onPress={() => router.push("/sobre" as never)}
+                hitSlop={8}
+                accessibilityRole="link"
+              >
+                <Text style={styles.legal}>
+                  Ao continuar, você concorda com os termos de uso, política de
+                  privacidade e disclaimer médico.
+                </Text>
+              </Pressable>
             </Animated.View>
           </View>
         </ScrollView>

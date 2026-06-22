@@ -18,6 +18,7 @@ import {
   renderReviewHighlighted,
   stripReviewMarkers,
 } from "@/features/generate/reviewMarkers";
+import { SHORT_MEDICAL_DISCLAIMER } from "@/legal/documents";
 import { Segment } from "@/ui/Segment";
 import { C, FONT } from "@/ui/tokens";
 
@@ -167,6 +168,13 @@ function ReportTab({ text }: { text: string }) {
           ? renderReviewHighlighted(text, styles.reviewMarker)
           : "Laudo ainda não gerado."}
       </Text>
+      {text ? (
+        <View style={styles.disclaimerCard}>
+          <Text style={styles.disclaimerText}>
+            {SHORT_MEDICAL_DISCLAIMER}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -402,6 +410,18 @@ const styles = StyleSheet.create({
     fontSize: 15.5,
     lineHeight: 23,
     fontFamily: FONT.body,
+  },
+  disclaimerCard: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: C.warningBg,
+  },
+  disclaimerText: {
+    color: C.warningText,
+    fontFamily: FONT.semibold,
+    fontSize: 12,
+    lineHeight: 17,
   },
   reviewMarker: {
     color: "#7C3AED",

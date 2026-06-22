@@ -1,15 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Sheet } from "@/ui/Sheet";
 import { C, FONT } from "@/ui/tokens";
-import { Camera, Ruler, X } from "@/ui/icons";
+import { Ruler, X } from "@/ui/icons";
 
 /**
  * Ações secundárias do composer.
- *   - camera: anexar imagem do exame e extrair dados via IA (em desenvolvimento)
- *   - calc:   abre CalculatorsSheet com IG/Doppler/Anemia
+ *   - calc:   abre CalculatorsSheet com calculadoras já prontas
  *   - clear:  reseta o editor
  */
-type Action = "camera" | "calc" | "clear";
+type Action = "calc" | "clear";
 
 type Props = {
   open: boolean;
@@ -21,20 +20,11 @@ type Item = {
   id: Action;
   label: string;
   sub: string;
-  Icon: typeof Camera;
+  Icon: typeof Ruler;
   color: string;
-  comingSoon?: boolean;
 };
 
 const ITEMS: Item[] = [
-  {
-    id: "camera",
-    label: "Anexar imagem",
-    sub: "Câmera ou galeria — extração de dados por IA",
-    Icon: Camera,
-    color: "#0EA5E9",
-    comingSoon: true,
-  },
   {
     id: "calc",
     label: "Calculadoras",
@@ -67,16 +57,11 @@ export function PlusSheet({ open, onClose, onPick }: Props) {
             <View style={[styles.iconBox, { backgroundColor: it.color + "18" }]}>
               <it.Icon size={20} color={it.color} />
             </View>
-            <View style={{ flex: 1 }}>
-              <View style={styles.labelRow}>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.label}>{it.label}</Text>
-                {it.comingSoon ? (
-                  <Text style={styles.soonBadge}>EM BREVE</Text>
-                ) : null}
+                <Text style={styles.sub}>{it.sub}</Text>
               </View>
-              <Text style={styles.sub}>{it.sub}</Text>
-            </View>
-          </Pressable>
+            </Pressable>
         ))}
       </View>
     </Sheet>
@@ -101,26 +86,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  labelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   label: {
     fontSize: 16,
     fontFamily: FONT.semibold,
     color: C.text,
-  },
-  soonBadge: {
-    fontSize: 9.5,
-    fontFamily: FONT.bold,
-    color: C.textMute,
-    backgroundColor: C.fill1,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    letterSpacing: 0.4,
-    overflow: "hidden",
   },
   sub: {
     fontSize: 13,
