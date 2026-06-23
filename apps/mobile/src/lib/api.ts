@@ -10,6 +10,7 @@ import {
   type Profile,
   type Report,
 } from "@/shared";
+import { fetch as expoFetch } from "expo/fetch";
 import { z } from "zod";
 import { supabase } from "./supabase";
 
@@ -238,8 +239,9 @@ export async function updateReportFinalOutput(
 /**
  * Faz POST /api/generate e itera sobre os eventos SSE.
  *
- * React Native NÃO tem EventSource nativo — usamos fetch com leitura
- * incremental do body como ReadableStream + parser SSE manual.
+ * React Native NÃO tem EventSource nativo, e o `fetch` global do RN NÃO
+ * expõe `response.body` como stream (vem null no Android) — por isso usamos
+ * `expo/fetch`, que entrega um ReadableStream real, + parser SSE manual.
  *
  * @param mockScenario  se setado, chama /api/generate/mock (sem custo de IA)
  */
@@ -256,7 +258,7 @@ export async function* generateReportStream(
   const body = mockScenario
     ? { ...request, mock_scenario: mockScenario }
     : request;
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await expoFetch(`${API_URL}${path}`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
