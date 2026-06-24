@@ -75,15 +75,6 @@ export function Field({
           backgroundColor: t.card,
           borderWidth: 1.5,
           borderColor: focused ? BRAND : t.separator,
-          ...(focused
-            ? {
-                shadowColor: BRAND,
-                shadowOpacity: 0.16,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 0 },
-                elevation: 2,
-              }
-            : null),
         }}
       >
         <TextInput
