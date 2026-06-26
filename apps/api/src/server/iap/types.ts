@@ -46,10 +46,16 @@ export type SubscriptionStatusOut = {
 export function parseProductId(
   productId: string,
 ): { tier: SubscriptionTier; period: SubscriptionPeriod } | null {
-  const match = productId.match(/^laudousg\.(essencial|pro)\.(monthly|yearly)$/);
+  // IDs reais no App Store Connect: com.laudousg.LaudoUSG.<tier>.<period>
+  // (tier em inglês "essential"). Legado aceito: laudousg.<tier>.<period> ("essencial").
+  const match = productId.match(
+    /^(?:com\.laudousg\.LaudoUSG|laudousg)\.(essential|essencial|pro)\.(monthly|yearly)$/,
+  );
   if (!match) return null;
+  const tier: SubscriptionTier =
+    match[1] === "essential" ? "essencial" : (match[1] as SubscriptionTier);
   return {
-    tier: match[1] as SubscriptionTier,
+    tier,
     period: match[2] as SubscriptionPeriod,
   };
 }
