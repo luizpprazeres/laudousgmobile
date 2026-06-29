@@ -9,6 +9,7 @@
 import { extractCommandOperations, applyCommandOperations } from "../commandOperations";
 import { applyOperations } from "../operations";
 import { normalizeAsrCommands } from "../asrNormalize";
+import { hasEvidence } from "../commandInterpreter";
 
 let pass = 0;
 let fail = 0;
@@ -125,6 +126,18 @@ const LAUDO = [
   const OBJ = ["ULTRASSONOGRAFIA MAMÁRIA", "", "TÉCNICA:", "Transdutor linear.", "", "ACHADOS:", "Mamas de aspecto normal.", "", "IMPRESSÃO:", "1. Sem alterações."].join("\n");
   const r = applyOperations(OBJ, [{ op: "add_body_finding", text: "cisto de óleo" }]);
   check("add_body_finding objetivo: antes de IMPRESSÃO", /cisto de óleo[\s\S]*IMPRESSÃO:/i.test(r.laudo) && !/cisto de óleo/i.test(r.laudo.split("IMPRESSÃO:")[1] ?? ""), r.laudo);
+}
+
+// ── dex1 ALTO: replace_phrase preserva a numeração da conclusão ──
+{
+  const L = ["ULTRASSONOGRAFIA DA PRÓSTATA", "", "CONCLUSÃO:", "1) Resíduo pós-miccional de 80 mL.", "2) Próstata com volume normal."].join("\n");
+  const r = applyOperations(L, [{ op: "replace_phrase", from: "1) Resíduo pós-miccional de 80 mL.", to: "Resíduo pós-miccional desprezível." }]);
+  check("replace preserva o '1)' da conclusão", /CONCLUSÃO:\n1\) Resíduo pós-miccional desprezível\.\n2\) Próstata/.test(r.laudo), r.laudo);
+}
+// ── dex1 ALTO: validação de evidência (anti-invenção) ──
+{
+  check("hasEvidence: conteúdo ditado → true", hasEvidence("cisto de óleo na mama direita", "pode colocar cisto de óleo na mama direita"));
+  check("hasEvidence: conteúdo inventado → false", !hasEvidence("nódulo espiculado suspeito categoria cinco", "mamas de aspecto normal, pode acrescentar uma observação"));
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);

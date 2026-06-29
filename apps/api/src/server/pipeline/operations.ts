@@ -55,7 +55,13 @@ function applyReplacePhrase(
   if (!laudo.includes(from)) {
     return { laudo, applied: false, reason: "frase_nao_encontrada" };
   }
-  return { laudo: laudo.split(from).join(to), applied: true };
+  // Preserva o prefixo de numeração ("N)" / "N." / "N -") quando o `from` o inclui
+  // — senão o replace remove o número e quebra a numeração da conclusão (review
+  // dex1 ALTO). O prefixo do `from` é reaplicado ao `to`.
+  const NUM = /^(\s*\d+\s*[).\-]\s+)/;
+  const pfx = from.match(NUM);
+  const toFinal = pfx ? `${pfx[1]}${to.replace(NUM, "")}` : to;
+  return { laudo: laudo.split(from).join(toFinal), applied: true };
 }
 
 /** Acrescenta item à conclusão (1-based; dedup por conteúdo equivalente). */

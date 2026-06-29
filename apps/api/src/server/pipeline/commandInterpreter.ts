@@ -79,7 +79,7 @@ CONJUNTO FECHADO DE OPERAÇÕES (use só estas):
 - add_conclusion_item {text}: o médico pediu para ACRESCENTAR algo À CONCLUSÃO ("na conclusão acrescente/recomende X", "no final coloque X").
 - add_comment {text}: o médico pediu para acrescentar algo aos COMENTÁRIOS/técnica ("acrescente nos comentários que ...").
 - add_body_finding {text}: o médico pediu para acrescentar um ACHADO ao CORPO do laudo ("pode colocar/coloque/acrescente <achado>" que descreve um achado clínico, não um item de conclusão; ex.: "pode colocar cisto de óleo").
-- replace_phrase {from,to}: o médico pediu para TROCAR uma frase ("no lugar de X escreva Y", "no lugar da frase do resíduo escreva Y"). O campo "from" DEVE ser uma substring LITERAL EXATA copiada do LAUDO (draft) — encontre a linha correspondente ("a frase do resíduo" → a linha do draft que fala de resíduo) e copie-a IDÊNTICA. Se não houver linha correspondente no draft, NÃO emita a operação.
+- replace_phrase {from,to}: o médico pediu para TROCAR uma frase ("no lugar de X escreva Y", "no lugar da frase do resíduo escreva Y"). O campo "from" DEVE ser uma substring LITERAL EXATA copiada do LAUDO (draft) — encontre a linha correspondente ("a frase do resíduo" → a linha do draft que fala de resíduo) e copie-a IDÊNTICA, MAS SEM o prefixo de numeração da conclusão ("1)", "2.", "3 -"): copie só o texto da frase. Se não houver linha correspondente no draft, NÃO emita a operação.
 
 REGRAS:
 1. text/to: a SUBSTÂNCIA LIMPA, nas palavras do médico, SEM as palavras de comando ("acrescente", "no lugar de", "pode colocar", "na conclusão") e SEM ruído.
@@ -88,9 +88,31 @@ REGRAS:
 4. NUNCA invente conteúdo. Se o ditado não tem comando de edição, devolva operations: [].
 5. Devolva SOMENTE o JSON no formato pedido.`;
 
+const STOPWORDS = new Set([
+  "para", "pela", "pelo", "com", "que", "dos", "das", "uma", "sem", "por",
+  "nos", "nas", "como", "mais", "esse", "essa", "este", "esta", "aqui",
+  "onde", "também", "depois", "antes", "frase", "lugar", "escreva", "coloque",
+  "acrescente", "adicione", "inclua", "conclusão", "comentários", "corpo",
+]);
+function sigTokens(s: string): string[] {
+  return (s.toLowerCase().match(/\p{L}{4,}/gu) ?? []).filter((t) => !STOPWORDS.has(t));
+}
 /**
- * Chama o LLM e valida a saída contra o draft. replace_phrase com `from` que não
- * é substring literal do laudo é DESCARTADO (fail-safe: nunca substitui errado).
+ * O conteúdo da op tem LASTRO no ditado? (≥50% dos tokens significativos presentes).
+ * Anti-invenção: o LLM não pode inserir conteúdo que o médico não ditou (review dex1).
+ */
+export function hasEvidence(content: string, rawInput: string): boolean {
+  const toks = sigTokens(content);
+  if (toks.length === 0) return true;
+  const raw = rawInput.toLowerCase();
+  const hits = toks.filter((t) => raw.includes(t)).length;
+  return hits / toks.length >= 0.5;
+}
+
+/**
+ * Chama o LLM e VALIDA a saída: (1) replace_phrase com `from` inexistente no draft é
+ * descartado (fail-safe); (2) todo conteúdo (text/to) precisa ter lastro lexical no
+ * ditado (anti-invenção — review dex1 ALTO). Loga o que foi descartado.
  */
 export async function interpretCommandsLLM(
   rawInput: string,
@@ -106,9 +128,18 @@ export async function interpretCommandsLLM(
     parser: InterpreterOutputSchema,
     signal,
   });
-  return out.operations.filter(
-    (op) => op.op !== "replace_phrase" || draft.includes(op.from),
-  );
+  const kept = out.operations.filter((op) => {
+    if (op.op === "replace_phrase") {
+      return draft.includes(op.from) && hasEvidence(op.to, rawInput);
+    }
+    return hasEvidence(op.text, rawInput);
+  });
+  if (kept.length < out.operations.length) {
+    console.warn(
+      `[commandInterpreter] descartadas ${out.operations.length - kept.length}/${out.operations.length} op(s) sem lastro/âncora.`,
+    );
+  }
+  return kept;
 }
 
 /**
