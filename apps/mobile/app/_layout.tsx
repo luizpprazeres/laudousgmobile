@@ -67,6 +67,7 @@ export default function RootLayout() {
           <Stack.Screen name="historico" />
           <Stack.Screen name="analytics" />
           <Stack.Screen name="preferencias" />
+          <Stack.Screen name="sobre" />
           <Stack.Screen name="biblioteca" />
           <Stack.Screen name="seguranca" />
           <Stack.Screen

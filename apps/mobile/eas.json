@@ -15,6 +15,11 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://yldtkqrsbgcnwlydrrot.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsZHRrcXJzYmdjbndseWRycm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3ODk2NjgsImV4cCI6MjA5NDM2NTY2OH0.lvEJIwyHH-fMqLsDiad_8YlETNTfTFeWdgenRsPDTBY",
+        "EXPO_PUBLIC_API_URL": "https://laudousgmobile.vercel.app"
       }
     },
     "production": {
@@ -23,6 +28,11 @@
       },
       "ios": {
         "buildConfiguration": "Release"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://yldtkqrsbgcnwlydrrot.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsZHRrcXJzYmdjbndseWRycm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3ODk2NjgsImV4cCI6MjA5NDM2NTY2OH0.lvEJIwyHH-fMqLsDiad_8YlETNTfTFeWdgenRsPDTBY",
+        "EXPO_PUBLIC_API_URL": "https://laudousgmobile.vercel.app"
       }
     }
   },

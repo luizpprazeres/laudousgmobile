@@ -6,12 +6,10 @@ import { C, FONT, type ColorTokens } from "@/ui/tokens";
 import type { BannerSeverity } from "@/ui/Banner";
 import {
   Bar,
-  Book,
   Chevron,
   Folder,
   Layers,
   Moon,
-  Shield,
   Sliders,
 } from "@/ui/icons";
 import { getMeProfile } from "@/lib/api";
@@ -40,8 +38,6 @@ type Props = {
 const NAV = [
   { id: "historico", label: "Histórico", Icon: Folder, route: "/historico" as const },
   { id: "analytics", label: "Analytics", Icon: Bar, route: "/analytics" as const },
-  { id: "biblioteca", label: "Biblioteca", Icon: Book, route: "/biblioteca" as const },
-  { id: "seguranca", label: "Segurança", Icon: Shield, route: "/seguranca" as const },
   { id: "preferencias", label: "Preferências", Icon: Sliders, route: "/preferencias" as const },
 ];
 

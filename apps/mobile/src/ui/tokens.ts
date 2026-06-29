@@ -92,6 +92,32 @@ export const FONT = {
 } as const;
 
 /**
+ * Spacing & radius scale — espelha o DesignSystem do app Swift
+ * (LaudoUSG/DesignSystem/Spacing.swift) pra manter paridade visual.
+ */
+export const SPACING = {
+  xxs: 4,
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+  xxxl: 64,
+  huge: 96,
+} as const;
+
+export const RADIUS = {
+  sm: 4,
+  md: 6,
+  lg: 8,
+  xl: 12,
+  xxl: 16,
+  xxxl: 24,
+  pill: 999,
+} as const;
+
+/**
  * IDs aqui devem bater EXATAMENTE com category_code da tabela `categories`
  * do Supabase (ver packages/db/src/seeds/data.ts). Se trocar um ID, o
  * /api/generate não acha RAG nem aceita a categoria.

@@ -10,7 +10,9 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getMeProfile, updateMeProfile } from "@/lib/api";
+import { router } from "expo-router";
+import { deleteMeAccount, getMeProfile, updateMeProfile } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { PageHeader } from "@/ui/PageHeader";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
@@ -53,6 +55,10 @@ export default function PreferenciasScreen() {
   const [savedName, setSavedName] = useState("");
   const [writingStyleId, setWritingStyleId] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeMode>("auto");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -123,6 +129,21 @@ export default function PreferenciasScreen() {
   async function selectTheme(value: ThemeMode) {
     setTheme(value);
     await AsyncStorage.setItem(THEME_KEY, value);
+  }
+
+  async function deleteAccount() {
+    if (deleteText.trim() !== "EXCLUIR" || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteMeAccount();
+      await supabase.auth.signOut();
+      router.replace("/(auth)/login");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDeleting(false);
+    }
   }
 
   if (loading) {
@@ -222,6 +243,92 @@ export default function PreferenciasScreen() {
             </Pressable>
           ))}
         </View>
+
+        <Text style={styles.sectionHeader}>Legal</Text>
+        <View style={styles.list}>
+          <Pressable
+            onPress={() => router.push("/sobre" as never)}
+            style={({ pressed }) => [
+              styles.row,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="link"
+          >
+            <Text style={styles.label}>Sobre / Legal</Text>
+            <Text style={styles.value}>Termos, privacidade e disclaimer</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionHeader}>Zona de risco</Text>
+        <View style={styles.list}>
+          <Pressable
+            onPress={() => {
+              setDeleteConfirmOpen((value) => !value);
+              setDeleteError(null);
+            }}
+            style={({ pressed }) => [
+              styles.row,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.label, { color: t.danger }]}>
+              Excluir minha conta
+            </Text>
+          </Pressable>
+        </View>
+
+        {deleteConfirmOpen ? (
+          <View style={styles.dangerCard}>
+            <Text style={styles.dangerTitle}>Exclusão definitiva</Text>
+            <Text style={styles.dangerText}>
+              Isso apaga sua conta e os dados vinculados, incluindo laudos,
+              preferências, frases e sessões da Sala. Essa ação não pode ser
+              desfeita.
+            </Text>
+            <Text style={styles.confirmLabel}>
+              Digite EXCLUIR para confirmar.
+            </Text>
+            <TextInput
+              value={deleteText}
+              onChangeText={setDeleteText}
+              autoCapitalize="characters"
+              placeholder="EXCLUIR"
+              placeholderTextColor={t.textMute}
+              editable={!deleting}
+              style={styles.confirmInput}
+            />
+            {deleteError ? (
+              <Text style={styles.deleteError}>{deleteError}</Text>
+            ) : null}
+            <View style={styles.deleteActions}>
+              <Pressable
+                onPress={() => {
+                  setDeleteConfirmOpen(false);
+                  setDeleteText("");
+                  setDeleteError(null);
+                }}
+                disabled={deleting}
+                style={[styles.cancelDeleteBtn, deleting && styles.disabled]}
+              >
+                <Text style={styles.cancelDeleteText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                onPress={deleteAccount}
+                disabled={deleteText.trim() !== "EXCLUIR" || deleting}
+                style={[
+                  styles.deleteBtn,
+                  (deleteText.trim() !== "EXCLUIR" || deleting) && styles.disabled,
+                ]}
+              >
+                {deleting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.deleteBtnText}>Excluir conta</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
 
         {saving ? <Text style={styles.savingText}>Salvando...</Text> : null}
       </ScrollView>
@@ -354,6 +461,82 @@ function makeStyles(t: ColorTokens) {
       color: t.textSec,
       marginTop: 12,
       textAlign: "center",
+    },
+    dangerCard: {
+      backgroundColor: t.card,
+      marginHorizontal: 12,
+      marginTop: 8,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.danger,
+    },
+    dangerTitle: {
+      fontFamily: FONT.semibold,
+      fontSize: 16,
+      color: t.danger,
+    },
+    dangerText: {
+      marginTop: 8,
+      fontFamily: FONT.body,
+      fontSize: 14,
+      lineHeight: 20,
+      color: t.text,
+    },
+    confirmLabel: {
+      marginTop: 14,
+      fontFamily: FONT.semibold,
+      fontSize: 13,
+      color: t.text,
+    },
+    confirmInput: {
+      marginTop: 8,
+      borderRadius: 10,
+      backgroundColor: t.fill1,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      color: t.text,
+      fontFamily: FONT.body,
+      fontSize: 15,
+    },
+    deleteError: {
+      marginTop: 8,
+      color: t.danger,
+      fontFamily: FONT.body,
+      fontSize: 13,
+    },
+    deleteActions: {
+      marginTop: 14,
+      flexDirection: "row",
+      gap: 10,
+    },
+    cancelDeleteBtn: {
+      flex: 1,
+      alignItems: "center",
+      borderRadius: 10,
+      backgroundColor: t.fill1,
+      paddingVertical: 12,
+    },
+    cancelDeleteText: {
+      color: t.text,
+      fontFamily: FONT.semibold,
+      fontSize: 14,
+    },
+    deleteBtn: {
+      flex: 1,
+      alignItems: "center",
+      borderRadius: 10,
+      backgroundColor: t.danger,
+      paddingVertical: 12,
+      minHeight: 44,
+    },
+    deleteBtnText: {
+      color: "#fff",
+      fontFamily: FONT.semibold,
+      fontSize: 14,
+    },
+    disabled: {
+      opacity: 0.45,
     },
     errorCard: {
       backgroundColor: t.card,
