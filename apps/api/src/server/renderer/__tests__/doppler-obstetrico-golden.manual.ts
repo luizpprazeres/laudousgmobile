@@ -6,6 +6,7 @@
  */
 import {
   renderDopplerObstetrico,
+  mergeStructuredIg,
   type DopplerObstetricoFindings,
 } from "../categories/DOPPLER_OBSTETRICO";
 
@@ -175,6 +176,28 @@ const RCF = (over: Partial<DopplerObstetricoFindings> = {}) =>
   const a = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
   const b = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
   check("byte-stability (2x idêntico)", a === b);
+}
+
+// ── mergeStructuredIg: bloco estruturado do app vence garble de ASR (segurança) ──
+{
+  // d213131b: prose tinha "hoje com 20...6 dias" (garble); estruturado = DUM 26s6d.
+  const raw = "IG pela DUM: 26s6d\nIG pela biometria: 24s6d\n...hoje com 20 e semanas e 6 dias...";
+  const m = mergeStructuredIg(F({ ig_semanas: 99, ig_dias: 9, ig_referencia_hoje_semanas: 20, ig_referencia_hoje_dias: 6, referencia_fonte: null }), raw);
+  check("merge IG: biometria do bloco (24s6d)", m.ig_semanas === 24 && m.ig_dias === 6, JSON.stringify(m));
+  check("merge IG: referência do bloco (26s6d, não 20)", m.ig_referencia_hoje_semanas === 26 && m.ig_referencia_hoje_dias === 6, JSON.stringify(m));
+  check("merge IG: fonte = dum", m.referencia_fonte === "dum");
+}
+{
+  const raw = "IG pela ultrassonografia precoce: 41s0d\nIG pela biometria: 38s4d";
+  const m = mergeStructuredIg(F({}), raw);
+  check("merge IG: US precoce → fonte usg_precoce + 41s0d", m.referencia_fonte === "usg_precoce" && m.ig_referencia_hoje_semanas === 41 && m.ig_referencia_hoje_dias === 0, JSON.stringify(m));
+  check("merge IG: âncora biometria 38s4d", m.ig_semanas === 38 && m.ig_dias === 4);
+}
+{
+  // Sem bloco estruturado → findings intocados (confia na extração).
+  const orig = F({ ig_semanas: 30, ig_dias: 2, referencia_fonte: "usg_precoce" });
+  const m = mergeStructuredIg(orig, "Sonografia obstétrica com doppler, feto cefálico.");
+  check("merge IG: sem bloco → intocado", m.ig_semanas === 30 && m.ig_dias === 2 && m.referencia_fonte === "usg_precoce");
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);

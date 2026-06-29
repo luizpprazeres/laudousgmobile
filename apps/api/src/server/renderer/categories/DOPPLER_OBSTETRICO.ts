@@ -123,6 +123,12 @@ REGRAS OBSTÉTRICAS (idênticas à categoria OBSTETRICA):
    "alterado" com liquido_classe). PRESERVE a casa decimal. NUNCA troque bolsão por ILA.
 6. ig_semanas/ig_dias: IG ATUAL da BIOMETRIA deste exame (âncora). Ex.: "IG pela biometria:
    24s6d" → ig_semanas 24, ig_dias 6. PREFIRA o valor com dias.
+6b. BLOCO ESTRUTURADO DE IG (gerado pelo app, formato fixo) — REGRA OBRIGATÓRIA: quando o
+   input tiver "IG pela biometria: As Bd" E ("IG pela ultrassonografia precoce: Xs Yd" OU
+   "IG pela DUM: Xs Yd"), você DEVE preencher TODOS estes campos (NUNCA deixe null):
+   ig_semanas=A, ig_dias=B; ig_referencia_hoje_semanas=X, ig_referencia_hoje_dias=Y;
+   referencia_fonte="usg_precoce" se a linha disser "ultrassonografia precoce", "dum" se disser
+   "DUM". Deixe corrigir_ig=null (o sistema decide a correção sozinho pela regra dos 5 dias).
 7. ÉPICO IG — referência precoce (só quando ditada; senão null): data_exame; primeira_us_data
    + primeira_us_ig_semanas/dias (1ª US: data + IG NAQUELA data); ig_referencia_hoje_semanas/dias
    (IG da referência já corrigida p/ hoje — ex.: "IG pela DUM: 26s6d" quando essa é a referência);
@@ -161,6 +167,17 @@ function numPt(n: number): string {
 }
 function bcfFrag(v: number | null): string {
   return v !== null ? ptBr(v) : "____";
+}
+/** "esquerda"/"direita" cru → "à esquerda"/"à direita" (extração às vezes tira o "à"). */
+function dorsoFmt(s: string | null): string | null {
+  if (!s) return null;
+  const t = s.trim();
+  return /^(direita|esquerda)$/i.test(t) ? `à ${t.toLowerCase()}` : t;
+}
+/** Feto[0] com o dorso normalizado (preposição). */
+function feto0(f: DopplerObstetricoFindings): Feto {
+  const ft = f.fetos[0] ?? EMPTY_FETO;
+  return { ...ft, dorso: dorsoFmt(ft.dorso) };
 }
 function grauPlacenta(s: string | null): string | null {
   if (!s) return null;
@@ -308,7 +325,7 @@ function toPesoFetalData(f: DopplerObstetricoFindings): PesoFetalData {
 function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean): string {
   const ig = igResultDoppler(f, igCorrection);
   const d = toDopplerData(f);
-  const ft = f.fetos[0] ?? EMPTY_FETO;
+  const ft = feto0(f);
 
   const aspectos: string[] = [
     fetoApresentacaoFrase(ft, false),
@@ -363,7 +380,7 @@ function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean): st
 function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean): string {
   const ig = igResultDoppler(f, igCorrection);
   const d = toDopplerData(f);
-  const ft = f.fetos[0] ?? EMPTY_FETO;
+  const ft = feto0(f);
 
   const achados: string[] = [];
   const apres = ft.apresentacao ? `, em apresentação ${ft.apresentacao}` : "";
@@ -415,6 +432,37 @@ function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean): st
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+/**
+ * SEGURANÇA — sobrescreve os campos de IG com o BLOCO ESTRUTURADO gerado pelo app
+ * (formato fixo "IG pela biometria/DUM/ultrassonografia precoce: Xs Yd"). O valor
+ * estruturado é a fonte de verdade; a extração LLM erra quando o prose tem garble
+ * de ASR (caso d213131b: "hoje com 20...6 dias" sobrescrevia "IG pela DUM: 26s6d").
+ * Determinístico: sem esse bloco, retorna `f` intocado (confia na extração).
+ */
+export function mergeStructuredIg(
+  f: DopplerObstetricoFindings,
+  rawInput: string,
+): DopplerObstetricoFindings {
+  const biom = rawInput.match(/IG\s+pela\s+biometria:\s*(\d+)\s*s\s*(\d+)\s*d/i);
+  const precoce = rawInput.match(
+    /IG\s+pela\s+ultrassonografia\s+precoce:\s*(\d+)\s*s\s*(\d+)\s*d/i,
+  );
+  const dum = rawInput.match(/IG\s+pela\s+DUM:\s*(\d+)\s*s\s*(\d+)\s*d/i);
+  const ref = precoce ?? dum;
+  if (!biom && !ref) return f;
+  const out = { ...f };
+  if (biom) {
+    out.ig_semanas = Number(biom[1]);
+    out.ig_dias = Number(biom[2]);
+  }
+  if (ref) {
+    out.ig_referencia_hoje_semanas = Number(ref[1]);
+    out.ig_referencia_hoje_dias = Number(ref[2]);
+    out.referencia_fonte = precoce ? "usg_precoce" : "dum";
+  }
+  return out;
 }
 
 export function renderDopplerObstetrico(

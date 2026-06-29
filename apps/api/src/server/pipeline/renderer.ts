@@ -43,6 +43,7 @@ import type { ProstataSuprapubicaFindings } from "../renderer/categories/PROSTAT
 import { renderMusculoesqueletico } from "../renderer/categories/MUSCULOESQUELETICO";
 import {
   renderDopplerObstetrico,
+  mergeStructuredIg,
   type DopplerObstetricoFindings,
 } from "../renderer/categories/DOPPLER_OBSTETRICO";
 
@@ -268,11 +269,14 @@ export async function* runRendererStream(args: {
         // S6: peso por fórmula + IPP por grau (A10). category_code = alias.
         fullText = renderProstataSuprapubica(fnd as ProstataSuprapubicaFindings);
         break;
-      case "DOPPLER_OBSTETRICO":
+      case "DOPPLER_OBSTETRICO": {
         // Renderer determinístico (IG Domingos + percentis do input + boilerplate
         // Doppler). Reusa o corpo obstétrico de OBSTETRICA. Gated por RENDERER_CATEGORIES.
-        fullText = renderDopplerObstetrico(fnd as DopplerObstetricoFindings, null, { objetivo, igCorrection });
+        // mergeStructuredIg: sobrescreve a IG com o bloco estruturado do app (segurança).
+        const dfnd = mergeStructuredIg(fnd as DopplerObstetricoFindings, args.rawInput);
+        fullText = renderDopplerObstetrico(dfnd, null, { objetivo, igCorrection });
         break;
+      }
       default:
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });
         break;

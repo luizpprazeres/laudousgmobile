@@ -265,6 +265,11 @@ function apresentacaoFmt(s: string | null): string | null {
   const map: Record<string, string> = {
     cefálico: "cefálica",
     cefalico: "cefálica",
+    // ASR: "encefálica/encefálico" → "cefálica" (boletim 23/jun + mineração).
+    encefálico: "cefálica",
+    encefalico: "cefálica",
+    encefálica: "cefálica",
+    encefalica: "cefálica",
     pélvico: "pélvica",
     pelvico: "pélvica",
     córmico: "córmica",
