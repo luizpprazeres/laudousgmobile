@@ -53,6 +53,11 @@ const ServerEnvSchema = z.object({
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
   // golden + review. Ver pipeline/commandOperations.ts.
   COMMAND_OPERATIONS: z.string().default("false"),
+  // DET-6 FASE 2: quando "true", roda o INTERPRETADOR DE COMANDOS por LLM
+  // (pipeline/commandInterpreter.ts) DEPOIS da fase 1 determinística — resolve
+  // âncora semântica ("a frase do resíduo") e achado-no-corpo ("pode colocar X").
+  // Adiciona 1 chamada LLM; falha graciosa (laudo intocado). Default OFF.
+  COMMAND_INTERPRETER: z.string().default("false"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =

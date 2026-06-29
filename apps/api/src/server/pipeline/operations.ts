@@ -124,6 +124,24 @@ function applyAddComment(laudo: string, text: string): OpOutcome {
   return { laudo: lines.join("\n"), applied: true };
 }
 
+/** Acrescenta `text` como frase de ACHADO no corpo, logo antes de CONCLUSÃO/IMPRESSÃO. */
+function applyAddBodyFinding(laudo: string, text: string): OpOutcome {
+  const item = asItem(text);
+  const m = laudo.match(/^(?:CONCLUS[ÃA]O|IMPRESS[ÃA]O)\s*:/im);
+  if (!m || m.index === undefined) {
+    if (normItem(laudo).includes(normItem(item))) {
+      return { laudo, applied: false, reason: "ja_presente" };
+    }
+    return { laudo: `${laudo.trimEnd()}\n${item}`, applied: true };
+  }
+  const before = laudo.slice(0, m.index).trimEnd();
+  const after = laudo.slice(m.index);
+  if (normItem(before).includes(normItem(item))) {
+    return { laudo, applied: false, reason: "ja_presente" };
+  }
+  return { laudo: `${before}\n${item}\n\n${after}`, applied: true };
+}
+
 /** Insere `text` como nova linha antes/depois da 1ª linha que contém `anchor`. */
 function applyInsertLine(
   laudo: string,
@@ -149,6 +167,8 @@ function applyOne(laudo: string, op: ReportOperation): OpOutcome {
       return applyRemoveConclusionItem(laudo, op.match);
     case "add_comment":
       return applyAddComment(laudo, op.text);
+    case "add_body_finding":
+      return applyAddBodyFinding(laudo, op.text);
     case "insert_before":
       return applyInsertLine(laudo, op.anchor, op.text, "before");
     case "insert_after":

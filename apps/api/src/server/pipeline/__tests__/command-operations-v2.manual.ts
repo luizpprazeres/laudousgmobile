@@ -112,5 +112,20 @@ const LAUDO = [
   check("objetivo: não polui ACHADOS/IMPRESSÃO", !/recém-nascido/.test(r.laudo.split("ACHADOS:")[1] ?? ""), r.laudo);
 }
 
+// ── FASE 2: add_body_finding insere no CORPO, antes da CONCLUSÃO ──
+{
+  const r = applyOperations(LAUDO, [{ op: "add_body_finding", text: "imagem hipoecoica sugestiva de cisto de óleo" }]);
+  const corpo = r.laudo.split("CONCLUSÃO:")[0] ?? "";
+  check("add_body_finding: entra no corpo (antes da CONCLUSÃO)", /cisto de óleo/.test(corpo), r.laudo);
+  check("add_body_finding: NÃO entra na conclusão", !/cisto de óleo/.test(r.laudo.split("CONCLUSÃO:")[1] ?? ""), r.laudo);
+  check("add_body_finding: conclusão preservada", /CONCLUSÃO:\n1\) Exame dentro/.test(r.laudo), r.laudo);
+}
+// ── FASE 2: add_body_finding no estilo objetivo (antes de IMPRESSÃO) ──
+{
+  const OBJ = ["ULTRASSONOGRAFIA MAMÁRIA", "", "TÉCNICA:", "Transdutor linear.", "", "ACHADOS:", "Mamas de aspecto normal.", "", "IMPRESSÃO:", "1. Sem alterações."].join("\n");
+  const r = applyOperations(OBJ, [{ op: "add_body_finding", text: "cisto de óleo" }]);
+  check("add_body_finding objetivo: antes de IMPRESSÃO", /cisto de óleo[\s\S]*IMPRESSÃO:/i.test(r.laudo) && !/cisto de óleo/i.test(r.laudo.split("IMPRESSÃO:")[1] ?? ""), r.laudo);
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

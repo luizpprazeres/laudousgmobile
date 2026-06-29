@@ -55,6 +55,16 @@ export const AddCommentOpSchema = z.object({
   ...baseFields,
 });
 
+/**
+ * Acrescenta uma frase de ACHADO ao corpo do laudo (antes da CONCLUSÃO). Resolve
+ * "pode colocar/coloque <achado>" que é conteúdo do corpo, não da conclusão.
+ */
+export const AddBodyFindingOpSchema = z.object({
+  op: z.literal("add_body_finding"),
+  text: z.string().min(1),
+  ...baseFields,
+});
+
 /** Insere `text` imediatamente antes da 1ª ocorrência da âncora textual. */
 export const InsertBeforeOpSchema = z.object({
   op: z.literal("insert_before"),
@@ -76,6 +86,7 @@ export const ReportOperationSchema = z.discriminatedUnion("op", [
   AddConclusionItemOpSchema,
   RemoveConclusionItemOpSchema,
   AddCommentOpSchema,
+  AddBodyFindingOpSchema,
   InsertBeforeOpSchema,
   InsertAfterOpSchema,
 ]);

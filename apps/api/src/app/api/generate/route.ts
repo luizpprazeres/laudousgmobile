@@ -17,6 +17,7 @@ import {
   flagGemelarHallucination,
 } from "@/server/pipeline/dopplerOverlay";
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
+import { applyCommandInterpreter } from "@/server/pipeline/commandInterpreter";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import { applyCommandGuard } from "@/server/pipeline/commandGuard";
@@ -956,6 +957,16 @@ export async function POST(req: Request) {
         finalText = applyConfiguredCommands(
           finalText,
           reqInput.consolidated_transcript ?? reqInput.raw_input,
+        );
+      }
+      // DET-6 FASE 2 (flag COMMAND_INTERPRETER): interpretador de comandos por LLM
+      // — roda DEPOIS da fase 1 determinística, resolve âncora semântica + achado
+      // no corpo. Recebe o laudo (draft) como contexto. Falha graciosa (intocado).
+      if (env().COMMAND_INTERPRETER === "true") {
+        finalText = await applyCommandInterpreter(
+          finalText,
+          reqInput.consolidated_transcript ?? reqInput.raw_input,
+          signal,
         );
       }
       // Guard de sanitização (universal): remove artefatos de ditado/ASR que
