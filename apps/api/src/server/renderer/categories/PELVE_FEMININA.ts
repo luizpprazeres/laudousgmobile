@@ -593,6 +593,34 @@ function endometrioCorpo(f: PelveFemininaFindings, via: Via): string | null {
   return `Endométrio ${eco}medindo ${espFmt(f.endometrio_espessura_cm)} cm de espessura${sufixo}.`;
 }
 
+/**
+ * Override determinístico de MENOPAUSA. Se o ditado mencionar "menopausa" (não
+ * "pré-menopausa" nem negação), marca AMBOS os ovários como atróficos ("poucas
+ * imagens anecoicas" / conclusão "ambos praticamente sem folículos") e o
+ * endométrio com a frase da menopausa ("faixa etária da menopausa"). O "como
+ * escrever" já existe no renderer; isto garante o GATILHO automático ("só falar
+ * menopausa") sem depender da extração LLM (mineração: ajuste frequente do Luiz).
+ * Vale p/ TA e TV. Achados individualizados por lado continuam vencendo (a
+ * precedência de achados/conclusão patológica já está no renderer).
+ */
+export function mergeMenopausaPelve(
+  f: PelveFemininaFindings,
+  rawInput: string,
+): PelveFemininaFindings {
+  const t = rawInput.toLowerCase();
+  const menopausa =
+    /menop[áa]usic|\bmenopausa\b/.test(t) &&
+    !/pr[ée]-?\s*menopausa/.test(t) &&
+    !/n[ãa]o\s+(?:est[áa]\s+)?(?:na\s+|em\s+)?menopausa/.test(t);
+  if (!menopausa) return f;
+  return {
+    ...f,
+    ovario_direito: { ...f.ovario_direito, atrofico: true },
+    ovario_esquerdo: { ...f.ovario_esquerdo, atrofico: true },
+    endometrio_frase: "menopausa",
+  };
+}
+
 /** Item de conclusão do endométrio. */
 function endometrioConclusao(f: PelveFemininaFindings, via: Via): string {
   if (f.endometrio_conclusao && f.endometrio_conclusao.trim() !== "") {
