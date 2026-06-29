@@ -58,6 +58,11 @@ const ServerEnvSchema = z.object({
   // âncora semântica ("a frase do resíduo") e achado-no-corpo ("pode colocar X").
   // Adiciona 1 chamada LLM; falha graciosa (laudo intocado). Default OFF.
   COMMAND_INTERPRETER: z.string().default("false"),
+  // DET-6 FASE 3: quando "true", SEPARA os comandos do ditado ANTES da geração
+  // (pipeline/commandStripper.ts) — o writer/extração gera o draft SEM o comando
+  // (não ecoa); os comandos são aplicados depois (fase 1/2) sobre o draft limpo.
+  // Resolve o eco upstream que o pós-processamento sozinho não removia. Default OFF.
+  COMMAND_PREGEN: z.string().default("false"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =

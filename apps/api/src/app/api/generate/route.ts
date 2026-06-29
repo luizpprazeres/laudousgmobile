@@ -18,6 +18,7 @@ import {
 } from "@/server/pipeline/dopplerOverlay";
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
 import { applyCommandInterpreter } from "@/server/pipeline/commandInterpreter";
+import { stripCommandSpans } from "@/server/pipeline/commandStripper";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import { applyCommandGuard } from "@/server/pipeline/commandGuard";
@@ -175,6 +176,16 @@ export async function POST(req: Request) {
   // FAST-PATH: o request pode pedir explicitamente; senão usa o default do
   // servidor (env FAST_PATH_DEFAULT, "true" = ligado pra todos). Revert via env.
   const fastPath = reqInput.fast_path ?? env().FAST_PATH_DEFAULT === "true";
+  // DET-6 FASE 3 (flag COMMAND_PREGEN): separa os comandos do ditado ANTES da
+  // geração — o writer/extração recebe `genText` (sem comando) e não ecoa; os
+  // comandos seguem sendo aplicados depois sobre o raw original. OFF = genText é o
+  // próprio ditado (byte-idêntico).
+  const effectiveInput =
+    reqInput.consolidated_transcript ?? reqInput.raw_input;
+  const genText =
+    env().COMMAND_PREGEN === "true"
+      ? stripCommandSpans(effectiveInput).clean
+      : effectiveInput;
   const eventSurface = surfaceFromRequest(
     req,
     reqInput.source === "watch"
@@ -482,7 +493,7 @@ export async function POST(req: Request) {
           emit({ type: "structured", ts: nowIso(), payload: findings });
         } else {
         const structured = await runStructurer({
-          rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          rawInput: genText,
           categoryHint: reqInput.category_hint,
           knownCategories: [...categoriesInfo.codes],
           signal,
@@ -761,7 +772,7 @@ export async function POST(req: Request) {
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
-            rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+            rawInput: genText,
             templateBody: rendererTemplateBody ?? "",
             signal,
             // DET-5 ONDA 2 — toggles resolvidos junto da variante (sem 2ª query).
@@ -782,10 +793,8 @@ export async function POST(req: Request) {
             categoryCode: effectiveCategory,
             categoryLabel:
               categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
-            // FAST-PATH: writer escreve direto do ditado cru (sem achados estruturados).
-            rawUserMessage: fastPath
-              ? reqInput.consolidated_transcript ?? reqInput.raw_input
-              : undefined,
+            // FAST-PATH: writer escreve direto do ditado (genText: sem comando se COMMAND_PREGEN).
+            rawUserMessage: fastPath ? genText : undefined,
             signal,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
@@ -835,7 +844,7 @@ export async function POST(req: Request) {
           writingStyleCode: styleRow.code,
           categoryCode: effectiveCategory,
           categoryLabel: categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
-          rawUserMessage: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          rawUserMessage: genText,
           signal,
           onSystemMessage: (message) => {
             auditState.systemMessageFull = message;

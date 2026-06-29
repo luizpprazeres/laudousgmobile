@@ -45,12 +45,15 @@ export function conclusionCommandsToOperations(
 const META_DROP =
   /com\s+a\s+ultrassonografia\s+precoce|correlacion\w*\s+com\s+(?:a\s+|o\s+)?(?:ultrassonograf|us\s+precoce|\bdum\b|data\s+da\s+[úu]ltima|idade\s+gestacional|\big\b)|item\s+\d+\s+da\s+conclus|no\s+item\s+\d+/i;
 
-/** "acrescente nos comentários (que) X" → texto X para a seção COMENTÁRIOS. */
-const COMMENT_RE =
-  /(?:acrescent\w+|adicion\w+|coloqu\w+|inclu\w+)\s+(?:n[oa]s?\s+)?coment[áa]rios?\s*(?:,?\s*que\s+)?[:\s-]*([^.;\n]+)/gi;
+/**
+ * "acrescente nos/após comentários (que) X" → texto X para a seção COMENTÁRIOS.
+ * Cobre "nos comentários", "após (os) comentários" (caso 43657c4b) e "ao final dos".
+ */
+export const COMMENT_RE =
+  /(?:acrescent\w+|adicion\w+|coloqu\w+|inclu\w+)\s+(?:(?:n[oa]s?|ap[óo]s(?:\s+os)?|ao\s+final\s+d[oa]s)\s+)?coment[áa]rios?\s*(?:,?\s*que\s+)?[:\s-]*([^.;\n]+)/gi;
 
 /** "no lugar d(e|o|a) X (escreva|coloque|ponha) Y" → replace_phrase literal. */
-const REPLACE_RE =
+export const REPLACE_RE =
   /no\s+lugar\s+d[eoa]\s+(.+?)\s+(?:escrev\w+|coloqu\w+|ponh\w+)\s+([^.;\n]+)/gi;
 
 /**
