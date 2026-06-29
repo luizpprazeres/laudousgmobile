@@ -15,10 +15,11 @@
 export function normalizeAsrCommands(text: string): string {
   return (
     text
-      // "acione/acionar/aciona [na conclusão] com a US precoce/DUM" → correlacione.
-      // ASR clássico: o médico dita "correlacione", sai "acione".
+      // "acione [na conclusão] com a US precoce/DUM" → correlacione. Só a forma
+      // IMPERATIVA "acione" (erro ASR mais provável de "correlacione"); não toca
+      // "acionar/aciona" (mais prováveis de uso legítimo). Review dex1 (BAIXO).
       .replace(
-        /\bacion(?:e|ar|a)\b(?=[^.;\n]*?(?:ultrassonograf|us\s+precoce|\bdum\b|conclus))/gi,
+        /\bacione\b(?=[^.;\n]*?(?:ultrassonograf|us\s+precoce|\bdum\b|conclus))/gi,
         "correlacione",
       )
       // "no lugar de X escreve Y" → "escreva" (imperativo).

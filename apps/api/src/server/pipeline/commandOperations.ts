@@ -43,7 +43,7 @@ export function conclusionCommandsToOperations(
  * "Com a ultrassonografia precoce." (caso b8f67ca5).
  */
 const META_DROP =
-  /com\s+a\s+ultrassonografia\s+precoce|correlacion\w*\s+com|item\s+\d+\s+da\s+conclus|no\s+item\s+\d+/i;
+  /com\s+a\s+ultrassonografia\s+precoce|correlacion\w*\s+com\s+(?:a\s+|o\s+)?(?:ultrassonograf|us\s+precoce|\bdum\b|data\s+da\s+[úu]ltima|idade\s+gestacional|\big\b)|item\s+\d+\s+da\s+conclus|no\s+item\s+\d+/i;
 
 /** "acrescente nos comentários (que) X" → texto X para a seção COMENTÁRIOS. */
 const COMMENT_RE =
@@ -72,7 +72,7 @@ export function extractCommandOperations(rawInput: string): ReportOperation[] {
       cleaned = cleaned.replace(m[0], " ");
     }
   }
-  for (const m of text.matchAll(REPLACE_RE)) {
+  for (const m of cleaned.matchAll(REPLACE_RE)) {
     const from = m[1]?.trim();
     const to = m[2]?.trim();
     if (from && to) {

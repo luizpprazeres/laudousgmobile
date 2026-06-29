@@ -86,5 +86,31 @@ const LAUDO = [
   check("regressão: item legítimo entra na conclusão", /acompanhamento ultrassonográfico/i.test(out.split("CONCLUSÃO:")[1] ?? ""), out);
 }
 
+// ── dex1 ALTO: "correlacionar com achados clínicos" é comando LEGÍTIMO (não meta) ──
+{
+  const ops = extractCommandOperations("Na conclusão, correlacionar com achados clínicos e laboratoriais.");
+  check("correlação clínica legítima vira item de conclusão", ops.some((o) => o.op === "add_conclusion_item" && /achados clínicos/i.test(o.text)), JSON.stringify(ops));
+}
+// ── controle: correlação com US precoce/DUM CONTINUA sendo meta-dropada ──
+{
+  const ops = extractCommandOperations("Na conclusão, correlacionar com a ultrassonografia precoce.");
+  check("correlação com US precoce continua dropada", !ops.some((o) => "text" in o && /ultrassonografia precoce/i.test((o as { text: string }).text)), JSON.stringify(ops));
+}
+
+// ── dex1 ALTO: replace DENTRO de comentário não gera dupla operação ──
+{
+  const ops = extractCommandOperations("Inclua nos comentários que no lugar de X escreva Y.");
+  check("comentário com 'no lugar de' → só add_comment (sem replace duplo)", ops.some((o) => o.op === "add_comment") && !ops.some((o) => o.op === "replace_phrase"), JSON.stringify(ops));
+}
+
+// ── dex1 MÉDIO: add_comment no estilo objetivo cai na TÉCNICA ──
+{
+  const OBJ = ["ULTRASSONOGRAFIA OBSTÉTRICA", "", "TÉCNICA:", "Exame com transdutor convexo.", "", "ACHADOS:", "Feto único.", "", "IMPRESSÃO:", "Gestação tópica."].join("\n");
+  const r = applyOperations(OBJ, [{ op: "add_comment", text: "Exame em recém-nascido de 3 dias" }]);
+  const tecnicaBloco = r.laudo.split("ACHADOS:")[0] ?? "";
+  check("objetivo: add_comment cai na TÉCNICA", /recém-nascido de 3 dias/.test(tecnicaBloco), r.laudo);
+  check("objetivo: não polui ACHADOS/IMPRESSÃO", !/recém-nascido/.test(r.laudo.split("ACHADOS:")[1] ?? ""), r.laudo);
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

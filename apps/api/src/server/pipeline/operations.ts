@@ -98,11 +98,15 @@ function applyRemoveConclusionItem(laudo: string, match: string): OpOutcome {
   return { laudo: renderWithConclusion(parsed, kept), applied: true };
 }
 
-/** Acrescenta `text` ao FINAL da seção COMENTÁRIOS (antes da 1ª linha em branco). */
+/**
+ * Acrescenta `text` ao FINAL da seção COMENTÁRIOS (antes da 1ª linha em branco).
+ * Fallback p/ estilo objetivo (sem COMENTÁRIOS): usa a seção TÉCNICA (review dex1).
+ */
 function applyAddComment(laudo: string, text: string): OpOutcome {
   const lines = laudo.split("\n");
-  const i = lines.findIndex((l) => /^COMENT[ÁA]RIOS\s*:/i.test(l.trim()));
-  if (i === -1) return { laudo, applied: false, reason: "sem_comentarios" };
+  let i = lines.findIndex((l) => /^COMENT[ÁA]RIOS\s*:/i.test(l.trim()));
+  if (i === -1) i = lines.findIndex((l) => /^T[ÉE]CNICA\s*:/i.test(l.trim()));
+  if (i === -1) return { laudo, applied: false, reason: "sem_secao_comentarios" };
   // Fim do bloco COMENTÁRIOS = 1ª linha em branco após o cabeçalho (separa da
   // próxima seção); sem branco, vai ao fim do laudo.
   let end = lines.length;
