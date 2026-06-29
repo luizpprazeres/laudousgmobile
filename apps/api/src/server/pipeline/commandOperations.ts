@@ -18,11 +18,13 @@
  */
 import { extractConclusionCommands } from "./commandGuard";
 import { applyOperations, type ApplyOperationsResult } from "./operations";
+import { normalizeAsrCommands } from "./asrNormalize";
 import type { ReportOperation } from "@laudousg/shared";
 
 /**
  * Converte as diretivas de conclusão do ditado em operações `add_conclusion_item`.
  * `insertAt` (0-based, do commandGuard) → `position` (1-based) = insertAt + 1.
+ * (Mantido para compat; a extração rica é `extractCommandOperations`.)
  */
 export function conclusionCommandsToOperations(
   rawInput: string,
@@ -34,12 +36,67 @@ export function conclusionCommandsToOperations(
   }));
 }
 
+/**
+ * Meta-comandos que NÃO viram item de conclusão: a correlação de IG pela US
+ * precoce/DUM já é montada deterministicamente pelo renderer (regra Domingos), e
+ * referências a "item N" são posicionais, não conteúdo. Dropar evita o item-lixo
+ * "Com a ultrassonografia precoce." (caso b8f67ca5).
+ */
+const META_DROP =
+  /com\s+a\s+ultrassonografia\s+precoce|correlacion\w*\s+com|item\s+\d+\s+da\s+conclus|no\s+item\s+\d+/i;
+
+/** "acrescente nos comentários (que) X" → texto X para a seção COMENTÁRIOS. */
+const COMMENT_RE =
+  /(?:acrescent\w+|adicion\w+|coloqu\w+|inclu\w+)\s+(?:n[oa]s?\s+)?coment[áa]rios?\s*(?:,?\s*que\s+)?[:\s-]*([^.;\n]+)/gi;
+
+/** "no lugar d(e|o|a) X (escreva|coloque|ponha) Y" → replace_phrase literal. */
+const REPLACE_RE =
+  /no\s+lugar\s+d[eoa]\s+(.+?)\s+(?:escrev\w+|coloqu\w+|ponh\w+)\s+([^.;\n]+)/gi;
+
+/**
+ * Extrai operações tipadas do ditado (caminho DET-6, flag COMMAND_OPERATIONS):
+ * roteia para COMENTÁRIOS, gera substituição literal, dropa meta-comandos e só
+ * então deriva itens de conclusão — nunca imprime o comando literal.
+ */
+export function extractCommandOperations(rawInput: string): ReportOperation[] {
+  const text = normalizeAsrCommands(rawInput);
+  const ops: ReportOperation[] = [];
+  // `cleaned`: o que sobra para o extrator de conclusão, sem os trechos já
+  // consumidos por comentário/substituição (evita captura dupla).
+  let cleaned = text;
+
+  for (const m of text.matchAll(COMMENT_RE)) {
+    const t = m[1]?.trim();
+    if (t) {
+      ops.push({ op: "add_comment", text: t, trecho_original: m[0] });
+      cleaned = cleaned.replace(m[0], " ");
+    }
+  }
+  for (const m of text.matchAll(REPLACE_RE)) {
+    const from = m[1]?.trim();
+    const to = m[2]?.trim();
+    if (from && to) {
+      ops.push({ op: "replace_phrase", from, to, trecho_original: m[0] });
+      cleaned = cleaned.replace(m[0], " ");
+    }
+  }
+  for (const c of extractConclusionCommands(cleaned)) {
+    if (META_DROP.test(c.text)) continue;
+    ops.push({
+      op: "add_conclusion_item",
+      text: c.text,
+      ...(c.insertAt !== undefined ? { position: c.insertAt + 1 } : {}),
+    });
+  }
+  return ops;
+}
+
 /** Versão auditável: devolve laudo + relatório de operações aplicadas. */
 export function applyCommandOperationsWithAudit(
   laudo: string,
   rawInput: string,
 ): ApplyOperationsResult {
-  const ops = conclusionCommandsToOperations(rawInput);
+  const ops = extractCommandOperations(rawInput);
   if (ops.length === 0) return { laudo, results: [] };
   return applyOperations(laudo, ops);
 }

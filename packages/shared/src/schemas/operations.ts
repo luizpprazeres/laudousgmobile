@@ -45,6 +45,16 @@ export const RemoveConclusionItemOpSchema = z.object({
   ...baseFields,
 });
 
+/**
+ * Acrescenta uma linha ao FINAL da seção COMENTÁRIOS (não na conclusão). Resolve
+ * "acrescente nos comentários que ..." que hoje vaza para a conclusão.
+ */
+export const AddCommentOpSchema = z.object({
+  op: z.literal("add_comment"),
+  text: z.string().min(1),
+  ...baseFields,
+});
+
 /** Insere `text` imediatamente antes da 1ª ocorrência da âncora textual. */
 export const InsertBeforeOpSchema = z.object({
   op: z.literal("insert_before"),
@@ -65,6 +75,7 @@ export const ReportOperationSchema = z.discriminatedUnion("op", [
   ReplacePhraseOpSchema,
   AddConclusionItemOpSchema,
   RemoveConclusionItemOpSchema,
+  AddCommentOpSchema,
   InsertBeforeOpSchema,
   InsertAfterOpSchema,
 ]);

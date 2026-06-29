@@ -98,6 +98,28 @@ function applyRemoveConclusionItem(laudo: string, match: string): OpOutcome {
   return { laudo: renderWithConclusion(parsed, kept), applied: true };
 }
 
+/** Acrescenta `text` ao FINAL da seção COMENTÁRIOS (antes da 1ª linha em branco). */
+function applyAddComment(laudo: string, text: string): OpOutcome {
+  const lines = laudo.split("\n");
+  const i = lines.findIndex((l) => /^COMENT[ÁA]RIOS\s*:/i.test(l.trim()));
+  if (i === -1) return { laudo, applied: false, reason: "sem_comentarios" };
+  // Fim do bloco COMENTÁRIOS = 1ª linha em branco após o cabeçalho (separa da
+  // próxima seção); sem branco, vai ao fim do laudo.
+  let end = lines.length;
+  for (let j = i + 1; j < lines.length; j++) {
+    if ((lines[j] ?? "").trim() === "") {
+      end = j;
+      break;
+    }
+  }
+  const item = asItem(text);
+  const target = normItem(item);
+  const dup = lines.slice(i + 1, end).some((l) => normItem(l) === target);
+  if (dup) return { laudo, applied: false, reason: "ja_presente" };
+  lines.splice(end, 0, item);
+  return { laudo: lines.join("\n"), applied: true };
+}
+
 /** Insere `text` como nova linha antes/depois da 1ª linha que contém `anchor`. */
 function applyInsertLine(
   laudo: string,
@@ -121,6 +143,8 @@ function applyOne(laudo: string, op: ReportOperation): OpOutcome {
       return applyAddConclusionItem(laudo, op.text, op.position);
     case "remove_conclusion_item":
       return applyRemoveConclusionItem(laudo, op.match);
+    case "add_comment":
+      return applyAddComment(laudo, op.text);
     case "insert_before":
       return applyInsertLine(laudo, op.anchor, op.text, "before");
     case "insert_after":
