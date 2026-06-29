@@ -184,7 +184,13 @@ export async function POST(req: Request) {
     reqInput.consolidated_transcript ?? reqInput.raw_input;
   const genText =
     env().COMMAND_PREGEN === "true"
-      ? stripCommandSpans(effectiveInput).clean
+      ? stripCommandSpans(effectiveInput, {
+          // Só remove comentário/replace se houver aplicador tipado ligado p/
+          // reaplicar (senão = lost-command). Review dex1 ALTO.
+          typedEngine:
+            env().COMMAND_OPERATIONS === "true" ||
+            env().COMMAND_INTERPRETER === "true",
+        }).clean
       : effectiveInput;
   const eventSurface = surfaceFromRequest(
     req,

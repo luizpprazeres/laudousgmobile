@@ -52,9 +52,9 @@ const META_DROP =
 export const COMMENT_RE =
   /(?:acrescent\w+|adicion\w+|coloqu\w+|inclu\w+)\s+(?:(?:n[oa]s?|ap[óo]s(?:\s+os)?|ao\s+final\s+d[oa]s)\s+)?coment[áa]rios?\s*(?:,?\s*que\s+)?[:\s-]*([^.;\n]+)/gi;
 
-/** "no lugar d(e|o|a) X (escreva|coloque|ponha) Y" → replace_phrase literal. */
+/** "no lugar d(e|o|a) X (escreva|coloque|ponha)[,:] Y" → replace_phrase literal. */
 export const REPLACE_RE =
-  /no\s+lugar\s+d[eoa]\s+(.+?)\s+(?:escrev\w+|coloqu\w+|ponh\w+)\s+([^.;\n]+)/gi;
+  /no\s+lugar\s+d[eoa]\s+(.+?)\s+(?:escrev\w+|coloqu\w+|ponh\w+)[\s,:]+([^.;\n]+)/gi;
 
 /**
  * Extrai operações tipadas do ditado (caminho DET-6, flag COMMAND_OPERATIONS):
