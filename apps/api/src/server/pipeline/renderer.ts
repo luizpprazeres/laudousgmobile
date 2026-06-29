@@ -41,6 +41,10 @@ import { renderViasUrinarias } from "../renderer/categories/VIAS_URINARIAS";
 import { renderProstataSuprapubica } from "../renderer/categories/PROSTATA_SUPRAPUBICA";
 import type { ProstataSuprapubicaFindings } from "../renderer/categories/PROSTATA_SUPRAPUBICA";
 import { renderMusculoesqueletico } from "../renderer/categories/MUSCULOESQUELETICO";
+import {
+  renderDopplerObstetrico,
+  type DopplerObstetricoFindings,
+} from "../renderer/categories/DOPPLER_OBSTETRICO";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -220,7 +224,8 @@ export async function* runRendererStream(args: {
     args.categoryCode === "ABDOMEN_SUPERIOR" ||
     args.categoryCode === "VIAS_URINARIAS" ||
     args.categoryCode === "MUSCULOESQUELETICO_V2" ||
-    args.categoryCode === "PROSTATA_SUPRAPUBICA"
+    args.categoryCode === "PROSTATA_SUPRAPUBICA" ||
+    args.categoryCode === "DOPPLER_OBSTETRICO"
   ) {
     const objetivo = isEstiloObjetivo(args.writingStyleId);
     // Épico IG determinística (Domingos) — atrás de flag (default OFF).
@@ -262,6 +267,11 @@ export async function* runRendererStream(args: {
       case "PROSTATA_SUPRAPUBICA":
         // S6: peso por fórmula + IPP por grau (A10). category_code = alias.
         fullText = renderProstataSuprapubica(fnd as ProstataSuprapubicaFindings);
+        break;
+      case "DOPPLER_OBSTETRICO":
+        // Renderer determinístico (IG Domingos + percentis do input + boilerplate
+        // Doppler). Reusa o corpo obstétrico de OBSTETRICA. Gated por RENDERER_CATEGORIES.
+        fullText = renderDopplerObstetrico(fnd as DopplerObstetricoFindings, null, { objetivo, igCorrection });
         break;
       default:
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });

@@ -332,7 +332,7 @@ export function calcDsm(f: ObstetricaFindings): number | null {
 const COMENTARIOS =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
-function fetoApresentacaoFrase(f: ObstetricaFindings["fetos"][number], inicial: boolean): string {
+export function fetoApresentacaoFrase(f: ObstetricaFindings["fetos"][number], inicial: boolean): string {
   const subst = inicial ? "Embrião" : "Feto";
   const apres = apresentacaoFmt(f.apresentacao) ?? (inicial ? "transversa" : "cefálica");
   const conector = inicial ? "em situação" : "em apresentação";
@@ -342,7 +342,7 @@ function fetoApresentacaoFrase(f: ObstetricaFindings["fetos"][number], inicial: 
   return `${frase}.`;
 }
 
-function biometriaLinhas(f: ObstetricaFindings["fetos"][number]): string[] {
+export function biometriaLinhas(f: ObstetricaFindings["fetos"][number]): string[] {
   const linhas = [
     `Diâmetro biparietal (DBP) de ${mm(f.dbp_mm)} mm.`,
     `Circunferência da cabeça (CC) de ${mm(f.cc_mm)} mm.`,
@@ -352,7 +352,7 @@ function biometriaLinhas(f: ObstetricaFindings["fetos"][number]): string[] {
   return linhas;
 }
 
-function pesoLinha(f: ObstetricaFindings["fetos"][number]): string {
+export function pesoLinha(f: ObstetricaFindings["fetos"][number]): string {
   const extras: string[] = [];
   if (f.peso_variacao_g !== null) extras.push(`+- ${gramas(f.peso_variacao_g)} gramas`);
   if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
@@ -360,7 +360,7 @@ function pesoLinha(f: ObstetricaFindings["fetos"][number]): string {
   return `Peso aproximado de ${gramas(f.peso_g)} gramas${sufixo}.`;
 }
 
-function placentaFrase(f: ObstetricaFindings): string | null {
+export function placentaFrase(f: ObstetricaFindings): string | null {
   const qtd = f.placenta_quantidade ?? f.numero_fetos;
   const grauTxt = grauFmt(f.placenta_grau);
   if (f.numero_fetos >= 2) {
@@ -381,7 +381,7 @@ function placentaFrase(f: ObstetricaFindings): string | null {
 }
 
 /** Linha de líquido amniótico no corpo + item de conclusão. */
-function liquido(f: ObstetricaFindings): { corpo: string; conclusao: string } {
+export function liquido(f: ObstetricaFindings): { corpo: string; conclusao: string } {
   const tipo = f.liquido_tipo ?? "normal";
   if (tipo === "mbv" && f.liquido_mbv_por_feto_cm && f.liquido_mbv_por_feto_cm.length > 0) {
     // Feto único: NUNCA rotular "(feto A)" nem "ambos os fetos" (P5 — sem
@@ -424,7 +424,7 @@ function rotuloFeto(f: ObstetricaFindings, i: number): string {
   return f.fetos[i]?.rotulo ?? String.fromCharCode(65 + i);
 }
 
-const EMPTY_FETO: ObstetricaFindings["fetos"][number] = {
+export const EMPTY_FETO: ObstetricaFindings["fetos"][number] = {
   rotulo: null,
   posicao_relativa: null,
   apresentacao: null,
@@ -659,7 +659,7 @@ export function renderObstetricaClassico(
 // "(feto A)"/"ambos os fetos" (P5). Percentil é só reproduzido (nunca cruzado
 // com a IG).
 
-const TECNICA_OBJ =
+export const TECNICA_OBJ =
   "Exame realizado com transdutor convexo multifrequencial.";
 
 /** 1 casa decimal SEMPRE (P3) — vírgula decimal. */
@@ -676,7 +676,7 @@ function g0(v: number | null): string {
 }
 
 /** Biometria objetiva (1 casa decimal) — só as 4 medidas padrão. */
-function biometriaLinhasObj(f: ObstetricaFindings["fetos"][number]): string[] {
+export function biometriaLinhasObj(f: ObstetricaFindings["fetos"][number]): string[] {
   return [
     `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`,
     `Circunferência cefálica (CC): ${mm1(f.cc_mm)} mm.`,
@@ -686,7 +686,7 @@ function biometriaLinhasObj(f: ObstetricaFindings["fetos"][number]): string[] {
 }
 
 /** Linha de peso objetiva: peso + (variação, percentil) só se ditados. */
-function pesoLinhaObj(f: ObstetricaFindings["fetos"][number]): string {
+export function pesoLinhaObj(f: ObstetricaFindings["fetos"][number]): string {
   const extras: string[] = [];
   if (f.peso_variacao_g !== null) extras.push(`+- ${g0(f.peso_variacao_g)} g`);
   if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
@@ -695,7 +695,7 @@ function pesoLinhaObj(f: ObstetricaFindings["fetos"][number]): string {
 }
 
 /** Placenta objetiva (frase enxuta). null = não descrita. */
-function placentaFraseObj(f: ObstetricaFindings): string | null {
+export function placentaFraseObj(f: ObstetricaFindings): string | null {
   const g = grauFmt(f.placenta_grau);
   const grauTxt = g ? `${g} de Grannum et al.` : null;
   if (f.numero_fetos >= 2) {

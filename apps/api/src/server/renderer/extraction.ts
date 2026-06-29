@@ -60,6 +60,11 @@ import {
   PROSTATA_SUPRAPUBICA_EXTRACTION_PROMPT,
   ProstataSuprapubicaFindingsSchema,
 } from "./categories/PROSTATA_SUPRAPUBICA";
+import {
+  DOPPLER_OBSTETRICO_JSON_SCHEMA,
+  DOPPLER_OBSTETRICO_EXTRACTION_PROMPT,
+  DopplerObstetricoFindingsSchema,
+} from "./categories/DOPPLER_OBSTETRICO";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -94,6 +99,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "VIAS_URINARIAS",
   "MUSCULOESQUELETICO_V2",
   "PROSTATA_SUPRAPUBICA",
+  "DOPPLER_OBSTETRICO",
 ]);
 
 export type RendererExtractionResult = {
@@ -265,6 +271,12 @@ export const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: PROSTATA_SUPRAPUBICA_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: PROSTATA_SUPRAPUBICA_EXTRACTION_PROMPT,
     parse: (raw) => ProstataSuprapubicaFindingsSchema.parse(raw),
+  },
+  DOPPLER_OBSTETRICO: {
+    schemaName: "DopplerObstetricoFindings",
+    jsonSchema: DOPPLER_OBSTETRICO_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: DOPPLER_OBSTETRICO_EXTRACTION_PROMPT,
+    parse: (raw) => DopplerObstetricoFindingsSchema.parse(raw),
   },
 };
 
