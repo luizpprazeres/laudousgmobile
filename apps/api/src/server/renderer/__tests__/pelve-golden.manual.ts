@@ -9,6 +9,7 @@
  */
 import {
   renderPelveFeminina,
+  mergeMenopausaPelve,
   type PelveFemininaFindings,
 } from "../categories/PELVE_FEMININA";
 
@@ -217,6 +218,28 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
   // 8 anos → pediátrica.
   const ped = renderPelveFeminina(F({ referencia_idade_anos: 8, referencia_grande_multipara: false }));
   check("referência: pediátrica (8 anos)", /paciente de 8 anos: útero até 5,0 cm³; ovários até 1,5 cm³/.test(ped), ped);
+}
+
+// ── MENOPAUSA: gatilho automático determinístico (mergeMenopausaPelve) ──
+{
+  const f = mergeMenopausaPelve(F({}), "Ultrassonografia pélvica. Paciente está na menopausa. Útero e ovários de aspecto normal.");
+  const l = renderPelveFeminina(f);
+  check("menopausa: ovário D 'poucas imagens anecoicas'", /Ovário direito medindo[^.]*poucas imagens anecoicas\./.test(l), l);
+  check("menopausa: ovário E 'poucas imagens anecoicas'", /Ovário esquerdo medindo[^.]*poucas imagens anecoicas\./.test(l), l);
+  check("menopausa: conclusão 'ambos praticamente sem folículos'", /ambos praticamente sem folículos\./.test(l), l);
+  check("menopausa: endométrio 'faixa etária da menopausa'", /espessura normal para a faixa etária da menopausa\./.test(l), l);
+}
+// ── controle: sem menopausa → frases normais (sem override) ──
+{
+  const f = mergeMenopausaPelve(F({}), "Ultrassonografia pélvica. Útero e ovários de aspecto normal.");
+  const l = renderPelveFeminina(f);
+  check("sem menopausa: ovários 'apresentando imagens anecoicas' (não 'poucas')", /apresentando imagens anecoicas\./.test(l) && !/poucas imagens anecoicas/.test(l), l);
+  check("sem menopausa: 'ambos contendo folículos'", /ambos contendo folículos\./.test(l), l);
+}
+// ── controle: 'pré-menopausa' e negação NÃO disparam ──
+{
+  check("pré-menopausa não dispara", mergeMenopausaPelve(F({}), "paciente na pré-menopausa").ovario_direito.atrofico === false);
+  check("'não está na menopausa' não dispara", mergeMenopausaPelve(F({}), "a paciente não está na menopausa").ovario_direito.atrofico === false);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

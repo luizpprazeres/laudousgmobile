@@ -35,7 +35,7 @@ import {
 } from "../renderer/categories/MAMARIA";
 import { renderPartesMoles } from "../renderer/categories/PARTES_MOLES";
 import { renderCervical } from "../renderer/categories/CERVICAL";
-import { renderPelveFeminina } from "../renderer/categories/PELVE_FEMININA";
+import { renderPelveFeminina, mergeMenopausaPelve } from "../renderer/categories/PELVE_FEMININA";
 import { renderAbdomenSuperior } from "../renderer/categories/ABDOMEN_SUPERIOR";
 import { renderViasUrinarias } from "../renderer/categories/VIAS_URINARIAS";
 import { renderProstataSuprapubica } from "../renderer/categories/PROSTATA_SUPRAPUBICA";
@@ -255,9 +255,16 @@ export async function* runRendererStream(args: {
       case "CERVICAL":
         fullText = renderCervical(fnd as Parameters<typeof renderCervical>[0], { objetivo });
         break;
-      case "PELVE_FEMININA":
-        fullText = renderPelveFeminina(fnd as Parameters<typeof renderPelveFeminina>[0], { objetivo });
+      case "PELVE_FEMININA": {
+        // Override determinístico de menopausa ("só falar menopausa" → ajustes
+        // automáticos nos ovários + endométrio). Vale p/ TA e TV.
+        const pelveFnd = mergeMenopausaPelve(
+          fnd as Parameters<typeof renderPelveFeminina>[0],
+          args.rawInput,
+        );
+        fullText = renderPelveFeminina(pelveFnd, { objetivo });
         break;
+      }
       case "ABDOMEN_SUPERIOR":
         fullText = renderAbdomenSuperior(fnd as Parameters<typeof renderAbdomenSuperior>[0], { objetivo });
         break;
