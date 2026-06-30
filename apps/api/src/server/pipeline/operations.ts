@@ -55,7 +55,13 @@ function applyReplacePhrase(
   if (!laudo.includes(from)) {
     return { laudo, applied: false, reason: "frase_nao_encontrada" };
   }
-  return { laudo: laudo.split(from).join(to), applied: true };
+  // Preserva o prefixo de numeração ("N)" / "N." / "N -") quando o `from` o inclui
+  // — senão o replace remove o número e quebra a numeração da conclusão (review
+  // dex1 ALTO). O prefixo do `from` é reaplicado ao `to`.
+  const NUM = /^(\s*\d+\s*[).\-]\s+)/;
+  const pfx = from.match(NUM);
+  const toFinal = pfx ? `${pfx[1]}${to.replace(NUM, "")}` : to;
+  return { laudo: laudo.split(from).join(toFinal), applied: true };
 }
 
 /** Acrescenta item à conclusão (1-based; dedup por conteúdo equivalente). */
@@ -98,6 +104,50 @@ function applyRemoveConclusionItem(laudo: string, match: string): OpOutcome {
   return { laudo: renderWithConclusion(parsed, kept), applied: true };
 }
 
+/**
+ * Acrescenta `text` ao FINAL da seção COMENTÁRIOS (antes da 1ª linha em branco).
+ * Fallback p/ estilo objetivo (sem COMENTÁRIOS): usa a seção TÉCNICA (review dex1).
+ */
+function applyAddComment(laudo: string, text: string): OpOutcome {
+  const lines = laudo.split("\n");
+  let i = lines.findIndex((l) => /^COMENT[ÁA]RIOS\s*:/i.test(l.trim()));
+  if (i === -1) i = lines.findIndex((l) => /^T[ÉE]CNICA\s*:/i.test(l.trim()));
+  if (i === -1) return { laudo, applied: false, reason: "sem_secao_comentarios" };
+  // Fim do bloco COMENTÁRIOS = 1ª linha em branco após o cabeçalho (separa da
+  // próxima seção); sem branco, vai ao fim do laudo.
+  let end = lines.length;
+  for (let j = i + 1; j < lines.length; j++) {
+    if ((lines[j] ?? "").trim() === "") {
+      end = j;
+      break;
+    }
+  }
+  const item = asItem(text);
+  const target = normItem(item);
+  const dup = lines.slice(i + 1, end).some((l) => normItem(l) === target);
+  if (dup) return { laudo, applied: false, reason: "ja_presente" };
+  lines.splice(end, 0, item);
+  return { laudo: lines.join("\n"), applied: true };
+}
+
+/** Acrescenta `text` como frase de ACHADO no corpo, logo antes de CONCLUSÃO/IMPRESSÃO. */
+function applyAddBodyFinding(laudo: string, text: string): OpOutcome {
+  const item = asItem(text);
+  const m = laudo.match(/^(?:CONCLUS[ÃA]O|IMPRESS[ÃA]O)\s*:/im);
+  if (!m || m.index === undefined) {
+    if (normItem(laudo).includes(normItem(item))) {
+      return { laudo, applied: false, reason: "ja_presente" };
+    }
+    return { laudo: `${laudo.trimEnd()}\n${item}`, applied: true };
+  }
+  const before = laudo.slice(0, m.index).trimEnd();
+  const after = laudo.slice(m.index);
+  if (normItem(before).includes(normItem(item))) {
+    return { laudo, applied: false, reason: "ja_presente" };
+  }
+  return { laudo: `${before}\n${item}\n\n${after}`, applied: true };
+}
+
 /** Insere `text` como nova linha antes/depois da 1ª linha que contém `anchor`. */
 function applyInsertLine(
   laudo: string,
@@ -121,6 +171,10 @@ function applyOne(laudo: string, op: ReportOperation): OpOutcome {
       return applyAddConclusionItem(laudo, op.text, op.position);
     case "remove_conclusion_item":
       return applyRemoveConclusionItem(laudo, op.match);
+    case "add_comment":
+      return applyAddComment(laudo, op.text);
+    case "add_body_finding":
+      return applyAddBodyFinding(laudo, op.text);
     case "insert_before":
       return applyInsertLine(laudo, op.anchor, op.text, "before");
     case "insert_after":

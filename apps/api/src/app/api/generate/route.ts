@@ -17,6 +17,9 @@ import {
   flagGemelarHallucination,
 } from "@/server/pipeline/dopplerOverlay";
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
+import { applyCommandInterpreter } from "@/server/pipeline/commandInterpreter";
+import { parseCommandsPregen } from "@/server/pipeline/commandStripper";
+import { applyOperations } from "@/server/pipeline/operations";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import { applyCommandGuard } from "@/server/pipeline/commandGuard";
@@ -174,6 +177,31 @@ export async function POST(req: Request) {
   // FAST-PATH: o request pode pedir explicitamente; senão usa o default do
   // servidor (env FAST_PATH_DEFAULT, "true" = ligado pra todos). Revert via env.
   const fastPath = reqInput.fast_path ?? env().FAST_PATH_DEFAULT === "true";
+  // DET-6 FASE 3 (flag COMMAND_PREGEN): separa os comandos do ditado ANTES da
+  // geração — o writer/extração recebe `genText` (sem comando) e não ecoa; os
+  // comandos seguem sendo aplicados depois sobre o raw original. OFF = genText é o
+  // próprio ditado (byte-idêntico).
+  const effectiveInput =
+    reqInput.consolidated_transcript ?? reqInput.raw_input;
+  // FONTE ÚNICA: parseCommandsPregen identifica os comandos UMA vez → `clean` p/ a
+  // geração + `ops` p/ aplicar depois (mesma régua; o executor não re-introduz o
+  // ditado cru como item de conclusão — bug mama 88543eea). typedEngine só remove
+  // comentário/replace quando há aplicador tipado ligado p/ reaplicar (dex1).
+  const pregen =
+    env().COMMAND_PREGEN === "true"
+      ? parseCommandsPregen(effectiveInput, {
+          typedEngine:
+            env().COMMAND_OPERATIONS === "true" ||
+            env().COMMAND_INTERPRETER === "true",
+        })
+      : null;
+  const genText = pregen ? pregen.clean : effectiveInput;
+  // Aplica os comandos do médico: com PREGEN, os ops da régua única; senão o
+  // caminho legado (commandGuard/commandOperations) sobre o raw original.
+  const applyDoctorCommands = (laudo: string): string =>
+    pregen
+      ? applyOperations(laudo, pregen.ops).laudo
+      : applyConfiguredCommands(laudo, effectiveInput);
   const eventSurface = surfaceFromRequest(
     req,
     reqInput.source === "watch"
@@ -481,7 +509,7 @@ export async function POST(req: Request) {
           emit({ type: "structured", ts: nowIso(), payload: findings });
         } else {
         const structured = await runStructurer({
-          rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          rawInput: genText,
           categoryHint: reqInput.category_hint,
           knownCategories: [...categoriesInfo.codes],
           signal,
@@ -760,7 +788,7 @@ export async function POST(req: Request) {
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
-            rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+            rawInput: genText,
             templateBody: rendererTemplateBody ?? "",
             signal,
             // DET-5 ONDA 2 — toggles resolvidos junto da variante (sem 2ª query).
@@ -781,10 +809,8 @@ export async function POST(req: Request) {
             categoryCode: effectiveCategory,
             categoryLabel:
               categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
-            // FAST-PATH: writer escreve direto do ditado cru (sem achados estruturados).
-            rawUserMessage: fastPath
-              ? reqInput.consolidated_transcript ?? reqInput.raw_input
-              : undefined,
+            // FAST-PATH: writer escreve direto do ditado (genText: sem comando se COMMAND_PREGEN).
+            rawUserMessage: fastPath ? genText : undefined,
             signal,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
@@ -834,7 +860,7 @@ export async function POST(req: Request) {
           writingStyleCode: styleRow.code,
           categoryCode: effectiveCategory,
           categoryLabel: categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
-          rawUserMessage: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          rawUserMessage: genText,
           signal,
           onSystemMessage: (message) => {
             auditState.systemMessageFull = message;
@@ -897,10 +923,7 @@ export async function POST(req: Request) {
       // conclusão recomendar X", "recomende Y") entrem no laudo se o LLM ignorou.
       // Roda por último — comandos entram ao final da conclusão. Ver commandGuard.
       // DET-6: a flag COMMAND_OPERATIONS roteia pelo aplicador de operações.
-      finalText = applyConfiguredCommands(
-        finalText,
-        reqInput.consolidated_transcript ?? reqInput.raw_input,
-      );
+      finalText = applyDoctorCommands(finalText);
       // CERVICAL: (3) remove narração de observação vazada ("estou vendo...") que
       // o LLM transcreveu literal em vez de interpretar; (2) sugere o nível Robbins
       // de referência anatômica inequívoca (ângulo mandíbula→IB, supraclavicular→VB),
@@ -953,9 +976,16 @@ export async function POST(req: Request) {
         // até o DET-6 tratar comandos como operações (review dex1). É
         // determinístico: não quebra a byte-stability (mesmo input → mesmo
         // comando → mesmo texto). DET-6: COMMAND_OPERATIONS roteia pelas ops.
-        finalText = applyConfiguredCommands(
+        finalText = applyDoctorCommands(finalText);
+      }
+      // DET-6 FASE 2 (flag COMMAND_INTERPRETER): interpretador de comandos por LLM
+      // — roda DEPOIS da fase 1 determinística, resolve âncora semântica + achado
+      // no corpo. Recebe o laudo (draft) como contexto. Falha graciosa (intocado).
+      if (env().COMMAND_INTERPRETER === "true") {
+        finalText = await applyCommandInterpreter(
           finalText,
           reqInput.consolidated_transcript ?? reqInput.raw_input,
+          signal,
         );
       }
       // Guard de sanitização (universal): remove artefatos de ditado/ASR que
