@@ -1,79 +1,108 @@
 /**
- * DET-6 FASE 3 — Pré-geração: SEPARA o comando do ditado ANTES do writer/extração.
+ * DET-6 FASE 3 — Pré-geração: FONTE ÚNICA de comandos (tira + executa pela MESMA
+ * régua).
  *
- * Problema (validação E2E em dados reais): o comando é processado como
- * pós-processamento, mas a extração/writer já ECOA o comando para dentro do laudo
- * ANTES do parser rodar, e o pós-processamento só ADICIONA a execução (o eco
- * upstream permanece — casos 43657c4b/89de6e68/88543eea).
+ * Problema (validação E2E): o "tirador" (strip) e o "executor" (fase 1) olhavam o
+ * ditado de formas diferentes — o executor guloso re-introduzia o comando E pedaços
+ * do ditado cru como itens de conclusão (mama 88543eea: itens-lixo 7 e 8). Strip ≠
+ * aplicação.
  *
- * Solução: gerar o draft a partir do ditado SEM os comandos (`stripCommandSpans`),
- * e aplicar os comandos (fase 1 + 2) sobre o draft LIMPO. O writer nunca vê o
- * comando → não ecoa.
+ * Solução: `parseCommandsPregen` identifica os comandos UMA vez e devolve {clean,
+ * ops}: `clean` (sem os comandos) vai para a geração; `ops` (exatamente os comandos
+ * identificados) são aplicados depois. Por construção o que foi tirado é o que é
+ * executado — o executor não "inventa" comando que o tirador não viu.
  *
- * MUITO CONSERVADOR por design (review dex1): remover conteúdo clínico é GRAVE;
- * deixar um eco é só cosmético (e o sanitizer/dedup pega o residual). Por isso:
- *  - "na conclusão X" só é comando se vier seguida de VERBO de comando (não pega
- *    "na conclusão do exame físico, paciente refere ...");
- *  - comentário exige ALVO explícito ("nos/após comentários", não "inclui
- *    comentários sobre ...");
- *  - "recomendar" solto NÃO é stripado (eco benigno → vira "Recomenda-se X" certo);
- *  - comentário/replace só são removidos quando há aplicador tipado ligado
- *    (`typedEngine`) — senão seriam lost-command (o legado só aplica conclusão).
+ * MUITO CONSERVADOR (review dex1): só comandos de marcador inequívoco. O ambíguo
+ * ("na conclusão pode colocar X" = reclassificar/achado-no-corpo) é TIRADO mas não
+ * vira op determinística — fica para a fase 2 (LLM) decidir o lugar certo.
  *
- * Flag: `COMMAND_PREGEN` (default OFF). Wirado no route antes da geração.
+ * Flag: `COMMAND_PREGEN` (default OFF).
  */
 import { normalizeAsrCommands } from "./asrNormalize";
-import { REPLACE_RE } from "./commandOperations";
+import { COMMENT_STRIP_RE, REPLACE_RE } from "./commandOperations";
+import type { ReportOperation } from "@laudousg/shared";
 
-/**
- * Diretiva de conclusão = "na conclusão" + (vírgula/dois-pontos opcional) + VERBO
- * de comando. Exigir o verbo evita stripar frase clínica ("na conclusão do exame").
- */
-const NA_CONCLUSAO_CMD_RE =
-  /\bna\s+conclus[ãa]o\s*[,;:]?\s*(?:recomend|acrescent|adicion|inclu|coloqu|escrev|ponh|pode\s+colocar|substitu)\w*[^.;\n]*/gi;
+/** "na conclusão" + VERBO de adição claro + conteúdo → add_conclusion_item. */
+const NA_CONCLUSAO_ADD_RE =
+  /\bna\s+conclus[ãa]o\s*[,;:]?\s*(recomend\w+|acrescent\w+|adicion\w+|inclu\w+|escrev\w+)\s+([^.;\n]+)/gi;
+/** "na conclusão" + colocar/substituir = AMBÍGUO → só tira (fase 2 decide). */
+const NA_CONCLUSAO_AMBIG_RE =
+  /\bna\s+conclus[ãa]o\s*[,;:]?\s*(?:pode\s+colocar|coloqu\w+|substitu\w+)[^.;\n]*/gi;
 
-/**
- * Comentário com ALVO EXPLÍCITO obrigatório (mais estrito que o COMMENT_RE de
- * extração): "acrescente/adicione/coloque/inclua nos/após/ao final dos comentários".
- */
-const COMMENT_STRIP_RE =
-  /(?:acrescent\w+|adicion\w+|coloqu\w+|inclu\w+)\s+(?:n[oa]s?|ap[óo]s(?:\s+os)?|ao\s+final\s+d[oa]s)\s+coment[áa]rios?\s*(?:,?\s*que\s+)?[:\s-]*[^.;\n]+/gi;
-
-export interface StripResult {
+export interface PregenResult {
   clean: string;
+  ops: ReportOperation[];
   stripped: string[];
 }
 
 /**
- * Remove do ditado os spans de comando de ALTA confiança, preservando 100% do
- * conteúdo clínico. `typedEngine` (COMMAND_OPERATIONS||COMMAND_INTERPRETER): só
- * quando true removemos comentário/substituição (que só o aplicador tipado
- * reaplica) — senão seriam lost-command. "na conclusão + verbo" o legado cobre,
- * então é sempre seguro stripar.
+ * Identifica os comandos de alta confiança UMA vez. Devolve o ditado SEM eles
+ * (`clean`, p/ a geração) + os `ops` a aplicar depois (mesma régua) + os spans
+ * removidos (auditoria). `typedEngine` (COMMAND_OPERATIONS||COMMAND_INTERPRETER):
+ * comentário/substituição só entram quando há aplicador tipado ligado.
  */
-export function stripCommandSpans(
+export function parseCommandsPregen(
   rawInput: string,
   opts?: { typedEngine?: boolean },
-): StripResult {
+): PregenResult {
   let clean = normalizeAsrCommands(rawInput);
+  const ops: ReportOperation[] = [];
   const stripped: string[] = [];
-  const rm = (re: RegExp): void => {
-    clean = clean.replace(new RegExp(re.source, "gi"), (m) => {
-      const t = m.trim();
+  const consume = (
+    re: RegExp,
+    makeOp: (m: string[]) => ReportOperation | null,
+  ): void => {
+    clean = clean.replace(new RegExp(re.source, "gi"), (match: string, ...rest: unknown[]) => {
+      const groups = rest.slice(0, -2) as string[]; // tira offset + string
+      const t = match.trim();
       if (t) stripped.push(t);
+      const op = makeOp([match, ...groups]);
+      if (op) ops.push(op);
       return " ";
     });
   };
-  rm(NA_CONCLUSAO_CMD_RE);
+
+  // "na conclusão, recomendar/acrescente/... X" → item de conclusão (verbo claro).
+  consume(NA_CONCLUSAO_ADD_RE, (m) => {
+    const verbo = (m[1] ?? "").toLowerCase();
+    const conteudo = (m[2] ?? "").trim();
+    if (!conteudo) return null;
+    const text = /^recomend/.test(verbo) ? `Recomenda-se ${conteudo}` : conteudo;
+    return { op: "add_conclusion_item", text };
+  });
+  // "na conclusão, pode colocar X" (ambíguo) → só tira; fase 2 decide o lugar.
+  consume(NA_CONCLUSAO_AMBIG_RE, () => null);
+
   if (opts?.typedEngine) {
-    rm(COMMENT_STRIP_RE);
-    rm(REPLACE_RE);
+    consume(COMMENT_STRIP_RE, (m) =>
+      m[1]?.trim() ? { op: "add_comment", text: m[1].trim() } : null,
+    );
+    consume(REPLACE_RE, (m) => {
+      const from = m[1]?.trim();
+      const to = m[2]?.trim();
+      if (!from || !to) return null;
+      // "no lugar DA FRASE DO X" = referência SEMÂNTICA: não dá p/ ancorar literal
+      // no draft. Garante o conteúdo Y na conclusão (add determinístico) — se a
+      // frase X existir, o médico revisa; perder o comando é pior que duplicar.
+      if (/^(?:a\s+)?frase\b/i.test(from)) return { op: "add_conclusion_item", text: to };
+      return { op: "replace_phrase", from, to };
+    });
   }
+
   clean = clean
     .replace(/[ \t]{2,}/g, " ")
     .replace(/[ \t]+([.;,])/g, "$1")
     .replace(/^[\s.,;]+/, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+  return { clean, ops, stripped };
+}
+
+/** Compat: só o texto limpo + spans (o golden e usos que não precisam dos ops). */
+export function stripCommandSpans(
+  rawInput: string,
+  opts?: { typedEngine?: boolean },
+): { clean: string; stripped: string[] } {
+  const { clean, stripped } = parseCommandsPregen(rawInput, opts);
   return { clean, stripped };
 }

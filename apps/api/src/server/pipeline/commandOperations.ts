@@ -57,6 +57,13 @@ export const REPLACE_RE =
   /no\s+lugar\s+d[eoa]\s+(.+?)\s+(?:escrev\w+|coloqu\w+|ponh\w+)[\s,:]+([^.;\n]+)/gi;
 
 /**
+ * Comentário com ALVO EXPLÍCITO obrigatório (usado pelo strip pré-geração — mais
+ * estrito que COMMENT_RE, que tem alvo opcional). Grupo 1 = conteúdo p/ COMENTÁRIOS.
+ */
+export const COMMENT_STRIP_RE =
+  /(?:acrescent\w+|adicion\w+|coloqu\w+|inclu\w+)\s+(?:n[oa]s?|ap[óo]s(?:\s+os)?|ao\s+final\s+d[oa]s)\s+coment[áa]rios?\s*(?:,?\s*que\s+)?[:\s-]*([^.;\n]+)/gi;
+
+/**
  * Extrai operações tipadas do ditado (caminho DET-6, flag COMMAND_OPERATIONS):
  * roteia para COMENTÁRIOS, gera substituição literal, dropa meta-comandos e só
  * então deriva itens de conclusão — nunca imprime o comando literal.

@@ -18,7 +18,8 @@ import {
 } from "@/server/pipeline/dopplerOverlay";
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
 import { applyCommandInterpreter } from "@/server/pipeline/commandInterpreter";
-import { stripCommandSpans } from "@/server/pipeline/commandStripper";
+import { parseCommandsPregen } from "@/server/pipeline/commandStripper";
+import { applyOperations } from "@/server/pipeline/operations";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import { applyCommandGuard } from "@/server/pipeline/commandGuard";
@@ -182,16 +183,25 @@ export async function POST(req: Request) {
   // próprio ditado (byte-idêntico).
   const effectiveInput =
     reqInput.consolidated_transcript ?? reqInput.raw_input;
-  const genText =
+  // FONTE ÚNICA: parseCommandsPregen identifica os comandos UMA vez → `clean` p/ a
+  // geração + `ops` p/ aplicar depois (mesma régua; o executor não re-introduz o
+  // ditado cru como item de conclusão — bug mama 88543eea). typedEngine só remove
+  // comentário/replace quando há aplicador tipado ligado p/ reaplicar (dex1).
+  const pregen =
     env().COMMAND_PREGEN === "true"
-      ? stripCommandSpans(effectiveInput, {
-          // Só remove comentário/replace se houver aplicador tipado ligado p/
-          // reaplicar (senão = lost-command). Review dex1 ALTO.
+      ? parseCommandsPregen(effectiveInput, {
           typedEngine:
             env().COMMAND_OPERATIONS === "true" ||
             env().COMMAND_INTERPRETER === "true",
-        }).clean
-      : effectiveInput;
+        })
+      : null;
+  const genText = pregen ? pregen.clean : effectiveInput;
+  // Aplica os comandos do médico: com PREGEN, os ops da régua única; senão o
+  // caminho legado (commandGuard/commandOperations) sobre o raw original.
+  const applyDoctorCommands = (laudo: string): string =>
+    pregen
+      ? applyOperations(laudo, pregen.ops).laudo
+      : applyConfiguredCommands(laudo, effectiveInput);
   const eventSurface = surfaceFromRequest(
     req,
     reqInput.source === "watch"
@@ -913,10 +923,7 @@ export async function POST(req: Request) {
       // conclusão recomendar X", "recomende Y") entrem no laudo se o LLM ignorou.
       // Roda por último — comandos entram ao final da conclusão. Ver commandGuard.
       // DET-6: a flag COMMAND_OPERATIONS roteia pelo aplicador de operações.
-      finalText = applyConfiguredCommands(
-        finalText,
-        reqInput.consolidated_transcript ?? reqInput.raw_input,
-      );
+      finalText = applyDoctorCommands(finalText);
       // CERVICAL: (3) remove narração de observação vazada ("estou vendo...") que
       // o LLM transcreveu literal em vez de interpretar; (2) sugere o nível Robbins
       // de referência anatômica inequívoca (ângulo mandíbula→IB, supraclavicular→VB),
@@ -969,10 +976,7 @@ export async function POST(req: Request) {
         // até o DET-6 tratar comandos como operações (review dex1). É
         // determinístico: não quebra a byte-stability (mesmo input → mesmo
         // comando → mesmo texto). DET-6: COMMAND_OPERATIONS roteia pelas ops.
-        finalText = applyConfiguredCommands(
-          finalText,
-          reqInput.consolidated_transcript ?? reqInput.raw_input,
-        );
+        finalText = applyDoctorCommands(finalText);
       }
       // DET-6 FASE 2 (flag COMMAND_INTERPRETER): interpretador de comandos por LLM
       // — roda DEPOIS da fase 1 determinística, resolve âncora semântica + achado
