@@ -315,12 +315,24 @@ const ladoFmt = (l: string) => (l === "direito" ? "direito" : "esquerdo");
  *  - polias: "polia a 2" / "polia a2" / "polia A 2" → "polia A2";
  *  - "quirodáctilo" sempre minúsculo (exceto início de frase).
  */
-export function normalizeNomenclatura(s: string): string {
+/** Correções mecânicas INEQUÍVOCAS (seguras p/ passthrough): polia A2, quirodáctilo. */
+function normalizeNomenclaturaMecanica(s: string): string {
   return s
     .replace(/\bpolias?\s+a\s*(\d)/gi, (_m, n) => `polia A${n}`)
-    .replace(/(\S\s)(Quirod[áa]ctilos?)/g, (_m, pre, w) => `${pre}${w.toLowerCase()}`)
-    // Dr. Domingos: nunca "artrose" isolada (preserva "Rizartrose", termo válido).
-    .replace(/\bartrose\b/gi, "alterações degenerativas");
+    .replace(/(\S\s)(Quirod[áa]ctilos?)/g, (_m, pre, w) => `${pre}${w.toLowerCase()}`);
+}
+
+/**
+ * Normalização de nomenclatura para TEXTO GERADO pelo renderer. Além das correções
+ * mecânicas, aplica a regra de redação da casa "artrose"→"alterações degenerativas"
+ * (Dr. Domingos; preserva "Rizartrose"). NÃO usar no passthrough — em laudo colado a
+ * escolha "artrose" é do médico (review dex1).
+ */
+export function normalizeNomenclatura(s: string): string {
+  return normalizeNomenclaturaMecanica(s).replace(
+    /\bartrose\b/gi,
+    "alterações degenerativas",
+  );
 }
 
 /**
@@ -437,12 +449,13 @@ export function isPreformattedMskReport(input: string): boolean {
 
 /**
  * Passthrough fiel: preserva o laudo colado quase byte-idêntico. Sanitização mínima
- * e SEGURA (padronização da casa, determinística): nomenclatura inequívoca (polia A2,
- * quirodáctilo, artrose→alterações degenerativas) + apara espaços em branco à direita
- * das linhas e nas pontas. NÃO reordena, NÃO regenera, NÃO mexe em quebras internas.
+ * e SEGURA: só correções mecânicas INEQUÍVOCAS (polia A2, quirodáctilo) + apara
+ * espaços em branco à direita das linhas e nas pontas. NÃO aplica "artrose"→
+ * "alterações degenerativas" (escolha do médico no colado — review dex1). NÃO
+ * reordena, NÃO regenera, NÃO mexe em quebras internas nem no conteúdo clínico.
  */
 export function mskPassthrough(input: string): string {
-  return normalizeNomenclatura(input).replace(/[ \t]+$/gm, "").trim();
+  return normalizeNomenclaturaMecanica(input).replace(/[ \t]+$/gm, "").trim();
 }
 
 // ───────────────────────── Extração (LLM) ─────────────────────────

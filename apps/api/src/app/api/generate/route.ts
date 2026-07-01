@@ -826,6 +826,7 @@ export async function POST(req: Request) {
             inputTokens?: number;
             outputTokens?: number;
             cachedInputTokens?: number;
+            passthrough?: boolean;
           }
         | undefined;
       try {
@@ -970,18 +971,21 @@ export async function POST(req: Request) {
       if (effectiveCategory === "MUSCULOESQUELETICO_V2") {
         finalText = normalizeSectionSpacing(finalText);
       }
-      } else {
+      } else if (!writerResult?.passthrough) {
         // RENDERER (DET-5): único guard que roda é o de COMANDOS do médico —
         // diretivas explícitas ("na conclusão recomendar X") precisam entrar
         // até o DET-6 tratar comandos como operações (review dex1). É
         // determinístico: não quebra a byte-stability (mesmo input → mesmo
         // comando → mesmo texto). DET-6: COMMAND_OPERATIONS roteia pelas ops.
+        // MSK passthrough NÃO entra: o texto é o laudo colado do médico — reparsear
+        // comandos dele ("Recomendar controle...") alteraria o próprio laudo (dex1).
         finalText = applyDoctorCommands(finalText);
       }
       // DET-6 FASE 2 (flag COMMAND_INTERPRETER): interpretador de comandos por LLM
       // — roda DEPOIS da fase 1 determinística, resolve âncora semântica + achado
       // no corpo. Recebe o laudo (draft) como contexto. Falha graciosa (intocado).
-      if (env().COMMAND_INTERPRETER === "true") {
+      // MSK passthrough NÃO entra: preserva o laudo colado do médico intacto (dex1).
+      if (!writerResult?.passthrough && env().COMMAND_INTERPRETER === "true") {
         finalText = await applyCommandInterpreter(
           finalText,
           reqInput.consolidated_transcript ?? reqInput.raw_input,

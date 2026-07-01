@@ -63,5 +63,17 @@ check("aceita variante ACHADOS:",
   check("passthrough apara trailing whitespace", !/ \n/.test(out) && !/\s$/.test(out), JSON.stringify(out));
 }
 
+// 8) NÃO aplica "artrose"→"alterações degenerativas" no passthrough (escolha do médico — dex1).
+{
+  const out = mskPassthrough("CONCLUSÃO:\nSinais de artrose do compartimento medial do joelho.");
+  check("passthrough preserva 'artrose' do médico", /\bartrose\b/.test(out) && !/alterações degenerativas/.test(out), out);
+}
+
+// 9) NÃO reinterpreta comandos: "Recomendar controle..." fica intacto (bypass no route — dex1).
+{
+  const txt = "CONCLUSÃO:\nRotura parcial do supraespinhal à direita.\nRecomendar controle ultrassonográfico em 6 meses.";
+  check("passthrough preserva 'Recomendar controle...' literal", mskPassthrough(txt).includes("Recomendar controle ultrassonográfico em 6 meses."), mskPassthrough(txt));
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

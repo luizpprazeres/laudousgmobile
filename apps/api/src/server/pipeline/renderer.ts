@@ -184,6 +184,9 @@ export type RendererStreamResult = {
   cachedInputTokens?: number;
   extraction: RendererExtractionResult;
   freeSlotCount: number;
+  /** MSK passthrough: o texto é o laudo do médico preservado — o route deve PULAR
+   *  guards que alteram conteúdo (applyDoctorCommands, COMMAND_INTERPRETER). */
+  passthrough?: boolean;
 };
 
 export async function* runRendererStream(args: {
@@ -227,6 +230,7 @@ export async function* runRendererStream(args: {
       cachedInputTokens: undefined,
       extraction: { findings: null, latencyMs: 0 },
       freeSlotCount: 0,
+      passthrough: true,
     };
   }
 
