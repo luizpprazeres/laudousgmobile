@@ -621,6 +621,38 @@ export function mergeMenopausaPelve(
   };
 }
 
+/**
+ * ANTI-ALUCINAÇÃO (boletim 2026-06-30, laudo 900c411c): a extração LLM às vezes
+ * DUPLICA uma coleção peri-ovariana (O-RADS 2) também como `liquido_livre`, gerando
+ * um "líquido livre na cavidade pélvica" INEXISTENTE (corpo + conclusão). Se a
+ * descrição do líquido livre repete a de um achado ovariano (≥60% dos tokens
+ * significativos), é a MESMA coleção contada 2x → suprime o líquido livre.
+ * Conservador: só suprime na sobreposição alta; líquido livre com descrição própria
+ * (ex.: "moderada quantidade no fundo de saco") é preservado.
+ */
+export function mergePelveLiquidoLivre(
+  f: PelveFemininaFindings,
+): PelveFemininaFindings {
+  if (!f.liquido_livre) return f;
+  const desc = (f.liquido_livre_descricao ?? "").toLowerCase().trim();
+  if (!desc) return f;
+  const tokens = desc.match(/\p{L}{4,}/gu) ?? [];
+  if (tokens.length === 0) return f;
+  const ovarioDescs = [
+    ...f.ovario_direito.achados,
+    ...f.ovario_esquerdo.achados,
+  ]
+    .map((a) => (a.descricao ?? "").toLowerCase())
+    .filter((d) => d.trim() !== "");
+  const duplicado = ovarioDescs.some((od) => {
+    const hits = tokens.filter((t) => od.includes(t)).length;
+    return hits / tokens.length >= 0.6;
+  });
+  return duplicado
+    ? { ...f, liquido_livre: false, liquido_livre_descricao: null }
+    : f;
+}
+
 /** Item de conclusão do endométrio. */
 function endometrioConclusao(f: PelveFemininaFindings, via: Via): string {
   if (f.endometrio_conclusao && f.endometrio_conclusao.trim() !== "") {

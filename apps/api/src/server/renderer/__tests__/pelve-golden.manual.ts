@@ -10,6 +10,7 @@
 import {
   renderPelveFeminina,
   mergeMenopausaPelve,
+  mergePelveLiquidoLivre,
   type PelveFemininaFindings,
 } from "../categories/PELVE_FEMININA";
 
@@ -240,6 +241,31 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
 {
   check("pré-menopausa não dispara", mergeMenopausaPelve(F({}), "paciente na pré-menopausa").ovario_direito.atrofico === false);
   check("'não está na menopausa' não dispara", mergeMenopausaPelve(F({}), "a paciente não está na menopausa").ovario_direito.atrofico === false);
+}
+
+// ── Anti-alucinação de líquido livre (900c411c) ──
+{
+  const desc = "pequena coleção líquida provavelmente funcional";
+  const ovComColecao = {
+    ...ovNormal([3.9, 2.8, 3.3]),
+    alterado: true,
+    achados: [{ lado: "esquerdo" as const, tipo: "funcional" as const, medidas_cm: [3.1], descricao: desc }],
+  };
+  // Coleção ovariana duplicada como líquido livre → suprime.
+  const dup = mergePelveLiquidoLivre(
+    F({ ovario_esquerdo: ovComColecao, liquido_livre: true, liquido_livre_descricao: desc }),
+  );
+  check("líquido livre = coleção ovariana duplicada → suprimido", dup.liquido_livre === false && dup.liquido_livre_descricao === null);
+
+  // Líquido livre com descrição PRÓPRIA (não ovariana) → preservado.
+  const genuino = mergePelveLiquidoLivre(
+    F({ ovario_esquerdo: ovComColecao, liquido_livre: true, liquido_livre_descricao: "moderada quantidade no fundo de saco de Douglas" }),
+  );
+  check("líquido livre genuíno (descrição própria) → preservado", genuino.liquido_livre === true);
+
+  // Sem líquido livre → intocado.
+  const sem = mergePelveLiquidoLivre(F({ liquido_livre: false }));
+  check("sem líquido livre → intocado", sem.liquido_livre === false);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -200,5 +200,25 @@ const RCF = (over: Partial<DopplerObstetricoFindings> = {}) =>
   check("merge IG: sem bloco → intocado", m.ig_semanas === 30 && m.ig_dias === 2 && m.referencia_fonte === "usg_precoce");
 }
 
+// SEGURANÇA gemelar (boletim 2026-06-30, 9cb5204c): 2+ fetos → throw → writer.
+{
+  const twinN = F({ numero_fetos: 2, fetos: [feto({}), feto({})] });
+  let threw = false;
+  try { renderDopplerObstetrico(twinN, null, { igCorrection: true }); }
+  catch { threw = true; }
+  check("gemelar (numero_fetos=2) lança → fallback writer", threw);
+
+  const twinArr = F({ numero_fetos: 1, fetos: [feto({}), feto({ apresentacao: "pélvica" })] });
+  let threw2 = false;
+  try { renderDopplerObstetrico(twinArr, null, { igCorrection: true }); }
+  catch { threw2 = true; }
+  check("gemelar (fetos.length=2) lança → fallback writer", threw2);
+
+  // Controle: feto único continua renderizando (não regride).
+  let single = "";
+  try { single = renderDopplerObstetrico(RCF(), null, { igCorrection: true }); } catch { /* */ }
+  check("feto único NÃO lança (continua no renderer)", /CONCLUSÃO:/.test(single));
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);
