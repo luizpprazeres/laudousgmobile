@@ -40,7 +40,11 @@ import { renderAbdomenSuperior } from "../renderer/categories/ABDOMEN_SUPERIOR";
 import { renderViasUrinarias } from "../renderer/categories/VIAS_URINARIAS";
 import { renderProstataSuprapubica } from "../renderer/categories/PROSTATA_SUPRAPUBICA";
 import type { ProstataSuprapubicaFindings } from "../renderer/categories/PROSTATA_SUPRAPUBICA";
-import { renderMusculoesqueletico } from "../renderer/categories/MUSCULOESQUELETICO";
+import {
+  renderMusculoesqueletico,
+  isPreformattedMskReport,
+  mskPassthrough,
+} from "../renderer/categories/MUSCULOESQUELETICO";
 import {
   renderDopplerObstetrico,
   mergeStructuredIg,
@@ -180,6 +184,9 @@ export type RendererStreamResult = {
   cachedInputTokens?: number;
   extraction: RendererExtractionResult;
   freeSlotCount: number;
+  /** MSK passthrough: o texto é o laudo do médico preservado — o route deve PULAR
+   *  guards que alteram conteúdo (applyDoctorCommands, COMMAND_INTERPRETER). */
+  passthrough?: boolean;
 };
 
 export async function* runRendererStream(args: {
@@ -200,6 +207,32 @@ export async function* runRendererStream(args: {
   onProgress?: (e: { stage: "interpretando" | "achado" | "calculando" | "montando"; label: string }) => void;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
+
+  // MSK passthrough (flag MSK_PASSTHROUGH): quando o input JÁ é um laudo formatado
+  // (colado pronto), preserva o texto do médico em vez de regerar a partir da
+  // extração — regerar perderia formatação, ordem e COMENTÁRIOS. Rota explícita
+  // ANTES da extração: uma vez pelo LLM, a garantia de preservação já se perde. (dex1)
+  if (
+    args.categoryCode === "MUSCULOESQUELETICO_V2" &&
+    env().MSK_PASSTHROUGH === "true" &&
+    isPreformattedMskReport(args.rawInput)
+  ) {
+    const fullText = mskPassthrough(args.rawInput);
+    const systemMessage = `[${RENDERER_VERSION}] MSK passthrough (input pré-formatado)`;
+    args.onSystemMessage?.(systemMessage);
+    yield fullText;
+    return {
+      fullText,
+      latencyMs: Date.now() - t0,
+      systemMessage,
+      inputTokens: undefined,
+      outputTokens: undefined,
+      cachedInputTokens: undefined,
+      extraction: { findings: null, latencyMs: 0 },
+      freeSlotCount: 0,
+      passthrough: true,
+    };
+  }
 
   // 1. Extração tipada (única chamada LLM obrigatória do caminho).
   args.onProgress?.({ stage: "interpretando", label: "Interpretando o ditado…" });

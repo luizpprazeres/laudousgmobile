@@ -315,12 +315,24 @@ const ladoFmt = (l: string) => (l === "direito" ? "direito" : "esquerdo");
  *  - polias: "polia a 2" / "polia a2" / "polia A 2" → "polia A2";
  *  - "quirodáctilo" sempre minúsculo (exceto início de frase).
  */
-export function normalizeNomenclatura(s: string): string {
+/** Correções mecânicas INEQUÍVOCAS (seguras p/ passthrough): polia A2, quirodáctilo. */
+function normalizeNomenclaturaMecanica(s: string): string {
   return s
     .replace(/\bpolias?\s+a\s*(\d)/gi, (_m, n) => `polia A${n}`)
-    .replace(/(\S\s)(Quirod[áa]ctilos?)/g, (_m, pre, w) => `${pre}${w.toLowerCase()}`)
-    // Dr. Domingos: nunca "artrose" isolada (preserva "Rizartrose", termo válido).
-    .replace(/\bartrose\b/gi, "alterações degenerativas");
+    .replace(/(\S\s)(Quirod[áa]ctilos?)/g, (_m, pre, w) => `${pre}${w.toLowerCase()}`);
+}
+
+/**
+ * Normalização de nomenclatura para TEXTO GERADO pelo renderer. Além das correções
+ * mecânicas, aplica a regra de redação da casa "artrose"→"alterações degenerativas"
+ * (Dr. Domingos; preserva "Rizartrose"). NÃO usar no passthrough — em laudo colado a
+ * escolha "artrose" é do médico (review dex1).
+ */
+export function normalizeNomenclatura(s: string): string {
+  return normalizeNomenclaturaMecanica(s).replace(
+    /\bartrose\b/gi,
+    "alterações degenerativas",
+  );
 }
 
 /**
@@ -413,6 +425,37 @@ export function renderMusculoesqueletico(
   findings: MusculoesqueleticoFindings,
 ): string {
   return findings.laudos.map(renderLaudo).join("\n\n");
+}
+
+// ───────────── Passthrough (laudo MSK pré-formatado colado) ─────────────
+
+/**
+ * Detecta quando o input JÁ é um laudo MSK completo (colado pronto — ex.: feito em
+ * outra IA). Nesse caso o renderer NÃO deve regerar: perderia formatação, ordem,
+ * quebras e o COMENTÁRIOS do médico (doutrina MSK: "preservar/padronizar, não
+ * regerar"). Conservador: exige TODOS os marcadores estruturais de um laudo completo
+ * (título ULTRASSONOGRAFIA + COMENTÁRIOS + ASPECTOS/ACHADOS + CONCLUSÃO). Ditado curto
+ * (só-diagnóstico) não casa → segue no renderer + biblioteca canônica. (review dex1)
+ */
+export function isPreformattedMskReport(input: string): boolean {
+  const t = input.toUpperCase();
+  return (
+    /\bULTRASSONOGRAFIA\b/.test(t) &&
+    /\bCOMENT[ÁA]RIOS\s*:/.test(t) &&
+    /(OS SEGUINTES ASPECTOS FORAM OBSERVADOS\s*:|\bACHADOS\s*:)/.test(t) &&
+    /\bCONCLUS[ÃA]O\s*:/.test(t)
+  );
+}
+
+/**
+ * Passthrough fiel: preserva o laudo colado quase byte-idêntico. Sanitização mínima
+ * e SEGURA: só correções mecânicas INEQUÍVOCAS (polia A2, quirodáctilo) + apara
+ * espaços em branco à direita das linhas e nas pontas. NÃO aplica "artrose"→
+ * "alterações degenerativas" (escolha do médico no colado — review dex1). NÃO
+ * reordena, NÃO regenera, NÃO mexe em quebras internas nem no conteúdo clínico.
+ */
+export function mskPassthrough(input: string): string {
+  return normalizeNomenclaturaMecanica(input).replace(/[ \t]+$/gm, "").trim();
 }
 
 // ───────────────────────── Extração (LLM) ─────────────────────────

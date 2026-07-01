@@ -68,6 +68,12 @@ const ServerEnvSchema = z.object({
   // da extração (pipeline/asrClinical.ts) — evita eco cru/perda de dado. OFF =
   // ditado intocado (byte-idêntico). Default OFF.
   ASR_CLINICAL: z.string().default("false"),
+  // Auditoria 2026-07-01: quando "true", o renderer MSK detecta laudo JÁ formatado
+  // (colado pronto: título + COMENTÁRIOS + ASPECTOS/ACHADOS + CONCLUSÃO) e faz
+  // PASSTHROUGH fiel (preserva o texto do médico, só padroniza nomenclatura) em vez
+  // de regerar a partir da extração. Ditado curto (só-diagnóstico) segue no renderer
+  // + biblioteca canônica. OFF = sempre regenera (comportamento atual). Default OFF.
+  MSK_PASSTHROUGH: z.string().default("false"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =
