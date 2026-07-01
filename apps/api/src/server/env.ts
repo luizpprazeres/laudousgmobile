@@ -63,6 +63,11 @@ const ServerEnvSchema = z.object({
   // (não ecoa); os comandos são aplicados depois (fase 1/2) sobre o draft limpo.
   // Resolve o eco upstream que o pós-processamento sozinho não removia. Default OFF.
   COMMAND_PREGEN: z.string().default("false"),
+  // Boletim 2026-06-30: quando "true", normaliza GARBLE de ASR clínico inequívoco
+  // ("estímulo"→istmo, "ecoeca"→anecoica, "miolétrico"→miométrio) no ditado ANTES
+  // da extração (pipeline/asrClinical.ts) — evita eco cru/perda de dado. OFF =
+  // ditado intocado (byte-idêntico). Default OFF.
+  ASR_CLINICAL: z.string().default("false"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =

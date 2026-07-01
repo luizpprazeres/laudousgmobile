@@ -1,4 +1,5 @@
 import { env } from "../env";
+import { normalizeAsrClinical } from "../pipeline/asrClinical";
 import { openai } from "../ai/openai";
 import {
   ABDOMEN_TOTAL_FINDINGS_JSON_SCHEMA,
@@ -321,6 +322,12 @@ export async function runRendererExtraction(args: {
   }
   const t0 = Date.now();
   const e = env();
+  // Boletim 2026-06-30: normaliza garble de ASR clínico inequívoco ANTES da
+  // extração (flag ASR_CLINICAL) — o LLM não ecoa/perde o dado. OFF = intocado.
+  const rawInput =
+    e.ASR_CLINICAL === "true"
+      ? normalizeAsrClinical(args.rawInput)
+      : args.rawInput;
   const base = {
     model: e.OPENAI_MODEL_STRUCTURER,
     temperature: 0.0,
@@ -335,7 +342,7 @@ export async function runRendererExtraction(args: {
     },
     messages: [
       { role: "system" as const, content: extractor.prompt },
-      { role: "user" as const, content: `Ditado do médico:\n${args.rawInput}` },
+      { role: "user" as const, content: `Ditado do médico:\n${rawInput}` },
     ],
   };
 
