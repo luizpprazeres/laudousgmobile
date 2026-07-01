@@ -13,9 +13,12 @@
  *
  * Flag: `ASR_CLINICAL` (default OFF).
  */
-const CLINICAL_GARBLE: ReadonlyArray<readonly [RegExp, string]> = [
-  // "istmo" tireoidiano transcrito como "estímulo" (nunca há "estímulo" num US).
-  [/\best[íi]mulos?\b/gi, "istmo"],
+
+/**
+ * Garbles GLOBAIS: strings que NÃO existem no vocabulário PT (não-palavras), então
+ * podem ser normalizadas em qualquer categoria sem risco de falso-positivo.
+ */
+const CLINICAL_GARBLE_GLOBAL: ReadonlyArray<readonly [RegExp, string]> = [
   // "anecoica" quebrada: "na ecoeca" / "anecoeca" / "ecoeca" → anecoica.
   [/\bn[ao]\s+ecoec[ao]\b/gi, "anecoica"],
   [/\b(?:an?)?ecoec[ao]\b/gi, "anecoica"],
@@ -24,9 +27,32 @@ const CLINICAL_GARBLE: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bmio\s+el[ée]tric[oa]\b/gi, "miométrio"],
 ];
 
-/** Substitui garbles clínicos inequívocos por seus termos corretos. */
-export function normalizeAsrClinical(text: string): string {
+/**
+ * Garbles ESCOPADOS por categoria: "estímulo" é palavra PT legítima ("estímulo
+ * doloroso") e só deve virar "istmo" no contexto tireoidiano — jamais há
+ * "estímulo" num US de tireoide. Restringir por categoria evita falso-positivo
+ * fora de TIREOIDE (review dex1, 2026-07-01).
+ */
+const CLINICAL_GARBLE_BY_CATEGORY: Readonly<
+  Record<string, ReadonlyArray<readonly [RegExp, string]>>
+> = {
+  TIREOIDE: [
+    // "istmo" tireoidiano transcrito como "estímulo".
+    [/\best[íi]mulos?\b/gi, "istmo"],
+  ],
+};
+
+/**
+ * Substitui garbles clínicos inequívocos por seus termos corretos.
+ * `categoryCode` habilita regras escopadas por categoria (ex.: estímulo→istmo só
+ * em TIREOIDE). Sem categoria, aplica apenas os garbles globais (não-palavras).
+ */
+export function normalizeAsrClinical(text: string, categoryCode?: string): string {
   let out = text;
-  for (const [re, sub] of CLINICAL_GARBLE) out = out.replace(re, sub);
+  for (const [re, sub] of CLINICAL_GARBLE_GLOBAL) out = out.replace(re, sub);
+  const scoped = categoryCode
+    ? CLINICAL_GARBLE_BY_CATEGORY[categoryCode]
+    : undefined;
+  if (scoped) for (const [re, sub] of scoped) out = out.replace(re, sub);
   return out;
 }

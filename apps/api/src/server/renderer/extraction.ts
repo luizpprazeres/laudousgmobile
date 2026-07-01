@@ -326,7 +326,7 @@ export async function runRendererExtraction(args: {
   // extração (flag ASR_CLINICAL) — o LLM não ecoa/perde o dado. OFF = intocado.
   const rawInput =
     e.ASR_CLINICAL === "true"
-      ? normalizeAsrClinical(args.rawInput)
+      ? normalizeAsrClinical(args.rawInput, args.categoryCode)
       : args.rawInput;
   const base = {
     model: e.OPENAI_MODEL_STRUCTURER,
