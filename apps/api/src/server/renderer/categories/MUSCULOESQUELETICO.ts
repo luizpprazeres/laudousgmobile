@@ -415,6 +415,36 @@ export function renderMusculoesqueletico(
   return findings.laudos.map(renderLaudo).join("\n\n");
 }
 
+// ───────────── Passthrough (laudo MSK pré-formatado colado) ─────────────
+
+/**
+ * Detecta quando o input JÁ é um laudo MSK completo (colado pronto — ex.: feito em
+ * outra IA). Nesse caso o renderer NÃO deve regerar: perderia formatação, ordem,
+ * quebras e o COMENTÁRIOS do médico (doutrina MSK: "preservar/padronizar, não
+ * regerar"). Conservador: exige TODOS os marcadores estruturais de um laudo completo
+ * (título ULTRASSONOGRAFIA + COMENTÁRIOS + ASPECTOS/ACHADOS + CONCLUSÃO). Ditado curto
+ * (só-diagnóstico) não casa → segue no renderer + biblioteca canônica. (review dex1)
+ */
+export function isPreformattedMskReport(input: string): boolean {
+  const t = input.toUpperCase();
+  return (
+    /\bULTRASSONOGRAFIA\b/.test(t) &&
+    /\bCOMENT[ÁA]RIOS\s*:/.test(t) &&
+    /(OS SEGUINTES ASPECTOS FORAM OBSERVADOS\s*:|\bACHADOS\s*:)/.test(t) &&
+    /\bCONCLUS[ÃA]O\s*:/.test(t)
+  );
+}
+
+/**
+ * Passthrough fiel: preserva o laudo colado quase byte-idêntico. Sanitização mínima
+ * e SEGURA (padronização da casa, determinística): nomenclatura inequívoca (polia A2,
+ * quirodáctilo, artrose→alterações degenerativas) + apara espaços em branco à direita
+ * das linhas e nas pontas. NÃO reordena, NÃO regenera, NÃO mexe em quebras internas.
+ */
+export function mskPassthrough(input: string): string {
+  return normalizeNomenclatura(input).replace(/[ \t]+$/gm, "").trim();
+}
+
 // ───────────────────────── Extração (LLM) ─────────────────────────
 
 export const MUSCULOESQUELETICO_JSON_SCHEMA = {
