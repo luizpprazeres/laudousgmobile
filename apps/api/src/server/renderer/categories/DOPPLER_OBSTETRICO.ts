@@ -478,6 +478,14 @@ export function renderDopplerObstetrico(
       "DOPPLER_OBSTETRICO: gestação inicial ou sem vitalidade fora do escopo do renderer determinístico (v1) → fallback writer",
     );
   }
+  // SEGURANÇA CRÍTICA (boletim 2026-06-30, laudo 9cb5204c): o renderer v1 é FETO
+  // ÚNICO — usa feto0() e descartaria silenciosamente o 2º feto + seus Dopplers
+  // (AU/ACM/DV) numa gestação gemelar. Gemelar → fallback writer (preserva os dois).
+  if ((f.numero_fetos ?? 1) >= 2 || f.fetos.length >= 2) {
+    throw new Error(
+      "DOPPLER_OBSTETRICO: gestação gemelar (2+ fetos) fora do escopo do renderer determinístico (v1) → fallback writer",
+    );
+  }
   const igc = opts?.igCorrection ?? false;
   return opts?.objetivo ? renderObjetivo(f, igc) : renderClassico(f, igc);
 }
