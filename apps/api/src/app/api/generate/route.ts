@@ -992,15 +992,21 @@ export async function POST(req: Request) {
           signal,
         );
       }
-      // Guard de sanitização (universal): remove artefatos de ditado/ASR que
-      // vazaram para o texto clínico — "vírgula" falada, "Você vai escrever ...",
-      // "Item dos ovários:", despedidas. Preserva conteúdo + placeholders ____.
-      // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
-      finalText = sanitizeDictationArtifacts(finalText);
-      // Sanity de medidas: sinaliza [REVISAR] em valores fisiologicamente
-      // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
-      // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
-      finalText = flagImplausibleMeasures(finalText);
+      // MSK passthrough: o texto é o laudo colado do médico — pular também os
+      // mutadores universais finais (sanitizeDictationArtifacts pode mexer em
+      // espaço/"vírgula"/despedida; flagImplausibleMeasures pode inserir [REVISAR]).
+      // Preserva o laudo intacto (review dex1).
+      if (!writerResult?.passthrough) {
+        // Guard de sanitização (universal): remove artefatos de ditado/ASR que
+        // vazaram para o texto clínico — "vírgula" falada, "Você vai escrever ...",
+        // "Item dos ovários:", despedidas. Preserva conteúdo + placeholders ____.
+        // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
+        finalText = sanitizeDictationArtifacts(finalText);
+        // Sanity de medidas: sinaliza [REVISAR] em valores fisiologicamente
+        // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
+        // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
+        finalText = flagImplausibleMeasures(finalText);
+      }
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
