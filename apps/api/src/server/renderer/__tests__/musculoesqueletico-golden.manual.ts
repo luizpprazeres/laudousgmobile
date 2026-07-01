@@ -163,13 +163,28 @@ const alt = (
   check("adversarial: NÃO usa a canônica genérica", !/grácil, sartório e semitendíneo/.test(corpo), corpo);
 }
 
-// 12) Achado FORA da biblioteca (achado_tipo desconhecido) + sem morfologia → fallback (não quebra).
+// 12) Achado FORA da biblioteca ("outro") + sem morfologia → frase NEUTRA (não ecoa dx).
 {
   const l = renderMusculoesqueletico(F([{
     segmento: "joelho", lado: "direito",
     alteracoes: [alt("partes_moles", "Lesão inespecífica no subcutâneo à direita.", { achado_tipo: "outro", descricao_livre: null })],
   }]));
-  check("fallback: renderiza sem quebrar", /CONCLUSÃO:\nLesão inespecífica no subcutâneo à direita\.$/.test(l), l);
+  const corpo = l.split("OBSERVADOS:")[1]?.split("CONCLUSÃO")[0] ?? "";
+  check("outro sem morfologia: corpo usa frase neutra", /Alteração ecográfica na topografia avaliada, detalhada na conclusão\./.test(corpo), corpo);
+  check("outro sem morfologia: corpo NÃO ecoa o diagnóstico", !/Lesão inespecífica/.test(corpo), corpo);
+  check("outro sem morfologia: conclusão mantém o diagnóstico", /CONCLUSÃO:\nLesão inespecífica no subcutâneo à direita\.$/.test(l), l);
+}
+
+// 13) GUARD (dex1): slug INCOMPATÍVEL com a estrutura → NÃO injeta a morfologia errada.
+{
+  const l = renderMusculoesqueletico(F([{
+    segmento: "joelho", lado: "direito",
+    alteracoes: [alt("pata_de_ganso", "Tendinopatia da pata de ganso à direita.", { achado_tipo: "tendinopatia_patelar", descricao_livre: null })],
+  }]));
+  const corpo = l.split("OBSERVADOS:")[1]?.split("CONCLUSÃO")[0] ?? "";
+  check("guard: NÃO injeta morfologia do patelar na linha da pata de ganso", !/polo inferior da patela/.test(corpo), corpo);
+  check("guard: usa frase neutra p/ slug incompatível", /Alteração ecográfica na topografia avaliada/.test(corpo), corpo);
+  check("guard: conclusão intacta (do LLM)", /CONCLUSÃO:\nTendinopatia da pata de ganso à direita\.$/.test(l), l);
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);
