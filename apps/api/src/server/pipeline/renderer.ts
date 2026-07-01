@@ -35,7 +35,7 @@ import {
 } from "../renderer/categories/MAMARIA";
 import { renderPartesMoles } from "../renderer/categories/PARTES_MOLES";
 import { renderCervical } from "../renderer/categories/CERVICAL";
-import { renderPelveFeminina, mergeMenopausaPelve } from "../renderer/categories/PELVE_FEMININA";
+import { renderPelveFeminina, mergeMenopausaPelve, mergePelveLiquidoLivre } from "../renderer/categories/PELVE_FEMININA";
 import { renderAbdomenSuperior } from "../renderer/categories/ABDOMEN_SUPERIOR";
 import { renderViasUrinarias } from "../renderer/categories/VIAS_URINARIAS";
 import { renderProstataSuprapubica } from "../renderer/categories/PROSTATA_SUPRAPUBICA";
@@ -258,9 +258,13 @@ export async function* runRendererStream(args: {
       case "PELVE_FEMININA": {
         // Override determinístico de menopausa ("só falar menopausa" → ajustes
         // automáticos nos ovários + endométrio). Vale p/ TA e TV.
-        const pelveFnd = mergeMenopausaPelve(
-          fnd as Parameters<typeof renderPelveFeminina>[0],
-          args.rawInput,
+        // Menopausa (override determinístico) + anti-alucinação de líquido livre
+        // (coleção ovariana duplicada como líquido livre — laudo 900c411c).
+        const pelveFnd = mergePelveLiquidoLivre(
+          mergeMenopausaPelve(
+            fnd as Parameters<typeof renderPelveFeminina>[0],
+            args.rawInput,
+          ),
         );
         fullText = renderPelveFeminina(pelveFnd, { objetivo });
         break;
