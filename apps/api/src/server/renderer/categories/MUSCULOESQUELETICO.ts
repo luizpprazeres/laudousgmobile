@@ -12,6 +12,13 @@
  * Garante por construção o que o writer não entregava de forma consistente:
  * cobertura completa, corpo≠conclusão, segmento normal descrito no corpo,
  * nomenclatura e espaçamento.
+ *
+ * BIBLIOTECA DE MORFOLOGIA CANÔNICA (2026-07-01): em MSK o médico MUITO comumente
+ * dita SÓ o diagnóstico ("tendinopatia da pata de ganso", "fasciite plantar") sem
+ * descrever a morfologia. Antes, o LLM ecoava o diagnóstico no CORPO (defeito de
+ * raiz — corpo≠conclusão violado no conteúdo). Agora, quando o médico não descreve
+ * a morfologia (`descricao_livre` = null), o código injeta a descrição ECOGRÁFICA
+ * canônica do achado (`ACHADOS_CANONICOS`). Quando descreve, preserva a redação.
  */
 import { z } from "zod";
 
@@ -30,11 +37,16 @@ export const SEGMENTOS = [
 export type Segmento = (typeof SEGMENTOS)[number];
 
 export const MusculoesqueleticoAlteracaoSchema = z.object({
-  /** Chave da estrutura do roteiro afetada (ver ROTEIRO). Se não casar com o
-   *  roteiro, a alteração entra como linha adicional no corpo. */
+  /** Chave da estrutura do roteiro afetada (ver ROTEIRO). Define a POSIÇÃO da
+   *  linha no corpo. Se não casar com o roteiro, entra como linha adicional. */
   estrutura: z.string(),
-  /** Descrição morfológica para o CORPO (preservar a redação do médico). */
-  descricao_corpo: z.string(),
+  /** Slug do achado na biblioteca de morfologia canônica (ACHADOS_CANONICOS).
+   *  Quando o médico dita SÓ o diagnóstico (descricao_livre = null), o código usa
+   *  a descrição canônica deste achado no corpo. Use "outro" se não houver. */
+  achado_tipo: z.string(),
+  /** Morfologia DITADA pelo médico para o CORPO (preservar a redação). `null`
+   *  quando ele ditou só o diagnóstico — aí o corpo vem de ACHADOS_CANONICOS. */
+  descricao_livre: z.string().nullable(),
   /** Diagnóstico sintético para a CONCLUSÃO. */
   diagnostico_conclusao: z.string(),
 });
@@ -51,6 +63,109 @@ export const MusculoesqueleticoFindingsSchema = z.object({
 export type MusculoesqueleticoFindings = z.infer<
   typeof MusculoesqueleticoFindingsSchema
 >;
+
+type Alteracao = MusculoesqueleticoFindings["laudos"][number]["alteracoes"][number];
+
+// ───────────── Biblioteca de morfologia canônica (diagnóstico → corpo) ─────────────
+
+type AchadoCanonico = {
+  /** Descrição ECOGRÁFICA para o CORPO (measurement-free — lição TIREOIDE: nunca
+   *  inventar medida/"____"). */
+  corpo: string;
+  /** Diagnóstico base para a CONCLUSÃO (sem lateralidade; fallback se o LLM não
+   *  fornecer `diagnostico_conclusao`). */
+  conclusao: string;
+};
+
+/**
+ * Semente curada (~18 achados MSK mais ditados). Cresce por telemetria de
+ * `achado_tipo` desconhecido. Curadoria revisada pelo Dr. Domingos/Dr. Luiz.
+ * NUNCA colocar medida inventada aqui (só o que é morfologia qualitativa).
+ */
+export const ACHADOS_CANONICOS: Readonly<Record<string, AchadoCanonico>> = {
+  // Joelho
+  tendinopatia_pata_de_ganso: {
+    corpo: "Tendões da pata de ganso (grácil, sartório e semitendíneo) com espessamento e redução difusa da ecogenicidade, com perda do padrão fibrilar, junto à inserção na face medial da tíbia proximal.",
+    conclusao: "Tendinopatia da pata de ganso",
+  },
+  bursite_anserina: {
+    corpo: "Distensão da bursa anserina, com conteúdo líquido, junto à inserção da pata de ganso.",
+    conclusao: "Bursite anserina",
+  },
+  tendinopatia_patelar: {
+    corpo: "Tendão patelar com espessamento e áreas de redução da ecogenicidade, com perda do padrão fibrilar, mais evidente na sua origem no polo inferior da patela.",
+    conclusao: "Tendinopatia patelar",
+  },
+  tendinopatia_quadricipital: {
+    corpo: "Tendão quadricipital com espessamento e heterogeneidade ecotextural, com perda do padrão fibrilar, junto à inserção no polo superior da patela.",
+    conclusao: "Tendinopatia quadricipital",
+  },
+  cisto_de_baker: {
+    corpo: "Formação cística anecoica na fossa poplítea, de contornos definidos, comunicante com a articulação (cisto de Baker).",
+    conclusao: "Cisto de Baker",
+  },
+  // Pé / tornozelo
+  fasciite_plantar: {
+    corpo: "Fáscia plantar espessada na sua origem calcânea (acima de 4 mm), com redução da ecogenicidade e perda do padrão fibrilar habitual.",
+    conclusao: "Fasciite plantar",
+  },
+  neuroma_de_morton: {
+    corpo: "Formação nodular hipoecoica no espaço intermetatarsal, compatível com neuroma de Morton.",
+    conclusao: "Neuroma de Morton",
+  },
+  tendinopatia_aquileu: {
+    corpo: "Tendão calcâneo (de Aquiles) com espessamento fusiforme e áreas de redução da ecogenicidade, com perda do padrão fibrilar.",
+    conclusao: "Tendinopatia do tendão calcâneo (Aquiles)",
+  },
+  // Ombro
+  tendinopatia_supraespinhal: {
+    corpo: "Tendão supraespinhal com espessamento e heterogeneidade ecotextural, sem solução de continuidade evidente.",
+    conclusao: "Tendinopatia do supraespinhal",
+  },
+  ruptura_parcial_supraespinhal: {
+    corpo: "Tendão supraespinhal com afilamento e foco de solução de continuidade das fibras, compatível com ruptura parcial.",
+    conclusao: "Ruptura parcial do supraespinhal",
+  },
+  bursite_subacromial: {
+    corpo: "Distensão e espessamento da bursa subacromial-subdeltoidea, com conteúdo líquido.",
+    conclusao: "Bursite subacromial-subdeltoidea",
+  },
+  tendinopatia_cabo_longo_biceps: {
+    corpo: "Cabo longo do bíceps com espessamento e halo líquido na bainha, tópico, sem luxação.",
+    conclusao: "Tendinopatia do cabo longo do bíceps",
+  },
+  // Cotovelo
+  epicondilite_lateral: {
+    corpo: "Tendão extensor comum (epicôndilo lateral) com espessamento e redução da ecogenicidade, com perda do padrão fibrilar.",
+    conclusao: "Epicondilite lateral",
+  },
+  epicondilite_medial: {
+    corpo: "Tendão flexor comum (epicôndilo medial) com espessamento e redução da ecogenicidade, com perda do padrão fibrilar.",
+    conclusao: "Epicondilite medial",
+  },
+  // Punho / mão
+  tenossinovite_de_quervain: {
+    corpo: "Espessamento sinovial e halo hipoecoico ao redor dos tendões do primeiro compartimento extensor (abdutor longo e extensor curto do polegar).",
+    conclusao: "Tenossinovite de De Quervain",
+  },
+  dedo_em_gatilho: {
+    corpo: "Espessamento da polia A1 com tenossinovite dos tendões flexores, com atrito à manobra dinâmica.",
+    conclusao: "Dedo em gatilho (tenossinovite da polia A1)",
+  },
+  cisto_sinovial: {
+    corpo: "Formação cística anecoica de contornos definidos, compatível com cisto sinovial (gânglio).",
+    conclusao: "Cisto sinovial (gânglio)",
+  },
+  sindrome_tunel_carpo: {
+    corpo: "Nervo mediano com aumento da área de secção transversa na entrada do túnel do carpo.",
+    conclusao: "Síndrome do túnel do carpo",
+  },
+  // Quadril
+  bursite_trocanterica: {
+    corpo: "Distensão da bursa trocantérica, com conteúdo líquido.",
+    conclusao: "Bursite trocantérica",
+  },
+};
 
 // ───────────────────────── Roteiro determinístico ─────────────────────────
 
@@ -175,16 +290,39 @@ export function normalizeNomenclatura(s: string): string {
     .replace(/\bartrose\b/gi, "alterações degenerativas");
 }
 
+/**
+ * Descrição do CORPO para uma alteração:
+ *  1. morfologia DITADA pelo médico (`descricao_livre`) → preserva a redação;
+ *  2. senão, morfologia CANÔNICA do achado (`ACHADOS_CANONICOS[achado_tipo]`) —
+ *     evita ecoar o diagnóstico no corpo quando o médico dita só-diagnóstico;
+ *  3. fallback (achado fora da biblioteca e sem morfologia): usa o diagnóstico
+ *     como último recurso (comportamento anterior) — cobrir via biblioteca.
+ */
+function corpoDaAlteracao(a: Alteracao): string {
+  const livre = a.descricao_livre?.trim();
+  if (livre) return normalizeNomenclatura(livre);
+  const canon = ACHADOS_CANONICOS[a.achado_tipo];
+  if (canon) return canon.corpo;
+  return normalizeNomenclatura(a.diagnostico_conclusao);
+}
+
+/** Diagnóstico da CONCLUSÃO: o do LLM, ou o canônico como fallback. */
+function conclusaoDaAlteracao(a: Alteracao): string {
+  const diag = a.diagnostico_conclusao?.trim();
+  if (diag) return normalizeNomenclatura(diag);
+  return ACHADOS_CANONICOS[a.achado_tipo]?.conclusao ?? "";
+}
+
 function renderLaudo(laudo: MusculoesqueleticoFindings["laudos"][number]): string {
   const rot = ROTEIRO[laudo.segmento];
   const lado = ladoFmt(laudo.lado);
   const titulo = `ULTRASSONOGRAFIA ${rot.titulo} ${lado.toUpperCase()}`;
 
   // Indexa alterações por chave de estrutura.
-  const porChave = new Map<string, string>(); // chave -> descricao_corpo
+  const porChave = new Map<string, string>(); // chave -> descricao do corpo
   const extras: string[] = []; // alterações sem chave no roteiro
   for (const a of laudo.alteracoes) {
-    const desc = normalizeNomenclatura(a.descricao_corpo);
+    const desc = corpoDaAlteracao(a);
     if (rot.estruturas.some((e) => e.chave === a.estrutura)) porChave.set(a.estrutura, desc);
     else extras.push(desc);
   }
@@ -201,10 +339,10 @@ function renderLaudo(laudo: MusculoesqueleticoFindings["laudos"][number]): strin
   if (laudo.alteracoes.length === 0) {
     conclusao = rot.fechamentoNormal(lado);
   } else if (laudo.alteracoes.length === 1) {
-    conclusao = normalizeNomenclatura(laudo.alteracoes[0]!.diagnostico_conclusao);
+    conclusao = conclusaoDaAlteracao(laudo.alteracoes[0]!);
   } else {
     conclusao = laudo.alteracoes
-      .map((a, i) => `${i + 1}) ${normalizeNomenclatura(a.diagnostico_conclusao)}`)
+      .map((a, i) => `${i + 1}) ${conclusaoDaAlteracao(a)}`)
       .join("\n");
   }
 
@@ -249,10 +387,11 @@ export const MUSCULOESQUELETICO_JSON_SCHEMA = {
             items: {
               type: "object",
               additionalProperties: false,
-              required: ["estrutura", "descricao_corpo", "diagnostico_conclusao"],
+              required: ["estrutura", "achado_tipo", "descricao_livre", "diagnostico_conclusao"],
               properties: {
                 estrutura: { type: "string" },
-                descricao_corpo: { type: "string" },
+                achado_tipo: { type: "string" },
+                descricao_livre: { type: ["string", "null"] },
                 diagnostico_conclusao: { type: "string" },
               },
             },
@@ -267,11 +406,13 @@ const CHAVES_POR_SEGMENTO = SEGMENTOS.filter(temRoteiro)
   .map((s) => `  - ${s}: ${ROTEIRO[s].estruturas.map((e) => e.chave).join(", ")}`)
   .join("\n");
 
+const ACHADOS_TIPOS = Object.keys(ACHADOS_CANONICOS).join(", ");
+
 export const MUSCULOESQUELETICO_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO do LaudoUSG para ULTRASSONOGRAFIA MUSCULOESQUELÉTICA.
 Organize o ditado no JSON tipado. NÃO redija o laudo nem as estruturas normais — o
-CÓDIGO monta a técnica, as estruturas normais do roteiro, o fechamento e o formato.
-Sua única função é separar os exames em laudos por segmento/lado e EXTRAIR as
-ALTERAÇÕES (só o que está anormal), preservando a redação do médico.
+CÓDIGO monta a técnica, as estruturas normais do roteiro, o fechamento, o formato e a
+DESCRIÇÃO CANÔNICA do corpo quando o médico não a dita.
+Sua função é separar os exames em laudos por segmento/lado e EXTRAIR as ALTERAÇÕES.
 
 REGRAS:
 1. Um item em "laudos" para CADA segmento+lado examinado (é comum vários no mesmo
@@ -284,18 +425,36 @@ REGRAS:
    - estrutura: a CHAVE da estrutura do roteiro (lista abaixo). Use a chave exata.
      Se a estrutura alterada não estiver no roteiro do segmento, use uma chave
      descritiva curta (entrará como linha extra no corpo).
-   - descricao_corpo: a descrição MORFOLÓGICA para o corpo (o que foi visto),
-     preservando os termos/medidas do médico. NUNCA o diagnóstico ("Tendinopatia").
-   - diagnostico_conclusao: o diagnóstico sintético para a conclusão (ex.:
-     "Tendinopatia do tendão supraespinhal à direita.").
+   - achado_tipo: o SLUG do achado na biblioteca canônica (lista abaixo) que melhor
+     corresponde ao diagnóstico. Use "outro" se nenhum corresponder.
+   - descricao_livre: a morfologia que o médico DESCREVEU (o que foi visto: espessura,
+     ecogenicidade, medidas, características), preservando os termos dele. Se o médico
+     ditou APENAS o diagnóstico (ex.: "tendinopatia da pata de ganso") SEM descrever a
+     morfologia, use null — o código preenche a descrição canônica. NUNCA copie o
+     diagnóstico para descricao_livre.
+   - diagnostico_conclusao: o diagnóstico sintético para a conclusão, com lateralidade
+     (ex.: "Tendinopatia da pata de ganso à direita.").
 4. NÃO invente alterações. NÃO converta normalidade em alteração. Preserve medidas,
    lateralidade e nomenclatura (polias A1, A2, A3; "quirodáctilo").
 5. NUNCA use a palavra "artrose". Para alterações degenerativas da articulação
-   acromioclavicular: corpo = "irregularidade cortical e osteófitos marginais";
-   conclusão = "Alterações degenerativas da articulação acromioclavicular".
+   acromioclavicular: descricao_livre = "irregularidade cortical e osteófitos
+   marginais"; conclusão = "Alterações degenerativas da articulação acromioclavicular".
+
+EXEMPLOS (ditado só-diagnóstico → descricao_livre = null):
+- "joelho direito com tendinopatia da pata de ganso" →
+  { segmento: "joelho", lado: "direito", alteracoes: [{ estrutura: "pata_de_ganso",
+    achado_tipo: "tendinopatia_pata_de_ganso", descricao_livre: null,
+    diagnostico_conclusao: "Tendinopatia da pata de ganso à direita." }] }
+- "pé esquerdo com fasciite plantar" →
+  { segmento: "pe", lado: "esquerdo", alteracoes: [{ estrutura: "fascia_plantar",
+    achado_tipo: "fasciite_plantar", descricao_livre: null,
+    diagnostico_conclusao: "Fasciite plantar à esquerda." }] }
 
 CHAVES DE ESTRUTURA POR SEGMENTO (use a chave exata em "estrutura"):
-${CHAVES_POR_SEGMENTO}`;
+${CHAVES_POR_SEGMENTO}
+
+SLUGS DE ACHADO CANÔNICO (use em "achado_tipo", ou "outro"):
+${ACHADOS_TIPOS}`;
 
 export function parseMusculoesqueletico(raw: unknown): MusculoesqueleticoFindings {
   return MusculoesqueleticoFindingsSchema.parse(raw);
