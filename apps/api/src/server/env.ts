@@ -82,6 +82,13 @@ const ServerEnvSchema = z.object({
   // Modelo do MSK writer_guarded. gpt-4.1 (full) acerta as convenções da casa com
   // os few-shots (e não é mais lento que o mini: ~3s). Configurável.
   MSK_WRITER_MODEL: z.string().default("gpt-4.1"),
+  // Arquitetura 2 modos (2026-07-02): quando "true", PARTES_MOLES (categoria ABERTA,
+  // lesão de qualquer tipo/topografia) é escrita pelo LLM (writer_guarded) — mesma
+  // receita do MSK (prompt base + roteiro da casa + few-shots dos laudos assinados +
+  // fact-audit). Piloto: pipeline/partesMolesWriter.ts. OFF = renderer atual. Default OFF.
+  PARTES_MOLES_WRITER: z.string().default("false"),
+  // Modelo do PARTES_MOLES writer_guarded (mesma justificativa do MSK_WRITER_MODEL).
+  PARTES_MOLES_WRITER_MODEL: z.string().default("gpt-4.1"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =

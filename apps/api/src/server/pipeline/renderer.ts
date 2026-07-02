@@ -46,6 +46,7 @@ import {
   mskPassthrough,
 } from "../renderer/categories/MUSCULOESQUELETICO";
 import { runMskWriterStream } from "./mskWriter";
+import { runPartesMolesWriterStream } from "./partesMolesWriter";
 import {
   renderDopplerObstetrico,
   mergeStructuredIg,
@@ -255,6 +256,40 @@ export async function* runRendererStream(args: {
       ? "audit=ok"
       : `audit=FAIL(medidas:${a.missingMeasures.join("/") || "-"};lados:${a.missingSides.join("/") || "-"};extra:${a.extraStructures.join("/") || "-"})`;
     const systemMessage = `[${RENDERER_VERSION}] MSK writer_guarded (${res.model}, ttft=${res.ttftMs}ms, ${res.outputTokens ?? "?"}tok, ${auditMsg})`;
+    args.onSystemMessage?.(systemMessage);
+    return {
+      fullText: res.fullText,
+      latencyMs: res.latencyMs,
+      systemMessage,
+      inputTokens: undefined,
+      outputTokens: res.outputTokens,
+      cachedInputTokens: undefined,
+      extraction: { findings: null, latencyMs: 0 },
+      freeSlotCount: 0,
+      passthrough: true,
+    };
+  }
+
+  // PARTES_MOLES writer_guarded (flag PARTES_MOLES_WRITER, 2ª categoria aberta —
+  // mesma receita do MSK): lesão de qualquer tipo/topografia → o LLM ESCREVE o laudo
+  // (entende garble/comandos/correções), guiado pelo roteiro da casa. Rota explícita
+  // ANTES da extração (não usa o schema rígido). passthrough=true: o texto do writer
+  // é final; o route pula os mutadores de conteúdo (o writer já tratou comandos).
+  if (
+    args.categoryCode === "PARTES_MOLES" &&
+    env().PARTES_MOLES_WRITER === "true"
+  ) {
+    args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
+    const res = yield* runPartesMolesWriterStream({
+      rawInput: args.rawInput,
+      signal: args.signal,
+    });
+    // Observabilidade (mesma linha do MSK): modelo, TTFT, audit pass/fail + fatos.
+    const a = res.audit;
+    const auditMsg = a.ok
+      ? "audit=ok"
+      : `audit=FAIL(medidas:${a.missingMeasures.join("/") || "-"};lados:${a.missingSides.join("/") || "-"};extra:${a.extraStructures.join("/") || "-"};placeholder:${a.placeholder ? "sim" : "-"};doppler:${a.dopplerInventado ? "inventado" : "-"})`;
+    const systemMessage = `[${RENDERER_VERSION}] PARTES_MOLES writer_guarded (${res.model}, ttft=${res.ttftMs}ms, ${res.outputTokens ?? "?"}tok, ${auditMsg})`;
     args.onSystemMessage?.(systemMessage);
     return {
       fullText: res.fullText,
