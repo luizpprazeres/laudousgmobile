@@ -32,8 +32,15 @@ const RE_FOCO = /focos?\s+ecog[êe]nicos?/i;
 const RE_PUNTIFORME = /hiperec[oó]ic[ao]s?\s+puntiformes?/i;
 const RE_VENTRICULO = /ventr[íi]culo/i;
 const RE_MEDIDA = /(\d+(?:[.,]\d+)?)\s*(cm|cent[íi]metros?|mm|mil[íi]metros?)\b/i;
+// Negação na sentença (review dex1): "sem foco ecogênico", "ausência de golf ball",
+// "não há foco no ventrículo" NÃO podem gerar achado positivo + recomendação (seria
+// inversão clínica). Guard conservador — qualquer marca de negação inibe o gatilho.
+// Fronteiras: início/espaço/vírgula antes; espaço/fim depois (evita \b, que não
+// casa após vogal acentuada como o "á" de "há").
+const RE_NEGACAO = /(?:^|[\s,])(sem|ausênci[ao]|aus[êe]nte|n[ãa]o\s+h[áa]|n[ãa]o\s+se|n[ãa]o\s+foram?|n[ãa]o\s+identific\w*|descart\w*|exclu\w*)(?=\s|$)/i;
 
 function sentencaDispara(s: string): boolean {
+  if (RE_NEGACAO.test(s)) return false;
   if (RE_GOLF.test(s)) return true;
   if (RE_FOCO_INTRACARDIACO.test(s)) return true;
   if (RE_FOCO.test(s) && RE_VENTRICULO.test(s)) return true;

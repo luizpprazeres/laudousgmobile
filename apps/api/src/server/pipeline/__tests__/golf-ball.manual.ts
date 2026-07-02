@@ -60,6 +60,19 @@ check("dispara: hiperecoica puntiforme + ventrículo + medida mm", (() => {
 check("NÃO dispara: foco ecogênico renal (sem contexto cardíaco)", detectGolfBall("foco ecogênico renal à direita") === null);
 check("NÃO dispara: ditado sem o achado", detectGolfBall("DBP 54, CC 200, líquido normal") === null);
 
+// Negação (review dex1) — jamais gerar achado positivo a partir de negação.
+check("NÃO dispara: 'sem foco ecogênico intracardíaco'", detectGolfBall("Coração sem foco ecogênico intracardíaco.") === null);
+check("NÃO dispara: 'ausência de golf ball'", detectGolfBall("ausência de golf ball") === null);
+check("NÃO dispara: 'não há foco ecogênico no ventrículo'", detectGolfBall("não há foco ecogênico no ventrículo esquerdo") === null);
+check("dispara mesmo com negação em OUTRA sentença", (() => {
+  const g = detectGolfBall("Sem derrame pericárdico. Golf ball no ventrículo esquerdo.");
+  return g !== null && g.lado === "esquerdo";
+})());
+check("stripGolfBallEcho preserva sentença NEGATIVA", (() => {
+  const t = stripGolfBallEcho("Sem foco ecogênico intracardíaco. Pelve renal distendida.");
+  return /sem foco ecog/i.test(t) && /Pelve renal distendida/.test(t);
+})());
+
 check("lado em outra sentença (fallback pro ditado inteiro)", (() => {
   const g = detectGolfBall("Golf ball. Presente no ventrículo esquerdo.");
   return g !== null && g.lado === "esquerdo";
@@ -144,6 +157,23 @@ check("OBST sem detecção: laudo intocado", (() => {
   const laudo = renderObstetrica(obsBase, null, {});
   return !/Golf Ball|hiperecoica puntiforme/.test(laudo);
 })());
+
+// Gemelar (review dex1): o wire passa golfBall=null (feto único apenas); o achado
+// ditado é preservado literal em achados_adicionais (nunca dropado).
+{
+  const gem = {
+    ...obsBase,
+    numero_fetos: 2,
+    fetos: [],
+    achados_adicionais: "Foco ecogênico intracardíaco no ventrículo esquerdo do feto B.",
+  } as unknown as ObstetricaFindings;
+  // Simula o wire: gemelar → golfBall=null (sem canonização, sem strip).
+  const laudo = renderObstetrica(gem, null, { golfBall: null });
+  check("OBST gemelar: achado preservado literal (não dropado, não canonizado)",
+    laudo.includes("Foco ecogênico intracardíaco no ventrículo esquerdo do feto B.") &&
+    !/\(Golf Ball\)/.test(laudo),
+    laudo.slice(-300));
+}
 
 // ───────────── Integração: DOPPLER_OBSTETRICO clássico ─────────────
 
