@@ -60,6 +60,7 @@ export const CATEGORIES_SEED: { code: string; label: string }[] = [
   { code: "OBSTETRICA", label: "Obstétrica" },
   { code: "DOPPLER_OBSTETRICO", label: "Doppler Obstétrico" },
   { code: "MORFOLOGICO", label: "Morfológico" },
+  { code: "CERVICOMETRIA", label: "Cervicometria (colo uterino)" },
 
   // Abdome
   { code: "ABDOMEN_TOTAL", label: "Abdome Total" },

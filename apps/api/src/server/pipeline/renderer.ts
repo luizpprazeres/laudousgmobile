@@ -53,6 +53,10 @@ import {
   type DopplerObstetricoFindings,
 } from "../renderer/categories/DOPPLER_OBSTETRICO";
 import { detectGolfBall } from "../renderer/categories/golfBall";
+import {
+  renderCervicometria,
+  type CervicometriaFindings,
+} from "../renderer/categories/CERVICOMETRIA";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -333,7 +337,8 @@ export async function* runRendererStream(args: {
     args.categoryCode === "VIAS_URINARIAS" ||
     args.categoryCode === "MUSCULOESQUELETICO_V2" ||
     args.categoryCode === "PROSTATA_SUPRAPUBICA" ||
-    args.categoryCode === "DOPPLER_OBSTETRICO"
+    args.categoryCode === "DOPPLER_OBSTETRICO" ||
+    args.categoryCode === "CERVICOMETRIA"
   ) {
     const objetivo = isEstiloObjetivo(args.writingStyleId);
     // Épico IG determinística (Domingos) — atrás de flag (default OFF).
@@ -415,6 +420,11 @@ export async function* runRendererStream(args: {
         fullText = renderDopplerObstetrico(dfnd, null, { objetivo, igCorrection, golfBall: golfBallSingle(dfnd.numero_fetos) });
         break;
       }
+      case "CERVICOMETRIA":
+        // Cervicometria (ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL p/ medida do colo).
+        // Exame simples e 100% determinístico. Sem variante objetivo (clássico só).
+        fullText = renderCervicometria(fnd as CervicometriaFindings);
+        break;
       default:
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });
         break;

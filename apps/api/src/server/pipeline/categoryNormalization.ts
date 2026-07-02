@@ -59,6 +59,8 @@ const FAMILY_RULES: Array<{ test: RegExp; code: string; needsDoppler?: boolean }
     { test: /pr[óo]stata/i, code: "PROSTATA_SUPRAPUBICA" },
     { test: /escrot|test[íi]cul/i, code: "ESCROTAL" },
     { test: /\bmam[áa]ri|\bmama\b/i, code: "MAMARIA" },
+    // Cervicometria (medida do colo) ANTES de PELVE — senão "transvaginal" a rouba.
+    { test: /cervicometr|colo\s*uterin|medida\s+d[oa]\s+colo|comprimento\s+d[oa]\s+colo/i, code: "CERVICOMETRIA" },
     { test: /pelve|pelvic|transvaginal|endovaginal/i, code: "PELVE_FEMININA" },
     { test: /tire[óo]id/i, code: "TIREOIDE" },
     { test: /ocular|globo_ocular|[óo]rbit/i, code: "OCULAR" },
