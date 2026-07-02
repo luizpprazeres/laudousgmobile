@@ -30,8 +30,9 @@ export type MskAudit = {
   extraStructures: string[];
 };
 
-/** Extrai os NÚMEROS de medidas (com unidade) de um texto. */
-function extractMeasureNumbers(text: string): string[] {
+/** Extrai os NÚMEROS de medidas (com unidade) de um texto. (Exportado: reusado
+ *  pelo partesMolesWriterAudit — mesma auditoria de fato, outra categoria.) */
+export function extractMeasureNumbers(text: string): string[] {
   const re =
     /(\d+(?:[.,]\d+)?)\s*(?:cm³|mm²|cm|mm|cent[íi]metros?(?:\s+c[úu]bicos?)?|mil[íi]metros?(?:\s+quadrados?)?)/gi;
   const out: string[] = [];
@@ -40,8 +41,9 @@ function extractMeasureNumbers(text: string): string[] {
   return out;
 }
 
-/** Número presente no laudo em qualquer grafia decimal (2.4 / 2,4). */
-function numberInLaudo(num: string, laudo: string): boolean {
+/** Número presente no laudo em qualquer grafia decimal (2.4 / 2,4). (Exportado:
+ *  reusado pelo partesMolesWriterAudit.) */
+export function numberInLaudo(num: string, laudo: string): boolean {
   return laudo.includes(num.replace(",", ".")) || laudo.includes(num.replace(".", ","));
 }
 
