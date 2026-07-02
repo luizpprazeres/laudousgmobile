@@ -18,7 +18,7 @@ const semPico = F({ com_doppler: true }) as TireoideFindings;
 // Doppler ligado, só o direito ditado.
 const soDireito = F({
   com_doppler: true,
-  pico_arteria_direita: "polo superior",
+  pico_arteria_direita: "superior",
   pico_sistolico_direito_cms: 22,
 }) as TireoideFindings;
 
@@ -41,7 +41,7 @@ for (const objetivo of [false, true]) {
   // ON com um lado ditado: mantém o ditado, omite só o null.
   {
     const l = renderTireoide(soDireito, null, { objetivo, omitPicoNull: true });
-    check(`${tag} ON: preserva o pico ditado (direito 22)`, /Pico sistólico da artéria tireoidiana polo superior direita de 22(,0)? cm\/s\./.test(l), l);
+    check(`${tag} ON: preserva o pico ditado (direito 22)`, /Pico sistólico da artéria tireoidiana superior direita de 22(,0)? cm\/s\./.test(l), l);
     check(`${tag} ON: omite o pico esquerdo null`, !/esquerda de ____/.test(l) && !/esquerda de.*cm\/s/.test(l), l);
     check(`${tag} ON: só 1 linha de pico`, (l.match(/Pico sistólico/g) ?? []).length === 1, l);
   }

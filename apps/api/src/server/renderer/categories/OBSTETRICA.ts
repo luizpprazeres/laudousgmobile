@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { applyGolfBall, stripGolfBallEcho, type GolfBall } from "./golfBall";
 import { buildIgInput, computeIg, type IgRawFields } from "../ig";
 
 /**
@@ -519,12 +520,26 @@ function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string
 export function renderObstetrica(
   f: ObstetricaFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null },
 ): string {
   const igc = opts?.igCorrection ?? false;
   const flx = opts?.flexivel ?? false;
-  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx);
-  return renderObstetricaClassico(f, igc, flx);
+  const g = opts?.golfBall ?? null;
+  // Golf ball (flag): o snippet canônico substitui o eco cru da extração — remove
+  // dos achados adicionais/itens livres as sentenças que mencionam o foco (dedup).
+  if (g) {
+    f = {
+      ...f,
+      achados_adicionais: f.achados_adicionais
+        ? stripGolfBallEcho(f.achados_adicionais) || null
+        : f.achados_adicionais,
+      itens_conclusao_livres: (f.itens_conclusao_livres ?? []).filter(
+        (it) => stripGolfBallEcho(it) === it.trim(),
+      ),
+    };
+  }
+  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx, g);
+  return renderObstetricaClassico(f, igc, flx, g);
 }
 
 /** Monta o laudo obstétrico (estrutura por construção). */
@@ -532,6 +547,7 @@ export function renderObstetricaClassico(
   f: ObstetricaFindings,
   igCorrection = false,
   flexivel = false,
+  golfBall: GolfBall | null = null,
 ): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
@@ -629,6 +645,10 @@ export function renderObstetricaClassico(
     conclusao.push(ig.conclusaoClassico);
     if (!f.gestacao_inicial) conclusao.push(liq.conclusao);
   }
+
+  // Golf ball (flag): corpo na posição canônica (bloco de anatomia) + item de
+  // conclusão com a recomendação de eco fetal (~28s). Determinístico.
+  if (golfBall) applyGolfBall(aspectos, conclusao, golfBall);
 
   // Achados adicionais (texto do médico) — inserido literal antes da conclusão,
   // sem LLM e sem invenção. Vai para o corpo; o médico revisa a conclusão.
@@ -731,6 +751,7 @@ export function renderObstetricaObjetivo(
   f: ObstetricaFindings,
   igCorrection = false,
   flexivel = false,
+  golfBall: GolfBall | null = null,
 ): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar
@@ -842,6 +863,9 @@ export function renderObstetricaObjetivo(
       impressao.push(liq.conclusao);
     }
   }
+
+  // Golf ball (flag): linha nos achados + item na impressão (recomendação eco fetal).
+  if (golfBall) applyGolfBall(achados, impressao, golfBall);
 
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push(`\n${f.achados_adicionais.trim()}`);

@@ -94,6 +94,12 @@ const ServerEnvSchema = z.object({
   PARTES_MOLES_WRITER: z.string().default("false"),
   // Modelo do PARTES_MOLES writer_guarded (mesma justificativa do MSK_WRITER_MODEL).
   PARTES_MOLES_WRITER_MODEL: z.string().default("gpt-4.1"),
+  // Auditoria 2026-07-01 gap #1 (🔴 falha de seguimento): quando "true", detecta
+  // golf ball / foco ecogênico intracardíaco no ditado (OBSTETRICA/MORFOLOGICO/
+  // DOPPLER_OBSTETRICO) e injeta as frases canônicas da casa (corpo + item de
+  // conclusão + recomendação de eco fetal ~28s). Determinístico, sem LLM
+  // (renderer/categories/golfBall.ts). OFF = comportamento atual. Default OFF.
+  GOLF_BALL_SNIPPET: z.string().default("false"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =

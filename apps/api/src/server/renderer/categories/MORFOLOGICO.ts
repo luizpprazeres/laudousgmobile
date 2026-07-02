@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { buildIgInput, computeIg, type IgRawFields, type IgComputed } from "../ig";
+import {
+  applyGolfBallMorfologico,
+  stripGolfBallEcho,
+  type GolfBall,
+} from "./golfBall";
 
 /**
  * DET-5 — Renderer de MORFOLOGICO (1º, 2º e 3º trimestre).
@@ -218,7 +223,7 @@ function grauPlacenta(s: string | null): string | null {
 const COMENTARIOS_1T =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
-function render1t(f: MorfologicoFindings, igCorrection = false): string {
+function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null): string {
   const ig = igResultMorfo(f, igCorrection);
   const aspectos: string[] = [
     "Feto único de situação variável.",
@@ -255,11 +260,12 @@ function render1t(f: MorfologicoFindings, igCorrection = false): string {
   if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
     conclusao.push("Dopplervelocimetria normal das artérias uterinas.");
   }
+  if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
   return assemble("ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE", f, aspectos, conclusao, ig.fraseReferencia);
 }
 
-function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false): string {
+function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null): string {
   const ig = igResultMorfo(f, igCorrection);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
@@ -320,6 +326,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     "Líquido amniótico de quantidade normal.",
     "Morfologia fetal sem evidência de alteração detectável pelo método.",
   ];
+  if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
   return assemble(titulo, f, aspectos, conclusao, ig.fraseReferencia);
 }
@@ -365,12 +372,18 @@ function assemble(
 export function renderMorfologico(
   f: MorfologicoFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null },
 ): string {
   const igc = opts?.igCorrection ?? false;
-  if (opts?.objetivo) return renderMorfologicoObjetivo(f, igc);
-  if (f.trimestre === "1t") return render1t(f, igc);
-  return render2t3t(f, f.trimestre === "3t", igc);
+  const g = opts?.golfBall ?? null;
+  // Golf ball (flag): o snippet canônico substitui o eco cru da extração — remove
+  // do achados_adicionais as sentenças que mencionam o foco (dedup determinístico).
+  if (g && f.achados_adicionais) {
+    f = { ...f, achados_adicionais: stripGolfBallEcho(f.achados_adicionais) || null };
+  }
+  if (opts?.objetivo) return renderMorfologicoObjetivo(f, igc, g);
+  if (f.trimestre === "1t") return render1t(f, igc, g);
+  return render2t3t(f, f.trimestre === "3t", igc, g);
 }
 
 // ===========================================================================
@@ -446,7 +459,7 @@ function genitaliaFmt(g: string | null): string {
   return g.trim();
 }
 
-function render1tObj(f: MorfologicoFindings, igCorrection = false): string {
+function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null): string {
   const ig = igResultMorfo(f, igCorrection);
   // Doppler das uterinas = presença de IP. Só então o título leva "COM DOPPLER
   // COLORIDO" e entram as frases de IP + a conclusão de dopplervelocimetria.
@@ -491,6 +504,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false): string {
   if (comDoppler) {
     impressao.push("Dopplervelocimetria normal das artérias uterinas.");
   }
+  if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
   return assembleObj(
     comDoppler
@@ -503,7 +517,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false): string {
   );
 }
 
-function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false): string {
+function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null): string {
   const ig = igResultMorfo(f, igCorrection);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
@@ -556,6 +570,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     "Líquido amniótico de quantidade normal.",
     "Morfologia fetal sem evidência de alteração detectável pelo método.",
   ];
+  if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
   return assembleObj(titulo, f, achados, impressao, ig.fraseReferencia);
 }
@@ -563,7 +578,8 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
 export function renderMorfologicoObjetivo(
   f: MorfologicoFindings,
   igCorrection = false,
+  golfBall: GolfBall | null = null,
 ): string {
-  if (f.trimestre === "1t") return render1tObj(f, igCorrection);
-  return render2t3tObj(f, f.trimestre === "3t", igCorrection);
+  if (f.trimestre === "1t") return render1tObj(f, igCorrection, golfBall);
+  return render2t3tObj(f, f.trimestre === "3t", igCorrection, golfBall);
 }
