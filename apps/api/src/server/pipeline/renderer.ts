@@ -387,7 +387,11 @@ export async function* runRendererStream(args: {
             args.rawInput,
           ),
         );
-        fullText = renderPelveFeminina(pelveFnd, { objetivo });
+        fullText = renderPelveFeminina(pelveFnd, {
+          objetivo,
+          // Gap #6 (flag PELVE_CONCL_DEDUP): remove itens de conclusão idênticos.
+          dedup: env().PELVE_CONCL_DEDUP === "true",
+        });
         break;
       }
       case "ABDOMEN_SUPERIOR":

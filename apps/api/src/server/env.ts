@@ -100,6 +100,11 @@ const ServerEnvSchema = z.object({
   // conclusão + recomendação de eco fetal ~28s). Determinístico, sem LLM
   // (renderer/categories/golfBall.ts). OFF = comportamento atual. Default OFF.
   GOLF_BALL_SNIPPET: z.string().default("false"),
+  // Auditoria 2026-07-01 gap #6 (🟡): quando "true", a PELVE_FEMININA deduplica itens
+  // de conclusão IDÊNTICOS (a extração às vezes emite o mesmo achado 2x — ex.: também
+  // em achados_adicionais). Conservador: só duplicata literal (preserva lateralidade/
+  // topografia). OFF = comportamento atual. Default OFF.
+  PELVE_CONCL_DEDUP: z.string().default("false"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =

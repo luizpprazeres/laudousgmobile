@@ -807,6 +807,37 @@ function ovariosConclusao(f: PelveFemininaFindings): string[] {
 // Render
 // ---------------------------------------------------------------------------
 
+/**
+ * Dedup CONSERVADOR de itens de conclusão (auditoria gap #6, flag PELVE_CONCL_DEDUP).
+ * A extração às vezes emite o MESMO item de conclusão duas vezes (ex.: achado
+ * ovariano que também escapa em achados_adicionais). Remove só duplicatas de FATO,
+ * preservando a ordem (mantém a 1ª ocorrência).
+ *
+ * SEGURANÇA (por que NÃO uso "≥70% de similaridade" como a auditoria sugeriu):
+ * itens de laudo diferem clinicamente por lateralidade/topografia ("... à direita"
+ * vs "... à esquerda", "às 03 horas" vs "às 09 horas", quadrantes) — fundir por
+ * similaridade alta apagaria um achado real. Aqui a chave de comparação PRESERVA
+ * esses discriminantes; só some item cuja forma normalizada é IDÊNTICA à de um
+ * anterior. Duplicata literal é seguro remover; qualquer diferença de lado/topografia
+ * mantém os dois.
+ */
+function dedupeConclusao(itens: string[]): string[] {
+  const vistos = new Set<string>();
+  const out: string[] = [];
+  for (const it of itens) {
+    const chave = it
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .replace(/[.;]+\s*$/, "")
+      .trim();
+    if (chave === "" || !vistos.has(chave)) {
+      if (chave !== "") vistos.add(chave);
+      out.push(it);
+    }
+  }
+  return out;
+}
+
 /** Numeração contínua: item único sem número; 2+ → "1) ", "2) "... */
 function numerar(itens: string[]): string {
   if (itens.length === 1) return itens[0] ?? "";
@@ -819,17 +850,18 @@ function numerar(itens: string[]): string {
  */
 export function renderPelveFeminina(
   f: PelveFemininaFindings,
-  opts?: { objetivo?: boolean },
+  opts?: { objetivo?: boolean; dedup?: boolean },
 ): string {
-  if (opts?.objetivo) return renderPelveFemininaObjetivo(f);
-  return renderPelveFemininaClassico(f);
+  const dedup = opts?.dedup ?? false;
+  if (opts?.objetivo) return renderPelveFemininaObjetivo(f, dedup);
+  return renderPelveFemininaClassico(f, dedup);
 }
 
 /**
  * Monta o laudo de PELVE FEMININA por construção (estilo CLÁSSICO).
  * Estrutura/cabeçalhos/numeração garantidos; silêncio → normalidade.
  */
-function renderPelveFemininaClassico(f: PelveFemininaFindings): string {
+function renderPelveFemininaClassico(f: PelveFemininaFindings, dedup = false): string {
   const via = resolveVia(f.via);
   const titulo = tituloDaVia(via);
   const comentarios = comentariosDaVia(via);
@@ -1003,7 +1035,7 @@ function renderPelveFemininaClassico(f: PelveFemininaFindings): string {
     aspectos.join("\n"),
     "",
     "CONCLUSÃO:",
-    numerar(conclusao),
+    numerar(dedup ? dedupeConclusao(conclusao) : conclusao),
     rodapes.length > 0 ? `\n${rodapes.join("\n\n")}` : "",
   ].join("\n");
 
@@ -1062,7 +1094,7 @@ function ovarioAchadoObjetivo(lado: "direito" | "esquerdo", ov: PelveOvario): st
  * Render do estilo OBJETIVO: TÉCNICA / ACHADOS / IMPRESSÃO.
  * Reusa extração + cálculos + lógica de achados do clássico (conclusão).
  */
-function renderPelveFemininaObjetivo(f: PelveFemininaFindings): string {
+function renderPelveFemininaObjetivo(f: PelveFemininaFindings, dedup = false): string {
   const via = resolveVia(f.via);
   const titulo = tituloDaVia(via);
   const tecnica = tecnicaObjetivo(via);
@@ -1225,10 +1257,11 @@ function renderPelveFemininaObjetivo(f: PelveFemininaFindings): string {
     impressao.push(f.achados_adicionais.trim());
   }
 
+  const impressaoFinal = dedup ? dedupeConclusao(impressao) : impressao;
   const impressaoTxt =
-    impressao.length === 1
-      ? (impressao[0] as string)
-      : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
+    impressaoFinal.length === 1
+      ? (impressaoFinal[0] as string)
+      : impressaoFinal.map((it, i) => `${i + 1}. ${it}`).join("\n");
 
   // ----- Rodapés (mantém FIGO + tabela quando aplicável) -----
   const rodapes: string[] = [];
