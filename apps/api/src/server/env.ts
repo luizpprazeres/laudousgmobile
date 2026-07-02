@@ -105,6 +105,13 @@ const ServerEnvSchema = z.object({
   // categoria por heurística = risco de mascarar malignidade). (A) achado sólido sem
   // categoria; (B) BI-RADS >= 4 sobre nódulo morfologicamente benigno. Default OFF.
   MAMARIA_BIRADS_GUARD: z.string().default("false"),
+  // Arquitetura 2 modos (pedido Luiz 02/07): quando "true", PELVE_FEMININA (TA/TV
+  // têm muitos detalhes que mudam → renderer gera frase repetida/mal posicionada/
+  // alucinada) é escrita pelo LLM (writer_guarded). Mesma receita do MSK/PARTES_MOLES.
+  // Piloto: pipeline/pelveWriter.ts. OFF = renderer determinístico atual. Default OFF.
+  PELVE_WRITER: z.string().default("false"),
+  // Modelo do PELVE writer_guarded (mesma justificativa do MSK_WRITER_MODEL).
+  PELVE_WRITER_MODEL: z.string().default("gpt-4.1"),
   // Auditoria 2026-07-01 gap #6 (🟡): quando "true", a PELVE_FEMININA deduplica itens
   // de conclusão IDÊNTICOS (a extração às vezes emite o mesmo achado 2x — ex.: também
   // em achados_adicionais). Conservador: só duplicata literal (preserva lateralidade/
