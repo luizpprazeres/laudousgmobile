@@ -59,6 +59,8 @@ const FAMILY_RULES: Array<{ test: RegExp; code: string; needsDoppler?: boolean }
     { test: /pr[óo]stata/i, code: "PROSTATA_SUPRAPUBICA" },
     { test: /escrot|test[íi]cul/i, code: "ESCROTAL" },
     { test: /\bmam[áa]ri|\bmama\b/i, code: "MAMARIA" },
+    // Cervicometria (medida do colo) ANTES de PELVE — senão "transvaginal" a rouba.
+    { test: /cervicometr|colo\s*uterin|medida\s+d[oa]\s+colo|comprimento\s+d[oa]\s+colo/i, code: "CERVICOMETRIA" },
     { test: /pelve|pelvic|transvaginal|endovaginal/i, code: "PELVE_FEMININA" },
     { test: /tire[óo]id/i, code: "TIREOIDE" },
     { test: /ocular|globo_ocular|[óo]rbit/i, code: "OCULAR" },
@@ -71,6 +73,37 @@ const FAMILY_RULES: Array<{ test: RegExp; code: string; needsDoppler?: boolean }
     { test: /abdom/i, code: "ABDOMEN_TOTAL_DOPPLER", needsDoppler: true },
     { test: /abdom/i, code: "ABDOMEN_TOTAL" },
   ];
+
+/**
+ * Override de roteamento p/ CERVICOMETRIA a partir do TEXTO BRUTO (review dex1).
+ * A normalização normal retorna cedo quando o structurer já emitiu um código
+ * válido (ex.: PELVE_FEMININA) — então nunca olharia "medida do colo" no raw. Este
+ * guard roda ANTES da normalização e força CERVICOMETRIA quando o ditado NOMEIA o
+ * exame de cervicometria, análogo ao guard morfológico.
+ *
+ * Preciso: exige a INTENÇÃO de medir o colo ("cervicometria", "medida/comprimento
+ * do colo") — NÃO dispara por "colo uterino" solto (aparece em pelve geral).
+ * GATED: só sobrescreve se CERVICOMETRIA ∈ knownCodes (dormente até o row no DB).
+ */
+const CERVICOMETRIA_EXAM_RE =
+  /\bcervicometr\w*|\bmedid[ao]s?\s+d[oae]?\s*(?:comprimento\s+d[oae]?\s*)?colo\b|\bcomprimento\s+d[oae]?\s*colo\b|\bmedir\s+o\s+colo\b|medida\s+do\s+colo\s+uterin/i;
+
+export function resolveCervicometriaCategory(
+  detectedCategory: string,
+  rawInput: string,
+  knownCodes: Set<string>,
+): { category: string; overridden: boolean } {
+  if (!knownCodes.has("CERVICOMETRIA")) {
+    return { category: detectedCategory, overridden: false };
+  }
+  if (CERVICOMETRIA_EXAM_RE.test(rawInput)) {
+    return {
+      category: "CERVICOMETRIA",
+      overridden: detectedCategory !== "CERVICOMETRIA",
+    };
+  }
+  return { category: detectedCategory, overridden: false };
+}
 
 /**
  * Devolve um category_code garantidamente normalizado. Se não conseguir mapear

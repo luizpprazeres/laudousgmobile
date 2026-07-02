@@ -8,7 +8,7 @@ import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
 import { loadDeterministicBundle } from "@/server/pipeline/bundleLoader";
 import { resolveMorfologicoCategory } from "@/server/pipeline/morfologicoRouteSelection";
-import { normalizeCategoryCode } from "@/server/pipeline/categoryNormalization";
+import { normalizeCategoryCode, resolveCervicometriaCategory } from "@/server/pipeline/categoryNormalization";
 import {
   extractDopplerData,
   applyDopplerOverlay,
@@ -135,8 +135,16 @@ function resolveEffectiveCategory(
       `[generate ${reportId}] category_override: ${detectedCategory} -> ${morf.category} (reason=${morf.reason})`,
     );
   }
+  // Override CERVICOMETRIA por texto bruto (gated por knownCodes) — pega ditados de
+  // "medida do colo" que o structurer classificaria como PELVE_FEMININA.
+  const cerv = resolveCervicometriaCategory(morf.category, rawText, knownCodes);
+  if (cerv.overridden) {
+    console.warn(
+      `[generate ${reportId}] category_override: ${morf.category} -> CERVICOMETRIA (reason=cervicometria_exam)`,
+    );
+  }
   const norm = normalizeCategoryCode(
-    morf.category,
+    cerv.category,
     knownCodes,
     rawText,
     categoryHint,

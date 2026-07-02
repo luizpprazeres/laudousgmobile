@@ -66,6 +66,11 @@ import {
   DOPPLER_OBSTETRICO_EXTRACTION_PROMPT,
   DopplerObstetricoFindingsSchema,
 } from "./categories/DOPPLER_OBSTETRICO";
+import {
+  CERVICOMETRIA_JSON_SCHEMA,
+  CERVICOMETRIA_EXTRACTION_PROMPT,
+  CervicometriaFindingsSchema,
+} from "./categories/CERVICOMETRIA";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -101,6 +106,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "MUSCULOESQUELETICO_V2",
   "PROSTATA_SUPRAPUBICA",
   "DOPPLER_OBSTETRICO",
+  "CERVICOMETRIA",
 ]);
 
 export type RendererExtractionResult = {
@@ -278,6 +284,12 @@ export const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: DOPPLER_OBSTETRICO_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: DOPPLER_OBSTETRICO_EXTRACTION_PROMPT,
     parse: (raw) => DopplerObstetricoFindingsSchema.parse(raw),
+  },
+  CERVICOMETRIA: {
+    schemaName: "CervicometriaFindings",
+    jsonSchema: CERVICOMETRIA_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: CERVICOMETRIA_EXTRACTION_PROMPT,
+    parse: (raw) => CervicometriaFindingsSchema.parse(raw),
   },
 };
 
