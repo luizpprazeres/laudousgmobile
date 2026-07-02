@@ -18,10 +18,11 @@ export type PelveAudit = {
 };
 
 /** Números de VOLUME ditados sem unidade adjacente ("volume de 69,8", "volume
- *  aumentado de 189,1") — o extractMeasureNumbers (com unidade) não os pega, mas o
- *  volume é fato crítico (vai na conclusão). */
+ *  aumentado de 189,1", "volume 54,0") — o extractMeasureNumbers (com unidade) não
+ *  os pega, mas o volume é fato crítico (vai na conclusão). O "de" é OPCIONAL
+ *  (review dex1: o médico dita "volume 54,0" sem "de"). */
 function extractVolumeNumbers(text: string): string[] {
-  const re = /volume\s+(?:normal\s+|aumentado\s+|reduzido\s+)?de\s+(\d+(?:[.,]\d+)?)/gi;
+  const re = /volume\s+(?:normal\s+|aumentado\s+|reduzido\s+)?(?:de\s+)?(\d+(?:[.,]\d+)?)/gi;
   const out: string[] = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) out.push(m[1]!);
@@ -45,9 +46,13 @@ export function auditPelveFacts(rawInput: string, laudo: string): PelveAudit {
   const menopausaSemMarca =
     menopausaDitada && !/praticamente sem fol[íi]culos/.test(laudoLc);
 
-  // Anti-líquido-livre: o laudo menciona "líquido livre" sem o médico ter ditado.
+  // Anti-líquido-livre: o laudo menciona "líquido livre" POSITIVAMENTE sem o médico
+  // ter ditado. NÃO conta menção NEGADA ("ausência de/sem/não há líquido livre") —
+  // review dex1: evita falso-positivo quando o writer escreve a negação de rotina.
+  const liqLivreNoLaudo = RE_LIQ_LIVRE.test(laudoLc);
+  const liqLivreNegado = /(aus[êe]ncia\s+de|sem|n[ãa]o\s+h[áa]|n[ãa]o\s+se\s+observ\w+)\s+l[íi]quido\s+livre/i.test(laudoLc);
   const liquidoLivreInventado =
-    RE_LIQ_LIVRE.test(laudoLc) && !RE_LIQ_LIVRE.test(rawLc);
+    liqLivreNoLaudo && !liqLivreNegado && !RE_LIQ_LIVRE.test(rawLc);
 
   const placeholder = laudo.includes("____");
 

@@ -72,5 +72,40 @@ function check(name: string, cond: boolean, detail?: string) {
   check("placeholder ____ detectado", !a.ok && a.placeholder, JSON.stringify(a));
 }
 
+// 9) Volume SEM "de" (review dex1: "volume 54,0") — drop detectado.
+{
+  const raw = "útero em anteversão medindo 7,0 x 3,5 x 4,2 com volume 54,0";
+  const laudo = "Útero em anteversão, medindo 7,0 x 3,5 x 4,2 cm."; // dropou o volume 54,0
+  const a = auditPelveFacts(raw, laudo);
+  check("volume sem 'de' (54,0) drop detectado", !a.ok && a.missingMeasures.includes("54,0"), JSON.stringify(a));
+}
+{
+  const raw = "útero volume 54,0";
+  const laudo = "Útero de volume normal (54,0 cm³).";
+  const a = auditPelveFacts(raw, laudo);
+  check("volume sem 'de' presente no laudo → ok", a.ok, JSON.stringify(a));
+}
+
+// 10) "ausência de líquido livre" (negação) NÃO é invenção (review dex1).
+{
+  const raw = "pelve transvaginal, útero normal";
+  const laudo = "Útero em anteversão. ... Ausência de líquido livre na cavidade pélvica.";
+  const a = auditPelveFacts(raw, laudo);
+  check("'ausência de líquido livre' não é invenção", !a.liquidoLivreInventado, JSON.stringify(a));
+}
+{
+  const raw = "pelve transvaginal";
+  const laudo = "Não há líquido livre na pelve.";
+  const a = auditPelveFacts(raw, laudo);
+  check("'não há líquido livre' não é invenção", !a.liquidoLivreInventado, JSON.stringify(a));
+}
+{
+  // POSITIVA e não-ditada → ainda detecta.
+  const raw = "pelve transvaginal, útero normal";
+  const laudo = "Presença de líquido livre na cavidade pélvica.";
+  const a = auditPelveFacts(raw, laudo);
+  check("líquido livre POSITIVO não-ditado ainda detecta", a.liquidoLivreInventado, JSON.stringify(a));
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);
