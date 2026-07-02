@@ -495,10 +495,38 @@ function noduloConclusao(nod: TireoideNodulo, showDomingos: boolean): string {
 export function renderTireoide(
   f: TireoideFindings,
   prefsInput?: Partial<TireoidePreferences> | null,
-  opts?: { objetivo?: boolean },
+  opts?: { objetivo?: boolean; omitPicoNull?: boolean },
 ): string {
-  if (opts?.objetivo) return renderTireoideObjetivo(f, prefsInput);
-  return renderTireoideClassico(f, prefsInput);
+  const omitPicoNull = opts?.omitPicoNull ?? false;
+  if (opts?.objetivo) return renderTireoideObjetivo(f, prefsInput, omitPicoNull);
+  return renderTireoideClassico(f, prefsInput, omitPicoNull);
+}
+
+/**
+ * Linhas de pico sistólico (Doppler) da tireoide. Auditoria gap #4: quando o pico
+ * não foi ditado (null) e `omitPicoNull` (flag TIREOIDE_PICO_OMIT), OMITE a linha
+ * em vez de imprimir "____ cm/s". OFF = comportamento atual (placeholder). O
+ * formatador de número difere entre clássico (ptBr) e objetivo (ptBr1).
+ */
+function picoLinhas(
+  f: TireoideFindings,
+  fmt: (n: number) => string,
+  omitPicoNull: boolean,
+): string[] {
+  const ad = f.pico_arteria_direita ?? "inferior";
+  const ae = f.pico_arteria_esquerda ?? "inferior";
+  const out: string[] = [];
+  if (f.pico_sistolico_direito_cms !== null) {
+    out.push(`Pico sistólico da artéria tireoidiana ${ad} direita de ${fmt(f.pico_sistolico_direito_cms)} cm/s.`);
+  } else if (!omitPicoNull) {
+    out.push(`Pico sistólico da artéria tireoidiana ${ad} direita de ____ cm/s.`);
+  }
+  if (f.pico_sistolico_esquerdo_cms !== null) {
+    out.push(`Pico sistólico da artéria tireoidiana ${ae} esquerda de ${fmt(f.pico_sistolico_esquerdo_cms)} cm/s.`);
+  } else if (!omitPicoNull) {
+    out.push(`Pico sistólico da artéria tireoidiana ${ae} esquerda de ____ cm/s.`);
+  }
+  return out;
 }
 
 /** Mescla prefs cruas/parciais (JSONB da conta) com os defaults seguros. */
@@ -523,6 +551,7 @@ function mergeTireoidePrefs(
 function renderTireoideClassico(
   f: TireoideFindings,
   prefsInput?: Partial<TireoidePreferences> | null,
+  omitPicoNull = false,
 ): string {
   // Mescla com os defaults — aceita o JSONB cru/parcial da preferência da conta
   // (chaves faltando ou null caem no default seguro: Domingos ON, conduta OFF).
@@ -538,18 +567,11 @@ function renderTireoideClassico(
   ];
 
   if (f.com_doppler) {
-    const ad = f.pico_arteria_direita ?? "inferior";
-    const ae = f.pico_arteria_esquerda ?? "inferior";
-    aspectos.push(
-      `\nPico sistólico da artéria tireoidiana ${ad} direita de ${
-        f.pico_sistolico_direito_cms !== null ? ptBr(f.pico_sistolico_direito_cms) : "____"
-      } cm/s.`,
-    );
-    aspectos.push(
-      `Pico sistólico da artéria tireoidiana ${ae} esquerda de ${
-        f.pico_sistolico_esquerdo_cms !== null ? ptBr(f.pico_sistolico_esquerdo_cms) : "____"
-      } cm/s.`,
-    );
+    const linhas = picoLinhas(f, ptBr, omitPicoNull);
+    // Preserva a quebra de seção antes do bloco de pico (só quando há linha).
+    if (linhas.length > 0) {
+      aspectos.push(`\n${linhas[0]}`, ...linhas.slice(1));
+    }
   }
 
   if (f.linfonodos_descritos) {
@@ -817,6 +839,7 @@ function noduloAchadoObjetivo(nod: TireoideNodulo): string {
 function renderTireoideObjetivo(
   f: TireoideFindings,
   prefsInput?: Partial<TireoidePreferences> | null,
+  omitPicoNull = false,
 ): string {
   const prefs = mergeTireoidePrefs(prefsInput);
 
@@ -879,18 +902,7 @@ function renderTireoideObjetivo(
 
   // Doppler (picos sistólicos) quando aplicável.
   if (f.com_doppler) {
-    const ad = f.pico_arteria_direita ?? "inferior";
-    const ae = f.pico_arteria_esquerda ?? "inferior";
-    achados.push(
-      `Pico sistólico da artéria tireoidiana ${ad} direita de ${
-        f.pico_sistolico_direito_cms !== null ? ptBr1(f.pico_sistolico_direito_cms) : "____"
-      } cm/s.`,
-    );
-    achados.push(
-      `Pico sistólico da artéria tireoidiana ${ae} esquerda de ${
-        f.pico_sistolico_esquerdo_cms !== null ? ptBr1(f.pico_sistolico_esquerdo_cms) : "____"
-      } cm/s.`,
-    );
+    achados.push(...picoLinhas(f, ptBr1, omitPicoNull));
   }
 
   // Linfonodos.

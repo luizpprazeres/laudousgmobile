@@ -349,7 +349,11 @@ export async function* runRendererStream(args: {
         fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo, igCorrection });
         break;
       case "TIREOIDE":
-        fullText = renderTireoide(fnd as TireoideFindings, args.rendererPreferences, { objetivo });
+        fullText = renderTireoide(fnd as TireoideFindings, args.rendererPreferences, {
+          objetivo,
+          // Gap #4 (flag TIREOIDE_PICO_OMIT): omitir linha de pico sem valor ditado.
+          omitPicoNull: env().TIREOIDE_PICO_OMIT === "true",
+        });
         break;
       case "MAMARIA":
         fullText = renderMamaria(fnd as MamariaFindings, args.rendererPreferences, { objetivo });
