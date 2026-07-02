@@ -106,6 +106,12 @@ function cm(v: number | null): string {
  * comprimento do colo veio > 6 (implausível em cm — o colo mede ~0,5–5,0 cm),
  * quase certamente é milímetro → divide por 10. Idem para a distância da placenta
  * (implausível > 30 cm). Conservador: só corrige valores claramente-mm.
+ *
+ * NOTA (dex1, a confirmar com o Luiz na ativação): é um BACKSTOP — o prompt já
+ * manda o LLM converter mm→cm. O limiar > 6 nunca corrompe um colo fisiológico
+ * (máx ~5 cm); o único risco teórico é um "6,5 cm" ditado literalmente virar 0,65,
+ * mas 6,5 cm de colo não é fisiológico. Se o Luiz preferir, dá p/ trocar por
+ * "só dividir quando o raw disser mm" (exigiria passar o raw ao renderer).
  */
 function normalizeMedidasMm(f: CervicometriaFindings): CervicometriaFindings {
   const fixColo =
@@ -138,9 +144,14 @@ function classificarColo(l: number | null): ColoClasse {
  */
 function coloConclusaoItens(f: CervicometriaFindings): string[] {
   const l = f.colo_oi_oe_cm;
-  // Sem medida → não afirma normalidade.
+  // Sem medida → não afirma normalidade. Mas OI aberto é achado importante mesmo
+  // sem a medida (review dex1): sinaliza a medida faltante E o OI aberto.
   if (l === null || !Number.isFinite(l)) {
-    return ["Medida do comprimento do colo uterino não caracterizada pelo método. [REVISAR]"];
+    const itens = ["Medida do comprimento do colo uterino não caracterizada pelo método. [REVISAR]"];
+    if (!f.orificio_interno_fechado) {
+      itens.push("Orifício interno do colo uterino aberto, com risco para trabalho de parto prematuro.");
+    }
+    return itens;
   }
   const classe = classificarColo(l);
   const itens: string[] = [];

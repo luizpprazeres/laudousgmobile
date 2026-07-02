@@ -97,6 +97,15 @@ const concl = (l: string) => l.split("CONCLUSÃO:")[1] ?? "";
   check("sem colo ditado → conclusão sinaliza [REVISAR]", /não caracterizada pelo método\. \[REVISAR\]/.test(l), concl(l));
 }
 
+// ── Borda (review dex1 #2): OI aberto E colo null → sinaliza os DOIS ──
+{
+  const l = renderCervicometria(F({ orificio_interno_fechado: false }));
+  const c = concl(l);
+  check("OI aberto + colo null → item [REVISAR] medida", /não caracterizada pelo método\. \[REVISAR\]/.test(c), c);
+  check("OI aberto + colo null → TAMBÉM item de OI aberto", /Orifício interno do colo uterino aberto, com risco para trabalho de parto prematuro\./.test(c), c);
+  check("OI aberto + colo null → nunca 'ecograficamente normal'", !/ecograficamente normal/.test(c), c);
+}
+
 // ── SEGURANÇA (review dex1): orifício interno ABERTO → nunca normal ──
 {
   // Mesmo com comprimento >= 2,5 (que seria "normal"), OI aberto é anormal.

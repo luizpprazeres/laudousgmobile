@@ -103,6 +103,24 @@ pnpm -F api build
 
 **Precedência (no prompt):** comandos explícitos > achados estruturados > validações > prompt global > contrato categoria > estilo > RAG > exemplos.
 
+### Como adicionar uma categoria de renderer determinístico
+
+Referência viva: a categoria **CERVICOMETRIA** (US pélvica transvaginal p/ medida do
+colo). Uma categoria programática nova toca 6 pontos:
+1. `renderer/categories/<CAT>.ts` — schema Zod + JSON schema strict + prompt de
+   extração + `render<Cat>()`.
+2. `renderer/extraction.ts` — import + entrada em `EXTRACTORS` + `RENDERER_PROGRAMMATIC_CATEGORIES`.
+3. `pipeline/renderer.ts` — `case` no switch programático.
+4. `pipeline/categoryNormalization.ts` — `FAMILY_RULES` (e, se o structurer tende a
+   confundir com outra categoria, um override por texto bruto como
+   `resolveCervicometriaCategory`, chamado no `resolveEffectiveCategory` do route).
+5. `packages/db/src/seeds/data.ts` — `CATEGORIES_SEED`.
+6. **Deploy (gate):** row em `categories` no DB de prod + código na env
+   `RENDERER_CATEGORIES` do Vercel + redeploy. Sem os dois, a categoria é dormente.
+
+Checklist de ativação da CERVICOMETRIA (com thresholds a confirmar pelo Luiz):
+`docs/deploy-cervicometria-2026-07-02.md`.
+
 ---
 
 ## Segurança / LGPD
