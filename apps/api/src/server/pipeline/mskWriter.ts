@@ -14,6 +14,7 @@
 import { openai } from "../ai/openai";
 import { env } from "../env";
 import { buildMskWriterSystemMessage } from "../renderer/categories/MUSCULOESQUELETICO";
+import { MSK_FEWSHOTS } from "../renderer/categories/mskFewshots";
 import { auditMskFacts, auditRevisarNote, type MskAudit } from "./mskWriterAudit";
 
 export type MskWriterResult = {
@@ -31,10 +32,17 @@ export async function* runMskWriterStream(args: {
   rawInput: string;
   signal?: AbortSignal;
 }): AsyncGenerator<string, MskWriterResult, void> {
-  const model = env().OPENAI_MODEL_WRITER;
+  const model = env().MSK_WRITER_MODEL;
   const t0 = Date.now();
   let ttftMs = 0;
   let full = "";
+
+  // Few-shots dos laudos REAIS assinados do médico (estilo da casa por exemplo) +
+  // regras no system. Prefixo estável → cacheável pelo provedor.
+  const fewshotMsgs = MSK_FEWSHOTS.flatMap((f) => [
+    { role: "user" as const, content: `Ditado do médico:\n${f.raw}` },
+    { role: "assistant" as const, content: f.laudo },
+  ]);
 
   const stream = await openai().chat.completions.create(
     {
@@ -44,6 +52,7 @@ export async function* runMskWriterStream(args: {
       stream_options: { include_usage: true },
       messages: [
         { role: "system", content: buildMskWriterSystemMessage() },
+        ...fewshotMsgs,
         { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
       ],
     },
