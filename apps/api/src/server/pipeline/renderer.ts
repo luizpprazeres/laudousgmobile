@@ -47,6 +47,7 @@ import {
 } from "../renderer/categories/MUSCULOESQUELETICO";
 import { runMskWriterStream } from "./mskWriter";
 import { runPartesMolesWriterStream } from "./partesMolesWriter";
+import { runPelveWriterStream } from "./pelveWriter";
 import {
   renderDopplerObstetrico,
   mergeStructuredIg,
@@ -298,6 +299,40 @@ export async function* runRendererStream(args: {
       ? "audit=ok"
       : `audit=FAIL(medidas:${a.missingMeasures.join("/") || "-"};lados:${a.missingSides.join("/") || "-"};extra:${a.extraStructures.join("/") || "-"};placeholder:${a.placeholder ? "sim" : "-"};doppler:${a.dopplerInventado ? "inventado" : "-"})`;
     const systemMessage = `[${RENDERER_VERSION}] PARTES_MOLES writer_guarded (${res.model}, ttft=${res.ttftMs}ms, ${res.outputTokens ?? "?"}tok, ${auditMsg})`;
+    args.onSystemMessage?.(systemMessage);
+    return {
+      fullText: res.fullText,
+      latencyMs: res.latencyMs,
+      systemMessage,
+      inputTokens: undefined,
+      outputTokens: res.outputTokens,
+      cachedInputTokens: undefined,
+      extraction: { findings: null, latencyMs: 0 },
+      freeSlotCount: 0,
+      passthrough: true,
+    };
+  }
+
+  // PELVE writer_guarded (flag PELVE_WRITER, pedido Luiz 02/07): a pelve TA/TV tem
+  // muitos detalhes que mudam → o LLM ESCREVE o laudo (entende comandos/garble),
+  // guiado pelo roteiro da casa. Rota explícita ANTES da extração (não usa o schema
+  // rígido). passthrough=true: o texto do writer é final; o route pula os mutadores
+  // de conteúdo. Estilo objetivo fica no renderer (o writer escreve o clássico).
+  if (
+    args.categoryCode === "PELVE_FEMININA" &&
+    env().PELVE_WRITER === "true" &&
+    !isEstiloObjetivo(args.writingStyleId)
+  ) {
+    args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
+    const res = yield* runPelveWriterStream({
+      rawInput: args.rawInput,
+      signal: args.signal,
+    });
+    const a = res.audit;
+    const auditMsg = a.ok
+      ? "audit=ok"
+      : `audit=FAIL(medidas:${a.missingMeasures.join("/") || "-"};menop:${a.menopausaSemMarca ? "sem-marca" : "-"};liqlivre:${a.liquidoLivreInventado ? "inventado" : "-"};placeholder:${a.placeholder ? "sim" : "-"})`;
+    const systemMessage = `[${RENDERER_VERSION}] PELVE writer_guarded (${res.model}, ttft=${res.ttftMs}ms, ${res.outputTokens ?? "?"}tok, ${auditMsg})`;
     args.onSystemMessage?.(systemMessage);
     return {
       fullText: res.fullText,
