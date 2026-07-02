@@ -249,7 +249,12 @@ export async function* runRendererStream(args: {
       rawInput: args.rawInput,
       signal: args.signal,
     });
-    const systemMessage = `[${RENDERER_VERSION}] MSK writer_guarded (${res.model}, ttft=${res.ttftMs}ms)`;
+    // Observabilidade (dex1): modelo, TTFT, audit pass/fail + fatos que falharam.
+    const a = res.audit;
+    const auditMsg = a.ok
+      ? "audit=ok"
+      : `audit=FAIL(medidas:${a.missingMeasures.join("/") || "-"};lados:${a.missingSides.join("/") || "-"};extra:${a.extraStructures.join("/") || "-"})`;
+    const systemMessage = `[${RENDERER_VERSION}] MSK writer_guarded (${res.model}, ttft=${res.ttftMs}ms, ${res.outputTokens ?? "?"}tok, ${auditMsg})`;
     args.onSystemMessage?.(systemMessage);
     return {
       fullText: res.fullText,

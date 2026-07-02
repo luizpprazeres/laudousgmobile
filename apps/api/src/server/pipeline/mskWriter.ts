@@ -14,6 +14,7 @@
 import { openai } from "../ai/openai";
 import { env } from "../env";
 import { buildMskWriterSystemMessage } from "../renderer/categories/MUSCULOESQUELETICO";
+import { auditMskFacts, auditRevisarNote, type MskAudit } from "./mskWriterAudit";
 
 export type MskWriterResult = {
   fullText: string;
@@ -21,6 +22,8 @@ export type MskWriterResult = {
   ttftMs: number;
   model: string;
   outputTokens?: number;
+  /** Fact-audit determinístico (medida/lado/estrutura) — observabilidade. */
+  audit: MskAudit;
 };
 
 /** Streama o laudo MSK escrito pelo LLM. Yields deltas; retorna o texto + métricas. */
@@ -58,11 +61,23 @@ export async function* runMskWriterStream(args: {
     if (chunk.usage?.completion_tokens) outputTokens = chunk.usage.completion_tokens;
   }
 
+  // Fact-audit determinístico (opção 2 do Luiz): streama otimista, audita DEPOIS.
+  // Se um fato objetivo falha (medida/lado ausente, estrutura fora do protocolo),
+  // ANEXA "[REVISAR: …]" ao fim (não re-roda — mantém o TTFT). Sempre logado.
+  let fullText = full.trim();
+  const audit = auditMskFacts(args.rawInput, fullText);
+  const nota = auditRevisarNote(audit);
+  if (nota) {
+    fullText = `${fullText}\n\n${nota}`;
+    yield `\n\n${nota}`;
+  }
+
   return {
-    fullText: full.trim(),
+    fullText,
     latencyMs: Date.now() - t0,
     ttftMs,
     model,
     outputTokens,
+    audit,
   };
 }
