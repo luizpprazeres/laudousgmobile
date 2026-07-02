@@ -16,6 +16,7 @@ import { env } from "../env";
 import { buildMskWriterSystemMessage } from "../renderer/categories/MUSCULOESQUELETICO";
 import { MSK_FEWSHOTS } from "../renderer/categories/mskFewshots";
 import { auditMskFacts, auditRevisarNote, type MskAudit } from "./mskWriterAudit";
+import { normalizeMskWriterFormat } from "./mskWriterFormat";
 
 export type MskWriterResult = {
   fullText: string;
@@ -70,10 +71,13 @@ export async function* runMskWriterStream(args: {
     if (chunk.usage?.completion_tokens) outputTokens = chunk.usage.completion_tokens;
   }
 
+  // Guard de formato determinístico (cabeçalhos canônicos, bullets, espaços) — só
+  // formato, nunca conteúdo. Corrige typos raros do modelo (ex.: "OS SEGUINTOS").
+  let fullText = normalizeMskWriterFormat(full);
+
   // Fact-audit determinístico (opção 2 do Luiz): streama otimista, audita DEPOIS.
   // Se um fato objetivo falha (medida/lado ausente, estrutura fora do protocolo),
   // ANEXA "[REVISAR: …]" ao fim (não re-roda — mantém o TTFT). Sempre logado.
-  let fullText = full.trim();
   const audit = auditMskFacts(args.rawInput, fullText);
   const nota = auditRevisarNote(audit);
   if (nota) {

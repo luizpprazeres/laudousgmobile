@@ -1,8 +1,9 @@
 /**
  * Few-shots do MSK writer_guarded — laudos REAIS assinados pelo Dr. Luiz (final_output).
- * São o "estilo da casa" de verdade (técnica curta, agrupamento, linha em branco entre
- * achados, "X ecograficamente normal", termos do médico). Ensinar por EXEMPLO > regra.
- * Gerado de casos: 7c391290, aecad190, edcfee95, 0d36e3f4. Curado 2026-07-02. NÃO editar à mão (regenerar).
+ * O "estilo da casa" de verdade (técnica, agrupamento, linha em branco entre achados,
+ * "X ecograficamente normal", termos do médico). Ensinar por EXEMPLO > regra.
+ * Casos: 7c391290, aecad190, edcfee95, 0d36e3f4, 4c621d97, b98d2b06 (mão/punho, ombro-tend, tornozelo, ombro-deg, joelho, pé).
+ * Curado 2026-07-02. NÃO editar à mão (regenerar do final_output).
  */
 export const MSK_FEWSHOTS: ReadonlyArray<{ raw: string; laudo: string }> = [
   {
@@ -20,5 +21,13 @@ export const MSK_FEWSHOTS: ReadonlyArray<{ raw: string; laudo: string }> = [
   {
     "raw": "Grafia do ombro esquerdo com alterações degenerativas da esquerda, com osteóficos marginais e regularidade cortical, E0E0 restante normal.",
     "laudo": "ULTRASSONOGRAFIA DO OMBRO ESQUERDO\n\nCOMENTÁRIOS:\nExame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\nTendão supraespinhal de espessura, continuidade e ecotextura preservadas.\nTendão infraespinhal de espessura, continuidade e ecotextura preservadas.\nTendão subescapular de espessura, continuidade e ecotextura preservadas.\nCabo longo do bíceps tópico, de espessura e ecotextura preservadas.\nBursa subacromial-subdeltoidea sem distensão.\nAlterações degenerativas da articulação acromioclavicular esquerda, com osteóficos marginais e irregularidade cortical\nNão há sinais de derrame articular significativo.\n\nCONCLUSÃO:\nAlterações degenerativas da articulação acromioclavicular esquerda, com osteófitos marginais."
+  },
+  {
+    "raw": "ULTRASSONOGRAFIA DO JOELHO DIREITO\n\nCOMENTÁRIOS:\n\nExame realizado com transdutor linear de alta frequência, abrangendo a avaliação do joelho direito.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\n\nTendões da pata de ganso com discreto espessamento e alteração ecotextural, sem sinais de rotura.\n\nNão há sinais de coleção líquida significativa na topografia da bursa anserina.\n\nTendão quadricipital e tendão patelar com espessura, continuidade e ecotextura preservadas.\n\nAusência de derrame articular significativo.\n\nPlanos subcutâneos avaliados sem alterações relevantes.\n\nCONCLUSÃO:\n\nTendinopatia dos tendões da pata de ganso do joelho direito.",
+    "laudo": "ULTRASSONOGRAFIA DO JOELHO DIREITO\n\nCOMENTÁRIOS:\nExame realizado com transdutor linear de alta frequência, abrangendo a avaliação do joelho direito.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\nTendões da pata de ganso com discreto espessamento e alteração ecotextural, sem sinais de rotura.\n\nNão há sinais de coleção líquida significativa na topografia da bursa anserina.\n\nTendão quadricipital e tendão patelar com espessura, continuidade e ecotextura preservadas.\n\nAusência de derrame articular significativo.\n\nPlanos subcutâneos avaliados sem alterações relevantes.\n\nCONCLUSÃO:\nTendinopatia dos tendões da pata de ganso do joelho direito."
+  },
+  {
+    "raw": "Microcenografia do do pé esquerdo com do tendão tibial posterior, E ultrassonografia do punho direito normal, com área transversa do nervo mediano na entrada do túnel do carpo de 7 milímetros quadrados. também normal.",
+    "laudo": "ULTRASSONOGRAFIA DO PÉ ESQUERDO\n\nCOMENTÁRIOS:\nExame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\nFáscia plantar com espessura e ecotextura preservadas.\nTendão tibial posterior com modificação do padrão ecotextural, sem evidência de roturas.\nNão há sinais de coleções, lesões expansivas ou alterações ecográficas relevantes no segmento avaliado.\n\nCONCLUSÃO:\nTendinopatia do tendão tibial posterior esquerdo.\n\nULTRASSONOGRAFIA DO PUNHO DIREITO\n\nCOMENTÁRIOS:\nExame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\nTendões flexores e retináculo dos flexores de aspecto preservado.\nCompartimentos extensores de aspecto preservado.\nNervo mediano de calibre e ecotextura preservados ao nível do túnel do carpo.\nNão há sinais de coleções, cistos sinoviais ou efusão articular no segmento avaliado.\n\nCONCLUSÃO:\nPunho direito ecograficamente normal."
   }
 ];
