@@ -74,6 +74,14 @@ const ServerEnvSchema = z.object({
   // de regerar a partir da extração. Ditado curto (só-diagnóstico) segue no renderer
   // + biblioteca canônica. OFF = sempre regenera (comportamento atual). Default OFF.
   MSK_PASSTHROUGH: z.string().default("false"),
+  // Arquitetura 2 modos (2026-07-02): quando "true", MSK (categoria ABERTA) é escrito
+  // pelo LLM (writer_guarded) em vez do renderer determinístico — entende linguagem
+  // natural (multi-segmento, garble, comandos), guiado pelo roteiro da casa no prompt.
+  // Piloto: pipeline/mskWriter.ts. OFF = renderer atual. Default OFF.
+  MSK_WRITER: z.string().default("false"),
+  // Modelo do MSK writer_guarded. gpt-4.1 (full) acerta as convenções da casa com
+  // os few-shots (e não é mais lento que o mini: ~3s). Configurável.
+  MSK_WRITER_MODEL: z.string().default("gpt-4.1"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =

@@ -458,6 +458,55 @@ export function mskPassthrough(input: string): string {
   return normalizeNomenclaturaMecanica(input).replace(/[ \t]+$/gm, "").trim();
 }
 
+// ───────────── writer_guarded (piloto: MSK escrito pelo LLM) ─────────────
+
+/** Roteiro da casa em texto para o prompt do writer (reusa ROTEIRO — DRY). Dá ao
+ *  modelo as estruturas EXATAS por segmento + a frase de normalidade de cada uma. */
+function roteiroParaPrompt(): string {
+  return SEGMENTOS.map((seg) => {
+    const r = ROTEIRO[seg];
+    const linhas = r.estruturas.map((e) => `  - ${e.normal}`).join("\n");
+    return `ULTRASSONOGRAFIA ${r.titulo}:\n${linhas}`;
+  }).join("\n\n");
+}
+
+/**
+ * Prompt base do MSK `writer_guarded` (piloto — arquitetura de 2 modos, 2026-07-02).
+ * O LLM ESCREVE o laudo entendendo linguagem natural (multi-segmento, garble, comandos
+ * misturados), guiado pelo ROTEIRO DA CASA (cobertura exata, sem inventar estrutura).
+ * Prompt PURO/estável → cacheável pelo provedor (byte-idêntico entre requests).
+ */
+export function buildMskWriterSystemMessage(): string {
+  return `Você é um médico radiologista brasileiro redigindo laudos de ULTRASSONOGRAFIA MUSCULOESQUELÉTICA. Escreva o laudo FINAL a partir do ditado do médico, ENTENDENDO linguagem natural (medidas, comandos e conteúdo misturados no mesmo ditado).
+
+FORMATO (um bloco por segmento/lado examinado — é comum vários no mesmo exame):
+ULTRASSONOGRAFIA DO {SEGMENTO} {LADO}
+
+COMENTÁRIOS:
+${TECNICA}
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+(uma linha por estrutura do roteiro do segmento)
+
+CONCLUSÃO:
+(diagnósticos; 1 item = sem número; vários = "1) 2) 3)")
+
+Linha em branco ANTES de cada cabeçalho (COMENTÁRIOS/OS SEGUINTES/CONCLUSÃO) e entre laudos.
+
+ROTEIRO DA CASA — cubra EXATAMENTE estas estruturas do segmento (nem mais, nem menos). Estrutura NORMAL: use a frase de normalidade abaixo. Estrutura ALTERADA: descreva a MORFOLOGIA. NUNCA inclua estrutura fora desta lista (ex.: NÃO cite meniscos, cartilagem ou ligamentos no joelho — não fazem parte do protocolo):
+${roteiroParaPrompt()}
+
+REGRAS:
+1. CORPO = MORFOLOGIA (o que se vê: espessamento, redução da ecogenicidade, perda do padrão fibrilar, líquido, etc.). CONCLUSÃO = DIAGNÓSTICO. NUNCA escreva o diagnóstico ("Tendinopatia", "Bursite") no corpo, e NÃO escreva "compatível com X" no corpo — só a descrição morfológica; o nome do diagnóstico vai SÓ na conclusão.
+2. Se o médico ditar SÓ o diagnóstico (ex.: "tendinopatia da pata de ganso"), escreva no corpo a morfologia ecográfica típica desse diagnóstico (SEM inventar medida) e o diagnóstico na conclusão.
+3. Gere um laudo APENAS para segmentos que o médico examinou/descreveu. Não crie laudo normal para um segmento só citado de passagem.
+4. Preserve TODA medida e lateralidade ditadas, exatamente. Nunca invente medida; nunca escreva "____".
+5. Nomenclatura: polias A1/A2/A3 (nunca "polia a 2"); "quirodáctilo" (não "dedo"); nunca "artrose" isolada → "alterações degenerativas".
+6. Corrija garble ÓBVIO de transcrição (ex.: terinopatia→tendinopatia, tenores→tendões, subafromial→subacromial, osteóficos→osteófitos, aquática/anecóica→anecoica), só o inequívoco. NUNCA ecoe o garble (não escreva o termo errado entre parênteses).
+7. Comandos ditados são INSTRUÇÕES, execute-os e NUNCA os transcreva literalmente: "pode colocar X" (adicione X), "na conclusão Y" (Y vai na conclusão), "quer dizer Z" (correção do que veio antes — use Z, descarte o anterior).
+8. NÃO invente achados nem estruturas fora do roteiro. NÃO drope NADA que o médico ditou (todo achado e toda medida entram no laudo).`;
+}
+
 // ───────────────────────── Extração (LLM) ─────────────────────────
 
 export const MUSCULOESQUELETICO_JSON_SCHEMA = {
