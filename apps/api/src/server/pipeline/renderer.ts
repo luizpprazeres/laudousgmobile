@@ -52,6 +52,7 @@ import {
   mergeStructuredIg,
   type DopplerObstetricoFindings,
 } from "../renderer/categories/DOPPLER_OBSTETRICO";
+import { detectGolfBall } from "../renderer/categories/golfBall";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -339,14 +340,19 @@ export async function* runRendererStream(args: {
     const igCorrection = env().IG_REFERENCE_CORRECTION === "true";
     // Camada flexível (itens livres na conclusão) — atrás de flag (default OFF).
     const flexivel = env().FLEXIBLE_CONCLUSION === "true";
+    // Golf ball / foco ecogênico intracardíaco (auditoria gap #1) — atrás de flag
+    // (default OFF). Detecção determinística no DITADO; o renderer injeta as frases
+    // canônicas da casa (corpo + conclusão + recomendação de eco fetal ~28s).
+    const golfBall =
+      env().GOLF_BALL_SNIPPET === "true" ? detectGolfBall(args.rawInput) : null;
     const fnd = extraction.findings;
     let fullText: string;
     switch (args.categoryCode) {
       case "OBSTETRICA":
-        fullText = renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection, flexivel });
+        fullText = renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection, flexivel, golfBall });
         break;
       case "MORFOLOGICO":
-        fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo, igCorrection });
+        fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo, igCorrection, golfBall });
         break;
       case "TIREOIDE":
         fullText = renderTireoide(fnd as TireoideFindings, args.rendererPreferences, {
@@ -395,7 +401,7 @@ export async function* runRendererStream(args: {
         // Doppler). Reusa o corpo obstétrico de OBSTETRICA. Gated por RENDERER_CATEGORIES.
         // mergeStructuredIg: sobrescreve a IG com o bloco estruturado do app (segurança).
         const dfnd = mergeStructuredIg(fnd as DopplerObstetricoFindings, args.rawInput);
-        fullText = renderDopplerObstetrico(dfnd, null, { objetivo, igCorrection });
+        fullText = renderDopplerObstetrico(dfnd, null, { objetivo, igCorrection, golfBall });
         break;
       }
       default:

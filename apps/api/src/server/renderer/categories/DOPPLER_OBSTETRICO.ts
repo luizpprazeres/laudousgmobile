@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { buildIgInput, computeIg, type IgRawFields } from "../ig";
+import { applyGolfBall, stripGolfBallEcho, type GolfBall } from "./golfBall";
 import {
   ObstetricaFindingsSchema,
   OBSTETRICA_JSON_SCHEMA,
@@ -322,7 +323,7 @@ function toPesoFetalData(f: DopplerObstetricoFindings): PesoFetalData {
 // Render
 // ---------------------------------------------------------------------------
 
-function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean): string {
+function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null): string {
   const ig = igResultDoppler(f, igCorrection);
   const d = toDopplerData(f);
   const ft = feto0(f);
@@ -353,6 +354,9 @@ function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean): st
     ...buildDopplerConclusionItems(d),
   ];
 
+  // Golf ball (flag): corpo no bloco de anatomia + item de conclusão (eco fetal ~28s).
+  if (golfBall) applyGolfBall(aspectos, conclusao, golfBall);
+
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
   }
@@ -377,7 +381,7 @@ function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean): st
     .trim();
 }
 
-function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean): string {
+function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null): string {
   const ig = igResultDoppler(f, igCorrection);
   const d = toDopplerData(f);
   const ft = feto0(f);
@@ -397,16 +401,18 @@ function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean): st
   achados.push(liq.corpo);
   achados.push(`\n${stripPerfilLine(buildDopplervelocimetriaSection(d))}`);
 
-  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
-    achados.push(`\n${f.achados_adicionais.trim()}`);
-  }
-
+  // Golf ball (flag): linha nos achados ANTES dos adicionais (posição estável).
   const impressao = [
     ...ig.conclusaoObjetivo,
     liq.conclusao,
     ...buildPesoFetalItems(toPesoFetalData(f)),
     ...buildDopplerConclusionItems(d),
   ];
+  if (golfBall) applyGolfBall(achados, impressao, golfBall);
+
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    achados.push(`\n${f.achados_adicionais.trim()}`);
+  }
 
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = ig.fraseReferencia ? `\n${ig.fraseReferencia}` : "";
@@ -468,7 +474,7 @@ export function mergeStructuredIg(
 export function renderDopplerObstetrico(
   f: DopplerObstetricoFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null },
 ): string {
   // SEGURANÇA (review dex1): gestação inicial e óbito/ausência de vitalidade saem
   // do escopo v1 — lança erro → fallback writer no route (route.ts:812). O renderer
@@ -487,5 +493,10 @@ export function renderDopplerObstetrico(
     );
   }
   const igc = opts?.igCorrection ?? false;
-  return opts?.objetivo ? renderObjetivo(f, igc) : renderClassico(f, igc);
+  const g = opts?.golfBall ?? null;
+  // Golf ball (flag): dedup do eco cru nos achados adicionais (o snippet substitui).
+  if (g && f.achados_adicionais) {
+    f = { ...f, achados_adicionais: stripGolfBallEcho(f.achados_adicionais) || null };
+  }
+  return opts?.objetivo ? renderObjetivo(f, igc, g) : renderClassico(f, igc, g);
 }
