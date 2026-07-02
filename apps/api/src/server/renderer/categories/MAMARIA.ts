@@ -323,6 +323,73 @@ function biradsDoAchado(a: MamariaAchado): string | null {
   return a.birads_ditado?.trim() || calcBirads(a);
 }
 
+/**
+ * Guard BI-RADS "SÓ SINALIZA" (auditoria gap #3, flag MAMARIA_BIRADS_GUARD).
+ *
+ * Rebaixar categoria BI-RADS por heurística é risco clínico inaceitável (mascarar
+ * malignidade) — a decisão é do médico. Este guard NUNCA muda a categoria; apenas
+ * ANEXA "[REVISAR: …]" quando detecta uma incoerência objetiva, para o médico
+ * conferir. Duas condições conservadoras:
+ *
+ * (A) Achado categorizável (nódulo sólido / não-nodular) SEM categoria BI-RADS
+ *     resolvida no estudo — pega a OMISSÃO (caso real 3553d87e).
+ * (B) BI-RADS >= 4 atribuído a um nódulo sólido com morfologia TOTALMENTE benigna
+ *     (margem circunscrita + forma oval/redonda + orientação paralela + sem sombra
+ *     acústica + sem calcificação suspeita) — pega a SUPERESTIMAÇÃO inequívoca
+ *     (caso real 88543eea: 4A ditado sobre nódulo que a morfologia diz ser 3).
+ *
+ * NÃO tenta replicar o julgamento clínico do médico (ex.: rebaixar microlobulado/
+ * angular por reconhecer fibroadenoma) — só a contradição objetiva. Conservador
+ * para não gerar ruído de [REVISAR] em categorização legítima.
+ */
+function noduloTotalmenteBenigno(a: MamariaAchado): boolean {
+  // Hallmarks benignos FORTES exigidos: margem circunscrita + orientação paralela.
+  // Forma: aceita oval/redonda OU não-ditada (o médico raramente dita a forma —
+  // caso real 88543eea só tinha margem+orientação); só EXCLUI forma "irregular"
+  // (suspeita). Sem sombra acústica e sem calcificação suspeita.
+  return (
+    a.margem === "circunscrita" &&
+    a.orientacao === "paralela" &&
+    a.forma !== "irregular" &&
+    a.posterior !== "sombra" &&
+    a.calcificacoes !== "em_nodulo" &&
+    a.calcificacoes !== "microcalcificacoes" &&
+    a.calcificacoes !== "intraductais"
+  );
+}
+
+/** Tipos que DEVEM carregar uma categoria BI-RADS na conclusão. */
+const CATEGORIZAVEIS = new Set<Tipo>(["nodulo_solido", "achado_nao_nodular", "calcificacoes"]);
+
+export function biradsRevisarNotes(f: MamariaFindings): string[] {
+  const achados = Array.isArray(f.achados) ? f.achados : [];
+  const notas: string[] = [];
+
+  // (A) achado categorizável sem categoria BI-RADS resolvida.
+  const semCategoria = achados.some(
+    (a) => CATEGORIZAVEIS.has(a.tipo) && !biradsDoAchado(a),
+  );
+  if (semCategoria) {
+    notas.push(
+      "[REVISAR: achado categorizável sem categoria BI-RADS na conclusão — atribuir a categoria]",
+    );
+  }
+
+  // (B) BI-RADS >= 4 sobre nódulo morfologicamente benigno (superestimação).
+  for (const a of achados) {
+    if (a.tipo !== "nodulo_solido") continue;
+    const b = biradsDoAchado(a);
+    if (b && biradsRank(b) >= 5 && noduloTotalmenteBenigno(a)) {
+      const formaTxt = a.forma === "oval" ? "oval, " : a.forma === "redonda" ? "redondo, " : "";
+      notas.push(
+        `[REVISAR: BI-RADS ${b} atribuído a nódulo de morfologia benigna (margem circunscrita, ${formaTxt}paralelo à pele, sem sombra acústica) — confirmar categoria]`,
+      );
+    }
+  }
+
+  return notas;
+}
+
 // ---------------------------------------------------------------------------
 // Formatação
 // ---------------------------------------------------------------------------
@@ -610,15 +677,24 @@ function mergeMamariaPrefs(
 export function renderMamaria(
   f: MamariaFindings,
   prefsInput?: Partial<MamariaPreferences> | null,
-  opts?: { objetivo?: boolean },
+  opts?: { objetivo?: boolean; biradsGuard?: boolean },
 ): string {
-  if (opts?.objetivo) return renderMamariaObjetivo(f, prefsInput);
-  return renderMamariaClassico(f, prefsInput);
+  const biradsGuard = opts?.biradsGuard ?? false;
+  if (opts?.objetivo) return renderMamariaObjetivo(f, prefsInput, biradsGuard);
+  return renderMamariaClassico(f, prefsInput, biradsGuard);
+}
+
+/** Anexa as notas [REVISAR] do guard BI-RADS ao fim do texto (só-sinaliza). */
+function appendBiradsNotes(texto: string, f: MamariaFindings, biradsGuard: boolean): string {
+  if (!biradsGuard) return texto;
+  const notas = biradsRevisarNotes(f);
+  return notas.length > 0 ? `${texto}\n\n${notas.join("\n")}` : texto;
 }
 
 function renderMamariaClassico(
   f: MamariaFindings,
   prefsInput?: Partial<MamariaPreferences> | null,
+  biradsGuard = false,
 ): string {
   const prefs = mergeMamariaPrefs(prefsInput);
 
@@ -739,7 +815,7 @@ function renderMamariaClassico(
     RODAPE,
   ].join("\n");
 
-  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+  return appendBiradsNotes(corpo.replace(/\n{3,}/g, "\n\n").trim(), f, biradsGuard);
 }
 
 // ===========================================================================
@@ -768,6 +844,7 @@ function achadoAchadoObjetivo(a: MamariaAchado): string {
 function renderMamariaObjetivo(
   f: MamariaFindings,
   prefsInput?: Partial<MamariaPreferences> | null,
+  biradsGuard = false,
 ): string {
   const prefs = mergeMamariaPrefs(prefsInput);
 
@@ -884,5 +961,5 @@ function renderMamariaObjetivo(
     RODAPE,
   ].join("\n");
 
-  return corpo.replace(/\n{3,}/g, "\n\n").trim();
+  return appendBiradsNotes(corpo.replace(/\n{3,}/g, "\n\n").trim(), f, biradsGuard);
 }

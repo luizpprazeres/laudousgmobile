@@ -372,7 +372,11 @@ export async function* runRendererStream(args: {
         });
         break;
       case "MAMARIA":
-        fullText = renderMamaria(fnd as MamariaFindings, args.rendererPreferences, { objetivo });
+        fullText = renderMamaria(fnd as MamariaFindings, args.rendererPreferences, {
+          objetivo,
+          // Gap #3 (flag MAMARIA_BIRADS_GUARD): só sinaliza [REVISAR], nunca rebaixa.
+          biradsGuard: env().MAMARIA_BIRADS_GUARD === "true",
+        });
         break;
       // Categorias clássico-só (Sprint clássico 2026-06-15) — sem variante objetivo ainda.
       case "PARTES_MOLES":
