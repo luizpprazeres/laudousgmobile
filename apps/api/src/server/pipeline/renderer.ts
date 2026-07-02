@@ -45,6 +45,7 @@ import {
   isPreformattedMskReport,
   mskPassthrough,
 } from "../renderer/categories/MUSCULOESQUELETICO";
+import { runMskWriterStream } from "./mskWriter";
 import {
   renderDopplerObstetrico,
   mergeStructuredIg,
@@ -227,6 +228,35 @@ export async function* runRendererStream(args: {
       systemMessage,
       inputTokens: undefined,
       outputTokens: undefined,
+      cachedInputTokens: undefined,
+      extraction: { findings: null, latencyMs: 0 },
+      freeSlotCount: 0,
+      passthrough: true,
+    };
+  }
+
+  // MSK writer_guarded (flag MSK_WRITER, piloto arquitetura 2 modos): MSK é categoria
+  // ABERTA → o LLM ESCREVE o laudo (entende multi-segmento/garble/comandos), guiado
+  // pelo roteiro da casa. Rota explícita ANTES da extração (não usa o schema rígido).
+  // passthrough=true: o texto do writer é final; o route pula os mutadores de conteúdo
+  // (o writer já tratou comandos). Fact-audit + rerun entram numa fatia seguinte.
+  if (
+    args.categoryCode === "MUSCULOESQUELETICO_V2" &&
+    env().MSK_WRITER === "true"
+  ) {
+    args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
+    const res = yield* runMskWriterStream({
+      rawInput: args.rawInput,
+      signal: args.signal,
+    });
+    const systemMessage = `[${RENDERER_VERSION}] MSK writer_guarded (${res.model}, ttft=${res.ttftMs}ms)`;
+    args.onSystemMessage?.(systemMessage);
+    return {
+      fullText: res.fullText,
+      latencyMs: res.latencyMs,
+      systemMessage,
+      inputTokens: undefined,
+      outputTokens: res.outputTokens,
       cachedInputTokens: undefined,
       extraction: { findings: null, latencyMs: 0 },
       freeSlotCount: 0,
