@@ -82,6 +82,11 @@ const ServerEnvSchema = z.object({
   // Modelo do MSK writer_guarded. gpt-4.1 (full) acerta as convenções da casa com
   // os few-shots (e não é mais lento que o mini: ~3s). Configurável.
   MSK_WRITER_MODEL: z.string().default("gpt-4.1"),
+  // Auditoria 2026-07-01 gap #4 (🟡): quando "true", a TIREOIDE COM DOPPLER OMITE a
+  // linha de pico sistólico quando o valor não foi ditado (null), em vez de imprimir
+  // "____ cm/s" (placeholder feio — corpus §2 "remover linhas de pico não ditadas").
+  // Vale p/ clássico e objetivo. OFF = comportamento atual ("____"). Default OFF.
+  TIREOIDE_PICO_OMIT: z.string().default("false"),
   // Arquitetura 2 modos (2026-07-02): quando "true", PARTES_MOLES (categoria ABERTA,
   // lesão de qualquer tipo/topografia) é escrita pelo LLM (writer_guarded) — mesma
   // receita do MSK (prompt base + roteiro da casa + few-shots dos laudos assinados +
