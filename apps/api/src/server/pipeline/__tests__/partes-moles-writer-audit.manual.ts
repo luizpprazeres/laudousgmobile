@@ -78,5 +78,21 @@ function check(name: string, cond: boolean, detail?: string) {
   check("Doppler ditado não é invenção: audit ok", a.ok, JSON.stringify(a));
 }
 
+// 9) Deriva cervical (review dex1: órgão inventado ao generalizar "região cervical") → detecta.
+{
+  const raw = "partes moles da região cervical direita, linfonodos de aspecto habitual";
+  const laudo = "Linfonodos cervicais de aspecto habitual. Glândula submandibular direita, parótida direita e tireoide com aspecto ecográfico normal. Estudo comparativo contralateral sem alterações.";
+  const a = auditPartesMolesFacts(raw, laudo);
+  check("deriva cervical detectada (tireoide/parótida/glândula/contralateral)", !a.ok && a.extraStructures.includes("tireoide") && a.extraStructures.includes("parótida") && a.extraStructures.includes("contralateral"), JSON.stringify(a));
+}
+
+// 10) Órgão cervical DITADO (ou laudo colado que o cita) → não é deriva.
+{
+  const raw = "partes moles da região cervical direita, glândula submandibular e tireoide de aspecto normal, linfonodos habituais";
+  const laudo = "Glândula submandibular direita e tireoide com aspecto ecográfico normal. Linfonodos cervicais de aspecto habitual.";
+  const a = auditPartesMolesFacts(raw, laudo);
+  check("órgão cervical ditado não é deriva: audit ok", a.ok, JSON.stringify(a));
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

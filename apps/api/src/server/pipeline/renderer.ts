@@ -275,9 +275,12 @@ export async function* runRendererStream(args: {
   // (entende garble/comandos/correções), guiado pelo roteiro da casa. Rota explícita
   // ANTES da extração (não usa o schema rígido). passthrough=true: o texto do writer
   // é final; o route pula os mutadores de conteúdo (o writer já tratou comandos).
+  // Estilo OBJETIVO fica no renderer (review dex1: o writer escreve o clássico da
+  // casa; trocar TÉCNICA/ACHADOS/IMPRESSÃO sem aviso seria regressão p/ o usuário).
   if (
     args.categoryCode === "PARTES_MOLES" &&
-    env().PARTES_MOLES_WRITER === "true"
+    env().PARTES_MOLES_WRITER === "true" &&
+    !isEstiloObjetivo(args.writingStyleId)
   ) {
     args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
     const res = yield* runPartesMolesWriterStream({

@@ -13,8 +13,11 @@
  */
 import { extractMeasureNumbers, numberInLaudo } from "./mskWriterAudit";
 
-/** Termos de deriva MSK: só são problema se aparecem no LAUDO sem estarem no DITADO. */
-const TERMOS_DERIVA_MSK = [
+/** Termos de deriva: só são problema se aparecem no LAUDO sem estarem no DITADO.
+ *  MSK (deriva de exame musculoesquelético) + órgãos/planos cervicais (review dex1:
+ *  o modelo pode generalizar "região cervical" para avaliar tireoide/parótida/
+ *  submandibular/estudo comparativo que o médico não ditou). */
+const TERMOS_DERIVA = [
   "tendinopatia",
   "tenossinovite",
   "bursite",
@@ -22,6 +25,12 @@ const TERMOS_DERIVA_MSK = [
   "menisco",
   "tendão",
   "tendões",
+  "tireoide",
+  "parótida",
+  "submandibular",
+  "glândula",
+  "contralateral",
+  "modo b",
 ];
 
 export type PartesMolesAudit = {
@@ -53,8 +62,8 @@ export function auditPartesMolesFacts(rawInput: string, laudo: string): PartesMo
   if (/\bdireit[oa]s?\b/.test(rawLc) && !/direit[oa]/.test(laudoLc)) missingSides.push("direito");
   if (/\besquerd[oa]s?\b/.test(rawLc) && !/esquerd[oa]/.test(laudoLc)) missingSides.push("esquerdo");
 
-  // Deriva MSK: termo no laudo SEM estar no ditado → invenção de achado.
-  const extraStructures = TERMOS_DERIVA_MSK.filter(
+  // Deriva: termo no laudo SEM estar no ditado → invenção de achado/estrutura.
+  const extraStructures = TERMOS_DERIVA.filter(
     (t) => laudoLc.includes(t) && !rawLc.includes(t),
   );
 
