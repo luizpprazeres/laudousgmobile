@@ -83,9 +83,9 @@ export const CERVICOMETRIA_JSON_SCHEMA = {
 export const CERVICOMETRIA_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO do LaudoUSG para a ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL PARA A MEDIDA DO COLO UTERINO (cervicometria). Exame MUITO simples: o médico dita basicamente duas medidas. NÃO redija laudo — quem escreve é o código. NÃO invente nada.
 
 CAMPOS:
-1. colo_oi_oe_cm: a medida do COMPRIMENTO do colo = distância do orifício interno ao orifício externo do colo uterino, em cm. É a medida principal. null se não ditada. Converta "2,4" ou "2.4" → 2.4.
+1. colo_oi_oe_cm: a medida do COMPRIMENTO do colo = distância do orifício interno ao orifício externo do colo uterino, SEMPRE EM CENTÍMETROS. É a medida principal. null se não ditada. Converta "2,4" ou "2.4" → 2.4. CONVERTA MILÍMETROS PARA CENTÍMETROS: "30 mm"/"30 milímetros" → 3.0; "25 mm" → 2.5; "8 mm" → 0.8. O comprimento do colo é fisiologicamente ~0,5 a 5,0 cm — um número como 30 é milímetros (=3,0 cm).
 2. orificio_interno_fechado: true por padrão (o normal). false SOMENTE se o médico disser explicitamente que o orifício interno está aberto/dilatado/com afunilamento.
-3. placenta_distancia_cm: distância do orifício interno até a borda (extremidade) inferior da placenta, em cm. null se não ditada.
+3. placenta_distancia_cm: distância do orifício interno até a borda (extremidade) inferior da placenta, SEMPRE EM CENTÍMETROS (converta mm→cm: "35 mm" → 3.5). null se não ditada.
 4. placenta_distante: true SOMENTE se o médico disser que a placenta está "distante"/"muito distante"/"longe" do orifício interno SEM dar um número. Se deu número, use placenta_distancia_cm e deixe placenta_distante = false. Se não falou de placenta, ambos ficam null/false.
 5. ig_semanas: idade gestacional em semanas, se o médico disser (ex.: "34 semanas", "com 33 semanas"). null se não disser.
 6. cerclagem: true se o médico mencionar cerclagem / pontos de cerclagem / cerclage.
@@ -101,6 +101,22 @@ function cm(v: number | null): string {
   return v.toFixed(1).replace(".", ",");
 }
 
+/**
+ * Guard determinístico mm→cm (review dex1): cervicometria costuma vir em mm. Se o
+ * comprimento do colo veio > 6 (implausível em cm — o colo mede ~0,5–5,0 cm),
+ * quase certamente é milímetro → divide por 10. Idem para a distância da placenta
+ * (implausível > 30 cm). Conservador: só corrige valores claramente-mm.
+ */
+function normalizeMedidasMm(f: CervicometriaFindings): CervicometriaFindings {
+  const fixColo =
+    f.colo_oi_oe_cm !== null && f.colo_oi_oe_cm > 6 ? f.colo_oi_oe_cm / 10 : f.colo_oi_oe_cm;
+  const fixPlac =
+    f.placenta_distancia_cm !== null && f.placenta_distancia_cm > 30
+      ? f.placenta_distancia_cm / 10
+      : f.placenta_distancia_cm;
+  return { ...f, colo_oi_oe_cm: fixColo, placenta_distancia_cm: fixPlac };
+}
+
 const TITULO = "ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL";
 const COMENTARIOS =
   "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
@@ -114,22 +130,44 @@ function classificarColo(l: number | null): ColoClasse {
   return "normal";
 }
 
-/** Item de conclusão do colo pela classe. */
-function coloConclusao(l: number | null): string {
-  switch (classificarColo(l)) {
+/**
+ * Item(ns) de conclusão do colo. SEGURANÇA (review dex1):
+ *  - Sem a medida principal (colo null) → NUNCA concluir normalidade; sinaliza.
+ *  - Orifício interno ABERTO → é achado anormal por si só (afunilamento/risco);
+ *    NUNCA "ecograficamente normal", mesmo com comprimento ≥ 2,5.
+ */
+function coloConclusaoItens(f: CervicometriaFindings): string[] {
+  const l = f.colo_oi_oe_cm;
+  // Sem medida → não afirma normalidade.
+  if (l === null || !Number.isFinite(l)) {
+    return ["Medida do comprimento do colo uterino não caracterizada pelo método. [REVISAR]"];
+  }
+  const classe = classificarColo(l);
+  const itens: string[] = [];
+  // Orifício interno aberto: item próprio (nunca "normal").
+  if (!f.orificio_interno_fechado) {
+    itens.push(`Orifício interno do colo uterino aberto (colo medindo ${cm(l)} cm), com risco para trabalho de parto prematuro.`);
+    return itens;
+  }
+  switch (classe) {
     case "curto":
-      return `Colo uterino curto (medindo ${cm(l)} cm), com alto risco para trabalho de parto prematuro.`;
+      itens.push(`Colo uterino curto (medindo ${cm(l)} cm), com alto risco para trabalho de parto prematuro.`);
+      break;
     case "um_pouco_curto":
-      return `Colo uterino um pouco curto (medindo ${cm(l)} cm).`;
+      itens.push(`Colo uterino um pouco curto (medindo ${cm(l)} cm).`);
+      break;
     case "normal":
     default:
-      return "Colo uterino ecograficamente normal.";
+      itens.push("Colo uterino ecograficamente normal.");
+      break;
   }
+  return itens;
 }
 
 // ─────────────────────────── Render ───────────────────────────
 
-export function renderCervicometria(f: CervicometriaFindings): string {
+export function renderCervicometria(input: CervicometriaFindings): string {
+  const f = normalizeMedidasMm(input);
   // ----- OS SEGUINTES ASPECTOS FORAM OBSERVADOS -----
   const aspectos: string[] = [];
   aspectos.push(
@@ -160,7 +198,7 @@ export function renderCervicometria(f: CervicometriaFindings): string {
   }
 
   // ----- CONCLUSÃO -----
-  const conclusao: string[] = [coloConclusao(f.colo_oi_oe_cm)];
+  const conclusao: string[] = [...coloConclusaoItens(f)];
   if (f.cerclagem) {
     conclusao.push("Pontos de cerclagem uterina em topografia habitual.");
   }

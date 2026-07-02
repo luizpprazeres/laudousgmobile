@@ -89,10 +89,36 @@ const concl = (l: string) => l.split("CONCLUSÃO:")[1] ?? "";
   check("cerclagem → conclusão numerada", /1\) Colo uterino ecograficamente normal\.\n2\) Pontos de cerclagem/.test(concl(l)), concl(l));
 }
 
-// ── Sem medida do colo → placeholder ____, mas conclusão normal ──
+// ── SEGURANÇA (review dex1): sem medida do colo → NÃO conclui normal ──
 {
   const l = renderCervicometria(F({}));
   check("sem colo ditado → '____ cm' no corpo", /de ____ cm\./.test(l), l);
+  check("sem colo ditado → NÃO diz 'ecograficamente normal'", !/ecograficamente normal/.test(l), l);
+  check("sem colo ditado → conclusão sinaliza [REVISAR]", /não caracterizada pelo método\. \[REVISAR\]/.test(l), concl(l));
+}
+
+// ── SEGURANÇA (review dex1): orifício interno ABERTO → nunca normal ──
+{
+  // Mesmo com comprimento >= 2,5 (que seria "normal"), OI aberto é anormal.
+  const l = renderCervicometria(F({ colo_oi_oe_cm: 3.2, orificio_interno_fechado: false }));
+  check("OI aberto → corpo 'aberto'", /Orifício interno do colo uterino aberto\./.test(l), l);
+  check("OI aberto → conclusão NÃO diz 'ecograficamente normal'", !/ecograficamente normal/.test(concl(l)), concl(l));
+  check("OI aberto → conclusão marca risco de TPP", /Orifício interno do colo uterino aberto \(colo medindo 3,2 cm\), com risco para trabalho de parto prematuro\./.test(concl(l)), concl(l));
+}
+
+// ── SEGURANÇA (review dex1): medida em mm → convertida p/ cm ──
+{
+  const l = renderCervicometria(F({ colo_oi_oe_cm: 30 })); // 30 mm = 3,0 cm
+  check("colo 30 (mm) → 3,0 cm no corpo", /de 3,0 cm\./.test(l), l);
+  check("colo 30 (mm) → conclusão normal (3,0 cm)", /ecograficamente normal/.test(concl(l)), concl(l));
+}
+{
+  const l = renderCervicometria(F({ colo_oi_oe_cm: 18 })); // 18 mm = 1,8 cm → curto
+  check("colo 18 (mm) → 1,8 cm curto + TPP", /Colo uterino curto \(medindo 1,8 cm\), com alto risco/.test(concl(l)), concl(l));
+}
+{
+  const l = renderCervicometria(F({ colo_oi_oe_cm: 4.0 })); // já cm, não mexe
+  check("colo 4,0 (cm) preservado (não vira 0,4)", /de 4,0 cm\./.test(l), l);
 }
 
 // ── Schema aceita o shape esperado ──
