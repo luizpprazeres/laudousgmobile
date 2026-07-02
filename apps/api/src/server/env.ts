@@ -100,6 +100,11 @@ const ServerEnvSchema = z.object({
   // conclusão + recomendação de eco fetal ~28s). Determinístico, sem LLM
   // (renderer/categories/golfBall.ts). OFF = comportamento atual. Default OFF.
   GOLF_BALL_SNIPPET: z.string().default("false"),
+  // Auditoria 2026-07-01 gap #3 (🟠): quando "true", a MAMARIA anexa "[REVISAR: …]"
+  // quando detecta incoerência de BI-RADS — SÓ SINALIZA, NUNCA rebaixa (rebaixar
+  // categoria por heurística = risco de mascarar malignidade). (A) achado sólido sem
+  // categoria; (B) BI-RADS >= 4 sobre nódulo morfologicamente benigno. Default OFF.
+  MAMARIA_BIRADS_GUARD: z.string().default("false"),
   // Auditoria 2026-07-01 gap #6 (🟡): quando "true", a PELVE_FEMININA deduplica itens
   // de conclusão IDÊNTICOS (a extração às vezes emite o mesmo achado 2x — ex.: também
   // em achados_adicionais). Conservador: só duplicata literal (preserva lateralidade/
