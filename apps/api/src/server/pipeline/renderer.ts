@@ -48,6 +48,7 @@ import {
 import { runMskWriterStream } from "./mskWriter";
 import { runPartesMolesWriterStream } from "./partesMolesWriter";
 import { runPelveWriterStream } from "./pelveWriter";
+import { runDopplerRenalWriterStream } from "./dopplerRenalWriter";
 import {
   renderDopplerObstetrico,
   mergeStructuredIg,
@@ -333,6 +334,35 @@ export async function* runRendererStream(args: {
       ? "audit=ok"
       : `audit=FAIL(medidas:${a.missingMeasures.join("/") || "-"};menop:${a.menopausaSemMarca ? "sem-marca" : "-"};liqlivre:${a.liquidoLivreInventado ? "inventado" : "-"};placeholder:${a.placeholder ? "sim" : "-"})`;
     const systemMessage = `[${RENDERER_VERSION}] PELVE writer_guarded (${res.model}, ttft=${res.ttftMs}ms, ${res.outputTokens ?? "?"}tok, ${auditMsg})`;
+    args.onSystemMessage?.(systemMessage);
+    return {
+      fullText: res.fullText,
+      latencyMs: res.latencyMs,
+      systemMessage,
+      inputTokens: undefined,
+      outputTokens: res.outputTokens,
+      cachedInputTokens: undefined,
+      extraction: { findings: null, latencyMs: 0 },
+      freeSlotCount: 0,
+      passthrough: true,
+    };
+  }
+
+  // DOPPLER_RENAL writer_guarded (piloto vascular, decisão Claude+Dex2). Gate =
+  // membership em RENDERER_CATEGORIES (o route só chama runRendererStream se a
+  // categoria está na env); aqui sempre roteia p/ o writer (não há renderer). O
+  // médico dita compacto → o LLM emite só o ditado (nunca ____), com critérios JVB.
+  if (args.categoryCode === "DOPPLER_RENAL") {
+    args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
+    const res = yield* runDopplerRenalWriterStream({
+      rawInput: args.rawInput,
+      signal: args.signal,
+    });
+    const a = res.audit;
+    const auditMsg = a.ok
+      ? "audit=ok"
+      : `audit=FAIL(placeholder:${a.placeholder ? "sim" : "-"};pct:${a.percentEstenose ? "sim" : "-"};estenose-sem-criterio:${a.estenoseSemCriterio ? "sim" : "-"};medidas:${a.missingMeasures.join("/") || "-"})`;
+    const systemMessage = `[${RENDERER_VERSION}] DOPPLER_RENAL writer_guarded (${res.model}, ttft=${res.ttftMs}ms, ${res.outputTokens ?? "?"}tok, ${auditMsg})`;
     args.onSystemMessage?.(systemMessage);
     return {
       fullText: res.fullText,

@@ -112,6 +112,11 @@ const ServerEnvSchema = z.object({
   PELVE_WRITER: z.string().default("false"),
   // Modelo do PELVE writer_guarded (mesma justificativa do MSK_WRITER_MODEL).
   PELVE_WRITER_MODEL: z.string().default("gpt-4.1"),
+  // Eixo vascular Doppler (piloto, decisão Claude+Dex2 03/07): DOPPLER_RENAL escrita
+  // pelo LLM (writer_guarded) — o médico dita compacto e o template rígido enche de
+  // ____. Gate = membership em RENDERER_CATEGORIES (como DOPPLER_OBSTETRICO); fora da
+  // env → writer geral atual. pipeline/dopplerRenalWriter.ts. Modelo configurável.
+  DOPPLER_RENAL_WRITER_MODEL: z.string().default("gpt-4.1"),
   // Auditoria 2026-07-01 gap #6 (🟡): quando "true", a PELVE_FEMININA deduplica itens
   // de conclusão IDÊNTICOS (a extração às vezes emite o mesmo achado 2x — ex.: também
   // em achados_adicionais). Conservador: só duplicata literal (preserva lateralidade/

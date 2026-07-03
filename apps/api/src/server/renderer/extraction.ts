@@ -71,6 +71,11 @@ import {
   CERVICOMETRIA_EXTRACTION_PROMPT,
   CervicometriaFindingsSchema,
 } from "./categories/CERVICOMETRIA";
+import {
+  DOPPLER_RENAL_JSON_SCHEMA,
+  DOPPLER_RENAL_EXTRACTION_PROMPT,
+  DopplerRenalFindingsSchema,
+} from "./categories/DOPPLER_RENAL";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -107,6 +112,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "PROSTATA_SUPRAPUBICA",
   "DOPPLER_OBSTETRICO",
   "CERVICOMETRIA",
+  "DOPPLER_RENAL",
 ]);
 
 export type RendererExtractionResult = {
@@ -290,6 +296,15 @@ export const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: CERVICOMETRIA_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: CERVICOMETRIA_EXTRACTION_PROMPT,
     parse: (raw) => CervicometriaFindingsSchema.parse(raw),
+  },
+  // Registry mínimo p/ o gate do route (RENDERER_SUPPORTED). O caminho ativo é o
+  // writer (pipeline/dopplerRenalWriter.ts), que roda ANTES da extração — este
+  // extractor não é chamado hoje.
+  DOPPLER_RENAL: {
+    schemaName: "DopplerRenalFindings",
+    jsonSchema: DOPPLER_RENAL_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: DOPPLER_RENAL_EXTRACTION_PROMPT,
+    parse: (raw) => DopplerRenalFindingsSchema.parse(raw),
   },
 };
 
