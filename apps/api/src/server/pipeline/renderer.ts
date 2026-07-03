@@ -21,6 +21,10 @@ import {
   type ObstetricaFindings,
 } from "../renderer/categories/OBSTETRICA";
 import {
+  mergeBiometriaEstruturada,
+  reconcileBiometriaUnidade,
+} from "../renderer/categories/biometriaFetal";
+import {
   renderMorfologico,
   type MorfologicoFindings,
 } from "../renderer/categories/MORFOLOGICO";
@@ -451,9 +455,20 @@ export async function* runRendererStream(args: {
     const fnd = extraction.findings;
     let fullText: string;
     switch (args.categoryCode) {
-      case "OBSTETRICA":
-        fullText = renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection, flexivel, golfBall: golfBallSingle((fnd as ObstetricaFindings).numero_fetos) });
+      case "OBSTETRICA": {
+        // Biometria determinística (flag OBST_BIOMETRIA_DET, boletim 02/07): o bloco
+        // "Biometria fetal:" da calculadora do app + reconciliação cm→mm de voz
+        // VENCEM a extração LLM (mesmo padrão do mergeStructuredIg do Doppler).
+        const ofnd =
+          env().OBST_BIOMETRIA_DET === "true"
+            ? reconcileBiometriaUnidade(
+                mergeBiometriaEstruturada(fnd as ObstetricaFindings, args.rawInput),
+                args.rawInput,
+              )
+            : (fnd as ObstetricaFindings);
+        fullText = renderObstetrica(ofnd, null, { objetivo, igCorrection, flexivel, golfBall: golfBallSingle(ofnd.numero_fetos) });
         break;
+      }
       case "MORFOLOGICO":
         fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo, igCorrection, golfBall });
         break;

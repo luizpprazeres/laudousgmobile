@@ -1013,7 +1013,11 @@ export async function POST(req: Request) {
         // Sanity de medidas: sinaliza [REVISAR] em valores fisiologicamente
         // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
         // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
-        finalText = flagImplausibleMeasures(finalText);
+        finalText = flagImplausibleMeasures(finalText, {
+          // Check IG×CF (flag OBST_BIOMETRIA_DET): só sinaliza; o regex interno
+          // (label "(CF)" + "Gestação em torno de") já restringe ao obstétrico.
+          cfIgAware: env().OBST_BIOMETRIA_DET === "true",
+        });
       }
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
