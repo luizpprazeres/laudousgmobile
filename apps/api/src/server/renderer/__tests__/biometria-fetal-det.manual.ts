@@ -111,6 +111,15 @@ Obstétrica com em apresentação cefálica com dorso à esquerda, frequência c
 }
 
 {
+  // Correção FALADA pelo médico depois do bloco ("na verdade o fêmur tem 60"):
+  // extração devolve 60 (≠ bloco 57.6 e ≠ eco 5.76) → comando explícito VENCE o bloco.
+  const f = findings([feto({ cf_mm: 60, dbp_mm: null })]);
+  const m = mergeBiometriaEstruturada(f, RAW_62F15728);
+  ck(m.fetos[0]!.cf_mm === 60, "merge cirúrgico: correção falada (60) preservada");
+  ck(m.fetos[0]!.dbp_mm === 74.6, "merge cirúrgico: campo dropado (null) preenchido do bloco");
+}
+
+{
   // Gemelar: bloco ambíguo (de qual feto?) → NÃO tocar.
   const f = findings([feto({ cc_mm: 28.1 }), feto({ rotulo: "B" })], 2);
   const m = mergeBiometriaEstruturada(f, RAW_62F15728);

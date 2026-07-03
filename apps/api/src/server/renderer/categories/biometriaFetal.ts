@@ -97,8 +97,25 @@ export function parseBiometriaFetalBlock(rawInput: string): BiometriaBloco | nul
 }
 
 /**
- * Override determinístico: campos do bloco da calculadora VENCEM a extração LLM
- * (o bloco é máquina→máquina; o LLM só podia degradá-lo). Feto único apenas.
+ * Sobrescreve o campo extraído com o valor do bloco? SÓ quando a extração:
+ * (a) dropou o campo (null); (b) já bate com o bloco (idempotente); ou
+ * (c) ecoou o valor em cm sem o ×10 (o bug do boletim 02/07).
+ * Qualquer OUTRO valor = possível correção FALADA pelo médico depois de colar o
+ * bloco ("na verdade o fêmur tem 60") — precedência da casa: comando explícito >
+ * achados estruturados → preserva a extração.
+ */
+function blocoVence(atual: number | null, blocoMm: number): boolean {
+  return (
+    atual === null ||
+    Math.abs(atual - blocoMm) < 0.05 ||
+    Math.abs(atual - blocoMm / 10) < 0.05
+  );
+}
+
+/**
+ * Override determinístico: campos do bloco da calculadora (máquina→máquina; o LLM
+ * só podia degradá-los) corrigem a extração — cirúrgico, via blocoVence().
+ * Feto único apenas.
  */
 export function mergeBiometriaEstruturada(
   f: ObstetricaFindings,
@@ -110,12 +127,11 @@ export function mergeBiometriaEstruturada(
   const bloco = parseBiometriaFetalBlock(rawInput);
   if (!bloco) return f;
   const feto: Feto = { ...feto0 };
-  if (bloco.dbp_mm !== null) feto.dbp_mm = bloco.dbp_mm;
-  if (bloco.cc_mm !== null) feto.cc_mm = bloco.cc_mm;
-  if (bloco.ca_mm !== null) feto.ca_mm = bloco.ca_mm;
-  if (bloco.cf_mm !== null) feto.cf_mm = bloco.cf_mm;
-  if (bloco.peso_g !== null) feto.peso_g = bloco.peso_g;
-  if (bloco.peso_variacao_g !== null) feto.peso_variacao_g = bloco.peso_variacao_g;
+  const campos = ["dbp_mm", "cc_mm", "ca_mm", "cf_mm", "peso_g", "peso_variacao_g"] as const;
+  for (const c of campos) {
+    const b = bloco[c];
+    if (b !== null && blocoVence(feto[c], b)) feto[c] = b;
+  }
   return { ...f, fetos: [feto] };
 }
 
