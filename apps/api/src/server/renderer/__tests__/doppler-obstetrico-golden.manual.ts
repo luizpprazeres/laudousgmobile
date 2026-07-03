@@ -220,5 +220,31 @@ const RCF = (over: Partial<DopplerObstetricoFindings> = {}) =>
   check("feto único NÃO lança (continua no renderer)", /CONCLUSÃO:/.test(single));
 }
 
+// ── Camada flexível (P1 dex1): Doppler herda o schema; deve renderizar os campos
+// livres com a flag, senão dropa o inusitado silenciosamente. ──
+{
+  const base = F({ observacoes_corpo_livres: ["As adrenais fetais têm morfologia normal."], itens_conclusao_livres: ["O exame comparado ao anterior mostra evolução normal."] });
+  // Flag OFF: campos livres NÃO aparecem (byte-estável com o legado).
+  const off = renderDopplerObstetrico(base, null, { igCorrection: true });
+  check("Doppler flexivel OFF: corpo-livre não aparece", !/adrenais/.test(off));
+  check("Doppler flexivel OFF: item-livre não aparece", !/evolução normal/.test(off));
+  // Flag ON clássico: corpo-livre nos ASPECTOS, item-livre na CONCLUSÃO.
+  const on = renderDopplerObstetrico(base, null, { igCorrection: true, flexivel: true });
+  const [corpo, concl] = on.split("CONCLUSÃO:");
+  check("Doppler flexivel ON: adrenais no corpo", /adrenais/.test(corpo ?? ""));
+  check("Doppler flexivel ON: adrenais NÃO na conclusão", !/adrenais/.test(concl ?? ""));
+  check("Doppler flexivel ON: comparação na conclusão", /evolução normal/.test(concl ?? ""));
+  // Flag ON objetivo: corpo-livre nos ACHADOS.
+  const onObj = renderDopplerObstetrico(base, null, { igCorrection: true, flexivel: true, objetivo: true });
+  check("Doppler objetivo ON: adrenais nos achados", /adrenais/.test(onObj));
+  // Dedup: biometria reditada não duplica.
+  const dup = renderDopplerObstetrico(
+    F({ fetos: [feto({ dbp_mm: 60 })], observacoes_corpo_livres: ["Diâmetro biparietal (DBP) de 60 mm."] }),
+    null,
+    { igCorrection: true, flexivel: true },
+  );
+  check("Doppler flexivel ON: dedup de biometria reditada", (dup.match(/Diâmetro biparietal \(DBP\) de 60 mm/g) ?? []).length === 1);
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

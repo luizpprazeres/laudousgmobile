@@ -529,7 +529,7 @@ export async function* runRendererStream(args: {
         const dfnd = mergeStructuredIg(fnd as DopplerObstetricoFindings, args.rawInput);
         // Doppler gemelar já cai no fallback writer (throw no renderer); o guard de
         // feto único é defesa em profundidade.
-        fullText = renderDopplerObstetrico(dfnd, null, { objetivo, igCorrection, golfBall: golfBallSingle(dfnd.numero_fetos) });
+        fullText = renderDopplerObstetrico(dfnd, null, { objetivo, igCorrection, flexivel, golfBall: golfBallSingle(dfnd.numero_fetos) });
         break;
       }
       case "CERVICOMETRIA":
