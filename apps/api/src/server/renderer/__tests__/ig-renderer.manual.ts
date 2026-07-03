@@ -27,7 +27,7 @@ const O = (p: Partial<ObstetricaFindings> = {}): ObstetricaFindings => ({
   saco_gestacional_mm: null, saco_gestacional_medidas_mm: null,
   placenta_quantidade: null, placenta_localizacao: null, placenta_ecotextura: null,
   placenta_grau: null, liquido_tipo: null, liquido_ila_cm: null,
-  liquido_mbv_por_feto_cm: null, liquido_classe: null, achados_adicionais: null, itens_conclusao_livres: [], ...p,
+  liquido_mbv_por_feto_cm: null, liquido_classe: null, achados_adicionais: null, itens_conclusao_livres: [], observacoes_corpo_livres: [], ...p,
 });
 
 // Caso com referência precoce divergente (>5d): biometria 19s4d, 1ªUS 12/01 (8s2d),

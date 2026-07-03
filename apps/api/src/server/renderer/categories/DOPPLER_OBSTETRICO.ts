@@ -11,6 +11,8 @@ import {
   pesoLinhaObj,
   placentaFraseObj,
   TECNICA_OBJ,
+  filterFreeBodyItems,
+  filterFreeConclusionItems,
 } from "./OBSTETRICA";
 import {
   type DopplerData,
@@ -323,7 +325,7 @@ function toPesoFetalData(f: DopplerObstetricoFindings): PesoFetalData {
 // Render
 // ---------------------------------------------------------------------------
 
-function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null): string {
+function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null, flexivel = false): string {
   const ig = igResultDoppler(f, igCorrection);
   const d = toDopplerData(f);
   const ft = feto0(f);
@@ -361,6 +363,13 @@ function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, gol
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
   }
 
+  // Camada flexível (flag): observações livres de corpo (após dedup) nos aspectos,
+  // e itens livres na conclusão. Espelha OBSTETRICA (dex1: não dropar o inusitado).
+  if (flexivel) {
+    aspectos.push(...filterFreeBodyItems(f.observacoes_corpo_livres));
+    conclusao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
+  }
+
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = ig.fraseReferencia ? `${ig.fraseReferencia}\n` : "";
 
@@ -381,7 +390,7 @@ function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, gol
     .trim();
 }
 
-function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null): string {
+function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null, flexivel = false): string {
   const ig = igResultDoppler(f, igCorrection);
   const d = toDopplerData(f);
   const ft = feto0(f);
@@ -412,6 +421,12 @@ function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean, gol
 
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push(`\n${f.achados_adicionais.trim()}`);
+  }
+
+  // Camada flexível (flag): corpo-livre nos achados, itens-livres na impressão.
+  if (flexivel) {
+    achados.push(...filterFreeBodyItems(f.observacoes_corpo_livres));
+    impressao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
   }
 
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
@@ -474,7 +489,7 @@ export function mergeStructuredIg(
 export function renderDopplerObstetrico(
   f: DopplerObstetricoFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null },
 ): string {
   // SEGURANÇA (review dex1): gestação inicial e óbito/ausência de vitalidade saem
   // do escopo v1 — lança erro → fallback writer no route (route.ts:812). O renderer
@@ -498,5 +513,6 @@ export function renderDopplerObstetrico(
   if (g && f.achados_adicionais) {
     f = { ...f, achados_adicionais: stripGolfBallEcho(f.achados_adicionais) || null };
   }
-  return opts?.objetivo ? renderObjetivo(f, igc, g) : renderClassico(f, igc, g);
+  const flx = opts?.flexivel ?? false;
+  return opts?.objetivo ? renderObjetivo(f, igc, g, flx) : renderClassico(f, igc, g, flx);
 }

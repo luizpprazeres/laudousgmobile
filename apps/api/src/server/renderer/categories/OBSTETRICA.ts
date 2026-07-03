@@ -70,6 +70,10 @@ export const ObstetricaFindingsSchema = z.object({
   // NÃO cabe em campo estruturado (ex.: comparação com exame anterior). Passa por
   // guard de dedup determinístico antes de entrar (nunca duplica IG/líquido/peso).
   itens_conclusao_livres: z.array(z.string()),
+  // Camada flexível (CORPO): observação clínica LIVRE que o médico quer no CORPO
+  // do laudo e que não cabe em campo estruturado — o caso matador "adicione uma
+  // frase sobre as adrenais fetais". Mesmo dedup determinístico do corpo.
+  observacoes_corpo_livres: z.array(z.string()),
 });
 
 export type ObstetricaFindings = z.infer<typeof ObstetricaFindingsSchema>;
@@ -145,6 +149,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "liquido_classe",
     "achados_adicionais",
     "itens_conclusao_livres",
+    "observacoes_corpo_livres",
   ],
   properties: {
     numero_fetos: { type: "integer" },
@@ -174,6 +179,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     liquido_classe: str,
     achados_adicionais: str,
     itens_conclusao_livres: { type: "array", items: { type: "string" } },
+    observacoes_corpo_livres: { type: "array", items: { type: "string" } },
   },
 } as const;
 
@@ -249,7 +255,18 @@ REGRAS:
       ("X pela biometria atual, devendo ser corrigida..."), 1ª US/DUM, líquido,
       peso — MESMO que o médico tenha ditado a frase inteira. Isso já é montado
       pelo sistema.
-    - NUNCA invente. Array VAZIO [] se não houver conteúdo extra.`;
+    - NUNCA invente. Array VAZIO [] se não houver conteúdo extra.
+14. observacoes_corpo_livres (CAMADA FLEXÍVEL — CORPO): observação clínica que o
+    médico manda pôr no CORPO do laudo (descrição do que se vê) e que NÃO cabe em
+    NENHUM outro campo — ex.: "adicione uma frase sobre as adrenais fetais",
+    "comente o cordão umbilical com 3 vasos". Mesmas regras ESTRITAS do item 13:
+    - SUBSTÂNCIA LIMPA nas palavras do médico, SEM as palavras de comando
+      ("adicione uma frase", "comente", "descreva no corpo") e SEM ruído.
+    - NUNCA repita o que já tem campo próprio (biometria, placenta, líquido,
+      apresentação, BCF, movimentos) — isso já é montado pelo sistema.
+    - Diferença do 13: aqui é DESCRIÇÃO do corpo; lá é item de CONCLUSÃO. Uma
+      observação de corpo NÃO vira item de conclusão (e vice-versa).
+    - NUNCA invente. Array VAZIO [] se não houver.`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos
@@ -475,10 +492,43 @@ const DETERMINISTIC_CONCL_PATTERNS: RegExp[] = [
   /^(?:correlacion|corrij|corrig)\w*\b[^.]*\b(?:ultrassonograf|precoce|\bdum\b|biometria|idade\s+gestacional|item\s+\d)/i,
   /\bno\s+item\s+\d/i,
 ];
+/** Capitaliza a 1ª letra + garante ponto final (o item livre vem em prosa crua). */
+function normalizaItemLivre(s: string): string {
+  const t = s.trim().replace(/\s+/g, " ");
+  const cap = t.charAt(0).toUpperCase() + t.slice(1);
+  return /[.!?]$/.test(cap) ? cap : `${cap}.`;
+}
+
 export function filterFreeConclusionItems(items: string[] | null | undefined): string[] {
   return (items ?? [])
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !DETERMINISTIC_CONCL_PATTERNS.some((re) => re.test(s)));
+    .filter((s) => s.length > 0 && !DETERMINISTIC_CONCL_PATTERNS.some((re) => re.test(s)))
+    .map(normalizaItemLivre);
+}
+
+/**
+ * Guard de dedup do CORPO (camada flexível): remove observações livres que
+ * duplicam linhas já montadas deterministicamente no corpo (biometria, placenta,
+ * líquido, apresentação/BCF/movimentos). O médico às vezes redita o que já é campo
+ * próprio; o código não deixa sair duas vezes. Mantém o inusitado genuíno (adrenais
+ * fetais, cordão com 3 vasos). Mesmo princípio de filterFreeConclusionItems.
+ */
+const DETERMINISTIC_BODY_PATTERNS: RegExp[] = [
+  /di[âa]metro\s+biparietal|\bdbp\b/i,
+  /circunfer[êe]ncia\s+(?:da\s+cabe[çc]a|abdominal|cef[áa]lica)|\bcc\b|\bca\b/i,
+  /comprimento\s+do\s+f[êe]mur|\bcf\b/i,
+  /peso\s+(?:aproximado|fetal)/i,
+  /placenta\b/i,
+  /l[íi]quido\s+amni[óo]tico|maior\s+bols[ãa]o|\bila\b/i,
+  /apresenta[çc][ãa]o\s+(?:cef[áa]lica|p[ée]lvica|c[óo]rmica|transversa)|feto\s+[úu]nico/i,
+  /batimentos\s+card[íi]acos|\bbcf\b|movimentos\s+fetais\s+(?:s[ãa]o\s+)?ativos/i,
+  /saco\s+gestacional|comprimento\s+cr[âa]nio|\bccn\b|ves[íi]cula\s+vitel/i,
+];
+export function filterFreeBodyItems(items: string[] | null | undefined): string[] {
+  return (items ?? [])
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && !DETERMINISTIC_BODY_PATTERNS.some((re) => re.test(s)))
+    .map(normalizaItemLivre);
 }
 
 /**
@@ -656,8 +706,12 @@ export function renderObstetricaClassico(
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
   }
 
-  // Camada flexível (flag): itens livres (após dedup determinístico) ao fim da conclusão.
-  if (flexivel) conclusao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
+  // Camada flexível (flag): observações livres de corpo (após dedup) ao fim dos
+  // aspectos, e itens livres (após dedup) ao fim da conclusão.
+  if (flexivel) {
+    aspectos.push(...filterFreeBodyItems(f.observacoes_corpo_livres));
+    conclusao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
+  }
 
   // Linha opcional de DUM (logo após o título).
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
@@ -871,8 +925,12 @@ export function renderObstetricaObjetivo(
     achados.push(`\n${f.achados_adicionais.trim()}`);
   }
 
-  // Camada flexível (flag): itens livres (após dedup determinístico) ao fim da impressão.
-  if (flexivel) impressao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
+  // Camada flexível (flag): observações livres de corpo (após dedup) nos achados,
+  // e itens livres (após dedup) ao fim da impressão.
+  if (flexivel) {
+    achados.push(...filterFreeBodyItems(f.observacoes_corpo_livres));
+    impressao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
+  }
 
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = ig.fraseReferencia ? `\n${ig.fraseReferencia}` : "";

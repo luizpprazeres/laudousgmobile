@@ -34,7 +34,7 @@ const F = (p: Partial<ObstetricaFindings>): ObstetricaFindings => ({
   primeira_us_ig_dias: null, ig_referencia_hoje_semanas: null,
   ig_referencia_hoje_dias: null, referencia_fonte: null, corrigir_ig: null,
   achados_adicionais: null,
-  itens_conclusao_livres: [],
+  itens_conclusao_livres: [], observacoes_corpo_livres: [],
   ...p,
 });
 

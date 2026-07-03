@@ -7,6 +7,7 @@
 import {
   renderObstetrica,
   filterFreeConclusionItems,
+  filterFreeBodyItems,
   type ObstetricaFindings,
 } from "../categories/OBSTETRICA";
 
@@ -28,7 +29,7 @@ const O = (p: Partial<ObstetricaFindings> = {}): ObstetricaFindings => ({
   placenta_quantidade: null, placenta_localizacao: null, placenta_ecotextura: null,
   placenta_grau: null, liquido_tipo: null, liquido_ila_cm: null,
   liquido_mbv_por_feto_cm: null, liquido_classe: null, achados_adicionais: null,
-  itens_conclusao_livres: [], ...p,
+  itens_conclusao_livres: [], observacoes_corpo_livres: [], ...p,
 });
 
 // ── guard de dedup ──
@@ -59,9 +60,48 @@ ck(filterFreeConclusionItems(["  ", ""]).length === 0, "guard DROPA vazios");
   ck((out.match(/devendo ser corrigida/g) ?? []).length === 0, "renderer NÃO duplica correção de IG ditada verbatim (guard dropou)");
 }
 
-// ── byte-stability: lista vazia = idêntico ao sem o campo ──
+// ── CORPO livre: guard de dedup ──
+ck(
+  filterFreeBodyItems(["As adrenais fetais têm morfologia e dimensões normais."]).length === 1,
+  "guard CORPO MANTÉM inusitado genuíno (adrenais fetais)",
+);
+ck(filterFreeBodyItems(["Diâmetro biparietal (DBP) de 48 mm."]).length === 0, "guard CORPO DROPA biometria (DBP)");
+ck(filterFreeBodyItems(["Placenta de localização anterior."]).length === 0, "guard CORPO DROPA placenta");
+ck(filterFreeBodyItems(["Maior bolsão vertical de 4,0 cm."]).length === 0, "guard CORPO DROPA líquido");
+ck(filterFreeBodyItems(["Feto único, em apresentação cefálica."]).length === 0, "guard CORPO DROPA apresentação");
+ck(filterFreeBodyItems(["  ", ""]).length === 0, "guard CORPO DROPA vazios");
+
+// ── renderer: observação de corpo genuína entra nos ASPECTOS, não na conclusão ──
 {
-  const a = renderObstetrica(O({ itens_conclusao_livres: [] }));
+  const out = renderObstetrica(
+    O({ observacoes_corpo_livres: ["As adrenais fetais têm morfologia e dimensões normais."] }),
+    null,
+    { flexivel: true },
+  );
+  const [corpo, concl] = out.split("CONCLUSÃO:");
+  ck(corpo?.includes("adrenais fetais") ?? false, "renderer: observação de corpo entra nos ASPECTOS");
+  ck(!(concl?.includes("adrenais fetais") ?? false), "renderer: observação de corpo NÃO vaza pra conclusão");
+}
+
+// ── renderer: corpo-livre respeita a flag (OFF = não aparece) ──
+{
+  const out = renderObstetrica(O({ observacoes_corpo_livres: ["As adrenais fetais têm morfologia normal."] }));
+  ck(!out.includes("adrenais"), "renderer: corpo-livre ignorado com flag OFF");
+}
+
+// ── renderer objetivo: corpo-livre entra nos ACHADOS ──
+{
+  const out = renderObstetrica(
+    O({ observacoes_corpo_livres: ["As adrenais fetais têm morfologia normal."] }),
+    null,
+    { flexivel: true, objetivo: true },
+  );
+  ck(out.includes("adrenais fetais"), "renderer objetivo: corpo-livre entra nos ACHADOS");
+}
+
+// ── byte-stability: listas vazias = idêntico ao sem os campos ──
+{
+  const a = renderObstetrica(O({ itens_conclusao_livres: [], observacoes_corpo_livres: [] }));
   const b = renderObstetrica(O({ ig_semanas: 22, ig_dias: 0 }));
   ck(a === b, "byte-stability: itens vazios = idêntico ao legado");
 }
