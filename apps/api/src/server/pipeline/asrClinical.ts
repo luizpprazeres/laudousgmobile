@@ -33,6 +33,13 @@ const CLINICAL_GARBLE_GLOBAL: ReadonlyArray<readonly [RegExp, string]> = [
  * "estímulo" num US de tireoide. Restringir por categoria evita falso-positivo
  * fora de TIREOIDE (review dex1, 2026-07-01).
  */
+// "maior bolsão vertical" garbleado como "maior vertical média" (boletim 02/07,
+// laudo 62f15728: virou "ILA de 3,9 cm" — rótulo errado; ILA 3,9 seria oligoâmnio).
+// "maior vertical média" jamais é conteúdo clínico legítimo em obstetrícia.
+const OBST_MBV_GARBLE: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\bmaior\s+vertical\s+m[ée]di[ao]\b/gi, "maior bolsão vertical"],
+];
+
 const CLINICAL_GARBLE_BY_CATEGORY: Readonly<
   Record<string, ReadonlyArray<readonly [RegExp, string]>>
 > = {
@@ -40,6 +47,9 @@ const CLINICAL_GARBLE_BY_CATEGORY: Readonly<
     // "istmo" tireoidiano transcrito como "estímulo".
     [/\best[íi]mulos?\b/gi, "istmo"],
   ],
+  OBSTETRICA: OBST_MBV_GARBLE,
+  DOPPLER_OBSTETRICO: OBST_MBV_GARBLE,
+  MORFOLOGICO: OBST_MBV_GARBLE,
 };
 
 /**

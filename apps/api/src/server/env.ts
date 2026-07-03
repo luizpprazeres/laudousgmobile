@@ -87,6 +87,11 @@ const ServerEnvSchema = z.object({
   // "____ cm/s" (placeholder feio — corpus §2 "remover linhas de pico não ditadas").
   // Vale p/ clássico e objetivo. OFF = comportamento atual ("____"). Default OFF.
   TIREOIDE_PICO_OMIT: z.string().default("false"),
+  // Biometria fetal determinística (boletim 02/07, laudo 62f15728): quando "true",
+  // o bloco "Biometria fetal:" da calculadora do app + a reconciliação cm→mm de
+  // ditado por voz VENCEM a extração LLM (que ecoou CC/CA/CF sem o ×10), e o
+  // measureSanity ganha o check IG×CF (fórmula canônica do app). Default OFF.
+  OBST_BIOMETRIA_DET: z.string().default("false"),
   // Arquitetura 2 modos (2026-07-02): quando "true", PARTES_MOLES (categoria ABERTA,
   // lesão de qualquer tipo/topografia) é escrita pelo LLM (writer_guarded) — mesma
   // receita do MSK (prompt base + roteiro da casa + few-shots dos laudos assinados +

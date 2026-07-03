@@ -8,6 +8,8 @@
  * não gerar falso-positivo. Idempotente (não re-sinaliza). Preserva placeholders ____.
  */
 
+import { igSemanasPorCf } from "../renderer/categories/biometriaFetal";
+
 const FLAG = " [REVISAR: valor improvável]";
 
 /** Regra: label + número + unidade; sinaliza se fora de [min, max]. */
@@ -38,8 +40,14 @@ function flagSegue(full: string, offset: number, mLen: number): boolean {
 /**
  * Insere [REVISAR] após medidas fora da faixa plausível + dimensões zero.
  * NÃO altera o valor; só sinaliza. Idempotente. Preserva placeholders ____.
+ * `opts.cfIgAware` (flag OBST_BIOMETRIA_DET): check IG×CF adicional — pega a
+ * unidade errada que os bounds estáticos não pegam (boletim 02/07, 62f15728:
+ * CF 5,8 mm é plausível em gestação inicial, absurdo com IG de 29 semanas).
  */
-export function flagImplausibleMeasures(laudo: string): string {
+export function flagImplausibleMeasures(
+  laudo: string,
+  opts?: { cfIgAware?: boolean },
+): string {
   let s = laudo;
 
   for (const r of REGRAS) {
@@ -67,5 +75,29 @@ export function flagImplausibleMeasures(laudo: string): string {
     },
   );
 
+  if (opts?.cfIgAware) s = flagCfIncompativelComIg(s);
+
   return s;
+}
+
+const FLAG_CF_IG = " [REVISAR: CF incompatível com a IG]";
+
+/**
+ * IG×CF: sinaliza CF cuja IG estimada (fórmula canônica do app, Hadlock) diverge
+ * >6 semanas da IG da conclusão ("Gestação em torno de N semanas"). Tolerância
+ * LARGA de propósito (RCIU/macrossomia jamais desviam 6 semanas; unidade errada
+ * desvia 15+). Só sinaliza; nunca altera. Idempotente (pula CF já flagrado).
+ */
+function flagCfIncompativelComIg(laudo: string): string {
+  const ig = laudo.match(/Gesta[çc][ãa]o em torno de (\d+) semanas/i);
+  if (!ig || ig[1] === undefined) return laudo;
+  const igSemanas = parseInt(ig[1], 10);
+  return laudo.replace(
+    /\(CF\)[^\d\n]{0,18}?(\d+(?:[.,]\d+)?)\s*mm(?!\s*\[REVISAR)/gi,
+    (m, valor: string) => {
+      const est = igSemanasPorCf(num(valor));
+      if (est === null) return m;
+      return Math.abs(est - igSemanas) > 6 ? `${m}${FLAG_CF_IG}` : m;
+    },
+  );
 }
