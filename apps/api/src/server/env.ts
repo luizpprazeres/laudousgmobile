@@ -117,6 +117,9 @@ const ServerEnvSchema = z.object({
   // ____. Gate = membership em RENDERER_CATEGORIES (como DOPPLER_OBSTETRICO); fora da
   // env → writer geral atual. pipeline/dopplerRenalWriter.ts. Modelo configurável.
   DOPPLER_RENAL_WRITER_MODEL: z.string().default("gpt-4.1"),
+  // Eixo vascular — DOPPLER_VENOSO_MMII writer_guarded (2ª modalidade). Gate =
+  // membership em RENDERER_CATEGORIES. Segurança: TVP-only não afirma superficial.
+  DOPPLER_VENOSO_WRITER_MODEL: z.string().default("gpt-4.1"),
   // Auditoria 2026-07-01 gap #6 (🟡): quando "true", a PELVE_FEMININA deduplica itens
   // de conclusão IDÊNTICOS (a extração às vezes emite o mesmo achado 2x — ex.: também
   // em achados_adicionais). Conservador: só duplicata literal (preserva lateralidade/
