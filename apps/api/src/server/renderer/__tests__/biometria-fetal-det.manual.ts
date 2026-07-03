@@ -70,7 +70,7 @@ const findings = (
   liquido_mbv_por_feto_cm: null,
   liquido_classe: null,
   achados_adicionais: null,
-  itens_conclusao_livres: [],
+  itens_conclusao_livres: [], observacoes_corpo_livres: [],
 });
 
 // ---------------------------------------------------------------------------

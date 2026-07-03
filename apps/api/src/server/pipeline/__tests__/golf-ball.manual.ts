@@ -140,7 +140,7 @@ const obsBase = {
   numero_fetos: 1,
   gestacao_inicial: false,
   fetos: [],
-  itens_conclusao_livres: [],
+  itens_conclusao_livres: [], observacoes_corpo_livres: [],
 } as unknown as ObstetricaFindings;
 
 {
@@ -183,7 +183,7 @@ const dopBase = {
   gestacao_inicial: false,
   vitalidade_ausente: false,
   fetos: [],
-  itens_conclusao_livres: [],
+  itens_conclusao_livres: [], observacoes_corpo_livres: [],
 } as unknown as DopplerObstetricoFindings;
 
 {

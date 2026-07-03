@@ -41,7 +41,7 @@ const F = (p: Partial<DopplerObstetricoFindings>): DopplerObstetricoFindings => 
   placenta_quantidade: null, placenta_localizacao: null,
   placenta_ecotextura: null, placenta_grau: null, liquido_tipo: null,
   liquido_ila_cm: null, liquido_mbv_por_feto_cm: null, liquido_classe: null,
-  achados_adicionais: null, itens_conclusao_livres: [],
+  achados_adicionais: null, itens_conclusao_livres: [], observacoes_corpo_livres: [],
   // doppler
   ip_umbilical: null, perc_umbilical: null, ip_acm: null, perc_acm: null,
   ip_uterina_dir: null, ip_uterina_esq: null, ip_medio_uterinas: null,
