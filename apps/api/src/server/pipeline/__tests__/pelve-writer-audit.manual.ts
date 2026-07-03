@@ -107,5 +107,28 @@ function check(name: string, cond: boolean, detail?: string) {
   check("líquido livre POSITIVO não-ditado ainda detecta", a.liquidoLivreInventado, JSON.stringify(a));
 }
 
+// 11) Tolerância mm→cm (achado do smoke ampliado): "12 milímetros" → "1,2 cm" no
+// laudo NÃO é drop (o writer converteu certo).
+{
+  const raw = "saco gestacional medindo 12 milímetros de diâmetro médio";
+  const laudo = "Presença de saco gestacional intrauterino, tópico, medindo 1,2 cm de diâmetro médio.";
+  const a = auditPelveFacts(raw, laudo);
+  check("mm→cm: '12 mm' → '1,2 cm' não é drop", a.ok && !a.missingMeasures.includes("12"), JSON.stringify(a));
+}
+{
+  // mm ditado e AUSENTE de fato (nem literal nem forma cm) → ainda detecta.
+  const raw = "nódulo medindo 8 milímetros";
+  const laudo = "Útero em anteversão."; // não tem 8 nem 0,8
+  const a = auditPelveFacts(raw, laudo);
+  check("mm realmente ausente ainda detecta", !a.ok && a.missingMeasures.includes("8"), JSON.stringify(a));
+}
+{
+  // cm ditado normal (não-mm) segue detectando drop literal.
+  const raw = "útero medindo 6,3 x 3,8 x 5,4 cm";
+  const laudo = "Útero medindo 6,3 x 3,8 cm."; // dropou 5,4
+  const a = auditPelveFacts(raw, laudo);
+  check("cm ditado: drop de 5,4 ainda detecta", !a.ok && a.missingMeasures.includes("5,4"), JSON.stringify(a));
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

@@ -29,6 +29,19 @@ function extractVolumeNumbers(text: string): string[] {
   return out;
 }
 
+/** O número foi ditado em MILÍMETROS? (ex.: "12 mm" / "12 milímetros"). */
+function ditadoEmMm(num: string, raw: string): boolean {
+  const pat = num.replace(/[.,]/g, "[.,]");
+  return new RegExp(`(?<![\\d.,])${pat}\\s*(?:mm|mil[íi]metros?)\\b`, "i").test(raw);
+}
+
+/** Forma em cm (÷10) de um número ditado em mm — "12" → "1.2" (numberInLaudo
+ *  já casa vírgula/ponto). Usado p/ tolerar a conversão mm→cm do writer. */
+function mmParaCm(num: string): string {
+  const v = parseFloat(num.replace(",", ".")) / 10;
+  return String(v);
+}
+
 const RE_MENOPAUSA = /menop[áa]usic|\bmenopausa\b|ov[áa]rios?\s+atr[óo]fic/i;
 const RE_MENOPAUSA_NEG = /pr[ée]-?\s*menopausa|n[ãa]o\s+(?:est[áa]\s+)?(?:na\s+|em\s+)?menopausa/i;
 const RE_LIQ_LIVRE = /l[íi]quido\s+livre/i;
@@ -38,8 +51,15 @@ export function auditPelveFacts(rawInput: string, laudo: string): PelveAudit {
   const laudoLc = laudo.toLowerCase();
 
   // Medidas ditadas ausentes no laudo (com unidade, via MSK) + volumes sem unidade.
+  // Tolerância mm→cm (achado do smoke ampliado): quando o médico dita em mm e o
+  // writer converte p/ cm (ex.: "12 mm" → "1,2 cm"), o número literal "12" não está
+  // no laudo — mas a forma /10 está. Não é drop; aceita a conversão correta.
   const ditadas = [...extractMeasureNumbers(rawInput), ...extractVolumeNumbers(rawInput)];
-  const missingMeasures = [...new Set(ditadas)].filter((n) => !numberInLaudo(n, laudo));
+  const missingMeasures = [...new Set(ditadas)].filter((n) => {
+    if (numberInLaudo(n, laudo)) return false;
+    if (ditadoEmMm(n, rawInput) && numberInLaudo(mmParaCm(n), laudo)) return false;
+    return true;
+  });
 
   // Menopausa ditada → o laudo TEM que marcar "praticamente sem folículos".
   const menopausaDitada = RE_MENOPAUSA.test(rawLc) && !RE_MENOPAUSA_NEG.test(rawLc);
