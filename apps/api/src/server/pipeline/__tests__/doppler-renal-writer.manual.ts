@@ -74,5 +74,34 @@ check("few-shot sugestivo: não afirma estenose significativa (VPS 210/RAR 2,8)"
   check("audit: RAR 1,3 dropada detectada", !a.ok && a.missingMeasures.includes("1,3"), JSON.stringify(a));
 }
 
+// ── Apertos do review dex1 ──
+// (#1) Afirmação "pelada" de estenose (sem lead "com sinais") SEM critério → detecta.
+{
+  const raw = "renal direita VPS 180, RAR 2,0"; // sem critério forte
+  const laudo = "CONCLUSÃO:\nEstenose hemodinamicamente significativa da artéria renal direita.";
+  const a = auditDopplerRenalFacts(raw, laudo);
+  check("dex1 #1: afirmação pelada de estenose sem critério detectada", a.estenoseSemCriterio && !a.ok, JSON.stringify(a));
+}
+// (#1) Forma NEGADA normal não é afirmação.
+{
+  const a = auditDopplerRenalFacts("renal 120 e 110, sem estenose", "sem evidência ecográfica de estenose hemodinamicamente significativa.");
+  check("dex1 #1: 'sem evidência de estenose...' não é afirmação", !a.estenoseSemCriterio && a.ok, JSON.stringify(a));
+}
+// (#2) Formato compacto "VPS à direita 120 e à esquerda 110" — ambos extraídos.
+{
+  const raw = "Doppler renal. VPS à direita 120 e à esquerda 110. Sem estenose.";
+  const laudoOk = "Artéria renal direita: VPS de 120 cm/s. Artéria renal esquerda: VPS de 110 cm/s.\nCONCLUSÃO:\nArtérias renais com fluxo preservado.";
+  const laudoDrop = "Artéria renal direita: VPS de 120 cm/s.\nCONCLUSÃO:\nnormal."; // dropou 110
+  check("dex1 #2: VPS compacto ambos presentes → ok", auditDopplerRenalFacts(raw, laudoOk).ok, JSON.stringify(auditDopplerRenalFacts(raw, laudoOk)));
+  check("dex1 #2: VPS compacto — drop de 110 detectado", auditDopplerRenalFacts(raw, laudoDrop).missingMeasures.includes("110"));
+}
+// (#2) "RAR direita 1,3, esquerda 1,2" — 2º valor sem rótulo detectado se dropado.
+{
+  const raw = "RAR direita 1,3, esquerda 1,2.";
+  const laudoDrop = "Relação aorto-renal (RAR) de 1,3 à direita.\nCONCLUSÃO:\nnormal."; // dropou 1,2
+  const a = auditDopplerRenalFacts(raw, laudoDrop);
+  check("dex1 #2: RAR 2º valor (1,2) sem rótulo — drop detectado", a.missingMeasures.includes("1,2"), JSON.stringify(a));
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

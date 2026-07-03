@@ -16,31 +16,41 @@ export type DopplerRenalAudit = {
   missingMeasures: string[];
 };
 
-/** Números de VPS ditados (int, cm/s) — "VPS 120", "120 cm/s", "95 centímetros por segundo". */
+function collect(re: RegExp, text: string): number[] {
+  const out: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const g = (m[1] ?? m[2])!;
+    out.push(Number(g.replace(",", ".")));
+  }
+  return out;
+}
+
+/** Números de VPS ditados (int, cm/s). Tolera palavras entre o rótulo e o número
+ *  (review dex1: "VPS à direita 120 e à esquerda 110") + valor lateral sem prefixo. */
 function extractVps(text: string): number[] {
-  const out: number[] = [];
-  const re = /(?:vps\s*(?:de\s*)?|velocidade\s+de\s+pico\s+sist[óo]lico\s+de\s+)(\d{2,3})|(\d{2,3})\s*(?:cm\/s|cent[íi]metros?\s+por\s+segundo)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) out.push(Number(m[1] ?? m[2]));
-  return out;
+  // "VPS ... 120", "velocidade de pico sistólico ... 95", "120 cm/s".
+  const rotulado = collect(/(?:vps|velocidade\s+de\s+pico\s+sist[óo]lico)[^0-9]{0,18}?(\d{2,3})|(\d{2,3})\s*(?:cm\/s|cent[íi]metros?\s+por\s+segundo)/gi, text);
+  // "à direita 120", "à esquerda 110" (int 2-3 dígitos, NÃO decimal → não pega RAR/IR).
+  const lateral = collect(/(?:à\s+)?(?:direita|esquerda)\s+(\d{2,3})(?![.,]?\d)/gi, text);
+  return [...rotulado, ...lateral];
 }
 
-/** Valores de RAR ditados (decimal). "RAR 1,3", "relação aorto-renal de 3,8", "relação renal aorta de 1,8". */
+/** Valores de RAR ditados (decimal). Tolera palavras entre o rótulo e o número
+ *  (review dex1: "RAR direita 1,3, esquerda 1,2"). */
 function extractRar(text: string): number[] {
-  const out: number[] = [];
-  const re = /(?:\brar\b|rela[çc][ãa]o\s+(?:aorto-?renal|renal\s+aorta))\s*(?:de\s*)?(\d+[.,]\d+)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) out.push(Number(m[1]!.replace(",", ".")));
-  return out;
+  return collect(/(?:\brar\b|rela[çc][ãa]o\s+(?:aorto-?renal|renal\s+aorta))[^0-9]{0,20}?(\d+[.,]\d+)/gi, text);
 }
 
-/** Valores de IR ditados (decimal). "IR 0,62", "índices de resistividade de 0,50". */
+/** Valores de IR ditados (decimal). */
 function extractIr(text: string): number[] {
-  const out: number[] = [];
-  const re = /(?:\bir\b|[íi]ndices?\s+de\s+resist\w+)[^0-9]{0,30}?(\d+[.,]\d+)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) out.push(Number(m[1]!.replace(",", ".")));
-  return out;
+  return collect(/(?:\bir\b|[íi]ndices?\s+de\s+resist\w+)[^0-9]{0,30}?(\d+[.,]\d+)/gi, text);
+}
+
+/** Segundo valor decimal por lado sem repetir o rótulo ("... esquerda 1,2"/"esquerda 0,64").
+ *  Type-agnóstico (RAR ou IR) — o audit só checa presença do NÚMERO. */
+function extractSideDecimals(text: string): number[] {
+  return collect(/(?:à\s+)?(?:direita|esquerda)\s+(\d+[.,]\d+)/gi, text);
 }
 
 /** O número (com grafia decimal vírgula/ponto) está no laudo? */
@@ -48,11 +58,12 @@ function inLaudo(nStr: string, laudo: string): boolean {
   return laudo.includes(nStr.replace(",", ".")) || laudo.includes(nStr.replace(".", ","));
 }
 
-// AFIRMAÇÃO positiva de estenose ("com sinais ecográficos de estenose … significativa"
-// / "apresentando estenose …"). NÃO casa a forma NEGADA da conclusão normal ("SEM
-// evidência ecográfica de estenose hemodinamicamente significativa").
-const RE_ESTENOSE_AFIRMADA =
-  /(?:com\s+sinais?|apresent\w+|achados?\s+de)\s+(?:ecogr[áa]ficos?\s+)?(?:de\s+)?estenose\s+hemodinamicamente\s+significativa/i;
+// Estenose afirmada no laudo = a FRASE está presente E NÃO está negada (review dex1:
+// pegar também a afirmação "pelada", ex.: "Estenose hemodinamicamente significativa da
+// artéria renal direita", sem o lead "com sinais/apresenta/achados de").
+const RE_ESTENOSE_FRASE = /estenose\s+hemodinamicamente\s+significativa/i;
+const RE_ESTENOSE_NEGADA =
+  /(?:sem\s+(?:evid[êe]ncia|sinais?)[^.]{0,45}?|aus[êe]ncia\s+de[^.]{0,25}?|n[ãa]o\s+h[áa][^.]{0,25}?)estenose\s+hemodinamicamente\s+significativa/i;
 const RE_TARDUS = /tardus[-\s]?parvus/i;
 
 export function auditDopplerRenalFacts(rawInput: string, laudo: string): DopplerRenalAudit {
@@ -72,13 +83,16 @@ export function auditDopplerRenalFacts(rawInput: string, laudo: string): Doppler
   const estenoseDitada = (/\bestenose\b/i.test(rawLc) && !estenoseNegada) || RE_TARDUS.test(rawLc);
   const criterioForte = hasVpsHigh || hasRarHigh || estenoseDitada;
 
-  const estenoseSemCriterio = RE_ESTENOSE_AFIRMADA.test(laudo) && !criterioForte;
+  const estenoseAfirmadaNoLaudo = RE_ESTENOSE_FRASE.test(laudo) && !RE_ESTENOSE_NEGADA.test(laudo);
+  const estenoseSemCriterio = estenoseAfirmadaNoLaudo && !criterioForte;
 
-  // Medidas ditadas ausentes do laudo (VPS int + RAR/IR decimais).
+  // Medidas ditadas ausentes do laudo (VPS int + RAR/IR decimais + decimais laterais
+  // sem rótulo repetido, ex.: "…esquerda 1,2").
   const ditadas = [
     ...vps.map((v) => String(v)),
     ...rar.map((r) => String(r).replace(".", ",")),
     ...extractIr(rawInput).map((v) => String(v).replace(".", ",")),
+    ...extractSideDecimals(rawInput).map((v) => String(v).replace(".", ",")),
   ];
   const missingMeasures = [...new Set(ditadas)].filter((n) => !inLaudo(n, laudo));
 
