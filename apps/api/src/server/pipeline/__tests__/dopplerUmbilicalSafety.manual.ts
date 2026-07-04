@@ -7,6 +7,7 @@
 import {
   buildDopplerConclusionItems,
   deriveUmbilicalSafety,
+  correctDopplerConclusion,
   UMBILICAL_IP_ALERTA,
   type DopplerData,
 } from "../dopplerOverlay";
@@ -65,6 +66,25 @@ const RAW = "Ultrassonografia obstétrica com doppler ... maior bolsao vertical 
 {
   const d = deriveUmbilicalSafety({ ipUmbilical: 0.9 }, "ducto venoso com onda A reversa");
   ck(d.umbilicalAlterado !== true, "diástole/onda reversa em ducto (sem 'umbilical') → não força umbilical");
+}
+
+// ── caminho writer/post-processor (correctDopplerConclusion) — P0 dex1 ──
+{
+  const laudoFalsoNormal = `DOPPLERVELOCIMETRIA:
+Artéria umbilical: IP 2,11.
+
+CONCLUSÃO:
+1) Gestação em torno de 26 semanas.
+2) Índice de pulsatilidade normal nas artérias uterinas e umbilical.
+3) Diástole zero na artéria umbilical.`;
+  const dBruto: DopplerData = { ipUmbilical: 2.11, ipUterinaDir: 1.17, ipUterinaEsq: 1.87, ipMedioUterinas: 1.52 };
+  // SEM guard: correctDopplerConclusion mantém/reescreve a frase normal.
+  const semGuard = correctDopplerConclusion(laudoFalsoNormal, dBruto);
+  ck(/pulsatilidade\s+normal[^.]*umbilical/i.test(semGuard), "correctDopplerConclusion SEM guard: ainda pode afirmar normal");
+  // COM guard (d derivado): nunca normal na umbilical.
+  const comGuard = correctDopplerConclusion(laudoFalsoNormal, deriveUmbilicalSafety(dBruto, RAW));
+  ck(!/pulsatilidade\s+normal[^.]*umbilical/i.test(comGuard), "correctDopplerConclusion COM guard: NÃO afirma normal na umbilical");
+  ck(/diast[óo]lico\s+ausente|di[áa]stole\s+zero/i.test(comGuard), "correctDopplerConclusion COM guard: reflete diástole zero");
 }
 
 console.log(`\n${pass} ok, ${fail} falhas`);
