@@ -1,7 +1,17 @@
 # Plano — LaudoUSG Android / Play Store
 
-> **Status:** 🟡 PLANEJADO (2026-06-22). Base: análise de gap RN×Swift (Dex2) + políticas atuais do
+> **Status:** 🟢 EM EXECUÇÃO (2026-07-04, sessão dedicada). Base: análise de gap RN×Swift (Dex2) + políticas atuais do
 > Google Play para apps de saúde. iOS 1.0 (145) em WAITING_FOR_REVIEW na Apple.
+>
+> **⚠️ ESTE PLANO FOI SUPERSEDIDO em 04/07 por `docs/parity/android-gap-analysis.md`** (caminho
+> L0–L8 revisado pelo Dex1, com pesquisa de docs oficiais atualizada). Correções ao texto abaixo:
+> - **Delete account JÁ EXISTIA** (commit 00b67d8 de 22/06) — falta só o **link web** de deleção.
+> - **Docs legais + disclaimer curto + telas "em breve" + permissões app.json**: feitos em 00b67d8.
+> - **A pasta `android/` EXISTE** (prebuild feito) — build local via `npx expo run:android` funciona.
+> - **targetSdk 35** exigido (era 34 por default do SDK 52) — corrigido em c0338aa (04/07).
+> - Sanity 04/07 no device (SM_G780G): login→achados→**SSE token-a-token OK** (risco SSE eliminado).
+> - Decisões D1/D2 (Whisper fica no Android; categoria Produtividade) em `docs/parity/decisions-pending.md`.
+> - Health declaration deve ser **honesta** (não "sem features de saúde") — review Dex1 04/07.
 
 ## Contexto
 - **App Android = Expo RN 0.76.9** (`apps/mobile`). É o ÚNICO candidato (o Swift é iOS-only).

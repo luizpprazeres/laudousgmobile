@@ -1,5 +1,14 @@
 # Gap analysis Android — consolidado executável (Fase 0)
 
+> **PROGRESSO 04/07 (sessão dedicada, branch feat/android-parity):**
+> ✅ L0+L1 (c0338aa) · ✅ L2 (f61a9e0) · ✅ L3 validado no device (c9903e5) · ✅ L5 página web
+> (d190dc8, falta deploy) · ✅ L7 AAB produção no EAS (final: build c6b56ebb, com tudo) ·
+> ✅ B1 ThemeProvider (59a0ef4) · ✅ Edição inline+autosave c/ flush e update verificado
+> (1f3378a+b0e0e60) · ✅ Feedback 👍/👎 (4896bf1) · ✅ Histórico busca/filtros/multi-delete/Sala
+> (04a144b) · ✅ **Dark mode universal** (b0e0e60, 17 arquivos, validado dark+light no device).
+> ⏳ Restam: onboarding 6 steps · forgot password · L8 Play Console (manual) · deploy web ·
+> Fase 2 (calculadoras, consultor, etc.).
+
 > Gerado 2026-07-04. Ancora e ATUALIZA o `docs/plano-paridade-android-swift.md` (22/06) com a
 > auditoria de código de hoje + decisões D1/D2/D3 + pesquisa de docs oficiais (Play/Expo/Android).
 > Detalhes por feature: `feature-parity-matrix.md` · navegação: `navigation-map.md` · design:
@@ -35,18 +44,26 @@
 | B8 | `app.json` stub `{"expo":{}}` na RAIZ do monorepo (confunde tooling Expo) | `/app.json` | P2 → deletar |
 | B9 | Comentário defasado em `CATS` ("9 listadas") — são 14; DB tem ~32 | `tokens.ts:126-128` | P3 |
 
-## Caminho crítico de LOJA (Fase 1 — ordem de execução)
+## Caminho crítico de LOJA (Fase 1 — ordem revisada pós-review Dex1 04/07)
 
 | # | Item | Esforço | Depende |
 |---|---|---|---|
-| L1 | `blockedPermissions` (B2) + deletar app.json raiz (B8) | XS | — |
-| L2 | Corrigir docs legais (B3/B4): conteúdo Android+Whisper, contato, render decente | S | — |
-| L3 | **Disclaimer accept-gate** (port do iOS: 3 checkboxes, versões "2.0", `recordLegalAcceptance` em profiles, gate no index) | M | L2 |
-| L4 | **ThemeProvider** (B1): aplicar preferência auto/claro/escuro + StatusBar dinâmica | S | — |
+| L0 | **targetSdk 35** (hoje 34 — `build.gradle:8` default; Play exige 35 p/ apps novos) via `expo-build-properties` + **`allowBackup: false`** (app médico, manifest hoje `true`) | S | — |
+| L1 | `blockedPermissions` (B2: storage×2 + SYSTEM_ALERT_WINDOW; manter MODIFY_AUDIO_SETTINGS/VIBRATE — normais, expo-av/haptics) + deletar app.json raiz (B8) | XS | — |
+| L2 | Corrigir docs legais (B3/B4 **P0**): política deve listar **OpenAI/Whisper** como operador de ASR (backend confirmado `whisper-1`; Deepgram é só iOS live) + render markdown decente + contato | S | — |
+| L3 | **Disclaimer accept-gate** (port do iOS: 3 checkboxes, versões "2.0", grava em `profiles` via supabase-js direto — colunas EXISTEM no DB; gate no root pós-auth, NÃO no login) | M | L2 |
 | L5 | Link web de delete account (página em web.laudousg.com) + revisar fluxo in-app | S | fora do apps/mobile |
 | L6 | Ícone/splash/branding release + versionCode/appVersionSource | XS | — |
-| L7 | **AAB via EAS** (`eas build -p android --profile production`) + Internal testing | S | L1–L6 |
-| L8 | Play Console: listing "Produtividade" (D2), Data Safety (áudio→ASR nuvem, identifiers, UGC), Health declaration ("sem features de saúde"), IARC, credenciais de teste | M | L7 |
+| L7 | **AAB via EAS** (`eas build -p android --profile production`) + Internal testing | S | L0–L3, L6 |
+| L8 | Play Console: listing "Produtividade" (D2), Data Safety (áudio→OpenAI, identifiers, UGC), **Health declaration HONESTA** (ferramenta profissional médica — não declarar "sem features de saúde"; risco de reclassificação é real, plano B CNPJ vivo), IARC, credenciais de teste | M | L7 |
+
+> **Fora do caminho de loja** (Dex1): ThemeProvider/B1 é paridade de produto (P2 p/ loja) — segue
+> em paralelo, não bloqueia AAB.
+> **Já feito em 00b67d8 (22/06):** delete account in-app, docs legais copiados do Swift
+> (`assets/legal/*.md` + `documents.ts`), disclaimer curto no laudo, telas "em breve" escondidas,
+> permissões app.json só RECORD_AUDIO. **Backend follow-up pós-Android:** expor campos legais no
+> `/api/me/profile` (drizzle+ProfileSchema+rota) — hoje o iOS decodifica `nil` e provavelmente
+> re-mostra o gate a cada cold start.
 
 ## Paridade core (Fase 1.5 — muda a sensação de produto)
 

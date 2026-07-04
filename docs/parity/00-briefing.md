@@ -31,6 +31,21 @@
   ~/laudousgmobile-def/apps/mobile/android`) ou `sudo ln -s /opt/homebrew/bin/node /usr/local/bin/node`.
 - node v25.7.0, adb OK, `apps/mobile/node_modules` OK, Expo ~52.
 
+### Aprendizados de build validados na prática (04/07, sessão dedicada)
+- **JAVA_HOME**: não há JDK no sistema; usar o do Android Studio:
+  `export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"` (JDK 21, funciona).
+- **Daemon Gradle envenenado**: se o Android Studio criou daemon sem node no PATH, `settings.gradle:34`
+  falha com "Cannot run program node" MESMO buildando pelo terminal → rodar `android/gradlew --stop` antes.
+- **react-native-svg**: manter **15.8.0 exato** (SDK 52). Versões ≥15.9 usam `StyleSizeLength` do yoga
+  que só existe no RN 0.77+ → erro C++ no build. Se o node_modules divergir do package.json, o build quebra.
+- **Gestor de pacotes**: `apps/mobile` é **npm** (tem package-lock.json próprio). CUIDADO: `npx expo install`
+  detecta o pnpm do monorepo e instala NA RAIZ → depois rodar `npm install` dentro de apps/mobile.
+- **APK antigo no device**: se houver build EAS/preview instalado, `expo run:android` falha com
+  INSTALL_FAILED_UPDATE_INCOMPATIBLE (assinatura) → `adb uninstall com.laudousg.LaudoUSG` antes.
+- **Metro + USB**: `adb reverse tcp:8081 tcp:8081` após reinstalar; relançar o app.
+- **Sanity 04/07 PASSOU**: login (apple-review) → achados digitados → SSE **token-a-token** → laudo
+  ABDOMEN_TOTAL completo no device. SSE via `expo/fetch` confirmado no runtime Android (risco §6.3 eliminado).
+
 ## 1. Estado REAL (desfaz a confusão do README antigo)
 
 - **O app Android EXISTE e está ATIVO.** É `apps/mobile/` — React Native / Expo 52, **RN
