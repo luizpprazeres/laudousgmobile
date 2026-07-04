@@ -19,6 +19,7 @@ import {
 } from "@expo-google-fonts/barlow";
 import { C } from "@/ui/tokens";
 import { BrandSplash } from "@/ui/BrandSplash";
+import { LegalGate } from "@/features/legal/LegalGate";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* ignore */
@@ -75,6 +76,8 @@ export default function RootLayout() {
             options={{ headerShown: true, title: "Laudo" }}
           />
         </Stack>
+        {/* Gate de aceite legal — cobre todas as rotas (paridade iOS AppShellView). */}
+        <LegalGate />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
