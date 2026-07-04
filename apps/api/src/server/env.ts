@@ -92,6 +92,12 @@ const ServerEnvSchema = z.object({
   // ditado por voz VENCEM a extração LLM (que ecoou CC/CA/CF sem o ×10), e o
   // measureSanity ganha o check IG×CF (fórmula canônica do app). Default OFF.
   OBST_BIOMETRIA_DET: z.string().default("false"),
+  // SEGURANÇA P0 Doppler (boletim 03/07, caso 89ffa1ef): quando "true", NUNCA
+  // afirmar "IP normal na artéria umbilical" com diástole zero/reversa ditada ou
+  // IP umbilical bruto ≥ 1,5 (grosseiramente anormal). A lógica antiga dependia só
+  // do flag verbalizado + percentil → falso-normal em feto PIG. Default OFF (LIGAR
+  // ASSIM QUE VALIDADO — é correção de risco clínico direto).
+  DOPPLER_UMBILICAL_SAFETY: z.string().default("false"),
   // Arquitetura 2 modos (2026-07-02): quando "true", PARTES_MOLES (categoria ABERTA,
   // lesão de qualquer tipo/topografia) é escrita pelo LLM (writer_guarded) — mesma
   // receita do MSK (prompt base + roteiro da casa + few-shots dos laudos assinados +

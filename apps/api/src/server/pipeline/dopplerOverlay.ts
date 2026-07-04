@@ -40,6 +40,33 @@ export interface DopplerData {
   ectasia?: boolean;
   /** Uterinas >P95 por comando/explícito ("uterinas acima do percentil 95"). */
   uterinasAcimaP95?: boolean;
+  /** SEGURANÇA: diástole zero/ausente/reversa na umbilical (força alteração). */
+  diastoleZeroUmbilical?: boolean;
+}
+
+/**
+ * SEGURANÇA P0 (boletim 03/07, caso 89ffa1ef reenviado 4×): NUNCA afirmar "IP
+ * normal na umbilical" quando o IP umbilical BRUTO é grosseiramente elevado OU há
+ * diástole zero/reversa ditada. A lógica de normalidade dependia só do flag
+ * verbalizado (`umbilicalAlterado`) + percentil, ignorando o IP bruto (2,11) e a
+ * diástole zero → laudo falso-normal em feto PIG (risco clínico direto).
+ *
+ * Limiar 1,5: acima do percentil 95 de QUALQUER IG obstétrica com Doppler (o P95
+ * do IP umbilical varia ~0,8 a ~1,2). Conservador — não gera falso-positivo em
+ * umbilical normal. Flag: DOPPLER_UMBILICAL_SAFETY (default OFF).
+ */
+export const UMBILICAL_IP_ALERTA = 1.5;
+export function deriveUmbilicalSafety(d: DopplerData, rawInput?: string): DopplerData {
+  const diastoleZero = rawInput
+    ? /di[áa]stole\s+(?:zero|ausente|revers)/i.test(rawInput) && /umbilical/i.test(rawInput)
+    : false;
+  const ipAlto = d.ipUmbilical !== undefined && d.ipUmbilical >= UMBILICAL_IP_ALERTA;
+  if (!diastoleZero && !ipAlto) return d;
+  return {
+    ...d,
+    umbilicalAlterado: true,
+    diastoleZeroUmbilical: diastoleZero || d.diastoleZeroUmbilical,
+  };
 }
 
 const numFmt = (n: number): string =>
@@ -330,9 +357,17 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
   // ── Frase do índice de pulsatilidade (umbilical/ACM) ──
   if (umbOuAcmAlt) {
     if (d.umbilicalAlterado && acmAltExplicita) {
-      items.push("Índices de pulsatilidade alterados na artéria umbilical e na ACM.");
+      items.push(
+        d.diastoleZeroUmbilical
+          ? "Fluxo diastólico ausente (diástole zero) na artéria umbilical, com índice de pulsatilidade alterado na artéria cerebral média."
+          : "Índices de pulsatilidade alterados na artéria umbilical e na ACM.",
+      );
     } else if (d.umbilicalAlterado) {
-      items.push("Índice de pulsatilidade elevado na artéria umbilical.");
+      items.push(
+        d.diastoleZeroUmbilical
+          ? "Fluxo diastólico ausente (diástole zero) na artéria umbilical."
+          : "Índice de pulsatilidade elevado na artéria umbilical.",
+      );
       // ACM comprometida (ex.: centralização) mas não explicitamente alterada →
       // não afirma ACM normal (acmComprometida já a excluiu da frase normal).
     } else {
