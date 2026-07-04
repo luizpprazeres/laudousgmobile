@@ -1,8 +1,10 @@
 # LaudoUSG — Backend Mobile (monorepo)
 
-Monorepo que hoje serve **exclusivamente como backend Next.js + packages compartilhados** para o app iOS LaudoUSG.
+Monorepo que serve **(1) o backend Next.js + packages compartilhados** (consumidos pelo app iOS Swift **e** pelo app Android RN) **e (2) o app Android React Native/Expo** (`apps/mobile`), que está **ATIVO** e em preparação para a Play Store.
 
-> **Origem:** este repo nasceu como app RN/Expo + backend. O app RN foi **descontinuado** em favor do app iOS nativo SwiftUI (em [`~/laudousg-swift/`](../laudousg-swift)). O backend continuou aqui porque já estava em prod e tem dependências de monorepo (Drizzle + Zod compartilhados).
+> **Origem / correção (2026-07-04):** este repo nasceu como app RN/Expo + backend. Houve uma fase em que o app RN foi congelado em favor do app iOS nativo SwiftUI (em [`~/laudousg-swift/`](../laudousg-swift)). **Mas o app Android RN foi RETOMADO** — hoje é o app Android oficial (Expo 52, RN 0.76.9), em desenvolvimento ativo (paridade com o iOS) e prestes a lançar na Play Store. O README anterior dizia que `apps/mobile` estava congelado — isso está **desatualizado**.
+>
+> **Android Studio / emular:** o projeto nativo Android fica em **`apps/mobile/android/`** (Gradle — abrir esta pasta no Android Studio). O fluxo recomendado com Expo é `cd apps/mobile && npx expo run:android` (compila o `android/` e instala no device/emulador). Planos: `docs/plano-paridade-android-swift.md` (paridade RN↔Swift) + `docs/plano-android-playstore.md` (publicação) + `docs/parity/` (briefing/auditoria).
 
 ---
 
@@ -14,7 +16,7 @@ Monorepo que hoje serve **exclusivamente como backend Next.js + packages compart
 | `packages/db/` | 🟢 Vivo | Drizzle ORM schema + migrations. Usado **só** pelo `apps/api`. |
 | `packages/shared/` | 🟢 Vivo | Zod schemas + tipos. Usado por `apps/api` (e por `apps/mobile` que está congelado). |
 | `_extraction/from-laudousg-original/` | 📚 Referência | Prompts canônicos, modelos por categoria, regras clínicas, few-shots — extraídos do `laudousg.com`. Não mexer sem revisão. |
-| `apps/mobile/` | ❄️ **CONGELADO** | App RN/Expo descontinuado. Mantido como referência clínica das calculadoras IG/Doppler pra port futuro pra SwiftUI. **Não desenvolver mais aqui.** |
+| `apps/mobile/` | 🟢 **ATIVO** (Android) | App **Android** React Native/Expo (Expo 52, RN 0.76.9). Retomado; app Android oficial em paridade com o iOS, prestes a lançar na Play Store. Nativo Android em `apps/mobile/android/` (Android Studio). Consome o mesmo backend `apps/api`. |
 
 ---
 
@@ -87,7 +89,7 @@ pnpm -F api typecheck
 pnpm -F api build
 ```
 
-> `pnpm mobile:dev` ainda funciona (Expo) mas **não desenvolver mais lá** — o app é o Swift.
+> **App Android (RN/Expo):** `cd apps/mobile && npx expo run:android` (dev build no device/emulador) ou abrir `apps/mobile/android/` no Android Studio. `pnpm mobile:dev` inicia o Metro. É desenvolvimento **ativo** — ver `docs/plano-paridade-android-swift.md`.
 
 ---
 
@@ -103,25 +105,21 @@ pnpm -F api build
 
 **Precedência (no prompt):** comandos explícitos > achados estruturados > validações > prompt global > contrato categoria > estilo > RAG > exemplos.
 
-### Como adicionar uma categoria de renderer determinístico
-
-Referência viva: a categoria **CERVICOMETRIA** (US pélvica transvaginal p/ medida do
-colo). Uma categoria programática nova toca 6 pontos:
-1. `renderer/categories/<CAT>.ts` — schema Zod + JSON schema strict + prompt de
-   extração + `render<Cat>()`.
-2. `renderer/extraction.ts` — import + entrada em `EXTRACTORS` + `RENDERER_PROGRAMMATIC_CATEGORIES`.
-3. `pipeline/renderer.ts` — `case` no switch programático.
-4. `pipeline/categoryNormalization.ts` — `FAMILY_RULES` (e, se o structurer tende a
-   confundir com outra categoria, um override por texto bruto como
-   `resolveCervicometriaCategory`, chamado no `resolveEffectiveCategory` do route).
-5. `packages/db/src/seeds/data.ts` — `CATEGORIES_SEED`.
-6. **Deploy (gate):** row em `categories` no DB de prod + código na env
-   `RENDERER_CATEGORIES` do Vercel + redeploy. Sem os dois, a categoria é dormente.
-
-Checklist de ativação da CERVICOMETRIA (com thresholds a confirmar pelo Luiz):
-`docs/deploy-cervicometria-2026-07-02.md`.
-
 ---
+
+## Qualidade & aprendizado contínuo
+
+- **`docs/aprendizado-correcoes-luiz.md`** — corpus vivo ("memória infinita") do que a IA
+  erra e o Dr. Luiz corrige à mão, extraído do diff `generated_output` (saída da IA) →
+  `final_output` (versão salva após correção). Ranking dos defeitos + biblioteca de frases
+  canônicas. Atualizar re-rodando a mineração; consultado pela automação do boletim.
+- **`docs/plano-acao-boletins-2026-06-29.md`** — plano de ação consolidado dos boletins.
+- **`docs/boletim-diario-prompt.md`** — prompt da automação diária de qualidade. Analisa
+  `generated_output` (= saída real da IA, pós-guards). **Não** trocar para `final_output`
+  (essa é a versão já corrigida pelo médico).
+
+> Semântica das colunas: `generated_output` = saída da IA; `final_output` = correção manual
+> do médico (só gravada quando ele edita). Hoje só 1 usuário salva `final_output`.
 
 ## Segurança / LGPD
 

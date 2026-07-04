@@ -81,7 +81,17 @@ Item único → sem número. Múltiplos → **"1) 2) 3)"** (parêntese, não pon
 - **DOPPLER ARTERIAL MMII:** ver §9 (reescrever com PSV/VDF).
 - **DOPPLER VENOSO MMII c/ MEDIDAS:** o corpus do Luiz aprovou quase sem alteração.
 
-## 9. Doppler arterial de MMII — meio-termo (regra específica)
+## 8b. Título de Doppler — SEM "COM" (aprovado 04/07)
+O título de exame Doppler é **"ULTRASSONOGRAFIA DOPPLER {ARTERIAL/VENOSO/DE
+CARÓTIDAS E VERTEBRAIS} …"** — NUNCA "ULTRASSONOGRAFIA **COM** DOPPLER …". Ex.:
+"ULTRASSONOGRAFIA DOPPLER ARTERIAL DO MEMBRO INFERIOR DIREITO",
+"ULTRASSONOGRAFIA DOPPLER DE CARÓTIDAS E VERTEBRAIS". O único "COM" que permanece é
+o de **"… COM MEDIDAS"** (mapeamento venoso), que indica conteúdo, não o método.
+
+## 9. Doppler arterial de MMII — meio-termo (regra específica) — APROVADO 04/07
+> Os 5 laudos v2 foram aprovados pelo Dr. Luiz (só o título mudou, ver §8b). Dex2
+> validou a coerência clínica dos valores. Viram few-shots/golden do writer arterial.
+
 O Luiz não corrigiu os laudos arteriais; pediu para **reescrevê-los num meio-termo**
 entre os meus (concisos, bom resumo) e dois exemplos dele (prolixos). Requisitos:
 - **PSV e VDF de CADA artéria presentes** (dá credibilidade de que o médico mediu) —
