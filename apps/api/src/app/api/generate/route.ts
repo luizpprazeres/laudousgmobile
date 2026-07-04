@@ -11,6 +11,7 @@ import { resolveMorfologicoCategory } from "@/server/pipeline/morfologicoRouteSe
 import { normalizeCategoryCode, resolveCervicometriaCategory } from "@/server/pipeline/categoryNormalization";
 import {
   extractDopplerData,
+  deriveUmbilicalSafety,
   applyDopplerOverlay,
   correctDopplerConclusion,
   mergeIgConclusionItems,
@@ -958,12 +959,21 @@ export async function POST(req: Request) {
       // DOPPLERVELOCIMETRIA + itens de conclusão a partir dos valores ditados,
       // seguindo o spec (umbilical/ACM manual, uterinas auto, perfil=1/RCP).
       // Roda APÓS a linha de líquido pra os itens Doppler virem na sequência.
+      // SEGURANÇA P0 (flag DOPPLER_UMBILICAL_SAFETY): o guard umbilical vale também
+      // no caminho writer/post-processor (dex1) — diástole zero/IP umbilical elevado
+      // NUNCA vira "IP normal na umbilical", independente de renderer/writer/fallback.
+      const dopplerDataGuarded = () => {
+        const d = extractDopplerData(dopplerInput);
+        return env().DOPPLER_UMBILICAL_SAFETY === "true"
+          ? deriveUmbilicalSafety(d, dopplerInput)
+          : d;
+      };
       if (effectiveCategory === "MORFOLOGICO" && /\bdoppler\b/i.test(dopplerInput)) {
-        finalText = applyDopplerOverlay(finalText, extractDopplerData(dopplerInput));
+        finalText = applyDopplerOverlay(finalText, dopplerDataGuarded());
       } else if (effectiveCategory === "DOPPLER_OBSTETRICO") {
         // Fix B (bug D2): a seção já vem do template; só corrige a conclusão
         // pra o vaso certo (umbilical/ACM manual, uterinas auto, perfil=1/RCP).
-        finalText = correctDopplerConclusion(finalText, extractDopplerData(dopplerInput));
+        finalText = correctDopplerConclusion(finalText, dopplerDataGuarded());
         // Boletim f715875c: combina IG biometria + IG referência num único item.
         finalText = mergeIgConclusionItems(finalText);
         // Boletim c53bbc1f: sinaliza gemelaridade alucinada (não ditada).

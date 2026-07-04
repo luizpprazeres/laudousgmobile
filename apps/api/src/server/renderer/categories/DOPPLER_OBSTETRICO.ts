@@ -18,6 +18,7 @@ import {
   type DopplerData,
   buildDopplervelocimetriaSection,
   buildDopplerConclusionItems,
+  deriveUmbilicalSafety,
 } from "../../pipeline/dopplerOverlay";
 import { type PesoFetalData, buildPesoFetalItems } from "../../pipeline/pesoFetalGuard";
 
@@ -325,9 +326,12 @@ function toPesoFetalData(f: DopplerObstetricoFindings): PesoFetalData {
 // Render
 // ---------------------------------------------------------------------------
 
-function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null, flexivel = false): string {
+function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null, flexivel = false, safety?: { umbilical?: boolean; rawInput?: string }): string {
   const ig = igResultDoppler(f, igCorrection);
-  const d = toDopplerData(f);
+  let d = toDopplerData(f);
+  // SEGURANÇA P0 (flag DOPPLER_UMBILICAL_SAFETY): nunca afirmar IP umbilical normal
+  // com diástole zero/reversa ditada ou IP bruto grosseiramente elevado.
+  if (safety?.umbilical) d = deriveUmbilicalSafety(d, safety.rawInput);
   const ft = feto0(f);
 
   const aspectos: string[] = [
@@ -390,9 +394,10 @@ function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, gol
     .trim();
 }
 
-function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null, flexivel = false): string {
+function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean, golfBall: GolfBall | null = null, flexivel = false, safety?: { umbilical?: boolean; rawInput?: string }): string {
   const ig = igResultDoppler(f, igCorrection);
-  const d = toDopplerData(f);
+  let d = toDopplerData(f);
+  if (safety?.umbilical) d = deriveUmbilicalSafety(d, safety.rawInput);
   const ft = feto0(f);
 
   const achados: string[] = [];
@@ -489,7 +494,7 @@ export function mergeStructuredIg(
 export function renderDopplerObstetrico(
   f: DopplerObstetricoFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null; umbilicalSafety?: boolean; rawInput?: string },
 ): string {
   // SEGURANÇA (review dex1): gestação inicial e óbito/ausência de vitalidade saem
   // do escopo v1 — lança erro → fallback writer no route (route.ts:812). O renderer
@@ -514,5 +519,10 @@ export function renderDopplerObstetrico(
     f = { ...f, achados_adicionais: stripGolfBallEcho(f.achados_adicionais) || null };
   }
   const flx = opts?.flexivel ?? false;
-  return opts?.objetivo ? renderObjetivo(f, igc, g, flx) : renderClassico(f, igc, g, flx);
+  const safety = opts?.umbilicalSafety
+    ? { umbilical: true, rawInput: opts.rawInput }
+    : undefined;
+  return opts?.objetivo
+    ? renderObjetivo(f, igc, g, flx, safety)
+    : renderClassico(f, igc, g, flx, safety);
 }

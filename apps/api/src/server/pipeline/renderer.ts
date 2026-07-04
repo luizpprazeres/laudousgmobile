@@ -529,7 +529,14 @@ export async function* runRendererStream(args: {
         const dfnd = mergeStructuredIg(fnd as DopplerObstetricoFindings, args.rawInput);
         // Doppler gemelar já cai no fallback writer (throw no renderer); o guard de
         // feto único é defesa em profundidade.
-        fullText = renderDopplerObstetrico(dfnd, null, { objetivo, igCorrection, flexivel, golfBall: golfBallSingle(dfnd.numero_fetos) });
+        fullText = renderDopplerObstetrico(dfnd, null, {
+          objetivo, igCorrection, flexivel,
+          golfBall: golfBallSingle(dfnd.numero_fetos),
+          // SEGURANÇA P0 (flag DOPPLER_UMBILICAL_SAFETY): diástole zero/IP umbilical
+          // elevado nunca vira "IP normal na umbilical" (boletim 03/07).
+          umbilicalSafety: env().DOPPLER_UMBILICAL_SAFETY === "true",
+          rawInput: args.rawInput,
+        });
         break;
       }
       case "CERVICOMETRIA":
