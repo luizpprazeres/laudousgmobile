@@ -20,10 +20,15 @@ import { useColorTokens } from "@/ui/useColorTokens";
 import {
   fetchLegalAcceptance,
   hasCachedAcceptance,
+  hasCachedOnboardingDone,
+  markOnboardingComplete,
   needsLegalAcceptance,
+  needsOnboarding,
   recordLegalAcceptance,
   setCachedAccepted,
+  setCachedOnboardingDone,
 } from "./acceptance";
+import { OnboardingFlow } from "@/features/onboarding/OnboardingFlow";
 
 /**
  * Gate de aceite legal — port do DisclaimerAcceptModal do iOS.
@@ -39,7 +44,7 @@ import {
  * a leitura remota re-sincroniza em background (versões novas reabrem o gate).
  */
 
-type GateState = "hidden" | "checking" | "blocked";
+type GateState = "hidden" | "checking" | "blocked" | "onboarding";
 type DocMeta = { id: LegalDocId; title: string; version: string };
 
 export function LegalGate() {
@@ -49,6 +54,9 @@ export function LegalGate() {
   const [state, setState] = useState<GateState>("hidden");
   const [userId, setUserId] = useState<string | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  // Onboarding pendente segundo a última leitura remota (decide o passo pós-aceite).
+  const [onboardingPending, setOnboardingPending] = useState(false);
   const [checks, setChecks] = useState<Record<LegalDocId, boolean>>({
     terms: false,
     privacy: false,
@@ -62,23 +70,36 @@ export function LegalGate() {
 
   const evaluate = useCallback(async (uid: string) => {
     const run = ++runRef.current;
-    const cached = await hasCachedAcceptance(uid);
+    const [cachedLegal, cachedOnb] = await Promise.all([
+      hasCachedAcceptance(uid),
+      hasCachedOnboardingDone(uid),
+    ]);
     if (runRef.current !== run) return;
 
-    // Sem confirmação local → bloqueia enquanto verifica (fail-closed).
-    if (!cached) setState("checking");
+    // Ambos confirmados neste device → nada a checar de forma bloqueante.
+    // Sem confirmação local do LEGAL → bloqueia enquanto verifica (fail-closed).
+    if (!cachedLegal) setState("checking");
     setFetchFailed(false);
 
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const acceptance = await fetchLegalAcceptance(uid);
         if (runRef.current !== run) return;
+        setDisplayName(acceptance.name);
+        const onbPending = needsOnboarding(acceptance);
+        setOnboardingPending(onbPending);
         if (needsLegalAcceptance(acceptance)) {
           setState("blocked");
         } else {
           await setCachedAccepted(uid);
           if (runRef.current !== run) return;
-          setState("hidden");
+          if (onbPending && !cachedOnb) {
+            setState("onboarding");
+          } else {
+            if (!onbPending) await setCachedOnboardingDone(uid);
+            if (runRef.current !== run) return;
+            setState("hidden");
+          }
         }
         return;
       } catch {
@@ -87,8 +108,9 @@ export function LegalGate() {
       }
     }
     if (runRef.current !== run) return;
-    if (cached) {
-      // Aceite atual já confirmado antes neste device — não bloqueia offline.
+    if (cachedLegal) {
+      // Legal já confirmado neste device — não bloqueia offline (onboarding
+      // não é crítico de segurança; fica pra próxima abertura com rede).
       setState("hidden");
     } else {
       setFetchFailed(true);
@@ -139,13 +161,25 @@ export function LegalGate() {
     setError(null);
     try {
       await recordLegalAcceptance(userId); // lança se 0 linhas atualizadas
-      setState("hidden");
+      // Aceite ok → próximo gate: onboarding (paridade iOS AppShellView).
+      setState(onboardingPending ? "onboarding" : "hidden");
     } catch {
       setError(
         "Não foi possível registrar o aceite. Verifique a conexão e tente novamente.",
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const finishOnboarding = async () => {
+    setState("hidden"); // não prende o usuário se a gravação falhar
+    if (!userId) return;
+    try {
+      await markOnboardingComplete(userId);
+    } catch (err) {
+      // Sem cache/gravação: reaparece na próxima abertura com rede.
+      console.warn("[LegalGate] marcar onboarding falhou:", err);
     }
   };
 
@@ -163,6 +197,8 @@ export function LegalGate() {
     <Modal visible transparent={false} animationType="fade" onRequestClose={() => undefined}>
       {state === "checking" ? (
         <BrandSplash />
+      ) : state === "onboarding" ? (
+        <OnboardingFlow displayName={displayName} onFinish={finishOnboarding} />
       ) : (
         <View style={styles.root}>
           <ScrollView

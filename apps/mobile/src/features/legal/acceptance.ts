@@ -20,10 +20,12 @@ export type LegalAcceptance = {
   terms_version_accepted: string | null;
   privacy_version_accepted: string | null;
   medical_disclaimer_version_accepted: string | null;
+  onboarding_completed_at: string | null;
+  name: string | null;
 };
 
 const COLUMNS =
-  "terms_accepted_at, terms_version_accepted, privacy_version_accepted, medical_disclaimer_version_accepted";
+  "terms_accepted_at, terms_version_accepted, privacy_version_accepted, medical_disclaimer_version_accepted, onboarding_completed_at, name";
 
 const cacheKey = (userId: string) => `laudousg.legal_ok.${userId}`;
 const versionsSignature = () =>
@@ -72,6 +74,46 @@ export async function recordLegalAcceptance(userId: string): Promise<void> {
     throw new Error("legal_acceptance_record: nenhuma linha atualizada (RLS/perfil ausente)");
   }
   await setCachedAccepted(userId);
+}
+
+/** Onboarding (paridade iOS AppState.needsOnboarding). */
+export function needsOnboarding(a: LegalAcceptance): boolean {
+  return a.onboarding_completed_at === null;
+}
+
+/** Marca onboarding concluído (espelho iOS markOnboardingComplete; update verificado). */
+export async function markOnboardingComplete(userId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      onboarding_completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId)
+    .select("id");
+  if (error) throw new Error(`onboarding_complete: ${error.message}`);
+  if (!data || data.length !== 1) {
+    throw new Error("onboarding_complete: nenhuma linha atualizada");
+  }
+  await setCachedOnboardingDone(userId);
+}
+
+const onboardingKey = (userId: string) => `laudousg.onboarding_ok.${userId}`;
+
+export async function hasCachedOnboardingDone(userId: string): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(onboardingKey(userId))) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export async function setCachedOnboardingDone(userId: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(onboardingKey(userId), "1");
+  } catch {
+    // cache é otimização
+  }
 }
 
 /** true se este usuário já teve aceite CONFIRMADO (leitura ou gravação) nas versões vigentes. */
