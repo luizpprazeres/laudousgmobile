@@ -20,6 +20,7 @@ import {
 import { C } from "@/ui/tokens";
 import { BrandSplash } from "@/ui/BrandSplash";
 import { LegalGate } from "@/features/legal/LegalGate";
+import { ThemeProvider, useTheme } from "@/ui/ThemeProvider";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* ignore */
@@ -55,8 +56,9 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
-        <Stack
+        <ThemeProvider>
+          <ThemedStatusBar />
+          <Stack
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: C.bg },
@@ -75,10 +77,23 @@ export default function RootLayout() {
             name="report/[id]"
             options={{ headerShown: true, title: "Laudo" }}
           />
-        </Stack>
-        {/* Gate de aceite legal — cobre todas as rotas (paridade iOS AppShellView). */}
-        <LegalGate />
+          </Stack>
+          {/* Gate de aceite legal — cobre todas as rotas (paridade iOS AppShellView). */}
+          <LegalGate />
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+/**
+ * StatusBar: por enquanto FIXA em ícones escuros. As telas principais
+ * (generate/report/sheets) ainda são light-locked — seguir o tema aqui deixaria
+ * os ícones invisíveis para quem usa modo escuro. Trocar para
+ * `scheme === "dark" ? "light" : "dark"` quando o dark mode universal migrar
+ * essas telas (task dark-mode; useTheme já está disponível).
+ */
+function ThemedStatusBar() {
+  useTheme(); // mantém o hook plugado p/ a virada futura
+  return <StatusBar style="dark" />;
 }

@@ -8,18 +8,14 @@ import {
   TextInput,
   View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { deleteMeAccount, getMeProfile, updateMeProfile } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { PageHeader } from "@/ui/PageHeader";
+import { useTheme, type ThemeMode } from "@/ui/ThemeProvider";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
-
-type ThemeMode = "auto" | "light" | "dark";
-
-const THEME_KEY = "laudousg.theme_mode";
 
 const WRITING_STYLES = [
   {
@@ -54,7 +50,7 @@ export default function PreferenciasScreen() {
   const [name, setName] = useState("");
   const [savedName, setSavedName] = useState("");
   const [writingStyleId, setWritingStyleId] = useState<string | null>(null);
-  const [theme, setTheme] = useState<ThemeMode>("auto");
+  const { mode: theme, setMode: setThemeMode } = useTheme();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteText, setDeleteText] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -67,19 +63,14 @@ export default function PreferenciasScreen() {
       setLoading(true);
       setError(null);
       try {
-        const [profile, storedTheme] = await Promise.all([
-          getMeProfile(),
-          AsyncStorage.getItem(THEME_KEY),
-        ]);
+        const profile = await getMeProfile();
         if (!alive) return;
         setEmail(profile.email);
         setPlan(profile.plan);
         setName(profile.name ?? "");
         setSavedName(profile.name ?? "");
         setWritingStyleId(profile.default_writing_style_id);
-        if (storedTheme === "auto" || storedTheme === "light" || storedTheme === "dark") {
-          setTheme(storedTheme);
-        }
+        // Tema: preferência vive no ThemeProvider (carrega do AsyncStorage lá).
       } catch (err) {
         if (alive) setError(err instanceof Error ? err.message : String(err));
       } finally {
@@ -126,9 +117,8 @@ export default function PreferenciasScreen() {
     }
   }
 
-  async function selectTheme(value: ThemeMode) {
-    setTheme(value);
-    await AsyncStorage.setItem(THEME_KEY, value);
+  function selectTheme(value: ThemeMode) {
+    setThemeMode(value); // aplica na hora (ThemeProvider) e persiste
   }
 
   async function deleteAccount() {
