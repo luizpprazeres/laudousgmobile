@@ -20,12 +20,17 @@ type Props = {
   /** "recording" mostra timer + waveform animado; "transcribing" mostra
    *  spinner + waveform mais quieto. */
   mode?: Mode;
+  /** Nível de áudio REAL (0..1) vindo do metering do expo-av. Quando presente,
+   *  o waveform desliza com o nível capturado (evidência de que o mic ouve);
+   *  sem ele, cai no modo animado antigo. */
+  level?: number | null;
 };
 
 export function RecordingOverlay({
   transcript = "Aguardando áudio…",
   showCursor = true,
   mode = "recording",
+  level = null,
 }: Props) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
@@ -34,16 +39,25 @@ export function RecordingOverlay({
   );
   const [seconds, setSeconds] = useState(0);
   const cursor = useRef(new Animated.Value(1)).current;
+  const levelRef = useRef<number | null>(level);
+  levelRef.current = level;
   const insets = useSafeAreaInsets();
   const isRecording = mode === "recording";
 
   useEffect(() => {
     const id = setInterval(() => {
-      setBars((prev) =>
-        prev.map(() =>
+      setBars((prev) => {
+        const real = levelRef.current;
+        if (isRecording && real !== null) {
+          // Buffer deslizante com o nível real (mesmo padrão do overlay iOS).
+          const next = prev.slice(1);
+          next.push(Math.max(0.08, real));
+          return next;
+        }
+        return prev.map(() =>
           isRecording ? 0.2 + Math.random() * 0.8 : 0.15 + Math.random() * 0.25,
-        ),
-      );
+        );
+      });
       if (isRecording) setSeconds((s) => s + 0.1);
     }, 80);
     return () => clearInterval(id);

@@ -25,8 +25,14 @@ export async function ensureMicPermission(): Promise<void> {
 /**
  * Inicia uma gravação HIGH_QUALITY (m4a/aac em iOS+Android).
  * Retorna a instância — guarde em ref e passe para stopAndUpload.
+ *
+ * onLevel (opcional): recebe o nível de áudio REAL (0..1, via metering) a cada
+ * ~120ms — alimenta o waveform do RecordingOverlay (feedback de captura, P0
+ * do critique 04/07: ditar sem evidência de que o mic ouve é vale de ansiedade).
  */
-export async function startRecording(): Promise<Audio.Recording> {
+export async function startRecording(
+  onLevel?: (level01: number, durationMillis: number) => void,
+): Promise<Audio.Recording> {
   if (Platform.OS === "ios") {
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
@@ -34,7 +40,17 @@ export async function startRecording(): Promise<Audio.Recording> {
     });
   }
   const { recording } = await Audio.Recording.createAsync(
-    Audio.RecordingOptionsPresets.HIGH_QUALITY,
+    { ...Audio.RecordingOptionsPresets.HIGH_QUALITY, isMeteringEnabled: true },
+    onLevel
+      ? (status) => {
+          if (status.isRecording && typeof status.metering === "number") {
+            // metering vem em dBFS (silêncio ≈ -60..-160; fala ≈ -30..-5).
+            const level = Math.min(1, Math.max(0, (status.metering + 50) / 45));
+            onLevel(level, status.durationMillis ?? 0);
+          }
+        }
+      : undefined,
+    120,
   );
   return recording;
 }

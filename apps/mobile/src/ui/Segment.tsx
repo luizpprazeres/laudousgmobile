@@ -39,7 +39,7 @@ export function Segment<T extends string>({ value, onChange, options }: Props<T>
               >
                 {o.label}
               </Text>
-              {o.dot ? <View style={styles.dot} /> : null}
+              {o.dot ? <View style={[styles.dot, active && styles.dotActive]} /> : null}
             </View>
           </Pressable>
         );
@@ -50,28 +50,24 @@ export function Segment<T extends string>({ value, onChange, options }: Props<T>
 
 function makeStyles(t: ColorTokens) {
   return StyleSheet.create({
+    // Capsule estilo iOS: pill ativa verde (brand) com texto branco.
     wrap: {
       flexDirection: "row",
       backgroundColor: t.fill1,
-      borderRadius: 9,
-      padding: 2,
+      borderRadius: 999,
+      padding: 3,
       marginHorizontal: 16,
     },
     btn: {
       flex: 1,
-      borderRadius: 7,
-      paddingVertical: 7,
+      borderRadius: 999,
+      paddingVertical: 8,
       paddingHorizontal: 4,
       alignItems: "center",
       justifyContent: "center",
     },
     btnActive: {
-      backgroundColor: t.card,
-      shadowColor: "#000",
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 1,
+      backgroundColor: t.brand,
     },
     btnInner: {
       flexDirection: "row",
@@ -82,7 +78,7 @@ function makeStyles(t: ColorTokens) {
       fontSize: 13,
     },
     labelActive: {
-      color: t.text,
+      color: "#fff",
       fontFamily: FONT.semibold,
     },
     labelIdle: {
@@ -94,6 +90,9 @@ function makeStyles(t: ColorTokens) {
       height: 5,
       borderRadius: 3,
       backgroundColor: t.brand,
+    },
+    dotActive: {
+      backgroundColor: "#fff",
     },
   });
 }

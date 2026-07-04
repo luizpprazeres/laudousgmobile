@@ -62,8 +62,12 @@ export function PrimaryButton({
   onPress,
   style,
 }: PrimaryProps) {
+  const t = useColorTokens();
   const { scale, opacity, onPressIn, onPressOut } = usePressAnim(0.96);
   const isOff = disabled || loading;
+  // Disabled sólido neutro (não verde lavado): mantém o texto legível e a
+  // hierarquia correta contra botões secundários (critique login 04/07).
+  const isDisabledIdle = disabled && !loading;
 
   return (
     <Pressable
@@ -79,8 +83,8 @@ export function PrimaryButton({
           {
             minHeight: 48,
             borderRadius: RADIUS.xl,
-            backgroundColor: BRAND,
-            opacity: isOff ? 0.5 * 1 : opacity,
+            backgroundColor: isDisabledIdle ? t.fill1 : BRAND,
+            opacity: loading ? 0.75 : opacity,
             transform: [{ scale }],
             flexDirection: "row",
             alignItems: "center",
@@ -98,7 +102,7 @@ export function PrimaryButton({
             {icon}
             <Text
               style={{
-                color: "#fff",
+                color: isDisabledIdle ? t.textMute : "#fff",
                 fontFamily: FONT.semibold,
                 fontSize: 16,
                 letterSpacing: 0.2,

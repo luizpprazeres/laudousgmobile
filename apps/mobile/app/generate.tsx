@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 import type { Audio as AudioNS } from "expo-av";
 import {
-  Image,
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -29,12 +31,12 @@ import { Segment } from "@/ui/Segment";
 import { CATS, Category, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 import {
+  Chevron,
   Layers,
   Menu,
   Mic,
   Plus,
   Quote,
-  Send,
   Stop,
 } from "@/ui/icons";
 import { CategorySheet } from "@/features/generate/CategorySheet";
@@ -97,6 +99,8 @@ export default function GenerateScreen() {
   } | null>(null);
   const aborterRef = useRef<AbortController | null>(null);
   const recordingRef = useRef<AudioNS.Recording | null>(null);
+  // Nível de áudio real (metering) → waveform do overlay (P0 critique).
+  const [micLevel, setMicLevel] = useState<number | null>(null);
 
   // ── Edição inline do laudo final (paridade iOS: autosave 600ms) ──
   const [editingLaudo, setEditingLaudo] = useState(false);
@@ -127,7 +131,12 @@ export default function GenerateScreen() {
   flushRef.current = flushPendingSave;
 
   useEffect(() => {
-    if (state.kind !== "done") {
+    if (state.kind === "done") {
+      // Peak-end: momento do laudo pronto merece confirmação tátil.
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => undefined,
+      );
+    } else {
       flushRef.current(); // persiste edição pendente antes de sair do done
       setEditingLaudo(false);
       setSaveStatus("idle");
@@ -222,8 +231,10 @@ export default function GenerateScreen() {
   const onMicToggle = async () => {
     // STOP path: para gravação, faz upload Whisper, dispatch transcript.
     if (recording) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
       const rec = recordingRef.current;
       recordingRef.current = null;
+      setMicLevel(null);
       dispatch({ type: "STOP_REC" });
       if (!rec) {
         dispatch({ type: "FAIL", message: "Gravação perdida — tente de novo." });
@@ -263,8 +274,11 @@ export default function GenerateScreen() {
 
     try {
       await ensureMicPermission();
-      const rec = await startRecording();
+      const rec = await startRecording((level) => setMicLevel(level));
       recordingRef.current = rec;
+      // Confirmação tátil de que a captura começou (mão no transdutor,
+      // olhos no monitor — critique 04/07).
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
       dispatch({ type: "START_REC" });
     } catch (e) {
       setNotice({
@@ -277,8 +291,19 @@ export default function GenerateScreen() {
 
   const onPlusAction = (a: "calc" | "clear") => {
     if (a === "clear") {
-      dispatch({ type: "RESET" });
-      setTab("achados");
+      if (!hasContent) return;
+      // Ditado de minutos não pode sumir com 2 taps (critique P1).
+      Alert.alert("Limpar achados?", "O texto ditado/digitado será apagado.", [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Limpar",
+          style: "destructive",
+          onPress: () => {
+            dispatch({ type: "RESET" });
+            setTab("achados");
+          },
+        },
+      ]);
       return;
     }
     if (a === "calc") {
@@ -311,22 +336,16 @@ export default function GenerateScreen() {
           accessibilityLabel="Abrir menu"
         >
           <Menu size={22} color={t.text} />
-          {/* Texto "LaudoUSG" verde + mini-marca à direita. Texto na cor
-              da brand (t.brand) reforça identidade; logo ao lado funciona
-              como pequena assinatura visual. */}
-          <Text style={styles.brandText}>LaudoUSG</Text>
-          <Image
-            source={require("../assets/brand/logos/logo-laudousg-transparent.png")}
-            style={{ width: 36, height: 24 }}
-            resizeMode="contain"
-            accessibilityLabel="LaudoUSG"
-          />
+          {/* Wordmark "LaudoUSG●" — igual ao iOS (sem logo no meio). */}
+          <Text style={styles.brandText}>
+            LaudoUSG<Text style={{ color: t.brand }}>.</Text>
+          </Text>
         </Pressable>
         {/* Chip da categoria: mostra a especialidade selecionada e abre o
             CategorySheet ao tocar. Substitui o chip "mock" técnico antigo. */}
         <Pressable
           onPress={() => setCatOpen(true)}
-          style={[styles.catChip, { borderColor: cat.color + "55" }]}
+          style={styles.catChip}
           accessibilityRole="button"
           accessibilityLabel={`Categoria atual: ${cat.label}. Tocar para mudar.`}
           hitSlop={6}
@@ -335,6 +354,7 @@ export default function GenerateScreen() {
           <Text style={styles.catChipText} numberOfLines={1}>
             {cat.label}
           </Text>
+          <Chevron color={t.textGhost} />
         </Pressable>
       </View>
 
@@ -483,27 +503,38 @@ export default function GenerateScreen() {
         ]}
         pointerEvents="box-none"
       >
+        {/* Layout iOS: [+] discreto · "Gerar laudo" central · mic circular */}
         <View style={styles.composerRow} pointerEvents="box-none">
           <Pressable
             onPress={() => setPlusOpen(true)}
             disabled={micBusy}
-            style={[
-              styles.sideBtn,
-              { opacity: micBusy ? 0.35 : 1 },
-            ]}
+            style={[styles.sideBtn, { opacity: micBusy ? 0.35 : 1 }]}
             accessibilityLabel="Mais ações"
           >
-            <Plus size={22} color={t.text2} />
+            <Plus size={20} color={t.text2} />
+          </Pressable>
+
+          <Pressable
+            onPress={hasContent && !generating && !micBusy ? startGenerate : undefined}
+            disabled={!hasContent || generating || micBusy}
+            style={[
+              styles.generateBtn,
+              { opacity: !hasContent || generating || micBusy ? 0.45 : 1 },
+            ]}
+            accessibilityLabel="Gerar laudo"
+          >
+            <Text style={styles.generateBtnText}>
+              {generating ? "Gerando…" : "Gerar laudo"}
+            </Text>
           </Pressable>
 
           <Pressable
             onPress={onMicToggle}
             disabled={isStreaming || transcribing}
             style={[
-              styles.recBtn,
+              styles.micBtn,
               {
                 backgroundColor: recording ? t.danger : t.brand,
-                shadowColor: recording ? t.danger : t.brand,
                 opacity: isStreaming ? 0.6 : 1,
               },
             ]}
@@ -515,35 +546,13 @@ export default function GenerateScreen() {
                   : "Gravar achados"
             }
           >
-            {recording ? (
+            {transcribing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : recording ? (
               <Stop size={16} color="#fff" />
             ) : (
-              <Mic size={18} color="#fff" />
+              <Mic size={19} color="#fff" />
             )}
-            <Text style={styles.recBtnText}>
-              {recording
-                ? "Parar gravação"
-                : transcribing
-                  ? "Transcrevendo…"
-                  : "Gravar achados"}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={hasContent && !generating && !micBusy ? startGenerate : undefined}
-            disabled={!hasContent || generating || micBusy}
-            style={[
-              styles.sideBtn,
-              {
-                opacity: micBusy ? 0.35 : hasContent ? 1 : 0.55,
-              },
-            ]}
-            accessibilityLabel="Gerar laudo"
-          >
-            <Send
-              size={18}
-              color={hasContent && !micBusy ? t.brand : t.textGhost}
-            />
           </Pressable>
         </View>
       </View>
@@ -551,6 +560,7 @@ export default function GenerateScreen() {
       {/* Overlays */}
       {recording ? (
         <RecordingOverlay
+          level={micLevel}
           mode="recording"
           transcript="Falando para o microfone…"
         />
@@ -732,25 +742,10 @@ function AchadosBody({
         editable={editable}
         multiline
         textAlignVertical="top"
-        placeholder={
-          hasContent
-            ? "Continue digitando ou ditando…"
-            : `Digite os achados do exame de ${cat.label.toLowerCase()}…\nEx: "Fígado normal. Vesícula com cálculo de 1,2 cm. Rins normais."`
-        }
+        placeholder="Dite ou digite os achados."
         placeholderTextColor={t.textMute}
         style={styles.editor}
       />
-
-      {!hasContent ? (
-        <>
-          <Text style={[styles.emptySub, { marginTop: 14 }]}>
-            A IA organiza no padrão de {cat.label}.
-          </Text>
-          <Text style={styles.emptyHint}>
-            Toque o microfone para ditar ou comece a digitar acima.
-          </Text>
-        </>
-      ) : null}
     </View>
   );
 }
@@ -873,16 +868,14 @@ function LaudoBody({
           </View>
         ) : null}
 
-        {/* Toolbar do laudo pronto: Editar/Visualizar + Copiar + status do autosave */}
+        {/* Toolbar do laudo pronto: Editar/Visualizar + status do autosave
+            (Copiar virou a ação PRIMÁRIA no fim do fluxo — critique P0). */}
         {state.kind === "done" && text ? (
           <View style={styles.laudoToolbar}>
             <Pressable onPress={onToggleEdit} style={styles.toolbarBtn} hitSlop={6}>
               <Text style={styles.toolbarBtnText}>
                 {editing ? "Visualizar" : "Editar"}
               </Text>
-            </Pressable>
-            <Pressable onPress={onCopy} style={styles.toolbarBtn} hitSlop={6}>
-              <Text style={styles.toolbarBtnText}>Copiar</Text>
             </Pressable>
             <Text
               style={[
@@ -916,11 +909,7 @@ function LaudoBody({
         )}
 
         {state.kind === "done" && text ? (
-          <View style={styles.disclaimerCard}>
-            <Text style={styles.disclaimerText}>
-              {SHORT_MEDICAL_DISCLAIMER}
-            </Text>
-          </View>
+          <CompactDisclaimer styles={styles} />
         ) : null}
 
         {state.kind === "done" && text ? (
@@ -934,16 +923,25 @@ function LaudoBody({
         ) : null}
 
         {state.kind === "done" ? (
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 18 }}>
+          <View style={{ gap: 10, marginTop: 18 }}>
             <Pressable
-              onPress={() => onOpenReport(state.reportId)}
-              style={[styles.primaryBtn, { flex: 1 }]}
+              onPress={onCopy}
+              style={styles.primaryBtn}
+              accessibilityRole="button"
             >
-              <Text style={styles.primaryBtnText}>Abrir detalhes</Text>
+              <Text style={styles.primaryBtnText}>Copiar laudo</Text>
             </Pressable>
-            <Pressable onPress={onReset} style={styles.secondaryBtn}>
-              <Text style={styles.secondaryBtnText}>Novo</Text>
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Pressable
+                onPress={() => onOpenReport(state.reportId)}
+                style={[styles.secondaryBtn, { flex: 1 }]}
+              >
+                <Text style={styles.secondaryBtnText}>Abrir detalhes</Text>
+              </Pressable>
+              <Pressable onPress={onReset} style={[styles.secondaryBtn, { flex: 1 }]}>
+                <Text style={styles.secondaryBtnText}>Novo</Text>
+              </Pressable>
+            </View>
           </View>
         ) : null}
       </View>
@@ -1011,6 +1009,30 @@ function LaudoBody({
 }
 
 // ─── Styles ───────────────────────────────────────────────────────
+/**
+ * Disclaimer legal compacto (1 linha, expansível) — mantém a função (CFM/loja)
+ * sem terminar a jornada com um cartão de aviso gritante (critique P1).
+ */
+function CompactDisclaimer({ styles }: { styles: ReturnType<typeof makeStyles> }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <Pressable
+      onPress={() => setExpanded((e) => !e)}
+      style={styles.disclaimerCompact}
+      accessibilityRole="button"
+    >
+      <Text style={styles.disclaimerCompactText}>
+        {expanded
+          ? SHORT_MEDICAL_DISCLAIMER
+          : "Minuta de IA — revise antes de assinar."}
+        <Text style={styles.disclaimerMore}>
+          {expanded ? "   ocultar" : "   saiba mais"}
+        </Text>
+      </Text>
+    </Pressable>
+  );
+}
+
 function makeStyles(t: ColorTokens) {
   return StyleSheet.create({
   root: {
@@ -1039,22 +1061,20 @@ function makeStyles(t: ColorTokens) {
     paddingHorizontal: 4,
   },
   brandText: {
-    fontSize: 17,
+    fontSize: 16.5,
     fontFamily: FONT.bold,
     color: t.brand,
     letterSpacing: -0.2,
   },
   // Chip da categoria atual no header (toca pra mudar)
+  // Sem contorno/fundo — só ponto de cor + nome (iOS).
   catChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    paddingHorizontal: 12,
+    paddingHorizontal: 4,
     paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.03)",
-    borderWidth: StyleSheet.hairlineWidth,
-    maxWidth: 180,
+    maxWidth: 190,
   },
   catChipDot: {
     width: 8,
@@ -1063,7 +1083,7 @@ function makeStyles(t: ColorTokens) {
   },
   catChipText: {
     color: t.text,
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: FONT.semibold,
   },
   // DEV-only floating mock toggle (canto inferior direito).
@@ -1121,15 +1141,15 @@ function makeStyles(t: ColorTokens) {
   // Mesma tipografia do placeholder do editor (fontSize 17, FONT.body, cor
   // mute) só que com sublinhado pra deixar claro que é clicável.
   quickLink: {
-    fontSize: 17,
-    lineHeight: 26,
+    fontSize: 14.5,
+    lineHeight: 22,
     color: t.textMute,
     fontFamily: FONT.body,
     textDecorationLine: "underline",
   },
   editor: {
-    fontSize: 17,
-    lineHeight: 26,
+    fontSize: 16,
+    lineHeight: 24,
     color: t.text,
     minHeight: 280,
     fontFamily: FONT.body,
@@ -1204,6 +1224,22 @@ function makeStyles(t: ColorTokens) {
     padding: 12,
     borderRadius: 12,
     backgroundColor: t.warningBg,
+  },
+  disclaimerCompact: {
+    marginTop: 14,
+    paddingVertical: 4,
+  },
+  disclaimerCompactText: {
+    color: t.warningText,
+    fontFamily: FONT.medium,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  disclaimerMore: {
+    color: t.textMute,
+    fontFamily: FONT.semibold,
+    fontSize: 11.5,
+    textDecorationLine: "underline",
   },
   disclaimerText: {
     color: t.warningText,
@@ -1347,37 +1383,32 @@ function makeStyles(t: ColorTokens) {
     gap: 8,
   },
   sideBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: t.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: t.separator,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: t.fill1,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
-  recBtn: {
+  generateBtn: {
     flex: 1,
-    height: 46,
+    height: 44,
     borderRadius: 12,
-    flexDirection: "row",
+    backgroundColor: t.brandDeep,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    shadowOpacity: 0.32,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
   },
-  recBtnText: {
+  generateBtnText: {
     color: "#fff",
     fontSize: 15,
     fontFamily: FONT.semibold,
+  },
+  micBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 }

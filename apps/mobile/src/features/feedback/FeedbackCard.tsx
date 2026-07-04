@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ActivityIndicator,
   Pressable,
@@ -9,13 +10,18 @@ import {
 } from "react-native";
 import { FONT, RADIUS, SPACING, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
+import { ThumbDown, ThumbUp } from "@/ui/icons";
 import { submitFeedback, type FeedbackVerdict } from "./feedback";
 
 /**
- * Card de avaliação do laudo (paridade iOS feedbackCard):
- * 👍 envia direto; 👎 expande comentário opcional "O que faltou?".
- * Estados idle/submitting/submitted/error; voto pode ser trocado.
+ * Card de avaliação do laudo (paridade iOS feedbackCard, adaptado no critique
+ * 04/07): ícones em vez de emoji e AMOSTRAGEM 1/5 — aparece no 1º laudo e a
+ * cada 5 (decisão do Luiz: evitar fadiga no 40º laudo do dia).
+ * 👍 envia direto; 👎 expande comentário opcional. Voto pode ser trocado.
  */
+
+const SAMPLE_EVERY = 5;
+const COUNTER_KEY = "laudousg.feedback_counter";
 
 type Status = "idle" | "submitting" | "submitted" | "error";
 
@@ -32,13 +38,28 @@ export function FeedbackCard({
   const [status, setStatus] = useState<Status>("idle");
   const [comment, setComment] = useState("");
   const [commentOpen, setCommentOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
 
-  // Novo laudo → zera o card.
+  // Novo laudo → zera o card e decide amostragem (1º laudo e a cada 5).
   useEffect(() => {
     setVerdict(null);
     setStatus("idle");
     setComment("");
     setCommentOpen(false);
+    let active = true;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(COUNTER_KEY);
+        const count = (raw ? parseInt(raw, 10) || 0 : 0) + 1;
+        await AsyncStorage.setItem(COUNTER_KEY, String(count));
+        if (active) setVisible(count % SAMPLE_EVERY === 1);
+      } catch {
+        if (active) setVisible(true); // sem contador confiável, mostra
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [reportId]);
 
   async function send(v: FeedbackVerdict, withComment?: string) {
@@ -70,6 +91,8 @@ export function FeedbackCard({
 
   const busy = status === "submitting";
 
+  if (!visible) return null;
+
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -82,7 +105,7 @@ export function FeedbackCard({
             accessibilityRole="button"
             accessibilityLabel="Laudo bom"
           >
-            <Text style={styles.thumbIcon}>👍</Text>
+            <ThumbUp size={18} color={verdict === "positive" ? t.brandDeep : t.textSec} />
           </Pressable>
           <Pressable
             onPress={onThumbDown}
@@ -94,7 +117,7 @@ export function FeedbackCard({
             accessibilityRole="button"
             accessibilityLabel="Laudo com problemas"
           >
-            <Text style={styles.thumbIcon}>👎</Text>
+            <ThumbDown size={18} color={verdict === "negative" ? t.warningText : t.textSec} />
           </Pressable>
         </View>
       </View>
