@@ -17,7 +17,7 @@ import {
   Barlow_700Bold,
   Barlow_800ExtraBold,
 } from "@expo-google-fonts/barlow";
-import { C } from "@/ui/tokens";
+import { darkTokens, lightTokens } from "@/ui/tokens";
 import { BrandSplash } from "@/ui/BrandSplash";
 import { LegalGate } from "@/features/legal/LegalGate";
 import { ThemeProvider, useTheme } from "@/ui/ThemeProvider";
@@ -57,29 +57,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <ThemedStatusBar />
-          <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: C.bg },
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="generate" />
-          <Stack.Screen name="historico" />
-          <Stack.Screen name="analytics" />
-          <Stack.Screen name="preferencias" />
-          <Stack.Screen name="sobre" />
-          <Stack.Screen name="biblioteca" />
-          <Stack.Screen name="seguranca" />
-          <Stack.Screen
-            name="report/[id]"
-            options={{ headerShown: true, title: "Laudo" }}
-          />
-          </Stack>
-          {/* Gate de aceite legal — cobre todas as rotas (paridade iOS AppShellView). */}
-          <LegalGate />
+          <ThemedRoot />
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -87,13 +65,39 @@ export default function RootLayout() {
 }
 
 /**
- * StatusBar: por enquanto FIXA em ícones escuros. As telas principais
- * (generate/report/sheets) ainda são light-locked — seguir o tema aqui deixaria
- * os ícones invisíveis para quem usa modo escuro. Trocar para
- * `scheme === "dark" ? "light" : "dark"` quando o dark mode universal migrar
- * essas telas (task dark-mode; useTheme já está disponível).
+ * Raiz tematizada (precisa estar DENTRO do ThemeProvider): StatusBar segue o
+ * tema efetivo e o fundo das rotas usa os tokens ativos (dark mode universal).
  */
-function ThemedStatusBar() {
-  useTheme(); // mantém o hook plugado p/ a virada futura
-  return <StatusBar style="dark" />;
+function ThemedRoot() {
+  const { scheme } = useTheme();
+  const t = scheme === "dark" ? darkTokens : lightTokens;
+  return (
+    <>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: t.bg },
+          headerStyle: { backgroundColor: t.card },
+          headerTintColor: t.text,
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="generate" />
+        <Stack.Screen name="historico" />
+        <Stack.Screen name="analytics" />
+        <Stack.Screen name="preferencias" />
+        <Stack.Screen name="sobre" />
+        <Stack.Screen name="biblioteca" />
+        <Stack.Screen name="seguranca" />
+        <Stack.Screen
+          name="report/[id]"
+          options={{ headerShown: true, title: "Laudo" }}
+        />
+      </Stack>
+      {/* Gate de aceite legal — cobre todas as rotas (paridade iOS AppShellView). */}
+      <LegalGate />
+    </>
+  );
 }

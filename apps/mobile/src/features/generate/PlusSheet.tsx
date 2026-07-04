@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Sheet } from "@/ui/Sheet";
-import { C, FONT } from "@/ui/tokens";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 import { Ruler, X } from "@/ui/icons";
 
 /**
@@ -42,6 +44,8 @@ const ITEMS: Item[] = [
 ];
 
 export function PlusSheet({ open, onClose, onPick }: Props) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <Sheet open={open} onClose={onClose} height={320}>
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}>
@@ -68,33 +72,35 @@ export function PlusSheet({ open, onClose, onPick }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: C.card,
-    marginBottom: 6,
-  },
-  iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    fontSize: 16,
-    fontFamily: FONT.semibold,
-    color: C.text,
-  },
-  sub: {
-    fontSize: 13,
-    color: C.textSec,
-    marginTop: 1,
-    fontFamily: FONT.body,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 14,
+      borderRadius: 12,
+      backgroundColor: t.card,
+      marginBottom: 6,
+    },
+    iconBox: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    label: {
+      fontSize: 16,
+      fontFamily: FONT.semibold,
+      color: t.text,
+    },
+    sub: {
+      fontSize: 13,
+      color: t.textSec,
+      marginTop: 1,
+      fontFamily: FONT.body,
+    },
+  });
+}

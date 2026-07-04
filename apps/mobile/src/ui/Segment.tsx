@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { C, FONT } from "./tokens";
+import { FONT, type ColorTokens } from "./tokens";
+import { useColorTokens } from "./useColorTokens";
 
 export type SegmentOption<T extends string> = {
   value: T;
@@ -14,6 +16,8 @@ type Props<T extends string> = {
 };
 
 export function Segment<T extends string>({ value, onChange, options }: Props<T>) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <View style={styles.wrap}>
       {options.map((o) => {
@@ -44,50 +48,52 @@ export function Segment<T extends string>({ value, onChange, options }: Props<T>
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: "row",
-    backgroundColor: C.fill1,
-    borderRadius: 9,
-    padding: 2,
-    marginHorizontal: 16,
-  },
-  btn: {
-    flex: 1,
-    borderRadius: 7,
-    paddingVertical: 7,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnActive: {
-    backgroundColor: C.card,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-  },
-  btnInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  label: {
-    fontSize: 13,
-  },
-  labelActive: {
-    color: C.text,
-    fontFamily: FONT.semibold,
-  },
-  labelIdle: {
-    color: C.text2,
-    fontFamily: FONT.medium,
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: C.brand,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    wrap: {
+      flexDirection: "row",
+      backgroundColor: t.fill1,
+      borderRadius: 9,
+      padding: 2,
+      marginHorizontal: 16,
+    },
+    btn: {
+      flex: 1,
+      borderRadius: 7,
+      paddingVertical: 7,
+      paddingHorizontal: 4,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    btnActive: {
+      backgroundColor: t.card,
+      shadowColor: "#000",
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 1,
+    },
+    btnInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+    },
+    label: {
+      fontSize: 13,
+    },
+    labelActive: {
+      color: t.text,
+      fontFamily: FONT.semibold,
+    },
+    labelIdle: {
+      color: t.text2,
+      fontFamily: FONT.medium,
+    },
+    dot: {
+      width: 5,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: t.brand,
+    },
+  });
+}

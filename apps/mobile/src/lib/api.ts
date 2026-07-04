@@ -224,15 +224,22 @@ export async function updateReportFinalOutput(
   reportId: string,
   finalOutput: string,
 ): Promise<void> {
-  const { error } = await supabase
+  // .select() confirma que exatamente 1 linha foi atualizada — com RLS, um
+  // update sem match retorna sucesso vazio e a UI marcaria "Salvo" sem salvar
+  // (review Dex1 04/07).
+  const { data, error } = await supabase
     .from("reports")
     .update({
       final_output: finalOutput,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", reportId);
+    .eq("id", reportId)
+    .select("id");
   if (error) {
     throw new Error(`salvar final_output falhou: ${error.message}`);
+  }
+  if (!data || data.length !== 1) {
+    throw new Error("salvar final_output falhou: nenhuma linha atualizada");
   }
 }
 

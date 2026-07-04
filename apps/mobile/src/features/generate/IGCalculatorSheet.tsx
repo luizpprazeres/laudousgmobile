@@ -13,7 +13,8 @@ import {
   type IGResult,
 } from "@/shared";
 import { Sheet } from "@/ui/Sheet";
-import { C, FONT } from "@/ui/tokens";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 import { Cal, Ruler } from "@/ui/icons";
 
 type Tab = "dum" | "usg";
@@ -40,6 +41,8 @@ export function IGCalculatorSheet({
   onClose,
   onInsert,
 }: Props) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [tab, setTab] = useState<Tab>(initialTab);
 
   // DUM
@@ -79,14 +82,14 @@ export function IGCalculatorSheet({
         <View style={styles.tabs}>
           <TabBtn
             label="Pela DUM"
-            icon={<Cal size={16} color={tab === "dum" ? C.brand : C.textSec} />}
+            icon={<Cal size={16} color={tab === "dum" ? t.brand : t.textSec} />}
             active={tab === "dum"}
             onPress={() => setTab("dum")}
           />
           <TabBtn
             label="Pela 1ª USG"
             icon={
-              <Ruler size={16} color={tab === "usg" ? C.brand : C.textSec} />
+              <Ruler size={16} color={tab === "usg" ? t.brand : t.textSec} />
             }
             active={tab === "usg"}
             onPress={() => setTab("usg")}
@@ -100,7 +103,7 @@ export function IGCalculatorSheet({
               value={dumValue}
               onChangeText={setDumValue}
               placeholder="DD/MM/AAAA"
-              placeholderTextColor={C.textMute}
+              placeholderTextColor={t.textMute}
               keyboardType="numbers-and-punctuation"
               style={styles.input}
               maxLength={10}
@@ -118,7 +121,7 @@ export function IGCalculatorSheet({
               value={usgDate}
               onChangeText={setUsgDate}
               placeholder="DD/MM/AAAA"
-              placeholderTextColor={C.textMute}
+              placeholderTextColor={t.textMute}
               keyboardType="numbers-and-punctuation"
               style={styles.input}
               maxLength={10}
@@ -132,7 +135,7 @@ export function IGCalculatorSheet({
                 value={usgWeeks}
                 onChangeText={setUsgWeeks}
                 placeholder="Semanas"
-                placeholderTextColor={C.textMute}
+                placeholderTextColor={t.textMute}
                 keyboardType="numeric"
                 style={[styles.input, { flex: 1 }]}
                 maxLength={2}
@@ -141,7 +144,7 @@ export function IGCalculatorSheet({
                 value={usgDays}
                 onChangeText={setUsgDays}
                 placeholder="Dias 0–6"
-                placeholderTextColor={C.textMute}
+                placeholderTextColor={t.textMute}
                 keyboardType="numeric"
                 style={[styles.input, { flex: 1 }]}
                 maxLength={1}
@@ -171,6 +174,8 @@ function TabBtn({
   active: boolean;
   onPress: () => void;
 }) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <Pressable
       onPress={onPress}
@@ -180,7 +185,7 @@ function TabBtn({
       <Text
         style={[
           styles.tabText,
-          active && { color: C.brand, fontFamily: FONT.semibold },
+          active && { color: t.brand, fontFamily: FONT.semibold },
         ]}
       >
         {label}
@@ -196,6 +201,8 @@ function ResultCard({
   result: IGResult;
   onInsert: (r: IGResult) => void;
 }) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <View style={styles.resultCard}>
       <View style={styles.resultRow}>
@@ -222,6 +229,8 @@ function ResultCard({
 }
 
 function Hint() {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <Text style={styles.hint}>
       Preencha os campos pra ver o cálculo automático.
@@ -229,101 +238,103 @@ function Hint() {
   );
 }
 
-const styles = StyleSheet.create({
-  tabs: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 18,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: C.fill1,
-  },
-  tabActive: {
-    backgroundColor: C.brandLight,
-  },
-  tabText: {
-    fontSize: 14,
-    color: C.textSec,
-    fontFamily: FONT.medium,
-  },
-  section: {},
-  label: {
-    fontSize: 12,
-    color: C.textSec,
-    fontFamily: FONT.medium,
-    marginBottom: 6,
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
-  },
-  input: {
-    fontSize: 16,
-    color: C.text,
-    fontFamily: FONT.body,
-    backgroundColor: C.fill1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: C.separator,
-    // Web: remover outline azul
-    // @ts-expect-error — outline* not in RN types
-    outlineStyle: "none",
-    outlineWidth: 0,
-  },
-  hint: {
-    fontSize: 13,
-    color: C.textMute,
-    fontStyle: "italic",
-    marginTop: 16,
-    textAlign: "center",
-  },
-  resultCard: {
-    marginTop: 18,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: C.brandLight,
-    borderWidth: 1,
-    borderColor: C.brand + "33",
-  },
-  resultRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  resultKey: {
-    fontSize: 12,
-    color: C.brandDeep,
-    fontFamily: FONT.medium,
-  },
-  resultValue: {
-    fontSize: 13,
-    color: C.brandDeep,
-    fontFamily: FONT.semibold,
-  },
-  resultValueStrong: {
-    fontSize: 15,
-    color: C.brandDeep,
-    fontFamily: FONT.bold,
-  },
-  insertBtn: {
-    marginTop: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: C.brand,
-    alignItems: "center",
-  },
-  insertBtnText: {
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: FONT.semibold,
-    letterSpacing: 0.3,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    tabs: {
+      flexDirection: "row",
+      gap: 8,
+      marginBottom: 18,
+    },
+    tab: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 10,
+      borderRadius: 10,
+      backgroundColor: t.fill1,
+    },
+    tabActive: {
+      backgroundColor: t.brandLight,
+    },
+    tabText: {
+      fontSize: 14,
+      color: t.textSec,
+      fontFamily: FONT.medium,
+    },
+    section: {},
+    label: {
+      fontSize: 12,
+      color: t.textSec,
+      fontFamily: FONT.medium,
+      marginBottom: 6,
+      letterSpacing: 0.3,
+      textTransform: "uppercase",
+    },
+    input: {
+      fontSize: 16,
+      color: t.text,
+      fontFamily: FONT.body,
+      backgroundColor: t.fill1,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: t.separator,
+      // Web: remover outline azul
+      // @ts-expect-error — outline* not in RN types
+      outlineStyle: "none",
+      outlineWidth: 0,
+    },
+    hint: {
+      fontSize: 13,
+      color: t.textMute,
+      fontStyle: "italic",
+      marginTop: 16,
+      textAlign: "center",
+    },
+    resultCard: {
+      marginTop: 18,
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: t.brandLight,
+      borderWidth: 1,
+      borderColor: t.brand + "33",
+    },
+    resultRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 6,
+    },
+    resultKey: {
+      fontSize: 12,
+      color: t.brandDeep,
+      fontFamily: FONT.medium,
+    },
+    resultValue: {
+      fontSize: 13,
+      color: t.brandDeep,
+      fontFamily: FONT.semibold,
+    },
+    resultValueStrong: {
+      fontSize: 15,
+      color: t.brandDeep,
+      fontFamily: FONT.bold,
+    },
+    insertBtn: {
+      marginTop: 12,
+      paddingVertical: 12,
+      borderRadius: 10,
+      backgroundColor: t.brand,
+      alignItems: "center",
+    },
+    insertBtnText: {
+      color: "#fff",
+      fontSize: 14,
+      fontFamily: FONT.semibold,
+      letterSpacing: 0.3,
+    },
+  });
+}

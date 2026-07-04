@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +9,8 @@ import {
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { Sheet } from "@/ui/Sheet";
-import { C, FONT } from "@/ui/tokens";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 import { AlertTriangle, CheckCircle, Send } from "@/ui/icons";
 import {
   generateSalaPairing,
@@ -41,6 +42,8 @@ function remainingLabel(expiresAt: string, now: number): string {
 }
 
 export function SalaPairingSheet({ open, onClose }: Props) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [pairing, setPairing] = useState<SalaPairing | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +115,7 @@ export function SalaPairingSheet({ open, onClose }: Props) {
       <View style={styles.container}>
         {isLoading && !pairing ? (
           <View style={styles.center}>
-            <ActivityIndicator color={C.brand} />
+            <ActivityIndicator color={t.brand} />
             <Text style={styles.muted}>Gerando código…</Text>
           </View>
         ) : pairing ? (
@@ -142,9 +145,9 @@ export function SalaPairingSheet({ open, onClose }: Props) {
               ]}
             >
               {didCopyURL ? (
-                <CheckCircle size={16} color={C.brand} />
+                <CheckCircle size={16} color={t.brand} />
               ) : (
-                <Send size={16} color={C.text} />
+                <Send size={16} color={t.text} />
               )}
               <Text style={styles.secondaryBtnText}>
                 {didCopyURL
@@ -178,7 +181,7 @@ export function SalaPairingSheet({ open, onClose }: Props) {
 
             {error ? (
               <View style={styles.errorCard}>
-                <AlertTriangle size={16} color={C.danger} />
+                <AlertTriangle size={16} color={t.danger} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
@@ -206,142 +209,144 @@ export function SalaPairingSheet({ open, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 22,
-    paddingTop: 8,
-    paddingBottom: 32,
-    gap: 14,
-  },
-  center: {
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 60,
-  },
-  muted: {
-    color: C.text2,
-    fontFamily: FONT.body,
-    fontSize: 14,
-  },
-  introCard: {
-    backgroundColor: C.card,
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.separator,
-    gap: 8,
-  },
-  introTitle: {
-    color: C.text,
-    fontFamily: FONT.semibold,
-    fontSize: 16,
-  },
-  introBody: {
-    color: C.text2,
-    fontFamily: FONT.body,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  codeCard: {
-    backgroundColor: C.brandLight,
-    borderRadius: 22,
-    paddingVertical: 24,
-    paddingHorizontal: 18,
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "rgba(5,150,105,0.25)",
-  },
-  codeLabel: {
-    color: C.brandDeep,
-    fontFamily: FONT.semibold,
-    fontSize: 11,
-    letterSpacing: 1.2,
-  },
-  code: {
-    color: C.brandDeep,
-    fontFamily: FONT.black,
-    fontSize: 44,
-    letterSpacing: 4,
-  },
-  codeMeta: {
-    color: C.text2,
-    fontFamily: FONT.medium,
-    fontSize: 12,
-  },
-  instructionsCard: {
-    backgroundColor: C.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.separator,
-    gap: 6,
-  },
-  sectionLabel: {
-    color: C.textSec,
-    fontFamily: FONT.semibold,
-    fontSize: 11,
-    letterSpacing: 1.2,
-  },
-  instructions: {
-    color: C.text2,
-    fontFamily: FONT.body,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  primaryBtn: {
-    backgroundColor: C.brand,
-    borderRadius: 14,
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 18,
-  },
-  primaryBtnText: {
-    color: "#fff",
-    fontFamily: FONT.semibold,
-    fontSize: 16,
-  },
-  secondaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: C.card,
-    borderRadius: 12,
-    minHeight: 46,
-    paddingHorizontal: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.separator,
-  },
-  secondaryBtnText: {
-    color: C.text,
-    fontFamily: FONT.medium,
-    fontSize: 14,
-  },
-  dangerBtn: {
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dangerBtnText: {
-    color: C.danger,
-    fontFamily: FONT.medium,
-    fontSize: 14,
-  },
-  errorCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(255,59,48,0.08)",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  errorText: {
-    flex: 1,
-    color: C.danger,
-    fontFamily: FONT.medium,
-    fontSize: 13,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      paddingHorizontal: 22,
+      paddingTop: 8,
+      paddingBottom: 32,
+      gap: 14,
+    },
+    center: {
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 60,
+    },
+    muted: {
+      color: t.text2,
+      fontFamily: FONT.body,
+      fontSize: 14,
+    },
+    introCard: {
+      backgroundColor: t.card,
+      borderRadius: 18,
+      padding: 18,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.separator,
+      gap: 8,
+    },
+    introTitle: {
+      color: t.text,
+      fontFamily: FONT.semibold,
+      fontSize: 16,
+    },
+    introBody: {
+      color: t.text2,
+      fontFamily: FONT.body,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    codeCard: {
+      backgroundColor: t.brandLight,
+      borderRadius: 22,
+      paddingVertical: 24,
+      paddingHorizontal: 18,
+      alignItems: "center",
+      gap: 8,
+      borderWidth: 1,
+      borderColor: "rgba(5,150,105,0.25)",
+    },
+    codeLabel: {
+      color: t.brandDeep,
+      fontFamily: FONT.semibold,
+      fontSize: 11,
+      letterSpacing: 1.2,
+    },
+    code: {
+      color: t.brandDeep,
+      fontFamily: FONT.black,
+      fontSize: 44,
+      letterSpacing: 4,
+    },
+    codeMeta: {
+      color: t.text2,
+      fontFamily: FONT.medium,
+      fontSize: 12,
+    },
+    instructionsCard: {
+      backgroundColor: t.card,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.separator,
+      gap: 6,
+    },
+    sectionLabel: {
+      color: t.textSec,
+      fontFamily: FONT.semibold,
+      fontSize: 11,
+      letterSpacing: 1.2,
+    },
+    instructions: {
+      color: t.text2,
+      fontFamily: FONT.body,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    primaryBtn: {
+      backgroundColor: t.brand,
+      borderRadius: 14,
+      minHeight: 50,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 18,
+    },
+    primaryBtnText: {
+      color: "#fff",
+      fontFamily: FONT.semibold,
+      fontSize: 16,
+    },
+    secondaryBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: t.card,
+      borderRadius: 12,
+      minHeight: 46,
+      paddingHorizontal: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.separator,
+    },
+    secondaryBtnText: {
+      color: t.text,
+      fontFamily: FONT.medium,
+      fontSize: 14,
+    },
+    dangerBtn: {
+      minHeight: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    dangerBtnText: {
+      color: t.danger,
+      fontFamily: FONT.medium,
+      fontSize: 14,
+    },
+    errorCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: "rgba(255,59,48,0.08)",
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    errorText: {
+      flex: 1,
+      color: t.danger,
+      fontFamily: FONT.medium,
+      fontSize: 13,
+    },
+  });
+}

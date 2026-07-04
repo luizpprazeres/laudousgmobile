@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
   Modal,
@@ -15,7 +15,8 @@ import { BrandSplash } from "@/ui/BrandSplash";
 import { MarkdownLite } from "@/ui/MarkdownLite";
 import { Sheet } from "@/ui/Sheet";
 import { PrimaryButton } from "@/ui/Button";
-import { C, FONT, RADIUS, SPACING } from "@/ui/tokens";
+import { FONT, RADIUS, SPACING, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 import {
   fetchLegalAcceptance,
   hasCachedAcceptance,
@@ -36,8 +37,6 @@ import {
  *
  * Cache por usuário (AsyncStorage) evita re-checagem bloqueante a cada start;
  * a leitura remota re-sincroniza em background (versões novas reabrem o gate).
- *
- * Tokens em light fixo (C), como os demais sheets — migra no passo dark mode.
  */
 
 type GateState = "hidden" | "checking" | "blocked";
@@ -45,6 +44,8 @@ type DocMeta = { id: LegalDocId; title: string; version: string };
 
 export function LegalGate() {
   const insets = useSafeAreaInsets();
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [state, setState] = useState<GateState>("hidden");
   const [userId, setUserId] = useState<string | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -260,113 +261,115 @@ export function LegalGate() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-  title: {
-    color: C.text,
-    fontFamily: FONT.displayBold,
-    fontSize: 28,
-  },
-  subtitle: {
-    color: C.textSec,
-    fontFamily: FONT.body,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  warnBanner: {
-    backgroundColor: C.warningBg,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.sm,
-    gap: SPACING.xxs,
-    marginTop: SPACING.xs,
-  },
-  warnText: {
-    color: C.warningText,
-    fontFamily: FONT.medium,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  warnAction: {
-    color: C.warningText,
-    fontFamily: FONT.bold,
-    fontSize: 13,
-    textDecorationLine: "underline",
-  },
-  docCard: {
-    backgroundColor: C.card,
-    borderRadius: RADIUS.xl,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
-  docTitle: {
-    color: C.text,
-    fontFamily: FONT.semibold,
-    fontSize: 15,
-  },
-  docVersion: {
-    color: C.textMute,
-    fontFamily: FONT.body,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  docChevron: {
-    color: C.textMute,
-    fontSize: 24,
-    fontFamily: FONT.body,
-  },
-  checkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    paddingVertical: SPACING.xxs,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: RADIUS.md,
-    borderWidth: 2,
-    borderColor: C.textGhost,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: C.card,
-  },
-  checkboxOn: {
-    backgroundColor: C.brand,
-    borderColor: C.brand,
-  },
-  checkmark: {
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: FONT.bold,
-    lineHeight: 16,
-  },
-  checkLabel: {
-    color: C.text,
-    fontFamily: FONT.body,
-    fontSize: 14,
-    flex: 1,
-    lineHeight: 20,
-  },
-  error: {
-    color: C.danger,
-    fontFamily: FONT.medium,
-    fontSize: 13,
-    marginTop: SPACING.xs,
-  },
-  exitBtn: {
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  exitText: {
-    color: C.textSec,
-    fontFamily: FONT.semibold,
-    fontSize: 15,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: t.bg,
+    },
+    title: {
+      color: t.text,
+      fontFamily: FONT.displayBold,
+      fontSize: 28,
+    },
+    subtitle: {
+      color: t.textSec,
+      fontFamily: FONT.body,
+      fontSize: 14,
+      lineHeight: 21,
+    },
+    warnBanner: {
+      backgroundColor: t.warningBg,
+      borderRadius: RADIUS.lg,
+      padding: SPACING.sm,
+      gap: SPACING.xxs,
+      marginTop: SPACING.xs,
+    },
+    warnText: {
+      color: t.warningText,
+      fontFamily: FONT.medium,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    warnAction: {
+      color: t.warningText,
+      fontFamily: FONT.bold,
+      fontSize: 13,
+      textDecorationLine: "underline",
+    },
+    docCard: {
+      backgroundColor: t.card,
+      borderRadius: RADIUS.xl,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+    },
+    docTitle: {
+      color: t.text,
+      fontFamily: FONT.semibold,
+      fontSize: 15,
+    },
+    docVersion: {
+      color: t.textMute,
+      fontFamily: FONT.body,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    docChevron: {
+      color: t.textMute,
+      fontSize: 24,
+      fontFamily: FONT.body,
+    },
+    checkRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      paddingVertical: SPACING.xxs,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: RADIUS.md,
+      borderWidth: 2,
+      borderColor: t.textGhost,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: t.card,
+    },
+    checkboxOn: {
+      backgroundColor: t.brand,
+      borderColor: t.brand,
+    },
+    checkmark: {
+      color: "#fff",
+      fontSize: 14,
+      fontFamily: FONT.bold,
+      lineHeight: 16,
+    },
+    checkLabel: {
+      color: t.text,
+      fontFamily: FONT.body,
+      fontSize: 14,
+      flex: 1,
+      lineHeight: 20,
+    },
+    error: {
+      color: t.danger,
+      fontFamily: FONT.medium,
+      fontSize: 13,
+      marginTop: SPACING.xs,
+    },
+    exitBtn: {
+      minHeight: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    exitText: {
+      color: t.textSec,
+      fontFamily: FONT.semibold,
+      fontSize: 15,
+    },
+  });
+}

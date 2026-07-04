@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import * as Clipboard from "expo-clipboard";
 import type { Audio as AudioNS } from "expo-av";
 import {
@@ -26,7 +26,8 @@ import {
 } from "@/lib/api";
 import { Banner, type BannerSeverity } from "@/ui/Banner";
 import { Segment } from "@/ui/Segment";
-import { C, CATS, Category, FONT } from "@/ui/tokens";
+import { CATS, Category, FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 import {
   Layers,
   Menu,
@@ -71,6 +72,8 @@ type Tab = "achados" | "laudo";
 
 export default function GenerateScreen() {
   const insets = useSafeAreaInsets();
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [state, dispatch] = useReducer(generateReducer, initialGenerateState);
   const [tab, setTab] = useState<Tab>("achados");
   const [cat, setCat] = useState<Category>(CATS[0]);
@@ -101,39 +104,56 @@ export default function GenerateScreen() {
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Última edição ainda não persistida — flush em unmount/toggle/reset garante
+  // que sair rápido não perde texto (review Dex1 04/07).
+  const pendingSaveRef = useRef<{ reportId: string; text: string } | null>(null);
+
+  function flushPendingSave() {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const pending = pendingSaveRef.current;
+    pendingSaveRef.current = null;
+    if (!pending) return;
+    updateReportFinalOutput(pending.reportId, stripReviewMarkers(pending.text))
+      .then(() => setSaveStatus("saved"))
+      .catch((err) => {
+        console.warn("[mobile] autosave do laudo falhou:", err);
+        setSaveStatus("error");
+      });
+  }
+  const flushRef = useRef(flushPendingSave);
+  flushRef.current = flushPendingSave;
 
   useEffect(() => {
     if (state.kind !== "done") {
+      flushRef.current(); // persiste edição pendente antes de sair do done
       setEditingLaudo(false);
       setSaveStatus("idle");
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = null;
-      }
     }
   }, [state.kind]);
 
   useEffect(
     () => () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      flushRef.current(); // unmount: não perde a última edição
     },
     [],
   );
+
+  function toggleEditingLaudo() {
+    if (editingLaudo) flushPendingSave(); // saindo do modo edição → salva já
+    setEditingLaudo(!editingLaudo);
+  }
 
   function onEditFinal(nextText: string) {
     if (state.kind !== "done") return;
     const reportId = state.reportId;
     dispatch({ type: "EDIT_FINAL", text: nextText });
     setSaveStatus("saving");
+    pendingSaveRef.current = { reportId, text: nextText };
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      updateReportFinalOutput(reportId, stripReviewMarkers(nextText))
-        .then(() => setSaveStatus("saved"))
-        .catch((err) => {
-          console.warn("[mobile] autosave do laudo falhou:", err);
-          setSaveStatus("error");
-        });
-    }, 600);
+    saveTimerRef.current = setTimeout(() => flushRef.current(), 600);
   }
 
   async function onCopyLaudo() {
@@ -290,9 +310,9 @@ export default function GenerateScreen() {
           accessibilityRole="button"
           accessibilityLabel="Abrir menu"
         >
-          <Menu size={22} color={C.text} />
+          <Menu size={22} color={t.text} />
           {/* Texto "LaudoUSG" verde + mini-marca à direita. Texto na cor
-              da brand (C.brand) reforça identidade; logo ao lado funciona
+              da brand (t.brand) reforça identidade; logo ao lado funciona
               como pequena assinatura visual. */}
           <Text style={styles.brandText}>LaudoUSG</Text>
           <Image
@@ -387,7 +407,7 @@ export default function GenerateScreen() {
               cat={cat}
               editing={editingLaudo}
               saveStatus={saveStatus}
-              onToggleEdit={() => setEditingLaudo((e) => !e)}
+              onToggleEdit={toggleEditingLaudo}
               onEditFinal={onEditFinal}
               onCopy={onCopyLaudo}
               onCancel={cancelGenerate}
@@ -473,7 +493,7 @@ export default function GenerateScreen() {
             ]}
             accessibilityLabel="Mais ações"
           >
-            <Plus size={22} color={C.text2} />
+            <Plus size={22} color={t.text2} />
           </Pressable>
 
           <Pressable
@@ -482,8 +502,8 @@ export default function GenerateScreen() {
             style={[
               styles.recBtn,
               {
-                backgroundColor: recording ? C.danger : C.brand,
-                shadowColor: recording ? C.danger : C.brand,
+                backgroundColor: recording ? t.danger : t.brand,
+                shadowColor: recording ? t.danger : t.brand,
                 opacity: isStreaming ? 0.6 : 1,
               },
             ]}
@@ -522,7 +542,7 @@ export default function GenerateScreen() {
           >
             <Send
               size={18}
-              color={hasContent && !micBusy ? C.brand : C.textGhost}
+              color={hasContent && !micBusy ? t.brand : t.textGhost}
             />
           </Pressable>
         </View>
@@ -671,6 +691,8 @@ function AchadosBody({
   editable,
   cat,
 }: AchadosProps) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const quickActions = buildQuickActions(
     cat.id,
     onOpenIG,
@@ -715,7 +737,7 @@ function AchadosBody({
             ? "Continue digitando ou ditando…"
             : `Digite os achados do exame de ${cat.label.toLowerCase()}…\nEx: "Fígado normal. Vesícula com cálculo de 1,2 cm. Rins normais."`
         }
-        placeholderTextColor={C.textMute}
+        placeholderTextColor={t.textMute}
         style={styles.editor}
       />
 
@@ -821,6 +843,8 @@ function LaudoBody({
   onOpenReport,
   onReset,
 }: LaudoProps) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const today = new Date().toLocaleDateString("pt-BR");
   const time = new Date().toLocaleTimeString("pt-BR", {
     hour: "2-digit",
@@ -842,7 +866,7 @@ function LaudoBody({
 
         {state.kind === "generating" && state.structured ? (
           <View style={styles.pipelineRow}>
-            <View style={[styles.pipeDot, { backgroundColor: C.brand }]} />
+            <View style={[styles.pipeDot, { backgroundColor: t.brand }]} />
             <Text style={styles.pipelineText}>
               {state.structured.categoria_detectada} · {state.structured.tipo_exame}
             </Text>
@@ -863,7 +887,7 @@ function LaudoBody({
             <Text
               style={[
                 styles.saveStatus,
-                saveStatus === "error" && { color: C.danger },
+                saveStatus === "error" && { color: t.danger },
               ]}
             >
               {SAVE_LABEL[saveStatus]}
@@ -929,7 +953,7 @@ function LaudoBody({
   if (state.kind === "clarifying") {
     return (
       <View>
-        <Text style={[styles.eyebrow, { color: C.brand }]}>
+        <Text style={[styles.eyebrow, { color: t.brand }]}>
           Validador clínico
         </Text>
         <Text style={styles.laudoTitle}>Antes de gerar, confirme:</Text>
@@ -944,7 +968,7 @@ function LaudoBody({
               value={state.answers[q.id] ?? ""}
               onChangeText={(t) => onAnswerClarify(q.id, t)}
               placeholder="Sua resposta"
-              placeholderTextColor={C.textMute}
+              placeholderTextColor={t.textMute}
               style={styles.qInput}
             />
           </View>
@@ -980,17 +1004,18 @@ function LaudoBody({
   return (
     <Text style={styles.laudoEmpty}>
       Toque{" "}
-      <Text style={{ color: C.brand, fontFamily: FONT.semibold }}>Gerar</Text>{" "}
+      <Text style={{ color: t.brand, fontFamily: FONT.semibold }}>Gerar</Text>{" "}
       com achados preenchidos para ver o laudo aqui.
     </Text>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: t.bg,
   },
   navBar: {
     flexDirection: "row",
@@ -1016,7 +1041,7 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 17,
     fontFamily: FONT.bold,
-    color: C.brand,
+    color: t.brand,
     letterSpacing: -0.2,
   },
   // Chip da categoria atual no header (toca pra mudar)
@@ -1037,7 +1062,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   catChipText: {
-    color: C.text,
+    color: t.text,
     fontSize: 13,
     fontFamily: FONT.semibold,
   },
@@ -1063,19 +1088,19 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     lineHeight: 27,
-    color: C.textSec,
+    color: t.textSec,
     marginBottom: 6,
     fontFamily: FONT.body,
   },
   emptySub: {
     fontSize: 16,
-    color: C.textMute,
+    color: t.textMute,
     marginBottom: 28,
     fontFamily: FONT.body,
   },
   sectionLabel: {
     fontSize: 11,
-    color: C.textMute,
+    color: t.textMute,
     letterSpacing: 1,
     textTransform: "uppercase",
     marginBottom: 4,
@@ -1083,7 +1108,7 @@ const styles = StyleSheet.create({
   },
   emptyHint: {
     fontSize: 13,
-    color: C.textGhost,
+    color: t.textGhost,
     marginTop: 32,
     fontStyle: "italic",
     fontFamily: FONT.body,
@@ -1098,14 +1123,14 @@ const styles = StyleSheet.create({
   quickLink: {
     fontSize: 17,
     lineHeight: 26,
-    color: C.textMute,
+    color: t.textMute,
     fontFamily: FONT.body,
     textDecorationLine: "underline",
   },
   editor: {
     fontSize: 17,
     lineHeight: 26,
-    color: C.text,
+    color: t.text,
     minHeight: 280,
     fontFamily: FONT.body,
     padding: 0,
@@ -1128,19 +1153,19 @@ const styles = StyleSheet.create({
   laudoTitle: {
     fontFamily: FONT.display,
     fontSize: 22,
-    color: C.text,
+    color: t.text,
     marginBottom: 4,
   },
   laudoMeta: {
     fontSize: 12,
-    color: C.textSec,
+    color: t.textSec,
     marginBottom: 18,
     fontFamily: FONT.body,
   },
   laudoText: {
     fontSize: 16,
     lineHeight: 25,
-    color: C.text,
+    color: t.text,
     fontFamily: FONT.body,
   },
   laudoToolbar: {
@@ -1153,35 +1178,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: C.fill1,
+    backgroundColor: t.fill1,
   },
   toolbarBtnText: {
-    color: C.text,
+    color: t.text,
     fontFamily: FONT.semibold,
     fontSize: 13,
   },
   saveStatus: {
     marginLeft: "auto",
-    color: C.textMute,
+    color: t.textMute,
     fontFamily: FONT.medium,
     fontSize: 12,
   },
   laudoEditor: {
     minHeight: 260,
-    backgroundColor: C.card,
+    backgroundColor: t.card,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: C.separator,
+    borderColor: t.separator,
   },
   disclaimerCard: {
     marginTop: 16,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: C.warningBg,
+    backgroundColor: t.warningBg,
   },
   disclaimerText: {
-    color: C.warningText,
+    color: t.warningText,
     fontFamily: FONT.semibold,
     fontSize: 12,
     lineHeight: 17,
@@ -1193,11 +1218,11 @@ const styles = StyleSheet.create({
   laudoEmpty: {
     fontSize: 17,
     lineHeight: 25,
-    color: C.textMute,
+    color: t.textMute,
     fontFamily: FONT.body,
   },
   cursor: {
-    color: C.brand,
+    color: t.brand,
     fontFamily: FONT.bold,
   },
   pipelineRow: {
@@ -1214,22 +1239,22 @@ const styles = StyleSheet.create({
   },
   pipelineText: {
     fontSize: 12,
-    color: C.textSec,
+    color: t.textSec,
     fontFamily: FONT.medium,
   },
 
   qLabel: {
     fontSize: 15,
-    color: C.text,
+    color: t.text,
     marginBottom: 6,
     fontFamily: FONT.medium,
   },
   qInput: {
     fontSize: 15,
-    color: C.text,
+    color: t.text,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: C.card,
+    backgroundColor: t.card,
     fontFamily: FONT.body,
   },
 
@@ -1241,13 +1266,13 @@ const styles = StyleSheet.create({
   },
   bannerTitle: {
     fontSize: 15,
-    color: C.danger,
+    color: t.danger,
     fontFamily: FONT.semibold,
     marginBottom: 4,
   },
   bannerBody: {
     fontSize: 14,
-    color: C.text,
+    color: t.text,
     fontFamily: FONT.body,
   },
   issueRow: {
@@ -1255,12 +1280,12 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.separator,
+    borderBottomColor: t.separator,
   },
   issueSev: {
     fontSize: 11,
     fontFamily: FONT.bold,
-    color: C.danger,
+    color: t.danger,
     letterSpacing: 0.5,
     textTransform: "uppercase",
     width: 72,
@@ -1268,17 +1293,17 @@ const styles = StyleSheet.create({
   issueType: {
     fontSize: 14,
     fontFamily: FONT.semibold,
-    color: C.text,
+    color: t.text,
   },
   issueDetail: {
     fontSize: 13,
-    color: C.textSec,
+    color: t.textSec,
     marginTop: 2,
     fontFamily: FONT.body,
   },
 
   primaryBtn: {
-    backgroundColor: C.brand,
+    backgroundColor: t.brand,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -1293,12 +1318,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: C.fill1,
+    backgroundColor: t.fill1,
     alignItems: "center",
     justifyContent: "center",
   },
   secondaryBtnText: {
-    color: C.text,
+    color: t.text,
     fontSize: 15,
     fontFamily: FONT.medium,
   },
@@ -1312,9 +1337,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     zIndex: 110,
     // bg opaco evita o laudo gerado aparecer por baixo dos botões.
-    backgroundColor: C.bg,
+    backgroundColor: t.bg,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
+    borderTopColor: t.separator,
   },
   composerRow: {
     flexDirection: "row",
@@ -1325,9 +1350,9 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 12,
-    backgroundColor: C.card,
+    backgroundColor: t.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.separator,
+    borderColor: t.separator,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -1355,3 +1380,4 @@ const styles = StyleSheet.create({
     fontFamily: FONT.semibold,
   },
 });
+}

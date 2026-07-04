@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -7,7 +7,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { C, FONT } from "@/ui/tokens";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 
 const BAR_COUNT = 32;
 
@@ -26,6 +27,8 @@ export function RecordingOverlay({
   showCursor = true,
   mode = "recording",
 }: Props) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [bars, setBars] = useState<number[]>(() =>
     Array.from({ length: BAR_COUNT }, () => 0.3),
   );
@@ -81,14 +84,14 @@ export function RecordingOverlay({
           {isRecording ? (
             <>
               <View style={styles.liveDot} />
-              <Text style={[styles.liveLabel, { color: C.danger }]}>
+              <Text style={[styles.liveLabel, { color: t.danger }]}>
                 GRAVANDO
               </Text>
             </>
           ) : (
             <>
-              <ActivityIndicator size="small" color={C.brand} />
-              <Text style={[styles.liveLabel, { color: C.brand }]}>
+              <ActivityIndicator size="small" color={t.brand} />
+              <Text style={[styles.liveLabel, { color: t.brand }]}>
                 TRANSCREVENDO
               </Text>
             </>
@@ -126,7 +129,7 @@ export function RecordingOverlay({
               flex: 1,
               height: `${h * 100}%`,
               minHeight: 4,
-              backgroundColor: C.brand,
+              backgroundColor: t.brand,
               borderRadius: 2,
               opacity: isRecording ? 0.85 : 0.4,
               marginHorizontal: 1.5,
@@ -138,78 +141,83 @@ export function RecordingOverlay({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 90,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    flexDirection: "column",
-    zIndex: 100,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.separator,
-  },
-  headerRow: {
-    paddingHorizontal: 22,
-    paddingVertical: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  live: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: C.danger,
-    shadowColor: C.danger,
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  liveLabel: {
-    fontSize: 13,
-    fontFamily: FONT.semibold,
-    letterSpacing: 0.6,
-  },
-  timer: {
-    fontSize: 17,
-    fontFamily: FONT.semibold,
-    color: C.text,
-    fontVariant: ["tabular-nums"],
-  },
-  body: {
-    flex: 1,
-    paddingHorizontal: 28,
-    justifyContent: "center",
-  },
-  transcript: {
-    fontSize: 22,
-    lineHeight: 32,
-    color: C.text,
-    fontFamily: FONT.body,
-  },
-  cursor: {
-    color: C.brand,
-    fontFamily: FONT.bold,
-  },
-  help: {
-    fontSize: 14,
-    color: C.textMute,
-    marginTop: 16,
-    fontFamily: FONT.body,
-  },
-  waveform: {
-    paddingHorizontal: 28,
-    paddingBottom: 28,
-    flexDirection: "row",
-    alignItems: "center",
-    height: 70,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    wrap: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 90,
+      // Overlay quase opaco sobre a tela — segue o tema pra não virar
+      // texto claro sobre fundo branco no dark mode (bg = #0B0B0F).
+      backgroundColor:
+        t.mode === "dark" ? "rgba(11,11,15,0.95)" : "rgba(255,255,255,0.95)",
+      flexDirection: "column",
+      zIndex: 100,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.separator,
+    },
+    headerRow: {
+      paddingHorizontal: 22,
+      paddingVertical: 20,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    live: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    liveDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: t.danger,
+      shadowColor: t.danger,
+      shadowOpacity: 0.18,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 0 },
+    },
+    liveLabel: {
+      fontSize: 13,
+      fontFamily: FONT.semibold,
+      letterSpacing: 0.6,
+    },
+    timer: {
+      fontSize: 17,
+      fontFamily: FONT.semibold,
+      color: t.text,
+      fontVariant: ["tabular-nums"],
+    },
+    body: {
+      flex: 1,
+      paddingHorizontal: 28,
+      justifyContent: "center",
+    },
+    transcript: {
+      fontSize: 22,
+      lineHeight: 32,
+      color: t.text,
+      fontFamily: FONT.body,
+    },
+    cursor: {
+      color: t.brand,
+      fontFamily: FONT.bold,
+    },
+    help: {
+      fontSize: 14,
+      color: t.textMute,
+      marginTop: 16,
+      fontFamily: FONT.body,
+    },
+    waveform: {
+      paddingHorizontal: 28,
+      paddingBottom: 28,
+      flexDirection: "row",
+      alignItems: "center",
+      height: 70,
+    },
+  });
+}

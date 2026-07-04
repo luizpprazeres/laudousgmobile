@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,14 +7,14 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { C, FONT, RADIUS, SPACING } from "@/ui/tokens";
+import { FONT, RADIUS, SPACING, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 import { submitFeedback, type FeedbackVerdict } from "./feedback";
 
 /**
  * Card de avaliação do laudo (paridade iOS feedbackCard):
  * 👍 envia direto; 👎 expande comentário opcional "O que faltou?".
  * Estados idle/submitting/submitted/error; voto pode ser trocado.
- * Light fixo (C) como o resto do generate — migra no dark mode universal.
  */
 
 type Status = "idle" | "submitting" | "submitted" | "error";
@@ -26,6 +26,8 @@ export function FeedbackCard({
   reportId: string;
   categoryCode: string;
 }) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [verdict, setVerdict] = useState<FeedbackVerdict | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [comment, setComment] = useState("");
@@ -103,7 +105,7 @@ export function FeedbackCard({
             value={comment}
             onChangeText={setComment}
             placeholder="O que faltou? (opcional)"
-            placeholderTextColor={C.textMute}
+            placeholderTextColor={t.textMute}
             multiline
             style={styles.commentInput}
           />
@@ -134,77 +136,79 @@ export function FeedbackCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    marginTop: SPACING.md,
-    backgroundColor: C.card,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.sm,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: SPACING.sm,
-  },
-  title: {
-    color: C.text,
-    fontFamily: FONT.semibold,
-    fontSize: 14,
-  },
-  thumbRow: {
-    flexDirection: "row",
-    gap: SPACING.xs,
-  },
-  thumbBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: RADIUS.pill,
-    backgroundColor: C.fill1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  thumbOn: {
-    backgroundColor: C.brandLight,
-  },
-  thumbOnNeg: {
-    backgroundColor: C.warningBg,
-  },
-  thumbIcon: {
-    fontSize: 18,
-  },
-  commentInput: {
-    minHeight: 72,
-    backgroundColor: C.bg,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.sm,
-    color: C.text,
-    fontFamily: FONT.body,
-    fontSize: 14,
-    textAlignVertical: "top",
-  },
-  sendBtn: {
-    minHeight: 42,
-    borderRadius: RADIUS.lg,
-    backgroundColor: C.brand,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sendBtnText: {
-    color: "#fff",
-    fontFamily: FONT.semibold,
-    fontSize: 14,
-  },
-  statusOk: {
-    marginTop: SPACING.xs,
-    color: C.brandDeep,
-    fontFamily: FONT.medium,
-    fontSize: 12.5,
-  },
-  statusErr: {
-    marginTop: SPACING.xs,
-    color: C.danger,
-    fontFamily: FONT.medium,
-    fontSize: 12.5,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    card: {
+      marginTop: SPACING.md,
+      backgroundColor: t.card,
+      borderRadius: RADIUS.xl,
+      padding: SPACING.sm,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: SPACING.sm,
+    },
+    title: {
+      color: t.text,
+      fontFamily: FONT.semibold,
+      fontSize: 14,
+    },
+    thumbRow: {
+      flexDirection: "row",
+      gap: SPACING.xs,
+    },
+    thumbBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: RADIUS.pill,
+      backgroundColor: t.fill1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    thumbOn: {
+      backgroundColor: t.brandLight,
+    },
+    thumbOnNeg: {
+      backgroundColor: t.warningBg,
+    },
+    thumbIcon: {
+      fontSize: 18,
+    },
+    commentInput: {
+      minHeight: 72,
+      backgroundColor: t.bg,
+      borderRadius: RADIUS.lg,
+      padding: SPACING.sm,
+      color: t.text,
+      fontFamily: FONT.body,
+      fontSize: 14,
+      textAlignVertical: "top",
+    },
+    sendBtn: {
+      minHeight: 42,
+      borderRadius: RADIUS.lg,
+      backgroundColor: t.brand,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sendBtnText: {
+      color: "#fff",
+      fontFamily: FONT.semibold,
+      fontSize: 14,
+    },
+    statusOk: {
+      marginTop: SPACING.xs,
+      color: t.brandDeep,
+      fontFamily: FONT.medium,
+      fontSize: 12.5,
+    },
+    statusErr: {
+      marginTop: SPACING.xs,
+      color: t.danger,
+      fontFamily: FONT.medium,
+      fontSize: 12.5,
+    },
+  });
+}
