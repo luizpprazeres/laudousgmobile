@@ -151,6 +151,9 @@ export function OnboardingFlow({
     abortRef.current = ac;
     try {
       let sawToken = false;
+      // Acumulador LOCAL — o state `streamed` no done seria closure velha
+      // (bug apontado pelo Dex1: primeiro laudo podia vir vazio).
+      let acc = "";
       for await (const ev of generateReportStream(
         {
           raw_input: transcript,
@@ -166,11 +169,12 @@ export function OnboardingFlow({
             sawToken = true;
             setStageIndex(3);
           }
-          setStreamed((s) => s + ev.delta);
+          acc += ev.delta;
+          setStreamed(acc);
         }
         if (ev.type === "done") {
           setStageIndex(4);
-          setFinalText(ev.final_text || streamed);
+          setFinalText(ev.final_text || acc);
           setTimeout(() => setStep("firstLaudo"), 700);
         }
         if (ev.type === "error") {

@@ -161,8 +161,15 @@ export function LegalGate() {
     setError(null);
     try {
       await recordLegalAcceptance(userId); // lança se 0 linhas atualizadas
-      // Aceite ok → próximo gate: onboarding (paridade iOS AppShellView).
-      setState(onboardingPending ? "onboarding" : "hidden");
+      if (fetchFailed) {
+        // Aceitou sem leitura prévia (offline no fetch): re-avalia para não
+        // pular o onboarding com estado velho (Dex1 P2).
+        setState("hidden");
+        evaluate(userId);
+      } else {
+        // Aceite ok → próximo gate: onboarding (paridade iOS AppShellView).
+        setState(onboardingPending ? "onboarding" : "hidden");
+      }
     } catch {
       setError(
         "Não foi possível registrar o aceite. Verifique a conexão e tente novamente.",
