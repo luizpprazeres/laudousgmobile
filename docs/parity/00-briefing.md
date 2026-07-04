@@ -7,6 +7,30 @@
 
 ---
 
+## 0. ANTES DE COMEÇAR (obrigatório)
+- **Revisar a documentação oficial ATUALIZADA do Android** antes de qualquer trabalho:
+  **https://developer.android.com/develop** (build, Gradle, publicação/Play Console, permissões,
+  APIs). Não confiar só em conhecimento memorizado — a plataforma Android muda rápido (Gradle,
+  target SDK, políticas da Play Store). Conferir também a doc do **Expo** (docs.expo.dev) e do
+  **React Native 0.76** para o fluxo de build nativo.
+- Ler os planos existentes: `docs/plano-paridade-android-swift.md` + `docs/plano-android-playstore.md`.
+
+## 0b. Estado do build LOCAL (diagnóstico 04/07)
+- **Device USB conectado:** `RQ8R9036KRX` — porém **`unauthorized`**. No celular: aceitar o popup
+  "Permitir depuração USB?" (marcar "Sempre permitir deste computador"). Se não aparecer: Opções
+  do desenvolvedor → confirmar "Depuração USB" ON → "Revogar autorizações USB" → reconectar o cabo.
+- **Erro do Android Studio ("Cannot run program node"):** o Android Studio aberto pelo ícone NÃO
+  herda o PATH do shell (o `node` está em `/opt/homebrew/bin/node`). O `settings.gradle:34` roda
+  `node` para resolver Expo → falha. **Solução: buildar pelo TERMINAL** (que tem o node no PATH):
+  ```
+  cd ~/laudousgmobile-def/apps/mobile
+  npx expo run:android
+  ```
+  Compila o `android/`, instala o APK debug no device e inicia o Metro (1ª build ~5–10 min).
+  Alternativas p/ usar o Android Studio: abri-lo pelo terminal (`open -a "Android Studio"
+  ~/laudousgmobile-def/apps/mobile/android`) ou `sudo ln -s /opt/homebrew/bin/node /usr/local/bin/node`.
+- node v25.7.0, adb OK, `apps/mobile/node_modules` OK, Expo ~52.
+
 ## 1. Estado REAL (desfaz a confusão do README antigo)
 
 - **O app Android EXISTE e está ATIVO.** É `apps/mobile/` — React Native / Expo 52, **RN
@@ -100,5 +124,15 @@ visual) em paralelo; depois a SPIKE de voz Deepgram (gate); depois features rica
    que streama token-a-token no runtime Android).
 4. **Não reescrever o que funciona** (~80% do core está pronto).
 
+## 7. Depois do Android (backlog congelado — retomar SÓ após o Android aprovado)
+O foco agora é **exclusivamente o Android** até ele ser aprovado/lançado. Todo o resto do produto
+(laudos, lab.laudousg, melhorias) fica **em espera, mas NÃO esquecido** — está catalogado em
+**`docs/parity/backlog-pos-android.md`**: os writers das 6 categorias vasculares/menores (corpus
+já assinado), a propagação do free-slots pras estruturadas restantes (TIREOIDE/MAMA/ABDOMEN/
+PRÓSTATA), a reconstrução do **lab.laudousg.com** (sem RAG, regras visualizáveis), o /adm de volta,
+[REVISAR] com highlight roxo/amarelo, sinal liberado/bloqueado na sala do auxiliar, e o restante
+dos gaps de boletim. Retomar por lá quando o Android estiver aprovado.
+
 > **Entregáveis desta conversa (feitos):** README corrigido; `docs/parity/00-briefing.md` (este);
-> `docs/parity/decisions-pending.md`. **A auditoria completa + código = próxima sessão dedicada.**
+> `docs/parity/decisions-pending.md`; `docs/parity/backlog-pos-android.md`; 5 flags de laudo
+> ativadas em prod (04/07). **A auditoria completa + código do Android = próxima sessão dedicada.**
