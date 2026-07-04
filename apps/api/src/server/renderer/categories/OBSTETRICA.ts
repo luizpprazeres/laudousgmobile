@@ -553,11 +553,12 @@ function igRawFromFindings(f: ObstetricaFindings, enabled: boolean): IgRawFields
 }
 
 /** computeIg com o lead da conclusão (gemelar passa o lead com corionicidade). */
-function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string) {
+function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string, sanityCheck = false) {
   return computeIg(
     buildIgInput(igRawFromFindings(f, enabled), {
       leadAncora,
       leadBase: "Gestação em torno de ",
+      sanityCheck,
     }),
   );
 }
@@ -570,11 +571,12 @@ function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string
 export function renderObstetrica(
   f: ObstetricaFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null; igSanity?: boolean },
 ): string {
   const igc = opts?.igCorrection ?? false;
   const flx = opts?.flexivel ?? false;
   const g = opts?.golfBall ?? null;
+  const igSan = opts?.igSanity ?? false;
   // Golf ball (flag): o snippet canônico substitui o eco cru da extração — remove
   // dos achados adicionais/itens livres as sentenças que mencionam o foco (dedup).
   if (g) {
@@ -588,8 +590,8 @@ export function renderObstetrica(
       ),
     };
   }
-  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx, g);
-  return renderObstetricaClassico(f, igc, flx, g);
+  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx, g, igSan);
+  return renderObstetricaClassico(f, igc, flx, g, igSan);
 }
 
 /** Monta o laudo obstétrico (estrutura por construção). */
@@ -598,6 +600,7 @@ export function renderObstetricaClassico(
   igCorrection = false,
   flexivel = false,
   golfBall: GolfBall | null = null,
+  igSanity = false,
 ): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
@@ -607,7 +610,7 @@ export function renderObstetricaClassico(
   const leadAncora = gemelar
     ? `Gestação gemelar ${corionLead}em torno de `
     : "Gestação em torno de ";
-  const ig = igResultFor(f, igCorrection, leadAncora);
+  const ig = igResultFor(f, igCorrection, leadAncora, igSanity);
 
   const aspectos: string[] = [];
   const conclusao: string[] = [];
@@ -806,6 +809,7 @@ export function renderObstetricaObjetivo(
   igCorrection = false,
   flexivel = false,
   golfBall: GolfBall | null = null,
+  igSanity = false,
 ): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar
@@ -817,7 +821,7 @@ export function renderObstetricaObjetivo(
   const leadAncora = gemelar
     ? `Gestação gemelar ${corionLead}em torno de `
     : "Gestação em torno de ";
-  const ig = igResultFor(f, igCorrection, leadAncora);
+  const ig = igResultFor(f, igCorrection, leadAncora, igSanity);
 
   const achados: string[] = [];
   const impressao: string[] = [];

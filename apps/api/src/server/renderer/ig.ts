@@ -68,6 +68,13 @@ export interface IgComputeInput {
   /** Sinaliza a correção no caso divergente (toggle conta / comando de voz). */
   corrigir: boolean;
   /**
+   * Sanity de IG (flag OBST_IG_SANITY): quando true, uma divergência IMPLAUSÍVEL
+   * entre biometria e referência (> ~4 semanas) é tratada como erro de ditado —
+   * NÃO corrige (degrada p/ biometria pura) e sinaliza [REVISAR]. Boletim 04/07
+   * (10813392: biometria 24s6d, "hoje com 4 semanas" → correção absurda p/ 4s6d).
+   */
+  sanityCheck?: boolean;
+  /**
    * Lead da conclusão âncora. Feto único: "Gestação em torno de ". Gemelar:
    * "Gestação gemelar dicoriônica e diamniótica em torno de " (o renderer monta).
    */
@@ -82,7 +89,8 @@ export type IgCaso =
   | "concordante"
   | "divergente_leve"
   | "divergente"
-  | "divergente_sem_correcao";
+  | "divergente_sem_correcao"
+  | "divergente_implausivel";
 
 export interface IgComputed {
   caso: IgCaso;
@@ -244,6 +252,7 @@ export function computeIg(input: IgComputeInput): IgComputed {
     corrigir,
     leadAncora,
     leadBase,
+    sanityCheck,
   } = input;
 
   const fmtA = formatIgSemanasDias(biometriaSemanas, bDia);
@@ -297,6 +306,22 @@ export function computeIg(input: IgComputeInput): IgComputed {
   const rHojeDiasTotal = igDias(rHoje.semanas, rHoje.dias);
   const divergenciaDias = Math.abs(biometriaDiasTotal - rHojeDiasTotal);
   const threshold = igThresholdDays(biometriaSemanas);
+
+  // Sanity (flag): divergência IMPLAUSÍVEL (> 4 semanas) = erro de ditado. Uma
+  // referência precoce corrige em dias/1-2 semanas, NUNCA 20 semanas (10813392:
+  // "hoje com 4 semanas" vs biometria 24s6d). NÃO corrige (âncora = biometria
+  // pura) e sinaliza [REVISAR] na frase de referência — o médico confere o valor.
+  const MAX_DIVERGENCIA_PLAUSIVEL_DIAS = 28;
+  if (sanityCheck && divergenciaDias > MAX_DIVERGENCIA_PLAUSIVEL_DIAS) {
+    const fraseRevisar = fraseReferencia
+      ? `${fraseReferencia} [REVISAR: divergência implausível com a biometria atual]`
+      : fraseReferencia;
+    return baseResult("divergente_implausivel", rHoje, {
+      divergenciaDias,
+      fraseReferencia: fraseRevisar,
+      fonteLabel,
+    });
+  }
 
   // Concordante ou divergência leve → âncora pura (biometria), sem referenciar.
   if (divergenciaDias === 0) {
@@ -372,7 +397,7 @@ export interface IgRawFields {
  */
 export function buildIgInput(
   raw: IgRawFields,
-  opts: { leadAncora: string; leadBase: string; corrigirToggle?: boolean | null },
+  opts: { leadAncora: string; leadBase: string; corrigirToggle?: boolean | null; sanityCheck?: boolean },
 ): IgComputeInput {
   const temUsgData =
     raw.primeiraUsData !== null || raw.primeiraUsIgSemanas !== null;
@@ -419,6 +444,7 @@ export function buildIgInput(
     corrigir,
     leadAncora: opts.leadAncora,
     leadBase: opts.leadBase,
+    sanityCheck: opts.sanityCheck,
   };
 }
 

@@ -466,7 +466,13 @@ export async function* runRendererStream(args: {
                 args.rawInput,
               )
             : (fnd as ObstetricaFindings);
-        fullText = renderObstetrica(ofnd, null, { objetivo, igCorrection, flexivel, golfBall: golfBallSingle(ofnd.numero_fetos) });
+        fullText = renderObstetrica(ofnd, null, {
+          objetivo, igCorrection, flexivel,
+          golfBall: golfBallSingle(ofnd.numero_fetos),
+          // Sanity de IG (flag OBST_IG_SANITY): divergência implausível ref×biometria
+          // não vira correção absurda (boletim 04/07, 10813392).
+          igSanity: env().OBST_IG_SANITY === "true",
+        });
         break;
       }
       case "MORFOLOGICO":
