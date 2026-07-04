@@ -92,6 +92,11 @@ const ServerEnvSchema = z.object({
   // ditado por voz VENCEM a extração LLM (que ecoou CC/CA/CF sem o ×10), e o
   // measureSanity ganha o check IG×CF (fórmula canônica do app). Default OFF.
   OBST_BIOMETRIA_DET: z.string().default("false"),
+  // Dedup da frase de referência de IG (boletim 04/07, caso 10813392): quando
+  // "true", a frase "Primeira ultrassonografia realizada…/Data da última
+  // menstruação em…" só aparece UMA vez (o comando "após o título acrescente…"
+  // fazia o interpretador re-inserir uma cópia nos comentários). Default OFF.
+  OBST_REF_DEDUP: z.string().default("false"),
   // SEGURANÇA P0 Doppler (boletim 03/07, caso 89ffa1ef): quando "true", NUNCA
   // afirmar "IP normal na artéria umbilical" com diástole zero/reversa ditada ou
   // IP umbilical bruto ≥ 1,5 (grosseiramente anormal). A lógica antiga dependia só

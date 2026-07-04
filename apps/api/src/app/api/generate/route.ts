@@ -28,6 +28,7 @@ import { applyCommandOperations } from "@/server/pipeline/commandOperations";
 import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionItemsGuard";
 import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
 import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
+import { dedupReferenciaFrase } from "@/server/pipeline/referenciaDedupeGuard";
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import {
   enforceStatedAmnioticClass,
@@ -1028,6 +1029,13 @@ export async function POST(req: Request) {
           // (label "(CF)" + "Gestação em torno de") já restringe ao obstétrico.
           cfIgAware: env().OBST_BIOMETRIA_DET === "true",
         });
+        // Dedup da frase de referência de IG (flag OBST_REF_DEDUP, boletim 04/07,
+        // caso 10813392): "Primeira ultrassonografia realizada…" só pode aparecer
+        // UMA vez — o comando "após o título acrescente…" fazia o interpretador
+        // re-inserir uma cópia nos comentários. Roda APÓS o commandInterpreter.
+        if (env().OBST_REF_DEDUP === "true") {
+          finalText = dedupReferenciaFrase(finalText);
+        }
       }
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
