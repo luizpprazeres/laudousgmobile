@@ -29,7 +29,8 @@ Esta Política é parte integrante dos [Termos de Uso](./TERMS_OF_USE.md) e est�
 - **Lei Geral de Proteção de Dados Pessoais** — LGPD (Lei nº 13.709/2018);
 - **Marco Civil da Internet** (Lei nº 12.965/2014);
 - **Código de Defesa do Consumidor** (Lei nº 8.078/1990);
-- **Apple App Store Review Guidelines** §5.1.
+- **Apple App Store Review Guidelines** §5.1;
+- **Políticas do Google Play** (seção Data Safety e requisitos para apps com login).
 
 ## 2. Quem somos (Controlador)
 
@@ -87,7 +88,7 @@ Os Termos de Uso (Cláusula 5.2) **vedam expressamente** que o Usuário insira d
 | Dado | Finalidade | Base Legal |
 |---|---|---|
 | Endereço IP (registro de acesso) | Segurança, auditoria, cumprimento Marco Civil | Cumprimento de obrigação legal (Art. 7º, II); Legítimo interesse (Art. 7º, IX) |
-| Modelo do dispositivo, versão iOS, versão do app | Diagnóstico de erros, compatibilidade | Legítimo interesse (Art. 7º, IX) |
+| Modelo do dispositivo, versão do sistema operacional (iOS ou Android), versão do app | Diagnóstico de erros, compatibilidade | Legítimo interesse (Art. 7º, IX) |
 | Logs de erro e crash | Diagnóstico técnico | Legítimo interesse (Art. 7º, IX) |
 | Identificador de instalação do app | Sessão e segurança | Execução de contrato (Art. 7º, V) |
 
@@ -98,8 +99,8 @@ Os Termos de Uso (Cláusula 5.2) **vedam expressamente** que o Usuário insira d
 - Dados identificáveis de **pacientes** (nome, CPF, RG, endereço, telefone, foto, prontuário). Os Termos de Uso vedam expressamente que o Usuário insira tais dados;
 - **Localização geográfica** precisa do Usuário (não solicitamos permissão de localização);
 - **Contatos**, calendário, biblioteca de fotos do dispositivo;
-- **Identificadores publicitários** (Apple IDFA);
-- **Dados biométricos** (Face ID/Touch ID são processados localmente pelo iOS, não saem do dispositivo);
+- **Identificadores publicitários** (Apple IDFA / Android Advertising ID);
+- **Dados biométricos** (recursos como Face ID/Touch ID ou biometria do Android são processados localmente pelo sistema operacional, não saem do dispositivo);
 - **Dados sensíveis** além do estritamente necessário (Art. 5º, II LGPD).
 
 **Não realizamos:** rastreamento publicitário, perfilhamento para marketing de terceiros, fingerprinting, web tracking.
@@ -130,11 +131,12 @@ Para operar o Serviço, contratamos provedores que atuam como **Operadores** (LG
 |---|---|---|---|
 | **Supabase** | Banco de dados, autenticação, armazenamento | EUA (AWS us-east-1) | Cadastrais, conteúdo, logs |
 | **Vercel** | Hospedagem do backend Next.js | EUA / multi-região | Requisições, logs técnicos |
-| **Deepgram** | Transcrição de áudio em tempo real | EUA | Áudio temporário para transcrição |
-| **OpenAI** | Geração de texto e análise de conteúdo multimodal quando aplicável | EUA | Texto do ditado, laudos, imagens temporárias quando selecionadas |
+| **Deepgram** | Transcrição de áudio em tempo real (ditado ao vivo, disponível no app iOS) | EUA | Áudio temporário para transcrição |
+| **OpenAI** | Transcrição de áudio (Whisper) e geração de texto/análise de conteúdo multimodal quando aplicável | EUA | Áudio temporário do ditado, texto do ditado, laudos, imagens temporárias quando selecionadas |
 | **Groq** | Fallback de geração de texto (llama-3.3-70b) | EUA | Texto do ditado |
 | **Resend** | Envio de emails transacionais | EUA / Europa | Email, conteúdo do email |
 | **Apple** | Distribuição do app e serviços da plataforma iOS | Global, conforme termos da Apple | Dados técnicos e de distribuição tratados pela Apple como provedora da plataforma |
+| **Google** | Distribuição do app e serviços da plataforma Android (Google Play) | Global, conforme termos do Google | Dados técnicos e de distribuição tratados pelo Google como provedor da plataforma |
 
 **Funcionalidades futuras** (como push notifications, analytics adicionais ou billing) deverão ser **refletidas nesta Política antes de entrarem em produção**, quando envolverem novos dados, operadores ou finalidades.
 
@@ -206,20 +208,20 @@ Aplicamos medidas técnicas e organizacionais para proteger seus dados, incluind
 
 ## 13. Cookies e Identificadores
 
-O LaudoUSG é um **aplicativo nativo iOS** — não utiliza cookies de navegação web.
+O LaudoUSG é um **aplicativo nativo (iOS e Android)** — não utiliza cookies de navegação web.
 
 Utilizamos:
 
 - **Identificador de instalação** do app (gerado localmente, vinculado à Conta do Usuário) — necessário para sessão e segurança;
-- **Tokens JWT** armazenados localmente (UserDefaults) para manter sessão autenticada.
+- **Tokens JWT** armazenados localmente no dispositivo para manter sessão autenticada.
 
 **Não utilizamos:**
 
-- Apple IDFA (Identifier for Advertisers) — não exibimos publicidade;
+- Apple IDFA / Android Advertising ID — não exibimos publicidade;
 - Cookies de rastreamento publicitário de terceiros;
 - SDK de analytics comportamental (Google Analytics, Facebook SDK, etc.).
 
-**App Tracking Transparency (Apple):** o LaudoUSG **não realiza rastreamento** entre apps/websites de terceiros, portanto não exibimos o prompt de ATT.
+**App Tracking Transparency (Apple, iOS):** o LaudoUSG **não realiza rastreamento** entre apps/websites de terceiros, portanto não exibimos o prompt de ATT.
 
 ## 14. Crianças e Adolescentes
 

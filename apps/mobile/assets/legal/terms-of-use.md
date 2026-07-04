@@ -32,7 +32,7 @@ Se você não concorda com qualquer cláusula, **não utilize o LaudoUSG**.
 
 ## 2. Definições
 
-- **LaudoUSG:** aplicativo móvel iOS de apoio à elaboração de laudos de ultrassonografia, incluindo geração assistida por inteligência artificial.
+- **LaudoUSG:** aplicativo móvel (iOS e Android) de apoio à elaboração de laudos de ultrassonografia, incluindo geração assistida por inteligência artificial.
 - **Usuário:** profissional médico cadastrado e ativo, titular de registro válido no Conselho Regional de Medicina (CRM).
 - **Laudo:** documento médico elaborado pelo Usuário com auxílio do LaudoUSG.
 - **Conta:** cadastro pessoal e intransferível no LaudoUSG, vinculado ao email e CRM do Usuário.

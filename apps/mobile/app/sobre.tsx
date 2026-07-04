@@ -11,6 +11,7 @@ import {
   LEGAL_DOCUMENTS,
   type LegalDocId,
 } from "@/legal/documents";
+import { MarkdownLite } from "@/ui/MarkdownLite";
 import { PageHeader } from "@/ui/PageHeader";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
@@ -61,10 +62,7 @@ export default function SobreScreen() {
         </View>
 
         <View style={styles.documentCard}>
-          <Text style={styles.documentTitle}>{current.title}</Text>
-          <Text selectable style={styles.documentText}>
-            {current.body}
-          </Text>
+          <MarkdownLite markdown={current.body} />
         </View>
       </ScrollView>
     </View>
@@ -124,18 +122,6 @@ function makeStyles(t: ColorTokens) {
       backgroundColor: t.card,
       borderRadius: 14,
       padding: 16,
-    },
-    documentTitle: {
-      color: t.text,
-      fontFamily: FONT.semibold,
-      fontSize: 18,
-      marginBottom: 10,
-    },
-    documentText: {
-      color: t.text,
-      fontFamily: FONT.body,
-      fontSize: 13,
-      lineHeight: 20,
     },
   });
 }
