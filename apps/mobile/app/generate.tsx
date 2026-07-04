@@ -1,4 +1,5 @@
-import { useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
+import * as Clipboard from "expo-clipboard";
 import type { Audio as AudioNS } from "expo-av";
 import {
   Image,
@@ -92,6 +93,57 @@ export default function GenerateScreen() {
   } | null>(null);
   const aborterRef = useRef<AbortController | null>(null);
   const recordingRef = useRef<AudioNS.Recording | null>(null);
+
+  // ── Edição inline do laudo final (paridade iOS: autosave 600ms) ──
+  const [editingLaudo, setEditingLaudo] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (state.kind !== "done") {
+      setEditingLaudo(false);
+      setSaveStatus("idle");
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    }
+  }, [state.kind]);
+
+  useEffect(
+    () => () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    },
+    [],
+  );
+
+  function onEditFinal(nextText: string) {
+    if (state.kind !== "done") return;
+    const reportId = state.reportId;
+    dispatch({ type: "EDIT_FINAL", text: nextText });
+    setSaveStatus("saving");
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      updateReportFinalOutput(reportId, stripReviewMarkers(nextText))
+        .then(() => setSaveStatus("saved"))
+        .catch((err) => {
+          console.warn("[mobile] autosave do laudo falhou:", err);
+          setSaveStatus("error");
+        });
+    }, 600);
+  }
+
+  async function onCopyLaudo() {
+    if (state.kind !== "done") return;
+    try {
+      await Clipboard.setStringAsync(stripReviewMarkers(state.finalText));
+      setNotice({ severity: "success", message: "Laudo copiado." });
+    } catch {
+      setNotice({ severity: "error", message: "Não foi possível copiar." });
+    }
+  }
 
   const text =
     "text" in state ? (state as { text: string }).text : "";
@@ -332,6 +384,11 @@ export default function GenerateScreen() {
             <LaudoBody
               state={state}
               cat={cat}
+              editing={editingLaudo}
+              saveStatus={saveStatus}
+              onToggleEdit={() => setEditingLaudo((e) => !e)}
+              onEditFinal={onEditFinal}
+              onCopy={onCopyLaudo}
               onCancel={cancelGenerate}
               onAnswerClarify={(qid, ans) =>
                 dispatch({
@@ -730,6 +787,11 @@ import type { SanityIssue } from "@/shared";
 type LaudoProps = {
   state: GenerateState;
   cat: Category;
+  editing: boolean;
+  saveStatus: "idle" | "saving" | "saved" | "error";
+  onToggleEdit: () => void;
+  onEditFinal: (text: string) => void;
+  onCopy: () => void;
   onCancel: () => void;
   onAnswerClarify: (qid: string, ans: string) => void;
   onResume: () => void;
@@ -737,9 +799,21 @@ type LaudoProps = {
   onReset: () => void;
 };
 
+const SAVE_LABEL: Record<"idle" | "saving" | "saved" | "error", string> = {
+  idle: "",
+  saving: "Salvando…",
+  saved: "Salvo",
+  error: "Falha ao salvar",
+};
+
 function LaudoBody({
   state,
   cat,
+  editing,
+  saveStatus,
+  onToggleEdit,
+  onEditFinal,
+  onCopy,
   onCancel,
   onAnswerClarify,
   onResume,
@@ -774,14 +848,47 @@ function LaudoBody({
           </View>
         ) : null}
 
-        <Text style={styles.laudoText}>
-          {text
-            ? renderReviewHighlighted(text, styles.reviewMarker)
-            : isStreaming
-              ? "Estruturando achados…"
-              : ""}
-          {isStreaming ? <Text style={styles.cursor}> ▎</Text> : null}
-        </Text>
+        {/* Toolbar do laudo pronto: Editar/Visualizar + Copiar + status do autosave */}
+        {state.kind === "done" && text ? (
+          <View style={styles.laudoToolbar}>
+            <Pressable onPress={onToggleEdit} style={styles.toolbarBtn} hitSlop={6}>
+              <Text style={styles.toolbarBtnText}>
+                {editing ? "Visualizar" : "Editar"}
+              </Text>
+            </Pressable>
+            <Pressable onPress={onCopy} style={styles.toolbarBtn} hitSlop={6}>
+              <Text style={styles.toolbarBtnText}>Copiar</Text>
+            </Pressable>
+            <Text
+              style={[
+                styles.saveStatus,
+                saveStatus === "error" && { color: C.danger },
+              ]}
+            >
+              {SAVE_LABEL[saveStatus]}
+            </Text>
+          </View>
+        ) : null}
+
+        {state.kind === "done" && editing ? (
+          <TextInput
+            value={state.finalText}
+            onChangeText={onEditFinal}
+            multiline
+            autoFocus
+            textAlignVertical="top"
+            style={[styles.laudoText, styles.laudoEditor]}
+          />
+        ) : (
+          <Text style={styles.laudoText}>
+            {text
+              ? renderReviewHighlighted(text, styles.reviewMarker)
+              : isStreaming
+                ? "Estruturando achados…"
+                : ""}
+            {isStreaming ? <Text style={styles.cursor}> ▎</Text> : null}
+          </Text>
+        )}
 
         {state.kind === "done" && text ? (
           <View style={styles.disclaimerCard}>
@@ -1030,6 +1137,37 @@ const styles = StyleSheet.create({
     lineHeight: 25,
     color: C.text,
     fontFamily: FONT.body,
+  },
+  laudoToolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  toolbarBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: C.fill1,
+  },
+  toolbarBtnText: {
+    color: C.text,
+    fontFamily: FONT.semibold,
+    fontSize: 13,
+  },
+  saveStatus: {
+    marginLeft: "auto",
+    color: C.textMute,
+    fontFamily: FONT.medium,
+    fontSize: 12,
+  },
+  laudoEditor: {
+    minHeight: 260,
+    backgroundColor: C.card,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: C.separator,
   },
   disclaimerCard: {
     marginTop: 16,

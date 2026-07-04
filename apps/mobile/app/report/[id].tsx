@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams } from "expo-router";
 import {
@@ -10,10 +10,11 @@ import {
   Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getReport, type ReportDetail } from "@/lib/api";
+import { getReport, updateReportFinalOutput, type ReportDetail } from "@/lib/api";
 import {
   renderReviewHighlighted,
   stripReviewMarkers,
@@ -61,10 +62,42 @@ export default function ReportDetailScreen() {
     };
   }, [id]);
 
+  // ── Edição inline + autosave (paridade iOS ReportDetail: debounce 1200ms) ──
+  const [editing, setEditing] = useState(false);
+  const [editedText, setEditedText] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    },
+    [],
+  );
+
   const finalText = useMemo(() => {
+    if (editedText !== null) return editedText;
     const report = data?.report;
     return report?.final_output || report?.generated_output || "";
-  }, [data]);
+  }, [data, editedText]);
+
+  function onEditText(next: string) {
+    if (!data) return;
+    const reportId = data.report.id;
+    setEditedText(next);
+    setSaveStatus("saving");
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      updateReportFinalOutput(reportId, stripReviewMarkers(next))
+        .then(() => setSaveStatus("saved"))
+        .catch((err) => {
+          console.warn("[mobile] autosave do laudo (detalhe) falhou:", err);
+          setSaveStatus("error");
+        });
+    }, 1200);
+  }
 
   async function copyReport() {
     if (!finalText) return;
@@ -121,6 +154,19 @@ export default function ReportDetailScreen() {
 
         <View style={styles.actions}>
           <Pressable
+            onPress={() => setEditing((e) => !e)}
+            disabled={!finalText}
+            style={({ pressed }) => [
+              styles.actionButton,
+              pressed && styles.pressed,
+              !finalText && styles.disabled,
+            ]}
+          >
+            <Text style={styles.actionText}>
+              {editing ? "Visualizar" : "Editar"}
+            </Text>
+          </Pressable>
+          <Pressable
             onPress={copyReport}
             disabled={!finalText}
             style={({ pressed }) => [
@@ -147,7 +193,37 @@ export default function ReportDetailScreen() {
 
         <Segment value={tab} onChange={setTab} options={TABS} />
 
-        {tab === "report" ? <ReportTab text={finalText} /> : null}
+        {tab === "report" && saveStatus !== "idle" ? (
+          <Text
+            style={[
+              styles.saveStatus,
+              saveStatus === "error" && { color: "#FF3B30" },
+            ]}
+          >
+            {saveStatus === "saving"
+              ? "Salvando…"
+              : saveStatus === "saved"
+                ? "Salvo"
+                : "Falha ao salvar — verifique a conexão"}
+          </Text>
+        ) : null}
+
+        {tab === "report" ? (
+          editing ? (
+            <View style={styles.card}>
+              <TextInput
+                value={finalText}
+                onChangeText={onEditText}
+                multiline
+                autoFocus
+                textAlignVertical="top"
+                style={styles.reportEditor}
+              />
+            </View>
+          ) : (
+            <ReportTab text={finalText} />
+          )
+        ) : null}
         {tab === "findings" ? (
           <JsonTab value={report.structured_findings ?? {}} />
         ) : null}
@@ -410,6 +486,20 @@ const styles = StyleSheet.create({
     fontSize: 15.5,
     lineHeight: 23,
     fontFamily: FONT.body,
+  },
+  reportEditor: {
+    color: C.text,
+    fontSize: 15.5,
+    lineHeight: 23,
+    fontFamily: FONT.body,
+    minHeight: 320,
+  },
+  saveStatus: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    color: C.textMute,
+    fontSize: 12,
+    fontFamily: FONT.medium,
   },
   disclaimerCard: {
     marginTop: 16,

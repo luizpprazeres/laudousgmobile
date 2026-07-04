@@ -44,6 +44,7 @@ export type GenerateState =
 
 export type GenerateAction =
   | { type: "EDIT_TEXT"; text: string }
+  | { type: "EDIT_FINAL"; text: string }
   | { type: "START_REC" }
   | { type: "STOP_REC" }
   | { type: "TRANSCRIPTION_DONE"; text: string }
@@ -69,6 +70,11 @@ export function generateReducer(
         };
       }
       return state;
+
+    case "EDIT_FINAL":
+      // Edição inline do laudo final (paridade iOS: TextEditor + autosave).
+      if (state.kind !== "done") return state;
+      return { ...state, finalText: action.text };
 
     case "START_REC":
       return { kind: "recording", text: state.text };
