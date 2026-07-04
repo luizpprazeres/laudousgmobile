@@ -84,21 +84,23 @@ arquitetura>performance>publicação>refino). A estrutura `docs/parity/` é boa.
 - **Dex:** a casa usa **Dex1** (código, GPT-5.5) **+ Dex2** (2ª opinião clínica/adversarial),
   via `medmaestri ask "dex1"`/`"dex2"`. Usar ambos.
 
-## 4. A DECISÃO ESTRATÉGICA (o norte da sessão) — precisa do Luiz
+## 4. A DECISÃO ESTRATÉGICA — DEFINIDA pelo Luiz (04/07)
 
-Há dois objetivos em tensão:
+- **PARIDADE TOTAL** com o iOS (design, features, fluxos), **com uma exceção deliberada:
+  manter Whisper batch no Android** (iOS = Deepgram Live). É um **A/B de produto** — comparar
+  Whisper × Deepgram com usuários reais antes de investir na voz ao vivo no Android.
+- **Efeito no escopo:** o **Deepgram Live sai do plano Android** — era o item de MAIOR RISCO
+  (SPIKE de PCM ao vivo). Sem ele, o risco técnico cai muito e a paridade fica "só" design +
+  features (todas com caminho conhecido). O resto entra: dark mode universal, edição inline,
+  onboarding, disclaimer gate, feedback, history busca/filtro, calculadoras completas,
+  consultor IA, análise de imagem, settings, paywall, categorias dinâmicas.
+- **Publicação:** categoria **"Produtividade"** com conta Individual (não CNPJ agora) — ver
+  D2. Ainda vale o **caminho crítico de loja** do `plano-android-playstore.md` (delete-account,
+  legal, disclaimer, esconder telas "em breve", permissões só `RECORD_AUDIO`, AAB via EAS).
 
-| | **(A) Lançar rápido (MVP)** | **(B) Paridade rica com iOS** |
-|---|---|---|
-| Escopo | delete-account, legal, disclaimer, esconder "em breve", permissões, AAB, resolver conta Google | Deepgram Live, dark mode universal, calculadoras completas, consultor IA, editor de miomas, análise de imagem… |
-| Voz | **Whisper batch** (já funciona) | Deepgram Live streaming (SPIKE de risco) |
-| Prazo | ~1 sprint | meses (fases) |
-| Fonte | `plano-android-playstore.md` | `plano-paridade-android-swift.md` |
-
-**Recomendação (Fable):** **A → depois B.** Publicar o MVP com Whisper batch destrava a loja
-sem esperar o item de maior risco (voz); a paridade rica entra como upgrades pós-lançamento.
-O prompt externo otimiza B — mas o objetivo imediato declarado ("prestes a lançar") é A. A
-sessão deve começar por A, com B mapeado logo atrás.
+**Ordem prática:** (1) caminho crítico de loja + estabilizar o build (loja pode ir cedo);
+(2) design system / dark mode universal / polish (alto impacto, baixo risco); (3) features
+ricas por bloco. Deepgram Android NÃO entra. Detalhes em `decisions-pending.md` (D1/D2/D3).
 
 ## 5. Ordem de trabalho recomendada para a sessão dedicada
 
@@ -114,15 +116,20 @@ Fase 1 (delete-account, legal, disclaimer, esconder "em breve", permissões) + v
 + **resolver a conta Google** (§ decisions-pending). Cada item: implementar → Dex1/Dex2 → testar
 no device → commit.
 
-**Fase 2+ — paridade rica (objetivo B):** dark mode universal + polish (baixo risco, alto impacto
-visual) em paralelo; depois a SPIKE de voz Deepgram (gate); depois features ricas por bloco.
+**Fase 2+ — paridade rica:** dark mode universal + polish (baixo risco, alto impacto visual);
+depois features ricas por bloco (edição inline, onboarding, disclaimer, feedback, history,
+calculadoras, consultor IA, análise de imagem, settings, paywall, categorias dinâmicas).
+**Voz continua Whisper batch no Android — Deepgram NÃO entra** (decisão D1). Não portar a SPIKE.
 
 ## 6. Riscos-chave a não esquecer
-1. **Conta Google Individual × app médico** (bloqueador externo — pode travar o lançamento).
-2. **Deepgram Live PCM ao vivo no Android** (incerto — por isso é SPIKE/gate; MVP pode ir com Whisper).
+1. **Categoria "Produtividade" × triagem do Google** (risco de reclassificação p/ Medical — plano
+   B é migrar p/ Organization/CNPJ). Ver D2.
+2. **Ambiente de build:** node v25 é bleeding-edge — Expo 52/Metro costumam pedir node LTS 20/22;
+   e o Android Studio não herda o PATH do node (buildar pelo terminal / fixar node LTS). Ver §0b.
 3. **SSE incremental no Android/Expo** (`res.body.getReader()` em `src/lib/api.ts` — testar cedo
    que streama token-a-token no runtime Android).
 4. **Não reescrever o que funciona** (~80% do core está pronto).
+- ~~Deepgram Live PCM ao vivo~~ — **fora do escopo** (Whisper batch fica no Android, decisão D1).
 
 ## 7. Depois do Android (backlog congelado — retomar SÓ após o Android aprovado)
 O foco agora é **exclusivamente o Android** até ele ser aprovado/lançado. Todo o resto do produto

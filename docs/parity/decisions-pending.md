@@ -1,41 +1,33 @@
-# Decisões pendentes — App Android (aguardam o Luiz)
+# Decisões — App Android (DECIDIDAS pelo Luiz 04/07)
 
-> Registradas 2026-07-04. A próxima sessão dedicada deve resolver estas ANTES de avançar
-> nos blocos correspondentes. Cada uma tem a opção mais segura pré-selecionada.
+> As decisões-norte foram tomadas. Registro abaixo. Novas dúvidas que surgirem na sessão
+> dedicada vão para o fim deste arquivo.
 
-## D1 — Estratégia de lançamento: MVP-primeiro ou paridade-total? 🔴 (norte da sessão)
-- **Contexto:** o core Android já funciona (~80%). Lançar exige um MVP enxuto
-  (`plano-android-playstore.md`); a paridade rica com o iOS é meses de trabalho.
-- **Opção A (recomendada):** publicar o MVP com **Whisper batch** (já funciona) e fazer a
-  paridade rica (Deepgram Live, calculadoras, consultor) como upgrades pós-lançamento.
-- **Opção B:** segurar o lançamento até a paridade rica (inclui a SPIKE de voz, maior risco).
-- **Pendente:** Luiz confirma A ou B?
+## ✅ D1 — Estratégia: PARIDADE TOTAL, mas Whisper fica no Android (DECIDIDO)
+- **Decisão do Luiz:** buscar **paridade total** com o iOS (design, features, fluxos), **COM
+  UMA EXCEÇÃO deliberada: manter a transcrição por Whisper batch no Android** (o iOS fica com
+  Deepgram Live). Motivo: rodar um **A/B de produto na prática** — comparar Whisper (Android)
+  × Deepgram (iOS) com usuários reais e ver o que preferem, antes de investir na voz ao vivo.
+- **Consequência (importante):** o **Deepgram Live SAI do escopo Android** — era o item de
+  MAIOR RISCO técnico (PCM ao vivo, SPIKE de gate). Isso **remove o maior risco** e acelera.
+  A waveform pode continuar a atual; a UX de gravação segue o padrão Whisper (gravar→transcrever).
+- **Escopo real:** todo o resto da paridade (dark mode universal, edição inline, onboarding,
+  disclaimer gate, feedback, history busca/filtro, calculadoras completas, consultor IA,
+  análise de imagem, settings, paywall, categorias dinâmicas) **entra**. Voz ao vivo **não**.
 
-## D2 — Conta Google Play: Individual × Organization (CNPJ)? 🔴 (bloqueador externo)
-- **Contexto:** o Google **não permite conta Individual** em apps Medical/Health.
-- **Opção A (definitiva):** migrar a conta para **Organization (CNPJ)** — resolve Google e
-  Apple para um app médico. Requer entidade jurídica + verificação (dias).
-- **Opção B (MVP arriscado):** publicar como categoria **"Produtividade"** (ferramenta de
-  redação de laudos, não app de saúde do consumidor) + disclaimer. Risco: reclassificação
-  pelo Google.
-- **Pendente:** Luiz tem CNPJ disponível? Se sim → A. (Já perguntado em 22/06, segue aberto.)
+## ✅ D2 — Conta Google Play: categoria "PRODUTIVIDADE" (DECIDIDO)
+- **Decisão do Luiz:** publicar como **"Produtividade"** (ferramenta de redação de laudos para
+  médicos — não app de saúde do consumidor), com a conta **Individual** atual. Não migrar para
+  CNPJ/Organization agora.
+- **Implicações a tratar na sessão:** disclaimer médico explícito; posicionar copy da store como
+  ferramenta profissional de produtividade (não diagnóstico); **não** usar Health Connect;
+  Data Safety honesto. **Risco assumido:** o Google pode reclassificar como Medical na triagem —
+  se acontecer, o plano B é migrar para Organization (CNPJ). Documentar isso como risco vivo.
 
-## D3 — Stack de captura de áudio para o Deepgram Live (quando for B) 🟠
-- **Contexto:** `expo-av` grava arquivo (batch); Deepgram Live precisa de **PCM linear16 ao
-  vivo**. Incerto no Android (pode vir 48kHz, jitter no bridge JS).
-- **Opção candidata:** `@dr.pogodin/react-native-audio` (ou `expo-audio useAudioStream`) em
-  **dev build** (Expo Go não serve). Requer a **SPIKE de gate** da Fase 0 do plano-paridade.
-- **Pendente:** aprovar a SPIKE quando chegarmos em B (não bloqueia o MVP).
+## D3 — Escopo visual: dark mode universal É paridade (não opcional)
+- Como o alvo é paridade total, **dark mode universal + polish** entram no escopo (não ficam
+  "pós-MVP"). Ordem: baixo risco e alto impacto → fazer cedo, em paralelo às features.
 
-## D4 — Escopo visual do MVP: quanto polir antes de lançar? 🟡
-- **Contexto:** dark mode é parcial (login/generate/report em light fixo). Polish de UI é alto
-  impacto visual, baixo risco.
-- **Opção (recomendada):** MVP publica funcional mesmo com dark mode parcial; dark mode
-  universal + polish entram como primeira leva pós-MVP (ou em paralelo, não bloqueante).
-- **Pendente:** Luiz aceita lançar com dark mode parcial?
-
-## D5 — Deepgram no Android vale o esforço, ou Whisper batch basta? 🟡
-- **Contexto:** a voz ao vivo (Deepgram) é o diferencial de UX do iOS, mas é o maior risco no
-  Android. Whisper batch já entrega laudo correto (só sem transcrição ao vivo).
-- **Pendente:** Luiz considera a transcrição ao vivo essencial no Android v1, ou aceita batch
-  e prioriza outras features?
+---
+## Dúvidas novas (preencher na sessão dedicada)
+- (nenhuma ainda)
