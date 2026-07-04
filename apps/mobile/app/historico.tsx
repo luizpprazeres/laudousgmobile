@@ -187,7 +187,9 @@ export default function HistoricoScreen() {
           style: "destructive",
           onPress: async () => {
             setDeleting(true);
+            // Snapshot dos ids: a seleção pode mudar durante o await (Dex1).
             const ids = [...selected];
+            const idsSet = new Set(ids);
             const { error: delError } = await supabase
               .from("reports")
               .delete()
@@ -197,7 +199,7 @@ export default function HistoricoScreen() {
               Alert.alert("Erro ao excluir", delError.message);
               return;
             }
-            setReports((prev) => prev.filter((r) => !selected.has(r.id)));
+            setReports((prev) => prev.filter((r) => !idsSet.has(r.id)));
             exitSelection();
           },
         },
