@@ -54,6 +54,7 @@ import {
   stripReviewMarkers,
 } from "@/features/generate/reviewMarkers";
 import { SHORT_MEDICAL_DISCLAIMER } from "@/legal/documents";
+import { FeedbackCard } from "@/features/feedback/FeedbackCard";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -896,6 +897,10 @@ function LaudoBody({
               {SHORT_MEDICAL_DISCLAIMER}
             </Text>
           </View>
+        ) : null}
+
+        {state.kind === "done" && text ? (
+          <FeedbackCard reportId={state.reportId} categoryCode={cat.id} />
         ) : null}
 
         {state.kind === "generating" ? (
