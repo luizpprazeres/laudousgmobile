@@ -29,6 +29,7 @@
       "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/expo/adaptive-icon.png",
+        "monochromeImage": "./assets/brand/expo/monochrome-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [

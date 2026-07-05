@@ -1,4 +1,4 @@
-import { Audio } from "expo-av";
+import { Audio, InterruptionModeAndroid } from "expo-av";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase";
@@ -83,12 +83,15 @@ export async function clearPendingAudio(): Promise<void> {
 export async function startRecording(
   onLevel?: (level01: number, durationMillis: number) => void,
 ): Promise<Audio.Recording> {
-  if (Platform.OS === "ios") {
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-    });
-  }
+  // Audio focus exclusivo (DoNotMix): pausa a música/podcast do médico ao
+  // começar a gravar e devolve ao parar — comportamento profissional padrão
+  // dos apps de gravação Android. No iOS também habilita a captura.
+  await Audio.setAudioModeAsync({
+    allowsRecordingIOS: true,
+    playsInSilentModeIOS: true,
+    interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+    shouldDuckAndroid: false,
+  });
   const { recording } = await Audio.Recording.createAsync(
     { ...Audio.RecordingOptionsPresets.HIGH_QUALITY, isMeteringEnabled: true },
     onLevel
@@ -105,13 +108,6 @@ export async function startRecording(
   return recording;
 }
 
-/**
- * Para a gravação e faz upload para POST /api/transcribe.
- * Retorna { transcript, language? } do Whisper batch.
- *
- * Lança Error humanizado em qualquer falha (sem permissão, áudio vazio,
- * sem rede, 4xx/5xx do backend).
- */
 /** Para a gravação e devolve o URI do arquivo (sem enviar). */
 export async function stopRecording(recording: Audio.Recording): Promise<string> {
   await recording.stopAndUnloadAsync();
@@ -119,10 +115,11 @@ export async function stopRecording(recording: Audio.Recording): Promise<string>
   if (!uri) {
     throw new Error("Gravação vazia — tente segurar o microfone por mais tempo.");
   }
-  // Restaura modo de áudio padrão (silencia o "talking" no iOS).
-  if (Platform.OS === "ios") {
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-  }
+  // Restaura o modo de áudio padrão — devolve o audio focus no Android
+  // (a música do médico volta a tocar) e silencia o "talking" no iOS.
+  await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(
+    () => undefined,
+  );
   return uri;
 }
 

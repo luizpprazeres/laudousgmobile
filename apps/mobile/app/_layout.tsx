@@ -17,6 +17,8 @@ import {
   Barlow_700Bold,
   Barlow_800ExtraBold,
 } from "@expo-google-fonts/barlow";
+import * as QuickActions from "expo-quick-actions";
+import { useQuickActionRouting, type RouterAction } from "expo-quick-actions/router";
 import { darkTokens, lightTokens } from "@/ui/tokens";
 import { BrandSplash } from "@/ui/BrandSplash";
 import { LegalGate } from "@/features/legal/LegalGate";
@@ -71,6 +73,20 @@ export default function RootLayout() {
 function ThemedRoot() {
   const { scheme } = useTheme();
   const t = scheme === "dark" ? darkTokens : lightTokens;
+
+  // App shortcut Android (long-press no ícone → "Novo laudo"): 1 gesto para
+  // o fluxo nº 1 do médico entre pacientes. Dinâmico — aparece após o 1º boot.
+  useQuickActionRouting();
+  useEffect(() => {
+    QuickActions.setItems<RouterAction>([
+      {
+        id: "novo-laudo",
+        title: "Novo laudo",
+        subtitle: "Ditar achados agora",
+        params: { href: "/generate" },
+      },
+    ]).catch(() => undefined);
+  }, []);
   return (
     <>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
