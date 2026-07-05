@@ -58,7 +58,15 @@ export async function getPendingAudio(): Promise<PendingAudio | null> {
     const raw = await AsyncStorage.getItem(PENDING_AUDIO_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PendingAudio;
-    return parsed?.uri ? parsed : null;
+    if (!parsed?.uri) return null;
+    // Expira em 48h: o SO pode limpar o cache de áudio a qualquer momento —
+    // melhor não oferecer recuperação de um arquivo que provavelmente já era.
+    const age = Date.now() - new Date(parsed.savedAt ?? 0).getTime();
+    if (!Number.isFinite(age) || age > 48 * 60 * 60 * 1000) {
+      await AsyncStorage.removeItem(PENDING_AUDIO_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
