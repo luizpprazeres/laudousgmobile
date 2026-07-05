@@ -3,19 +3,23 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Sheet } from "@/ui/Sheet";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
-import { Ruler, X } from "@/ui/icons";
+import { ImageIcon, Ruler, X } from "@/ui/icons";
+import { canAnalyzeCategory } from "@/features/imaging/imageAnalysis";
 
 /**
  * Ações secundárias do composer.
  *   - calc:   abre CalculatorsSheet com calculadoras já prontas
+ *   - image:  análise de imagem de USG (categorias obstétricas)
  *   - clear:  reseta o editor
  */
-type Action = "calc" | "clear";
+type Action = "calc" | "image" | "clear";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onPick: (a: Action) => void;
+  /** Categoria atual — controla a visibilidade da análise de imagem. */
+  categoryId: string;
 };
 
 type Item = {
@@ -35,6 +39,13 @@ const ITEMS: Item[] = [
     color: "#F59E0B",
   },
   {
+    id: "image",
+    label: "Analisar imagem de USG",
+    sub: "Extrai biometria e Doppler da foto do aparelho",
+    Icon: ImageIcon,
+    color: "#8B5CF6",
+  },
+  {
     id: "clear",
     label: "Limpar achados",
     sub: "Começar do zero",
@@ -43,13 +54,16 @@ const ITEMS: Item[] = [
   },
 ];
 
-export function PlusSheet({ open, onClose, onPick }: Props) {
+export function PlusSheet({ open, onClose, onPick, categoryId }: Props) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
+  const items = ITEMS.filter(
+    (it) => it.id !== "image" || canAnalyzeCategory(categoryId),
+  );
   return (
-    <Sheet open={open} onClose={onClose} height={320}>
+    <Sheet open={open} onClose={onClose} height={items.length > 2 ? 380 : 320}>
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}>
-        {ITEMS.map((it) => (
+        {items.map((it) => (
           <Pressable
             key={it.id}
             onPress={() => {

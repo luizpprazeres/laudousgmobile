@@ -58,6 +58,7 @@ import {
 } from "@/features/generate/reviewMarkers";
 import { SHORT_MEDICAL_DISCLAIMER } from "@/legal/documents";
 import { FeedbackCard } from "@/features/feedback/FeedbackCard";
+import { ImageAnalysisSheet } from "@/features/imaging/ImageAnalysisSheet";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -87,6 +88,7 @@ export default function GenerateScreen() {
   const [igCalcInitialTab, setIgCalcInitialTab] = useState<"dum" | "usg">("dum");
   const [dopplerCalcOpen, setDopplerCalcOpen] = useState(false);
   const [salaOpen, setSalaOpen] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
   // Mock OFF por default — antes era "happy" em DEV mas isso fazia toda
   // geração cair no /api/generate/mock, que retorna PELVE_FEMININA fixo
   // e não persiste no DB (laudo sumia do histórico). FAB DEV abaixo ainda
@@ -289,7 +291,11 @@ export default function GenerateScreen() {
     }
   };
 
-  const onPlusAction = (a: "calc" | "clear") => {
+  const onPlusAction = (a: "calc" | "image" | "clear") => {
+    if (a === "image") {
+      setImageOpen(true);
+      return;
+    }
     if (a === "clear") {
       if (!hasContent) return;
       // Ditado de minutos não pode sumir com 2 taps (critique P1).
@@ -585,6 +591,15 @@ export default function GenerateScreen() {
         onNotice={(n) => setNotice(n)}
         onOpenSala={() => setSalaOpen(true)}
       />
+      <ImageAnalysisSheet
+        open={imageOpen}
+        onClose={() => setImageOpen(false)}
+        categoryId={cat.id}
+        onInsert={(block) =>
+          dispatch({ type: "EDIT_TEXT", text: (text ? text + "\n\n" : "") + block })
+        }
+      />
+
       <SalaPairingSheet
         open={salaOpen}
         onClose={() => setSalaOpen(false)}
@@ -593,6 +608,7 @@ export default function GenerateScreen() {
         open={plusOpen}
         onClose={() => setPlusOpen(false)}
         onPick={onPlusAction}
+        categoryId={cat.id}
       />
       <CalculatorsSheet
         open={calcOpen}
@@ -840,11 +856,6 @@ function LaudoBody({
 }: LaudoProps) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
-  const today = new Date().toLocaleDateString("pt-BR");
-  const time = new Date().toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 
   if (state.kind === "generating" || state.kind === "done") {
     const isStreaming = state.kind === "generating";
@@ -852,13 +863,9 @@ function LaudoBody({
       state.kind === "generating" ? state.streamedText : state.finalText;
     return (
       <View>
-        <Text style={[styles.eyebrow, { color: cat.color }]}>
-          Ultrassonografia {cat.label.toLowerCase()}
-        </Text>
-        <Text style={styles.laudoMeta}>
-          {today} · {time}
-        </Text>
-
+        {/* Sem cabeçalho "Ultrassonografia X" nem data/hora: a categoria já
+            está no header e a hora no relógio — pedido do Luiz 04/07 (o laudo
+            começa direto). */}
         {state.kind === "generating" && state.structured ? (
           <View style={styles.pipelineRow}>
             <View style={[styles.pipeDot, { backgroundColor: t.brand }]} />
@@ -1183,8 +1190,8 @@ function makeStyles(t: ColorTokens) {
     fontFamily: FONT.body,
   },
   laudoText: {
-    fontSize: 16,
-    lineHeight: 25,
+    fontSize: 15,
+    lineHeight: 23,
     color: t.text,
     fontFamily: FONT.body,
   },
