@@ -47,6 +47,9 @@ import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
 import { CalculatorsSheet, type CalcKey } from "@/features/generate/CalculatorsSheet";
 import { IGCalculatorSheet } from "@/features/generate/IGCalculatorSheet";
 import { DopplerCalculatorSheet } from "@/features/generate/DopplerCalculatorSheet";
+import { HadlockCalculatorSheet } from "@/features/generate/HadlockCalculatorSheet";
+import { ILA4QCalculatorSheet } from "@/features/generate/ILA4QCalculatorSheet";
+import { AnemiaCalculatorSheet } from "@/features/generate/AnemiaCalculatorSheet";
 import {
   ensureMicPermission,
   startRecording,
@@ -78,6 +81,9 @@ export default function GenerateScreen() {
   const [igCalcOpen, setIgCalcOpen] = useState(false);
   const [igCalcInitialTab, setIgCalcInitialTab] = useState<"dum" | "usg">("dum");
   const [dopplerCalcOpen, setDopplerCalcOpen] = useState(false);
+  const [hadlockOpen, setHadlockOpen] = useState(false);
+  const [ilaOpen, setIlaOpen] = useState(false);
+  const [anemiaOpen, setAnemiaOpen] = useState(false);
   const [salaOpen, setSalaOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
   // Mock OFF por default — antes era "happy" em DEV mas isso fazia toda
@@ -604,6 +610,12 @@ export default function GenerateScreen() {
             setIgCalcOpen(true);
           } else if (key === "doppler") {
             setDopplerCalcOpen(true);
+          } else if (key === "hadlock") {
+            setHadlockOpen(true);
+          } else if (key === "ila") {
+            setIlaOpen(true);
+          } else if (key === "anemia") {
+            setAnemiaOpen(true);
           }
         }}
       />
@@ -617,6 +629,21 @@ export default function GenerateScreen() {
         open={dopplerCalcOpen}
         findingsText={text}
         onClose={() => setDopplerCalcOpen(false)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <HadlockCalculatorSheet
+        open={hadlockOpen}
+        onClose={() => setHadlockOpen(false)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <ILA4QCalculatorSheet
+        open={ilaOpen}
+        onClose={() => setIlaOpen(false)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <AnemiaCalculatorSheet
+        open={anemiaOpen}
+        onClose={() => setAnemiaOpen(false)}
         onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
       />
 

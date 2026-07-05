@@ -3,9 +3,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Sheet } from "@/ui/Sheet";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
-import { Cal, Ruler } from "@/ui/icons";
+import { Cal, Ruler, Bar, Layers, Sparkle } from "@/ui/icons";
 
-export type CalcKey = "ig" | "doppler";
+export type CalcKey = "ig" | "doppler" | "hadlock" | "ila" | "anemia";
 
 type Props = {
   open: boolean;
@@ -36,6 +36,27 @@ const ITEMS: Item[] = [
     Icon: Ruler,
     color: "#F97316",
   },
+  {
+    key: "hadlock",
+    label: "Peso fetal (Hadlock)",
+    sub: "Estimativa por biometria + percentil (Hadlock 4, 1985)",
+    Icon: Bar,
+    color: "#6366F1",
+  },
+  {
+    key: "ila",
+    label: "ILA 4 quadrantes",
+    sub: "Líquido amniótico pela técnica de Phelan (1987)",
+    Icon: Layers,
+    color: "#0EA5E9",
+  },
+  {
+    key: "anemia",
+    label: "Anemia fetal (MCA-PSV)",
+    sub: "Risco por Doppler da cerebral média (Mari, 2000)",
+    Icon: Sparkle,
+    color: "#EF4444",
+  },
 ];
 
 /**
@@ -45,7 +66,7 @@ export function CalculatorsSheet({ open, onClose, onPick }: Props) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   return (
-    <Sheet open={open} onClose={onClose} title="Calculadoras" height={360}>
+    <Sheet open={open} onClose={onClose} title="Calculadoras" height={560}>
       <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 }}>
         {ITEMS.map((it) => (
           <Pressable
