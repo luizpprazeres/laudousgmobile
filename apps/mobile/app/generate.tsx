@@ -50,6 +50,15 @@ import { DopplerCalculatorSheet } from "@/features/generate/DopplerCalculatorShe
 import { HadlockCalculatorSheet } from "@/features/generate/HadlockCalculatorSheet";
 import { ILA4QCalculatorSheet } from "@/features/generate/ILA4QCalculatorSheet";
 import { AnemiaCalculatorSheet } from "@/features/generate/AnemiaCalculatorSheet";
+import { DuctoVenosoCalculatorSheet } from "@/features/generate/DuctoVenosoCalculatorSheet";
+import { PreEclampsiaCalculatorSheet } from "@/features/generate/PreEclampsiaCalculatorSheet";
+import { AFCCalculatorSheet } from "@/features/generate/AFCCalculatorSheet";
+import { BIRADSCalculatorSheet } from "@/features/generate/BIRADSCalculatorSheet";
+import { TIRADSCalculatorSheet } from "@/features/generate/TIRADSCalculatorSheet";
+import { VolumeProstaticoCalculatorSheet } from "@/features/generate/VolumeProstaticoCalculatorSheet";
+import { VolumeResidualCalculatorSheet } from "@/features/generate/VolumeResidualCalculatorSheet";
+import { VolumeTireoideanoCalculatorSheet } from "@/features/generate/VolumeTireoideanoCalculatorSheet";
+import { VolumeUterinoCalculatorSheet } from "@/features/generate/VolumeUterinoCalculatorSheet";
 import {
   clearPendingAudio,
   ensureMicPermission,
@@ -88,6 +97,9 @@ export default function GenerateScreen() {
   const [hadlockOpen, setHadlockOpen] = useState(false);
   const [ilaOpen, setIlaOpen] = useState(false);
   const [anemiaOpen, setAnemiaOpen] = useState(false);
+  // Sheet de calculadora aberto (lote 2 — as 9 novas usam um estado único,
+  // já que só uma abre por vez a partir do CalculatorsSheet).
+  const [calcSheet, setCalcSheet] = useState<CalcKey | null>(null);
   const [salaOpen, setSalaOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
   // Mock OFF por default — antes era "happy" em DEV mas isso fazia toda
@@ -704,6 +716,8 @@ export default function GenerateScreen() {
             setIlaOpen(true);
           } else if (key === "anemia") {
             setAnemiaOpen(true);
+          } else {
+            setCalcSheet(key);
           }
         }}
       />
@@ -732,6 +746,51 @@ export default function GenerateScreen() {
       <AnemiaCalculatorSheet
         open={anemiaOpen}
         onClose={() => setAnemiaOpen(false)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <DuctoVenosoCalculatorSheet
+        open={calcSheet === "ductoVenoso"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <PreEclampsiaCalculatorSheet
+        open={calcSheet === "preEclampsia"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <AFCCalculatorSheet
+        open={calcSheet === "afc"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <BIRADSCalculatorSheet
+        open={calcSheet === "birads"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <TIRADSCalculatorSheet
+        open={calcSheet === "tirads"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <VolumeProstaticoCalculatorSheet
+        open={calcSheet === "volProstata"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <VolumeResidualCalculatorSheet
+        open={calcSheet === "volResidual"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <VolumeTireoideanoCalculatorSheet
+        open={calcSheet === "volTireoide"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <VolumeUterinoCalculatorSheet
+        open={calcSheet === "volUtero"}
+        onClose={() => setCalcSheet(null)}
         onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
       />
 
