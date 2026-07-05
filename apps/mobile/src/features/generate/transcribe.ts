@@ -1,5 +1,4 @@
 import { Audio, InterruptionModeAndroid } from "expo-av";
-import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase";
 
@@ -118,16 +117,19 @@ export async function startRecording(
 
 /** Para a gravação e devolve o URI do arquivo (sem enviar). */
 export async function stopRecording(recording: Audio.Recording): Promise<string> {
-  await recording.stopAndUnloadAsync();
+  try {
+    await recording.stopAndUnloadAsync();
+  } finally {
+    // Devolve o audio focus no Android (a música do médico volta a tocar) e
+    // silencia o "talking" no iOS — mesmo se o stop falhar (P2 Dex1 05/07).
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(
+      () => undefined,
+    );
+  }
   const uri = recording.getURI();
   if (!uri) {
     throw new Error("Gravação vazia — tente segurar o microfone por mais tempo.");
   }
-  // Restaura o modo de áudio padrão — devolve o audio focus no Android
-  // (a música do médico volta a tocar) e silencia o "talking" no iOS.
-  await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(
-    () => undefined,
-  );
   return uri;
 }
 
