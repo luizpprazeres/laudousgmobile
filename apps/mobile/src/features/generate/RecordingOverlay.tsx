@@ -35,12 +35,16 @@ export function RecordingOverlay({
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   const [bars, setBars] = useState<number[]>(() =>
-    Array.from({ length: BAR_COUNT }, () => 0.3),
+    Array.from({ length: BAR_COUNT }, () => 0.04),
   );
   const [seconds, setSeconds] = useState(0);
+  const [quietWarn, setQuietWarn] = useState(false);
   const cursor = useRef(new Animated.Value(1)).current;
   const levelRef = useRef<number | null>(level);
   levelRef.current = level;
+  // Ticks consecutivos (80ms cada) abaixo do piso de fala — 50 ticks ≈ 4 s de
+  // silêncio contínuo dispara o aviso "não estou te ouvindo".
+  const quietTicksRef = useRef(0);
   const insets = useSafeAreaInsets();
   const isRecording = mode === "recording";
 
@@ -49,9 +53,21 @@ export function RecordingOverlay({
       setBars((prev) => {
         const real = levelRef.current;
         if (isRecording && real !== null) {
-          // Buffer deslizante com o nível real (mesmo padrão do overlay iOS).
+          // Buffer deslizante com o nível real. Curva de contraste: remove o
+          // piso de ruído (~0,15 do metering) e expande o resto — silêncio
+          // vira toco de 4px, fala vira barra alta. O médico percebe mic
+          // mudo em segundos, não só no fim do ditado.
+          const shaped = Math.pow(Math.max(0, (real - 0.15) / 0.85), 0.7);
           const next = prev.slice(1);
-          next.push(Math.max(0.08, real));
+          next.push(Math.max(0.04, shaped));
+
+          if (real < 0.22) {
+            quietTicksRef.current += 1;
+            if (quietTicksRef.current >= 50) setQuietWarn(true);
+          } else {
+            quietTicksRef.current = 0;
+            setQuietWarn(false);
+          }
           return next;
         }
         return prev.map(() =>
@@ -128,11 +144,20 @@ export function RecordingOverlay({
             </Animated.Text>
           ) : null}
         </Text>
-        <Text style={styles.help}>
-          {isRecording
-            ? "Toque em parar quando terminar. A IA estrutura automaticamente."
-            : "Aguarde — pode levar alguns segundos."}
-        </Text>
+        {isRecording && quietWarn ? (
+          <View style={styles.quietWarn}>
+            <Text style={styles.quietWarnText}>
+              Não estou captando sua voz — fale mais perto do aparelho ou
+              verifique se o microfone não está coberto.
+            </Text>
+          </View>
+        ) : (
+          <Text style={styles.help}>
+            {isRecording
+              ? "Toque em parar quando terminar. A IA estrutura automaticamente."
+              : "Aguarde — pode levar alguns segundos."}
+          </Text>
+        )}
       </View>
 
       <View style={styles.waveform}>
@@ -225,6 +250,19 @@ function makeStyles(t: ColorTokens) {
       color: t.textMute,
       marginTop: 16,
       fontFamily: FONT.body,
+    },
+    quietWarn: {
+      marginTop: 16,
+      backgroundColor: t.warningBg,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    quietWarnText: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: t.warningText,
+      fontFamily: FONT.medium,
     },
     waveform: {
       paddingHorizontal: 28,

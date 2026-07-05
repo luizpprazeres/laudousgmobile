@@ -1,5 +1,6 @@
 import { Audio } from "expo-av";
 import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -14,11 +15,60 @@ export type TranscribeResult = {
  * Lança Error humanizado se negada.
  */
 export async function ensureMicPermission(): Promise<void> {
+  // Checa primeiro: se já concedida ("Ao usar o app"), NUNCA mostra diálogo de
+  // novo — o Android lembra a escolha. Só re-pergunta se o usuário escolheu
+  // "Somente desta vez" (expira ao fechar) ou nunca respondeu.
+  const current = await Audio.getPermissionsAsync();
+  if (current.granted) return;
+  if (!current.canAskAgain) {
+    throw new Error(
+      "O microfone está bloqueado para o LaudoUSG. Abra Configurações → Apps → LaudoUSG → Permissões → Microfone e escolha \"Permitir ao usar o app\" (fica salvo para sempre).",
+    );
+  }
   const res = await Audio.requestPermissionsAsync();
   if (!res.granted) {
     throw new Error(
-      "Permissão de microfone negada. Abra Configurações do app e conceda acesso ao microfone para ditar.",
+      res.canAskAgain
+        ? "Permissão de microfone negada. Toque no microfone de novo e escolha \"Permitir ao usar o app\" para não perguntar mais."
+        : "O microfone está bloqueado. Configurações → Apps → LaudoUSG → Permissões → Microfone → \"Permitir ao usar o app\".",
     );
+  }
+}
+
+// ── Áudio pendente (recuperável): o arquivo gravado só é "esquecido" após
+// transcrição bem-sucedida. Queda de internet/erro do Whisper NÃO perde o
+// ditado — dá pra tentar de novo, inclusive depois de fechar o app. ──
+const PENDING_AUDIO_KEY = "laudousg.pending_audio";
+
+export type PendingAudio = { uri: string; savedAt: string };
+
+export async function savePendingAudio(uri: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(
+      PENDING_AUDIO_KEY,
+      JSON.stringify({ uri, savedAt: new Date().toISOString() }),
+    );
+  } catch {
+    /* melhor-esforço */
+  }
+}
+
+export async function getPendingAudio(): Promise<PendingAudio | null> {
+  try {
+    const raw = await AsyncStorage.getItem(PENDING_AUDIO_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PendingAudio;
+    return parsed?.uri ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPendingAudio(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(PENDING_AUDIO_KEY);
+  } catch {
+    /* idem */
   }
 }
 
@@ -62,22 +112,24 @@ export async function startRecording(
  * Lança Error humanizado em qualquer falha (sem permissão, áudio vazio,
  * sem rede, 4xx/5xx do backend).
  */
-export async function stopAndUpload(
-  recording: Audio.Recording,
-): Promise<TranscribeResult> {
-  if (!API_URL) {
-    throw new Error("Configuração ausente (EXPO_PUBLIC_API_URL).");
-  }
-
+/** Para a gravação e devolve o URI do arquivo (sem enviar). */
+export async function stopRecording(recording: Audio.Recording): Promise<string> {
   await recording.stopAndUnloadAsync();
   const uri = recording.getURI();
   if (!uri) {
     throw new Error("Gravação vazia — tente segurar o microfone por mais tempo.");
   }
-
   // Restaura modo de áudio padrão (silencia o "talking" no iOS).
   if (Platform.OS === "ios") {
     await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+  }
+  return uri;
+}
+
+/** Envia um arquivo de áudio já gravado para o Whisper. Pode ser re-tentado. */
+export async function uploadAudio(uri: string): Promise<TranscribeResult> {
+  if (!API_URL) {
+    throw new Error("Configuração ausente (EXPO_PUBLIC_API_URL).");
   }
 
   const { data: session } = await supabase.auth.getSession();
@@ -146,6 +198,14 @@ export async function stopAndUpload(
     );
   }
   return { transcript, language };
+}
+
+/** Compat: para + envia (onboarding usa). Fluxo principal usa stop/upload separados. */
+export async function stopAndUpload(
+  recording: Audio.Recording,
+): Promise<TranscribeResult> {
+  const uri = await stopRecording(recording);
+  return uploadAudio(uri);
 }
 
 function humanizeStatus(status: number, detail?: string): string {

@@ -51,9 +51,13 @@ import { HadlockCalculatorSheet } from "@/features/generate/HadlockCalculatorShe
 import { ILA4QCalculatorSheet } from "@/features/generate/ILA4QCalculatorSheet";
 import { AnemiaCalculatorSheet } from "@/features/generate/AnemiaCalculatorSheet";
 import {
+  clearPendingAudio,
   ensureMicPermission,
+  getPendingAudio,
+  savePendingAudio,
   startRecording,
-  stopAndUpload,
+  stopRecording,
+  uploadAudio,
 } from "@/features/generate/transcribe";
 import {
   renderReviewHighlighted,
@@ -100,6 +104,10 @@ export default function GenerateScreen() {
   const recordingRef = useRef<AudioNS.Recording | null>(null);
   // Nível de áudio real (metering) → waveform do overlay (P0 critique).
   const [micLevel, setMicLevel] = useState<number | null>(null);
+  // Áudio gravado que falhou na transcrição (rede caiu, Whisper 5xx…).
+  // O arquivo fica salvo e o card "Tentar novamente" reaparece — o ditado
+  // do médico NUNCA se perde por falha de upload.
+  const [retryAudio, setRetryAudio] = useState<string | null>(null);
 
   // ── Edição inline do laudo final (paridade iOS: autosave 600ms) ──
   const [editingLaudo, setEditingLaudo] = useState(false);
@@ -224,8 +232,65 @@ export default function GenerateScreen() {
   };
 
 
+  // Sobe um áudio já gravado (recém-parado OU retry de falha anterior).
+  // Sucesso limpa o pendente; falha preserva o arquivo e arma o retry.
+  const transcribeUri = async (uri: string, priorText: string) => {
+    try {
+      const { transcript } = await uploadAudio(uri);
+      dispatch({ type: "TRANSCRIPTION_DONE", text: transcript });
+      setRetryAudio(null);
+      clearPendingAudio();
+    } catch (e) {
+      // Volta ao estado inicial (texto preservado) SEM perder o áudio:
+      // o arquivo continua no cache e o card de retry assume.
+      dispatch({ type: "RESET" });
+      if (priorText) dispatch({ type: "EDIT_TEXT", text: priorText });
+      setRetryAudio(uri);
+      setNotice({
+        severity: "error",
+        title: "Não consegui transcrever",
+        message:
+          (e instanceof Error ? e.message : String(e)) +
+          " Seu áudio está salvo — toque em “Tentar novamente” abaixo.",
+      });
+    }
+  };
+
+  const retryTranscription = async () => {
+    if (!retryAudio || micBusy || isStreaming) return;
+    setNotice(null);
+    dispatch({ type: "STOP_REC" }); // → transcribing (spinner + overlay)
+    await transcribeUri(retryAudio, text);
+  };
+
+  const discardRetryAudio = () => {
+    setRetryAudio(null);
+    clearPendingAudio();
+  };
+
+  // Recuperação pós-crash/fechamento: se ficou um ditado gravado sem
+  // transcrever na última sessão, oferece de volta no boot da tela.
+  useEffect(() => {
+    let alive = true;
+    getPendingAudio().then((pending) => {
+      if (!alive || !pending) return;
+      setRetryAudio(pending.uri);
+      setNotice({
+        severity: "warning",
+        title: "Ditado recuperado",
+        message:
+          "Encontrei um áudio gravado que não chegou a ser transcrito. Toque em “Tentar novamente” para transcrevê-lo, ou descarte.",
+      });
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const onMicToggle = async () => {
-    // STOP path: para gravação, faz upload Whisper, dispatch transcript.
+    // STOP path: para gravação, salva o arquivo como pendente e sobe pro
+    // Whisper. Qualquer falha a partir daqui NÃO perde a gravação.
     if (recording) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
       const rec = recordingRef.current;
@@ -236,20 +301,21 @@ export default function GenerateScreen() {
         dispatch({ type: "FAIL", message: "Gravação perdida — tente de novo." });
         return;
       }
+      let uri: string;
       try {
-        const { transcript } = await stopAndUpload(rec);
-        dispatch({ type: "TRANSCRIPTION_DONE", text: transcript });
+        uri = await stopRecording(rec);
       } catch (e) {
-        // Volta o usuário para o estado inicial (com texto preservado),
-        // e mostra o erro como notice em cima do composer.
         dispatch({ type: "RESET" });
         if (text) dispatch({ type: "EDIT_TEXT", text });
         setNotice({
           severity: "error",
-          title: "Não consegui transcrever",
+          title: "Falha na gravação",
           message: e instanceof Error ? e.message : String(e),
         });
+        return;
       }
+      await savePendingAudio(uri);
+      await transcribeUri(uri, text);
       return;
     }
 
@@ -378,6 +444,28 @@ export default function GenerateScreen() {
             message={notice.message}
             onDismiss={() => setNotice(null)}
           />
+        </View>
+      ) : null}
+
+      {retryAudio && !micBusy && !isStreaming ? (
+        <View style={styles.retryCard}>
+          <Text style={styles.retryText}>Áudio gravado aguardando transcrição</Text>
+          <View style={styles.retryRow}>
+            <Pressable
+              onPress={retryTranscription}
+              style={styles.retryBtn}
+              accessibilityRole="button"
+            >
+              <Text style={styles.retryBtnText}>Tentar novamente</Text>
+            </Pressable>
+            <Pressable
+              onPress={discardRetryAudio}
+              style={styles.retryDiscard}
+              accessibilityRole="button"
+            >
+              <Text style={styles.retryDiscardText}>Descartar</Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
 
@@ -1195,6 +1283,52 @@ function makeStyles(t: ColorTokens) {
   root: {
     flex: 1,
     backgroundColor: t.bg,
+  },
+  retryCard: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    backgroundColor: t.card,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: t.separator,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  retryText: {
+    color: t.text2,
+    fontFamily: FONT.medium,
+    fontSize: 13.5,
+  },
+  retryRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  retryBtn: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 10,
+    backgroundColor: t.brand,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryBtnText: {
+    color: "#fff",
+    fontFamily: FONT.semibold,
+    fontSize: 13.5,
+  },
+  retryDiscard: {
+    minHeight: 38,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: t.fill1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryDiscardText: {
+    color: t.text2,
+    fontFamily: FONT.medium,
+    fontSize: 13.5,
   },
   navBar: {
     flexDirection: "row",
