@@ -24,6 +24,7 @@ export type GenerateState =
       structured?: StructuredFindings;
       ragBlockIds?: string[];
       streamedText: string;
+      sanity?: SanityResult;
     }
   | {
       kind: "clarifying";
@@ -156,6 +157,7 @@ function applySse(
         reportId: ev.report_id,
         finalText: ev.final_text,
         structured: state.structured,
+        sanity: state.sanity,
       };
     case "blocked":
       // Feature de bloqueio removida — backend não emite mais este evento,
@@ -163,8 +165,10 @@ function applySse(
       return state;
     case "error":
       return { kind: "error", text: state.text, message: ev.message };
-    case "validator":
     case "sanity":
+      // Guarda o resultado pro card "N pontos a revisar" no done (paridade iOS).
+      return { ...state, sanity: ev.result };
+    case "validator":
     case "heartbeat":
     case "warning":
       // warning é informativo (ex: RAG_EMPTY). Backend já registrou em

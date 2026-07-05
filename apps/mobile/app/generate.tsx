@@ -62,15 +62,6 @@ import { ImageAnalysisSheet } from "@/features/imaging/ImageAnalysisSheet";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
-const SNIPPETS: Record<string, string> = {
-  dum:
-    "IG pela DUM (DUM: __/__/____): __ semanas e __ dias.\nDPP: __/__/____.\n\n",
-  usg:
-    "IG pela 1ª USG (8s2d em 03/12/2025): 28 semanas e 6 dias.\nDPP corrigida: 17/07/2026.\n\n",
-  frase:
-    "Feto único, vivo, em apresentação cefálica, dorso à esquerda. Batimentos cardíacos fetais de 142 bpm, regulares. Movimentos fetais ativos.\n\n",
-};
-
 type Tab = "achados" | "laudo";
 
 export default function GenerateScreen() {
@@ -226,9 +217,6 @@ export default function GenerateScreen() {
     setTab("achados");
   };
 
-  const insertSnippet = (key: keyof typeof SNIPPETS) => {
-    dispatch({ type: "EDIT_TEXT", text: text + SNIPPETS[key] });
-  };
 
   const onMicToggle = async () => {
     // STOP path: para gravação, faz upload Whisper, dispatch transcript.
@@ -407,16 +395,16 @@ export default function GenerateScreen() {
               text={text}
               hasContent={hasContent}
               onChangeText={(t) => dispatch({ type: "EDIT_TEXT", text: t })}
-              onSnippet={insertSnippet}
               onOpenIG={(tab) => {
                 setIgCalcInitialTab(tab);
                 setIgCalcOpen(true);
               }}
-              onOpenFrasesSalvas={() =>
-                undefined
-              }
-              onUnimplemented={(label) =>
-                undefined
+              onOpenDoppler={() => setDopplerCalcOpen(true)}
+              onInsert={(block) =>
+                dispatch({
+                  type: "EDIT_TEXT",
+                  text: text ? text + (text.endsWith("\n") ? "" : "\n\n") + block : block,
+                })
               }
               editable={
                 state.kind === "idle" ||
@@ -431,6 +419,10 @@ export default function GenerateScreen() {
             <LaudoBody
               state={state}
               cat={cat}
+              onUseCategory={(code) => {
+                const found = CATS.find((c) => c.id === code);
+                if (found) setCat(found);
+              }}
               editing={editingLaudo}
               saveStatus={saveStatus}
               onToggleEdit={toggleEditingLaudo}
@@ -657,10 +649,9 @@ type AchadosProps = {
   text: string;
   hasContent: boolean;
   onChangeText: (t: string) => void;
-  onSnippet: (key: "dum" | "usg" | "frase") => void;
   onOpenIG: (tab: "dum" | "usg") => void;
-  onOpenFrasesSalvas: () => void;
-  onUnimplemented: (label: string) => void;
+  onOpenDoppler: () => void;
+  onInsert: (text: string) => void;
   editable: boolean;
   cat: Category;
 };
@@ -691,40 +682,103 @@ type QuickAction = {
   onPress: () => void;
 };
 
+// Textos idênticos aos GenerateShortcut do iOS (GenerateViewModel.defaults).
+const SHORTCUT_TEXTS = {
+  semVitalidade:
+    'Gestação sem vitalidade embrionária/fetal. Manter o mesmo modelo do exame obstétrico (diâmetro médio do saco gestacional e CCN). Aplicar substituições padronizadas: (1) na frequência cardíaca, substituir a frase pela seguinte: "Batimentos cardíacos fetais não visualizados pelo modo B e nem pelo modo Doppler."; (2) na CONCLUSÃO, no item da idade gestacional, escrever: "gestação em torno de X semanas e Y dias, contendo embrião/feto sem vitalidade." (usar "embrião" ou "feto" conforme a idade gestacional ditada).',
+  tireoideNormal:
+    "Glândula tireoide tópica, contornos regulares, dimensões e ecotextura preservadas, sem nódulos. Vascularização ao Doppler colorido sem alterações.",
+  hashimoto:
+    "Glândula tireoide tópica, dimensões normais, com ecotextura heterogênea e padrão micronodular difuso, vascularização aumentada ao Doppler colorido — padrão ecográfico compatível com tireoidite crônica linfocítica (Hashimoto).",
+  protese:
+    "Paciente com próteses mamárias. Próteses íntegras, sem sinais de ruptura intra ou extracapsular.",
+  linfonodosAxilares:
+    "Imagens ovais, com a periferia hipoecoica e o centro hiperecoico nas axilas, compatíveis com linfonodos de morfologia preservada.",
+  esteatoseLeve:
+    "Fígado de dimensões normais, contornos regulares, apresentando ecogenicidade discretamente aumentada, com leve atenuação sonora posterior, compatível com esteatose hepática leve.",
+  colecistectomia:
+    "Ausência da imagem da vesícula biliar (paciente previamente submetida a colecistectomia).",
+  menopausa:
+    'Paciente em menopausa — ovários atróficos. Aplicar substituições padronizadas: (1) no CORPO, descrever cada ovário como "Ovário direito medindo X x Y x Z cm, apresentando poucas imagens anecoicas." e idem pro esquerdo (NUNCA usar apenas "imagens anecoicas" — usar SEMPRE "poucas imagens anecoicas"); (2) na CONCLUSÃO, item do endométrio: "O endométrio tem espessura normal para a faixa etária da menopausa."; (3) na CONCLUSÃO, item dos ovários: "Ovários ecograficamente normais (o direito com X cm³ e o esquerdo com Y cm³), ambos praticamente sem folículos."',
+  miomatoso:
+    'Útero miomatoso — múltiplos nódulos coalescentes não individualizáveis. Aplicar substituições: (1) no CORPO, substituir a frase do miométrio por: "Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas, coalescentes, ocasionando atenuação sonora, que impede a avaliação individualizada."; (2) na CONCLUSÃO, substituir o item de volume + miométrio por: "Útero globoso (miomatoso), de volume acentuadamente aumentado (X cm³)." sem classificação FIGO individual.',
+  exameNormal: "Exame sem alterações dignas de nota.",
+} as const;
+
+type QuickActionHandlers = {
+  onOpenIG: (tab: "dum" | "usg") => void;
+  onOpenDoppler: () => void;
+  onInsert: (text: string) => void;
+};
+
 function buildQuickActions(
   catId: string,
-  onOpenIG: (tab: "dum" | "usg") => void,
-  _onOpenFrasesSalvas: () => void,
-  _onUnimplemented: (label: string) => void,
+  { onOpenIG, onOpenDoppler, onInsert }: QuickActionHandlers,
 ): QuickAction[] {
-  if (isObstetrica(catId)) {
+  const ins = (key: string, label: string, text: string): QuickAction => ({
+    key,
+    label,
+    onPress: () => onInsert(text + "\n\n"),
+  });
+
+  if (catId === "OBSTETRICA" || catId === "MORFOLOGICO") {
     return [
-      { key: "dum", label: "IG pela DUM", onPress: () => onOpenIG("dum") },
+      { key: "dum", label: "Calcular IG pela DUM", onPress: () => onOpenIG("dum") },
       { key: "usg", label: "IG pela 1ª USG", onPress: () => onOpenIG("usg") },
+      { key: "perc", label: "Calcular percentis", onPress: onOpenDoppler },
+      ins("semvit", "Sem vitalidade", SHORTCUT_TEXTS.semVitalidade),
     ];
   }
-  return [];
+  if (catId === "DOPPLER_OBSTETRICO") {
+    return [
+      { key: "dum", label: "Calcular IG pela DUM", onPress: () => onOpenIG("dum") },
+      { key: "perc", label: "Calcular percentis", onPress: onOpenDoppler },
+    ];
+  }
+  if (catId === "TIREOIDE") {
+    return [
+      ins("normal", "Normal", SHORTCUT_TEXTS.tireoideNormal),
+      ins("hashi", "Hashimoto", SHORTCUT_TEXTS.hashimoto),
+    ];
+  }
+  if (catId === "MAMARIA") {
+    return [
+      ins("protese", "Prótese", SHORTCUT_TEXTS.protese),
+      ins("linf", "Linfonodos axilares", SHORTCUT_TEXTS.linfonodosAxilares),
+    ];
+  }
+  if (catId.startsWith("ABDOMEN")) {
+    return [
+      ins("esteat", "Esteatose leve", SHORTCUT_TEXTS.esteatoseLeve),
+      ins("colecis", "Colecistectomia", SHORTCUT_TEXTS.colecistectomia),
+    ];
+  }
+  if (catId === "PELVE_FEMININA") {
+    return [
+      ins("menop", "Menopausa", SHORTCUT_TEXTS.menopausa),
+      ins("mioma", "Miomatoso", SHORTCUT_TEXTS.miomatoso),
+    ];
+  }
+  return [ins("normal", "Exame normal", SHORTCUT_TEXTS.exameNormal)];
 }
 
 function AchadosBody({
   text,
   hasContent,
   onChangeText,
-  onSnippet: _onSnippet,
   onOpenIG,
-  onOpenFrasesSalvas,
-  onUnimplemented,
+  onOpenDoppler,
+  onInsert,
   editable,
   cat,
 }: AchadosProps) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
-  const quickActions = buildQuickActions(
-    cat.id,
+  const quickActions = buildQuickActions(cat.id, {
     onOpenIG,
-    onOpenFrasesSalvas,
-    onUnimplemented,
-  );
+    onOpenDoppler,
+    onInsert,
+  });
   return (
     <View>
       {/* Quick actions row: chips clicáveis com texto sublinhado, mesma
@@ -766,13 +820,6 @@ function AchadosBody({
   );
 }
 
-function isObstetrica(catId: string): boolean {
-  return (
-    catId === "OBSTETRICA" ||
-    catId === "MORFOLOGICO" ||
-    catId === "DOPPLER_OBSTETRICO"
-  );
-}
 
 /**
  * Converte erro técnico do generate em mensagem útil pro médico.
@@ -821,6 +868,7 @@ import type { SanityIssue } from "@/shared";
 type LaudoProps = {
   state: GenerateState;
   cat: Category;
+  onUseCategory: (code: string) => void;
   editing: boolean;
   saveStatus: "idle" | "saving" | "saved" | "error";
   onToggleEdit: () => void;
@@ -843,6 +891,7 @@ const SAVE_LABEL: Record<"idle" | "saving" | "saved" | "error", string> = {
 function LaudoBody({
   state,
   cat,
+  onUseCategory,
   editing,
   saveStatus,
   onToggleEdit,
@@ -866,6 +915,30 @@ function LaudoBody({
         {/* Sem cabeçalho "Ultrassonografia X" nem data/hora: a categoria já
             está no header e a hora no relógio — pedido do Luiz 04/07 (o laudo
             começa direto). */}
+        {state.kind === "done" &&
+        state.structured &&
+        state.structured.categoria_detectada !== cat.id ? (
+          <View style={styles.catMismatch}>
+            <Text style={styles.catMismatchText}>
+              A IA detectou{" "}
+              <Text style={{ fontFamily: FONT.bold }}>
+                {catLabelFor(state.structured.categoria_detectada)}
+              </Text>{" "}
+              — você selecionou {cat.label}. O laudo foi estruturado pela
+              categoria detectada; confira antes de copiar.
+            </Text>
+            <Pressable
+              onPress={() => onUseCategory(state.structured!.categoria_detectada)}
+              hitSlop={6}
+              accessibilityRole="button"
+            >
+              <Text style={styles.catMismatchAction}>
+                Usar {catLabelFor(state.structured.categoria_detectada)} nas próximas
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {state.kind === "generating" && state.structured ? (
           <View style={styles.pipelineRow}>
             <View style={[styles.pipeDot, { backgroundColor: t.brand }]} />
@@ -914,6 +987,14 @@ function LaudoBody({
             {isStreaming ? <Text style={styles.cursor}> ▎</Text> : null}
           </Text>
         )}
+
+        {state.kind === "done" &&
+        text &&
+        state.sanity &&
+        state.sanity.issues.length > 0 &&
+        state.sanity.verdict !== "ok" ? (
+          <SanityCard sanity={state.sanity} styles={styles} />
+        ) : null}
 
         {state.kind === "done" && text ? (
           <CompactDisclaimer styles={styles} />
@@ -1016,6 +1097,59 @@ function LaudoBody({
 }
 
 // ─── Styles ───────────────────────────────────────────────────────
+/**
+ * Card "N ponto(s) a revisar" — port do sanity card do iOS: transforma o
+ * verificador determinístico em mecanismo de confiança (critique 04/07:
+ * mostrar ONDE conferir, em vez de só assustar com disclaimer).
+ */
+function SanityCard({
+  sanity,
+  styles,
+}: {
+  sanity: NonNullable<Extract<GenerateState, { kind: "done" }>["sanity"]>;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const count = sanity.issues.length;
+  const critical = sanity.verdict === "critical";
+  return (
+    <View style={[styles.sanityCard, critical && styles.sanityCardCritical]}>
+      <Pressable
+        onPress={() => setExpanded((e) => !e)}
+        style={styles.sanityHeader}
+        accessibilityRole="button"
+      >
+        <Text style={[styles.sanityTitle, critical && styles.sanityTitleCritical]}>
+          {count} ponto{count > 1 ? "s" : ""} a revisar
+        </Text>
+        <Text style={styles.sanityChevron}>{expanded ? "▲" : "▼"}</Text>
+      </Pressable>
+      {expanded ? (
+        <View style={{ gap: 8, marginTop: 8 }}>
+          {sanity.issues.map((issue, i) => (
+            <View key={i} style={styles.sanityIssue}>
+              <Text style={styles.sanityIssueDetail}>
+                {issue.severity === "critical" ? "⚠ " : "• "}
+                {issue.detail}
+              </Text>
+              {issue.trecho_laudo ? (
+                <Text style={styles.sanityIssueTrecho}>“{issue.trecho_laudo}”</Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function catLabelFor(code: string): string {
+  return (
+    CATS.find((c) => c.id === code)?.label ??
+    code.replaceAll("_", " ").toLowerCase().replace(/^./, (m) => m.toUpperCase())
+  );
+}
+
 /**
  * Disclaimer legal compacto (1 linha, expansível) — mantém a função (CFM/loja)
  * sem terminar a jornada com um cartão de aviso gritante (critique P1).
@@ -1231,6 +1365,67 @@ function makeStyles(t: ColorTokens) {
     padding: 12,
     borderRadius: 12,
     backgroundColor: t.warningBg,
+  },
+  sanityCard: {
+    marginTop: 14,
+    backgroundColor: t.warningBg,
+    borderRadius: 12,
+    padding: 12,
+  },
+  sanityCardCritical: {
+    backgroundColor: t.mode === "dark" ? "rgba(255,69,58,0.14)" : "#FEF2F2",
+  },
+  sanityHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  sanityTitle: {
+    color: t.warningText,
+    fontFamily: FONT.semibold,
+    fontSize: 13.5,
+  },
+  sanityTitleCritical: {
+    color: t.danger,
+  },
+  sanityChevron: {
+    color: t.textMute,
+    fontSize: 10,
+  },
+  sanityIssue: {
+    gap: 2,
+  },
+  sanityIssueDetail: {
+    color: t.text,
+    fontFamily: FONT.medium,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  sanityIssueTrecho: {
+    color: t.textSec,
+    fontFamily: FONT.body,
+    fontSize: 12.5,
+    fontStyle: "italic",
+    lineHeight: 18,
+  },
+  catMismatch: {
+    backgroundColor: t.warningBg,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    gap: 6,
+  },
+  catMismatchText: {
+    color: t.warningText,
+    fontFamily: FONT.medium,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  catMismatchAction: {
+    color: t.warningText,
+    fontFamily: FONT.bold,
+    fontSize: 13,
+    textDecorationLine: "underline",
   },
   disclaimerCompact: {
     marginTop: 14,
