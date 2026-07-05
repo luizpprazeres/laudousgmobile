@@ -1313,8 +1313,8 @@ function makeStyles(t: ColorTokens) {
     fontFamily: FONT.body,
   },
   laudoText: {
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 14,
+    lineHeight: 21,
     color: t.text,
     fontFamily: FONT.body,
   },
