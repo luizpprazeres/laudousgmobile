@@ -38,6 +38,7 @@ import {
   Plus,
   Quote,
   Stop,
+  X,
 } from "@/ui/icons";
 import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
@@ -113,6 +114,8 @@ export default function GenerateScreen() {
     message: string;
   } | null>(null);
   const aborterRef = useRef<AbortController | null>(null);
+  // Aborter do upload de transcrição (X do composer cancela sem perder áudio).
+  const uploadAborterRef = useRef<AbortController | null>(null);
   const recordingRef = useRef<AudioNS.Recording | null>(null);
   // Nível de áudio real (metering) → waveform do overlay (P0 critique).
   const [micLevel, setMicLevel] = useState<number | null>(null);
@@ -245,10 +248,13 @@ export default function GenerateScreen() {
 
 
   // Sobe um áudio já gravado (recém-parado OU retry de falha anterior).
-  // Sucesso limpa o pendente; falha preserva o arquivo e arma o retry.
+  // Sucesso limpa o pendente; falha/cancelamento preservam o arquivo e
+  // armam o card de retry.
   const transcribeUri = async (uri: string, priorText: string) => {
+    const aborter = new AbortController();
+    uploadAborterRef.current = aborter;
     try {
-      const { transcript } = await uploadAudio(uri);
+      const { transcript } = await uploadAudio(uri, aborter.signal);
       dispatch({ type: "TRANSCRIPTION_DONE", text: transcript });
       setRetryAudio(null);
       clearPendingAudio();
@@ -258,14 +264,55 @@ export default function GenerateScreen() {
       dispatch({ type: "RESET" });
       if (priorText) dispatch({ type: "EDIT_TEXT", text: priorText });
       setRetryAudio(uri);
-      setNotice({
-        severity: "error",
-        title: "Não consegui transcrever",
-        message:
-          (e instanceof Error ? e.message : String(e)) +
-          " Seu áudio está salvo — toque em “Tentar novamente” abaixo.",
-      });
+      if ((e as Error)?.name === "AbortError" || aborter.signal.aborted) {
+        // Cancelamento do médico — não é erro; card de retry basta.
+        setNotice({
+          severity: "warning",
+          title: "Transcrição cancelada",
+          message:
+            "Seu áudio está salvo — transcreva quando quiser ou descarte no card abaixo.",
+        });
+      } else {
+        setNotice({
+          severity: "error",
+          title: "Não consegui transcrever",
+          message:
+            (e instanceof Error ? e.message : String(e)) +
+            " Seu áudio está salvo — toque em “Tentar novamente” abaixo.",
+        });
+      }
+    } finally {
+      if (uploadAborterRef.current === aborter) uploadAborterRef.current = null;
     }
+  };
+
+  // Cancela o UPLOAD em andamento (o arquivo fica salvo → card de retry).
+  // Sem confirmação de propósito: cancelar não perde nada (review Dex2 05/07).
+  const cancelTranscription = () => {
+    uploadAborterRef.current?.abort();
+  };
+
+  // Descarta a GRAVAÇÃO em andamento (falou errado, quer recomeçar).
+  // Aqui SIM tem confirmação: o áudio ainda não virou nada recuperável.
+  const cancelRecording = () => {
+    Alert.alert("Descartar gravação?", "O áudio gravado até aqui será apagado.", [
+      { text: "Continuar gravando", style: "cancel" },
+      {
+        text: "Descartar",
+        style: "destructive",
+        onPress: () => {
+          const rec = recordingRef.current;
+          recordingRef.current = null;
+          setMicLevel(null);
+          dispatch({ type: "RESET" });
+          if (text) dispatch({ type: "EDIT_TEXT", text });
+          if (rec) {
+            // Para e restaura o audio focus; o arquivo morre no cache.
+            stopRecording(rec).catch(() => undefined);
+          }
+        },
+      },
+    ]);
   };
 
   const retryTranscription = async () => {
@@ -604,14 +651,28 @@ export default function GenerateScreen() {
       >
         {/* Layout iOS: [+] discreto · "Gerar laudo" central · mic circular */}
         <View style={styles.composerRow} pointerEvents="box-none">
-          <Pressable
-            onPress={() => setPlusOpen(true)}
-            disabled={micBusy}
-            style={[styles.sideBtn, { opacity: micBusy ? 0.35 : 1 }]}
-            accessibilityLabel="Mais ações"
-          >
-            <Plus size={20} color={t.text2} />
-          </Pressable>
+          {micBusy ? (
+            // Durante gravação/transcrição o [+] vira X de cancelar:
+            // gravação = descartar (com confirmação); transcrição = parar
+            // envio (áudio fica salvo no card de retry). Dex2 05/07.
+            <Pressable
+              onPress={recording ? cancelRecording : cancelTranscription}
+              style={styles.sideBtn}
+              accessibilityLabel={
+                recording ? "Descartar gravação" : "Cancelar transcrição"
+              }
+            >
+              <X size={20} color={t.danger} />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => setPlusOpen(true)}
+              style={styles.sideBtn}
+              accessibilityLabel="Mais ações"
+            >
+              <Plus size={20} color={t.text2} />
+            </Pressable>
+          )}
 
           <Pressable
             onPress={hasContent && !generating && !micBusy ? startGenerate : undefined}

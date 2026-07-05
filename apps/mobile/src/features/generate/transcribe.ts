@@ -133,8 +133,12 @@ export async function stopRecording(recording: Audio.Recording): Promise<string>
   return uri;
 }
 
-/** Envia um arquivo de áudio já gravado para o Whisper. Pode ser re-tentado. */
-export async function uploadAudio(uri: string): Promise<TranscribeResult> {
+/** Envia um arquivo de áudio já gravado para o Whisper. Pode ser re-tentado
+ *  e cancelado via AbortSignal (o cancelamento NÃO descarta o arquivo). */
+export async function uploadAudio(
+  uri: string,
+  signal?: AbortSignal,
+): Promise<TranscribeResult> {
   if (!API_URL) {
     throw new Error("Configuração ausente (EXPO_PUBLIC_API_URL).");
   }
@@ -165,8 +169,13 @@ export async function uploadAudio(uri: string): Promise<TranscribeResult> {
         Accept: "application/json",
       },
       body: form,
+      signal,
     });
   } catch (e) {
+    // Cancelamento explícito do usuário passa direto (não é falha de rede).
+    if ((e as Error)?.name === "AbortError" || signal?.aborted) {
+      throw e;
+    }
     throw new Error(
       "Sem conexão com o servidor. Confira sua rede e tente de novo.",
     );
