@@ -49,6 +49,10 @@ export function ImageAnalysisSheet({
 
   const supported = canAnalyzeCategory(categoryId);
 
+  // Limite do backend: ~5 MB por imagem (~7 MB em base64). Validar ANTES de
+  // subir — sem isso o médico espera minutos para tomar 413 (review Dex1).
+  const MAX_BASE64_BYTES = 7_000_000;
+
   async function pick() {
     setError(null);
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -57,11 +61,26 @@ export function ImageAnalysisSheet({
       selectionLimit: MAX_IMAGES - images.length,
       quality: 0.7,
       base64: true,
+      exif: false,
     });
     if (result.canceled) return;
-    const picked = result.assets
-      .filter((a) => a.base64)
-      .map((a) => ({ uri: a.uri, base64: a.base64 as string }));
+    const picked: Picked[] = [];
+    let rejected = 0;
+    for (const a of result.assets) {
+      if (!a.base64) continue;
+      if (a.base64.length > MAX_BASE64_BYTES) {
+        rejected++;
+        continue;
+      }
+      picked.push({ uri: a.uri, base64: a.base64 });
+    }
+    if (rejected > 0) {
+      setError(
+        rejected === 1
+          ? "1 imagem passou de 5 MB e foi descartada — use a foto direto da tela do aparelho."
+          : `${rejected} imagens passaram de 5 MB e foram descartadas — use fotos direto da tela do aparelho.`,
+      );
+    }
     setImages((prev) => [...prev, ...picked].slice(0, MAX_IMAGES));
   }
 

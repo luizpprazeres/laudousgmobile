@@ -45,6 +45,9 @@ export type GenerateState =
 
 export type GenerateAction =
   | { type: "EDIT_TEXT"; text: string }
+  // Anexa bloco ao texto ATUAL (reducer calcula — evita race de closure com
+  // inserts assíncronos de calculadoras/análise de imagem; review Dex1 04/07)
+  | { type: "APPEND_TEXT"; text: string }
   | { type: "EDIT_FINAL"; text: string }
   | { type: "START_REC" }
   | { type: "STOP_REC" }
@@ -71,6 +74,16 @@ export function generateReducer(
         };
       }
       return state;
+
+    case "APPEND_TEXT": {
+      if (state.kind !== "idle" && state.kind !== "ready") return state;
+      const base = state.text.trimEnd();
+      const merged = base ? base + "\n\n" + action.text : action.text;
+      return {
+        kind: merged.trim().length > 0 ? "ready" : "idle",
+        text: merged,
+      };
+    }
 
     case "EDIT_FINAL":
       // Edição inline do laudo final (paridade iOS: TextEditor + autosave).
@@ -118,6 +131,12 @@ function applySse(
   state: GenerateState,
   ev: GenerateSSEEvent,
 ): GenerateState {
+  // O backend emite `done` ANTES de `sanity` (generate/route.ts:1027 vs 1052) —
+  // aceita sanity também no done, senão o card nunca aparece (review Dex1).
+  if (state.kind === "done") {
+    if (ev.type === "sanity") return { ...state, sanity: ev.result };
+    return state;
+  }
   if (state.kind !== "generating") return state;
 
   switch (ev.type) {

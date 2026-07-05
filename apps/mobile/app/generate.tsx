@@ -400,12 +400,7 @@ export default function GenerateScreen() {
                 setIgCalcOpen(true);
               }}
               onOpenDoppler={() => setDopplerCalcOpen(true)}
-              onInsert={(block) =>
-                dispatch({
-                  type: "EDIT_TEXT",
-                  text: text ? text + (text.endsWith("\n") ? "" : "\n\n") + block : block,
-                })
-              }
+              onInsert={(block) => dispatch({ type: "APPEND_TEXT", text: block })}
               editable={
                 state.kind === "idle" ||
                 state.kind === "ready" ||
@@ -587,9 +582,7 @@ export default function GenerateScreen() {
         open={imageOpen}
         onClose={() => setImageOpen(false)}
         categoryId={cat.id}
-        onInsert={(block) =>
-          dispatch({ type: "EDIT_TEXT", text: (text ? text + "\n\n" : "") + block })
-        }
+        onInsert={(block) => dispatch({ type: "APPEND_TEXT", text: block })}
       />
 
       <SalaPairingSheet
@@ -618,17 +611,13 @@ export default function GenerateScreen() {
         open={igCalcOpen}
         initialTab={igCalcInitialTab}
         onClose={() => setIgCalcOpen(false)}
-        onInsert={(bloco) =>
-          dispatch({ type: "EDIT_TEXT", text: text + bloco })
-        }
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
       />
       <DopplerCalculatorSheet
         open={dopplerCalcOpen}
         findingsText={text}
         onClose={() => setDopplerCalcOpen(false)}
-        onInsert={(bloco) =>
-          dispatch({ type: "EDIT_TEXT", text: text + bloco })
-        }
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
       />
 
       {/* DEV-only: floating mock toggle (substitui o antigo chip do header).
