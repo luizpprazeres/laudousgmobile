@@ -174,7 +174,7 @@ export default function PreferenciasScreen() {
           </View>
           <View style={[styles.row, styles.rowDivider]}>
             <Text style={styles.label}>Email</Text>
-            <Text style={styles.value} numberOfLines={1}>
+            <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">
               {email}
             </Text>
           </View>
@@ -372,13 +372,14 @@ function makeStyles(t: ColorTokens) {
       borderBottomColor: t.separator,
     },
     label: {
-      flex: 1,
+      flexShrink: 0,
       fontSize: 15,
       color: t.text,
       fontFamily: FONT.body,
     },
     value: {
-      maxWidth: "58%",
+      flex: 1,
+      textAlign: "right",
       fontSize: 14,
       color: t.textSec,
       fontFamily: FONT.body,
