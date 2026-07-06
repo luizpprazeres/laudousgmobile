@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { SystemBars } from "react-native-edge-to-edge";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
@@ -94,7 +94,10 @@ function ThemedRoot() {
   }, []);
   return (
     <>
-      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      {/* Edge-to-edge (C7): SystemBars substitui expo-status-bar — no
+          Android 15+ o app desenha atrás das barras; os insets de cada
+          tela cuidam do resto (react-native-edge-to-edge/zoontek). */}
+      <SystemBars style={scheme === "dark" ? "light" : "dark"} />
       <Stack
         screenOptions={{
           headerShown: false,

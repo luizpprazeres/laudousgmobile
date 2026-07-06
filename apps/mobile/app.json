@@ -45,6 +45,7 @@
       "favicon": "./assets/brand/expo/favicon.png"
     },
     "plugins": [
+      "react-native-edge-to-edge",
       "expo-router",
       [
         "expo-av",
@@ -65,7 +66,10 @@
         "expo-build-properties",
         {
           "android": {
-            "targetSdkVersion": 35
+            "targetSdkVersion": 35,
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.facebook.react.fabric.** { *; }\n-keep class com.facebook.react.bridge.** { *; }\n-keep class com.facebook.react.uimanager.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.facebook.jni.** { *; }\n-keep class com.facebook.hermes.** { *; }"
           }
         }
       ]
