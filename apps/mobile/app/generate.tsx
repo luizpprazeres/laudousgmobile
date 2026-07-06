@@ -32,11 +32,14 @@ import { CATS, Category, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 import {
   Chevron,
+  Copy,
   Layers,
   Menu,
   Mic,
+  Pencil,
   Plus,
   Quote,
+  RotateCcw,
   Stop,
   X,
 } from "@/ui/icons";
@@ -576,8 +579,11 @@ export default function GenerateScreen() {
               editable={
                 state.kind === "idle" ||
                 state.kind === "ready" ||
-                state.kind === "error"
+                state.kind === "error" ||
+                // done editável: mexer nos achados inicia novo ciclo
+                state.kind === "done"
               }
+              onClear={() => onPlusAction("clear")}
               cat={cat}
             />
           )}
@@ -900,6 +906,7 @@ type AchadosProps = {
   onOpenDoppler: () => void;
   onInsert: (text: string) => void;
   editable: boolean;
+  onClear: () => void;
   cat: Category;
 };
 
@@ -1017,6 +1024,7 @@ function AchadosBody({
   onOpenDoppler,
   onInsert,
   editable,
+  onClear,
   cat,
 }: AchadosProps) {
   const t = useColorTokens();
@@ -1031,27 +1039,45 @@ function AchadosBody({
       {/* Quick actions row: chips clicáveis com texto sublinhado, mesma
           tipografia do placeholder. Customizado por categoria (obstétricas
           ganham IG pela DUM / 1ª USG). ScrollView horizontal
-          pra acomodar quando lista cresce sem quebrar layout. */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.quickRow}
-      >
-        {quickActions.map((qa, i) => (
+          pra acomodar quando lista cresce sem quebrar layout. À direita,
+          fixo fora do scroll, o "limpar achados" (restart) — discreto, só
+          com conteúdo (pedido Luiz 06/07; confirma via Alert do pai). */}
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.quickRow}
+          style={{ flex: 1 }}
+        >
+          {quickActions.map((qa, i) => (
+            <Pressable
+              key={qa.key}
+              onPress={qa.onPress}
+              disabled={!editable}
+              style={({ pressed }) => [
+                i > 0 && { marginLeft: 18 },
+                pressed && { opacity: 0.5 },
+              ]}
+              hitSlop={6}
+            >
+              <Text style={styles.quickLink}>{qa.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        {hasContent && editable ? (
           <Pressable
-            key={qa.key}
-            onPress={qa.onPress}
-            disabled={!editable}
+            onPress={onClear}
+            hitSlop={10}
             style={({ pressed }) => [
-              i > 0 && { marginLeft: 18 },
+              styles.quickClear,
               pressed && { opacity: 0.5 },
             ]}
-            hitSlop={6}
+            accessibilityLabel="Limpar achados"
           >
-            <Text style={styles.quickLink}>{qa.label}</Text>
+            <RotateCcw size={16} color={t.textMute} />
           </Pressable>
-        ))}
-      </ScrollView>
+        ) : null}
+      </View>
 
       <TextInput
         value={text}
@@ -1195,14 +1221,20 @@ function LaudoBody({
           </View>
         ) : null}
 
-        {/* Toolbar do laudo pronto: Editar/Visualizar + status do autosave
-            (Copiar virou a ação PRIMÁRIA no fim do fluxo — critique P0). */}
+        {/* Toolbar do laudo pronto: Editar + Copiar como TEXT BUTTONS (sem
+            fundo/contorno — ícone + cor brand dão a affordance, padrão
+            Material; não competem com o Segment acima). Pedido Luiz 06/07. */}
         {state.kind === "done" && text ? (
           <View style={styles.laudoToolbar}>
-            <Pressable onPress={onToggleEdit} style={styles.toolbarBtn} hitSlop={6}>
-              <Text style={styles.toolbarBtnText}>
+            <Pressable onPress={onToggleEdit} style={styles.textBtn} hitSlop={8}>
+              <Pencil size={15} color={t.brand} />
+              <Text style={styles.textBtnLabel}>
                 {editing ? "Visualizar" : "Editar"}
               </Text>
+            </Pressable>
+            <Pressable onPress={onCopy} style={styles.textBtn} hitSlop={8}>
+              <Copy size={15} color={t.brand} />
+              <Text style={styles.textBtnLabel}>Copiar laudo</Text>
             </Pressable>
             <Text
               style={[
@@ -1244,40 +1276,21 @@ function LaudoBody({
         ) : null}
 
         {state.kind === "done" && text ? (
-          <CompactDisclaimer styles={styles} />
+          <FeedbackCard reportId={state.reportId} categoryCode={cat.id} />
         ) : null}
 
+        {/* Disclaimer vai por ÚLTIMO e discreto: quem faz 40 laudos/dia já
+            sabe — a função legal se mantém sem gritar (pedido Luiz 06/07).
+            Copiar/Novo/Abrir detalhes saíram: Copiar subiu pra toolbar; novo
+            laudo = voltar em Achados (limpar/editar); detalhes = Histórico. */}
         {state.kind === "done" && text ? (
-          <FeedbackCard reportId={state.reportId} categoryCode={cat.id} />
+          <CompactDisclaimer styles={styles} />
         ) : null}
 
         {state.kind === "generating" ? (
           <Pressable onPress={onCancel} style={styles.secondaryBtn}>
             <Text style={styles.secondaryBtnText}>Cancelar geração</Text>
           </Pressable>
-        ) : null}
-
-        {state.kind === "done" ? (
-          <View style={{ gap: 10, marginTop: 18 }}>
-            <Pressable
-              onPress={onCopy}
-              style={styles.primaryBtn}
-              accessibilityRole="button"
-            >
-              <Text style={styles.primaryBtnText}>Copiar laudo</Text>
-            </Pressable>
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <Pressable
-                onPress={() => onOpenReport(state.reportId)}
-                style={[styles.secondaryBtn, { flex: 1 }]}
-              >
-                <Text style={styles.secondaryBtnText}>Abrir detalhes</Text>
-              </Pressable>
-              <Pressable onPress={onReset} style={[styles.secondaryBtn, { flex: 1 }]}>
-                <Text style={styles.secondaryBtnText}>Novo</Text>
-              </Pressable>
-            </View>
-          </View>
         ) : null}
       </View>
     );
@@ -1638,6 +1651,23 @@ function makeStyles(t: ColorTokens) {
     color: t.text,
     fontFamily: FONT.semibold,
     fontSize: 13,
+  },
+  // Text button (Material): ícone + label na cor brand, sem fundo/contorno.
+  textBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 7,
+    paddingRight: 14,
+  },
+  textBtnLabel: {
+    color: t.brand,
+    fontFamily: FONT.semibold,
+    fontSize: 13.5,
+  },
+  quickClear: {
+    paddingLeft: 12,
+    paddingVertical: 4,
   },
   saveStatus: {
     marginLeft: "auto",

@@ -26,6 +26,16 @@ type Props = {
   level?: number | null;
 };
 
+// Progressão de status durante a transcrição: tira a sensação de espera
+// parada sem prometer etapas falsas — avança a cada ~2,8s e PARA na última
+// (não fica rodando em círculo). Pedido Luiz 06/07.
+const TRANSCRIBING_PHRASES = [
+  "Recebendo o áudio…",
+  "Transcrevendo de forma inteligente…",
+  "Checando o vocabulário médico…",
+  "Corrigindo possíveis erros…",
+];
+
 export function RecordingOverlay({
   transcript = "Aguardando áudio…",
   showCursor = true,
@@ -34,6 +44,18 @@ export function RecordingOverlay({
 }: Props) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
+  const [phraseIdx, setPhraseIdx] = useState(0);
+
+  useEffect(() => {
+    if (mode !== "transcribing") return;
+    setPhraseIdx(0);
+    const id = setInterval(() => {
+      setPhraseIdx((i) =>
+        i < TRANSCRIBING_PHRASES.length - 1 ? i + 1 : i,
+      );
+    }, 2800);
+    return () => clearInterval(id);
+  }, [mode]);
   const [bars, setBars] = useState<number[]>(() =>
     Array.from({ length: BAR_COUNT }, () => 0.04),
   );
@@ -136,7 +158,7 @@ export function RecordingOverlay({
 
       <View style={styles.body}>
         <Text style={styles.transcript}>
-          {transcript}
+          {isRecording ? transcript : TRANSCRIBING_PHRASES[phraseIdx]}
           {showCursor ? (
             <Animated.Text style={[styles.cursor, { opacity: cursor }]}>
               {" "}

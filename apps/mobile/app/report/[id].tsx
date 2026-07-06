@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as Clipboard from "expo-clipboard";
-import { useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
@@ -21,15 +21,17 @@ import {
 } from "@/features/generate/reviewMarkers";
 import { SHORT_MEDICAL_DISCLAIMER } from "@/legal/documents";
 import { Segment } from "@/ui/Segment";
-import { FONT, type ColorTokens } from "@/ui/tokens";
+import { CATS, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 
-type Tab = "report" | "findings" | "rag" | "meta";
+// RAG saiu (pipeline atual usa writers/renderers, igual ao iOS); a aba
+// "Achados" mostra o que o médico ditou/digitou (raw_input) — antes era um
+// JSON técnico que não servia a ninguém (pedido Luiz 06/07).
+type Tab = "report" | "findings" | "meta";
 
 const TABS = [
   { value: "report", label: "Laudo" },
-  { value: "findings", label: "Entendido" },
-  { value: "rag", label: "RAG" },
+  { value: "findings", label: "Achados" },
   { value: "meta", label: "Meta" },
 ] satisfies Array<{ value: Tab; label: string }>;
 
@@ -123,8 +125,12 @@ export default function ReportDetailScreen() {
   }
 
   async function copyReport() {
-    if (!finalText) return;
-    const cleanText = stripReviewMarkers(finalText);
+    // Copiar é contextual: na aba Achados copia o que foi ditado/digitado;
+    // nas demais copia o laudo (pedido Luiz 06/07).
+    const source =
+      tab === "findings" ? (data?.report.raw_input ?? "") : finalText;
+    if (!source) return;
+    const cleanText = stripReviewMarkers(source);
     if (Platform.OS === "web" && navigator?.clipboard?.writeText) {
       await navigator.clipboard.writeText(cleanText);
       Alert.alert("Texto copiado");
@@ -157,10 +163,16 @@ export default function ReportDetailScreen() {
     );
   }
 
-  const { report, latest_run: latestRun, rag_blocks: ragBlocks } = data;
+  const { report, latest_run: latestRun } = data;
+  const catLabel =
+    CATS.find((c) => c.id === report.category_code)?.label ??
+    report.category_code;
 
   return (
     <View style={styles.screen}>
+      {/* Header nativo mostra a CATEGORIA (economiza a linha duplicada que
+          existia no corpo — pedido Luiz 06/07). */}
+      <Stack.Screen options={{ title: catLabel }} />
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -168,10 +180,11 @@ export default function ReportDetailScreen() {
         ]}
       >
         <View style={styles.summary}>
-          <Text style={styles.kicker}>{report.category_code}</Text>
-          <Text style={styles.title}>{statusLabel(report.status)}</Text>
           <Text style={styles.subtitle}>
-            Atualizado em {formatDate(report.updated_at)}
+            Laudo gerado em {formatDate(report.created_at)}
+          </Text>
+          <Text style={styles.subtitle}>
+            Última atualização em {formatDate(report.updated_at)}
           </Text>
         </View>
 
@@ -198,7 +211,7 @@ export default function ReportDetailScreen() {
               !finalText && styles.disabled,
             ]}
           >
-            <Text style={styles.actionText}>Copiar texto</Text>
+            <Text style={styles.actionText}>Copiar</Text>
           </Pressable>
           <Pressable
             onPress={shareReport}
@@ -210,7 +223,7 @@ export default function ReportDetailScreen() {
               !finalText && styles.disabled,
             ]}
           >
-            <Text style={styles.primaryText}>Compartilhar</Text>
+            <Text style={styles.primaryText}>Enviar</Text>
           </Pressable>
         </View>
 
@@ -248,10 +261,7 @@ export default function ReportDetailScreen() {
           )
         ) : null}
         {tab === "findings" ? (
-          <JsonTab value={report.structured_findings ?? {}} />
-        ) : null}
-        {tab === "rag" ? (
-          <RagTab ids={report.rag_blocks_used} blocks={ragBlocks} />
+          <FindingsTab text={report.raw_input} />
         ) : null}
         {tab === "meta" ? <MetaTab run={latestRun} /> : null}
       </ScrollView>
@@ -280,53 +290,15 @@ function ReportTab({ text }: { text: string }) {
   );
 }
 
-function JsonTab({ value }: { value: unknown }) {
+/** O que o médico ditou/digitou nos achados (raw_input), como texto. */
+function FindingsTab({ text }: { text: string }) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   return (
-    <ScrollView horizontal style={styles.card} contentContainerStyle={styles.codeWrap}>
-      <Text selectable style={styles.codeText}>
-        {JSON.stringify(value, null, 2)}
+    <View style={styles.card}>
+      <Text selectable style={styles.reportText}>
+        {text?.trim() ? text : "Sem achados registrados."}
       </Text>
-    </ScrollView>
-  );
-}
-
-function RagTab({
-  ids,
-  blocks,
-}: {
-  ids: string[];
-  blocks: ReportDetail["rag_blocks"];
-}) {
-  const t = useColorTokens();
-  const styles = useMemo(() => makeStyles(t), [t]);
-  if (ids.length === 0) {
-    return (
-      <View style={styles.card}>
-        <Text style={styles.emptyText}>Nenhum bloco RAG registrado neste laudo.</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.listCard}>
-      {ids.map((id, index) => {
-        const block = blocks.find((b) => b.id === id);
-        return (
-          <View
-            key={id}
-            style={[styles.ragRow, index < ids.length - 1 && styles.rowDivider]}
-          >
-            <View style={styles.ragMain}>
-              <Text style={styles.ragTitle}>{block?.title ?? id}</Text>
-              <Text style={styles.ragMeta}>
-                {block?.kind ?? "bloco"} · prioridade {block?.priority ?? "-"}
-              </Text>
-            </View>
-          </View>
-        );
-      })}
     </View>
   );
 }
@@ -374,25 +346,10 @@ function MetaTab({ run }: { run: ReportDetail["latest_run"] }) {
   );
 }
 
-function statusLabel(status: string) {
-  const labels: Record<string, string> = {
-    draft: "Rascunho",
-    awaiting_clarify: "Aguardando esclarecimento",
-    generated: "Laudo gerado",
-    blocked: "Bloqueado para revisão",
-    published: "Publicado",
-    discarded: "Descartado",
-  };
-  return labels[status] ?? status;
-}
-
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+  const d = new Date(value);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} às ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function formatMs(value: number | null) {

@@ -1034,6 +1034,10 @@ export async function POST(req: Request) {
         const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({
           findings,
           finalText,
+          // Ditado cru = fonte de verdade primária: evita falso "achado
+          // inventado" quando o structurer devolve achados vazios mas o
+          // writer gera direto do ditado (falso positivo Luiz 06/07).
+          rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
         });
         const sanity = mergeSanityResults(aiSanity, deterministicSanity);
         auditState.sanityDurationMs = sanityMs;

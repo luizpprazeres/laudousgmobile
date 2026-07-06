@@ -67,7 +67,15 @@ export function generateReducer(
 ): GenerateState {
   switch (action.type) {
     case "EDIT_TEXT":
-      if (state.kind === "idle" || state.kind === "ready") {
+      // done/error também aceitam edição: mexer nos achados depois do laudo
+      // pronto INICIA UM NOVO CICLO (o laudo anterior fica no histórico) —
+      // fluxo "novo laudo sem botão Novo" (pedido Luiz 06/07).
+      if (
+        state.kind === "idle" ||
+        state.kind === "ready" ||
+        state.kind === "done" ||
+        state.kind === "error"
+      ) {
         return {
           kind: action.text.trim().length > 0 ? "ready" : "idle",
           text: action.text,
@@ -76,7 +84,13 @@ export function generateReducer(
       return state;
 
     case "APPEND_TEXT": {
-      if (state.kind !== "idle" && state.kind !== "ready") return state;
+      if (
+        state.kind !== "idle" &&
+        state.kind !== "ready" &&
+        state.kind !== "done" &&
+        state.kind !== "error"
+      )
+        return state;
       const base = state.text.trimEnd();
       const merged = base ? base + "\n\n" + action.text : action.text;
       return {

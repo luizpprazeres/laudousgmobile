@@ -148,6 +148,36 @@ export const X = ({ size = 22, color = "#000" }: IconProps) =>
 export const Stop = ({ size = 22, color = "#000" }: IconProps) =>
   fill(size, color, <Rect x="6" y="6" width="12" height="12" rx="2.5" />);
 
+export const Pencil = ({ size = 22, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <Path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />,
+  );
+
+export const Copy = ({ size = 22, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <>
+      <Rect x="9" y="9" width="13" height="13" rx="2" />
+      <Path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </>,
+  );
+
+export const RotateCcw = ({ size = 22, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <>
+      <Polyline points="1 4 1 10 7 10" />
+      <Path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+    </>,
+  );
+
 export const CheckCircle = ({ size = 18, color = "#000" }: IconProps) =>
   stroke(
     size,

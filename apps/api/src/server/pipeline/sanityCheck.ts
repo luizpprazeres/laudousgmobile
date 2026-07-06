@@ -18,8 +18,19 @@ import { SANITY_JSON_SCHEMA } from "../ai/jsonSchema";
  */
 
 const SANITY_SYSTEM_PROMPT = [
-  "Você é o sanity check do LaudoUSG. Compara o JSON de ACHADOS ESTRUTURADOS",
-  "com o LAUDO FINAL gerado e detecta inconsistências.",
+  "Você é o sanity check do LaudoUSG. Compara o que o MÉDICO DITOU com o",
+  "LAUDO FINAL gerado e detecta inconsistências FACTUAIS.",
+  "",
+  "FONTE DE VERDADE: o DITADO DO MÉDICO (texto cru). O JSON de achados",
+  "estruturados é AUXILIAR e pode estar incompleto ou vazio — pipelines",
+  "novos geram o laudo direto do ditado. REGRAS INEGOCIÁVEIS:",
+  "- Conteúdo presente no DITADO e no laudo NUNCA é issue, mesmo que falte",
+  "  no JSON auxiliar (não reporte achado_inventado nesse caso).",
+  "- JSON com lista de achados vazia ≠ laudo inventado: compare com o ditado.",
+  "- O médico decide o que vai no corpo e o que vai na conclusão. Um achado",
+  "  presente no corpo e ausente na conclusão (ou vice-versa) NÃO é issue.",
+  "- Frases de normalidade padrão da categoria (estruturas não citadas",
+  "  descritas como normais) são esperadas — não são achado_inventado.",
   "",
   "Detecte e reporte (sem reescrever) os seguintes tipos de issue:",
   "- medida_divergente, lateralidade_divergente, achado_omitido, achado_inventado,",
@@ -36,18 +47,24 @@ const SANITY_SYSTEM_PROMPT = [
   "- warning: pelo menos um warning, sem critical",
   "- critical: pelo menos um critical → o laudo NÃO deve ser entregue sem revisão",
   "",
-  "Retorne JSON estrito conforme o schema. NÃO sugira correções.",
+  "Na dúvida entre reportar ou não, NÃO reporte: falso alarme treina o médico",
+  "a ignorar o card. Retorne JSON estrito conforme o schema. NÃO sugira correções.",
 ].join("\n");
 
 export async function runSanityCheck(args: {
   findings: StructuredFindings;
   finalText: string;
+  /** Texto cru ditado/digitado pelo médico — fonte de verdade primária. */
+  rawInput?: string;
   signal?: AbortSignal;
 }): Promise<{ result: SanityResult; latencyMs: number }> {
   const t0 = Date.now();
 
   const userPrompt = [
-    "## ACHADOS ESTRUTURADOS",
+    "## DITADO DO MÉDICO (fonte de verdade)",
+    args.rawInput?.trim() || "(não disponível — use apenas o JSON auxiliar)",
+    "",
+    "## ACHADOS ESTRUTURADOS (auxiliar — pode estar incompleto)",
     "```json",
     JSON.stringify(args.findings, null, 2),
     "```",
