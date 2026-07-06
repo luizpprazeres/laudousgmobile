@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { Sheet } from "@/ui/Sheet";
 import { FONT, RADIUS, SPACING, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
@@ -34,11 +35,15 @@ export function ImageAnalysisSheet({
   onClose,
   categoryId,
   onInsert,
+  sharedUris,
 }: {
   open: boolean;
   onClose: () => void;
   categoryId: string;
   onInsert: (text: string) => void;
+  /** Imagens vindas do share do sistema (WhatsApp/galeria → LaudoUSG).
+   *  Quando presentes, são carregadas automaticamente ao abrir. */
+  sharedUris?: string[];
 }) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
@@ -48,6 +53,47 @@ export function ImageAnalysisSheet({
   const [error, setError] = useState<string | null>(null);
 
   const supported = canAnalyzeCategory(categoryId);
+
+  // Carrega as imagens compartilhadas (share intent) quando o sheet abre.
+  // Lê o arquivo do cache como base64 — mesma validação de tamanho do picker.
+  useEffect(() => {
+    if (!open || !sharedUris || sharedUris.length === 0) return;
+    let alive = true;
+    (async () => {
+      const picked: Picked[] = [];
+      let rejected = 0;
+      for (const raw of sharedUris.slice(0, MAX_IMAGES)) {
+        const uri = raw.startsWith("file://") || raw.startsWith("content://")
+          ? raw
+          : `file://${raw}`;
+        try {
+          const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          if (base64.length > MAX_BASE64_BYTES) {
+            rejected++;
+            continue;
+          }
+          picked.push({ uri, base64 });
+        } catch {
+          rejected++;
+        }
+      }
+      if (!alive) return;
+      if (rejected > 0) {
+        setError(
+          rejected === 1
+            ? "1 imagem compartilhada não pôde ser usada (muito grande ou ilegível)."
+            : `${rejected} imagens compartilhadas não puderam ser usadas.`,
+        );
+      }
+      setImages((prev) => [...prev, ...picked].slice(0, MAX_IMAGES));
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sharedUris]);
 
   // Limite do backend: ~5 MB por imagem (~7 MB em base64). Validar ANTES de
   // subir — sem isso o médico espera minutos para tomar 413 (review Dex1).

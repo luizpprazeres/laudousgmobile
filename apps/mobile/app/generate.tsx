@@ -74,6 +74,7 @@ import {
   stripReviewMarkers,
 } from "@/features/generate/reviewMarkers";
 import { SHORT_MEDICAL_DISCLAIMER } from "@/legal/documents";
+import { useShareIntentContext } from "expo-share-intent";
 import { FeedbackCard } from "@/features/feedback/FeedbackCard";
 import { ImageAnalysisSheet } from "@/features/imaging/ImageAnalysisSheet";
 
@@ -103,6 +104,24 @@ export default function GenerateScreen() {
   const [calcSheet, setCalcSheet] = useState<CalcKey | null>(null);
   const [salaOpen, setSalaOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
+  // Imagens vindas do "Compartilhar → LaudoUSG" (WhatsApp/galeria) — abrem
+  // a análise de USG automaticamente (B4 06/07).
+  const [sharedImageUris, setSharedImageUris] = useState<string[] | null>(null);
+  const { hasShareIntent, shareIntent, resetShareIntent } =
+    useShareIntentContext();
+
+  useEffect(() => {
+    if (!hasShareIntent) return;
+    const uris = (shareIntent?.files ?? [])
+      .filter((f) => f.mimeType?.startsWith("image/"))
+      .map((f) => f.path)
+      .filter(Boolean) as string[];
+    resetShareIntent();
+    if (uris.length === 0) return;
+    setSharedImageUris(uris);
+    setImageOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasShareIntent]);
   // Mock OFF por default — antes era "happy" em DEV mas isso fazia toda
   // geração cair no /api/generate/mock, que retorna PELVE_FEMININA fixo
   // e não persiste no DB (laudo sumia do histórico). FAB DEV abaixo ainda
@@ -747,9 +766,13 @@ export default function GenerateScreen() {
       />
       <ImageAnalysisSheet
         open={imageOpen}
-        onClose={() => setImageOpen(false)}
+        onClose={() => {
+          setImageOpen(false);
+          setSharedImageUris(null); // share consumido — próximo abre limpo
+        }}
         categoryId={cat.id}
         onInsert={(block) => dispatch({ type: "APPEND_TEXT", text: block })}
+        sharedUris={sharedImageUris ?? undefined}
       />
 
       <SalaPairingSheet

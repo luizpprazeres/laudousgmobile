@@ -19,6 +19,7 @@ import {
 } from "@expo-google-fonts/barlow";
 import * as QuickActions from "expo-quick-actions";
 import { useQuickActionRouting, type RouterAction } from "expo-quick-actions/router";
+import { ShareIntentProvider } from "expo-share-intent";
 import { darkTokens, lightTokens } from "@/ui/tokens";
 import { BrandSplash } from "@/ui/BrandSplash";
 import { LegalGate } from "@/features/legal/LegalGate";
@@ -56,13 +57,17 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <ThemedRoot />
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    // ShareIntentProvider precisa envolver o router para o share do
+    // WhatsApp/galeria chegar via useShareIntentContext (B4 06/07).
+    <ShareIntentProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <ThemedRoot />
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ShareIntentProvider>
   );
 }
 
