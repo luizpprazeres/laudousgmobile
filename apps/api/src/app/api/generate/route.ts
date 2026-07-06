@@ -8,19 +8,13 @@ import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
 import { loadDeterministicBundle } from "@/server/pipeline/bundleLoader";
 import { resolveMorfologicoCategory } from "@/server/pipeline/morfologicoRouteSelection";
-import { normalizeCategoryCode, resolveCervicometriaCategory } from "@/server/pipeline/categoryNormalization";
+import { normalizeCategoryCode } from "@/server/pipeline/categoryNormalization";
 import {
   extractDopplerData,
-  deriveUmbilicalSafety,
   applyDopplerOverlay,
   correctDopplerConclusion,
-  mergeIgConclusionItems,
-  flagGemelarHallucination,
 } from "@/server/pipeline/dopplerOverlay";
 import { ensurePesoFetalConclusion } from "@/server/pipeline/pesoFetalGuard";
-import { applyCommandInterpreter } from "@/server/pipeline/commandInterpreter";
-import { parseCommandsPregen } from "@/server/pipeline/commandStripper";
-import { applyOperations } from "@/server/pipeline/operations";
 import { applyVolumePolicy } from "@/server/pipeline/volumeGuard";
 import { applyDsmPolicy } from "@/server/pipeline/dsmGuard";
 import { applyCommandGuard } from "@/server/pipeline/commandGuard";
@@ -28,11 +22,9 @@ import { applyCommandOperations } from "@/server/pipeline/commandOperations";
 import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionItemsGuard";
 import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
 import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
-import { dedupReferenciaFrase } from "@/server/pipeline/referenciaDedupeGuard";
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import {
   enforceStatedAmnioticClass,
-  enforceAmnioticMeasureType,
   ensureAmnioticConclusionLine,
 } from "@/server/pipeline/amnioticFluidGuard";
 import { stripSpuriousMagnitudeFlags } from "@/server/pipeline/magnitudeGuard";
@@ -137,16 +129,8 @@ function resolveEffectiveCategory(
       `[generate ${reportId}] category_override: ${detectedCategory} -> ${morf.category} (reason=${morf.reason})`,
     );
   }
-  // Override CERVICOMETRIA por texto bruto (gated por knownCodes) — pega ditados de
-  // "medida do colo" que o structurer classificaria como PELVE_FEMININA.
-  const cerv = resolveCervicometriaCategory(morf.category, rawText, knownCodes);
-  if (cerv.overridden) {
-    console.warn(
-      `[generate ${reportId}] category_override: ${morf.category} -> CERVICOMETRIA (reason=cervicometria_exam)`,
-    );
-  }
   const norm = normalizeCategoryCode(
-    cerv.category,
+    morf.category,
     knownCodes,
     rawText,
     categoryHint,
@@ -187,31 +171,6 @@ export async function POST(req: Request) {
   // FAST-PATH: o request pode pedir explicitamente; senão usa o default do
   // servidor (env FAST_PATH_DEFAULT, "true" = ligado pra todos). Revert via env.
   const fastPath = reqInput.fast_path ?? env().FAST_PATH_DEFAULT === "true";
-  // DET-6 FASE 3 (flag COMMAND_PREGEN): separa os comandos do ditado ANTES da
-  // geração — o writer/extração recebe `genText` (sem comando) e não ecoa; os
-  // comandos seguem sendo aplicados depois sobre o raw original. OFF = genText é o
-  // próprio ditado (byte-idêntico).
-  const effectiveInput =
-    reqInput.consolidated_transcript ?? reqInput.raw_input;
-  // FONTE ÚNICA: parseCommandsPregen identifica os comandos UMA vez → `clean` p/ a
-  // geração + `ops` p/ aplicar depois (mesma régua; o executor não re-introduz o
-  // ditado cru como item de conclusão — bug mama 88543eea). typedEngine só remove
-  // comentário/replace quando há aplicador tipado ligado p/ reaplicar (dex1).
-  const pregen =
-    env().COMMAND_PREGEN === "true"
-      ? parseCommandsPregen(effectiveInput, {
-          typedEngine:
-            env().COMMAND_OPERATIONS === "true" ||
-            env().COMMAND_INTERPRETER === "true",
-        })
-      : null;
-  const genText = pregen ? pregen.clean : effectiveInput;
-  // Aplica os comandos do médico: com PREGEN, os ops da régua única; senão o
-  // caminho legado (commandGuard/commandOperations) sobre o raw original.
-  const applyDoctorCommands = (laudo: string): string =>
-    pregen
-      ? applyOperations(laudo, pregen.ops).laudo
-      : applyConfiguredCommands(laudo, effectiveInput);
   const eventSurface = surfaceFromRequest(
     req,
     reqInput.source === "watch"
@@ -519,7 +478,7 @@ export async function POST(req: Request) {
           emit({ type: "structured", ts: nowIso(), payload: findings });
         } else {
         const structured = await runStructurer({
-          rawInput: genText,
+          rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
           categoryHint: reqInput.category_hint,
           knownCategories: [...categoriesInfo.codes],
           signal,
@@ -798,7 +757,7 @@ export async function POST(req: Request) {
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
-            rawInput: genText,
+            rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
             templateBody: rendererTemplateBody ?? "",
             signal,
             // DET-5 ONDA 2 — toggles resolvidos junto da variante (sem 2ª query).
@@ -819,8 +778,10 @@ export async function POST(req: Request) {
             categoryCode: effectiveCategory,
             categoryLabel:
               categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
-            // FAST-PATH: writer escreve direto do ditado (genText: sem comando se COMMAND_PREGEN).
-            rawUserMessage: fastPath ? genText : undefined,
+            // FAST-PATH: writer escreve direto do ditado cru (sem achados estruturados).
+            rawUserMessage: fastPath
+              ? reqInput.consolidated_transcript ?? reqInput.raw_input
+              : undefined,
             signal,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
@@ -836,7 +797,6 @@ export async function POST(req: Request) {
             inputTokens?: number;
             outputTokens?: number;
             cachedInputTokens?: number;
-            passthrough?: boolean;
           }
         | undefined;
       try {
@@ -871,7 +831,7 @@ export async function POST(req: Request) {
           writingStyleCode: styleRow.code,
           categoryCode: effectiveCategory,
           categoryLabel: categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
-          rawUserMessage: genText,
+          rawUserMessage: reqInput.consolidated_transcript ?? reqInput.raw_input,
           signal,
           onSystemMessage: (message) => {
             auditState.systemMessageFull = message;
@@ -908,12 +868,6 @@ export async function POST(req: Request) {
         finalText,
         reqInput.consolidated_transcript ?? reqInput.raw_input,
       );
-      // Boletim P0 #2: corrige MBV rotulado/classificado como ILA (falso
-      // oligoâmnio). MBV 2–8 normal; ILA 5–25 normal. Reclassifica pela medida.
-      finalText = enforceAmnioticMeasureType(
-        finalText,
-        reqInput.consolidated_transcript ?? reqInput.raw_input,
-      );
       // Remove flags "[REVISAR — magnitude]" espúrios em biometria dentro da
       // faixa fisiológica (LLM super-flagava valores normais a termo).
       finalText = stripSpuriousMagnitudeFlags(finalText);
@@ -934,7 +888,10 @@ export async function POST(req: Request) {
       // conclusão recomendar X", "recomende Y") entrem no laudo se o LLM ignorou.
       // Roda por último — comandos entram ao final da conclusão. Ver commandGuard.
       // DET-6: a flag COMMAND_OPERATIONS roteia pelo aplicador de operações.
-      finalText = applyDoctorCommands(finalText);
+      finalText = applyConfiguredCommands(
+        finalText,
+        reqInput.consolidated_transcript ?? reqInput.raw_input,
+      );
       // CERVICAL: (3) remove narração de observação vazada ("estou vendo...") que
       // o LLM transcreveu literal em vez de interpretar; (2) sugere o nível Robbins
       // de referência anatômica inequívoca (ângulo mandíbula→IB, supraclavicular→VB),
@@ -960,25 +917,12 @@ export async function POST(req: Request) {
       // DOPPLERVELOCIMETRIA + itens de conclusão a partir dos valores ditados,
       // seguindo o spec (umbilical/ACM manual, uterinas auto, perfil=1/RCP).
       // Roda APÓS a linha de líquido pra os itens Doppler virem na sequência.
-      // SEGURANÇA P0 (flag DOPPLER_UMBILICAL_SAFETY): o guard umbilical vale também
-      // no caminho writer/post-processor (dex1) — diástole zero/IP umbilical elevado
-      // NUNCA vira "IP normal na umbilical", independente de renderer/writer/fallback.
-      const dopplerDataGuarded = () => {
-        const d = extractDopplerData(dopplerInput);
-        return env().DOPPLER_UMBILICAL_SAFETY === "true"
-          ? deriveUmbilicalSafety(d, dopplerInput)
-          : d;
-      };
       if (effectiveCategory === "MORFOLOGICO" && /\bdoppler\b/i.test(dopplerInput)) {
-        finalText = applyDopplerOverlay(finalText, dopplerDataGuarded());
+        finalText = applyDopplerOverlay(finalText, extractDopplerData(dopplerInput));
       } else if (effectiveCategory === "DOPPLER_OBSTETRICO") {
         // Fix B (bug D2): a seção já vem do template; só corrige a conclusão
         // pra o vaso certo (umbilical/ACM manual, uterinas auto, perfil=1/RCP).
-        finalText = correctDopplerConclusion(finalText, dopplerDataGuarded());
-        // Boletim f715875c: combina IG biometria + IG referência num único item.
-        finalText = mergeIgConclusionItems(finalText);
-        // Boletim c53bbc1f: sinaliza gemelaridade alucinada (não ditada).
-        finalText = flagGemelarHallucination(finalText, dopplerInput);
+        finalText = correctDopplerConclusion(finalText, extractDopplerData(dopplerInput));
       }
       // Guard transversal: remove itens numerados de conclusão cujo conteúdo é
       // só placeholder ("____"). Preserva placeholders dentro de itens reais.
@@ -990,53 +934,26 @@ export async function POST(req: Request) {
       if (effectiveCategory === "MUSCULOESQUELETICO_V2") {
         finalText = normalizeSectionSpacing(finalText);
       }
-      } else if (!writerResult?.passthrough) {
+      } else {
         // RENDERER (DET-5): único guard que roda é o de COMANDOS do médico —
         // diretivas explícitas ("na conclusão recomendar X") precisam entrar
         // até o DET-6 tratar comandos como operações (review dex1). É
         // determinístico: não quebra a byte-stability (mesmo input → mesmo
         // comando → mesmo texto). DET-6: COMMAND_OPERATIONS roteia pelas ops.
-        // MSK passthrough NÃO entra: o texto é o laudo colado do médico — reparsear
-        // comandos dele ("Recomendar controle...") alteraria o próprio laudo (dex1).
-        finalText = applyDoctorCommands(finalText);
-      }
-      // DET-6 FASE 2 (flag COMMAND_INTERPRETER): interpretador de comandos por LLM
-      // — roda DEPOIS da fase 1 determinística, resolve âncora semântica + achado
-      // no corpo. Recebe o laudo (draft) como contexto. Falha graciosa (intocado).
-      // MSK passthrough NÃO entra: preserva o laudo colado do médico intacto (dex1).
-      if (!writerResult?.passthrough && env().COMMAND_INTERPRETER === "true") {
-        finalText = await applyCommandInterpreter(
+        finalText = applyConfiguredCommands(
           finalText,
           reqInput.consolidated_transcript ?? reqInput.raw_input,
-          signal,
         );
       }
-      // MSK passthrough: o texto é o laudo colado do médico — pular também os
-      // mutadores universais finais (sanitizeDictationArtifacts pode mexer em
-      // espaço/"vírgula"/despedida; flagImplausibleMeasures pode inserir [REVISAR]).
-      // Preserva o laudo intacto (review dex1).
-      if (!writerResult?.passthrough) {
-        // Guard de sanitização (universal): remove artefatos de ditado/ASR que
-        // vazaram para o texto clínico — "vírgula" falada, "Você vai escrever ...",
-        // "Item dos ovários:", despedidas. Preserva conteúdo + placeholders ____.
-        // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
-        finalText = sanitizeDictationArtifacts(finalText);
-        // Sanity de medidas: sinaliza [REVISAR] em valores fisiologicamente
-        // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
-        // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
-        finalText = flagImplausibleMeasures(finalText, {
-          // Check IG×CF (flag OBST_BIOMETRIA_DET): só sinaliza; o regex interno
-          // (label "(CF)" + "Gestação em torno de") já restringe ao obstétrico.
-          cfIgAware: env().OBST_BIOMETRIA_DET === "true",
-        });
-        // Dedup da frase de referência de IG (flag OBST_REF_DEDUP, boletim 04/07,
-        // caso 10813392): "Primeira ultrassonografia realizada…" só pode aparecer
-        // UMA vez — o comando "após o título acrescente…" fazia o interpretador
-        // re-inserir uma cópia nos comentários. Roda APÓS o commandInterpreter.
-        if (env().OBST_REF_DEDUP === "true") {
-          finalText = dedupReferenciaFrase(finalText);
-        }
-      }
+      // Guard de sanitização (universal): remove artefatos de ditado/ASR que
+      // vazaram para o texto clínico — "vírgula" falada, "Você vai escrever ...",
+      // "Item dos ovários:", despedidas. Preserva conteúdo + placeholders ____.
+      // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
+      finalText = sanitizeDictationArtifacts(finalText);
+      // Sanity de medidas: sinaliza [REVISAR] em valores fisiologicamente
+      // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
+      // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
+      finalText = flagImplausibleMeasures(finalText);
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
@@ -1071,6 +988,10 @@ export async function POST(req: Request) {
       const deterministicSanity = runDeterministicSanity({
         findings,
         finalText,
+        // Ditado cru como fonte de input — sem ele, achados vazios (fast-path
+        // e pipelines writer/renderer) geram falso "medida não encontrada" e
+        // falso critical de RADS (review adversarial 06/07).
+        rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
       });
       const deterministicOnlySanity =
         sanityResultFromDeterministic(deterministicSanity);
@@ -1117,6 +1038,10 @@ export async function POST(req: Request) {
         const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({
           findings,
           finalText,
+          // Ditado cru = fonte de verdade primária: evita falso "achado
+          // inventado" quando o structurer devolve achados vazios mas o
+          // writer gera direto do ditado (falso positivo Luiz 06/07).
+          rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
         });
         const sanity = mergeSanityResults(aiSanity, deterministicSanity);
         auditState.sanityDurationMs = sanityMs;
