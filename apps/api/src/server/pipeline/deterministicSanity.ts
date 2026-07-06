@@ -88,6 +88,11 @@ const STOPWORDS = new Set([
 export function runDeterministicSanity(args: {
   findings: StructuredFindings;
   finalText: string;
+  /** Ditado cru do médico — fonte de input adicional. Sem ele, pipelines
+   *  que geram direto do ditado (structurer devolve achados vazios) produzem
+   *  FALSOS positivos: "medida não encontrada nos achados estruturados" e
+   *  falso critical de RADS "inventado" (review adversarial 06/07). */
+  rawInput?: string;
 }): DeterministicSanityResult {
   const extracted = extractValues(args.finalText);
   const categorySpecific = runCategorySpecificSanity(
@@ -95,13 +100,14 @@ export function runDeterministicSanity(args: {
     extracted,
     args.finalText,
   );
+  const rawInput = args.rawInput ?? "";
   const issues: DeterministicIssue[] = [
-    ...checkMeasurements(args.findings, args.finalText),
+    ...checkMeasurements(args.findings, args.finalText, rawInput),
     ...checkLaterality(args.findings, args.finalText),
     ...checkDates(args.findings, args.finalText),
     ...checkCommands(args.findings, args.finalText),
     ...checkPlaceholders(args.finalText),
-    ...checkRadsClassifications(args.findings, args.finalText),
+    ...checkRadsClassifications(args.findings, args.finalText, rawInput),
     ...categorySpecific,
   ];
 
@@ -133,6 +139,7 @@ function sanityFlagToDeterministicIssue(flag: SanityFlag): DeterministicIssue {
 function checkMeasurements(
   findings: StructuredFindings,
   finalText: string,
+  rawInput = "",
 ): DeterministicIssue[] {
   const issues: DeterministicIssue[] = [];
   const findingMeasures = flatten(findings.achados).flatMap((entry) =>
@@ -141,6 +148,11 @@ function checkMeasurements(
   const textMeasures = extractMeasurements(finalText);
   const textMeasureSet = new Set(textMeasures.map((m) => m.normalized));
   const findingMeasureSet = new Set(findingMeasures.map((m) => m.normalized));
+  // Medidas presentes no DITADO também são input legítimo — evita falso
+  // "medida não encontrada nos achados" quando o structurer veio vazio.
+  for (const m of extractMeasurements(rawInput)) {
+    findingMeasureSet.add(m.normalized);
+  }
 
   for (const measure of uniqueBy(findingMeasures, (m) => `${m.path}:${m.normalized}`)) {
     if (!textMeasureSet.has(measure.normalized)) {
@@ -269,10 +281,11 @@ function checkCommands(
 function checkRadsClassifications(
   findings: StructuredFindings,
   finalText: string,
+  rawInput = "",
 ): DeterministicIssue[] {
   const issues: DeterministicIssue[] = [];
 
-  const inputSources: string[] = [];
+  const inputSources: string[] = [rawInput];
   for (const cmd of findings.comandos_do_medico) {
     inputSources.push(cmd.texto);
     if (cmd.trecho_original) inputSources.push(cmd.trecho_original);

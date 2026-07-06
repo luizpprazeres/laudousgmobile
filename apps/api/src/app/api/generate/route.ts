@@ -988,6 +988,10 @@ export async function POST(req: Request) {
       const deterministicSanity = runDeterministicSanity({
         findings,
         finalText,
+        // Ditado cru como fonte de input — sem ele, achados vazios (fast-path
+        // e pipelines writer/renderer) geram falso "medida não encontrada" e
+        // falso critical de RADS (review adversarial 06/07).
+        rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
       });
       const deterministicOnlySanity =
         sanityResultFromDeterministic(deterministicSanity);

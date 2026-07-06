@@ -31,6 +31,10 @@ const SANITY_SYSTEM_PROMPT = [
   "  presente no corpo e ausente na conclusão (ou vice-versa) NÃO é issue.",
   "- Frases de normalidade padrão da categoria (estruturas não citadas",
   "  descritas como normais) são esperadas — não são achado_inventado.",
+  "- Meta-instruções do médico no ditado (\"use o modelo X\", \"pula a linha\")",
+  "  não são achados clínicos. Correções/retratações no meio do ditado",
+  "  (\"não, apaga isso\") valem pela versão FINAL — conteúdo retirado de",
+  "  propósito não é achado_omitido.",
   "",
   "Detecte e reporte (sem reescrever) os seguintes tipos de issue:",
   "- medida_divergente, lateralidade_divergente, achado_omitido, achado_inventado,",
@@ -60,9 +64,12 @@ export async function runSanityCheck(args: {
 }): Promise<{ result: SanityResult; latencyMs: number }> {
   const t0 = Date.now();
 
+  // Teto no ditado: transcript multi-turn longo infla o prompt sem ganho.
+  const rawTrimmed = (args.rawInput ?? "").trim().slice(0, 10_000);
+
   const userPrompt = [
     "## DITADO DO MÉDICO (fonte de verdade)",
-    args.rawInput?.trim() || "(não disponível — use apenas o JSON auxiliar)",
+    rawTrimmed || "(não disponível — use apenas o JSON auxiliar)",
     "",
     "## ACHADOS ESTRUTURADOS (auxiliar — pode estar incompleto)",
     "```json",
