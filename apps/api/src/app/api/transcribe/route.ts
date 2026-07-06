@@ -14,11 +14,15 @@ const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL ?? "whisper-1";
 
 // Whisper NÃO segue instruções no prompt — ele imita o ESTILO do texto
-// (cookbook oficial). Então o prompt é um trecho de ditado-exemplo com o
-// vocabulário da casa e o estilo de medida/pontuação que queremos.
+// (cookbook oficial). GOTCHA descoberto em produção 05/07: prompt com
+// FRASES COMPLETAS de laudo era ECOADO pelo modelo em áudio silencioso
+// ("Tireoide com nódulo isoecogênico" repetido no app do Luiz). Por isso:
+// (1) o prompt é um GLOSSÁRIO de termos (echo vira lista distinta, fácil
+// de detectar), e (2) stripPromptEcho() remove qualquer trecho longo do
+// transcript que seja cópia literal do prompt.
 // Limite: 224 tokens (whisper-1 ignora silenciosamente o excedente).
 const MEDICAL_STYLE_PROMPT =
-  "Fígado com esteatose hepática leve, hepatomegalia discreta. Vesícula biliar com colelitíase, sem colecistite. Litíase renal à direita, cálculo no terço médio do ureter, hidronefrose leve, pelve renal e cálices preservados. Nódulo hipoecoico, sólido, medindo 1,8 x 1,2 cm, com sombra acústica posterior e reforço acústico. Ecogenicidade e ecotextura preservadas. Útero em anteversoflexão, miométrio homogêneo, endométrio medindo 0,8 cm, ovários e anexos sem alterações. Tireoide com nódulo isoecogênico, TI-RADS 3. Mama com BI-RADS 2. Próstata, testículos e bolsa escrotal sem alterações. Linfonodos de aspecto habitual. Doppler colorido com índice de resistividade normal, artéria umbilical, MMII, veia safena magna sem refluxo, sem trombose venosa profunda, bilateral, à direita, à esquerda.";
+  "Glossário: esteatose hepática, hepatomegalia, colelitíase, colecistite, litíase renal, hidronefrose, pelve renal, cálices, ureter, hipoecoico, hiperecoico, isoecogênico, anecoico, ecogenicidade, ecotextura, sombra acústica posterior, reforço acústico, anteversoflexão, miométrio, endométrio, ovários, anexos, tireoide, TI-RADS, BI-RADS, FIGO, próstata, testículos, bolsa escrotal, linfonodos, Doppler colorido, índice de resistividade, artéria umbilical, MMII, veia safena magna, refluxo, trombose venosa profunda, medindo 1,8 x 1,2 cm, bilateral, à direita, à esquerda.";
 
 // Alucinações conhecidas do Whisper em trechos de silêncio (viés do corpus
 // de legendas de vídeo — gh openai/whisper#928). Nunca fariam parte de um
@@ -34,12 +38,53 @@ const ASR_HALLUCINATION_PATTERNS: RegExp[] = [
   /at[ée]\s+o\s+pr[óo]ximo\s+v[íi]deo\w*/gi,
 ];
 
+// Normaliza para comparação de echo: minúsculas, sem acentos, espaço único.
+function normalizeForEcho(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const PROMPT_NORMALIZED = normalizeForEcho(MEDICAL_STYLE_PROMPT);
+
+// Remove (a) frases que são cópia literal do prompt (echo em silêncio) e
+// (b) repetições consecutivas da mesma frase (loop clássico do Whisper).
+// Limiares conservadores: ditado real curto ("esteatose hepática") tem <25
+// chars e NÃO é removido; echo real vem em sequências longas.
+function stripPromptEchoAndLoops(text: string): {
+  clean: string;
+  removed: number;
+} {
+  const sentences = text.split(/(?<=[.!?])\s+|\n+/);
+  const kept: string[] = [];
+  let removed = 0;
+  let prevNorm = "";
+  for (const sentence of sentences) {
+    const norm = normalizeForEcho(sentence.replace(/[.!?]+$/, ""));
+    if (norm.length >= 25 && PROMPT_NORMALIZED.includes(norm)) {
+      removed++; // echo literal do prompt
+      continue;
+    }
+    if (norm.length >= 15 && norm === prevNorm) {
+      removed++; // frase idêntica consecutiva = loop
+      continue;
+    }
+    prevNorm = norm;
+    kept.push(sentence);
+  }
+  return { clean: kept.join(" ").trim(), removed };
+}
+
 function stripAsrHallucinations(text: string): {
   clean: string;
   removed: number;
 } {
-  let removed = 0;
-  let clean = text;
+  const echo = stripPromptEchoAndLoops(text);
+  let removed = echo.removed;
+  let clean = echo.clean;
   for (const pattern of ASR_HALLUCINATION_PATTERNS) {
     clean = clean.replace(pattern, () => {
       removed++;
