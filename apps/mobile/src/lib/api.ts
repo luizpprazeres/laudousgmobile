@@ -56,6 +56,13 @@ const AnalyticsResponseSchema = z.object({
   total_reports: z.number().int(),
   reports_last_7d: z.number().int(),
   reports_last_30d: z.number().int(),
+  // Opcionais: toleram backend anterior ao deploy de 06/07 (produção diária
+  // no fuso do médico + top de patologias das conclusões).
+  reports_today: z.number().int().optional(),
+  reports_yesterday: z.number().int().optional(),
+  top_pathologies: z
+    .array(z.object({ label: z.string(), count: z.number().int() }))
+    .optional(),
   avg_latency_ms: z.number().int().nullable(),
   top_categories: z.array(
     z.object({
