@@ -38,12 +38,16 @@ const ASR_HALLUCINATION_PATTERNS: RegExp[] = [
   /at[ée]\s+o\s+pr[óo]ximo\s+v[íi]deo\w*/gi,
 ];
 
-// Normaliza para comparação de echo: minúsculas, sem acentos, espaço único.
+// Normaliza para comparação de echo: minúsculas, sem acentos, espaço único
+// e NÚMEROS viram "#" — o modelo ecoa o prompt VARIANDO os dígitos (caso
+// real 06/07: glossário "medindo 1,8 x 1,2 cm" ecoado como "medindo 18 x
+// 12 cm"), então o match precisa ser cego a números.
 function normalizeForEcho(s: string): string {
   return s
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
+    .replace(/[0-9]+([.,][0-9]+)?/g, "#")
     .replace(/\s+/g, " ")
     .trim();
 }
