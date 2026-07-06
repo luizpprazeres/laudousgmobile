@@ -728,7 +728,7 @@ export default function GenerateScreen() {
       {transcribing ? (
         <RecordingOverlay
           mode="transcribing"
-          transcript="Transcrevendo seu áudio com Whisper…"
+          transcript="Transcrevendo seu áudio…"
           showCursor={false}
         />
       ) : null}
