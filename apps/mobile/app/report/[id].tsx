@@ -513,7 +513,8 @@ function makeStyles(t: ColorTokens) {
       color: t.text,
       fontSize: 12,
       lineHeight: 18,
-      fontFamily: "Menlo",
+      // Menlo só existe no iOS; no Android o nome genérico resolve monospace.
+      fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),
     },
     emptyText: {
       color: t.textSec,
