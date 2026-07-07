@@ -4,24 +4,10 @@ import { Stack } from "expo-router";
 import { SystemBars } from "react-native-edge-to-edge";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  useFonts as useInter,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_900Black,
-} from "@expo-google-fonts/inter";
-import {
-  useFonts as useBarlow,
-  Barlow_700Bold,
-  Barlow_800ExtraBold,
-} from "@expo-google-fonts/barlow";
 import * as QuickActions from "expo-quick-actions";
 import { useQuickActionRouting, type RouterAction } from "expo-quick-actions/router";
 import { ShareIntentProvider } from "expo-share-intent";
 import { darkTokens, lightTokens } from "@/ui/tokens";
-import { BrandSplash } from "@/ui/BrandSplash";
 import { LegalGate } from "@/features/legal/LegalGate";
 import { ThemeProvider, useTheme } from "@/ui/ThemeProvider";
 
@@ -30,31 +16,16 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 });
 
 export default function RootLayout() {
-  const [interLoaded] = useInter({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_900Black,
-  });
-  const [barlowLoaded] = useBarlow({
-    Barlow_700Bold,
-    Barlow_800ExtraBold,
-  });
-
-  const ready = interLoaded && barlowLoaded;
-
+  // Fontes agora são EMBUTIDAS NATIVAMENTE (config plugin do expo-font em
+  // app.json) — disponíveis desde o frame 0, sem loadAsync e sem gate.
+  // CAUSA RAIZ do incidente v10 (06/07): os .ttf carregados em runtime via
+  // @expo-google-fonts NÃO eram embarcados nos AABs (só no APK universal);
+  // instalando pela Play (splits), useFonts nunca resolvia e o app ficava
+  // PRESO NA SPLASH para sempre. Fontes nativas eliminam a classe inteira
+  // do problema (e o boot fica mais rápido).
   useEffect(() => {
-    if (ready) SplashScreen.hideAsync().catch(() => undefined);
-  }, [ready]);
-
-  if (!ready) {
-    // Fontes ainda carregando — mostra o splash visual com o logo da marca,
-    // continuidade visual com o splash nativo (expo.splash em app.json).
-    // Não mostra spinner aqui: a carga de fontes é rápida e o spinner causa
-    // flicker. O spinner fica para o gate de auth (app/index.tsx).
-    return <BrandSplash showSpinner={false} />;
-  }
+    SplashScreen.hideAsync().catch(() => undefined);
+  }, []);
 
   return (
     // ShareIntentProvider precisa envolver o router para o share do
