@@ -123,6 +123,18 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
     issues: z.array(SanityResultSchema.shape.issues.element),
     severity: z.enum(["warning", "blocker"]),
   }),
+  // Esquema visual (cartografia) — entregue APÓS o "done", só o DESENHO (o texto
+  // do laudo vem no "done"/writer). Atrás da flag VENOUS_SCHEME_MAP (server).
+  // Aditivo: clientes que não tratam ignoram. `map` = MapaVenoso
+  // (@laudousg/schemes) — o cliente faz o cast/validação; shared não depende do
+  // pacote de esquemas. `asset_version` versiona a arte-base usada no render.
+  z.object({
+    ...Base,
+    type: z.literal("scheme"),
+    exam_type: z.string(),
+    asset_version: z.string(),
+    map: z.unknown(),
+  }),
   z.object({
     ...Base,
     type: z.literal("done"),
