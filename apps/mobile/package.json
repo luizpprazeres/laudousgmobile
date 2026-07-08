@@ -15,10 +15,11 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
-    "@laudousg/schemes": "workspace:*",
     "@expo/metro-runtime": "~4.0.1",
+    "@laudousg/schemes": "workspace:*",
     "@opentelemetry/api": "^1.9.1",
     "@react-native-async-storage/async-storage": "1.23.1",
+    "@shopify/react-native-skia": "1.5.0",
     "@supabase/supabase-js": "^2.47.10",
     "expo": "~52.0.20",
     "expo-av": "~15.0.1",

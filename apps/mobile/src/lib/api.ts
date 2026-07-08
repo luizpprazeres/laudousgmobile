@@ -227,6 +227,31 @@ export async function pushReportToSala(reportId: string): Promise<void> {
   }
 }
 
+export type PushSchemaToSalaInput = {
+  reportId?: string | null;
+  examType: string;
+  examLabel: string;
+  png: string;
+  pdf?: string | null;
+};
+
+export async function pushSchemaToSala(
+  input: PushSchemaToSalaInput,
+): Promise<{ ok: boolean; replaced: boolean }> {
+  const res = await authedFetch("/api/sala/push-schema", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  return (await readJsonOrThrow(res, "enviar esquema pra sala")) as {
+    ok: boolean;
+    replaced: boolean;
+  };
+}
+
 export async function updateReportFinalOutput(
   reportId: string,
   finalOutput: string,

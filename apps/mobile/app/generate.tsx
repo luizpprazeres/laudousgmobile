@@ -80,6 +80,7 @@ import { SHORT_MEDICAL_DISCLAIMER } from "@/legal/documents";
 import { useShareIntentContext } from "expo-share-intent";
 import { FeedbackCard } from "@/features/feedback/FeedbackCard";
 import { ImageAnalysisSheet } from "@/features/imaging/ImageAnalysisSheet";
+import { VenousSchemeView } from "@/features/generate/VenousSchemeView";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -1273,6 +1274,10 @@ function LaudoBody({
         state.sanity.issues.length > 0 &&
         state.sanity.verdict !== "ok" ? (
           <SanityCard sanity={state.sanity} styles={styles} />
+        ) : null}
+
+        {state.kind === "done" && state.venousMap ? (
+          <VenousSchemeView map={state.venousMap} reportId={state.reportId} />
         ) : null}
 
         {state.kind === "done" && text ? (
