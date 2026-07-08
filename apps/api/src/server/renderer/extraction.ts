@@ -6,6 +6,11 @@ import {
   type AbdomenTotalFindings,
 } from "./findingsSchemas/ABDOMEN_TOTAL";
 import {
+  DOPPLER_VENOSO_MMII_FINDINGS_JSON_SCHEMA,
+  DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT,
+  VenosoMMIIFindingsSchema,
+} from "./findingsSchemas/DOPPLER_VENOSO_MMII";
+import {
   OBSTETRICA_JSON_SCHEMA,
   OBSTETRICA_EXTRACTION_PROMPT,
   ObstetricaFindingsSchema,
@@ -265,6 +270,15 @@ export const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: PROSTATA_SUPRAPUBICA_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: PROSTATA_SUPRAPUBICA_EXTRACTION_PROMPT,
     parse: (raw) => ProstataSuprapubicaFindingsSchema.parse(raw),
+  },
+  // Fundação do eixo vascular: schema estruturado por-segmento. DORMENTE — só
+  // ativa quando houver renderer vascular E a categoria entrar em
+  // RENDERER_CATEGORIES (env). Sem renderer/template, o route cai no writer.
+  DOPPLER_VENOSO_MMII: {
+    schemaName: "VenosoMMIIFindings",
+    jsonSchema: DOPPLER_VENOSO_MMII_FINDINGS_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT,
+    parse: (raw) => VenosoMMIIFindingsSchema.parse(raw),
   },
 };
 
