@@ -62,6 +62,19 @@ type SalaSchema = {
 
 type ActiveMainTab = "report" | "schemas";
 
+/**
+ * Esquemas visuais (`sala_schemas.exam_type`) que pertencem a cada categoria de
+ * laudo. A listagem no banco é por médico (`user_id`), sem vínculo com a
+ * categoria exibida — este mapa evita o vazamento (ex.: MIOMAS aparecendo num
+ * laudo de MAMA/TIREOIDE). Categoria sem entrada → nenhum esquema (estrito, para
+ * não reabrir o vazamento). Novo `exam_type` do app precisa entrar aqui.
+ */
+const SCHEMA_EXAM_TYPES_BY_CATEGORY: Record<string, string[]> = {
+  MAMARIA: ["MAMA"],
+  TIREOIDE: ["TIREOIDE"],
+  PELVE_FEMININA: ["MIOMAS"],
+};
+
 const POLL_INTERVAL_MS = 3000;
 
 const A4_PAGE_WIDTH_PX = 794;
@@ -500,6 +513,15 @@ export default function SalaTokenPage() {
   const isViewingPast = selectedReportId !== null && selectedReportId !== latestReport?.id;
   const displayReport: SalaReport | null = isViewingPast ? selectedReport : latestReport;
   const activeId = displayReport?.id ?? latestReport?.id ?? null;
+  // Filtra os esquemas visuais pela categoria do laudo em exibição (a lista vem
+  // por médico, sem vínculo com a categoria). Sem isso, o esquema do útero/miomas
+  // aparecia em todos os exames (mama, tireoide, etc.).
+  const visibleSchemas = useMemo(() => {
+    const cat = displayReport?.category ?? "";
+    const allowed = SCHEMA_EXAM_TYPES_BY_CATEGORY[cat];
+    if (!allowed) return [] as SalaSchema[];
+    return schemas.filter((s) => allowed.includes(s.examType));
+  }, [schemas, displayReport?.category]);
   const status: "loading" | "invalid" | "waiting" | "live" = loading
     ? "loading"
     : !tokenValid
@@ -511,10 +533,10 @@ export default function SalaTokenPage() {
           : "live";
 
   useEffect(() => {
-    if (schemas.length === 0 && activeMainTab === "schemas") {
+    if (visibleSchemas.length === 0 && activeMainTab === "schemas") {
       setActiveMainTab("report");
     }
-  }, [activeMainTab, schemas.length]);
+  }, [activeMainTab, visibleSchemas.length]);
 
   useEffect(() => {
     function isTypingTarget(target: EventTarget | null): boolean {
@@ -688,7 +710,7 @@ export default function SalaTokenPage() {
         motivationalQuote={motivationalQuote}
         shortcutsOpen={shortcutsOpen}
         noteInputRef={noteInputRef}
-        schemas={schemas}
+        schemas={visibleSchemas}
         activeMainTab={activeMainTab}
         salaToken={token}
         onToggleTheme={toggleTheme}
