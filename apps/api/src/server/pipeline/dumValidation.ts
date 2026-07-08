@@ -27,9 +27,12 @@ export function stripInvalidDumLines(text: string): string {
   return text
     .split("\n")
     .filter((line) => {
-      const m = /^DUM:\s*(.+?)\.?\s*$/i.exec(line);
-      if (!m) return true; // não é linha DUM → mantém
-      return isValidDum(m[1]); // linha DUM → mantém só se válida
+      // Só age em linhas "DUM: <token-único>." — um valor sem espaços (null,
+      // data impossível, IG roteada). Linhas com conteúdo extra na mesma linha
+      // (ex.: "DUM: 01/01/2026. Hoje com 10 semanas...") NÃO casam e são mantidas.
+      const m = /^DUM:\s*([^\s.]+)\.?\s*$/i.exec(line);
+      if (!m) return true; // não é linha DUM isolada → mantém
+      return isValidDum(m[1]); // linha DUM isolada → mantém só se data válida
     })
     .join("\n");
 }
