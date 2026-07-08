@@ -1,6 +1,5 @@
 import type { MapaVenoso, EstadoSegmento } from "./venousMap";
-import type { SegmentoVenoso, LadoVenoso } from "../findingsSchemas/DOPPLER_VENOSO_MMII";
-import { NOME_SEGMENTO } from "./venousMap";
+import type { SegmentoVenoso, LadoVenoso } from "./findings";
 
 /**
  * Motor de composição do ESQUEMA VISUAL venoso (SVG vetorial, server-side).
@@ -214,4 +213,3 @@ export function renderVenousSvg(opts: RenderVenousSvgOpts): string {
   return out.join("");
 }
 
-export { NOME_SEGMENTO };

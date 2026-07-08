@@ -9,7 +9,7 @@ import {
   DOPPLER_VENOSO_MMII_FINDINGS_JSON_SCHEMA,
   DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT,
   VenosoMMIIFindingsSchema,
-} from "./findingsSchemas/DOPPLER_VENOSO_MMII";
+} from "@laudousg/schemes/vascular";
 import {
   OBSTETRICA_JSON_SCHEMA,
   OBSTETRICA_EXTRACTION_PROMPT,

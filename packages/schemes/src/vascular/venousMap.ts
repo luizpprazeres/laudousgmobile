@@ -3,7 +3,7 @@ import type {
   SegmentoVenoso,
   LadoVenoso,
   SegmentoVenosoFinding,
-} from "../findingsSchemas/DOPPLER_VENOSO_MMII";
+} from "./findings";
 
 /**
  * Ponte determinística: achados estruturados (DOPPLER_VENOSO_MMII) → `MapaVenoso`,

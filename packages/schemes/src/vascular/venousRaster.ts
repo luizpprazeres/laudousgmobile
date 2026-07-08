@@ -1,6 +1,6 @@
 import type { MapaVenoso, EstadoSegmento } from "./venousMap";
 import type { Ponto } from "./venousSvg";
-import type { LadoVenoso } from "../findingsSchemas/DOPPLER_VENOSO_MMII";
+import type { LadoVenoso } from "./findings";
 
 /**
  * Coordenadas dos segmentos traçadas sobre a arte-base, aninhadas por lado
