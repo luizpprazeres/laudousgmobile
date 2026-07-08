@@ -93,6 +93,17 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
     type: z.literal("sanity"),
     result: SanityResultSchema,
   }),
+  // Esquema visual (cartografia venosa) — entregue APÓS o "done", só o DESENHO
+  // (texto do laudo vem no "done"/writer). Atrás da flag VENOUS_SCHEME_MAP no
+  // server. Aditivo: se não tratarmos, é ignorado. `map` = MapaVenoso
+  // (@laudousg/schemes); tipado como unknown aqui (o consumidor faz o cast).
+  z.object({
+    ...Base,
+    type: z.literal("scheme"),
+    exam_type: z.string(),
+    asset_version: z.string(),
+    map: z.unknown(),
+  }),
   z.object({
     ...Base,
     type: z.literal("done"),

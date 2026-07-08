@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
+    "@laudousg/schemes": "workspace:*",
     "@expo/metro-runtime": "~4.0.1",
     "@opentelemetry/api": "^1.9.1",
     "@react-native-async-storage/async-storage": "1.23.1",

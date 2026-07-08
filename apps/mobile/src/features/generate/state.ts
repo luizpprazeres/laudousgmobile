@@ -4,6 +4,7 @@ import type {
   ClarifyQuestion,
   SanityResult,
 } from "@/shared";
+import type { MapaVenoso } from "@laudousg/schemes";
 
 /**
  * Máquina de estado da tela Generate.
@@ -40,6 +41,9 @@ export type GenerateState =
       finalText: string;
       structured?: StructuredFindings;
       sanity?: SanityResult;
+      // Esquema visual venoso (cartografia) — chega no evento SSE "scheme" APÓS
+      // o done. Só o DESENHO; o texto do laudo é o finalText (writer).
+      venousMap?: MapaVenoso;
     }
   | { kind: "error"; text: string; message: string };
 
@@ -149,6 +153,8 @@ function applySse(
   // aceita sanity também no done, senão o card nunca aparece (review Dex1).
   if (state.kind === "done") {
     if (ev.type === "sanity") return { ...state, sanity: ev.result };
+    if (ev.type === "scheme")
+      return { ...state, venousMap: ev.map as MapaVenoso };
     return state;
   }
   if (state.kind !== "generating") return state;
@@ -201,6 +207,10 @@ function applySse(
     case "sanity":
       // Guarda o resultado pro card "N pontos a revisar" no done (paridade iOS).
       return { ...state, sanity: ev.result };
+    case "scheme":
+      // scheme chega APÓS o done (tratado no bloco kind==="done"); em
+      // "generating" é inesperado → no-op.
+      return state;
     case "validator":
     case "heartbeat":
     case "warning":
