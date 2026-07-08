@@ -3,3 +3,4 @@ export * from "./findings";
 export * from "./venousMap";
 export * from "./venousRaster";
 export * from "./venousSvg";
+export * from "./venousAnteriorCoords";
