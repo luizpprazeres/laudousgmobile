@@ -681,10 +681,12 @@ export async function* runRendererStream(args: {
     if (x.conclusao) conclusaoItens.push(x.conclusao);
   }
 
-  // 5. Conclusão por construção (regra curada de fechamento).
+  // 5. Conclusão por construção (regra curada de fechamento). Item único
+  // (caso todos-normais) sai sem numeração — numera-se apenas com 2+ itens,
+  // como nas demais categorias.
   const conclusao =
     conclusaoItens.length === 0
-      ? `1. ${CONCLUSAO_TODOS_NORMAIS}`
+      ? CONCLUSAO_TODOS_NORMAIS
       : [...conclusaoItens, CONCLUSAO_FECHAMENTO]
           .map((item, i) => `${i + 1}. ${item}`)
           .join("\n");
@@ -706,7 +708,9 @@ export async function* runRendererStream(args: {
     },
   );
 
-  const fullText = body.trim();
+  // Linha em branco antes de CONCLUSÃO: por construção — o template no banco
+  // pode não trazê-la (e {{extra_abdominais}} consome a quebra quando vazio).
+  const fullText = body.replace(/\n+(?=CONCLUSÃO:)/g, "\n\n").trim();
   const systemMessage = `[${RENDERER_VERSION}] template+findings determinístico (${args.categoryCode})`;
   args.onSystemMessage?.(systemMessage);
 
