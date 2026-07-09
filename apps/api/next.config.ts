@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // packages do monorepo são transpilados pelo Next
-  transpilePackages: ["@laudousg/shared", "@laudousg/db"],
+  transpilePackages: ["@laudousg/shared", "@laudousg/db", "@laudousg/schemes"],
   // libs Node-only que não devem ser bundleadas para o cliente
   serverExternalPackages: ["postgres", "drizzle-orm"],
   typescript: {

@@ -1,6 +1,15 @@
 import { env } from "../env";
 import { normalizeAsrClinical } from "../pipeline/asrClinical";
 import { openai } from "../ai/openai";
+// Esquema visual venoso (DESENHO): schema per-segmento vindo do pacote
+// @laudousg/schemes. É SEPARADO do writer DOPPLER_VENOSO_MMII (texto do laudo) —
+// registrado abaixo sob a chave DOPPLER_VENOSO_MMII_SCHEME. O prompt é aliasado
+// para não colidir com o nome exportado pelo módulo do writer.
+import {
+  DOPPLER_VENOSO_MMII_FINDINGS_JSON_SCHEMA,
+  DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT as VENOSO_MMII_SCHEME_EXTRACTION_PROMPT,
+  VenosoMMIIFindingsSchema,
+} from "@laudousg/schemes/vascular";
 import {
   ABDOMEN_TOTAL_FINDINGS_JSON_SCHEMA,
   AbdomenTotalFindingsSchema,
@@ -317,6 +326,20 @@ export const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: DOPPLER_VENOSO_MMII_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT,
     parse: (raw) => DopplerVenosoMmiiFindingsSchema.parse(raw),
+  },
+  // Esquema visual venoso (DESENHO) — extração per-segmento SEPARADA do writer
+  // DOPPLER_VENOSO_MMII acima (que faz o TEXTO do laudo). Chave distinta para não
+  // colidir; consumida SÓ pelo side-channel extractVenousMap (flag
+  // VENOUS_SCHEME_MAP). effectiveCategory nunca resolve para esta chave, então ela
+  // jamais entra no caminho renderer normal. Ver server/vascular/venousMapService.
+  DOPPLER_VENOSO_MMII_SCHEME: {
+    schemaName: "VenosoMMIIFindings",
+    jsonSchema: DOPPLER_VENOSO_MMII_FINDINGS_JSON_SCHEMA as unknown as Record<
+      string,
+      unknown
+    >,
+    prompt: VENOSO_MMII_SCHEME_EXTRACTION_PROMPT,
+    parse: (raw) => VenosoMMIIFindingsSchema.parse(raw),
   },
 };
 

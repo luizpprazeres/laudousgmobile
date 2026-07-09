@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@laudousg/db": "workspace:*",
+    "@laudousg/schemes": "workspace:*",
     "@laudousg/shared": "workspace:*",
     "@supabase/supabase-js": "^2.47.10",
     "drizzle-orm": "^0.38.3",

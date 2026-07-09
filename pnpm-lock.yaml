@@ -38,6 +38,9 @@ importers:
       '@laudousg/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@laudousg/schemes':
+        specifier: workspace:*
+        version: link:../../packages/schemes
       '@laudousg/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -333,6 +336,16 @@ importers:
         version: 5.9.3
 
   packages/knowledge:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/schemes:
+    dependencies:
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       typescript:
         specifier: ^5.7.2

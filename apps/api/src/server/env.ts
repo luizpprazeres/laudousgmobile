@@ -163,6 +163,11 @@ const ServerEnvSchema = z.object({
   // itens livres extraídos mas NÃO inseridos (byte-idêntico). Ver OBSTETRICA.ts +
   // docs/camada-flexivel-design.md.
   FLEXIBLE_CONCLUSION: z.string().default("false"),
+  // Esquema visual venoso: quando "true", roda a extração side-channel de
+  // DOPPLER_VENOSO_MMII (chave _SCHEME) APÓS o "done" e emite o evento SSE
+  // "scheme" com o MapaVenoso (só o DESENHO; o texto do laudo continua no writer).
+  // OFF = nada muda. Fail-safe: falha nunca derruba o laudo.
+  VENOUS_SCHEME_MAP: z.string().default("false"),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),

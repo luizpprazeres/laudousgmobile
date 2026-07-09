@@ -74,8 +74,10 @@ import { runRendererStream } from "@/server/pipeline/renderer";
 import {
   RENDERER_SUPPORTED_CATEGORIES,
   RENDERER_PROGRAMMATIC_CATEGORIES,
+  runRendererExtraction,
 } from "@/server/renderer/extraction";
 import { env } from "@/server/env";
+import { extractVenousMap } from "@/server/vascular/venousMapService";
 import {
   estimateCost,
   persistAudit,
@@ -1033,6 +1035,32 @@ export async function POST(req: Request) {
         report_id: reportId,
         final_text: finalText,
       });
+
+      // Esquema visual venoso (side-channel) — roda APÓS o "done", então NÃO
+      // atrasa o laudo; fail-safe (extractVenousMap nunca lança). Emite o evento
+      // SSE "scheme" com o MapaVenoso; o cliente renderiza o desenho (recolor).
+      // O TEXTO do laudo já foi entregue pelo writer — aqui só o DESENHO.
+      // Flag VENOUS_SCHEME_MAP (default OFF).
+      if (
+        env().VENOUS_SCHEME_MAP === "true" &&
+        effectiveCategory === "DOPPLER_VENOSO_MMII"
+      ) {
+        const venousMap = await extractVenousMap(
+          reqInput.consolidated_transcript ?? reqInput.raw_input,
+          (categoryCode, rawInput, sig) =>
+            runRendererExtraction({ categoryCode, rawInput, signal: sig }),
+          signal,
+        );
+        if (venousMap) {
+          emit({
+            type: "scheme",
+            ts: nowIso(),
+            exam_type: "VENOSO_MMII",
+            asset_version: "venoso-anterior-1",
+            map: venousMap,
+          });
+        }
+      }
 
       try {
         const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({
