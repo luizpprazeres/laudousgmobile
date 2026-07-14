@@ -163,6 +163,9 @@ const ServerEnvSchema = z.object({
   // itens livres extraídos mas NÃO inseridos (byte-idêntico). Ver OBSTETRICA.ts +
   // docs/camada-flexivel-design.md.
   FLEXIBLE_CONCLUSION: z.string().default("false"),
+  // Edição incremental: quando "true", habilita POST /api/edit (ajuste pontual de
+  // laudo pronto via linguagem natural + diff-guard). OFF = endpoint responde 404.
+  EDIT_INCREMENTAL: z.string().default("false"),
   // Placenta: quando "true", o grau de Grannum sai como parentético no fim da
   // frase da placenta ("(grau II de Grannum et al.)", romano) e, se a textura não
   // foi ditada mas o grau sim, infere-a (grau 0 = homogênea; I/II/III =

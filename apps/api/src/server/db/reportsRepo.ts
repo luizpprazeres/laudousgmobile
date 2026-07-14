@@ -140,3 +140,76 @@ export async function loadReportForResume(args: {
     status: row.status,
   };
 }
+
+/**
+ * Carrega report para edição incremental. Valida ownership via user_id.
+ */
+export async function loadReportForEdit(args: {
+  reportId: string;
+  userId: string;
+}): Promise<{
+  id: string;
+  categoryCode: string;
+  generatedOutput: string | null;
+  finalOutput: string | null;
+  generationMetadata: Record<string, unknown> | null;
+} | null> {
+  const db = getDbClient();
+  const [row] = await db
+    .select({
+      id: schema.reports.id,
+      categoryCode: schema.reports.categoryCode,
+      generatedOutput: schema.reports.generatedOutput,
+      finalOutput: schema.reports.finalOutput,
+      generationMetadata: schema.reports.generationMetadata,
+    })
+    .from(schema.reports)
+    .where(
+      and(
+        eq(schema.reports.id, args.reportId),
+        eq(schema.reports.userId, args.userId),
+      ),
+    )
+    .limit(1);
+
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    categoryCode: row.categoryCode,
+    generatedOutput: row.generatedOutput,
+    finalOutput: row.finalOutput,
+    generationMetadata: isPlainRecord(row.generationMetadata)
+      ? row.generationMetadata
+      : null,
+  };
+}
+
+export async function updateReportAfterEdit(args: {
+  reportId: string;
+  userId: string;
+  finalOutput: string;
+  metadata: Record<string, unknown>;
+}): Promise<boolean> {
+  const db = getDbClient();
+  const rows = await db
+    .update(schema.reports)
+    .set({
+      finalOutput: args.finalOutput,
+      generationMetadata: args.metadata as never,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(schema.reports.id, args.reportId),
+        eq(schema.reports.userId, args.userId),
+      ),
+    )
+    .returning({ id: schema.reports.id });
+
+  return rows.length > 0;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
