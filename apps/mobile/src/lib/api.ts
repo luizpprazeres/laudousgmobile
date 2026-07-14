@@ -100,6 +100,7 @@ const EditReportResponseSchema = z.object({
 
 export type EditChangedLine = z.infer<typeof EditChangedLineSchema>;
 export type EditReportResponse = z.infer<typeof EditReportResponseSchema>;
+export type EditReportTarget = "body" | "conclusion" | "both";
 
 const ProfileResponseSchema = z.object({
   profile: ProfileSchema,
@@ -279,6 +280,7 @@ export async function pushSchemaToSala(
 export async function editReport(
   reportId: string,
   instruction: string,
+  target: EditReportTarget = "body",
   signal?: AbortSignal,
 ): Promise<EditReportResponse> {
   const res = await authedFetch("/api/edit", {
@@ -287,7 +289,7 @@ export async function editReport(
       "content-type": "application/json",
       accept: "application/json",
     },
-    body: JSON.stringify({ report_id: reportId, instruction }),
+    body: JSON.stringify({ report_id: reportId, instruction, target }),
     signal,
   });
   return EditReportResponseSchema.parse(

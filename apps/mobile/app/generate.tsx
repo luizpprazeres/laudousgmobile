@@ -26,6 +26,7 @@ import {
   pushReportToSala,
   updateReportFinalOutput,
   type EditChangedLine,
+  type EditReportTarget,
   type EditReportResponse,
   type MockScenario,
 } from "@/lib/api";
@@ -90,6 +91,15 @@ const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 type Tab = "achados" | "laudo";
 type AdjustmentStatus = "idle" | "recording" | "transcribing" | "submitting";
 
+const ADJUST_TARGET_OPTIONS: Array<{
+  value: EditReportTarget;
+  label: string;
+}> = [
+  { value: "body", label: "Corpo" },
+  { value: "conclusion", label: "Conclusão" },
+  { value: "both", label: "Ambos" },
+];
+
 export default function GenerateScreen() {
   const insets = useSafeAreaInsets();
   const t = useColorTokens();
@@ -143,6 +153,7 @@ export default function GenerateScreen() {
   const aborterRef = useRef<AbortController | null>(null);
   // Aborter do upload de transcrição (X do composer cancela sem perder áudio).
   const uploadAborterRef = useRef<AbortController | null>(null);
+  const adjustAborterRef = useRef<AbortController | null>(null);
   const recordingRef = useRef<AudioNS.Recording | null>(null);
   // Nível de áudio real (metering) → waveform do overlay (P0 critique).
   const [micLevel, setMicLevel] = useState<number | null>(null);
@@ -155,6 +166,7 @@ export default function GenerateScreen() {
   const [editingLaudo, setEditingLaudo] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustInstruction, setAdjustInstruction] = useState("");
+  const [adjustTarget, setAdjustTarget] = useState<EditReportTarget>("body");
   const [adjustStatus, setAdjustStatus] = useState<AdjustmentStatus>("idle");
   const [adjustResult, setAdjustResult] = useState<EditReportResponse | null>(null);
   const [saveStatus, setSaveStatus] = useState<
@@ -285,6 +297,28 @@ export default function GenerateScreen() {
     setTab("achados");
   };
 
+  function stopAdjustmentRecordingIfNeeded() {
+    adjustAborterRef.current?.abort();
+    adjustAborterRef.current = null;
+    if (adjustStatus !== "recording") {
+      if (adjustStatus === "transcribing" || adjustStatus === "submitting") {
+        setAdjustStatus("idle");
+      }
+      return;
+    }
+    const rec = recordingRef.current;
+    recordingRef.current = null;
+    setMicLevel(null);
+    setAdjustStatus("idle");
+    if (rec) stopRecording(rec).catch(() => undefined);
+  }
+
+  function toggleAdjustmentPanel() {
+    if (adjustOpen) stopAdjustmentRecordingIfNeeded();
+    setAdjustOpen((open) => !open);
+    setAdjustResult(null);
+  }
+
   async function submitAdjustment(rawInstruction: string) {
     if (state.kind !== "done" || adjustStatus === "submitting") return;
     const instruction = rawInstruction.trim();
@@ -297,8 +331,15 @@ export default function GenerateScreen() {
     }
     setAdjustStatus("submitting");
     setAdjustResult(null);
+    const aborter = new AbortController();
+    adjustAborterRef.current = aborter;
     try {
-      const result = await editReport(state.reportId, instruction);
+      const result = await editReport(
+        state.reportId,
+        instruction,
+        adjustTarget,
+        aborter.signal,
+      );
       setAdjustResult(result);
       if (result.accepted) {
         applyFinalText(result.edited_text);
@@ -312,12 +353,14 @@ export default function GenerateScreen() {
         });
       }
     } catch (e) {
+      if ((e as Error)?.name === "AbortError" || aborter.signal.aborted) return;
       setNotice({
         severity: "error",
         title: "Não foi possível ajustar",
         message: e instanceof Error ? e.message : String(e),
       });
     } finally {
+      if (adjustAborterRef.current === aborter) adjustAborterRef.current = null;
       setAdjustStatus("idle");
     }
   }
@@ -335,12 +378,23 @@ export default function GenerateScreen() {
         setNotice({ severity: "error", message: "Gravação perdida — tente de novo." });
         return;
       }
+      let uploadAborter: AbortController | null = null;
       try {
         const uri = await stopRecording(rec);
-        const { transcript } = await uploadAudio(uri);
+        uploadAborter = new AbortController();
+        adjustAborterRef.current = uploadAborter;
+        const { transcript } = await uploadAudio(uri, uploadAborter.signal);
+        if (adjustAborterRef.current === uploadAborter) adjustAborterRef.current = null;
         setAdjustInstruction(transcript);
         await submitAdjustment(transcript);
       } catch (e) {
+        if ((e as Error)?.name === "AbortError") {
+          setAdjustStatus("idle");
+          return;
+        }
+        if (uploadAborter && adjustAborterRef.current === uploadAborter) {
+          adjustAborterRef.current = null;
+        }
         setNotice({
           severity: "error",
           title: "Não consegui transcrever o ajuste",
@@ -713,14 +767,16 @@ export default function GenerateScreen() {
               onCopy={onCopyLaudo}
               adjustOpen={adjustOpen}
               adjustInstruction={adjustInstruction}
+              adjustTarget={adjustTarget}
               adjustStatus={adjustStatus}
               adjustResult={adjustResult}
-              onToggleAdjust={() => {
-                setAdjustOpen((open) => !open);
-                setAdjustResult(null);
-              }}
+              onToggleAdjust={toggleAdjustmentPanel}
               onChangeAdjustInstruction={(instruction) => {
                 setAdjustInstruction(instruction);
+                setAdjustResult(null);
+              }}
+              onChangeAdjustTarget={(target) => {
+                setAdjustTarget(target);
                 setAdjustResult(null);
               }}
               onSubmitAdjust={() => submitAdjustment(adjustInstruction)}
@@ -1298,10 +1354,12 @@ type LaudoProps = {
   onCopy: () => void;
   adjustOpen: boolean;
   adjustInstruction: string;
+  adjustTarget: EditReportTarget;
   adjustStatus: AdjustmentStatus;
   adjustResult: EditReportResponse | null;
   onToggleAdjust: () => void;
   onChangeAdjustInstruction: (instruction: string) => void;
+  onChangeAdjustTarget: (target: EditReportTarget) => void;
   onSubmitAdjust: () => void;
   onToggleAdjustRecording: () => void;
   onApplyAdjustOverride: () => void;
@@ -1331,10 +1389,12 @@ function LaudoBody({
   onCopy,
   adjustOpen,
   adjustInstruction,
+  adjustTarget,
   adjustStatus,
   adjustResult,
   onToggleAdjust,
   onChangeAdjustInstruction,
+  onChangeAdjustTarget,
   onSubmitAdjust,
   onToggleAdjustRecording,
   onApplyAdjustOverride,
@@ -1427,9 +1487,11 @@ function LaudoBody({
         {state.kind === "done" && adjustOpen ? (
           <AdjustmentCard
             instruction={adjustInstruction}
+            target={adjustTarget}
             status={adjustStatus}
             result={adjustResult}
             onChangeInstruction={onChangeAdjustInstruction}
+            onChangeTarget={onChangeAdjustTarget}
             onSubmit={onSubmitAdjust}
             onToggleRecording={onToggleAdjustRecording}
             onApplyOverride={onApplyAdjustOverride}
@@ -1600,9 +1662,11 @@ function SanityCard({
 
 function AdjustmentCard({
   instruction,
+  target,
   status,
   result,
   onChangeInstruction,
+  onChangeTarget,
   onSubmit,
   onToggleRecording,
   onApplyOverride,
@@ -1610,9 +1674,11 @@ function AdjustmentCard({
   styles,
 }: {
   instruction: string;
+  target: EditReportTarget;
   status: AdjustmentStatus;
   result: EditReportResponse | null;
   onChangeInstruction: (instruction: string) => void;
+  onChangeTarget: (target: EditReportTarget) => void;
   onSubmit: () => void;
   onToggleRecording: () => void;
   onApplyOverride: () => void;
@@ -1662,6 +1728,37 @@ function AdjustmentCard({
             <Mic size={16} color="#fff" />
           )}
         </Pressable>
+      </View>
+
+      <View style={styles.adjustTargetBlock}>
+        <Text style={styles.adjustTargetLabel}>Onde aplicar</Text>
+        <View style={styles.adjustTargetSegment}>
+          {ADJUST_TARGET_OPTIONS.map((option) => {
+            const selected = target === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => onChangeTarget(option.value)}
+                disabled={busy}
+                style={[
+                  styles.adjustTargetOption,
+                  selected && styles.adjustTargetOptionActive,
+                  busy && { opacity: 0.55 },
+                ]}
+                accessibilityRole="button"
+              >
+                <Text
+                  style={[
+                    styles.adjustTargetOptionText,
+                    selected && styles.adjustTargetOptionTextActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <TextInput
@@ -2144,6 +2241,42 @@ function makeStyles(t: ColorTokens) {
   },
   adjustMicRecording: {
     backgroundColor: t.danger,
+  },
+  adjustTargetBlock: {
+    gap: 6,
+  },
+  adjustTargetLabel: {
+    color: t.textSec,
+    fontFamily: FONT.semibold,
+    fontSize: 12,
+  },
+  adjustTargetSegment: {
+    flexDirection: "row",
+    padding: 3,
+    borderRadius: 10,
+    backgroundColor: t.fill1,
+    gap: 3,
+  },
+  adjustTargetOption: {
+    flex: 1,
+    minHeight: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  adjustTargetOptionActive: {
+    backgroundColor: t.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: t.separator,
+  },
+  adjustTargetOptionText: {
+    color: t.textSec,
+    fontFamily: FONT.medium,
+    fontSize: 12.5,
+  },
+  adjustTargetOptionTextActive: {
+    color: t.brand,
+    fontFamily: FONT.semibold,
   },
   adjustInput: {
     minHeight: 72,
