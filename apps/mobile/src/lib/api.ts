@@ -77,6 +77,30 @@ const AnalyticsResponseSchema = z.object({
 
 export type MeAnalytics = z.infer<typeof AnalyticsResponseSchema>;
 
+const EditChangedLineSchema = z.union([
+  z.number().int(),
+  z
+    .object({
+      line: z.number().int().optional(),
+      line_number: z.number().int().optional(),
+      index: z.number().int().optional(),
+      text: z.string().optional(),
+      before: z.string().optional(),
+      after: z.string().optional(),
+    })
+    .passthrough(),
+]);
+
+const EditReportResponseSchema = z.object({
+  edited_text: z.string(),
+  changed_lines: z.array(EditChangedLineSchema),
+  accepted: z.boolean(),
+  reason: z.string().nullable().optional(),
+});
+
+export type EditChangedLine = z.infer<typeof EditChangedLineSchema>;
+export type EditReportResponse = z.infer<typeof EditReportResponseSchema>;
+
 const ProfileResponseSchema = z.object({
   profile: ProfileSchema,
 });
@@ -250,6 +274,25 @@ export async function pushSchemaToSala(
     ok: boolean;
     replaced: boolean;
   };
+}
+
+export async function editReport(
+  reportId: string,
+  instruction: string,
+  signal?: AbortSignal,
+): Promise<EditReportResponse> {
+  const res = await authedFetch("/api/edit", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({ report_id: reportId, instruction }),
+    signal,
+  });
+  return EditReportResponseSchema.parse(
+    await readJsonOrThrow(res, "ajustar laudo"),
+  );
 }
 
 export async function updateReportFinalOutput(
