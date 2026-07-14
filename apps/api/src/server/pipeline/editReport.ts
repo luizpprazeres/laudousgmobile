@@ -26,10 +26,14 @@ export type EditReportResult = {
   reason?: string;
 };
 
+export type EditTarget = "body" | "conclusion" | "both";
+
 export type EditReportArgs = {
   baseText: string;
   instruction: string;
   category: string;
+  /** Onde aplicar: corpo / conclusão / ambos. Default "body". */
+  target?: EditTarget;
   signal?: AbortSignal;
 };
 
@@ -46,8 +50,7 @@ export async function editReport(args: EditReportArgs): Promise<EditReportResult
   const editedText = normalizeTrailingNewline(editedCandidate);
   const changedLines = diffChangedLines(baseText, editedText);
   const rejection = validateEditScope({
-    baseText,
-    instruction: args.instruction,
+    target: args.target ?? "body",
     changedLines,
   });
 
@@ -75,7 +78,7 @@ async function requestEditedReport(args: EditReportArgs, baseText: string) {
     model: writerModel,
     messages: [
       { role: "system", content: EDIT_SYSTEM_PROMPT },
-      { role: "user", content: buildEditUserMessage(baseText, args.instruction, args.category) },
+      { role: "user", content: buildEditUserMessage(baseText, args.instruction, args.category, args.target ?? "body") },
     ],
   };
 
@@ -98,7 +101,12 @@ async function requestEditedReport(args: EditReportArgs, baseText: string) {
   return text;
 }
 
-function buildEditUserMessage(baseText: string, instruction: string, category: string) {
+function buildEditUserMessage(
+  baseText: string,
+  instruction: string,
+  category: string,
+  target: EditTarget,
+) {
   return [
     `CATEGORIA: ${category}`,
     "",
@@ -108,8 +116,21 @@ function buildEditUserMessage(baseText: string, instruction: string, category: s
     "=== AJUSTE FALADO PELO MÉDICO ===",
     instruction.trim(),
     "",
+    targetDirective(target),
     "Retorne somente o laudo inteiro editado.",
   ].join("\n");
+}
+
+function targetDirective(target: EditTarget): string {
+  switch (target) {
+    case "conclusion":
+      return "ALVO: aplique o ajuste APENAS na CONCLUSÃO/IMPRESSÃO. NÃO altere o corpo do laudo.";
+    case "both":
+      return "ALVO: aplique o ajuste onde a frase aparecer, TANTO no corpo QUANTO na conclusão.";
+    case "body":
+    default:
+      return "ALVO: aplique o ajuste APENAS no CORPO do laudo (a parte descritiva antes de CONCLUSÃO/IMPRESSÃO). NÃO altere a conclusão.";
+  }
 }
 
 function normalizeModelOutput(text: string) {
@@ -124,27 +145,25 @@ function normalizeTrailingNewline(text: string) {
 }
 
 function validateEditScope(args: {
-  baseText: string;
-  instruction: string;
+  target: EditTarget;
   changedLines: EditReportChangedLine[];
 }): string | null {
   if (args.changedLines.length === 0) return "sem alteração";
   if (args.changedLines.length > MAX_CHANGED_LINES) return "edição ampla — confirme";
 
-  const requestedSection = requestedSectionFromInstruction(args.instruction);
-  if (requestedSection) {
-    const outside = args.changedLines.find((line) => line.section !== requestedSection);
-    if (outside) return "mudança fora da seção pedida — confirme";
+  // "body" = tudo que NÃO é conclusão (técnica + corpo); "conclusion" = só a
+  // conclusão; "both" = livre. Barra mudança fora do alvo pedido.
+  const allowConclusion = args.target !== "body";
+  const allowBody = args.target !== "conclusion";
+  const outside = args.changedLines.find((line) => {
+    const isConclusion = line.section === "conclusion";
+    return isConclusion ? !allowConclusion : !allowBody;
+  });
+  if (outside) {
+    if (args.target === "conclusion") return "mudança fora da conclusão — confirme";
+    if (args.target === "body") return "mudança na conclusão (você pediu só o corpo) — confirme";
+    return "mudança fora do alvo — confirme";
   }
-
-  return null;
-}
-
-function requestedSectionFromInstruction(instruction: string): ReportSection | null {
-  const text = instruction.toLowerCase();
-  if (/\b(conclus[aã]o|impress[aã]o)\b/.test(text)) return "conclusion";
-  if (/\b(t[ée]cnica|coment[áa]rios?)\b/.test(text)) return "tecnica";
-  if (/\b(achados?|corpo|descri[çc][aã]o)\b/.test(text)) return "body";
   return null;
 }
 

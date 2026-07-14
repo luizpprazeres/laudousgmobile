@@ -58,6 +58,7 @@ export async function POST(req: Request) {
     baseText,
     instruction: input.instruction,
     category: report.categoryCode,
+    target: input.target,
     signal: req.signal,
   });
 
