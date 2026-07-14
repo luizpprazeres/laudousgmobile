@@ -468,6 +468,8 @@ export async function* runRendererStream(args: {
             : (fnd as ObstetricaFindings);
         fullText = renderObstetrica(ofnd, null, {
           objetivo, igCorrection, flexivel,
+          // Grannum na placenta (grau parentético + inferência de textura) — flag OFF default.
+          grannum: env().GRANNUM_PLACENTA === "true",
           golfBall: golfBallSingle(ofnd.numero_fetos),
           // Sanity de IG (flag OBST_IG_SANITY): divergência implausível ref×biometria
           // não vira correção absurda (boletim 04/07, 10813392).
