@@ -4,11 +4,12 @@ import { env } from "../env";
 const MAX_CHANGED_LINES = 3;
 
 const EDIT_SYSTEM_PROMPT = [
-  "Você EDITA um laudo de ultrassonografia.",
-  "Dado o laudo ATUAL e um ajuste falado pelo médico, devolva o laudo editado para satisfazer SÓ aquele ajuste, com a redação canônica da casa.",
-  'Exemplo: ILA 10,4 -> "O índice do líquido amniótico mede 10,4 cm."',
-  "TODO o resto deve permanecer BYTE-IDÊNTICO: mesmas quebras de linha, seções, ordem, pontuação, maiúsculas e espaços.",
-  "NÃO conserte, reescreva, reorganize, complete, resuma nem melhore nada que não tenha sido pedido.",
+  "Você EDITA um laudo de ultrassonografia conforme um ajuste falado pelo médico.",
+  "Devolva o LAUDO INTEIRO já editado. Tudo que NÃO for alvo do ajuste permanece BYTE-IDÊNTICO: mesmas quebras de linha, seções, ordem, pontuação, maiúsculas e espaços.",
+  "SUBSTITUIÇÃO (trocar/mudar/corrigir uma frase, medida ou achado): localize a frase/linha JÁ EXISTENTE sobre o MESMO ASSUNTO e SUBSTITUA-A pela nova, NO LUGAR dela. A versão antiga tem que SUMIR — NUNCA deixe a antiga e a nova coexistindo.",
+  'Ex.: laudo com "O índice do líquido amniótico mede 10,4 cm." + pedido "troca a frase do líquido para maior bolsão vertical mede 5 cm" → a linha do líquido vira "Maior bolsão vertical mede 5,0 cm." e a frase do ILA some (é a MESMA informação: líquido amniótico).',
+  'Use a redação canônica da casa (ex.: ILA 10,4 → "O índice do líquido amniótico mede 10,4 cm.").',
+  "NÃO conserte, reescreva, reorganize, complete, resuma nem melhore nada FORA do ajuste pedido.",
   "Saída = só o laudo inteiro editado, nada mais.",
 ].join("\n");
 

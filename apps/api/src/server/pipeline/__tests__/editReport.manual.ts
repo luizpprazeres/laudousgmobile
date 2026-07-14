@@ -16,6 +16,8 @@ type Case = {
   instruction: string;
   target: EditTarget;
   expected: RegExp;
+  /** Texto que NÃO pode sobreviver (ex.: a frase antiga numa substituição). */
+  notExpected?: RegExp;
   /** Seção onde a mudança DEVE cair (valida o roteamento por alvo). */
   expectedSection: "body" | "conclusion";
 };
@@ -44,6 +46,19 @@ const CASES: Case[] = [
     instruction: "muda a frase do líquido, ILA 10,4",
     target: "body",
     expected: /O índice do líquido amniótico mede 10,4 cm\./,
+    expectedSection: "body",
+  },
+  {
+    name: "OBSTETRICA líquido — SUBSTITUI (ILA→MBV, a antiga some)",
+    category: "OBSTETRICA",
+    baseText: OBST_BASE.replace(
+      "Líquido amniótico em quantidade normal.",
+      "O índice do líquido amniótico mede 10,4 cm.",
+    ),
+    instruction: "troca a frase do líquido para maior bolsão vertical mede 5 cm",
+    target: "body",
+    expected: /Maior bolsão vertical mede 5/i,
+    notExpected: /índice do líquido amni[oó]tico/i,
     expectedSection: "body",
   },
   {
@@ -134,6 +149,13 @@ async function main() {
       result.editedText,
     );
     check(`${c.name}: contém frase esperada`, c.expected.test(result.editedText), result.editedText);
+    if (c.notExpected) {
+      check(
+        `${c.name}: frase antiga sumiu`,
+        !c.notExpected.test(result.editedText),
+        result.editedText,
+      );
+    }
     const sectionOk =
       c.expectedSection === "conclusion"
         ? result.changedLines.every((l) => l.section === "conclusion")
