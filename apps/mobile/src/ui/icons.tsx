@@ -123,6 +123,17 @@ export const Layers = ({ size = 16, color = "#000" }: IconProps) =>
     </>,
   );
 
+export const Smartphone = ({ size = 18, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    1.9,
+    <>
+      <Rect x="6" y="2" width="12" height="20" rx="2.5" />
+      <Line x1="10" y1="18" x2="14" y2="18" />
+    </>,
+  );
+
 export const Camera = ({ size = 20, color = "#000" }: IconProps) =>
   stroke(
     size,

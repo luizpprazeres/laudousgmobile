@@ -252,6 +252,66 @@ export async function pushReportToSala(reportId: string): Promise<void> {
   }
 }
 
+// ============================================
+// Workspace Companion — celular envia dados ao laudo aberto no computador
+// ============================================
+
+export type WorkspaceCompanionSession = {
+  id: string;
+  code: string;
+  expiresAt: string;
+  pairedAt: string | null;
+  deviceLabel: string | null;
+  active: boolean;
+};
+
+const WorkspaceCompanionSessionSchema = z.object({
+  id: z.string().uuid(),
+  code: z.string(),
+  expiresAt: z.string(),
+  pairedAt: z.string().nullable(),
+  deviceLabel: z.string().nullable(),
+  active: z.boolean(),
+});
+
+export async function pairWorkspaceCompanion(
+  code: string,
+  deviceLabel = "Celular",
+): Promise<WorkspaceCompanionSession> {
+  const res = await authedFetch("/api/workspace/pair", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({ code, deviceLabel }),
+  });
+  const data = (await readJsonOrThrow(res, "conectar ao computador")) as {
+    session?: unknown;
+  };
+  return WorkspaceCompanionSessionSchema.parse(data.session);
+}
+
+export type WorkspaceCompanionInputKind = "text" | "measurements";
+
+export async function sendWorkspaceCompanionInput(input: {
+  sessionId: string;
+  clientEventId: string;
+  kind: WorkspaceCompanionInputKind;
+  text: string;
+  categoryCode?: string | null;
+}): Promise<void> {
+  const res = await authedFetch("/api/workspace/inputs", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  await readJsonOrThrow(res, "enviar ao computador");
+}
+
 export type PushSchemaToSalaInput = {
   reportId?: string | null;
   examType: string;

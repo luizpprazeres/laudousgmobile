@@ -24,6 +24,7 @@ import { saveWebReport } from '@/lib/webReports'
 import { categoryCompactName, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
 import { diffReportBlocks } from './reportSuggestion'
+import type { WorkspaceInput } from '@/lib/workspaceCompanion'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
@@ -41,6 +42,7 @@ type LaudarWebExperienceProps = {
   workspaceV2?: boolean
   richEditor?: boolean
   agentWorkspace?: boolean
+  mobileCompanion?: boolean
 }
 
 type ReportDraft = {
@@ -138,7 +140,12 @@ function completedTireoideSections(state: TireoideState) {
   return completed
 }
 
-export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, agentWorkspace = false }: LaudarWebExperienceProps) {
+export function LaudarWebExperience({
+  workspaceV2 = false,
+  richEditor = false,
+  agentWorkspace = false,
+  mobileCompanion = false,
+}: LaudarWebExperienceProps) {
   const [categoria, setCategoria] = useState<string>(GENERIC_CATEGORIES[0]?.id ?? 'ABDOMEN_TOTAL')
   // Um ExamState por categoria genérica (preserva o preenchimento ao alternar).
   const [examStates, setExamStates] = useState<Record<string, ExamState>>(() =>
@@ -271,6 +278,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     undoSnapshot.appliedText === composedText &&
     documentText === composedText
   )
+  const applyMobileInput = (input: WorkspaceInput) => {
+    const receivedText = input.text.trim()
+    if (!receivedText) return
+    const currentText = documentText.trimEnd()
+    onDocumentChange(currentText ? `${currentText}\n\n${receivedText}` : receivedText)
+  }
   const preview = useMemo(
     () => appendInitials(documentText, initialsOn ? initials : undefined),
     [documentText, initials, initialsOn]
@@ -464,7 +477,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               )}
             </div>
 
-            {workspaceV2 && agentWorkspace ? (
+            {workspaceV2 && (agentWorkspace || mobileCompanion) ? (
               <WorkspaceInputDock
                 canGoPrevious={Boolean(previous && previous.id !== activeSection?.id)}
                 canGoNext={Boolean(next && next.id !== activeSection?.id)}
@@ -475,6 +488,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 onAcceptSuggestion={applyCurrentModel}
                 onRejectSuggestion={rejectCurrentModel}
                 onUndoSuggestion={undoAcceptedSuggestion}
+                mobileEnabled={mobileCompanion}
+                currentCategory={categoria}
+                onApplyMobileInput={applyMobileInput}
               />
             ) : (
               <footer className={`sticky bottom-0 flex items-center gap-3 border-t backdrop-blur-xl ${workspaceV2 ? 'border-gray-100 bg-white/95 px-4 py-3 dark:border-gray-800 dark:bg-[#1C1C1E]/95' : 'border-gray-200 bg-white/90 px-7 py-4 dark:border-gray-800 dark:bg-gray-950/90'}`}>

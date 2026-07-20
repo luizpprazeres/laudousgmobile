@@ -18,10 +18,8 @@ export default async function GerarPage() {
     <LaudarWebExperience
       workspaceV2={process.env.WEB_WORKSPACE_V2 === 'true'}
       richEditor={process.env.WEB_RICH_EDITOR === 'true'}
-      agentWorkspace={
-        process.env.WEB_AGENT_SUGGESTIONS === 'true' ||
-        process.env.WEB_MOBILE_COMPANION === 'true'
-      }
+      agentWorkspace={process.env.WEB_AGENT_SUGGESTIONS === 'true'}
+      mobileCompanion={process.env.WEB_MOBILE_COMPANION === 'true'}
     />
   )
 }

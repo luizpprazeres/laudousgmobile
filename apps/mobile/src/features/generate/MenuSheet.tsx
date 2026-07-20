@@ -12,6 +12,7 @@ import {
   Layers,
   Moon,
   Sliders,
+  Smartphone,
 } from "@/ui/icons";
 import { getMeProfile } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -34,6 +35,8 @@ type Props = {
   onNotice?: (n: Notice) => void;
   /** Solicita abertura do SalaPairingSheet — renderizado pelo parent. */
   onOpenSala?: () => void;
+  /** Abre o celular como dispositivo de entrada do Workspace web. */
+  onOpenWorkspace?: () => void;
 };
 
 const NAV = [
@@ -73,7 +76,7 @@ function planBadge(plan: string | null): PlanBadge {
   return { label: "Gratuito", bg: "rgba(0,0,0,0.06)", fg: "#3C3C43" };
 }
 
-export function MenuSheet({ open, onClose, onNotice, onOpenSala }: Props) {
+export function MenuSheet({ open, onClose, onNotice, onOpenSala, onOpenWorkspace }: Props) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   const [identity, setIdentity] = useState<Identity>({
@@ -132,6 +135,11 @@ export function MenuSheet({ open, onClose, onNotice, onOpenSala }: Props) {
     setTimeout(() => onOpenSala?.(), 220);
   };
 
+  const openWorkspace = () => {
+    onClose();
+    setTimeout(() => onOpenWorkspace?.(), 220);
+  };
+
   const signOut = async () => {
     onClose();
     try {
@@ -180,6 +188,24 @@ export function MenuSheet({ open, onClose, onNotice, onOpenSala }: Props) {
         </View>
 
         <View style={{ marginTop: 12 }}>
+          <Pressable
+            onPress={openWorkspace}
+            style={({ pressed }) => [
+              styles.navRow,
+              styles.navRowBorder,
+              pressed && { opacity: 0.6 },
+            ]}
+            accessibilityRole="button"
+          >
+            <View style={styles.navIcon}>
+              <Smartphone size={20} color={t.text2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.navLabel}>Conectar ao computador</Text>
+              <Text style={styles.profileEmail}>Enviar texto e medidas ao laudo aberto</Text>
+            </View>
+            <Chevron size={14} color={t.textGhost} />
+          </Pressable>
           {/* Sala do Auxiliar abre um sheet (callback) — não é rota. */}
           <Pressable
             onPress={openSala}
