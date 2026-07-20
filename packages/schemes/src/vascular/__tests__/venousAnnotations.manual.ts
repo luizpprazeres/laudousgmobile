@@ -48,6 +48,7 @@ console.log("Caso 1: calibre safena_magna (direito) → célula medial");
   assert(l.texto === "5,8 mm", "texto correto");
   assert(inCell(l.anchor[0], l.anchor[1], COL.medial, 0), "âncora na célula direito__medial");
   assert(inCell(l.textPos[0], l.textPos[1], COL.medial, 0), "texto dentro da célula medial");
+  assert(Math.abs(l.textPos[0] - l.anchor[0]) >= 26, "texto afastado do vaso (não sobrepõe)");
 }
 
 // Caso 2: perfurante à esquerda → rótulo na célula esquerdo__posterior

@@ -18,8 +18,10 @@ export type VenousAnnotationLabel = {
   texto: string;
   tipo: VenousAnnotation["tipo"];
   anchor: Ponto; // ponto no vaso (espaço da arte)
-  textPos: Ponto; // canto do texto (espaço da arte)
-  side: "left" | "right"; // lado do vaso em que o texto fica
+  textPos: Ponto; // borda do texto MAIS PRÓXIMA do vaso (= fim do traço-guia)
+  side: "left" | "right"; // margem em que o texto fica → alinhamento no cliente:
+  // "left" = texto na margem esquerda, alinhado à DIREITA terminando em textPos;
+  // "right" = texto na margem direita, alinhado à ESQUERDA começando em textPos.
 };
 
 export type VenousAnnotationLayout = {
@@ -29,9 +31,10 @@ export type VenousAnnotationLayout = {
 };
 
 export type AnnotationLayoutOpts = {
-  textOffset?: number; // distância do vaso até o texto
+  textWidth?: number; // largura reservada p/ o texto na margem (espaço da arte)
   lineHeight?: number; // altura reservada por rótulo (anti-overlap)
   margin?: number; // respiro na borda da célula
+  minGap?: number; // vão mínimo entre o vaso e o texto (evita sobreposição)
 };
 
 const COLS: VistaVenosa[] = ["lateral", "anterior", "medial", "posterior"];
@@ -92,9 +95,10 @@ export function buildVenousAnnotations4(
 ): VenousAnnotationLayout {
   const width = coords.width;
   const height = coords.height;
-  const textOffset = opts.textOffset ?? 30;
+  const textW = opts.textWidth ?? 180;
   const lineH = opts.lineHeight ?? 46;
-  const margin = opts.margin ?? 10;
+  const margin = opts.margin ?? 12;
+  const minGap = opts.minGap ?? 26;
   const colW = width / 4;
   const rowH = height / 2;
 
@@ -120,14 +124,18 @@ export function buildVenousAnnotations4(
     const row = ROW_INDEX[ann.lado];
     const cellX0 = col * colW;
     const cellX1 = cellX0 + colW;
-    // Lado com mais espaço dentro da célula (vaso costuma ficar centralizado).
+    // Texto vai para a MARGEM da célula (longe do vaso, nunca por cima). Escolhe
+    // a margem com mais espaço; a borda do texto próxima ao vaso (= fim do
+    // traço-guia) fica a pelo menos `minGap` do vaso.
     const roomRight = cellX1 - anchor[0];
     const roomLeft = anchor[0] - cellX0;
     const side: "left" | "right" = roomRight >= roomLeft ? "right" : "left";
-    const textPos: Ponto =
+    // textPos = borda do texto voltada para o vaso (extremidade do traço-guia).
+    const nearX =
       side === "right"
-        ? [Math.min(anchor[0] + textOffset, cellX1 - margin - 90), anchor[1]]
-        : [Math.max(anchor[0] - textOffset - 90, cellX0 + margin), anchor[1]];
+        ? Math.max(anchor[0] + minGap, cellX1 - margin - textW)
+        : Math.min(anchor[0] - minGap, cellX0 + margin + textW);
+    const textPos: Ponto = [nearX, anchor[1]];
 
     pending.push({
       id: `ann-${i}`,
