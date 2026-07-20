@@ -1,16 +1,31 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ArrowRight, Bot, Image, Mic, Send, Smartphone } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Bot, Check, Image, Mic, Send, Smartphone, Undo2, X } from 'lucide-react'
 
 type Props = {
   canGoPrevious: boolean
   canGoNext: boolean
   onPrevious: () => void
   onNext: () => void
+  hasPendingSuggestion?: boolean
+  canUndoSuggestion?: boolean
+  onAcceptSuggestion?: () => void
+  onRejectSuggestion?: () => void
+  onUndoSuggestion?: () => void
 }
 
-export function WorkspaceInputDock({ canGoPrevious, canGoNext, onPrevious, onNext }: Props) {
+export function WorkspaceInputDock({
+  canGoPrevious,
+  canGoNext,
+  onPrevious,
+  onNext,
+  hasPendingSuggestion = false,
+  canUndoSuggestion = false,
+  onAcceptSuggestion,
+  onRejectSuggestion,
+  onUndoSuggestion,
+}: Props) {
   const [mode, setMode] = useState<'agent' | 'mobile'>('agent')
 
   return (
@@ -40,7 +55,9 @@ export function WorkspaceInputDock({ canGoPrevious, canGoNext, onPrevious, onNex
           <Smartphone className="h-3 w-3" />
           Celular
         </button>
-        <span className="ml-1 text-[10px] font-medium text-gray-400">estrutura reservada · conexão desligada</span>
+        <span className={`ml-1 text-[10px] font-medium ${hasPendingSuggestion ? 'text-amber-600 dark:text-amber-300' : canUndoSuggestion ? 'text-emerald-600 dark:text-emerald-300' : 'text-gray-400'}`}>
+          {hasPendingSuggestion ? '1 sugestão aguardando revisão' : canUndoSuggestion ? 'alteração aplicada' : 'estrutura reservada · conexão desligada'}
+        </span>
         <div className="flex-1" />
         <button
           type="button"
@@ -62,7 +79,36 @@ export function WorkspaceInputDock({ canGoPrevious, canGoNext, onPrevious, onNex
         </button>
       </div>
 
-      {mode === 'agent' ? (
+      {mode === 'agent' && hasPendingSuggestion ? (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/75 px-2.5 py-2 dark:border-amber-900/50 dark:bg-amber-950/25">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-amber-600 shadow-sm dark:bg-gray-900 dark:text-amber-300">
+            <Bot className="h-3.5 w-3.5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-semibold text-amber-950 dark:text-amber-100">Os campos propuseram uma alteração</div>
+            <div className="text-[10.5px] text-amber-800/70 dark:text-amber-300/70">A comparação está aberta ao lado do laudo.</div>
+          </div>
+          <button type="button" onClick={onRejectSuggestion} className="inline-flex h-7 items-center gap-1 rounded-full border border-amber-200 bg-white px-2.5 text-[10.5px] font-semibold text-gray-600 hover:bg-amber-50 dark:border-amber-900/60 dark:bg-gray-900 dark:text-gray-300">
+            <X className="h-3 w-3" />
+            Rejeitar
+          </button>
+          <button type="button" onClick={onAcceptSuggestion} className="inline-flex h-7 items-center gap-1 rounded-full bg-emerald-600 px-2.5 text-[10.5px] font-semibold text-white hover:bg-emerald-700">
+            <Check className="h-3 w-3" />
+            Aceitar
+          </button>
+        </div>
+      ) : mode === 'agent' && canUndoSuggestion ? (
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 dark:border-emerald-900/50 dark:bg-emerald-950/25">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-emerald-600 shadow-sm dark:bg-gray-900 dark:text-emerald-300">
+            <Check className="h-3.5 w-3.5" />
+          </span>
+          <div className="min-w-0 flex-1 text-xs font-semibold text-emerald-900 dark:text-emerald-100">Alteração aplicada ao laudo</div>
+          <button type="button" onClick={onUndoSuggestion} className="inline-flex h-7 items-center gap-1 rounded-full border border-emerald-200 bg-white px-2.5 text-[10.5px] font-semibold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/60 dark:bg-gray-900 dark:text-emerald-300">
+            <Undo2 className="h-3 w-3" />
+            Desfazer
+          </button>
+        </div>
+      ) : mode === 'agent' ? (
         <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 p-1.5 dark:border-gray-700 dark:bg-gray-900/60">
           <button type="button" disabled title="Áudio será conectado na etapa do agente" className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 disabled:cursor-not-allowed">
             <Mic className="h-4 w-4" />
