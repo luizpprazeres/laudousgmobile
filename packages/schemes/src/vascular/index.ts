@@ -5,3 +5,4 @@ export * from "./venousRaster";
 export * from "./venousCallouts";
 export * from "./venousSvg";
 export * from "./venousAnteriorCoords";
+export * from "./venous4ViewCoords";

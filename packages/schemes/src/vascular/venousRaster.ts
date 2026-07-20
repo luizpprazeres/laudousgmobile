@@ -14,6 +14,25 @@ export type VenousCoords = {
 };
 
 /**
+ * Coords da arte de 4 VISTAS (8 células `${lado}__${vista}`, asset 2048×3072).
+ * Cada célula guarda as polilinhas dos segmentos DESENHADOS naquela vista — a
+ * própria chave codifica a pertinência vista↔segmento (magna só em `*__medial`,
+ * parva só em `*__posterior`), então o recolor não precisa de tabela extra.
+ * A chave `tributaria_lateral` (vistas `*__lateral`) não é um SegmentoVenoso do
+ * schema: é tratada por um passo dedicado (varicosidade de face lateral).
+ */
+export type VistaVenosa = "lateral" | "anterior" | "medial" | "posterior";
+export type CelulaVenosa = `${LadoVenoso}__${VistaVenosa}`;
+export type VenousCoords4 = {
+  width: number;
+  height: number;
+  vistas: Partial<Record<CelulaVenosa, Record<string, Ponto[]>>>;
+};
+
+/** Chave provisória p/ a rede de face lateral (sem tronco nomeado no schema). */
+export const TRIBUTARIA_LATERAL_KEY = "tributaria_lateral";
+
+/**
  * Tube-recolor do esquema venoso ORGÂNICO (produção). Puro e SEM dependência de
  * lib de imagem: recebe o buffer RGBA (do canvas do cliente ou de um decoder no
  * servidor) e recolore, IN-PLACE, só os pixels da veia dentro de um "tubo" ao
@@ -68,6 +87,41 @@ function tubeRadius(seg: string, base: number): number {
 export type RecolorOpts = { radius?: number };
 
 /**
+ * Recolore IN-PLACE os pixels-de-veia dentro do tubo (raio R) ao redor de UMA
+ * polilinha. Só toca pixels AZUIS (pele/branco intactos). Retorna nº alterados.
+ * Núcleo compartilhado por `recolorVenousPixels` e `recolorVenousPixels4`.
+ */
+function recolorTube(
+  pixels: Uint8ClampedArray | Uint8Array | number[],
+  width: number,
+  height: number,
+  pts: Ponto[],
+  rgb: RGB,
+  R: number,
+): number {
+  if (pts.length < 2) return 0;
+  let changed = 0;
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const x0 = Math.max(0, Math.floor(Math.min(...xs) - R - 2));
+  const x1 = Math.min(width - 1, Math.ceil(Math.max(...xs) + R + 2));
+  const y0 = Math.max(0, Math.floor(Math.min(...ys) - R - 2));
+  const y1 = Math.min(height - 1, Math.ceil(Math.max(...ys) + R + 2));
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const i = (y * width + x) * 4;
+      if (!isVeinPixel(pixels[i]!, pixels[i + 1]!, pixels[i + 2]!)) continue;
+      if (distToPolyline(x, y, pts) > R) continue;
+      pixels[i] = rgb[0];
+      pixels[i + 1] = rgb[1];
+      pixels[i + 2] = rgb[2];
+      changed++;
+    }
+  }
+  return changed;
+}
+
+/**
  * Recolore IN-PLACE os pixels RGBA (`pixels`, largura×altura) conforme o
  * `MapaVenoso`: para cada segmento com estado ≠ normal, pinta os pixels-de-veia
  * dentro do tubo ao redor da polilinha (coords). Retorna nº de pixels alterados.
@@ -89,25 +143,67 @@ export function recolorVenousPixels(
       const rgb = VENOUS_STATE_RGB[estado];
       const pts = coords[lado]?.[seg];
       if (!rgb || !pts || pts.length < 2) continue;
-      const R = tubeRadius(seg, baseR);
-      const xs = pts.map((p) => p[0]);
-      const ys = pts.map((p) => p[1]);
-      const x0 = Math.max(0, Math.floor(Math.min(...xs) - R - 2));
-      const x1 = Math.min(width - 1, Math.ceil(Math.max(...xs) + R + 2));
-      const y0 = Math.max(0, Math.floor(Math.min(...ys) - R - 2));
-      const y1 = Math.min(height - 1, Math.ceil(Math.max(...ys) + R + 2));
-      for (let y = y0; y <= y1; y++) {
-        for (let x = x0; x <= x1; x++) {
-          const i = (y * width + x) * 4;
-          if (!isVeinPixel(pixels[i]!, pixels[i + 1]!, pixels[i + 2]!)) continue;
-          if (distToPolyline(x, y, pts) > R) continue;
-          pixels[i] = rgb[0];
-          pixels[i + 1] = rgb[1];
-          pixels[i + 2] = rgb[2];
-          changed++;
-        }
-      }
+      changed += recolorTube(pixels, width, height, pts, rgb, tubeRadius(seg, baseR));
     }
   });
   return changed;
+}
+
+/**
+ * Recolor da arte de 4 VISTAS (asset 2048×3072, coords `${lado}__${vista}`).
+ * Itera as 8 células; para cada segmento com polilinha na célula, lê o estado
+ * em `mapa.lados[lado].segmentos[seg]` e recolore o tubo se ≠ normal. A chave
+ * a pertinência vista↔segmento vem das próprias coords (não há tabela de mapa).
+ *
+ * Passo dedicado para a face LATERAL (sem tronco nomeado no schema, decisão Luiz
+ * 20/07): a coord `tributaria_lateral` é pintada com a cor de varicosidade quando
+ * há, naquele lado, uma lesão de estado `varicosidade` cujo texto (label+sub)
+ * menciona "lateral". Conservador: sem match → não pinta.
+ *
+ * Raio default = 13 (veia da arte v3 tem ~6px; cobre + folga sem invadir vizinhas).
+ */
+export function recolorVenousPixels4(
+  pixels: Uint8ClampedArray | Uint8Array | number[],
+  width: number,
+  height: number,
+  mapa: MapaVenoso,
+  coords: VenousCoords4,
+  opts: RecolorOpts = {},
+): number {
+  const baseR = opts.radius ?? 13;
+  let changed = 0;
+  // Lados com varicosidade de face lateral (para a coord tributaria_lateral).
+  const varicLateral = lateralVaricosidadeLados(mapa);
+  for (const cellKey of Object.keys(coords.vistas) as CelulaVenosa[]) {
+    const cell = coords.vistas[cellKey];
+    if (!cell) continue;
+    const lado = cellKey.split("__")[0] as LadoVenoso;
+    for (const seg of Object.keys(cell)) {
+      const pts = cell[seg];
+      if (!pts || pts.length < 2) continue;
+      let rgb: RGB | null;
+      if (seg === TRIBUTARIA_LATERAL_KEY) {
+        rgb = varicLateral.has(lado) ? VENOUS_STATE_RGB.varicosidade : null;
+      } else {
+        const estado = mapa.lados[lado]?.segmentos?.[seg as keyof MapaVenoso["lados"]["direito"]["segmentos"]] as
+          | EstadoSegmento
+          | undefined;
+        rgb = estado ? VENOUS_STATE_RGB[estado] : null;
+      }
+      if (!rgb) continue;
+      changed += recolorTube(pixels, width, height, pts, rgb, tubeRadius(seg, baseR));
+    }
+  }
+  return changed;
+}
+
+/** Lados que têm alguma lesão de varicosidade cujo texto menciona "lateral". */
+function lateralVaricosidadeLados(mapa: MapaVenoso): Set<LadoVenoso> {
+  const out = new Set<LadoVenoso>();
+  for (const l of mapa.lesoes) {
+    if (l.estado !== "varicosidade") continue;
+    const txt = `${l.label} ${l.sub}`.toLowerCase();
+    if (txt.includes("lateral")) out.add(l.lado);
+  }
+  return out;
 }

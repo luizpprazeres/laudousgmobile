@@ -60,3 +60,6 @@ _extraction/
 scripts/.golden-reports/
 tests/golden-objetivo/report.html
 tests/golden-deterministico/report.html
+
+# artefatos temporários de review (contêm dados de paciente — nunca commitar)
+tmp-review/
