@@ -44,6 +44,9 @@ export type GenerateState =
       // Esquema visual venoso (cartografia) — chega no evento SSE "scheme" APÓS
       // o done. Só o DESENHO; o texto do laudo é o finalText (writer).
       venousMap?: MapaVenoso;
+      // Versão da arte-base p/ o render escolher asset/coords/motor:
+      // "venoso-anterior-1" (vista única) | "venous-4view-1" (8 células).
+      venousAssetVersion?: string;
     }
   | { kind: "error"; text: string; message: string };
 
@@ -154,7 +157,11 @@ function applySse(
   if (state.kind === "done") {
     if (ev.type === "sanity") return { ...state, sanity: ev.result };
     if (ev.type === "scheme")
-      return { ...state, venousMap: ev.map as MapaVenoso };
+      return {
+        ...state,
+        venousMap: ev.map as MapaVenoso,
+        venousAssetVersion: ev.asset_version,
+      };
     return state;
   }
   if (state.kind !== "generating") return state;

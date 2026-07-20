@@ -26,6 +26,8 @@ import {
 import {
   buildVenousCallouts,
   recolorVenousPixels,
+  recolorVenousPixels4,
+  VENOUS_4VIEW_COORDS,
   type MapaVenoso,
   type VenousCoords,
 } from "@laudousg/schemes";
@@ -33,40 +35,52 @@ import { pushSchemaToSala } from "@/lib/api";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 
+// Vista ÚNICA (anterior) — asset + coords + callouts em pílula (produção atual).
 const BASE_IMAGE = require("../../../assets/venous/venoso-lineart-veias.png");
 const COORDS = require("../../../assets/venous/venoso-lineart-veias-coords.json") as VenousCoords;
+// 4 VISTAS (8 células) — asset novo; coords vêm do pacote (@laudousg/schemes).
+const BASE_IMAGE_4VIEW = require("../../../assets/venous/venous-4view.png");
 const FONT_BOLD = require("../../../assets/fonts/Inter_700Bold.ttf");
 const FONT_REGULAR = require("../../../assets/fonts/Inter_400Regular.ttf");
 
 const EXAM_TYPE = "VENOSO_MMII";
 const EXAM_LABEL = "Doppler Venoso MMII";
-const SOURCE_WIDTH = COORDS.width ?? 944;
-const SOURCE_HEIGHT = COORDS.height ?? 1666;
-const SOURCE_ASPECT = SOURCE_WIDTH / SOURCE_HEIGHT;
 const LABEL_FONT_SIZE = 30;
 const SUB_FONT_SIZE = 26;
 const LEGEND_FONT_SIZE = 24;
 
+/** asset_version que aciona o render de 4 vistas (recolorVenousPixels4). */
+function is4ViewAsset(assetVersion?: string): boolean {
+  return (assetVersion ?? "").startsWith("venous-4view");
+}
+
 type Props = {
   map: MapaVenoso;
   reportId: string;
+  /** Do evento SSE "scheme"; decide vista única vs 4 vistas. */
+  assetVersion?: string;
 };
 
 type RenderedImage =
   | { image: SkImage; error: null; changedPixels: number }
   | { image: null; error: string; changedPixels: 0 };
 
-export function VenousSchemeView({ map, reportId }: Props) {
+export function VenousSchemeView({ map, reportId, assetVersion }: Props) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   const { width: windowWidth } = useWindowDimensions();
   const canvasRef = useCanvasRef();
-  const baseImage = useImage(BASE_IMAGE);
+  const is4View = is4ViewAsset(assetVersion);
+  const baseImage = useImage(is4View ? BASE_IMAGE_4VIEW : BASE_IMAGE);
   const labelFont = useFont(FONT_BOLD, LABEL_FONT_SIZE);
   const subFont = useFont(FONT_REGULAR, SUB_FONT_SIZE);
   const legendFont = useFont(FONT_REGULAR, LEGEND_FONT_SIZE);
   const [sending, setSending] = useState(false);
   const [sentLabel, setSentLabel] = useState<string | null>(null);
+
+  const sourceWidth = is4View ? VENOUS_4VIEW_COORDS.width : COORDS.width ?? 944;
+  const sourceHeight = is4View ? VENOUS_4VIEW_COORDS.height : COORDS.height ?? 1666;
+  const sourceAspect = sourceWidth / sourceHeight;
 
   const rendered = useMemo<RenderedImage>(() => {
     if (!baseImage || !labelFont || !subFont || !legendFont) {
@@ -92,13 +106,23 @@ export function VenousSchemeView({ map, reportId }: Props) {
     }
 
     const pixels = new Uint8Array(rawPixels);
-    const changedPixels = recolorVenousPixels(
-      pixels,
-      imageInfo.width,
-      imageInfo.height,
-      map,
-      COORDS,
-    );
+    // 4 vistas usa o motor de 8 células (recolorVenousPixels4) + coords do pacote;
+    // vista única mantém o recolor + callouts em pílula de produção.
+    const changedPixels = is4View
+      ? recolorVenousPixels4(
+          pixels,
+          imageInfo.width,
+          imageInfo.height,
+          map,
+          VENOUS_4VIEW_COORDS,
+        )
+      : recolorVenousPixels(
+          pixels,
+          imageInfo.width,
+          imageInfo.height,
+          map,
+          COORDS,
+        );
     const recoloredImage = Skia.Image.MakeImage(
       imageInfo,
       Skia.Data.fromBytes(pixels),
@@ -113,15 +137,19 @@ export function VenousSchemeView({ map, reportId }: Props) {
       };
     }
 
-    const image = drawCalloutsImage(
-      recoloredImage,
-      imageInfo.width,
-      imageInfo.height,
-      map,
-      labelFont,
-      subFont,
-      legendFont,
-    );
+    // 4 vistas: sem callouts em pílula (as anotações manuscritas são o C5); o
+    // desenho recolorido já é o resultado. Vista única: callouts como hoje.
+    const image = is4View
+      ? recoloredImage
+      : drawCalloutsImage(
+          recoloredImage,
+          imageInfo.width,
+          imageInfo.height,
+          map,
+          labelFont,
+          subFont,
+          legendFont,
+        );
 
     if (!image) {
       return {
@@ -132,10 +160,10 @@ export function VenousSchemeView({ map, reportId }: Props) {
     }
 
     return { image, error: null, changedPixels };
-  }, [baseImage, labelFont, legendFont, map, subFont]);
+  }, [baseImage, labelFont, legendFont, map, subFont, is4View]);
 
   const previewWidth = Math.min(Math.max(windowWidth - 64, 220), 340);
-  const previewHeight = Math.round(previewWidth / SOURCE_ASPECT);
+  const previewHeight = Math.round(previewWidth / sourceAspect);
   const canSend = !!rendered.image && !sending;
 
   async function sendToSala() {

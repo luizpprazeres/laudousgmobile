@@ -1529,7 +1529,11 @@ function LaudoBody({
         ) : null}
 
         {state.kind === "done" && state.venousMap ? (
-          <VenousSchemeView map={state.venousMap} reportId={state.reportId} />
+          <VenousSchemeView
+            map={state.venousMap}
+            reportId={state.reportId}
+            assetVersion={state.venousAssetVersion}
+          />
         ) : null}
 
         {state.kind === "done" && text ? (
