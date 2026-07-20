@@ -43,13 +43,15 @@ const COORDS = require("../../../assets/venous/venoso-lineart-veias-coords.json"
 const BASE_IMAGE_4VIEW = require("../../../assets/venous/venous-4view.png");
 const FONT_BOLD = require("../../../assets/fonts/Inter_700Bold.ttf");
 const FONT_REGULAR = require("../../../assets/fonts/Inter_400Regular.ttf");
+// Fonte manuscrita (Caveat, OFL) para as anotações C5 — estilo D3.
+const FONT_HANDWRITING = require("../../../assets/fonts/Caveat.ttf");
 
 const EXAM_TYPE = "VENOSO_MMII";
 const EXAM_LABEL = "Doppler Venoso MMII";
 const LABEL_FONT_SIZE = 30;
 const SUB_FONT_SIZE = 26;
 const LEGEND_FONT_SIZE = 24;
-const ANN_FONT_SIZE = 52; // anotações C5 (espaço da arte 2048×3072)
+const ANN_FONT_SIZE = 64; // anotações C5 cursivas (espaço da arte 2048×3072; Caveat)
 const ANN_COLOR = "#7a1f2b"; // vinho discreto (medida manuscrita)
 
 /** asset_version que aciona o render de 4 vistas (recolorVenousPixels4). */
@@ -78,9 +80,9 @@ export function VenousSchemeView({ map, reportId, assetVersion }: Props) {
   const labelFont = useFont(FONT_BOLD, LABEL_FONT_SIZE);
   const subFont = useFont(FONT_REGULAR, SUB_FONT_SIZE);
   const legendFont = useFont(FONT_REGULAR, LEGEND_FONT_SIZE);
-  // Anotações manuscritas (C5) — fonte maior (a arte 2048px reduz muito no preview;
-  // legível no PNG exportado). TODO(estilo): trocar por fonte handwriting quando bundlada.
-  const annFont = useFont(FONT_BOLD, ANN_FONT_SIZE);
+  // Anotações manuscritas (C5) — fonte cursiva Caveat, maior (a arte 2048px reduz
+  // muito no preview; legível no PNG exportado).
+  const annFont = useFont(FONT_HANDWRITING, ANN_FONT_SIZE);
   const [sending, setSending] = useState(false);
   const [sentLabel, setSentLabel] = useState<string | null>(null);
 
