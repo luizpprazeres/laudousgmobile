@@ -21,6 +21,8 @@ import { ExamSectionNav } from './ExamSectionNav'
 import { LaudarRail } from './LaudarRail'
 import { LaudoPreview } from './LaudoPreview'
 import { saveWebReport } from '@/lib/webReports'
+import { categoryCompactName, categoryDotClass } from './categoryPresentation'
+import { WorkspaceInputDock } from './WorkspaceInputDock'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
@@ -32,6 +34,57 @@ type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normal
 const TIREOIDE_CATEGORY = {
   id: TIREOIDE_ID,
   name: 'Tireoide',
+}
+
+type LaudarWebExperienceProps = {
+  workspaceV2?: boolean
+  richEditor?: boolean
+  agentWorkspace?: boolean
+}
+
+type ReportDraft = {
+  text: string
+  sourceText: string
+  dirty: boolean
+}
+
+function CategorySelector({
+  categoria,
+  currentName,
+  compact,
+  onChange,
+}: {
+  categoria: string
+  currentName: string
+  compact: boolean
+  onChange: (categoryId: string) => void
+}) {
+  return (
+    <label
+      className={
+        compact
+          ? 'relative inline-flex h-8 min-w-[210px] items-center gap-2 rounded-full border border-gray-200 bg-white px-3 pr-8 text-xs font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200'
+          : 'relative inline-flex h-10 items-center rounded-full border border-rose-200 bg-rose-50 px-4 pr-9 text-sm font-bold text-rose-500 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300'
+      }
+    >
+      <select
+        value={categoria}
+        onChange={(event) => onChange(event.target.value)}
+        className="absolute inset-0 cursor-pointer opacity-0"
+        aria-label="Selecionar categoria"
+      >
+        {GENERIC_CATEGORIES.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+        <option value={TIREOIDE_ID}>Tireoide</option>
+      </select>
+      {compact ? <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${categoryDotClass(categoria)}`} /> : null}
+      <span className="truncate">{compact ? categoryCompactName(categoria, currentName) : currentName}</span>
+      <ChevronDown className={`absolute right-3 ${compact ? 'h-3.5 w-3.5 text-gray-400' : 'h-4 w-4'}`} />
+    </label>
+  )
 }
 
 function ToolbarPill({
@@ -79,7 +132,7 @@ function completedTireoideSections(state: TireoideState) {
   return completed
 }
 
-export function LaudarWebExperience() {
+export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, agentWorkspace = false }: LaudarWebExperienceProps) {
   const [categoria, setCategoria] = useState<string>(GENERIC_CATEGORIES[0]?.id ?? 'ABDOMEN_TOTAL')
   // Um ExamState por categoria genérica (preserva o preenchimento ao alternar).
   const [examStates, setExamStates] = useState<Record<string, ExamState>>(() =>
@@ -131,9 +184,45 @@ export function LaudarWebExperience() {
     const cat = CATEGORIES[categoria]
     return cat ? composeReport(cat, examStates[categoria]).text : ''
   }, [categoria, examStates, isTireoide, tireoideState])
+
+  // O texto manual é preservado por categoria. Enquanto o usuário não editar,
+  // os controles determinísticos continuam atualizando o documento ao vivo.
+  // Depois da primeira edição, uma nova composição nunca sobrescreve o rascunho.
+  const [reportDrafts, setReportDrafts] = useState<Record<string, ReportDraft>>({})
+  const storedDraft = reportDrafts[categoria]
+  const activeDraft: ReportDraft = storedDraft ?? {
+    text: composedText,
+    sourceText: composedText,
+    dirty: false,
+  }
+  const documentText = richEditor && activeDraft.dirty ? activeDraft.text : composedText
+  const sourceChanged = richEditor && activeDraft.dirty && activeDraft.sourceText !== composedText
+  const onDocumentChange = (text: string) => {
+    setReportDrafts((drafts) => {
+      const sourceText = drafts[categoria]?.dirty ? drafts[categoria].sourceText : composedText
+      return {
+        ...drafts,
+        [categoria]: {
+          text,
+          sourceText,
+          dirty: text !== sourceText,
+        },
+      }
+    })
+  }
+  const resetDocumentDraft = () => {
+    if (activeDraft.dirty && typeof window !== 'undefined') {
+      const confirmed = window.confirm('Substituir a edição manual pelo modelo gerado a partir dos campos atuais?')
+      if (!confirmed) return
+    }
+    setReportDrafts((drafts) => ({
+      ...drafts,
+      [categoria]: { text: composedText, sourceText: composedText, dirty: false },
+    }))
+  }
   const preview = useMemo(
-    () => appendInitials(composedText, initialsOn ? initials : undefined),
-    [composedText, initialsOn]
+    () => appendInitials(documentText, initialsOn ? initials : undefined),
+    [documentText, initials, initialsOn]
   )
 
   // Persistência real (S9) — substitui o status falso. Volta a "idle" quando o
@@ -197,33 +286,43 @@ export function LaudarWebExperience() {
   }
 
   return (
-    <div className="min-h-screen overflow-hidden bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/70 px-5 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/70">
-        <div className="flex items-end gap-0.5 font-barlow text-[22px] leading-none tracking-tight">
-          <span className="font-extrabold text-emerald-700 dark:text-emerald-500">Laudo</span>
-          <span className="font-normal text-emerald-600 dark:text-emerald-400">USG</span>
-          <span className="mb-1 ml-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
-        </div>
-        <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
-        <span className="font-barlow text-base font-medium text-gray-500 dark:text-gray-400">Web</span>
-
-        <label className="relative inline-flex h-10 items-center rounded-full border border-rose-200 bg-rose-50 px-4 pr-9 text-sm font-bold text-rose-500 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
-          <select
-            value={categoria}
-            onChange={(event) => setCategoria(event.target.value)}
-            className="absolute inset-0 cursor-pointer opacity-0"
-            aria-label="Selecionar categoria"
-          >
-            {GENERIC_CATEGORIES.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-            <option value={TIREOIDE_ID}>Tireoide</option>
-          </select>
-          {currentCategory.name}
-          <ChevronDown className="absolute right-3 h-4 w-4" />
-        </label>
+    <div className={`min-h-screen overflow-hidden text-gray-900 dark:text-gray-100 ${workspaceV2 ? 'bg-[#F2F2F7] p-2 dark:bg-[#0B0B0F]' : 'bg-gray-100 dark:bg-gray-950'}`}>
+      <header className={workspaceV2
+        ? 'sticky top-0 z-40 flex h-[76px] items-center gap-3 bg-transparent px-2'
+        : 'sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/70 px-5 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/70'}>
+        {workspaceV2 ? (
+          <div className="flex flex-col items-start gap-1.5">
+            <div className="flex items-end gap-2">
+              <div className="flex items-end gap-0.5 font-barlow text-[19px] leading-none tracking-tight">
+                <span className="font-extrabold text-emerald-800 dark:text-emerald-300">Laudo</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">USG</span>
+              </div>
+              <span className="font-barlow text-xs font-medium text-gray-400 dark:text-gray-500">Web</span>
+            </div>
+            <CategorySelector
+              categoria={categoria}
+              currentName={currentCategory.name}
+              compact
+              onChange={setCategoria}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="flex items-end gap-0.5 font-barlow text-[22px] leading-none tracking-tight">
+              <span className="font-extrabold text-emerald-700 dark:text-emerald-500">Laudo</span>
+              <span className="font-normal text-emerald-600 dark:text-emerald-400">USG</span>
+              <span className="mb-1 ml-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
+            </div>
+            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
+            <span className="font-barlow text-base font-medium text-gray-500 dark:text-gray-400">Web</span>
+            <CategorySelector
+              categoria={categoria}
+              currentName={currentCategory.name}
+              compact={false}
+              onChange={setCategoria}
+            />
+          </>
+        )}
 
         {isTireoide ? (
           <ToolbarPill
@@ -234,17 +333,23 @@ export function LaudarWebExperience() {
           </ToolbarPill>
         ) : null}
 
-        <ToolbarPill><Calculator className="h-4 w-4" />Cálculos</ToolbarPill>
-        <ToolbarPill><Mic className="h-4 w-4" />Ditar</ToolbarPill>
-        <ToolbarPill><Image className="h-4 w-4" />Imagem</ToolbarPill>
-        <ToolbarPill tone="purple">Múltiplos</ToolbarPill>
+        {!workspaceV2 ? (
+          <>
+            <ToolbarPill><Calculator className="h-4 w-4" />Cálculos</ToolbarPill>
+            <ToolbarPill><Mic className="h-4 w-4" />Ditar</ToolbarPill>
+            <ToolbarPill><Image className="h-4 w-4" />Imagem</ToolbarPill>
+            <ToolbarPill tone="purple">Múltiplos</ToolbarPill>
+          </>
+        ) : null}
         <div className="flex-1" />
-        <ToolbarPill tone="primary"><Sparkles className="h-4 w-4" />Gerar com IA</ToolbarPill>
+        {!workspaceV2 ? <ToolbarPill tone="primary"><Sparkles className="h-4 w-4" />Gerar com IA</ToolbarPill> : null}
       </header>
 
-      <main className="relative h-[calc(100vh-64px)]">
-        <LaudarRail />
-        <div className="ml-16 grid h-full grid-cols-[196px_minmax(420px,1fr)_minmax(460px,1fr)]">
+      <main className={`relative ${workspaceV2 ? 'h-[calc(100vh-92px)]' : 'h-[calc(100vh-64px)]'}`}>
+        <LaudarRail workspaceV2={workspaceV2} />
+        <div className={workspaceV2
+          ? 'ml-14 grid h-full grid-cols-[142px_minmax(330px,0.88fr)_minmax(420px,1.32fr)] gap-2'
+          : 'ml-16 grid h-full grid-cols-[196px_minmax(420px,1fr)_minmax(460px,1fr)]'}>
           <ExamSectionNav
             sections={sections}
             activeId={activeSection?.id ?? ''}
@@ -255,10 +360,13 @@ export function LaudarWebExperience() {
             controls={controls}
             opts={opts}
             onOpts={onOpts}
+            workspaceV2={workspaceV2}
           />
 
-          <section className="min-h-0 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-            <div className="border-b border-gray-200 bg-white px-6 py-3 dark:border-gray-800 dark:bg-gray-950">
+          <section className={`min-h-0 ${workspaceV2 ? 'flex flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]' : 'overflow-y-auto bg-gray-50 dark:bg-gray-900'}`}>
+            <div className={workspaceV2
+              ? 'sticky top-0 z-10 border-b border-gray-100 bg-white/95 px-4 py-3 backdrop-blur-xl dark:border-gray-800 dark:bg-[#1C1C1E]/95'
+              : 'border-b border-gray-200 bg-white px-6 py-3 dark:border-gray-800 dark:bg-gray-950'}>
               <div className="flex items-center justify-between gap-4">
                 <p className="text-[13px] text-gray-500 dark:text-gray-400">
                   {isTireoide
@@ -272,7 +380,7 @@ export function LaudarWebExperience() {
               </div>
             </div>
 
-            <div className="px-6 py-5">
+            <div className={workspaceV2 ? 'min-h-0 flex-1 overflow-y-auto px-3 py-2.5' : 'px-6 py-5'}>
               {activeSection?.id?.startsWith('calc:') ? (
                 (() => {
                   const spec = calculators.find((c) => `calc:${c.id}` === activeSection.id)
@@ -288,6 +396,7 @@ export function LaudarWebExperience() {
                 <OrganFormPanel
                   schema={activeSection.module.schema}
                   state={examState?.[activeSection.id] ?? activeSection.module.initialState()}
+                  compact={workspaceV2}
                   onChange={(nextState) =>
                     setExamStates((all) => ({
                       ...all,
@@ -304,21 +413,31 @@ export function LaudarWebExperience() {
               )}
             </div>
 
-            <footer className="sticky bottom-0 flex items-center gap-3 border-t border-gray-200 bg-white/90 px-7 py-4 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/90">
-              <span className="text-xs text-gray-500 dark:text-gray-400">Atalhos</span>
-              <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">⌘K</kbd>
-              <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">Tab</kbd>
-              <div className="flex-1" />
-              <button type="button" onClick={() => previous && setActiveSectionId(previous.id)} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" disabled={!previous || previous.id === activeSection?.id}>
-                <ArrowLeft className="h-4 w-4" /> anterior
-              </button>
-              <button type="button" onClick={() => next && setActiveSectionId(next.id)} className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900" disabled={!next || next.id === activeSection?.id}>
-                próxima <ArrowRight className="h-4 w-4" />
-              </button>
-            </footer>
+            {workspaceV2 && agentWorkspace ? (
+              <WorkspaceInputDock
+                canGoPrevious={Boolean(previous && previous.id !== activeSection?.id)}
+                canGoNext={Boolean(next && next.id !== activeSection?.id)}
+                onPrevious={() => previous && setActiveSectionId(previous.id)}
+                onNext={() => next && setActiveSectionId(next.id)}
+              />
+            ) : (
+              <footer className={`sticky bottom-0 flex items-center gap-3 border-t backdrop-blur-xl ${workspaceV2 ? 'border-gray-100 bg-white/95 px-4 py-3 dark:border-gray-800 dark:bg-[#1C1C1E]/95' : 'border-gray-200 bg-white/90 px-7 py-4 dark:border-gray-800 dark:bg-gray-950/90'}`}>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Atalhos</span>
+                <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">⌘K</kbd>
+                <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">Tab</kbd>
+                <div className="flex-1" />
+                <button type="button" onClick={() => previous && setActiveSectionId(previous.id)} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" disabled={!previous || previous.id === activeSection?.id}>
+                  <ArrowLeft className="h-4 w-4" /> anterior
+                </button>
+                <button type="button" onClick={() => next && setActiveSectionId(next.id)} className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900" disabled={!next || next.id === activeSection?.id}>
+                  próxima <ArrowRight className="h-4 w-4" />
+                </button>
+              </footer>
+            )}
           </section>
 
           <LaudoPreview
+            documentKey={categoria}
             text={preview}
             initialsOn={initialsOn}
             onToggleInitials={() => setInitialsOn((value) => !value)}
@@ -326,6 +445,13 @@ export function LaudarWebExperience() {
             saveState={saveState}
             saveError={saveError}
             onSave={onSave}
+            workspaceV2={workspaceV2}
+            editable={workspaceV2 && richEditor}
+            editableText={documentText}
+            draftDirty={activeDraft.dirty}
+            sourceChanged={sourceChanged}
+            onTextChange={onDocumentChange}
+            onResetDraft={resetDocumentDraft}
           />
         </div>
       </main>
