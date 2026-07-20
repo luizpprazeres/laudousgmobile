@@ -25,6 +25,7 @@ import {
 } from "@shopify/react-native-skia";
 import {
   buildVenousCallouts,
+  buildVenousAnnotations4,
   recolorVenousPixels,
   recolorVenousPixels4,
   VENOUS_4VIEW_COORDS,
@@ -48,6 +49,8 @@ const EXAM_LABEL = "Doppler Venoso MMII";
 const LABEL_FONT_SIZE = 30;
 const SUB_FONT_SIZE = 26;
 const LEGEND_FONT_SIZE = 24;
+const ANN_FONT_SIZE = 52; // anotações C5 (espaço da arte 2048×3072)
+const ANN_COLOR = "#7a1f2b"; // vinho discreto (medida manuscrita)
 
 /** asset_version que aciona o render de 4 vistas (recolorVenousPixels4). */
 function is4ViewAsset(assetVersion?: string): boolean {
@@ -75,6 +78,9 @@ export function VenousSchemeView({ map, reportId, assetVersion }: Props) {
   const labelFont = useFont(FONT_BOLD, LABEL_FONT_SIZE);
   const subFont = useFont(FONT_REGULAR, SUB_FONT_SIZE);
   const legendFont = useFont(FONT_REGULAR, LEGEND_FONT_SIZE);
+  // Anotações manuscritas (C5) — fonte maior (a arte 2048px reduz muito no preview;
+  // legível no PNG exportado). TODO(estilo): trocar por fonte handwriting quando bundlada.
+  const annFont = useFont(FONT_BOLD, ANN_FONT_SIZE);
   const [sending, setSending] = useState(false);
   const [sentLabel, setSentLabel] = useState<string | null>(null);
 
@@ -83,7 +89,7 @@ export function VenousSchemeView({ map, reportId, assetVersion }: Props) {
   const sourceAspect = sourceWidth / sourceHeight;
 
   const rendered = useMemo<RenderedImage>(() => {
-    if (!baseImage || !labelFont || !subFont || !legendFont) {
+    if (!baseImage || !labelFont || !subFont || !legendFont || !annFont) {
       return { image: null, error: "Carregando imagem-base…", changedPixels: 0 };
     }
 
@@ -137,10 +143,16 @@ export function VenousSchemeView({ map, reportId, assetVersion }: Props) {
       };
     }
 
-    // 4 vistas: sem callouts em pílula (as anotações manuscritas são o C5); o
-    // desenho recolorido já é o resultado. Vista única: callouts como hoje.
+    // 4 vistas: anotações manuscritas (C5) ao lado do vaso, sem callouts em pílula.
+    // Vista única: callouts como hoje.
     const image = is4View
-      ? recoloredImage
+      ? drawAnnotationsImage(
+          recoloredImage,
+          imageInfo.width,
+          imageInfo.height,
+          map,
+          annFont,
+        )
       : drawCalloutsImage(
           recoloredImage,
           imageInfo.width,
@@ -154,13 +166,13 @@ export function VenousSchemeView({ map, reportId, assetVersion }: Props) {
     if (!image) {
       return {
         image: null,
-        error: "Não foi possível desenhar os callouts do esquema venoso.",
+        error: "Não foi possível desenhar as anotações do esquema venoso.",
         changedPixels: 0,
       };
     }
 
     return { image, error: null, changedPixels };
-  }, [baseImage, labelFont, legendFont, map, subFont, is4View]);
+  }, [baseImage, labelFont, legendFont, map, subFont, annFont, is4View]);
 
   const previewWidth = Math.min(Math.max(windowWidth - 64, 220), 340);
   const previewHeight = Math.round(previewWidth / sourceAspect);
@@ -247,6 +259,63 @@ export function VenousSchemeView({ map, reportId, assetVersion }: Props) {
       </View>
     </View>
   );
+}
+
+/**
+ * Desenha as anotações manuscritas (C5) sobre o recolor de 4 vistas: cada medida
+ * na margem da célula + traço-guia até o vaso. Layout vem de `buildVenousAnnotations4`
+ * (compartilhado com iOS). `side` decide o alinhamento (esquerda = alinhado à
+ * direita terminando em textPos; direita = alinhado à esquerda começando em textPos).
+ */
+function drawAnnotationsImage(
+  recoloredImage: SkImage,
+  width: number,
+  height: number,
+  map: MapaVenoso,
+  annFont: SkFont,
+): SkImage | null {
+  const surfaceFactory = Skia.Surface as unknown as {
+    MakeOffscreen?: (width: number, height: number) => ReturnType<typeof Skia.Surface.Make> | null;
+    Make?: (width: number, height: number) => ReturnType<typeof Skia.Surface.Make> | null;
+  };
+  const surface =
+    surfaceFactory.MakeOffscreen?.(width, height) ??
+    surfaceFactory.Make?.(width, height);
+  if (!surface) return null;
+
+  const canvas = surface.getCanvas();
+  canvas.clear(Skia.Color("white"));
+  canvas.drawImage(recoloredImage, 0, 0);
+
+  const layout = buildVenousAnnotations4(map, VENOUS_4VIEW_COORDS);
+
+  const linePaint = Skia.Paint();
+  linePaint.setColor(Skia.Color(ANN_COLOR));
+  linePaint.setStrokeWidth(3);
+  linePaint.setAntiAlias(true);
+
+  const dotPaint = Skia.Paint();
+  dotPaint.setColor(Skia.Color(ANN_COLOR));
+  dotPaint.setAntiAlias(true);
+
+  const textPaint = Skia.Paint();
+  textPaint.setColor(Skia.Color(ANN_COLOR));
+  textPaint.setAntiAlias(true);
+
+  const baselineShift = ANN_FONT_SIZE / 3; // centra o texto verticalmente na âncora
+
+  for (const label of layout.labels) {
+    const [ax, ay] = label.anchor;
+    const [tx, ty] = label.textPos;
+    canvas.drawLine(ax, ay, tx, ty, linePaint);
+    canvas.drawCircle(ax, ay, 6, dotPaint);
+    const textWidth = annFont.measureText(label.texto).width;
+    // side "left" = texto termina em tx (alinhado à direita); "right" = começa em tx.
+    const drawX = label.side === "left" ? tx - textWidth : tx;
+    canvas.drawText(label.texto, drawX, ty + baselineShift, textPaint, annFont);
+  }
+
+  return surface.makeImageSnapshot();
 }
 
 function drawCalloutsImage(
