@@ -14,5 +14,12 @@ export default async function GerarPage() {
 
   if (!user) redirect('/login?redirect=/app/gerar')
 
-  return <LaudarWebExperience />
+  return (
+    <LaudarWebExperience
+      workspaceV2={process.env.WEB_WORKSPACE_V2 === 'true'}
+      richEditor={process.env.WEB_RICH_EDITOR === 'true'}
+      agentWorkspace={process.env.WEB_AGENT_SUGGESTIONS === 'true'}
+      mobileCompanion={process.env.WEB_MOBILE_COMPANION === 'true'}
+    />
+  )
 }
