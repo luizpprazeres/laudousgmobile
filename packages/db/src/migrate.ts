@@ -34,6 +34,7 @@ async function main() {
     "0015_doppler_obstetrico_objetivo.sql",
     "0016_msk_reforco_cobertura.sql",
     "0017_quality_bulletins.sql",
+    "0021_workspace_companion.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);
