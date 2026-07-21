@@ -177,6 +177,11 @@ const ServerEnvSchema = z.object({
   // "scheme" com o MapaVenoso (só o DESENHO; o texto do laudo continua no writer).
   // OFF = nada muda. Fail-safe: falha nunca derruba o laudo.
   VENOUS_SCHEME_MAP: z.string().default("false"),
+  // Cartografia venosa de 4 VISTAS: quando "true", o evento SSE "scheme" anuncia
+  // asset_version "venous-4view-1" (o cliente renderiza as 8 células com
+  // recolorVenousPixels4). OFF = mantém "venoso-anterior-1" (vista única). O
+  // MapaVenoso é o mesmo; só muda o asset/coords/render no cliente. Fail-safe.
+  VENOUS_SCHEME_4VIEW: z.string().default("false"),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),

@@ -1056,7 +1056,11 @@ export async function POST(req: Request) {
             type: "scheme",
             ts: nowIso(),
             exam_type: "VENOSO_MMII",
-            asset_version: "venoso-anterior-1",
+            // 4 vistas (recolorVenousPixels4) quando a flag liga; senão vista única.
+            asset_version:
+              env().VENOUS_SCHEME_4VIEW === "true"
+                ? "venous-4view-1"
+                : "venoso-anterior-1",
             map: venousMap,
           });
         }

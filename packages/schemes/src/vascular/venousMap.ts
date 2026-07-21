@@ -47,11 +47,26 @@ export type LadoDesenho = {
   segmentos: Partial<Record<SegmentoVenoso, EstadoSegmento>>;
 };
 
+/**
+ * Anotação manuscrita (C5/D3): medida curta ao lado do vaso (cm/mm/profundidade).
+ * `segmento` posiciona na célula/vaso (magna→medial, parva→posterior); `topografia`
+ * (perfurante) posiciona por nível aproximado. Só entra quando há número claro.
+ */
+export type VenousAnnotation = {
+  lado: LadoVenoso;
+  tipo: "calibre" | "perfurante" | "refluxo";
+  texto: string; // ex.: "5,8 mm" · "Ø 3,3 mm"
+  segmento?: SegmentoVenoso;
+  topografia?: PerfuranteDesenho["topografia"];
+};
+
 export type MapaVenoso = {
   lados: { direito: LadoDesenho; esquerdo: LadoDesenho };
   lesoes: LesaoDesenho[];
   perfurantes: PerfuranteDesenho[];
   tvp_presente: boolean;
+  // Anotações manuscritas (C5). Opcional/aditivo: clientes antigos ignoram.
+  anotacoes?: VenousAnnotation[];
 };
 
 /** Nome de exibição por segmento (pt-BR) para os rótulos do desenho. */
@@ -131,10 +146,22 @@ export function buildMapaVenoso(findings: VenosoMMIIFindings): MapaVenoso {
   };
   const lesoes: LesaoDesenho[] = [];
   const perfurantes: PerfuranteDesenho[] = [];
+  const anotacoes: VenousAnnotation[] = [];
+  // Segmentos com coords na arte de 4 vistas → anotar calibre ao lado do vaso.
+  const SEG_ANOTAVEL = new Set<SegmentoVenoso>(["safena_magna", "safena_parva"]);
 
   (["direito", "esquerdo"] as const).forEach((lado) => {
     const leg = findings.lados[lado];
     for (const f of leg.segmentos) {
+      // Anotação manuscrita de calibre (C5): só das safenas desenhadas, quando ditado.
+      if (f.calibre_mm != null && SEG_ANOTAVEL.has(f.segmento)) {
+        anotacoes.push({
+          lado,
+          tipo: "calibre",
+          texto: `${fmt(f.calibre_mm)} mm`,
+          segmento: f.segmento,
+        });
+      }
       const m = mapSegmento(f);
       if (!m) continue;
       // Estado por segmento (o mais grave vence se repetir — trombose > refluxo).
@@ -159,10 +186,19 @@ export function buildMapaVenoso(findings: VenosoMMIIFindings): MapaVenoso {
         label: `Perfurante de ${TOPO_LABEL[p.topografia]} incompetente`,
         sub: detalhes,
       });
+      // Anotação manuscrita da perfurante (C5): Ø ao lado, por topografia.
+      if (p.diametro_mm != null) {
+        anotacoes.push({
+          lado,
+          tipo: "perfurante",
+          texto: `Ø ${fmt(p.diametro_mm)} mm`,
+          topografia: p.topografia,
+        });
+      }
     }
   });
 
-  return { lados, lesoes, perfurantes, tvp_presente: findings.tvp_presente };
+  return { lados, lesoes, perfurantes, tvp_presente: findings.tvp_presente, anotacoes };
 }
 
 /** Ordem de gravidade p/ resolver segmento com múltiplos achados. */
