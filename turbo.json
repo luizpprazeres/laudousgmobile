@@ -7,7 +7,8 @@
     "WEB_WORKSPACE_V2",
     "WEB_RICH_EDITOR",
     "WEB_AGENT_SUGGESTIONS",
-    "WEB_MOBILE_COMPANION"
+    "WEB_MOBILE_COMPANION",
+    "NEXT_PUBLIC_API_URL"
   ],
   "tasks": {
     "build": {
