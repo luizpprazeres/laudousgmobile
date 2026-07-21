@@ -2,8 +2,8 @@
  * Compositor do laudo determinístico — monta o texto canônico completo
  * (TÍTULO / TÉCNICA / ANÁLISE / CONCLUSÃO) a partir do estado dos órgãos.
  *
- * Convenção de storage (igual ao ReportEditor): "\n\n" separa seções,
- * "\n" simples = quebra interna. O espaçamento visual é do CSS, não do texto.
+ * Convenção de storage (igual ao ReportEditor): "\n\n" separa os blocos
+ * principais; os achados de cada órgão usam "\n" simples entre si.
  */
 
 import type { OrganState } from './types'
@@ -86,8 +86,7 @@ export function composeReport(
   const parts = [
     titulo,
     `COMENTÁRIOS:\n${tecnica}`,
-    category.achadosHeader,
-    ...bodyParts,
+    [category.achadosHeader, ...bodyParts].join('\n'),
     `CONCLUSÃO:\n${conclusionBlock}`,
   ]
   if (category.footer) parts.push(category.footer)
