@@ -3,7 +3,11 @@
   "globalDependencies": [".env", ".env.local"],
   "globalEnv": [
     "NODE_ENV",
-    "VERCEL_ENV"
+    "VERCEL_ENV",
+    "WEB_WORKSPACE_V2",
+    "WEB_RICH_EDITOR",
+    "WEB_AGENT_SUGGESTIONS",
+    "WEB_MOBILE_COMPANION"
   ],
   "tasks": {
     "build": {
