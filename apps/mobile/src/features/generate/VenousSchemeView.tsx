@@ -280,9 +280,12 @@ function drawAnnotationsImage(
     MakeOffscreen?: (width: number, height: number) => ReturnType<typeof Skia.Surface.Make> | null;
     Make?: (width: number, height: number) => ReturnType<typeof Skia.Surface.Make> | null;
   };
+  // Preferir a surface CPU-backed (Make): recolor e export já são CPU, então
+  // evitamos a ida GPU→CPU e o contexto EGL que deixavam o preview branco no
+  // Android. MakeOffscreen (GPU) fica só como fallback.
   const surface =
-    surfaceFactory.MakeOffscreen?.(width, height) ??
-    surfaceFactory.Make?.(width, height);
+    surfaceFactory.Make?.(width, height) ??
+    surfaceFactory.MakeOffscreen?.(width, height);
   if (!surface) return null;
 
   const canvas = surface.getCanvas();
@@ -317,7 +320,12 @@ function drawAnnotationsImage(
     canvas.drawText(label.texto, drawX, ty + baselineShift, textPaint, annFont);
   }
 
-  return surface.makeImageSnapshot();
+  // flush + snapshot CPU: garante que o desenho foi materializado e que a imagem
+  // sobrevive ao cross-context do preview e do export (encodeToBase64). Sem cópia
+  // CPU válida, retornamos null (erro explícito) em vez de reintroduzir a textura
+  // que deixava o Canvas branco no Android.
+  surface.flush();
+  return surface.makeImageSnapshot().makeNonTextureImage();
 }
 
 function drawCalloutsImage(
@@ -333,9 +341,12 @@ function drawCalloutsImage(
     MakeOffscreen?: (width: number, height: number) => ReturnType<typeof Skia.Surface.Make> | null;
     Make?: (width: number, height: number) => ReturnType<typeof Skia.Surface.Make> | null;
   };
+  // Preferir a surface CPU-backed (Make): recolor e export já são CPU, então
+  // evitamos a ida GPU→CPU e o contexto EGL que deixavam o preview branco no
+  // Android. MakeOffscreen (GPU) fica só como fallback.
   const surface =
-    surfaceFactory.MakeOffscreen?.(width, height) ??
-    surfaceFactory.Make?.(width, height);
+    surfaceFactory.Make?.(width, height) ??
+    surfaceFactory.MakeOffscreen?.(width, height);
   if (!surface) return null;
 
   const canvas = surface.getCanvas();
@@ -411,7 +422,8 @@ function drawCalloutsImage(
   }
 
   drawLegend(canvas, layout.legend, width, height, legendFont);
-  return surface.makeImageSnapshot();
+  surface.flush();
+  return surface.makeImageSnapshot().makeNonTextureImage();
 }
 
 function drawLegend(
