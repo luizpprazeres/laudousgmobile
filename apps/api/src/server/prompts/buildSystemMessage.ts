@@ -11,6 +11,7 @@ import {
 import { getCategoryContract } from "./contracts";
 import { toObjectiveHeaders } from "./contracts/objective";
 import { getStyleOverlay } from "./styles";
+import { LIVRE_SYSTEM_PROMPT } from "../pipeline/livreSystemPrompt";
 
 /**
  * Monta o system message do writer seguindo a ordem do LaudoUSG original
@@ -42,6 +43,10 @@ export function buildSystemMessage(args: {
   writingStyleCode: WritingStyleCode;
   ragBlocks: RagBlockForPrompt[];
 }): string {
+  if (args.categoryCode === "LIVRE" || args.categoryCode === "TESTE") {
+    return LIVRE_SYSTEM_PROMPT;
+  }
+
   const contract = getCategoryContract(
     args.categoryCode,
     args.writingStyleCode,
