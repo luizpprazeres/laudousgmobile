@@ -8,3 +8,4 @@ export * from "./validator";
 export * from "./sanity";
 export * from "./generate";
 export * from "./report";
+export * from "./edit";

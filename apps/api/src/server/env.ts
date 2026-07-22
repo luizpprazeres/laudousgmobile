@@ -60,6 +60,10 @@ const ServerEnvSchema = z.object({
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
   // golden + review. Ver pipeline/commandOperations.ts.
   COMMAND_OPERATIONS: z.string().default("false"),
+  // Edição incremental A1: quando "true", o route poderá chamar o caminho de
+  // ajuste de laudo final existente (laudo inteiro editado + diff-guard). OFF =
+  // fluxo atual intacto; o módulo editReport.ts continua testável isoladamente.
+  EDIT_INCREMENTAL: z.string().default("false"),
   // Épico IG determinística (Domingos): quando "true", a conclusão obstétrica
   // (OBSTETRICA/MORFOLOGICO) considera a referência precoce (1ª US/DUM) corrigida
   // p/ a data do exame e sinaliza a correção na divergência > threshold. OFF =
@@ -78,6 +82,12 @@ const ServerEnvSchema = z.object({
   // itens livres extraídos mas NÃO inseridos (byte-idêntico). Ver OBSTETRICA.ts +
   // docs/camada-flexivel-design.md.
   FLEXIBLE_CONCLUSION: z.string().default("false"),
+  // Placenta: quando "true", o grau de Grannum sai como parentético no fim da
+  // frase da placenta ("(grau II de Grannum et al.)", romano) e, se a textura não
+  // foi ditada mas o grau sim, infere-a (grau 0 = homogênea; I/II/III =
+  // heterogênea, de acordo com a fase da gestação). SÓ no corpo, nunca na
+  // conclusão. OFF = comportamento atual (grau inline). Ver OBSTETRICA.ts.
+  GRANNUM_PLACENTA: z.string().default("false"),
   // Esquema visual venoso: quando "true", roda a extração side-channel de
   // DOPPLER_VENOSO_MMII APÓS o "done" e emite o evento SSE "scheme" com o
   // MapaVenoso (só o DESENHO; o texto do laudo continua no writer). OFF = nada

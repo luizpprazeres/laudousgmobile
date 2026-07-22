@@ -281,6 +281,23 @@ function grauFmt(s: string | null): string | null {
   const romano: Record<string, string> = { "0": "0", "1": "I", "2": "II", "3": "III" };
   return `grau ${romano[t] ?? t}`;
 }
+/** Parentético do Grannum no fim da frase: " (grau II de Grannum et al.)". "" se OFF/sem grau. */
+function grannumParen(grau: string | null, grannum: boolean): string {
+  if (!grannum) return "";
+  const g = grauFmt(grau);
+  return g ? ` (${g} de Grannum et al.)` : "";
+}
+/**
+ * Ecotextura da placenta: usa a ditada; se ausente e houver grau (flag ON),
+ * INFERE — grau 0 = homogênea; graus I/II/III = heterogênea, de acordo com a fase
+ * da gestação. Retorna null se nada disponível.
+ */
+function placentaEco(f: ObstetricaFindings, grannum: boolean): string | null {
+  if (f.placenta_ecotextura) return f.placenta_ecotextura;
+  if (!grannum || !f.placenta_grau) return null;
+  const g = f.placenta_grau.trim().replace(/^grau\s*/i, "");
+  return g === "0" ? "homogênea" : "heterogênea, de acordo com a fase da gestação";
+}
 function mm(v: number | null): string {
   return v === null ? "____" : ptBr(v);
 }
@@ -360,23 +377,28 @@ function pesoLinha(f: ObstetricaFindings["fetos"][number]): string {
   return `Peso aproximado de ${gramas(f.peso_g)} gramas${sufixo}.`;
 }
 
-function placentaFrase(f: ObstetricaFindings): string | null {
+function placentaFrase(f: ObstetricaFindings, grannum: boolean): string | null {
   const qtd = f.placenta_quantidade ?? f.numero_fetos;
   const grauTxt = grauFmt(f.placenta_grau);
+  const flagOn = grannum;
+  const paren = grannumParen(f.placenta_grau, grannum); // "" se OFF/sem grau
+  const eco = placentaEco(f, grannum); // ditada ou inferida (flag) ou null
   if (f.numero_fetos >= 2) {
     const base =
       qtd >= 2 ? `${qtd === 2 ? "Duas" : qtd === 3 ? "Três" : qtd} placentas` : "Placenta única";
     const loc = f.placenta_localizacao ? `, ${f.placenta_localizacao}` : "";
-    const grau = grauTxt ? `, ${grauTxt}` : "";
-    const eco = f.placenta_ecotextura ? `, com ecotextura ${f.placenta_ecotextura}` : "";
-    return `${base}${loc}${grau}${eco}.`;
+    // Flag ON: grau vira parentético no fim; OFF: inline (byte-idêntico).
+    const grau = !flagOn && grauTxt ? `, ${grauTxt}` : "";
+    const ecoTxt = eco ? `, com ecotextura ${eco}` : "";
+    return `${base}${loc}${grau}${ecoTxt}${paren}.`;
   }
-  if (!f.placenta_localizacao && !f.placenta_ecotextura && !grauTxt)
+  if (!f.placenta_localizacao && !eco && !grauTxt)
     return "Placenta de aspecto normal.";
   let frase = "Placenta";
   if (f.placenta_localizacao) frase += ` de localização ${f.placenta_localizacao}`;
-  if (grauTxt) frase += `, ${grauTxt}`;
-  if (f.placenta_ecotextura) frase += `, com ecotextura ${f.placenta_ecotextura}`;
+  if (!flagOn && grauTxt) frase += `, ${grauTxt}`;
+  if (eco) frase += `, com ecotextura ${eco}`;
+  frase += paren;
   return `${frase}.`;
 }
 
@@ -508,12 +530,18 @@ function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string
 export function renderObstetrica(
   f: ObstetricaFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean },
+  opts?: {
+    objetivo?: boolean;
+    igCorrection?: boolean;
+    flexivel?: boolean;
+    grannum?: boolean;
+  },
 ): string {
   const igc = opts?.igCorrection ?? false;
   const flx = opts?.flexivel ?? false;
-  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx);
-  return renderObstetricaClassico(f, igc, flx);
+  const grn = opts?.grannum ?? false;
+  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx, grn);
+  return renderObstetricaClassico(f, igc, flx, grn);
 }
 
 /** Monta o laudo obstétrico (estrutura por construção). */
@@ -521,6 +549,7 @@ export function renderObstetricaClassico(
   f: ObstetricaFindings,
   igCorrection = false,
   flexivel = false,
+  grannum = false,
 ): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
@@ -566,7 +595,7 @@ export function renderObstetricaClassico(
         `\nPeso fetal médio de ${gramas(pond.pesoMedio)} gramas. Divergência ponderal de ${gramas(pond.divergenciaG)} gramas (${ptBr(pond.divergenciaPct ?? 0)}%).`,
       );
     }
-    const plc = placentaFrase(f);
+    const plc = placentaFrase(f, grannum);
     if (plc) aspectos.push(`\n${plc}`);
     const liq = liquido(f);
     aspectos.push(liq.corpo);
@@ -605,7 +634,7 @@ export function renderObstetricaClassico(
       aspectos.push("\nA biometria fetal é a seguinte:");
       aspectos.push(...biometriaLinhas(ft));
       aspectos.push(pesoLinha(ft));
-      const plc = placentaFrase(f);
+      const plc = placentaFrase(f, grannum);
       if (plc) aspectos.push(`\n${plc}`);
     } else {
       aspectos.push(`Comprimento crânio-nádegas (CCN) de ${mm(ft.ccn_mm)} mm.`);
@@ -695,9 +724,12 @@ function pesoLinhaObj(f: ObstetricaFindings["fetos"][number]): string {
 }
 
 /** Placenta objetiva (frase enxuta). null = não descrita. */
-function placentaFraseObj(f: ObstetricaFindings): string | null {
+function placentaFraseObj(f: ObstetricaFindings, grannum: boolean): string | null {
   const g = grauFmt(f.placenta_grau);
   const grauTxt = g ? `${g} de Grannum et al.` : null;
+  const flagOn = grannum;
+  const paren = grannumParen(f.placenta_grau, grannum);
+  const eco = placentaEco(f, grannum);
   if (f.numero_fetos >= 2) {
     const qtd = f.placenta_quantidade ?? f.numero_fetos;
     const base =
@@ -705,8 +737,21 @@ function placentaFraseObj(f: ObstetricaFindings): string | null {
         ? `${qtd === 2 ? "Duas" : qtd === 3 ? "Três" : qtd} placentas`
         : "Placenta única";
     const loc = f.placenta_localizacao ? `, ${f.placenta_localizacao}` : "";
+    if (flagOn) {
+      const ecoTxt = eco ? `, com ecotextura ${eco}` : "";
+      return `${base}${loc}${ecoTxt}${paren}.`;
+    }
     const grau = grauTxt ? `, ${grauTxt}` : "";
     return `${base}${loc}${grau}.`;
+  }
+  if (flagOn) {
+    if (!f.placenta_localizacao && !eco && paren === "")
+      return "Placenta de aspecto normal.";
+    let frase = "Placenta";
+    if (f.placenta_localizacao) frase += ` de localização ${f.placenta_localizacao}`;
+    if (eco) frase += `, com ecotextura ${eco}`;
+    frase += paren;
+    return `${frase}.`;
   }
   if (!f.placenta_localizacao && !grauTxt) return "Placenta de aspecto normal.";
   let frase = "Placenta";
@@ -720,6 +765,7 @@ export function renderObstetricaObjetivo(
   f: ObstetricaFindings,
   igCorrection = false,
   flexivel = false,
+  grannum = false,
 ): string {
   const gemelar = f.numero_fetos >= 2;
   const titulo = gemelar
@@ -775,7 +821,7 @@ export function renderObstetricaObjetivo(
         `\nPeso fetal médio: ${g0(pond.pesoMedio)} g. Divergência ponderal: ${g0(pond.divergenciaG)} g (${ptBr1(pond.divergenciaPct ?? 0)}%).`,
       );
     }
-    const plc = placentaFraseObj(f);
+    const plc = placentaFraseObj(f, grannum);
     if (plc) achados.push(plc);
     const liq = liquido(f);
     achados.push(liq.corpo);
@@ -822,7 +868,7 @@ export function renderObstetricaObjetivo(
       achados.push("\nBiometria fetal:");
       achados.push(...biometriaLinhasObj(ft));
       achados.push(pesoLinhaObj(ft));
-      const plc = placentaFraseObj(f);
+      const plc = placentaFraseObj(f, grannum);
       if (plc) achados.push(plc);
       const liq = liquido(f);
       achados.push(liq.corpo);

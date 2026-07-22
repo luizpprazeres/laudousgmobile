@@ -24,6 +24,7 @@ Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.}}
 {{orgao:aorta|Aorta abdominal de calibre e contornos normais.}}
 {{orgao:bexiga|Bexiga de forma, contorno e ecotextura normais.}}
 {{extra_abdominais}}
+
 CONCLUSÃO:
 {{conclusao}}$tpl$
 WHERE category_code = 'ABDOMEN_TOTAL'
