@@ -88,10 +88,26 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
     type: z.literal("token"),
     delta: z.string(),
   }),
+  // Progresso de estágio (aditivo; clientes que não tratam ignoram). Mantido em
+  // sincronia com packages/shared.
+  z.object({
+    ...Base,
+    type: z.literal("stage"),
+    stage: z.enum(["interpretando", "achado", "calculando", "montando"]),
+    label: z.string(),
+  }),
   z.object({
     ...Base,
     type: z.literal("sanity"),
     result: SanityResultSchema,
+  }),
+  // Sanity emitido durante o stream (o server também manda no "done"/"blocked").
+  // Sem este tipo o RN rejeitava o evento com ZodError e o descartava.
+  z.object({
+    ...Base,
+    type: z.literal("sanity_warning"),
+    issues: z.array(SanityResultSchema.shape.issues.element),
+    severity: z.enum(["warning", "blocker"]),
   }),
   // Esquema visual (cartografia venosa) — entregue APÓS o "done", só o DESENHO
   // (texto do laudo vem no "done"/writer). Atrás da flag VENOUS_SCHEME_MAP no

@@ -225,5 +225,11 @@ function applySse(
       // generation_metadata. UI pode escutar via prop callback no futuro
       // — por ora não muda state.
       return state;
+    case "stage":
+    case "sanity_warning":
+      // Progresso/aviso durante o stream; o sanity final chega no done/blocked.
+      // Aditivos: aceitos pelo schema e ignorados no state (sem no-op o Zod
+      // rejeitava o evento inteiro com ZodError).
+      return state;
   }
 }
