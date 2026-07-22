@@ -21,13 +21,9 @@ import {
   initialGenerateState,
 } from "@/features/generate/state";
 import {
-  editReport,
   generateReportStream,
   pushReportToSala,
   updateReportFinalOutput,
-  type EditChangedLine,
-  type EditReportTarget,
-  type EditReportResponse,
   type MockScenario,
 } from "@/lib/api";
 import { Banner, type BannerSeverity } from "@/ui/Banner";
@@ -42,7 +38,6 @@ import {
   Mic,
   Pencil,
   Plus,
-  Quote,
   RotateCcw,
   Stop,
   X,
@@ -89,16 +84,6 @@ import { VenousSchemeView } from "@/features/generate/VenousSchemeView";
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
 type Tab = "achados" | "laudo";
-type AdjustmentStatus = "idle" | "recording" | "transcribing" | "submitting";
-
-const ADJUST_TARGET_OPTIONS: Array<{
-  value: EditReportTarget;
-  label: string;
-}> = [
-  { value: "body", label: "Corpo" },
-  { value: "conclusion", label: "Conclusão" },
-  { value: "both", label: "Ambos" },
-];
 
 export default function GenerateScreen() {
   const insets = useSafeAreaInsets();
@@ -153,7 +138,6 @@ export default function GenerateScreen() {
   const aborterRef = useRef<AbortController | null>(null);
   // Aborter do upload de transcrição (X do composer cancela sem perder áudio).
   const uploadAborterRef = useRef<AbortController | null>(null);
-  const adjustAborterRef = useRef<AbortController | null>(null);
   const recordingRef = useRef<AudioNS.Recording | null>(null);
   // Nível de áudio real (metering) → waveform do overlay (P0 critique).
   const [micLevel, setMicLevel] = useState<number | null>(null);
@@ -164,11 +148,6 @@ export default function GenerateScreen() {
 
   // ── Edição inline do laudo final (paridade iOS: autosave 600ms) ──
   const [editingLaudo, setEditingLaudo] = useState(false);
-  const [adjustOpen, setAdjustOpen] = useState(false);
-  const [adjustInstruction, setAdjustInstruction] = useState("");
-  const [adjustTarget, setAdjustTarget] = useState<EditReportTarget>("body");
-  const [adjustStatus, setAdjustStatus] = useState<AdjustmentStatus>("idle");
-  const [adjustResult, setAdjustResult] = useState<EditReportResponse | null>(null);
   const [saveStatus, setSaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
@@ -230,14 +209,6 @@ export default function GenerateScreen() {
     saveTimerRef.current = setTimeout(() => flushRef.current(), 600);
   }
 
-  function applyFinalText(nextText: string) {
-    if (state.kind !== "done") return;
-    dispatch({ type: "EDIT_FINAL", text: nextText });
-    setSaveStatus("saving");
-    pendingSaveRef.current = { reportId: state.reportId, text: nextText };
-    flushRef.current();
-  }
-
   async function onCopyLaudo() {
     if (state.kind !== "done") return;
     try {
@@ -296,142 +267,6 @@ export default function GenerateScreen() {
     dispatch({ type: "RESET" });
     setTab("achados");
   };
-
-  function stopAdjustmentRecordingIfNeeded() {
-    adjustAborterRef.current?.abort();
-    adjustAborterRef.current = null;
-    if (adjustStatus !== "recording") {
-      if (adjustStatus === "transcribing" || adjustStatus === "submitting") {
-        setAdjustStatus("idle");
-      }
-      return;
-    }
-    const rec = recordingRef.current;
-    recordingRef.current = null;
-    setMicLevel(null);
-    setAdjustStatus("idle");
-    if (rec) stopRecording(rec).catch(() => undefined);
-  }
-
-  function toggleAdjustmentPanel() {
-    if (adjustOpen) stopAdjustmentRecordingIfNeeded();
-    setAdjustOpen((open) => !open);
-    setAdjustResult(null);
-  }
-
-  async function submitAdjustment(rawInstruction: string) {
-    if (state.kind !== "done" || adjustStatus === "submitting") return;
-    const instruction = rawInstruction.trim();
-    if (!instruction) {
-      setNotice({
-        severity: "warning",
-        message: "Diga ou escreva o ajuste antes de enviar.",
-      });
-      return;
-    }
-    setAdjustStatus("submitting");
-    setAdjustResult(null);
-    const aborter = new AbortController();
-    adjustAborterRef.current = aborter;
-    try {
-      const result = await editReport(
-        state.reportId,
-        instruction,
-        adjustTarget,
-        aborter.signal,
-      );
-      setAdjustResult(result);
-      if (result.accepted) {
-        applyFinalText(result.edited_text);
-        setAdjustInstruction("");
-        setNotice({ severity: "success", message: "Laudo ajustado." });
-      } else {
-        setNotice({
-          severity: "warning",
-          title: "Ajuste precisa de confirmação",
-          message: result.reason ?? "Revise a prévia antes de aplicar.",
-        });
-      }
-    } catch (e) {
-      if ((e as Error)?.name === "AbortError" || aborter.signal.aborted) return;
-      setNotice({
-        severity: "error",
-        title: "Não foi possível ajustar",
-        message: e instanceof Error ? e.message : String(e),
-      });
-    } finally {
-      if (adjustAborterRef.current === aborter) adjustAborterRef.current = null;
-      setAdjustStatus("idle");
-    }
-  }
-
-  async function toggleAdjustmentRecording() {
-    if (state.kind !== "done") return;
-    if (adjustStatus === "recording") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-      const rec = recordingRef.current;
-      recordingRef.current = null;
-      setMicLevel(null);
-      setAdjustStatus("transcribing");
-      if (!rec) {
-        setAdjustStatus("idle");
-        setNotice({ severity: "error", message: "Gravação perdida — tente de novo." });
-        return;
-      }
-      let uploadAborter: AbortController | null = null;
-      try {
-        const uri = await stopRecording(rec);
-        uploadAborter = new AbortController();
-        adjustAborterRef.current = uploadAborter;
-        const { transcript } = await uploadAudio(uri, uploadAborter.signal);
-        if (adjustAborterRef.current === uploadAborter) adjustAborterRef.current = null;
-        setAdjustInstruction(transcript);
-        await submitAdjustment(transcript);
-      } catch (e) {
-        if ((e as Error)?.name === "AbortError") {
-          setAdjustStatus("idle");
-          return;
-        }
-        if (uploadAborter && adjustAborterRef.current === uploadAborter) {
-          adjustAborterRef.current = null;
-        }
-        setNotice({
-          severity: "error",
-          title: "Não consegui transcrever o ajuste",
-          message: e instanceof Error ? e.message : String(e),
-        });
-        setAdjustStatus("idle");
-      }
-      return;
-    }
-
-    if (adjustStatus !== "idle" || recording || transcribing || generating) return;
-
-    if (Platform.OS === "web") {
-      setNotice({
-        severity: "warning",
-        title: "Gravação só no app",
-        message: "Use o campo de texto para escrever o ajuste no navegador.",
-      });
-      return;
-    }
-
-    try {
-      await ensureMicPermission();
-      const rec = await startRecording((level) => setMicLevel(level));
-      recordingRef.current = rec;
-      setAdjustResult(null);
-      setAdjustStatus("recording");
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-    } catch (e) {
-      setNotice({
-        severity: "error",
-        title: "Microfone indisponível",
-        message: e instanceof Error ? e.message : String(e),
-      });
-    }
-  }
-
 
   // Sobe um áudio já gravado (recém-parado OU retry de falha anterior).
   // Sucesso limpa o pendente; falha/cancelamento preservam o arquivo e
@@ -765,33 +600,6 @@ export default function GenerateScreen() {
               onToggleEdit={toggleEditingLaudo}
               onEditFinal={onEditFinal}
               onCopy={onCopyLaudo}
-              adjustOpen={adjustOpen}
-              adjustInstruction={adjustInstruction}
-              adjustTarget={adjustTarget}
-              adjustStatus={adjustStatus}
-              adjustResult={adjustResult}
-              onToggleAdjust={toggleAdjustmentPanel}
-              onChangeAdjustInstruction={(instruction) => {
-                setAdjustInstruction(instruction);
-                setAdjustResult(null);
-              }}
-              onChangeAdjustTarget={(target) => {
-                setAdjustTarget(target);
-                setAdjustResult(null);
-              }}
-              onSubmitAdjust={() => submitAdjustment(adjustInstruction)}
-              onToggleAdjustRecording={toggleAdjustmentRecording}
-              onApplyAdjustOverride={() => {
-                if (state.kind !== "done" || !adjustResult) return;
-                applyFinalText(adjustResult.edited_text);
-                setAdjustInstruction("");
-                setAdjustResult(null);
-                setNotice({ severity: "success", message: "Ajuste aplicado." });
-              }}
-              onRetryAdjust={() => {
-                setAdjustResult(null);
-                setAdjustInstruction("");
-              }}
               onCancel={cancelGenerate}
               onAnswerClarify={(qid, ans) =>
                 dispatch({
@@ -941,13 +749,6 @@ export default function GenerateScreen() {
           transcript="Falando para o microfone…"
         />
       ) : null}
-      {adjustStatus === "recording" ? (
-        <RecordingOverlay
-          level={micLevel}
-          mode="recording"
-          transcript="Falando o ajuste do laudo…"
-        />
-      ) : null}
       {transcribing ? (
         <RecordingOverlay
           mode="transcribing"
@@ -955,14 +756,6 @@ export default function GenerateScreen() {
           showCursor={false}
         />
       ) : null}
-      {adjustStatus === "transcribing" ? (
-        <RecordingOverlay
-          mode="transcribing"
-          transcript="Transcrevendo o ajuste…"
-          showCursor={false}
-        />
-      ) : null}
-
       <CategorySheet
         open={catOpen}
         onClose={() => setCatOpen(false)}
@@ -1352,18 +1145,6 @@ type LaudoProps = {
   onToggleEdit: () => void;
   onEditFinal: (text: string) => void;
   onCopy: () => void;
-  adjustOpen: boolean;
-  adjustInstruction: string;
-  adjustTarget: EditReportTarget;
-  adjustStatus: AdjustmentStatus;
-  adjustResult: EditReportResponse | null;
-  onToggleAdjust: () => void;
-  onChangeAdjustInstruction: (instruction: string) => void;
-  onChangeAdjustTarget: (target: EditReportTarget) => void;
-  onSubmitAdjust: () => void;
-  onToggleAdjustRecording: () => void;
-  onApplyAdjustOverride: () => void;
-  onRetryAdjust: () => void;
   onCancel: () => void;
   onAnswerClarify: (qid: string, ans: string) => void;
   onResume: () => void;
@@ -1387,18 +1168,6 @@ function LaudoBody({
   onToggleEdit,
   onEditFinal,
   onCopy,
-  adjustOpen,
-  adjustInstruction,
-  adjustTarget,
-  adjustStatus,
-  adjustResult,
-  onToggleAdjust,
-  onChangeAdjustInstruction,
-  onChangeAdjustTarget,
-  onSubmitAdjust,
-  onToggleAdjustRecording,
-  onApplyAdjustOverride,
-  onRetryAdjust,
   onCancel,
   onAnswerClarify,
   onResume,
@@ -1465,14 +1234,6 @@ function LaudoBody({
               <Copy size={15} color={t.brand} />
               <Text style={styles.textBtnLabel}>Copiar laudo</Text>
             </Pressable>
-            <Pressable
-              onPress={onToggleAdjust}
-              style={styles.textBtn}
-              hitSlop={8}
-            >
-              <Quote size={15} color={t.brand} />
-              <Text style={styles.textBtnLabel}>Ajustar laudo</Text>
-            </Pressable>
             <Text
               style={[
                 styles.saveStatus,
@@ -1482,22 +1243,6 @@ function LaudoBody({
               {SAVE_LABEL[saveStatus]}
             </Text>
           </View>
-        ) : null}
-
-        {state.kind === "done" && adjustOpen ? (
-          <AdjustmentCard
-            instruction={adjustInstruction}
-            target={adjustTarget}
-            status={adjustStatus}
-            result={adjustResult}
-            onChangeInstruction={onChangeAdjustInstruction}
-            onChangeTarget={onChangeAdjustTarget}
-            onSubmit={onSubmitAdjust}
-            onToggleRecording={onToggleAdjustRecording}
-            onApplyOverride={onApplyAdjustOverride}
-            onRetry={onRetryAdjust}
-            styles={styles}
-          />
         ) : null}
 
         {state.kind === "done" && editing ? (
@@ -1662,222 +1407,6 @@ function SanityCard({
       ) : null}
     </View>
   );
-}
-
-function AdjustmentCard({
-  instruction,
-  target,
-  status,
-  result,
-  onChangeInstruction,
-  onChangeTarget,
-  onSubmit,
-  onToggleRecording,
-  onApplyOverride,
-  onRetry,
-  styles,
-}: {
-  instruction: string;
-  target: EditReportTarget;
-  status: AdjustmentStatus;
-  result: EditReportResponse | null;
-  onChangeInstruction: (instruction: string) => void;
-  onChangeTarget: (target: EditReportTarget) => void;
-  onSubmit: () => void;
-  onToggleRecording: () => void;
-  onApplyOverride: () => void;
-  onRetry: () => void;
-  styles: ReturnType<typeof makeStyles>;
-}) {
-  const busy = status !== "idle";
-  const canSubmit = instruction.trim().length > 0 && !busy;
-  const statusLabel =
-    status === "recording"
-      ? "Gravando ajuste…"
-      : status === "transcribing"
-        ? "Transcrevendo…"
-        : status === "submitting"
-          ? "Ajustando…"
-          : null;
-  return (
-    <View style={styles.adjustCard}>
-      <View style={styles.adjustHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.adjustTitle}>Ajustar laudo</Text>
-          <Text style={styles.adjustHint}>
-            Diga exatamente o que quer mudar. O laudo só é alterado sozinho se o
-            guard aceitar.
-          </Text>
-        </View>
-        <Pressable
-          onPress={onToggleRecording}
-          disabled={status === "transcribing" || status === "submitting"}
-          style={[
-            styles.adjustMic,
-            status === "recording" && styles.adjustMicRecording,
-            (status === "transcribing" || status === "submitting") && {
-              opacity: 0.5,
-            },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={
-            status === "recording" ? "Parar gravação" : "Gravar ajuste"
-          }
-        >
-          {status === "recording" ? (
-            <Stop size={14} color="#fff" />
-          ) : status === "transcribing" ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Mic size={16} color="#fff" />
-          )}
-        </Pressable>
-      </View>
-
-      <View style={styles.adjustTargetBlock}>
-        <Text style={styles.adjustTargetLabel}>Onde aplicar</Text>
-        <View style={styles.adjustTargetSegment}>
-          {ADJUST_TARGET_OPTIONS.map((option) => {
-            const selected = target === option.value;
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => onChangeTarget(option.value)}
-                disabled={busy}
-                style={[
-                  styles.adjustTargetOption,
-                  selected && styles.adjustTargetOptionActive,
-                  busy && { opacity: 0.55 },
-                ]}
-                accessibilityRole="button"
-              >
-                <Text
-                  style={[
-                    styles.adjustTargetOptionText,
-                    selected && styles.adjustTargetOptionTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <TextInput
-        value={instruction}
-        onChangeText={onChangeInstruction}
-        editable={!busy}
-        multiline
-        placeholder="Ex.: muda só a frase do líquido, ILA 10,4"
-        placeholderTextColor="#8A8F98"
-        style={styles.adjustInput}
-      />
-
-      <View style={styles.adjustActions}>
-        <Pressable
-          onPress={onSubmit}
-          disabled={!canSubmit}
-          style={[styles.adjustPrimary, !canSubmit && { opacity: 0.45 }]}
-          accessibilityRole="button"
-        >
-          {status === "submitting" ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.adjustPrimaryText}>Enviar ajuste</Text>
-          )}
-        </Pressable>
-        {statusLabel ? <Text style={styles.adjustStatus}>{statusLabel}</Text> : null}
-      </View>
-
-      {result ? (
-        <View
-          style={[
-            styles.adjustResult,
-            !result.accepted && styles.adjustResultBlocked,
-          ]}
-        >
-          <Text
-            style={[
-              styles.adjustResultTitle,
-              !result.accepted && styles.adjustResultTitleBlocked,
-            ]}
-          >
-            {result.accepted ? "Prévia aplicada" : "Prévia não aplicada"}
-          </Text>
-          {result.reason ? (
-            <Text style={styles.adjustReason}>{result.reason}</Text>
-          ) : null}
-          <Text style={styles.adjustChangedCount}>
-            {result.changed_lines.length} linha
-            {result.changed_lines.length === 1 ? "" : "s"} alterada
-            {result.changed_lines.length === 1 ? "" : "s"}
-          </Text>
-          <Text style={styles.adjustPreview}>
-            {renderChangedText(result.edited_text, result.changed_lines, styles)}
-          </Text>
-          {!result.accepted ? (
-            <View style={styles.adjustDecisionRow}>
-              <Pressable
-                onPress={onApplyOverride}
-                style={styles.adjustDangerBtn}
-                accessibilityRole="button"
-              >
-                <Text style={styles.adjustDangerText}>Aplicar mesmo assim</Text>
-              </Pressable>
-              <Pressable
-                onPress={onRetry}
-                style={styles.adjustRetryBtn}
-                accessibilityRole="button"
-              >
-                <Text style={styles.adjustRetryText}>Refazer comando</Text>
-              </Pressable>
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function renderChangedText(
-  text: string,
-  changedLines: EditChangedLine[],
-  styles: ReturnType<typeof makeStyles>,
-) {
-  const { lineIndexes, lineTexts } = normalizeChangedLines(changedLines);
-  return text.split("\n").map((line, index, lines) => {
-    const highlighted = lineIndexes.has(index) || lineTexts.has(line.trim());
-    return (
-      <Text
-        key={`${index}-${line.slice(0, 12)}`}
-        style={highlighted ? styles.adjustPreviewHighlight : undefined}
-      >
-        {line}
-        {index < lines.length - 1 ? "\n" : ""}
-      </Text>
-    );
-  });
-}
-
-function normalizeChangedLines(changedLines: EditChangedLine[]) {
-  const lineIndexes = new Set<number>();
-  const lineTexts = new Set<string>();
-  for (const item of changedLines) {
-    if (typeof item === "number") {
-      lineIndexes.add(item > 0 ? item - 1 : item);
-      continue;
-    }
-    const maybeLine = item.line_number ?? item.line ?? item.index;
-    if (typeof maybeLine === "number") {
-      lineIndexes.add(maybeLine > 0 ? maybeLine - 1 : maybeLine);
-    }
-    for (const value of [item.text, item.after]) {
-      if (typeof value === "string" && value.trim()) lineTexts.add(value.trim());
-    }
-  }
-  return { lineIndexes, lineTexts };
 }
 
 function catLabelFor(code: string): string {
@@ -2208,186 +1737,6 @@ function makeStyles(t: ColorTokens) {
     fontSize: 12.5,
     fontStyle: "italic",
     lineHeight: 18,
-  },
-  adjustCard: {
-    marginBottom: 14,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: t.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: t.separator,
-    gap: 10,
-  },
-  adjustHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  adjustTitle: {
-    color: t.text,
-    fontFamily: FONT.semibold,
-    fontSize: 14,
-  },
-  adjustHint: {
-    color: t.textSec,
-    fontFamily: FONT.body,
-    fontSize: 12.5,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  adjustMic: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: t.brand,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  adjustMicRecording: {
-    backgroundColor: t.danger,
-  },
-  adjustTargetBlock: {
-    gap: 6,
-  },
-  adjustTargetLabel: {
-    color: t.textSec,
-    fontFamily: FONT.semibold,
-    fontSize: 12,
-  },
-  adjustTargetSegment: {
-    flexDirection: "row",
-    padding: 3,
-    borderRadius: 10,
-    backgroundColor: t.fill1,
-    gap: 3,
-  },
-  adjustTargetOption: {
-    flex: 1,
-    minHeight: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  adjustTargetOptionActive: {
-    backgroundColor: t.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: t.separator,
-  },
-  adjustTargetOptionText: {
-    color: t.textSec,
-    fontFamily: FONT.medium,
-    fontSize: 12.5,
-  },
-  adjustTargetOptionTextActive: {
-    color: t.brand,
-    fontFamily: FONT.semibold,
-  },
-  adjustInput: {
-    minHeight: 72,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: t.fill1,
-    color: t.text,
-    fontFamily: FONT.body,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlignVertical: "top",
-  },
-  adjustActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  adjustPrimary: {
-    minHeight: 38,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: t.brand,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  adjustPrimaryText: {
-    color: "#fff",
-    fontFamily: FONT.semibold,
-    fontSize: 13.5,
-  },
-  adjustStatus: {
-    color: t.textSec,
-    fontFamily: FONT.medium,
-    fontSize: 12.5,
-  },
-  adjustResult: {
-    marginTop: 2,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: t.mode === "dark" ? "rgba(48,209,88,0.10)" : "#ECFDF3",
-    gap: 6,
-  },
-  adjustResultBlocked: {
-    backgroundColor: t.warningBg,
-  },
-  adjustResultTitle: {
-    color: t.mode === "dark" ? "#30D158" : "#027A48",
-    fontFamily: FONT.semibold,
-    fontSize: 13.5,
-  },
-  adjustResultTitleBlocked: {
-    color: t.warningText,
-  },
-  adjustReason: {
-    color: t.textSec,
-    fontFamily: FONT.medium,
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  adjustChangedCount: {
-    color: t.textMute,
-    fontFamily: FONT.medium,
-    fontSize: 12,
-  },
-  adjustPreview: {
-    color: t.text,
-    fontFamily: FONT.body,
-    fontSize: 12.5,
-    lineHeight: 18,
-    paddingTop: 4,
-  },
-  adjustPreviewHighlight: {
-    backgroundColor:
-      t.mode === "dark" ? "rgba(255,214,10,0.22)" : "rgba(255,214,10,0.35)",
-    color: t.text,
-    fontFamily: FONT.semibold,
-  },
-  adjustDecisionRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 4,
-  },
-  adjustDangerBtn: {
-    flex: 1,
-    minHeight: 38,
-    borderRadius: 10,
-    backgroundColor: t.danger,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  adjustDangerText: {
-    color: "#fff",
-    fontFamily: FONT.semibold,
-    fontSize: 13,
-  },
-  adjustRetryBtn: {
-    flex: 1,
-    minHeight: 38,
-    borderRadius: 10,
-    backgroundColor: t.fill1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  adjustRetryText: {
-    color: t.text,
-    fontFamily: FONT.semibold,
-    fontSize: 13,
   },
   catMismatch: {
     backgroundColor: t.warningBg,
