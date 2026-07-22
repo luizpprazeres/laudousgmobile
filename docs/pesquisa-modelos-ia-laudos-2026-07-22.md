@@ -45,8 +45,8 @@ Ranking dos defeitos que o Luiz corrige à mão (226 laudos):
 
 ## 5. Pesquisa web (jul/2026) — resultados (fontes: Artificial Analysis, LMArena, páginas oficiais)
 
-### ⚠️ FATO QUE REORDENA TUDO: migração é OBRIGATÓRIA
-**`gpt-4.1` e `gpt-4.1-mini` (o que usamos hoje) serão DESATIVADOS na API da OpenAI em 14/10/2026.** Já saíram do ChatGPT (fev/2026). Não é "upgrade opcional" — temos deadline. Trata-se disso como prazo, e aproveita-se a migração forçada para ganhar qualidade.
+### ⚠️ Migração é recomendada (prazo NÃO oficial p/ a API — corrigido por Dex2)
+O agente de pesquisa apontou desligamento do gpt-4.1-mini na API em 14/10/2026, MAS o **Dex2 verificou na página oficial de depreciações da OpenAI e esse desligamento NÃO está listado para a API** — a retirada confirmada foi no **ChatGPT** (a API do gpt-4.1-mini segue disponível por ora). **Não tratar 14/10/2026 como fato oficial da API.** Ainda assim, migrar cedo é o certo (o 4.x é geração antiga e será eventualmente depreciado), aproveitando para ganhar qualidade. Fixar snapshots pós-piloto p/ evitar mudança silenciosa de alias.
 
 ### Nomes mudaram (jul/2026)
 - OpenAI: GPT-5 puro/mini/nano → famílias **GPT-5.4 / 5.5 / 5.6** (GPT-5 mini marcado deprecated). O Dex2 roda **GPT-5.6 sol** (II 56–59).
