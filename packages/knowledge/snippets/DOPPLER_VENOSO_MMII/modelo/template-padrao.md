@@ -2,7 +2,7 @@
 id: doppler-venoso-mmii-modelo-template-padrao
 category: DOPPLER_VENOSO_MMII
 kind: modelo
-tags: [doppler, venoso, mmii, modelo, tvp, insuficiencia, ceap]
+tags: [doppler, venoso, mmii, modelo, tvp, insuficiencia, ceap, variant:completo]
 priority: 95
 priority_tier: universal
 version: 0.1.0
@@ -24,7 +24,7 @@ ATENÇÃO — este modelo cobre o PROTOCOLO COMPLETO. Se o exame foi solicitado 
 - "Protocolo COMPLETO" (este modelo): TVP + competência venosa profunda + sistema superficial (safenas, perfurantes, tributárias).
 - "Protocolo TVP-only": APENAS patência/compressibilidade do sistema profundo. NÃO afirmar competência de safenas/perfurantes se não foram avaliadas.
 
-A distinção é clínica: solicitação para "investigar TVP / TVP / suspeita de trombose / D-dímero alterado" em paciente sem queixa varicosa = TVP-only. "Mapeamento pré-operatório / cartografia / pré-radiofrequência / varizes" = use DOPPLER_VENOSO_MMII_MEDIDAS. Quando o pedido cobre AMBOS, usar este modelo completo.
+A distinção é clínica: solicitação para "investigar TVP / TVP / suspeita de trombose / D-dímero alterado" em paciente sem queixa varicosa = TVP-only. "Mapeamento pré-operatório / cartografia / pré-radiofrequência / varizes" = use a variante `cartografia` de DOPPLER_VENOSO_MMII. Quando o pedido cobre AMBOS sem foco cartográfico, usar este modelo completo.
 
 ═══════════════════════════════════════════════════
 ESTRUTURA OBRIGATÓRIA

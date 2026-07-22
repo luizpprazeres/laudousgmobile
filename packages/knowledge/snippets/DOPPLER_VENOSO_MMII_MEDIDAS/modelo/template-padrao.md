@@ -2,7 +2,7 @@
 id: doppler-venoso-mmii-medidas-modelo-template-padrao
 category: DOPPLER_VENOSO_MMII_MEDIDAS
 kind: modelo
-tags: [venoso, mmii, medidas, cartografia, mapeamento, pre-operatorio, safena]
+tags: [venoso, mmii, medidas, cartografia, mapeamento, pre-operatorio, safena, deprecated, orphaned-category]
 priority: 95
 priority_tier: universal
 version: 0.1.0

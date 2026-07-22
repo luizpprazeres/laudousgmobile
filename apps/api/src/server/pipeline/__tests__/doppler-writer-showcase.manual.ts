@@ -7,11 +7,17 @@
  *
  * Rodar: tsx src/server/pipeline/__tests__/doppler-writer-showcase.manual.ts
  */
+import fs from "node:fs";
+import path from "node:path";
 import { config } from "dotenv";
 config({ path: "/Users/luizprazeres/laudousgmobile-def/.env" });
 
 const CLASSICO_ID = "11111111-1111-4111-8111-111111111111";
 const OBJETIVO_ID = "44444444-4444-4444-8444-444444444444";
+const REPO_ROOT = "/Users/luizprazeres/laudousgmobile-def";
+const VARIANT_TAG_PREFIX = "variant:";
+const VENOUS_CARTOGRAPHY_TRIGGER =
+  /cartografia|mapeamento\s+venoso|pr[ée][-\s]?operat[óo]rio|pr[ée][-\s]?op\b|varizes?|pr[ée][-\s]?safenectomia|pr[ée][-\s]?abla[çc][ãa]o|pr[ée][-\s]?radiofrequ[êe]ncia|insufici[êe]ncia\s+(?:venosa|varicosa)/i;
 
 type Caso = { titulo: string; ditado: string };
 const SUITE: { categoria: string; casos: Caso[] }[] = [
@@ -54,9 +60,24 @@ const SUITE: { categoria: string; casos: Caso[] }[] = [
           "Membro inferior direito. Veias femoral comum, femoral, poplítea e veias da panturrilha compressíveis, com fluxo fásico e resposta normal às manobras de compressão distal. Sem trombos. Veia safena magna pérvia, sem refluxo.",
       },
       {
-        titulo: "TVP aguda (MIE)",
+        titulo: "TVP-only contraste (MIE)",
         ditado:
-          "Membro inferior esquerdo. Veia femoral comum esquerda não compressível, com material ecogênico endoluminal e ausência de fluxo ao Doppler, compatível com trombose venosa profunda aguda. Veia poplítea pérvia e compressível. Veia safena magna com refluxo de 1,8 segundos.",
+          "Exame para pesquisa de TVP no membro inferior esquerdo. Veias femoral comum, femoral e poplítea pérvias e compressíveis, com fluxo fásico preservado. Veias tibiais posteriores e fibulares compressíveis. Sem trombos.",
+      },
+      {
+        titulo: "Cartografia bilateral — refluxo safena magna + tributárias + perfurantes",
+        ditado:
+          "Cartografia venosa pré-operatória dos membros inferiores. No membro inferior direito, sistema venoso fêmoro-poplíteo pérvio e compressível, sem trombose. Junção safeno-femoral competente. Safena magna direita com refluxo em coxa média e distal, diâmetros: croça 5,1 mm, coxa proximal 4,3 mm, coxa média 4,9 mm, coxa distal 5,4 mm, joelho 4,2 mm, perna proximal 3,6 mm, perna média 3,0 mm. Tributária varicosa medial de coxa medindo 4,8 mm, drenando para varicosidades na face medial da perna. Perfurante incompetente medial de perna a 16 cm do maléolo, 4,2 mm, refluxo de 1,1 segundo. Junção safeno-poplítea competente, safena parva sem refluxo. No membro inferior esquerdo, sistema profundo pérvio e compressível. Junção safeno-femoral com refluxo. Safena magna esquerda com refluxo desde a croça até perna proximal, medidas em ordem: croça 6,4 mm, coxa proximal 5,9 mm, coxa média 5,2 mm, coxa distal 4,9 mm, joelho 4,4 mm, perna proximal 3,8 mm. Tributária posterior de coxa medindo 5 mm, com transferência para tributária anterior de perna. Perfurante medial de perna 18 cm acima do maléolo, 4,5 mm. Safena parva esquerda pérvia, sem refluxo.",
+      },
+      {
+        titulo: "Cartografia — prosa com transferência e drenagem",
+        ditado:
+          "Mapeamento venoso por varizes. Membro inferior direito com veias profundas pérvias e compressíveis. A safena magna direita tem refluxo segmentar na coxa distal, transferido através de ramo tributário anterior da coxa e drenado por tributária varicosa da face medial da perna. Os diâmetros encontram-se em torno de 4,0 mm na croça, 3,7 mm na coxa proximal, 4,6 mm na coxa distal, 3,9 mm no joelho e 3,2 mm na perna proximal. Não há refluxo na safena parva direita. Membro inferior esquerdo com sistema profundo pérvio. Junção safeno-femoral esquerda com refluxo, safena magna com refluxo em coxa proximal e média, transferido por tributária posterior de coxa, drenado através de varicosidades em face posterior e medial da perna. Diâmetros de 5,7 mm na croça, 5,1 mm na coxa proximal, 4,8 mm na coxa média, 4,0 mm no joelho e 3,5 mm na perna. Perfurante incompetente posterior de perna esquerda medindo 3,9 mm.",
+      },
+      {
+        titulo: "Cartografia — insuficiência varicosa com medidas em ordem livre",
+        ditado:
+          "Insuficiência venosa varicosa, avaliação pré-ablação. À direita, veias femoral comum, femoral e poplítea compressíveis. Safena magna com refluxo desde a junção safeno-femoral até o joelho. Medidas ditadas: joelho 4,6 mm, croça 6,0 mm, coxa média 5,5 mm, coxa proximal 5,8 mm, coxa distal 5,1 mm, perna proximal 3,7 mm. Tributária varicosa lateral de coxa, 5,2 mm, comunicando com rede varicosa lateral da perna. Perfurante lateral da perna direita 4,0 mm. Safena parva direita competente. À esquerda, sistema profundo sem trombose. Safena magna esquerda pérvia, sem refluxo significativo, com diâmetro de 4,2 mm na croça e 3,6 mm na coxa média. Tributárias varicosas discretas na face medial da perna. Junção safeno-poplítea e safena parva esquerdas competentes.",
       },
     ],
   },
@@ -76,6 +97,104 @@ function formatObjectiveEnumerations(text: string) {
     .join("\n");
 }
 
+type LocalBlock = {
+  id: string;
+  kind: string;
+  title: string;
+  content: string;
+  priority: number;
+  tags: string[];
+  status: string;
+};
+
+function variantOf(tags: string[]): string | null {
+  const tag = tags.find((x) => x.startsWith(VARIANT_TAG_PREFIX));
+  return tag ? tag.slice(VARIANT_TAG_PREFIX.length) : null;
+}
+
+function parseTags(value: string | undefined) {
+  if (!value) return [];
+  return value
+    .replace(/^\[/, "")
+    .replace(/\]$/, "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function parseSnippet(filePath: string): LocalBlock {
+  const raw = fs.readFileSync(filePath, "utf8");
+  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!match) throw new Error(`Frontmatter ausente em ${filePath}`);
+  const values = new Map<string, string>();
+  for (const line of (match[1] ?? "").split("\n")) {
+    const index = line.indexOf(":");
+    if (index === -1) continue;
+    values.set(line.slice(0, index).trim(), line.slice(index + 1).trim());
+  }
+  return {
+    id: values.get("id") ?? path.basename(filePath),
+    kind: values.get("kind") ?? "regra",
+    title: values.get("id") ?? path.basename(filePath),
+    content: (match[2] ?? "").trim(),
+    priority: Number.parseInt(values.get("priority") ?? "50", 10),
+    tags: parseTags(values.get("tags")),
+    status: values.get("status") ?? "published",
+  };
+}
+
+function walkMarkdownFiles(dir: string): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walkMarkdownFiles(fullPath);
+    if (entry.isFile() && entry.name.endsWith(".md")) return [fullPath];
+    return [];
+  });
+}
+
+function loadLocalVenousCartographyBundle() {
+  const snippetsDir = path.join(
+    REPO_ROOT,
+    "packages/knowledge/snippets/DOPPLER_VENOSO_MMII",
+  );
+  return walkMarkdownFiles(snippetsDir)
+    .map(parseSnippet)
+    .filter((block) => block.status !== "archived" && block.status !== "draft")
+    .filter((block) => {
+      const blockVariant = variantOf(block.tags);
+      return blockVariant === null || blockVariant === "cartografia";
+    })
+    .sort(
+      (a, b) =>
+        kindRank(a.kind) - kindRank(b.kind) ||
+        b.priority - a.priority ||
+        a.id.localeCompare(b.id),
+    )
+    .map((block) => ({
+      id: block.id,
+      kind: block.kind,
+      title: block.title,
+      content: block.content,
+      priority: block.priority,
+      similarity: null,
+    }));
+}
+
+const KIND_ORDER = [
+  "modelo",
+  "regra",
+  "frase",
+  "conclusao",
+  "excecao",
+  "comentario_tecnico",
+  "exemplo",
+] as const;
+
+function kindRank(kind: string): number {
+  const index = (KIND_ORDER as readonly string[]).indexOf(kind);
+  return index === -1 ? KIND_ORDER.length : index;
+}
+
 async function main() {
   const { loadDeterministicBundle } = await import("../bundleLoader");
   const { runWriterStream } = await import("../writer");
@@ -89,7 +208,6 @@ async function main() {
   const { removeEmptyConclusionItems } = await import(
     "../emptyConclusionItemsGuard"
   );
-  const fs = await import("node:fs");
 
   const categoriesInfo = await getKnownCategories();
   const styles = {
@@ -109,8 +227,19 @@ async function main() {
       rawInput: ditado,
       accountVariantKey: undefined,
     });
+    let ragBlocks;
     if (bundle.error) {
-      return { texto: "", erro: bundle.error.code };
+      if (
+        categoria === "DOPPLER_VENOSO_MMII" &&
+        bundle.error.code === "BUNDLE_VARIANT_EMPTY" &&
+        VENOUS_CARTOGRAPHY_TRIGGER.test(ditado)
+      ) {
+        ragBlocks = loadLocalVenousCartographyBundle();
+      } else {
+        return { texto: "", erro: bundle.error.code };
+      }
+    } else {
+      ragBlocks = bundle.blocks;
     }
     const findings = {
       schema_version: "v1",
@@ -124,7 +253,7 @@ async function main() {
 
     const gen = runWriterStream({
       findings,
-      ragBlocks: bundle.blocks,
+      ragBlocks: ragBlocks as never,
       writingStyleCode: styleCode as never,
       categoryCode: categoria,
       categoryLabel: categoriesInfo.labels.get(categoria) ?? categoria,

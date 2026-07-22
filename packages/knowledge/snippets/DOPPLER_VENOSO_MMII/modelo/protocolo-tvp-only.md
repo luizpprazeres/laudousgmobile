@@ -2,7 +2,7 @@
 id: doppler-venoso-mmii-modelo-protocolo-tvp-only
 category: DOPPLER_VENOSO_MMII
 kind: modelo
-tags: [venoso, mmii, modelo, tvp, protocolo-restrito, dimero-d, urgencia]
+tags: [venoso, mmii, modelo, tvp, protocolo-restrito, dimero-d, urgencia, variant:tvp-only]
 priority: 85
 priority_tier: contextual
 version: 0.1.0
@@ -22,7 +22,7 @@ USE ESTE MODELO QUANDO: exame foi solicitado APENAS para investigação de tromb
 - Pós-operatório, imobilização, trauma.
 - Suspeita clínica em paciente sem queixa varicosa.
 
-NÃO USE este modelo (use "template-padrao" completo) quando: solicitação inclui avaliação superficial, refluxo, varizes ou cartografia. Para mapeamento pré-op específico: usar DOPPLER_VENOSO_MMII_MEDIDAS.
+NÃO USE este modelo (use "template-padrao" completo) quando: solicitação inclui avaliação superficial, refluxo, varizes ou cartografia. Para mapeamento pré-op específico: usar a variante `cartografia` de DOPPLER_VENOSO_MMII.
 
 TÍTULO: "ULTRASSONOGRAFIA COM DOPPLER COLORIDO VENOSO DE MEMBROS INFERIORES — INVESTIGAÇÃO DE TROMBOSE VENOSA PROFUNDA"
 

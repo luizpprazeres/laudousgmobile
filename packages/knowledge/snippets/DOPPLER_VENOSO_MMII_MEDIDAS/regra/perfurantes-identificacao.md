@@ -2,7 +2,7 @@
 id: doppler-venoso-mmii-medidas-regra-perfurantes
 category: DOPPLER_VENOSO_MMII_MEDIDAS
 kind: regra
-tags: [perfurantes, incompetentes, localizacao, mapeamento, ressecciap]
+tags: [perfurantes, incompetentes, localizacao, mapeamento, ressecciap, deprecated, orphaned-category]
 priority: 75
 priority_tier: contextual
 version: 0.1.0

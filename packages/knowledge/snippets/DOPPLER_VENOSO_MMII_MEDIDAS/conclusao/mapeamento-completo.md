@@ -2,7 +2,7 @@
 id: doppler-venoso-mmii-medidas-conclusao-mapeamento-completo
 category: DOPPLER_VENOSO_MMII_MEDIDAS
 kind: conclusao
-tags: [venoso, mapeamento, conclusao, pre-operatorio, safena]
+tags: [venoso, mapeamento, conclusao, pre-operatorio, safena, deprecated, orphaned-category]
 priority: 80
 priority_tier: contextual
 version: 0.1.0

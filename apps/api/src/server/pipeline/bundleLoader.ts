@@ -70,6 +70,9 @@ const DOPPLER_NEGATION = new RegExp(
   "i",
 );
 
+const VENOUS_CARTOGRAPHY_TRIGGER =
+  /cartografia|mapeamento\s+venoso|pr[ée][-\s]?operat[óo]rio|pr[ée][-\s]?op\b|varizes?|pr[ée][-\s]?safenectomia|pr[ée][-\s]?abla[çc][ãa]o|pr[ée][-\s]?radiofrequ[êe]ncia|insufici[êe]ncia\s+(?:venosa|varicosa)/i;
+
 const MODEL_VARIANT_SELECTORS: Record<string, ModelVariantSelector> = {
   // ABDOMEN_TOTAL: padrão × Doppler esplâncnico.
   ABDOMEN_TOTAL: {
@@ -77,11 +80,15 @@ const MODEL_VARIANT_SELECTORS: Record<string, ModelVariantSelector> = {
     defaultVariant: "padrao",
   },
 
-  // DOPPLER_VENOSO_MMII: protocolo COMPLETO (padrão) × TVP-only (restrito).
+  // DOPPLER_VENOSO_MMII: cartografia × protocolo COMPLETO × TVP-only.
   // Gatilho = pedido EXPLÍCITO de exame p/ TVP (não basta a palavra trombose
   // num achado negativo).
   DOPPLER_VENOSO_MMII: {
     rules: [
+      {
+        variant: "cartografia",
+        trigger: VENOUS_CARTOGRAPHY_TRIGGER,
+      },
       {
         variant: "tvp-only",
         trigger:
@@ -340,8 +347,9 @@ function applyModeloVariantSelection<
 
   return {
     rows: rows.filter((r) => {
-      if (r.kind !== "modelo") return true;
-      return variantOf(r.tags) === chosen;
+      const blockVariant = variantOf(r.tags);
+      if (blockVariant === null) return true;
+      return blockVariant === chosen;
     }),
     variantKey: chosen,
     error: null,

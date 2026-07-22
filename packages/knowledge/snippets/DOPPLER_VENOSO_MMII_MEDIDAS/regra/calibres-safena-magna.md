@@ -2,7 +2,7 @@
 id: doppler-venoso-mmii-medidas-regra-calibres-safena-magna
 category: DOPPLER_VENOSO_MMII_MEDIDAS
 kind: regra
-tags: [safena-magna, calibre, segmentos, jsf, mapeamento]
+tags: [safena-magna, calibre, segmentos, jsf, mapeamento, deprecated, orphaned-category]
 priority: 75
 priority_tier: contextual
 version: 0.1.0
