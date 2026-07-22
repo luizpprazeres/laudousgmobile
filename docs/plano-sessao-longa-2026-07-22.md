@@ -33,8 +33,8 @@ Código RN pronto no branch `feat/venous-4view-recolor` (C4-clientes RN 328aeba 
 
 **Sobras do plano C1–C5 (avaliar com Dex2):** v2 do schema venoso (tributaria_lateral nomeada, medida-por-nível, distância plantar "43cm"); asset home de prod se sair do bundle.
 
-## ⏳ PENDENTE (Luiz 22/07): remover o botão "Ajustar laudo" do ANDROID também
-O RN (`apps/mobile`) tem o MESMO botão "Ajustar laudo" que removemos do iOS (aparece na tela do laudo, abaixo de Editar/Copiar — confirmado no smoke 22/07). Remover a UI no RN espelhando a Frente 2a do iOS: botão + sheet/estado da edição incremental (POST `/api/edit`). Backend `/api/edit` FICA. Arquivos prováveis: `apps/mobile/src/features/generate/*` (procurar "Ajustar laudo"/`/api/edit`/EDIT_TEXT). Delegar ao Dex quando retomar.
+## 🔧 EM ANDAMENTO (Dex1): remover o botão "Ajustar laudo" do ANDROID
+O RN tem a MESMA feature "Ajustar laudo" que removemos do iOS (edição incremental por voz/texto via POST `/api/edit`), entrelaçada em `apps/mobile/app/generate.tsx` (127 ocorrências). Escopo cirúrgico mapeado por Claude: REMOVER tudo `adjust*` (estados/refs/funções `submitAdjustment`/`toggleAdjustmentPanel`/`stopAdjustmentRecordingIfNeeded`/`applyFinalText`, import `editReport`, painel `AdjustmentPanel`, gravação de voz do ajuste, estilos); MANTER edição inline manual (`editingLaudo`/`onEditFinal`/`EDIT_FINAL`/`EDIT_TEXT`/autosave/TextInput). Backend `/api/edit` FICA. Delegado ao Dex1 (tsc 0 + bundle Metro + diff p/ Claude revisar).
 
 ## Frente 2 — Ajustes iOS (repo Swift `laudousg-swift/LaudoUSG`, branch feat/venous-4view-recolor)
 
