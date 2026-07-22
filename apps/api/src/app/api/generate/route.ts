@@ -33,6 +33,8 @@ import { stripSpuriousMagnitudeFlags } from "@/server/pipeline/magnitudeGuard";
 import { applyCervicalLevelSuggestions } from "@/server/pipeline/cervicalLevelGuard";
 import { stripObservationNarration } from "@/server/pipeline/cervicalNarrationGuard";
 import { runWriterStream } from "@/server/pipeline/writer";
+import { resolveWriterModel } from "@/server/pipeline/modelResolver";
+import { resolveGenerationPath } from "@/server/pipeline/generationPathResolver";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
 import {
   runDeterministicSanity,
@@ -172,9 +174,16 @@ export async function POST(req: Request) {
   }
 
   const reqInput = parsed.data;
+  const generationMode = reqInput.mode;
+  const initialGenerationPath = resolveGenerationPath({
+    mode: generationMode,
+    categoryCode: reqInput.category_hint ?? "ABDOMEN_TOTAL",
+  });
   // FAST-PATH: o request pode pedir explicitamente; senão usa o default do
   // servidor (env FAST_PATH_DEFAULT, "true" = ligado pra todos). Revert via env.
-  const fastPath = reqInput.fast_path ?? env().FAST_PATH_DEFAULT === "true";
+  const fastPath =
+    initialGenerationPath.guardsMode === "advisory-only" ||
+    (reqInput.fast_path ?? env().FAST_PATH_DEFAULT === "true");
   const eventSurface = surfaceFromRequest(
     req,
     reqInput.source === "watch"
@@ -612,6 +621,20 @@ export async function POST(req: Request) {
         return;
       }
 
+      const generationPath = resolveGenerationPath({
+        mode: generationMode,
+        categoryCode: effectiveCategory,
+      });
+      const modelConfig = resolveWriterModel({
+        mode: generationMode,
+        categoryCode: effectiveCategory,
+        userId: user.id,
+      });
+      auditState.modelWriter = modelConfig.model;
+      console.log(
+        `[generate ${reportId}] model resolved: provider=${modelConfig.provider} model=${modelConfig.model} credential=${modelConfig.credentialRef}`,
+      );
+
       // ----- 3. BUNDLE determinístico (caminho ÚNICO) -----
       // DET-2 final: o retriever vetorial foi APOSENTADO. Toda categoria carrega
       // TODOS os blocos validados por chave fixa (categoria × estilo) — sem
@@ -643,6 +666,7 @@ export async function POST(req: Request) {
         .map((s) => s.trim())
         .filter((s) => s !== "");
       const isProgrammaticRenderer =
+        generationPath.path === "renderer" &&
         rendererCatsEarly.includes(effectiveCategory) &&
         RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory) &&
         RENDERER_PROGRAMMATIC_CATEGORIES.has(effectiveCategory);
@@ -695,7 +719,10 @@ export async function POST(req: Request) {
       }
       // bundle.blocks pode vir vazio quando ignoramos um bundle.error de renderer
       // programático acima — o renderer não usa o bundle, então [] é seguro.
-      const blocks = bundle.blocks ?? [];
+      const loadedBlocks = bundle.blocks ?? [];
+      const blocks = generationPath.ragFewShots
+        ? loadedBlocks
+        : loadedBlocks.filter((block) => block.kind === "modelo");
       auditState.ragDurationMs = Date.now() - ragT0;
       auditState.ragBlocksRetrieved = blocks;
       auditState.ragBlocksSkipped = skipped;
@@ -738,6 +765,7 @@ export async function POST(req: Request) {
         .map((s) => s.trim())
         .filter((s) => s !== "");
       const rendererEligible =
+        generationPath.path === "renderer" &&
         rendererCategories.includes(effectiveCategory) &&
         RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory);
       // Categorias programáticas (ex: OBSTETRICA) montam o laudo em código e não
@@ -786,6 +814,7 @@ export async function POST(req: Request) {
             rawUserMessage: fastPath
               ? reqInput.consolidated_transcript ?? reqInput.raw_input
               : undefined,
+            modelConfig,
             signal,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
@@ -836,6 +865,7 @@ export async function POST(req: Request) {
           categoryCode: effectiveCategory,
           categoryLabel: categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
           rawUserMessage: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          modelConfig,
           signal,
           onSystemMessage: (message) => {
             auditState.systemMessageFull = message;
@@ -855,7 +885,7 @@ export async function POST(req: Request) {
       // DET-5: no caminho RENDERER os post-processors NÃO rodam — a estrutura
       // (cabeçalhos, ordem, numeração, placeholders) é garantida por
       // construção; os guards existem pra consertar o que o writer LLM quebra.
-      if (!useRenderer) {
+      if (generationPath.guardsMode === "full" && !useRenderer) {
       if (styleRow.code === "OBJETIVO") {
         finalText = formatObjectiveEnumerations(finalText);
       }
@@ -938,7 +968,7 @@ export async function POST(req: Request) {
       if (effectiveCategory === "MUSCULOESQUELETICO_V2") {
         finalText = normalizeSectionSpacing(finalText);
       }
-      } else {
+      } else if (generationPath.guardsMode === "full") {
         // RENDERER (DET-5): único guard que roda é o de COMANDOS do médico —
         // diretivas explícitas ("na conclusão recomendar X") precisam entrar
         // até o DET-6 tratar comandos como operações (review dex1). É
@@ -953,6 +983,7 @@ export async function POST(req: Request) {
       // vazaram para o texto clínico — "vírgula" falada, "Você vai escrever ...",
       // "Item dos ovários:", despedidas. Preserva conteúdo + placeholders ____.
       // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
+      if (generationPath.guardsMode === "full") {
       finalText = sanitizeDictationArtifacts(finalText);
       // Normalização determinística de medidas (universal): abrevia
       // "centímetros"→"cm" / "milímetros"→"mm" e junta dimensões "A por B"→
@@ -966,6 +997,7 @@ export async function POST(req: Request) {
       // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
       // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
       finalText = flagImplausibleMeasures(finalText);
+      }
       auditState.outputText = finalText;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
@@ -988,7 +1020,7 @@ export async function POST(req: Request) {
         tokensOutput: writerResult?.outputTokens,
         // DET-5: prova de rollout/auditoria — qual caminho montou o laudo
         // (review dex2). O modelo da extração continua em model_structurer.
-        modelWriter: useRenderer ? "renderer/v1" : undefined,
+        modelWriter: useRenderer ? "renderer/v1" : modelConfig.model,
       });
 
       // ----- 5. Sanity check (observabilidade, NÃO bloqueia) -----
@@ -1076,7 +1108,8 @@ export async function POST(req: Request) {
         }
       }
 
-      try {
+      if (modelConfig.provider === "openai") {
+        try {
         const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({
           findings,
           finalText,
@@ -1108,8 +1141,9 @@ export async function POST(req: Request) {
             severity: sanity.verdict === "critical" ? "blocker" : "warning",
           });
         }
-      } catch (e) {
-        console.error("runSanityCheck failed after done:", e);
+        } catch (e) {
+          console.error("runSanityCheck failed after done:", e);
+        }
       }
     } catch (err) {
       // AbortError vem quando cliente fecha conexão

@@ -30,6 +30,8 @@ export const GenerateRequestSchema = z.object({
   // FAST-PATH (experimental): pula o structurer (categoria vem do hint), o
   // writer escreve direto do ditado cru. Tira ~4,8s do caminho bloqueante.
   fast_path: z.boolean().optional(),
+  // Modo premium opcional. O backend só o ativa quando HARD_MODE_ENABLED=true.
+  mode: z.enum(["standard", "hard"]).default("standard"),
   // Quando true e o laudo for finalizado com sucesso, faz touch no updated_at
   // do report para que ele apareça imediatamente no feed da Sala do Auxiliar
   // (via /api/sala/latest). Usado por clientes que querem o "publica direto na

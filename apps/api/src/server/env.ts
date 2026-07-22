@@ -14,6 +14,13 @@ const ServerEnvSchema = z.object({
   // Esforço de raciocínio quando OPENAI_MODEL_WRITER é um reasoning model (GPT-5):
   // none/low/medium/high/xhigh. Ignorado por modelos não-reasoning (gpt-4.1-mini).
   OPENAI_WRITER_REASONING_EFFORT: z.string().default("none"),
+  HARD_MODE_ENABLED: z.string().default("false"),
+  HARD_MODE_MODEL: z.string().default("gpt-5.4"),
+  TESTE_CATEGORY_MODEL: z.string().default(""),
+  TESTE_CATEGORY_BASE_URL: z.string().default(""),
+  TESTE_CATEGORY_API_KEY: z.string().default(""),
+  TESTE_REASONING_EFFORT: z.string().default("low"),
+  TESTE_ALLOWED_USER_ID: z.string().default(""),
   OPENAI_MODEL_SANITY: z.string().default("gpt-4.1-mini"),
   OPENAI_MODEL_CONSULTANT: z.string().default("gpt-5"),
   OPENAI_MODEL_CONSULTANT_FALLBACK: z.string().default("gpt-4.1"),
