@@ -104,6 +104,8 @@ export const CATEGORIES_SEED: { code: string; label: string }[] = [
   { code: "OCULAR", label: "Ocular" },
   { code: "TORAX", label: "Tórax" },
   { code: "QUADRIL_INFANTIL", label: "Quadril Infantil" },
+  { code: "LIVRE", label: "Livre" },
+  { code: "TESTE", label: "Teste" },
 ];
 
 /**
