@@ -39,6 +39,7 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  Sparkle,
   Stop,
   X,
 } from "@/ui/icons";
@@ -130,6 +131,10 @@ export default function GenerateScreen() {
   // e não persiste no DB (laudo sumia do histórico). FAB DEV abaixo ainda
   // permite alternar manualmente pra testar cenários (clarify/error/slow).
   const [mock, setMock] = useState<MockScenario | null>(null);
+  // Toggle "laudo difícil" (modo avançado): quando ON, o request vai com
+  // mode:"hard" (writer premium, sem renderer). Estado só da sessão. O server
+  // só ativa se HARD_MODE_ENABLED=true.
+  const [hardMode, setHardMode] = useState(false);
   const [notice, setNotice] = useState<{
     severity: BannerSeverity;
     title?: string;
@@ -242,6 +247,7 @@ export default function GenerateScreen() {
           // Categoria escolhida pelo médico tem prioridade — structurer ainda
           // pode reclassificar se discordar do texto.
           category_hint: cat.id,
+          mode: hardMode ? "hard" : "standard",
         },
         ac.signal,
         mock ?? undefined,
@@ -636,6 +642,7 @@ export default function GenerateScreen() {
                       category_hint: cat.id,
                       resume_from_report_id: state.reportId,
                       clarify_answers: answers,
+                      mode: hardMode ? "hard" : "standard",
                     },
                     ac.signal,
                     mock ?? undefined,
@@ -673,6 +680,23 @@ export default function GenerateScreen() {
         ]}
         pointerEvents="box-none"
       >
+        {/* Toggle discreto "laudo difícil" (modo avançado) — muda a cor do
+            botão Gerar e envia mode:"hard". Estado só da sessão. */}
+        <View style={styles.advRow} pointerEvents="box-none">
+          <Pressable
+            onPress={() => setHardMode((v) => !v)}
+            style={[styles.advChip, hardMode && styles.advChipOn]}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: hardMode }}
+            accessibilityLabel="Modo avançado (laudo difícil)"
+          >
+            <Sparkle size={13} color={hardMode ? "#7C3AED" : t.text2} />
+            <Text style={[styles.advChipText, hardMode && styles.advChipTextOn]}>
+              Avançado
+            </Text>
+          </Pressable>
+        </View>
+
         {/* Layout iOS: [+] discreto · "Gerar laudo" central · mic circular */}
         <View style={styles.composerRow} pointerEvents="box-none">
           {micBusy ? (
@@ -703,9 +727,10 @@ export default function GenerateScreen() {
             disabled={!hasContent || generating || micBusy}
             style={[
               styles.generateBtn,
+              hardMode && styles.generateBtnHard,
               { opacity: !hasContent || generating || micBusy ? 0.45 : 1 },
             ]}
-            accessibilityLabel="Gerar laudo"
+            accessibilityLabel={hardMode ? "Gerar laudo (modo avançado)" : "Gerar laudo"}
           >
             <Text style={styles.generateBtnText}>
               {generating ? "Gerando…" : "Gerar laudo"}
@@ -1909,6 +1934,34 @@ function makeStyles(t: ColorTokens) {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: t.separator,
   },
+  advRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingBottom: 6,
+  },
+  advChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: t.fill1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "transparent",
+  },
+  advChipOn: {
+    backgroundColor: "#7C3AED18",
+    borderColor: "#7C3AED66",
+  },
+  advChipText: {
+    fontSize: 12,
+    fontFamily: FONT.medium,
+    color: t.text2,
+  },
+  advChipTextOn: {
+    color: "#7C3AED",
+  },
   composerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1929,6 +1982,9 @@ function makeStyles(t: ColorTokens) {
     backgroundColor: t.brandDeep,
     alignItems: "center",
     justifyContent: "center",
+  },
+  generateBtnHard: {
+    backgroundColor: "#7C3AED",
   },
   generateBtnText: {
     color: "#fff",

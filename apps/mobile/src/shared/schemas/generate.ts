@@ -12,6 +12,9 @@ export const GenerateRequestSchema = z.object({
   // Hint de categoria (opcional). O structurer pode discordar.
   category_hint: CategoryCodeSchema.optional(),
   writing_style_id: z.string().uuid(),
+  // Modo de geração. "hard" = toggle "laudo difícil" (writer premium, sem
+  // renderer determinístico). O server só ativa se HARD_MODE_ENABLED=true.
+  mode: z.enum(["standard", "hard"]).optional(),
   // Quando o app já consolidou texto a partir de transcrição live
   consolidated_transcript: z.string().optional(),
   // Quando retomamos um pipeline pausado por clarify, o app reenvia
