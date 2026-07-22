@@ -634,6 +634,12 @@ export async function POST(req: Request) {
       console.log(
         `[generate ${reportId}] model resolved: provider=${modelConfig.provider} model=${modelConfig.model} credential=${modelConfig.credentialRef}`,
       );
+      // Categorias de writer PURO (LIVRE/TESTE): usam o prompt geral da casa
+      // (LIVRE_SYSTEM_PROMPT), NÃO o template curado do bundle. Logo, um
+      // bundle.error (BUNDLE_EMPTY — sem biblioteca) NÃO deve bloquear, e o
+      // writer escreve direto do ditado cru (rawUserMessage), sem structurer.
+      const isFreeWriterCategory =
+        effectiveCategory === "LIVRE" || effectiveCategory === "TESTE";
 
       // ----- 3. BUNDLE determinístico (caminho ÚNICO) -----
       // DET-2 final: o retriever vetorial foi APOSENTADO. Toda categoria carrega
@@ -682,7 +688,7 @@ export async function POST(req: Request) {
       //  - BUNDLE_NO_TEMPLATE: há blocos mas nenhum kind=modelo
       //  - BUNDLE_VARIANT_EMPTY: a variante escolhida não tem modelo
       //  - BUNDLE_MODEL_AMBIGUOUS: >1 modelo após seleção (falta seletor/tag)
-      if (bundle.error && !isProgrammaticRenderer) {
+      if (bundle.error && !isProgrammaticRenderer && !isFreeWriterCategory) {
         outcome = "blocked";
         const reason =
           bundle.error.code === "BUNDLE_VARIANT_EMPTY"
@@ -811,7 +817,8 @@ export async function POST(req: Request) {
             categoryLabel:
               categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
             // FAST-PATH: writer escreve direto do ditado cru (sem achados estruturados).
-            rawUserMessage: fastPath
+            // LIVRE/TESTE são SEMPRE writer puro do ditado (não dependem do fastPath).
+            rawUserMessage: (fastPath || isFreeWriterCategory)
               ? reqInput.consolidated_transcript ?? reqInput.raw_input
               : undefined,
             modelConfig,
