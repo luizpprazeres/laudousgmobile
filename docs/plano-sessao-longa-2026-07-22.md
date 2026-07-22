@@ -27,7 +27,7 @@ Código RN pronto no branch `feat/venous-4view-recolor` (C4-clientes RN 328aeba 
 
 1. **[CRÍTICO — resolvido] `react-native-reanimated` faltando como peer dep do Skia.** `@shopify/react-native-skia@1.5.0` faz `require("react-native-reanimated")` (via ReanimatedProxy) em qualquer tela que monte Skia; sem a dep, o JS derruba o ReactHost → **tela branca no boot**. `apps/mobile/package.json` não declarava reanimated. Corrigido: `react-native-reanimated@~3.16.7` adicionado. **Por que a v11 da Play não trava:** v11 é de 07/07, ANTERIOR à cartografia venosa (08/07+) — não tem VenousSchemeView, logo não puxa Skia/reanimated. **⚠️ Sem este fix, o 1º build de produção Android COM cartografia travaria em prod.** Gotcha de build: `createBundleReleaseJsAndAssets` fica UP-TO-DATE e reusa bundle JS velho → precisa `--rerun-tasks` ou apagar o bundle após mexer em deps JS.
 
-2. **[MENOR] Evento SSE `sanity_warning` rejeitado pelo schema RN.** Backend emite `{type:"sanity_warning"}` durante o stream; o `GenerateSSEEventSchema` (shared) só conhece `sanity` → ZodError, evento descartado (`'evento SSE inválido'`). Não bloqueia (o sanity final chega pelo `done` — "4 pontos a revisar" apareceu). Alinhar o discriminador depois.
+2. **[MENOR — resolvido] Evento SSE `sanity_warning`/`stage` rejeitado pelo schema RN.** O RN tem uma CÓPIA local do schema (`apps/mobile/src/shared/schemas/generate.ts`), defasada do `packages/shared` — faltavam `sanity_warning` e `stage` → ZodError, evento descartado. Corrigido (commit `654bf71`): tipos add ao schema RN + reducer `state.ts` trata como no-op. tsc 0.
 
 3. **[EM CORREÇÃO] Cartografia 4-view renderiza BRANCA no device.** Card "Cartografia venosa" monta, `rendered.image != null`, subtítulo "Mapa recolorido…" (changedPixels>0), mas o Canvas de preview sai branco. Causa: `surface.makeImageSnapshot()` de offscreen GPU surface 2048×3072 vira textura presa à surface liberada (`updateAndRelease: EGLConsumer is not attached`). Fix aplicado em `VenousSchemeView.tsx`: `.makeNonTextureImage()` nos dois compose (`drawAnnotationsImage`/`drawCalloutsImage`) → traz p/ CPU. Rebuild em validação.
 
@@ -73,6 +73,11 @@ Artes: `tmp-review/tireoide-base.png` (mantém como está — Luiz: "lindo, não
 
 ### Tireoide (TI-RADS)
 - Arte aprovada como está. Nódulos por lobo (direito/esquerdo/istmo) + terço (superior/médio/inferior). Mesma linguagem de glifos (sólido/cisto/misto) adaptada a TI-RADS — propor e validar.
+
+### ✅ Correções não-visuais JÁ FEITAS (Dex1, commit `616eb9a`, independentes do gate):
+- `reportId` real no envio à Sala (mama+tireoide; era `nil` → não substituía por laudo). Propagado do PlusSheet.
+- Editor abre VAZIO — removida a auto-importação em `.task` (v1 manual). Botão "Importar achados do laudo" segue funcionando. BUILD SUCCEEDED.
+- NÃO tocado (depende do gate): glifos, artes, render, geometria, examType.
 
 ### Arquitetura — DECIDIDA (Dex2): v1 MANUAL estilo miomas. **Plano detalhado: `docs/plano-esquemas-tireoide-mama-2026-07-22.md`**.
 - **Descoberta do Dex2:** NÃO é do zero. Já há impls parciais no repo Swift: tireoide (`5d03f20`: modelo+parser+editor+view+sheet+exporter) e mama (`da4f8ab`). Gaps: redesenham a anatomia por código (não usam as artes aprovadas); mama sem destaque 12/3/6/9; léxico de glifos incompleto; autoimport em `.task` (contraria a fonte manual); `reportId: nil` no envio à Sala; entrada duplicada no PlusSheet. → **auditar e estender, não reimplementar.**
