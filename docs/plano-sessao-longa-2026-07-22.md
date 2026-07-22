@@ -17,9 +17,11 @@ Código RN pronto no branch `feat/venous-4view-recolor` (C4-clientes RN 328aeba 
 - [x] Device Samsung SM-G780G conectado via USB (RQ8R9036KRX)
 - [ ] Build release local (`assembleRelease`, JAVA_HOME=JBR) — **rodando**
 - [ ] `adb uninstall com.laudousg.LaudoUSG` (device tem v11 da Play, assinatura diferente) + install do APK release
-- [ ] Login com conta de teste (criar via `apps/api/scripts/create-beta-tester.mjs` se preciso) + smoke: achados venosos por TEXTO → gerar → conferir render 4-view (8 células, magna→medial, anotações Caveat SEM flip — RN/Skia não tem o bug do CGContext)
-- [ ] Exportar/Enviar p/ Sala (pílulas/anotações assadas no snapshot)
-- [ ] Registrar resultado + commit de eventuais fixes no branch
+- [x] Login com conta de teste + smoke: achados venosos por TEXTO → gerar → render 4-view (8 células, magna→medial laranja, parva→posterior vermelha, anotações Caveat legíveis SEM flip) ✅ VALIDADO
+- [x] Enviar p/ Sala — "Esquema enviado à sala" (encodeToBase64 CPU OK) ✅
+- [x] Fixes commitados no branch: **8bf2a6d** (reanimated + render CPU)
+- **Nota:** "Ø 4 mn" na tela é a fonte cursiva Caveat (o 2º "m" parece "n") — texto real é "mm", não é defeito.
+- **FRENTE 1 CONCLUÍDA E VALIDADA EM DEVICE (SM-G780G).** Falta só: build EAS/Play quando o Luiz quiser publicar (o fix do reanimated é pré-requisito).
 
 ### 🐞 BUGS ENCONTRADOS NO 1º TESTE EM DEVICE (22/07) — este é o 1º device-run do venoso no Android (antes só bundle Metro)
 
