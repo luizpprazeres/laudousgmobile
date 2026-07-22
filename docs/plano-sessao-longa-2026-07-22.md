@@ -33,6 +33,9 @@ Código RN pronto no branch `feat/venous-4view-recolor` (C4-clientes RN 328aeba 
 
 **Sobras do plano C1–C5 (avaliar com Dex2):** v2 do schema venoso (tributaria_lateral nomeada, medida-por-nível, distância plantar "43cm"); asset home de prod se sair do bundle.
 
+## ⏳ PENDENTE (Luiz 22/07): remover o botão "Ajustar laudo" do ANDROID também
+O RN (`apps/mobile`) tem o MESMO botão "Ajustar laudo" que removemos do iOS (aparece na tela do laudo, abaixo de Editar/Copiar — confirmado no smoke 22/07). Remover a UI no RN espelhando a Frente 2a do iOS: botão + sheet/estado da edição incremental (POST `/api/edit`). Backend `/api/edit` FICA. Arquivos prováveis: `apps/mobile/src/features/generate/*` (procurar "Ajustar laudo"/`/api/edit`/EDIT_TEXT). Delegar ao Dex quando retomar.
+
 ## Frente 2 — Ajustes iOS (repo Swift `laudousg-swift/LaudoUSG`, branch feat/venous-4view-recolor)
 
 ### 2a. REMOVER a ferramenta "Ajustar laudo" (decisão do Luiz — não funcionou, tirar)
