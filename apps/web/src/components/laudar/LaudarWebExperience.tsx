@@ -23,6 +23,7 @@ import { LaudoPreview } from './LaudoPreview'
 import { saveWebReport } from '@/lib/webReports'
 import { categoryCompactName, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
+import { diffReportBlocks } from './reportSuggestion'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
@@ -46,6 +47,11 @@ type ReportDraft = {
   text: string
   sourceText: string
   dirty: boolean
+}
+
+type UndoSnapshot = {
+  previousText: string
+  appliedText: string
 }
 
 function CategorySelector({
@@ -189,6 +195,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // os controles determinísticos continuam atualizando o documento ao vivo.
   // Depois da primeira edição, uma nova composição nunca sobrescreve o rascunho.
   const [reportDrafts, setReportDrafts] = useState<Record<string, ReportDraft>>({})
+  const [undoByCategory, setUndoByCategory] = useState<Record<string, UndoSnapshot | undefined>>({})
   const storedDraft = reportDrafts[categoria]
   const activeDraft: ReportDraft = storedDraft ?? {
     text: composedText,
@@ -197,7 +204,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   }
   const documentText = richEditor && activeDraft.dirty ? activeDraft.text : composedText
   const sourceChanged = richEditor && activeDraft.dirty && activeDraft.sourceText !== composedText
+  const suggestionDiff = useMemo(
+    () => sourceChanged ? diffReportBlocks(documentText, composedText) : null,
+    [composedText, documentText, sourceChanged]
+  )
   const onDocumentChange = (text: string) => {
+    setUndoByCategory((undo) => ({ ...undo, [categoria]: undefined }))
     setReportDrafts((drafts) => {
       const sourceText = drafts[categoria]?.dirty ? drafts[categoria].sourceText : composedText
       return {
@@ -210,16 +222,55 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       }
     })
   }
-  const resetDocumentDraft = () => {
-    if (activeDraft.dirty && typeof window !== 'undefined') {
-      const confirmed = window.confirm('Substituir a edição manual pelo modelo gerado a partir dos campos atuais?')
-      if (!confirmed) return
-    }
+  const applyCurrentModel = () => {
+    setUndoByCategory((undo) => ({
+      ...undo,
+      [categoria]: { previousText: documentText, appliedText: composedText },
+    }))
     setReportDrafts((drafts) => ({
       ...drafts,
       [categoria]: { text: composedText, sourceText: composedText, dirty: false },
     }))
   }
+  const resetDocumentDraft = () => {
+    if (activeDraft.dirty && typeof window !== 'undefined') {
+      const confirmed = window.confirm('Substituir a edição manual pelo modelo gerado a partir dos campos atuais?')
+      if (!confirmed) return
+    }
+    applyCurrentModel()
+  }
+  const rejectCurrentModel = () => {
+    setReportDrafts((drafts) => {
+      const current = drafts[categoria] ?? activeDraft
+      return {
+        ...drafts,
+        [categoria]: {
+          text: current.text,
+          sourceText: composedText,
+          dirty: current.text !== composedText,
+        },
+      }
+    })
+  }
+  const undoAcceptedSuggestion = () => {
+    const snapshot = undoByCategory[categoria]
+    if (!snapshot || snapshot.appliedText !== composedText || documentText !== composedText) return
+    setReportDrafts((drafts) => ({
+      ...drafts,
+      [categoria]: {
+        text: snapshot.previousText,
+        sourceText: composedText,
+        dirty: snapshot.previousText !== composedText,
+      },
+    }))
+    setUndoByCategory((undo) => ({ ...undo, [categoria]: undefined }))
+  }
+  const undoSnapshot = undoByCategory[categoria]
+  const canUndoSuggestion = Boolean(
+    undoSnapshot &&
+    undoSnapshot.appliedText === composedText &&
+    documentText === composedText
+  )
   const preview = useMemo(
     () => appendInitials(documentText, initialsOn ? initials : undefined),
     [documentText, initials, initialsOn]
@@ -419,6 +470,11 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 canGoNext={Boolean(next && next.id !== activeSection?.id)}
                 onPrevious={() => previous && setActiveSectionId(previous.id)}
                 onNext={() => next && setActiveSectionId(next.id)}
+                hasPendingSuggestion={sourceChanged}
+                canUndoSuggestion={canUndoSuggestion}
+                onAcceptSuggestion={applyCurrentModel}
+                onRejectSuggestion={rejectCurrentModel}
+                onUndoSuggestion={undoAcceptedSuggestion}
               />
             ) : (
               <footer className={`sticky bottom-0 flex items-center gap-3 border-t backdrop-blur-xl ${workspaceV2 ? 'border-gray-100 bg-white/95 px-4 py-3 dark:border-gray-800 dark:bg-[#1C1C1E]/95' : 'border-gray-200 bg-white/90 px-7 py-4 dark:border-gray-800 dark:bg-gray-950/90'}`}>
@@ -450,8 +506,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             editableText={documentText}
             draftDirty={activeDraft.dirty}
             sourceChanged={sourceChanged}
+            suggestionDiff={suggestionDiff}
             onTextChange={onDocumentChange}
             onResetDraft={resetDocumentDraft}
+            onAcceptSuggestion={applyCurrentModel}
+            onRejectSuggestion={rejectCurrentModel}
+            canUndoSuggestion={canUndoSuggestion}
+            onUndoSuggestion={undoAcceptedSuggestion}
           />
         </div>
       </main>
