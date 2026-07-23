@@ -2,7 +2,13 @@
 
 **Método:** `git cherry origin/main <branch>` (patch-equivalência) + diff de conteúdo de duas pontas + grep de features na `origin/main`. A main foi reconstruída por cherry-picks (~19/06), então SHAs diferem mesmo com conteúdo idêntico — os vereditos abaixo são por **conteúdo**, não por SHA.
 
-**Status da execução:** inventário produzido; **nenhuma branch foi deletada ainda** — aguarda checkpoint Dex2 🔵 (plano da sessão, Frente 0 passo 5) antes de qualquer deleção.
+**Status da execução (22/07, pós-checkpoint Dex2 ✅ "GO condicionado"):** CONSOLIDAÇÃO EXECUTADA.
+- `feat/model-resolver-hard-mode` **pushada** (condição do Dex2 — a consolidação deixou de ser só local).
+- 3 tags **anotadas** `archive/*` criadas e **publicadas na origin** (sala-schemas-category-filter, laudo-quick-wins, android-parity).
+- **44 branches locais deletadas** (as 41 mergeadas + as 3 arquivadas). Restam 5: `main`, `feat/model-resolver-hard-mode` e as 3 `codex/*` dos worktrees.
+- Resíduos portados em branches novas a partir da main, **typecheck+build OK, pushadas, aguardando OK do Luiz p/ merge→main (deploy)**:
+  - `hotfix/sala-schemas-report-filter` (`0583a86`) — port ADAPTADO de dd0c319 per Dex2: vínculo primário por `report_id` (o endpoint já selecionava a coluna e descartava), defesa por categoria só p/ linhas legadas, + categorias venosas (`DOPPLER_VENOSO_MMII[_MEDIDAS]` → `VENOSO_MMII`).
+  - `port/engine-quick-wins` (`9a16970`) — cherry-pick limpo de bafeb2a+23fbb3f; o wiring caiu dentro do bloco `guardsMode === "full"` da main (LIVRE/TESTE continuam pulando guards, correto).
 
 ## Resumo
 
