@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — TROMBOSE VENOSA ABDOMINAL
 
 No corpo:
-"Material ecogênico endoluminal em ___ (veia porta/cava/hepática), com ausência/falha de enchimento ao Doppler colorido, compatível com trombose."
+"Material ecogênico endoluminal em ___ (veia porta/cava/hepática), com ausência/falha de enchimento ao Doppler colorido."
 
 Na conclusão:
 "Trombose ___ (da veia porta / cava inferior)."

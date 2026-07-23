@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — ESTENOSE DA FÍSTULA ARTERIOVENOSA
 
 No corpo:
-"Redução focal do calibre da veia arterializada ___ (junto à anastomose/no trajeto), com aumento das velocidades (pico de ___ cm/s) e turbilhonamento; razão de velocidade (intra-estenose/pré-estenose) de ___, compatível com estenose significativa (> 50%)."
+"Redução focal do calibre da veia arterializada ___ (junto à anastomose/no trajeto), com aumento das velocidades (pico de ___ cm/s) e turbilhonamento; razão de velocidade (intra-estenose/pré-estenose) de ___."
 
 Na conclusão:
 "Estenose ___ da fístula arteriovenosa, com repercussão hemodinâmica (razão de velocidade > 2)."

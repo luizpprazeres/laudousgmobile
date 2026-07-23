@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — DESCOLAMENTO DE RETINA
 
 No corpo:
-"Membrana espessa e hiperecoica na câmara vítrea, de alta refletividade, aderida ao disco óptico e à ora serrata, configurando aspecto em 'V'/funil, com mobilidade restrita aos movimentos oculares, compatível com descolamento de retina."
+"Membrana espessa e hiperecoica na câmara vítrea, de alta refletividade, aderida ao disco óptico e à ora serrata, configurando aspecto em 'V'/funil, com mobilidade restrita aos movimentos oculares."
 
 Na conclusão:
 "Descolamento de retina."

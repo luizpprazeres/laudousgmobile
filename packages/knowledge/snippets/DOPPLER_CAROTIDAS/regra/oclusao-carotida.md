@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — OCLUSÃO CAROTÍDEA
 
 No corpo:
-"Ausência de fluxo detectável ao Doppler colorido e espectral no segmento ___, compatível com oclusão."
+"Ausência de fluxo detectável ao Doppler colorido e espectral no segmento ___."
 
 Na conclusão:
 "Oclusão da artéria ___."

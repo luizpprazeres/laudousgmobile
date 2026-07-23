@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — DESCOLAMENTO DO VÍTREO POSTERIOR
 
 No corpo:
-"Membrana fina, de baixa refletividade, muito móvel ('ondulante') na câmara vítrea, SEM inserção no disco óptico, compatível com descolamento do vítreo posterior."
+"Membrana fina, de baixa refletividade, muito móvel ('ondulante') na câmara vítrea, SEM inserção no disco óptico."
 
 Na conclusão:
 "Descolamento do vítreo posterior."

@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — TENDINOPATIA CALCÁRIA
 
 No corpo:
-"Foco hiperecoico com sombra acústica no interior do tendão ___, compatível com calcificação."
+"Foco hiperecoico com sombra acústica no interior do tendão ___."
 
 Na conclusão:
 "Tendinopatia calcária do ___."

@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — CORPO ESTRANHO INTRAOCULAR
 
 No corpo:
-"Foco hiperecoico com sombra acústica/reverberação na ___ (câmara vítrea/parede), compatível com corpo estranho."
+"Foco hiperecoico com sombra acústica/reverberação na ___ (câmara vítrea/parede)."
 
 Na conclusão:
 "Corpo estranho intraocular."

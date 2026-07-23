@@ -22,7 +22,7 @@ Achados ecográficos a descrever:
 
 Descrição obrigatória no corpo:
 "Vias biliares intra-hepáticas difusamente dilatadas (sinal do duplo canal positivo).
-Canal colédoco com calibre de 1,4 cm em sua porção intra-pancreática, contendo imagem hiperecoica, medindo 0,9 cm no seu maior eixo, ocasionando sombra acústica — compatível com coledocolitíase.
+Canal colédoco com calibre de 1,4 cm em sua porção intra-pancreática, contendo imagem hiperecoica, medindo 0,9 cm no seu maior eixo, ocasionando sombra acústica.
 Vesícula biliar com múltiplas imagens hiperecoicas móveis em seu interior."
 
 Na conclusão (numerada):

@@ -21,7 +21,7 @@ Conduta ecográfica:
 3. Se não for identificado em região inguinal, mencionar a impossibilidade de localização ecográfica e sugerir avaliação complementar.
 
 No corpo (testículo identificado no canal inguinal):
-"Testículo esquerdo não identificado na bolsa escrotal. Em região inguinal homolateral, identifica-se estrutura ovalada de ecotextura testicular, medindo 2,5 x 1,5 x 1,3 cm, compatível com testículo ectópico."
+"Testículo esquerdo não identificado na bolsa escrotal. Em região inguinal homolateral, identifica-se estrutura ovalada de ecotextura testicular, medindo 2,5 x 1,5 x 1,3 cm."
 
 Na conclusão:
 "Criptorquidia à esquerda — testículo identificado em canal inguinal homolateral. Convém, a critério clínico, correlacionar com avaliação urológica."

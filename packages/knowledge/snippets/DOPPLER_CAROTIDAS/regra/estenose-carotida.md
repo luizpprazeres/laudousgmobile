@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — ESTENOSE CAROTÍDEA
 
 No corpo:
-"Aumento focal das velocidades na artéria carótida interna ___ (pico sistólico de ___ cm/s; velocidade diastólica final de ___ cm/s; razão ACI/ACC de ___), associado a placa/redução luminal, compatível com estenose de ___% pelos critérios velocimétricos."
+"Aumento focal das velocidades na artéria carótida interna ___ (pico sistólico de ___ cm/s; velocidade diastólica final de ___ cm/s; razão ACI/ACC de ___), associado a placa/redução luminal."
 
 Na conclusão:
 "Estenose de ___% da artéria carótida interna ___, pelos critérios velocimétricos."

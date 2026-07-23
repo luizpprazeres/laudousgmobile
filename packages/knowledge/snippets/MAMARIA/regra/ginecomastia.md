@@ -24,4 +24,4 @@ A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internac
 
 6. GINECOMASTIA
 Usar exatamente:
-Mama direita/esquerda com aumento do tecido fibroglandular retroareolar, compatível com ginecomastia.
+Mama direita/esquerda com aumento do tecido fibroglandular retroareolar.

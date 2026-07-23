@@ -23,7 +23,7 @@ REGRA — BEXIGA TRABECULADA SECUNDÁRIA A HPB
 Em pacientes com HPB de longa data e/ou lóbulo médio significativo, a bexiga adapta-se à obstrução crônica desenvolvendo espessamento difuso das paredes (hipertrofia do músculo detrusor) e trabeculação característica. Divertículos podem se formar como complicação.
 
 Descrição obrigatória no corpo (pattern):
-"Bexiga de forma e contorno preservados, com paredes difusamente espessadas, medindo até 6 mm, com trabeculação evidente da camada muscular. Identifica-se imagem sacular comunicante com a luz vesical na parede posterior direita, medindo cerca de 2,5 cm — compatível com divertículo. Volume pré-miccional de 280.0 ml."
+"Bexiga de forma e contorno preservados, com paredes difusamente espessadas, medindo até 6 mm, com trabeculação evidente da camada muscular. Identifica-se imagem sacular comunicante com a luz vesical na parede posterior direita, medindo cerca de 2,5 cm. Volume pré-miccional de 280.0 ml."
 
 Na conclusão (numerada):
 - "x) Espessamento difuso das paredes vesicais com trabeculação."

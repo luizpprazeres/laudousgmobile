@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — DERRAME ARTICULAR
 
 No corpo:
-"Líquido anecoico/com debris no recesso articular ___, compatível com derrame."
+"Líquido anecoico/com debris no recesso articular ___."
 
 Na conclusão:
 "Derrame articular ___."

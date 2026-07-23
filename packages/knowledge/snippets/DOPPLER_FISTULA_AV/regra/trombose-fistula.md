@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — TROMBOSE DA FÍSTULA
 
 No corpo:
-"Ausência de fluxo ao Doppler no segmento ___, com material ecogênico endoluminal, compatível com trombose."
+"Ausência de fluxo ao Doppler no segmento ___, com material ecogênico endoluminal."
 
 Na conclusão:
 "Trombose da fístula arteriovenosa."

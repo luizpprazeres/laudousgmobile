@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — ROUBO DA SUBCLÁVIA
 
 No corpo:
-"Artéria vertebral ___ com fluxo invertido (retrógrado), compatível com fenômeno de roubo da subclávia."
+"Artéria vertebral ___ com fluxo invertido (retrógrado)."
 
 Na conclusão:
 "Fenômeno de roubo da subclávia à ___."

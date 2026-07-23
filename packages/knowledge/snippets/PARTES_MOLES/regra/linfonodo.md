@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — LINFONODO REACIONAL
 
 No corpo:
-"Imagem oval com hilo ecogênico central preservado e cortical de espessura regular, compatível com linfonodo de aspecto reacional, medindo ___."
+"Imagem oval com hilo ecogênico central preservado e cortical de espessura regular, medindo ___."
 
 Na conclusão:
 "Linfonodo de aspecto reacional."
