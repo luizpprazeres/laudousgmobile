@@ -81,12 +81,35 @@ Item único → sem número. Múltiplos → **"1) 2) 3)"** (parêntese, não pon
 - **DOPPLER ARTERIAL MMII:** ver §9 (reescrever com PSV/VDF).
 - **DOPPLER VENOSO MMII c/ MEDIDAS:** o corpus do Luiz aprovou quase sem alteração.
 
-## 8b. Título de Doppler — SEM "COM" (aprovado 04/07)
-O título de exame Doppler é **"ULTRASSONOGRAFIA DOPPLER {ARTERIAL/VENOSO/DE
-CARÓTIDAS E VERTEBRAIS} …"** — NUNCA "ULTRASSONOGRAFIA **COM** DOPPLER …". Ex.:
-"ULTRASSONOGRAFIA DOPPLER ARTERIAL DO MEMBRO INFERIOR DIREITO",
-"ULTRASSONOGRAFIA DOPPLER DE CARÓTIDAS E VERTEBRAIS". O único "COM" que permanece é
-o de **"… COM MEDIDAS"** (mapeamento venoso), que indica conteúdo, não o método.
+## 8b. Título de Doppler — depende se o Doppler É o exame ou COMPLEMENTA (refinado 23/07)
+Duas situações:
+- **Exame vascular puro** (o Doppler é o método principal): **"ULTRASSONOGRAFIA DOPPLER
+  {ARTERIAL/VENOSO/DE CARÓTIDAS E VERTEBRAIS/DE FÍSTULA ARTERIOVENOSA} …"** — SEM "COM".
+  Ex.: "ULTRASSONOGRAFIA DOPPLER DE CARÓTIDAS E VERTEBRAIS", "ULTRASSONOGRAFIA DOPPLER
+  ARTERIAL DO MEMBRO INFERIOR DIREITO". O único "COM" que permanece é o de **"… COM
+  MEDIDAS"** (mapeamento venoso), que indica conteúdo, não o método.
+- **Exame de órgão com Doppler COMPLEMENTAR** (o modo B é o principal e o Doppler
+  complementa): **"ULTRASSONOGRAFIA {DA/DO REGIÃO} COM DOPPLER COLORIDO"**. Ex. aprovado
+  pelo Luiz 23/07: **"ULTRASSONOGRAFIA DA BOLSA ESCROTAL COM DOPPLER COLORIDO"**. Vale
+  para escrotal, tireoide, partes moles, etc.
+
+## 8c. Decisões transversais dos golden cases — RESOLVIDAS pelo Luiz (23/07)
+As 5 dúvidas que apareceram em várias categorias ao gerar os golden cases:
+1. **Conclusão de item único → SEM número** (estilo-casa §7 vence os templates que punham "1)").
+2. **Adjetivo "ecogênico" → "ecoico"** (hipo/hiper/iso/anecoico). Já aplicado nos golden
+   cases e em 27 snippets (substantivo "ecogenicidade" preservado).
+3. **"compatível com X" NÃO fica no corpo** — diagnóstico só na CONCLUSÃO (§2). Atualizar
+   os snippets `regra/*` que ainda põem o diagnóstico na frase de corpo (deixar intactos
+   os de conclusão e as instruções que falam "NÃO escrever compatível com").
+4. **Título:** ver §8b refinado acima (vascular puro sem "COM"; órgão+Doppler = "COM
+   DOPPLER COLORIDO").
+5. **COMENTÁRIOS:** manter as frequências canônicas por categoria (são quase sempre as
+   mesmas — pode explicitar o transdutor/MHz habitual).
+
+> **Status:** todas as 9 categorias bloqueadas (DOPPLER_CAROTIDAS, ESCROTAL,
+> PROSTATA_TRANSRETAL, REGIAO_INGUINAL, OCULAR, PARATIREOIDE, PAREDE_ABDOMINAL,
+> TRANSFONTANELA, DOPPLER_FISTULA_AV) tiveram os golden cases **APROVADOS pelo Luiz em
+> 23/07** (carótidas com o ajuste de formato da velocimetria). Viram few-shots/writer.
 
 ## 9. Doppler arterial de MMII — meio-termo (regra específica) — APROVADO 04/07
 > Os 5 laudos v2 foram aprovados pelo Dr. Luiz (só o título mudou, ver §8b). Dex2
