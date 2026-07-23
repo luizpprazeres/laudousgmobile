@@ -14,7 +14,7 @@
 
 1. **`fix/sala-schemas-category-filter` — BUGFIX REAL NÃO PORTADO.** Commit `dd0c319` adiciona `SCHEMA_EXAM_TYPES_BY_CATEGORY` + `visibleSchemas` em `apps/api/src/app/sala/[token]/page.tsx`. A main NÃO filtra esquemas por categoria (grep vazio) → esquemas vazam entre exames (ex.: MIOMAS em laudo de MAMA/TIREOIDE). **Cherry-pick `dd0c319` → main antes de arquivar/deletar.**
 2. **`feat/android-parity`** — únicos não portados: `apps/api/scripts/create-beta-tester.mjs` (script de onboarding de beta tester, usado no teste interno da Play) + `docs/RESUME-2026-07-07.md`. Portar o script ou arquivar como tag.
-3. **`fix/laudo-quick-wins`** — guard `isValidDum` (`23fbb3f`) não existe literal na main; a main reimplementou DUM em `deterministicSanity/obstetrica.ts` (IG_DUM_CCN_DISCORDANT, ACOG 2022) — provavelmente cobre funcionalmente. Confirmar cobertura antes de descartar; senão, arquivar como tag.
+3. **`fix/laudo-quick-wins` — QUICK-WINS DE ENGINE NÃO PORTADOS (confirmado 22/07).** Os 2 commits únicos são `bafeb2a` (cria `measureNormalizer.ts` — normalização cm/mm, join "x" — + `dumValidation.ts` — remove linha DUM inválida — + wiring no `generate/route.ts`) e `23fbb3f` (fix do guard: só remove linha "DUM: <token-único>", preserva DUM válida). **Nenhum dos dois arquivos existe na `origin/main`** (`git cat-file -e` falha para ambos). Ruling do Luiz (memória 08/07) dava esses itens como "JÁ implementados" — implementados na branch, mas nunca chegaram em prod. **Cherry-pick `bafeb2a` + `23fbb3f` → main** (verificar conflito no route.ts) antes de arquivar/deletar.
 
 ## Vivas ([vivo→manter])
 
