@@ -23,6 +23,8 @@ import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionIte
 import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
 import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
+import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
+import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -990,6 +992,14 @@ export async function POST(req: Request) {
       // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
       if (generationPath.guardsMode === "full") {
       finalText = sanitizeDictationArtifacts(finalText);
+      // Normalização determinística de medidas (universal): abrevia
+      // "centímetros"→"cm" / "milímetros"→"mm" e junta dimensões "A por B"→
+      // "A x B". Conservador: não força separador decimal. Roda ANTES do sanity
+      // de medidas para o flag ver unidades já normalizadas.
+      finalText = normalizeMeasures(finalText);
+      // Rede de segurança: remove linhas "DUM:" com valor inválido (literal
+      // "null", data impossível, IG roteada por engano). O médico apagava.
+      finalText = stripInvalidDumLines(finalText);
       // Sanity de medidas: sinaliza [REVISAR] em valores fisiologicamente
       // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
       // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
