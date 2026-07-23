@@ -36,6 +36,7 @@ export async function GET(
 
   const schemas = (data ?? []).map((s) => ({
     id: s.id as string,
+    reportId: (s.report_id as string | null) ?? null,
     examType: s.exam_type as string,
     examLabel: s.exam_label as string,
     png: s.png_base64 as string,

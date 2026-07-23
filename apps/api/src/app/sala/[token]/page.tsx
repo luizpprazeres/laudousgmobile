@@ -52,6 +52,7 @@ type SalaResponse = {
 
 type SalaSchema = {
   id: string;
+  reportId: string | null;
   examType: string;
   examLabel: string;
   png: string;
@@ -61,6 +62,22 @@ type SalaSchema = {
 };
 
 type ActiveMainTab = "report" | "schemas";
+
+/**
+ * Esquemas visuais (`sala_schemas.exam_type`) que pertencem a cada categoria de
+ * laudo. Defesa para linhas legadas SEM `report_id` — a listagem vem por médico
+ * (`user_id`) e, sem vínculo, o esquema vazava entre exames (ex.: MIOMAS num
+ * laudo de MAMA/TIREOIDE). Categoria sem entrada → nenhum esquema legado
+ * (estrito, para não reabrir o vazamento). Novo `exam_type` do app precisa
+ * entrar aqui.
+ */
+const SCHEMA_EXAM_TYPES_BY_CATEGORY: Record<string, string[]> = {
+  MAMARIA: ["MAMA"],
+  TIREOIDE: ["TIREOIDE"],
+  PELVE_FEMININA: ["MIOMAS"],
+  DOPPLER_VENOSO_MMII: ["VENOSO_MMII"],
+  DOPPLER_VENOSO_MMII_MEDIDAS: ["VENOSO_MMII"],
+};
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -500,6 +517,18 @@ export default function SalaTokenPage() {
   const isViewingPast = selectedReportId !== null && selectedReportId !== latestReport?.id;
   const displayReport: SalaReport | null = isViewingPast ? selectedReport : latestReport;
   const activeId = displayReport?.id ?? latestReport?.id ?? null;
+  // Esquemas do laudo em exibição. Vínculo primário por report_id (o push do
+  // app grava o laudo de origem) — impede tanto o vazamento entre categorias
+  // quanto entre dois laudos da MESMA categoria. Linhas legadas sem report_id
+  // caem na defesa por categoria (mapa estrito acima).
+  const visibleSchemas = useMemo(() => {
+    const rep = displayReport;
+    if (!rep) return [] as SalaSchema[];
+    const allowed = SCHEMA_EXAM_TYPES_BY_CATEGORY[rep.category ?? ""] ?? [];
+    return schemas.filter((s) =>
+      s.reportId !== null ? s.reportId === rep.id : allowed.includes(s.examType),
+    );
+  }, [schemas, displayReport]);
   const status: "loading" | "invalid" | "waiting" | "live" = loading
     ? "loading"
     : !tokenValid
@@ -511,10 +540,10 @@ export default function SalaTokenPage() {
           : "live";
 
   useEffect(() => {
-    if (schemas.length === 0 && activeMainTab === "schemas") {
+    if (visibleSchemas.length === 0 && activeMainTab === "schemas") {
       setActiveMainTab("report");
     }
-  }, [activeMainTab, schemas.length]);
+  }, [activeMainTab, visibleSchemas.length]);
 
   useEffect(() => {
     function isTypingTarget(target: EventTarget | null): boolean {
@@ -688,7 +717,7 @@ export default function SalaTokenPage() {
         motivationalQuote={motivationalQuote}
         shortcutsOpen={shortcutsOpen}
         noteInputRef={noteInputRef}
-        schemas={schemas}
+        schemas={visibleSchemas}
         activeMainTab={activeMainTab}
         salaToken={token}
         onToggleTheme={toggleTheme}
