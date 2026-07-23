@@ -25,7 +25,7 @@ CRITÉRIOS PARA CONSIDERAR NORMAL
 
 PARÓTIDAS:
 - AP entre 25-40 mm e longitudinal 50-70 mm bilateralmente (variável conforme biotipo).
-- Ecotextura homogênea, isoecoica ou ligeiramente hiperecogênica em relação ao músculo adjacente.
+- Ecotextura homogênea, isoecoica ou ligeiramente hiperecoica em relação ao músculo adjacente.
 - Ducto de Stensen NÃO-visível ou < 1,5 mm.
 - Ausência de nódulos, cistos ou áreas hipoecoicas focais.
 - Ausência de cálculos.

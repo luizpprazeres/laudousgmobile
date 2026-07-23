@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — CALCIFICAÇÕES PROSTÁTICAS
 
 No corpo:
-"Focos hiperecogênicos no parênquima prostático, compatíveis com calcificações."
+"Focos hiperecoicos no parênquima prostático, compatíveis com calcificações."
 
 Na conclusão:
 "Calcificações prostáticas."

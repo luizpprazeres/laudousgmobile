@@ -18,7 +18,7 @@ EXCEÇÃO — TROMBOSE VENOSA PROFUNDA DE IDADE INDETERMINADA
 USE ESTE BLOCO QUANDO há sinais ecográficos de trombose (incompressibilidade + material trombótico intraluminal) MAS NÃO é possível classificar como aguda ou crônica recanalizada porque faltam critérios positivos de qualquer um dos extremos:
 
 NÃO USA AGUDA quando faltam:
-- Material hipoecogênico claro.
+- Material hipoecoico claro.
 - Distensão venosa marcada.
 - Parede venosa fina.
 - Quadro clínico de início recente documentado.
@@ -26,7 +26,7 @@ NÃO USA AGUDA quando faltam:
 NÃO USA CRÔNICA RECANALIZADA quando faltam:
 - Parede espessada/ecogênica claramente.
 - Recanalização parcial visível.
-- Material hiperecogênico organizado.
+- Material hiperecoico organizado.
 - Circulação colateral evidente.
 
 Cenário típico: ecogenicidade do material trombótico é mista/intermediária, sem datação clínica disponível, exame de triagem em paciente assintomático, achado incidental.
@@ -45,7 +45,7 @@ QUANDO USAR vs OUTROS BLOCOS DE TVP
 
 | Cenário | Bloco apropriado |
 |---|---|
-| Trombo hipoecogênico + distensão + clínica aguda | tvp-aguda |
+| Trombo hipoecoico + distensão + clínica aguda | tvp-aguda |
 | Parede espessada + recanalização + colaterais | tvp-cronica-recanalizada |
 | Trombo de cronologia incerta (ecogenicidade mista, sem clínica datada) | ESTE BLOCO |
 | Trombo agudo SOBRE achados crônicos | tvp-cronica-recanalizada com observação de re-trombose |

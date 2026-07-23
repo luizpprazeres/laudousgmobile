@@ -39,7 +39,7 @@ CENÁRIO 3 — Múltiplos cálculos:
 "X) Múltiplos cálculos em [ducto / corpo glandular de] glândula [salivar], o maior medindo ___ mm. Dilatação ductal segmentar com calibre máximo de ___ mm."
 
 CENÁRIO 4 — Cálculo pequeno SEM sombra acústica clara:
-"X) Imagem hiperecogênica em [ducto / corpo glandular] medindo ___ mm, sem sombra acústica posterior definida, sugestiva de cálculo de pequenas dimensões. Convém, a critério clínico, complementar com sialotomografia ou sialorressonância para confirmação e melhor caracterização do cálculo."
+"X) Imagem hiperecoica em [ducto / corpo glandular] medindo ___ mm, sem sombra acústica posterior definida, sugestiva de cálculo de pequenas dimensões. Convém, a critério clínico, complementar com sialotomografia ou sialorressonância para confirmação e melhor caracterização do cálculo."
 
 ═══════════════════════════════════════════════════
 ATENÇÃO TÉCNICA

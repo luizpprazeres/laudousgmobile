@@ -20,7 +20,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — ADENOMA DE PARATIREOIDE
 
 No corpo:
-"Imagem nodular hipoecogênica, ovalada, de contornos regulares, situada na loja paratireoidiana ___ (posterior/inferior ao lobo tireoidiano), apresentando pedículo vascular polar ao Doppler, medindo ___."
+"Imagem nodular hipoecoica, ovalada, de contornos regulares, situada na loja paratireoidiana ___ (posterior/inferior ao lobo tireoidiano), apresentando pedículo vascular polar ao Doppler, medindo ___."
 
 Na conclusão:
 "Imagem nodular em loja paratireoidiana ___, compatível com adenoma de paratireoide. Convém, a critério clínico, correlacionar com cálcio e PTH e complementar com cintilografia (sestamibi)."

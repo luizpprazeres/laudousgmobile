@@ -20,7 +20,7 @@ Diferenciar de TVP aguda (regra: tvp-aguda):
 CARACTERÍSTICAS ECOGRÁFICAS DE CRONICIDADE:
 - Parede venosa espessada/ecogênica (em vez de fina).
 - Recanalização parcial: fluxo internalizado entre material trombótico residual.
-- Material trombótico hiperecogênico (organizado) — diferentemente do hipoecogênico agudo.
+- Material trombótico hiperecoico (organizado) — diferentemente do hipoecoico agudo.
 - Circulação colateral evidente.
 - Calibre venoso reduzido (vs aumento agudo) OU normal.
 - Compressibilidade parcial (pode ser comprimida com pressão maior).
@@ -41,7 +41,7 @@ ATENÇÃO — quadro misto agudo + crônico
 ═══════════════════════════════════════════════════
 
 Pode coexistir TVP aguda SOBRE achados crônicos (re-trombose). Critérios:
-- Material trombótico hipoecogênico (novo) somado a parede já espessada.
+- Material trombótico hipoecoico (novo) somado a parede já espessada.
 - Distensão venosa parcial.
 - Sintomatologia compatível.
 

@@ -20,7 +20,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — COLEÇÃO / ABSCESSO
 
 No corpo:
-"Coleção de conteúdo heterogêneo com debris, sem vascularização central, circundada por halo de tecido hiperecogênico e hiperemia periférica ao Doppler, no plano ___, medindo ___."
+"Coleção de conteúdo heterogêneo com debris, sem vascularização central, circundada por halo de tecido hiperecoico e hiperemia periférica ao Doppler, no plano ___, medindo ___."
 
 Na conclusão:
 "Coleção com aspecto sugestivo de processo inflamatório/abscesso. Convém, a critério clínico, correlacionar com dados laboratoriais e avaliar drenagem."

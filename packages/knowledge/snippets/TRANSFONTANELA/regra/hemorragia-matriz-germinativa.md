@@ -20,7 +20,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — HEMORRAGIA DA MATRIZ GERMINATIVA / PERI-INTRAVENTRICULAR
 
 No corpo:
-"Imagem hiperecogênica em ___ (matriz germinativa subependimária / interior ventricular / parênquima), compatível com hemorragia, classificável como grau ___ (Papile)."
+"Imagem hiperecoica em ___ (matriz germinativa subependimária / interior ventricular / parênquima), compatível com hemorragia, classificável como grau ___ (Papile)."
 
 Na conclusão:
 "Hemorragia da matriz germinativa/peri-intraventricular grau ___ (classificação de Papile)."

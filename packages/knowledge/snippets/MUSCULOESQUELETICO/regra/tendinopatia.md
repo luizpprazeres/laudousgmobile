@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — TENDINOPATIA
 
 No corpo:
-"Tendão ___ espessado, com perda do padrão fibrilar e áreas hipoecogênicas, podendo apresentar neovascularização ao Doppler."
+"Tendão ___ espessado, com perda do padrão fibrilar e áreas hipoecoicas, podendo apresentar neovascularização ao Doppler."
 
 Na conclusão:
 "Tendinopatia do ___."

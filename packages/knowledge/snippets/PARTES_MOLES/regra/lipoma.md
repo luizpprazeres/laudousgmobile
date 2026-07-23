@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — LIPOMA
 
 No corpo:
-"Formação nodular ovalada, de eixo maior paralelo à pele, isoecogênica a discretamente hiperecogênica em relação ao subcutâneo, com finas estriações internas, bem delimitada, sem vascularização significativa ao Doppler, no plano ___, medindo ___."
+"Formação nodular ovalada, de eixo maior paralelo à pele, isoecoica a discretamente hiperecoica em relação ao subcutâneo, com finas estriações internas, bem delimitada, sem vascularização significativa ao Doppler, no plano ___, medindo ___."
 
 Na conclusão:
 "Formação compatível com lipoma."

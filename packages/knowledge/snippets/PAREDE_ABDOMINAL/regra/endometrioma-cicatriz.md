@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — ENDOMETRIOMA DE CICATRIZ
 
 No corpo:
-"Nódulo sólido hipoecogênico, de contornos irregulares, com vascularização ao Doppler, em topografia de cicatriz cirúrgica (cesárea), medindo ___."
+"Nódulo sólido hipoecoico, de contornos irregulares, com vascularização ao Doppler, em topografia de cicatriz cirúrgica (cesárea), medindo ___."
 
 Na conclusão:
 "Nódulo em cicatriz cirúrgica, a correlacionar com endometrioma de parede abdominal."

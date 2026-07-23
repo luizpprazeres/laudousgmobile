@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — PLACA ATEROMATOSA
 
 No corpo:
-"Placa ateromatosa ___ (calcificada/heterogênea/predominantemente hipoecogênica) em ___ (parede/segmento), determinando redução luminal estimada em ___%."
+"Placa ateromatosa ___ (calcificada/heterogênea/predominantemente hipoecoica) em ___ (parede/segmento), determinando redução luminal estimada em ___%."
 
 Na conclusão:
 "Placa ateromatosa em ___, com estenose estimada de ___%."

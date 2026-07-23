@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — CISTO EPIDÉRMICO
 
 No corpo:
-"Imagem nodular bem delimitada no plano subcutâneo, de conteúdo hipoecogênico heterogêneo (por vezes em 'pseudotestículo'), sem vascularização interna, podendo apresentar trajeto até a derme, medindo ___."
+"Imagem nodular bem delimitada no plano subcutâneo, de conteúdo hipoecoico heterogêneo (por vezes em 'pseudotestículo'), sem vascularização interna, podendo apresentar trajeto até a derme, medindo ___."
 
 Na conclusão:
 "Imagem compatível com cisto epidérmico (sebáceo)."

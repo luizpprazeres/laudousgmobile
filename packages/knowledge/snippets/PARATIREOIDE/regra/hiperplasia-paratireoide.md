@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — HIPERPLASIA DAS PARATIREOIDES
 
 No corpo:
-"Múltiplas imagens nodulares hipoecogênicas nas lojas paratireoidianas."
+"Múltiplas imagens nodulares hipoecoicas nas lojas paratireoidianas."
 
 Na conclusão:
 "Múltiplas imagens em lojas paratireoidianas, a correlacionar com hiperplasia das paratireoides."

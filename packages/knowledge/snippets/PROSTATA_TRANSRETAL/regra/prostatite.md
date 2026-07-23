@@ -18,7 +18,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — PROSTATITE
 
 No corpo:
-"Próstata de ecotextura heterogênea, com áreas hipoecogênicas e hiperemia ao Doppler."
+"Próstata de ecotextura heterogênea, com áreas hipoecoicas e hiperemia ao Doppler."
 
 Na conclusão:
 "Alterações ecográficas que podem corresponder a prostatite, a correlacionar clinicamente."

@@ -11,7 +11,7 @@ source_path: SVS/AVF/AVLS 2023 §5 (DVT diagnosis) + AIUM Practice Parameter for
 source_extracted_at: 2026-05-30
 ---
 
-GATILHOS DE APLICAÇÃO: "TVP aguda", "trombose aguda", "trombose recente", "trombo hipoecogênico", "trombo agudo", "veia distendida com trombo", "primeiro episódio de TVP", "TVP proximal aguda".
+GATILHOS DE APLICAÇÃO: "TVP aguda", "trombose aguda", "trombose recente", "trombo hipoecoico", "trombo agudo", "veia distendida com trombo", "primeiro episódio de TVP", "TVP proximal aguda".
 
 CONCLUSÃO — TROMBOSE VENOSA PROFUNDA AGUDA / RECENTE
 
@@ -26,7 +26,7 @@ Se a idade do trombo NÃO estiver clara nos achados (sem cronologia clínica E s
 
 Estrutura quando critérios de TVP aguda são atendidos:
 
-"X) Sinais ecográficos de trombose venosa profunda aguda em membro inferior [DIREITO/ESQUERDO/BILATERAL], envolvendo [listar segmentos: ex: veia femoral comum, femoral e poplítea]. Veia não compressível ao toque do transdutor, com material trombótico hipoecogênico intraluminal, distensão venosa, parede venosa fina e ausência de fluxo espontâneo — achados compatíveis com evento agudo/recente. [Topografia: trombose proximal, envolvendo veias femoral, ilíaca ou poplítea / trombose distal isolada, envolvendo apenas tibiais ou fibulares.] O diagnóstico mais provável é trombose venosa profunda aguda."
+"X) Sinais ecográficos de trombose venosa profunda aguda em membro inferior [DIREITO/ESQUERDO/BILATERAL], envolvendo [listar segmentos: ex: veia femoral comum, femoral e poplítea]. Veia não compressível ao toque do transdutor, com material trombótico hipoecoico intraluminal, distensão venosa, parede venosa fina e ausência de fluxo espontâneo — achados compatíveis com evento agudo/recente. [Topografia: trombose proximal, envolvendo veias femoral, ilíaca ou poplítea / trombose distal isolada, envolvendo apenas tibiais ou fibulares.] O diagnóstico mais provável é trombose venosa profunda aguda."
 
 RECOMENDAÇÃO:
 "X) Convém, com caráter de urgência, avaliação médica para definição de conduta terapêutica, conforme protocolo clínico do médico assistente."
@@ -47,7 +47,7 @@ DIFERENCIAR DE TVP CRÔNICA / SEQUELA
 Características de cronicidade (NÃO é aguda):
 - Parede venosa espessada/ecogênica.
 - Recanalização parcial (fluxo internalizado).
-- Material trombótico hiperecogênico organizado.
+- Material trombótico hiperecoico organizado.
 - Circulação colateral evidente.
 
 Se quadro misto: usar regra "tvp-cronica-recanalizada" (excecao).

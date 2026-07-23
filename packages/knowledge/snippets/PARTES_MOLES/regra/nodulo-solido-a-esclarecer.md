@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — NÓDULO SÓLIDO A ESCLARECER
 
 No corpo:
-"Formação nodular sólida, hipoecogênica, de contornos ___, com vascularização ___ ao Doppler, no plano ___, medindo ___."
+"Formação nodular sólida, hipoecoica, de contornos ___, com vascularização ___ ao Doppler, no plano ___, medindo ___."
 
 Na conclusão:
 "Formação sólida de partes moles a esclarecer. Convém, a critério clínico, complementar a investigação com método contrastado (RM) e/ou avaliação histopatológica."

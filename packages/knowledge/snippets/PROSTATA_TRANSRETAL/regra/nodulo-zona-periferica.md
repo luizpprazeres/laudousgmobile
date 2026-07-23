@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 REGRA — NÓDULO NA ZONA PERIFÉRICA
 
 No corpo:
-"Nódulo/área hipoecogênica na zona periférica, de contornos ___, medindo ___, com vascularização ___ ao Doppler."
+"Nódulo/área hipoecoica na zona periférica, de contornos ___, medindo ___, com vascularização ___ ao Doppler."
 
 Na conclusão:
 "Nódulo na zona periférica prostática a esclarecer. Convém, a critério clínico, correlacionar com PSA e complementar com RM multiparamétrica e/ou biópsia."

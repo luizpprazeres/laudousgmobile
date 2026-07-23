@@ -13,7 +13,7 @@ source_extracted_at: 2026-06-08
 
 EXCEÇÃO — NÓDULO SUSPEITO NA ZONA PERIFÉRICA
 
-Nódulo hipoecogênico na zona periférica associado a PSA elevado deve ser descrito como achado suspeito.
+Nódulo hipoecoico na zona periférica associado a PSA elevado deve ser descrito como achado suspeito.
 
 Na conclusão:
 "Nódulo na zona periférica prostática com características suspeitas. Convém, a critério clínico, complementar com RM multiparamétrica e biópsia prostática."

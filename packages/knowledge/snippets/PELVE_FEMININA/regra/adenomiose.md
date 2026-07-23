@@ -26,7 +26,7 @@ FRASES PARA O CORPO
 2. Útero com formato globoso, apresentando miométrio de ecotextura heterogênea.
 3. Miométrio com espessamento assimétrico das paredes uterinas, associado a ecotextura heterogênea.
 4. Miométrio com ecotextura heterogênea, apresentando imagens anecoicas, com margens regulares.
-5. Miométrio com ecotextura heterogênea, apresentando ilhas hiperecogênicas sem conexão com o endométrio.
+5. Miométrio com ecotextura heterogênea, apresentando ilhas hiperecoicas sem conexão com o endométrio.
 6. Miométrio com ecotextura heterogênea, apresentando linhas e brotos subendometriais ecogênicos.
 7. Miométrio com ecotextura heterogênea, apresentando sombreamento em leque.
 8. Complementamos o estudo com Doppler colorido, que mostrou vascularização translesional na área descrita.

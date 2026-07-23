@@ -14,7 +14,7 @@ source_extracted_at: 2026-05-25
 GATILHOS DE APLICAÇÃO:
 - esteatose
 - esteatose hepática
-- fígado hiperecogênico
+- fígado hiperecoico
 - fígado gorduroso
 - infiltração gordurosa
 
@@ -28,7 +28,7 @@ Graduação ecográfica:
 - **Grau acentuado**: aumento marcado da ecogenicidade com importante atenuação do feixe acústico, sem visualização adequada dos vasos intra-hepáticos profundos nem do diafragma.
 
 Descrição obrigatória no corpo (pattern: descrição genérica → achado):
-"Fígado de dimensões normais e contornos regulares, apresentando ecotextura difusamente hiperecogênica, com discreta atenuação do feixe acústico nos planos profundos e perda parcial da definição dos vasos intra-hepáticos."
+"Fígado de dimensões normais e contornos regulares, apresentando ecotextura difusamente hiperecoica, com discreta atenuação do feixe acústico nos planos profundos e perda parcial da definição dos vasos intra-hepáticos."
 
 Na conclusão (numerada):
 - "x)    Esteatose hepática, grau leve."
