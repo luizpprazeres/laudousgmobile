@@ -6,14 +6,13 @@ tags: [doppler-carotidas, template, modelo-base, carotidas, vertebrais]
 priority: 100
 priority_tier: universal
 version: 1.0.0
-status: draft
-source_path: ai-generated-c1-knowledge-base
+status: publishedsource_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-06-08
 ---
 
-MODELO-BASE PADRÃO — ULTRASSONOGRAFIA COM DOPPLER COLORIDO DE ARTÉRIAS CARÓTIDAS E VERTEBRAIS:
+MODELO-BASE PADRÃO — ULTRASSONOGRAFIA DOPPLER DE CARÓTIDAS E VERTEBRAIS:
 
-ULTRASSONOGRAFIA COM DOPPLER COLORIDO DE ARTÉRIAS CARÓTIDAS E VERTEBRAIS
+ULTRASSONOGRAFIA DOPPLER DE CARÓTIDAS E VERTEBRAIS
 
 COMENTÁRIOS:
 Exame realizado com transdutor linear de alta frequência, com estudo ao Doppler colorido e espectral das artérias carótidas e vertebrais.

@@ -6,14 +6,13 @@ tags: [doppler-fistula-av, template, modelo-base, fistula, hemodialise]
 priority: 100
 priority_tier: universal
 version: 1.0.0
-status: draft
-source_path: ai-generated-c1-knowledge-base
+status: publishedsource_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-06-08
 ---
 
-MODELO-BASE PADRÃO — ULTRASSONOGRAFIA COM DOPPLER DE FÍSTULA ARTERIOVENOSA:
+MODELO-BASE PADRÃO — ULTRASSONOGRAFIA DOPPLER DE FÍSTULA ARTERIOVENOSA:
 
-ULTRASSONOGRAFIA COM DOPPLER DE FÍSTULA ARTERIOVENOSA
+ULTRASSONOGRAFIA DOPPLER DE FÍSTULA ARTERIOVENOSA
 
 COMENTÁRIOS:
 Exame realizado com transdutor linear de alta frequência, com Doppler colorido e espectral, avaliando artéria aferente, anastomose e veia eferente arterializada.
