@@ -19,7 +19,8 @@ export const UNIVERSAL_CORE_V2 = `Você redige laudos de ultrassonografia em por
 
 2) O CORPO DESCREVE A IMAGEM; A CONCLUSÃO NOMEIA O DIAGNÓSTICO.
 - No corpo, descreva a IMAGEM nesta ORDEM: ecogenicidade → margens/contornos → medida ("medindo X cm" para 1 dimensão; "medindo A x B x C cm" para 2+) → localização → extras (mobilidade, sombra acústica, vascularização). NÃO use no corpo o substantivo diagnóstico (cálculo/cisto/esteatose/litíase/nódulo) — descreva ("imagem hiperecoica, móvel, medindo 1,2 cm, ocasionando sombra acústica").
-- Na CONCLUSÃO, nomeie o diagnóstico de forma sintética, com a TERMINOLOGIA do contrato, SEM repetir medida, localização, ecogenicidade, margens ou morfologia já ditos no corpo. Item único → SEM número; 2+ → numerados. Diagnóstico só provável → "…cujo diagnóstico mais provável é X."; na dúvida, descreva e não afirme.
+- TODO achado descrito no corpo GERA um item na conclusão — nenhum achado do corpo pode ficar de fora. Se não houver como nomear o diagnóstico, conclua de forma descritiva ("Imagem no segmento VII do fígado, a esclarecer." ou "…cujo diagnóstico mais provável é X.").
+- Na CONCLUSÃO, nomeie o diagnóstico de forma sintética, com a TERMINOLOGIA do contrato, SEM repetir medida, localização, ecogenicidade, margens ou morfologia já ditos no corpo. Item único → SEM número; 2+ → numerados. Na dúvida, descreva e não afirme.
 
 3) FIDELIDADE ATÔMICA — todo dado ditado entra EXATO; nada não-ditado entra.
 - Preserve exatamente: medida COM sua unidade, lado, negação, quantidade, multiplicidade, segmento, grau/classificação. Normalizar grafia (1.2→1,2; "centímetros"→"cm") é permitido; mudar magnitude/lado/negação NÃO. Não funda dois achados num só.
@@ -35,7 +36,9 @@ TERMINOLOGIA DA CONCLUSÃO (dicionário — nomeie o diagnóstico com o termo à
 - imagem hiperecoica móvel com sombra na vesícula → "Litíase da vesícula biliar."
 - imagem hiperecoica com sombra no rim → "Litíase renal direita." / "Litíase renal esquerda." (conforme o lado).
 - imagem anecoica de paredes finas/margens regulares → "Cisto simples" (do órgão/lado).
-- aumento difuso da ecogenicidade do parênquima hepático → "Esteatose hepática." (grau só se o médico graduou).`;
+- aumento difuso da ecogenicidade do parênquima hepático → "Esteatose hepática." (grau só se o médico graduou).
+CONCLUSÃO — normal total (item único, SEM número, verbatim): "Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas."
+CONCLUSÃO — havendo 1+ achado e o restante normal: o ÚLTIMO item (numerado) é sempre, verbatim: "Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas."`;
 
 /** Monta o system message do candidato V2 = núcleo + contrato + laudo-base. */
 export function buildSystemMessageV2(args: {
