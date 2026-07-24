@@ -111,6 +111,15 @@ As 5 dúvidas que apareceram em várias categorias ao gerar os golden cases:
 > TRANSFONTANELA, DOPPLER_FISTULA_AV) tiveram os golden cases **APROVADOS pelo Luiz em
 > 23/07** (carótidas com o ajuste de formato da velocimetria). Viram few-shots/writer.
 
+## 8d. Padrões de conclusão e de hérnia — CORREÇÕES DO LUIZ (23/07, generalizáveis)
+Destilado das correções do Luiz sobre os writers (região inguinal, parede abdominal, paratireoide). Valem para OUTRAS categorias no mesmo espírito:
+- **Conclusão de exame NORMAL (sem achados):** frase única, sem número — **"Ausência de alterações detectáveis pelo método."** (substitui frases categoria-específicas tipo "sem evidência de defeitos herniários"). Aplicável a laudos normais de outras categorias.
+- **Fecho após achados:** o ÚLTIMO item da conclusão numerada é **"Ausência de outras alterações detectáveis pelo método."** Ex.: "1) Hérnia inguinal indireta à direita. 2) Ausência de outras alterações detectáveis pelo método."
+- **Conclusão NÃO repete o corpo:** colo, conteúdo e redutibilidade da hérnia ficam SÓ no corpo; a conclusão traz só o diagnóstico ("Hérnia umbilical.", "Hérnia inguinal indireta à direita.").
+- **Hérnia / defeito de parede no CORPO = "solução de continuidade"** (nunca "hérnia"): "Solução de continuidade [da parede do canal inguinal {lado}, lateral à artéria epigástrica inferior / na cicatriz umbilical], com passagem de {gordura/alça}, que se acentua à manobra de Valsalva, com colo de {X} cm, redutível à compressão com o transdutor."
+- **Diagnóstico PROVÁVEL (não fechado):** conclusão no formato **"Imagem [descrição] que tem como diagnóstico mais provável [X]. Convém, a critério clínico, correlacionar com [...], com objetivo de [acompanhar a evolução/prosseguir a investigação]."** (NÃO usar "compatível com"). Ex. paratireoide: "Imagem hipoecoica na loja paratireoidiana que tem como diagnóstico mais provável adenoma de paratireoide."
+- **COMENTÁRIOS de exame de REGIÃO/par (inguinal, escrotal, etc.):** indicar o lado efetivamente examinado (direita/esquerda/bilateral) conforme o ditado.
+
 ## 9. Doppler arterial de MMII — meio-termo (regra específica) — APROVADO 04/07
 > Os 5 laudos v2 foram aprovados pelo Dr. Luiz (só o título mudou, ver §8b). Dex2
 > validou a coerência clínica dos valores. Viram few-shots/golden do writer arterial.

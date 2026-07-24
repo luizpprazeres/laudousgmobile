@@ -10,12 +10,13 @@ status: published
 ULTRASSONOGRAFIA DA REGIÃO INGUINAL
 
 COMENTÁRIOS:
-Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação da região inguinal direita, com avaliação dinâmica do canal inguinal à manobra de Valsalva e em ortostase.
+Exame realizado com transdutor de 12 MHz, abrangendo a avaliação da região inguinal bilateral. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
-Solução de continuidade da parede do canal inguinal direito, lateral à artéria epigástrica inferior, com passagem de conteúdo gorduroso através do anel inguinal profundo, percorrendo o canal inguinal, que se acentua à manobra de Valsalva e em ortostase, com redução completa ao repouso e à compressão, com colo medindo 1,2 cm.
-Ausência de coleções ou líquido no saco herniário.
-Linfonodos inguinais de morfologia preservada, com hilo hiperecoico mantido, o maior medindo 0,9 cm.
+Solução de continuidade da parede do canal inguinal direito, lateral à artéria epigástrica inferior, com passagem de gordura, que se acentua à manobra de Valsalva, com colo de 1,2 cm, redutível à compressão com o transdutor.
+Região inguinal esquerda com ecogenicidade e ecotextura normais, sem sinais de solução de continuidade.
+Ausência de coleções ou linfonodomegalias.
 
 CONCLUSÃO:
-Hérnia inguinal indireta à direita, de conteúdo gorduroso, redutível.
+1) Hérnia inguinal indireta à direita.
+2) Ausência de outras alterações detectáveis pelo método.

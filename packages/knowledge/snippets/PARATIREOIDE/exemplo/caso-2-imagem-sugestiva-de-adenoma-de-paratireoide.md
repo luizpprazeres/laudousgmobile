@@ -10,13 +10,11 @@ status: published
 ULTRASSONOGRAFIA DAS GLÂNDULAS PARATIREOIDES
 
 COMENTÁRIOS:
-Exame realizado com transdutor linear de alta frequência, em modo B e Doppler colorido, avaliando a região cervical anterior e as lojas paratireoidianas nas faces posteriores dos polos superior e inferior de ambos os lobos tireoidianos.
+Exame realizado com transdutor linear de alta frequência, com Doppler colorido, avaliando as lojas paratireoidianas.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
-Tireoide de dimensões, ecogenicidade e ecotextura normais.
-Imagem nodular hipoecoica, ovalada, de contornos regulares, situada na loja paratireoidiana posterior ao polo inferior do lobo tireoidiano direito, medindo 1,4 x 0,8 x 0,6 cm, apresentando pedículo vascular polar ao Doppler colorido.
-Não se identificam outras imagens nodulares nas demais lojas paratireoidianas.
-Região infratireoidiana sem imagens nodulares.
+Tireoide de aspecto habitual.
+Imagem hipoecoica, oval, situada na loja paratireoidiana posterior ao polo inferior do lobo tireoidiano direito, medindo 1,2 cm, apresentando pedículo vascular polar ao Doppler colorido.
 
 CONCLUSÃO:
-Imagem nodular na loja paratireoidiana posterior ao polo inferior do lobo tireoidiano direito, com características sugestivas de adenoma de paratireoide. Convém, a critério clínico, correlacionar com as dosagens de cálcio sérico e PTH, com objetivo de prosseguir a investigação.
+Imagem hipoecoica na loja paratireoidiana que tem como diagnóstico mais provável adenoma de paratireoide. Convém, a critério clínico, correlacionar com as dosagens laboratoriais de cálcio e PTH, com objetivo de acompanhar a evolução.

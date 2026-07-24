@@ -6,7 +6,8 @@ tags: [prostata, transretal, nodulo-suspeito, zona-periferica, psa, biopsia]
 priority: 95
 priority_tier: contextual
 version: 1.0.0
-status: publishedsource_path: ai-generated-c1-knowledge-base
+status: published
+source_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-06-08
 ---
 

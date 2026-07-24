@@ -6,7 +6,8 @@ tags: [regiao-inguinal, hernia, indireta]
 priority: 80
 priority_tier: contextual
 version: 1.0.0
-status: publishedsource_path: ai-generated-c1-knowledge-base
+status: published
+source_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-06-08
 ---
 
@@ -16,8 +17,9 @@ GATILHOS DE APLICAÇÃO:
 
 REGRA — HÉRNIA INGUINAL INDIRETA
 
-No corpo:
-"Conteúdo herniário ___ (gorduroso/entérico) emergindo lateralmente aos vasos epigástricos inferiores, através do anel inguinal profundo, percorrendo o canal inguinal à manobra de Valsalva, redutível, com colo de ___."
+No corpo (descrever como SOLUÇÃO DE CONTINUIDADE, nunca "hérnia"):
+"Solução de continuidade da parede do canal inguinal ___ (direito/esquerdo), lateral à artéria epigástrica inferior, com passagem de ___ (gordura/alça intestinal), que se acentua à manobra de Valsalva, com colo de ___ cm, redutível à compressão com o transdutor."
 
-Na conclusão:
-"Hérnia inguinal indireta à ___ (direita/esquerda), conteúdo ___, redutível."
+Na conclusão (o diagnóstico vem AQUI, conciso, sem repetir colo/conteúdo):
+"Hérnia inguinal indireta à ___ (direita/esquerda)."
+Seguido do fecho: "Ausência de outras alterações detectáveis pelo método.".

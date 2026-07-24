@@ -6,7 +6,8 @@ tags: [paratireoide, adenoma, hiperparatireoidismo, sestamibi]
 priority: 80
 priority_tier: contextual
 version: 1.0.0
-status: publishedsource_path: ai-generated-c1-knowledge-base
+status: published
+source_path: ai-generated-c1-knowledge-base
 source_extracted_at: 2026-06-08
 ---
 
@@ -18,8 +19,8 @@ GATILHOS DE APLICAÇÃO:
 
 REGRA — ADENOMA DE PARATIREOIDE
 
-No corpo:
-"Imagem nodular hipoecoica, ovalada, de contornos regulares, situada na loja paratireoidiana ___ (posterior/inferior ao lobo tireoidiano), apresentando pedículo vascular polar ao Doppler, medindo ___."
+No corpo (descrição concisa; "Imagem hipoecoica, oval", NÃO "nódulo"):
+"Imagem hipoecoica, oval, situada na loja paratireoidiana posterior ao polo ___ (inferior/superior) do lobo tireoidiano ___ (direito/esquerdo), medindo ___ cm, apresentando pedículo vascular polar ao Doppler colorido."
 
-Na conclusão:
-"Imagem nodular em loja paratireoidiana ___, compatível com adenoma de paratireoide. Convém, a critério clínico, correlacionar com cálcio e PTH e complementar com cintilografia (sestamibi)."
+Na conclusão (padrão "que tem como diagnóstico mais provável"; NÃO usar "compatível com"):
+"Imagem hipoecoica na loja paratireoidiana que tem como diagnóstico mais provável adenoma de paratireoide. Convém, a critério clínico, correlacionar com as dosagens laboratoriais de cálcio e PTH, com objetivo de acompanhar a evolução."
