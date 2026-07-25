@@ -40,16 +40,40 @@ TERMINOLOGIA DA CONCLUSÃO (dicionário — nomeie o diagnóstico com o termo à
 CONCLUSÃO — normal total (item único, SEM número, verbatim): "Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas."
 CONCLUSÃO — havendo 1+ achado e o restante normal: o ÚLTIMO item (numerado) é sempre, verbatim: "Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas."`;
 
-/** Monta o system message do candidato V2 = núcleo + contrato + laudo-base. */
+/**
+ * DICIONÁRIO DE CONCLUSÕES CADASTRADAS — abdome (verbatim das snippets do Luiz:
+ * ABDOMEN_TOTAL/conclusao/*). É a resposta ao "achado → frase de conclusão": o
+ * writer NÃO adivinha diagnósticos interpretativos do médico; ele usa a frase
+ * cadastrada quando o achado casa. Curto (frases, não laudos) → composável e
+ * barato. Só entra na conclusão o que o médico realmente ditou.
+ */
+export const ABDOME_CONCLUSION_PHRASEBOOK = `DICIONÁRIO DE CONCLUSÕES CADASTRADAS (use a frase à direita quando o achado do médico casar; nunca invente diagnóstico fora desta lista para achados interpretativos):
+- Fígado com aumento difuso da ecogenicidade → "Esteatose hepática." (+ ", grau leve/moderado/acentuado" SÓ se o médico graduou).
+- Fígado com sinais de doença crônica (contornos irregulares/nodular) → "Sinais de doença hepática crônica."
+- Imagem hipoecoica em segmento hepático (IV/V/VI/VII), fígado com esteatose → "Imagem hipoecoica no segmento ___ do fígado, cujo diagnóstico mais provável é área poupada da esteatose."
+- Imagem anecoica de paredes finas no fígado → "Cisto hepático sem septações no segmento ___."
+- Imagem hiperecoica móvel com sombra na vesícula → "Litíase da vesícula biliar."
+- Imagem anecoica de paredes finas no rim → "Cisto simples no rim direito/esquerdo."
+- Imagem hiperecoica com sombra no rim → "Litíase renal direita/esquerda."
+- Placas na aorta abdominal → "Placas de ateromas na aorta abdominal."`;
+
+/** Monta o system message do candidato V2 = núcleo + contrato + dicionário + laudo-base. */
 export function buildSystemMessageV2(args: {
   categoryContract: string;
   laudoBase: string;
+  conclusionPhrasebook?: string;
 }): string {
-  return [
+  const parts = [
     UNIVERSAL_CORE_V2,
     "=== CONTRATO DA CATEGORIA ===",
     args.categoryContract,
+  ];
+  if (args.conclusionPhrasebook) {
+    parts.push("=== CONCLUSÕES CADASTRADAS DA CATEGORIA ===", args.conclusionPhrasebook);
+  }
+  parts.push(
     "=== LAUDO-BASE (a AUTORIDADE do estilo — edite minimamente, não parafraseie) ===",
     args.laudoBase,
-  ].join("\n\n");
+  );
+  return parts.join("\n\n");
 }
