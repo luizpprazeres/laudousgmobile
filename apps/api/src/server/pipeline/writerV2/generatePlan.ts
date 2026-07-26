@@ -26,7 +26,12 @@ function serializeSpec(spec: ReportSpec): string {
   const modoNota = porEstrutura
     ? `\n\nMODO DE CONCLUSÃO = POR_ESTRUTURA: o CÓDIGO monta a conclusão listando um item por estrutura (a "conclusão-normal" acima). Para cada slot com achado, informe em "conclusao" o DIAGNÓSTICO daquele slot (o código o usa NO LUGAR da conclusão-normal). Estruturas sem achado saem normais automaticamente — NÃO as repita. "conclusao" (avulso) só para o que não nasce de uma estrutura (ex.: idade gestacional).`
     : `\n\nMODO DE CONCLUSÃO = FECHAMENTO: liste em "conclusao" (avulso) os diagnósticos nomeados; deixe "conclusao" dos slots vazio ("").`;
-  return `SLOTS DO LAUDO-BASE (id → frase de normalidade):\n${slots}\n\nDICIONÁRIO DE ACHADOS (gatilho → corpo morfológico + conclusão cadastrada):\n${dict}${modoNota}`;
+  const avulsos = spec.avulsos_condicionais.length
+    ? `\n\nAVULSOS CONDICIONAIS (quando o gatilho ocorrer no ditado, acrescente o "texto" ao array "conclusao" avulso UMA ÚNICA vez — NÃO repita mesmo que o gatilho valha para mais de uma estrutura, e NÃO o pendure em nenhum slot):\n${spec.avulsos_condicionais
+        .map((a) => `- gatilho: ${a.gatilho}\n    texto: ${a.texto}`)
+        .join("\n")}`
+    : "";
+  return `SLOTS DO LAUDO-BASE (id → frase de normalidade):\n${slots}\n\nDICIONÁRIO DE ACHADOS (gatilho → corpo morfológico + conclusão cadastrada):\n${dict}${modoNota}${avulsos}`;
 }
 
 const PLAN_INSTRUCTIONS = `Sua saída NÃO é o laudo — é um PLANO DE EDIÇÃO (JSON) sobre o laudo-base.

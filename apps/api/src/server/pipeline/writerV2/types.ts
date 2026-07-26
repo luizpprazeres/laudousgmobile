@@ -55,10 +55,25 @@ export const categoryContractSchema = z.object({
 });
 export type CategoryContract = z.infer<typeof categoryContractSchema>;
 
+/**
+ * Avulso CONDICIONAL — item de conclusão que NÃO nasce de uma estrutura e é
+ * emitido UMA vez quando o gatilho ocorre (ex.: SOP em qualquer ovário →
+ * recomendação única de FSH/LH). O planner (LLM) reconhece o gatilho no ditado
+ * e coloca `texto` no array `conclusao` (avulsos); o assemble já o anexa ao fim.
+ * Não depende de slot, então não duplica mesmo quando o gatilho é bilateral.
+ */
+export const conditionalAddendumSchema = z.object({
+  id: z.string(),
+  gatilho: z.string(),
+  texto: z.string(),
+});
+export type ConditionalAddendum = z.infer<typeof conditionalAddendumSchema>;
+
 export const reportSpecSchema = z.object({
   base: z.array(specSlotSchema),
   dictionary: z.array(findingPhraseSchema),
   contract: categoryContractSchema,
+  avulsos_condicionais: z.array(conditionalAddendumSchema).default([]),
 });
 export type ReportSpec = z.infer<typeof reportSpecSchema>;
 

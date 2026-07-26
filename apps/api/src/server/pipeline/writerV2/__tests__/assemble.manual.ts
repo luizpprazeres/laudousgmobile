@@ -246,6 +246,42 @@ check(
   conclusaoDe(pelveOvarioAlterado),
 );
 
+// 5a-bis: SOP bilateral — os dois ovários viram itens de volume aumentado e a
+// recomendação de FSH/LH entra UMA única vez como avulso ao fim (o planner a
+// emite em plan.conclusao; o assemble anexa). Prova que não duplica.
+const FSH_LH =
+  "Convém, a critério clínico, correlacionar com as dosagens laboratoriais de FSH e LH com objetivo de investigar síndrome dos ovários policísticos.";
+const pelveSop = assemble(
+  pelveSpec,
+  editPlanSchema.parse({
+    slots: [
+      {
+        slotId: "ovario_dir",
+        corpo:
+          "Ovário direito medindo 4,5 x 3,8 x 3,2 cm, apresentando mais de 20 folículos antrais distribuídos na periferia.",
+        conclusao: "Ovário direito de volume aumentado (14,0 cm³), contendo mais de 20 folículos.",
+      },
+      {
+        slotId: "ovario_esq",
+        corpo:
+          "Ovário esquerdo medindo 4,4 x 3,7 x 3,1 cm, apresentando mais de 20 folículos antrais distribuídos na periferia.",
+        conclusao: "Ovário esquerdo de volume aumentado (13,5 cm³), contendo mais de 20 folículos.",
+      },
+    ],
+    conclusao: [FSH_LH],
+  }),
+);
+const concSop = conclusaoDe(pelveSop);
+const ocorrenciasFshLh = concSop.split(FSH_LH).length - 1;
+check(
+  "PELVE SOP bilateral: recomendação FSH/LH aparece 1x ao fim, sem duplicar",
+  concSop.includes("Ovário direito de volume aumentado (14,0 cm³), contendo mais de 20 folículos.") &&
+    concSop.includes("Ovário esquerdo de volume aumentado (13,5 cm³), contendo mais de 20 folículos.") &&
+    ocorrenciasFshLh === 1 &&
+    concSop.trim().endsWith(FSH_LH),
+  `ocorrências=${ocorrenciasFshLh}\n${concSop}`,
+);
+
 // 5b: OBSTÉTRICA padrão normal — gestação+IG são um único item, placenta não
 // entra sem ter sido ditada e líquido usa a preposição "em".
 const obstetricaSpec = requireSpec("OBSTETRICA");

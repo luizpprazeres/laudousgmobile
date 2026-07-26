@@ -304,5 +304,12 @@
       "diu",
       "fundo_saco"
     ]
-  }
+  },
+  "avulsos_condicionais": [
+    {
+      "id": "sop_fsh_lh",
+      "gatilho": "qualquer ovário com síndrome dos ovários policísticos — seja pelo achado (ovário aumentado com mais de 20 folículos antrais distribuídos na periferia) OU por menção direta do médico ('ovários policísticos', 'SOP', 'síndrome dos ovários policísticos')",
+      "texto": "Convém, a critério clínico, correlacionar com as dosagens laboratoriais de FSH e LH com objetivo de investigar síndrome dos ovários policísticos."
+    }
+  ]
 }
