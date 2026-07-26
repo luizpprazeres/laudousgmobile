@@ -1,0 +1,183 @@
+{
+  "base": [
+    {
+      "id": "titulo",
+      "frase_normal": "ULTRASSONOGRAFIA DO ABDOME TOTAL",
+      "obrigatorio": false
+    },
+    {
+      "id": "comentarios",
+      "frase_normal": "Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
+      "obrigatorio": false
+    },
+    {
+      "id": "figado",
+      "frase_normal": "Fígado de dimensões normais, contornos regulares e ecotextura homogênea.\nOs vasos intra-hepáticos são bem visíveis e de calibre anatômico.\nVeia porta de calibre normal.",
+      "obrigatorio": false
+    },
+    {
+      "id": "vesicula",
+      "frase_normal": "Vesícula biliar de topografia usual e de parede fina, sem cálculo.",
+      "obrigatorio": false
+    },
+    {
+      "id": "vias_biliares",
+      "frase_normal": "Canal hepático e canal colédoco de calibre normal.",
+      "obrigatorio": false
+    },
+    {
+      "id": "baco",
+      "frase_normal": "Baço de dimensões normais e ecotextura sólida e homogênea.",
+      "obrigatorio": false
+    },
+    {
+      "id": "pancreas",
+      "frase_normal": "Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "rim_dir",
+      "frase_normal": "Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "rim_esq",
+      "frase_normal": "Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "veia_cava",
+      "frase_normal": "Veia cava inferior de calibre e contornos normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "aorta",
+      "frase_normal": "Aorta abdominal de calibre e contornos normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "bexiga",
+      "frase_normal": "Bexiga de forma, contorno e ecotextura normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "conclusao_normal",
+      "frase_normal": "Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.",
+      "obrigatorio": false
+    },
+    {
+      "id": "conclusao_fechamento",
+      "frase_normal": "Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.",
+      "obrigatorio": false
+    }
+  ],
+  "dictionary": [
+    {
+      "gatilho": "fígado com discreto aumento da ecogenicidade parenquimatosa",
+      "slot_alvo": "figado",
+      "corpo": "Fígado de dimensões normais, com discreto aumento da ecogenicidade parenquimatosa.",
+      "conclusao": "Esteatose hepática, grau leve."
+    },
+    {
+      "gatilho": "fígado com aumento difuso da ecogenicidade parenquimatosa e atenuação sonora",
+      "slot_alvo": "figado",
+      "corpo": "Fígado de dimensões normais, apresentando aumento difuso da ecogenicidade parenquimatosa e atenuação sonora. Os vasos intra-hepáticos e o diafragma foram visualizados parcialmente.",
+      "conclusao": "Esteatose hepática, grau moderado."
+    },
+    {
+      "gatilho": "fígado com modificação da ecogenicidade e ecotextura parenquimatosa",
+      "slot_alvo": "figado",
+      "corpo": "Fígado de dimensões normais, apresentando modificação da ecogenicidade e ecotextura parenquimatosa.",
+      "conclusao": "Sinais de doença hepática crônica."
+    },
+    {
+      "gatilho": "imagem hipoecoica de contornos mal delimitados em segmento hepático, em fígado com esteatose",
+      "slot_alvo": "figado",
+      "corpo": "Imagem hipoecoica, de contornos mal delimitados, medindo aproximadamente X x Y x Z cm, situada no segmento IV/V/VI/VII etc.",
+      "conclusao": "Imagem hipoecoica no segmento IV/V/VI/VII do fígado, cujo diagnóstico mais provável é área poupada da esteatose."
+    },
+    {
+      "gatilho": "imagem anecoica homogênea, de margem regular e sem calcificações, em segmento hepático",
+      "slot_alvo": "figado",
+      "corpo": "Imagem anecoica homogênea, com margem regular, medindo X x Y x Z cm, sem calcificações, situada no segmento VII.",
+      "conclusao": "Cisto hepático sem septações no segmento VII."
+    },
+    {
+      "gatilho": "uma imagem hiperecoica móvel com sombra acústica na vesícula biliar",
+      "slot_alvo": "vesicula",
+      "corpo": "Vesícula biliar de topografia usual e parede fina, apresentando imagem hiperecoica, móvel, medindo 1.2 centímetros no seu maior eixo, ocasionando sombra acústica.",
+      "conclusao": "Litíase da vesícula biliar."
+    },
+    {
+      "gatilho": "múltiplas imagens hiperecoicas móveis com sombras acústicas na vesícula biliar",
+      "slot_alvo": "vesicula",
+      "corpo": "Vesícula biliar de topografia usual e parede fina, apresentando múltiplas imagens hiperecoicas, a menor medindo aproximadamente 1.1 centímetros, móveis, ocasionando sombras acústicas.",
+      "conclusao": "Litíase da vesícula biliar."
+    },
+    {
+      "gatilho": "ausência da imagem da vesícula biliar após colecistectomia",
+      "slot_alvo": "vesicula",
+      "corpo": "Ausência da imagem da vesícula biliar (paciente submetida a colecistectomia).",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "canal colédoco medido acima dos limites habituais, sem cálculo",
+      "slot_alvo": "vias_biliares",
+      "corpo": "Canal hepático de calibre normal e canal colédoco medindo 0.8 centímetros.",
+      "conclusao": "Canal colédoco acima dos limites habituais, sem evidência de cálculos."
+    },
+    {
+      "gatilho": "baço visualizado parcialmente por interposição de gases intestinais",
+      "slot_alvo": "baco",
+      "corpo": "Baço visualizado parcialmente devido à interposição de gases intestinais.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "pâncreas parcialmente visualizado por interposição de gases intestinais",
+      "slot_alvo": "pancreas",
+      "corpo": "Pâncreas parcialmente visualizado devido à interposição de gases intestinais.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "imagem anecoica homogênea de margem regular no rim esquerdo",
+      "slot_alvo": "rim_esq",
+      "corpo": "Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem anecoica homogênea, com margem regular, medindo X x Y x Z cm, situada no polo superior / terço médio.",
+      "conclusao": "Cisto simples no rim esquerdo."
+    },
+    {
+      "gatilho": "imagem cística no rim esquerdo com margem irregular, calcificação periférica, septações ou componente sólido",
+      "slot_alvo": "rim_esq",
+      "corpo": "",
+      "conclusao": "Imagem cística no rim esquerdo com calcificação periférica puntiforme."
+    },
+    {
+      "gatilho": "imagem hiperecoica no rim direito",
+      "slot_alvo": "rim_dir",
+      "corpo": "Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem hiperecoica, medindo 0.6 cm no seu maior eixo, situada em cálices superiores.",
+      "conclusao": "Litíase renal direita."
+    },
+    {
+      "gatilho": "imagens hiperecoicas aderidas às paredes da aorta abdominal",
+      "slot_alvo": "aorta",
+      "corpo": "Aorta abdominal de calibre normal, apresentando imagens hiperecoicas aderidas às suas paredes.",
+      "conclusao": "Placas de ateromas na aorta abdominal."
+    },
+    {
+      "gatilho": "volume pré-miccional informado",
+      "slot_alvo": "bexiga",
+      "corpo": "Bexiga de forma, contorno e ecotextura normais. Volume pré-miccional de X mL/cm³.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "moderada quantidade de líquido no espaço pleural bilateralmente",
+      "slot_alvo": "baco",
+      "corpo": "Moderada quantidade de líquido no espaço pleural, bilateralmente.",
+      "conclusao": "Derrame pleural moderado bilateralmente."
+    }
+  ],
+  "contract": {
+    "titulo": "ULTRASSONOGRAFIA DO ABDOME TOTAL",
+    "numeracao_conclusao": "1.",
+    "segmentos_romanos": true
+  }
+}
