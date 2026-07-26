@@ -455,19 +455,24 @@ export async function POST(req: Request) {
         });
         auditState.reportId = reportId;
 
-        // ----- WRITER V2 (experimental, opt-in por conta/param, ABDOME) -----
+        // ----- WRITER V2 (experimental, opt-in por conta/param) -----
         // Motor plano+montagem+auditoria (writerV2). Fail-closed: só ativa p/ o
-        // user_id autorizado OU param writer_variant=v2, em ABDOMEN_TOTAL.
-        // QUALQUER erro → fallback pro caminho normal abaixo (o route NÃO quebra).
+        // user_id autorizado OU param writer_variant=v2, nas categorias com spec
+        // (WRITER_V2_CATEGORIES). QUALQUER erro → fallback pro caminho normal
+        // abaixo (o route NÃO quebra).
+        const writerV2Categories = env()
+          .WRITER_V2_CATEGORIES.split(",")
+          .map((c) => c.trim())
+          .filter(Boolean);
         const useWriterV2 =
-          draftCategory === "ABDOMEN_TOTAL" &&
-          env().WRITER_V2_ABDOME_USER_ID !== "" &&
-          (user.id === env().WRITER_V2_ABDOME_USER_ID ||
+          writerV2Categories.includes(draftCategory) &&
+          env().WRITER_V2_USER_ID !== "" &&
+          (user.id === env().WRITER_V2_USER_ID ||
             reqInput.writer_variant === "v2");
         if (useWriterV2) {
           try {
             currentStage = "writer";
-            const specV2 = loadSpecV2("ABDOMEN_TOTAL");
+            const specV2 = loadSpecV2(draftCategory);
             if (specV2) {
               const v2 = await runWriterV2({
                 openai: new OpenAI({ apiKey: env().OPENAI_API_KEY }),

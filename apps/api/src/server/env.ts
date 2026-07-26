@@ -60,12 +60,15 @@ const ServerEnvSchema = z.object({
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
   // golden + review. Ver pipeline/commandOperations.ts.
   COMMAND_OPERATIONS: z.string().default("false"),
-  // WRITER V2 (experimental, ABDOME): user_id autorizado a usar o motor
-  // plano+montagem+auditoria (writerV2) em ABDOMEN_TOTAL. "" = OFF para todos
-  // (fail-closed). Ativa para essa conta SEM precisar do app enviar param —
-  // permite o Luiz testar no iPhone. Qualquer erro do V2 → fallback pro caminho
-  // atual (o route não quebra). Ver pipeline/writerV2/.
-  WRITER_V2_ABDOME_USER_ID: z.string().default(""),
+  // WRITER V2 (experimental): user_id autorizado ao motor plano+montagem+
+  // auditoria (writerV2). "" = OFF para todos (fail-closed). Ativa para essa
+  // conta SEM o app enviar param — permite testar no iPhone. Qualquer erro do
+  // V2 → fallback pro caminho atual (o route não quebra). Ver pipeline/writerV2/.
+  WRITER_V2_USER_ID: z.string().default(""),
+  // Categorias habilitadas p/ o Writer V2 (CSV de category_codes com spec em
+  // writerV2/specs/). Ex.: "ABDOMEN_TOTAL,PELVE_FEMININA,OBSTETRICA". Só ativa
+  // se a conta for a autorizada (WRITER_V2_USER_ID) OU o request pedir writer_variant=v2.
+  WRITER_V2_CATEGORIES: z.string().default("ABDOMEN_TOTAL"),
   // Edição incremental A1: quando "true", o route poderá chamar o caminho de
   // ajuste de laudo final existente (laudo inteiro editado + diff-guard). OFF =
   // fluxo atual intacto; o módulo editReport.ts continua testável isoladamente.
