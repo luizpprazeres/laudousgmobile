@@ -60,9 +60,19 @@ const ServerEnvSchema = z.object({
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
   // golden + review. Ver pipeline/commandOperations.ts.
   COMMAND_OPERATIONS: z.string().default("false"),
-  // WRITER V2 (experimental, ABDOME): user_id autorizado ao motor writerV2 em
-  // ABDOMEN_TOTAL. "" = OFF p/ todos (fail-closed). Erro do V2 -> fallback.
+  // WRITER V2 (experimental): user_id autorizado ao motor plano+montagem+
+  // auditoria (writerV2). "" = OFF para todos (fail-closed). Ativa para essa
+  // conta SEM o app enviar param — permite testar no iPhone. Qualquer erro do
+  // V2 → fallback pro caminho atual (o route não quebra). Ver pipeline/writerV2/.
+  WRITER_V2_USER_ID: z.string().default(""),
+  // LEGADO (compat): var da 1ª ativação do abdome, ainda setada em prod e
+  // Sensitive (não legível p/ migrar). O gate usa WRITER_V2_USER_ID OU esta,
+  // então o abdome segue ativo sem migrar o id. Preferir WRITER_V2_USER_ID.
   WRITER_V2_ABDOME_USER_ID: z.string().default(""),
+  // Categorias habilitadas p/ o Writer V2 (CSV de category_codes com spec em
+  // writerV2/specs/). Ex.: "ABDOMEN_TOTAL,PELVE_FEMININA,OBSTETRICA". Só ativa
+  // se a conta for a autorizada (WRITER_V2_USER_ID) OU o request pedir writer_variant=v2.
+  WRITER_V2_CATEGORIES: z.string().default("ABDOMEN_TOTAL"),
   // DET-6 FASE 2: quando "true", roda o INTERPRETADOR DE COMANDOS por LLM
   // (pipeline/commandInterpreter.ts) DEPOIS da fase 1 determinística — resolve
   // âncora semântica ("a frase do resíduo") e achado-no-corpo ("pode colocar X").

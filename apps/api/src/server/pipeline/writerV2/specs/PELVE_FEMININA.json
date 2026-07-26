@@ -1,0 +1,315 @@
+{
+  "base": [
+    {
+      "id": "titulo",
+      "frase_normal": "ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL",
+      "obrigatorio": false
+    },
+    {
+      "id": "comentarios",
+      "frase_normal": "Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
+      "obrigatorio": false
+    },
+    {
+      "id": "bexiga",
+      "frase_normal": "Bexiga de forma, contorno e ecotextura normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "utero",
+      "frase_normal": "Útero em ____, medindo ____ x ____ x ____ cm.",
+      "obrigatorio": false,
+      "frase_conclusao": "Útero de volume normal."
+    },
+    {
+      "id": "istmo",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "endometrio",
+      "frase_normal": "Endométrio medindo ____ cm de espessura.",
+      "obrigatorio": false,
+      "frase_conclusao": "O endométrio tem espessura normal para a fase do ciclo menstrual."
+    },
+    {
+      "id": "diu",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "miometrio",
+      "frase_normal": "Miométrio com ecogenicidade e ecotextura normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "colo",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "ovario_dir",
+      "frase_normal": "Ovário direito medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.",
+      "obrigatorio": false,
+      "frase_conclusao": "Ovário direito ecograficamente normal, contendo folículos."
+    },
+    {
+      "id": "ovario_esq",
+      "frase_normal": "Ovário esquerdo medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.",
+      "obrigatorio": false,
+      "frase_conclusao": "Ovário esquerdo ecograficamente normal, contendo folículos."
+    },
+    {
+      "id": "fundo_saco",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "conclusao_normal",
+      "frase_normal": "1) Bexiga ecograficamente normal.\n2) Útero de volume normal.\n3) O endométrio tem espessura normal para a fase do ciclo menstrual.\n4) Ovário direito ecograficamente normal, contendo folículos.\n5) Ovário esquerdo ecograficamente normal, contendo folículos.",
+      "obrigatorio": false
+    },
+    {
+      "id": "conclusao_fechamento",
+      "frase_normal": "",
+      "obrigatorio": false
+    }
+  ],
+  "dictionary": [
+    {
+      "gatilho": "técnica transabdominal ou combinada transabdominal e transvaginal, com avaliação da bexiga repleta",
+      "slot_alvo": "bexiga",
+      "corpo": "Bexiga de forma, contorno e ecotextura normais.",
+      "conclusao": "Bexiga ecograficamente normal."
+    },
+    {
+      "gatilho": "técnica exclusivamente transvaginal, sem avaliação transabdominal da bexiga",
+      "slot_alvo": "bexiga",
+      "corpo": "",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "volume uterino explicitamente informado como normal",
+      "slot_alvo": "utero",
+      "corpo": "Útero em {posição}, medindo {L} x {AP} x {T} cm.",
+      "conclusao": "Útero de volume normal ({vol_uterino} cm³)."
+    },
+    {
+      "gatilho": "volume do ovário direito explicitamente informado como normal",
+      "slot_alvo": "ovario_dir",
+      "corpo": "Ovário direito medindo {a} x {b} x {c} cm, apresentando imagens anecoicas.",
+      "conclusao": "Ovário direito ecograficamente normal ({vol_OD} cm³), contendo folículos."
+    },
+    {
+      "gatilho": "volume do ovário esquerdo explicitamente informado como normal",
+      "slot_alvo": "ovario_esq",
+      "corpo": "Ovário esquerdo medindo {a} x {b} x {c} cm, apresentando imagens anecoicas.",
+      "conclusao": "Ovário esquerdo ecograficamente normal ({vol_OE} cm³), contendo folículos."
+    },
+    {
+      "gatilho": "menopausa com endométrio de espessura normal",
+      "slot_alvo": "endometrio",
+      "corpo": "Endométrio medindo {endo} cm de espessura.",
+      "conclusao": "O endométrio tem espessura normal para a faixa etária da menopausa."
+    },
+    {
+      "gatilho": "menopausa em terapêutica de reposição hormonal com endométrio de espessura normal",
+      "slot_alvo": "endometrio",
+      "corpo": "Endométrio medindo {endo} cm de espessura.",
+      "conclusao": "O endométrio tem espessura normal para a paciente submetida a terapêutica de reposição hormonal."
+    },
+    {
+      "gatilho": "endométrio sem correlação possível com a fase menstrual",
+      "slot_alvo": "endometrio",
+      "corpo": "Endométrio medindo {endo} cm de espessura.",
+      "conclusao": "Endométrio medindo {endo} cm de espessura. Não foi possível correlacionar a espessura do endométrio com a fase menstrual, pois {motivo}."
+    },
+    {
+      "gatilho": "técnica somente transabdominal sem boa avaliação do endométrio",
+      "slot_alvo": "endometrio",
+      "corpo": "A técnica transabdominal não permite avaliar detalhadamente a espessura do endométrio.",
+      "conclusao": "Não foi possível avaliar detalhadamente a espessura do endométrio pela técnica transabdominal."
+    },
+    {
+      "gatilho": "menopausa com endométrio espessado e sangramento pós-menopausa",
+      "slot_alvo": "endometrio",
+      "corpo": "Endométrio medindo {endo} cm de espessura.",
+      "conclusao": "Endométrio medindo {endo} cm, com espessura acima do esperado para a faixa etária da menopausa, sobretudo em paciente sem terapia de reposição hormonal e com sangramento pós-menopausa. Convém, a critério clínico, realizar histeroscopia com biópsia, com objetivo de investigação complementar."
+    },
+    {
+      "gatilho": "imagem hiperecoica focal no endométrio com pedículo vascular ao Doppler",
+      "slot_alvo": "endometrio",
+      "corpo": "Endométrio medindo {endo} cm, apresentando imagem hiperecoica focal medindo {a} x {b} cm, com pedículo vascular ao Doppler.",
+      "conclusao": "Endométrio medindo {endo} cm, apresentando imagem hiperecoica focal com pedículo vascular, que tem como diagnóstico mais provável pólipo endometrial."
+    },
+    {
+      "gatilho": "uma imagem miometrial hipoecoica e heterogênea de margens regulares",
+      "slot_alvo": "miometrio",
+      "corpo": "Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares, medindo {a} x {b} x {c} cm, situada na {parede}, {relação serosa/mucosa}.",
+      "conclusao": "Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso {intramural/subseroso/submucoso}{, com mais/menos de 50% intramural, se aplicável}{ (categoria FIGO {n})}."
+    },
+    {
+      "gatilho": "duas imagens miometriais hipoecoicas e heterogêneas de margens regulares",
+      "slot_alvo": "miometrio",
+      "corpo": "Miométrio apresentando duas imagens hipoecoicas e heterogêneas, com margens regulares. A primeira medindo {a} x {b} x {c} cm, situada na {parede1}, {relação1}. A segunda medindo {a} x {b} x {c} cm, situada na {parede2}, {relação2}.",
+      "conclusao": "Miométrio apresentando duas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos: o primeiro {classif1}{ (categoria FIGO {n1})}, e o segundo {classif2}{ (categoria FIGO {n2})}."
+    },
+    {
+      "gatilho": "três ou mais imagens miometriais hipoecoicas e heterogêneas mensuráveis",
+      "slot_alvo": "miometrio",
+      "corpo": "Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas. As maiores assim descritas: a primeira medindo {a} x {b} x {c} cm, situada na {parede1}; a segunda medindo {a} x {b} x {c} cm, situada na {parede2}; [a terceira medindo {a} x {b} x {c} cm, situada na {parede3}; ...]",
+      "conclusao": "Miométrio apresentando múltiplas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos. Os maiores: {classif1}{ (categoria FIGO {n1})}, {classif2}{ (categoria FIGO {n2})}[, e {classif3}{ (categoria FIGO {n3})}]."
+    },
+    {
+      "gatilho": "múltiplas imagens miometriais coalescentes que impedem avaliação individualizada",
+      "slot_alvo": "miometrio",
+      "corpo": "Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas, coalescentes, ocasionando atenuação sonora, que impede a avaliação individualizada.",
+      "conclusao": "Útero globoso (miomatoso), de volume acentuadamente aumentado ({vol} cm³)."
+    },
+    {
+      "gatilho": "miométrio heterogêneo com útero globoso, espessamento assimétrico, imagens anecoicas e sombreamento em leque",
+      "slot_alvo": "miometrio",
+      "corpo": "Útero com formato globoso, apresentando miométrio heterogêneo, com espessamento assimétrico das paredes, imagens anecoicas e com margens regulares e sombreamento em leque.",
+      "conclusao": "Achados compatíveis com adenomiose difusa."
+    },
+    {
+      "gatilho": "área miometrial focal mal delimitada e de ecotextura heterogênea",
+      "slot_alvo": "miometrio",
+      "corpo": "Miométrio com ecotextura heterogênea, apresentando área mal delimitada.",
+      "conclusao": "Achados compatíveis com adenomiose focal."
+    },
+    {
+      "gatilho": "imagens hiperecoicas na projeção das artérias arqueadas",
+      "slot_alvo": "utero",
+      "corpo": "Útero em {posição}, medindo {L} x {AP} x {T} cm, com ecotextura sólida heterogênea devido a imagens hiperecóicas visualizadas na projeção das artérias arqueadas.",
+      "conclusao": "Útero de dimensões normais (volume de {vol_uterino} cm³), apresentando calcificação das artérias arqueadas sem significado patológico."
+    },
+    {
+      "gatilho": "imagem anecoica triangular no istmo em cicatriz cesárea",
+      "slot_alvo": "istmo",
+      "corpo": "Imagem anecoica no istmo, de forma triangular, medindo {a} x {b} x {c} cm, com miométrio residual de {mr} cm e miométrio adjacente de {ma} cm.",
+      "conclusao": "Nicho de cicatriz cesárea, tipo {simples/complexo}."
+    },
+    {
+      "gatilho": "imagem hiperecoica linear na cavidade endometrial com posição adequada",
+      "slot_alvo": "diu",
+      "corpo": "Imagem hiperecoica linear na cavidade endometrial, medindo {len} cm de comprimento. A distância da borda proximal em relação à serosa uterina mede {prox_serosa} cm. A distância da borda distal em relação ao orifício interno do colo mede {dist_os} cm.",
+      "conclusao": "DIU bem posicionado."
+    },
+    {
+      "gatilho": "imagem hiperecoica linear na cavidade endometrial com haste intramiometrial",
+      "slot_alvo": "diu",
+      "corpo": "Imagem hiperecoica linear na cavidade endometrial, medindo {len} cm de comprimento. A distância da borda proximal em relação à serosa uterina mede {prox_serosa} cm. A distância da borda distal em relação ao orifício interno do colo mede {dist_os} cm. Observa-se segmento de {seg} cm da haste transversa {direita/esquerda} em topografia intramiometrial.",
+      "conclusao": "DIU deslocado."
+    },
+    {
+      "gatilho": "imagens anecoicas na topografia do colo uterino",
+      "slot_alvo": "colo",
+      "corpo": "Imagens anecoicas na topografia do colo uterino.",
+      "conclusao": "Cistos de Naboth (provável sequela de cervicite)."
+    },
+    {
+      "gatilho": "imagem ovariana de baixa ecogenicidade com aspecto em vidro fosco, sem componente sólido ou septações",
+      "slot_alvo": "ovario_dir",
+      "corpo": "Ovário direito medindo {a} x {b} x {c} cm, apresentando imagem de baixa ecogenicidade com aspecto em vidro fosco, medindo {x} x {y} x {z} cm, sem componente sólido ou septações. Complementamos o estudo com Doppler colorido, que não mostrou vascularização.",
+      "conclusao": "Ovário direito apresentando imagem hipoecoica que tem como diagnóstico mais provável endometrioma (O-RADS 2)."
+    },
+    {
+      "gatilho": "imagem ovariana esquerda de baixa ecogenicidade com aspecto em vidro fosco, sem componente sólido ou septações",
+      "slot_alvo": "ovario_esq",
+      "corpo": "Ovário esquerdo medindo {a} x {b} x {c} cm, apresentando imagem de baixa ecogenicidade com aspecto em vidro fosco, medindo {x} x {y} x {z} cm, sem componente sólido ou septações. Complementamos o estudo com Doppler colorido, que não mostrou vascularização.",
+      "conclusao": "Ovário esquerdo apresentando imagem hipoecoica que tem como diagnóstico mais provável endometrioma (O-RADS 2)."
+    },
+    {
+      "gatilho": "coleção líquida de aspecto funcional no ovário direito",
+      "slot_alvo": "ovario_dir",
+      "corpo": "Ovário direito medindo {a} x {b} x {c} cm, apresentando coleção líquida de aspecto funcional medindo {x} x {y} x {z} cm.",
+      "conclusao": "Ovário direito de volume {normal/aumentado} ({vol} cm³), às custas de coleção líquida provavelmente funcional (O-RADS 2)."
+    },
+    {
+      "gatilho": "coleção líquida de aspecto funcional no ovário esquerdo",
+      "slot_alvo": "ovario_esq",
+      "corpo": "Ovário esquerdo medindo {a} x {b} x {c} cm, apresentando coleção líquida de aspecto funcional medindo {x} x {y} x {z} cm.",
+      "conclusao": "Ovário esquerdo de volume {normal/aumentado} ({vol} cm³), às custas de coleção líquida provavelmente funcional (O-RADS 2)."
+    },
+    {
+      "gatilho": "mais de 20 folículos antrais distribuídos na periferia do ovário direito",
+      "slot_alvo": "ovario_dir",
+      "corpo": "Ovário direito medindo {a} x {b} x {c} cm, apresentando mais de 20 folículos antrais distribuídos na periferia.",
+      "conclusao": "Ovário direito de volume aumentado ({vol_OD} cm³), contendo mais de 20 folículos."
+    },
+    {
+      "gatilho": "mais de 20 folículos antrais distribuídos na periferia do ovário esquerdo",
+      "slot_alvo": "ovario_esq",
+      "corpo": "Ovário esquerdo medindo {a} x {b} x {c} cm, apresentando mais de 20 folículos antrais distribuídos na periferia.",
+      "conclusao": "Ovário esquerdo de volume aumentado ({vol_OE} cm³), contendo mais de 20 folículos."
+    },
+    {
+      "gatilho": "menopausa com ovário direito reduzido e poucos folículos",
+      "slot_alvo": "ovario_dir",
+      "corpo": "Ovário direito medindo {a} x {b} x {c} cm, apresentando poucas imagens anecoicas.",
+      "conclusao": "Ovário direito ecograficamente normal ({vol_OD} cm³), praticamente sem folículos."
+    },
+    {
+      "gatilho": "menopausa com ovário esquerdo reduzido e poucos folículos",
+      "slot_alvo": "ovario_esq",
+      "corpo": "Ovário esquerdo medindo {a} x {b} x {c} cm, apresentando poucas imagens anecoicas.",
+      "conclusao": "Ovário esquerdo ecograficamente normal ({vol_OE} cm³), praticamente sem folículos."
+    },
+    {
+      "gatilho": "ovário direito não visualizado",
+      "slot_alvo": "ovario_dir",
+      "corpo": "Ovário direito não visualizado.",
+      "conclusao": "Ovário direito não visualizado pela técnica empregada."
+    },
+    {
+      "gatilho": "ovário esquerdo não visualizado",
+      "slot_alvo": "ovario_esq",
+      "corpo": "Ovário esquerdo não visualizado.",
+      "conclusao": "Ovário esquerdo não visualizado pela técnica empregada."
+    },
+    {
+      "gatilho": "imagens hiperecoicas amorfas na cavidade endometrial após abortamento",
+      "slot_alvo": "endometrio",
+      "corpo": "Imagens hiperecoicas amorfas na cavidade endométrial. Ausência de saco gestacional.",
+      "conclusao": "{pequena/moderada/grande} quantidade de produtos retidos da concepção."
+    },
+    {
+      "gatilho": "ausência de saco gestacional e de material intracavitário após abortamento",
+      "slot_alvo": "endometrio",
+      "corpo": "Ausência de saco gestacional.",
+      "conclusao": "Ausência de produtos retidos da concepção."
+    },
+    {
+      "gatilho": "presença de líquido livre na cavidade pélvica",
+      "slot_alvo": "fundo_saco",
+      "corpo": "Presença de líquido livre na cavidade pélvica.",
+      "conclusao": ""
+    }
+  ],
+  "contract": {
+    "titulo": "ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL",
+    "numeracao_conclusao": "1)",
+    "segmentos_romanos": false,
+    "conclusao_modo": "por_estrutura",
+    "conclusao_ordem": [
+      "bexiga",
+      "utero",
+      "endometrio",
+      "ovario_dir",
+      "ovario_esq",
+      "miometrio",
+      "istmo",
+      "colo",
+      "diu",
+      "fundo_saco"
+    ]
+  },
+  "avulsos_condicionais": [
+    {
+      "id": "sop_fsh_lh",
+      "gatilho": "qualquer ovário com síndrome dos ovários policísticos — seja pelo achado (ovário aumentado com mais de 20 folículos antrais distribuídos na periferia) OU por menção direta do médico ('ovários policísticos', 'SOP', 'síndrome dos ovários policísticos')",
+      "texto": "Convém, a critério clínico, correlacionar com as dosagens laboratoriais de FSH e LH com objetivo de investigar síndrome dos ovários policísticos."
+    }
+  ]
+}

@@ -27,6 +27,64 @@ function numSep(numeracao: string): string {
   return numeracao.replace(/^\d+/, "") || ")";
 }
 
+/**
+ * Monta a CONCLUSÃO conforme o modo do contrato.
+ * - "fechamento" (abdome): vazio = frase de normalidade única (sem número);
+ *   com achado = diagnósticos numerados + fechamento "Demais órgãos...".
+ * - "por_estrutura" (pelve/obstétrica): um item por estrutura com
+ *   `frase_conclusao` (ordem do base); o achado do slot substitui o item normal;
+ *   slots omitidos não geram item; itens avulsos (IG, correlação) vão ao fim.
+ *   A completude é do CÓDIGO — não depende do LLM listar todos os itens.
+ */
+function buildConclusao(
+  spec: ReportSpec,
+  plan: EditPlan,
+  omit: Set<string>,
+): string {
+  const sep = numSep(spec.contract.numeracao_conclusao);
+
+  if (spec.contract.conclusao_modo === "por_estrutura") {
+    // Um slot gera item de conclusão se:
+    //  - tem `frase_conclusao` → item SEMPRE-presente (normal, ou substituído
+    //    pelo diagnóstico do achado); OU
+    //  - NÃO tem `frase_conclusao` mas o plano trouxe `conclusao` p/ ele → item
+    //    CONDICIONAL (só aparece quando ditado; ex.: placenta/bexiga que o
+    //    gabarito só conclui quando relevantes).
+    const planConcl = new Map(
+      plan.slots.filter((p) => p.conclusao.trim()).map((p) => [p.slotId, p.conclusao.trim()]),
+    );
+    const eligible = spec.base.filter((s) => s.frase_conclusao || planConcl.has(s.id));
+    // Ordem: `conclusao_ordem` (se definida) tem prioridade; o resto entra na
+    // ordem do base.
+    const ordem = spec.contract.conclusao_ordem ?? [];
+    const ordered = [
+      ...ordem
+        .map((id) => eligible.find((s) => s.id === id))
+        .filter((s): s is (typeof eligible)[number] => Boolean(s)),
+      ...eligible.filter((s) => !ordem.includes(s.id)),
+    ];
+    const itens: string[] = [];
+    for (const s of ordered) {
+      if (omit.has(s.id)) continue;
+      const item = planConcl.get(s.id) ?? (s.frase_conclusao ?? "").trim();
+      if (item) itens.push(item);
+    }
+    for (const avulso of plan.conclusao) {
+      if (avulso.trim()) itens.push(avulso.trim());
+    }
+    return itens.map((it, i) => `${i + 1}${sep} ${it}`).join("\n");
+  }
+
+  // modo "fechamento" (abdome)
+  if (plan.conclusao.length === 0) {
+    return slotText(spec, plan, "conclusao_normal").trim();
+  }
+  const fechamento =
+    spec.base.find((s) => s.id === "conclusao_fechamento")?.frase_normal.trim() ?? "";
+  const itens = fechamento ? [...plan.conclusao, fechamento] : [...plan.conclusao];
+  return itens.map((it, i) => `${i + 1}${sep} ${it.trim()}`).join("\n");
+}
+
 export function assemble(spec: ReportSpec, plan: EditPlan): string {
   const titulo = slotText(spec, plan, "titulo").trim();
   const comentarios = slotText(spec, plan, "comentarios").trim();
@@ -40,18 +98,7 @@ export function assemble(spec: ReportSpec, plan: EditPlan): string {
     .filter(Boolean)
     .join("\n");
 
-  // Conclusão: vazia = normal (item único, sem número). Com achados = numerada +
-  // último item de fechamento ("Demais órgãos...").
-  let conclusao: string;
-  if (plan.conclusao.length === 0) {
-    conclusao = slotText(spec, plan, "conclusao_normal").trim();
-  } else {
-    const fechamento =
-      spec.base.find((s) => s.id === "conclusao_fechamento")?.frase_normal.trim() ?? "";
-    const itens = fechamento ? [...plan.conclusao, fechamento] : [...plan.conclusao];
-    const sep = numSep(spec.contract.numeracao_conclusao);
-    conclusao = itens.map((it, i) => `${i + 1}${sep} ${it.trim()}`).join("\n");
-  }
+  const conclusao = buildConclusao(spec, plan, omit);
 
   return [
     titulo,
