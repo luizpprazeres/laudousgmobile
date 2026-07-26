@@ -192,10 +192,14 @@ const pelveNormal = assemble(
         conclusao: "Útero de volume normal (75,3 cm³).",
       },
       {
-        slotId: "ovarios_conclusao",
-        corpo: "",
-        conclusao:
-          "Ovários ecograficamente normais (o direito com 6,9 cm³ e o esquerdo 6,8 cm³), ambos contendo folículos.",
+        slotId: "ovario_dir",
+        corpo: "Ovário direito medindo 3,0 x 2,5 x 1,8 cm, apresentando imagens anecoicas.",
+        conclusao: "Ovário direito ecograficamente normal (6,9 cm³), contendo folículos.",
+      },
+      {
+        slotId: "ovario_esq",
+        corpo: "Ovário esquerdo medindo 3,0 x 2,4 x 1,8 cm, apresentando imagens anecoicas.",
+        conclusao: "Ovário esquerdo ecograficamente normal (6,8 cm³), contendo folículos.",
       },
     ],
   }),
@@ -204,12 +208,42 @@ const pelveGabarito = [
   "1) Bexiga ecograficamente normal.",
   "2) Útero de volume normal (75,3 cm³).",
   "3) O endométrio tem espessura normal para a fase do ciclo menstrual.",
-  "4) Ovários ecograficamente normais (o direito com 6,9 cm³ e o esquerdo 6,8 cm³), ambos contendo folículos.",
+  "4) Ovário direito ecograficamente normal (6,9 cm³), contendo folículos.",
+  "5) Ovário esquerdo ecograficamente normal (6,8 cm³), contendo folículos.",
 ].join("\n");
 check(
   "PELVE normal: conclusão igual ao gabarito do renderer",
   conclusaoDe(pelveNormal) === pelveGabarito,
   conclusaoDe(pelveNormal),
+);
+
+const pelveOvarioAlterado = assemble(
+  pelveSpec,
+  editPlanSchema.parse({
+    slots: [
+      {
+        slotId: "ovario_dir",
+        corpo:
+          "Ovário direito medindo 4,0 x 3,5 x 3,0 cm, apresentando imagem de baixa ecogenicidade com aspecto em vidro fosco, medindo 2,5 x 2,0 x 1,8 cm, sem componente sólido ou septações.",
+        conclusao:
+          "Ovário direito apresentando imagem hipoecoica que tem como diagnóstico mais provável endometrioma (O-RADS 2).",
+      },
+    ],
+  }),
+);
+check(
+  "PELVE um ovário alterado: lado alterado substitui e lado normal permanece separado",
+  conclusaoDe(pelveOvarioAlterado).includes(
+    "3) Ovário direito apresentando imagem hipoecoica que tem como diagnóstico mais provável endometrioma (O-RADS 2).",
+  ) &&
+    conclusaoDe(pelveOvarioAlterado).includes(
+      "4) Ovário esquerdo ecograficamente normal, contendo folículos.",
+    ) &&
+    !conclusaoDe(pelveOvarioAlterado).includes("Ovários ecograficamente normais") &&
+    !conclusaoDe(pelveOvarioAlterado).includes(
+      "Ovário direito ecograficamente normal, contendo folículos.",
+    ),
+  conclusaoDe(pelveOvarioAlterado),
 );
 
 // 5b: OBSTÉTRICA padrão normal — gestação+IG são um único item, placenta não
