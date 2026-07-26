@@ -44,22 +44,29 @@ function buildConclusao(
   const sep = numSep(spec.contract.numeracao_conclusao);
 
   if (spec.contract.conclusao_modo === "por_estrutura") {
-    // Ordem da conclusão: `conclusao_ordem` (se definida) tem prioridade; slots
-    // com frase_conclusao fora dela entram depois, na ordem do base.
+    // Um slot gera item de conclusão se:
+    //  - tem `frase_conclusao` → item SEMPRE-presente (normal, ou substituído
+    //    pelo diagnóstico do achado); OU
+    //  - NÃO tem `frase_conclusao` mas o plano trouxe `conclusao` p/ ele → item
+    //    CONDICIONAL (só aparece quando ditado; ex.: placenta/bexiga que o
+    //    gabarito só conclui quando relevantes).
+    const planConcl = new Map(
+      plan.slots.filter((p) => p.conclusao.trim()).map((p) => [p.slotId, p.conclusao.trim()]),
+    );
+    const eligible = spec.base.filter((s) => s.frase_conclusao || planConcl.has(s.id));
+    // Ordem: `conclusao_ordem` (se definida) tem prioridade; o resto entra na
+    // ordem do base.
     const ordem = spec.contract.conclusao_ordem ?? [];
-    const conclSlots = spec.base.filter((s) => s.frase_conclusao);
     const ordered = [
       ...ordem
-        .map((id) => conclSlots.find((s) => s.id === id))
-        .filter((s): s is (typeof conclSlots)[number] => Boolean(s)),
-      ...conclSlots.filter((s) => !ordem.includes(s.id)),
+        .map((id) => eligible.find((s) => s.id === id))
+        .filter((s): s is (typeof eligible)[number] => Boolean(s)),
+      ...eligible.filter((s) => !ordem.includes(s.id)),
     ];
     const itens: string[] = [];
     for (const s of ordered) {
       if (omit.has(s.id)) continue;
-      const op = plan.slots.find((p) => p.slotId === s.id);
-      const item =
-        op && op.conclusao.trim() ? op.conclusao.trim() : (s.frase_conclusao ?? "").trim();
+      const item = planConcl.get(s.id) ?? (s.frase_conclusao ?? "").trim();
       if (item) itens.push(item);
     }
     for (const avulso of plan.conclusao) {
