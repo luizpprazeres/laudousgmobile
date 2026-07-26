@@ -4,9 +4,12 @@ import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { sseResponse, nowIso } from "@/server/sse/stream";
 import { getServiceClient } from "@/server/supabaseService";
 export { OPTIONS } from "@/server/cors";
+import OpenAI from "openai";
 import { runStructurer } from "@/server/pipeline/structurer";
 import { runValidator } from "@/server/pipeline/validator";
 import { loadDeterministicBundle } from "@/server/pipeline/bundleLoader";
+import { loadSpecV2 } from "@/server/pipeline/writerV2/loadSpec";
+import { runWriterV2 } from "@/server/pipeline/writerV2/runWriterV2";
 import { resolveMorfologicoCategory } from "@/server/pipeline/morfologicoRouteSelection";
 import { normalizeCategoryCode } from "@/server/pipeline/categoryNormalization";
 import {
@@ -451,6 +454,56 @@ export async function POST(req: Request) {
             reqInput.consolidated_transcript ?? reqInput.raw_input,
         });
         auditState.reportId = reportId;
+
+        // ----- WRITER V2 (experimental, opt-in por conta/param, ABDOME) -----
+        // Motor plano+montagem+auditoria (writerV2). Fail-closed: só ativa p/ o
+        // user_id autorizado OU param writer_variant=v2, em ABDOMEN_TOTAL.
+        // QUALQUER erro → fallback pro caminho normal abaixo (o route NÃO quebra).
+        const useWriterV2 =
+          draftCategory === "ABDOMEN_TOTAL" &&
+          env().WRITER_V2_ABDOME_USER_ID !== "" &&
+          (user.id === env().WRITER_V2_ABDOME_USER_ID ||
+            reqInput.writer_variant === "v2");
+        if (useWriterV2) {
+          try {
+            currentStage = "writer";
+            const specV2 = loadSpecV2("ABDOMEN_TOTAL");
+            if (specV2) {
+              const v2 = await runWriterV2({
+                openai: new OpenAI({ apiKey: env().OPENAI_API_KEY }),
+                model: env().OPENAI_MODEL_WRITER,
+                ditadoCru: reqInput.consolidated_transcript ?? reqInput.raw_input,
+                spec: specV2,
+              });
+              emit({ type: "token", ts: nowIso(), delta: v2.laudo });
+              try {
+                await updateRunAfterWriter({ runId, latencyMs: 0, modelWriter: "writerV2" });
+              } catch {
+                /* fechamento do run é cosmético — não bloqueia */
+              }
+              outcome = "success";
+              await finalizeReport({
+                reportId,
+                status: "generated",
+                generatedOutput: v2.laudo,
+                sanityResult: null,
+                metadata: {
+                  writer_v2: true,
+                  writer_v2_reparou: v2.reparou,
+                  writer_v2_divergencias: v2.divergencias.length,
+                },
+              });
+              emit({ type: "done", ts: nowIso(), report_id: reportId, final_text: v2.laudo });
+              return;
+            }
+          } catch (writerV2Error) {
+            console.error(
+              `[generate ${reportId}] writerV2 falhou, fallback pro caminho normal:`,
+              writerV2Error,
+            );
+            // NÃO return → segue o fluxo normal abaixo (fail-safe).
+          }
+        }
 
         // ----- 1. Structurer (ou FAST-PATH determinístico) -----
         currentStage = "structurer";

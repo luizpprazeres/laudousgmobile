@@ -60,6 +60,9 @@ const ServerEnvSchema = z.object({
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
   // golden + review. Ver pipeline/commandOperations.ts.
   COMMAND_OPERATIONS: z.string().default("false"),
+  // WRITER V2 (experimental, ABDOME): user_id autorizado ao motor writerV2 em
+  // ABDOMEN_TOTAL. "" = OFF p/ todos (fail-closed). Erro do V2 -> fallback.
+  WRITER_V2_ABDOME_USER_ID: z.string().default(""),
   // DET-6 FASE 2: quando "true", roda o INTERPRETADOR DE COMANDOS por LLM
   // (pipeline/commandInterpreter.ts) DEPOIS da fase 1 determinística — resolve
   // âncora semântica ("a frase do resíduo") e achado-no-corpo ("pode colocar X").
