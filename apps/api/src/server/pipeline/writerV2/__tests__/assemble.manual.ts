@@ -282,6 +282,32 @@ check(
   `ocorrências=${ocorrenciasFshLh}\n${concSop}`,
 );
 
+// 5a-ter: PELVE com mioma — o item do MIOMÉTRIO aparece ANTES dos ovários na
+// conclusão (gabarito do renderer: bexiga→útero→endométrio→miométrio→ovários),
+// não por último. Regressão de conclusao_ordem que o Luiz pegou nas telas.
+const pelveMioma = assemble(
+  pelveSpec,
+  editPlanSchema.parse({
+    slots: [
+      {
+        slotId: "miometrio",
+        corpo:
+          "Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares, medindo 2,4 x 2,3 x 2,4 cm, situada na parede anterior e lateral esquerda.",
+        conclusao:
+          "Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso intramural (categoria FIGO 4).",
+      },
+    ],
+  }),
+);
+const concMioma = conclusaoDe(pelveMioma);
+const idxMiometrioC = concMioma.indexOf("nódulo miomatoso");
+const idxOvarioC = concMioma.indexOf("Ovário direito");
+check(
+  "PELVE mioma: miométrio na conclusão vem ANTES dos ovários",
+  idxMiometrioC !== -1 && idxOvarioC !== -1 && idxMiometrioC < idxOvarioC,
+  `idxMiometrio=${idxMiometrioC} idxOvario=${idxOvarioC}\n${concMioma}`,
+);
+
 // 5b: OBSTÉTRICA padrão normal — gestação+IG são um único item, placenta não
 // entra sem ter sido ditada e líquido usa a preposição "em".
 const obstetricaSpec = requireSpec("OBSTETRICA");
@@ -305,6 +331,36 @@ check(
   "OBSTETRICA normal: conclusão igual ao gabarito do renderer",
   conclusaoDe(obstetricaNormal) === obstetricaGabarito,
   conclusaoDe(obstetricaNormal),
+);
+
+// 5b-bis: OBSTÉTRICA com placenta ditada (posterior, heterogênea, SEM grau de
+// Grannum) — a placenta entra SÓ no corpo, NÃO na conclusão (gabarito: conclusão
+// = IG + líquido) e sem o parentético "(grau ___ de Grannum et al.)".
+const obstetricaPlacenta = assemble(
+  obstetricaSpec,
+  editPlanSchema.parse({
+    slots: [
+      {
+        slotId: "feto",
+        corpo: "Feto único, em apresentação cefálica.",
+        conclusao: "Gestação em torno de 30 semanas.",
+      },
+      {
+        slotId: "placenta",
+        corpo: "Placenta de localização posterior, com ecotextura heterogênea.",
+        conclusao: "",
+      },
+    ],
+  }),
+);
+const concPlac = conclusaoDe(obstetricaPlacenta);
+check(
+  "OBSTETRICA placenta: no corpo, FORA da conclusão, sem Grannum/placeholder",
+  obstetricaPlacenta.includes("Placenta de localização posterior, com ecotextura heterogênea.") &&
+    !concPlac.includes("Placenta") &&
+    !obstetricaPlacenta.includes("Grannum") &&
+    !obstetricaPlacenta.includes("grau ____"),
+  `CONCLUSÃO:\n${concPlac}`,
 );
 
 // 5c: MORFOLÓGICO 2T normal — líquido usa "de" e a morfologia é o terceiro

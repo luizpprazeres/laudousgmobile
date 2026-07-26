@@ -238,31 +238,37 @@
       "gatilho": "placenta anterior antes de 30 semanas sem ecotextura ditada",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização anterior, com ecotextura homogênea.",
-      "conclusao": "Placenta de localização anterior, com ecotextura homogênea."
+      "conclusao": ""
     },
     {
       "gatilho": "placenta anterior a partir de 30 semanas sem ecotextura ditada",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização anterior, com ecotextura heterogênea, de acordo com a fase da gestação.",
-      "conclusao": "Placenta de localização anterior, com ecotextura heterogênea, de acordo com a fase da gestação."
+      "conclusao": ""
     },
     {
-      "gatilho": "placenta com localização, ecotextura e grau de Grannum informados",
+      "gatilho": "placenta com localização e ecotextura informadas, SEM grau de Grannum (o grau de Grannum é OPCIONAL — só entra quando o médico dita o grau; sem grau, NÃO acrescente parentético nem placeholder)",
+      "slot_alvo": "placenta",
+      "corpo": "Placenta de localização {localização}, com ecotextura {ecotextura}.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "placenta com localização, ecotextura E grau de Grannum explicitamente ditado pelo médico",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização {localização}, com ecotextura {ecotextura} (grau {0/I/II/III} de Grannum et al.).",
-      "conclusao": "Placenta de localização {localização}, com ecotextura {ecotextura} (grau {0/I/II/III} de Grannum et al.)."
+      "conclusao": ""
     },
     {
       "gatilho": "duas placentas de mesma localização em gestação gemelar",
       "slot_alvo": "placenta",
       "corpo": "Duas placentas, ambas de localização anterior, com ecotextura ____.",
-      "conclusao": "Duas placentas, ambas de localização anterior, com ecotextura ____."
+      "conclusao": ""
     },
     {
       "gatilho": "duas placentas de localizações diferentes em gestação gemelar",
       "slot_alvo": "placenta",
       "corpo": "Duas placentas: Feto A de localização anterior e Feto B de localização posterior, ambas com ecotextura ____.",
-      "conclusao": "Duas placentas: Feto A de localização anterior e Feto B de localização posterior, ambas com ecotextura ____."
+      "conclusao": ""
     },
     {
       "gatilho": "líquido amniótico normal pela análise subjetiva, sem medida",
@@ -327,7 +333,6 @@
     "conclusao_ordem": [
       "feto",
       "liquido_amniotico",
-      "placenta",
       "peso_fetal"
     ]
   }
