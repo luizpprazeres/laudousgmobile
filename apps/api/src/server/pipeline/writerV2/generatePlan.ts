@@ -50,6 +50,10 @@ const EDIT_PLAN_JSON_SCHEMA = {
 } as const;
 
 async function callPlan(openai: OpenAI, model: string, system: string, user: string): Promise<EditPlan> {
+  const isReasoning = /gpt-5/.test(model) && !/chat-latest/.test(model);
+  const modelParams = isReasoning
+    ? { max_completion_tokens: 1500, reasoning_effort: "none" }
+    : { max_tokens: 1500, temperature: 0.2 };
   const res = await openai.chat.completions.create({
     model,
     messages: [
@@ -57,8 +61,7 @@ async function callPlan(openai: OpenAI, model: string, system: string, user: str
       { role: "user", content: user },
     ],
     response_format: { type: "json_schema", json_schema: EDIT_PLAN_JSON_SCHEMA },
-    max_completion_tokens: 1500,
-    reasoning_effort: "none",
+    ...modelParams,
   } as never);
   const raw = (res as { choices: { message: { content: string } }[] }).choices[0]?.message?.content ?? "{}";
   return editPlanSchema.parse(JSON.parse(raw));

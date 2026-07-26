@@ -37,6 +37,10 @@ export const GenerateRequestSchema = z.object({
   // (via /api/sala/latest). Usado por clientes que querem o "publica direto na
   // sala" sem etapa de revisão (caso de uso: Apple Watch dictation).
   auto_push_to_sala: z.boolean().optional(),
+  // WRITER V2 (experimental, opt-in): quando "v2" E o backend tem
+  // WRITER_V2_ABDOME=true E categoria ABDOMEN_TOTAL, usa o motor plano+montagem+
+  // auditoria (writerV2). Ausente/qualquer outro valor = caminho atual intacto.
+  writer_variant: z.enum(["v2"]).optional(),
 });
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
