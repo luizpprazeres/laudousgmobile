@@ -49,18 +49,12 @@ const EDIT_PLAN_JSON_SCHEMA = {
   },
 } as const;
 
-export async function generatePlanV2(args: {
-  openai: OpenAI;
-  model: string;
-  ditadoCru: string;
-  spec: ReportSpec;
-}): Promise<EditPlan> {
-  const system = `${UNIVERSAL_CORE_V2}\n\n=== TAREFA (PLANO DE EDIÇÃO) ===\n${PLAN_INSTRUCTIONS}\n\n=== SPEC DA CATEGORIA ===\n${serializeSpec(args.spec)}`;
-  const res = await args.openai.chat.completions.create({
-    model: args.model,
+async function callPlan(openai: OpenAI, model: string, system: string, user: string): Promise<EditPlan> {
+  const res = await openai.chat.completions.create({
+    model,
     messages: [
       { role: "system", content: system },
-      { role: "user", content: `=== DITADO DO MÉDICO ===\n${args.ditadoCru.trim()}` },
+      { role: "user", content: user },
     ],
     response_format: { type: "json_schema", json_schema: EDIT_PLAN_JSON_SCHEMA },
     max_completion_tokens: 1500,
@@ -68,4 +62,31 @@ export async function generatePlanV2(args: {
   } as never);
   const raw = (res as { choices: { message: { content: string } }[] }).choices[0]?.message?.content ?? "{}";
   return editPlanSchema.parse(JSON.parse(raw));
+}
+
+export async function generatePlanV2(args: {
+  openai: OpenAI;
+  model: string;
+  ditadoCru: string;
+  spec: ReportSpec;
+}): Promise<EditPlan> {
+  const system = `${UNIVERSAL_CORE_V2}\n\n=== TAREFA (PLANO DE EDIÇÃO) ===\n${PLAN_INSTRUCTIONS}\n\n=== SPEC DA CATEGORIA ===\n${serializeSpec(args.spec)}`;
+  return callPlan(args.openai, args.model, system, `=== DITADO DO MÉDICO ===\n${args.ditadoCru.trim()}`);
+}
+
+/**
+ * REPARO CONDICIONAL (Fase 4) — 1 chamada dirigida quando a auditoria acha
+ * divergência. Reintroduz SÓ o que foi ditado e sumiu; não inventa.
+ */
+export async function repairPlanV2(args: {
+  openai: OpenAI;
+  model: string;
+  ditadoCru: string;
+  spec: ReportSpec;
+  laudoAtual: string;
+  divergencias: string[];
+}): Promise<EditPlan> {
+  const system = `${UNIVERSAL_CORE_V2}\n\n=== TAREFA (REPARO DO PLANO) ===\n${PLAN_INSTRUCTIONS}\n\nO plano anterior gerou um laudo com DIVERGÊNCIAS de fidelidade abaixo. Gere um PLANO CORRIGIDO (mesmo formato) que reponha EXATAMENTE o que o médico ditou e sumiu — sem inventar nada novo.\nDIVERGÊNCIAS:\n${args.divergencias.map((d) => `- ${d}`).join("\n")}\n\n=== SPEC DA CATEGORIA ===\n${serializeSpec(args.spec)}`;
+  const user = `=== DITADO DO MÉDICO ===\n${args.ditadoCru.trim()}\n\n=== LAUDO ATUAL (com as divergências) ===\n${args.laudoAtual}`;
+  return callPlan(args.openai, args.model, system, user);
 }
