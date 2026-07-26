@@ -18,10 +18,12 @@ export function measureNumbers(text: string): string[] {
   const reUnidade = /(\d+(?:[.,]\d+)?)\s*(?:cm³|cm|mm|ml|centímetros?|milímetros?)/gi;
   const reDim = /(\d+(?:[.,]\d+)?)\s*(?:x|×|por)\s*(\d+(?:[.,]\d+)?)/gi;
   let m: RegExpExecArray | null;
-  while ((m = reUnidade.exec(text)) !== null) nums.add(norm(m[1]));
+  while ((m = reUnidade.exec(text)) !== null) {
+    if (m[1]) nums.add(norm(m[1]));
+  }
   while ((m = reDim.exec(text)) !== null) {
-    nums.add(norm(m[1]));
-    nums.add(norm(m[2]));
+    if (m[1]) nums.add(norm(m[1]));
+    if (m[2]) nums.add(norm(m[2]));
   }
   return [...nums];
 }
