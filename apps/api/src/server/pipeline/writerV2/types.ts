@@ -55,6 +55,8 @@ export const editPlanSchema = z.object({
     .default([]),
   /** Itens de conclusão (diagnósticos nomeados), na ordem final. Vazio = exame normal. */
   conclusao: z.array(z.string()).default([]),
+  /** slotIds a OMITIR do laudo (ex.: médico pediu "não descreva a bexiga"). */
+  omitSlots: z.array(z.string()).default([]),
 });
 export type EditPlan = z.infer<typeof editPlanSchema>;
 
