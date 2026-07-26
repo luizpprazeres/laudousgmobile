@@ -1,0 +1,423 @@
+{
+  "base": [
+    {
+      "id": "titulo",
+      "frase_normal": "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE",
+      "obrigatorio": false
+    },
+    {
+      "id": "data_gestacional",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "comentarios",
+      "frase_normal": "Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
+      "obrigatorio": false
+    },
+    {
+      "id": "feto",
+      "frase_normal": "Feto único, em apresentação cefálica.",
+      "obrigatorio": false
+    },
+    {
+      "id": "bcf",
+      "frase_normal": "Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ____ bpm).",
+      "obrigatorio": true
+    },
+    {
+      "id": "movimentos_fetais",
+      "frase_normal": "Os movimentos fetais são ativos.",
+      "obrigatorio": false
+    },
+    {
+      "id": "snc_coluna",
+      "frase_normal": "As considerações sobre a anatomia fetal são as seguintes:\nAs estruturas cranianas e da coluna vertebral são normais.",
+      "obrigatorio": false
+    },
+    {
+      "id": "face",
+      "frase_normal": "Nariz e narinas presentes.\nLábio superior sem solução de continuidade.",
+      "obrigatorio": false
+    },
+    {
+      "id": "torax_coracao",
+      "frase_normal": "Coração com quatro câmaras visíveis.",
+      "obrigatorio": false
+    },
+    {
+      "id": "abdome_rins",
+      "frase_normal": "O estômago, a bexiga e os rins foram bem identificados e com ecotextura homogênea.\nA aorta abdominal fetal apresenta calibre normal.",
+      "obrigatorio": false
+    },
+    {
+      "id": "genitalia",
+      "frase_normal": "Genitália externa não avaliada.",
+      "obrigatorio": false
+    },
+    {
+      "id": "biometria_cabecalho",
+      "frase_normal": "A biometria fetal é a seguinte:",
+      "obrigatorio": false
+    },
+    {
+      "id": "dbp",
+      "frase_normal": "Diâmetro biparietal (DBP) de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "cc",
+      "frase_normal": "Circunferência da cabeça (CC) de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "cerebelo",
+      "frase_normal": "Cerebelo mede ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "cisterna_magna",
+      "frase_normal": "Cisterna magna mede ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "distancia_binocular",
+      "frase_normal": "Distância binocular de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "ca",
+      "frase_normal": "Circunferência abdominal (CA) de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "membros",
+      "frase_normal": "Comprimento do fêmur direito de ____ mm.\nComprimento do fêmur esquerdo de ____ mm.\nComprimento da tíbia direita de ____ mm.\nComprimento da tíbia esquerda de ____ mm.\nComprimento da fíbula direita de ____ mm.\nComprimento da fíbula esquerda de ____ mm.\nComprimento do úmero direito de ____ mm.\nComprimento do úmero esquerdo de ____ mm.\nComprimento do rádio direito de ____ mm.\nComprimento do rádio esquerdo de ____ mm.\nComprimento da ulna direita de ____ mm.\nComprimento da ulna esquerda de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "peso_fetal",
+      "frase_normal": "Peso fetal estimado em ____ g.",
+      "obrigatorio": true
+    },
+    {
+      "id": "cordao_umbilical",
+      "frase_normal": "Análise extra-fetal:\nCordão umbilical com duas artérias e uma veia.",
+      "obrigatorio": false
+    },
+    {
+      "id": "placenta",
+      "frase_normal": "Placenta de aspecto normal.",
+      "obrigatorio": false
+    },
+    {
+      "id": "liquido_amniotico",
+      "frase_normal": "Líquido amniótico de quantidade normal pela análise subjetiva.",
+      "obrigatorio": false
+    },
+    {
+      "id": "colo",
+      "frase_normal": "Orifício interno do colo uterino encontra-se fechado.",
+      "obrigatorio": false
+    },
+    {
+      "id": "ccn",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "translucencia_nucal",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "osso_nasal",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "ducto_venoso",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "arterias_uterinas",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "maturidade_3t",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "conclusao_normal",
+      "frase_normal": "1) Gestação em torno de ____ semanas.\n2) Líquido amniótico de quantidade normal.\n3) Morfologia fetal sem evidência de alteração detectável pelo método.",
+      "obrigatorio": false
+    },
+    {
+      "id": "conclusao_fechamento",
+      "frase_normal": "",
+      "obrigatorio": false
+    }
+  ],
+  "dictionary": [
+    {
+      "gatilho": "morfológico do primeiro trimestre, morfo 1T, idade gestacional até 14 semanas, CCN ou translucência nucal",
+      "slot_alvo": "titulo",
+      "corpo": "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "morfológico do segundo trimestre, morfo 2T ou idade gestacional entre 15 e 28 semanas",
+      "slot_alvo": "titulo",
+      "corpo": "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "morfológico do terceiro trimestre, morfo 3T ou idade gestacional a partir de 29 semanas",
+      "slot_alvo": "titulo",
+      "corpo": "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "DUM com data e idade gestacional atual informadas",
+      "slot_alvo": "data_gestacional",
+      "corpo": "DUM: dd/mm/aaaa. Hoje com X semanas e X dias.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "primeira USG com data, idade gestacional naquela data e idade gestacional atual informadas",
+      "slot_alvo": "data_gestacional",
+      "corpo": "Primeira USG: dd/mm/aaaa, com X semanas e X dias. Hoje com X semanas e X dias.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "feto único com apresentação e dorso informados",
+      "slot_alvo": "feto",
+      "corpo": "Feto único, em apresentação {apresentação}, com dorso {dorso}.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "primeiro trimestre com feto único",
+      "slot_alvo": "feto",
+      "corpo": "Feto único de situação variável.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "primeiro trimestre com batimentos cardíacos",
+      "slot_alvo": "bcf",
+      "corpo": "Batimentos cardíacos presentes, bem caracterizados pelo modo Doppler (FC = ____ bpm).",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "comprimento crânio-nádegas no primeiro trimestre",
+      "slot_alvo": "ccn",
+      "corpo": "Comprimento crânio-nádegas (CCN) de ____ mm.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "translucência nucal no primeiro trimestre",
+      "slot_alvo": "translucencia_nucal",
+      "corpo": "Medida da translucência nucal (TN) de ____ mm.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "osso nasal presente",
+      "slot_alvo": "osso_nasal",
+      "corpo": "Presença de osso nasal.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "osso nasal ausente",
+      "slot_alvo": "osso_nasal",
+      "corpo": "Ausência de osso nasal.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "ducto venoso com onda trifásica e sístole atrial positiva",
+      "slot_alvo": "ducto_venoso",
+      "corpo": "Ducto venoso com aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas).",
+      "conclusao": "Doppler do ducto venoso normal."
+    },
+    {
+      "gatilho": "ducto venoso com onda A reversa",
+      "slot_alvo": "ducto_venoso",
+      "corpo": "Ducto venoso com onda reversa na sístole atrial.",
+      "conclusao": "Doppler do ducto venoso alterado (onda A reversa)."
+    },
+    {
+      "gatilho": "IP das artérias uterinas direita e esquerda no primeiro trimestre",
+      "slot_alvo": "arterias_uterinas",
+      "corpo": "Artéria uterina direita: IP {IP_direita}.\nArtéria uterina esquerda: IP {IP_esquerda}.\nÍndice de pulsatilidade médio das artérias uterinas: {IP_médio}.",
+      "conclusao": "Dopplervelocimetria normal das artérias uterinas."
+    },
+    {
+      "gatilho": "genitália externa masculina",
+      "slot_alvo": "genitalia",
+      "corpo": "Genitália externa masculina.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "genitália externa feminina",
+      "slot_alvo": "genitalia",
+      "corpo": "Genitália externa feminina.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "terceiro trimestre com avaliação de maturidade intestinal e pulmonar",
+      "slot_alvo": "maturidade_3t",
+      "corpo": "Intestinos com ecogenicidade compatível com a maturidade intestinal para a fase da gestação.\nPulmões com ecogenicidade compatível com a maturidade pulmonar para a fase da gestação.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "alteração morfológica explicitamente ditada no sistema nervoso central ou nas estruturas cranianas",
+      "slot_alvo": "snc_coluna",
+      "corpo": "{descrição morfológica literal do sistema nervoso central ou das estruturas cranianas ditada pelo médico}",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "alteração morfológica explicitamente ditada na coluna vertebral",
+      "slot_alvo": "snc_coluna",
+      "corpo": "{descrição morfológica literal da coluna vertebral ditada pelo médico}",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "alteração morfológica explicitamente ditada na face, nariz, narinas ou lábio superior",
+      "slot_alvo": "face",
+      "corpo": "{descrição morfológica literal da face ditada pelo médico}",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "alteração morfológica explicitamente ditada no tórax ou coração",
+      "slot_alvo": "torax_coracao",
+      "corpo": "{descrição morfológica literal do tórax ou coração ditada pelo médico}",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "alteração morfológica explicitamente ditada no abdome, estômago, bexiga, rins ou aorta fetal",
+      "slot_alvo": "abdome_rins",
+      "corpo": "{descrição morfológica literal do abdome, trato urinário ou aorta fetal ditada pelo médico}",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "alteração morfológica explicitamente ditada nos membros ou ossos longos",
+      "slot_alvo": "membros",
+      "corpo": "{descrição morfológica literal dos membros ou ossos longos ditada pelo médico}",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "medidas dos ossos longos informadas sem distinção de lado",
+      "slot_alvo": "membros",
+      "corpo": "Comprimento do fêmur direito de {fêmur} mm.\nComprimento do fêmur esquerdo de {fêmur} mm.\nComprimento da tíbia direita de {tíbia} mm.\nComprimento da tíbia esquerda de {tíbia} mm.\nComprimento da fíbula direita de {fíbula} mm.\nComprimento da fíbula esquerda de {fíbula} mm.\nComprimento do úmero direito de {úmero} mm.\nComprimento do úmero esquerdo de {úmero} mm.\nComprimento do rádio direito de {rádio} mm.\nComprimento do rádio esquerdo de {rádio} mm.\nComprimento da ulna direita de {ulna} mm.\nComprimento da ulna esquerda de {ulna} mm.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "peso fetal com variação e percentil informados",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em ____ g (+- ____ g, percentil ____).",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "percentil do peso fetal menor ou igual a 3",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil < 3).",
+      "conclusao": "O peso fetal encontra-se abaixo do percentil 3 para a idade gestacional."
+    },
+    {
+      "gatilho": "percentil do peso fetal menor ou igual a 3",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil < 3).",
+      "conclusao": "Sinais de restrição do crescimento fetal, estágio I de Gratacós."
+    },
+    {
+      "gatilho": "percentil do peso fetal menor ou igual a 3",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil < 3).",
+      "conclusao": "Convém, a critério clínico, realizar nova ultrassonografia obstétrica com Doppler colorido em quatro semanas, com objetivo de acompanhar a evolução."
+    },
+    {
+      "gatilho": "percentil do peso fetal entre 3 e 10 sem menção a restrição",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil {percentil}).",
+      "conclusao": "O peso fetal encontra-se abaixo do percentil 10 (pequeno para a idade gestacional - P.I.G.)."
+    },
+    {
+      "gatilho": "percentil do peso fetal entre 3 e 10 sem menção a restrição",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil {percentil}).",
+      "conclusao": "Convém, a critério clínico, realizar nova ultrassonografia obstétrica com Doppler colorido em quatro semanas, com objetivo de acompanhar a evolução."
+    },
+    {
+      "gatilho": "percentil do peso fetal entre 3 e 10 com restrição do crescimento explicitamente mencionada",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil {percentil}).",
+      "conclusao": "Feto abaixo do percentil 10 para a idade gestacional."
+    },
+    {
+      "gatilho": "percentil do peso fetal entre 3 e 10 com restrição do crescimento explicitamente mencionada",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil {percentil}).",
+      "conclusao": "Sinais de restrição do crescimento fetal, estágio I de Gratacós."
+    },
+    {
+      "gatilho": "percentil do peso fetal entre 3 e 10 com restrição do crescimento explicitamente mencionada",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil {percentil}).",
+      "conclusao": "Convém, a critério clínico, realizar nova ultrassonografia obstétrica com Doppler colorido em quatro semanas, com objetivo de acompanhar a evolução."
+    },
+    {
+      "gatilho": "percentil do peso fetal acima de 95",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso fetal estimado em {peso} g (percentil {percentil}).",
+      "conclusao": "O peso fetal encontra-se acima do percentil 95 (grande para a idade gestacional - G.I.G.)."
+    },
+    {
+      "gatilho": "placenta anterior antes de 30 semanas sem ecotextura ditada",
+      "slot_alvo": "placenta",
+      "corpo": "Placenta de localização anterior, com ecotextura homogênea.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "placenta anterior a partir de 30 semanas sem ecotextura ditada",
+      "slot_alvo": "placenta",
+      "corpo": "Placenta de localização anterior, com ecotextura heterogênea, de acordo com a fase da gestação.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "placenta com localização e grau de Grannum informados",
+      "slot_alvo": "placenta",
+      "corpo": "Placenta de localização {localização}, {grau} de Grannum et al.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "líquido amniótico normal pela análise subjetiva, sem medida",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "Líquido amniótico de quantidade normal pela análise subjetiva.",
+      "conclusao": "Líquido amniótico de quantidade normal."
+    },
+    {
+      "gatilho": "ILA menor que 8 cm, classificado como reduzido; bloqueio obrigatório se ILA menor que 6 cm",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O índice do líquido amniótico mede {ILA} cm.",
+      "conclusao": "Líquido amniótico em quantidade reduzida (ILA mede {ILA} cm)."
+    },
+    {
+      "gatilho": "ILA entre 8 e 24 cm, classificado como normal",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O índice do líquido amniótico mede {ILA} cm.",
+      "conclusao": "Líquido amniótico de quantidade normal (ILA mede {ILA} cm)."
+    },
+    {
+      "gatilho": "ILA maior que 24 cm, classificado como aumentado; bloqueio obrigatório se ILA maior que 26 cm",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O índice do líquido amniótico mede {ILA} cm.",
+      "conclusao": "Líquido amniótico em quantidade aumentada (ILA mede {ILA} cm)."
+    }
+  ],
+  "contract": {
+    "titulo": "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE",
+    "numeracao_conclusao": "1)",
+    "segmentos_romanos": false
+  }
+}

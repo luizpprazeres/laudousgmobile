@@ -1,0 +1,445 @@
+{
+  "base": [
+    {
+      "id": "titulo",
+      "frase_normal": "ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO",
+      "obrigatorio": false
+    },
+    {
+      "id": "data_gestacional",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "comentarios",
+      "frase_normal": "Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.",
+      "obrigatorio": false
+    },
+    {
+      "id": "feto",
+      "frase_normal": "Feto único, em apresentação cefálica.",
+      "obrigatorio": false
+    },
+    {
+      "id": "bcf",
+      "frase_normal": "Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ____ bpm).",
+      "obrigatorio": true
+    },
+    {
+      "id": "movimentos_fetais",
+      "frase_normal": "Os movimentos fetais são ativos.",
+      "obrigatorio": false
+    },
+    {
+      "id": "anatomia",
+      "frase_normal": "As considerações sobre a anatomia fetal são as seguintes:\nAs estruturas cranianas e da coluna vertebral são normais.\nO estômago e a bexiga foram bem identificados e com ecotextura homogênea.",
+      "obrigatorio": false
+    },
+    {
+      "id": "biometria_cabecalho",
+      "frase_normal": "A biometria fetal é a seguinte:",
+      "obrigatorio": false
+    },
+    {
+      "id": "dbp",
+      "frase_normal": "Diâmetro biparietal (DBP) de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "cc",
+      "frase_normal": "Circunferência da cabeça (CC) de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "ca",
+      "frase_normal": "Circunferência abdominal (CA) de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "cf",
+      "frase_normal": "Comprimento do fêmur (CF) de ____ mm.",
+      "obrigatorio": true
+    },
+    {
+      "id": "peso_fetal",
+      "frase_normal": "Peso aproximado de ____ g.",
+      "obrigatorio": true
+    },
+    {
+      "id": "placenta",
+      "frase_normal": "Placenta de aspecto normal.",
+      "obrigatorio": false
+    },
+    {
+      "id": "liquido_amniotico",
+      "frase_normal": "Líquido amniótico de quantidade normal pela análise subjetiva.",
+      "obrigatorio": false
+    },
+    {
+      "id": "doppler_cabecalho",
+      "frase_normal": "DOPPLERVELOCIMETRIA:",
+      "obrigatorio": false
+    },
+    {
+      "id": "arteria_umbilical",
+      "frase_normal": "Artéria umbilical: IP ____.",
+      "obrigatorio": true
+    },
+    {
+      "id": "arteria_cerebral_media",
+      "frase_normal": "Artéria cerebral média: IP ____.",
+      "obrigatorio": true
+    },
+    {
+      "id": "psv_acm",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "ducto_venoso",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "arteria_uterina_dir",
+      "frase_normal": "Artéria uterina direita: IP ____.",
+      "obrigatorio": true
+    },
+    {
+      "id": "arteria_uterina_esq",
+      "frase_normal": "Artéria uterina esquerda: IP ____.",
+      "obrigatorio": true
+    },
+    {
+      "id": "ip_medio_uterinas",
+      "frase_normal": "IP médio das artérias uterinas mede ____.",
+      "obrigatorio": true
+    },
+    {
+      "id": "incisuras",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "relacao_cerebro_placentaria",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "perfil_hemodinamico",
+      "frase_normal": "",
+      "obrigatorio": false
+    },
+    {
+      "id": "conclusao_normal",
+      "frase_normal": "1) Gestação em torno de ____ semanas.\n2) Líquido amniótico em quantidade normal.\n3) Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.\n4) Ausência de sinais de incisuras.\n5) Não há sinais de pré-centralização ou de centralização.\n6) Perfil hemodinâmico fetal é normal, menor de 1.0.",
+      "obrigatorio": false
+    },
+    {
+      "id": "conclusao_fechamento",
+      "frase_normal": "",
+      "obrigatorio": false
+    }
+  ],
+  "dictionary": [
+    {
+      "gatilho": "DUM com data e idade gestacional atual informadas",
+      "slot_alvo": "data_gestacional",
+      "corpo": "DUM: dd/mm/aaaa. Hoje com X semanas e X dias.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "primeira USG com data, idade gestacional naquela data e idade gestacional atual informadas",
+      "slot_alvo": "data_gestacional",
+      "corpo": "Primeira USG: dd/mm/aaaa, com X semanas e X dias. Hoje com X semanas e X dias.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "feto único com apresentação e dorso informados",
+      "slot_alvo": "feto",
+      "corpo": "Feto único, em apresentação {apresentação}, com dorso {dorso}.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "dois fetos com posição relativa, apresentação e dorso informados",
+      "slot_alvo": "feto",
+      "corpo": "Dois fetos, o feto da direita (FETO A) em apresentação cefálica com dorso à direita, e o feto da esquerda (FETO B) em apresentação pélvica com dorso à esquerda.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "peso fetal com variação e percentil informados",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso aproximado de ____ g (+- ____ g, percentil ____).",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "percentil do peso fetal menor ou igual a 3",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso aproximado de {peso} g (percentil < 3).",
+      "conclusao": "O peso fetal encontra-se abaixo do percentil 3 para a idade gestacional."
+    },
+    {
+      "gatilho": "percentil do peso fetal menor ou igual a 3",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso aproximado de {peso} g (percentil < 3).",
+      "conclusao": "Sinais de restrição do crescimento fetal, estágio I de Gratacós."
+    },
+    {
+      "gatilho": "percentil do peso fetal entre 3 e 10 sem menção a restrição",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso aproximado de {peso} g (percentil {percentil}).",
+      "conclusao": "O peso fetal encontra-se abaixo do percentil 10 (pequeno para a idade gestacional - P.I.G.)."
+    },
+    {
+      "gatilho": "percentil do peso fetal entre 3 e 10 com restrição do crescimento explicitamente mencionada",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso aproximado de {peso} g (percentil {percentil}).",
+      "conclusao": "Feto abaixo do percentil 10 para a idade gestacional."
+    },
+    {
+      "gatilho": "percentil do peso fetal entre 3 e 10 com restrição do crescimento explicitamente mencionada",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso aproximado de {peso} g (percentil {percentil}).",
+      "conclusao": "Sinais de restrição do crescimento fetal, estágio I de Gratacós."
+    },
+    {
+      "gatilho": "percentil do peso fetal acima de 95",
+      "slot_alvo": "peso_fetal",
+      "corpo": "Peso aproximado de {peso} g (percentil {percentil}).",
+      "conclusao": "O peso fetal encontra-se acima do percentil 95 (grande para a idade gestacional - G.I.G.)."
+    },
+    {
+      "gatilho": "placenta anterior antes de 30 semanas sem ecotextura ditada",
+      "slot_alvo": "placenta",
+      "corpo": "Placenta de localização anterior, com ecotextura homogênea.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "placenta anterior a partir de 30 semanas sem ecotextura ditada",
+      "slot_alvo": "placenta",
+      "corpo": "Placenta de localização anterior, com ecotextura heterogênea, de acordo com a fase da gestação.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "placenta com localização, ecotextura e grau de Grannum informados",
+      "slot_alvo": "placenta",
+      "corpo": "Placenta de localização {localização}, com ecotextura {ecotextura} (grau {0/I/II/III} de Grannum et al.).",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "líquido amniótico normal pela análise subjetiva, sem medida",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "Líquido amniótico de quantidade normal pela análise subjetiva.",
+      "conclusao": "Líquido amniótico de quantidade normal."
+    },
+    {
+      "gatilho": "ILA menor que 8 cm, classificado como reduzido; bloqueio obrigatório se ILA menor que 6 cm",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O índice do líquido amniótico mede {ILA} cm.",
+      "conclusao": "Líquido amniótico em quantidade reduzida (ILA mede {ILA} cm)."
+    },
+    {
+      "gatilho": "ILA entre 8 e 24 cm, classificado como normal",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O índice do líquido amniótico mede {ILA} cm.",
+      "conclusao": "Líquido amniótico de quantidade normal (ILA mede {ILA} cm)."
+    },
+    {
+      "gatilho": "ILA maior que 24 cm, classificado como aumentado; bloqueio obrigatório se ILA maior que 26 cm",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O índice do líquido amniótico mede {ILA} cm.",
+      "conclusao": "Líquido amniótico em quantidade aumentada (ILA mede {ILA} cm)."
+    },
+    {
+      "gatilho": "MBV menor que 2 cm, classificado como reduzido; bloqueio obrigatório se MBV menor que 1,4 cm",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O maior bolsão vertical mede {MBV} cm.",
+      "conclusao": "Líquido amniótico em quantidade reduzida (MBV mede {MBV} cm)."
+    },
+    {
+      "gatilho": "MBV entre 2 e 8 cm, classificado como normal",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O maior bolsão vertical mede {MBV} cm.",
+      "conclusao": "Líquido amniótico de quantidade normal (MBV mede {MBV} cm)."
+    },
+    {
+      "gatilho": "MBV maior que 8 cm, classificado como aumentado",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "O maior bolsão vertical mede {MBV} cm.",
+      "conclusao": "Líquido amniótico em quantidade aumentada (MBV mede {MBV} cm)."
+    },
+    {
+      "gatilho": "artéria umbilical com IP informado e sem percentil",
+      "slot_alvo": "arteria_umbilical",
+      "corpo": "Artéria umbilical: IP {IP}.",
+      "conclusao": "Índice de pulsatilidade normal na artéria umbilical."
+    },
+    {
+      "gatilho": "artéria umbilical com IP e percentil informados",
+      "slot_alvo": "arteria_umbilical",
+      "corpo": "Artéria umbilical: IP {IP} (percentil {percentil}).",
+      "conclusao": "Índice de pulsatilidade normal na artéria umbilical."
+    },
+    {
+      "gatilho": "artéria umbilical com IP elevado ou acima do percentil informado",
+      "slot_alvo": "arteria_umbilical",
+      "corpo": "Artéria umbilical: IP {IP} (percentil {percentil}).",
+      "conclusao": "Índice de pulsatilidade elevado na artéria umbilical."
+    },
+    {
+      "gatilho": "artéria umbilical com diástole zero",
+      "slot_alvo": "arteria_umbilical",
+      "corpo": "Artéria umbilical: IP {IP}, com diástole zero.",
+      "conclusao": "Artéria umbilical com diástole zero."
+    },
+    {
+      "gatilho": "artéria umbilical com diástole ausente",
+      "slot_alvo": "arteria_umbilical",
+      "corpo": "Artéria umbilical: IP {IP}, com diástole ausente.",
+      "conclusao": "Artéria umbilical com diástole ausente."
+    },
+    {
+      "gatilho": "artéria umbilical com diástole reversa",
+      "slot_alvo": "arteria_umbilical",
+      "corpo": "Artéria umbilical: IP {IP}, com diástole reversa.",
+      "conclusao": "Artéria umbilical com diástole reversa."
+    },
+    {
+      "gatilho": "artéria cerebral média com IP informado e sem percentil",
+      "slot_alvo": "arteria_cerebral_media",
+      "corpo": "Artéria cerebral média: IP {IP}.",
+      "conclusao": "Índice de pulsatilidade normal na artéria cerebral média."
+    },
+    {
+      "gatilho": "artéria cerebral média com IP e percentil informados",
+      "slot_alvo": "arteria_cerebral_media",
+      "corpo": "Artéria cerebral média: IP {IP} (percentil {percentil}).",
+      "conclusao": "Índice de pulsatilidade normal na artéria cerebral média."
+    },
+    {
+      "gatilho": "artéria cerebral média com IP reduzido ou alterado",
+      "slot_alvo": "arteria_cerebral_media",
+      "corpo": "Artéria cerebral média: IP {IP} (percentil {percentil}).",
+      "conclusao": "Índice de pulsatilidade alterado na artéria cerebral média."
+    },
+    {
+      "gatilho": "PSV da artéria cerebral média e MoM informados, sem sinais de anemia",
+      "slot_alvo": "psv_acm",
+      "corpo": "Artéria cerebral média: PSV {PSV} cm/s ({MoM} MoM).",
+      "conclusao": "Sem sinais de anemia."
+    },
+    {
+      "gatilho": "PSV da artéria cerebral média e MoM informados, com sinais de anemia",
+      "slot_alvo": "psv_acm",
+      "corpo": "Artéria cerebral média: PSV {PSV} cm/s ({MoM} MoM).",
+      "conclusao": "Com sinais de anemia ({grau})."
+    },
+    {
+      "gatilho": "ducto venoso com onda trifásica e sístole atrial positiva",
+      "slot_alvo": "ducto_venoso",
+      "corpo": "Ducto venoso: aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas).",
+      "conclusao": "Doppler do ducto venoso normal."
+    },
+    {
+      "gatilho": "ducto venoso com onda A ausente",
+      "slot_alvo": "ducto_venoso",
+      "corpo": "Ducto venoso: onda A ausente.",
+      "conclusao": "Doppler do ducto venoso alterado (onda A ausente)."
+    },
+    {
+      "gatilho": "ducto venoso com onda A reversa",
+      "slot_alvo": "ducto_venoso",
+      "corpo": "Ducto venoso: onda A reversa.",
+      "conclusao": "Doppler do ducto venoso alterado (onda A reversa)."
+    },
+    {
+      "gatilho": "IP da artéria uterina direita informado",
+      "slot_alvo": "arteria_uterina_dir",
+      "corpo": "Artéria uterina direita: IP {IP}.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "IP da artéria uterina esquerda informado",
+      "slot_alvo": "arteria_uterina_esq",
+      "corpo": "Artéria uterina esquerda: IP {IP}.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "IP médio das artérias uterinas informado ou calculado pela média dos IPs direito e esquerdo, sem percentil",
+      "slot_alvo": "ip_medio_uterinas",
+      "corpo": "IP médio das artérias uterinas mede {IP_médio}.",
+      "conclusao": "Índice de pulsatilidade normal nas artérias uterinas."
+    },
+    {
+      "gatilho": "IP médio das artérias uterinas com percentil menor ou igual a 95",
+      "slot_alvo": "ip_medio_uterinas",
+      "corpo": "IP médio das artérias uterinas mede {IP_médio} (percentil {percentil}).",
+      "conclusao": "Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média."
+    },
+    {
+      "gatilho": "IP médio das artérias uterinas acima do percentil 95",
+      "slot_alvo": "ip_medio_uterinas",
+      "corpo": "IP médio das artérias uterinas mede {IP_médio} (percentil {percentil}).",
+      "conclusao": "IP médio das artérias uterinas acima do percentil 95 para a idade gestacional."
+    },
+    {
+      "gatilho": "IP médio das uterinas acima do percentil 95 com umbilical e cerebral média normais",
+      "slot_alvo": "ip_medio_uterinas",
+      "corpo": "IP médio das artérias uterinas mede {IP_médio} (percentil {percentil}).",
+      "conclusao": "Índices de pulsatilidade normais nas artérias umbilical e cerebral média."
+    },
+    {
+      "gatilho": "incisura protodiastólica nas artérias uterinas",
+      "slot_alvo": "incisuras",
+      "corpo": "Presença de incisura protodiastólica nas artérias uterinas.",
+      "conclusao": "Presença de incisura protodiastólica nas artérias uterinas."
+    },
+    {
+      "gatilho": "ausência de incisuras nas artérias uterinas",
+      "slot_alvo": "incisuras",
+      "corpo": "",
+      "conclusao": "Ausência de sinais de incisuras."
+    },
+    {
+      "gatilho": "relação cérebro-placentária informada",
+      "slot_alvo": "relacao_cerebro_placentaria",
+      "corpo": "Relação cérebro-placentária (RCP): {RCP}.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "relação cérebro-placentária reduzida com centralização",
+      "slot_alvo": "relacao_cerebro_placentaria",
+      "corpo": "Relação cérebro-placentária (RCP): {RCP}.",
+      "conclusao": "Sinais de redistribuição hemodinâmica fetal (brain sparing), compatível com centralização."
+    },
+    {
+      "gatilho": "relação cérebro-placentária com pré-centralização",
+      "slot_alvo": "relacao_cerebro_placentaria",
+      "corpo": "Relação cérebro-placentária (RCP): {RCP}.",
+      "conclusao": "Achados compatíveis com sinais iniciais de centralização fetal (pré-centralização)."
+    },
+    {
+      "gatilho": "perfil hemodinâmico fetal calculado menor que 1,0",
+      "slot_alvo": "perfil_hemodinamico",
+      "corpo": "Perfil hemodinâmico fetal: {perfil}.",
+      "conclusao": "Perfil hemodinâmico fetal é normal, menor de 1.0."
+    },
+    {
+      "gatilho": "perfil hemodinâmico fetal calculado maior ou igual a 1,0",
+      "slot_alvo": "perfil_hemodinamico",
+      "corpo": "Perfil hemodinâmico fetal: {perfil}.",
+      "conclusao": "Perfil hemodinâmico fetal alterado, maior de 1.0."
+    },
+    {
+      "gatilho": "gestação gemelar com maior bolsão vertical medido em cada cavidade",
+      "slot_alvo": "liquido_amniotico",
+      "corpo": "Maior bolsão vertical de ____ cm (FETO A) e ____ cm (FETO B).",
+      "conclusao": "Líquido amniótico em quantidade normal — MBV ____ cm (FETO A) e ____ cm (FETO B)."
+    }
+  ],
+  "contract": {
+    "titulo": "ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO",
+    "numeracao_conclusao": "1)",
+    "segmentos_romanos": false
+  }
+}
