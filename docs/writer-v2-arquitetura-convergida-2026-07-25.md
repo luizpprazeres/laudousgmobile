@@ -44,8 +44,18 @@ A confiabilidade vem de **tirar a inteligência de dentro do modelo e colocá-la
 - `ReportOperation[]` / interpretador de comandos (edição incremental A1) → o formato do **plano de edição**.
 - Toggle "difícil" → a **escalada de modelo**.
 
-## Próximos passos (quando o Luiz decidir)
-1. Definir o SCHEMA do plano de edição (operações sobre o base) e do spec tipado.
-2. Protótipo do fluxo: ditado → plano (LLM) → montagem+auditoria (código) → [reparo condicional] — na categoria abdome, flag OFF, contra o gabarito do renderer.
-3. Auditor determinístico de fidelidade (ditado→laudo).
-4. Flywheel de proposta+aprovação (bootstrap do histórico do Luiz).
+## Personalização / multi-tenant (por que a mesma arquitetura escala por usuário)
+
+A personalização NÃO é um puxadinho — é a razão de a arquitetura ser essa. Como o estilo mora no **dado** (spec), "cada médico com seu estilo" é o estado natural. O agente não sabe o estilo de ninguém; **lê** o spec daquele médico a cada laudo. Um médico novo funciona no 1º dia, sem re-treino.
+
+- **Eficiência preservada:** personalizar muda QUAL dado carrega, não QUANTAS chamadas nem o tamanho do modelo. Latência ≈ de graça. Contra-intuitivo: quanto melhor o spec, MENOS o modelo precisa pensar.
+- **Cache em 2 níveis:** princípios universais = idênticos p/ todos (cache global); spec do médico = estável entre os exames dele (cacheia no 2º laudo). Ordem no prompt: universal → spec → ditado.
+- **LINCHPIN — base ESTRUTURADO por slots com ids estáveis** (`figado`, `vesicula`, `rim_dir`…): o plano de edição e o dicionário apontam para slots; se o médico edita a frase do fígado, o slot `figado` persiste e nada dessincroniza. Base como texto livre = personalização frágil. **É aqui que se investe.**
+- **Governança = git para laudos** (seção 12 do brief): oficial imutável → o médico bifurca uma cópia pessoal editável; só a versão **publicada** entra em produção; histórico + restaurar versão + restaurar padrão + lixeira; o oficial pode ser atualizado no centro sem atropelar o fork de ninguém.
+- **Auditor spec-aware, NÃO hardcoded:** o código confere só invariantes universais (medida+unidade/lado/negação presentes e inalteradas, placeholder obrigatório, nada inventado). Estilo (numeração, frase) é garantido por **reproduzir o base**, nunca por regra fixa — senão quebra quando o usuário muda o padrão.
+- **Onboarding do médico novo = flywheel:** ele manda laudos históricos → a gente PROPÕE o base + dicionário iniciais → ele aprova/ajusta. Chega "escrevendo como ele" sem montar o spec do zero.
+- **Alternativas descartadas p/ personalizar:** fine-tuning por médico (lento, caixa-preta, sem restaurar-padrão), RAG por médico (desnecessário, spec por categoria é pequeno). Dado-como-spec ganha: edição instantânea, transparente, versionável, barata, segura.
+- **Riscos a vigiar:** (1) crescimento do dicionário (limitado por ser por-categoria; medir, não pré-otimizar); (2) auditor jamais hardcodar estilo; (3) bootstrap por histórico como caminho de onboarding.
+
+## Próximos passos
+Ver plano faseado em `docs/writer-v2-plano-implementacao-2026-07-25.md`.
