@@ -53,6 +53,13 @@ Fontes: [Nova-2 vs Nova-3](https://deepgram.com/learn/model-comparison-when-to-u
 
 **P3 — Whisper→Deepgram no Android:** migrar o RN para o mesmo streaming Nova-3 do iOS (paridade + qualidade). Maior esforço; fase separada.
 
+## 5b. Estratégia de fornecedor (tunar > trocar) — decisão de rumo
+Restrição decisiva: **Vercel é serverless e não segura WebSocket persistente** — por isso o iOS faz streaming DIRETO ao Deepgram (backend só emite token). Qualquer solução **self-hosted em tempo real** (faster-whisper/WhisperLive) exigiria **GPU 24/7 + WS persistente** = virar operador de infra de áudio, num app clínico onde a transcrição não pode cair no meio do laudo.
+- **Não trocar de fornecedor agora.** O gargalo (qualidade pt-BR médico) tem ganho não explorado DENTRO do Deepgram: keyterms expandidos (P0), lifecycle (P1), e um A/B de `nova-3-medical` (validar se suporta pt).
+- **A maior dívida técnica não é o Deepgram — é ter DOIS motores** (iOS Deepgram / Android Whisper): glossário e qualidade inconsistentes. Unificar (P3, Android→Deepgram) vale mais que trocar de fornecedor.
+- **Self-hosted / treinar modelo próprio:** só com gatilho real — (a) compliance exigir que áudio de paciente não saia da infra; (b) escala em que a conta gerenciada supere GPU+ops; (c) já existir um **corpus de áudios reais pareados com laudos corrigidos** (esse dataset é o ativo competitivo, não o modelo). Antes disso, é otimização prematura.
+- **Resumo:** o dinheiro está em **tunar o Deepgram + unificar as plataformas**, não em trocar de modelo.
+
 ## 6. Segurança (sinalizar ao Luiz)
 A `DEEPGRAM_API_KEY` aparece em texto claro no `.env` local (gitignored, não está no git). Como apareceu num relatório, vale **rotacionar a chave** por precaução e confirmar que o `.env` nunca é commitado.
 
