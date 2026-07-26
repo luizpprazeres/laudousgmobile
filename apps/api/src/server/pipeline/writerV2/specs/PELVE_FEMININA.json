@@ -19,7 +19,7 @@
       "id": "utero",
       "frase_normal": "Útero em ____, medindo ____ x ____ x ____ cm.",
       "obrigatorio": false,
-      "frase_conclusao": "Útero de volume normal (____ cm³)."
+      "frase_conclusao": "Útero de volume normal."
     },
     {
       "id": "istmo",
@@ -50,14 +50,18 @@
     {
       "id": "ovario_dir",
       "frase_normal": "Ovário direito medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.",
-      "obrigatorio": false,
-      "frase_conclusao": "Ovário direito de aspecto normal."
+      "obrigatorio": false
     },
     {
       "id": "ovario_esq",
       "frase_normal": "Ovário esquerdo medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.",
+      "obrigatorio": false
+    },
+    {
+      "id": "ovarios_conclusao",
+      "frase_normal": "",
       "obrigatorio": false,
-      "frase_conclusao": "Ovário esquerdo de aspecto normal."
+      "frase_conclusao": "Ovários ecograficamente normais, ambos contendo folículos."
     },
     {
       "id": "fundo_saco",
@@ -76,6 +80,24 @@
     }
   ],
   "dictionary": [
+    {
+      "gatilho": "técnica transabdominal ou combinada transabdominal e transvaginal, com avaliação da bexiga repleta",
+      "slot_alvo": "bexiga",
+      "corpo": "Bexiga de forma, contorno e ecotextura normais.",
+      "conclusao": "Bexiga ecograficamente normal."
+    },
+    {
+      "gatilho": "técnica exclusivamente transvaginal, sem avaliação transabdominal da bexiga",
+      "slot_alvo": "bexiga",
+      "corpo": "",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "volume uterino explicitamente informado como normal",
+      "slot_alvo": "utero",
+      "corpo": "Útero em {posição}, medindo {L} x {AP} x {T} cm.",
+      "conclusao": "Útero de volume normal ({vol_uterino} cm³)."
+    },
     {
       "gatilho": "menopausa com endométrio de espessura normal",
       "slot_alvo": "endometrio",
@@ -263,10 +285,17 @@
     "segmentos_romanos": false,
     "conclusao_modo": "por_estrutura",
     "conclusao_ordem": [
+      "bexiga",
       "utero",
       "endometrio",
+      "ovarios_conclusao",
+      "miometrio",
+      "istmo",
+      "colo",
       "ovario_dir",
-      "ovario_esq"
+      "ovario_esq",
+      "diu",
+      "fundo_saco"
     ]
   }
 }

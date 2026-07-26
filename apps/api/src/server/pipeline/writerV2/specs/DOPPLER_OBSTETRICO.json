@@ -11,12 +11,6 @@
       "obrigatorio": false
     },
     {
-      "id": "idade_gestacional",
-      "frase_normal": "",
-      "obrigatorio": true,
-      "frase_conclusao": "Idade gestacional em torno de ____ semanas."
-    },
-    {
       "id": "comentarios",
       "frase_normal": "Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.",
       "obrigatorio": false
@@ -24,8 +18,7 @@
     {
       "id": "feto",
       "frase_normal": "Feto único, em apresentação cefálica.",
-      "obrigatorio": false,
-      "frase_conclusao": "Gestação tópica única, feto vivo."
+      "obrigatorio": false
     },
     {
       "id": "bcf",
@@ -75,14 +68,12 @@
     {
       "id": "placenta",
       "frase_normal": "Placenta de aspecto normal.",
-      "obrigatorio": false,
-      "frase_conclusao": "Placenta de aspecto normal."
+      "obrigatorio": false
     },
     {
       "id": "liquido_amniotico",
       "frase_normal": "Líquido amniótico de quantidade normal pela análise subjetiva.",
-      "obrigatorio": false,
-      "frase_conclusao": "Líquido amniótico em quantidade normal."
+      "obrigatorio": false
     },
     {
       "id": "doppler_cabecalho",
@@ -92,14 +83,12 @@
     {
       "id": "arteria_umbilical",
       "frase_normal": "Artéria umbilical: IP ____.",
-      "obrigatorio": true,
-      "frase_conclusao": "Índice de pulsatilidade normal na artéria umbilical."
+      "obrigatorio": true
     },
     {
       "id": "arteria_cerebral_media",
       "frase_normal": "Artéria cerebral média: IP ____.",
-      "obrigatorio": true,
-      "frase_conclusao": "Índice de pulsatilidade normal na artéria cerebral média."
+      "obrigatorio": true
     },
     {
       "id": "psv_acm",
@@ -124,26 +113,22 @@
     {
       "id": "ip_medio_uterinas",
       "frase_normal": "IP médio das artérias uterinas mede ____.",
-      "obrigatorio": true,
-      "frase_conclusao": "Índice de pulsatilidade normal nas artérias uterinas."
+      "obrigatorio": true
     },
     {
       "id": "incisuras",
       "frase_normal": "",
-      "obrigatorio": false,
-      "frase_conclusao": "Ausência de sinais de incisuras."
+      "obrigatorio": false
     },
     {
       "id": "relacao_cerebro_placentaria",
       "frase_normal": "",
-      "obrigatorio": false,
-      "frase_conclusao": "Não há sinais de pré-centralização ou de centralização."
+      "obrigatorio": false
     },
     {
       "id": "perfil_hemodinamico",
       "frase_normal": "",
-      "obrigatorio": false,
-      "frase_conclusao": "Perfil hemodinâmico fetal é normal, menor de 1.0."
+      "obrigatorio": false
     },
     {
       "id": "conclusao_normal",
@@ -455,19 +440,6 @@
   "contract": {
     "titulo": "ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO",
     "numeracao_conclusao": "1)",
-    "segmentos_romanos": false,
-    "conclusao_modo": "por_estrutura",
-    "conclusao_ordem": [
-      "feto",
-      "idade_gestacional",
-      "liquido_amniotico",
-      "placenta",
-      "arteria_umbilical",
-      "arteria_cerebral_media",
-      "ip_medio_uterinas",
-      "incisuras",
-      "relacao_cerebro_placentaria",
-      "perfil_hemodinamico"
-    ]
+    "segmentos_romanos": false
   }
 }

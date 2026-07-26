@@ -11,12 +11,6 @@
       "obrigatorio": false
     },
     {
-      "id": "idade_gestacional",
-      "frase_normal": "",
-      "obrigatorio": true,
-      "frase_conclusao": "Idade gestacional em torno de ____ semanas."
-    },
-    {
       "id": "comentarios",
       "frase_normal": "Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
       "obrigatorio": false
@@ -25,7 +19,7 @@
       "id": "feto",
       "frase_normal": "Feto único, em apresentação cefálica.",
       "obrigatorio": false,
-      "frase_conclusao": "Gestação tópica única, feto vivo."
+      "frase_conclusao": "Gestação em torno de ____ semanas."
     },
     {
       "id": "bcf",
@@ -115,14 +109,13 @@
     {
       "id": "placenta",
       "frase_normal": "Placenta de aspecto normal.",
-      "obrigatorio": false,
-      "frase_conclusao": "Placenta de aspecto normal."
+      "obrigatorio": false
     },
     {
       "id": "liquido_amniotico",
       "frase_normal": "Líquido amniótico de quantidade normal pela análise subjetiva.",
       "obrigatorio": false,
-      "frase_conclusao": "Líquido amniótico em quantidade normal."
+      "frase_conclusao": "Líquido amniótico de quantidade normal."
     },
     {
       "id": "colo",
@@ -182,6 +175,12 @@
       "slot_alvo": "titulo",
       "corpo": "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
       "conclusao": ""
+    },
+    {
+      "gatilho": "morfológico do primeiro trimestre, morfo 1T, idade gestacional até 14 semanas, CCN ou translucência nucal",
+      "slot_alvo": "morfologia",
+      "corpo": "",
+      "conclusao": "Morfologia fetal normal para esta fase da gestação."
     },
     {
       "gatilho": "morfológico do segundo trimestre, morfo 2T ou idade gestacional entre 15 e 28 semanas",
@@ -391,19 +390,19 @@
       "gatilho": "placenta anterior antes de 30 semanas sem ecotextura ditada",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização anterior, com ecotextura homogênea.",
-      "conclusao": ""
+      "conclusao": "Placenta de localização anterior, com ecotextura homogênea."
     },
     {
       "gatilho": "placenta anterior a partir de 30 semanas sem ecotextura ditada",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização anterior, com ecotextura heterogênea, de acordo com a fase da gestação.",
-      "conclusao": ""
+      "conclusao": "Placenta de localização anterior, com ecotextura heterogênea, de acordo com a fase da gestação."
     },
     {
       "gatilho": "placenta com localização e grau de Grannum informados",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização {localização}, {grau} de Grannum et al.",
-      "conclusao": ""
+      "conclusao": "Placenta de localização {localização}, {grau} de Grannum et al."
     },
     {
       "gatilho": "líquido amniótico normal pela análise subjetiva, sem medida",
@@ -437,10 +436,12 @@
     "conclusao_modo": "por_estrutura",
     "conclusao_ordem": [
       "feto",
-      "idade_gestacional",
       "liquido_amniotico",
+      "ducto_venoso",
+      "morfologia",
+      "arterias_uterinas",
       "placenta",
-      "morfologia"
+      "peso_fetal"
     ]
   }
 }

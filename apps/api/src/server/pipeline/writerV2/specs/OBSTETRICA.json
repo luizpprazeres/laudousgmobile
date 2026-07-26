@@ -11,12 +11,6 @@
       "obrigatorio": false
     },
     {
-      "id": "idade_gestacional",
-      "frase_normal": "",
-      "obrigatorio": true,
-      "frase_conclusao": "Idade gestacional em torno de ____ semanas."
-    },
-    {
       "id": "comentarios",
       "frase_normal": "Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
       "obrigatorio": false
@@ -25,7 +19,7 @@
       "id": "feto",
       "frase_normal": "Feto único, em apresentação cefálica.",
       "obrigatorio": false,
-      "frase_conclusao": "Gestação tópica única, feto vivo."
+      "frase_conclusao": "Gestação em torno de ____ semanas."
     },
     {
       "id": "bcf",
@@ -75,8 +69,7 @@
     {
       "id": "placenta",
       "frase_normal": "Placenta de aspecto normal.",
-      "obrigatorio": false,
-      "frase_conclusao": "Placenta de aspecto normal."
+      "obrigatorio": false
     },
     {
       "id": "liquido_amniotico",
@@ -179,7 +172,7 @@
       "gatilho": "dois fetos com posição relativa, apresentação e dorso informados",
       "slot_alvo": "feto",
       "corpo": "Dois fetos, o feto da direita (FETO A) em apresentação cefálica com dorso à direita, e o feto da esquerda (FETO B) em apresentação pélvica com dorso à esquerda.",
-      "conclusao": ""
+      "conclusao": "Gestação gemelar {corionicidade} em torno de {IG} semanas."
     },
     {
       "gatilho": "peso fetal com variação e percentil informados",
@@ -245,37 +238,37 @@
       "gatilho": "placenta anterior antes de 30 semanas sem ecotextura ditada",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização anterior, com ecotextura homogênea.",
-      "conclusao": ""
+      "conclusao": "Placenta de localização anterior, com ecotextura homogênea."
     },
     {
       "gatilho": "placenta anterior a partir de 30 semanas sem ecotextura ditada",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização anterior, com ecotextura heterogênea, de acordo com a fase da gestação.",
-      "conclusao": ""
+      "conclusao": "Placenta de localização anterior, com ecotextura heterogênea, de acordo com a fase da gestação."
     },
     {
       "gatilho": "placenta com localização, ecotextura e grau de Grannum informados",
       "slot_alvo": "placenta",
       "corpo": "Placenta de localização {localização}, com ecotextura {ecotextura} (grau {0/I/II/III} de Grannum et al.).",
-      "conclusao": ""
+      "conclusao": "Placenta de localização {localização}, com ecotextura {ecotextura} (grau {0/I/II/III} de Grannum et al.)."
     },
     {
       "gatilho": "duas placentas de mesma localização em gestação gemelar",
       "slot_alvo": "placenta",
       "corpo": "Duas placentas, ambas de localização anterior, com ecotextura ____.",
-      "conclusao": ""
+      "conclusao": "Duas placentas, ambas de localização anterior, com ecotextura ____."
     },
     {
       "gatilho": "duas placentas de localizações diferentes em gestação gemelar",
       "slot_alvo": "placenta",
       "corpo": "Duas placentas: Feto A de localização anterior e Feto B de localização posterior, ambas com ecotextura ____.",
-      "conclusao": ""
+      "conclusao": "Duas placentas: Feto A de localização anterior e Feto B de localização posterior, ambas com ecotextura ____."
     },
     {
       "gatilho": "líquido amniótico normal pela análise subjetiva, sem medida",
       "slot_alvo": "liquido_amniotico",
       "corpo": "Líquido amniótico de quantidade normal pela análise subjetiva.",
-      "conclusao": "Líquido amniótico de quantidade normal."
+      "conclusao": "Líquido amniótico em quantidade normal."
     },
     {
       "gatilho": "ILA menor que 8 cm, classificado como reduzido; bloqueio obrigatório se ILA menor que 6 cm",
@@ -287,7 +280,7 @@
       "gatilho": "ILA entre 8 e 24 cm, classificado como normal",
       "slot_alvo": "liquido_amniotico",
       "corpo": "O índice do líquido amniótico mede {ILA} cm.",
-      "conclusao": "Líquido amniótico de quantidade normal (ILA mede {ILA} cm)."
+      "conclusao": "Líquido amniótico em quantidade normal (ILA mede {ILA} cm)."
     },
     {
       "gatilho": "ILA maior que 24 cm, classificado como aumentado; bloqueio obrigatório se ILA maior que 26 cm",
@@ -305,7 +298,7 @@
       "gatilho": "MBV entre 2 e 8 cm, classificado como normal",
       "slot_alvo": "liquido_amniotico",
       "corpo": "O maior bolsão vertical mede {MBV} cm.",
-      "conclusao": "Líquido amniótico de quantidade normal (MBV mede {MBV} cm)."
+      "conclusao": "Líquido amniótico em quantidade normal (MBV mede {MBV} cm)."
     },
     {
       "gatilho": "MBV maior que 8 cm, classificado como aumentado",
@@ -333,9 +326,9 @@
     "conclusao_modo": "por_estrutura",
     "conclusao_ordem": [
       "feto",
-      "idade_gestacional",
       "liquido_amniotico",
-      "placenta"
+      "placenta",
+      "peso_fetal"
     ]
   }
 }
