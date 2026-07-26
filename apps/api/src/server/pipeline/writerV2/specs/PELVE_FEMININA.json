@@ -296,11 +296,11 @@
       "bexiga",
       "utero",
       "endometrio",
-      "ovario_dir",
-      "ovario_esq",
       "miometrio",
       "istmo",
       "colo",
+      "ovario_dir",
+      "ovario_esq",
       "diu",
       "fundo_saco"
     ]
