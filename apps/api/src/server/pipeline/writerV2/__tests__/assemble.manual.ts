@@ -162,5 +162,146 @@ check(
   ),
 );
 
+// --- Cenário 5: SPECS REAIS por_estrutura ---
+function requireSpec(categoryCode: string) {
+  const loaded = loadSpecV2(categoryCode);
+  if (!loaded) throw new Error(`spec ${categoryCode} não carregou`);
+  return loaded;
+}
+
+// 5a: PELVE — normal completo; menopausa + ovário direito alterado substituem
+// exatamente os respectivos itens, sem inserir bexiga/fundo de saco.
+const pelveSpec = requireSpec("PELVE_FEMININA");
+const pelveNormal = assemble(pelveSpec, editPlanSchema.parse({}));
+check(
+  "PELVE normal: conclusão completa na ordem tradicional",
+  /CONCLUSÃO:\n1\) Útero de volume normal \(____ cm³\)\.\n2\) O endométrio tem espessura normal para a fase do ciclo menstrual\.\n3\) Ovário direito de aspecto normal\.\n4\) Ovário esquerdo de aspecto normal\.\s*$/.test(
+    pelveNormal,
+  ),
+);
+const pelveAchados = assemble(
+  pelveSpec,
+  editPlanSchema.parse({
+    slots: [
+      {
+        slotId: "endometrio",
+        corpo: "Endométrio medindo 0,3 cm de espessura.",
+        conclusao: "O endométrio tem espessura normal para a faixa etária da menopausa.",
+      },
+      {
+        slotId: "ovario_dir",
+        corpo: "Ovário direito apresentando imagem de baixa ecogenicidade com aspecto em vidro fosco.",
+        conclusao: "Ovário direito apresentando imagem hipoecoica que tem como diagnóstico mais provável endometrioma (O-RADS 2).",
+      },
+    ],
+  }),
+);
+check(
+  "PELVE achados: endométrio e ovário substituem os itens normais",
+  pelveAchados.includes("2) O endométrio tem espessura normal para a faixa etária da menopausa.") &&
+    pelveAchados.includes(
+      "3) Ovário direito apresentando imagem hipoecoica que tem como diagnóstico mais provável endometrioma (O-RADS 2).",
+    ) &&
+    !pelveAchados.includes("Ovário direito de aspecto normal."),
+);
+
+// 5b: OBSTÉTRICA — vitalidade→IG→líquido→placenta; líquido alterado substitui
+// só o item da sua estrutura.
+const obstetricaSpec = requireSpec("OBSTETRICA");
+const obstetricaNormal = assemble(obstetricaSpec, editPlanSchema.parse({}));
+check(
+  "OBSTETRICA normal: conclusão completa na ordem do contrato",
+  /CONCLUSÃO:\n1\) Gestação tópica única, feto vivo\.\n2\) Idade gestacional em torno de ____ semanas\.\n3\) Líquido amniótico em quantidade normal\.\n4\) Placenta de aspecto normal\.\s*$/.test(
+    obstetricaNormal,
+  ),
+);
+const obstetricaAchado = assemble(
+  obstetricaSpec,
+  editPlanSchema.parse({
+    slots: [
+      {
+        slotId: "liquido_amniotico",
+        corpo: "Índice de líquido amniótico (ILA) de 6,5 cm.",
+        conclusao: "Líquido amniótico em quantidade reduzida (ILA mede 6,5 cm).",
+      },
+    ],
+  }),
+);
+check(
+  "OBSTETRICA achado: líquido substitui o normal sem apagar os demais itens",
+  obstetricaAchado.includes("3) Líquido amniótico em quantidade reduzida (ILA mede 6,5 cm).") &&
+    obstetricaAchado.includes("1) Gestação tópica única, feto vivo.") &&
+    obstetricaAchado.includes("4) Placenta de aspecto normal.") &&
+    !obstetricaAchado.includes("3) Líquido amniótico em quantidade normal."),
+);
+
+// 5c: DOPPLER — conclusão completa por componente; líquido reduzido e diástole
+// reversa substituem apenas seus itens (guard umbilical nunca fica "normal").
+const dopplerSpec = requireSpec("DOPPLER_OBSTETRICO");
+const dopplerNormal = assemble(dopplerSpec, editPlanSchema.parse({}));
+check(
+  "DOPPLER normal: conclusão completa na ordem do contrato",
+  /CONCLUSÃO:\n1\) Gestação tópica única, feto vivo\.\n2\) Idade gestacional em torno de ____ semanas\.\n3\) Líquido amniótico em quantidade normal\.\n4\) Placenta de aspecto normal\.\n5\) Índice de pulsatilidade normal na artéria umbilical\.\n6\) Índice de pulsatilidade normal na artéria cerebral média\.\n7\) Índice de pulsatilidade normal nas artérias uterinas\.\n8\) Ausência de sinais de incisuras\.\n9\) Não há sinais de pré-centralização ou de centralização\.\n10\) Perfil hemodinâmico fetal é normal, menor de 1\.0\.\s*$/.test(
+    dopplerNormal,
+  ),
+);
+const dopplerAchados = assemble(
+  dopplerSpec,
+  editPlanSchema.parse({
+    slots: [
+      {
+        slotId: "liquido_amniotico",
+        corpo: "Maior bolsão vertical de 1,7 cm.",
+        conclusao: "Líquido amniótico em quantidade reduzida (MBV mede 1,7 cm).",
+      },
+      {
+        slotId: "arteria_umbilical",
+        corpo: "Artéria umbilical apresentando diástole reversa.",
+        conclusao: "Artéria umbilical com diástole reversa.",
+      },
+    ],
+  }),
+);
+check(
+  "DOPPLER achados: líquido e umbilical substituem; diástole reversa nunca fica normal",
+  dopplerAchados.includes("3) Líquido amniótico em quantidade reduzida (MBV mede 1,7 cm).") &&
+    dopplerAchados.includes("5) Artéria umbilical com diástole reversa.") &&
+    !dopplerAchados.includes("Índice de pulsatilidade normal na artéria umbilical."),
+);
+
+// 5d: MORFOLÓGICO — vitalidade→IG→líquido→placenta→morfologia; alteração
+// morfológica e líquido aumentado substituem os dois itens correspondentes.
+const morfologicoSpec = requireSpec("MORFOLOGICO");
+const morfologicoNormal = assemble(morfologicoSpec, editPlanSchema.parse({}));
+check(
+  "MORFOLOGICO normal: conclusão completa na ordem do contrato",
+  /CONCLUSÃO:\n1\) Gestação tópica única, feto vivo\.\n2\) Idade gestacional em torno de ____ semanas\.\n3\) Líquido amniótico em quantidade normal\.\n4\) Placenta de aspecto normal\.\n5\) Morfologia fetal sem evidência de alteração detectável pelo método\.\s*$/.test(
+    morfologicoNormal,
+  ),
+);
+const morfologicoAchados = assemble(
+  morfologicoSpec,
+  editPlanSchema.parse({
+    slots: [
+      {
+        slotId: "liquido_amniotico",
+        corpo: "Índice do líquido amniótico de 25,5 cm.",
+        conclusao: "Líquido amniótico em quantidade aumentada (ILA mede 25,5 cm).",
+      },
+      {
+        slotId: "morfologia",
+        corpo: "Identifica-se alteração morfológica fetal descrita nos achados.",
+        conclusao: "Morfologia fetal com alteração detectável pelo método.",
+      },
+    ],
+  }),
+);
+check(
+  "MORFOLOGICO achados: líquido e morfologia substituem os itens normais",
+  morfologicoAchados.includes("3) Líquido amniótico em quantidade aumentada (ILA mede 25,5 cm).") &&
+    morfologicoAchados.includes("5) Morfologia fetal com alteração detectável pelo método.") &&
+    !morfologicoAchados.includes("Morfologia fetal sem evidência de alteração detectável pelo método."),
+);
+
 console.log(pass ? "\nwriterV2 assemble+audit: PASS" : "\nwriterV2 assemble+audit: FAIL");
 if (!pass) process.exit(1);

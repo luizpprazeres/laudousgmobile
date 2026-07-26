@@ -11,6 +11,12 @@
       "obrigatorio": false
     },
     {
+      "id": "idade_gestacional",
+      "frase_normal": "",
+      "obrigatorio": true,
+      "frase_conclusao": "Idade gestacional em torno de ____ semanas."
+    },
+    {
       "id": "comentarios",
       "frase_normal": "Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
       "obrigatorio": false
@@ -18,7 +24,8 @@
     {
       "id": "feto",
       "frase_normal": "Feto único, em apresentação cefálica.",
-      "obrigatorio": false
+      "obrigatorio": false,
+      "frase_conclusao": "Gestação tópica única, feto vivo."
     },
     {
       "id": "bcf",
@@ -68,12 +75,14 @@
     {
       "id": "placenta",
       "frase_normal": "Placenta de aspecto normal.",
-      "obrigatorio": false
+      "obrigatorio": false,
+      "frase_conclusao": "Placenta de aspecto normal."
     },
     {
       "id": "liquido_amniotico",
       "frase_normal": "Líquido amniótico de quantidade normal pela análise subjetiva.",
-      "obrigatorio": false
+      "obrigatorio": false,
+      "frase_conclusao": "Líquido amniótico em quantidade normal."
     },
     {
       "id": "saco_gestacional",
@@ -320,6 +329,13 @@
   "contract": {
     "titulo": "ULTRASSONOGRAFIA OBSTÉTRICA",
     "numeracao_conclusao": "1)",
-    "segmentos_romanos": false
+    "segmentos_romanos": false,
+    "conclusao_modo": "por_estrutura",
+    "conclusao_ordem": [
+      "feto",
+      "idade_gestacional",
+      "liquido_amniotico",
+      "placenta"
+    ]
   }
 }

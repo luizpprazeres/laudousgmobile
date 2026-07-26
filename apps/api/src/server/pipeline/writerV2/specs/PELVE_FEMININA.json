@@ -18,7 +18,8 @@
     {
       "id": "utero",
       "frase_normal": "Útero em ____, medindo ____ x ____ x ____ cm.",
-      "obrigatorio": false
+      "obrigatorio": false,
+      "frase_conclusao": "Útero de volume normal (____ cm³)."
     },
     {
       "id": "istmo",
@@ -28,7 +29,8 @@
     {
       "id": "endometrio",
       "frase_normal": "Endométrio medindo ____ cm de espessura.",
-      "obrigatorio": false
+      "obrigatorio": false,
+      "frase_conclusao": "O endométrio tem espessura normal para a fase do ciclo menstrual."
     },
     {
       "id": "diu",
@@ -48,12 +50,14 @@
     {
       "id": "ovario_dir",
       "frase_normal": "Ovário direito medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.",
-      "obrigatorio": false
+      "obrigatorio": false,
+      "frase_conclusao": "Ovário direito de aspecto normal."
     },
     {
       "id": "ovario_esq",
       "frase_normal": "Ovário esquerdo medindo ____ x ____ x ____ cm, apresentando imagens anecoicas.",
-      "obrigatorio": false
+      "obrigatorio": false,
+      "frase_conclusao": "Ovário esquerdo de aspecto normal."
     },
     {
       "id": "fundo_saco",
@@ -256,6 +260,13 @@
   "contract": {
     "titulo": "ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL",
     "numeracao_conclusao": "1)",
-    "segmentos_romanos": false
+    "segmentos_romanos": false,
+    "conclusao_modo": "por_estrutura",
+    "conclusao_ordem": [
+      "utero",
+      "endometrio",
+      "ovario_dir",
+      "ovario_esq"
+    ]
   }
 }
