@@ -1,6 +1,11 @@
 import type OpenAI from "openai";
 import { editPlanSchema, type EditPlan, type ReportSpec } from "./types";
+import { assemble } from "./assemble";
 import { UNIVERSAL_CORE_V2 } from "../../prompts/universalCoreV2";
+
+// Plano vazio (nenhum achado) → o assemble devolve o LAUDO-BASE normal completo,
+// usado para MOSTRAR o modelo inteiro ao planner (não é o laudo de saída).
+const EMPTY_PLAN: EditPlan = editPlanSchema.parse({ slots: [], conclusao: [], omitSlots: [] });
 
 /**
  * CHAMADA SEMÂNTICA (Fase 3) — o LLM lê o ditado + o spec e emite um EDITPLAN
@@ -10,9 +15,15 @@ import { UNIVERSAL_CORE_V2 } from "../../prompts/universalCoreV2";
 
 function serializeSpec(spec: ReportSpec): string {
   const porEstrutura = spec.contract.conclusao_modo === "por_estrutura";
+  // LAUDO-BASE COMPLETO (normal): dá ao LLM o DOCUMENTO inteiro — seções, ordem e
+  // frases exatas — em vez de stubs truncados em 90 chars. Assim ele entende o
+  // modelo, honra comandos posicionais ("após a frase de X") e não inventa frases.
+  const baseLaudo = assemble(spec, EMPTY_PLAN);
   const slots = spec.base
     .map((s) => {
-      const base = `- ${s.id}: ${s.frase_normal.replace(/\n/g, " ").slice(0, 90)}`;
+      // Frase COMPLETA (sem truncar) — em uma linha para o mapa de ids.
+      const norm = s.frase_normal.replace(/\n/g, " ").trim();
+      const base = `- ${s.id}: ${norm || "(vazio no modelo; só aparece quando há achado)"}`;
       // No modo por_estrutura, mostrar o item de conclusão normal do slot para o
       // modelo saber o que substituir quando aquela estrutura tiver achado.
       return porEstrutura && s.frase_conclusao
@@ -31,7 +42,7 @@ function serializeSpec(spec: ReportSpec): string {
         .map((a) => `- gatilho: ${a.gatilho}\n    texto: ${a.texto}`)
         .join("\n")}`
     : "";
-  return `SLOTS DO LAUDO-BASE (id → frase de normalidade):\n${slots}\n\nDICIONÁRIO DE ACHADOS (gatilho → corpo morfológico + conclusão cadastrada):\n${dict}${modoNota}${avulsos}`;
+  return `LAUDO-BASE COMPLETO — o MODELO PADRÃO (versão normal). É a AUTORIDADE do estilo: preserve-o ao MÁXIMO e edite só o mínimo necessário. As seções (COMENTÁRIOS; OS SEGUINTES ASPECTOS FORAM OBSERVADOS; CONCLUSÃO), a ordem das estruturas e as frases fixas são as deste modelo. Para um comando posicional ("após a frase de X", "depois de Y"), localize a frase EXATA aqui dentro e insira ali — NUNCA reescreva a seção inteira nem invente frases (ex.: novas linhas de anatomia) que não existam neste modelo.\n\n${baseLaudo}\n\nMAPA DE SLOTS (id → a frase que ele ocupa no modelo acima; use estes ids EXATOS no plano):\n${slots}\n\nDICIONÁRIO DE ACHADOS (gatilho → corpo morfológico + conclusão cadastrada):\n${dict}${modoNota}${avulsos}`;
 }
 
 const PLAN_INSTRUCTIONS = `Sua saída NÃO é o laudo — é um PLANO DE EDIÇÃO (JSON) sobre o laudo-base.
