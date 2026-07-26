@@ -1,5 +1,6 @@
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { openai } from "@/server/ai/openai";
+import { ALL_MEDICAL_ASR_KEYTERMS } from "@/server/asr/medicalGlossary";
 export { OPTIONS } from "@/server/cors";
 
 export const runtime = "nodejs";
@@ -21,8 +22,41 @@ const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL ?? "whisper-1";
 // de detectar), e (2) stripPromptEcho() remove qualquer trecho longo do
 // transcript que seja cópia literal do prompt.
 // Limite: 224 tokens (whisper-1 ignora silenciosamente o excedente).
-const MEDICAL_STYLE_PROMPT =
-  "Glossário: esteatose hepática, hepatomegalia, colelitíase, colecistite, litíase renal, hidronefrose, pelve renal, cálices, ureter, hipoecoico, hiperecoico, isoecogênico, anecoico, ecogenicidade, ecotextura, sombra acústica posterior, reforço acústico, anteversoflexão, miométrio, endométrio, ovários, anexos, tireoide, TI-RADS, BI-RADS, FIGO, próstata, testículos, bolsa escrotal, linfonodos, Doppler colorido, índice de resistividade, artéria umbilical, MMII, veia safena magna, refluxo, trombose venosa profunda, medindo 1,8 x 1,2 cm, bilateral, à direita, à esquerda.";
+const LEGACY_WHISPER_KEYTERMS = [
+  "esteatose hepática",
+  "hepatomegalia",
+  "colecistite",
+  "litíase renal",
+  "hidronefrose",
+  "pelve renal",
+  "cálices",
+  "ureter",
+  "isoecogênico",
+  "sombra acústica posterior",
+  "reforço acústico",
+  "anteversoflexão",
+  "miométrio",
+  "endométrio",
+  "ovários",
+  "anexos",
+  "tireoide",
+  "próstata",
+  "testículos",
+  "bolsa escrotal",
+  "linfonodos",
+  "índice de resistividade",
+  "artéria umbilical",
+  "MMII",
+  "trombose venosa profunda",
+  "medindo 1,8 x 1,2 cm",
+  "bilateral",
+  "à direita",
+  "à esquerda",
+] as const;
+
+const MEDICAL_STYLE_PROMPT = `Glossário: ${[
+  ...new Set([...LEGACY_WHISPER_KEYTERMS, ...ALL_MEDICAL_ASR_KEYTERMS]),
+].join(", ")}.`;
 
 // Alucinações conhecidas do Whisper em trechos de silêncio (viés do corpus
 // de legendas de vídeo — gh openai/whisper#928). Nunca fariam parte de um

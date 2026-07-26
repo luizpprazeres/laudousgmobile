@@ -1,4 +1,5 @@
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
+import { medicalAsrKeytermsForCategory } from "@/server/asr/medicalGlossary";
 import { env } from "@/server/env";
 export { OPTIONS } from "@/server/cors";
 
@@ -19,28 +20,16 @@ export const dynamic = "force-dynamic";
  *   Body    { "ttl_seconds": 60 }   (default 30, máx 3600)
  *   Resp    { "access_token": "<jwt>", "expires_in": 60 }
  */
-/**
- * Keyterm Prompting (Nova-3) — termos de US/obstetrícia que o Deepgram mais
- * erra em pt-BR: nomes próprios + técnicos/latinos (NÃO palavras comuns).
- * Revisado com dex1; conservador (~25, MUITO abaixo do limite de 500 tokens).
- * Controlado aqui no servidor → dá pra tunar/desligar sem rebuild do app.
- * Adicionar mais só se o log mostrar erro recorrente.
- */
-const KEYTERMS: string[] = [
-  "Hadlock", "Intergrowth", "Gratacós", "BI-RADS", "TI-RADS", "O-RADS",
-  "FIGO", "oligoâmnio", "polidrâmnio", "anecoico", "hipoecoico", "hiperecoico",
-  "incisura", "ducto venoso", "artéria cerebral média", "translucência nucal",
-  "pré-centralização", "leiomioma", "adenomiose", "endometrioma",
-  "cisterna magna", "osso nasal",
-];
-
-function activeKeyterms(): string[] {
-  return env().DEEPGRAM_KEYTERMS_ENABLED === "true" ? KEYTERMS : [];
+function activeKeyterms(category: string | null): string[] {
+  return env().DEEPGRAM_KEYTERMS_ENABLED === "true"
+    ? medicalAsrKeytermsForCategory(category)
+    : [];
 }
 
 export async function POST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
+  const category = new URL(req.url).searchParams.get("category");
 
   // FAST-PATH: a conta não suporta /auth/grant (403). Pula a ida ao Deepgram e
   // devolve a key direta na hora — corta ~0,3-0,5s do início da gravação.
@@ -55,7 +44,7 @@ export async function POST(req: Request) {
       expires_in: 0,
       model: env().DEEPGRAM_MODEL,
       language: env().DEEPGRAM_LANGUAGE,
-      keyterms: activeKeyterms(),
+      keyterms: activeKeyterms(category),
     });
   }
 
@@ -95,7 +84,7 @@ export async function POST(req: Request) {
         expires_in: 0,
         model: env().DEEPGRAM_MODEL,
         language: env().DEEPGRAM_LANGUAGE,
-        keyterms: activeKeyterms(),
+        keyterms: activeKeyterms(category),
       });
     }
     return json({ error: "deepgram_grant_failed", status: resp.status }, 502);
@@ -117,7 +106,7 @@ export async function POST(req: Request) {
     expires_in: data.expires_in ?? 60,
     model: env().DEEPGRAM_MODEL,
     language: env().DEEPGRAM_LANGUAGE,
-    keyterms: activeKeyterms(),
+    keyterms: activeKeyterms(category),
   });
 }
 
