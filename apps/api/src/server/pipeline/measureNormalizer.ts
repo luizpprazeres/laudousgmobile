@@ -1,11 +1,11 @@
 /**
  * Normalizador determinístico de medidas no texto do laudo (pós-processo
  * universal, idempotente). Conservador de propósito: mexe só em unidade por
- * extenso e na junção de dimensões — NÃO força separador decimal (a casa usa
- * vírgula e ponto conforme o contexto; forçar teria alto risco de regressão).
+ * extenso, junção de dimensões e separador decimal DENTRO de uma medida
+ * inequívoca (cadeia multidimensional ou número imediatamente antes de cm/mm).
  *
  * - "1,5 centímetros" → "1,5 cm"
- * - "0.3 por 0.3 por 0.6" → "0.3 x 0.3 x 0.6"
+ * - "0.3 por 0.3 por 0.6" → "0,3 x 0,3 x 0,6"
  * - "2,0x3,0" → "2,0 x 3,0" (espaça o joiner)
  *
  * A junção "A por B" só ocorre quando AMBOS os lados são números, para não
@@ -24,5 +24,15 @@ export function normalizeMeasures(text: string): string {
   out = out.replace(porRe, "$1 x $2");
   // normaliza espaçamento do joiner ("x" ou "×") entre números
   out = out.replace(new RegExp(`(${NUM})\\s*[x×]\\s*(${NUM})`, "gi"), "$1 x $2");
+  // pt-BR: ponto → vírgula SOMENTE em contexto inequívoco de medida.
+  // Não toca datas, versões, percentis nem qualquer número solto.
+  out = out.replace(
+    new RegExp(`\\b${NUM}(?:\\s+x\\s+${NUM})+(?:\\s*(?:cm|mm))?`, "gi"),
+    (measure) => measure.replace(/(\d)\.(\d)/g, "$1,$2"),
+  );
+  out = out.replace(
+    new RegExp(`(${NUM})(\\s*(?:cm|mm)\\b)`, "gi"),
+    (_, value: string, unit: string) => `${value.replace(".", ",")}${unit}`,
+  );
   return out;
 }

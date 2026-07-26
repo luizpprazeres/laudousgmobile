@@ -1,6 +1,7 @@
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { openai } from "@/server/ai/openai";
 import { ALL_MEDICAL_ASR_KEYTERMS } from "@/server/asr/medicalGlossary";
+import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
 export { OPTIONS } from "@/server/cors";
 
 export const runtime = "nodejs";
@@ -194,6 +195,7 @@ export async function POST(req: Request) {
 
     const raw = transcription.text?.trim() ?? "";
     const { clean, removed } = stripAsrHallucinations(raw);
+    const normalizedTranscript = normalizeAsrTranscript(clean);
     if (removed > 0) {
       console.log(
         `[transcribe] ${removed} frase(s) de alucinação ASR removida(s)`,
@@ -202,7 +204,7 @@ export async function POST(req: Request) {
     }
 
     return json({
-      transcript: clean,
+      transcript: normalizedTranscript,
       language: "pt",
     });
   } catch (err) {

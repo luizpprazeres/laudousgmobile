@@ -27,6 +27,7 @@ import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
 import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
+import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
 import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
 import {
   enforceStatedAmnioticClass,
@@ -176,7 +177,18 @@ export async function POST(req: Request) {
     );
   }
 
-  const reqInput = parsed.data;
+  // Normaliza transformações determinísticas (medidas 'A por B'→'A x B', datas
+  // faladas → dd/mm/aaaa) no transcript ANTES de persistir e de qualquer LLM.
+  // Garble irrecuperável vira [REVISAR], nunca adivinha. Cobre Deepgram direto
+  // do iOS e clientes antigos (o Whisper já chega normalizado).
+  const reqInput = {
+    ...parsed.data,
+    raw_input: normalizeAsrTranscript(parsed.data.raw_input),
+    consolidated_transcript:
+      parsed.data.consolidated_transcript === undefined
+        ? undefined
+        : normalizeAsrTranscript(parsed.data.consolidated_transcript),
+  };
   const generationMode = reqInput.mode;
   const initialGenerationPath = resolveGenerationPath({
     mode: generationMode,
