@@ -23,6 +23,15 @@ ditado cru
 | 4. Reparo condicional | `repair(divergencias)` ≤1 chamada | LLM | LLM |
 | 5. Flywheel | minerar histórico → propor spec → aprovar | offline | dado+curadoria |
 
+## Progresso (25/07, sessão autônoma)
+- ✅ **Fase 0** schemas (`writerV2/types.ts` — ReportSpec/EditPlan/Divergencia Zod).
+- ✅ **Fase 1** spec do abdome (Dex2 → `writerV2/specs/abdomenTotal.json`, revisado).
+- ✅ **Fase 2** motor determinístico (`assemble.ts` + `audit.ts`, teste PASS).
+- ✅ **Fase 3** chamada semântica (`generatePlan.ts`, structured output) — harness 12 cenários: **~10/12 idêntico ao gabarito**; V2 cumpre o pedido de ajuste que o renderer ignora; auditoria pega omissão de medidas.
+- ✅ **Fase 4** reparo condicional + orquestrador (`repairPlanV2` + `runWriterV2.ts`) — cenário de medidas omitidas: reparou e zerou a auditoria.
+- ⏳ **Fase 5** wiring (writerProfile=v2) — próximo, toca `/api/generate`. **Aguarda decisão do Luiz** (mecanismo de opt-in).
+- Tudo **INERTE / flag OFF**; nada tocou o caminho de produção.
+
 ## Fases
 
 ### Fase 0 — Schemas (fundação, sem runtime)
