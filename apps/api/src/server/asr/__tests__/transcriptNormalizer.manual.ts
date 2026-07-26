@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { normalizeMeasures } from "../../pipeline/measureNormalizer";
 import { normalizeSpokenDates } from "../dateNormalizer";
+import { normalizeLanguageNumbers } from "../languageNumberNormalizer";
 import { normalizeAsrTranscript } from "../transcriptNormalizer";
 
 assert.equal(
@@ -55,6 +56,41 @@ assert.equal(
   "Sem trombose à esquerda. Nódulo 12,4 x 8,2 mm à direita.",
 );
 
+assert.equal(
+  normalizeLanguageNumbers("Acrescente 1 frase e remova 2 linhas."),
+  "Acrescente uma frase e remova duas linhas.",
+);
+assert.equal(normalizeLanguageNumbers("Escreva 3 itens."), "Escreva três itens.");
+assert.equal(normalizeLanguageNumbers("Coloque na 2 linha."), "Coloque na segunda linha.");
+assert.equal(
+  normalizeLanguageNumbers("Primeira ultrassonografia registrada como 1ª ultrassonografia."),
+  "Primeira ultrassonografia registrada como primeira ultrassonografia.",
+);
+assert.equal(
+  normalizeLanguageNumbers("1º item, 2ª linha, 3º ponto e 10ª palavra."),
+  "primeiro item, segunda linha, terceiro ponto e décima palavra.",
+);
+assert.equal(
+  normalizeLanguageNumbers("1,5 cm; rim 1; nódulo 2; 2 por 3 cm."),
+  "1,5 cm; rim 1; nódulo 2; 2 por 3 cm.",
+);
+assert.equal(
+  normalizeAsrTranscript("Acrescente 1 frase. Nódulo 1.5 por 2 por 3 cm."),
+  "Acrescente uma frase. Nódulo 1,5 x 2 x 3 cm.",
+);
+assert.equal(
+  normalizeLanguageNumbers("Valor de 1 ponto 5 cm."),
+  "Valor de 1 ponto 5 cm.",
+);
+assert.equal(
+  normalizeLanguageNumbers("Acrescente 2. Coloque 1 cm e remova 3 x 4 mm."),
+  "Acrescente dois. Coloque 1 cm e remova 3 x 4 mm.",
+);
+assert.equal(
+  normalizeLanguageNumbers("Temperatura de referência 1ºC."),
+  "Temperatura de referência 1ºC.",
+);
+
 const combined =
   "DUM dois de março de dois mil e vinte e seis. Cisto 0.5 por 0.6 por 0.6 cm.";
 const normalized =
@@ -62,4 +98,4 @@ const normalized =
 assert.equal(normalizeAsrTranscript(combined), normalized);
 assert.equal(normalizeAsrTranscript(normalized), normalized, "deve ser idempotente");
 
-console.log("transcript normalizer: 16/16 PASS");
+console.log("transcript normalizer: 26/26 PASS");
