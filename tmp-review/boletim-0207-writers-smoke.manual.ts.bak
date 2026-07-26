@@ -1,0 +1,70 @@
+/**
+ * SMOKE (LLM real) — os casos críticos do boletim 02/07 rodados contra os writers
+ * NOVOS (PELVE_WRITER, MSK_WRITER), que substituíram o renderer que errou.
+ * Objetivo: confirmar que o writer_guarded resolve o que o renderer antigo quebrou.
+ * Rodar: tsx src/server/pipeline/__tests__/boletim-0207-writers-smoke.manual.ts
+ */
+import { config } from "dotenv";
+config({ path: "/Users/luizprazeres/laudousgmobile-def/.env" });
+
+import { runPelveWriterStream } from "../pelveWriter";
+import { runMskWriterStream } from "../mskWriter";
+
+async function drain<T>(gen: AsyncGenerator<string, T, void>): Promise<T> {
+  let r = await gen.next();
+  while (!r.done) r = await gen.next();
+  return r.value;
+}
+
+// Caso 63a92f8e (PELVE): comando "Adicione imagem hiperecoica linear..." vazou 2×
+// no renderer antigo; DIU não foi pra conclusão. Correção do Luiz: 1 linha no corpo
+// (cavidade endometrial) + conclusão "D.I.U. normoposicionado".
+const PELVE_RAW = `Ultrassonografia da pelve transabdominal e transvaginal com útero em anteversão medindo 6.3 x 3.8 x 5.4 cm, com volume normal de 69.8 , Adicione imagem hiperecoica linear, medindo 3.2 centímetros no seu maior eixo, 0.1 centímetros, da extremidade superior à região fúndica, Endométrio mede 0.4, normal para fase do ciclo menstrual, ovário direito medido 2.0 x 1.9 x 2.1 cm, com volume de 4.4, ovário esquerdo medindo 2.1 x 1.1 x 0.9, com volume de 1.1.`;
+
+// Caso 6afe8f78 (MSK): renderer misturou ombro+joelho (Baker vazou pro ombro),
+// ecoou "imagem aquática"/"subacromial subdeltoidea" cru, não executou o comando
+// "raciocine a localização do cisto".
+const MSK_RAW = `Ultrassonografia do ombro direito com tendinopatia do supraespinhal, ibos, subdeltóidea. Subacromial, subdeltoidea.
+Tem ultrassonografia do joelho direito. Com tendinopatia dos tenores da pata de ganso, e 1 cisto de Baker, que 1 imagem aquática medindo 2.4 centímetros no seu maior eixo. A localização você coloca, como você, eu quero, o comando é que você raciocine a localização, do do cisto de e coloque lá no local especificado do lado.`;
+
+let pass = 0, fail = 0;
+const ck = (n: boolean, t: string) => { n ? pass++ : fail++; console.log(`${n ? "✓" : "✗"} ${t}`); };
+
+async function main() {
+  console.log("═".repeat(70));
+  console.log("PELVE 63a92f8e — writer_guarded (comando não vaza; DIU → conclusão)");
+  console.log("═".repeat(70));
+  const pelve = await drain(runPelveWriterStream({ rawInput: PELVE_RAW }));
+  console.log(pelve.fullText);
+  console.log("─".repeat(70));
+  const pt = pelve.fullText;
+  ck(!/adicione/i.test(pt), "PELVE: comando 'Adicione' NÃO vazou no laudo");
+  ck(/hiperecoica linear/i.test(pt), "PELVE: achado (imagem hiperecoica linear) presente");
+  ck((pt.match(/hiperecoica linear/gi) ?? []).length === 1, "PELVE: achado aparece UMA vez (sem duplicata)");
+  ck(/cavidade endometrial|endométr/i.test(pt.split("hiperecoica linear")[0]?.slice(-120) ?? ""), "PELVE: achado ancorado na cavidade/endométrio");
+  ck(/D\.?I\.?U\.?|dispositivo intrauterino/i.test(pt), "PELVE: DIU inferido na conclusão (correção do Luiz)");
+
+  console.log("\n" + "═".repeat(70));
+  console.log("MSK 6afe8f78 — writer_guarded (segmentos separados; sem garble)");
+  console.log("═".repeat(70));
+  const msk = await drain(runMskWriterStream({ rawInput: MSK_RAW }));
+  console.log(msk.fullText);
+  console.log("─".repeat(70));
+  const mt = msk.fullText;
+  // Segmentos: cada laudo tem seu título; Baker só no bloco do joelho.
+  const idxOmbro = mt.search(/OMBRO/i);
+  const idxJoelho = mt.search(/JOELHO/i);
+  ck(idxOmbro >= 0 && idxJoelho >= 0, "MSK: dois títulos (ombro + joelho)");
+  const blocoOmbro = idxJoelho > idxOmbro ? mt.slice(idxOmbro, idxJoelho) : mt.slice(idxOmbro);
+  ck(!/baker/i.test(blocoOmbro), "MSK: cisto de Baker NÃO aparece no bloco do ombro");
+  ck(/baker/i.test(mt), "MSK: cisto de Baker presente (no joelho)");
+  ck(!/aquátic/i.test(mt), "MSK: 'imagem aquática' (garble) NÃO ecoado");
+  ck(/anecoic/i.test(mt) || /cisto de baker/i.test(mt), "MSK: Baker descrito (anecoico/cisto)");
+  ck(!/raciocine|o comando é|eu quero/i.test(mt), "MSK: meta-comando NÃO ecoado");
+  ck(!/\bibos\b/i.test(mt), "MSK: garble 'ibos' (bursa) NÃO ecoado cru");
+  ck(/2,4\s*cm|2\.4\s*cm/i.test(mt), "MSK: medida 2,4 cm preservada");
+
+  console.log(`\n${pass} ok, ${fail} avisos (não-bloqueante; smoke de LLM não-determinístico)`);
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });

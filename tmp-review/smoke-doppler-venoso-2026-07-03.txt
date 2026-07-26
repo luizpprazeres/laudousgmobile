@@ -1,0 +1,50 @@
+
+=== TVP-only (segurança: NÃO afirmar superficial) ===
+ULTRASSONOGRAFIA COM DOPPLER COLORIDO VENOSO DE MEMBRO INFERIOR DIREITO — INVESTIGAÇÃO DE TROMBOSE VENOSA PROFUNDA
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear (5-12 MHz) em decúbito dorsal para avaliação do sistema venoso profundo. Foram aplicadas manobras de compressibilidade ao longo de cada segmento avaliado. NÃO foi realizado mapeamento do sistema venoso superficial (safenas, perfurantes, tributárias) — escopo restrito à investigação de TVP conforme solicitação.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Sistema venoso profundo:
+Veias profundas pérvias, calibres normais, paredes finas, compressíveis e com fluxo modulado pelos movimentos respiratórios.
+
+CONCLUSÃO:
+Sistema venoso profundo do membro inferior direito pérvio e compressível, sem evidência ecográfica de trombose venosa.
+
+audit=ok
+
+=== Completo/varizes com refluxo ===
+ULTRASSONOGRAFIA COM DOPPLER COLORIDO VENOSO DE MEMBRO INFERIOR ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear (5-12 MHz) em decúbito dorsal (sistema profundo) e ortostase ou Trendelenburg (sistema superficial). Manobras de compressibilidade, Valsalva e compressão distal manual aplicadas.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Sistema venoso profundo:
+Veias profundas pérvias, calibres normais, paredes finas, compressíveis e com fluxo modulado pelos movimentos respiratórios.
+
+Sistema venoso superficial:
+Veia safena magna com refluxo de 2,5 segundos à manobra de Valsalva. Varicosidades na coxa.
+
+CONCLUSÃO:
+1) Sistema venoso profundo do membro inferior esquerdo pérvio e compressível, sem evidência ecográfica de trombose venosa.
+2) Sinais ecográficos de insuficiência venosa superficial (refluxo da veia safena magna, de 2,5 segundos), com varicosidades na coxa.
+
+audit=ok
+
+=== TVP POSITIVA (trombose achada) ===
+ULTRASSONOGRAFIA COM DOPPLER COLORIDO VENOSO DE MEMBRO INFERIOR ESQUERDO — INVESTIGAÇÃO DE TROMBOSE VENOSA PROFUNDA
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear (5-12 MHz) em decúbito dorsal para avaliação do sistema venoso profundo. Foram aplicadas manobras de compressibilidade ao longo de cada segmento avaliado. NÃO foi realizado mapeamento do sistema venoso superficial (safenas, perfurantes, tributárias) — escopo restrito à investigação de TVP conforme solicitação.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Sistema venoso profundo:
+Veia femoral com material trombótico intraluminal, incompressível, de aspecto agudo.
+Veias poplítea e tibiais posteriores pérvias e compressíveis.
+
+CONCLUSÃO:
+Trombose venosa profunda em veia femoral do membro inferior esquerdo, de aspecto agudo.
+
+audit=ok

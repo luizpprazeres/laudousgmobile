@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doppler arterial MMII — v2 (meio-termo com PSV/VDF)</title>
+<style>
+  :root{--bg:#0f1216;--panel:#171b21;--panel2:#1e242c;--ink:#e8edf2;--dim:#9aa7b4;--line:#2a323c;--accent:#4f9cf9;--ok:#43c59e;--danger:#e2607a;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
+  header{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:16px 24px}
+  header h1{margin:0 0 4px;font-size:18px}
+  header p{margin:0;color:var(--dim);font-size:13px;max-width:80ch}
+  main{max-width:1000px;margin:0 auto;padding:24px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 16px}
+  .card .tag{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:6px;margin-bottom:10px}
+  .tag.normal{background:rgba(67,197,158,.15);color:var(--ok)}
+  .tag.pat{background:rgba(226,96,122,.15);color:var(--danger)}
+  .card h3{margin:0 0 10px;font-size:14px;font-weight:600}
+  textarea{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-family:var(--mono);font-size:12.5px;line-height:1.55;padding:12px;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .note{margin-top:8px}.note label{font-size:11px;color:#e0b23c;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .note textarea{min-height:38px;border-style:dashed;font-family:var(--sans);font-size:13px}
+  button{font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:8px 14px;margin-right:8px}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#08121f}
+  .bar{margin-top:12px}
+  .status{position:fixed;bottom:20px;right:20px;background:var(--ok);color:#08121f;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none}
+  .status.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Doppler arterial de MMII — v2 (meio-termo com PSV / VDF / IR)</h1>
+  <p>Reescrevi os 5 laudos no meio-termo que você pediu: <strong>corpo conciso</strong> (descreve o achado sem prolixidade)
+     + seção <strong>DOPPLERVELOCIMETRIA</strong> com PSV, VDF e IR de cada artéria (femoral comum → dorsal do pé) e padrão
+     espectral (trifásico/monofásico/tardus-parvus). Apliquei as regras gerais que você me passou. Corrija na caixa e exporte.</p>
+  <div class="bar">
+    <button class="primary" onclick="copyAll()">Copiar corrigidos</button>
+    <button onclick="dl()">Baixar .md</button>
+  </div>
+</header>
+<main id="app"></main>
+<div class="status" id="toast">Copiado!</div>
+<script>
+const L = [
+{r:"Normal (MID)", pat:false, t:
+`ULTRASSONOGRAFIA COM DOPPLER ARTERIAL DO MEMBRO INFERIOR DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear multifrequencial de alta resolução, com imagens em modo B, Doppler colorido e Doppler espectral, abrangendo as principais artérias do membro inferior direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Artérias femoral comum, femoral profunda, femoral superficial, poplítea, tronco tibioperoneiro, tibiais anterior e posterior, fibular e dorsal do pé pérvias, de trajeto habitual e calibre preservado, com paredes de ecogenicidade e espessura preservadas, sem imagens determinando redução luminal significativa.
+Ao Doppler colorido, enchimento adequado da luz vascular, sem aliasing focal ou turbulência significativa.
+Ao Doppler espectral, padrão trifásico preservado em todos os segmentos avaliados.
+
+DOPPLERVELOCIMETRIA:
+Artéria femoral comum direita: padrão trifásico, VPS de 96 cm/s, VDF de 4 cm/s e IR de 0,96.
+Artéria femoral profunda direita: padrão trifásico, VPS de 74 cm/s, VDF de 3 cm/s e IR de 0,96.
+Artéria femoral superficial direita, segmento proximal: padrão trifásico, VPS de 88 cm/s, VDF de 4 cm/s e IR de 0,95.
+Artéria femoral superficial direita, segmento médio: padrão trifásico, VPS de 82 cm/s, VDF de 3 cm/s e IR de 0,96.
+Artéria femoral superficial direita, segmento distal: padrão trifásico, VPS de 78 cm/s, VDF de 3 cm/s e IR de 0,96.
+Artéria poplítea direita: padrão trifásico, VPS de 62 cm/s, VDF de 3 cm/s e IR de 0,95.
+Tronco tibioperoneiro direito: padrão trifásico, VPS de 48 cm/s, VDF de 2 cm/s e IR de 0,96.
+Artéria tibial anterior direita: padrão trifásico, VPS de 44 cm/s, VDF de 3 cm/s e IR de 0,93.
+Artéria tibial posterior direita: padrão trifásico, VPS de 52 cm/s, VDF de 3 cm/s e IR de 0,94.
+Artéria fibular direita: padrão trifásico, VPS de 38 cm/s, VDF de 2 cm/s e IR de 0,95.
+Artéria dorsal do pé direita: padrão trifásico, VPS de 34 cm/s, VDF de 2 cm/s e IR de 0,94.
+
+CONCLUSÃO:
+Estudo Doppler arterial do membro inferior direito sem alterações ao método, com padrão de fluxo trifásico preservado e ausência de sinais de estenose hemodinamicamente significativa ou oclusão nos segmentos avaliados.`},
+
+{r:"Ateromatose difusa sem estenose (MIE)", pat:true, t:
+`ULTRASSONOGRAFIA COM DOPPLER ARTERIAL DO MEMBRO INFERIOR ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear multifrequencial de alta resolução, com imagens em modo B, Doppler colorido e Doppler espectral, abrangendo as principais artérias do membro inferior esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Notam-se espessamento parietal e calcificações ateromatosas nos segmentos avaliados, sem imagens determinando redução luminal significativa.
+Artérias femoral comum, femoral profunda, femoral superficial, poplítea, tronco tibioperoneiro, tibiais anterior e posterior, fibular e dorsal do pé pérvias, de trajeto habitual e calibre preservado.
+Ao Doppler colorido, enchimento adequado da luz vascular, sem aliasing focal ou turbulência significativa.
+Ao Doppler espectral, padrão trifásico preservado, sem sinais de estenose hemodinamicamente significativa.
+
+DOPPLERVELOCIMETRIA:
+Artéria femoral comum esquerda: padrão trifásico, VPS de 92 cm/s, VDF de 5 cm/s e IR de 0,95.
+Artéria femoral profunda esquerda: padrão trifásico, VPS de 76 cm/s, VDF de 4 cm/s e IR de 0,95.
+Artéria femoral superficial esquerda, segmento proximal: padrão trifásico, VPS de 84 cm/s, VDF de 4 cm/s e IR de 0,95.
+Artéria femoral superficial esquerda, segmento médio: padrão trifásico, VPS de 80 cm/s, VDF de 3 cm/s e IR de 0,95.
+Artéria femoral superficial esquerda, segmento distal: padrão trifásico, VPS de 76 cm/s, VDF de 3 cm/s e IR de 0,96.
+Artéria poplítea esquerda: padrão trifásico, VPS de 60 cm/s, VDF de 3 cm/s e IR de 0,95.
+Tronco tibioperoneiro esquerdo: padrão trifásico, VPS de 46 cm/s, VDF de 2 cm/s e IR de 0,96.
+Artéria tibial anterior esquerda: padrão trifásico, VPS de 42 cm/s, VDF de 3 cm/s e IR de 0,93.
+Artéria tibial posterior esquerda: padrão trifásico, VPS de 50 cm/s, VDF de 3 cm/s e IR de 0,94.
+Artéria fibular esquerda: padrão trifásico, VPS de 36 cm/s, VDF de 2 cm/s e IR de 0,95.
+Artéria dorsal do pé esquerda: padrão trifásico, VPS de 32 cm/s, VDF de 2 cm/s e IR de 0,94.
+
+CONCLUSÃO:
+Doença ateromatosa do membro inferior esquerdo, conforme descrição, sem evidência de estenose hemodinamicamente significativa ou oclusão nos segmentos avaliados.`},
+
+{r:"Estenose significativa da femoral superficial (MID)", pat:true, t:
+`ULTRASSONOGRAFIA COM DOPPLER ARTERIAL DO MEMBRO INFERIOR DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear multifrequencial de alta resolução, com imagens em modo B, Doppler colorido e Doppler espectral, abrangendo as principais artérias do membro inferior direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Notam-se espessamento parietal e calcificações ateromatosas nos segmentos avaliados.
+Artérias femoral comum e femoral profunda direitas pérvias, de calibre preservado e padrão trifásico.
+No terço médio da artéria femoral superficial direita observa-se imagem parietal heterogênea, predominantemente hiperecoica, de margem luminal irregular, medindo aproximadamente 2,2 cm de extensão, determinando redução significativa da luz vascular, com aliasing focal e turbulência pós-estenótica ao Doppler colorido.
+Os segmentos distais (femoral superficial distal, poplítea, tronco tibioperoneiro, tibiais e fibular) encontram-se pérvios, com fluxo monofásico de baixa amplitude, compatível com repercussão hemodinâmica distal.
+Ausência de oclusão arterial completa nos segmentos avaliados.
+
+DOPPLERVELOCIMETRIA:
+Artéria femoral comum direita: padrão trifásico, VPS de 92 cm/s, VDF de 5 cm/s e IR de 0,95.
+Artéria femoral profunda direita: padrão trifásico, VPS de 78 cm/s, VDF de 4 cm/s e IR de 0,95.
+Artéria femoral superficial direita, segmento proximal: padrão trifásico, VPS de 82 cm/s, VDF de 5 cm/s e IR de 0,94.
+Artéria femoral superficial direita, terço médio (ponto de maior estreitamento): fluxo acelerado e turbulento, VPS de 326 cm/s, VDF de 72 cm/s e IR de 0,78; relação de velocidades em relação ao segmento pré-estenótico de aproximadamente 4,0.
+Artéria femoral superficial direita, segmento distal: padrão monofásico, VPS de 42 cm/s, VDF de 13 cm/s e IR de 0,69.
+Artéria poplítea direita: padrão monofásico, VPS de 38 cm/s, VDF de 12 cm/s e IR de 0,68.
+Tronco tibioperoneiro direito: padrão monofásico, VPS de 34 cm/s, VDF de 10 cm/s e IR de 0,70.
+Artéria tibial anterior direita: padrão monofásico, VPS de 28 cm/s, VDF de 9 cm/s e IR de 0,68.
+Artéria tibial posterior direita: padrão monofásico, VPS de 31 cm/s, VDF de 10 cm/s e IR de 0,67.
+Artéria fibular direita: padrão monofásico, VPS de 24 cm/s, VDF de 7 cm/s e IR de 0,71.
+Artéria dorsal do pé direita: padrão monofásico, VPS de 22 cm/s, VDF de 6 cm/s e IR de 0,73.
+
+CONCLUSÃO:
+1) Doença ateromatosa do membro inferior direito.
+2) Imagem parietal heterogênea no terço médio da artéria femoral superficial direita, determinando estenose hemodinamicamente significativa, estimada acima de 70% (relação de velocidades de aproximadamente 4,0 no ponto de maior estreitamento).
+3) Fluxo distal monofásico, compatível com repercussão hemodinâmica.
+4) Ausência de oclusão arterial completa nos segmentos avaliados.`},
+
+{r:"Oclusão da femoral superficial (MIE)", pat:true, t:
+`ULTRASSONOGRAFIA COM DOPPLER ARTERIAL DO MEMBRO INFERIOR ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear multifrequencial de alta resolução, com imagens em modo B, Doppler colorido e Doppler espectral, abrangendo as principais artérias do membro inferior esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Notam-se espessamento parietal e calcificações ateromatosas nos segmentos avaliados.
+Artérias femoral comum e femoral profunda esquerdas pérvias, de calibre preservado e padrão trifásico.
+Artéria femoral superficial esquerda sem fluxo detectável ao Doppler colorido e espectral no seu terço médio-distal, compatível com oclusão, com reenchimento distal por circulação colateral.
+Artérias poplítea, tibiais anterior e posterior e fibular pérvias, com padrão tardus-parvus, compatível com a obstrução proximal descrita.
+
+DOPPLERVELOCIMETRIA:
+Artéria femoral comum esquerda: padrão trifásico, VPS de 90 cm/s, VDF de 5 cm/s e IR de 0,95.
+Artéria femoral profunda esquerda: padrão trifásico, VPS de 72 cm/s, VDF de 4 cm/s e IR de 0,95.
+Artéria femoral superficial esquerda, segmento proximal: padrão trifásico, VPS de 78 cm/s, VDF de 4 cm/s e IR de 0,94.
+Artéria femoral superficial esquerda, terço médio-distal: ausência de fluxo detectável, compatível com oclusão.
+Artéria poplítea esquerda: padrão tardus-parvus, VPS de 30 cm/s, VDF de 11 cm/s e IR de 0,63, com tempo de aceleração aumentado.
+Tronco tibioperoneiro esquerdo: padrão tardus-parvus, VPS de 26 cm/s, VDF de 9 cm/s e IR de 0,65.
+Artéria tibial anterior esquerda: padrão tardus-parvus, VPS de 22 cm/s, VDF de 8 cm/s e IR de 0,64.
+Artéria tibial posterior esquerda: padrão tardus-parvus, VPS de 24 cm/s, VDF de 8 cm/s e IR de 0,66.
+Artéria fibular esquerda: padrão tardus-parvus, VPS de 20 cm/s, VDF de 6 cm/s e IR de 0,67.
+Artéria dorsal do pé esquerda: padrão tardus-parvus, VPS de 18 cm/s, VDF de 5 cm/s e IR de 0,68.
+
+CONCLUSÃO:
+1) Oclusão da artéria femoral superficial do membro inferior esquerdo, no terço médio-distal, com perfusão distal por circulação colateral.
+2) Padrão tardus-parvus nas artérias distais, compatível com a obstrução descrita.
+3) Doença ateromatosa do membro inferior esquerdo.`},
+
+{r:"Tardus-parvus distal (obstrução proximal ao exame, MID)", pat:true, t:
+`ULTRASSONOGRAFIA COM DOPPLER ARTERIAL DO MEMBRO INFERIOR DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear multifrequencial de alta resolução, com imagens em modo B, Doppler colorido e Doppler espectral, abrangendo as principais artérias do membro inferior direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Artérias femoral comum, femoral profunda, femoral superficial, poplítea, tronco tibioperoneiro, tibiais anterior e posterior, fibular e dorsal do pé pérvias, de calibre preservado, sem imagens parietais determinando redução luminal significativa nos segmentos diretamente avaliados.
+A análise espectral evidencia padrão tardus-parvus difuso — pico sistólico reduzido e tempo de aceleração aumentado —, compatível com lesão obstrutiva proximal ao segmento avaliado.
+
+DOPPLERVELOCIMETRIA:
+Artéria femoral comum direita: padrão tardus-parvus, VPS de 45 cm/s, VDF de 12 cm/s e IR de 0,66, com tempo de aceleração aumentado.
+Artéria femoral profunda direita: padrão tardus-parvus, VPS de 40 cm/s, VDF de 10 cm/s e IR de 0,67.
+Artéria femoral superficial direita, segmento proximal: padrão tardus-parvus, VPS de 42 cm/s, VDF de 11 cm/s e IR de 0,66.
+Artéria femoral superficial direita, segmento distal: padrão tardus-parvus, VPS de 38 cm/s, VDF de 10 cm/s e IR de 0,67.
+Artéria poplítea direita: padrão tardus-parvus, VPS de 34 cm/s, VDF de 9 cm/s e IR de 0,68.
+Tronco tibioperoneiro direito: padrão tardus-parvus, VPS de 30 cm/s, VDF de 8 cm/s e IR de 0,68.
+Artéria tibial anterior direita: padrão tardus-parvus, VPS de 26 cm/s, VDF de 7 cm/s e IR de 0,69.
+Artéria tibial posterior direita: padrão tardus-parvus, VPS de 28 cm/s, VDF de 8 cm/s e IR de 0,68.
+Artéria fibular direita: padrão tardus-parvus, VPS de 22 cm/s, VDF de 6 cm/s e IR de 0,70.
+Artéria dorsal do pé direita: padrão tardus-parvus, VPS de 20 cm/s, VDF de 5 cm/s e IR de 0,71.
+
+CONCLUSÃO:
+Padrão tardus-parvus difuso nas artérias do membro inferior direito, compatível com lesão obstrutiva proximal ao exame. Convém, a critério clínico, avaliação do segmento aortoilíaco com objetivo de prosseguir a investigação.`},
+];
+
+const app=document.getElementById("app");
+L.forEach((l,i)=>{
+  const c=document.createElement("div");c.className="card";
+  c.innerHTML=`<span class="tag ${l.pat?'pat':'normal'}">${l.pat?'Patológico':'Normal'}</span><h3>${l.r}</h3>`;
+  const ta=document.createElement("textarea");ta.value=l.t;ta.dataset.r=l.r;ta.rows=l.t.split("\n").length+1;ta.className="laudo";
+  c.appendChild(ta);
+  const n=document.createElement("div");n.className="note";n.innerHTML=`<label>O que corrigi / por quê (opcional)</label>`;
+  const nt=document.createElement("textarea");nt.className="nota";nt.dataset.r=l.r;nt.rows=1;n.appendChild(nt);c.appendChild(n);
+  app.appendChild(c);
+});
+function collect(){let o="# Doppler arterial MMII v2 — corrigido pelo Dr. Luiz\n\n";
+  document.querySelectorAll("textarea.laudo").forEach(ta=>{const nt=document.querySelector(`textarea.nota[data-r="${CSS.escape(ta.dataset.r)}"]`);
+    o+="## "+ta.dataset.r+"\n\n```\n"+ta.value.trim()+"\n```\n";if(nt&&nt.value.trim())o+="\n**Correção:** "+nt.value.trim()+"\n";o+="\n";});return o;}
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1600);}
+function copyAll(){navigator.clipboard.writeText(collect()).then(()=>toast("Copiado!"));}
+function dl(){const b=new Blob([collect()],{type:"text/markdown"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="arterial-v2-corrigido.md";a.click();URL.revokeObjectURL(u);toast("Download iniciado");}
+</script>
+</body>
+</html>

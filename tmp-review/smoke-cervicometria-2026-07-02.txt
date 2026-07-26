@@ -1,0 +1,90 @@
+
+════════════════════════════════════════════════════════════════════
+■ normal — 2 medidas (estilo do Luiz)
+════════════════════════════════════════════════════════════════════
+findings: {"colo_oi_oe_cm":4.2,"orificio_interno_fechado":true,"placenta_distancia_cm":3.9,"placenta_distante":false,"ig_semanas":null,"cerclagem":false,"observacoes":null}
+
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Distância do orifício interno ao orifício externo do colo uterino de 4,2 cm.
+Orifício interno do colo uterino fechado.
+Extremidade inferior da placenta distando cerca de 3,9 cm do orifício interno do colo.
+
+CONCLUSÃO:
+Colo uterino ecograficamente normal.
+
+════════════════════════════════════════════════════════════════════
+■ colo curto + placenta distante + 34 semanas
+════════════════════════════════════════════════════════════════════
+findings: {"colo_oi_oe_cm":1.7,"orificio_interno_fechado":true,"placenta_distancia_cm":null,"placenta_distante":true,"ig_semanas":34,"cerclagem":false,"observacoes":null}
+
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Distância do orifício interno ao orifício externo do colo uterino de 1,7 cm.
+Orifício interno do colo uterino fechado.
+Extremidade inferior da placenta distante do orifício interno do colo.
+
+CONCLUSÃO:
+1) Colo uterino curto (medindo 1,7 cm), com alto risco para trabalho de parto prematuro.
+2) Não há sinais de placenta prévia.
+
+════════════════════════════════════════════════════════════════════
+■ colo um pouco curto + cerclagem
+════════════════════════════════════════════════════════════════════
+findings: {"colo_oi_oe_cm":2.3,"orificio_interno_fechado":true,"placenta_distancia_cm":null,"placenta_distante":false,"ig_semanas":null,"cerclagem":true,"observacoes":null}
+
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Distância do orifício interno ao orifício externo do colo uterino de 2,3 cm.
+Orifício interno do colo uterino fechado.
+Imagens hiperecoicas puntiformes na topografia do canal endocervical, compatíveis com pontos de cerclagem.
+
+CONCLUSÃO:
+1) Colo uterino um pouco curto (medindo 2,3 cm).
+2) Pontos de cerclagem uterina em topografia habitual.
+
+════════════════════════════════════════════════════════════════════
+■ medida em MILÍMETROS (30 mm = 3,0 cm)
+════════════════════════════════════════════════════════════════════
+findings: {"colo_oi_oe_cm":3,"orificio_interno_fechado":true,"placenta_distancia_cm":null,"placenta_distante":false,"ig_semanas":null,"cerclagem":false,"observacoes":null}
+
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Distância do orifício interno ao orifício externo do colo uterino de 3,0 cm.
+Orifício interno do colo uterino fechado.
+
+CONCLUSÃO:
+Colo uterino ecograficamente normal.
+
+════════════════════════════════════════════════════════════════════
+■ orifício interno ABERTO (afunilamento) — nunca normal
+════════════════════════════════════════════════════════════════════
+findings: {"colo_oi_oe_cm":2.8,"orificio_interno_fechado":false,"placenta_distancia_cm":null,"placenta_distante":false,"ig_semanas":null,"cerclagem":false,"observacoes":null}
+
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Distância do orifício interno ao orifício externo do colo uterino de 2,8 cm.
+Orifício interno do colo uterino aberto.
+
+CONCLUSÃO:
+Orifício interno do colo uterino aberto (colo medindo 2,8 cm), com risco para trabalho de parto prematuro.

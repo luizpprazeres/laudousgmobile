@@ -1,0 +1,1374 @@
+<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Writer V2 — comparação 3 braços</title>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--fg:#e6e9ef;--mut:#9aa4b2;--line:#262b36;--a:#8a93a5;--b:#e0a458;--c:#5bd18a}
+@media(prefers-color-scheme:light){:root{--bg:#f6f7f9;--card:#fff;--fg:#1a1d24;--mut:#5b6472;--line:#e3e6eb;--a:#6b7280;--b:#a86a1a;--c:#1a7f4b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.wrap{max-width:1400px;margin:0 auto;padding:24px 18px 80px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px}
+details.cat{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:0 0 14px;overflow:hidden}
+summary{cursor:pointer;padding:13px 16px;font-weight:700;font-size:16px;user-select:none}
+.dit{padding:8px 16px;color:var(--mut);border-top:1px solid var(--line);font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid var(--line)}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}}
+.col{padding:12px 14px;border-right:1px solid var(--line)}
+.col.c{border-right:0}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.03em;margin:0 0 8px}
+.a h3{color:var(--a)}.b h3{color:var(--b)}.c h3{color:var(--c)}
+.runtag{font-size:11px;color:var(--mut);margin:10px 0 3px}
+pre{white-space:pre-wrap;word-wrap:break-word;font:12.5px/1.5 Georgia,serif;margin:0}
+.col.a pre{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+</style></head><body><div class=wrap>
+<h1>Writer V2 — comparação de 3 braços</h1>
+<p class=sub>Modelo gpt-5.4-mini · 2 execuções nos braços B/C · prompt V1 = 37397 chars, V2 = 6950 chars. <b>A</b>=comportamento atual (renderer determinístico em prod). <b>B</b>=writer forçado com todas as regras atuais (GLOBAL_RULES). <b>C</b>=writer V2 (núcleo enxuto). Isola se a melhora vem do núcleo novo. Dados sintéticos.</p>
+<details class="cat" open><summary>1. Normal</summary>
+<div class="dit"><b>Ditado:</b> Abdome total normal, fígado normal, vesícula sem cálculos, vias biliares finas, pâncreas normal, baço normal, rins normais, aorta normal.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 6813ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 3475ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 3338ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2390ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2381ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+</div></details>
+<details class="cat" open><summary>2. Alteração frequente</summary>
+<div class="dit"><b>Ditado:</b> Fígado com esteatose difusa moderada. Vesícula com cálculo de 1,2 cm, móvel, com sombra acústica. Demais normais.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 5170ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, apresentando aumento difuso da ecogenicidade parenquimatosa e atenuação sonora.
+Os vasos intra-hepáticos e o diafragma foram visualizados parcialmente.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e parede fina, apresentando imagem hiperecoica, móvel à mudança de decúbito, medindo 1,2 centímetros no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática, grau moderado.
+2. Litíase da vesícula biliar.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2743ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, apresentando aumento difuso da ecogenicidade parenquimatosa e atenuação sonora.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e parede fina, apresentando imagem hiperecoica, móvel, medindo 1,2 cm no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática, grau moderado.
+2. Litíase da vesícula biliar.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2560ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, apresentando aumento difuso da ecogenicidade parenquimatosa e atenuação sonora. Os vasos intra-hepáticos e o diafragma foram visualizados parcialmente.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e parede fina, apresentando imagem hiperecoica, móvel, medindo 1,2 cm no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática, grau moderado.
+2. Litíase da vesícula biliar.
+3. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2643ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares, com ecotextura difusamente aumentada, compatível com esteatose difusa moderada.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, contendo cálculo móvel de 1,2 cm, com sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática difusa moderada.
+2. Colelitíase.
+3. Órgãos e estruturas abdominais estudadas sem evidência de outras alterações ecográficas.</pre><div class="runtag">execução 2 · 3085ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura difusamente aumentada, compatível com esteatose moderada.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, contendo cálculo móvel de 1,2 cm, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática difusa moderada.
+2. Cálculo móvel na vesícula biliar, medindo 1,2 cm, com sombra acústica.
+3. Ausência de outras alterações detectáveis pelo método.</pre></div>
+</div></details>
+<details class="cat" open><summary>3. Achado incomum</summary>
+<div class="dit"><b>Ditado:</b> No segmento VII do fígado uma imagem de 2,3 centímetros com halo hipoecoico e centro hiperecoico, aspecto em alvo. Resto normal.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 6880ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+Imagem hipoecoica, de contornos mal delimitados, medindo 2,3 cm, com halo hipoecoico e centro hiperecoico, aspecto em alvo, situada no segmento VII do fígado.
+
+CONCLUSÃO:
+1. Imagem hipoecoica no segmento VII do fígado, cujo diagnóstico mais provável é área poupada da esteatose.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 3062ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, apresentando no segmento VII uma imagem de 2,3 centímetros com halo hipoecoico e centro hiperecoico, aspecto em alvo.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Imagem no segmento VII do fígado, medindo 2,3 cm, com halo hipoecoico e centro hiperecoico, de aspecto em alvo.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2328ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, apresentando imagem de 2,3 cm, com halo hipoecoico e centro hiperecoico, aspecto em alvo, situada no segmento VII.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Imagem em alvo no segmento VII do fígado.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2619ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, apresentando no segmento VII imagem de 2,3 cm com halo hipoecoico e centro hiperecoico, de aspecto em alvo.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Imagem de 2,3 cm no segmento VII do fígado, com halo hipoecoico e centro hiperecoico, de aspecto em alvo.
+2. Órgãos e estruturas abdominais estudadas sem evidência de outras alterações ecográficas.</pre><div class="runtag">execução 2 · 2683ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, exceto por imagem no segmento VII medindo 2,3 cm, com halo hipoecoico e centro hiperecoico, de aspecto em alvo.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Imagem no segmento VII hepático medindo 2,3 cm, com halo hipoecoico e centro hiperecoico, de aspecto em alvo.
+2. Órgãos e estruturas abdominais estudadas sem evidência de outras alterações ecográficas.</pre></div>
+</div></details>
+<details class="cat" open><summary>4. Pedido de ajuste</summary>
+<div class="dit"><b>Ditado:</b> Abdome normal. Na conclusão, item 1: &#x27;Fígado de dimensões no limite superior da normalidade&#x27;. Não descreva a bexiga.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 3900ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2255ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões no limite superior da normalidade.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+
+CONCLUSÃO:
+1) Fígado de dimensões no limite superior da normalidade.
+2) Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2510ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões no limite superior da normalidade.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+
+CONCLUSÃO:
+1. Fígado de dimensões no limite superior da normalidade.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2270ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões no limite superior da normalidade, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+
+CONCLUSÃO:
+1. Fígado de dimensões no limite superior da normalidade.
+2. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2116ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+
+CONCLUSÃO:
+1. Fígado de dimensões no limite superior da normalidade.
+2. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+</div></details>
+<details class="cat" open><summary>5. Erro linguístico</summary>
+<div class="dit"><b>Ditado:</b> fikado com esteatoze, vezícula com cauculo de zero vírgula oito, baso normal, rinz normais, pancreas normal.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 5000ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, com discreto aumento da ecogenicidade parenquimatosa.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e parede fina, apresentando imagem hiperecoica, móvel à mudança de decúbito, medindo 0,8 centímetros no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática, grau leve.
+2. Litíase da vesícula biliar.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2920ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, com discreto aumento da ecogenicidade parenquimatosa.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, apresentando imagem hiperecoica, móvel, medindo 0,8 cm no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática, grau leve.
+2. Litíase da vesícula biliar.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2482ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, apresentando aumento difuso da ecogenicidade parenquimatosa.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, apresentando imagem hiperecoica, móvel, medindo 0,8 cm no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática, grau moderado.
+2. Litíase da vesícula biliar.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2633ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, com esteatose.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, com cálculo de 0,8 cm, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática.
+2. Cálculo na vesícula biliar, medindo 0,8 cm.
+3. Ausência de outras alterações detectáveis pelo método.</pre><div class="runtag">execução 2 · 2285ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado com dimensões normais, contornos regulares e ecotextura heterogênea, com esteatose.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, com cálculo de 0,8 cm.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Esteatose hepática.
+2. Colelitíase.
+3. Ausência de outras alterações detectáveis pelo método.</pre></div>
+</div></details>
+<details class="cat" open><summary>6. Ruído de transcrição</summary>
+<div class="dit"><b>Ditado:</b> fígado normal ééé vesícula sem cálculos hã pâncreas não deu pra ver direito por causa de gases tá rins normais aorta normal.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 4042ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas visualizado parcialmente devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2943ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas parcialmente visualizado devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2169ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões e ecotextura normais.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões e ecotextura normais.
+Pâncreas parcialmente visualizado devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre normal.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Pâncreas parcialmente visualizado devido à interposição de gases intestinais. 
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2734ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculos.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas visualizado parcialmente devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Pâncreas visualizado parcialmente devido à interposição de gases intestinais.
+2. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2107ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas visualizado parcialmente devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+</div></details>
+<details class="cat" open><summary>7. Contradição/auto-correção</summary>
+<div class="dit"><b>Ditado:</b> Vesícula normal sem cálculos… na verdade tem um cálculo de 8 milímetros móvel. Resto normal.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 3891ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e parede fina, apresentando imagem hiperecoica, móvel à mudança de decúbito, medindo 0,8 centímetros no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Litíase da vesícula biliar.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2521ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, apresentando imagem hiperecoica, móvel, medindo 8 mm no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Litíase da vesícula biliar.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2218ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, apresentando imagem hiperecoica, móvel, medindo 8 mm no seu maior eixo, ocasionando sombra acústica.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Litíase da vesícula biliar.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2359ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, apresentando cálculo móvel de 8 mm.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cálculo móvel de 8 mm na vesícula biliar.
+2. Ausência de outras alterações detectáveis pelo método.</pre><div class="runtag">execução 2 · 2325ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, com cálculo móvel de 8 mm.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cálculo móvel de 8 mm na vesícula biliar.
+2. Órgãos e estruturas abdominais estudadas sem evidência de outras alterações ecográficas.</pre></div>
+</div></details>
+<details class="cat" open><summary>8. Ambiguidade</summary>
+<div class="dit"><b>Ditado:</b> Cisto no rim direito de ponto cinco centímetros. Cálculo de 15 no rim esquerdo.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 5220ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem anecoica homogênea, com margem regular, medindo 0,5 cm, situada no ____.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem hiperecoica, medindo 15 cm no seu maior eixo, situada em ____.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto simples no rim direito.
+2. Litíase renal esquerda.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2948ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, apresentando imagem anecoica homogênea, com margem regular, medindo 0,5 cm, situada no polo superior.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, apresentando imagem hiperecoica, medindo 15 mm no seu maior eixo, situada em cálices superiores.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto simples no rim direito.
+2. Litíase renal esquerda.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2730ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, apresentando imagem anecoica homogênea, com margem regular, medindo 0,5 cm, situada no polo superior.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, apresentando imagem hiperecoica, medindo 15 mm no seu maior eixo, situada em cálices.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto simples no rim direito.
+2. Litíase renal esquerda.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2326ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com imagem cística medindo 0,5 cm.
+Rim esquerdo com imagem calculosa medindo 15 mm.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto no rim direito, medindo 0,5 cm.
+2. Cálculo no rim esquerdo, medindo 15 mm.
+3. Ausência de outras alterações detectáveis pelo método.</pre><div class="runtag">execução 2 · 2649ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, com imagem cística no polo direito medindo 0,5 cm.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, com cálculo medindo 15 mm.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Imagem cística no rim direito, medindo 0,5 cm.
+2. Cálculo no rim esquerdo, medindo 15 mm.
+3. Ausência de outras alterações detectáveis pelo método.</pre></div>
+</div></details>
+<details class="cat" open><summary>9. Troca de lateralidade/medida</summary>
+<div class="dit"><b>Ditado:</b> Cisto cortical no rim esquerdo de 2,4 cm. Aliás não é esquerdo, é o rim direito. Resto normal.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 4325ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem anecoica homogênea, com margem regular, medindo 2,4 cm, situada no cortical.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto simples no rim direito.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2629ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, com imagem anecoica homogênea, com margem regular, medindo 2,4 cm, situada no polo superior.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto cortical no rim direito, medindo 2,4 cm.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 3557ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, com cisto cortical medindo 2,4 cm.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto cortical no rim direito.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2986ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, com imagem anecoica cortical de 2,4 cm.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto cortical no rim direito, medindo 2,4 cm.
+2. Órgãos e estruturas abdominais estudadas sem evidência de outras alterações ecográficas.</pre><div class="runtag">execução 2 · 2427ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, observando-se imagem cística cortical medindo 2,4 cm.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto cortical no rim direito, medindo 2,4 cm.
+2. Órgãos e estruturas abdominais estudadas sem evidência de outras alterações ecográficas.</pre></div>
+</div></details>
+<details class="cat" open><summary>10. Órgão não visualizado</summary>
+<div class="dit"><b>Ditado:</b> Fígado e vesícula normais. Não consegui ver o pâncreas por gases. Baço, rins e aorta normais.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 3640ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas visualizado parcialmente devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2607ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas parcialmente visualizado devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Pâncreas parcialmente visualizado devido à interposição de gases intestinais.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2634ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas parcialmente visualizado devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Pâncreas parcialmente visualizado devido à interposição de gases intestinais.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2284ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas visualizado parcialmente devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Fígado e vesícula biliar sem alterações ecográficas.
+2. Pâncreas não visualizado adequadamente por interposição de gases intestinais.
+3. Baço, rins e aorta abdominal sem alterações ecográficas.</pre><div class="runtag">execução 2 · 2585ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas visualizado parcialmente devido à interposição de gases intestinais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Pâncreas visualizado parcialmente devido à interposição de gases intestinais.
+2. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+</div></details>
+<details class="cat" open><summary>11. Volume não solicitado</summary>
+<div class="dit"><b>Ditado:</b> Rim direito com cálculo de 4 mm no grupo calicinal inferior. Rim esquerdo 10,2 por 4,8 por 4,5 cm normal. Resto normal.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 4566ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando imagem hiperecoica, medindo 0,4 cm no seu maior eixo, situada em grupo calicinal inferior.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Litíase renal direita.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 2710ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões e ecotextura normais.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar com paredes finas, sem cálculos.
+Vias biliares sem dilatação.
+Baço de dimensões e ecotextura normais.
+Pâncreas parcialmente visualizado, sem alterações detectáveis.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, apresentando imagem hiperecoica, medindo 4 mm no seu maior eixo, situada no grupo calicinal inferior.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, medindo 10,2 x 4,8 x 4,5 cm.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Litíase renal direita.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 3546ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, com imagem hiperecoica, medindo 4 mm no seu maior eixo, situada no grupo calicinal inferior.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais, medindo 10,2 x 4,8 x 4,5 cm.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Litíase renal direita.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2453ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4,0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com cálculo de 4 mm no grupo calicinal inferior, apresentando diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, com topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo medindo 10,2 x 4,8 x 4,5 cm, com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cálculo de 4 mm no grupo calicinal inferior do rim direito.
+2. Rim esquerdo medindo 10,2 x 4,8 x 4,5 cm.
+3. Órgãos e estruturas abdominais estudadas sem evidência de outras alterações ecográficas.</pre><div class="runtag">execução 2 · 2413ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com cálculo de 4 mm no grupo calicinal inferior, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior medidos em 10,2 x 4,8 x 4,5 cm, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cálculo de 4 mm no grupo calicinal inferior do rim direito.
+2. Rim esquerdo medindo 10,2 x 4,8 x 4,5 cm, com aspecto ultrassonográfico normal.
+3. Ausência de outras alterações detectáveis pelo método.</pre></div>
+</div></details>
+<details class="cat" open><summary>12. Duas lesões</summary>
+<div class="dit"><b>Ditado:</b> Fígado com dois cistos simples, um no segmento IV de 1,1 cm e outro no segmento VII de 0,7 cm. Vesícula, pâncreas, baço, rins e aorta normais.</div>
+<div class="grid">
+<div class="col a"><h3>A · Atual (renderer prod)</h3><div class="runtag">execução 1 · 4401ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Imagem anecoica homogênea, com margem regular, medindo 1,1 cm, situada no segmento IV.
+Imagem anecoica homogênea, com margem regular, medindo 0,7 cm, situada no segmento VII.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cisto hepático sem septações no segmento IV.
+2. Cisto hepático sem septações no segmento VII.
+3. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col b"><h3>B · Writer V1 (contrato + GLOBAL_RULES)</h3><div class="runtag">execução 1 · 3170ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, apresentando duas imagens anecoicas homogêneas, com margem regular, medindo 1,1 cm, situada no segmento IV, e 0,7 cm, situada no segmento VII, sem calcificações.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cistos hepáticos simples nos segmentos IV e VII.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2629ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, apresentando imagem anecoica homogênea, com margem regular, medindo 1,1 cm, situada no segmento IV. Apresenta ainda outra imagem anecoica homogênea, com margem regular, medindo 0,7 cm, situada no segmento VII.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Cistos simples no fígado, situados nos segmentos IV e VII.
+2. Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre></div>
+<div class="col c"><h3>C · Writer V2 (núcleo + contrato + base)</h3><div class="runtag">execução 1 · 2479ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, apresentando dois cistos simples, um no segmento IV medindo 1,1 cm e outro no segmento VII medindo 0,7 cm.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Dois cistos simples hepáticos, um no segmento IV medindo 1,1 cm e outro no segmento VII medindo 0,7 cm.
+2. Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</pre><div class="runtag">execução 2 · 2797ms</div><pre>ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 4.0 MHz, inicialmente do abdome superior com paciente em jejum e posteriormente com a bexiga repleta do abdome inferior. Foram realizados múltiplos cortes, abrangendo todo o abdome, em decúbito dorsal como também em ortostase. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado de dimensões normais, contornos regulares e ecotextura homogênea, apresentando dois cistos simples, um no segmento IV medindo 1,1 cm e outro no segmento VII medindo 0,7 cm.
+Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.
+Veia porta de calibre normal.
+Vesícula biliar de topografia usual e de parede fina, sem cálculo.
+Canal hepático e canal colédoco de calibre normal.
+Baço de dimensões normais e ecotextura sólida e homogênea.
+Pâncreas de ecotextura habitual para a faixa etária. A cabeça, o corpo e a cauda apresentam dimensões normais.
+Rim direito com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Rim esquerdo com diâmetros longitudinais e anteroposterior dentro dos limites normais, medidos pelo flanco, apresentando topografia, ecotextura do seio renal e ecotextura córtico medular normais.
+Veia cava inferior de calibre e contornos normais.
+Aorta abdominal de calibre e contornos normais.
+Bexiga de forma, contorno e ecotextura normais.
+
+CONCLUSÃO:
+1. Dois cistos simples hepáticos, um no segmento IV medindo 1,1 cm e outro no segmento VII medindo 0,7 cm.
+2. Órgãos e estruturas abdominais estudadas sem evidência de outras alterações ecográficas.</pre></div>
+</div></details>
+</div></body></html>

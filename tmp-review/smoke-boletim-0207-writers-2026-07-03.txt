@@ -1,0 +1,81 @@
+◇ injected env (22) from ../../../../../../../../../Users/luizprazeres/laudousgmobile-def/.env // tip: ◈ secrets for agents [www.dotenvx.com]
+══════════════════════════════════════════════════════════════════════
+PELVE 63a92f8e — writer_guarded (comando não vaza; DIU → conclusão)
+══════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga de forma, contorno e ecotextura normais.
+Útero em anteversão, medindo 6,3 x 3,8 x 5,4 cm.
+Endométrio medindo 0,4 cm de espessura.
+Imagem hiperecoica linear na cavidade endometrial, medindo 3,2 cm no seu maior eixo, distando 0,1 cm da extremidade superior à região fúndica.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 2,0 x 1,9 x 2,1 cm, apresentando imagens anecoicas.
+Ovário esquerdo medindo 2,1 x 1,1 x 0,9 cm, apresentando imagens anecoicas.
+
+CONCLUSÃO:
+1) Bexiga ecograficamente normal.
+2) Útero de volume normal (69,8 cm³).
+3) O endométrio tem espessura normal para a fase do ciclo menstrual.
+4) Ovários ecograficamente normais (o direito com 4,4 cm³ e o esquerdo 1,1 cm³), ambos contendo folículos.
+5) Dispositivo intrauterino (D.I.U.) normoposicionado.
+──────────────────────────────────────────────────────────────────────
+✓ PELVE: comando 'Adicione' NÃO vazou no laudo
+✓ PELVE: achado (imagem hiperecoica linear) presente
+✓ PELVE: achado aparece UMA vez (sem duplicata)
+✓ PELVE: achado ancorado na cavidade/endométrio
+✓ PELVE: DIU inferido na conclusão (correção do Luiz)
+
+══════════════════════════════════════════════════════════════════════
+MSK 6afe8f78 — writer_guarded (segmentos separados; sem garble)
+══════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DO OMBRO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão supraespinhal com alteração ecotextural, sem evidência de rotura.
+Tendão infraespinhal de espessura, continuidade e ecotextura preservadas.
+Tendão subescapular de espessura, continuidade e ecotextura preservadas.
+Cabo longo do bíceps tópico, de espessura e ecotextura preservadas.
+Bursa subacromial-subdeltoidea com espessamento e aumento da quantidade de líquido.
+Articulação acromioclavicular de aspecto preservado.
+Não há sinais de derrame articular significativo.
+
+CONCLUSÃO:
+1) Tendinopatia do tendão supraespinhal direito.
+2) Bursite subacromial-subdeltoidea à direita.
+
+
+
+ULTRASSONOGRAFIA DO JOELHO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão quadricipital de espessura, continuidade e ecotextura preservadas.
+Tendão patelar de espessura, continuidade e ecotextura preservadas.
+Tendões da pata de ganso com alteração ecotextural, sem sinais de rotura.
+Ausência de derrame articular significativo.
+Fossa poplítea com imagem anecoica, de contornos regulares, medindo 2,4 cm no maior eixo, compatível com cisto de Baker.
+Planos musculares e subcutâneos avaliados sem alterações relevantes.
+
+CONCLUSÃO:
+1) Tendinopatia dos tendões da pata de ganso do joelho direito.
+2) Cisto de Baker à direita.
+──────────────────────────────────────────────────────────────────────
+✓ MSK: dois títulos (ombro + joelho)
+✓ MSK: cisto de Baker NÃO aparece no bloco do ombro
+✓ MSK: cisto de Baker presente (no joelho)
+✓ MSK: 'imagem aquática' (garble) NÃO ecoado
+✓ MSK: Baker descrito (anecoico/cisto)
+✓ MSK: meta-comando NÃO ecoado
+✓ MSK: garble 'ibos' (bursa) NÃO ecoado cru
+✓ MSK: medida 2,4 cm preservada
+
+13 ok, 0 avisos (não-bloqueante; smoke de LLM não-determinístico)

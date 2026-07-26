@@ -1,0 +1,71 @@
+
+══════════════════════════════════════════════════════════════════════
+■ TA+TV normal simples (não visto)
+══════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga de forma, contorno e ecotextura normais.
+Útero em anteversão, medindo 7,0 x 3,5 x 4,2 cm.
+Endométrio medindo 0,6 cm de espessura.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 2,2 x 1,5 x 1,8 cm, apresentando imagens anecoicas.
+Ovário esquerdo medindo 2,4 x 1,6 x 1,9 cm, apresentando imagens anecoicas.
+
+CONCLUSÃO:
+1) Bexiga ecograficamente normal.
+2) Útero de volume normal (54,0 cm³).
+3) O endométrio tem espessura normal para a fase do ciclo menstrual.
+4) Ovários ecograficamente normais (o direito com 3,1 cm³ e o esquerdo 3,7 cm³), ambos contendo folículos.
+
+▸ ttft=3743ms total=12302ms tok=365 audit=ok
+
+══════════════════════════════════════════════════════════════════════
+■ Menopausa TV (generalização da regra)
+══════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Útero em anteversão, medindo 4,8 x 2,2 x 3,1 cm.
+Endométrio medindo 0,3 cm de espessura.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 0,9 x 0,7 x 1,0 cm, apresentando poucas imagens anecoicas.
+Ovário esquerdo medindo 1,0 x 0,8 x 0,9 cm, apresentando poucas imagens anecoicas.
+
+CONCLUSÃO:
+1) Útero de volume normal (17,0 cm³).
+2) O endométrio tem espessura normal para a faixa etária da menopausa.
+3) Ovários ecograficamente normais (o direito com 0,3 cm³ e o esquerdo com 0,4 cm³), ambos praticamente sem folículos.
+
+▸ ttft=1648ms total=13305ms tok=273 audit=ok
+
+══════════════════════════════════════════════════════════════════════
+■ Coleção ovariana (anti-líquido-livre — NÃO pode virar líquido livre)
+══════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga de forma, contorno e ecotextura normais.
+Útero em anteversão, medindo 6,5 x 3,4 x 4,0 cm.
+Endométrio medindo 0,7 cm de espessura.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 3,0 x 2,4 x 2,6 cm, apresentando imagem anecoica medindo 2,8 cm em seu maior eixo.
+Ovário esquerdo medindo 2,1 x 1,4 x 1,7 cm, apresentando imagens anecoicas.
+
+CONCLUSÃO:
+1) Bexiga ecograficamente normal.
+2) Útero de volume normal (46,0 cm³).
+3) O endométrio tem espessura normal para a fase do ciclo menstrual.
+4) Ovário direito de volume aumentado (9,8 cm³), às custas de coleção líquida provavelmente funcional (O-RADS 2).
+5) Ovário esquerdo ecograficamente normal (2,6 cm³), contendo folículos.
+
+▸ ttft=811ms total=4957ms tok=393 audit=ok

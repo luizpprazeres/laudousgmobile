@@ -1,0 +1,49 @@
+
+══════════════════════════════════════════════════════════════════════
+■ CASO: 41f8343d — suprapúbica com garble (real, 30/06)
+══════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DAS PARTES MOLES DA REGIÃO SUPRAPÚBICA
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação das partes moles da região suprapúbica. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Imagem anecoica com margens lobuladas, medindo aproximadamente 0,8 x 0,8 x 1,0 cm (volume de 0,3 ml), situada à direita da cicatriz cirúrgica, na topografia da cicatriz, distando 1,1 cm do seu centro até a pele, com comunicação externa com a pele e discreta vascularização periférica ao estudo Doppler colorido.
+
+CONCLUSÃO:
+Coleção na região suprapúbica, podendo corresponder a cisto de inclusão epidérmica ou abscesso. Correlacionar com dados clínicos.
+
+▸ model=gpt-4.1 ttft=950ms total=2167ms tokens=225 audit=ok
+
+══════════════════════════════════════════════════════════════════════
+■ CASO: 66ec1a30 — lipoma coxa direita (real)
+══════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DAS PARTES MOLES DA COXA DIREITA
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação das partes moles da coxa direita. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Imagem nodular sólida, hipoecoica, de contornos regulares, medindo 1,8 x 1,2 cm, localizada no subcutâneo da coxa direita.
+
+CONCLUSÃO:
+Imagem nodular sólida no subcutâneo da coxa direita, de aspecto inespecífico. O diagnóstico mais provável é lipoma.
+
+▸ model=gpt-4.1 ttft=3356ms total=4323ms tokens=160 audit=ok
+
+══════════════════════════════════════════════════════════════════════
+■ CASO: normal sem região
+══════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DE PARTES MOLES
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação da região solicitada. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Planos musculares e tecidos subcutâneos com ecogenicidade e ecotextura normais.
+Não há evidência de coleção, massa ou alteração focal.
+
+CONCLUSÃO:
+Ausência de alterações detectáveis pelo método.
+
+▸ model=gpt-4.1 ttft=619ms total=1322ms tokens=128 audit=ok

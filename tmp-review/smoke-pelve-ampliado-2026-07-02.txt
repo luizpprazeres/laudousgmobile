@@ -1,0 +1,127 @@
+
+════════════════════════════════════════════════════════════════════════
+■ DIU DESLOCADO
+  (observar: conclusão deve dizer 'D.I.U. deslocado' (NÃO normoposicionado))
+════════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Útero em anteversão, medindo 7,2 x 3,6 x 4,4 cm.
+Endométrio medindo 0,5 cm de espessura.
+Imagem hiperecoica linear na cavidade endometrial, deslocada em direção ao istmo/colo.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 2,1 x 1,4 x 1,7 cm, apresentando imagens anecoicas.
+Ovário esquerdo medindo 2,0 x 1,3 x 1,6 cm, apresentando imagens anecoicas.
+
+CONCLUSÃO:
+1) Útero de volume normal (60,0 cm³).
+2) O endométrio tem espessura normal para a fase do ciclo menstrual.
+3) Ovários ecograficamente normais (o direito com 2,6 cm³ e o esquerdo 2,2 cm³), ambos contendo folículos.
+4) Dispositivo intrauterino (D.I.U.) deslocado, com haste voltada para o istmo/colo.
+
+▸ ttft=2679ms total=4364ms tok=315 audit=ok
+
+════════════════════════════════════════════════════════════════════════
+■ ENDOMETRIOMA
+  (observar: ovário direito → item próprio com 'endometrioma (O-RADS 2)', volume aumentado; NÃO vira líquido livre)
+════════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga de forma, contorno e ecotextura normais.
+Útero em anteversão, medindo 6,8 x 3,5 x 4,3 cm.
+Endométrio medindo 0,6 cm de espessura.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 4,5 x 3,2 x 3,8 cm, apresentando imagem de baixa ecogenicidade com pontos ecogênicos, medindo 3,6 cm.
+Ovário esquerdo medindo 2,2 x 1,5 x 1,8 cm, apresentando imagens anecoicas.
+
+CONCLUSÃO:
+1) Bexiga ecograficamente normal.
+2) Útero de volume normal (53,0 cm³).
+3) O endométrio tem espessura normal para a fase do ciclo menstrual.
+4) Ovário direito de volume aumentado (28,0 cm³), às custas de imagem de baixa ecogenicidade com pontos ecogênicos, provavelmente endometrioma (O-RADS 2).
+5) Ovário esquerdo ecograficamente normal (3,1 cm³), contendo folículos.
+
+▸ ttft=597ms total=3485ms tok=410 audit=ok
+
+════════════════════════════════════════════════════════════════════════
+■ SOP (mais de 20 folículos)
+  (observar: ovários com >20 folículos; conclusão SOP + recomendação FSH/LH)
+════════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Útero em anteversão, medindo 5,5 x 2,9 x 3,6 cm.
+Endométrio medindo 0,4 cm de espessura.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 3,8 x 2,6 x 3,0 cm, com volume de 15,5 cm³, apresentando mais de 20 folículos antrais distribuídos na periferia.
+Ovário esquerdo medindo 3,9 x 2,7 x 3,1 cm, com volume de 17,1 cm³, apresentando mais de 20 folículos antrais distribuídos na periferia.
+
+CONCLUSÃO:
+1) Útero de volume normal (30,0 cm³).
+2) O endométrio tem espessura normal para a fase do ciclo menstrual.
+3) Ovário direito de volume aumentado (15,5 cm³), com mais de 20 folículos antrais distribuídos na periferia.
+4) Ovário esquerdo de volume aumentado (17,1 cm³), com mais de 20 folículos antrais distribuídos na periferia.
+Correlacionar com dosagens de FSH e LH.
+
+▸ ttft=1055ms total=2989ms tok=348 audit=ok
+
+════════════════════════════════════════════════════════════════════════
+■ GESTAÇÃO INICIAL em contexto de pelve (segurança)
+  (observar: descreve SG tópico; NÃO deve alucinar embrião/BCF não ditado; idealmente sugere US obstétrica)
+════════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Útero em anteversão, medindo 8,0 x 4,2 x 5,0 cm.
+Presença de saco gestacional intrauterino, tópico, medindo 1,2 cm de diâmetro médio, com vesícula vitelínica presente.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 2,3 x 1,6 x 1,9 cm, apresentando imagens anecoicas.
+Ovário esquerdo medindo 2,1 x 1,4 x 1,7 cm, apresentando imagens anecoicas.
+
+CONCLUSÃO:
+1) Útero de volume normal.
+2) Saco gestacional intrauterino, tópico, com vesícula vitelínica presente.
+3) Ovários ecograficamente normais (o direito com 3,5 cm³ e o esquerdo 2,6 cm³), ambos contendo folículos.
+
+[REVISAR: medida(s) ditada(s) não localizada(s) no texto: 12]
+
+▸ ttft=995ms total=2295ms tok=283 audit={"ok":false,"missingMeasures":["12"],"menopausaSemMarca":false,"liquidoLivreInventado":false,"placeholder":false}
+
+════════════════════════════════════════════════════════════════════════
+■ MASSA ANEXIAL SUSPEITA / O-RADS ALTO
+  (observar: massa complexa O-RADS 4 (NÃO rebaixar); conduta ditada preservada; não vira líquido livre)
+════════════════════════════════════════════════════════════════════════
+ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL
+
+COMENTÁRIOS:
+Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Bexiga de forma, contorno e ecotextura normais.
+Útero em anteversão, medindo 6,0 x 3,2 x 4,0 cm.
+Endométrio medindo 0,5 cm de espessura.
+Miométrio com ecogenicidade e ecotextura normais.
+Ovário direito medindo 2,0 x 1,4 x 1,7 cm, apresentando imagens anecoicas.
+Ovário esquerdo substituído por massa complexa, com componente sólido vascularizado e septos espessos, medindo 6,8 x 5,4 x 6,0 cm.
+
+CONCLUSÃO:
+1) Bexiga ecograficamente normal.
+2) Útero de volume normal (40,0 cm³).
+3) O endométrio tem espessura normal para a fase do ciclo menstrual.
+4) Ovário direito ecograficamente normal (2,5 cm³), contendo folículos.
+5) Ovário esquerdo de volume aumentado, substituído por massa complexa, com componente sólido vascularizado e septos espessos, medindo 6,8 x 5,4 x 6,0 cm, achado suspeito (O-RADS 4). Convém avaliação complementar com ressonância magnética e correlação com marcadores tumorais.
+
+▸ ttft=569ms total=2881ms tok=439 audit=ok

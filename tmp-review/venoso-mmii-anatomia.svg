@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Cartografia venosa esquemática dos membros inferiores</title>
+  <desc id="desc">
+    SVG standalone enderecavel por segmento. Paciente em vista frontal: membro direito no lado esquerdo da imagem, membro esquerdo no lado direito.
+    A safena parva, por ser posterior, foi representada como projecao postero-lateral visivel na vista frontal.
+  </desc>
+
+  <metadata id="segment-anchor-map" type="application/json"><![CDATA[
+{
+  "viewBox": [0, 0, 1000, 1200],
+  "orientation": "vista frontal do paciente; direito aparece a esquerda da imagem",
+  "anchors_are": "pontos anatômicos aproximados proximal->distal para indexacao por posicao_t; o motor deve usar getPointAtLength(path) para a posicao final",
+  "segments": {
+    "direito__femoral_comum": [[330,176],[322,218],[316,252]],
+    "direito__femoral": [[316,252],[309,360],[305,475],[302,552]],
+    "direito__femoral_profunda": [[316,254],[284,292],[258,342]],
+    "direito__poplitea": [[302,552],[300,592],[300,632]],
+    "direito__tibial_posterior": [[300,632],[316,740],[328,870],[344,1030]],
+    "direito__tibial_anterior": [[300,632],[282,742],[270,878],[256,1018]],
+    "direito__fibular": [[300,650],[294,766],[292,890],[296,1032]],
+    "direito__safena_magna": [[354,172],[362,292],[360,424],[356,552],[366,710],[372,870],[386,1052]],
+    "direito__safena_parva": [[286,616],[278,710],[272,830],[266,972],[258,1064]],
+    "direito__safena_acessoria_anterior": [[340,202],[328,304],[318,414],[310,520]],
+    "direito__giacomini": [[278,734],[298,662],[318,584],[342,506]],
+    "direito__jsf": [[330,176],[354,172]],
+    "direito__jsp": [[286,616],[300,632]],
+    "direito__perf_coxa": [[357,430],[330,440],[306,452]],
+    "direito__perf_perna": [[372,800],[338,808],[304,818]],
+
+    "esquerdo__femoral_comum": [[670,176],[678,218],[684,252]],
+    "esquerdo__femoral": [[684,252],[691,360],[695,475],[698,552]],
+    "esquerdo__femoral_profunda": [[684,254],[716,292],[742,342]],
+    "esquerdo__poplitea": [[698,552],[700,592],[700,632]],
+    "esquerdo__tibial_posterior": [[700,632],[684,740],[672,870],[656,1030]],
+    "esquerdo__tibial_anterior": [[700,632],[718,742],[730,878],[744,1018]],
+    "esquerdo__fibular": [[700,650],[706,766],[708,890],[704,1032]],
+    "esquerdo__safena_magna": [[646,172],[638,292],[640,424],[644,552],[634,710],[628,870],[614,1052]],
+    "esquerdo__safena_parva": [[714,616],[722,710],[728,830],[734,972],[742,1064]],
+    "esquerdo__safena_acessoria_anterior": [[660,202],[672,304],[682,414],[690,520]],
+    "esquerdo__giacomini": [[722,734],[702,662],[682,584],[658,506]],
+    "esquerdo__jsf": [[670,176],[646,172]],
+    "esquerdo__jsp": [[714,616],[700,632]],
+    "esquerdo__perf_coxa": [[643,430],[670,440],[694,452]],
+    "esquerdo__perf_perna": [[628,800],[662,808],[696,818]]
+  }
+}
+  ]]></metadata>
+
+  <defs>
+    <style>
+      :root {
+        --map-bg: #fbfaf7;
+        --limb-fill: #eadfce;
+        --limb-stroke: #d8c8b1;
+        --text: #2f3742;
+        --muted: #7c8795;
+        --profundo-stroke: #255f9f;
+        --superficial-stroke: #2f9d83;
+        --juncao-stroke: #1f3f5f;
+        --perfurante-stroke: #8b6f47;
+        --seg-opacity: 1;
+      }
+
+      .surface { fill: var(--map-bg); }
+      .limb { fill: var(--limb-fill); stroke: var(--limb-stroke); stroke-width: 2; }
+      .label { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: var(--text); font-size: 24px; font-weight: 700; letter-spacing: 0; }
+      .subtle-label { fill: var(--muted); font-size: 15px; font-weight: 600; }
+      .seg { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: var(--seg-opacity); }
+      .seg[data-sys="profundo"] { stroke: var(--profundo-stroke); stroke-width: var(--profundo-width, 7); }
+      .seg[data-sys="superficial"] { stroke: var(--superficial-stroke); stroke-width: var(--superficial-width, 5); }
+      .seg[data-sys="juncao"] { stroke: var(--juncao-stroke); stroke-width: var(--juncao-width, 6); }
+      .seg[data-sys="perfurante"] { stroke: var(--perfurante-stroke); stroke-width: var(--perfurante-width, 3.5); }
+      .posterior-proj { stroke-dasharray: 8 7; opacity: .78; }
+      .landmark { fill: var(--map-bg); stroke: currentColor; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+      .side-note { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: var(--muted); font-size: 13px; font-weight: 500; letter-spacing: 0; }
+    </style>
+  </defs>
+
+  <rect class="surface" x="0" y="0" width="1000" height="1200" />
+
+  <g id="contexto-silhueta" aria-hidden="true">
+    <path id="silhueta-direita" class="limb" d="M246 142 C226 214 222 332 235 438 C244 508 257 568 262 628 C268 700 244 796 234 895 C226 978 223 1040 206 1087 C225 1108 264 1111 286 1090 C291 1005 292 910 300 818 C309 909 312 1005 319 1090 C343 1111 383 1108 404 1087 C386 1039 380 978 372 895 C362 796 336 700 342 628 C347 566 360 508 368 438 C381 332 376 214 354 142 C330 156 272 156 246 142 Z" />
+    <path id="silhueta-esquerda" class="limb" d="M646 142 C624 214 619 332 632 438 C640 508 653 566 658 628 C664 700 638 796 628 895 C620 978 614 1039 596 1087 C617 1108 657 1111 681 1090 C688 1005 691 909 700 818 C708 910 709 1005 714 1090 C736 1111 775 1108 794 1087 C777 1040 774 978 766 895 C756 796 732 700 738 628 C743 568 756 508 765 438 C778 332 774 214 754 142 C728 156 670 156 646 142 Z" />
+  </g>
+
+  <text class="label" x="300" y="88" text-anchor="middle">DIREITO</text>
+  <text class="label" x="700" y="88" text-anchor="middle">ESQUERDO</text>
+  <text class="side-note" x="500" y="1136" text-anchor="middle">Sistema venoso MMII esquematico: segmentos por id estavel, estilizados por CSS externo</text>
+
+  <g id="direito" data-side="direito">
+    <g id="direito__profundo" data-sys-group="profundo">
+      <path id="direito__femoral_comum" class="seg" data-sys="profundo" data-points="330,176 322,218 316,252" d="M330 176 C326 198 321 224 316 252" />
+      <path id="direito__femoral" class="seg" data-sys="profundo" data-points="316,252 309,360 305,475 302,552" d="M316 252 C311 326 307 420 302 552" />
+      <path id="direito__femoral_profunda" class="seg" data-sys="profundo" data-points="316,254 284,292 258,342" d="M316 254 C298 276 276 308 258 342" />
+      <path id="direito__poplitea" class="seg" data-sys="profundo" data-points="302,552 300,592 300,632" d="M302 552 C299 580 299 604 300 632" />
+      <path id="direito__tibial_posterior" class="seg" data-sys="profundo" data-points="300,632 316,740 328,870 344,1030" d="M300 632 C313 726 325 870 344 1030" />
+      <path id="direito__tibial_anterior" class="seg" data-sys="profundo" data-points="300,632 282,742 270,878 256,1018" d="M300 632 C282 736 270 874 256 1018" />
+      <path id="direito__fibular" class="seg" data-sys="profundo" data-points="300,650 294,766 292,890 296,1032" d="M300 650 C293 754 291 906 296 1032" />
+    </g>
+
+    <g id="direito__superficial" data-sys-group="superficial">
+      <path id="direito__safena_magna" class="seg" data-sys="superficial" data-points="354,172 362,292 360,424 356,552 366,710 372,870 386,1052" d="M354 172 C364 250 364 348 360 424 C357 480 352 520 356 552 C365 642 363 744 372 870 C378 948 382 1008 386 1052" />
+      <path id="direito__safena_parva" class="seg posterior-proj" data-sys="superficial" data-points="286,616 278,710 272,830 266,972 258,1064" d="M286 616 C278 698 273 806 272 830 C268 916 264 1002 258 1064" />
+      <path id="direito__safena_acessoria_anterior" class="seg" data-sys="superficial" data-points="340,202 328,304 318,414 310,520" d="M340 202 C330 278 321 396 310 520" />
+      <path id="direito__giacomini" class="seg posterior-proj" data-sys="superficial" data-points="278,734 298,662 318,584 342,506" d="M278 734 C292 680 312 592 342 506" />
+    </g>
+
+    <g id="direito__juncoes" data-sys-group="juncao">
+      <path id="direito__jsf" class="seg" data-sys="juncao" data-points="330,176 354,172" d="M330 176 C338 170 346 170 354 172" />
+      <path id="direito__jsp" class="seg" data-sys="juncao" data-points="286,616 300,632" d="M286 616 C292 622 296 628 300 632" />
+      <circle class="landmark" cx="354" cy="172" r="5.5" style="color: var(--juncao-stroke)" />
+      <circle class="landmark" cx="286" cy="616" r="5" style="color: var(--juncao-stroke)" />
+    </g>
+
+    <g id="direito__perfurantes" data-sys-group="perfurante">
+      <path id="direito__perf_coxa" class="seg" data-sys="perfurante" data-points="357,430 330,440 306,452" d="M357 430 C340 432 326 442 306 452" />
+      <path id="direito__perf_perna" class="seg" data-sys="perfurante" data-points="372,800 338,808 304,818" d="M372 800 C352 802 330 812 304 818" />
+    </g>
+
+    <text class="subtle-label" x="356" y="151" text-anchor="middle">JSF</text>
+    <text class="subtle-label" x="266" y="610" text-anchor="end">JSP</text>
+  </g>
+
+  <g id="esquerdo" data-side="esquerdo">
+    <g id="esquerdo__profundo" data-sys-group="profundo">
+      <path id="esquerdo__femoral_comum" class="seg" data-sys="profundo" data-points="670,176 678,218 684,252" d="M670 176 C674 198 679 224 684 252" />
+      <path id="esquerdo__femoral" class="seg" data-sys="profundo" data-points="684,252 691,360 695,475 698,552" d="M684 252 C689 326 693 420 698 552" />
+      <path id="esquerdo__femoral_profunda" class="seg" data-sys="profundo" data-points="684,254 716,292 742,342" d="M684 254 C702 276 724 308 742 342" />
+      <path id="esquerdo__poplitea" class="seg" data-sys="profundo" data-points="698,552 700,592 700,632" d="M698 552 C701 580 701 604 700 632" />
+      <path id="esquerdo__tibial_posterior" class="seg" data-sys="profundo" data-points="700,632 684,740 672,870 656,1030" d="M700 632 C687 726 675 870 656 1030" />
+      <path id="esquerdo__tibial_anterior" class="seg" data-sys="profundo" data-points="700,632 718,742 730,878 744,1018" d="M700 632 C718 736 730 874 744 1018" />
+      <path id="esquerdo__fibular" class="seg" data-sys="profundo" data-points="700,650 706,766 708,890 704,1032" d="M700 650 C707 754 709 906 704 1032" />
+    </g>
+
+    <g id="esquerdo__superficial" data-sys-group="superficial">
+      <path id="esquerdo__safena_magna" class="seg" data-sys="superficial" data-points="646,172 638,292 640,424 644,552 634,710 628,870 614,1052" d="M646 172 C636 250 636 348 640 424 C643 480 648 520 644 552 C635 642 637 744 628 870 C622 948 618 1008 614 1052" />
+      <path id="esquerdo__safena_parva" class="seg posterior-proj" data-sys="superficial" data-points="714,616 722,710 728,830 734,972 742,1064" d="M714 616 C722 698 727 806 728 830 C732 916 736 1002 742 1064" />
+      <path id="esquerdo__safena_acessoria_anterior" class="seg" data-sys="superficial" data-points="660,202 672,304 682,414 690,520" d="M660 202 C670 278 679 396 690 520" />
+      <path id="esquerdo__giacomini" class="seg posterior-proj" data-sys="superficial" data-points="722,734 702,662 682,584 658,506" d="M722 734 C708 680 688 592 658 506" />
+    </g>
+
+    <g id="esquerdo__juncoes" data-sys-group="juncao">
+      <path id="esquerdo__jsf" class="seg" data-sys="juncao" data-points="670,176 646,172" d="M670 176 C662 170 654 170 646 172" />
+      <path id="esquerdo__jsp" class="seg" data-sys="juncao" data-points="714,616 700,632" d="M714 616 C708 622 704 628 700 632" />
+      <circle class="landmark" cx="646" cy="172" r="5.5" style="color: var(--juncao-stroke)" />
+      <circle class="landmark" cx="714" cy="616" r="5" style="color: var(--juncao-stroke)" />
+    </g>
+
+    <g id="esquerdo__perfurantes" data-sys-group="perfurante">
+      <path id="esquerdo__perf_coxa" class="seg" data-sys="perfurante" data-points="643,430 670,440 694,452" d="M643 430 C660 432 674 442 694 452" />
+      <path id="esquerdo__perf_perna" class="seg" data-sys="perfurante" data-points="628,800 662,808 696,818" d="M628 800 C648 802 670 812 696 818" />
+    </g>
+
+    <text class="subtle-label" x="644" y="151" text-anchor="middle">JSF</text>
+    <text class="subtle-label" x="734" y="610">JSP</text>
+  </g>
+</svg>

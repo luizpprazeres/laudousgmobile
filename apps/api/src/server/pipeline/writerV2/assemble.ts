@@ -32,8 +32,10 @@ export function assemble(spec: ReportSpec, plan: EditPlan): string {
   const comentarios = slotText(spec, plan, "comentarios").trim();
 
   // Órgãos do corpo, na ordem do base; cada um: achado (plan) OU frase_normal.
+  // Slots em omitSlots são REMOVIDOS (médico pediu "não descreva X").
+  const omit = new Set(plan.omitSlots ?? []);
   const corpo = spec.base
-    .filter((s) => !SPECIAL_SLOTS.has(s.id))
+    .filter((s) => !SPECIAL_SLOTS.has(s.id) && !omit.has(s.id))
     .map((s) => slotText(spec, plan, s.id).trim())
     .filter(Boolean)
     .join("\n");

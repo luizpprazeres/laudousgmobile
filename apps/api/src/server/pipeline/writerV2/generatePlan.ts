@@ -22,6 +22,7 @@ const PLAN_INSTRUCTIONS = `Sua saída NÃO é o laudo — é um PLANO DE EDIÇÃ
 - "slots": para cada ESTRUTURA com achado ditado, um item { slotId, corpo }. O "corpo" é a descrição MORFOLÓGICA do achado (ecogenicidade → margens → medindo → localização → extras), SEM o substantivo diagnóstico (cálculo/cisto/esteatose/litíase). Estrutura NÃO citada pelo médico: NÃO gere item (mantém-se normal). Use os slotIds EXATOS da lista.
 - "conclusao": lista de DIAGNÓSTICOS nomeados (um por achado que tenha diagnóstico), na ordem dos achados, usando a TERMINOLOGIA do dicionário. NÃO inclua o item de fechamento "Demais órgãos..." (o código adiciona). Exame normal → "conclusao": [].
 - Quando um achado casar com um GATILHO do dicionário, use o "corpo" e a "conclusão" cadastrados, preenchendo as medidas/lado/segmento realmente ditados. Achado sem entrada no dicionário: redija o corpo morfologicamente; se não souber nomear o diagnóstico, conclua de forma descritiva.
+- "omitSlots": se o médico pedir para NÃO descrever uma estrutura (ex.: "não descreva a bexiga", "sem a bexiga"), coloque o slotId dela aqui. Caso contrário, [].
 - FIDELIDADE: preserve medidas+unidade, lado, negação, multiplicidade EXATAMENTE. Não invente grau/severidade/diagnóstico/conduta não ditados.`;
 
 const EDIT_PLAN_JSON_SCHEMA = {
@@ -44,8 +45,9 @@ const EDIT_PLAN_JSON_SCHEMA = {
         },
       },
       conclusao: { type: "array", items: { type: "string" } },
+      omitSlots: { type: "array", items: { type: "string" } },
     },
-    required: ["slots", "conclusao"],
+    required: ["slots", "conclusao", "omitSlots"],
   },
 } as const;
 

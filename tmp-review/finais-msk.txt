@@ -1,0 +1,706 @@
+
+===== 7c391290 =====
+RAW: Do da mão direita, da mão esquerda, do punho direito e do punho esquerdo, no punho esquerdo, terinopatia tenossinovite do 4º compartimento extensor, Área de secção transversa do nervo mediano esquerdo normal, medindo 4 milímetros quadrados, No 3º quirodácto pode colocar mão esquerda, quer dizer 3º quirodácto da mão esquerda, imagem anecoica, com margem regular medindo 0.3 por 0.1 por 0.4 centímetros. No, Na conclusão com com cisto sinovial, ou comumente relacionado a a, entre parênteses dedo em gatilho, entre aspas, no e dedo em gatilho, Mão direita com rizartrose, punho direito Área de secção transversa do nervo mediano normal, medindo 5.1 milímetros quadrados na entrada do túnel do carpo,
+FINAL:
+**ULTRASSONOGRAFIA DA MÃO DIREITA**
+
+**COMENTÁRIOS:**
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação da mão direita.
+
+**OS SEGUINTES ASPECTOS FORAM OBSERVADOS:**
+Articulação trapézio-metacarpal do polegar direito apresentando irregularidade cortical marginal e osteófitos, compatível com alterações degenerativas.
+
+Não há sinais de derrame articular significativo ou coleções líquidas organizadas nos segmentos avaliados.
+
+**CONCLUSÃO:**
+Rizartrose à direita.
+
+
+
+**ULTRASSONOGRAFIA DA MÃO ESQUERDA**
+
+**COMENTÁRIOS:**
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação da mão esquerda.
+
+**OS SEGUINTES ASPECTOS FORAM OBSERVADOS:**
+Imagem anecoica na polia A1, com margem regular, medindo aproximadamente 0,3 x 0,1 x 0,4 cm., situada no 3º quirodáctilo  da mão esquerda.
+
+Não há sinais de coleções líquidas organizadas nos demais segmentos avaliados.
+
+**CONCLUSÃO:**
+Imagem anecoica na polia A1 do 3º quirodáctilo da mão esquerda. O diagnóstico mais provável é cisto sinovial, achado comumente relacionado à tenossinovite estenosante (“dedo em gatilho”).
+
+
+
+**ULTRASSONOGRAFIA DO PUNHO DIREITO**
+
+**COMENTÁRIOS:**
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do punho direito.
+
+**OS SEGUINTES ASPECTOS FORAM OBSERVADOS:**
+Compartimentos dos tendões extensores de aspecto habitual, sem tendinopatias ou tenossinovites.
+
+Na região volar do punho, o retináculo dos flexores apresenta padrão ecotextural normal. O nervo mediano não apresenta sinais de compressão.
+
+Nervo mediano com área de secção transversa normal na entrada do túnel do carpo, medindo 5,1 mm².
+
+Não foram caracterizadas lesões expansivas ou variações anatômicas no interior do túnel do carpo.
+
+Ausência de derrame articular ou hipertrofia sinovial nos recessos articulares do punho.
+
+**CONCLUSÃO:**
+Punho direito ecograficamente normal.
+
+
+**ULTRASSONOGRAFIA DO PUNHO ESQUERDO**
+
+**COMENTÁRIOS:**
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do punho esquerdo.
+
+**OS SEGUINTES ASPECTOS FORAM OBSERVADOS:**
+Tendões do 4º compartimento extensor, correspondendo aos tendões extensor comum dos dedos e extensor próprio do indicador, apresentando modificação do padrão ecotextural, associada a sinais de tenossinovite.
+
+Na região volar do punho, o retináculo dos flexores apresenta padrão ecotextural normal. O nervo mediano não apresenta sinais de compressão.
+
+Nervo mediano esquerdo com área de secção transversa normal na entrada do túnel do carpo, medindo 4,0 mm².
+
+Não foram caracterizadas lesões expansivas ou variações anatômicas no interior do túnel do carpo.
+
+Ausência de derrame articular significativo nos recessos articulares do punho.
+
+**CONCLUSÃO:**
+Tendinopatia/tenossinovite dos tendões do 4º compartimento extensor do punho esquerdo.
+
+
+===== 0d36e3f4 =====
+RAW: Grafia do ombro esquerdo com alterações degenerativas da esquerda, com osteóficos marginais e regularidade cortical, E0E0 restante normal.
+FINAL:
+ULTRASSONOGRAFIA DO OMBRO ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão supraespinhal de espessura, continuidade e ecotextura preservadas.
+Tendão infraespinhal de espessura, continuidade e ecotextura preservadas.
+Tendão subescapular de espessura, continuidade e ecotextura preservadas.
+Cabo longo do bíceps tópico, de espessura e ecotextura preservadas.
+Bursa subacromial-subdeltoidea sem distensão.
+Alterações degenerativas da articulação acromioclavicular esquerda, com osteóficos marginais e irregularidade cortical
+Não há sinais de derrame articular significativo.
+
+CONCLUSÃO:
+Alterações degenerativas da articulação acromioclavicular esquerda, com osteófitos marginais.
+
+===== edcfee95 =====
+RAW: Tornozelo direito  Tornozelo direito com irregularidade cortical, na inserção do, tendão do calcâneo, osteófitos não é, marginais, na conclusão do tendao de aquiles
+FINAL:
+ULTRASSONOGRAFIA DO TORNOZELO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Ausência de derrame articular.
+
+Tendão calcâneo com espessura preservada, sem evidência de roturas, apresentando irregularidade cortical na inserção distal do tendão calcâneo, associada a osteófitos/entesófitos marginais.
+
+Tendões tibial anterior, tibial posterior, fibulares, extensores e flexores longo dos dedos e do hálux de espessura, continuidade e ecotextura preservadas.
+
+Recesso articular tibiotalar sem coleções ou derrame.
+
+CONCLUSÃO:
+Tendinopatia insercional do tendão calcâneo direito.
+
+
+===== aecad190 =====
+RAW: Ultrassonografia do ombro direito com tendinopatia do supra infra e  subescapular, com espessamento da bursa subafromial e subdeltoidea, no ombro esquerdo a mesma coisa.
+FINAL:
+ULTRASSONOGRAFIA DO OMBRO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do ombro direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões supraespinhal, infraespinhal e subescapular com modificação do padrão ecotextural, sem evidência de roturas.
+
+Tendão da cabeça longa do bíceps tópico, com espessura e ecotextura preservadas.
+
+Espessamento da bursa subacromial-subdeltoidea.
+
+CONCLUSÃO:
+1. Tendinopatia dos tendões supraespinhal, infraespinhal e subescapular do ombro direito.
+2. Bursite subacromial-subdeltoidea à direita.
+
+
+
+ULTRASSONOGRAFIA DO OMBRO ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do ombro esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões supraespinhal, infraespinhal e subescapular com modificação do padrão ecotextural, sem evidência de roturas.
+
+Tendão da cabeça longa do bíceps tópico, com espessura e ecotextura preservadas.
+
+Espessamento da bursa subacromial-subdeltoidea.
+
+CONCLUSÃO:
+1. Tendinopatia dos tendões supraespinhal, infraespinhal e subescapular do ombro esquerdo.
+2. Bursite subacromial-subdeltoidea à esquerda.
+
+===== b98d2b06 =====
+RAW: Microcenografia do do pé esquerdo com do tendão tibial posterior, E ultrassonografia do punho direito normal, com área transversa do nervo mediano na entrada do túnel do carpo de 7 milímetros quadrados. também normal.
+FINAL:
+ULTRASSONOGRAFIA DO PÉ ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fáscia plantar com espessura e ecotextura preservadas.
+Tendão tibial posterior com modificação do padrão ecotextural, sem evidência de roturas.
+Não há sinais de coleções, lesões expansivas ou alterações ecográficas relevantes no segmento avaliado.
+
+CONCLUSÃO:
+Tendinopatia do tendão tibial posterior esquerdo.
+
+ULTRASSONOGRAFIA DO PUNHO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões flexores e retináculo dos flexores de aspecto preservado.
+Compartimentos extensores de aspecto preservado.
+Nervo mediano de calibre e ecotextura preservados ao nível do túnel do carpo.
+Não há sinais de coleções, cistos sinoviais ou efusão articular no segmento avaliado.
+
+CONCLUSÃO:
+Punho direito ecograficamente normal.
+
+===== 4af148ef =====
+RAW: Direito com desgaste da articulação acrinoclavicular, irregularidade cortical, e osteófitos, Isso tanto no ombro direito como no ombro esquerdo. No ombro direito também, pneumonia do, subescapular, e esquerdo, 1 batida entreespinhal. Agora próximo exame no ultrassom do punho direito. Com área de centro-exército do nível mediano de direita de 7.3, milímetros quadrados. 4º compartimento de extensor. Pois o esquerdo, com área de extensão transversa do neos mediano. De 9 milímetros quadrados, e termina a partir do 4º compartimento extensor. Do pé esquerdo com sinais de faceite plantar.
+FINAL:
+
+ULTRASSONOGRAFIA DO OMBRO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação das estruturas tendíneas, articulares e bursais do ombro direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Articulação acromioclavicular direita com irregularidade cortical, osteófitos marginais e sinais de desgaste articular.
+
+Tendão subescapular com modificação do padrão ecotextural, sem evidência de rotura.
+
+Tendões supraespinhal e infraespinhal com ecogenicidade e ecotextura normais, sem evidência de roturas.
+
+Não há derrame articular significativo.
+
+CONCLUSÃO:
+1. Sinais de artropatia degenerativa da articulação acromioclavicular direita.
+2. Tendinopatia do subescapular direito.
+
+⸻
+
+ULTRASSONOGRAFIA DO OMBRO ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação das estruturas tendíneas, articulares e bursais do ombro esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Articulação acromioclavicular esquerda com irregularidade cortical, osteófitos marginais e sinais de desgaste articular.
+
+Tendão infraespinhal com modificação do padrão ecotextural, sem evidência de rotura.
+
+Tendões subescapular e supraespinhal com ecogenicidade e ecotextura normais, sem evidência de roturas.
+
+Não há derrame articular significativo.
+
+CONCLUSÃO:
+1. Sinais de artropatia degenerativa da articulação acromioclavicular esquerda.
+2. Tendinopatia do infraespinhal esquerdo.
+
+⸻
+
+ULTRASSONOGRAFIA DO PUNHO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de 12 MHz. Foram realizados múltiplos cortes do punho direito. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Na região volar do punho, o aspecto do retináculo dos flexores apresenta padrão ecotextural normal.
+
+Nervo mediano com área de secção transversa ao nível do túnel do carpo proximal de 7,3 mm².
+
+Não foram caracterizadas lesões expansivas ou variações anatômicas no interior do túnel do carpo.
+
+Tendões do 4º compartimento extensor com modificação do padrão ecotextural.
+
+Os tendões do 1º, 2º, 3º, 5º e 6º compartimentos extensores apresentam ecogenicidade e ecotextura normais.
+
+Ausência de derrame articular ou hipertrofia sinovial nos recessos articulares do punho.
+
+CONCLUSÃO:
+Tendinopatia dos tendões do 4º compartimento extensor do punho direito — extensores comum dos dedos e extensor próprio do indicador.
+
+⸻
+
+ULTRASSONOGRAFIA DO PUNHO ESQUERDO
+
+COMENTÁRIOS:
+
+Exame realizado com transdutor linear de 12 MHz. Foram realizados múltiplos cortes do punho esquerdo. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Na região volar do punho, o aspecto do retináculo dos flexores apresenta padrão ecotextural normal.
+
+Nervo mediano com área de secção transversa ao nível do túnel do carpo proximal de 9,0 mm².
+
+Não foram caracterizadas lesões expansivas ou variações anatômicas no interior do túnel do carpo.
+
+Tendões do 4º compartimento extensor com modificação do padrão ecotextural.
+
+Os tendões do 1º, 2º, 3º, 5º e 6º compartimentos extensores apresentam ecogenicidade e ecotextura normais.
+
+Ausência de derrame articular ou hipertrofia sinovial nos recessos articulares do punho.
+
+CONCLUSÃO:
+Tendinopatia dos tendões do 4º compartimento extensor do punho esquerdo — extensores comum dos dedos e extensor próprio do indicador.
+
+⸻
+
+ULTRASSONOGRAFIA DO PÉ ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear multifrequencial de alta resolução, direcionado para a região plantar do retropé esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fáscia plantar esquerda com espessamento do terço proximal e da origem da banda central, sem sinais de rotura.
+
+Tendão calcâneo com espessura e ecotextura fibrilar preservadas.
+
+Não há derrame articular significativo.
+
+CONCLUSÃO:
+Sinais ecográficos de fasciopatia plantar à esquerda.
+
+===== df7edf3e =====
+RAW: ULTRASSONOGRAFIA DO OMBRO DIREITO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do ombro direito.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Tendão supraespinhal com discreto espessamento e alteração ecotextural, sem sinais de rotura.  Espessamento da bursa subacromial-subdeltoidea.  Articulação acromioclavicular com irregularidade cortical e pequenos osteófitos marginais.  Tendões infraespinhal, subescapular e cabo longo do bíceps com espessura, continuidade e ecotextura preservadas.  Não há sinais de derrame articular significativo.  CONCLUSÃO:  1. Tendinopatia do supraespinhal direito. 2. Bursite subacromial-subdeltoidea. 3. Sinais de artrose da articulação acromioclavicular.  ULTRASSONOGRAFIA DO OMBRO ESQUERDO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do ombro esquerdo.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Tendão supraespinhal com discreto espessamento e alteração ecotextural, sem sinais de rotura.  Tendões infraespinhal, subescapular e cabo longo do bíceps com espessura, continuidade e ecotextura preservadas.  Bursa subacromial-subdeltoidea sem distensão significativa.  Não há sinais de derrame articular significativo.  CONCLUSÃO:  Tendinopatia do supraespinhal esquerdo.  ULTRASSONOGRAFIA DA MÃO ESQUERDA  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação da mão esquerda.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Articulação trapézio-metacarpal do polegar com irregularidade cortical e osteófitos marginais.  Espessamento da polia A2 do 3º quirodáctilo, associado a discreta alteração da bainha sinovial do tendão flexor correspondente.  Os demais tendões flexores avaliados apresentam ecogenicidade, ecotextura e espessura preservadas.  Não há sinais de rotura tendínea.  Não foram evidenciadas coleções ou lesões expansivas no segmento avaliado.  CONCLUSÃO:  1. Tenossinovite ao nível da polia A2 do 3º quirodáctilo da mão esquerda. 2. Rizartrose.  ULTRASSONOGRAFIA DO PÉ DIREITO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do pé direito.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Planos subcutâneos com ecogenicidade e ecotextura preservadas.  Estruturas tendíneas avaliadas com espessura, continuidade e ecotextura preservadas.  Fáscia plantar de aspecto ecográfico habitual.  Não há sinais de coleções, lesões expansivas ou alterações ecográficas relevantes no segmento avaliado.  CONCLUSÃO:  Pé direito sem evidência de alterações ecográficas.
+FINAL:
+ULTRASSONOGRAFIA DO OMBRO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do ombro direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão supraespinhal com discreto espessamento e alteração ecotextural, sem sinais de rotura.
+
+Espessamento da bursa subacromial-subdeltoidea.
+
+Articulação acromioclavicular com irregularidade cortical e pequenos osteófitos marginais.
+
+Tendões infraespinhal, subescapular e cabo longo do bíceps com espessura, continuidade e ecotextura preservadas.
+
+Não há sinais de derrame articular significativo.
+
+CONCLUSÃO:
+1) Tendinopatia do supraespinhal direito.
+2) Bursite subacromial-subdeltoidea.
+3) Sinais de artrose da articulação acromioclavicular.
+
+
+ULTRASSONOGRAFIA DO OMBRO ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do ombro esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão supraespinhal com discreto espessamento e alteração ecotextural, sem sinais de rotura.
+
+Tendões infraespinhal, subescapular e cabo longo do bíceps com espessura, continuidade e ecotextura preservadas.
+
+Bursa subacromial-subdeltoidea sem distensão significativa.
+
+Não há sinais de derrame articular significativo.
+
+CONCLUSÃO:
+1) Tendinopatia do supraespinhal esquerdo.
+2) Não há sinais de rotura.
+
+
+ULTRASSONOGRAFIA DA MÃO ESQUERDA
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação da mão esquerda.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Articulação trapézio-metacarpal do polegar com irregularidade cortical e osteófitos marginais.
+
+Espessamento da polia A2 do 3º quirodáctilo, associado a discreta alteração da bainha sinovial do tendão flexor correspondente.
+
+Os demais tendões flexores avaliados apresentam ecogenicidade, ecotextura e espessura preservadas.
+
+Não há sinais de rotura tendínea.
+
+Não foram evidenciadas coleções ou lesões expansivas no segmento avaliado.
+
+CONCLUSÃO:
+1) Tenossinovite ao nível da polia A2 do 3º quirodáctilo da mão esquerda.
+2) Rizartrose do polegar esquerdo.
+
+
+ULTRASSONOGRAFIA DO PÉ DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do pé direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Planos subcutâneos com ecogenicidade e ecotextura preservadas.
+
+Estruturas tendíneas avaliadas com espessura, continuidade e ecotextura preservadas.
+
+Fáscia plantar de aspecto ecográfico habitual.
+
+Não há sinais de coleções, lesões expansivas ou alterações ecográficas relevantes no segmento avaliado.
+
+CONCLUSÃO:
+Pé direito sem evidência de alterações ecográficas.
+
+===== 4c621d97 =====
+RAW: ULTRASSONOGRAFIA DO JOELHO DIREITO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do joelho direito.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Tendões da pata de ganso com discreto espessamento e alteração ecotextural, sem sinais de rotura.  Não há sinais de coleção líquida significativa na topografia da bursa anserina.  Tendão quadricipital e tendão patelar com espessura, continuidade e ecotextura preservadas.  Ausência de derrame articular significativo.  Planos subcutâneos avaliados sem alterações relevantes.  CONCLUSÃO:  Tendinopatia dos tendões da pata de ganso do joelho direito.
+FINAL:
+ULTRASSONOGRAFIA DO JOELHO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do joelho direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões da pata de ganso com discreto espessamento e alteração ecotextural, sem sinais de rotura.
+
+Não há sinais de coleção líquida significativa na topografia da bursa anserina.
+
+Tendão quadricipital e tendão patelar com espessura, continuidade e ecotextura preservadas.
+
+Ausência de derrame articular significativo.
+
+Planos subcutâneos avaliados sem alterações relevantes.
+
+CONCLUSÃO:
+Tendinopatia dos tendões da pata de ganso do joelho direito.
+
+===== 8fd7da09 =====
+RAW: ULTRASSONOGRAFIA DO JOELHO DIREITO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do joelho direito.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Tendão quadricipital com espessamento e discreta alteração ecotextural, associado a pequenas calcificações distróficas de permeio.  Tendão patelar com espessura e ecotextura preservadas.  Não há sinais de derrame articular significativo.  Planos musculares e subcutâneos avaliados sem alterações relevantes.  CONCLUSÃO:  Tendinopatia do tendão quadricipital direito, com pequenas calcificações distróficas.  ULTRASSONOGRAFIA DO JOELHO ESQUERDO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do joelho esquerdo.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Tendão quadricipital e tendão patelar com espessura, continuidade e ecotextura preservadas.  Não há sinais de derrame articular significativo.  Planos musculares e subcutâneos avaliados sem alterações relevantes.  CONCLUSÃO:  Joelho esquerdo sem evidência de alterações ecográficas.  ULTRASSONOGRAFIA DO TORNOZELO DIREITO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do tornozelo direito.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Pequena coleção líquida no recesso articular anterior do tornozelo.  Tendões tibial anterior, tibial posterior, fibulares, extensores e flexores com espessura, continuidade e ecotextura preservadas.  Tendão calcâneo com espessura e padrão fibrilar preservados.  Planos subcutâneos avaliados sem alterações relevantes.  CONCLUSÃO:  Pequena coleção líquida no recesso articular anterior do tornozelo direito.  ULTRASSONOGRAFIA DO TORNOZELO ESQUERDO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do tornozelo esquerdo.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Ausência de derrame articular significativo.  Tendão calcâneo com espessura e padrão fibrilar preservados.  Tendões tibial anterior, tibial posterior, fibulares, extensores e flexores com espessura, continuidade e ecotextura preservadas.  Planos subcutâneos avaliados sem alterações relevantes.  CONCLUSÃO:  Tornozelo esquerdo sem evidência de alterações ecográficas.  ULTRASSONOGRAFIA DO PÉ DIREITO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do pé direito.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Fáscia plantar com espessura e ecotextura preservadas.  Estruturas tendíneas avaliadas com espessura, continuidade e ecotextura preservadas.  Não há sinais de coleções, lesões expansivas ou alterações ecográficas relevantes no segmento avaliado.  CONCLUSÃO:  Pé direito sem evidência de alterações ecográficas.  ULTRASSONOGRAFIA DO PÉ ESQUERDO  COMENTÁRIOS:  Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do pé esquerdo.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS:  Espessamento da fáscia plantar, medindo aproximadamente 0,8 cm em seu maior diâmetro.  Estruturas tendíneas avaliadas com espessura, continuidade e ecotextura preservadas.  Não há sinais de coleções ou lesões expansivas no segmento avaliado.  CONCLUSÃO:  Sinais de fasciopatia plantar à esquerda.
+FINAL:
+ULTRASSONOGRAFIA DO JOELHO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do joelho direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão quadricipital com espessamento e discreta alteração ecotextural, associado a pequenas calcificações distróficas de permeio.
+
+Tendão patelar com espessura e ecotextura preservadas.
+
+Não há sinais de derrame articular significativo.
+
+Planos musculares e subcutâneos avaliados sem alterações relevantes.
+
+CONCLUSÃO:
+Tendinopatia do tendão quadricipital direito, com pequenas calcificações distróficas.
+
+
+ULTRASSONOGRAFIA DO JOELHO ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do joelho esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão quadricipital e tendão patelar com espessura, continuidade e ecotextura preservadas.
+
+Não há sinais de derrame articular significativo.
+
+Planos musculares e subcutâneos avaliados sem alterações relevantes.
+
+CONCLUSÃO:
+Joelho esquerdo sem evidência de alterações ecográficas.
+
+
+ULTRASSONOGRAFIA DO TORNOZELO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do tornozelo direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Pequena coleção líquida no recesso articular anterior do tornozelo.
+
+Tendões tibial anterior, tibial posterior, fibulares, extensores e flexores com espessura, continuidade e ecotextura preservadas.
+
+Tendão calcâneo com espessura e padrão fibrilar preservados.
+
+Planos subcutâneos avaliados sem alterações relevantes.
+
+CONCLUSÃO:
+Pequeno derrame articular no recesso anterior do tornozelo direito.
+
+
+ULTRASSONOGRAFIA DO TORNOZELO ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do tornozelo esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Ausência de derrame articular significativo.
+
+Tendão calcâneo com espessura e padrão fibrilar preservados.
+
+Tendões tibial anterior, tibial posterior, fibulares, extensores e flexores com espessura, continuidade e ecotextura preservadas.
+
+Planos subcutâneos avaliados sem alterações relevantes.
+
+CONCLUSÃO:
+Tornozelo esquerdo sem evidência de alterações ecográficas.
+
+
+ULTRASSONOGRAFIA DO PÉ DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do pé direito.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fáscia plantar com espessura e ecotextura preservadas.
+
+Estruturas tendíneas avaliadas com espessura, continuidade e ecotextura preservadas.
+
+Não há sinais de coleções, lesões expansivas ou alterações ecográficas relevantes no segmento avaliado.
+
+CONCLUSÃO:
+Pé direito sem evidência de alterações ecográficas.
+
+
+ULTRASSONOGRAFIA DO PÉ ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do pé esquerdo.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Espessamento da fáscia plantar, medindo aproximadamente 0,8 cm em seu maior diâmetro.
+
+Estruturas tendíneas avaliadas com espessura, continuidade e ecotextura preservadas.
+
+Não há sinais de coleções ou lesões expansivas no segmento avaliado.
+
+CONCLUSÃO:
+Sinais de fasciopatia plantar à esquerda.
+
+===== 395a0c2e =====
+RAW: Ultrassonografia da mão direita com tenossinovite da polia a 2 do 3º e 4º Quirodáctilos, E ultrassonografia do pé esquerdo normal.
+FINAL:
+ULTRASSONOGRAFIA DA MÃO DIREITA
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação da mão direita. Foram realizados múltiplos cortes nos planos longitudinal e transversal, com complementação pelo estudo Doppler colorido.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões flexores do 3º e 4º quirodáctilos com continuidade preservada.
+
+Espessamento e discreta distensão da bainha sinovial dos tendões flexores ao nível das polias A2 do 3º e 4º quirodáctilos.
+
+Os demais tendões flexores avaliados apresentam ecogenicidade, ecotextura e espessura preservadas.
+
+Não há sinais de rotura tendínea.
+
+Não foram evidenciadas coleções ou lesões expansivas no segmento avaliado.
+
+CONCLUSÃO:
+Tenossinovite dos tendões flexores ao nível das polias A2 do 3º e 4º quirodáctilos da mão direita.
+
+
+ULTRASSONOGRAFIA DO PÉ ESQUERDO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação do pé esquerdo. Foram realizados múltiplos cortes nos planos longitudinal e transversal.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Planos subcutâneos com ecogenicidade e ecotextura preservadas.
+
+Estruturas tendíneas avaliadas com espessura, continuidade e ecotextura preservadas.
+
+Fáscia plantar de aspecto ecográfico habitual.
+
+CONCLUSÃO:
+Pé esquerdo sem evidência de alterações ecográficas.
+
+===== 5b619586 =====
+RAW: ULTRASSONOGRAFIA DO OMBRO DIREITO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendão supraespinhal apresenta modificação do padrão ecotextural. Bolsa subacromial-subdeltoidea com espessamento. Tendão infraespinhal e subescapular de espessura e ecotextura normais. Tendão da cabeça longa do bíceps de espessura e ecotextura normais, alojado no sulco bicipital. Articulação acromioclavicular sem alterações. Sinais de efusão sinovial. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: 1) Tendinopatia do tendão supraespinhal à direita. 2) Espessamento na bolsa subacromial-subdeltoidea à direita. 3) Não há sinais de ruptura do manguito rotador à direita. 4) Ausência de outras alterações ecográficas detectáveis pelo método.  ULTRASSONOGRAFIA DO PUNHO DIREITO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Na região volar do punho o aspecto do retináculo dos flexores apresenta padrão ecotextural normal; o nervo mediano apresenta aumento da área, medindo 18,9 mm², com morfologia conservada; as bolsas sinoviais radial e ulnar não apresentam efusão. Na região dorsal do punho os seis compartimentos sinoviais dos extensores apresentam aspecto normal. Não há sinais de efusão sinovial. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: Aumento da espessura do nervo mediano do punho direito com morfologia conservada. Convém a critério clínico realizar eletroneuromiografia.  ULTRASSONOGRAFIA DA MÃO DIREITA.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendões flexores e extensores da mão direita de espessura e ecotextura normais. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: Mão direita ecograficamente normal.  ULTRASSONOGRAFIA DO QUADRIL ESQUERDO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendões glúteos médio e mínimo com modificação do padrão ecotextural. Tendão iliopsoas e tendão dos adutores de espessura e ecotextura normais. Bursas trocantérica e iliopectínea sem distensão. Não há sinais de efusão articular coxofemoral.  CONCLUSÃO: 1) Tendinopatia dos glúteos médio e mínimo esquerdo. 2) Ausência de outras alterações ecográficas detectáveis pelo método.  ULTRASSONOGRAFIA DO QUADRIL DIREITO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendões glúteo mínimo e médio com modificação do padrão ecotextural. Tendão iliopsoas e tendão dos adutores de espessura e ecotextura normais. Bursas trocantérica e iliopectínea sem distensão. Não há sinais de efusão articular coxofemoral.  CONCLUSÃO: 1) Tendinopatia dos glúteos médio e mínimo direito. 2) Bursite trocantérica direita. 3) Ausência de outras alterações ecográficas detectáveis pelo método.  ULTRASSONOGRAFIA DO JOELHO DIREITO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendões do quadríceps e patelar apresentam modificação do padrão ecotextural, com calcificações distróficas na inserção do tendão patelar. Tendões da pata de ganso de espessura e ecotextura normais. Tendão do bíceps femoral de espessura e ecotextura normais. Ligamentos colaterais medial e lateral de espessura e ecotextura normais. Não há sinais de efusão sinovial ou de cisto de Baker. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: 1) Tendinopatia do patelar à direita, associada a calcificações distróficas. 2) Ausência de outras alterações ecográficas detectáveis pelo método.  ULTRASSONOGRAFIA DO JOELHO ESQUERDO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendões do quadríceps e patelar de espessura e ecotextura normais. Tendões da pata de ganso de espessura e ecotextura normais. Tendão do bíceps femoral de espessura e ecotextura normais. Ligamentos colaterais medial e lateral de espessura e ecotextura normais. Não há sinais de efusão sinovial ou de cisto de Baker. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: Joelho esquerdo ecograficamente normal.  ULTRASSONOGRAFIA DO OMBRO ESQUERDO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendões supraespinhal, infraespinhal e subescapular de espessura e ecotextura normais. Tendão da cabeça longa do bíceps de espessura e ecotextura normais, alojado no sulco bicipital. Bolsa subacromial-subdeltoidea sem efusão ou espessamento. Articulação acromioclavicular sem alterações. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: Ultrassonografia do ombro esquerdo sem alterações ecográficas relevantes.  ULTRASSONOGRAFIA DO PUNHO ESQUERDO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Na região volar do punho o aspecto do retináculo dos flexores apresenta padrão ecotextural normal; o nervo mediano apresenta aumento da área, medindo 10,5 mm², com morfologia conservada; as bolsas sinoviais radial e ulnar não apresentam efusão. Na região dorsal do punho os seis compartimentos sinoviais dos extensores apresentam aspecto normal. Não há sinais de efusão sinovial. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: Aumento da espessura do nervo mediano do punho esquerdo com morfologia conservada. Convém a critério clínico realizar eletroneuromiografia.  ULTRASSONOGRAFIA DA MÃO ESQUERDA.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendões flexores e extensores da mão esquerda de espessura e ecotextura normais. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: Mão esquerda ecograficamente normal.
+FINAL:
+ULTRASSONOGRAFIA DO OMBRO DIREITO.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão supraespinhal apresenta modificação do padrão ecotextural.
+Bolsa subacromial-subdeltoidea com espessamento.
+Tendão infraespinhal e subescapular de espessura e ecotextura normais.
+Tendão da cabeça longa do bíceps de espessura e ecotextura normais, alojado no sulco bicipital.
+Articulação acromioclavicular sem alterações.
+Sinais de efusão sinovial.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+1) Tendinopatia do tendão supraespinhal à direita.
+2) Espessamento na bolsa subacromial-subdeltoidea à direita.
+3) Não há sinais de ruptura do manguito rotador à direita.
+4) Ausência de outras alterações ecográficas detectáveis pelo método.
+
+ULTRASSONOGRAFIA DO PUNHO DIREITO.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Na região volar do punho o aspecto do retináculo dos flexores apresenta padrão ecotextural normal; o nervo mediano medindo 18,9 mm², com morfologia conservada; as bolsas sinoviais radial e ulnar não apresentam efusão.
+Na região dorsal do punho os seis compartimentos sinoviais dos extensores apresentam aspecto normal.
+Não há sinais de efusão sinovial.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+Aumento da espessura do nervo mediano do punho direito comumente relacionada a síndrome do túnel do carpo.
+
+ULTRASSONOGRAFIA DA MÃO DIREITA.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões flexores e extensores da mão direita de espessura e ecotextura normais.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+Mão direita ecograficamente normal.
+
+ULTRASSONOGRAFIA DO QUADRIL ESQUERDO.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendão glúteo mínimo com modificação do padrão ecotextural. Demais tendões glúteos com espessura e ecotextura normais.
+Tendão iliopsoas e tendão dos adutores de espessura e ecotextura normais.
+Bursas trocantérica e iliopectínea sem distensão.
+Não há sinais de efusão articular coxofemoral.
+
+CONCLUSÃO:
+1) Tendinopatia do glúteo mínimo esquerdo.
+2) Ausência de outras alterações ecográficas detectáveis pelo método.
+
+ULTRASSONOGRAFIA DO QUADRIL DIREITO.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões glúteo mínimo e médio com modificação do padrão ecotextural.
+Tendão iliopsoas e tendão dos adutores de espessura e ecotextura normais.
+Bursas trocantérica e iliopectínea com aumento da espessura.
+Não há sinais de efusão articular coxofemoral.
+
+CONCLUSÃO:
+1) Tendinopatia dos glúteos médio e mínimo direito.
+2) Bursite trocantérica direita.
+3) Ausência de outras alterações ecográficas detectáveis pelo método.
+
+ULTRASSONOGRAFIA DO JOELHO DIREITO.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões do quadríceps e patelar apresentam modificação do padrão ecotextural, com calcificações distróficas na inserção do tendão patelar e do tendão do quadríceps.
+Tendões da pata de ganso de espessura e ecotextura normais.
+Tendão do bíceps femoral de espessura e ecotextura normais.
+Ligamentos colaterais medial e lateral de espessura e ecotextura normais.
+Não há sinais de efusão sinovial ou de cisto de Baker.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+1) Tendinopatia do tendão patelar e do tendão quadríceps à direita, associada a calcificações distróficas.
+2) Ausência de outras alterações ecográficas detectáveis pelo método.
+
+ULTRASSONOGRAFIA DO JOELHO ESQUERDO.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões do quadríceps e patelar de espessura e ecotextura normais.
+Tendões da pata de ganso de espessura e ecotextura normais.
+Tendão do bíceps femoral de espessura e ecotextura normais.
+Ligamentos colaterais medial e lateral de espessura e ecotextura normais.
+Não há sinais de efusão sinovial ou de cisto de Baker.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+Joelho esquerdo ecograficamente normal.
+
+ULTRASSONOGRAFIA DO OMBRO ESQUERDO.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões supraespinhal, infraespinhal e subescapular de espessura e ecotextura normais.
+Tendão da cabeça longa do bíceps de espessura e ecotextura normais, alojado no sulco bicipital.
+Bolsa subacromial-subdeltoidea sem efusão ou espessamento.
+Articulação acromioclavicular sem alterações.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+Ombro esquerdo ecograficamente normal.
+
+ULTRASSONOGRAFIA DO PUNHO ESQUERDO.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Na região volar do punho o aspecto do retináculo dos flexores apresenta padrão ecotextural normal; o nervo mediano mede 10,5 mm², com morfologia conservada; as bolsas sinoviais radial e ulnar não apresentam efusão.
+Na região dorsal do punho os seis compartimentos sinoviais dos extensores apresentam aspecto normal.
+Não há sinais de efusão sinovial.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+Punho esquerdo ecograficamente normal.
+
+ULTRASSONOGRAFIA DA MÃO ESQUERDA.
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões flexores e extensores da mão esquerda de espessura e ecotextura normais.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+Mão esquerda ecograficamente normal.
+
+===== 6127e85f =====
+RAW: ULTRASSONOGRAFIA DO JOELHO DIREITO.  COMENTÁRIOS: Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.  OS SEGUINTES ASPECTOS FORAM OBSERVADOS: Tendões do quadríceps e patelar de espessura e ecotextura normais. Tendões da pata de ganso de espessura e ecotextura normais. Tendão do bíceps femoral de espessura e ecotextura normais. Ligamentos colaterais medial e lateral de espessura e ecotextura normais. Não há sinais de efusão sinovial ou de cisto de Baker. Ausência de outras alterações ecográficas detectáveis pelo método.  CONCLUSÃO: Joelho direito ecograficamente normal.
+FINAL:
+ULTRASSONOGRAFIA DO JOELHO DIREITO
+
+COMENTÁRIOS:
+Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Tendões do quadríceps e patelar de espessura e ecotextura normais.
+Tendões da pata de ganso de espessura e ecotextura normais.
+Tendão do bíceps femoral de espessura e ecotextura normais.
+Ligamentos colaterais medial e lateral de espessura e ecotextura normais.
+Não há sinais de efusão sinovial ou de cisto de Baker.
+Ausência de outras alterações ecográficas detectáveis pelo método.
+
+CONCLUSÃO:
+Joelho direito ecograficamente normal.
