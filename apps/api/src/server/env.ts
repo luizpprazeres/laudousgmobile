@@ -14,6 +14,10 @@ const ServerEnvSchema = z.object({
   // Esforço de raciocínio quando OPENAI_MODEL_WRITER é um reasoning model (GPT-5):
   // none/low/medium/high/xhigh. Ignorado por modelos não-reasoning (gpt-4.1-mini).
   OPENAI_WRITER_REASONING_EFFORT: z.string().default("none"),
+  // Pós-validador clínico determinístico. "observe" apenas registra issues no
+  // sanity (roda após a entrega do laudo — não altera o texto); "block_critical"
+  // interromperia a entrega quando houver issue critical (não usado ainda).
+  POST_VALIDATOR_MODE: z.enum(["observe", "block_critical"]).default("observe"),
   HARD_MODE_ENABLED: z.string().default("false"),
   HARD_MODE_MODEL: z.string().default("gpt-5.4"),
   TESTE_CATEGORY_MODEL: z.string().default(""),
