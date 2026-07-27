@@ -163,3 +163,53 @@ as contradições que o Dex1 achou. Texto a validar contra os 100 laudos.
 Harness que roda os 100 ditados reais (raw_input) pelo writer com prompt A (atual)
 vs B (reforçado), e compara: nº de achados/comandos ditados que SOBREVIVEM (queda
 de omissão), duplicações, diagnósticos inventados. Rollout só após B ganhar.
+
+---
+
+## Apêndice 2 — Síntese do boletim dos 100 laudos (Dex2, 27/07) e arquitetura REFINADA
+
+Relatório: `tmp-review/boletim-100-laudos-2026-07-27.md`. **63% dos laudos com ≥1
+defeito.** Contagens (multi-rótulo): OMISSÃO 30, ALUCINAÇÃO 25, ESTILO 26, POSIÇÃO
+16, COMANDO 17, DUPLICAÇÃO 13. Concentração em OBSTÉTRICA (21/36) + DOPPLER_OBST
+(15/19) = 36 dos 63.
+
+**O problema é MAIOR que "omissão do inesperado":** o padrão nº1 é **perda de
+átomos ditados** (valores viram `____`, MBV↔ILA, lateralidade/topografia trocadas,
+multiplicidade perdida), seguido de comando mal-processado, negação/inviabilidade
+ignoradas (BCF "presente" em feto sem vitalidade — PERIGOSO), e falha ESTRUTURAL
+(laudos MSK inteiros aninhados na conclusão anterior).
+
+### Arquitetura refinada (2 camadas, o 2º-leitor-LLM foi SUPERADO)
+1. **Prompt reforçado (WRITER_HARDENING_BLOCK, flag OFF):** ampliado além da omissão
+   para: FIDELIDADE ATÔMICA (átomos 1x, sem `____` quando há valor, MBV≠ILA) +
+   NEGAÇÃO/INVIABILIDADE/LÍQUIDO precedência absoluta + COMANDO por intenção
+   (operação única) + incluir-intenção/ignorar-ruído + colocação + FRONTEIRAS
+   ESTRUTURAIS. Já implementado (686b0ad), tsc 0, teste 7/7.
+2. **PÓS-VALIDADOR DETERMINÍSTICO (guards, SEM 2ª chamada LLM)** — substitui o
+   "segundo leitor LLM" do Apêndice 1 (Camada 3). É mais barato, mais rápido
+   (resolve a preocupação de latência do Luiz) e determinístico. Rejeita/sinaliza:
+   número ditado ausente/alterado; lateralidade trocada; negação invertida;
+   MBV/ILA rótulo/classe incompatível; BCF positivo quando input diz não-visualizado;
+   metacomando residual; título/seção dentro da conclusão; item repetido. (Dex1
+   inventaria os guards existentes vs esta lista; implementa os que faltam,
+   priorizando BCF-vs-inviabilidade, MBV/ILA e metacomando.)
+
+### 3ª frente — frases canônicas por categoria (contrato/spec)
+Placenta, 1ª US/DUM, Hashimoto, composição nodular, BI-RADS, pólipo vesicular,
+condutas autorizadas — hoje dependem do "bom senso" do writer e falham. Devem
+entrar como entradas/exemplos explícitos no contrato da categoria (o núcleo
+universal fica curto; o local diz a frase canônica). (Dex2, menor volume, alto reuso.)
+
+### Reasoning/modelo (decisão do Luiz — pendente)
+O writer em prod provavelmente já é **gpt-5.4-mini + reasoning** (env setado 5d atrás,
+Sensitive; bate com a migração 22/07). Se confirmado, a "Camada 2 (reasoning)" já
+está parcialmente feita; a decisão vira "o effort atual basta ou subir?". Confirmar
+o valor real de OPENAI_MODEL_WRITER/REASONING_EFFORT.
+
+### Ordem por impacto (do boletim)
+1. Fidelidade atômica (30 omissões + parte das 25 alucinações + 11 placeholders).
+2. Comando-como-operação (17 comando + parte das 13 duplicações).
+3. Negação/inviabilidade/líquido (os mais PERIGOSOS: BCF, líquido).
+4. Fronteiras estruturais (aninhamento MSK + 16 posição).
+5. Guards determinísticos (rede de segurança dos átomos de alto risco).
+6. Frases canônicas por categoria (placenta/Hashimoto/BI-RADS/pólipo).
