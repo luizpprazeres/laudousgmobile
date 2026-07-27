@@ -5,6 +5,7 @@ import type {
 import {
   GLOBAL_PROHIBITIONS,
   GLOBAL_RULES_BLOCK,
+  WRITER_HARDENING_BLOCK,
   buildCoTInstruction,
   DEFAULT_SYSTEM_MESSAGE,
 } from "./global";
@@ -42,9 +43,12 @@ export function buildSystemMessage(args: {
   categoryLabel: string;
   writingStyleCode: WritingStyleCode;
   ragBlocks: RagBlockForPrompt[];
+  hardening?: boolean;
 }): string {
   if (args.categoryCode === "LIVRE" || args.categoryCode === "TESTE") {
-    return LIVRE_SYSTEM_PROMPT;
+    return args.hardening
+      ? `${LIVRE_SYSTEM_PROMPT}\n\n${WRITER_HARDENING_BLOCK}`
+      : LIVRE_SYSTEM_PROMPT;
   }
 
   const contract = getCategoryContract(
@@ -85,6 +89,8 @@ export function buildSystemMessage(args: {
   // 2. subspecialty — TODO
 
   sections.push(formatSection(GLOBAL_RULES_BLOCK));
+
+  if (args.hardening) sections.push(WRITER_HARDENING_BLOCK);
 
   if (styleOverlay) sections.push(styleOverlay);
 

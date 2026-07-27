@@ -42,6 +42,7 @@ export async function* runWriterStream(args: {
    */
   rawUserMessage?: string;
   modelConfig?: WriterModelConfig;
+  hardening?: boolean;
   signal?: AbortSignal;
   onSystemMessage?: (message: string) => void;
 }): AsyncGenerator<
@@ -67,6 +68,8 @@ export async function* runWriterStream(args: {
     categoryLabel: args.categoryLabel,
     writingStyleCode: args.writingStyleCode,
     ragBlocks: args.ragBlocks,
+    hardening:
+      args.hardening ?? (env().WRITER_HARDENING === "true"),
   });
   args.onSystemMessage?.(systemMessage);
 

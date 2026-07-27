@@ -14,6 +14,9 @@ const ServerEnvSchema = z.object({
   // Esforço de raciocínio quando OPENAI_MODEL_WRITER é um reasoning model (GPT-5):
   // none/low/medium/high/xhigh. Ignorado por modelos não-reasoning (gpt-4.1-mini).
   OPENAI_WRITER_REASONING_EFFORT: z.string().default("none"),
+  // Reforço opt-in do prompt do writer anterior. OFF preserva o system message
+  // byte a byte; ligar somente após validação A/B contra laudos reais.
+  WRITER_HARDENING: z.string().default("false"),
   HARD_MODE_ENABLED: z.string().default("false"),
   HARD_MODE_MODEL: z.string().default("gpt-5.4"),
   TESTE_CATEGORY_MODEL: z.string().default(""),

@@ -223,6 +223,38 @@ export const GLOBAL_PROHIBITIONS = `PROIBIÇÕES GLOBAIS (aplicam-se a TODAS as 
 - NÃO numerar a conclusão quando houver apenas um único item`;
 
 /**
+ * Reforço opt-in do writer anterior contra omissão do inesperado.
+ * Só entra no system message quando WRITER_HARDENING=true.
+ */
+export const WRITER_HARDENING_BLOCK = `REFORÇO DE INTENÇÃO E COMPLETUDE (PRIORIDADE ALTA):
+
+FIDELIDADE ATÔMICA (faça ANTES de redigir):
+Liste mentalmente TODOS os átomos sensíveis do ditado: cada MEDIDA com sua UNIDADE, o TIPO da medida (ex.: MBV ≠ ILA — nunca troque um pelo outro), LADO/topografia, NEGAÇÃO ("não visualizado", "ausente", "sem"), MULTIPLICIDADE (uma vs várias imagens), VITALIDADE, e GRAU/classificação ditada. Cada átomo deve aparecer no laudo UMA vez e no MESMO sentido. NUNCA escreva "____" quando o valor foi ditado — o placeholder só vale quando o dado realmente falta. Não funda dois achados num só nem parta um em dois.
+
+NEGAÇÃO, INVIABILIDADE E LÍQUIDO — PRECEDÊNCIA ABSOLUTA (vence a frase normal do modelo):
+- Uma NEGAÇÃO ditada sobre uma estrutura ("não visualizado", "ausente", "sem vitalidade", "batimentos não visualizados") BLOQUEIA qualquer frase positiva/normal sobre a MESMA estrutura, no corpo E na conclusão. Ex.: se o médico diz "batimentos não visualizados / feto sem vitalidade", NUNCA escreva "Batimentos cardíacos ritmados/presentes" nem BCF com "____"; e a inviabilidade DEVE ir à conclusão.
+- LÍQUIDO AMNIÓTICO: preserve o RÓTULO ditado (MBV ou ILA) e a CLASSE ditada (reduzido/normal/aumentado). Nunca converta MBV em ILA nem reclassifique "reduzido/aumentado" como "normal".
+
+COMANDOS DO MÉDICO — EXECUTAR POR INTENÇÃO:
+O médico às vezes dá INSTRUÇÕES de edição, não só descrições. Reconheça-as e EXECUTE a intenção — nunca escreva as palavras do comando, nunca duplique.
+- "após/depois da frase de X, acrescente Y" → insira a frase de Y logo após a frase de X, no CORPO, redigida no estilo da casa (ex.: "adicione uma frase de tórax fetal normal" → escreva "O tórax fetal é normal.", NÃO a instrução).
+- "não descreva / remova / sem X" → OMITA a estrutura X do laudo.
+- "troque a frase de X por Y" / "no lugar de X escreva Y" → substitua.
+- "no final da conclusão / item N da conclusão = Z" → posicione conforme pedido.
+Antes de finalizar: confira que cada comando foi CUMPRIDO (a intenção realizada) e que o conteúdo NÃO aparece duplicado (uma vez a instrução + uma vez o efeito).
+
+INCLUIR O QUE TEM INTENÇÃO, IGNORAR O RUÍDO:
+Inclua TUDO que o médico disse com INTENÇÃO — achados, medidas, ressalvas, comandos — mesmo que não haja lugar previsto no modelo (nesse caso, encaixe no ponto mais coerente). Incluir o que foi pedido VENCE preservar o template quando os dois conflitam. PORÉM: trechos que são claramente RUÍDO — lixo de transcrição, frase abandonada/interrompida, palavra solta sem sentido clínico, hesitação — devem ser IGNORADOS (não force conteúdo sem intenção só para "não deixar nada de fora"). Julgue lendo a mensagem INTEIRA: o que tem intenção fica; o ruído morre.
+Checklist final (amplie o atual): liste TUDO que o médico disse com intenção (não só as categorias do template) e confirme que cada um aparece — no corpo, na conclusão ou executado como comando. Se faltar algo com intenção, reescreva.
+
+ONDE COLOCAR O ACHADO INESPERADO:
+Achado atípico SEM comando de posição: descreva no CORPO, na posição anatômica coerente (morfologia pura — ecogenicidade → margens → medida → localização), SEM nomear diagnóstico ali. Só leve à CONCLUSÃO se o médico DITAR/pedir o diagnóstico — NÃO infira diagnóstico a partir da anormalidade por conta própria.
+Na dúvida sobre o diagnóstico, descreva no corpo e não afirme na conclusão.
+
+FRONTEIRAS ESTRUTURAIS (exames múltiplos e seções):
+NUNCA aninhe um laudo dentro de outro. Um TÍTULO, "COMENTÁRIOS:", "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:" ou uma segunda "CONCLUSÃO:" JAMAIS aparecem DENTRO de uma conclusão existente. Em exame MÚLTIPLO (ex.: punho direito + punho esquerdo), cada novo título ENCERRA formalmente o laudo anterior — não continue a numeração da conclusão do laudo anterior. A conclusão de um laudo só contém os itens DAQUELE laudo.`;
+
+/**
  * Chain-of-Thought interno — VERBATIM (lib/promptBuilder.ts:22-42).
  * `{categoryLabel}` substituído em runtime.
  */
