@@ -111,3 +111,55 @@ renal, "saco solto", o exemplo do tórax).
 - **F5** — Validar contra os casos reais; iterar; medir omissão antes/depois.
 - **F6** — (Condicional) Camada 3 se a omissão persistir.
 - **F7** — Propostas de melhoria de prompt + pontos de atenção (do F2) para o Luiz.
+
+---
+
+## Apêndice — Rascunho dos blocos de reforço (Camada 1, model-agnostic)
+
+Baseado no mapa do Dex1 (global.ts) + achados do Dex2 (omissão de placenta/CCN,
+comandos ecoados literais, duplicação obstétrica, diagnóstico inventado). Entram
+em `global.ts` (GLOBAL_RULES_BLOCK / buildCoTInstruction) atrás de flag, e resolvem
+as contradições que o Dex1 achou. Texto a validar contra os 100 laudos.
+
+### Bloco 1 — COMANDOS DO MÉDICO (executar por INTENÇÃO)
+> O médico às vezes dá INSTRUÇÕES de edição, não só descrições. Reconheça-as e
+> EXECUTE a intenção — nunca escreva as palavras do comando, nunca duplique.
+> - "após/depois da frase de X, acrescente Y" → insira a frase de Y logo após a
+>   frase de X, no CORPO, redigida no estilo da casa (ex.: "adicione uma frase de
+>   tórax fetal normal" → escreva "O tórax fetal é normal.", NÃO a instrução).
+> - "não descreva / remova / sem X" → OMITA a estrutura X do laudo.
+> - "troque a frase de X por Y" / "no lugar de X escreva Y" → substitua.
+> - "no final da conclusão / item N da conclusão = Z" → posicione conforme pedido.
+> Antes de finalizar: confira que cada comando foi CUMPRIDO (a intenção realizada)
+> e que o conteúdo NÃO aparece duplicado (uma vez a instrução + uma vez o efeito).
+
+### Bloco 2 — INCLUIR O QUE TEM INTENÇÃO, IGNORAR O RUÍDO
+> Inclua TUDO que o médico disse com INTENÇÃO — achados, medidas, ressalvas,
+> comandos — mesmo que não haja lugar previsto no modelo (nesse caso, encaixe no
+> ponto mais coerente). Incluir o que foi pedido VENCE preservar o template quando
+> os dois conflitam. PORÉM: trechos que são claramente RUÍDO — lixo de transcrição,
+> frase abandonada/interrompida, palavra solta sem sentido clínico, hesitação —
+> devem ser IGNORADOS (não force conteúdo sem intenção só para "não deixar nada de
+> fora"). Julgue lendo a mensagem INTEIRA: o que tem intenção fica; o ruído morre.
+> Checklist final (amplie o atual): liste TUDO que o médico disse com intenção
+> (não só as categorias do template) e confirme que cada um aparece — no corpo, na
+> conclusão ou executado como comando. Se faltar algo com intenção, reescreva.
+
+### Bloco 3 — ONDE COLOCAR O ACHADO INESPERADO
+> Achado atípico SEM comando de posição: descreva no CORPO, na posição anatômica
+> coerente (morfologia pura — ecogenicidade → margens → medida → localização),
+> SEM nomear diagnóstico ali. Só leve à CONCLUSÃO se o médico DITAR/pedir o
+> diagnóstico — NÃO infira diagnóstico a partir da anormalidade por conta própria.
+> Na dúvida sobre o diagnóstico, descreva no corpo e não afirme na conclusão.
+
+### Contradições a resolver (do mapa do Dex1)
+- Numeração: unificar em "1)" (remover a exceção "1. 2. 3." de ABDOMEN_TOTAL —
+  global.ts:89 e contracts/ABDOMEN_TOTAL.ts:103 — batendo em estilo:59/global:223).
+- Diagnóstico: alinhar o exemplo do estilo OBJETIVO (styles.ts:68, hoje com
+  "compatível com esteatose" nos ACHADOS) à regra "diagnóstico só na conclusão"
+  (estilo:17) — OU documentar explicitamente a exceção do estilo OBJETIVO.
+
+### Validação (offline, sem risco de prod)
+Harness que roda os 100 ditados reais (raw_input) pelo writer com prompt A (atual)
+vs B (reforçado), e compara: nº de achados/comandos ditados que SOBREVIVEM (queda
+de omissão), duplicações, diagnósticos inventados. Rollout só após B ganhar.
