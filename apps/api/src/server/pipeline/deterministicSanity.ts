@@ -7,6 +7,9 @@ import { checkObstetrica } from "./deterministicSanity/obstetrica";
 import { checkPelveFeminina } from "./deterministicSanity/pelveFeminina";
 import { checkTireoide } from "./deterministicSanity/tireoide";
 import type { ExtractedValues, SanityFlag } from "./deterministicSanity/types";
+import { checkAmnioticFluidFidelity } from "./amnioticFluidFidelityGuard";
+import { checkFetalVitality } from "./fetalVitalityGuard";
+import { checkMetaCommandLeaks } from "./metaCommandLeakGuard";
 
 export type DeterministicIssue = {
   type:
@@ -16,6 +19,9 @@ export type DeterministicIssue = {
     | "comando_ignorado"
     | "placeholder_vazado"
     | "rads_divergente"
+    | "vitalidade_fetal_divergente"
+    | "liquido_amniotico_divergente"
+    | "metacomando_residual"
     | "categoria_especifica";
   severity: "critical" | "warning";
   detail: string;
@@ -108,6 +114,9 @@ export function runDeterministicSanity(args: {
     ...checkCommands(args.findings, args.finalText),
     ...checkPlaceholders(args.finalText),
     ...checkRadsClassifications(args.findings, args.finalText, rawInput),
+    ...checkFetalVitality(rawInput, args.finalText),
+    ...checkAmnioticFluidFidelity(rawInput, args.finalText),
+    ...checkMetaCommandLeaks(args.finalText),
     ...categorySpecific,
   ];
 

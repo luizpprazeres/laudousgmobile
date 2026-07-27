@@ -1115,6 +1115,23 @@ export async function POST(req: Request) {
       });
       const deterministicOnlySanity =
         sanityResultFromDeterministic(deterministicSanity);
+      const postValidatorCriticalIssues = deterministicSanity.issues.filter(
+        (issue) =>
+          issue.severity === "critical" &&
+          (issue.type === "vitalidade_fetal_divergente" ||
+            issue.type === "liquido_amniotico_divergente" ||
+            issue.type === "metacomando_residual"),
+      );
+      if (
+        env().POST_VALIDATOR_MODE === "block_critical" &&
+        postValidatorCriticalIssues.length > 0
+      ) {
+        throw new Error(
+          `POST_VALIDATOR_BLOCKED: ${postValidatorCriticalIssues
+            .map((issue) => issue.type)
+            .join(",")}`,
+        );
+      }
 
       outcome = "success";
       await finalizeReport({
@@ -1333,6 +1350,13 @@ function mapDeterministicIssueType(
   // classificação ditada pelo médico foi substituída/inventada.
   // Detalhe completo preservado em `detail`.
   if (type === "rads_divergente") return "comando_ignorado";
+  if (
+    type === "vitalidade_fetal_divergente" ||
+    type === "liquido_amniotico_divergente" ||
+    type === "metacomando_residual"
+  ) {
+    return "outro";
+  }
   if (type === "categoria_especifica") return "outro";
   return type;
 }

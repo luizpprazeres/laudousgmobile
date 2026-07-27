@@ -17,6 +17,9 @@ const ServerEnvSchema = z.object({
   // Reforço opt-in do prompt do writer anterior. OFF preserva o system message
   // byte a byte; ligar somente após validação A/B contra laudos reais.
   WRITER_HARDENING: z.string().default("false"),
+  // Pós-validador clínico determinístico. "observe" apenas registra issues no
+  // sanity; "block_critical" interrompe a entrega quando houver issue critical.
+  POST_VALIDATOR_MODE: z.enum(["observe", "block_critical"]).default("observe"),
   HARD_MODE_ENABLED: z.string().default("false"),
   HARD_MODE_MODEL: z.string().default("gpt-5.4"),
   TESTE_CATEGORY_MODEL: z.string().default(""),
