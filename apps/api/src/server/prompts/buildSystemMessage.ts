@@ -11,6 +11,8 @@ import {
 import { getCategoryContract } from "./contracts";
 import { PELVE_ANEXIAL_BLOCK } from "./contracts/PELVE_FEMININA";
 import { PLACENTA_BLOCK } from "./contracts/OBSTETRICA";
+import { TIREOIDE_HASHIMOTO_BLOCK } from "./contracts/TIREOIDE";
+import { ABDOMEN_POLIPO_BLOCK } from "./contracts/ABDOMEN_TOTAL";
 import { toObjectiveHeaders } from "./contracts/objective";
 import { getStyleOverlay } from "./styles";
 import { LIVRE_SYSTEM_PROMPT } from "../pipeline/livreSystemPrompt";
@@ -46,6 +48,8 @@ export function buildSystemMessage(args: {
   ragBlocks: RagBlockForPrompt[];
   hasAnexial?: boolean;
   hasPlacenta?: boolean;
+  hasHashimoto?: boolean;
+  hasPolipo?: boolean;
 }): string {
   if (args.categoryCode === "LIVRE" || args.categoryCode === "TESTE") {
     return LIVRE_SYSTEM_PROMPT;
@@ -96,6 +100,14 @@ export function buildSystemMessage(args: {
     args.hasPlacenta
   ) {
     sections.push(PLACENTA_BLOCK);
+  }
+
+  if (args.categoryCode === "TIREOIDE" && args.hasHashimoto) {
+    sections.push(TIREOIDE_HASHIMOTO_BLOCK);
+  }
+
+  if (args.categoryCode === "ABDOMEN_TOTAL" && args.hasPolipo) {
+    sections.push(ABDOMEN_POLIPO_BLOCK);
   }
 
   // 2. subspecialty — TODO

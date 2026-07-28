@@ -22,6 +22,18 @@ export function hasPlacentaMention(rawInput: string): boolean {
   return PLACENTA_TRIGGER_RE.test(rawInput);
 }
 
+const HASHIMOTO_TRIGGER_RE = /hashimoto/i;
+
+export function hasHashimotoMention(rawInput: string): boolean {
+  return HASHIMOTO_TRIGGER_RE.test(rawInput);
+}
+
+const POLIPO_TRIGGER_RE = /p[óo]lipo/i;
+
+export function hasPolipoMention(rawInput: string): boolean {
+  return POLIPO_TRIGGER_RE.test(rawInput);
+}
+
 /**
  * Etapa 4 — Writer (gpt-4.1-mini, streaming, temperatura por categoria).
  *
@@ -90,6 +102,12 @@ export async function* runWriterStream(args: {
       (effectiveCategoryCode === "OBSTETRICA" ||
         effectiveCategoryCode === "DOPPLER_OBSTETRICO") &&
       hasPlacentaMention(sourceTranscript),
+    hasHashimoto:
+      effectiveCategoryCode === "TIREOIDE" &&
+      hasHashimotoMention(sourceTranscript),
+    hasPolipo:
+      effectiveCategoryCode === "ABDOMEN_TOTAL" &&
+      hasPolipoMention(sourceTranscript),
   });
   args.onSystemMessage?.(systemMessage);
 

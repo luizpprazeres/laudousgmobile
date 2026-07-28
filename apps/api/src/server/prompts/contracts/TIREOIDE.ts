@@ -57,15 +57,6 @@ Tipos de descritores: ecogenicidade (anecoica, hipoecoica, isoecoica, heterogên
 "Pico sistólico da artéria tireoidiana inferior direita de X cm/s."
 "Pico sistólico da artéria tireoidiana inferior esquerda de Y cm/s."
 
-3.5. FRASE CANÔNICA — TIREOIDITE DE HASHIMOTO
-Quando o usuário disser "coloque as frases de Hashimoto", "frases de tireoidite de Hashimoto" ou pedir a frase da casa para Hashimoto, isso é um COMANDO para substituir a frase normal de CADA lobo e do istmo pela morfologia abaixo. Nunca copie o comando para o laudo e nunca escreva "as frases de Hashimoto".
-"Lobo direito medindo A x B x C cm (volume de Vd ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
-"Lobo esquerdo medindo D x E x F cm (volume de Ve ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
-"Istmo medindo G x H x I cm (volume de Vi ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
-Na conclusão, preservar o item de volume e acrescentar exatamente:
-"Sinais de doença parenquimatosa difusa. O diagnóstico mais provável é tireoidite de Hashimoto."
-Copiar VERBATIM a morfologia acima nos três segmentos. As grafias "hipoecoicas" e "hiperecoicas" são imutáveis.
-
 4) CONCLUSÃO
 
 4.1. VOLUME TOTAL
@@ -88,8 +79,21 @@ PROIBIÇÕES ESPECÍFICAS — TIREOIDE:
 - NÃO incluir linfonodos normais na conclusão (apenas no corpo, com linha em branco antes)
 - NÃO calcular ou alterar a Nota Final Domingos nem o TI-RADS — reproduzir exatamente como informado
 - NÃO trocar "imagem isoecoica com áreas anecoicas" por "imagem sólida com áreas anecoicas"
-- NÃO ecoar comandos como "coloque as frases de Hashimoto" ou "as frases de Hashimoto"; executar a frase canônica da seção 3.5
 - NÃO omitir o rodapé com créditos Domingos e ACR quando houver avaliação de nódulo`;
+
+/**
+ * Reforço de Hashimoto opt-in (de-risk do 95760f4, que embutia isto ALWAYS-ON
+ * na seção 3.5 do contrato). Injetado em TIREOIDE SOMENTE quando o ditado
+ * menciona Hashimoto; tireoide sem Hashimoto fica byte-idêntica ao controle.
+ */
+export const TIREOIDE_HASHIMOTO_BLOCK = `FRASE CANÔNICA — TIREOIDITE DE HASHIMOTO
+Quando o usuário disser "coloque as frases de Hashimoto", "frases de tireoidite de Hashimoto" ou pedir a frase da casa para Hashimoto, isso é um COMANDO para substituir a frase normal de CADA lobo e do istmo pela morfologia abaixo. Nunca copie o comando para o laudo e nunca escreva "as frases de Hashimoto".
+"Lobo direito medindo A x B x C cm (volume de Vd ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
+"Lobo esquerdo medindo D x E x F cm (volume de Ve ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
+"Istmo medindo G x H x I cm (volume de Vi ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
+Na conclusão, preservar o item de volume e acrescentar exatamente:
+"Sinais de doença parenquimatosa difusa. O diagnóstico mais provável é tireoidite de Hashimoto."
+Copiar VERBATIM a morfologia acima nos três segmentos. As grafias "hipoecoicas" e "hiperecoicas" são imutáveis.`;
 
 /**
  * Modelo-base TIREOIDE (sem Doppler, caso normal) — sintetizado das frases
