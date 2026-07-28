@@ -29,6 +29,7 @@ import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
 import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
 import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
+import { normalizeDumFormat } from "@/server/pipeline/dumFormatGuard";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -1046,6 +1047,21 @@ export async function POST(req: Request) {
       // Guard transversal: remove itens numerados de conclusão cujo conteúdo é
       // só placeholder ("____"). Preserva placeholders dentro de itens reais.
       finalText = removeEmptyConclusionItems(finalText);
+      // Guard determinístico de FORMA para DUM/Primeira USG/IG (só família
+      // obstétrica). Corrige desvios de forma pós-emissão — frase da Primeira USG
+      // reescrita, linha de DUM fabricada a partir de IG-em-semanas, item de
+      // gestação com placeholder "____" duplicado, "1 dias" → "1 dia" — SEM
+      // competir com o writer e SEM decidir a âncora clínica de IG. Roda após os
+      // guards de conclusão (peso/Doppler/placeholder) p/ renumerar por último.
+      // Substitui o bloco de prompt condicional que deu 2× NO-GO (deslocava
+      // vitalidade/líquido). Byte-idêntico fora das assinaturas de defeito.
+      if (
+        effectiveCategory === "OBSTETRICA" ||
+        effectiveCategory === "DOPPLER_OBSTETRICO" ||
+        effectiveCategory === "MORFOLOGICO"
+      ) {
+        finalText = normalizeDumFormat(finalText);
+      }
       // Fase 3 (determinismo): normaliza o espaçamento de seções do MSK — quebra
       // simples entre achados, linha em branco só antes de cabeçalhos/títulos.
       // Garante por construção o formato que o writer LLM não entrega de forma
