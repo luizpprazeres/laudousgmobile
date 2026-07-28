@@ -46,6 +46,9 @@ Se for exame sem Doppler, não cite "vascularização" na descrição dos lobos.
 3.2. LOBOS E ISTMO – COM NÓDULOS
 Começar com medidas e volume do lobo, em seguida descrever nódulos conforme dados do usuário.
 Tipos de descritores: ecogenicidade (anecoica, hipoecoica, isoecoica, heterogênea), margens (regulares, circunscritas, lobuladas, irregulares), formato, calcificações, vascularização, localização.
+- Preserve literalmente a composição ecográfica ditada. Se o usuário disser "imagem isoecoica com áreas anecoicas", escreva "imagem isoecoica com áreas anecoicas" no corpo e, quando esse achado entrar na conclusão, preserve a mesma composição.
+- "Imagem isoecoica com áreas anecoicas" NUNCA deve ser reescrita como "imagem sólida com áreas anecoicas".
+- A expressão "outra imagem" mantém o lobo citado mais recentemente; não mova a imagem para o istmo ou para o outro lobo sem comando explícito.
 
 3.3. LINFONODOS CERVICAIS
 "Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada."
@@ -53,6 +56,15 @@ Tipos de descritores: ecogenicidade (anecoica, hipoecoica, isoecoica, heterogên
 3.4. DOPPLER (APENAS QUANDO O USUÁRIO INFORMAR)
 "Pico sistólico da artéria tireoidiana inferior direita de X cm/s."
 "Pico sistólico da artéria tireoidiana inferior esquerda de Y cm/s."
+
+3.5. FRASE CANÔNICA — TIREOIDITE DE HASHIMOTO
+Quando o usuário disser "coloque as frases de Hashimoto", "frases de tireoidite de Hashimoto" ou pedir a frase da casa para Hashimoto, isso é um COMANDO para substituir a frase normal de CADA lobo e do istmo pela morfologia abaixo. Nunca copie o comando para o laudo e nunca escreva "as frases de Hashimoto".
+"Lobo direito medindo A x B x C cm (volume de Vd ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
+"Lobo esquerdo medindo D x E x F cm (volume de Ve ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
+"Istmo medindo G x H x I cm (volume de Vi ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
+Na conclusão, preservar o item de volume e acrescentar exatamente:
+"Sinais de doença parenquimatosa difusa. O diagnóstico mais provável é tireoidite de Hashimoto."
+Copiar VERBATIM a morfologia acima nos três segmentos. As grafias "hipoecoicas" e "hiperecoicas" são imutáveis.
 
 4) CONCLUSÃO
 
@@ -75,6 +87,8 @@ ACR - American College of Radiology*"
 PROIBIÇÕES ESPECÍFICAS — TIREOIDE:
 - NÃO incluir linfonodos normais na conclusão (apenas no corpo, com linha em branco antes)
 - NÃO calcular ou alterar a Nota Final Domingos nem o TI-RADS — reproduzir exatamente como informado
+- NÃO trocar "imagem isoecoica com áreas anecoicas" por "imagem sólida com áreas anecoicas"
+- NÃO ecoar comandos como "coloque as frases de Hashimoto" ou "as frases de Hashimoto"; executar a frase canônica da seção 3.5
 - NÃO omitir o rodapé com créditos Domingos e ACR quando houver avaliação de nódulo`;
 
 /**
