@@ -128,6 +128,13 @@ Não mude a estrutura.
 Não produza explicações.
 Entregue somente o laudo final.`;
 
+export const MAMARIA_BIRADS_BLOCK = `CLASSIFICAÇÃO BI-RADS — REGRAS CANÔNICAS:
+- Este bloco é ativado somente quando há lesão mamária. Para a lesão descrita, inclua obrigatoriamente a categoria BI-RADS correspondente na CONCLUSÃO. Esta regra específica vence a proibição genérica de inferir BI-RADS quando a morfologia abaixo estiver explicitamente ditada.
+- Imagem sólida com características benignas — forma oval ou redonda, margens circunscritas e maior eixo paralelo à pele, sem característica suspeita ditada — deve ser classificada como BI-RADS 3. Imagem cística simples/anecoica, sem componente sólido ou característica suspeita, deve ser classificada como BI-RADS 2.
+- NÃO superestime para BI-RADS 4 ou 5 sem característica suspeita explicitamente ditada. Só use BI-RADS 4/5 quando o médico ditar o próprio grau ou característica suspeita, como margem espiculada/irregular, orientação não paralela à pele ou sombra acústica.
+- NUNCA imprima no laudo marcador, comentário ou raciocínio interno, incluindo qualquer texto no formato "[REVISAR...]" ou equivalente.
+- Preserve a MULTIPLICIDADE exatamente como ditada: uma imagem permanece singular; duas, múltiplas ou várias imagens permanecem no plural no corpo e na conclusão. Quando o médico ditar várias imagens e fornecer a medida apenas da maior, mantenha o achado no plural; medir somente a maior não autoriza reduzir o conjunto a uma imagem. Não funda achados distintos nem transforme "cistos simples" em "cisto simples".`;
+
 /**
  * Modelo-base MAMARIA (caso normal, com axilas avaliadas) — sintetizado das
  * frases canônicas de lib/categoryDefaults.ts:3183-3411. Estrutura fixa do

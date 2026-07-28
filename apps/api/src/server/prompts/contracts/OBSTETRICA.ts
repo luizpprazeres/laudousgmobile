@@ -84,10 +84,12 @@ ENTREGA: somente o laudo final, sem explicações.`;
  */
 export const PLACENTA_BLOCK = `PLACENTA — FRASE CANÔNICA CONDICIONAL:
 - Quando a placenta for explicitamente ditada, este bloco prevalece sobre a regra de omiti-la no modelo inicial.
-- Em linha própria no CORPO: "Placenta de localização {LOCALIZAÇÃO}, com ecotextura {ECOTEXTURA}{ (grau {GRAU ROMANO} de Grannum et al.)}." Omitir a subcláusula cujo dado não estiver disponível; nunca imprimir placeholder.
+- Em linha própria no CORPO: "Placenta de localização {LOCALIZAÇÃO}, com ecotextura {ECOTEXTURA}." Omitir a subcláusula cujo dado não estiver disponível; nunca imprimir placeholder.
+- Acrescentar a placenta NÃO substitui nem remove as demais linhas obrigatórias do modelo (líquido amniótico/MBV/ILA, biometria etc.): todas permanecem; a placenta é uma linha ADICIONAL no corpo.
 - Preservar integralmente localização e ecotextura ditadas. A topografia pertence somente à placenta e NUNCA pode migrar para apresentação, situação, dorso ou polo fetal.
 - Se a ecotextura não foi ditada e a idade gestacional é conhecida: antes de 30 semanas usar "homogênea"; a partir de 30 semanas usar "heterogênea, de acordo com a fase da gestação". Nunca substituir ecotextura ditada.
-- Incluir o grau de Grannum somente quando o grau tiver sido ditado. A placenta fica somente no corpo e NUNCA vira item de conclusão.`;
+- Quando o grau for ditado, acrescentar ao fim da frase da placenta o parentético EXATO " (grau {0|I|II|III} de Grannum et al.)", convertendo 0→0, 1→I, 2→II e 3→III. Sem grau ditado, não escrever o parentético nem "____".
+- A placenta fica somente no corpo e NUNCA vira item de conclusão.`;
 
 /**
  * Modelo PADRÃO (> 14 semanas) — VERBATIM de lib/categoryDefaults.ts:52-80.

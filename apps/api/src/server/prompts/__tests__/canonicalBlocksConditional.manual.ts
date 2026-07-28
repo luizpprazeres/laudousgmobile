@@ -15,7 +15,7 @@ const sha256 = (text: string): string =>
   createHash("sha256").update(text).digest("hex");
 
 function build(
-  categoryCode: "TIREOIDE" | "ABDOMEN_TOTAL",
+  categoryCode: "TIREOIDE" | "ABDOMEN_TOTAL" | "MAMARIA",
   categoryLabel: string,
   rawInput?: string,
 ): string {
