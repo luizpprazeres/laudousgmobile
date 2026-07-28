@@ -9,6 +9,13 @@ import type { WriterModelConfig } from "./modelResolver";
 import { temperatureForCategory } from "./temperatureByCategory";
 import { buildSystemMessage } from "../prompts/buildSystemMessage";
 
+const ANEXIAL_TRIGGER_RE =
+  /regi[aã]o\s+anexial|anexos?|anexial|paraovari|paratub/i;
+
+export function hasAnexialMention(rawInput: string): boolean {
+  return ANEXIAL_TRIGGER_RE.test(rawInput);
+}
+
 /**
  * Etapa 4 — Writer (gpt-4.1-mini, streaming, temperatura por categoria).
  *
@@ -41,6 +48,8 @@ export async function* runWriterStream(args: {
    * dos achados estruturados). Tira o structurer do caminho bloqueante.
    */
   rawUserMessage?: string;
+  /** Ditado original usado apenas para selecionar reforços condicionais. */
+  sourceTranscript?: string;
   modelConfig?: WriterModelConfig;
   hardening?: boolean;
   signal?: AbortSignal;
@@ -62,6 +71,7 @@ export async function* runWriterStream(args: {
 
   const effectiveCategoryCode =
     args.categoryCode ?? args.findings.categoria_detectada;
+  const sourceTranscript = args.sourceTranscript ?? args.rawUserMessage ?? "";
 
   const systemMessage = buildSystemMessage({
     categoryCode: effectiveCategoryCode,
@@ -70,6 +80,9 @@ export async function* runWriterStream(args: {
     ragBlocks: args.ragBlocks,
     hardening:
       args.hardening ?? (env().WRITER_HARDENING === "true"),
+    hasAnexial:
+      effectiveCategoryCode === "PELVE_FEMININA" &&
+      hasAnexialMention(sourceTranscript),
   });
   args.onSystemMessage?.(systemMessage);
 

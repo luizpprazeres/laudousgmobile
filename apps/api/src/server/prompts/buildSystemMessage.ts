@@ -10,6 +10,7 @@ import {
   DEFAULT_SYSTEM_MESSAGE,
 } from "./global";
 import { getCategoryContract } from "./contracts";
+import { PELVE_ANEXIAL_BLOCK } from "./contracts/PELVE_FEMININA";
 import { toObjectiveHeaders } from "./contracts/objective";
 import { getStyleOverlay } from "./styles";
 import { LIVRE_SYSTEM_PROMPT } from "../pipeline/livreSystemPrompt";
@@ -44,6 +45,7 @@ export function buildSystemMessage(args: {
   writingStyleCode: WritingStyleCode;
   ragBlocks: RagBlockForPrompt[];
   hardening?: boolean;
+  hasAnexial?: boolean;
 }): string {
   if (args.categoryCode === "LIVRE" || args.categoryCode === "TESTE") {
     return args.hardening
@@ -85,6 +87,10 @@ export function buildSystemMessage(args: {
   const sections: string[] = [];
 
   sections.push(formatSection(contract ?? DEFAULT_SYSTEM_MESSAGE));
+
+  if (args.categoryCode === "PELVE_FEMININA" && args.hasAnexial) {
+    sections.push(PELVE_ANEXIAL_BLOCK);
+  }
 
   // 2. subspecialty — TODO
 

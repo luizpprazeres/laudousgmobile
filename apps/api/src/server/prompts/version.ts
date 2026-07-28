@@ -31,7 +31,7 @@ import {
 } from "./contracts/TIREOIDE";
 
 // Bump obrigatório quando qualquer contract, modelo base ou regra global mudar.
-export const PROMPT_VERSION = "v1.6";
+export const PROMPT_VERSION = "v1.7";
 
 const OBJECTIVE_STYLE_ID = "44444444-4444-4444-8444-444444444444";
 

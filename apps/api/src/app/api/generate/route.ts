@@ -890,6 +890,8 @@ export async function POST(req: Request) {
             rawUserMessage: (fastPath || isFreeWriterCategory)
               ? reqInput.consolidated_transcript ?? reqInput.raw_input
               : undefined,
+            sourceTranscript:
+              reqInput.consolidated_transcript ?? reqInput.raw_input,
             modelConfig,
             signal,
             onSystemMessage: (message) => {
@@ -941,6 +943,8 @@ export async function POST(req: Request) {
           categoryCode: effectiveCategory,
           categoryLabel: categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
           rawUserMessage: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          sourceTranscript:
+            reqInput.consolidated_transcript ?? reqInput.raw_input,
           modelConfig,
           signal,
           onSystemMessage: (message) => {
