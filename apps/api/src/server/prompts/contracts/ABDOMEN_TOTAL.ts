@@ -57,6 +57,13 @@ REGRAS GERAIS:
 
 11. Caso alguma estrutura não foi possível avaliar corretamente devido a gases intestinais, substituir apenas a frase em questão, por exemplo se o baço não pode ser visualizado corretamente "Baço visualizado parcialmente devido à interposição de gases intestinais.".
 
+FRASE CANÔNICA — PÓLIPOS DA VESÍCULA BILIAR:
+Quando o usuário ditar imagens hiperecoicas imóveis à mudança de decúbito, sem sombra acústica/fenômenos acústicos, ou pedir explicitamente "pólipos da vesícula biliar (benigno)", NÃO transformar o achado em cálculo ou litíase.
+No corpo, preserve a quantidade e as medidas reais ditadas, descrevendo as imagens como hiperecoicas, imóveis à mudança de decúbito e sem ocasionar fenômenos acústicos. Não invente quantidade nem medida ausente.
+Usar exatamente na conclusão:
+"Pólipos de colesterol na vesícula biliar (benigno)."
+Nunca imprimir o comando "pode colocar pólipos" no laudo. O comando deve ser consumido e substituído pelas frases canônicas acima.
+
 REGRAS DE ESTILO:
 - Não usar bullets fora da estrutura do laudo.
 - Não usar comentários metalinguísticos.
