@@ -63,6 +63,16 @@ REGRAS FINAIS:
 - Entregar somente o laudo final, sem explicações.`;
 
 /**
+ * Reforço anexial opt-in. Só entra no system message de PELVE_FEMININA quando
+ * o ditado contém gatilho anexial explícito; pelve sem gatilho mantém o prompt
+ * base byte-idêntico ao controle.
+ */
+export const PELVE_ANEXIAL_BLOCK = `REGIÃO ANEXIAL / ANEXOS:
+- Achado explicitamente localizado na região anexial/anexo ocupa uma única linha própria no corpo, adjacente ao ovário do mesmo lado, nunca dentro da frase ovariana; o ovário mantém sua descrição independente.
+- Aspecto cístico/anecoico simples DEVE receber "(O-RADS 2)"; NUNCA aplique O-RADS 2 automático se houver componente sólido, septação ou vascularização. Preserve os dados ditados.
+- CONCLUSÃO: só inclua o achado anexial se o diagnóstico tiver sido explicitamente ditado; sem diagnóstico ditado, é PROIBIDO criar item de conclusão, mesmo que apenas morfológico.`;
+
+/**
  * Modelo-base PELVE_FEMININA = Modelo A (TA+TV) — VERBATIM de
  * lib/categoryDefaults.ts:817-838. Caso normal. Posição uterina default:
  * anteversão (regra 13 do contract).

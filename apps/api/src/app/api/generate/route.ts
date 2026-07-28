@@ -895,6 +895,8 @@ export async function POST(req: Request) {
             rawUserMessage: (fastPath || isFreeWriterCategory)
               ? reqInput.consolidated_transcript ?? reqInput.raw_input
               : undefined,
+            sourceTranscript:
+              reqInput.consolidated_transcript ?? reqInput.raw_input,
             modelConfig,
             signal,
             onSystemMessage: (message) => {
@@ -946,6 +948,8 @@ export async function POST(req: Request) {
           categoryCode: effectiveCategory,
           categoryLabel: categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
           rawUserMessage: reqInput.consolidated_transcript ?? reqInput.raw_input,
+          sourceTranscript:
+            reqInput.consolidated_transcript ?? reqInput.raw_input,
           modelConfig,
           signal,
           onSystemMessage: (message) => {
@@ -1338,6 +1342,13 @@ function mapDeterministicIssueType(
   // classificação ditada pelo médico foi substituída/inventada.
   // Detalhe completo preservado em `detail`.
   if (type === "rads_divergente") return "comando_ignorado";
+  if (
+    type === "vitalidade_fetal_divergente" ||
+    type === "liquido_amniotico_divergente" ||
+    type === "metacomando_residual"
+  ) {
+    return "outro";
+  }
   if (type === "categoria_especifica") return "outro";
   return type;
 }
