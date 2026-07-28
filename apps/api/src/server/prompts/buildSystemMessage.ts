@@ -10,6 +10,7 @@ import {
 } from "./global";
 import { getCategoryContract } from "./contracts";
 import { PELVE_ANEXIAL_BLOCK } from "./contracts/PELVE_FEMININA";
+import { PLACENTA_BLOCK } from "./contracts/OBSTETRICA";
 import { toObjectiveHeaders } from "./contracts/objective";
 import { getStyleOverlay } from "./styles";
 import { LIVRE_SYSTEM_PROMPT } from "../pipeline/livreSystemPrompt";
@@ -44,6 +45,7 @@ export function buildSystemMessage(args: {
   writingStyleCode: WritingStyleCode;
   ragBlocks: RagBlockForPrompt[];
   hasAnexial?: boolean;
+  hasPlacenta?: boolean;
 }): string {
   if (args.categoryCode === "LIVRE" || args.categoryCode === "TESTE") {
     return LIVRE_SYSTEM_PROMPT;
@@ -86,6 +88,14 @@ export function buildSystemMessage(args: {
 
   if (args.categoryCode === "PELVE_FEMININA" && args.hasAnexial) {
     sections.push(PELVE_ANEXIAL_BLOCK);
+  }
+
+  if (
+    (args.categoryCode === "OBSTETRICA" ||
+      args.categoryCode === "DOPPLER_OBSTETRICO") &&
+    args.hasPlacenta
+  ) {
+    sections.push(PLACENTA_BLOCK);
   }
 
   // 2. subspecialty — TODO

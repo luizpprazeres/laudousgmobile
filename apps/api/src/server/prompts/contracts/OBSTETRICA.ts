@@ -79,6 +79,20 @@ PROIBIÇÕES
 ENTREGA: somente o laudo final, sem explicações.`;
 
 /**
+ * Reforço placentário opt-in. Injetado no system message de OBSTETRICA/
+ * DOPPLER_OBSTETRICO SOMENTE quando o ditado menciona placenta; caso contrário
+ * o prompt fica byte-idêntico ao controle. Validado GO por multi-run.
+ */
+export const PLACENTA_BLOCK = `PLACENTA — FRASE CANÔNICA CONDICIONAL:
+- Quando a placenta for explicitamente ditada, este bloco prevalece sobre a regra de omiti-la no modelo inicial.
+- Em linha própria no CORPO: "Placenta de localização {LOCALIZAÇÃO}, com ecotextura {ECOTEXTURA}." Omitir a subcláusula cujo dado não estiver disponível; nunca imprimir placeholder.
+- Acrescentar a placenta NÃO substitui nem remove as demais linhas obrigatórias do modelo (líquido amniótico/MBV/ILA, biometria etc.): todas permanecem; a placenta é uma linha ADICIONAL no corpo.
+- Preservar integralmente localização e ecotextura ditadas. A topografia pertence somente à placenta e NUNCA pode migrar para apresentação, situação, dorso ou polo fetal.
+- Se a ecotextura não foi ditada e a idade gestacional é conhecida: antes de 30 semanas usar "homogênea"; a partir de 30 semanas usar "heterogênea, de acordo com a fase da gestação". Nunca substituir ecotextura ditada.
+- Quando o grau for ditado, acrescentar ao fim da frase da placenta o parentético EXATO " (grau {0|I|II|III} de Grannum et al.)", convertendo 0→0, 1→I, 2→II e 3→III. Sem grau ditado, não escrever o parentético nem "____".
+- A placenta fica somente no corpo e NUNCA vira item de conclusão.`;
+
+/**
  * Modelo PADRÃO (> 14 semanas) — VERBATIM de lib/categoryDefaults.ts:52-80.
  * Bloco RAG kind=modelo, priority alta. Marcadores {LINHA_LIQUIDO_AMNIOTICO}
  * e {CONCLUSAO_LIQUIDO_AMNIOTICO} expandidos pelas GLOBAL_RULES § LÍQUIDO AMNIÓTICO.

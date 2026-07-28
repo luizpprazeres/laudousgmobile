@@ -16,6 +16,12 @@ export function hasAnexialMention(rawInput: string): boolean {
   return ANEXIAL_TRIGGER_RE.test(rawInput);
 }
 
+const PLACENTA_TRIGGER_RE = /\bplacent(?:a|as|ária|árias|ário|ários)\b/iu;
+
+export function hasPlacentaMention(rawInput: string): boolean {
+  return PLACENTA_TRIGGER_RE.test(rawInput);
+}
+
 /**
  * Etapa 4 — Writer (gpt-4.1-mini, streaming, temperatura por categoria).
  *
@@ -80,6 +86,10 @@ export async function* runWriterStream(args: {
     hasAnexial:
       effectiveCategoryCode === "PELVE_FEMININA" &&
       hasAnexialMention(sourceTranscript),
+    hasPlacenta:
+      (effectiveCategoryCode === "OBSTETRICA" ||
+        effectiveCategoryCode === "DOPPLER_OBSTETRICO") &&
+      hasPlacentaMention(sourceTranscript),
   });
   args.onSystemMessage?.(systemMessage);
 
