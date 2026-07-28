@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { hasAnexialMention } from "../../pipeline/writer";
 import { buildSystemMessage } from "../buildSystemMessage";
+import { resolveConditionalPromptBlocks } from "../conditionalBlocks";
 import {
   PELVE_ANEXIAL_BLOCK,
   PELVE_FEMININA_CONTRACT,
@@ -18,13 +18,15 @@ const baseArgs = {
 const control = buildSystemMessage(baseArgs);
 const withoutAnexial = buildSystemMessage({
   ...baseArgs,
-  hasAnexial: hasAnexialMention(
+  conditionalBlocks: resolveConditionalPromptBlocks(
+    "PELVE_FEMININA",
     "Útero em anteversão. Ovários com dimensões normais.",
   ),
 });
 const withAnexial = buildSystemMessage({
   ...baseArgs,
-  hasAnexial: hasAnexialMention(
+  conditionalBlocks: resolveConditionalPromptBlocks(
+    "PELVE_FEMININA",
     "Coleção na região anexial direita medindo 2,0 cm.",
   ),
 });

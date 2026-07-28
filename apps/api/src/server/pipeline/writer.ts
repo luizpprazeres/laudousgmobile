@@ -8,13 +8,7 @@ import { writerClient, writerRequestParams } from "../ai/writerClient";
 import type { WriterModelConfig } from "./modelResolver";
 import { temperatureForCategory } from "./temperatureByCategory";
 import { buildSystemMessage } from "../prompts/buildSystemMessage";
-
-const ANEXIAL_TRIGGER_RE =
-  /regi[aã]o\s+anexial|anexos?|anexial|paraovari|paratub/i;
-
-export function hasAnexialMention(rawInput: string): boolean {
-  return ANEXIAL_TRIGGER_RE.test(rawInput);
-}
+import { resolveConditionalPromptBlocks } from "../prompts/conditionalBlocks";
 
 /**
  * Etapa 4 — Writer (gpt-4.1-mini, streaming, temperatura por categoria).
@@ -80,9 +74,10 @@ export async function* runWriterStream(args: {
     ragBlocks: args.ragBlocks,
     hardening:
       args.hardening ?? (env().WRITER_HARDENING === "true"),
-    hasAnexial:
-      effectiveCategoryCode === "PELVE_FEMININA" &&
-      hasAnexialMention(sourceTranscript),
+    conditionalBlocks: resolveConditionalPromptBlocks(
+      effectiveCategoryCode,
+      sourceTranscript,
+    ),
   });
   args.onSystemMessage?.(systemMessage);
 
