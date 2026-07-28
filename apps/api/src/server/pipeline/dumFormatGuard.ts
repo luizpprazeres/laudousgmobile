@@ -58,3 +58,29 @@ export function normalizeDumFormat(text: string): string {
 
   return out;
 }
+
+/**
+ * Remove itens de CONCLUSÃO exatamente duplicados (o writer às vezes repete um
+ * item idêntico, ex.: "Líquido amniótico em quantidade aumentada (ILA mede
+ * 26,4 cm)." duas vezes — e9e44aec/19e3816b). Mantém a PRIMEIRA ocorrência,
+ * remove as repetições idênticas e renumera. Comparação por texto exato
+ * (trim) — itens diferentes (medidas/lados distintos) nunca colidem.
+ *
+ * Conservador: só age quando há duplicata EXATA; qualquer outra conclusão passa
+ * inalterada. Idempotente.
+ */
+export function dedupeConclusionItems(text: string): string {
+  const parsed = parseConclusion(text);
+  if (!parsed.found) return text;
+
+  const seen = new Set<string>();
+  const kept = parsed.items.filter((item) => {
+    const key = item.trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (kept.length === parsed.items.length) return text;
+  return renderWithConclusion(parsed, kept);
+}

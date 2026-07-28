@@ -29,7 +29,10 @@ import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
 import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
 import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
-import { normalizeDumFormat } from "@/server/pipeline/dumFormatGuard";
+import {
+  normalizeDumFormat,
+  dedupeConclusionItems,
+} from "@/server/pipeline/dumFormatGuard";
 import {
   enforceStatedAmnioticClass,
   ensureAmnioticConclusionLine,
@@ -1061,6 +1064,11 @@ export async function POST(req: Request) {
         effectiveCategory === "MORFOLOGICO"
       ) {
         finalText = normalizeDumFormat(finalText);
+        // Dedup determinístico de itens de conclusão exatamente duplicados
+        // (ex.: líquido amniótico repetido — e9e44aec/19e3816b). Só família
+        // obstétrica: os casos MSK de "duplicata" são falha estrutural de exame
+        // bilateral (não dedup) e ficam de fora por construção.
+        finalText = dedupeConclusionItems(finalText);
       }
       // Fase 3 (determinismo): normaliza o espaçamento de seções do MSK — quebra
       // simples entre achados, linha em branco só antes de cabeçalhos/títulos.
