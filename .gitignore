@@ -80,3 +80,7 @@ apps/api/_smoke*.mjs
 
 # Harness experimental do Writer V2 (descartável)
 apps/api/_writer_v2_harness.*
+
+# Python bytecode
+__pycache__/
+*.pyc

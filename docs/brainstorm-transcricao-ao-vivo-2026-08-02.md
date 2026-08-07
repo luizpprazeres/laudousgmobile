@@ -67,7 +67,7 @@ upload para `/api/transcribe` → Whisper em batch. **Não é ao vivo.**
 | # | Achado | Impacto |
 |---|---|---|
 | **A1** | O iOS chama `POST /api/deepgram/token` **sem `?category=`**. O backend então cai no `return ALL_MEDICAL_ASR_KEYTERMS` — 110 termos / 138 palavras — em vez dos 50–62 termos da categoria. | O narrowing por categoria existe e **nunca é usado**. Perde-se foco do biasing. |
-| **A2** | ~~O teto de 500 tokens está sendo estourado.~~ **MEDIDO em 02/08 — hipótese própria derrubada.** Os keyterms funcionam em pt-BR, mas o efeito é **instável e não-monotônico** com o tamanho da lista. Ver §1.1. | O problema é **relevância, não só tamanho**: 110 termos indiferenciados diluem o boost. |
+| **A2** | ~~O teto de 500 tokens está sendo estourado.~~ **MEDIDO em 02/08 — hipótese própria derrubada.** Os keyterms funcionam em pt-BR, mas o efeito é **instável e não-monotônico** com o tamanho da lista. Ver §1.1. → **REABERTA em 06/08: o teto é REAL e virou o limite ativo. Ver §1.3.** | O problema é **relevância, não só tamanho**: 110 termos indiferenciados diluem o boost. |
 | **A3** | ~~Snapshot antigo do nova-3 sem keyterm multilíngue.~~ **Descartado:** produção resolve `general-nova-3` versão `2026-05-11.12084`, que aceita keyterm em pt-BR (comprovado — com 4 termos o boost funciona). | Não é a causa. |
 | **A4** | API key do Deepgram trafega para o cliente. | Risco de segurança/LGPD já sinalizado no próprio código. |
 | **A5** | Watch grava a 32 kbps AAC. | Bitrate baixo para jargão médico; consoantes fricativas (que separam "hipo" de "hiper") são as primeiras a morrer na compressão. |
@@ -165,6 +165,43 @@ parecidos (`miométrio`, `colestase`) **não** são tocados.
 
 > ⚠️ Continua sendo áudio sintético de uma única voz. Mede *fidelidade de termo em fala
 > limpa e em ruído sintético* — não substitui o corpus real de ditados.
+
+### 1.3 Achado de 06/08 — o teto de 500 tokens é real, e falha em silêncio
+
+Ao promover o harness para `scripts/asr-bench/` e rodá-lo de novo, a config com o glossário
+completo devolveu **0/159**. Não era diluição — eram **18 HTTP 400**, com a mensagem literal
+da API:
+
+```
+Keyterm limit exceeded. The maximum number of tokens across all keyterms is 500.
+```
+
+**Isto reabre parcialmente o A2.** O que foi corretamente descartado em 02/08 foi o teto como
+explicação do comportamento **não-monotônico** em listas de 55–70 termos — pequenas demais
+para estourar nada. Mas o teto existe, e com o glossário crescendo ele virou o **limite
+ativo**. Medido contra a API em 06/08 com este vocabulário: **137 palavras passam, 138 dão
+400.** O limite real é em tokens de subpalavra; palavras são só um proxy.
+
+**Por que isso é o pior tipo de bug:** o cliente iOS tem um fallback que reconecta **sem**
+keyterms quando a conexão com eles falha — engenharia defensiva boa, que aqui vira máscara.
+Estourar o teto não quebra nada visível: o ditado apenas despenca de ~85% para ~66% de
+acerto de termo, sem erro em lugar nenhum.
+
+**Como foi descoberto:** adicionar `"maior bolsão vertical"` (3 palavras) ao glossário levou
+o fallback `ALL` de 135 para 138 palavras e passou a produzir 400 em toda requisição. O termo
+foi encurtado para `"bolsão"` e o limite virou `KEYTERM_WORD_BUDGET` em `medicalGlossary.ts`,
+com teste. **A folga hoje é de 1 palavra** — o `ALL` vive na beira do precipício.
+
+**Consequência para o roadmap:** isto aumenta a urgência do A1. Enquanto o cliente não mandar
+`?category=` sempre, é o `ALL` que vai para o ar — a maior e menos relevante das listas, e a
+única que chega perto do teto. As listas focadas usam 32–51 palavras, com folga confortável.
+
+| Config | Termos | Palavras | Deepgram |
+|---|---|---|---|
+| `ALL` (fallback de hoje) | 115 | **136** | ✅ (folga de 1) |
+| TIREOIDE · MAMARIA | 30 | 32 | ✅ |
+| OBSTETRICA | 39 | 47 | ✅ |
+| MUSCULOESQUELETICO_V2 | 41 | 51 | ✅ |
 
 ---
 

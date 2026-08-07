@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
 import {
   ALL_MEDICAL_ASR_KEYTERMS,
+  KEYTERM_WORD_BUDGET,
+  keytermWordCount,
   medicalAsrKeytermsForCategory,
 } from "../medicalGlossary";
+
+/// Categorias com teto prático de contagem de termos (não de palavras).
+const EXPECTED_MAX = {
+  TIREOIDE: 55, MAMARIA: 55, ABDOMEN_TOTAL: 55, OBSTETRICA: 55,
+  DOPPLER_VENOSO_MMII: 55, MUSCULOESQUELETICO_V2: 55, PELVE_FEMININA: 55,
+} as const;
 
 const currentDeepgramTerms = [
   "Hadlock",
@@ -94,12 +102,40 @@ for (const cat of ["TIREOIDE", "MAMARIA", "ABDOMEN_TOTAL", "MUSCULOESQUELETICO_V
 }
 
 // Teto prático: listas focadas precisam continuar enxutas.
-for (const cat of Object.keys({
-  TIREOIDE: 1, MAMARIA: 1, ABDOMEN_TOTAL: 1, OBSTETRICA: 1,
-  DOPPLER_VENOSO_MMII: 1, MUSCULOESQUELETICO_V2: 1, PELVE_FEMININA: 1,
-})) {
+for (const [cat, max] of Object.entries(EXPECTED_MAX)) {
   const n = medicalAsrKeytermsForCategory(cat).length;
-  assert.ok(n <= 55, `${cat} tem ${n} keyterms — acima do teto prático de 55`);
+  assert.ok(n <= max, `${cat} tem ${n} keyterms — acima do teto prático de ${max}`);
 }
 
-console.log("medical glossary: PASS");
+// ── O teste que impede a regressão de 06/08 ──────────────────────────────────
+// O Deepgram rejeita a requisição INTEIRA com HTTP 400 quando a lista estoura:
+//   "Keyterm limit exceeded. The maximum number of tokens across all keyterms
+//    is 500."
+// E o cliente iOS, ao ver a conexão com keyterms falhar, reconecta SEM eles.
+// Resultado: nenhum erro visível e o ditado despenca de ~85% para ~66% de
+// acerto de termo. Medido contra a API em 06/08: 137 palavras passam, 138 dão
+// 400. Foi assim que "maior bolsão vertical" (3 palavras) quebrou produção.
+//
+// Se este teste falhar, NÃO aumente o orçamento sem medir contra a API de novo:
+// o limite real é em tokens de subpalavra, e palavras são só um proxy.
+const allWords = keytermWordCount(ALL_MEDICAL_ASR_KEYTERMS);
+assert.ok(
+  allWords <= KEYTERM_WORD_BUDGET,
+  `ALL_MEDICAL_ASR_KEYTERMS tem ${allWords} palavras — acima do orçamento de ` +
+    `${KEYTERM_WORD_BUDGET}. O Deepgram vai devolver 400 e o cliente vai cair ` +
+    `no fallback SEM keyterms, silenciosamente. Encurte termos ou remova algum.`,
+);
+
+// Toda lista efetivamente enviada precisa caber, não só o fallback.
+for (const cat of [null, "CATEGORIA_DESCONHECIDA", ...Object.keys(EXPECTED_MAX)]) {
+  const n = keytermWordCount(medicalAsrKeytermsForCategory(cat));
+  assert.ok(
+    n <= KEYTERM_WORD_BUDGET,
+    `categoria ${cat} envia ${n} palavras — acima do orçamento`,
+  );
+}
+
+console.log(
+  `medical glossary: PASS (fallback ALL = ${allWords}/${KEYTERM_WORD_BUDGET} palavras, ` +
+    `folga de ${KEYTERM_WORD_BUDGET - allWords})`,
+);

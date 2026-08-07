@@ -1,0 +1,8 @@
+# Artefatos gerados — reproduzíveis por gen-audio.sh e dump-keyterms.ts.
+audio/
+keyterms.json
+bench_results.json
+bench_corrected.json
+
+# Listas de keyterms ad-hoc para experimentação local.
+custom.json
