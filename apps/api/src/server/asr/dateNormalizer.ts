@@ -172,6 +172,24 @@ export function normalizeSpokenDates(text: string): string {
           ),
   );
 
+  // Forma MISTA "25 do 02 de 2026" — o que o Deepgram devolve quando o
+  // `numerals=true` já converteu dia e mês em dígitos e só a preposição
+  // sobreviveu. Não é ambígua (dia, mês e ano estão todos ali), então
+  // reconstrói de verdade em vez de só pedir revisão. O lookahead `(?!\s+e\s+\d)`
+  // cede a vez para a regra de garble logo abaixo, onde o ano veio partido.
+  out = out.replace(
+    new RegExp(`\\b(${SMALL_NUMBER}|\\d{1,2})\\s+(?:do|de)\\s+(${SMALL_NUMBER}|\\d{1,2})\\s+de\\s+(${YEAR})\\b(?!\\s+e\\s+\\d)(\\s*\\[REVISAR\\])?`, "gi"),
+    (original, day: string, month: string, year: string, review?: string) =>
+      review
+        ? original
+        : formatOrReview(
+            original,
+            parseSmallNumber(day),
+            parseSmallNumber(month),
+            parseYear(year),
+          ),
+  );
+
   // Garble típico "2 do 3 de 2020 e 6": há mais de uma reconstrução possível.
   // Preserva todos os números e apenas pede revisão; nunca inventa 2026.
   out = out.replace(
