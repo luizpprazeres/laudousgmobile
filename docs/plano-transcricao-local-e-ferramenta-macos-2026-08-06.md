@@ -357,6 +357,45 @@ caminho de hotwords não vem pronto, e começar por ele seria pagar antes de sab
   motor, não recebe áudio, não faz streaming e **não injeta glossário**.
 - Um transducer de 0.6 B não cabe no orçamento de RAM/ANE/bateria do relógio.
 
+### Verificado no SDK em 07/08 — e um exemplo real de projeto que erra isso
+
+Não é opinião nem leitura de documentação. Conferido no SDK instalado
+(**Xcode 26.4 / WatchOS26.4.sdk**):
+
+```
+❌ Speech.framework       AUSENTE no watchOS SDK
+✅ Speech.framework       existe no iOS SDK
+✅ AVFoundation.framework existe no watchOS SDK
+```
+
+`Speech.framework` é onde vivem **os dois** — o `SFSpeechRecognizer` legado e o
+`SpeechTranscriber` novo. Ausente o framework, nenhum dos dois roda no relógio. O
+`AVFoundation` está lá, então **gravar** funciona; **transcrever** não.
+
+O [murmur](https://github.com/sushildalavi/murmur) é a demonstração viva do problema. O
+README anuncia *"On-device transcription … for iPhone, Mac, and **Apple Watch**"*. No código:
+
+```swift
+#if canImport(Speech)
+    …implementação real com SFSpeechRecognizer…
+#else
+public final class SpeechTranscriber: Transcriber {
+    public func transcribeFile(at url: URL, locale: Locale) async throws
+        -> [TranscriptSegment] { [] }        // ← no-op silencioso
+}
+#endif
+```
+
+O target `MurmurWatchApp` (platform `watchOS`) depende do `MurmurCore`, onde `canImport(Speech)`
+é **falso** — então o relógio compila o stub vazio. E o repositório **não tem uma linha de
+`WCSession`/`WatchConnectivity`**, ou seja, também não descarrega o áudio para o iPhone
+processar. Na prática o app de relógio grava e mostra *"Speak to see the transcript here."*
+para sempre.
+
+> **A lição transversal:** afirmação de README sobre suporte a watchOS em ASR precisa ser
+> verificada no código e no SDK. Dois dos projetos avaliados aqui — Echo-Chamber e murmur —
+> anunciam Apple Watch; nenhum dos dois transcreve no relógio.
+
 **A consequência prática é boa:** para **comando** ("próxima categoria", "marcar achado",
 "gerar laudo"), o ditado de sistema do Watch é **suficiente e grátis** — vocabulário
 pequeno, fechado e sem jargão. Para **ditar o laudo**, continua fora de questão. Isso
@@ -372,6 +411,29 @@ do que eu havia creditado: **comando por voz, não só por toque.**
 | [TranscriptionSuite](https://github.com/homelab-00/TranscriptionSuite) | GPLv3. Electron + Python + Docker = peso morto para ditado no Mac. Bom **catálogo** de backends, base ruim |
 | [whisper_real_time](https://github.com/davabase/whisper_real_time) | Demo educacional: 2.9k ★ mas **16 commits**, sem VAD. **Não usar.** Vale como ilustração do §2.1 |
 | [Scriberr](https://github.com/rishikanthc/Scriberr) | MIT, bem-feito, mas **batch** e desenvolvimento pausado. Resolve um problema que vocês não têm |
+| [**murmur**](https://github.com/sushildalavi/murmur) *(avaliado em 07/08)* | **O mais útil dos seis, e ainda assim de utilidade estreita.** Swift/SwiftUI + Go, MIT, 0 ★ / 119 commits. Ver §2.6.1 |
+
+### 2.6.1 murmur — o que aproveitar e o que ignorar
+
+**Aproveitar:** o `SpeechLiveTranscriptionSession` (≈130 linhas,
+`MurmurCore/Sources/MurmurCore/Transcription/Transcriber.swift`) é uma implementação
+mínima, limpa e **MIT** exatamente da trilha A — `SFSpeechAudioBufferRecognitionRequest` +
+`shouldReportPartialResults = true` + `requiresOnDeviceRecognition = true` (guardado por
+`supportsOnDeviceRecognition`), emitindo por `AsyncStream`. Como usa a API **legada**, é o
+ponto de partida natural para resolver a pendência da §2.2.2 — e o `MurmurCore` como package
+compartilhado entre iOS/Mac/watch é o padrão a copiar se a ferramenta de Mac (Parte I) for
+compartilhar código com o app iOS.
+
+**Ignorar:**
+
+- **Não usa `contextualStrings`.** Não resolve a §2.2.2 — não é evidência de nenhum lado.
+- **Watch não transcreve** (ver §2.5). O README afirma que sim.
+- O dedupe de segmentos é ingênuo — `Array(current.dropFirst(previous.count))` assume que o
+  reconhecedor só **acrescenta**. Quando ele **revisa** uma hipótese anterior (que é o normal
+  em ASR de streaming), o texto sai duplicado ou errado. O dedupe de frase final que vocês já
+  têm no `DeepgramLiveService` é mais maduro que este.
+- Zero pt-BR, zero vocabulário, zero jargão. É app de memo de voz com resumo — mesma
+  categoria do Echo-Chamber, não ferramenta de ditado clínico.
 
 **O padrão:** os 5 são *Whisper/Parakeet batch em desktop*. Nenhum ataca streaming + mobile +
 pt-BR + jargão médico. Bom para mapear o terreno; a resposta não está neles.
@@ -455,7 +517,7 @@ derrubaram a versão anterior deste doc (PR #3671 mergeado · hotwords exigem
 [erro "asset not found after attempted download"](https://developer.apple.com/forums/thread/797835) ·
 [Apple Watch Series 9 — Neural Engine e ditado](https://www.apple.com/newsroom/2023/09/apple-introduces-the-advanced-new-apple-watch-series-9/)
 
-**Batch / referência:** [faster-whisper](https://github.com/SYSTRAN/faster-whisper) ·
+**Batch / referência:** [murmur](https://github.com/sushildalavi/murmur) · [faster-whisper](https://github.com/SYSTRAN/faster-whisper) ·
 [Scriberr](https://github.com/rishikanthc/Scriberr) ·
 [TranscriptionSuite](https://github.com/homelab-00/TranscriptionSuite) ·
 [whisper_real_time](https://github.com/davabase/whisper_real_time) ·
