@@ -1,6 +1,15 @@
 import { env } from "../env";
 
-export type GenerationMode = "standard" | "hard";
+/**
+ * - `standard` — o writer normal da casa.
+ * - `hard` — "laudo difícil": modelo maior, mesmo provider.
+ * - `experimental` — provider alternativo (hoje DeepSeek), para bancada de
+ *   comparação. Substitui a antiga categoria TESTE: o gatilho passou a ser um
+ *   MODO, não uma categoria, justamente para poder testar o modelo em qualquer
+ *   exame — tireoide, obstétrico, o que for — em vez de exigir uma categoria
+ *   própria que não tem contrato clínico nenhum.
+ */
+export type GenerationMode = "standard" | "hard" | "experimental";
 
 export type WriterModelConfig = {
   provider: "openai" | "openai-compat";
@@ -43,14 +52,21 @@ export function resolveWriterModel(
   ctx: WriterModelContext,
   config: ModelResolverEnv = env(),
 ): WriterModelConfig {
-  if (ctx.categoryCode === "TESTE") {
+  // O modo experimental e a categoria TESTE legada resolvem para o mesmo lugar.
+  // A categoria foi desativada no banco em 09/08, mas o ramo fica: cliente antigo
+  // ainda pode mandar TESTE, e é melhor honrar do que cair no modelo padrão sem
+  // ninguém perceber que o experimento não estava sendo experimentado.
+  //
+  // As envs mantêm o prefixo `TESTE_` por serem Sensitive no Vercel — recriar
+  // significa redigitar 5 segredos, risco maior que o ganho de nome bonito.
+  if (ctx.mode === "experimental" || ctx.categoryCode === "TESTE") {
     if (
       !config.TESTE_ALLOWED_USER_ID ||
       !ctx.userId ||
       ctx.userId !== config.TESTE_ALLOWED_USER_ID
     ) {
       throw new WriterModelResolutionError(
-        "Categoria TESTE restrita ao usuário autorizado.",
+        "Modelo experimental restrito ao usuário autorizado.",
         "TESTE_FORBIDDEN",
         403,
       );
@@ -61,7 +77,7 @@ export function resolveWriterModel(
       !config.TESTE_CATEGORY_API_KEY
     ) {
       throw new WriterModelResolutionError(
-        "Provider da categoria TESTE não está configurado.",
+        "Provider do modelo experimental não está configurado.",
         "TESTE_PROVIDER_NOT_CONFIGURED",
         503,
       );

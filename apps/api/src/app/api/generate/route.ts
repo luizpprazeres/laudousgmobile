@@ -962,6 +962,31 @@ export async function POST(req: Request) {
         }
       }
       finalText = writerResult?.fullText ?? finalText;
+
+      // GUARD: laudo vazio nunca é sucesso.
+      //
+      // Modelo de raciocínio servido por API compatível com OpenAI pode gastar
+      // TODO o `max_tokens` nos tokens de raciocínio e terminar o stream sem
+      // emitir uma palavra. O stream fecha limpo, então nada acusa erro — e sem
+      // este guard o pipeline gravava `generated_output = ''` com
+      // `outcome = 'success'`, e o médico via uma tela em branco sem explicação.
+      // Aconteceu em produção em 09/08 (TESTE / deepseek-v4-flash): duas de três
+      // gerações bateram exatamente no teto de tokens e voltaram vazias.
+      // Cancelamento do cliente sai por aqui como AbortError, para o catch de
+      // baixo registrar `aborted` em vez de `error`. Sem isto, desistir da
+      // geração no meio viraria "falha do writer" na auditoria.
+      if (finalText.trim() === "" && signal.aborted) {
+        const abortErr = new Error("client disconnected");
+        abortErr.name = "AbortError";
+        throw abortErr;
+      }
+      if (finalText.trim() === "") {
+        throw new Error(
+          `Writer não produziu texto (model=${modelConfig.model}, ` +
+            `tokens_out=${writerResult?.outputTokens ?? "?"}). ` +
+            `Causa provável: o orçamento de tokens acabou no raciocínio.`,
+        );
+      }
       // DET-5: no caminho RENDERER os post-processors NÃO rodam — a estrutura
       // (cabeçalhos, ordem, numeração, placeholders) é garantida por
       // construção; os guards existem pra consertar o que o writer LLM quebra.

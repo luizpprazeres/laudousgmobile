@@ -76,9 +76,32 @@ const compatParams = writerRequestParams({
   userMessage: "user",
   temperature: 0.2,
 });
+// MUDANÇA DE COMPORTAMENTO (09/08). Este teste afirmava o contrário — que o
+// compat NÃO enviava reasoning_effort — e com isso congelava dois bugs:
+//
+//   1. TESTE_REASONING_EFFORT era configuração morta: resolvida e descartada.
+//   2. max_tokens 2500 não cobria raciocínio + laudo. Medido em produção com
+//      deepseek-v4-flash: duas de três gerações bateram exatamente no teto e
+//      voltaram VAZIAS, porque o raciocínio consome o orçamento primeiro.
 check(
-  "adapter compat não envia reasoning_effort nem temperature",
-  !("reasoning_effort" in compatParams) && !("temperature" in compatParams),
+  "adapter compat envia reasoning_effort configurado, sem temperature",
+  compatParams.reasoning_effort === "low" && !("temperature" in compatParams),
+);
+check(
+  "adapter compat reserva orçamento para raciocínio + laudo",
+  compatParams.max_tokens === 8000,
+);
+// Sem a env, nada de reasoning_effort: provider compatível é terreno de
+// terceiros, e os estritos devolvem 400 em parâmetro desconhecido.
+const compatSemEffort = writerRequestParams({
+  config: { ...teste, reasoningEffort: "" },
+  systemMessage: "system",
+  userMessage: "user",
+  temperature: 0.2,
+});
+check(
+  "adapter compat omite reasoning_effort quando não configurado",
+  !("reasoning_effort" in compatSemEffort),
 );
 
 const standardParams = writerRequestParams({
@@ -99,29 +122,57 @@ const hardParams = writerRequestParams({
   temperature: 0.2,
 });
 check(
+  // 8000, não 2500: em modelo de raciocínio o orçamento cobre raciocínio E
+  // conteúdo, então dimensioná-lo pelo tamanho do laudo apaga o laudo.
   "adapter OpenAI reasoning usa effort low sem temperature",
   hardParams.reasoning_effort === "low" &&
-    hardParams.max_completion_tokens === 2500 &&
+    hardParams.max_completion_tokens === 8000 &&
     !("temperature" in hardParams),
 );
 
-for (const [name, userId, config, expectedCode] of [
-  ["TESTE rejeita usuário não autorizado", "outro", baseEnv, "TESTE_FORBIDDEN"],
+for (const [name, mode, categoryCode, userId, config, expectedCode] of [
+  ["TESTE rejeita usuário não autorizado", "standard", "TESTE", "outro", baseEnv, "TESTE_FORBIDDEN"],
   [
     "TESTE falha fechado sem configuração",
-    "luiz",
+    "standard", "TESTE", "luiz",
     { ...baseEnv, TESTE_CATEGORY_API_KEY: "" },
+    "TESTE_PROVIDER_NOT_CONFIGURED",
+  ],
+  // O modo experimental herda EXATAMENTE as mesmas travas da categoria antiga:
+  // trocar o gatilho de categoria para modo não pode afrouxar a autorização.
+  [
+    "experimental rejeita usuário não autorizado",
+    "experimental", "TIREOIDE", "outro", baseEnv, "TESTE_FORBIDDEN",
+  ],
+  [
+    "experimental falha fechado sem configuração",
+    "experimental", "TIREOIDE", "luiz",
+    { ...baseEnv, TESTE_CATEGORY_BASE_URL: "" },
     "TESTE_PROVIDER_NOT_CONFIGURED",
   ],
 ] as const) {
   let code = "";
   try {
-    resolveWriterModel({ mode: "standard", categoryCode: "TESTE", userId }, config);
+    resolveWriterModel({ mode, categoryCode, userId }, config);
   } catch (error) {
     if (error instanceof WriterModelResolutionError) code = error.code;
   }
   check(name, code === expectedCode);
 }
+
+// O ganho do refactor: o modelo experimental agora vale em QUALQUER categoria,
+// que é o ponto — comparar provider no exame real, não numa categoria sem
+// contrato clínico.
+const experimental = resolveWriterModel(
+  { mode: "experimental", categoryCode: "OBSTETRICA", userId: "luiz" },
+  baseEnv,
+);
+check(
+  "experimental troca o provider em categoria clínica normal",
+  experimental.provider === "openai-compat" &&
+    experimental.credentialRef === "teste" &&
+    experimental.model === baseEnv.TESTE_CATEGORY_MODEL,
+);
 
 const standardRenderer = resolveGenerationPath(
   { mode: "standard", categoryCode: "ABDOMEN_TOTAL" },

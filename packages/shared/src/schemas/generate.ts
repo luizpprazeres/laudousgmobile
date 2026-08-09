@@ -31,7 +31,10 @@ export const GenerateRequestSchema = z.object({
   // writer escreve direto do ditado cru. Tira ~4,8s do caminho bloqueante.
   fast_path: z.boolean().optional(),
   // Modo premium opcional. O backend só o ativa quando HARD_MODE_ENABLED=true.
-  mode: z.enum(["standard", "hard"]).default("standard"),
+  // `experimental` troca o writer para o provider alternativo (bancada de
+  // comparação de modelo) e é restrito a TESTE_ALLOWED_USER_ID no servidor —
+  // mandar esse valor sem autorização devolve 403, não degrada em silêncio.
+  mode: z.enum(["standard", "hard", "experimental"]).default("standard"),
   // Quando true e o laudo for finalizado com sucesso, faz touch no updated_at
   // do report para que ele apareça imediatamente no feed da Sala do Auxiliar
   // (via /api/sala/latest). Usado por clientes que querem o "publica direto na
