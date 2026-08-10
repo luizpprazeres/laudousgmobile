@@ -61,6 +61,14 @@ const ServerEnvSchema = z.object({
   // precisa de template_body na variante resolvida — senão cai no writer
   // (fallback automático, rollback trivial = tirar da lista).
   RENDERER_CATEGORIES: z.string().default(""),
+  // Projeto modelos (docs/projeto-modelos/): categorias cujo renderer monta o
+  // laudo a partir do CATÁLOGO (renderer/catalog/) em vez das frases literais
+  // em código. Lista CSV de category_codes. Vazio = comportamento atual, byte
+  // a byte — a equivalência é verificada por
+  // renderer/__tests__/catalog-equivalence.manual.ts (3840 combinações).
+  // Só o estilo CLÁSSICO tem catálogo hoje; o objetivo cai no caminho antigo.
+  // Rollback trivial: tirar a categoria da lista.
+  MODEL_CATALOG_CATEGORIES: z.string().default(""),
   // DET-6: quando "true", as diretivas de conclusão do médico são aplicadas
   // como OPERAÇÕES tipadas (pipeline/operations.ts) em vez do commandGuard
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após

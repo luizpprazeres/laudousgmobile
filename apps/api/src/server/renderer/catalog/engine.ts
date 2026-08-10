@@ -18,6 +18,19 @@ import type {
   SlotVariant,
 } from "./types";
 
+/**
+ * A categoria usa o catálogo? Lê a CSV de MODEL_CATALOG_CATEGORIES.
+ * Fail-closed: vazio, espaços ou entradas soltas nunca ligam por acidente.
+ */
+export function catalogEnabledFor(csv: string, categoria: string): boolean {
+  if (categoria === "") return false;
+  return csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "")
+    .includes(categoria);
+}
+
 // ---------------------------------------------------------------------------
 // Interpolação — estrita (crítica C12: na v1 placeholder desconhecido vazava)
 // ---------------------------------------------------------------------------

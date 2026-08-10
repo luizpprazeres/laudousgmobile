@@ -268,8 +268,8 @@ Escopo do corte vertical (fim a fim, tudo atrás de feature flag):
 | # | Passo | Estado |
 |---|---|---|
 | 0 | Provar que o catálogo reproduz o renderer byte-a-byte | ✅ **feito** |
-| 1 | **Catálogo completo de OBSTETRICA clássico** (gemelar, líquido, placenta, flags) | ✅ **feito — 960/960** |
-| 2 | Refatorar `renderer/categories/OBSTETRICA.ts` para ler o catálogo — **flag `MODEL_CATALOG_CATEGORIES`, default vazio** | próximo |
+| 1 | **Catálogo completo de OBSTETRICA clássico** (gemelar, líquido, placenta, flags) | ✅ **feito — 3840/3840** |
+| 2 | **Renderer lê o catálogo atrás de `MODEL_CATALOG_CATEGORIES`** (default vazio) | ✅ **feito** |
 | 2b | Segundo catálogo: OBSTETRICA × OBJETIVO | a fazer |
 | 3 | ~~Promover o catálogo ao banco~~ → **catálogo-base fica no Git** (revisão C9); o banco guarda só overlays + versão/hash do base | revisado |
 | 4 | Tabela `report_scopes` + `account_report_customizations` (`scope_id` FK, `base_catalog_id`, `base_versao`, `operations`, `status`) | a fazer |
@@ -288,10 +288,26 @@ Escopo do corte vertical (fim a fim, tudo atrás de feature flag):
 | `renderer/catalog/engine.ts` | `buildDoc`, `serialize`, `validateOperations`, `applyCustomization` |
 | `renderer/catalog/OBSTETRICA.classico.ts` | o catálogo + o motor da categoria (formatação, concordância, predicados) |
 | `renderer/catalog/OBSTETRICA.render.ts` | adaptador que o passo 2 vai plugar no renderer |
-| `__tests__/catalog-equivalence.manual.ts` | **960 combinações** (gestação × nº de fetos × líquido × placenta × extras × flags) |
-| `__tests__/catalog-guarantees.manual.ts` | **33 garantias** de segurança da personalização |
+| `__tests__/catalog-equivalence.manual.ts` | **3840 combinações** (gestação × nº de fetos × líquido × placenta × extras × flags) |
+| `__tests__/catalog-guarantees.manual.ts` | **41 garantias** de segurança da personalização |
 
-Nada disso é importado pelo pipeline ainda.
+### Wiring do passo 2
+
+`pipeline/renderer.ts` (case `OBSTETRICA`) escolhe entre o renderer atual e o
+catálogo por `catalogEnabledFor(env().MODEL_CATALOG_CATEGORIES, "OBSTETRICA")`.
+Só o estilo **clássico** entra no catálogo; o objetivo continua no caminho antigo
+(não tem catálogo ainda).
+
+A flag é **fail-closed** e isso é testado: vazio, só espaços, vírgulas soltas,
+categoria vazia e prefixo (`OBSTETRICA_X`) **não** ligam.
+
+Cobertura de flags na matriz de equivalência — inclui as que estão **ligadas em
+produção**: `off`, `grannum`, `igCorrection`, `flexivel` e `prod-like`
+(as três simultâneas). Também cobre referência precoce (1ª US e IG-hoje) e
+itens livres da camada flexível, incluindo um item que o dedup determinístico
+deve descartar.
+
+**Rollback:** tirar `OBSTETRICA` de `MODEL_CATALOG_CATEGORIES`. Sem deploy de código.
 
 **Critério de aceitação inegociável do passo 2:** com zero customizações e a flag ligada,
 a saída deve ser **byte-a-byte idêntica** à atual nos casos golden de obstetrícia

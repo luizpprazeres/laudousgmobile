@@ -98,13 +98,44 @@ const D_EXTRAS: Dim[] = [
   { nome: "limpo", aplicar: (f) => f },
   { nome: "dum", aplicar: (f) => ({ ...f, dum: "12/01/2026" }) },
   { nome: "peso-extras", aplicar: (f) => ({ ...f, fetos: f.fetos.map((x) => ({ ...x, peso_variacao_g: x.peso_g === null ? null : 350, percentil: 42 })) }) },
-  { nome: "apres+dorso", aplicar: (f) => ({ ...f, fetos: f.fetos.map((x) => ({ ...x, apresentacao: "pélvico", dorso: "à esquerda" })) }) },
+  { nome: "apres+dorso", aplicar: (f) => ({ ...f, fetos: f.fetos.map((x) => ({ ...x, apresentacao: "pélvico", dorso: "à esquerda", polo_cefalico: "à direita" })) }) },
   { nome: "achados", aplicar: (f) => ({ ...f, achados_adicionais: "Cisto de plexo coroide à esquerda, medindo 4 mm." }) },
+  // Referência precoce (épico IG determinística) — só tem efeito com igCorrection.
+  {
+    nome: "ref-1aUS",
+    aplicar: (f) => ({
+      ...f, dum: "05/01/2026", data_exame: "09/08/2026",
+      primeira_us_data: "20/02/2026", primeira_us_ig_semanas: 9, primeira_us_ig_dias: 3,
+      referencia_fonte: "usg_precoce", corrigir_ig: true,
+    }),
+  },
+  {
+    nome: "ref-hoje",
+    aplicar: (f) => ({
+      ...f, dum: "05/01/2026", ig_referencia_hoje_semanas: 31, ig_referencia_hoje_dias: 0,
+      referencia_fonte: "dum", corrigir_ig: true,
+    }),
+  },
+  // Camada flexível — itens livres, incluindo um que o dedup deve descartar.
+  {
+    nome: "itens-livres",
+    aplicar: (f) => ({
+      ...f,
+      itens_conclusao_livres: [
+        "Comparado ao exame anterior de 19/05/2026, evolução normal da gestação.",
+        "Gestação em torno de 32 semanas pela biometria atual.", // deve ser deduplicado
+      ],
+    }),
+  },
 ];
 
+/** Combinações de flags que importam — incluindo as que estão ON em produção. */
 const D_FLAGS: { nome: string; flags: Flags }[] = [
-  { nome: "flags-off", flags: { igCorrection: false, flexivel: false, grannum: false, objetivo: false } },
+  { nome: "off", flags: { igCorrection: false, flexivel: false, grannum: false, objetivo: false } },
   { nome: "grannum", flags: { igCorrection: false, flexivel: false, grannum: true, objetivo: false } },
+  { nome: "igCorr", flags: { igCorrection: true, flexivel: false, grannum: false, objetivo: false } },
+  { nome: "flexivel", flags: { igCorrection: false, flexivel: true, grannum: false, objetivo: false } },
+  { nome: "prod-like", flags: { igCorrection: true, flexivel: true, grannum: true, objetivo: false } },
 ];
 
 // ---------------------------------------------------------------------------

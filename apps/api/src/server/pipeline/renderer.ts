@@ -20,6 +20,8 @@ import {
   renderObstetrica,
   type ObstetricaFindings,
 } from "../renderer/categories/OBSTETRICA";
+import { renderObstetricaCatalogo } from "../renderer/catalog/OBSTETRICA.render";
+import { catalogEnabledFor } from "../renderer/catalog/engine";
 import {
   renderMorfologico,
   type MorfologicoFindings,
@@ -229,11 +231,22 @@ export async function* runRendererStream(args: {
     const flexivel = env().FLEXIBLE_CONCLUSION === "true";
     // Grannum na placenta (grau parentético + inferência de textura) — flag OFF default.
     const grannum = env().GRANNUM_PLACENTA === "true";
+    // Projeto modelos: categorias que montam o laudo a partir do catálogo.
+    const usaCatalogo = (cat: string) => catalogEnabledFor(env().MODEL_CATALOG_CATEGORIES, cat);
     const fnd = extraction.findings;
     let fullText: string;
     switch (args.categoryCode) {
       case "OBSTETRICA":
-        fullText = renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection, flexivel, grannum });
+        // Projeto modelos: com MODEL_CATALOG_CATEGORIES a montagem vem do
+        // catálogo (conteúdo como dado). Saída byte-idêntica — ver
+        // renderer/__tests__/catalog-equivalence.manual.ts. Só clássico por ora.
+        fullText =
+          usaCatalogo("OBSTETRICA") && !objetivo
+            ? renderObstetricaCatalogo({
+                findings: fnd as ObstetricaFindings,
+                flags: { objetivo, igCorrection, flexivel, grannum },
+              })
+            : renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection, flexivel, grannum });
         break;
       case "MORFOLOGICO":
         fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo, igCorrection });

@@ -31,11 +31,13 @@ Convenção usada em todos: **[F]** fato verificado por comando/arquivo ·
   A proposta foi corrigida duas vezes: o renderer permanece como *motor* e só o *conteúdo*
   vira dado (`01 §2.1`); e a unidade interna passou a ser um **documento estruturado**, com
   a string como último passo (`04-revisao-codex.md`). PoC: **29/29**.
-- **Fase 3 (Implementação): item 1 de 10 concluído** — o catálogo de
-  OBSTETRICA × CLASSICO_COMPLETO está completo e reproduz o renderer atual em
-  **960/960** combinações, byte-a-byte. As **33 garantias** de segurança da
-  personalização passam contra os módulos reais. Próximo: item 2 (refatorar o
-  renderer para ler o catálogo, atrás de flag desligada).
+- **Fase 3 (Implementação): itens 1 e 2 de 10 concluídos** — o catálogo de
+  OBSTETRICA × CLASSICO_COMPLETO reproduz o renderer atual em **3840/3840**
+  combinações byte-a-byte (incluindo `igCorrection`, `flexivel` e `grannum`,
+  as flags ligadas em produção). O renderer já sabe lê-lo, atrás de
+  `MODEL_CATALOG_CATEGORIES` — **default vazio, comportamento inalterado**.
+  **41 garantias** de segurança da personalização passam contra os módulos reais.
+  Próximo: item 2b (catálogo do estilo OBJETIVO) e item 4 (tabelas).
 
 Nada foi alterado no banco, em produção ou em configuração de domínio. As escritas
 desta sessão são: os 5 documentos desta pasta e **um** arquivo de teste novo,

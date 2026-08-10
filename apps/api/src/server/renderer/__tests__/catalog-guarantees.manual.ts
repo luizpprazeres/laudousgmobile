@@ -12,7 +12,7 @@
  * Rodar: pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-guarantees.manual.ts
  */
 import type { ObstetricaFindings } from "../categories/OBSTETRICA";
-import { applyCustomization, validateOperations } from "../catalog/engine";
+import { applyCustomization, catalogEnabledFor, validateOperations } from "../catalog/engine";
 import { OBSTETRICA_CLASSICO } from "../catalog/OBSTETRICA.classico";
 import { buildObstetricaDoc, renderObstetricaCatalogo } from "../catalog/OBSTETRICA.render";
 import { segmentKey, type Customization, type Operation, type ReportDoc } from "../catalog/types";
@@ -187,6 +187,17 @@ check("achado patológico é 'computed'", d6.segments.find((s) => s.slotId === "
 check("item de IG calculado é 'computed'", d6.segments.find((s) => s.slotId === "concl_ig")?.origin === "computed");
 check("o documento carrega o id e a versão do catálogo-base",
   d6.catalogId === "OBSTETRICA/CLASSICO_COMPLETO" && d6.catalogVersao === 1);
+
+console.log("\n[G7] A flag é fail-closed\n");
+
+check("vazio não liga", !catalogEnabledFor("", "OBSTETRICA"));
+check("só espaços não liga", !catalogEnabledFor("   ", "OBSTETRICA"));
+check("vírgulas soltas não ligam", !catalogEnabledFor(",,", "OBSTETRICA"));
+check("categoria vazia nunca liga", !catalogEnabledFor("OBSTETRICA", ""));
+check("outra categoria não liga esta", !catalogEnabledFor("TIREOIDE,MAMARIA", "OBSTETRICA"));
+check("prefixo não conta como match", !catalogEnabledFor("OBSTETRICA_X", "OBSTETRICA"));
+check("liga quando listada", catalogEnabledFor("OBSTETRICA", "OBSTETRICA"));
+check("liga com espaços em volta", catalogEnabledFor(" TIREOIDE , OBSTETRICA ", "OBSTETRICA"));
 
 console.log(`\n${pass} passaram, ${fail} falharam\n`);
 if (fail > 0) process.exit(1);
