@@ -129,7 +129,13 @@ export function segmentKey(s: Pick<Segment, "slotId" | "instance">): string {
 export type Operation =
   | { op: "remove_slot"; slot: string }
   | { op: "replace_phrase"; slot: string; variant?: string; value: string }
-  | { op: "append_conclusion_item"; value: string };
+  | { op: "append_conclusion_item"; value: string }
+  /**
+   * Acrescenta uma frase nova ao corpo, logo depois de um slot existente.
+   * O slot criado recebe id `custom:<n>` e nasce opcional — nunca obrigatório,
+   * porque invariante clínica é decisão do catálogo-base, não do usuário.
+   */
+  | { op: "insert_phrase_after"; anchor: string; value: string };
 
 export type Customization = {
   baseCatalogId: string;

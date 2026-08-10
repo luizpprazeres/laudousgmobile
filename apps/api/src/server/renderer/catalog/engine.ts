@@ -11,6 +11,7 @@ import type {
   Catalog,
   Customization,
   Operation,
+  OrderItem,
   ReportDoc,
   Segment,
   Slot,
@@ -205,10 +206,26 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
   const byId = new Map(catalog.slots.map((s) => [s.id, s]));
   const erros: string[] = [];
 
+  const textoLivre = (rotulo: string, value: string) => {
+    if (value.trim() === "") erros.push(`${rotulo} vazio`);
+    if (CABECALHO_RE.test(value)) erros.push(`${rotulo} não pode conter cabeçalho de seção`);
+    for (const ph of placeholdersOf(value)) {
+      if (!catalog.variaveis.includes(ph)) erros.push(`placeholder desconhecido em ${rotulo}: {${ph}}`);
+    }
+  };
+
   for (const o of ops) {
     if (o.op === "append_conclusion_item") {
-      if (o.value.trim() === "") erros.push("item de conclusão vazio");
-      else if (CABECALHO_RE.test(o.value)) erros.push("item de conclusão não pode conter cabeçalho de seção");
+      textoLivre("item de conclusão", o.value);
+      continue;
+    }
+
+    if (o.op === "insert_phrase_after") {
+      if (!byId.has(o.anchor)) {
+        erros.push(`a frase seria inserida depois de "${o.anchor}", que não existe no modelo-base v${catalog.versao}`);
+        continue;
+      }
+      textoLivre("frase acrescentada", o.value);
       continue;
     }
 
@@ -282,6 +299,16 @@ export function applyCustomization<F>(
     .filter((o): o is Extract<Operation, { op: "append_conclusion_item" }> => o.op === "append_conclusion_item")
     .map((o) => o.value);
 
+  // Frases acrescentadas pelo usuário viram slots sintéticos `custom:<n>`.
+  // Nascem SEM `obrigatorio`: invariante clínica é decisão do catálogo-base.
+  const inseridas = custom.operations.filter(
+    (o): o is Extract<Operation, { op: "insert_phrase_after" }> => o.op === "insert_phrase_after",
+  );
+  const novosSlots: Slot<F>[] = inseridas.map((o, i) => ({
+    id: `custom:${i + 1}`,
+    variantes: [{ id: "custom", frase: o.value }],
+  }));
+
   const slots = catalog.slots.map((s) => {
     const mine = replaced.filter((r) => r.slot === s.id);
     if (mine.length === 0) return s;
@@ -296,22 +323,101 @@ export function applyCustomization<F>(
 
   const next: Catalog<F> = {
     ...catalog,
-    slots,
-    // Remoção vale tanto para slots soltos quanto para os repetidos por feto.
-    ordem: (ctx) =>
-      catalog
+    slots: [...slots, ...novosSlots],
+    ordem: (ctx) => {
+      // Remoção vale tanto para slots soltos quanto para os repetidos por feto.
+      const base = catalog
         .ordem(ctx)
         .map((item) =>
           typeof item === "string"
             ? item
             : { repetirPorFeto: item.repetirPorFeto.filter((id) => !removed.has(id)) },
         )
-        .filter((item) => (typeof item === "string" ? !removed.has(item) : item.repetirPorFeto.length > 0)),
+        .filter((item) => (typeof item === "string" ? !removed.has(item) : item.repetirPorFeto.length > 0));
+
+      // Insere cada frase nova logo depois da sua âncora. Se a âncora não estiver
+      // nesta ordem (ex.: slot que só existe no gemelar), a frase não entra —
+      // acompanha o contexto em vez de aparecer fora de lugar.
+      const out: OrderItem[] = [];
+      for (const item of base) {
+        out.push(item);
+        const ancora = typeof item === "string" ? item : item.repetirPorFeto.at(-1);
+        for (const [i, ins] of inseridas.entries()) {
+          if (ins.anchor === ancora) out.push(`custom:${i + 1}`);
+        }
+      }
+      return out;
+    },
   };
 
   return {
     catalog: next,
-    customSlots: new Set([...removed, ...replaced.map((r) => r.slot)]),
+    customSlots: new Set([
+      ...removed,
+      ...replaced.map((r) => r.slot),
+      ...novosSlots.map((s) => s.id),
+    ]),
     extraConclusao: extras,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Diff estruturado — o que MUDOU, e só isso
+// ---------------------------------------------------------------------------
+
+export type Mudanca = {
+  secao: "corpo" | "conclusao";
+  tipo: "alterada" | "removida" | "acrescentada";
+  slot: string;
+  instance?: string;
+  antes?: string;
+  depois?: string;
+};
+
+/**
+ * Compara dois documentos por CHAVE DE SEGMENTO, não por texto.
+ *
+ * Diff textual não sabe distinguir "esta frase foi reescrita" de "esta frase
+ * saiu e outra entrou". Como cada segmento carrega o seu slot, aqui a diferença
+ * é exata — e é isso que permite mostrar a alteração no ponto, em vez de dois
+ * laudos inteiros lado a lado.
+ */
+export function diffDocs(base: ReportDoc, custom: ReportDoc): Mudanca[] {
+  const chave = (s: Segment) => `${s.kind}|${s.slotId}|${s.instance ?? ""}`;
+  const mapaBase = new Map(base.segments.map((s) => [chave(s), s]));
+  const mapaCustom = new Map(custom.segments.map((s) => [chave(s), s]));
+  const mudancas: Mudanca[] = [];
+
+  for (const [k, s] of mapaBase) {
+    const alvo = mapaCustom.get(k);
+    if (!alvo) {
+      mudancas.push({
+        secao: s.kind, tipo: "removida", slot: s.slotId,
+        ...(s.instance ? { instance: s.instance } : {}), antes: s.text,
+      });
+    } else if (alvo.text !== s.text) {
+      mudancas.push({
+        secao: s.kind, tipo: "alterada", slot: s.slotId,
+        ...(s.instance ? { instance: s.instance } : {}), antes: s.text, depois: alvo.text,
+      });
+    }
+  }
+
+  for (const [k, s] of mapaCustom) {
+    if (!mapaBase.has(k)) {
+      mudancas.push({
+        secao: s.kind, tipo: "acrescentada", slot: s.slotId,
+        ...(s.instance ? { instance: s.instance } : {}), depois: s.text,
+      });
+    }
+  }
+
+  // Corpo antes da conclusão, na ordem em que aparecem no laudo.
+  const posicao = (m: Mudanca) => {
+    const lista = m.tipo === "removida" ? base.segments : custom.segments;
+    return lista.findIndex((s) => s.slotId === m.slot && s.kind === m.secao);
+  };
+  return mudancas.sort(
+    (a, b) => (a.secao === b.secao ? posicao(a) - posicao(b) : a.secao === "corpo" ? -1 : 1),
+  );
 }

@@ -2,11 +2,11 @@ import { forbidden, unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 export { OPTIONS } from "@/server/cors";
 import { z } from "zod";
 import { env } from "@/server/env";
-import { applyCustomization, validateOperations } from "@/server/renderer/catalog/engine";
+import { applyCustomization, diffDocs, validateOperations } from "@/server/renderer/catalog/engine";
 import { describeCatalog } from "@/server/renderer/catalog/describe";
 import { OBSTETRICA_CLASSICO } from "@/server/renderer/catalog/OBSTETRICA.classico";
 import { OBSTETRICA_SAMPLES } from "@/server/renderer/catalog/OBSTETRICA.samples";
-import { renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.render";
+import { buildObstetricaDoc, renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.render";
 import type { Customization, Operation } from "@/server/renderer/catalog/types";
 
 export const runtime = "nodejs";
@@ -30,6 +30,7 @@ const CATALOGOS = {
     catalog: OBSTETRICA_CLASSICO,
     samples: OBSTETRICA_SAMPLES,
     render: (args: Parameters<typeof renderObstetricaCatalogo>[0]) => renderObstetricaCatalogo(args),
+    buildDoc: (args: Parameters<typeof buildObstetricaDoc>[0]) => buildObstetricaDoc(args).doc,
   },
 } as const;
 
@@ -77,13 +78,28 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
   return Response.json({
     catalogo: descricao,
     flags,
-    cenarios: entry.samples.map((s) => ({
-      id: s.id,
-      nome: s.nome,
-      descricao: s.descricao,
-      patologico: Boolean(s.patologico),
-      laudo_padrao: entry.render({ findings: s.findings, flags }),
-    })),
+    cenarios: entry.samples.map((s) => {
+      // "O que ESTE ACHADO muda no modelo padrão" — diff do cenário contra a
+      // sua referência, sem nenhuma personalização envolvida. É como o médico
+      // entende as alterações condicionais por patologia sem precisar ditar.
+      const ref = s.comparaCom ? entry.samples.find((x) => x.id === s.comparaCom) : undefined;
+      const efeito = ref
+        ? diffDocs(
+            entry.buildDoc({ findings: ref.findings, flags }),
+            entry.buildDoc({ findings: s.findings, flags }),
+          )
+        : [];
+      return {
+        id: s.id,
+        nome: s.nome,
+        descricao: s.descricao,
+        patologico: Boolean(s.patologico),
+        compara_com: s.comparaCom ?? null,
+        compara_com_nome: ref?.nome ?? null,
+        efeito_do_achado: efeito,
+        laudo_padrao: entry.render({ findings: s.findings, flags }),
+      };
+    }),
   });
 }
 
@@ -96,6 +112,11 @@ const OperationSchema: z.ZodType<Operation> = z.union([
     value: z.string().max(2000),
   }),
   z.object({ op: z.literal("append_conclusion_item"), value: z.string().min(1).max(1000) }),
+  z.object({
+    op: z.literal("insert_phrase_after"),
+    anchor: z.string().min(1),
+    value: z.string().min(1).max(2000),
+  }),
 ]);
 
 const PreviewBodySchema = z.object({
@@ -143,19 +164,27 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
   const alvos = ids?.length ? entry.samples.filter((s) => ids.includes(s.id)) : entry.samples;
 
   const previas = alvos.map((s) => {
-    const base = entry.render({ findings: s.findings, flags });
-    const personalizado = entry.render({
+    const argsCustom = {
       findings: s.findings,
       flags,
       catalog: custom.catalog,
       customSlots: custom.customSlots,
       extraConclusao: custom.extraConclusao,
-    });
+    };
+    const base = entry.render({ findings: s.findings, flags });
+    const personalizado = entry.render(argsCustom);
+    // O diff é por SLOT, não textual — é o que permite mostrar a alteração no
+    // ponto certo (frase antiga riscada, nova embaixo) em vez de dois laudos.
+    const mudancas = diffDocs(
+      entry.buildDoc({ findings: s.findings, flags }),
+      entry.buildDoc(argsCustom),
+    );
     return {
       cenario: s.id,
       nome: s.nome,
       patologico: Boolean(s.patologico),
       mudou: base !== personalizado,
+      mudancas,
       laudo_padrao: base,
       laudo_personalizado: personalizado,
     };

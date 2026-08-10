@@ -12,7 +12,7 @@
  * Rodar: pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-guarantees.manual.ts
  */
 import type { ObstetricaFindings } from "../categories/OBSTETRICA";
-import { applyCustomization, catalogEnabledFor, validateOperations } from "../catalog/engine";
+import { applyCustomization, catalogEnabledFor, diffDocs, validateOperations } from "../catalog/engine";
 import { OBSTETRICA_CLASSICO } from "../catalog/OBSTETRICA.classico";
 import { buildObstetricaDoc, renderObstetricaCatalogo } from "../catalog/OBSTETRICA.render";
 import { segmentKey, type Customization, type Operation, type ReportDoc } from "../catalog/types";
@@ -187,6 +187,87 @@ check("achado patológico é 'computed'", d6.segments.find((s) => s.slotId === "
 check("item de IG calculado é 'computed'", d6.segments.find((s) => s.slotId === "concl_ig")?.origin === "computed");
 check("o documento carrega o id e a versão do catálogo-base",
   d6.catalogId === "OBSTETRICA/CLASSICO_COMPLETO" && d6.catalogVersao === 1);
+
+console.log("\n[G8] Acrescentar uma linha ao corpo\n");
+
+const OPS_INSERT: Operation[] = [
+  { op: "insert_phrase_after", anchor: "cf", value: "Índice cefálico dentro da normalidade." },
+];
+check("inserir depois de um slot existente é válido", erros(OPS_INSERT).length === 0);
+check("a frase nova aparece logo após a âncora", (() => {
+  const linhas = rend(f(), OPS_INSERT).split("\n");
+  const iCf = linhas.findIndex((l) => l.startsWith("Comprimento do fêmur"));
+  return linhas[iCf + 1] === "Índice cefálico dentro da normalidade.";
+})());
+check("inserir depois de âncora inexistente é rejeitado",
+  erros([{ op: "insert_phrase_after", anchor: "nao_existe", value: "x" }]).length === 1);
+check("frase acrescentada não pode conter cabeçalho de seção",
+  erros([{ op: "insert_phrase_after", anchor: "cf", value: "CONCLUSÃO: x" }]).length === 1);
+check("frase acrescentada não pode usar placeholder desconhecido",
+  erros([{ op: "insert_phrase_after", anchor: "cf", value: "Valor {inexistente}." }]).length === 1);
+check("a linha acrescentada NASCE opcional (invariante clínica é do catálogo-base)", (() => {
+  const novo = custom(OPS_INSERT).catalog.slots.find((s) => s.id === "custom:1");
+  return novo !== undefined && !novo.obrigatorio && (novo.placeholdersObrigatorios ?? []).length === 0;
+})());
+check("o slot criado não existe no catálogo-base (só no personalizado)",
+  CAT.slots.every((s) => !s.id.startsWith("custom:")));
+check("frase acrescentada pode usar dados do exame",
+  (() => {
+    const ops: Operation[] = [{ op: "insert_phrase_after", anchor: "cf", value: "Relação CC/CA: {cc}/{ca}." }];
+    return erros(ops).length === 0 && rend(f(), ops).includes("Relação CC/CA: 310/295.");
+  })());
+
+console.log("\n[G9] Diff pontual: o que mudou, e só isso\n");
+
+const OPS_DIFF: Operation[] = [
+  { op: "replace_phrase", slot: "movimentos_fetais", value: "Movimentação fetal presente e ativa." },
+  { op: "remove_slot", slot: "anatomia_visceras" },
+  { op: "insert_phrase_after", anchor: "cf", value: "Índice cefálico dentro da normalidade." },
+  { op: "append_conclusion_item", value: "Recomenda-se controle ecográfico em 4 semanas." },
+];
+const cDiff = custom(OPS_DIFF);
+const docBase2 = buildObstetricaDoc({ findings: f() }).doc;
+const docCust2 = buildObstetricaDoc({
+  findings: f(), catalog: cDiff.catalog, customSlots: cDiff.customSlots, extraConclusao: cDiff.extraConclusao,
+}).doc;
+const ms = diffDocs(docBase2, docCust2);
+
+check("4 operações produzem exatamente 4 mudanças", ms.length === 4,
+  `    ${ms.length}: ${ms.map((m) => `${m.tipo}/${m.slot}`).join(", ")}`);
+check("a frase reescrita vem com antes E depois", (() => {
+  const m = ms.find((x) => x.slot === "movimentos_fetais");
+  return m?.tipo === "alterada" && m.antes === "Os movimentos fetais são ativos."
+    && m.depois === "Movimentação fetal presente e ativa.";
+})());
+check("a removida traz só o 'antes'", (() => {
+  const m = ms.find((x) => x.slot === "anatomia_visceras");
+  return m?.tipo === "removida" && Boolean(m.antes) && m.depois === undefined;
+})());
+check("a acrescentada traz só o 'depois'", (() => {
+  const m = ms.find((x) => x.slot === "custom:1");
+  return m?.tipo === "acrescentada" && m.depois === "Índice cefálico dentro da normalidade." && m.antes === undefined;
+})());
+check("o item novo da conclusão é marcado como seção conclusão", (() => {
+  const m = ms.find((x) => x.slot === "conclusao_extra");
+  return m?.secao === "conclusao" && m.tipo === "acrescentada";
+})());
+check("as mudanças do corpo vêm antes das da conclusão",
+  ms.filter((m) => m.secao === "corpo").length === 3 && ms.at(-1)?.secao === "conclusao");
+check("sem operações, não há mudança nenhuma",
+  diffDocs(docBase2, buildObstetricaDoc({ findings: f() }).doc).length === 0);
+check("no cenário de oligoâmnio, personalizar o líquido normal não gera mudança", (() => {
+  const c = custom([{ op: "replace_phrase", slot: "liquido_amniotico", value: "Líquido amniótico de quantidade normal." }]);
+  const b = buildObstetricaDoc({ findings: OLIGO }).doc;
+  const p = buildObstetricaDoc({ findings: OLIGO, catalog: c.catalog, customSlots: c.customSlots }).doc;
+  return diffDocs(b, p).length === 0;
+})());
+check("o gemelar identifica a instância do feto na mudança", (() => {
+  const c = custom([{ op: "replace_phrase", slot: "dbp", value: "DBP: {dbp} mm." }]);
+  const b = buildObstetricaDoc({ findings: GEMELAR }).doc;
+  const p = buildObstetricaDoc({ findings: GEMELAR, catalog: c.catalog, customSlots: c.customSlots }).doc;
+  const d = diffDocs(b, p);
+  return d.length === 2 && d[0]?.instance === "A" && d[1]?.instance === "B";
+})());
 
 console.log("\n[G7] A flag é fail-closed\n");
 

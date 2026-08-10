@@ -34,6 +34,13 @@ export type Sample = {
   descricao: string;
   /** Cenário com achado alterado: a personalização de normalidade não se aplica. */
   patologico?: boolean;
+  /**
+   * Cenário de referência para mostrar O QUE ESTE ACHADO MUDA no modelo.
+   * Só faz sentido em variações de achado sobre o mesmo modelo (ILA, oligoâmnio,
+   * placenta prévia). Variações estruturais — gestação inicial, gemelar — usam
+   * outro modelo e não se comparam com o padrão.
+   */
+  comparaCom?: string;
   findings: ObstetricaFindings;
 };
 
@@ -69,21 +76,31 @@ export const OBSTETRICA_SAMPLES: Sample[] = [
   {
     id: "ila",
     nome: "Com ILA medido",
-    descricao: "Líquido amniótico quantificado pelo índice, em vez da análise subjetiva.",
+    descricao: "O médico mediu o índice de líquido amniótico em vez de avaliar subjetivamente.",
+    comparaCom: "padrao",
     findings: f({ liquido_tipo: "ila", liquido_ila_cm: 12.4 }),
+  },
+  {
+    id: "mbv",
+    nome: "Com maior bolsão vertical",
+    descricao: "O médico mediu o maior bolsão vertical em vez de avaliar subjetivamente.",
+    comparaCom: "padrao",
+    findings: f({ liquido_tipo: "mbv", liquido_mbv_por_feto_cm: [1.3] }),
   },
   {
     id: "placenta-previa",
     nome: "Placenta prévia",
-    descricao: "Achado alterado: a frase da placenta é escrita pelo sistema e não aceita personalização.",
+    descricao: "O médico descreveu placenta prévia centro-total, grau II.",
     patologico: true,
+    comparaCom: "padrao",
     findings: f({ placenta_localizacao: "prévia centro-total", placenta_grau: "2" }),
   },
   {
     id: "oligoamnio",
     nome: "Oligoâmnio",
-    descricao: "Achado alterado: a frase do líquido é escrita pelo sistema e não aceita personalização.",
+    descricao: "O médico constatou oligoâmnio.",
     patologico: true,
+    comparaCom: "padrao",
     findings: f({ liquido_tipo: "alterado", liquido_classe: "oligoâmnio" }),
   },
 ];
