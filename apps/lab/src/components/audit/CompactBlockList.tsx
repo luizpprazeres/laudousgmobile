@@ -1,5 +1,5 @@
 import { Check, X } from "lucide-react";
-import type { AuditCompactBlock } from "@/lib/mock/audit";
+import type { AuditCompactBlock } from "@/lib/audit/types";
 import { cn } from "@/lib/utils";
 
 type Tone = "retrieved" | "skipped";
@@ -60,7 +60,7 @@ export function CompactBlockList({ tone, label, blocks }: Props) {
             >
               {b.slug}
             </span>{" "}
-            {b.priority > 0 && <span className="font-mono text-stone-500">{b.similarity.toFixed(3).replace(/^0/, "")}</span>}
+            {b.priority > 0 && <span className="font-mono text-stone-500">p{b.priority}</span>}
           </li>
         ))}
       </ul>

@@ -1,5 +1,5 @@
 import { AlertTriangle, Check, X } from "lucide-react";
-import type { AuditStatus } from "@/lib/mock/audit";
+import type { AuditStatus } from "@/lib/audit/types";
 import { cn } from "@/lib/utils";
 
 export function StatusIcon({ status, size = "md" }: { status: AuditStatus; size?: "sm" | "md" }) {
