@@ -117,6 +117,39 @@ Nada disso será feito sem confirmação explícita, item a item, no momento:
 
 ---
 
+## Q7 — v1: DSL restrita ou edição livre de frase? 🟡 decisão de produto
+
+Levantada pela revisão do Codex (`04-revisao-codex.md`, C8). Ele propõe que a **primeira
+versão** ofereça um conjunto fechado de preferências em vez de edição livre de texto:
+
+```
+sacoGestacionalDisplay = dsm | medidas_e_dsm
+phraseVariant          = padrao | alternativa_usuario
+showOptionalSlot(slot)
+appendConclusionItem(texto)
+```
+
+| | **A — DSL restrita** (Codex) | **B — Operações livres** (decidido em Q2) |
+|---|---|---|
+| Superfície de risco | muito menor | maior, mitigada por validação |
+| Exemplos do briefing atendidos | 1, 3, 4, 5 | **todos os 5** |
+| Exemplo 2 ("substituir por redação de minha preferência") | ❌ não atende | ✅ atende |
+| Esforço da v1 | menor | maior |
+
+**Minha leitura:** o exemplo 2 é edição livre por natureza, e é provavelmente o pedido
+mais frequente de um médico com estilo próprio. Cortá-lo da v1 entrega uma personalização
+que ainda parece uma tela de configuração, não uma biblioteca.
+
+**Recomendação: caminho do meio.** Edição livre **desde a v1**, porém restrita a slots
+**não marcados como `estadoClinico`**, com as quatro validações já provadas no PoC
+(placeholders obrigatórios preservados, texto não-vazio, vocabulário conhecido, sem
+cabeçalho de seção) e **prévia obrigatória antes de publicar**. Os itens da DSL entram
+como *atalhos* para os casos comuns, não como a única via.
+
+**Preciso do seu aval** — é decisão de produto, não técnica.
+
+---
+
 ## Q6 — Duas perguntas menores, com recomendação embutida
 
 - **`WRITER_V2_ABDOME_USER_ID` × `WRITER_V2_USER_ID`** — o env de produção tem um nome,

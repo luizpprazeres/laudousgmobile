@@ -17,7 +17,8 @@ sanity checks, versões e métricas.
 | `00-mapa-do-sistema.md` | **O mapa real verificado**: repositórios, domínios, bancos, pipeline, clientes, testes. Respostas às 12 perguntas da investigação |
 | `01-arquitetura-proposta.md` | Modelo canônico, personalização por operações, camadas de precedência, primeira implementação vertical |
 | `02-riscos.md` | Achados graves, 28 acoplamentos a texto literal, divergências briefing × código, 19 riscos operacionais |
-| `03-perguntas-abertas.md` | As 6 decisões que dependem do responsável |
+| `03-perguntas-abertas.md` | Decisões do responsável — Q1–Q4 respondidas; Q5–Q7 abertas |
+| `04-revisao-codex.md` | Revisão adversarial do Codex 1: 7 críticas procedentes, 5 já incorporadas ao PoC, 2 que mudaram o plano + 1 bug novo confirmado |
 
 Convenção usada em todos: **[F]** fato verificado por comando/arquivo ·
 **[I]** inferência · **[?]** não confirmado.
@@ -25,10 +26,11 @@ Convenção usada em todos: **[F]** fato verificado por comando/arquivo ·
 ## Estado atual
 
 - **Fase 1 (Descoberta): concluída** — 2026-08-09
-- **Fase 2 (Arquitetura): decidida** — Q1–Q4 respondidas em 2026-08-09; viabilidade
-  **validada com prova executável** (9/9). A proposta foi **corrigida** pela validação:
-  o renderer permanece como *motor*; só o *conteúdo* (frases, ordem, obrigatoriedade)
-  vira dado. Ver `01-arquitetura-proposta.md §2.1`.
+- **Fase 2 (Arquitetura): decidida e revisada** — Q1–Q4 respondidas em 09/08; viabilidade
+  validada com prova executável; **revisão adversarial do Codex 1 em 10/08 incorporada**.
+  A proposta foi corrigida duas vezes: o renderer permanece como *motor* e só o *conteúdo*
+  vira dado (`01 §2.1`); e a unidade interna passou a ser um **documento estruturado**, com
+  a string como último passo (`04-revisao-codex.md`). PoC: **29/29**.
 - **Fase 3 (Implementação): não iniciada** — próximo passo é o item 1 do corte
   vertical (`01-arquitetura-proposta.md §5`).
 
