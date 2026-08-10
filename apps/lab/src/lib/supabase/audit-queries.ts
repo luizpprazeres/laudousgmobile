@@ -41,8 +41,8 @@ const COLUNAS_LISTA =
   "model_writer, openai_cost_usd";
 
 const COLUNAS_DETALHE =
-  `${COLUNAS_LISTA}, output_text, system_message_full, prompt_version, pipeline_version, ` +
-  "contract_hash, openai_input_tokens, openai_output_tokens, model_structurer";
+  `${COLUNAS_LISTA}, output_text, system_message_full, structured_output, prompt_version, ` +
+  "pipeline_version, contract_hash, openai_input_tokens, openai_output_tokens, model_structurer";
 
 type SanityIssue = { type?: string; severity?: string; detail?: string };
 type SanityResult = { verdict?: string; issues?: SanityIssue[] } | null;
@@ -104,6 +104,7 @@ type AuditRowDB = {
 type AuditDetailDB = AuditRowDB & {
   output_text: string | null;
   system_message_full: string | null;
+  structured_output: unknown;
   prompt_version: string | null;
   pipeline_version: string | null;
   contract_hash: string | null;
@@ -278,6 +279,7 @@ export async function getAuditDetail(id: string): Promise<AuditDetail | null> {
     inputFull: d.raw_input ?? "",
     outputText: d.output_text,
     systemMessage: d.system_message_full,
+    structuredOutput: d.structured_output ?? null,
     retrieved: retrieved.map(compactBlock),
     tokensIn: d.openai_input_tokens,
     tokensOut: d.openai_output_tokens,

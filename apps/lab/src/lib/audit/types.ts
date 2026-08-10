@@ -54,6 +54,8 @@ export type AuditDetail = AuditRow & {
   inputFull: string;
   outputText: string | null;
   systemMessage: string | null;
+  /** Achados tipados da geração — é o que permite atribuir procedência. */
+  structuredOutput: unknown;
   retrieved: AuditCompactBlock[];
   tokensIn: number | null;
   tokensOut: number | null;

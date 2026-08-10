@@ -214,10 +214,40 @@ export function procedenciaDoLaudo(
 }
 
 /**
- * A procedência só é determinável quando o laudo foi montado por código a
- * partir de dados tipados. No caminho do writer, o LLM redige tudo — não há
- * o que atribuir.
+ * Como interpretar o trecho NÃO atribuído a nenhum campo do LLM.
+ *
+ * A mesma medição significa coisas diferentes conforme o caminho:
+ *  - no RENDERER, o que não veio de campo veio do template, em código;
+ *  - no WRITER, o LLM redigiu o laudo inteiro, então o não atribuído foi ele
+ *    que escreveu — livremente, sem passar por campo estruturado.
+ *
+ * Chamar os dois de "código" seria mentira no segundo caso.
  */
-export function procedenciaDisponivel(modelWriter: string | null, temStructured: boolean): boolean {
-  return modelWriter === "renderer/v1" && temStructured;
+export type ModoProcedencia = "renderer" | "writer";
+
+export function modoDe(modelWriter: string | null): ModoProcedencia {
+  return modelWriter === "renderer/v1" ? "renderer" : "writer";
+}
+
+/** Rótulo honesto do trecho não atribuído, por caminho. */
+export function rotuloNaoAtribuido(modo: ModoProcedencia): { curto: string; ajuda: string } {
+  return modo === "renderer"
+    ? {
+        curto: "template",
+        ajuda:
+          "Não veio de nenhum campo preenchido pelo LLM — é frase escrita no código do renderer.",
+      }
+    : {
+        curto: "o LLM redigiu",
+        ajuda:
+          "Neste caminho o LLM escreve o laudo inteiro. O trecho não corresponde a nenhum campo estruturado: foi redação livre.",
+      };
+}
+
+/**
+ * A atribuição exige o `structured_output` daquela geração. Sem ele não há o
+ * que casar, e a tela deve dizer que não sabe em vez de inventar cor.
+ */
+export function procedenciaDisponivel(_modelWriter: string | null, temStructured: boolean): boolean {
+  return temStructured;
 }

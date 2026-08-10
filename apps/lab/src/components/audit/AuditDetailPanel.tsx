@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertTriangle, Eye, Play, RotateCw, X } from "lucide-react";
 import type { AuditDetail } from "@/lib/audit/types";
 import { CompactBlockList } from "./CompactBlockList";
+import { DissecarPainel } from "@/components/dissecar/DissecarPainel";
 
 function Dobravel({ titulo, children }: { titulo: string; children: string }) {
   return (
@@ -81,9 +82,16 @@ export function AuditDetailPanel({ detail, onClose }: { detail: AuditDetail; onC
         )}
 
         {detail.outputText && (
-          <Dobravel titulo={`Laudo gerado · ${detail.outputText.length.toLocaleString("pt-BR")} ch`}>
-            {detail.outputText}
-          </Dobravel>
+          <div className="mt-4">
+            <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-stone-500">
+              de onde veio cada trecho
+            </p>
+            <DissecarPainel
+              laudo={detail.outputText}
+              structuredOutput={detail.structuredOutput}
+              modelWriter={detail.modelo}
+            />
+          </div>
         )}
 
         {/* O prompt inteiro que a IA recebeu naquela geração. Até aqui só o

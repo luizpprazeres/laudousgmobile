@@ -2,7 +2,7 @@
  * Testes da procedência por correspondência literal.
  * Rodar: pnpm exec tsx apps/lab/src/lib/procedencia/index.manual.ts
  */
-import { procedenciaDoLaudo, procedenciaDisponivel, textosLivresDo, numerosDo } from "./index";
+import { procedenciaDoLaudo, procedenciaDisponivel, modoDe, rotuloNaoAtribuido, textosLivresDo, numerosDo } from "./index";
 
 let pass = 0, fail = 0;
 const check = (n: string, c: boolean, d?: unknown) => {
@@ -67,10 +67,14 @@ console.log("\n[conversão cm→mm]\n");
 check("dita em cm, publicado em mm — reconhece",
   procedenciaDoLaudo("DBP de 74,2 mm.", { dbp: 7.42 }).trechos.some((t) => t.origem === "llm_dado"));
 
-console.log("\n[disponibilidade]\n");
-check("renderer com structured → disponível", procedenciaDisponivel("renderer/v1", true));
-check("writer LLM → indisponível", !procedenciaDisponivel("gpt-5.4-mini", true));
-check("renderer sem structured → indisponível", !procedenciaDisponivel("renderer/v1", false));
+console.log("\n[disponibilidade e leitura do não-atribuído]\n");
+check("com structured → disponível", procedenciaDisponivel("renderer/v1", true) && procedenciaDisponivel("gpt-5.4-mini", true));
+check("sem structured → indisponível", !procedenciaDisponivel("renderer/v1", false));
+check("modo é derivado do model_writer", modoDe("renderer/v1") === "renderer" && modoDe("gpt-5.4-mini") === "writer");
+check("no renderer, não-atribuído é template",
+  rotuloNaoAtribuido("renderer").curto === "template");
+check("no writer, não-atribuído é redação do LLM — não 'código'",
+  rotuloNaoAtribuido("writer").curto.includes("LLM") && !rotuloNaoAtribuido("writer").curto.includes("template"));
 
 console.log(`\n${pass} passaram, ${fail} falharam\n`);
 if (fail > 0) process.exit(1);
