@@ -14,6 +14,7 @@
 | **Q2** | Filosofia de personalização | **Operações sobre o modelo-base**, ancoradas em `slot.id`. Com `replace_section` como válvula de escape para reescrita ampla. **Não** template integral. |
 | **Q3** | Escopo | **Usuário, com a chave preparada:** modelar `(scope_type, scope_id)` desde a v1, aceitando apenas `scope_type = 'user'`. |
 | **Q4** | Próximo passo | **Validar a viabilidade do renderer-como-interpretador agora** (read-only + prova de conceito local). |
+| **Q7** | Edição livre ou menu fechado na v1 | **Edição livre + atalhos.** O médico reescreve qualquer frase que não seja estado clínico, com as 4 travas provadas (não vazia · conserva o dado · sem campo inventado · sem cabeçalho de seção), **prévia obrigatória** antes de publicar e restaurar-padrão sempre disponível. Os casos comuns (3 medidas do SG, ocultar bloco opcional, item fixo na conclusão) entram como atalhos, não como única via. Decidido 2026-08-10, contra a recomendação mais restritiva do Codex — divergência de apetite de risco, registrada em `04-revisao-codex.md` C8. |
 
 Consequências diretas:
 - A web (`~/laudousg`, banco B) **sai do caminho crítico**. Seu modelo de personalização

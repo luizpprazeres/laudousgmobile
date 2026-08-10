@@ -31,8 +31,11 @@ Convenção usada em todos: **[F]** fato verificado por comando/arquivo ·
   A proposta foi corrigida duas vezes: o renderer permanece como *motor* e só o *conteúdo*
   vira dado (`01 §2.1`); e a unidade interna passou a ser um **documento estruturado**, com
   a string como último passo (`04-revisao-codex.md`). PoC: **29/29**.
-- **Fase 3 (Implementação): não iniciada** — próximo passo é o item 1 do corte
-  vertical (`01-arquitetura-proposta.md §5`).
+- **Fase 3 (Implementação): item 1 de 10 concluído** — o catálogo de
+  OBSTETRICA × CLASSICO_COMPLETO está completo e reproduz o renderer atual em
+  **960/960** combinações, byte-a-byte. As **33 garantias** de segurança da
+  personalização passam contra os módulos reais. Próximo: item 2 (refatorar o
+  renderer para ler o catálogo, atrás de flag desligada).
 
 Nada foi alterado no banco, em produção ou em configuração de domínio. As escritas
 desta sessão são: os 5 documentos desta pasta e **um** arquivo de teste novo,
@@ -70,6 +73,12 @@ personalização elimina. Já tem spec estruturada e renderer em produção como
 ## Comandos de validação
 
 ```bash
+# equivalência byte-a-byte do catálogo com o renderer atual (960 combinações)
+pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-equivalence.manual.ts
+
+# garantias de segurança da personalização (33 asserções)
+pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-guarantees.manual.ts
+
 pnpm --filter @laudousg/api typecheck
 pnpm --filter @laudousg/api build
 GOLDEN_AUTH_TOKEN=<jwt> pnpm validate:golden:deterministico

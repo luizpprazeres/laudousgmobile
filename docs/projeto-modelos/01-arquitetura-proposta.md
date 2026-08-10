@@ -267,17 +267,31 @@ Escopo do corte vertical (fim a fim, tudo atrás de feature flag):
 
 | # | Passo | Estado |
 |---|---|---|
-| 0 | Provar que o catálogo reproduz o renderer byte-a-byte | ✅ **feito** (§2.1, 9/9) |
-| 1 | Completar o catálogo de OBSTETRICA: gemelar, variações de líquido e placenta, flags, estilo OBJETIVO | a fazer |
-| 2 | Refatorar `renderer/categories/OBSTETRICA.ts` para ler o catálogo — **flag `MODEL_CATALOG_CATEGORIES`, default vazio** | a fazer |
-| 3 | Promover o catálogo a linha versionada em `report_template_variants.renderer_schema` | a fazer |
-| 4 | Tabela `account_report_customizations` `(scope_type, scope_id, base_variant_id, base_version, operations, status)` | a fazer |
-| 5 | Validador de operações (rejeita remover slot `obrigatorio`; detecta slot inexistente = conflito de versão) | ✅ provado no PoC |
+| 0 | Provar que o catálogo reproduz o renderer byte-a-byte | ✅ **feito** |
+| 1 | **Catálogo completo de OBSTETRICA clássico** (gemelar, líquido, placenta, flags) | ✅ **feito — 960/960** |
+| 2 | Refatorar `renderer/categories/OBSTETRICA.ts` para ler o catálogo — **flag `MODEL_CATALOG_CATEGORIES`, default vazio** | próximo |
+| 2b | Segundo catálogo: OBSTETRICA × OBJETIVO | a fazer |
+| 3 | ~~Promover o catálogo ao banco~~ → **catálogo-base fica no Git** (revisão C9); o banco guarda só overlays + versão/hash do base | revisado |
+| 4 | Tabela `report_scopes` + `account_report_customizations` (`scope_id` FK, `base_catalog_id`, `base_versao`, `operations`, `status`) | a fazer |
+| 5 | Validador de operações | ✅ **feito — 33/33** |
 | 6 | Endpoints: rascunho, prévia, publicar, restaurar padrão, histórico, rollback | a fazer |
 | 7 | Geração aplicando a customização publicada | a fazer |
-| 8 | `generation_audit` grava `model_version` + `customization_version` | a fazer |
-| 9 | Visualização no Lab | a fazer |
-| 10 | Golden tests: sem customização (byte-idêntico) + um por personalização do briefing | a fazer |
+| 8 | `generation_audit` grava `catalog_id` + `catalog_versao` + `customization_versao` | a fazer |
+| 9 | Visualização no Lab (usa `Segment.origin`, já disponível) | a fazer |
+| 10 | Golden tests contra a API real | a fazer |
+
+### Artefatos do passo 1
+
+| Arquivo | Papel |
+|---|---|
+| `renderer/catalog/types.ts` | `Slot`, `SlotVariant`, `Catalog`, `Segment`, `ReportDoc`, `Operation` |
+| `renderer/catalog/engine.ts` | `buildDoc`, `serialize`, `validateOperations`, `applyCustomization` |
+| `renderer/catalog/OBSTETRICA.classico.ts` | o catálogo + o motor da categoria (formatação, concordância, predicados) |
+| `renderer/catalog/OBSTETRICA.render.ts` | adaptador que o passo 2 vai plugar no renderer |
+| `__tests__/catalog-equivalence.manual.ts` | **960 combinações** (gestação × nº de fetos × líquido × placenta × extras × flags) |
+| `__tests__/catalog-guarantees.manual.ts` | **33 garantias** de segurança da personalização |
+
+Nada disso é importado pelo pipeline ainda.
 
 **Critério de aceitação inegociável do passo 2:** com zero customizações e a flag ligada,
 a saída deve ser **byte-a-byte idêntica** à atual nos casos golden de obstetrícia
