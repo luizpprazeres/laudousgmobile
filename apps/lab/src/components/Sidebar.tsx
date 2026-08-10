@@ -8,6 +8,7 @@ import {
   FlaskConical,
   LayoutDashboard,
   LayoutGrid,
+  Library,
   Newspaper,
   Pencil,
   Settings,
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/testbench", label: "Testbench", icon: FlaskConical },
+  { href: "/modelos", label: "Modelos", icon: Library },
   { href: "/showcase", label: "Showcase", icon: LayoutGrid },
   { href: "/audit", label: "Audit", icon: FileText },
   { href: "/blocks", label: "Blocks", icon: Pencil },
