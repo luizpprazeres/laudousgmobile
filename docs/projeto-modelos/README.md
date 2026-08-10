@@ -118,31 +118,6 @@ pnpm --filter @laudousg/api typecheck && pnpm --filter @laudousg/lab typecheck
    (`conclusionUtils.ts:27` só reconhece `CONCLUSÃO:`). Latente hoje — nenhum laudo
    objetivo desde 03/06/2026 — mas arma no momento em que o estilo for ligado.
 
-## Primeira implementação vertical proposta
-
-**OBSTETRICA / CLASSICO_COMPLETO / banco A** — escolhida por dados, não por conveniência:
-maior taxa de edição manual (41,8 % de 378 laudos em 60 dias) com o **menor** delta médio
-(93 caracteres), ou seja, exatamente o padrão "ajuste pontual repetitivo" que a
-personalização elimina. Já tem spec estruturada e renderer em produção como gabarito.
-
-**Critério de aceitação do primeiro passo:** com zero customizações, saída
-**byte-a-byte idêntica** à atual nos 52 casos golden. Sem isso, nada avança.
-
-## Comandos de validação
-
-```bash
-# equivalência byte-a-byte do catálogo com o renderer atual (960 combinações)
-pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-equivalence.manual.ts
-
-# garantias de segurança da personalização (33 asserções)
-pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-guarantees.manual.ts
-
-pnpm --filter @laudousg/api typecheck
-pnpm --filter @laudousg/api build
-GOLDEN_AUTH_TOKEN=<jwt> pnpm validate:golden:deterministico
-# ⚠️ pnpm test é NO-OP: nenhum package define script "test"
-```
-
 ## Como retomar
 
 1. Leia `00-mapa-do-sistema.md` — é o estado de verdade, com caminhos reais.
