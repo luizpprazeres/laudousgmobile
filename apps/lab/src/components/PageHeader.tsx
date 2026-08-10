@@ -9,6 +9,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   "/": "Dashboard",
   "/testbench": "Testbench",
   "/modelos": "Modelos",
+  "/prompts": "Prompts",
   "/audit": "Audit",
   "/blocks": "Blocks",
   "/reviewer": "Reviewer",

@@ -8,6 +8,12 @@ import { buildSystemMessage } from "@/server/prompts/buildSystemMessage";
 import { resolveConditionalPromptBlocks } from "@/server/prompts/conditionalBlocks";
 import { getCategoryContract } from "@/server/prompts/contracts";
 import { getStyleOverlay } from "@/server/prompts/styles";
+import {
+  GLOBAL_PROHIBITIONS,
+  GLOBAL_RULES_BLOCK,
+  WRITER_HARDENING_BLOCK,
+  buildCoTInstruction,
+} from "@/server/prompts/global";
 import { PROMPT_VERSION, contractHashFor } from "@/server/prompts/version";
 import { loadDeterministicBundle } from "@/server/pipeline/bundleLoader";
 import { getWritingStyleById } from "@/server/db/lookups";
@@ -273,13 +279,52 @@ export async function GET(req: Request) {
     conditionalBlocks: condicionais,
   });
 
-  // As camadas, separadas — é o que permite estudar de onde vem cada parte.
+  // As camadas, separadas e NA ORDEM REAL em que buildSystemMessage as concatena
+  // (buildSystemMessage.ts:86-127). É o que permite dissecar o prompt em vez de
+  // encarar 50 mil caracteres de uma vez.
   const contrato = getCategoryContract(category, style.code);
   const overlay = getStyleOverlay(style.code);
   const porKind = bundle.blocks.reduce<Record<string, number>>((acc, b) => {
     acc[b.kind] = (acc[b.kind] ?? 0) + 1;
     return acc;
   }, {});
+
+  const fewShots = bundle.blocks.filter((b) => b.kind === "exemplo");
+  const normativos = bundle.blocks.filter((b) => b.kind !== "exemplo");
+  const ORDEM_KIND = ["modelo", "regra", "frase", "conclusao", "excecao", "comentario_tecnico"];
+
+  type Camada = { ordem: number; id: string; titulo: string; origem: string; texto: string };
+  const camadas: Camada[] = [];
+  let n = 0;
+  const add = (id: string, titulo: string, origem: string, texto: string | null | undefined) => {
+    if (texto && texto.trim() !== "") camadas.push({ ordem: ++n, id, titulo, origem, texto });
+  };
+
+  add("contrato", "Contrato da categoria", `prompts/contracts/${category}.ts`,
+    contrato ?? "(sem contrato — usa DEFAULT_SYSTEM_MESSAGE)");
+  condicionais.forEach((b, i) =>
+    add(`condicional_${i}`, `Bloco condicional ${i + 1} (disparado pelo ditado)`,
+      "prompts/conditionalBlocks.ts", b));
+  add("global", "Regras globais da casa", "prompts/global.ts → GLOBAL_RULES_BLOCK", GLOBAL_RULES_BLOCK);
+  if (usarHardening) {
+    add("hardening", "Reforço de intenção (flag WRITER_HARDENING)",
+      "prompts/global.ts → WRITER_HARDENING_BLOCK", WRITER_HARDENING_BLOCK);
+  }
+  add("estilo", `Overlay do estilo ${style.code}`, "prompts/styles.ts", overlay);
+  for (const kind of ORDEM_KIND) {
+    const doKind = normativos.filter((b) => b.kind === kind);
+    if (doKind.length === 0) continue;
+    add(`bundle_${kind}`, `Biblioteca — ${kind} (${doKind.length})`,
+      "knowledge_blocks (categoria × estilo)",
+      doKind.map((b) => `--- ${b.title} ---\n${b.content}`).join("\n\n"));
+  }
+  if (fewShots.length > 0) {
+    add("fewshots", `Exemplos (few-shots, ${fewShots.length})`, "knowledge_blocks kind=exemplo",
+      fewShots.map((b) => `--- ${b.title} ---\n${b.content}`).join("\n\n"));
+  }
+  add("proibicoes", "Proibições globais", "prompts/global.ts → GLOBAL_PROHIBITIONS", GLOBAL_PROHIBITIONS);
+  add("cot", "Instrução de raciocínio", "prompts/global.ts → buildCoTInstruction()",
+    buildCoTInstruction(cat.label));
 
   return Response.json({
     categoria: { code: cat.code, label: cat.label, ativa: cat.active },
@@ -289,13 +334,15 @@ export async function GET(req: Request) {
     contract_hash: contractHashFor(category, styleId),
     hardening: usarHardening,
     variante: bundle.variantKey,
-    camadas: {
-      contrato_da_categoria: contrato,
-      overlay_de_estilo: overlay,
-      blocos_condicionais: condicionais,
+    resumo_camadas: {
+      contrato_da_categoria: Boolean(contrato),
+      overlay_de_estilo: Boolean(overlay),
+      blocos_condicionais: condicionais.length,
       bundle_por_kind: porKind,
       bundle_total: bundle.blocks.length,
     },
+    // As camadas na ORDEM em que são concatenadas, com o texto de cada uma.
+    camadas,
     blocos: bundle.blocks.map((b) => ({
       id: b.id, kind: b.kind, title: b.title, priority: b.priority,
       tamanho: b.content.length,
