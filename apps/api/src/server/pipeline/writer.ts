@@ -58,6 +58,11 @@ export async function* runWriterStream(args: {
     outputTokens?: number;
     /** DET-1: tokens do prefixo servidos pelo prompt caching da OpenAI. */
     cachedInputTokens?: number;
+    /**
+     * Por que o modelo parou. Só `stop` (ou ausente) autoriza persistir —
+     * `length` significa laudo TRUNCADO. Ver `isCompleteFinishReason`.
+     */
+    finishReason?: string;
   },
   void
 > {
@@ -109,6 +114,12 @@ export async function* runWriterStream(args: {
   let inputTokens: number | undefined;
   let outputTokens: number | undefined;
   let cachedInputTokens: number | undefined;
+  // Último `finish_reason` NÃO-nulo visto no stream.
+  //
+  // Por que guardar em vez de ler no fim: com `stream_options.include_usage`,
+  // o provider manda um chunk final SÓ de usage, com `choices` vazio. Ler o
+  // último chunk daria `undefined` e mascararia o motivo real do término.
+  let finishReason: string | undefined;
   for await (const chunk of stream) {
     if (chunk.usage) {
       inputTokens = chunk.usage.prompt_tokens;
@@ -117,6 +128,8 @@ export async function* runWriterStream(args: {
       // DET-1: prefixo estável do system message sendo reaproveitado).
       cachedInputTokens = chunk.usage.prompt_tokens_details?.cached_tokens;
     }
+    const reason = chunk.choices[0]?.finish_reason;
+    if (reason) finishReason = reason;
     const delta = chunk.choices[0]?.delta?.content ?? "";
     if (delta) {
       full += delta;
@@ -131,7 +144,26 @@ export async function* runWriterStream(args: {
     inputTokens,
     outputTokens,
     cachedInputTokens,
+    finishReason,
   };
+}
+
+/**
+ * O laudo só pode ser persistido quando o modelo terminou por conta própria.
+ *
+ * `length` é o caso perigoso: o texto sai TRUNCADO e parece um laudo bom.
+ * Isso é pior que a saída vazia (que ao menos é óbvia) — em modelo de
+ * raciocínio o orçamento acaba durante a escrita e a última frase morre no
+ * meio, possivelmente numa medida ou numa lateralidade.
+ *
+ * Falha fechado também no desconhecido: um motivo novo de um provider
+ * compatível deve parar o laudo, não passar batido.
+ */
+export function isCompleteFinishReason(reason: string | undefined): boolean {
+  // `undefined` é aceito: nem todo provider compatível emite finish_reason, e
+  // recusar tudo quebraria quem hoje funciona. O guard de texto vazio e o de
+  // truncamento explícito cobrem o que importa.
+  return reason === undefined || reason === "stop";
 }
 
 type OpenAIChatCreate = ReturnType<typeof writerClient>["chat"]["completions"]["create"];

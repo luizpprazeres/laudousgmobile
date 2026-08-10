@@ -36,7 +36,7 @@ import {
 import { stripSpuriousMagnitudeFlags } from "@/server/pipeline/magnitudeGuard";
 import { applyCervicalLevelSuggestions } from "@/server/pipeline/cervicalLevelGuard";
 import { stripObservationNarration } from "@/server/pipeline/cervicalNarrationGuard";
-import { runWriterStream } from "@/server/pipeline/writer";
+import { isCompleteFinishReason, runWriterStream } from "@/server/pipeline/writer";
 import { resolveWriterModel } from "@/server/pipeline/modelResolver";
 import { resolveGenerationPath } from "@/server/pipeline/generationPathResolver";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
@@ -476,6 +476,11 @@ export async function POST(req: Request) {
           .map((c) => c.trim())
           .filter(Boolean);
         const useWriterV2 =
+          // O modo experimental tem que passar reto por aqui. O writerV2 usa o
+          // OPENAI_MODEL_WRITER fixo e retorna ANTES do resolveWriterModel — ou
+          // seja, ignoraria o provider alternativo e, pior, contornaria a
+          // rejeição de usuário não autorizado, que só é avaliada lá adiante.
+          generationMode !== "experimental" &&
           writerV2Categories.includes(draftCategory) &&
           env().WRITER_V2_USER_ID !== "" &&
           (user.id === env().WRITER_V2_USER_ID ||
@@ -908,6 +913,7 @@ export async function POST(req: Request) {
             inputTokens?: number;
             outputTokens?: number;
             cachedInputTokens?: number;
+            finishReason?: string;
           }
         | undefined;
       try {
@@ -963,28 +969,43 @@ export async function POST(req: Request) {
       }
       finalText = writerResult?.fullText ?? finalText;
 
-      // GUARD: laudo vazio nunca é sucesso.
+      // GUARD: só persiste laudo que o modelo terminou de escrever.
       //
-      // Modelo de raciocínio servido por API compatível com OpenAI pode gastar
-      // TODO o `max_tokens` nos tokens de raciocínio e terminar o stream sem
-      // emitir uma palavra. O stream fecha limpo, então nada acusa erro — e sem
-      // este guard o pipeline gravava `generated_output = ''` com
-      // `outcome = 'success'`, e o médico via uma tela em branco sem explicação.
-      // Aconteceu em produção em 09/08 (TESTE / deepseek-v4-flash): duas de três
-      // gerações bateram exatamente no teto de tokens e voltaram vazias.
-      // Cancelamento do cliente sai por aqui como AbortError, para o catch de
-      // baixo registrar `aborted` em vez de `error`. Sem isto, desistir da
-      // geração no meio viraria "falha do writer" na auditoria.
-      if (finalText.trim() === "" && signal.aborted) {
+      // Cancelamento do cliente vem PRIMEIRO e independe do conteúdo. O SDK da
+      // OpenAI lança `APIUserAbortError`, cujo `name` é "Error" — o catch lá
+      // embaixo só reconhece "AbortError", então sem isto desistir da geração
+      // no meio seria auditado como falha do writer.
+      if (signal.aborted) {
         const abortErr = new Error("client disconnected");
         abortErr.name = "AbortError";
         throw abortErr;
       }
+
+      // Vazio: o modelo de raciocínio gastou TODO o `max_tokens` pensando e não
+      // emitiu uma palavra. O stream fecha limpo, então nada acusa erro. Sem o
+      // guard, gravava `generated_output = ''` com `outcome = 'success'` e o
+      // médico via tela em branco. Produção 09/08 (deepseek-v4-flash): duas de
+      // três gerações bateram no teto e voltaram vazias.
       if (finalText.trim() === "") {
         throw new Error(
           `Writer não produziu texto (model=${modelConfig.model}, ` +
-            `tokens_out=${writerResult?.outputTokens ?? "?"}). ` +
+            `tokens_out=${writerResult?.outputTokens ?? "?"}, ` +
+            `finish_reason=${writerResult?.finishReason ?? "?"}). ` +
             `Causa provável: o orçamento de tokens acabou no raciocínio.`,
+        );
+      }
+
+      // TRUNCADO — o caso PIOR, e o que este bloco existe para pegar.
+      //
+      // Quando o orçamento acaba durante a escrita (finish_reason="length"), o
+      // texto sai cortado no meio e PARECE um laudo bom. Diferente do vazio, que
+      // é óbvio, este passa despercebido — e a frase que morre no meio pode ser
+      // uma medida ou uma lateralidade. Nunca persistir.
+      if (!isCompleteFinishReason(writerResult?.finishReason)) {
+        throw new Error(
+          `Laudo incompleto: o modelo parou por "${writerResult?.finishReason}" ` +
+            `(model=${modelConfig.model}, tokens_out=${writerResult?.outputTokens ?? "?"}). ` +
+            `O texto foi descartado por estar truncado.`,
         );
       }
       // DET-5: no caminho RENDERER os post-processors NÃO rodam — a estrutura
