@@ -11,6 +11,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   "/modelos": "Modelos",
   "/prompts": "Prompts",
   "/audit": "Audit",
+  "/correcoes": "Correções",
   "/blocks": "Blocks",
   "/reviewer": "Reviewer",
   "/changelog": "Changelog",

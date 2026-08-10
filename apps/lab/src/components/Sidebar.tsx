@@ -11,6 +11,7 @@ import {
   Library,
   MessageSquareCode,
   Newspaper,
+  PenLine,
   Pencil,
   Settings,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/prompts", label: "Prompts", icon: MessageSquareCode },
   { href: "/showcase", label: "Showcase", icon: LayoutGrid },
   { href: "/audit", label: "Audit", icon: FileText },
+  { href: "/correcoes", label: "Correções", icon: PenLine },
   { href: "/blocks", label: "Blocks", icon: Pencil },
   { href: "/reviewer", label: "Reviewer", icon: Eye },
   { href: "/changelog", label: "Changelog", icon: Newspaper },
