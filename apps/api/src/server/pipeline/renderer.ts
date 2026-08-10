@@ -195,6 +195,19 @@ export async function* runRendererStream(args: {
    * (interpretando → achado → montando) para o route emitir via SSE. Quando
    * presente, a extração é STREAMADA. */
   onProgress?: (e: { stage: "interpretando" | "achado" | "calculando" | "montando"; label: string }) => void;
+  /**
+   * Recebe os achados tipados assim que a extração termina, para o route
+   * registrá-los na auditoria.
+   *
+   * Até aqui estes dados viviam só na memória do request: o renderer extraía,
+   * montava o laudo e descartava. Sem eles não há como dizer de onde veio cada
+   * trecho do laudo, nem como o sanity distinguir o que o médico ditou do que o
+   * template preencheu — foi o que gerou os falsos "achado_inventado"
+   * (docs/projeto-modelos/07-verificacao-achado-inventado.md).
+   *
+   * Puramente observacional: não altera o texto gerado.
+   */
+  onFindings?: (findings: unknown) => void;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
 
@@ -207,6 +220,12 @@ export async function* runRendererStream(args: {
     stream: !!args.onProgress,
     onProgress: args.onProgress,
   });
+  // Nunca deixar a auditoria derrubar a geração de um laudo.
+  try {
+    args.onFindings?.(extraction.findings);
+  } catch {
+    /* observacional — ignora */
+  }
   args.onProgress?.({ stage: "montando", label: "Montando o laudo…" });
 
   // Categorias com render programático auto-contido (sem slots de órgão nem

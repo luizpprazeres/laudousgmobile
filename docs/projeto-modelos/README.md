@@ -19,30 +19,86 @@ sanity checks, versões e métricas.
 | `02-riscos.md` | Achados graves, 28 acoplamentos a texto literal, divergências briefing × código, 19 riscos operacionais |
 | `03-perguntas-abertas.md` | Decisões do responsável — Q1–Q4 respondidas; Q5–Q7 abertas |
 | `04-revisao-codex.md` | Revisão adversarial do Codex 1: 7 críticas procedentes, 5 já incorporadas ao PoC, 2 que mudaram o plano + 1 bug novo confirmado |
+| `05-plano-migracao.md` | O que a migration `0022` cria, impacto, índices, RLS, rollback — **aplicada em 10/08** |
+| `06-lab-cockpit.md` | Levantamento do Lab: o que sobreviveu ao fim do RAG, o que aposentar, o que criar |
+| `07-verificacao-achado-inventado.md` | Os 371 alertas de "achado inventado" são **falso positivo** — e o que se descobriu no lugar |
 
 Convenção usada em todos: **[F]** fato verificado por comando/arquivo ·
 **[I]** inferência · **[?]** não confirmado.
 
-## Estado atual
+## Estado atual — 2026-08-10
 
-- **Fase 1 (Descoberta): concluída** — 2026-08-09
-- **Fase 2 (Arquitetura): decidida e revisada** — Q1–Q4 respondidas em 09/08; viabilidade
-  validada com prova executável; **revisão adversarial do Codex 1 em 10/08 incorporada**.
-  A proposta foi corrigida duas vezes: o renderer permanece como *motor* e só o *conteúdo*
-  vira dado (`01 §2.1`); e a unidade interna passou a ser um **documento estruturado**, com
-  a string como último passo (`04-revisao-codex.md`). PoC: **29/29**.
-- **Fase 3 (Implementação): itens 1 e 2 de 10 concluídos** — o catálogo de
-  OBSTETRICA × CLASSICO_COMPLETO reproduz o renderer atual em **3840/3840**
-  combinações byte-a-byte (incluindo `igCorrection`, `flexivel` e `grannum`,
-  as flags ligadas em produção). O renderer já sabe lê-lo, atrás de
-  `MODEL_CATALOG_CATEGORIES` — **default vazio, comportamento inalterado**.
-  **41 garantias** de segurança da personalização passam contra os módulos reais.
-  Próximo: item 2b (catálogo do estilo OBJETIVO) e item 4 (tabelas).
+O projeto tem **duas frentes**, que se separaram durante o trabalho:
 
-Nada foi alterado no banco, em produção ou em configuração de domínio. As escritas
-desta sessão são: os 5 documentos desta pasta e **um** arquivo de teste novo,
-`apps/api/src/server/renderer/__tests__/model-catalog-poc.manual.ts` (PoC isolado,
-não importado por código de produção). `pnpm --filter @laudousg/api typecheck` limpo.
+| Frente | Onde vive | Estado |
+|---|---|---|
+| **A. Modelo canônico + personalização** | backend + Biblioteca (web/iOS/Android) | catálogo e motor prontos; persistência criada; falta a Biblioteca no produto |
+| **B. Cockpit do Lab** | `lab.laudousg.com` | 3 telas entregues; procedência destravada |
+
+> **Correção de rumo (10/08):** a tela `/modelos` que nasceu no Lab pertence à
+> **Biblioteca do usuário**, não ao Lab. Ela fica onde está por ora, como bancada
+> de avaliação, e migra quando formos ao `apps/web`. O Lab é o cockpit do Luiz
+> para *estudar* como os laudos se formam — ver `06-lab-cockpit.md`.
+
+### Frente A — modelo canônico e personalização
+
+- **Fase 1 (Descoberta): concluída** — 09/08
+- **Fase 2 (Arquitetura): decidida e revisada duas vezes**
+  Q1–Q4 respondidas em 09/08; Q7 (edição livre) em 10/08. A proposta foi corrigida
+  pela validação de viabilidade (`01 §2.1` — o renderer é *motor*, só o *conteúdo*
+  vira dado) e pela revisão adversarial do Codex (`04-revisao-codex.md` — a unidade
+  interna passou a ser um **documento estruturado**, com a string como último passo).
+- **Fase 3 (Implementação): 4 de 10 itens**
+
+| # | Item | Estado |
+|---|---|---|
+| 1 | Catálogo de OBSTETRICA × clássico | ✅ **3840/3840** byte-a-byte |
+| 2 | Renderer lê o catálogo atrás de `MODEL_CATALOG_CATEGORIES` (default vazio) | ✅ |
+| 2b | Catálogo do estilo OBJETIVO | ⏳ |
+| 3 | Catálogo-base versionado — **no Git**, não no banco (revisão C9) | ✅ por decisão |
+| 4 | Tabelas `report_scopes` + `report_model_customizations` | ✅ **aplicadas** em 10/08 |
+| 5 | Validador de operações | ✅ **58 garantias** |
+| 6 | Endpoints: rascunho, prévia, publicar, restaurar, histórico, rollback | ⏳ só a prévia existe |
+| 7 | Geração aplicando a customização publicada | ⏳ |
+| 8 | Auditoria com `catalog_id` + versões | ⏳ |
+| 9 | Visualização no Lab | ✅ bancada `/modelos` |
+| 10 | Golden tests contra a API real | ⏳ |
+
+### Frente B — cockpit do Lab
+
+| Tela | Estado | O que entrega |
+|---|---|---|
+| `/prompts` | ✅ | O prompt de qualquer categoria × estilo **sem gerar laudo**, dissecado nas camadas, com o caminho (renderer/writer/livre) explícito |
+| `/audit` | ✅ | Todas as contas, com filtro por **tipo** de alerta; falso "erro" corrigido |
+| `/correcoes` | ✅ | Os 585 laudos que o médico corrigiu, com diff por linha |
+| Procedência por trecho | ✅ motor · ⏳ tela | Destravado em 10/08 (ver abaixo) |
+
+## O que já foi alterado no sistema
+
+Até 09/08 nada havia sido tocado. Depois disso, com autorização explícita:
+
+| Data | Mudança | Risco |
+|---|---|---|
+| 10/08 | **Migration `0022`** aplicada — 2 tabelas novas, nenhum `ALTER`, 0 linhas afetadas | verificada: invariantes testadas em transação com rollback; advisor limpo |
+| 10/08 | Flag `MODEL_CATALOG_CATEGORIES` em `env.ts` — **default vazio** | nulo enquanto vazia |
+| 10/08 | `pipeline/renderer.ts` + `route.ts`: callback `onFindings` grava a extração do renderer na auditoria | aditivo e observacional; não altera o texto gerado; 3840/3840 e goldens verdes depois |
+
+## Comandos de validação
+
+```bash
+# equivalência byte-a-byte do catálogo com o renderer (3840 combinações)
+pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-equivalence.manual.ts
+# garantias de segurança da personalização (58)
+pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-guarantees.manual.ts
+# projeção que a Biblioteca consome (25)
+pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-describe.manual.ts
+# diff das correções (9) e procedência (17)
+pnpm exec tsx apps/lab/src/lib/diff/linhas.manual.ts
+pnpm exec tsx apps/lab/src/lib/procedencia/index.manual.ts
+
+pnpm --filter @laudousg/api typecheck && pnpm --filter @laudousg/lab typecheck
+# ⚠️ pnpm test é NO-OP: nenhum package define script "test"
+```
 
 ## Os cinco fatos que mudam o entendimento do projeto
 
@@ -90,13 +146,39 @@ GOLDEN_AUTH_TOKEN=<jwt> pnpm validate:golden:deterministico
 ## Como retomar
 
 1. Leia `00-mapa-do-sistema.md` — é o estado de verdade, com caminhos reais.
-2. Leia as decisões no topo de `03-perguntas-abertas.md` (Q1–Q4, já respondidas)
-   e a correção de escopo em `01-arquitetura-proposta.md §2.1`.
-3. Rode o PoC para reancorar o entendimento em algo executável:
-   `pnpm exec tsx apps/api/src/server/renderer/__tests__/model-catalog-poc.manual.ts`
-4. Continue pelo item 1 do corte vertical (`01 §5`): completar o catálogo de OBSTETRICA
-   (gemelar, variações de líquido/placenta, flags, estilo OBJETIVO).
-5. Confirme o ambiente antes de qualquer acesso ao banco: projeto `laudousgmobile`,
-   ref `yldtkqrsbgcnwlydrrot`, us-east-2 — **é o banco de produção, não há staging**.
-6. Continuam **abertas**: Q5 (autorizações operacionais — criar tabelas, ligar flags,
-   arquivar o lab) e Q6 (renomear `WRITER_V2_ABDOME_USER_ID`; futuro do estilo OBJETIVO).
+2. Veja as decisões no topo de `03-perguntas-abertas.md` (Q1–Q4 e Q7, respondidas)
+   e as duas correções de rumo: `01 §2.1` (motor × conteúdo) e `04-revisao-codex.md`
+   (documento estruturado).
+3. Rode os comandos de validação acima — reancoram o entendimento em algo executável.
+4. Suba o ambiente para ver as telas:
+   ```
+   pnpm --filter @laudousg/api dev                                  # :3000
+   BACKEND_API_URL=http://localhost:3000 pnpm --filter @laudousg/lab dev   # :3001
+   ```
+5. **Antes de tocar o banco**: projeto `laudousgmobile`, ref `yldtkqrsbgcnwlydrrot`,
+   us-east-2 — é **produção, e não há staging**. Só com autorização explícita.
+
+### Próximos passos, em ordem
+
+1. **Tela de procedência** — o motor está pronto (`apps/lab/src/lib/procedencia/`) e
+   o dado passou a ser gravado em 10/08. Precisa de laudos novos para ter o que mostrar.
+2. **Endpoints de personalização** (item 6): rascunho, publicar, histórico, rollback —
+   as tabelas já existem e estão vazias.
+3. **Geração aplicando a customização** (item 7), atrás de flag.
+4. **Catálogo do estilo OBJETIVO** (item 2b).
+5. **Biblioteca no produto** — mover `/modelos` do Lab para o `apps/web`.
+
+### Frentes que apareceram no caminho e não são deste projeto
+
+- **Garble de ASR no MSK** — erros de transcrição vazando no laudo
+  (`07-verificacao-achado-inventado.md §3`). É a categoria com maior taxa de
+  correção manual: 41 %.
+- **Sanity saturado** — `medida_divergente` é 74 % dos alertas e
+  `achado_inventado` é falso positivo. Com os findings agora gravados, dá para
+  o comparador saber o que veio de campo estruturado.
+- **Estilo objetivo ignorado** em `MUSCULOESQUELETICO` e `PROSTATA_SUPRAPUBICA` —
+  são chamados sem o parâmetro de estilo e produzem laudo clássico em silêncio.
+- **`observacoes_do_medico` descartado** em ABDOMEN_TOTAL e ABDOMEN_SUPERIOR: o
+  prompt promete respeitar, nada renderiza.
+- **Q5 e Q6 seguem abertas** — arquivar o Lab antigo; renomear
+  `WRITER_V2_ABDOME_USER_ID`; futuro do estilo OBJETIVO.

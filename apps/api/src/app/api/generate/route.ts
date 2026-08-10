@@ -882,6 +882,13 @@ export async function POST(req: Request) {
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
             },
+            // Os achados tipados que o renderer extraiu. No fast-path o
+            // structurer é pulado, então sem isto a auditoria fica com
+            // `achados: {}` e não há como saber, depois, o que o médico ditou
+            // e o que o template preencheu. Só registra — não muda o laudo.
+            onFindings: (f) => {
+              auditState.structuredOutput = f as typeof auditState.structuredOutput;
+            },
           })
         : runWriterStream({
             findings,
