@@ -12,3 +12,4 @@ export * from "./learningSuggestions";
 export * from "./productEvents";
 export * from "./reportTemplateVariants";
 export * from "./accountReportPreferences";
+export * from "./reportModelCustomizations";
