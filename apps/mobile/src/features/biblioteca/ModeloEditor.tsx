@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Sheet } from "@/ui/Sheet";
 import { LaudoPreview } from "./LaudoPreview";
+import { HistoricoSheet } from "./HistoricoSheet";
 import { PrimaryButton, SecondaryButton } from "@/ui/Button";
 import { useColorTokens } from "@/ui/useColorTokens";
 import {
@@ -11,6 +12,7 @@ import {
   getPersonalizacao,
   PersonalizacaoRecusada,
   publicar,
+  restaurarVersao,
   salvarRascunho,
   type EstadoPersonalizacao,
   type Operacao,
@@ -65,6 +67,7 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
   const [variacao, setVariacao] = useState<string | null>(null);
   /** Alterna entre editar o modelo e ver o laudo pronto. */
   const [aba, setAba] = useState<"modelo" | "laudo">("modelo");
+  const [verHistorico, setVerHistorico] = useState(false);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -180,6 +183,21 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
     }
   }
 
+  async function restaurar(versao: number) {
+    setVerHistorico(false);
+    setSalvando(true);
+    setRecusa(null);
+    try {
+      await restaurarVersao(categoria, versao);
+      await carregar();
+    } catch (err) {
+      if (err instanceof PersonalizacaoRecusada) setRecusa(err.erros);
+      else setErro(err instanceof Error ? err.message : "não foi possível restaurar");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
   function abrirSlot(slot: SlotDescricao, frase: string, editavel: boolean) {
     if (!editavel) {
       setSlotAberto(slot);
@@ -245,6 +263,20 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
             </Pressable>
           );
         })}
+        {estado.historico.length > 0 && (
+          <Pressable
+            onPress={() => setVerHistorico(true)}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: t.fill2,
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: t.text2, fontSize: 13, fontWeight: "600" }}>Versões</Text>
+          </Pressable>
+        )}
       </View>
 
       {aba === "laudo" ? (
@@ -557,6 +589,14 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
         </View>
       )}
 
+      <Sheet open={verHistorico} onClose={() => setVerHistorico(false)} height={460}>
+        <HistoricoSheet
+          historico={estado.historico}
+          publicadaVersao={publicado?.versao ?? null}
+          onRestaurar={(v) => void restaurar(v)}
+        />
+      </Sheet>
+
       {/* ações de uma frase */}
       <Sheet open={slotAberto !== null || modoEdicao === "conclusao"} onClose={fechar} height={420}>
         {modoEdicao === null && slotAberto && (
@@ -621,12 +661,47 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
                   ? "Frase a acrescentar depois"
                   : "Item a acrescentar na conclusão"}
             </Text>
-            {modoEdicao === "trocar" && slotAberto && slotAberto.placeholdersObrigatorios.length > 0 && (
-              <Text style={{ color: t.textSec, fontSize: 12, lineHeight: 18 }}>
-                Conserve {slotAberto.placeholdersObrigatorios.map((p) => `{${p}}`).join(", ")} — é o
-                dado medido no exame.
-              </Text>
-            )}
+            {modoEdicao === "trocar" && slotAberto && slotAberto.placeholdersObrigatorios.length > 0 && (() => {
+              const faltando = slotAberto.placeholdersObrigatorios.filter(
+                (p) => !rascunhoTexto.includes(`{${p}}`),
+              );
+              return (
+                <>
+                  {/* Avisa AQUI, não só ao salvar: o servidor recusaria, mas o
+                      médico já teria perdido a frase que estava escrevendo. */}
+                  <Text
+                    style={{
+                      color: faltando.length > 0 ? t.warningText : t.textSec,
+                      fontSize: 12,
+                      lineHeight: 18,
+                    }}
+                  >
+                    {faltando.length > 0
+                      ? `Falta ${faltando.map((p) => `{${p}}`).join(", ")} — é o dado medido no exame, e sem ele o laudo perderia a medida.`
+                      : `Conserve ${slotAberto.placeholdersObrigatorios.map((p) => `{${p}}`).join(", ")} — é o dado medido no exame.`}
+                  </Text>
+                  {/* Tocar insere: o médico não precisa decorar a grafia da chave. */}
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                    {slotAberto.placeholdersObrigatorios.map((p) => (
+                      <Pressable
+                        key={p}
+                        onPress={() => setRascunhoTexto((v) => `${v}{${p}}`)}
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 999,
+                          backgroundColor: t.brandLight,
+                        }}
+                      >
+                        <Text style={{ color: t.brandDeep, fontSize: 12 }}>
+                          {p.replace(/_/g, " ")}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              );
+            })()}
             <TextInput
               value={rascunhoTexto}
               onChangeText={setRascunhoTexto}
@@ -645,7 +720,16 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
               }}
             />
             <PrimaryButton title="Guardar"
-              disabled={rascunhoTexto.trim() === "" || salvando}
+              disabled={
+                rascunhoTexto.trim() === "" ||
+                salvando ||
+                // Deixar salvar e o servidor recusar seria correto e péssimo:
+                // o médico perderia o que escreveu.
+                (modoEdicao === "trocar" &&
+                  (slotAberto?.placeholdersObrigatorios ?? []).some(
+                    (p) => !rascunhoTexto.includes(`{${p}}`),
+                  ))
+              }
               onPress={() => {
                 const v = rascunhoTexto.trim();
                 const semAnterior = slotAberto
