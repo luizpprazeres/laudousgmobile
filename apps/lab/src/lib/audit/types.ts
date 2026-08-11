@@ -46,6 +46,13 @@ export type AuditRow = {
   piorIssue: string | null;
 };
 
+/** Colunas da migration 0023 — opcionais: a query cai no fallback sem elas. */
+export type AuditModeloDB = {
+  model_catalog_id?: string | null;
+  model_catalog_versao?: number | null;
+  model_customization_versao?: number | null;
+};
+
 export type AuditDetail = AuditRow & {
   pipeline: string;
   promptVersion: string;
@@ -59,6 +66,17 @@ export type AuditDetail = AuditRow & {
   retrieved: AuditCompactBlock[];
   tokensIn: number | null;
   tokensOut: number | null;
+  /**
+   * Qual MODELO DE LAUDO montou o texto (migration 0023) — não confundir com
+   * `modelo`, que é o modelo de IA (model_writer). `null` aqui significa que a
+   * query caiu no fallback: o banco ainda não tem as colunas. Presente com
+   * `catalogId: null` significa outra coisa — o laudo não passou pelo catálogo.
+   */
+  modeloCatalogo: {
+    catalogId: string | null;
+    catalogVersao: number | null;
+    customizacaoVersao: number | null;
+  } | null;
   warning?: { title: string; message: string };
 };
 

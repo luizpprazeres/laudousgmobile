@@ -21,6 +21,10 @@ import {
   type ObstetricaFindings,
 } from "../renderer/categories/OBSTETRICA";
 import { renderObstetricaCatalogo } from "../renderer/catalog/OBSTETRICA.render";
+import { OBSTETRICA_CLASSICO } from "../renderer/catalog/OBSTETRICA.classico";
+
+const OBSTETRICA_CATALOG_ID = OBSTETRICA_CLASSICO.id;
+const OBSTETRICA_CATALOG_VERSAO = OBSTETRICA_CLASSICO.versao;
 import { catalogEnabledFor } from "../renderer/catalog/engine";
 import type { PersonalizacaoResolvida } from "../customization/resolve";
 import {
@@ -219,8 +223,18 @@ export async function* runRendererStream(args: {
    * modelo-base, que é o comportamento de sempre.
    */
   personalizacao?: Promise<PersonalizacaoResolvida>;
-  /** Recebe o que foi (ou não foi) aplicado, para a auditoria. Observacional. */
-  onPersonalizacao?: (r: PersonalizacaoResolvida) => void;
+  /**
+   * Qual modelo montou o laudo — para a auditoria (item 8). Emitido sempre que
+   * o caminho do catálogo é usado, mesmo sem personalização: saber que um laudo
+   * saiu do catálogo v1 já responde metade da pergunta "por que este texto?".
+   * Observacional.
+   */
+  onModelo?: (m: {
+    catalogId: string;
+    catalogVersao: number;
+    customizacaoVersao: number | null;
+    motivoSemPersonalizacao?: string;
+  }) => void;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
 
@@ -286,7 +300,12 @@ export async function* runRendererStream(args: {
               ` | personalização v${p.versao}: ${p.operacoes} operação(ões) sobre ${p.catalogId} v${p.baseVersao}`;
           }
           try {
-            if (p) args.onPersonalizacao?.(p);
+            args.onModelo?.({
+              catalogId: OBSTETRICA_CATALOG_ID,
+              catalogVersao: OBSTETRICA_CATALOG_VERSAO,
+              customizacaoVersao: p?.aplicar ? p.versao : null,
+              ...(p && !p.aplicar ? { motivoSemPersonalizacao: p.motivo } : {}),
+            });
           } catch {
             /* observacional — nunca derruba a geração */
           }

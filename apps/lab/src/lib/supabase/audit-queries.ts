@@ -1,5 +1,6 @@
 import "server-only";
 import type {
+  AuditModeloDB,
   AuditCompactBlock,
   AuditDetail,
   AuditFiltros,
@@ -43,6 +44,27 @@ const COLUNAS_LISTA =
 const COLUNAS_DETALHE =
   `${COLUNAS_LISTA}, output_text, system_message_full, structured_output, prompt_version, ` +
   "pipeline_version, contract_hash, openai_input_tokens, openai_output_tokens, model_structurer";
+
+/**
+ * Colunas da migration 0023 — qual MODELO montou o laudo.
+ *
+ * Ficam separadas porque o Lab pode estar rodando contra um banco em que a
+ * migration ainda não foi aplicada. Nesse caso a query inteira falharia e a
+ * tela de auditoria — que funciona hoje — quebraria por causa de um dado
+ * novo e acessório. Ver `selecionarComModelo`.
+ */
+const COLUNAS_MODELO =
+  "model_catalog_id, model_catalog_versao, model_customization_versao";
+
+/** O mesmo detector de auditRepo.ts: coluna que ainda não existe no banco. */
+function ehColunaDesconhecida(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === "PGRST204" ||
+    error.code === "42703" ||
+    /column .* does not exist|could not find the .* column/i.test(error.message ?? "")
+  );
+}
 
 type SanityIssue = { type?: string; severity?: string; detail?: string };
 type SanityResult = { verdict?: string; issues?: SanityIssue[] } | null;
@@ -111,7 +133,7 @@ type AuditDetailDB = AuditRowDB & {
   openai_input_tokens: number | null;
   openai_output_tokens: number | null;
   model_structurer: string | null;
-};
+} & AuditModeloDB;
 
 type RawRagBlock = { id?: string; kind?: string; title?: string; priority?: number };
 
@@ -254,11 +276,21 @@ export async function listarAuditoria(f: AuditFiltros = {}): Promise<AuditPagina
 
 export async function getAuditDetail(id: string): Promise<AuditDetail | null> {
   const supa = createServerSupabaseClient();
-  const { data, error } = await supa
+  // Tenta com as colunas de modelo; se a migration 0023 ainda não foi aplicada,
+  // repete sem elas. O detalhe do laudo é útil mesmo sem saber o modelo — o que
+  // não pode é a tela toda cair por causa de uma coluna acessória.
+  let { data, error } = await supa
     .from("generation_audit")
-    .select(COLUNAS_DETALHE)
+    .select(`${COLUNAS_DETALHE}, ${COLUNAS_MODELO}`)
     .eq("id", id)
     .maybeSingle();
+  if (error && ehColunaDesconhecida(error)) {
+    ({ data, error } = await supa
+      .from("generation_audit")
+      .select(COLUNAS_DETALHE)
+      .eq("id", id)
+      .maybeSingle());
+  }
   if (error) throw new Error(`getAuditDetail: ${error.message}`);
   if (!data) return null;
 
@@ -283,6 +315,17 @@ export async function getAuditDetail(id: string): Promise<AuditDetail | null> {
     retrieved: retrieved.map(compactBlock),
     tokensIn: d.openai_input_tokens,
     tokensOut: d.openai_output_tokens,
+    // Ausente quando a migration 0023 ainda não foi aplicada (a query caiu no
+    // fallback) — distinto de "presente e nulo", que significa que o laudo não
+    // passou pelo catálogo.
+    modeloCatalogo:
+      d.model_catalog_id === undefined
+        ? null
+        : {
+            catalogId: d.model_catalog_id,
+            catalogVersao: d.model_catalog_versao ?? null,
+            customizacaoVersao: d.model_customization_versao ?? null,
+          },
     warning: deriveWarning(d),
   };
 }

@@ -43,11 +43,30 @@ export type GenerationAuditState = {
   promptVersion: string;
   pipelineVersion: "v1";
   contractHash: string;
+  /** Qual modelo montou o laudo — migration 0023. Opcionais: só o caminho do
+   *  catálogo os preenche; writer e renderer antigo deixam nulos. */
+  modelCatalogId?: string | null;
+  modelCatalogVersao?: number | null;
+  modelCustomizationVersao?: number | null;
 };
+
+/**
+ * Erro de coluna inexistente — o código chegou antes da migration 0023.
+ * PostgREST devolve PGRST204 ("column not found in schema cache"); o Postgres
+ * cru, 42703.
+ */
+function ehColunaDesconhecida(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === "PGRST204" ||
+    error.code === "42703" ||
+    /column .* does not exist|could not find the .* column/i.test(error.message ?? "")
+  );
+}
 
 export async function persistAudit(state: GenerationAuditState): Promise<void> {
   try {
-    const { error } = await getServiceClient().from("generation_audit").insert({
+    const base = {
       report_id: state.reportId,
       user_id: state.userId,
       category: state.category,
@@ -78,8 +97,23 @@ export async function persistAudit(state: GenerationAuditState): Promise<void> {
       prompt_version: state.promptVersion,
       pipeline_version: state.pipelineVersion,
       contract_hash: state.contractHash,
-    });
-    if (error) {
+    };
+    // Colunas da migration 0023. Separadas do resto para poder reinserir sem
+    // elas se o código chegar a produção antes da migration — assim a ordem do
+    // deploy não custa a auditoria inteira daquela geração.
+    const modelo = {
+      model_catalog_id: state.modelCatalogId ?? null,
+      model_catalog_versao: state.modelCatalogVersao ?? null,
+      model_customization_versao: state.modelCustomizationVersao ?? null,
+    };
+
+    const sb = getServiceClient();
+    const { error } = await sb.from("generation_audit").insert({ ...base, ...modelo });
+    if (error && ehColunaDesconhecida(error)) {
+      console.warn("generation_audit: migration 0023 ainda não aplicada; gravando sem as colunas de modelo");
+      const retry = await sb.from("generation_audit").insert(base);
+      if (retry.error) console.error("generation_audit insert failed:", retry.error);
+    } else if (error) {
       console.error("generation_audit insert failed:", error);
     }
   } catch (error) {

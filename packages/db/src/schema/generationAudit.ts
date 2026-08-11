@@ -54,6 +54,15 @@ export const generationAudit = pgTable(
     promptVersion: text("prompt_version").notNull(),
     pipelineVersion: text("pipeline_version").notNull().default("v1"),
     contractHash: text("contract_hash").notNull(),
+    /**
+     * Qual MODELO montou este laudo — projeto modelos, item 8 (migration 0023).
+     * A auditoria já versionava o prompt; sem isto não há como responder, diante
+     * de um laudo estranho, se ele saiu do modelo padrão ou da personalização
+     * daquele médico. NULL nas três = não passou pelo catálogo.
+     */
+    modelCatalogId: text("model_catalog_id"),
+    modelCatalogVersao: integer("model_catalog_versao"),
+    modelCustomizationVersao: integer("model_customization_versao"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (t) => [

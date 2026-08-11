@@ -19,6 +19,20 @@ function Dobravel({ titulo, children }: { titulo: string; children: string }) {
   );
 }
 
+/**
+ * Três estados que não podem virar um "—" só:
+ *  - a coluna não existe no banco (migration 0023 pendente) → não sabemos
+ *  - existe e está nula → o laudo não passou pelo catálogo
+ *  - existe e tem valor → qual catálogo, e se houve personalização
+ */
+function rotuloModelo(detail: AuditDetail): string {
+  const m = detail.modeloCatalogo;
+  if (m === null) return "não registrado (migration 0023 pendente)";
+  if (m.catalogId === null) return "fora do catálogo";
+  const base = `${m.catalogId} v${m.catalogVersao ?? "?"}`;
+  return m.customizacaoVersao === null ? base : `${base} + personalização v${m.customizacaoVersao}`;
+}
+
 export function AuditDetailPanel({ detail, onClose }: { detail: AuditDetail; onClose?: () => void }) {
   return (
     <div className="rounded-2xl border border-stone-200 bg-white shadow-card">
@@ -48,12 +62,26 @@ export function AuditDetailPanel({ detail, onClose }: { detail: AuditDetail; onC
           </div>
         )}
 
+        {detail.modeloCatalogo?.customizacaoVersao != null && (
+          <div className="mt-4 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2">
+            <p className="text-sm font-semibold text-violet-900">
+              Este laudo saiu personalizado
+            </p>
+            <p className="mt-0.5 text-xs text-violet-700">
+              Personalização v{detail.modeloCatalogo.customizacaoVersao} deste médico, sobre{" "}
+              {detail.modeloCatalogo.catalogId} v{detail.modeloCatalogo.catalogVersao}. Diante de um
+              texto inesperado, é aqui que se olha primeiro.
+            </p>
+          </div>
+        )}
+
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           <Field label="pipeline" value={detail.pipeline} />
           <Field label="prompt" value={detail.promptVersion} />
           <Field label="contract" value={detail.contract} />
           <Field label="writing_style" value={detail.writingStyle} />
-          <Field label="modelo" value={detail.modelo ?? "—"} />
+          <Field label="modelo de IA" value={detail.modelo ?? "—"} />
+          <Field label="modelo de laudo" value={rotuloModelo(detail)} />
           <Field label="médico" value={detail.medico ?? "—"} />
           <Field
             label="tokens / custo"

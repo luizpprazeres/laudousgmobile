@@ -907,8 +907,13 @@ export async function POST(req: Request) {
             // personalizado seria indistinguível de um laudo padrão na
             // auditoria — e a primeira pergunta diante de um laudo estranho é
             // justamente "este saiu do modelo ou da personalização dele?".
-            onPersonalizacao: (r) => {
-              if (!r.aplicar) console.info("[personalizacao] não aplicada:", r.motivo);
+            onModelo: (m) => {
+              auditState.modelCatalogId = m.catalogId;
+              auditState.modelCatalogVersao = m.catalogVersao;
+              auditState.modelCustomizationVersao = m.customizacaoVersao;
+              if (m.motivoSemPersonalizacao) {
+                console.info("[personalizacao] não aplicada:", m.motivoSemPersonalizacao);
+              }
             },
           })
         : runWriterStream({
