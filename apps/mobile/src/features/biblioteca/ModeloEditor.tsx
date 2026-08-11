@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Sheet } from "@/ui/Sheet";
+import { LaudoPreview } from "./LaudoPreview";
 import { PrimaryButton, SecondaryButton } from "@/ui/Button";
 import { useColorTokens } from "@/ui/useColorTokens";
 import {
@@ -62,6 +63,8 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
   const [modoEdicao, setModoEdicao] = useState<"trocar" | "depois" | "conclusao" | null>(null);
   /** Achado selecionado para ver o efeito no modelo. null = modelo padrão. */
   const [variacao, setVariacao] = useState<string | null>(null);
+  /** Alterna entre editar o modelo e ver o laudo pronto. */
+  const [aba, setAba] = useState<"modelo" | "laudo">("modelo");
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -219,6 +222,36 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
 
   return (
     <>
+      {/* editar × conferir: o médico precisa das duas visões, e elas não cabem
+          na mesma tela sem uma virar ruído da outra. */}
+      <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 16, paddingTop: 10 }}>
+        {(["modelo", "laudo"] as const).map((k) => {
+          const ativo = aba === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => setAba(k)}
+              style={{
+                flex: 1,
+                paddingVertical: 8,
+                borderRadius: 10,
+                alignItems: "center",
+                backgroundColor: ativo ? t.brand : t.fill2,
+              }}
+            >
+              <Text style={{ color: ativo ? "#fff" : t.text2, fontSize: 13, fontWeight: "600" }}>
+                {k === "modelo" ? "Editar o modelo" : "Ver o laudo"}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {aba === "laudo" ? (
+        <View style={{ flex: 1, paddingTop: 12 }}>
+          <LaudoPreview previas={estado.previa} />
+        </View>
+      ) : (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 140 }}>
         {/* estado atual */}
         {publicado ? (
@@ -457,6 +490,7 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
           }}
         />
       </ScrollView>
+      )}
 
       {/* rodapé de ações */}
       {(temRascunho || publicado) && (

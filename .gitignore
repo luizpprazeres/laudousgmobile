@@ -60,3 +60,23 @@ _extraction/
 scripts/.golden-reports/
 tests/golden-objetivo/report.html
 tests/golden-deterministico/report.html
+
+# artefatos temporários de review (contêm dados de paciente — nunca commitar)
+tmp-review/
+
+# Rascunhos de sessão: harnesses de benchmark, relatórios de validação A/B,
+# scripts ad-hoc. Podem conter trechos de laudo real — manter LOCAL.
+# Se algo aqui virar ferramenta de verdade, promover para scripts/ ou tests/.
+scratchpad/
+
+# Material de estudo local (PDFs de livros — nunca commitar)
+study/
+
+# Config local do agente Codex
+.codex/
+
+# Smoke scripts locais ad-hoc
+apps/api/_smoke*.mjs
+
+# Harness experimental do Writer V2 (descartável)
+apps/api/_writer_v2_harness.*

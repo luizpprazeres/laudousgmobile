@@ -125,9 +125,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
     const estado = await lerEstado(r.chave, r.entrada);
     const flags = flagsDeProducao();
 
-    // A prévia acompanha o rascunho, que é o que o médico está editando. Sem
-    // rascunho não há o que prever — a tela mostra só o modelo-base.
-    const emEdicao = estado.rascunho?.operations ?? [];
+    // O que o médico está vendo: o rascunho se houver, senão o publicado,
+    // senão o modelo-base.
+    const emEdicao = (estado.rascunho?.operations ??
+      estado.publicado?.operations ??
+      []) as Operation[];
 
     return Response.json({
       categoria: category,
@@ -155,7 +157,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
       rascunho: estado.rascunho,
       publicado: estado.publicado,
       historico: estado.historico,
-      previa: emEdicao.length > 0 ? previaDe(r.entrada, emEdicao) : [],
+      // SEMPRE presente, mesmo sem nenhuma alteração — é como o médico vê o
+      // laudo dele hoje. Antes só vinha com rascunho, e a tela não tinha o que
+      // mostrar em quem nunca personalizou nada: justamente quem mais precisa
+      // ver o modelo antes de mexer.
+      previa: previaDe(r.entrada, emEdicao),
       // O efeito de cada achado sobre o modelo QUE ELE TERÁ: com o rascunho
       // se houver, senão com o publicado, senão com o base.
       variacoes: variacoesDe(
