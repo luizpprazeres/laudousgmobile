@@ -203,11 +203,19 @@ médico já pode estar digitando nele, e a Sala pode estar lendo outra versão.
 > **Regra inegociável: nada acrescenta ou remove linha do texto depois do
 > `done`.**
 
-Com a decisão de §2.3, restam duas saídas — ver §4, D4:
+**Decidido (D4): só as determinísticas viram texto.** Elas já existem no passo 1,
+antes do `done`. As de IA continuam como card no app, exatamente como hoje.
 
-1. **só as determinísticas viram texto** (já existem no passo 1, antes do
-   `done`); as de IA continuam como card, como hoje;
-2. **esperar a IA antes do `done`** — texto completo, ao custo de latência.
+```
+geração → sanity determinístico → texto + REVISAR: → done → Sala vê
+                     sanity de IA (depois) → card no app, só metadado
+```
+
+Custo aceito conscientemente: **pendência levantada pela IA não aparece na
+Sala** na v1. Em troca, o texto é imutável depois de entregue e não há latência
+nova. Se a medição do passo 3 mostrar que a IA pega coisas relevantes que o
+determinístico não pega, isso vira argumento para promover aqueles checks a
+determinísticos — não para reabrir a janela de mutação do texto.
 
 ### 2.3 A Sala
 
@@ -313,7 +321,7 @@ o corpus.
 |---|---|---|
 | **D1** | Na Sala, o auxiliar resolve a pendência ou só vê? | **só vê.** Aceitar sugestão é ato clínico — quem assina é o médico. O auxiliar enxerga e pode avisar; o botão de aceitar existe só no app do médico |
 | **D2** | Pendência dentro do texto ou em bloco separado? | **dentro do texto**, como pedido. O risco é coberto no botão Copiar (§2.3), não removendo a linha da tela |
-| **D4** | Só as pendências determinísticas viram texto, ou esperar a IA antes do `done`? | **em aberto** — ver §2.2-bis. Recomendo a primeira: sem latência nova e sem texto mutante; as de IA seguem no card, como hoje |
+| **D4** | Só as determinísticas viram texto, ou esperar a IA antes do `done`? | **só as determinísticas.** Sem latência nova e sem texto mutante; as de IA seguem no card do app, como hoje. Custo aceito: pendência de IA não chega à Sala na v1 |
 | **D3** | Pendência crítica bloqueia a cópia? | **só avisa.** Às vezes o médico sabe que está certo; e atrito repetido vira clique automático. O aviso já resolve o problema relatado — deixar passar por não ver |
 
 ---
