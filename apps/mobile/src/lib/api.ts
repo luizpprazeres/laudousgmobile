@@ -86,7 +86,8 @@ export type UpdateProfileInput = {
   default_writing_style_id?: string | null;
 };
 
-async function authedFetch(path: string, init: RequestInit = {}) {
+/** Exportado para os módulos-irmãos (ex.: personalizacao.ts). */
+export async function authedFetch(path: string, init: RequestInit = {}) {
   const token = await getAccessToken();
   return fetch(`${API_URL}${path}`, {
     ...init,
@@ -97,7 +98,7 @@ async function authedFetch(path: string, init: RequestInit = {}) {
   });
 }
 
-async function readJsonOrThrow(res: Response, label: string) {
+export async function readJsonOrThrow(res: Response, label: string) {
   if (!res.ok) {
     let detail = "";
     try {
