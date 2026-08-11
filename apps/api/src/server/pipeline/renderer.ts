@@ -20,6 +20,10 @@ import {
   renderObstetrica,
   type ObstetricaFindings,
 } from "../renderer/categories/OBSTETRICA";
+import { renderObstetricaCatalogo } from "../renderer/catalog/OBSTETRICA.render";
+import { OBSTETRICA_CLASSICO } from "../renderer/catalog/OBSTETRICA.classico";
+import { catalogEnabledFor } from "../renderer/catalog/engine";
+import type { PersonalizacaoResolvida } from "../customization/resolve";
 import {
   mergeBiometriaEstruturada,
   reconcileBiometriaUnidade,
@@ -189,6 +193,9 @@ async function renderFreeSlots(
   };
 }
 
+const OBSTETRICA_CATALOG_ID = OBSTETRICA_CLASSICO.id;
+const OBSTETRICA_CATALOG_VERSAO = OBSTETRICA_CLASSICO.versao;
+
 export type RendererStreamResult = {
   fullText: string;
   latencyMs: number;
@@ -219,6 +226,41 @@ export async function* runRendererStream(args: {
    * (interpretando → achado → montando) para o route emitir via SSE. Quando
    * presente, a extração é STREAMADA. */
   onProgress?: (e: { stage: "interpretando" | "achado" | "calculando" | "montando"; label: string }) => void;
+  /**
+   * Recebe os achados tipados assim que a extração termina, para o route
+   * registrá-los na auditoria.
+   *
+   * Até aqui estes dados viviam só na memória do request: o renderer extraía,
+   * montava o laudo e descartava. Sem eles não há como dizer de onde veio cada
+   * trecho do laudo, nem como o sanity distinguir o que o médico ditou do que o
+   * template preencheu — foi o que gerou os falsos "achado_inventado"
+   * (docs/projeto-modelos/07-verificacao-achado-inventado.md).
+   *
+   * Puramente observacional: não altera o texto gerado.
+   */
+  onFindings?: (findings: unknown) => void;
+  /**
+   * Personalização do médico, JÁ RESOLVIDA e validada (item 7 do projeto
+   * modelos). Vem como promessa para que a consulta ao banco corra em paralelo
+   * com a extração do LLM, que é o custo dominante deste caminho.
+   *
+   * Nunca rejeita — `resolverPersonalizacao` devolve `aplicar: false` em
+   * qualquer situação duvidosa, inclusive erro de banco. Ausente = laudo no
+   * modelo-base, que é o comportamento de sempre.
+   */
+  personalizacao?: Promise<PersonalizacaoResolvida>;
+  /**
+   * Qual modelo montou o laudo — para a auditoria (item 8). Emitido sempre que
+   * o caminho do catálogo é usado, mesmo sem personalização: saber que um laudo
+   * saiu do catálogo v1 já responde metade da pergunta "por que este texto?".
+   * Observacional.
+   */
+  onModelo?: (m: {
+    catalogId: string;
+    catalogVersao: number;
+    customizacaoVersao: number | null;
+    motivoSemPersonalizacao?: string;
+  }) => void;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
 
@@ -418,6 +460,12 @@ export async function* runRendererStream(args: {
     stream: !!args.onProgress,
     onProgress: args.onProgress,
   });
+  // Nunca deixar a auditoria derrubar a geração de um laudo.
+  try {
+    args.onFindings?.(extraction.findings);
+  } catch {
+    /* observacional — ignora */
+  }
   args.onProgress?.({ stage: "montando", label: "Montando o laudo…" });
 
   // Categorias com render programático auto-contido (sem slots de órgão nem
@@ -452,8 +500,14 @@ export async function* runRendererStream(args: {
     // é preservado literal em achados_adicionais (nunca dropa o achado).
     const golfBallSingle = (fndNumeroFetos: number | undefined) =>
       (fndNumeroFetos ?? 1) >= 2 ? null : golfBall;
+    // Projeto modelos: categorias que montam o laudo a partir do catálogo.
+    const usaCatalogo = (cat: string) => catalogEnabledFor(env().MODEL_CATALOG_CATEGORIES, cat);
     const fnd = extraction.findings;
     let fullText: string;
+    // Anotação da personalização. Composta aqui e concatenada na systemMessage
+    // abaixo — NÃO no route, porque `onSystemMessage` é emitido depois e a
+    // sobrescreveria.
+    let notaPersonalizacao = "";
     switch (args.categoryCode) {
       case "OBSTETRICA": {
         // Biometria determinística (flag OBST_BIOMETRIA_DET, boletim 02/07): o bloco
@@ -466,15 +520,57 @@ export async function* runRendererStream(args: {
                 args.rawInput,
               )
             : (fnd as ObstetricaFindings);
-        fullText = renderObstetrica(ofnd, null, {
-          objetivo, igCorrection, flexivel,
-          // Grannum na placenta (grau parentético + inferência de textura) — flag OFF default.
-          grannum: env().GRANNUM_PLACENTA === "true",
-          golfBall: golfBallSingle(ofnd.numero_fetos),
-          // Sanity de IG (flag OBST_IG_SANITY): divergência implausível ref×biometria
-          // não vira correção absurda (boletim 04/07, 10813392).
-          igSanity: env().OBST_IG_SANITY === "true",
-        });
+        const grannum = env().GRANNUM_PLACENTA === "true";
+        const golfBallObst = golfBallSingle(ofnd.numero_fetos);
+        const igSanity = env().OBST_IG_SANITY === "true";
+
+        // O catálogo (projeto modelos) foi validado byte-a-byte contra o
+        // renderer de 09/08 — 3840/3840. Desde então a main ganhou golf ball,
+        // sanity de IG e biometria determinística, que o catálogo AINDA NÃO
+        // conhece. Enquanto a equivalência não for refeita contra este
+        // renderer, ele não assume nos casos que não sabe reproduzir: senão o
+        // laudo perderia um recurso em silêncio, que é pior que não ter o
+        // catálogo. Ver docs/projeto-modelos/README.md.
+        const catalogoCobreEsteCaso =
+          !objetivo && golfBallObst === null && !igSanity && env().OBST_BIOMETRIA_DET !== "true";
+
+        if (usaCatalogo("OBSTETRICA") && catalogoCobreEsteCaso) {
+          // Item 7: o overlay do médico entra aqui, e só aqui. Sem
+          // personalização aplicável os três campos ficam undefined e vale o
+          // catálogo-base — exatamente o caminho já validado.
+          const p = await args.personalizacao;
+          if (p?.aplicar) {
+            notaPersonalizacao =
+              ` | personalização v${p.versao}: ${p.operacoes} operação(ões) sobre ${p.catalogId} v${p.baseVersao}`;
+          }
+          try {
+            args.onModelo?.({
+              catalogId: OBSTETRICA_CATALOG_ID,
+              catalogVersao: OBSTETRICA_CATALOG_VERSAO,
+              customizacaoVersao: p?.aplicar ? p.versao : null,
+              ...(p && !p.aplicar ? { motivoSemPersonalizacao: p.motivo } : {}),
+            });
+          } catch {
+            /* observacional — nunca derruba a geração */
+          }
+          fullText = renderObstetricaCatalogo({
+            findings: ofnd,
+            flags: { objetivo, igCorrection, flexivel, grannum },
+            ...(p?.aplicar
+              ? { catalog: p.catalog, customSlots: p.customSlots, extraConclusao: p.extraConclusao }
+              : {}),
+          });
+        } else {
+          fullText = renderObstetrica(ofnd, null, {
+            objetivo, igCorrection, flexivel,
+            // Grannum na placenta (grau parentético + inferência de textura) — flag OFF default.
+            grannum,
+            golfBall: golfBallObst,
+            // Sanity de IG (flag OBST_IG_SANITY): divergência implausível ref×biometria
+            // não vira correção absurda (boletim 04/07, 10813392).
+            igSanity,
+          });
+        }
         break;
       }
       case "MORFOLOGICO":
@@ -556,7 +652,7 @@ export async function* runRendererStream(args: {
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });
         break;
     }
-    const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;
+    const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})${notaPersonalizacao}`;
     args.onSystemMessage?.(systemMessage);
     yield fullText;
     return {
