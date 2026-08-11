@@ -80,3 +80,11 @@ apps/api/_smoke*.mjs
 
 # Harness experimental do Writer V2 (descartável)
 apps/api/_writer_v2_harness.*
+
+# Áudio do benchmark de ASR — ~10 MB de .wav com ditado de teste.
+# Estava fora do git só por nunca ter sido adicionado: um `git add -A`
+# distraído o traria junto. Repositório PÚBLICO, então a proteção é explícita.
+# (Achado do @devops na auditoria do deploy de 11/08.)
+scripts/asr-bench/audio/
+scripts/asr-bench/bench_results.json
+scripts/asr-bench/keyterms.json
