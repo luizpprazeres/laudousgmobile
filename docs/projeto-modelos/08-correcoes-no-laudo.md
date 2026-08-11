@@ -155,17 +155,30 @@ estiver *dentro do texto*, ela vai junto — e "REVISAR: faltou a medida do
 fêmur" entra no prontuário do paciente. É exatamente o que o strip de
 `latest/route.ts:83` evita hoje.
 
-**Recomendação:** já que a Sala vai ser mexida de qualquer jeito (para o roxo),
-não vale o truque. Melhor mandar as pendências **como dado** e a Sala
-renderizar um bloco próprio, fora do texto copiável:
+**DECIDIDO em 10/08 — as linhas ficam DENTRO do texto**, como pedido. Eu havia
+recomendado um bloco separado; o Luiz manteve a proposta original depois de
+ver o risco.
 
-- o médico vê na tela da Sala — que é o objetivo;
-- o auxiliar vê que há pendência, e pode avisar;
-- o texto copiado continua limpo;
-- o botão copiar avisa: *"este laudo tem 2 pendências não resolvidas"*.
+O risco continua real, e é coberto na saída em vez de na entrada:
 
-Entrega o objetivo sem criar o risco. **É uma variação do pedido literal, e a
-decisão é do Luiz** — ver §4.
+> **O botão Copiar da Sala remove as linhas `REVISAR:` do que vai para a área
+> de transferência**, e avisa: *"copiado sem as 2 linhas de REVISAR — há
+> pendências não resolvidas"*.
+
+Assim as três coisas valem ao mesmo tempo:
+
+- as linhas aparecem no texto, na tela da Sala — que é o que o médico pediu;
+- não é preciso canal novo para elas chegarem lá;
+- nada de `REVISAR:` alcança o prontuário, que é o que o strip de
+  `latest/route.ts:83` protege hoje.
+
+`REVISAR:` é sempre efêmero — nenhum laudo final o quer. Removê-lo na cópia é
+correto em todos os casos, não é um caso especial.
+
+Consequência técnica: o strip do `latest/route.ts:83` **sai do servidor e vai
+para o botão de copiar**. O texto entregue à Sala passa a conter as linhas; a
+limpeza acontece no momento da cópia, nos dois lugares que copiam
+(`copyReportToClipboard`, `page.tsx:1596`, e o fluxo de anotações).
 
 ---
 
@@ -179,7 +192,7 @@ Incrementos pequenos, cada um verificável e reversível sozinho.
 | **2** | iOS passa a consumir o backend em vez do `SanityChecker` local | corrige divergência | flag |
 | **3** | Cor padronizada nos apps: roxo = falta | sim | flag |
 | **4** | **Uma** sugestão determinística, com botão aceitar | sim | flag |
-| **5** | Sala: bloco de pendências + aviso ao copiar | sim | flag |
+| **5** | Sala: linhas `REVISAR:` no texto + limpeza no botão Copiar | sim | flag |
 | **6** | Ampliar as sugestões conforme o passo 4 medir | sim | por caso |
 
 O passo 1 não muda nada para ninguém: serve para comparar a lista nova com o
@@ -193,11 +206,13 @@ renderizado. A sugestão é o próprio valor. Um caso só, medido antes de ampli
 
 ## 4. Decisões que dependem do Luiz
 
-| # | Pergunta | Por que trava |
+**Respondidas em 10/08.**
+
+| # | Pergunta | Decisão |
 |---|---|---|
-| **D1** | Na Sala, o auxiliar **resolve** a pendência ou só **vê**? | aceitar sugestão é ato clínico; se o auxiliar aceita, ele assina por omissão |
-| **D2** | Pendência dentro do texto (pedido literal) ou bloco separado (§2.3)? | muda o risco de a pendência ir para o prontuário |
-| **D3** | Pendência **crítica** não resolvida deve **bloquear** a cópia, ou só avisar? | bloquear protege o paciente e irrita quem tem pressa |
+| **D1** | Na Sala, o auxiliar resolve a pendência ou só vê? | **só vê.** Aceitar sugestão é ato clínico — quem assina é o médico. O auxiliar enxerga e pode avisar; o botão de aceitar existe só no app do médico |
+| **D2** | Pendência dentro do texto ou em bloco separado? | **dentro do texto**, como pedido. O risco é coberto no botão Copiar (§2.3), não removendo a linha da tela |
+| **D3** | Pendência crítica bloqueia a cópia? | **só avisa.** Às vezes o médico sabe que está certo; e atrito repetido vira clique automático. O aviso já resolve o problema relatado — deixar passar por não ver |
 
 ---
 
@@ -206,7 +221,7 @@ renderizado. A sugestão é o próprio valor. Um caso só, medido antes de ampli
 | # | Risco | Mitigação |
 |---|---|---|
 | R1 | Sugestão errada aceita por reflexo — pior que não sugerir | só fonte determinística na v1; `origem` sempre visível; aceitar é reversível |
-| R2 | Pendência vaza para o prontuário via Sala | bloco fora do texto copiável (§2.3) |
+| R2 | Pendência vaza para o prontuário via Sala | o botão Copiar limpa e avisa (§2.3). **Atenção:** o strip deixa de ser do servidor e passa a ser do cliente — se um caminho de cópia for esquecido, o vazamento volta. Inventariar TODOS os caminhos de cópia antes do passo 5 |
 | R3 | Âncora textual não encontra a frase (texto editado no meio) | `ocorrencia` + degradar para "pendência sem âncora", nunca destacar o trecho errado |
 | R4 | Metade dos marcadores depende de o LLM lembrar (§1.2) | migrar para guards determinísticos onde der; medir a taxa de esquecimento antes |
 | R5 | Três clientes divergindo de novo | a lista é uma só; o cliente não recalcula nada |
