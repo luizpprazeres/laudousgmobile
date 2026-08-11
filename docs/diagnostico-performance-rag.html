@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico de Performance & Arquitetura — Gerador de Laudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0e0d;
+    --ink-2:#111816;
+    --panel:#151e1b;
+    --panel-2:#1b2723;
+    --line:rgba(120,180,160,.14);
+    --fog:#9fb3ab;
+    --paper:#eef4f1;
+    --paper-dim:#c2d2cb;
+    --emerald:#2ec27e;
+    --emerald-deep:#157a52;
+    --emerald-glow:rgba(46,194,126,.16);
+    --coral:#ff6b53;
+    --coral-soft:#ff9a7d;
+    --amber:#f5b945;
+    --violet:#9d8cff;
+    --r:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:
+      radial-gradient(1200px 700px at 78% -8%, rgba(46,194,126,.10), transparent 60%),
+      radial-gradient(900px 600px at 8% 12%, rgba(157,140,255,.06), transparent 55%),
+      var(--ink);
+    color:var(--paper);
+    font-family:'Atkinson Hyperlegible',system-ui,sans-serif;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:1;max-width:1060px;margin:0 auto;padding:0 28px}
+
+  /* ---------- type ---------- */
+  h1,h2,h3,.display{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.04}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;color:var(--emerald);font-weight:600}
+  .mono{font-family:'JetBrains Mono',monospace}
+  p{color:var(--paper-dim)}
+  strong{color:var(--paper);font-weight:700}
+  em{color:var(--emerald);font-style:normal}
+
+  /* ---------- hero ---------- */
+  header{padding:84px 0 40px;border-bottom:1px solid var(--line)}
+  .kicker-row{display:flex;align-items:center;gap:14px;margin-bottom:26px;flex-wrap:wrap}
+  .badge{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;padding:6px 12px;border:1px solid var(--line);border-radius:999px;color:var(--fog)}
+  .badge.live{color:var(--emerald);border-color:rgba(46,194,126,.4);background:var(--emerald-glow)}
+  h1{font-size:clamp(2.5rem,6.4vw,4.6rem);margin:8px 0 24px;color:var(--paper)}
+  h1 .hl{color:var(--emerald);font-style:italic;font-weight:600}
+  .lede{font-size:clamp(1.1rem,2.2vw,1.42rem);max-width:46ch;color:var(--paper-dim)}
+  .lede b{color:var(--paper)}
+
+  .verdict{
+    margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden
+  }
+  .verdict div{background:var(--panel);padding:24px 22px}
+  .verdict .n{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:2.5rem;letter-spacing:-.03em;line-height:1}
+  .verdict .n.bad{color:var(--coral)}
+  .verdict .n.good{color:var(--emerald)}
+  .verdict .n.neutral{color:var(--amber)}
+  .verdict .l{font-size:.86rem;color:var(--fog);margin-top:8px;letter-spacing:.01em}
+
+  /* ---------- sections ---------- */
+  section{padding:64px 0;border-bottom:1px solid var(--line)}
+  .sec-head{display:flex;align-items:baseline;gap:18px;margin-bottom:34px}
+  .sec-no{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--emerald-deep);font-weight:600;padding-top:6px}
+  h2{font-size:clamp(1.7rem,3.6vw,2.5rem);color:var(--paper)}
+  .sub{color:var(--fog);font-size:1.02rem;max-width:60ch;margin-top:10px}
+
+  /* ---------- latency viz ---------- */
+  .latviz{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);padding:34px 30px;margin-top:8px}
+  .bar-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:.9rem}
+  .bar-label .who{font-weight:700;color:var(--paper);font-family:'Bricolage Grotesque',sans-serif}
+  .bar-label .tt{font-family:'JetBrains Mono',monospace;color:var(--fog)}
+  .stack{display:flex;height:46px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#0d1311}
+  .seg{display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.74rem;font-weight:600;color:#06120d;white-space:nowrap;transition:flex-basis 1s cubic-bezier(.2,.7,.2,1)}
+  .seg.struct{background:linear-gradient(180deg,#ff8568,var(--coral))}
+  .seg.rag{background:linear-gradient(180deg,#54e0a4,var(--emerald))}
+  .seg.writer{background:linear-gradient(180deg,#ffd06b,var(--amber))}
+  .seg.other{background:#3a4d46;color:var(--paper-dim)}
+  .seg.gpt{background:linear-gradient(180deg,#54e0a4,var(--emerald));color:#06120d}
+  .legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:20px;font-size:.82rem;color:var(--fog)}
+  .legend span{display:flex;align-items:center;gap:8px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .vs{text-align:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;color:var(--fog);margin:24px 0 18px;font-size:.9rem;letter-spacing:.2em}
+
+  /* ---------- cards ---------- */
+  .grid{display:grid;gap:18px;margin-top:8px}
+  .grid.two{grid-template-columns:1fr 1fr}
+  .grid.three{grid-template-columns:repeat(3,1fr)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px;position:relative;overflow:hidden}
+  .card.q::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--emerald)}
+  .card h3{font-size:1.12rem;margin-bottom:8px;color:var(--paper)}
+  .card .verdict-tag{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;border-radius:6px;display:inline-block;margin-bottom:12px;font-weight:600}
+  .tag-no{background:rgba(255,107,83,.14);color:var(--coral-soft);border:1px solid rgba(255,107,83,.3)}
+  .tag-yes{background:var(--emerald-glow);color:var(--emerald);border:1px solid rgba(46,194,126,.3)}
+  .tag-part{background:rgba(245,185,69,.13);color:var(--amber);border:1px solid rgba(245,185,69,.3)}
+  .card p{font-size:.95rem}
+
+  /* ---------- pull quote ---------- */
+  .pull{margin:8px 0;padding:30px 32px;background:linear-gradient(135deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-left:3px solid var(--coral);border-radius:var(--r)}
+  .pull p{font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.2rem,2.6vw,1.6rem);font-weight:500;line-height:1.34;color:var(--paper);letter-spacing:-.01em}
+  .pull .by{margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:.1em;color:var(--coral-soft);text-transform:uppercase}
+
+  /* ---------- plan ---------- */
+  .plan{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+  .step{display:grid;grid-template-columns:78px 1fr;gap:22px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:24px 24px;align-items:start;transition:border-color .3s,transform .3s}
+  .step:hover{border-color:rgba(46,194,126,.4);transform:translateX(4px)}
+  .step .pr{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:-.02em}
+  .step .pr small{display:block;font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.12em;color:var(--fog);font-weight:400;margin-top:4px;text-transform:uppercase}
+  .p0 .pr{color:var(--emerald)} .p1 .pr{color:#7fd9b3} .p2 .pr{color:var(--amber)} .p3 .pr{color:var(--violet)} .p4 .pr{color:var(--fog)}
+  .step h3{font-size:1.12rem;margin-bottom:6px}
+  .step .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .chip{font-family:'JetBrains Mono',monospace;font-size:.66rem;padding:4px 10px;border-radius:6px;border:1px solid var(--line);color:var(--fog);letter-spacing:.04em}
+  .chip.win{color:var(--emerald);border-color:rgba(46,194,126,.3);background:var(--emerald-glow)}
+
+  /* ---------- layers ---------- */
+  .layers{display:flex;flex-direction:column;gap:0;margin-top:8px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .layer{padding:22px 26px;border-bottom:1px solid var(--line);position:relative}
+  .layer:last-child{border-bottom:none}
+  .layer.l1{background:linear-gradient(90deg,rgba(46,194,126,.10),transparent)}
+  .layer.l2{background:linear-gradient(90deg,rgba(245,185,69,.10),transparent)}
+  .layer.l3{background:linear-gradient(90deg,rgba(157,140,255,.08),transparent)}
+  .layer .lt{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:1.05rem;color:var(--paper);display:flex;align-items:center;gap:12px}
+  .layer .lt .num{font-family:'JetBrains Mono',monospace;font-size:.7rem;border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--fog)}
+  .layer p{font-size:.92rem;margin-top:6px}
+
+  /* ---------- do/dont ---------- */
+  .dd{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px}
+  .dd .col{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px}
+  .dd .col.bad{border-top:3px solid var(--coral)}
+  .dd .col.good{border-top:3px solid var(--emerald)}
+  .dd h3{font-size:1.05rem;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .dd ul{list-style:none;display:flex;flex-direction:column;gap:13px}
+  .dd li{font-size:.92rem;color:var(--paper-dim);padding-left:24px;position:relative;line-height:1.5}
+  .dd li::before{position:absolute;left:0;top:0;font-family:'JetBrains Mono',monospace;font-weight:600}
+  .dd .bad li::before{content:"✕";color:var(--coral)}
+  .dd .good li::before{content:"✓";color:var(--emerald)}
+
+  /* ---------- thesis ---------- */
+  .thesis{background:linear-gradient(135deg,#0f1a16,#10231a);border:1px solid rgba(46,194,126,.25);border-radius:24px;padding:48px 42px;margin-top:8px;position:relative;overflow:hidden}
+  .thesis::after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;background:radial-gradient(circle,var(--emerald-glow),transparent 70%);pointer-events:none}
+  .thesis h2{font-size:clamp(1.8rem,4vw,2.7rem);margin-bottom:18px}
+  .thesis h2 .hl{color:var(--emerald);font-style:italic;font-weight:600}
+  .thesis p{font-size:1.1rem;color:var(--paper-dim);max-width:62ch}
+  .thesis p+p{margin-top:14px}
+
+  /* ---------- footer ---------- */
+  footer{padding:54px 0 80px;color:var(--fog);font-size:.85rem}
+  footer .mono{color:var(--emerald-deep)}
+  .ftgrid{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
+
+  /* ---------- inline emphasis ---------- */
+  .num-inline{font-family:'JetBrains Mono',monospace;color:var(--paper);font-weight:600}
+  .big-num{color:var(--coral)}
+  .small-num{color:var(--emerald)}
+
+  /* ---------- reveal ---------- */
+  .reveal{opacity:0;transform:translateY(22px);animation:rise .9s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .d1{animation-delay:.05s}.d2{animation-delay:.13s}.d3{animation-delay:.22s}.d4{animation-delay:.32s}.d5{animation-delay:.42s}
+
+  @media(max-width:760px){
+    .verdict,.grid.two,.grid.three,.dd{grid-template-columns:1fr}
+    .step{grid-template-columns:56px 1fr;gap:14px}
+    .sec-head{flex-direction:column;gap:6px}
+    header{padding:56px 0 32px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ HERO ============ -->
+  <header>
+    <div class="kicker-row reveal d1">
+      <span class="eyebrow">Diagnóstico de Arquitetura</span>
+      <span class="badge">LaudoUSG · backend de geração</span>
+      <span class="badge live">● dados reais · 281 laudos medidos</span>
+    </div>
+    <h1 class="reveal d2">O RAG não é o problema.<br><span class="hl">O caminho até o laudo é.</span></h1>
+    <p class="lede reveal d3">Medimos cada etapa da geração. A busca semântica leva <b>0,6 segundo</b>. O que faz o médico esperar são as <b>duas chamadas de IA em sequência</b> — e, ironicamente, a parte que tenta "organizar" antes de escrever. Este é o mapa de como ficar tão rápido quanto o ChatGPT <em>sem perder o que nos torna melhores que ele</em>.</p>
+
+    <div class="verdict reveal d4">
+      <div><div class="n bad">~16s</div><div class="l">tempo típico de um laudo hoje (mediana). p90 chega a 39s.</div></div>
+      <div><div class="n neutral">&lt;1s</div><div class="l">o GPT personalizado começa a responder — é com ele que competimos.</div></div>
+      <div><div class="n good">0,6s</div><div class="l">o RAG inteiro. Acusado errado: ele é a parte rápida.</div></div>
+    </div>
+  </header>
+
+  <!-- ============ 01 NÚMEROS ============ -->
+  <section>
+    <div class="sec-head reveal">
+      <span class="sec-no">01</span>
+      <div><h2>Onde o tempo realmente vai</h2>
+      <p class="sub">Sem achismo. Medições da tabela <span class="mono">generation_audit</span>, últimos 200 laudos. A barra abaixo é o tempo real, na proporção real.</p></div>
+    </div>
+
+    <div class="latviz reveal">
+      <div class="bar-label"><span class="who">Nosso pipeline hoje</span><span class="tt">≈ 15,8s (mediana)</span></div>
+      <div class="stack">
+        <div class="seg struct" style="flex-basis:30%">Structurer 4,8s</div>
+        <div class="seg rag" style="flex-basis:4%" title="RAG 0,6s"></div>
+        <div class="seg writer" style="flex-basis:41%">Writer 6,5s</div>
+        <div class="seg other" style="flex-basis:25%">Banco + overhead ~3,9s</div>
+      </div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--coral)"></i> Structurer — organiza ANTES de escrever (bloqueia tudo)</span>
+        <span><i class="dot" style="background:var(--emerald)"></i> RAG — busca os blocos (0,6s)</span>
+        <span><i class="dot" style="background:var(--amber)"></i> Writer — escreve o laudo (streaming)</span>
+        <span><i class="dot" style="background:#3a4d46"></i> ~8-10 gravações sequenciais no Supabase</span>
+      </div>
+
+      <div class="vs">— versus —</div>
+      <div class="bar-label"><span class="who">GPT personalizado (ChatGPT)</span><span class="tt">começa em ~0,3s</span></div>
+      <div class="stack">
+        <div class="seg gpt" style="flex-basis:6%">1 chamada</div>
+        <div class="seg other" style="flex-basis:94%;background:#0d1311;color:var(--fog);justify-content:flex-start;padding-left:14px">streama direto — sem etapa de "organizar", sem round-trip separado</div>
+      </div>
+    </div>
+
+    <div class="grid three" style="margin-top:18px">
+      <div class="card reveal"><h3 style="color:var(--coral)">Structurer · 4,8s</h3><p>Uma chamada <span class="mono">gpt-4.1-mini</span> com <span class="mono">max_tokens 16.000</span> + JSON estrito. Roda <strong>inteira</strong> antes do laudo começar. É o principal motivo de você "olhar pra tela esperando".</p></div>
+      <div class="card reveal"><h3 style="color:var(--emerald)">RAG · 0,6s</h3><p>Embedding + busca pgvector com índice. <strong>Rápido e legítimo.</strong> Não é o Supabase free, não é falta de blocos. O RAG está inocente.</p></div>
+      <div class="card reveal"><h3 style="color:var(--amber)">Writer · 6,5s</h3><p>Outra <span class="mono">gpt-4.1-mini</span>, streaming. Modelo econômico, não o mais rápido. Aqui mora tanto a lentidão da escrita quanto o "ele ignora o que pedi".</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 02 SUAS PERGUNTAS ============ -->
+  <section>
+    <div class="sec-head reveal">
+      <span class="sec-no">02</span>
+      <div><h2>Respondendo, uma por uma</h2>
+      <p class="sub">Você levantou cinco hipóteses. Os dados respondem todas — e a resposta surpreende.</p></div>
+    </div>
+    <div class="grid two">
+      <div class="card q reveal"><span class="verdict-tag tag-no">Não é a causa</span><h3>É o Supabase free?</h3><p>O RAG roda em 0,6s, com índice vetorial ativo. O free <em>pode</em> contribuir nos ~3,9s de "banco" (são ~8-10 gravações em sequência), mas isso é overhead de telemetria, não o gargalo. Migrar de plano não resolve o que dói.</p></div>
+      <div class="card q reveal"><span class="verdict-tag tag-part">Sim e não</span><h3>São poucos blocos?</h3><p>609 blocos não são "poucos" para performance — RAG com isso voa. Mas <strong>só 10 das ~33 categorias têm blocos</strong>. O problema de "poucos blocos" é de <em>cobertura clínica</em>, não de velocidade.</p></div>
+      <div class="card q reveal"><span class="verdict-tag tag-yes">É aqui</span><h3>É a IA que demora?</h3><p>Sim. <strong>11,3s dos ~16s são as duas chamadas de IA.</strong> O desenho que faz uma IA "organizar" e outra "escrever" — em sequência — é o coração da lentidão.</p></div>
+      <div class="card q reveal"><span class="verdict-tag tag-part">Ajuda, não resolve</span><h3>Precisa de GPT-5 instant?</h3><p>Um modelo mais novo escreve mais rápido <em>e</em> obedece melhor (ataca o "ele ignora"). Mas trocar o modelo sem tirar o structurer do bloqueio é colocar pneu novo num carro com freio de mão puxado.</p></div>
+      <div class="card q reveal"><span class="verdict-tag tag-no">Não precisa</span><h3>Falta plataforma externa?</h3><p>Não para o RAG. Temos pgvector real e funcional. No máximo, um provedor de inferência mais veloz para o writer (ex.: modelos a 500+ tokens/s). Infra de retrieval externa seria resolver o problema errado.</p></div>
+      <div class="card q reveal"><span class="verdict-tag tag-yes">A virada</span><h3>Então o que falta?</h3><p>Streamar mais cedo, encolher o contexto, e tirar a etapa pesada de "organizar" do caminho crítico — <strong>sem perder a camada determinística que protege o seu padrão.</strong> O resto da página é como.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 03 RAG TEATRO ============ -->
+  <section>
+    <div class="sec-head reveal">
+      <span class="sec-no">03</span>
+      <div><h2>RAG de verdade — ou teatro?</h2>
+      <p class="sub">Sua intuição estava parcialmente certa. Pus o dex1 como advogado do diabo. Veredito honesto:</p></div>
+    </div>
+    <div class="pull reveal">
+      <p>"Parte é real, parte é teatro. Bloco de modelo com priority 100 e categoria/estilo já conhecidos é mais <em>lookup</em> do que busca semântica. Se entram 30 blocos no prompt, o RAG virou uma mini base de conhecimento despejada — e isso não é retrieval bom. Retrieval bom é <em>pouco contexto, muito pertinente.</em>"</p>
+      <div class="by">dex1 · advogado do diabo</div>
+    </div>
+    <div class="grid two" style="margin-top:20px">
+      <div class="card reveal"><span class="verdict-tag tag-yes">Real</span><h3>O que é retrieval honesto</h3><p>Buscar <strong>poucas</strong> regras/frases/exceções altamente relevantes para um achado específico — ex.: a regra certa de líquido amniótico para o caso ditado. Aí o embedding faz trabalho de verdade.</p></div>
+      <div class="card reveal"><span class="verdict-tag tag-part">Teatro</span><h3>O que é "lookup disfarçado"</h3><p>Recuperar o template-base da categoria via embedding quando ele já está travado por <span class="mono">category_code</span> + estilo + priority 100. Isso é um <em>SELECT</em>, não uma busca. E despejar 30 blocos satura o modelo — o que <strong>piora</strong> velocidade e obediência.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 04 A VIRADA ============ -->
+  <section>
+    <div class="sec-head reveal">
+      <span class="sec-no">04</span>
+      <div><h2>A virada de chave</h2>
+      <p class="sub">A tentação é "ser como o ChatGPT": colapsar tudo numa chamada gigante. O dex1 me parou — e ele está certo.</p></div>
+    </div>
+    <div class="pull reveal" style="border-left-color:var(--violet)">
+      <p>"Vocês acumulam guards determinísticos porque o writer <em>desobedece</em>. Isso é sinal de que o writer deveria ter <strong>menos</strong> responsabilidade, não mais. Dar a ele o laudo inteiro numa só chamada anda na direção errada. A arquitetura mais forte é determinística-primeiro: roteador + template + IA só preenche + guards. Rápida <em>e</em> mais segura."</p>
+      <div class="by">dex1 · advogado do diabo</div>
+    </div>
+    <div class="grid two" style="margin-top:20px">
+      <div class="card reveal"><h3 style="color:var(--coral)">❌ Out-ChatGPT o ChatGPT</h3><p>Uma chamada de IA gigante que escreve o laudo do zero. Rápido para começar, mas <strong>devolve ao modelo todo o controle</strong> que passamos a semana inteira retomando com guards. Mais veloz, menos confiável.</p></div>
+      <div class="card reveal"><h3 style="color:var(--emerald)">✓ Determinístico-primeiro</h3><p>O sistema <strong>monta</strong> a estrutura do laudo (template + valores ditados) de forma instantânea e correta; a IA só preenche os trechos que realmente precisam de redação. Os guards garantem o seu padrão. Mais veloz <em>e</em> mais confiável.</p></div>
+    </div>
+    <p style="margin-top:22px;font-size:1.05rem;color:var(--paper-dim);max-width:64ch">Repare na elegância: cada vez que a IA "ignora um achado", a resposta certa não é brigar com a IA — é <strong>tirar aquela decisão da mão dela</strong>. Foi o que fizemos com líquido, peso, vasos do Doppler. A arquitetura futura só generaliza isso.</p>
+  </section>
+
+  <!-- ============ 05 PLANO ============ -->
+  <section>
+    <div class="sec-head reveal">
+      <span class="sec-no">05</span>
+      <div><h2>O plano, por impacto</h2>
+      <p class="sub">Ordenado por retorno sobre esforço. Os ganhos grandes vêm primeiro — e nenhum deles é "trocar de banco".</p></div>
+    </div>
+    <div class="plan">
+      <div class="step p0 reveal"><div class="pr">P0<small>agora</small></div><div>
+        <h3>Streamar mais cedo + encolher o caminho crítico</h3>
+        <p>Tirar o structurer do bloqueio: rodá-lo em paralelo (ou detectar a categoria de forma determinística — já temos <span class="mono">morfologicoRouteSelection</span> + <span class="mono">categoryNormalization</span>) e começar o writer assim que os blocos chegam. As gravações de telemetria no Supabase viram <em>fire-and-forget</em> pós-stream.</p>
+        <div class="meta"><span class="chip win">TTFT: ~6-9s → ~1-2s</span><span class="chip">esforço médio</span><span class="chip">zero troca de infra</span></div>
+      </div></div>
+      <div class="step p0 reveal"><div class="pr">P0<small>agora</small></div><div>
+        <h3>Cortar o contexto do prompt</h3>
+        <p>Reduzir as quotas do RAG (hoje até ~30 blocos) — menos blocos, mais pertinentes. Sem few-shots quando há template. Prompt menor = <strong>mais rápido para começar a escrever E mais obediente</strong> (o modelo para de se perder em 30 blocos).</p>
+        <div class="meta"><span class="chip win">velocidade + obediência</span><span class="chip">esforço baixo</span></div>
+      </div></div>
+      <div class="step p1 reveal"><div class="pr">P1<small>em seguida</small></div><div>
+        <h3>Structurer enxuto</h3>
+        <p><span class="mono">max_tokens 16k → ~2k</span>, schema reduzido (só o que de fato usamos: comandos do médico, categoria, medidas críticas), modelo mais leve. Se a categoria já vem do roteador determinístico, o structurer encolhe muito — ou some do caminho crítico.</p>
+        <div class="meta"><span class="chip win">structurer: 4,8s → ~1,5s</span><span class="chip">esforço médio</span></div>
+      </div></div>
+      <div class="step p1 reveal"><div class="pr">P1<small>em seguida</small></div><div>
+        <h3>Writer mais rápido e mais obediente</h3>
+        <p>Benchmark próprio: <span class="mono">gpt-4.1</span> / <span class="mono">gpt-4o</span> / <span class="mono">gpt-5</span> / modelos a 500+ tok/s. Aqui está o duplo ganho: um modelo melhor <strong>ignora menos os seus achados</strong>. Mas só depois de cortar contexto — senão você paga mais por um problema que era de prompt.</p>
+        <div class="meta"><span class="chip win">writer: 6,5s → ~3s + menos "ignorou"</span><span class="chip">esforço baixo</span></div>
+      </div></div>
+      <div class="step p2 reveal"><div class="pr">P2<small>experimento</small></div><div>
+        <h3>Rota "fast mode" de uma chamada — atrás de flag</h3>
+        <p>Para obstétrica / morfológico / Doppler, testar a rota colapsada (1 chamada streaming) <strong>protegida por flag e pelos guards</strong>. Medir TTFT e total contra a rota atual com casos golden. Decisão guiada por dado, não por fé.</p>
+        <div class="meta"><span class="chip">reversível</span><span class="chip">esforço médio</span></div>
+      </div></div>
+      <div class="step p3 reveal"><div class="pr">P3<small>norte</small></div><div>
+        <h3>Arquitetura determinística-primeiro</h3>
+        <p>Roteador determinístico → montagem do template com valores ditados → IA só nos trechos livres → guards. Esta é a estrela-guia do dex1: o que <strong>elimina</strong> a maior parte da imprevisibilidade (e da lentidão) de uma vez. Generaliza os guards de líquido/peso/Doppler num motor de montagem de laudo.</p>
+        <div class="meta"><span class="chip win">rápido + correto por construção</span><span class="chip">esforço alto</span></div>
+      </div></div>
+      <div class="step p4 reveal"><div class="pr">P4<small>contínuo</small></div><div>
+        <h3>Benchmark próprio + observabilidade de TTFT</h3>
+        <p>Hoje medimos duração por etapa — falta o <strong>TTFT</strong> (tempo até o primeiro caractere), que é o que você <em>sente</em>. Instrumentar isso e rodar um conjunto golden por modelo/rota torna toda decisão futura objetiva.</p>
+        <div class="meta"><span class="chip">esforço baixo</span><span class="chip">destrava todo o resto</span></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ============ 06 RAG PRÁTICAS ============ -->
+  <section>
+    <div class="sec-head reveal">
+      <span class="sec-no">06</span>
+      <div><h2>Como você me ajuda a te ajudar</h2>
+      <p class="sub">Sim, temos RAG de verdade — e isso significa que ele pode ser contaminado. O que você faz no dia a dia importa.</p></div>
+    </div>
+    <div class="dd">
+      <div class="col bad reveal">
+        <h3>🩸 Más práticas que contaminam o RAG</h3>
+        <ul class="bad">
+          <li><strong>Blocos duplicados/triplicados.</strong> Já existem cópias do mesmo template (uma por estilo). Isso satura as quotas e dilui o ranking.</li>
+          <li><strong>Editar um bloco compartilhado com a sua preferência pessoal.</strong> Muda o laudo de <em>todos</em> os usuários, não só o seu.</li>
+          <li><strong>Hacks de priority</strong> (o "truque do priority 75") para forçar um bloco a vencer. Frágil e difícil de raciocinar depois.</li>
+          <li><strong>Blocos que se contradizem.</strong> Duas regras divergentes → a IA escolhe de forma imprevisível.</li>
+          <li><strong>Empilhar regra sobre regra.</strong> Quanto mais texto no prompt, mais o modelo "esquece" os seus achados.</li>
+        </ul>
+      </div>
+      <div class="col good reveal">
+        <h3>💚 Boas práticas</h3>
+        <ul class="good">
+          <li><strong>Um bloco canônico por conceito.</strong> Sem cópias. Deduplicar os triplicados.</li>
+          <li><strong>Caso golden para cada ajuste.</strong> Quando você aprova um jeito, vira teste — e nunca mais regride.</li>
+          <li><strong>Quando a IA ignorar algo, me avise.</strong> Isso vira ou um guard determinístico, ou uma correção de bloco — não uma briga com o prompt.</li>
+          <li><strong>Prompt enxuto.</strong> Menos blocos, mais relevantes. Velocidade e obediência sobem juntas.</li>
+          <li><strong>Ajustes pela camada certa</strong> (veja abaixo) — nunca misturar o seu padrão clínico com preferência de usuário.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="display reveal" style="margin:38px 0 16px;font-size:1.35rem;color:var(--paper)">O princípio inegociável: a IA gera o laudo que <span style="color:var(--emerald);font-style:italic">você</span> aprova</h3>
+    <p class="sub reveal" style="margin-bottom:18px">Três camadas. As de cima nunca sobrescrevem as de baixo. É assim que preferência de usuário convive com o seu padrão — sem nunca furá-lo.</p>
+    <div class="layers reveal">
+      <div class="layer l1"><div class="lt"><span class="num">camada 1</span>Conhecimento clínico canônico</div><p>A biblioteca compartilhada, validada. Verdade médica de base, igual para todos.</p></div>
+      <div class="layer l2"><div class="lt"><span class="num">camada 2</span>O SEU padrão aprovado · <em style="color:var(--amber)">travado</em></div><p>A fraseologia e a estrutura que <strong>você</strong> assinou embaixo. Os guards determinísticos (líquido, peso, Doppler…) <strong>impõem esta camada</strong> mesmo contra a vontade do modelo. É o seu moat.</p></div>
+      <div class="layer l3"><div class="lt"><span class="num">camada 3</span>Preferências do usuário</div><p>Ajustes de estilo de cada médico — <strong>podem personalizar, nunca podem quebrar</strong> a camada 2 (sua estrutura clínica e suas regras de segurança).</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 07 TESE ============ -->
+  <section style="border-bottom:none">
+    <div class="sec-head reveal">
+      <span class="sec-no">07</span>
+      <div><h2>A tese estratégica</h2></div>
+    </div>
+    <div class="thesis reveal">
+      <h2>Não vença o ChatGPT na <span class="hl">velocidade</span>.<br>Vença na <span class="hl">obediência</span>.</h2>
+      <p>A velocidade dá para empatar — streamar cedo, contexto enxuto, modelo atual, montagem determinística. Isso é engenharia, e o plano acima entrega.</p>
+      <p>Mas o ChatGPT <strong>nunca</strong> vai garantir que o laudo saia exatamente do jeito que você aprovou. Ele é genérico por natureza. Nós impomos o seu padrão de forma determinística — líquido no item 2, peso fetal que não some, o vaso certo no Doppler. <strong>Esse é o motivo para o médico sair dele e vir para você</strong>: não porque somos mais rápidos, mas porque somos <em>dele</em>.</p>
+      <p>O seu medo — "estamos ficando complexos e nos distanciando do objetivo" — tem uma resposta concreta: a arquitetura determinística-primeiro <strong>reduz</strong> complexidade. Menos imprevisibilidade da IA para remendar. Cada guard que hoje parece um remendo é, na verdade, um tijolo do motor que vai te deixar rápido e fiel ao mesmo tempo.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="ftgrid">
+      <div>
+        <div class="mono" style="letter-spacing:.1em;margin-bottom:6px">DIAGNÓSTICO · 2026-06-04</div>
+        <div>Construído por c1 + dex1 (advogado do diabo) · dados reais de <span class="mono">generation_audit</span></div>
+      </div>
+      <div style="text-align:right;color:var(--emerald-deep)" class="mono">
+        structurer 4,8s · rag 0,6s · writer 6,5s<br>609 blocos · 10 categorias · 281 laudos
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // anima a barra de latência ao entrar na viewport
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('.seg').forEach(s=>{const b=s.style.flexBasis;s.style.flexBasis='0%';requestAnimationFrame(()=>requestAnimationFrame(()=>s.style.flexBasis=b))});io.unobserve(e.target)}})},{threshold:.4});
+  document.querySelectorAll('.latviz').forEach(el=>io.observe(el));
+  // reveal on scroll for elements below the fold
+  const ro=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.animationPlayState='running';ro.unobserve(e.target)}})},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach((el,i)=>{if(i>4){el.style.animationPlayState='paused';ro.observe(el)}});
+</script>
+</body>
+</html>
