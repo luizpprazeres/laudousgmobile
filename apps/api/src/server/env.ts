@@ -69,6 +69,12 @@ const ServerEnvSchema = z.object({
   // Só o estilo CLÁSSICO tem catálogo hoje; o objetivo cai no caminho antigo.
   // Rollback trivial: tirar a categoria da lista.
   MODEL_CATALOG_CATEGORIES: z.string().default(""),
+  // Projeto modelos item 7: categorias em que a personalização PUBLICADA do
+  // médico é aplicada na geração. Trava separada de MODEL_CATALOG_CATEGORIES
+  // de propósito — o catálogo é byte-idêntico ao renderer (risco nulo), mas
+  // aplicar o overlay do usuário muda o texto do laudo. Só vale quando as
+  // DUAS estão ligadas. Rollback trivial: esvaziar esta.
+  MODEL_CUSTOMIZATION_CATEGORIES: z.string().default(""),
   // DET-6: quando "true", as diretivas de conclusão do médico são aplicadas
   // como OPERAÇÕES tipadas (pipeline/operations.ts) em vez do commandGuard
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após

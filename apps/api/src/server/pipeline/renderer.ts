@@ -22,6 +22,7 @@ import {
 } from "../renderer/categories/OBSTETRICA";
 import { renderObstetricaCatalogo } from "../renderer/catalog/OBSTETRICA.render";
 import { catalogEnabledFor } from "../renderer/catalog/engine";
+import type { PersonalizacaoResolvida } from "../customization/resolve";
 import {
   renderMorfologico,
   type MorfologicoFindings,
@@ -208,6 +209,18 @@ export async function* runRendererStream(args: {
    * Puramente observacional: não altera o texto gerado.
    */
   onFindings?: (findings: unknown) => void;
+  /**
+   * Personalização do médico, JÁ RESOLVIDA e validada (item 7 do projeto
+   * modelos). Vem como promessa para que a consulta ao banco corra em paralelo
+   * com a extração do LLM, que é o custo dominante deste caminho.
+   *
+   * Nunca rejeita — `resolverPersonalizacao` devolve `aplicar: false` em
+   * qualquer situação duvidosa, inclusive erro de banco. Ausente = laudo no
+   * modelo-base, que é o comportamento de sempre.
+   */
+  personalizacao?: Promise<PersonalizacaoResolvida>;
+  /** Recebe o que foi (ou não foi) aplicado, para a auditoria. Observacional. */
+  onPersonalizacao?: (r: PersonalizacaoResolvida) => void;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
 
@@ -254,19 +267,41 @@ export async function* runRendererStream(args: {
     const usaCatalogo = (cat: string) => catalogEnabledFor(env().MODEL_CATALOG_CATEGORIES, cat);
     const fnd = extraction.findings;
     let fullText: string;
+    // Anotação da personalização. Composta aqui e concatenada na
+    // systemMessage abaixo — NÃO no route, porque `onSystemMessage` é emitido
+    // depois de `onPersonalizacao` e sobrescreveria a nota.
+    let notaPersonalizacao = "";
     switch (args.categoryCode) {
-      case "OBSTETRICA":
+      case "OBSTETRICA": {
         // Projeto modelos: com MODEL_CATALOG_CATEGORIES a montagem vem do
         // catálogo (conteúdo como dado). Saída byte-idêntica — ver
         // renderer/__tests__/catalog-equivalence.manual.ts. Só clássico por ora.
-        fullText =
-          usaCatalogo("OBSTETRICA") && !objetivo
-            ? renderObstetricaCatalogo({
-                findings: fnd as ObstetricaFindings,
-                flags: { objetivo, igCorrection, flexivel, grannum },
-              })
-            : renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection, flexivel, grannum });
+        if (usaCatalogo("OBSTETRICA") && !objetivo) {
+          // Item 7: o overlay do médico entra aqui, e só aqui. Sem
+          // personalização aplicável, os três campos ficam undefined e o
+          // catálogo-base é usado — exatamente o caminho já validado.
+          const p = await args.personalizacao;
+          if (p?.aplicar) {
+            notaPersonalizacao =
+              ` | personalização v${p.versao}: ${p.operacoes} operação(ões) sobre ${p.catalogId} v${p.baseVersao}`;
+          }
+          try {
+            if (p) args.onPersonalizacao?.(p);
+          } catch {
+            /* observacional — nunca derruba a geração */
+          }
+          fullText = renderObstetricaCatalogo({
+            findings: fnd as ObstetricaFindings,
+            flags: { objetivo, igCorrection, flexivel, grannum },
+            ...(p?.aplicar
+              ? { catalog: p.catalog, customSlots: p.customSlots, extraConclusao: p.extraConclusao }
+              : {}),
+          });
+        } else {
+          fullText = renderObstetrica(fnd as ObstetricaFindings, null, { objetivo, igCorrection, flexivel, grannum });
+        }
         break;
+      }
       case "MORFOLOGICO":
         fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo, igCorrection });
         break;
@@ -301,7 +336,7 @@ export async function* runRendererStream(args: {
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });
         break;
     }
-    const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})`;
+    const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})${notaPersonalizacao}`;
     args.onSystemMessage?.(systemMessage);
     yield fullText;
     return {

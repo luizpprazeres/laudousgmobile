@@ -79,6 +79,7 @@ import {
   resolveAccountReportPreference,
 } from "@/server/db/lookups";
 import { runRendererStream } from "@/server/pipeline/renderer";
+import { resolverPersonalizacao } from "@/server/customization/resolve";
 import {
   RENDERER_SUPPORTED_CATEGORIES,
   RENDERER_PROGRAMMATIC_CATEGORIES,
@@ -866,6 +867,18 @@ export async function POST(req: Request) {
       // UX (flag RENDERER_PROGRESS): emite progresso da extração via SSE para o
       // app mostrar status em vez de tela muda. OFF = sem stage events.
       const progressEnabled = env().RENDERER_PROGRESS === "true";
+      // Projeto modelos item 7 — a personalização publicada do médico.
+      // Disparada SEM await: a consulta corre em paralelo com a extração do
+      // LLM, que leva segundos, então não acrescenta latência percebida.
+      // A função nunca rejeita (devolve `aplicar: false` até em erro de banco),
+      // por isso é seguro guardar a promessa sem `catch`.
+      const personalizacao = useRenderer
+        ? resolverPersonalizacao({
+            userId: user.id,
+            categoryCode: effectiveCategory,
+            styleCode: styleRow.code,
+          })
+        : undefined;
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
@@ -888,6 +901,14 @@ export async function POST(req: Request) {
             // e o que o template preencheu. Só registra — não muda o laudo.
             onFindings: (f) => {
               auditState.structuredOutput = f as typeof auditState.structuredOutput;
+            },
+            personalizacao,
+            // Registra o que foi (ou não foi) aplicado. Sem isto, um laudo
+            // personalizado seria indistinguível de um laudo padrão na
+            // auditoria — e a primeira pergunta diante de um laudo estranho é
+            // justamente "este saiu do modelo ou da personalização dele?".
+            onPersonalizacao: (r) => {
+              if (!r.aplicar) console.info("[personalizacao] não aplicada:", r.motivo);
             },
           })
         : runWriterStream({
