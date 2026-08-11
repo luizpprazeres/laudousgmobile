@@ -22,6 +22,7 @@ sanity checks, versões e métricas.
 | `05-plano-migracao.md` | O que a migration `0022` cria, impacto, índices, RLS, rollback — **aplicada em 10/08** |
 | `06-lab-cockpit.md` | Levantamento do Lab: o que sobreviveu ao fim do RAG, o que aposentar, o que criar |
 | `07-verificacao-achado-inventado.md` | Os 371 alertas de "achado inventado" são **falso positivo** — e o que se descobriu no lugar |
+| `08-correcoes-no-laudo.md` | **Frente C** — pendências e correções dentro do laudo: roxo para o que falta, riscado + verde para o que está errado, com botão de aceitar |
 
 Convenção usada em todos: **[F]** fato verificado por comando/arquivo ·
 **[I]** inferência · **[?]** não confirmado.
@@ -32,8 +33,9 @@ O projeto tem **duas frentes**, que se separaram durante o trabalho:
 
 | Frente | Onde vive | Estado |
 |---|---|---|
-| **A. Modelo canônico + personalização** | backend + Biblioteca (web/iOS/Android) | catálogo e motor prontos; persistência criada; falta a Biblioteca no produto |
-| **B. Cockpit do Lab** | `lab.laudousg.com` | 3 telas entregues; procedência destravada |
+| **A. Modelo canônico + personalização** | backend + Biblioteca (web/iOS/Android) | catálogo, motor e ciclo de vida prontos; falta aplicar na geração e a Biblioteca no produto |
+| **B. Cockpit do Lab** | `lab.laudousg.com` | 4 telas entregues |
+| **C. Pendências e correções no laudo** | pipeline + iOS + Android + Sala | planejada (`08`); 3 decisões pendentes |
 
 > **Correção de rumo (10/08):** a tela `/modelos` que nasceu no Lab pertence à
 > **Biblioteca do usuário**, não ao Lab. Ela fica onde está por ora, como bancada
@@ -48,7 +50,7 @@ O projeto tem **duas frentes**, que se separaram durante o trabalho:
   pela validação de viabilidade (`01 §2.1` — o renderer é *motor*, só o *conteúdo*
   vira dado) e pela revisão adversarial do Codex (`04-revisao-codex.md` — a unidade
   interna passou a ser um **documento estruturado**, com a string como último passo).
-- **Fase 3 (Implementação): 4 de 10 itens**
+- **Fase 3 (Implementação): 5 de 10 itens**
 
 | # | Item | Estado |
 |---|---|---|
@@ -58,7 +60,7 @@ O projeto tem **duas frentes**, que se separaram durante o trabalho:
 | 3 | Catálogo-base versionado — **no Git**, não no banco (revisão C9) | ✅ por decisão |
 | 4 | Tabelas `report_scopes` + `report_model_customizations` | ✅ **aplicadas** em 10/08 |
 | 5 | Validador de operações | ✅ **58 garantias** |
-| 6 | Endpoints: rascunho, prévia, publicar, restaurar, histórico, rollback | ⏳ só a prévia existe |
+| 6 | Endpoints: rascunho, prévia, publicar, restaurar, histórico, desligar | ✅ **49 asserções** no banco real |
 | 7 | Geração aplicando a customização publicada | ⏳ |
 | 8 | Auditoria com `catalog_id` + versões | ⏳ |
 | 9 | Visualização no Lab | ✅ bancada `/modelos` |
@@ -71,7 +73,7 @@ O projeto tem **duas frentes**, que se separaram durante o trabalho:
 | `/prompts` | ✅ | O prompt de qualquer categoria × estilo **sem gerar laudo**, dissecado nas camadas, com o caminho (renderer/writer/livre) explícito |
 | `/audit` | ✅ | Todas as contas, com filtro por **tipo** de alerta; falso "erro" corrigido |
 | `/correcoes` | ✅ | Os 585 laudos que o médico corrigiu, com diff por linha |
-| Procedência por trecho | ✅ motor · ⏳ tela | Destravado em 10/08 (ver abaixo) |
+| `/audit` → dissecação | ✅ | De onde veio cada trecho: sem cor / âmbar (o LLM redigiu) / azul (mediu ou classificou) |
 
 ## O que já foi alterado no sistema
 
@@ -82,6 +84,8 @@ Até 09/08 nada havia sido tocado. Depois disso, com autorização explícita:
 | 10/08 | **Migration `0022`** aplicada — 2 tabelas novas, nenhum `ALTER`, 0 linhas afetadas | verificada: invariantes testadas em transação com rollback; advisor limpo |
 | 10/08 | Flag `MODEL_CATALOG_CATEGORIES` em `env.ts` — **default vazio** | nulo enquanto vazia |
 | 10/08 | `pipeline/renderer.ts` + `route.ts`: callback `onFindings` grava a extração do renderer na auditoria | aditivo e observacional; não altera o texto gerado; 3840/3840 e goldens verdes depois |
+| 10/08 | 5 rotas novas em `/api/me/report-customizations/…` | nada as chama ainda; a geração só passa a usá-las no item 7 |
+| 10/08 | Registro de catálogos extraído da rota admin para `catalog/registry.ts` | refatoração pura; a rota admin passou a usá-lo |
 
 ## Comandos de validação
 
@@ -95,6 +99,9 @@ pnpm exec tsx apps/api/src/server/renderer/__tests__/catalog-describe.manual.ts
 # diff das correções (9) e procedência (17)
 pnpm exec tsx apps/lab/src/lib/diff/linhas.manual.ts
 pnpm exec tsx apps/lab/src/lib/procedencia/index.manual.ts
+
+# ciclo de vida da personalização — BANCO REAL, tudo em transação com rollback (49)
+cd apps/api && pnpm exec tsx --env-file=.env.local src/server/customization/store.manual.ts
 
 pnpm --filter @laudousg/api typecheck && pnpm --filter @laudousg/lab typecheck
 # ⚠️ pnpm test é NO-OP: nenhum package define script "test"
@@ -135,12 +142,15 @@ pnpm --filter @laudousg/api typecheck && pnpm --filter @laudousg/lab typecheck
 
 ### Próximos passos, em ordem
 
-1. **Tela de procedência** — o motor está pronto (`apps/lab/src/lib/procedencia/`) e
-   o dado passou a ser gravado em 10/08. Precisa de laudos novos para ter o que mostrar.
-2. **Endpoints de personalização** (item 6): rascunho, publicar, histórico, rollback —
-   as tabelas já existem e estão vazias.
-3. **Geração aplicando a customização** (item 7), atrás de flag.
-4. **Catálogo do estilo OBJETIVO** (item 2b).
+1. **Geração aplicando a customização publicada** (item 7), atrás de flag. O
+   `lerPublicada()` já existe e devolve `null` em qualquer dúvida — sem
+   personalização, gera-se o modelo-base, que é o comportamento de hoje.
+2. **Frente C, passo 1** (`08 §3`): backend emite `pendencias[]` sem ninguém
+   consumir, para provar equivalência antes de trocar qualquer cliente.
+3. **Frente C, passo 2**: matar a divergência iOS × Android — hoje os dois
+   mostram conjuntos diferentes de pendências para o mesmo laudo.
+4. **Catálogo do estilo OBJETIVO** (item 2b) — destrava a personalização do
+   segundo estilo, que hoje responde 404 por não ter catálogo.
 5. **Biblioteca no produto** — mover `/modelos` do Lab para o `apps/web`.
 
 ### Frentes que apareceram no caminho e não são deste projeto
