@@ -14,6 +14,7 @@ import {
   type EstadoPersonalizacao,
   type Operacao,
   type SlotDescricao,
+  type Variacao,
 } from "@/lib/personalizacao";
 
 /**
@@ -59,6 +60,8 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
   const [slotAberto, setSlotAberto] = useState<SlotDescricao | null>(null);
   const [rascunhoTexto, setRascunhoTexto] = useState("");
   const [modoEdicao, setModoEdicao] = useState<"trocar" | "depois" | "conclusao" | null>(null);
+  /** Achado selecionado para ver o efeito no modelo. null = modelo padrão. */
+  const [variacao, setVariacao] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -118,6 +121,34 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
     });
     return m;
   }, [ops]);
+
+  const variacaoAtiva: Variacao | null = useMemo(
+    () => estado?.variacoes.find((v) => v.id === variacao) ?? null,
+    [estado, variacao],
+  );
+
+  /**
+   * O que o achado escolhido muda, por slot. É o que permite desenhar a
+   * substituição NO PONTO — frase riscada, nova embaixo — em vez de mostrar
+   * dois laudos lado a lado.
+   */
+  const efeitoPorSlot = useMemo(() => {
+    const m = new Map<string, { corpo?: string; conclusao?: string; antes?: string }>();
+    for (const mu of variacaoAtiva?.mudancas ?? []) {
+      const atual = m.get(mu.slot) ?? {};
+      if (mu.secao === "corpo") {
+        atual.corpo = mu.depois ?? "";
+        // O `antes` vem do backend já COM a personalização do médico aplicada.
+        // É ele que precisa aparecer riscado — não a frase do catálogo-base —,
+        // senão riscaríamos um texto que este médico nem teria.
+        atual.antes = mu.antes ?? "";
+      } else {
+        atual.conclusao = mu.depois ?? "";
+      }
+      m.set(mu.slot, atual);
+    }
+    return m;
+  }, [variacaoAtiva]);
 
   async function aplicar(novas: Operacao[]) {
     setSalvando(true);
@@ -234,6 +265,65 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
           </View>
         )}
 
+        {/* o que muda quando há um achado */}
+        {estado.variacoes.length > 0 && (
+          <View style={{ marginBottom: 14 }}>
+            <Text style={{ color: t.textSec, fontSize: 12, marginBottom: 7 }}>
+              Ver o que muda no laudo quando há:
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+              <Pressable
+                onPress={() => setVariacao(null)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  backgroundColor: variacao === null ? t.brand : t.fill2,
+                }}
+              >
+                <Text style={{ color: variacao === null ? "#fff" : t.text2, fontSize: 12, fontWeight: "600" }}>
+                  Nada alterado
+                </Text>
+              </Pressable>
+              {estado.variacoes.map((v) => {
+                const ativa = v.id === variacao;
+                return (
+                  <Pressable
+                    key={v.id}
+                    onPress={() => setVariacao(ativa ? null : v.id)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 999,
+                      backgroundColor: ativa ? t.warningText : t.fill2,
+                    }}
+                  >
+                    <Text style={{ color: ativa ? "#fff" : t.text2, fontSize: 12, fontWeight: "600" }}>
+                      {v.nome}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            {variacaoAtiva && (
+              <View
+                style={{
+                  backgroundColor: t.warningBg,
+                  borderRadius: 10,
+                  padding: 10,
+                  marginTop: 9,
+                }}
+              >
+                <Text style={{ color: t.warningText, fontSize: 12, lineHeight: 18 }}>
+                  {variacaoAtiva.descricao} Estas frases são escritas pelo sistema a partir do
+                  que você ditar — não dá para personalizá-las, justamente para que a sua
+                  redação de normalidade nunca apareça no lugar de um achado alterado.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* o modelo, como texto corrido */}
         <Text style={{ color: t.textSec, fontSize: 11, letterSpacing: 1, marginBottom: 8 }}>
           {estado.catalogo.cabecalhos.corpo}
@@ -243,6 +333,9 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
           const op = opDoSlot(slot.id);
           const removido = removidos.has(slot.id);
           const trocado = op?.op === "replace_phrase" ? op.value : null;
+          // O achado selecionado substitui esta frase?
+          const efeito = efeitoPorSlot.get(slot.id);
+          const substituida = efeito?.corpo !== undefined;
           return (
             <Pressable
               key={slot.id}
@@ -258,21 +351,38 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
               {/* a frase original: riscada quando mudou ou saiu */}
               <Text
                 style={{
-                  color: removido || trocado ? t.textSec : t.text,
+                  color: removido || trocado || substituida ? t.textSec : t.text,
                   fontSize: 15,
                   lineHeight: 23,
-                  textDecorationLine: removido || trocado ? "line-through" : "none",
+                  textDecorationLine:
+                    removido || trocado || substituida ? "line-through" : "none",
                 }}
               >
-                {removido || trocado ? (
+                {substituida ? (
+                  (efeito!.antes ?? frase).trim()
+                ) : removido || trocado ? (
                   frase.replace(/\{(\w+)\}/g, (_, v: string) => v.replace(/_/g, " "))
                 ) : (
                   <FraseComDados frase={frase} cor={t.text} corDado={t.brand} />
                 )}
               </Text>
 
-              {/* a substituta, logo abaixo */}
-              {trocado && (
+              {/* o que o ACHADO põe no lugar */}
+              {substituida && (
+                <View style={{ marginTop: 3 }}>
+                  <Text style={{ color: t.warningText, fontSize: 15, lineHeight: 23 }}>
+                    {efeito!.corpo!.trim()}
+                  </Text>
+                  {efeito!.conclusao !== undefined && (
+                    <Text style={{ color: t.warningText, fontSize: 13, lineHeight: 20, marginTop: 2 }}>
+                      na conclusão: {efeito!.conclusao!.trim()}
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {/* a substituta, logo abaixo — some quando o achado já assumiu a frase */}
+              {trocado && !substituida && (
                 <View style={{ marginTop: 3 }}>
                   <FraseComDados frase={trocado} cor={t.brand} corDado={t.brand} />
                 </View>

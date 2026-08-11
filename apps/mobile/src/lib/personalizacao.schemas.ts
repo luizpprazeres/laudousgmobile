@@ -86,6 +86,19 @@ export const PreviaSchema = z.object({
 });
 
 /** Exportado para o teste de contrato em apps/api (contrato-biblioteca.manual.ts). */
+/**
+ * O que um ACHADO muda no modelo — "com oligoâmnio, esta frase sai e esta
+ * entra". Calculado pelo backend sobre o modelo do próprio médico.
+ */
+export const VariacaoSchema = z.object({
+  id: z.string(),
+  nome: z.string(),
+  descricao: z.string(),
+  patologico: z.boolean(),
+  compara_com_nome: z.string(),
+  mudancas: z.array(MudancaSchema),
+});
+
 export const EstadoSchema = z.object({
   categoria: z.string(),
   estilo: z.string(),
@@ -96,6 +109,8 @@ export const EstadoSchema = z.object({
   publicado: VersaoSchema.nullable(),
   historico: z.array(VersaoSchema),
   previa: z.array(PreviaSchema),
+  // Tolera backend anterior ao deploy das variações.
+  variacoes: z.array(VariacaoSchema).default([]),
 });
 
 export type Catalogo = z.infer<typeof CatalogoSchema>;
@@ -103,5 +118,6 @@ export type SlotDescricao = z.infer<typeof SlotSchema>;
 export type VersaoPersonalizacao = z.infer<typeof VersaoSchema>;
 export type Previa = z.infer<typeof PreviaSchema>;
 export type Mudanca = z.infer<typeof MudancaSchema>;
+export type Variacao = z.infer<typeof VariacaoSchema>;
 export type EstadoPersonalizacao = z.infer<typeof EstadoSchema>;
 

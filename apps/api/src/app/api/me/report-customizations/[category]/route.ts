@@ -34,6 +34,53 @@ export const dynamic = "force-dynamic";
  * alteração no ponto certo, com a frase antiga riscada e a nova embaixo, em
  * vez de dois laudos inteiros lado a lado.
  */
+/**
+ * O que cada ACHADO muda no modelo — "clico em oligoâmnio e vejo qual frase
+ * sai e qual entra".
+ *
+ * Calculado sobre o modelo que o médico terá (com as operações dele
+ * aplicadas), não sobre o catálogo-base: se ele reescreveu a frase de líquido
+ * normal, é a frase DELE que precisa aparecer riscada quando há oligoâmnio.
+ *
+ * Só entram cenários com `comparaCom` — variações de achado sobre o mesmo
+ * modelo. Gestação inicial e gemelar usam outro modelo e não se comparam.
+ */
+function variacoesDe(entrada: EntradaCatalogo, operations: Operation[]) {
+  const flags = flagsDeProducao();
+  const custom =
+    operations.length > 0
+      ? applyCustomization(entrada.catalog, {
+          baseCatalogId: entrada.catalog.id,
+          baseVersao: entrada.catalog.versao,
+          operations,
+        })
+      : null;
+
+  const doc = (findings: unknown) =>
+    entrada.buildDoc({
+      findings: findings as Parameters<typeof entrada.buildDoc>[0]["findings"],
+      flags,
+      ...(custom
+        ? { catalog: custom.catalog, customSlots: custom.customSlots, extraConclusao: custom.extraConclusao }
+        : {}),
+    });
+
+  return entrada.samples
+    .filter((s) => s.comparaCom)
+    .flatMap((s) => {
+      const ref = entrada.samples.find((x) => x.id === s.comparaCom);
+      if (!ref) return [];
+      return [{
+        id: s.id,
+        nome: s.nome,
+        descricao: s.descricao,
+        patologico: Boolean(s.patologico),
+        compara_com_nome: ref.nome,
+        mudancas: diffDocs(doc(ref.findings), doc(s.findings)),
+      }];
+    });
+}
+
 function previaDe(entrada: EntradaCatalogo, operations: Operation[]) {
   const flags = flagsDeProducao();
   const custom = applyCustomization(entrada.catalog, {
@@ -96,6 +143,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
       publicado: estado.publicado,
       historico: estado.historico,
       previa: emEdicao.length > 0 ? previaDe(r.entrada, emEdicao) : [],
+      // O efeito de cada achado sobre o modelo QUE ELE TERÁ: com o rascunho
+      // se houver, senão com o publicado, senão com o base.
+      variacoes: variacoesDe(
+        r.entrada,
+        emEdicao.length > 0 ? emEdicao : ((estado.publicado?.operations ?? []) as Operation[]),
+      ),
     });
   } catch (e) {
     return respostaDeErro(e);

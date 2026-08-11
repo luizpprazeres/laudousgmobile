@@ -14,7 +14,7 @@ import { describeCatalog } from "@/server/renderer/catalog/describe";
 import { flagsDeProducao, resolveCatalogo } from "@/server/renderer/catalog/registry";
 import { applyCustomization, diffDocs } from "@/server/renderer/catalog/engine";
 // Caminho relativo de propósito: é o schema REAL do app, não uma cópia.
-import { EstadoSchema } from "../../../../mobile/src/lib/personalizacao.schemas";
+import { EstadoSchema, type Variacao } from "../../../../mobile/src/lib/personalizacao.schemas";
 
 let ok = 0;
 const falhas: string[] = [];
@@ -58,6 +58,40 @@ const previa = entrada.samples.map((s) => {
   };
 });
 
+/** Mesma função da rota: o efeito de cada achado sobre o modelo do médico. */
+function variacoesDe(operations: { op: string; [k: string]: unknown }[]) {
+  const c =
+    operations.length > 0
+      ? applyCustomization(entrada.catalog, {
+          baseCatalogId: entrada.catalog.id,
+          baseVersao: entrada.catalog.versao,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          operations: operations as any,
+        })
+      : null;
+  const doc = (findings: unknown) =>
+    entrada.buildDoc({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      findings: findings as any,
+      flags,
+      ...(c ? { catalog: c.catalog, customSlots: c.customSlots, extraConclusao: c.extraConclusao } : {}),
+    });
+  return entrada.samples
+    .filter((s) => s.comparaCom)
+    .flatMap((s) => {
+      const ref = entrada.samples.find((x) => x.id === s.comparaCom);
+      if (!ref) return [];
+      return [{
+        id: s.id,
+        nome: s.nome,
+        descricao: s.descricao,
+        patologico: Boolean(s.patologico),
+        compara_com_nome: ref.nome,
+        mudancas: diffDocs(doc(ref.findings), doc(s.findings)),
+      }];
+    });
+}
+
 const agora = new Date().toISOString();
 const resposta = {
   categoria: "OBSTETRICA",
@@ -82,6 +116,7 @@ const resposta = {
   publicado: null,
   historico: [],
   previa,
+  variacoes: variacoesDe(operations),
 };
 
 const r = EstadoSchema.safeParse(resposta);
@@ -133,6 +168,54 @@ if (r.success) {
   console.log(`  editáveis: ${linhas.filter((l) => l.editavel).length}`);
   console.log(`  escritas pelo sistema: ${linhas.filter((l) => !l.editavel).length}`);
 }
+
+// --- as variações: "o que muda quando há oligoâmnio" ---------------------
+const vs = variacoesDe([]) as Variacao[];
+check("há variações de achado", vs.length >= 4, vs.length);
+check(
+  "toda variação tem mudança no corpo",
+  vs.every((v) => v.mudancas.some((m) => m.secao === "corpo")),
+);
+check(
+  "toda mudança de corpo tem antes E depois (dá para riscar e substituir)",
+  vs.every((v) =>
+    v.mudancas
+      .filter((m) => m.secao === "corpo")
+      .every((m) => (m.antes ?? "").trim() !== "" && (m.depois ?? "").trim() !== ""),
+  ),
+);
+
+const oligo = vs.find((v) => v.id === "oligoamnio");
+check("o oligoâmnio está entre elas", oligo !== undefined);
+if (oligo) {
+  const corpo = oligo.mudancas.find((m) => m.secao === "corpo");
+  const concl = oligo.mudancas.find((m) => m.secao === "conclusao");
+  check("oligoâmnio risca a frase de normalidade", (corpo?.antes ?? "").includes("normal"), corpo?.antes);
+  check("e põe o achado no lugar", (corpo?.depois ?? "").toLowerCase().includes("oligo"), corpo?.depois);
+  check("a conclusão também muda", concl !== undefined && (concl.depois ?? "").toLowerCase().includes("oligo"));
+  check("é marcado como patológico", oligo.patologico === true);
+}
+
+// O PONTO SUTIL: com a frase personalizada, é a frase DO MÉDICO que aparece
+// riscada quando há oligoâmnio — não a do catálogo-base. Se isto quebrar, a
+// tela risca um texto que aquele médico nunca teria visto.
+const MINHA = "Volume de líquido amniótico dentro da normalidade.";
+const vsCustom = variacoesDe([
+  { op: "replace_phrase", slot: "liquido_amniotico", value: MINHA },
+]) as Variacao[];
+const oligoCustom = vsCustom.find((v) => v.id === "oligoamnio");
+const antesCustom = oligoCustom?.mudancas.find((m) => m.secao === "corpo")?.antes ?? "";
+check("com personalização, risca a frase DO MÉDICO", antesCustom.includes(MINHA), antesCustom);
+check(
+  "e não a do catálogo-base",
+  !antesCustom.includes("pela análise subjetiva"),
+  antesCustom,
+);
+check(
+  "o que o achado põe no lugar NÃO muda com a personalização",
+  (oligoCustom?.mudancas.find((m) => m.secao === "corpo")?.depois ?? "") ===
+    (oligo?.mudancas.find((m) => m.secao === "corpo")?.depois ?? ""),
+);
 
 console.log(`\nContrato rota × tela da Biblioteca\n`);
 for (const f of falhas) console.log("  ✗", f);
