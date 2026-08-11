@@ -33,6 +33,26 @@ assert.equal(
   ),
   "Data 31 de fevereiro de dois mil e vinte e seis [REVISAR].",
 );
+// Forma mista (dia/mês já em dígito, preposição sobrevivente) — o caso real
+// relatado em 06/08. Não é ambígua: reconstrói em vez de pedir revisão.
+assert.equal(normalizeSpokenDates("DUM 25 do 02 de 2026."), "DUM 25/02/2026.");
+assert.equal(normalizeSpokenDates("DUM 25 de 02 de 2026."), "DUM 25/02/2026.");
+assert.equal(normalizeSpokenDates("DUM 5 do 2 de 2026."), "DUM 05/02/2026.");
+assert.equal(
+  normalizeSpokenDates("DUM vinte e cinco do 02 de 2026."),
+  "DUM 25/02/2026.",
+);
+// Data impossível continua indo para revisão, não vira data inventada.
+assert.equal(
+  normalizeSpokenDates("DUM 31 do 02 de 2026."),
+  "DUM 31 do 02 de 2026 [REVISAR].",
+);
+assert.equal(
+  normalizeSpokenDates(normalizeSpokenDates("DUM 31 do 02 de 2026.")),
+  "DUM 31 do 02 de 2026 [REVISAR].",
+  "forma mista inválida deve ser idempotente",
+);
+// A regra nova NÃO pode roubar o garble da regra abaixo (ano partido em "e N").
 assert.equal(
   normalizeSpokenDates("Data 2 do 3 de 2020 e 6."),
   "Data 2 do 3 de 2020 e 6 [REVISAR].",

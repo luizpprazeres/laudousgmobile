@@ -1,0 +1,38 @@
+[
+  {
+    "id": "tireoide",
+    "categoria": "TIREOIDE",
+    "texto": "Glândula tireoide tópica, com ecotextura heterogênea e padrão micronodular difuso, compatível com tireoidite crônica linfocítica de Hashimoto. Nódulo isoecoico no istmo, medindo zero vírgula nove centímetros, classificado como TI-RADS três. Vascularização ao Doppler colorido aumentada.",
+    "termos": ["tireoide", "ecotextura", "micronodular", "tireoidite", "Hashimoto", "isoecoico", "istmo", "TI-RADS", "Doppler colorido"]
+  },
+  {
+    "id": "abdomen",
+    "categoria": "ABDOMEN_TOTAL",
+    "texto": "Fígado com esteatose hepática moderada e ecogenicidade aumentada. Colédoco de calibre normal. Vesícula biliar com colelitíase e microlitíase, sem sinais de colecistite. Rim direito com cálculo pielocalicial e discreta hidronefrose. Aorta abdominal com ateromatose difusa.",
+    "termos": ["esteatose", "ecogenicidade", "colédoco", "colelitíase", "microlitíase", "colecistite", "cálculo", "pielocalicial", "hidronefrose", "ateromatose"]
+  },
+  {
+    "id": "venoso",
+    "categoria": "DOPPLER_VENOSO_MMII",
+    "texto": "Safena magna com refluxo valvular acima de um segundo. Veia poplítea pérvia e compressível, com fluxo anterógrado. Perfurante incompetente na panturrilha. Ausência de trombose venosa profunda. Recanalização parcial do segmento femoral.",
+    "termos": ["safena magna", "refluxo", "poplítea", "anterógrado", "perfurante", "panturrilha", "trombose", "recanalização", "femoral"]
+  },
+  {
+    "id": "obstetrica",
+    "categoria": "OBSTETRICA",
+    "texto": "Gestação tópica única. Placenta anterior, grau dois de Grannum. Índice de líquido amniótico normal, sem oligoâmnio. Biometria fetal compatível pela tabela de Hadlock. Ducto venoso com onda A positiva. Artéria cerebral média sem sinais de pré-centralização.",
+    "termos": ["Placenta", "Grannum", "amniótico", "oligoâmnio", "Biometria", "Hadlock", "Ducto venoso", "artéria cerebral média", "pré-centralização"]
+  },
+  {
+    "id": "msk",
+    "categoria": "MUSCULOESQUELETICO_V2",
+    "texto": "Tendinopatia do supraespinal com espessamento fibrilar e rotura parcial. Bursa subacromial subdeltóidea com derrame articular. Entesófito no epicôndilo lateral. Cisto de Baker na fossa poplítea. Fáscia plantar espessada.",
+    "termos": ["Tendinopatia", "supraespinal", "fibrilar", "rotura", "Bursa", "subacromial", "subdeltóidea", "derrame articular", "Entesófito", "cisto de Baker", "fáscia plantar"]
+  },
+  {
+    "id": "mama",
+    "categoria": "MAMARIA",
+    "texto": "Nódulo sólido oval, hipoecoico, paralelo à pele, na mama direita, em região retroareolar, medindo um vírgula dois por zero vírgula oito centímetros, classificado como BI-RADS três. Linfonodos axilares com morfologia preservada e centro hiperecoico.",
+    "termos": ["hipoecoico", "retroareolar", "BI-RADS", "Linfonodos", "hiperecoico"]
+  }
+]
