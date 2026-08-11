@@ -1,8 +1,10 @@
 -- 0023 — Qual MODELO gerou este laudo (projeto docs/projeto-modelos/, item 8)
 --
--- NÃO APLICADA. Requer autorização explícita: o projeto Supabase
--- `laudousgmobile` (yldtkqrsbgcnwlydrrot) é o ÚNICO da organização — não há
--- staging, dev e prod são o mesmo banco.
+-- APLICADA em 2026-08-11 pelo Luiz, no projeto Supabase `laudousgmobile`
+-- (yldtkqrsbgcnwlydrrot) — que é o ÚNICO da organização: não há staging, dev e
+-- prod são o mesmo banco. Verificada depois de aplicada: o insert com as três
+-- colunas passa a funcionar (auditModelo.manual.ts), e a linha de teste que
+-- ele grava é removida no próprio script.
 --
 -- O que faz: acrescenta TRÊS COLUNAS NULLABLE a `generation_audit`.
 -- O que NÃO faz: não altera coluna existente, não apaga nada, não move dado,
