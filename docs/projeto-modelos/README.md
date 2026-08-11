@@ -50,7 +50,7 @@ O projeto tem **duas frentes**, que se separaram durante o trabalho:
   pela validação de viabilidade (`01 §2.1` — o renderer é *motor*, só o *conteúdo*
   vira dado) e pela revisão adversarial do Codex (`04-revisao-codex.md` — a unidade
   interna passou a ser um **documento estruturado**, com a string como último passo).
-- **Fase 3 (Implementação): 5 de 10 itens**
+- **Fase 3 (Implementação): 6 de 10 itens**
 
 | # | Item | Estado |
 |---|---|---|
@@ -61,7 +61,7 @@ O projeto tem **duas frentes**, que se separaram durante o trabalho:
 | 4 | Tabelas `report_scopes` + `report_model_customizations` | ✅ **aplicadas** em 10/08 |
 | 5 | Validador de operações | ✅ **58 garantias** |
 | 6 | Endpoints: rascunho, prévia, publicar, restaurar, histórico, desligar | ✅ **49 asserções** no banco real |
-| 7 | Geração aplicando a customização publicada | ⏳ |
+| 7 | Geração aplicando a customização publicada | ✅ atrás de **2 flags**; 25/25 ligada, 6/6 desligada |
 | 8 | Auditoria com `catalog_id` + versões | ⏳ |
 | 9 | Visualização no Lab | ✅ bancada `/modelos` |
 | 10 | Golden tests contra a API real | ⏳ |
@@ -86,6 +86,7 @@ Até 09/08 nada havia sido tocado. Depois disso, com autorização explícita:
 | 10/08 | `pipeline/renderer.ts` + `route.ts`: callback `onFindings` grava a extração do renderer na auditoria | aditivo e observacional; não altera o texto gerado; 3840/3840 e goldens verdes depois |
 | 10/08 | 5 rotas novas em `/api/me/report-customizations/…` | nada as chama ainda; a geração só passa a usá-las no item 7 |
 | 10/08 | Registro de catálogos extraído da rota admin para `catalog/registry.ts` | refatoração pura; a rota admin passou a usá-lo |
+| 10/08 | Flag `MODEL_CUSTOMIZATION_CATEGORIES` + `resolve.ts` + gancho no renderer/route | **default vazia**; provado que com as flags OFF o laudo sai byte-idêntico mesmo havendo personalização publicada |
 
 ## Comandos de validação
 
@@ -102,6 +103,10 @@ pnpm exec tsx apps/lab/src/lib/procedencia/index.manual.ts
 
 # ciclo de vida da personalização — BANCO REAL, tudo em transação com rollback (49)
 cd apps/api && pnpm exec tsx --env-file=.env.local src/server/customization/store.manual.ts
+# item 7 de ponta a ponta — rodar NOS DOIS estados de flag
+pnpm exec tsx --env-file=.env.local src/server/customization/resolve.manual.ts            # 6, flags OFF
+MODEL_CATALOG_CATEGORIES=OBSTETRICA MODEL_CUSTOMIZATION_CATEGORIES=OBSTETRICA \
+  pnpm exec tsx --env-file=.env.local src/server/customization/resolve.manual.ts          # 25, flags ON
 
 pnpm --filter @laudousg/api typecheck && pnpm --filter @laudousg/lab typecheck
 # ⚠️ pnpm test é NO-OP: nenhum package define script "test"
@@ -142,16 +147,17 @@ pnpm --filter @laudousg/api typecheck && pnpm --filter @laudousg/lab typecheck
 
 ### Próximos passos, em ordem
 
-1. **Geração aplicando a customização publicada** (item 7), atrás de flag. O
-   `lerPublicada()` já existe e devolve `null` em qualquer dúvida — sem
-   personalização, gera-se o modelo-base, que é o comportamento de hoje.
+1. **Auditoria com `catalog_id` + versões** (item 8) — hoje a personalização
+   aplicada aparece só na `systemMessage`; falta coluna própria para filtrar.
 2. **Frente C, passo 1** (`08 §3`): backend emite `pendencias[]` sem ninguém
    consumir, para provar equivalência antes de trocar qualquer cliente.
 3. **Frente C, passo 2**: matar a divergência iOS × Android — hoje os dois
    mostram conjuntos diferentes de pendências para o mesmo laudo.
 4. **Catálogo do estilo OBJETIVO** (item 2b) — destrava a personalização do
    segundo estilo, que hoje responde 404 por não ter catálogo.
-5. **Biblioteca no produto** — mover `/modelos` do Lab para o `apps/web`.
+5. **Biblioteca no produto** — mover `/modelos` do Lab para o `apps/web`. É o
+   que falta para o médico conseguir personalizar sem passar por uma chamada
+   HTTP: o backend está pronto, a interface não.
 
 ### Frentes que apareceram no caminho e não são deste projeto
 
