@@ -9,7 +9,11 @@
  * Ainda NÃO é chamado pelo pipeline.
  */
 import { buildIgInput, computeIg } from "../ig";
-import { filterFreeConclusionItems, type ObstetricaFindings } from "../categories/OBSTETRICA";
+import {
+  filterFreeBodyItems,
+  filterFreeConclusionItems,
+  type ObstetricaFindings,
+} from "../categories/OBSTETRICA";
 import { buildDoc, serialize } from "./engine";
 import { OBSTETRICA_CLASSICO, conclusaoLiquidoAplicavel, rotuloFeto, varsObstetrica } from "./OBSTETRICA.classico";
 import type { Catalog, ReportDoc, Segment, SlotContext } from "./types";
@@ -69,6 +73,9 @@ export function buildObstetricaDoc(args: RenderArgs): { doc: ReportDoc; catalog:
     flags,
     preLinhas: [f.dum ? `\nDUM: ${f.dum}.\n` : "", ig.fraseReferencia ? `${ig.fraseReferencia}\n` : ""],
     customSlots: args.customSlots,
+    // Camada flexível (flag FLEXIBLE_CONCLUSION), lado do CORPO: observação
+    // clínica que o médico ditou fora dos slots. Mesmo dedup do renderer.
+    extraCorpo: flags.flexivel ? filterFreeBodyItems(f.observacoes_corpo_livres) : [],
     // Camada flexível (flag FLEXIBLE_CONCLUSION): itens livres do médico entram
     // ao fim da conclusão, após o mesmo dedup determinístico do renderer.
     extraConclusao: [

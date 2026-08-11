@@ -280,5 +280,46 @@ check("prefixo não conta como match", !catalogEnabledFor("OBSTETRICA_X", "OBSTE
 check("liga quando listada", catalogEnabledFor("OBSTETRICA", "OBSTETRICA"));
 check("liga com espaços em volta", catalogEnabledFor(" TIREOIDE , OBSTETRICA ", "OBSTETRICA"));
 
+
+// ---------------------------------------------------------------------------
+// Bugs achados na revisão do Codex ao port de 11/08
+// ---------------------------------------------------------------------------
+
+console.log("\n[G6] Bugs achados na revisão do port\n");
+
+// (A) Frase acrescentada é texto FIXO: entra como segmento pronto, sem passar
+// pela interpolação. Aceitar {placeholder} fazia o laudo sair com a chave crua.
+check(
+  "item de conclusão com {dado} é recusado",
+  erros([{ op: "append_conclusion_item", value: "Controle com IG de {ig_semanas} semanas." }]).length > 0,
+);
+// Já a frase acrescentada ao CORPO vira um slot e É interpolada — ali o dado
+// do exame vale, e o teste [G8] adiante prova o resultado no laudo.
+check(
+  "frase acrescentada ao corpo com {dado} continua valendo",
+  erros([{ op: "insert_phrase_after", anchor: "cf", value: "Relação CC/CA: {cc}/{ca}." }]).length === 0,
+);
+check(
+  "sem chaves continua valendo",
+  erros([{ op: "append_conclusion_item", value: "Controle ecográfico em 4 semanas." }]).length === 0,
+);
+
+// (B) Âncora DENTRO de um bloco repetido por feto. Antes só o último slot do
+// grupo (peso_fetal) era reconhecido: acrescentar depois do "dbp" era aceito,
+// salvo e publicado — e sumia no gemelar.
+const OPS_APOS_DBP: Operation[] = [
+  { op: "insert_phrase_after", anchor: "dbp", value: "Medida conferida em dois planos." },
+];
+check("âncora dentro do grupo por feto é aceita", erros(OPS_APOS_DBP).length === 0);
+const unicoDbp = rend(f(), OPS_APOS_DBP);
+const gemelarDbp = rend(GEMELAR, OPS_APOS_DBP);
+check("a frase aparece no feto único", unicoDbp.includes("conferida em dois planos"));
+check("e NÃO some no gemelar", gemelarDbp.includes("conferida em dois planos"));
+check(
+  "no gemelar ela acompanha CADA feto",
+  (gemelarDbp.match(/conferida em dois planos/g) ?? []).length === 2,
+  String((gemelarDbp.match(/conferida em dois planos/g) ?? []).length),
+);
+
 console.log(`\n${pass} passaram, ${fail} falharam\n`);
 if (fail > 0) process.exit(1);

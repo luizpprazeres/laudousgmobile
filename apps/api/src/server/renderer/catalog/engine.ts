@@ -85,6 +85,14 @@ export type BuildArgs<F> = {
   /** Slots cujo texto veio de personalização (para marcar origin). */
   customSlots?: Set<string>;
   /** Itens extras de conclusão (personalização / camada flexível). */
+  /**
+   * Texto livre que entra no FIM DO CORPO — as observações livres do médico
+   * (camada flexível). Simétrico de `extraConclusao`. Sem isto, o catálogo
+   * simplesmente PERDIA o que o médico ditou fora dos slots, enquanto o
+   * renderer o preservava (categories/OBSTETRICA.ts:738). Achado da revisão
+   * do Codex no port de 11/08.
+   */
+  extraCorpo?: string[];
   extraConclusao?: string[];
 };
 
@@ -160,6 +168,22 @@ export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
     segments.push(...corpo, ...concl);
   }
 
+  // No fim do corpo, antes da conclusão — a mesma posição do renderer.
+  for (const extra of args.extraCorpo ?? []) {
+    // `findLastIndex` exigiria lib es2023; o alvo do projeto é menor.
+    let i = -1;
+    for (let k = segments.length - 1; k >= 0; k--) {
+      if (segments[k]!.kind === "corpo") { i = k; break; }
+    }
+    segments.splice(i + 1, 0, {
+      slotId: "corpo_extra",
+      variantId: "custom",
+      kind: "corpo",
+      text: extra,
+      origin: "custom",
+    });
+  }
+
   for (const extra of args.extraConclusao ?? []) {
     segments.push({
       slotId: "conclusao_extra",
@@ -217,6 +241,16 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
   for (const o of ops) {
     if (o.op === "append_conclusion_item") {
       textoLivre("item de conclusão", o.value);
+      // Frase ACRESCENTADA é texto fixo: entra no documento sem passar pela
+      // interpolação (é empilhada como segmento pronto). Aceitar {placeholder}
+      // aqui faria o laudo sair com a chave crua — "controle com {bcf}." Para
+      // usar um dado do exame, o caminho é reescrever um slot que já o tem.
+      if (placeholdersOf(o.value).length > 0) {
+        erros.push(
+          "um item acrescentado à conclusão não pode conter dados entre chaves; " +
+            "para usar um dado do exame, reescreva a frase que já o contém",
+        );
+      }
       continue;
     }
 
@@ -225,6 +259,9 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
         erros.push(`a frase seria inserida depois de "${o.anchor}", que não existe no modelo-base v${catalog.versao}`);
         continue;
       }
+      // Aqui os dados do exame VALEM: a frase vira um slot `custom:n` e passa
+      // pela mesma interpolação dos demais. Diferente do item de conclusão,
+      // que é empilhado como texto pronto.
       textoLivre("frase acrescentada", o.value);
       continue;
     }
@@ -340,11 +377,25 @@ export function applyCustomization<F>(
       // acompanha o contexto em vez de aparecer fora de lugar.
       const out: OrderItem[] = [];
       for (const item of base) {
-        out.push(item);
-        const ancora = typeof item === "string" ? item : item.repetirPorFeto.at(-1);
-        for (const [i, ins] of inseridas.entries()) {
-          if (ins.anchor === ancora) out.push(`custom:${i + 1}`);
+        if (typeof item === "string") {
+          out.push(item);
+          for (const [i, ins] of inseridas.entries()) {
+            if (ins.anchor === item) out.push(`custom:${i + 1}`);
+          }
+          continue;
         }
+        // Bloco repetido por feto: a frase nova entra DENTRO do grupo, logo
+        // após a sua âncora — e portanto se repete por feto, como o slot que
+        // ela acompanha. Ancorar só no último slot do grupo (era o caso)
+        // fazia a frase sumir no gemelar sempre que a âncora fosse outra.
+        const expandido: string[] = [];
+        for (const id of item.repetirPorFeto) {
+          expandido.push(id);
+          for (const [i, ins] of inseridas.entries()) {
+            if (ins.anchor === id) expandido.push(`custom:${i + 1}`);
+          }
+        }
+        out.push({ repetirPorFeto: expandido });
       }
       return out;
     },

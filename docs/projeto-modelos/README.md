@@ -114,6 +114,30 @@ silêncio seria pior que não ter catálogo nenhum.
 > Antes de ampliar o catálogo, é preciso ensiná-lo esses três recursos e
 > refazer a equivalência com eles ligados.
 
+## Bugs que a revisão do port encontrou — 11/08
+
+Quatro defeitos reais, achados pelo Codex depois de o port já estar "pronto".
+Registrados porque cada um ensina algo sobre onde os testes eram cegos.
+
+| # | Defeito | Por que passou despercebido |
+|---|---|---|
+| 1 | O catálogo **perdia as observações livres do corpo**. O renderer as preserva (`categories/OBSTETRICA.ts:738`); o catálogo só tratava as da conclusão. Com `FLEXIBLE_CONCLUSION` ligada — e ela está —, tudo que o médico ditasse fora dos slots sumiria | O teste inicializava `observacoes_corpo_livres: []` em todos os cenários. **Eu mesmo criei a cegueira** ao acrescentar o campo vazio para satisfazer o compilador |
+| 2 | `append_conclusion_item` aceitava `{placeholder}` na validação, mas o item entra no documento como texto pronto — o laudo sairia com `{bcf}` literal | O teste verificava a *validação*, não o *resultado no laudo* |
+| 3 | `insert_phrase_after` ancorado num slot repetido por feto só funcionava se a âncora fosse o ÚLTIMO do grupo. "Depois do DBP" era aceito, salvo, publicado — e sumia no gemelar | Nenhum teste combinava inserção com gemelar |
+| 4 | A tela dizia **"Em uso nos seus laudos"** para uma personalização que o gerador ignora, porque quem decide são as flags do servidor | A tela só olhava se existia linha publicada |
+
+O 1 foi corrigido com `extraCorpo` no motor, simétrico ao `extraConclusao`, e o
+teste ganhou a dimensão `livres` — 3840 combinações viraram **4320**. Verifiquei
+que ele *pega* o defeito: desligando a correção, o teste acusa a frase perdida.
+
+O 2 virou recusa explícita na validação, com mensagem que ensina o caminho
+("reescreva a frase que já contém o dado"). Ao corrigi-lo eu proibi demais e
+quebrei dois testes verdes — o `insert_phrase_after` **interpola** corretamente,
+porque vira um slot. Revertido.
+
+O 4 acrescentou `personalizacao_ativa` à resposta: a tela passa a distinguir
+"publicada" de "valendo".
+
 ## Comandos de validação
 
 ```bash

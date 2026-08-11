@@ -100,6 +100,21 @@ const D_EXTRAS: Dim[] = [
   { nome: "peso-extras", aplicar: (f) => ({ ...f, fetos: f.fetos.map((x) => ({ ...x, peso_variacao_g: x.peso_g === null ? null : 350, percentil: 42 })) }) },
   { nome: "apres+dorso", aplicar: (f) => ({ ...f, fetos: f.fetos.map((x) => ({ ...x, apresentacao: "pélvico", dorso: "à esquerda", polo_cefalico: "à direita" })) }) },
   { nome: "achados", aplicar: (f) => ({ ...f, achados_adicionais: "Cisto de plexo coroide à esquerda, medindo 4 mm." }) },
+  // CAMADA FLEXÍVEL — o que o médico ditou fora dos slots, nos DOIS lados.
+  // Esta dimensão faltava, e a ausência dela escondia um bug real: o catálogo
+  // renderizava os itens livres da conclusão mas PERDIA as observações livres
+  // do corpo, que o renderer preserva. Achado da revisão do Codex, 11/08.
+  {
+    nome: "livres",
+    aplicar: (f) => ({
+      ...f,
+      observacoes_corpo_livres: [
+        "Adrenais fetais de dimensões aumentadas bilateralmente.",
+        "Cordão umbilical com três vasos.",
+      ],
+      itens_conclusao_livres: ["Adrenais fetais aumentadas, a esclarecer."],
+    }),
+  },
   // Referência precoce (épico IG determinística) — só tem efeito com igCorrection.
   {
     nome: "ref-1aUS",

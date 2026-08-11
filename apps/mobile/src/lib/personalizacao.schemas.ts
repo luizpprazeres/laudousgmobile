@@ -105,6 +105,9 @@ export const EstadoSchema = z.object({
   base_catalog_id: z.string(),
   base_versao: z.number(),
   catalogo: CatalogoSchema,
+  /** A publicada está mesmo valendo? Depende das flags do servidor, não de
+   *  ter publicado. Default true tolera backend anterior a este campo. */
+  personalizacao_ativa: z.boolean().default(true),
   rascunho: VersaoSchema.nullable(),
   publicado: VersaoSchema.nullable(),
   historico: z.array(VersaoSchema),

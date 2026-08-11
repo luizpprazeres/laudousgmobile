@@ -3,6 +3,8 @@ export { OPTIONS } from "@/server/cors";
 import { applyCustomization, diffDocs } from "@/server/renderer/catalog/engine";
 import { describeCatalog } from "@/server/renderer/catalog/describe";
 import { flagsDeProducao, type EntradaCatalogo } from "@/server/renderer/catalog/registry";
+import { catalogEnabledFor } from "@/server/renderer/catalog/engine";
+import { env } from "@/server/env";
 import { lerJson, resolverContexto, respostaDeErro } from "@/server/customization/http";
 import { NoteSchema, OperationsSchema } from "@/server/customization/schemas";
 import { descartarRascunho, lerEstado, salvarRascunho } from "@/server/customization/store";
@@ -139,6 +141,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
           ctx: { findings: r.entrada.samples[0]!.findings, fetoIndex: 0, gemelar: false, flags },
         },
       ]),
+      /**
+       * A personalização publicada está REALMENTE valendo nos laudos?
+       *
+       * Publicar grava a intenção; quem decide se ela se aplica são as duas
+       * flags de ambiente. Sem este campo a tela dizia "Em uso nos seus
+       * laudos" para uma personalização que o gerador ignora — mentira
+       * confortável, e a pior espécie num produto clínico.
+       */
+      personalizacao_ativa:
+        catalogEnabledFor(env().MODEL_CATALOG_CATEGORIES, category) &&
+        catalogEnabledFor(env().MODEL_CUSTOMIZATION_CATEGORIES, category),
       rascunho: estado.rascunho,
       publicado: estado.publicado,
       historico: estado.historico,

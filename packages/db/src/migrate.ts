@@ -34,6 +34,13 @@ async function main() {
     "0015_doppler_obstetrico_objetivo.sql",
     "0016_msk_reforco_cobertura.sql",
     "0017_quality_bulletins.sql",
+    // 0018–0021 já estão no banco atual, mas nunca entraram nesta lista.
+    // Não as acrescento aqui porque não verifiquei se são idempotentes — e
+    // este script roda contra um banco de verdade. Fica registrado: um
+    // ambiente novo preparado só por `db:migrate` NÃO fica completo.
+    // As duas abaixo são minhas e usam `if not exists` em todo objeto.
+    "0022_model_customizations.sql",
+    "0023_audit_model_version.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

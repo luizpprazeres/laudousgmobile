@@ -224,18 +224,26 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
         {publicado ? (
           <View
             style={{
-              backgroundColor: t.brandLight,
+              backgroundColor: estado.personalizacao_ativa ? t.brandLight : t.fill2,
               borderRadius: 12,
               padding: 12,
               marginBottom: 14,
             }}
           >
             <Text style={{ color: t.brand, fontWeight: "700", fontSize: 13 }}>
-              Em uso nos seus laudos
+              {estado.personalizacao_ativa
+                ? "Em uso nos seus laudos"
+                : "Publicada, mas ainda não valendo"}
             </Text>
             <Text style={{ color: t.textSec, fontSize: 13, marginTop: 2 }}>
               Versão {publicado.versao} · {publicado.operations.length} alteração(ões)
             </Text>
+            {!estado.personalizacao_ativa && (
+              <Text style={{ color: t.textSec, fontSize: 12, marginTop: 4, lineHeight: 17 }}>
+                O servidor ainda não está aplicando personalizações nesta categoria.
+                Ela passa a valer sem você precisar publicar de novo.
+              </Text>
+            )}
           </View>
         ) : (
           <Text style={{ color: t.textSec, fontSize: 13, marginBottom: 14, lineHeight: 19 }}>
