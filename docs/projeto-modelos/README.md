@@ -50,7 +50,7 @@ O projeto tem **duas frentes**, que se separaram durante o trabalho:
   pela validação de viabilidade (`01 §2.1` — o renderer é *motor*, só o *conteúdo*
   vira dado) e pela revisão adversarial do Codex (`04-revisao-codex.md` — a unidade
   interna passou a ser um **documento estruturado**, com a string como último passo).
-- **Fase 3 (Implementação): 6 de 10 itens**
+- **Fase 3 (Implementação): 7 de 11 itens**
 
 | # | Item | Estado |
 |---|---|---|
@@ -64,6 +64,7 @@ O projeto tem **duas frentes**, que se separaram durante o trabalho:
 | 7 | Geração aplicando a customização publicada | ✅ atrás de **2 flags**; 25/25 ligada, 6/6 desligada |
 | 8 | Auditoria com `catalog_id` + versões | ⏳ |
 | 9 | Visualização no Lab | ✅ bancada `/modelos` |
+| 9b | **Biblioteca no app** — personalizar + ver o efeito de cada achado | ✅ Android; iOS ⏳ |
 | 10 | Golden tests contra a API real | ⏳ |
 
 ### Frente B — cockpit do Lab
@@ -87,6 +88,7 @@ Até 09/08 nada havia sido tocado. Depois disso, com autorização explícita:
 | 10/08 | 5 rotas novas em `/api/me/report-customizations/…` | nada as chama ainda; a geração só passa a usá-las no item 7 |
 | 10/08 | Registro de catálogos extraído da rota admin para `catalog/registry.ts` | refatoração pura; a rota admin passou a usá-lo |
 | 10/08 | Flag `MODEL_CUSTOMIZATION_CATEGORIES` + `resolve.ts` + gancho no renderer/route | **default vazia**; provado que com as flags OFF o laudo sai byte-idêntico mesmo havendo personalização publicada |
+| 11/08 | Biblioteca do app (era "em breve") + campo `variacoes` no GET | tela nova; o campo é aditivo e o schema do app tolera backend antigo |
 
 ## Comandos de validação
 
@@ -147,17 +149,22 @@ pnpm --filter @laudousg/api typecheck && pnpm --filter @laudousg/lab typecheck
 
 ### Próximos passos, em ordem
 
-1. **Auditoria com `catalog_id` + versões** (item 8) — hoje a personalização
+1. **Ver a Biblioteca rodando** — está provada por contrato e compila, mas
+   ainda não foi aberta num aparelho. É a próxima verificação, não uma tarefa.
+2. **A Biblioteca no iOS** — mesma tela em SwiftUI, sobre os mesmos endpoints.
+3. **Auditoria com `catalog_id` + versões** (item 8) — hoje a personalização
    aplicada aparece só na `systemMessage`; falta coluna própria para filtrar.
-2. **Frente C, passo 1** (`08 §3`): backend emite `pendencias[]` sem ninguém
-   consumir, para provar equivalência antes de trocar qualquer cliente.
-3. **Frente C, passo 2**: matar a divergência iOS × Android — hoje os dois
-   mostram conjuntos diferentes de pendências para o mesmo laudo.
-4. **Catálogo do estilo OBJETIVO** (item 2b) — destrava a personalização do
+4. **Frente C, passo 1** (`08 §3`): backend emite `pendencias[]` sem ninguém
+   consumir, para a prova diferencial antes de trocar qualquer cliente.
+5. **Catálogo do estilo OBJETIVO** (item 2b) — destrava a personalização do
    segundo estilo, que hoje responde 404 por não ter catálogo.
-5. **Biblioteca no produto** — mover `/modelos` do Lab para o `apps/web`. É o
-   que falta para o médico conseguir personalizar sem passar por uma chamada
-   HTTP: o backend está pronto, a interface não.
+
+**A Biblioteca na web é outra frente, maior do que parecia.** O `apps/web`
+**não fala com o `apps/api`** — só tem rotas de checkout e webhook, gera laudo
+localmente por `lib/deterministic/` e vai direto ao Supabase. Então a tela lá
+não alcançaria os endpoints, e mesmo alcançando, **o motor de geração da web é
+outro** e não aplicaria a personalização. É integração, não interface. O item
+5 do plano antigo ("mover `/modelos` para o `apps/web`") estava errado.
 
 ### Frentes que apareceram no caminho e não são deste projeto
 
