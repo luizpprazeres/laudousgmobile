@@ -1,13 +1,15 @@
 import { forbidden, unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 export { OPTIONS } from "@/server/cors";
 import { z } from "zod";
-import { env } from "@/server/env";
 import { applyCustomization, diffDocs, validateOperations } from "@/server/renderer/catalog/engine";
 import { describeCatalog } from "@/server/renderer/catalog/describe";
-import { OBSTETRICA_CLASSICO } from "@/server/renderer/catalog/OBSTETRICA.classico";
-import { OBSTETRICA_SAMPLES } from "@/server/renderer/catalog/OBSTETRICA.samples";
-import { buildObstetricaDoc, renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.render";
-import type { Customization, Operation } from "@/server/renderer/catalog/types";
+import {
+  flagsDeProducao,
+  paresComCatalogo,
+  resolveCatalogo,
+} from "@/server/renderer/catalog/registry";
+import { OperationSchema } from "@/server/customization/schemas";
+import type { Customization } from "@/server/renderer/catalog/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,45 +27,17 @@ export const dynamic = "force-dynamic";
  *          com o laudo-base e o personalizado lado a lado
  */
 
-const CATALOGOS = {
-  OBSTETRICA: {
-    catalog: OBSTETRICA_CLASSICO,
-    samples: OBSTETRICA_SAMPLES,
-    render: (args: Parameters<typeof renderObstetricaCatalogo>[0]) => renderObstetricaCatalogo(args),
-    buildDoc: (args: Parameters<typeof buildObstetricaDoc>[0]) => buildObstetricaDoc(args).doc,
-  },
-} as const;
-
-type CategoriaSuportada = keyof typeof CATALOGOS;
-
-function resolve(category: string) {
-  return (CATALOGOS as Record<string, (typeof CATALOGOS)[CategoriaSuportada] | undefined>)[category];
-}
-
-/**
- * As flags de renderer que valem hoje em produção afetam o texto. A prévia usa
- * as mesmas, senão o médico veria um laudo diferente do que o sistema gera.
- */
-function flagsDeProducao() {
-  const e = env();
-  return {
-    igCorrection: e.IG_REFERENCE_CORRECTION === "true",
-    flexivel: e.FLEXIBLE_CONCLUSION === "true",
-    grannum: e.GRANNUM_PLACENTA === "true",
-    objetivo: false,
-  };
-}
-
 export async function GET(req: Request, ctx: { params: Promise<{ category: string }> }) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
   if (user.role !== "admin") return forbidden();
 
   const { category } = await ctx.params;
-  const entry = resolve(category);
+  const estilo = new URL(req.url).searchParams.get("estilo") ?? "CLASSICO_COMPLETO";
+  const entry = resolveCatalogo(category, estilo);
   if (!entry) {
     return Response.json(
-      { error: "categoria sem catálogo", suportadas: Object.keys(CATALOGOS) },
+      { error: "categoria sem catálogo neste estilo", suportados: paresComCatalogo() },
       { status: 404 },
     );
   }
@@ -103,22 +77,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
   });
 }
 
-const OperationSchema: z.ZodType<Operation> = z.union([
-  z.object({ op: z.literal("remove_slot"), slot: z.string().min(1) }),
-  z.object({
-    op: z.literal("replace_phrase"),
-    slot: z.string().min(1),
-    variant: z.string().min(1).optional(),
-    value: z.string().max(2000),
-  }),
-  z.object({ op: z.literal("append_conclusion_item"), value: z.string().min(1).max(1000) }),
-  z.object({
-    op: z.literal("insert_phrase_after"),
-    anchor: z.string().min(1),
-    value: z.string().min(1).max(2000),
-  }),
-]);
-
 const PreviewBodySchema = z.object({
   operations: z.array(OperationSchema).max(100),
   /** Limita a prévia a cenários específicos; vazio = todos. */
@@ -131,7 +89,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
   if (user.role !== "admin") return forbidden();
 
   const { category } = await ctx.params;
-  const entry = resolve(category);
+  const estilo = new URL(req.url).searchParams.get("estilo") ?? "CLASSICO_COMPLETO";
+  const entry = resolveCatalogo(category, estilo);
   if (!entry) return Response.json({ error: "categoria sem catálogo" }, { status: 404 });
 
   let raw: unknown;

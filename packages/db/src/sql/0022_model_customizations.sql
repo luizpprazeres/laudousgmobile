@@ -1,8 +1,9 @@
 -- 0022 — Personalização de modelos de laudo (projeto docs/projeto-modelos/)
 --
--- NÃO APLICADA. Requer autorização explícita: o projeto Supabase
--- `laudousgmobile` (yldtkqrsbgcnwlydrrot) é o ÚNICO da organização — não há
--- staging, dev e prod são o mesmo banco.
+-- APLICADA em 2026-08-10 pelo Luiz, no projeto Supabase `laudousgmobile`
+-- (yldtkqrsbgcnwlydrrot) — que é o ÚNICO da organização: não há staging, dev e
+-- prod são o mesmo banco. Verificada depois de aplicada: as duas tabelas
+-- existem, os 5 índices e as 6 policies estão no lugar, 0 linhas.
 --
 -- Cria DUAS tabelas novas. Não altera nenhuma tabela existente, não move dado
 -- e nada no sistema lê estas tabelas ainda. Impacto em dados: ZERO.
