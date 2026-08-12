@@ -66,6 +66,11 @@ const ServerEnvSchema = z.object({
   // renderer/__tests__/catalog-equivalence.manual.ts (3840 combinações).
   // Só o estilo CLÁSSICO tem catálogo hoje; o objetivo cai no caminho antigo.
   // Rollback trivial: tirar a categoria da lista.
+  // Reforço de intenção e completude no prompt do writer (bloco ADICIONAL no
+  // fim do system message). Endereça a família de defeitos do boletim de 100
+  // laudos: átomo do ditado que some, negação virando frase normal, comando
+  // executado como texto. Default OFF — entra inerte.
+  WRITER_HARDENING: z.string().default("false"),
   MODEL_CATALOG_CATEGORIES: z.string().default(""),
   // Projeto modelos item 7: categorias em que a personalização PUBLICADA do
   // médico é aplicada na geração. Trava separada de MODEL_CATALOG_CATEGORIES

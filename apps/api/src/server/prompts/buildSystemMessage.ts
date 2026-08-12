@@ -4,6 +4,7 @@ import type {
 } from "@laudousg/shared";
 import {
   GLOBAL_PROHIBITIONS,
+  WRITER_HARDENING_BLOCK,
   GLOBAL_RULES_BLOCK,
   buildCoTInstruction,
   DEFAULT_SYSTEM_MESSAGE,
@@ -46,13 +47,20 @@ export function buildSystemMessage(args: {
   categoryLabel: string;
   writingStyleCode: WritingStyleCode;
   ragBlocks: RagBlockForPrompt[];
+  /**
+   * Reforço de intenção e completude (flag WRITER_HARDENING, default OFF).
+   * Acrescenta um bloco ao fim do prompt; não substitui nem desliga nada.
+   */
+  hardening?: boolean;
   hasAnexial?: boolean;
   hasPlacenta?: boolean;
   hasHashimoto?: boolean;
   hasPolipo?: boolean;
 }): string {
   if (args.categoryCode === "LIVRE" || args.categoryCode === "TESTE") {
-    return LIVRE_SYSTEM_PROMPT;
+    return args.hardening
+      ? `${LIVRE_SYSTEM_PROMPT}\n\n${WRITER_HARDENING_BLOCK}`
+      : LIVRE_SYSTEM_PROMPT;
   }
 
   const contract = getCategoryContract(
@@ -137,6 +145,7 @@ export function buildSystemMessage(args: {
     );
   }
 
+  if (args.hardening) sections.push(formatSection(WRITER_HARDENING_BLOCK));
   sections.push(formatSection(GLOBAL_PROHIBITIONS));
   sections.push(formatSection(buildCoTInstruction(args.categoryLabel)));
 

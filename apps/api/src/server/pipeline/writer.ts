@@ -91,6 +91,9 @@ export async function* runWriterStream(args: {
   const sourceTranscript = args.sourceTranscript ?? args.rawUserMessage ?? "";
 
   const systemMessage = buildSystemMessage({
+    // Reforço de intenção e completude — flag WRITER_HARDENING, default OFF.
+    // Bloco adicional; não altera nem desliga os condicionais existentes.
+    hardening: env().WRITER_HARDENING === "true",
     categoryCode: effectiveCategoryCode,
     categoryLabel: args.categoryLabel,
     writingStyleCode: args.writingStyleCode,
