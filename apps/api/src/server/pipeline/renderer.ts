@@ -525,14 +525,21 @@ export async function* runRendererStream(args: {
         const igSanity = env().OBST_IG_SANITY === "true";
 
         // O catálogo (projeto modelos) foi validado byte-a-byte contra o
-        // renderer de 09/08 — 3840/3840. Desde então a main ganhou golf ball,
-        // sanity de IG e biometria determinística, que o catálogo AINDA NÃO
-        // conhece. Enquanto a equivalência não for refeita contra este
-        // renderer, ele não assume nos casos que não sabe reproduzir: senão o
-        // laudo perderia um recurso em silêncio, que é pior que não ter o
-        // catálogo. Ver docs/projeto-modelos/README.md.
-        const catalogoCobreEsteCaso =
-          !objetivo && golfBallObst === null && !igSanity && env().OBST_BIOMETRIA_DET !== "true";
+        // renderer — 4320/4320 sintéticas e, com dado real de produção, 9/9.
+        // Ele não assume nos casos que não sabe reproduzir.
+        //
+        // O que ele NÃO conhece são os dois PARÂMETROS que o renderer recebe e
+        // ele não: golf ball e sanity de IG. Com qualquer um ativo, o laudo
+        // perderia um recurso em silêncio — pior que não ter catálogo.
+        //
+        // A BIOMETRIA DETERMINÍSTICA saiu desta lista, e o motivo importa: ela
+        // não é um recurso do renderer, é um PRÉ-PROCESSAMENTO dos achados
+        // (`ofnd` acima). O catálogo recebe o mesmo `ofnd` já reconciliado, e
+        // portanto produz o mesmo texto. Mantê-la aqui bloqueava o catálogo em
+        // 100% dos laudos — a flag está ligada em produção —, o que tornava
+        // MODEL_CATALOG_CATEGORIES inócua sem que nada indicasse isso.
+        // Descoberto pelo harness contra laudos reais, 12/08.
+        const catalogoCobreEsteCaso = !objetivo && golfBallObst === null && !igSanity;
 
         if (usaCatalogo("OBSTETRICA") && catalogoCobreEsteCaso) {
           // Item 7: o overlay do médico entra aqui, e só aqui. Sem

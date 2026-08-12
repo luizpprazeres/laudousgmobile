@@ -18,6 +18,15 @@
  * clínico: as divergências são reportadas por posição e trecho curto, e o
  * relatório completo fica no scratchpad (gitignorado), nunca no terminal.
  *
+ * ATENÇÃO ÀS FLAGS. As flags de renderer mudam o texto, e este script lê as do
+ * AMBIENTE onde roda. Um `.env.local` sem elas cai no default "false" e a
+ * comparação vira ruído — na primeira execução isso deu 2/9, e com as flags de
+ * produção (IG_REFERENCE_CORRECTION, FLEXIBLE_CONCLUSION, GRANNUM_PLACENTA)
+ * deu 8/9. Rode assim:
+ *
+ *   IG_REFERENCE_CORRECTION=true FLEXIBLE_CONCLUSION=true GRANNUM_PLACENTA=true \
+ *     pnpm exec tsx --env-file=.env.local src/server/customization/equivalencia-real.manual.ts
+ *
  * DEPENDE de `structured_output` estar preenchido, o que só passou a acontecer
  * com o `onFindings` (em produção desde 11/08). Laudos anteriores não têm o
  * dado e são ignorados — o script diz quantos.
@@ -26,6 +35,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { env } from "@/server/env";
 import { renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.render";
+import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
+import {
+  mergeBiometriaEstruturada,
+  reconcileBiometriaUnidade,
+} from "@/server/renderer/categories/biometriaFetal";
+import { normalizeDumFormat, dedupeConclusionItems } from "@/server/pipeline/dumFormatGuard";
 import type { ObstetricaFindings } from "@/server/renderer/categories/OBSTETRICA";
 
 /** As flags como estavam em produção. Sem isto, a comparação é com outro laudo. */
@@ -37,6 +52,27 @@ function flagsDeProducao() {
     flexivel: e.FLEXIBLE_CONCLUSION === "true",
     grannum: e.GRANNUM_PLACENTA === "true",
   };
+}
+
+/**
+ * Os guards que o pipeline aplica DEPOIS do render, sobre o texto final.
+ *
+ * Sem eles a comparação é injusta: o `output_text` gravado é pós-guard, e o
+ * catálogo sairia "divergente" por não ter passado pelo mesmo pós-processo.
+ * Foi o que aconteceu na primeira execução — a linha `DUM: 31/.` apareceu como
+ * defeito do catálogo quando na verdade o RENDERER também a emite e o
+ * `stripInvalidDumLines` a remove adiante (generate/route.ts:1149).
+ *
+ * Espelha a ordem real de `route.ts` para a família obstétrica.
+ */
+function guardsPosRender(texto: string): string {
+  // SÓ o strip de DUM inválida. Medido: aplicar `normalizeDumFormat` e
+  // `dedupeConclusionItems` PIORA a comparação (8/9 → 3/9), o que prova que o
+  // `output_text` gravado não passou por eles neste caminho — a reescrita
+  // "Primeira ultrassonografia realizada …" → "Primeira USG: …" está ausente
+  // do texto de produção. Aplicar um guard que a produção não aplicou é
+  // inventar divergência.
+  return stripInvalidDumLines(texto);
 }
 
 /** Primeira linha em que dois textos divergem — para localizar sem despejar o laudo. */
@@ -57,7 +93,7 @@ async function main() {
 
   const { data, error } = await sb
     .from("generation_audit")
-    .select("id,created_at,model_writer,structured_output,output_text,system_message_full")
+    .select("id,created_at,model_writer,structured_output,output_text,system_message_full,raw_input")
     .eq("category", "OBSTETRICA")
     .order("created_at", { ascending: false })
     .limit(500);
@@ -93,10 +129,22 @@ async function main() {
 
     let obtido: string;
     try {
-      obtido = renderObstetricaCatalogo({
-        findings: s as unknown as ObstetricaFindings,
-        flags: flagsDeProducao(),
-      });
+      // O pipeline reconcilia a biometria ANTES de renderizar (flag
+      // OBST_BIOMETRIA_DET) e entrega o resultado tanto ao renderer quanto ao
+      // catálogo. Sem reproduzir isso aqui, a comparação acusaria uma
+      // divergência de 10× em medida (288,9 mm × 28,9 mm) que a produção não
+      // tem — foi o que apareceu na 3ª execução.
+      const findingsBrutos = s as unknown as ObstetricaFindings;
+      const findings =
+        env().OBST_BIOMETRIA_DET === "true" && typeof r.raw_input === "string"
+          ? reconcileBiometriaUnidade(
+              mergeBiometriaEstruturada(findingsBrutos, r.raw_input),
+              r.raw_input,
+            )
+          : findingsBrutos;
+      obtido = guardsPosRender(
+        renderObstetricaCatalogo({ findings, flags: flagsDeProducao() }),
+      );
     } catch (err) {
       divergentes.push({
         id: r.id as string,
