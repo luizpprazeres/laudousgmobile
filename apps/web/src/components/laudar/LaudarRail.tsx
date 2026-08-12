@@ -60,7 +60,7 @@ function Row({ icon: Icon, label, active, disabled, soon }: { icon: IconType; la
   )
 }
 
-export function LaudarRail() {
+export function LaudarRail({ workspaceV2 = false }: { workspaceV2?: boolean }) {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -84,7 +84,7 @@ export function LaudarRail() {
   }
 
   return (
-    <aside className="group absolute inset-y-0 left-0 z-30 flex w-16 flex-col overflow-hidden border-r border-gray-200 bg-gray-50 py-3 shadow-none transition-[width,box-shadow] duration-300 hover:w-[220px] hover:shadow-2xl dark:border-gray-800 dark:bg-gray-900">
+    <aside className={`group absolute inset-y-0 left-0 z-30 flex flex-col overflow-hidden py-3 shadow-none transition-[width,box-shadow] duration-300 hover:w-[220px] hover:shadow-2xl ${workspaceV2 ? 'w-14 rounded-2xl border border-transparent bg-transparent hover:border-gray-200 hover:bg-white dark:hover:border-gray-800 dark:hover:bg-[#1C1C1E]' : 'w-16 border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900'}`}>
       <div className="mb-2 flex h-12 w-16 items-center justify-center">
         <Sparkles className="h-5 w-5 text-emerald-600" />
       </div>

@@ -7,6 +7,7 @@ type Props = {
   schema: OrganSchema
   state: OrganState
   onChange: (next: OrganState) => void
+  compact?: boolean
 }
 
 function asArray(value: OrganState[string]) {
@@ -19,8 +20,12 @@ function isSelected(state: OrganState, field: Field, value: string) {
   return current === value
 }
 
-export function OrganFormPanel({ schema, state, onChange }: Props) {
+export function OrganFormPanel({ schema, state, onChange, compact = false }: Props) {
   const [rareOpen, setRareOpen] = useState(false)
+
+  const fieldCardClass = compact
+    ? 'rounded-lg border border-gray-100 bg-gray-50/65 px-2.5 py-2 dark:border-gray-800 dark:bg-gray-900/55'
+    : 'rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900'
 
   const setValue = (key: string, value: string | string[]) => onChange({ ...state, [key]: value })
 
@@ -95,7 +100,7 @@ export function OrganFormPanel({ schema, state, onChange }: Props) {
         />
       )
       return (
-        <section key={field.key} className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <section key={field.key} className={fieldCardClass}>
           <div className="mb-2 flex items-center justify-between gap-3">
             <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">{field.label}</h3>
             {field.hint ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
@@ -125,29 +130,31 @@ export function OrganFormPanel({ schema, state, onChange }: Props) {
     }
     if (field.kind === 'segmented') {
       return (
-        <section key={field.key} className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="mb-2.5 flex items-center justify-between gap-3">
-            <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">{field.label}</h3>
-            {field.hint ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
-          </div>
-          <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-4">
-            {(field.options ?? []).map((option) => {
-              const active = isSelected(state, field, option.value)
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setValue(field.key, option.value)}
-                  className={`rounded-lg border px-2.5 py-1.5 text-left text-[13px] transition ${
-                    active
-                      ? 'border-emerald-200 bg-white font-bold text-gray-900 shadow-sm ring-1 ring-emerald-100 dark:border-emerald-800 dark:bg-gray-900 dark:text-gray-100 dark:ring-emerald-900/50'
-                      : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-200 hover:bg-emerald-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-emerald-950/40'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              )
-            })}
+        <section key={field.key} className={fieldCardClass}>
+          <div className={compact ? 'grid grid-cols-[92px_minmax(0,1fr)] items-start gap-2' : undefined}>
+            <div className={`${compact ? 'pt-1' : 'mb-2.5'} flex items-start justify-between gap-2`}>
+              <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</h3>
+              {field.hint ? <span className={`${compact ? 'hidden' : ''} text-[11px] text-gray-500 dark:text-gray-400`}>{field.hint}</span> : null}
+            </div>
+            <div className={`grid grid-cols-2 gap-1 ${compact ? 'xl:grid-cols-3' : 'xl:grid-cols-4'}`}>
+              {(field.options ?? []).map((option) => {
+                const active = isSelected(state, field, option.value)
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setValue(field.key, option.value)}
+                    className={`rounded-md border px-2 py-1 text-left text-[12px] leading-tight transition ${
+                      active
+                        ? 'border-emerald-200 bg-white font-bold text-gray-900 shadow-sm ring-1 ring-emerald-100 dark:border-emerald-800 dark:bg-gray-900 dark:text-gray-100 dark:ring-emerald-900/50'
+                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-200 hover:bg-emerald-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-emerald-950/40'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
           {(field.options ?? []).map((option) =>
             isSelected(state, field, option.value) && option.subFields?.length ? (
@@ -168,27 +175,27 @@ export function OrganFormPanel({ schema, state, onChange }: Props) {
     if (field.kind === 'checklist') {
       const selected = asArray(state[field.key])
       return (
-        <section key={field.key} className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">{field.label}</h3>
+        <section key={field.key} className={fieldCardClass}>
+          <div className={`${compact ? 'mb-1.5' : 'mb-2'} flex items-center justify-between gap-3`}>
+            <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</h3>
             {field.hint ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
           </div>
-          <div className="space-y-1.5">
+          <div className={compact ? 'grid grid-cols-3 gap-1' : 'space-y-1.5'}>
             {(field.options ?? []).map((option) => {
               const active = selected.includes(option.value)
               return (
-                <div key={option.value} className="rounded-lg border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40">
+                <div key={option.value} className={`rounded-md border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40 ${compact && active && option.subFields?.length ? 'col-span-3' : ''}`}>
                   <button
                     type="button"
                     onClick={() => toggleChecklist(field, option.value)}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left"
+                    className={`flex w-full items-center text-left ${compact ? 'gap-1.5 px-2 py-1.5' : 'gap-2.5 px-3 py-2'}`}
                   >
                     <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border text-[10px] font-bold ${
                       active ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-gray-300 bg-white text-transparent dark:border-gray-600 dark:bg-gray-900'
                     }`}>
                       ✓
                     </span>
-                    <span className="flex-1 text-[13px] font-semibold text-gray-800 dark:text-gray-200">{option.label}</span>
+                    <span className={`${compact ? 'text-[11.5px] leading-tight' : 'text-[13px]'} flex-1 font-semibold text-gray-800 dark:text-gray-200`}>{option.label}</span>
                     {option.isDefault ? <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">default</span> : null}
                   </button>
                   {active && option.subFields?.length ? (
@@ -207,7 +214,7 @@ export function OrganFormPanel({ schema, state, onChange }: Props) {
     }
 
     return (
-      <section key={field.key} className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <section key={field.key} className={fieldCardClass}>
         {renderMiniField(field)}
       </section>
     )
@@ -217,10 +224,10 @@ export function OrganFormPanel({ schema, state, onChange }: Props) {
   const rareLabels = (schema.rareFindings ?? []).map((finding) => finding.label).join(', ')
 
   return (
-    <div className="space-y-2.5">
+    <div className={compact ? 'space-y-1.5' : 'space-y-2.5'}>
       {schema.fields.map(renderField)}
       {schema.rareFindings?.length ? (
-        <section className="rounded-xl border border-dashed border-gray-300 bg-white/70 px-3.5 py-2.5 dark:border-gray-700 dark:bg-gray-900/70">
+        <section className={`${compact ? 'rounded-lg px-2.5 py-2' : 'rounded-xl px-3.5 py-2.5'} border border-dashed border-gray-300 bg-white/70 dark:border-gray-700 dark:bg-gray-900/70`}>
           <button
             type="button"
             onClick={() => setRareOpen((value) => !value)}

@@ -15,6 +15,7 @@ type Props = {
   controls?: Field[]
   opts?: OrganState
   onOpts?: (key: string, value: string | string[]) => void
+  workspaceV2?: boolean
 }
 
 function ControlsBlock({ controls, opts, onOpts }: { controls: Field[]; opts: OrganState; onOpts: (k: string, v: string | string[]) => void }) {
@@ -77,24 +78,26 @@ function sectionDone(section: NavSection, examState?: ExamState, completedIds?: 
   return JSON.stringify(examState[section.id] ?? {}) !== JSON.stringify(section.module.initialState())
 }
 
-export function ExamSectionNav({ sections, activeId, onSelect, examState, completedIds, controls, opts, onOpts }: Props) {
+export function ExamSectionNav({ sections, activeId, onSelect, examState, completedIds, controls, opts, onOpts, workspaceV2 = false }: Props) {
   const groups: NavSection['group'][] = ['cabecalho', 'orgaos', 'conclusao', 'calculos']
   const organSections = sections.filter((section) => section.group === 'orgaos')
   const completed = organSections.filter((section) => sectionDone(section, examState, completedIds)).length
   const progress = organSections.length ? Math.round((completed / organSections.length) * 100) : 0
 
   return (
-    <aside className="flex h-full w-[196px] flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
+    <aside className={workspaceV2
+      ? 'flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]'
+      : 'flex h-full w-[196px] flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950'}>
       {controls && controls.length && opts && onOpts ? (
         <ControlsBlock controls={controls} opts={opts} onOpts={onOpts} />
       ) : null}
-      <nav className="min-h-0 flex-1 overflow-y-auto py-4">
+      <nav className={`min-h-0 flex-1 overflow-y-auto ${workspaceV2 ? 'px-2 py-3' : 'py-4'}`}>
         {groups.map((group) => {
           const groupSections = sections.filter((section) => section.group === group)
           if (!groupSections.length) return null
           return (
-            <div key={group} className="mb-5">
-              <div className="px-5 pb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+            <div key={group} className={workspaceV2 ? 'mb-3' : 'mb-5'}>
+              <div className={`${workspaceV2 ? 'px-2' : 'px-5'} pb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400`}>
                 {GROUP_LABELS[group]}
               </div>
               <div className="space-y-1">
@@ -106,13 +109,17 @@ export function ExamSectionNav({ sections, activeId, onSelect, examState, comple
                       key={section.id}
                       type="button"
                       onClick={() => onSelect(section.id)}
-                      className={`flex w-full items-center gap-3 border-l-4 px-4 py-2.5 text-left text-sm transition ${
+                      className={`flex w-full items-center gap-2 text-left text-sm transition ${workspaceV2 ? 'rounded-xl border px-2.5 py-2' : 'border-l-4 px-4 py-2.5'} ${
                         active
-                          ? 'border-emerald-600 bg-emerald-50 font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                          : 'border-transparent text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
+                          ? workspaceV2
+                            ? 'border-emerald-200 bg-emerald-50 font-bold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-300'
+                            : 'border-emerald-600 bg-emerald-50 font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                          : workspaceV2
+                            ? 'border-transparent text-gray-600 hover:border-gray-200 hover:bg-gray-50 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:bg-gray-800'
+                            : 'border-transparent text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
                       }`}
                     >
-                      <span className="flex-1 truncate">{section.label}</span>
+                      <span className={workspaceV2 ? 'min-w-0 flex-1 leading-tight' : 'flex-1 truncate'}>{section.label}</span>
                       {done ? <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">✓</span> : null}
                     </button>
                   )
@@ -123,13 +130,15 @@ export function ExamSectionNav({ sections, activeId, onSelect, examState, comple
         })}
       </nav>
 
-      <div className="m-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
-        <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{completed} de {organSections.length} seções</div>
-        <div className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">Defaults cobrem o resto.</div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white dark:bg-gray-800">
+      <div className={workspaceV2
+        ? 'm-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/25'
+        : 'm-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30'}>
+        <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{completed} de {organSections.length}</div>
+        {!workspaceV2 ? <div className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">Defaults cobrem o resto.</div> : null}
+        <div className={`${workspaceV2 ? 'mt-2 h-1' : 'mt-3 h-2'} overflow-hidden rounded-full bg-white dark:bg-gray-800`}>
           <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${progress}%` }} />
         </div>
-        <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">salvo há 2s</div>
+        {!workspaceV2 ? <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">salvo há 2s</div> : null}
       </div>
     </aside>
   )
