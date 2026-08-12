@@ -93,6 +93,47 @@ As frentes **1, 2, 6, 7 e 10 são independentes** entre si.
 
 ---
 
+## 3.1 Estado em 12/08/2026 — 8 dos 10 blocos na main
+
+| # | Frente | Estado |
+|---|---|---|
+| 13 | docs/chore | ✅ 56 documentos |
+| 1 | web workspace | ✅ 8 arquivos |
+| 7 | ASR | ✅ **muda transcrição** (77 % → 94 %) |
+| 6 | packages/schemes | ✅ inerte |
+| 2 | Android | ✅ 87 arquivos, 9 deps novas |
+| 9a | `WRITER_HARDENING` | ✅ inerte (flag OFF) |
+| 5 | Lab | ✅ + correção do `modoDe()` |
+| 8 | guards — *parte* | ✅ só o `discarded`, com duas correções |
+| 10 | snippets | ⏳ precisa de janela |
+| 9b | `conditionalBlocks` | ⏳ risco desproporcional |
+
+`origin/main` = `98b70a8`. Blocos 3, 11 e 12 saíram da fila: já estavam na main.
+
+### O que o bloco 8 ensinou
+
+Portei o `discarded` (laudo que falha deixa de virar rascunho eterno) e
+deployei. A revisão adversarial encontrou **depois** dois defeitos, ambos
+piores que o problema resolvido:
+
+1. **cancelar virava descartar** — a classificação era pelo NOME do erro, e o
+   abort real às vezes sobe como `DOMException` ou `TypeError: terminated`.
+   Isso matava a retomada do laudo. Corrigido: decide pelo `signal.aborted`;
+2. **laudo já entregue podia ser rebaixado** — o esquema venoso roda depois do
+   `done` sem try/catch próprio, então uma falha dele alcançava o catch e
+   descartava um texto que o médico já tinha na tela. Corrigido com a trava
+   `laudoEntregue`.
+
+Nenhum dos dois foi pego por typecheck, build, quatro suítes de teste ou pela
+inspeção dirigida — todos verificavam o que eu havia pensado.
+
+**Regra que sai daqui: nada que toque `generate/route.ts` vai para a main sem
+leitura adversarial ANTES do deploy.**
+
+Os outros dois commits do bloco 8 (orçamento de tokens, `finish_reason`) **não
+devem ser portados como estão** — o Codex analisou e cada um carrega dependência
+ou falha própria. Ver §4.1.
+
 ## 4. Ordem recomendada
 
 | Ordem | Frente | Por quê aqui |
@@ -159,6 +200,16 @@ de feature — foi exatamente o que aconteceu no port da personalização, onde 
 determinística que a branch não conhecia.
 
 ---
+
+## 5.1 Dívidas descobertas no caminho (nenhuma urgente)
+
+| # | Dívida | Onde |
+|---|---|---|
+| D1 | O **structurer** roda 100 % em `gpt-4.1-mini` — o writer migrou para `gpt-5.4-mini` em 22/07, ele não. Inclusive na extração do renderer, que é obrigatória | `env.ts:12` |
+| D2 | O histórico do Android mostra `discarded` como **"Draft"** — o banco melhorou, a tela não | `apps/mobile/app/historico.tsx:566` |
+| D3 | As fotos de onboarding foram redistribuídas num repositório **público**; licença de uso no app ≠ licença de redistribuição | `apps/mobile/assets/onboarding/` |
+| D4 | `apps/mobile/package-lock.json` (npm) versionado ao lado do `pnpm-lock.yaml` — os dois podem resolver versões diferentes e ninguém percebe até o build quebrar | — |
+| D5 | `db:migrate` nunca listou as migrations **0018–0021**; um ambiente novo não fica completo só com ele | `packages/db/src/migrate.ts` |
 
 ## 6. Incertezas
 
