@@ -1,5 +1,5 @@
-import { Audio } from "expo-av";
-import { Platform } from "react-native";
+import { Audio, InterruptionModeAndroid } from "expo-av";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -14,54 +14,133 @@ export type TranscribeResult = {
  * Lança Error humanizado se negada.
  */
 export async function ensureMicPermission(): Promise<void> {
+  // Checa primeiro: se já concedida ("Ao usar o app"), NUNCA mostra diálogo de
+  // novo — o Android lembra a escolha. Só re-pergunta se o usuário escolheu
+  // "Somente desta vez" (expira ao fechar) ou nunca respondeu.
+  const current = await Audio.getPermissionsAsync();
+  if (current.granted) return;
+  if (!current.canAskAgain) {
+    throw new Error(
+      "O microfone está bloqueado para o LaudoUSG. Abra Configurações → Apps → LaudoUSG → Permissões → Microfone e escolha \"Permitir ao usar o app\" (fica salvo para sempre).",
+    );
+  }
   const res = await Audio.requestPermissionsAsync();
   if (!res.granted) {
     throw new Error(
-      "Permissão de microfone negada. Abra Configurações do app e conceda acesso ao microfone para ditar.",
+      res.canAskAgain
+        ? "Permissão de microfone negada. Toque no microfone de novo e escolha \"Permitir ao usar o app\" para não perguntar mais."
+        : "O microfone está bloqueado. Configurações → Apps → LaudoUSG → Permissões → Microfone → \"Permitir ao usar o app\".",
     );
+  }
+}
+
+// ── Áudio pendente (recuperável): o arquivo gravado só é "esquecido" após
+// transcrição bem-sucedida. Queda de internet/erro do Whisper NÃO perde o
+// ditado — dá pra tentar de novo, inclusive depois de fechar o app. ──
+const PENDING_AUDIO_KEY = "laudousg.pending_audio";
+
+export type PendingAudio = { uri: string; savedAt: string };
+
+export async function savePendingAudio(uri: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(
+      PENDING_AUDIO_KEY,
+      JSON.stringify({ uri, savedAt: new Date().toISOString() }),
+    );
+  } catch {
+    /* melhor-esforço */
+  }
+}
+
+export async function getPendingAudio(): Promise<PendingAudio | null> {
+  try {
+    const raw = await AsyncStorage.getItem(PENDING_AUDIO_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PendingAudio;
+    if (!parsed?.uri) return null;
+    // Expira em 48h: o SO pode limpar o cache de áudio a qualquer momento —
+    // melhor não oferecer recuperação de um arquivo que provavelmente já era.
+    const age = Date.now() - new Date(parsed.savedAt ?? 0).getTime();
+    if (!Number.isFinite(age) || age > 48 * 60 * 60 * 1000) {
+      await AsyncStorage.removeItem(PENDING_AUDIO_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPendingAudio(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(PENDING_AUDIO_KEY);
+  } catch {
+    /* idem */
   }
 }
 
 /**
  * Inicia uma gravação HIGH_QUALITY (m4a/aac em iOS+Android).
  * Retorna a instância — guarde em ref e passe para stopAndUpload.
+ *
+ * onLevel (opcional): recebe o nível de áudio REAL (0..1, via metering) a cada
+ * ~120ms — alimenta o waveform do RecordingOverlay (feedback de captura, P0
+ * do critique 04/07: ditar sem evidência de que o mic ouve é vale de ansiedade).
  */
-export async function startRecording(): Promise<Audio.Recording> {
-  if (Platform.OS === "ios") {
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-    });
-  }
+export async function startRecording(
+  onLevel?: (level01: number, durationMillis: number) => void,
+): Promise<Audio.Recording> {
+  // Audio focus exclusivo (DoNotMix): pausa a música/podcast do médico ao
+  // começar a gravar e devolve ao parar — comportamento profissional padrão
+  // dos apps de gravação Android. No iOS também habilita a captura.
+  await Audio.setAudioModeAsync({
+    allowsRecordingIOS: true,
+    playsInSilentModeIOS: true,
+    interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+    shouldDuckAndroid: false,
+  });
   const { recording } = await Audio.Recording.createAsync(
-    Audio.RecordingOptionsPresets.HIGH_QUALITY,
+    { ...Audio.RecordingOptionsPresets.HIGH_QUALITY, isMeteringEnabled: true },
+    onLevel
+      ? (status) => {
+          if (status.isRecording && typeof status.metering === "number") {
+            // metering vem em dBFS (silêncio ≈ -60..-160; fala ≈ -30..-5).
+            const level = Math.min(1, Math.max(0, (status.metering + 50) / 45));
+            onLevel(level, status.durationMillis ?? 0);
+          }
+        }
+      : undefined,
+    120,
   );
   return recording;
 }
 
-/**
- * Para a gravação e faz upload para POST /api/transcribe.
- * Retorna { transcript, language? } do Whisper batch.
- *
- * Lança Error humanizado em qualquer falha (sem permissão, áudio vazio,
- * sem rede, 4xx/5xx do backend).
- */
-export async function stopAndUpload(
-  recording: Audio.Recording,
-): Promise<TranscribeResult> {
-  if (!API_URL) {
-    throw new Error("Configuração ausente (EXPO_PUBLIC_API_URL).");
+/** Para a gravação e devolve o URI do arquivo (sem enviar). */
+export async function stopRecording(recording: Audio.Recording): Promise<string> {
+  try {
+    await recording.stopAndUnloadAsync();
+  } finally {
+    // Devolve o audio focus no Android (a música do médico volta a tocar) e
+    // silencia o "talking" no iOS — mesmo se o stop falhar (P2 Dex1 05/07).
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(
+      () => undefined,
+    );
   }
-
-  await recording.stopAndUnloadAsync();
   const uri = recording.getURI();
   if (!uri) {
     throw new Error("Gravação vazia — tente segurar o microfone por mais tempo.");
   }
+  return uri;
+}
 
-  // Restaura modo de áudio padrão (silencia o "talking" no iOS).
-  if (Platform.OS === "ios") {
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+/** Envia um arquivo de áudio já gravado para o Whisper. Pode ser re-tentado
+ *  e cancelado via AbortSignal (o cancelamento NÃO descarta o arquivo). */
+export async function uploadAudio(
+  uri: string,
+  signal?: AbortSignal,
+): Promise<TranscribeResult> {
+  if (!API_URL) {
+    throw new Error("Configuração ausente (EXPO_PUBLIC_API_URL).");
   }
 
   const { data: session } = await supabase.auth.getSession();
@@ -90,8 +169,13 @@ export async function stopAndUpload(
         Accept: "application/json",
       },
       body: form,
+      signal,
     });
   } catch (e) {
+    // Cancelamento explícito do usuário passa direto (não é falha de rede).
+    if ((e as Error)?.name === "AbortError" || signal?.aborted) {
+      throw e;
+    }
     throw new Error(
       "Sem conexão com o servidor. Confira sua rede e tente de novo.",
     );
@@ -130,6 +214,14 @@ export async function stopAndUpload(
     );
   }
   return { transcript, language };
+}
+
+/** Compat: para + envia (onboarding usa). Fluxo principal usa stop/upload separados. */
+export async function stopAndUpload(
+  recording: Audio.Recording,
+): Promise<TranscribeResult> {
+  const uri = await stopRecording(recording);
+  return uploadAudio(uri);
 }
 
 function humanizeStatus(status: number, detail?: string): string {

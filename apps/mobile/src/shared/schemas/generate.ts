@@ -12,6 +12,9 @@ export const GenerateRequestSchema = z.object({
   // Hint de categoria (opcional). O structurer pode discordar.
   category_hint: CategoryCodeSchema.optional(),
   writing_style_id: z.string().uuid(),
+  // Modo de geração. "hard" = toggle "laudo difícil" (writer premium, sem
+  // renderer determinístico). O server só ativa se HARD_MODE_ENABLED=true.
+  mode: z.enum(["standard", "hard"]).optional(),
   // Quando o app já consolidou texto a partir de transcrição live
   consolidated_transcript: z.string().optional(),
   // Quando retomamos um pipeline pausado por clarify, o app reenvia
@@ -88,10 +91,37 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
     type: z.literal("token"),
     delta: z.string(),
   }),
+  // Progresso de estágio (aditivo; clientes que não tratam ignoram). Mantido em
+  // sincronia com packages/shared.
+  z.object({
+    ...Base,
+    type: z.literal("stage"),
+    stage: z.enum(["interpretando", "achado", "calculando", "montando"]),
+    label: z.string(),
+  }),
   z.object({
     ...Base,
     type: z.literal("sanity"),
     result: SanityResultSchema,
+  }),
+  // Sanity emitido durante o stream (o server também manda no "done"/"blocked").
+  // Sem este tipo o RN rejeitava o evento com ZodError e o descartava.
+  z.object({
+    ...Base,
+    type: z.literal("sanity_warning"),
+    issues: z.array(SanityResultSchema.shape.issues.element),
+    severity: z.enum(["warning", "blocker"]),
+  }),
+  // Esquema visual (cartografia venosa) — entregue APÓS o "done", só o DESENHO
+  // (texto do laudo vem no "done"/writer). Atrás da flag VENOUS_SCHEME_MAP no
+  // server. Aditivo: se não tratarmos, é ignorado. `map` = MapaVenoso
+  // (@laudousg/schemes); tipado como unknown aqui (o consumidor faz o cast).
+  z.object({
+    ...Base,
+    type: z.literal("scheme"),
+    exam_type: z.string(),
+    asset_version: z.string(),
+    map: z.unknown(),
   }),
   z.object({
     ...Base,

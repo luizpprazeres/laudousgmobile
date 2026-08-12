@@ -4,6 +4,7 @@ import type {
   ClarifyQuestion,
   SanityResult,
 } from "@/shared";
+import type { MapaVenoso } from "@laudousg/schemes";
 
 /**
  * Máquina de estado da tela Generate.
@@ -24,6 +25,7 @@ export type GenerateState =
       structured?: StructuredFindings;
       ragBlockIds?: string[];
       streamedText: string;
+      sanity?: SanityResult;
     }
   | {
       kind: "clarifying";
@@ -39,11 +41,21 @@ export type GenerateState =
       finalText: string;
       structured?: StructuredFindings;
       sanity?: SanityResult;
+      // Esquema visual venoso (cartografia) — chega no evento SSE "scheme" APÓS
+      // o done. Só o DESENHO; o texto do laudo é o finalText (writer).
+      venousMap?: MapaVenoso;
+      // Versão da arte-base p/ o render escolher asset/coords/motor:
+      // "venoso-anterior-1" (vista única) | "venous-4view-1" (8 células).
+      venousAssetVersion?: string;
     }
   | { kind: "error"; text: string; message: string };
 
 export type GenerateAction =
   | { type: "EDIT_TEXT"; text: string }
+  // Anexa bloco ao texto ATUAL (reducer calcula — evita race de closure com
+  // inserts assíncronos de calculadoras/análise de imagem; review Dex1 04/07)
+  | { type: "APPEND_TEXT"; text: string }
+  | { type: "EDIT_FINAL"; text: string }
   | { type: "START_REC" }
   | { type: "STOP_REC" }
   | { type: "TRANSCRIPTION_DONE"; text: string }
@@ -62,13 +74,42 @@ export function generateReducer(
 ): GenerateState {
   switch (action.type) {
     case "EDIT_TEXT":
-      if (state.kind === "idle" || state.kind === "ready") {
+      // done/error também aceitam edição: mexer nos achados depois do laudo
+      // pronto INICIA UM NOVO CICLO (o laudo anterior fica no histórico) —
+      // fluxo "novo laudo sem botão Novo" (pedido Luiz 06/07).
+      if (
+        state.kind === "idle" ||
+        state.kind === "ready" ||
+        state.kind === "done" ||
+        state.kind === "error"
+      ) {
         return {
           kind: action.text.trim().length > 0 ? "ready" : "idle",
           text: action.text,
         };
       }
       return state;
+
+    case "APPEND_TEXT": {
+      if (
+        state.kind !== "idle" &&
+        state.kind !== "ready" &&
+        state.kind !== "done" &&
+        state.kind !== "error"
+      )
+        return state;
+      const base = state.text.trimEnd();
+      const merged = base ? base + "\n\n" + action.text : action.text;
+      return {
+        kind: merged.trim().length > 0 ? "ready" : "idle",
+        text: merged,
+      };
+    }
+
+    case "EDIT_FINAL":
+      // Edição inline do laudo final (paridade iOS: TextEditor + autosave).
+      if (state.kind !== "done") return state;
+      return { ...state, finalText: action.text };
 
     case "START_REC":
       return { kind: "recording", text: state.text };
@@ -111,6 +152,18 @@ function applySse(
   state: GenerateState,
   ev: GenerateSSEEvent,
 ): GenerateState {
+  // O backend emite `done` ANTES de `sanity` (generate/route.ts:1027 vs 1052) —
+  // aceita sanity também no done, senão o card nunca aparece (review Dex1).
+  if (state.kind === "done") {
+    if (ev.type === "sanity") return { ...state, sanity: ev.result };
+    if (ev.type === "scheme")
+      return {
+        ...state,
+        venousMap: ev.map as MapaVenoso,
+        venousAssetVersion: ev.asset_version,
+      };
+    return state;
+  }
   if (state.kind !== "generating") return state;
 
   switch (ev.type) {
@@ -150,6 +203,7 @@ function applySse(
         reportId: ev.report_id,
         finalText: ev.final_text,
         structured: state.structured,
+        sanity: state.sanity,
       };
     case "blocked":
       // Feature de bloqueio removida — backend não emite mais este evento,
@@ -157,13 +211,25 @@ function applySse(
       return state;
     case "error":
       return { kind: "error", text: state.text, message: ev.message };
-    case "validator":
     case "sanity":
+      // Guarda o resultado pro card "N pontos a revisar" no done (paridade iOS).
+      return { ...state, sanity: ev.result };
+    case "scheme":
+      // scheme chega APÓS o done (tratado no bloco kind==="done"); em
+      // "generating" é inesperado → no-op.
+      return state;
+    case "validator":
     case "heartbeat":
     case "warning":
       // warning é informativo (ex: RAG_EMPTY). Backend já registrou em
       // generation_metadata. UI pode escutar via prop callback no futuro
       // — por ora não muda state.
+      return state;
+    case "stage":
+    case "sanity_warning":
+      // Progresso/aviso durante o stream; o sanity final chega no done/blocked.
+      // Aditivos: aceitos pelo schema e ignorados no state (sem no-op o Zod
+      // rejeitava o evento inteiro com ZodError).
       return state;
   }
 }

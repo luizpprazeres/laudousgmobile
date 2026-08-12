@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useMemo, useRef } from "react";
 import {
   Animated,
   Easing,
@@ -10,7 +10,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { C, FONT } from "./tokens";
+import { FONT, type ColorTokens } from "./tokens";
+import { useColorTokens } from "./useColorTokens";
 import { X } from "./icons";
 
 type Props = {
@@ -22,6 +23,8 @@ type Props = {
 };
 
 export function Sheet({ open, onClose, title, children, height = 460 }: Props) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const translate = useRef(new Animated.Value(height + 40)).current;
   const fade = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
@@ -85,7 +88,7 @@ export function Sheet({ open, onClose, title, children, height = 460 }: Props) {
               hitSlop={8}
               accessibilityLabel="Fechar"
             >
-              <X size={16} color={C.text2} />
+              <X size={16} color={t.text2} />
             </Pressable>
           </View>
         ) : null}
@@ -95,50 +98,52 @@ export function Sheet({ open, onClose, title, children, height = 460 }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  sheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: C.bg,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    flexDirection: "column",
-  },
-  handleWrap: {
-    alignItems: "center",
-    paddingTop: 8,
-  },
-  handle: {
-    width: 36,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: "rgba(0,0,0,0.18)",
-  },
-  header: {
-    paddingHorizontal: 22,
-    paddingTop: 14,
-    paddingBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  title: {
-    fontSize: 17,
-    fontFamily: FONT.semibold,
-    color: C.text,
-  },
-  closeBtn: {
-    backgroundColor: C.fill1,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.4)",
+    },
+    sheet: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: t.bg,
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+      flexDirection: "column",
+    },
+    handleWrap: {
+      alignItems: "center",
+      paddingTop: 8,
+    },
+    handle: {
+      width: 36,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: "rgba(0,0,0,0.18)",
+    },
+    header: {
+      paddingHorizontal: 22,
+      paddingTop: 14,
+      paddingBottom: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    title: {
+      fontSize: 17,
+      fontFamily: FONT.semibold,
+      color: t.text,
+    },
+    closeBtn: {
+      backgroundColor: t.fill1,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
+}

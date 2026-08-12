@@ -16,9 +16,15 @@ export default function IndexGate() {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setAuthed(!!data.session);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (active) setAuthed(!!data.session);
+      })
+      .catch(() => {
+        // Nunca prender na BrandSplash: sem sessão legível → login.
+        if (active) setAuthed(false);
+      });
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
       if (active) setAuthed(!!session);
     });

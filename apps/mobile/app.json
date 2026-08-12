@@ -9,9 +9,9 @@
     "newArchEnabled": true,
     "scheme": "laudousg",
     "splash": {
-      "image": "./assets/brand/logos/logo-laudousg-white.png",
+      "image": "./assets/brand/expo/logo-laudousg-transparent.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -26,12 +26,18 @@
     "android": {
       "package": "com.laudousg.LaudoUSG",
       "versionCode": 1,
+      "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/expo/adaptive-icon.png",
+        "monochromeImage": "./assets/brand/expo/monochrome-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
         "android.permission.RECORD_AUDIO"
+      ],
+      "blockedPermissions": [
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "web": {
@@ -39,6 +45,7 @@
       "favicon": "./assets/brand/expo/favicon.png"
     },
     "plugins": [
+      "react-native-edge-to-edge",
       "expo-router",
       [
         "expo-av",
@@ -46,7 +53,39 @@
           "microphonePermission": "O LaudoUSG precisa do microfone para ditar achados de exame."
         }
       ],
-      "expo-font"
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Inter_400Regular.ttf",
+            "./assets/fonts/Inter_500Medium.ttf",
+            "./assets/fonts/Inter_600SemiBold.ttf",
+            "./assets/fonts/Inter_700Bold.ttf",
+            "./assets/fonts/Inter_900Black.ttf",
+            "./assets/fonts/Barlow_700Bold.ttf",
+            "./assets/fonts/Barlow_800ExtraBold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "disableIOS": true,
+          "androidIntentFilters": ["image/*"],
+          "androidMultiIntentFilters": ["image/*"]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "targetSdkVersion": 35,
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.facebook.react.fabric.** { *; }\n-keep class com.facebook.react.bridge.** { *; }\n-keep class com.facebook.react.uimanager.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.facebook.jni.** { *; }\n-keep class com.facebook.hermes.** { *; }"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

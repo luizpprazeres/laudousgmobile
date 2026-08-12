@@ -1,13 +1,13 @@
-import { useColorScheme } from "react-native";
 import { darkTokens, lightTokens, type ColorTokens } from "./tokens";
+import { useTheme } from "./ThemeProvider";
 
 /**
- * Returns the active color token set based on the OS color scheme.
- * Existing screens still import `C` directly (light only) for backwards
- * compatibility — call this hook instead when you want a screen to react
- * to system theme changes.
+ * Tokens de cor ativos: respeitam a PREFERÊNCIA do usuário (Preferências →
+ * Aparência: auto/claro/escuro, via ThemeProvider) resolvida contra o tema
+ * do SO. Telas legadas ainda importam `C` (light fixo) — migração em curso
+ * (dark mode universal); use este hook em qualquer tela nova.
  */
 export function useColorTokens(): ColorTokens {
-  const scheme = useColorScheme();
+  const { scheme } = useTheme();
   return scheme === "dark" ? darkTokens : lightTokens;
 }

@@ -1,6 +1,6 @@
 # Disclaimer Médico — LaudoUSG
 
-> **Versão:** 2.0 (Sprint 11 — pronto pra exibição em produção, ainda requer revisão jurídica externa antes de submit final ao App Store)
+> **Versão:** 2.0
 > **Última atualização:** 2026-05-22
 > **Conformidade:** Resolução CFM 2.314/2022 (Telemedicina), Código de Ética Médica (Resolução CFM 2.217/2018, em especial Caps. III e IX), demais normas vigentes do Conselho Federal de Medicina sobre uso de inteligência artificial em medicina
 

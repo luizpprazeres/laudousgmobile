@@ -1,6 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { C, FONT } from "./tokens";
+import { FONT, type ColorTokens } from "./tokens";
+import { useColorTokens } from "./useColorTokens";
 import { Chevron } from "./icons";
 
 type Props = {
@@ -11,13 +12,15 @@ type Props = {
 };
 
 export function Suggestion({ icon, label, hint, onPress }: Props) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <Pressable
       onPress={onPress}
-      android_ripple={{ color: C.fill2 }}
+      android_ripple={{ color: t.fill2 }}
       style={({ pressed }) => [
         styles.row,
-        pressed && { backgroundColor: C.fill2 },
+        pressed && { backgroundColor: t.fill2 },
       ]}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -28,43 +31,45 @@ export function Suggestion({ icon, label, hint, onPress }: Props) {
       </Text>
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       <View style={styles.chev}>
-        <Chevron size={14} color={C.textGhost} />
+        <Chevron size={14} color={t.textGhost} />
       </View>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 13,
-    paddingHorizontal: 4,
-    marginHorizontal: -4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.separator,
-    borderRadius: 6,
-  },
-  iconBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    flex: 1,
-    fontSize: 16,
-    color: C.text,
-    fontFamily: FONT.body,
-  },
-  hint: {
-    fontSize: 14,
-    color: C.textMute,
-    fontVariant: ["tabular-nums"],
-    fontFamily: FONT.body,
-  },
-  chev: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      paddingVertical: 13,
+      paddingHorizontal: 4,
+      marginHorizontal: -4,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.separator,
+      borderRadius: 6,
+    },
+    iconBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    label: {
+      flex: 1,
+      fontSize: 16,
+      color: t.text,
+      fontFamily: FONT.body,
+    },
+    hint: {
+      fontSize: 14,
+      color: t.textMute,
+      fontVariant: ["tabular-nums"],
+      fontFamily: FONT.body,
+    },
+    chev: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+  });
+}

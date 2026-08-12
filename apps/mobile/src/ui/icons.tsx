@@ -148,6 +148,36 @@ export const X = ({ size = 22, color = "#000" }: IconProps) =>
 export const Stop = ({ size = 22, color = "#000" }: IconProps) =>
   fill(size, color, <Rect x="6" y="6" width="12" height="12" rx="2.5" />);
 
+export const Pencil = ({ size = 22, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <Path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />,
+  );
+
+export const Copy = ({ size = 22, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <>
+      <Rect x="9" y="9" width="13" height="13" rx="2" />
+      <Path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </>,
+  );
+
+export const RotateCcw = ({ size = 22, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <>
+      <Polyline points="1 4 1 10 7 10" />
+      <Path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+    </>,
+  );
+
 export const CheckCircle = ({ size = 18, color = "#000" }: IconProps) =>
   stroke(
     size,
@@ -299,5 +329,35 @@ export const EyeOff = ({ size = 18, color = "#000" }: IconProps) =>
     <>
       <Path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
       <Line x1="1" y1="1" x2="23" y2="23" />
+    </>,
+  );
+
+// Feather thumbs — feedback do laudo (sem emoji; critique 04/07)
+export const ThumbUp = ({ size = 18, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <Path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />,
+  );
+
+export const ThumbDown = ({ size = 18, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <Path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />,
+  );
+
+// Feather image — análise de imagem de USG
+export const ImageIcon = ({ size = 18, color = "#000" }: IconProps) =>
+  stroke(
+    size,
+    color,
+    2,
+    <>
+      <Rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <Circle cx="8.5" cy="8.5" r="1.5" />
+      <Polyline points="21 15 16 10 5 21" />
     </>,
   );

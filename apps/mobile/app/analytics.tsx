@@ -83,6 +83,12 @@ export default function AnalyticsScreen() {
     );
   }
 
+  // Tempo economizado por laudo vs. o método tradicional (digitar/ditar pra
+  // secretária): média fracionada definida pelo Luiz 06/07 — 3min27s. A
+  // pesquisa antiga de 7min estava superestimada (real fica entre 2 e 4min).
+  const SAVED_SECONDS_PER_REPORT = 3 * 60 + 27;
+  const savedTotal = data.total_reports * SAVED_SECONDS_PER_REPORT;
+
   const kpis = [
     {
       value: formatNumber(data.total_reports),
@@ -90,21 +96,23 @@ export default function AnalyticsScreen() {
       sub: `${formatNumber(data.reports_last_30d)} nos últimos 30 dias`,
     },
     {
-      value: formatNumber(data.reports_last_7d),
-      label: "últimos 7 dias",
-      sub: "produção recente",
+      value: formatNumber(data.reports_today ?? 0),
+      label: "laudos hoje",
+      sub: `ontem: ${formatNumber(data.reports_yesterday ?? 0)}`,
     },
     {
       value: data.avg_latency_ms === null ? "-" : formatDuration(data.avg_latency_ms),
-      label: "tempo médio",
+      label: "tempo médio por laudo",
       sub: "até finalizar a geração",
     },
     {
-      value: `$${data.total_cost_usd.toFixed(4)}`,
-      label: "custo estimado",
-      sub: `${Math.round(data.edits_ratio * 100)}% com edição final`,
+      value: formatSaved(savedTotal),
+      label: "tempo economizado",
+      sub: "≈ 3min27s por laudo vs. método tradicional",
     },
   ];
+
+  const pathologies = data.top_pathologies ?? [];
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -126,6 +134,31 @@ export default function AnalyticsScreen() {
               <Text style={styles.kpiSub}>{kpi.sub}</Text>
             </View>
           ))}
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 22 }]}>
+          Patologias mais frequentes
+        </Text>
+        <View style={styles.catsCard}>
+          {pathologies.length === 0 ? (
+            <Text style={styles.emptyInline}>
+              Ainda sem patologias registradas nas conclusões.
+            </Text>
+          ) : (
+            pathologies.map((p, index) => (
+              <View
+                key={p.label}
+                style={[
+                  styles.catRow,
+                  index < pathologies.length - 1 && styles.catRowDivider,
+                ]}
+              >
+                <Text style={styles.rankBadge}>{index + 1}</Text>
+                <Text style={styles.catName}>{p.label}</Text>
+                <Text style={styles.catCount}>{p.count}</Text>
+              </View>
+            ))
+          )}
         </View>
 
         <Text style={[styles.sectionHeader, { marginTop: 22 }]}>
@@ -184,6 +217,14 @@ function formatDuration(ms: number) {
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
   return rest ? `${minutes}m ${rest}s` : `${minutes}m`;
+}
+
+/** Tempo economizado acumulado: minutos até 1h, depois horas (≈). */
+function formatSaved(totalSeconds: number) {
+  const minutes = Math.round(totalSeconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = totalSeconds / 3600;
+  return hours >= 10 ? `${Math.round(hours)} h` : `${hours.toFixed(1).replace(".", ",")} h`;
 }
 
 function makeStyles(t: ColorTokens) {
@@ -273,6 +314,18 @@ function makeStyles(t: ColorTokens) {
       width: 10,
       height: 10,
       borderRadius: 5,
+    },
+    rankBadge: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: t.brandLight,
+      color: t.brandDeep,
+      fontFamily: FONT.semibold,
+      fontSize: 12,
+      textAlign: "center",
+      lineHeight: 22,
+      overflow: "hidden",
     },
     catName: {
       flex: 1,

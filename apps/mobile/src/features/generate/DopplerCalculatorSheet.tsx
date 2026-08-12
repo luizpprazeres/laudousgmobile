@@ -16,7 +16,8 @@ import {
   type VesselResult,
 } from "@/shared";
 import { Sheet } from "@/ui/Sheet";
-import { C, FONT } from "@/ui/tokens";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 
 type Props = {
   open: boolean;
@@ -62,6 +63,8 @@ export function DopplerCalculatorSheet({
   findingsText,
   onInsert,
 }: Props) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [form, setForm] = useState<FormState>(EMPTY);
 
   // Ao abrir, tenta auto-preencher IPs a partir do texto de achados
@@ -223,6 +226,8 @@ function Field({
   maxLength?: number;
   style?: object;
 }) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <View style={[{ flex: 1 }, style]}>
       <Text style={styles.label}>{label}</Text>
@@ -230,7 +235,7 @@ function Field({
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor={C.textMute}
+        placeholderTextColor={t.textMute}
         keyboardType="decimal-pad"
         maxLength={maxLength}
         style={styles.input}
@@ -248,6 +253,8 @@ function ResultLine({
   v: VesselResult;
   extra?: string;
 }) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <View style={styles.resRow}>
       <Text style={styles.resLabel}>{label}</Text>
@@ -262,92 +269,94 @@ function ResultLine({
   );
 }
 
-const styles = StyleSheet.create({
-  helper: {
-    fontSize: 13,
-    color: C.textSec,
-    fontFamily: FONT.body,
-    marginBottom: 16,
-    lineHeight: 18,
-  },
-  section: {
-    fontSize: 12,
-    color: C.textSec,
-    fontFamily: FONT.medium,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 11,
-    color: C.textMute,
-    fontFamily: FONT.medium,
-    marginBottom: 4,
-  },
-  input: {
-    fontSize: 16,
-    color: C.text,
-    fontFamily: FONT.body,
-    backgroundColor: C.fill1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderWidth: 1,
-    borderColor: C.separator,
-    // @ts-expect-error — outline* web-only, no-op nativo
-    outlineStyle: "none",
-    outlineWidth: 0,
-  },
-  resultBox: {
-    marginTop: 22,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: C.brandLight,
-    borderWidth: 1,
-    borderColor: C.brand + "33",
-  },
-  resRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.brand + "22",
-  },
-  resLabel: {
-    fontSize: 13,
-    color: C.brandDeep,
-    fontFamily: FONT.semibold,
-  },
-  resIP: {
-    fontSize: 13,
-    color: C.brandDeep,
-    fontFamily: FONT.medium,
-  },
-  resExtra: {
-    fontSize: 11,
-    color: C.brandDeep,
-    fontFamily: FONT.body,
-    marginTop: 1,
-  },
-  insertBtn: {
-    marginTop: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: C.brand,
-    alignItems: "center",
-  },
-  insertBtnText: {
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: FONT.semibold,
-    letterSpacing: 0.3,
-  },
-  hint: {
-    fontSize: 13,
-    color: C.textMute,
-    fontStyle: "italic",
-    marginTop: 24,
-    textAlign: "center",
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    helper: {
+      fontSize: 13,
+      color: t.textSec,
+      fontFamily: FONT.body,
+      marginBottom: 16,
+      lineHeight: 18,
+    },
+    section: {
+      fontSize: 12,
+      color: t.textSec,
+      fontFamily: FONT.medium,
+      letterSpacing: 0.4,
+      textTransform: "uppercase",
+      marginBottom: 8,
+    },
+    label: {
+      fontSize: 11,
+      color: t.textMute,
+      fontFamily: FONT.medium,
+      marginBottom: 4,
+    },
+    input: {
+      fontSize: 16,
+      color: t.text,
+      fontFamily: FONT.body,
+      backgroundColor: t.fill1,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      borderWidth: 1,
+      borderColor: t.separator,
+      // @ts-expect-error — outline* web-only, no-op nativo
+      outlineStyle: "none",
+      outlineWidth: 0,
+    },
+    resultBox: {
+      marginTop: 22,
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: t.brandLight,
+      borderWidth: 1,
+      borderColor: t.brand + "33",
+    },
+    resRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.brand + "22",
+    },
+    resLabel: {
+      fontSize: 13,
+      color: t.brandDeep,
+      fontFamily: FONT.semibold,
+    },
+    resIP: {
+      fontSize: 13,
+      color: t.brandDeep,
+      fontFamily: FONT.medium,
+    },
+    resExtra: {
+      fontSize: 11,
+      color: t.brandDeep,
+      fontFamily: FONT.body,
+      marginTop: 1,
+    },
+    insertBtn: {
+      marginTop: 14,
+      paddingVertical: 12,
+      borderRadius: 10,
+      backgroundColor: t.brand,
+      alignItems: "center",
+    },
+    insertBtnText: {
+      color: "#fff",
+      fontSize: 14,
+      fontFamily: FONT.semibold,
+      letterSpacing: 0.3,
+    },
+    hint: {
+      fontSize: 13,
+      color: t.textMute,
+      fontStyle: "italic",
+      marginTop: 24,
+      textAlign: "center",
+    },
+  });
+}

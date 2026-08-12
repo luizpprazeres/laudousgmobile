@@ -19,7 +19,7 @@ if (!API_URL) {
   throw new Error("EXPO_PUBLIC_API_URL ausente. Ver .env.example.");
 }
 
-async function getAccessToken(): Promise<string> {
+export async function getAccessToken(): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error("não autenticado");
@@ -56,6 +56,13 @@ const AnalyticsResponseSchema = z.object({
   total_reports: z.number().int(),
   reports_last_7d: z.number().int(),
   reports_last_30d: z.number().int(),
+  // Opcionais: toleram backend anterior ao deploy de 06/07 (produção diária
+  // no fuso do médico + top de patologias das conclusões).
+  reports_today: z.number().int().optional(),
+  reports_yesterday: z.number().int().optional(),
+  top_pathologies: z
+    .array(z.object({ label: z.string(), count: z.number().int() }))
+    .optional(),
   avg_latency_ms: z.number().int().nullable(),
   top_categories: z.array(
     z.object({
@@ -221,19 +228,51 @@ export async function pushReportToSala(reportId: string): Promise<void> {
   }
 }
 
+export type PushSchemaToSalaInput = {
+  reportId?: string | null;
+  examType: string;
+  examLabel: string;
+  png: string;
+  pdf?: string | null;
+};
+
+export async function pushSchemaToSala(
+  input: PushSchemaToSalaInput,
+): Promise<{ ok: boolean; replaced: boolean }> {
+  const res = await authedFetch("/api/sala/push-schema", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  return (await readJsonOrThrow(res, "enviar esquema pra sala")) as {
+    ok: boolean;
+    replaced: boolean;
+  };
+}
+
 export async function updateReportFinalOutput(
   reportId: string,
   finalOutput: string,
 ): Promise<void> {
-  const { error } = await supabase
+  // .select() confirma que exatamente 1 linha foi atualizada — com RLS, um
+  // update sem match retorna sucesso vazio e a UI marcaria "Salvo" sem salvar
+  // (review Dex1 04/07).
+  const { data, error } = await supabase
     .from("reports")
     .update({
       final_output: finalOutput,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", reportId);
+    .eq("id", reportId)
+    .select("id");
   if (error) {
     throw new Error(`salvar final_output falhou: ${error.message}`);
+  }
+  if (!data || data.length !== 1) {
+    throw new Error("salvar final_output falhou: nenhuma linha atualizada");
   }
 }
 

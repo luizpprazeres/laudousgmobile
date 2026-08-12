@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Sheet } from "@/ui/Sheet";
-import { C, FONT, type ColorTokens } from "@/ui/tokens";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 import type { BannerSeverity } from "@/ui/Banner";
 import {
   Bar,
@@ -73,11 +74,8 @@ function planBadge(plan: string | null): PlanBadge {
 }
 
 export function MenuSheet({ open, onClose, onNotice, onOpenSala }: Props) {
-  // Sheet background usa tokens light fixos (C). Para evitar texto branco
-  // sobre fundo claro quando o SO está em dark mode, fixamos os tokens do
-  // conteúdo também em light. Quando o Sheet ganhar suporte a dark, trocar.
-  const t = C;
-  const styles = useMemo(() => makeStyles(t), []);
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [identity, setIdentity] = useState<Identity>({
     email: null,
     name: null,

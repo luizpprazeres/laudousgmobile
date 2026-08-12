@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -26,7 +25,6 @@ type Mode = "signin" | "signup";
 
 const RISE_DURATION_MS = 520;
 const STAGGER_MS = 100;
-const BRAND = "#059669";
 
 /**
  * Haptics: silenciosamente no-op em web e em devices sem motor háptico.
@@ -58,6 +56,7 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<Mode>("signin");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   // Animação de entrada (rise + stagger) — plus do RN que mantemos.
   const animValues = useRef(
@@ -107,6 +106,33 @@ export default function LoginScreen() {
     }
   }
 
+  async function forgotPassword() {
+    if (busy) return;
+    setError(null);
+    setInfo(null);
+    if (!validEmail) {
+      setError("Preencha seu email acima para enviarmos o link de redefinição.");
+      return;
+    }
+    haptic.light();
+    setBusy(true);
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+        trimmedEmail,
+      );
+      if (resetErr) throw resetErr;
+      haptic.success();
+      setInfo(
+        `Enviamos um link de redefinição para ${trimmedEmail}. Confira também o spam.`,
+      );
+    } catch (e) {
+      haptic.error();
+      setError(humanizeAuthError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const riseStyle = (idx: number) => ({
     opacity: animValues[idx],
     transform: [
@@ -143,25 +169,20 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Header discreto: só o wordmark, com respiro no topo (o ícone
+              tinha fidelidade de clipart e a tagline caps gritava — critique
+              04/07; o header do generate segue o mesmo padrão). */}
           <Animated.View
             style={[
               {
-                flexDirection: "row",
                 alignItems: "center",
-                justifyContent: "center",
-                gap: SPACING.sm,
+                marginTop: SPACING.xl,
                 marginBottom: SPACING.xl,
               },
               riseStyle(0),
             ]}
           >
-            <Image
-              source={require("../../assets/brand/logos/logo-laudousg-transparent.png")}
-              style={{ width: 60, height: 60 }}
-              resizeMode="contain"
-              accessibilityLabel="LaudoUSG"
-            />
-            <LaudoUSGLogo size="lg" variant="auto" showTagline />
+            <LaudoUSGLogo size="lg" variant="auto" />
           </Animated.View>
 
           <View style={{ gap: SPACING.md }}>
@@ -171,6 +192,13 @@ export default function LoginScreen() {
                 title="Não foi possível entrar"
                 message={error}
                 onDismiss={() => setError(null)}
+              />
+            ) : null}
+            {info ? (
+              <Banner
+                severity="success"
+                message={info}
+                onDismiss={() => setInfo(null)}
               />
             ) : null}
 
@@ -202,6 +230,28 @@ export default function LoginScreen() {
                 onSubmitEditing={submit}
               />
             </Animated.View>
+
+            {mode === "signin" ? (
+              <Animated.View style={[riseStyle(3), { alignItems: "flex-end" }]}>
+                <Pressable
+                  onPress={forgotPassword}
+                  hitSlop={8}
+                  disabled={busy}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={{
+                      color: t.textSec,
+                      fontFamily: FONT.medium,
+                      fontSize: 13,
+                      textDecorationLine: "underline",
+                    }}
+                  >
+                    Esqueci minha senha
+                  </Text>
+                </Pressable>
+              </Animated.View>
+            ) : null}
 
             <Animated.View style={[riseStyle(3), { marginTop: SPACING.xs, gap: SPACING.sm }]}>
               <PrimaryButton

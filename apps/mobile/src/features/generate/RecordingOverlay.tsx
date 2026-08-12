@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -7,7 +7,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { C, FONT } from "@/ui/tokens";
+import { FONT, type ColorTokens } from "@/ui/tokens";
+import { useColorTokens } from "@/ui/useColorTokens";
 
 const BAR_COUNT = 32;
 
@@ -19,28 +20,82 @@ type Props = {
   /** "recording" mostra timer + waveform animado; "transcribing" mostra
    *  spinner + waveform mais quieto. */
   mode?: Mode;
+  /** Nível de áudio REAL (0..1) vindo do metering do expo-av. Quando presente,
+   *  o waveform desliza com o nível capturado (evidência de que o mic ouve);
+   *  sem ele, cai no modo animado antigo. */
+  level?: number | null;
 };
+
+// Progressão de status durante a transcrição: tira a sensação de espera
+// parada sem prometer etapas falsas — avança a cada ~2,8s e PARA na última
+// (não fica rodando em círculo). Pedido Luiz 06/07.
+const TRANSCRIBING_PHRASES = [
+  "Recebendo o áudio…",
+  "Transcrevendo de forma inteligente…",
+  "Checando o vocabulário médico…",
+  "Corrigindo possíveis erros…",
+];
 
 export function RecordingOverlay({
   transcript = "Aguardando áudio…",
   showCursor = true,
   mode = "recording",
+  level = null,
 }: Props) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const [phraseIdx, setPhraseIdx] = useState(0);
+
+  useEffect(() => {
+    if (mode !== "transcribing") return;
+    setPhraseIdx(0);
+    const id = setInterval(() => {
+      setPhraseIdx((i) =>
+        i < TRANSCRIBING_PHRASES.length - 1 ? i + 1 : i,
+      );
+    }, 2800);
+    return () => clearInterval(id);
+  }, [mode]);
   const [bars, setBars] = useState<number[]>(() =>
-    Array.from({ length: BAR_COUNT }, () => 0.3),
+    Array.from({ length: BAR_COUNT }, () => 0.04),
   );
   const [seconds, setSeconds] = useState(0);
+  const [quietWarn, setQuietWarn] = useState(false);
   const cursor = useRef(new Animated.Value(1)).current;
+  const levelRef = useRef<number | null>(level);
+  levelRef.current = level;
+  // Ticks consecutivos (80ms cada) abaixo do piso de fala — 50 ticks ≈ 4 s de
+  // silêncio contínuo dispara o aviso "não estou te ouvindo".
+  const quietTicksRef = useRef(0);
   const insets = useSafeAreaInsets();
   const isRecording = mode === "recording";
 
   useEffect(() => {
     const id = setInterval(() => {
-      setBars((prev) =>
-        prev.map(() =>
+      setBars((prev) => {
+        const real = levelRef.current;
+        if (isRecording && real !== null) {
+          // Buffer deslizante com o nível real. Curva de contraste: remove o
+          // piso de ruído (~0,15 do metering) e expande o resto — silêncio
+          // vira toco de 4px, fala vira barra alta. O médico percebe mic
+          // mudo em segundos, não só no fim do ditado.
+          const shaped = Math.pow(Math.max(0, (real - 0.15) / 0.85), 0.7);
+          const next = prev.slice(1);
+          next.push(Math.max(0.04, shaped));
+
+          if (real < 0.22) {
+            quietTicksRef.current += 1;
+            if (quietTicksRef.current >= 50) setQuietWarn(true);
+          } else {
+            quietTicksRef.current = 0;
+            setQuietWarn(false);
+          }
+          return next;
+        }
+        return prev.map(() =>
           isRecording ? 0.2 + Math.random() * 0.8 : 0.15 + Math.random() * 0.25,
-        ),
-      );
+        );
+      });
       if (isRecording) setSeconds((s) => s + 0.1);
     }, 80);
     return () => clearInterval(id);
@@ -81,14 +136,14 @@ export function RecordingOverlay({
           {isRecording ? (
             <>
               <View style={styles.liveDot} />
-              <Text style={[styles.liveLabel, { color: C.danger }]}>
+              <Text style={[styles.liveLabel, { color: t.danger }]}>
                 GRAVANDO
               </Text>
             </>
           ) : (
             <>
-              <ActivityIndicator size="small" color={C.brand} />
-              <Text style={[styles.liveLabel, { color: C.brand }]}>
+              <ActivityIndicator size="small" color={t.brand} />
+              <Text style={[styles.liveLabel, { color: t.brand }]}>
                 TRANSCREVENDO
               </Text>
             </>
@@ -103,7 +158,7 @@ export function RecordingOverlay({
 
       <View style={styles.body}>
         <Text style={styles.transcript}>
-          {transcript}
+          {isRecording ? transcript : TRANSCRIBING_PHRASES[phraseIdx]}
           {showCursor ? (
             <Animated.Text style={[styles.cursor, { opacity: cursor }]}>
               {" "}
@@ -111,11 +166,20 @@ export function RecordingOverlay({
             </Animated.Text>
           ) : null}
         </Text>
-        <Text style={styles.help}>
-          {isRecording
-            ? "Toque em parar quando terminar. A IA estrutura automaticamente."
-            : "Aguarde — pode levar alguns segundos."}
-        </Text>
+        {isRecording && quietWarn ? (
+          <View style={styles.quietWarn}>
+            <Text style={styles.quietWarnText}>
+              Não estou captando sua voz — fale mais perto do aparelho ou
+              verifique se o microfone não está coberto.
+            </Text>
+          </View>
+        ) : (
+          <Text style={styles.help}>
+            {isRecording
+              ? "Toque em parar quando terminar. A IA estrutura automaticamente."
+              : "Aguarde — pode levar alguns segundos."}
+          </Text>
+        )}
       </View>
 
       <View style={styles.waveform}>
@@ -126,7 +190,7 @@ export function RecordingOverlay({
               flex: 1,
               height: `${h * 100}%`,
               minHeight: 4,
-              backgroundColor: C.brand,
+              backgroundColor: t.brand,
               borderRadius: 2,
               opacity: isRecording ? 0.85 : 0.4,
               marginHorizontal: 1.5,
@@ -138,78 +202,96 @@ export function RecordingOverlay({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 90,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    flexDirection: "column",
-    zIndex: 100,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.separator,
-  },
-  headerRow: {
-    paddingHorizontal: 22,
-    paddingVertical: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  live: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: C.danger,
-    shadowColor: C.danger,
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  liveLabel: {
-    fontSize: 13,
-    fontFamily: FONT.semibold,
-    letterSpacing: 0.6,
-  },
-  timer: {
-    fontSize: 17,
-    fontFamily: FONT.semibold,
-    color: C.text,
-    fontVariant: ["tabular-nums"],
-  },
-  body: {
-    flex: 1,
-    paddingHorizontal: 28,
-    justifyContent: "center",
-  },
-  transcript: {
-    fontSize: 22,
-    lineHeight: 32,
-    color: C.text,
-    fontFamily: FONT.body,
-  },
-  cursor: {
-    color: C.brand,
-    fontFamily: FONT.bold,
-  },
-  help: {
-    fontSize: 14,
-    color: C.textMute,
-    marginTop: 16,
-    fontFamily: FONT.body,
-  },
-  waveform: {
-    paddingHorizontal: 28,
-    paddingBottom: 28,
-    flexDirection: "row",
-    alignItems: "center",
-    height: 70,
-  },
-});
+function makeStyles(t: ColorTokens) {
+  return StyleSheet.create({
+    wrap: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 90,
+      // Overlay quase opaco sobre a tela — segue o tema pra não virar
+      // texto claro sobre fundo branco no dark mode (bg = #0B0B0F).
+      backgroundColor:
+        t.mode === "dark" ? "rgba(11,11,15,0.95)" : "rgba(255,255,255,0.95)",
+      flexDirection: "column",
+      zIndex: 100,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.separator,
+    },
+    headerRow: {
+      paddingHorizontal: 22,
+      paddingVertical: 20,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    live: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    liveDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: t.danger,
+      shadowColor: t.danger,
+      shadowOpacity: 0.18,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 0 },
+    },
+    liveLabel: {
+      fontSize: 13,
+      fontFamily: FONT.semibold,
+      letterSpacing: 0.6,
+    },
+    timer: {
+      fontSize: 17,
+      fontFamily: FONT.semibold,
+      color: t.text,
+      fontVariant: ["tabular-nums"],
+    },
+    body: {
+      flex: 1,
+      paddingHorizontal: 28,
+      justifyContent: "center",
+    },
+    transcript: {
+      fontSize: 22,
+      lineHeight: 32,
+      color: t.text,
+      fontFamily: FONT.body,
+    },
+    cursor: {
+      color: t.brand,
+      fontFamily: FONT.bold,
+    },
+    help: {
+      fontSize: 14,
+      color: t.textMute,
+      marginTop: 16,
+      fontFamily: FONT.body,
+    },
+    quietWarn: {
+      marginTop: 16,
+      backgroundColor: t.warningBg,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    quietWarnText: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: t.warningText,
+      fontFamily: FONT.medium,
+    },
+    waveform: {
+      paddingHorizontal: 28,
+      paddingBottom: 28,
+      flexDirection: "row",
+      alignItems: "center",
+      height: 70,
+    },
+  });
+}
