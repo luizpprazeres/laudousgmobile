@@ -260,6 +260,16 @@ export async function POST(req: Request) {
     let outcome: "success" | "clarify" | "blocked" | "error" | "aborted" =
       "error";
     let errorMessage: string | undefined;
+    /**
+     * O report já foi finalizado como `generated`?
+     *
+     * Depois disso o laudo JÁ FOI ENTREGUE ao médico pelo SSE. Qualquer coisa
+     * que falhe adiante — o esquema venoso, o sanity de IA — é acessória e não
+     * pode rebaixar um laudo bom a `discarded`. Sem esta trava, um erro no
+     * side-channel marcaria como descartado um texto que o médico já tem na
+     * tela. (Revisão do Codex, 12/08.)
+     */
+    let laudoEntregue = false;
     let currentStage: GenerationAuditStage = "request";
 
     try {
@@ -508,6 +518,7 @@ export async function POST(req: Request) {
                 /* fechamento do run é cosmético — não bloqueia */
               }
               outcome = "success";
+              laudoEntregue = true;
               await finalizeReport({
                 reportId,
                 status: "generated",
@@ -1183,6 +1194,7 @@ export async function POST(req: Request) {
         sanityResultFromDeterministic(deterministicSanity);
 
       outcome = "success";
+      laudoEntregue = true;
       await finalizeReport({
         reportId,
         status: "generated",
@@ -1288,8 +1300,13 @@ export async function POST(req: Request) {
         }
       }
     } catch (err) {
-      // AbortError vem quando cliente fecha conexão
-      if ((err as Error).name === "AbortError") {
+      // Cancelamento é decidido pelo SIGNAL, não pelo nome do erro. Quando o
+      // cliente fecha a conexão, o que sobe nem sempre se chama "AbortError" —
+      // pode vir como DOMException, erro de stream fechado ou TypeError do
+      // undici. Classificar pelo nome deixava esses casos caírem no ramo de
+      // erro e, desde o guard de `discarded`, virarem laudo descartado em vez
+      // de rascunho retomável. (Revisão do Codex, 12/08.)
+      if (signal.aborted || (err as Error).name === "AbortError") {
         outcome = "aborted";
         errorMessage = "client disconnected";
         auditState.errorCode = "ABORTED";
@@ -1321,8 +1338,13 @@ export async function POST(req: Request) {
         // De propósito FORA do ramo AbortError: cancelar NÃO é descartar. O
         // médico pode retomar depois (`loadReportForResume`), e marcar o report
         // como descartado mataria essa retomada.
+        // NUNCA rebaixa um laudo já entregue: o que falha depois do `done` é
+        // acessório (esquema venoso, sanity de IA) e não invalida o texto que
+        // o médico já recebeu.
         try {
-          await markReportStatus({ reportId, status: "discarded" });
+          if (!laudoEntregue) {
+            await markReportStatus({ reportId, status: "discarded" });
+          }
         } catch (e) {
           // Best-effort: se o banco caiu, o erro original é o que importa
           // reportar. Engolir aqui evita mascarar a causa raiz com um segundo
