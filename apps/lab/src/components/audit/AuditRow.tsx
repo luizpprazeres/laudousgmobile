@@ -1,6 +1,6 @@
 "use client";
 
-import type { AuditRow } from "@/lib/mock/audit";
+import type { AuditRow } from "@/lib/audit/types";
 import { cn } from "@/lib/utils";
 import { StatusIcon } from "./StatusIcon";
 
@@ -44,7 +44,7 @@ export function AuditRowItem({ row, selected, onSelect }: Props) {
           </div>
           <p className="mt-1.5 truncate font-mono text-xs text-stone-600">{`"${row.inputPreview}"`}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-wider text-stone-500">
-            <span>{row.time}</span>
+            <span>{row.quando}</span>
             <span className="text-stone-300">·</span>
             <span>{secs}s</span>
             {row.blocksUsed > 0 && (
@@ -53,16 +53,16 @@ export function AuditRowItem({ row, selected, onSelect }: Props) {
                 <span>{row.blocksUsed} blocks</span>
               </>
             )}
-            {row.blocksSkipped > 0 && (
+            {row.medico && (
               <>
                 <span className="text-stone-300">·</span>
-                <span className={cn(row.status === "warning" ? "text-amber-700" : "")}>{row.blocksSkipped} skipped</span>
+                <span className="normal-case tracking-normal text-stone-600">{row.medico}</span>
               </>
             )}
-            {row.blocksUsed === 0 && (
+            {row.modelo && (
               <>
                 <span className="text-stone-300">·</span>
-                <span className="text-rose-700">0 blocks</span>
+                <span className="normal-case tracking-normal">{row.modelo}</span>
               </>
             )}
           </div>

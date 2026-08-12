@@ -2,8 +2,36 @@
 
 import Link from "next/link";
 import { AlertTriangle, Eye, Play, RotateCw, X } from "lucide-react";
-import type { AuditDetail } from "@/lib/mock/audit";
+import type { AuditDetail } from "@/lib/audit/types";
 import { CompactBlockList } from "./CompactBlockList";
+import { DissecarPainel } from "@/components/dissecar/DissecarPainel";
+
+function Dobravel({ titulo, children }: { titulo: string; children: string }) {
+  return (
+    <details className="mt-3 rounded-lg border border-stone-200">
+      <summary className="cursor-pointer px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-stone-600 hover:bg-stone-50">
+        {titulo}
+      </summary>
+      <pre className="max-h-[45vh] overflow-auto whitespace-pre-wrap border-t border-stone-100 px-3 py-2 font-mono text-[11px] leading-relaxed text-stone-800">
+        {children}
+      </pre>
+    </details>
+  );
+}
+
+/**
+ * Três estados que não podem virar um "—" só:
+ *  - a coluna não existe no banco (migration 0023 pendente) → não sabemos
+ *  - existe e está nula → o laudo não passou pelo catálogo
+ *  - existe e tem valor → qual catálogo, e se houve personalização
+ */
+function rotuloModelo(detail: AuditDetail): string {
+  const m = detail.modeloCatalogo;
+  if (m === null) return "não registrado (migration 0023 pendente)";
+  if (m.catalogId === null) return "fora do catálogo";
+  const base = `${m.catalogId} v${m.catalogVersao ?? "?"}`;
+  return m.customizacaoVersao === null ? base : `${base} + personalização v${m.customizacaoVersao}`;
+}
 
 export function AuditDetailPanel({ detail, onClose }: { detail: AuditDetail; onClose?: () => void }) {
   return (
@@ -34,11 +62,35 @@ export function AuditDetailPanel({ detail, onClose }: { detail: AuditDetail; onC
           </div>
         )}
 
+        {detail.modeloCatalogo?.customizacaoVersao != null && (
+          <div className="mt-4 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2">
+            <p className="text-sm font-semibold text-violet-900">
+              Este laudo saiu personalizado
+            </p>
+            <p className="mt-0.5 text-xs text-violet-700">
+              Personalização v{detail.modeloCatalogo.customizacaoVersao} deste médico, sobre{" "}
+              {detail.modeloCatalogo.catalogId} v{detail.modeloCatalogo.catalogVersao}. Diante de um
+              texto inesperado, é aqui que se olha primeiro.
+            </p>
+          </div>
+        )}
+
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           <Field label="pipeline" value={detail.pipeline} />
           <Field label="prompt" value={detail.promptVersion} />
           <Field label="contract" value={detail.contract} />
           <Field label="writing_style" value={detail.writingStyle} />
+          <Field label="modelo de IA" value={detail.modelo ?? "—"} />
+          <Field label="modelo de laudo" value={rotuloModelo(detail)} />
+          <Field label="médico" value={detail.medico ?? "—"} />
+          <Field
+            label="tokens / custo"
+            value={
+              detail.tokensIn === null && detail.custoUsd === null
+                ? "—"
+                : `${detail.tokensIn ?? "?"}→${detail.tokensOut ?? "?"} · US$ ${(detail.custoUsd ?? 0).toFixed(4)}`
+            }
+          />
           <div className="col-span-2">
             <dt className="font-mono text-[10px] uppercase tracking-widest text-stone-500">input</dt>
             <dd className="mt-1 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 font-mono text-xs leading-relaxed text-stone-700">
@@ -47,10 +99,37 @@ export function AuditDetailPanel({ detail, onClose }: { detail: AuditDetail; onC
           </div>
         </dl>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <CompactBlockList tone="retrieved" label={`retrieved · ${detail.blocksUsed}`} blocks={detail.retrieved} />
-          <CompactBlockList tone="skipped" label={`skipped · ${detail.skipped.length}`} blocks={detail.skipped} />
-        </div>
+        {detail.retrieved.length > 0 && (
+          <div className="mt-5">
+            <CompactBlockList
+              tone="retrieved"
+              label={`blocos no prompt · ${detail.blocksUsed}`}
+              blocks={detail.retrieved}
+            />
+          </div>
+        )}
+
+        {detail.outputText && (
+          <div className="mt-4">
+            <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-stone-500">
+              de onde veio cada trecho
+            </p>
+            <DissecarPainel
+              laudo={detail.outputText}
+              structuredOutput={detail.structuredOutput}
+              systemMessage={detail.systemMessage}
+            />
+          </div>
+        )}
+
+        {/* O prompt inteiro que a IA recebeu naquela geração. Até aqui só o
+            /dissecador mostrava isso. É o registro do que valia NAQUELE dia —
+            reconstruir hoje pode dar outro texto, se os blocos mudaram. */}
+        {detail.systemMessage && (
+          <Dobravel titulo={`Prompt enviado · ${detail.systemMessage.length.toLocaleString("pt-BR")} ch`}>
+            {detail.systemMessage}
+          </Dobravel>
+        )}
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
           <Link

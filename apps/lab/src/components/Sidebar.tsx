@@ -8,7 +8,10 @@ import {
   FlaskConical,
   LayoutDashboard,
   LayoutGrid,
+  Library,
+  MessageSquareCode,
   Newspaper,
+  PenLine,
   Pencil,
   Settings,
 } from "lucide-react";
@@ -17,8 +20,11 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/testbench", label: "Testbench", icon: FlaskConical },
+  { href: "/modelos", label: "Modelos", icon: Library },
+  { href: "/prompts", label: "Prompts", icon: MessageSquareCode },
   { href: "/showcase", label: "Showcase", icon: LayoutGrid },
   { href: "/audit", label: "Audit", icon: FileText },
+  { href: "/correcoes", label: "Correções", icon: PenLine },
   { href: "/blocks", label: "Blocks", icon: Pencil },
   { href: "/reviewer", label: "Reviewer", icon: Eye },
   { href: "/changelog", label: "Changelog", icon: Newspaper },

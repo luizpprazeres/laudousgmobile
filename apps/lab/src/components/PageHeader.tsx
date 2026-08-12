@@ -8,7 +8,10 @@ type Crumb = { href?: string; label: string };
 const SEGMENT_LABELS: Record<string, string> = {
   "/": "Dashboard",
   "/testbench": "Testbench",
+  "/modelos": "Modelos",
+  "/prompts": "Prompts",
   "/audit": "Audit",
+  "/correcoes": "Correções",
   "/blocks": "Blocks",
   "/reviewer": "Reviewer",
   "/changelog": "Changelog",
