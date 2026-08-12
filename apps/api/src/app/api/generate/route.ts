@@ -83,6 +83,7 @@ import {
   resolveAccountReportPreference,
 } from "@/server/db/lookups";
 import { runRendererStream } from "@/server/pipeline/renderer";
+import { decidirDescarte } from "@/server/pipeline/descarteDecision";
 import { resolverPersonalizacao } from "@/server/customization/resolve";
 import {
   RENDERER_SUPPORTED_CATEGORIES,
@@ -1300,13 +1301,15 @@ export async function POST(req: Request) {
         }
       }
     } catch (err) {
-      // Cancelamento é decidido pelo SIGNAL, não pelo nome do erro. Quando o
-      // cliente fecha a conexão, o que sobe nem sempre se chama "AbortError" —
-      // pode vir como DOMException, erro de stream fechado ou TypeError do
-      // undici. Classificar pelo nome deixava esses casos caírem no ramo de
-      // erro e, desde o guard de `discarded`, virarem laudo descartado em vez
-      // de rascunho retomável. (Revisão do Codex, 12/08.)
-      if (signal.aborted || (err as Error).name === "AbortError") {
+      // A regra vive em `pipeline/descarteDecision.ts` para que o teste use a
+      // MESMA função, e não uma cópia dela — cópia trava a regra no papel e
+      // não detecta divergência do código real.
+      const decisao = decidirDescarte({
+        erro: err,
+        signalAbortado: signal.aborted,
+        laudoEntregue,
+      });
+      if (decisao.outcome === "aborted") {
         outcome = "aborted";
         errorMessage = "client disconnected";
         auditState.errorCode = "ABORTED";
@@ -1342,7 +1345,7 @@ export async function POST(req: Request) {
         // acessório (esquema venoso, sanity de IA) e não invalida o texto que
         // o médico já recebeu.
         try {
-          if (!laudoEntregue) {
+          if (decisao.marcaDescartado) {
             await markReportStatus({ reportId, status: "discarded" });
           }
         } catch (e) {

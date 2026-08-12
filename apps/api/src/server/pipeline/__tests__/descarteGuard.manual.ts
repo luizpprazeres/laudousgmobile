@@ -15,9 +15,13 @@
  *  2. o que falha DEPOIS do `done` (esquema venoso, sanity de IA) é acessório;
  *     rebaixar por causa disso descarta um texto que o médico já tem na tela.
  *
- * Este teste reproduz a lógica de decisão dos dois pontos. Não sobe a rota — o
- * que se quer travar é a REGRA, para que ela não volte atrás numa refatoração.
+ * O teste IMPORTA a mesma função que o pipeline usa (`descarteDecision.ts`).
+ * A primeira versão espelhava a regra aqui dentro, e o @devops notou o furo:
+ * uma cópia trava o conceito no papel mas não detecta divergência do código
+ * real. Agora, se alguém mudar a decisão, este arquivo acusa.
  */
+
+import { decidirDescarte } from "../descarteDecision";
 
 let ok = 0;
 const falhas: string[] = [];
@@ -26,16 +30,8 @@ function check(nome: string, cond: boolean, extra?: unknown) {
   else falhas.push(nome + (extra === undefined ? "" : ` — ${JSON.stringify(extra)}`));
 }
 
-/** Espelha a decisão de `generate/route.ts` no catch do pipeline. */
-function decidir(args: {
-  erro: Error;
-  signalAbortado: boolean;
-  laudoEntregue: boolean;
-}): { outcome: "aborted" | "error"; marcaDescartado: boolean } {
-  const abortado = args.signalAbortado || args.erro.name === "AbortError";
-  if (abortado) return { outcome: "aborted", marcaDescartado: false };
-  return { outcome: "error", marcaDescartado: !args.laudoEntregue };
-}
+const decidir = (args: { erro: Error; signalAbortado: boolean; laudoEntregue: boolean }) =>
+  decidirDescarte(args);
 
 const generico = new Error("boom");
 const abortError = Object.assign(new Error("aborted"), { name: "AbortError" });
