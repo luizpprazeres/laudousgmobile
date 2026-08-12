@@ -1307,6 +1307,28 @@ export async function POST(req: Request) {
           code: "PIPELINE_FAILURE",
           message: errorMessage,
         });
+
+        // O report foi inserido como `draft` no começo do pipeline. Falhando
+        // aqui, ele ficava `draft` PARA SEMPRE — indistinguível de um rascunho
+        // legítimo do médico, e contando como laudo criado nas métricas.
+        // Produção tinha 29 linhas assim em 10/08 (17/05 a 22/07), contra 3.346
+        // geradas: gotejamento, não vazamento.
+        //
+        // `discarded` já existe no enum `report_status`, então não há migration.
+        // A `generation_run` continua sendo finalizada no `finally` com
+        // outcome de erro — a auditoria do porquê não se perde.
+        //
+        // De propósito FORA do ramo AbortError: cancelar NÃO é descartar. O
+        // médico pode retomar depois (`loadReportForResume`), e marcar o report
+        // como descartado mataria essa retomada.
+        try {
+          await markReportStatus({ reportId, status: "discarded" });
+        } catch (e) {
+          // Best-effort: se o banco caiu, o erro original é o que importa
+          // reportar. Engolir aqui evita mascarar a causa raiz com um segundo
+          // erro de persistência.
+          console.error("markReportStatus(discarded) failed:", e);
+        }
       }
     } finally {
       auditState.totalDurationMs = Date.now() - t0;
