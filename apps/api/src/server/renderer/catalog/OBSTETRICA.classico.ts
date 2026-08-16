@@ -58,6 +58,32 @@ export function rotuloFeto(f: F, i: number): string {
 }
 
 /**
+ * Fim da PRIMEIRA sentença — o ponto final seguido de espaço + maiúscula, ou o
+ * ponto final do texto. É onde entra a atribuição ao feto.
+ */
+const FIM_PRIMEIRA_SENTENCA = /\.(?=\s+[A-ZÁÂÃÉÊÍÓÔÕÚÜÇ]|\s*$)/;
+
+/**
+ * Atribui um item de conclusão ao feto que o gerou — "(feto B)".
+ *
+ * A marca entra no fim da primeira SENTENÇA, não no fim do item. Várias
+ * conclusões de achado terminam com a conduta ("Convém, a critério clínico,
+ * realizar neurossonografia fetal…"), e "(feto B)" depois dela atribuiria a
+ * RECOMENDAÇÃO ao feto, não o achado:
+ *
+ *   errado → "Aumento da cisterna magna. … acompanhar a evolução (feto B)."
+ *   certo  → "Aumento da cisterna magna (feto B). … acompanhar a evolução."
+ *
+ * O parêntese é a mesma forma que o corpo já usa na linha do maior bolsão
+ * vertical do gemelar ("4,2 cm (feto A) e 3,8 cm (feto B)").
+ */
+export function atribuirAoFeto(texto: string, rotulo: string): string {
+  const marca = ` (feto ${rotulo})`;
+  const i = texto.search(FIM_PRIMEIRA_SENTENCA);
+  return i === -1 ? `${texto}${marca}` : `${texto.slice(0, i)}${marca}${texto.slice(i)}`;
+}
+
+/**
  * A placenta é escrita pelo MOTOR quando há qualquer dado descrito — e sempre
  * no gemelar, onde a frase depende da contagem ("Duas placentas", "Placenta
  * única"). Só o caso "feto único, nada descrito" usa a frase do catálogo.
@@ -136,7 +162,7 @@ function liquidoKind(f: F): LiquidoKind {
   if (tipo === "mbv" && f.liquido_mbv_por_feto_cm && f.liquido_mbv_por_feto_cm.length > 0) {
     return f.numero_fetos < 2 ? "mbv_unico" : "mbv_gemelar";
   }
-  if (tipo === "ila" && f.liquido_ila_cm !== null) return "ila";
+  if (tipo === "ila" && f.liquido_ila_cm != null) return "ila";
   if (tipo === "alterado" && f.liquido_classe) return "alterado";
   return "normal";
 }
@@ -325,6 +351,15 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
     "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
 
   numerarConclusao: (i, total) => (total === 1 ? "" : `${i + 1}) `),
+
+  /**
+   * Gemelar: o achado é de UM feto, e a conclusão precisa dizer qual.
+   *
+   * Só vale para segmentos com `instance` — ou seja, os slots repetidos por
+   * feto (vitalidade, crânio, cordão). Itens do exame (líquido, ponderal, IG)
+   * não têm instância e saem sem marca, como hoje.
+   */
+  atribuirConclusao: atribuirAoFeto,
 
   // No corpo o ponderal vem antes de placenta/líquido; na conclusão, depois.
   ordemConclusao: () => ["liquido_amniotico", "ponderal"],
@@ -571,7 +606,12 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
          * nenhuma variante casando, o slot de descrição é OMITIDO — que é o
          * certo: quem descreve a placenta ali é o achado.
          */
-        { id: "normal", quando: (c) => c.findings.placenta_achado == null,
+        /**
+         * `padrao: true` porque o predicado acima tirou dela o papel de
+         * fallback — e sem a marca a Biblioteca perdia a única frase de
+         * placenta que o médico PODE reescrever. Ver SlotVariant.padrao.
+         */
+        { id: "normal", quando: (c) => c.findings.placenta_achado == null, padrao: true,
           frase: "\nPlacenta de aspecto normal." },
       ],
     },
@@ -595,7 +635,8 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
       id: "placenta_achado",
       /** Carrega achado alterado — ver Slot.removivel (C3). */
       removivel: false,
-      incluirSe: (c) => c.findings.placenta_achado !== null,
+      /** `!= null` cobre campo AUSENTE — ver a nota em `cordao_umbilical`. */
+      incluirSe: (c) => c.findings.placenta_achado != null,
       variantes: [
         { id: "descolamento", quando: (c) => c.findings.placenta_achado === "descolamento",
           montar: (c) => `\nImagem hipoecoica e heterogênea, medindo ${c.findings.placenta_achado_medidas ?? "____"}, situada entre a placenta e o miométrio, sem vascularização.`,
@@ -661,8 +702,16 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
        * cordão — mudança de comportamento em 100% dos laudos, que a
        * equivalência pegou na hora. Afirmar "três vasos" sem ter avaliado é o
        * mesmo defeito da técnica/via.
+       *
+       * `!= null` e não `!== null`: o campo pode vir AUSENTE, não nulo.
+       * `undefined !== null` é `true`, e com isso o slot voltava a entrar em
+       * todo laudo — foi o que a equivalência contra laudos REAIS pegou (0/12,
+       * todos com "O cordão umbilical tem aspecto normal" enxertado). A
+       * equivalência sintética não viu porque o feto-base dela crava
+       * `cordao_vasos: null` explicitamente; o `structured_output` de campo
+       * simplesmente não traz a chave.
        */
-      incluirSe: (c) => ftDe(c)?.cordao_vasos !== null,
+      incluirSe: (c) => ftDe(c)?.cordao_vasos != null,
       variantes: [
         { id: "arteria_unica", quando: (c) => ftDe(c)?.cordao_vasos === "dois",
           frase: "\nO cordão umbilical tem dois vasos, sendo uma artéria e uma veia.",

@@ -8,12 +8,14 @@
  * causa dela é um problema clínico. Por isso nada aqui lança — nem um erro de
  * banco, nem um catálogo ausente, nem uma operação que deixou de valer.
  *
- * Quatro travas, todas precisam passar:
+ * Cinco travas, todas precisam passar:
  *   1. a categoria está em MODEL_CUSTOMIZATION_CATEGORIES;
  *   2. a categoria também está em MODEL_CATALOG_CATEGORIES — sem o catálogo
  *      ligado não existe onde aplicar operação;
  *   3. existe catálogo para aquele (categoria, estilo);
- *   4. as operações publicadas AINDA valem no catálogo-base atual.
+ *   4. a personalização foi publicada contra o MESMO catálogo-base que está
+ *      em produção agora (mesmo id e mesma versão);
+ *   5. as operações publicadas AINDA valem nesse catálogo-base.
  */
 
 import { env } from "@/server/env";
@@ -77,6 +79,31 @@ export async function resolverPersonalizacao(
     );
     if (!publicada) return NAO("médico não tem personalização publicada");
 
+    // TRAVA DE VERSÃO — a mais importante das quatro, e a que faltava.
+    //
+    // O que estava acontecendo: as operações eram lidas do banco (gravadas
+    // contra o base vN) e aplicadas contra o base ATUAL, porque o
+    // `baseVersao` passado a `applyCustomization` era o do catálogo em
+    // memória, não o da linha. Uma personalização da v1 valia sobre a v2 em
+    // silêncio.
+    //
+    // `validateOperations` não substitui esta checagem: ela responde "o slot
+    // ainda existe?", nunca "o slot ainda quer dizer a mesma coisa?". Um slot
+    // que muda de sentido conservando o id passa por ela inteiro.
+    //
+    // Aqui o princípio do módulo se aplica na íntegra — na dúvida, não
+    // personalize. O médico já vê `baseDesatualizado: true` na Biblioteca; o
+    // caminho é republicar, que revalida contra o base novo.
+    if (
+      publicada.baseCatalogId !== entrada.catalog.id ||
+      publicada.baseVersao !== entrada.catalog.versao
+    ) {
+      return NAO(
+        `personalização publicada contra ${publicada.baseCatalogId} v${publicada.baseVersao}; ` +
+          `o modelo-base hoje é ${entrada.catalog.id} v${entrada.catalog.versao} — republique na Biblioteca`,
+      );
+    }
+
     // Revalidar aqui não é paranoia: a personalização foi validada quando o
     // médico publicou, e o catálogo-base pode ter mudado num deploy depois
     // disso. Se uma operação deixou de valer, o laudo sai no modelo-base — em
@@ -89,8 +116,10 @@ export async function resolverPersonalizacao(
     }
 
     const custom = applyCustomization(entrada.catalog, {
-      baseCatalogId: entrada.catalog.id,
-      baseVersao: entrada.catalog.versao,
+      // O par vem da LINHA, não do catálogo em memória — é o que faz a trava
+      // do motor ser uma trava de verdade, e não uma tautologia.
+      baseCatalogId: publicada.baseCatalogId,
+      baseVersao: publicada.baseVersao,
       operations: publicada.operations,
     });
 

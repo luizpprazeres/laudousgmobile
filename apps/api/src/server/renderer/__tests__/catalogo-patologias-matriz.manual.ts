@@ -59,13 +59,42 @@ const txt = (f: ObstetricaFindings) => serialize(doc(f), OBSTETRICA_CLASSICO);
 const variantesDe = (f: ObstetricaFindings, slot: string) =>
   doc(f).segments.filter((s) => s.slotId === slot).map((s) => s.variantId);
 
+/**
+ * O texto de UM slot, não o laudo inteiro.
+ *
+ * Afirmar sobre o laudo inteiro produz falso-verde nas asserções de lacuna: um
+ * `____` vindo do DBP ausente satisfazia "a bradicardia sem BCF não inventou
+ * número". Aqui a asserção olha só o segmento que está sendo julgado.
+ */
+const trechoDe = (f: ObstetricaFindings, slot: string, kind: "corpo" | "conclusao" = "corpo") =>
+  doc(f).segments.filter((s) => s.slotId === slot && s.kind === kind).map((s) => s.text).join(" ");
+
+/** Os slots que a categoria coloca na ordem daquele contexto. */
+const slotsDaOrdem = (f: ObstetricaFindings): Set<string> => {
+  const ctx = { findings: f, fetoIndex: 0, gemelar: f.numero_fetos >= 2,
+    flags: { igCorrection: false, flexivel: false, grannum: false, objetivo: false } };
+  const out = new Set<string>();
+  for (const item of OBSTETRICA_CLASSICO.ordem(ctx)) {
+    if (typeof item === "string") out.add(item);
+    else for (const id of item.repetirPorFeto) out.add(id);
+  }
+  return out;
+};
+
 // ---------------------------------------------------------------- 1 COBERTURA
 console.log("\n1 · COBERTURA — toda variante nova é alcançável pelo seu exemplo");
 {
   /**
-   * "Alcançável em ALGUM contexto válido" — não só no feto único. Slots como
-   * `bcf_gemelar` só existem na ordem gemelar; exigir feto único acusaria
-   * falso positivo.
+   * "Alcançável em TODO contexto onde o slot existe" — não em algum.
+   *
+   * A versão anterior aceitava `onde.length > 0`, e isso é falso-verde: as
+   * alterações de vitalidade são compartilhadas entre `bcf` (feto único) e
+   * `bcf_gemelar`. Bastava a variante funcionar num dos dois para o teste
+   * passar com o outro quebrado. O critério certo não é "existe contexto que
+   * funciona", é "não existe contexto onde o slot entra e a variante não sai".
+   *
+   * Slots que não estão na ordem daquele contexto ficam de fora da conta —
+   * cobrar `bcf` no gemelar seria falso POSITIVO na direção oposta.
    */
   const contextos: [string, ObstetricaFindings][] = [
     ["único", base()],
@@ -81,7 +110,8 @@ console.log("\n1 · COBERTURA — toda variante nova é alcançável pelo seu ex
     for (const v of slot.variantes) {
       if (!v.exemplo) continue;
       const ex = v.exemplo as Partial<ObstetricaFindings> & { fetos?: Record<string, unknown>[] };
-      const onde: string[] = [];
+      const aplicaveis: string[] = [];
+      const falhou: string[] = [];
       for (const [nome, ctx] of contextos) {
         // mesma mesclagem do registry: rasa no exame, profunda no feto
         const f = {
@@ -90,10 +120,17 @@ console.log("\n1 · COBERTURA — toda variante nova é alcançável pelo seu ex
             ? ctx.fetos.map((x, i) => ({ ...x, ...(ex.fetos![i] ?? ex.fetos![0]!) }))
             : ctx.fetos,
         } as ObstetricaFindings;
-        if (variantesDe(f, slot.id).includes(v.id)) onde.push(nome);
+        // O exemplo pode MUDAR a ordem (gestacao_inicial), então a ordem é lida
+        // dos findings já mesclados, não do contexto de partida.
+        if (!slotsDaOrdem(f).has(slot.id)) continue;
+        aplicaveis.push(nome);
+        if (!variantesDe(f, slot.id).includes(v.id)) falhou.push(nome);
       }
-      t("cobertura", `${slot.id}/${v.id} alcançável`, onde.length > 0,
-        `não renderizou em nenhum contexto — variante sombreada por outra`);
+      t("cobertura", `${slot.id}/${v.id} alcançável onde o slot existe`,
+        aplicaveis.length > 0 && falhou.length === 0,
+        aplicaveis.length === 0
+          ? "o slot não entra em nenhum contexto testado — o exemplo não prova nada"
+          : `não renderizou em: ${falhou.join(", ")} — variante sombreada por outra`);
     }
   }
 }
@@ -141,14 +178,39 @@ console.log("3 · COERÊNCIA — o laudo não se contradiz");
 }
 {
   // Bradicardia sem BCF ditado não deve afirmar frequência inventada.
-  const s = txt(comFeto(base(), 0, { bcf_alteracao: "bradicardia", bcf_bpm: null }));
-  t("coerência", "bradicardia sem BCF não inventa número", !/frequência de \d+ bpm/.test(s) || /____/.test(s),
-    "afirmou uma frequência que não foi ditada");
+  // A asserção olha o TRECHO do bcf: um "____" vindo do DBP ausente satisfazia
+  // a versão anterior, que testava o laudo inteiro (falso-verde).
+  const f = comFeto(base(), 0, { bcf_alteracao: "bradicardia", bcf_bpm: null });
+  const trecho = trechoDe(f, "bcf");
+  t("coerência", "bradicardia sem BCF não inventa número",
+    trecho.includes("____") && !/frequência de \d+ bpm/.test(trecho),
+    `trecho do bcf: ${JSON.stringify(trecho)}`);
+  t("coerência", "…e a conclusão de bradicardia sai mesmo assim",
+    trechoDe(f, "bcf", "conclusao").includes("Bradicardia fetal."));
 }
 {
   // Descolamento sem medida não deve afirmar medida.
-  const s = txt(base({ placenta_achado: "descolamento" }));
-  t("coerência", "descolamento sem medida usa lacuna", /____/.test(s) || !/medindo\s*,/.test(s));
+  const f = base({ placenta_achado: "descolamento" });
+  const trecho = trechoDe(f, "placenta_achado");
+  t("coerência", "descolamento sem medida usa lacuna no PRÓPRIO trecho",
+    trecho.includes("medindo ____") && !/medindo\s*[,.]/.test(trecho),
+    `trecho do achado: ${JSON.stringify(trecho)}`);
+}
+{
+  // Crânio sem medida ditada: mesma regra, no trecho do crânio.
+  const f = comFeto(base(), 0, { cranio_achado: "ventriculomegalia", cranio_medida_mm: null });
+  const trecho = trechoDe(f, "cranio_achado");
+  t("coerência", "ventriculomegalia sem medida usa lacuna, não inventa número",
+    trecho.includes("____") && !/medindo \d/.test(trecho),
+    `trecho do crânio: ${JSON.stringify(trecho)}`);
+}
+{
+  // Lateralidade não ditada não vira lado inventado.
+  const f = comFeto(base(), 0, { cranio_achado: "cisto_plexo_coroide", cranio_medida_mm: 5 });
+  const concl = trechoDe(f, "cranio_achado", "conclusao");
+  t("coerência", "cisto de plexo coroide sem lado não escolhe um lado",
+    concl.includes("____") && !/à (direita|esquerda)/.test(concl),
+    `conclusão do crânio: ${JSON.stringify(concl)}`);
 }
 
 // ----------------------------------------------------------------- 4 GEMELAR
@@ -183,6 +245,52 @@ console.log("4 · GEMELAR — achado por feto não vira achado global");
     "achado de crânio ditado sumiu no gemelar");
   t("gemelar", "cordão não é ignorado na ordem gemelar", /cordão umbilical/i.test(s),
     "achado de cordão ditado sumiu no gemelar");
+
+  /**
+   * ATRIBUIÇÃO NA CONCLUSÃO — o corpo diz de quem é o achado (cabeçalho
+   * "Feto B:"); a conclusão não tinha como dizer. "Óbito fetal." num laudo de
+   * dois fetos é ambíguo no ponto em que a ambiguidade custa mais caro.
+   */
+  const conclusao = (f: ObstetricaFindings) => txt(f).split("CONCLUSÃO:")[1] ?? "";
+  {
+    const c = conclusao(comFeto(gem, 1, { bcf_alteracao: "ausente", bcf_bpm: null }));
+    t("gemelar", "óbito de um feto diz QUAL feto na conclusão", /Óbito fetal \(feto B\)\./.test(c),
+      `conclusão: ${JSON.stringify(c)}`);
+    t("gemelar", "e não atribui ao feto errado", !/\(feto A\)/.test(c));
+  }
+  {
+    const c = conclusao(comFeto(gem, 1, { cordao_vasos: "dois" }));
+    t("gemelar", "artéria umbilical única é atribuída ao feto",
+      /Artéria umbilical única \(feto B\)\./.test(c), `conclusão: ${JSON.stringify(c)}`);
+  }
+  {
+    // A marca entra no fim da PRIMEIRA sentença — depois da conduta ela
+    // atribuiria a recomendação ao feto, não o achado.
+    const c = conclusao(comFeto(gem, 0, { cranio_achado: "megacisterna_magna", cranio_medida_mm: 12 }));
+    t("gemelar", "a marca acompanha o achado, não a conduta",
+      /Aumento da cisterna magna \(feto A\)\./.test(c) && !/evolução \(feto A\)/.test(c),
+      `conclusão: ${JSON.stringify(c)}`);
+  }
+  {
+    // Dois fetos com o mesmo achado: dois itens, cada um com o seu dono.
+    const dois = comFeto(comFeto(gem, 0, { bcf_alteracao: "ausente", bcf_bpm: null }), 1,
+      { bcf_alteracao: "ausente", bcf_bpm: null });
+    const c = conclusao(dois);
+    t("gemelar", "achado nos dois fetos gera um item por feto",
+      /Óbito fetal \(feto A\)\./.test(c) && /Óbito fetal \(feto B\)\./.test(c), `conclusão: ${JSON.stringify(c)}`);
+  }
+  {
+    // Item do EXAME não é de feto nenhum — não pode ganhar marca.
+    const c = conclusao(gem);
+    t("gemelar", "itens do exame (IG, líquido, ponderal) não ganham marca de feto",
+      !/\(feto [AB]\)/.test(c), `conclusão: ${JSON.stringify(c)}`);
+  }
+}
+{
+  // Feto único NUNCA rotula — mesma regra P5 que o renderer já aplica ao MBV.
+  const s = txt(comFeto(base(), 0, { bcf_alteracao: "ausente", bcf_bpm: null, cordao_vasos: "dois" }));
+  t("gemelar", "feto único não ganha '(feto A)' em lugar nenhum", !/\(feto [A-Z]\)/.test(s),
+    "alucinação gemelar em laudo de feto único");
 }
 
 // ---------------------------------------------------------- 5 NÃO-REGRESSÃO
@@ -203,6 +311,44 @@ console.log("5 · NÃO-REGRESSÃO — sem achado ditado, nada aparece");
   const s = txt(base({ gestacao_inicial: true, ig_semanas: 8, saco_gestacional_mm: 20,
     fetos: [{ ...EMPTY_FETO, ccn_mm: 16, bcf_bpm: 160 }] }));
   t("não-regressão", "inicial sem cordão ditado não traz cordão", !/cordão umbilical/i.test(s));
+}
+{
+  /**
+   * CAMPO AUSENTE ≠ CAMPO NULO — o defeito que só a equivalência contra laudos
+   * REAIS pegou (0/12), e que a matriz sintética não via.
+   *
+   * Os cenários acima partem de `EMPTY_FETO`, que crava `cordao_vasos: null`.
+   * O `structured_output` que a produção grava simplesmente NÃO TRAZ a chave
+   * quando o campo é novo ou a extração não o preencheu — e `undefined !== null`
+   * é `true`. Com isso o slot condicional voltava a entrar em 100% dos laudos,
+   * enxertando "O cordão umbilical tem aspecto normal, com duas artérias e uma
+   * veia." num exame em que ninguém avaliou o cordão.
+   *
+   * Aqui os campos de achado são REMOVIDOS do objeto, não zerados.
+   */
+  const semChaves = (() => {
+    const f = base();
+    const feto = { ...f.fetos[0] } as Record<string, unknown>;
+    for (const k of ["cordao_vasos", "cranio_achado", "cranio_medida_mm",
+      "cranio_lateralidade", "movimentos_fetais", "bcf_alteracao"]) delete feto[k];
+    const exame = { ...f, fetos: [feto] } as Record<string, unknown>;
+    for (const k of ["placenta_achado", "placenta_achado_medidas",
+      "placenta_relacao_orificio", "liquido_tipo"]) delete exame[k];
+    return exame as unknown as ObstetricaFindings;
+  })();
+  const s = txt(semChaves);
+  const proibidos: [string, RegExp][] = [
+    ["cordão", /cordão umbilical/i], ["crânio", /Dandy-Walker|cisterna magna|cavum|plexo coroide/i],
+    ["placenta aguda", /acretismo|lagos venosos|retroplacentária/i],
+    ["movimentos alterados", /Não foram observados movimentos|Movimentos fetais reduzidos/i],
+    ["óbito", /Óbito fetal|sem vitalidade/i],
+  ];
+  for (const [nome, re] of proibidos) {
+    t("não-regressão", `campo de ${nome} AUSENTE (não nulo) não afirma nada`, !re.test(s),
+      "o slot condicional entrou porque `undefined !== null` — use `!= null`");
+  }
+  t("não-regressão", "e o laudo continua íntegro com os campos ausentes",
+    /Placenta de aspecto normal/.test(s) && /Líquido amniótico/.test(s));
 }
 
 // ------------------------------------------------------------------ relatório

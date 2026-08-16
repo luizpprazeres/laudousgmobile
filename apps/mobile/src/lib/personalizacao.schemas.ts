@@ -30,6 +30,16 @@ export const VarianteSchema = z.object({
 export const SlotSchema = z.object({
   id: z.string(),
   obrigatorio: z.boolean(),
+  /**
+   * Pode sair do laudo? NÃO é `!obrigatorio`: os slots de achado são
+   * condicionais (só aparecem com o achado ditado) e mesmo assim não podem ser
+   * removidos do modelo — remover apagaria a patologia. Ver Slot.removivel no
+   * backend.
+   *
+   * `.default(true)` porque o app precisa continuar funcionando contra um
+   * backend anterior ao campo; o servidor recusa de qualquer forma.
+   */
+  removivel: z.boolean().default(true),
   placeholdersObrigatorios: z.array(z.string()),
   condicional: z.boolean(),
   variantes: z.array(VarianteSchema),

@@ -650,6 +650,15 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
                     <Text style={{ color: t.textSec, fontSize: 13, textAlign: "center" }}>
                       Esta frase é obrigatória e não pode sair do laudo.
                     </Text>
+                  ) : !slotAberto.removivel ? (
+                    // Slot de achado: condicional (só aparece quando ditado),
+                    // mas não removível — tirá-lo do modelo apagaria a
+                    // patologia do laudo. O servidor recusa; sem isto o médico
+                    // via o botão e levava o erro depois.
+                    <Text style={{ color: t.textSec, fontSize: 13, textAlign: "center" }}>
+                      Esta frase descreve um achado alterado. Ela só aparece quando você dita o
+                      achado — e por isso não pode ser tirada do modelo.
+                    </Text>
                   ) : (
                     <SecondaryButton title="Tirar do laudo"
                       onPress={() => {

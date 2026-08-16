@@ -30,8 +30,12 @@ const d = describeCatalog(OBSTETRICA_CLASSICO, [
 console.log("\n[D1] A projeção é serializável e completa\n");
 
 check("é JSON puro (sem funções)", JSON.stringify(d).length > 0 && !JSON.stringify(d).includes("function"));
+// A versão não é cravada: cravar quebra o teste a cada bump do catálogo sem que
+// a garantia — a projeção espelhar a base — tenha sido violada (aconteceu no
+// v1→v2, 16/08). O que se afirma é que `describeCatalog` copia fielmente.
 check("traz id, categoria, estilo e versão",
-  d.id === "OBSTETRICA/CLASSICO_COMPLETO" && d.categoria === "OBSTETRICA" && d.versao === 1);
+  d.id === "OBSTETRICA/CLASSICO_COMPLETO" && d.categoria === "OBSTETRICA" &&
+  d.estilo === "CLASSICO_COMPLETO" && d.versao === OBSTETRICA_CLASSICO.versao);
 check("traz as três ordens de exibição", d.ordens.length === 3 && d.ordens.every((o) => o.slots.length > 0));
 check("todo slot de toda ordem existe na lista de slots",
   d.ordens.every((o) => o.slots.every((s) => d.slots.some((x) => x.id === s))),
@@ -52,6 +56,35 @@ check("a placenta descrita NÃO é editável", descrita.editavel === false);
 check("e a interface recebe o motivo, em português", Boolean(descrita.motivo?.includes("achado alterado")));
 check("a placenta normal continua editável",
   placenta.variantes.find((v) => v.padrao)?.editavel === true);
+// A `normal` da placenta ganhou um `quando` (para não convier com o achado
+// agudo) e com isso deixou de ser o fallback do slot. Sem `padrao: true`
+// explícito, a Biblioteca perdia a única frase de placenta reescrevível.
+check("a variante padrão da placenta é a NORMAL, não a primeira da lista",
+  placenta.variantes.find((v) => v.padrao)?.id === "normal");
+// O que a validação aceita tem de ser o que a aplicação altera. Enquanto as
+// duas regras divergiam, esta operação passava e não mudava nada.
+check("reescrever sem dizer a variante atinge a padrão — e chega ao laudo",
+  (() => {
+    const op: Operation[] = [{ op: "replace_phrase", slot: "placenta", value: "\nPlacenta com aspecto habitual." }];
+    if (validateOperations(OBSTETRICA_CLASSICO, op).length > 0) return false;
+    const cc = applyCustomization(OBSTETRICA_CLASSICO, {
+      baseCatalogId: OBSTETRICA_CLASSICO.id, baseVersao: OBSTETRICA_CLASSICO.versao, operations: op,
+    });
+    const s = OBSTETRICA_SAMPLES.find((x) => x.id === "padrao")!;
+    return renderObstetricaCatalogo({
+      findings: s.findings, flags, catalog: cc.catalog, customSlots: cc.customSlots,
+      extraConclusao: cc.extraConclusao,
+    }).includes("Placenta com aspecto habitual.");
+  })());
+
+// Slot de achado é CONDICIONAL mas não removível — as duas travas do servidor
+// precisam chegar à interface, senão ela oferece um botão que será recusado.
+for (const id of ["cranio_achado", "placenta_achado", "cordao_umbilical", "movimentos_achado"]) {
+  check(`"${id}" chega à interface como não removível`,
+    d.slots.find((s) => s.id === id)?.removivel === false);
+}
+check("um slot comum continua removível", d.slots.find((s) => s.id === "ovarios")?.removivel === true);
+check("slot obrigatório não é removível", d.slots.find((s) => s.id === "dbp")?.removivel === false);
 
 const liquido = d.slots.find((s) => s.id === "liquido_amniotico")!;
 check("o líquido alterado não é editável",

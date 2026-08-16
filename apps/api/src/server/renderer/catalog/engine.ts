@@ -56,6 +56,17 @@ function pickVariant<F>(slot: Slot<F>, ctx: SlotContext<F>): SlotVariant<F> | un
   return slot.variantes.find((v) => v.quando?.(ctx)) ?? slot.variantes.find((v) => !v.quando);
 }
 
+/**
+ * A variante que a personalização edita quando não especifica qual.
+ *
+ * É a mesma regra em três lugares — validação, aplicação e projeção para a
+ * Biblioteca — e por isso vive aqui. Divergir entre eles é o defeito que
+ * aceitava uma operação na validação e depois não a aplicava.
+ */
+export function variantePadrao<F>(slot: Slot<F>): SlotVariant<F> | undefined {
+  return slot.variantes.find((v) => v.padrao) ?? slot.variantes.find((v) => !v.quando);
+}
+
 function textOf<F>(v: SlotVariant<F>, ctx: SlotContext<F>, vars: Record<string, string>): string {
   if (v.montar) return v.montar(ctx, vars);
   if (v.frase !== undefined) return interpolate(v.frase, vars);
@@ -103,7 +114,7 @@ export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
   const base: SlotContext<F> = { findings, fetoIndex: 0, gemelar, flags };
   const segments: Segment[] = [];
 
-  const emit = (id: string, fetoIndex: number, instance?: string) => {
+  const emit = (id: string, fetoIndex: number, instance?: string, dentroDoGrupo = false) => {
     const slot = byId.get(id);
     if (!slot) return;
     const ctx: SlotContext<F> = { findings, fetoIndex, gemelar, flags };
@@ -111,7 +122,20 @@ export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
     const variant = pickVariant(slot, ctx);
     if (!variant) return;
     const vars = varsFor(ctx);
-    const text = textOf(variant, ctx, vars);
+    let text = textOf(variant, ctx, vars);
+
+    /**
+     * Dentro de um bloco repetido por instância, só a PRIMEIRA linha abre
+     * parágrafo — quem separa os blocos é o cabeçalho ("Feto B:").
+     *
+     * O "\n" inicial de uma frase é a marcação de parágrafo do catálogo, e ela
+     * é escrita pensando no feto único, onde o slot está entre outros blocos.
+     * O MESMO slot reaparece dentro do bloco do feto no gemelar — e ali a
+     * quebra rasgava o bloco ao meio: "Feto B:" ficava sozinho, com uma linha
+     * em branco antes da ausência de BCF e outra antes do cordão. Isto é
+     * posição, não conteúdo, e por isso é decisão do motor.
+     */
+    if (dentroDoGrupo && text.startsWith("\n")) text = text.replace(/^\n+/, "");
 
     // Crítica C3: variante de estado clínico alterado é escrita pelo motor;
     // a personalização do usuário não se aplica a ela.
@@ -149,7 +173,14 @@ export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
     }
     // Agrupamento por feto: (slots do feto A), (slots do feto B), …
     instancias.forEach((inst, i) => {
-      for (const id of item.repetirPorFeto) emit(id, i, gemelar ? inst : undefined);
+      // "Primeiro do grupo" é o primeiro EMITIDO NO CORPO, não o primeiro da
+      // lista: os slots do bloco são condicionais e o cabeçalho pode ter sido
+      // removido por personalização.
+      const corpoAntes = () => segments.filter((s) => s.kind === "corpo").length;
+      const inicio = corpoAntes();
+      for (const id of item.repetirPorFeto) {
+        emit(id, i, gemelar ? inst : undefined, corpoAntes() > inicio);
+      }
     });
   }
 
@@ -209,7 +240,12 @@ export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
 
 export function serialize<F>(doc: ReportDoc, catalog: Catalog<F>): string {
   const corpo = doc.segments.filter((s) => s.kind === "corpo").map((s) => s.text);
-  const concl = doc.segments.filter((s) => s.kind === "conclusao").map((s) => s.text);
+  // O item de conclusão de um slot repetido por instância (feto A/B) precisa
+  // dizer de quem ele é: no corpo o cabeçalho "Feto B:" resolve, na conclusão
+  // não existe cabeçalho nenhum. Ver Catalog.atribuirConclusao.
+  const concl = doc.segments
+    .filter((s) => s.kind === "conclusao")
+    .map((s) => (s.instance && catalog.atribuirConclusao ? catalog.atribuirConclusao(s.text, s.instance) : s.text));
   const conclTxt = concl.map((it, i) => `${catalog.numerarConclusao(i, concl.length)}${it}`).join("\n");
 
   const partes: string[] = [doc.titulo, ...doc.preLinhas];
@@ -288,7 +324,7 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
     // replace_phrase
     const alvo = o.variant
       ? slot.variantes.find((v) => v.id === o.variant)
-      : slot.variantes.find((v) => !v.quando) ?? slot.variantes[0];
+      : variantePadrao(slot) ?? slot.variantes[0];
     if (!alvo) {
       erros.push(`variante inexistente em "${o.slot}": ${o.variant}`);
       continue;
@@ -329,11 +365,29 @@ export type AppliedCustomization<F> = {
   extraConclusao: string[];
 };
 
-/** Aplica operações JÁ VALIDADAS sobre o catálogo-base, sem mutá-lo. */
+/**
+ * Aplica operações JÁ VALIDADAS sobre o catálogo-base, sem mutá-lo.
+ *
+ * Lança se a personalização foi escrita contra OUTRO catálogo-base. O par
+ * (`baseCatalogId`, `baseVersao`) estava sendo recebido e ignorado: uma
+ * personalização gravada na v1 era aplicada em silêncio sobre a v2, e
+ * `validateOperations` não pega isso — ela só sabe dizer se o slot ainda
+ * existe, não se ele ainda QUER DIZER a mesma coisa. Slot que troca de sentido
+ * conservando o id é justamente o caso perigoso.
+ *
+ * Quem edita passa o catálogo atual e nunca vê este erro. Quem lê do banco
+ * (customization/resolve.ts) precisa checar antes e cair no modelo-base.
+ */
 export function applyCustomization<F>(
   catalog: Catalog<F>,
   custom: Customization,
 ): AppliedCustomization<F> {
+  if (custom.baseCatalogId !== catalog.id || custom.baseVersao !== catalog.versao) {
+    throw new Error(
+      `personalização escrita contra ${custom.baseCatalogId} v${custom.baseVersao}, ` +
+        `aplicada sobre ${catalog.id} v${catalog.versao}`,
+    );
+  }
   const removed = new Set(
     custom.operations.filter((o): o is Extract<Operation, { op: "remove_slot" }> => o.op === "remove_slot").map((o) => o.slot),
   );
@@ -357,10 +411,13 @@ export function applyCustomization<F>(
   const slots = catalog.slots.map((s) => {
     const mine = replaced.filter((r) => r.slot === s.id);
     if (mine.length === 0) return s;
+    // MESMA regra de `validateOperations` — ver `variantePadrao`. Quando as duas
+    // divergiam, a operação passava na validação e não chegava a ser aplicada.
+    const padrao = variantePadrao(s);
     return {
       ...s,
       variantes: s.variantes.map((v) => {
-        const hit = mine.find((r) => (r.variant ? r.variant === v.id : !v.quando));
+        const hit = mine.find((r) => (r.variant ? r.variant === v.id : v === padrao));
         return hit ? { ...v, frase: hit.value } : v;
       }),
     };

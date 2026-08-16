@@ -6,6 +6,7 @@
  * Aqui expomos só o que é apresentável e editável, além do motivo pelo qual
  * um slot NÃO é editável — o usuário precisa entender a recusa, não só sofrê-la.
  */
+import { variantePadrao } from "./engine";
 import type { Catalog, SlotContext } from "./types";
 
 export type VariantDescription = {
@@ -39,6 +40,16 @@ export type RenderizadorDeExemplo<F> = (
 export type SlotDescription = {
   id: string;
   obrigatorio: boolean;
+  /**
+   * Pode ser removido do modelo?
+   *
+   * Separado de `obrigatorio` porque os slots de achado são CONDICIONAIS: não
+   * aparecem no laudo sem o achado, mas também não podem sumir do modelo. Sem
+   * este campo a Biblioteca oferecia "remover" em `cranio_achado`,
+   * `placenta_achado` e `cordao_umbilical`, e o servidor recusava depois — o
+   * médico levava um erro no lugar de nem ver o botão. Ver Slot.removivel.
+   */
+  removivel: boolean;
   placeholdersObrigatorios: string[];
   /** Aparece no laudo? (slots condicionais podem não aparecer no cenário atual) */
   condicional: boolean;
@@ -109,19 +120,25 @@ export function describeCatalog<F>(
     slots: catalog.slots.map((s) => ({
       id: s.id,
       obrigatorio: Boolean(s.obrigatorio),
+      // As duas travas do servidor (engine.validateOperations), não uma só.
+      removivel: !s.obrigatorio && s.removivel !== false,
       placeholdersObrigatorios: s.placeholdersObrigatorios ?? [],
       condicional: Boolean(s.incluirSe),
-      variantes: s.variantes.map((v) => {
+      variantes: (() => {
+        // A mesma variante que `replace_phrase` sem `variant` vai atingir.
+        const padrao = variantePadrao(s);
+        return s.variantes.map((v) => {
         const motivo = motivoNaoEditavel(v);
         return {
           id: v.id,
           ...(v.frase !== undefined ? { frase: v.frase } : {}),
-          padrao: !v.quando,
+          padrao: v === padrao,
           editavel: motivo === undefined,
           ...(motivo ? { motivo } : {}),
           ...exemploDe(s.id, v),
         };
-      }),
+        });
+      })(),
     })),
   };
 }

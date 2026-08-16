@@ -23,6 +23,12 @@ type VariantDescription = { id: string; frase?: string; padrao: boolean; editave
 type SlotDescription = {
   id: string;
   obrigatorio: boolean;
+  /**
+   * Pode sair do modelo? NÃO é `!obrigatorio`: slot de achado é condicional
+   * (só aparece com o achado ditado) e ainda assim não pode ser removido —
+   * removê-lo apagaria a patologia. Opcional para tolerar backend anterior.
+   */
+  removivel?: boolean;
   placeholdersObrigatorios: string[];
   condicional: boolean;
   variantes: VariantDescription[];
@@ -437,13 +443,14 @@ function LinhaDoLaudo({
           className={cn(
             "absolute -left-1 top-1 bottom-1 w-[3px] rounded-full transition",
             modificada ? "bg-brand-500"
-              : slot.obrigatorio ? "bg-red-300"
+              : slot.obrigatorio || slot.removivel === false ? "bg-red-300"
               : !editavel ? "bg-stone-300"
               : "bg-transparent group-hover:bg-stone-200",
           )}
           title={
             modificada ? "alterada por você"
               : slot.obrigatorio ? "obrigatória — não pode ser removida"
+              : slot.removivel === false ? "descreve um achado alterado — não pode ser removida"
               : !editavel ? "escrita pelo sistema"
               : undefined
           }
@@ -466,7 +473,7 @@ function LinhaDoLaudo({
             <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => onFrase(undefined)}
               className="rounded bg-white/90 px-1 text-[10px] text-stone-500 hover:text-stone-900">desfazer</button>
           )}
-          {!slot.obrigatorio && editavel && (
+          {!slot.obrigatorio && slot.removivel !== false && editavel && (
             <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => onRemover(!removido)}
               className="rounded bg-white/90 px-1 text-[10px] text-stone-500 hover:text-stone-900">
               {removido ? "restaurar" : "remover"}

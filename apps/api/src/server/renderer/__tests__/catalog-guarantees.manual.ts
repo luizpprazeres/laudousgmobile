@@ -193,10 +193,44 @@ check("item de IG calculado é 'computed'", d6.segments.find((s) => s.slotId ===
 // A versão vem do catálogo, não cravada: cravar faz o teste quebrar a cada bump
 // (aconteceu no v1→v2, 16/08) sem que a GARANTIA — o documento carregar id e
 // versão — tenha sido violada. O que importa é o documento espelhar a base.
-check("o documento carrega o id e a versão do catálogo-base",
+// …mas comparar com o próprio catálogo é TAUTOLÓGICO: passa mesmo se buildDoc
+// ignorar o argumento e ler a constante importada. Aqui a versão é diferente da
+// real, então só passa quem de fato espelha o catálogo recebido.
+check("o documento carrega o id e a versão do catálogo que RECEBEU", (() => {
+  const outro = { ...CAT, id: "TESTE/OUTRO_MODELO", versao: CAT.versao + 41 };
+  const d = buildObstetricaDoc({ findings: f(), catalog: outro }).doc;
+  return d.catalogId === "TESTE/OUTRO_MODELO" && d.catalogVersao === CAT.versao + 41;
+})());
+check("e no caminho normal esse catálogo é o base",
   d6.catalogId === OBSTETRICA_CLASSICO.id && d6.catalogVersao === OBSTETRICA_CLASSICO.versao);
 check("a versão do catálogo é um inteiro positivo",
   Number.isInteger(OBSTETRICA_CLASSICO.versao) && OBSTETRICA_CLASSICO.versao >= 1);
+
+console.log("\n[G6b] Personalização de OUTRA versão não se aplica em silêncio\n");
+
+/**
+ * O par (baseCatalogId, baseVersao) era recebido e ignorado: uma personalização
+ * gravada contra a v1 era aplicada sobre a v2 sem aviso. `validateOperations`
+ * não cobre isso — ela responde "o slot existe?", nunca "o slot ainda quer
+ * dizer a mesma coisa?". Slot que troca de sentido conservando o id é o caso
+ * perigoso, e é exatamente o que um bump de versão sinaliza.
+ */
+const OPS_OK: Operation[] = [{ op: "replace_phrase", slot: "ovarios", value: "Ovários sem alterações." }];
+function aplicar(over: Partial<Customization>): string | null {
+  try {
+    applyCustomization(CAT, {
+      baseCatalogId: CAT.id, baseVersao: CAT.versao, operations: OPS_OK, ...over,
+    } satisfies Customization);
+    return null;
+  } catch (e) { return (e as Error).message; }
+}
+check("versão anterior é recusada", aplicar({ baseVersao: CAT.versao - 1 }) !== null);
+check("versão futura também é recusada", aplicar({ baseVersao: CAT.versao + 1 }) !== null);
+check("outro catálogo é recusado", aplicar({ baseCatalogId: "OUTRA/COISA" }) !== null);
+check("a recusa nomeia as duas versões, para a auditoria",
+  (aplicar({ baseVersao: 1 }) ?? "").includes("v1") &&
+  (aplicar({ baseVersao: 1 }) ?? "").includes(`v${CAT.versao}`));
+check("o par correto passa", aplicar({}) === null);
 
 console.log("\n[G8] Acrescentar uma linha ao corpo\n");
 

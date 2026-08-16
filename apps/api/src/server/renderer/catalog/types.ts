@@ -31,6 +31,20 @@ export type SlotVariant<F> = {
   /** Predicado do motor. Ausente = variante padrão (fallback). */
   quando?: (ctx: SlotContext<F>) => boolean;
   /**
+   * Esta é a variante PADRÃO do slot — a que a Biblioteca oferece para editar
+   * quando o médico não escolhe uma.
+   *
+   * Normalmente é inferida ("a que não tem `quando`"). Precisa ser declarada
+   * quando a frase de normalidade ganhou um predicado. Foi o que aconteceu com
+   * a `placenta`: para não sair "Placenta de aspecto normal." seguida da
+   * descrição do acretismo, a variante `normal` virou condicional — e com isso
+   * o slot ficou SEM padrão. O efeito colateral: `replace_phrase` sem `variant`
+   * caía em `variantes[0]` (inserção baixa, `personalizavel: false`) e o médico
+   * levava um "descreve um estado clínico e não pode ser reescrito" ao tentar
+   * personalizar a placenta NORMAL. E, se passasse, a troca não se aplicava.
+   */
+  padrao?: boolean;
+  /**
    * Texto com placeholders nomeados `{campo}`. Quando o texto depende de dados
    * de forma que interpolação simples não expressa (listas, concordância),
    * use `montar` — aí a frase deixa de ser editável e passa a ser do motor.
@@ -117,6 +131,19 @@ export type Catalog<F> = {
   slots: Slot<F>[];
   /** Numeração dos itens de conclusão: (i, total) => prefixo. */
   numerarConclusao: (i: number, total: number) => string;
+  /**
+   * Como marcar, na CONCLUSÃO, a instância a que o item pertence.
+   *
+   * No corpo a atribuição é estrutural — há um cabeçalho "Feto B:" antes do
+   * bloco. A conclusão não tem isso: os itens são reordenados e agrupados, e
+   * "Óbito fetal." saía sem dono num laudo com dois fetos. O `instance` estava
+   * no segmento desde sempre; era a serialização que o descartava.
+   *
+   * Fica no catálogo, e não no motor, porque a redação da marca é da categoria
+   * ("(feto B)" aqui; "(à direita)" numa categoria bilateral). Ausente, a
+   * serialização ignora `instance` — o comportamento anterior.
+   */
+  atribuirConclusao?: (texto: string, instance: string) => string;
 };
 
 // ---------------------------------------------------------------------------
