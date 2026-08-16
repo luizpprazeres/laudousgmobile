@@ -19,6 +19,8 @@ import type { ObstetricaFindings } from "../categories/OBSTETRICA";
 import { OBSTETRICA_CLASSICO } from "./OBSTETRICA.classico";
 import { OBSTETRICA_SAMPLES } from "./OBSTETRICA.samples";
 import { buildObstetricaDoc, renderObstetricaCatalogo } from "./OBSTETRICA.render";
+import { catalogoDerivadoDe } from "./modeloNormalCatalog";
+import { categoriasComModeloNormal } from "./modeloNormalRegistry";
 
 /**
  * Os códigos são os do enum `writing_style_code` do banco. Dos quatro, só
@@ -80,8 +82,25 @@ export function chaveDe(categoria: string, estilo: string): string {
   return `${categoria}/${estilo}`;
 }
 
+/**
+ * O catálogo de uma (categoria, estilo) — escrito à mão OU derivado do renderer.
+ *
+ * A precedência importa: onde existe catálogo ESTRUTURADO ele vence sempre. Ele
+ * conhece variantes, predicados e conclusão por achado; o derivado só conhece o
+ * modelo normal. Trocar um pelo outro seria rebaixar a categoria.
+ *
+ * Para as demais, a entrada é montada do modelo normal — e é isso que faz a
+ * Biblioteca deixar de mostrar só OBSTETRICA. Ver `modeloNormalCatalog.ts`.
+ */
 export function resolveCatalogo(categoria: string, estilo: string): EntradaCatalogo | undefined {
-  return CATALOGOS[chaveDe(categoria, estilo)];
+  const estruturado = CATALOGOS[chaveDe(categoria, estilo)];
+  if (estruturado) return estruturado;
+  return (catalogoDerivadoDe(categoria, estilo) as EntradaCatalogo | null) ?? undefined;
+}
+
+/** A categoria é servida pelo modelo derivado (e não por catálogo escrito)? */
+export function ehDerivado(categoria: string, estilo: string): boolean {
+  return !CATALOGOS[chaveDe(categoria, estilo)] && catalogoDerivadoDe(categoria, estilo) !== null;
 }
 
 /** Pares (categoria, estilo) com catálogo — para mensagens de erro úteis. */
@@ -93,7 +112,20 @@ export function paresComCatalogo(): { categoria: string; estilo: string }[] {
 }
 
 export function categoriasComCatalogo(): string[] {
-  return [...new Set(Object.values(CATALOGOS).map((e) => e.catalog.categoria))];
+  return [
+    ...new Set([
+      ...Object.values(CATALOGOS).map((e) => e.catalog.categoria),
+      ...categoriasComModeloNormal().map((c) => c.categoria),
+    ]),
+  ];
+}
+
+/** Categorias que a Biblioteca lista, com o nome que o médico lê. */
+export function categoriasDaBiblioteca(): { categoria: string; rotulo: string; derivado: boolean }[] {
+  return categoriasComModeloNormal().map((c) => ({
+    ...c,
+    derivado: ehDerivado(c.categoria, "CLASSICO_COMPLETO"),
+  }));
 }
 
 /** Os estilos com catálogo para uma dada categoria. */

@@ -1,4 +1,5 @@
 import { env } from "../env";
+import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { openai } from "../ai/openai";
 import {
   runRendererExtraction,
@@ -249,6 +250,15 @@ export async function* runRendererStream(args: {
    * modelo-base, que é o comportamento de sempre.
    */
   personalizacao?: Promise<PersonalizacaoResolvida>;
+  /**
+   * A redação do médico nas categorias SEM catálogo estruturado — as doze que
+   * hoje não têm slots a que ancorar uma operação.
+   *
+   * Chega como promessa pelo mesmo motivo da `personalizacao`: a consulta ao
+   * banco corre em paralelo com a extração, que é o custo dominante. E, pelo
+   * mesmo princípio, nunca rejeita.
+   */
+  frases?: Promise<import("../customization/resolveFrases").FrasesResolvidas>;
   /**
    * Qual modelo montou o laudo — para a auditoria (item 8). Emitido sempre que
    * o caminho do catálogo é usado, mesmo sem personalização: saber que um laudo
@@ -659,6 +669,26 @@ export async function* runRendererStream(args: {
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });
         break;
     }
+    /**
+     * A REDAÇÃO DO MÉDICO nas categorias sem catálogo estruturado.
+     *
+     * Última camada, de propósito: o laudo acima é o do renderer de produção, e
+     * esta passagem só troca linhas que reconhece. Se o exame tem um achado, a
+     * frase de normalidade não está lá, nada casa, e o texto sai intocado — o
+     * pior caso é a personalização não aplicar, nunca um laudo errado.
+     *
+     * Onde há catálogo (OBSTETRICA), a personalização já entrou lá em cima,
+     * montando o laudo slot a slot; `frases` vem vazio e isto é um no-op.
+     */
+    const fr = await args.frases;
+    if (fr?.aplicar) {
+      const r = aplicarFrasesPersonalizadas(fullText, fr.frases);
+      if (r.aplicadas > 0) {
+        fullText = r.texto;
+        notaPersonalizacao += ` [redação do médico v${fr.versao}: ${r.aplicadas} frase(s)]`;
+      }
+    }
+
     const systemMessage = `[${RENDERER_VERSION}] render programático determinístico (${args.categoryCode})${notaPersonalizacao}`;
     args.onSystemMessage?.(systemMessage);
     yield fullText;

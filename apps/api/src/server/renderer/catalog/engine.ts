@@ -346,6 +346,22 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
         erros.push(`a frase de "${o.slot}" precisa conservar o dado {${ph}}`);
       }
     }
+    // Modelo derivado: o dado é a lacuna do renderer, não um `{nome}`.
+    if (slot.lacunasObrigatorias !== undefined) {
+      const tem = (o.value.match(/_{2,}/g) ?? []).length;
+      if (tem < slot.lacunasObrigatorias) {
+        erros.push(
+          slot.lacunasObrigatorias === 1
+            ? "a sua frase precisa conservar o dado do exame — deixe ____ onde ele entra"
+            : `a sua frase precisa conservar os ${slot.lacunasObrigatorias} dados do exame — deixe ____ onde cada um entra`,
+        );
+      } else if (tem > slot.lacunasObrigatorias) {
+        erros.push(
+          `a frase original tem ${slot.lacunasObrigatorias} dado(s) do exame e a sua tem ${tem} lacuna(s); ` +
+            "as que sobram sairiam como ____ no laudo",
+        );
+      }
+    }
     for (const ph of placeholdersOf(o.value)) {
       if (!catalog.variaveis.includes(ph)) {
         erros.push(`placeholder desconhecido em "${o.slot}": {${ph}}`);

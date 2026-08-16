@@ -97,6 +97,18 @@ export type Slot<F> = {
   removivel?: boolean;
   /** Invariante de CONTEÚDO: placeholders que a frase precisa conservar. */
   placeholdersObrigatorios?: string[];
+  /**
+   * Invariante de CONTEÚDO no modelo DERIVADO: quantas lacunas `____` a frase
+   * precisa conservar.
+   *
+   * O catálogo escrito à mão marca o dado com `{dbp}` — nome e tudo. O modelo
+   * derivado do renderer não tem esse nome: o que ele vê é a lacuna que o
+   * próprio renderer imprime quando o valor não foi ditado. São dois jeitos de
+   * dizer a mesma coisa ("aqui entra um dado do exame, e a sua redação não
+   * pode descartá-lo"), e o motor precisa entender os dois — senão a validação
+   * do derivado procura `{dado}` numa frase que nunca teve chaves.
+   */
+  lacunasObrigatorias?: number;
   /** Só entra no documento se o predicado passar. */
   incluirSe?: (ctx: SlotContext<F>) => boolean;
   variantes: SlotVariant<F>[];
