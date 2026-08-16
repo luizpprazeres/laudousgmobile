@@ -72,6 +72,21 @@ for (const m of MODELOS_NORMAIS) {
   const suspeitas = linhas.filter(
     (l) => CHEIRO_DE_ACHADO.some((re) => re.test(l.texto)) && !NEGA_O_ACHADO.test(l.texto),
   );
+
+  /**
+   * 2b · o modelo não pode ser um exame RUIM.
+   *
+   * Um booleano invertido não produz patologia com nome feio — produz um exame
+   * mal feito: "Ovário direito não visualizado", "Bexiga com repleção
+   * insuficiente", "Orifício interno aberto, com risco para trabalho de parto
+   * prematuro". Nenhum destes seria pego pelo `CHEIRO_DE_ACHADO`, e todos são
+   * o oposto do modelo padrão da categoria.
+   */
+  const naoIdeal = linhas.filter((l) =>
+    /(n[ãa]o visualizad|n[ãa]o caracterizad|insuficiente|prejudicando|\[REVISAR\]|aberto, com risco|risco para trabalho de parto)/i
+      .test(l.texto));
+  t(`${m.categoria}: o modelo padrão não é um exame mal feito`, naoIdeal.length === 0,
+    naoIdeal.map((s) => `"${s.texto.slice(0, 78)}"`).join("\n        "));
   t(`${m.categoria}: nenhuma frase de achado na lista`, suspeitas.length === 0,
     suspeitas.map((s) => `"${s.texto.slice(0, 70)}"`).join("\n        "));
 
