@@ -156,6 +156,15 @@ const FETO_JSON = {
     "peso_g",
     "peso_variacao_g",
     "percentil",
+    // Achados patológicos POR FETO (catálogo de 16/08). Em `required` porque o
+    // modo strict da OpenAI exige TODA propriedade em `required` — o "opcional"
+    // se exprime pelo `null`, não pela ausência.
+    "bcf_alteracao",
+    "movimentos_fetais",
+    "cranio_achado",
+    "cranio_medida_mm",
+    "cranio_lateralidade",
+    "cordao_vasos",
   ],
   properties: {
     rotulo: str,
@@ -172,6 +181,38 @@ const FETO_JSON = {
     peso_g: num,
     peso_variacao_g: num,
     percentil: num,
+    /**
+     * ACHADOS PATOLÓGICOS POR FETO.
+     *
+     * Estavam só no schema Zod: o extractor não os conhecia, então nunca os
+     * preenchia, e todo o catálogo de patologias de 16/08 era decorativo — com
+     * a flag ligada os laudos sairiam exatamente iguais aos de antes.
+     *
+     * ⚠️ Este objeto é o CONTRATO VIVO da extração em modo strict, e o
+     * `DOPPLER_OBSTETRICO` HERDA. Nunca mexer aqui sem mexer no prompt e no
+     * consumidor na mesma leva — e sem rodar `equivalencia-real.manual.ts`
+     * antes e depois.
+     */
+    bcf_alteracao: {
+      type: ["string", "null"],
+      enum: ["ausente", "bradicardia", "taquicardia", null],
+    },
+    movimentos_fetais: { type: ["string", "null"], enum: ["ausentes", "reduzidos", null] },
+    cranio_achado: {
+      type: ["string", "null"],
+      enum: [
+        "ventriculomegalia",
+        "cisto_plexo_coroide",
+        "megacisterna_magna",
+        "cisto_bolsa_blake",
+        "dandy_walker",
+        "cavum_nao_visualizado",
+        null,
+      ],
+    },
+    cranio_medida_mm: num,
+    cranio_lateralidade: str,
+    cordao_vasos: { type: ["string", "null"], enum: ["tres", "dois", null] },
   },
 } as const;
 
@@ -202,6 +243,8 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "placenta_grau",
     "placenta_relacao_orificio",
     "placenta_distancia_orificio_mm",
+    "placenta_achado",
+    "placenta_achado_medidas",
     "liquido_tipo",
     "liquido_ila_cm",
     "liquido_mbv_por_feto_cm",
@@ -237,6 +280,16 @@ export const OBSTETRICA_JSON_SCHEMA = {
       enum: ["insercao_baixa", "marginal", "previa", null],
     },
     placenta_distancia_orificio_mm: num,
+    /**
+     * Achado AGUDO da placenta — eixo independente da topografia e da relação
+     * com o orifício. As três coisas podem coexistir no mesmo exame.
+     */
+    placenta_achado: {
+      type: ["string", "null"],
+      enum: ["descolamento", "acretismo", "lagos_venosos", null],
+    },
+    /** Medidas do descolamento, como ditadas ("3,2 x 1,8 cm"). */
+    placenta_achado_medidas: str,
     liquido_tipo: { type: ["string", "null"], enum: ["normal", "ila", "mbv", "alterado", null] },
     liquido_ila_cm: num,
     liquido_mbv_por_feto_cm: { type: ["array", "null"], items: { type: "number" } },
@@ -322,15 +375,72 @@ REGRAS:
     - NUNCA invente. Array VAZIO [] se não houver conteúdo extra.
 14. observacoes_corpo_livres (CAMADA FLEXÍVEL — CORPO): observação clínica que o
     médico manda pôr no CORPO do laudo (descrição do que se vê) e que NÃO cabe em
-    NENHUM outro campo — ex.: "adicione uma frase sobre as adrenais fetais",
-    "comente o cordão umbilical com 3 vasos". Mesmas regras ESTRITAS do item 13:
+    NENHUM outro campo — ex.: "adicione uma frase sobre as adrenais fetais".
+    (O cordão umbilical passou a ter campo próprio — ver item 18 — e por isso
+    NÃO entra mais aqui.) Mesmas regras ESTRITAS do item 13:
     - SUBSTÂNCIA LIMPA nas palavras do médico, SEM as palavras de comando
       ("adicione uma frase", "comente", "descreva no corpo") e SEM ruído.
     - NUNCA repita o que já tem campo próprio (biometria, placenta, líquido,
       apresentação, BCF, movimentos) — isso já é montado pelo sistema.
     - Diferença do 13: aqui é DESCRIÇÃO do corpo; lá é item de CONCLUSÃO. Uma
       observação de corpo NÃO vira item de conclusão (e vice-versa).
-    - NUNCA invente. Array VAZIO [] se não houver.`;
+    - NUNCA invente. Array VAZIO [] se não houver.
+
+ACHADOS ALTERADOS — campos tipados. Regra geral para os itens 15 a 18: são
+SEMPRE null quando o médico não ditou o achado. Silêncio NUNCA vira achado, e
+achado NUNCA vira normalidade. Se o médico descreveu algo que não cabe nos
+valores abaixo, use achados_adicionais / observacoes_corpo_livres — NÃO force
+para o valor mais parecido.
+
+15. fetos[].bcf_alteracao — alteração da vitalidade DAQUELE feto:
+    - "ausente": batimentos não visualizados, óbito fetal, feto sem vitalidade,
+      sem atividade cardíaca, feto morto. Nesse caso bcf_bpm é null.
+    - "bradicardia" / "taquicardia": o médico NOMEOU a alteração. Um BCF baixo
+      ou alto SEM o médico nomear NÃO vira alteração — deixe null e registre só
+      bcf_bpm. Classificar é ato clínico, não seu.
+    - No gemelar isto é POR FETO: acontece de um feto ter óbito e o outro não.
+
+16. fetos[].movimentos_fetais — "ausentes" ou "reduzidos", só quando ditado.
+    Movimentos normais NÃO se registram aqui (o modelo já os afirma): null.
+
+17. fetos[].cranio_achado — achado do crânio/SNC, um valor:
+    - "ventriculomegalia" (com cranio_medida_mm = átrio ventricular em mm)
+    - "cisto_plexo_coroide" (cranio_medida_mm + cranio_lateralidade
+      "à direita"/"à esquerda", como ditado)
+    - "megacisterna_magna" (cranio_medida_mm = cisterna magna)
+    - "cisto_bolsa_blake"
+    - "dandy_walker"
+    - "cavum_nao_visualizado" (cavum do septo pelúcido não visualizado)
+    Medida não ditada → cranio_medida_mm null (NUNCA inventar). Lateralidade
+    não dita → cranio_lateralidade null.
+
+18. fetos[].cordao_vasos — o NÚMERO DE VASOS do cordão, só quando avaliado:
+    - "tres" = cordão normal: duas artérias e uma veia.
+    - "dois" = artéria umbilical ÚNICA: uma artéria e uma veia.
+    - null = o médico não falou do cordão. Afirmar "três vasos" sem ele ter
+      avaliado é inventar exame.
+    Quando preencher este campo, NÃO repita o cordão em
+    observacoes_corpo_livres — o sistema já escreve a frase a partir daqui.
+
+19. placenta_achado — achado AGUDO da placenta, INDEPENDENTE da localização e da
+    relação com o orifício (as três coisas coexistem):
+    - "descolamento": coleção/hematoma retroplacentário. Se o médico deu as
+      medidas, copie-as literalmente em placenta_achado_medidas ("3,2 x 1,8 cm");
+      senão null.
+    - "acretismo": suspeita de acretismo/PAS, perda da zona hipoecoica
+      retroplacentária, invasão miometrial.
+    - "lagos_venosos": lagos/lacunas venosas placentárias.
+    null quando não ditado. NUNCA deduza acretismo de placenta prévia — são
+    coisas diferentes, e prévia já é placenta_relacao_orificio.
+
+20. placenta_relacao_orificio — relação com o orifício interno do colo, eixo
+    SEPARADO da topografia (anterior/posterior vai em placenta_localizacao):
+    - "insercao_baixa": placenta baixa / no segmento inferior, sem alcançar o
+      orifício. Se o médico deu a distância da borda ao orifício, copie em
+      placenta_distancia_orificio_mm (em mm).
+    - "marginal": a borda ALCANÇA/margeia o orifício, sem recobrir.
+    - "previa": RECOBRE o orifício interno.
+    null quando o médico não falou da relação com o orifício.`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos

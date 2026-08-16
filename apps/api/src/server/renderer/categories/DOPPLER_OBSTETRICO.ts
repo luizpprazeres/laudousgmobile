@@ -154,7 +154,21 @@ REGRAS DO DOPPLER:
     acm_alterado, incisura (incisura protodiastólica nas uterinas), ectasia, pre_centralizacao,
     centralizacao (brain sparing/redistribuição), uterinas_acima_p95 (uterinas "acima do P95").
 13. SEGURANÇA — vitalidade_ausente: true se o médico disser ÓBITO/"sem vitalidade"/"BCF ausente"/
-    "sem batimentos"/"sem atividade cardíaca". Caso contrário null. NUNCA invente vitalidade.`;
+    "sem batimentos"/"sem atividade cardíaca". Caso contrário null. NUNCA invente vitalidade.
+14. ACHADOS ALTERADOS POR FETO — herdados da categoria OBSTETRICA e com as MESMAS
+    regras: fetos[].bcf_alteracao ("ausente"/"bradicardia"/"taquicardia"),
+    fetos[].movimentos_fetais ("ausentes"/"reduzidos"), fetos[].cranio_achado +
+    cranio_medida_mm + cranio_lateralidade, fetos[].cordao_vasos ("tres" normal,
+    "dois" = artéria umbilical única), placenta_achado ("descolamento" com
+    placenta_achado_medidas / "acretismo" / "lagos_venosos") e
+    placenta_relacao_orificio ("insercao_baixa"/"marginal"/"previa" +
+    placenta_distancia_orificio_mm). TODOS null quando não ditados — silêncio
+    nunca vira achado.
+    RELAÇÃO COM O ITEM 13: vitalidade_ausente é do EXAME e continua valendo;
+    fetos[].bcf_alteracao diz de QUAL feto. Com óbito, preencha os DOIS —
+    vitalidade_ausente=true e bcf_alteracao="ausente" no feto certo. No gemelar
+    é o segundo que carrega a informação, porque "o exame tem um óbito" não diz
+    se o feto morto é o A ou o B.`;
 
 // ---------------------------------------------------------------------------
 // Helpers locais
