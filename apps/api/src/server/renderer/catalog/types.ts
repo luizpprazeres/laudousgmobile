@@ -47,12 +47,40 @@ export type SlotVariant<F> = {
    * mascarar um achado patológico.)
    */
   personalizavel?: boolean;
+  /**
+   * Achado de EXEMPLO que faz esta variante valer — usado só para exibição.
+   *
+   * Sem isto, as variantes montadas pelo motor (justamente as patológicas)
+   * aparecem na Biblioteca e no Lab **sem texto nenhum**: `frase` é undefined e
+   * não há o que mostrar. O médico via "não editável" e o motivo, mas nunca a
+   * frase que sairia no laudo dele.
+   *
+   * É mesclado sobre um achado-base da categoria e renderizado; o resultado
+   * vira `corpoExemplo` / `conclusaoExemplo` em `describeCatalog`.
+   */
+  exemplo?: Record<string, unknown>;
 };
 
 export type Slot<F> = {
   id: string;
   /** Invariante de PRESENÇA: nenhuma personalização remove. */
   obrigatorio?: boolean;
+  /**
+   * Invariante de SOBREVIVÊNCIA do achado — separada de `obrigatorio`.
+   *
+   * BURACO (revisão Codex 16/08): `personalizavel: false` só impede
+   * `replace_phrase`. NÃO impedia `remove_slot`. Um médico podia remover
+   * `cranio_achado`, `placenta_achado` e `cordao_umbilical` e o laudo perdia
+   * Dandy-Walker, acretismo, prévia e artéria umbilical única — conservando
+   * "estruturas cranianas normais". A validação retornava zero erros.
+   *
+   * Isso viola a crítica C3 mais gravemente que o defeito que ela criou para
+   * impedir: não é normalidade mascarando patologia, é patologia APAGADA.
+   *
+   * `obrigatorio` não serve aqui: estes slots são CONDICIONAIS — não aparecem
+   * quando não há achado. O que não se pode é removê-los do modelo.
+   */
+  removivel?: boolean;
   /** Invariante de CONTEÚDO: placeholders que a frase precisa conservar. */
   placeholdersObrigatorios?: string[];
   /** Só entra no documento se o predicado passar. */

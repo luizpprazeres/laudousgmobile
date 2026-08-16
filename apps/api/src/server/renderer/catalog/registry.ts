@@ -15,6 +15,7 @@
  */
 
 import { env } from "@/server/env";
+import type { ObstetricaFindings } from "../categories/OBSTETRICA";
 import { OBSTETRICA_CLASSICO } from "./OBSTETRICA.classico";
 import { OBSTETRICA_SAMPLES } from "./OBSTETRICA.samples";
 import { buildObstetricaDoc, renderObstetricaCatalogo } from "./OBSTETRICA.render";
@@ -36,6 +37,36 @@ const OBSTETRICA_ENTRADA = {
   samples: OBSTETRICA_SAMPLES,
   render: (args: Parameters<typeof renderObstetricaCatalogo>[0]) => renderObstetricaCatalogo(args),
   buildDoc: (args: Parameters<typeof buildObstetricaDoc>[0]) => buildObstetricaDoc(args).doc,
+  /**
+   * Renderiza o `exemplo` de uma variante sobre o achado-base da categoria, e
+   * devolve os segmentos — é o que dá texto às variantes montadas pelo motor na
+   * Biblioteca e no Lab. Sem isto, uma patologia aparece na lista sem frase.
+   */
+  renderizarExemplo: (exemplo: Record<string, unknown>) => {
+    const base = OBSTETRICA_SAMPLES[0]!.findings;
+    const ex = exemplo as Partial<ObstetricaFindings> & { fetos?: Record<string, unknown>[] };
+    /**
+     * Mescla RASA no exame, PROFUNDA no feto.
+     *
+     * Achados por feto (BCF, crânio, cordão) vivem dentro de `fetos[]`. Com
+     * mescla rasa o exemplo teria de repetir o feto inteiro — e sem sobrescrever
+     * `bcf_bpm` a prévia de bradicardia e taquicardia saía com o mesmo valor do
+     * feto-base (defeito #9 da revisão do Codex).
+     */
+    const findings = {
+      ...base,
+      ...ex,
+      fetos: ex.fetos
+        ? ex.fetos.map((f, i) => ({ ...(base.fetos[i] ?? base.fetos[0]!), ...f }))
+        : base.fetos,
+    } as ObstetricaFindings;
+    return buildObstetricaDoc({ findings, flags: flagsDeProducao() }).doc.segments.map((s) => ({
+      slotId: s.slotId,
+      variantId: s.variantId,
+      kind: s.kind,
+      text: s.text,
+    }));
+  },
 } as const;
 
 export type EntradaCatalogo = typeof OBSTETRICA_ENTRADA;

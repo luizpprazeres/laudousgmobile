@@ -26,7 +26,7 @@ type Feto = DopplerObstetricoFindings["fetos"][number];
 const feto = (p: Partial<Feto>): Feto => ({
   rotulo: null, posicao_relativa: null, apresentacao: null, dorso: null,
   polo_cefalico: null, bcf_bpm: 140, dbp_mm: null, cc_mm: null, ca_mm: null,
-  cf_mm: null, ccn_mm: null, peso_g: null, peso_variacao_g: null, percentil: null,
+  cf_mm: null, ccn_mm: null, peso_g: null, peso_variacao_g: null, percentil: null, bcf_alteracao: null, movimentos_fetais: null, cranio_achado: null, cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: null,
   ...p,
 });
 
@@ -39,7 +39,7 @@ const F = (p: Partial<DopplerObstetricoFindings>): DopplerObstetricoFindings => 
   ig_referencia_hoje_dias: null, referencia_fonte: null, corrigir_ig: null,
   saco_gestacional_mm: null, saco_gestacional_medidas_mm: null,
   placenta_quantidade: null, placenta_localizacao: null,
-  placenta_ecotextura: null, placenta_grau: null, liquido_tipo: null,
+  placenta_ecotextura: null, placenta_grau: null, placenta_relacao_orificio: null, placenta_distancia_orificio_mm: null, placenta_achado: null, placenta_achado_medidas: null, liquido_tipo: null,
   liquido_ila_cm: null, liquido_mbv_por_feto_cm: null, liquido_classe: null,
   achados_adicionais: null, itens_conclusao_livres: [], observacoes_corpo_livres: [],
   // doppler

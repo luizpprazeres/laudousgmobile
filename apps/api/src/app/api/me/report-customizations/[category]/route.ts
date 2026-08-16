@@ -137,12 +137,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
       base_catalog_id: r.entrada.catalog.id,
       base_versao: r.entrada.catalog.versao,
       flags,
-      catalogo: describeCatalog(r.entrada.catalog, [
-        {
-          nome: "Gestação padrão",
-          ctx: { findings: r.entrada.samples[0]!.findings, fetoIndex: 0, gemelar: false, flags },
-        },
-      ]),
+      catalogo: describeCatalog(
+        r.entrada.catalog,
+        [
+          {
+            nome: "Gestação padrão",
+            ctx: { findings: r.entrada.samples[0]!.findings, fetoIndex: 0, gemelar: false, flags },
+          },
+        ],
+        // Dá texto às variantes montadas pelo motor — sem isto, as patologias
+        // aparecem na lista sem a frase que sairia no laudo.
+        r.entrada.renderizarExemplo,
+      ),
       /**
        * A personalização publicada está REALMENTE valendo nos laudos?
        *

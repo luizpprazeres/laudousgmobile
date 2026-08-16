@@ -274,6 +274,14 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
 
     if (o.op === "remove_slot") {
       if (slot.obrigatorio) erros.push(`slot obrigatório não pode ser removido: ${o.slot}`);
+      // Segunda trava, independente de `obrigatorio`: slot que carrega achado
+      // patológico não pode sumir do modelo. Ver Slot.removivel.
+      else if (slot.removivel === false) {
+        erros.push(
+          `"${o.slot}" descreve achados alterados e não pode ser removido do modelo — ` +
+            `ele só aparece quando o achado é ditado`,
+        );
+      }
       continue;
     }
 

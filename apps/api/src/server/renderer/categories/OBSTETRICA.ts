@@ -34,6 +34,26 @@ const FetoSchema = z.object({
   peso_g: z.number().nullable(),
   peso_variacao_g: z.number().nullable(),
   percentil: z.number().nullable(),
+  /**
+   * ACHADOS POR FETO — não do exame.
+   *
+   * BUG (revisão Codex 16/08): estavam no nível do exame, então no gemelar
+   * `bcf_alteracao` era global e simplesmente ignorado — ditar ausência de BCF
+   * saía com dois batimentos positivos. E o Luiz confirmou: "acontece de um
+   * feto ter óbito e o outro não".
+   *
+   * `.default(null)` para que payload antigo (sem os campos) faça parse.
+   */
+  bcf_alteracao: z.enum(["ausente", "bradicardia", "taquicardia"]).nullable().default(null),
+  movimentos_fetais: z.enum(["ausentes", "reduzidos"]).nullable().default(null),
+  cranio_achado: z
+    .enum(["ventriculomegalia", "cisto_plexo_coroide", "megacisterna_magna",
+           "cisto_bolsa_blake", "dandy_walker", "cavum_nao_visualizado"])
+    .nullable().default(null),
+  cranio_medida_mm: z.number().nullable().default(null),
+  cranio_lateralidade: z.string().nullable().default(null),
+  /** Cada feto tem o seu cordão. */
+  cordao_vasos: z.enum(["tres", "dois"]).nullable().default(null),
 });
 
 export const ObstetricaFindingsSchema = z.object({
@@ -61,6 +81,43 @@ export const ObstetricaFindingsSchema = z.object({
   placenta_localizacao: z.string().nullable(),
   placenta_ecotextura: z.string().nullable(),
   placenta_grau: z.string().nullable(),
+  /**
+   * Relação da placenta com o orifício interno do colo — eixo INDEPENDENTE da
+   * topografia (`placenta_localizacao`). Sem separar os dois, "placenta
+   * posterior de inserção baixa" é inexprimível: `posterior` é topografia,
+   * `inserção baixa` é relação. Ver docs/plano-biblioteca-implementacao-2026-08-12.md §A.5.3.
+   *
+   * Só é consumido pelo CATÁLOGO (dormente atrás de flag). O renderer clássico
+   * ignora — nada muda em produção enquanto a flag não subir.
+   */
+  placenta_relacao_orificio: z
+    .enum(["insercao_baixa", "marginal", "previa"])
+    .nullable(),
+  /**
+   * Distância da borda inferior ao orifício interno, em mm.
+   *
+   * OPCIONAL por decisão clínica (Luiz 14/08): só é ditada quando está muito
+   * clara, ou quando houve transvaginal complementar. Ausente → a 2ª frase da
+   * inserção baixa simplesmente não sai.
+   */
+  placenta_distancia_orificio_mm: z.number().nullable(),
+  /**
+   * ACHADOS PATOLÓGICOS — catálogo aprovado pelo Dr. Luiz em 2026-08-16.
+   * Ver docs/catalogo-patologias-obstetrica-spec-2026-08-16.md.
+   *
+   * Todos OPCIONAIS e consumidos SÓ pelo catálogo (dormente atrás de flag).
+   * O renderer clássico os ignora — nada muda em produção até a flag subir.
+   *
+   * NÃO incluem biometria (PIG/CIR/GIG) nem classes de líquido: essas já
+   * existem, mais completas, nas specs do Writer V2. Duplicar criaria uma
+   * terceira redação do mesmo achado.
+   */
+  /** Achado agudo da placenta — eixo independente de localização e de relação. */
+  placenta_achado: z
+    .enum(["descolamento", "acretismo", "lagos_venosos"])
+    .nullable()
+    .default(null),
+  placenta_achado_medidas: z.string().nullable().default(null),
   liquido_tipo: z.enum(["normal", "ila", "mbv", "alterado"]).nullable(),
   liquido_ila_cm: z.number().nullable(),
   liquido_mbv_por_feto_cm: z.array(z.number()).nullable(),
@@ -143,6 +200,8 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "placenta_localizacao",
     "placenta_ecotextura",
     "placenta_grau",
+    "placenta_relacao_orificio",
+    "placenta_distancia_orificio_mm",
     "liquido_tipo",
     "liquido_ila_cm",
     "liquido_mbv_por_feto_cm",
@@ -173,6 +232,11 @@ export const OBSTETRICA_JSON_SCHEMA = {
     placenta_localizacao: str,
     placenta_ecotextura: str,
     placenta_grau: str,
+    placenta_relacao_orificio: {
+      type: ["string", "null"],
+      enum: ["insercao_baixa", "marginal", "previa", null],
+    },
+    placenta_distancia_orificio_mm: num,
     liquido_tipo: { type: ["string", "null"], enum: ["normal", "ila", "mbv", "alterado", null] },
     liquido_ila_cm: num,
     liquido_mbv_por_feto_cm: { type: ["array", "null"], items: { type: "number" } },
@@ -372,8 +436,45 @@ export function calcDsm(f: ObstetricaFindings): number | null {
 const COMENTARIOS =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
-export function fetoApresentacaoFrase(f: ObstetricaFindings["fetos"][number], inicial: boolean): string {
-  const subst = inicial ? "Embrião" : "Feto";
+/**
+ * "Embrião" ou "Feto"? — corte em 10 SEMANAS, não em 13s6d.
+ *
+ * BUG (relatado pelo Luiz 2026-08-16): o médico ditava "Feto com 11 semanas e
+ * 2 dias" e o laudo saía "Embrião único". Causa: UM flag decidia DUAS coisas.
+ *
+ *   gestacao_inicial (≤13s6d) → escolhe o MODELO do laudo   ✅ correto
+ *   gestacao_inicial          → escolhia a PALAVRA           ❌ errado
+ *
+ * São eixos independentes: "feto é acima de 10 semanas, e embrião abaixo
+ * disso" (Luiz). A janela do defeito era 10s0d–13s6d — quase quatro semanas
+ * de gestações saindo com o substantivo errado.
+ *
+ * Sem IG conhecida cai no comportamento antigo: nesse caso não há como
+ * decidir, e as gestações sem IG são tipicamente as bem iniciais.
+ *
+ * ⚠️ LIMITE CONHECIDO — usa a IG BIOMÉTRICA (`ig_semanas`), não a corrigida.
+ * Quando há referência de USG precoce e `IG_REFERENCE_CORRECTION` está ligada,
+ * `computeIg` pode devolver uma IG diferente. Se as duas caírem em lados
+ * opostos das 10 semanas (ex.: biometria 9s5d, corrigida 10s2d), a palavra sai
+ * pela biometria. Janela estreita, mas real.
+ *
+ * Não troquei por `computeIg` porque isso tornaria o substantivo dependente de
+ * FLAG — a mesma gestação viraria "embrião" ou "feto" conforme a flag. Decidir
+ * isso é chamada clínica, não técnica.
+ */
+export function ehEmbriao(f: ObstetricaFindings): boolean {
+  if (f.ig_semanas === null) return f.gestacao_inicial;
+  return f.ig_semanas < 10;
+}
+
+export function fetoApresentacaoFrase(
+  f: ObstetricaFindings["fetos"][number],
+  inicial: boolean,
+  embriao: boolean = inicial,
+): string {
+  // `inicial` continua governando a FORMA da frase (situação × apresentação),
+  // que é escolha de modelo. Só o substantivo passou a depender da IG.
+  const subst = embriao ? "Embrião" : "Feto";
   const apres = apresentacaoFmt(f.apresentacao) ?? (inicial ? "transversa" : "cefálica");
   const conector = inicial ? "em situação" : "em apresentação";
   let frase = `${subst} único, ${conector} ${apres}`;
@@ -469,6 +570,7 @@ function rotuloFeto(f: ObstetricaFindings, i: number): string {
 }
 
 export const EMPTY_FETO: ObstetricaFindings["fetos"][number] = {
+  bcf_alteracao: null, movimentos_fetais: null, cranio_achado: null, cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: null,
   rotulo: null,
   posicao_relativa: null,
   apresentacao: null,
@@ -688,7 +790,7 @@ export function renderObstetricaClassico(
   } else {
     // Feto único.
     const ft = f.fetos[0] ?? EMPTY_FETO;
-    aspectos.push(fetoApresentacaoFrase(ft, f.gestacao_inicial));
+    aspectos.push(fetoApresentacaoFrase(ft, f.gestacao_inicial, ehEmbriao(f)));
     if (f.gestacao_inicial) {
       // P1 — no obstétrico inicial a linha do saco gestacional é OBRIGATÓRIA;
       // nunca some. DSM calculado das 3 medidas (ou ditado direto); sem dado →
@@ -927,7 +1029,7 @@ export function renderObstetricaObjetivo(
         `Saco gestacional de forma normal, diâmetro médio (DSM): ${mm1(calcDsm(f))} mm.`,
       );
       const apres = apresentacaoFmt(ft.apresentacao) ?? "transversa";
-      let fetoFrase = `Embrião único, em situação ${apres}`;
+      let fetoFrase = `${ehEmbriao(f) ? "Embrião" : "Feto"} único, em situação ${apres}`;
       if (ft.dorso) fetoFrase += `, com dorso ${ft.dorso}`;
       achados.push(`${fetoFrase}.`);
       achados.push(

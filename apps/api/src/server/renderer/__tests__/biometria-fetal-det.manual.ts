@@ -11,7 +11,7 @@ import {
   reconcileBiometriaUnidade,
   igSemanasPorCf,
 } from "../categories/biometriaFetal";
-import { renderObstetrica, type ObstetricaFindings } from "../categories/OBSTETRICA";
+import { renderObstetrica, EMPTY_FETO, type ObstetricaFindings } from "../categories/OBSTETRICA";
 import { flagImplausibleMeasures } from "../../pipeline/measureSanity";
 import { normalizeAsrClinical } from "../../pipeline/asrClinical";
 
@@ -23,6 +23,7 @@ const ck = (n: boolean, t: string, d?: string) => {
 };
 
 const feto = (over: Partial<ObstetricaFindings["fetos"][number]> = {}) => ({
+  ...EMPTY_FETO,
   rotulo: null,
   posicao_relativa: null,
   apresentacao: "cefálica",
@@ -36,7 +37,7 @@ const feto = (over: Partial<ObstetricaFindings["fetos"][number]> = {}) => ({
   ccn_mm: null,
   peso_g: null,
   peso_variacao_g: null,
-  percentil: null,
+  percentil: null, bcf_alteracao: null, movimentos_fetais: null, cranio_achado: null, cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: null,
   ...over,
 });
 
@@ -64,7 +65,7 @@ const findings = (
   placenta_quantidade: null,
   placenta_localizacao: "anterior",
   placenta_ecotextura: null,
-  placenta_grau: null,
+  placenta_grau: null, placenta_relacao_orificio: null, placenta_distancia_orificio_mm: null, placenta_achado: null, placenta_achado_medidas: null,
   liquido_tipo: null,
   liquido_ila_cm: null,
   liquido_mbv_por_feto_cm: null,

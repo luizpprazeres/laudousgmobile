@@ -133,9 +133,15 @@
       "conclusao": ""
     },
     {
-      "gatilho": "gestação inicial com embrião único",
+      "gatilho": "gestação inicial com idade gestacional ABAIXO de 10 semanas",
       "slot_alvo": "embriao",
       "corpo": "Embrião único, em situação transversa.",
+      "conclusao": ""
+    },
+    {
+      "gatilho": "gestação inicial com idade gestacional de 10 semanas ou mais (até 13s6d)",
+      "slot_alvo": "embriao",
+      "corpo": "Feto único, em situação transversa.",
       "conclusao": ""
     },
     {

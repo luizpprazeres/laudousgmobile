@@ -9,7 +9,7 @@
  * nomeados). O que o motor decide vive em `montar` ou em variante marcada
  * `personalizavel: false` — estados clínicos alterados nunca são reescritos.
  */
-import { calcDsm, calcPonderal, type ObstetricaFindings } from "../categories/OBSTETRICA";
+import { calcDsm, calcPonderal, ehEmbriao, type ObstetricaFindings } from "../categories/OBSTETRICA";
 import type { Catalog, SlotContext } from "./types";
 
 type F = ObstetricaFindings;
@@ -66,6 +66,50 @@ function placentaAlterada(f: F, grannum: boolean): boolean {
   if (f.numero_fetos >= 2) return true;
   return Boolean(f.placenta_localizacao) || Boolean(placentaEco(f, grannum)) || Boolean(grauFmt(f.placenta_grau));
 }
+/**
+ * Corpo da placenta quando há RELAÇÃO com o orifício interno do colo.
+ *
+ * Ordem fixada pelos laudos reais do Luiz (14/08):
+ *   localização → ecotextura → cláusula de extensão
+ *
+ * A cláusula não é um trecho intercambiável: a redação difere estruturalmente
+ * entre os três casos ("estendendo-se ao segmento" × "estendendo-se
+ * inferiormente E margeando" × "estendendo-se ao segmento E recobrindo
+ * amplamente"). Por isso são três variantes, não um placeholder.
+ *
+ * A 2ª frase (distância ao orifício) é OPCIONAL por decisão clínica: só é
+ * ditada quando está muito clara, ou quando houve transvaginal complementar.
+ */
+function placentaRelacaoTexto(f: F, grannum: boolean): string {
+  const paren = grannumParen(f.placenta_grau, grannum);
+  const eco = placentaEco(f, grannum);
+  const grauTxt = grauFmt(f.placenta_grau);
+
+  let frase = "Placenta";
+  if (f.placenta_localizacao) frase += ` de localização ${f.placenta_localizacao}`;
+  if (!grannum && grauTxt) frase += `, ${grauTxt}`;
+  if (eco) frase += `, com ecotextura ${eco}`;
+  frase += paren;
+  frase += `, ${CLAUSULA_RELACAO[f.placenta_relacao_orificio ?? "insercao_baixa"]}.`;
+
+  if (f.placenta_relacao_orificio === "insercao_baixa" && f.placenta_distancia_orificio_mm != null) {
+    frase +=
+      ` Sua borda inferior dista cerca de ${ptBr(f.placenta_distancia_orificio_mm)} mm` +
+      " do orifício interno do colo uterino, sem recobri-lo.";
+  }
+  return `\n${frase}`;
+}
+
+const CLAUSULA_RELACAO: Record<NonNullable<F["placenta_relacao_orificio"]>, string> = {
+  insercao_baixa: "estendendo-se ao segmento uterino inferior",
+  marginal:
+    "estendendo-se inferiormente e margeando o orifício interno do colo uterino," +
+    " sem evidência de recobrimento",
+  previa:
+    "estendendo-se ao segmento uterino inferior e recobrindo amplamente" +
+    " o orifício interno do colo uterino",
+};
+
 function placentaTexto(f: F, grannum: boolean): string {
   const paren = grannumParen(f.placenta_grau, grannum);
   const eco = placentaEco(f, grannum);
@@ -105,6 +149,83 @@ function mbvGemelarTxt(f: F): string {
     .map((v, i) => `${ptBr(v)} cm (feto ${rotuloFeto(f, i)})`)
     .join(" e ");
 }
+
+
+/** Alterações de vitalidade — valem no feto único E no gemelar (por feto). */
+const BCF_ALTERADO: Catalog<F>["slots"][number]["variantes"] = [
+        /**
+   * Vitalidade ausente — a frase do corpo depende do TRIMESTRE e a palavra
+   * embrião/feto depende da IG (10 sem). Dois cortes diferentes.
+   */
+  { id: "ausente_inicial", quando: (c) => ftDe(c)?.bcf_alteracao === "ausente" && inicial(c),
+    montar: () => "\nBatimentos cardíacos fetais não visualizados pelo modo B ou pelo modo Doppler.",
+    montarConclusao: (c) => `${embriao(c) ? "Embrião" : "Feto"} sem vitalidade.`,
+    personalizavel: false,
+    exemplo: { gestacao_inicial: true, ig_semanas: 8, fetos: [{ bcf_alteracao: "ausente", bcf_bpm: null }] } },
+  { id: "ausente", quando: (c) => ftDe(c)?.bcf_alteracao === "ausente",
+    montar: () => "\nAusência de batimentos cardíacos fetais.",
+    montarConclusao: () => "Óbito fetal.",
+    personalizavel: false,
+    exemplo: { gestacao_inicial: false, ig_semanas: 32, fetos: [{ bcf_alteracao: "ausente", bcf_bpm: null }] } },
+  { id: "bradicardia", quando: (c) => ftDe(c)?.bcf_alteracao === "bradicardia",
+    montar: (_c, v) => `\nBatimentos cardíacos presentes, com frequência de ${v.bcf} bpm.`,
+    montarConclusao: () => "Bradicardia fetal.",
+    personalizavel: false,
+    exemplo: { fetos: [{ bcf_alteracao: "bradicardia", bcf_bpm: 98 }] } },
+  { id: "taquicardia", quando: (c) => ftDe(c)?.bcf_alteracao === "taquicardia",
+    montar: (_c, v) => `\nBatimentos cardíacos presentes, com frequência de ${v.bcf} bpm.`,
+    montarConclusao: () => "Taquicardia fetal.",
+    personalizavel: false,
+    exemplo: { fetos: [{ bcf_alteracao: "taquicardia", bcf_bpm: 182 }] } },
+];
+
+/**
+ * Achados de crânio/SNC — redação clínica do Dr. Luiz (16/08).
+ * Ver docs/catalogo-patologias-obstetrica-spec-2026-08-16.md §3.
+ *
+ * Todas `personalizavel: false` (crítica C3): são achados patológicos, e frase
+ * personalizada de normalidade jamais pode mascarar patologia.
+ */
+const NEURO = "Convém, a critério clínico, realizar neurossonografia fetal, com objetivo de acompanhar a evolução.";
+const md = (c: Ctx) => { const v = ftDe(c)?.cranio_medida_mm; return v != null ? ptBr(v) : "____"; };
+const lat = (c: Ctx) => ftDe(c)?.cranio_lateralidade ?? "____";
+
+const CRANIO_VARIANTES: Catalog<F>["slots"][number]["variantes"] = [
+  { id: "ventriculomegalia", quando: (c) => ftDe(c)?.cranio_achado === "ventriculomegalia",
+    montar: (c) => `\nVentriculomegalia, com átrio ventricular medindo ${md(c)} mm.`,
+    personalizavel: false,
+    exemplo: { fetos: [{ cranio_achado: "ventriculomegalia", cranio_medida_mm: 11 }] } },
+
+  { id: "cisto_plexo_coroide", quando: (c) => ftDe(c)?.cranio_achado === "cisto_plexo_coroide",
+    montar: (c) => `\nImagem anecoica, de contornos regulares, medindo ${md(c)} mm, situada no plexo coroide ${lat(c)}.`,
+    montarConclusao: (c) => `Cisto de plexo coroide ${lat(c)}.`,
+    personalizavel: false,
+    exemplo: { fetos: [{ cranio_achado: "cisto_plexo_coroide", cranio_medida_mm: 5, cranio_lateralidade: "à esquerda" }] } },
+
+  { id: "megacisterna_magna", quando: (c) => ftDe(c)?.cranio_achado === "megacisterna_magna",
+    montar: (c) => `\nCisterna magna aumentada, medindo ${md(c)} mm, com hemisférios cerebelares e vermis apresentando morfologia preservada.`,
+    montarConclusao: () => `Aumento da cisterna magna. O diagnóstico mais provável é megacisterna magna. ${NEURO}`,
+    personalizavel: false,
+    exemplo: { fetos: [{ cranio_achado: "megacisterna_magna", cranio_medida_mm: 12 }] } },
+
+  { id: "cisto_bolsa_blake", quando: (c) => ftDe(c)?.cranio_achado === "cisto_bolsa_blake",
+    montar: () => "\nImagem anecoica na fossa posterior, em continuidade com o quarto ventrículo, associada a discreta rotação superior do vermis, que apresenta dimensões e morfologia preservadas.",
+    montarConclusao: () => `Achados sugestivos de cisto da bolsa de Blake. ${NEURO}`,
+    personalizavel: false,
+    exemplo: { fetos: [{ cranio_achado: "cisto_bolsa_blake" }] } },
+
+  { id: "dandy_walker", quando: (c) => ftDe(c)?.cranio_achado === "dandy_walker",
+    montar: () => "\nAumento da fossa posterior, associado a comunicação do quarto ventrículo com a cisterna magna, rotação superior e alteração morfológica do vermis cerebelar.",
+    montarConclusao: () => `Achados ultrassonográficos que levantam a possibilidade de malformação da fossa posterior. O diagnóstico mais provável é malformação de Dandy-Walker. ${NEURO}`,
+    personalizavel: false,
+    exemplo: { fetos: [{ cranio_achado: "dandy_walker" }] } },
+
+  { id: "cavum_nao_visualizado", quando: (c) => ftDe(c)?.cranio_achado === "cavum_nao_visualizado",
+    montar: () => "\nNão foi visualizado o cavum do septo pelúcido nos planos ultrassonográficos obtidos.",
+    montarConclusao: () => `Não visualização do cavum do septo pelúcido. ${NEURO}`,
+    personalizavel: false,
+    exemplo: { fetos: [{ cranio_achado: "cavum_nao_visualizado" }] } },
+];
 
 // ---------------------------------------------------------------------------
 // Variáveis expostas ao catálogo
@@ -170,14 +291,29 @@ export function varsObstetrica(ctx: Ctx): Record<string, string> {
 // Catálogo
 // ---------------------------------------------------------------------------
 
+/** O feto em contexto — no gemelar cada repetição traz o seu `fetoIndex`. */
+const ftDe = (c: Ctx) => c.findings.fetos[c.fetoIndex];
 const inicial = (c: Ctx) => c.findings.gestacao_inicial;
+/** "Embrião" só abaixo de 10 semanas — eixo independente de `inicial`. */
+const embriao = (c: Ctx) => ehEmbriao(c.findings);
 const padrao = (c: Ctx) => !c.findings.gestacao_inicial;
 
 export const OBSTETRICA_CLASSICO: Catalog<F> = {
   id: "OBSTETRICA/CLASSICO_COMPLETO",
   categoria: "OBSTETRICA",
   estilo: "CLASSICO_COMPLETO",
-  versao: 1,
+  /**
+   * v2 (2026-08-16) — 33 → 53 variantes.
+   *
+   * Slots novos: `placenta_achado`, `cranio_achado`, `cordao_umbilical`.
+   * Variantes novas em `bcf`, `bcf_gemelar` e `movimentos_fetais`.
+   * `feto` ganhou `inicial_embriao` × `inicial_feto` (corte de 10 semanas).
+   *
+   * O bump faz personalizações gravadas contra a v1 aparecerem como
+   * `baseDesatualizado` — que é o comportamento certo: a estrutura mudou, e o
+   * médico precisa saber antes de publicar por cima.
+   */
+  versao: 2,
   variaveis: VARIAVEIS_OBSTETRICA,
 
   titulo: (c) =>
@@ -199,26 +335,27 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
         "fetos_resumo",
         {
           repetirPorFeto: c.findings.gestacao_inicial
-            ? ["feto_header", "bcf_gemelar", "ccn", "peso_fetal"]
-            : ["feto_header", "bcf_gemelar", "dbp", "cc", "ca", "cf", "peso_fetal"],
+            ? ["feto_header", "bcf_gemelar", "ccn", "cranio_achado", "cordao_umbilical", "peso_fetal"]
+            : ["feto_header", "bcf_gemelar", "movimentos_achado", "cranio_achado", "cordao_umbilical", "dbp", "cc", "ca", "cf", "peso_fetal"],
         },
         "ponderal",
         "placenta",
+        "placenta_achado",
         "liquido_amniotico",
         "achados_adicionais",
       ];
     }
     if (c.findings.gestacao_inicial) {
       return [
-        "saco_gestacional", "feto", "bcf", "ccn",
-        "vesicula_vitelina", "liquido_amniotico", "ovarios", "achados_adicionais",
+        "saco_gestacional", "feto", "bcf", "cranio_achado", "ccn",
+        "vesicula_vitelina", "cordao_umbilical", "liquido_amniotico", "ovarios", "achados_adicionais",
       ];
     }
     return [
-      "feto", "bcf", "movimentos_fetais",
-      "anatomia_header", "anatomia_cranio", "anatomia_visceras",
+      "feto", "bcf", "movimentos_fetais", "movimentos_achado",
+      "anatomia_header", "anatomia_cranio", "cranio_achado", "anatomia_visceras",
       "biometria_header", "dbp", "cc", "ca", "cf", "peso_fetal",
-      "placenta", "liquido_amniotico", "achados_adicionais",
+      "placenta", "placenta_achado", "cordao_umbilical", "liquido_amniotico", "achados_adicionais",
     ];
   },
 
@@ -231,7 +368,16 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
     {
       id: "feto",
       variantes: [
-        { id: "inicial", quando: inicial, frase: "Embrião único, em situação {apresentacao}{dorso_sufixo}{polo_sufixo}." },
+        /**
+         * DOIS eixos, não um (bug 16/08 — ver OBSTETRICA.ts `ehEmbriao`):
+         *   `inicial` (≤13s6d) escolhe a FORMA  — "em situação" × "em apresentação"
+         *   `embriao` (<10 sem) escolhe a PALAVRA — "Embrião" × "Feto"
+         * Entre 10s0d e 13s6d é gestação inicial COM feto.
+         */
+        { id: "inicial_embriao", quando: (c) => inicial(c) && embriao(c),
+          frase: "Embrião único, em situação {apresentacao}{dorso_sufixo}{polo_sufixo}." },
+        { id: "inicial_feto", quando: inicial,
+          frase: "Feto único, em situação {apresentacao}{dorso_sufixo}{polo_sufixo}." },
         { id: "padrao", frase: "Feto único, em apresentação {apresentacao}{dorso_sufixo}{polo_sufixo}." },
       ],
     },
@@ -245,22 +391,86 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
     },
     {
       id: "bcf",
+      /** Carrega achado alterado — ver Slot.removivel (C3). */
+      removivel: false,
       obrigatorio: true,
       placeholdersObrigatorios: ["bcf"],
       variantes: [
+        ...BCF_ALTERADO,
         { id: "inicial", quando: inicial, frase: "Batimentos cardíacos ritmados (BCF = {bcf} bpm)." },
         { id: "padrao", frase: "Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = {bcf} bpm)." },
       ],
     },
     {
       id: "bcf_gemelar",
+      /** Carrega achado alterado — ver Slot.removivel (C3). */
+      removivel: false,
       obrigatorio: true,
       placeholdersObrigatorios: ["bcf"],
-      variantes: [{ id: "gemelar", frase: "Batimentos cardíacos presentes (BCF = {bcf} bpm)." }],
+      // As alterações de vitalidade valem por feto — Luiz 16/08: "acontece de
+      // um feto ter óbito e o outro não".
+      variantes: [...BCF_ALTERADO, { id: "gemelar", frase: "Batimentos cardíacos presentes (BCF = {bcf} bpm)." }],
     },
-    { id: "movimentos_fetais", variantes: [{ id: "normal", frase: "Os movimentos fetais são ativos." }] },
+    {
+      id: "movimentos_fetais",
+      /** Carrega achado alterado — ver Slot.removivel (C3). */
+      removivel: false,
+      /**
+       * Feto sem vitalidade não tem movimento — nem "ativos" (contradição
+       * direta com o óbito), nem "reduzidos". O slot inteiro sai.
+       */
+      incluirSe: (c) => ftDe(c)?.bcf_alteracao !== "ausente",
+      /**
+       * Política de ausência AFIRMATIVA (Luiz 16/08): não dito ⇒ "ativos".
+       * É o OPOSTO da placenta, e está certo — movimentos são observados
+       * durante todo o exame; silêncio significa presença.
+       */
+      variantes: [
+        { id: "normal", frase: "Os movimentos fetais são ativos." },
+      ],
+    },
+    {
+      /**
+       * ACHADO de movimentos — slot próprio e condicional, mesmo padrão de
+       * `placenta_achado` e `cranio_achado`. Como slot condicional pode entrar
+       * na ordem GEMELAR por feto; a frase de normalidade, que é incondicional,
+       * entraria em todo laudo gemelar (a equivalência pegou).
+       */
+      id: "movimentos_achado",
+      removivel: false,
+      incluirSe: (c) => ftDe(c)?.movimentos_fetais != null && ftDe(c)?.bcf_alteracao !== "ausente",
+      variantes: [
+        { id: "ausentes", quando: (c) => ftDe(c)?.movimentos_fetais === "ausentes",
+          frase: "\nNão foram observados movimentos fetais durante o exame.",
+          personalizavel: false,
+          exemplo: { fetos: [{ movimentos_fetais: "ausentes" }] } },
+        { id: "reduzidos", quando: (c) => ftDe(c)?.movimentos_fetais === "reduzidos",
+          frase: "\nMovimentos fetais reduzidos.",
+          personalizavel: false,
+          exemplo: { fetos: [{ movimentos_fetais: "reduzidos" }] } },
+      ],
+    },
     { id: "anatomia_header", variantes: [{ id: "normal", frase: "\nAs considerações sobre a anatomia fetal são as seguintes:" }] },
-    { id: "anatomia_cranio", variantes: [{ id: "normal", frase: "As estruturas cranianas e da coluna vertebral são normais." }] },
+    {
+      id: "anatomia_cranio",
+      // Mesma regra da placenta: com achado de crânio, a frase de normalidade
+      // some — o achado a substitui.
+      variantes: [{ id: "normal", quando: (c) => ftDe(c)?.cranio_achado == null,
+        frase: "As estruturas cranianas e da coluna vertebral são normais." }],
+    },
+    {
+      /**
+       * ACHADO de crânio — slot PRÓPRIO e condicional, não variante da frase de
+       * normalidade. Mesmo motivo da `placenta_achado`: são eixos diferentes, e
+       * como slot condicional pode entrar também na ordem GEMELAR, por feto,
+       * sem alterar o laudo de quem não tem achado.
+       */
+      id: "cranio_achado",
+      /** Carrega achado alterado — ver Slot.removivel (C3). */
+      removivel: false,
+      incluirSe: (c) => ftDe(c)?.cranio_achado != null,
+      variantes: CRANIO_VARIANTES,
+    },
     { id: "anatomia_visceras", variantes: [{ id: "normal", frase: "O estômago e a bexiga foram bem identificados e com ecotextura homogênea." }] },
     { id: "biometria_header", variantes: [{ id: "normal", frase: "\nA biometria fetal é a seguinte:" }] },
     { id: "dbp", obrigatorio: true, placeholdersObrigatorios: ["dbp"], variantes: [{ id: "normal", frase: "Diâmetro biparietal (DBP) de {dbp} mm." }] },
@@ -288,15 +498,120 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
     },
     {
       id: "placenta",
+      /** Carrega achado alterado — ver Slot.removivel (C3). */
+      removivel: false,
       variantes: [
+        /**
+         * RELAÇÃO COM O ORIFÍCIO INTERNO — eixo independente da topografia.
+         *
+         * Vêm ANTES de `descrita` de propósito: `pickVariant` pega a primeira
+         * condição verdadeira, e `placentaAlterada()` também seria true aqui.
+         * Os predicados exigem `placenta_relacao_orificio`, então não há
+         * sobreposição entre eles nem ambiguidade de ordem com o resto.
+         *
+         * `personalizavel: false` pela crítica C3: são achados PATOLÓGICOS, e
+         * frase personalizada jamais pode mascarar patologia. Quem escreve é o
+         * motor. O que o médico personaliza é a placenta normal (`descrita`).
+         *
+         * Spec clínica: docs/plano-biblioteca-implementacao-2026-08-12.md §A.5.3
+         */
+        {
+          id: "insercao_baixa",
+          quando: (c) => c.findings.placenta_relacao_orificio === "insercao_baixa",
+          montar: (c) => placentaRelacaoTexto(c.findings, c.flags.grannum),
+          montarConclusao: () => "Placenta de inserção baixa.",
+          personalizavel: false,
+          exemplo: {
+            placenta_localizacao: "posterior",
+            placenta_ecotextura: "homogênea",
+            placenta_relacao_orificio: "insercao_baixa",
+            placenta_distancia_orificio_mm: 12,
+          },
+        },
+        {
+          id: "marginal",
+          quando: (c) => c.findings.placenta_relacao_orificio === "marginal",
+          montar: (c) => placentaRelacaoTexto(c.findings, c.flags.grannum),
+          // Forma tradicional é o padrão (decisão Luiz 14/08). A descritiva
+          // ("Placenta de localização baixa, cuja borda inferior alcança o
+          // orifício interno do colo uterino, sem recobri-lo.") entra como
+          // variante escolhível na Biblioteca — depende dos pré-requisitos §A.3.
+          montarConclusao: () => "Placenta prévia marginal.",
+          personalizavel: false,
+          exemplo: {
+            placenta_localizacao: "anterior",
+            placenta_ecotextura: "homogênea",
+            placenta_relacao_orificio: "marginal",
+          },
+        },
+        {
+          id: "previa",
+          quando: (c) => c.findings.placenta_relacao_orificio === "previa",
+          montar: (c) => placentaRelacaoTexto(c.findings, c.flags.grannum),
+          montarConclusao: () => "Placenta prévia.",
+          personalizavel: false,
+          exemplo: {
+            placenta_localizacao: "anterior",
+            placenta_ecotextura: "homogênea",
+            placenta_relacao_orificio: "previa",
+          },
+        },
         // Estado ALTERADO: escrito pelo motor, nunca personalizável (crítica C3).
         {
           id: "descrita",
           quando: (c) => placentaAlterada(c.findings, c.flags.grannum),
           montar: (c) => placentaTexto(c.findings, c.flags.grannum),
           personalizavel: false,
+          exemplo: { placenta_localizacao: "anterior", placenta_ecotextura: "homogênea" },
         },
-        { id: "normal", frase: "\nPlacenta de aspecto normal." },
+        /**
+         * Sem `quando` esta era o fallback incondicional — e com achado agudo
+         * sem descrição o laudo saía "Placenta de aspecto normal." SEGUIDO da
+         * descrição do acretismo (revisão Codex 16/08). Com o predicado, e sem
+         * nenhuma variante casando, o slot de descrição é OMITIDO — que é o
+         * certo: quem descreve a placenta ali é o achado.
+         */
+        { id: "normal", quando: (c) => c.findings.placenta_achado == null,
+          frase: "\nPlacenta de aspecto normal." },
+      ],
+    },
+    {
+      /**
+       * ACHADO AGUDO — slot PRÓPRIO, não variante de `placenta`.
+       *
+       * BUG (revisão Codex 16/08): estavam como variantes do mesmo slot que a
+       * descrição e a relação com o orifício. Como `pickVariant` pega a
+       * primeira condição verdadeira, ditar "acretismo + prévia + anterior"
+       * fazia sumir a relação E a topografia — só o acretismo saía.
+       *
+       * São TRÊS eixos independentes da placenta:
+       *   topografia + ecotextura  → frase de descrição   (slot `placenta`)
+       *   relação com o orifício   → cláusula na mesma frase
+       *   achado agudo             → frase PRÓPRIA, adicional  (este slot)
+       *
+       * Clinicamente é frase à parte mesmo: a redação do Luiz para os três
+       * agudos é uma sentença completa, que não substitui a descrição.
+       */
+      id: "placenta_achado",
+      /** Carrega achado alterado — ver Slot.removivel (C3). */
+      removivel: false,
+      incluirSe: (c) => c.findings.placenta_achado !== null,
+      variantes: [
+        { id: "descolamento", quando: (c) => c.findings.placenta_achado === "descolamento",
+          montar: (c) => `\nImagem hipoecoica e heterogênea, medindo ${c.findings.placenta_achado_medidas ?? "____"}, situada entre a placenta e o miométrio, sem vascularização.`,
+          montarConclusao: () => "Coleção retroplacentária, que tem como diagnóstico mais provável descolamento placentário.",
+          personalizavel: false,
+          exemplo: { placenta_achado: "descolamento", placenta_achado_medidas: "3,2 x 1,8 cm" } },
+        { id: "acretismo", quando: (c) => c.findings.placenta_achado === "acretismo",
+          montar: () => "\nPlacenta apresentando perda focal da zona hipoecoica retroplacentária e acentuado adelgaçamento do miométrio subjacente. Ademais, imagens anecoicas intraplacentárias, irregulares, algumas apresentando fluxo turbulento ao estudo Doppler, associadas a aumento da vascularização na interface uterovesical.",
+          montarConclusao: () => "Achados ultrassonográficos que aumentam a suspeição para espectro de acretismo placentário (PAS). Convém, a critério clínico, avaliação dirigida em serviço de alto risco e controle ultrassonográfico.",
+          personalizavel: false,
+          exemplo: { placenta_achado: "acretismo" } },
+        { id: "lagos_venosos", quando: (c) => c.findings.placenta_achado === "lagos_venosos",
+          montar: () => "\nPlacenta apresentando imagens anecoicas intraparenquimatosas, bem delimitadas, de contornos regulares, algumas demonstrando fluxo de baixa velocidade ao estudo Doppler.",
+          montarConclusao: () => "Lagos venosos placentários.",
+          personalizavel: false,
+          exemplo: { placenta_achado: "lagos_venosos" } },
       ],
     },
     {
@@ -333,6 +648,37 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
           frase: "Líquido amniótico de quantidade normal pela análise subjetiva.",
           conclusao: "Líquido amniótico em quantidade normal.",
         },
+      ],
+    },
+    {
+      id: "cordao_umbilical",
+      /** Carrega achado alterado — ver Slot.removivel (C3). */
+      removivel: false,
+      /**
+       * SÓ entra quando o médico disse algo sobre o cordão.
+       *
+       * Sem isto, todo laudo obstétrico ganharia a frase de normalidade do
+       * cordão — mudança de comportamento em 100% dos laudos, que a
+       * equivalência pegou na hora. Afirmar "três vasos" sem ter avaliado é o
+       * mesmo defeito da técnica/via.
+       */
+      incluirSe: (c) => ftDe(c)?.cordao_vasos !== null,
+      variantes: [
+        { id: "arteria_unica", quando: (c) => ftDe(c)?.cordao_vasos === "dois",
+          frase: "\nO cordão umbilical tem dois vasos, sendo uma artéria e uma veia.",
+          conclusao: "Artéria umbilical única.",
+          personalizavel: false,
+          exemplo: { fetos: [{ cordao_vasos: "dois" }] } },
+        /**
+         * Normal NÃO vai à conclusão (Luiz 16/08).
+         *
+         * Continua EDITÁVEL de propósito: é frase de normalidade, e a crítica C3
+         * só proíbe personalizar ACHADO ALTERADO. E como o slot é condicional,
+         * ela só sai quando o médico avaliou o cordão — não é normalidade
+         * presumida do silêncio.
+         */
+        { id: "normal", frase: "\nO cordão umbilical tem aspecto normal, com duas artérias e uma veia.",
+          exemplo: { fetos: [{ cordao_vasos: "tres" }] } },
       ],
     },
     { id: "vesicula_vitelina", variantes: [{ id: "normal", frase: "Vesícula vitelina de forma e dimensões normais." }] },

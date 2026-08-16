@@ -23,7 +23,7 @@ type Flags = ObstetricaFlags;
 const FETO_BASE = {
   rotulo: null, posicao_relativa: null, apresentacao: null, dorso: null,
   polo_cefalico: null, bcf_bpm: 142, dbp_mm: 85, cc_mm: 310, ca_mm: 295,
-  cf_mm: 62, ccn_mm: null, peso_g: 2450, peso_variacao_g: null, percentil: null,
+  cf_mm: 62, ccn_mm: null, peso_g: 2450, peso_variacao_g: null, percentil: null, bcf_alteracao: null, movimentos_fetais: null, cranio_achado: null, cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: null,
 } satisfies ObstetricaFindings["fetos"][number];
 
 function base(over: Partial<ObstetricaFindings> = {}): ObstetricaFindings {
@@ -35,7 +35,7 @@ function base(over: Partial<ObstetricaFindings> = {}): ObstetricaFindings {
     referencia_fonte: null, corrigir_ig: null,
     saco_gestacional_mm: null, saco_gestacional_medidas_mm: null,
     placenta_quantidade: null, placenta_localizacao: null,
-    placenta_ecotextura: null, placenta_grau: null,
+    placenta_ecotextura: null, placenta_grau: null, placenta_relacao_orificio: null, placenta_distancia_orificio_mm: null, placenta_achado: null, placenta_achado_medidas: null,
     liquido_tipo: null, liquido_ila_cm: null, liquido_mbv_por_feto_cm: null,
     liquido_classe: null, achados_adicionais: null, itens_conclusao_livres: [], observacoes_corpo_livres: [],
     ...over,

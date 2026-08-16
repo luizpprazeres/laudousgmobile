@@ -79,7 +79,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
     F({
       trimestre: "2t", ig_semanas: 22, ig_dias: 1, apresentacao: "cefálico", dorso: "esquerda",
       dbp_mm: 52.3, cc_mm: 195.4, cerebelo_mm: 23.1, cisterna_magna_mm: 5.4, binocular_mm: 41.2,
-      ca_mm: 175.6, femur_mm: 37.4, peso_g: 480, percentil: 45, genitalia: "feminino",
+      ca_mm: 175.6, femur_mm: 37.4, peso_g: 480, percentil: 45,  genitalia: "feminino",
       placenta_localizacao: "posterior", placenta_grau: "1", ila_cm: 14.2,
     }),
   );

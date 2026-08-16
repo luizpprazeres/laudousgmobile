@@ -73,6 +73,18 @@ BIOMETRIA OBSTÉTRICA
 PROIBIÇÕES
 - NUNCA inferir/calcular biometria que o médico não informou.
 - NUNCA escrever "Embrião único" no modelo PADRÃO (>14 sem) — usar "Feto único".
+
+EMBRIÃO × FETO — DOIS CORTES DIFERENTES, NÃO CONFUNDIR
+- O corte do MODELO (inicial × padrão) é 13 SEMANAS E 6 DIAS.
+- O corte da PALAVRA (embrião × feto) é 10 SEMANAS.
+- Portanto, entre 10s0d e 13s6d o laudo usa o MODELO INICIAL com a palavra "Feto":
+  "Feto único, de situação ____" — e NÃO "Embrião único".
+- Abaixo de 10 semanas: "Embrião". A partir de 10s0d: "Feto".
+- Vale também na conclusão de vitalidade: "Embrião sem vitalidade" (<10s) ×
+  "Feto sem vitalidade" (≥10s).
+- Sem idade gestacional informada, mantenha "Embrião" no modelo inicial.
+  (Defeito relatado pelo Dr. Luiz em 16/08: ele ditava "Feto com 11 semanas e
+  2 dias" e o laudo saía "Embrião único".)
 - NUNCA inserir sufixo no título.
 - NUNCA usar "oligoidrâmnio" ou "polidrâmnio" — usar "quantidade reduzida/aumentada".
 

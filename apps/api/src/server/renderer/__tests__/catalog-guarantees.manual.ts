@@ -33,7 +33,7 @@ function custom(ops: Operation[]) {
 const FETO = {
   rotulo: null, posicao_relativa: null, apresentacao: null, dorso: null, polo_cefalico: null,
   bcf_bpm: 142, dbp_mm: 85, cc_mm: 310, ca_mm: 295, cf_mm: 62, ccn_mm: null,
-  peso_g: 2450, peso_variacao_g: null, percentil: null,
+  peso_g: 2450, peso_variacao_g: null, percentil: null, bcf_alteracao: null, movimentos_fetais: null, cranio_achado: null, cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: null,
 };
 function f(over: Partial<ObstetricaFindings> = {}): ObstetricaFindings {
   return {
@@ -43,7 +43,7 @@ function f(over: Partial<ObstetricaFindings> = {}): ObstetricaFindings {
     ig_referencia_hoje_semanas: null, ig_referencia_hoje_dias: null,
     referencia_fonte: null, corrigir_ig: null, saco_gestacional_mm: null,
     saco_gestacional_medidas_mm: null, placenta_quantidade: null, placenta_localizacao: null,
-    placenta_ecotextura: null, placenta_grau: null, liquido_tipo: null, liquido_ila_cm: null,
+    placenta_ecotextura: null, placenta_grau: null, placenta_relacao_orificio: null, placenta_distancia_orificio_mm: null, placenta_achado: null, placenta_achado_medidas: null, liquido_tipo: null, liquido_ila_cm: null,
     liquido_mbv_por_feto_cm: null, liquido_classe: null, achados_adicionais: null,
     itens_conclusao_livres: [], observacoes_corpo_livres: [], ...over,
   };
@@ -103,7 +103,12 @@ check("4. remover um bloco opcional inteiro",
 console.log("\n[G2] Invariantes de presença e de conteúdo\n");
 
 check("remover slot obrigatório é rejeitado", erros([{ op: "remove_slot", slot: "dbp" }]).length === 1);
-check("remover slot opcional é permitido", erros([{ op: "remove_slot", slot: "movimentos_fetais" }]).length === 0);
+// `movimentos_fetais` deixou de servir aqui: passou a carregar variantes
+// patológicas (ausentes/reduzidos) e ganhou `removivel: false`. O slot de teste
+// tem de ser um que só descreva normalidade.
+check("remover slot opcional é permitido", erros([{ op: "remove_slot", slot: "ovarios" }]).length === 0);
+check("remover slot que carrega patologia é rejeitado",
+  erros([{ op: "remove_slot", slot: "cranio_achado" }]).length === 1);
 check("esvaziar a frase de um slot obrigatório é rejeitado",
   erros([{ op: "replace_phrase", slot: "dbp", value: "   " }]).length === 1);
 check("reescrever DBP perdendo a medida {dbp} é rejeitado",
@@ -185,8 +190,13 @@ check("segmento personalizado é 'custom'", d6.segments.find((s) => s.slotId ===
 check("segmento não tocado é 'base'", d6.segments.find((s) => s.slotId === "dbp")?.origin === "base");
 check("achado patológico é 'computed'", d6.segments.find((s) => s.slotId === "placenta")?.origin === "computed");
 check("item de IG calculado é 'computed'", d6.segments.find((s) => s.slotId === "concl_ig")?.origin === "computed");
+// A versão vem do catálogo, não cravada: cravar faz o teste quebrar a cada bump
+// (aconteceu no v1→v2, 16/08) sem que a GARANTIA — o documento carregar id e
+// versão — tenha sido violada. O que importa é o documento espelhar a base.
 check("o documento carrega o id e a versão do catálogo-base",
-  d6.catalogId === "OBSTETRICA/CLASSICO_COMPLETO" && d6.catalogVersao === 1);
+  d6.catalogId === OBSTETRICA_CLASSICO.id && d6.catalogVersao === OBSTETRICA_CLASSICO.versao);
+check("a versão do catálogo é um inteiro positivo",
+  Number.isInteger(OBSTETRICA_CLASSICO.versao) && OBSTETRICA_CLASSICO.versao >= 1);
 
 console.log("\n[G8] Acrescentar uma linha ao corpo\n");
 

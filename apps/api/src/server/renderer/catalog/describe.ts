@@ -17,7 +17,24 @@ export type VariantDescription = {
   editavel: boolean;
   /** Por que não é editável — texto para a interface. */
   motivo?: string;
+  /**
+   * Como esta variante SAI no laudo, renderizada a partir de `variante.exemplo`.
+   *
+   * É o que permite a lista sintética do Lab — ver todas as alterações de uma
+   * categoria de uma vez, cada uma com o texto do corpo e o item de conclusão,
+   * sem precisar montar o achado à mão para descobrir.
+   */
+  corpoExemplo?: string;
+  conclusaoExemplo?: string;
 };
+
+/**
+ * Renderiza um achado de exemplo e devolve os trechos por (slot, variante).
+ * Injetado de fora porque `describeCatalog` é genérico e não sabe renderizar.
+ */
+export type RenderizadorDeExemplo<F> = (
+  exemplo: Record<string, unknown>,
+) => { slotId: string; variantId: string; kind: "corpo" | "conclusao"; text: string }[];
 
 export type SlotDescription = {
   id: string;
@@ -58,7 +75,28 @@ function achatar(ordem: (string | { repetirPorFeto: string[] })[]): string[] {
 export function describeCatalog<F>(
   catalog: Catalog<F>,
   contextos: { nome: string; ctx: SlotContext<F> }[],
+  renderizarExemplo?: RenderizadorDeExemplo<F>,
 ): CatalogDescription {
+  /** Renderiza `variante.exemplo` e pega só os trechos daquela variante. */
+  function exemploDe(slotId: string, v: { id: string; exemplo?: Record<string, unknown> }) {
+    if (!v.exemplo || !renderizarExemplo) return {};
+    let segs: ReturnType<RenderizadorDeExemplo<F>>;
+    try {
+      segs = renderizarExemplo(v.exemplo);
+    } catch {
+      // Exemplo que não renderiza é defeito de catálogo, não de produção:
+      // não pode derrubar a tela de personalização inteira.
+      return {};
+    }
+    const meus = segs.filter((s) => s.slotId === slotId && s.variantId === v.id);
+    const corpo = meus.filter((s) => s.kind === "corpo").map((s) => s.text.trim()).join(" ");
+    const concl = meus.filter((s) => s.kind === "conclusao").map((s) => s.text.trim()).join(" ");
+    return {
+      ...(corpo ? { corpoExemplo: corpo } : {}),
+      ...(concl ? { conclusaoExemplo: concl } : {}),
+    };
+  }
+
   return {
     id: catalog.id,
     categoria: catalog.categoria,
@@ -81,6 +119,7 @@ export function describeCatalog<F>(
           padrao: !v.quando,
           editavel: motivo === undefined,
           ...(motivo ? { motivo } : {}),
+          ...exemploDe(s.id, v),
         };
       }),
     })),

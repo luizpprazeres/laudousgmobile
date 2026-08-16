@@ -173,6 +173,9 @@ Seleção automática do modelo obstétrico:
   - Estruturas: CCN, DSM, saco gestacional, vesícula vitelina, embrião.
   - Idade gestacional declarada ≤ 13 semanas e 6 dias.
 - Caso contrário, use o MODELO PADRÃO (≥ 14 semanas).
+- EMBRIÃO × FETO é OUTRO corte: **10 semanas**, não 13s6d. Entre 10s0d e 13s6d
+  use o MODELO INICIAL com a palavra "Feto" ("Feto único, de situação ____").
+  Abaixo de 10 semanas, "Embrião". Sem IG informada, mantenha "Embrião".
 
 Musculoesquelético — tendões normais:
 - Frase padrão: "de espessura, ecogenicidade e ecotextura normais, mantendo continuidade fibrilar"

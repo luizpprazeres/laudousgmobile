@@ -16,7 +16,7 @@ function check(name: string, cond: boolean, detail?: string) {
 const feto = (p: Partial<ObstetricaFindings["fetos"][number]> = {}): ObstetricaFindings["fetos"][number] => ({
   rotulo: null, posicao_relativa: null, apresentacao: null, dorso: null,
   polo_cefalico: null, bcf_bpm: 140, dbp_mm: 45, cc_mm: 170, ca_mm: 140, cf_mm: 28,
-  ccn_mm: null, peso_g: 240, peso_variacao_g: null, percentil: null, ...p,
+  ccn_mm: null, peso_g: 240, peso_variacao_g: null, percentil: null, bcf_alteracao: null, movimentos_fetais: null, cranio_achado: null, cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: null, ...p,
 });
 const O = (p: Partial<ObstetricaFindings> = {}): ObstetricaFindings => ({
   numero_fetos: 1, corionicidade: null, gestacao_inicial: false, fetos: [feto()],
@@ -26,7 +26,7 @@ const O = (p: Partial<ObstetricaFindings> = {}): ObstetricaFindings => ({
   ig_referencia_hoje_dias: null, referencia_fonte: null, corrigir_ig: null,
   saco_gestacional_mm: null, saco_gestacional_medidas_mm: null,
   placenta_quantidade: null, placenta_localizacao: null, placenta_ecotextura: null,
-  placenta_grau: null, liquido_tipo: null, liquido_ila_cm: null,
+  placenta_grau: null, placenta_relacao_orificio: null, placenta_distancia_orificio_mm: null, placenta_achado: null, placenta_achado_medidas: null, liquido_tipo: null, liquido_ila_cm: null,
   liquido_mbv_por_feto_cm: null, liquido_classe: null, achados_adicionais: null, itens_conclusao_livres: [], observacoes_corpo_livres: [], ...p,
 });
 
