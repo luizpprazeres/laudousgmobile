@@ -89,13 +89,51 @@ console.log("\nRemoção de slot NORMAL continua permitida");
   }
 }
 
-// -------------------------- replace_phrase em patologia segue bloqueado
-console.log("\nreplace_phrase em achado alterado segue bloqueado");
+// --------------- reescrever patologia é PERMITIDO — com os invariantes
+console.log("\nreescrever um achado é permitido; descartar o dado dele, não");
 {
+  /**
+   * A regra mudou em 16/08, por decisão do Luiz, e mudou para melhor.
+   *
+   * `personalizavel: false` estava sendo lido como "esta frase descreve
+   * patologia, então é proibido mexer". Com isso a Biblioteca mostrava os
+   * achados fechados: o médico via que o sistema escreve "Óbito fetal." e não
+   * podia dizer como o laudo DELE descreve um óbito.
+   *
+   * A proteção nunca foi proibir a edição — é o conjunto de invariantes: o
+   * slot não pode sair (`removivel: false`, testado acima) e o dado do exame
+   * não pode ser descartado (`placeholdersObrigatorios`). Dentro disso, a
+   * redação é do médico.
+   */
   const erros = validateOperations(OBSTETRICA_CLASSICO, [
-    { op: "replace_phrase", slot: "cranio_achado", variant: "dandy_walker", value: "Tudo normal." },
+    { op: "replace_phrase", slot: "cranio_achado", variant: "dandy_walker",
+      value: "\nFossa posterior alargada, com vermis cerebelar hipoplásico e rodado." },
   ]);
-  t("reescrever a malformação é rejeitado", erros.length > 0, JSON.stringify(erros));
+  t("reescrever a malformação é PERMITIDO", erros.length === 0, JSON.stringify(erros));
+
+  // …mas a medida do achado não pode sumir na reescrita.
+  const semMedida = validateOperations(OBSTETRICA_CLASSICO, [
+    { op: "replace_phrase", slot: "cranio_achado", variant: "ventriculomegalia",
+      value: "\nVentriculomegalia." },
+  ]);
+  t("reescrever a ventriculomegalia SEM a medida é rejeitado", semMedida.length > 0, JSON.stringify(semMedida));
+
+  const comMedida = validateOperations(OBSTETRICA_CLASSICO, [
+    { op: "replace_phrase", slot: "cranio_achado", variant: "ventriculomegalia",
+      value: "\nÁtrio ventricular medindo {cranio_medida} mm, compatível com ventriculomegalia." },
+  ]);
+  t("…e COM a medida é aceito", comMedida.length === 0, JSON.stringify(comMedida));
+
+  // O lado do cisto é dado do exame, não redação.
+  const semLado = validateOperations(OBSTETRICA_CLASSICO, [
+    { op: "replace_phrase", slot: "cranio_achado", variant: "cisto_plexo_coroide",
+      value: "\nCisto de plexo coroide medindo {cranio_medida} mm." },
+  ]);
+  t("reescrever o cisto sem o LADO é rejeitado", semLado.length > 0, JSON.stringify(semLado));
+
+  // E o invariante que importa mais: o slot do achado continua sem poder sair.
+  const remover = validateOperations(OBSTETRICA_CLASSICO, [{ op: "remove_slot", slot: "cranio_achado" }]);
+  t("mesmo editável, o slot do achado não pode ser removido", remover.length > 0, JSON.stringify(remover));
 }
 
 // ------------------------------------------- e o aplicador respeita

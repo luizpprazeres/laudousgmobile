@@ -341,7 +341,9 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
       erros.push(`frase vazia esvazia o slot na prática: ${o.slot}`);
       continue;
     }
-    for (const ph of slot.placeholdersObrigatorios ?? []) {
+    // Os dados obrigatórios do SLOT valem para todas as variantes; os da
+    // VARIANTE, só para ela — ver SlotVariant.placeholdersObrigatorios.
+    for (const ph of [...(slot.placeholdersObrigatorios ?? []), ...(alvo.placeholdersObrigatorios ?? [])]) {
       if (!o.value.includes(`{${ph}}`)) {
         erros.push(`a frase de "${o.slot}" precisa conservar o dado {${ph}}`);
       }

@@ -87,10 +87,21 @@ check("um slot comum continua removível", d.slots.find((s) => s.id === "ovarios
 check("slot obrigatório não é removível", d.slots.find((s) => s.id === "dbp")?.removivel === false);
 
 const liquido = d.slots.find((s) => s.id === "liquido_amniotico")!;
-check("o líquido alterado não é editável",
-  liquido.variantes.find((v) => v.id === "alterado")?.editavel === false);
+// O líquido alterado PASSOU a ser editável (decisão do Luiz, 16/08): a frase é
+// texto com dado, e o que a protege é conservar `{liquido_classe}`, não o
+// bloqueio. Ver SlotVariant.personalizavel.
+check("o líquido alterado é editável, com a classe travada",
+  liquido.variantes.find((v) => v.id === "alterado")?.editavel === true &&
+  OBSTETRICA_CLASSICO.slots.find((s) => s.id === "liquido_amniotico")!
+    .variantes.find((v) => v.id === "alterado")!.placeholdersObrigatorios?.includes("liquido_classe") === true);
 check("o líquido normal é editável",
   liquido.variantes.find((v) => v.padrao)?.editavel === true);
+// O que sobra não-editável é o caso legítimo: frase montada por partes
+// condicionais, que não existe como texto com lacunas.
+check("a placenta descrita segue não editável (montada pelo motor)",
+  d.slots.find((s) => s.id === "placenta")!.variantes.find((v) => v.id === "descrita")?.editavel === false);
+check("e os achados de crânio agora SÃO editáveis",
+  d.slots.find((s) => s.id === "cranio_achado")!.variantes.every((v) => v.editavel));
 check("toda variante não editável explica o motivo",
   d.slots.flatMap((s) => s.variantes).filter((v) => !v.editavel).every((v) => Boolean(v.motivo)));
 

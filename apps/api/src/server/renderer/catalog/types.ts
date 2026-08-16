@@ -55,12 +55,31 @@ export type SlotVariant<F> = {
   conclusao?: string;
   montarConclusao?: (ctx: SlotContext<F>, vars: Record<string, string>) => string;
   /**
-   * Falso quando esta variante representa um ESTADO CLÍNICO ALTERADO — nesse
-   * caso quem escreve é o motor e a personalização do usuário não se aplica.
-   * (Crítica C3 da revisão: uma frase personalizada de normalidade jamais pode
-   * mascarar um achado patológico.)
+   * Falso quando quem escreve esta frase é o MOTOR, e não há texto a editar.
+   *
+   * ⚠️ NÃO é "esta frase descreve patologia, então é proibido mexer". Essa
+   * leitura estava errada e travava a Biblioteca inteira: um achado ficava
+   * fechado, e o médico não podia dizer como o SEU laudo descreve um óbito ou
+   * um acretismo. A proteção do sistema nunca foi proibir a edição — é o
+   * conjunto de invariantes: slot que não pode sair (`removivel`), dado que
+   * não pode ser descartado (`placeholdersObrigatorios`), frase que não pode
+   * sumir (`obrigatorio`). Dentro disso, a redação é do médico.
+   *
+   * O que sobra aqui é o caso legítimo: variantes cuja frase depende de
+   * montagem condicional (listas, partes opcionais, concordância) e que
+   * portanto não existem como texto com lacunas. Ver a placenta descrita.
    */
   personalizavel?: boolean;
+  /**
+   * Dados do exame que a redação DESTA variante precisa conservar.
+   *
+   * Existe por variante, e não só por slot, porque variantes do mesmo slot
+   * carregam dados diferentes: a ventriculomegalia tem a medida do átrio, o
+   * cisto de plexo coroide tem medida E lateralidade, e o Dandy-Walker não tem
+   * nenhum. Um invariante único no slot ou exigiria demais das que não têm
+   * dado, ou de menos das que têm.
+   */
+  placeholdersObrigatorios?: string[];
   /**
    * Achado de EXEMPLO que faz esta variante valer — usado só para exibição.
    *
