@@ -85,6 +85,7 @@ import {
 import { runRendererStream } from "@/server/pipeline/renderer";
 import { decidirDescarte } from "@/server/pipeline/descarteDecision";
 import { resolverPersonalizacao } from "@/server/customization/resolve";
+import { resolverFrasesPersonalizadas } from "@/server/customization/resolveFrases";
 import {
   RENDERER_SUPPORTED_CATEGORIES,
   RENDERER_PROGRAMMATIC_CATEGORIES,
@@ -895,6 +896,22 @@ export async function POST(req: Request) {
             styleCode: styleRow.code,
           })
         : undefined;
+      /**
+       * A redação do médico nas categorias SEM catálogo estruturado — as doze
+       * que não têm slots a que ancorar uma operação.
+       *
+       * Mesmo padrão da `personalizacao`: sem `await`, corre em paralelo com a
+       * extração, e nunca rejeita. Onde há catálogo (OBSTETRICA), esta resolve
+       * para `aplicar: false` e a de cima é que vale — as duas nunca se
+       * aplicam ao mesmo laudo.
+       */
+      const frases = useRenderer
+        ? resolverFrasesPersonalizadas({
+            userId: user.id,
+            categoryCode: effectiveCategory,
+            styleCode: styleRow.code,
+          })
+        : undefined;
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
@@ -919,6 +936,7 @@ export async function POST(req: Request) {
               auditState.structuredOutput = f as typeof auditState.structuredOutput;
             },
             personalizacao,
+            frases,
             // Registra o que foi (ou não foi) aplicado. Sem isto, um laudo
             // personalizado seria indistinguível de um laudo padrão na
             // auditoria — e a primeira pergunta diante de um laudo estranho é
