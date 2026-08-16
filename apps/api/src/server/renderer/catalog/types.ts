@@ -147,6 +147,15 @@ export type Catalog<F> = {
   versao: number;
   /** Vocabulário de placeholders que o motor sabe preencher nesta categoria. */
   variaveis: readonly string[];
+  /**
+   * Como cada placeholder se chama PARA O MÉDICO.
+   *
+   * Sem isto a tela mostra o nome da variável, e o nome da variável é de
+   * programador: `{apresentacao}{dorso_sufixo}{polo_sufixo}` virava
+   * "apresentacaodorso sufixopolo sufixo" na frente do médico — três chips
+   * colados, sem acento, com o `_` trocado por espaço. Ilegível.
+   */
+  rotulosVariaveis?: Readonly<Record<string, string>>;
   titulo: (ctx: SlotContext<F>) => string;
   cabecalhos: { tecnica?: string; corpo: string; conclusao: string };
   /** Bloco fixo antes do corpo (ex.: COMENTÁRIOS no estilo clássico). */

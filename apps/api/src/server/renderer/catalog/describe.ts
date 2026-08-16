@@ -62,6 +62,8 @@ export type CatalogDescription = {
   estilo: string;
   versao: number;
   variaveis: string[];
+  /** Nome de cada placeholder para o médico — ver Catalog.rotulosVariaveis. */
+  rotulos_variaveis?: Record<string, string>;
   cabecalhos: { tecnica?: string; corpo: string; conclusao: string };
   preambulo?: string;
   slots: SlotDescription[];
@@ -114,6 +116,7 @@ export function describeCatalog<F>(
     estilo: catalog.estilo,
     versao: catalog.versao,
     variaveis: [...catalog.variaveis],
+    ...(catalog.rotulosVariaveis ? { rotulos_variaveis: { ...catalog.rotulosVariaveis } } : {}),
     cabecalhos: catalog.cabecalhos,
     preambulo: catalog.preambulo,
     ordens: contextos.map((c) => ({ nome: c.nome, slots: achatar(catalog.ordem(c.ctx)) })),

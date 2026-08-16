@@ -37,19 +37,23 @@ import {
 type Props = { categoria?: string };
 
 /** `{ig_semanas}` vira um pedaço destacado: é dado do exame, não texto fixo. */
-function FraseComDados({ frase, cor, corDado }: { frase: string; cor: string; corDado: string }) {
+function FraseComDados({
+  frase, cor, corDado, rotulos,
+}: { frase: string; cor: string; corDado: string; rotulos?: Record<string, string> }) {
   const partes = frase.split(/(\{\w+\})/g).filter((p) => p !== "");
   return (
     <Text style={{ color: cor, fontSize: 15, lineHeight: 23 }}>
-      {partes.map((p, i) =>
-        /^\{\w+\}$/.test(p) ? (
-          <Text key={i} style={{ color: corDado, fontWeight: "600" }}>
-            {p.slice(1, -1).replace(/_/g, " ")}
-          </Text>
-        ) : (
-          <Text key={i}>{p}</Text>
-        ),
-      )}
+      {partes.map((p, i) => {
+        if (!/^\{\w+\}$/.test(p)) return <Text key={i}>{p}</Text>;
+        const campo = p.slice(1, -1);
+        // O fallback (trocar `_` por espaço) produzia "dorso sufixo"; com dois
+        // ou três dados adjacentes virava "apresentacaodorso sufixopolo
+        // sufixo". Os colchetes separam dados vizinhos.
+        const rotulo = rotulos?.[campo] ?? campo.replace(/_/g, " ");
+        return (
+          <Text key={i} style={{ color: corDado, fontWeight: "600" }}>{`[${rotulo}]`}</Text>
+        );
+      })}
     </Text>
   );
 }
@@ -504,7 +508,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
                 ) : removido || trocado ? (
                   frase.replace(/\{(\w+)\}/g, (_, v: string) => v.replace(/_/g, " "))
                 ) : (
-                  <FraseComDados frase={frase} cor={t.text} corDado={t.brand} />
+                  <FraseComDados rotulos={estado?.catalogo.rotulos_variaveis} frase={frase} cor={t.text} corDado={t.brand} />
                 )}
               </Text>
 
@@ -525,7 +529,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
               {/* a substituta, logo abaixo — some quando o achado já assumiu a frase */}
               {trocado && !substituida && (
                 <View style={{ marginTop: 3 }}>
-                  <FraseComDados frase={trocado} cor={t.brand} corDado={t.brand} />
+                  <FraseComDados rotulos={estado?.catalogo.rotulos_variaveis} frase={trocado} cor={t.brand} corDado={t.brand} />
                 </View>
               )}
               {removido && (
@@ -548,7 +552,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
                 >
                   <Text style={{ color: t.brand, fontSize: 15, lineHeight: 23 }}>+</Text>
                   <View style={{ flex: 1 }}>
-                    <FraseComDados frase={ins.texto} cor={t.brand} corDado={t.brandDeep} />
+                    <FraseComDados rotulos={estado?.catalogo.rotulos_variaveis} frase={ins.texto} cor={t.brand} corDado={t.brandDeep} />
                     <Text style={{ color: t.textGhost, fontSize: 11 }}>toque para desfazer</Text>
                   </View>
                 </Pressable>

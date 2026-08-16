@@ -51,6 +51,8 @@ export const CatalogoSchema = z.object({
   estilo: z.string(),
   versao: z.number(),
   variaveis: z.array(z.string()),
+  /** Nome de cada dado para o médico — ver Catalog.rotulosVariaveis no backend. */
+  rotulos_variaveis: z.record(z.string()).optional(),
   cabecalhos: z.object({
     tecnica: z.string().optional(),
     corpo: z.string(),

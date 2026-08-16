@@ -383,6 +383,38 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
   versao: 2,
   variaveis: VARIAVEIS_OBSTETRICA,
 
+  /**
+   * Como cada dado se chama para o médico.
+   *
+   * A tela mostrava o nome da variável, e nome de variável é de programador:
+   * `{apresentacao}{dorso_sufixo}{polo_sufixo}` aparecia como
+   * "apresentacaodorso sufixopolo sufixo" — três pedaços colados, sem acento,
+   * com o `_` virando espaço. O Luiz abriu a Biblioteca e leu isso.
+   *
+   * Os "sufixo" são trechos CONDICIONAIS (só saem quando ditados), e o rótulo
+   * precisa dizer isso — senão o médico acha que sumiu um dado do laudo dele.
+   */
+  rotulosVariaveis: {
+    apresentacao: "apresentação",
+    dorso_sufixo: "dorso, se ditado",
+    polo_sufixo: "polo cefálico, se ditado",
+    bcf: "BCF",
+    dbp: "DBP", cc: "CC", ca: "CA", cf: "CF", ccn: "CCN",
+    peso: "peso", peso_extras: "variação e percentil, se ditados",
+    dsm: "DSM", sg_medidas: "medidas do saco",
+    rotulo: "letra do feto", qtd_fetos_label: "quantidade de fetos",
+    fetos_descricao: "descrição dos fetos",
+    peso_medio: "peso médio", divergencia_g: "divergência em gramas",
+    divergencia_pct: "divergência em %",
+    ila: "ILA", mbv: "maior bolsão", mbv_gemelar: "maior bolsão por feto",
+    liquido_classe: "classe do líquido", liquido_classe_cap: "classe do líquido",
+    achados_adicionais: "achados ditados",
+    cordao_vasos_txt: "vasos do cordão",
+    cranio_medida: "medida", cranio_lateralidade: "lado",
+    placenta_achado_medidas: "medidas do achado",
+    embriao_ou_feto: "embrião ou feto",
+  },
+
   titulo: (c) =>
     c.gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA",
 
