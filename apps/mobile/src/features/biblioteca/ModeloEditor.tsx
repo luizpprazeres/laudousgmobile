@@ -18,6 +18,8 @@ import {
   type Operacao,
   type SlotDescricao,
   type Variacao,
+  listarCategorias,
+  type CategoriaDaBiblioteca,
 } from "@/lib/personalizacao";
 
 /**
@@ -52,8 +54,15 @@ function FraseComDados({ frase, cor, corDado }: { frase: string; cor: string; co
   );
 }
 
-export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
+export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Props) {
   const t = useColorTokens();
+  /**
+   * A categoria deixou de ser fixa. Era um prop com default e nenhum seletor,
+   * então o médico via só o modelo obstétrico por mais que o backend passasse
+   * a servir treze.
+   */
+  const [categoria, setCategoria] = useState(categoriaInicial);
+  const [categorias, setCategorias] = useState<CategoriaDaBiblioteca[]>([]);
   const [estado, setEstado] = useState<EstadoPersonalizacao | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -92,6 +101,20 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  // A lista de categorias vem do servidor uma vez. Em falha, o fallback.
+  useEffect(() => {
+    void listarCategorias().then(setCategorias);
+  }, []);
+
+  /** Trocar de exame descarta o que estava em edição AQUI — as operações são
+   *  de outra categoria. O rascunho gravado no servidor não é tocado. */
+  const trocarCategoria = useCallback((c: string) => {
+    setCategoria(c);
+    setOps([]);
+    setVariacao(null);
+    setSlotAberto(null);
+  }, []);
 
   /** Slots na ordem em que aparecem no laudo, com a variante padrão. */
   const linhas = useMemo(() => {
@@ -255,6 +278,36 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
 
   return (
     <>
+      {/* Qual exame o médico está editando. Uma fileira rolável, e não um
+          segmentado: são treze categorias e elas não cabem lado a lado. */}
+      {categorias.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 6, paddingHorizontal: 16, paddingTop: 10 }}
+        >
+          {categorias.map((c) => {
+            const ativo = c.categoria === categoria;
+            return (
+              <Pressable
+                key={c.categoria}
+                onPress={() => trocarCategoria(c.categoria)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 7,
+                  borderRadius: 999,
+                  backgroundColor: ativo ? t.brand : t.fill2,
+                }}
+              >
+                <Text style={{ color: ativo ? "#fff" : t.text2, fontSize: 13, fontWeight: "600" }}>
+                  {c.rotulo}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
+
       {/* editar × conferir: o médico precisa das duas visões, e elas não cabem
           na mesma tela sem uma virar ruído da outra. */}
       <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 16, paddingTop: 10 }}>

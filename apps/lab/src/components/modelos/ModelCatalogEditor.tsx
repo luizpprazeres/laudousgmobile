@@ -64,9 +64,28 @@ type Operation =
   | { op: "append_conclusion_item"; value: string }
   | { op: "insert_phrase_after"; anchor: string; value: string };
 
-const CATEGORIA = "OBSTETRICA";
+/**
+ * Categoria de PARTIDA. Era `const CATEGORIA = "OBSTETRICA"` — fixo, sem
+ * seletor —, e por isso a bancada mostrava só o modelo obstétrico depois que o
+ * backend passou a servir treze.
+ */
+const CATEGORIA_INICIAL = "OBSTETRICA";
+
+type CategoriaDaBiblioteca = {
+  categoria: string;
+  rotulo: string;
+  derivado: boolean;
+};
+
+/** O título do laudo daquela categoria, para o alto da prévia. */
+function rotuloDaCategoria(cat: string, cats: CategoriaDaBiblioteca[]): string {
+  const r = cats.find((c) => c.categoria === cat)?.rotulo;
+  return r ? `ULTRASSONOGRAFIA — ${r.toUpperCase()}` : cat;
+}
 
 export function ModelCatalogEditor() {
+  const [categoria, setCategoria] = useState(CATEGORIA_INICIAL);
+  const [categorias, setCategorias] = useState<CategoriaDaBiblioteca[]>([]);
   const [catalogo, setCatalogo] = useState<CatalogDescription | null>(null);
   const [cenarios, setCenarios] = useState<Cenario[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -87,7 +106,7 @@ export function ModelCatalogEditor() {
     let vivo = true;
     (async () => {
       try {
-        const r = await fetch(`/api/model-catalog/${CATEGORIA}`, { cache: "no-store" });
+        const r = await fetch(`/api/model-catalog/${categoria}`, { cache: "no-store" });
         const j = await r.json();
         if (!vivo) return;
         if (!r.ok) throw new Error(j?.error ?? `HTTP ${r.status}`);
@@ -99,6 +118,19 @@ export function ModelCatalogEditor() {
       } finally {
         if (vivo) setCarregando(false);
       }
+    })();
+    return () => { vivo = false; };
+  }, [categoria]);
+
+  // A lista de categorias vem do servidor; sem ela, só a de partida.
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      try {
+        const r = await fetch("/api/model-catalog", { cache: "no-store" });
+        const j = await r.json();
+        if (vivo && Array.isArray(j?.categorias)) setCategorias(j.categorias);
+      } catch { /* a bancada funciona sem a lista */ }
     })();
     return () => { vivo = false; };
   }, []);
@@ -115,7 +147,7 @@ export function ModelCatalogEditor() {
   const avaliar = useCallback(async (ops: Operation[]) => {
     setAvaliando(true);
     try {
-      const r = await fetch(`/api/model-catalog/${CATEGORIA}`, {
+      const r = await fetch(`/api/model-catalog/${categoria}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ operations: ops }),
       });
@@ -179,6 +211,27 @@ export function ModelCatalogEditor() {
         </div>
       )}
 
+      {categorias.length > 1 && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {categorias.map((c) => (
+            <button
+              key={c.categoria}
+              type="button"
+              onClick={() => setCategoria(c.categoria)}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium transition",
+                c.categoria === categoria
+                  ? "bg-brand-600 text-white"
+                  : "bg-stone-100 text-stone-600 hover:bg-stone-200",
+              )}
+              title={c.derivado ? "modelo derivado do renderer" : "catálogo escrito à mão"}
+            >
+              {c.rotulo}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         {/* ------------------------------------------------- o laudo, como laudo */}
         <section className="rounded-lg border border-stone-200 bg-white">
@@ -190,9 +243,12 @@ export function ModelCatalogEditor() {
 
               <div className="px-5 py-4 font-mono text-[13px] leading-[1.75] text-stone-800">
                 <p className="mb-3 select-none font-semibold text-stone-900">
+                  {/* O título vinha cravado como obstétrico — em qualquer
+                      categoria a bancada escrevia "ULTRASSONOGRAFIA
+                      OBSTÉTRICA" no alto de um laudo de tireoide. */}
                   {catalogo.categoria === "OBSTETRICA" && ordem.nome === "Gemelar"
                     ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR"
-                    : "ULTRASSONOGRAFIA OBSTÉTRICA"}
+                    : rotuloDaCategoria(catalogo.categoria, categorias)}
                 </p>
                 {catalogo.preambulo && (
                   <p className="mb-3 whitespace-pre-wrap select-none text-stone-400">{catalogo.preambulo}</p>

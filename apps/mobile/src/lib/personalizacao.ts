@@ -49,6 +49,40 @@ async function lerOuRecusar(res: Response, label: string) {
   return readJsonOrThrow(res, label);
 }
 
+export type CategoriaDaBiblioteca = {
+  categoria: string;
+  rotulo: string;
+  /** O modelo vem do renderer (só normalidade) ou de catálogo escrito? */
+  derivado: boolean;
+  /** Esta categoria já aplica a redação do médico nos laudos? */
+  personalizacao_ativa: boolean;
+};
+
+/**
+ * As categorias que a Biblioteca mostra — do servidor, não cravadas.
+ *
+ * A lista estava fixa no app (uma entrada, OBSTETRICA), e por isso o médico
+ * continuava vendo só o modelo obstétrico depois que o backend passou a servir
+ * treze. Em falha devolve o obstétrico: a tela nunca fica vazia por causa de
+ * uma chamada que não voltou.
+ */
+export async function listarCategorias(): Promise<CategoriaDaBiblioteca[]> {
+  try {
+    const res = await authedFetch(BASE, { method: "GET" });
+    const corpo = (await readJsonOrThrow(res, "listar categorias")) as {
+      categorias?: CategoriaDaBiblioteca[];
+    };
+    const cs = corpo.categorias ?? [];
+    return cs.length > 0 ? cs : CATEGORIA_FALLBACK;
+  } catch {
+    return CATEGORIA_FALLBACK;
+  }
+}
+
+const CATEGORIA_FALLBACK: CategoriaDaBiblioteca[] = [
+  { categoria: "OBSTETRICA", rotulo: "Obstétrica", derivado: false, personalizacao_ativa: false },
+];
+
 export async function getPersonalizacao(
   categoria: string,
   estilo = "CLASSICO_COMPLETO",
