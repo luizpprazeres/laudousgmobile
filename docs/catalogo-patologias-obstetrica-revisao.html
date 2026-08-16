@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catálogo de patologias — OBSTETRICA · revisão clínica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f5f2ea; --paper-2:#efeade; --ink:#191512; --ink-2:#4a423a; --ink-3:#8b8073;
+  --rule:#ddd5c6; --rule-2:#c9bfab;
+  --crit:#a8321c; --crit-bg:#f9e9e4;
+  --yes:#2f6244; --yes-bg:#e7f0e8;
+  --edit:#9a6c14; --edit-bg:#f8eed8;
+  --no:#6a6259;  --no-bg:#e9e4da;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --serif:'Newsreader',Georgia,serif;
+  --disp:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--serif);font-size:17px;line-height:1.6;
+  font-variation-settings:'opsz' 16;
+  background-image:
+    radial-gradient(circle at 15% 8%,rgba(168,50,28,.045),transparent 45%),
+    radial-gradient(circle at 85% 92%,rgba(47,98,68,.05),transparent 45%);
+  background-attachment:fixed;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.35;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+}
+.wrap{max-width:60rem;margin:0 auto;padding:0 1.5rem 8rem;position:relative;z-index:2}
+
+/* ---------- cabeçalho ---------- */
+header{padding:5rem 0 2.5rem;border-bottom:2px solid var(--ink)}
+.kicker{font-family:var(--mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--crit);margin:0 0 1.5rem}
+h1{
+  font-family:var(--disp);font-weight:600;font-size:clamp(2.6rem,7vw,4.6rem);
+  line-height:.95;letter-spacing:-.025em;margin:0 0 1.2rem;
+  font-variation-settings:'SOFT' 30,'WONK' 1,'opsz' 100;
+}
+h1 em{font-style:normal;color:var(--crit);font-variation-settings:'SOFT' 60,'WONK' 1,'opsz' 100}
+.lede{font-size:1.28rem;line-height:1.5;color:var(--ink-2);max-width:44ch;margin:0}
+
+/* ---------- diagnóstico ---------- */
+.diag{margin:3rem 0 0;padding:1.75rem 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:1.75rem}
+.stat .n{font-family:var(--disp);font-size:2.9rem;line-height:1;font-variation-settings:'opsz' 100,'WONK' 1;display:block}
+.stat .n.hot{color:var(--crit)}
+.stat .l{font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin-top:.5rem;display:block;line-height:1.4}
+
+.pull{margin:2.5rem 0 0;padding:1.4rem 1.6rem;background:var(--crit-bg);border-left:4px solid var(--crit);font-size:1.05rem}
+.pull strong{font-weight:700}
+
+/* ---------- como decidir ---------- */
+.howto{margin:3.5rem 0 0;padding:1.6rem 1.75rem;background:var(--paper-2);border:1px solid var(--rule)}
+.howto h2{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;margin:0 0 1rem;color:var(--ink-3)}
+.howto ul{margin:0;padding-left:0;list-style:none;display:grid;gap:.6rem}
+.howto li{display:grid;grid-template-columns:5.4rem 1fr;gap:1rem;align-items:baseline;font-size:.97rem}
+.tag{font-family:var(--mono);font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;padding:.26rem .5rem;text-align:center;border-radius:2px;font-weight:600}
+.tag.y{background:var(--yes-bg);color:var(--yes);border:1px solid var(--yes)}
+.tag.e{background:var(--edit-bg);color:var(--edit);border:1px solid var(--edit)}
+.tag.n{background:var(--no-bg);color:var(--no);border:1px solid var(--no)}
+
+/* ---------- barra fixa ---------- */
+.bar{position:sticky;top:0;z-index:20;background:rgba(245,242,234,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--rule-2);margin:0 -1.5rem;padding:.85rem 1.5rem;
+  display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap}
+.prog{flex:1;min-width:11rem;height:5px;background:var(--rule);border-radius:99px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--ink);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.count{font-family:var(--mono);font-size:.78rem;letter-spacing:.05em;white-space:nowrap;color:var(--ink-2)}
+.count b{color:var(--ink);font-weight:600}
+button.act{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;
+  padding:.6rem 1.05rem;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer;border-radius:2px;transition:.16s}
+button.act:hover{background:transparent;color:var(--ink)}
+button.ghost{background:transparent;color:var(--ink)}
+button.ghost:hover{background:var(--ink);color:var(--paper)}
+
+/* ---------- grupos ---------- */
+.grp{margin:4.5rem 0 0;animation:rise .6s both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.grp>h2{display:grid;grid-template-columns:3.6rem 1fr;align-items:baseline;gap:1rem;margin:0 0 .4rem;
+  font-family:var(--disp);font-size:1.85rem;font-weight:600;letter-spacing:-.015em;font-variation-settings:'opsz' 60,'WONK' 1}
+.grp>h2 .num{font-family:var(--mono);font-size:.78rem;color:var(--ink-3);letter-spacing:.08em;font-weight:500}
+.grp>h2 code{font-family:var(--mono);font-size:.95rem;background:var(--paper-2);padding:.1rem .4rem;border:1px solid var(--rule);font-weight:500}
+.grp .sub{margin:0 0 1.6rem 4.6rem;color:var(--ink-2);font-size:1rem;max-width:52ch}
+.grp .sub.warn{color:var(--crit);font-weight:500}
+
+/* ---------- card ---------- */
+.card{border:1px solid var(--rule-2);border-left:4px solid var(--rule-2);background:#fbf9f4;
+  margin:0 0 .9rem;transition:border-color .2s,background .2s}
+.card[data-v="sim"]{border-left-color:var(--yes);background:linear-gradient(90deg,var(--yes-bg),#fbf9f4 22%)}
+.card[data-v="ajustar"]{border-left-color:var(--edit);background:linear-gradient(90deg,var(--edit-bg),#fbf9f4 22%)}
+.card[data-v="nao"]{border-left-color:var(--no);opacity:.55}
+.card.crit{border-left-color:var(--crit)}
+.card.crit[data-v="sim"]{border-left-color:var(--yes)}
+
+.card .top{display:flex;align-items:flex-start;gap:.85rem;padding:1rem 1.15rem .3rem;flex-wrap:wrap}
+.vid{font-family:var(--mono);font-size:.76rem;font-weight:600;letter-spacing:.03em;background:var(--paper-2);
+  border:1px solid var(--rule);padding:.16rem .48rem;white-space:nowrap}
+.crit .vid{background:var(--crit);color:#fff;border-color:var(--crit)}
+.badge{font-family:var(--mono);font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;font-weight:600;
+  padding:.22rem .5rem;border-radius:99px}
+.badge.c{background:var(--crit);color:#fff}
+.badge.novo{background:var(--ink);color:var(--paper)}
+.badge.fora{background:var(--edit-bg);color:var(--edit);border:1px solid var(--edit)}
+
+.txt{padding:.15rem 1.15rem .3rem;display:grid;gap:.42rem}
+.row{display:grid;grid-template-columns:5.6rem 1fr;gap:.9rem;align-items:baseline}
+.row .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding-top:.22rem}
+.row .v{font-size:1.06rem;line-height:1.5}
+.row .v.concl{font-weight:600}
+.row .v .ph{font-family:var(--mono);font-size:.9em;color:var(--crit);background:var(--crit-bg);padding:.02em .22em;border-radius:2px}
+.row .v.pend{color:var(--edit);font-style:italic}
+.why{padding:.5rem 1.15rem .2rem;font-size:.9rem;color:var(--ink-2);border-top:1px dotted var(--rule);margin-top:.5rem}
+.why b{color:var(--crit)}
+
+.choose{display:flex;gap:.45rem;padding:.85rem 1.15rem 1.05rem;flex-wrap:wrap;align-items:center}
+.choose button{font-family:var(--mono);font-size:.67rem;letter-spacing:.09em;text-transform:uppercase;font-weight:600;
+  padding:.46rem .8rem;border:1.5px solid var(--rule-2);background:transparent;color:var(--ink-3);cursor:pointer;border-radius:2px;transition:.14s}
+.choose button:hover{border-color:var(--ink-3);color:var(--ink)}
+.choose button[aria-pressed="true"].y{background:var(--yes);border-color:var(--yes);color:#fff}
+.choose button[aria-pressed="true"].e{background:var(--edit);border-color:var(--edit);color:#fff}
+.choose button[aria-pressed="true"].n{background:var(--no);border-color:var(--no);color:#fff}
+textarea{display:none;width:calc(100% - 2.3rem);margin:0 1.15rem 1.05rem;padding:.7rem .8rem;font-family:var(--serif);
+  font-size:1rem;border:1px solid var(--edit);background:#fffdf7;resize:vertical;min-height:4.5rem;border-radius:2px;color:var(--ink)}
+textarea:focus{outline:2px solid var(--edit);outline-offset:1px}
+.card[data-v="ajustar"] textarea{display:block;animation:rise .25s both}
+
+/* ---------- modal ---------- */
+dialog{border:2px solid var(--ink);background:var(--paper);max-width:52rem;width:92vw;padding:0;color:var(--ink)}
+dialog::backdrop{background:rgba(25,21,18,.6)}
+dialog .dh{padding:1.2rem 1.5rem;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;gap:1rem}
+dialog h3{font-family:var(--disp);margin:0;font-size:1.4rem;font-variation-settings:'WONK' 1}
+dialog pre{margin:0;padding:1.5rem;max-height:60vh;overflow:auto;font-family:var(--mono);font-size:.78rem;line-height:1.65;white-space:pre-wrap;background:#fbf9f4}
+footer{margin-top:5rem;padding-top:2rem;border-top:1px solid var(--rule);font-family:var(--mono);font-size:.72rem;color:var(--ink-3);line-height:1.8}
+@media(max-width:640px){
+  .row{grid-template-columns:1fr;gap:.15rem}
+  .grp>h2{grid-template-columns:1fr;gap:.2rem}
+  .grp .sub{margin-left:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">Proposta · 14 ago 2026 · aguardando decisão clínica</p>
+  <h1>O catálogo só<br>sabe descrever<br><em>normalidade.</em></h1>
+  <p class="lede">Fora placenta e líquido, nenhum slot do obstétrico tem variante de anormalidade. Toda patologia escapa hoje por texto livre do LLM.</p>
+
+  <div class="diag">
+    <div class="stat"><span class="n">23</span><span class="l">slots no catálogo</span></div>
+    <div class="stat"><span class="n">33</span><span class="l">variantes hoje</span></div>
+    <div class="stat"><span class="n hot">4</span><span class="l">descrevem patologia</span></div>
+    <div class="stat"><span class="n">~40</span><span class="l">propostas aqui</span></div>
+  </div>
+
+  <p class="pull">Cada patologia que vira variante é uma patologia que <strong>sai do texto livre</strong> — converte geração imprevisível em seleção determinística. É a lição da VX aplicada onde mais importa.</p>
+
+  <div class="howto">
+    <h2>Como decidir</h2>
+    <ul>
+      <li><span class="tag y">Aprovar</span><span>A redação está boa como está.</span></li>
+      <li><span class="tag e">Ajustar</span><span>A ideia serve, mas a frase é outra — escreva a sua no campo que abre.</span></li>
+      <li><span class="tag n">Recusar</span><span>Não entra, ou não é assim.</span></li>
+    </ul>
+    <p style="margin:1.1rem 0 0;font-size:.93rem;color:var(--ink-2)">Ao final, <strong>Exportar decisões</strong> copia tudo em texto para você me devolver. Suas marcações ficam salvas no navegador.</p>
+  </div>
+</header>
+
+<div class="bar">
+  <span class="count"><b id="done">0</b> de <b id="total">0</b> decididos</span>
+  <div class="prog"><i id="pbar"></i></div>
+  <button class="act" id="exp">Exportar decisões</button>
+  <button class="act ghost" id="clr">Limpar</button>
+</div>
+
+<main id="app"></main>
+
+<footer>
+  Fonte: docs/catalogo-patologias-obstetrica-proposta-2026-08-14.md<br>
+  Ferramenta de revisão: <code>catalogo-lista.manual.ts</code><br>
+  A redação abaixo é <strong>proposta</strong>, não texto clínico validado.
+</footer>
+</div>
+
+<dialog id="dlg">
+  <div class="dh"><h3>Decisões</h3><button class="act" id="cp">Copiar</button></div>
+  <pre id="out"></pre>
+</dialog>
+
+<script>
+const G=[
+ {n:1,slot:"bcf",tit:"Batimentos cardíacos",sub:"Nenhuma variante de anormalidade hoje. Ausência de BCF — o achado mais grave do exame — sai por texto livre.",warn:true,items:[
+  {id:"bcf.ausente",crit:true,corpo:"Ausência de batimentos cardíacos fetais.",concl:"Óbito fetal.",why:"<b>Prioridade máxima.</b> Óbito fetal saindo hoje por texto livre. Sozinho justifica a frente."},
+  {id:"bcf.bradicardia",corpo:"Batimentos cardíacos presentes, com frequência de {bcf} bpm.",concl:"Bradicardia fetal.",why:"A faixa que define bradicardia precisa ser sua — o motor pode derivar de {bcf}, ou você dita a classe."},
+  {id:"bcf.taquicardia",corpo:"Batimentos cardíacos presentes, com frequência de {bcf} bpm.",concl:"Taquicardia fetal.",why:"Mesma pergunta da faixa."}]},
+
+ {n:2,slot:"movimentos_fetais",tit:"Movimentos fetais",items:[
+  {id:"mov.ausentes",corpo:"Não foram observados movimentos fetais durante o exame.",concl:null,pendConcl:true,why:"Precisa de conclusão? Ou fica só no corpo?"},
+  {id:"mov.reduzidos",corpo:"Movimentos fetais reduzidos.",concl:null}]},
+
+ {n:3,slot:"anatomia_cranio",tit:"Crânio e SNC",sub:"Ventriculomegalia tem medida e limiar clínico (≥10 mm) — candidata a valor + classe, como o líquido.",items:[
+  {id:"cranio.ventriculomegalia",corpo:"Ventriculomegalia, com átrio ventricular medindo {atrio_mm} mm.",concl:null,why:"Conclusão própria? E o limiar entra como classe (leve/moderada/grave)?"},
+  {id:"cranio.cisto_plexo",corpo:"Cisto de plexo coroide {lateralidade}, medindo {medida}.",concl:null},
+  {id:"cranio.fossa_posterior",corpo:null,pend:true,concl:null},
+  {id:"cranio.cavum_ausente",corpo:null,pend:true,concl:null}]},
+
+ {n:4,slot:"anatomia_visceras",tit:"Vísceras",items:[
+  {id:"visc.golf_ball",fora:true,corpo:"(o snippet que já existe, trazido para dentro do catálogo)",concl:null,why:"Hoje é um <b>snippet com flag própria</b> (GOLF_BALL_SNIPPET), fora do catálogo. Trazer para cá unifica."},
+  {id:"visc.pielectasia",corpo:"Pielectasia {lateralidade}, com pelve renal medindo {mm} mm.",concl:null,why:"<b>É o seu próprio exemplo da VX</b> — “Pelve renal direita mede 3 mm e a esquerda 4 mm”. Bilateral com medida por lado → precisa de cardinalidade, como as placentas gemelares."},
+  {id:"visc.estomago",corpo:null,pend:true,concl:null},
+  {id:"visc.bexiga",corpo:null,pend:true,concl:null},
+  {id:"visc.intestino_hiper",corpo:null,pend:true,concl:null},
+  {id:"visc.ascite_derrame",corpo:null,pend:true,concl:null}]},
+
+ {n:5,slot:"dbp · cc · ca · cf · peso_fetal",tit:"Biometria",sub:"O {percentil} já é calculado pelo sistema. A variante é seleção por faixa — determinística, sem LLM.",items:[
+  {id:"bio.pig",corpo:null,concl:"Feto pequeno para a idade gestacional (percentil {percentil}).",why:"<b>CIR e PIG são coisas diferentes</b> e a distinção é clínica (CIR exige Doppler). Precisa da sua regra: quando é um, quando é o outro."},
+  {id:"bio.gig",corpo:null,concl:"Feto grande para a idade gestacional (percentil {percentil})."},
+  {id:"bio.discrepancia",corpo:null,concl:"Biometria discordante da idade gestacional de referência."}]},
+
+ {n:6,slot:"liquido_amniotico",tit:"Líquido amniótico",sub:"Hoje há só uma variante genérica “alterado” que ecoa {liquido_classe}. Proposta: separar, com conclusão própria de cada — o mesmo padrão da placenta.",items:[
+  {id:"liq.oligoamnio",corpo:null,pend:true,concl:"Oligoâmnio.",why:"<b>Cuidado registrado:</b> o amnioticFluidGuard existe porque confundir MBV com ILA gerava falso oligoâmnio. Qualquer variante aqui passa por ele."},
+  {id:"liq.polidramnio",corpo:null,pend:true,concl:"Polidrâmnio."}]},
+
+ {n:7,slot:"placenta",tit:"Placenta — completar",sub:"As três de relação com o orifício já foram feitas em 14/08. Faltam os achados agudos.",items:[
+  {id:"plac.descolamento",corpo:null,pend:true,concl:null,why:"Achado agudo, alta gravidade."},
+  {id:"plac.acretismo",corpo:null,pend:true,concl:null,why:"Conduta específica."},
+  {id:"plac.lagos_venosos",corpo:null,pend:true,concl:null,why:"Achado benigno frequente."}]},
+
+ {n:8,slot:"cordao_umbilical",tit:"Cordão umbilical",novo:true,sub:"O slot não existe no catálogo obstétrico. Artéria umbilical única é achado frequente e com implicação clínica — hoje não tem onde ser dito.",warn:true,items:[
+  {id:"cordao.normal",corpo:"Cordão umbilical com três vasos.",concl:null},
+  {id:"cordao.arteria_unica",corpo:"Cordão umbilical com dois vasos (artéria umbilical única).",concl:null,why:"Entra na ordem entre placenta e líquido? Decisão sua."}]},
+
+ {n:9,slot:"ovarios · vesicula_vitelina · saco_gestacional",tit:"Anexos e 1º trimestre",items:[
+  {id:"ovarios.cistos",corpo:null,pend:true,concl:null,why:"Candidatas: cisto simples · endometrioma · cisto de corpo lúteo."},
+  {id:"vesicula.alterada",corpo:null,pend:true,concl:null,why:"Candidatas: aumentada · calcificada · não visualizada."},
+  {id:"sg.alterado",corpo:null,pend:true,concl:null,why:"Candidatas: irregular · descolamento subcoriônico · gestação anembrionada."}]},
+];
+
+const K="cat-patologias-obst-v1";
+const S=JSON.parse(localStorage.getItem(K)||"{}");
+const ph=s=>s.replace(/\{([^}]+)\}/g,'<span class="ph">{$1}</span>');
+const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+let TOT=0;
+document.getElementById("app").innerHTML=G.map((g,gi)=>{
+ const cards=g.items.map(it=>{TOT++;
+  const st=S[it.id]||{};
+  const badges=[it.crit?'<span class="badge c">crítico</span>':"",it.novo?'<span class="badge novo">slot novo</span>':"",it.fora?'<span class="badge fora">já existe fora</span>':""].join("");
+  const rows=[
+    it.corpo?`<div class="row"><span class="k">corpo</span><span class="v">${ph(esc(it.corpo))}</span></div>`:
+      (it.pend?`<div class="row"><span class="k">corpo</span><span class="v pend">redação sua — descreva como você escreve</span></div>`:""),
+    it.concl?`<div class="row"><span class="k">conclusão</span><span class="v concl">${ph(esc(it.concl))}</span></div>`:
+      (it.pendConcl?`<div class="row"><span class="k">conclusão</span><span class="v pend">a definir</span></div>`:""),
+  ].join("");
+  return `<article class="card ${it.crit?"crit":""}" data-id="${it.id}" ${st.v?`data-v="${st.v}"`:""}>
+    <div class="top"><span class="vid">${it.id}</span>${badges}</div>
+    <div class="txt">${rows}</div>
+    ${it.why?`<div class="why">${it.why}</div>`:""}
+    <div class="choose">
+      <button class="y" data-v="sim"      aria-pressed="${st.v==="sim"}">Aprovar</button>
+      <button class="e" data-v="ajustar"  aria-pressed="${st.v==="ajustar"}">Ajustar</button>
+      <button class="n" data-v="nao"      aria-pressed="${st.v==="nao"}">Recusar</button>
+    </div>
+    <textarea placeholder="Sua redação — corpo e conclusão">${esc(st.t||"")}</textarea>
+  </article>`}).join("");
+ return `<section class="grp" style="animation-delay:${gi*40}ms">
+   <h2><span class="num">${String(g.n).padStart(2,"0")}</span><span>${g.tit} <code>${g.slot}</code></span></h2>
+   ${g.sub?`<p class="sub ${g.warn?"warn":""}">${g.sub}</p>`:""}
+   ${cards}</section>`}).join("");
+
+document.getElementById("total").textContent=TOT;
+const upd=()=>{const d=Object.values(S).filter(x=>x.v).length;
+  document.getElementById("done").textContent=d;
+  document.getElementById("pbar").style.width=(d/TOT*100)+"%";};
+const save=()=>{localStorage.setItem(K,JSON.stringify(S));upd()};
+
+document.getElementById("app").addEventListener("click",e=>{
+  const b=e.target.closest(".choose button"); if(!b)return;
+  const card=b.closest(".card"),id=card.dataset.id,v=b.dataset.v;
+  const cur=(S[id]||{}).v;
+  S[id]=S[id]||{}; S[id].v=cur===v?null:v;
+  card.querySelectorAll(".choose button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S[id].v));
+  if(S[id].v)card.dataset.v=S[id].v; else delete card.dataset.v;
+  if(S[id].v==="ajustar")setTimeout(()=>card.querySelector("textarea").focus(),60);
+  save();
+});
+document.getElementById("app").addEventListener("input",e=>{
+  if(e.target.tagName!=="TEXTAREA")return;
+  const id=e.target.closest(".card").dataset.id;
+  S[id]=S[id]||{}; S[id].t=e.target.value; save();
+});
+
+document.getElementById("exp").onclick=()=>{
+  const L=["# Decisões — catálogo de patologias OBSTETRICA",""];
+  const M={sim:"APROVADA",ajustar:"AJUSTAR",nao:"RECUSADA"};
+  for(const g of G){
+    const its=g.items.filter(i=>(S[i.id]||{}).v);
+    if(!its.length)continue;
+    L.push(`## ${g.n}. ${g.tit}  (${g.slot})`);
+    for(const i of its){const s=S[i.id];
+      L.push(`- **${i.id}** → ${M[s.v]}`);
+      if(s.v==="ajustar"&&s.t?.trim())L.push(`      redação do Luiz: ${s.t.trim().replace(/\n/g,"\n      ")}`);}
+    L.push("");
+  }
+  const pend=G.flatMap(g=>g.items).filter(i=>!(S[i.id]||{}).v).map(i=>i.id);
+  if(pend.length)L.push("## Sem decisão",...pend.map(p=>`- ${p}`));
+  document.getElementById("out").textContent=L.join("\n");
+  document.getElementById("dlg").showModal();
+};
+document.getElementById("cp").onclick=async e=>{
+  await navigator.clipboard.writeText(document.getElementById("out").textContent);
+  e.target.textContent="Copiado ✓"; setTimeout(()=>e.target.textContent="Copiar",1600);
+};
+document.getElementById("clr").onclick=()=>{
+  if(!confirm("Apagar todas as decisões?"))return;
+  localStorage.removeItem(K);location.reload();
+};
+upd();
+</script>
+</body>
+</html>
