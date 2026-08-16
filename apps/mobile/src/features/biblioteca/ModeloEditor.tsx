@@ -75,8 +75,13 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
     try {
       const e = await getPersonalizacao(categoria);
       setEstado(e);
-      // O rascunho do servidor é a verdade — não o que ficou nesta tela.
-      setOps((e.rascunho?.operations ?? []) as Operacao[]);
+      // O que o médico está editando: o rascunho se houver, SENÃO o publicado.
+      //
+      // Ler só o rascunho era perda de dados: publicar zera o rascunho e move as
+      // operações para `publicado`, então a tela voltava a mostrar o modelo
+      // padrão ("não salvou") e a próxima edição partia de lista vazia —
+      // publicar de novo apagava em silêncio tudo o que já estava publicado.
+      setOps((e.rascunho?.operations ?? e.publicado?.operations ?? []) as Operacao[]);
     } catch (err) {
       setErro(err instanceof Error ? err.message : "não foi possível carregar");
     } finally {
@@ -174,7 +179,10 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
         // A recusa é informação, não falha: o backend explica por que aquela
         // alteração não pode valer. O rascunho local volta ao que era.
         setRecusa(err.erros.length > 0 ? err.erros : [err.message]);
-        setOps((estado?.rascunho?.operations ?? []) as Operacao[]);
+        // Mesma regra do carregamento: volta ao rascunho, ou ao publicado.
+        setOps(
+          (estado?.rascunho?.operations ?? estado?.publicado?.operations ?? []) as Operacao[],
+        );
       } else {
         setErro(err instanceof Error ? err.message : "não foi possível salvar");
       }
@@ -217,7 +225,14 @@ export function ModeloEditor({ categoria = "OBSTETRICA" }: Props) {
   }
 
   const publicado = estado?.publicado ?? null;
-  const temRascunho = ops.length > 0;
+  /**
+   * "Existe rascunho" é o que o SERVIDOR diz — não `ops.length > 0`.
+   *
+   * Desde que `ops` passou a cair no publicado quando não há rascunho, contar
+   * operações diria "tem rascunho" para quem só tem personalização publicada, e
+   * o rodapé ofereceria "Publicar" em vez de "Voltar ao modelo padrão".
+   */
+  const temRascunho = estado?.rascunho != null;
 
   if (carregando && !estado) {
     return (
