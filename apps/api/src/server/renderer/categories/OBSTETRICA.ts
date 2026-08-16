@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { applyGolfBall, stripGolfBallEcho, type GolfBall } from "./golfBall";
-import { buildIgInput, computeIg, type IgRawFields } from "../ig";
+import { buildIgInput, computeIg, computeRHoje, type IgRawFields } from "../ig";
 
 /**
  * DET-5 — Renderer de OBSTETRICA (feto único + gemelar).
@@ -452,17 +452,33 @@ const COMENTARIOS =
  * Sem IG conhecida cai no comportamento antigo: nesse caso não há como
  * decidir, e as gestações sem IG são tipicamente as bem iniciais.
  *
- * ⚠️ LIMITE CONHECIDO — usa a IG BIOMÉTRICA (`ig_semanas`), não a corrigida.
- * Quando há referência de USG precoce e `IG_REFERENCE_CORRECTION` está ligada,
- * `computeIg` pode devolver uma IG diferente. Se as duas caírem em lados
- * opostos das 10 semanas (ex.: biometria 9s5d, corrigida 10s2d), a palavra sai
- * pela biometria. Janela estreita, mas real.
+ * QUAL IG (revisão do Codex, 16/08) — a de DATAÇÃO, não a da biometria.
  *
- * Não troquei por `computeIg` porque isso tornaria o substantivo dependente de
- * FLAG — a mesma gestação viraria "embrião" ou "feto" conforme a flag. Decidir
- * isso é chamada clínica, não técnica.
+ * A versão anterior usava `ig_semanas` (biometria atual). O argumento contra,
+ * e é decisivo: *um embrião pequeno não volta a ser embrião por estar medindo
+ * menos*. Se a datação diz 11 semanas e a biometria mede 9s5d, isso é um feto
+ * com crescimento abaixo do esperado — não um embrião. A idade da gestação é a
+ * da datação; a biometria é uma estimativa dela, e uma que erra justamente nos
+ * casos em que errar importa.
+ *
+ * A objeção que existia aqui era que isso tornaria a palavra dependente da flag
+ * `IG_REFERENCE_CORRECTION`. Não torna: a flag decide se a CONCLUSÃO é
+ * corrigida — uma escolha de redação —, e o substantivo é fato clínico. Por
+ * isso a datação vale sempre que existir, com ou sem flag.
+ *
+ * Precedência: datação (R_hoje ditado > USG precoce > DUM) → biometria →
+ * `gestacao_inicial`.
  */
+export function igDeDatacao(f: ObstetricaFindings): { semanas: number; dias: number } | null {
+  // `enabled: true` de propósito — ver acima: a flag governa a redação da
+  // conclusão, não o fato de a gestação ter uma datação.
+  const input = buildIgInput(igRawFromFindings(f, true), { leadAncora: "", leadBase: "" });
+  return input.referencia ? computeRHoje(input.referencia, f.data_exame) : null;
+}
+
 export function ehEmbriao(f: ObstetricaFindings): boolean {
+  const datacao = igDeDatacao(f);
+  if (datacao) return datacao.semanas * 7 + datacao.dias < 10 * 7;
   if (f.ig_semanas === null) return f.gestacao_inicial;
   return f.ig_semanas < 10;
 }

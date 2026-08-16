@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
 import { buildObstetricaDoc } from "../catalog/OBSTETRICA.render";
 import { serialize } from "../catalog/engine";
 import { OBSTETRICA_CLASSICO } from "../catalog/OBSTETRICA.classico";
-import { ehEmbriao, EMPTY_FETO, fetoApresentacaoFrase, type ObstetricaFindings } from "../categories/OBSTETRICA";
+import { ehEmbriao, igDeDatacao, EMPTY_FETO, fetoApresentacaoFrase, type ObstetricaFindings } from "../categories/OBSTETRICA";
 
 let ok = 0;
 let fail = 0;
@@ -57,6 +57,50 @@ t(
   ehEmbriao(base({ ig_semanas: null })) === true &&
     ehEmbriao(base({ ig_semanas: null, gestacao_inicial: false })) === false,
 );
+
+console.log("\nQUAL IG decide — a DATAÇÃO, não a biometria (revisão 16/08)");
+{
+  /**
+   * "Um embrião pequeno não volta a ser embrião por estar medindo menos."
+   *
+   * Datação em 11s0d (USG precoce de 8s0d há 21 dias) e biometria medindo
+   * 9s3d: é um feto com crescimento abaixo do esperado, não um embrião.
+   */
+  const atrasado = base({
+    ig_semanas: 9, ig_dias: 3,
+    data_exame: "22/07/2026",
+    primeira_us_data: "01/07/2026", primeira_us_ig_semanas: 8, primeira_us_ig_dias: 0,
+    referencia_fonte: "usg_precoce",
+  });
+  t("biometria 9s3d mas datação 11s0d → FETO", ehEmbriao(atrasado) === false,
+    `igDeDatacao: ${JSON.stringify(igDeDatacao(atrasado))}`);
+
+  // E o simétrico: a datação também pode dizer "ainda é embrião".
+  const adiantado = base({
+    ig_semanas: 10, ig_dias: 4,
+    data_exame: "22/07/2026",
+    primeira_us_data: "15/07/2026", primeira_us_ig_semanas: 8, primeira_us_ig_dias: 0,
+    referencia_fonte: "usg_precoce",
+  });
+  t("biometria 10s4d mas datação 9s0d → EMBRIÃO", ehEmbriao(adiantado) === true,
+    `igDeDatacao: ${JSON.stringify(igDeDatacao(adiantado))}`);
+
+  // DUM também é datação.
+  const porDum = base({ ig_semanas: 9, ig_dias: 0, dum: "01/05/2026", data_exame: "22/07/2026" });
+  t("DUM de 01/05 com exame em 22/07 (11s5d) → FETO", ehEmbriao(porDum) === false,
+    `igDeDatacao: ${JSON.stringify(igDeDatacao(porDum))}`);
+
+  // Sem referência, continua a biometria — nada mudou para quem não tem datação.
+  t("sem referência, decide a biometria", igDeDatacao(base()) === null && ehEmbriao(base()) === false);
+
+  /**
+   * A palavra NÃO depende da flag `IG_REFERENCE_CORRECTION`: a flag governa se
+   * a CONCLUSÃO é corrigida (redação), e o substantivo é fato clínico. Como
+   * `ehEmbriao` não recebe flags, isto é estrutural — mas o teste registra a
+   * decisão, que era a objeção que travava a troca.
+   */
+  t("a decisão não passa por flag nenhuma", ehEmbriao.length === 1);
+}
 
 console.log("\nO BUG relatado — 11s2d, gestação inicial");
 {

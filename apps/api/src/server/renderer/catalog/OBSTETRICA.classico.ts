@@ -263,7 +263,7 @@ export const VARIAVEIS_OBSTETRICA = [
   "rotulo", "qtd_fetos_label", "fetos_descricao",
   "peso_medio", "divergencia_g", "divergencia_pct",
   "ila", "mbv", "mbv_gemelar", "liquido_classe", "liquido_classe_cap",
-  "achados_adicionais",
+  "achados_adicionais", "cordao_vasos_txt",
 ] as const;
 
 export function varsObstetrica(ctx: Ctx): Record<string, string> {
@@ -310,6 +310,15 @@ export function varsObstetrica(ctx: Ctx): Record<string, string> {
     liquido_classe: classe,
     liquido_classe_cap: classe ? `${classe.charAt(0).toUpperCase()}${classe.slice(1)}` : "",
     achados_adicionais: f.achados_adicionais?.trim() ?? "",
+    /**
+     * A contagem de vasos vem do ACHADO, não do texto.
+     *
+     * Estava cravada na frase ("…com duas artérias e uma veia."), e a frase é
+     * editável — nada impedia a personalização de reescrevê-la sem os vasos, ou
+     * pior, com o número errado. Como placeholder obrigatório, o dado sobrevive
+     * a qualquer redação que o médico escolha.
+     */
+    cordao_vasos_txt: ft?.cordao_vasos === "dois" ? "uma artéria e uma veia" : "duas artérias e uma veia",
   };
 }
 
@@ -696,6 +705,12 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
       /** Carrega achado alterado — ver Slot.removivel (C3). */
       removivel: false,
       /**
+       * A contagem de vasos é o dado do slot — nenhuma redação pode descartá-la.
+       * Vale só para a variante editável (`normal`); a de artéria única é
+       * `personalizavel: false` e sequer chega à validação.
+       */
+      placeholdersObrigatorios: ["cordao_vasos_txt"],
+      /**
        * SÓ entra quando o médico disse algo sobre o cordão.
        *
        * Sem isto, todo laudo obstétrico ganharia a frase de normalidade do
@@ -726,7 +741,7 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
          * ela só sai quando o médico avaliou o cordão — não é normalidade
          * presumida do silêncio.
          */
-        { id: "normal", frase: "\nO cordão umbilical tem aspecto normal, com duas artérias e uma veia.",
+        { id: "normal", frase: "\nO cordão umbilical tem aspecto normal, com {cordao_vasos_txt}.",
           exemplo: { fetos: [{ cordao_vasos: "tres" }] } },
       ],
     },
