@@ -7,6 +7,7 @@ import { useColorTokens } from "@/ui/useColorTokens";
 import type { BannerSeverity } from "@/ui/Banner";
 import {
   Bar,
+  Book,
   Chevron,
   Folder,
   Layers,
@@ -39,6 +40,7 @@ type Props = {
 const NAV = [
   { id: "historico", label: "Histórico", Icon: Folder, route: "/historico" as const },
   { id: "analytics", label: "Analytics", Icon: Bar, route: "/analytics" as const },
+  { id: "biblioteca", label: "Biblioteca", Icon: Book, route: "/biblioteca" as const },
   { id: "preferencias", label: "Preferências", Icon: Sliders, route: "/preferencias" as const },
 ];
 

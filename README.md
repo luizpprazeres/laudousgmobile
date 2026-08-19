@@ -14,7 +14,7 @@ Monorepo que serve **(1) o backend Next.js + packages compartilhados** (consumid
 |---|---|---|
 | `apps/api/` | 🟢 **VIVO em prod** | Backend Next.js 15. Deploy: `https://laudousgmobile.vercel.app`. Endpoints consumidos pelo app iOS Swift. |
 | `packages/db/` | 🟢 Vivo | Drizzle ORM schema + migrations. Usado **só** pelo `apps/api`. |
-| `packages/shared/` | 🟢 Vivo | Zod schemas + tipos. Usado por `apps/api` (e por `apps/mobile` que está congelado). |
+| `packages/shared/` | 🟢 Vivo | Zod schemas + tipos. Usado por `apps/api` e por `apps/mobile`. |
 | `_extraction/from-laudousg-original/` | 📚 Referência | Prompts canônicos, modelos por categoria, regras clínicas, few-shots — extraídos do `laudousg.com`. Não mexer sem revisão. |
 | `apps/mobile/` | 🟢 **ATIVO** (Android) | App **Android** React Native/Expo (Expo 52, RN 0.76.9). Retomado; app Android oficial em paridade com o iOS, prestes a lançar na Play Store. Nativo Android em `apps/mobile/android/` (Android Studio). Consome o mesmo backend `apps/api`. |
 
