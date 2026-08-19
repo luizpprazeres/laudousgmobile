@@ -54,6 +54,46 @@ const FetoSchema = z.object({
   cranio_lateralidade: z.string().nullable().default(null),
   /** Cada feto tem o seu cordão. */
   cordao_vasos: z.enum(["tres", "dois"]).nullable().default(null),
+  /**
+   * ACHADOS DE VÍSCERAS — spec clínica §4, aprovada pelo Luiz.
+   *
+   * Um campo por achado, e NÃO um enum único. Ascite, derrame pleural e
+   * intestino hiperecogênico coexistem no mesmo feto; um enum singular
+   * repetiria o defeito que o `placenta_achado` já teve, em que ditar dois
+   * achados fazia um sumir.
+   */
+  /**
+   * PIELECTASIA — dois eixos, não um (crítica do Codex, 19/08).
+   *
+   * A MEDIDA da pelve renal e o fato de ela ser ANORMAL são coisas diferentes:
+   * a spec manda medir os dois lados, e os dois podem vir preenchidos com
+   * apenas um alterado. Derivar a lateralidade de "qual medida veio" faria um
+   * rim normal medido virar pielectasia — o mesmo erro que já cometemos cinco
+   * vezes neste catálogo.
+   */
+  pielectasia_direita: z.boolean().nullish(),
+  pielectasia_esquerda: z.boolean().nullish(),
+  pielectasia_direita_mm: z.number().nullish(),
+  pielectasia_esquerda_mm: z.number().nullish(),
+  intestino_hiperecogenico: z.boolean().nullish(),
+  ascite: z.boolean().nullish(),
+  derrame_pleural: z.enum(["direito", "esquerdo", "bilateral"]).nullish(),
+  derrame_pleural_mm: z.number().nullish(),
+  /**
+   * HIDROPSIA — nunca derivada dos componentes.
+   *
+   * Clinicamente ela inclui ascite, derrame e edema, mas o diagnóstico é do
+   * médico: deduzi-la de "ascite + derrame" seria inventar um diagnóstico que
+   * ele não deu. Quando presente, a APRESENTAÇÃO suprime as frases isoladas —
+   * os dados de ascite e derrame continuam gravados.
+   */
+  hidropsia: z.boolean().nullish(),
+  /**
+   * Estômago não visualizado — CONDIÇÃO COMPOSTA (spec §4, R4): a conclusão só
+   * vale COM polidrâmnio associado. Sem ele a spec deixa a pergunta em aberto,
+   * e o campo fica sem consumidor até o Luiz decidir.
+   */
+  estomago_nao_visualizado: z.boolean().nullish(),
 });
 
 export const ObstetricaFindingsSchema = z.object({
@@ -118,6 +158,21 @@ export const ObstetricaFindingsSchema = z.object({
     .nullable()
     .default(null),
   placenta_achado_medidas: z.string().nullable().default(null),
+  /**
+   * ACHADOS DE ANEXOS E DE 1º TRIMESTRE — spec clínica §9.
+   *
+   * Ficam no exame, e não no feto, porque descrevem a MÃE (ovários) ou o
+   * continente (saco gestacional), não o concepto.
+   */
+  ovario_achado: z.enum(["cisto_simples", "endometrioma"]).nullish(),
+  ovario_lado: z.enum(["direito", "esquerdo"]).nullish(),
+  ovario_medidas_cm: z.array(z.number()).nullish(),
+  ovario_achado_medida_cm: z.number().nullish(),
+  vesicula_vitelina_mm: z.number().nullish(),
+  hematoma_perigestacional_medidas: z.string().nullish(),
+  hematoma_perigestacional_lado: z.enum(["direita", "esquerda"]).nullish(),
+  /** Saco gestacional sem embrião — critérios de inviabilidade (spec §9). */
+  gestacao_inviavel: z.boolean().nullish(),
   liquido_tipo: z.enum(["normal", "ila", "mbv", "alterado"]).nullable(),
   liquido_ila_cm: z.number().nullable(),
   liquido_mbv_por_feto_cm: z.array(z.number()).nullable(),
@@ -137,6 +192,7 @@ export type ObstetricaFindings = z.infer<typeof ObstetricaFindingsSchema>;
 
 // JSON Schema strict para OpenAI (todos required, nullable via union).
 const num = { type: ["number", "null"] } as const;
+const bool = { type: ["boolean", "null"] } as const;
 const str = { type: ["string", "null"] } as const;
 const FETO_JSON = {
   type: "object",
@@ -165,6 +221,17 @@ const FETO_JSON = {
     "cranio_medida_mm",
     "cranio_lateralidade",
     "cordao_vasos",
+    // Achados de vísceras (spec §4). Um campo por achado: eles coexistem.
+    "pielectasia_direita",
+    "pielectasia_esquerda",
+    "pielectasia_direita_mm",
+    "pielectasia_esquerda_mm",
+    "intestino_hiperecogenico",
+    "ascite",
+    "derrame_pleural",
+    "derrame_pleural_mm",
+    "hidropsia",
+    "estomago_nao_visualizado",
   ],
   properties: {
     rotulo: str,
@@ -213,6 +280,23 @@ const FETO_JSON = {
     cranio_medida_mm: num,
     cranio_lateralidade: str,
     cordao_vasos: { type: ["string", "null"], enum: ["tres", "dois", null] },
+    /**
+     * ACHADOS DE VÍSCERAS — um campo por achado, e não um enum único.
+     * Ascite, derrame pleural e intestino hiperecogênico coexistem no mesmo
+     * feto; um enum singular faria um sumir, que é o defeito que o
+     * `placenta_achado` já teve.
+     */
+    /** Estado por lado e medida por lado — eixos separados. */
+    pielectasia_direita: bool,
+    pielectasia_esquerda: bool,
+    pielectasia_direita_mm: num,
+    pielectasia_esquerda_mm: num,
+    intestino_hiperecogenico: bool,
+    ascite: bool,
+    derrame_pleural: { type: ["string", "null"], enum: ["direito", "esquerdo", "bilateral", null] },
+    derrame_pleural_mm: num,
+    hidropsia: bool,
+    estomago_nao_visualizado: bool,
   },
 } as const;
 
@@ -245,6 +329,15 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "placenta_distancia_orificio_mm",
     "placenta_achado",
     "placenta_achado_medidas",
+    // Anexos e 1º trimestre (spec §9).
+    "ovario_achado",
+    "ovario_lado",
+    "ovario_medidas_cm",
+    "ovario_achado_medida_cm",
+    "vesicula_vitelina_mm",
+    "hematoma_perigestacional_medidas",
+    "hematoma_perigestacional_lado",
+    "gestacao_inviavel",
     "liquido_tipo",
     "liquido_ila_cm",
     "liquido_mbv_por_feto_cm",
@@ -290,6 +383,15 @@ export const OBSTETRICA_JSON_SCHEMA = {
     },
     /** Medidas do descolamento, como ditadas ("3,2 x 1,8 cm"). */
     placenta_achado_medidas: str,
+    /** Anexos e 1º trimestre — descrevem a MÃE ou o saco, não o concepto. */
+    ovario_achado: { type: ["string", "null"], enum: ["cisto_simples", "endometrioma", null] },
+    ovario_lado: { type: ["string", "null"], enum: ["direito", "esquerdo", null] },
+    ovario_medidas_cm: { type: ["array", "null"], items: { type: "number" } },
+    ovario_achado_medida_cm: num,
+    vesicula_vitelina_mm: num,
+    hematoma_perigestacional_medidas: str,
+    hematoma_perigestacional_lado: { type: ["string", "null"], enum: ["direita", "esquerda", null] },
+    gestacao_inviavel: bool,
     liquido_tipo: { type: ["string", "null"], enum: ["normal", "ila", "mbv", "alterado", null] },
     liquido_ila_cm: num,
     liquido_mbv_por_feto_cm: { type: ["array", "null"], items: { type: "number" } },
@@ -432,6 +534,37 @@ para o valor mais parecido.
     - "lagos_venosos": lagos/lacunas venosas placentárias.
     null quando não ditado. NUNCA deduza acretismo de placenta prévia — são
     coisas diferentes, e prévia já é placenta_relacao_orificio.
+
+21. ACHADOS DE VÍSCERAS — um campo por achado, porque eles COEXISTEM. Preencha
+    cada um só quando ditado:
+    - pielectasia_direita / pielectasia_esquerda: true SÓ quando o médico disser
+      que aquele lado está ALTERADO (pielectasia, dilatação, distensão da pelve
+      renal). Medir não é alterar: as duas pelves são medidas de rotina.
+    - pielectasia_direita_mm / pielectasia_esquerda_mm: a medida em mm de cada
+      lado, quando ditada — inclusive do lado NORMAL.
+    - intestino_hiperecogenico: true quando "alças intestinais hiperecogênicas",
+      "intestino hiperecogênico".
+    - ascite: true quando "ascite fetal", "líquido livre na cavidade abdominal
+      do feto".
+    - derrame_pleural: "direito"/"esquerdo"/"bilateral" + derrame_pleural_mm com
+      a espessura, se ditada.
+    - hidropsia: true quando o médico DIZ "hidropsia"/"hidropisia fetal". NÃO
+      deduza hidropsia de ascite + derrame — o diagnóstico é dele.
+    - estomago_nao_visualizado: true quando "estômago não visualizado" apesar de
+      procura dirigida.
+
+22. ANEXOS E 1º TRIMESTRE (do EXAME, não do feto):
+    - ovario_achado: "cisto_simples" (imagem anecoica, paredes finas, sem
+      septação) ou "endometrioma" (conteúdo em vidro fosco). Com ovario_lado,
+      ovario_medidas_cm (as 3 medidas do ovário) e ovario_achado_medida_cm (o
+      maior eixo da imagem).
+    - vesicula_vitelina_mm: só quando o médico disser que está AUMENTADA, com a
+      medida.
+    - hematoma_perigestacional_medidas (verbatim, "1,2 x 0,8 x 0,5 cm") +
+      hematoma_perigestacional_lado ("direita"/"esquerda").
+    - gestacao_inviavel: true quando "gestação anembrionada", "saco gestacional
+      sem embrião", "gestação inviável". NÃO deduza de um DSM grande — o
+      critério é do médico.
 
 20. placenta_relacao_orificio — relação com o orifício interno do colo, eixo
     SEPARADO da topografia (anterior/posterior vai em placenta_localizacao):

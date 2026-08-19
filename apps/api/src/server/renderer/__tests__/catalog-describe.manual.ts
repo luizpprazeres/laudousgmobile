@@ -83,7 +83,9 @@ for (const id of ["cranio_achado", "placenta_achado", "cordao_umbilical", "movim
   check(`"${id}" chega à interface como não removível`,
     d.slots.find((s) => s.id === id)?.removivel === false);
 }
-check("um slot comum continua removível", d.slots.find((s) => s.id === "ovarios")?.removivel === true);
+// `ovarios` deixou de servir de exemplo: ganhou cisto e endometrioma (spec §9)
+// e virou `removivel: false`, como todo slot que carrega achado.
+check("um slot comum continua removível", d.slots.find((s) => s.id === "anatomia_visceras")?.removivel === true);
 check("slot obrigatório não é removível", d.slots.find((s) => s.id === "dbp")?.removivel === false);
 
 const liquido = d.slots.find((s) => s.id === "liquido_amniotico")!;

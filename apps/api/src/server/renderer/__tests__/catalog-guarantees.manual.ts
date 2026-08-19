@@ -103,10 +103,11 @@ check("4. remover um bloco opcional inteiro",
 console.log("\n[G2] Invariantes de presença e de conteúdo\n");
 
 check("remover slot obrigatório é rejeitado", erros([{ op: "remove_slot", slot: "dbp" }]).length === 1);
-// `movimentos_fetais` deixou de servir aqui: passou a carregar variantes
-// patológicas (ausentes/reduzidos) e ganhou `removivel: false`. O slot de teste
-// tem de ser um que só descreva normalidade.
-check("remover slot opcional é permitido", erros([{ op: "remove_slot", slot: "ovarios" }]).length === 0);
+// O slot de teste tem de ser um que só descreva NORMALIDADE, e a lista encolhe
+// a cada patologia nova: `movimentos_fetais` saiu quando ganhou ausentes/
+// reduzidos, e `ovarios` saiu quando ganhou cisto e endometrioma. Ambos são
+// `removivel: false` agora — remover o slot apagaria o achado junto.
+check("remover slot opcional é permitido", erros([{ op: "remove_slot", slot: "anatomia_visceras" }]).length === 0);
 check("remover slot que carrega patologia é rejeitado",
   erros([{ op: "remove_slot", slot: "cranio_achado" }]).length === 1);
 check("esvaziar a frase de um slot obrigatório é rejeitado",

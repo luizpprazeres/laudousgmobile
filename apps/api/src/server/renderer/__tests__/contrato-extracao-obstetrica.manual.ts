@@ -85,6 +85,15 @@ const CAMPOS_DE_ACHADO = [
   "cranio_lateralidade", "cordao_vasos",
   "placenta_achado", "placenta_achado_medidas",
   "placenta_relacao_orificio", "placenta_distancia_orificio_mm",
+  // Vísceras (spec §4)
+  "pielectasia_direita", "pielectasia_esquerda",
+  "pielectasia_direita_mm", "pielectasia_esquerda_mm", "intestino_hiperecogenico",
+  "ascite", "derrame_pleural", "derrame_pleural_mm", "hidropsia",
+  "estomago_nao_visualizado",
+  // Anexos e 1º trimestre (spec §9)
+  "ovario_achado", "ovario_lado", "ovario_medidas_cm", "ovario_achado_medida_cm",
+  "vesicula_vitelina_mm", "hematoma_perigestacional_medidas",
+  "hematoma_perigestacional_lado", "gestacao_inviavel",
 ];
 for (const c of CAMPOS_DE_ACHADO) {
   t(`prompt explica ${c}`, OBSTETRICA_EXTRACTION_PROMPT.includes(c),

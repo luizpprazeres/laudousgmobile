@@ -19,7 +19,7 @@
  * (`obrigatorio`). Dentro disso, a redação é do médico. 50 das 55 variantes
  * são editáveis hoje.
  */
-import { calcDsm, calcPonderal, ehEmbriao, type ObstetricaFindings } from "../categories/OBSTETRICA";
+import { calcDsm, calcPonderal, ehEmbriao, igDeDatacao, type ObstetricaFindings } from "../categories/OBSTETRICA";
 import type { Catalog, SlotContext } from "./types";
 
 type F = ObstetricaFindings;
@@ -286,6 +286,11 @@ export const VARIAVEIS_OBSTETRICA = [
   // Dados dos achados patológicos — o que torna essas frases editáveis sem
   // que a redação do médico possa descartar a medida ou o lado.
   "cranio_medida", "cranio_lateralidade", "placenta_achado_medidas", "embriao_ou_feto",
+  // Vísceras e anexos (spec §4 e §9)
+  "pielectasia_d", "pielectasia_e", "pielectasia_lado", "pielectasia_conduta",
+  "derrame_lado", "derrame_medida",
+  "ovario_lado", "ovario_medidas", "ovario_medida_achado", "ovario_volume",
+  "vesicula_medida", "hematoma_medidas", "hematoma_lado", "dsm",
 ] as const;
 
 export function varsObstetrica(ctx: Ctx): Record<string, string> {
@@ -351,7 +356,66 @@ export function varsObstetrica(ctx: Ctx): Record<string, string> {
     placenta_achado_medidas: f.placenta_achado_medidas ?? "____",
     /** O corte de 10 semanas — ver `ehEmbriao`. */
     embriao_ou_feto: ehEmbriao(f) ? "Embrião" : "Feto",
+
+    // ---- vísceras (spec §4)
+    pielectasia_d: ft?.pielectasia_direita_mm != null ? ptBr(ft.pielectasia_direita_mm) : "____",
+    pielectasia_e: ft?.pielectasia_esquerda_mm != null ? ptBr(ft.pielectasia_esquerda_mm) : "____",
+    pielectasia_lado: ladoDaPielectasia(ft),
+    pielectasia_conduta: condutaDaPielectasia(f),
+    derrame_lado: ft?.derrame_pleural ?? "____",
+    derrame_medida: ft?.derrame_pleural_mm != null ? ptBr(ft.derrame_pleural_mm) : "____",
+
+    // ---- anexos e 1º trimestre (spec §9)
+    ovario_lado: f.ovario_lado ?? "____",
+    ovario_medidas: (f.ovario_medidas_cm ?? []).map((n) => ptBr(n)).join(" x ") || "____",
+    ovario_medida_achado: f.ovario_achado_medida_cm != null ? ptBr(f.ovario_achado_medida_cm) : "____",
+    ovario_volume: volumeOvario(f.ovario_medidas_cm),
+    vesicula_medida: f.vesicula_vitelina_mm != null ? ptBr(f.vesicula_vitelina_mm) : "____",
+    hematoma_medidas: f.hematoma_perigestacional_medidas ?? "____",
+    hematoma_lado: f.hematoma_perigestacional_lado ?? "____",
   };
+}
+
+/**
+ * A lateralidade da pielectasia vem do ESTADO por lado, não das medidas.
+ *
+ * As duas pelves são medidas de rotina; ter medida não é ter pielectasia
+ * (crítica do Codex, 19/08).
+ */
+function ladoDaPielectasia(ft: F["fetos"][number] | undefined): string {
+  const d = ft?.pielectasia_direita === true;
+  const e = ft?.pielectasia_esquerda === true;
+  if (d && e) return "bilateralmente";
+  if (d) return "direita";
+  if (e) return "esquerda";
+  return "____";
+}
+
+/**
+ * A conduta da pielectasia muda em 32 semanas — e com IG desconhecida NÃO se
+ * escolhe uma das duas em silêncio (crítica do Codex).
+ *
+ * Usa a IG de DATAÇÃO com os dias, não `ig_semanas` cru: 31s6d e 32s0d caem em
+ * lados opostos, e arredondar por semana erraria o prazo.
+ */
+function condutaDaPielectasia(f: F): string {
+  const datacao = igDeDatacao(f);
+  const dias = datacao
+    ? datacao.semanas * 7 + datacao.dias
+    : f.ig_semanas != null
+      ? f.ig_semanas * 7 + (f.ig_dias ?? 0)
+      : null;
+  if (dias === null) return "____";
+  return dias < 32 * 7
+    ? "no prazo de 4 semanas"
+    : "no pós-natal (no prazo de 1 a 3 meses)";
+}
+
+/** Volume ovariano pela fórmula do elipsoide — a mesma da PELVE. */
+function volumeOvario(medidas: number[] | null | undefined): string {
+  const m = (medidas ?? []).filter((n) => Number.isFinite(n));
+  if (m.length < 3) return "____";
+  return ptBr(Math.round(m[0]! * m[1]! * m[2]! * 0.523 * 10) / 10);
 }
 
 // ---------------------------------------------------------------------------
@@ -455,13 +519,16 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
     }
     if (c.findings.gestacao_inicial) {
       return [
-        "saco_gestacional", "feto", "bcf", "cranio_achado", "ccn",
-        "vesicula_vitelina", "cordao_umbilical", "liquido_amniotico", "ovarios", "achados_adicionais",
+        "saco_gestacional", "gestacao_inviavel", "feto", "bcf", "cranio_achado", "ccn",
+        "vesicula_vitelina", "hematoma_perigestacional", "cordao_umbilical",
+        "liquido_amniotico", "ovarios", "achados_adicionais",
       ];
     }
     return [
       "feto", "bcf", "movimentos_fetais", "movimentos_achado",
       "anatomia_header", "anatomia_cranio", "cranio_achado", "anatomia_visceras",
+      "pielectasia", "estomago_nao_visualizado", "intestino_hiperecogenico",
+      "ascite", "derrame_pleural", "hidropsia",
       "biometria_header", "dbp", "cc", "ca", "cf", "peso_fetal",
       "placenta", "placenta_achado", "cordao_umbilical", "liquido_amniotico", "achados_adicionais",
     ];
@@ -578,6 +645,113 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
       variantes: CRANIO_VARIANTES,
     },
     { id: "anatomia_visceras", variantes: [{ id: "normal", frase: "O estômago e a bexiga foram bem identificados e com ecotextura homogênea." }] },
+    /**
+     * ACHADOS DE VÍSCERAS — spec §4, aprovada pelo Luiz.
+     *
+     * UM SLOT POR ACHADO, e não um enum. Ascite, derrame pleural e intestino
+     * hiperecogênico coexistem no mesmo feto; um enum singular faria os outros
+     * sumirem — o defeito que o `placenta_achado` já teve.
+     */
+    {
+      id: "pielectasia",
+      removivel: false,
+      incluirSe: (c) => ftDe(c)?.pielectasia_direita === true || ftDe(c)?.pielectasia_esquerda === true,
+      variantes: [{
+        id: "presente",
+        frase: "A pelve renal direita mede {pielectasia_d} mm e a esquerda mede {pielectasia_e} mm.",
+        // A conduta muda em 32 semanas (spec §4), e o prazo é dado do exame:
+        // sem IG conhecida sai como lacuna, nunca chutando um dos dois.
+        conclusao:
+          "Pequena distensão na pelve renal {pielectasia_lado} (pielectasia). " +
+          "Convém, a critério clínico, reavaliar ultrassonograficamente {pielectasia_conduta}, " +
+          "com objetivo de acompanhar a evolução.",
+        placeholdersObrigatorios: ["pielectasia_lado", "pielectasia_conduta"],
+        exemplo: { fetos: [{ pielectasia_direita: true, pielectasia_direita_mm: 6.2, pielectasia_esquerda_mm: 3.1 }] },
+      }],
+    },
+    {
+      id: "intestino_hiperecogenico",
+      removivel: false,
+      incluirSe: (c) => ftDe(c)?.intestino_hiperecogenico === true,
+      variantes: [{
+        id: "presente",
+        frase: "\nAlças intestinais fetais apresentando aumento difuso da ecogenicidade, semelhante à ecogenicidade das estruturas ósseas.",
+        conclusao:
+          "Hiperecogenicidade intestinal fetal, de aspecto inespecífico. Convém, a critério clínico, " +
+          "realizar estudo morfológico dirigido e acompanhamento ultrassonográfico evolutivo.",
+        exemplo: { fetos: [{ intestino_hiperecogenico: true }] },
+      }],
+    },
+    {
+      /**
+       * ASCITE e DERRAME saem SUPRIMIDOS quando há hidropsia (decisão com o
+       * Codex, 19/08): a frase de hidropsia já descreve os três componentes, e
+       * repeti-los faria o laudo dizer a mesma coisa três vezes. Os DADOS
+       * continuam gravados — a supressão é de apresentação, não de conteúdo.
+       */
+      id: "ascite",
+      removivel: false,
+      incluirSe: (c) => ftDe(c)?.ascite === true && ftDe(c)?.hidropsia !== true,
+      variantes: [{
+        id: "presente",
+        frase: "\nModerada quantidade de líquido anecoico na cavidade abdominal fetal, circundando parcialmente as vísceras.",
+        conclusao: "Ascite fetal.",
+        exemplo: { fetos: [{ ascite: true }] },
+      }],
+    },
+    {
+      id: "derrame_pleural",
+      removivel: false,
+      incluirSe: (c) => ftDe(c)?.derrame_pleural != null && ftDe(c)?.hidropsia !== true,
+      variantes: [{
+        id: "presente",
+        frase: "\nColeção líquida anecoica no espaço pleural {derrame_lado}, medindo até {derrame_medida} mm de espessura.",
+        conclusao: "Derrame pleural fetal {derrame_lado}.",
+        placeholdersObrigatorios: ["derrame_lado"],
+        exemplo: { fetos: [{ derrame_pleural: "direito", derrame_pleural_mm: 4.5 }] },
+      }],
+    },
+    {
+      id: "hidropsia",
+      removivel: false,
+      incluirSe: (c) => ftDe(c)?.hidropsia === true,
+      variantes: [{
+        id: "presente",
+        frase: "\nModerada quantidade de líquido livre na cavidade abdominal, associado a derrame pleural bilateral e edema do tecido celular subcutâneo fetal.",
+        conclusao: "Sinais ultrassonográficos de hidropisia fetal.",
+        exemplo: { fetos: [{ hidropsia: true }] },
+      }],
+    },
+    {
+      /**
+       * ESTÔMAGO NÃO VISUALIZADO — condição COMPOSTA (spec §4, R4): a conclusão
+       * só vale COM polidrâmnio associado. Sem ele a spec deixa a pergunta em
+       * aberto, e o corpo sai sozinho até o Luiz decidir.
+       */
+      id: "estomago_nao_visualizado",
+      removivel: false,
+      incluirSe: (c) => ftDe(c)?.estomago_nao_visualizado === true,
+      variantes: [
+        {
+          id: "com_polidramnio",
+          quando: (c) => /polidr/i.test(c.findings.liquido_classe ?? ""),
+          frase: "\nO estômago fetal não foi visualizado durante o período de observação, apesar do estudo dirigido em diferentes momentos da avaliação.",
+          conclusao:
+            "Persistente ausência de visualização do estômago fetal, associada a aumento do líquido amniótico. " +
+            "O conjunto dos achados levanta a possibilidade de alteração do trato digestivo alto (atresia esofágica), " +
+            "e por isso recomendamos avaliação morfológica dirigida.",
+          exemplo: { liquido_tipo: "alterado", liquido_classe: "polidrâmnio", fetos: [{ estomago_nao_visualizado: true }] },
+        },
+        {
+          // Sem polidrâmnio a spec não define conclusão — o corpo descreve, e a
+          // conclusão fica para o médico. Afirmar um diagnóstico aqui seria
+          // inventar o que ele não aprovou.
+          id: "isolado",
+          frase: "\nO estômago fetal não foi visualizado durante o período de observação, apesar do estudo dirigido em diferentes momentos da avaliação.",
+          exemplo: { fetos: [{ estomago_nao_visualizado: true }] },
+        },
+      ],
+    },
     { id: "biometria_header", variantes: [{ id: "normal", frase: "\nA biometria fetal é a seguinte:" }] },
     { id: "dbp", obrigatorio: true, placeholdersObrigatorios: ["dbp"], variantes: [{ id: "normal", frase: "Diâmetro biparietal (DBP) de {dbp} mm." }] },
     { id: "cc", obrigatorio: true, placeholdersObrigatorios: ["cc"], variantes: [{ id: "normal", frase: "Circunferência da cabeça (CC) de {cc} mm." }] },
@@ -809,8 +983,93 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
           exemplo: { fetos: [{ cordao_vasos: "tres" }] } },
       ],
     },
-    { id: "vesicula_vitelina", variantes: [{ id: "normal", frase: "Vesícula vitelina de forma e dimensões normais." }] },
-    { id: "ovarios", variantes: [{ id: "normal", frase: "Ovários de aspecto normal." }] },
+    {
+      id: "vesicula_vitelina",
+      removivel: false,
+      variantes: [
+        {
+          // Aumentada só quando o médico DIZ e MEDE — a frase de normalidade
+          // continua sendo o padrão do 1º trimestre.
+          id: "aumentada",
+          quando: (c) => c.findings.vesicula_vitelina_mm != null,
+          frase: "Vesícula vitelina de dimensões aumentadas, medindo {vesicula_medida} mm no seu maior eixo.",
+          conclusao:
+            "Vesícula vitelina de dimensões aumentadas (hidrópica), achado associado a maior risco de " +
+            "desfecho desfavorável da gestação. Convém acompanhamento ultrassonográfico evolutivo.",
+          placeholdersObrigatorios: ["vesicula_medida"],
+          exemplo: { gestacao_inicial: true, ig_semanas: 8, vesicula_vitelina_mm: 6.8 },
+        },
+        { id: "normal", padrao: true, frase: "Vesícula vitelina de forma e dimensões normais." },
+      ],
+    },
+    {
+      id: "ovarios",
+      removivel: false,
+      variantes: [
+        /**
+         * ACHADOS DE OVÁRIO — spec §9. O volume vem da fórmula do elipsoide, a
+         * mesma da PELVE, e é dado do exame: a redação do médico pode mudar,
+         * o número não.
+         */
+        {
+          id: "cisto_simples",
+          quando: (c) => c.findings.ovario_achado === "cisto_simples",
+          frase:
+            "Ovário {ovario_lado} medindo {ovario_medidas} cm, apresentando imagem anecoica, " +
+            "de paredes finas e regulares, sem septações, medindo {ovario_medida_achado} cm no seu " +
+            "maior eixo, sem componente sólido.",
+          conclusao:
+            "Ovário {ovario_lado} ({ovario_volume} cm³), apresentando cisto simples (O-RADS 2).",
+          placeholdersObrigatorios: ["ovario_lado", "ovario_volume"],
+          exemplo: { gestacao_inicial: true, ig_semanas: 8, ovario_achado: "cisto_simples", ovario_lado: "direito", ovario_medidas_cm: [3.2, 2.1, 2.4], ovario_achado_medida_cm: 3.4 },
+        },
+        {
+          id: "endometrioma",
+          quando: (c) => c.findings.ovario_achado === "endometrioma",
+          frase:
+            "Ovário {ovario_lado} medindo {ovario_medidas} cm, apresentando imagem de baixa " +
+            "ecogenicidade, com margens regulares e conteúdo com aspecto em \"vidro fosco\", sem " +
+            "vascularização, medindo {ovario_medida_achado} cm.",
+          conclusao:
+            "Ovário {ovario_lado} ({ovario_volume} cm³), apresentando imagem de baixa ecogenicidade " +
+            "que tem como diagnóstico mais provável endometrioma (O-RADS US 2).",
+          placeholdersObrigatorios: ["ovario_lado", "ovario_volume"],
+          exemplo: { gestacao_inicial: true, ig_semanas: 8, ovario_achado: "endometrioma", ovario_lado: "esquerdo", ovario_medidas_cm: [4.1, 3.2, 3.5], ovario_achado_medida_cm: 2.8 },
+        },
+        { id: "normal", padrao: true, frase: "Ovários de aspecto normal." },
+      ],
+    },
+    {
+      id: "hematoma_perigestacional",
+      removivel: false,
+      incluirSe: (c) => c.findings.hematoma_perigestacional_medidas != null,
+      variantes: [{
+        id: "presente",
+        frase: "\nImagem hipoecoica alongada, medindo {hematoma_medidas}, situada adjacente à {hematoma_lado} do saco gestacional.",
+        /**
+         * A conclusão da spec está TRUNCADA no original ("<15% do tamanho do
+         * saco…"). Sai só o que está aprovado; o percentual entra quando o
+         * Luiz completar a frase.
+         */
+        conclusao: "Imagem hipoecoica adjacente ao saco gestacional. O diagnóstico mais provável é pequeno hematoma perigestacional.",
+        placeholdersObrigatorios: ["hematoma_medidas", "hematoma_lado"],
+        exemplo: { gestacao_inicial: true, ig_semanas: 8, hematoma_perigestacional_medidas: "1,2 x 0,8 x 0,5 cm", hematoma_perigestacional_lado: "esquerda" },
+      }],
+    },
+    {
+      id: "gestacao_inviavel",
+      removivel: false,
+      incluirSe: (c) => c.findings.gestacao_inviavel === true,
+      variantes: [{
+        id: "presente",
+        frase: "Saco gestacional medindo {dsm} mm de diâmetro médio, sem visualização de embrião.",
+        conclusao:
+          "Ausência de embrião em saco gestacional com diâmetro médio (DSM) de {dsm} mm, " +
+          "permitindo preencher critérios ultrassonográficos de inviabilidade gestacional.",
+        placeholdersObrigatorios: ["dsm"],
+        exemplo: { gestacao_inicial: true, ig_semanas: 8, gestacao_inviavel: true, saco_gestacional_mm: 27.4 },
+      }],
+    },
     {
       id: "achados_adicionais",
       incluirSe: (c) => Boolean(c.findings.achados_adicionais?.trim()),
