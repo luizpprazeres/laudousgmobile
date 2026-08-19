@@ -948,6 +948,37 @@ export async function POST(req: Request) {
               if (m.motivoSemPersonalizacao) {
                 console.info("[personalizacao] não aplicada:", m.motivoSemPersonalizacao);
               }
+              /**
+               * O MÉDICO PRECISA SABER que este laudo saiu com a redação
+               * padrão (exigência do Codex, 19/08).
+               *
+               * Ele publicou uma redação, ela estava válida, e o laudo saiu
+               * sem ela — do lado dele isso é indistinguível de a
+               * personalização simplesmente não funcionar. O aviso vai por
+               * dois caminhos, nenhum deles DENTRO do texto copiável: o evento
+               * do stream e o `metadata` do laudo, que fica gravado.
+               */
+              if (m.personalizacaoDescartada) {
+                pipelineWarnings.push({
+                  code: "personalizacao_descartada",
+                  message:
+                    "Este laudo saiu com a redação padrão: a sua personalização não pôde ser aplicada. " +
+                    "Confira o texto antes de assinar.",
+                });
+                emit({
+                  type: "sanity_warning",
+                  ts: nowIso(),
+                  severity: "warning",
+                  issues: [
+                    {
+                      type: "outro" as const,
+                      severity: "warning" as const,
+                      detail:
+                        "A sua personalização não pôde ser aplicada — este laudo saiu com a redação padrão.",
+                    },
+                  ],
+                });
+              }
             },
           })
         : runWriterStream({

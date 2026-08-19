@@ -270,6 +270,13 @@ export async function* runRendererStream(args: {
     catalogVersao: number;
     customizacaoVersao: number | null;
     motivoSemPersonalizacao?: string;
+    /**
+     * O médico TINHA personalização publicada e válida, e mesmo assim o laudo
+     * saiu com a redação padrão. É o único caso em que ele precisa ser avisado:
+     * nos demais ("não publicou", "o modelo mudou") ou não há o que perder, ou
+     * ele já sabe. Ver o fallback do catálogo, abaixo.
+     */
+    personalizacaoDescartada?: boolean;
   }) => void;
 }): AsyncGenerator<string, RendererStreamResult, void> {
   const t0 = Date.now();
@@ -618,6 +625,7 @@ export async function* runRendererStream(args: {
                 motivoSemPersonalizacao: `fallback para o renderer clássico: ${
                   err instanceof Error ? err.message.slice(0, 120) : "erro"
                 }`,
+                ...(p?.aplicar ? { personalizacaoDescartada: true } : {}),
               });
             } catch {
               /* observacional — nunca derruba a geração */
@@ -731,7 +739,45 @@ export async function* runRendererStream(args: {
       const r = aplicarFrasesPersonalizadas(fullText, fr.frases);
       if (r.aplicadas > 0) {
         fullText = r.texto;
-        notaPersonalizacao += ` [redação do médico v${fr.versao}: ${r.aplicadas} frase(s)]`;
+        notaPersonalizacao += ` [redação do médico v${fr.versao}: ${r.aplicadas} de ${fr.frases.length} frase(s)]`;
+      } else {
+        /**
+         * Resolveu e não aplicou NENHUMA. É o caso legítimo — o exame tem
+         * achado, a frase de normalidade não está no laudo —, mas do lado do
+         * médico é indistinguível de "a personalização não funciona". Fica na
+         * auditoria para que a pergunta tenha resposta.
+         */
+        notaPersonalizacao += ` [redação do médico v${fr.versao}: 0 de ${fr.frases.length} frase(s) — nenhuma âncora neste laudo]`;
+      }
+      /**
+       * AUDITORIA DO CAMINHO DERIVADO (achado do Codex, 19/08).
+       *
+       * `onModelo` só era chamado no ramo do catálogo escrito. Doze das treze
+       * categorias passam por aqui: o laudo saía personalizado sem nenhum
+       * registro estruturado de qual modelo o assinou.
+       */
+      try {
+        args.onModelo?.({
+          catalogId: fr.catalogId,
+          catalogVersao: fr.baseVersao,
+          customizacaoVersao: fr.versao,
+          ...(r.aplicadas === 0
+            ? { motivoSemPersonalizacao: "nenhuma frase-âncora presente neste laudo" }
+            : {}),
+        });
+      } catch {
+        /* observacional — nunca derruba a geração */
+      }
+    } else if (fr && !fr.aplicar) {
+      try {
+        args.onModelo?.({
+          catalogId: `${args.categoryCode}/derivado`,
+          catalogVersao: 0,
+          customizacaoVersao: null,
+          motivoSemPersonalizacao: fr.motivo,
+        });
+      } catch {
+        /* observacional — nunca derruba a geração */
       }
     }
 

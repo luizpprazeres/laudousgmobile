@@ -78,6 +78,19 @@ const ServerEnvSchema = z.object({
   // aplicar o overlay do usuário muda o texto do laudo. Só vale quando as
   // DUAS estão ligadas. Rollback trivial: esvaziar esta.
   MODEL_CUSTOMIZATION_CATEGORIES: z.string().default(""),
+  /**
+   * ALLOWLIST DE USUÁRIOS da personalização — CSV de `user_id`.
+   *
+   * Categoria não é canário de usuário (crítica do Codex, 19/08): ligar
+   * `MODEL_CUSTOMIZATION_CATEGORIES` habilita a personalização para QUALQUER
+   * médico que tenha publicado naquela categoria, não só para quem está
+   * pilotando. Numa função que muda o texto do laudo por decisão do usuário,
+   * o piloto precisa ser nominal.
+   *
+   * Vazio = NINGUÉM, mesmo com a categoria ligada. Fail-closed, como as
+   * demais flags deste sistema.
+   */
+  MODEL_CUSTOMIZATION_USER_IDS: z.string().default(""),
   // DET-6: quando "true", as diretivas de conclusão do médico são aplicadas
   // como OPERAÇÕES tipadas (pipeline/operations.ts) em vez do commandGuard
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
@@ -244,4 +257,22 @@ export function env() {
   }
   _env = parsed.data;
   return _env;
+}
+
+/**
+ * Relê `process.env`. SÓ PARA OS GATES manuais.
+ *
+ * Existe por causa da allowlist da personalização: o `user_id` do piloto só é
+ * conhecido depois de consultar o banco, e a essa altura `env()` já foi
+ * memoizada pelo cliente do Postgres. Sem isto, o gate não conseguiria
+ * exercitar o caminho ligado — e a trava mais importante ficaria sem teste.
+ *
+ * Recusa-se a rodar em produção: mudar env em runtime lá seria um jeito de
+ * ligar uma flag sem deploy.
+ */
+export function recarregarEnvParaTeste(): void {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("recarregarEnvParaTeste não roda em produção");
+  }
+  _env = null;
 }

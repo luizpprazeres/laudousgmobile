@@ -19,6 +19,8 @@ import { OBSTETRICA_SAMPLES } from "@/server/renderer/catalog/OBSTETRICA.samples
 import { renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.render";
 import { aplicarFrasesPersonalizadas } from "@/server/pipeline/frasesPersonalizadas";
 import { frasesBaseDe, frasesDeOperacoes } from "./resolveFrases";
+import { usuarioLiberado } from "@/server/renderer/catalog/engine";
+import { versaoDerivadaDe } from "@/server/renderer/catalog/modeloNormalCatalog";
 import { laudoPadraoDe } from "@/server/renderer/catalog/modeloNormalRegistry";
 import { linhasDoLaudo } from "@/server/renderer/catalog/modeloNormal";
 import type { Operation } from "@/server/renderer/catalog/types";
@@ -285,6 +287,38 @@ console.log("4 · personalização de outra versão não se aplica");
   t("versão anterior do base é recusada", lancou);
   t("o catálogo está na versão que a estrutura de hoje merece",
     OBSTETRICA_CLASSICO.versao >= 3, `v${OBSTETRICA_CLASSICO.versao}`);
+}
+
+console.log("5 · as travas que o Codex pediu antes de ligar a flag");
+{
+  // 5a · âncora que as próprias alterações removem
+  const anc = OBSTETRICA_CLASSICO.slots.find((sl) => sl.removivel !== false && !sl.obrigatorio)!;
+  const conflito: Operation[] = [
+    { op: "insert_phrase_after", anchor: anc.id, value: "Frase acrescentada pelo médico." },
+    { op: "remove_slot", slot: anc.id },
+  ];
+  const errosConflito = validateOperations(OBSTETRICA_CLASSICO, conflito);
+  t("inserir depois de uma frase que o mesmo conjunto remove é recusado",
+    errosConflito.length > 0, errosConflito.join(" / "));
+  // …e a ordem inversa também: o médico lista as operações como quiser.
+  t("…em qualquer ordem",
+    validateOperations(OBSTETRICA_CLASSICO, [conflito[1]!, conflito[0]!]).length > 0);
+  // Sem a remoção, a mesma inserção é legítima.
+  t("mas a inserção sozinha continua válida",
+    validateOperations(OBSTETRICA_CLASSICO, [conflito[0]!]).length === 0);
+
+  // 5b · allowlist nominal — fail-closed
+  t("allowlist vazia não libera ninguém", !usuarioLiberado("", "abc"));
+  t("usuário sem id não é liberado", !usuarioLiberado("abc", ""));
+  t("só o id listado é liberado", usuarioLiberado("xyz, abc", "abc") && !usuarioLiberado("xyz", "abc"));
+
+  // 5c · o modelo derivado deixou de ser eternamente v0
+  const vPartes = versaoDerivadaDe("PARTES_MOLES", "CLASSICO_COMPLETO");
+  const vTireoide = versaoDerivadaDe("TIREOIDE", "CLASSICO_COMPLETO");
+  t("o modelo derivado tem impressão digital", vPartes > 0 && vTireoide > 0, `${vPartes}/${vTireoide}`);
+  t("…e ela distingue as categorias", vPartes !== vTireoide);
+  t("…e é estável entre chamadas", versaoDerivadaDe("PARTES_MOLES", "CLASSICO_COMPLETO") === vPartes);
+  t("categoria sem modelo devolve 0", versaoDerivadaDe("NAO_EXISTE", "CLASSICO_COMPLETO") === 0);
 }
 
 const total = ok + falhas.length;

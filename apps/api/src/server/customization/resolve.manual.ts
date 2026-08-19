@@ -17,9 +17,9 @@
 
 import { getDbClient, schema } from "@laudousg/db";
 import { sql } from "drizzle-orm";
-import { env } from "@/server/env";
-import { catalogEnabledFor } from "@/server/renderer/catalog/engine";
-import { resolveCatalogo } from "@/server/renderer/catalog/registry";
+import { env, recarregarEnvParaTeste } from "@/server/env";
+import { catalogEnabledFor, validateOperations } from "@/server/renderer/catalog/engine";
+import { resolveCatalogo, categoriasDaBiblioteca } from "@/server/renderer/catalog/registry";
 import { OBSTETRICA_SAMPLES } from "@/server/renderer/catalog/OBSTETRICA.samples";
 import { renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.render";
 import {
@@ -27,6 +27,10 @@ import {
   type ObstetricaFindings,
 } from "@/server/renderer/categories/OBSTETRICA";
 import { resolverPersonalizacao } from "./resolve";
+import { resolverFrasesPersonalizadas } from "./resolveFrases";
+import { laudoPadraoDe } from "@/server/renderer/catalog/modeloNormalRegistry";
+import { linhasDoLaudo, contarDados } from "@/server/renderer/catalog/modeloNormal";
+import { aplicarFrasesPersonalizadas } from "@/server/pipeline/frasesPersonalizadas";
 import { publicar, salvarRascunho, type Chave, type Executor } from "./store";
 import type { Operation } from "@/server/renderer/catalog/types";
 
@@ -44,6 +48,129 @@ const FLAGS = { igCorrection: false, flexivel: false, grannum: false, objetivo: 
 /** O laudo que o pipeline produz hoje, sem catálogo nem personalização. */
 function laudoDeProducaoHoje(f: ObstetricaFindings): string {
   return renderObstetrica(f, null, FLAGS);
+}
+
+const DERIVADA = { categoria: "PARTES_MOLES", estilo: "CLASSICO_COMPLETO" as const };
+
+/**
+ * As travas do resolver derivado, exercitadas contra o banco.
+ *
+ * Mexe em `process.env` e devolve tudo ao fim — o resto do gate depende do
+ * estado original das flags para decidir o que cobrar.
+ */
+async function derivadas(x: Executor, userId: string): Promise<void> {
+  const antesCat = process.env.MODEL_CUSTOMIZATION_CATEGORIES ?? "";
+  const antesIds = process.env.MODEL_CUSTOMIZATION_USER_IDS ?? "";
+  const chave: Chave = { userId, categoryCode: DERIVADA.categoria, styleCode: DERIVADA.estilo };
+  const entrada = resolveCatalogo(DERIVADA.categoria, DERIVADA.estilo);
+  check("a categoria derivada resolve", entrada !== undefined);
+  if (!entrada) return;
+
+  const laudo = laudoPadraoDe(DERIVADA.categoria, DERIVADA.estilo)!;
+  const linhas = linhasDoLaudo(laudo);
+  const alvo = linhas.find((l) => contarDados(l.texto) === 0 && l.secao === "corpo") ?? linhas[0]!;
+  const NOVA = "Redação do médico nesta linha.";
+  await salvarRascunho(chave, entrada, [{ op: "replace_phrase", slot: alvo.id, value: NOVA }], null, x);
+  await publicar(chave, entrada, x);
+
+  const com = async (cats: string, ids: string) => {
+    process.env.MODEL_CUSTOMIZATION_CATEGORIES = cats;
+    process.env.MODEL_CUSTOMIZATION_USER_IDS = ids;
+    recarregarEnvParaTeste();
+    return resolverFrasesPersonalizadas(chave, x);
+  };
+
+  const desligada = await com("", userId);
+  check("derivada: categoria desligada não aplica", desligada.aplicar === false, desligada);
+
+  const foraDaLista = await com(DERIVADA.categoria, "");
+  check("derivada: allowlist vazia não aplica", foraDaLista.aplicar === false, foraDaLista);
+
+  const outroUsuario = await com(DERIVADA.categoria, "00000000-0000-0000-0000-000000000000");
+  check("derivada: outro usuário na allowlist não aplica", outroUsuario.aplicar === false, outroUsuario);
+
+  const r = await com(DERIVADA.categoria, userId);
+  check("derivada: com categoria + usuário liberados, aplica", r.aplicar === true, r);
+  if (r.aplicar) {
+    check("derivada: uma frase resolvida", r.frases.length === 1, r.frases.length);
+    check("derivada: a base é a linha de hoje", r.frases[0]?.base === alvo.texto);
+    const aplicado = aplicarFrasesPersonalizadas(laudo, r.frases);
+    check("derivada: a redação entra no laudo", aplicado.aplicadas === 1 && aplicado.texto.includes(NOVA));
+    check(
+      "derivada: e o resto do laudo não muda",
+      aplicado.texto.split("\n").length === laudo.split("\n").length,
+    );
+  }
+
+  // O LAUDO COM ACHADO: a frase de normalidade não está lá, e nada casa.
+  // É o pior caso por desenho — a personalização não aplica, nunca um laudo
+  // errado. Simula trocando a linha-âncora por outra redação no laudo.
+  if (true) {
+    const comAchado = laudo.replace(alvo.texto, "Achado alterado descrito pelo médico.");
+    const r2 = await com(DERIVADA.categoria, userId);
+    if (r2.aplicar) {
+      const ap = aplicarFrasesPersonalizadas(comAchado, r2.frases);
+      check("derivada: sem a âncora no laudo, nada é aplicado", ap.aplicadas === 0, ap.aplicadas);
+      check("derivada: e o laudo sai intocado", ap.texto === comAchado);
+    }
+  }
+
+  // REMOÇÃO de uma linha do modelo derivado.
+  {
+    await salvarRascunho(chave, entrada, [{ op: "remove_slot", slot: alvo.id }], null, x);
+    await publicar(chave, entrada, x);
+    const r3 = await com(DERIVADA.categoria, userId);
+    check("derivada: remoção resolve", r3.aplicar === true, r3);
+    if (r3.aplicar) {
+      const ap = aplicarFrasesPersonalizadas(laudo, r3.frases);
+      check("derivada: a linha sai do laudo", !ap.texto.includes(alvo.texto));
+      check(
+        "derivada: e só ela sai",
+        ap.texto.split("\n").filter((l) => l.trim() !== "").length ===
+          laudo.split("\n").filter((l) => l.trim() !== "").length - 1,
+      );
+    }
+  }
+
+  // MEDIDA: reescrever apagando o dado é recusado, também na derivada.
+  // PARTES_MOLES normal não tem medida nenhuma — a busca varre as derivadas
+  // até achar uma que tenha, senão o teste passaria por vacuidade.
+  {
+    let testou = false;
+    for (const c of categoriasDaBiblioteca().filter((x) => x.derivado)) {
+      const e2 = resolveCatalogo(c.categoria, DERIVADA.estilo);
+      const l2 = laudoPadraoDe(c.categoria, DERIVADA.estilo);
+      if (!e2 || !l2) continue;
+      const comDado = linhasDoLaudo(l2).find((l) => contarDados(l.texto) > 0);
+      if (!comDado) continue;
+      const erros = validateOperations(e2.catalog, [
+        { op: "replace_phrase", slot: comDado.id, value: "Frase sem a medida." },
+      ]);
+      check(`derivada (${c.categoria}): apagar a medida é recusado`, erros.length > 0, comDado.texto.slice(0, 50));
+      testou = true;
+      break;
+    }
+    check("alguma derivada tem medida para testar", testou);
+  }
+
+  // TRAVA DE VERSÃO: simula o deploy que mexeu no modelo. A personalização
+  // continua apontando para uma linha que existe — o que a barra é o modelo
+  // ao redor ter mudado.
+  await x.execute(sql`
+    update public.report_model_customizations
+       set base_versao = base_versao + 1
+     where status = 'published'
+       and category_code = ${DERIVADA.categoria}
+  `);
+  const versaoVelha = await com(DERIVADA.categoria, userId);
+  check("derivada: modelo-base mudou ⇒ não aplica", versaoVelha.aplicar === false, versaoVelha);
+  if (!versaoVelha.aplicar) {
+    check("derivada: e o motivo é a mudança do modelo", versaoVelha.motivo.includes("mudou"), versaoVelha.motivo);
+  }
+
+  process.env.MODEL_CUSTOMIZATION_CATEGORIES = antesCat;
+  process.env.MODEL_CUSTOMIZATION_USER_IDS = antesIds;
+  recarregarEnvParaTeste();
 }
 
 async function main() {
@@ -71,6 +198,33 @@ async function main() {
       // --- 1. Sem nada publicado ------------------------------------------
       const semNada = await resolverPersonalizacao(chave, x);
       check("sem personalização publicada, não aplica", semNada.aplicar === false, semNada);
+
+      // --- 1a. O CAMINHO DERIVADO -----------------------------------------
+      // Doze das treze categorias não têm catálogo escrito: a personalização
+      // delas troca linhas do laudo PRONTO (`resolveFrases.ts`). É outro
+      // resolver, com outras travas — e ficava fora deste gate.
+      await derivadas(x, perfil.id);
+
+      // --- 1b. ALLOWLIST: a categoria ligada não basta ---------------------
+      // Codex, 19/08: "categoria não é canário de usuário". Com a flag de
+      // categoria ligada e o médico FORA da allowlist, nada se aplica.
+      if (ligado) {
+        process.env.MODEL_CUSTOMIZATION_USER_IDS = "00000000-0000-0000-0000-000000000000";
+        recarregarEnvParaTeste();
+        const foraDaLista = await resolverPersonalizacao(chave, x);
+        check("médico fora da allowlist não personaliza", foraDaLista.aplicar === false, foraDaLista);
+        if (!foraDaLista.aplicar) {
+          check("e o motivo é o usuário", foraDaLista.motivo.includes("usuário"), foraDaLista.motivo);
+        }
+        // Lista vazia é NINGUÉM, nunca "todo mundo" — fail-closed.
+        process.env.MODEL_CUSTOMIZATION_USER_IDS = "";
+        recarregarEnvParaTeste();
+        const listaVazia = await resolverPersonalizacao(chave, x);
+        check("allowlist vazia não libera geral", listaVazia.aplicar === false, listaVazia);
+        // A partir daqui o piloto é este médico.
+        process.env.MODEL_CUSTOMIZATION_USER_IDS = `outro-id,${perfil.id}`;
+        recarregarEnvParaTeste();
+      }
 
       // --- 2. Publica uma personalização ----------------------------------
       const FRASE = "Reavaliação ultrassonográfica em 4 semanas.";

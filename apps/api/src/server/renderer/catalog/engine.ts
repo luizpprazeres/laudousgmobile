@@ -32,6 +32,22 @@ export function catalogEnabledFor(csv: string, categoria: string): boolean {
     .includes(categoria);
 }
 
+/**
+ * O usuário está na allowlist da personalização?
+ *
+ * Fail-closed pelo mesmo motivo de `catalogEnabledFor`: lista vazia é NINGUÉM,
+ * nunca "todo mundo". Uma função que muda o texto do laudo não pode ligar por
+ * acidente de configuração.
+ */
+export function usuarioLiberado(csv: string, userId: string): boolean {
+  if (userId === "") return false;
+  return csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "")
+    .includes(userId);
+}
+
 // ---------------------------------------------------------------------------
 // Interpolação — estrita (crítica C12: na v1 placeholder desconhecido vazava)
 // ---------------------------------------------------------------------------
@@ -274,6 +290,17 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
     }
   };
 
+  /**
+   * Os slots que ESTE conjunto remove. `insert_phrase_after` é validado contra
+   * o catálogo-base, onde a âncora ainda existe — mas na aplicação a remoção
+   * roda primeiro, a âncora some da ordem, e a frase nova nunca é inserida
+   * (achado do Codex, 19/08).
+   *
+   * Precisa ser um pré-cálculo: o médico pode listar as operações em qualquer
+   * ordem, e a de remoção pode vir depois da de inserção.
+   */
+  const removidos = new Set(ops.filter((o) => o.op === "remove_slot").map((o) => o.slot));
+
   for (const o of ops) {
     if (o.op === "append_conclusion_item") {
       textoLivre("item de conclusão", o.value);
@@ -293,6 +320,13 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
     if (o.op === "insert_phrase_after") {
       if (!byId.has(o.anchor)) {
         erros.push(`a frase seria inserida depois de "${o.anchor}", que não existe no modelo-base v${catalog.versao}`);
+        continue;
+      }
+      if (removidos.has(o.anchor)) {
+        erros.push(
+          `a frase seria inserida depois de "${o.anchor}", que estas mesmas alterações removem — ` +
+            "ela não apareceria em laudo nenhum; escolha outra frase como âncora",
+        );
         continue;
       }
       // Aqui os dados do exame VALEM: a frase vira um slot `custom:n` e passa

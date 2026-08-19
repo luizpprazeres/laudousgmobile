@@ -169,6 +169,52 @@ FLEXIBLE_CONCLUSION=true GRANNUM_PLACENTA=true \
 > laudos que a produção montou com o renderer clássico. Ele avisa quando esse
 > cohort encolhe; quando chegar a zero, deixa de medir qualquer coisa.
 
+### Personalização — AINDA DESLIGADA
+
+A Biblioteca já **mostra** o modelo em todas as categorias; o que ainda não vale
+em laudo nenhum é a redação que o médico publica. `MODEL_CUSTOMIZATION_CATEGORIES`
+não existe em produção (default `""` = desligada).
+
+Ligar exige **duas** variáveis, e as duas são fail-closed:
+
+| Variável | O que faz |
+|---|---|
+| `MODEL_CUSTOMIZATION_CATEGORIES` | quais categorias aceitam personalização |
+| `MODEL_CUSTOMIZATION_USER_IDS` | **quais médicos** — vazio é ninguém |
+
+A segunda existe porque *categoria não é canário de usuário*: sem ela, ligar a
+categoria valeria para todo médico que já tivesse publicado nela.
+
+As travas, todas com gate:
+
+- **tudo ou nada** — cinco frases publicadas e duas que não casam mais devolvem
+  `null`, e o laudo sai inteiro no padrão. Meia personalização é um híbrido que
+  o médico nunca revisou.
+- **impressão digital do modelo derivado** — o derivado nasce do renderer e
+  ficava eternamente em `versao: 0`. Agora a `versao` é o hash do conjunto de
+  frases: linha nova entre as dele ou irmã reescrita ⇒ republicar.
+- **âncora que a própria alteração remove** — `insert_phrase_after` num slot que
+  o mesmo conjunto remove passava na validação e sumia em silêncio.
+- **fallback avisa** — quando o catálogo falha e o laudo sai pelo renderer
+  clássico, a personalização é descartada; vai um aviso ao médico (evento do
+  stream + `metadata`), **fora do texto copiável**.
+- **auditoria dos dois caminhos** — `onModelo` não era chamado nas 12 categorias
+  derivadas: o laudo saía personalizado sem registro de qual modelo o assinou.
+
+```bash
+cd apps/api
+# o gate que autoriza ligar
+pnpm exec tsx --env-file=../../.env src/server/customization/personalizacao-ponta-a-ponta.manual.ts
+# o caminho até o laudo, contra o banco — rodar NOS DOIS estados de flag
+pnpm exec tsx --env-file=../../.env src/server/customization/resolve.manual.ts
+MODEL_CATALOG_CATEGORIES=OBSTETRICA MODEL_CUSTOMIZATION_CATEGORIES=OBSTETRICA \
+  pnpm exec tsx --env-file=../../.env src/server/customization/resolve.manual.ts
+```
+
+> **Falta antes de ligar:** nenhum app renderiza o aviso hoje — `sanity_warning`
+> chega ao RN e é ignorado, e o iOS não o trata. O aviso existe no servidor e
+> fica gravado no laudo, mas o médico só o verá quando a tela mostrar.
+
 ### Biblioteca
 
 13 categorias, com técnica, corpo e conclusão. O médico reescreve a redação; os

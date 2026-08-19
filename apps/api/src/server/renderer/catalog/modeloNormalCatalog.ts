@@ -15,6 +15,7 @@
  * como overlay sobre o laudo do renderer de produção. Confundir os dois papéis
  * seria trocar o renderer clínico por uma casca.
  */
+import { createHash } from "node:crypto";
 import { buildDoc, serialize } from "./engine";
 import { cenariosDe, laudoDoCenario, laudoPadraoDe, modeloNormalDe } from "./modeloNormalRegistry";
 import { contarDados, linhasDoLaudo, type LinhaModelo } from "./modeloNormal";
@@ -55,6 +56,32 @@ export type EntradaDerivada = {
  * Monta a entrada de catálogo de uma categoria derivada.
  * `null` quando a categoria não tem modelo normal (não é uma das treze).
  */
+/**
+ * A VERSÃO do modelo derivado — a impressão digital do conjunto de frases.
+ *
+ * O catálogo escrito tem uma `versao` que o autor bumpa quando mexe na
+ * estrutura. O derivado não tem autor: ele nasce do renderer, e o renderer muda
+ * em qualquer deploy. Ficava cravado em 0 — a trava de versão nunca disparava,
+ * e a única defesa era o id de cada frase personalizada (achado do Codex,
+ * 19/08).
+ *
+ * O id de uma frase já cobre "a MINHA frase mudou". O que faltava é "o modelo
+ * ao redor mudou": uma linha nova entre as suas, uma irmã reescrita. O médico
+ * revisou um documento; se o documento mudou, ele revisa de novo. Por isso o
+ * hash é do CONJUNTO ordenado de ids — a mesma superfície que `frasesBaseDe`
+ * usa como âncora.
+ *
+ * 0 continua reservado para "não foi possível derivar".
+ */
+export function versaoDerivadaDe(categoria: string, estilo: string): number {
+  const laudo = laudoPadraoDe(categoria, estilo);
+  if (!laudo) return 0;
+  const ids = linhasDoLaudo(laudo).map((l) => l.id).sort().join("|");
+  const hex = createHash("sha1").update(`${categoria}/${estilo}/${ids}`).digest("hex").slice(0, 8);
+  // 31 bits: cabe em `integer` do Postgres e nunca colide com 0.
+  return (parseInt(hex, 16) % 0x7ffffffe) + 1;
+}
+
 export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDerivada | null {
   const m = modeloNormalDe(categoria);
   if (!m) return null;
@@ -69,12 +96,8 @@ export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDe
     id: `${categoria}/${estilo}`,
     categoria,
     estilo,
-    /**
-     * Versão 0 marca "derivado do renderer", não escrito à mão. Ela não é
-     * comparada na aplicação — a personalização derivada é ancorada no id da
-     * frase, que já muda quando a redação muda. Ver `resolveFrases.ts`.
-     */
-    versao: 0,
+    /** Impressão digital do modelo de hoje — ver `versaoDerivadaDe`. */
+    versao: versaoDerivadaDe(categoria, estilo),
     variaveis: [],
     titulo: () => titulo,
     cabecalhos: { corpo: "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", conclusao: "CONCLUSÃO:" },
