@@ -3,6 +3,32 @@
 **Status:** decisão pendente do Luiz. Não é tarefa de implementação.
 **Levantado em 19/08, com parecer adversarial do Codex.**
 
+> ## ⚠️ Atualização da noite de 19/08 — o risco deixou de ser hipotético
+>
+> Hoje o catálogo entrou em produção no mobile e **corrigiu um óbito fetal**: o
+> Luiz ditou *"batimentos cardíacos fetais não visualizados pelo modo B e nem
+> pelo modo Doppler"* e o renderer clássico escrevia *"Batimentos cardíacos
+> ritmados (BCF = ____ bpm)"*. O catálogo escreve a ausência e conclui
+> *"Feto sem vitalidade"* (laudo `e113211c`).
+>
+> **A web não tem como pegar isso.** Verificado no código: o sanity dela extrai
+> um BCF **numérico** — `lib/sanityCheck/extractor.ts:60`, faixa 50–280 bpm — e
+> não existe regra alguma para AUSÊNCIA de batimentos. Um ditado de óbito fetal
+> não produz `bcf_bpm`, não dispara nada, e o texto sai como o LLM escrever.
+> O `lib/deterministic/` cobre fígado, rim, baço, pâncreas, tireoide, vesícula e
+> vias biliares. **Obstetrícia não está lá.**
+>
+> Correção ao que este documento dizia antes: a web **não** está sem guard
+> nenhum — ela roda normalização de decimais e o sanity determinístico local
+> depois do LLM (`app/app/generate/page.tsx:1223`). Mas esses guards são de
+> forma, não de conteúdo clínico.
+>
+> **Decisão operacional tomada com o Codex em 19/08:** o gerador da web (`/app/
+> generate` e `app/api/generate`) é **área protegida** até a integração
+> canônica. Redesenho de Histórico, Preferências, Biblioteca, Analytics e do
+> shell responsivo segue livre — nada disso se perde. O que espera é
+> funcionalidade clínica nova e redesenho profundo do gerador.
+
 ## O achado
 
 A web (`~/laudousg`) **não tem nada** do trabalho determinístico obstétrico.
