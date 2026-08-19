@@ -348,6 +348,25 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
         erros.push(`a frase de "${o.slot}" precisa conservar o dado {${ph}}`);
       }
     }
+    /**
+     * O DIAGNÓSTICO precisa sobreviver à reescrita, não só o dado.
+     *
+     * Sem isto, "Ventriculomegalia, com átrio medindo {cranio_medida} mm" podia
+     * virar "Ventrículos sem dilatação, medindo {cranio_medida} mm": o
+     * placeholder sobrevive e o achado some.
+     */
+    for (const alternativas of alvo.termosObrigatorios ?? []) {
+      const conserva = alternativas.some((termo) =>
+        o.value.toLowerCase().includes(termo.toLowerCase()),
+      );
+      if (!conserva) {
+        erros.push(
+          `a sua frase precisa continuar dizendo o achado — use "${alternativas[0]}"` +
+            (alternativas.length > 1 ? ` (ou ${alternativas.slice(1).map((a) => `"${a}"`).join(", ")})` : ""),
+        );
+      }
+    }
+
     // Modelo derivado: o dado é a lacuna do renderer, não um `{nome}`.
     if (slot.lacunasObrigatorias !== undefined) {
       const tem = (o.value.match(/_{2,}/g) ?? []).length;

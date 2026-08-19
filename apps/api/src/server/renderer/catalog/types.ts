@@ -81,6 +81,23 @@ export type SlotVariant<F> = {
    */
   placeholdersObrigatorios?: string[];
   /**
+   * Termos que a redação do médico precisa CONSERVAR — o diagnóstico, não o dado.
+   *
+   * ⚠️ Conservar `{cranio_medida}` NÃO conserva a ventriculomegalia (achado do
+   * Codex, 19/08). Com só os placeholders travados, esta reescrita passaria:
+   *
+   *     "Ventriculomegalia, com átrio ventricular medindo {cranio_medida} mm."
+   *   → "Ventrículos sem dilatação, medindo {cranio_medida} mm."
+   *
+   * O dado sobrevive e o ACHADO some. É a crítica C3 voltando por outra porta:
+   * não é normalidade mascarando patologia por remoção, é por REESCRITA.
+   *
+   * Cada entrada é uma lista de alternativas — a frase precisa conter ao menos
+   * uma de cada. Assim o médico troca "Ventriculomegalia" por "Dilatação
+   * ventricular" sem perder o diagnóstico.
+   */
+  termosObrigatorios?: string[][];
+  /**
    * Achado de EXEMPLO que faz esta variante valer — usado só para exibição.
    *
    * Sem isto, as variantes montadas pelo motor (justamente as patológicas)

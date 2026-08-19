@@ -69,9 +69,9 @@ for (const c of cats) {
     JSON.stringify(validateOperations(entrada.catalog, ops)));
 
   const frases = frasesDeOperacoes(ops, frasesBaseDe(c.categoria, ESTILO));
-  t(`${c.categoria}: a operação vira uma troca de frase`, frases.length === 1);
+  t(`${c.categoria}: a operação vira uma troca de frase`, frases !== null && frases.length === 1);
 
-  const r = aplicarFrasesPersonalizadas(laudo, frases);
+  const r = aplicarFrasesPersonalizadas(laudo, frases ?? []);
   t(`${c.categoria}: a redação sai no laudo`, r.aplicadas === 1 && r.texto.includes(nova),
     `aplicadas=${r.aplicadas}`);
   t(`${c.categoria}: e o resto do laudo não muda`,

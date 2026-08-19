@@ -230,7 +230,19 @@ export async function salvarRascunho(
         .limit(1);
 
       if (existente) {
-        const [atualizado] = await tx
+        /**
+         * O UPDATE é CONDICIONADO a a linha ainda ser rascunho.
+         *
+         * Entre o SELECT acima e este UPDATE, outra requisição pode ter
+         * PUBLICADO esse mesmo rascunho. Atualizar só por `id` alteraria uma
+         * personalização já publicada — que está valendo nos laudos — sem nova
+         * versão e sem revalidação, e sem que ninguém percebesse (achado do
+         * Codex, 19/08).
+         *
+         * Zero linhas afetadas significa que a corrida aconteceu: vira 409, e
+         * a tela recarrega em vez de sobrescrever o que já vale.
+         */
+        const atualizados = await tx
           .update(T)
           .set({
             operations,
@@ -238,9 +250,15 @@ export async function salvarRascunho(
             baseCatalogId: entrada.catalog.id,
             baseVersao: entrada.catalog.versao,
           })
-          .where(eq(T.id, existente.id))
+          .where(and(eq(T.id, existente.id), eq(T.status, "draft")))
           .returning();
-        return paraVersao(atualizado!, entrada.catalog.versao);
+        if (atualizados.length === 0) {
+          throw new CustomizationError(
+            "conflict",
+            "este rascunho acabou de ser publicado noutra aba ou dispositivo — recarregue para continuar de onde ele está",
+          );
+        }
+        return paraVersao(atualizados[0]!, entrada.catalog.versao);
       }
 
       // Versão nova = uma acima da maior já existente, publicada ou arquivada.
@@ -339,7 +357,15 @@ export async function publicar(
         await tx.update(T).set({ status: "archived" }).where(eq(T.id, anterior.id));
       }
 
-      const [publicado] = await tx
+      /**
+       * A promoção também é CONDICIONADA a a linha ainda ser rascunho.
+       *
+       * Duas publicações simultâneas leriam o mesmo rascunho e ambas o
+       * promoveriam — a segunda arquivaria a primeira e publicaria a MESMA
+       * linha de novo, deixando o histórico com uma versão fantasma. Zero
+       * linhas aqui significa que outra requisição chegou antes.
+       */
+      const publicados = await tx
         .update(T)
         .set({
           status: "published",
@@ -348,11 +374,17 @@ export async function publicar(
           baseCatalogId: entrada.catalog.id,
           baseVersao: entrada.catalog.versao,
         })
-        .where(eq(T.id, rascunho.id))
+        .where(and(eq(T.id, rascunho.id), eq(T.status, "draft")))
         .returning();
+      if (publicados.length === 0) {
+        throw new CustomizationError(
+          "conflict",
+          "esta personalização acabou de ser publicada noutra aba ou dispositivo — recarregue para ver a versão que está valendo",
+        );
+      }
 
       return {
-        publicado: paraVersao(publicado!, entrada.catalog.versao),
+        publicado: paraVersao(publicados[0]!, entrada.catalog.versao),
         arquivou: anterior?.versao ?? null,
       };
     });

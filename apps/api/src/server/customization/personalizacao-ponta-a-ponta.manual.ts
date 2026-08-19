@@ -113,6 +113,45 @@ console.log("2 · os invariantes seguram, mesmo com o médico no comando");
   t("…e na conclusão", /Ascite fetal\./.test(laudo));
 }
 
+// ----------------------- 2c · o ataque que o Codex descreveu
+console.log("2c · conservar o DADO não pode bastar — o diagnóstico também fica");
+{
+  /**
+   * "Conservar {medida} não conserva o diagnóstico" (Codex, 19/08).
+   *
+   * Com só o placeholder travado, esta reescrita passava: o dado sobrevive e o
+   * ACHADO some. É a crítica C3 voltando por outra porta — não é normalidade
+   * mascarando patologia por REMOÇÃO, é por REESCRITA.
+   */
+  const ataque: Operation[] = [{
+    op: "replace_phrase", slot: "cranio_achado", variant: "ventriculomegalia",
+    value: "\nVentrículos sem dilatação, medindo {cranio_medida} mm.",
+  }];
+  const erros = validateOperations(OBSTETRICA_CLASSICO, ataque);
+  t("reescrever a ventriculomegalia como NORMALIDADE é recusado", erros.length > 0, JSON.stringify(erros));
+  t("…e o erro diz o que conservar", (erros[0] ?? "").toLowerCase().includes("ventriculomegalia"), erros[0] ?? "");
+
+  // Mas a redação PRÓPRIA do médico, que conserva o diagnóstico, passa.
+  t("reescrever conservando o diagnóstico é aceito",
+    validateOperations(OBSTETRICA_CLASSICO, [{
+      op: "replace_phrase", slot: "cranio_achado", variant: "ventriculomegalia",
+      value: "\nDilatação ventricular, com átrio medindo {cranio_medida} mm.",
+    }]).length === 0);
+
+  // O pior caso possível: transformar o óbito em afirmação de vitalidade.
+  const obito: Operation[] = [{
+    op: "replace_phrase", slot: "bcf", variant: "ausente",
+    value: "\nBatimentos cardíacos fetais presentes.",
+  }];
+  t("transformar o ÓBITO em vitalidade é recusado",
+    validateOperations(OBSTETRICA_CLASSICO, obito).length > 0, JSON.stringify(validateOperations(OBSTETRICA_CLASSICO, obito)));
+  t("…mas outra redação de ausência é aceita",
+    validateOperations(OBSTETRICA_CLASSICO, [{
+      op: "replace_phrase", slot: "bcf", variant: "ausente",
+      value: "\nNão foram identificados batimentos cardíacos fetais.",
+    }]).length === 0);
+}
+
 // -------------------------- 2b · os três juntos: personalização + achado + gemelar
 console.log("2b · personalização + achado + GEMELAR ao mesmo tempo");
 {
@@ -158,6 +197,7 @@ for (const cat of ["ABDOMEN_SUPERIOR", "TIREOIDE", "PELVE_FEMININA"]) {
     [{ op: "replace_phrase", slot: alvo.id, value: nova }],
     frasesBaseDe(cat, "CLASSICO_COMPLETO"),
   );
+  if (frases === null) { falhas.push(`${cat}: frasesDeOperacoes recusou`); continue; }
   const r = aplicarFrasesPersonalizadas(laudo, frases);
   t(`${cat}: a redação dele sai no laudo`, r.aplicadas === 1 && r.texto.includes(nova));
   t(`${cat}: o laudo não muda de tamanho`, r.texto.split("\n").length === laudo.split("\n").length);

@@ -212,6 +212,8 @@ const BCF_ALTERADO: Catalog<F>["slots"][number]["variantes"] = [
   { id: "ausente", quando: (c) => ftDe(c)?.bcf_alteracao === "ausente",
     frase: "\nAusência de batimentos cardíacos fetais.",
     conclusao: "Óbito fetal.",
+    // A frase NÃO pode virar afirmação de vitalidade — o pior caso possível.
+    termosObrigatorios: [["ausência", "ausente", "não visualiz", "não foram", "sem "]],
     exemplo: { gestacao_inicial: false, ig_semanas: 32, fetos: [{ bcf_alteracao: "ausente", bcf_bpm: null }] } },
   { id: "bradicardia", quando: (c) => ftDe(c)?.bcf_alteracao === "bradicardia",
     frase: "\nBatimentos cardíacos presentes, com frequência de {bcf} bpm.",
@@ -240,11 +242,14 @@ const CRANIO_VARIANTES: Catalog<F>["slots"][number]["variantes"] = [
   { id: "ventriculomegalia", quando: (c) => ftDe(c)?.cranio_achado === "ventriculomegalia",
     frase: "\nVentriculomegalia, com átrio ventricular medindo {cranio_medida} mm.",
     placeholdersObrigatorios: ["cranio_medida"],
+    // Conservar a MEDIDA não conserva o DIAGNÓSTICO — ver termosObrigatorios.
+    termosObrigatorios: [["ventriculomegalia", "dilatação ventricular", "ventrículo dilatado"]],
     exemplo: { fetos: [{ cranio_achado: "ventriculomegalia", cranio_medida_mm: 11 }] } },
 
   { id: "cisto_plexo_coroide", quando: (c) => ftDe(c)?.cranio_achado === "cisto_plexo_coroide",
     frase: "\nImagem anecoica, de contornos regulares, medindo {cranio_medida} mm, situada no plexo coroide {cranio_lateralidade}.",
     conclusao: "Cisto de plexo coroide {cranio_lateralidade}.",
+    termosObrigatorios: [["cisto", "imagem anecoica", "formação cística"]],
     // O LADO é dado do exame, não redação: uma frase sem ele diria que há um
     // cisto sem dizer em qual plexo.
     placeholdersObrigatorios: ["cranio_medida", "cranio_lateralidade"],
@@ -253,22 +258,26 @@ const CRANIO_VARIANTES: Catalog<F>["slots"][number]["variantes"] = [
   { id: "megacisterna_magna", quando: (c) => ftDe(c)?.cranio_achado === "megacisterna_magna",
     frase: "\nCisterna magna aumentada, medindo {cranio_medida} mm, com hemisférios cerebelares e vermis apresentando morfologia preservada.",
     conclusao: `Aumento da cisterna magna. O diagnóstico mais provável é megacisterna magna. ${NEURO}`,
+    termosObrigatorios: [["cisterna magna"], ["aumentad", "megacisterna", "alargad"]],
     placeholdersObrigatorios: ["cranio_medida"],
     exemplo: { fetos: [{ cranio_achado: "megacisterna_magna", cranio_medida_mm: 12 }] } },
 
   { id: "cisto_bolsa_blake", quando: (c) => ftDe(c)?.cranio_achado === "cisto_bolsa_blake",
     frase: "\nImagem anecoica na fossa posterior, em continuidade com o quarto ventrículo, associada a discreta rotação superior do vermis, que apresenta dimensões e morfologia preservadas.",
     conclusao: `Achados sugestivos de cisto da bolsa de Blake. ${NEURO}`,
+    termosObrigatorios: [["fossa posterior", "quarto ventrículo", "vermis"]],
     exemplo: { fetos: [{ cranio_achado: "cisto_bolsa_blake" }] } },
 
   { id: "dandy_walker", quando: (c) => ftDe(c)?.cranio_achado === "dandy_walker",
     frase: "\nAumento da fossa posterior, associado a comunicação do quarto ventrículo com a cisterna magna, rotação superior e alteração morfológica do vermis cerebelar.",
     conclusao: `Achados ultrassonográficos que levantam a possibilidade de malformação da fossa posterior. O diagnóstico mais provável é malformação de Dandy-Walker. ${NEURO}`,
+    termosObrigatorios: [["fossa posterior"], ["vermis", "quarto ventrículo"]],
     exemplo: { fetos: [{ cranio_achado: "dandy_walker" }] } },
 
   { id: "cavum_nao_visualizado", quando: (c) => ftDe(c)?.cranio_achado === "cavum_nao_visualizado",
     frase: "\nNão foi visualizado o cavum do septo pelúcido nos planos ultrassonográficos obtidos.",
     conclusao: `Não visualização do cavum do septo pelúcido. ${NEURO}`,
+    termosObrigatorios: [["cavum"], ["não", "ausên", "sem "]],
     exemplo: { fetos: [{ cranio_achado: "cavum_nao_visualizado" }] } },
 ];
 
@@ -577,11 +586,20 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
       /** Carrega achado alterado — ver Slot.removivel (C3). */
       removivel: false,
       obrigatorio: true,
-      placeholdersObrigatorios: ["bcf"],
+      /**
+       * `{bcf}` é exigido POR VARIANTE, não pelo slot.
+       *
+       * Um feto sem vitalidade não tem batimento para registrar: exigir a
+       * frequência na variante de óbito recusava a redação correta do médico
+       * ("Não foram identificados batimentos cardíacos fetais.") e só admitia
+       * uma que citasse um número que não existe.
+       */
       variantes: [
         ...BCF_ALTERADO,
-        { id: "inicial", quando: inicial, frase: "Batimentos cardíacos ritmados (BCF = {bcf} bpm)." },
-        { id: "padrao", frase: "Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = {bcf} bpm)." },
+        { id: "inicial", quando: inicial, frase: "Batimentos cardíacos ritmados (BCF = {bcf} bpm).",
+          placeholdersObrigatorios: ["bcf"] },
+        { id: "padrao", frase: "Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = {bcf} bpm).",
+          placeholdersObrigatorios: ["bcf"] },
       ],
     },
     {
@@ -589,10 +607,11 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
       /** Carrega achado alterado — ver Slot.removivel (C3). */
       removivel: false,
       obrigatorio: true,
-      placeholdersObrigatorios: ["bcf"],
+      // Ver `bcf`: a frequência é exigida por variante, não pelo slot.
       // As alterações de vitalidade valem por feto — Luiz 16/08: "acontece de
       // um feto ter óbito e o outro não".
-      variantes: [...BCF_ALTERADO, { id: "gemelar", frase: "Batimentos cardíacos presentes (BCF = {bcf} bpm)." }],
+      variantes: [...BCF_ALTERADO, { id: "gemelar", frase: "Batimentos cardíacos presentes (BCF = {bcf} bpm).",
+        placeholdersObrigatorios: ["bcf"] }],
     },
     {
       id: "movimentos_fetais",
@@ -704,6 +723,7 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
         id: "presente",
         frase: "\nModerada quantidade de líquido anecoico na cavidade abdominal fetal, circundando parcialmente as vísceras.",
         conclusao: "Ascite fetal.",
+        termosObrigatorios: [["líquido", "ascite", "anecoico"]],
         exemplo: { fetos: [{ ascite: true }] },
       }],
     },
@@ -727,6 +747,7 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
         id: "presente",
         frase: "\nModerada quantidade de líquido livre na cavidade abdominal, associado a derrame pleural bilateral e edema do tecido celular subcutâneo fetal.",
         conclusao: "Sinais ultrassonográficos de hidropisia fetal.",
+        termosObrigatorios: [["líquido", "derrame", "edema", "hidrop"]],
         exemplo: { fetos: [{ hidropsia: true }] },
       }],
     },
@@ -895,10 +916,12 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
           frase: "\nImagem hipoecoica e heterogênea, medindo {placenta_achado_medidas}, situada entre a placenta e o miométrio, sem vascularização.",
           conclusao: "Coleção retroplacentária, que tem como diagnóstico mais provável descolamento placentário.",
           placeholdersObrigatorios: ["placenta_achado_medidas"],
+          termosObrigatorios: [["hipoecoica", "hipoecogênica", "coleção", "hematoma"]],
           exemplo: { placenta_achado: "descolamento", placenta_achado_medidas: "3,2 x 1,8 cm" } },
         { id: "acretismo", quando: (c) => c.findings.placenta_achado === "acretismo",
           frase: "\nPlacenta apresentando perda focal da zona hipoecoica retroplacentária e acentuado adelgaçamento do miométrio subjacente. Ademais, imagens anecoicas intraplacentárias, irregulares, algumas apresentando fluxo turbulento ao estudo Doppler, associadas a aumento da vascularização na interface uterovesical.",
           conclusao: "Achados ultrassonográficos que aumentam a suspeição para espectro de acretismo placentário (PAS). Convém, a critério clínico, avaliação dirigida em serviço de alto risco e controle ultrassonográfico.",
+          termosObrigatorios: [["perda focal", "adelgaçamento", "acretismo", "invasão"]],
           exemplo: { placenta_achado: "acretismo" } },
         { id: "lagos_venosos", quando: (c) => c.findings.placenta_achado === "lagos_venosos",
           frase: "\nPlacenta apresentando imagens anecoicas intraparenquimatosas, bem delimitadas, de contornos regulares, algumas demonstrando fluxo de baixa velocidade ao estudo Doppler.",

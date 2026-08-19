@@ -42,23 +42,40 @@ export function frasesBaseDe(categoria: string, estilo: string): Map<string, str
   return new Map(linhasDoLaudo(laudo).map((l) => [l.id, l.texto]));
 }
 
-/** Converte as operações gravadas em trocas de frase, descartando o que não vale. */
+/**
+ * Converte as operações gravadas em trocas de frase — TODAS OU NENHUMA.
+ *
+ * ⚠️ A versão anterior descartava as que não casavam e aplicava o resto. Com
+ * cinco frases publicadas e duas mudando de hash num deploy, o médico recebia
+ * um laudo com três personalizações e duas não — sem aviso, e sem que o texto
+ * resultante fosse nem o dele nem o padrão (achado do Codex, 19/08).
+ *
+ * Meia personalização é pior que nenhuma: o médico confere o laudo esperando a
+ * redação dele e encontra um híbrido que nunca revisou. `null` aqui faz o laudo
+ * sair inteiro no modelo-base, com o motivo na auditoria.
+ */
 export function frasesDeOperacoes(
   operations: Operation[],
   base: Map<string, string>,
-): FrasePersonalizada[] {
+): FrasePersonalizada[] | null {
   const out: FrasePersonalizada[] = [];
   for (const o of operations) {
-    if (o.op === "replace_phrase") {
+    if (o.op === "replace_phrase" || o.op === "remove_slot") {
       const b = base.get(o.slot);
-      if (b !== undefined) out.push({ id: o.slot, base: b, nova: o.value });
-    } else if (o.op === "remove_slot") {
-      const b = base.get(o.slot);
-      if (b !== undefined) out.push({ id: o.slot, base: b, nova: null });
+      // A âncora sumiu do modelo — a redação foi escrita contra um texto que o
+      // sistema não escreve mais.
+      if (b === undefined) return null;
+      out.push({ id: o.slot, base: b, nova: o.op === "replace_phrase" ? o.value : null });
+      continue;
     }
-    // `append_conclusion_item` e `insert_phrase_after` ainda não valem no
-    // modelo derivado: acrescentar linha exige saber ONDE, e a âncora aqui é
-    // uma frase que pode não estar no laudo. Fica para quando houver caso.
+    /**
+     * `append_conclusion_item` e `insert_phrase_after` ainda não valem no
+     * modelo derivado: acrescentar linha exige saber ONDE, e a âncora aqui é
+     * uma frase que pode não estar no laudo. Uma operação que o motor não sabe
+     * executar invalida o conjunto — aplicar as outras entregaria uma
+     * personalização parcial, que é o que este `null` existe para impedir.
+     */
+    return null;
   }
   return out;
 }
@@ -90,10 +107,10 @@ export async function resolverFrasesPersonalizadas(
     if (base.size === 0) return NAO("o modelo desta categoria não pôde ser derivado");
 
     const frases = frasesDeOperacoes(publicada.operations, base);
-    if (frases.length === 0) {
+    if (frases === null || frases.length === 0) {
       return NAO(
         `as ${publicada.operations.length} personalização(ões) publicadas não valem mais no modelo atual — ` +
-          "as frases mudaram; republique na Biblioteca",
+          "o texto-base mudou; republique na Biblioteca para conferir e publicar de novo",
       );
     }
     return { aplicar: true, versao: publicada.versao, frases };
