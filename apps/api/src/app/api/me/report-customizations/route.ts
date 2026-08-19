@@ -22,7 +22,13 @@ export async function GET(req: Request): Promise<Response> {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
-  const categorias = categoriasDaBiblioteca().map((c) => ({
+  const categorias = categoriasDaBiblioteca().map((c) => {
+    const a = personalizacaoAtiva({
+      userId: user.id,
+      categoria: c.categoria,
+      estilo: "CLASSICO_COMPLETO",
+    });
+    return {
     categoria: c.categoria,
     rotulo: c.rotulo,
     /**
@@ -37,12 +43,17 @@ export async function GET(req: Request): Promise<Response> {
      * categoria: um médico fora da allowlist lia "Em uso nos seus laudos",
      * publicava, e nada acontecia (achado do Codex, 19/08).
      */
-    personalizacao_ativa: personalizacaoAtiva({
-      userId: user.id,
-      categoria: c.categoria,
-      estilo: "CLASSICO_COMPLETO",
-    }).ativa,
-  }));
+    personalizacao_ativa: a.ativa,
+    /**
+     * POR QUE não está valendo — em português, para a tela dizer.
+     *
+     * Sem isto o médico vê "não está em uso" e não sabe se falta publicar, se a
+     * categoria não abriu, ou se aquele exame é escrito pela IA e nunca vai
+     * aceitar personalização. Três situações diferentes, uma cara só.
+     */
+    ...(a.ativa ? {} : { motivo_inativa: a.motivo, explicacao_inativa: a.explicacao }),
+  };
+  });
 
   return Response.json({
     categorias,
