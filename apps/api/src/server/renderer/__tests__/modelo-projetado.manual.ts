@@ -19,6 +19,7 @@
  */
 import { describeCatalog } from "../catalog/describe";
 import { resolveCatalogo, flagsDeProducao, categoriasDaBiblioteca } from "../catalog/registry";
+import { laudoDoCenario } from "../catalog/modeloNormalRegistry";
 
 let ok = 0;
 const falhas: string[] = [];
@@ -137,6 +138,61 @@ console.log("\nOs defeitos que o Luiz encontrou");
   const linhas = (projetar("TIREOIDE").modelos ?? []).flatMap((m) => m.linhas);
   t("a tireoide separa corpo e conclusão",
     linhas.some((l) => l.secao === "corpo") && linhas.some((l) => l.secao === "conclusao"));
+}
+
+// ------------------------------------------- o que a revisão do Codex pegou
+console.log("\nRevisão adversarial (Codex, 19/08)");
+{
+  const d = projetar("OBSTETRICA");
+  const linhas = (d.modelos ?? []).flatMap((m) => m.linhas);
+
+  /**
+   * `replace_phrase` altera `variant.frase` (corpo), NUNCA `variant.conclusao`.
+   * Uma linha de conclusão editável faria o médico reescrever a conclusão e ver
+   * o CORPO mudar no lugar.
+   */
+  t("conclusão do catálogo escrito NÃO é editável",
+    linhas.filter((l) => l.secao === "conclusao").every((l) => !l.editavel),
+    linhas.filter((l) => l.secao === "conclusao" && l.editavel).map((l) => l.frase).join(" | "));
+  t("…e a recusa é explicada",
+    linhas.filter((l) => l.secao === "conclusao").every((l) => (l.motivo ?? "").length > 0));
+
+  /**
+   * Achado não é só o que vive em slot condicional: BCF ausente, placenta
+   * prévia e líquido alterado são variantes não-padrão de slots que SEMPRE
+   * aparecem, e some­riam da lista se o critério fosse `incluirSe`.
+   */
+  const slotsDeAchado = (d.achados ?? []).map((a) => a.slot);
+  for (const esperado of ["bcf", "placenta", "liquido_amniotico", "cranio_achado", "placenta_achado"]) {
+    t(`achados incluem "${esperado}"`, slotsDeAchado.includes(esperado), slotsDeAchado.join(", "));
+  }
+  const vitalidade = (d.achados ?? []).find((a) => a.slot === "bcf");
+  t("as alterações de vitalidade estão lá",
+    (vitalidade?.variantes ?? []).some((v) => /ausência de batimentos/i.test(v.frase ?? "")),
+    (vitalidade?.variantes ?? []).map((v) => v.id).join(", "));
+  t("…e a variante NORMAL do bcf não entra como achado",
+    !(vitalidade?.variantes ?? []).some((v) => v.id === "padrao"));
+
+  /** Sem `dados`, o app deixaria apagar a medida e só veria o 422. */
+  const descolamento = (d.achados ?? [])
+    .find((a) => a.slot === "placenta_achado")?.variantes
+    .find((v) => v.id === "descolamento");
+  t("o achado carrega os dados da frase", (descolamento?.dados ?? []).length > 0,
+    JSON.stringify(descolamento?.dados));
+  t("…e a medida do descolamento é obrigatória",
+    (descolamento?.dados ?? []).some((x) => x.obrigatorio));
+}
+{
+  /**
+   * A máscara é FAIL-CLOSED: sem o segundo render não há cenário. Devolver o
+   * texto original traria os números do seed — valores inventados — como se
+   * fossem o modelo.
+   */
+  t("categoria sem modelo devolve nada", laudoDoCenario("NAO_EXISTE", "CLASSICO_COMPLETO", {}) === null);
+  // Seed que faz o renderer recusar (Doppler não aceita gemelar): sem o segundo
+  // render não há comparação, e sem comparação não há cenário.
+  t("seed que o renderer recusa devolve nada",
+    laudoDoCenario("DOPPLER_OBSTETRICO", "CLASSICO_COMPLETO", { numero_fetos: 2 }) === null);
 }
 
 const total = ok + falhas.length;

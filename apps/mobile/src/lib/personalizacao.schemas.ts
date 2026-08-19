@@ -45,6 +45,38 @@ export const SlotSchema = z.object({
   variantes: z.array(VarianteSchema),
 });
 
+/** Um dado do exame dentro de uma frase — `{dbp}` nomeado ou `____` posicional. */
+export const DadoSchema = z.object({
+  marcador: z.string(),
+  rotulo: z.string(),
+  obrigatorio: z.boolean(),
+});
+
+/** Uma linha do modelo, na ordem e na seção em que sai no laudo. */
+export const LinhaSchema = z.object({
+  secao: z.enum(["tecnica", "corpo", "conclusao"]),
+  slot: z.string(),
+  variante: z.string(),
+  frase: z.string(),
+  editavel: z.boolean(),
+  motivo: z.string().optional(),
+  obrigatorio: z.boolean(),
+  removivel: z.boolean(),
+  placeholdersObrigatorios: z.array(z.string()).default([]),
+  dados: z.array(DadoSchema).default([]),
+});
+
+export const ModeloSchema = z.object({
+  nome: z.string(),
+  linhas: z.array(LinhaSchema),
+});
+
+export const AchadoSchema = z.object({
+  slot: z.string(),
+  removivel: z.boolean(),
+  variantes: z.array(VarianteSchema.extend({ dados: z.array(DadoSchema).default([]) })),
+});
+
 export const CatalogoSchema = z.object({
   id: z.string(),
   categoria: z.string(),
@@ -60,6 +92,15 @@ export const CatalogoSchema = z.object({
   }),
   preambulo: z.string().optional(),
   slots: z.array(SlotSchema),
+  /**
+   * O modelo como LINHAS, por cenário — e os achados à parte.
+   *
+   * Sem estes campos declarados o Zod os DESCARTAVA em silêncio: o servidor
+   * mandava, o app não via, e o teste de contrato dava falso-verde para a API
+   * nova (achado do Codex, 19/08).
+   */
+  modelos: z.array(ModeloSchema).optional(),
+  achados: z.array(AchadoSchema).optional(),
   ordens: z.array(z.object({ nome: z.string(), slots: z.array(z.string()) })),
 });
 

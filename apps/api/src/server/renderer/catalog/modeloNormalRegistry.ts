@@ -232,10 +232,19 @@ export function laudoDoCenario(
    * modelo cravava "IP 1,02", o número que EU escolhi para o seed.
    */
   const b = laudoPadraoDe(categoria, estilo, variarSeed({ ...(m?.seed ?? {}), ...seed }));
-  if (!b) return a;
+  /**
+   * FAIL-CLOSED (achado do Codex, 19/08).
+   *
+   * Devolver o texto original quando a comparação não roda parecia inofensivo
+   * — e é o contrário: o texto original traz os NÚMEROS DO SEED, valores que
+   * eu inventei, apresentados ao médico como se fossem o modelo. Uma mudança
+   * futura no renderer que quebrasse o segundo render faria isso voltar em
+   * silêncio. Sem comparação, sem cenário.
+   */
+  if (!b) return null;
   const la = a.split("\n");
   const lb = b.split("\n");
-  if (la.length !== lb.length) return a;
+  if (la.length !== lb.length) return null;
   return la.map((linha, i) => mascararPorComparacao(linha, lb[i] ?? linha)).join("\n");
 }
 

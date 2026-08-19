@@ -754,6 +754,9 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
           frase: "Líquido amniótico em quantidade alterada ({liquido_classe}).",
           conclusao: "{liquido_classe_cap}.",
           placeholdersObrigatorios: ["liquido_classe"],
+          // `exemplo` é o que faz esta variante aparecer na lista de ACHADOS —
+          // ela vive num slot incondicional, então sem isto sumia (Codex 19/08).
+          exemplo: { liquido_tipo: "alterado", liquido_classe: "oligoâmnio" },
         },
         {
           id: "normal",

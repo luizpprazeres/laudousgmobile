@@ -59,15 +59,32 @@ export function linhasDeDocumento<F>(doc: ReportDoc, catalog: Catalog<F>): Linha
       ...(slot?.placeholdersObrigatorios ?? []),
       ...(variante?.placeholdersObrigatorios ?? []),
     ];
+    const podeEditar = variante !== undefined && motivo === undefined && seg.kind !== "conclusao";
+    const motivoDaRecusa =
+      variante === undefined
+        ? "Esta linha é montada pelo sistema a partir dos dados do exame."
+        : seg.kind === "conclusao"
+          ? "A conclusão acompanha a frase do corpo — reescreva a frase e a conclusão segue."
+          : motivo ?? "Esta frase é escrita pelo sistema.";
 
     out.push({
       secao: seg.kind === "conclusao" ? "conclusao" : "corpo",
       slot: seg.slotId,
       variante: seg.variantId,
       frase: frase.trim(),
-      // Sem variante conhecida (itens do motor, como a IG) não há o que editar.
-      editavel: variante !== undefined && motivo === undefined,
-      ...(motivo ? { motivo } : {}),
+      /**
+       * A CONCLUSÃO do catálogo escrito não é editável, e isto não é
+       * conservadorismo — é correção (achado do Codex, 19/08).
+       *
+       * A variante guarda `frase` (corpo) e `conclusao` em campos separados, e
+       * `replace_phrase` altera SÓ a `frase`. Deixar a linha de conclusão
+       * editável faria o médico reescrever a conclusão e ver o CORPO mudar no
+       * lugar. Editar conclusão exige uma operação própria, que ainda não
+       * existe. No modelo derivado não há esse problema: lá a conclusão é uma
+       * linha como outra, endereçada pelo id da frase.
+       */
+      editavel: podeEditar,
+      ...(podeEditar ? {} : { motivo: motivoDaRecusa }),
       obrigatorio: Boolean(slot?.obrigatorio),
       removivel: !slot?.obrigatorio && slot?.removivel !== false,
       placeholdersObrigatorios: obrig,
@@ -134,15 +151,23 @@ export function linhasDeLaudoPadrao(laudo: string): LinhaDoModelo[] {
  */
 export function achadosDoCatalogo<F>(
   catalog: Catalog<F>,
-  descrever: (slotId: string, v: any) => VariantDescription,
+  descrever: (slotId: string, v: any) => AchadoProjetado["variantes"][number],
 ): AchadoProjetado[] {
+  /**
+   * O critério é a VARIANTE ter `exemplo`, não o slot ser condicional.
+   *
+   * Filtrar por `incluirSe` deixava de fora justamente os achados que vivem em
+   * slots que sempre aparecem: BCF ausente/bradicardia/taquicardia, placenta
+   * prévia, líquido alterado. Eles são variantes não-padrão de slots
+   * incondicionais — e são achados como qualquer outro (achado do Codex).
+   */
   return catalog.slots
-    .filter((s) => s.incluirSe !== undefined && s.variantes.some((v) => v.exemplo))
     .map((s) => ({
       slot: s.id,
       removivel: !s.obrigatorio && s.removivel !== false,
-      variantes: s.variantes.map((v) => descrever(s.id, v)),
-    }));
+      variantes: s.variantes.filter((v) => v.exemplo).map((v) => descrever(s.id, v)),
+    }))
+    .filter((a) => a.variantes.length > 0);
 }
 
 export type ContextoDeCenario<F> = { nome: string; ctx: SlotContext<F> };

@@ -7,7 +7,7 @@
  * um slot NÃO é editável — o usuário precisa entender a recusa, não só sofrê-la.
  */
 import { variantePadrao } from "./engine";
-import { achadosDoCatalogo } from "./projetarModelo";
+import { achadosDoCatalogo, dadosNomeados } from "./projetarModelo";
 import type { Catalog, SlotContext } from "./types";
 
 export type VariantDescription = {
@@ -138,6 +138,11 @@ export function describeCatalog<F>(
     ...(projetarModelos ? { modelos: projetarModelos(contextos) } : {}),
     achados: achadosDoCatalogo(catalog, (slotId, v) => {
       const motivo = motivoNaoEditavel(v);
+      const slot = catalog.slots.find((s) => s.id === slotId);
+      const obrig = [
+        ...(slot?.placeholdersObrigatorios ?? []),
+        ...(v.placeholdersObrigatorios ?? []),
+      ];
       return {
         id: v.id,
         ...(v.frase !== undefined ? { frase: v.frase } : {}),
@@ -145,6 +150,7 @@ export function describeCatalog<F>(
         editavel: motivo === undefined,
         ...(motivo ? { motivo } : {}),
         ...exemploDe(slotId, v),
+        dados: dadosNomeados(v.frase ?? "", obrig, catalog.rotulosVariaveis),
       };
     }),
     slots: catalog.slots.map((s) => ({
@@ -248,5 +254,14 @@ export type ModeloProjetado = {
 export type AchadoProjetado = {
   slot: string;
   removivel: boolean;
-  variantes: VariantDescription[];
+  variantes: (VariantDescription & {
+    /**
+     * Os dados do exame nesta variante.
+     *
+     * Sem isto o app não consegue impedir que a redação apague
+     * `{placenta_achado_medidas}` — só descobriria no 422 do servidor (achado
+     * do Codex, 19/08).
+     */
+    dados: DadoDaFrase[];
+  })[];
 };
