@@ -11,7 +11,7 @@
  */
 import type { z } from "zod";
 import { env } from "@/server/env";
-import { achadoNormalDe } from "./modeloNormal";
+import { achadoNormalDe, mascararPorComparacao, variarSeed } from "./modeloNormal";
 
 import { AbdomenSuperiorFindingsSchema, renderAbdomenSuperior } from "../categories/ABDOMEN_SUPERIOR";
 import { CervicalFindingsSchema, renderCervical } from "../categories/CERVICAL";
@@ -36,6 +36,15 @@ export type EntradaModeloNormal = {
   schema: z.ZodTypeAny;
   /** Campos que o achado derivado não consegue inferir sozinho. */
   seed?: Record<string, unknown>;
+  /**
+   * VARIANTES DE EXAME da categoria — cada uma com o seu seed.
+   *
+   * Uma categoria não tem um modelo só. O morfológico tem 1º e 2º trimestre e
+   * saía apenas com o 1º; a obstétrica escrita já tinha três cenários. Sem
+   * isto, metade do modelo de uma categoria fica invisível para o médico, e ele
+   * não tem como conferir nem personalizar a outra metade.
+   */
+  cenarios?: { nome: string; seed: Record<string, unknown> }[];
   render: (findings: any, opts: { objetivo: boolean }) => string;
 };
 
@@ -52,16 +61,45 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   {
     categoria: "OBSTETRICA", rotulo: "Obstétrica", schema: ObstetricaFindingsSchema,
     seed: { numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL] },
+    cenarios: [
+      { nome: "Gestação padrão", seed: { numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL] } },
+      { nome: "Gestação inicial", seed: { numero_fetos: 1, gestacao_inicial: true, fetos: [FETO_NORMAL] } },
+      { nome: "Gemelar", seed: { numero_fetos: 2, gestacao_inicial: false, fetos: [FETO_NORMAL, FETO_NORMAL] } },
+    ],
     render: (f, o) => renderObstetrica(f, null, { objetivo: o.objetivo }),
   },
   {
     categoria: "DOPPLER_OBSTETRICO", rotulo: "Obstétrica com Doppler",
     schema: DopplerObstetricoFindingsSchema,
-    seed: { numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL] },
+    /**
+     * Os índices entram no seed porque, sem eles, o renderer escreve
+     * "DOPPLERVELOCIMETRIA:" e mais nada — o médico via a seção vazia, que foi
+     * um dos defeitos que o Luiz apontou. Os valores em si não aparecem no
+     * modelo: `mascararPorComparacao` os troca por lacuna.
+     */
+    seed: {
+      numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL],
+      ip_umbilical: 1.02, perc_umbilical: 50,
+      ip_acm: 1.75, perc_acm: 50,
+      ip_uterina_dir: 0.72, ip_uterina_esq: 0.68,
+      ip_medio_uterinas: 0.7, perc_medio_uterinas: 50,
+      ducto_venoso_ip: 0.45, rcp: 1.71,
+    },
     render: (f, o) => renderDopplerObstetrico(f, null as any, { objetivo: o.objetivo }),
   },
   {
     categoria: "MORFOLOGICO", rotulo: "Morfológico", schema: MorfologicoFindingsSchema,
+    /**
+     * O morfológico tem TRÊS exames diferentes sob o mesmo nome, e o derivado
+     * mostrava só o primeiro (o enum começa em "1t"). Metade do modelo ficava
+     * invisível: o médico não conseguia conferir nem personalizar o de 2º
+     * trimestre, que é o mais usado.
+     */
+    cenarios: [
+      { nome: "Primeiro trimestre", seed: { trimestre: "1t" } },
+      { nome: "Segundo trimestre", seed: { trimestre: "2t" } },
+      { nome: "Terceiro trimestre", seed: { trimestre: "3t" } },
+    ],
     render: (f, o) => renderMorfologico(f, null as any, { objetivo: o.objetivo }),
   },
   {
@@ -96,6 +134,12 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   },
   {
     categoria: "CERVICOMETRIA", rotulo: "Cervicometria", schema: CervicometriaFindingsSchema,
+    /**
+     * Sem a medida do colo a conclusão sai "não caracterizada pelo método
+     * [REVISAR]" — o aviso de dado faltando, não o modelo. A medida entra no
+     * seed e some do texto por comparação.
+     */
+    seed: { colo_oi_oe_cm: 3.4 },
     render: (f) => renderCervicometria(f),
   },
   {
@@ -130,11 +174,19 @@ export function categoriasComModeloNormal(): { categoria: string; rotulo: string
  * Devolve `null` — nunca lança — quando a categoria não renderiza: uma
  * categoria quebrada não pode derrubar a Biblioteca inteira.
  */
-export function laudoPadraoDe(categoria: string, estilo: string): string | null {
+export function laudoPadraoDe(
+  categoria: string,
+  estilo: string,
+  seedExtra?: Record<string, unknown>,
+): string | null {
   const m = modeloNormalDe(categoria);
   if (!m) return null;
   try {
-    const bruto = { ...(achadoNormalDe(m.schema) as Record<string, unknown>), ...(m.seed ?? {}) };
+    const bruto = {
+      ...(achadoNormalDe(m.schema) as Record<string, unknown>),
+      ...(m.seed ?? {}),
+      ...(seedExtra ?? {}),
+    };
     const parsed = (m.schema as any).safeParse(bruto);
     if (!parsed.success) return null;
     const texto = m.render(parsed.data, { objetivo: estilo === "OBJETIVO" });
@@ -142,6 +194,49 @@ export function laudoPadraoDe(categoria: string, estilo: string): string | null 
   } catch {
     return null;
   }
+}
+
+/**
+ * Os cenários de uma categoria — as variantes de exame que ela tem.
+ *
+ * Sem `cenarios` declarados, é um só: o modelo padrão.
+ */
+export function cenariosDe(categoria: string): { nome: string; seed: Record<string, unknown> }[] {
+  const m = modeloNormalDe(categoria);
+  if (!m) return [];
+  return m.cenarios ?? [{ nome: "Modelo padrão", seed: {} }];
+}
+
+/**
+ * O laudo padrão de um cenário, com os DADOS já virados lacuna.
+ *
+ * Renderiza duas vezes — com o seed e com uma variação dele — e troca por
+ * `____` o que mudou. É assim que a linha do Doppler aparece como
+ * "Artéria umbilical: IP ____ (percentil ____)." em vez de cravar o valor que
+ * eu escolhi para o seed. Ver `mascararPorComparacao`.
+ */
+export function laudoDoCenario(
+  categoria: string,
+  estilo: string,
+  seed: Record<string, unknown>,
+): string | null {
+  const m = modeloNormalDe(categoria);
+  const a = laudoPadraoDe(categoria, estilo, seed);
+  if (!a) return null;
+  /**
+   * Varia o seed COMPLETO — o da categoria mais o do cenário.
+   *
+   * Variar só o do cenário não muda nada quando os valores que interessam
+   * vivem no seed da categoria: foi o que aconteceu com o Doppler, cujos
+   * índices de pulsatilidade estão lá. Os dois renders saíam idênticos e o
+   * modelo cravava "IP 1,02", o número que EU escolhi para o seed.
+   */
+  const b = laudoPadraoDe(categoria, estilo, variarSeed({ ...(m?.seed ?? {}), ...seed }));
+  if (!b) return a;
+  const la = a.split("\n");
+  const lb = b.split("\n");
+  if (la.length !== lb.length) return a;
+  return la.map((linha, i) => mascararPorComparacao(linha, lb[i] ?? linha)).join("\n");
 }
 
 /** As flags de renderer que valem hoje — a prévia precisa ser o laudo real. */

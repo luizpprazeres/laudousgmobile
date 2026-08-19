@@ -20,6 +20,8 @@ import { OBSTETRICA_CLASSICO } from "./OBSTETRICA.classico";
 import { OBSTETRICA_SAMPLES } from "./OBSTETRICA.samples";
 import { buildObstetricaDoc, renderObstetricaCatalogo } from "./OBSTETRICA.render";
 import { catalogoDerivadoDe } from "./modeloNormalCatalog";
+import { linhasDeDocumento, linhasDePreambulo } from "./projetarModelo";
+import type { SlotContext } from "./types";
 import { categoriasComModeloNormal } from "./modeloNormalRegistry";
 
 /**
@@ -36,6 +38,24 @@ export function ehEstiloVivo(estilo: string): estilo is EstiloVivo {
 
 const OBSTETRICA_ENTRADA = {
   catalog: OBSTETRICA_CLASSICO,
+  /**
+   * As LINHAS do modelo, por cenário — a partir do documento renderizado.
+   *
+   * É isto que faz a conclusão aparecer na Biblioteca (a ordem do corpo não a
+   * contém) e os slots de achado sumirem do modelo de rotina (o documento do
+   * cenário normal não os inclui). Ver `projetarModelo.ts`.
+   */
+  projetarModelos: (contextos: { nome: string; ctx: SlotContext<ObstetricaFindings> }[]) =>
+    contextos.map((c) => ({
+      nome: c.nome,
+      linhas: [
+        ...linhasDePreambulo(OBSTETRICA_CLASSICO),
+        ...linhasDeDocumento(
+          buildObstetricaDoc({ findings: c.ctx.findings, flags: flagsDeProducao() }).doc,
+          OBSTETRICA_CLASSICO,
+        ),
+      ],
+    })),
   samples: OBSTETRICA_SAMPLES,
   render: (args: Parameters<typeof renderObstetricaCatalogo>[0]) => renderObstetricaCatalogo(args),
   buildDoc: (args: Parameters<typeof buildObstetricaDoc>[0]) => buildObstetricaDoc(args).doc,

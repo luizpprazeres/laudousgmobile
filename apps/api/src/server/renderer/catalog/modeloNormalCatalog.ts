@@ -16,8 +16,9 @@
  * seria trocar o renderer clínico por uma casca.
  */
 import { buildDoc, serialize } from "./engine";
-import { laudoPadraoDe, modeloNormalDe } from "./modeloNormalRegistry";
+import { cenariosDe, laudoDoCenario, laudoPadraoDe, modeloNormalDe } from "./modeloNormalRegistry";
 import { contarDados, linhasDoLaudo, type LinhaModelo } from "./modeloNormal";
+import { linhasDeLaudoPadrao } from "./projetarModelo";
 import type { Catalog, Slot } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -44,6 +45,7 @@ function slotDe(l: LinhaModelo): Slot<F> {
 export type EntradaDerivada = {
   catalog: Catalog<F>;
   samples: { id: string; nome: string; descricao: string; findings: F; comparaCom?: string; patologico?: boolean }[];
+  projetarModelos: () => { nome: string; linhas: ReturnType<typeof linhasDeLaudoPadrao> }[];
   render: (args: any) => string;
   buildDoc: (args: any) => ReturnType<typeof buildDoc>;
   renderizarExemplo: (exemplo: Record<string, unknown>) => never[];
@@ -96,6 +98,12 @@ export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDe
 
   return {
     catalog,
+    /** As LINHAS de cada cenário — é o que a tela desenha. */
+    projetarModelos: () =>
+      cenariosDe(categoria)
+        .map((c) => ({ nome: c.nome, laudo: laudoDoCenario(categoria, estilo, c.seed) }))
+        .filter((c): c is { nome: string; laudo: string } => c.laudo !== null)
+        .map((c) => ({ nome: c.nome, linhas: linhasDeLaudoPadrao(c.laudo) })),
     samples: [{
       id: "padrao",
       nome: "Exame normal",

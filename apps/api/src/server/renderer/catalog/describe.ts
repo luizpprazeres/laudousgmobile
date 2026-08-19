@@ -7,6 +7,7 @@
  * um slot NÃO é editável — o usuário precisa entender a recusa, não só sofrê-la.
  */
 import { variantePadrao } from "./engine";
+import { achadosDoCatalogo } from "./projetarModelo";
 import type { Catalog, SlotContext } from "./types";
 
 export type VariantDescription = {
@@ -69,6 +70,14 @@ export type CatalogDescription = {
   slots: SlotDescription[];
   /** Ordem dos slots em cada situação, para a interface agrupar. */
   ordens: { nome: string; slots: string[] }[];
+  /**
+   * O modelo COMO LINHAS, por cenário — corpo e conclusão, com a seção de cada
+   * uma. É o que a tela deve usar; `slots`/`ordens` ficam para cliente antigo.
+   * Ver `LinhaDoModelo`.
+   */
+  modelos?: ModeloProjetado[];
+  /** Os achados condicionais, fora do modelo de rotina. Ver `AchadoProjetado`. */
+  achados?: AchadoProjetado[];
 };
 
 function motivoNaoEditavel<F>(v: { montar?: unknown; personalizavel?: boolean }): string | undefined {
@@ -89,6 +98,12 @@ export function describeCatalog<F>(
   catalog: Catalog<F>,
   contextos: { nome: string; ctx: SlotContext<F> }[],
   renderizarExemplo?: RenderizadorDeExemplo<F>,
+  /**
+   * Como montar as LINHAS de cada cenário. Injetado porque `describeCatalog` é
+   * genérico e não sabe construir documento — quem sabe é o motor da categoria.
+   * Ausente, a projeção sai só com `slots`/`ordens`, como antes.
+   */
+  projetarModelos?: (contextos: { nome: string; ctx: SlotContext<F> }[]) => ModeloProjetado[],
 ): CatalogDescription {
   /** Renderiza `variante.exemplo` e pega só os trechos daquela variante. */
   function exemploDe(slotId: string, v: { id: string; exemplo?: Record<string, unknown> }) {
@@ -120,6 +135,18 @@ export function describeCatalog<F>(
     cabecalhos: catalog.cabecalhos,
     preambulo: catalog.preambulo,
     ordens: contextos.map((c) => ({ nome: c.nome, slots: achatar(catalog.ordem(c.ctx)) })),
+    ...(projetarModelos ? { modelos: projetarModelos(contextos) } : {}),
+    achados: achadosDoCatalogo(catalog, (slotId, v) => {
+      const motivo = motivoNaoEditavel(v);
+      return {
+        id: v.id,
+        ...(v.frase !== undefined ? { frase: v.frase } : {}),
+        padrao: false,
+        editavel: motivo === undefined,
+        ...(motivo ? { motivo } : {}),
+        ...exemploDe(slotId, v),
+      };
+    }),
     slots: catalog.slots.map((s) => ({
       id: s.id,
       obrigatorio: Boolean(s.obrigatorio),
@@ -145,3 +172,59 @@ export function describeCatalog<F>(
     })),
   };
 }
+
+// ---------------------------------------------------------------------------
+// O MODELO COMO LINHAS — a forma que a tela realmente precisa
+// ---------------------------------------------------------------------------
+
+/**
+ * Uma linha do modelo, na ordem e na seção em que sai no laudo.
+ *
+ * POR QUE ISTO EXISTE. A projeção entregava `slots` + `ordens`, e a tela
+ * montava as linhas sozinha: pegava a "variante padrão" de cada slot da ordem
+ * do corpo. Três defeitos vinham daí, e o Luiz encontrou todos no device:
+ *
+ *   · a CONCLUSÃO não aparecia — a ordem do corpo não a contém, então o modelo
+ *     terminava no último aspecto e emendava na conclusão sem o cabeçalho;
+ *   · COMENTÁRIOS/TÉCNICA idem;
+ *   · slot CONDICIONAL de achado vazava para o modelo normal. Slots como
+ *     `placenta_achado` não têm variante padrão; a tela caía na primeira da
+ *     lista e mostrava "Imagem hipoecoica e heterogênea, medindo…" — um
+ *     descolamento placentário — como se fosse parte do laudo de rotina.
+ *
+ * Montando as linhas a partir dos SEGMENTOS do documento renderizado, as três
+ * somem de uma vez: o documento tem a ordem certa, tem a conclusão, e não
+ * contém os condicionais que não se aplicam.
+ */
+export type LinhaDoModelo = {
+  secao: "tecnica" | "corpo" | "conclusao";
+  slot: string;
+  variante: string;
+  /** A frase COM os marcadores de dado (`{dbp}` ou `____`). */
+  frase: string;
+  editavel: boolean;
+  motivo?: string;
+  obrigatorio: boolean;
+  removivel: boolean;
+  placeholdersObrigatorios: string[];
+};
+
+export type ModeloProjetado = {
+  /** "Gestação padrão", "Gemelar", "Segundo trimestre"… */
+  nome: string;
+  linhas: LinhaDoModelo[];
+};
+
+/**
+ * Os slots de ACHADO — condicionais, que só entram no laudo quando ditados.
+ *
+ * Vão numa lista à parte de propósito: no modelo eles não estão (o exame de
+ * rotina não os produz), mas o médico precisa vê-los e poder reescrevê-los.
+ * Misturá-los com o modelo é o defeito que fez o descolamento placentário
+ * aparecer como linha de rotina.
+ */
+export type AchadoProjetado = {
+  slot: string;
+  removivel: boolean;
+  variantes: VariantDescription[];
+};

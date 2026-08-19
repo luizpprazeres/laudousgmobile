@@ -47,6 +47,25 @@ export const dynamic = "force-dynamic";
  * Só entram cenários com `comparaCom` — variações de achado sobre o mesmo
  * modelo. Gestação inicial e gemelar usam outro modelo e não se comparam.
  */
+/**
+ * Os cenários que representam MODELOS distintos — os samples sem `comparaCom`.
+ * Sem eles, a Biblioteca mostra um modelo por categoria e esconde os demais.
+ */
+function cenariosBase(entrada: EntradaCatalogo, flags: ReturnType<typeof flagsDeProducao>) {
+  const base = entrada.samples.filter((s) => !s.comparaCom);
+  return (base.length > 0 ? base : entrada.samples.slice(0, 1)).map((s) => ({
+    nome: s.nome,
+    ctx: {
+      findings: s.findings,
+      fetoIndex: 0,
+      gemelar: (s.findings as { numero_fetos?: number }).numero_fetos
+        ? ((s.findings as { numero_fetos: number }).numero_fetos ?? 1) >= 2
+        : false,
+      flags,
+    },
+  }));
+}
+
 function variacoesDe(entrada: EntradaCatalogo, operations: Operation[]) {
   const flags = flagsDeProducao();
   const custom =
@@ -139,15 +158,21 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
       flags,
       catalogo: describeCatalog(
         r.entrada.catalog,
-        [
-          {
-            nome: "Gestação padrão",
-            ctx: { findings: r.entrada.samples[0]!.findings, fetoIndex: 0, gemelar: false, flags },
-          },
-        ],
+        /**
+         * TODOS os cenários-base da categoria, não só o primeiro.
+         *
+         * Os samples com `comparaCom` são variações de ACHADO sobre o mesmo
+         * modelo (oligoâmnio, placenta prévia) — esses viram a lista de
+         * "variações". Os sem `comparaCom` são MODELOS diferentes: gestação
+         * padrão, inicial e gemelar. Passar só o primeiro escondia dois terços
+         * do modelo obstétrico, e é o mesmo defeito que fazia o morfológico sair
+         * só com o 1º trimestre.
+         */
+        cenariosBase(r.entrada, flags),
         // Dá texto às variantes montadas pelo motor — sem isto, as patologias
         // aparecem na lista sem a frase que sairia no laudo.
         r.entrada.renderizarExemplo,
+        r.entrada.projetarModelos,
       ),
       /**
        * A personalização publicada está REALMENTE valendo nos laudos?
