@@ -108,6 +108,27 @@ import {
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
 //  - maxDuration alto para acomodar o pipeline completo
 //  - persistência incremental em generation_runs
+/**
+ * Acrescenta os avisos do pipeline ao resultado do sanity.
+ *
+ * O card "N pontos a revisar" é a superfície que iOS, Android e web já
+ * desenham. Um aviso que não aparece nele é um aviso que ninguém lê.
+ */
+function comAvisosDoPipeline<T extends { verdict: string; issues: unknown[] }>(
+  sanity: T,
+  avisos: { code: string; message: string }[],
+): T {
+  if (avisos.length === 0) return sanity;
+  return {
+    ...sanity,
+    verdict: sanity.verdict === "critical" ? sanity.verdict : "warning",
+    issues: [
+      ...sanity.issues,
+      ...avisos.map((a) => ({ type: "outro", severity: "warning", detail: a.message })),
+    ],
+  };
+}
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -1322,7 +1343,20 @@ export async function POST(req: Request) {
           // writer gera direto do ditado (falso positivo Luiz 06/07).
           rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
         });
-        const sanity = mergeSanityResults(aiSanity, deterministicSanity);
+        /**
+         * O AVISO DE PERSONALIZAÇÃO DESCARTADA entra no sanity.
+         *
+         * Não porque seja um problema clínico, mas porque este é o ÚNICO canal
+         * que os três clientes já mostram: o card "N pontos a revisar". Um
+         * evento novo exigiria mexer em iOS, Android e web antes de o médico
+         * ver qualquer coisa — e ele precisa ver hoje, não no próximo release
+         * dos três (exigência do Codex, 19/08: o aviso tem de chegar ao médico,
+         * fora do texto copiável).
+         */
+        const sanity = comAvisosDoPipeline(
+          mergeSanityResults(aiSanity, deterministicSanity),
+          pipelineWarnings,
+        );
         auditState.sanityDurationMs = sanityMs;
         auditState.sanityResult = sanity;
         await updateRunAfterSanity({ runId, sanity, latencyMs: sanityMs });
