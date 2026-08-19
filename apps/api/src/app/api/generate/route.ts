@@ -979,25 +979,31 @@ export async function POST(req: Request) {
                * dois caminhos, nenhum deles DENTRO do texto copiável: o evento
                * do stream e o `metadata` do laudo, que fica gravado.
                */
+              /**
+               * SEGUNDO CASO, e igualmente invisível: a personalização deixou
+               * de valer porque o modelo-base mudou (achado do Codex, 19/08).
+               *
+               * A Biblioteca continua dizendo "Em uso nos seus laudos" — ela
+               * não sabe que o resolver recusou — e o laudo saiu no padrão. O
+               * médico precisa saber que existe algo a republicar.
+               */
+              if (
+                !m.personalizacaoDescartada &&
+                m.motivoSemPersonalizacao?.includes("mudou") === true
+              ) {
+                pipelineWarnings.push({
+                  code: "personalizacao_desatualizada",
+                  message:
+                    "Este laudo saiu com o modelo padrão: o modelo desta categoria mudou e a sua " +
+                    "personalização precisa ser revisada e publicada de novo na Biblioteca.",
+                });
+              }
               if (m.personalizacaoDescartada) {
                 pipelineWarnings.push({
                   code: "personalizacao_descartada",
                   message:
                     "Este laudo saiu com a redação padrão: a sua personalização não pôde ser aplicada. " +
                     "Confira o texto antes de assinar.",
-                });
-                emit({
-                  type: "sanity_warning",
-                  ts: nowIso(),
-                  severity: "warning",
-                  issues: [
-                    {
-                      type: "outro" as const,
-                      severity: "warning" as const,
-                      detail:
-                        "A sua personalização não pôde ser aplicada — este laudo saiu com a redação padrão.",
-                    },
-                  ],
                 });
               }
             },

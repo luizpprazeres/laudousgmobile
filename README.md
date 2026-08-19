@@ -221,9 +221,18 @@ As travas, todas com gate:
   sobreviver (`termosObrigatorios`), e a frase não pode NEGÁ-LO — "sem
   ventriculomegalia" conservava a palavra e invertia o diagnóstico. As demais
   ficam travadas até serem liberadas uma a uma.
-- **publish com `FOR UPDATE`** — entre ler o rascunho e promovê-lo, um PUT de
-  outro aparelho reescrevia `operations` mantendo `status = 'draft'`, e a
-  publicação promovia conteúdo que nunca validou.
+- **publish e restore com `FOR UPDATE`** — entre ler o rascunho e promovê-lo,
+  um PUT de outro aparelho reescrevia `operations` mantendo `status = 'draft'`.
+  Em `restaurar()` era pior: o UPDATE ia só por id, e uma publicação simultânea
+  fazia a restauração **reescrever a versão publicada** — o histórico, que nunca
+  deve ser reescrito, era reescrito.
+- **os slots vêm de TODOS os cenários** — a Biblioteca desenha um cenário por
+  aba, e os slots vinham só do padrão: no morfológico, 37 linhas do 2º trimestre
+  e 35 do 3º apareciam editáveis e eram recusadas com "slot inexistente" ao
+  salvar. A *ordem* continua a do cenário padrão — os extras existem para serem
+  ancoráveis, não para entrarem no documento.
+- **histórico paginado** (20 por vez, nada apagado). O rascunho e o publicado
+  são buscados por status, então um histórico longo nunca os empurra para fora.
 - **auditoria dos dois caminhos** — `onModelo` não era chamado nas 12 categorias
   derivadas: o laudo saía personalizado sem registro de qual modelo o assinou.
 

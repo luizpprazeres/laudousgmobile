@@ -191,6 +191,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
       rascunho: estado.rascunho,
       publicado: estado.publicado,
       historico: estado.historico,
+      // Há versões mais antigas do que as devolvidas. A tela usa para não
+      // afirmar "este é todo o seu histórico" quando não é.
+      historico_truncado: estado.historicoTruncado,
       // SEMPRE presente, mesmo sem nenhuma alteração — é como o médico vê o
       // laudo dele hoje. Antes só vinha com rascunho, e a tela não tinha o que
       // mostrar em quem nunca personalizou nada: justamente quem mais precisa

@@ -960,14 +960,24 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
           conclusao: "{liquido_classe_cap}.",
           placeholdersObrigatorios: ["liquido_classe"],
           /**
-           * Aqui o DIAGNÓSTICO viaja dentro do dado: quem diz "oligoâmnio" ou
-           * "polidrâmnio" é `{liquido_classe}`, não uma palavra da frase.
+           * TRAVADA NO PILOTO — e a tentativa de liberar merece ficar escrita.
            *
-           * Exigir a própria chave como termo obrigatório é o que libera a
-           * reescrita desta variante sem abrir mão da garantia — e ainda faz a
-           * trava de polaridade valer: "sem {liquido_classe}" é recusado.
+           * Aqui o diagnóstico viaja dentro do dado: quem diz "oligoâmnio" ou
+           * "polidrâmnio" é `{liquido_classe}`. Exigir a própria chave como
+           * termo obrigatório parecia bastar — a chave sobrevive e a trava de
+           * polaridade recusa "sem {liquido_classe}".
+           *
+           * Não basta (Codex, 19/08). Continuam passando:
+           *   "Não há alteração compatível com {liquido_classe}."
+           *   "Líquido em quantidade normal, apesar de {liquido_classe}."
+           * A conclusão segue dizendo "Oligoâmnio." e o corpo diz o contrário —
+           * contradição interna num laudo que parece revisado.
+           *
+           * A saída não é uma regex melhor: é o diagnóstico virar componente
+           * PROTEGIDO da frase, com o médico editando prefixo e sufixo em
+           * volta. Enquanto isso não existe, esta variante não é reescrevível.
            */
-          termosObrigatorios: [["{liquido_classe}"]],
+          personalizavel: false,
           // `exemplo` é o que faz esta variante aparecer na lista de ACHADOS —
           // ela vive num slot incondicional, então sem isto sumia (Codex 19/08).
           exemplo: { liquido_tipo: "alterado", liquido_classe: "oligoâmnio" },

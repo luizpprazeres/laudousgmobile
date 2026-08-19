@@ -111,6 +111,32 @@ export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDe
   const concl = linhas.filter((l) => l.secao === "conclusao");
   const titulo = laudo.split("\n").find((l) => l.trim() !== "")?.trim() ?? m.rotulo;
 
+  /**
+   * OS SLOTS DE TODOS OS CENÁRIOS, não só do padrão (achado do Codex, 19/08).
+   *
+   * A Biblioteca desenha um cenário por aba — no MORFOLÓGICO são primeiro,
+   * segundo e terceiro trimestre. Os slots vinham só do cenário padrão, e por
+   * isso 37 linhas do segundo trimestre e 35 do terceiro apareciam editáveis e
+   * eram recusadas com "slot inexistente" na hora de salvar. A tela oferecia o
+   * que o servidor não aceitava.
+   *
+   * A ORDEM (`catalog.ordem`) continua sendo a do cenário padrão: ela decide
+   * como o laudo é montado, e um laudo de primeiro trimestre não deve ganhar as
+   * linhas do terceiro. Os extras existem para serem ancoráveis, não para
+   * entrarem no documento.
+   */
+  const extras: LinhaModelo[] = [];
+  const vistos = new Set(linhas.map((l) => l.id));
+  for (const c of cenariosDe(categoria)) {
+    const outro = laudoDoCenario(categoria, estilo, c.seed);
+    if (!outro) continue;
+    for (const l of linhasDoLaudo(outro)) {
+      if (vistos.has(l.id)) continue;
+      vistos.add(l.id);
+      extras.push(l);
+    }
+  }
+
   const catalog: Catalog<F> = {
     id: `${categoria}/${estilo}`,
     categoria,
@@ -123,7 +149,7 @@ export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDe
     numerarConclusao: (i, total) => (total === 1 ? "" : `${i + 1}) `),
     ordem: () => linhas.map((l) => l.id),
     ordemConclusao: () => concl.map((l) => l.id),
-    slots: linhas.map(slotDe),
+    slots: [...linhas, ...extras].map(slotDe),
   };
 
   const findings = {} as F;

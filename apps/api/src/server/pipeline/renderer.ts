@@ -1,5 +1,6 @@
 import { env } from "../env";
 import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
+import { caminhoDeGeracao } from "./caminhoDeGeracao";
 import { openai } from "../ai/openai";
 import {
   runRendererExtraction,
@@ -314,7 +315,7 @@ export async function* runRendererStream(args: {
   // (o writer já tratou comandos). Fact-audit + rerun entram numa fatia seguinte.
   if (
     args.categoryCode === "MUSCULOESQUELETICO_V2" &&
-    env().MSK_WRITER === "true"
+    caminhoDeGeracao(args.categoryCode, { objetivo: isEstiloObjetivo(args.writingStyleId) }) === "writer"
   ) {
     args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
     const res = yield* runMskWriterStream({
@@ -350,8 +351,7 @@ export async function* runRendererStream(args: {
   // casa; trocar TÉCNICA/ACHADOS/IMPRESSÃO sem aviso seria regressão p/ o usuário).
   if (
     args.categoryCode === "PARTES_MOLES" &&
-    env().PARTES_MOLES_WRITER === "true" &&
-    !isEstiloObjetivo(args.writingStyleId)
+    caminhoDeGeracao(args.categoryCode, { objetivo: isEstiloObjetivo(args.writingStyleId) }) === "writer"
   ) {
     args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
     const res = yield* runPartesMolesWriterStream({
@@ -385,8 +385,7 @@ export async function* runRendererStream(args: {
   // de conteúdo. Estilo objetivo fica no renderer (o writer escreve o clássico).
   if (
     args.categoryCode === "PELVE_FEMININA" &&
-    env().PELVE_WRITER === "true" &&
-    !isEstiloObjetivo(args.writingStyleId)
+    caminhoDeGeracao(args.categoryCode, { objetivo: isEstiloObjetivo(args.writingStyleId) }) === "writer"
   ) {
     args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
     const res = yield* runPelveWriterStream({

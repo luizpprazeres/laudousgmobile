@@ -151,9 +151,10 @@ check("tentar reescrever o líquido alterado (oligoâmnio) é rejeitado",
 check("…e negar o achado conservando o dado também é rejeitado",
   erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Líquido amniótico sem {liquido_classe}." }]).length > 0,
   `    erros: ${JSON.stringify(erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Líquido amniótico sem {liquido_classe}." }]))}`);
-// E o caminho legítimo continua aberto: outra redação, mesmo dado.
-check("…mas outra redação conservando o dado é aceita",
-  erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Volume de líquido amniótico alterado ({liquido_classe})." }]).length === 0);
+// E nem conservando o dado ela é reescrevível: a variante está travada no
+// piloto porque conservar a chave não impede "normal, apesar de {liquido_classe}".
+check("…e nem outra redação conservando o dado passa (variante travada)",
+  erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Volume de líquido amniótico alterado ({liquido_classe})." }]).length > 0);
 // A VARIANTE DE ACHADO sem termo declarado está travada no piloto.
 check("variante de achado sem termo obrigatório não é reescrevível",
   erros([{ op: "replace_phrase", slot: "cordao_umbilical", variant: "arteria_unica", value: "O cordão tem dois vasos." }]).length > 0);

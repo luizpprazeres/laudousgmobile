@@ -15,25 +15,7 @@
 import { env } from "@/server/env";
 import { catalogEnabledFor, usuarioLiberado } from "@/server/renderer/catalog/engine";
 import { ehDerivado } from "@/server/renderer/catalog/registry";
-
-/**
- * Categorias cujo laudo é ESCRITO pelo LLM, não montado pelo renderer.
- *
- * O caminho do writer devolve o texto e retorna ANTES da camada que aplica a
- * redação do médico (`renderer.ts`). A personalização dessas categorias é
- * gravada, aparece na Biblioteca e não muda laudo nenhum.
- *
- * Duas são incondicionais; as outras dependem de flag, e por isso a checagem é
- * feita em tempo de chamada, não numa lista fixa.
- */
-function escritaPeloWriter(categoria: string): boolean {
-  const e = env();
-  if (categoria === "DOPPLER_VENOSO_MMII" || categoria === "DOPPLER_RENAL") return true;
-  if (categoria === "MUSCULOESQUELETICO_V2" && e.MSK_WRITER === "true") return true;
-  if (categoria === "PARTES_MOLES" && e.PARTES_MOLES_WRITER === "true") return true;
-  if (categoria === "PELVE_FEMININA" && e.PELVE_WRITER === "true") return true;
-  return false;
-}
+import { caminhoDeGeracao } from "@/server/pipeline/caminhoDeGeracao";
 
 export type MotivoInativa =
   | "usuario_nao_liberado"
@@ -73,7 +55,13 @@ export function personalizacaoAtiva(args: {
       explicacao: "a personalização ainda não está ligada para esta categoria",
     };
   }
-  if (escritaPeloWriter(args.categoria)) {
+  /**
+   * O caminho do WRITER retorna antes da camada que aplica a redação do
+   * médico. A decisão é a MESMA do dispatcher — ver `caminhoDeGeracao`, que os
+   * dois importam. Enquanto era escrita duas vezes, o estilo objetivo ficava
+   * de fora e a Biblioteca dizia "inativa" onde o renderer roda.
+   */
+  if (caminhoDeGeracao(args.categoria, { objetivo: args.estilo === "OBJETIVO" }) === "writer") {
     return {
       ativa: false,
       motivo: "escrita_pelo_writer",

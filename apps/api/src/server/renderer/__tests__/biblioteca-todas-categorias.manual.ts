@@ -11,7 +11,7 @@
 import { describeCatalog } from "../catalog/describe";
 import { validateOperations } from "../catalog/engine";
 import { categoriasDaBiblioteca, resolveCatalogo, ehDerivado, flagsDeProducao } from "../catalog/registry";
-import { laudoPadraoDe } from "../catalog/modeloNormalRegistry";
+import { cenariosDe, laudoDoCenario, laudoPadraoDe } from "../catalog/modeloNormalRegistry";
 import { linhasDoLaudo, contarDados } from "../catalog/modeloNormal";
 import { aplicarFrasesPersonalizadas } from "@/server/pipeline/frasesPersonalizadas";
 import { frasesBaseDe, frasesDeOperacoes } from "@/server/customization/resolveFrases";
@@ -84,6 +84,38 @@ for (const c of cats) {
     t(`${c.categoria}: reescrever apagando o dado é recusado`,
       validateOperations(entrada.catalog, semLacuna).length > 0,
       `"${comDado.texto.slice(0, 60)}"`);
+  }
+}
+
+// -------------------------------------------------- toda linha é ancorável
+/**
+ * O QUE A TELA MOSTRA TEM DE SER SALVÁVEL.
+ *
+ * A Biblioteca desenha um cenário por aba; os slots do catálogo derivado vinham
+ * só do cenário PADRÃO. No morfológico isso deixava 37 linhas do segundo
+ * trimestre e 35 do terceiro visíveis, editáveis e recusadas com "slot
+ * inexistente" na hora de salvar (medido pelo Codex, 19/08).
+ */
+console.log("\nToda linha de todo cenário tem slot a que ancorar");
+for (const c of cats) {
+  // Só as derivadas: no catálogo ESCRITO os ids são os do catálogo, e a
+  // projeção da tela vem de `projetarModelos`, não de `linhasDoLaudo`.
+  if (!ehDerivado(c.categoria, ESTILO)) continue;
+  const entrada = resolveCatalogo(c.categoria, ESTILO);
+  if (!entrada) continue;
+  const ids = new Set(entrada.catalog.slots.map((s) => s.id));
+  const cenarios = [
+    { nome: "padrão", laudo: laudoPadraoDe(c.categoria, ESTILO) },
+    ...cenariosDe(c.categoria).map((x) => ({
+      nome: x.nome,
+      laudo: laudoDoCenario(c.categoria, ESTILO, x.seed),
+    })),
+  ];
+  for (const cen of cenarios) {
+    if (!cen.laudo) continue;
+    const fora = linhasDoLaudo(cen.laudo).filter((l) => !ids.has(l.id));
+    t(`${c.categoria} / ${cen.nome}: toda linha tem slot`, fora.length === 0,
+      fora.map((l) => l.texto.slice(0, 50)).join(" · "));
   }
 }
 

@@ -135,27 +135,67 @@ function filtroDaChave(scopeId: string, chave: Chave) {
   );
 }
 
-/** Rascunho, publicado e histórico completo de uma (categoria, estilo). */
+/**
+ * Quantas versões o histórico devolve por vez.
+ *
+ * Nenhuma versão clínica é apagada — o histórico existe para responder "por que
+ * este laudo saiu assim" anos depois. O que não pode é a tela buscar TODAS a
+ * cada abertura: quem personaliza semanalmente chega a centenas em um ano, e o
+ * primeiro gargalo é a API, não o disco (achado do Codex, 19/08).
+ *
+ * O rascunho e o publicado são buscados à parte, então eles nunca ficam de
+ * fora por causa deste corte.
+ */
+const HISTORICO_POR_PAGINA = 20;
+
+/** Rascunho, publicado e as últimas versões de uma (categoria, estilo). */
 export async function lerEstado(
   chave: Chave,
   entrada: EntradaCatalogo,
   _db?: Executor,
-): Promise<{ rascunho: Versao | null; publicado: Versao | null; historico: Versao[] }> {
+): Promise<{
+  rascunho: Versao | null;
+  publicado: Versao | null;
+  historico: Versao[];
+  /** Há versões mais antigas do que as devolvidas. */
+  historicoTruncado: boolean;
+}> {
   const scopeId = await acharEscopo(chave.userId, _db);
-  if (!scopeId) return { rascunho: null, publicado: null, historico: [] };
+  if (!scopeId) return { rascunho: null, publicado: null, historico: [], historicoTruncado: false };
 
   const db = conexao(_db);
+  // +1 para saber se há mais sem uma segunda consulta.
   const linhas = await db
     .select()
     .from(T)
     .where(filtroDaChave(scopeId, chave))
-    .orderBy(desc(T.versao));
+    .orderBy(desc(T.versao))
+    .limit(HISTORICO_POR_PAGINA + 1);
 
-  const todas = linhas.map((r) => paraVersao(r, entrada.catalog.versao));
+  const truncado = linhas.length > HISTORICO_POR_PAGINA;
+  const pagina = truncado ? linhas.slice(0, HISTORICO_POR_PAGINA) : linhas;
+  const todas = pagina.map((r) => paraVersao(r, entrada.catalog.versao));
+
+  /**
+   * O rascunho e o publicado NÃO saem desta página: eles são o estado atual, e
+   * um histórico longo poderia empurrá-los para fora. São buscados por status.
+   */
+  const porStatus = async (status: "draft" | "published") => {
+    const naPagina = todas.find((v) => v.status === status);
+    if (naPagina) return naPagina;
+    const [r] = await db
+      .select()
+      .from(T)
+      .where(and(filtroDaChave(scopeId, chave), eq(T.status, status)))
+      .limit(1);
+    return r ? paraVersao(r, entrada.catalog.versao) : null;
+  };
+
   return {
-    rascunho: todas.find((v) => v.status === "draft") ?? null,
-    publicado: todas.find((v) => v.status === "published") ?? null,
+    rascunho: await porStatus("draft"),
+    publicado: await porStatus("published"),
     historico: todas,
+    historicoTruncado: truncado,
   };
 }
 
@@ -466,11 +506,21 @@ export async function restaurar(
   const scopeIdGarantido = await garantirEscopo(chave.userId, _db);
   try {
     const rascunho = await db.transaction(async (tx) => {
+      /**
+       * `FOR UPDATE`, pelo mesmo motivo do `publicar` — e aqui o estrago era
+       * maior (achado do Codex, 19/08).
+       *
+       * A restauração lia o rascunho e atualizava SÓ POR ID. Se outro aparelho
+       * publicasse entre as duas operações, aquela linha já não era rascunho:
+       * a restauração reescrevia uma versão PUBLICADA no lugar, sem criar
+       * versão nova. O histórico, que nunca deve ser reescrito, era reescrito.
+       */
       const [existente] = await tx
         .select()
         .from(T)
         .where(and(filtroDaChave(scopeIdGarantido, chave), eq(T.status, "draft")))
-        .limit(1);
+        .limit(1)
+        .for("update");
 
       const note = `restaurado da versão ${versaoAlvo}`;
 
@@ -483,9 +533,18 @@ export async function restaurar(
             baseCatalogId: entrada.catalog.id,
             baseVersao: entrada.catalog.versao,
           })
-          .where(eq(T.id, existente.id))
+          // A condição `status = 'draft'` é a segunda trava, independente do
+          // lock: zero linhas significa que a linha deixou de ser rascunho
+          // entre a leitura e a escrita.
+          .where(and(eq(T.id, existente.id), eq(T.status, "draft")))
           .returning();
-        return atualizado!;
+        if (!atualizado) {
+          throw new CustomizationError(
+            "conflict",
+            "o rascunho foi publicado enquanto esta restauração corria; recarregue e tente de novo",
+          );
+        }
+        return atualizado;
       }
 
       const [maior] = await tx

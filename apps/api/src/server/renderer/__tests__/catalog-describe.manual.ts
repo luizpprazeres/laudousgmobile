@@ -89,11 +89,18 @@ check("um slot comum continua removível", d.slots.find((s) => s.id === "anatomi
 check("slot obrigatório não é removível", d.slots.find((s) => s.id === "dbp")?.removivel === false);
 
 const liquido = d.slots.find((s) => s.id === "liquido_amniotico")!;
-// O líquido alterado PASSOU a ser editável (decisão do Luiz, 16/08): a frase é
-// texto com dado, e o que a protege é conservar `{liquido_classe}`, não o
-// bloqueio. Ver SlotVariant.personalizavel.
-check("o líquido alterado é editável, com a classe travada",
-  liquido.variantes.find((v) => v.id === "alterado")?.editavel === true &&
+/**
+ * O líquido alterado foi editável entre 16/08 e 19/08 e VOLTOU a ser travado.
+ *
+ * A ideia era que conservar `{liquido_classe}` bastasse: a chave carrega o
+ * diagnóstico. Não basta — "Líquido em quantidade normal, apesar de
+ * {liquido_classe}" conserva a chave e contradiz a conclusão. Enquanto o
+ * diagnóstico não for um componente protegido da frase, esta variante não é
+ * reescrevível (Codex, 19/08).
+ */
+check("o líquido alterado NÃO é editável — o diagnóstico viaja no dado",
+  liquido.variantes.find((v) => v.id === "alterado")?.editavel === false);
+check("…e a classe segue obrigatória para quem monta a frase",
   OBSTETRICA_CLASSICO.slots.find((s) => s.id === "liquido_amniotico")!
     .variantes.find((v) => v.id === "alterado")!.placeholdersObrigatorios?.includes("liquido_classe") === true);
 check("o líquido normal é editável",
