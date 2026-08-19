@@ -20,6 +20,8 @@ import { renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.r
 import { aplicarFrasesPersonalizadas } from "@/server/pipeline/frasesPersonalizadas";
 import { frasesBaseDe, frasesDeOperacoes } from "./resolveFrases";
 import { motivoNaoReescrevivel, negaOTermo, usuarioLiberado, variantePadrao } from "@/server/renderer/catalog/engine";
+import { personalizacaoAtiva } from "./ativa";
+import { recarregarEnvParaTeste } from "@/server/env";
 import { versaoDerivadaDe } from "@/server/renderer/catalog/modeloNormalCatalog";
 import { laudoPadraoDe } from "@/server/renderer/catalog/modeloNormalRegistry";
 import { linhasDoLaudo } from "@/server/renderer/catalog/modeloNormal";
@@ -334,6 +336,57 @@ console.log("5 · as travas que o Codex pediu antes de ligar a flag");
     }
     t("toda variante de achado editável declara o termo que sobrevive",
       semGarantia.length === 0, semGarantia.join(", "));
+  }
+
+  // 5b-quater · A REGRA ÚNICA, nas quatro pernas
+  {
+    const antes = {
+      cat: process.env.MODEL_CUSTOMIZATION_CATEGORIES ?? "",
+      ids: process.env.MODEL_CUSTOMIZATION_USER_IDS ?? "",
+      catalogo: process.env.MODEL_CATALOG_CATEGORIES ?? "",
+      pm: process.env.PARTES_MOLES_WRITER ?? "",
+      pelve: process.env.PELVE_WRITER ?? "",
+    };
+    const com = (env: Record<string, string>, categoria: string, userId = "medico-1") => {
+      process.env.MODEL_CUSTOMIZATION_CATEGORIES = env.cat ?? "";
+      process.env.MODEL_CUSTOMIZATION_USER_IDS = env.ids ?? "";
+      process.env.MODEL_CATALOG_CATEGORIES = env.catalogo ?? "";
+      process.env.PARTES_MOLES_WRITER = env.pm ?? "false";
+      process.env.PELVE_WRITER = env.pelve ?? "false";
+      recarregarEnvParaTeste();
+      return personalizacaoAtiva({ userId, categoria, estilo: "CLASSICO_COMPLETO" });
+    };
+    const TUDO = { cat: "OBSTETRICA,PARTES_MOLES,CERVICAL,PELVE_FEMININA,DOPPLER_RENAL", ids: "medico-1", catalogo: "OBSTETRICA" };
+
+    t("regra única: usuário fora da allowlist ⇒ inativa",
+      com({ ...TUDO, ids: "outro" }, "CERVICAL").ativa === false);
+    t("regra única: categoria desligada ⇒ inativa",
+      com({ ...TUDO, cat: "OBSTETRICA" }, "CERVICAL").ativa === false);
+    t("regra única: derivada NÃO exige o catálogo ligado",
+      com({ ...TUDO, catalogo: "" }, "CERVICAL").ativa === true);
+    t("regra única: escrita (OBSTETRICA) EXIGE o catálogo ligado",
+      com({ ...TUDO, catalogo: "" }, "OBSTETRICA").ativa === false &&
+      com(TUDO, "OBSTETRICA").ativa === true);
+    // A perna nova: a categoria que o writer escreve retorna ANTES do overlay.
+    t("regra única: PARTES_MOLES com o writer ligado ⇒ inativa",
+      com({ ...TUDO, pm: "true" }, "PARTES_MOLES").ativa === false);
+    t("…e com o writer desligado ⇒ ativa",
+      com({ ...TUDO, pm: "false" }, "PARTES_MOLES").ativa === true);
+    t("regra única: PELVE com o writer ligado ⇒ inativa",
+      com({ ...TUDO, pelve: "true" }, "PELVE_FEMININA").ativa === false);
+    t("regra única: DOPPLER_RENAL é sempre escrito pelo writer ⇒ inativa",
+      com(TUDO, "DOPPLER_RENAL").ativa === false);
+    const inativa = com({ ...TUDO, pm: "true" }, "PARTES_MOLES");
+    t("regra única: o motivo é legível em português",
+      inativa.ativa === false && /escrito pela IA/.test(inativa.explicacao),
+      inativa.ativa ? "estava ativa" : inativa.explicacao);
+
+    process.env.MODEL_CUSTOMIZATION_CATEGORIES = antes.cat;
+    process.env.MODEL_CUSTOMIZATION_USER_IDS = antes.ids;
+    process.env.MODEL_CATALOG_CATEGORIES = antes.catalogo;
+    process.env.PARTES_MOLES_WRITER = antes.pm;
+    process.env.PELVE_WRITER = antes.pelve;
+    recarregarEnvParaTeste();
   }
 
   // 5c · o modelo derivado deixou de ser eternamente v0
