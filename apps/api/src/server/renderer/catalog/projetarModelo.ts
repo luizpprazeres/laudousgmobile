@@ -13,7 +13,7 @@
  *
  * A tela não distingue: recebe `LinhaDoModelo` das duas.
  */
-import type { LinhaDoModelo, AchadoProjetado, VariantDescription } from "./describe";
+import type { LinhaDoModelo, AchadoProjetado, VariantDescription, DadoDaFrase } from "./describe";
 import { linhasDoLaudo } from "./modeloNormal";
 import type { Catalog, ReportDoc, SlotContext } from "./types";
 
@@ -55,6 +55,10 @@ export function linhasDeDocumento<F>(doc: ReportDoc, catalog: Catalog<F>): Linha
       seg.kind === "conclusao"
         ? variante?.conclusao ?? seg.text
         : variante?.frase ?? seg.text;
+    const obrig = [
+      ...(slot?.placeholdersObrigatorios ?? []),
+      ...(variante?.placeholdersObrigatorios ?? []),
+    ];
 
     out.push({
       secao: seg.kind === "conclusao" ? "conclusao" : "corpo",
@@ -66,10 +70,8 @@ export function linhasDeDocumento<F>(doc: ReportDoc, catalog: Catalog<F>): Linha
       ...(motivo ? { motivo } : {}),
       obrigatorio: Boolean(slot?.obrigatorio),
       removivel: !slot?.obrigatorio && slot?.removivel !== false,
-      placeholdersObrigatorios: [
-        ...(slot?.placeholdersObrigatorios ?? []),
-        ...(variante?.placeholdersObrigatorios ?? []),
-      ],
+      placeholdersObrigatorios: obrig,
+      dados: dadosNomeados(frase, obrig, catalog.rotulosVariaveis),
     });
   }
   return out;
@@ -97,6 +99,7 @@ export function linhasDePreambulo<F>(catalog: Catalog<F>): LinhaDoModelo[] {
         obrigatorio: true,
         removivel: false,
         placeholdersObrigatorios: [],
+        dados: [],
       })),
   );
 }
@@ -118,6 +121,7 @@ export function linhasDeLaudoPadrao(laudo: string): LinhaDoModelo[] {
     obrigatorio: false,
     removivel: l.secao !== "tecnica",
     placeholdersObrigatorios: [],
+    dados: dadosPosicionais(l.texto),
   }));
 }
 
@@ -142,3 +146,53 @@ export function achadosDoCatalogo<F>(
 }
 
 export type ContextoDeCenario<F> = { nome: string; ctx: SlotContext<F> };
+
+// ---------------------------------------------------------------------------
+// Os DADOS de uma frase — nomeados ou posicionais, mesma forma para a tela
+// ---------------------------------------------------------------------------
+
+/**
+ * Rótulo de uma lacuna posicional, inferido do que vem depois dela.
+ *
+ * "Diâmetro biparietal (DBP) de ____ mm." → "medida em mm". É pouco, e é
+ * honesto: no modelo derivado o sistema não sabe o NOME do dado — sabe que ali
+ * entra um valor que o renderer preencheu. Chutar "DBP" a partir do texto
+ * seria inventar semântica que não existe.
+ */
+function rotuloDaLacuna(depois: string): string {
+  const u = /^\s*(mm|cm|ml|g|gramas|bpm|%|semanas|dias)\b/i.exec(depois);
+  return u ? `medida em ${u[1]!.toLowerCase()}` : "dado do exame";
+}
+
+/** Os dados de uma frase do catálogo ESCRITO — `{campo}` nomeado. */
+export function dadosNomeados(
+  frase: string,
+  obrigatorios: string[],
+  rotulos: Readonly<Record<string, string>> | undefined,
+): DadoDaFrase[] {
+  return [...frase.matchAll(/\{(\w+)\}/g)].map((m) => ({
+    marcador: m[0],
+    rotulo: rotulos?.[m[1]!] ?? m[1]!.replace(/_/g, " "),
+    obrigatorio: obrigatorios.includes(m[1]!),
+  }));
+}
+
+/**
+ * Os dados de uma frase do modelo DERIVADO — lacunas `____`.
+ *
+ * Todas obrigatórias: a lacuna é justamente o valor que o renderer preencheu,
+ * e uma redação que a descarta apaga a medida do laudo.
+ */
+export function dadosPosicionais(frase: string): DadoDaFrase[] {
+  const out: DadoDaFrase[] = [];
+  const re = /_{2,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(frase)) !== null) {
+    out.push({
+      marcador: "____",
+      rotulo: rotuloDaLacuna(frase.slice(m.index + m[0].length)),
+      obrigatorio: true,
+    });
+  }
+  return out;
+}

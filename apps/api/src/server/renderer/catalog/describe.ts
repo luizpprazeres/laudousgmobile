@@ -196,6 +196,26 @@ export function describeCatalog<F>(
  * somem de uma vez: o documento tem a ordem certa, tem a conclusão, e não
  * contém os condicionais que não se aplicam.
  */
+/**
+ * Um dado do exame dentro de uma frase.
+ *
+ * UNIFICA as duas representações (sugestão do Codex, 19/08). O catálogo
+ * escrito marca o dado com `{dbp}` — nomeado; o derivado, com a lacuna `____`
+ * que o renderer imprime — posicional. São a mesma coisa para o médico, e ele
+ * não deve ver nem `{dbp}` nem `____`: vê um chip com o nome do dado.
+ *
+ * `obrigatorio` é o que faltava no contrato: sem ele o app deixaria apagar uma
+ * medida do modelo derivado e só descobriria no 422 do servidor.
+ */
+export type DadoDaFrase = {
+  /** O que inserir na redação para trazer o dado de volta: `{dbp}` ou `____`. */
+  marcador: string;
+  /** Nome para o médico — "DBP", "medida em mm", "dado do exame". */
+  rotulo: string;
+  /** A redação precisa conservá-lo? */
+  obrigatorio: boolean;
+};
+
 export type LinhaDoModelo = {
   secao: "tecnica" | "corpo" | "conclusao";
   slot: string;
@@ -207,6 +227,8 @@ export type LinhaDoModelo = {
   obrigatorio: boolean;
   removivel: boolean;
   placeholdersObrigatorios: string[];
+  /** Os dados do exame nesta frase — ver `DadoDaFrase`. */
+  dados: DadoDaFrase[];
 };
 
 export type ModeloProjetado = {

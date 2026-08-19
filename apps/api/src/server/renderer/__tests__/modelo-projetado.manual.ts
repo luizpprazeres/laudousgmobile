@@ -75,7 +75,30 @@ for (const c of categoriasDaBiblioteca()) {
   t(`${c.categoria}: a conclusão não traz a numeração`,
     !linhas.some((l) => /^\d+\)\s/.test(l.frase)));
 
-  // 6 · nenhuma seção vazia — um cabeçalho sem linha embaixo é um buraco
+  /**
+   * 6 · TODO dado da frase está declarado em `dados` (achado do Codex).
+   *
+   * Sem isto o app não sabe que uma lacuna do modelo derivado é obrigatória —
+   * deixaria o médico apagar uma medida e só descobriria no 422 do servidor.
+   */
+  for (const l of linhas) {
+    const marcadores = [...l.frase.matchAll(/\{\w+\}|_{2,}/g)].map((m) => m[0]);
+    t(`${c.categoria}: "${l.frase.slice(0, 30)}…" declara seus dados`,
+      marcadores.length === l.dados.length,
+      `${marcadores.length} no texto, ${l.dados.length} declarados`);
+    // O que denuncia nome de variável cru é o `_` ("dorso_sufixo"), não a
+    // minúscula: "peso" e "apresentação" são rótulos legítimos.
+    t(`${c.categoria}: nenhum dado exibe o nome cru da variável`,
+      l.dados.every((d) => d.rotulo.length > 0 && !d.rotulo.includes("_")),
+      l.dados.map((d) => d.rotulo).join(", "));
+  }
+  // No modelo DERIVADO toda lacuna é obrigatória — ela É o valor do exame.
+  if (c.derivado) {
+    t(`${c.categoria}: toda lacuna do derivado é obrigatória`,
+      linhas.flatMap((l) => l.dados).every((d) => d.obrigatorio));
+  }
+
+  // 7 · nenhuma seção vazia — um cabeçalho sem linha embaixo é um buraco
   for (const m of ms) {
     t(`${c.categoria}/${m.nome}: conclusão não fica vazia`,
       m.linhas.some((l) => l.secao === "conclusao"),
