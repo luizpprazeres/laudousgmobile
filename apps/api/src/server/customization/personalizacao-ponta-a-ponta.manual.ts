@@ -21,6 +21,7 @@ import { aplicarFrasesPersonalizadas } from "@/server/pipeline/frasesPersonaliza
 import { frasesBaseDe, frasesDeOperacoes } from "./resolveFrases";
 import { motivoNaoReescrevivel, negaOTermo, usuarioLiberado, variantePadrao } from "@/server/renderer/catalog/engine";
 import { personalizacaoAtiva } from "./ativa";
+import { ehDerivado } from "@/server/renderer/catalog/registry";
 import { recarregarEnvParaTeste } from "@/server/env";
 import { versaoDerivadaDe } from "@/server/renderer/catalog/modeloNormalCatalog";
 import { laudoPadraoDe } from "@/server/renderer/catalog/modeloNormalRegistry";
@@ -387,6 +388,31 @@ console.log("5 · as travas que o Codex pediu antes de ligar a flag");
     process.env.PARTES_MOLES_WRITER = antes.pm;
     process.env.PELVE_WRITER = antes.pelve;
     recarregarEnvParaTeste();
+  }
+
+  // 5d · UM RESOLVER SÓ por categoria — e a auditoria bate
+  {
+    /**
+     * A rota disparava os dois resolvers em toda categoria renderer, contando
+     * com o derivado devolver `aplicar: false` onde há catálogo. Não devolve:
+     * na OBSTETRICA ele compara a MESMA publicação com a impressão digital
+     * derivada e conclui "desatualizada" — aviso falso e auditoria sobrescrita
+     * com `OBSTETRICA/derivado` (achado do Codex, 19/08).
+     *
+     * O que se afirma aqui é a premissa que faz a escolha na rota funcionar:
+     * `ehDerivado` separa os dois mundos, e as duas versões-base são de
+     * naturezas diferentes e nunca comparáveis.
+     */
+    t("OBSTETRICA não é derivada — quem resolve é o catálogo escrito",
+      !ehDerivado("OBSTETRICA", "CLASSICO_COMPLETO"));
+    t("uma derivada é derivada", ehDerivado("CERVICAL", "CLASSICO_COMPLETO"));
+    const vEscrita = OBSTETRICA_CLASSICO.versao;
+    const vDerivada = versaoDerivadaDe("OBSTETRICA", "CLASSICO_COMPLETO");
+    t("as duas versões-base nunca se confundem", vEscrita !== vDerivada,
+      `escrita=${vEscrita} derivada=${vDerivada}`);
+    // E a prova de que comparar as duas produziria exatamente o falso positivo:
+    t("comparar a versão escrita com a derivada daria 'desatualizada'",
+      vEscrita !== vDerivada);
   }
 
   // 5c · o modelo derivado deixou de ser eternamente v0

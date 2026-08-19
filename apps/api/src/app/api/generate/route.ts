@@ -84,6 +84,7 @@ import {
 } from "@/server/db/lookups";
 import { runRendererStream } from "@/server/pipeline/renderer";
 import { decidirDescarte } from "@/server/pipeline/descarteDecision";
+import { ehDerivado } from "@/server/renderer/catalog/registry";
 import { resolverPersonalizacao } from "@/server/customization/resolve";
 import { resolverFrasesPersonalizadas } from "@/server/customization/resolveFrases";
 import {
@@ -910,29 +911,43 @@ export async function POST(req: Request) {
       // LLM, que leva segundos, então não acrescenta latência percebida.
       // A função nunca rejeita (devolve `aplicar: false` até em erro de banco),
       // por isso é seguro guardar a promessa sem `catch`.
-      const personalizacao = useRenderer
-        ? resolverPersonalizacao({
-            userId: user.id,
-            categoryCode: effectiveCategory,
-            styleCode: styleRow.code,
-          })
-        : undefined;
+      /**
+       * UM RESOLVER, NÃO DOIS (achado do Codex, 19/08).
+       *
+       * A rota disparava os dois em toda categoria renderer, contando com o
+       * derivado resolver `aplicar: false` onde há catálogo. Não resolve: na
+       * OBSTETRICA ele compara a MESMA publicação com a impressão digital
+       * derivada (590047862) contra o catálogo escrito (v3), conclui
+       * "desatualizada", emite aviso FALSO e chama `onModelo` de novo,
+       * sobrescrevendo a auditoria com `OBSTETRICA/derivado`.
+       *
+       * Quem monta o laudo decide quem resolve.
+       */
+      const usaModeloDerivado = ehDerivado(effectiveCategory, styleRow.code);
+      const personalizacao =
+        useRenderer && !usaModeloDerivado
+          ? resolverPersonalizacao({
+              userId: user.id,
+              categoryCode: effectiveCategory,
+              styleCode: styleRow.code,
+            })
+          : undefined;
       /**
        * A redação do médico nas categorias SEM catálogo estruturado — as doze
        * que não têm slots a que ancorar uma operação.
        *
        * Mesmo padrão da `personalizacao`: sem `await`, corre em paralelo com a
-       * extração, e nunca rejeita. Onde há catálogo (OBSTETRICA), esta resolve
-       * para `aplicar: false` e a de cima é que vale — as duas nunca se
-       * aplicam ao mesmo laudo.
+       * extração, e nunca rejeita. Onde há catálogo escrito (OBSTETRICA), esta
+       * NEM É CHAMADA — ver `usaModeloDerivado`.
        */
-      const frases = useRenderer
-        ? resolverFrasesPersonalizadas({
-            userId: user.id,
-            categoryCode: effectiveCategory,
-            styleCode: styleRow.code,
-          })
-        : undefined;
+      const frases =
+        useRenderer && usaModeloDerivado
+          ? resolverFrasesPersonalizadas({
+              userId: user.id,
+              categoryCode: effectiveCategory,
+              styleCode: styleRow.code,
+            })
+          : undefined;
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
@@ -993,6 +1008,25 @@ export async function POST(req: Request) {
                   message:
                     "Este laudo saiu com o modelo padrão: o modelo desta categoria mudou e a sua " +
                     "personalização precisa ser revisada e publicada de novo na Biblioteca.",
+                });
+              }
+              /**
+               * FALHA, não configuração. Banco fora do ar ou erro no resolver
+               * também produzem laudo padrão — e ficavam sem explicação nenhuma
+               * (achado do Codex, 19/08).
+               *
+               * `inativa` e `sem_publicacao` seguem silenciosos: são o estado
+               * normal de quem não personalizou nada.
+               */
+              if (
+                !m.personalizacaoDescartada &&
+                (m.motivoCodigo === "erro" || m.motivoCodigo === "sem_modelo")
+              ) {
+                pipelineWarnings.push({
+                  code: "personalizacao_indisponivel",
+                  message:
+                    "Não foi possível verificar ou aplicar a sua personalização. Este laudo saiu " +
+                    "com o modelo padrão; confira antes de assinar.",
                 });
               }
               if (m.personalizacaoDescartada) {
