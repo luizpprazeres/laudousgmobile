@@ -185,19 +185,45 @@ Ligar exige **duas** variáveis, e as duas são fail-closed:
 A segunda existe porque *categoria não é canário de usuário*: sem ela, ligar a
 categoria valeria para todo médico que já tivesse publicado nela.
 
+**Uma regra só decide se vale** (`server/customization/ativa.ts`), e é a mesma
+na tela e no gerador:
+
+```
+ativa = usuário liberado && categoria liberada
+        && (derivada || catálogo ligado)
+        && a categoria não é escrita pelo writer
+```
+
+A última perna existe porque o caminho do writer (MSK, PARTES_MOLES, PELVE,
+DOPPLER venoso/renal) devolve o texto e **retorna antes** da camada que aplica a
+redação do médico. Sem ela, a Biblioteca prometia o que a geração ignorava.
+Publicar (não salvar rascunho) responde **403** para quem está fora da
+allowlist: uma publicação gravada hoje passaria a valer sozinha no dia em que a
+flag mudasse.
+
 As travas, todas com gate:
 
 - **tudo ou nada** — cinco frases publicadas e duas que não casam mais devolvem
   `null`, e o laudo sai inteiro no padrão. Meia personalização é um híbrido que
   o médico nunca revisou.
 - **impressão digital do modelo derivado** — o derivado nasce do renderer e
-  ficava eternamente em `versao: 0`. Agora a `versao` é o hash do conjunto de
-  frases: linha nova entre as dele ou irmã reescrita ⇒ republicar.
+  ficava eternamente em `versao: 0`. Agora a `versao` é o hash de *cenário +
+  seção + ids na ordem*, em todos os cenários: linha nova, irmã reescrita ou
+  troca de ordem ⇒ republicar.
 - **âncora que a própria alteração remove** — `insert_phrase_after` num slot que
   o mesmo conjunto remove passava na validação e sumia em silêncio.
-- **fallback avisa** — quando o catálogo falha e o laudo sai pelo renderer
-  clássico, a personalização é descartada; vai um aviso ao médico (evento do
-  stream + `metadata`), **fora do texto copiável**.
+- **fallback em três degraus** — `catálogo + personalização → catálogo-base →
+  renderer clássico`. Cair direto no clássico perdia os achados que motivaram o
+  catálogo (óbito fetal, ventriculomegalia, hidropsia). Quando a redação é
+  descartada, vai um aviso ao médico (evento do stream + `metadata`), **fora do
+  texto copiável**.
+- **variante de achado só é reescrevível se declarar o termo** que tem de
+  sobreviver (`termosObrigatorios`), e a frase não pode NEGÁ-LO — "sem
+  ventriculomegalia" conservava a palavra e invertia o diagnóstico. As demais
+  ficam travadas até serem liberadas uma a uma.
+- **publish com `FOR UPDATE`** — entre ler o rascunho e promovê-lo, um PUT de
+  outro aparelho reescrevia `operations` mantendo `status = 'draft'`, e a
+  publicação promovia conteúdo que nunca validou.
 - **auditoria dos dois caminhos** — `onModelo` não era chamado nas 12 categorias
   derivadas: o laudo saía personalizado sem registro de qual modelo o assinou.
 

@@ -567,69 +567,102 @@ export async function* runRendererStream(args: {
             notaPersonalizacao =
               ` | personalização v${p.versao}: ${p.operacoes} operação(ões) sobre ${p.catalogId} v${p.baseVersao}`;
           }
+          /**
+           * O catálogo LANÇA em situações legítimas: `interpolate` recusa
+           * placeholder desconhecido (engine.ts), `applyCustomization` recusa
+           * personalização de outra versão. Sem fallback, qualquer uma delas
+           * derruba a GERAÇÃO — o médico dita e não recebe laudo nenhum.
+           *
+           * TRÊS DEGRAUS, do mais fiel ao mais seguro (desenho do Codex, 19/08).
+           *
+           *   catálogo + personalização → catálogo-base → renderer clássico
+           *
+           * Cair direto no clássico custava caro demais: ele não conhece os
+           * achados que motivaram o catálogo — óbito fetal, ventriculomegalia,
+           * hidropsia — e pode PERDER a patologia que o médico ditou. Se a
+           * falha veio da redação do médico, o catálogo-base ainda monta o
+           * laudo certo; só a redação se perde.
+           *
+           * Perder a patologia daquele laudo é o último recurso, e só existe
+           * porque não entregar laudo nenhum é pior.
+           */
+          const montado = (() => {
+            try {
+              return {
+                texto: renderObstetricaCatalogo({
+                  findings: ofnd,
+                  flags: { objetivo, igCorrection, flexivel, grannum },
+                  ...(p?.aplicar
+                    ? { catalog: p.catalog, customSlots: p.customSlots, extraConclusao: p.extraConclusao }
+                    : {}),
+                }),
+                degrau: "catalogo" as const,
+                erro: null as Error | null,
+              };
+            } catch (err) {
+              const e1 = err instanceof Error ? err : new Error("erro no catálogo");
+              if (p?.aplicar) {
+                try {
+                  return {
+                    texto: renderObstetricaCatalogo({
+                      findings: ofnd,
+                      flags: { objetivo, igCorrection, flexivel, grannum },
+                    }),
+                    degrau: "catalogo_base" as const,
+                    erro: e1,
+                  };
+                } catch (err2) {
+                  console.warn("catálogo-base também falhou:", err2);
+                }
+              }
+              return {
+                texto: renderObstetrica(ofnd, null, {
+                  objetivo, igCorrection, flexivel, grannum,
+                  golfBall: golfBallObst, igSanity,
+                }),
+                degrau: "classico" as const,
+                erro: e1,
+              };
+            }
+          })();
+
+          fullText = montado.texto;
+          const porque = montado.erro ? montado.erro.message.slice(0, 80) : "";
+          /**
+           * O DEGRAU FICA GRAVADO, e o descarte da redação também.
+           *
+           * O médico não tem como saber que este laudo saiu com a redação
+           * padrão: para ele, a personalização está publicada e valendo. Sem
+           * esta marca, "por que este laudo saiu diferente dos meus outros?"
+           * não tem resposta na auditoria.
+           */
+          const perdeuRedacao = Boolean(p?.aplicar) && montado.degrau !== "catalogo";
+          notaPersonalizacao +=
+            montado.degrau === "catalogo"
+              ? " | modelo: catálogo"
+              : montado.degrau === "catalogo_base"
+                ? ` | modelo: catálogo-base (a personalização falhou: ${porque})`
+                : ` | modelo: clássico (catálogo falhou: ${porque})`;
+          if (perdeuRedacao) notaPersonalizacao += " | ⚠️ PERSONALIZAÇÃO NÃO APLICADA";
+
           try {
             args.onModelo?.({
               catalogId: OBSTETRICA_CATALOG_ID,
               catalogVersao: OBSTETRICA_CATALOG_VERSAO,
-              customizacaoVersao: p?.aplicar ? p.versao : null,
-              ...(p && !p.aplicar ? { motivoSemPersonalizacao: p.motivo } : {}),
+              customizacaoVersao: montado.degrau === "catalogo" && p?.aplicar ? p.versao : null,
+              ...(montado.degrau !== "catalogo"
+                ? {
+                    motivoSemPersonalizacao: `laudo montado pelo ${
+                      montado.degrau === "catalogo_base" ? "catálogo-base" : "renderer clássico"
+                    }: ${montado.erro?.message.slice(0, 120) ?? "erro"}`,
+                  }
+                : p && !p.aplicar
+                  ? { motivoSemPersonalizacao: p.motivo }
+                  : {}),
+              ...(perdeuRedacao ? { personalizacaoDescartada: true } : {}),
             });
           } catch {
             /* observacional — nunca derruba a geração */
-          }
-          /**
-           * FALLBACK PARA O RENDERER CLÁSSICO (achado do Codex, 19/08).
-           *
-           * O catálogo LANÇA em situações legítimas: `interpolate` recusa
-           * placeholder desconhecido (engine.ts), `applyCustomization` recusa
-           * personalização de outra versão. Sem isto, qualquer uma delas
-           * derruba a GERAÇÃO — o médico dita e não recebe laudo nenhum.
-           *
-           * O clássico é o caminho que rodou até agora e continua correto para
-           * tudo que não é achado novo. Cair nele custa a patologia daquele
-           * laudo; não cair custa o laudo inteiro.
-           */
-          try {
-            fullText = renderObstetricaCatalogo({
-              findings: ofnd,
-              flags: { objetivo, igCorrection, flexivel, grannum },
-              ...(p?.aplicar
-                ? { catalog: p.catalog, customSlots: p.customSlots, extraConclusao: p.extraConclusao }
-                : {}),
-            });
-            notaPersonalizacao += " | modelo: catálogo";
-          } catch (err) {
-            console.warn("catálogo falhou; caindo no renderer clássico:", err);
-            fullText = renderObstetrica(ofnd, null, {
-              objetivo, igCorrection, flexivel, grannum,
-              golfBall: golfBallObst, igSanity,
-            });
-            /**
-             * O FALLBACK DESCARTA A PERSONALIZAÇÃO — e isso precisa ficar
-             * gravado, não só o motivo do fallback.
-             *
-             * O renderer clássico não conhece as frases do médico. Quando o
-             * catálogo falha, o laudo sai correto mas COM A REDAÇÃO PADRÃO, e
-             * ele não tem como saber: para ele, a personalização está
-             * publicada e valendo. Sem esta marca, "por que este laudo saiu
-             * diferente dos meus outros?" não tem resposta na auditoria.
-             */
-            notaPersonalizacao += ` | modelo: clássico (catálogo falhou: ${
-              err instanceof Error ? err.message.slice(0, 80) : "erro"
-            })${p?.aplicar ? " | ⚠️ PERSONALIZAÇÃO NÃO APLICADA (fallback)" : ""}`;
-            try {
-              args.onModelo?.({
-                catalogId: OBSTETRICA_CATALOG_ID,
-                catalogVersao: OBSTETRICA_CATALOG_VERSAO,
-                customizacaoVersao: null,
-                motivoSemPersonalizacao: `fallback para o renderer clássico: ${
-                  err instanceof Error ? err.message.slice(0, 120) : "erro"
-                }`,
-                ...(p?.aplicar ? { personalizacaoDescartada: true } : {}),
-              });
-            } catch {
-              /* observacional — nunca derruba a geração */
-            }
           }
         } else {
           fullText = renderObstetrica(ofnd, null, {

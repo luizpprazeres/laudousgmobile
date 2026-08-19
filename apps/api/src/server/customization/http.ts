@@ -16,6 +16,7 @@ import {
   type EntradaCatalogo,
 } from "@/server/renderer/catalog/registry";
 import { CustomizationError, type Chave } from "./store";
+import { personalizacaoAtiva } from "./ativa";
 
 export type Contexto = {
   chave: Chave;
@@ -29,6 +30,19 @@ export type Contexto = {
 export async function resolverContexto(
   req: Request,
   category: string,
+  /**
+   * `publica: true` nas ações que MUDAM os laudos (publicar, restaurar).
+   *
+   * Enquanto a personalização é piloto, quem não está na allowlist não publica
+   * (exigência do Codex, 19/08). O motivo não é cosmético: uma publicação
+   * gravada hoje por quem não está liberado passaria a valer sozinha no dia em
+   * que a flag mudasse — um laudo diferente, meses depois, sem ninguém ter
+   * mexido em nada.
+   *
+   * O RASCUNHO continua livre para todos: é privado, não muda laudo nenhum, e
+   * é como o médico prepara a redação antes de a categoria abrir.
+   */
+  opts: { publica?: boolean } = {},
 ): Promise<Contexto | { erro: Response }> {
   const user = await verifyJwt(req);
   if (!user) return { erro: unauthorized() };
@@ -61,6 +75,22 @@ export async function resolverContexto(
         { status: 404 },
       ),
     };
+  }
+
+  if (opts.publica) {
+    const a = personalizacaoAtiva({ userId: user.id, categoria: category, estilo });
+    if (!a.ativa) {
+      return {
+        erro: Response.json(
+          {
+            error: "publicação ainda não liberada",
+            detalhe: a.explicacao,
+            motivo: a.motivo,
+          },
+          { status: 403 },
+        ),
+      };
+    }
   }
 
   return {

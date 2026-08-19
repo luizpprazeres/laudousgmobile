@@ -66,18 +66,37 @@ export type EntradaDerivada = {
  * 19/08).
  *
  * O id de uma frase já cobre "a MINHA frase mudou". O que faltava é "o modelo
- * ao redor mudou": uma linha nova entre as suas, uma irmã reescrita. O médico
- * revisou um documento; se o documento mudou, ele revisa de novo. Por isso o
- * hash é do CONJUNTO ordenado de ids — a mesma superfície que `frasesBaseDe`
- * usa como âncora.
+ * ao redor mudou": uma linha nova entre as suas, uma irmã reescrita, uma troca
+ * de ordem. O médico revisou um DOCUMENTO; se o documento mudou, ele revisa de
+ * novo.
  *
  * 0 continua reservado para "não foi possível derivar".
  */
 export function versaoDerivadaDe(categoria: string, estilo: string): number {
   const laudo = laudoPadraoDe(categoria, estilo);
   if (!laudo) return 0;
-  const ids = linhasDoLaudo(laudo).map((l) => l.id).sort().join("|");
-  const hex = createHash("sha1").update(`${categoria}/${estilo}/${ids}`).digest("hex").slice(0, 8);
+
+  /**
+   * TODOS os cenários, na ORDEM, com a seção. A primeira versão hasheava só o
+   * cenário padrão e ainda ordenava os ids — e portanto era cega justamente às
+   * mudanças que importam (achado do Codex, 19/08):
+   *
+   *  - trocar duas frases de lugar não mexia na versão, e o médico revisou um
+   *    documento numa ordem;
+   *  - mudança exclusiva de 2º/3º trimestre não mexia na versão, e a tela
+   *    mostra todos os cenários;
+   *  - a seção não entrava, então mover uma frase do corpo para a conclusão
+   *    passava batido.
+   */
+  const partes = [`${categoria}/${estilo}`];
+  for (const l of linhasDoLaudo(laudo)) partes.push(`padrao|${l.secao}|${l.id}`);
+  for (const c of cenariosDe(categoria)) {
+    const outro = laudoDoCenario(categoria, estilo, c.seed);
+    if (!outro) continue;
+    for (const l of linhasDoLaudo(outro)) partes.push(`${c.nome}|${l.secao}|${l.id}`);
+  }
+
+  const hex = createHash("sha1").update(partes.join("\n")).digest("hex").slice(0, 8);
   // 31 bits: cabe em `integer` do Postgres e nunca colide com 0.
   return (parseInt(hex, 16) % 0x7ffffffe) + 1;
 }

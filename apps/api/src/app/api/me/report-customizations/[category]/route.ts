@@ -5,6 +5,7 @@ import { describeCatalog } from "@/server/renderer/catalog/describe";
 import { flagsDeProducao, type EntradaCatalogo } from "@/server/renderer/catalog/registry";
 import { catalogEnabledFor } from "@/server/renderer/catalog/engine";
 import { env } from "@/server/env";
+import { personalizacaoAtiva } from "@/server/customization/ativa";
 import { lerJson, resolverContexto, respostaDeErro } from "@/server/customization/http";
 import { NoteSchema, OperationsSchema } from "@/server/customization/schemas";
 import { descartarRascunho, lerEstado, salvarRascunho } from "@/server/customization/store";
@@ -182,9 +183,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
        * laudos" para uma personalização que o gerador ignora — mentira
        * confortável, e a pior espécie num produto clínico.
        */
-      personalizacao_ativa:
-        catalogEnabledFor(env().MODEL_CATALOG_CATEGORIES, category) &&
-        catalogEnabledFor(env().MODEL_CUSTOMIZATION_CATEGORIES, category),
+      personalizacao_ativa: personalizacaoAtiva({
+        userId: r.chave.userId,
+        categoria: category,
+        estilo: r.chave.styleCode,
+      }).ativa,
       rascunho: estado.rascunho,
       publicado: estado.publicado,
       historico: estado.historico,

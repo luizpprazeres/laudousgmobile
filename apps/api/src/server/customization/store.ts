@@ -327,11 +327,26 @@ export async function publicar(
 
   try {
     return await db.transaction(async (tx) => {
+      /**
+       * `FOR UPDATE` — o rascunho é LIDO E TRAVADO na mesma instrução.
+       *
+       * Sem a trava, entre esta leitura e a promoção lá embaixo um PUT de outro
+       * aparelho podia reescrever `operations` mantendo `status = 'draft'`: a
+       * publicação promovia um conteúdo que ela nunca validou nem mostrou na
+       * prévia (achado do Codex, 19/08). A condição `status = 'draft'` no
+       * UPDATE não pega este caso — a linha continua rascunho, só que com
+       * outro texto dentro.
+       *
+       * O iOS desabilita os botões durante a chamada, o que reduz a chance no
+       * mesmo aparelho e não cobre dois. Aqui o segundo PUT espera a transação
+       * fechar e então encontra a linha já publicada — 409, como deve ser.
+       */
       const [rascunho] = await tx
         .select()
         .from(T)
         .where(and(filtroDaChave(scopeId, chave), eq(T.status, "draft")))
-        .limit(1);
+        .limit(1)
+        .for("update");
 
       if (!rascunho) {
         throw new CustomizationError("nothing_to_publish", "não há rascunho para publicar");

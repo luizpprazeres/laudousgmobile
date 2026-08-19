@@ -1,8 +1,7 @@
 export { OPTIONS } from "@/server/cors";
 import { verifyJwt, unauthorized } from "@/server/auth/verifyJwt";
-import { catalogEnabledFor } from "@/server/renderer/catalog/engine";
 import { categoriasDaBiblioteca } from "@/server/renderer/catalog/registry";
-import { env } from "@/server/env";
+import { personalizacaoAtiva } from "@/server/customization/ativa";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +22,6 @@ export async function GET(req: Request): Promise<Response> {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
-  const e = env();
   const categorias = categoriasDaBiblioteca().map((c) => ({
     categoria: c.categoria,
     rotulo: c.rotulo,
@@ -34,7 +32,16 @@ export async function GET(req: Request): Promise<Response> {
      * achado. A tela usa isto para não prometer o que a categoria não tem.
      */
     derivado: c.derivado,
-    personalizacao_ativa: catalogEnabledFor(e.MODEL_CUSTOMIZATION_CATEGORIES, c.categoria),
+    /**
+     * Uma regra só — a mesma que o gerador usa. Aqui ela olhava só a flag de
+     * categoria: um médico fora da allowlist lia "Em uso nos seus laudos",
+     * publicava, e nada acontecia (achado do Codex, 19/08).
+     */
+    personalizacao_ativa: personalizacaoAtiva({
+      userId: user.id,
+      categoria: c.categoria,
+      estilo: "CLASSICO_COMPLETO",
+    }).ativa,
   }));
 
   return Response.json({

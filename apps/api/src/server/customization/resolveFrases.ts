@@ -16,8 +16,7 @@
  * congelaria uma frase que o sistema não escreve mais.
  */
 
-import { env } from "@/server/env";
-import { catalogEnabledFor, usuarioLiberado } from "@/server/renderer/catalog/engine";
+import { personalizacaoAtiva } from "./ativa";
 import { ehEstiloVivo } from "@/server/renderer/catalog/registry";
 import { modeloNormalDe, laudoPadraoDe } from "@/server/renderer/catalog/modeloNormalRegistry";
 import { linhasDoLaudo } from "@/server/renderer/catalog/modeloNormal";
@@ -96,20 +95,16 @@ export async function resolverFrasesPersonalizadas(
   _db?: Executor,
 ): Promise<FrasesResolvidas> {
   try {
-    const e = env();
-    if (!catalogEnabledFor(e.MODEL_CUSTOMIZATION_CATEGORIES, args.categoryCode)) {
-      return NAO("personalização desligada para esta categoria");
-    }
     /**
-     * ALLOWLIST NOMINAL — categoria não é canário de usuário.
-     *
-     * Ligar a categoria habilitaria a personalização para todo médico que
-     * tivesse publicado nela, não só para quem está pilotando. Numa função que
-     * muda o texto do laudo por decisão do usuário, o piloto é nominal.
+     * A MESMA regra da tela. Enquanto cada ponto tinha a sua, a Biblioteca
+     * dizia "em uso" e o gerador ignorava — ou o contrário. Ver `ativa.ts`.
      */
-    if (!usuarioLiberado(e.MODEL_CUSTOMIZATION_USER_IDS, args.userId)) {
-      return NAO("personalização ainda não liberada para este usuário");
-    }
+    const a = personalizacaoAtiva({
+      userId: args.userId,
+      categoria: args.categoryCode,
+      estilo: args.styleCode,
+    });
+    if (!a.ativa) return NAO(a.explicacao);
     if (!modeloNormalDe(args.categoryCode)) {
       return NAO(`sem modelo para ${args.categoryCode}`);
     }

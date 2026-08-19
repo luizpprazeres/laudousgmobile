@@ -276,6 +276,71 @@ export function serialize<F>(doc: ReportDoc, catalog: Catalog<F>): string {
 // Personalização: validação e aplicação
 // ---------------------------------------------------------------------------
 
+/**
+ * Por que ESTA variante não pode ser reescrita — ou `undefined` se pode.
+ *
+ * Uma função só, consumida pela validação (o que o servidor aceita) e pela
+ * projeção (o que a tela oferece). Enquanto as duas regras eram escritas
+ * separadamente, a tela ofereceu um botão que o servidor recusava — e, pior,
+ * aceitou uma reescrita que a tela não sabia mostrar.
+ */
+export function motivoNaoReescrevivel(
+  slot: { variantes: { id: string }[]; removivel?: boolean },
+  v: SlotVariant<never> | { id: string; montar?: unknown; personalizavel?: boolean; termosObrigatorios?: string[][] },
+  padrao: { id: string } | undefined,
+): string | undefined {
+  if ((v as { personalizavel?: boolean }).personalizavel === false) {
+    return "Descreve um achado alterado. O texto é escrito pelo sistema a partir do que foi ditado, para que uma personalização de normalidade nunca oculte uma patologia.";
+  }
+  if ((v as { montar?: unknown }).montar) {
+    return "É montado pelo sistema a partir dos dados do exame (listas, cálculos ou concordância), e não a partir de uma frase fixa.";
+  }
+  /**
+   * VARIANTE DE ACHADO SEM TERMO OBRIGATÓRIO — trava do piloto (Codex, 19/08).
+   *
+   * `exemplo` é o que faz a variante aparecer na lista de ACHADOS da
+   * Biblioteca: ela é a frase de uma patologia. Reescrevê-la sem que o catálogo
+   * diga QUAL palavra tem de sobreviver deixa passar "corpo normal, conclusão
+   * patológica" — o pior laudo possível, porque parece revisado.
+   *
+   * Não basta ser não-padrão: `bcf/inicial`, `feto/inicial_feto` e o bolsão
+   * vertical também são variantes condicionais, e são NORMAIS — travá-las
+   * tiraria da Biblioteca frases que o médico legitimamente quer reescrever.
+   *
+   * `termosObrigatorios` é o jeito de liberar uma por vez, com a garantia
+   * escrita ao lado da frase. `padrao` fica no argumento porque a regra já
+   * precisou dele e volta a precisar quando a liberação for por slot.
+   */
+  void padrao;
+  const ehAchado = (v as { exemplo?: unknown }).exemplo !== undefined;
+  if (ehAchado && !((v as { termosObrigatorios?: string[][] }).termosObrigatorios?.length)) {
+    return "Descreve um achado e ainda não está liberada para reescrita — a frase precisa declarar qual termo do diagnóstico tem de sobreviver.";
+  }
+  return undefined;
+}
+
+/**
+ * A frase INVERTE o diagnóstico? "sem ventriculomegalia" conserva a palavra e
+ * nega o achado (achado do Codex, 19/08).
+ *
+ * Só pega a negação imediatamente antes do termo — não é análise semântica, e
+ * não pretende ser. É a diferença entre a fraude óbvia e nenhuma trava.
+ */
+const NEGACAO = /(?:sem|não|nao|ausência de|ausencia de|nenhum[ao]?|exclui|descarta|afasta|livre de|isent[ao] de)\s+(?:sinais\s+de\s+|evidência\s+de\s+|evidencia\s+de\s+)?$/i;
+
+export function negaOTermo(frase: string, termo: string): boolean {
+  const t = termo.toLowerCase();
+  const f = frase.toLowerCase();
+  let i = f.indexOf(t);
+  let achouAfirmado = false;
+  while (i !== -1) {
+    // 40 caracteres é o bastante para "sem evidência de " e sobra.
+    if (!NEGACAO.test(f.slice(Math.max(0, i - 40), i))) achouAfirmado = true;
+    i = f.indexOf(t, i + t.length);
+  }
+  return !achouAfirmado;
+}
+
 const CABECALHO_RE = /^\s*(CONCLUS[ÃA]O|IMPRESS[ÃA]O|ACHADOS|T[ÉE]CNICA|COMENT[ÁA]RIOS|OS SEGUINTES ASPECTOS)/im;
 
 export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): string[] {
@@ -363,12 +428,9 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
       erros.push(`variante inexistente em "${o.slot}": ${o.variant}`);
       continue;
     }
-    if (alvo.personalizavel === false) {
-      erros.push(`"${o.slot}" descreve um estado clínico e não pode ser reescrito`);
-      continue;
-    }
-    if (alvo.montar) {
-      erros.push(`"${o.slot}" é montado pelo motor e não pode ser reescrito`);
+    const naoReescrevivel = motivoNaoReescrevivel(slot, alvo, variantePadrao(slot));
+    if (naoReescrevivel) {
+      erros.push(`"${o.slot}": ${naoReescrevivel}`);
       continue;
     }
     if (o.value.trim() === "") {
@@ -397,6 +459,11 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
         erros.push(
           `a sua frase precisa continuar dizendo o achado — use "${alternativas[0]}"` +
             (alternativas.length > 1 ? ` (ou ${alternativas.slice(1).map((a) => `"${a}"`).join(", ")})` : ""),
+        );
+      } else if (alternativas.every((termo) => negaOTermo(o.value, termo))) {
+        // Conservou a palavra e NEGOU o achado: "sem ventriculomegalia".
+        erros.push(
+          `a sua frase nega o achado que ela deveria descrever — "${alternativas[0]}" aparece negado`,
         );
       }
     }

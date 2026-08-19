@@ -141,8 +141,22 @@ check("com placenta PRÉVIA a personalização de normalidade não mascara o ach
 
 check("tentar reescrever a variante de estado alterado é rejeitado na validação",
   erros([{ op: "replace_phrase", slot: "placenta", variant: "descrita", value: "\nPlacenta normal." }]).length === 1);
+// A frase perde o dado E o diagnóstico — duas travas, e basta uma para
+// recusar. Cravar a CONTAGEM travava o teste na implementação, não na garantia.
 check("tentar reescrever o líquido alterado (oligoâmnio) é rejeitado",
-  erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Líquido normal." }]).length === 1);
+  erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Líquido normal." }]).length > 0);
+// CONSERVAR o dado e NEGAR o achado — "sem {liquido_classe}" mantém a chave e
+// inverte o laudo. Era o buraco que sobrava depois de termosObrigatorios
+// (achado do Codex, 19/08).
+check("…e negar o achado conservando o dado também é rejeitado",
+  erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Líquido amniótico sem {liquido_classe}." }]).length > 0,
+  `    erros: ${JSON.stringify(erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Líquido amniótico sem {liquido_classe}." }]))}`);
+// E o caminho legítimo continua aberto: outra redação, mesmo dado.
+check("…mas outra redação conservando o dado é aceita",
+  erros([{ op: "replace_phrase", slot: "liquido_amniotico", variant: "alterado", value: "Volume de líquido amniótico alterado ({liquido_classe})." }]).length === 0);
+// A VARIANTE DE ACHADO sem termo declarado está travada no piloto.
+check("variante de achado sem termo obrigatório não é reescrevível",
+  erros([{ op: "replace_phrase", slot: "cordao_umbilical", variant: "arteria_unica", value: "O cordão tem dois vasos." }]).length > 0);
 
 const OLIGO = f({ liquido_tipo: "alterado", liquido_classe: "oligoâmnio" });
 check("personalizar o líquido NORMAL não afeta o laudo com oligoâmnio",

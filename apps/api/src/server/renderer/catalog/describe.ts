@@ -6,7 +6,7 @@
  * Aqui expomos só o que é apresentável e editável, além do motivo pelo qual
  * um slot NÃO é editável — o usuário precisa entender a recusa, não só sofrê-la.
  */
-import { variantePadrao } from "./engine";
+import { motivoNaoReescrevivel, variantePadrao } from "./engine";
 import { achadosDoCatalogo, dadosNomeados } from "./projetarModelo";
 import type { Catalog, SlotContext } from "./types";
 
@@ -80,14 +80,18 @@ export type CatalogDescription = {
   achados?: AchadoProjetado[];
 };
 
-function motivoNaoEditavel<F>(v: { montar?: unknown; personalizavel?: boolean }): string | undefined {
-  if (v.personalizavel === false) {
-    return "Descreve um achado alterado. O texto é escrito pelo sistema a partir do que foi ditado, para que uma personalização de normalidade nunca oculte uma patologia.";
-  }
-  if (v.montar) {
-    return "É montado pelo sistema a partir dos dados do exame (listas, cálculos ou concordância), e não a partir de uma frase fixa.";
-  }
-  return undefined;
+/**
+ * O motivo vem de `engine.motivoNaoReescrevivel` — a MESMA função que a
+ * validação usa. Duplicar a regra aqui já produziu uma tela que oferecia o que
+ * o servidor recusava.
+ */
+function motivoNaoEditavel<F>(
+  slot: { variantes: { id: string }[]; removivel?: boolean } | undefined,
+  v: { id: string; montar?: unknown; personalizavel?: boolean; termosObrigatorios?: string[][] },
+  padrao: { id: string } | undefined,
+): string | undefined {
+  if (!slot) return undefined;
+  return motivoNaoReescrevivel(slot, v, padrao);
 }
 
 function achatar(ordem: (string | { repetirPorFeto: string[] })[]): string[] {
@@ -137,8 +141,8 @@ export function describeCatalog<F>(
     ordens: contextos.map((c) => ({ nome: c.nome, slots: achatar(catalog.ordem(c.ctx)) })),
     ...(projetarModelos ? { modelos: projetarModelos(contextos) } : {}),
     achados: achadosDoCatalogo(catalog, (slotId, v) => {
-      const motivo = motivoNaoEditavel(v);
       const slot = catalog.slots.find((s) => s.id === slotId);
+      const motivo = motivoNaoEditavel(slot, v, slot ? variantePadrao(slot) : undefined);
       const obrig = [
         ...(slot?.placeholdersObrigatorios ?? []),
         ...(v.placeholdersObrigatorios ?? []),
@@ -164,7 +168,7 @@ export function describeCatalog<F>(
         // A mesma variante que `replace_phrase` sem `variant` vai atingir.
         const padrao = variantePadrao(s);
         return s.variantes.map((v) => {
-        const motivo = motivoNaoEditavel(v);
+        const motivo = motivoNaoEditavel(s, v, padrao);
         return {
           id: v.id,
           ...(v.frase !== undefined ? { frase: v.frase } : {}),

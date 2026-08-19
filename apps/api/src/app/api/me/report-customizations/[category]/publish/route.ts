@@ -22,7 +22,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request, ctx: { params: Promise<{ category: string }> }) {
   const { category } = await ctx.params;
-  const r = await resolverContexto(req, category);
+  // `publica` = a ação que muda o laudo. Desligar (DELETE, abaixo) nunca é
+  // barrado: sair da personalização tem de ser sempre possível.
+  const r = await resolverContexto(req, category, { publica: true });
   if ("erro" in r) return r.erro;
 
   try {

@@ -19,7 +19,7 @@ import { OBSTETRICA_SAMPLES } from "@/server/renderer/catalog/OBSTETRICA.samples
 import { renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.render";
 import { aplicarFrasesPersonalizadas } from "@/server/pipeline/frasesPersonalizadas";
 import { frasesBaseDe, frasesDeOperacoes } from "./resolveFrases";
-import { usuarioLiberado } from "@/server/renderer/catalog/engine";
+import { motivoNaoReescrevivel, negaOTermo, usuarioLiberado, variantePadrao } from "@/server/renderer/catalog/engine";
 import { versaoDerivadaDe } from "@/server/renderer/catalog/modeloNormalCatalog";
 import { laudoPadraoDe } from "@/server/renderer/catalog/modeloNormalRegistry";
 import { linhasDoLaudo } from "@/server/renderer/catalog/modeloNormal";
@@ -311,6 +311,30 @@ console.log("5 · as travas que o Codex pediu antes de ligar a flag");
   t("allowlist vazia não libera ninguém", !usuarioLiberado("", "abc"));
   t("usuário sem id não é liberado", !usuarioLiberado("abc", ""));
   t("só o id listado é liberado", usuarioLiberado("xyz, abc", "abc") && !usuarioLiberado("xyz", "abc"));
+
+  // 5b-bis · POLARIDADE: conservar a palavra e negar o achado
+  t("negar o achado conservando o termo é recusado",
+    negaOTermo("Ventrículos sem ventriculomegalia.", "ventriculomegalia"));
+  t("…e 'sem sinais de X' também", negaOTermo("Sem sinais de hidropsia fetal.", "hidropsia"));
+  t("…e 'ausência de X'", negaOTermo("Ausência de ascite.", "ascite"));
+  t("…mas afirmar não é negar", !negaOTermo("Ventriculomegalia moderada.", "ventriculomegalia"));
+  t("…e uma menção negada + uma afirmada conta como afirmada",
+    !negaOTermo("Sem ventriculomegalia à direita; ventriculomegalia à esquerda.", "ventriculomegalia"));
+
+  // 5b-ter · toda variante de ACHADO ou é intocável ou declara o termo
+  {
+    const semGarantia: string[] = [];
+    for (const sl of OBSTETRICA_CLASSICO.slots) {
+      const padrao = variantePadrao(sl);
+      for (const v of sl.variantes) {
+        if (v.exemplo === undefined) continue; // não é frase de achado
+        const bloqueada = motivoNaoReescrevivel(sl, v, padrao) !== undefined;
+        if (!bloqueada && !(v.termosObrigatorios?.length)) semGarantia.push(`${sl.id}/${v.id}`);
+      }
+    }
+    t("toda variante de achado editável declara o termo que sobrevive",
+      semGarantia.length === 0, semGarantia.join(", "));
+  }
 
   // 5c · o modelo derivado deixou de ser eternamente v0
   const vPartes = versaoDerivadaDe("PARTES_MOLES", "CLASSICO_COMPLETO");

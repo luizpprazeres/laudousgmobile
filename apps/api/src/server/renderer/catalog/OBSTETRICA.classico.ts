@@ -959,6 +959,15 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
           frase: "Líquido amniótico em quantidade alterada ({liquido_classe}).",
           conclusao: "{liquido_classe_cap}.",
           placeholdersObrigatorios: ["liquido_classe"],
+          /**
+           * Aqui o DIAGNÓSTICO viaja dentro do dado: quem diz "oligoâmnio" ou
+           * "polidrâmnio" é `{liquido_classe}`, não uma palavra da frase.
+           *
+           * Exigir a própria chave como termo obrigatório é o que libera a
+           * reescrita desta variante sem abrir mão da garantia — e ainda faz a
+           * trava de polaridade valer: "sem {liquido_classe}" é recusado.
+           */
+          termosObrigatorios: [["{liquido_classe}"]],
           // `exemplo` é o que faz esta variante aparecer na lista de ACHADOS —
           // ela vive num slot incondicional, então sem isto sumia (Codex 19/08).
           exemplo: { liquido_tipo: "alterado", liquido_classe: "oligoâmnio" },

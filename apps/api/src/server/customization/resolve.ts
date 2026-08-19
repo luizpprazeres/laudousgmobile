@@ -18,8 +18,8 @@
  *   5. as operações publicadas AINDA valem nesse catálogo-base.
  */
 
-import { env } from "@/server/env";
-import { applyCustomization, catalogEnabledFor, usuarioLiberado, validateOperations } from "@/server/renderer/catalog/engine";
+import { applyCustomization, validateOperations } from "@/server/renderer/catalog/engine";
+import { personalizacaoAtiva } from "./ativa";
 import { ehEstiloVivo, resolveCatalogo } from "@/server/renderer/catalog/registry";
 import type { Catalog } from "@/server/renderer/catalog/types";
 import { lerPublicada, type Executor } from "./store";
@@ -54,26 +54,15 @@ export async function resolverPersonalizacao(
   _db?: Executor,
 ): Promise<PersonalizacaoResolvida> {
   try {
-    const e = env();
-
-    if (!catalogEnabledFor(e.MODEL_CUSTOMIZATION_CATEGORIES, args.categoryCode)) {
-      return NAO("personalização desligada para esta categoria");
-    }
-    /**
-     * ALLOWLIST NOMINAL — categoria não é canário de usuário.
-     *
-     * Ligar a categoria habilitaria a personalização para todo médico que
-     * tivesse publicado nela, não só para quem está pilotando. Numa função que
-     * muda o texto do laudo por decisão do usuário, o piloto é nominal.
-     */
-    if (!usuarioLiberado(e.MODEL_CUSTOMIZATION_USER_IDS, args.userId)) {
-      return NAO("personalização ainda não liberada para este usuário");
-    }
-    // Pré-requisito real, não redundância: sem o catálogo ligado o laudo é
+    /** A MESMA regra da tela — ver `ativa.ts`. */
+    const a = personalizacaoAtiva({
+      userId: args.userId,
+      categoria: args.categoryCode,
+      estilo: args.styleCode,
+    });
+    // `personalizacaoAtiva` já cobre o catálogo: sem ele ligado o laudo é
     // montado pelo renderer antigo, que não conhece slot nenhum.
-    if (!catalogEnabledFor(e.MODEL_CATALOG_CATEGORIES, args.categoryCode)) {
-      return NAO("catálogo desligado para esta categoria");
-    }
+    if (!a.ativa) return NAO(a.explicacao);
     if (!ehEstiloVivo(args.styleCode)) return NAO(`estilo desconhecido: ${args.styleCode}`);
 
     const entrada = resolveCatalogo(args.categoryCode, args.styleCode);

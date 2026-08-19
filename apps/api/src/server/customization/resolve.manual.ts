@@ -240,7 +240,13 @@ async function main() {
         // deste código não muda nenhum laudo.
         check("com flags OFF, não aplica mesmo publicada", r.aplicar === false, r);
         if (!r.aplicar) {
-          check("o motivo é a flag, não outra coisa", r.motivo.includes("desligada"), r.motivo);
+          // O motivo é de CONFIGURAÇÃO — usuário fora da allowlist ou categoria
+          // desligada, conforme o que estiver faltando. Ver `ativa.ts`.
+          check(
+            "o motivo é a configuração, não outra coisa",
+            /liberada|ligada|monta os laudos/.test(r.motivo),
+            r.motivo,
+          );
         }
         const laudo = renderObstetricaCatalogo({ findings: amostra, flags: FLAGS });
         check("laudo idêntico ao de produção", laudo === laudoDeProducaoHoje(amostra));
