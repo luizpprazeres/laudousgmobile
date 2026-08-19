@@ -133,10 +133,17 @@ dado (`renderer/catalog/`), não literais no código. As demais categorias têm 
 1. **Campo AUSENTE ≠ campo NULO.** Em predicado de slot condicional use
    `!= null`. A matriz sintética não pega — o feto-base dela crava tudo como
    `null`. Só `equivalencia-real` pega.
-2. **Um campo não pode decidir duas coisas.** Aconteceu 6×: método × classe do
+2. **Um campo não pode decidir duas coisas.** Aconteceu 8×: método × classe do
    líquido, topografia × relação da placenta, modelo × substantivo do embrião,
    medida × anormalidade da pielectasia. Achado patológico vira **slot próprio
    condicional**.
+   A variante mais cara é **flag × caso**: `OBST_BIOMETRIA_DET` (12/08) e
+   `OBST_IG_SANITY` (19/08, pego em produção) decidiam se o CATÁLOGO cobria o
+   laudo. Ambas ligadas em produção ⇒ o catálogo **nunca rodava**, e nada
+   indicava isso. A pergunta certa nunca é "a flag está ligada", é "isto muda
+   ESTE laudo" — hoje `igSanityAltera(findings, igCorrection)`.
+   Por isso a systemMessage passou a registrar **por que** o catálogo não foi
+   usado (`modelo: clássico (motivo)`).
 3. **Nunca mexer no `OBSTETRICA_JSON_SCHEMA`** sem prompt e consumidor na mesma
    leva — é o contrato vivo da extração, e o `DOPPLER_OBSTETRICO` herda.
 4. **`CodingKeys` em snake_case no Swift** briga com o `convertFromSnakeCase` do

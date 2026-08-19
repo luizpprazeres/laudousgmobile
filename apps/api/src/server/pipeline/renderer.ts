@@ -19,6 +19,7 @@ import {
   assembleAbdomenObjetivo,
 } from "../renderer/phrases/ABDOMEN_TOTAL";
 import {
+  igSanityAltera,
   renderObstetrica,
   type ObstetricaFindings,
 } from "../renderer/categories/OBSTETRICA";
@@ -545,6 +546,17 @@ export async function* runRendererStream(args: {
         const grannum = env().GRANNUM_PLACENTA === "true";
         const golfBallObst = golfBallSingle(ofnd.numero_fetos);
         const igSanity = env().OBST_IG_SANITY === "true";
+        /**
+         * A sanidade só EXCLUI o catálogo quando muda alguma coisa neste laudo.
+         *
+         * Antes bastava a flag estar ligada — e ela está —, o que bloqueava o
+         * catálogo em 100% dos laudos e tornava MODEL_CATALOG_CATEGORIES
+         * inócua. Mesmo defeito da biometria determinística (12/08), pego de
+         * novo em produção no primeiro dia do catálogo (19/08): o Luiz ditou
+         * "batimentos cardíacos fetais não visualizados" e recebeu
+         * "Batimentos cardíacos ritmados (BCF = ____ bpm)".
+         */
+        const igSanityAtua = igSanity && igSanityAltera(ofnd, igCorrection);
 
         // O catálogo (projeto modelos) foi validado byte-a-byte contra o
         // renderer — 4320/4320 sintéticas e, com dado real de produção, 9/9.
@@ -561,7 +573,7 @@ export async function* runRendererStream(args: {
         // 100% dos laudos — a flag está ligada em produção —, o que tornava
         // MODEL_CATALOG_CATEGORIES inócua sem que nada indicasse isso.
         // Descoberto pelo harness contra laudos reais, 12/08.
-        const catalogoCobreEsteCaso = !objetivo && golfBallObst === null && !igSanity;
+        const catalogoCobreEsteCaso = !objetivo && golfBallObst === null && !igSanityAtua;
 
         if (usaCatalogo("OBSTETRICA") && catalogoCobreEsteCaso) {
           // Item 7: o overlay do médico entra aqui, e só aqui. Sem
@@ -670,6 +682,23 @@ export async function* runRendererStream(args: {
             /* observacional — nunca derruba a geração */
           }
         } else {
+          /**
+           * POR QUE o catálogo não montou este laudo — na systemMessage.
+           *
+           * Sem isto, o catálogo desligar-se por uma condição inesperada é
+           * indistinguível de ele nunca ter sido ligado. Aconteceu duas vezes
+           * (biometria em 12/08, sanidade de IG em 19/08), e nas duas a única
+           * pista foi comparar textos à mão. Um laudo que não passou pelo
+           * catálogo agora diz o motivo.
+           */
+          const porQueNao = !usaCatalogo("OBSTETRICA")
+            ? "categoria fora de MODEL_CATALOG_CATEGORIES"
+            : objetivo
+              ? "estilo objetivo"
+              : golfBallObst !== null
+                ? "golf ball ditado"
+                : "sanidade de IG atua neste laudo";
+          notaPersonalizacao += ` | modelo: clássico (${porQueNao})`;
           fullText = renderObstetrica(ofnd, null, {
             objetivo, igCorrection, flexivel,
             // Grannum na placenta (grau parentético + inferência de textura) — flag OFF default.

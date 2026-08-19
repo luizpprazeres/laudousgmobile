@@ -946,6 +946,27 @@ function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string
 }
 
 /**
+ * A sanidade de IG MUDA ALGUMA COISA neste laudo?
+ *
+ * `OBST_IG_SANITY` é uma flag, e estava sendo usada para decidir se o CATÁLOGO
+ * cobria o caso — bloqueando-o em 100% dos laudos enquanto a flag estivesse
+ * ligada. É o mesmo defeito que a biometria determinística causou em 12/08, e
+ * pelo mesmo motivo: um campo decidindo duas coisas independentes.
+ *
+ * A pergunta certa não é "a flag está ligada", é "a sanidade altera ESTE
+ * laudo". Ela só atua quando a divergência entre a IG de referência e a
+ * biometria é implausível — raro. Nos demais, os dois caminhos produzem o mesmo
+ * texto e o catálogo cobre o caso.
+ */
+export function igSanityAltera(f: ObstetricaFindings, igCorrection: boolean): boolean {
+  const lead = "Gestação em torno de ";
+  return (
+    JSON.stringify(igResultFor(f, igCorrection, lead, false)) !==
+    JSON.stringify(igResultFor(f, igCorrection, lead, true))
+  );
+}
+
+/**
  * Dispatcher fino: escolhe o estilo de redação. Clássico (default) preserva 100%
  * o comportamento anterior; objetivo usa TÉCNICA/ACHADOS/IMPRESSÃO (Sprint 2),
  * reusando a MESMA extração e os MESMOS cálculos determinísticos.
