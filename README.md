@@ -53,7 +53,8 @@ Monorepo que serve **(1) o backend Next.js + packages compartilhados** (consumid
 .
 ├── apps/
 │   ├── api/        🟢 Next.js — VIVO em prod
-│   └── mobile/     ❄️ Expo — CONGELADO (não desenvolver)
+│   ├── mobile/     🟢 Expo — app Android ATIVO
+│   └── lab/        🟢 Bancada interna (lab.laudousg.com)
 ├── packages/
 │   ├── shared/     🟢 Zod schemas + tipos
 │   └── db/         🟢 Drizzle schema + migrations
@@ -107,6 +108,79 @@ pnpm -F api build
 
 ---
 
+## Modelo de laudo — catálogo e Biblioteca
+
+O laudo obstétrico é montado a partir de um **catálogo**: as frases vivem como
+dado (`renderer/catalog/`), não literais no código. As demais categorias têm o
+**modelo derivado** do próprio renderer — não há cópia do texto clínico.
+
+**Ligado em produção (19/08):** `MODEL_CATALOG_CATEGORIES=OBSTETRICA`. Rollback
+é remover a variável.
+
+### O que isso corrigiu
+
+| Defeito | Onde estava |
+|---|---|
+| Feto em óbito saía com *"Batimentos cardíacos ritmados"* | renderer clássico ignorava `bcf_alteracao` — **1 laudo real afetado**, `08f9b6a4` de 18/08 |
+| Conclusão gemelar não dizia de qual feto | `instance` existia no segmento e a serialização o descartava |
+| *"O cordão umbilical tem aspecto normal"* em 100% dos laudos | `!== null` num campo que chega **ausente** — `undefined !== null` é `true` |
+| Embrião × feto errado entre 10s0d e 13s6d | um flag decidia o modelo **e** a palavra |
+| Patologias nunca extraídas | 8 dos 10 campos não existiam no contrato de extração |
+| Biblioteca só mostrava obstétrica | categoria cravada nos três apps |
+
+### As armadilhas que já custaram caro
+
+1. **Campo AUSENTE ≠ campo NULO.** Em predicado de slot condicional use
+   `!= null`. A matriz sintética não pega — o feto-base dela crava tudo como
+   `null`. Só `equivalencia-real` pega.
+2. **Um campo não pode decidir duas coisas.** Aconteceu 6×: método × classe do
+   líquido, topografia × relação da placenta, modelo × substantivo do embrião,
+   medida × anormalidade da pielectasia. Achado patológico vira **slot próprio
+   condicional**.
+3. **Nunca mexer no `OBSTETRICA_JSON_SCHEMA`** sem prompt e consumidor na mesma
+   leva — é o contrato vivo da extração, e o `DOPPLER_OBSTETRICO` herda.
+4. **`CodingKeys` em snake_case no Swift** briga com o `convertFromSnakeCase` do
+   `APIClient` e o decode lança em silêncio. Custou dois deploys.
+5. **Verde na matriz não é verde no que você escreveu** — ela fixa os campos
+   patológicos em `null`.
+
+### Os gates
+
+```bash
+cd apps/api
+
+# equivalência sintética: o catálogo é byte-idêntico ao renderer clássico
+pnpm exec tsx src/server/renderer/__tests__/catalog-equivalence.manual.ts
+
+# o que a Biblioteca desenha, por categoria e cenário
+pnpm exec tsx --env-file=../../.env src/server/renderer/__tests__/modelo-projetado.manual.ts
+
+# o contrato de extração cobre o que o renderer consome
+pnpm exec tsx src/server/renderer/__tests__/contrato-extracao-obstetrica.manual.ts
+
+# O GATE QUE MAIS PEGA DEFEITO — catálogo × laudos que a produção gerou.
+# EXIGE as flags de produção no comando; sem elas a comparação vira ruído.
+OBST_BIOMETRIA_DET=true IG_REFERENCE_CORRECTION=true \
+FLEXIBLE_CONCLUSION=true GRANNUM_PLACENTA=true \
+  pnpm exec tsx --env-file=../../.env src/server/customization/equivalencia-real.manual.ts
+```
+
+> ⚠️ Depois do flip, `equivalencia-real` só compara o **cohort pré-flag** — os
+> laudos que a produção montou com o renderer clássico. Ele avisa quando esse
+> cohort encolhe; quando chegar a zero, deixa de medir qualquer coisa.
+
+### Biblioteca
+
+13 categorias, com técnica, corpo e conclusão. O médico reescreve a redação; os
+invariantes protegem o laudo: slot que não sai (`removivel`), dado que não some
+(`placeholdersObrigatorios` / lacuna), frase obrigatória (`obrigatorio`).
+
+**Dormente:** `MODEL_CUSTOMIZATION_CATEGORIES` está vazia — nenhuma
+personalização muda laudo ainda. A Biblioteca **não aparece no Android**: o
+componente existe, mas nenhuma tela o abre.
+
+---
+
 ## Qualidade & aprendizado contínuo
 
 - **`docs/aprendizado-correcoes-luiz.md`** — corpus vivo ("memória infinita") do que a IA
@@ -136,9 +210,10 @@ pnpm -F api build
 
 ## Backlog de limpeza (futuro, não urgente)
 
-- [ ] Extrair calculadoras RN (`apps/mobile/src/features/generate/IGCalculatorSheet.tsx`, `DopplerCalculatorSheet.tsx`) pra `_extraction/from-laudousg-mobile/calculators/` antes de deletar `apps/mobile/`
-- [ ] Após extração: deletar `apps/mobile/` + entrada em `pnpm-workspace.yaml` + deps órfãs
 - [ ] Renomear pasta local pra `laudousg-backend` (manter repo GitHub como `laudousgmobile` por causa do Vercel git-link)
 - [ ] Atualizar referências em `~/laudousg-swift/CLAUDE.md` + `ARCHITECTURE.md` pro novo path
+
+> O item "deletar `apps/mobile/`" saiu do backlog: o app Android foi retomado e
+> está ativo.
 
 Plano completo em `~/laudousg-swift/CLAUDE.md` (seção "Relação entre repos").
