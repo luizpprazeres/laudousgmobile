@@ -99,6 +99,27 @@ async function main() {
     t("feto B sem BCF inventado", b?.bcf_bpm === null, JSON.stringify(b?.bcf_bpm));
   }
 
+  // ------------------------------------------------------ CASO 3b · achados novos
+  console.log("\n3b · vísceras e anexos — os campos que entraram em 19/08");
+  {
+    const f = await extrai(
+      "OBSTETRICA",
+      "Ultrassom obstétrico. Feto único, cefálico, 28 semanas. BCF 140. " +
+        "DBP 72, CC 265, CA 240, fêmur 53. Peso 1200 gramas. " +
+        "Pelve renal direita medindo 6,2 milímetros, pielectasia à direita. Pelve renal esquerda 3,1. " +
+        "Alças intestinais hiperecogênicas. Ascite fetal. " +
+        "Placenta posterior. Maior bolsão vertical de 4,2 centímetros.",
+    );
+    const ft = f.fetos[0]!;
+    t("pielectasia à direita marcada", ft.pielectasia_direita === true, JSON.stringify(ft.pielectasia_direita));
+    t("medida da pelve direita", ft.pielectasia_direita_mm === 6.2, JSON.stringify(ft.pielectasia_direita_mm));
+    t("pelve ESQUERDA medida mas NÃO marcada como alterada",
+      ft.pielectasia_esquerda !== true, JSON.stringify(ft.pielectasia_esquerda));
+    t("intestino hiperecogênico", ft.intestino_hiperecogenico === true, JSON.stringify(ft.intestino_hiperecogenico));
+    t("ascite", ft.ascite === true, JSON.stringify(ft.ascite));
+    t("hidropsia NÃO deduzida de ascite", ft.hidropsia !== true, JSON.stringify(ft.hidropsia));
+  }
+
   // ------------------------------------------------------------------ CASO 4
   console.log("\n4 · DOPPLER herda o contrato e não quebra");
   {
