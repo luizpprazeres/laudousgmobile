@@ -502,8 +502,9 @@ function makeStyles(t: ColorTokens) {
       fontSize: 12,
       lineHeight: 17,
     },
+    // A COR vem da linha (ver reviewMarkers.tsx); aqui fica só o peso, que
+    // destaca o "(?)" dentro do próprio realce.
     reviewMarker: {
-      color: "#7C3AED",
       fontFamily: FONT.bold,
     },
     codeWrap: {

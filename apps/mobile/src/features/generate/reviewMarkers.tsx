@@ -1,40 +1,58 @@
 import type { ReactNode } from "react";
 import { Text } from "react-native";
 import type { StyleProp, TextStyle } from "react-native";
+import { COR_REVISAR, REVIEW_MARKER_RE, corDaLinha } from "./reviewMarkers.rules";
 
-export const REVIEW_MARKER_COLOR = "#7C3AED";
-const REVIEW_MARKER_RE = /\s*\[REVISAR\b[^\]]*\]/g;
+export {
+  COR_FALTA,
+  COR_REVISAR,
+  corDaLinha,
+  stripReviewMarkers,
+} from "./reviewMarkers.rules";
 
-export function stripReviewMarkers(text: string): string {
-  return text.replace(REVIEW_MARKER_RE, "");
-}
+/** @deprecated use COR_REVISAR/COR_FALTA — mantido para não quebrar imports. */
+export const REVIEW_MARKER_COLOR = COR_REVISAR.fg;
 
+/**
+ * Destaca as LINHAS que pedem atenção — não só o marcador.
+ *
+ * A versão anterior pintava apenas um "(?)" roxo de 3 caracteres no meio do
+ * texto, e ignorava `____` por completo: quem lia no Android via um laudo com
+ * lacunas sem nenhum sinal, e quem lia no iOS via a linha inteira realçada. Os
+ * dois apps mostravam coisas diferentes para o mesmo laudo.
+ *
+ * A regra da cor vive em `reviewMarkers.rules.ts`, sem React, porque é a parte
+ * que importa e a que erra.
+ */
 export function renderReviewHighlighted(
   text: string,
   markerStyle?: StyleProp<TextStyle>,
 ): ReactNode[] {
-  const parts: ReactNode[] = [];
-  let lastIndex = 0;
+  const linhas = text.split("\n");
+  const out: ReactNode[] = [];
 
-  for (const match of text.matchAll(REVIEW_MARKER_RE)) {
-    const index = match.index ?? 0;
-    if (index > lastIndex) {
-      parts.push(text.slice(lastIndex, index));
+  linhas.forEach((linha, i) => {
+    const cor = corDaLinha(linha);
+    const temRevisar = linha.includes("[REVISAR");
+
+    // O marcador verboso vira "(?)" discreto — some sozinho ao copiar/enviar,
+    // porque `stripReviewMarkers` age sobre o texto, não sobre a exibição.
+    const exibida = temRevisar ? linha.replace(REVIEW_MARKER_RE, " (?)") : linha;
+
+    if (cor) {
+      out.push(
+        <Text
+          key={`l-${i}`}
+          style={[{ backgroundColor: cor.bg, color: cor.fg }, temRevisar ? markerStyle : null]}
+        >
+          {exibida}
+        </Text>,
+      );
+    } else {
+      out.push(exibida);
     }
-    parts.push(
-      <Text
-        key={`review-${index}-${parts.length}`}
-        style={[{ color: REVIEW_MARKER_COLOR, fontWeight: "700" }, markerStyle]}
-      >
-        {" (?)"}
-      </Text>,
-    );
-    lastIndex = index + match[0].length;
-  }
+    if (i < linhas.length - 1) out.push("\n");
+  });
 
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts;
+  return out;
 }
