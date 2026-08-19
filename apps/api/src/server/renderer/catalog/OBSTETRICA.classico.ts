@@ -434,17 +434,25 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
   categoria: "OBSTETRICA",
   estilo: "CLASSICO_COMPLETO",
   /**
-   * v2 (2026-08-16) — 33 → 53 variantes.
+   * v3 (2026-08-19) — as patologias viraram TEXTO, e 7 slots novos entraram.
    *
-   * Slots novos: `placenta_achado`, `cranio_achado`, `cordao_umbilical`.
-   * Variantes novas em `bcf`, `bcf_gemelar` e `movimentos_fetais`.
-   * `feto` ganhou `inicial_embriao` × `inicial_feto` (corte de 10 semanas).
+   * v2 (16/08): 33 → 53 variantes; slots `placenta_achado`, `cranio_achado`,
+   * `cordao_umbilical`; corte de 10 semanas em `feto`.
+   * v3 (19/08): 17 variantes patológicas saíram de `montar()` para `frase` com
+   * placeholder (50 das 55 são editáveis agora); `SlotVariant.padrao` e
+   * `placeholdersObrigatorios` por variante; slots de vísceras (pielectasia,
+   * intestino, ascite, derrame pleural, hidropsia, estômago) e de anexos
+   * (hematoma perigestacional, gestação inviável); `ovarios` e
+   * `vesicula_vitelina` ganharam achados e viraram `removivel: false`.
    *
-   * O bump faz personalizações gravadas contra a v1 aparecerem como
-   * `baseDesatualizado` — que é o comportamento certo: a estrutura mudou, e o
-   * médico precisa saber antes de publicar por cima.
+   * ⚠️ O BUMP É OBRIGATÓRIO quando a ESTRUTURA muda, não só quando um slot
+   * some. Uma personalização gravada contra a v2 de 16/08 seria aplicada, em
+   * silêncio, contra um catálogo em que `ovarios` deixou de ser removível e
+   * `placenta_achado` deixou de ser bloco fechado — e a trava de versão
+   * (`applyCustomization`) não teria como perceber, porque o número seria o
+   * mesmo. Hoje o custo é zero: a tabela de personalizações está VAZIA.
    */
-  versao: 2,
+  versao: 3,
   variaveis: VARIAVEIS_OBSTETRICA,
 
   /**

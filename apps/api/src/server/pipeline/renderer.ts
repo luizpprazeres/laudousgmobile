@@ -597,9 +597,31 @@ export async function* runRendererStream(args: {
               objetivo, igCorrection, flexivel, grannum,
               golfBall: golfBallObst, igSanity,
             });
+            /**
+             * O FALLBACK DESCARTA A PERSONALIZAÇÃO — e isso precisa ficar
+             * gravado, não só o motivo do fallback.
+             *
+             * O renderer clássico não conhece as frases do médico. Quando o
+             * catálogo falha, o laudo sai correto mas COM A REDAÇÃO PADRÃO, e
+             * ele não tem como saber: para ele, a personalização está
+             * publicada e valendo. Sem esta marca, "por que este laudo saiu
+             * diferente dos meus outros?" não tem resposta na auditoria.
+             */
             notaPersonalizacao += ` | modelo: clássico (catálogo falhou: ${
               err instanceof Error ? err.message.slice(0, 80) : "erro"
-            })`;
+            })${p?.aplicar ? " | ⚠️ PERSONALIZAÇÃO NÃO APLICADA (fallback)" : ""}`;
+            try {
+              args.onModelo?.({
+                catalogId: OBSTETRICA_CATALOG_ID,
+                catalogVersao: OBSTETRICA_CATALOG_VERSAO,
+                customizacaoVersao: null,
+                motivoSemPersonalizacao: `fallback para o renderer clássico: ${
+                  err instanceof Error ? err.message.slice(0, 120) : "erro"
+                }`,
+              });
+            } catch {
+              /* observacional — nunca derruba a geração */
+            }
           }
         } else {
           fullText = renderObstetrica(ofnd, null, {
