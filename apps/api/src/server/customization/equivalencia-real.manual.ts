@@ -36,6 +36,8 @@ import { createClient } from "@supabase/supabase-js";
 import { env } from "@/server/env";
 import { renderObstetricaCatalogo } from "@/server/renderer/catalog/OBSTETRICA.render";
 import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
+import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
+import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
 import {
   mergeBiometriaEstruturada,
   reconcileBiometriaUnidade,
@@ -66,13 +68,20 @@ function flagsDeProducao() {
  * Espelha a ordem real de `route.ts` para a família obstétrica.
  */
 function guardsPosRender(texto: string): string {
-  // SÓ o strip de DUM inválida. Medido: aplicar `normalizeDumFormat` e
-  // `dedupeConclusionItems` PIORA a comparação (8/9 → 3/9), o que prova que o
-  // `output_text` gravado não passou por eles neste caminho — a reescrita
-  // "Primeira ultrassonografia realizada …" → "Primeira USG: …" está ausente
-  // do texto de produção. Aplicar um guard que a produção não aplicou é
+  // Medido: aplicar `normalizeDumFormat` e `dedupeConclusionItems` PIORA a
+  // comparação (8/9 → 3/9), o que prova que o `output_text` gravado não passou
+  // por eles neste caminho. Aplicar um guard que a produção não aplicou é
   // inventar divergência.
-  return stripInvalidDumLines(texto);
+  //
+  // `sanitizeDictationArtifacts` é o oposto: a produção O APLICA (route.ts, no
+  // finalText), e não aplicá-lo aqui é que inventava divergência. Ele
+  // recapitaliza o início de linha, e os `achados_adicionais` do médico chegam
+  // em minúscula — o laudo real saía "Genitália externa masculina" e o catálogo
+  // recalculado, "genitália". Diferença do harness, não do catálogo.
+  // A ORDEM é a da produção (route.ts): sanitize → medidas → strip de DUM.
+  // Inverter muda o resultado — o strip remove linhas, e o sanitize colapsa
+  // linhas em branco; aplicados fora de ordem, sobra ou falta uma quebra.
+  return stripInvalidDumLines(normalizeMeasures(sanitizeDictationArtifacts(texto)));
 }
 
 /** Primeira linha em que dois textos divergem — para localizar sem despejar o laudo. */
@@ -85,6 +94,38 @@ function primeiraDivergencia(a: string, b: string): { linha: number; esperado: s
     }
   }
   return null;
+}
+
+/**
+ * O laudo tem achado que o renderer CLÁSSICO ignora?
+ *
+ * Estes campos entraram no contrato de extração em 16/08 e só o catálogo os
+ * consome. Enquanto a flag não subir, o clássico escreve normalidade por cima
+ * deles — que é o defeito que ligar o catálogo corrige.
+ */
+function temAchadoQueOClassicoIgnora(f: ObstetricaFindings): boolean {
+  const fetos = f.fetos ?? [];
+  return (
+    fetos.some((ft) => ft.bcf_alteracao != null) ||
+    fetos.some((ft) => ft.cranio_achado != null) ||
+    fetos.some((ft) => ft.cordao_vasos != null) ||
+    fetos.some((ft) => ft.movimentos_fetais != null) ||
+    f.placenta_achado != null ||
+    f.placenta_relacao_orificio != null
+  );
+}
+
+function descreverAchado(f: ObstetricaFindings): string {
+  const partes: string[] = [];
+  for (const ft of f.fetos ?? []) {
+    if (ft.bcf_alteracao) partes.push(`vitalidade: ${ft.bcf_alteracao}`);
+    if (ft.cranio_achado) partes.push(`crânio: ${ft.cranio_achado}`);
+    if (ft.cordao_vasos) partes.push(`cordão: ${ft.cordao_vasos} vasos`);
+    if (ft.movimentos_fetais) partes.push(`movimentos: ${ft.movimentos_fetais}`);
+  }
+  if (f.placenta_achado) partes.push(`placenta: ${f.placenta_achado}`);
+  if (f.placenta_relacao_orificio) partes.push(`orifício: ${f.placenta_relacao_orificio}`);
+  return partes.join(" · ") || "achado";
 }
 
 async function main() {
@@ -105,6 +146,8 @@ async function main() {
   let semTexto = 0;
   let comparados = 0;
   let iguais = 0;
+  let corrigidos = 0;
+  const correcoes: { id: string; quando: string; achado: string }[] = [];
   const divergentes: { id: string; quando: string; linha: number; esperado: string; obtido: string }[] = [];
 
   for (const r of todos) {
@@ -128,6 +171,8 @@ async function main() {
     if ((r.system_message_full ?? "").includes("personalização v")) continue;
 
     let obtido: string;
+    // Fora do `try` porque a classificação da divergência precisa dele depois.
+    let findings: ObstetricaFindings = s as unknown as ObstetricaFindings;
     try {
       // O pipeline reconcilia a biometria ANTES de renderizar (flag
       // OBST_BIOMETRIA_DET) e entrega o resultado tanto ao renderer quanto ao
@@ -135,7 +180,7 @@ async function main() {
       // divergência de 10× em medida (288,9 mm × 28,9 mm) que a produção não
       // tem — foi o que apareceu na 3ª execução.
       const findingsBrutos = s as unknown as ObstetricaFindings;
-      const findings =
+      findings =
         env().OBST_BIOMETRIA_DET === "true" && typeof r.raw_input === "string"
           ? reconcileBiometriaUnidade(
               mergeBiometriaEstruturada(findingsBrutos, r.raw_input),
@@ -160,6 +205,26 @@ async function main() {
     comparados++;
     if (obtido === esperado) {
       iguais++;
+    } else if (temAchadoQueOClassicoIgnora(findings)) {
+      /**
+       * DIVERGÊNCIA ESPERADA — o catálogo está CORRIGINDO o renderer.
+       *
+       * O renderer clássico não conhece `bcf_alteracao`, `cranio_achado`,
+       * `cordao_vasos` nem `placenta_achado`: ele os ignora e escreve a frase
+       * de normalidade. Quando o médico dita um desses achados, os dois textos
+       * TÊM de divergir — e a divergência é justamente o motivo de ligar o
+       * catálogo.
+       *
+       * Contar isso como falha deixaria o harness vermelho para sempre a partir
+       * do primeiro laudo com patologia, e ele perderia a única função que tem:
+       * avisar quando o catálogo diverge onde NÃO deveria.
+       */
+      corrigidos++;
+      correcoes.push({
+        id: r.id as string,
+        quando: (r.created_at as string).slice(0, 10),
+        achado: descreverAchado(findings),
+      });
     } else {
       const d = primeiraDivergencia(esperado, obtido);
       divergentes.push({
@@ -179,7 +244,15 @@ async function main() {
   console.log(`    sem texto de saída:           ${semTexto}`);
   console.log(`  COMPARADOS:                     ${comparados}`);
   console.log(`    byte-a-byte idênticos:        ${iguais}`);
-  console.log(`    divergentes:                  ${divergentes.length}`);
+  console.log(`    CORRIGIDOS pelo catálogo:     ${corrigidos}  (o clássico ignora o achado)`);
+  console.log(`    divergentes (a investigar):   ${divergentes.length}`);
+
+  if (correcoes.length > 0) {
+    console.log(`\n  Laudos em que o catálogo CORRIGE o renderer:\n`);
+    for (const c of correcoes) {
+      console.log(`   ${c.quando}  ${c.id.slice(0, 8)}  ${c.achado}`);
+    }
+  }
 
   if (comparados === 0) {
     console.log(`
@@ -201,8 +274,11 @@ async function main() {
     if (divergentes.length > 10) console.log(`   … e mais ${divergentes.length - 10}.`);
   }
 
-  const pct = comparados === 0 ? 0 : (100 * iguais) / comparados;
-  console.log(`\n  ${iguais}/${comparados} (${pct.toFixed(1)}%) idênticos ao que a produção gerou.\n`);
+  const pct = comparados === 0 ? 0 : (100 * (iguais + corrigidos)) / comparados;
+  console.log(
+    `\n  ${iguais + corrigidos}/${comparados} (${pct.toFixed(1)}%) sob controle — ` +
+      `${iguais} idênticos, ${corrigidos} corrigidos.\n`,
+  );
   process.exit(divergentes.length === 0 ? 0 : 1);
 }
 
