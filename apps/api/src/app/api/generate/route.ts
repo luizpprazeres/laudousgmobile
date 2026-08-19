@@ -987,10 +987,7 @@ export async function POST(req: Request) {
                * não sabe que o resolver recusou — e o laudo saiu no padrão. O
                * médico precisa saber que existe algo a republicar.
                */
-              if (
-                !m.personalizacaoDescartada &&
-                m.motivoSemPersonalizacao?.includes("mudou") === true
-              ) {
+              if (!m.personalizacaoDescartada && m.motivoCodigo === "base_desatualizada") {
                 pipelineWarnings.push({
                   code: "personalizacao_desatualizada",
                   message:
@@ -1267,8 +1264,19 @@ export async function POST(req: Request) {
         // falso critical de RADS (review adversarial 06/07).
         rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
       });
-      const deterministicOnlySanity =
-        sanityResultFromDeterministic(deterministicSanity);
+      /**
+       * OS AVISOS ENTRAM AQUI, no sanity DETERMINÍSTICO.
+       *
+       * Antes eles só entravam no sanity final, que depende de o provider ser
+       * OpenAI e de a chamada de IA terminar sem erro — duas condições que não
+       * têm nada a ver com o médico precisar saber que o laudo saiu no modelo
+       * padrão (achado do Codex, 19/08). Aqui o aviso é incondicional; a
+       * sanity por IA só o atualiza depois.
+       */
+      const deterministicOnlySanity = comAvisosDoPipeline(
+        sanityResultFromDeterministic(deterministicSanity),
+        pipelineWarnings,
+      );
 
       outcome = "success";
       laudoEntregue = true;
@@ -1308,6 +1316,19 @@ export async function POST(req: Request) {
         report_id: reportId,
         final_text: finalText,
       });
+
+      /**
+       * O SANITY DETERMINÍSTICO VAI SEMPRE, logo após o `done`.
+       *
+       * O evento `sanity` só era emitido dentro do bloco da sanity por IA:
+       * provider diferente de OpenAI, ou uma chamada que falhasse, e o médico
+       * não recebia o card — inclusive o aviso de que o laudo saiu no modelo
+       * padrão (achado do Codex, 19/08). A sanity por IA continua vindo depois
+       * e SUBSTITUI este resultado no mesmo evento.
+       */
+      if (deterministicOnlySanity.issues.length > 0) {
+        emit({ type: "sanity", ts: nowIso(), result: deterministicOnlySanity });
+      }
 
       // Esquema visual venoso (side-channel) — roda APÓS o "done", então NÃO
       // atrasa o laudo; fail-safe (extractVenousMap nunca lança). Emite o evento

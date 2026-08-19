@@ -20,12 +20,13 @@
 
 import { applyCustomization, validateOperations } from "@/server/renderer/catalog/engine";
 import { personalizacaoAtiva } from "./ativa";
+import type { MotivoTecnico } from "./resolveFrases";
 import { ehEstiloVivo, resolveCatalogo } from "@/server/renderer/catalog/registry";
 import type { Catalog } from "@/server/renderer/catalog/types";
 import { lerPublicada, type Executor } from "./store";
 
 export type PersonalizacaoResolvida =
-  | { aplicar: false; motivo: string }
+  | { aplicar: false; motivo: string; codigo: MotivoTecnico }
   | {
       aplicar: true;
       versao: number;
@@ -38,7 +39,11 @@ export type PersonalizacaoResolvida =
       extraConclusao: string[];
     };
 
-const NAO = (motivo: string): PersonalizacaoResolvida => ({ aplicar: false, motivo });
+const NAO = (motivo: string, codigo: MotivoTecnico = "inativa"): PersonalizacaoResolvida => ({
+  aplicar: false,
+  motivo,
+  codigo,
+});
 
 /**
  * Nunca rejeita — o chamador pode dar `await` sem try/catch, e um banco fora do
@@ -63,10 +68,10 @@ export async function resolverPersonalizacao(
     // `personalizacaoAtiva` já cobre o catálogo: sem ele ligado o laudo é
     // montado pelo renderer antigo, que não conhece slot nenhum.
     if (!a.ativa) return NAO(a.explicacao);
-    if (!ehEstiloVivo(args.styleCode)) return NAO(`estilo desconhecido: ${args.styleCode}`);
+    if (!ehEstiloVivo(args.styleCode)) return NAO(`estilo desconhecido: ${args.styleCode}`, "sem_modelo");
 
     const entrada = resolveCatalogo(args.categoryCode, args.styleCode);
-    if (!entrada) return NAO(`sem catálogo para ${args.categoryCode}/${args.styleCode}`);
+    if (!entrada) return NAO(`sem catálogo para ${args.categoryCode}/${args.styleCode}`, "sem_modelo");
 
     const publicada = await lerPublicada(
       {
@@ -76,7 +81,7 @@ export async function resolverPersonalizacao(
       },
       _db,
     );
-    if (!publicada) return NAO("médico não tem personalização publicada");
+    if (!publicada) return NAO("médico não tem personalização publicada", "sem_publicacao");
 
     // TRAVA DE VERSÃO — a mais importante das quatro, e a que faltava.
     //
@@ -100,6 +105,7 @@ export async function resolverPersonalizacao(
       return NAO(
         `personalização publicada contra ${publicada.baseCatalogId} v${publicada.baseVersao}; ` +
           `o modelo-base hoje é ${entrada.catalog.id} v${entrada.catalog.versao} — republique na Biblioteca`,
+        "base_desatualizada",
       );
     }
 
@@ -111,6 +117,7 @@ export async function resolverPersonalizacao(
     if (erros.length > 0) {
       return NAO(
         `personalização v${publicada.versao} não vale mais no base v${entrada.catalog.versao}: ${erros.join("; ")}`,
+        "base_desatualizada",
       );
     }
 
@@ -135,6 +142,6 @@ export async function resolverPersonalizacao(
   } catch (err) {
     // Inclui o banco fora do ar. O laudo sai; o motivo fica no log.
     console.warn("resolverPersonalizacao falhou; gerando sem personalização:", err);
-    return NAO("falha ao resolver a personalização");
+    return NAO("falha ao resolver a personalização", "erro");
   }
 }

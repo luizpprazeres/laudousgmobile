@@ -272,6 +272,12 @@ export async function* runRendererStream(args: {
     customizacaoVersao: number | null;
     motivoSemPersonalizacao?: string;
     /**
+     * O motivo EM CÓDIGO. A rota decidia o aviso ao médico casando a string
+     * ("mudou"), e a mensagem do catálogo obstétrico diz "o modelo-base hoje
+     * é…": o aviso não saía (achado do Codex, 19/08).
+     */
+    motivoCodigo?: import("../customization/resolveFrases").MotivoTecnico;
+    /**
      * O médico TINHA personalização publicada e válida, e mesmo assim o laudo
      * saiu com a redação padrão. É o único caso em que ele precisa ser avisado:
      * nos demais ("não publicou", "o modelo mudou") ou não há o que perder, ou
@@ -656,7 +662,7 @@ export async function* runRendererStream(args: {
                     }: ${montado.erro?.message.slice(0, 120) ?? "erro"}`,
                   }
                 : p && !p.aplicar
-                  ? { motivoSemPersonalizacao: p.motivo }
+                  ? { motivoSemPersonalizacao: p.motivo, motivoCodigo: p.codigo }
                   : {}),
               ...(perdeuRedacao ? { personalizacaoDescartada: true } : {}),
             });
@@ -807,6 +813,7 @@ export async function* runRendererStream(args: {
           catalogVersao: 0,
           customizacaoVersao: null,
           motivoSemPersonalizacao: fr.motivo,
+          motivoCodigo: fr.codigo,
         });
       } catch {
         /* observacional — nunca derruba a geração */

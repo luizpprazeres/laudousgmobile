@@ -533,9 +533,18 @@ export async function restaurar(
             baseCatalogId: entrada.catalog.id,
             baseVersao: entrada.catalog.versao,
           })
-          // A condição `status = 'draft'` é a segunda trava, independente do
-          // lock: zero linhas significa que a linha deixou de ser rascunho
-          // entre a leitura e a escrita.
+          /**
+           * Segunda trava, independente do lock. Com o `FOR UPDATE` acima ela
+           * raramente dispara — quem restaura já segurou a linha —, e é de
+           * propósito: o que ela impede é o caso em que o lock não valeu.
+           *
+           * O que ela NÃO resolve é a concorrência lógica: se restaurar pega o
+           * lock primeiro, publicar espera e publica o conteúdo restaurado; se
+           * publicar pega primeiro, restaurar não acha rascunho e cria um novo.
+           * Nenhum dos dois corrompe o histórico, mas o resultado depende da
+           * ordem. Fechar isso exige `expectedUpdatedAt` (CAS), necessário
+           * antes de uso simultâneo em celular e computador (Codex, 19/08).
+           */
           .where(and(eq(T.id, existente.id), eq(T.status, "draft")))
           .returning();
         if (!atualizado) {

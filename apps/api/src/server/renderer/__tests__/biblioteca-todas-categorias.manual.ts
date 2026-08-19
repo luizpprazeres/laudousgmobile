@@ -119,6 +119,57 @@ for (const c of cats) {
   }
 }
 
+// -------------------------------------------------- multi-cenário de ponta a ponta
+/**
+ * UMA LINHA QUE SÓ EXISTE NO 2º TRIMESTRE, personalizada, chegando ao laudo de
+ * 2º trimestre e NÃO ao de 1º.
+ *
+ * É o gate que o Codex pediu (19/08). O catálogo derivado já ancorava os slots
+ * de todos os cenários, mas `frasesBaseDe` — o mapa que a GERAÇÃO consulta —
+ * continuava só com o padrão: a Biblioteca aceitava a personalização de 2T/3T e
+ * a geração recusava o conjunto inteiro, porque ali é tudo ou nada.
+ */
+console.log("\nUma linha exclusiva de um cenário chega ao laudo daquele cenário");
+{
+  const CAT = "MORFOLOGICO";
+  const base = frasesBaseDe(CAT, ESTILO);
+  const padrao = laudoPadraoDe(CAT, ESTILO)!;
+  const idsDoPadrao = new Set(linhasDoLaudo(padrao).map((l) => l.id));
+
+  let achou = false;
+  for (const c of cenariosDe(CAT)) {
+    const laudo = laudoDoCenario(CAT, ESTILO, c.seed);
+    if (!laudo) continue;
+    const exclusiva = linhasDoLaudo(laudo).find(
+      (l) => !idsDoPadrao.has(l.id) && contarDados(l.texto) === 0,
+    );
+    if (!exclusiva) continue;
+    achou = true;
+
+    t(`${c.nome}: a linha exclusiva está no mapa do resolver`, base.has(exclusiva.id),
+      exclusiva.texto.slice(0, 50));
+
+    const ops: Operation[] = [{ op: "replace_phrase", slot: exclusiva.id, value: "REDAÇÃO DO MÉDICO." }];
+    const entrada = resolveCatalogo(CAT, ESTILO)!;
+    t(`${c.nome}: a operação passa na validação`,
+      validateOperations(entrada.catalog, ops).length === 0,
+      JSON.stringify(validateOperations(entrada.catalog, ops)));
+
+    const frases = frasesDeOperacoes(ops, base);
+    t(`${c.nome}: e vira uma troca de frase`, frases !== null && frases.length === 1);
+
+    const noCenario = aplicarFrasesPersonalizadas(laudo, frases ?? []);
+    t(`${c.nome}: a redação entra no laudo DESTE cenário`,
+      noCenario.aplicadas === 1 && noCenario.texto.includes("REDAÇÃO DO MÉDICO."));
+
+    const noPadrao = aplicarFrasesPersonalizadas(padrao, frases ?? []);
+    t(`${c.nome}: e NÃO entra no laudo do cenário padrão`,
+      noPadrao.aplicadas === 0 && noPadrao.texto === padrao);
+    break;
+  }
+  t("há cenário com linha exclusiva para exercitar isto", achou);
+}
+
 // -------------------------------------------------- OBSTETRICA continua rica
 console.log("\nO catálogo escrito não foi rebaixado pelo derivado");
 {
