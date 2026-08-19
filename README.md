@@ -246,9 +246,41 @@ MODEL_CATALOG_CATEGORIES=OBSTETRICA MODEL_CUSTOMIZATION_CATEGORIES=OBSTETRICA \
   pnpm exec tsx --env-file=../../.env src/server/customization/resolve.manual.ts
 ```
 
-> **Falta antes de ligar:** nenhum app renderiza o aviso hoje — `sanity_warning`
-> chega ao RN e é ignorado, e o iOS não o trata. O aviso existe no servidor e
-> fica gravado no laudo, mas o médico só o verá quando a tela mostrar.
+O aviso chega ao médico pelo card **"N pontos a revisar"** — a única superfície
+que iOS, Android e web já desenham. São três códigos:
+`personalizacao_descartada` (fallback), `personalizacao_desatualizada` (o
+modelo-base mudou) e `personalizacao_indisponivel` (erro/sem modelo).
+`inativa` e `sem_publicacao` seguem silenciosos: são o estado normal de quem
+não personalizou nada.
+
+### O rollout — TRÊS deploys, nunca um
+
+Revisão adversarial do Codex, 19/08. Misturar o catálogo com a personalização
+no mesmo deploy destrói a capacidade de saber qual mudança causou um problema.
+
+> ⚠️ `MODEL_CATALOG_CATEGORIES=OBSTETRICA` está **configurada e não valendo**: a
+> variável foi criada depois do último deploy, e na Vercel a env entra no
+> build. O catálogo obstétrico ainda não montou nenhum laudo real.
+
+| Deploy | Flags | O que provar |
+|---|---|---|
+| **A** | catálogo só | 5 casos obstétricos: padrão, inicial 7 sem (embrião), inicial 11 sem (feto), gemelar, patológico |
+| **B** | `+ MODEL_CUSTOMIZATION_CATEGORIES=CERVICAL` `+ MODEL_CUSTOMIZATION_USER_IDS=<Luiz>` | rascunho não muda laudo · publicar muda só a linha escolhida · exame alterado não recebe a frase normal · despublicar volta byte a byte |
+| **C** | `+ OBSTETRICA` na personalização | padrão, inicial, gemelar e patológico com UMA frase normal personalizada |
+
+**`model_catalog_id` não prova que o catálogo montou o laudo** — o fallback
+clássico passa pelo mesmo callback de auditoria. Quem prova é
+`system_message_full`, que registra o degrau (`modelo: catálogo` ×
+`modelo: catálogo-base` × `modelo: clássico`).
+
+```bash
+# o que está publicado, se a versão-base ainda bate, e o degrau dos últimos laudos
+pnpm exec tsx --env-file=../../.env src/server/customization/painel.manual.ts
+```
+
+> O painel lê o banco corretamente, mas avalia a regra de ativação com o `.env`
+> da SUA máquina — ele não prova quais flags estão rodando em produção. Essa
+> prova é gerar um laudo e olhar a auditoria.
 
 ### Biblioteca
 

@@ -29,6 +29,14 @@ function versaoDeHoje(categoria: string, estilo: string): number | null {
   return resolveCatalogo(categoria, estilo)?.catalog.versao ?? null;
 }
 
+/** Qual degrau montou o laudo, lido da systemMessage. */
+function degrauDe(msg: string): string {
+  if (msg.includes("modelo: catálogo-base")) return "catálogo-base";
+  if (msg.includes("modelo: catálogo")) return "catálogo";
+  if (msg.includes("modelo: clássico")) return "CLÁSSICO (fallback)";
+  return "—";
+}
+
 async function main() {
   const db = getDbClient();
 
@@ -80,6 +88,7 @@ async function main() {
   const laudos = await db.execute(sql`
     select r.id, r.created_at, r.category_code,
            g.model_catalog_id, g.model_catalog_versao, g.model_customization_versao,
+           g.system_message_full,
            r.generation_metadata->'pipeline_warnings' as avisos
       from public.reports r
       left join public.generation_audit g on g.report_id = r.id
@@ -105,6 +114,14 @@ async function main() {
       `  ${String(l.created_at).slice(0, 16)}  ${String(l.id).slice(0, 8)}  ` +
         `${String(l.category_code).padEnd(20)} ` +
         `modelo=${l.model_catalog_id ?? "—"} v${l.model_catalog_versao ?? "—"} ` +
+        /**
+         * O DEGRAU, tirado da systemMessage.
+         *
+         * `model_catalog_id` sozinho NÃO prova que o catálogo montou o laudo: o
+         * fallback clássico passa pelo mesmo callback de auditoria (Codex,
+         * 19/08). Quem prova é a marca que o renderer escreve.
+         */
+        `[${degrauDe(String(l.system_message_full ?? ""))}] ` +
         `personalização=${l.model_customization_versao ?? "não aplicada"}` +
         (avisos?.length ? `\n    ⚠️ ${avisos.map((a) => a.code).join(", ")}` : ""),
     );

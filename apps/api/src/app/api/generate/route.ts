@@ -923,7 +923,10 @@ export async function POST(req: Request) {
        *
        * Quem monta o laudo decide quem resolve.
        */
-      const usaModeloDerivado = ehDerivado(effectiveCategory, styleRow.code);
+      // `useRenderer &&` antes: sem isso as categorias do writer construíam o
+      // modelo derivado à toa (0–1,73 ms, medido pelo Codex — desperdício, não
+      // risco, mas é trabalho que ninguém vai usar).
+      const usaModeloDerivado = useRenderer && ehDerivado(effectiveCategory, styleRow.code);
       const personalizacao =
         useRenderer && !usaModeloDerivado
           ? resolverPersonalizacao({
