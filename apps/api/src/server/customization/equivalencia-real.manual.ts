@@ -187,6 +187,7 @@ async function main() {
   let comparados = 0;
   let iguais = 0;
   let corrigidos = 0;
+  let posFlag = 0;
   const correcoes: { id: string; quando: string; achado: string }[] = [];
   const divergentes: { id: string; quando: string; linha: number; esperado: string; obtido: string }[] = [];
 
@@ -209,6 +210,18 @@ async function main() {
     // Se a personalização já estava aplicada naquele laudo, a comparação com o
     // catálogo-base não faz sentido — pula.
     if ((r.system_message_full ?? "").includes("personalização v")) continue;
+
+    /**
+     * LAUDO JÁ GERADO PELO CATÁLOGO — não serve de referência (achado do
+     * Codex, 19/08).
+     *
+     * Depois de `MODEL_CATALOG_CATEGORIES=OBSTETRICA`, o `output_text` passa a
+     * ser a saída do PRÓPRIO catálogo. Comparar o catálogo com ele é
+     * tautológico: dá 100% sempre, inclusive se o catálogo estiver errado, e o
+     * harness perde a única função que tem. O cohort válido é o pré-flag —
+     * laudos que a produção montou com o renderer CLÁSSICO.
+     */
+    if ((r.system_message_full ?? "").includes("modelo: catálogo")) { posFlag++; continue; }
 
     let obtido: string;
     // Fora do `try` porque a classificação da divergência precisa dele depois.
@@ -280,6 +293,7 @@ async function main() {
   console.log(`\nEquivalência contra laudos REAIS — OBSTETRICA\n`);
   console.log(`  laudos examinados na auditoria: ${todos.length}`);
   console.log(`    fora do caminho renderer:     ${naoRenderer}`);
+  console.log(`    já gerados PELO catálogo:     ${posFlag}  (pós-flag — comparação seria tautológica)`);
   console.log(`    sem achados gravados:         ${semAchados}  (anteriores ao onFindings de 11/08)`);
   console.log(`    sem texto de saída:           ${semTexto}`);
   console.log(`  COMPARADOS:                     ${comparados}`);
@@ -316,9 +330,19 @@ async function main() {
 
   const pct = comparados === 0 ? 0 : (100 * (iguais + corrigidos)) / comparados;
   console.log(
-    `\n  ${iguais + corrigidos}/${comparados} (${pct.toFixed(1)}%) sob controle — ` +
-      `${iguais} idênticos, ${corrigidos} corrigidos.\n`,
+    `\n  ${iguais}/${comparados} byte-a-byte equivalentes` +
+      (corrigidos > 0
+        ? ` + ${corrigidos} divergência(s) clínica(s) INTENCIONAL(is) revisada(s)`
+        : "") +
+      `${divergentes.length > 0 ? ` + ${divergentes.length} A INVESTIGAR` : ""}.\n`,
   );
+  if (comparados > 0 && posFlag > 0) {
+    console.log(
+      `  ⚠️  ${posFlag} laudo(s) já saíram do catálogo e ficaram FORA da comparação.\n` +
+        `      O cohort pré-flag encolhe a cada laudo novo; quando chegar a zero,\n` +
+        `      este harness deixa de medir qualquer coisa.\n`,
+    );
+  }
   process.exit(divergentes.length === 0 ? 0 : 1);
 }
 

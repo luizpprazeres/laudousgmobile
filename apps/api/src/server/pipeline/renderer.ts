@@ -570,13 +570,37 @@ export async function* runRendererStream(args: {
           } catch {
             /* observacional — nunca derruba a geração */
           }
-          fullText = renderObstetricaCatalogo({
-            findings: ofnd,
-            flags: { objetivo, igCorrection, flexivel, grannum },
-            ...(p?.aplicar
-              ? { catalog: p.catalog, customSlots: p.customSlots, extraConclusao: p.extraConclusao }
-              : {}),
-          });
+          /**
+           * FALLBACK PARA O RENDERER CLÁSSICO (achado do Codex, 19/08).
+           *
+           * O catálogo LANÇA em situações legítimas: `interpolate` recusa
+           * placeholder desconhecido (engine.ts), `applyCustomization` recusa
+           * personalização de outra versão. Sem isto, qualquer uma delas
+           * derruba a GERAÇÃO — o médico dita e não recebe laudo nenhum.
+           *
+           * O clássico é o caminho que rodou até agora e continua correto para
+           * tudo que não é achado novo. Cair nele custa a patologia daquele
+           * laudo; não cair custa o laudo inteiro.
+           */
+          try {
+            fullText = renderObstetricaCatalogo({
+              findings: ofnd,
+              flags: { objetivo, igCorrection, flexivel, grannum },
+              ...(p?.aplicar
+                ? { catalog: p.catalog, customSlots: p.customSlots, extraConclusao: p.extraConclusao }
+                : {}),
+            });
+            notaPersonalizacao += " | modelo: catálogo";
+          } catch (err) {
+            console.warn("catálogo falhou; caindo no renderer clássico:", err);
+            fullText = renderObstetrica(ofnd, null, {
+              objetivo, igCorrection, flexivel, grannum,
+              golfBall: golfBallObst, igSanity,
+            });
+            notaPersonalizacao += ` | modelo: clássico (catálogo falhou: ${
+              err instanceof Error ? err.message.slice(0, 80) : "erro"
+            })`;
+          }
         } else {
           fullText = renderObstetrica(ofnd, null, {
             objetivo, igCorrection, flexivel,
