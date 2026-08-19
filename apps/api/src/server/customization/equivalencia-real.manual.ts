@@ -115,6 +115,46 @@ function temAchadoQueOClassicoIgnora(f: ObstetricaFindings): boolean {
   );
 }
 
+/**
+ * A divergência é EXPLICADA pelo achado — ou há outra coisa junto?
+ *
+ * Presença de campo não basta (crítica do Codex, 19/08): um laudo pode ter
+ * `cordao_vasos` preenchido E uma divergência de biometria sem relação
+ * nenhuma. Classificar pela mera presença mascararia o segundo bug.
+ *
+ * O teste é direto: renderiza o catálogo com os campos de achado ZERADOS. Se o
+ * resultado bate byte a byte com o que a produção entregou, então TODA a
+ * diferença vem do achado — e só dele. Sobrou qualquer outra coisa, é
+ * divergência de verdade e precisa ser investigada.
+ */
+function aDivergenciaEhExplicadaPeloAchado(f: ObstetricaFindings, esperado: string): boolean {
+  if (!temAchadoQueOClassicoIgnora(f)) return false;
+  const semAchado: ObstetricaFindings = {
+    ...f,
+    fetos: (f.fetos ?? []).map((ft) => ({
+      ...ft,
+      bcf_alteracao: null,
+      cranio_achado: null,
+      cranio_medida_mm: null,
+      cranio_lateralidade: null,
+      cordao_vasos: null,
+      movimentos_fetais: null,
+    })),
+    placenta_achado: null,
+    placenta_achado_medidas: null,
+    placenta_relacao_orificio: null,
+    placenta_distancia_orificio_mm: null,
+  };
+  try {
+    return (
+      guardsPosRender(renderObstetricaCatalogo({ findings: semAchado, flags: flagsDeProducao() })) ===
+      esperado
+    );
+  } catch {
+    return false;
+  }
+}
+
 function descreverAchado(f: ObstetricaFindings): string {
   const partes: string[] = [];
   for (const ft of f.fetos ?? []) {
@@ -205,7 +245,7 @@ async function main() {
     comparados++;
     if (obtido === esperado) {
       iguais++;
-    } else if (temAchadoQueOClassicoIgnora(findings)) {
+    } else if (aDivergenciaEhExplicadaPeloAchado(findings, esperado)) {
       /**
        * DIVERGÊNCIA ESPERADA — o catálogo está CORRIGINDO o renderer.
        *
