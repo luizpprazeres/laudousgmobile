@@ -215,3 +215,115 @@ Existe `WorkspaceInputDock.tsx` e as flags `WEB_MOBILE_COMPANION`,
    ovário saía com "volume reduzido" que ninguém pediu.
 5. **`git add -A` no `~/laudousg`** arrasta ~18 arquivos untracked de outra
    frente. Adicione por caminho. (Repo morto, mas a regra vale.)
+
+---
+
+## 6. A mudança de domínio: `web.laudousg.com` → `laudousg.com.br`
+
+Decidido pelo Luiz em 20/08. O domínio novo é `laudousg.com.br`, e o alvo é
+mover a estação de laudos para lá. `laudousg.com` continua **morto** — a
+migração não o ressuscita, e é justamente por ele estar morto que o ápice do
+domínio novo pode ser o produto.
+
+### 6.1 O que já está pronto (verificado, não presumido)
+
+| fato | como foi verificado |
+|---|---|
+| `laudousg.com.br` registrado em nome do Luiz, `status: ACTIVE` | `whois laudousg.com.br` |
+| já delegado à Hostinger (`helios`/`aster.dns-parking.com`) | `dig laudousg.com.br NS` |
+| **nenhuma troca de nameserver é necessária** | idem — o DNS já se gerencia no painel da Hostinger |
+| a API aceita qualquer origem (`Access-Control-Allow-Origin: *`) | `apps/api/src/server/cors.ts` |
+| o código de auth é agnóstico de domínio (usa `window.location.origin` e o `origin` da request) | `app/auth/callback/route.ts`, `(auth)/signup`, `(auth)/forgot-password` |
+
+### 6.2 Hostinger — os registros de DNS
+
+Painel da Hostinger → domínio `laudousg.com.br` → **Zona DNS**. Dois registros:
+
+**O que está lá HOJE** (conferido com `dig` em 20/08) — são registros de
+estacionamento da Hostinger, e eles têm de ser **substituídos**, não acrescentados:
+
+| tipo | nome | valor atual | o que é |
+|---|---|---|---|
+| `A` | `@` | `2.57.91.91` | página de estacionamento (responde 200) |
+| `CNAME` | `www` | `laudousg.com.br` | aponta o www para o próprio ápice |
+
+**O que passa a ser:**
+
+| tipo | nome | valor | TTL |
+|---|---|---|---|
+| `A` | `@` | `216.198.79.1` | 300 |
+| `CNAME` | `www` | `cname.vercel-dns.com` | 300 |
+
+Estes não são valores de memória: são **os mesmos que já funcionam nesta conta**
+— `laudousg.com` (ápice) resolve para `216.198.79.1` e `www.laudousg.com` é
+`CNAME cname.vercel-dns.com`, ambos servidos pela Vercel hoje.
+
+> **Edite os dois registros existentes; não crie um segundo.** Dois `A` no mesmo
+> nome fazem o domínio resolver ora para a Vercel, ora para a página de
+> estacionamento — intermitência é o pior modo de falhar, porque parece
+> "funcionou para mim".
+
+TTL 300 durante a migração; suba depois de estabilizar.
+
+### 6.3 Vercel — projeto `laudousg-web`
+
+Settings → Domains:
+
+1. **Adicionar `laudousg.com.br`** e marcar como **Primary Domain** (é ele que
+   passa a aparecer na barra e nos links canônicos).
+2. **Adicionar `www.laudousg.com.br`** com **Redirect to `laudousg.com.br`** (308).
+3. **Manter `web.laudousg.com` no projeto**, trocado para **Redirect to
+   `laudousg.com.br`** (308). Não remover: é o endereço que o Luiz já usa, que
+   está em favoritos e no histórico dos navegadores. Um domínio removido dá
+   `DEPLOYMENT_NOT_FOUND`; um redirecionado leva o médico ao lugar certo.
+
+Prazo para aposentar `web.laudousg.com`: no mínimo até o Luiz confirmar que
+ninguém mais chega por ele.
+
+### 6.4 O que quebra em silêncio se for esquecido
+
+Esta é a parte que não aparece no painel de DNS.
+
+**1. Supabase — allowlist de redirect (o que mais quebra).**
+Projeto `yldtkqrsbgcnwlydrrot` → Authentication → URL Configuration:
+
+- **Site URL:** `https://laudousg.com.br`
+- **Redirect URLs:** acrescentar `https://laudousg.com.br/**` **e manter**
+  `https://web.laudousg.com/**` enquanto o redirect existir.
+
+O código monta `emailRedirectTo` a partir de `window.location.origin`, mas quem
+valida é o Supabase. Fora da allowlist ele **não dá erro** — troca silenciosamente
+pela Site URL. O sintoma é confirmação de cadastro e recuperação de senha
+levando ao domínio errado, e é fácil culpar o DNS por isso.
+
+**2. As URLs cravadas no código.** Dez arquivos do `apps/web` escrevem
+`laudousg.com` — o domínio MORTO — inclusive o `metadataBase`, o `canonical` e o
+Open Graph do `app/layout.tsx`. Ou seja: **hoje o web já anuncia ao Google um
+site que não existe mais.** A migração é a hora de corrigir para
+`laudousg.com.br`:
+
+```
+app/layout.tsx            metadataBase, alternates.canonical, openGraph.url,
+                          twitter, softwareAppSchema.url, organizationSchema.url+logo
+app/precos/layout.tsx     canonical + OG
+app/privacy/page.tsx      canonical + corpo
+app/terms/page.tsx        canonical + corpo
+app/app/seguranca/page.tsx
+app/excluir-conta/page.tsx  (cita `web.laudousg.com` no corpo)
+```
+
+**3. AbacatePay.** Conferir no painel as URLs de retorno de checkout e o webhook
+(`/api/webhooks/abacate`). Se apontarem para `web.laudousg.com`, continuam
+funcionando pelo redirect — mas um POST de webhook seguindo 308 é frágil.
+Apontar direto para o domínio novo.
+
+### 6.5 A ordem, para não ficar fora do ar
+
+1. Vercel: adicionar os dois domínios novos (fica pendente de verificação)
+2. Hostinger: criar `A @` e `CNAME www` — a Vercel verifica e emite o TLS
+3. Supabase: acrescentar as Redirect URLs **antes** de virar o Primary
+4. Vercel: marcar `laudousg.com.br` como Primary
+5. Deploy do `apps/web` com as URLs do §6.4-2 corrigidas
+6. Só então: `web.laudousg.com` → Redirect
+
+Os passos 1-3 não tiram nada do ar; a virada acontece no 4.
