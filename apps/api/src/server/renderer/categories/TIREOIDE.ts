@@ -413,14 +413,44 @@ function classificarNodulo(nod: TireoideNodulo): {
 // Frases fixas
 // ---------------------------------------------------------------------------
 
-const COMENTARIOS =
-  "COMENTÁRIOS:\nExame realizado com transdutor de 12 MHz, abrangendo todos os segmentos da glândula tireoide, como também a cadeia ganglionar cervical de I a V. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+/**
+ * A técnica do estilo clássico.
+ *
+ * Ela é CONDICIONAL à avaliação linfonodal, e isso não é detalhe de redação: o
+ * texto afirma que o exame abrangeu "a cadeia ganglionar cervical de I a V".
+ * Quando o médico não avaliou as cadeias, essa frase afirma um exame que não
+ * houve — e um laudo que declara ter examinado o que não examinou é pior que um
+ * laudo omisso, porque o leitor confia nele.
+ */
+function comentarios(linfonodosAvaliados: boolean): string {
+  const alcance = linfonodosAvaliados
+    ? "abrangendo todos os segmentos da glândula tireoide, como também a cadeia ganglionar cervical de I a V"
+    : "abrangendo todos os segmentos da glândula tireoide";
+  return `COMENTÁRIOS:\nExame realizado com transdutor de 12 MHz, ${alcance}. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.`;
+}
 
 const RODAPE =
   "*ESCORE DE NÓDULO TIREOIDEANO - Domingos Correia da Rocha - Material baseado em 2588 nódulos puncionados - 2003 | Atualizada em 2013 - Total de 5134 nódulos puncionados\nACR - American College of Radiology*";
 
 const LINFONODOS_NORMAIS =
   "Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.";
+
+/**
+ * O que se escreve quando o médico diz que os linfonodos estão ALTERADOS e não
+ * descreve como.
+ *
+ * Antes não havia esta frase, e a ausência produzia um laudo que se contradiz:
+ * `linfonodos_alterados = true` com descrição vazia caía na frase NORMAL no
+ * corpo — "morfologia preservada" — enquanto a conclusão dizia "de aspecto
+ * alterado". Duas afirmações opostas sobre o mesmo achado, no mesmo documento.
+ *
+ * A saída não é inventar características (arredondado, perda do hilo): o médico
+ * não as informou, e o catálogo chegou a cravá-las no cenário justamente para
+ * contornar este defeito. A saída é dizer o que se sabe — que estão alterados e
+ * que a caracterização não foi detalhada.
+ */
+const LINFONODOS_ALTERADOS_SEM_DESCRICAO =
+  "Adicionalmente, evidenciam-se linfonodos cervicais de aspecto alterado, sem caracterização detalhada ao método.";
 
 // ---------------------------------------------------------------------------
 // Render do corpo
@@ -482,6 +512,97 @@ function noduloConclusao(nod: TireoideNodulo, showDomingos: boolean): string {
   // Domingos OFF (ou sem nota): só o TI-RADS quando disponível.
   if (tiradsTxt !== null) return `${base} - TI-RADS ${tiradsTxt}`;
   return base;
+}
+
+// ---------------------------------------------------------------------------
+// O VOCABULÁRIO DOS EIXOS — o contrato de que a tela precisa
+// ---------------------------------------------------------------------------
+
+/**
+ * Os eixos do nódulo, com os valores que o renderer aceita e o rótulo que o
+ * médico lê.
+ *
+ * Existe para que a tela da web possa oferecer os SEIS eixos e deixar o
+ * `/render` calcular. Sem este contrato, a tela ou adivinha os enums ou
+ * classifica por conta própria — e classificar por conta própria foi o defeito
+ * mais grave achado no piloto de 20/08: a web usava uma escala de GRAU 1–6 e o
+ * canônico uma SOMA DE PONTOS, de modo que o nódulo marcado como provavelmente
+ * maligno saía impresso "provavelmente benignas".
+ *
+ * **Os PONTOS ficam de fora de propósito.** A tela mostra os eixos; quem soma é
+ * o renderer. Publicar a pontuação convidaria o navegador a antecipar o escore,
+ * que é exatamente a segunda autoridade que este desenho existe para evitar.
+ *
+ * O rótulo é o `txt` do próprio renderer — a mesma fonte que escreve a frase.
+ * Uma segunda lista de rótulos divergiria no primeiro ajuste de redação.
+ */
+export type EixoDoNodulo = {
+  campo: "ecogenicidade" | "margem" | "halo" | "forma" | "calcificacoes" | "vascularizacao";
+  rotulo: string;
+  /** Este eixo precisa estar preenchido para o renderer classificar? */
+  obrigatorio: boolean;
+  opcoes: { valor: string; rotulo: string }[];
+};
+
+/** "com margem regular" → "margem regular"; o rótulo do campo já diz o resto. */
+function semPreposicao(txt: string): string {
+  return txt.replace(/^(com|sem) /, (m) => (m === "sem " ? "sem " : ""));
+}
+
+export function eixosDoNodulo(): EixoDoNodulo[] {
+  return [
+    {
+      campo: "ecogenicidade",
+      rotulo: "Ecogenicidade e conteúdo",
+      /**
+       * O único obrigatório: `calcNotaDomingos` ancora nele e devolve `null`
+       * sem ele — o renderer não inventa nota para um nódulo que não sabe
+       * descrever.
+       */
+      obrigatorio: true,
+      opcoes: Object.entries(ECOGENICIDADE).map(([valor, v]) => ({ valor, rotulo: v.txt })),
+    },
+    {
+      campo: "margem",
+      rotulo: "Margem",
+      obrigatorio: false,
+      opcoes: Object.entries(MARGEM).map(([valor, v]) => ({ valor, rotulo: semPreposicao(v.txt) })),
+    },
+    {
+      campo: "halo",
+      rotulo: "Halo",
+      obrigatorio: false,
+      opcoes: Object.entries(HALO).map(([valor, v]) => ({ valor, rotulo: semPreposicao(v.txt) })),
+    },
+    {
+      campo: "forma",
+      rotulo: "Forma",
+      obrigatorio: false,
+      opcoes: Object.entries(FORMA).map(([valor, v]) => ({ valor, rotulo: v.txt })),
+    },
+    {
+      campo: "calcificacoes",
+      rotulo: "Calcificações",
+      obrigatorio: false,
+      opcoes: Object.entries(CALCIFICACOES).map(([valor, v]) => ({ valor, rotulo: semPreposicao(v.txt) })),
+    },
+    {
+      campo: "vascularizacao",
+      rotulo: "Vascularização (Chammas)",
+      obrigatorio: false,
+      /**
+       * Chammas PONTUA e NUNCA é escrito no laudo — regra da casa, no topo
+       * deste arquivo. O rótulo aqui é da TELA; ele não aparece no documento.
+       */
+      opcoes: [
+        { valor: "sem", rotulo: "ausente" },
+        { valor: "periferica", rotulo: "periférica" },
+        { valor: "periferica_maior_central", rotulo: "periférica > central" },
+        { valor: "central_maior_periferica", rotulo: "central > periférica" },
+        { valor: "exclusiva_central", rotulo: "exclusivamente central" },
+      ],
+    },
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -575,13 +696,18 @@ function renderTireoideClassico(
   }
 
   if (f.linfonodos_descritos) {
-    aspectos.push(
-      `\n${
-        f.linfonodos_alterados && f.linfonodos_descricao
-          ? f.linfonodos_descricao.trim()
-          : LINFONODOS_NORMAIS
-      }`,
-    );
+    /**
+     * TRÊS estados, não dois. O `&&` de antes juntava "alterado sem descrição"
+     * com "normal" e escrevia a frase de normalidade embaixo de uma conclusão
+     * que dizia o contrário.
+     */
+    const desc = f.linfonodos_descricao?.trim();
+    const linha = !f.linfonodos_alterados
+      ? LINFONODOS_NORMAIS
+      : desc
+        ? desc
+        : LINFONODOS_ALTERADOS_SEM_DESCRICAO;
+    aspectos.push(`\n${linha}`);
   }
 
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
@@ -655,7 +781,7 @@ function renderTireoideClassico(
   const corpo = [
     titulo,
     "",
-    COMENTARIOS,
+    comentarios(f.linfonodos_descritos),
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     aspectos.join("\n"),
@@ -905,9 +1031,24 @@ function renderTireoideObjetivo(
     achados.push(...picoLinhas(f, ptBr1, omitPicoNull));
   }
 
-  // Linfonodos.
-  if (f.linfonodos_descritos && f.linfonodos_alterados && f.linfonodos_descricao) {
-    achados.push(f.linfonodos_descricao.trim());
+  /**
+   * Linfonodos — os mesmos TRÊS estados do clássico.
+   *
+   * O `&&` de antes jogava "alterado sem descrição" no `else` e escrevia
+   * "Não há evidência de linfonodomegalias" nos ACHADOS, enquanto a IMPRESSÃO
+   * logo abaixo dizia "de aspecto alterado". Mesma contradição que D4 corrigiu
+   * no clássico, viva no outro estilo. (Codex, 20/08.)
+   *
+   * ⚠️ O que este trecho NÃO resolve: quando `linfonodos_descritos` é falso —
+   * o médico não avaliou as cadeias — o objetivo continua afirmando
+   * "Não há evidência de linfonodomegalias", isto é, um achado negativo que
+   * ninguém fez. O clássico omite a linha nesse caso, então os dois estilos
+   * divergem. Alinhar muda o texto de TODO laudo objetivo em que os linfonodos
+   * não foram mencionados, e por isso é decisão do Luiz, não deste ajuste.
+   */
+  if (f.linfonodos_descritos && f.linfonodos_alterados) {
+    const desc = f.linfonodos_descricao?.trim();
+    achados.push(desc ? desc : LINFONODOS_ALTERADOS_SEM_DESCRICAO);
   } else {
     achados.push("Não há evidência de linfonodomegalias.");
   }
