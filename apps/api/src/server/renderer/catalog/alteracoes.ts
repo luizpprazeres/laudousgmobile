@@ -181,12 +181,33 @@ export function renderizarSelecao(
   categoria: string,
   estilo: string,
   specs: AlteracaoSpec[],
+  /**
+   * O que o MÉDICO digitou — medidas, lateralidade, localização.
+   *
+   * Entra por último e vence os valores do cenário: os números de um
+   * `AlteracaoSpec` existem para o renderer ter o que calcular, não para
+   * aparecerem no laudo de alguém. Quando o médico mede 1,8 cm, é 1,8 que tem
+   * de ser escrito — e é a partir dele que a classificação é computada.
+   *
+   * O schema Zod da categoria valida tudo isto (`laudoPadraoDe` faz `safeParse`),
+   * então um cliente não consegue injetar campo que a categoria não tem.
+   */
+  dados?: Record<string, unknown>,
 ): SelecaoRenderizada {
   const conflitos = conflitosEntre(specs);
   if (conflitos.length > 0) return { ok: false, conflitos };
 
-  const seed = Object.assign({}, ...specs.map((s) => s.seed)) as Record<string, unknown>;
-  const texto = specs.length === 0 ? laudoPadraoDe(categoria, estilo) : laudoDaAlteracao(categoria, estilo, seed);
+  const seed = Object.assign({}, ...specs.map((s) => s.seed), dados ?? {}) as Record<string, unknown>;
+  const vazio = specs.length === 0 && (dados === undefined || Object.keys(dados).length === 0);
+  const texto = vazio
+    ? laudoPadraoDe(categoria, estilo)
+    : /**
+       * COM DADO DO MÉDICO não se mascara: o `____` existe para esconder o
+       * número que EU inventei no cenário. O que ele mediu é o laudo.
+       */
+      dados && Object.keys(dados).length > 0
+      ? laudoPadraoDe(categoria, estilo, seed)
+      : laudoDaAlteracao(categoria, estilo, seed);
   if (!texto) return { ok: false, erro: "esta combinação não pôde ser renderizada" };
   return { ok: true, texto };
 }

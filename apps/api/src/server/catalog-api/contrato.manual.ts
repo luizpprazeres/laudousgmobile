@@ -92,7 +92,43 @@ async function main() {
     t("…e numerou a conclusão", /(^|\n)\s*[23][.)]/.test(j.laudo.split(/CONCLUS[ÃA]O:/)[1] ?? ""));
   }
 
-  console.log("6 · o que não combina é recusado com o motivo\n");
+  console.log("6 · o DADO DO MÉDICO vence o número do cenário\n");
+  {
+    // O clicar-e-montar da web só serve se o que ele mede aparece no laudo. Os
+    // números do cenário existem para o renderer calcular, não para o médico ler.
+    const r = await post("TIREOIDE", {
+      alteracoes: ["nodulo_solido_suspeito"],
+      dados: {
+        lobo_direito: {
+          medidas_cm: [5.1, 1.7, 1.6], volume_ml: 7.2, ecotextura_alterada: null,
+          nodulos: [{
+            ecogenicidade: "hipoecoica", margem: "irregular", halo: "sem_halo",
+            forma: "mais_alta_que_larga", calcificacoes: "micro", vascularizacao: "exclusiva_central",
+            medidas_cm: [1.8, 1.4, 1.6], diametro_transverso_cm: null,
+            localizacao: "no terço inferior", descricao_raw: null,
+            nota_domingos_ditada: null, ti_rads_ditado: null,
+          }],
+        },
+      },
+    });
+    t("renderiza com o dado digitado", r.status === 200, `${r.status}`);
+    const j = await r.json();
+    t("a MEDIDA dele aparece no laudo", /1,8/.test(j.laudo), j.laudo.split("\n").find((l: string) => /hipoecoica/.test(l))?.slice(0, 120));
+    // A LINHA dele sai preenchida; o lobo esquerdo, que ele não mediu, segue
+    // com lacuna — e isso é o certo. Afirmar "nenhuma lacuna no laudo" cobrava
+    // que o modelo preenchesse o que ninguém mediu.
+    const linhaDele = j.laudo.split("\n").find((l: string) => /Lobo direito/.test(l)) ?? "";
+    t("…e a linha dele não tem lacuna", !/____/.test(linhaDele), linhaDele.slice(0, 120));
+    t("o que ele NÃO mediu segue como lacuna",
+      /Lobo esquerdo medindo ____/.test(j.laudo));
+    t("a LOCALIZAÇÃO dele vence a do cenário",
+      /terço inferior/.test(j.laudo) && !/terço superior/.test(j.laudo));
+    // E a classificação continua sendo do renderer, agora sobre o dado real.
+    t("o renderer classifica a partir do que ele mediu", /TI-RADS \d/.test(j.laudo),
+      j.laudo.split(/CONCLUS[ÃA]O:/)[1]?.slice(0, 120));
+  }
+
+  console.log("7 · o que não combina é recusado com o motivo\n");
   {
     const r = await post("TIREOIDE", { alteracoes: ["volume_aumentado", "volume_reduzido"] });
     t("combinação impossível dá 409", r.status === 409, `${r.status}`);

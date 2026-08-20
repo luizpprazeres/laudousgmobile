@@ -12,6 +12,15 @@ const Corpo = z.object({
   estilo: z.string().default("CLASSICO_COMPLETO"),
   /** Os ids que o médico clicou. Vazio = o modelo normal. */
   alteracoes: z.array(z.string()).max(20).default([]),
+  /**
+   * O que ele DIGITOU — medidas, lados, localização. Entra por último e vence
+   * os números do cenário, que existem só para o renderer ter o que calcular.
+   *
+   * O schema Zod da categoria valida: campo que a categoria não tem é
+   * descartado no `safeParse`, e um valor fora de forma derruba o render — que
+   * vira 409, não laudo torto.
+   */
+  dados: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -62,7 +71,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
     );
   }
 
-  const r = renderizarSelecao(category, corpo.estilo, escolhidas.filter((s) => s !== undefined));
+  const r = renderizarSelecao(
+    category,
+    corpo.estilo,
+    escolhidas.filter((s) => s !== undefined),
+    corpo.dados,
+  );
 
   if (!r.ok) {
     // 409: não é erro do cliente nem do servidor — é combinação que não existe
