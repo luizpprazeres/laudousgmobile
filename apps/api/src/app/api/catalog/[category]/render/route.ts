@@ -71,6 +71,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
     );
   }
 
+  /**
+   * Preset usado como alteração, e alteração pedida num estilo em que ela não
+   * existe, são recusados por `renderizarSelecao` — no NÚCLEO, não aqui.
+   *
+   * A regra morava nesta rota, e "só na rota" é meia proteção: qualquer
+   * consumidor interno novo reabriria o caminho sem tocar no arquivo que
+   * documenta a regra. O que sobra aqui é traduzir a recusa para HTTP.
+   */
   const r = renderizarSelecao(
     category,
     corpo.estilo,
@@ -79,13 +87,31 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
   );
 
   if (!r.ok) {
-    // 409: não é erro do cliente nem do servidor — é combinação que não existe
-    // clinicamente. A tela precisa distinguir isso de "deu erro".
+    if (!("conflitos" in r)) return Response.json({ error: r.erro }, { status: 409 });
+
+    /**
+     * 400 × 409, e a diferença não é cosmética.
+     *
+     * **400** — a seleção é inválida por natureza: preset mandado como
+     * alteração, ou alteração pedida num estilo em que ela não existe. O
+     * cliente pediu algo que nunca poderia valer, e a correção é dele.
+     *
+     * **409** — a seleção é legítima e apenas não se combina, ou o que foi
+     * digitado apagaria um achado. Aqui quem escolhe é o médico; nada está
+     * errado no cliente, e a tela precisa distinguir isso de "deu erro".
+     */
+    const invalida = r.conflitos.some(
+      (c) => c.motivo.includes("modelo de preenchimento") || c.motivo.includes("não existe no estilo"),
+    );
     return Response.json(
-      "conflitos" in r
-        ? { error: "estas alterações não se combinam", conflitos: r.conflitos }
-        : { error: r.erro },
-      { status: 409 },
+      invalida
+        ? {
+            error: "esta seleção não é possível",
+            conflitos: r.conflitos,
+            comoUsar: "preset: use `template` do GET e mande o resultado em `dados`",
+          }
+        : { error: "estas alterações não se combinam", conflitos: r.conflitos },
+      { status: invalida ? 400 : 409 },
     );
   }
 

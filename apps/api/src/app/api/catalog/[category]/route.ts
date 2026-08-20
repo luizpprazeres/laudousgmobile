@@ -5,6 +5,7 @@ import { resolveCatalogo, flagsDeProducao, ehEstiloVivo } from "@/server/rendere
 import { laudoPadraoDe, cenariosDe, laudoDoCenario } from "@/server/renderer/catalog/modeloNormalRegistry";
 import { previaDaAlteracao } from "@/server/renderer/catalog/alteracoes";
 import { alteracoesDe } from "@/server/renderer/catalog/alteracoes/index";
+import { eixosDoNodulo } from "@/server/renderer/categories/TIREOIDE";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,6 +79,20 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
     .map((c) => ({ nome: c.nome, laudo: laudoDoCenario(category, estilo, c.seed) }))
     .filter((c): c is { nome: string; laudo: string } => c.laudo !== null);
 
+  /**
+   * Os EIXOS de um achado repetível — o vocabulário com que a tela monta o
+   * formulário e deixa o renderer classificar.
+   *
+   * As `alteracoes` cobrem o achado que se CLICA; isto cobre o achado que se
+   * DESCREVE, e que entra por `dados` em qualquer número. Sem ele a tela não
+   * tem como oferecer os seis eixos do nódulo — e foi por não os ter que ela
+   * classificava sozinha, por uma escala incompatível com a do renderer.
+   *
+   * Hoje só a TIREOIDE o publica. As demais categorias que tenham achado
+   * repetível entram aqui uma a uma, pelo mesmo caminho.
+   */
+  const eixos = category === "TIREOIDE" ? { nodulo: eixosDoNodulo() } : undefined;
+
   return Response.json({
     categoria: category,
     estilo,
@@ -90,5 +105,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
     /** Frases, variantes, obrigatoriedade e o que é editável. */
     catalogo: descricao,
     alteracoes,
+    ...(eixos ? { eixos } : {}),
   });
 }
