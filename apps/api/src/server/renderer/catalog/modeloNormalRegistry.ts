@@ -11,7 +11,7 @@
  */
 import type { z } from "zod";
 import { env } from "@/server/env";
-import { achadoNormalDe, mascararPorComparacao, variarSeed } from "./modeloNormal";
+import { achadoNormalDe, mascararPorComparacao, mesclarFundo, variarSeed } from "./modeloNormal";
 
 import { AbdomenSuperiorFindingsSchema, renderAbdomenSuperior } from "../categories/ABDOMEN_SUPERIOR";
 import { CervicalFindingsSchema, renderCervical } from "../categories/CERVICAL";
@@ -104,7 +104,33 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   },
   {
     categoria: "TIREOIDE", rotulo: "Tireoide", schema: TireoideFindingsSchema,
-    render: (f, o) => renderTireoide(f, undefined as any, { objetivo: o.objetivo }),
+    /**
+     * `omitPicoNull` vem da MESMA flag que a produção lê
+     * (`pipeline/renderer.ts:721`). Sem ela aqui, o catálogo renderizava com a
+     * política contrária à do laudo real — e o aviso no topo deste arquivo diz
+     * exatamente que divergir faz o médico personalizar uma frase que nunca sai
+     * no laudo dele.
+     *
+     * Efeito prático (decisão D5, 20/08): com a flag ligada, um Doppler com um
+     * pico só não estampa "____ cm/s" no lado que ninguém mediu. Exigir os dois
+     * criaria dado obrigatório que a web nunca exigiu.
+     */
+    render: (f, o) =>
+      renderTireoide(f, undefined as any, {
+        objetivo: o.objetivo,
+        /**
+         * Lido de `process.env` direto, e NÃO do `env()` validado — de
+         * propósito.
+         *
+         * `env()` valida o ambiente inteiro e LANÇA quando falta qualquer
+         * variável. Como `laudoPadraoDe` engole exceção para que uma categoria
+         * quebrada não derrube a Biblioteca, usar `env()` aqui fazia a TIREOIDE
+         * **sumir inteira** de qualquer ambiente sem env completo — em
+         * silêncio, com o gate dando verde por não ter o que reprovar. Uma
+         * flag de formatação não pode ter poder de apagar uma categoria.
+         */
+        omitPicoNull: process.env.TIREOIDE_PICO_OMIT === "true",
+      }),
   },
   {
     categoria: "MAMARIA", rotulo: "Mamária", schema: MamariaFindingsSchema,
@@ -182,11 +208,20 @@ export function laudoPadraoDe(
   const m = modeloNormalDe(categoria);
   if (!m) return null;
   try {
-    const bruto = {
-      ...(achadoNormalDe(m.schema) as Record<string, unknown>),
-      ...(m.seed ?? {}),
-      ...(seedExtra ?? {}),
-    };
+    /**
+     * MERGE FUNDO, não spread.
+     *
+     * O spread raso trocava o objeto inteiro: um `seedExtra` que quisesse mudar
+     * só `lobo_direito.medidas_cm` apagava `ecotextura_alterada`, `volume_ml` e
+     * `nodulos` do achado derivado, e o Zod recusava o laudo por campo
+     * faltando. O efeito prático era obrigar todo cliente a reenviar o objeto
+     * COMPLETO — e reenviar completo é exatamente como se apaga um achado sem
+     * perceber.
+     */
+    const bruto = mesclarFundo(
+      mesclarFundo(achadoNormalDe(m.schema) as Record<string, unknown>, m.seed ?? {}),
+      seedExtra ?? {},
+    );
     const parsed = (m.schema as any).safeParse(bruto);
     if (!parsed.success) return null;
     const texto = m.render(parsed.data, { objetivo: estilo === "OBJETIVO" });
@@ -231,7 +266,13 @@ export function laudoDoCenario(
    * índices de pulsatilidade estão lá. Os dois renders saíam idênticos e o
    * modelo cravava "IP 1,02", o número que EU escolhi para o seed.
    */
-  const b = laudoPadraoDe(categoria, estilo, variarSeed({ ...(m?.seed ?? {}), ...seed }));
+  /**
+   * Mescla FUNDO também aqui. O render A já usa `mesclarFundo`; deixar o B com
+   * spread raso é assimetria à espera de um seed aninhado — os dois renders
+   * passariam a partir de bases diferentes e a máscara por comparação marcaria
+   * como "dado variável" um campo que só mudou porque o B o perdeu.
+   */
+  const b = laudoPadraoDe(categoria, estilo, variarSeed(mesclarFundo(m?.seed ?? {}, seed)));
   /**
    * FAIL-CLOSED (achado do Codex, 19/08).
    *
