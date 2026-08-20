@@ -432,6 +432,45 @@ function comentarios(linfonodosAvaliados: boolean): string {
 const RODAPE =
   "*ESCORE DE NÓDULO TIREOIDEANO - Domingos Correia da Rocha - Material baseado em 2588 nódulos puncionados - 2003 | Atualizada em 2013 - Total de 5134 nódulos puncionados\nACR - American College of Radiology*";
 
+/**
+ * A conclusão de ALTERAÇÃO DIFUSA — e ela é do médico, não nossa.
+ *
+ * Em 30 dias de laudos reais dele (`_extraction/.../tireoide_30d.md`, 251
+ * laudos) esta é a frase, 48 vezes de 62. As outras 14 são pontuação e
+ * variantes dela. **Zero** mencionam Hashimoto, De Quervain, Riedel,
+ * "linfocítica", "autoimune" ou anti-TPO: ele descreve o padrão e nomeia
+ * "tireoidopatia", sem cravar etiologia nem prescrever exame.
+ *
+ * Isso importa porque a alternativa considerada era escrever quatro conclusões
+ * etiológicas — as que existem hoje no compositor da web e que o próprio
+ * arquivo de lá chama de "ponto de partida p/ curadoria". Elas foram
+ * inventadas. Trocar a omissão por uma frase que ele nunca escreveu seria
+ * substituir um defeito por outro.
+ *
+ * O que NÃO se infere daqui, porque o corpus não autoriza:
+ *
+ * - **"crônica"** aparece 4×, e nenhum achado estruturado a prediz: dois casos
+ *   "crônicos" não têm esboços, um caso com esboços não recebe o rótulo. Deve
+ *   depender de história ou evolução, que não estão nos achados.
+ * - **"com esboços nodulares"** NÃO quer dizer que há nódulo. Nesses laudos o
+ *   corpo diz justamente que não se delimitam lesões focais; quando há nódulo
+ *   de verdade, ele ganha item próprio depois. Ler `nodulos.length > 0` para
+ *   escrever "esboços" inverteria o significado.
+ *
+ * (Adjudicação Codex + Claude, 20/08, contra o corpus.)
+ */
+const TIREOIDOPATIA = "Sinais ecográficos de tireoidopatia.";
+
+/**
+ * A variante com bócio, composta — não escrita à parte.
+ *
+ * Aparece 2× no corpus, e nas duas a glândula está aumentada. É a única
+ * variante que o dado estruturado prediz com segurança, e só quando
+ * `volume_glandular` vem explicitamente "aumentado" — nunca inferida das
+ * medidas, como o próprio prompt de extração já determina.
+ */
+const TIREOIDOPATIA_BOCIO = "Sinais ecográficos de tireoidopatia (bócio tireoideano).";
+
 const LINFONODOS_NORMAIS =
   "Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.";
 
@@ -739,6 +778,22 @@ function renderTireoideClassico(
     );
   } else {
     conclusao.push(`Tireoide de volume ${volStatus} (${vtFmt} ml).`);
+
+    /**
+     * A ALTERAÇÃO DIFUSA, que antes sumia daqui.
+     *
+     * Este era um defeito de produção: o corpo descrevia a ecotextura alterada
+     * e a conclusão dizia só "Tireoide de volume normal (…)". Quem lê apenas a
+     * conclusão — que é como se lê laudo com pressa — não ficava sabendo.
+     *
+     * Entra DEPOIS do volume e ANTES dos itens nodulares. A ordem não é
+     * estética: nos 12 laudos do corpus que têm tireoidopatia e conclusão
+     * nodular, a tireoidopatia vem antes em 12/12.
+     */
+    if (temDifusa) {
+      conclusao.push(f.volume_glandular === "aumentado" ? TIREOIDOPATIA_BOCIO : TIREOIDOPATIA);
+    }
+
     // Um item por lobo; imagens do mesmo lobo no mesmo item, separadas por ";".
     for (const l of lobosComAchado) {
       const trechos = l.lobo.nodulos.map((nod) =>
@@ -1060,20 +1115,29 @@ function renderTireoideObjetivo(
   // ----- IMPRESSÃO -----
   const impressao: string[] = [];
 
+  /**
+   * Com difusa E bócio, a variante combinada do corpus cobre os dois — repetir
+   * "Bócio (aumento difuso…)" logo acima dela seria dizer a mesma coisa duas
+   * vezes, com duas redações diferentes.
+   */
   if (volStatus === "aumentado") {
-    impressao.push("Bócio (aumento difuso do volume glandular).");
+    if (!temDifusa) impressao.push("Bócio (aumento difuso do volume glandular).");
   } else if (volStatus === "reduzido") {
     impressao.push("Glândula tireoide de dimensões reduzidas.");
   }
 
   if (temDifusa) {
-    const difusa = lobos
-      .map((l) => l.lobo.ecotextura_alterada?.trim())
-      .find((t) => !!t);
+    /**
+     * A MESMA frase do clássico, e pelo mesmo motivo.
+     *
+     * Antes o objetivo escrevia "Tireoidopatia difusa (descrição)" — texto que
+     * não existe em nenhum dos 251 laudos reais —, e ainda repetia entre
+     * parênteses a descrição que o bloco ACHADOS acabara de dar. Os dois
+     * estilos podem diferir na ESTRUTURA do documento; não em ter duas
+     * hipóteses diagnósticas diferentes para o mesmo achado.
+     */
     impressao.push(
-      difusa
-        ? `Tireoidopatia difusa (${difusa.replace(/\.+$/, "")}).`
-        : "Tireoidopatia difusa.",
+      volStatus === "aumentado" ? TIREOIDOPATIA_BOCIO : TIREOIDOPATIA,
     );
   }
 

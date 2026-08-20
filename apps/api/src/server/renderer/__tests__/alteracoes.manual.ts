@@ -228,7 +228,7 @@ console.log("\n10 · o que se DIGITA não pode apagar o achado do cenário\n");
    * sintática. Por isso a conferência é no RESULTADO — o que o cenário afirma
    * tem de continuar de pé, ou é 409 com o caminho nomeado.
    */
-  const hashimoto = alteracoesDe("TIREOIDE").find((x) => x.id === "tireoidite_cronica")!;
+  const hashimoto = alteracoesDe("TIREOIDE").find((x) => x.id === "alteracao_difusa")!;
 
   /**
    * Spec SINTÉTICO, não o preset de verdade.
@@ -274,7 +274,7 @@ console.log("\n10 · o que se DIGITA não pode apagar o achado do cenário\n");
     lobo_direito: { medidas_cm: [5.2, 1.7, 1.6], volume_ml: 7.1 },
   });
   t("mas MEDIR o lobo continua valendo", convive.ok);
-  t("…com a tireoidite de pé", convive.ok && convive.texto.includes("micronodula"));
+  t("…com a alteração difusa de pé", convive.ok && convive.texto.includes("difusamente heterogênea"));
   t("…e a medida digitada no lugar", convive.ok && convive.texto.includes("5,2"));
 
   /**
@@ -294,7 +294,7 @@ console.log("\n10 · o que se DIGITA não pode apagar o achado do cenário\n");
     },
   });
   t("tireoidite E nódulo convivem", juntos.ok);
-  t("…com a tireoidite", juntos.ok && juntos.texto.includes("micronodula"));
+  t("…com a alteração difusa", juntos.ok && juntos.texto.includes("difusamente heterogênea"));
   t("…com o nódulo", juntos.ok && juntos.texto.includes("hipoecoica"));
   t("…e a classificação calculada", juntos.ok && /TI-RADS \d/.test(juntos.texto));
 }
@@ -328,6 +328,68 @@ console.log("\n11 · chave de protótipo não contamina o achado\n");
     String((out as Record<string, unknown>).poluido));
   t("`constructor` não vira campo do achado", !Object.keys(out).includes("constructor"), Object.keys(out).join(","));
   t("e o que era para ser mesclado foi mesclado", (out as Record<string, unknown>).a === 1);
+}
+
+const t_ = t;
+console.log("\n12 · a ALTERAÇÃO DIFUSA conclui com a frase do MÉDICO\n");
+{
+  /**
+   * D1, ancorado no corpus. Em 251 laudos reais dele
+   * (`_extraction/.../tireoide_30d.md`), 62 conclusões de alteração difusa: 48
+   * são exatamente "Sinais ecográficos de tireoidopatia." e as outras são
+   * pontuação e variantes dela. ZERO nomeiam etiologia.
+   *
+   * Antes desta correção o clássico OMITIA a difusa da conclusão — um
+   * Hashimoto saía com "Tireoide de volume normal" e nada mais — e o objetivo
+   * escrevia "Tireoidopatia difusa (…, compatível com tireoidite crônica)",
+   * afirmando uma etiologia que ele nunca afirma. O golden do objetivo passava
+   * nos dois estados: não asserta essa linha. Este bloco asserta.
+   */
+  const difusa = { ecotextura_alterada: "difusamente heterogênea" };
+  const lobo = { medidas_cm: [5.2, 1.7, 1.6], volume_ml: 7.1 };
+  const istmo = { medidas_cm: [1.5, 0.9, 0.8], volume_ml: 1.2 };
+  const base = { lobo_direito: { ...lobo, ...difusa }, lobo_esquerdo: { ...lobo, ...difusa }, istmo };
+
+  for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"]) {
+    const t = laudoPadraoDe(CAT, estilo, base)!;
+    t_(`${estilo}: conclui com a frase do corpus`, t.includes("Sinais ecográficos de tireoidopatia."));
+    t_(`${estilo}: NÃO nomeia etiologia`,
+      !/hashimoto|quervain|riedel|linfoc[ií]tic|autoimune|anti-?TPO|tireoidite/i.test(t),
+      t.split("\n").find((l) => /tireoid/i.test(l) && /crônic|compat/i.test(l))?.slice(0, 120));
+
+    const comBocio = laudoPadraoDe(CAT, estilo, { ...base, volume_glandular: "aumentado" })!;
+    t_(`${estilo}: com bócio usa a variante do corpus`,
+      comBocio.includes("Sinais ecográficos de tireoidopatia (bócio tireoideano)."));
+    t_(`${estilo}: …sem repetir o bócio em outro item`,
+      (comBocio.match(/[Bb][óo]cio/g) ?? []).length === 1,
+      String((comBocio.match(/[Bb][óo]cio/g) ?? []).length));
+  }
+
+  /**
+   * A ORDEM: nos 12 laudos do corpus com tireoidopatia E conclusão nodular, a
+   * tireoidopatia vem antes da imagem nodular em 12/12.
+   */
+  const comNodulo = laudoPadraoDe(CAT, "CLASSICO_COMPLETO", {
+    ...base,
+    lobo_direito: { ...lobo, ...difusa, nodulos: [{
+      ecogenicidade: "hipoecoica", margem: "irregular", halo: "sem_halo", forma: "mais_alta_que_larga",
+      calcificacoes: "micro", vascularizacao: "exclusiva_central", medidas_cm: [1.8, 1.2, 1.4],
+      diametro_transverso_cm: null, localizacao: null, descricao_raw: null,
+      nota_domingos_ditada: null, ti_rads_ditado: null,
+    }] },
+  })!;
+  const iDifusa = comNodulo.indexOf("Sinais ecográficos de tireoidopatia");
+  const iNodulo = comNodulo.indexOf("Lobo direito apresentando");
+  t_("a tireoidopatia vem ANTES do item nodular", iDifusa > 0 && iNodulo > iDifusa, `${iDifusa} < ${iNodulo}`);
+
+  /**
+   * O que NÃO se infere. "esboços nodulares" no corpus significa que NÃO se
+   * delimitam lesões focais; ler `nodulos.length > 0` para escrevê-lo
+   * inverteria o significado. E "crônica" não é predito por nenhum achado
+   * estruturado — depende de história, que não está aqui.
+   */
+  t_("não inventa \"esboços nodulares\"", !/esbo[çc]os nodulares/i.test(comNodulo));
+  t_("não inventa \"crônica\"", !/tireoidopatia cr[ôo]nica/i.test(comNodulo));
 }
 
 const total = ok + falhas.length;

@@ -186,18 +186,18 @@ async function main() {
     t("nem chega ao guard — o preset é barrado antes", apagaNodulo.status === 400, `${apagaNodulo.status}`);
 
     const apagaTireoidite = await post("TIREOIDE", {
-      alteracoes: ["tireoidite_cronica"],
+      alteracoes: ["alteracao_difusa"],
       dados: { lobo_direito: { ecotextura_alterada: null } },
     });
     t("apagar a tireoidite é RECUSADO", apagaTireoidite.status === 409, `${apagaTireoidite.status}`);
 
     const convivem = await post("TIREOIDE", {
-      alteracoes: ["tireoidite_cronica"],
+      alteracoes: ["alteracao_difusa"],
       dados: { lobo_direito: { medidas_cm: [5.2, 1.7, 1.6], volume_ml: 7.1 } },
     });
     t("…mas MEDIR o lobo continua valendo", convivem.status === 200, `${convivem.status}`);
     const jc = await convivem.json();
-    t("…com a tireoidite de pé", /micronodula/.test(jc.laudo ?? ""));
+    t("…com a alteração difusa de pé", /difusamente heterogênea/.test(jc.laudo ?? ""));
     t("…e a medida digitada no lugar", /5,2/.test(jc.laudo ?? ""));
   }
 
@@ -275,7 +275,7 @@ async function main() {
     t("…com o ITEM, não o lobo em volta",
       preset?.template?.ecogenicidade === "hipoecoica" && !("lobo_direito" in (preset?.template ?? {})),
       Object.keys(preset?.template ?? {}).join(","));
-    const alt = (jg.alteracoes ?? []).find((a: { id: string }) => a.id === "tireoidite_cronica");
+    const alt = (jg.alteracoes ?? []).find((a: { id: string }) => a.id === "alteracao_difusa");
     t("a alteração de verdade continua clicável", alt?.kind === "alteracao", String(alt?.kind));
   }
 

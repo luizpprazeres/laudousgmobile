@@ -163,7 +163,7 @@ const CASOS: Caso[] = [
     porque:
       "O CASO QUE MOTIVOU O GUARD. O merge raso trocava o lobo inteiro e o laudo saía 'sem evidência de alteração ecotextural' — o achado clicado virava o seu contrário, em silêncio.",
     estado: { ...medido(), tireoidite: "hashimoto" },
-    exige: ["micronodula", "5,2"],
+    exige: ["difusamente heterogênea", "5,2"],
     proibe: ["sem evidência de alteração ecotextural"],
     /**
      * Esta asserção FALHA hoje, e é o objetivo dela. O corpo descreve a
@@ -182,7 +182,7 @@ const CASOS: Caso[] = [
       tireoidite: "hashimoto",
       nodulos: [nodulo({ id: "a", dimensao: "1,3 x 1,0 x 0,9" })],
     },
-    exige: ["micronodula"],
+    exige: ["difusamente heterogênea"],
     proibe: ["sem evidência de alteração ecotextural"],
     pendente: "o nódulo em si não migra (D2); o que este caso prova é que tireoidite + nódulo CONVIVEM no merge",
   },

@@ -282,8 +282,27 @@ export function adaptarTireoide(state: TireoideState): Adaptacao {
   const alteracoes: string[] = [];
 
   if (state.tireoidite && state.tireoidite !== "nenhuma") {
+    /**
+     * AS QUATRO TIREOIDITES DA TELA NÃO EXISTEM NO LAUDO DELE.
+     *
+     * Adjudicado contra o corpus em 20/08: em 251 laudos reais, 62 conclusões
+     * de alteração difusa, o médico escreve "Sinais ecográficos de
+     * tireoidopatia" e **nunca** nomeia etiologia. As quatro opções da tela
+     * (Hashimoto, linfocítica, granulomatosa/De Quervain, Riedel) foram
+     * inventadas — o próprio arquivo do compositor local as chama de "ponto de
+     * partida p/ curadoria do Luiz".
+     *
+     * Então o canônico tem UM estado difuso, e é o certo. Mas mapear as quatro
+     * para ele em silêncio é o defeito do outro lado: o médico escolhe Riedel,
+     * recebe tireoidopatia genérica e acredita ter registrado o que não
+     * registrou. Uma escolha que não muda o laudo é affordance falsa.
+     *
+     * Por isso continua BLOQUEANDO até a tela oferecer o estado único
+     * ("Tireoidopatia / alteração difusa"). Quando ela oferecer, este ramo vira
+     * um `push("alteracao_difusa")` e some a distinção.
+     */
     if (state.tireoidite === "hashimoto") {
-      alteracoes.push("tireoidite_cronica");
+      alteracoes.push("alteracao_difusa");
     } else {
       /**
        * As outras três tireoidites não existem no catálogo canônico — ele tem
@@ -300,7 +319,7 @@ export function adaptarTireoide(state: TireoideState): Adaptacao {
         onde: "tireoidite",
         valor: state.tireoidite,
         motivo:
-          "o catálogo canônico só tem tireoidite crônica (Hashimoto); sem AlteracaoSpec própria o laudo sairia NORMAL, negando o diagnóstico selecionado",
+          "o canônico tem um único estado difuso, ancorado no corpus do médico, que não nomeia etiologia — a tela precisa oferecer \"Tireoidopatia / alteração difusa\" no lugar das quatro opções inventadas",
         bloqueia: true,
       });
     }

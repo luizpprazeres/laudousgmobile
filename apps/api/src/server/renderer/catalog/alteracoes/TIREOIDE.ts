@@ -169,26 +169,26 @@ export const ALTERACOES_TIREOIDE: AlteracaoSpec[] = [
 
   // ── Alterações difusas ───────────────────────────────────────────────────
   {
-    id: "tireoidite_cronica",
+    id: "alteracao_difusa",
     nome: "Tireoidite crônica (Hashimoto)",
     kind: "alteracao",
-    descricao: "Ecotextura difusamente heterogênea, com micronodulações.",
+    descricao: "Parênquima difusamente heterogêneo — a conclusão sai como \"Sinais ecográficos de tireoidopatia\".",
     grupo: "ecotextura",
     /**
      * Sem lacunas: o cenário afirma a ecotextura dos dois lobos e mais nada. As
      * medidas do lobo não estão no seed, então o médico as digita livremente por
      * `dados` — não há o que autorizar.
      *
-     * ⚠️ Este cenário conserta um defeito e ESBARRA em outro. O renderer
-     * clássico monta a frase do corpo com o verbatim, mas **não menciona a
-     * tireoidite na CONCLUSÃO** (`TIREOIDE.ts:607-623`): um Hashimoto sai com
-     * "Tireoide de volume normal (…)" e nada mais. Isso é defeito de PRODUÇÃO —
-     * atinge o médico que dita hoje pelo app —, não do catálogo, e a correção é
-     * o campo estruturado `tireoidite_tipo` (D1).
+     * A descrição vem do CORPUS: "Parênquima tireoidiano com ecotextura
+     * difusamente heterogênea" é a linha dele, 62 vezes. Aqui entra só a
+     * cláusula, porque o renderer a encaixa na frase do lobo.
+     *
+     * Nada de "com micronodulações": era invenção do cenário. Quando o médico
+     * descrever um padrão específico, ele o digita e o verbatim dele vence.
      */
     seed: {
-      lobo_direito: { ecotextura_alterada: "difusamente heterogênea, com micronodulações" },
-      lobo_esquerdo: { ecotextura_alterada: "difusamente heterogênea, com micronodulações" },
+      lobo_direito: { ecotextura_alterada: "difusamente heterogênea" },
+      lobo_esquerdo: { ecotextura_alterada: "difusamente heterogênea" },
     },
   },
   {

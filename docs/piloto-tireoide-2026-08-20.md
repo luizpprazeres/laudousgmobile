@@ -182,21 +182,71 @@ cenário aprovado.
 
 ## O que NÃO foi corrigido, e por quê
 
-### A tireoidite some da conclusão — defeito de PRODUÇÃO em aberto
+### D1 — resolvido, e a pergunta estava errada
 
-No clássico, uma alteração difusa muda o corpo e **não aparece na conclusão**:
-um Hashimoto sai com "Tireoide de volume normal (13,7 ml)." e nada mais. Quem
-dita Hashimoto hoje, no app, recebe uma conclusão que o omite.
+O defeito era real: no clássico, uma alteração difusa mudava o corpo e **não
+aparecia na conclusão**. Um Hashimoto saía com "Tireoide de volume normal
+(13,7 ml)." e nada mais.
 
-A correção é o campo estruturado `tireoidite_tipo` (D1), e ela tem condição do
-Codex que aceito: **nullable e aditivo no Zod, no JSON Schema strict E com regra
-no prompt, na mesma leva.** Acrescentar só no Zod repetiria a divergência de
-contrato que o README proíbe. As quatro redações de conclusão precisam de
-curadoria clínica.
+A correção planejada era um campo `tireoidite_tipo` com quatro redações
+etiológicas curadas. **O corpus desmentiu a premissa.** Em
+`_extraction/from-laudousg-original/07-laudos-reais-anonimizados/tireoide_30d.md`
+— 251 laudos reais dele, 30 dias — há 62 conclusões de alteração difusa:
 
-Junto vêm dois primos: a concordância quebrada ("Lobo direito … difusamente
-heterogênea" — o verbatim foi escrito para concordar com "glândula") e a
-generalização do objetivo, que conclui só "Tireoidopatia difusa".
+```
+ 48×  Sinais ecográficos de tireoidopatia.
+  3×  -Sinais ecográficos de tireoidopatia.
+  2×  Sinais ecográficos de tireoidopatia (bócio tireoideano).
+  2×  Sinais ecográficos de tireoidopatia crônica com esboços nodulares.
+  2×  Sinais ecográficos de tireoidopatia crônica.
+  ...
+```
+
+**Zero** mencionam Hashimoto, De Quervain, Riedel, "linfocítica", "autoimune"
+ou anti-TPO. Ele descreve o padrão e nomeia "tireoidopatia", sem cravar
+etiologia nem prescrever exame.
+
+As quatro frases da web foram **inventadas** — o próprio arquivo de lá as chama
+de "ponto de partida p/ curadoria do Luiz". E o renderer canônico, no objetivo,
+escrevia algo pior: *"Tireoidopatia difusa (…, compatível com tireoidite
+crônica)"* — afirmava uma etiologia que ele nunca afirma.
+
+Trocar a omissão por uma frase que ele nunca escreveu seria substituir um
+defeito por outro. Então D1 deixou de ser "escrever quatro tireoidites" e virou
+uma correção pequena, sustentada por 62 casos:
+
+| situação | conclusão |
+|---|---|
+| alteração difusa | `Sinais ecográficos de tireoidopatia.` |
+| difusa + `volume_glandular = "aumentado"` | `Sinais ecográficos de tireoidopatia (bócio tireoideano).` — 2× no corpus, nas duas com glândula aumentada |
+| difusa + nódulo | a tireoidopatia vem **antes** do item nodular — 12/12 no corpus |
+
+Os dois estilos passaram a dizer a mesma coisa. **Nenhuma mudança de schema,
+JSON Schema ou prompt** — o sinal estruturado já existia (`ecotextura_alterada`
+em qualquer lobo ⇒ `temDifusa`), o que elimina o risco de contrato que o Codex
+havia levantado.
+
+**O que NÃO se infere**, porque o corpus não autoriza:
+
+- **"crônica"** (4× no corpus) não é predita por nenhum achado estruturado:
+  dois casos "crônicos" não têm esboços, um caso com esboços não recebe o
+  rótulo. Depende de história ou evolução, que não estão nos achados.
+- **"com esboços nodulares"** NÃO significa que há nódulo — nesses laudos o
+  corpo diz justamente que não se delimitam lesões focais. Ler
+  `nodulos.length > 0` para escrevê-lo inverteria o significado.
+
+O cenário do catálogo também carregava a premissa: chamava-se
+`tireoidite_cronica`, aparecia como "Tireoidite crônica (Hashimoto)" e injetava
+"com micronodulações" que ninguém selecionou. Virou `alteracao_difusa`,
+"Alteração difusa da ecotextura", afirmando só o que o médico afirma.
+
+**Fica para o Luiz:** se ele QUISER as etiologias, é feature nova — definição
+dos estados, critérios, corpo, conclusão e testes aprovados por ele. O corpus
+atual não autoriza promovê-las a padrão. E a tela precisa passar a oferecer
+**um** estado ("Tireoidopatia / alteração difusa"): mapear as quatro para a
+mesma saída em silêncio é affordance falsa — o médico escolheria Riedel e
+acreditaria ter registrado o que não registrou. Por isso o adaptador continua
+bloqueando as outras três.
 
 ### Oito cenários ainda escrevem redação clínica
 
@@ -298,7 +348,9 @@ marcou. A terceira é a que ela mais persegue.
 
 | # | o que | estado |
 |---|---|---|
-| D1 | `tireoidite_tipo` estruturado (Zod + JSON Schema + prompt) | precisa de curadoria clínica das 4 conclusões |
+| D1 | conclusão da alteração difusa, ancorada no corpus | ✅ feito — sem mudança de schema |
+| — | etiologias nomeadas (Hashimoto, Riedel…) como FEATURE | só se o Luiz pedir; não há âncora |
+| — | a tela oferecer UM estado difuso no lugar das 4 opções | bloqueado no adaptador até lá |
 | D2 | tela do nódulo sobre os seis eixos canônicos | **bloqueia o nódulo no piloto** |
 | D4 | linfonodos, clássico e objetivo | ✅ feito |
 | — | `axilas_alteradas` da MAMÁRIA: mesmo defeito do D4, precisa de redação | com o D1 |
