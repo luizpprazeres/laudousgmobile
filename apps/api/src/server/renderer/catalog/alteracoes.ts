@@ -44,6 +44,16 @@ export type AlteracaoSpec = {
    * detectada sozinha; o grupo cobre o que colide sem compartilhar chave.
    */
   grupo?: string;
+  /**
+   * Os estilos em que este cenário vale. Ausente = todos.
+   *
+   * Existe porque os dois renderers de uma categoria podem não cobrir os mesmos
+   * campos: `com_protese` troca o bloco de COMENTÁRIOS no clássico e é IGNORADO
+   * no objetivo (MAMARIA.ts:854, que monta a técnica só a partir de
+   * `titulo_com_axilas`). Sem declarar, o cenário apareceria na lista do
+   * objetivo e não faria nada ao ser clicado.
+   */
+  estilos?: readonly string[];
   /** O patch estruturado sobre os achados normais. Nunca texto. */
   seed: Record<string, unknown>;
 };
@@ -102,6 +112,7 @@ export function previaDaAlteracao(
   estilo: string,
   spec: AlteracaoSpec,
 ): PreviaDaAlteracao | null {
+  if (spec.estilos && !spec.estilos.includes(estilo)) return null;
   const normal = laudoPadraoDe(categoria, estilo);
   const alterado = laudoDaAlteracao(categoria, estilo, spec.seed);
   if (!normal || !alterado) return null;

@@ -9,7 +9,7 @@
  *   pnpm exec tsx --env-file=../../.env src/server/renderer/__tests__/alteracoes-tireoide.manual.ts
  */
 import { previaDaAlteracao, renderizarSelecao, conflitosEntre } from "../catalog/alteracoes";
-import { alteracoesDe } from "../catalog/alteracoes/index";
+import { alteracoesDe, categoriasComAlteracoes } from "../catalog/alteracoes/index";
 import { laudoPadraoDe } from "../catalog/modeloNormalRegistry";
 
 let ok = 0;
@@ -98,6 +98,47 @@ console.log("6 · nenhuma seleção volta ao normal por acidente\n");
   }
   const vazia = renderizarSelecao(CAT, "CLASSICO_COMPLETO", []);
   t("sem alteração nenhuma, sai o modelo normal", vazia.ok === true && vazia.texto === normal);
+}
+
+console.log("7 · o desenho GENERALIZA — vale para toda categoria curada\n");
+{
+  const cats = categoriasComAlteracoes();
+  t("há mais de uma categoria curada", cats.length >= 2, cats.join(", "));
+  for (const cat of cats) {
+    const lista = alteracoesDe(cat);
+    t(`${cat}: tem cenários`, lista.length > 0);
+    // Ids repetidos fariam a tela mandar um e o servidor aplicar outro.
+    t(`${cat}: os ids são únicos`, new Set(lista.map((s) => s.id)).size === lista.length);
+    for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"]) {
+      for (const spec of lista) {
+        // Um cenário pode valer só num estilo — e declara isso. O que não pode
+        // é aparecer na lista e não fazer nada ao ser clicado.
+        if (spec.estilos && !spec.estilos.includes(estilo)) continue;
+        const p = previaDaAlteracao(cat, estilo, spec);
+        t(`${cat}/${estilo} · ${spec.id}: renderiza e muda o laudo`, p !== null);
+      }
+    }
+    // A regra que vale em todas: nenhum cenário escreve texto clínico.
+    t(`${cat}: nenhum cenário menciona classificação`,
+      !JSON.stringify(lista).match(/TI-RADS|BI-RADS|NOTA FINAL|Categoria/i));
+  }
+}
+
+console.log("8 · MAMÁRIA — outra classificação calculada, mesmo mecanismo\n");
+{
+  const m = (id: string) => alteracoesDe("MAMARIA").find((s) => s.id === id)!;
+  const suspeito = previaDaAlteracao("MAMARIA", "CLASSICO_COMPLETO", m("nodulo_solido_suspeito"))!;
+  const benigno = previaDaAlteracao("MAMARIA", "CLASSICO_COMPLETO", m("nodulo_solido_benigno"))!;
+  const cSus = suspeito.entram.join(" ");
+  const cBen = benigno.entram.join(" ");
+  t("o suspeito recebe BI-RADS alto", /BI-RADS® [45]/.test(cSus), cSus.slice(0, 120));
+  t("o benigno recebe BI-RADS baixo", /BI-RADS® [123]/.test(cBen), cBen.slice(0, 120));
+  t("as categorias são diferentes",
+    (cSus.match(/BI-RADS® \d/)?.[0] ?? "a") !== (cBen.match(/BI-RADS® \d/)?.[0] ?? "b"));
+  // A frase normal "não há sinais evidentes" precisa SAIR quando há achado —
+  // é o mesmo princípio de não deixar normalidade encobrir patologia.
+  t("a frase de normalidade sai quando há nódulo",
+    suspeito.saem.some((l) => /Não há sinais evidentes/.test(l)), suspeito.saem.join(" | "));
 }
 
 const total = ok + falhas.length;
