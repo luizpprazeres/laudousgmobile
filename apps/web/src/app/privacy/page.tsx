@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'Política de Privacidade — LaudoUSG',
   description:
     'Como o LaudoUSG coleta, usa e protege seus dados pessoais e os dados de exames, em conformidade com a LGPD.',
-  alternates: { canonical: 'https://laudousg.com/privacy' },
+  alternates: { canonical: 'https://www.laudousg.com.br/privacy' },
 }
 
 export default function PrivacyPage() {

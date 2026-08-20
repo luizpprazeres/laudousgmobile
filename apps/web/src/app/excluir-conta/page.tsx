@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'Excluir conta e dados — LaudoUSG',
   description:
     'Como excluir sua conta LaudoUSG e todos os dados associados, pelo próprio app ou por solicitação via e-mail.',
-  alternates: { canonical: 'https://web.laudousg.com/excluir-conta' },
+  alternates: { canonical: 'https://www.laudousg.com.br/excluir-conta' },
 }
 
 export default function ExcluirContaPage() {

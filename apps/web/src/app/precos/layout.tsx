@@ -5,10 +5,10 @@ export const metadata: Metadata = {
   description:
     'Compare os planos do LaudoUSG: Gratuito, Essencial e Profissional. Escolha a solução ideal para sua rotina de ultrassonografia.',
   alternates: {
-    canonical: 'https://laudousg.com/precos',
+    canonical: 'https://www.laudousg.com.br/precos',
   },
   openGraph: {
-    url: 'https://laudousg.com/precos',
+    url: 'https://www.laudousg.com.br/precos',
     title: 'Planos e Preços — LaudoUSG | Software de Laudos USG com IA',
     description:
       'Compare os planos do LaudoUSG: Gratuito, Essencial e Profissional. Escolha a solução ideal para sua rotina de ultrassonografia.',

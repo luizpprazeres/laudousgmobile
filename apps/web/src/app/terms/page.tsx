@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'Termos de Uso — LaudoUSG',
   description:
     'Termos e condições de uso da plataforma LaudoUSG para geração de laudos de ultrassonografia.',
-  alternates: { canonical: 'https://laudousg.com/terms' },
+  alternates: { canonical: 'https://www.laudousg.com.br/terms' },
 }
 
 export default function TermsPage() {

@@ -20,7 +20,7 @@ const softwareAppSchema = {
   name: 'LaudoUSG',
   applicationCategory: 'MedicalApplication',
   operatingSystem: 'Web',
-  url: 'https://laudousg.com',
+  url: 'https://www.laudousg.com.br',
   description:
     'Plataforma para geração de laudos de ultrassonografia com inteligência artificial. Dite os achados por voz e obtenha laudos prontos em segundos.',
   offers: [
@@ -52,14 +52,14 @@ const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'LaudoUSG',
-  url: 'https://laudousg.com',
-  logo: 'https://laudousg.com/brand/logo-laudousg-transparent.png',
+  url: 'https://www.laudousg.com.br',
+  logo: 'https://www.laudousg.com.br/brand/logo-laudousg-transparent.png',
   description:
     'Plataforma SaaS para geração de laudos de ultrassonografia com inteligência artificial',
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://laudousg.com'),
+  metadataBase: new URL('https://www.laudousg.com.br'),
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -72,11 +72,11 @@ export const metadata: Metadata = {
   description:
     'Plataforma para geração de laudos de ultrassonografia com inteligência artificial. Dite os achados por voz e obtenha laudos prontos em segundos.',
   alternates: {
-    canonical: 'https://laudousg.com',
+    canonical: 'https://www.laudousg.com.br',
   },
   openGraph: {
     type: 'website',
-    url: 'https://laudousg.com',
+    url: 'https://www.laudousg.com.br',
     siteName: 'LaudoUSG',
     title: 'LaudoUSG – Laudos de Ultrassonografia com IA',
     description:

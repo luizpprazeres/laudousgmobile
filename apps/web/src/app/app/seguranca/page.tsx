@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, ChevronDown } from 'lucide-react'
 
 // Segurança — Política de Privacidade (LGPD) + Termos de Uso. Conteúdo estático
-// portado do laudousg.com original. Protegido pelo middleware (updateSession).
+// portado do laudousg.com.br original. Protegido pelo middleware (updateSession).
 function AccordionBlock({
   title,
   date,
