@@ -91,6 +91,18 @@ const ServerEnvSchema = z.object({
    * demais flags deste sistema.
    */
   MODEL_CUSTOMIZATION_USER_IDS: z.string().default(""),
+
+  /**
+   * Segredo de SISTEMA das rotas `/api/catalog/*` — o modelo de laudo que a web
+   * consome para montar por cliques.
+   *
+   * O catálogo não tem dado de paciente e não depende de usuário, mas é a
+   * redação clínica da casa inteira: uma rota aberta convida raspagem. Só o
+   * backend da web usa; o navegador nunca vê a chave.
+   *
+   * Vazio ou curto = rota indisponível (503). Ver `catalog-api/auth.ts`.
+   */
+  CATALOG_SERVICE_TOKEN: z.string().default(""),
   // DET-6: quando "true", as diretivas de conclusão do médico são aplicadas
   // como OPERAÇÕES tipadas (pipeline/operations.ts) em vez do commandGuard
   // legado. Drop-in determinístico, atrás de flag (default OFF) — liga após
