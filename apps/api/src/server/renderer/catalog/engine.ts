@@ -366,8 +366,28 @@ export function validateOperations<F>(catalog: Catalog<F>, ops: Operation[]): st
    */
   const removidos = new Set(ops.filter((o) => o.op === "remove_slot").map((o) => o.slot));
 
+  /**
+   * O catálogo DERIVADO não sabe acrescentar item ao fim da conclusão.
+   *
+   * Ele não monta o laudo slot a slot: troca linhas de um laudo pronto. Para
+   * acrescentar ao fim da conclusão seria preciso saber onde ela termina e com
+   * que número o item entra — e numerar é do renderer.
+   *
+   * A recusa vem AQUI, quando o médico salva, e não lá na geração: até agora o
+   * rascunho salvava, a publicação dava certo, e o laudo saía no padrão com a
+   * mensagem errada, dizendo que o modelo tinha mudado.
+   */
+  const derivado = catalog.derivado === true;
+
   for (const o of ops) {
     if (o.op === "append_conclusion_item") {
+      if (derivado) {
+        erros.push(
+          "esta categoria ainda não aceita item novo na conclusão — " +
+            "acrescente a frase depois de uma linha existente",
+        );
+        continue;
+      }
       textoLivre("item de conclusão", o.value);
       // Frase ACRESCENTADA é texto fixo: entra no documento sem passar pela
       // interpolação (é empilhada como segmento pronto). Aceitar {placeholder}

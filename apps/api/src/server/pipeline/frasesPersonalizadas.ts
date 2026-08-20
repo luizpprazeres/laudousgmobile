@@ -32,8 +32,20 @@ export type FrasePersonalizada = {
   id: string;
   /** A frase do modelo-base, como estava quando ele personalizou. */
   base: string;
-  /** A redação dele. `null` = tirar a linha do laudo. */
-  nova: string | null;
+  /**
+   * A redação dele. `null` = tirar a linha do laudo. `undefined` = deixar a
+   * linha como está — é o caso de quem só acrescentou algo depois dela.
+   */
+  nova?: string | null;
+  /**
+   * Texto a ACRESCENTAR logo depois desta linha.
+   *
+   * Existia como operação (`insert_phrase_after`), o app oferecia o botão, e o
+   * caminho derivado recusava — descartando a personalização inteira com a
+   * mensagem errada, dizendo que o modelo tinha mudado. O médico contornava
+   * colando as linhas novas dentro da frase que ele "alterava".
+   */
+  acrescentar?: string;
 };
 
 export type ResultadoAplicacao = {
@@ -124,12 +136,28 @@ export function aplicarFrasesPersonalizadas(
     usadas.add(f.id);
     aplicadas++;
 
-    if (f.nova === null) continue; // remover: a linha não entra na saída
-
     // A numeração da conclusão ("1) ") é do motor e não pertence à frase.
     const prefixo = /^\s*\d+\)\s*/.exec(linha)?.[0] ?? "";
     const indent = /^\s*/.exec(linha)?.[0] ?? "";
-    saida.push(`${prefixo || indent}${preencherDados(f.nova, dados).trim()}`);
+
+    if (f.nova === null) {
+      // Remover: a linha não entra na saída. O que vier depois dela, entra —
+      // acrescentar ancorado numa linha removida já é recusado na validação.
+    } else if (f.nova === undefined) {
+      saida.push(linha); // só acrescentou algo depois; a linha segue igual
+    } else {
+      saida.push(`${prefixo || indent}${preencherDados(f.nova, dados).trim()}`);
+    }
+
+    if (f.acrescentar !== undefined) {
+      /**
+       * As linhas novas herdam o RECUO da âncora, não a numeração: numerar é do
+       * motor, e um "2)" escrito aqui brigaria com o que o renderer contou.
+       */
+      for (const nl of preencherDados(f.acrescentar, dados).split("\n")) {
+        saida.push(nl.trim() === "" ? "" : `${indent}${nl.trim()}`);
+      }
+    }
   }
 
   return {

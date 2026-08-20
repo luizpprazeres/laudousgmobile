@@ -62,6 +62,22 @@ async function main() {
   const db = getDbClient();
   let contagemFinal = -1;
 
+  /**
+   * O ANTES, não o zero.
+   *
+   * Este teste afirmava que as tabelas ficavam VAZIAS no fim — o que valia
+   * enquanto ninguém tinha publicado nada. Desde o piloto de 20/08 há
+   * personalização de verdade em produção, e "vazio" passou a acusar falha
+   * onde não há. O que a transação promete é não deixar rastro: o certo é
+   * comparar com o estado anterior.
+   */
+  const [c0] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(schema.reportModelCustomizations);
+  const [e0] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.reportScopes);
+  const antesCustom = Number(c0?.n ?? 0);
+  const antesEscopos = Number(e0?.n ?? 0);
+
   try {
     await db.transaction(async (tx) => {
       const x = tx as Executor;
@@ -206,14 +222,16 @@ async function main() {
     if (e !== ROLLBACK) throw e;
   }
 
-  // Depois do rollback, o banco tem de estar como antes: as tabelas seguem vazias.
+  // Depois do rollback, o banco tem de estar COMO ANTES — nem uma linha a mais.
   const [depois] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(schema.reportModelCustomizations);
   const [escopos] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.reportScopes);
   contagemFinal = Number(depois?.n ?? -1);
-  check("ROLLBACK limpou as personalizações", contagemFinal === 0, contagemFinal);
-  check("ROLLBACK limpou os escopos", Number(escopos?.n) === 0, escopos?.n);
+  check("ROLLBACK não deixou personalização para trás", contagemFinal === antesCustom,
+    `antes ${antesCustom}, depois ${contagemFinal}`);
+  check("ROLLBACK não deixou escopo para trás", Number(escopos?.n) === antesEscopos,
+    `antes ${antesEscopos}, depois ${escopos?.n}`);
 
   console.log(`\nCiclo de vida da personalização — banco real, tudo revertido\n`);
   for (const f of falhas) console.log("  ✗", f);

@@ -143,6 +143,7 @@ export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDe
     estilo,
     /** Impressão digital do modelo de hoje — ver `versaoDerivadaDe`. */
     versao: versaoDerivadaDe(categoria, estilo),
+    derivado: true,
     variaveis: [],
     titulo: () => titulo,
     cabecalhos: { corpo: "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", conclusao: "CONCLUSÃO:" },

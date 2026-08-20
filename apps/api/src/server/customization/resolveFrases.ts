@@ -107,26 +107,61 @@ export function frasesDeOperacoes(
   operations: Operation[],
   base: Map<string, string>,
 ): FrasePersonalizada[] | null {
-  const out: FrasePersonalizada[] = [];
+  /**
+   * Por ÂNCORA, não por operação: alterar uma frase e acrescentar outra depois
+   * dela são duas operações sobre a mesma linha, e o aplicador percorre o laudo
+   * uma vez só. Sem juntar aqui, a segunda sobrescreveria a primeira no mapa e
+   * o médico perderia metade do que publicou.
+   */
+  const porAncora = new Map<string, FrasePersonalizada>();
+
+  const pegar = (id: string): FrasePersonalizada | null => {
+    const b = base.get(id);
+    // A âncora sumiu do modelo — a redação foi escrita contra um texto que o
+    // sistema não escreve mais.
+    if (b === undefined) return null;
+    const atual = porAncora.get(id);
+    if (atual) return atual;
+    const nova: FrasePersonalizada = { id, base: b };
+    porAncora.set(id, nova);
+    return nova;
+  };
+
   for (const o of operations) {
-    if (o.op === "replace_phrase" || o.op === "remove_slot") {
-      const b = base.get(o.slot);
-      // A âncora sumiu do modelo — a redação foi escrita contra um texto que o
-      // sistema não escreve mais.
-      if (b === undefined) return null;
-      out.push({ id: o.slot, base: b, nova: o.op === "replace_phrase" ? o.value : null });
+    if (o.op === "replace_phrase") {
+      const f = pegar(o.slot);
+      if (!f) return null;
+      f.nova = o.value;
+      continue;
+    }
+    if (o.op === "remove_slot") {
+      const f = pegar(o.slot);
+      if (!f) return null;
+      f.nova = null;
+      continue;
+    }
+    if (o.op === "insert_phrase_after") {
+      const f = pegar(o.anchor);
+      if (!f) return null;
+      // Duas inserções na mesma âncora empilham, na ordem em que ele escreveu.
+      f.acrescentar = f.acrescentar === undefined ? o.value : `${f.acrescentar}\n${o.value}`;
       continue;
     }
     /**
-     * `append_conclusion_item` e `insert_phrase_after` ainda não valem no
-     * modelo derivado: acrescentar linha exige saber ONDE, e a âncora aqui é
-     * uma frase que pode não estar no laudo. Uma operação que o motor não sabe
-     * executar invalida o conjunto — aplicar as outras entregaria uma
-     * personalização parcial, que é o que este `null` existe para impedir.
+     * `append_conclusion_item` não vale no modelo derivado, e a recusa é do
+     * conjunto inteiro.
+     *
+     * Acrescentar ao FIM da conclusão exige saber onde a conclusão termina e
+     * com que número o item entra — e a numeração é do renderer. Aplicar as
+     * outras operações e calar sobre esta entregaria uma personalização parcial:
+     * o médico confere o laudo esperando a redação dele e encontra um híbrido.
+     *
+     * A validação recusa esta operação antes de o rascunho ser salvo (ver
+     * `engine.validateOperations`), então na prática ela não chega até aqui.
      */
     return null;
   }
-  return out;
+  return [...porAncora.values()];
 }
 
 /** Nunca rejeita — o chamador pode dar `await` sem try/catch. */

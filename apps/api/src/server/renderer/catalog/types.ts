@@ -165,6 +165,15 @@ export type Catalog<F> = {
   /** Vocabulário de placeholders que o motor sabe preencher nesta categoria. */
   variaveis: readonly string[];
   /**
+   * Este catálogo foi DERIVADO do renderer, e não escrito à mão.
+   *
+   * A diferença importa em quem sabe montar o quê: o escrito compõe o laudo
+   * slot a slot e aceita item novo na conclusão; o derivado troca linhas de um
+   * laudo pronto e não sabe onde a conclusão termina. Sem esta marca, a regra
+   * ficava por conta de comparar a `versao` com um número mágico.
+   */
+  derivado?: boolean;
+  /**
    * Como cada placeholder se chama PARA O MÉDICO.
    *
    * Sem isto a tela mostra o nome da variável, e o nome da variável é de
