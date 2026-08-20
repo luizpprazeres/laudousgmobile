@@ -26,6 +26,39 @@ function activeKeyterms(category: string | null): string[] {
     : [];
 }
 
+type DirectKeyReason = "configured_skip_grant" | "grant_insufficient_permissions";
+
+/**
+ * Saída de emergência: mantém o ditado vivo, mas torna a degradação observável.
+ *
+ * A chave do projeto chega ao aparelho neste modo. Por isso ele nunca pode ser
+ * indistinguível do caminho seguro: há log estruturado, header e campos no JSON.
+ */
+function directKeyResponse(category: string | null, reason: DirectKeyReason) {
+  console.warn("[deepgram/token] DEGRADED_DIRECT_KEY", {
+    reason,
+    category: category ?? "ALL",
+  });
+  return json(
+    {
+      token: env().DEEPGRAM_API_KEY,
+      scheme: "Token",
+      temporary: false,
+      expires_in: 0,
+      model: env().DEEPGRAM_MODEL,
+      language: env().DEEPGRAM_LANGUAGE,
+      keyterms: activeKeyterms(category),
+      degraded: true,
+      degraded_reason: reason,
+    },
+    200,
+    {
+      "x-laudousg-deepgram-mode": "direct-key",
+      warning: '299 - "Deepgram direct-key degraded mode"',
+    },
+  );
+}
+
 export async function POST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
@@ -37,15 +70,7 @@ export async function POST(req: Request) {
     env().DEEPGRAM_SKIP_GRANT === "true" &&
     env().DEEPGRAM_ALLOW_DIRECT_KEY === "true"
   ) {
-    return json({
-      token: env().DEEPGRAM_API_KEY,
-      scheme: "Token",
-      temporary: false,
-      expires_in: 0,
-      model: env().DEEPGRAM_MODEL,
-      language: env().DEEPGRAM_LANGUAGE,
-      keyterms: activeKeyterms(category),
-    });
+    return directKeyResponse(category, "configured_skip_grant");
   }
 
   let resp: Response;
@@ -76,16 +101,13 @@ export async function POST(req: Request) {
     // devolvemos a própria API key (esquema "Token") quando permitido por env.
     // ⚠️ NÃO É SEGURO PRA PRODUÇÃO — a key trafega pro cliente. Remover/desligar
     // (DEEPGRAM_ALLOW_DIRECT_KEY=false) assim que o token temporário funcionar.
-    if (env().DEEPGRAM_ALLOW_DIRECT_KEY === "true") {
-      return json({
-        token: env().DEEPGRAM_API_KEY,
-        scheme: "Token",
-        temporary: false,
-        expires_in: 0,
-        model: env().DEEPGRAM_MODEL,
-        language: env().DEEPGRAM_LANGUAGE,
-        keyterms: activeKeyterms(category),
-      });
+    // Só há fallback quando a evidência diz que a key TRANSCREVE, mas não pode
+    // emitir JWT. 401/402/429/5xx não são "permissão de grant" e devolver 200
+    // nesses casos mascararia chave revogada, faturamento, limite ou outage.
+    const grantSemPermissao =
+      resp.status === 403 && /insufficient permissions/i.test(detail);
+    if (env().DEEPGRAM_ALLOW_DIRECT_KEY === "true" && grantSemPermissao) {
+      return directKeyResponse(category, "grant_insufficient_permissions");
     }
     return json({ error: "deepgram_grant_failed", status: resp.status }, 502);
   }
@@ -110,9 +132,17 @@ export async function POST(req: Request) {
   });
 }
 
-function json(body: Record<string, unknown>, status = 200) {
+function json(
+  body: Record<string, unknown>,
+  status = 200,
+  extraHeaders: Record<string, string> = {},
+) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      ...extraHeaders,
+    },
   });
 }

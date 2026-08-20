@@ -8,7 +8,8 @@
     "start": "next start -p 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next .turbo"
+    "clean": "rm -rf .next .turbo",
+    "check:deepgram": "tsx --env-file=../../.env src/server/asr/__tests__/deepgram-saude.manual.ts"
   },
   "dependencies": {
     "@laudousg/db": "workspace:*",
