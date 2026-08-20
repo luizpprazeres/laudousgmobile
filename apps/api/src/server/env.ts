@@ -33,14 +33,27 @@ const ServerEnvSchema = z.object({
   DEEPGRAM_API_KEY: z.string().min(20),
   DEEPGRAM_MODEL: z.string().default("nova-3"),
   DEEPGRAM_LANGUAGE: z.string().default("pt-BR"),
-  // FALLBACK PROTÓTIPO: se /auth/grant falhar (conta sem permissão), o endpoint
-  // /api/deepgram/token devolve a API key direta. ⚠️ inseguro — desligar
-  // ("false") quando o token temporário funcionar. Default "true" só pro teste.
-  DEEPGRAM_ALLOW_DIRECT_KEY: z.string().default("true"),
-  // A conta não tem permissão de /auth/grant (403). PULA a ida ao Deepgram e
-  // devolve a key direta na hora — economiza ~0,3-0,5s no início da gravação.
-  // Quando o grant for habilitado na conta, setar "false".
-  DEEPGRAM_SKIP_GRANT: z.string().default("true"),
+  /**
+   * ⚠️ MODO DEGRADADO: entrega a API key do projeto AO APARELHO.
+   *
+   * Existe como saída de emergência para o caso — e só para o caso — em que a
+   * key transcreve mas não pode emitir JWT temporário
+   * (`/v1/auth/grant` → 403 "Insufficient permissions"). Qualquer outro erro do
+   * grant NÃO cai aqui; ver `api/deepgram/token/route.ts`.
+   *
+   * O default era `"true"`, e foi assim que o sistema rodou meses em modo
+   * inseguro sem ninguém saber: com a variável ausente, o caminho seguro nem
+   * era tentado. Um default que degrada a segurança em silêncio é o pior tipo
+   * de default. Agora é FAIL-SAFE: sem configuração explícita, exige o token
+   * temporário.
+   */
+  DEEPGRAM_ALLOW_DIRECT_KEY: z.string().default("false"),
+  /**
+   * Pula a ida ao Deepgram e devolve a key direta na hora, economizando
+   * ~0,3-0,5s no início da gravação. Mesmo raciocínio do de cima: a economia
+   * não justifica um default que põe a chave do projeto no aparelho.
+   */
+  DEEPGRAM_SKIP_GRANT: z.string().default("false"),
   // Keyterm Prompting (boost de vocabulário médico no STT). Controlado pelo
   // servidor pra ligar/desligar/tunar SEM rebuild do app. Setar "false" desliga.
   DEEPGRAM_KEYTERMS_ENABLED: z.string().default("true"),
