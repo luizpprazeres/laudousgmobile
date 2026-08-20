@@ -141,6 +141,28 @@ console.log("8 · MAMÁRIA — outra classificação calculada, mesmo mecanismo\
     suspeito.saem.some((l) => /Não há sinais evidentes/.test(l)), suspeito.saem.join(" | "));
 }
 
+console.log("9 · o cenário difere do normal SÓ naquilo de que ele trata\n");
+{
+  /**
+   * A armadilha que a pelve revelou: cravei [3,0 × 2,0 × 1,8] no ovário para
+   * ilustrar, e 5,7 ml fica abaixo do limiar de 6 — cada cenário de ovário saía
+   * com um "volume reduzido" que ninguém pediu. Um achado clínico inventado por
+   * um número escolhido de enfeite.
+   *
+   * A regra: se o cenário não é SOBRE aquele dado, ele não o menciona.
+   */
+  const proibidas = /volume reduzido|volume aumentado|de volume alterado/i;
+  for (const cat of categoriasComAlteracoes()) {
+    for (const spec of alteracoesDe(cat)) {
+      if (/volume|bocio|hipotrof/i.test(spec.id)) continue; // estes SÃO sobre volume
+      const p = previaDaAlteracao(cat, "CLASSICO_COMPLETO", spec);
+      if (!p) continue;
+      const achou = p.entram.find((l) => proibidas.test(l));
+      t(`${cat} · ${spec.id}: não inventa alteração de volume`, achou === undefined, achou);
+    }
+  }
+}
+
 const total = ok + falhas.length;
 console.log(`\n${"═".repeat(74)}`);
 if (falhas.length === 0) console.log(`✓ ${ok}/${total} — o cenário é escrito, a frase é do renderer`);

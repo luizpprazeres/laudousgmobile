@@ -1,5 +1,6 @@
 import type { AlteracaoSpec } from "../alteracoes";
 import { ALTERACOES_MAMARIA } from "./MAMARIA";
+import { ALTERACOES_PELVE } from "./PELVE_FEMININA";
 import { ALTERACOES_TIREOIDE } from "./TIREOIDE";
 
 /**
@@ -13,6 +14,7 @@ import { ALTERACOES_TIREOIDE } from "./TIREOIDE";
 const POR_CATEGORIA: Record<string, AlteracaoSpec[]> = {
   TIREOIDE: ALTERACOES_TIREOIDE,
   MAMARIA: ALTERACOES_MAMARIA,
+  PELVE_FEMININA: ALTERACOES_PELVE,
 };
 
 export function alteracoesDe(categoria: string): AlteracaoSpec[] {
