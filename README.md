@@ -1,6 +1,12 @@
 # LaudoUSG — Backend Mobile (monorepo)
 
-Monorepo que serve **(1) o backend Next.js + packages compartilhados** (consumidos pelo app iOS Swift **e** pelo app Android RN) **e (2) o app Android React Native/Expo** (`apps/mobile`), que está **ATIVO** e em preparação para a Play Store.
+> ## 📍 Retomando o trabalho? Leia também `docs/plano-web-workspace-2026-08-20.md`
+>
+> Ele tem o estado do **web.laudousg.com** e a fila do que falta. E abre com o
+> mapa que evita a confusão que custou horas em 20/08: **existem dois sites**.
+> `laudousg.com` está **morto**; `web.laudousg.com` (= `apps/web`) é o que vale.
+
+Monorepo que serve **(1) o backend Next.js + packages compartilhados** (consumidos pelo app iOS Swift **e** pelo app Android RN), **(2) o app Android React Native/Expo** (`apps/mobile`), em preparação para a Play Store, e **(3) a estação de laudos da web** (`apps/web` → `web.laudousg.com`), onde o médico monta o laudo por cliques em vez de ditar.
 
 > **Origem / correção (2026-07-04):** este repo nasceu como app RN/Expo + backend. Houve uma fase em que o app RN foi congelado em favor do app iOS nativo SwiftUI (em [`~/laudousg-swift/`](../laudousg-swift)). **Mas o app Android RN foi RETOMADO** — hoje é o app Android oficial (Expo 52, RN 0.76.9), em desenvolvimento ativo (paridade com o iOS) e prestes a lançar na Play Store. O README anterior dizia que `apps/mobile` estava congelado — isso está **desatualizado**.
 >
@@ -16,6 +22,7 @@ Monorepo que serve **(1) o backend Next.js + packages compartilhados** (consumid
 | `packages/db/` | 🟢 Vivo | Drizzle ORM schema + migrations. Usado **só** pelo `apps/api`. |
 | `packages/shared/` | 🟢 Vivo | Zod schemas + tipos. Usado por `apps/api` e por `apps/mobile`. |
 | `_extraction/from-laudousg-original/` | 📚 Referência | Prompts canônicos, modelos por categoria, regras clínicas, few-shots — extraídos do `laudousg.com`. Não mexer sem revisão. |
+| `apps/web/` | 🟢 **VIVO em prod** | **`web.laudousg.com`** — a estação de laudos por CLIQUES (projeto Vercel `laudousg-web`). Mesmo Supabase do iOS/Android. Não confundir com `~/laudousg`, que serve `laudousg.com` e está **morto**. Ver `docs/plano-web-workspace-2026-08-20.md`. |
 | `apps/mobile/` | 🟢 **ATIVO** (Android) | App **Android** React Native/Expo (Expo 52, RN 0.76.9). Retomado; app Android oficial em paridade com o iOS, prestes a lançar na Play Store. Nativo Android em `apps/mobile/android/` (Android Studio). Consome o mesmo backend `apps/api`. |
 
 ---
@@ -288,6 +295,62 @@ pnpm exec tsx --env-file=../../.env src/server/customization/painel.manual.ts
 > O painel lê o banco corretamente, mas avalia a regra de ativação com o `.env`
 > da SUA máquina — ele não prova quais flags estão rodando em produção. Essa
 > prova é gerar um laudo e olhar a auditoria.
+
+### As ALTERAÇÕES — o que se clica para sair do normal
+
+O modelo normal já era derivado do renderer. As patologias também são, e pelo
+mesmo princípio: **escreve-se o CENÁRIO, nunca a frase.**
+
+```ts
+AlteracaoSpec = id clínico + nome + patch estruturado + grupo de conflito
+```
+
+A frase, a conclusão e **a classificação** continuam saindo do renderer de
+produção — o TI-RADS sai da combinação dos eixos, não de um texto guardado.
+Digitar redação num spec seria a quarta cópia do texto clínico.
+
+Percorrer o schema Zod trocando campos por valores "patológicos" **não
+funciona**: o schema não carrega significado clínico. Um nódulo é objeto dentro
+de array com seis eixos, e nenhum algoritmo genérico conclui que aquilo é um TR3.
+
+| categoria | cenários | o que provou |
+|---|---|---|
+| TIREOIDE | 8 | escore de Domingos → **TI-RADS** calculado |
+| MAMARIA | 9 | outra classificação → **BI-RADS** calculado |
+| PELVE_FEMININA | 14 | variedade: achado em 3 lugares, FIGO, O-RADS, lados independentes |
+
+```bash
+pnpm exec tsx --env-file=../../.env src/server/renderer/__tests__/alteracoes.manual.ts   # 163/163
+```
+
+### As rotas do catálogo — como a web monta laudo sem uma 2ª cópia do texto
+
+```
+GET  /api/catalog/[category]?estilo=   modelo, cenários, projeção e alterações
+POST /api/catalog/[category]/render    { estilo, alteracoes[], dados } → laudo
+```
+
+**A tela manda os ids e o que o médico digitou; o RENDERER recompõe.** `dados`
+entra por último e vence os números do cenário — eles existem para o renderer ter
+o que calcular, não para aparecerem no laudo de alguém. Combinação impossível
+responde **409** com os conflitos nomeados, porque "não existe clinicamente" é
+diferente de "deu erro".
+
+Auth de sistema por `CATALOG_SERVICE_TOKEN`, comparado em tempo constante e
+**fail-closed**: sem o segredo, 503. Gate: `catalog-api/contrato.manual.ts` (37/37).
+
+> **Onde a web PODE divergir do app, e onde não pode.**
+>
+> **Texto clínico:** o canônico ganha, sempre. Uma fonte só.
+>
+> **Cálculo:** depende do canal de entrada. No app o médico **dita** — três eixos
+> mal ouvidos viram um volume errado apresentado como fato, e por isso o canônico
+> nunca calcula volume. No web ele **digita**, o dado é confiável, e o web **pode
+> e deve** calcular e mostrar. Divergir aqui é correto.
+>
+> **Exceção:** a **classificação** (TI-RADS, BI-RADS, O-RADS, Domingos) vem
+> sempre do `/render`. Calculá-la nos dois lados criaria duas autoridades sobre o
+> mesmo laudo, e um dia a tela diria um número e o laudo, outro.
 
 ### Biblioteca
 
