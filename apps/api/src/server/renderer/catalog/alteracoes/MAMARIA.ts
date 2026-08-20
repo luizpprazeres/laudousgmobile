@@ -23,7 +23,16 @@ import type { AlteracaoSpec } from "../alteracoes";
 function achado(over: Record<string, unknown>) {
   return {
     tipo: "nodulo_solido",
-    lado: "direita",
+    /**
+     * O LADO é do exame, não do cenário — e o renderer já sabia disso.
+     *
+     * `mamaTxt` escreve "mama ____" para lado nulo, com o comentário
+     * "NUNCA inventa direita". Este helper cravava `"direita"` como default e
+     * todos os cenários saíam à direita, inclusive os que não tratam de
+     * lateralidade: o catálogo violava a doutrina do próprio renderer.
+     * (Achado do Codex, 20/08.)
+     */
+    lado: null,
     ecogenicidade: null,
     forma: null,
     orientacao: null,
@@ -49,6 +58,7 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "cisto_simples",
     nome: "Cisto simples",
+    kind: "alteracao",
     descricao: "Anecoico, circunscrito, com reforço acústico — o achado benigno mais comum.",
     grupo: "achado_direita",
     seed: {
@@ -61,9 +71,9 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
           margem: "circunscrita",
           posterior: "reforco",
           calcificacoes: "sem",
-          medidas_cm: [1.2, 0.9, 0.8],
-          localizacao: "no quadrante superior lateral",
-          horario: "10 horas",
+          medidas_cm: null,
+          localizacao: null,
+          horario: null,
         }),
       ],
     },
@@ -71,19 +81,20 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "cistos_multiplos",
     nome: "Cistos múltiplos",
+    kind: "alteracao",
     descricao: "Cistos simples em ambas as mamas.",
     grupo: "achado_direita",
     seed: {
       achados: [
         achado({
           tipo: "multiplos_cistos",
-          lado: "bilateral",
+          lado: null,
           ecogenicidade: "anecoico",
           forma: "oval",
           orientacao: "paralela",
           margem: "circunscrita",
           posterior: "reforco",
-          medidas_cm: [0.8, 0.6, 0.6],
+          medidas_cm: null,
         }),
       ],
     },
@@ -91,6 +102,7 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "cisto_complicado",
     nome: "Cisto complicado",
+    kind: "alteracao",
     descricao: "Conteúdo espesso, com finos ecos em suspensão.",
     grupo: "achado_direita",
     seed: {
@@ -102,8 +114,8 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
           orientacao: "paralela",
           margem: "circunscrita",
           posterior: "reforco",
-          medidas_cm: [1.4, 1.0, 0.9],
-          localizacao: "no quadrante superior medial",
+          medidas_cm: null,
+          localizacao: null,
         }),
       ],
     },
@@ -113,6 +125,7 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "nodulo_solido_benigno",
     nome: "Nódulo sólido de aspecto benigno",
+    kind: "alteracao",
     descricao: "Oval, paralelo à pele, circunscrito — o padrão do fibroadenoma.",
     grupo: "achado_direita",
     seed: {
@@ -125,9 +138,9 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
           margem: "circunscrita",
           posterior: "nenhuma",
           calcificacoes: "sem",
-          medidas_cm: [1.6, 1.1, 1.0],
-          localizacao: "no quadrante superior lateral",
-          horario: "10 horas",
+          medidas_cm: null,
+          localizacao: null,
+          horario: null,
         }),
       ],
     },
@@ -135,6 +148,7 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "nodulo_solido_suspeito",
     nome: "Nódulo sólido com critérios de suspeição",
+    kind: "alteracao",
     descricao: "Irregular, não paralelo, margem espiculada e sombra acústica posterior.",
     grupo: "achado_direita",
     seed: {
@@ -147,9 +161,9 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
           margem: "espiculada",
           posterior: "sombra",
           calcificacoes: "microcalcificacoes",
-          medidas_cm: [1.3, 1.1, 1.2],
-          localizacao: "no quadrante superior lateral",
-          horario: "11 horas",
+          medidas_cm: null,
+          localizacao: null,
+          horario: null,
         }),
       ],
     },
@@ -157,6 +171,7 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "linfonodo_intramamario",
     nome: "Linfonodo intramamário",
+    kind: "alteracao",
     descricao: "Achado habitual, com hilo ecogênico preservado.",
     grupo: "achado_direita",
     seed: {
@@ -167,8 +182,8 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
           forma: "oval",
           orientacao: "paralela",
           margem: "circunscrita",
-          medidas_cm: [0.7, 0.4, 0.4],
-          localizacao: "no quadrante superior lateral",
+          medidas_cm: null,
+          localizacao: null,
         }),
       ],
     },
@@ -178,6 +193,7 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "axilas_alteradas",
     nome: "Linfonodos axilares alterados",
+    kind: "alteracao",
     descricao: "Cadeias axilares com linfonodos de aspecto suspeito.",
     grupo: "axilas",
     /**
@@ -199,6 +215,7 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "protese",
     nome: "Portadora de prótese",
+    kind: "alteracao",
     // `com_protese` troca o bloco de COMENTÁRIOS (MAMARIA.ts:704) e nada mais —
     // é uma alteração de técnica, não de achado. O nome diz isso, para o médico
     // não esperar uma frase no corpo que não vem.
@@ -218,11 +235,12 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
   {
     id: "ginecomastia",
     nome: "Ginecomastia",
+    kind: "alteracao",
     descricao: "Mama masculina, com tecido fibroglandular retroareolar.",
     grupo: "mama_masculina",
     seed: {
       mama_masculina: true,
-      achados: [achado({ tipo: "ginecomastia", lado: "bilateral" })],
+      achados: [achado({ tipo: "ginecomastia" })],
     },
   },
 ];

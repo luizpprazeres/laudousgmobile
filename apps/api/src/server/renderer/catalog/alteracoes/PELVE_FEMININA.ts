@@ -48,14 +48,15 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "mioma_intramural",
     nome: "Mioma intramural",
+    kind: "alteracao",
     descricao: "Nódulo único na parede do útero.",
     grupo: "miometrio",
     seed: {
       miomas: [
         {
           classificacao: "intramural",
-          medidas_cm: [2.4, 2.1, 1.9],
-          parede: "parede anterior",
+          medidas_cm: null,
+          parede: null,
           relacao: null,
           figo: null,
         },
@@ -65,14 +66,15 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "mioma_submucoso_figo",
     nome: "Mioma submucoso (com FIGO)",
+    kind: "alteracao",
     descricao: "Nódulo que deforma a cavidade — o renderer classifica pela FIGO ditada.",
     grupo: "miometrio",
     seed: {
       miomas: [
         {
           classificacao: "submucoso",
-          medidas_cm: [1.8, 1.6, 1.5],
-          parede: "parede posterior",
+          medidas_cm: null,
+          parede: null,
           relacao: null,
           figo: "2",
         },
@@ -82,6 +84,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "utero_miomatoso",
     nome: "Útero miomatoso",
+    kind: "alteracao",
     descricao: "Múltiplos nódulos, sem individualizar cada um.",
     grupo: "miometrio",
     seed: { utero_miomatoso: true },
@@ -89,6 +92,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "adenomiose",
     nome: "Adenomiose",
+    kind: "alteracao",
     descricao: "Miométrio heterogêneo, com as alterações típicas.",
     grupo: "miometrio_difuso",
     seed: {
@@ -102,6 +106,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "polipo_endometrial",
     nome: "Pólipo endometrial",
+    kind: "alteracao",
     descricao: "Imagem ecogênica na cavidade.",
     grupo: "endometrio",
     /**
@@ -119,10 +124,17 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "endometrio_espessado",
     nome: "Endométrio espessado",
+    kind: "alteracao",
     descricao: "Espessura acima do esperado para a fase.",
     grupo: "endometrio",
     seed: {
-      endometrio_espessura_cm: 1.6,
+      /**
+       * Sem número: o Codex conferiu que o laudo sai byte a byte igual com 1,6
+       * e com `null` — era medida fictícia invisível ao gate dinâmico, que só
+       * acusa o que é IMPRESSO. Um cenário não carrega dado de exame nem quando
+       * ninguém percebe.
+       */
+      endometrio_espessura_cm: null,
       endometrio_achado: "Endométrio espessado, de ecotextura heterogênea.",
       endometrio_conclusao: "Espessamento endometrial.",
     },
@@ -132,28 +144,31 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "cisto_simples_direito",
     nome: "Cisto simples no ovário direito",
+    kind: "alteracao",
     descricao: "Imagem anecoica, de paredes finas.",
     grupo: "ovario_direito",
     seed: {
-      ovario_direito: ovarioCom("direito", { tipo: "cisto_simples", medidas_cm: [2.8, 2.4, 2.2] }),
+      ovario_direito: ovarioCom("direito", { tipo: "cisto_simples", medidas_cm: null }),
     },
   },
   {
     id: "endometrioma_direito",
     nome: "Endometrioma no ovário direito",
+    kind: "alteracao",
     descricao: 'Conteúdo em "vidro fosco", sem vascularização.',
     grupo: "ovario_direito",
     seed: {
-      ovario_direito: ovarioCom("direito", { tipo: "endometrioma", medidas_cm: [3.2, 2.8, 2.5] }),
+      ovario_direito: ovarioCom("direito", { tipo: "endometrioma", medidas_cm: null }),
     },
   },
   {
     id: "cisto_esquerdo",
     nome: "Cisto no ovário esquerdo",
+    kind: "alteracao",
     descricao: "Combina com achados do ovário direito — são lados independentes.",
     grupo: "ovario_esquerdo",
     seed: {
-      ovario_esquerdo: ovarioCom("esquerdo", { tipo: "cisto_simples", medidas_cm: [2.5, 2.0, 1.9] }),
+      ovario_esquerdo: ovarioCom("esquerdo", { tipo: "cisto_simples", medidas_cm: null }),
     },
   },
 
@@ -161,6 +176,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "diu_bem_posicionado",
     nome: "DIU bem posicionado",
+    kind: "alteracao",
     descricao: "Dispositivo tópico, na posição esperada.",
     grupo: "diu",
     seed: { diu: "bem_posicionado" },
@@ -168,6 +184,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "diu_deslocado",
     nome: "DIU deslocado",
+    kind: "alteracao",
     descricao: "Dispositivo fora da posição esperada.",
     grupo: "diu",
     seed: { diu: "deslocado" },
@@ -175,6 +192,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "cistos_naboth",
     nome: "Cistos de Naboth",
+    kind: "alteracao",
     descricao: "Achado cervical habitual, sem significado patológico.",
     grupo: "colo",
     seed: { cistos_naboth: true },
@@ -182,6 +200,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "istmocele",
     nome: "Istmocele",
+    kind: "alteracao",
     descricao: "Defeito na cicatriz de cesárea.",
     grupo: "istmo",
     seed: {
@@ -193,6 +212,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
   {
     id: "liquido_livre",
     nome: "Líquido livre",
+    kind: "alteracao",
     descricao: "Pequena quantidade no fundo de saco.",
     grupo: "liquido",
     seed: {
