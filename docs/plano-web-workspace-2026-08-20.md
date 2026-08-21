@@ -151,7 +151,27 @@ As três operações valem nas derivadas: alterar, **acrescentar** e remover.
 | `/app/seguranca` | 256 | documento legal | prosa jurídica: `max-w-4xl` está **certo**, não alargar |
 | **Biblioteca** | — | **não existe** | o `LaudarRail` já reserva o slot com `soon: true` |
 
-### 3.2 A troca do motor — o trabalho grande
+### 3.2 A troca do motor — ✅ FEITA na TIREOIDE (21/08)
+
+> **Estado.** A TIREOIDE não compõe mais texto no navegador: `LaudarWebExperience`
+> chama `POST /api/catalog/TIREOIDE/render` e mostra o que o renderer devolve. O
+> compositor local dela **foi apagado**, não desativado.
+>
+> O bloqueio era o nódulo (D2): a tela pedia um GRAU de 1 a 6 e o canônico soma
+> pontos dos eixos — escalas diferentes com o mesmo nome, que se invertem na
+> ponta maligna. Resolvido tirando a tradução do caminho: a tela passou a
+> oferecer os seis eixos com as chaves do renderer.
+>
+> Também entrou o controle de **volume glandular**, que faltava: a web concluía
+> "volume normal" para qualquer volume digitado, inclusive um bócio.
+>
+> O gate `tireoide-ponta-a-ponta.manual.ts` mudou de premissa (não há mais texto
+> local com que comparar) e fecha **0 pendências**.
+>
+> **Falta:** as demais categorias, uma por vez. `lib/deterministic` só sai quando
+> a última sair.
+
+### O desenho original
 
 `LaudarWebExperience.tsx` (23 KB) compõe o texto localmente com
 `lib/deterministic`. O alvo:
