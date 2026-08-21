@@ -54,7 +54,7 @@ export default function PreferenciasPage() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 dark:bg-gray-950">
       <div className="mx-auto max-w-2xl">
-        <Link href="/app" className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <Link href="/app/gerar" className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
           <ArrowLeft className="h-3.5 w-3.5" /> Voltar
         </Link>
         <h1 className="mb-6 font-barlow text-2xl font-bold text-gray-900 dark:text-gray-100">Preferências</h1>

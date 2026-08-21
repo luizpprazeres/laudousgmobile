@@ -1,129 +1,183 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ChevronDown, Copy, Trash2 } from 'lucide-react'
-import { deleteWebReport } from '@/lib/webReports'
+import { ArrowLeft, FileText, Search } from 'lucide-react'
+import { categoriaLabel, dataFmt, grupoDaData, resumo, type HistoryItem } from './HistoryItem'
+import { OriginBadge, ReportDetail } from './ReportDetail'
 
-export type HistoryItem = {
-  id: string
-  origin: 'web' | 'ia'
-  category: string
-  title: string | null
-  text: string
-  date: string
-}
+export type { HistoryItem }
 
-/** Código de categoria → rótulo legível (ex.: ABDOMEN_TOTAL → Abdome total). */
-function categoriaLabel(code: string): string {
-  const map: Record<string, string> = {
-    ABDOMEN_TOTAL: 'Abdome total',
-    ABDOME_SUPERIOR: 'Abdome superior',
-    PROSTATA_SUPRAPUBICA: 'Próstata',
-    VIAS_URINARIAS: 'Vias urinárias',
-    MAMARIA: 'Mamária',
-    PELVE_FEMININA: 'Pelve feminina',
-    CERVICAL: 'Cervical',
-    PARTES_MOLES: 'Partes moles',
-    TIREOIDE: 'Tireoide',
-    MUSCULOESQUELETICO: 'Musculoesquelético',
-    OBSTETRICA: 'Obstétrica',
-    MORFOLOGICO: 'Morfológica',
-    DOPPLER_OBSTETRICO: 'Doppler obstétrico',
+/**
+ * O histórico em DUAS COLUNAS: a lista à esquerda, o laudo à direita.
+ *
+ * Antes era um acordeão numa coluna de 48rem — abrir um laudo empurrava os
+ * outros para fora da tela, e comparar dois exigia rolar. A tela do médico é
+ * larga; a lista não precisava dela toda, e o laudo precisava.
+ *
+ * No celular a mesma lista abre o laudo em folha sobreposta, com o MESMO
+ * componente de detalhe. Duas implementações divergiriam.
+ */
+export function HistoryList({ items }: { items: HistoryItem[] }) {
+  const [lista, setLista] = useState(items)
+  const [selecionado, setSelecionado] = useState<string | null>(items[0]?.id ?? null)
+  const [busca, setBusca] = useState('')
+
+  const filtrados = useMemo(() => {
+    const q = busca.trim().toLowerCase()
+    if (!q) return lista
+    /** Busca no título, na categoria e no TEXTO — quem procura "mioma" quer o laudo que o menciona. */
+    return lista.filter((i) =>
+      [i.title ?? '', categoriaLabel(i.category), i.text].join(' ').toLowerCase().includes(q),
+    )
+  }, [lista, busca])
+
+  const aberto = filtrados.find((i) => i.id === selecionado) ?? null
+
+  const aoExcluir = (id: string) => {
+    const restante = lista.filter((x) => x.id !== id)
+    setLista(restante)
+    /** Some o que estava aberto: abre o próximo, em vez de deixar o painel vazio. */
+    if (selecionado === id) setSelecionado(restante[0]?.id ?? null)
   }
-  return map[code] ?? code.charAt(0) + code.slice(1).toLowerCase().replace(/_/g, ' ')
-}
 
-function dataFmt(iso: string): string {
-  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
-  return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : iso
-}
+  if (lista.length === 0) return <Vazio />
 
-function Row({ item, onDeleted }: { item: HistoryItem; onDeleted: (id: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const copy = () => navigator.clipboard?.writeText(item.text)
-  const remove = async () => {
-    if (!confirm('Excluir este laudo do histórico?')) return
-    setDeleting(true)
-    try {
-      await deleteWebReport(item.id)
-      onDeleted(item.id)
-    } catch {
-      setDeleting(false)
-    }
-  }
   return (
-    <li className="rounded-xl border border-gray-200 bg-white">
-      <div className="flex items-center gap-3 px-4 py-3">
-        <button type="button" onClick={() => setOpen((v) => !v)} className="flex flex-1 items-center gap-3 text-left">
-          <ChevronDown className={`h-4 w-4 shrink-0 text-gray-400 transition ${open ? 'rotate-180' : ''}`} />
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-gray-800">{item.title ?? categoriaLabel(item.category)}</div>
-            <div className="text-xs text-gray-400">{dataFmt(item.date)}</div>
-          </div>
-        </button>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-            item.origin === 'web' ? 'bg-emerald-50 text-emerald-700' : 'bg-violet-50 text-violet-700'
-          }`}
-          title={item.origin === 'web' ? 'Gerado na web (sem IA)' : 'Gerado com IA (app)'}
+    <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-950">
+      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-200 bg-white px-5 py-3 dark:border-gray-800 dark:bg-gray-900">
+        <Link
+          href="/app/gerar"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-300"
         >
-          {item.origin === 'web' ? 'Web' : 'IA'}
+          <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+        </Link>
+        <h1 className="font-barlow text-lg font-bold text-gray-900 dark:text-gray-100">Histórico</h1>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {filtrados.length === lista.length
+            ? `${lista.length} laudo${lista.length === 1 ? '' : 's'}`
+            : `${filtrados.length} de ${lista.length}`}
         </span>
-        <button type="button" onClick={copy} className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-gray-50 hover:text-gray-700" title="Copiar">
-          <Copy className="h-4 w-4" />
-        </button>
-        {item.origin === 'web' ? (
-          <button type="button" onClick={remove} disabled={deleting} className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40" title="Excluir">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        ) : null}
+
+        <label className="relative ml-auto w-full max-w-xs">
+          <span className="sr-only">Buscar no histórico</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por categoria ou conteúdo…"
+            className="h-8 w-full rounded-full border border-gray-200 bg-white pl-9 pr-3 text-xs text-gray-800 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900/40"
+          />
+        </label>
+
+        <Link
+          href="/app/gerar"
+          className="shrink-0 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700"
+        >
+          Novo laudo
+        </Link>
+      </header>
+
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(19rem,26rem)_1fr]">
+        {/* ── a lista ── */}
+        <nav
+          aria-label="Laudos salvos"
+          className="min-h-0 overflow-y-auto border-gray-200 bg-white lg:border-r dark:border-gray-800 dark:bg-gray-900"
+        >
+          {filtrados.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+              Nada encontrado para “{busca}”.
+            </p>
+          ) : (
+            <ul>
+              {filtrados.map((item, i) => {
+                const grupo = grupoDaData(item.date)
+                const novoGrupo = i === 0 || grupoDaData(filtrados[i - 1]!.date) !== grupo
+                const ativo = item.id === selecionado
+                return (
+                  <li key={`${item.origin}-${item.id}`}>
+                    {novoGrupo ? (
+                      <p className="sticky top-0 z-10 border-b border-gray-100 bg-gray-50/95 px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500 backdrop-blur dark:border-gray-800 dark:bg-gray-950/95 dark:text-gray-400">
+                        {grupo}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setSelecionado(item.id)}
+                      aria-current={ativo ? 'true' : undefined}
+                      className={`flex w-full items-start gap-2.5 border-b border-gray-100 px-5 py-3 text-left transition dark:border-gray-800/70 ${
+                        ativo
+                          ? 'bg-emerald-50/70 dark:bg-emerald-950/25'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                      }`}
+                    >
+                      {/* Barra de seleção: diz onde você está sem depender só do fundo. */}
+                      <span
+                        aria-hidden
+                        className={`mt-0.5 h-9 w-0.5 shrink-0 rounded-full ${ativo ? 'bg-emerald-600' : 'bg-transparent'}`}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">
+                            {item.title ?? categoriaLabel(item.category)}
+                          </span>
+                          <OriginBadge origin={item.origin} />
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">
+                          {resumo(item.text)}
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-gray-400 dark:text-gray-500">
+                          {dataFmt(item.date)}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </nav>
+
+        {/* ── o laudo, no desktop ── */}
+        <section className="hidden min-h-0 bg-white lg:block dark:bg-gray-900">
+          {aberto ? (
+            <ReportDetail item={aberto} onDeleted={aoExcluir} />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-500">
+              <FileText className="h-7 w-7" />
+              <p className="text-sm">Escolha um laudo à esquerda.</p>
+            </div>
+          )}
+        </section>
       </div>
-      {open ? (
-        <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap border-t border-gray-100 bg-gray-50 px-5 py-4 font-['Times_New_Roman'] text-[13px] leading-relaxed text-gray-800">
-          {item.text}
-        </pre>
+
+      {/*
+        No celular não há coluna: o laudo aberto vira folha sobreposta, com o
+        mesmo componente. `lg:hidden` para não duplicar no desktop.
+      */}
+      {aberto ? (
+        <div className="fixed inset-0 z-40 bg-white lg:hidden dark:bg-gray-900">
+          <ReportDetail item={aberto} onClose={() => setSelecionado(null)} onDeleted={aoExcluir} />
+        </div>
       ) : null}
-    </li>
+    </div>
   )
 }
 
-export function HistoryList({ items }: { items: HistoryItem[] }) {
-  const [list, setList] = useState(items)
-  const onDeleted = (id: string) => setList((l) => l.filter((x) => x.id !== id))
-
+function Vazio() {
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-6 flex items-center justify-between gap-3">
-          <div>
-            <Link href="/app" className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600">
-              <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-            </Link>
-            <h1 className="font-barlow text-2xl font-bold text-gray-900">Histórico de laudos</h1>
-            <p className="text-sm text-gray-500">{list.length} laudo(s) — web e IA juntos.</p>
-          </div>
-          <Link href="/app/gerar" className="shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-700">
-            Novo laudo
-          </Link>
-        </div>
-
-        {list.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center">
-            <p className="text-sm font-semibold text-gray-700">Nenhum laudo salvo ainda</p>
-            <p className="mt-1 text-sm text-gray-500">Gere um laudo e clique em “Salvar laudo” — ele aparece aqui.</p>
-            <Link href="/app/gerar" className="mt-5 inline-block rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
-              Gerar meu primeiro laudo
-            </Link>
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {list.map((item) => (
-              <Row key={`${item.origin}-${item.id}`} item={item} onDeleted={onDeleted} />
-            ))}
-          </ul>
-        )}
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
+      <div className="max-w-md rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-900">
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nenhum laudo salvo ainda</p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Monte um laudo e clique em <strong className="font-semibold">Salvar laudo</strong> — ele aparece aqui.
+        </p>
+        <Link
+          href="/app/gerar"
+          className="mt-5 inline-block rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
+        >
+          Gerar meu primeiro laudo
+        </Link>
       </div>
     </div>
   )

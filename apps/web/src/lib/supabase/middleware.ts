@@ -47,6 +47,23 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  /**
+   * O HUB `/app` DEIXOU DE EXISTIR — e a URL não pode morrer com ele.
+   *
+   * Ele era uma tela de atalhos para gerar, histórico, preferências e preços;
+   * o menu lateral já leva a todos, e a tela sobrava entre o login e o
+   * trabalho. Mas era o destino pós-login desde o começo: está em favoritos e
+   * no histórico dos navegadores. Apagar o arquivo sem isto entregaria 404 a
+   * quem já usava.
+   *
+   * Só o caminho EXATO redireciona: `/app/gerar` e os demais seguem.
+   */
+  if (pathname === "/app" || pathname === "/app/") {
+    const paraOTrabalho = request.nextUrl.clone();
+    paraOTrabalho.pathname = "/app/gerar";
+    return NextResponse.redirect(paraOTrabalho);
+  }
+
   // Protege a área logada.
   if (!user && pathname.startsWith("/app")) {
     const redirectUrl = request.nextUrl.clone();
@@ -55,10 +72,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Usuário logado não vê login/signup — manda para o destino ou /app.
+  // Usuário logado não vê login/signup — manda para o destino ou direto ao trabalho.
   if (user && (pathname === "/login" || pathname === "/signup")) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = request.nextUrl.searchParams.get("redirect") || "/app";
+    redirectUrl.pathname = request.nextUrl.searchParams.get("redirect") || "/app/gerar";
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }
