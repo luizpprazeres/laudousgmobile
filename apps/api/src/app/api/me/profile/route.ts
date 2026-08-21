@@ -144,8 +144,34 @@ async function loadProfile(userId: string) {
  *
  * Existir linha aqui quer dizer App Store; não existir, o site. Só assinatura
  * ativa conta — uma expirada não descreve o plano de hoje.
+ *
+ * ⚠️ NUNCA derruba o perfil. A tabela `subscriptions` está declarada no schema
+ * do Drizzle mas **não existe neste banco** — descoberto em 21/08 quando a
+ * primeira versão desta função deixou `/api/me/profile` respondendo 500 em
+ * produção, na rota que o iOS usa. O perfil é o dado essencial; a assinatura é
+ * enriquecimento. Enriquecimento que quebra o essencial é defeito de desenho,
+ * não azar.
+ *
+ * Aqui `null` também é a resposta CORRETA, não um remendo: sem tabela não há
+ * assinatura da App Store registrada, e o rótulo do plano cai na nomenclatura
+ * do site — que é de onde vieram todos os planos deste banco.
  */
 async function loadAssinatura(userId: string) {
+  try {
+    return await buscarAssinatura(userId);
+  } catch (erro) {
+    console.warn(
+      JSON.stringify({
+        evento: "ASSINATURA_INDISPONIVEL",
+        motivo: erro instanceof Error ? erro.message : String(erro),
+        efeito: "perfil devolvido sem assinatura; rótulo do plano usa o nome do site",
+      }),
+    );
+    return null;
+  }
+}
+
+async function buscarAssinatura(userId: string) {
   const db = getDbClient();
   const [row] = await db
     .select({
