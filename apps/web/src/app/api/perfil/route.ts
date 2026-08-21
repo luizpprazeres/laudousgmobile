@@ -39,5 +39,28 @@ export async function PATCH(req: Request) {
 
   const r = await salvarPerfil(patch)
   if (!r.ok) return NextResponse.json({ error: r.erro }, { status: r.status })
+
+  /**
+   * O SUCESSO SILENCIOSO QUE NÃO FEZ NADA — e como se recusa a fingir.
+   *
+   * `apps/api` e `apps/web` são projetos separados na Vercel e podem subir em
+   * ordens diferentes. O Zod descarta chave desconhecida sem reclamar: contra
+   * uma versão antiga da rota canônica, `crm` e `uf` seriam simplesmente
+   * ignorados, ela responderia 200 com o perfil intacto, e a tela diria
+   * "salvo" para uma gravação que não aconteceu.
+   *
+   * A prova é o próprio corpo de volta: se ele não traz sequer a CHAVE `crm`,
+   * a rota lá não conhece o campo. Melhor uma falha clara agora do que o
+   * médico descobrir que o CRM sumiu no dia em que imprimir o laudo.
+   */
+  const devolvido = (r.corpo as { profile?: Record<string, unknown> } | null)?.profile
+  const pediuRegistro = 'crm' in patch || 'uf' in patch
+  if (pediuRegistro && devolvido && !('crm' in devolvido)) {
+    return NextResponse.json(
+      { error: 'registro_nao_suportado' },
+      { status: 502 },
+    )
+  }
+
   return NextResponse.json(r.corpo, { status: r.status })
 }

@@ -68,7 +68,9 @@ export function Perfil({ inicial }: { inicial: PerfilDoMedico }) {
             ? 'Informe o CRM e a UF juntos, ou deixe os dois em branco.'
             : j.error === 'invalid_body'
               ? 'O CRM é só o número, de 4 a 10 dígitos.'
-              : (j.error ?? 'Não foi possível salvar.'),
+              : j.error === 'registro_nao_suportado'
+                ? 'O serviço ainda não grava CRM e UF. Nada foi salvo — tente de novo em alguns minutos.'
+                : (j.error ?? 'Não foi possível salvar.'),
         )
         return
       }
