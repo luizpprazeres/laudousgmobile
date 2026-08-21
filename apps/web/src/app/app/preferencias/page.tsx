@@ -20,7 +20,12 @@ export const dynamic = 'force-dynamic'
  * duas colunas a partir de `lg`, com o que é do médico à esquerda e o que é da
  * conta e da máquina à direita.
  */
-export default async function PreferenciasPage() {
+export default async function PreferenciasPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const veioDoPagamento = (await searchParams).assinatura === 'sucesso'
   const r = await lerPerfil()
   const corpo = (r.ok ? r.corpo : null) as {
     profile?: PerfilDoMedico & { plan?: PlanoDoBanco }
@@ -40,6 +45,23 @@ export default async function PreferenciasPage() {
         <h1 className="mb-6 font-barlow text-2xl font-bold text-gray-900 dark:text-gray-100">
           Preferências
         </h1>
+
+        {/*
+          A confirmação depois do pagamento.
+          
+          Diz que o plano pode demorar a aparecer porque é verdade: quem grava
+          `profiles.plan` é o webhook da AbacatePay, e ele chega quando chega. O
+          médico pode voltar desta página antes disso e ver o plano antigo no
+          cartão ao lado — prometer "já está ativo" faria a própria tela
+          desmentir a frase alguns centímetros abaixo.
+        */}
+        {veioDoPagamento ? (
+          <p className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
+            <strong className="font-semibold">Pagamento recebido.</strong> A confirmação da
+            operadora costuma levar alguns instantes — se o plano abaixo ainda estiver
+            o antigo, atualize a página em um minuto.
+          </p>
+        ) : null}
 
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="flex flex-col gap-4">

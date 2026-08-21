@@ -33,7 +33,15 @@ export async function POST(request: NextRequest) {
     items: [{ id: productId, quantity: 1 }],
     methods: ['CARD'],
     externalId: user.id,
-    completionUrl: `${origin}/app?assinatura=sucesso`,
+    /**
+     * Volta para as PREFERÊNCIAS, não para a tela de gerar.
+     *
+     * Quem acabou de pagar quer ver o que comprou. O destino antigo era
+     * `/app?assinatura=sucesso` — e `/app` deixou de existir (o middleware
+     * manda para `/app/gerar`), onde ninguém lia o parâmetro: o médico pagava e
+     * caía numa tela de trabalho sem uma palavra de confirmação.
+     */
+    completionUrl: `${origin}/app/preferencias?assinatura=sucesso`,
     returnUrl: `${origin}/precos`,
     metadata: { userId: user.id, email: user.email, plan },
   })
