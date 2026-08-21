@@ -15,6 +15,8 @@ import {
   type TireoideState,
 } from '@/lib/deterministic'
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
+import { adaptarPelve } from '@/lib/catalog/pelveParaCatalogo'
+import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
 import { CalcPanel } from './CalcPanel'
@@ -198,34 +200,38 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }))
 
   /**
-   * A TIREOIDE sai do RENDERER canônico; as demais ainda compõem localmente.
+   * AS CATEGORIAS MIGRADAS saem do RENDERER canônico; as demais compõem local.
    *
-   * É a categoria piloto da troca de motor (§3.2 do plano de 20/08). O
-   * compositor local dela foi apagado — não há para onde cair, e é de propósito:
-   * um segundo motor vivo produziria um laudo plausível e errado no dia em que
-   * alguém chamasse o errado.
+   * A lista está em `lib/catalog/migradas.ts`, e cada entrada só chega lá
+   * depois de provada por um gate diferencial. Acrescentar a próxima categoria
+   * é acrescentar um `case` aqui e uma linha lá — não uma cirurgia.
+   *
+   * Não há para onde cair quando o `/render` falha, e é de propósito: um
+   * segundo motor vivo produziria um laudo plausível e errado no dia em que
+   * alguém o chamasse sem perceber. `composeReport` recusa categoria migrada.
    */
-  const achadosCanonicos = useMemo(
-    () => (isTireoide ? adaptarTireoide(tireoideState) : null),
-    [isTireoide, tireoideState],
-  )
-  const laudoCanonico = useLaudoCanonico(
-    'TIREOIDE',
-    achadosCanonicos
-      ? {
-          dados: achadosCanonicos.dados as unknown as Record<string, unknown>,
-          alteracoes: achadosCanonicos.alteracoes,
-          pendencias: achadosCanonicos.pendencias,
-        }
-      : null,
-    isTireoide,
-  )
+  const migrada = categoriaMigrada(categoria)
+
+  const achadosCanonicos = useMemo(() => {
+    if (isTireoide) {
+      const a = adaptarTireoide(tireoideState)
+      return { dados: a.dados as unknown as Record<string, unknown>, alteracoes: a.alteracoes, pendencias: a.pendencias }
+    }
+    if (categoria === 'PELVE_FEMININA') {
+      const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
+      const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
+      return adaptarPelve(estado, opcoes)
+    }
+    return null
+  }, [categoria, examStates, isTireoide, tireoideState])
+
+  const laudoCanonico = useLaudoCanonico(categoria, achadosCanonicos, migrada)
 
   const composedText = useMemo(() => {
-    if (isTireoide) return laudoCanonico.texto
+    if (migrada) return laudoCanonico.texto
     const cat = CATEGORIES[categoria]
     return cat ? composeReport(cat, examStates[categoria]).text : ''
-  }, [categoria, examStates, isTireoide, laudoCanonico.texto])
+  }, [categoria, examStates, migrada, laudoCanonico.texto])
 
   // O texto manual é preservado por categoria. Enquanto o usuário não editar,
   // os controles determinísticos continuam atualizando o documento ao vivo.
@@ -320,7 +326,31 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     setSaveState('idle')
     setSaveError(null)
   }, [preview])
+  /**
+   * SALVAR um laudo que já não corresponde ao formulário — o buraco fechado.
+   *
+   * Nas categorias migradas o texto chega por rede, com atraso. Entre a última
+   * tecla e a resposta, o que está na tela é o laudo ANTERIOR; e quando o
+   * `/render` falha, é o laudo de antes da falha. O aviso acima do preview diz
+   * isso — mas aviso não impede clique, e o médico que salva nesse intervalo
+   * guarda no prontuário um documento que ele acha que revisou.
+   *
+   * A recusa não vale para o texto EDITADO à mão: aí o médico assumiu a
+   * redação, e ela é dele, não do motor.
+   */
+  const laudoNaoConfere =
+    migrada && !activeDraft.dirty && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
+
   const onSave = async () => {
+    if (laudoNaoConfere) {
+      setSaveState('error')
+      setSaveError(
+        laudoCanonico.erro
+          ? 'O laudo não foi montado — não dá para salvar o texto anterior como se fosse este exame.'
+          : 'Espere o laudo terminar de montar: o texto na tela ainda é o anterior.',
+      )
+      return
+    }
     setSaveState('saving')
     setSaveError(null)
     try {
@@ -558,12 +588,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           {/*
             O ESTADO DO MOTOR, acima do laudo.
             
-            A TIREOIDE agora vem do renderer, e isso é assíncrono: entre a tecla
+            As categorias migradas vêm do renderer, e isso é assíncrono: entre a tecla
             e a resposta há um intervalo em que o texto na tela não corresponde
             ao formulário. Sem dizer isso, o médico leria como atual um laudo de
             dois segundos atrás — e no erro, um laudo de antes da falha.
           */}
-          {isTireoide && (laudoCanonico.erro || laudoCanonico.desatualizado) ? (
+          {migrada && (laudoCanonico.erro || laudoCanonico.desatualizado) ? (
             <p
               className={`mb-2 rounded-xl px-3.5 py-2 text-xs ${
                 laudoCanonico.erro

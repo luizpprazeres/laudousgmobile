@@ -46,11 +46,12 @@ function configuracao(): { base: string; token: string } | null {
  * caminho canônico não deve ser alcançável só porque alguém digitou o nome dela
  * na barra de endereços.
  */
-export const CATEGORIAS_MIGRADAS = ["TIREOIDE"] as const;
-
-export function categoriaMigrada(categoria: string): boolean {
-  return (CATEGORIAS_MIGRADAS as readonly string[]).includes(categoria);
-}
+/**
+ * A lista vive em `./migradas` — este módulo é `server-only`, e o compositor
+ * local (no cliente) precisa consultá-la para se recusar a rodar no que já
+ * migrou.
+ */
+export { CATEGORIAS_MIGRADAS, categoriaMigrada } from "./migradas";
 
 /**
  * O estilo do piloto.

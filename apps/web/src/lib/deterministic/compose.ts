@@ -8,6 +8,13 @@
 
 import type { OrganState } from './types'
 import type { ExamCategory } from './organs/abdomeTotal'
+/**
+ * Caminho RELATIVO, não o alias `@/`. Este módulo é importado também de fora do
+ * `apps/web` — o gate diferencial roda em `apps/api` e carrega o compositor da
+ * web para comparar os dois caminhos. Lá o `@/` aponta para outra árvore, e o
+ * import quebra em tempo de EXECUÇÃO, depois de o build ter passado.
+ */
+import { categoriaMigrada } from '../catalog/migradas'
 
 /** Estado completo do exame: { [sectionId]: OrganState }. */
 export type ExamState = Record<string, OrganState>
@@ -41,10 +48,31 @@ export function appendInitials(text: string, initials?: string): string {
   return `${text}\n\n/${clean}`
 }
 
+/**
+ * ⚠️ CATEGORIA MIGRADA NÃO PASSA POR AQUI — a trava, não a boa vontade.
+ *
+ * Quando uma categoria passa a sair do renderer canônico, este compositor deixa
+ * de ser a fonte da redação dela. O risco não é alguém decidir usá-lo de novo;
+ * é alguém chamá-lo SEM PERCEBER — um caminho novo, um botão de prévia, um
+ * export — e receber um laudo plausível, escrito por um motor aposentado, que
+ * ninguém vai reconhecer como errado porque ele parece certo.
+ *
+ * Na TIREOIDE isso foi resolvido apagando o compositor dela. A pelve usa o
+ * sistema genérico, e apagar as funções de cada módulo seria uma cirurgia
+ * grande com pouco ganho. A trava faz o mesmo trabalho: quem chamar quebra
+ * alto, com o nome da categoria e o que fazer.
+ */
 export function composeReport(
   category: ExamCategory,
   state: ExamState,
 ): ComposedReport {
+  if (categoriaMigrada(category.id)) {
+    throw new Error(
+      `${category.id} sai do renderer canônico — use /api/catalog/${category.id}/render ` +
+        `(ver lib/catalog/migradas.ts). O compositor local não é mais a fonte da redação desta categoria.`,
+    )
+  }
+
   const bodyParts: string[] = []
   const conclusion: string[] = []
   let alteredCount = 0
