@@ -2,6 +2,8 @@ import { z } from "zod";
 export { OPTIONS } from "@/server/cors";
 import { applyCustomization, diffDocs } from "@/server/renderer/catalog/engine";
 import { describeCatalog } from "@/server/renderer/catalog/describe";
+import { cenariosDe, laudoPadraoDe } from "@/server/renderer/catalog/modeloNormalRegistry";
+import { sementeDeExemplo } from "@/server/renderer/catalog/exemplos";
 import { flagsDeProducao, type EntradaCatalogo } from "@/server/renderer/catalog/registry";
 import { catalogEnabledFor } from "@/server/renderer/catalog/engine";
 import { env } from "@/server/env";
@@ -188,6 +190,37 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
         categoria: category,
         estilo: r.chave.styleCode,
       }).ativa,
+      /**
+       * OS CENÁRIOS, com o que os DISTINGUE — para a tela achar um laudo real
+       * do mesmo tipo.
+       *
+       * A coluna de exemplo mostrava o laudo mais recente da categoria, e no
+       * obstétrico isso punha uma gestação de 7 semanas ao lado do modelo de 32
+       * (Luiz, 21/08). O modelo é por cenário; o exemplo tem de ser também.
+       *
+       * `filtro` são só os campos ESCALARES do seed — e eles bastam porque o
+       * seed existe justamente para discriminar o cenário: `numero_fetos`,
+       * `gestacao_inicial`, `trimestre`. Arrays e objetos (o feto-base, por
+       * exemplo) ficam de fora: nunca casariam com um laudo de verdade.
+       */
+      cenarios: cenariosDe(category).map((c) => ({
+        nome: c.nome,
+        /**
+         * O EXEMPLO PREENCHIDO — mesmo cenário, mesmo estilo, mesmo motor.
+         *
+         * A primeira versão mostrava um laudo real do médico ao lado do modelo,
+         * e desencontrava em dois eixos (Luiz, 21/08): vinha de outro cenário
+         * (7 semanas ao lado do modelo de 32) e no estilo em que foi escrito,
+         * não no que a tela mostra. Renderizar resolve os dois.
+         *
+         * Os valores vêm de `exemplos.ts` — o único lugar do sistema onde é
+         * certo inventar medida, porque isto nunca vira laudo.
+         */
+        exemplo: laudoPadraoDe(category, r.chave.styleCode, {
+          ...c.seed,
+          ...sementeDeExemplo(category, c.nome),
+        }),
+      })),
       rascunho: estado.rascunho,
       publicado: estado.publicado,
       historico: estado.historico,

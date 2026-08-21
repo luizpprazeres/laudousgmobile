@@ -13,6 +13,8 @@ const ESTILOS = [
 
 type Detalhe = {
   catalogo?: { modelos?: ModeloProjetado[] }
+  /** Um por cenário, na mesma ordem dos modelos, no MESMO estilo da tela. */
+  cenarios?: { nome: string; exemplo: string | null }[]
   rascunho?: { operations: Operation[] } | null
   publicado?: { operations: Operation[]; versao: number } | null
   personalizacao_ativa?: boolean
@@ -48,7 +50,6 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
 
   /** O que ainda não foi salvo: reescritas, remoções e frases novas. */
   const [edicoes, setEdicoes] = useState<Edicoes>(EDICOES_VAZIAS)
-  const [exemplo, setExemplo] = useState<{ texto: string; origem: string; data: string } | null | undefined>(undefined)
 
   const atual = categorias.find((c) => c.categoria === categoria)
 
@@ -86,26 +87,22 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
     void carregar()
   }, [carregar])
 
-  /**
-   * O exemplo é um laudo REAL do médico, buscado à parte: ele não depende do
-   * estilo escolhido e é mais lento que o modelo. Carregar junto faria a tela
-   * inteira esperar pelo banco.
-   */
-  useEffect(() => {
-    if (!categoria) return
-    let vivo = true
-    setExemplo(undefined)
-    fetch(`/api/biblioteca/${categoria}/exemplo`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => { if (vivo) setExemplo(d.exemplo ?? null) })
-      .catch(() => { if (vivo) setExemplo(null) })
-    return () => { vivo = false }
-  }, [categoria])
-
   const modelos = detalhe?.catalogo?.modelos ?? []
   const [cenario, setCenario] = useState(0)
   useEffect(() => setCenario(0), [categoria, estilo])
   const modelo = modelos[cenario] ?? modelos[0]
+  /**
+   * O exemplo do cenário ESCOLHIDO, no estilo da tela.
+   *
+   * Antes era um laudo real do médico, buscado por categoria — e desencontrava
+   * em dois eixos: podia ser de outro cenário (7 semanas ao lado do modelo de
+   * 32) e vinha no estilo em que foi escrito. Agora sai do mesmo motor, com o
+   * mesmo cenário e o mesmo estilo. (Luiz, 21/08.)
+   */
+  const exemplo =
+    detalhe?.cenarios?.find((c) => c.nome === modelo?.nome)?.exemplo ??
+    detalhe?.cenarios?.[cenario]?.exemplo ??
+    null
 
   const operacoes = useMemo<Operation[]>(
     () => [

@@ -43,7 +43,8 @@ export function Modelo({
 }: {
   modelo: ModeloProjetado
   edicoes: Edicoes
-  exemplo: { texto: string; origem: string; data: string } | null | undefined
+  /** O laudo de exemplo, já renderizado no mesmo cenário e estilo. */
+  exemplo: string | null
   onEditar: (slot: string, valor: string) => void
   onRemover: (slot: string) => void
   onRestaurar: (slot: string) => void
@@ -86,25 +87,14 @@ export function Modelo({
 
       {/* ── um laudo seu, de verdade ── */}
       <div className="flex min-w-0 flex-col gap-2">
-        <Cabecalho
-          titulo="Um laudo seu"
-          auxiliar={
-            exemplo
-              ? `o mais recente desta categoria · ${exemplo.origem === 'web' ? 'montado na web' : 'ditado'}`
-              : 'para comparar com o modelo ao lado'
-          }
-        />
-        {exemplo === undefined ? (
-          <p className="text-xs text-gray-400">Buscando…</p>
-        ) : exemplo === null ? (
+        <Cabecalho titulo="Exemplo" auxiliar="o mesmo modelo, com números — ilustrativos, de um exame normal" />
+        {exemplo === null ? (
           <p className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-xs text-gray-400 dark:border-gray-700">
-            Você ainda não tem laudo salvo nesta categoria.
-            <br />
-            Quando tiver, ele aparece aqui para comparar.
+            Sem exemplo para este cenário.
           </p>
         ) : (
           <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl bg-gray-50 px-4 py-3 font-['Times_New_Roman',Georgia,serif] text-[13px] leading-relaxed text-gray-600 dark:bg-gray-900/60 dark:text-gray-400">
-            {exemplo.texto}
+            {exemplo}
           </pre>
         )}
       </div>
