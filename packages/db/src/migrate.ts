@@ -41,6 +41,12 @@ async function main() {
     // As duas abaixo são minhas e usam `if not exists` em todo objeto.
     "0022_model_customizations.sql",
     "0023_audit_model_version.sql",
+    // Menor privilégio de escrita. Vem por ÚLTIMO de propósito: o passo 1
+    // revoga de `anon` em todas as tabelas do schema, então precisa rodar
+    // depois de qualquer migração que crie tabela. Uma migração futura que
+    // criar tabela e precisar de escrita pelo cliente tem de conceder
+    // explicitamente — e entra DEPOIS desta na lista.
+    "0024_menor_privilegio_escrita.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);
