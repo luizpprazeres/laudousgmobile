@@ -414,6 +414,20 @@ console.log("\n13 · linfonodo fora do padrão é ATÍPICO — a palavra é do m
       { titulo_com_axilas: true, axilas_alteradas: true }],
   ];
 
+  /**
+   * NÃO AVALIOU, NÃO ESCREVE. Decisão do Luiz, 21/08.
+   *
+   * O objetivo afirmava "Não há evidência de linfonodomegalias" mesmo com
+   * `linfonodos_descritos = false` — achado negativo que ninguém fez. A frase é
+   * dele (222× em 251 laudos), mas pertence a quem avaliou: em 26 laudos (10%)
+   * ele não fala de linfonodo, e nesses o laudo cala.
+   */
+  for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"]) {
+    const semAvaliar = (laudoPadraoDe("TIREOIDE", estilo, { linfonodos_descritos: false }) ?? "");
+    const linhas = semAvaliar.split("\n").filter((l) => /linfonod|ganglionar cervical/i.test(l)).join(" ");
+    t_(`${estilo}: não avaliou → o laudo CALA sobre linfonodo`, linhas === "", linhas.slice(0, 110));
+  }
+
   for (const [cat, normal, atipico] of casos) {
     for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"]) {
       const linhasDe = (seed: Record<string, unknown>) =>
@@ -433,6 +447,61 @@ console.log("\n13 · linfonodo fora do padrão é ATÍPICO — a palavra é do m
       t_(`${cat}/${estilo}: …e não inventa lado ou morfologia`,
         !/arredondad|espessamento cortical|à direita|à esquerda/i.test(tAtip), tAtip.slice(0, 110));
     }
+  }
+}
+
+console.log("\n14 · as TIREOIDITES NOMEADAS — recurso pedido pelo Luiz\n");
+{
+  /**
+   * `tireoidite_tipo` é FEATURE, não correção: nos 251 laudos reais ele nunca
+   * nomeia etiologia. Nulo — o caso de 100% dos laudos até hoje — continua
+   * concluindo "Sinais ecográficos de tireoidopatia".
+   *
+   * O que este bloco protege é o modo de falha que eu MESMO introduzi ao
+   * implementar: nomear Hashimoto e o corpo seguir dizendo "de ecogenicidade e
+   * ecotextura normais", enquanto a conclusão afirmava a tireoidite. Mesma
+   * família dos linfonodos — corpo e conclusão discordando sobre o mesmo
+   * achado.
+   */
+  const lobo = { medidas_cm: [5.2, 1.7, 1.6], volume_ml: 7.1 };
+  const base = { lobo_direito: lobo, lobo_esquerdo: lobo, istmo: { medidas_cm: [1.5, 0.9, 0.8], volume_ml: 1.2 } };
+  const esperado: Record<string, string> = {
+    hashimoto: "tireoidite crônica autoimune (Hashimoto)",
+    linfocitica: "tireoidite linfocítica",
+    granulomatosa: "tireoidite subaguda granulomatosa (De Quervain)",
+    riedel: "tireoidite de Riedel (fibrosante)",
+  };
+
+  for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"]) {
+    /** Sem tipo: a frase dele, ancorada em 62 conclusões reais. */
+    const semTipo = laudoPadraoDe(CAT, estilo, {
+      ...base,
+      lobo_direito: { ...lobo, ecotextura_alterada: "difusamente heterogênea" },
+      lobo_esquerdo: { ...lobo, ecotextura_alterada: "difusamente heterogênea" },
+    })!;
+    t_(`${estilo}: sem tipo conclui a frase genérica`, semTipo.includes("Sinais ecográficos de tireoidopatia."));
+    t_(`${estilo}: …e NÃO nomeia etiologia`, !/tireoidite/i.test(semTipo));
+
+    for (const [tipo, frase] of Object.entries(esperado)) {
+      const t = laudoPadraoDe(CAT, estilo, { ...base, tireoidite_tipo: tipo })!;
+      t_(`${estilo}/${tipo}: conclui nomeando`, t.includes(`Sinais ecográficos de ${frase}.`), frase);
+      /** O defeito que eu introduzi: corpo normal sob conclusão de tireoidite. */
+      t_(`${estilo}/${tipo}: o corpo NÃO diz ecotextura normal`,
+        !/ecotextura normais|ecotextura homogênea/.test(t),
+        t.split("\n").find((l) => /Lobo direito|Parênquima/.test(l))?.slice(0, 100));
+      t_(`${estilo}/${tipo}: não sobra tireoidopatia genérica junto`,
+        !t.includes("Sinais ecográficos de tireoidopatia."));
+    }
+
+    /** O VERBATIM dele vence a descrição padrão do tipo. */
+    const comDescricao = laudoPadraoDe(CAT, estilo, {
+      ...base,
+      tireoidite_tipo: "hashimoto",
+      lobo_direito: { ...lobo, ecotextura_alterada: "difusamente heterogênea, com traves ecogênicas" },
+      lobo_esquerdo: { ...lobo, ecotextura_alterada: "difusamente heterogênea, com traves ecogênicas" },
+    })!;
+    t_(`${estilo}: a descrição do médico vence a do tipo`, comDescricao.includes("traves ecogênicas"));
+    t_(`${estilo}: …e a conclusão nomeada continua`, comDescricao.includes("(Hashimoto)"));
   }
 }
 

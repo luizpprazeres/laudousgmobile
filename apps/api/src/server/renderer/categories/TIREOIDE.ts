@@ -107,8 +107,28 @@ const LoboSchema = z.object({
   nodulos: z.array(NoduloSchema),
 });
 
+/**
+ * Os tipos de tireoidite que o médico pode NOMEAR.
+ *
+ * Pedido do Luiz em 21/08. Note que isto é FEATURE, não correção: nos 251
+ * laudos reais dele não há uma única menção a etiologia — ele escreve "Sinais
+ * ecográficos de tireoidopatia" e para por aí. O campo existe porque ele quer
+ * poder nomear quando tiver convicção, não porque o corpus peça.
+ *
+ * Nulo é o caso normal e continua sendo: alteração difusa sem tipo declarado
+ * conclui a frase genérica dele.
+ */
+const TIREOIDITE_TIPOS = ["hashimoto", "linfocitica", "granulomatosa", "riedel"] as const;
+export type TireoiditeTipo = (typeof TIREOIDITE_TIPOS)[number];
+
 export const TireoideFindingsSchema = z.object({
   com_doppler: z.boolean(),
+  /**
+   * O tipo NOMEADO, quando o médico o disser. Nunca inferido dos achados: a
+   * distinção entre as tireoidites depende de clínica e evolução, não de
+   * ecotextura. Ver `TIREOIDITE_CONCLUSAO`.
+   */
+  tireoidite_tipo: z.enum(TIREOIDITE_TIPOS).nullable(),
   volume_glandular: z.enum(["normal", "aumentado", "reduzido"]).nullable(),
   lobo_direito: LoboSchema,
   lobo_esquerdo: LoboSchema,
@@ -206,9 +226,11 @@ export const TIREOIDE_JSON_SCHEMA = {
     "linfonodos_alterados",
     "linfonodos_descricao",
     "achados_adicionais",
+    "tireoidite_tipo",
   ],
   properties: {
     com_doppler: { type: "boolean" },
+    tireoidite_tipo: enumNull(["hashimoto", "linfocitica", "granulomatosa", "riedel"]),
     volume_glandular: enumNull(["normal", "aumentado", "reduzido"]),
     lobo_direito: LOBO_JSON,
     lobo_esquerdo: LOBO_JSON,
@@ -240,6 +262,15 @@ REGRAS:
 3. Cada estrutura (lobo_direito, lobo_esquerdo, istmo):
    - medidas_cm: as 3 medidas do lobo/istmo em cm; null se não ditas.
    - volume_ml: volume do lobo/istmo em ml quando ditado; senão null. NUNCA calcule.
+   - tireoidite_tipo: SÓ quando o médico NOMEAR a tireoidite. Mapeie:
+     "Hashimoto" / "crônica autoimune" / "autoimune" -> "hashimoto";
+     "linfocítica" -> "linfocitica";
+     "granulomatosa" / "De Quervain" / "subaguda" -> "granulomatosa";
+     "Riedel" / "fibrosante" -> "riedel".
+     NUNCA infira o tipo a partir da ecotextura, do volume ou do Doppler — a
+     distinção depende de clínica e evolução, que não estão no ditado. Se ele
+     descrever o padrão sem nomear a doença, deixe null: o código escreve
+     "Sinais ecográficos de tireoidopatia", que é a redação da casa.
    - ecotextura_alterada: SÓ se a ecotextura for DIFUSAMENTE alterada (tireoidite/
      Graves) — cláusula verbatim do médico ("de ecotextura difusamente
      heterogênea..."); null se normal. NÃO use para nódulos.
@@ -471,6 +502,57 @@ const TIREOIDOPATIA = "Sinais ecográficos de tireoidopatia.";
  */
 const TIREOIDOPATIA_BOCIO = "Sinais ecográficos de tireoidopatia (bócio tireoideano).";
 
+/**
+ * ⚠️ REDAÇÃO PROPOSTA — AGUARDANDO APROVAÇÃO DO LUIZ (pedido dele, 21/08).
+ *
+ * Diferente de tudo o mais neste arquivo, estas quatro frases **não têm âncora
+ * no corpus**: em 251 laudos reais ele nunca nomeia etiologia de tireoidite.
+ * Elas existem porque ele pediu o recurso, e foram escritas na VOZ dele —
+ * abrindo com "Sinais ecográficos de", que é o padrão das 62 conclusões de
+ * alteração difusa — em vez de copiadas do compositor da web, que o próprio
+ * arquivo de lá chama de "ponto de partida p/ curadoria".
+ *
+ * Enquanto não houver o aval, o comportamento default não muda: `tireoidite_tipo`
+ * nulo — que é o caso de 100% dos laudos até hoje — continua concluindo
+ * `TIREOIDOPATIA`.
+ */
+const TIREOIDITE_CONCLUSAO: Record<TireoiditeTipo, string> = {
+  hashimoto: "Sinais ecográficos de tireoidite crônica autoimune (Hashimoto).",
+  linfocitica: "Sinais ecográficos de tireoidite linfocítica.",
+  granulomatosa: "Sinais ecográficos de tireoidite subaguda granulomatosa (De Quervain).",
+  riedel: "Sinais ecográficos de tireoidite de Riedel (fibrosante).",
+};
+
+/**
+ * A descrição do PARÊNQUIMA por tipo — usada só quando o médico nomeia a
+ * tireoidite e NÃO descreve a ecotextura.
+ *
+ * A precedência importa e é esta: o verbatim dele (`ecotextura_alterada`) vence
+ * sempre. Isto é o que se escreve quando ele diz "Hashimoto" e mais nada — não
+ * uma frase que substitui a descrição dele.
+ *
+ * Também aguardando aprovação.
+ */
+const TIREOIDITE_CORPO: Record<TireoiditeTipo, string> = {
+  hashimoto: "difusamente heterogênea e hipoecogênica, com micronodulações",
+  linfocitica: "difusamente heterogênea, de grau leve a moderado",
+  granulomatosa: "heterogênea, com áreas hipoecogênicas mal definidas e confluentes",
+  riedel: "difusamente hipoecogênica, de aspecto endurecido",
+};
+
+/**
+ * A conclusão da alteração difusa: nomeada quando o médico nomeou, genérica
+ * quando não.
+ *
+ * O bócio só compõe com a genérica. "Sinais ecográficos de tireoidite de
+ * Riedel (bócio tireoideano)" não é frase que exista — quando há tipo nomeado,
+ * o aumento de volume já tem item próprio na conclusão.
+ */
+function conclusaoDifusa(tipo: TireoiditeTipo | null, bocio: boolean): string {
+  if (tipo) return TIREOIDITE_CONCLUSAO[tipo];
+  return bocio ? TIREOIDOPATIA_BOCIO : TIREOIDOPATIA;
+}
+
 const LINFONODOS_NORMAIS =
   "Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.";
 
@@ -519,19 +601,33 @@ function noduloDescritor(nod: TireoideNodulo): string {
   return partes.join(", ");
 }
 
-/** Frase do lobo/istmo no corpo (normal, difusa ou com imagens nodulares). */
+/**
+ * Frase do lobo/istmo no corpo (normal, difusa ou com imagens nodulares).
+ *
+ * `tipoDifuso` entra porque nomear a tireoidite JÁ afirma que a ecotextura está
+ * alterada. Sem ele, dizer "Hashimoto" sem descrever o parênquima produzia um
+ * laudo que se contradiz: o corpo escrevia "de ecogenicidade e ecotextura
+ * normais" e a conclusão, logo abaixo, "Sinais ecográficos de tireoidite
+ * crônica autoimune". É a mesma família de defeito dos linfonodos.
+ *
+ * O verbatim do médico continua vencendo — a descrição do tipo só preenche o
+ * silêncio.
+ */
 function loboCorpo(
   rotulo: string,
   lobo: TireoideLobo,
   comDoppler: boolean,
   isIstmo: boolean,
+  tipoDifuso: TireoiditeTipo | null = null,
 ): string {
   const medVol = `${rotulo} medindo ${medidasFmt(lobo.medidas_cm)} (volume de ${volFmt(
     lobo.volume_ml,
   )} ml)`;
   if (lobo.nodulos.length === 0) {
-    const sufixo = lobo.ecotextura_alterada
-      ? lobo.ecotextura_alterada.trim().replace(/\.+$/, "")
+    const difusa =
+      lobo.ecotextura_alterada?.trim() ?? (tipoDifuso ? TIREOIDITE_CORPO[tipoDifuso] : null);
+    const sufixo = difusa
+      ? difusa.replace(/\.+$/, "")
       : comDoppler && !isIstmo
         ? "de ecogenicidade, ecotextura e vascularização normais"
         : "de ecogenicidade e ecotextura normais";
@@ -731,9 +827,14 @@ function renderTireoideClassico(
     : "ULTRASSONOGRAFIA DA TIREOIDE";
 
   const aspectos: string[] = [
-    loboCorpo("Lobo direito", f.lobo_direito, f.com_doppler, false),
-    loboCorpo("Lobo esquerdo", f.lobo_esquerdo, f.com_doppler, false),
-    loboCorpo("Istmo", f.istmo, f.com_doppler, true),
+    loboCorpo("Lobo direito", f.lobo_direito, f.com_doppler, false, f.tireoidite_tipo),
+    loboCorpo("Lobo esquerdo", f.lobo_esquerdo, f.com_doppler, false, f.tireoidite_tipo),
+    /**
+     * O istmo também. A tireoidite é DIFUSA por definição — descrever os lobos
+     * como alterados e o istmo como normal descreveria uma doença que não é
+     * essa.
+     */
+    loboCorpo("Istmo", f.istmo, f.com_doppler, true, f.tireoidite_tipo),
   ];
 
   if (f.com_doppler) {
@@ -779,7 +880,12 @@ function renderTireoideClassico(
     { rotulo: "Istmo", lobo: f.istmo },
   ];
   const lobosComAchado = lobos.filter((l) => l.lobo.nodulos.length > 0);
-  const temDifusa = lobos.some((l) => !!l.lobo.ecotextura_alterada);
+  /**
+   * Nomear a tireoidite JÁ é declarar alteração difusa. Sem isto, dizer
+   * "Hashimoto" sem descrever a ecotextura deixava o laudo concluir "sem
+   * evidência de alteração ecotextural" — o contrário do que foi dito.
+   */
+  const temDifusa = lobos.some((l) => !!l.lobo.ecotextura_alterada) || !!f.tireoidite_tipo;
 
   const conclusao: string[] = [];
   if (lobosComAchado.length === 0 && !temDifusa) {
@@ -800,8 +906,8 @@ function renderTireoideClassico(
      * estética: nos 12 laudos do corpus que têm tireoidopatia e conclusão
      * nodular, a tireoidopatia vem antes em 12/12.
      */
-    if (temDifusa) {
-      conclusao.push(f.volume_glandular === "aumentado" ? TIREOIDOPATIA_BOCIO : TIREOIDOPATIA);
+    if (temDifusa || f.tireoidite_tipo) {
+      conclusao.push(conclusaoDifusa(f.tireoidite_tipo, f.volume_glandular === "aumentado"));
     }
 
     // Um item por lobo; imagens do mesmo lobo no mesmo item, separadas por ";".
@@ -1045,7 +1151,12 @@ function renderTireoideObjetivo(
     { rotulo: "Istmo", lobo: f.istmo },
   ];
   const lobosComNodulo = lobos.filter((l) => l.lobo.nodulos.length > 0);
-  const temDifusa = lobos.some((l) => !!l.lobo.ecotextura_alterada);
+  /**
+   * Nomear a tireoidite JÁ é declarar alteração difusa. Sem isto, dizer
+   * "Hashimoto" sem descrever a ecotextura deixava o laudo concluir "sem
+   * evidência de alteração ecotextural" — o contrário do que foi dito.
+   */
+  const temDifusa = lobos.some((l) => !!l.lobo.ecotextura_alterada) || !!f.tireoidite_tipo;
   const volStatus = f.volume_glandular; // "aumentado" | "reduzido" | "normal" | null
 
   // ----- ACHADOS -----
@@ -1062,9 +1173,14 @@ function renderTireoideObjetivo(
 
   // Linha de ecotextura / lesões.
   if (temDifusa) {
-    const difusa = lobos
-      .map((l) => l.lobo.ecotextura_alterada?.trim())
-      .find((t) => !!t);
+    /**
+     * O VERBATIM DELE VENCE. A descrição por tipo é o que se escreve quando ele
+     * nomeia a tireoidite e não descreve o parênquima — nunca substitui o que
+     * ele descreveu.
+     */
+    const difusa =
+      lobos.map((l) => l.lobo.ecotextura_alterada?.trim()).find((t) => !!t) ??
+      (f.tireoidite_tipo ? TIREOIDITE_CORPO[f.tireoidite_tipo] : null);
     achados.push(
       `Parênquima tireoidiano ${(difusa ?? "com ecotextura difusamente heterogênea").replace(/\.+$/, "")}.`,
     );
@@ -1098,25 +1214,28 @@ function renderTireoideObjetivo(
   }
 
   /**
-   * Linfonodos — os mesmos TRÊS estados do clássico.
+   * Linfonodos — TRÊS estados, e o primeiro deles é o silêncio.
    *
-   * O `&&` de antes jogava "alterado sem descrição" no `else` e escrevia
-   * "Não há evidência de linfonodomegalias" nos ACHADOS, enquanto a IMPRESSÃO
-   * logo abaixo dizia "de aspecto alterado". Mesma contradição que D4 corrigiu
-   * no clássico, viva no outro estilo. (Codex, 20/08.)
+   * **Não avaliou, não escreve.** Decisão do Luiz em 21/08, e ela alinha o
+   * objetivo ao clássico: antes, com `linfonodos_descritos = false`, este
+   * estilo afirmava "Não há evidência de linfonodomegalias" — um achado
+   * negativo que ninguém fez. A frase é dele (222× nos 251 laudos reais), mas
+   * ela pertence a quem avaliou; em 26 laudos (10%) ele não fala de linfonodo
+   * nenhum, e nesses o laudo não diz nada a respeito.
    *
-   * ⚠️ O que este trecho NÃO resolve: quando `linfonodos_descritos` é falso —
-   * o médico não avaliou as cadeias — o objetivo continua afirmando
-   * "Não há evidência de linfonodomegalias", isto é, um achado negativo que
-   * ninguém fez. O clássico omite a linha nesse caso, então os dois estilos
-   * divergem. Alinhar muda o texto de TODO laudo objetivo em que os linfonodos
-   * não foram mencionados, e por isso é decisão do Luiz, não deste ajuste.
+   * Os outros dois estados vêm de D4: com descrição, vale a dele; alterado sem
+   * descrição, "atípico" — nunca a frase de normalidade, que fazia o laudo se
+   * contradizer.
    */
-  if (f.linfonodos_descritos && f.linfonodos_alterados) {
+  if (f.linfonodos_descritos) {
     const desc = f.linfonodos_descricao?.trim();
-    achados.push(desc ? desc : LINFONODOS_ATIPICOS_SEM_DESCRICAO);
-  } else {
-    achados.push("Não há evidência de linfonodomegalias.");
+    achados.push(
+      !f.linfonodos_alterados
+        ? "Não há evidência de linfonodomegalias."
+        : desc
+          ? desc
+          : LINFONODOS_ATIPICOS_SEM_DESCRICAO,
+    );
   }
 
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
@@ -1148,7 +1267,7 @@ function renderTireoideObjetivo(
      * hipóteses diagnósticas diferentes para o mesmo achado.
      */
     impressao.push(
-      volStatus === "aumentado" ? TIREOIDOPATIA_BOCIO : TIREOIDOPATIA,
+      conclusaoDifusa(f.tireoidite_tipo, volStatus === "aumentado"),
     );
   }
 

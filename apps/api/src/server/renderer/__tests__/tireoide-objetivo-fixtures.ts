@@ -39,6 +39,9 @@ export const L = (p: Partial<TireoideLobo>): TireoideLobo => ({
 export const F = (p: Partial<TireoideFindings>): TireoideFindings => ({
   com_doppler: false,
   volume_glandular: null,
+  // Nulo é o caso de 100% dos laudos reais: o médico descreve o padrão difuso e
+  // não nomeia etiologia. Nomear é opção nova, dele, de 21/08.
+  tireoidite_tipo: null,
   lobo_direito: L({ medidas_cm: [5.0, 1.8, 1.6], volume_ml: 7.0 }),
   lobo_esquerdo: L({ medidas_cm: [4.8, 1.7, 1.5], volume_ml: 6.0 }),
   istmo: L({ medidas_cm: [1.2, 0.3, 1.0], volume_ml: 0.5 }),

@@ -191,6 +191,50 @@ export const ALTERACOES_TIREOIDE: AlteracaoSpec[] = [
       lobo_esquerdo: { ecotextura_alterada: "difusamente heterogênea" },
     },
   },
+  /**
+   * As TIREOIDITES NOMEADAS — recurso pedido pelo Luiz em 21/08.
+   *
+   * Elas convivem com `alteracao_difusa` no mesmo grupo: ou o médico nomeia a
+   * doença, ou descreve o padrão sem nomear. Nomear é a exceção — em 251 laudos
+   * reais ele nunca o fez —, e por isso o genérico continua primeiro na lista.
+   *
+   * O seed carrega SÓ o tipo. A descrição do parênquima e a conclusão saem do
+   * renderer, como todo o resto: se o cenário escrevesse a frase, seria a
+   * quarta cópia do texto clínico. E o verbatim do médico, quando existe, vence
+   * a descrição padrão do tipo.
+   */
+  {
+    id: "tireoidite_hashimoto",
+    kind: "alteracao",
+    nome: "Tireoidite crônica autoimune (Hashimoto)",
+    descricao: "Parênquima difusamente heterogêneo e hipoecogênico, com micronodulações.",
+    grupo: "ecotextura",
+    seed: { tireoidite_tipo: "hashimoto" },
+  },
+  {
+    id: "tireoidite_linfocitica",
+    kind: "alteracao",
+    nome: "Tireoidite linfocítica",
+    descricao: "Heterogeneidade difusa, de grau leve a moderado.",
+    grupo: "ecotextura",
+    seed: { tireoidite_tipo: "linfocitica" },
+  },
+  {
+    id: "tireoidite_granulomatosa",
+    kind: "alteracao",
+    nome: "Tireoidite subaguda (De Quervain)",
+    descricao: "Áreas hipoecogênicas mal definidas e confluentes.",
+    grupo: "ecotextura",
+    seed: { tireoidite_tipo: "granulomatosa" },
+  },
+  {
+    id: "tireoidite_riedel",
+    kind: "alteracao",
+    nome: "Tireoidite de Riedel (fibrosante)",
+    descricao: "Glândula difusamente hipoecogênica, de aspecto endurecido.",
+    grupo: "ecotextura",
+    seed: { tireoidite_tipo: "riedel" },
+  },
   {
     id: "volume_aumentado",
     nome: "Bócio (volume aumentado)",

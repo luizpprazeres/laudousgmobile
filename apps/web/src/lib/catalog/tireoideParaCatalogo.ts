@@ -281,45 +281,43 @@ export function adaptarTireoide(state: TireoideState): Adaptacao {
   const pendencias: Pendencia[] = [];
   const alteracoes: string[] = [];
 
+  /**
+   * AS QUATRO TIREOIDITES ATRAVESSAM — desbloqueado em 21/08.
+   *
+   * Elas estiveram bloqueadas por um bom motivo: o canônico só tinha um estado
+   * difuso genérico, e mapear as quatro para ele em silêncio faria o médico
+   * escolher Riedel, receber "tireoidopatia" e acreditar ter registrado o que
+   * não registrou. Uma escolha que não muda o laudo é affordance falsa.
+   *
+   * O Luiz pediu o recurso, então o canônico ganhou `tireoidite_tipo`
+   * estruturado — Zod, JSON Schema e prompt na mesma leva — e agora cada uma
+   * tem conclusão própria. O mapa é 1:1; a tela e o renderer usam os mesmos
+   * quatro valores.
+   *
+   * ⚠️ Estas quatro conclusões NÃO têm âncora no corpus: em 251 laudos reais
+   * ele nunca nomeia etiologia. Existem porque ele as pediu, e a redação está
+   * em `categories/TIREOIDE.ts` marcada como pendente de aprovação dele.
+   */
+  const TIREOIDITE_PARA_CENARIO: Record<string, string> = {
+    hashimoto: "tireoidite_hashimoto",
+    linfocitica: "tireoidite_linfocitica",
+    granulomatosa: "tireoidite_granulomatosa",
+    riedel: "tireoidite_riedel",
+  };
+
   if (state.tireoidite && state.tireoidite !== "nenhuma") {
-    /**
-     * AS QUATRO TIREOIDITES DA TELA NÃO EXISTEM NO LAUDO DELE.
-     *
-     * Adjudicado contra o corpus em 20/08: em 251 laudos reais, 62 conclusões
-     * de alteração difusa, o médico escreve "Sinais ecográficos de
-     * tireoidopatia" e **nunca** nomeia etiologia. As quatro opções da tela
-     * (Hashimoto, linfocítica, granulomatosa/De Quervain, Riedel) foram
-     * inventadas — o próprio arquivo do compositor local as chama de "ponto de
-     * partida p/ curadoria do Luiz".
-     *
-     * Então o canônico tem UM estado difuso, e é o certo. Mas mapear as quatro
-     * para ele em silêncio é o defeito do outro lado: o médico escolhe Riedel,
-     * recebe tireoidopatia genérica e acredita ter registrado o que não
-     * registrou. Uma escolha que não muda o laudo é affordance falsa.
-     *
-     * Por isso continua BLOQUEANDO até a tela oferecer o estado único
-     * ("Tireoidopatia / alteração difusa"). Quando ela oferecer, este ramo vira
-     * um `push("alteracao_difusa")` e some a distinção.
-     */
-    if (state.tireoidite === "hashimoto") {
-      alteracoes.push("alteracao_difusa");
+    const cenario = TIREOIDITE_PARA_CENARIO[state.tireoidite];
+    if (cenario) {
+      alteracoes.push(cenario);
     } else {
       /**
-       * As outras três tireoidites não existem no catálogo canônico — ele tem
-       * `tireoidite_cronica` e mais nada.
-       *
-       * BLOQUEIA, e a distinção importa. Deixar passar como simples aviso não
-       * produz um laudo incompleto: produz um laudo NORMAL. O renderer não
-       * recebe alteração difusa nenhuma e conclui "sem evidência de alteração
-       * ecotextural ou de imagem nodular" — a negação exata do diagnóstico que o
-       * médico selecionou. (Falso verde apontado pelo Codex, 20/08: a prova
-       * diferencial dava "✓ renderiza" para o cenário de Riedel.)
+       * Valor que a tela tem e o canônico não conhece. Continua BLOQUEANDO: sem
+       * cenário, o laudo sairia NORMAL, negando o diagnóstico selecionado.
        */
       pendencias.push({
         onde: "tireoidite",
         valor: state.tireoidite,
-        motivo:
-          "o canônico tem um único estado difuso, ancorado no corpus do médico, que não nomeia etiologia — a tela precisa oferecer \"Tireoidopatia / alteração difusa\" no lugar das quatro opções inventadas",
+        motivo: "este tipo não existe no catálogo canônico — sem cenário o laudo sairia normal, negando o diagnóstico",
         bloqueia: true,
       });
     }
