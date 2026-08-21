@@ -136,13 +136,21 @@ function intPtBr(n: number): string {
  * substitui exatamente aquela linha de conclusão). A flexão singular correta
  * ("1 dia") é dívida cosmética GLOBAL do sistema, fora do escopo deste épico.
  */
+/**
+ * "7 semanas e 1 dia" — não "1 dias".
+ *
+ * Havia um remendo para isto em `dumFormatGuard`, mas ele roda no pipeline da
+ * IA: o caminho do catálogo (Biblioteca, `/render` direto) passava ao largo e
+ * imprimia a concordância errada. Corrigido na origem — o guard continua lá
+ * como rede, e agora é redundante em vez de ser a única defesa.
+ */
 export function formatIgSemanasDias(
   semanas: number | null,
   dias: number | null,
 ): string {
   if (semanas === null) return "____ semanas";
-  if (dias === null || dias === 0) return `${intPtBr(semanas)} semanas`;
-  return `${intPtBr(semanas)} semanas e ${intPtBr(dias)} dias`;
+  if (dias === null || dias === 0) return `${intPtBr(semanas)} ${semanas === 1 ? "semana" : "semanas"}`;
+  return `${intPtBr(semanas)} ${semanas === 1 ? "semana" : "semanas"} e ${intPtBr(dias)} ${dias === 1 ? "dia" : "dias"}`;
 }
 
 /** Dias totais de uma IG {semanas, dias}. */

@@ -85,6 +85,20 @@ function guardsPosRender(texto: string): string {
 }
 
 /** Primeira linha em que dois textos divergem — para localizar sem despejar o laudo. */
+/**
+ * A única diferença é a concordância que o catálogo passou a acertar?
+ *
+ * Aplica ao texto ANTIGO a mesma correção que o formatador faz hoje. Se depois
+ * disso os dois coincidem, a divergência era só essa — e é melhoria, não
+ * regressão. Qualquer outra diferença sobrevive à normalização e continua
+ * sendo relatada.
+ */
+function ehSoConcordancia(esperado: string, obtido: string): boolean {
+  const corrigir = (t: string) =>
+    t.replace(/\b1 dias\b/g, "1 dia").replace(/\b1 semanas\b/g, "1 semana");
+  return corrigir(esperado) === corrigir(obtido) && esperado !== obtido;
+}
+
 function primeiraDivergencia(a: string, b: string): { linha: number; esperado: string; obtido: string } | null {
   const la = a.split("\n");
   const lb = b.split("\n");
@@ -258,6 +272,25 @@ async function main() {
     comparados++;
     if (obtido === esperado) {
       iguais++;
+    } else if (ehSoConcordancia(esperado, obtido)) {
+      /**
+       * SEGUNDA espécie de correção: a CONCORDÂNCIA.
+       *
+       * Laudos antigos saíram com "7 semanas e 1 dias". O erro estava no
+       * formatador de idade gestacional, e havia um remendo em
+       * `dumFormatGuard` que só valia no pipeline da IA — o caminho do
+       * catálogo passava ao largo. Corrigido na origem em 21/08.
+       *
+       * O texto guardado continua com a forma errada, para sempre: é o que foi
+       * entregue ao médico naquele dia. Contar isso como divergência marcaria
+       * o catálogo de errado justamente onde ele ficou certo.
+       */
+      corrigidos++;
+      correcoes.push({
+        id: r.id as string,
+        quando: (r.created_at as string).slice(0, 10),
+        achado: "concordância de número (\"1 dias\" → \"1 dia\")",
+      });
     } else if (aDivergenciaEhExplicadaPeloAchado(findings, esperado)) {
       /**
        * DIVERGÊNCIA ESPERADA — o catálogo está CORRIGINDO o renderer.

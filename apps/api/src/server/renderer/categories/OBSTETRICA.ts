@@ -638,8 +638,8 @@ function gramas(v: number | null): string {
 /** IG: "X semanas e Y dias" (omite "e Y dias" quando dias é 0 ou null). */
 function formatIg(semanas: number | null, dias: number | null): string {
   if (semanas === null) return "____ semanas";
-  if (dias === null || dias === 0) return `${ptBr(semanas)} semanas`;
-  return `${ptBr(semanas)} semanas e ${ptBr(dias)} dias`;
+  if (dias === null || dias === 0) return `${ptBr(semanas)} ${semanas === 1 ? "semana" : "semanas"}`;
+  return `${ptBr(semanas)} ${semanas === 1 ? "semana" : "semanas"} e ${ptBr(dias)} ${dias === 1 ? "dia" : "dias"}`;
 }
 
 export type PonderalCalc = {

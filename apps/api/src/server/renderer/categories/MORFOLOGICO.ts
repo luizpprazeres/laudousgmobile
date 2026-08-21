@@ -154,8 +154,8 @@ function mm(v: number | null): string {
 }
 function formatIg(semanas: number | null, dias: number | null): string {
   if (semanas === null) return "____ semanas";
-  if (dias === null || dias === 0) return `${ptBr(semanas)} semanas`;
-  return `${ptBr(semanas)} semanas e ${ptBr(dias)} dias`;
+  if (dias === null || dias === 0) return `${ptBr(semanas)} ${semanas === 1 ? "semana" : "semanas"}`;
+  return `${ptBr(semanas)} ${semanas === 1 ? "semana" : "semanas"} e ${ptBr(dias)} ${dias === 1 ? "dia" : "dias"}`;
 }
 
 /**
