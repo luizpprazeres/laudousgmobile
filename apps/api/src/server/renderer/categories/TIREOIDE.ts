@@ -516,42 +516,93 @@ const TIREOIDOPATIA_BOCIO = "Sinais ecográficos de tireoidopatia (bócio tireoi
  * nulo — que é o caso de 100% dos laudos até hoje — continua concluindo
  * `TIREOIDOPATIA`.
  */
-const TIREOIDITE_CONCLUSAO: Record<TireoiditeTipo, string> = {
-  hashimoto: "Sinais ecográficos de tireoidite crônica autoimune (Hashimoto).",
-  linfocitica: "Sinais ecográficos de tireoidite linfocítica.",
-  granulomatosa: "Sinais ecográficos de tireoidite subaguda granulomatosa (De Quervain).",
-  riedel: "Sinais ecográficos de tireoidite de Riedel (fibrosante).",
+/**
+ * ⚠️ REDAÇÃO PROPOSTA — AGUARDANDO APROVAÇÃO DO LUIZ (especificada por ele, 21/08).
+ *
+ * As quatro tireoidites nomeadas. Diferente de tudo o mais neste arquivo, o
+ * DIAGNÓSTICO não tem âncora no corpus: em 251 laudos reais ele nunca nomeia
+ * etiologia. O que TEM âncora é a forma de dizê-lo, e ela veio dos laudos dele:
+ *
+ *  - "O diagnóstico mais provável é X."  → 27 ocorrências nos corpora
+ *  - "a critério clínico"                → 105 ocorrências
+ *  - "hipoecoicas", "hiperecoicas", "traves" → o vocabulário dele
+ *    (hipoeco* 134× na tireoide; hiperecoico 8× contra hiperecogênico 1×)
+ *
+ * A unidade fica em **ml**: o corpus do laudousg.com escrevia "cm³" (855× contra
+ * 2×), mas o Luiz confirmou em 21/08 que "cm³" foi equívoco dele e que ml é o
+ * correto. Corpus antigo não vence médico presente.
+ *
+ * A estrutura foi ditada por ele: a alteração difusa deixa de ser um item
+ * separado da conclusão e passa a completar a PRIMEIRA frase, a que já fala de
+ * volume. No corpo, entra depois de "apresentando".
+ */
+type FraseTireoidite = {
+  /** No CORPO, depois de "apresentando". Só quando ele não descreveu o parênquima. */
+  corpo: string;
+  /** Na CONCLUSÃO, completando a frase do volume: "…, apresentando <isto>." */
+  ecotextura: string;
+  /** O nome da doença, como ele o escreveu. */
+  diagnostico: string;
+  /**
+   * A recomendação laboratorial, último item da conclusão.
+   *
+   * A de Quervain é VERBATIM dele. As outras três eu propus, no mesmo molde e
+   * com os exames que a hipótese pede — ele autorizou expressamente ("se quiser
+   * sugerir anti-TPO ou outros exames de forma específica fique à vontade").
+   */
+  recomendacao: string;
+};
+
+const TIREOIDITE: Record<TireoiditeTipo, FraseTireoidite> = {
+  hashimoto: {
+    // Verbatim do Luiz, 21/08.
+    corpo: "modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas",
+    ecotextura: "ecotextura heterogênea",
+    diagnostico: "Tireoidite de Hashimoto",
+    recomendacao:
+      "Convém, a critério clínico, correlacionar com as dosagens laboratoriais de TSH, T4 livre e dos anticorpos antitireoperoxidase (anti-TPO) e antitireoglobulina.",
+  },
+  linfocitica: {
+    corpo: "modificação difusa do padrão ecotextural, de grau leve a moderado",
+    ecotextura: "ecotextura heterogênea",
+    diagnostico: "Tireoidite linfocítica",
+    recomendacao:
+      "Convém, a critério clínico, correlacionar com as dosagens laboratoriais de TSH, T4 livre e do anticorpo antitireoperoxidase (anti-TPO).",
+  },
+  granulomatosa: {
+    corpo:
+      "modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas mal definidas e confluentes",
+    ecotextura: "ecotextura heterogênea",
+    diagnostico: "Tireoidite subaguda granulomatosa (de Quervain)",
+    // Verbatim do Luiz, 21/08.
+    recomendacao:
+      "Convém, a critério clínico, correlacionar com as dosagens laboratoriais de TSH, T4L, hemograma e PCR, com objetivo de acompanhar a evolução.",
+  },
+  riedel: {
+    corpo:
+      "modificação difusa do padrão ecotextural, notadamente por acentuada hipoecogenicidade e limites mal definidos com os planos adjacentes",
+    // "heterogênea" descreveria mal: aqui o padrão é hipoecoico difuso, não misto.
+    ecotextura: "ecotextura difusamente hipoecoica",
+    diagnostico: "Tireoidite de Riedel",
+    recomendacao:
+      "Convém, a critério clínico, correlacionar com as dosagens laboratoriais de TSH e T4 livre.",
+  },
 };
 
 /**
- * A descrição do PARÊNQUIMA por tipo — usada só quando o médico nomeia a
- * tireoidite e NÃO descreve a ecotextura.
+ * O FIM da primeira frase da conclusão — a que fala do volume.
  *
- * A precedência importa e é esta: o verbatim dele (`ecotextura_alterada`) vence
- * sempre. Isto é o que se escreve quando ele diz "Hashimoto" e mais nada — não
- * uma frase que substitui a descrição dele.
- *
- * Também aguardando aprovação.
+ * Estrutura ditada pelo Luiz: em vez de um item separado "Sinais ecográficos
+ * de…", a alteração difusa completa a frase do volume e o diagnóstico vem em
+ * seguida. Sem tipo nomeado, nada disto acontece: continua valendo a frase dele,
+ * ancorada em 62 conclusões reais.
  */
-const TIREOIDITE_CORPO: Record<TireoiditeTipo, string> = {
-  hashimoto: "difusamente heterogênea e hipoecogênica, com micronodulações",
-  linfocitica: "difusamente heterogênea, de grau leve a moderado",
-  granulomatosa: "heterogênea, com áreas hipoecogênicas mal definidas e confluentes",
-  riedel: "difusamente hipoecogênica, de aspecto endurecido",
-};
-
-/**
- * A conclusão da alteração difusa: nomeada quando o médico nomeou, genérica
- * quando não.
- *
- * O bócio só compõe com a genérica. "Sinais ecográficos de tireoidite de
- * Riedel (bócio tireoideano)" não é frase que exista — quando há tipo nomeado,
- * o aumento de volume já tem item próprio na conclusão.
- */
-function conclusaoDifusa(tipo: TireoiditeTipo | null, bocio: boolean): string {
-  if (tipo) return TIREOIDITE_CONCLUSAO[tipo];
-  return bocio ? TIREOIDOPATIA_BOCIO : TIREOIDOPATIA;
+function fecharFraseDoVolume(tipo: TireoiditeTipo | null): string {
+  if (!tipo) return ".";
+  const f = TIREOIDITE[tipo];
+  return `, apresentando ${f.ecotextura}. O diagnóstico mais provável é ${f.diagnostico}.`;
 }
+
 
 const LINFONODOS_NORMAIS =
   "Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.";
@@ -623,17 +674,49 @@ function loboCorpo(
   const medVol = `${rotulo} medindo ${medidasFmt(lobo.medidas_cm)} (volume de ${volFmt(
     lobo.volume_ml,
   )} ml)`;
+  /**
+   * A alteração difusa entra depois de "apresentando" — estrutura ditada pelo
+   * Luiz em 21/08. O verbatim dele, quando existe, vence a descrição do tipo.
+   *
+   * Note que o verbatim NÃO recebe "apresentando": ele é escrito como cláusula
+   * adjetiva ("difusamente heterogênea, com micronodulações") e "apresentando
+   * difusamente heterogênea" não é português. Só a descrição por tipo, que
+   * nasce como sintagma nominal ("modificação difusa do padrão ecotextural"),
+   * casa com o verbo.
+   */
+  const verbatim = lobo.ecotextura_alterada?.trim();
+  const porTipo = tipoDifuso ? TIREOIDITE[tipoDifuso].corpo : null;
+  const difusa = verbatim
+    ? { texto: verbatim.replace(/\.+$/, ""), comVerbo: false }
+    : porTipo
+      ? { texto: porTipo, comVerbo: true }
+      : null;
+
   if (lobo.nodulos.length === 0) {
-    const difusa =
-      lobo.ecotextura_alterada?.trim() ?? (tipoDifuso ? TIREOIDITE_CORPO[tipoDifuso] : null);
     const sufixo = difusa
-      ? difusa.replace(/\.+$/, "")
+      ? `${difusa.comVerbo ? "apresentando " : ""}${difusa.texto}`
       : comDoppler && !isIstmo
         ? "de ecogenicidade, ecotextura e vascularização normais"
         : "de ecogenicidade e ecotextura normais";
     return `${medVol}, ${sufixo}.`;
   }
-  // Volume MANTIDO em parênteses; imagens separadas por ";".
+
+  /**
+   * COM alteração difusa E imagem, o nódulo vira FRASE À PARTE — pedido do
+   * Luiz: "... traves hiperecoicas. Imagem anecoica, com margem regular...".
+   * Encavalar os dois no mesmo "apresentando" faria a difusa e o nódulo
+   * parecerem o mesmo achado.
+   */
+  if (difusa) {
+    const abertura = `${medVol}, ${difusa.comVerbo ? "apresentando " : ""}${difusa.texto}.`;
+    const frases = lobo.nodulos.map((n) => {
+      const d = noduloDescritor(n);
+      return `${d.charAt(0).toUpperCase()}${d.slice(1)}.`;
+    });
+    return [abertura, ...frases].join(" ");
+  }
+
+  // Sem difusa: comportamento de sempre — imagens separadas por ";".
   const imagens = lobo.nodulos.map(noduloDescritor).join("; ");
   return `${medVol}, apresentando ${imagens}.`;
 }
@@ -893,7 +976,14 @@ function renderTireoideClassico(
       `Tireoide de volume ${volStatus} (${vtFmt} ml), sem evidência de alteração ecotextural ou de imagem nodular.`,
     );
   } else {
-    conclusao.push(`Tireoide de volume ${volStatus} (${vtFmt} ml).`);
+    /**
+     * A alteração difusa deixou de ser item separado: ela fecha a frase do
+     * volume, e o diagnóstico vem em seguida. Estrutura ditada pelo Luiz.
+     * Sem tipo nomeado, `fecharFraseDoVolume` devolve só o ponto e o item
+     * separado "Sinais ecográficos de tireoidopatia" continua valendo — é a
+     * redação dele, ancorada em 62 conclusões reais.
+     */
+    conclusao.push(`Tireoide de volume ${volStatus} (${vtFmt} ml)${fecharFraseDoVolume(f.tireoidite_tipo)}`);
 
     /**
      * A ALTERAÇÃO DIFUSA, que antes sumia daqui.
@@ -906,8 +996,9 @@ function renderTireoideClassico(
      * estética: nos 12 laudos do corpus que têm tireoidopatia e conclusão
      * nodular, a tireoidopatia vem antes em 12/12.
      */
-    if (temDifusa || f.tireoidite_tipo) {
-      conclusao.push(conclusaoDifusa(f.tireoidite_tipo, f.volume_glandular === "aumentado"));
+    /** Só o genérico vira item próprio; o nomeado já foi para a frase acima. */
+    if (temDifusa && !f.tireoidite_tipo) {
+      conclusao.push(f.volume_glandular === "aumentado" ? TIREOIDOPATIA_BOCIO : TIREOIDOPATIA);
     }
 
     // Um item por lobo; imagens do mesmo lobo no mesmo item, separadas por ";".
@@ -929,6 +1020,18 @@ function renderTireoideClassico(
         : "Linfonodos cervicais de aspecto atípico.",
     );
   }
+
+  /**
+   * A RECOMENDAÇÃO LABORATORIAL — último item da conclusão.
+   *
+   * "no final da conclusão", como o Luiz pediu. Vem depois dos linfonodos
+   * porque é sobre a glândula, não sobre um achado focal, e fecha o raciocínio.
+   *
+   * Só existe quando a tireoidite foi NOMEADA: sem hipótese, não há exame a
+   * pedir. É o que separa esta frase de uma recomendação genérica colada em
+   * todo laudo.
+   */
+  if (f.tireoidite_tipo) conclusao.push(TIREOIDITE[f.tireoidite_tipo].recomendacao);
 
   // Conduta (toggle) — append do maior TI-RADS calculado/ditado entre as imagens.
   if (prefs.show_conduct_recommendation) {
@@ -1180,7 +1283,7 @@ function renderTireoideObjetivo(
      */
     const difusa =
       lobos.map((l) => l.lobo.ecotextura_alterada?.trim()).find((t) => !!t) ??
-      (f.tireoidite_tipo ? TIREOIDITE_CORPO[f.tireoidite_tipo] : null);
+      (f.tireoidite_tipo ? TIREOIDITE[f.tireoidite_tipo].corpo : null);
     achados.push(
       `Parênquima tireoidiano ${(difusa ?? "com ecotextura difusamente heterogênea").replace(/\.+$/, "")}.`,
     );
@@ -1266,8 +1369,17 @@ function renderTireoideObjetivo(
      * estilos podem diferir na ESTRUTURA do documento; não em ter duas
      * hipóteses diagnósticas diferentes para o mesmo achado.
      */
+    /**
+     * O objetivo não tem a frase de abertura com o volume — ele imprime
+     * "Volume total: X ml." nos ACHADOS. Então a mesma informação vira um item
+     * autocontido, com a ecotextura e o diagnóstico na ordem que o Luiz pediu.
+     */
     impressao.push(
-      conclusaoDifusa(f.tireoidite_tipo, volStatus === "aumentado"),
+      f.tireoidite_tipo
+        ? `Tireoide de ${TIREOIDITE[f.tireoidite_tipo].ecotextura}. O diagnóstico mais provável é ${TIREOIDITE[f.tireoidite_tipo].diagnostico}.`
+        : volStatus === "aumentado"
+          ? TIREOIDOPATIA_BOCIO
+          : TIREOIDOPATIA,
     );
   }
 
@@ -1301,6 +1413,9 @@ function renderTireoideObjetivo(
         : "Linfonodos cervicais de aspecto atípico.",
     );
   }
+
+  /** A recomendação laboratorial fecha a impressão, como no clássico. */
+  if (f.tireoidite_tipo) impressao.push(TIREOIDITE[f.tireoidite_tipo].recomendacao);
 
   if (impressao.length === 0) {
     impressao.push("Estudo ultrassonográfico dentro dos padrões da normalidade.");

@@ -465,11 +465,17 @@ console.log("\n14 · as TIREOIDITES NOMEADAS — recurso pedido pelo Luiz\n");
    */
   const lobo = { medidas_cm: [5.2, 1.7, 1.6], volume_ml: 7.1 };
   const base = { lobo_direito: lobo, lobo_esquerdo: lobo, istmo: { medidas_cm: [1.5, 0.9, 0.8], volume_ml: 1.2 } };
-  const esperado: Record<string, string> = {
-    hashimoto: "tireoidite crônica autoimune (Hashimoto)",
-    linfocitica: "tireoidite linfocítica",
-    granulomatosa: "tireoidite subaguda granulomatosa (De Quervain)",
-    riedel: "tireoidite de Riedel (fibrosante)",
+  /**
+   * A estrutura mudou em 21/08, por especificação do Luiz: a alteração difusa
+   * deixou de ser item separado ("Sinais ecográficos de …") e passou a fechar a
+   * frase do volume, seguida do diagnóstico. A forma "O diagnóstico mais
+   * provável é X" é dele — 27 ocorrências nos corpora.
+   */
+  const esperado: Record<string, { diagnostico: string; exame: string }> = {
+    hashimoto:     { diagnostico: "Tireoidite de Hashimoto", exame: "anti-TPO" },
+    linfocitica:   { diagnostico: "Tireoidite linfocítica", exame: "anti-TPO" },
+    granulomatosa: { diagnostico: "Tireoidite subaguda granulomatosa (de Quervain)", exame: "PCR" },
+    riedel:        { diagnostico: "Tireoidite de Riedel", exame: "T4 livre" },
   };
 
   for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"]) {
@@ -482,9 +488,20 @@ console.log("\n14 · as TIREOIDITES NOMEADAS — recurso pedido pelo Luiz\n");
     t_(`${estilo}: sem tipo conclui a frase genérica`, semTipo.includes("Sinais ecográficos de tireoidopatia."));
     t_(`${estilo}: …e NÃO nomeia etiologia`, !/tireoidite/i.test(semTipo));
 
-    for (const [tipo, frase] of Object.entries(esperado)) {
+    for (const [tipo, { diagnostico, exame }] of Object.entries(esperado)) {
       const t = laudoPadraoDe(CAT, estilo, { ...base, tireoidite_tipo: tipo })!;
-      t_(`${estilo}/${tipo}: conclui nomeando`, t.includes(`Sinais ecográficos de ${frase}.`), frase);
+      const concl = t.split(/CONCLUS[ÃA]O:\n|IMPRESS[ÃA]O:\n/)[1] ?? "";
+      t_(`${estilo}/${tipo}: nomeia o diagnóstico`,
+        concl.includes(`O diagnóstico mais provável é ${diagnostico}.`), diagnostico);
+      /** A recomendação laboratorial fecha a conclusão, e é específica do tipo. */
+      t_(`${estilo}/${tipo}: recomenda o exame certo`,
+        concl.includes("Convém, a critério clínico") && concl.includes(exame), exame);
+      /** No clássico, a difusa fecha a PRIMEIRA frase em vez de virar item. */
+      if (estilo === "CLASSICO_COMPLETO") {
+        t_(`${estilo}/${tipo}: a difusa fecha a frase do volume`,
+          /Tireoide de volume \w+ \([^)]+\), apresentando ecotextura/.test(concl),
+          concl.split("\n")[0]?.slice(0, 110));
+      }
       /** O defeito que eu introduzi: corpo normal sob conclusão de tireoidite. */
       t_(`${estilo}/${tipo}: o corpo NÃO diz ecotextura normal`,
         !/ecotextura normais|ecotextura homogênea/.test(t),
@@ -501,7 +518,8 @@ console.log("\n14 · as TIREOIDITES NOMEADAS — recurso pedido pelo Luiz\n");
       lobo_esquerdo: { ...lobo, ecotextura_alterada: "difusamente heterogênea, com traves ecogênicas" },
     })!;
     t_(`${estilo}: a descrição do médico vence a do tipo`, comDescricao.includes("traves ecogênicas"));
-    t_(`${estilo}: …e a conclusão nomeada continua`, comDescricao.includes("(Hashimoto)"));
+    t_(`${estilo}: …e o diagnóstico nomeado continua`,
+      comDescricao.includes("O diagnóstico mais provável é Tireoidite de Hashimoto."));
   }
 }
 
