@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, ArrowLeft, Check, Lock, Pencil, RotateCcw, Undo2 } from 'lucide-react'
-import type { CategoriaDaBiblioteca, LinhaDoModelo, ModeloProjetado, Operation } from '@/lib/biblioteca/tipos'
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Undo2 } from 'lucide-react'
+import type { CategoriaDaBiblioteca, ModeloProjetado, Operation } from '@/lib/biblioteca/tipos'
+import { EDICOES_VAZIAS, Modelo, type Edicoes } from './Modelo'
 
 const ESTILOS = [
   { code: 'CLASSICO_COMPLETO', label: 'Clássico' },
@@ -16,12 +17,6 @@ type Detalhe = {
   publicado?: { operations: Operation[]; versao: number } | null
   personalizacao_ativa?: boolean
   error?: string
-}
-
-const SECAO_ROTULO: Record<LinhaDoModelo['secao'], string> = {
-  tecnica: 'Técnica',
-  corpo: 'Achados',
-  conclusao: 'Conclusão',
 }
 
 /**
@@ -51,8 +46,9 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
   const [aviso, setAviso] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
 
-  /** As reescritas ainda não salvas: slot → frase nova. */
-  const [edicoes, setEdicoes] = useState<Record<string, string>>({})
+  /** O que ainda não foi salvo: reescritas, remoções e frases novas. */
+  const [edicoes, setEdicoes] = useState<Edicoes>(EDICOES_VAZIAS)
+  const [exemplo, setExemplo] = useState<{ texto: string; origem: string; data: string } | null | undefined>(undefined)
 
   const atual = categorias.find((c) => c.categoria === categoria)
 
@@ -61,7 +57,7 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
     setCarregando(true)
     setErro(null)
     setAviso(null)
-    setEdicoes({})
+    setEdicoes(EDICOES_VAZIAS)
     try {
       const r = await fetch(`/api/biblioteca/${categoria}?estilo=${estilo}`, { cache: 'no-store' })
       const d = (await r.json()) as Detalhe
@@ -71,11 +67,13 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
       } else {
         setDetalhe(d)
         /** O rascunho em curso reaparece como edição pendente, não como texto salvo. */
-        const doRascunho: Record<string, string> = {}
+        const pend: Edicoes = { textos: {}, removidos: [], inseridas: [] }
         for (const op of d.rascunho?.operations ?? []) {
-          if (op.op === 'replace_phrase') doRascunho[op.slot] = op.value
+          if (op.op === 'replace_phrase') pend.textos[op.slot] = op.value
+          if (op.op === 'remove_slot') pend.removidos.push(op.slot)
+          if (op.op === 'insert_phrase_after') pend.inseridas.push({ anchor: op.anchor, value: op.value })
         }
-        setEdicoes(doRascunho)
+        setEdicoes(pend)
       }
     } catch {
       setErro('Não foi possível falar com o servidor.')
@@ -88,21 +86,40 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
     void carregar()
   }, [carregar])
 
+  /**
+   * O exemplo é um laudo REAL do médico, buscado à parte: ele não depende do
+   * estilo escolhido e é mais lento que o modelo. Carregar junto faria a tela
+   * inteira esperar pelo banco.
+   */
+  useEffect(() => {
+    if (!categoria) return
+    let vivo = true
+    setExemplo(undefined)
+    fetch(`/api/biblioteca/${categoria}/exemplo`, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => { if (vivo) setExemplo(d.exemplo ?? null) })
+      .catch(() => { if (vivo) setExemplo(null) })
+    return () => { vivo = false }
+  }, [categoria])
+
   const modelos = detalhe?.catalogo?.modelos ?? []
   const [cenario, setCenario] = useState(0)
   useEffect(() => setCenario(0), [categoria, estilo])
   const modelo = modelos[cenario] ?? modelos[0]
 
   const operacoes = useMemo<Operation[]>(
-    () =>
-      Object.entries(edicoes)
+    () => [
+      ...Object.entries(edicoes.textos)
         .filter(([, v]) => v.trim() !== '')
-        .map(([slot, value]) => ({ op: 'replace_phrase', slot, value })),
+        .map(([slot, value]) => ({ op: 'replace_phrase', slot, value }) as Operation),
+      ...edicoes.removidos.map((slot) => ({ op: 'remove_slot', slot }) as Operation),
+      ...edicoes.inseridas.map((i) => ({ op: 'insert_phrase_after', anchor: i.anchor, value: i.value }) as Operation),
+    ],
     [edicoes],
   )
 
   const publicadoOps = detalhe?.publicado?.operations ?? []
-  const sujo = JSON.stringify(operacoes) !== JSON.stringify(publicadoOps.filter((o) => o.op === 'replace_phrase'))
+  const sujo = JSON.stringify(operacoes) !== JSON.stringify(publicadoOps)
 
   const acao = async (caminho: string, init: RequestInit, sucesso: string) => {
     setSalvando(true)
@@ -149,9 +166,6 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
           <ArrowLeft className="h-3.5 w-3.5" /> Voltar
         </Link>
         <h1 className="font-barlow text-lg font-bold text-gray-900 dark:text-gray-100">Biblioteca</h1>
-        <p className="hidden text-xs text-gray-500 sm:block dark:text-gray-400">
-          O modelo dos seus laudos. Reescreva a redação; os dados continuam vindo do exame.
-        </p>
 
         <div className="ml-auto inline-flex rounded-full border border-gray-200 p-0.5 dark:border-gray-700">
           {ESTILOS.map((e) => (
@@ -170,6 +184,8 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
           ))}
         </div>
       </header>
+
+      <Apresentacao />
 
       <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(15rem,19rem)_1fr]">
         <nav
@@ -256,12 +272,21 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
                 <Modelo
                   modelo={modelo}
                   edicoes={edicoes}
-                  onEditar={(slot, valor) => setEdicoes((e) => ({ ...e, [slot]: valor }))}
-                  onRestaurarLinha={(slot) =>
+                  exemplo={exemplo}
+                  onEditar={(slot, valor) =>
+                    setEdicoes((e) => ({ ...e, textos: { ...e.textos, [slot]: valor } }))
+                  }
+                  onRemover={(slot) =>
+                    setEdicoes((e) => ({ ...e, removidos: [...new Set([...e.removidos, slot])] }))
+                  }
+                  onRestaurar={(slot) =>
                     setEdicoes((e) => {
-                      const { [slot]: _fora, ...resto } = e
-                      return resto
+                      const { [slot]: _fora, ...textos } = e.textos
+                      return { ...e, textos, removidos: e.removidos.filter((r) => r !== slot) }
                     })
+                  }
+                  onInserir={(anchor, value) =>
+                    setEdicoes((e) => ({ ...e, inseridas: [...e.inseridas, { anchor, value }] }))
                   }
                 />
               </>
@@ -351,125 +376,89 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
   )
 }
 
-function Modelo({
-  modelo,
-  edicoes,
-  onEditar,
-  onRestaurarLinha,
-}: {
-  modelo: ModeloProjetado
-  edicoes: Record<string, string>
-  onEditar: (slot: string, valor: string) => void
-  onRestaurarLinha: (slot: string) => void
-}) {
-  const secoes: LinhaDoModelo['secao'][] = ['tecnica', 'corpo', 'conclusao']
-  return (
-    <div className="flex flex-col gap-5">
-      {secoes.map((secao) => {
-        const linhas = modelo.linhas.filter((l) => l.secao === secao)
-        if (linhas.length === 0) return null
-        return (
-          <section key={secao}>
-            <h2 className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
-              {SECAO_ROTULO[secao]}
-            </h2>
-            <div className="flex flex-col gap-1.5">
-              {linhas.map((l) => (
-                <Linha
-                  key={`${l.slot}·${l.variante}`}
-                  linha={l}
-                  valor={edicoes[l.slot]}
-                  onEditar={(v) => onEditar(l.slot, v)}
-                  onRestaurar={() => onRestaurarLinha(l.slot)}
-                />
-              ))}
-            </div>
-          </section>
-        )
-      })}
-    </div>
-  )
-}
+/**
+ * A apresentação — poucas linhas, e elas ganham o dia.
+ *
+ * O médico chega numa tela que edita o texto dos próprios laudos e precisa
+ * entender três coisas antes de mexer: de onde vem o modelo, por que algumas
+ * frases não abrem, e que reescrever aqui não é o mesmo que assinar. Sem isso
+ * ele testa no escuro — e o que está em jogo é documento clínico.
+ *
+ * Recolhida por padrão depois da primeira visita: instrução que não se pode
+ * fechar vira ruído para quem já leu.
+ */
+function Apresentacao() {
+  const [aberta, setAberta] = useState<boolean | null>(null)
 
-function Linha({
-  linha,
-  valor,
-  onEditar,
-  onRestaurar,
-}: {
-  linha: LinhaDoModelo
-  valor?: string
-  onEditar: (v: string) => void
-  onRestaurar: () => void
-}) {
-  const [abrindo, setAbrindo] = useState(false)
-  const alterada = valor !== undefined && valor !== linha.frase
-  const editando = abrindo || alterada
+  useEffect(() => {
+    try {
+      setAberta(window.localStorage.getItem('laudousg.biblioteca.lida') !== 'sim')
+    } catch {
+      setAberta(true)
+    }
+  }, [])
 
-  if (!linha.editavel) {
+  const fechar = () => {
+    setAberta(false)
+    try {
+      window.localStorage.setItem('laudousg.biblioteca.lida', 'sim')
+    } catch {
+      /* modo privado: fecha só nesta visita */
+    }
+  }
+
+  if (aberta === null) return null
+
+  if (!aberta) {
     return (
-      <div
-        title={linha.motivo ?? 'Esta linha é escrita pelo sistema'}
-        className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-900/60"
+      <button
+        type="button"
+        onClick={() => setAberta(true)}
+        className="flex shrink-0 items-center gap-1.5 border-b border-gray-200 bg-white px-5 py-1.5 text-left text-[11px] font-semibold text-gray-400 transition hover:text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:hover:text-gray-300"
       >
-        <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
-        <p className="flex-1 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-500 dark:text-gray-400">
-          {linha.frase}
-        </p>
-      </div>
+        <ChevronDown className="h-3 w-3" />
+        Como funciona a Biblioteca
+      </button>
     )
   }
 
   return (
-    <div
-      className={`rounded-lg border px-3 py-2 transition ${
-        alterada
-          ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20'
-          : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900'
-      }`}
-    >
-      {editando ? (
-        <textarea
-          autoFocus={abrindo}
-          value={valor ?? linha.frase}
-          onChange={(e) => onEditar(e.target.value)}
-          onBlur={() => setAbrindo(false)}
-          rows={Math.max(2, Math.ceil((valor ?? linha.frase).length / 78))}
-          className="w-full resize-y rounded-md border border-gray-200 bg-white px-2.5 py-1.5 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 outline-none focus:border-emerald-600 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
-        />
-      ) : (
+    <div className="shrink-0 border-b border-gray-200 bg-white px-5 py-3 dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex items-start gap-4">
+        <div className="grid flex-1 gap-x-7 gap-y-2 text-[12px] leading-relaxed text-gray-600 sm:grid-cols-3 dark:text-gray-400">
+          <p>
+            <strong className="font-semibold text-gray-800 dark:text-gray-200">Este é o seu laudo.</strong>{' '}
+            O modelo não é um texto guardado: sai do mesmo motor que escreve os seus laudos. O que
+            você lê aqui é o que sai lá.
+          </p>
+          <p>
+            <strong className="font-semibold text-gray-800 dark:text-gray-200">
+              O que tem cadeado não abre.
+            </strong>{' '}
+            São as frases que o sistema calcula — classificação, escore, volume. Se elas virassem
+            texto livre, o laudo poderia dizer um número e concluir outro.
+          </p>
+          <p>
+            <strong className="font-semibold text-gray-800 dark:text-gray-200">
+              Mexa na redação, não no dado.
+            </strong>{' '}
+            As lacunas <code className="font-mono text-[11px]">____</code> são medidas do exame.
+            Troque as palavras à vontade; deixe as lacunas onde estão.
+          </p>
+        </div>
         <button
           type="button"
-          onClick={() => setAbrindo(true)}
-          className="group flex w-full items-start gap-2 text-left"
+          onClick={fechar}
+          className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
         >
-          <Pencil className="mt-1 h-3 w-3 shrink-0 text-gray-300 transition group-hover:text-emerald-600 dark:text-gray-600" />
-          <p className="flex-1 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 dark:text-gray-200">
-            {linha.frase}
-          </p>
+          Entendi
         </button>
-      )}
-
-      {(linha.placeholdersObrigatorios.length > 0 || !linha.removivel || linha.obrigatorio || alterada) && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-gray-500 dark:text-gray-400">
-          {linha.placeholdersObrigatorios.map((p) => (
-            <span key={p} title="Este dado vem do exame e não pode sumir da frase">
-              mantenha <code className="font-mono text-gray-700 dark:text-gray-300">{p}</code>
-            </span>
-          ))}
-          {linha.obrigatorio || !linha.removivel ? <span>frase obrigatória</span> : null}
-          {alterada ? (
-            <button
-              type="button"
-              onClick={onRestaurar}
-              className="ml-auto inline-flex items-center gap-1 font-semibold text-gray-500 transition hover:text-gray-800 dark:hover:text-gray-200"
-            >
-              <RotateCcw className="h-3 w-3" />
-              desfazer
-            </button>
-          ) : null}
-        </div>
-      )}
+      </div>
+      <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-500">
+        Nada muda nos seus laudos até você <strong className="font-semibold">publicar</strong> — o
+        rascunho é só seu. Ao lado de cada modelo há um laudo real da mesma categoria, para
+        comparar.
+      </p>
     </div>
   )
 }
