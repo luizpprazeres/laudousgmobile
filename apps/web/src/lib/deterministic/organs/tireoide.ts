@@ -23,20 +23,65 @@ export interface LoboState {
   ecotextura: 'normal' | 'heterogenea'
 }
 
+/**
+ * Um nódulo, descrito pelos SEIS EIXOS que o escore de Domingos pontua.
+ *
+ * Antes a tela pedia `notaDomingos` e `tirads` prontos, escolhidos à mão — e o
+ * médico precisava saber a tabela de cabeça para converter o que via num
+ * número. Pior: aquela escala de 1 a 6 não é a nota de Domingos, e as duas se
+ * invertem no meio da faixa (grau 5 = "provavelmente maligna" para a tela,
+ * TI-RADS 2 = "provavelmente benigna" para o canônico). Ver
+ * `lib/catalog/eixosDoNodulo.ts`.
+ *
+ * Agora o médico classifica o que VÊ, e quem pontua é o renderer canônico. As
+ * chaves são as dele; `null` quer dizer "não classificado" e pontua zero, que é
+ * o comportamento dele também.
+ */
 export interface NoduloTireoide {
   id: string
   lobo: LoboId
-  ecogenicidade: string // chave em ECOGENICIDADES
-  margens: string // chave em MARGENS
-  dimensao: string
-  notaDomingos: string // '1'..'6'
-  tirads: string // '1' | '2' | '3' | '4a' | '4b' | '4c' | '5'
+  /** Chaves de `lib/catalog/eixosDoNodulo`. `null` = não classificado. */
+  ecogenicidade: string | null
+  margem: string | null
+  halo: string | null
+  forma: string | null
+  calcificacoes: string | null
+  /** Chammas — pontua, mas nunca é escrita no laudo. */
+  vascularizacao: string | null
+  /** Os três eixos em cm, como digitados. Vazio é lacuna, não zero. */
+  c1: string
+  c2: string
+  c3: string
+  /** Onde está, com a preposição: "no terço médio". Opcional. */
+  localizacao: string
 }
 
 export type TireoiditeTipo = 'nenhuma' | 'hashimoto' | 'linfocitica' | 'granulomatosa' | 'riedel'
 
+/** `null` = o médico ainda não disse. Ver `VOLUME_GLANDULAR`. */
+export type VolumeGlandular = 'normal' | 'aumentado' | 'reduzido' | null
+
+export const VOLUME_GLANDULAR: { value: Exclude<VolumeGlandular, null>; label: string }[] = [
+  { value: 'normal', label: 'Normal' },
+  { value: 'aumentado', label: 'Aumentado' },
+  { value: 'reduzido', label: 'Reduzido' },
+]
+
 export interface TireoideState {
   doppler: boolean
+  /**
+   * O ESTADO DA GLÂNDULA — perguntado, nunca inferido das medidas.
+   *
+   * A web concluía "volume normal" para QUALQUER volume digitado: um bócio de
+   * 40 ml saía com a glândula descrita como normal. O canônico tem o estado
+   * explícito e é categórico em não deduzi-lo dos eixos — a faixa de
+   * normalidade varia com idade, sexo e constituição, e um número não decide
+   * isso sozinho.
+   *
+   * Nulo é o padrão e o mais honesto: sem resposta, o laudo não afirma nem
+   * normalidade nem aumento.
+   */
+  volumeGlandular: VolumeGlandular
   lobo_direito: LoboState
   lobo_esquerdo: LoboState
   istmo: LoboState
@@ -130,6 +175,7 @@ function loboEmptyState(): LoboState {
 
 export function initialTireoideState(): TireoideState {
   return {
+    volumeGlandular: null,
     doppler: false,
     lobo_direito: loboEmptyState(),
     lobo_esquerdo: loboEmptyState(),
@@ -180,144 +226,23 @@ function fmtMedidas(lobo: LoboState): string | null {
   return a && b && c ? `${a} x ${b} x ${c} cm` : null
 }
 
-// ─── Composição ───
-
-function noduloCorpo(n: NoduloTireoide): string {
-  const eco = ECO_TEXTO[n.ecogenicidade] ?? 'nodular'
-  const margens = n.margens ? ` de margens ${n.margens}` : ''
-  const dim = n.dimensao.trim() ? `, medindo ${n.dimensao.trim()}` : ''
-  return `imagem ${eco}${margens}${dim}`
-}
-
-function noduloConclusao(n: NoduloTireoide): string {
-  const eco = ECO_TEXTO[n.ecogenicidade] ?? 'nodular'
-  const carac = caracteristicaDaNota(n.notaDomingos)
-  return `imagem ${eco} com NOTA FINAL ${n.notaDomingos} (${carac}), equivalente ao TI-RADS ${n.tirads} ACR`
-}
-
-function loboFraseCorpo(loboId: LoboId, lobo: LoboState, nodulos: NoduloTireoide[], doppler: boolean): string {
-  const nome = LOBO_NOME[loboId]
-  const medidas = fmtMedidas(lobo)
-  const vol = volumeLobo(lobo)
-  const abertura = medidas && vol !== null
-    ? `${nome} medindo ${medidas} (volume de ${fmtVol(vol)} ml)`
-    : `${nome} de dimensões habituais`
-
-  // Vascularização só com Doppler e apenas para os lobos (não istmo).
-  const incluiVasc = doppler && loboId !== 'istmo'
-  let descricao: string
-  if (lobo.ecotextura === 'heterogenea') {
-    descricao = incluiVasc
-      ? 'de ecogenicidade heterogênea e vascularização preservada'
-      : 'de ecogenicidade e ecotextura heterogêneas'
-  } else {
-    descricao = incluiVasc
-      ? 'de ecogenicidade, ecotextura e vascularização normais'
-      : 'de ecogenicidade e ecotextura normais'
-  }
-
-  const meus = nodulos.filter((n) => n.lobo === loboId)
-  if (meus.length === 0) return `${abertura}, ${descricao}.`
-  const lista = meus.map(noduloCorpo).join('; e ')
-  return `${abertura}, apresentando ${lista}.`
-}
-
-export interface ComposedReport {
-  text: string
-  conclusion: string[]
-  alteredCount: number
-}
-
-const RODAPE =
-  '*ESCORE DE NÓDULO TIREOIDEANO - Domingos Correia da Rocha - Material baseado em 2588 nódulos puncionados - 2003 | Atualizada em 2013 - Total de 5134 nódulos puncionados. ACR - American College of Radiology*'
-
-const COMENTARIOS =
-  'Exame realizado com transdutor de 12 MHz, abrangendo todos os segmentos da glândula tireoide, como também a cadeia ganglionar cervical de I a V. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
-
-export function composeTireoide(state: TireoideState): ComposedReport {
-  const titulo = state.doppler
-    ? 'ULTRASSONOGRAFIA DE TIREOIDE COM DOPPLER'
-    : 'ULTRASSONOGRAFIA DE TIREOIDE'
-
-  const tireoidite = state.tireoidite && state.tireoidite !== 'nenhuma' ? state.tireoidite : null
-
-  // Corpo — lobos e istmo (com nódulos embutidos por lobo).
-  const corpo: string[] = [
-    loboFraseCorpo('lobo_direito', state.lobo_direito, state.nodulos, state.doppler),
-    loboFraseCorpo('lobo_esquerdo', state.lobo_esquerdo, state.nodulos, state.doppler),
-    loboFraseCorpo('istmo', state.istmo, state.nodulos, state.doppler),
-  ]
-
-  // Tireoidite difusa (após os lobos).
-  if (tireoidite) corpo.push(TIREOIDITE_CORPO[tireoidite])
-
-  if (state.doppler && (state.picoDireito.trim() || state.picoEsquerdo.trim())) {
-    if (state.picoDireito.trim())
-      corpo.push(`Pico sistólico da artéria tireoidiana inferior direita de ${state.picoDireito.trim()} cm/s.`)
-    if (state.picoEsquerdo.trim())
-      corpo.push(`Pico sistólico da artéria tireoidiana inferior esquerda de ${state.picoEsquerdo.trim()} cm/s.`)
-  }
-
-  // Linfonodos cervicais (opcional — só quando avaliados).
-  if (state.avaliarLinfonodos) {
-    corpo.push(
-      state.linfonodos === 'preservados'
-        ? 'Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.'
-        : 'Adicionalmente, evidenciam-se linfonodos cervicais de aspecto atípico (perda do hilo ecogênico e/ou morfologia arredondada), a esclarecer.',
-    )
-  }
-
-  // Conclusão.
-  const conclusion: string[] = []
-  const volTotal =
-    (volumeLobo(state.lobo_direito) ?? 0) +
-    (volumeLobo(state.lobo_esquerdo) ?? 0) +
-    (volumeLobo(state.istmo) ?? 0)
-  const semAlteracao = state.nodulos.length === 0 && !tireoidite
-  if (volTotal > 0) {
-    conclusion.push(
-      semAlteracao
-        ? `Tireoide de volume normal (${fmtVol(volTotal)} ml), sem evidência de alteração ecotextural ou de imagem nodular`
-        : `Tireoide de volume normal (${fmtVol(volTotal)} ml)`,
-    )
-  } else if (semAlteracao) {
-    conclusion.push('Tireoide sem evidência de alteração ecotextural ou de imagem nodular')
-  }
-
-  // Tireoidite (conclusão).
-  if (tireoidite) conclusion.push(TIREOIDITE_CONCLUSAO[tireoidite])
-
-  // Nódulos agrupados por lobo, formato exato.
-  for (const loboId of ['lobo_direito', 'lobo_esquerdo', 'istmo'] as LoboId[]) {
-    const meus = state.nodulos.filter((n) => n.lobo === loboId)
-    if (meus.length === 0) continue
-    const lista = meus.map(noduloConclusao).join('; e ')
-    conclusion.push(`${LOBO_NOME[loboId]} apresentando ${lista}`)
-  }
-
-  if (state.avaliarLinfonodos) {
-    conclusion.push(
-      state.linfonodos === 'preservados'
-        ? 'Linfonodos cervicais com morfologia preservada, com predomínio nos níveis I e II, sem sinais de infiltração neoplásica ao método'
-        : 'Linfonodos cervicais de aspecto atípico, a esclarecer',
-    )
-  }
-
-  const conclusionBlock = conclusion.map((c, i) => `${i + 1}. ${c}.`).join('\n')
-
-  // Comentários: menciona a cadeia cervical só quando os linfonodos são avaliados.
-  const comentarios = state.avaliarLinfonodos
-    ? COMENTARIOS
-    : 'Exame realizado com transdutor de 12 MHz, abrangendo todos os segmentos da glândula tireoide. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
-
-  const text = [
-    titulo,
-    `COMENTÁRIOS:\n${comentarios}`,
-    'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
-    ...corpo,
-    `CONCLUSÃO:\n${conclusionBlock}`,
-    RODAPE,
-  ].join('\n\n')
-
-  return { text, conclusion, alteredCount: state.nodulos.length }
-}
+// ─── Composição: SAIU DAQUI ───
+//
+// A TIREOIDE foi a categoria PILOTO da troca de motor (§3.2 do plano de 20/08).
+// O texto clínico dela não é mais montado no navegador: a tela manda os achados
+// para `POST /api/catalog/TIREOIDE/render` e recebe o laudo pronto do renderer
+// canônico — a mesma fonte que atende o iOS e o Android.
+//
+// O que morava aqui foi apagado de propósito, não desativado. Um compositor
+// local vivo ao lado do canônico é a definição de segunda fonte de redação
+// clínica: um dia alguém chama o errado, e ninguém percebe, porque os dois
+// produzem um laudo plausível.
+//
+// O que SOBRA neste arquivo é estrutura de TELA, não redação: o formato do
+// estado, as seções do formulário, e `volumeLobo` — que é fórmula pura e fica
+// do lado da web de propósito (regra §1: aqui o médico DIGITA os eixos, o dado
+// é confiável, e o canônico recebe o volume pronto, exatamente como a regra
+// dele manda).
+//
+// As demais categorias continuam em `lib/deterministic` até que cada uma faça a
+// mesma travessia.

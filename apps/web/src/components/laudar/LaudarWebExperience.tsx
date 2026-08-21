@@ -7,7 +7,6 @@ import {
   GENERIC_CATEGORIES,
   appendInitials,
   composeReport,
-  composeTireoide,
   initialExamState,
   initialTireoideState,
   tireoideSections,
@@ -15,6 +14,8 @@ import {
   type ExamState,
   type TireoideState,
 } from '@/lib/deterministic'
+import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
+import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
 import { CalcPanel } from './CalcPanel'
 import { ExamSectionNav } from './ExamSectionNav'
@@ -196,11 +197,35 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       [categoria]: { ...all[categoria], __opts: { ...((all[categoria]?.['__opts'] as Record<string, string | string[]>) ?? {}), [key]: value } },
     }))
 
+  /**
+   * A TIREOIDE sai do RENDERER canônico; as demais ainda compõem localmente.
+   *
+   * É a categoria piloto da troca de motor (§3.2 do plano de 20/08). O
+   * compositor local dela foi apagado — não há para onde cair, e é de propósito:
+   * um segundo motor vivo produziria um laudo plausível e errado no dia em que
+   * alguém chamasse o errado.
+   */
+  const achadosCanonicos = useMemo(
+    () => (isTireoide ? adaptarTireoide(tireoideState) : null),
+    [isTireoide, tireoideState],
+  )
+  const laudoCanonico = useLaudoCanonico(
+    'TIREOIDE',
+    achadosCanonicos
+      ? {
+          dados: achadosCanonicos.dados as unknown as Record<string, unknown>,
+          alteracoes: achadosCanonicos.alteracoes,
+          pendencias: achadosCanonicos.pendencias,
+        }
+      : null,
+    isTireoide,
+  )
+
   const composedText = useMemo(() => {
-    if (isTireoide) return composeTireoide(tireoideState).text
+    if (isTireoide) return laudoCanonico.texto
     const cat = CATEGORIES[categoria]
     return cat ? composeReport(cat, examStates[categoria]).text : ''
-  }, [categoria, examStates, isTireoide, tireoideState])
+  }, [categoria, examStates, isTireoide, laudoCanonico.texto])
 
   // O texto manual é preservado por categoria. Enquanto o usuário não editar,
   // os controles determinísticos continuam atualizando o documento ao vivo.
@@ -529,6 +554,34 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               </footer>
             )}
           </section>
+
+          {/*
+            O ESTADO DO MOTOR, acima do laudo.
+            
+            A TIREOIDE agora vem do renderer, e isso é assíncrono: entre a tecla
+            e a resposta há um intervalo em que o texto na tela não corresponde
+            ao formulário. Sem dizer isso, o médico leria como atual um laudo de
+            dois segundos atrás — e no erro, um laudo de antes da falha.
+          */}
+          {isTireoide && (laudoCanonico.erro || laudoCanonico.desatualizado) ? (
+            <p
+              className={`mb-2 rounded-xl px-3.5 py-2 text-xs ${
+                laudoCanonico.erro
+                  ? 'border border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300'
+                  : 'border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-200'
+              }`}
+            >
+              {laudoCanonico.erro ? (
+                <>
+                  <strong className="font-semibold">O laudo não foi montado.</strong>{' '}
+                  {laudoCanonico.erro}
+                  {laudoCanonico.texto ? ' O texto abaixo é de antes desta falha.' : ''}
+                </>
+              ) : (
+                <>Montando o laudo com o que você mudou — o texto abaixo ainda é o anterior.</>
+              )}
+            </p>
+          ) : null}
 
           <LaudoPreview
             documentKey={categoria}

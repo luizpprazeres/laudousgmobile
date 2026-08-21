@@ -158,83 +158,46 @@ function medidasDoNodulo(dim: string): number[] | null {
   return nums.length > 0 ? nums : null;
 }
 
-function adaptarNodulo(n: NoduloTireoide, pendencias: Pendencia[]): NoduloCanonico {
-  /**
-   * BLOQUEIO: enquanto a tela classificar por grau, o nódulo não migra.
-   *
-   * Esta pendência é a mais importante do módulo. Ela não é um aviso de
-   * acabamento — é o que impede o laudo de sair com a classificação invertida.
-   * Ver o comentário longo em `nota_domingos_ditada`.
-   */
-  if (n.notaDomingos || n.tirads) {
-    pendencias.push({
-      onde: `nódulo ${n.id}`,
-      valor: `NOTA ${n.notaDomingos || "—"} / TI-RADS ${n.tirads || "—"}`,
-      motivo:
-        "a tela classifica por GRAU (1–6) e o canônico por SOMA DE PONTOS dos eixos — repassar o grau inverteria o significado na ponta maligna. O nódulo só migra quando a tela oferecer os seis eixos canônicos",
-      bloqueia: true,
-    });
-  }
-
-  const eco = ECO_PARA_CANONICO[n.ecogenicidade] ?? null;
-  if (n.ecogenicidade && eco === null) {
-    pendencias.push({
-      onde: `nódulo ${n.id}`,
-      valor: `ecogenicidade "${n.ecogenicidade}"`,
-      motivo:
-        "o canônico descreve o conteúdo do nódulo, e cada opção pontua diferente na tabela de Domingos — escolher uma no lugar mudaria a NOTA FINAL",
-    });
-  }
-
-  const margem = MARGEM_PARA_CANONICO[n.margens] ?? null;
-  if (n.margens && margem === null) {
-    pendencias.push({
-      onde: `nódulo ${n.id}`,
-      valor: `margem "${n.margens}"`,
-      motivo:
-        "o canônico pontua regular (0) / irregular (1) / espiculada (2); esta opção fica entre dois degraus e traduzi-la acrescentaria ponto que o médico não escolheu",
-    });
-  }
+/**
+ * O nódulo atravessa DIRETO — os eixos da tela já são os do canônico (D2).
+ *
+ * Este era o único bloqueio da migração, e o comentário que ficava aqui
+ * explicava por quê: a tela pedia um GRAU de 1 a 6 e o canônico soma pontos dos
+ * eixos, escalas diferentes com o mesmo nome de "NOTA FINAL", que se invertem
+ * na ponta maligna. Traduzir era impossível com segurança, e mandar só os dois
+ * eixos que a tela tinha era pior — os quatro ausentes pontuam zero e a nota
+ * saía subestimada, o mesmo erro pelo mesmo lado.
+ *
+ * Resolvido tirando a tradução do caminho: a tela passou a oferecer os seis
+ * eixos (`lib/catalog/eixosDoNodulo.ts`), com as chaves do renderer. Nada é
+ * convertido aqui, e por isso nada pode ser convertido errado.
+ *
+ * `nota_domingos_ditada` e `ti_rads_ditado` continuam nulos e devem continuar:
+ * eles existem para o médico DITAR uma nota por cima do cálculo, e a web não
+ * tem ditado. Preenchê-los faria a tela vencer o renderer — as duas
+ * autoridades sobre o mesmo laudo que a regra §1 do plano proíbe.
+ */
+function adaptarNodulo(n: NoduloTireoide, _pendencias: Pendencia[]): NoduloCanonico {
+  const medidas = [n.c1, n.c2, n.c3]
+    .map((v) => Number.parseFloat(v.trim().replace(",", ".")))
+    .filter((x) => Number.isFinite(x) && x > 0);
 
   return {
-    ecogenicidade: eco,
-    margem,
-    halo: null,
-    forma: null,
-    calcificacoes: null,
-    vascularizacao: null,
-    medidas_cm: medidasDoNodulo(n.dimensao),
-    diametro_transverso_cm: null,
-    localizacao: null,
-    descricao_raw: null,
+    ecogenicidade: n.ecogenicidade,
+    margem: n.margem,
+    halo: n.halo,
+    forma: n.forma,
+    calcificacoes: n.calcificacoes,
+    vascularizacao: n.vascularizacao,
+    medidas_cm: medidas.length > 0 ? medidas : null,
     /**
-     * ⚠️ A NOTA E O TI-RADS DA TELA NÃO ATRAVESSAM. Descoberto em 20/08 pela
-     * prova diferencial, e é o motivo de o nódulo ainda não migrar.
-     *
-     * Parecia haver uma ponte segura: o renderer aceita
-     * `nota_domingos_ditada`/`ti_rads_ditado`, o ditado do médico vence o
-     * cálculo, e o laudo de hoje sairia preservado. **É falso, e falha para o
-     * lado perigoso** — as duas "NOTA FINAL" são escalas DIFERENTES com o mesmo
-     * nome:
-     *
-     * | valor | a tela (grau 1–6) | o canônico (soma de pontos) |
-     * |---|---|---|
-     * | 4 | intermediárias | TI-RADS 2 → provavelmente benignas |
-     * | 5 | **provavelmente malignas** | TI-RADS 2 → **provavelmente benignas** |
-     * | 6 | **malignas** | TI-RADS 3 → intermediárias |
-     *
-     * A tela é um GRAU que o médico escolhe (`NOTAS_DOMINGOS = 1..6`); o
-     * canônico é a SOMA dos pontos dos eixos, que chega a 16. Repassar o grau
-     * como se fosse pontuação inverte o significado clínico exatamente na ponta
-     * maligna — o nódulo que o médico marcou como provavelmente maligno sairia
-     * impresso "características provavelmente benignas".
-     *
-     * Enquanto a tela não oferecer os seis eixos canônicos (ecogenicidade,
-     * margem, halo, forma, calcificações, vascularização) para o renderer
-     * calcular, o nódulo não tem travessia segura. Mandar os dois eixos que ela
-     * tem também não serve: os quatro ausentes pontuam zero e a nota sai
-     * SUBESTIMADA, que é o mesmo erro pelo mesmo lado.
+     * Nulo de propósito: sem médico nomeando qual eixo é o transverso, o
+     * renderer usa o MAIOR — que é a regra dele, e a que interessa para o
+     * seguimento.
      */
+    diametro_transverso_cm: null,
+    localizacao: n.localizacao.trim() || null,
+    descricao_raw: null,
     nota_domingos_ditada: null,
     ti_rads_ditado: null,
   };
@@ -329,7 +292,7 @@ export function adaptarTireoide(state: TireoideState): Adaptacao {
 
   const dados: TireoideDados = {
     com_doppler: state.doppler,
-    volume_glandular: null,
+    volume_glandular: state.volumeGlandular,
     lobo_direito: adaptarLobo("lobo_direito", state.lobo_direito, state.nodulos, pendencias),
     lobo_esquerdo: adaptarLobo("lobo_esquerdo", state.lobo_esquerdo, state.nodulos, pendencias),
     istmo: adaptarLobo("istmo", state.istmo, state.nodulos, pendencias),

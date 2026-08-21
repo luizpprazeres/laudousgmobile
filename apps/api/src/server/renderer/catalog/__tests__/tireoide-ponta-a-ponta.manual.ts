@@ -1,20 +1,19 @@
 /**
- * TIREOIDE — a PROVA DIFERENCIAL do piloto: a web de hoje × o renderer canônico.
+ * TIREOIDE — o gate do PILOTO, agora que o motor já foi trocado.
  *
- * Este gate existe para responder uma pergunta só, e responder antes de alguém
- * escrever tela: **o que o médico perde no dia em que a web parar de compor o
- * texto e passar a pedir o laudo ao `/render`?**
+ * Ele nasceu como prova DIFERENCIAL (a web de hoje × o canônico), para
+ * responder antes de alguém escrever tela: o que o médico perde quando a web
+ * parar de compor o texto? Respondida a pergunta, a troca foi feita em 21/08 e
+ * **o compositor local da TIREOIDE foi apagado** — não há mais texto A com que
+ * comparar, e não deve haver.
  *
- * O desenho é o do §3.2 de `docs/plano-web-workspace-2026-08-20.md`: um caso
- * clínico é escrito UMA vez, no estado da tela, e percorre os dois caminhos.
+ * O gate continua, com a premissa nova:
  *
- *   caso → composeTireoide(...)                        → texto A (a web de hoje)
- *   caso → adaptarTireoide(...) → renderizarSelecao(…) → texto B (o canônico)
+ *   caso → adaptarTireoide(...) → renderizarSelecao(…) → o laudo que o médico vê
  *
  * ## Como se lê o resultado
  *
- * Divergência de TEXTO não é falha — é o objetivo. O canônico ganha a redação,
- * sempre; uma fonte só. O que este gate procura é outra coisa:
+ * O que este gate procura:
  *
  * - **B não renderiza** — o caminho canônico recusa um caso que a web aceita.
  *   É bloqueador: o médico perde a capacidade de laudar aquilo.
@@ -43,7 +42,6 @@
 import { renderizarSelecao } from "../alteracoes";
 import { alteracoesDe } from "../alteracoes/index";
 import {
-  composeTireoide,
   initialTireoideState,
   type NoduloTireoide,
   type TireoideState,
@@ -91,21 +89,43 @@ type Caso = {
    * silenciado: um `esperado_falhar` sem motivo é um teste desligado.
    */
   pendente?: string;
+  /**
+   * O que a conclusão NÃO pode dizer.
+   *
+   * Existe para o modo de falha mais perigoso deste laudo: a conclusão que
+   * AFIRMA o contrário do achado. Exigir a frase certa não basta — "TI-RADS 5"
+   * e "provavelmente benignas" podem sair na mesma linha, e a asserção positiva
+   * passaria.
+   */
+  proibeNaConclusao?: string[];
 };
 
 function lobo(a: string, b: string, c: string) {
   return { a, b, c, ecotextura: "normal" as const };
 }
 
+/**
+ * Um nódulo pelos SEIS EIXOS canônicos (D2, 21/08).
+ *
+ * A base é um nódulo BENIGNO clássico — isoecoico, margem regular, halo fino,
+ * mais largo que alto, sem calcificação, sem vascularização — que soma 2 pontos.
+ * Cada caso muda só o eixo que quer provar, e assim a diferença de nota é
+ * atribuível.
+ */
 function nodulo(over: Partial<NoduloTireoide>): NoduloTireoide {
   return {
     id: "n1",
     lobo: "lobo_direito",
     ecogenicidade: "isoecoica",
-    margens: "regulares",
-    dimensao: "1,2 x 0,9 x 0,8",
-    notaDomingos: "3",
-    tirads: "3",
+    margem: "regular",
+    halo: "fino_regular",
+    forma: "mais_larga_que_alta",
+    calcificacoes: "sem",
+    vascularizacao: "sem",
+    c1: "1,2",
+    c2: "0,9",
+    c3: "0,8",
+    localizacao: "",
     ...over,
   };
 }
@@ -134,17 +154,30 @@ const CASOS: Caso[] = [
     estado: initialTireoideState(),
   },
   {
-    nome: "DOIS nódulos no mesmo lobo",
+    nome: "DOIS nódulos no mesmo lobo — um suspeito, um cisto",
     porque:
-      "os cenários fixos do catálogo são mutuamente exclusivos por grupo — não sabem representar isto. Prova que a lista aberta em `dados` é o caminho certo.",
+      "os cenários fixos do catálogo são mutuamente exclusivos por grupo e não sabem representar isto; prova que a lista aberta em `dados` é o caminho. E prova o D2: os dois nódulos são descritos pelos EIXOS e o renderer é quem pontua.",
     estado: {
       ...medido(),
       nodulos: [
-        nodulo({ id: "a", ecogenicidade: "hipoecoica", margens: "irregulares", dimensao: "1,8 x 1,2 x 1,4", notaDomingos: "5", tirads: "4c" }),
-        nodulo({ id: "b", ecogenicidade: "anecoica", margens: "regulares", dimensao: "0,6 x 0,5 x 0,4", notaDomingos: "1", tirads: "2" }),
+        // Hipoecoico (3) + margem espiculada (2) + halo ausente (1) + mais alto
+        // que largo (3) + microcalcificações (3) + vasc. central (4) = 16, o
+        // teto da tabela. Tem de sair na ponta MALIGNA.
+        nodulo({
+          id: "a", ecogenicidade: "hipoecoica", margem: "espiculada", halo: "sem_halo",
+          forma: "mais_alta_que_larga", calcificacoes: "micro", vascularizacao: "exclusiva_central",
+          c1: "1,8", c2: "1,2", c3: "1,4",
+        }),
+        // Cisto simples: anecoico homogêneo, tudo zero.
+        nodulo({
+          id: "b", ecogenicidade: "anecoica_homogenea", margem: "regular", halo: "fino_regular",
+          forma: "mais_larga_que_alta", calcificacoes: "sem", vascularizacao: "sem",
+          c1: "0,6", c2: "0,5", c3: "0,4",
+        }),
       ],
     },
-    pendente: "escalas de NOTA incompatíveis — o nódulo não migra até a tela ter os seis eixos (D2)",
+    exige: ["hipoecoic", "anecoic", "1,8", "0,6"],
+    exigeNaConclusao: ["NOTA FINAL"],
   },
   {
     nome: "nódulos em lobos diferentes",
@@ -152,26 +185,67 @@ const CASOS: Caso[] = [
     estado: {
       ...medido(),
       nodulos: [
-        nodulo({ id: "a", dimensao: "1,4 x 1,1 x 1,0" }),
-        nodulo({ id: "b", lobo: "lobo_esquerdo", dimensao: "0,9 x 0,7 x 0,6" }),
+        nodulo({ id: "a", c1: "1,4", c2: "1,1", c3: "1,0" }),
+        nodulo({ id: "b", lobo: "lobo_esquerdo", c1: "0,9", c2: "0,7", c3: "0,6" }),
       ],
     },
-    pendente: "idem — escalas de NOTA incompatíveis (D2)",
+    exige: ["Lobo direito", "Lobo esquerdo", "1,4", "0,9"],
+  },
+  {
+    /**
+     * O CASO QUE MOTIVOU O D2 — e a prova de que ele foi resolvido.
+     *
+     * Na tela antiga o médico escolhia "grau 5" para dizer PROVAVELMENTE
+     * MALIGNO. Repassado ao canônico como nota, 5 pontos caem em TI-RADS 2 e o
+     * laudo sairia "provavelmente benignas": a inversão exata que bloqueava a
+     * migração do nódulo.
+     *
+     * Descrito pelos eixos, o mesmo nódulo suspeito soma 16 e sai na ponta
+     * certa. Este caso falha se alguém reintroduzir a travessia por nota.
+     */
+    nome: "o nódulo suspeito NÃO pode sair como provavelmente benigno",
+    porque: "é a inversão de escala que bloqueou o piloto por um dia inteiro.",
+    estado: {
+      ...medido(),
+      nodulos: [
+        nodulo({
+          ecogenicidade: "hipoecoica", margem: "espiculada", halo: "sem_halo",
+          forma: "mais_alta_que_larga", calcificacoes: "micro", vascularizacao: "exclusiva_central",
+        }),
+      ],
+    },
+    proibeNaConclusao: ["provavelmente benign"],
   },
   {
     nome: "Hashimoto + medidas digitadas",
     porque:
       "O CASO QUE MOTIVOU O GUARD. O merge raso trocava o lobo inteiro e o laudo saía 'sem evidência de alteração ecotextural' — o achado clicado virava o seu contrário, em silêncio.",
     estado: { ...medido(), tireoidite: "hashimoto" },
-    exige: ["difusamente heterogênea", "5,2"],
-    proibe: ["sem evidência de alteração ecotextural"],
     /**
-     * Esta asserção FALHA hoje, e é o objetivo dela. O corpo descreve a
-     * tireoidite; a conclusão não a menciona. Enquanto o D1 não entrar, o caso
-     * é uma perda contada, não um verde.
+     * A EXIGÊNCIA É CLÍNICA, NÃO LITERAL — corrigido em 21/08.
+     *
+     * Este caso exigia "difusamente heterogênea", que é a redação da web
+     * ANTIGA. O canônico escreve "ecotextura heterogênea", e o gate marcava
+     * isso como perda — contra a sua própria doutrina, que diz que divergência
+     * de TEXTO não é falha e que o canônico ganha a redação. Cobrar a palavra
+     * do motor aposentado é pedir que o novo imite o velho justamente onde ele
+     * foi trocado.
+     *
+     * O que tem de sobreviver é o ACHADO: heterogeneidade no corpo, a medida
+     * digitada, e o nome do diagnóstico na conclusão.
      */
-    exigeNaConclusao: ["tireoid"],
-    pendente: "D1 — a tireoidite sai no corpo e SOME da conclusão (defeito de produção)",
+    exige: ["heterogên", "5,2"],
+    /**
+     * A conclusão TEM de nomear o diagnóstico. Esta asserção falhava de
+     * propósito enquanto o D1 não existia — a tireoidite saía no corpo e sumia
+     * da conclusão. Com o D1 no ar ela passa, e passa a servir de trava.
+     *
+     * (A versão antiga procurava "tireoid" em minúsculas, o que nunca casaria
+     * com "Tireoidite de Hashimoto" — duas chaves `exigeNaConclusao` no mesmo
+     * objeto, e a segunda vencia calada.)
+     */
+    exigeNaConclusao: ["Hashimoto"],
+    proibe: ["sem evidência de alteração ecotextural"],
   },
   {
     nome: "Hashimoto + nódulo + medidas",
@@ -180,24 +254,19 @@ const CASOS: Caso[] = [
     estado: {
       ...medido(),
       tireoidite: "hashimoto",
-      nodulos: [nodulo({ id: "a", dimensao: "1,3 x 1,0 x 0,9" })],
+      nodulos: [nodulo({ id: "a", c1: "1,3", c2: "1,0", c3: "0,9" })],
     },
-    exige: ["difusamente heterogênea"],
+    exige: ["heterogên"],
+    exigeNaConclusao: ["Hashimoto", "NOTA FINAL"],
     proibe: ["sem evidência de alteração ecotextural"],
-    pendente: "o nódulo em si não migra (D2); o que este caso prova é que tireoidite + nódulo CONVIVEM no merge",
   },
   {
     nome: "tireoidite de Riedel",
     porque:
-      "o catálogo canônico só tem Hashimoto. As outras três patologias da web não têm cenário — o adaptador tem de DIZER isso, não sumir com o diagnóstico.",
+      "das quatro tireoidites, era a que não tinha cenário canônico — o adaptador BLOQUEAVA em vez de sumir com o diagnóstico. Com o D1 as quatro passaram a existir; este caso prova que a menos comum delas chega inteira à conclusão.",
     estado: { ...medido(), tireoidite: "riedel" },
-    /**
-     * `proibe` além da pendência: se um dia alguém tirar o bloqueio do
-     * adaptador, este caso tem de reprovar pelo TEXTO — o laudo não pode
-     * concluir normalidade num exame que o médico marcou como tireoidite.
-     */
+    exigeNaConclusao: ["Riedel"],
     proibe: ["sem evidência de alteração ecotextural"],
-    pendente: "sem AlteracaoSpec canônica — o adaptador BLOQUEIA (D1)",
   },
   {
     nome: "Doppler com UM pico só",
@@ -235,9 +304,29 @@ const CASOS: Caso[] = [
   {
     nome: "bócio (volume aumentado)",
     porque:
-      "a web SEMPRE conclui 'volume normal' quando há qualquer volume; o canônico tem estado explícito. A tela precisa perguntar — o navegador não deve inferir normalidade de um número.",
+      "a web concluía 'volume normal' para QUALQUER volume digitado — um bócio de 40 ml saía com a glândula descrita como normal. Resolvido em 21/08 acrescentando o controle: o estado é perguntado, nunca inferido das medidas.",
+    estado: { ...medido(), volumeGlandular: "aumentado" as const },
+    proibeNaConclusao: ["volume normal"],
+  },
+  {
+    /**
+     * O CONTRAPESO do caso acima — e o registro de um comportamento que
+     * surpreende.
+     *
+     * Sem esta trava alguém "resolveria" o bócio fazendo o padrão ser
+     * "aumentado", e todo exame sem resposta afirmaria glândula aumentada: o
+     * mesmo erro, para o outro lado.
+     *
+     * ⚠️ O que este caso também documenta: em branco o renderer **não se cala**
+     * — ele escreve "volume normal". Não é silêncio, é um padrão. Fica afirmado
+     * aqui para ninguém precisar descobrir de novo, e para a tela poder dizer a
+     * verdade ao médico no rótulo do controle.
+     */
+    nome: "volume glandular NÃO informado",
+    porque: "prova o padrão do renderer: em branco ele conclui NORMAL, não fica calado.",
     estado: medido(),
-    pendente: "a tela não tem o controle de estado glandular (D-extra)",
+    exigeNaConclusao: ["volume normal"],
+    proibeNaConclusao: ["bócio", "aumentad"],
   },
 ];
 
@@ -258,7 +347,6 @@ for (const caso of CASOS) {
   console.log(`\n\n▸ ${caso.nome}`);
   console.log(`  ${caso.porque}`);
 
-  const a = composeTireoide(caso.estado).text;
   const { dados, alteracoes, pendencias } = adaptarTireoide(caso.estado);
 
   const specs = alteracoes
@@ -321,6 +409,11 @@ for (const caso of CASOS) {
     if (!b.includes(termo)) registrar(`PERDEU: o laudo canônico não contém "${termo}"`);
   }
   const conclusao = b.split(/CONCLUS[ÃA]O:\n/)[1]?.split("\n\n")[0] ?? "";
+  for (const proibido of caso.proibeNaConclusao ?? []) {
+    if (conclusao.toLowerCase().includes(proibido.toLowerCase())) {
+      registrar(`AFIRMA O CONTRÁRIO: a conclusão diz "${proibido}"`);
+    }
+  }
   for (const termo of caso.exigeNaConclusao ?? []) {
     if (!conclusao.includes(termo)) {
       registrar(`PERDEU NA CONCLUSÃO: "${termo}" sai no corpo e a conclusão não o menciona`);
@@ -335,9 +428,7 @@ for (const caso of CASOS) {
     pendentes += 1;
   }
 
-  const la = linhas(a).length;
-  const lb = linhas(b).length;
-  console.log(`  ✓ renderiza · web ${la} linhas · canônico ${lb} linhas`);
+  console.log(`  ✓ renderiza · ${linhas(b).length} linhas`);
 
   const conclusaoB = b.split(/CONCLUS[ÃA]O:\n/)[1]?.split("\n\n")[0] ?? "";
   console.log(`  conclusão canônica: ${conclusaoB.replace(/\n/g, " | ")}`);

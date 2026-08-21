@@ -2,11 +2,8 @@
 
 import { Plus, X } from 'lucide-react'
 import {
-  ECOGENICIDADES,
-  MARGENS,
-  NOTAS_DOMINGOS,
-  TIRADS_VALUES,
   TIREOIDITES,
+  VOLUME_GLANDULAR,
   volumeLobo,
   type LoboId,
   type LoboState,
@@ -14,6 +11,15 @@ import {
   type TireoideState,
   type TireoiditeTipo,
 } from '@/lib/deterministic'
+import {
+  CALCIFICACOES_EIXOS,
+  ECOGENICIDADE_EIXOS,
+  FORMA_EIXOS,
+  HALO_EIXOS,
+  MARGEM_EIXOS,
+  VASCULARIZACAO_EIXOS,
+  type Opcao,
+} from '@/lib/catalog/eixosDoNodulo'
 
 type Props = {
   section: string
@@ -201,15 +207,66 @@ function LoboPanel({ section, state, onChange }: Props & { section: LoboId }) {
 }
 
 function newNodulo(): NoduloTireoide {
+  /**
+   * Nasce SEM classificação. O padrão antigo já vinha com "hipoecoica", nota 3
+   * e TI-RADS 3 preenchidos — e nódulo que chega classificado é nódulo que sai
+   * classificado sem ninguém ter olhado. Vazio pontua zero no canônico, que é o
+   * mesmo que "não avaliado", e obriga o médico a dizer o que viu.
+   */
   return {
     id: crypto.randomUUID(),
     lobo: 'lobo_direito',
-    ecogenicidade: 'hipoecoica',
-    margens: 'regulares',
-    dimensao: '',
-    notaDomingos: '3',
-    tirads: '3',
+    ecogenicidade: null,
+    margem: null,
+    halo: null,
+    forma: null,
+    calcificacoes: null,
+    vascularizacao: null,
+    c1: '',
+    c2: '',
+    c3: '',
+    localizacao: '',
   }
+}
+
+/** Um eixo do escore: rótulo, opções, e a possibilidade de desmarcar. */
+function Eixo({
+  rotulo,
+  auxiliar,
+  opcoes,
+  valor,
+  onChange,
+}: {
+  rotulo: string
+  auxiliar?: string
+  opcoes: Opcao[]
+  valor: string | null
+  onChange: (v: string | null) => void
+}) {
+  return (
+    <div>
+      <FieldLabel>
+        {rotulo}
+        {auxiliar ? (
+          <span className="ml-1.5 font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">
+            {auxiliar}
+          </span>
+        ) : null}
+      </FieldLabel>
+      <div className="flex flex-wrap gap-1.5">
+        {opcoes.map((o) => (
+          <Chip
+            key={o.value}
+            active={valor === o.value}
+            /* Clicar de novo desmarca — sem isso não há como voltar a "não avaliado". */
+            onClick={() => onChange(valor === o.value ? null : o.value)}
+          >
+            {o.label}
+          </Chip>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
@@ -227,7 +284,9 @@ function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
           <div>
             <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Nódulos</h3>
             <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-gray-400">
-              Nota Domingos e TI-RADS são informados pelo médico — selecione, não calculamos.
+              Descreva o que você vê. A <strong className="font-semibold">nota de Domingos</strong> e o{' '}
+              <strong className="font-semibold">TI-RADS</strong> são calculados no laudo, a partir destes
+              eixos — você não precisa converter nada.
             </p>
           </div>
           <button
@@ -267,64 +326,70 @@ function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
               ]}
             />
 
+            {/* As três medidas, separadas. O canônico usa a maior como diâmetro
+                transverso quando o médico não nomeia um. */}
             <div>
-              <FieldLabel>Ecogenicidade</FieldLabel>
-              <div className="flex flex-wrap gap-1.5">
-                {ECOGENICIDADES.map((option) => (
-                  <Chip
-                    key={option.value}
-                    active={nodulo.ecogenicidade === option.value}
-                    onClick={() => updateNodulo(nodulo.id, { ecogenicidade: option.value })}
-                  >
-                    {option.label}
-                  </Chip>
+              <FieldLabel>Medidas (cm)</FieldLabel>
+              <div className="flex items-center gap-1.5">
+                {(['c1', 'c2', 'c3'] as const).map((eixo, n) => (
+                  <div key={eixo} className="flex items-center gap-1.5">
+                    {n > 0 ? <span className="text-xs text-gray-400">×</span> : null}
+                    <input
+                      value={nodulo[eixo]}
+                      inputMode="decimal"
+                      placeholder="0,0"
+                      onChange={(e) => updateNodulo(nodulo.id, { [eixo]: e.target.value })}
+                      className="w-16 rounded-lg border border-gray-200 px-2 py-1.5 text-center font-mono text-sm text-gray-800 outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                    />
+                  </div>
                 ))}
               </div>
             </div>
 
-            <div>
-              <FieldLabel>Margens</FieldLabel>
-              <div className="flex flex-wrap gap-1.5">
-                {MARGENS.map((option) => (
-                  <Chip
-                    key={option.value}
-                    active={nodulo.margens === option.value}
-                    onClick={() => updateNodulo(nodulo.id, { margens: option.value })}
-                  >
-                    {option.label}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-
-            <TextInput
-              label="Dimensão"
-              value={nodulo.dimensao}
-              placeholder="12 mm"
-              onChange={(value) => updateNodulo(nodulo.id, { dimensao: value })}
+            <Eixo
+              rotulo="Ecogenicidade"
+              opcoes={ECOGENICIDADE_EIXOS}
+              valor={nodulo.ecogenicidade}
+              onChange={(v) => updateNodulo(nodulo.id, { ecogenicidade: v })}
+            />
+            <Eixo
+              rotulo="Margem"
+              opcoes={MARGEM_EIXOS}
+              valor={nodulo.margem}
+              onChange={(v) => updateNodulo(nodulo.id, { margem: v })}
+            />
+            <Eixo
+              rotulo="Halo"
+              opcoes={HALO_EIXOS}
+              valor={nodulo.halo}
+              onChange={(v) => updateNodulo(nodulo.id, { halo: v })}
+            />
+            <Eixo
+              rotulo="Forma"
+              opcoes={FORMA_EIXOS}
+              valor={nodulo.forma}
+              onChange={(v) => updateNodulo(nodulo.id, { forma: v })}
+            />
+            <Eixo
+              rotulo="Calcificações"
+              opcoes={CALCIFICACOES_EIXOS}
+              valor={nodulo.calcificacoes}
+              onChange={(v) => updateNodulo(nodulo.id, { calcificacoes: v })}
+            />
+            <Eixo
+              rotulo="Vascularização"
+              auxiliar="Chammas — entra na nota, não no texto"
+              opcoes={VASCULARIZACAO_EIXOS}
+              valor={nodulo.vascularizacao}
+              onChange={(v) => updateNodulo(nodulo.id, { vascularizacao: v })}
             />
 
-            <div>
-              <FieldLabel>Nota Domingos</FieldLabel>
-              <div className="flex flex-wrap gap-1.5">
-                {NOTAS_DOMINGOS.map((nota) => (
-                  <Chip key={nota} active={nodulo.notaDomingos === nota} onClick={() => updateNodulo(nodulo.id, { notaDomingos: nota })}>
-                    {nota}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <FieldLabel>TI-RADS</FieldLabel>
-              <div className="flex flex-wrap gap-1.5">
-                {TIRADS_VALUES.map((tirads) => (
-                  <Chip key={tirads} active={nodulo.tirads === tirads} onClick={() => updateNodulo(nodulo.id, { tirads })}>
-                    {tirads.toUpperCase()}
-                  </Chip>
-                ))}
-              </div>
-            </div>
+            <TextInput
+              label="Localização (opcional)"
+              value={nodulo.localizacao}
+              placeholder="no terço médio"
+              onChange={(value) => updateNodulo(nodulo.id, { localizacao: value })}
+            />
           </div>
         </section>
       ))}
@@ -334,7 +399,46 @@ function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
 
 function ParenquimaPanel({ state, onChange }: Omit<Props, 'section'>) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <section className="space-y-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      {/*
+        O VOLUME DA GLÂNDULA é perguntado, não deduzido das medidas.
+        
+        A tela concluía "volume normal" para qualquer volume digitado — um bócio
+        de 40 ml saía descrito como normal. A faixa de normalidade varia com
+        idade, sexo e constituição; um número não decide isso sozinho, e o
+        renderer se recusa a inferir das medidas.
+        
+        ⚠️ Mas EM BRANCO o laudo não fica calado: o renderer escreve "volume
+        normal" como padrão. Escrevi aqui, primeiro, que em branco "o laudo não
+        afirma" — e era falso; o gate mostrou a conclusão dizendo normal. O
+        rótulo agora diz o que acontece de verdade, porque um aviso errado é
+        pior que nenhum: o médico deixaria em branco acreditando ter se calado.
+      */}
+      <div>
+        <FieldLabel>
+          Volume da glândula
+          <span className="ml-1.5 font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">
+            em branco, sai como normal
+          </span>
+        </FieldLabel>
+        <div className="flex flex-wrap gap-1.5">
+          {VOLUME_GLANDULAR.map((o) => (
+            <Chip
+              key={o.value}
+              active={state.volumeGlandular === o.value}
+              onClick={() =>
+                onChange({
+                  ...state,
+                  volumeGlandular: state.volumeGlandular === o.value ? null : o.value,
+                })
+              }
+            >
+              {o.label}
+            </Chip>
+          ))}
+        </div>
+      </div>
+
       <Segmented
         label="Tireoidite (difusa)"
         value={state.tireoidite}

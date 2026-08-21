@@ -37,7 +37,8 @@ export { vesiculaModule } from './organs/vesicula'
  * Registro das categorias GENÉRICAS (compostas via composeReport). Adicionar uma
  * categoria nova = criar o módulo em organs/ e incluí-la aqui. A UI
  * (LaudarWebExperience) lê este registro — não precisa mexer no componente.
- * (Tireoide tem motor próprio — composeTireoide — e não entra aqui.)
+ * (Tireoide não entra aqui: ela foi a PILOTO da troca de motor e agora sai do
+ *  `/render` canônico. Ver a nota em `organs/tireoide.ts`.)
  */
 export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina, cervical, partesMoles, musculoesqueletico, obstetrica, morfologico]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
@@ -51,7 +52,6 @@ export {
   type ComposedReport,
 } from './compose'
 export {
-  composeTireoide,
   initialTireoideState,
   volumeLobo,
   tireoideSections,
@@ -60,6 +60,7 @@ export {
   NOTAS_DOMINGOS,
   TIRADS_VALUES,
   TIREOIDITES,
+  VOLUME_GLANDULAR,
   type TireoideState,
   type LoboState,
   type LoboId,
