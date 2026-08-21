@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, Undo2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Lock, Undo2 } from 'lucide-react'
 import type { CategoriaDaBiblioteca, ModeloProjetado, Operation } from '@/lib/biblioteca/tipos'
 import { EDICOES_VAZIAS, Modelo, type Edicoes } from './Modelo'
 
@@ -225,7 +225,12 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
         </nav>
 
         <section className="min-h-0 overflow-y-auto">
-          <div className="mx-auto max-w-3xl px-5 py-5">
+          {/*
+            Largo o bastante para as duas colunas — o modelo e o exemplo lado a
+            lado são um laudo inteiro cada, e em `max-w-3xl` cada coluna ficava
+            com pouco mais de vinte caracteres por linha.
+          */}
+          <div className="mx-auto max-w-6xl px-5 py-5">
             {atual && !atual.personalizacao_ativa && atual.explicacao_inativa ? (
               <p className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-200">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -235,6 +240,8 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
                 </span>
               </p>
             ) : null}
+
+            <ComoFunciona />
 
             {erro ? <Faixa tom="erro">{erro}</Faixa> : null}
             {aviso ? <Faixa tom="ok">{aviso}</Faixa> : null}
@@ -478,6 +485,80 @@ function Moldura({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="mx-auto max-w-3xl">{children}</div>
+    </div>
+  )
+}
+
+/**
+ * O QUE É A BIBLIOTECA — três parágrafos, no topo, uma vez.
+ *
+ * Sem isto o médico chega numa tela cheia de frases, algumas clicáveis e
+ * outras não, sem nada dizendo por quê. A pergunta que ele faz primeiro não é
+ * "como edito", é "posso mexer nisso sem estragar o laudo?".
+ *
+ * Fica recolhido depois da primeira leitura: instrução que reaparece todo dia
+ * vira ruído, e aí ninguém lê nem na primeira vez.
+ */
+function ComoFunciona() {
+  const [aberto, setAberto] = useState(true)
+
+  useEffect(() => {
+    setAberto(window.localStorage.getItem('biblioteca:comoFunciona') !== 'lido')
+  }, [])
+
+  const fechar = () => {
+    setAberto(false)
+    window.localStorage.setItem('biblioteca:comoFunciona', 'lido')
+  }
+
+  if (!aberto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        className="mb-4 text-xs font-semibold text-gray-400 underline-offset-2 transition hover:text-gray-600 hover:underline dark:hover:text-gray-300"
+      >
+        como funciona a Biblioteca
+      </button>
+    )
+  }
+
+  return (
+    <div className="mb-5 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 dark:border-gray-800 dark:bg-gray-900">
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <h2 className="font-barlow text-sm font-bold text-gray-800 dark:text-gray-100">
+          Este é o seu jeito de escrever
+        </h2>
+        <button
+          type="button"
+          onClick={fechar}
+          className="shrink-0 text-[11px] font-semibold text-gray-400 transition hover:text-gray-700 dark:hover:text-gray-200"
+        >
+          entendi
+        </button>
+      </div>
+      <div className="flex flex-col gap-1.5 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+        <p>
+          À esquerda está o laudo que a casa escreve nesta categoria, frase por
+          frase. Passe o mouse para reescrever, tirar ou acrescentar. À direita,
+          o mesmo laudo com números — para você ver como fica antes de valer.
+        </p>
+        <p>
+          As <strong className="font-semibold text-gray-800 dark:text-gray-200">lacunas</strong>{' '}
+          (<span className="font-mono">____</span>) são o exame: medida, lado,
+          classificação. Elas se preenchem sozinhas com o que você ditou ou
+          digitou — mantenha-as onde estão. Uma frase com{' '}
+          <Lock className="inline h-3 w-3 -translate-y-px text-gray-400" /> é fixa
+          porque depende de cálculo, não de redação: mudar o texto dela mudaria o
+          que o número significa.
+        </p>
+        <p>
+          Nada muda nos seus laudos enquanto você não{' '}
+          <strong className="font-semibold text-gray-800 dark:text-gray-200">publicar</strong>. O
+          rascunho é só seu, dá para voltar atrás a qualquer momento, e despublicar
+          devolve o texto da casa palavra por palavra.
+        </p>
+      </div>
     </div>
   )
 }

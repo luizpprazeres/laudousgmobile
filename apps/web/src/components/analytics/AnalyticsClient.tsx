@@ -32,7 +32,13 @@ export default function AnalyticsClient({ reports, totals }: { reports: Analytic
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
+    /*
+      A LARGURA É USADA. Em `max-w-4xl` a página era uma coluna comprida: o
+      médico rolava por gráfico depois de gráfico numa tela de 27 polegadas com
+      dois terços vazios dos lados. Analytics é para comparar — e comparar exige
+      ver duas coisas ao mesmo tempo.
+    */
+    <div className="mx-auto max-w-7xl space-y-4 p-4 md:p-6">
       <div>
         <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Analytics</h1>
         <p className="text-xs text-gray-500 dark:text-gray-400">Somando laudos com IA e laudos determinísticos da web.</p>
@@ -51,8 +57,15 @@ export default function AnalyticsClient({ reports, totals }: { reports: Analytic
         <VolumeLineChart reports={reports} period={linePeriod} onPeriodChange={setLinePeriod} />
       </div>
 
-      <AssertivityTable reports={reports} />
-      <PathologyList reports={reports} />
+      {/*
+        Assertividade e patologias lado a lado a partir de `xl`. Abaixo disso
+        empilham: as duas são tabelas, e tabela espremida deixa de ser legível
+        antes de deixar de caber.
+      */}
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <AssertivityTable reports={reports} />
+        <PathologyList reports={reports} />
+      </div>
     </div>
   )
 }
