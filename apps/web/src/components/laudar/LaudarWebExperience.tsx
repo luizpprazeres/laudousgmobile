@@ -16,6 +16,7 @@ import {
 } from '@/lib/deterministic'
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
 import { adaptarPelve } from '@/lib/catalog/pelveParaCatalogo'
+import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
@@ -221,6 +222,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
       const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
       return adaptarPelve(estado, opcoes)
+    }
+    if (categoria === 'MAMARIA') {
+      return adaptarMamaria((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
     return null
   }, [categoria, examStates, isTireoide, tireoideState])

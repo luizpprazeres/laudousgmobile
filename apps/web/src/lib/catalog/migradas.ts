@@ -14,8 +14,9 @@
  * |---|---|---|
  * | TIREOIDE | 21/08 | `tireoide-ponta-a-ponta.manual.ts` |
  * | PELVE_FEMININA | 21/08 | `pelve-ponta-a-ponta.manual.ts` |
+ * | MAMARIA | 21/08 | `mamaria-ponta-a-ponta.manual.ts` |
  */
-export const CATEGORIAS_MIGRADAS = ["TIREOIDE", "PELVE_FEMININA"] as const
+export const CATEGORIAS_MIGRADAS = ["TIREOIDE", "PELVE_FEMININA", "MAMARIA"] as const
 
 export function categoriaMigrada(categoria: string): boolean {
   return (CATEGORIAS_MIGRADAS as readonly string[]).includes(categoria)
