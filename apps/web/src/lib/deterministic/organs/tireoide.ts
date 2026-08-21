@@ -246,3 +246,12 @@ function fmtMedidas(lobo: LoboState): string | null {
 //
 // As demais categorias continuam em `lib/deterministic` até que cada uma faça a
 // mesma travessia.
+//
+// ## Não há laudo antigo para quebrar
+//
+// O formato do nódulo mudou por inteiro (`margens`/`dimensao`/`notaDomingos`
+// deram lugar aos seis eixos), e a pergunta óbvia é o que acontece com o que já
+// está gravado. Nada: `web_reports.exam_state` é ESCRITO no salvamento e nunca
+// relido — o histórico mostra o TEXTO do laudo, não reidrata o formulário
+// (conferido em 21/08). Se um dia alguém abrir um laudo salvo para reeditar, aí
+// sim é preciso migrar o formato, e este parágrafo é o aviso.
