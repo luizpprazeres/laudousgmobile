@@ -3,29 +3,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Check, Minus, ChevronDown, ChevronUp, Zap, ArrowLeft, Loader2 } from 'lucide-react'
+import { COMPARATIVO, PRECOS, fmtBRL } from '@/lib/planos'
 
-// Preços mensais (decisão Luiz 2026-06-19). Free = 10 laudos vitalício (sem cobrança).
-const PRICES = {
-  essencial: 99.0,
-  profissional: 169.9,
-} as const
-
-const fmtBRL = (v: number) =>
-  v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
-const comparisonRows: {
-  label: string
-  free: string | true | false
-  essencial: string | true | false
-  profissional: string | true | false
-}[] = [
-  { label: 'Laudos', free: '10 vitalício', essencial: '800/mês', profissional: 'Ilimitados' },
-  { label: 'Categorias de USG', free: true, essencial: true, profissional: true },
-  { label: 'Geração com e sem IA', free: true, essencial: true, profissional: true },
-  { label: 'Link de sala (auxiliar)', free: false, essencial: true, profissional: true },
-  { label: 'Exportação .docx', free: true, essencial: true, profissional: true },
-  { label: 'Suporte', free: false, essencial: 'WhatsApp', profissional: 'WhatsApp prioritário' },
-]
+/**
+ * Preços e comparativo vêm de `lib/planos.ts` — a mesma fonte que a tela de
+ * preferências lê para dizer ao médico o que o plano dele inclui. Duas cópias
+ * divergiriam no dia em que um preço mudasse, e a vitrine prometeria uma coisa
+ * enquanto o aplicativo afirmaria outra.
+ */
+const PRICES = PRECOS
+const comparisonRows = COMPARATIVO
 
 function CellValue({ value }: { value: string | boolean }) {
   if (value === true) return <Check className="w-4 h-4 text-emerald-500 mx-auto" />

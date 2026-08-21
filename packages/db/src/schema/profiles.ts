@@ -29,6 +29,14 @@ export const profiles = pgTable(
     role: profileRoleEnum("role").notNull().default("user"),
     plan: profilePlanEnum("plan").notNull().default("free"),
     defaultWritingStyleId: uuid("default_writing_style_id"),
+    /**
+     * Registro profissional. Existem no banco desde a migração do onboarding,
+     * mas ficaram fora deste schema — e por isso fora do `ProfileSchema`, da
+     * rota `/api/me/profile` e de qualquer tela. O médico não tinha onde
+     * informar o próprio CRM.
+     */
+    crm: text("crm"),
+    uf: text("uf"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

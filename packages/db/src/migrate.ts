@@ -47,6 +47,7 @@ async function main() {
     // criar tabela e precisar de escrita pelo cliente tem de conceder
     // explicitamente — e entra DEPOIS desta na lista.
     "0024_menor_privilegio_escrita.sql",
+    "0025_crm_e_uf_separados.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

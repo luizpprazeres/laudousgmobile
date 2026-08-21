@@ -1,8 +1,8 @@
 import { forbidden, unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { getDbClient, schema } from "@laudousg/db";
 export { OPTIONS } from "@/server/cors";
-import { ProfileSchema } from "@laudousg/shared";
-import { eq } from "drizzle-orm";
+import { ProfileSchema, UfSchema } from "@laudousg/shared";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { isBetaTester } from "@/server/iap/betaWhitelist";
 
@@ -12,6 +12,19 @@ export const dynamic = "force-dynamic";
 const UpdateProfileSchema = z.object({
   name: z.string().trim().min(1).max(120).nullable().optional(),
   default_writing_style_id: z.string().uuid().nullable().optional(),
+  /**
+   * Só dígitos, 4 a 10. O CRM sai impresso no laudo como identificação
+   * profissional: aceitar "CRM 12345-SP" aqui faria a tela imprimir o prefixo
+   * duas vezes, e a UF em dois lugares que podem discordar. Guarda-se o número
+   * puro, e a UF no campo dela.
+   */
+  crm: z
+    .string()
+    .trim()
+    .regex(/^\d{4,10}$/, "o CRM é só o número, de 4 a 10 dígitos")
+    .nullable()
+    .optional(),
+  uf: UfSchema.nullable().optional(),
   plan: z.enum(["free", "essencial", "pro", "clinic"]).optional(),
 });
 
@@ -22,7 +35,7 @@ export async function GET(req: Request) {
   const profile = await loadProfile(user.id);
   if (!profile) return json({ error: "profile_not_found" }, 404);
 
-  return json({ profile });
+  return json({ profile, assinatura: await loadAssinatura(user.id) });
 }
 
 export async function PATCH(req: Request) {
@@ -43,12 +56,30 @@ export async function PATCH(req: Request) {
   if (parsed.data.plan !== undefined) {
     return forbidden("plan_read_only");
   }
+  /**
+   * CRM e UF andam JUNTOS. Um número de conselho sem estado não identifica
+   * ninguém — o mesmo número existe em 27 conselhos. Guardar metade seria
+   * guardar uma identificação que não identifica, e ela vai para o laudo.
+   */
+  const crmDepois =
+    "crm" in parsed.data ? (parsed.data.crm ?? null) : undefined;
+  const ufDepois = "uf" in parsed.data ? (parsed.data.uf ?? null) : undefined;
+  if (crmDepois !== undefined || ufDepois !== undefined) {
+    const atual = await loadProfile(user.id);
+    const crmFinal = crmDepois !== undefined ? crmDepois : (atual?.crm ?? null);
+    const ufFinal = ufDepois !== undefined ? ufDepois : (atual?.uf ?? null);
+    if ((crmFinal === null) !== (ufFinal === null)) {
+      return json({ error: "crm_e_uf_juntos" }, 400);
+    }
+  }
 
   const db = getDbClient();
   const patch: Partial<typeof schema.profiles.$inferInsert> = {
     updatedAt: new Date(),
   };
   if ("name" in parsed.data) patch.name = parsed.data.name ?? null;
+  if ("crm" in parsed.data) patch.crm = parsed.data.crm ?? null;
+  if ("uf" in parsed.data) patch.uf = parsed.data.uf ?? null;
   if ("default_writing_style_id" in parsed.data) {
     const styleId = parsed.data.default_writing_style_id ?? null;
     if (styleId) {
@@ -94,9 +125,55 @@ async function loadProfile(userId: string) {
     role: row.role,
     plan: effectivePlan,
     default_writing_style_id: row.defaultWritingStyleId,
+    crm: row.crm,
+    uf: row.uf,
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
   });
+}
+
+/**
+ * A ASSINATURA DA APP STORE, quando existe — e é ela que desfaz uma ambiguidade
+ * real no nome do plano.
+ *
+ * `profiles.plan` é escrito por dois canais que nomeiam os níveis de formas
+ * diferentes: a AbacatePay grava `pro` para quem assinou o **Essencial** do
+ * site, e a Apple grava `pro` para o tier **Pro** dela. O mesmo valor, dois
+ * significados. Sem saber a origem, qualquer rótulo que a tela mostre tem
+ * chance de estar errado para metade dos assinantes.
+ *
+ * Existir linha aqui quer dizer App Store; não existir, o site. Só assinatura
+ * ativa conta — uma expirada não descreve o plano de hoje.
+ */
+async function loadAssinatura(userId: string) {
+  const db = getDbClient();
+  const [row] = await db
+    .select({
+      tier: schema.subscriptions.tier,
+      period: schema.subscriptions.period,
+      expiresAt: schema.subscriptions.expiresAt,
+      isTrial: schema.subscriptions.isTrial,
+      status: schema.subscriptions.status,
+    })
+    .from(schema.subscriptions)
+    .where(
+      and(
+        eq(schema.subscriptions.userId, userId),
+        eq(schema.subscriptions.status, "active"),
+      ),
+    )
+    .orderBy(desc(schema.subscriptions.expiresAt))
+    .limit(1);
+
+  if (!row) return null;
+  return {
+    origem: "apple" as const,
+    tier: row.tier,
+    period: row.period,
+    expires_at: row.expiresAt.toISOString(),
+    is_trial: row.isTrial,
+    status: row.status,
+  };
 }
 
 function json(body: unknown, status = 200) {
