@@ -19,6 +19,7 @@ import { tiRadsSpec } from '@/lib/calculators/specs'
 import { CalcPanel } from './CalcPanel'
 import { ExamSectionNav } from './ExamSectionNav'
 import { LaudarRail } from './LaudarRail'
+import { lerAtual, lerDigitadoras, gravarAtual, type Digitadora } from '@/lib/digitadoras'
 import { LaudoPreview } from './LaudoPreview'
 import { saveWebReport } from '@/lib/webReports'
 import { categoryCompactName, categoryDotClass } from './categoryPresentation'
@@ -150,12 +151,22 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     ...Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, c.sections[0]?.id ?? ''])),
     [TIREOIDE_ID]: 'lobo_direito',
   }))
-  const [initialsOn, setInitialsOn] = useState(true)
-  // Iniciais configuráveis nas Preferências (localStorage 'laudousg.initials').
-  const [initials, setInitials] = useState('ha')
+  /**
+   * A DIGITADORA escolhida. Cadastro em Preferências, escolha na barra do topo.
+   *
+   * Antes eram duas coisas separadas — um valor de iniciais nas Preferências e
+   * um botão de liga-desliga no rodapé do preview. Quem trabalha com mais de
+   * uma auxiliar reeditava o campo a cada troca, e o controle ficava no fim do
+   * texto pronto, depois da decisão. Agora a escolha é uma só e acontece antes.
+   *
+   * Vazio = nenhuma, e o laudo sai sem iniciais. É o estado de quem digitou o
+   * próprio laudo.
+   */
+  const [digitadoras, setDigitadoras] = useState<Digitadora[]>([])
+  const [initials, setInitials] = useState('')
   useEffect(() => {
-    const v = typeof window !== 'undefined' ? window.localStorage.getItem('laudousg.initials') : null
-    if (v) setInitials(v)
+    setDigitadoras(lerDigitadoras())
+    setInitials(lerAtual())
   }, [])
 
   const isTireoide = categoria === TIREOIDE_ID
@@ -272,8 +283,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     documentText === composedText
   )
   const preview = useMemo(
-    () => appendInitials(documentText, initialsOn ? initials : undefined),
-    [documentText, initials, initialsOn]
+    () => appendInitials(documentText, initials || undefined),
+    [documentText, initials]
   )
 
   // Persistência real (S9) — substitui o status falso. Volta a "idle" quando o
@@ -393,6 +404,33 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           </>
         ) : null}
         <div className="flex-1" />
+
+        {/*
+          QUEM DIGITOU — a escolha vive aqui, junto da categoria, porque é
+          decisão de antes de escrever. Some quando não há ninguém cadastrado:
+          um seletor vazio é ruído para quem digita os próprios laudos.
+        */}
+        {digitadoras.length > 0 ? (
+          <label className="inline-flex items-center gap-1.5" title="Quem digitou — as iniciais saem no fim do laudo">
+            <span className="sr-only">Digitadora</span>
+            <select
+              value={initials}
+              onChange={(e) => {
+                setInitials(e.target.value)
+                gravarAtual(e.target.value)
+              }}
+              className="h-8 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 outline-none transition hover:bg-gray-50 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:ring-emerald-900/40"
+            >
+              <option value="">Sem digitadora</option>
+              {digitadoras.map((d) => (
+                <option key={d.iniciais} value={d.iniciais}>
+                  {d.nome || d.iniciais.toUpperCase()} · /{d.iniciais}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
         {!workspaceV2 ? <ToolbarPill tone="primary"><Sparkles className="h-4 w-4" />Gerar com IA</ToolbarPill> : null}
       </header>
 
@@ -495,9 +533,6 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           <LaudoPreview
             documentKey={categoria}
             text={preview}
-            initialsOn={initialsOn}
-            onToggleInitials={() => setInitialsOn((value) => !value)}
-            initials={initials}
             saveState={saveState}
             saveError={saveError}
             onSave={onSave}

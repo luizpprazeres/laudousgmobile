@@ -8,9 +8,6 @@ import type { ReportSuggestionDiff } from './reportSuggestion'
 type Props = {
   documentKey?: string
   text: string
-  initialsOn: boolean
-  onToggleInitials: () => void
-  initials: string
   saveState?: SaveState
   saveError?: string | null
   onSave?: () => void
@@ -28,19 +25,30 @@ type Props = {
   onUndoSuggestion?: () => void
 }
 
-/** Status honesto de persistência (substitui o "salvo há 2s" falso). */
+/**
+ * Status honesto de persistência (substitui o "salvo há 2s" falso).
+ *
+ * Ficou INLINE e discreto. Antes era um bloco embaixo de um título "Preview ·
+ * laudo", e os dois juntos comiam uma fileira inteira do cabeçalho só para
+ * dizer o que o botão ao lado já diz. Agora é um ponto colorido com o texto,
+ * na mesma linha das ações — e no estado ocioso mostra só o ponto, porque
+ * "Não salvo" é o padrão e não é notícia.
+ */
 function SaveStatus({ state, error }: { state: SaveState; error?: string | null }) {
   const map = {
-    idle: { dot: 'bg-gray-300', text: 'Não salvo' },
-    saving: { dot: 'bg-amber-500 animate-pulse', text: 'Salvando…' },
-    saved: { dot: 'bg-emerald-600', text: 'Salvo no histórico' },
-    error: { dot: 'bg-red-500', text: error || 'Erro ao salvar' },
+    idle: { dot: 'bg-gray-300 dark:bg-gray-600', text: '', title: 'Ainda não salvo no histórico' },
+    saving: { dot: 'bg-amber-500 animate-pulse', text: 'Salvando…', title: 'Salvando' },
+    saved: { dot: 'bg-emerald-600', text: 'Salvo', title: 'Salvo no histórico' },
+    error: { dot: 'bg-red-500', text: error || 'Erro ao salvar', title: error || 'Erro ao salvar' },
   }[state]
   return (
-    <div className="mt-1 flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-      <span className={`h-2 w-2 rounded-full ${map.dot}`} />
+    <span
+      title={map.title}
+      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400"
+    >
+      <span className={`h-2 w-2 flex-shrink-0 rounded-full ${map.dot}`} />
       {map.text}
-    </div>
+    </span>
   )
 }
 
@@ -81,9 +89,6 @@ function ReportTextEditor({ value, onChange }: { value: string; onChange: (text:
 export function LaudoPreview({
   documentKey,
   text,
-  initialsOn,
-  onToggleInitials,
-  initials,
   saveState = 'idle',
   saveError,
   onSave,
@@ -116,76 +121,86 @@ export function LaudoPreview({
     <section className={workspaceV2
       ? 'flex min-h-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]'
       : 'flex min-h-0 flex-col border-l border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900'}>
-      <div className={`sticky top-0 z-10 border-b backdrop-blur-xl ${workspaceV2 ? 'border-gray-100 bg-white/95 px-4 py-3 dark:border-gray-800 dark:bg-[#1C1C1E]/95' : 'border-gray-200 bg-white/80 px-5 py-4 dark:border-gray-800 dark:bg-gray-950/80'}`}>
-        <div className={workspaceV2 ? 'flex items-center justify-between gap-3' : 'mb-3 flex items-center justify-between gap-3'}>
-          <div>
-            <div className={`${workspaceV2 ? 'font-barlow text-base normal-case tracking-normal text-gray-900 dark:text-gray-100' : 'font-mono text-[10px] uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400'} font-bold`}>
-              {workspaceV2 ? 'Laudo' : 'Preview · laudo'}
-            </div>
-            <SaveStatus state={saveState} error={saveError} />
-          </div>
-          <div className="flex items-center gap-2">
-            {workspaceV2 ? (
-              <button
-                type="button"
-                onClick={copy}
-                title="Copiar laudo com formatação"
-                aria-label="Copiar laudo com formatação"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-emerald-200 hover:text-emerald-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
-            {onSave ? (
-              <button
-                type="button"
-                onClick={onSave}
-                disabled={saveState === 'saving' || saveState === 'saved'}
-                className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-default disabled:bg-gray-300 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
-              >
-                {saveState === 'saved' ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
-                {saveState === 'saved' ? 'Salvo' : saveState === 'saving' ? 'Salvando…' : 'Salvar laudo'}
-              </button>
-            ) : null}
-          </div>
-        </div>
-        {!workspaceV2 ? (
-          <div className="flex flex-wrap items-center gap-2">
+      {/*
+        UMA FILEIRA. Antes eram duas: uma com o título "Preview · laudo" e o
+        status embaixo, outra com as ferramentas — e o título não dizia nada que
+        o conteúdo já não dissesse, num painel que só mostra o laudo.
+
+        A ordem segue o uso: formatar (à esquerda, junto do texto), depois o
+        status, depois as saídas (copiar) e por último a ação que encerra
+        (salvar). As iniciais saíram daqui — quem escolhe a digitadora é o
+        seletor da barra do topo, onde a decisão acontece antes de digitar.
+      */}
+      <div className={`sticky top-0 z-10 border-b backdrop-blur-xl ${workspaceV2
+        ? 'border-gray-100 bg-white/95 px-4 py-3 dark:border-gray-800 dark:bg-[#1C1C1E]/95'
+        : 'border-gray-200 bg-white/95 px-4 py-2 dark:border-gray-800 dark:bg-gray-950/95'}`}>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          {!workspaceV2 ? (
             <>
               {['B', 'I', 'U'].map((label) => (
-                <button key={label} type="button" className="h-8 w-8 rounded-lg border border-gray-200 bg-white text-sm font-bold text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                <button
+                  key={label}
+                  type="button"
+                  title={{ B: 'Negrito', I: 'Itálico', U: 'Sublinhado' }[label]}
+                  className="h-7 w-7 rounded-md border border-gray-200 bg-white text-[13px] font-bold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
                   {label}
                 </button>
               ))}
-              <button type="button" className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+              <button
+                type="button"
+                title="Destacar trecho"
+                className="h-7 rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
                 Destacar
               </button>
-              <button type="button" disabled className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+              <button
+                type="button"
+                disabled
+                title="Refazer o texto com IA (em breve)"
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 text-[11px] font-semibold text-gray-400 dark:border-gray-800 dark:bg-gray-900/60 dark:text-gray-600"
+              >
                 <WandSparkles className="h-3.5 w-3.5" />
                 Refazer com IA
               </button>
-              <span className="mx-1 h-7 w-px bg-gray-200 dark:bg-gray-700" />
             </>
+          ) : null}
+
+          <span className="ml-auto" />
+          <SaveStatus state={saveState} error={saveError} />
+
+          <button
+            type="button"
+            onClick={copy}
+            title="Copiar com formatação"
+            className="inline-flex h-7 items-center gap-1.5 rounded-md bg-emerald-600 px-2.5 text-[11px] font-bold text-white transition hover:bg-emerald-700"
+          >
+            <Copy className="h-3.5 w-3.5" />
+            Copiar
+          </button>
+          <button
+            type="button"
+            onClick={copy}
+            title="Copiar sem formatação (texto puro)"
+            aria-label="Copiar sem formatação"
+            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Texto puro
+          </button>
+
+          {onSave ? (
             <button
               type="button"
-              onClick={onToggleInitials}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                initialsOn ? 'bg-emerald-600 text-white' : 'border border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
-              }`}
+              onClick={onSave}
+              disabled={saveState === 'saving' || saveState === 'saved'}
+              className="inline-flex h-7 items-center gap-1.5 rounded-md bg-gray-900 px-3 text-[11px] font-bold text-white transition hover:bg-gray-800 disabled:opacity-45 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
             >
-              /{initials} · iniciais
+              {saveState === 'saved' ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
+              {saveState === 'saved' ? 'Salvo' : saveState === 'saving' ? 'Salvando…' : 'Salvar laudo'}
             </button>
-            <div className="flex-1" />
-            <button type="button" onClick={copy} className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700">
-              <Copy className="h-3.5 w-3.5" />
-              Copiar com formatação
-            </button>
-            <button type="button" onClick={copy} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-              <RotateCcw className="h-3.5 w-3.5" />
-              Copiar texto puro
-            </button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
       {sourceChanged && suggestionDiff ? (
@@ -269,17 +284,13 @@ export function LaudoPreview({
                   Restaurar modelo
                 </button>
               ) : null}
-              <button
-                type="button"
-                onClick={onToggleInitials}
-                className={`rounded-full px-2.5 py-1 font-mono text-[11px] transition ${
-                  initialsOn
-                    ? 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-400'
-                    : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-900'
-                }`}
-              >
-                {initialsOn ? `/${initials}` : '+ iniciais'}
-              </button>
+              {/*
+                O botão "/ha · iniciais" saiu daqui. Quem decide quem digitou é
+                o seletor de DIGITADORA na barra do topo — a escolha acontece
+                antes de escrever, não no rodapé do texto pronto. As iniciais
+                continuam saindo no fim do laudo; o que sumiu foi o controle
+                fora de lugar.
+              */}
             </footer>
           ) : null}
         </article>
