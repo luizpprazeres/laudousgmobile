@@ -27,7 +27,7 @@ const ITEMS: NavItem[] = [
   { label: 'Laudar', icon: FileText, href: '/app/gerar' },
   { label: 'Histórico', icon: History, href: '/app/historico' },
   { label: 'Analytics', icon: BarChart3, href: '/app/analytics' },
-  { label: 'Biblioteca', icon: BookOpen, soon: true },
+  { label: 'Biblioteca', icon: BookOpen, href: '/app/biblioteca' },
   { label: 'Segurança', icon: ShieldCheck, href: '/app/seguranca' },
   { label: 'Preferências', icon: SlidersHorizontal, href: '/app/preferencias' },
 ]
