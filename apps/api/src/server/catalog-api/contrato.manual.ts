@@ -350,10 +350,15 @@ async function main() {
 
       const semDesc = await (await post("TIREOIDE", { estilo, alteracoes: ["linfonodos_alterados"] })).json();
       const txt = semDesc.laudo ?? "";
-      t(`${estilo}: alterado sem descrição não escreve normalidade`,
+      t(`${estilo}: atípico sem descrição não escreve normalidade`,
         !/morfologia preservada|Não há evidência de linfonodomegalias/i.test(txt),
         txt.split("\n").find((l: string) => /linfonodo/i.test(l))?.slice(0, 110));
-      t(`${estilo}: …e diz que está alterado`, /alterado/i.test(txt));
+      /**
+       * "atípico", não "alterado" — é a palavra do médico, dos corpora reais
+       * (aprovada em 21/08). Este teste procurava "alterado" e passou a
+       * reprovar quando o vocabulário foi corrigido, que é o gate funcionando.
+       */
+      t(`${estilo}: …e diz que está atípico`, /at[íi]pico/i.test(txt));
 
       const comDesc = await (await post("TIREOIDE", {
         estilo,

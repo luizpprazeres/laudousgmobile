@@ -191,16 +191,33 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
 
   // ── Fora do nódulo ───────────────────────────────────────────────────────
   {
-    id: "axilas_alteradas",
-    nome: "Linfonodos axilares alterados",
+    id: "axilas_atipicas",
+    nome: "Linfonodos axilares atípicos",
     kind: "alteracao",
-    descricao: "Cadeias axilares com linfonodos de aspecto suspeito.",
+    descricao: "Cadeias axilares com linfonodos fora do padrão — descreva no campo abaixo.",
     grupo: "axilas",
     /**
-     * `axilas_descricao` é o VERBATIM do médico — o renderer o usa como frase.
-     * Fragmento sai solto no meio do laudo, como aconteceu com os linfonodos
-     * cervicais da tireoide.
+     * ⚠️ O cenário PAROU de inventar o achado.
+     *
+     * Ele cravava "Linfonodo axilar **à direita**, de aspecto **arredondado** e
+     * com **espessamento cortical**" — lado, forma e espessamento que o médico
+     * não informou ao clicar um card que diz apenas "alterados". Isso existia
+     * para contornar um defeito do renderer, não porque fosse certo: com
+     * `axilas_alteradas` e descrição vazia, o corpo escrevia a frase de
+     * NORMALIDADE e a conclusão dizia "alterado" — o laudo se contradizia.
+     *
+     * O defeito foi corrigido em quatro sítios do renderer (corpo e conclusão,
+     * clássico e objetivo), então o cenário volta a afirmar só o que o médico
+     * afirma. A palavra "atípico" é dele: em 266 laudos de mama, o único
+     * linfonodo axilar fora do padrão conclui "Linfonodo axilar atípico à
+     * esquerda". (Aprovado pelo Luiz em 21/08.)
+     *
+     * A descrição fica como LACUNA: no corpus ele nunca publica linfonodo
+     * alterado sem descrever — quando descreve, vem lado, achado e medida.
      */
+    lacunas: [
+      { caminho: "axilas_descricao", rotulo: "Descrição dos linfonodos axilares", tipo: "texto", esperado: true },
+    ],
     seed: {
       // `titulo_com_axilas` é PRÉ-REQUISITO, não enfeite: a frase das axilas só
       // entra no corpo quando o título as inclui (MAMARIA.ts:730). Sem ele o
@@ -208,8 +225,6 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
       // desenho funcionando: spec que não muda o laudo some da lista.
       titulo_com_axilas: true,
       axilas_alteradas: true,
-      axilas_descricao:
-        "Linfonodo axilar à direita, de aspecto arredondado e com espessamento cortical.",
     },
   },
   {

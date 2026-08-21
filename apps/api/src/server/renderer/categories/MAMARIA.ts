@@ -453,6 +453,32 @@ const AUSENCIA_LESAO = "Não há sinais evidentes de imagem nodular sólida, cí
 const AXILAR_NORMAL_CORPO =
   "Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.";
 const AXILAR_NORMAL_CONCLUSAO = "Linfonodos axilares normais.";
+
+/**
+ * O que se escreve quando o médico marca as axilas como ALTERADAS e não
+ * descreve como.
+ *
+ * A palavra é **ATÍPICO**, e ela é dele: em 266 laudos de mama o único
+ * linfonodo axilar fora do padrão conclui *"Linfonodo axilar atípico à
+ * esquerda."* Não há nenhuma ocorrência de "de aspecto alterado".
+ *
+ * Sem estas duas frases, `axilas_alteradas = true` com descrição vazia caía no
+ * ternário para a frase NORMAL — o corpo dizia que as axilas estavam normais e
+ * a conclusão, logo abaixo, que estavam alteradas. O mesmo defeito que a
+ * TIREOIDE tinha e que foi corrigido em 20/08; aqui ficou solto mais um dia.
+ *
+ * Sem lado e sem características, de propósito: o médico não as informou. O
+ * cenário do catálogo chegou a cravar "à direita, de aspecto arredondado e com
+ * espessamento cortical" para contornar isto — inventava a topografia e a
+ * morfologia de um linfonodo que ninguém caracterizou.
+ *
+ * ⚠️ No corpus ele NUNCA publica linfonodo alterado sem descrever: quando
+ * descreve, vem lado, achado e medida. Estas frases são rede de segurança do
+ * ditado, não o caminho normal — a tela deve pedir a descrição.
+ */
+const AXILAR_ATIPICO_CORPO =
+  "Linfonodos axilares de aspecto atípico.";
+const AXILAR_ATIPICO_CONCLUSAO = "Linfonodos axilares de aspecto atípico.";
 const RODAPE = "Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).";
 
 /** Sufixo de localização + horário + distâncias (comum a vários tipos). */
@@ -728,8 +754,14 @@ function renderMamariaClassico(
   }
   // Axilas: se o título inclui axilas, a frase aparece SEMPRE (decisão Luiz).
   if (f.titulo_com_axilas) {
+    /**
+     * TRÊS estados, não dois. O `&&` juntava "alterada sem descrição" com
+     * "normal" e escrevia a frase de normalidade sob uma conclusão que dizia o
+     * contrário.
+     */
+    const desc = f.axilas_descricao?.trim();
     aspectos.push(
-      f.axilas_alteradas && f.axilas_descricao ? f.axilas_descricao.trim() : AXILAR_NORMAL_CORPO,
+      !f.axilas_alteradas ? AXILAR_NORMAL_CORPO : desc ? desc : AXILAR_ATIPICO_CORPO,
     );
   }
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "")
@@ -774,10 +806,13 @@ function renderMamariaClassico(
   }
   // Axilas na conclusão (só quando o título inclui axilas).
   if (f.titulo_com_axilas) {
+    const descAx = f.axilas_descricao?.trim();
     conclusao.push(
-      f.axilas_alteradas && f.axilas_descricao
-        ? `Linfonodos axilares de aspecto alterado (${f.axilas_descricao.trim().replace(/\.+$/, "")}).`
-        : AXILAR_NORMAL_CONCLUSAO,
+      !f.axilas_alteradas
+        ? AXILAR_NORMAL_CONCLUSAO
+        : descAx
+          ? `Linfonodos axilares de aspecto atípico (${descAx.replace(/\.+$/, "")}).`
+          : AXILAR_ATIPICO_CONCLUSAO,
     );
   }
   // Correlação com exame prévio.
@@ -874,10 +909,10 @@ function renderMamariaObjetivo(
       );
   }
   if (f.titulo_com_axilas) {
+    // Idem: três estados. Era o quarto lugar com o mesmo `&&`.
+    const descAx = f.axilas_descricao?.trim();
     linhas.push(
-      f.axilas_alteradas && f.axilas_descricao
-        ? f.axilas_descricao.trim()
-        : AXILAR_NORMAL_CORPO,
+      !f.axilas_alteradas ? AXILAR_NORMAL_CORPO : descAx ? descAx : AXILAR_ATIPICO_CORPO,
     );
   }
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "")
@@ -922,10 +957,15 @@ function renderMamariaObjetivo(
     }
   }
   if (f.titulo_com_axilas) {
+    // Mesmos três estados do clássico — o `&&` mandava "alterada sem descrição"
+    // para a frase de normalidade.
+    const descAx = f.axilas_descricao?.trim();
     impressao.push(
-      f.axilas_alteradas && f.axilas_descricao
-        ? `Linfonodos axilares de aspecto alterado (${f.axilas_descricao.trim().replace(/\.+$/, "")}).`
-        : AXILAR_NORMAL_CONCLUSAO,
+      !f.axilas_alteradas
+        ? AXILAR_NORMAL_CONCLUSAO
+        : descAx
+          ? `Linfonodos axilares de aspecto atípico (${descAx.replace(/\.+$/, "")}).`
+          : AXILAR_ATIPICO_CONCLUSAO,
     );
   }
   if (f.correlacao) {

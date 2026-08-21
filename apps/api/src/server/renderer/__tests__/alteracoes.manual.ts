@@ -392,6 +392,50 @@ console.log("\n12 · a ALTERAÇÃO DIFUSA conclui com a frase do MÉDICO\n");
   t_("não inventa \"crônica\"", !/tireoidopatia cr[ôo]nica/i.test(comNodulo));
 }
 
+console.log("\n13 · linfonodo fora do padrão é ATÍPICO — a palavra é do médico\n");
+{
+  /**
+   * Trava a decisão de 21/08. A palavra vem dos corpora reais: em 266 laudos de
+   * mama, o único linfonodo axilar fora do padrão conclui "Linfonodo axilar
+   * atípico à esquerda". Não há nenhuma ocorrência de "de aspecto alterado" —
+   * essa era redação minha, e saiu.
+   *
+   * Três estados, dois estilos, duas categorias. O estado do meio é o perigoso:
+   * marcado como fora do padrão e SEM descrição, o renderer escrevia a frase de
+   * NORMALIDADE no corpo e a de alteração na conclusão — o laudo se
+   * contradizia. Estava em quatro sítios da mamária e dois da tireoide.
+   */
+  const casos: [string, Record<string, unknown>, Record<string, unknown>][] = [
+    ["TIREOIDE",
+      { linfonodos_descritos: true, linfonodos_alterados: false },
+      { linfonodos_descritos: true, linfonodos_alterados: true }],
+    ["MAMARIA",
+      { titulo_com_axilas: true, axilas_alteradas: false },
+      { titulo_com_axilas: true, axilas_alteradas: true }],
+  ];
+
+  for (const [cat, normal, atipico] of casos) {
+    for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"]) {
+      const linhasDe = (seed: Record<string, unknown>) =>
+        (laudoPadraoDe(cat, estilo, seed) ?? "").split("\n").filter((l) => /linfonod/i.test(l)).join(" ");
+
+      const tNorm = linhasDe(normal);
+      t_(`${cat}/${estilo}: normal não diz atípico`, !/at[íi]pico/i.test(tNorm), tNorm.slice(0, 90));
+
+      const tAtip = linhasDe(atipico);
+      t_(`${cat}/${estilo}: fora do padrão diz ATÍPICO`, /at[íi]pico/i.test(tAtip), tAtip.slice(0, 100));
+      t_(`${cat}/${estilo}: …e NÃO diz "alterado"`, !/aspecto alterado/i.test(tAtip));
+      /** O modo de falha que motivou tudo: normalidade e alteração no mesmo laudo. */
+      t_(`${cat}/${estilo}: …e não escreve normalidade junto`,
+        !/morfologia preservada|Linfonodos axilares normais|Não há evidência de linfonodomegalias|Ausência de linfonodomegalias/.test(tAtip),
+        tAtip.slice(0, 110));
+      /** E não inventa lado nem morfologia que o médico não informou. */
+      t_(`${cat}/${estilo}: …e não inventa lado ou morfologia`,
+        !/arredondad|espessamento cortical|à direita|à esquerda/i.test(tAtip), tAtip.slice(0, 110));
+    }
+  }
+}
+
 const total = ok + falhas.length;
 console.log(`\n${"═".repeat(74)}`);
 if (falhas.length === 0) console.log(`✓ ${ok}/${total} — o cenário é escrito, a frase é do renderer`);

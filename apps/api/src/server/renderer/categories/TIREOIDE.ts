@@ -475,21 +475,31 @@ const LINFONODOS_NORMAIS =
   "Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.";
 
 /**
- * O que se escreve quando o médico diz que os linfonodos estão ALTERADOS e não
+ * O que se escreve quando o médico diz que os linfonodos estão alterados e não
  * descreve como.
  *
  * Antes não havia esta frase, e a ausência produzia um laudo que se contradiz:
  * `linfonodos_alterados = true` com descrição vazia caía na frase NORMAL no
- * corpo — "morfologia preservada" — enquanto a conclusão dizia "de aspecto
- * alterado". Duas afirmações opostas sobre o mesmo achado, no mesmo documento.
+ * corpo — "morfologia preservada" — enquanto a conclusão dizia "alterado".
+ * Duas afirmações opostas sobre o mesmo achado, no mesmo documento.
  *
- * A saída não é inventar características (arredondado, perda do hilo): o médico
- * não as informou, e o catálogo chegou a cravá-las no cenário justamente para
- * contornar este defeito. A saída é dizer o que se sabe — que estão alterados e
- * que a caracterização não foi detalhada.
+ * A palavra é **ATÍPICO**, e ela é do médico, não nossa. Nos corpora reais —
+ * 266 laudos de mama e 251 de tireoide — é assim que ele nomeia o linfonodo que
+ * saiu do padrão: *"Linfonodo axilar atípico à esquerda."* Nenhuma ocorrência de
+ * "de aspecto alterado". A primeira versão desta constante dizia "alterado, sem
+ * caracterização detalhada ao método" — redação minha, sem âncora, aprovada pelo
+ * Luiz para troca em 21/08.
+ *
+ * O que continua valendo do raciocínio original: não se inventa característica
+ * (arredondado, perda do hilo). O médico não as informou, e o catálogo chegou a
+ * cravá-las no cenário justamente para contornar este defeito.
+ *
+ * ⚠️ Nos dois corpora ele **nunca** publica linfonodo alterado sem descrever —
+ * quando descreve, vem lado, achado e medida. Esta frase é a rede de segurança
+ * do ditado, não o caminho normal: a tela deve pedir a descrição.
  */
-const LINFONODOS_ALTERADOS_SEM_DESCRICAO =
-  "Adicionalmente, evidenciam-se linfonodos cervicais de aspecto alterado, sem caracterização detalhada ao método.";
+const LINFONODOS_ATIPICOS_SEM_DESCRICAO =
+  "Adicionalmente, evidenciam-se linfonodos cervicais de aspecto atípico.";
 
 // ---------------------------------------------------------------------------
 // Render do corpo
@@ -745,7 +755,7 @@ function renderTireoideClassico(
       ? LINFONODOS_NORMAIS
       : desc
         ? desc
-        : LINFONODOS_ALTERADOS_SEM_DESCRICAO;
+        : LINFONODOS_ATIPICOS_SEM_DESCRICAO;
     aspectos.push(`\n${linha}`);
   }
 
@@ -804,12 +814,13 @@ function renderTireoideClassico(
   }
 
   // Linfonodos alterados → item factual (NUNCA "morfologia preservada").
+  // "atípico" é a palavra dele; ver LINFONODOS_ATIPICOS_SEM_DESCRICAO.
   if (f.linfonodos_descritos && f.linfonodos_alterados) {
     const desc = f.linfonodos_descricao?.trim();
     conclusao.push(
       desc
-        ? `Linfonodos cervicais de aspecto alterado (${desc.replace(/\.+$/, "")}).`
-        : "Linfonodos cervicais de aspecto alterado.",
+        ? `Linfonodos cervicais de aspecto atípico (${desc.replace(/\.+$/, "")}).`
+        : "Linfonodos cervicais de aspecto atípico.",
     );
   }
 
@@ -1103,7 +1114,7 @@ function renderTireoideObjetivo(
    */
   if (f.linfonodos_descritos && f.linfonodos_alterados) {
     const desc = f.linfonodos_descricao?.trim();
-    achados.push(desc ? desc : LINFONODOS_ALTERADOS_SEM_DESCRICAO);
+    achados.push(desc ? desc : LINFONODOS_ATIPICOS_SEM_DESCRICAO);
   } else {
     achados.push("Não há evidência de linfonodomegalias.");
   }
@@ -1167,8 +1178,8 @@ function renderTireoideObjetivo(
     const desc = f.linfonodos_descricao?.trim();
     impressao.push(
       desc
-        ? `Linfonodos cervicais de aspecto alterado (${desc.replace(/\.+$/, "")}).`
-        : "Linfonodos cervicais de aspecto alterado.",
+        ? `Linfonodos cervicais de aspecto atípico (${desc.replace(/\.+$/, "")}).`
+        : "Linfonodos cervicais de aspecto atípico.",
     );
   }
 
