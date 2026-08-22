@@ -181,6 +181,9 @@ importers:
       '@laudousg/schemes':
         specifier: workspace:*
         version: link:../../packages/schemes
+      '@laudousg/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@opentelemetry/api':
         specifier: ^1.9.1
         version: 1.9.1

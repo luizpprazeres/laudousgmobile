@@ -4,7 +4,6 @@ export * from "./anemia";
 export * from "./hadlock";
 export * from "./ila4q";
 export * from "./ductoVenoso";
-export * from "./preEclampsia";
 export * from "./afc";
 export * from "./birads";
 export * from "./tirads";

@@ -86,7 +86,7 @@ const SECTIONS: Section[] = [
       {
         key: "preEclampsia",
         label: "Risco de pré-eclâmpsia",
-        sub: "Fatores clínicos + Doppler de uterinas (11–14 sem)",
+        sub: "Modelo FMF — risco 1 em N (11–13+6 sem)",
         Icon: Sparkle,
         color: "#D946EF",
       },
