@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { Copy, Wand2 } from 'lucide-react'
-import type { CalcSpec, ExamStateLike } from '@/lib/calculators/specs'
+import type { ExamStateLike, StandardCalcSpec } from '@/lib/calculators/specs'
 
-export function CalcPanel({ spec, examState }: { spec: CalcSpec; examState?: ExamStateLike }) {
+export function CalcPanel({ spec, examState }: { spec: StandardCalcSpec; examState?: ExamStateLike }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: s[k] === v ? '' : v }))
 
@@ -14,7 +14,7 @@ export function CalcPanel({ spec, examState }: { spec: CalcSpec; examState?: Exa
     if (v) setValues(v)
   }
 
-  let result: ReturnType<CalcSpec['compute']> = null
+  let result: ReturnType<StandardCalcSpec['compute']> = null
   try {
     result = spec.compute(values)
   } catch {

@@ -22,6 +22,7 @@ import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
 import { CalcPanel } from './CalcPanel'
+import { PreEclampsiaFmfPanel } from './PreEclampsiaFmfPanel'
 import { ExamSectionNav } from './ExamSectionNav'
 import { LaudarRail } from './LaudarRail'
 import { lerAtual, lerDigitadoras, gravarAtual, type Digitadora } from '@/lib/digitadoras'
@@ -235,11 +236,31 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
   const laudoCanonico = useLaudoCanonico(categoria, achadosCanonicos, migrada)
 
-  const composedText = useMemo(() => {
+  const generatedText = useMemo(() => {
     if (migrada) return laudoCanonico.texto
     const cat = CATEGORIES[categoria]
     return cat ? composeReport(cat, examStates[categoria]).text : ''
   }, [categoria, examStates, migrada, laudoCanonico.texto])
+
+  const [calculatorBlocksByCategory, setCalculatorBlocksByCategory] = useState<Record<string, Record<string, string>>>({})
+  const calculatorBlocks = calculatorBlocksByCategory[categoria] ?? {}
+  const composedText = useMemo(
+    () => [generatedText, ...Object.values(calculatorBlocks)].filter(Boolean).join('\n\n'),
+    [calculatorBlocks, generatedText]
+  )
+  const insertCalculatorBlock = (calculatorId: string, block: string) => {
+    setCalculatorBlocksByCategory((all) => ({
+      ...all,
+      [categoria]: { ...(all[categoria] ?? {}), [calculatorId]: block },
+    }))
+  }
+  const removeCalculatorBlock = (calculatorId: string) => {
+    setCalculatorBlocksByCategory((all) => {
+      const current = { ...(all[categoria] ?? {}) }
+      delete current[calculatorId]
+      return { ...all, [categoria]: current }
+    })
+  }
 
   // O texto manual é preservado por categoria. Enquanto o usuário não editar,
   // os controles determinísticos continuam atualizando o documento ao vivo.
@@ -536,7 +557,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               {activeSection?.id?.startsWith('calc:') ? (
                 (() => {
                   const spec = calculators.find((c) => `calc:${c.id}` === activeSection.id)
-                  return spec ? <CalcPanel spec={spec} examState={isTireoide ? undefined : examState} /> : null
+                  if (!spec) return null
+                  if (spec.kind === 'pre-eclampsia-fmf') {
+                    return (
+                      <PreEclampsiaFmfPanel
+                        insertedBlock={calculatorBlocks[spec.id]}
+                        onInsert={(block) => insertCalculatorBlock(spec.id, block)}
+                        onRemove={() => removeCalculatorBlock(spec.id)}
+                      />
+                    )
+                  }
+                  return <CalcPanel spec={spec} examState={isTireoide ? undefined : examState} />
                 })()
               ) : isTireoide ? (
                 <TireoideFormPanel

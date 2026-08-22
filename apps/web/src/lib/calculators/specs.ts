@@ -20,13 +20,28 @@ export type CalcResult = { headline: string; block: string } | null
 /** Estado do exame (por seção) — usado pelo "Extrair dos achados". */
 export type ExamStateLike = Record<string, Record<string, string | string[]> | undefined>
 
-export type CalcSpec = {
+export type StandardCalcSpec = {
   id: string
   name: string
+  kind?: 'standard'
   fields: CalcField[]
   compute: (v: Record<string, string>) => CalcResult
   /** Preenche a calculadora a partir do estado já marcado nos órgãos. */
   extract?: (examState: ExamStateLike) => Record<string, string> | null
+}
+
+export type CustomCalcSpec = {
+  id: string
+  name: string
+  kind: 'pre-eclampsia-fmf'
+}
+
+export type CalcSpec = StandardCalcSpec | CustomCalcSpec
+
+export const preEclampsiaFmfSpec: CustomCalcSpec = {
+  id: 'pre-eclampsia-fmf',
+  name: 'Pré-eclâmpsia FMF',
+  kind: 'pre-eclampsia-fmf',
 }
 
 // ── ACR TI-RADS ──────────────────────────────────────────────────────────────

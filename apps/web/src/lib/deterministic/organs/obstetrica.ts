@@ -12,6 +12,7 @@
 import type { ExamCategory } from './abdomeTotal'
 import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { computeIG, type Referencia } from '../../ig/computeIG'
+import { preEclampsiaFmfSpec } from '../../calculators/specs'
 
 const TECNICA =
   'Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
@@ -310,6 +311,7 @@ export const obstetrica: ExamCategory = {
     { id: 'liquido', label: 'Líquido', group: 'orgaos', module: liquidoModule },
     { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
   ],
+  calculators: [preEclampsiaFmfSpec],
   // A IG sempre gera item de conclusão; este fallback é só defensivo.
   conclusionNormal: 'Gestação em torno de ____ semanas.',
 }
