@@ -79,6 +79,24 @@ const CASOS: Caso[] = [
     proibeNaConclusao: ["Oligoâmnio", "Polidrâmnio"],
   },
   {
+    nome: "o DIAGNÓSTICO chega à conclusão",
+    porque:
+      "o que faltava para a morfológica migrar. `achados_adicionais` só ia ao corpo; a tela tem diagnóstico por sistema e ele não tinha destino. Agora vai por `itens_conclusao_livres`, o mesmo canal da obstétrica.",
+    patch: {
+      achados_adicionais: "Observa-se ventriculomegalia bilateral de 12 mm.",
+      itens_conclusao_livres: ["Ventriculomegalia bilateral leve."],
+    },
+    exigeNaConclusao: ["Ventriculomegalia bilateral leve"],
+    proibeNaConclusao: ["sem evidência de alteração detectável", "Morfologia fetal normal"],
+  },
+  {
+    nome: "o guard de duplicação",
+    porque:
+      "o médico às vezes reescreve na conclusão o que o renderer já monta lá. `filterFreeConclusionItems` descarta pelos padrões da CONCLUSÃO — líquido, IG, peso, primeira US. (Escrevi este caso primeiro com 'Placenta de localização anterior' e ele reprovava: placenta é linha de CORPO, e o filtro da conclusão não a cobre. O erro era do teste.)",
+    patch: { itens_conclusao_livres: ["Líquido amniótico em quantidade normal."] },
+    proibeNaConclusao: ["Líquido amniótico em quantidade normal."],
+  },
+  {
     nome: "achado E oligoâmnio juntos",
     porque: "as duas condições no mesmo laudo, que é o caso clínico real.",
     patch: { ila_cm: 3, achados_adicionais: "Observa-se ventriculomegalia bilateral de 12 mm." },

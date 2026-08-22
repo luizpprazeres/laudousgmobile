@@ -1,3 +1,4 @@
+import { filterFreeConclusionItems } from "./OBSTETRICA";
 import { z } from "zod";
 import { buildIgInput, computeIg, type IgRawFields, type IgComputed } from "../ig";
 import {
@@ -64,6 +65,19 @@ export const MorfologicoFindingsSchema = z.object({
   referencia_fonte: z.enum(["usg_precoce", "dum"]).nullable(),
   corrigir_ig: z.boolean().nullable(),
   achados_adicionais: z.string().nullable(),
+  /**
+   * OS ITENS DE CONCLUSÃO DO MÉDICO — o canal que faltava.
+   *
+   * `achados_adicionais` só chega ao CORPO. Um morfológico que encontra
+   * ventriculomegalia descrevia o achado e não o concluía: a tela tem um campo
+   * de diagnóstico por sistema que não tinha para onde ir, e a conclusão ficava
+   * calada sobre a malformação.
+   *
+   * O mecanismo é o mesmo já usado na obstétrica (camada flexível), incluindo o
+   * `filterFreeConclusionItems`, que descarta o que duplica linha determinística
+   * — o médico às vezes reescreve na conclusão o que já é campo próprio.
+   */
+  itens_conclusao_livres: z.array(z.string()).nullish(),
 });
 
 export type MorfologicoFindings = z.infer<typeof MorfologicoFindingsSchema>;
@@ -102,6 +116,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     referencia_fonte: { type: ["string", "null"], enum: ["usg_precoce", "dum", null] },
     corrigir_ig: { type: ["boolean", "null"] },
     achados_adicionais: str,
+    itens_conclusao_livres: { type: ["array", "null"], items: { type: "string" } },
   },
 } as const;
 
@@ -263,6 +278,7 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
       ? "Doppler do ducto venoso alterado (onda A reversa)."
       : "Doppler do ducto venoso normal.",
     ...(temAchado ? [] : ["Morfologia fetal normal para esta fase da gestação."]),
+    ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
   if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
     conclusao.push("Dopplervelocimetria normal das artérias uterinas.");
@@ -360,6 +376,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     ...(temAchado
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
+    ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
@@ -542,6 +559,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
       ? "Doppler do ducto venoso alterado (onda A reversa)."
       : "Doppler do ducto venoso normal.",
     ...(temAchado ? [] : ["Morfologia fetal normal para esta fase da gestação."]),
+    ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
   if (comDoppler) {
     impressao.push("Dopplervelocimetria normal das artérias uterinas.");
@@ -620,6 +638,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     ...(temAchadoObj
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
+    ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
