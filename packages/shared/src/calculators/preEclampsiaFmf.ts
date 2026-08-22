@@ -56,10 +56,58 @@ export interface PeGestante {
 }
 
 export interface PeMedidas {
-  /** PAM em mmHg — protocolo de 4 aferições. `(PAS + 2×PAD)/3`, média das 4 */
+  /** PAM em mmHg. Use `pamDeAfericoes()` para obtê-la a partir das pressões. */
   pamMmHg?: number | null;
   /** IP médio das artérias uterinas, (direita + esquerda)/2, transabdominal */
   utaPiMedio?: number | null;
+  /**
+   * Quantas aferições de pressão originaram a PAM. O protocolo da FMF são 4
+   * (dois braços, duas vezes); com menos, o laudo declara isso. Não muda o
+   * cálculo — muda o que o laudo afirma.
+   */
+  afericoesPam?: number | null;
+}
+
+export interface PeAfericao {
+  sistolica: number;
+  diastolica: number;
+}
+
+export interface PePam {
+  /** média das PAM individuais, em mmHg */
+  pamMmHg: number;
+  afericoes: number;
+  /** as 4 aferições do protocolo da FMF estão presentes */
+  protocoloCompleto: boolean;
+}
+
+/**
+ * PAM a partir das aferições de pressão.
+ *
+ * `PAM = (PAS + 2×PAD) / 3` para cada aferição; a PAM final é a média delas.
+ * O protocolo da FMF são **4 aferições** — braço direito e esquerdo, duas vezes
+ * cada. Aceitamos de 1 a 4 porque na rotina brasileira o ultrassonografista
+ * costuma receber uma pressão só; o resultado é o mesmo cálculo, com mais ruído,
+ * e o laudo passa a declarar quantas foram.
+ */
+export function pamDeAfericoes(afericoes: PeAfericao[]): PePam {
+  const validas = afericoes.filter(
+    (a) =>
+      Number.isFinite(a.sistolica) &&
+      Number.isFinite(a.diastolica) &&
+      a.sistolica > a.diastolica &&
+      a.sistolica >= 50 && a.sistolica <= 300 &&
+      a.diastolica >= 20 && a.diastolica <= 200
+  );
+  if (validas.length === 0) {
+    throw new PeErroDeDominio("nenhuma aferição de pressão válida");
+  }
+  const soma = validas.reduce((s, a) => s + (a.sistolica + 2 * a.diastolica) / 3, 0);
+  return {
+    pamMmHg: soma / validas.length,
+    afericoes: validas.length,
+    protocoloCompleto: validas.length >= 4,
+  };
 }
 
 export interface PeMarcador {
@@ -498,6 +546,7 @@ export function calcularPreEclampsiaFmf(g: PeGestante, med: PeMedidas = {}): PeR
 // Bloco de laudo
 // ─────────────────────────────────────────────────────────────────────────────
 
+const n1 = (v: number) => v.toFixed(1).replace(".", ",");
 const n2 = (v: number) => v.toFixed(2).replace(".", ",");
 const milhar = (n: number) =>
   n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
@@ -524,9 +573,15 @@ function formatarBlocoPreEclampsia(
 
   if (med.pamMmHg != null) {
     const mom = marcadores.find((m) => m.nome === "map");
+    const n = med.afericoesPam ?? null;
+    const origem =
+      n == null ? ""
+      : n >= 4 ? " (4 aferições)"
+      : n === 1 ? " (aferição única)"
+      : ` (${n} aferições)`;
     linhas.push(
-      `Pressão arterial média: ${n2(med.pamMmHg)} mmHg` +
-        (mom ? ` (${n2(mom.mom)} MoM)` : "")
+      `Pressão arterial média: ${n1(med.pamMmHg)} mmHg${origem}` +
+        (mom ? ` — ${n2(mom.mom)} MoM` : "")
     );
   }
   if (med.utaPiMedio != null) {
@@ -558,12 +613,22 @@ function formatarBlocoPreEclampsia(
     );
   }
 
-  if (marcadores.some((m) => m.truncado)) {
-    linhas.push(
-      "",
-      "Observação: valor de marcador fora da faixa do modelo, truncado conforme " +
-        "a especificação."
+  const ressalvas: string[] = [];
+  if (med.afericoesPam != null && med.afericoesPam < 4) {
+    ressalvas.push(
+      "a pressão arterial média foi obtida de " +
+        (med.afericoesPam === 1 ? "uma única aferição" : `${med.afericoesPam} aferições`) +
+        "; o protocolo da Fetal Medicine Foundation prevê quatro (ambos os " +
+        "braços, duas vezes), o que reduz a variabilidade da medida"
     );
+  }
+  if (marcadores.some((m) => m.truncado)) {
+    ressalvas.push(
+      "valor de marcador fora da faixa do modelo, truncado conforme a especificação"
+    );
+  }
+  if (ressalvas.length > 0) {
+    linhas.push("", `Ressalvas: ${ressalvas.join("; ")}.`);
   }
 
   linhas.push(
