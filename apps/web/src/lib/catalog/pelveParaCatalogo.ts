@@ -72,7 +72,9 @@ function medidas(bruto: string): number[] | null {
 
 function volumeDe(m: number[] | null): number | null {
   if (!m || m.length < 3) return null;
-  return +(m[0] * m[1] * m[2] * FATOR_ELIPSOIDE).toFixed(1);
+  const [a, b, c] = m;
+  if (a === undefined || b === undefined || c === undefined) return null;
+  return +(a * b * c * FATOR_ELIPSOIDE).toFixed(1);
 }
 
 function numero(bruto: string): number | null {
@@ -246,9 +248,12 @@ export function adaptarPelve(
     calcificacao_arqueadas: false,
 
     /**
-     * LÍQUIDO LIVRE é `false` fixo, e é de propósito: a tela não pergunta.
-     * Mandar `true` sem o médico ter dito é alucinar um achado — foi um defeito
-     * real de produção, corrigido em 30/06 e que não se repete aqui.
+     * LÍQUIDO LIVRE é `false` fixo, e o Luiz confirmou que é o certo (21/08):
+     * *"não afirmado geralmente é avaliei e não tinha, e quando tem a gente
+     * fala"*. Ou seja, `false` não é uma lacuna disfarçada — é a prática dele.
+     *
+     * O inverso é que seria defeito: mandar `true` sem ele ter dito é alucinar
+     * um achado, e foi um defeito real de produção corrigido em 30/06.
      */
     liquido_livre: false,
     liquido_livre_descricao: null,

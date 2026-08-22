@@ -295,8 +295,8 @@ export const pelveFeminina: ExamCategory = {
       options: [{ value: 'sim', label: 'Paciente na menopausa' }],
     },
   ],
-  resolveTitle: (opts) => VIA_TITULO[viaDe(opts)] ?? VIA_TITULO.ta_tv,
-  resolveTecnica: (opts) => VIA_TECNICA[viaDe(opts)] ?? VIA_TECNICA.ta_tv,
+  resolveTitle: (opts) => VIA_TITULO[viaDe(opts)] ?? VIA_TITULO.ta_tv!,
+  resolveTecnica: (opts) => VIA_TECNICA[viaDe(opts)] ?? VIA_TECNICA.ta_tv!,
   // Útero primeiro (mais útil); bexiga no fim.
   sections: [
     { id: 'utero', label: 'Útero', group: 'orgaos', module: uteroModule },

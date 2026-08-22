@@ -201,7 +201,7 @@ function camposCobertos(): number {
     new URL("../../../../../../web/src/lib/catalog/pelveParaCatalogo.ts", import.meta.url),
     "utf8",
   );
-  const chaves = [...new Set([...tela.matchAll(/key:\s*'([^']+)'/g)].map((m) => m[1]))];
+  const chaves = [...new Set([...tela.matchAll(/key:\s*'([^']+)'/g)].map((m) => m[1]!))];
 
   /**
    * `estado` (bexiga) e `via`/`menopausa` (controles) não passam pelo adaptador

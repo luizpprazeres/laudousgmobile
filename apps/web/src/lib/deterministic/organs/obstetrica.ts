@@ -37,7 +37,7 @@ function brToISO(v: unknown): string | null {
   const d = Number(m[1]), mo = Number(m[2]), y = Number(m[3])
   const dt = new Date(y, mo - 1, d)
   if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null
-  return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
+  return `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`
 }
 
 // ── IG e datas (âncora = biometria atual; referência só corrige se >5 dias) ───

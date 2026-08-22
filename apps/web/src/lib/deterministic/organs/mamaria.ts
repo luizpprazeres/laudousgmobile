@@ -332,7 +332,7 @@ function compose(state: OrganState): OrganComposition {
   }
 
   // ── corpo ──
-  const aspectos: string[] = [FUNDO[String(state.fundo)] ?? FUNDO.heterogeneo]
+  const aspectos: string[] = [FUNDO[String(state.fundo)] ?? FUNDO.heterogeneo!]
   const TIPOS_LESAO = new Set(['cisto_simples', 'multiplos_cistos', 'nodulo'])
   if (!achados.some((a) => TIPOS_LESAO.has(a.tipo))) aspectos.push(AUSENCIA_LESAO)
   for (const a of achados) {

@@ -194,7 +194,7 @@ export function formatarBlocosBiRads(input: BiRadsInput, result: BiRadsResult): 
       sombra: 'sombra acústica',
       combinado: 'padrão misto posterior',
     }
-    descritores.push(rpLabels[input.reforcoPosterior])
+    descritores.push(rpLabels[input.reforcoPosterior]!)
   }
   if (input.calcificacao && input.calcificacao !== 'ausente') {
     descritores.push(input.calcificacao === 'macrocalcificações' ? 'macrocalcificações' : 'microcalcificações suspeitas')

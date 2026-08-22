@@ -195,7 +195,7 @@ function camposCobertos(): number {
     new URL("../../../../../../web/src/lib/catalog/mamariaParaCatalogo.ts", import.meta.url),
     "utf8",
   );
-  const chaves = [...new Set([...tela.matchAll(/key:\s*'([^']+)'/g)].map((m) => m[1]))];
+  const chaves = [...new Set([...tela.matchAll(/key:\s*'([^']+)'/g)].map((m) => m[1]!))];
 
   /** Ausências que são DECISÃO, não esquecimento. */
   const foraDePropósito: Record<string, string> = {

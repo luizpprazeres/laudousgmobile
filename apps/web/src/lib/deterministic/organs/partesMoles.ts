@@ -159,7 +159,7 @@ const lesaoModule: OrganModule = {
       }
       case 'linfonodo': {
         const partes = ['Linfonodo']
-        if (g('eco')) partes.push(ECO[String(g('eco'))])
+        if (g('eco')) partes.push(ECO[String(g('eco'))]!)
         if (contornos) partes.push(contornos)
         partes.push(`medindo ${medidas3(g('medidas'))}`, `situado ${planoLocal(st, p).replace(/^localizada /, '')}`)
         if (doppler) partes.push(doppler)
