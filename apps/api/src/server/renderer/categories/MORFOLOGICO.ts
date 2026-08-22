@@ -249,13 +249,20 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
     }
   }
 
+  /**
+   * As duas frases abaixo eram INCONDICIONAIS — ver a explicação longa na
+   * ramificação do 2º/3º trimestre clássico. Mesmo defeito, mesma correção:
+   * não asseverar normalidade que ninguém verificou, e não negar na conclusão
+   * o achado que o corpo descreve.
+   */
+  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
   const conclusao = [
     ig.conclusaoClassico,
     "Líquido amniótico de quantidade normal.",
     f.ducto_venoso === "alterado"
       ? "Doppler do ducto venoso alterado (onda A reversa)."
       : "Doppler do ducto venoso normal.",
-    "Morfologia fetal normal para esta fase da gestação.",
+    ...(temAchado ? [] : ["Morfologia fetal normal para esta fase da gestação."]),
   ];
   if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
     conclusao.push("Dopplervelocimetria normal das artérias uterinas.");
@@ -521,13 +528,20 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
     }
   }
 
+  /**
+   * As duas frases abaixo eram INCONDICIONAIS — ver a explicação longa na
+   * ramificação do 2º/3º trimestre clássico. Mesmo defeito, mesma correção:
+   * não asseverar normalidade que ninguém verificou, e não negar na conclusão
+   * o achado que o corpo descreve.
+   */
+  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
   const impressao = [
     ...ig.conclusaoObjetivo,
     "Líquido amniótico de quantidade normal.",
     f.ducto_venoso === "alterado"
       ? "Doppler do ducto venoso alterado (onda A reversa)."
       : "Doppler do ducto venoso normal.",
-    "Morfologia fetal normal para esta fase da gestação.",
+    ...(temAchado ? [] : ["Morfologia fetal normal para esta fase da gestação."]),
   ];
   if (comDoppler) {
     impressao.push("Dopplervelocimetria normal das artérias uterinas.");
@@ -593,10 +607,19 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     ...(terceiro ? [] : ["Orifício interno do colo uterino fechado."]),
   ];
 
+  /** Mesma regra da ramificação clássica — ver a explicação longa lá. */
+  const temAchadoObj = (f.achados_adicionais ?? "").trim() !== "";
+  const classeLiquidoObj =
+    f.ila_cm === null ? null : f.ila_cm < 5 ? "Oligoâmnio" : f.ila_cm > 25 ? "Polidrâmnio" : null;
+
   const impressao = [
     ...ig.conclusaoObjetivo,
-    "Líquido amniótico de quantidade normal.",
-    "Morfologia fetal sem evidência de alteração detectável pelo método.",
+    classeLiquidoObj
+      ? `${classeLiquidoObj} (ILA de ${ptBr(f.ila_cm as number)} cm).`
+      : "Líquido amniótico de quantidade normal.",
+    ...(temAchadoObj
+      ? []
+      : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
   ];
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 

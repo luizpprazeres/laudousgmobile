@@ -48,14 +48,14 @@ const CASOS: Caso[] = [
     nome: "exame normal",
     porque: "o caso de todos os 279 morfológicos reais. Tem de sair idêntico ao de sempre.",
     patch: {},
-    exigeNaConclusao: ["Líquido amniótico de quantidade normal", "sem evidência de alteração detectável"],
+    exigeNaConclusao: ["Líquido amniótico de quantidade normal"],
   },
   {
     nome: "ventriculomegalia nos achados",
     porque:
       "o corpo descreve a malformação. A conclusão NÃO pode dizer que não há alteração detectável.",
     patch: { achados_adicionais: "Observa-se ventriculomegalia bilateral de 12 mm." },
-    proibeNaConclusao: ["sem evidência de alteração detectável"],
+    proibeNaConclusao: ["sem evidência de alteração detectável", "Morfologia fetal normal"],
   },
   {
     nome: "ILA de 3 cm",
@@ -83,19 +83,43 @@ const CASOS: Caso[] = [
     porque: "as duas condições no mesmo laudo, que é o caso clínico real.",
     patch: { ila_cm: 3, achados_adicionais: "Observa-se ventriculomegalia bilateral de 12 mm." },
     exigeNaConclusao: ["Oligoâmnio"],
-    proibeNaConclusao: ["sem evidência de alteração detectável", "quantidade normal"],
+    proibeNaConclusao: ["sem evidência de alteração detectável", "Morfologia fetal normal", "quantidade normal"],
   },
+];
+
+/**
+ * AS QUATRO RAMIFICAÇÕES. O morfológico se divide em 1º trimestre × 2º/3º e,
+ * dentro de cada um, clássico × objetivo. A primeira correção pegou UMA delas —
+ * as outras três continuavam afirmando normalidade incondicionalmente, e só
+ * apareceram na varredura das 15 categorias. Testar uma ramificação e concluir
+ * que a categoria está certa é o erro que este bloco evita.
+ */
+const RAMIFICACOES: { rot: string; trimestre: string; objetivo: boolean }[] = [
+  { rot: "1º tri · clássico", trimestre: "1t", objetivo: false },
+  { rot: "1º tri · objetivo", trimestre: "1t", objetivo: true },
+  { rot: "2º/3º · clássico", trimestre: "2t", objetivo: false },
+  { rot: "2º/3º · objetivo", trimestre: "2t", objetivo: true },
 ];
 
 let falhas = 0;
 console.log("═".repeat(74));
-console.log("MORFOLÓGICO — a conclusão não contradiz o corpo");
+console.log("MORFOLÓGICO — a conclusão não contradiz o corpo, nas 4 ramificações");
 console.log("═".repeat(74));
 
-for (const c of CASOS) {
-  const f = MorfologicoFindingsSchema.parse({ ...BASE, ...c.patch });
-  const texto = renderMorfologico(f, null as never, { objetivo: false });
-  const conclusao = texto.split(/CONCLUS[ÃA]O:\n/)[1]?.split("\n\n")[0] ?? "";
+for (const ram of RAMIFICACOES) {
+  console.log(`\n${"─".repeat(74)}\n▸▸ ${ram.rot}`);
+  for (const c of CASOS) {
+  /** No 1º trimestre não se mede ILA — os casos de líquido não se aplicam. */
+  if (ram.trimestre === "1t" && "ila_cm" in c.patch) continue;
+  const f = MorfologicoFindingsSchema.parse({ ...BASE, trimestre: ram.trimestre, ...c.patch });
+  const texto = renderMorfologico(f, null as never, { objetivo: ram.objetivo });
+  /**
+   * CONCLUSÃO no clássico, IMPRESSÃO no objetivo — é a convenção de cabeçalhos
+   * da casa (TÉCNICA / ACHADOS / IMPRESSÃO). A primeira versão deste gate só
+   * procurava "CONCLUSÃO" e por isso lia string vazia nas duas ramificações
+   * objetivas: reprovava seis casos que estavam certos.
+   */
+  const conclusao = texto.split(/(?:CONCLUS[ÃA]O|IMPRESS[ÃA]O):\n/)[1]?.split("\n\n")[0] ?? "";
 
   console.log(`\n▸ ${c.nome}`);
   console.log(`  ${c.porque}`);
@@ -105,7 +129,8 @@ for (const c of CASOS) {
   for (const t of c.proibeNaConclusao ?? []) {
     if (conclusao.includes(t)) { console.log(`  ✗ CONTRADIZ: a conclusão diz "${t}"`); falhas++; }
   }
-  console.log(`  ${conclusao.replace(/\n/g, " | ").slice(0, 150)}`);
+  console.log(`  ${conclusao.replace(/\n/g, " | ").slice(0, 140)}`);
+  }
 }
 
 console.log("\n" + "═".repeat(74));

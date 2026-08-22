@@ -87,6 +87,7 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
         igCorrection: process.env.IG_REFERENCE_CORRECTION === "true",
         flexivel: process.env.FLEXIBLE_CONCLUSION === "true",
         grannum: process.env.GRANNUM_PLACENTA === "true",
+        igSanity: process.env.OBST_IG_SANITY === "true",
       }),
   },
   {
@@ -106,7 +107,29 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
       ip_medio_uterinas: 0.7, perc_medio_uterinas: 50,
       ducto_venoso_ip: 0.45, rcp: 1.71,
     },
-    render: (f, o) => renderDopplerObstetrico(f, null as any, { objetivo: o.objetivo }),
+    /**
+     * TODAS as flags de produção atravessam. A varredura de 22/08 achou seis
+     * categorias em que o registry repassava só `objetivo` — a terceira vez
+     * que o mesmo esquecimento aparece (antes: `omitPicoNull` na tireoide e
+     * `igCorrection` na obstétrica). `process.env` direto pelo motivo de
+     * sempre: `env()` lança quando falta variável e `laudoPadraoDe` engole a
+     * exceção, fazendo a categoria SUMIR em silêncio.
+     *
+     * `golfBall` e `rawInput` ficam FORA de propósito — dependem do ditado, e
+     * o catálogo não tem ditado.
+     */
+render: (f, o) =>
+      renderDopplerObstetrico(f, null as never, {
+        objetivo: o.objetivo,
+        /**
+         * ⚠️ GUARD DE SEGURANÇA. Sem ele, diástole zero ou IP ≥ 1,5 podem sair
+         * descritos como "IP normal" — o falso-normal do Doppler umbilical,
+         * corrigido como P0 em julho e que o caminho do catálogo ignorava.
+         */
+        umbilicalSafety: process.env.DOPPLER_UMBILICAL_SAFETY === "true",
+        igCorrection: process.env.IG_REFERENCE_CORRECTION === "true",
+        flexivel: process.env.FLEXIBLE_CONCLUSION === "true",
+      }),
   },
   {
     categoria: "MORFOLOGICO", rotulo: "Morfológico", schema: MorfologicoFindingsSchema,
@@ -121,7 +144,11 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
       { nome: "Segundo trimestre", seed: { trimestre: "2t" } },
       { nome: "Terceiro trimestre", seed: { trimestre: "3t" } },
     ],
-    render: (f, o) => renderMorfologico(f, null as any, { objetivo: o.objetivo }),
+    render: (f, o) =>
+      renderMorfologico(f, null as never, {
+        objetivo: o.objetivo,
+        igCorrection: process.env.IG_REFERENCE_CORRECTION === "true",
+      }),
   },
   {
     categoria: "TIREOIDE", rotulo: "Tireoide", schema: TireoideFindingsSchema,
@@ -155,11 +182,21 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   },
   {
     categoria: "MAMARIA", rotulo: "Mamária", schema: MamariaFindingsSchema,
-    render: (f, o) => renderMamaria(f, undefined as any, { objetivo: o.objetivo }),
+    render: (f, o) =>
+      renderMamaria(f, undefined as never, {
+        objetivo: o.objetivo,
+        /** Guard que só SINALIZA BI-RADS discrepante; live em produção. */
+        biradsGuard: process.env.MAMARIA_BIRADS_GUARD === "true",
+      }),
   },
   {
     categoria: "PELVE_FEMININA", rotulo: "Pelve feminina", schema: PelveFemininaFindingsSchema,
-    render: (f, o) => renderPelveFeminina(f, { objetivo: o.objetivo }),
+    render: (f, o) =>
+      renderPelveFeminina(f, {
+        objetivo: o.objetivo,
+        /** Deduplica itens repetidos na conclusão; live em produção. */
+        dedup: process.env.PELVE_CONCL_DEDUP === "true",
+      }),
   },
   {
     categoria: "ABDOMEN_SUPERIOR", rotulo: "Abdome superior", schema: AbdomenSuperiorFindingsSchema,
