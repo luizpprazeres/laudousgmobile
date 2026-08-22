@@ -784,7 +784,46 @@ export function placentaFrase(f: ObstetricaFindings, grannum = false): string | 
   return `${frase}.`;
 }
 
-/** Linha de líquido amniótico no corpo + item de conclusão. */
+/**
+ * A CLASSE do líquido a partir da MEDIDA — limiares clássicos.
+ *
+ * ILA: < 5 cm oligoâmnio, > 25 cm polidrâmnio.
+ * MBV: < 2 cm oligoâmnio, > 8 cm polidrâmnio.
+ *
+ * `null` quer dizer dentro da faixa. Os mesmos números que a web já usava
+ * desde sempre; trazê-los para cá não muda julgamento clínico, muda de quem é
+ * a autoridade sobre ele.
+ */
+function classeDaMedida(valor: number, escala: "ila" | "mbv"): string | null {
+  const [baixo, alto] = escala === "ila" ? [5, 25] : [2, 8];
+  if (valor < baixo) return "oligoâmnio";
+  if (valor > alto) return "polidrâmnio";
+  return null;
+}
+
+/**
+ * Linha de líquido amniótico no corpo + item de conclusão.
+ *
+ * ⚠️ ATÉ 22/08 ESTA FUNÇÃO AFIRMAVA NORMALIDADE PARA QUALQUER MEDIDA.
+ *
+ * Com `liquido_tipo: "ila"` e `liquido_ila_cm: 4`, ela escrevia "Líquido
+ * amniótico em quantidade normal (ILA de 4 cm)" — um oligoâmnio franco
+ * relatado como normal, com o número que o desmente na mesma frase. O mesmo
+ * pelo MBV.
+ *
+ * Não era acidente de código: a classificação era delegada à IA, que devia
+ * mandar `liquido_tipo: "alterado"` + `liquido_classe`. Delegar comparação de
+ * limiar a um modelo de linguagem é frágil por natureza, e não havia nada aqui
+ * para pegar o erro dela.
+ *
+ * Nunca mordeu em produção porque nenhum laudo real chegou com medida — 1344
+ * laudos obstétricos, todos com `liquido_tipo` nulo (conferido em 22/08). Quem
+ * ia acordar o defeito era a web, que passa a mandar a medida que o médico
+ * digita.
+ *
+ * A classe DITADA continua vencendo: se o médico disse "oligoâmnio", é isso que
+ * sai, mesmo que o número diga outra coisa — ele viu o exame.
+ */
 export function liquido(f: ObstetricaFindings): { corpo: string; conclusao: string } {
   const tipo = f.liquido_tipo ?? "normal";
   if (tipo === "mbv" && f.liquido_mbv_por_feto_cm && f.liquido_mbv_por_feto_cm.length > 0) {
@@ -793,9 +832,12 @@ export function liquido(f: ObstetricaFindings): { corpo: string; conclusao: stri
     if (f.numero_fetos < 2) {
       const v = f.liquido_mbv_por_feto_cm[0];
       const mbvTxt = v !== undefined ? `${ptBr(v)} cm` : "____ cm";
+      const classe = f.liquido_classe ?? (v !== undefined ? classeDaMedida(v, "mbv") : null);
       return {
         corpo: `Maior bolsão vertical de ${mbvTxt}.`,
-        conclusao: `Líquido amniótico em quantidade normal (maior bolsão vertical de ${mbvTxt}).`,
+        conclusao: classe
+          ? `${classe.charAt(0).toUpperCase()}${classe.slice(1)} (maior bolsão vertical de ${mbvTxt}).`
+          : `Líquido amniótico em quantidade normal (maior bolsão vertical de ${mbvTxt}).`,
       };
     }
     const labels = f.liquido_mbv_por_feto_cm
@@ -807,9 +849,12 @@ export function liquido(f: ObstetricaFindings): { corpo: string; conclusao: stri
     };
   }
   if (tipo === "ila" && f.liquido_ila_cm !== null) {
+    const classe = f.liquido_classe ?? classeDaMedida(f.liquido_ila_cm, "ila");
     return {
       corpo: `Índice de líquido amniótico (ILA) de ${ptBr(f.liquido_ila_cm)} cm.`,
-      conclusao: `Líquido amniótico em quantidade normal (ILA de ${ptBr(f.liquido_ila_cm)} cm).`,
+      conclusao: classe
+        ? `${classe.charAt(0).toUpperCase()}${classe.slice(1)} (ILA de ${ptBr(f.liquido_ila_cm)} cm).`
+        : `Líquido amniótico em quantidade normal (ILA de ${ptBr(f.liquido_ila_cm)} cm).`,
     };
   }
   if (tipo === "alterado" && f.liquido_classe) {

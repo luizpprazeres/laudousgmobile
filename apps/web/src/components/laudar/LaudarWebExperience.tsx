@@ -17,6 +17,7 @@ import {
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
 import { adaptarPelve } from '@/lib/catalog/pelveParaCatalogo'
 import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
+import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
@@ -225,6 +226,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'MAMARIA') {
       return adaptarMamaria((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'OBSTETRICA') {
+      return adaptarObstetrica((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
     return null
   }, [categoria, examStates, isTireoide, tireoideState])

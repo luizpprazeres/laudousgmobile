@@ -66,7 +66,28 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
       { nome: "Gestação inicial", seed: { numero_fetos: 1, gestacao_inicial: true, fetos: [FETO_NORMAL] } },
       { nome: "Gemelar", seed: { numero_fetos: 2, gestacao_inicial: false, fetos: [FETO_NORMAL, FETO_NORMAL] } },
     ],
-    render: (f, o) => renderObstetrica(f, null, { objetivo: o.objetivo }),
+    /**
+     * AS FLAGS DE PRODUÇÃO ATRAVESSAM — o mesmo defeito do `omitPicoNull` da
+     * tireoide (D5), achado de novo aqui em 22/08 pelo gate da obstétrica.
+     *
+     * O registry passava só `objetivo` e descartava as outras três. Efeito:
+     * `IG_REFERENCE_CORRECTION` está LIGADA em produção há 65 dias, e ainda
+     * assim a frase da primeira ultrassonografia nunca aparecia por este
+     * caminho — nem na Biblioteca, nem na web. O médico informava a data da US
+     * precoce e ela não saía no laudo.
+     *
+     * `process.env` direto, e não `env()`: o validado LANÇA quando falta
+     * qualquer variável, e `laudoPadraoDe` engole exceção para que uma
+     * categoria quebrada não derrube a Biblioteca — a combinação faz a
+     * categoria SUMIR em silêncio. Já custou isso uma vez.
+     */
+    render: (f, o) =>
+      renderObstetrica(f, null, {
+        objetivo: o.objetivo,
+        igCorrection: process.env.IG_REFERENCE_CORRECTION === "true",
+        flexivel: process.env.FLEXIBLE_CONCLUSION === "true",
+        grannum: process.env.GRANNUM_PLACENTA === "true",
+      }),
   },
   {
     categoria: "DOPPLER_OBSTETRICO", rotulo: "Obstétrica com Doppler",
