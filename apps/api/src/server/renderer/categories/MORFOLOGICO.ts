@@ -321,10 +321,38 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     ...(terceiro ? [] : ["Orifício interno do colo uterino encontra-se fechado."]),
   ];
 
+  /**
+   * ⚠️ ATÉ 22/08 ESTAS DUAS FRASES ERAM INCONDICIONAIS.
+   *
+   * A conclusão afirmava líquido normal e morfologia sem alteração
+   * independentemente do que estivesse nos achados. Com `ila_cm: 3` e
+   * `achados_adicionais: "ventriculomegalia bilateral de 12 mm"`, o laudo saía
+   * descrevendo a ventriculomegalia no corpo e concluindo, logo abaixo, que
+   * não havia alteração detectável — e que o líquido estava normal.
+   *
+   * Um laudo que se contradiz é pior que um laudo incompleto: quem lê a
+   * conclusão não tem como saber que o corpo diz outra coisa.
+   *
+   * Nunca mordeu em produção — dos 279 morfológicos reais, nenhum tem
+   * `achados_adicionais` nem `ila_cm` preenchidos (conferido em 22/08), então
+   * as duas condições preservam o texto de todos eles byte a byte.
+   *
+   * O que AINDA falta para o morfológico anormal: um canal de CONCLUSÃO para o
+   * achado. Hoje ele só chega ao corpo. Não asseverar normalidade é o mínimo;
+   * dizer o diagnóstico é o certo, e exige campo que o schema não tem.
+   */
+  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
+  const classeLiquido =
+    f.ila_cm === null ? null : f.ila_cm < 5 ? "Oligoâmnio" : f.ila_cm > 25 ? "Polidrâmnio" : null;
+
   const conclusao = [
     ig.conclusaoClassico,
-    "Líquido amniótico de quantidade normal.",
-    "Morfologia fetal sem evidência de alteração detectável pelo método.",
+    classeLiquido
+      ? `${classeLiquido} (ILA de ${ptBr(f.ila_cm as number)} cm).`
+      : "Líquido amniótico de quantidade normal.",
+    ...(temAchado
+      ? []
+      : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
   ];
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
