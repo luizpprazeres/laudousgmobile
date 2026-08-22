@@ -11,15 +11,33 @@ risco(<G)  = ∫h de g.current a G  ÷  ∫h de g.current a ∞
 g.current  = max(24, IG atual em semanas)
 ```
 
-## ⚠️ Estado: NÃO usar clinicamente ainda
+## ⚠️ Estado: NÃO usar para decisão clínica binária
 
-Falta o passo que nenhum código faz sozinho: **conferir contra a calculadora
-oficial da FMF**. `validacao/CASOS-FMF.md` tem 16 casos prontos para isso — a
-coluna “NOSSO <37s” já está preenchida por `validacao/casos.mjs`; a coluna do
-FMF oficial é para preencher à mão, no app deles.
+Não por defeito conhecido no código — os seis da auditoria estão corrigidos —
+mas por uma **divergência medida contra o software oficial da FMF**, que a
+segunda auditoria (`AUDITORIA-2026-08-22-mom.md`) quantificou.
 
-Enquanto essa coluna estiver vazia, isto é uma implementação fiel *na leitura
-dos papers*, não uma implementação *verificada*.
+O que ela achou: a transcrição das Tabelas 2 de Wright A 2015 e Tayyar 2015
+está **correta**; a divergência não é sinal perdido nem tabela do trimestre
+errado. Mas o resíduo remanescente **cruza o corte de 1:100** — o limiar que
+decide profilaxia com aspirina:
+
+| perfil | faixa em que os dois discordam |
+|---|---|
+| com HAS | nosso entre ~1:100 e 1:78 pode dar POSITIVO com o oficial ainda abaixo de 1:100 |
+| sem HAS | faixa estreita de FALSO NEGATIVO: nosso entre ~1:103 e 1:100 com o oficial já acima do corte |
+
+Sem HAS os dois erros de marcador atuam em sentidos opostos e quase se
+cancelam; com HAS, não.
+
+**O que isso permite e o que não permite.** Permite continuar a validação e
+rodar em *shadow mode* — calcular e comparar sem mostrar. Não permite rotular
+como paridade FMF, nem usar o resultado para decidir do lado do corte, sem um
+guard de incerteza explícito.
+
+`validacao/CASOS-FMF.md` tem 16 casos com a coluna “NOSSO <37s” preenchida por
+`validacao/casos.mjs`; a coluna do FMF oficial é para preencher à mão, no app
+deles. É o que fecha a adjudicação: qual família de normalização o software usa.
 
 ## Por que está aqui, e não no aplicativo
 
