@@ -286,21 +286,36 @@ const cov = (a: string, b: string) => COV[`${a}:${b}`] ?? COV[`${b}:${a}`];
 
 const LN_2PI = Math.log(2 * Math.PI);
 
+/**
+ * Leitura de índice na grade de integração. O `apps/api` compila com
+ * `noUncheckedIndexedAccess`, que marca TODO acesso indexado como
+ * `number | undefined` — inclusive em `Float64Array`. Os índices deste módulo
+ * são provadamente internos à grade (`0..N`), então a garantia fica concentrada
+ * aqui, num lugar só, em vez de espalhada em `!` pelo laço numérico.
+ */
+const at = (arr: Float64Array, i: number): number => arr[i] as number;
+
 const logDnorm = (t: number, mu: number, sd: number) =>
   -0.5 * (((t - mu) / sd) ** 2 + LN_2PI) - Math.log(sd);
 
-function logDmvnorm(x: number[], media: number[], S: number[][]): number {
-  const p = x.length;
-  if (p === 1) {
-    const d = x[0] - media[0];
-    return -0.5 * ((d * d) / S[0][0] + Math.log(S[0][0]) + LN_2PI);
-  }
-  const det = S[0][0] * S[1][1] - S[0][1] * S[1][0];
+/** log-densidade normal univariada a partir da variância. */
+function logDmvnorm1(x0: number, m0: number, s00: number): number {
+  const d = x0 - m0;
+  return -0.5 * ((d * d) / s00 + Math.log(s00) + LN_2PI);
+}
+
+/** log-densidade normal bivariada a partir da covariância. */
+function logDmvnorm2(
+  x0: number, x1: number,
+  m0: number, m1: number,
+  s00: number, s01: number, s11: number
+): number {
+  const det = s00 * s11 - s01 * s01;
   if (!(det > 0)) throw new PeErroDeDominio("matriz de covariância não positiva definida");
-  const d0 = x[0] - media[0];
-  const d1 = x[1] - media[1];
-  const q = (S[1][1] * d0 * d0 - 2 * S[0][1] * d0 * d1 + S[0][0] * d1 * d1) / det;
-  return -0.5 * (q + Math.log(det) + p * LN_2PI);
+  const d0 = x0 - m0;
+  const d1 = x1 - m1;
+  const q = (s11 * d0 * d0 - 2 * s01 * d0 * d1 + s00 * d1 * d1) / det;
+  return -0.5 * (q + Math.log(det) + 2 * LN_2PI);
 }
 
 /** Φ — CDF normal padrão. erfc de Chebyshev (Numerical Recipes), erro < 1,2e-7. */
@@ -407,43 +422,53 @@ export function calcularPreEclampsiaFmf(g: PeGestante, med: PeMedidas = {}): PeR
       riscos[G] = G <= gCurrent ? 0 : (pnorm((G - priorMean) / SIGMA) - base) / (1 - base);
     }
   } else {
-    const x = mk.map((m) => m.x);
-    const S = mk.map((a) => mk.map((b) => cov(a.nome, b.nome)));
+    // Extrai para escalares nomeados: o núcleo numérico não indexa arrays.
+    const a = mk[0]!;
+    const b = mk.length === 2 ? mk[1]! : null;
+    const sAA = cov(a.nome, a.nome)!;
+    const sBB = b ? cov(b.nome, b.nome)! : 0;
+    const sAB = b ? cov(a.nome, b.nome)! : 0;
 
     const G0 = gCurrent;
     const G1 = 100;
     const N = 15200;
     const h = (G1 - G0) / N;
 
-    const logF = new Array<number>(N + 1);
+    const logF = new Float64Array(N + 1);
     let logMax = -Infinity;
     for (let i = 0; i <= N; i++) {
       const t = G0 + i * h;
-      const media = mk.map((m) => mediaLog10MoM(m.nome, t));
-      logF[i] = logDnorm(t, priorMean, SIGMA) + logDmvnorm(x, media, S);
-      if (logF[i] > logMax) logMax = logF[i];
+      const v =
+        logDnorm(t, priorMean, SIGMA) +
+        (b
+          ? logDmvnorm2(a.x, b.x, mediaLog10MoM(a.nome, t), mediaLog10MoM(b.nome, t), sAA, sAB, sBB)
+          : logDmvnorm1(a.x, mediaLog10MoM(a.nome, t), sAA));
+      logF[i] = v;
+      if (v > logMax) logMax = v;
     }
     if (!Number.isFinite(logMax)) {
       throw new PeErroDeDominio("verossimilhança degenerada — medidas incompatíveis com o modelo");
     }
-    const f = logF.map((v) => Math.exp(v - logMax));
 
-    const acum = new Array<number>(N + 1).fill(0);
+    const f = new Float64Array(N + 1);
+    for (let i = 0; i <= N; i++) f[i] = Math.exp(at(logF, i) - logMax);
+
+    const acum = new Float64Array(N + 1);
     for (let i = 2; i <= N; i += 2) {
-      acum[i] = acum[i - 2] + (h / 3) * (f[i - 2] + 4 * f[i - 1] + f[i]);
+      acum[i] = at(acum, i - 2) + (h / 3) * (at(f, i - 2) + 4 * at(f, i - 1) + at(f, i));
     }
-    for (let i = 1; i <= N; i += 2) acum[i] = (acum[i - 1] + acum[i + 1]) / 2;
-    const total = acum[N];
+    for (let i = 1; i <= N; i += 2) acum[i] = (at(acum, i - 1) + at(acum, i + 1)) / 2;
+    const total = at(acum, N);
     if (!(total > 0) || !Number.isFinite(total)) {
       throw new PeErroDeDominio("integral do posterior nula ou não finita");
     }
 
-    const emG = (G: number) => {
+    const emG = (G: number): number => {
       if (G <= G0) return 0;
       if (G >= G1) return total;
       const u = (G - G0) / h;
       const i = Math.floor(u);
-      return acum[i] + (acum[i + 1] - acum[i]) * (u - i);
+      return at(acum, i) + (at(acum, i + 1) - at(acum, i)) * (u - i);
     };
 
     for (const G of CORTES) {
