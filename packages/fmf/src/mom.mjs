@@ -18,6 +18,42 @@
 
 const I = (b) => (b ? 1 : 0);
 
+/**
+ * CALIBRAÇÃO EMPÍRICA da interação `HAS crônica × peso` no modelo de MoM da PAM.
+ *
+ * Wright A 2015, Tabela 2, publica −0,000421118 por kg acima de 69. O software
+ * oficial da FMF (v1.0.44) usa um valor diferente. Medimos 7 pontos à mão, no
+ * app, variando SÓ peso e hipertensão crônica (mesma paciente no resto):
+ *
+ *   peso  HAS   MoM PAM que o FMF exibiu
+ *    69   não   1,07        69   sim   0,95
+ *    95   não   1,01        95   sim   0,91
+ *   120   não   0,98       120   sim   0,89
+ *   120   não   0,99  (a 13s6d — confirma que os termos de IG estão certos)
+ *
+ * O desvio é ZERO em 69 kg (onde a interação não atua) e cresce linearmente com
+ * o peso — assinatura de que o efeito PRINCIPAL da HAS está certo e só a
+ * inclinação da interação difere. Ajuste de 2 parâmetros nos 7 pontos:
+ * resíduo máximo 0,23% no MoM, contra ±0,5% de incerteza do próprio
+ * arredondamento de 2 casas da tela. Ou seja: explica os dados até o limite do
+ * que eles conseguem distinguir.
+ *
+ * Aplicamos SÓ esta correção. O ajuste também revelou um deslocamento constante
+ * de −0,0034 em log10 (0,78% no MoM), mas ele é **confundido**: todos os 7
+ * pontos compartilham idade, altura, etnia, paridade, diabetes e história
+ * familiar, então esse deslocamento pode vir de qualquer um desses termos ou do
+ * intercepto. Aplicá-lo globalmente seria errado para quem não tem diabetes ou
+ * história familiar. Fica pendente de UMA medição adicional (mesmo perfil, sem
+ * diabetes e sem história familiar) que separa intercepto de comorbidade.
+ *
+ * ⚠️ Isto é calibração empírica contra o comportamento observado, não parâmetro
+ * publicado. Substituir assim que a FMF fornecer os valores vigentes — o
+ * apêndice de 2020 diz que eles estão em fetalmedicine.com, mas não achamos a
+ * página; o caminho é `softwaresupport@fetalmedicine.org`.
+ */
+export const CAL_MAP_HAS_PESO = -1.8859e-4;   // substitui −4.211180e-4
+export const CAL_ORIGEM = 'medição manual no FMF v1.0.44 em 22/08/2026, 7 pontos';
+
 /** log10 da PAM esperada — Wright A 2015, Tabela 2 (efeitos de 1º trimestre). */
 export function log10MapEsperada(p) {
   const ga = p.gaDias - 77;
@@ -38,7 +74,7 @@ export function log10MapEsperada(p) {
     - 0.001191227 * afro
     - 0.000050679 * afro * ga
     + 0.051007216 * has
-    - 0.000421118 * has * wt               // interação HAS crônica × peso
+    + CAL_MAP_HAS_PESO * has * wt          // interação HAS × peso — CALIBRADA (ver acima)
     + 0.004445020 * I(p.diabetes)
     + 0.005976240 * I(p.histFamiliarPE)
     - 0.009402127 * I(p.paridade === 'multipara-sem-pe')

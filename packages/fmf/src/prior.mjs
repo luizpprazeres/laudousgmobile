@@ -109,19 +109,36 @@ function mediaComRamoHAS(p0, comHAS) {
   return mu;
 }
 
+/**
+ * A salvaguarda da HAS crônica está DESLIGADA por padrão — decisão empírica.
+ *
+ * Wright 2015, p. 62.e7, manda em prosa:
+ *   "In extreme cases [...] the model predicts that those with a family history
+ *    of preeclampsia, diabetes mellitus, and weight in excess of 100.5 kg will
+ *    be protected by chronic hypertension. From the clinical perspective, this
+ *    is implausible, and in practical applications, it should be avoided by
+ *    taking the minimum of the means from the model with and without chronic
+ *    hypertension."
+ *
+ * O apêndice de 2020 NÃO repete essa regra, e a conferência no software oficial
+ * da FMF (22/08/2026) mostrou que ele NÃO a aplica: mulher de 120 kg, diabética,
+ * mãe com PE, 12s0d, PAM 95, IP 1,73 —
+ *      COM hipertensão crônica → 1 em 50
+ *      SEM hipertensão crônica → 1 em 17
+ * ou seja, no software deles a hipertensão crônica de fato "protege" nesse canto
+ * do espaço. Para reproduzir o FMF, mantemos desligada.
+ *
+ * A anomalia é real e clinicamente implausível — os próprios autores dizem isso.
+ * Se um dia a decisão de produto for divergir do FMF neste ponto, ligue aqui e
+ * DECLARE a divergência no laudo; não a ligue em silêncio.
+ */
+export const SALVAGUARDA_HAS = false;
+
 export function mediaIgPartoComPE(p) {
   if (!p.hipertensaoCronica) return mediaComRamoHAS(p, false);
-
-  // SALVAGUARDA DA HAS CRÔNICA — Wright 2015, p. 62.e7:
-  //   "In extreme cases [...] the model predicts that those with a family history
-  //    of preeclampsia, diabetes mellitus, and weight in excess of 100.5 kg will
-  //    be protected by chronic hypertension. From the clinical perspective, this
-  //    is implausible, and in practical applications, it should be avoided by
-  //    taking the minimum of the means from the model with and without chronic
-  //    hypertension."
-  // Sem isto, obesa + diabética + história familiar COM HAS sai com risco MENOR
-  // do que a mesma mulher sem HAS. Média menor = risco maior.
-  return Math.min(mediaComRamoHAS(p, true), mediaComRamoHAS(p, false));
+  return SALVAGUARDA_HAS
+    ? Math.min(mediaComRamoHAS(p, true), mediaComRamoHAS(p, false))
+    : mediaComRamoHAS(p, true);
 }
 
 /**
