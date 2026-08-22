@@ -242,6 +242,46 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     return cat ? composeReport(cat, examStates[categoria]).text : ''
   }, [categoria, examStates, migrada, laudoCanonico.texto])
 
+  /**
+   * OS BLOCOS DE CALCULADORA — e por que isto NÃO fura a regra do §3.2.
+   *
+   * A regra é que o navegador não compõe texto clínico: nas categorias
+   * migradas o laudo vem inteiro do renderer canônico, e `composeReport`
+   * RECUSA categoria migrada justamente para que nenhum caminho novo devolva
+   * prosa clínica montada aqui.
+   *
+   * Um bloco de calculadora é concatenado ao laudo, e à primeira leitura
+   * parece a mesma coisa. Não é, e a diferença não é de tamanho nem de origem
+   * do texto — é de **quem decide que ele entra**:
+   *
+   *   - o que a regra proíbe é um MOTOR PARALELO compondo frase clínica
+   *     sozinho, sem ninguém pedir, produzindo um laudo plausível que ninguém
+   *     reconhece como vindo do lugar errado;
+   *   - o bloco é AUTOIDENTIFICADO (abre com "RASTREIO DE PRÉ-ECLÂMPSIA
+   *     (1º trimestre)") e entra por ação EXPLÍCITA do médico, que clica para
+   *     inseri-lo e pode removê-lo. É o equivalente a ele digitar.
+   *
+   * Quem for acrescentar bloco novo aqui: o teste é esse. Se o texto entra
+   * sozinho, ou se ele se confunde com as frases do laudo, está do lado errado
+   * da regra — e aí o lugar dele é o renderer canônico, não este arquivo.
+   *
+   * ## Por que não duplica no re-render
+   *
+   * Nas categorias migradas o laudo chega por rede e o componente re-renderiza
+   * a cada resposta. O bloco não é inserido NO TEXTO: vive em estado próprio,
+   * chaveado por categoria e por calculadora, e `composedText` é derivado.
+   * Inserir duas vezes sobrescreve a mesma chave; um laudo novo recompõe o
+   * join. Duplicação é estruturalmente impossível, e por isso o núcleo em
+   * `packages/shared` não precisa carregar id de deduplicação.
+   *
+   * ## O caso do rascunho editado à mão
+   *
+   * Depois que o médico edita o texto, `documentText` passa a ser o rascunho e
+   * o bloco já está dentro dele. Remover pelo painel muda o `composedText` mas
+   * não o rascunho — e isso aparece como `sourceChanged`, a sugestão de
+   * aplicar o modelo novo. É o comportamento do rascunho que já existia: o que
+   * ele editou é dele, e nada sobrescreve sem ele mandar.
+   */
   const [calculatorBlocksByCategory, setCalculatorBlocksByCategory] = useState<Record<string, Record<string, string>>>({})
   const calculatorBlocks = calculatorBlocksByCategory[categoria] ?? {}
   const composedText = useMemo(
