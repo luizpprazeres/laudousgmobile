@@ -30,7 +30,7 @@ leia "O que falta" antes de ligar em produção.
 | Calibração bayesiana | Hosmer-Lemeshow χ²=6,60 / 8 g.l., **p=0,58**; faixa de decisão (1:200–1:50, n=36.557): predito 1 em 102, observado 1 em 102 |
 | Dupla implementação cega | outra implementação, feita só a partir do apêndice: **concordam em ~1e-9** em 11.718 comparações |
 | Discriminação | AUC simulada 0,867 × 0,876 publicada (O'Gorman 2016, Tabela 4) |
-| **Paridade com o software oficial** | **7 pontos medidos à mão: risco dentro de 1–2 unidades de "1 em N"** |
+| **Paridade com o software oficial** | **8 pontos medidos à mão: MoM da PAM dentro de ±0,003; risco dentro de 3 unidades de "1 em N"** |
 
 ## Duas coisas que parecem bug e NÃO são
 
@@ -57,10 +57,10 @@ Escolhemos **paridade com o software**, e por isso `SALVAGUARDA_HAS = false` em
 > clinicamente implausível. Se um dia o produto escolher a segunda, ligue a flag
 > **e declare a divergência no laudo**; não ligue em silêncio.
 
-### 2. Um coeficiente não está em paper nenhum
+### 2. Dois números não estão em paper nenhum
 
-`CAL_MAP_HAS_PESO = −1,8859e-4` em `src/mom.mjs` é a interação `HAS × peso` do
-modelo de MoM da PAM. Wright A 2015, Tabela 2, publica **−4,211180e-4**.
+`CAL_MAP_HAS_PESO = −1,8859e-4` (interação `HAS × peso`, contra os −4,211180e-4
+publicados) e `CAL_MAP_INTERCEPTO = −0,003568` (intercepto), ambos em `src/mom.mjs`.
 
 O número calibrado foi **medido, não publicado**: 7 leituras manuais no app
 oficial variando só peso (69, 95, 120 kg) e hipertensão crônica. O desvio é zero
@@ -69,23 +69,30 @@ assinatura de o efeito principal estar certo e só a inclinação diferir. Ajust
 2 parâmetros nos 7 pontos: resíduo máximo 0,23% no MoM, contra ±0,5% da própria
 resolução da tela.
 
-Sem essa correção, o erro no risco chegava a **19%** e chegava a cruzar o corte de
-1:100. Com ela, todos os 7 pontos ficam dentro da resolução do display.
+O deslocamento constante que sobrava foi identificado por um **8º ponto** (sem
+diabetes e sem história familiar): o resíduo não mudou, logo não vinha das
+comorbidades; altura, etnia, paridade e tabagismo contribuem zero nesses pontos;
+e o coeficiente de idade teria de ser 2,7× o publicado, fora do IC95%. Restou o
+intercepto, e ele é aplicado globalmente.
+
+Resultado: os 8 MoMs batem dentro de **±0,003** — abaixo do próprio arredondamento
+de 2 casas da tela.
 
 ## O que falta
 
-**Um deslocamento constante de 0,78% no MoM da PAM**, que é real e ainda não
-atribuído. Os 7 pontos compartilham idade, altura, etnia, paridade, diabetes e
-história familiar — então o deslocamento pode vir de qualquer um desses termos ou
-do intercepto, e aplicá-lo globalmente estaria errado para quem não tem diabetes
-ou história familiar.
+**O ramo do IP uterino nunca foi medido** — a seção ficou recolhida em todas as
+telas capturadas. Com o MoM da PAM calibrado, os riscos ainda desviam até **3
+unidades** de "1 em N", concentrados nos casos com hipertensão, e o IP é o
+suspeito. Um deslocamento de +0,005 em log10 na mediana do IP reduziria a soma
+dos desvios de 10 para 7, mas o ótimo é raso e ajustar sem medida seria inventar
+coeficiente.
 
-**Uma medição resolve:** mesmo perfil, 69 kg, sem HAS, **sem diabetes e sem
-história familiar de PE**. Se o resíduo continuar 0,78%, é intercepto (ou idade) e
-se aplica a todos; se cair para ~0, era diabetes + história familiar.
+**Uma medição resolve:** abrir a seção *Uterine artery PI* em qualquer uma das
+telas e anotar o **MoM exibido**. A tolerância do gate está em 3 unidades por
+causa disso e deve ir para 1 quando o dado chegar.
 
-Também não validado: o ramo do **IP uterino** (a seção ficou recolhida nas telas
-medidas), outras etnias e paridades, e qualquer coisa fora de 11–14 semanas.
+Também não validado: outras idades, alturas, etnias e paridades, nada fora de
+11–14 semanas, e gemelar (recusado explicitamente).
 
 O caminho definitivo não é medir mais: o apêndice de 2020 diz que *"the current
 parameter estimates used in the algorithm are given at fetalmedicine.com"*. Não

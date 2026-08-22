@@ -38,21 +38,31 @@ const I = (b) => (b ? 1 : 0);
  * arredondamento de 2 casas da tela. Ou seja: explica os dados até o limite do
  * que eles conseguem distinguir.
  *
- * Aplicamos SÓ esta correção. O ajuste também revelou um deslocamento constante
- * de −0,0034 em log10 (0,78% no MoM), mas ele é **confundido**: todos os 7
- * pontos compartilham idade, altura, etnia, paridade, diabetes e história
- * familiar, então esse deslocamento pode vir de qualquer um desses termos ou do
- * intercepto. Aplicá-lo globalmente seria errado para quem não tem diabetes ou
- * história familiar. Fica pendente de UMA medição adicional (mesmo perfil, sem
- * diabetes e sem história familiar) que separa intercepto de comorbidade.
+ * Sobrava também um deslocamento CONSTANTE de +0,00357 em log10 (0,83% no MoM),
+ * a princípio confundido entre intercepto, idade, diabetes e história familiar —
+ * todos fixos naqueles 7 pontos. Um **8º ponto** (mesmo perfil, 69 kg, sem HAS,
+ * **sem diabetes e sem história familiar**, 13s6d → FMF exibiu 1,11) separou:
+ *
+ *   - o resíduo NÃO mudou ao remover diabetes e história familiar
+ *     (0,00463 contra 0,0033–0,0036, dentro da incerteza) ⇒ não vem delas;
+ *   - altura, etnia, paridade e tabagismo contribuem ZERO nesses pontos
+ *     (todos na categoria de referência ou centrados em zero);
+ *   - se viesse do coeficiente de IDADE, ele teria de ser 1,199e-3 — **2,7× o
+ *     publicado** e muito fora do IC95% [3,955e-4; 4,830e-4]. Implausível.
+ *
+ * Resta o INTERCEPTO. Com a interação corrigida, os 8 resíduos têm dispersão de
+ * 0,00175 em log10, contra ~0,0040 de amplitude que o próprio arredondamento de
+ * 2 casas já produz. É constante. Aplicado globalmente.
  *
  * ⚠️ Isto é calibração empírica contra o comportamento observado, não parâmetro
  * publicado. Substituir assim que a FMF fornecer os valores vigentes — o
  * apêndice de 2020 diz que eles estão em fetalmedicine.com, mas não achamos a
  * página; o caminho é `softwaresupport@fetalmedicine.org`.
  */
-export const CAL_MAP_HAS_PESO = -1.8859e-4;   // substitui −4.211180e-4
-export const CAL_ORIGEM = 'medição manual no FMF v1.0.44 em 22/08/2026, 7 pontos';
+export const CAL_MAP_HAS_PESO  = -1.8859e-4;    // substitui −4.211180e-4
+export const CAL_MAP_INTERCEPTO = -0.003568;    // soma a 1.943223919 (NEGATIVO:
+// o MoM da FMF é MAIOR que o nosso ⇒ a mediana dela é MENOR ⇒ baixa o intercepto)
+export const CAL_ORIGEM = 'medição manual no FMF v1.0.44 em 22/08/2026, 8 pontos';
 
 /** log10 da PAM esperada — Wright A 2015, Tabela 2 (efeitos de 1º trimestre). */
 export function log10MapEsperada(p) {
@@ -63,7 +73,7 @@ export function log10MapEsperada(p) {
   const afro = I(p.etnia === 'afro');
   const has = I(p.hipertensaoCronica);
 
-  return 1.943223919
+  return 1.943223919 + CAL_MAP_INTERCEPTO   // intercepto CALIBRADO (ver acima)
     + 0.000209037 * ga
     - 0.000020452 * ga * ga
     + 0.000439271 * age                    // efeito de idade é específico do 1º tri
