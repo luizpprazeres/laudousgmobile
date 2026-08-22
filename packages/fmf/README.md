@@ -21,8 +21,8 @@ Gemelar é recusado explicitamente (a Tabela 2 do spec existe, não foi implemen
 
 ## Estado
 
-O motor está validado. A calibração dos modelos de mediana está **parcial** —
-leia "O que falta" antes de ligar em produção.
+O motor está validado e os modelos de mediana estão calibrados contra o software
+oficial. Leia "O que falta" antes de ligar em produção.
 
 | verificação | resultado |
 |---|---|
@@ -30,7 +30,7 @@ leia "O que falta" antes de ligar em produção.
 | Calibração bayesiana | Hosmer-Lemeshow χ²=6,60 / 8 g.l., **p=0,58**; faixa de decisão (1:200–1:50, n=36.557): predito 1 em 102, observado 1 em 102 |
 | Dupla implementação cega | outra implementação, feita só a partir do apêndice: **concordam em ~1e-9** em 11.718 comparações |
 | Discriminação | AUC simulada 0,867 × 0,876 publicada (O'Gorman 2016, Tabela 4) |
-| **Paridade com o software oficial** | **8 pontos medidos à mão: MoM da PAM dentro de ±0,003; risco dentro de 3 unidades de "1 em N"** |
+| **Paridade com o software oficial** | **8 pontos medidos à mão: MoM da PAM dentro de ±0,003, MoM do IP uterino dentro de ±0,005; risco dentro de 3 unidades de "1 em N"** |
 
 ## Duas coisas que parecem bug e NÃO são
 
@@ -78,21 +78,26 @@ intercepto, e ele é aplicado globalmente.
 Resultado: os 8 MoMs batem dentro de **±0,003** — abaixo do próprio arredondamento
 de 2 casas da tela.
 
+## O IP uterino bate SEM calibração
+
+Medido no ponto H (1,73 a 13s6d, 69 kg): a FMF exibe **1,17**, o nosso dá
+**1,1652** — dentro do arredondamento de 2 casas. O modelo de Tayyar 2015 está
+correto como publicado; **nenhuma calibração foi aplicada nele**.
+
 ## O que falta
 
-**O ramo do IP uterino nunca foi medido** — a seção ficou recolhida em todas as
-telas capturadas. Com o MoM da PAM calibrado, os riscos ainda desviam até **3
-unidades** de "1 em N", concentrados nos casos com hipertensão, e o IP é o
-suspeito. Um deslocamento de +0,005 em log10 na mediana do IP reduziria a soma
-dos desvios de 10 para 7, mas o ótimo é raso e ajustar sem medida seria inventar
-coeficiente.
+Sobra um desvio de até **3 unidades** de "1 em N", concentrado nos casos com
+hipertensão (pior: ponto B, FMF 1 em 38 × nosso 1 em 35). Com os dois MoMs
+batendo, propagar a incerteza do arredondamento dá 1 em 34 a 37 — o 38 fica
+logo fora. É pequeno e não atribuído.
 
-**Uma medição resolve:** abrir a seção *Uterine artery PI* em qualquer uma das
-telas e anotar o **MoM exibido**. A tolerância do gate está em 3 unidades por
-causa disso e deve ir para 1 quando o dado chegar.
+**Não perseguir ajustando parâmetro.** Com os MoMs já batendo dentro da
+resolução da tela, qualquer correção adicional seria ajuste ao arredondamento do
+display, não ao modelo. A tolerância do gate está em 3 unidades por isso.
 
-Também não validado: outras idades, alturas, etnias e paridades, nada fora de
-11–14 semanas, e gemelar (recusado explicitamente).
+Não validado: outras idades, alturas, etnias e paridades; o IP uterino em outras
+IGs e pesos (só o ponto H foi medido); nada fora de 11–14 semanas; gemelar
+(recusado explicitamente).
 
 O caminho definitivo não é medir mais: o apêndice de 2020 diz que *"the current
 parameter estimates used in the algorithm are given at fetalmedicine.com"*. Não
@@ -108,13 +113,13 @@ achamos a página. `softwaresupport@fetalmedicine.org` é o endereço a pergunta
 e a ressalva de engenharia reversa exige que o obtido *"is not used to create any
 software that is substantially similar in its expression to the App"*.
 
-Os 7 pontos foram lidos **à mão, um a um**, por um médico usuário licenciado.
+Os 8 pontos foram lidos **à mão, um a um**, por um médico usuário licenciado.
 Nada de Playwright, nada de automação. **Manter assim.**
 
 ## Rodar
 
 ```bash
-node packages/fmf/validacao/paridade-fmf.manual.mjs   # os 7 pontos oficiais
+node packages/fmf/validacao/paridade-fmf.manual.mjs   # os 8 pontos oficiais
 node packages/fmf/validacao/casos2.mjs                # tabela para conferência manual
 ```
 

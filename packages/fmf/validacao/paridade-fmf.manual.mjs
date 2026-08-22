@@ -19,7 +19,7 @@
  */
 
 import { riscoPreEclampsia, umEmN } from '../src/risco.mjs';
-import { mapMoM } from '../src/mom.mjs';
+import { mapMoM, utaPiMoM } from '../src/mom.mjs';
 
 const PACIENTE = {
   idade: 30, altura: 164, etnia: 'branca', paridade: 'nulipara',
@@ -40,7 +40,7 @@ const OFICIAL = [
   // O 8º ponto é o que IDENTIFICA o deslocamento constante: sem diabetes e sem
   // história familiar, o resíduo não mudou ⇒ o desvio é do intercepto, não das
   // comorbidades. Sem ele, a correção de intercepto seria chute.
-  ['H',  69, false, 97,  1.11, 90, { diabetes: false, histFamiliarPE: false }],
+  ['H',  69, false, 97,  1.11, 90, { diabetes: false, histFamiliarPE: false }, 1.17],
 ];
 
 // A tela mostra o risco como "1 em N" inteiro. Em N=11 um passo já vale 9%,
@@ -63,13 +63,22 @@ console.log('PARIDADE COM O FMF OFICIAL — 8 pontos medidos à mão\n');
 console.log('  #  peso  HAS   MoM FMF  MoM nosso  Δmom    risco FMF  risco nosso   Δ');
 console.log('  ────────────────────────────────────────────────────────────────────────');
 
-for (const [id, peso, has, gaDias, momOficial, riscoOficial, extra] of OFICIAL) {
+for (const [id, peso, has, gaDias, momOficial, riscoOficial, extra, momUtaOficial] of OFICIAL) {
   const p = { ...PACIENTE, peso, hipertensaoCronica: has, gaDias, ...(extra ?? {}) };
   const momNosso = mapMoM(MEDIDAS.pamMmHg, p);
   const nNosso = umEmN(riscoPreEclampsia(p, MEDIDAS, [37]).riscos[37]);
 
   const dMom = momNosso - momOficial;
   const momOk = Math.abs(dMom) <= TOLERANCIA_MOM + 1e-9;
+  // O IP uterino só foi exibido no ponto H — é o único ramo com medida.
+  let utaTag = '';
+  if (momUtaOficial != null) {
+    const momUta = utaPiMoM(MEDIDAS.utaPiMedio, p);
+    const utaOk = Math.abs(momUta - momUtaOficial) <= TOLERANCIA_MOM + 1e-9;
+    if (!utaOk) falhas++;
+    utaTag = `   [IP ut.: FMF ${momUtaOficial.toFixed(2)} · nosso ${momUta.toFixed(4)} ${utaOk ? '✓' : '✗'}]`;
+  }
+
   const dUnidades = Math.abs(nNosso - riscoOficial);
   const riscoOk = dUnidades <= TOLERANCIA_UNIDADES;
   if (!momOk || !riscoOk) falhas++;
@@ -80,7 +89,7 @@ for (const [id, peso, has, gaDias, momOficial, riscoOficial, extra] of OFICIAL) 
     `${momOficial.toFixed(2).padStart(7)}  ${momNosso.toFixed(4).padStart(9)} ` +
     `${(dMom >= 0 ? '+' : '') + dMom.toFixed(4)}${momOk ? ' ' : '✗'}  ` +
     `${('1 em ' + riscoOficial).padStart(9)}  ${('1 em ' + nNosso).padStart(11)}   ` +
-    `${dUnidades === 0 ? '=' : (nNosso > riscoOficial ? '+' : '−') + dUnidades}${riscoOk ? '' : ' ✗'}`
+    `${dUnidades === 0 ? '=' : (nNosso > riscoOficial ? '+' : '−') + dUnidades}${riscoOk ? '' : ' ✗'}` + utaTag
   );
 }
 
@@ -94,8 +103,9 @@ console.log(`
     provam     · o efeito da hipertensão crônica em 3 pesos (69, 95, 120 kg)
                · os termos de idade gestacional (12s0d e 13s6d)
                · que o desvio constante é do intercepto, não de comorbidade
+               · que o MoM do IP uterino bate SEM calibração (ponto H)
     NÃO provam · outras idades, alturas, etnias e paridades
-               · o ramo do IP uterino (a seção ficou recolhida em todas as telas)
+               · o IP uterino em outras IGs/pesos (só o ponto H foi medido)
                · nada fora de 11–14 semanas, nem gemelar
 `);
 
