@@ -16,12 +16,14 @@
  * | PELVE_FEMININA | 21/08 | `pelve-ponta-a-ponta.manual.ts` |
  * | MAMARIA | 21/08 | `mamaria-ponta-a-ponta.manual.ts` |
  * | OBSTETRICA | 22/08 | `obstetrica-ponta-a-ponta.manual.ts` |
+ * | MORFOLOGICO | 22/08 | `morfologico-ponta-a-ponta.manual.ts` |
  */
 export const CATEGORIAS_MIGRADAS = [
   "TIREOIDE",
   "PELVE_FEMININA",
   "MAMARIA",
   "OBSTETRICA",
+  "MORFOLOGICO",
 ] as const
 
 export function categoriaMigrada(categoria: string): boolean {
