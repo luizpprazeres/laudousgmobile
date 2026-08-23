@@ -2,7 +2,9 @@ import type {
   AbdomenFinding,
   AbdomenOrganKey,
   AbdomenOrganState,
+  AbdomenTotalFindings,
 } from "../findingsSchemas/ABDOMEN_TOTAL";
+import { ABDOMEN_ORGAN_KEYS } from "../findingsSchemas/ABDOMEN_TOTAL";
 
 /**
  * DET-5 — Biblioteca de frases de ABDOMEN_TOTAL, transcrita das regras
@@ -508,4 +510,129 @@ export function assembleAbdomenObjetivo(args: {
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+// ---------------------------------------------------------------------------
+// Montagem SÍNCRONA do clássico — o caminho da web
+// ---------------------------------------------------------------------------
+
+/**
+ * O CLÁSSICO DO ABDOME, sem o slot livre — para o caminho do catálogo.
+ *
+ * ## Por que esta função existe
+ *
+ * O abdome é a única categoria cuja máscara do laudo mora no BANCO
+ * (`report_template_variants.template_body`, com slots `{{orgao:figado|…}}`),
+ * e não no código. O renderer não escreve o laudo: ele preenche a máscara.
+ *
+ * No aplicativo isso é montado dentro de `pipeline/renderer.ts`, e de lá não
+ * dá para reusar: aquele caminho é `async` porque chama `renderFreeSlots`, que
+ * usa LLM para transformar em prosa os achados que não cabem no catálogo
+ * fechado (`tipo: "outro"`). O catálogo — que a web usa — é síncrono e puro
+ * de propósito.
+ *
+ * ## Por que a web não precisa do slot livre
+ *
+ * O slot existe porque o DITADO produz o inesperado: o médico fala algo que o
+ * catálogo não tem, e o LLM vira aquilo em frase de laudo. Na web ele DIGITA,
+ * e o que ele digitou já é a frase. Passar isso por um LLM seria o navegador
+ * ganhar um segundo autor, não-determinístico — exatamente o que a regra do
+ * §3.2 impede.
+ *
+ * O dado sustenta: em 843 abdomes reais de 90 dias, ZERO usaram o slot livre
+ * (medido em 22/08). O catálogo fechado deu conta de todos.
+ *
+ * Achado com `tipo: "outro"` aqui entra pelo verbatim do médico, sem polimento.
+ * Se um dia a web precisar de polimento, ele NÃO deve vir para cá — o lugar
+ * dele é antes, na tela, com o médico vendo o que foi reescrito.
+ */
+const ORGAN_SLOT_RE_SYNC = /\{\{orgao:([a-z_]+)\|([\s\S]*?)\}\}/g;
+
+export function renderAbdomenTotalClassico(
+  f: AbdomenTotalFindings,
+  templateBody: string,
+): string {
+  /**
+   * ⚠️ O `outro` NÃO PODE SUMIR.
+   *
+   * `renderOrgan` empurra `tipo: "outro"` para `freeSlotFindings`, esperando
+   * que alguém os transforme em prosa — no app, o LLM. Aqui não há LLM, e
+   * ignorá-los faria o achado que o médico escreveu desaparecer do laudo sem
+   * erro nenhum: o pior modo de falhar deste sistema, e o que os gates de
+   * todas as categorias perseguem.
+   *
+   * Então o verbatim dele entra como está. Não é polido, e é de propósito: na
+   * web o médico DIGITA, e o que ele digitou já é a frase do laudo. Polir
+   * seria o navegador ganhar um segundo autor.
+   */
+  const verbatimDoOutro = (r: OrganRender): string[] =>
+    r.freeSlotFindings
+      .map((x) => (x.descricao_livre ?? x.termo_do_medico ?? "").trim())
+      .filter((t) => t !== "")
+      .map((t) => `${t.charAt(0).toUpperCase()}${t.slice(1).replace(/\.+$/, "")}.`);
+
+  const organRenders = new Map<AbdomenOrganKey, OrganRender>();
+  for (const organ of ABDOMEN_ORGAN_KEYS) {
+    organRenders.set(organ, renderOrgan(organ, f.orgaos[organ]));
+  }
+  const extraRenders = f.achados_extra_abdominais.map(renderExtraAbdominal);
+
+  /**
+   * A CONCLUSÃO SEGUE A ORDEM DOS SLOTS DO TEMPLATE, não a dos órgãos no
+   * schema — é a ordem em que o médico lê o corpo. Idêntico ao pipeline.
+   */
+  const slotOrder = [...templateBody.matchAll(ORGAN_SLOT_RE_SYNC)].map(
+    (m) => m[1] as AbdomenOrganKey,
+  );
+  const conclusaoItens: string[] = [];
+  const organFinalText = new Map<string, string>();
+  for (const organKey of slotOrder) {
+    const r = organRenders.get(organKey);
+    if (!r) continue;
+    conclusaoItens.push(...r.conclusao);
+    const linhas = [r.body, ...verbatimDoOutro(r)].filter((x): x is string => !!x);
+    if (linhas.length > 0) organFinalText.set(organKey, linhas.join("\n"));
+  }
+
+  /**
+   * Órgão com achado e SEM slot neste template. Não acontece nos templates de
+   * hoje (têm os 11), mas a conclusão nunca pode se perder por causa de uma
+   * máscara editada — o corpo vai para as linhas extras.
+   */
+  const extraLines: string[] = [];
+  for (const organ of ABDOMEN_ORGAN_KEYS) {
+    if (slotOrder.includes(organ)) continue;
+    const r = organRenders.get(organ);
+    if (!r) continue;
+    if (r.body) extraLines.push(r.body);
+    extraLines.push(...verbatimDoOutro(r));
+    conclusaoItens.push(...r.conclusao);
+  }
+  for (const r of extraRenders) {
+    if (r.body) extraLines.push(r.body);
+    extraLines.push(...verbatimDoOutro(r));
+    conclusaoItens.push(...r.conclusao);
+  }
+
+  const conclusao =
+    conclusaoItens.length === 0
+      ? CONCLUSAO_TODOS_NORMAIS
+      : [...conclusaoItens, CONCLUSAO_FECHAMENTO]
+          .map((item, i) => `${i + 1}. ${item}`)
+          .join("\n");
+
+  /** Passo ÚNICO: o que se insere nunca é re-escaneado. */
+  const COMBINED = /\{\{orgao:([a-z_]+)\|([\s\S]*?)\}\}|\{\{extra_abdominais\}\}\n?|\{\{conclusao\}\}/g;
+  const body = templateBody.replace(
+    COMBINED,
+    (match, organKey: string | undefined, defaultText: string | undefined) => {
+      if (organKey !== undefined) return organFinalText.get(organKey) ?? defaultText ?? "";
+      if (match.startsWith("{{extra_abdominais}}")) {
+        return extraLines.length > 0 ? `${extraLines.join("\n")}\n` : "";
+      }
+      return conclusao;
+    },
+  );
+
+  return body.replace(/\n+(?=CONCLUSÃO:)/g, "\n\n").trim();
 }

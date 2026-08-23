@@ -25,9 +25,20 @@ import { ProstataSuprapubicaFindingsSchema, renderProstataSuprapubica } from "..
 import { TireoideFindingsSchema, renderTireoide } from "../categories/TIREOIDE";
 import { ViasUrinariasFindingsSchema, renderViasUrinarias } from "../categories/VIAS_URINARIAS";
 import { ObstetricaFindingsSchema, renderObstetrica } from "../categories/OBSTETRICA";
+import {
+  ABDOMEN_ORGAN_KEYS,
+  AbdomenTotalFindingsSchema,
+} from "../findingsSchemas/ABDOMEN_TOTAL";
+import { renderAbdomenTotalClassico } from "../phrases/ABDOMEN_TOTAL";
 import { DopplerObstetricoFindingsSchema, renderDopplerObstetrico } from "../categories/DOPPLER_OBSTETRICO";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+/** O que o renderer precisa e não está no código nem no que o médico digitou. */
+export type ContextoDeRender = {
+  /** Máscara do laudo, de `report_template_variants`. Só o abdome usa. */
+  templateBody?: string | null;
+};
 
 export type EntradaModeloNormal = {
   categoria: string;
@@ -45,7 +56,22 @@ export type EntradaModeloNormal = {
    * não tem como conferir nem personalizar a outra metade.
    */
   cenarios?: { nome: string; seed: Record<string, unknown> }[];
-  render: (findings: any, opts: { objetivo: boolean }) => string;
+  /**
+   * `ctx` carrega o que NÃO vem do código nem do médico.
+   *
+   * Hoje só o ABDOMEN_TOTAL usa: a máscara do laudo dele mora em
+   * `report_template_variants.template_body`, no banco, e o renderer preenche
+   * slots (`{{orgao:figado|…}}`) em vez de montar o texto inteiro. As outras
+   * doze têm a máscara no próprio código e ignoram o `ctx`.
+   *
+   * Fica OPCIONAL de propósito: uma categoria que precise de máscara e não a
+   * receba deve devolver `null` (laudo nenhum), nunca um laudo pela metade.
+   */
+  render: (
+    findings: any,
+    opts: { objetivo: boolean },
+    ctx?: ContextoDeRender,
+  ) => string | null;
 };
 
 /** Um feto normal — o mínimo para o schema obstétrico passar no `.min(1)`. */
@@ -57,7 +83,48 @@ const FETO_NORMAL = {
   cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: null,
 };
 
+/** Os 11 órgãos, todos normais — o modelo do abdome sem achado nenhum. */
+const ABDOMEN_ORGAOS_NORMAIS = Object.fromEntries(
+  ABDOMEN_ORGAN_KEYS.map((k) => [k, { status: "normal", achados: [] }]),
+);
+
 export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
+  {
+    categoria: "ABDOMEN_TOTAL", rotulo: "Abdome total",
+    schema: AbdomenTotalFindingsSchema,
+    seed: {
+      orgaos: ABDOMEN_ORGAOS_NORMAIS,
+      achados_extra_abdominais: [],
+      observacoes_do_medico: "",
+    },
+    cenarios: [
+      {
+        nome: "Modelo padrão",
+        seed: {
+          orgaos: ABDOMEN_ORGAOS_NORMAIS,
+          achados_extra_abdominais: [],
+          observacoes_do_medico: "",
+        },
+      },
+    ],
+    /**
+     * A ÚNICA categoria que não monta o laudo sozinha.
+     *
+     * A máscara dela mora em `report_template_variants.template_body` e o
+     * renderer preenche slots. Sem a máscara não há laudo — devolver `null` é
+     * o certo: um abdome sem os slots preenchidos sairia como um texto solto
+     * de frases, sem título nem seções, e pareceria um laudo.
+     *
+     * Só o CLÁSSICO por enquanto. O objetivo tem `assembleAbdomenObjetivo`,
+     * que é código puro e migra sem máscara — fica para a próxima leva.
+     */
+    render: (f, o, ctx) => {
+      if (o.objetivo) return null;
+      const tpl = ctx?.templateBody;
+      if (!tpl || tpl.trim() === "") return null;
+      return renderAbdomenTotalClassico(f, tpl);
+    },
+  },
   {
     categoria: "OBSTETRICA", rotulo: "Obstétrica", schema: ObstetricaFindingsSchema,
     seed: { numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL] },
@@ -262,6 +329,7 @@ export function laudoPadraoDe(
   categoria: string,
   estilo: string,
   seedExtra?: Record<string, unknown>,
+  ctx?: ContextoDeRender,
 ): string | null {
   const m = modeloNormalDe(categoria);
   if (!m) return null;
@@ -282,8 +350,13 @@ export function laudoPadraoDe(
     );
     const parsed = (m.schema as any).safeParse(bruto);
     if (!parsed.success) return null;
-    const texto = m.render(parsed.data, { objetivo: estilo === "OBJETIVO" });
-    return texto.trim() === "" ? null : texto;
+    const texto = m.render(parsed.data, { objetivo: estilo === "OBJETIVO" }, ctx);
+    /**
+     * `null` do renderer é resposta legítima, não falha: é como uma categoria
+     * diz "me falta o que preciso" — hoje, o abdome sem a máscara do banco.
+     * Laudo pela metade seria pior que laudo nenhum.
+     */
+    return texto === null || texto.trim() === "" ? null : texto;
   } catch {
     return null;
   }

@@ -19,6 +19,7 @@ import { adaptarPelve } from '@/lib/catalog/pelveParaCatalogo'
 import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
 import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
+import { adaptarAbdome } from '@/lib/catalog/abdomeParaCatalogo'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
@@ -231,6 +232,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'OBSTETRICA') {
       return adaptarObstetrica((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'ABDOMEN_TOTAL') {
+      return adaptarAbdome((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
     if (categoria === 'MORFOLOGICO') {
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>

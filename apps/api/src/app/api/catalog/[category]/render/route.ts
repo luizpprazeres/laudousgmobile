@@ -3,6 +3,8 @@ import { z } from "zod";
 import { autorizarServico } from "@/server/catalog-api/auth";
 import { ehEstiloVivo } from "@/server/renderer/catalog/registry";
 import { renderizarSelecao } from "@/server/renderer/catalog/alteracoes";
+import { getDbClient, schema } from "@laudousg/db";
+import { and, eq } from "drizzle-orm";
 import { alteracoesDe } from "@/server/renderer/catalog/alteracoes/index";
 
 export const runtime = "nodejs";
@@ -79,11 +81,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
    * consumidor interno novo reabriria o caminho sem tocar no arquivo que
    * documenta a regra. O que sobra aqui é traduzir a recusa para HTTP.
    */
+  /**
+   * A MÁSCARA DO ABDOME, do banco.
+   *
+   * É a única categoria cujo layout do laudo não está no código:
+   * `report_template_variants.template_body` traz os slots
+   * (`{{orgao:figado|…}}`) e o renderer os preenche. As outras doze montam o
+   * texto inteiro e ignoram este contexto.
+   *
+   * Busca-se aqui, na rota, porque `renderizarSelecao` é SÍNCRONO de propósito
+   * — o núcleo do catálogo não faz E/S. Sem máscara o renderer devolve `null`,
+   * e a rota responde 404: melhor nenhum laudo que um sem título nem seções.
+   */
+  const contexto = await contextoDeRender(category, corpo.estilo);
+
   const r = renderizarSelecao(
     category,
     corpo.estilo,
     escolhidas.filter((s) => s !== undefined),
     corpo.dados,
+    contexto,
   );
 
   if (!r.ok) {
@@ -121,4 +138,51 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
     alteracoes: corpo.alteracoes,
     laudo: r.texto,
   });
+}
+
+/**
+ * O contexto que o renderer precisa e não está no código.
+ *
+ * Hoje só a máscara do ABDOMEN_TOTAL. Devolve `{}` para as demais — nada de
+ * consulta inútil ao banco em doze categorias que a ignoram.
+ */
+async function contextoDeRender(
+  categoria: string,
+  estilo: string,
+): Promise<{ templateBody?: string | null }> {
+  if (categoria !== "ABDOMEN_TOTAL") return {};
+
+  /**
+   * O `code` é enum no schema, e isso é bom: obriga a validar em vez de
+   * confiar na string que chegou. Estilo desconhecido devolve máscara nula, e
+   * o renderer recusa — em vez de a consulta sair vazia por engano e o erro
+   * aparecer três camadas adiante.
+   */
+  const ESTILOS = ["CLASSICO_COMPLETO", "OBJETIVO", "DIRETO_OBJETIVO", "DETALHADO_PROTOCOLAR"] as const;
+  type EstiloCode = (typeof ESTILOS)[number];
+  if (!(ESTILOS as readonly string[]).includes(estilo)) return { templateBody: null };
+
+  const db = getDbClient();
+  const [linha] = await db
+    .select({ tpl: schema.reportTemplateVariants.templateBody })
+    .from(schema.reportTemplateVariants)
+    .innerJoin(
+      schema.writingStyles,
+      eq(schema.writingStyles.id, schema.reportTemplateVariants.writingStyleId),
+    )
+    .where(
+      and(
+        eq(schema.reportTemplateVariants.categoryCode, categoria),
+        eq(schema.writingStyles.code, estilo as EstiloCode),
+        /**
+         * `padrao` fixo: a variante `doppler` existe, e a tela da web não tem
+         * o controle que a escolheria. Escolher `doppler` sem o médico ter
+         * pedido acrescentaria um bloco de velocidades que ninguém mediu.
+         */
+        eq(schema.reportTemplateVariants.variantKey, "padrao"),
+        eq(schema.reportTemplateVariants.status, "validated"),
+      ),
+    )
+    .limit(1);
+  return { templateBody: linha?.tpl ?? null };
 }

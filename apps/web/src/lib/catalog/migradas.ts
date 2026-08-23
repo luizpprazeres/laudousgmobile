@@ -17,6 +17,7 @@
  * | MAMARIA | 21/08 | `mamaria-ponta-a-ponta.manual.ts` |
  * | OBSTETRICA | 22/08 | `obstetrica-ponta-a-ponta.manual.ts` |
  * | MORFOLOGICO | 22/08 | `morfologico-ponta-a-ponta.manual.ts` |
+ * | ABDOMEN_TOTAL | 23/08 | `abdome-ponta-a-ponta.manual.ts` — só o CLÁSSICO |
  */
 export const CATEGORIAS_MIGRADAS = [
   "TIREOIDE",
@@ -24,6 +25,7 @@ export const CATEGORIAS_MIGRADAS = [
   "MAMARIA",
   "OBSTETRICA",
   "MORFOLOGICO",
+  "ABDOMEN_TOTAL",
 ] as const
 
 export function categoriaMigrada(categoria: string): boolean {

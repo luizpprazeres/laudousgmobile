@@ -429,6 +429,8 @@ export function renderizarSelecao(
    * então um cliente não consegue injetar campo que a categoria não tem.
    */
   dados?: Record<string, unknown>,
+  /** Repassado ao renderer — hoje só a máscara do abdome. Ver `ContextoDeRender`. */
+  ctx?: { templateBody?: string | null },
 ): SelecaoRenderizada {
   const invalidas = selecaoInvalida(estilo, specs);
   if (invalidas.length > 0) return { ok: false, conflitos: invalidas };
@@ -456,13 +458,13 @@ export function renderizarSelecao(
   if (apagados.length > 0) return { ok: false, conflitos: apagados };
   const vazio = specs.length === 0 && (dados === undefined || Object.keys(dados).length === 0);
   const texto = vazio
-    ? laudoPadraoDe(categoria, estilo)
+    ? laudoPadraoDe(categoria, estilo, undefined, ctx)
     : /**
        * COM DADO DO MÉDICO não se mascara: o `____` existe para esconder o
        * número que EU inventei no cenário. O que ele mediu é o laudo.
        */
       dados && Object.keys(dados).length > 0
-      ? laudoPadraoDe(categoria, estilo, seed)
+      ? laudoPadraoDe(categoria, estilo, seed, ctx)
       : laudoDaAlteracao(categoria, estilo, seed);
   if (!texto) return { ok: false, erro: "esta combinação não pôde ser renderizada" };
   return { ok: true, texto };
