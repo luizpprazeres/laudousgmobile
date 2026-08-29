@@ -15,12 +15,21 @@ import {
   resolveCatalogo,
   type EntradaCatalogo,
 } from "@/server/renderer/catalog/registry";
+import { contextoDeRender } from "@/server/renderer/catalog/contextoDeRender";
+import type { ContextoDeRender } from "@/server/renderer/catalog/modeloNormalRegistry";
 import { CustomizationError, type Chave } from "./store";
 import { personalizacaoAtiva } from "./ativa";
 
 export type Contexto = {
   chave: Chave;
   entrada: EntradaCatalogo;
+  /**
+   * O que o renderer precisa e não está no código — hoje só a máscara do
+   * abdome. Sai junto porque quem renderiza DE NOVO precisa dele: a coluna de
+   * exemplo da Biblioteca chama `laudoPadraoDe` outra vez, e sem o contexto
+   * mostraria o modelo com o exemplo vazio.
+   */
+  contexto: ContextoDeRender;
 };
 
 /**
@@ -57,7 +66,18 @@ export async function resolverContexto(
     };
   }
 
-  const entrada = resolveCatalogo(category, estilo);
+  /**
+   * A MÁSCARA, para as categorias que a exigem.
+   *
+   * Sem ela o ABDOMEN_TOTAL não produz modelo — `laudoDoCenario` devolve
+   * `null`, a lista sai vazia, e a Biblioteca respondia 404 numa categoria que
+   * já estava migrada no `/render`. O médico via a categoria funcionando ao
+   * gerar e sumida ao personalizar.
+   *
+   * As outras doze não fazem consulta: `contextoDeRender` devolve `{}` e sai.
+   */
+  const contexto = await contextoDeRender(category, estilo);
+  const entrada = resolveCatalogo(category, estilo, contexto);
   if (!entrada) {
     // A mensagem distingue os dois casos, porque a ação do médico é diferente:
     // categoria sem catálogo nenhum × categoria que tem catálogo noutro estilo.
@@ -96,6 +116,12 @@ export async function resolverContexto(
   return {
     chave: { userId: user.id, categoryCode: category, styleCode: estilo },
     entrada,
+    /**
+     * O contexto sai junto para quem for renderizar de novo — a coluna de
+     * exemplo da Biblioteca faz isso, e sem ele o abdome mostraria o modelo
+     * com o exemplo vazio.
+     */
+    contexto,
   };
 }
 

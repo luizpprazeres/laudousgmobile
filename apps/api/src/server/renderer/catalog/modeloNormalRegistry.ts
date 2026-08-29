@@ -385,9 +385,10 @@ export function laudoDoCenario(
   categoria: string,
   estilo: string,
   seed: Record<string, unknown>,
+  ctx?: ContextoDeRender,
 ): string | null {
   const m = modeloNormalDe(categoria);
-  const a = laudoPadraoDe(categoria, estilo, seed);
+  const a = laudoPadraoDe(categoria, estilo, seed, ctx);
   if (!a) return null;
   /**
    * Varia o seed COMPLETO — o da categoria mais o do cenário.
@@ -403,7 +404,13 @@ export function laudoDoCenario(
    * passariam a partir de bases diferentes e a máscara por comparação marcaria
    * como "dado variável" um campo que só mudou porque o B o perdeu.
    */
-  const b = laudoPadraoDe(categoria, estilo, variarSeed(mesclarFundo(m?.seed ?? {}, seed)));
+  /**
+   * O CONTEXTO VAI NOS DOIS RENDERS. Sem ele aqui, o `b` do ABDOMEN_TOTAL saía
+   * `null` (sem máscara não há laudo), o fail-closed abaixo derrubava o cenário
+   * e a categoria ficava sem modelo — a Biblioteca respondia 404 numa categoria
+   * que renderiza perfeitamente. O fail-closed estava certo; faltava o dado.
+   */
+  const b = laudoPadraoDe(categoria, estilo, variarSeed(mesclarFundo(m?.seed ?? {}, seed)), ctx);
   /**
    * FAIL-CLOSED (achado do Codex, 19/08).
    *

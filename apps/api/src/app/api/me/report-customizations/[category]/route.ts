@@ -216,10 +216,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ category: strin
          * Os valores vêm de `exemplos.ts` — o único lugar do sistema onde é
          * certo inventar medida, porque isto nunca vira laudo.
          */
-        exemplo: laudoPadraoDe(category, r.chave.styleCode, {
-          ...c.seed,
-          ...sementeDeExemplo(category, c.nome),
-        }),
+        exemplo: laudoPadraoDe(
+          category,
+          r.chave.styleCode,
+          { ...c.seed, ...sementeDeExemplo(category, c.nome) },
+          /**
+           * O contexto vai aqui também. Sem ele o abdome mostraria o MODELO e
+           * a coluna de exemplo vazia — meia tela, que é o tipo de coisa que
+           * o médico interpreta como defeito da personalização dele.
+           */
+          r.contexto,
+        ),
       })),
       rascunho: estado.rascunho,
       publicado: estado.publicado,

@@ -17,7 +17,13 @@
  */
 import { createHash } from "node:crypto";
 import { buildDoc, serialize } from "./engine";
-import { cenariosDe, laudoDoCenario, laudoPadraoDe, modeloNormalDe } from "./modeloNormalRegistry";
+import {
+  cenariosDe,
+  laudoDoCenario,
+  laudoPadraoDe,
+  modeloNormalDe,
+  type ContextoDeRender,
+} from "./modeloNormalRegistry";
 import { contarDados, linhasDoLaudo, type LinhaModelo } from "./modeloNormal";
 import { linhasDeLaudoPadrao } from "./projetarModelo";
 import type { Catalog, Slot } from "./types";
@@ -72,8 +78,17 @@ export type EntradaDerivada = {
  *
  * 0 continua reservado para "não foi possível derivar".
  */
-export function versaoDerivadaDe(categoria: string, estilo: string): number {
-  const laudo = laudoPadraoDe(categoria, estilo);
+export function versaoDerivadaDe(
+  categoria: string,
+  estilo: string,
+  /**
+   * Sem o contexto a versão do ABDOMEN_TOTAL sairia de um modelo vazio — e
+   * duas máscaras diferentes teriam a mesma impressão digital, que é
+   * exatamente o que esta função existe para impedir.
+   */
+  ctx?: ContextoDeRender,
+): number {
+  const laudo = laudoPadraoDe(categoria, estilo, undefined, ctx);
   if (!laudo) return 0;
 
   /**
@@ -91,7 +106,7 @@ export function versaoDerivadaDe(categoria: string, estilo: string): number {
   const partes = [`${categoria}/${estilo}`];
   for (const l of linhasDoLaudo(laudo)) partes.push(`padrao|${l.secao}|${l.id}`);
   for (const c of cenariosDe(categoria)) {
-    const outro = laudoDoCenario(categoria, estilo, c.seed);
+    const outro = laudoDoCenario(categoria, estilo, c.seed, ctx);
     if (!outro) continue;
     for (const l of linhasDoLaudo(outro)) partes.push(`${c.nome}|${l.secao}|${l.id}`);
   }
@@ -101,10 +116,20 @@ export function versaoDerivadaDe(categoria: string, estilo: string): number {
   return (parseInt(hex, 16) % 0x7ffffffe) + 1;
 }
 
-export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDerivada | null {
+export function catalogoDerivadoDe(
+  categoria: string,
+  estilo: string,
+  /**
+   * O que o renderer precisa e não está no código — hoje só a máscara do
+   * abdome. Sem ele, `laudoDoCenario` devolve `null` para o ABDOMEN_TOTAL, a
+   * lista de modelos sai vazia e a Biblioteca responde 404. Era exatamente o
+   * que acontecia até 24/08.
+   */
+  ctx?: ContextoDeRender,
+): EntradaDerivada | null {
   const m = modeloNormalDe(categoria);
   if (!m) return null;
-  const laudo = laudoPadraoDe(categoria, estilo);
+  const laudo = laudoPadraoDe(categoria, estilo, undefined, ctx);
   if (!laudo) return null;
 
   const linhas = linhasDoLaudo(laudo);
@@ -128,7 +153,7 @@ export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDe
   const extras: LinhaModelo[] = [];
   const vistos = new Set(linhas.map((l) => l.id));
   for (const c of cenariosDe(categoria)) {
-    const outro = laudoDoCenario(categoria, estilo, c.seed);
+    const outro = laudoDoCenario(categoria, estilo, c.seed, ctx);
     if (!outro) continue;
     for (const l of linhasDoLaudo(outro)) {
       if (vistos.has(l.id)) continue;
@@ -142,7 +167,7 @@ export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDe
     categoria,
     estilo,
     /** Impressão digital do modelo de hoje — ver `versaoDerivadaDe`. */
-    versao: versaoDerivadaDe(categoria, estilo),
+    versao: versaoDerivadaDe(categoria, estilo, ctx),
     derivado: true,
     variaveis: [],
     titulo: () => titulo,
@@ -170,7 +195,7 @@ export function catalogoDerivadoDe(categoria: string, estilo: string): EntradaDe
     /** As LINHAS de cada cenário — é o que a tela desenha. */
     projetarModelos: () =>
       cenariosDe(categoria)
-        .map((c) => ({ nome: c.nome, laudo: laudoDoCenario(categoria, estilo, c.seed) }))
+        .map((c) => ({ nome: c.nome, laudo: laudoDoCenario(categoria, estilo, c.seed, ctx) }))
         .filter((c): c is { nome: string; laudo: string } => c.laudo !== null)
         .map((c) => ({ nome: c.nome, linhas: linhasDeLaudoPadrao(c.laudo) })),
     samples: [{

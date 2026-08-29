@@ -112,10 +112,15 @@ export function chaveDe(categoria: string, estilo: string): string {
  * Para as demais, a entrada é montada do modelo normal — e é isso que faz a
  * Biblioteca deixar de mostrar só OBSTETRICA. Ver `modeloNormalCatalog.ts`.
  */
-export function resolveCatalogo(categoria: string, estilo: string): EntradaCatalogo | undefined {
+export function resolveCatalogo(
+  categoria: string,
+  estilo: string,
+  /** Repassado ao modelo derivado — ver `ContextoDeRender`. */
+  ctx?: { templateBody?: string | null },
+): EntradaCatalogo | undefined {
   const estruturado = CATALOGOS[chaveDe(categoria, estilo)];
   if (estruturado) return estruturado;
-  return (catalogoDerivadoDe(categoria, estilo) as EntradaCatalogo | null) ?? undefined;
+  return (catalogoDerivadoDe(categoria, estilo, ctx) as EntradaCatalogo | null) ?? undefined;
 }
 
 /** A categoria é servida pelo modelo derivado (e não por catálogo escrito)? */
