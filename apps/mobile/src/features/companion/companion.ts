@@ -54,7 +54,11 @@ export async function restoreCompanionConnection(): Promise<CompanionConnection 
   return data ? { sessionId: data.id as string, expiresAt: data.expires_at as string } : null
 }
 
-export async function sendCompanionText(connection: CompanionConnection, text: string): Promise<void> {
+export async function sendCompanionEntry(
+  connection: CompanionConnection,
+  text: string,
+  kind: 'text' | 'transcript' = 'text',
+): Promise<void> {
   const content = text.trim()
   if (!content) throw new Error('Digite uma mensagem para a auxiliar.')
   if (content.length > 2000) throw new Error('A mensagem deve ter no máximo 2.000 caracteres.')
@@ -65,8 +69,14 @@ export async function sendCompanionText(connection: CompanionConnection, text: s
   const { error } = await supabase.from('companion_events').insert({
     session_id: connection.sessionId,
     user_id: auth.user.id,
-    kind: 'text',
+    kind,
     payload: { text: content },
   })
   if (error) throw new Error('Não foi possível enviar. Confirme se a sessão ainda está aberta.')
 }
+
+export const sendCompanionText = (connection: CompanionConnection, text: string) =>
+  sendCompanionEntry(connection, text, 'text')
+
+export const sendCompanionTranscript = (connection: CompanionConnection, text: string) =>
+  sendCompanionEntry(connection, text, 'transcript')

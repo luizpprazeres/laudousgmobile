@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import * as Haptics from 'expo-haptics'
+import * as FileSystem from 'expo-file-system'
+import type { Audio } from 'expo-av'
 import { Sheet } from '@/ui/Sheet'
 import { FONT, type ColorTokens } from '@/ui/tokens'
 import { useColorTokens } from '@/ui/useColorTokens'
-import { connectCompanion, restoreCompanionConnection, sendCompanionText, type CompanionConnection } from './companion'
+import { ensureMicPermission, startRecording, stopRecording, uploadAudio } from '@/features/generate/transcribe'
+import { connectCompanion, restoreCompanionConnection, sendCompanionText, sendCompanionTranscript, type CompanionConnection } from './companion'
 
 type Props = { open: boolean; onClose: () => void }
 
@@ -17,16 +20,62 @@ export function CompanionSheet({ open, onClose }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
+  const [dictated, setDictated] = useState(false)
+  const [recording, setRecording] = useState<Audio.Recording | null>(null)
+  const [recordingSeconds, setRecordingSeconds] = useState(0)
+  const [transcribing, setTranscribing] = useState(false)
+  const recordingRef = useRef<Audio.Recording | null>(null)
 
   useEffect(() => {
     if (!open || connection) return
     restoreCompanionConnection().then(setConnection).catch(() => undefined)
   }, [connection, open])
 
+  useEffect(() => () => {
+    const current = recordingRef.current
+    if (!current) return
+    recordingRef.current = null
+    stopRecording(current)
+      .then((uri) => FileSystem.deleteAsync(uri, { idempotent: true }))
+      .catch(() => undefined)
+  }, [])
+
   const run = async (action: () => Promise<void>) => {
     setBusy(true)
     setError(null)
     try { await action() } catch (e) { setError(e instanceof Error ? e.message : String(e)) } finally { setBusy(false) }
+  }
+
+  const toggleRecording = async () => {
+    if (!recordingRef.current) {
+      await run(async () => {
+        await ensureMicPermission()
+        const next = await startRecording((_level, durationMillis) => setRecordingSeconds(Math.floor(durationMillis / 1000)))
+        recordingRef.current = next
+        setRecording(next)
+        setRecordingSeconds(0)
+        setSent(false)
+      })
+      return
+    }
+
+    const current = recordingRef.current
+    recordingRef.current = null
+    setRecording(null)
+    setTranscribing(true)
+    setError(null)
+    let uri: string | null = null
+    try {
+      uri = await stopRecording(current)
+      const result = await uploadAudio(uri)
+      setMessage(result.transcript)
+      setDictated(true)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      if (uri) await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined)
+      setTranscribing(false)
+    }
   }
 
   return (
@@ -48,14 +97,25 @@ export function CompanionSheet({ open, onClose }: Props) {
               style={styles.messageInput}
             />
             <Pressable
-              disabled={busy || !message.trim()}
+              disabled={busy || transcribing}
+              onPress={toggleRecording}
+              style={({ pressed }) => [styles.record, recording && styles.recording, (pressed || busy || transcribing) && { opacity: 0.6 }]}
+            >
+              {transcribing
+                ? <ActivityIndicator color={t.brand} />
+                : <Text style={[styles.recordText, recording && styles.recordingText]}>{recording ? `Parar ditado (${recordingSeconds}s)` : 'Ditar para a web'}</Text>}
+            </Pressable>
+            {transcribing ? <Text style={styles.helper}>Transcrevendo… o áudio será descartado após esta etapa.</Text> : null}
+            <Pressable
+              disabled={busy || transcribing || Boolean(recording) || !message.trim()}
               onPress={() => run(async () => {
-                await sendCompanionText(connection, message)
+                await (dictated ? sendCompanionTranscript(connection, message) : sendCompanionText(connection, message))
                 setMessage('')
+                setDictated(false)
                 setSent(true)
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined)
               })}
-              style={({ pressed }) => [styles.primary, (pressed || busy || !message.trim()) && { opacity: 0.55 }]}
+              style={({ pressed }) => [styles.primary, (pressed || busy || transcribing || Boolean(recording) || !message.trim()) && { opacity: 0.55 }]}
             >
               {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Enviar para a web</Text>}
             </Pressable>
@@ -97,6 +157,11 @@ function makeStyles(t: ColorTokens) {
     body: { fontFamily: FONT.body, fontSize: 14, lineHeight: 20, color: t.text2 },
     codeInput: { height: 64, borderRadius: 18, borderWidth: 1, borderColor: t.separator, color: t.text, fontFamily: FONT.bold, fontSize: 28, letterSpacing: 5, textAlign: 'center', backgroundColor: t.card },
     messageInput: { minHeight: 130, borderRadius: 18, borderWidth: 1, borderColor: t.separator, color: t.text, fontFamily: FONT.body, fontSize: 15, padding: 16, textAlignVertical: 'top', backgroundColor: t.card },
+    record: { minHeight: 46, borderRadius: 16, borderWidth: 1, borderColor: t.brand, alignItems: 'center', justifyContent: 'center', backgroundColor: t.card },
+    recording: { borderColor: t.danger },
+    recordText: { color: t.brand, fontFamily: FONT.bold, fontSize: 14 },
+    recordingText: { color: t.danger },
+    helper: { color: t.text2, textAlign: 'center', fontFamily: FONT.body, fontSize: 12 },
     primary: { minHeight: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: t.brand },
     primaryText: { color: '#fff', fontFamily: FONT.bold, fontSize: 15 },
     okCard: { borderRadius: 16, padding: 16, gap: 6, backgroundColor: t.brandLight },

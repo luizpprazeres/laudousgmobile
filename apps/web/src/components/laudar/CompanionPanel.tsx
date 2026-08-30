@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Copy, Loader2, RefreshCw, Smartphone, X } from 'lucide-react'
+import { Check, Copy, Loader2, Mic, RefreshCw, Smartphone, X } from 'lucide-react'
 import {
   createCompanionSession,
   latestCompanionSession,
@@ -73,6 +73,7 @@ export function CompanionPanel({ open, onClose, onApplyText }: Props) {
             <div className="mt-4 space-y-2">
               {events.length === 0 ? <p className="rounded-2xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-400 dark:border-gray-700">Aguardando uma entrada do médico.</p> : events.map((event) => (
                 <div key={event.id} className="rounded-2xl border border-gray-200 p-3 dark:border-gray-700">
+                  {event.kind === 'transcript' ? <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-300"><Mic className="h-3 w-3" /> Ditado do médico</p> : null}
                   <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-200">{event.payload.text || 'Entrada sem texto'}</p>
                   <div className="mt-3 flex justify-end gap-2">
                     <button type="button" onClick={() => run(() => resolveCompanionEvent(event.id, 'dismissed'))} className="inline-flex h-8 items-center gap-1 rounded-full border border-gray-200 px-3 text-xs font-semibold text-gray-500 dark:border-gray-700"><X className="h-3 w-3" /> Descartar</button>
@@ -89,4 +90,3 @@ export function CompanionPanel({ open, onClose, onApplyText }: Props) {
     </div>
   )
 }
-
