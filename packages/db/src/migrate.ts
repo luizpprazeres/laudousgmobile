@@ -48,6 +48,7 @@ async function main() {
     // explicitamente — e entra DEPOIS desta na lista.
     "0024_menor_privilegio_escrita.sql",
     "0025_crm_e_uf_separados.sql",
+    "0026_companion_sessions.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

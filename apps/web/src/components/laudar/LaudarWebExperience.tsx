@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, Calculator, ChevronDown, Image, Mic, RotateCcw, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Calculator, ChevronDown, Image, Mic, RotateCcw, Smartphone, Sparkles } from 'lucide-react'
 import {
   CATEGORIES,
   GENERIC_CATEGORIES,
@@ -33,6 +33,7 @@ import { LaudoPreview } from './LaudoPreview'
 import { saveWebReport } from '@/lib/webReports'
 import { categoryCompactName, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
+import { CompanionPanel } from './CompanionPanel'
 import { diffReportBlocks } from './reportSuggestion'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -298,9 +299,15 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
    */
   const [calculatorBlocksByCategory, setCalculatorBlocksByCategory] = useState<Record<string, Record<string, string>>>({})
   const calculatorBlocks = calculatorBlocksByCategory[categoria] ?? {}
+  const [companionNotesByCategory, setCompanionNotesByCategory] = useState<Record<string, string[]>>({})
+  const companionNotes = companionNotesByCategory[categoria] ?? []
   const composedText = useMemo(
-    () => [generatedText, ...Object.values(calculatorBlocks)].filter(Boolean).join('\n\n'),
-    [calculatorBlocks, generatedText]
+    () => [
+      generatedText,
+      ...Object.values(calculatorBlocks),
+      ...companionNotes.map((note) => `OBSERVAÇÃO DO MÉDICO:\n${note}`),
+    ].filter(Boolean).join('\n\n'),
+    [calculatorBlocks, companionNotes, generatedText]
   )
   const insertCalculatorBlock = (calculatorId: string, block: string) => {
     setCalculatorBlocksByCategory((all) => ({
@@ -404,6 +411,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // Persistência real (S9) — substitui o status falso. Volta a "idle" quando o
   // laudo muda (o salvo anterior fica desatualizado).
   const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [companionOpen, setCompanionOpen] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   useEffect(() => {
     setSaveState('idle')
@@ -538,6 +546,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             <ToolbarPill><Calculator className="h-4 w-4" />Cálculos</ToolbarPill>
             <ToolbarPill><Mic className="h-4 w-4" />Ditar</ToolbarPill>
             <ToolbarPill><Image className="h-4 w-4" />Imagem</ToolbarPill>
+            <ToolbarPill onClick={() => setCompanionOpen(true)}><Smartphone className="h-4 w-4" />Celular</ToolbarPill>
             <ToolbarPill tone="purple">Múltiplos</ToolbarPill>
           </>
         ) : null}
@@ -727,6 +736,14 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           />
         </div>
       </main>
+      <CompanionPanel
+        open={companionOpen}
+        onClose={() => setCompanionOpen(false)}
+        onApplyText={(text) => setCompanionNotesByCategory((all) => ({
+          ...all,
+          [categoria]: [...(all[categoria] ?? []), text],
+        }))}
+      />
     </div>
   )
 }

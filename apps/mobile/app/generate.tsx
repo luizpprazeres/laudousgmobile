@@ -47,6 +47,7 @@ import { CategorySheet } from "@/features/generate/CategorySheet";
 import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
 import { SalaPairingSheet } from "@/features/sala/SalaPairingSheet";
+import { CompanionSheet } from "@/features/companion/CompanionSheet";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
 import { CalculatorsSheet, type CalcKey } from "@/features/generate/CalculatorsSheet";
 import { IGCalculatorSheet } from "@/features/generate/IGCalculatorSheet";
@@ -107,6 +108,7 @@ export default function GenerateScreen() {
   // já que só uma abre por vez a partir do CalculatorsSheet).
   const [calcSheet, setCalcSheet] = useState<CalcKey | null>(null);
   const [salaOpen, setSalaOpen] = useState(false);
+  const [companionOpen, setCompanionOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
   // Imagens vindas do "Compartilhar → LaudoUSG" (WhatsApp/galeria) — abrem
   // a análise de USG automaticamente (B4 06/07).
@@ -792,6 +794,7 @@ export default function GenerateScreen() {
         onClose={() => setMenuOpen(false)}
         onNotice={(n) => setNotice(n)}
         onOpenSala={() => setSalaOpen(true)}
+        onOpenCompanion={() => setCompanionOpen(true)}
       />
       <ImageAnalysisSheet
         open={imageOpen}
@@ -808,6 +811,7 @@ export default function GenerateScreen() {
         open={salaOpen}
         onClose={() => setSalaOpen(false)}
       />
+      <CompanionSheet open={companionOpen} onClose={() => setCompanionOpen(false)} />
       <PlusSheet
         open={plusOpen}
         onClose={() => setPlusOpen(false)}
