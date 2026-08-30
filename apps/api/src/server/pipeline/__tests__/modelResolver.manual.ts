@@ -16,6 +16,7 @@ const baseEnv = {
   TESTE_REASONING_EFFORT: "low",
   TESTE_ALLOWED_USER_ID: "luiz",
   RENDERER_CATEGORIES: "ABDOMEN_TOTAL,TIREOIDE",
+  DOPPLER_STANDALONE_V2: "true",
 };
 
 let passed = 0;
@@ -134,15 +135,21 @@ check(
     standardRenderer.guardsMode === "full",
 );
 
-const standardWriter = resolveGenerationPath(
+const dopplerV2 = resolveGenerationPath(
   { mode: "standard", categoryCode: "DOPPLER_OBSTETRICO" },
   baseEnv,
 );
 check(
-  "standard fora da flag usa writer com comportamento atual",
-  standardWriter.path === "writer-pure" &&
-    standardWriter.ragFewShots &&
-    standardWriter.guardsMode === "full",
+  "Doppler v2 usa renderer mesmo fora da allowlist histórica",
+  dopplerV2.path === "renderer" && dopplerV2.guardsMode === "full",
+);
+const dopplerRollback = resolveGenerationPath(
+  { mode: "standard", categoryCode: "DOPPLER_OBSTETRICO" },
+  { ...baseEnv, DOPPLER_STANDALONE_V2: "false" },
+);
+check(
+  "Doppler v2 tem rollback explícito para o writer",
+  dopplerRollback.path === "writer-pure" && dopplerRollback.guardsMode === "full",
 );
 
 const hardPathOff = resolveGenerationPath(

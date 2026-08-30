@@ -6,6 +6,14 @@ import {
   CERVICOMETRIA_ADDON_JSON_SCHEMA,
   renderCervicometriaBloco,
 } from "./CERVICOMETRIA";
+import {
+  DOPPLER_MODULE_EXTRACTION_RULES,
+  DOPPLER_OBSTETRICO_ADDON_JSON_SCHEMA,
+  DOPPLER_TECNICA_CLASSICO,
+  DOPPLER_TECNICA_OBJETIVO,
+  DopplerObstetricoModuleSchema,
+  renderDopplerModule,
+} from "./dopplerObstetricoModule";
 
 /**
  * DET-5 — Renderer de OBSTETRICA (feto único + gemelar).
@@ -193,6 +201,8 @@ export const ObstetricaFindingsSchema = z.object({
   observacoes_corpo_livres: z.array(z.string()),
   /** Exame complementar opcional; null = cervicometria não realizada. */
   cervicometria: CervicometriaAddonSchema.nullable().optional(),
+  /** Avaliação Doppler opcional, sem trocar a categoria obstétrica. */
+  doppler: DopplerObstetricoModuleSchema.nullable().optional(),
 });
 
 export type ObstetricaFindings = z.infer<typeof ObstetricaFindingsSchema>;
@@ -353,6 +363,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "itens_conclusao_livres",
     "observacoes_corpo_livres",
     "cervicometria",
+    "doppler",
   ],
   properties: {
     numero_fetos: { type: "integer" },
@@ -408,6 +419,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     itens_conclusao_livres: { type: "array", items: { type: "string" } },
     observacoes_corpo_livres: { type: "array", items: { type: "string" } },
     cervicometria: CERVICOMETRIA_ADDON_JSON_SCHEMA,
+    doppler: DOPPLER_OBSTETRICO_ADDON_JSON_SCHEMA,
   },
 } as const;
 
@@ -592,7 +604,9 @@ para o valor mais parecido.
     placenta_distancia_cm é a distância da borda placentária ao OI em cm;
     placenta_distante = true só quando ele disser distante sem medir;
     cerclagem = true se houver pontos de cerclagem; observacoes recebe apenas
-    observação adicional específica da cervicometria. NUNCA invente a medida.`;
+    observação adicional específica da cervicometria. NUNCA invente a medida.
+
+24. ${DOPPLER_MODULE_EXTRACTION_RULES}`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos
@@ -1038,7 +1052,7 @@ export function igSanityAltera(f: ObstetricaFindings, igCorrection: boolean): bo
 export function renderObstetrica(
   f: ObstetricaFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null; igSanity?: boolean; grannum?: boolean },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null; igSanity?: boolean; grannum?: boolean; umbilicalSafety?: boolean; rawInput?: string },
 ): string {
   const igc = opts?.igCorrection ?? false;
   const flx = opts?.flexivel ?? false;
@@ -1058,8 +1072,8 @@ export function renderObstetrica(
       ),
     };
   }
-  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx, g, igSan, grn);
-  return renderObstetricaClassico(f, igc, flx, g, igSan, grn);
+  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx, g, igSan, grn, opts?.umbilicalSafety, opts?.rawInput);
+  return renderObstetricaClassico(f, igc, flx, g, igSan, grn, opts?.umbilicalSafety, opts?.rawInput);
 }
 
 /** Monta o laudo obstétrico (estrutura por construção). */
@@ -1070,9 +1084,12 @@ export function renderObstetricaClassico(
   golfBall: GolfBall | null = null,
   igSanity = false,
   grannum = false,
+  umbilicalSafety = false,
+  rawInput?: string,
 ): string {
   const gemelar = f.numero_fetos >= 2;
-  const titulo = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
+  const tituloBase = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
+  const titulo = f.doppler ? `${tituloBase} COM DOPPLER COLORIDO` : tituloBase;
 
   // IG determinística (Domingos). Lead leva a corionicidade no gemelar.
   const corionLead = f.corionicidade ? `${f.corionicidade} ` : "";
@@ -1191,6 +1208,11 @@ export function renderObstetricaClassico(
     aspectos.push("\nCERVICOMETRIA:", ...cervico.achados);
     conclusao.push(...cervico.conclusao);
   }
+  if (f.doppler) {
+    const doppler = renderDopplerModule(f.doppler, { rawInput, umbilicalSafety });
+    aspectos.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
+    conclusao.push(...doppler.conclusao);
+  }
 
   // Linha opcional de DUM (logo após o título).
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
@@ -1201,9 +1223,13 @@ export function renderObstetricaClassico(
     titulo,
     dumLinha,
     igProse,
-    f.cervicometria
-      ? `${COMENTARIOS}\nFoi realizada avaliação complementar do colo uterino pela via transvaginal.`
-      : COMENTARIOS,
+    [
+      COMENTARIOS,
+      f.cervicometria
+        ? "Foi realizada avaliação complementar do colo uterino pela via transvaginal."
+        : null,
+      f.doppler ? DOPPLER_TECNICA_CLASSICO : null,
+    ].filter(Boolean).join("\n"),
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     aspectos.join("\n"),
@@ -1304,11 +1330,14 @@ export function renderObstetricaObjetivo(
   golfBall: GolfBall | null = null,
   igSanity = false,
   grannum = false,
+  umbilicalSafety = false,
+  rawInput?: string,
 ): string {
   const gemelar = f.numero_fetos >= 2;
-  const titulo = gemelar
+  const tituloBase = gemelar
     ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR"
     : "ULTRASSONOGRAFIA OBSTÉTRICA";
+  const titulo = f.doppler ? `${tituloBase} COM DOPPLER COLORIDO` : tituloBase;
 
   // IG determinística (Domingos). Lead leva a corionicidade no gemelar.
   const corionLead = f.corionicidade ? `${f.corionicidade} ` : "";
@@ -1435,6 +1464,11 @@ export function renderObstetricaObjetivo(
     achados.push("\nCERVICOMETRIA:", ...cervico.achados);
     impressao.push(...cervico.conclusao);
   }
+  if (f.doppler) {
+    const doppler = renderDopplerModule(f.doppler, { rawInput, umbilicalSafety });
+    achados.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
+    impressao.push(...doppler.conclusao);
+  }
 
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = ig.fraseReferencia ? `\n${ig.fraseReferencia}` : "";
@@ -1450,9 +1484,13 @@ export function renderObstetricaObjetivo(
     igProse,
     "",
     "TÉCNICA:",
-    f.cervicometria
-      ? `${TECNICA_OBJ} Avaliação complementar do colo uterino realizada pela via transvaginal.`
-      : TECNICA_OBJ,
+    [
+      TECNICA_OBJ,
+      f.cervicometria
+        ? "Avaliação complementar do colo uterino realizada pela via transvaginal."
+        : null,
+      f.doppler ? DOPPLER_TECNICA_OBJETIVO : null,
+    ].filter(Boolean).join(" "),
     "",
     "ACHADOS:",
     achados.join("\n"),

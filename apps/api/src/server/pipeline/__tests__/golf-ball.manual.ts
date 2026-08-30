@@ -18,11 +18,6 @@ import {
   ObstetricaFindingsSchema,
   type ObstetricaFindings,
 } from "../../renderer/categories/OBSTETRICA";
-import {
-  renderDopplerObstetrico,
-  DopplerObstetricoFindingsSchema,
-  type DopplerObstetricoFindings,
-} from "../../renderer/categories/DOPPLER_OBSTETRICO";
 
 let pass = 0, fail = 0;
 function check(name: string, cond: boolean, detail?: string) {
@@ -174,30 +169,6 @@ check("OBST sem detecção: laudo intocado", (() => {
     !/\(Golf Ball\)/.test(laudo),
     laudo.slice(-300));
 }
-
-// ───────────── Integração: DOPPLER_OBSTETRICO clássico ─────────────
-
-const dopBase = {
-  ...nulled(DopplerObstetricoFindingsSchema),
-  numero_fetos: 1,
-  gestacao_inicial: false,
-  vitalidade_ausente: false,
-  fetos: [],
-  itens_conclusao_livres: [], observacoes_corpo_livres: [],
-} as unknown as DopplerObstetricoFindings;
-
-{
-  const laudo = renderDopplerObstetrico(dopBase, null, { golfBall: { lado: "esquerdo", medida: "0,4 cm" } });
-  check("DOPPLER: corpo com a linha canônica no bloco de anatomia",
-    laudo.includes("O estômago e a bexiga foram bem identificados e com ecotextura homogênea.\nImagem hiperecoica puntiforme no ventrículo esquerdo, medindo 0,4 cm no seu maior eixo."),
-    laudo.slice(0, 500));
-  check("DOPPLER: conclusão tem o item Golf Ball", /\(Golf Ball\)/.test(laudo));
-}
-
-check("DOPPLER sem detecção: laudo intocado", (() => {
-  const laudo = renderDopplerObstetrico(dopBase, null, {});
-  return !/Golf Ball|hiperecoica puntiforme/.test(laudo);
-})());
 
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

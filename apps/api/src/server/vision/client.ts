@@ -4,20 +4,21 @@
  * (singleton openai() em vez de new OpenAI(), sem Gemini).
  *
  * Routing por categoria:
- *   DOPPLER_OBSTETRICO  → dupla req paralela (gpt-4.1-mini biometria + gpt-4.1 Doppler)
+ *   DOPPLER_OBSTETRICO  → gpt-4.1 especializado, somente Doppler
  *   OBSTETRICA          → gpt-4.1-mini (8 campos)
  *   MORFOLOGICO         → gpt-4.1-mini (18+ campos)
+ *   OBSTETRICA/MORFOLOGICO + módulo Doppler → duas leituras paralelas e merge namespaced
  */
 
-import type OpenAI from "openai";
 import { openai } from "../ai/openai";
 import { mergeBiometricData, parseVisionResponse } from "./extractor";
-import type { BiometricData, Category } from "./types";
+import type { BiometricData, Category, ImagingModule } from "./types";
 
 interface AnalyzeImageParams {
   imageBase64: string;
   category: Category;
   gemelar?: boolean;
+  modules?: ImagingModule[];
 }
 
 export interface AnalyzeImageResult {
@@ -246,107 +247,67 @@ ${COMMON_RULES}`;
   throw new Error(`Análise de imagem não suportada para categoria: ${category}`);
 }
 
-function buildBiometryForDopplerPrompt(): string {
-  return `Você é especialista em leitura de telas de ultrassom obstétrico.
-Analise esta imagem e extraia APENAS as medidas biométricas fetais e os dados do cabeçalho.
-NÃO extraia índices Doppler (RI, PI, S/D) — ignore completamente essa parte do relatório.
-
-CAMPOS DO CABEÇALHO:
-| Campo JSON      | Rótulos possíveis                                          |
-|-----------------|------------------------------------------------------------|
-| gestAgeLMP      | GA, IG, LMP-GA — campo ao lado de "LMP:" ou "DUM:" no topo|
-| gestAgeBiometry | EFW-GA, GA(EFW), Hadlock GA — dentro da seção EFW/Peso     |
-
-Formato de IG: "Xws Yd" → "37s3d". Use "37s" se dias = 0.
-
-CAMPOS DE BIOMETRIA:
-| Campo JSON      | Rótulos possíveis                                              |
-|-----------------|----------------------------------------------------------------|
-| dbp             | DBP, BPD, DBO, D.Bip, Diam.Bip                                |
-| cc              | CC, HC, CF.Cef, Head Circ                                      |
-| ca              | CA, AC, CF.Abd, Abd Circ                                       |
-| cf              | CF, FL, Femur, Fêmur                                           |
-| weight          | PFE, EFW, Peso Est., Peso Fetal                                |
-| weightVariation | ±, +/-, Variação — valor após ± na linha do EFW                |
-| percentile      | %ile, Percentil, P, %                                          |
-
-REGRAS:
-1. Extraia APENAS valores da coluna de medida obtida — não de "esperado" ou "ref".
-2. Normalize decimais: vírgula → ponto (45,2 → 45.2). Preserve a unidade original.
-3. Normalize weightVariation: "+/-" → "±".
-4. Se não visível, omita — nunca invente.
-5. Responda APENAS com JSON, sem markdown.
-
-EXEMPLO:
-{
-  "gestAgeLMP": "39s3d",
-  "gestAgeBiometry": "37s3d",
-  "dbp": "68.4 mm",
-  "cc": "248.1 mm",
-  "ca": "230.0 mm",
-  "cf": "50.2 mm",
-  "weight": "1050 g",
-  "weightVariation": "±155 g",
-  "percentile": "32"
-}`;
-}
-
 function buildDopplerOnlyPrompt(): string {
   return `Você é especialista em Doppler obstétrico.
-Analise esta imagem e extraia SOMENTE o IP (Índice de Pulsatilidade / PI) de cada artéria.
-NÃO extraia RI/IR nem biometria (DBP, HC, AC, FL, peso) — ignore completamente essas partes.
+Analise esta imagem e extraia SOMENTE IR (Índice de Resistividade / RI) e IP (Índice de Pulsatilidade / PI) de cada vaso.
+NÃO extraia biometria (DBP, HC, AC, FL, peso) — ignore completamente essas partes.
 
 SIGA ESTA SEQUÊNCIA DE PASSOS:
 
 PASSO 0 — Identifique as artérias visíveis:
   Antes de extrair qualquer valor, identifique QUAIS artérias estão nomeadas explicitamente no relatório.
   Mapeamento de rótulos para campos JSON:
-    "Ut.D", "Art.Uterina D", "AUt Dir", "Right Uterine" → ipRightUterine
-    "Ut.E", "Art.Uterina E", "AUt Esq", "Left Uterine"  → ipLeftUterine
-    "Umbilical A.", "AU", "UA", "Umbilical"              → ipUmbilical
-    "ACM", "MCA", "Cerebral Média", "Mid.Cerebral"       → ipMCA
-    "Ductus Venosus", "DV", "D.Venosus"                  → ipDuctusVenosus
-  REGRA FUNDAMENTAL: extraia IP SOMENTE de artérias identificadas pelo nome.
+    "Ut.D", "Art.Uterina D", "AUt Dir", "Right Uterine" → irRightUterine/ipRightUterine
+    "Ut.E", "Art.Uterina E", "AUt Esq", "Left Uterine"  → irLeftUterine/ipLeftUterine
+    "Umbilical A.", "AU", "UA", "Umbilical"              → irUmbilical/ipUmbilical
+    "ACM", "MCA", "Cerebral Média", "Mid.Cerebral"       → irMCA/ipMCA
+    "Ductus Venosus", "DV", "D.Venosus"                  → irDuctusVenosus/ipDuctusVenosus
+  REGRA FUNDAMENTAL: extraia índices SOMENTE de artérias identificadas pelo nome.
   Se um valor estiver presente mas a artéria NÃO estiver nomeada → não extraia.
 
-PASSO 1 — Extrair IP por artéria identificada:
-  Para cada artéria identificada no PASSO 0, localize a coluna "PI" ou "IP" naquela subseção.
-  Ignore colunas "RI", "IR", "S/D" ou "EDV" — leia APENAS "PI" ou "IP".
+PASSO 1 — Extrair IR/IP por artéria identificada:
+  Para cada artéria identificada no PASSO 0, localize separadamente as colunas
+  "RI"/"IR" e "PI"/"IP" naquela subseção. Ignore S/D, PSV, EDV e velocidades.
 
 PASSO 2 — ACM/MCA com dois lados:
   Se aparecer ACM direita e esquerda, prefira o lado esquerdo ("Esq. MCA").
 
 PASSO 3 — Validar e normalizar:
-  Valores esperados para IP: 0.40–2.50. Fora desse range → omita.
+  Valores plausíveis para IR/IP: 0.20–3.00. Fora desse range → omita.
   Normalize decimais: vírgula → ponto (0,65 → 0.65).
 
 CAMPOS A EXTRAIR:
 | Campo JSON        | Rótulos na imagem                                         |
 |-------------------|-----------------------------------------------------------|
-| ipRightUterine    | PI/IP Art.Uterina D / Ut.D PI / AUt Dir IP               |
-| ipLeftUterine     | PI/IP Art.Uterina E / Ut.E PI / AUt Esq IP               |
-| ipUmbilical       | PI/IP Art.Umbilical / AU PI / UA IP / Umbilical IP        |
-| ipMCA             | PI/IP ACM / MCA IP / Cerebral Média IP                    |
-| ipDuctusVenosus   | PI/IP DV / Ductus Venosus IP                              |
+| irRightUterine/ipRightUterine | RI/IR e PI/IP da uterina direita             |
+| irLeftUterine/ipLeftUterine   | RI/IR e PI/IP da uterina esquerda            |
+| irUmbilical/ipUmbilical       | RI/IR e PI/IP da artéria umbilical           |
+| irMCA/ipMCA                   | RI/IR e PI/IP da cerebral média              |
+| irDuctusVenosus/ipDuctusVenosus | RI/IR e PI/IP do ducto venoso             |
 
 REGRAS FINAIS:
-1. Leia SEMPRE pelo RÓTULO "PI" ou "IP" — ignore colunas "RI" ou "IR".
+1. Nunca troque IR por IP: copie cada valor somente para o campo do respectivo rótulo.
 2. Extraia somente artérias nomeadas explicitamente (PASSO 0).
 3. Se não estiver visível, omita — nunca invente.
 4. Responda APENAS com JSON. Se não houver Doppler visível, retorne {}.
 
 EXEMPLO:
 {
+  "irRightUterine": "0.59",
   "ipRightUterine": "0.81",
+  "irLeftUterine": "0.59",
   "ipLeftUterine": "0.83",
+  "irUmbilical": "0.58",
   "ipUmbilical": "1.02",
+  "irMCA": "0.81",
   "ipMCA": "1.48",
+  "irDuctusVenosus": "0.40",
   "ipDuctusVenosus": "0.72"
 }`;
 }
 
 // ---------------------------------------------------------------------------
-// Doppler — dupla requisição paralela
+// Doppler isolado — uma requisição especializada (sem biometria fetal)
 // ---------------------------------------------------------------------------
 
 async function analyzeDopplerObstetrico(
@@ -368,53 +329,20 @@ async function analyzeDopplerObstetrico(
     },
   ];
 
-  const client = openai();
-
-  const [biometryRes, dopplerRes] = await Promise.allSettled([
-    client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: "Responda APENAS com JSON válido, sem markdown." },
-        { role: "user", content: makeContent(buildBiometryForDopplerPrompt()) },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0,
-      max_tokens: 400,
-    }),
-    client.chat.completions.create({
-      model: "gpt-4.1",
-      messages: [
-        { role: "system", content: "Responda APENAS com JSON válido, sem markdown." },
-        { role: "user", content: makeContent(buildDopplerOnlyPrompt()) },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0,
-      max_tokens: 400,
-    }),
-  ]);
-
-  const parseOrEmpty = (
-    res: PromiseSettledResult<OpenAI.Chat.ChatCompletion>,
-  ): BiometricData => {
-    if (res.status === "rejected") {
-      console.error("[Doppler parallel] request failed:", res.reason);
-      return {};
-    }
-    const content = res.value.choices[0]?.message?.content;
-    if (!content) return {};
-    try {
-      return parseVisionResponse(content, "DOPPLER_OBSTETRICO");
-    } catch {
-      return {};
-    }
-  };
-
+  const response = await openai().chat.completions.create({
+    model: "gpt-4.1",
+    messages: [
+      { role: "system", content: "Responda APENAS com JSON válido, sem markdown." },
+      { role: "user", content: makeContent(buildDopplerOnlyPrompt()) },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0,
+    max_tokens: 500,
+  });
+  const content = response.choices[0]?.message?.content;
   return {
-    data: mergeBiometricData(
-      [parseOrEmpty(biometryRes), parseOrEmpty(dopplerRes)],
-      { dopplerAware: true },
-    ),
-    model: "gpt-4.1-mini + gpt-4.1 (paralelo)",
+    data: content ? parseVisionResponse(content, "DOPPLER_OBSTETRICO") : {},
+    model: "gpt-4.1 (Doppler)",
   };
 }
 
@@ -426,6 +354,7 @@ export async function analyzeImage({
   imageBase64,
   category,
   gemelar,
+  modules,
 }: AnalyzeImageParams): Promise<AnalyzeImageResult> {
   if (
     category !== "OBSTETRICA" &&
@@ -437,6 +366,17 @@ export async function analyzeImage({
 
   if (category === "DOPPLER_OBSTETRICO") {
     return analyzeDopplerObstetrico(imageBase64, gemelar);
+  }
+
+  if (modules?.includes("DOPPLER_OBSTETRICO")) {
+    const [base, doppler] = await Promise.all([
+      analyzeImage({ imageBase64, category, gemelar, modules: [] }),
+      analyzeDopplerObstetrico(imageBase64, gemelar),
+    ]);
+    return {
+      data: mergeBiometricData([base.data, doppler.data], { dopplerAware: true }),
+      model: `${base.model} + ${doppler.model}`,
+    };
   }
 
   let prompt = buildVisionPrompt(category);

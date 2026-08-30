@@ -31,10 +31,15 @@ export type BiometricData = {
   gestAge?: string;
   gestAgeLMP?: string;
   gestAgeBiometry?: string;
+  irRightUterine?: string;
   ipRightUterine?: string;
+  irLeftUterine?: string;
   ipLeftUterine?: string;
+  irUmbilical?: string;
   ipUmbilical?: string;
+  irMCA?: string;
   ipMCA?: string;
+  irDuctusVenosus?: string;
   ipDuctusVenosus?: string;
   tibia?: string;
   fibula?: string;
@@ -62,6 +67,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 async function analyzeOne(
   imageBase64: string,
   category: ImagingCategory,
+  includeDoppler: boolean,
 ): Promise<BiometricData | null> {
   const token = await getAccessToken();
   const res = await fetch(`${API_URL}/api/analyze-image`, {
@@ -70,7 +76,15 @@ async function analyzeOne(
       "content-type": "application/json",
       authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ imageBase64, category, gemelar: false }),
+    body: JSON.stringify({
+      imageBase64,
+      category,
+      gemelar: false,
+      modules:
+        includeDoppler && category !== "DOPPLER_OBSTETRICO"
+          ? ["DOPPLER_OBSTETRICO"]
+          : [],
+    }),
   });
   let payload: AnalyzeResponse;
   try {
@@ -90,11 +104,16 @@ export async function analyzeImages(
   imagesBase64: string[],
   category: ImagingCategory,
   onProgress?: (done: number, total: number) => void,
+  options?: { includeDoppler?: boolean },
 ): Promise<BiometricData[]> {
   const batch = imagesBase64.slice(0, 3);
   const results: BiometricData[] = [];
   for (let i = 0; i < batch.length; i++) {
-    const data = await analyzeOne(batch[i], category);
+    const data = await analyzeOne(
+      batch[i],
+      category,
+      category === "DOPPLER_OBSTETRICO" || options?.includeDoppler === true,
+    );
     if (data) results.push(data);
     onProgress?.(i + 1, batch.length);
   }
@@ -142,10 +161,15 @@ export function formatBiometric(
   }
 
   const doppler = rows([
+    ["IR uterina direita", m.irRightUterine],
     ["IP uterina direita", m.ipRightUterine],
+    ["IR uterina esquerda", m.irLeftUterine],
     ["IP uterina esquerda", m.ipLeftUterine],
+    ["IR artéria umbilical", m.irUmbilical],
     ["IP artéria umbilical", m.ipUmbilical],
+    ["IR artéria cerebral média", m.irMCA],
     ["IP artéria cerebral média", m.ipMCA],
+    ["IR ducto venoso", m.irDuctusVenosus],
     ["IP ducto venoso", m.ipDuctusVenosus],
   ]);
   if (doppler.length > 0) {

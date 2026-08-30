@@ -20,16 +20,24 @@
 import { parseConclusion, renderWithConclusion } from "./conclusionUtils";
 
 export interface DopplerData {
+  irUmbilical?: number;
   ipUmbilical?: number;
+  irACM?: number;
   ipACM?: number;
+  irUterinaDir?: number;
   ipUterinaDir?: number;
+  irUterinaEsq?: number;
   ipUterinaEsq?: number;
   ipMedioUterinas?: number;
   percUmbilical?: number;
   percACM?: number;
   percMedioUterinas?: number;
   ductoVenoso?: string;
+  irDuctoVenoso?: number;
+  ipDuctoVenoso?: number;
   rcp?: number;
+  /** Perfil 1/RCP já calculado/ditado. Quando ausente, o código calcula se possível. */
+  perfilHemodinamico?: number;
   /** Médico DITOU alteração manual (umbilical/ACM). */
   umbilicalAlterado?: boolean;
   acmAlterado?: boolean;
@@ -176,14 +184,21 @@ export function extractDopplerData(rawInput: string): DopplerData {
 /** Há algum dado Doppler relevante? (valores OU alterações/percentis ditados) */
 export function hasDopplerData(d: DopplerData): boolean {
   return (
+    d.irUmbilical !== undefined ||
     d.ipUmbilical !== undefined ||
+    d.irACM !== undefined ||
     d.ipACM !== undefined ||
+    d.irUterinaDir !== undefined ||
     d.ipMedioUterinas !== undefined ||
     d.ipUterinaDir !== undefined ||
+    d.irUterinaEsq !== undefined ||
     d.ipUterinaEsq !== undefined ||
     d.percMedioUterinas !== undefined ||
     d.rcp !== undefined ||
     d.ductoVenoso !== undefined ||
+    d.irDuctoVenoso !== undefined ||
+    d.ipDuctoVenoso !== undefined ||
+    d.perfilHemodinamico !== undefined ||
     d.umbilicalAlterado === true ||
     d.acmAlterado === true ||
     d.incisura === true ||
@@ -216,6 +231,7 @@ function computeRCP(d: DopplerData): number | undefined {
 
 /** Perfil hemodinâmico = 1/RCP. */
 function computePerfil(d: DopplerData): number | undefined {
+  if (d.perfilHemodinamico !== undefined) return d.perfilHemodinamico;
   const rcp = computeRCP(d);
   if (rcp === undefined || rcp === 0) return undefined;
   return 1 / rcp;
@@ -259,6 +275,11 @@ export function buildDopplervelocimetriaSection(d: DopplerData): string {
   }
 
   return lines.join("\n");
+}
+
+/** Perfil hemodinâmico exposto para o módulo composto, sem duplicar fórmula. */
+export function computePerfilHemodinamico(d: DopplerData): number | undefined {
+  return computePerfil(d);
 }
 
 /** Uterinas >P95? (valor numérico OU comando/explícito "acima do percentil 95"). */
@@ -344,7 +365,13 @@ export function removeBlankVesselLines(laudo: string): string {
 }
 
 /** Itens de conclusão do Doppler (sem numeração — o caller renumera). */
-export function buildDopplerConclusionItems(d: DopplerData): string[] {
+export function buildDopplerConclusionItems(
+  d: DopplerData,
+  options?: { strictEvidence?: boolean },
+): string[] {
+  if (options?.strictEvidence && !hasDopplerData(d)) {
+    return ["Dados Doppler insuficientes para conclusão hemodinâmica."];
+  }
   const items: string[] = [];
   const utAlt = uterinasAlteradas(d);
   // ACM alterada EXPLÍCITA (ditada alterada ou percentil < 5) → item próprio de
@@ -388,6 +415,26 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
     if (f) items.push(f);
   }
 
+  // O modelo isolado recebido inclui IR e IP. Só amplia a frase de normalidade
+  // quando algum IR foi realmente informado; os laudos antigos (apenas IP)
+  // preservam a redação byte a byte.
+  const temIr =
+    d.irUterinaDir !== undefined ||
+    d.irUterinaEsq !== undefined ||
+    d.irUmbilical !== undefined ||
+    d.irACM !== undefined;
+  const todoIpListadoTemIr =
+    (d.ipUterinaDir === undefined || d.irUterinaDir !== undefined) &&
+    (d.ipUterinaEsq === undefined || d.irUterinaEsq !== undefined) &&
+    (d.ipMedioUterinas === undefined || (d.irUterinaDir !== undefined && d.irUterinaEsq !== undefined)) &&
+    (d.ipUmbilical === undefined || d.irUmbilical !== undefined) &&
+    (d.ipACM === undefined || d.irACM !== undefined);
+  if (temIr && todoIpListadoTemIr && items.length > 0 && /[ÍI]ndice(?:s)? de pulsatilidade normal/.test(items[0] ?? "")) {
+    items[0] = (items[0] ?? "")
+      .replace("Índice de pulsatilidade normal", "Índices de resistividade e de pulsatilidade normais")
+      .replace("Índices de pulsatilidade normais", "Índices de resistividade e de pulsatilidade normais");
+  }
+
   // ── Item de uterinas >P95 — INDEPENDENTE do estado de umbilical/ACM (F3) ──
   if (uterinasAcimaP95(d)) {
     items.push(
@@ -398,7 +445,7 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
   // ── Incisuras (uterinas auto) ──
   if (d.incisura) {
     items.push("Presença de incisura protodiastólica nas artérias uterinas.");
-  } else {
+  } else if (!options?.strictEvidence || d.incisura === false) {
     items.push("Ausência de sinais de incisuras.");
   }
 
@@ -411,7 +458,7 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
     items.push(
       "Achados compatíveis com sinais iniciais de centralização fetal (pré-centralização).",
     );
-  } else if (!acmComprometida(d)) {
+  } else if ((!options?.strictEvidence || d.centralizacao === false || d.preCentralizacao === false) && !acmComprometida(d)) {
     // Só afirma ausência de centralização quando a ACM NÃO está comprometida
     // (ACM P≤5 / RCP<1 são a fisiologia inicial do brain sparing — review dex2).
     items.push("Não há sinais de pré-centralização ou de centralização.");
@@ -425,10 +472,14 @@ export function buildDopplerConclusionItems(d: DopplerData): string[] {
     } else {
       items.push(`Perfil hemodinâmico fetal alterado, maior de 1.0.`);
     }
-  } else if (!acmComprometida(d)) {
+  } else if (!options?.strictEvidence && !acmComprometida(d)) {
     // Sem RCP calculável: só afirma perfil normal se a ACM NÃO estiver comprometida
     // (centralização / P≤5 / RCP<1 não podem coexistir com perfil "normal" — dex2).
     items.push("Perfil hemodinâmico fetal é normal, menor de 1.0.");
+  }
+
+  if (options?.strictEvidence && items.length === 0) {
+    items.push("Dados Doppler insuficientes para conclusão hemodinâmica.");
   }
 
   return items;

@@ -15,8 +15,8 @@
  *   2. JSON Schema strict  — o CONTRATO, para o LLM saber que o campo existe
  *   3. prompt de extração  — a REGRA, para o LLM saber quando preenchê-lo
  *
- * ⚠️ O `OBSTETRICA_JSON_SCHEMA` é herdado pelo `DOPPLER_OBSTETRICO`. Mexer nele
- * muda a extração de DUAS categorias em produção.
+ * O Doppler isolado NÃO herda mais o obstétrico. O vínculo agora é explícito:
+ * `OBSTETRICA.doppler` usa o contrato do módulo compartilhado.
  *
  *   pnpm exec tsx src/server/renderer/__tests__/contrato-extracao-obstetrica.manual.ts
  */
@@ -175,60 +175,38 @@ console.log("5 · um payload completo do LLM passa no parse do Zod");
     r.success ? "" : JSON.stringify(r.error.issues.slice(0, 3)));
 }
 
-// -------------------------------------------- 6 · o DOPPLER herda — e tem de aguentar
-console.log("6 · DOPPLER_OBSTETRICO herda o contrato e sabe usá-lo");
+// -------------------------------------------- 6 · Doppler separado + add-on compartilhado
+console.log("6 · Doppler isolado e add-on têm o mesmo contrato vascular");
 {
   const dop = DOPPLER_OBSTETRICO_JSON_SCHEMA as any;
-  const dopFeto = dop.properties.fetos.items;
-  // A herança é por spread: se um campo novo NÃO chegar aqui, o Doppler fica
-  // com um contrato menor que o do renderer que ele reusa.
-  for (const c of CAMPOS_DE_ACHADO) {
-    const noFeto = camposFeto.includes(c);
-    t(`doppler herda ${c}`,
-      noFeto ? c in dopFeto.properties && dopFeto.required.includes(c)
-             : c in dop.properties && dop.required.includes(c));
+  const campos = [
+    "ir_uterina_dir", "ip_uterina_dir", "ir_uterina_esq", "ip_uterina_esq",
+    "ir_umbilical", "ip_umbilical", "ir_acm", "ip_acm",
+    "ir_ducto_venoso", "ip_ducto_venoso", "rcp", "perfil_hemodinamico",
+    "incisura", "pre_centralizacao", "centralizacao",
+  ];
+  for (const c of campos) {
+    t(`doppler isolado contém ${c}`, c in dop.properties && dop.required.includes(c));
   }
-  // …e o prompt do Doppler é SEPARADO: herdar a propriedade não herda a regra.
-  // Sem isto o LLM vê o campo no schema e inventa quando preenchê-lo.
-  for (const c of ["bcf_alteracao", "cranio_achado", "cordao_vasos", "placenta_achado",
-    "placenta_relacao_orificio", "movimentos_fetais"]) {
-    t(`prompt do doppler cita ${c}`, DOPPLER_OBSTETRICO_EXTRACTION_PROMPT.includes(c),
-      "campo herdado no schema, mas sem regra no prompt do Doppler");
-  }
-  // `vitalidade_ausente` (exame) × `bcf_alteracao` (feto) são o MESMO fato em
-  // eixos diferentes. O prompt precisa dizer como conviverem, senão o LLM
-  // escolhe um e o gemelar perde a atribuição.
-  t("o prompt do doppler desambigua vitalidade_ausente × bcf_alteracao",
-    /vitalidade_ausente[\s\S]{0,400}bcf_alteracao/.test(DOPPLER_OBSTETRICO_EXTRACTION_PROMPT));
+  t("obstétrica recebe Doppler namespaced", "doppler" in schema.properties && schema.required.includes("doppler"));
+  t("prompt obstétrico explica o módulo", /DOPPLER OBSTÉTRICO OPCIONAL/.test(OBSTETRICA_EXTRACTION_PROMPT));
+  t("prompt isolado proíbe biometria", /Não extraia biometria fetal/.test(DOPPLER_OBSTETRICO_EXTRACTION_PROMPT));
+  t("prompt isolado separa IR e IP", /preserve separadamente IR.*IP/is.test(DOPPLER_OBSTETRICO_EXTRACTION_PROMPT));
 
   const r = DopplerObstetricoFindingsSchema.safeParse({
-    numero_fetos: 1, corionicidade: null, gestacao_inicial: false,
-    fetos: [{
-      rotulo: null, posicao_relativa: null, apresentacao: null, dorso: null,
-      polo_cefalico: null, bcf_bpm: null, dbp_mm: 80, cc_mm: 290, ca_mm: 270,
-      cf_mm: 60, ccn_mm: null, peso_g: 2400, peso_variacao_g: null, percentil: null,
-      bcf_alteracao: "ausente", movimentos_fetais: null, cranio_achado: null,
-      cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: "dois",
-    }],
-    ig_semanas: 32, ig_dias: 0, dum: null, data_exame: null,
-    primeira_us_data: null, primeira_us_ig_semanas: null, primeira_us_ig_dias: null,
-    ig_referencia_hoje_semanas: null, ig_referencia_hoje_dias: null,
-    referencia_fonte: null, corrigir_ig: null,
-    saco_gestacional_mm: null, saco_gestacional_medidas_mm: null,
-    placenta_quantidade: null, placenta_localizacao: null, placenta_ecotextura: null,
-    placenta_grau: null, placenta_relacao_orificio: null,
-    placenta_distancia_orificio_mm: null, placenta_achado: null,
-    placenta_achado_medidas: null, liquido_tipo: null, liquido_ila_cm: null,
-    liquido_mbv_por_feto_cm: null, liquido_classe: null, achados_adicionais: null,
-    itens_conclusao_livres: [], observacoes_corpo_livres: [],
-    ip_umbilical: null, perc_umbilical: null, ip_acm: null, perc_acm: null,
-    ip_uterina_dir: null, ip_uterina_esq: null, ip_medio_uterinas: null,
-    perc_medio_uterinas: null, ducto_venoso_ip: null, ducto_venoso_qualitativo: null,
-    rcp: null, umbilical_alterado: null, acm_alterado: null, incisura: null,
-    ectasia: null, pre_centralizacao: null, centralizacao: null,
-    uterinas_acima_p95: null, restricao_crescimento: null, vitalidade_ausente: true,
+    ir_uterina_dir: 0.59, ip_uterina_dir: 0.81,
+    ir_uterina_esq: 0.58, ip_uterina_esq: 0.8,
+    ip_medio_uterinas: 0.81, perc_medio_uterinas: null,
+    ir_umbilical: 0.58, ip_umbilical: 1.02, perc_umbilical: null,
+    ir_acm: 0.81, ip_acm: 1.48, perc_acm: null,
+    ir_ducto_venoso: 0.4, ip_ducto_venoso: 0.72,
+    ducto_venoso_qualitativo: null, rcp: null, perfil_hemodinamico: null,
+    umbilical_alterado: false, acm_alterado: false, incisura: false,
+    ectasia: null, pre_centralizacao: false, centralizacao: false,
+    uterinas_acima_p95: null, observacoes_adicionais: null,
+    itens_conclusao_livres: [], ig_semanas: null, cervicometria: null,
   });
-  t("payload do doppler com achado por feto faz parse", r.success,
+  t("payload vascular isolado faz parse", r.success,
     r.success ? "" : JSON.stringify(r.error.issues.slice(0, 3)));
 }
 

@@ -26,6 +26,8 @@
  * percentil saem do renderer, que tem as regras.
  */
 
+import { dopplerDaTela } from "./dopplerParaCatalogo";
+
 type EstadoDaSecao = Record<string, unknown>;
 export type EstadoMorfologico = Record<string, EstadoDaSecao | unknown>;
 
@@ -189,6 +191,7 @@ export function adaptarMorfologico(
     /** O CANAL QUE FALTAVA. Cada diagnóstico vira um item da conclusão. */
     itens_conclusao_livres: diagnosticos,
     cervicometria: cervicometriaDaTela(estado),
+    doppler: dopplerDaTela(estado),
   };
 
   return { dados, alteracoes: [], pendencias };

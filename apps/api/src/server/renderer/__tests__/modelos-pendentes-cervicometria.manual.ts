@@ -145,13 +145,9 @@ for (const objetivo of [false, true]) {
 
 const doppler = DopplerObstetricoFindingsSchema.parse({
   ...(achadoNormalDe(DopplerObstetricoFindingsSchema) as Record<string, unknown>),
-  numero_fetos: 1,
-  gestacao_inicial: false,
-  fetos: [FETO],
   ig_semanas: 30,
   itens_conclusao_livres: [],
-  observacoes_corpo_livres: [],
-  vitalidade_ausente: null,
+  observacoes_adicionais: null,
   cervicometria: CERVICO_ADDON,
 });
 const dopplerClassico = renderDopplerObstetrico(doppler);

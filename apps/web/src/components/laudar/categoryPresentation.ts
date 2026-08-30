@@ -17,6 +17,7 @@ const CATEGORY_DOT_CLASSES: Record<string, string> = {
   MUSCULOESQUELETICO: 'bg-lime-500',
   OBSTETRICA: 'bg-pink-500',
   MORFOLOGICO: 'bg-violet-500',
+  DOPPLER_OBSTETRICO: 'bg-fuchsia-500',
   TIREOIDE: 'bg-sky-500',
 }
 

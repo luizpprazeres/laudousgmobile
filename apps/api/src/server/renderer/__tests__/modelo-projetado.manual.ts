@@ -30,8 +30,42 @@ function t(nome: string, cond: boolean, detalhe = "") {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const flags = flagsDeProducao();
+
+/**
+ * O abdome clássico é a única categoria cuja máscara mora no banco. Este gate
+ * é deliberadamente autocontido: usa uma máscara equivalente à validada para
+ * testar a projeção sem transformar disponibilidade do Postgres em requisito
+ * para conferir os modelos das outras categorias.
+ */
+const ABDOME_TEMPLATE_DE_TESTE = `ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+COMENTÁRIOS:
+Exame realizado com transdutor convexo multifrequencial.
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+{{orgao:figado|Fígado de dimensões normais, contornos regulares e ecotextura homogênea.}}
+{{orgao:veia_porta|Veia porta de calibre normal.}}
+{{orgao:vesicula|Vesícula biliar de topografia usual e paredes finas, sem cálculos.}}
+{{orgao:vias_biliares|Vias biliares intra e extra-hepáticas sem dilatação.}}
+{{orgao:baco|Baço de dimensões normais e ecotextura homogênea.}}
+{{orgao:pancreas|Pâncreas de dimensões e ecotextura normais.}}
+{{orgao:rim_direito|Rim direito de dimensões e ecotextura normais.}}
+{{orgao:rim_esquerdo|Rim esquerdo de dimensões e ecotextura normais.}}
+{{orgao:veia_cava|Veia cava inferior de calibre normal.}}
+{{orgao:aorta|Aorta abdominal de calibre normal.}}
+{{orgao:bexiga|Bexiga de forma, contornos e paredes normais.}}
+{{extra_abdominais}}
+
+CONCLUSÃO:
+{{conclusao}}`;
+
 function projetar(cat: string) {
-  const e = resolveCatalogo(cat, "CLASSICO_COMPLETO")!;
+  const e = resolveCatalogo(
+    cat,
+    "CLASSICO_COMPLETO",
+    cat === "ABDOMEN_TOTAL" ? { templateBody: ABDOME_TEMPLATE_DE_TESTE } : undefined,
+  );
+  if (!e) throw new Error(`Categoria sem catálogo projetável: ${cat}`);
   const base = e.samples.filter((s: any) => !s.comparaCom);
   const ctxs = (base.length ? base : e.samples.slice(0, 1)).map((s: any) => ({
     nome: s.nome,
@@ -125,7 +159,7 @@ console.log("\nOs defeitos que o Luiz encontrou");
   t("o Doppler traz as artérias", linhas.some((l) => /Artéria umbilical/i.test(l.frase)),
     "a seção DOPPLERVELOCIMETRIA saía vazia");
   t("…e com o índice como LACUNA, não com o valor do seed",
-    linhas.some((l) => /Artéria umbilical: IP ____/.test(l.frase)),
+    linhas.some((l) => /Artéria umbilical com índice de resistividade de ____ e índice de pulsatilidade de ____\./.test(l.frase)),
     linhas.find((l) => /Artéria umbilical/i.test(l.frase))?.frase ?? "");
 }
 {
@@ -189,10 +223,9 @@ console.log("\nRevisão adversarial (Codex, 19/08)");
    * fossem o modelo.
    */
   t("categoria sem modelo devolve nada", laudoDoCenario("NAO_EXISTE", "CLASSICO_COMPLETO", {}) === null);
-  // Seed que faz o renderer recusar (Doppler não aceita gemelar): sem o segundo
-  // render não há comparação, e sem comparação não há cenário.
+  // Seed de tipo inválido: sem render válido não há comparação nem cenário.
   t("seed que o renderer recusa devolve nada",
-    laudoDoCenario("DOPPLER_OBSTETRICO", "CLASSICO_COMPLETO", { numero_fetos: 2 }) === null);
+    laudoDoCenario("DOPPLER_OBSTETRICO", "CLASSICO_COMPLETO", { ip_umbilical: "inválido" }) === null);
 }
 
 const total = ok + falhas.length;

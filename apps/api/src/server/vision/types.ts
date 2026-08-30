@@ -4,6 +4,7 @@
  */
 
 export type Category = "OBSTETRICA" | "DOPPLER_OBSTETRICO" | "MORFOLOGICO";
+export type ImagingModule = "DOPPLER_OBSTETRICO";
 
 export const SUPPORTED_IMAGING_CATEGORIES: Category[] = [
   "OBSTETRICA",
@@ -24,11 +25,16 @@ export interface BiometricData {
   gestAgeLMP?: string;
   gestAgeBiometry?: string;
 
-  // Doppler-specific measurements (DOPPLER_OBSTETRICO only — IP only)
+  // Doppler obstétrico — módulo reutilizável em qualquer exame obstétrico.
+  irRightUterine?: string;
   ipRightUterine?: string;
+  irLeftUterine?: string;
   ipLeftUterine?: string;
+  irUmbilical?: string;
   ipUmbilical?: string;
+  irMCA?: string;
   ipMCA?: string;
+  irDuctusVenosus?: string;
   ipDuctusVenosus?: string;
 
   // Morfológico 2T additional measurements

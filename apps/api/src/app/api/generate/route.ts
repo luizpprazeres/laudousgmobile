@@ -42,7 +42,10 @@ import { applyCervicalLevelSuggestions } from "@/server/pipeline/cervicalLevelGu
 import { stripObservationNarration } from "@/server/pipeline/cervicalNarrationGuard";
 import { runWriterStream } from "@/server/pipeline/writer";
 import { resolveWriterModel } from "@/server/pipeline/modelResolver";
-import { resolveGenerationPath } from "@/server/pipeline/generationPathResolver";
+import {
+  rendererCategoryEnabled,
+  resolveGenerationPath,
+} from "@/server/pipeline/generationPathResolver";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
 import {
   runDeterministicSanity,
@@ -781,13 +784,9 @@ export async function POST(req: Request) {
       // Um erro de bundle/variante (ex.: ASR sujo "transaginal" que não resolve
       // TA/TV) NÃO deve bloquear — o renderer gera mesmo assim. (Boletim 2026-06-17:
       // PELVE bloqueava 10×/dia exatamente por isso, antes de chegar ao renderer.)
-      const rendererCatsEarly = env()
-        .RENDERER_CATEGORIES.split(",")
-        .map((s) => s.trim())
-        .filter((s) => s !== "");
       const isProgrammaticRenderer =
         generationPath.path === "renderer" &&
-        rendererCatsEarly.includes(effectiveCategory) &&
+        rendererCategoryEnabled(effectiveCategory) &&
         RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory) &&
         RENDERER_PROGRAMMATIC_CATEGORIES.has(effectiveCategory);
       if (bundle.error && isProgrammaticRenderer) {
@@ -877,16 +876,12 @@ export async function POST(req: Request) {
       // ----- 4. Writer (stream) OU Renderer (DET-5) -----
       // Fix codex #4: resolver writing_style code + category label do DB.
       currentStage = "writer";
-      // DET-5: caminho RENDERER quando a categoria está na flag E a variante
-      // resolvida tem template_body. Qualquer outra condição → writer
-      // (fallback automático; rollback trivial = tirar da flag).
-      const rendererCategories = env()
-        .RENDERER_CATEGORIES.split(",")
-        .map((s) => s.trim())
-        .filter((s) => s !== "");
+      // DET-5: caminho RENDERER quando a categoria está habilitada (allowlist
+      // histórica ou flag dedicada do Doppler v2) e é suportada. Categorias de
+      // máscara ainda exigem template_body; programáticas não.
       const rendererEligible =
         generationPath.path === "renderer" &&
-        rendererCategories.includes(effectiveCategory) &&
+        rendererCategoryEnabled(effectiveCategory) &&
         RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory);
       // Categorias programáticas (ex: OBSTETRICA) montam o laudo em código e não
       // precisam de template_body; as demais (ABDOMEN_TOTAL) exigem o template.

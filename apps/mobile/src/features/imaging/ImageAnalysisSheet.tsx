@@ -51,8 +51,14 @@ export function ImageAnalysisSheet({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dopplerEnabled, setDopplerEnabled] = useState(false);
 
   const supported = canAnalyzeCategory(categoryId);
+  const canAddDoppler = categoryId === "OBSTETRICA" || categoryId === "MORFOLOGICO";
+
+  useEffect(() => {
+    if (!open || !canAddDoppler) setDopplerEnabled(false);
+  }, [open, canAddDoppler]);
 
   // Carrega as imagens compartilhadas (share intent) quando o sheet abre.
   // Lê o arquivo do cache como base64 — mesma validação de tamanho do picker.
@@ -147,6 +153,7 @@ export function ImageAnalysisSheet({
           setProgress(
             done < total ? `Analisando ${done + 1} de ${total}…` : "Formatando…",
           ),
+        { includeDoppler: dopplerEnabled },
       );
       const text = formatBiometric(results, categoryId as ImagingCategory);
       if (!text.trim()) {
@@ -178,6 +185,25 @@ export function ImageAnalysisSheet({
           <Text style={styles.error}>
             Disponível para Obstétrica, Doppler obstétrico e Morfológico.
           </Text>
+        ) : null}
+
+        {canAddDoppler ? (
+          <Pressable
+            onPress={() => setDopplerEnabled((value) => !value)}
+            style={[styles.moduleToggle, dopplerEnabled && styles.moduleToggleOn]}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: dopplerEnabled }}
+          >
+            <View style={[styles.check, dopplerEnabled && styles.checkOn]}>
+              <Text style={styles.checkMark}>{dopplerEnabled ? "✓" : ""}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.moduleTitle}>Extrair também o Doppler</Text>
+              <Text style={styles.moduleHelp}>
+                Mantém a biometria e acrescenta IR/IP dos vasos encontrados.
+              </Text>
+            </View>
+          </Pressable>
         ) : null}
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -295,6 +321,51 @@ function makeStyles(t: ColorTokens) {
       alignItems: "center",
       justifyContent: "center",
       marginTop: SPACING.xs,
+    },
+    moduleToggle: {
+      minHeight: 58,
+      borderRadius: RADIUS.lg,
+      borderWidth: 1,
+      borderColor: t.separator,
+      backgroundColor: t.fill1,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.xs,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+    },
+    moduleToggleOn: {
+      borderColor: t.brand,
+      backgroundColor: t.brandLight,
+    },
+    check: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: t.textGhost,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkOn: {
+      borderColor: t.brand,
+      backgroundColor: t.brand,
+    },
+    checkMark: {
+      color: "#fff",
+      fontFamily: FONT.bold,
+      fontSize: 13,
+    },
+    moduleTitle: {
+      color: t.text,
+      fontFamily: FONT.semibold,
+      fontSize: 13.5,
+    },
+    moduleHelp: {
+      color: t.textMute,
+      fontFamily: FONT.body,
+      fontSize: 11.5,
+      lineHeight: 16,
     },
     analyzeText: {
       color: "#fff",

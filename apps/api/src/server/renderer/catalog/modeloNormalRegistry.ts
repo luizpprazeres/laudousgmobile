@@ -163,7 +163,7 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
       }),
   },
   {
-    categoria: "DOPPLER_OBSTETRICO", rotulo: "Obstétrica com Doppler",
+    categoria: "DOPPLER_OBSTETRICO", rotulo: "Doppler obstétrico",
     estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     schema: DopplerObstetricoFindingsSchema,
     /**
@@ -173,12 +173,16 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
      * modelo: `mascararPorComparacao` os troca por lacuna.
      */
     seed: {
-      numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL],
-      ip_umbilical: 1.02, perc_umbilical: 50,
-      ip_acm: 1.75, perc_acm: 50,
-      ip_uterina_dir: 0.72, ip_uterina_esq: 0.68,
+      ir_uterina_dir: 0.59, ip_uterina_dir: 0.59,
+      ir_uterina_esq: 0.59, ip_uterina_esq: 0.59,
       ip_medio_uterinas: 0.7, perc_medio_uterinas: 50,
-      ducto_venoso_ip: 0.45, rcp: 1.71,
+      ir_umbilical: 0.58, ip_umbilical: 1.0, perc_umbilical: 50,
+      ir_acm: 0.81, ip_acm: 1.8, perc_acm: 50,
+      ir_ducto_venoso: 0.4, ip_ducto_venoso: 0.72,
+      rcp: 1.8, perfil_hemodinamico: 0.56,
+      incisura: false, pre_centralizacao: false, centralizacao: false,
+      observacoes_adicionais: null, itens_conclusao_livres: [],
+      ig_semanas: null, cervicometria: null,
     },
     /**
      * TODAS as flags de produção atravessam. A varredura de 22/08 achou seis
@@ -199,9 +203,7 @@ render: (f, o) =>
          * descritos como "IP normal" — o falso-normal do Doppler umbilical,
          * corrigido como P0 em julho e que o caminho do catálogo ignorava.
          */
-        umbilicalSafety: process.env.DOPPLER_UMBILICAL_SAFETY === "true",
-        igCorrection: process.env.IG_REFERENCE_CORRECTION === "true",
-        flexivel: process.env.FLEXIBLE_CONCLUSION === "true",
+        umbilicalSafety: true,
       }),
   },
   {

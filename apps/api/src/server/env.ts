@@ -72,6 +72,10 @@ const ServerEnvSchema = z.object({
   // precisa de template_body na variante resolvida — senão cai no writer
   // (fallback automático, rollback trivial = tirar da lista).
   RENDERER_CATEGORIES: z.string().default(""),
+  // Sprint Doppler v2: a categoria passa a ser o exame Doppler ISOLADO e usa o
+  // renderer novo mesmo antes de a allowlist histórica ser atualizada no
+  // Vercel. Rollback explícito: false volta ao writer antigo.
+  DOPPLER_STANDALONE_V2: z.string().default("true"),
   // Projeto modelos (docs/projeto-modelos/): categorias cujo renderer monta o
   // laudo a partir do CATÁLOGO (renderer/catalog/) em vez das frases literais
   // em código. Lista CSV de category_codes. Vazio = comportamento atual, byte

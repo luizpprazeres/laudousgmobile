@@ -5,22 +5,28 @@
 
 import type { BiometricData, Category } from "./types";
 
-/** Campos IP Doppler — usados no merge inteligente para DOPPLER_OBSTETRICO */
-export const DOPPLER_IP_FIELDS: (keyof BiometricData)[] = [
+/** Campos IR/IP Doppler — usados no merge inteligente do módulo especializado. */
+export const DOPPLER_INDEX_FIELDS: (keyof BiometricData)[] = [
+  "irRightUterine",
   "ipRightUterine",
+  "irLeftUterine",
   "ipLeftUterine",
+  "irUmbilical",
   "ipUmbilical",
+  "irMCA",
   "ipMCA",
+  "irDuctusVenosus",
   "ipDuctusVenosus",
 ];
 
 /**
- * Valida IP (Índice de Pulsatilidade): range clínico 0.40–2.50.
+ * Valida IR/IP sem tentar classificar normalidade. O intervalo é apenas uma
+ * barreira contra datas, horários e velocidades confundidos com índices.
  */
-function validateIP(ip: string | undefined): string | undefined {
+function validateIndex(ip: string | undefined): string | undefined {
   if (!ip) return undefined;
   const n = parseFloat(ip);
-  return !isNaN(n) && n >= 0.4 && n <= 2.5 ? ip : undefined;
+  return !isNaN(n) && n >= 0.2 && n <= 3 ? ip : undefined;
 }
 
 /**
@@ -82,13 +88,19 @@ export function validateBiometricData(
   result.gestAgeLMP = s(data.gestAgeLMP);
   result.gestAgeBiometry = s(data.gestAgeBiometry);
 
-  // Doppler-specific fields (IP only)
+  // Doppler-specific fields. O parser especializado usa esta categoria mesmo
+  // quando o exame-base é Obstétrica ou Morfológico.
   if (category === "DOPPLER_OBSTETRICO") {
-    result.ipRightUterine = validateIP(s(data.ipRightUterine));
-    result.ipLeftUterine = validateIP(s(data.ipLeftUterine));
-    result.ipUmbilical = validateIP(s(data.ipUmbilical));
-    result.ipMCA = validateIP(s(data.ipMCA));
-    result.ipDuctusVenosus = validateIP(s(data.ipDuctusVenosus));
+    result.irRightUterine = validateIndex(s(data.irRightUterine));
+    result.ipRightUterine = validateIndex(s(data.ipRightUterine));
+    result.irLeftUterine = validateIndex(s(data.irLeftUterine));
+    result.ipLeftUterine = validateIndex(s(data.ipLeftUterine));
+    result.irUmbilical = validateIndex(s(data.irUmbilical));
+    result.ipUmbilical = validateIndex(s(data.ipUmbilical));
+    result.irMCA = validateIndex(s(data.irMCA));
+    result.ipMCA = validateIndex(s(data.ipMCA));
+    result.irDuctusVenosus = validateIndex(s(data.irDuctusVenosus));
+    result.ipDuctusVenosus = validateIndex(s(data.ipDuctusVenosus));
   }
 
   // Morfológico 2T complementary fields
@@ -140,7 +152,7 @@ export function mergeBiometricData(
   }
 
   const scores = dataArray.map(
-    (d) => DOPPLER_IP_FIELDS.filter((f) => d[f] !== undefined).length,
+    (d) => DOPPLER_INDEX_FIELDS.filter((f) => d[f] !== undefined).length,
   );
   const maxScore = Math.max(...scores);
   const dopplerWinner = maxScore > 0 ? dataArray[scores.indexOf(maxScore)] : undefined;
@@ -151,7 +163,7 @@ export function mergeBiometricData(
   for (const data of dataArray) {
     for (const [key, value] of Object.entries(data)) {
       const k = key as keyof BiometricData;
-      if (!DOPPLER_IP_FIELDS.includes(k) && value && !merged[k]) {
+      if (!DOPPLER_INDEX_FIELDS.includes(k) && value && !merged[k]) {
         merged[k] = value;
       }
     }
@@ -159,7 +171,7 @@ export function mergeBiometricData(
 
   // 2. IP: somente do vencedor Doppler
   if (dopplerWinner) {
-    for (const field of DOPPLER_IP_FIELDS) {
+    for (const field of DOPPLER_INDEX_FIELDS) {
       if (dopplerWinner[field]) {
         merged[field] = dopplerWinner[field];
       }

@@ -11,6 +11,14 @@ import {
   CERVICOMETRIA_ADDON_JSON_SCHEMA,
   renderCervicometriaBloco,
 } from "./CERVICOMETRIA";
+import {
+  DOPPLER_MODULE_EXTRACTION_RULES,
+  DOPPLER_OBSTETRICO_ADDON_JSON_SCHEMA,
+  DOPPLER_TECNICA_CLASSICO,
+  DOPPLER_TECNICA_OBJETIVO,
+  DopplerObstetricoModuleSchema,
+  renderDopplerModule,
+} from "./dopplerObstetricoModule";
 
 /**
  * DET-5 — Renderer de MORFOLOGICO (1º, 2º e 3º trimestre).
@@ -85,6 +93,8 @@ export const MorfologicoFindingsSchema = z.object({
   itens_conclusao_livres: z.array(z.string()).nullish(),
   /** Exame complementar opcional; null = cervicometria não realizada. */
   cervicometria: CervicometriaAddonSchema.nullable().optional(),
+  /** Doppler materno-fetal complementar, independente do protocolo do 1º trimestre. */
+  doppler: DopplerObstetricoModuleSchema.nullable().optional(),
 });
 
 export type MorfologicoFindings = z.infer<typeof MorfologicoFindingsSchema>;
@@ -103,7 +113,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "ig_semanas", "ig_dias", "dum",
     "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
     "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
-    "achados_adicionais", "cervicometria",
+    "achados_adicionais", "cervicometria", "doppler",
   ],
   properties: {
     trimestre: { type: "string", enum: ["1t", "2t", "3t"] },
@@ -125,6 +135,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     achados_adicionais: str,
     itens_conclusao_livres: { type: ["array", "null"], items: { type: "string" } },
     cervicometria: CERVICOMETRIA_ADDON_JSON_SCHEMA,
+    doppler: DOPPLER_OBSTETRICO_ADDON_JSON_SCHEMA,
   },
 } as const;
 
@@ -172,7 +183,8 @@ REGRAS:
    cervicometria ou ditar a medida do colo; caso contrário, null. A medida OI→OE
    e a distância da placenta são em cm (converta mm→cm). OI fechado é true por
    padrão dentro do objeto e false só quando aberto/dilatado/afunilado. Nunca
-   invente a medida.`;
+   invente a medida.
+10. ${DOPPLER_MODULE_EXTRACTION_RULES}`;
 
 // ---------------------------------------------------------------------------
 function ptBr(n: number): string {
@@ -234,6 +246,18 @@ function acrescentarCervicometria(
   conclusao.push(...cervico.conclusao);
 }
 
+function acrescentarDoppler(
+  f: MorfologicoFindings,
+  corpo: string[],
+  conclusao: string[],
+  options?: { umbilicalSafety?: boolean; rawInput?: string },
+): void {
+  if (!f.doppler) return;
+  const doppler = renderDopplerModule(f.doppler, options);
+  corpo.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
+  conclusao.push(...doppler.conclusao);
+}
+
 /** Concordância: "apresentação" feminina → cefálica/pélvica/córmica. */
 function apresentacaoFmt(s: string | null): string {
   if (!s) return "cefálica";
@@ -263,7 +287,7 @@ function grauPlacenta(s: string | null): string | null {
 const COMENTARIOS_1T =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
-function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null): string {
+function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
   const ig = igResultMorfo(f, igCorrection);
   const aspectos: string[] = [
     "Feto único de situação variável.",
@@ -310,10 +334,10 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
   }
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
-  return assemble("ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE", f, aspectos, conclusao, ig.fraseReferencia);
+  return assemble("ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE", f, aspectos, conclusao, ig.fraseReferencia, dopplerOptions);
 }
 
-function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null): string {
+function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
   const ig = igResultMorfo(f, igCorrection);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
@@ -407,7 +431,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
   ];
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
-  return assemble(titulo, f, aspectos, conclusao, ig.fraseReferencia);
+  return assemble(titulo, f, aspectos, conclusao, ig.fraseReferencia, dopplerOptions);
 }
 
 function assemble(
@@ -416,11 +440,13 @@ function assemble(
   aspectos: string[],
   conclusao: string[],
   fraseReferencia: string | null = null,
+  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string },
 ): string {
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
   }
   acrescentarCervicometria(f, aspectos, conclusao);
+  acrescentarDoppler(f, aspectos, conclusao, dopplerOptions);
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = fraseReferencia ? `${fraseReferencia}\n` : "";
   const conclTxt =
@@ -428,12 +454,16 @@ function assemble(
       ? conclusao[0] ?? ""
       : conclusao.map((it, i) => `${i + 1}) ${it}`).join("\n");
   return [
-    titulo,
+    f.doppler ? `${titulo} COM DOPPLER COLORIDO` : titulo,
     dumLinha,
     igProse,
-    f.cervicometria
-      ? `${COMENTARIOS_1T}\nFoi realizada avaliação complementar do colo uterino pela via transvaginal.`
-      : COMENTARIOS_1T,
+    [
+      COMENTARIOS_1T,
+      f.cervicometria
+        ? "Foi realizada avaliação complementar do colo uterino pela via transvaginal."
+        : null,
+      f.doppler ? DOPPLER_TECNICA_CLASSICO : null,
+    ].filter(Boolean).join("\n"),
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     aspectos.join("\n"),
@@ -454,7 +484,7 @@ function assemble(
 export function renderMorfologico(
   f: MorfologicoFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null; umbilicalSafety?: boolean; rawInput?: string },
 ): string {
   const igc = opts?.igCorrection ?? false;
   const g = opts?.golfBall ?? null;
@@ -463,9 +493,10 @@ export function renderMorfologico(
   if (g && f.achados_adicionais) {
     f = { ...f, achados_adicionais: stripGolfBallEcho(f.achados_adicionais) || null };
   }
-  if (opts?.objetivo) return renderMorfologicoObjetivo(f, igc, g);
-  if (f.trimestre === "1t") return render1t(f, igc, g);
-  return render2t3t(f, f.trimestre === "3t", igc, g);
+  const dopplerOptions = { umbilicalSafety: opts?.umbilicalSafety, rawInput: opts?.rawInput };
+  if (opts?.objetivo) return renderMorfologicoObjetivo(f, igc, g, dopplerOptions);
+  if (f.trimestre === "1t") return render1t(f, igc, g, dopplerOptions);
+  return render2t3t(f, f.trimestre === "3t", igc, g, dopplerOptions);
 }
 
 // ===========================================================================
@@ -503,11 +534,13 @@ function assembleObj(
   achados: string[],
   impressao: string[],
   fraseReferencia: string | null = null,
+  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string },
 ): string {
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push(`\n${f.achados_adicionais.trim()}`);
   }
   acrescentarCervicometria(f, achados, impressao);
+  acrescentarDoppler(f, achados, impressao, dopplerOptions);
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = fraseReferencia ? `\n${fraseReferencia}` : "";
   const impressaoTxt =
@@ -515,14 +548,18 @@ function assembleObj(
       ? impressao[0] ?? ""
       : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
   return [
-    titulo,
+    f.doppler ? `${titulo} COM DOPPLER COLORIDO` : titulo,
     dumLinha,
     igProse,
     "",
     "TÉCNICA:",
-    f.cervicometria
-      ? `${TECNICA_OBJ} Avaliação complementar do colo uterino realizada pela via transvaginal.`
-      : TECNICA_OBJ,
+    [
+      TECNICA_OBJ,
+      f.cervicometria
+        ? "Avaliação complementar do colo uterino realizada pela via transvaginal."
+        : null,
+      f.doppler ? DOPPLER_TECNICA_OBJETIVO : null,
+    ].filter(Boolean).join(" "),
     "",
     "ACHADOS:",
     achados.join("\n"),
@@ -544,7 +581,7 @@ function genitaliaFmt(g: string | null): string {
   return g.trim();
 }
 
-function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null): string {
+function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
   const ig = igResultMorfo(f, igCorrection);
   // Doppler das uterinas = presença de IP. Só então o título leva "COM DOPPLER
   // COLORIDO" e entram as frases de IP + a conclusão de dopplervelocimetria.
@@ -600,17 +637,18 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
   return assembleObj(
-    comDoppler
+    comDoppler && !f.doppler
       ? "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE COM DOPPLER COLORIDO"
       : "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
     f,
     achados,
     impressao,
     ig.fraseReferencia,
+    dopplerOptions,
   );
 }
 
-function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null): string {
+function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
   const ig = igResultMorfo(f, igCorrection);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
@@ -677,14 +715,15 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
   ];
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
-  return assembleObj(titulo, f, achados, impressao, ig.fraseReferencia);
+  return assembleObj(titulo, f, achados, impressao, ig.fraseReferencia, dopplerOptions);
 }
 
 export function renderMorfologicoObjetivo(
   f: MorfologicoFindings,
   igCorrection = false,
   golfBall: GolfBall | null = null,
+  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string },
 ): string {
-  if (f.trimestre === "1t") return render1tObj(f, igCorrection, golfBall);
-  return render2t3tObj(f, f.trimestre === "3t", igCorrection, golfBall);
+  if (f.trimestre === "1t") return render1tObj(f, igCorrection, golfBall, dopplerOptions);
+  return render2t3tObj(f, f.trimestre === "3t", igCorrection, golfBall, dopplerOptions);
 }

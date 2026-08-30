@@ -31,6 +31,8 @@
  * - **A tela informa o que foi MEDIDO.** DBP, CC, CA, CF, BCF, ILA/MBV.
  */
 
+import { dopplerDaTela } from "./dopplerParaCatalogo";
+
 type EstadoDaSecao = Record<string, unknown>;
 export type EstadoObstetrico = Record<string, EstadoDaSecao | unknown>;
 
@@ -201,6 +203,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
     itens_conclusao_livres: [],
     observacoes_corpo_livres: [],
     cervicometria: cervicometriaDaTela(estado),
+    doppler: dopplerDaTela(estado),
   };
 
   return { dados, alteracoes: [], pendencias };

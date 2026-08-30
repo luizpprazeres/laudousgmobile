@@ -573,7 +573,8 @@ export async function* runRendererStream(args: {
         // 100% dos laudos — a flag está ligada em produção —, o que tornava
         // MODEL_CATALOG_CATEGORIES inócua sem que nada indicasse isso.
         // Descoberto pelo harness contra laudos reais, 12/08.
-        const catalogoCobreEsteCaso = !objetivo && golfBallObst === null && !igSanityAtua;
+        const catalogoCobreEsteCaso =
+          !objetivo && golfBallObst === null && !igSanityAtua && !ofnd.doppler;
 
         if (usaCatalogo("OBSTETRICA") && catalogoCobreEsteCaso) {
           // Item 7: o overlay do médico entra aqui, e só aqui. Sem
@@ -636,6 +637,8 @@ export async function* runRendererStream(args: {
                 texto: renderObstetrica(ofnd, null, {
                   objetivo, igCorrection, flexivel, grannum,
                   golfBall: golfBallObst, igSanity,
+                  umbilicalSafety: true,
+                  rawInput: args.rawInput,
                 }),
                 degrau: "classico" as const,
                 erro: e1,
@@ -707,12 +710,20 @@ export async function* runRendererStream(args: {
             // Sanity de IG (flag OBST_IG_SANITY): divergência implausível ref×biometria
             // não vira correção absurda (boletim 04/07, 10813392).
             igSanity,
+            umbilicalSafety: true,
+            rawInput: args.rawInput,
           });
         }
         break;
       }
       case "MORFOLOGICO":
-        fullText = renderMorfologico(fnd as MorfologicoFindings, null, { objetivo, igCorrection, golfBall });
+        fullText = renderMorfologico(fnd as MorfologicoFindings, null, {
+          objetivo,
+          igCorrection,
+          golfBall,
+          umbilicalSafety: true,
+          rawInput: args.rawInput,
+        });
         break;
       case "TIREOIDE":
         fullText = renderTireoide(fnd as TireoideFindings, args.rendererPreferences, {
@@ -765,18 +776,14 @@ export async function* runRendererStream(args: {
         fullText = renderProstataSuprapubica(fnd as ProstataSuprapubicaFindings);
         break;
       case "DOPPLER_OBSTETRICO": {
-        // Renderer determinístico (IG Domingos + percentis do input + boilerplate
-        // Doppler). Reusa o corpo obstétrico de OBSTETRICA. Gated por RENDERER_CATEGORIES.
-        // mergeStructuredIg: sobrescreve a IG com o bloco estruturado do app (segurança).
+        // Exame Doppler isolado. Obstétrica e Morfológico compõem o mesmo módulo
+        // dentro dos respectivos renderers, sem trocar a categoria-base.
         const dfnd = mergeStructuredIg(fnd as DopplerObstetricoFindings, args.rawInput);
-        // Doppler gemelar já cai no fallback writer (throw no renderer); o guard de
-        // feto único é defesa em profundidade.
         fullText = renderDopplerObstetrico(dfnd, null, {
-          objetivo, igCorrection, flexivel,
-          golfBall: golfBallSingle(dfnd.numero_fetos),
-          // SEGURANÇA P0 (flag DOPPLER_UMBILICAL_SAFETY): diástole zero/IP umbilical
-          // elevado nunca vira "IP normal na umbilical" (boletim 03/07).
-          umbilicalSafety: env().DOPPLER_UMBILICAL_SAFETY === "true",
+          objetivo,
+          // SEGURANÇA P0 do módulo v2: diástole zero/IP umbilical elevado nunca
+          // vira "IP normal na umbilical" (boletim 03/07).
+          umbilicalSafety: true,
           rawInput: args.rawInput,
         });
         break;

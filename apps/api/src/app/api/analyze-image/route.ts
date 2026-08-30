@@ -1,12 +1,12 @@
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 export { OPTIONS } from "@/server/cors";
 import { analyzeImage, type AnalyzeImageResult } from "@/server/vision/client";
-import type { Category } from "@/server/vision/types";
+import type { Category, ImagingModule } from "@/server/vision/types";
 import { SUPPORTED_IMAGING_CATEGORIES } from "@/server/vision/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Vision API pode levar 20-40s pra Doppler (dupla req paralela). Dá folga.
+// Vision API pode levar 20-40s quando há leitura Doppler especializada. Dá folga.
 export const maxDuration = 90;
 
 const MAX_BATCH = 5;
@@ -17,6 +17,7 @@ type SingleInput = {
   imageBase64: string;
   category: Category;
   gemelar?: boolean;
+  modules?: ImagingModule[];
 };
 
 async function analyzeImageWithRetry(
@@ -56,6 +57,13 @@ function isValidCategory(value: unknown): value is Category {
   );
 }
 
+function isValidModules(value: unknown): value is ImagingModule[] {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.every((module) => module === "DOPPLER_OBSTETRICO"))
+  );
+}
+
 export async function POST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
@@ -86,7 +94,7 @@ export async function POST(req: Request) {
       if (!img || typeof img !== "object") {
         return json({ error: "invalid_image_entry" }, 400);
       }
-      const entry = img as { imageBase64?: unknown; category?: unknown };
+      const entry = img as { imageBase64?: unknown; category?: unknown; modules?: unknown };
       if (typeof entry.imageBase64 !== "string" || !entry.imageBase64) {
         return json({ error: "imageBase64 obrigatório em cada imagem." }, 400);
       }
@@ -95,6 +103,9 @@ export async function POST(req: Request) {
           { error: `category inválida. Aceitos: ${SUPPORTED_IMAGING_CATEGORIES.join(", ")}` },
           400,
         );
+      }
+      if (!isValidModules(entry.modules)) {
+        return json({ error: "modules inválidos." }, 400);
       }
       if (entry.imageBase64.length > MAX_BASE64_BYTES) {
         return json({ error: "Imagem muito grande. Tamanho máximo: 5 MB." }, 413);
@@ -108,6 +119,7 @@ export async function POST(req: Request) {
           imageBase64: img.imageBase64,
           category: img.category,
           gemelar: img.gemelar,
+          modules: img.modules,
         })
           .then(({ data, model }) => ({
             success: true as const,
@@ -146,6 +158,9 @@ export async function POST(req: Request) {
       400,
     );
   }
+  if (!isValidModules(single.modules)) {
+    return json({ error: "modules inválidos." }, 400);
+  }
 
   if (single.imageBase64.length > MAX_BASE64_BYTES) {
     return json({ error: "Imagem muito grande. Tamanho máximo: 5 MB." }, 413);
@@ -156,6 +171,7 @@ export async function POST(req: Request) {
       imageBase64: single.imageBase64,
       category: single.category,
       gemelar: single.gemelar,
+      modules: single.modules,
     });
 
     // Detecta resposta vazia

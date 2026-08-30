@@ -1,249 +1,193 @@
-/**
- * Golden determinístico do renderer DOPPLER_OBSTETRICO (DET).
- * Caso-base = d213131b (RCF real, boletim 28/06): IG Domingos, percentis do input,
- * MBV (não ILA), peso <P3 + Gratacós, boilerplate Doppler normal.
- * Rodar: tsx src/server/renderer/__tests__/doppler-obstetrico-golden.manual.ts
- */
+/** Golden do Doppler isolado + composição em Obstétrica/Morfológico. */
+import { achadoNormalDe } from "../catalog/modeloNormal";
 import {
+  DopplerObstetricoFindingsSchema,
   renderDopplerObstetrico,
-  mergeStructuredIg,
-  type DopplerObstetricoFindings,
 } from "../categories/DOPPLER_OBSTETRICO";
+import {
+  ObstetricaFindingsSchema,
+  renderObstetrica,
+} from "../categories/OBSTETRICA";
+import {
+  MorfologicoFindingsSchema,
+  renderMorfologico,
+} from "../categories/MORFOLOGICO";
+import type { DopplerObstetricoModule } from "../categories/dopplerObstetricoModule";
+import { adaptarDopplerObstetrico, dopplerDaTela } from "../../../../../web/src/lib/catalog/dopplerParaCatalogo";
 
 let pass = 0;
 let fail = 0;
-function check(name: string, cond: boolean, detail?: string) {
-  if (cond) {
+function check(name: string, condition: boolean, detail?: string) {
+  if (condition) {
     pass += 1;
     console.log(`✓ ${name}`);
   } else {
     fail += 1;
-    console.error(`✗ ${name}${detail ? `\n   ${detail}` : ""}`);
+    console.error(`✗ ${name}${detail ? `\n${detail}` : ""}`);
   }
 }
 
-type Feto = DopplerObstetricoFindings["fetos"][number];
-const feto = (p: Partial<Feto>): Feto => ({
-  rotulo: null, posicao_relativa: null, apresentacao: null, dorso: null,
-  polo_cefalico: null, bcf_bpm: 140, dbp_mm: null, cc_mm: null, ca_mm: null,
-  cf_mm: null, ccn_mm: null, peso_g: null, peso_variacao_g: null, percentil: null, bcf_alteracao: null, movimentos_fetais: null, cranio_achado: null, cranio_medida_mm: null, cranio_lateralidade: null, cordao_vasos: null,
-  ...p,
-});
+const DOPPLER_VAZIO: DopplerObstetricoModule = {
+  ir_uterina_dir: null, ip_uterina_dir: null,
+  ir_uterina_esq: null, ip_uterina_esq: null,
+  ip_medio_uterinas: null, perc_medio_uterinas: null,
+  ir_umbilical: null, ip_umbilical: null, perc_umbilical: null,
+  ir_acm: null, ip_acm: null, perc_acm: null,
+  ir_ducto_venoso: null, ip_ducto_venoso: null,
+  ducto_venoso_qualitativo: null, rcp: null, perfil_hemodinamico: null,
+  umbilical_alterado: null, acm_alterado: null,
+  incisura: null, ectasia: null, pre_centralizacao: null,
+  centralizacao: null, uterinas_acima_p95: null,
+};
 
-const F = (p: Partial<DopplerObstetricoFindings>): DopplerObstetricoFindings => ({
-  // obstétrico
-  numero_fetos: 1, corionicidade: null, gestacao_inicial: false,
-  fetos: [feto({})], ig_semanas: 24, ig_dias: 6, dum: null,
-  data_exame: null, primeira_us_data: null, primeira_us_ig_semanas: null,
-  primeira_us_ig_dias: null, ig_referencia_hoje_semanas: null,
-  ig_referencia_hoje_dias: null, referencia_fonte: null, corrigir_ig: null,
-  saco_gestacional_mm: null, saco_gestacional_medidas_mm: null,
-  placenta_quantidade: null, placenta_localizacao: null,
-  placenta_ecotextura: null, placenta_grau: null, placenta_relacao_orificio: null, placenta_distancia_orificio_mm: null, placenta_achado: null, placenta_achado_medidas: null, liquido_tipo: null,
-  liquido_ila_cm: null, liquido_mbv_por_feto_cm: null, liquido_classe: null,
-  achados_adicionais: null, itens_conclusao_livres: [], observacoes_corpo_livres: [],
-  // doppler
-  ip_umbilical: null, perc_umbilical: null, ip_acm: null, perc_acm: null,
-  ip_uterina_dir: null, ip_uterina_esq: null, ip_medio_uterinas: null,
-  perc_medio_uterinas: null, ducto_venoso_ip: null, ducto_venoso_qualitativo: null,
-  rcp: null, umbilical_alterado: null, acm_alterado: null, incisura: null,
-  ectasia: null, pre_centralizacao: null, centralizacao: null,
-  uterinas_acima_p95: null, restricao_crescimento: null, vitalidade_ausente: null,
-  ...p,
-});
+const DOPPLER_NORMAL: DopplerObstetricoModule = {
+  ...DOPPLER_VAZIO,
+  ir_uterina_dir: 0.59, ip_uterina_dir: 0.59,
+  ir_uterina_esq: 0.59, ip_uterina_esq: 0.59,
+  ir_umbilical: 0.58, ip_umbilical: 1.0,
+  ir_acm: 0.81, ip_acm: 1.8,
+  ir_ducto_venoso: 0.4, ip_ducto_venoso: 1.89,
+  perfil_hemodinamico: 0.8,
+  umbilical_alterado: false, acm_alterado: false,
+  incisura: false, pre_centralizacao: false, centralizacao: false,
+};
 
-// Caso-base d213131b: RCF, IG Domingos, percentis, MBV, Doppler normal.
-const RCF = (over: Partial<DopplerObstetricoFindings> = {}) =>
-  F({
-    fetos: [feto({ apresentacao: "cefálica", dorso: "à esquerda", bcf_bpm: 130, dbp_mm: 66.3, cc_mm: 241.3, ca_mm: 208.1, cf_mm: 43.6, peso_g: 775, peso_variacao_g: 113, percentil: 2 })],
-    ig_semanas: 24, ig_dias: 6,
-    data_exame: "28/06/2026", primeira_us_data: "28/06/2026",
-    primeira_us_ig_semanas: 26, primeira_us_ig_dias: 6,
-    referencia_fonte: "usg_precoce", corrigir_ig: true,
-    restricao_crescimento: true,
-    liquido_tipo: "mbv", liquido_mbv_por_feto_cm: [2.9],
-    ip_umbilical: 1.27, perc_umbilical: 46, ip_acm: 2.31, perc_acm: 88,
-    ip_uterina_dir: 0.97, ip_uterina_esq: 0.76, ip_medio_uterinas: 0.86, perc_medio_uterinas: 37,
-    ducto_venoso_ip: 0.46,
-    ...over,
+const ISOLADO = (doppler: DopplerObstetricoModule) =>
+  DopplerObstetricoFindingsSchema.parse({
+    ...doppler,
+    observacoes_adicionais: null,
+    itens_conclusao_livres: [],
+    ig_semanas: null,
+    cervicometria: null,
   });
 
-// ── Estrutura ──
 {
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  check("título com Doppler colorido", /^ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO/.test(l), l);
-  check("tem COMENTÁRIOS", /COMENTÁRIOS:/.test(l), l);
-  check("tem OS SEGUINTES ASPECTOS", /OS SEGUINTES ASPECTOS FORAM OBSERVADOS:/.test(l), l);
-  check("tem DOPPLERVELOCIMETRIA", /DOPPLERVELOCIMETRIA:/.test(l), l);
-  check("tem CONCLUSÃO", /CONCLUSÃO:/.test(l), l);
+  const laudo = renderDopplerObstetrico(ISOLADO(DOPPLER_NORMAL));
+  check("isolado: título puro", laudo.startsWith("DOPPLERVELOCIMETRIA OBSTÉTRICA"), laudo);
+  check("isolado: não carrega biometria", !/DBP|placenta|líquido amniótico|BCF/.test(laudo), laudo);
+  check("isolado: IR e IP por vaso", /Artéria umbilical com índice de resistividade de 0,58 e índice de pulsatilidade de 1\./.test(laudo), laudo);
+  check("isolado: conclusão IR e IP", /Índices de resistividade e de pulsatilidade normais nas artérias uterinas, umbilical e artéria cerebral média\./.test(laudo), laudo);
+  check("isolado: quatro conclusões normais", /4\) Perfil hemodinâmico fetal é normal, menor de 1\.0\.$/.test(laudo), laudo);
 }
 
-// ── IG Domingos (correção >5d) ──
 {
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
+  const laudo = renderDopplerObstetrico(ISOLADO(DOPPLER_NORMAL), null, { objetivo: true });
+  check("objetivo: três seções", /TÉCNICA:\n[\s\S]+ACHADOS:\n[\s\S]+IMPRESSÃO:/.test(laudo), laudo);
+  check("objetivo: sem estrutura clássica", !/COMENTÁRIOS:|OS SEGUINTES ASPECTOS|CONCLUSÃO:/.test(laudo), laudo);
+}
+
+{
+  const parcial = ISOLADO({ ...DOPPLER_VAZIO, ir_uterina_dir: 0.59 });
+  const laudo = renderDopplerObstetrico(parcial);
+  check("parcial: preserva IR isolado", /Artéria uterina direita com índice de resistividade de 0,59\./.test(laudo), laudo);
+  check("parcial: não inventa IP nem lacuna", !/____|índice de pulsatilidade de/.test(laudo), laudo);
+}
+
+{
+  const indicesDesencontrados = ISOLADO({
+    ...DOPPLER_VAZIO,
+    ir_uterina_dir: 0.59,
+    ip_umbilical: 1.0,
+  });
+  const laudo = renderDopplerObstetrico(indicesDesencontrados);
   check(
-    "IG: frase de correção Domingos",
-    /Gestação em torno de 24 semanas e 6 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 26 semanas e 6 dias\./.test(l),
-    l,
+    "parcial: IR de outro vaso não vira normalidade da umbilical",
+    !/resistividade e de pulsatilidade normais na artéria umbilical/i.test(laudo),
+    laudo,
   );
 }
 
-// ── IG flag OFF: degrada p/ biometria pura (byte-stable) ──
 {
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: false });
-  check("IG OFF: só biometria, sem correção", /Gestação em torno de 24 semanas e 6 dias\./.test(l) && !/devendo ser corrigida/.test(l), l);
+  const laudo = renderDopplerObstetrico(ISOLADO(DOPPLER_VAZIO));
+  check("sem dados: hard stop", /Dados Doppler insuficientes para conclusão hemodinâmica\./.test(laudo), laudo);
+  check("sem dados: não afirma normalidade", !/normais nas artérias|perfil hemodinâmico fetal é normal/i.test(laudo), laudo);
 }
 
-// ── Percentis do input PRESERVADOS na seção ──
 {
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  check("percentil umbilical preservado", /Artéria umbilical: IP 1,27 \(percentil 46\)\./.test(l), l);
-  check("percentil ACM preservado", /Artéria cerebral média: IP 2,31 \(percentil 88\)\./.test(l), l);
-  check("IP médio uterinas + percentil", /IP médio das artérias uterinas mede 0,86 \(percentil 37\)\./.test(l), l);
-  check("ducto venoso IP numérico", /Ducto venoso: IP 0,46\./.test(l), l);
+  const alterado = ISOLADO({
+    ...DOPPLER_NORMAL,
+    ip_umbilical: 2.1,
+    umbilical_alterado: null,
+    incisura: true,
+    centralizacao: true,
+    pre_centralizacao: false,
+    perfil_hemodinamico: 1.2,
+  });
+  const laudo = renderDopplerObstetrico(alterado, null, { umbilicalSafety: true });
+  check("alterado: umbilical alta não vira normal", /Índice de pulsatilidade elevado na artéria umbilical\./.test(laudo), laudo);
+  check("alterado: incisura", /Presença de incisura protodiastólica/.test(laudo), laudo);
+  check("alterado: centralização", /brain sparing/.test(laudo), laudo);
+  check("alterado: perfil", /Perfil hemodinâmico fetal alterado, maior de 1\.0\./.test(laudo), laudo);
 }
 
-// ── Líquido: MBV (NUNCA ILA), frase canônica do Luiz ──
+const FETO = {
+  rotulo: null, posicao_relativa: null, apresentacao: "cefálica", dorso: null,
+  polo_cefalico: null, bcf_bpm: 145, dbp_mm: 70, cc_mm: 250, ca_mm: 230,
+  cf_mm: 50, ccn_mm: null, peso_g: 1200, peso_variacao_g: null, percentil: null,
+};
+const CERVICO = {
+  colo_oi_oe_cm: 3.4, orificio_interno_fechado: true,
+  placenta_distancia_cm: null, placenta_distante: true,
+  cerclagem: false, observacoes: null,
+};
+
+const obstBase = ObstetricaFindingsSchema.parse({
+  ...(achadoNormalDe(ObstetricaFindingsSchema) as Record<string, unknown>),
+  numero_fetos: 1,
+  gestacao_inicial: false,
+  fetos: [FETO],
+  ig_semanas: 30,
+  itens_conclusao_livres: [],
+  observacoes_corpo_livres: [],
+  cervicometria: null,
+  doppler: null,
+});
 {
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  check("corpo: 'O maior bolsão vertical mede 2,9 cm.'", /O maior bolsão vertical mede 2,9 cm\./.test(l), l);
-  check("conclusão: 'Líquido amniótico de quantidade normal (maior bolsão vertical mede 2,9 cm).'", /Líquido amniótico de quantidade normal \(maior bolsão vertical mede 2,9 cm\)\./.test(l), l);
-  check("NUNCA rotula bolsão como ILA/índice", !/[íi]ndice d[oe] l[íi]quido amni[óo]tico/i.test(l), l);
+  const ausente = renderObstetrica(obstBase);
+  const nulo = renderObstetrica({ ...obstBase, doppler: null });
+  check("obstétrica sem Doppler: byte-idêntica", ausente === nulo);
+  const composto = renderObstetrica({ ...obstBase, cervicometria: CERVICO, doppler: DOPPLER_NORMAL });
+  check("obstétrica composta: título", /^ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO/.test(composto), composto);
+  check("obstétrica composta: cervix antes de Doppler", composto.indexOf("CERVICOMETRIA:") < composto.indexOf("DOPPLERVELOCIMETRIA:"), composto);
+  check("obstétrica composta: Doppler fecha conclusão", /Perfil hemodinâmico fetal é normal, menor de 1\.0\.$/.test(composto), composto);
 }
 
-// ── Placenta com sufixo canônico do Doppler ──
+const morfoBase = MorfologicoFindingsSchema.parse({
+  ...(achadoNormalDe(MorfologicoFindingsSchema) as Record<string, unknown>),
+  trimestre: "2t",
+  ig_semanas: 22,
+  itens_conclusao_livres: [],
+  cervicometria: null,
+  doppler: null,
+});
 {
-  const l = renderDopplerObstetrico(RCF({ placenta_localizacao: "anterior", placenta_ecotextura: "homogênea" }), null, { igCorrection: true });
-  check("placenta com 'de acordo com a fase da gestação'", /Placenta de localização anterior, com ecotextura homogênea, de acordo com a fase da gestação\./.test(l), l);
+  const composto = renderMorfologico({ ...morfoBase, cervicometria: CERVICO, doppler: DOPPLER_NORMAL });
+  check("morfológico composto: título", /^ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE COM DOPPLER COLORIDO/.test(composto), composto);
+  check("morfológico composto: cervix e Doppler coexistem", /CERVICOMETRIA:[\s\S]+DOPPLERVELOCIMETRIA:/.test(composto), composto);
+  check("morfológico composto: conclusão Doppler ao final", /Perfil hemodinâmico fetal é normal, menor de 1\.0\.$/.test(composto), composto);
 }
 
-// ── Peso usa "g" (não "gramas") ──
 {
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  check("peso em 'g' (não 'gramas')", /Peso aproximado de 775 g \(\+- 113 g, percentil 2\)\./.test(l) && !/gramas/.test(l), l);
-}
+  const secao = {
+    realizado: "sim",
+    "realizado.sim.ir_umb": "0,58",
+    "realizado.sim.ip_umb": "1,02",
+    "realizado.sim.ir_acm": "0,81",
+    "realizado.sim.ip_acm": "1,48",
+    "realizado.sim.incisura": "ausente",
+    "realizado.sim.centralizacao": "ausente",
+    "realizado.sim.umbilical": "normal",
+    "realizado.sim.acm": "normal",
+  };
+  const adaptado = dopplerDaTela({ doppler: secao });
+  check("web add-on: ativa sem trocar categoria", adaptado?.ir_umbilical === 0.58 && adaptado?.ip_acm === 1.48, JSON.stringify(adaptado));
+  check("web add-on: desligado vira null", dopplerDaTela({ doppler: { ...secao, realizado: "nao" } }) === null);
 
-// ── Linha de perfil NÃO aparece no corpo; conclusão mantém a frase ──
-{
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  check("sem 'Perfil hemodinâmico fetal: X.' no corpo", !/Perfil hemodinâmico fetal: [0-9]/.test(l), l);
-  check("conclusão mantém perfil normal", /Perfil hemodinâmico fetal é normal, menor de 1\.0\./.test(l), l);
-}
-
-// ── SEGURANÇA: gestação inicial e óbito → throw (fallback writer) ──
-{
-  let threw = false;
-  try { renderDopplerObstetrico(RCF({ gestacao_inicial: true }), null, { igCorrection: true }); } catch { threw = true; }
-  check("gestação inicial → throw (fallback)", threw);
-}
-{
-  let threw = false;
-  try { renderDopplerObstetrico(RCF({ vitalidade_ausente: true }), null, { igCorrection: true }); } catch { threw = true; }
-  check("óbito/sem vitalidade → throw (fallback)", threw);
-}
-
-// ── Peso <P3 → P3 + Gratacós ──
-{
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  check("peso abaixo do P3", /O peso fetal encontra-se abaixo do percentil 3 para a idade gestacional\./.test(l), l);
-  check("Gratacós estágio I", /Sinais de restrição do crescimento fetal, estágio I de Gratacós\./.test(l), l);
-}
-
-// ── Peso 10–95 → SEM item de peso ──
-{
-  const l = renderDopplerObstetrico(RCF({ fetos: [feto({ apresentacao: "cefálica", dbp_mm: 80, peso_g: 2200, percentil: 45 })], restricao_crescimento: null }), null, { igCorrection: true });
-  check("peso 10–95: sem item de peso", !/abaixo do percentil|Gratac[óo]s|P\.?I\.?G/i.test(l), l);
-}
-
-// ── Boilerplate Doppler normal completo ──
-{
-  const l = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  check("IP normal (3 vasos)", /Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média\./.test(l), l);
-  check("ausência de incisuras", /Ausência de sinais de incisuras\./.test(l), l);
-  check("sem pré/centralização", /Não há sinais de pré-centralização ou de centralização\./.test(l), l);
-  check("perfil normal <1.0", /Perfil hemodinâmico fetal é normal, menor de 1\.0\./.test(l), l);
-}
-
-// ── Uterinas > P95 ──
-{
-  const l = renderDopplerObstetrico(RCF({ perc_medio_uterinas: 97 }), null, { igCorrection: true });
-  check("uterinas >P95 na conclusão", /IP médio das artérias uterinas acima do percentil 95 para a idade gestacional\./.test(l), l);
-  check("IP normal exclui uterinas", /Índices de pulsatilidade normais nas artérias umbilical e cerebral média\./.test(l), l);
-}
-
-// ── Byte-stability: render 2x idêntico ──
-{
-  const a = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  const b = renderDopplerObstetrico(RCF(), null, { igCorrection: true });
-  check("byte-stability (2x idêntico)", a === b);
-}
-
-// ── mergeStructuredIg: bloco estruturado do app vence garble de ASR (segurança) ──
-{
-  // d213131b: prose tinha "hoje com 20...6 dias" (garble); estruturado = DUM 26s6d.
-  const raw = "IG pela DUM: 26s6d\nIG pela biometria: 24s6d\n...hoje com 20 e semanas e 6 dias...";
-  const m = mergeStructuredIg(F({ ig_semanas: 99, ig_dias: 9, ig_referencia_hoje_semanas: 20, ig_referencia_hoje_dias: 6, referencia_fonte: null }), raw);
-  check("merge IG: biometria do bloco (24s6d)", m.ig_semanas === 24 && m.ig_dias === 6, JSON.stringify(m));
-  check("merge IG: referência do bloco (26s6d, não 20)", m.ig_referencia_hoje_semanas === 26 && m.ig_referencia_hoje_dias === 6, JSON.stringify(m));
-  check("merge IG: fonte = dum", m.referencia_fonte === "dum");
-}
-{
-  const raw = "IG pela ultrassonografia precoce: 41s0d\nIG pela biometria: 38s4d";
-  const m = mergeStructuredIg(F({}), raw);
-  check("merge IG: US precoce → fonte usg_precoce + 41s0d", m.referencia_fonte === "usg_precoce" && m.ig_referencia_hoje_semanas === 41 && m.ig_referencia_hoje_dias === 0, JSON.stringify(m));
-  check("merge IG: âncora biometria 38s4d", m.ig_semanas === 38 && m.ig_dias === 4);
-}
-{
-  // Sem bloco estruturado → findings intocados (confia na extração).
-  const orig = F({ ig_semanas: 30, ig_dias: 2, referencia_fonte: "usg_precoce" });
-  const m = mergeStructuredIg(orig, "Sonografia obstétrica com doppler, feto cefálico.");
-  check("merge IG: sem bloco → intocado", m.ig_semanas === 30 && m.ig_dias === 2 && m.referencia_fonte === "usg_precoce");
-}
-
-// SEGURANÇA gemelar (boletim 2026-06-30, 9cb5204c): 2+ fetos → throw → writer.
-{
-  const twinN = F({ numero_fetos: 2, fetos: [feto({}), feto({})] });
-  let threw = false;
-  try { renderDopplerObstetrico(twinN, null, { igCorrection: true }); }
-  catch { threw = true; }
-  check("gemelar (numero_fetos=2) lança → fallback writer", threw);
-
-  const twinArr = F({ numero_fetos: 1, fetos: [feto({}), feto({ apresentacao: "pélvica" })] });
-  let threw2 = false;
-  try { renderDopplerObstetrico(twinArr, null, { igCorrection: true }); }
-  catch { threw2 = true; }
-  check("gemelar (fetos.length=2) lança → fallback writer", threw2);
-
-  // Controle: feto único continua renderizando (não regride).
-  let single = "";
-  try { single = renderDopplerObstetrico(RCF(), null, { igCorrection: true }); } catch { /* */ }
-  check("feto único NÃO lança (continua no renderer)", /CONCLUSÃO:/.test(single));
-}
-
-// ── Camada flexível (P1 dex1): Doppler herda o schema; deve renderizar os campos
-// livres com a flag, senão dropa o inusitado silenciosamente. ──
-{
-  const base = F({ observacoes_corpo_livres: ["As adrenais fetais têm morfologia normal."], itens_conclusao_livres: ["O exame comparado ao anterior mostra evolução normal."] });
-  // Flag OFF: campos livres NÃO aparecem (byte-estável com o legado).
-  const off = renderDopplerObstetrico(base, null, { igCorrection: true });
-  check("Doppler flexivel OFF: corpo-livre não aparece", !/adrenais/.test(off));
-  check("Doppler flexivel OFF: item-livre não aparece", !/evolução normal/.test(off));
-  // Flag ON clássico: corpo-livre nos ASPECTOS, item-livre na CONCLUSÃO.
-  const on = renderDopplerObstetrico(base, null, { igCorrection: true, flexivel: true });
-  const [corpo, concl] = on.split("CONCLUSÃO:");
-  check("Doppler flexivel ON: adrenais no corpo", /adrenais/.test(corpo ?? ""));
-  check("Doppler flexivel ON: adrenais NÃO na conclusão", !/adrenais/.test(concl ?? ""));
-  check("Doppler flexivel ON: comparação na conclusão", /evolução normal/.test(concl ?? ""));
-  // Flag ON objetivo: corpo-livre nos ACHADOS.
-  const onObj = renderDopplerObstetrico(base, null, { igCorrection: true, flexivel: true, objetivo: true });
-  check("Doppler objetivo ON: adrenais nos achados", /adrenais/.test(onObj));
-  // Dedup: biometria reditada não duplica.
-  const dup = renderDopplerObstetrico(
-    F({ fetos: [feto({ dbp_mm: 60 })], observacoes_corpo_livres: ["Diâmetro biparietal (DBP) de 60 mm."] }),
-    null,
-    { igCorrection: true, flexivel: true },
-  );
-  check("Doppler flexivel ON: dedup de biometria reditada", (dup.match(/Diâmetro biparietal \(DBP\) de 60 mm/g) ?? []).length === 1);
+  const isolado = adaptarDopplerObstetrico({
+    doppler: { ir_umb: "0,58", ip_umb: "1,02", ir_acm: "0,81", ip_acm: "1,48" },
+  });
+  const parsed = DopplerObstetricoFindingsSchema.parse(isolado.dados);
+  check("web isolado: usa o mesmo schema canônico", parsed.ir_umbilical === 0.58 && parsed.ip_acm === 1.48);
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);

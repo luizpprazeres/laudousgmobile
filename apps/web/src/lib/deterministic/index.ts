@@ -16,6 +16,7 @@ import { partesMoles } from './organs/partesMoles'
 import { musculoesqueletico } from './organs/musculoesqueletico'
 import { obstetrica } from './organs/obstetrica'
 import { morfologico } from './organs/morfologico'
+import { dopplerObstetrico } from './organs/dopplerObstetrico'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
@@ -30,6 +31,7 @@ export { partesMoles } from './organs/partesMoles'
 export { musculoesqueletico } from './organs/musculoesqueletico'
 export { obstetrica } from './organs/obstetrica'
 export { morfologico } from './organs/morfologico'
+export { dopplerObstetrico } from './organs/dopplerObstetrico'
 export type { ExamCategory, ExamSection } from './organs/abdomeTotal'
 export { vesiculaModule } from './organs/vesicula'
 
@@ -40,7 +42,7 @@ export { vesiculaModule } from './organs/vesicula'
  * (Tireoide não entra aqui: ela foi a PILOTO da troca de motor e agora sai do
  *  `/render` canônico. Ver a nota em `organs/tireoide.ts`.)
  */
-export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina, cervical, partesMoles, musculoesqueletico, obstetrica, morfologico]
+export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina, cervical, partesMoles, musculoesqueletico, obstetrica, morfologico, dopplerObstetrico]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
 )

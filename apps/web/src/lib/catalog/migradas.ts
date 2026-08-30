@@ -25,6 +25,7 @@ export const CATEGORIAS_MIGRADAS = [
   "MAMARIA",
   "OBSTETRICA",
   "MORFOLOGICO",
+  "DOPPLER_OBSTETRICO",
   "ABDOMEN_TOTAL",
 ] as const
 
