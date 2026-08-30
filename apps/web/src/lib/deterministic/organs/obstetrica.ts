@@ -11,6 +11,7 @@
 
 import type { ExamCategory } from './abdomeTotal'
 import type { OrganModule, OrganState, OrganComposition } from '../types'
+import { criarCervicometriaAddonModule } from './cervicometriaAddon'
 import { computeIG, type Referencia } from '../../ig/computeIG'
 import { preEclampsiaFmfSpec } from '../../calculators/specs'
 
@@ -297,6 +298,8 @@ const achadosModule: OrganModule = {
   },
 }
 
+const cervicometriaModule = criarCervicometriaAddonModule('OBSTETRICA')
+
 export const obstetrica: ExamCategory = {
   id: 'OBSTETRICA',
   name: 'Obstétrica',
@@ -309,6 +312,7 @@ export const obstetrica: ExamCategory = {
     { id: 'biometria', label: 'Biometria', group: 'orgaos', module: biometriaModule },
     { id: 'placenta', label: 'Placenta', group: 'orgaos', module: placentaModule },
     { id: 'liquido', label: 'Líquido', group: 'orgaos', module: liquidoModule },
+    { id: 'cervicometria', label: 'Cervicometria', group: 'orgaos', module: cervicometriaModule },
     { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
   ],
   calculators: [preEclampsiaFmfSpec],

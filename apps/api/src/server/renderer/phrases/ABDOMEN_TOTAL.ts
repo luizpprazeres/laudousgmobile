@@ -512,6 +512,25 @@ export function assembleAbdomenObjetivo(args: {
     .trim();
 }
 
+/**
+ * Entrada síncrona do Abdome Objetivo para Biblioteca e web. Reusa exatamente
+ * os mesmos renderizadores de órgão e o mesmo assembler do pipeline; nesta
+ * entrada não há free-slot por LLM, apenas os achados estruturados do exame.
+ */
+export function renderAbdomenTotalObjetivo(f: AbdomenTotalFindings): string {
+  const organRenders = new Map<AbdomenOrganKey, OrganRender>();
+  for (const organ of ABDOMEN_ORGAN_KEYS) {
+    organRenders.set(organ, renderOrgan(organ, f.orgaos[organ]));
+  }
+
+  return assembleAbdomenObjetivo({
+    organRenders,
+    freeByOrgan: new Map(),
+    extraRenders: f.achados_extra_abdominais.map(renderExtraAbdominal),
+    allOrganKeys: ABDOMEN_ORGAN_KEYS,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Montagem SÍNCRONA do clássico — o caminho da web
 // ---------------------------------------------------------------------------

@@ -13,6 +13,7 @@
 import type { ExamCategory, ExamSection } from './abdomeTotal'
 import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { igModule, numOrNull, ptBr, mm, classeILA } from './obstetrica'
+import { criarCervicometriaAddonModule } from './cervicometriaAddon'
 
 const TECNICA =
   'Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
@@ -239,12 +240,15 @@ const achadosModule: OrganModule = {
   },
 }
 
+const cervicometriaModule = criarCervicometriaAddonModule('MORFOLOGICO')
+
 const SECTIONS: ExamSection[] = [
   { id: 'ig', label: 'IG e datas', group: 'orgaos', module: igModule },
   { id: 'feto', label: 'Feto', group: 'orgaos', module: fetoModule },
   { id: 'anatomia', label: 'Anatomia fetal', group: 'orgaos', module: anatomiaModule },
   { id: 'biometria', label: 'Biometria', group: 'orgaos', module: biometriaModule },
   { id: 'extrafetal', label: 'Extra-fetal', group: 'orgaos', module: extraFetalModule },
+  { id: 'cervicometria', label: 'Cervicometria', group: 'orgaos', module: cervicometriaModule },
   { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
 ]
 

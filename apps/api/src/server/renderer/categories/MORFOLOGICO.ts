@@ -6,6 +6,11 @@ import {
   stripGolfBallEcho,
   type GolfBall,
 } from "./golfBall";
+import {
+  CervicometriaAddonSchema,
+  CERVICOMETRIA_ADDON_JSON_SCHEMA,
+  renderCervicometriaBloco,
+} from "./CERVICOMETRIA";
 
 /**
  * DET-5 — Renderer de MORFOLOGICO (1º, 2º e 3º trimestre).
@@ -78,6 +83,8 @@ export const MorfologicoFindingsSchema = z.object({
    * — o médico às vezes reescreve na conclusão o que já é campo próprio.
    */
   itens_conclusao_livres: z.array(z.string()).nullish(),
+  /** Exame complementar opcional; null = cervicometria não realizada. */
+  cervicometria: CervicometriaAddonSchema.nullable().optional(),
 });
 
 export type MorfologicoFindings = z.infer<typeof MorfologicoFindingsSchema>;
@@ -96,7 +103,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "ig_semanas", "ig_dias", "dum",
     "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
     "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
-    "achados_adicionais",
+    "achados_adicionais", "cervicometria",
   ],
   properties: {
     trimestre: { type: "string", enum: ["1t", "2t", "3t"] },
@@ -117,6 +124,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     corrigir_ig: { type: ["boolean", "null"] },
     achados_adicionais: str,
     itens_conclusao_livres: { type: ["array", "null"], items: { type: "string" } },
+    cervicometria: CERVICOMETRIA_ADDON_JSON_SCHEMA,
   },
 } as const;
 
@@ -158,7 +166,13 @@ REGRAS:
    palavras do médico. NUNCA coloque aqui frases de NORMALIDADE redundantes
    ("sem descolamentos", "movimentos e tônus presentes", "líquido normal",
    "placenta grau 2") — dados estruturados vão nos campos próprios; frases de
-   normalidade já estão no modelo. null se o exame for normal.`;
+   normalidade já estão no modelo. null se o exame for normal.
+9. cervicometria: exame complementar OPCIONAL dentro deste mesmo laudo. Preencha
+   o objeto SOMENTE quando o médico disser que realizou/quer acrescentar a
+   cervicometria ou ditar a medida do colo; caso contrário, null. A medida OI→OE
+   e a distância da placenta são em cm (converta mm→cm). OI fechado é true por
+   padrão dentro do objeto e false só quando aberto/dilatado/afunilado. Nunca
+   invente a medida.`;
 
 // ---------------------------------------------------------------------------
 function ptBr(n: number): string {
@@ -207,6 +221,17 @@ function pesoLinhaMorfo(f: MorfologicoFindings): string {
   if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
   const sufixo = extras.length > 0 ? ` (${extras.join(", ")})` : "";
   return `Peso fetal estimado em ${f.peso_g !== null ? ptBr(f.peso_g) : "____"} g${sufixo}.`;
+}
+
+function acrescentarCervicometria(
+  f: MorfologicoFindings,
+  corpo: string[],
+  conclusao: string[],
+): void {
+  if (!f.cervicometria) return;
+  const cervico = renderCervicometriaBloco(f.cervicometria, f.ig_semanas);
+  corpo.push("\nCERVICOMETRIA:", ...cervico.achados);
+  conclusao.push(...cervico.conclusao);
 }
 
 /** Concordância: "apresentação" feminina → cefálica/pélvica/córmica. */
@@ -341,7 +366,9 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     `Placenta de localização ${f.placenta_localizacao ?? "____"}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}, com ecotextura ${terceiro ? "heterogênea, de acordo com a fase da gestação" : "homogênea"}.`,
     `Índice do líquido amniótico de ${f.ila_cm !== null ? ptBr(f.ila_cm) : "____"} cm.`,
     // Orifício interno do colo: 2º trimestre apenas (removido no 3º, decisão Luiz).
-    ...(terceiro ? [] : ["Orifício interno do colo uterino encontra-se fechado."]),
+    ...(terceiro || f.cervicometria
+      ? []
+      : ["Orifício interno do colo uterino encontra-se fechado."]),
   ];
 
   /**
@@ -393,6 +420,7 @@ function assemble(
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
   }
+  acrescentarCervicometria(f, aspectos, conclusao);
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = fraseReferencia ? `${fraseReferencia}\n` : "";
   const conclTxt =
@@ -403,7 +431,9 @@ function assemble(
     titulo,
     dumLinha,
     igProse,
-    COMENTARIOS_1T,
+    f.cervicometria
+      ? `${COMENTARIOS_1T}\nFoi realizada avaliação complementar do colo uterino pela via transvaginal.`
+      : COMENTARIOS_1T,
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     aspectos.join("\n"),
@@ -477,6 +507,7 @@ function assembleObj(
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push(`\n${f.achados_adicionais.trim()}`);
   }
+  acrescentarCervicometria(f, achados, impressao);
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = fraseReferencia ? `\n${fraseReferencia}` : "";
   const impressaoTxt =
@@ -489,7 +520,9 @@ function assembleObj(
     igProse,
     "",
     "TÉCNICA:",
-    TECNICA_OBJ,
+    f.cervicometria
+      ? `${TECNICA_OBJ} Avaliação complementar do colo uterino realizada pela via transvaginal.`
+      : TECNICA_OBJ,
     "",
     "ACHADOS:",
     achados.join("\n"),
@@ -622,7 +655,9 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     `Placenta de localização ${f.placenta_localizacao ?? "____"}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : ""}.`,
     `Índice de líquido amniótico (ILA): ${f.ila_cm !== null ? ptBr1(f.ila_cm) : "____"} cm.`,
     // Orifício interno do colo: 2º trimestre apenas (decisão Luiz no clássico).
-    ...(terceiro ? [] : ["Orifício interno do colo uterino fechado."]),
+    ...(terceiro || f.cervicometria
+      ? []
+      : ["Orifício interno do colo uterino fechado."]),
   ];
 
   /** Mesma regra da ramificação clássica — ver a explicação longa lá. */

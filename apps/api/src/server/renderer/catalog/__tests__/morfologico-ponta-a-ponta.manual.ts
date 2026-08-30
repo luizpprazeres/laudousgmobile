@@ -156,6 +156,22 @@ const CASOS: Caso[] = [
     estado: com(medido(), "achados", { texto: "Cisto de plexo coroide à esquerda." }),
     exige: ["Cisto de plexo coroide"],
   },
+  {
+    nome: "cervicometria complementar sem trocar de categoria",
+    porque:
+      "o complemento transvaginal precisa atravessar a tela e fechar o corpo/conclusão do Morfológico sem duplicar a frase do orifício interno.",
+    estado: com(medido(), "cervicometria", {
+      realizada: "sim",
+      "realizada.sim.colo_cm": "2,2",
+      "realizada.sim.orificio": "fechado",
+      "realizada.sim.placenta_cm": "",
+      "realizada.sim.placenta_distante": "nao",
+      "realizada.sim.cerclagem": "nao",
+      "realizada.sim.observacoes": "",
+    }),
+    exige: ["via transvaginal", "CERVICOMETRIA:", "2,2 cm"],
+    exigeNaConclusao: ["Colo uterino um pouco curto"],
+  },
 ];
 
 // ---------------------------------------------------------------------------

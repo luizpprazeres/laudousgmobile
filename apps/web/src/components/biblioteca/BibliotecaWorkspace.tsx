@@ -52,9 +52,14 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
   const [edicoes, setEdicoes] = useState<Edicoes>(EDICOES_VAZIAS)
 
   const atual = categorias.find((c) => c.categoria === categoria)
+  const estilosDisponiveis = atual?.estilos_disponiveis ?? ['CLASSICO_COMPLETO']
 
   const carregar = useCallback(async () => {
     if (!categoria) return
+    if (!estilosDisponiveis.includes(estilo as 'CLASSICO_COMPLETO' | 'OBJETIVO')) {
+      setEstilo(estilosDisponiveis[0] ?? 'CLASSICO_COMPLETO')
+      return
+    }
     setCarregando(true)
     setErro(null)
     setAviso(null)
@@ -81,7 +86,7 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
     } finally {
       setCarregando(false)
     }
-  }, [categoria, estilo])
+  }, [categoria, estilo, estilosDisponiveis])
 
   useEffect(() => {
     void carregar()
@@ -170,10 +175,18 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
               key={e.code}
               type="button"
               onClick={() => setEstilo(e.code)}
+              disabled={!estilosDisponiveis.includes(e.code)}
+              title={
+                estilosDisponiveis.includes(e.code)
+                  ? undefined
+                  : `${e.label} ainda não possui modelo nesta categoria`
+              }
               className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
                 estilo === e.code
                   ? 'bg-emerald-600 text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  : estilosDisponiveis.includes(e.code)
+                    ? 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                    : 'cursor-not-allowed text-gray-300 dark:text-gray-700'
               }`}
             >
               {e.label}
@@ -196,7 +209,12 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
                 <li key={c.categoria}>
                   <button
                     type="button"
-                    onClick={() => setCategoria(c.categoria)}
+                    onClick={() => {
+                      setCategoria(c.categoria)
+                      if (!c.estilos_disponiveis.includes(estilo as 'CLASSICO_COMPLETO' | 'OBJETIVO')) {
+                        setEstilo(c.estilos_disponiveis[0] ?? 'CLASSICO_COMPLETO')
+                      }
+                    }}
                     aria-current={ativa ? 'true' : undefined}
                     className={`flex w-full items-center gap-2.5 border-b border-gray-100 px-4 py-2.5 text-left transition dark:border-gray-800/70 ${
                       ativa ? 'bg-emerald-50/70 dark:bg-emerald-950/25' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
@@ -275,6 +293,7 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
 
                 <Modelo
                   modelo={modelo}
+                  estilo={estilo}
                   edicoes={edicoes}
                   exemplo={exemplo}
                   onEditar={(slot, valor) =>

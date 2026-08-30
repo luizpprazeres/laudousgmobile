@@ -23,29 +23,25 @@ import { sementeDeExemplo } from "@/server/renderer/catalog/exemplos";
 async function rodar() {
   let faltam = 0;
   let comLacuna = 0;
-  for (const { categoria } of categoriasComModeloNormal()) {
+  for (const { categoria, estilos } of categoriasComModeloNormal()) {
     /**
-   * O ABDOMEN_TOTAL migrou SÓ NO CLÁSSICO (23/08). O objetivo tem
-   * `assembleAbdomenObjetivo`, que é código puro e migra sem máscara, mas ainda
-   * não foi feito — o renderer devolve `null` de propósito. Declarado aqui para
-   * a ausência ser uma DECISÃO registrada, não um verde por acidente nem um
-   * vermelho que se aprende a ignorar.
-   */
-  const NAO_MIGRADO = new Set(["ABDOMEN_TOTAL|OBJETIVO"]);
-
-  for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"])
-    for (const c of cenariosDe(categoria)) {
-      if (NAO_MIGRADO.has(`${categoria}|${estilo}`)) continue;
-      /** O abdome precisa da máscara do banco; as outras ignoram o contexto. */
-      const ctx = await contextoDeRender(categoria, estilo);
-      const t = laudoPadraoDe(categoria, estilo, { ...c.seed, ...sementeDeExemplo(categoria, c.nome) }, ctx);
-      if (!t) { console.log(`  ✗ ${categoria} · ${c.nome} · ${estilo}: NÃO RENDERIZOU`); faltam++; continue; }
-      const lac = t.split("\n").filter((l) => /_{2,}/.test(l));
-      if (lac.length > 0) comLacuna++;
-      const marca = lac.length === 0 ? "✓ preenchido" : `✗ ${lac.length} lacuna(s)`;
-      console.log(`  ${marca.padEnd(16)} ${categoria} · ${c.nome} · ${estilo}`);
-      if (lac.length) lac.slice(0,3).forEach((l)=>console.log(`        ${l.trim().slice(0,95)}`));
-    }
+     * Só exercita estilos declarados pelo próprio modelo. Ausência intencional
+     * é coberta por `estilos-da-biblioteca.manual.ts`; exigir os dois estilos
+     * aqui foi o que deixou Próstata, Cervicometria e MSK fingirem objetivo por
+     * meses, devolvendo uma cópia do clássico.
+     */
+    for (const estilo of estilos)
+      for (const c of cenariosDe(categoria)) {
+        /** O abdome precisa da máscara do banco; as outras ignoram o contexto. */
+        const ctx = await contextoDeRender(categoria, estilo);
+        const t = laudoPadraoDe(categoria, estilo, { ...c.seed, ...sementeDeExemplo(categoria, c.nome) }, ctx);
+        if (!t) { console.log(`  ✗ ${categoria} · ${c.nome} · ${estilo}: NÃO RENDERIZOU`); faltam++; continue; }
+        const lac = t.split("\n").filter((l) => /_{2,}/.test(l));
+        if (lac.length > 0) comLacuna++;
+        const marca = lac.length === 0 ? "✓ preenchido" : `✗ ${lac.length} lacuna(s)`;
+        console.log(`  ${marca.padEnd(16)} ${categoria} · ${c.nome} · ${estilo}`);
+        if (lac.length) lac.slice(0,3).forEach((l)=>console.log(`        ${l.trim().slice(0,95)}`));
+      }
   }
   console.log(
     faltam + comLacuna === 0

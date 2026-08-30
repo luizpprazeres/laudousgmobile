@@ -26,6 +26,8 @@ export type ModeloProjetado = { nome: string; linhas: LinhaDoModelo[] }
 export type CategoriaDaBiblioteca = {
   categoria: string
   rotulo: string
+  /** Estilos que possuem modelo real nesta categoria. */
+  estilos_disponiveis: ('CLASSICO_COMPLETO' | 'OBJETIVO')[]
   /** O modelo vem do renderer, não de um catálogo escrito à mão. */
   derivado: boolean
   /** A redação dele está REALMENTE valendo nos laudos — não só publicada. */

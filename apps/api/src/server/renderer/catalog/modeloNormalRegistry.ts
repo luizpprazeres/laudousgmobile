@@ -29,7 +29,7 @@ import {
   ABDOMEN_ORGAN_KEYS,
   AbdomenTotalFindingsSchema,
 } from "../findingsSchemas/ABDOMEN_TOTAL";
-import { renderAbdomenTotalClassico } from "../phrases/ABDOMEN_TOTAL";
+import { renderAbdomenTotalClassico, renderAbdomenTotalObjetivo } from "../phrases/ABDOMEN_TOTAL";
 import { DopplerObstetricoFindingsSchema, renderDopplerObstetrico } from "../categories/DOPPLER_OBSTETRICO";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -40,10 +40,14 @@ export type ContextoDeRender = {
   templateBody?: string | null;
 };
 
+export type EstiloModeloNormal = "CLASSICO_COMPLETO" | "OBJETIVO";
+
 export type EntradaModeloNormal = {
   categoria: string;
   /** Nome para a interface — o médico não lê CONSTANT_CASE. */
   rotulo: string;
+  /** Estilos que este renderer realmente implementa. Nunca inferir pelo fallback clássico. */
+  estilos: readonly EstiloModeloNormal[];
   schema: z.ZodTypeAny;
   /** Campos que o achado derivado não consegue inferir sozinho. */
   seed?: Record<string, unknown>;
@@ -91,6 +95,7 @@ const ABDOMEN_ORGAOS_NORMAIS = Object.fromEntries(
 export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   {
     categoria: "ABDOMEN_TOTAL", rotulo: "Abdome total",
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     schema: AbdomenTotalFindingsSchema,
     seed: {
       orgaos: ABDOMEN_ORGAOS_NORMAIS,
@@ -115,11 +120,10 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
      * o certo: um abdome sem os slots preenchidos sairia como um texto solto
      * de frases, sem título nem seções, e pareceria um laudo.
      *
-     * Só o CLÁSSICO por enquanto. O objetivo tem `assembleAbdomenObjetivo`,
-     * que é código puro e migra sem máscara — fica para a próxima leva.
+     * O objetivo é montado em código e não depende da máscara do banco.
      */
     render: (f, o, ctx) => {
-      if (o.objetivo) return null;
+      if (o.objetivo) return renderAbdomenTotalObjetivo(f);
       const tpl = ctx?.templateBody;
       if (!tpl || tpl.trim() === "") return null;
       return renderAbdomenTotalClassico(f, tpl);
@@ -127,6 +131,7 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   },
   {
     categoria: "OBSTETRICA", rotulo: "Obstétrica", schema: ObstetricaFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     seed: { numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL] },
     cenarios: [
       { nome: "Gestação padrão", seed: { numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL] } },
@@ -159,6 +164,7 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   },
   {
     categoria: "DOPPLER_OBSTETRICO", rotulo: "Obstétrica com Doppler",
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     schema: DopplerObstetricoFindingsSchema,
     /**
      * Os índices entram no seed porque, sem eles, o renderer escreve
@@ -200,6 +206,7 @@ render: (f, o) =>
   },
   {
     categoria: "MORFOLOGICO", rotulo: "Morfológico", schema: MorfologicoFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     /**
      * O morfológico tem TRÊS exames diferentes sob o mesmo nome, e o derivado
      * mostrava só o primeiro (o enum começa em "1t"). Metade do modelo ficava
@@ -219,6 +226,7 @@ render: (f, o) =>
   },
   {
     categoria: "TIREOIDE", rotulo: "Tireoide", schema: TireoideFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     /**
      * `omitPicoNull` vem da MESMA flag que a produção lê
      * (`pipeline/renderer.ts:721`). Sem ela aqui, o catálogo renderizava com a
@@ -249,6 +257,7 @@ render: (f, o) =>
   },
   {
     categoria: "MAMARIA", rotulo: "Mamária", schema: MamariaFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     render: (f, o) =>
       renderMamaria(f, undefined as never, {
         objetivo: o.objetivo,
@@ -258,6 +267,7 @@ render: (f, o) =>
   },
   {
     categoria: "PELVE_FEMININA", rotulo: "Pelve feminina", schema: PelveFemininaFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     render: (f, o) =>
       renderPelveFeminina(f, {
         objetivo: o.objetivo,
@@ -267,38 +277,44 @@ render: (f, o) =>
   },
   {
     categoria: "ABDOMEN_SUPERIOR", rotulo: "Abdome superior", schema: AbdomenSuperiorFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     render: (f, o) => renderAbdomenSuperior(f, { objetivo: o.objetivo }),
   },
   {
     categoria: "VIAS_URINARIAS", rotulo: "Vias urinárias", schema: ViasUrinariasFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     render: (f, o) => renderViasUrinarias(f, { objetivo: o.objetivo }),
   },
   {
     categoria: "PROSTATA_SUPRAPUBICA", rotulo: "Próstata (suprapúbica)",
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     schema: ProstataSuprapubicaFindingsSchema,
-    // Só clássico: este renderer não tem variante objetiva.
-    render: (f) => renderProstataSuprapubica(f),
+    render: (f, o) => renderProstataSuprapubica(f, null, { objetivo: o.objetivo }),
   },
   {
     categoria: "CERVICAL", rotulo: "Cervical", schema: CervicalFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     render: (f, o) => renderCervical(f, { objetivo: o.objetivo }),
   },
   {
     categoria: "CERVICOMETRIA", rotulo: "Cervicometria", schema: CervicometriaFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     /**
      * Sem a medida do colo a conclusão sai "não caracterizada pelo método
      * [REVISAR]" — o aviso de dado faltando, não o modelo. A medida entra no
      * seed e some do texto por comparação.
      */
     seed: { colo_oi_oe_cm: 3.4 },
-    render: (f) => renderCervicometria(f),
+    render: (f, o) => renderCervicometria(f, null, { objetivo: o.objetivo }),
   },
   {
     categoria: "PARTES_MOLES", rotulo: "Partes moles", schema: PartesMolesFindingsSchema,
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     render: (f, o) => renderPartesMoles(f, { objetivo: o.objetivo }),
   },
   {
     categoria: "MUSCULOESQUELETICO", rotulo: "Musculoesquelético",
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     schema: MusculoesqueleticoFindingsSchema,
     /**
      * Sem segmento examinado o MSK não escreve NADA — o laudo dele é sobre "o
@@ -307,7 +323,7 @@ render: (f, o) =>
      * normalidade do ombro são as mesmas de qualquer outro segmento.
      */
     seed: { laudos: [{ segmento: "ombro", lado: "direito", alteracoes: [] }] },
-    render: (f) => renderMusculoesqueletico(f),
+    render: (f, o) => renderMusculoesqueletico(f, null, { objetivo: o.objetivo }),
   },
 ];
 
@@ -315,8 +331,20 @@ export function modeloNormalDe(categoria: string): EntradaModeloNormal | undefin
   return MODELOS_NORMAIS.find((m) => m.categoria === categoria);
 }
 
-export function categoriasComModeloNormal(): { categoria: string; rotulo: string }[] {
-  return MODELOS_NORMAIS.map((m) => ({ categoria: m.categoria, rotulo: m.rotulo }));
+export function categoriasComModeloNormal(): {
+  categoria: string;
+  rotulo: string;
+  estilos: readonly EstiloModeloNormal[];
+}[] {
+  return MODELOS_NORMAIS.map((m) => ({
+    categoria: m.categoria,
+    rotulo: m.rotulo,
+    estilos: m.estilos,
+  }));
+}
+
+export function estilosDoModeloNormal(categoria: string): readonly EstiloModeloNormal[] {
+  return modeloNormalDe(categoria)?.estilos ?? [];
 }
 
 /**
@@ -333,6 +361,7 @@ export function laudoPadraoDe(
 ): string | null {
   const m = modeloNormalDe(categoria);
   if (!m) return null;
+  if (!m.estilos.includes(estilo as EstiloModeloNormal)) return null;
   try {
     /**
      * MERGE FUNDO, não spread.

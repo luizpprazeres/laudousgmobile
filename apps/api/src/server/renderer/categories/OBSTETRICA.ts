@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { applyGolfBall, stripGolfBallEcho, type GolfBall } from "./golfBall";
 import { buildIgInput, computeIg, computeRHoje, type IgRawFields } from "../ig";
+import {
+  CervicometriaAddonSchema,
+  CERVICOMETRIA_ADDON_JSON_SCHEMA,
+  renderCervicometriaBloco,
+} from "./CERVICOMETRIA";
 
 /**
  * DET-5 — Renderer de OBSTETRICA (feto único + gemelar).
@@ -186,6 +191,8 @@ export const ObstetricaFindingsSchema = z.object({
   // do laudo e que não cabe em campo estruturado — o caso matador "adicione uma
   // frase sobre as adrenais fetais". Mesmo dedup determinístico do corpo.
   observacoes_corpo_livres: z.array(z.string()),
+  /** Exame complementar opcional; null = cervicometria não realizada. */
+  cervicometria: CervicometriaAddonSchema.nullable().optional(),
 });
 
 export type ObstetricaFindings = z.infer<typeof ObstetricaFindingsSchema>;
@@ -345,6 +352,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "achados_adicionais",
     "itens_conclusao_livres",
     "observacoes_corpo_livres",
+    "cervicometria",
   ],
   properties: {
     numero_fetos: { type: "integer" },
@@ -399,6 +407,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     achados_adicionais: str,
     itens_conclusao_livres: { type: "array", items: { type: "string" } },
     observacoes_corpo_livres: { type: "array", items: { type: "string" } },
+    cervicometria: CERVICOMETRIA_ADDON_JSON_SCHEMA,
   },
 } as const;
 
@@ -573,7 +582,17 @@ para o valor mais parecido.
       placenta_distancia_orificio_mm (em mm).
     - "marginal": a borda ALCANÇA/margeia o orifício, sem recobrir.
     - "previa": RECOBRE o orifício interno.
-    null quando o médico não falou da relação com o orifício.`;
+    null quando o médico não falou da relação com o orifício.
+
+23. cervicometria — exame complementar OPCIONAL dentro deste mesmo laudo. Preencha
+    o objeto SOMENTE quando o médico disser que realizou/quer acrescentar a
+    cervicometria ou ditar a medida do colo. Caso contrário, cervicometria = null.
+    Dentro do objeto: colo_oi_oe_cm é a distância OI→OE em cm (mm → cm);
+    orificio_interno_fechado = false só se aberto/dilatado/afunilado;
+    placenta_distancia_cm é a distância da borda placentária ao OI em cm;
+    placenta_distante = true só quando ele disser distante sem medir;
+    cerclagem = true se houver pontos de cerclagem; observacoes recebe apenas
+    observação adicional específica da cervicometria. NUNCA invente a medida.`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos
@@ -1166,6 +1185,13 @@ export function renderObstetricaClassico(
     conclusao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
   }
 
+  // Complemento opcional sempre fecha o corpo e a conclusão do exame principal.
+  if (f.cervicometria) {
+    const cervico = renderCervicometriaBloco(f.cervicometria, f.ig_semanas);
+    aspectos.push("\nCERVICOMETRIA:", ...cervico.achados);
+    conclusao.push(...cervico.conclusao);
+  }
+
   // Linha opcional de DUM (logo após o título).
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   // Frase-prosa da referência precoce (1ª US/DUM corrigida p/ hoje), se houver.
@@ -1175,7 +1201,9 @@ export function renderObstetricaClassico(
     titulo,
     dumLinha,
     igProse,
-    COMENTARIOS,
+    f.cervicometria
+      ? `${COMENTARIOS}\nFoi realizada avaliação complementar do colo uterino pela via transvaginal.`
+      : COMENTARIOS,
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     aspectos.join("\n"),
@@ -1402,6 +1430,12 @@ export function renderObstetricaObjetivo(
     impressao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
   }
 
+  if (f.cervicometria) {
+    const cervico = renderCervicometriaBloco(f.cervicometria, f.ig_semanas);
+    achados.push("\nCERVICOMETRIA:", ...cervico.achados);
+    impressao.push(...cervico.conclusao);
+  }
+
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = ig.fraseReferencia ? `\n${ig.fraseReferencia}` : "";
 
@@ -1416,7 +1450,9 @@ export function renderObstetricaObjetivo(
     igProse,
     "",
     "TÉCNICA:",
-    TECNICA_OBJ,
+    f.cervicometria
+      ? `${TECNICA_OBJ} Avaliação complementar do colo uterino realizada pela via transvaginal.`
+      : TECNICA_OBJ,
     "",
     "ACHADOS:",
     achados.join("\n"),

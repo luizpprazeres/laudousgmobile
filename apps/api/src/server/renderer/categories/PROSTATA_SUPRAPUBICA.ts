@@ -141,6 +141,76 @@ const COMENTARIOS =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta com o paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais abrangendo toda a pelve.";
 const OBSERVACAO_VIA =
   "Observação: a avaliação por via transabdominal não detalha adequadamente lesões focais do parênquima prostático; havendo suspeita clínica, recomenda-se correlação com PSA e avaliação urológica (complementação por via transretal ou ressonância multiparamétrica).";
+const TECNICA_OBJETIVA =
+  "Exame realizado pela via transabdominal, com a bexiga repleta, utilizando transdutor convexo multifrequencial.";
+
+function blocosProstata(f: ProstataSuprapubicaFindings): {
+  aspectos: string[];
+  conclusao: string[];
+} {
+  const aspectos: string[] = [];
+  const conclusao: string[] = [];
+  const aumentada = f.hiperplasia;
+
+  const bexigaBody =
+    f.bexiga_achado && f.bexiga_achado.trim() !== ""
+      ? `Bexiga com ${f.bexiga_achado.trim()}.`
+      : "Bexiga de forma, ecotextura e contornos regulares.";
+  const volTxt =
+    f.volume_pre_miccional_ml !== null
+      ? ` Volume pré-miccional de ${intStr(f.volume_pre_miccional_ml)} mL.`
+      : "";
+  aspectos.push(`${bexigaBody}${volTxt}`);
+
+  const peso = calcPesoProstatico(f.prostata_d1_cm, f.prostata_d2_cm, f.prostata_d3_cm);
+  const medidas =
+    f.prostata_d1_cm !== null && f.prostata_d2_cm !== null && f.prostata_d3_cm !== null
+      ? `${ptBr1(f.prostata_d1_cm)} x ${ptBr1(f.prostata_d2_cm)} x ${ptBr1(f.prostata_d3_cm)} cm`
+      : "____ cm";
+  aspectos.push(
+    aumentada
+      ? `Próstata aumentada de volume, medindo ${medidas}.`
+      : `Próstata medindo ${medidas}.`,
+  );
+  if (f.calcificacoes) aspectos.push("Calcificações prostáticas.");
+  if (aumentada && f.ipp_cm !== null) {
+    aspectos.push(`Índice de protrusão prostática (IPP) mede ${ptBr1(f.ipp_cm)} cm.`);
+  }
+  aspectos.push("Vesículas seminais de dimensões, ecogenicidade e contornos normais.");
+  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
+    aspectos.push(f.achados_adicionais.trim());
+  }
+
+  conclusao.push(
+    f.bexiga_achado && f.bexiga_achado.trim() !== ""
+      ? `Alterações vesicais (${f.bexiga_achado.trim()}), a correlacionar com obstrução infravesical.`
+      : "Bexiga ecograficamente normal.",
+  );
+  if (f.residuo_pos_miccional_ml !== null) {
+    conclusao.push(
+      f.residuo_pos_miccional_ml > 100
+        ? `Resíduo pós-miccional elevado (${intStr(f.residuo_pos_miccional_ml)} mL).`
+        : `Resíduo pós-miccional de ${intStr(f.residuo_pos_miccional_ml)} mL.`,
+    );
+  } else if (f.residuo_desprezivel) {
+    conclusao.push("Resíduo pós-miccional desprezível.");
+  }
+  const pesoTxt = peso
+    ? `peso aproximado de ${ptBr1(peso.pesoG)} gramas`
+    : "peso não calculável (medidas incompletas)";
+  conclusao.push(
+    aumentada
+      ? `Próstata de volume aumentado (${pesoTxt}).`
+      : `Próstata de dimensões normais (${pesoTxt}).`,
+  );
+  if (aumentada && f.ipp_cm !== null) {
+    conclusao.push(`Protrusão prostática intravesical de ${ptBr1(f.ipp_cm)} cm (${ippGrau(f.ipp_cm)}).`);
+  }
+  if (f.calcificacoes) conclusao.push("Calcificações prostáticas.");
+  conclusao.push("Vesículas seminais ecograficamente normais.");
+
+  return { aspectos, conclusao };
+}
 
 /**
  * Render do laudo de próstata transabdominal. Curadoria do Luiz (2026-06-18):
@@ -156,83 +226,47 @@ const OBSERVACAO_VIA =
  */
 export function renderProstataSuprapubica(
   f: ProstataSuprapubicaFindings,
+  _prefs?: unknown,
+  opts?: { objetivo?: boolean },
 ): string {
-  const aspectos: string[] = [];
-  const conclusao: string[] = [];
-  const aumentada = f.hiperplasia;
-
-  // ── Corpo: bexiga (+ volume pré-miccional na mesma linha) ──
-  const bexigaBody =
-    f.bexiga_achado && f.bexiga_achado.trim() !== ""
-      ? `Bexiga com ${f.bexiga_achado.trim()}.`
-      : "Bexiga de forma, ecotextura e contornos regulares.";
-  const volTxt =
-    f.volume_pre_miccional_ml !== null
-      ? ` Volume pré-miccional de ${intStr(f.volume_pre_miccional_ml)} mL.`
-      : "";
-  aspectos.push(`${bexigaBody}${volTxt}`);
-
-  // ── Corpo: próstata (SÓ medidas — sem ecotextura na via transabdominal) ──
-  const peso = calcPesoProstatico(f.prostata_d1_cm, f.prostata_d2_cm, f.prostata_d3_cm);
-  const medidas =
-    f.prostata_d1_cm !== null && f.prostata_d2_cm !== null && f.prostata_d3_cm !== null
-      ? `${ptBr1(f.prostata_d1_cm)} x ${ptBr1(f.prostata_d2_cm)} x ${ptBr1(f.prostata_d3_cm)} cm`
-      : "____ cm";
-  aspectos.push(
-    aumentada
-      ? `Próstata aumentada de volume, medindo ${medidas}.`
-      : `Próstata medindo ${medidas}.`,
-  );
-  if (f.calcificacoes) aspectos.push("Calcificações prostáticas.");
-  // IPP só quando próstata aumentada (curadoria Luiz).
-  if (aumentada && f.ipp_cm !== null) {
-    aspectos.push(`Índice de protrusão prostática (IPP) mede ${ptBr1(f.ipp_cm)} cm.`);
-  }
-
-  // ── Corpo: vesículas seminais (sempre avaliadas) ──
-  aspectos.push("Vesículas seminais de dimensões, ecogenicidade e contornos normais.");
-
-  if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
-    aspectos.push(f.achados_adicionais.trim());
-  }
-
-  // ── Conclusão: cobre TODAS as estruturas (bexiga, resíduo, próstata, vesículas) ──
-  // 1) Bexiga
-  conclusao.push(
-    f.bexiga_achado && f.bexiga_achado.trim() !== ""
-      ? `Alterações vesicais (${f.bexiga_achado.trim()}), a correlacionar com obstrução infravesical.`
-      : "Bexiga ecograficamente normal.",
-  );
-  // 2) Resíduo pós-miccional (opcional — só quando disponível)
-  if (f.residuo_pos_miccional_ml !== null) {
-    conclusao.push(
-      f.residuo_pos_miccional_ml > 100
-        ? `Resíduo pós-miccional elevado (${intStr(f.residuo_pos_miccional_ml)} mL).`
-        : `Resíduo pós-miccional de ${intStr(f.residuo_pos_miccional_ml)} mL.`,
-    );
-  } else if (f.residuo_desprezivel) {
-    conclusao.push("Resíduo pós-miccional desprezível.");
-  }
-  // 3) Próstata (só peso; sem rótulo de HPB)
-  const pesoTxt = peso
-    ? `peso aproximado de ${ptBr1(peso.pesoG)} gramas`
-    : "peso não calculável (medidas incompletas)";
-  conclusao.push(
-    aumentada
-      ? `Próstata de volume aumentado (${pesoTxt}).`
-      : `Próstata de dimensões normais (${pesoTxt}).`,
-  );
-  if (aumentada && f.ipp_cm !== null) {
-    conclusao.push(`Protrusão prostática intravesical de ${ptBr1(f.ipp_cm)} cm (${ippGrau(f.ipp_cm)}).`);
-  }
-  if (f.calcificacoes) conclusao.push("Calcificações prostáticas.");
-  // 4) Vesículas seminais
-  conclusao.push("Vesículas seminais ecograficamente normais.");
+  const { aspectos, conclusao } = blocosProstata(f);
+  // O clássico fecha todas as estruturas normais por decisão histórica. No
+  // objetivo, a impressão fica só com a próstata, medidas pós-miccionais e
+  // alterações — bexiga/vesículas normais já estão descritas nos achados.
+  const conclusaoDoEstilo = opts?.objetivo
+    ? conclusao.filter(
+        (item) =>
+          item !== "Bexiga ecograficamente normal." &&
+          item !== "Vesículas seminais ecograficamente normais.",
+      )
+    : conclusao;
 
   const conclTxt =
-    conclusao.length === 1
-      ? conclusao[0] ?? ""
-      : conclusao.map((it, i) => `${i + 1}) ${it}`).join("\n");
+    conclusaoDoEstilo.length === 1
+      ? conclusaoDoEstilo[0] ?? ""
+      : conclusaoDoEstilo
+          .map((it, i) => `${i + 1}${opts?.objetivo ? "." : ")"} ${it}`)
+          .join("\n");
+
+  if (opts?.objetivo) {
+    return [
+      TITULO,
+      "",
+      "TÉCNICA:",
+      TECNICA_OBJETIVA,
+      "",
+      "ACHADOS:",
+      aspectos.join("\n"),
+      "",
+      "IMPRESSÃO:",
+      conclTxt,
+      "",
+      OBSERVACAO_VIA,
+    ]
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
 
   return [
     TITULO,

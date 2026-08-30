@@ -22,7 +22,7 @@ import { buildObstetricaDoc, renderObstetricaCatalogo } from "./OBSTETRICA.rende
 import { catalogoDerivadoDe } from "./modeloNormalCatalog";
 import { linhasDeDocumento, linhasDePreambulo } from "./projetarModelo";
 import type { SlotContext } from "./types";
-import { categoriasComModeloNormal } from "./modeloNormalRegistry";
+import { categoriasComModeloNormal, estilosDoModeloNormal } from "./modeloNormalRegistry";
 
 /**
  * Os códigos são os do enum `writing_style_code` do banco. Dos quatro, só
@@ -125,15 +125,24 @@ export function resolveCatalogo(
 
 /** A categoria é servida pelo modelo derivado (e não por catálogo escrito)? */
 export function ehDerivado(categoria: string, estilo: string): boolean {
-  return !CATALOGOS[chaveDe(categoria, estilo)] && catalogoDerivadoDe(categoria, estilo) !== null;
+  return (
+    !CATALOGOS[chaveDe(categoria, estilo)] &&
+    estilosDoModeloNormal(categoria).includes(estilo as "CLASSICO_COMPLETO" | "OBJETIVO")
+  );
 }
 
 /** Pares (categoria, estilo) com catálogo — para mensagens de erro úteis. */
 export function paresComCatalogo(): { categoria: string; estilo: string }[] {
-  return Object.values(CATALOGOS).map((e) => ({
-    categoria: e.catalog.categoria,
-    estilo: e.catalog.estilo,
-  }));
+  const pares = [
+    ...Object.values(CATALOGOS).map((e) => ({
+      categoria: e.catalog.categoria,
+      estilo: e.catalog.estilo,
+    })),
+    ...categoriasComModeloNormal().flatMap((c) =>
+      c.estilos.map((estilo) => ({ categoria: c.categoria, estilo })),
+    ),
+  ];
+  return [...new Map(pares.map((p) => [chaveDe(p.categoria, p.estilo), p])).values()];
 }
 
 export function categoriasComCatalogo(): string[] {
@@ -146,18 +155,28 @@ export function categoriasComCatalogo(): string[] {
 }
 
 /** Categorias que a Biblioteca lista, com o nome que o médico lê. */
-export function categoriasDaBiblioteca(): { categoria: string; rotulo: string; derivado: boolean }[] {
+export function categoriasDaBiblioteca(): {
+  categoria: string;
+  rotulo: string;
+  derivado: boolean;
+  estilos_disponiveis: readonly EstiloVivo[];
+}[] {
   return categoriasComModeloNormal().map((c) => ({
-    ...c,
+    categoria: c.categoria,
+    rotulo: c.rotulo,
     derivado: ehDerivado(c.categoria, "CLASSICO_COMPLETO"),
+    estilos_disponiveis: c.estilos,
   }));
 }
 
 /** Os estilos com catálogo para uma dada categoria. */
 export function estilosComCatalogo(categoria: string): string[] {
-  return Object.values(CATALOGOS)
+  return [...new Set([
+    ...Object.values(CATALOGOS)
     .filter((e) => e.catalog.categoria === categoria)
-    .map((e) => e.catalog.estilo);
+    .map((e) => e.catalog.estilo),
+    ...estilosDoModeloNormal(categoria),
+  ])];
 }
 
 /**

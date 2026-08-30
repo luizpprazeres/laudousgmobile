@@ -374,7 +374,10 @@ function conclusaoDaAlteracao(a: Alteracao): string {
   return ACHADOS_CANONICOS[a.achado_tipo]?.conclusao ?? "";
 }
 
-function renderLaudo(laudo: MusculoesqueleticoFindings["laudos"][number]): string {
+function renderLaudo(
+  laudo: MusculoesqueleticoFindings["laudos"][number],
+  objetivo: boolean,
+): string {
   const rot = ROTEIRO[laudo.segmento];
   const lado = ladoFmt(laudo.lado);
   const titulo = `ULTRASSONOGRAFIA ${rot.titulo} ${lado.toUpperCase()}`;
@@ -407,24 +410,41 @@ function renderLaudo(laudo: MusculoesqueleticoFindings["laudos"][number]): strin
       .join("\n");
   }
 
-  return [
-    titulo,
-    "",
-    "COMENTÁRIOS:",
-    TECNICA,
-    "",
-    "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
-    ...corpo,
-    "",
-    "CONCLUSÃO:",
-    conclusao,
-  ].join("\n");
+  return objetivo
+    ? [
+        titulo,
+        "",
+        "TÉCNICA:",
+        "Exame realizado com transdutor linear de alta frequência, com cortes longitudinais e transversais e avaliação dinâmica quando aplicável.",
+        "",
+        "ACHADOS:",
+        ...corpo,
+        "",
+        "IMPRESSÃO:",
+        conclusao.replace(/^(\d+)\) /gm, "$1. "),
+      ].join("\n")
+    : [
+        titulo,
+        "",
+        "COMENTÁRIOS:",
+        TECNICA,
+        "",
+        "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
+        ...corpo,
+        "",
+        "CONCLUSÃO:",
+        conclusao,
+      ].join("\n");
 }
 
 export function renderMusculoesqueletico(
   findings: MusculoesqueleticoFindings,
+  _prefs?: unknown,
+  opts?: { objetivo?: boolean },
 ): string {
-  return findings.laudos.map(renderLaudo).join("\n\n");
+  return findings.laudos
+    .map((laudo) => renderLaudo(laudo, opts?.objetivo ?? false))
+    .join("\n\n");
 }
 
 // ───────────── Passthrough (laudo MSK pré-formatado colado) ─────────────

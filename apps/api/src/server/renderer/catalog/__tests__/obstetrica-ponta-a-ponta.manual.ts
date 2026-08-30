@@ -172,6 +172,22 @@ const CASOS: Caso[] = [
     exige: ["3,0 cm"],
   },
   {
+    nome: "cervicometria complementar sem trocar de categoria",
+    porque:
+      "a auxiliar ativa o complemento dentro da Obstétrica; a via entra na técnica, a medida no fim do corpo e a interpretação no fim da conclusão.",
+    estado: com(medida(), "cervicometria", {
+      realizada: "sim",
+      "realizada.sim.colo_cm": "2,2",
+      "realizada.sim.orificio": "fechado",
+      "realizada.sim.placenta_cm": "4,0",
+      "realizada.sim.placenta_distante": "nao",
+      "realizada.sim.cerclagem": "sim",
+      "realizada.sim.observacoes": "",
+    }),
+    exige: ["via transvaginal", "CERVICOMETRIA:", "2,2 cm"],
+    exigeNaConclusao: ["Colo uterino um pouco curto", "Pontos de cerclagem"],
+  },
+  {
     /**
      * A tela não tem cordão, e o canônico tem. Este caso trava o defeito
      * histórico: cordão de três vasos afirmado em 100% dos laudos, sem ninguém

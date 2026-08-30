@@ -51,6 +51,21 @@ function numero(s: EstadoDaSecao, chave: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function cervicometriaDaTela(estado: EstadoObstetrico): Record<string, unknown> | null {
+  const c = secao(estado, "cervicometria");
+  if (texto(c, "realizada") !== "sim") return null;
+  return {
+    colo_oi_oe_cm: numero(c, "realizada.sim.colo_cm"),
+    orificio_interno_fechado: texto(c, "realizada.sim.orificio") !== "aberto",
+    placenta_distancia_cm: numero(c, "realizada.sim.placenta_cm"),
+    placenta_distante:
+      texto(c, "realizada.sim.placenta_distante") === "sim" &&
+      numero(c, "realizada.sim.placenta_cm") === null,
+    cerclagem: texto(c, "realizada.sim.cerclagem") === "sim",
+    observacoes: texto(c, "realizada.sim.observacoes") || null,
+  };
+}
+
 /**
  * O feto COMPLETO. Todo campo do `FetoSchema` aparece aqui, mesmo os que a tela
  * não coleta — ver o aviso do cabeçalho sobre array substituído por inteiro.
@@ -185,6 +200,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
     achados_adicionais: texto(a, "texto") || null,
     itens_conclusao_livres: [],
     observacoes_corpo_livres: [],
+    cervicometria: cervicometriaDaTela(estado),
   };
 
   return { dados, alteracoes: [], pendencias };

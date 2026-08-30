@@ -21,6 +21,7 @@ import {
   deriveUmbilicalSafety,
 } from "../../pipeline/dopplerOverlay";
 import { type PesoFetalData, buildPesoFetalItems } from "../../pipeline/pesoFetalGuard";
+import { renderCervicometriaBloco } from "./CERVICOMETRIA";
 
 /**
  * DET — Renderer determinístico de DOPPLER_OBSTETRICO.
@@ -168,7 +169,10 @@ REGRAS DO DOPPLER:
     fetos[].bcf_alteracao diz de QUAL feto. Com óbito, preencha os DOIS —
     vitalidade_ausente=true e bcf_alteracao="ausente" no feto certo. No gemelar
     é o segundo que carrega a informação, porque "o exame tem um óbito" não diz
-    se o feto morto é o A ou o B.`;
+    se o feto morto é o A ou o B.
+15. cervicometria: segue a MESMA regra da categoria OBSTETRICA. null quando não
+    realizada. Preencha o objeto apenas quando o médico pedir/acrescentar a
+    cervicometria ou ditar a medida do colo; nunca deduza do exame obstétrico.`;
 
 // ---------------------------------------------------------------------------
 // Helpers locais
@@ -388,6 +392,12 @@ function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, gol
     conclusao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
   }
 
+  if (f.cervicometria) {
+    const cervico = renderCervicometriaBloco(f.cervicometria, f.ig_semanas);
+    aspectos.push("\nCERVICOMETRIA:", ...cervico.achados);
+    conclusao.push(...cervico.conclusao);
+  }
+
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = ig.fraseReferencia ? `${ig.fraseReferencia}\n` : "";
 
@@ -395,7 +405,9 @@ function renderClassico(f: DopplerObstetricoFindings, igCorrection: boolean, gol
     TITULO,
     dumLinha,
     igProse,
-    COMENTARIOS_DOPPLER,
+    f.cervicometria
+      ? `${COMENTARIOS_DOPPLER}\nFoi realizada avaliação complementar do colo uterino pela via transvaginal.`
+      : COMENTARIOS_DOPPLER,
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     aspectos.join("\n"),
@@ -448,6 +460,12 @@ function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean, gol
     impressao.push(...filterFreeConclusionItems(f.itens_conclusao_livres));
   }
 
+  if (f.cervicometria) {
+    const cervico = renderCervicometriaBloco(f.cervicometria, f.ig_semanas);
+    achados.push("\nCERVICOMETRIA:", ...cervico.achados);
+    impressao.push(...cervico.conclusao);
+  }
+
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = ig.fraseReferencia ? `\n${ig.fraseReferencia}` : "";
   const impressaoTxt =
@@ -461,7 +479,9 @@ function renderObjetivo(f: DopplerObstetricoFindings, igCorrection: boolean, gol
     igProse,
     "",
     "TÉCNICA:",
-    TECNICA_OBJ,
+    f.cervicometria
+      ? `${TECNICA_OBJ} Avaliação complementar do colo uterino realizada pela via transvaginal.`
+      : TECNICA_OBJ,
     "",
     "ACHADOS:",
     achados.join("\n"),

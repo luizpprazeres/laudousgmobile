@@ -8,6 +8,11 @@ import Link from 'next/link'
 import { Eye, EyeOff, Mail } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import LaudoUSGLogo from '@/components/LaudoUSGLogo'
+import {
+  apresentarErroDeCadastro,
+  criarReferenciaDeCadastro,
+  type SignupErrorLike,
+} from '@/lib/auth/signupErrors'
 
 function SignupForm() {
   const router = useRouter()
@@ -23,6 +28,30 @@ function SignupForm() {
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
+  const mostrarFalha = (authError: SignupErrorLike) => {
+    const apresentacao = apresentarErroDeCadastro(authError)
+    const reference = criarReferenciaDeCadastro()
+
+    // Best effort: a falha continua visível ao médico mesmo se o log estiver indisponível.
+    void fetch('/api/auth/signup-diagnostic', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        reference,
+        code: apresentacao.code,
+        name: authError.name ?? 'AuthError',
+        status: authError.status ?? null,
+      }),
+    }).catch(() => undefined)
+
+    setError(
+      apresentacao.mostrarReferencia
+        ? `${apresentacao.message} Informe o código ${reference} ao suporte.`
+        : apresentacao.message,
+    )
+    setLoading(false)
+  }
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -32,18 +61,28 @@ function SignupForm() {
     try {
       supabase = createClient()
     } catch {
-      setError('Serviço indisponível: variáveis de ambiente não configuradas no servidor.')
-      setLoading(false)
+      mostrarFalha({ code: 'client_configuration_error', name: 'ClientConfigurationError' })
       return
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    })
+    let resposta
+    try {
+      resposta = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      })
+    } catch (error) {
+      mostrarFalha({
+        code: 'network_error',
+        name: error instanceof Error ? error.name : 'NetworkError',
+      })
+      return
+    }
+
+    const { data, error } = resposta
 
     if (!error && data.session) {
       router.push(next)
@@ -52,19 +91,7 @@ function SignupForm() {
     }
 
     if (error) {
-      const AUTH_ERROR_MESSAGES: Record<string, string> = {
-        'User already registered': 'Este email já está cadastrado. Tente fazer login.',
-        'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
-        'Password should be at least 6 characters': 'A senha deve ter pelo menos 6 caracteres.',
-        signup_disabled: 'Cadastro temporariamente indisponível.',
-        over_email_send_rate_limit: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-      }
-      const friendlyMessage =
-        AUTH_ERROR_MESSAGES[error.message] ??
-        Object.entries(AUTH_ERROR_MESSAGES).find(([key]) => error.message.includes(key))?.[1] ??
-        'Ocorreu um erro. Tente novamente.'
-      setError(friendlyMessage)
-      setLoading(false)
+      mostrarFalha(error)
       return
     }
 
@@ -124,9 +151,9 @@ function SignupForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 autoComplete="new-password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 pr-10 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
               <button

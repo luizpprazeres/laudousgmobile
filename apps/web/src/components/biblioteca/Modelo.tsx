@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { Lock, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import type { LinhaDoModelo, ModeloProjetado } from '@/lib/biblioteca/tipos'
 
-const SECAO_ROTULO: Record<LinhaDoModelo['secao'], string> = {
-  tecnica: 'Técnica',
-  corpo: 'Achados',
-  conclusao: 'Conclusão',
+function rotuloDaSecao(secao: LinhaDoModelo['secao'], estilo: string): string {
+  if (secao === 'tecnica') return estilo === 'OBJETIVO' ? 'Técnica' : 'Comentários'
+  if (secao === 'conclusao') return 'Conclusão'
+  return 'Achados'
 }
 
 export type Edicoes = {
@@ -34,6 +34,7 @@ export const EDICOES_VAZIAS: Edicoes = { textos: {}, removidos: [], inseridas: [
  */
 export function Modelo({
   modelo,
+  estilo,
   edicoes,
   exemplo,
   onEditar,
@@ -42,6 +43,7 @@ export function Modelo({
   onInserir,
 }: {
   modelo: ModeloProjetado
+  estilo: string
   edicoes: Edicoes
   /** O laudo de exemplo, já renderizado no mesmo cenário e estilo. */
   exemplo: string | null
@@ -63,7 +65,7 @@ export function Modelo({
           return (
             <section key={secao}>
               <h3 className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
-                {SECAO_ROTULO[secao]}
+                {rotuloDaSecao(secao, estilo)}
               </h3>
               <div className="-mx-2">
                 {linhas.map((l) => (

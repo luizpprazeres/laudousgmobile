@@ -55,6 +55,37 @@ export const CervicometriaFindingsSchema = z.object({
 
 export type CervicometriaFindings = z.infer<typeof CervicometriaFindingsSchema>;
 
+/**
+ * O mesmo exame quando acrescentado a um laudo obstétrico/morfológico.
+ * A idade gestacional vem do exame principal — não criamos uma segunda fonte
+ * para a mesma informação.
+ */
+export const CervicometriaAddonSchema = CervicometriaFindingsSchema.omit({
+  ig_semanas: true,
+});
+export type CervicometriaAddon = z.infer<typeof CervicometriaAddonSchema>;
+
+export const CERVICOMETRIA_ADDON_JSON_SCHEMA = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  required: [
+    "colo_oi_oe_cm",
+    "orificio_interno_fechado",
+    "placenta_distancia_cm",
+    "placenta_distante",
+    "cerclagem",
+    "observacoes",
+  ],
+  properties: {
+    colo_oi_oe_cm: { type: ["number", "null"] },
+    orificio_interno_fechado: { type: "boolean" },
+    placenta_distancia_cm: { type: ["number", "null"] },
+    placenta_distante: { type: "boolean" },
+    cerclagem: { type: "boolean" },
+    observacoes: { type: ["string", "null"] },
+  },
+} as const;
+
 export const CERVICOMETRIA_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -126,6 +157,8 @@ function normalizeMedidasMm(f: CervicometriaFindings): CervicometriaFindings {
 const TITULO = "ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL";
 const COMENTARIOS =
   "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+const TECNICA_OBJETIVA =
+  "Exame realizado pela via transvaginal, com transdutor endocavitário, para avaliação do colo uterino.";
 
 /** Classe do colo pelo comprimento (thresholds do Dr. Luiz — a confirmar). */
 type ColoClasse = "normal" | "um_pouco_curto" | "curto";
@@ -177,8 +210,20 @@ function coloConclusaoItens(f: CervicometriaFindings): string[] {
 
 // ─────────────────────────── Render ───────────────────────────
 
-export function renderCervicometria(input: CervicometriaFindings): string {
-  const f = normalizeMedidasMm(input);
+export type CervicometriaBloco = {
+  achados: string[];
+  conclusao: string[];
+};
+
+/**
+ * Fonte clínica única da cervicometria isolada e integrada. O chamador decide
+ * apenas os cabeçalhos; medidas, conversões, limiares e hard stops são comuns.
+ */
+export function renderCervicometriaBloco(
+  input: CervicometriaAddon,
+  igSemanas: number | null,
+): CervicometriaBloco {
+  const f = normalizeMedidasMm({ ...input, ig_semanas: igSemanas });
   // ----- OS SEGUINTES ASPECTOS FORAM OBSERVADOS -----
   const aspectos: string[] = [];
   aspectos.push(
@@ -220,22 +265,47 @@ export function renderCervicometria(input: CervicometriaFindings): string {
     conclusao.push("Não há sinais de placenta prévia.");
   }
 
-  const conclusaoTxt =
-    conclusao.length === 1
-      ? (conclusao[0] as string)
-      : conclusao.map((it, i) => `${i + 1}) ${it}`).join("\n");
+  return { achados: aspectos, conclusao };
+}
 
-  const corpo = [
-    TITULO,
-    "",
-    COMENTARIOS,
-    "",
-    "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
-    aspectos.join("\n"),
-    "",
-    "CONCLUSÃO:",
-    conclusaoTxt,
-  ].join("\n");
+export function renderCervicometria(
+  input: CervicometriaFindings,
+  _prefs?: unknown,
+  opts?: { objetivo?: boolean },
+): string {
+  const { ig_semanas: igSemanas, ...addon } = input;
+  const bloco = renderCervicometriaBloco(addon, igSemanas);
+  const conclusaoTxt =
+    bloco.conclusao.length === 1
+      ? (bloco.conclusao[0] as string)
+      : bloco.conclusao
+          .map((it, i) => `${i + 1}${opts?.objetivo ? "." : ")"} ${it}`)
+          .join("\n");
+
+  const corpo = opts?.objetivo
+    ? [
+        TITULO,
+        "",
+        "TÉCNICA:",
+        TECNICA_OBJETIVA,
+        "",
+        "ACHADOS:",
+        bloco.achados.join("\n"),
+        "",
+        "IMPRESSÃO:",
+        conclusaoTxt,
+      ].join("\n")
+    : [
+        TITULO,
+        "",
+        COMENTARIOS,
+        "",
+        "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
+        bloco.achados.join("\n"),
+        "",
+        "CONCLUSÃO:",
+        conclusaoTxt,
+      ].join("\n");
 
   return corpo.replace(/\n{3,}/g, "\n\n").trim();
 }
