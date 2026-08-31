@@ -14,7 +14,6 @@ import {
   Moon,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
   Sun,
 } from 'lucide-react'
 
@@ -85,8 +84,8 @@ export function LaudarRail({ workspaceV2 = false }: { workspaceV2?: boolean }) {
 
   return (
     <aside className={`group absolute inset-y-0 left-0 z-30 flex flex-col overflow-hidden py-3 shadow-none transition-[width,box-shadow] duration-300 hover:w-[220px] hover:shadow-2xl ${workspaceV2 ? 'w-14 rounded-2xl border border-transparent bg-transparent hover:border-gray-200 hover:bg-white dark:hover:border-gray-800 dark:hover:bg-[#1C1C1E]' : 'w-16 border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900'}`}>
-      <div className="mb-2 flex h-12 w-16 items-center justify-center">
-        <Sparkles className="h-5 w-5 text-emerald-600" />
+      <div className="mb-2 flex h-12 w-16 items-center justify-center" aria-hidden="true">
+        <span className="h-7 w-1 rounded-full bg-emerald-600 shadow-[0_0_14px_rgba(5,150,105,0.22)]" />
       </div>
       <div className="flex-1">{ITEMS.map(renderNav)}</div>
       <div className="border-t border-gray-200 pt-3 dark:border-gray-800">

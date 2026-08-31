@@ -86,6 +86,20 @@ export type UpdateProfileInput = {
   default_writing_style_id?: string | null;
 };
 
+export type UserPhrase = {
+  id: string;
+  title: string;
+  body: string;
+  category_code: string | null;
+  position: number;
+};
+
+export type UserPhraseInput = {
+  title: string;
+  body: string;
+  category_code?: string | null;
+};
+
 /** Exportado para os módulos-irmãos (ex.: personalizacao.ts). */
 export async function authedFetch(path: string, init: RequestInit = {}) {
   const token = await getAccessToken();
@@ -156,6 +170,27 @@ export async function updateMeProfile(input: UpdateProfileInput): Promise<Profil
   return ProfileResponseSchema.parse(
     await readJsonOrThrow(res, "salvar perfil"),
   ).profile;
+}
+
+export async function getUserPhrases(): Promise<UserPhrase[]> {
+  const res = await authedFetch('/api/me/user-phrases', { method: 'GET' });
+  const body = await readJsonOrThrow(res, 'buscar frases pessoais') as { phrases?: UserPhrase[] };
+  return body.phrases ?? [];
+}
+
+export async function createUserPhrase(input: UserPhraseInput): Promise<void> {
+  const res = await authedFetch('/api/me/user-phrases', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) });
+  await readJsonOrThrow(res, 'criar frase pessoal');
+}
+
+export async function updateUserPhrase(id: string, input: UserPhraseInput): Promise<void> {
+  const res = await authedFetch('/api/me/user-phrases', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, ...input }) });
+  await readJsonOrThrow(res, 'salvar frase pessoal');
+}
+
+export async function deleteUserPhrase(id: string): Promise<void> {
+  const res = await authedFetch(`/api/me/user-phrases?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await readJsonOrThrow(res, 'excluir frase pessoal');
 }
 
 export async function deleteMeAccount(): Promise<void> {

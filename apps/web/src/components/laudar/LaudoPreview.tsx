@@ -244,14 +244,14 @@ export function LaudoPreview({
 
       <div ref={documentScrollRef} className={`relative min-h-0 flex-1 overflow-y-auto ${workspaceV2 ? 'bg-white p-4 dark:bg-[#1C1C1E]' : 'p-6'}`}>
         {updating ? (
-          <div className="pointer-events-none sticky top-3 z-20 flex justify-center" role="status" aria-live="polite">
+          <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center" role="status" aria-live="polite">
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 shadow-sm backdrop-blur-md dark:border-emerald-800/70 dark:bg-gray-950/85 dark:text-emerald-300">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600 dark:border-emerald-900 dark:border-t-emerald-300" />
               Atualizando o trecho alterado…
             </span>
           </div>
         ) : null}
-        <article className={`${updating ? 'opacity-70 blur-[0.35px]' : 'opacity-100 blur-0'} transition-[filter,opacity] duration-200 ${workspaceV2
+        <article aria-busy={updating} className={`${updating ? 'opacity-55 blur-[0.35px]' : 'opacity-100 blur-0'} transition-[filter,opacity] duration-200 ${workspaceV2
           ? 'mx-auto min-h-full max-w-[760px] bg-white px-6 py-5 font-sans text-[14px] leading-[1.65] text-gray-950 dark:bg-[#1C1C1E] dark:text-gray-100'
           : "mx-auto min-h-full max-w-[760px] rounded-sm bg-white px-12 py-12 font-['Times_New_Roman'] text-[15px] leading-[1.62] text-gray-950 shadow-xl"}`}>
           {editable && onTextChange ? (

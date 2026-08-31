@@ -5,6 +5,8 @@ import { Perfil, type PerfilDoMedico } from '@/components/preferencias/Perfil'
 import { PlanoCard } from '@/components/preferencias/PlanoCard'
 import { Digitadoras } from '@/components/preferencias/Digitadoras'
 import { Tema } from '@/components/preferencias/Tema'
+import { FrasesPessoais } from '@/components/preferencias/FrasesPessoais'
+import { ModelosPreferidos } from '@/components/preferencias/ModelosPreferidos'
 import type { Assinatura, PlanoDoBanco } from '@/lib/planos'
 
 export const dynamic = 'force-dynamic'
@@ -83,6 +85,7 @@ export default async function PreferenciasPage({
               </section>
             )}
             <Digitadoras />
+            <FrasesPessoais />
           </div>
 
           <div className="flex flex-col gap-4">
@@ -95,6 +98,7 @@ export default async function PreferenciasPage({
               <PlanoCard plano={perfil.plan ?? 'free'} assinatura={corpo?.assinatura ?? null} />
             ) : null}
             <Tema />
+            <ModelosPreferidos />
           </div>
         </div>
       </div>

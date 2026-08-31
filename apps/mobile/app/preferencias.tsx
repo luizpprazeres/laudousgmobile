@@ -230,6 +230,17 @@ export default function PreferenciasScreen() {
           ))}
         </View>
 
+        <Text style={styles.sectionHeader}>Produtividade</Text>
+        <View style={styles.list}>
+          <Pressable
+            onPress={() => router.push('/frases-pessoais' as never)}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+          >
+            <Text style={styles.label}>Minhas frases</Text>
+            <Text style={styles.value}>Sincronizadas entre as plataformas</Text>
+          </Pressable>
+        </View>
+
         <Text style={styles.sectionHeader}>Legal</Text>
         <View style={styles.list}>
           <Pressable

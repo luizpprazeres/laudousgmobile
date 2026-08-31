@@ -81,10 +81,6 @@ function sectionDone(section: NavSection, examState?: ExamState, completedIds?: 
 
 export function ExamSectionNav({ sections, activeId, onSelect, examState, completedIds, controls, opts, onOpts, workspaceV2 = false, contentGroupLabel }: Props) {
   const groups: NavSection['group'][] = ['cabecalho', 'orgaos', 'conclusao', 'calculos']
-  const organSections = sections.filter((section) => section.group === 'orgaos')
-  const completed = organSections.filter((section) => sectionDone(section, examState, completedIds)).length
-  const progress = organSections.length ? Math.round((completed / organSections.length) * 100) : 0
-
   return (
     <aside className={workspaceV2
       ? 'flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]'
@@ -131,16 +127,6 @@ export function ExamSectionNav({ sections, activeId, onSelect, examState, comple
         })}
       </nav>
 
-      <div className={workspaceV2
-        ? 'm-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/25'
-        : 'm-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30'}>
-        <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{completed} de {organSections.length}</div>
-        {!workspaceV2 ? <div className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">O restante já está marcado como normal.</div> : null}
-        <div className={`${workspaceV2 ? 'mt-2 h-1' : 'mt-3 h-2'} overflow-hidden rounded-full bg-white dark:bg-gray-800`}>
-          <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${progress}%` }} />
-        </div>
-        {!workspaceV2 ? <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">salvo há 2s</div> : null}
-      </div>
     </aside>
   )
 }
