@@ -20,6 +20,7 @@ import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
 import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
 import { adaptarDopplerObstetrico } from '@/lib/catalog/dopplerParaCatalogo'
+import { adaptarDopplerCarotidas } from '@/lib/catalog/dopplerCarotidasParaCatalogo'
 import { adaptarAbdome } from '@/lib/catalog/abdomeParaCatalogo'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
@@ -41,6 +42,7 @@ export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
 import { TireoideFormPanel } from './TireoideFormPanel'
 import { MamariaFormPanel } from './MamariaFormPanel'
+import { DopplerCarotidasFormPanel } from './DopplerCarotidasFormPanel'
 
 const TIREOIDE_ID = 'TIREOIDE'
 type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
@@ -247,6 +249,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'DOPPLER_OBSTETRICO') {
       return adaptarDopplerObstetrico((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'DOPPLER_CAROTIDAS') {
+      return adaptarDopplerCarotidas((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
     return null
   }, [categoria, examStates, isTireoide, tireoideState])
@@ -647,6 +652,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                     setExamStates((all) => ({
                       ...all,
                       [categoria]: { ...all[categoria], mamas: nextState },
+                    }))
+                  }
+                />
+              ) : categoria === 'DOPPLER_CAROTIDAS' && activeSection?.module ? (
+                <DopplerCarotidasFormPanel
+                  section={activeSection.id}
+                  state={examState?.[activeSection.id] ?? activeSection.module.initialState()}
+                  onChange={(nextState) =>
+                    setExamStates((all) => ({
+                      ...all,
+                      [categoria]: { ...all[categoria], [activeSection.id]: nextState },
                     }))
                   }
                 />

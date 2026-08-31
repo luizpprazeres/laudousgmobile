@@ -27,6 +27,7 @@ export const CATEGORIAS_MIGRADAS = [
   "MORFOLOGICO",
   "DOPPLER_OBSTETRICO",
   "ABDOMEN_TOTAL",
+  "DOPPLER_CAROTIDAS",
 ] as const
 
 export function categoriaMigrada(categoria: string): boolean {

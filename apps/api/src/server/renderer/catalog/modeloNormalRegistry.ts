@@ -31,6 +31,7 @@ import {
 } from "../findingsSchemas/ABDOMEN_TOTAL";
 import { renderAbdomenTotalClassico, renderAbdomenTotalObjetivo } from "../phrases/ABDOMEN_TOTAL";
 import { DopplerObstetricoFindingsSchema, renderDopplerObstetrico } from "../categories/DOPPLER_OBSTETRICO";
+import { DopplerCarotidasFindingsSchema, renderDopplerCarotidas } from "../categories/DOPPLER_CAROTIDAS";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -205,6 +206,13 @@ render: (f, o) =>
          */
         umbilicalSafety: true,
       }),
+  },
+  {
+    categoria: "DOPPLER_CAROTIDAS", rotulo: "Doppler de carótidas e vertebrais",
+    estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
+    schema: DopplerCarotidasFindingsSchema,
+    seed: { classificacao_explicita: "normal" },
+    render: (f, o) => renderDopplerCarotidas(f, { objetivo: o.objetivo }),
   },
   {
     categoria: "MORFOLOGICO", rotulo: "Morfológico", schema: MorfologicoFindingsSchema,

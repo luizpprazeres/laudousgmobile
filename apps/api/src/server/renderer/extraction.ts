@@ -90,6 +90,11 @@ import {
   DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT,
   DopplerVenosoMmiiFindingsSchema,
 } from "./categories/DOPPLER_VENOSO_MMII";
+import {
+  DOPPLER_CAROTIDAS_JSON_SCHEMA,
+  DOPPLER_CAROTIDAS_EXTRACTION_PROMPT,
+  DopplerCarotidasFindingsSchema,
+} from "./categories/DOPPLER_CAROTIDAS";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -128,6 +133,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "CERVICOMETRIA",
   "DOPPLER_RENAL",
   "DOPPLER_VENOSO_MMII",
+  "DOPPLER_CAROTIDAS",
 ]);
 
 export type RendererExtractionResult = {
@@ -326,6 +332,12 @@ export const EXTRACTORS: Record<string, Extractor> = {
     jsonSchema: DOPPLER_VENOSO_MMII_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT,
     parse: (raw) => DopplerVenosoMmiiFindingsSchema.parse(raw),
+  },
+  DOPPLER_CAROTIDAS: {
+    schemaName: "DopplerCarotidasFindings",
+    jsonSchema: DOPPLER_CAROTIDAS_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: DOPPLER_CAROTIDAS_EXTRACTION_PROMPT,
+    parse: (raw) => DopplerCarotidasFindingsSchema.parse(raw),
   },
   // Esquema visual venoso (DESENHO) — extração per-segmento SEPARADA do writer
   // DOPPLER_VENOSO_MMII acima (que faz o TEXTO do laudo). Chave distinta para não

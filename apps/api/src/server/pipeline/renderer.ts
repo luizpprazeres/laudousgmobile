@@ -71,6 +71,10 @@ import {
   renderCervicometria,
   type CervicometriaFindings,
 } from "../renderer/categories/CERVICOMETRIA";
+import {
+  renderDopplerCarotidas,
+  type DopplerCarotidasFindings,
+} from "../renderer/categories/DOPPLER_CAROTIDAS";
 
 /**
  * DET-5 — RENDERER: máscara (template_body com slots) + achados tipados →
@@ -506,6 +510,7 @@ export async function* runRendererStream(args: {
     args.categoryCode === "MUSCULOESQUELETICO_V2" ||
     args.categoryCode === "PROSTATA_SUPRAPUBICA" ||
     args.categoryCode === "DOPPLER_OBSTETRICO" ||
+    args.categoryCode === "DOPPLER_CAROTIDAS" ||
     args.categoryCode === "CERVICOMETRIA"
   ) {
     const objetivo = isEstiloObjetivo(args.writingStyleId);
@@ -788,6 +793,9 @@ export async function* runRendererStream(args: {
         });
         break;
       }
+      case "DOPPLER_CAROTIDAS":
+        fullText = renderDopplerCarotidas(fnd as DopplerCarotidasFindings, { objetivo });
+        break;
       case "CERVICOMETRIA":
         // Cervicometria (ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL p/ medida do colo).
         // Exame simples e 100% determinístico. Sem variante objetivo (clássico só).

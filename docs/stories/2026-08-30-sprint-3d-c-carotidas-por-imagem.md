@@ -2,7 +2,7 @@
 
 ## Status
 
-Em andamento.
+3D-C1 concluída; 3D-C2 em andamento.
 
 ## Objetivo
 
@@ -63,9 +63,9 @@ para cada medida.
 
 ## Critérios de aceite
 
-- [ ] A categoria abre na web com formulário bilateral completo.
-- [ ] Os dois estilos produzem laudos coerentes e sem placeholders vazios.
-- [ ] Mais de uma placa pode ser registrada no mesmo lado.
+- [x] A categoria abre na web com formulário bilateral completo.
+- [x] Os dois estilos produzem laudos coerentes e sem placeholders vazios.
+- [x] Mais de uma placa pode ser registrada no mesmo lado.
 - [ ] Android e iOS extraem e revisam medidas de até três imagens.
 - [ ] A web aplica apenas campos confirmados pelo usuário.
 - [ ] Dados conflitantes são sinalizados, não sobrescritos silenciosamente.
@@ -74,4 +74,15 @@ para cada medida.
 
 ## File list
 
-- A preencher durante a implementação.
+- `apps/api/src/server/renderer/categories/DOPPLER_CAROTIDAS.ts`
+- `apps/api/src/server/renderer/extraction.ts`
+- `apps/api/src/server/pipeline/renderer.ts`
+- `apps/api/src/server/renderer/catalog/modeloNormalRegistry.ts`
+- `apps/api/src/server/renderer/__tests__/doppler-carotidas.manual.ts`
+- `apps/web/src/lib/deterministic/organs/dopplerCarotidas.ts`
+- `apps/web/src/lib/deterministic/index.ts`
+- `apps/web/src/lib/catalog/dopplerCarotidasParaCatalogo.ts`
+- `apps/web/src/lib/catalog/dopplerCarotidasParaCatalogo.test.ts`
+- `apps/web/src/lib/catalog/migradas.ts`
+- `apps/web/src/components/laudar/DopplerCarotidasFormPanel.tsx`
+- `apps/web/src/components/laudar/LaudarWebExperience.tsx`
