@@ -22,6 +22,8 @@
     "validate:golden": "tsx scripts/golden-validation.ts",
     "validate:golden:objetivo": "tsx tests/golden-objetivo/runner.ts",
     "validate:golden:deterministico": "tsx tests/golden-deterministico/runner.ts",
+    "validate:fmf:trisomias": "tsx tests/fmf-trisomy/runner.ts && tsx apps/web/src/lib/calculators/trisomyFmf.test.mts",
+    "generate:fmf:trisomias": "node packages/fmf-trisomy/generate-params.mjs",
     "diff:bundle": "tsx scripts/diff-bundle-vs-original.ts"
   },
   "devDependencies": {

@@ -1,0 +1,61 @@
+{
+  "modelVersion": "FMF-R-extract-2026-06-26/v1",
+  "source": "protótipo histórico congelado; não equivale a validação externa FMF",
+  "cases": [
+    {
+      "name": "idade, CCN e TN",
+      "input": { "maternalAge": 30, "crl": 64, "nt": 1.5 },
+      "expected": {
+        "t21": 0.0002730727305225977,
+        "t18": 0.00017853301827095458,
+        "t13": 0.000042569988277114955,
+        "ratios": [3662, 5601, 23491],
+        "markers": ["Idade materna", "TN"]
+      }
+    },
+    {
+      "name": "FCF isolada agora participa do cálculo",
+      "input": { "maternalAge": 39, "crl": 72.4, "nt": 3.1, "fhr": 165 },
+      "expected": {
+        "t21": 0.06382825000766097,
+        "t18": 0.005008433343673353,
+        "t13": 0.005796221272751978,
+        "ratios": [16, 200, 173],
+        "markers": ["Idade materna", "TN", "FCF"]
+      }
+    },
+    {
+      "name": "bioquímica e FCF",
+      "input": { "maternalAge": 36, "crl": 60.2, "nt": 2.2, "fhr": 152, "freeBetaHcgMoM": 1.8, "pappaMoM": 0.7, "isMoMCorrected": true },
+      "expected": {
+        "t21": 0.005079367684075807,
+        "t18": 0.000022731810319820432,
+        "t13": 0.000001763422553865466,
+        "ratios": [197, 43991, 567079],
+        "markers": ["Idade materna", "TN", "FCF", "Free β-hCG", "PAPP-A"]
+      }
+    },
+    {
+      "name": "marcadores ecográficos adicionais normais",
+      "input": { "maternalAge": 34, "crl": 67.5, "nt": 1.8, "dvPI": 1.1, "tricuspidRegurgitation": false, "nasalBoneAbsent": false, "weight": 70, "smoking": false },
+      "expected": {
+        "t21": 0.00006702503583473912,
+        "t18": 0.00006976118462392147,
+        "t13": 0.00002480700369616871,
+        "ratios": [14920, 14335, 40311],
+        "markers": ["Idade materna", "TN", "Ducto venoso", "Tricúspide", "Osso nasal"]
+      }
+    },
+    {
+      "name": "alto risco e truncamentos explícitos",
+      "input": { "maternalAge": 41, "crl": 80, "nt": 4.5, "fhr": 175, "freeBetaHcgMoM": 12, "pappaMoM": 0.05, "isMoMCorrected": true, "dvPI": 1.4, "tricuspidRegurgitation": true, "nasalBoneAbsent": true, "weight": 95, "ethnicity": "black" },
+      "expected": {
+        "t21": 0.9526920607949413,
+        "t18": 0.0466156249649367,
+        "t13": 0.0006922613682479789,
+        "ratios": [1, 21, 1445],
+        "markers": ["Idade materna", "TN", "FCF", "Free β-hCG", "PAPP-A", "Ducto venoso", "Tricúspide", "Osso nasal"]
+      }
+    }
+  ]
+}
