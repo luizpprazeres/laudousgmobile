@@ -315,17 +315,26 @@ export function varsObstetrica(ctx: Ctx): Record<string, string> {
   const descricoes = f.fetos.map((x, i) => {
     const rot = x.rotulo ?? String.fromCharCode(65 + i);
     const pos = x.posicao_relativa ? `o feto ${x.posicao_relativa} (feto ${rot})` : `o feto ${rot}`;
+    if (x.polo_cefalico) {
+      return `${pos}, em situação transversa, com polo cefálico ${x.polo_cefalico}${x.dorso ? `, e dorso ${x.dorso}` : ""}`;
+    }
     const ap = apresentacaoFmt(x.apresentacao);
-    return `${pos}${ap ? `, em apresentação ${ap}` : ""}${x.dorso ? ` com dorso ${x.dorso}` : ""}${x.polo_cefalico ? ` com polo cefálico ${x.polo_cefalico}` : ""}`;
+    return `${pos}${ap ? `, em apresentação ${ap}` : ""}${x.dorso ? `, com dorso ${x.dorso}` : ""}`;
   });
 
   const classe = f.liquido_classe ?? "";
   return {
     dsm: mm(calcDsm(f)),
     sg_medidas: (f.saco_gestacional_medidas_mm ?? []).map((n) => ptBr(n)).join(" x "),
-    apresentacao: apresentacaoFmt(ft?.apresentacao ?? null) ?? (f.gestacao_inicial ? "transversa" : "cefálica"),
-    dorso_sufixo: ft?.dorso ? `, com dorso ${ft.dorso}` : "",
-    polo_sufixo: ft?.polo_cefalico ? `, com polo cefálico ${ft.polo_cefalico}` : "",
+    apresentacao: ft?.polo_cefalico
+      ? `transversa, com polo cefálico ${ft.polo_cefalico}`
+      : apresentacaoFmt(ft?.apresentacao ?? null) ?? (f.gestacao_inicial ? "transversa" : "cefálica"),
+    dorso_sufixo: ft?.dorso
+      ? ft.polo_cefalico
+        ? `, e dorso ${ft.dorso}`
+        : `, com dorso ${ft.dorso}`
+      : "",
+    polo_sufixo: "",
     bcf: ft?.bcf_bpm != null ? ptBr(ft.bcf_bpm) : "____",
     dbp: mm(ft?.dbp_mm ?? null),
     cc: mm(ft?.cc_mm ?? null),
@@ -437,6 +446,7 @@ const inicial = (c: Ctx) => c.findings.gestacao_inicial;
 /** "Embrião" só abaixo de 10 semanas — eixo independente de `inicial`. */
 const embriao = (c: Ctx) => ehEmbriao(c.findings);
 const padrao = (c: Ctx) => !c.findings.gestacao_inicial;
+const transverso = (c: Ctx) => padrao(c) && Boolean(ftDe(c)?.polo_cefalico);
 
 export const OBSTETRICA_CLASSICO: Catalog<F> = {
   id: "OBSTETRICA/CLASSICO_COMPLETO",
@@ -570,6 +580,8 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
           frase: "Embrião único, em situação {apresentacao}{dorso_sufixo}{polo_sufixo}." },
         { id: "inicial_feto", quando: inicial,
           frase: "Feto único, em situação {apresentacao}{dorso_sufixo}{polo_sufixo}." },
+        { id: "padrao_transverso", quando: transverso,
+          frase: "Feto único, em situação {apresentacao}{dorso_sufixo}." },
         { id: "padrao", frase: "Feto único, em apresentação {apresentacao}{dorso_sufixo}{polo_sufixo}." },
       ],
     },

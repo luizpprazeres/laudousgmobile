@@ -163,6 +163,11 @@ export function renderDopplerModule(
   if (module.ducto_venoso_qualitativo) {
     linhas.push(`Ducto venoso: ${module.ducto_venoso_qualitativo}.`);
   }
+  if (module.perc_medio_uterinas !== null || module.perc_umbilical !== null || module.perc_acm !== null) {
+    linhas.push(
+      "Referência: percentis calculados com as equações da calculadora disponibilizada pela Fetal Medicine Barcelona.",
+    );
+  }
 
   const achados = linhas.filter((v): v is string => Boolean(v));
   if (achados.length === 0) achados.push("Não foram informados índices Doppler mensuráveis.");

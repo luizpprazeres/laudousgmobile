@@ -767,6 +767,10 @@ export function fetoApresentacaoFrase(
   // `inicial` continua governando a FORMA da frase (situação × apresentação),
   // que é escolha de modelo. Só o substantivo passou a depender da IG.
   const subst = embriao ? "Embrião" : "Feto";
+  if (f.polo_cefalico) {
+    const dorso = f.dorso ? `, e dorso ${f.dorso}` : "";
+    return `${subst} único, em situação transversa, com polo cefálico ${f.polo_cefalico}${dorso}.`;
+  }
   const apres = apresentacaoFmt(f.apresentacao) ?? (inicial ? "transversa" : "cefálica");
   const conector = inicial ? "em situação" : "em apresentação";
   let frase = `${subst} único, ${conector} ${apres}`;
@@ -1107,11 +1111,13 @@ export function renderObstetricaClassico(
     const descricoes = f.fetos.map((ft, i) => {
       const rot = ft.rotulo ?? String.fromCharCode(65 + i);
       const pos = ft.posicao_relativa ? `o feto ${ft.posicao_relativa} (feto ${rot})` : `o feto ${rot}`;
+      if (ft.polo_cefalico) {
+        return `${pos}, em situação transversa, com polo cefálico ${ft.polo_cefalico}${ft.dorso ? `, e dorso ${ft.dorso}` : ""}`;
+      }
       const apresFmt = apresentacaoFmt(ft.apresentacao);
       const apres = apresFmt ? `, em apresentação ${apresFmt}` : "";
-      const dorso = ft.dorso ? ` com dorso ${ft.dorso}` : "";
-      const polo = ft.polo_cefalico ? ` com polo cefálico ${ft.polo_cefalico}` : "";
-      return `${pos}${apres}${dorso}${polo}`;
+      const dorso = ft.dorso ? `, com dorso ${ft.dorso}` : "";
+      return `${pos}${apres}${dorso}`;
     });
     aspectos.push(`${qtdLabel}: ${descricoes.join(", e ")}.`);
     // Por feto: BCF + biometria + peso.
@@ -1361,6 +1367,9 @@ export function renderObstetricaObjetivo(
       const pos = ft.posicao_relativa
         ? `feto ${ft.posicao_relativa} (feto ${rot})`
         : `feto ${rot}`;
+      if (ft.polo_cefalico) {
+        return `${pos}, em situação transversa, com polo cefálico ${ft.polo_cefalico}${ft.dorso ? `, e dorso ${ft.dorso}` : ""}`;
+      }
       const apresFmt = apresentacaoFmt(ft.apresentacao);
       const apres = apresFmt ? `, em apresentação ${apresFmt}` : "";
       const dorso = ft.dorso ? `, com dorso ${ft.dorso}` : "";
@@ -1425,10 +1434,7 @@ export function renderObstetricaObjetivo(
 
       impressao.push(...ig.conclusaoObjetivo);
     } else {
-      const apres = apresentacaoFmt(ft.apresentacao) ?? "cefálica";
-      let fetoFrase = `Feto único, em apresentação ${apres}`;
-      if (ft.dorso) fetoFrase += `, com dorso ${ft.dorso}`;
-      achados.push(`${fetoFrase}.`);
+      achados.push(fetoApresentacaoFrase(ft, false, false));
       achados.push(
         `Batimentos cardíacos fetais (BCF): ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
       );

@@ -134,11 +134,17 @@ export function adaptarMorfologico(
   const genitalia = texto(an, "genitalia");
   const primeiroTrimestre =
     ((typeof opcoes.trimestre === "string" ? opcoes.trimestre : "") || "2t") === "1t";
+  const transversa = texto(f, "situacao") === "transversa";
 
   const dados: Record<string, unknown> = {
     trimestre: (typeof opcoes.trimestre === "string" ? opcoes.trimestre : "") || "2t",
-    apresentacao: texto(f, "apresentacao") || null,
+    apresentacao: transversa
+      ? null
+      : texto(f, "situacao.longitudinal.apresentacao") || texto(f, "apresentacao") || "cefálica",
     dorso: texto(f, "dorso") || null,
+    polo_cefalico: transversa
+      ? texto(f, "situacao.transversa.polo_cefalico") || "à direita"
+      : null,
     bcf_bpm: primeiroTrimestre ? numero(f1, "bcf") : numero(f, "bcf"),
 
     ccn_mm: primeiroTrimestre ? numero(f1, "ccn") : null,

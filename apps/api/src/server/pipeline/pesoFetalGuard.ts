@@ -6,10 +6,12 @@
  * É clinicamente grave (flag de restrição de crescimento / G.I.G. sumindo).
  * Reforço de prompt não vence → determinístico.
  *
- * Regras (verbatim do contract DOPPLER_OBSTETRICO):
- *  - percentil < 3: 2 itens (abaixo do P3 + restrição Gratacós estágio I).
- *  - percentil >= 3 e < 10: 1 item P.I.G. (com conduta) — OU 2 itens se o médico
- *    mencionar "restrição do crescimento"/"RCIU" (igual ao <P3, mas texto P10).
+ * Regras de segurança clínica:
+ *  - percentil isolado NÃO define estágio de Gratacós;
+ *  - o estágio só é preservado quando foi explicitamente informado pelo médico;
+ *  - percentil < 3: item abaixo do P3, sem inferir automaticamente restrição/estágio;
+ *  - percentil >= 3 e < 10: item P.I.G. — ou restrição sem estágio quando o médico
+ *    mencionar "restrição do crescimento"/"RCIU" sem informar o estágio.
  *  - percentil > 95: 1 item G.I.G.
  *  - percentil 10..95: NENHUM item adicional.
  *  - Posição: APÓS o item de líquido amniótico.
@@ -21,6 +23,7 @@ export interface PesoFetalData {
   abaixoP10?: boolean;
   acimaP95?: boolean;
   restricao?: boolean;
+  gratacosEstagio?: 1 | 2 | 3 | 4;
 }
 
 const ITEM_P3 = "O peso fetal encontra-se abaixo do percentil 3 para a idade gestacional.";
@@ -28,8 +31,7 @@ const ITEM_P10_PIG =
   "O peso fetal encontra-se abaixo do percentil 10 (pequeno para a idade gestacional - P.I.G.). Convém, a critério clínico, acompanhamento seriado com Doppler colorido.";
 const ITEM_P10_RESTR =
   "O peso fetal encontra-se abaixo do percentil 10 para a idade gestacional.";
-const ITEM_GRATACOS =
-  "Sinais de restrição do crescimento fetal, estágio I de Gratacós.";
+const ITEM_RESTRICAO = "Sinais de restrição do crescimento fetal.";
 const ITEM_P95_GIG =
   "O peso fetal encontra-se acima do percentil 95 (grande para a idade gestacional - G.I.G.).";
 
@@ -88,14 +90,34 @@ export function extractPesoFetal(rawInput: string): PesoFetalData {
   d.restricao =
     /restri[çc][ãa]o\s+do?\s+crescimento|\brciu\b|\bciur\b/i.test(t);
 
+  const gratacosDepois = t.match(
+    /gratac[óo]s.{0,24}?est[áa]gio\s*(i{1,3}|iv|[1-4])\b/i,
+  );
+  const gratacosAntes = t.match(
+    /est[áa]gio\s*(i{1,3}|iv|[1-4])\b.{0,24}?gratac[óo]s/i,
+  );
+  const gratacosToken = gratacosDepois?.[1] ?? gratacosAntes?.[1];
+  if (gratacosToken) {
+    const token = gratacosToken.toLowerCase();
+    const stage = token === "i" ? 1 : token === "ii" ? 2 : token === "iii" ? 3 : token === "iv" ? 4 : Number(token);
+    if (stage >= 1 && stage <= 4) {
+      d.gratacosEstagio = stage as 1 | 2 | 3 | 4;
+      d.restricao = true;
+    }
+  }
+
   return d;
 }
 
 /** Itens de conclusão do peso fetal (0, 1 ou 2 itens). */
 export function buildPesoFetalItems(d: PesoFetalData): string[] {
-  if (d.abaixoP3) return [ITEM_P3, ITEM_GRATACOS];
+  const restricaoItem = d.gratacosEstagio
+    ? `Sinais de restrição do crescimento fetal, estágio ${["", "I", "II", "III", "IV"][d.gratacosEstagio]} de Gratacós.`
+    : ITEM_RESTRICAO;
+
+  if (d.abaixoP3) return d.restricao ? [ITEM_P3, restricaoItem] : [ITEM_P3];
   if (d.abaixoP10) {
-    return d.restricao ? [ITEM_P10_RESTR, ITEM_GRATACOS] : [ITEM_P10_PIG];
+    return d.restricao ? [ITEM_P10_RESTR, restricaoItem] : [ITEM_P10_PIG];
   }
   if (d.acimaP95) return [ITEM_P95_GIG];
   return [];
@@ -110,23 +132,42 @@ export function ensurePesoFetalConclusion(
   laudo: string,
   rawInput: string,
 ): string {
-  const items = buildPesoFetalItems(extractPesoFetal(rawInput));
-  if (items.length === 0) return laudo;
+  const data = extractPesoFetal(rawInput);
+  const items = buildPesoFetalItems(data);
 
   const parsed = parseConclusion(laudo);
   if (!parsed.found) return laudo;
-  if (parsed.items.some((it) => PESO_ITEM_RE.test(it))) return laudo; // já tem
+
+  // O writer legado podia concluir Gratacós I apenas pelo percentil. Remove essa
+  // inferência quando o médico não informou estágio e corrige para o estágio ditado.
+  const semInferencia = parsed.items.flatMap((item) => {
+    if (!/gratac[óo]s/i.test(item)) return [item];
+    if (!data.gratacosEstagio) return [];
+    const romano = ["", "I", "II", "III", "IV"][data.gratacosEstagio];
+    return [`Sinais de restrição do crescimento fetal, estágio ${romano} de Gratacós.`];
+  });
+
+  if (items.length === 0) {
+    return semInferencia.length === parsed.items.length
+      ? laudo
+      : renderWithConclusion(parsed, semInferencia);
+  }
+  if (semInferencia.some((it) => PESO_ITEM_RE.test(it))) {
+    return semInferencia.length === parsed.items.length
+      ? laudo
+      : renderWithConclusion(parsed, semInferencia);
+  }
 
   // Posição: após o líquido; senão após a IG; senão no início.
-  const liqIdx = parsed.items.findIndex((it) =>
+  const liqIdx = semInferencia.findIndex((it) =>
     /Líquido amniótico/i.test(it),
   );
-  const igIdx = parsed.items.findIndex((it) =>
+  const igIdx = semInferencia.findIndex((it) =>
     /Gesta[çc][ãa]o em torno de/i.test(it),
   );
   const at = (liqIdx !== -1 ? liqIdx : igIdx) + 1;
 
-  const merged = [...parsed.items];
+  const merged = [...semInferencia];
   merged.splice(at, 0, ...items);
   return renderWithConclusion(parsed, merged);
 }

@@ -8,11 +8,11 @@ import {
   View,
 } from "react-native";
 import {
-  calcularDoppler,
+  calcularDopplerParcial,
   extrairIPsDoTexto,
-  formatarBlocoDoppler,
-  type DopplerInput,
-  type DopplerResult,
+  formatarBlocoDopplerParcial,
+  type DopplerPartialInput,
+  type DopplerPartialResult,
   type VesselResult,
 } from "@/shared";
 import { Sheet } from "@/ui/Sheet";
@@ -54,8 +54,8 @@ const EMPTY: FormState = {
  * ACM, uterinas D/E) via regex tolerante a transcrição de áudio. User pode
  * editar manualmente os campos.
  *
- * Cálculo: fórmulas Barcelona FMF (z-score → percentil) com 3 correções
- * clínicas anti-falso-positivo. NÃO INVENTAR — lógica em @laudousg/shared.
+ * Cálculo: fórmulas Barcelona (z-score → percentil), vaso a vaso e sem
+ * substituir o percentil matemático por interpretação clínica.
  */
 export function DopplerCalculatorSheet({
   open,
@@ -80,41 +80,36 @@ export function DopplerCalculatorSheet({
     }));
   }, [open, findingsText]);
 
-  const parsed: DopplerInput | null = useMemo(() => {
+  const parsed: DopplerPartialInput | null = useMemo(() => {
     const w = parseInt(form.weeks, 10);
     const d = parseInt(form.days, 10);
     const ua = parseFloat(form.ipUmbilical.replace(",", "."));
     const acm = parseFloat(form.ipMCA.replace(",", "."));
     const utd = parseFloat(form.ipUterinaDireita.replace(",", "."));
     const ute = parseFloat(form.ipUterinaEsquerda.replace(",", "."));
-    if (
-      Number.isNaN(w) ||
-      Number.isNaN(d) ||
-      Number.isNaN(ua) ||
-      Number.isNaN(acm) ||
-      Number.isNaN(utd) ||
-      Number.isNaN(ute)
-    ) {
-      return null;
-    }
+    if (Number.isNaN(w) || Number.isNaN(d)) return null;
+    const hasUterinas = !Number.isNaN(utd) && !Number.isNaN(ute);
+    const hasOutroVaso = !Number.isNaN(ua) || !Number.isNaN(acm);
+    if (!hasUterinas && !hasOutroVaso) return null;
     return {
       weeks: w,
       days: d,
-      ipUmbilical: ua,
-      ipMCA: acm,
-      ipUterinaDireita: utd,
-      ipUterinaEsquerda: ute,
+      ...(!Number.isNaN(ua) ? { ipUmbilical: ua } : {}),
+      ...(!Number.isNaN(acm) ? { ipMCA: acm } : {}),
+      ...(hasUterinas ? { ipUterinaDireita: utd, ipUterinaEsquerda: ute } : {}),
     };
   }, [form]);
 
-  const result: DopplerResult | null = useMemo(
-    () => (parsed ? calcularDoppler(parsed) : null),
-    [parsed],
-  );
+  const result: DopplerPartialResult | null = useMemo(() => {
+    if (!parsed) return null;
+    const calculated = calcularDopplerParcial(parsed);
+    return Object.keys(calculated).length > 0 ? calculated : null;
+  }, [parsed]);
+  const apenasUterinas = Number.parseInt(form.weeks, 10) < 20;
 
   const handleInsert = () => {
     if (!parsed || !result) return;
-    const bloco = formatarBlocoDoppler(parsed, result);
+    const bloco = formatarBlocoDopplerParcial(parsed, result);
     onInsert(bloco + "\n\n");
     onClose();
   };
@@ -155,19 +150,25 @@ export function DopplerCalculatorSheet({
 
         {/* IPs */}
         <Text style={[styles.section, { marginTop: 18 }]}>Índices de pulsatilidade (IP)</Text>
-        <Field
-          label="Artéria umbilical"
-          value={form.ipUmbilical}
-          onChange={(v) => update("ipUmbilical", v)}
-          placeholder="Ex: 0,95"
-        />
-        <Field
-          label="Artéria cerebral média (ACM)"
-          value={form.ipMCA}
-          onChange={(v) => update("ipMCA", v)}
-          placeholder="Ex: 1,75"
-          style={{ marginTop: 10 }}
-        />
+        {apenasUterinas ? (
+          <Text style={styles.hint}>Antes de 20 semanas, a calculadora Barcelona disponível aceita somente os IPs das artérias uterinas.</Text>
+        ) : (
+          <>
+            <Field
+              label="Artéria umbilical"
+              value={form.ipUmbilical}
+              onChange={(v) => update("ipUmbilical", v)}
+              placeholder="Ex: 0,95"
+            />
+            <Field
+              label="Artéria cerebral média (ACM)"
+              value={form.ipMCA}
+              onChange={(v) => update("ipMCA", v)}
+              placeholder="Ex: 1,75"
+              style={{ marginTop: 10 }}
+            />
+          </>
+        )}
         <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
           <Field
             label="Uterina direita"
@@ -186,14 +187,16 @@ export function DopplerCalculatorSheet({
         {/* Resultado */}
         {result ? (
           <View style={styles.resultBox}>
-            <ResultLine label="Umbilical" v={result.arteriaUmbilical} />
-            <ResultLine label="ACM" v={result.arteriaCerebralMedia} />
-            <ResultLine
-              label="Uterinas (média)"
-              v={result.arteriasUterinas}
-              extra={`D ${parsed?.ipUterinaDireita} / E ${parsed?.ipUterinaEsquerda}`}
-            />
-            <ResultLine label="RCP" v={result.ratioCerebroplacentario} />
+            {result.arteriaUmbilical ? <ResultLine label="Umbilical" v={result.arteriaUmbilical} /> : null}
+            {result.arteriaCerebralMedia ? <ResultLine label="ACM" v={result.arteriaCerebralMedia} /> : null}
+            {result.arteriasUterinas ? (
+              <ResultLine
+                label="Uterinas (média)"
+                v={result.arteriasUterinas}
+                extra={`D ${parsed?.ipUterinaDireita} / E ${parsed?.ipUterinaEsquerda}`}
+              />
+            ) : null}
+            {result.ratioCerebroplacentario ? <ResultLine label="RCP" v={result.ratioCerebroplacentario} /> : null}
             <Pressable
               onPress={handleInsert}
               style={({ pressed }) => [styles.insertBtn, pressed && { opacity: 0.7 }]}
@@ -203,7 +206,7 @@ export function DopplerCalculatorSheet({
           </View>
         ) : (
           <Text style={styles.hint}>
-            Preencha IG e os 4 IPs pra ver os percentis e inserir o bloco.
+            Preencha a IG e ao menos um vaso. Para uterinas, informe direita e esquerda.
           </Text>
         )}
       </ScrollView>

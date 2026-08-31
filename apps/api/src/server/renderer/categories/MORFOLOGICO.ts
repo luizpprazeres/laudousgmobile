@@ -36,6 +36,7 @@ export const MorfologicoFindingsSchema = z.object({
   trimestre: z.enum(["1t", "2t", "3t"]),
   apresentacao: z.string().nullable(),
   dorso: z.string().nullable(),
+  polo_cefalico: z.string().nullable(),
   bcf_bpm: z.number().nullable(),
   // 1º trimestre
   ccn_mm: z.number().nullable(),
@@ -103,7 +104,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
-    "trimestre", "apresentacao", "dorso", "bcf_bpm",
+    "trimestre", "apresentacao", "dorso", "polo_cefalico", "bcf_bpm",
     "ccn_mm", "tn_mm", "osso_nasal", "ducto_venoso",
     "uterina_ip_direita", "uterina_ip_esquerda",
     "dbp_mm", "cc_mm", "cerebelo_mm", "cisterna_magna_mm", "binocular_mm", "ca_mm",
@@ -117,7 +118,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
   ],
   properties: {
     trimestre: { type: "string", enum: ["1t", "2t", "3t"] },
-    apresentacao: str, dorso: str, bcf_bpm: num,
+    apresentacao: str, dorso: str, polo_cefalico: str, bcf_bpm: num,
     ccn_mm: num, tn_mm: num,
     osso_nasal: { type: ["string", "null"], enum: ["presente", "ausente", null] },
     ducto_venoso: { type: ["string", "null"], enum: ["normal", "alterado", null] },
@@ -161,7 +162,8 @@ REGRAS:
 3. osso_nasal: "presente"/"ausente". ducto_venoso: "normal"/"alterado" (onda A
    reversa = alterado; onda A positiva/trifásica = normal).
 4. uterina_ip_direita/esquerda: IP das artérias uterinas (1t).
-5. apresentacao/dorso (2t/3t): só se ditados.
+5. apresentacao/dorso (2t/3t): só se ditados. Situação transversa/córmica não é
+   apresentação: use apresentacao=null e registre a posição em polo_cefalico.
 6. peso_g/peso_variacao_g/percentil: só se ditados. genitalia: se ditada.
    placenta_localizacao e placenta_grau (Grannum: 0/1/2/3 — capture o número),
    ila_cm: se ditados.
@@ -353,9 +355,11 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
   const apres = apresentacaoFmt(f.apresentacao);
   const dorso = dorsoFmt(f.dorso);
-  const linhaFeto = dorso
-    ? `Feto único, em apresentação ${apres}, com dorso ${dorso}.`
-    : `Feto único, em apresentação ${apres}.`;
+  const linhaFeto = f.polo_cefalico
+    ? `Feto único, em situação transversa, com polo cefálico ${f.polo_cefalico}${dorso ? `, e dorso ${dorso}` : ""}.`
+    : dorso
+      ? `Feto único, em apresentação ${apres}, com dorso ${dorso}.`
+      : `Feto único, em apresentação ${apres}.`;
 
   const aspectos: string[] = [
     linhaFeto,
@@ -673,9 +677,11 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
   const apres = apresentacaoFmt(f.apresentacao);
   const dorso = dorsoFmt(f.dorso);
-  const linhaFeto = dorso
-    ? `Feto único, em apresentação ${apres}, com dorso ${dorso}.`
-    : `Feto único, em apresentação ${apres}.`;
+  const linhaFeto = f.polo_cefalico
+    ? `Feto único, em situação transversa, com polo cefálico ${f.polo_cefalico}${dorso ? `, e dorso ${dorso}` : ""}.`
+    : dorso
+      ? `Feto único, em apresentação ${apres}, com dorso ${dorso}.`
+      : `Feto único, em apresentação ${apres}.`;
 
   const achados: string[] = [
     linhaFeto,

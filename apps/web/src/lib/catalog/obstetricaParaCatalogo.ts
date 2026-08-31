@@ -74,12 +74,17 @@ function cervicometriaDaTela(estado: EstadoObstetrico): Record<string, unknown> 
  */
 function fetoDaTela(f: EstadoDaSecao, b: EstadoDaSecao) {
   const dorso = texto(f, "dorso");
+  const transversa = texto(f, "situacao") === "transversa";
   return {
     rotulo: null,
     posicao_relativa: null,
-    apresentacao: texto(f, "apresentacao") || null,
+    apresentacao: transversa
+      ? null
+      : texto(f, "situacao.longitudinal.apresentacao") || texto(f, "apresentacao") || "cefálica",
     dorso: dorso || null,
-    polo_cefalico: null,
+    polo_cefalico: transversa
+      ? texto(f, "situacao.transversa.polo_cefalico") || "à direita"
+      : null,
     bcf_bpm: numero(f, "bcf"),
     dbp_mm: numero(b, "dbp"),
     cc_mm: numero(b, "cc"),

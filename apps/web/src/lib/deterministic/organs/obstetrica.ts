@@ -121,7 +121,7 @@ export const igModule: OrganModule = {
   },
 }
 
-// ── Feto: apresentação + BCF + anatomia padrão ────────────────────────────────
+// ── Feto: situação/apresentação + BCF + anatomia padrão ───────────────────────
 const fetoModule: OrganModule = {
   schema: {
     id: 'feto',
@@ -129,26 +129,60 @@ const fetoModule: OrganModule = {
     category: 'OBSTETRICA',
     fields: [
       {
-        key: 'apresentacao',
-        label: 'Apresentação',
+        key: 'situacao',
+        label: 'Situação fetal',
         kind: 'segmented',
         options: [
-          { value: 'cefálica', label: 'Cefálica', isDefault: true },
-          { value: 'pélvica', label: 'Pélvica' },
-          { value: 'córmica', label: 'Córmica/transversa' },
+          {
+            value: 'longitudinal',
+            label: 'Longitudinal',
+            isDefault: true,
+            subFields: [{
+              key: 'apresentacao',
+              label: 'Apresentação',
+              kind: 'mini-segmented',
+              options: [
+                { value: 'cefálica', label: 'Cefálica', isDefault: true },
+                { value: 'pélvica', label: 'Pélvica' },
+              ],
+            }],
+          },
+          {
+            value: 'transversa',
+            label: 'Transversa/córmica',
+            subFields: [{
+              key: 'polo_cefalico',
+              label: 'Posição do polo cefálico',
+              kind: 'mini-segmented',
+              options: [
+                { value: 'à direita', label: 'À direita', isDefault: true },
+                { value: 'à esquerda', label: 'À esquerda' },
+              ],
+            }],
+          },
         ],
       },
       { key: 'dorso', label: 'Dorso (opcional)', kind: 'text', placeholder: 'à esquerda' },
       { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '145' },
     ],
   },
-  initialState: (): OrganState => ({ apresentacao: 'cefálica', dorso: '', bcf: '' }),
+  initialState: (): OrganState => ({
+    situacao: 'longitudinal',
+    'situacao.longitudinal.apresentacao': 'cefálica',
+    'situacao.transversa.polo_cefalico': 'à direita',
+    dorso: '',
+    bcf: '',
+  }),
   compose: (st): OrganComposition => {
-    const apres = String(st.apresentacao || 'cefálica')
+    const situacao = String(st.situacao || 'longitudinal')
+    const apres = String(st['situacao.longitudinal.apresentacao'] || 'cefálica')
+    const polo = String(st['situacao.transversa.polo_cefalico'] || 'à direita')
     const dorso = String(st.dorso || '').trim()
     const bcf = numOrNull(st.bcf)
     const linhas = [
-      `Feto único, em apresentação ${apres}${dorso ? `, com dorso ${dorso}` : ''}.`,
+      situacao === 'transversa'
+        ? `Feto único, em situação transversa, com polo cefálico ${polo}${dorso ? `, e dorso ${dorso}` : ''}.`
+        : `Feto único, em apresentação ${apres}${dorso ? `, com dorso ${dorso}` : ''}.`,
       `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`,
       'Os movimentos fetais são ativos.',
       '\nAs considerações sobre a anatomia fetal são as seguintes:',

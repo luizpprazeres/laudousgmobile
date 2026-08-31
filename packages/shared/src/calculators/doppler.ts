@@ -10,9 +10,6 @@
  *   - Artérias Uterinas (média bilateral, log-normal): patológico se z > 1.645
  *   - Ratio Cerebroplacentário (RCP = ACM/UA): patológico se z < -1.645
  *
- * Aplica 3 correções clínicas pós-cálculo pra evitar falsos positivos
- * (vide aplicarCorrecoesClincias).
- *
  * Lógica pura, client-side. Sem deps.
  */
 
@@ -38,6 +35,25 @@ export interface DopplerResult {
   arteriasUterinas: VesselResult & { ipMedio: number };
   ratioCerebroplacentario: VesselResult;
 }
+
+export interface DopplerPartialInput {
+  weeks: number;
+  days: number;
+  ipUmbilical?: number;
+  ipMCA?: number;
+  ipUterinaDireita?: number;
+  ipUterinaEsquerda?: number;
+}
+
+export interface DopplerPartialResult {
+  arteriaUmbilical?: VesselResult;
+  arteriaCerebralMedia?: VesselResult;
+  arteriasUterinas?: VesselResult & { ipMedio: number };
+  ratioCerebroplacentario?: VesselResult;
+}
+
+export const DOPPLER_BARCELONA_REFERENCE =
+  "Percentis calculados com as equações da calculadora disponibilizada pela Fetal Medicine Barcelona.";
 
 // Lookup table: z-score → percentile.
 // Tabela compartilhada com a calculadora Barcelona FMF.
@@ -192,7 +208,7 @@ function calcArteriasUterinas(
   ipEsquerda: number,
 ): VesselResult & { ipMedio: number } {
   const totalDays = weeks * 7 + days;
-  const ipMedio = (ipDireita + ipEsquerda) / 2;
+  const ipMedio = Math.round(((ipDireita + ipEsquerda) / 2) * 1000) / 1000;
   const logMedio = Math.log(ipMedio);
   const meanLog = 1.39 - 0.012 * totalDays + 1.98e-5 * totalDays * totalDays;
   const sdLog = 0.272 - 0.000259 * totalDays;
@@ -221,77 +237,53 @@ function calcRatioCerebroplacentario(
 }
 
 /**
- * Correção clínica pós-cálculo — evita falsos positivos em gestações normais.
- *
- * Regra 1 — Artéria Umbilical (AU):
- *   Só é patológica quando ELEVADA (>p95, fluxo aumentado).
- *   Percentil BAIXO (<p10) não tem significado → exibir como p5, não alarmar.
- *   Rationale: IP umbilical naturalmente baixo não indica comprometimento.
- *
- * Regra 2 — ACM:
- *   Centralização só tem significado quando AU também está comprometida.
- *   ACM baixa isolada (sem AU elevada) → exibir como p5, não alarmar.
- *
- * Regra 3 — RCP:
- *   Mesma lógica da ACM: só relevante quando AU alterada.
- *
- * IMPORTANTE: z-scores e IPs brutos não são alterados; apenas os campos
- * { percentile, pathological } de exibição são corrigidos.
+ * Calcula cada vaso de forma independente, respeitando as faixas do calc.js:
+ * uterinas 11–44 semanas; umbilical, ACM e RCP 20–44 semanas.
+ * O percentil matemático nunca é substituído por uma interpretação clínica.
  */
-function aplicarCorrecoesClincias(result: DopplerResult): DopplerResult {
-  const uaAlterada = result.arteriaUmbilical.pathological;
+export function calcularDopplerParcial(input: DopplerPartialInput): DopplerPartialResult {
+  if (!Number.isInteger(input.weeks) || input.days < 0 || input.days > 6) return {};
+  const ga = input.weeks + input.days / 7;
+  const result: DopplerPartialResult = {};
 
-  const auCorrigida: VesselResult =
-    result.arteriaUmbilical.percentile < 10
-      ? { ...result.arteriaUmbilical, percentile: 5, pathological: false }
-      : result.arteriaUmbilical;
-
-  const acmCorrigida: VesselResult =
-    !uaAlterada && result.arteriaCerebralMedia.pathological
-      ? { ...result.arteriaCerebralMedia, percentile: 5, pathological: false }
-      : result.arteriaCerebralMedia;
-
-  const rcpCorrigido: VesselResult =
-    !uaAlterada && result.ratioCerebroplacentario.pathological
-      ? {
-          ...result.ratioCerebroplacentario,
-          percentile: 5,
-          pathological: false,
-        }
-      : result.ratioCerebroplacentario;
-
-  return {
-    arteriaUmbilical: auCorrigida,
-    arteriaCerebralMedia: acmCorrigida,
-    arteriasUterinas: result.arteriasUterinas,
-    ratioCerebroplacentario: rcpCorrigido,
-  };
+  if (input.weeks >= 11 && input.weeks <= 44 &&
+      input.ipUterinaDireita !== undefined && input.ipUterinaEsquerda !== undefined &&
+      input.ipUterinaDireita > 0.1 && input.ipUterinaDireita <= 10 &&
+      input.ipUterinaEsquerda > 0.1 && input.ipUterinaEsquerda <= 10) {
+    result.arteriasUterinas = calcArteriasUterinas(
+      input.weeks, input.days, input.ipUterinaDireita, input.ipUterinaEsquerda,
+    );
+  }
+  if (input.weeks >= 20 && input.weeks <= 44) {
+    if (input.ipUmbilical !== undefined && input.ipUmbilical > 0.1 && input.ipUmbilical <= 10) {
+      result.arteriaUmbilical = calcArteriaUmbilical(ga, input.ipUmbilical);
+    }
+    if (input.ipMCA !== undefined && input.ipMCA > 0.1 && input.ipMCA <= 10) {
+      result.arteriaCerebralMedia = calcArteriaCerebralMedia(ga, input.ipMCA);
+    }
+    if (input.ipUmbilical !== undefined && input.ipMCA !== undefined &&
+        input.ipUmbilical > 0.1 && input.ipUmbilical <= 10 &&
+        input.ipMCA > 0.1 && input.ipMCA <= 10) {
+      result.ratioCerebroplacentario = calcRatioCerebroplacentario(
+        ga, input.ipMCA, input.ipUmbilical,
+      );
+    }
+  }
+  return result;
 }
 
 export function calcularDoppler(input: DopplerInput): DopplerResult {
-  const ga = input.weeks + input.days / 7;
-
-  const arteriaUmbilical = calcArteriaUmbilical(ga, input.ipUmbilical);
-  const arteriaCerebralMedia = calcArteriaCerebralMedia(ga, input.ipMCA);
-  const arteriasUterinas = calcArteriasUterinas(
-    input.weeks,
-    input.days,
-    input.ipUterinaDireita,
-    input.ipUterinaEsquerda,
-  );
-  const ratioCerebroplacentario = calcRatioCerebroplacentario(
-    ga,
-    input.ipMCA,
-    input.ipUmbilical,
-  );
-
-  const raw = {
-    arteriaUmbilical,
-    arteriaCerebralMedia,
-    arteriasUterinas,
-    ratioCerebroplacentario,
+  const result = calcularDopplerParcial(input);
+  if (!result.arteriaUmbilical || !result.arteriaCerebralMedia ||
+      !result.arteriasUterinas || !result.ratioCerebroplacentario) {
+    throw new RangeError("Idade gestacional ou índices Doppler fora da faixa da calculadora Barcelona.");
+  }
+  return {
+    arteriaUmbilical: result.arteriaUmbilical,
+    arteriaCerebralMedia: result.arteriaCerebralMedia,
+    arteriasUterinas: result.arteriasUterinas,
+    ratioCerebroplacentario: result.ratioCerebroplacentario,
   };
-  return aplicarCorrecoesClincias(raw);
 }
 
 /**
@@ -321,6 +313,28 @@ export function formatarBlocoDoppler(
     `RCP: ${fmt(rcp.ip)} (${pct(rcp.percentile)})${rcp.pathological ? " — ALTERADO" : ""}`,
   ];
 
+  return lines.join("\n");
+}
+
+export function formatarBlocoDopplerParcial(
+  input: DopplerPartialInput,
+  result: DopplerPartialResult,
+): string {
+  const fmt = (v: number) => v.toFixed(2).replace(".", ",");
+  const lines = [`IG: ${input.weeks}s${input.days}d`, "", "DOPPLERVELOCIMETRIA:"];
+  if (result.arteriaUmbilical) {
+    lines.push(`Artéria umbilical: IP ${fmt(result.arteriaUmbilical.ip)} (percentil ${result.arteriaUmbilical.percentile}).`);
+  }
+  if (result.arteriaCerebralMedia) {
+    lines.push(`Artéria cerebral média: IP ${fmt(result.arteriaCerebralMedia.ip)} (percentil ${result.arteriaCerebralMedia.percentile}).`);
+  }
+  if (result.arteriasUterinas) {
+    lines.push(`Artérias uterinas: IP médio ${fmt(result.arteriasUterinas.ipMedio)} (percentil ${result.arteriasUterinas.percentile}).`);
+  }
+  if (result.ratioCerebroplacentario) {
+    lines.push(`Relação cérebro-placentária: ${fmt(result.ratioCerebroplacentario.ip)} (percentil ${result.ratioCerebroplacentario.percentile}).`);
+  }
+  lines.push(DOPPLER_BARCELONA_REFERENCE);
   return lines.join("\n");
 }
 

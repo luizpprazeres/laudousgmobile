@@ -8,6 +8,7 @@ type Props = {
   state: OrganState
   onChange: (next: OrganState) => void
   compact?: boolean
+  gestationalWeeks?: number | null
 }
 
 function asArray(value: OrganState[string]) {
@@ -20,7 +21,7 @@ function isSelected(state: OrganState, field: Field, value: string) {
   return current === value
 }
 
-export function OrganFormPanel({ schema, state, onChange, compact = false }: Props) {
+export function OrganFormPanel({ schema, state, onChange, compact = false, gestationalWeeks }: Props) {
   const [rareOpen, setRareOpen] = useState(false)
 
   const fieldCardClass = compact
@@ -38,10 +39,17 @@ export function OrganFormPanel({ schema, state, onChange, compact = false }: Pro
   }
 
   const renderMiniField = (field: Field, keyPrefix?: string) => {
+    if (
+      field.minGestationalWeeks !== undefined &&
+      gestationalWeeks !== undefined &&
+      gestationalWeeks !== null &&
+      gestationalWeeks < field.minGestationalWeeks
+    ) return null
     const key = keyPrefix ?? field.key
+    const widthClass = field.halfWidth ? 'min-w-0' : 'col-span-2'
     if (field.kind === 'text') {
       return (
-        <label key={key} className="block">
+        <label key={key} className={`block ${widthClass}`}>
           <span className="mb-1.5 block font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</span>
           <input
             value={(state[key] as string) ?? ''}
@@ -54,7 +62,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false }: Pro
     }
 
     return (
-      <div key={key}>
+      <div key={key} className={widthClass}>
         <div className="mb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</div>
         <div className="flex flex-wrap gap-1.5">
           {(field.options ?? []).map((option) => {
@@ -80,6 +88,12 @@ export function OrganFormPanel({ schema, state, onChange, compact = false }: Pro
   }
 
   const renderField = (field: Field) => {
+    if (
+      field.minGestationalWeeks !== undefined &&
+      gestationalWeeks !== undefined &&
+      gestationalWeeks !== null &&
+      gestationalWeeks < field.minGestationalWeeks
+    ) return null
     if (field.kind === 'volume') {
       const factor = field.factor ?? 0.523
       const unit = field.unit ?? 'mL'
@@ -160,7 +174,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false }: Pro
             isSelected(state, field, option.value) && option.subFields?.length ? (
               <div
                 key={`sub-${option.value}`}
-                className="mt-2.5 grid gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2.5 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                className="mt-2.5 grid grid-cols-2 gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2.5 dark:border-emerald-900/50 dark:bg-emerald-950/20"
               >
                 {option.subFields.map((subField) =>
                   renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`)
@@ -199,7 +213,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false }: Pro
                     {option.isDefault ? <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">default</span> : null}
                   </button>
                   {active && option.subFields?.length ? (
-                    <div className="mx-3 mb-3 grid gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                    <div className="mx-3 mb-3 grid grid-cols-2 gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
                       {option.subFields.map((subField) =>
                         renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`)
                       )}

@@ -24,6 +24,7 @@
     "validate:golden:deterministico": "tsx tests/golden-deterministico/runner.ts",
     "validate:fmf:trisomias": "tsx tests/fmf-trisomy/runner.ts && tsx apps/web/src/lib/calculators/trisomyFmf.test.mts",
     "validate:web:morfologico-1t": "tsx apps/web/src/lib/catalog/morfologicoPrimeiroTrimestre.test.mts",
+    "validate:sprint6": "tsx tests/doppler-barcelona/runner.ts && tsx apps/api/src/server/renderer/__tests__/situacao-fetal-golden.manual.ts && tsx apps/api/src/server/renderer/__tests__/doppler-obstetrico-golden.manual.ts",
     "generate:fmf:trisomias": "node packages/fmf-trisomy/generate-params.mjs",
     "diff:bundle": "tsx scripts/diff-bundle-vs-original.ts"
   },

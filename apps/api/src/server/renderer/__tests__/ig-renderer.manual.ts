@@ -89,7 +89,7 @@ const COM_REF: Partial<ObstetricaFindings> = {
 
 // ── MORFOLOGICO flag OFF byte-stability + ON correção ──
 const M = (p: Partial<MorfologicoFindings> = {}): MorfologicoFindings => ({
-  trimestre: "2t", apresentacao: null, dorso: null, bcf_bpm: 145,
+  trimestre: "2t", apresentacao: null, dorso: null, polo_cefalico: null, bcf_bpm: 145,
   ccn_mm: null, tn_mm: null, osso_nasal: null, ducto_venoso: null,
   uterina_ip_direita: null, uterina_ip_esquerda: null,
   dbp_mm: 50, cc_mm: 180, cerebelo_mm: 20, cisterna_magna_mm: 5, binocular_mm: 40, ca_mm: 160,

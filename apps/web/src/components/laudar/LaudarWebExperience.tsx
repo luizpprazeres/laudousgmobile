@@ -701,6 +701,14 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   schema={activeSection.module.schema}
                   state={examState?.[activeSection.id] ?? activeSection.module.initialState()}
                   compact={workspaceV2}
+                  gestationalWeeks={(() => {
+                    if (activeSection.id !== 'doppler') return undefined
+                    const raw = categoria === 'DOPPLER_OBSTETRICO'
+                      ? examState?.doppler?.ig_sem
+                      : examState?.ig?.bio_sem
+                    const value = Number.parseFloat(String(raw ?? '').replace(',', '.'))
+                    return Number.isFinite(value) ? value : null
+                  })()}
                   onChange={(nextState) =>
                     setExamStates((all) => ({
                       ...all,

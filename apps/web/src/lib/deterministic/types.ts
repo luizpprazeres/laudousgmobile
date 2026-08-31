@@ -47,6 +47,10 @@ export interface Field {
   factor?: number
   /** Unidade exibida no campo 'volume' (ex.: 'mL', 'cm³'). */
   unit?: string
+  /** Ocupa metade da grade quando o campo aparece dentro de um grupo de subcampos. */
+  halfWidth?: boolean
+  /** Oculta o campo antes desta idade gestacional; sem IG informada, mantém visível. */
+  minGestationalWeeks?: number
 }
 
 /** Schema declarativo de um órgão — a UI renderiza a partir disto. */

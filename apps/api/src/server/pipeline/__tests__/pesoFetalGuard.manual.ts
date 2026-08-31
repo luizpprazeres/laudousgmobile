@@ -29,21 +29,21 @@ check(
   })(),
 );
 check(
-  "<P10 + restrição → 2 itens (P10 + Gratacós)",
+  "<P10 + restrição sem estágio → 2 itens, sem inventar Gratacós",
   (() => {
     const it = buildPesoFetalItems(
       extractPesoFetal("peso fetal abaixo do percentil 10, com restrição do crescimento"),
     );
-    return it.length === 2 && /Gratacós/.test(it[1]!);
+    return it.length === 2 && /restrição/.test(it[1]!) && !/Gratacós/.test(it[1]!);
   })(),
 );
 check(
-  "<P3 → 2 itens (P3 + Gratacós)",
+  "<P3 isolado → 1 item, sem inventar restrição/Gratacós",
   (() => {
     const it = buildPesoFetalItems(
       extractPesoFetal("peso fetal abaixo do percentil 3"),
     );
-    return it.length === 2 && /percentil 3/.test(it[0]!) && /Gratacós/.test(it[1]!);
+    return it.length === 1 && /percentil 3/.test(it[0]!) && !/Gratacós/.test(it[0]!);
   })(),
 );
 check(
@@ -78,10 +78,19 @@ check(
   })(),
 );
 check(
-  "valor real <3 (percentil 2) → P3 + Gratacós",
+  "valor real <3 (percentil 2) → P3 sem estágio automático",
   (() => {
     const it = buildPesoFetalItems(extractPesoFetal("peso fetal no percentil 2"));
-    return it.length === 2 && /percentil 3/.test(it[0]!);
+    return it.length === 1 && /percentil 3/.test(it[0]!);
+  })(),
+);
+check(
+  "estágio II explicitamente informado → preserva Gratacós II",
+  (() => {
+    const it = buildPesoFetalItems(
+      extractPesoFetal("peso fetal abaixo do percentil 3, restrição do crescimento, Gratacós estágio II"),
+    );
+    return it.length === 2 && /estágio II de Gratacós/.test(it[1]!);
   })(),
 );
 
@@ -104,6 +113,11 @@ check(
 check(
   "não duplica se já houver item de peso",
   ensurePesoFetalConclusion(out, "peso fetal no percentil 8") === out,
+);
+const writerInseguro = `${laudo}\n4) Sinais de restrição do crescimento fetal, estágio I de Gratacós.`;
+check(
+  "remove Gratacós inferido pelo writer quando o médico só informou percentil",
+  !/Gratacós/.test(ensurePesoFetalConclusion(writerInseguro, "peso fetal no percentil 2")),
 );
 
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));

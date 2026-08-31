@@ -23,7 +23,7 @@ function check(name: string, cond: boolean, detail?: string) {
 }
 
 const F = (p: Partial<MorfologicoFindings>): MorfologicoFindings => ({
-  trimestre: "2t", apresentacao: null, dorso: null, bcf_bpm: 145,
+  trimestre: "2t", apresentacao: null, dorso: null, polo_cefalico: null, bcf_bpm: 145,
   ccn_mm: null, tn_mm: null, osso_nasal: null, ducto_venoso: null,
   uterina_ip_direita: null, uterina_ip_esquerda: null,
   dbp_mm: null, cc_mm: null, cerebelo_mm: null, cisterna_magna_mm: null, binocular_mm: null, ca_mm: null,
