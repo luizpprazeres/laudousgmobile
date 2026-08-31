@@ -1,5 +1,14 @@
 /** Gate de integração da tela web. Rodar: pnpm exec tsx apps/web/src/lib/calculators/preEclampsia.test.mts */
-import { calcularPreEclampsiaWeb, type PeWebForm } from './preEclampsia'
+import * as importedPreEclampsia from './preEclampsia.ts'
+import type { PeWebForm } from './preEclampsia.ts'
+
+// O pacote web ainda é carregado como CommonJS pelo runner isolado do tsx.
+// Next/TypeScript expõem os exports nomeados normalmente; o runner os agrupa
+// em `default`. Aceitar as duas formas mantém este gate executável nos dois.
+const preEclampsiaModule = importedPreEclampsia as typeof importedPreEclampsia & {
+  default?: typeof importedPreEclampsia
+}
+const { calcularPreEclampsiaWeb } = preEclampsiaModule.default ?? preEclampsiaModule
 
 let pass = 0
 let fail = 0
