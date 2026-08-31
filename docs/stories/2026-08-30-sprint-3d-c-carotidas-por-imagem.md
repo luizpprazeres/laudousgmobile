@@ -2,7 +2,7 @@
 
 ## Status
 
-3D-C1 e 3D-C2 concluídas; 3D-C3 em andamento.
+Implementação e publicação concluídas. Validação com imagens reais pendente.
 
 ## Objetivo
 
@@ -70,7 +70,7 @@ para cada medida.
 - [x] A web aplica apenas campos confirmados pelo usuário.
 - [x] Dados conflitantes são sinalizados, não sobrescritos silenciosamente.
 - [ ] Teste com imagens reais documenta acertos, lacunas e conflitos.
-- [ ] Produção web e TestFlight publicados.
+- [x] Produção web e TestFlight publicados.
 
 ## File list
 
