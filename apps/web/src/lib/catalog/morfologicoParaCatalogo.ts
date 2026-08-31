@@ -88,6 +88,8 @@ export function adaptarMorfologico(
 
   const ig = secao(estado, "ig");
   const f = secao(estado, "feto");
+  const f1 = secao(estado, "primeiro_trimestre");
+  const doppler = secao(estado, "doppler");
   const an = secao(estado, "anatomia");
   const b = secao(estado, "biometria");
   const ex = secao(estado, "extrafetal");
@@ -130,20 +132,33 @@ export function adaptarMorfologico(
   const sub = (k: string) => texto(ig, `referencia.${fonte}.${k}`);
 
   const genitalia = texto(an, "genitalia");
+  const primeiroTrimestre =
+    ((typeof opcoes.trimestre === "string" ? opcoes.trimestre : "") || "2t") === "1t";
 
   const dados: Record<string, unknown> = {
     trimestre: (typeof opcoes.trimestre === "string" ? opcoes.trimestre : "") || "2t",
     apresentacao: texto(f, "apresentacao") || null,
     dorso: texto(f, "dorso") || null,
-    bcf_bpm: numero(f, "bcf"),
+    bcf_bpm: primeiroTrimestre ? numero(f1, "bcf") : numero(f, "bcf"),
 
-    /** Marcadores de 1º trimestre — a tela cobre 2º/3º e não os oferece. */
-    ccn_mm: null,
-    tn_mm: null,
-    osso_nasal: null,
-    ducto_venoso: null,
-    uterina_ip_direita: null,
-    uterina_ip_esquerda: null,
+    ccn_mm: primeiroTrimestre ? numero(f1, "ccn") : null,
+    tn_mm: primeiroTrimestre ? numero(f1, "tn") : null,
+    osso_nasal:
+      primeiroTrimestre && texto(f1, "osso_nasal") !== "na"
+        ? texto(f1, "osso_nasal") || null
+        : null,
+    ducto_venoso:
+      primeiroTrimestre && texto(f1, "ducto_venoso") !== "na"
+        ? texto(f1, "ducto_venoso") || null
+        : null,
+    uterina_ip_direita:
+      primeiroTrimestre && texto(doppler, "realizado") === "sim"
+        ? numero(doppler, "realizado.sim.ip_ut_dir")
+        : null,
+    uterina_ip_esquerda:
+      primeiroTrimestre && texto(doppler, "realizado") === "sim"
+        ? numero(doppler, "realizado.sim.ip_ut_esq")
+        : null,
 
     dbp_mm: numero(b, "dbp"),
     cc_mm: numero(b, "cc"),
@@ -165,7 +180,8 @@ export function adaptarMorfologico(
     /** `na` na tela quer dizer "não avaliada" — nulo, não uma genitália. */
     genitalia: genitalia && genitalia !== "na" ? genitalia : null,
 
-    placenta_localizacao: texto(ex, "placenta_loc") || null,
+    placenta_localizacao:
+      (primeiroTrimestre ? texto(f1, "placenta_loc") : texto(ex, "placenta_loc")) || null,
     placenta_grau: texto(ex, "placenta_grau").replace(/^grau\s*/i, "") || null,
     ila_cm: numero(ex, "ila"),
 

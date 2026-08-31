@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
   calcularTrissomias,
+  computeFmfNtLikelihoodRatios,
   FmfTrisomyDomainError,
   FMF_TRISOMY_MODEL_VERSION,
   formatarBlocoTrissomias,
@@ -27,6 +28,12 @@ type Golden = {
 const goldenPath = fileURLToPath(new URL('./golden.json', import.meta.url))
 const golden = JSON.parse(readFileSync(goldenPath, 'utf8')) as Golden
 assert.equal(golden.modelVersion, FMF_TRISOMY_MODEL_VERSION)
+
+// Wright et al., UOG 2008;31:376–383, apêndice: CCN 60 mm e TN 2,5 mm
+// produzem LR T21 = 2,653. Este vetor é externo ao protótipo histórico.
+const publishedNt = computeFmfNtLikelihoodRatios(2.5, 60)
+assert.ok(Math.abs(publishedNt.t21 - 2.653) < 0.002, `Wright 2008: LR T21 ${publishedNt.t21}`)
+console.log('✓ exemplo publicado Wright 2008 — LR da TN')
 
 for (const testCase of golden.cases) {
   const result = calcularTrissomias(testCase.input)

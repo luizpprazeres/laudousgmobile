@@ -15,12 +15,16 @@ import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { igModule, numOrNull, ptBr, mm, classeILA } from './obstetrica'
 import { criarCervicometriaAddonModule } from './cervicometriaAddon'
 import { criarDopplerAddonModule } from './dopplerObstetrico'
+import { preEclampsiaFmfSpec, trisomyFmfSpec } from '../../calculators/specs'
 
 const TECNICA =
   'Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
 
 function is3t(opts?: OrganState): boolean {
   return String(opts?.trimestre ?? '2t') === '3t'
+}
+function is1t(opts?: OrganState): boolean {
+  return String(opts?.trimestre ?? '2t') === '1t'
 }
 function genitaliaFmt(g: string): string {
   if (/masculin/i.test(g)) return 'masculina'
@@ -60,6 +64,89 @@ const fetoModule: OrganModule = {
       'Os movimentos fetais são ativos.',
     ]
     return { body: linhas.join('\n'), conclusion: [], isNormal: true }
+  },
+}
+
+// ── Morfológico do primeiro trimestre ───────────────────────────────────────
+const primeiroTrimestreModule: OrganModule = {
+  schema: {
+    id: 'primeiro_trimestre',
+    name: 'Feto e marcadores',
+    category: 'MORFOLOGICO',
+    fields: [
+      { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '150' },
+      { key: 'ccn', label: 'CCN (mm)', kind: 'text', placeholder: '64' },
+      { key: 'tn', label: 'Translucência nucal (mm)', kind: 'text', placeholder: '1,5' },
+      {
+        key: 'osso_nasal', label: 'Osso nasal', kind: 'segmented',
+        options: [
+          { value: 'presente', label: 'Presente', isDefault: true },
+          { value: 'ausente', label: 'Ausente' },
+          { value: 'na', label: 'Não avaliado' },
+        ],
+      },
+      {
+        key: 'tricuspide', label: 'Regurgitação tricúspide', kind: 'segmented',
+        options: [
+          { value: 'na', label: 'Não avaliada', isDefault: true },
+          { value: 'ausente', label: 'Ausente' },
+          { value: 'presente', label: 'Presente' },
+        ],
+      },
+      {
+        key: 'ducto_venoso', label: 'Ducto venoso', kind: 'segmented',
+        options: [
+          { value: 'normal', label: 'Normal', isDefault: true },
+          { value: 'alterado', label: 'Onda A reversa' },
+          { value: 'na', label: 'Não avaliado' },
+        ],
+      },
+      { key: 'placenta_loc', label: 'Placenta — localização (opcional)', kind: 'text', placeholder: 'posterior' },
+    ],
+  },
+  initialState: (): OrganState => ({
+    bcf: '', ccn: '', tn: '', osso_nasal: 'presente', tricuspide: 'na',
+    ducto_venoso: 'normal', placenta_loc: '',
+  }),
+  compose: (st): OrganComposition => {
+    const bcf = numOrNull(st.bcf)
+    const ccn = numOrNull(st.ccn)
+    const tn = numOrNull(st.tn)
+    const osso = String(st.osso_nasal || 'presente')
+    const tricuspide = String(st.tricuspide || 'na')
+    const ducto = String(st.ducto_venoso || 'normal')
+    const placenta = String(st.placenta_loc || '').trim()
+    const body = [
+      'Feto único, em situação variável.',
+      `Batimentos cardíacos presentes (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`,
+      'Movimentos fetais presentes.',
+      `Comprimento cabeça-nádega (CCN) de ${mm(ccn)} mm.`,
+      `Translucência nucal de ${mm(tn)} mm.`,
+      osso === 'na' ? 'Osso nasal não avaliado.' : `Osso nasal ${osso}.`,
+      tricuspide === 'na'
+        ? 'Regurgitação tricúspide não avaliada.'
+        : `Regurgitação tricúspide ${tricuspide}.`,
+      ducto === 'normal'
+        ? 'Ducto venoso com fluxo trifásico e onda A positiva.'
+        : ducto === 'alterado'
+          ? 'Ducto venoso com onda A reversa.'
+          : 'Ducto venoso não avaliado.',
+      ...(placenta ? [`Placenta de localização ${placenta}.`] : []),
+      'Líquido amniótico de quantidade normal.',
+    ]
+    const altered = osso === 'ausente' || tricuspide === 'presente' || ducto === 'alterado'
+    const conclusion = [
+      'Líquido amniótico de quantidade normal.',
+      ducto === 'normal'
+        ? 'Dopplervelocimetria do ducto venoso normal.'
+        : ducto === 'alterado'
+          ? 'Dopplervelocimetria do ducto venoso alterada, com onda A reversa.'
+          : 'Ducto venoso não avaliado.',
+      altered
+        ? 'Marcador ultrassonográfico de aneuploidia identificado; correlacionar com o rastreamento combinado.'
+        : 'Morfologia fetal sem evidência de alteração detectável nesta fase da gestação.',
+    ]
+    return { body: body.join('\n'), conclusion, isNormal: !altered }
   },
 }
 
@@ -255,6 +342,17 @@ const SECTIONS: ExamSection[] = [
   { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
 ]
 
+const FIRST_TRIMESTER_SECTIONS: ExamSection[] = [
+  { id: 'ig', label: 'IG e datas', group: 'orgaos', module: igModule },
+  { id: 'primeiro_trimestre', label: 'Feto e marcadores', group: 'orgaos', module: primeiroTrimestreModule },
+  { id: 'cervicometria', label: 'Cervicometria', group: 'orgaos', module: cervicometriaModule },
+  { id: 'doppler', label: 'Doppler', group: 'orgaos', module: dopplerModule },
+  { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
+]
+
+// União necessária para inicializar e preservar o estado ao trocar o trimestre.
+const ALL_SECTIONS = [...SECTIONS, FIRST_TRIMESTER_SECTIONS[1]!]
+
 export const morfologico: ExamCategory = {
   id: 'MORFOLOGICO',
   name: 'Morfológica',
@@ -267,15 +365,25 @@ export const morfologico: ExamCategory = {
       label: 'Trimestre',
       kind: 'segmented',
       options: [
+        { value: '1t', label: '1º trimestre' },
         { value: '2t', label: '2º trimestre', isDefault: true },
         { value: '3t', label: '3º trimestre' },
       ],
     },
   ],
   resolveTitle: (opts) =>
-    is3t(opts)
-      ? 'ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE'
-      : 'ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE',
-  sections: SECTIONS,
+    is1t(opts)
+      ? 'ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE'
+      : is3t(opts)
+        ? 'ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE'
+        : 'ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE',
+  sections: ALL_SECTIONS,
+  resolveSections: (opts) => is1t(opts) ? FIRST_TRIMESTER_SECTIONS : SECTIONS,
+  resolveCalculators: (opts) => is1t(opts)
+    ? [
+        preEclampsiaFmfSpec,
+        ...(process.env.NEXT_PUBLIC_FMF_TRISOMY_VALIDATION === 'true' ? [trisomyFmfSpec] : []),
+      ]
+    : [],
   conclusionNormal: 'Morfologia fetal sem evidência de alteração detectável pelo método.',
 }

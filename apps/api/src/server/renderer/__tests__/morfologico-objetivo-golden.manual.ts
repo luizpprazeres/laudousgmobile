@@ -71,6 +71,14 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   check("1t alt.: 'onda A reversa' nos achados", /Ducto venoso com onda A reversa\./.test(l), l);
   check("1t alt.: impressão Doppler alterado", /Doppler do ducto venoso alterado \(onda A reversa\)/.test(l), l);
   check("1t alt.: osso nasal ausente", /Osso nasal ausente\./.test(l), l);
+  check("1t alt.: não contradiz com morfologia normal", !/Morfologia fetal normal para esta fase/.test(l), l);
+}
+
+// ── 1º trimestre: marcador não avaliado não vira normal ──
+{
+  const l = render(F({ trimestre: "1t", ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: null, ducto_venoso: null }));
+  check("1t não avaliado: não inventa osso nasal presente", !/Osso nasal presente/.test(l), l);
+  check("1t não avaliado: não inventa ducto venoso normal", !/Doppler do ducto venoso normal|onda trifásica/.test(l), l);
 }
 
 // ── 2º trimestre: biometria 1 casa decimal + binocular presente + colo presente ──

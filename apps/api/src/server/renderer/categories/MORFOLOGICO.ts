@@ -295,10 +295,14 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
     "Movimentos fetais são ativos.",
     `Comprimento crânio-nádegas (CCN) de ${mm(f.ccn_mm)} mm.`,
     `Medida da translucência nucal (TN) de ${mm(f.tn_mm)} mm.`,
-    f.osso_nasal === "ausente" ? "Ausência de osso nasal." : "Presença de osso nasal.",
-    f.ducto_venoso === "alterado"
-      ? "Ducto venoso com onda reversa na sístole atrial."
-      : "Ducto venoso com aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas).",
+    ...(f.osso_nasal === null
+      ? []
+      : [f.osso_nasal === "ausente" ? "Ausência de osso nasal." : "Presença de osso nasal."]),
+    ...(f.ducto_venoso === null
+      ? []
+      : [f.ducto_venoso === "alterado"
+          ? "Ducto venoso com onda reversa na sístole atrial."
+          : "Ducto venoso com aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas)."]),
   ];
   if (f.placenta_localizacao) {
     aspectos.push(`Placenta de localização ${f.placenta_localizacao}, com ecotextura homogênea.`);
@@ -323,10 +327,15 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
   const conclusao = [
     ig.conclusaoClassico,
     "Líquido amniótico de quantidade normal.",
-    f.ducto_venoso === "alterado"
-      ? "Doppler do ducto venoso alterado (onda A reversa)."
-      : "Doppler do ducto venoso normal.",
-    ...(temAchado ? [] : ["Morfologia fetal normal para esta fase da gestação."]),
+    ...(f.ducto_venoso === null
+      ? []
+      : [f.ducto_venoso === "alterado"
+          ? "Doppler do ducto venoso alterado (onda A reversa)."
+          : "Doppler do ducto venoso normal."]),
+    ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
+    ...(temAchado || f.osso_nasal === "ausente" || f.ducto_venoso === "alterado"
+      ? []
+      : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
   if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
@@ -593,10 +602,14 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
     `Batimentos cardíacos fetais (BCF): ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
     `Comprimento cabeça-nádegas (CCN): ${mm1(f.ccn_mm)} mm.`,
     `Translucência nucal (TN): ${mm1(f.tn_mm)} mm.`,
-    f.osso_nasal === "ausente" ? "Osso nasal ausente." : "Osso nasal presente.",
-    f.ducto_venoso === "alterado"
-      ? "Ducto venoso com onda A reversa."
-      : "Ducto venoso com onda trifásica (onda A positiva).",
+    ...(f.osso_nasal === null
+      ? []
+      : [f.osso_nasal === "ausente" ? "Osso nasal ausente." : "Osso nasal presente."]),
+    ...(f.ducto_venoso === null
+      ? []
+      : [f.ducto_venoso === "alterado"
+          ? "Ducto venoso com onda A reversa."
+          : "Ducto venoso com onda trifásica (onda A positiva)."]),
   ];
   if (f.placenta_localizacao) {
     achados.push(
@@ -625,10 +638,15 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   const impressao = [
     ...ig.conclusaoObjetivo,
     "Líquido amniótico de quantidade normal.",
-    f.ducto_venoso === "alterado"
-      ? "Doppler do ducto venoso alterado (onda A reversa)."
-      : "Doppler do ducto venoso normal.",
-    ...(temAchado ? [] : ["Morfologia fetal normal para esta fase da gestação."]),
+    ...(f.ducto_venoso === null
+      ? []
+      : [f.ducto_venoso === "alterado"
+          ? "Doppler do ducto venoso alterado (onda A reversa)."
+          : "Doppler do ducto venoso normal."]),
+    ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
+    ...(temAchado || f.osso_nasal === "ausente" || f.ducto_venoso === "alterado"
+      ? []
+      : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
   if (comDoppler) {

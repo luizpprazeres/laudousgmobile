@@ -193,7 +193,24 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
   // Calculadoras pertinentes → seção "Cálculos".
-  const calculators = isTireoide ? [tiRadsSpec] : genericCategory?.calculators ?? []
+  const calculators = isTireoide
+    ? [tiRadsSpec]
+    : genericCategory?.resolveCalculators?.(opts) ?? genericCategory?.calculators ?? []
+  const trisomyInitialValues = useMemo(() => {
+    if (categoria !== 'MORFOLOGICO' || opts.trimestre !== '1t') return undefined
+    const first = examStates[categoria]?.primeiro_trimestre ?? {}
+    const doppler = examStates[categoria]?.doppler ?? {}
+    const nasal = String(first.osso_nasal ?? '')
+    const tricuspid = String(first.tricuspide ?? '')
+    return {
+      crl: String(first.ccn ?? ''),
+      nt: String(first.tn ?? ''),
+      fhr: String(first.bcf ?? ''),
+      dvPI: String(doppler['realizado.sim.ip_dv'] ?? ''),
+      nasalBone: nasal === 'presente' ? 'present' as const : nasal === 'ausente' ? 'absent' as const : '' as const,
+      tricuspid: tricuspid === 'ausente' ? 'normal' as const : tricuspid === 'presente' ? 'regurgitation' as const : '' as const,
+    }
+  }, [categoria, examStates, opts.trimestre])
   const calcSections: UiSection[] = calculators.map((c) => ({ id: `calc:${c.id}`, label: c.name, group: 'calculos' as const }))
   const sections: UiSection[] = [...baseSections, ...calcSections]
   const activeSectionId = activeByCat[categoria] ?? sections[0]?.id ?? ''
@@ -641,6 +658,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   if (spec.kind === 'trisomy-fmf') {
                     return (
                       <TrisomyFmfPanel
+                        initialValues={trisomyInitialValues}
                         insertedBlock={calculatorBlocks[spec.id]}
                         onInsert={(block) => insertCalculatorBlock(spec.id, block)}
                         onRemove={() => removeCalculatorBlock(spec.id)}

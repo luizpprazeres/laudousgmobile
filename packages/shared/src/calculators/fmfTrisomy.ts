@@ -119,7 +119,8 @@ function computePriorRisk(
 
 interface LRResult { t21: number; t18: number; t13: number }
 
-function computeNtLR(nt: number, crl: number): LRResult {
+/** Exposto para validação contra o exemplo numérico publicado por Wright et al. */
+export function computeFmfNtLikelihoodRatios(nt: number, crl: number): LRResult {
   const p = NT_MIX
   const logNt = Math.log10(nt)
   const crlR = Math.round(crl * 10) / 10 // round to 0.1mm
@@ -384,7 +385,7 @@ export function calcularTrissomias(input: FmfInput): FmfResult {
   }
 
   // 2. NT LR
-  const ntLR = computeNtLR(input.nt, input.crl)
+  const ntLR = computeFmfNtLikelihoodRatios(input.nt, input.crl)
 
   // Combined LRs start with NT
   let lrT21 = ntLR.t21

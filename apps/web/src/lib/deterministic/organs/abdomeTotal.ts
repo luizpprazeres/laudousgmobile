@@ -50,6 +50,8 @@ export interface ExamCategory {
   footer?: string
   /** Calculadoras pertinentes (seção "Cálculos"). */
   calculators?: CalcSpec[]
+  /** Calculadoras visíveis conforme os controles da categoria. */
+  resolveCalculators?: (opts: OrganState) => CalcSpec[]
   /** Controles de categoria (acima dos órgãos): ex.: via, menopausa. Estado vive
    *  sob a chave reservada '__opts' e é passado ao compose de cada módulo. */
   controls?: Field[]

@@ -2,7 +2,8 @@
 
 ## Status
 
-Em andamento — núcleo compartilhado e web em homologação concluídos.
+Em andamento — núcleo compartilhado, homologação web e fluxo morfológico de
+primeiro trimestre concluídos.
 
 ## Objetivo
 
@@ -49,15 +50,29 @@ bioquímica somente como MoM já corrigido pelo laboratório; valores fora dos
 limites do modelo geram aviso explícito. Peso materno é obrigatório quando o
 marcador tricúspide é usado, pois ele participa da equação.
 
-A tela web foi ligada à categoria obstétrica apenas quando
+A tela web foi ligada à categoria obstétrica e ao Morfológico de 1º trimestre apenas quando
 `NEXT_PUBLIC_FMF_TRISOMY_VALIDATION=true`. Sem a flag, nada novo aparece em
 produção. A tela declara validação externa pendente, separa risco basal e
 corrigido, mostra marcadores usados/ausentes e não esconde truncamentos.
+
+O Morfológico agora oferece o 1º trimestre na web com CCN, TN, BCF, osso nasal,
+regurgitação tricúspide e ducto venoso. Cervicometria e Doppler permanecem
+complementos opcionais. Os dados seguem para o renderer canônico, em vez de
+compor texto clínico no navegador. Ao abrir a calculadora de trissomias, CCN,
+TN, BCF, osso nasal, tricúspide e IP do ducto venoso já preenchidos no exame são
+reaproveitados; a calculadora continua oculta fora do 1º trimestre e sem a flag.
 
 ## Validação desta entrega
 
 - Núcleo: 5 golden vectors e 4 bloqueios de domínio aprovados.
 - Adaptador web: 3 cenários aprovados, incluindo vírgula decimal e confirmação de MoM.
+- Validação externa parcial: o exemplo numérico publicado por Wright et al.
+  (CCN 60 mm, TN 2,5 mm, LR T21 2,653) foi reproduzido com tolerância de 0,002.
+  Isto valida o componente de TN, não o risco combinado completo.
+- Morfológico 1º trimestre: gate tela → renderer, navegação e calculadoras aprovado.
+- Renderer morfológico objetivo: 38/38 casos aprovados; marcador não avaliado
+  não é mais convertido em normal e marcador alterado não convive com conclusão
+  de morfologia normal. O gate de não contradição clássico/objetivo também passou.
 - Typecheck: 8/8 pacotes aprovados.
 - Build web com a flag de homologação: aprovado.
 - `pnpm test`: não há tarefas de teste registradas no Turbo; os gates FMF foram executados explicitamente.
@@ -70,10 +85,10 @@ corrigido, mostra marcadores usados/ausentes e não esconde truncamentos.
 - [x] Congelar contrato clínico da v1: idade materna, CCN, TN e marcadores ecográficos; bioquímica opcional como MoM já corrigido.
 - [x] Importar parâmetros por gerador reproduzível, com versão e hash.
 - [x] Criar núcleo compartilhado T21/T18/T13 e vetores golden internos.
-- [ ] Fazer validação externa documentada e bloquear divergências próximas aos cortes.
+- [ ] Completar validação externa documentada do risco combinado e bloquear divergências próximas aos cortes (componente de TN já conferido).
 - [x] Integrar na web atrás de flag de homologação.
 - [ ] Integrar Android e iOS usando os mesmos vetores.
-- [ ] Inserir bloco coerente no laudo morfológico de primeiro trimestre.
+- [x] Inserir bloco coerente no laudo morfológico de primeiro trimestre na web, atrás da flag de homologação.
 - [ ] Criar PDF tabular; gráficos ficam para uma etapa posterior validada.
 
 ## Critério de segurança
@@ -89,7 +104,13 @@ marcadores usados e ausentes, truncamentos e versão do modelo.
 - `apps/web/src/lib/calculators/trisomyFmf.ts`
 - `apps/web/src/lib/calculators/trisomyFmf.test.mts`
 - `apps/web/src/components/laudar/TrisomyFmfPanel.tsx`
+- `apps/api/src/server/renderer/categories/MORFOLOGICO.ts`
+- `apps/api/src/server/renderer/__tests__/morfologico-objetivo-golden.manual.ts`
+- `apps/web/src/lib/catalog/morfologicoParaCatalogo.ts`
+- `apps/web/src/lib/catalog/morfologicoPrimeiroTrimestre.test.mts`
 - `apps/web/src/lib/calculators/specs.ts`
+- `apps/web/src/lib/deterministic/organs/abdomeTotal.ts`
+- `apps/web/src/lib/deterministic/organs/morfologico.ts`
 - `apps/web/src/lib/deterministic/organs/obstetrica.ts`
 - `apps/web/src/components/laudar/LaudarWebExperience.tsx`
 - `packages/fmf-trisomy/generate-params.mjs`
@@ -100,4 +121,5 @@ marcadores usados e ausentes, truncamentos e versão do modelo.
 - `packages/shared/src/calculators/fmfTrisomyFormatter.ts`
 - `tests/fmf-trisomy/golden.json`
 - `tests/fmf-trisomy/runner.ts`
+- `package.json`
 - `docs/stories/2026-08-30-sprint-5-fmf-e-trissomias.md`

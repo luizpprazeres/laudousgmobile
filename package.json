@@ -23,6 +23,7 @@
     "validate:golden:objetivo": "tsx tests/golden-objetivo/runner.ts",
     "validate:golden:deterministico": "tsx tests/golden-deterministico/runner.ts",
     "validate:fmf:trisomias": "tsx tests/fmf-trisomy/runner.ts && tsx apps/web/src/lib/calculators/trisomyFmf.test.mts",
+    "validate:web:morfologico-1t": "tsx apps/web/src/lib/catalog/morfologicoPrimeiroTrimestre.test.mts",
     "generate:fmf:trisomias": "node packages/fmf-trisomy/generate-params.mjs",
     "diff:bundle": "tsx scripts/diff-bundle-vs-original.ts"
   },

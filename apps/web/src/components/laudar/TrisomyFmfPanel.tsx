@@ -5,6 +5,7 @@ import { FilePlus2, X } from 'lucide-react'
 import { calculateTrisomyWeb, type TrisomyWebForm } from '@/lib/calculators/trisomyFmf'
 
 type Props = {
+  initialValues?: Partial<TrisomyWebForm>
   insertedBlock?: string
   onInsert: (block: string) => void
   onRemove: () => void
@@ -27,8 +28,8 @@ function Toggle({ label, active, onChange }: { label: string; active: boolean; o
   return <button type="button" aria-pressed={active} onClick={() => onChange(!active)} className={`rounded-lg border px-2.5 py-2 text-left text-[12px] font-semibold ${active ? 'border-violet-600 bg-violet-600 text-white' : 'border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'}`}>{label}</button>
 }
 
-export function TrisomyFmfPanel({ insertedBlock, onInsert, onRemove }: Props) {
-  const [form, setForm] = useState(INITIAL)
+export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemove }: Props) {
+  const [form, setForm] = useState<TrisomyWebForm>(() => ({ ...INITIAL, ...initialValues }))
   const set = <K extends keyof TrisomyWebForm>(key: K, value: TrisomyWebForm[K]) => setForm(current => ({ ...current, [key]: value }))
   const ready = Boolean(form.maternalAge.trim() && form.crl.trim() && form.nt.trim())
   const calculation = useMemo(() => {
