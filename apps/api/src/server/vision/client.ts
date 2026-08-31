@@ -244,6 +244,58 @@ EXEMPLO DE SAÍDA CORRETA (morfológico 2T com biometria completa):
 ${COMMON_RULES}`;
   }
 
+  if (category === "TIREOIDE") {
+    return `Você é especialista em leitura de telas e pranchas de ultrassonografia da tireoide.
+
+Extraia somente medidas e descritores explicitamente visíveis. NÃO diagnostique, NÃO atribua TI-RADS, NÃO calcule nota e NÃO classifique normalidade.
+
+MEDIDAS DA GLÂNDULA:
+- Identifique lobo direito, lobo esquerdo e istmo pelo rótulo da imagem.
+- Para cada estrutura, extraia até três eixos em thyroidRightLobe, thyroidLeftLobe ou thyroidIsthmus.
+- Use a, b e c na ordem exibida. Converta todas as medidas para cm e escreva apenas o número decimal.
+
+NÓDULOS:
+- Retorne um item em thyroidNodules para CADA nódulo explicitamente identificado.
+- lobe: lobo_direito, lobo_esquerdo ou istmo. Se o lado não estiver identificável, não extraia o nódulo.
+- c1/c2/c3: eixos em cm. Nunca junte nódulos diferentes.
+- location: somente se houver localização escrita, por exemplo "no terço médio".
+- Descritores opcionais: copie somente o que estiver escrito ou for inequivocamente indicado na tabela do aparelho.
+
+VALORES PERMITIDOS PARA DESCRITORES:
+- echogenicity: anecoica_homogenea, anecoica_finos_ecos, anecoica_septos, anecoica_componentes_solidos, solida_areas_anecoicas, solida_calcificacao_parede, hiperecoica, isoecoica, hipoecoica
+- margin: regular, irregular, espiculada
+- halo: fino_regular, espesso_irregular, sem_halo
+- shape: mais_larga_que_alta, mais_alta_que_larga
+- calcifications: sem, casca_ovo, grosseiras, micro
+- vascularization: sem, periferica, periferica_maior_central, central_maior_periferica, exclusiva_central
+
+Se um descritor não estiver explícito, omita-o. Ausência de texto não significa "sem".
+
+EXEMPLO:
+{
+  "thyroidRightLobe": { "a": "4.2", "b": "1.6", "c": "1.8" },
+  "thyroidLeftLobe": { "a": "4.0", "b": "1.4", "c": "1.7" },
+  "thyroidIsthmus": { "a": "0.3" },
+  "thyroidNodules": [
+    {
+      "lobe": "lobo_direito",
+      "c1": "1.2", "c2": "0.9", "c3": "0.8",
+      "location": "no terço médio",
+      "echogenicity": "hipoecoica",
+      "margin": "regular",
+      "shape": "mais_larga_que_alta"
+    }
+  ]
+}
+
+REGRAS FINAIS:
+1. Converta milímetros para centímetros (ex.: 42 mm → "4.2").
+2. Se a unidade original não estiver identificável, omita a medida.
+3. Não confunda datas, profundidade da imagem ou parâmetros do aparelho com medidas anatômicas.
+4. Se um campo não estiver visível ou legível, omita-o; nunca invente.
+5. Responda apenas com o objeto JSON, sem markdown.`;
+  }
+
   throw new Error(`Análise de imagem não suportada para categoria: ${category}`);
 }
 
@@ -359,7 +411,8 @@ export async function analyzeImage({
   if (
     category !== "OBSTETRICA" &&
     category !== "DOPPLER_OBSTETRICO" &&
-    category !== "MORFOLOGICO"
+    category !== "MORFOLOGICO" &&
+    category !== "TIREOIDE"
   ) {
     throw new Error(`Análise de imagem não suportada para categoria: ${category}`);
   }

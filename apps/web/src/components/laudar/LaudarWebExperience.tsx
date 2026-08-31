@@ -35,7 +35,7 @@ import { categoryCompactName, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
 import { CompanionPanel } from './CompanionPanel'
 import { diffReportBlocks } from './reportSuggestion'
-import { applyCompanionStructured, type CompanionStructuredPayload } from '@/lib/companionStructured'
+import { applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
@@ -745,6 +745,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           [categoria]: [...(all[categoria] ?? []), text],
         }))}
         onApplyStructured={(payload: CompanionStructuredPayload) => {
+          if (payload.category === 'TIREOIDE') {
+            setTireoideState((state) => applyCompanionThyroid(state, payload))
+            setCategoria(TIREOIDE_ID)
+            setActiveByCat((all) => ({ ...all, [TIREOIDE_ID]: payload.data.thyroidNodules?.length ? 'nodulos' : 'lobo_direito' }))
+            return
+          }
           setExamStates((all) => ({
             ...all,
             [payload.category]: applyCompanionStructured(all[payload.category] ?? {}, payload),

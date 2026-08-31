@@ -3,14 +3,37 @@
  * Port do laudousg/lib/types.ts — categorias suportadas e schema BiometricData.
  */
 
-export type Category = "OBSTETRICA" | "DOPPLER_OBSTETRICO" | "MORFOLOGICO";
+export type Category = "OBSTETRICA" | "DOPPLER_OBSTETRICO" | "MORFOLOGICO" | "TIREOIDE";
 export type ImagingModule = "DOPPLER_OBSTETRICO";
 
 export const SUPPORTED_IMAGING_CATEGORIES: Category[] = [
   "OBSTETRICA",
   "DOPPLER_OBSTETRICO",
   "MORFOLOGICO",
+  "TIREOIDE",
 ];
+
+export type ThyroidLobe = "lobo_direito" | "lobo_esquerdo" | "istmo";
+
+export interface ThyroidMeasurements {
+  a?: string;
+  b?: string;
+  c?: string;
+}
+
+export interface ThyroidNodule {
+  lobe: ThyroidLobe;
+  c1?: string;
+  c2?: string;
+  c3?: string;
+  location?: string;
+  echogenicity?: string;
+  margin?: string;
+  halo?: string;
+  shape?: string;
+  calcifications?: string;
+  vascularization?: string;
+}
 
 export interface BiometricData {
   // Standard obstetric measurements (all categories)
@@ -48,4 +71,10 @@ export interface BiometricData {
   binocularDistance?: string;
   ila?: string;
   gender?: string;
+
+  // Tireoide — medidas em cm e descritores visíveis, sempre sujeitos a revisão.
+  thyroidRightLobe?: ThyroidMeasurements;
+  thyroidLeftLobe?: ThyroidMeasurements;
+  thyroidIsthmus?: ThyroidMeasurements;
+  thyroidNodules?: ThyroidNodule[];
 }

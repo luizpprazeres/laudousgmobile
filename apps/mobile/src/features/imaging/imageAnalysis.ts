@@ -12,6 +12,7 @@ export const SUPPORTED_IMAGING_CATEGORIES = [
   "OBSTETRICA",
   "DOPPLER_OBSTETRICO",
   "MORFOLOGICO",
+  "TIREOIDE",
 ] as const;
 
 export type ImagingCategory = (typeof SUPPORTED_IMAGING_CATEGORIES)[number];
@@ -51,6 +52,18 @@ export type BiometricData = {
   binocularDistance?: string;
   ila?: string;
   gender?: string;
+  thyroidRightLobe?: ThyroidMeasurements;
+  thyroidLeftLobe?: ThyroidMeasurements;
+  thyroidIsthmus?: ThyroidMeasurements;
+  thyroidNodules?: ThyroidNodule[];
+};
+
+export type ThyroidMeasurements = { a?: string; b?: string; c?: string };
+export type ThyroidNodule = {
+  lobe: "lobo_direito" | "lobo_esquerdo" | "istmo";
+  c1?: string; c2?: string; c3?: string; location?: string;
+  echogenicity?: string; margin?: string; halo?: string; shape?: string;
+  calcifications?: string; vascularization?: string;
 };
 
 type AnalyzeResponse = {
@@ -124,7 +137,19 @@ export function mergeBiometric(results: BiometricData[]): BiometricData {
   return results.reduce<BiometricData>((partial, next) => {
     const out: BiometricData = { ...partial };
     (Object.keys(next) as (keyof BiometricData)[]).forEach((k) => {
-      if (out[k] === undefined && next[k] !== undefined) out[k] = next[k];
+      if (k === "thyroidNodules" && next.thyroidNodules) {
+        const existing = out.thyroidNodules ?? [];
+        const seen = new Set(existing.map((n) => `${n.lobe}|${n.c1}|${n.c2}|${n.c3}|${n.location ?? ""}`));
+        for (const nodule of next.thyroidNodules) {
+          const id = `${nodule.lobe}|${nodule.c1}|${nodule.c2}|${nodule.c3}|${nodule.location ?? ""}`;
+          if (!seen.has(id)) { existing.push(nodule); seen.add(id); }
+        }
+        out.thyroidNodules = existing;
+        return;
+      }
+      if (out[k] === undefined && next[k] !== undefined) {
+        (out as unknown as Record<string, unknown>)[k] = next[k];
+      }
     });
     return out;
   }, {});
@@ -143,6 +168,22 @@ export function formatBiometric(
 ): string {
   const m = mergeBiometric(results);
   const sections: string[] = [];
+
+  if (category === "TIREOIDE") {
+    const thyroidRows = rows([
+      ["Lobo direito", formatDimensions(m.thyroidRightLobe)],
+      ["Lobo esquerdo", formatDimensions(m.thyroidLeftLobe)],
+      ["Istmo", formatDimensions(m.thyroidIsthmus)],
+    ]);
+    if (thyroidRows.length) sections.push("Medidas da tireoide:\n" + thyroidRows.join("\n"));
+    const nodules = (m.thyroidNodules ?? []).map((n, index) => {
+      const dimensions = [n.c1, n.c2, n.c3].filter(Boolean).join(" x ");
+      const details = [dimensions ? `${dimensions} cm` : "", n.location ?? ""].filter(Boolean).join(" · ");
+      return `Nódulo ${index + 1} (${thyroidLobeLabel(n.lobe)}): ${details}`;
+    });
+    if (nodules.length) sections.push("Nódulos:\n" + nodules.join("\n"));
+    return sections.join("\n\n");
+  }
 
   const biometria = rows([
     ["DBP", m.dbp],
@@ -196,4 +237,15 @@ export function formatBiometric(
   }
 
   return sections.join("\n\n");
+}
+
+function formatDimensions(value?: ThyroidMeasurements): string | undefined {
+  const dimensions = value ? [value.a, value.b, value.c].filter(Boolean) : [];
+  return dimensions.length ? `${dimensions.join(" x ")} cm` : undefined;
+}
+
+function thyroidLobeLabel(value: ThyroidNodule["lobe"]): string {
+  if (value === "lobo_direito") return "lobo direito";
+  if (value === "lobo_esquerdo") return "lobo esquerdo";
+  return "istmo";
 }

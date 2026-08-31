@@ -3,10 +3,75 @@
  * Port 1:1 do laudousg/lib/vision/extractor.ts.
  */
 
-import type { BiometricData, Category } from "./types";
+import type { BiometricData, Category, ThyroidMeasurements, ThyroidNodule } from "./types";
+
+const THYROID_VALUES = {
+  lobe: new Set(["lobo_direito", "lobo_esquerdo", "istmo"]),
+  echogenicity: new Set(["anecoica_homogenea", "anecoica_finos_ecos", "anecoica_septos", "anecoica_componentes_solidos", "solida_areas_anecoicas", "solida_calcificacao_parede", "hiperecoica", "isoecoica", "hipoecoica"]),
+  margin: new Set(["regular", "irregular", "espiculada"]),
+  halo: new Set(["fino_regular", "espesso_irregular", "sem_halo"]),
+  shape: new Set(["mais_larga_que_alta", "mais_alta_que_larga"]),
+  calcifications: new Set(["sem", "casca_ovo", "grosseiras", "micro"]),
+  vascularization: new Set(["sem", "periferica", "periferica_maior_central", "central_maior_periferica", "exclusiva_central"]),
+} as const;
+
+function thyroidValue(value: unknown, allowed: ReadonlySet<string>): string | undefined {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return allowed.has(normalized) ? normalized : undefined;
+}
+
+function positiveCm(value: unknown): string | undefined {
+  const raw = typeof value === "string" || typeof value === "number" ? String(value).trim().toLowerCase() : "";
+  const match = raw.replace(",", ".").match(/\d+(?:\.\d+)?/);
+  if (!match) return undefined;
+  let number = Number.parseFloat(match[0]);
+  if (!Number.isFinite(number) || number <= 0) return undefined;
+  if (raw.includes("mm")) number /= 10;
+  if (!raw.includes("mm") && !raw.includes("cm") && typeof value !== "number") {
+    // O prompt devolve números unitless já convertidos para cm.
+    number = Number.parseFloat(match[0]);
+  }
+  if (number > 20) return undefined;
+  return Number(number.toFixed(2)).toString();
+}
+
+function thyroidMeasurements(value: unknown): ThyroidMeasurements | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const row = value as Record<string, unknown>;
+  const result = { a: positiveCm(row.a), b: positiveCm(row.b), c: positiveCm(row.c) };
+  return Object.values(result).some(Boolean) ? result : undefined;
+}
+
+function thyroidNodules(value: unknown): ThyroidNodule[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const result = value.flatMap((entry): ThyroidNodule[] => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const row = entry as Record<string, unknown>;
+    const lobe = thyroidValue(row.lobe, THYROID_VALUES.lobe);
+    if (!lobe) return [];
+    const nodule: ThyroidNodule = {
+      lobe: lobe as ThyroidNodule["lobe"],
+      c1: positiveCm(row.c1), c2: positiveCm(row.c2), c3: positiveCm(row.c3),
+      location: typeof row.location === "string" ? row.location.trim().slice(0, 120) || undefined : undefined,
+      echogenicity: thyroidValue(row.echogenicity, THYROID_VALUES.echogenicity),
+      margin: thyroidValue(row.margin, THYROID_VALUES.margin),
+      halo: thyroidValue(row.halo, THYROID_VALUES.halo),
+      shape: thyroidValue(row.shape, THYROID_VALUES.shape),
+      calcifications: thyroidValue(row.calcifications, THYROID_VALUES.calcifications),
+      vascularization: thyroidValue(row.vascularization, THYROID_VALUES.vascularization),
+    };
+    return nodule.c1 || nodule.c2 || nodule.c3 ? [nodule] : [];
+  });
+  return result.length ? result.slice(0, 12) : undefined;
+}
 
 /** Campos IR/IP Doppler — usados no merge inteligente do módulo especializado. */
-export const DOPPLER_INDEX_FIELDS: (keyof BiometricData)[] = [
+type DopplerIndexField =
+  | "irRightUterine" | "ipRightUterine" | "irLeftUterine" | "ipLeftUterine"
+  | "irUmbilical" | "ipUmbilical" | "irMCA" | "ipMCA"
+  | "irDuctusVenosus" | "ipDuctusVenosus";
+
+export const DOPPLER_INDEX_FIELDS: DopplerIndexField[] = [
   "irRightUterine",
   "ipRightUterine",
   "irLeftUterine",
@@ -117,6 +182,13 @@ export function validateBiometricData(
     result.gender = s(data.gender);
   }
 
+  if (category === "TIREOIDE") {
+    result.thyroidRightLobe = thyroidMeasurements(data.thyroidRightLobe);
+    result.thyroidLeftLobe = thyroidMeasurements(data.thyroidLeftLobe);
+    result.thyroidIsthmus = thyroidMeasurements(data.thyroidIsthmus);
+    result.thyroidNodules = thyroidNodules(data.thyroidNodules);
+  }
+
   // Remove undefined keys
   for (const key of Object.keys(result) as (keyof BiometricData)[]) {
     if (result[key] === undefined) delete result[key];
@@ -143,8 +215,18 @@ export function mergeBiometricData(
     const merged: BiometricData = {};
     for (const data of dataArray) {
       for (const [key, value] of Object.entries(data)) {
+        if (key === "thyroidNodules" && Array.isArray(value)) {
+          const existing = merged.thyroidNodules ?? [];
+          const seen = new Set(existing.map((n) => `${n.lobe}|${n.c1}|${n.c2}|${n.c3}|${n.location ?? ""}`));
+          for (const nodule of value) {
+            const id = `${nodule.lobe}|${nodule.c1}|${nodule.c2}|${nodule.c3}|${nodule.location ?? ""}`;
+            if (!seen.has(id)) { existing.push(nodule); seen.add(id); }
+          }
+          merged.thyroidNodules = existing;
+          continue;
+        }
         if (value && !merged[key as keyof BiometricData]) {
-          merged[key as keyof BiometricData] = value;
+          (merged as unknown as Record<string, unknown>)[key] = value;
         }
       }
     }
@@ -163,7 +245,7 @@ export function mergeBiometricData(
   for (const data of dataArray) {
     for (const [key, value] of Object.entries(data)) {
       const k = key as keyof BiometricData;
-      if (!DOPPLER_INDEX_FIELDS.includes(k) && value && !merged[k]) {
+      if (!DOPPLER_INDEX_FIELDS.includes(k as DopplerIndexField) && value && !merged[k]) {
         merged[k] = value;
       }
     }

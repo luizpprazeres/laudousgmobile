@@ -14,8 +14,8 @@ export type CompanionEvent = {
   kind: string
   payload: {
     text?: string
-    category?: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO'
-    data?: Record<string, string>
+    category?: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE'
+    data?: Record<string, unknown>
     summary?: string
   }
   status: 'pending' | 'applied' | 'dismissed'

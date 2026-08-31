@@ -44,5 +44,25 @@ const invalido = validateBiometricData(
 check("barreira elimina falsos índices", invalido.irUmbilical === undefined && invalido.ipUmbilical === undefined);
 check("índice plausível sobrevive", invalido.irMCA === "0.72");
 
+const thyroidA = validateBiometricData(
+  {
+    thyroidRightLobe: { a: "42 mm", b: "1.6 cm", c: "18 mm" },
+    thyroidNodules: [
+      { lobe: "lobo_direito", c1: "12 mm", c2: "0.9 cm", c3: "8 mm", echogenicity: "hipoecoica", margin: "regular" },
+      { lobe: "desconhecido", c1: "1.0" },
+    ],
+  },
+  "TIREOIDE",
+);
+const thyroidB = validateBiometricData(
+  { thyroidLeftLobe: { a: "4.0", b: "1.4", c: "1.7" }, thyroidNodules: [{ lobe: "lobo_esquerdo", c1: "0.7", c2: "0.5" }] },
+  "TIREOIDE",
+);
+const thyroidMerged = mergeBiometricData([thyroidA, thyroidB]);
+check("tireoide converte mm para cm", thyroidMerged.thyroidRightLobe?.a === "4.2" && thyroidMerged.thyroidNodules?.[0]?.c1 === "1.2");
+check("tireoide preserva lobos de imagens diferentes", thyroidMerged.thyroidLeftLobe?.a === "4");
+check("nódulo sem lado conhecido é recusado", thyroidMerged.thyroidNodules?.length === 2);
+check("descritores permitidos sobrevivem", thyroidMerged.thyroidNodules?.[0]?.echogenicity === "hipoecoica" && thyroidMerged.thyroidNodules?.[0]?.margin === "regular");
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

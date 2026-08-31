@@ -156,7 +156,7 @@ export function CompanionSheet({ open, onClose, categoryId }: Props) {
                 </View>
                 {imageFindings ? (
                   <View style={styles.findingsCard}>
-                    <Text style={styles.findingsTitle}>Medidas encontradas — revise antes de enviar</Text>
+                    <Text style={styles.findingsTitle}>{categoryId === 'TIREOIDE' ? 'Tireoide e nódulos encontrados' : 'Medidas encontradas'} — revise antes de enviar</Text>
                     <Text style={styles.findingsText}>{imageFindings.summary}</Text>
                     <Pressable
                       disabled={busy}

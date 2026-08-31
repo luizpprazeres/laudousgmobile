@@ -1,20 +1,84 @@
 import type { ExamState, OrganState } from '@/lib/deterministic'
+import type { LoboId, TireoideState } from '@/lib/deterministic/organs/tireoide'
 
-export type CompanionBiometricData = Partial<Record<
+type ObstetricField =
   | 'dbp' | 'cc' | 'ca' | 'cf' | 'weight' | 'weightVariation' | 'percentile'
   | 'gestAge' | 'gestAgeLMP' | 'gestAgeBiometry'
   | 'irRightUterine' | 'ipRightUterine' | 'irLeftUterine' | 'ipLeftUterine'
   | 'irUmbilical' | 'ipUmbilical' | 'irMCA' | 'ipMCA'
   | 'irDuctusVenosus' | 'ipDuctusVenosus'
   | 'tibia' | 'fibula' | 'humerus' | 'radius' | 'ulna'
-  | 'cerebellum' | 'cisternaMagna' | 'binocularDistance' | 'ila' | 'gender',
-  string
->>
+  | 'cerebellum' | 'cisternaMagna' | 'binocularDistance' | 'ila' | 'gender'
+
+export type CompanionThyroidMeasurements = { a?: string; b?: string; c?: string }
+export type CompanionThyroidNodule = {
+  lobe: LoboId
+  c1?: string; c2?: string; c3?: string; location?: string
+  echogenicity?: string; margin?: string; halo?: string; shape?: string
+  calcifications?: string; vascularization?: string
+}
+export type CompanionBiometricData = Partial<Record<ObstetricField, string>> & {
+  thyroidRightLobe?: CompanionThyroidMeasurements
+  thyroidLeftLobe?: CompanionThyroidMeasurements
+  thyroidIsthmus?: CompanionThyroidMeasurements
+  thyroidNodules?: CompanionThyroidNodule[]
+}
 
 export type CompanionStructuredPayload = {
-  category: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO'
+  category: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE'
   data: CompanionBiometricData
   summary?: string
+}
+
+function cleanMeasurements(value: CompanionThyroidMeasurements | undefined) {
+  return {
+    ...(clean(value?.a) ? { a: clean(value?.a) } : {}),
+    ...(clean(value?.b) ? { b: clean(value?.b) } : {}),
+    ...(clean(value?.c) ? { c: clean(value?.c) } : {}),
+  }
+}
+
+export function applyCompanionThyroid(
+  current: TireoideState,
+  payload: CompanionStructuredPayload,
+): TireoideState {
+  if (payload.category !== 'TIREOIDE') return current
+  const data = payload.data ?? {}
+  const mergeLobe = (id: LoboId, incoming?: CompanionThyroidMeasurements) => ({
+    ...current[id],
+    ...cleanMeasurements(incoming),
+  })
+  const extracted = (data.thyroidNodules ?? []).flatMap((nodule) => {
+    if (!['lobo_direito', 'lobo_esquerdo', 'istmo'].includes(nodule.lobe)) return []
+    const dimensions = [clean(nodule.c1), clean(nodule.c2), clean(nodule.c3)]
+    if (!dimensions.some(Boolean)) return []
+    return [{
+      id: crypto.randomUUID(),
+      lobo: nodule.lobe,
+      ecogenicidade: clean(nodule.echogenicity) || null,
+      margem: clean(nodule.margin) || null,
+      halo: clean(nodule.halo) || null,
+      forma: clean(nodule.shape) || null,
+      calcificacoes: clean(nodule.calcifications) || null,
+      vascularizacao: clean(nodule.vascularization) || null,
+      c1: dimensions[0]!, c2: dimensions[1]!, c3: dimensions[2]!,
+      localizacao: clean(nodule.location),
+    }]
+  })
+  const known = new Set(current.nodulos.map((n) => `${n.lobo}|${n.c1}|${n.c2}|${n.c3}|${n.localizacao}`))
+  const newNodules = extracted.filter((n) => {
+    const key = `${n.lobo}|${n.c1}|${n.c2}|${n.c3}|${n.localizacao}`
+    if (known.has(key)) return false
+    known.add(key)
+    return true
+  })
+  return {
+    ...current,
+    lobo_direito: mergeLobe('lobo_direito', data.thyroidRightLobe),
+    lobo_esquerdo: mergeLobe('lobo_esquerdo', data.thyroidLeftLobe),
+    istmo: mergeLobe('istmo', data.thyroidIsthmus),
+    nodulos: [...current.nodulos, ...newNodules],
+  }
 }
 
 const clean = (value: unknown) => typeof value === 'string' ? value.trim() : ''

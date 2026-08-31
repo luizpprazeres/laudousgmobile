@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { applyCompanionStructured } from './companionStructured'
+import { applyCompanionStructured, applyCompanionThyroid } from './companionStructured'
+import { initialTireoideState } from './deterministic/organs/tireoide'
 
 const obstetrica = applyCompanionStructured({}, {
   category: 'OBSTETRICA',
@@ -24,5 +25,17 @@ const morfologico = applyCompanionStructured({ extrafetal: { placenta_loc: 'post
 assert.equal(morfologico.biometria?.femur, '33')
 assert.equal(morfologico.biometria?.cerebelo, '20')
 assert.deepEqual(morfologico.extrafetal, { placenta_loc: 'posterior', ila: '12' })
+
+const tireoide = applyCompanionThyroid(initialTireoideState(), {
+  category: 'TIREOIDE',
+  data: {
+    thyroidRightLobe: { a: '4.2', b: '1.6', c: '1.8' },
+    thyroidNodules: [{ lobe: 'lobo_direito', c1: '1.2', c2: '0.9', c3: '0.8', echogenicity: 'hipoecoica', margin: 'regular' }],
+  },
+})
+assert.deepEqual(tireoide.lobo_direito, { a: '4.2', b: '1.6', c: '1.8', ecotextura: 'normal' })
+assert.equal(tireoide.nodulos.length, 1)
+assert.equal(tireoide.nodulos[0]?.ecogenicidade, 'hipoecoica')
+assert.equal(tireoide.nodulos[0]?.margem, 'regular')
 
 console.log('companionStructured: ok')
