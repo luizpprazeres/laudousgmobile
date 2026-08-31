@@ -18,9 +18,10 @@ type Props = {
   onClose: () => void
   onApplyText: (text: string) => void
   onApplyStructured: (payload: CompanionStructuredPayload) => void
+  onStateChange?: (state: { connected: boolean; pending: number }) => void
 }
 
-export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured }: Props) {
+export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, onStateChange }: Props) {
   const [session, setSession] = useState<CompanionSession | null>(null)
   const [events, setEvents] = useState<CompanionEvent[]>([])
   const [loading, setLoading] = useState(false)
@@ -46,18 +47,15 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured }
 
   const connected = Boolean(session?.connected_at)
 
+  useEffect(() => {
+    onStateChange?.({ connected, pending: events.length })
+  }, [connected, events.length, onStateChange])
+
   if (connected && session) {
-    if (!open) {
-      return (
-        <button type="button" onClick={onClose} className="fixed bottom-4 left-20 z-50 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-700 shadow-lg dark:border-emerald-900 dark:bg-[#1C1C1E] dark:text-emerald-300">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" /> Celular conectado
-          {events.length ? <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] text-white">{events.length}</span> : null}
-        </button>
-      )
-    }
+    if (!open) return null
 
     return (
-      <aside className="fixed bottom-4 left-20 z-50 w-[min(420px,calc(100vw-6rem))] rounded-2xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-[#1C1C1E]" aria-label="Entradas do celular conectado">
+      <aside className="fixed left-[clamp(18rem,32vw,36rem)] top-[4.5rem] z-50 w-[min(420px,calc(100vw-20rem))] rounded-2xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-[#1C1C1E]" aria-label="Entradas do celular conectado">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"><Smartphone className="h-4 w-4" /></span>
           <div className="min-w-0 flex-1"><p className="text-sm font-bold">Celular conectado</p><p className="text-[11px] text-gray-500">Turno ativo · entradas aparecem aqui</p></div>

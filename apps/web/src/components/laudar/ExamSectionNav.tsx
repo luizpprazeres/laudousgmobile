@@ -135,7 +135,7 @@ export function ExamSectionNav({ sections, activeId, onSelect, examState, comple
         ? 'm-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/25'
         : 'm-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30'}>
         <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{completed} de {organSections.length}</div>
-        {!workspaceV2 ? <div className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">Defaults cobrem o resto.</div> : null}
+        {!workspaceV2 ? <div className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">O restante já está marcado como normal.</div> : null}
         <div className={`${workspaceV2 ? 'mt-2 h-1' : 'mt-3 h-2'} overflow-hidden rounded-full bg-white dark:bg-gray-800`}>
           <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${progress}%` }} />
         </div>

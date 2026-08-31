@@ -437,6 +437,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // laudo muda (o salvo anterior fica desatualizado).
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [companionOpen, setCompanionOpen] = useState(false)
+  const [companionState, setCompanionState] = useState({ connected: false, pending: 0 })
   const [saveError, setSaveError] = useState<string | null>(null)
   useEffect(() => {
     setSaveState('idle')
@@ -566,11 +567,14 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           </ToolbarPill>
         ) : null}
 
-        {!workspaceV2 ? (
-          <>
-            <ToolbarPill onClick={() => setCompanionOpen(true)}><Smartphone className="h-4 w-4" />Celular</ToolbarPill>
-          </>
-        ) : null}
+        <ToolbarPill onClick={() => setCompanionOpen((open) => !open)}>
+          <Smartphone className="h-4 w-4" />
+          <span className={`h-2 w-2 rounded-full ${companionState.connected ? 'animate-pulse bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+          {companionState.connected ? 'Celular conectado' : 'Celular desconectado'}
+          {companionState.pending > 0 ? (
+            <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-gray-950">{companionState.pending}</span>
+          ) : null}
+        </ToolbarPill>
         <div className="flex-1" />
 
         {/*
@@ -807,6 +811,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       <CompanionPanel
         open={companionOpen}
         onClose={() => setCompanionOpen((open) => !open)}
+        onStateChange={setCompanionState}
         onApplyText={(text) => setCompanionNotesByCategory((all) => ({
           ...all,
           [categoria]: [...(all[categoria] ?? []), text],
