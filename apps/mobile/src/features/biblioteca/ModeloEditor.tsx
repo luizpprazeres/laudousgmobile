@@ -66,6 +66,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
    * a servir treze.
    */
   const [categoria, setCategoria] = useState(categoriaInicial);
+  const [estilo, setEstilo] = useState<"CLASSICO_COMPLETO" | "OBJETIVO">("CLASSICO_COMPLETO");
   const [categorias, setCategorias] = useState<CategoriaDaBiblioteca[]>([]);
   const [estado, setEstado] = useState<EstadoPersonalizacao | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -86,7 +87,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
     setCarregando(true);
     setErro(null);
     try {
-      const e = await getPersonalizacao(categoria);
+      const e = await getPersonalizacao(categoria, estilo);
       setEstado(e);
       // O que o médico está editando: o rascunho se houver, SENÃO o publicado.
       //
@@ -100,7 +101,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
     } finally {
       setCarregando(false);
     }
-  }, [categoria]);
+  }, [categoria, estilo]);
 
   useEffect(() => {
     void carregar();
@@ -115,6 +116,13 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
    *  de outra categoria. O rascunho gravado no servidor não é tocado. */
   const trocarCategoria = useCallback((c: string) => {
     setCategoria(c);
+    setOps([]);
+    setVariacao(null);
+    setSlotAberto(null);
+  }, []);
+
+  const trocarEstilo = useCallback((e: "CLASSICO_COMPLETO" | "OBJETIVO") => {
+    setEstilo(e);
     setOps([]);
     setVariacao(null);
     setSlotAberto(null);
@@ -194,10 +202,10 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
     setErro(null);
     try {
       if (novas.length === 0) {
-        await descartarRascunho(categoria);
+        await descartarRascunho(categoria, estilo);
         setOps([]);
       } else {
-        const r = await salvarRascunho(categoria, novas);
+        const r = await salvarRascunho(categoria, novas, estilo);
         setOps(r.rascunho.operations as Operacao[]);
       }
       await carregar();
@@ -223,7 +231,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
     setSalvando(true);
     setRecusa(null);
     try {
-      await restaurarVersao(categoria, versao);
+      await restaurarVersao(categoria, versao, estilo);
       await carregar();
     } catch (err) {
       if (err instanceof PersonalizacaoRecusada) setRecusa(err.erros);
@@ -311,6 +319,32 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
           })}
         </ScrollView>
       )}
+
+      <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 16, paddingTop: 10 }}>
+        {([
+          ["CLASSICO_COMPLETO", "Clássico"],
+          ["OBJETIVO", "Objetivo"],
+        ] as const).map(([codigo, rotulo]) => {
+          const ativo = estilo === codigo;
+          return (
+            <Pressable
+              key={codigo}
+              onPress={() => trocarEstilo(codigo)}
+              style={{
+                flex: 1,
+                paddingVertical: 8,
+                borderRadius: 10,
+                alignItems: "center",
+                backgroundColor: ativo ? t.brand : t.fill2,
+              }}
+            >
+              <Text style={{ color: ativo ? "#fff" : t.text2, fontSize: 13, fontWeight: "600" }}>
+                {rotulo}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {/* editar × conferir: o médico precisa das duas visões, e elas não cabem
           na mesma tela sem uma virar ruído da outra. */}
@@ -623,7 +657,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
                   setSalvando(true);
                   setRecusa(null);
                   try {
-                    await publicar(categoria);
+                    await publicar(categoria, estilo);
                     await carregar();
                   } catch (err) {
                     if (err instanceof PersonalizacaoRecusada) setRecusa(err.erros);
@@ -650,7 +684,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
                 if (salvando) return;
                 setSalvando(true);
                 try {
-                  await desligar(categoria);
+                  await desligar(categoria, estilo);
                   await carregar();
                 } finally {
                   setSalvando(false);

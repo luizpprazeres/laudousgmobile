@@ -1,13 +1,14 @@
 import { z } from "zod";
 
 /**
- * 3 estilos fixos validados pelo criador. Persistidos na tabela `writing_styles`
- * com UUIDs estáveis (ver seeds em packages/db/seeds/writing_styles.ts).
+ * Códigos históricos aceitos nos registros. A interface oferece apenas os
+ * estilos ativos retornados pelo produto (hoje Clássico e Objetivo).
  */
 export const WritingStyleCodeSchema = z.enum([
   "CLASSICO_COMPLETO",
   "DIRETO_OBJETIVO",
   "DETALHADO_PROTOCOLAR",
+  "OBJETIVO",
 ]);
 
 export type WritingStyleCode = z.infer<typeof WritingStyleCodeSchema>;

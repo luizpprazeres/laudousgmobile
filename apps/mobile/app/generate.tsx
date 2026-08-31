@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import type { Audio as AudioNS } from "expo-av";
@@ -15,13 +15,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import {
   generateReducer,
   initialGenerateState,
 } from "@/features/generate/state";
 import {
   generateReportStream,
+  getMeProfile,
   pushReportToSala,
   updateReportFinalOutput,
   type MockScenario,
@@ -121,6 +122,7 @@ export default function GenerateScreen() {
   const [companionConnection, setCompanionConnection] = useState<CompanionConnection | null>(null);
   const [sendingToWeb, setSendingToWeb] = useState(false);
   const [companionImage, setCompanionImage] = useState<{ data: BiometricData; summary: string; insertedText: string } | null>(null);
+  const [writingStyleId, setWritingStyleId] = useState(DEFAULT_WRITING_STYLE_ID);
   const [imageOpen, setImageOpen] = useState(false);
   // Imagens vindas do "Compartilhar → LaudoUSG" (WhatsApp/galeria) — abrem
   // a análise de USG automaticamente (B4 06/07).
@@ -131,6 +133,26 @@ export default function GenerateScreen() {
   useEffect(() => {
     restoreCompanionConnection().then(setCompanionConnection).catch(() => undefined);
   }, []);
+
+  // A preferência é da conta, não deste aparelho. Recarrega ao voltar para a
+  // tela para refletir imediatamente uma mudança feita no web ou no iOS.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getMeProfile()
+        .then((profile) => {
+          if (active) {
+            setWritingStyleId(
+              profile.default_writing_style_id ?? DEFAULT_WRITING_STYLE_ID,
+            );
+          }
+        })
+        .catch(() => undefined);
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   useEffect(() => {
     if (!hasShareIntent) return;
@@ -261,7 +283,7 @@ export default function GenerateScreen() {
       for await (const ev of generateReportStream(
         {
           raw_input: text,
-          writing_style_id: DEFAULT_WRITING_STYLE_ID,
+          writing_style_id: writingStyleId,
           // Categoria escolhida pelo médico tem prioridade — structurer ainda
           // pode reclassificar se discordar do texto.
           category_hint: cat.id,
@@ -683,7 +705,7 @@ export default function GenerateScreen() {
                   for await (const ev of generateReportStream(
                     {
                       raw_input: state.text,
-                      writing_style_id: DEFAULT_WRITING_STYLE_ID,
+                      writing_style_id: writingStyleId,
                       category_hint: cat.id,
                       resume_from_report_id: state.reportId,
                       clarify_answers: answers,
