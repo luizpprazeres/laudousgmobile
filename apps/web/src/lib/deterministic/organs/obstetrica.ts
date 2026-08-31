@@ -51,11 +51,11 @@ export const igModule: OrganModule = {
     name: 'Idade gestacional',
     category: 'OBSTETRICA',
     fields: [
-      { key: 'bio_sem', label: 'IG biometria — semanas', kind: 'text', placeholder: '20' },
-      { key: 'bio_dias', label: 'IG biometria — dias', kind: 'text', placeholder: '3' },
+      { key: 'bio_sem', label: 'Biometria atual · semanas', kind: 'text', placeholder: '20' },
+      { key: 'bio_dias', label: 'Dias', kind: 'text', placeholder: '3' },
       {
         key: 'referencia',
-        label: 'Referência precoce',
+        label: 'Datação de referência',
         kind: 'segmented',
         hint: 'corrige a IG só se divergir > 5 dias',
         options: [
@@ -345,7 +345,7 @@ export const obstetrica: ExamCategory = {
   tecnica: TECNICA,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [
-    { id: 'ig', label: 'IG e datas', group: 'orgaos', module: igModule },
+    { id: 'ig', label: 'Datação', group: 'orgaos', module: igModule },
     { id: 'feto', label: 'Feto', group: 'orgaos', module: fetoModule },
     { id: 'biometria', label: 'Biometria', group: 'orgaos', module: biometriaModule },
     { id: 'placenta', label: 'Placenta', group: 'orgaos', module: placentaModule },

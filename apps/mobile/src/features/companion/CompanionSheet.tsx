@@ -11,9 +11,9 @@ import { ensureMicPermission, startRecording, stopRecording, uploadAudio } from 
 import { analyzeImages, canAnalyzeCategory, formatBiometric, mergeBiometric, type BiometricData, type ImagingCategory } from '@/features/imaging/imageAnalysis'
 import { connectCompanion, restoreCompanionConnection, sendCompanionStructuredFindings, sendCompanionText, sendCompanionTranscript, type CompanionConnection } from './companion'
 
-type Props = { open: boolean; onClose: () => void; categoryId: string }
+type Props = { open: boolean; onClose: () => void; categoryId: string; onConnectionChanged?: (connection: CompanionConnection | null) => void }
 
-export function CompanionSheet({ open, onClose, categoryId }: Props) {
+export function CompanionSheet({ open, onClose, categoryId, onConnectionChanged }: Props) {
   const t = useColorTokens()
   const styles = useMemo(() => makeStyles(t), [t])
   const [code, setCode] = useState('')
@@ -34,6 +34,11 @@ export function CompanionSheet({ open, onClose, categoryId }: Props) {
     if (!open || connection) return
     restoreCompanionConnection().then(setConnection).catch(() => undefined)
   }, [connection, open])
+
+  useEffect(() => {
+    onConnectionChanged?.(connection)
+    if (connection) onClose()
+  }, [connection, onClose, onConnectionChanged])
 
   useEffect(() => () => {
     const current = recordingRef.current

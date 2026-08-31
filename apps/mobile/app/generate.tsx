@@ -48,6 +48,13 @@ import { MenuSheet } from "@/features/generate/MenuSheet";
 import { PlusSheet } from "@/features/generate/PlusSheet";
 import { SalaPairingSheet } from "@/features/sala/SalaPairingSheet";
 import { CompanionSheet } from "@/features/companion/CompanionSheet";
+import {
+  restoreCompanionConnection,
+  sendCompanionStructuredFindings,
+  sendCompanionText,
+  type CompanionConnection,
+} from "@/features/companion/companion";
+import { mergeBiometric, type BiometricData, type ImagingCategory } from "@/features/imaging/imageAnalysis";
 import { RecordingOverlay } from "@/features/generate/RecordingOverlay";
 import { CalculatorsSheet, type CalcKey } from "@/features/generate/CalculatorsSheet";
 import { IGCalculatorSheet } from "@/features/generate/IGCalculatorSheet";
@@ -111,12 +118,19 @@ export default function GenerateScreen() {
   const [calcSheet, setCalcSheet] = useState<CalcKey | null>(null);
   const [salaOpen, setSalaOpen] = useState(false);
   const [companionOpen, setCompanionOpen] = useState(false);
+  const [companionConnection, setCompanionConnection] = useState<CompanionConnection | null>(null);
+  const [sendingToWeb, setSendingToWeb] = useState(false);
+  const [companionImage, setCompanionImage] = useState<{ data: BiometricData; summary: string; insertedText: string } | null>(null);
   const [imageOpen, setImageOpen] = useState(false);
   // Imagens vindas do "Compartilhar → LaudoUSG" (WhatsApp/galeria) — abrem
   // a análise de USG automaticamente (B4 06/07).
   const [sharedImageUris, setSharedImageUris] = useState<string[] | null>(null);
   const { hasShareIntent, shareIntent, resetShareIntent } =
     useShareIntentContext();
+
+  useEffect(() => {
+    restoreCompanionConnection().then(setCompanionConnection).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!hasShareIntent) return;
@@ -269,6 +283,33 @@ export default function GenerateScreen() {
       console.error("generate error:", e);
       const message = humanizeGenerateError(raw);
       dispatch({ type: "FAIL", message });
+    }
+  };
+
+  const sendCurrentFindingsToWeb = async () => {
+    if (!companionConnection || !text.trim()) return;
+    setSendingToWeb(true);
+    setNotice(null);
+    try {
+      if (companionImage) {
+        await sendCompanionStructuredFindings(
+          companionConnection,
+          cat.id as ImagingCategory,
+          companionImage.data,
+          companionImage.summary,
+        );
+      }
+      const remaining = companionImage
+        ? text.replace(companionImage.insertedText, "").trim()
+        : text.trim();
+      if (remaining) await sendCompanionText(companionConnection, remaining);
+      dispatch({ type: "RESET" });
+      setCompanionImage(null);
+      setNotice({ severity: "success", message: "Enviado para a web." });
+    } catch (e) {
+      setNotice({ severity: "error", message: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setSendingToWeb(false);
     }
   };
 
@@ -727,17 +768,18 @@ export default function GenerateScreen() {
           )}
 
           <Pressable
-            onPress={hasContent && !generating && !micBusy ? startGenerate : undefined}
-            disabled={!hasContent || generating || micBusy}
+            onPress={hasContent && !generating && !micBusy ? (companionConnection ? sendCurrentFindingsToWeb : startGenerate) : undefined}
+            disabled={!hasContent || generating || sendingToWeb || micBusy}
             style={[
               styles.generateBtn,
+              companionConnection && { backgroundColor: "#F59E0B" },
               hardMode && styles.generateBtnHard,
               { opacity: !hasContent || generating || micBusy ? 0.45 : 1 },
             ]}
-            accessibilityLabel={hardMode ? "Gerar laudo (modo avançado)" : "Gerar laudo"}
+            accessibilityLabel={companionConnection ? "Enviar para a web" : (hardMode ? "Gerar laudo (modo avançado)" : "Gerar laudo")}
           >
             <Text style={styles.generateBtnText}>
-              {generating ? "Gerando…" : "Gerar laudo"}
+              {sendingToWeb ? "Enviando…" : companionConnection ? "Enviar para a web" : generating ? "Gerando…" : "Gerar laudo"}
             </Text>
           </Pressable>
 
@@ -806,6 +848,10 @@ export default function GenerateScreen() {
         }}
         categoryId={cat.id}
         onInsert={(block) => dispatch({ type: "APPEND_TEXT", text: block })}
+        onExtract={companionConnection ? (results, block) => {
+          setCompanionImage({ data: mergeBiometric(results), summary: block, insertedText: block });
+          dispatch({ type: "APPEND_TEXT", text: block });
+        } : undefined}
         sharedUris={sharedImageUris ?? undefined}
       />
 
@@ -813,7 +859,7 @@ export default function GenerateScreen() {
         open={salaOpen}
         onClose={() => setSalaOpen(false)}
       />
-      <CompanionSheet open={companionOpen} onClose={() => setCompanionOpen(false)} categoryId={cat.id} />
+      <CompanionSheet open={companionOpen} onClose={() => setCompanionOpen(false)} categoryId={cat.id} onConnectionChanged={setCompanionConnection} />
       <PlusSheet
         open={plusOpen}
         onClose={() => setPlusOpen(false)}

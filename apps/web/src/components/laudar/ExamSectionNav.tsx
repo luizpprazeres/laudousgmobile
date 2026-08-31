@@ -16,6 +16,7 @@ type Props = {
   opts?: OrganState
   onOpts?: (key: string, value: string | string[]) => void
   workspaceV2?: boolean
+  contentGroupLabel?: string
 }
 
 function ControlsBlock({ controls, opts, onOpts }: { controls: Field[]; opts: OrganState; onOpts: (k: string, v: string | string[]) => void }) {
@@ -78,7 +79,7 @@ function sectionDone(section: NavSection, examState?: ExamState, completedIds?: 
   return JSON.stringify(examState[section.id] ?? {}) !== JSON.stringify(section.module.initialState())
 }
 
-export function ExamSectionNav({ sections, activeId, onSelect, examState, completedIds, controls, opts, onOpts, workspaceV2 = false }: Props) {
+export function ExamSectionNav({ sections, activeId, onSelect, examState, completedIds, controls, opts, onOpts, workspaceV2 = false, contentGroupLabel }: Props) {
   const groups: NavSection['group'][] = ['cabecalho', 'orgaos', 'conclusao', 'calculos']
   const organSections = sections.filter((section) => section.group === 'orgaos')
   const completed = organSections.filter((section) => sectionDone(section, examState, completedIds)).length
@@ -98,7 +99,7 @@ export function ExamSectionNav({ sections, activeId, onSelect, examState, comple
           return (
             <div key={group} className={workspaceV2 ? 'mb-3' : 'mb-5'}>
               <div className={`${workspaceV2 ? 'px-2' : 'px-5'} pb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400`}>
-                {GROUP_LABELS[group]}
+                {group === 'orgaos' && contentGroupLabel ? contentGroupLabel : GROUP_LABELS[group]}
               </div>
               <div className="space-y-1">
                 {groupSections.map((section) => {

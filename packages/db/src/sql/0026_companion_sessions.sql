@@ -1,5 +1,5 @@
 -- Celular como dispositivo de entrada da web.
--- Separado de room_tokens/Sala do Auxiliar: código curto de uso único e turno de 10h.
+-- Separado de room_tokens/Sala do Auxiliar: código curto de uso único e turno de 4h.
 
 create table if not exists public.companion_sessions (
   id uuid primary key default gen_random_uuid(),

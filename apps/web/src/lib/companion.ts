@@ -14,7 +14,7 @@ export type CompanionEvent = {
   kind: string
   payload: {
     text?: string
-    category?: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE' | 'MAMARIA'
+    category?: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE' | 'MAMARIA' | 'DOPPLER_CAROTIDAS'
     data?: Record<string, unknown>
     summary?: string
   }
@@ -61,7 +61,7 @@ export async function createCompanionSession(): Promise<CompanionSession> {
         user_id: auth.user.id,
         pairing_code: randomCode(),
         pairing_expires_at: new Date(now + 10 * 60_000).toISOString(),
-        expires_at: new Date(now + 10 * 60 * 60_000).toISOString(),
+        expires_at: new Date(now + 4 * 60 * 60_000).toISOString(),
       })
       .select('id, pairing_code, pairing_expires_at, connected_at, expires_at, revoked_at')
       .single()

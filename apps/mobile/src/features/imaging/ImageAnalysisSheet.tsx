@@ -17,6 +17,7 @@ import {
   analyzeImages,
   canAnalyzeCategory,
   formatBiometric,
+  type BiometricData,
   type ImagingCategory,
 } from "./imageAnalysis";
 
@@ -35,12 +36,14 @@ export function ImageAnalysisSheet({
   onClose,
   categoryId,
   onInsert,
+  onExtract,
   sharedUris,
 }: {
   open: boolean;
   onClose: () => void;
   categoryId: string;
   onInsert: (text: string) => void;
+  onExtract?: (results: BiometricData[], text: string) => void;
   /** Imagens vindas do share do sistema (WhatsApp/galeria → LaudoUSG).
    *  Quando presentes, são carregadas automaticamente ao abrir. */
   sharedUris?: string[];
@@ -162,7 +165,8 @@ export function ImageAnalysisSheet({
         );
         return;
       }
-      onInsert(text + "\n\n");
+      if (onExtract) onExtract(results, text);
+      else onInsert(text + "\n\n");
       setImages([]);
       onClose();
     } catch (e) {

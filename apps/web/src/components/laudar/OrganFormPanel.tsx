@@ -239,7 +239,14 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
 
   return (
     <div className={compact ? 'space-y-1.5' : 'space-y-2.5'}>
-      {schema.fields.map(renderField)}
+      {schema.id === 'ig' ? (
+        <>
+          <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-1.5">
+            {schema.fields.slice(0, 2).map(renderField)}
+          </div>
+          {schema.fields.slice(2).map(renderField)}
+        </>
+      ) : schema.fields.map(renderField)}
       {schema.rareFindings?.length ? (
         <section className={`${compact ? 'rounded-lg px-2.5 py-2' : 'rounded-xl px-3.5 py-2.5'} border border-dashed border-gray-300 bg-white/70 dark:border-gray-700 dark:bg-gray-900/70`}>
           <button

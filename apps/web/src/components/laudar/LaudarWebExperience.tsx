@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, Calculator, ChevronDown, Image, Mic, RotateCcw, Smartphone, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronDown, Image, Mic, RotateCcw, Smartphone, Sparkles } from 'lucide-react'
 import {
   CATEGORIES,
   GENERIC_CATEGORIES,
@@ -568,7 +568,6 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
         {!workspaceV2 ? (
           <>
-            <ToolbarPill><Calculator className="h-4 w-4" />Cálculos</ToolbarPill>
             <ToolbarPill><Mic className="h-4 w-4" />Ditar</ToolbarPill>
             <ToolbarPill><Image className="h-4 w-4" />Imagem</ToolbarPill>
             <ToolbarPill onClick={() => setCompanionOpen(true)}><Smartphone className="h-4 w-4" />Celular</ToolbarPill>
@@ -622,20 +621,27 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             opts={opts}
             onOpts={onOpts}
             workspaceV2={workspaceV2}
+            contentGroupLabel={
+              ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO'].includes(categoria)
+                ? 'Etapas do exame'
+                : categoria === 'MUSCULOESQUELETICO'
+                  ? 'Estruturas'
+                  : undefined
+            }
           />
 
           <section className={`min-h-0 ${workspaceV2 ? 'flex flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]' : 'overflow-y-auto bg-gray-50 dark:bg-gray-900'}`}>
             <div className={workspaceV2
-              ? 'sticky top-0 z-10 border-b border-gray-100 bg-white/95 px-4 py-3 backdrop-blur-xl dark:border-gray-800 dark:bg-[#1C1C1E]/95'
-              : 'border-b border-gray-200 bg-white px-6 py-3 dark:border-gray-800 dark:bg-gray-950'}>
+              ? 'sticky top-0 z-10 border-b border-gray-100 bg-white/95 px-4 py-2 backdrop-blur-xl dark:border-gray-800 dark:bg-[#1C1C1E]/95'
+              : 'border-b border-gray-200 bg-white px-6 py-2 dark:border-gray-800 dark:bg-gray-950'}>
               <div className="flex items-center justify-between gap-4">
-                <p className="text-[13px] text-gray-500 dark:text-gray-400">
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">
                   {isTireoide
                     ? 'Preencha medidas, nódulos e classificações informadas pelo médico.'
                     : 'Tudo pré-marcado como normal. Mude só o que estiver alterado.'}
                 </p>
-                <button type="button" onClick={resetActive} className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800">
-                  <RotateCcw className="h-3.5 w-3.5" />
+                <button type="button" onClick={resetActive} className="inline-flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800">
+                  <RotateCcw className="h-3 w-3" />
                   Reset
                 </button>
               </div>
@@ -804,7 +810,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       </main>
       <CompanionPanel
         open={companionOpen}
-        onClose={() => setCompanionOpen(false)}
+        onClose={() => setCompanionOpen((open) => !open)}
         onApplyText={(text) => setCompanionNotesByCategory((all) => ({
           ...all,
           [categoria]: [...(all[categoria] ?? []), text],
