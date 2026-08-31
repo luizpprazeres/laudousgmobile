@@ -36,7 +36,7 @@ A versão atual da calculadora da Fetal Medicine Barcelona estava em atualizaç�
 - [x] Port literal para iOS e casos golden equivalentes.
 - [x] Bloco de laudo com referência didática da fonte.
 - [x] Validação completa e envio da build iOS 163 ao processamento do TestFlight.
-- [ ] Commits e push para a `main`.
+- [x] Commits e push para a `main`.
 
 ## Validação executada
 
