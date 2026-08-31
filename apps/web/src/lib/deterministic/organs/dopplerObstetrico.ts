@@ -13,6 +13,28 @@ const MEDIDAS: Field[] = [
   { key: 'ip_acm', label: 'IP artéria cerebral média', kind: 'text', placeholder: '1,80', halfWidth: true, minGestationalWeeks: 16 },
   { key: 'ir_dv', label: 'IR ducto venoso (opcional)', kind: 'text', placeholder: '0,40', halfWidth: true, minGestationalWeeks: 16 },
   { key: 'ip_dv', label: 'IP ducto venoso', kind: 'text', placeholder: '1,89', halfWidth: true, minGestationalWeeks: 16 },
+  {
+    key: 'ducto_fluxo', label: 'Ducto venoso — avaliação qualitativa', kind: 'segmented', minGestationalWeeks: 16,
+    options: [
+      { value: 'normal', label: 'Normal', isDefault: true },
+      {
+        value: 'ip_acima_p95', label: 'IP > p95',
+        subFields: [{ key: 'confirmada', label: 'Confirmado após 6–12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
+      },
+      {
+        value: 'diastole_ausente', label: 'Diástole ausente',
+        subFields: [{ key: 'confirmada', label: 'Confirmado após 6–12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
+      },
+      {
+        value: 'diastole_reversa', label: 'Diástole reversa',
+        subFields: [{ key: 'confirmada', label: 'Confirmado após 6–12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
+      },
+      {
+        value: 'pulsacoes_dicroticas', label: 'Pulsações dicróticas',
+        subFields: [{ key: 'confirmada', label: 'Confirmado após 6–12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
+      },
+    ],
+  },
   { key: 'rcp', label: 'Relação cérebro-placentária (opcional)', kind: 'text', placeholder: '1,25', minGestationalWeeks: 16 },
   { key: 'perfil', label: 'Perfil hemodinâmico (opcional)', kind: 'text', placeholder: '0,80', minGestationalWeeks: 16 },
   {
@@ -29,7 +51,18 @@ const MEDIDAS: Field[] = [
   },
   {
     key: 'umbilical', label: 'Artéria umbilical', kind: 'segmented', minGestationalWeeks: 16,
-    options: [{ value: 'normal', label: 'Normal', isDefault: true }, { value: 'alterada', label: 'Alterada' }],
+    options: [
+      { value: 'normal', label: 'Normal', isDefault: true },
+      { value: 'alterada', label: 'Alterada' },
+      {
+        value: 'diastole_ausente', label: 'Diástole ausente',
+        subFields: [{ key: 'confirmada', label: 'Confirmado após >12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
+      },
+      {
+        value: 'diastole_reversa', label: 'Diástole reversa',
+        subFields: [{ key: 'confirmada', label: 'Confirmado após 6–12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
+      },
+    ],
   },
   {
     key: 'acm', label: 'Artéria cerebral média', kind: 'segmented', minGestationalWeeks: 16,
@@ -52,7 +85,7 @@ const DEFAULTS: OrganState = {
   ir_ut_dir: '', ip_ut_dir: '', ir_ut_esq: '', ip_ut_esq: '', ip_ut_medio: '',
   ir_umb: '', ip_umb: '', ir_acm: '', ip_acm: '', ir_dv: '', ip_dv: '',
   rcp: '', perfil: '', incisura: 'ausente', centralizacao: 'ausente',
-  umbilical: 'normal', acm: 'normal',
+  umbilical: 'normal', acm: 'normal', ducto_fluxo: 'normal',
 }
 
 export function criarDopplerAddonModule(

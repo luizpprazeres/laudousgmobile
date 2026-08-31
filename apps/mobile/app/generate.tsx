@@ -53,6 +53,7 @@ import { CalculatorsSheet, type CalcKey } from "@/features/generate/CalculatorsS
 import { IGCalculatorSheet } from "@/features/generate/IGCalculatorSheet";
 import { DopplerCalculatorSheet } from "@/features/generate/DopplerCalculatorSheet";
 import { HadlockCalculatorSheet } from "@/features/generate/HadlockCalculatorSheet";
+import { FetalGrowthCalculatorSheet } from "@/features/generate/FetalGrowthCalculatorSheet";
 import { ILA4QCalculatorSheet } from "@/features/generate/ILA4QCalculatorSheet";
 import { AnemiaCalculatorSheet } from "@/features/generate/AnemiaCalculatorSheet";
 import { DuctoVenosoCalculatorSheet } from "@/features/generate/DuctoVenosoCalculatorSheet";
@@ -102,6 +103,7 @@ export default function GenerateScreen() {
   const [igCalcInitialTab, setIgCalcInitialTab] = useState<"dum" | "usg">("dum");
   const [dopplerCalcOpen, setDopplerCalcOpen] = useState(false);
   const [hadlockOpen, setHadlockOpen] = useState(false);
+  const [fetalGrowthOpen, setFetalGrowthOpen] = useState(false);
   const [ilaOpen, setIlaOpen] = useState(false);
   const [anemiaOpen, setAnemiaOpen] = useState(false);
   // Sheet de calculadora aberto (lote 2 — as 9 novas usam um estado único,
@@ -829,6 +831,8 @@ export default function GenerateScreen() {
             setDopplerCalcOpen(true);
           } else if (key === "hadlock") {
             setHadlockOpen(true);
+          } else if (key === "fetalGrowth") {
+            setFetalGrowthOpen(true);
           } else if (key === "ila") {
             setIlaOpen(true);
           } else if (key === "anemia") {
@@ -853,6 +857,12 @@ export default function GenerateScreen() {
       <HadlockCalculatorSheet
         open={hadlockOpen}
         onClose={() => setHadlockOpen(false)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <FetalGrowthCalculatorSheet
+        open={fetalGrowthOpen}
+        findingsText={text}
+        onClose={() => setFetalGrowthOpen(false)}
         onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
       />
       <ILA4QCalculatorSheet

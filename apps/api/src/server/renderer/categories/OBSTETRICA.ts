@@ -14,6 +14,11 @@ import {
   DopplerObstetricoModuleSchema,
   renderDopplerModule,
 } from "./dopplerObstetricoModule";
+import {
+  FETAL_GROWTH_MODULE_JSON_SCHEMA,
+  FetalGrowthModuleSchema,
+  renderFetalGrowthModule,
+} from "./fetalGrowthModule";
 
 /**
  * DET-5 — Renderer de OBSTETRICA (feto único + gemelar).
@@ -203,6 +208,8 @@ export const ObstetricaFindingsSchema = z.object({
   cervicometria: CervicometriaAddonSchema.nullable().optional(),
   /** Avaliação Doppler opcional, sem trocar a categoria obstétrica. */
   doppler: DopplerObstetricoModuleSchema.nullable().optional(),
+  /** Classificação PIG/RCF opcional, refeita no servidor a partir dos critérios. */
+  crescimento_fetal: FetalGrowthModuleSchema.nullable().optional(),
 });
 
 export type ObstetricaFindings = z.infer<typeof ObstetricaFindingsSchema>;
@@ -364,6 +371,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "observacoes_corpo_livres",
     "cervicometria",
     "doppler",
+    "crescimento_fetal",
   ],
   properties: {
     numero_fetos: { type: "integer" },
@@ -420,6 +428,7 @@ export const OBSTETRICA_JSON_SCHEMA = {
     observacoes_corpo_livres: { type: "array", items: { type: "string" } },
     cervicometria: CERVICOMETRIA_ADDON_JSON_SCHEMA,
     doppler: DOPPLER_OBSTETRICO_ADDON_JSON_SCHEMA,
+    crescimento_fetal: FETAL_GROWTH_MODULE_JSON_SCHEMA,
   },
 } as const;
 
@@ -606,7 +615,16 @@ para o valor mais parecido.
     cerclagem = true se houver pontos de cerclagem; observacoes recebe apenas
     observação adicional específica da cervicometria. NUNCA invente a medida.
 
-24. ${DOPPLER_MODULE_EXTRACTION_RULES}`;
+24. ${DOPPLER_MODULE_EXTRACTION_RULES}
+
+25. crescimento_fetal — classificação opcional e estruturada. Use null no laudo
+    obstétrico comum. Só preencha quando o médico fornecer explicitamente o
+    percentil do PFE e a curva/fonte usada. Confirmações de segunda medida só
+    podem ser true quando o médico disser que foram repetidas no intervalo
+    exigido; NUNCA as deduza de uma medida isolada. Não classifique PIG ou um
+    estágio de Gratacós por conta própria: o servidor fará a classificação a
+    partir dos campos estruturados. Campo não dito deve permanecer false/default,
+    sem inventar Doppler normal, CTG patológico ou confirmação.`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos
@@ -1219,6 +1237,11 @@ export function renderObstetricaClassico(
     aspectos.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
     conclusao.push(...doppler.conclusao);
   }
+  if (f.crescimento_fetal) {
+    const growth = renderFetalGrowthModule(f.crescimento_fetal, f.ig_semanas, f.ig_dias);
+    aspectos.push("\nCRESCIMENTO FETAL:", ...growth.achados);
+    conclusao.push(...growth.conclusao);
+  }
 
   // Linha opcional de DUM (logo após o título).
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
@@ -1474,6 +1497,11 @@ export function renderObstetricaObjetivo(
     const doppler = renderDopplerModule(f.doppler, { rawInput, umbilicalSafety });
     achados.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
     impressao.push(...doppler.conclusao);
+  }
+  if (f.crescimento_fetal) {
+    const growth = renderFetalGrowthModule(f.crescimento_fetal, f.ig_semanas, f.ig_dias);
+    achados.push("\nCRESCIMENTO FETAL:", ...growth.achados);
+    impressao.push(...growth.conclusao);
   }
 
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";

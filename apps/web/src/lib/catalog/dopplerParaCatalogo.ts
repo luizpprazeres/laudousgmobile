@@ -34,6 +34,8 @@ export function dopplerDaTela(
   const weeks = standalone ? numero(d, 'ig_sem') : numero(ig, 'bio_sem')
   const days = (standalone ? numero(d, 'ig_dias') : numero(ig, 'bio_dias')) ?? 0
   const somenteIpUterinas = weeks !== null && weeks <= 15
+  const umbilicalQualitativo = texto(d, key('umbilical')) || 'normal'
+  const ductoQualitativo = texto(d, key('ducto_fluxo')) || 'normal'
   const ipUmbilical = somenteIpUterinas ? null : numero(d, key('ip_umb'))
   const ipAcm = somenteIpUterinas ? null : numero(d, key('ip_acm'))
   const calculado = weeks !== null
@@ -57,16 +59,31 @@ export function dopplerDaTela(
     ir_umbilical: somenteIpUterinas ? null : numero(d, key('ir_umb')),
     ip_umbilical: ipUmbilical,
     perc_umbilical: calculado.arteriaUmbilical?.percentile ?? null,
+    fluxo_diastolico_umbilical: somenteIpUterinas
+      ? null
+      : umbilicalQualitativo === 'diastole_ausente'
+        ? 'ausente'
+        : umbilicalQualitativo === 'diastole_reversa'
+          ? 'reverso'
+          : 'presente',
     ir_acm: somenteIpUterinas ? null : numero(d, key('ir_acm')),
     ip_acm: ipAcm,
     perc_acm: calculado.arteriaCerebralMedia?.percentile ?? null,
     ir_ducto_venoso: somenteIpUterinas ? null : numero(d, key('ir_dv')),
     ip_ducto_venoso: somenteIpUterinas ? null : numero(d, key('ip_dv')),
-    ducto_venoso_qualitativo: null,
+    ducto_venoso_qualitativo: somenteIpUterinas || ductoQualitativo === 'normal'
+      ? null
+      : ductoQualitativo === 'ip_acima_p95'
+        ? 'índice de pulsatilidade acima do percentil 95'
+        : ductoQualitativo === 'diastole_ausente'
+          ? 'fluxo diastólico ausente'
+          : ductoQualitativo === 'diastole_reversa'
+            ? 'fluxo diastólico reverso'
+            : 'pulsações venosas dicróticas persistentes',
     rcp: somenteIpUterinas ? null : numero(d, key('rcp')) ?? rcpCalculada,
     perfil_hemodinamico: somenteIpUterinas ? null : numero(d, key('perfil')),
     umbilical_alterado:
-      !somenteIpUterinas && (texto(d, key('umbilical')) === 'alterada' || calculado.arteriaUmbilical?.pathological === true),
+      !somenteIpUterinas && calculado.arteriaUmbilical?.pathological === true,
     acm_alterado:
       !somenteIpUterinas && (texto(d, key('acm')) === 'alterada' || calculado.arteriaCerebralMedia?.pathological === true),
     incisura: !somenteIpUterinas && texto(d, key('incisura')) === 'presente',

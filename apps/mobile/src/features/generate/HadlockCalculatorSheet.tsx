@@ -143,8 +143,8 @@ export function HadlockCalculatorSheet({ open, onClose, onInsert }: Props) {
             </Text>
             {result.isSGA ? (
               <Text style={styles.warn}>
-                ⚠️ Peso abaixo do esperado (PIG) — considerar Doppler
-                obstétrico em 1-2 semanas.
+                ⚠️ Peso abaixo do percentil 10 — classificar como PIG ou RCF
+                somente após a avaliação Doppler.
               </Text>
             ) : result.isLGA ? (
               <Text style={styles.warn}>

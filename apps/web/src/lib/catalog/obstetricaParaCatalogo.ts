@@ -32,6 +32,7 @@
  */
 
 import { dopplerDaTela } from "./dopplerParaCatalogo";
+import { fetalGrowthDaTela } from "./fetalGrowthParaCatalogo";
 
 type EstadoDaSecao = Record<string, unknown>;
 export type EstadoObstetrico = Record<string, EstadoDaSecao | unknown>;
@@ -118,6 +119,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
   const p = secao(estado, "placenta");
   const l = secao(estado, "liquido");
   const a = secao(estado, "achados");
+  const crescimento = fetalGrowthDaTela(estado);
 
   const fonte = texto(ig, "referencia") || "nenhuma";
 
@@ -167,7 +169,10 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
     numero_fetos: 1,
     corionicidade: null,
     gestacao_inicial: false,
-    fetos: [fetoDaTela(f, b)],
+    fetos: [{
+      ...fetoDaTela(f, b),
+      percentil: crescimento ? crescimento.efwPercentile : null,
+    }],
 
     ig_semanas: numero(ig, "bio_sem"),
     ig_dias: numero(ig, "bio_dias"),
@@ -190,6 +195,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
     placenta_grau: placentaDetalhada
       ? texto(p, "estado.detalhar.grau").replace(/^grau\s*/i, "") || null
       : null,
+    placenta_relacao_orificio: null,
     placenta_distancia_orificio_mm: null,
     placenta_achado_medidas: null,
 
@@ -209,6 +215,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
     observacoes_corpo_livres: [],
     cervicometria: cervicometriaDaTela(estado),
     doppler: dopplerDaTela(estado),
+    crescimento_fetal: crescimento,
   };
 
   return { dados, alteracoes: [], pendencias };

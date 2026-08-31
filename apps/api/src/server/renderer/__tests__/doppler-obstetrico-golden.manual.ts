@@ -32,6 +32,7 @@ const DOPPLER_VAZIO: DopplerObstetricoModule = {
   ir_uterina_esq: null, ip_uterina_esq: null,
   ip_medio_uterinas: null, perc_medio_uterinas: null,
   ir_umbilical: null, ip_umbilical: null, perc_umbilical: null,
+  fluxo_diastolico_umbilical: null,
   ir_acm: null, ip_acm: null, perc_acm: null,
   ir_ducto_venoso: null, ip_ducto_venoso: null,
   ducto_venoso_qualitativo: null, rcp: null, perfil_hemodinamico: null,

@@ -15,6 +15,7 @@ import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { igModule, numOrNull, ptBr, mm, classeILA } from './obstetrica'
 import { criarCervicometriaAddonModule } from './cervicometriaAddon'
 import { criarDopplerAddonModule } from './dopplerObstetrico'
+import { criarFetalGrowthModule } from './fetalGrowth'
 import { preEclampsiaFmfSpec, trisomyFmfSpec } from '../../calculators/specs'
 
 const TECNICA =
@@ -358,6 +359,7 @@ const achadosModule: OrganModule = {
 const cervicometriaModule = criarCervicometriaAddonModule('MORFOLOGICO')
 const dopplerModule = criarDopplerAddonModule('MORFOLOGICO')
 const dopplerPrimeiroTrimestreModule = criarDopplerAddonModule('MORFOLOGICO', { apenasIpUterinas: true })
+const fetalGrowthModule = criarFetalGrowthModule('MORFOLOGICO')
 
 const SECTIONS: ExamSection[] = [
   { id: 'ig', label: 'IG e datas', group: 'orgaos', module: igModule },
@@ -367,6 +369,7 @@ const SECTIONS: ExamSection[] = [
   { id: 'extrafetal', label: 'Extra-fetal', group: 'orgaos', module: extraFetalModule },
   { id: 'cervicometria', label: 'Cervicometria', group: 'orgaos', module: cervicometriaModule },
   { id: 'doppler', label: 'Doppler', group: 'orgaos', module: dopplerModule },
+  { id: 'crescimento_fetal', label: 'Crescimento fetal', group: 'orgaos', module: fetalGrowthModule },
   { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
 ]
 

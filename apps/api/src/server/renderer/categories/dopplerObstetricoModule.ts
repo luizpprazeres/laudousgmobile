@@ -23,6 +23,7 @@ export const DopplerObstetricoModuleSchema = z.object({
   ir_umbilical: nullableNumber,
   ip_umbilical: nullableNumber,
   perc_umbilical: nullableNumber,
+  fluxo_diastolico_umbilical: z.enum(["presente", "ausente", "reverso"]).nullable(),
   ir_acm: nullableNumber,
   ip_acm: nullableNumber,
   perc_acm: nullableNumber,
@@ -48,7 +49,7 @@ export const DOPPLER_OBSTETRICO_MODULE_JSON_SCHEMA = {
   required: [
     "ir_uterina_dir", "ip_uterina_dir", "ir_uterina_esq", "ip_uterina_esq",
     "ip_medio_uterinas", "perc_medio_uterinas",
-    "ir_umbilical", "ip_umbilical", "perc_umbilical",
+    "ir_umbilical", "ip_umbilical", "perc_umbilical", "fluxo_diastolico_umbilical",
     "ir_acm", "ip_acm", "perc_acm",
     "ir_ducto_venoso", "ip_ducto_venoso", "ducto_venoso_qualitativo",
     "rcp", "perfil_hemodinamico", "umbilical_alterado", "acm_alterado",
@@ -60,6 +61,10 @@ export const DOPPLER_OBSTETRICO_MODULE_JSON_SCHEMA = {
     ir_uterina_esq: num, ip_uterina_esq: num,
     ip_medio_uterinas: num, perc_medio_uterinas: num,
     ir_umbilical: num, ip_umbilical: num, perc_umbilical: num,
+    fluxo_diastolico_umbilical: {
+      type: ["string", "null"],
+      enum: ["presente", "ausente", "reverso", null],
+    },
     ir_acm: num, ip_acm: num, perc_acm: num,
     ir_ducto_venoso: num, ip_ducto_venoso: num,
     ducto_venoso_qualitativo: str,
@@ -79,6 +84,7 @@ export const DOPPLER_MODULE_EXTRACTION_RULES = `
 DOPPLER OBSTÉTRICO OPCIONAL:
 - Preencha doppler SOMENTE se o médico realizou/pediu o complemento Doppler ou ditou índices vasculares. Caso contrário, doppler=null.
 - Preserve separadamente IR (índice de resistividade) e IP (índice de pulsatilidade) de: uterina direita, uterina esquerda, umbilical, cerebral média e ducto venoso.
+- fluxo_diastolico_umbilical: "ausente" ou "reverso" somente quando o médico disser esse achado; "presente" quando explicitamente normal; null no silêncio. Não esconda esse achado dentro de um simples flag de IP alterado.
 - ip_medio_uterinas/percentis, RCP e perfil_hemodinamico: somente quando ditados ou fornecidos por bloco estruturado; o código calcula o perfil a partir da RCP quando possível.
 - Flags de alteração só refletem o que foi verbalizado. Para ausência explicitamente avaliada, use false; silêncio é null.
 - Nunca invente um índice ausente e nunca transforme IR em IP.`;
@@ -159,7 +165,17 @@ export function renderDopplerModule(
   }
   if (module.rcp !== null) linhas.push(`Relação cérebro-placentária de ${fmt(module.rcp)}.`);
   const perfil = computePerfilHemodinamico(data);
-  if (perfil !== undefined) linhas.push(`Perfil hemodinâmico fetal de ${fmt(perfil)}.`);
+  const fluxoUmbilicalAnormal =
+    module.fluxo_diastolico_umbilical === "ausente" ||
+    module.fluxo_diastolico_umbilical === "reverso";
+  if (module.fluxo_diastolico_umbilical === "ausente") {
+    linhas.push("Fluxo diastólico ausente na artéria umbilical.");
+  } else if (module.fluxo_diastolico_umbilical === "reverso") {
+    linhas.push("Fluxo diastólico reverso na artéria umbilical.");
+  }
+  if (perfil !== undefined && !fluxoUmbilicalAnormal) {
+    linhas.push(`Perfil hemodinâmico fetal de ${fmt(perfil)}.`);
+  }
   if (module.ducto_venoso_qualitativo) {
     linhas.push(`Ducto venoso: ${module.ducto_venoso_qualitativo}.`);
   }
@@ -172,8 +188,18 @@ export function renderDopplerModule(
   const achados = linhas.filter((v): v is string => Boolean(v));
   if (achados.length === 0) achados.push("Não foram informados índices Doppler mensuráveis.");
 
-  return {
-    achados,
-    conclusao: buildDopplerConclusionItems(data, { strictEvidence: true }),
-  };
+  let conclusao = buildDopplerConclusionItems(data, { strictEvidence: true });
+  if (fluxoUmbilicalAnormal) {
+    conclusao = conclusao.filter((item) =>
+      !/^Perfil hemodinâmico fetal é normal/i.test(item) &&
+      !/^Índice de pulsatilidade elevado na artéria umbilical/i.test(item),
+    );
+    conclusao.unshift(
+      module.fluxo_diastolico_umbilical === "ausente"
+        ? "Fluxo diastólico ausente na artéria umbilical."
+        : "Fluxo diastólico reverso na artéria umbilical.",
+    );
+  }
+
+  return { achados, conclusao };
 }

@@ -19,6 +19,11 @@ import {
   DopplerObstetricoModuleSchema,
   renderDopplerModule,
 } from "./dopplerObstetricoModule";
+import {
+  FETAL_GROWTH_MODULE_JSON_SCHEMA,
+  FetalGrowthModuleSchema,
+  renderFetalGrowthModule,
+} from "./fetalGrowthModule";
 
 /**
  * DET-5 — Renderer de MORFOLOGICO (1º, 2º e 3º trimestre).
@@ -96,6 +101,7 @@ export const MorfologicoFindingsSchema = z.object({
   cervicometria: CervicometriaAddonSchema.nullable().optional(),
   /** Doppler materno-fetal complementar, independente do protocolo do 1º trimestre. */
   doppler: DopplerObstetricoModuleSchema.nullable().optional(),
+  crescimento_fetal: FetalGrowthModuleSchema.nullable().optional(),
 });
 
 export type MorfologicoFindings = z.infer<typeof MorfologicoFindingsSchema>;
@@ -115,6 +121,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
     "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
     "achados_adicionais", "cervicometria", "doppler",
+    "crescimento_fetal",
   ],
   properties: {
     trimestre: { type: "string", enum: ["1t", "2t", "3t"] },
@@ -137,6 +144,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     itens_conclusao_livres: { type: ["array", "null"], items: { type: "string" } },
     cervicometria: CERVICOMETRIA_ADDON_JSON_SCHEMA,
     doppler: DOPPLER_OBSTETRICO_ADDON_JSON_SCHEMA,
+    crescimento_fetal: FETAL_GROWTH_MODULE_JSON_SCHEMA,
   },
 } as const;
 
@@ -186,7 +194,12 @@ REGRAS:
    e a distância da placenta são em cm (converta mm→cm). OI fechado é true por
    padrão dentro do objeto e false só quando aberto/dilatado/afunilado. Nunca
    invente a medida.
-10. ${DOPPLER_MODULE_EXTRACTION_RULES}`;
+10. ${DOPPLER_MODULE_EXTRACTION_RULES}
+11. crescimento_fetal — use null por padrão. Só preencha quando o médico
+    fornecer explicitamente o percentil do PFE e a curva/fonte. Confirmação de
+    segunda medida só pode ser true quando tiver sido dita com o intervalo
+    exigido; NUNCA deduza confirmação, PIG ou estágio de Gratacós de uma medida
+    isolada. O servidor fará a classificação determinística.`;
 
 // ---------------------------------------------------------------------------
 function ptBr(n: number): string {
@@ -258,6 +271,21 @@ function acrescentarDoppler(
   const doppler = renderDopplerModule(f.doppler, options);
   corpo.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
   conclusao.push(...doppler.conclusao);
+}
+
+function acrescentarCrescimentoFetal(
+  f: MorfologicoFindings,
+  corpo: string[],
+  conclusao: string[],
+): void {
+  if (!f.crescimento_fetal) return;
+  const growth = renderFetalGrowthModule(
+    f.crescimento_fetal,
+    f.ig_semanas,
+    f.ig_dias,
+  );
+  corpo.push("\nCRESCIMENTO FETAL:", ...growth.achados);
+  conclusao.push(...growth.conclusao);
 }
 
 /** Concordância: "apresentação" feminina → cefálica/pélvica/córmica. */
@@ -460,6 +488,7 @@ function assemble(
   }
   acrescentarCervicometria(f, aspectos, conclusao);
   acrescentarDoppler(f, aspectos, conclusao, dopplerOptions);
+  acrescentarCrescimentoFetal(f, aspectos, conclusao);
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = fraseReferencia ? `${fraseReferencia}\n` : "";
   const conclTxt =
@@ -554,6 +583,7 @@ function assembleObj(
   }
   acrescentarCervicometria(f, achados, impressao);
   acrescentarDoppler(f, achados, impressao, dopplerOptions);
+  acrescentarCrescimentoFetal(f, achados, impressao);
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = fraseReferencia ? `\n${fraseReferencia}` : "";
   const impressaoTxt =

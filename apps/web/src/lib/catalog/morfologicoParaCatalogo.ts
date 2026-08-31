@@ -27,6 +27,7 @@
  */
 
 import { dopplerDaTela } from "./dopplerParaCatalogo";
+import { fetalGrowthDaTela } from "./fetalGrowthParaCatalogo";
 
 type EstadoDaSecao = Record<string, unknown>;
 export type EstadoMorfologico = Record<string, EstadoDaSecao | unknown>;
@@ -94,6 +95,7 @@ export function adaptarMorfologico(
   const b = secao(estado, "biometria");
   const ex = secao(estado, "extrafetal");
   const ac = secao(estado, "achados");
+  const crescimento = fetalGrowthDaTela(estado);
 
   /**
    * A ANATOMIA ALTERADA — descrição ao corpo, diagnóstico à conclusão.
@@ -181,7 +183,7 @@ export function adaptarMorfologico(
     peso_g: numero(b, "peso"),
     peso_variacao_g: null,
     /** O percentil sai do renderer, que tem a curva. */
-    percentil: null,
+    percentil: crescimento ? crescimento.efwPercentile : null,
 
     /** `na` na tela quer dizer "não avaliada" — nulo, não uma genitália. */
     genitalia: genitalia && genitalia !== "na" ? genitalia : null,
@@ -214,6 +216,7 @@ export function adaptarMorfologico(
     itens_conclusao_livres: diagnosticos,
     cervicometria: cervicometriaDaTela(estado),
     doppler: dopplerDaTela(estado),
+    crescimento_fetal: crescimento,
   };
 
   return { dados, alteracoes: [], pendencias };

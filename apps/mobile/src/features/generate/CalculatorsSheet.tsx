@@ -9,6 +9,7 @@ export type CalcKey =
   | "ig"
   | "doppler"
   | "hadlock"
+  | "fetalGrowth"
   | "ila"
   | "anemia"
   | "ductoVenoso"
@@ -61,6 +62,13 @@ const SECTIONS: Section[] = [
         sub: "Estimativa por biometria + percentil (Hadlock 4, 1985)",
         Icon: Bar,
         color: "#6366F1",
+      },
+      {
+        key: "fetalGrowth",
+        label: "Crescimento fetal",
+        sub: "PIG · RCF · estágios de Gratacós (Barcelona 2024)",
+        Icon: Bar,
+        color: "#7C3AED",
       },
       {
         key: "ila",
