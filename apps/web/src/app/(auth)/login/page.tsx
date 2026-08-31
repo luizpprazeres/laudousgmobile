@@ -19,7 +19,9 @@ function LoginForm() {
   const [error, setError] = useState(
     searchParams.get('error') === 'link_invalido'
       ? 'O link expirou ou é inválido. Solicite um novo.'
-      : ''
+      : searchParams.get('error') === 'confirmacao_sem_sessao'
+        ? 'Seu email pode já estar confirmado. Tente entrar com o email e a senha que você acabou de criar.'
+        : ''
   )
 
   const handleLogin = async (e: React.FormEvent) => {

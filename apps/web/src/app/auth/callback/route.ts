@@ -17,5 +17,12 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // A confirmação do email pode ter sido concluída pelo Supabase mesmo quando
+  // a troca PKCE falha (por exemplo, link aberto em outro navegador/dispositivo).
+  // Nesse caso o usuário só precisa entrar com a senha recém-criada.
+  if (code) {
+    return NextResponse.redirect(`${origin}/login?error=confirmacao_sem_sessao`)
+  }
+
   return NextResponse.redirect(`${origin}/login?error=link_invalido`)
 }

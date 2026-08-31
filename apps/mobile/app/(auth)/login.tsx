@@ -79,7 +79,7 @@ export default function LoginScreen() {
 
   const trimmedEmail = email.trim();
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
-  const validPassword = password.length >= 6;
+  const validPassword = mode === "signin" ? password.length > 0 : password.length >= 8;
   const canSubmit = validEmail && validPassword && !busy;
 
   async function submit() {
@@ -88,16 +88,28 @@ export default function LoginScreen() {
     setError(null);
     setBusy(true);
     try {
-      const { error: authErr } =
+      const { data, error: authErr } =
         mode === "signin"
           ? await supabase.auth.signInWithPassword({
               email: trimmedEmail,
               password,
             })
-          : await supabase.auth.signUp({ email: trimmedEmail, password });
+          : await supabase.auth.signUp({
+              email: trimmedEmail,
+              password,
+              options: { emailRedirectTo: "laudousg://auth/callback" },
+            });
       if (authErr) throw authErr;
       haptic.success();
-      router.replace("/generate");
+      if (data.session) {
+        router.replace("/generate");
+      } else {
+        setMode("signin");
+        setPassword("");
+        setInfo(
+          `Conta criada. Confirme o link enviado para ${trimmedEmail} e depois entre com sua senha.`,
+        );
+      }
     } catch (e) {
       haptic.error();
       setError(humanizeAuthError(e));
@@ -119,6 +131,7 @@ export default function LoginScreen() {
     try {
       const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
         trimmedEmail,
+        { redirectTo: "laudousg://auth/reset-password" },
       );
       if (resetErr) throw resetErr;
       haptic.success();
@@ -326,7 +339,7 @@ function humanizeAuthError(e: unknown): string {
     lower.includes("password is too weak") ||
     lower.includes("weak password")
   ) {
-    return "Senha fraca: use ao menos 6 caracteres, combinando letras e números.";
+    return "Senha fraca: use ao menos 8 caracteres, combinando letras e números.";
   }
   if (lower.includes("same password") || lower.includes("new password should be different")) {
     return "A nova senha precisa ser diferente da anterior.";

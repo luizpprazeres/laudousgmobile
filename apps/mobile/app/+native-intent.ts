@@ -17,6 +17,12 @@ export function redirectSystemPath({
     if (path.includes(`dataUrl=${getShareExtensionKey()}`)) {
       return "/generate";
     }
+    if (path.startsWith("laudousg://auth/reset-password")) {
+      return "/(auth)/update-password";
+    }
+    if (path.startsWith("laudousg://auth/callback")) {
+      return "/";
+    }
   } catch (e) {
     console.warn("[mobile] redirect de share intent falhou:", e);
   }

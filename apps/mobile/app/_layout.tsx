@@ -1,6 +1,7 @@
 import { useEffect } from "react";
+import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { SystemBars } from "react-native-edge-to-edge";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -10,6 +11,8 @@ import { ShareIntentProvider } from "expo-share-intent";
 import { darkTokens, lightTokens } from "@/ui/tokens";
 import { LegalGate } from "@/features/legal/LegalGate";
 import { ThemeProvider, useTheme } from "@/ui/ThemeProvider";
+import { supabase } from "@/lib/supabase";
+import { parseAuthDeepLink } from "@/features/auth/deepLink";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* ignore */
@@ -47,6 +50,7 @@ export default function RootLayout() {
  * tema efetivo e o fundo das rotas usa os tokens ativos (dark mode universal).
  */
 function ThemedRoot() {
+  const router = useRouter();
   const { scheme } = useTheme();
   const t = scheme === "dark" ? darkTokens : lightTokens;
 
@@ -63,6 +67,32 @@ function ThemedRoot() {
       },
     ]).catch(() => undefined);
   }, []);
+  useEffect(() => {
+    let active = true;
+
+    const handle = async (url: string | null) => {
+      if (!url || !active) return;
+      const auth = parseAuthDeepLink(url);
+      if (!auth) return;
+      const { error } = await supabase.auth.setSession({
+        access_token: auth.accessToken,
+        refresh_token: auth.refreshToken,
+      });
+      if (error || !active) return;
+      router.replace(
+        auth.type === "recovery"
+          ? "/(auth)/update-password"
+          : "/generate",
+      );
+    };
+
+    void Linking.getInitialURL().then(handle);
+    const subscription = Linking.addEventListener("url", ({ url }) => void handle(url));
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [router]);
   return (
     <>
       {/* Edge-to-edge (C7): SystemBars substitui expo-status-bar — no
