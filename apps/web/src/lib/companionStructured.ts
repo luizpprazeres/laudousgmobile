@@ -177,6 +177,71 @@ export function applyCompanionThyroid(
 
 const clean = (value: unknown) => typeof value === 'string' ? value.trim() : ''
 
+type GestationalAge = { weeks: string; days: string }
+
+/**
+ * As telas dos aparelhos misturam mm/cm e g/kg. Os formulários da web usam
+ * somente o número na unidade indicada pelo próprio campo, então o Companion
+ * precisa converter antes de preencher. Sem isto, valores como `49.8 mm`
+ * chegavam ao formulário, mas o renderer os recusava como número inválido.
+ */
+function measurement(value: unknown, target: 'mm' | 'cm' | 'g' | 'index'): string {
+  const raw = clean(value).toLowerCase().replace(/\s+/g, '')
+  const match = raw.match(/[-+]?\d+(?:[.,]\d+)?/)
+  if (!match) return ''
+  let numeric = Number.parseFloat(match[0]!.replace(',', '.'))
+  if (!Number.isFinite(numeric)) return ''
+  if (target === 'g' && /^\d{1,2}\.\d{3}(?:g|gramas?)?$/.test(raw)) {
+    numeric = Number.parseInt(raw.replace(/\D/g, ''), 10)
+  }
+  if (target === 'mm' && raw.includes('cm')) numeric *= 10
+  if (target === 'cm' && raw.includes('mm')) numeric /= 10
+  if (target === 'g' && raw.includes('kg')) numeric *= 1000
+  const decimals = target === 'g' ? 0 : 2
+  const formatted = numeric.toFixed(decimals)
+  return (formatted.includes('.') ? formatted.replace(/0+$/, '').replace(/\.$/, '') : formatted).replace('.', ',')
+}
+
+function gestationalAge(value: unknown): GestationalAge | null {
+  const raw = clean(value).toLowerCase()
+  const match = raw.match(/(\d{1,2})\s*(?:s(?:emanas?)?|w(?:eeks?)?)?\s*(?:\+|e|,|\s)?\s*(\d)?\s*(?:d(?:ias?)?)?/)
+  if (!match?.[1]) return null
+  const weeks = Number(match[1])
+  const days = Number(match[2] ?? 0)
+  if (weeks < 4 || weeks > 45 || days < 0 || days > 6) return null
+  return { weeks: String(weeks), days: String(days) }
+}
+
+function biometricPatch(data: CompanionBiometricData, morphologic: boolean): OrganState {
+  const patch: OrganState = {}
+  const pairs: Array<[string, keyof CompanionBiometricData]> = [
+    ['dbp', 'dbp'], ['cc', 'cc'], ['ca', 'ca'],
+    [morphologic ? 'femur' : 'cf', 'cf'], ['peso', 'weight'],
+  ]
+  if (morphologic) pairs.push(
+    ['tibia', 'tibia'], ['fibula', 'fibula'], ['umero', 'humerus'],
+    ['radio', 'radius'], ['ulna', 'ulna'], ['cerebelo', 'cerebellum'],
+    ['cisterna', 'cisternaMagna'], ['binocular', 'binocularDistance'],
+  )
+  for (const [target, source] of pairs) {
+    const value = measurement(data[source], source === 'weight' ? 'g' : 'mm')
+    if (value) patch[target] = value
+  }
+  return patch
+}
+
+function gestationalAgePatch(data: CompanionBiometricData, dopplerOnly = false): OrganState | null {
+  const parsed = gestationalAge(
+    dopplerOnly
+      ? data.gestAge ?? data.gestAgeLMP ?? data.gestAgeBiometry
+      : data.gestAgeBiometry ?? data.gestAge,
+  )
+  if (!parsed) return null
+  return dopplerOnly
+    ? { ig_sem: parsed.weeks, ig_dias: parsed.days }
+    : { bio_sem: parsed.weeks, bio_dias: parsed.days }
+}
+
 function dopplerPatch(data: CompanionBiometricData, addon: boolean): OrganState | null {
   const prefix = addon ? 'realizado.sim.' : ''
   const pairs: Array<[string, keyof CompanionBiometricData]> = [
@@ -188,7 +253,7 @@ function dopplerPatch(data: CompanionBiometricData, addon: boolean): OrganState 
   ]
   const patch: OrganState = {}
   for (const [target, source] of pairs) {
-    const value = clean(data[source])
+    const value = measurement(data[source], 'index')
     if (value) patch[`${prefix}${target}`] = value
   }
   const right = Number.parseFloat(clean(data.ipRightUterine).replace(',', '.'))
@@ -209,38 +274,37 @@ export function applyCompanionStructured(
   const next: ExamState = { ...current }
   const mergeSection = (id: string, patch: OrganState | null) => {
     if (!patch) return
-    next[id] = { ...(current[id] ?? {}), ...patch }
+    next[id] = { ...(next[id] ?? {}), ...patch }
   }
 
   if (payload.category === 'OBSTETRICA') {
-    mergeSection('biometria', {
-      ...(clean(data.dbp) ? { dbp: clean(data.dbp) } : {}),
-      ...(clean(data.cc) ? { cc: clean(data.cc) } : {}),
-      ...(clean(data.ca) ? { ca: clean(data.ca) } : {}),
-      ...(clean(data.cf) ? { cf: clean(data.cf) } : {}),
-      ...(clean(data.weight) ? { peso: clean(data.weight) } : {}),
+    mergeSection('biometria', biometricPatch(data, false))
+    mergeSection('ig', gestationalAgePatch(data))
+    if (measurement(data.percentile, 'index')) mergeSection('crescimento_fetal', {
+      avaliar: 'sim',
+      'avaliar.sim.percentil': measurement(data.percentile, 'index'),
+      'avaliar.sim.fonte': 'outra',
+      'avaliar.sim.fonte_outra': 'informado pelo aparelho',
     })
     mergeSection('doppler', dopplerPatch(data, true))
   } else if (payload.category === 'MORFOLOGICO') {
-    mergeSection('biometria', {
-      ...(clean(data.dbp) ? { dbp: clean(data.dbp) } : {}),
-      ...(clean(data.cc) ? { cc: clean(data.cc) } : {}),
-      ...(clean(data.ca) ? { ca: clean(data.ca) } : {}),
-      ...(clean(data.cf) ? { femur: clean(data.cf) } : {}),
-      ...(clean(data.weight) ? { peso: clean(data.weight) } : {}),
-      ...(clean(data.tibia) ? { tibia: clean(data.tibia) } : {}),
-      ...(clean(data.fibula) ? { fibula: clean(data.fibula) } : {}),
-      ...(clean(data.humerus) ? { umero: clean(data.humerus) } : {}),
-      ...(clean(data.radius) ? { radio: clean(data.radius) } : {}),
-      ...(clean(data.ulna) ? { ulna: clean(data.ulna) } : {}),
-      ...(clean(data.cerebellum) ? { cerebelo: clean(data.cerebellum) } : {}),
-      ...(clean(data.cisternaMagna) ? { cisterna: clean(data.cisternaMagna) } : {}),
-      ...(clean(data.binocularDistance) ? { binocular: clean(data.binocularDistance) } : {}),
+    mergeSection('biometria', biometricPatch(data, true))
+    mergeSection('ig', gestationalAgePatch(data))
+    const ila = measurement(data.ila, 'cm')
+    if (ila) mergeSection('extrafetal', { ila })
+    const gender = clean(data.gender).toLowerCase()
+    if (/masculin/.test(gender)) mergeSection('anatomia', { genitalia: 'masculina' })
+    else if (/feminin/.test(gender)) mergeSection('anatomia', { genitalia: 'feminina' })
+    if (measurement(data.percentile, 'index')) mergeSection('crescimento_fetal', {
+      avaliar: 'sim',
+      'avaliar.sim.percentil': measurement(data.percentile, 'index'),
+      'avaliar.sim.fonte': 'outra',
+      'avaliar.sim.fonte_outra': 'informado pelo aparelho',
     })
-    if (clean(data.ila)) mergeSection('extrafetal', { ila: clean(data.ila) })
     mergeSection('doppler', dopplerPatch(data, true))
   } else if (payload.category === 'DOPPLER_OBSTETRICO') {
     mergeSection('doppler', dopplerPatch(data, false))
+    mergeSection('doppler', gestationalAgePatch(data, true))
   }
   return next
 }
