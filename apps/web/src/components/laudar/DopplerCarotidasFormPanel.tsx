@@ -29,6 +29,7 @@ export function DopplerCarotidasFormPanel({ section, state, onChange }: Props) {
   </div>
 
   const ids = Array.isArray(state.placas_ids) ? state.placas_ids as string[] : []
+  const conflicts = Array.isArray(state.companion_conflitos) ? state.companion_conflitos as string[] : []
   const addPlate = () => set('placas_ids', [...ids, crypto.randomUUID()])
   const removePlate = (id: string) => {
     const next: OrganState = { ...state, placas_ids: ids.filter((item) => item !== id) }
@@ -36,6 +37,7 @@ export function DopplerCarotidasFormPanel({ section, state, onChange }: Props) {
     onChange(next)
   }
   return <div className="space-y-3">
+    {conflicts.length ? <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"><strong>As imagens trouxeram valores diferentes.</strong><div className="mt-1">Revise e preencha manualmente: {conflicts.join(' · ')}</div></div> : null}
     <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <h3 className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500">Morfologia</h3>
       <Field label="Espessura médio-intimal (mm)" value={value(state, 'emi')} placeholder="0,7" onChange={(v) => set('emi', v)} />

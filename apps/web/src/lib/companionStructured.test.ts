@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { applyCompanionBreast, applyCompanionStructured, applyCompanionThyroid } from './companionStructured'
+import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid } from './companionStructured'
 import { initialTireoideState } from './deterministic/organs/tireoide'
 
 const obstetrica = applyCompanionStructured({}, {
@@ -49,5 +49,31 @@ assert.equal(mama.mamas?.achados_ids.length, 2)
 const firstBreastId = mama.mamas?.achados_ids[0]
 assert.equal(mama.mamas?.[`achados.${firstBreastId}.medidas`], '1.2 x 0.9 x 0.8')
 assert.equal(mama.mamas?.[`achados.${firstBreastId}.margem`], 'circunscrita')
+
+const carotidas = applyCompanionCarotids({}, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: {
+    carotidMeasurements: [
+      { side: 'direita', vessel: 'interna', psv: '82', vdf: '24', ir: '0.71' },
+      { side: 'direita', vessel: 'externa', psv: '90', vdf: '18' },
+      { side: 'esquerda', vessel: 'vertebral', psv: '41', flowDirection: 'anterogrado' },
+    ],
+    carotidPlaques: [{ side: 'direita', location: 'bulbo carotídeo', thickness: '2.1' }],
+  },
+})
+assert.equal(carotidas.direita?.interna_vps, '82')
+assert.equal(carotidas.direita?.externa_vdf, '18')
+assert.equal(carotidas.esquerda?.vertebral_direcao, 'anterogrado')
+assert.equal(carotidas.direita?.placas_ids.length, 1)
+
+const carotidasComConflito = applyCompanionCarotids({}, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: { carotidMeasurements: [
+    { side: 'direita', vessel: 'interna', psv: '82' },
+    { side: 'direita', vessel: 'interna', psv: '120' },
+  ] },
+})
+assert.equal(carotidasComConflito.direita?.interna_vps, undefined)
+assert.equal(carotidasComConflito.direita?.companion_conflitos.length, 1)
 
 console.log('companionStructured: ok')

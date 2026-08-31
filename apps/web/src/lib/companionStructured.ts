@@ -25,18 +25,69 @@ export type CompanionBreastFinding = {
   shape?: string; margin?: string; orientation?: string; posterior?: string
   calcifications?: string
 }
+export type CompanionCarotidMeasurement = {
+  side: 'direita' | 'esquerda'; vessel: 'comum' | 'interna' | 'externa' | 'vertebral'
+  psv?: string; vdf?: string; ir?: string; emi?: string
+  flowDirection?: 'anterogrado' | 'retrogrado' | 'ausente'
+}
+export type CompanionCarotidPlaque = {
+  side: 'direita' | 'esquerda'; location?: string; thickness?: string; stenosisPercent?: string
+}
 export type CompanionBiometricData = Partial<Record<ObstetricField, string>> & {
   thyroidRightLobe?: CompanionThyroidMeasurements
   thyroidLeftLobe?: CompanionThyroidMeasurements
   thyroidIsthmus?: CompanionThyroidMeasurements
   thyroidNodules?: CompanionThyroidNodule[]
   breastFindings?: CompanionBreastFinding[]
+  carotidMeasurements?: CompanionCarotidMeasurement[]
+  carotidPlaques?: CompanionCarotidPlaque[]
 }
 
 export type CompanionStructuredPayload = {
-  category: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE' | 'MAMARIA'
+  category: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE' | 'MAMARIA' | 'DOPPLER_CAROTIDAS'
   data: CompanionBiometricData
   summary?: string
+}
+
+export function applyCompanionCarotids(current: ExamState, payload: CompanionStructuredPayload): ExamState {
+  if (payload.category !== 'DOPPLER_CAROTIDAS') return current
+  const next: ExamState = { ...current }
+  for (const side of ['direita', 'esquerda'] as const) {
+    const section: OrganState = { ...(current[side] ?? {}) }
+    const conflicts: string[] = []
+    const measurements = (payload.data.carotidMeasurements ?? []).filter((item) => item.side === side)
+    const applyUnique = (target: string, values: unknown[]) => {
+      const distinct = [...new Set(values.map(clean).filter(Boolean))]
+      if (distinct.length === 1) section[target] = distinct[0]!
+      else if (distinct.length > 1) conflicts.push(`${target}: ${distinct.join(' / ')}`)
+    }
+    for (const vessel of ['comum', 'interna', 'externa', 'vertebral'] as const) {
+      const rows = measurements.filter((item) => item.vessel === vessel)
+      if (vessel === 'vertebral') {
+        applyUnique('vertebral_vps', rows.map((item) => item.psv))
+        applyUnique('vertebral_direcao', rows.map((item) => item.flowDirection))
+      } else {
+        applyUnique(`${vessel}_vps`, rows.map((item) => item.psv))
+        applyUnique(`${vessel}_vdf`, rows.map((item) => item.vdf))
+      }
+    }
+    applyUnique('emi', measurements.map((item) => item.emi))
+    const ids = Array.isArray(section.placas_ids) ? [...section.placas_ids] : []
+    const known = new Set(ids.map((id) => `${section[`placas.${id}.localizacao`]}|${section[`placas.${id}.espessura`]}|${section[`placas.${id}.estenose`]}`))
+    for (const plaque of (payload.data.carotidPlaques ?? []).filter((item) => item.side === side)) {
+      const signature = `${clean(plaque.location)}|${clean(plaque.thickness)}|${clean(plaque.stenosisPercent)}`
+      if (known.has(signature) || signature === '||') continue
+      known.add(signature)
+      const id = crypto.randomUUID(); ids.push(id)
+      if (clean(plaque.location)) section[`placas.${id}.localizacao`] = clean(plaque.location)
+      if (clean(plaque.thickness)) section[`placas.${id}.espessura`] = clean(plaque.thickness)
+      if (clean(plaque.stenosisPercent)) section[`placas.${id}.estenose`] = clean(plaque.stenosisPercent)
+    }
+    section.placas_ids = ids
+    section.companion_conflitos = conflicts
+    next[side] = section
+  }
+  return next
 }
 
 export function applyCompanionBreast(current: ExamState, payload: CompanionStructuredPayload): ExamState {

@@ -36,7 +36,7 @@ import { categoryCompactName, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
 import { CompanionPanel } from './CompanionPanel'
 import { diffReportBlocks } from './reportSuggestion'
-import { applyCompanionBreast, applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
+import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
@@ -782,6 +782,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             setExamStates((all) => ({ ...all, MAMARIA: applyCompanionBreast(all.MAMARIA ?? {}, payload) }))
             setCategoria('MAMARIA')
             setActiveByCat((all) => ({ ...all, MAMARIA: 'mamas' }))
+            return
+          }
+          if (payload.category === 'DOPPLER_CAROTIDAS') {
+            setExamStates((all) => ({ ...all, DOPPLER_CAROTIDAS: applyCompanionCarotids(all.DOPPLER_CAROTIDAS ?? {}, payload) }))
+            setCategoria('DOPPLER_CAROTIDAS')
+            setActiveByCat((all) => ({ ...all, DOPPLER_CAROTIDAS: 'direita' }))
             return
           }
           setExamStates((all) => ({

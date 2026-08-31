@@ -67,8 +67,8 @@ para cada medida.
 - [x] Os dois estilos produzem laudos coerentes e sem placeholders vazios.
 - [x] Mais de uma placa pode ser registrada no mesmo lado.
 - [x] Android e iOS extraem e revisam medidas de até três imagens.
-- [ ] A web aplica apenas campos confirmados pelo usuário.
-- [ ] Dados conflitantes são sinalizados, não sobrescritos silenciosamente.
+- [x] A web aplica apenas campos confirmados pelo usuário.
+- [x] Dados conflitantes são sinalizados, não sobrescritos silenciosamente.
 - [ ] Teste com imagens reais documenta acertos, lacunas e conflitos.
 - [ ] Produção web e TestFlight publicados.
 
@@ -86,6 +86,8 @@ para cada medida.
 - `apps/web/src/lib/catalog/migradas.ts`
 - `apps/web/src/components/laudar/DopplerCarotidasFormPanel.tsx`
 - `apps/web/src/components/laudar/LaudarWebExperience.tsx`
+- `apps/web/src/lib/companionStructured.ts`
+- `apps/web/src/lib/companionStructured.test.ts`
 - `apps/api/src/server/vision/types.ts`
 - `apps/api/src/server/vision/client.ts`
 - `apps/api/src/server/vision/extractor.ts`
