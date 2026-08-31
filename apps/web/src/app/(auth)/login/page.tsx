@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import LaudoUSGLogo from '@/components/LaudoUSGLogo'
+import { loginErrorCode, loginErrorMessage, safeAuthRedirect } from '@/lib/auth/authPresentation'
 
 function LoginForm() {
   const searchParams = useSearchParams()
@@ -15,7 +16,9 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const redirectTo = searchParams.get('redirect') ?? '/app/gerar'
+  const redirectTo = safeAuthRedirect(searchParams.get('redirect'))
+  const [canResendConfirmation, setCanResendConfirmation] = useState(false)
+  const [info, setInfo] = useState('')
   const [error, setError] = useState(
     searchParams.get('error') === 'link_invalido'
       ? 'O link expirou ou é inválido. Solicite um novo.'
@@ -28,6 +31,8 @@ function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setInfo('')
+    setCanResendConfirmation(false)
 
     let supabase
     try {
@@ -38,26 +43,42 @@ function LoginForm() {
       return
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    let error
+    try {
+      ;({ error } = await supabase.auth.signInWithPassword({ email: email.trim(), password }))
+    } catch (caught) {
+      setError(loginErrorMessage({ code: 'network_error', name: caught instanceof Error ? caught.name : 'NetworkError' }))
+      setLoading(false)
+      return
+    }
 
     if (error) {
-      const AUTH_ERROR_MESSAGES: Record<string, string> = {
-        'Invalid login credentials': 'Email ou senha incorretos.',
-        'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
-        'User not found': 'Nenhuma conta encontrada com este email.',
-        over_request_rate_limit: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-        signup_disabled: 'Login temporariamente indisponível.',
-      }
-      const friendlyMessage =
-        AUTH_ERROR_MESSAGES[error.message] ??
-        Object.entries(AUTH_ERROR_MESSAGES).find(([key]) => error.message.includes(key))?.[1] ??
-        'Ocorreu um erro. Tente novamente.'
-      setError(friendlyMessage)
+      setError(loginErrorMessage(error))
+      setCanResendConfirmation(loginErrorCode(error) === 'email_not_confirmed')
       setLoading(false)
       return
     }
 
     window.location.href = redirectTo
+  }
+
+  const resendConfirmation = async () => {
+    setLoading(true); setError(''); setInfo('')
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}` },
+      })
+      if (error) throw error
+      setInfo('Enviamos uma nova confirmação. Confira também a caixa de spam.')
+      setCanResendConfirmation(false)
+    } catch (caught) {
+      setError(loginErrorMessage(caught instanceof Error ? caught : {}))
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -111,6 +132,8 @@ function LoginForm() {
             {error}
           </div>
         )}
+        {canResendConfirmation ? <button type="button" disabled={loading} onClick={resendConfirmation} className="w-full text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:opacity-50 dark:text-emerald-400">Reenviar confirmação</button> : null}
+        {info ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">{info}</div> : null}
 
         <button
           type="submit"

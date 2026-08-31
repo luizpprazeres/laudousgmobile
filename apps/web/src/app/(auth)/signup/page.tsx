@@ -13,11 +13,12 @@ import {
   criarReferenciaDeCadastro,
   type SignupErrorLike,
 } from '@/lib/auth/signupErrors'
+import { safeAuthRedirect } from '@/lib/auth/authPresentation'
 
 function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') ?? '/app/gerar'
+  const redirectTo = safeAuthRedirect(searchParams.get('redirect'))
   // plan vem de /precos (?plan=essencial|profissional) — usado no checkout (S5).
   const plan = searchParams.get('plan')
   const next = plan ? `${redirectTo}?plan=${plan}` : redirectTo
