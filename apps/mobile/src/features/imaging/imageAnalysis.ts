@@ -13,6 +13,7 @@ export const SUPPORTED_IMAGING_CATEGORIES = [
   "DOPPLER_OBSTETRICO",
   "MORFOLOGICO",
   "TIREOIDE",
+  "MAMARIA",
 ] as const;
 
 export type ImagingCategory = (typeof SUPPORTED_IMAGING_CATEGORIES)[number];
@@ -56,6 +57,7 @@ export type BiometricData = {
   thyroidLeftLobe?: ThyroidMeasurements;
   thyroidIsthmus?: ThyroidMeasurements;
   thyroidNodules?: ThyroidNodule[];
+  breastFindings?: BreastFinding[];
 };
 
 export type ThyroidMeasurements = { a?: string; b?: string; c?: string };
@@ -64,6 +66,14 @@ export type ThyroidNodule = {
   c1?: string; c2?: string; c3?: string; location?: string;
   echogenicity?: string; margin?: string; halo?: string; shape?: string;
   calcifications?: string; vascularization?: string;
+};
+export type BreastFinding = {
+  side: "direita" | "esquerda";
+  type: "cisto_simples" | "multiplos_cistos" | "nodulo" | "calcificacoes";
+  c1?: string; c2?: string; c3?: string; location?: string; hour?: string;
+  distanceSkin?: string; distanceNipple?: string; echogenicity?: string;
+  shape?: string; margin?: string; orientation?: string; posterior?: string;
+  calcifications?: string;
 };
 
 type AnalyzeResponse = {
@@ -147,6 +157,16 @@ export function mergeBiometric(results: BiometricData[]): BiometricData {
         out.thyroidNodules = existing;
         return;
       }
+      if (k === "breastFindings" && next.breastFindings) {
+        const existing = out.breastFindings ?? [];
+        const seen = new Set(existing.map((f) => `${f.side}|${f.type}|${f.c1}|${f.c2}|${f.c3}|${f.location ?? ""}|${f.hour ?? ""}`));
+        for (const finding of next.breastFindings) {
+          const id = `${finding.side}|${finding.type}|${finding.c1}|${finding.c2}|${finding.c3}|${finding.location ?? ""}|${finding.hour ?? ""}`;
+          if (!seen.has(id)) { existing.push(finding); seen.add(id); }
+        }
+        out.breastFindings = existing;
+        return;
+      }
       if (out[k] === undefined && next[k] !== undefined) {
         (out as unknown as Record<string, unknown>)[k] = next[k];
       }
@@ -183,6 +203,15 @@ export function formatBiometric(
     });
     if (nodules.length) sections.push("Nódulos:\n" + nodules.join("\n"));
     return sections.join("\n\n");
+  }
+
+  if (category === "MAMARIA") {
+    return (m.breastFindings ?? []).map((finding, index) => {
+      const dimensions = [finding.c1, finding.c2, finding.c3].filter(Boolean).join(" x ");
+      const details = [dimensions ? `${dimensions} cm` : "", finding.location ?? "", finding.hour ?? ""].filter(Boolean).join(" · ");
+      const type = finding.type === "nodulo" ? "Nódulo" : finding.type === "cisto_simples" ? "Cisto simples" : finding.type === "multiplos_cistos" ? "Cistos múltiplos" : "Calcificações";
+      return `${index + 1}. ${type} — mama ${finding.side}${details ? `: ${details}` : ""}`;
+    }).join("\n");
   }
 
   const biometria = rows([

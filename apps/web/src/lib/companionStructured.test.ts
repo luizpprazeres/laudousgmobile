@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { applyCompanionStructured, applyCompanionThyroid } from './companionStructured'
+import { applyCompanionBreast, applyCompanionStructured, applyCompanionThyroid } from './companionStructured'
 import { initialTireoideState } from './deterministic/organs/tireoide'
 
 const obstetrica = applyCompanionStructured({}, {
@@ -37,5 +37,17 @@ assert.deepEqual(tireoide.lobo_direito, { a: '4.2', b: '1.6', c: '1.8', ecotextu
 assert.equal(tireoide.nodulos.length, 1)
 assert.equal(tireoide.nodulos[0]?.ecogenicidade, 'hipoecoica')
 assert.equal(tireoide.nodulos[0]?.margem, 'regular')
+
+const mama = applyCompanionBreast({ mamas: { fundo: 'heterogeneo', achados_ids: [] } }, {
+  category: 'MAMARIA',
+  data: { breastFindings: [
+    { side: 'direita', type: 'nodulo', c1: '1.2', c2: '0.9', c3: '0.8', margin: 'circunscrita' },
+    { side: 'direita', type: 'cisto_simples', c1: '0.6', c2: '0.5', c3: '0.4' },
+  ] },
+})
+assert.equal(mama.mamas?.achados_ids.length, 2)
+const firstBreastId = mama.mamas?.achados_ids[0]
+assert.equal(mama.mamas?.[`achados.${firstBreastId}.medidas`], '1.2 x 0.9 x 0.8')
+assert.equal(mama.mamas?.[`achados.${firstBreastId}.margem`], 'circunscrita')
 
 console.log('companionStructured: ok')

@@ -14,7 +14,7 @@ export type CompanionEvent = {
   kind: string
   payload: {
     text?: string
-    category?: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE'
+    category?: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE' | 'MAMARIA'
     data?: Record<string, unknown>
     summary?: string
   }

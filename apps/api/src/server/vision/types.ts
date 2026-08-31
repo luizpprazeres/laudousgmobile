@@ -3,7 +3,7 @@
  * Port do laudousg/lib/types.ts — categorias suportadas e schema BiometricData.
  */
 
-export type Category = "OBSTETRICA" | "DOPPLER_OBSTETRICO" | "MORFOLOGICO" | "TIREOIDE";
+export type Category = "OBSTETRICA" | "DOPPLER_OBSTETRICO" | "MORFOLOGICO" | "TIREOIDE" | "MAMARIA";
 export type ImagingModule = "DOPPLER_OBSTETRICO";
 
 export const SUPPORTED_IMAGING_CATEGORIES: Category[] = [
@@ -11,6 +11,7 @@ export const SUPPORTED_IMAGING_CATEGORIES: Category[] = [
   "DOPPLER_OBSTETRICO",
   "MORFOLOGICO",
   "TIREOIDE",
+  "MAMARIA",
 ];
 
 export type ThyroidLobe = "lobo_direito" | "lobo_esquerdo" | "istmo";
@@ -33,6 +34,24 @@ export interface ThyroidNodule {
   shape?: string;
   calcifications?: string;
   vascularization?: string;
+}
+
+export interface BreastFinding {
+  side: "direita" | "esquerda";
+  type: "cisto_simples" | "multiplos_cistos" | "nodulo" | "calcificacoes";
+  c1?: string;
+  c2?: string;
+  c3?: string;
+  location?: string;
+  hour?: string;
+  distanceSkin?: string;
+  distanceNipple?: string;
+  echogenicity?: string;
+  shape?: string;
+  margin?: string;
+  orientation?: string;
+  posterior?: string;
+  calcifications?: string;
 }
 
 export interface BiometricData {
@@ -77,4 +96,7 @@ export interface BiometricData {
   thyroidLeftLobe?: ThyroidMeasurements;
   thyroidIsthmus?: ThyroidMeasurements;
   thyroidNodules?: ThyroidNodule[];
+
+  // Mamas — múltiplos achados, sem classificação BI-RADS automática pela visão.
+  breastFindings?: BreastFinding[];
 }

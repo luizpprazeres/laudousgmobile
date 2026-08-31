@@ -160,6 +160,68 @@ function acharNaMama(
   };
 }
 
+/**
+ * Estado novo da tela: cada achado tem id próprio e pode coexistir com outros
+ * na mesma mama. O formato achatado mantém compatibilidade com o motor genérico
+ * e com os rascunhos antigos, sem serializar objetos dentro de inputs.
+ */
+function acharPorId(
+  s: EstadoDaSecao,
+  id: string,
+  pendencias: Pendencia[],
+): Achado | null {
+  const base = `achados.${id}`;
+  const tipoTela = texto(s, `${base}.tipo`);
+  const lado = texto(s, `${base}.lado`);
+  if (!tipoTela || (lado !== "direita" && lado !== "esquerda")) {
+    pendencias.push({
+      onde: `achado ${id}`,
+      valor: tipoTela || lado || "incompleto",
+      motivo: "todo achado mamário precisa de tipo e lado antes de entrar no laudo",
+      bloqueia: true,
+    });
+    return null;
+  }
+
+  const tipo = TIPO_PARA_CANONICO[tipoTela];
+  if (!tipo) {
+    pendencias.push({
+      onde: `mama ${lado}`,
+      valor: tipoTela,
+      motivo: "este tipo de achado não existe no catálogo canônico",
+      bloqueia: true,
+    });
+    return null;
+  }
+
+  const sub = (k: string) => texto(s, `${base}.${k}`);
+  const calcSub = sub("calc_sub");
+  return {
+    tipo,
+    lado,
+    ecogenicidade: sub("eco") || null,
+    forma: sub("forma") || null,
+    orientacao: sub("orientacao") || null,
+    margem: sub("margem") || null,
+    posterior: sub("posterior") || null,
+    calcificacoes: calcSub
+      ? (CALC_PARA_CANONICO[calcSub] ?? null)
+      : marcado(s, `${base}.calc`, "microcalc")
+        ? "microcalcificacoes"
+        : null,
+    elasticidade: null,
+    descritores: null,
+    medidas_cm: medidas(sub("medidas")),
+    medida_invalida: null,
+    localizacao: sub("local") || null,
+    horario: sub("horario") || null,
+    dist_pele_cm: medidas(sub("dist_pele"))?.[0] ?? null,
+    dist_mamilo_cm: medidas(sub("dist_mamilo"))?.[0] ?? null,
+    descricao_nao_nodular: null,
+    birads_ditado: sub("birads") || null,
+  };
+}
+
 export type Adaptacao = {
   dados: Record<string, unknown>;
   alteracoes: string[];
@@ -171,10 +233,16 @@ export function adaptarMamaria(estado: EstadoDaMama): Adaptacao {
   const m = secao(estado, "mamas");
   const ax = secao(estado, "axilas");
 
-  const achados = [
-    acharNaMama(m, "md", "direita", pendencias),
-    acharNaMama(m, "me", "esquerda", pendencias),
-  ].filter((a): a is Achado => a !== null);
+  const ids = Array.isArray(m.achados_ids)
+    ? m.achados_ids.filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
+  const achados = (ids.length > 0
+    ? ids.map((id) => acharPorId(m, id, pendencias))
+    : [
+        acharNaMama(m, "md", "direita", pendencias),
+        acharNaMama(m, "me", "esquerda", pendencias),
+      ]
+  ).filter((a): a is Achado => a !== null);
 
   const axilas = texto(ax, "axilas") || "nao";
 

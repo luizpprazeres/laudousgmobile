@@ -35,11 +35,12 @@ import { categoryCompactName, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
 import { CompanionPanel } from './CompanionPanel'
 import { diffReportBlocks } from './reportSuggestion'
-import { applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
+import { applyCompanionBreast, applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
 import { TireoideFormPanel } from './TireoideFormPanel'
+import { MamariaFormPanel } from './MamariaFormPanel'
 
 const TIREOIDE_ID = 'TIREOIDE'
 type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
@@ -639,6 +640,16 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   state={tireoideState}
                   onChange={setTireoideState}
                 />
+              ) : categoria === 'MAMARIA' && activeSection?.id === 'mamas' ? (
+                <MamariaFormPanel
+                  state={examState?.mamas ?? activeSection.module?.initialState() ?? { fundo: 'heterogeneo', achados_ids: [] }}
+                  onChange={(nextState) =>
+                    setExamStates((all) => ({
+                      ...all,
+                      [categoria]: { ...all[categoria], mamas: nextState },
+                    }))
+                  }
+                />
               ) : activeSection?.module ? (
                 <OrganFormPanel
                   schema={activeSection.module.schema}
@@ -749,6 +760,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             setTireoideState((state) => applyCompanionThyroid(state, payload))
             setCategoria(TIREOIDE_ID)
             setActiveByCat((all) => ({ ...all, [TIREOIDE_ID]: payload.data.thyroidNodules?.length ? 'nodulos' : 'lobo_direito' }))
+            return
+          }
+          if (payload.category === 'MAMARIA') {
+            setExamStates((all) => ({ ...all, MAMARIA: applyCompanionBreast(all.MAMARIA ?? {}, payload) }))
+            setCategoria('MAMARIA')
+            setActiveByCat((all) => ({ ...all, MAMARIA: 'mamas' }))
             return
           }
           setExamStates((all) => ({

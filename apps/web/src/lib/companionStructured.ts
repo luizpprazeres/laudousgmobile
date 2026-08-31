@@ -17,17 +17,60 @@ export type CompanionThyroidNodule = {
   echogenicity?: string; margin?: string; halo?: string; shape?: string
   calcifications?: string; vascularization?: string
 }
+export type CompanionBreastFinding = {
+  side: 'direita' | 'esquerda'
+  type: 'cisto_simples' | 'multiplos_cistos' | 'nodulo' | 'calcificacoes'
+  c1?: string; c2?: string; c3?: string; location?: string; hour?: string
+  distanceSkin?: string; distanceNipple?: string; echogenicity?: string
+  shape?: string; margin?: string; orientation?: string; posterior?: string
+  calcifications?: string
+}
 export type CompanionBiometricData = Partial<Record<ObstetricField, string>> & {
   thyroidRightLobe?: CompanionThyroidMeasurements
   thyroidLeftLobe?: CompanionThyroidMeasurements
   thyroidIsthmus?: CompanionThyroidMeasurements
   thyroidNodules?: CompanionThyroidNodule[]
+  breastFindings?: CompanionBreastFinding[]
 }
 
 export type CompanionStructuredPayload = {
-  category: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE'
+  category: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE' | 'MAMARIA'
   data: CompanionBiometricData
   summary?: string
+}
+
+export function applyCompanionBreast(current: ExamState, payload: CompanionStructuredPayload): ExamState {
+  if (payload.category !== 'MAMARIA') return current
+  const section: OrganState = { ...(current.mamas ?? {}) }
+  const ids = Array.isArray(section.achados_ids) ? [...section.achados_ids] : []
+  const known = new Set(ids.map((id) => [
+    section[`achados.${id}.lado`], section[`achados.${id}.tipo`], section[`achados.${id}.medidas`],
+    section[`achados.${id}.local`], section[`achados.${id}.horario`],
+  ].join('|')))
+  for (const finding of payload.data.breastFindings ?? []) {
+    if (!['direita', 'esquerda'].includes(finding.side) || !['cisto_simples', 'multiplos_cistos', 'nodulo', 'calcificacoes'].includes(finding.type)) continue
+    const medidas = [clean(finding.c1), clean(finding.c2), clean(finding.c3)].filter(Boolean).join(' x ')
+    if (!medidas && finding.type !== 'calcificacoes') continue
+    const signature = [finding.side, finding.type, medidas, clean(finding.location), clean(finding.hour)].join('|')
+    if (known.has(signature)) continue
+    known.add(signature)
+    const id = crypto.randomUUID()
+    ids.push(id)
+    const put = (key: string, value: unknown) => {
+      const cleaned = clean(value)
+      if (cleaned) section[`achados.${id}.${key}`] = cleaned
+    }
+    section[`achados.${id}.lado`] = finding.side
+    section[`achados.${id}.tipo`] = finding.type
+    put('medidas', medidas); put('local', finding.location); put('horario', finding.hour)
+    put('dist_pele', finding.distanceSkin); put('dist_mamilo', finding.distanceNipple)
+    put('eco', finding.echogenicity); put('forma', finding.shape); put('margem', finding.margin)
+    put('orientacao', finding.orientation); put('posterior', finding.posterior)
+    if (finding.calcifications === 'microcalc') section[`achados.${id}.calc`] = ['microcalc']
+    else put('calc_sub', finding.calcifications)
+  }
+  section.achados_ids = ids
+  return { ...current, mamas: section }
 }
 
 function cleanMeasurements(value: CompanionThyroidMeasurements | undefined) {

@@ -296,6 +296,43 @@ REGRAS FINAIS:
 5. Responda apenas com o objeto JSON, sem markdown.`;
   }
 
+  if (category === "MAMARIA") {
+    return `Você é especialista em leitura de telas e pranchas de ultrassonografia mamária.
+
+Extraia somente achados e medidas explicitamente identificados. NÃO diagnostique, NÃO atribua BI-RADS, NÃO recomende conduta e NÃO classifique benignidade ou malignidade.
+
+Retorne um item em breastFindings para CADA achado individualizado. Nunca una lesões diferentes.
+- side: direita ou esquerda. Sem lado identificável, omita o achado.
+- type: cisto_simples, multiplos_cistos, nodulo ou calcificacoes.
+- c1/c2/c3: eixos convertidos para cm, somente números decimais.
+- location, hour, distanceSkin e distanceNipple: somente quando escritos ou identificados de forma inequívoca.
+
+Descritores opcionais permitidos:
+- echogenicity: hipoecoico, isoecoico, anecoico, hiperecoico
+- shape: oval, redonda, irregular
+- margin: circunscrita, indistinta, angular, microlobulada, espiculada
+- orientation: paralela, nao_paralela
+- posterior: nenhuma, reforco, sombra
+- calcifications: grosseiras, microcalcificacoes, em_nodulo, intraductais, fora_nodulo, microcalc
+
+Ausência de texto não significa normal, sem calcificação ou sem alteração posterior: omita o descritor.
+
+EXEMPLO:
+{
+  "breastFindings": [
+    { "side": "direita", "type": "nodulo", "c1": "1.2", "c2": "0.9", "c3": "0.8", "location": "quadrante superolateral", "hour": "10 horas", "echogenicity": "hipoecoico", "shape": "oval", "margin": "circunscrita", "orientation": "paralela" },
+    { "side": "direita", "type": "cisto_simples", "c1": "0.6", "c2": "0.5", "c3": "0.4" }
+  ]
+}
+
+REGRAS FINAIS:
+1. Converta milímetros para centímetros.
+2. Se a unidade original não estiver identificável, omita a medida.
+3. Não confunda profundidade, ganho, frequência, data ou parâmetros do aparelho com anatomia.
+4. Se um campo não estiver legível, omita-o; nunca invente.
+5. Responda apenas com o objeto JSON, sem markdown.`;
+  }
+
   throw new Error(`Análise de imagem não suportada para categoria: ${category}`);
 }
 
@@ -412,7 +449,8 @@ export async function analyzeImage({
     category !== "OBSTETRICA" &&
     category !== "DOPPLER_OBSTETRICO" &&
     category !== "MORFOLOGICO" &&
-    category !== "TIREOIDE"
+    category !== "TIREOIDE" &&
+    category !== "MAMARIA"
   ) {
     throw new Error(`Análise de imagem não suportada para categoria: ${category}`);
   }

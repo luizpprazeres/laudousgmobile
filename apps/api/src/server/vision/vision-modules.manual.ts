@@ -64,5 +64,18 @@ check("tireoide preserva lobos de imagens diferentes", thyroidMerged.thyroidLeft
 check("nódulo sem lado conhecido é recusado", thyroidMerged.thyroidNodules?.length === 2);
 check("descritores permitidos sobrevivem", thyroidMerged.thyroidNodules?.[0]?.echogenicity === "hipoecoica" && thyroidMerged.thyroidNodules?.[0]?.margin === "regular");
 
+const breastA = validateBiometricData({ breastFindings: [
+  { side: "direita", type: "nodulo", c1: "12 mm", c2: "0.9 cm", c3: "8 mm", margin: "circunscrita" },
+  { side: "direita", type: "cisto_simples", c1: "0.6", c2: "0.5", c3: "0.4" },
+  { side: "desconhecida", type: "nodulo", c1: "1.5" },
+] }, "MAMARIA");
+const breastB = validateBiometricData({ breastFindings: [
+  { side: "esquerda", type: "nodulo", c1: "0.8", c2: "0.7", shape: "irregular" },
+] }, "MAMARIA");
+const breastMerged = mergeBiometricData([breastA, breastB]);
+check("mama preserva múltiplos achados e converte mm", breastMerged.breastFindings?.length === 3 && breastMerged.breastFindings[0]?.c1 === "1.2");
+check("achado mamário sem lado é recusado", breastMerged.breastFindings?.every((finding) => finding.side === "direita" || finding.side === "esquerda") === true);
+check("visão mamária não cria BI-RADS", breastMerged.breastFindings?.every((finding) => !("birads" in finding)) === true);
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

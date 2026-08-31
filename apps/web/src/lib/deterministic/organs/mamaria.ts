@@ -278,8 +278,7 @@ const schema: OrganSchema = {
 function initialState(): OrganState {
   return {
     fundo: 'heterogeneo',
-    md_tipo: 'nenhum',
-    me_tipo: 'nenhum',
+    achados_ids: [],
   }
 }
 

@@ -3,7 +3,7 @@
  * Port 1:1 do laudousg/lib/vision/extractor.ts.
  */
 
-import type { BiometricData, Category, ThyroidMeasurements, ThyroidNodule } from "./types";
+import type { BiometricData, BreastFinding, Category, ThyroidMeasurements, ThyroidNodule } from "./types";
 
 const THYROID_VALUES = {
   lobe: new Set(["lobo_direito", "lobo_esquerdo", "istmo"]),
@@ -13,6 +13,17 @@ const THYROID_VALUES = {
   shape: new Set(["mais_larga_que_alta", "mais_alta_que_larga"]),
   calcifications: new Set(["sem", "casca_ovo", "grosseiras", "micro"]),
   vascularization: new Set(["sem", "periferica", "periferica_maior_central", "central_maior_periferica", "exclusiva_central"]),
+} as const;
+
+const BREAST_VALUES = {
+  side: new Set(["direita", "esquerda"]),
+  type: new Set(["cisto_simples", "multiplos_cistos", "nodulo", "calcificacoes"]),
+  echogenicity: new Set(["hipoecoico", "isoecoico", "anecoico", "hiperecoico"]),
+  shape: new Set(["oval", "redonda", "irregular"]),
+  margin: new Set(["circunscrita", "indistinta", "angular", "microlobulada", "espiculada"]),
+  orientation: new Set(["paralela", "nao_paralela"]),
+  posterior: new Set(["nenhuma", "reforco", "sombra"]),
+  calcifications: new Set(["grosseiras", "microcalcificacoes", "em_nodulo", "intraductais", "fora_nodulo", "microcalc"]),
 } as const;
 
 function thyroidValue(value: unknown, allowed: ReadonlySet<string>): string | undefined {
@@ -63,6 +74,34 @@ function thyroidNodules(value: unknown): ThyroidNodule[] | undefined {
     return nodule.c1 || nodule.c2 || nodule.c3 ? [nodule] : [];
   });
   return result.length ? result.slice(0, 12) : undefined;
+}
+
+function breastFindings(value: unknown): BreastFinding[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const result = value.flatMap((entry): BreastFinding[] => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const row = entry as Record<string, unknown>;
+    const side = thyroidValue(row.side, BREAST_VALUES.side);
+    const type = thyroidValue(row.type, BREAST_VALUES.type);
+    if (!side || !type) return [];
+    const finding: BreastFinding = {
+      side: side as BreastFinding["side"],
+      type: type as BreastFinding["type"],
+      c1: positiveCm(row.c1), c2: positiveCm(row.c2), c3: positiveCm(row.c3),
+      location: typeof row.location === "string" ? row.location.trim().slice(0, 120) || undefined : undefined,
+      hour: typeof row.hour === "string" ? row.hour.trim().slice(0, 30) || undefined : undefined,
+      distanceSkin: positiveCm(row.distanceSkin),
+      distanceNipple: positiveCm(row.distanceNipple),
+      echogenicity: thyroidValue(row.echogenicity, BREAST_VALUES.echogenicity),
+      shape: thyroidValue(row.shape, BREAST_VALUES.shape),
+      margin: thyroidValue(row.margin, BREAST_VALUES.margin),
+      orientation: thyroidValue(row.orientation, BREAST_VALUES.orientation),
+      posterior: thyroidValue(row.posterior, BREAST_VALUES.posterior),
+      calcifications: thyroidValue(row.calcifications, BREAST_VALUES.calcifications),
+    };
+    return finding.c1 || finding.c2 || finding.c3 || finding.type === "calcificacoes" ? [finding] : [];
+  });
+  return result.length ? result.slice(0, 20) : undefined;
 }
 
 /** Campos IR/IP Doppler — usados no merge inteligente do módulo especializado. */
@@ -189,6 +228,8 @@ export function validateBiometricData(
     result.thyroidNodules = thyroidNodules(data.thyroidNodules);
   }
 
+  if (category === "MAMARIA") result.breastFindings = breastFindings(data.breastFindings);
+
   // Remove undefined keys
   for (const key of Object.keys(result) as (keyof BiometricData)[]) {
     if (result[key] === undefined) delete result[key];
@@ -223,6 +264,16 @@ export function mergeBiometricData(
             if (!seen.has(id)) { existing.push(nodule); seen.add(id); }
           }
           merged.thyroidNodules = existing;
+          continue;
+        }
+        if (key === "breastFindings" && Array.isArray(value)) {
+          const existing = merged.breastFindings ?? [];
+          const seen = new Set(existing.map((f) => `${f.side}|${f.type}|${f.c1}|${f.c2}|${f.c3}|${f.location ?? ""}|${f.hour ?? ""}`));
+          for (const finding of value) {
+            const id = `${finding.side}|${finding.type}|${finding.c1}|${finding.c2}|${finding.c3}|${finding.location ?? ""}|${finding.hour ?? ""}`;
+            if (!seen.has(id)) { existing.push(finding); seen.add(id); }
+          }
+          merged.breastFindings = existing;
           continue;
         }
         if (value && !merged[key as keyof BiometricData]) {
