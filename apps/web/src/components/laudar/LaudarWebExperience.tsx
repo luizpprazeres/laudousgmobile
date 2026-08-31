@@ -83,6 +83,7 @@ function CategorySelector({
 }) {
   return (
     <label
+      data-category-selector
       className={
         compact
           ? 'relative inline-flex h-8 min-w-[210px] items-center gap-2 rounded-full border border-gray-200 bg-white px-3 pr-8 text-xs font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200'
@@ -488,6 +489,29 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const previous = sections[Math.max(0, currentIndex - 1)]
   const next = sections[Math.min(sections.length - 1, currentIndex + 1)]
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        const select = document.querySelector<HTMLSelectElement>('[data-category-selector] select')
+        select?.focus()
+        if (select && 'showPicker' in select) {
+          try { select.showPicker() } catch { /* o foco já permite usar as setas */ }
+        }
+        return
+      }
+      if (event.key !== 'Tab' || event.metaKey || event.ctrlKey || event.altKey) return
+      const target = event.target as HTMLElement | null
+      if (target?.matches('input, textarea, select, [contenteditable="true"]')) return
+      const destination = event.shiftKey ? previous : next
+      if (!destination || destination.id === activeSection?.id) return
+      event.preventDefault()
+      setActiveSectionId(destination.id)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [activeSection?.id, next, previous])
+
   const resetActive = () => {
     if (!activeSection) return
     if (isTireoide) {
@@ -767,45 +791,36 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             ao formulário. Sem dizer isso, o médico leria como atual um laudo de
             dois segundos atrás — e no erro, um laudo de antes da falha.
           */}
-          {migrada && (laudoCanonico.erro || laudoCanonico.desatualizado) ? (
-            <p
-              className={`mb-2 rounded-xl px-3.5 py-2 text-xs ${
-                laudoCanonico.erro
-                  ? 'border border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300'
-                  : 'border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-200'
-              }`}
-            >
-              {laudoCanonico.erro ? (
-                <>
-                  <strong className="font-semibold">O laudo não foi montado.</strong>{' '}
-                  {laudoCanonico.erro}
-                  {laudoCanonico.texto ? ' O texto abaixo é de antes desta falha.' : ''}
-                </>
-              ) : (
-                <>Montando o laudo com o que você mudou — o texto abaixo ainda é o anterior.</>
-              )}
-            </p>
-          ) : null}
+          <div className="flex h-full min-h-0 flex-col">
+            {migrada && laudoCanonico.erro ? (
+              <p className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                <strong className="font-semibold">O laudo não foi montado.</strong>{' '}
+                {laudoCanonico.erro}
+                {laudoCanonico.texto ? ' O texto abaixo é de antes desta falha.' : ''}
+              </p>
+            ) : null}
 
-          <LaudoPreview
-            documentKey={categoria}
-            text={preview}
-            saveState={saveState}
-            saveError={saveError}
-            onSave={onSave}
-            workspaceV2={workspaceV2}
-            editable={workspaceV2 && richEditor}
-            editableText={documentText}
-            draftDirty={activeDraft.dirty}
-            sourceChanged={sourceChanged}
-            suggestionDiff={suggestionDiff}
-            onTextChange={onDocumentChange}
-            onResetDraft={resetDocumentDraft}
-            onAcceptSuggestion={applyCurrentModel}
-            onRejectSuggestion={rejectCurrentModel}
-            canUndoSuggestion={canUndoSuggestion}
-            onUndoSuggestion={undoAcceptedSuggestion}
-          />
+            <LaudoPreview
+              documentKey={categoria}
+              text={preview}
+              saveState={saveState}
+              saveError={saveError}
+              onSave={onSave}
+              workspaceV2={workspaceV2}
+              editable={workspaceV2 && richEditor}
+              editableText={documentText}
+              draftDirty={activeDraft.dirty}
+              sourceChanged={sourceChanged}
+              suggestionDiff={suggestionDiff}
+              onTextChange={onDocumentChange}
+              onResetDraft={resetDocumentDraft}
+              onAcceptSuggestion={applyCurrentModel}
+              onRejectSuggestion={rejectCurrentModel}
+              canUndoSuggestion={canUndoSuggestion}
+              onUndoSuggestion={undoAcceptedSuggestion}
+              updating={migrada && (laudoCanonico.carregando || laudoCanonico.desatualizado)}
+            />
+          </div>
         </div>
       </main>
       <CompanionPanel

@@ -21,6 +21,10 @@ function isSelected(state: OrganState, field: Field, value: string) {
   return current === value
 }
 
+function visibleHint(hint?: string) {
+  return hint && !/^default\s*:/i.test(hint.trim()) ? hint : null
+}
+
 export function OrganFormPanel({ schema, state, onChange, compact = false, gestationalWeeks }: Props) {
   const [rareOpen, setRareOpen] = useState(false)
 
@@ -117,7 +121,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
         <section key={field.key} className={fieldCardClass}>
           <div className="mb-2 flex items-center justify-between gap-3">
             <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">{field.label}</h3>
-            {field.hint ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
+            {visibleHint(field.hint) ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -148,7 +152,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
           <div className={compact ? 'grid grid-cols-[92px_minmax(0,1fr)] items-start gap-2' : undefined}>
             <div className={`${compact ? 'pt-1' : 'mb-2.5'} flex items-start justify-between gap-2`}>
               <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</h3>
-              {field.hint ? <span className={`${compact ? 'hidden' : ''} text-[11px] text-gray-500 dark:text-gray-400`}>{field.hint}</span> : null}
+              {visibleHint(field.hint) ? <span className={`${compact ? 'hidden' : ''} text-[11px] text-gray-500 dark:text-gray-400`}>{field.hint}</span> : null}
             </div>
             <div className={`grid grid-cols-2 gap-1 ${compact ? 'xl:grid-cols-3' : 'xl:grid-cols-4'}`}>
               {(field.options ?? []).map((option) => {
@@ -192,7 +196,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
         <section key={field.key} className={fieldCardClass}>
           <div className={`${compact ? 'mb-1.5' : 'mb-2'} flex items-center justify-between gap-3`}>
             <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</h3>
-            {field.hint ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
+            {visibleHint(field.hint) ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
           </div>
           <div className={compact ? 'grid grid-cols-3 gap-1' : 'space-y-1.5'}>
             {(field.options ?? []).map((option) => {
@@ -210,7 +214,6 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
                       ✓
                     </span>
                     <span className={`${compact ? 'text-[11.5px] leading-tight' : 'text-[13px]'} flex-1 font-semibold text-gray-800 dark:text-gray-200`}>{option.label}</span>
-                    {option.isDefault ? <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">default</span> : null}
                   </button>
                   {active && option.subFields?.length ? (
                     <div className="mx-3 mb-3 grid grid-cols-2 gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">

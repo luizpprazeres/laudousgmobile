@@ -23,6 +23,7 @@ type Props = {
   onRejectSuggestion?: () => void
   canUndoSuggestion?: boolean
   onUndoSuggestion?: () => void
+  updating?: boolean
 }
 
 /**
@@ -104,6 +105,7 @@ export function LaudoPreview({
   onRejectSuggestion,
   canUndoSuggestion = false,
   onUndoSuggestion,
+  updating = false,
 }: Props) {
   const paragraphs = text.split('\n\n')
   const documentScrollRef = useRef<HTMLDivElement>(null)
@@ -119,8 +121,8 @@ export function LaudoPreview({
 
   return (
     <section className={workspaceV2
-      ? 'flex min-h-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]'
-      : 'flex min-h-0 flex-col border-l border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900'}>
+      ? 'flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]'
+      : 'flex min-h-0 flex-1 flex-col border-l border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900'}>
       {/*
         UMA FILEIRA. Antes eram duas: uma com o título "Preview · laudo" e o
         status embaixo, outra com as ferramentas — e o título não dizia nada que
@@ -240,10 +242,18 @@ export function LaudoPreview({
         </div>
       ) : null}
 
-      <div ref={documentScrollRef} className={`min-h-0 flex-1 overflow-y-auto ${workspaceV2 ? 'bg-white p-4 dark:bg-[#1C1C1E]' : 'p-6'}`}>
-        <article className={workspaceV2
+      <div ref={documentScrollRef} className={`relative min-h-0 flex-1 overflow-y-auto ${workspaceV2 ? 'bg-white p-4 dark:bg-[#1C1C1E]' : 'p-6'}`}>
+        {updating ? (
+          <div className="pointer-events-none sticky top-3 z-20 flex justify-center" role="status" aria-live="polite">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 shadow-sm backdrop-blur-md dark:border-emerald-800/70 dark:bg-gray-950/85 dark:text-emerald-300">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              Atualizando o trecho alterado…
+            </span>
+          </div>
+        ) : null}
+        <article className={`${updating ? 'opacity-70 blur-[0.35px]' : 'opacity-100 blur-0'} transition-[filter,opacity] duration-200 ${workspaceV2
           ? 'mx-auto min-h-full max-w-[760px] bg-white px-6 py-5 font-sans text-[14px] leading-[1.65] text-gray-950 dark:bg-[#1C1C1E] dark:text-gray-100'
-          : "mx-auto min-h-full max-w-[760px] rounded-sm bg-white px-12 py-12 font-['Times_New_Roman'] text-[15px] leading-[1.62] text-gray-950 shadow-xl"}>
+          : "mx-auto min-h-full max-w-[760px] rounded-sm bg-white px-12 py-12 font-['Times_New_Roman'] text-[15px] leading-[1.62] text-gray-950 shadow-xl"}`}>
           {editable && onTextChange ? (
             <ReportTextEditor value={editableText} onChange={onTextChange} />
           ) : paragraphs.map((paragraph, index) => {
