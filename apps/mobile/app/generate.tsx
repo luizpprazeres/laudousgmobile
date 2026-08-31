@@ -811,7 +811,7 @@ export default function GenerateScreen() {
         open={salaOpen}
         onClose={() => setSalaOpen(false)}
       />
-      <CompanionSheet open={companionOpen} onClose={() => setCompanionOpen(false)} />
+      <CompanionSheet open={companionOpen} onClose={() => setCompanionOpen(false)} categoryId={cat.id} />
       <PlusSheet
         open={plusOpen}
         onClose={() => setPlusOpen(false)}

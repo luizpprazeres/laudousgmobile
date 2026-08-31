@@ -35,6 +35,7 @@ import { categoryCompactName, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
 import { CompanionPanel } from './CompanionPanel'
 import { diffReportBlocks } from './reportSuggestion'
+import { applyCompanionStructured, type CompanionStructuredPayload } from '@/lib/companionStructured'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
@@ -743,6 +744,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           ...all,
           [categoria]: [...(all[categoria] ?? []), text],
         }))}
+        onApplyStructured={(payload: CompanionStructuredPayload) => {
+          setExamStates((all) => ({
+            ...all,
+            [payload.category]: applyCompanionStructured(all[payload.category] ?? {}, payload),
+          }))
+          setCategoria(payload.category)
+          setActiveByCat((all) => ({
+            ...all,
+            [payload.category]: payload.category === 'DOPPLER_OBSTETRICO' ? 'doppler' : 'biometria',
+          }))
+        }}
       />
     </div>
   )

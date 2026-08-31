@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Copy, Loader2, Mic, RefreshCw, Smartphone, X } from 'lucide-react'
+import { Check, Copy, Image, Loader2, Mic, RefreshCw, Smartphone, X } from 'lucide-react'
+import type { CompanionStructuredPayload } from '@/lib/companionStructured'
 import {
   createCompanionSession,
   latestCompanionSession,
@@ -12,9 +13,14 @@ import {
   type CompanionSession,
 } from '@/lib/companion'
 
-type Props = { open: boolean; onClose: () => void; onApplyText: (text: string) => void }
+type Props = {
+  open: boolean
+  onClose: () => void
+  onApplyText: (text: string) => void
+  onApplyStructured: (payload: CompanionStructuredPayload) => void
+}
 
-export function CompanionPanel({ open, onClose, onApplyText }: Props) {
+export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured }: Props) {
   const [session, setSession] = useState<CompanionSession | null>(null)
   const [events, setEvents] = useState<CompanionEvent[]>([])
   const [loading, setLoading] = useState(false)
@@ -74,10 +80,18 @@ export function CompanionPanel({ open, onClose, onApplyText }: Props) {
               {events.length === 0 ? <p className="rounded-2xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-400 dark:border-gray-700">Aguardando uma entrada do médico.</p> : events.map((event) => (
                 <div key={event.id} className="rounded-2xl border border-gray-200 p-3 dark:border-gray-700">
                   {event.kind === 'transcript' ? <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-300"><Mic className="h-3 w-3" /> Ditado do médico</p> : null}
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-200">{event.payload.text || 'Entrada sem texto'}</p>
+                  {event.kind === 'structured_findings' ? <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-300"><Image className="h-3 w-3" /> Medidas extraídas · {event.payload.category?.replaceAll('_', ' ')}</p> : null}
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-200">{event.payload.text || event.payload.summary || 'Entrada sem texto'}</p>
                   <div className="mt-3 flex justify-end gap-2">
                     <button type="button" onClick={() => run(() => resolveCompanionEvent(event.id, 'dismissed'))} className="inline-flex h-8 items-center gap-1 rounded-full border border-gray-200 px-3 text-xs font-semibold text-gray-500 dark:border-gray-700"><X className="h-3 w-3" /> Descartar</button>
-                    <button type="button" onClick={() => run(async () => { const text = event.payload.text?.trim(); if (text) onApplyText(text); await resolveCompanionEvent(event.id, 'applied') })} className="inline-flex h-8 items-center gap-1 rounded-full bg-emerald-600 px-3 text-xs font-semibold text-white"><Check className="h-3 w-3" /> Acrescentar ao laudo</button>
+                    <button type="button" onClick={() => run(async () => {
+                      if (event.kind === 'structured_findings' && event.payload.category && event.payload.data) {
+                        onApplyStructured(event.payload as CompanionStructuredPayload)
+                      } else {
+                        const text = event.payload.text?.trim(); if (text) onApplyText(text)
+                      }
+                      await resolveCompanionEvent(event.id, 'applied')
+                    })} className="inline-flex h-8 items-center gap-1 rounded-full bg-emerald-600 px-3 text-xs font-semibold text-white"><Check className="h-3 w-3" /> {event.kind === 'structured_findings' ? 'Preencher campos' : 'Acrescentar ao laudo'}</button>
                   </div>
                 </div>
               ))}

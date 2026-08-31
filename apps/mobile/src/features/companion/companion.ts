@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { BiometricData, ImagingCategory } from '@/features/imaging/imageAnalysis'
 
 export type CompanionConnection = {
   sessionId: string
@@ -80,3 +81,21 @@ export const sendCompanionText = (connection: CompanionConnection, text: string)
 
 export const sendCompanionTranscript = (connection: CompanionConnection, text: string) =>
   sendCompanionEntry(connection, text, 'transcript')
+
+export async function sendCompanionStructuredFindings(
+  connection: CompanionConnection,
+  category: ImagingCategory,
+  data: BiometricData,
+  summary: string,
+): Promise<void> {
+  if (Date.parse(connection.expiresAt) <= Date.now()) throw new Error('O turno expirou. Pareie novamente.')
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth.user) throw new Error('Sessão expirada. Entre novamente.')
+  const { error } = await supabase.from('companion_events').insert({
+    session_id: connection.sessionId,
+    user_id: auth.user.id,
+    kind: 'structured_findings',
+    payload: { category, data, summary },
+  })
+  if (error) throw new Error('Não foi possível enviar as medidas. Confirme se a sessão ainda está aberta.')
+}

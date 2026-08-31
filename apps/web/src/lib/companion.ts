@@ -12,7 +12,12 @@ export type CompanionSession = {
 export type CompanionEvent = {
   id: string
   kind: string
-  payload: { text?: string }
+  payload: {
+    text?: string
+    category?: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO'
+    data?: Record<string, string>
+    summary?: string
+  }
   status: 'pending' | 'applied' | 'dismissed'
   created_at: string
 }

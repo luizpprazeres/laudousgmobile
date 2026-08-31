@@ -120,7 +120,7 @@ export async function analyzeImages(
   return results;
 }
 
-function merge(results: BiometricData[]): BiometricData {
+export function mergeBiometric(results: BiometricData[]): BiometricData {
   return results.reduce<BiometricData>((partial, next) => {
     const out: BiometricData = { ...partial };
     (Object.keys(next) as (keyof BiometricData)[]).forEach((k) => {
@@ -141,7 +141,7 @@ export function formatBiometric(
   results: BiometricData[],
   category: ImagingCategory,
 ): string {
-  const m = merge(results);
+  const m = mergeBiometric(results);
   const sections: string[] = [];
 
   const biometria = rows([
@@ -156,7 +156,7 @@ export function formatBiometric(
     ["IG pela DUM", m.gestAgeLMP],
     ["IG pela biometria", m.gestAgeBiometry],
   ]);
-  if (biometria.length > 0) {
+  if (category !== "DOPPLER_OBSTETRICO" && biometria.length > 0) {
     sections.push("Biometria fetal:\n" + biometria.join("\n"));
   }
 
