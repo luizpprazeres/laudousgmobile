@@ -21,6 +21,7 @@ const choiceClass = (active: boolean) => `rounded-md border px-2.5 py-1.5 text-x
 
 export function MamariaFormPanel({ state, onChange }: Props) {
   const ids = Array.isArray(state.achados_ids) ? state.achados_ids : []
+  const conflicts = Array.isArray(state.companion_conflitos) ? state.companion_conflitos as string[] : []
   const get = (id: string, key: string) => String(state[`achados.${id}.${key}`] ?? '')
   const set = (id: string, key: string, value: string | string[]) =>
     onChange({ ...state, [`achados.${id}.${key}`]: value })
@@ -60,6 +61,7 @@ export function MamariaFormPanel({ state, onChange }: Props) {
 
   return (
     <div className="space-y-3">
+      {conflicts.length ? <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"><strong>A imagem trouxe dados diferentes dos já digitados.</strong><div className="mt-1">Mantivemos o formulário. Revise: {conflicts.join(' · ')}</div></div> : null}
       <section className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">Ecotextura de fundo</div>
         <div className="flex flex-wrap gap-2">

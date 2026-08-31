@@ -487,16 +487,21 @@ function LinfonodosPanel({ state, onChange }: Omit<Props, 'section'>) {
 }
 
 export function TireoideFormPanel({ section, state, onChange }: Props) {
-  if (section === 'nodulos') return <NodulosPanel state={state} onChange={onChange} />
-  if (section === 'parenquima') return <ParenquimaPanel state={state} onChange={onChange} />
-  if (section === 'linfonodos') return <LinfonodosPanel state={state} onChange={onChange} />
-  if (section === 'lobo_direito' || section === 'lobo_esquerdo' || section === 'istmo') {
-    return <LoboPanel section={section} state={state} onChange={onChange} />
-  }
-
-  return (
+  const conflicts = state.companionConflitos ?? []
+  let content: React.ReactNode
+  if (section === 'nodulos') content = <NodulosPanel state={state} onChange={onChange} />
+  else if (section === 'parenquima') content = <ParenquimaPanel state={state} onChange={onChange} />
+  else if (section === 'linfonodos') content = <LinfonodosPanel state={state} onChange={onChange} />
+  else if (section === 'lobo_direito' || section === 'lobo_esquerdo' || section === 'istmo') {
+    content = <LoboPanel section={section} state={state} onChange={onChange} />
+  } else content = (
     <section className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <p className="text-[13px] text-gray-500 dark:text-gray-400">Selecione uma seção da tireoide.</p>
     </section>
   )
+
+  return <>
+    {conflicts.length ? <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"><strong>A imagem trouxe dados diferentes dos já digitados.</strong><div className="mt-1">Mantivemos o formulário. Revise: {conflicts.join(' · ')}</div></div> : null}
+    {content}
+  </>
 }

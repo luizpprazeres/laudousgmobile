@@ -15,6 +15,9 @@ Fazer as medidas extraídas de imagens no celular preencherem os campos reais da
 - [x] ILA recebido em mm ou cm preenche o campo em centímetros.
 - [x] Índices Doppler e idade gestacional recebidos no mesmo evento são preservados juntos.
 - [x] Campos não presentes na imagem continuam intocados.
+- [x] Tireoide e carótidas não sobrescrevem valores já digitados.
+- [x] Achados repetidos de mama e nódulos repetidos de tireoide são enriquecidos, não duplicados.
+- [x] Divergências entre formulário e imagem ficam visíveis para revisão.
 
 ## Validação
 
@@ -26,4 +29,7 @@ Fazer as medidas extraídas de imagens no celular preencherem os campos reais da
 
 - `apps/web/src/lib/companionStructured.ts`
 - `apps/web/src/lib/companionStructured.test.ts`
+- `apps/web/src/components/laudar/TireoideFormPanel.tsx`
+- `apps/web/src/components/laudar/MamariaFormPanel.tsx`
+- `apps/web/src/lib/deterministic/organs/tireoide.ts`
 - `docs/stories/2026-08-31-sprint-9-preenchimento-obstetrico-companion.md`

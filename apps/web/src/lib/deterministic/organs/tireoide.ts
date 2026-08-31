@@ -68,6 +68,8 @@ export const VOLUME_GLANDULAR: { value: Exclude<VolumeGlandular, null>; label: s
 ]
 
 export interface TireoideState {
+  /** Divergências entre o formulário e medidas recebidas das imagens. */
+  companionConflitos?: string[]
   doppler: boolean
   /**
    * O ESTADO DA GLÂNDULA — perguntado, nunca inferido das medidas.

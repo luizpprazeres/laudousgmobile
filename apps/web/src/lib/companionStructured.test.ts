@@ -51,6 +51,23 @@ assert.equal(tireoide.nodulos.length, 1)
 assert.equal(tireoide.nodulos[0]?.ecogenicidade, 'hipoecoica')
 assert.equal(tireoide.nodulos[0]?.margem, 'regular')
 
+const tireoidePreservada = applyCompanionThyroid({
+  ...tireoide,
+  lobo_direito: { ...tireoide.lobo_direito, a: '4,5' },
+}, {
+  category: 'TIREOIDE',
+  data: {
+    thyroidRightLobe: { a: '4.8', b: '1.7' },
+    thyroidNodules: [{ lobe: 'lobo_direito', c1: '1.2', c2: '0.9', c3: '0.8', echogenicity: 'hipoecoica', margin: 'irregular', shape: 'mais_larga_que_alta' }],
+  },
+})
+assert.equal(tireoidePreservada.lobo_direito.a, '4,5')
+assert.equal(tireoidePreservada.lobo_direito.b, '1.6')
+assert.equal(tireoidePreservada.nodulos.length, 1)
+assert.equal(tireoidePreservada.nodulos[0]?.forma, 'mais_larga_que_alta')
+assert.equal(tireoidePreservada.nodulos[0]?.margem, 'regular')
+assert.equal(tireoidePreservada.companionConflitos?.length, 3)
+
 const mama = applyCompanionBreast({ mamas: { fundo: 'heterogeneo', achados_ids: [] } }, {
   category: 'MAMARIA',
   data: { breastFindings: [
@@ -62,6 +79,17 @@ assert.equal(mama.mamas?.achados_ids.length, 2)
 const firstBreastId = mama.mamas?.achados_ids[0]
 assert.equal(mama.mamas?.[`achados.${firstBreastId}.medidas`], '1.2 x 0.9 x 0.8')
 assert.equal(mama.mamas?.[`achados.${firstBreastId}.margem`], 'circunscrita')
+
+const mamaEnriquecida = applyCompanionBreast(mama, {
+  category: 'MAMARIA',
+  data: { breastFindings: [
+    { side: 'direita', type: 'nodulo', c1: '1.2', c2: '0.9', c3: '0.8', margin: 'espiculada', shape: 'oval' },
+  ] },
+})
+assert.equal(mamaEnriquecida.mamas?.achados_ids.length, 2)
+assert.equal(mamaEnriquecida.mamas?.[`achados.${firstBreastId}.forma`], 'oval')
+assert.equal(mamaEnriquecida.mamas?.[`achados.${firstBreastId}.margem`], 'circunscrita')
+assert.equal(mamaEnriquecida.mamas?.companion_conflitos.length, 1)
 
 const carotidas = applyCompanionCarotids({}, {
   category: 'DOPPLER_CAROTIDAS',
@@ -88,5 +116,13 @@ const carotidasComConflito = applyCompanionCarotids({}, {
 })
 assert.equal(carotidasComConflito.direita?.interna_vps, undefined)
 assert.equal(carotidasComConflito.direita?.companion_conflitos.length, 1)
+
+const carotidasPreservadas = applyCompanionCarotids({ direita: { interna_vps: '80' } }, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: { carotidMeasurements: [{ side: 'direita', vessel: 'interna', psv: '82', vdf: '24' }] },
+})
+assert.equal(carotidasPreservadas.direita?.interna_vps, '80')
+assert.equal(carotidasPreservadas.direita?.interna_vdf, '24')
+assert.equal(carotidasPreservadas.direita?.companion_conflitos.length, 1)
 
 console.log('companionStructured: ok')

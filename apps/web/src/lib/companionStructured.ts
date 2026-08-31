@@ -58,7 +58,9 @@ export function applyCompanionCarotids(current: ExamState, payload: CompanionStr
     const measurements = (payload.data.carotidMeasurements ?? []).filter((item) => item.side === side)
     const applyUnique = (target: string, values: unknown[]) => {
       const distinct = [...new Set(values.map(clean).filter(Boolean))]
-      if (distinct.length === 1) section[target] = distinct[0]!
+      const existing = clean(section[target])
+      if (distinct.length === 1 && !existing) section[target] = distinct[0]!
+      else if (distinct.length === 1 && existing !== distinct[0]) conflicts.push(`${target}: digitado ${existing} / imagem ${distinct[0]}`)
       else if (distinct.length > 1) conflicts.push(`${target}: ${distinct.join(' / ')}`)
     }
     for (const vessel of ['comum', 'interna', 'externa', 'vertebral'] as const) {
@@ -94,22 +96,26 @@ export function applyCompanionBreast(current: ExamState, payload: CompanionStruc
   if (payload.category !== 'MAMARIA') return current
   const section: OrganState = { ...(current.mamas ?? {}) }
   const ids = Array.isArray(section.achados_ids) ? [...section.achados_ids] : []
-  const known = new Set(ids.map((id) => [
+  const bySignature = new Map(ids.map((id) => [[
     section[`achados.${id}.lado`], section[`achados.${id}.tipo`], section[`achados.${id}.medidas`],
     section[`achados.${id}.local`], section[`achados.${id}.horario`],
-  ].join('|')))
+  ].join('|'), id]))
+  const conflicts = Array.isArray(section.companion_conflitos) ? [...section.companion_conflitos as string[]] : []
   for (const finding of payload.data.breastFindings ?? []) {
     if (!['direita', 'esquerda'].includes(finding.side) || !['cisto_simples', 'multiplos_cistos', 'nodulo', 'calcificacoes'].includes(finding.type)) continue
     const medidas = [clean(finding.c1), clean(finding.c2), clean(finding.c3)].filter(Boolean).join(' x ')
     if (!medidas && finding.type !== 'calcificacoes') continue
     const signature = [finding.side, finding.type, medidas, clean(finding.location), clean(finding.hour)].join('|')
-    if (known.has(signature)) continue
-    known.add(signature)
-    const id = crypto.randomUUID()
-    ids.push(id)
+    const existingId = bySignature.get(signature)
+    const id = existingId ?? crypto.randomUUID()
+    if (!existingId) { ids.push(id); bySignature.set(signature, id) }
     const put = (key: string, value: unknown) => {
       const cleaned = clean(value)
-      if (cleaned) section[`achados.${id}.${key}`] = cleaned
+      if (!cleaned) return
+      const target = `achados.${id}.${key}`
+      const existing = clean(section[target])
+      if (!existing) section[target] = cleaned
+      else if (existing !== cleaned) conflicts.push(`Achado ${ids.indexOf(id) + 1} · ${key}: digitado ${existing} / imagem ${cleaned}`)
     }
     section[`achados.${id}.lado`] = finding.side
     section[`achados.${id}.tipo`] = finding.type
@@ -121,6 +127,7 @@ export function applyCompanionBreast(current: ExamState, payload: CompanionStruc
     else put('calc_sub', finding.calcifications)
   }
   section.achados_ids = ids
+  section.companion_conflitos = [...new Set(conflicts)]
   return { ...current, mamas: section }
 }
 
@@ -138,10 +145,17 @@ export function applyCompanionThyroid(
 ): TireoideState {
   if (payload.category !== 'TIREOIDE') return current
   const data = payload.data ?? {}
-  const mergeLobe = (id: LoboId, incoming?: CompanionThyroidMeasurements) => ({
-    ...current[id],
-    ...cleanMeasurements(incoming),
-  })
+  const conflicts = [...(current.companionConflitos ?? [])]
+  const mergeLobe = (id: LoboId, incoming?: CompanionThyroidMeasurements) => {
+    const next = { ...current[id] }
+    for (const [axis, value] of Object.entries(cleanMeasurements(incoming))) {
+      const key = axis as 'a' | 'b' | 'c'
+      const existing = clean(next[key])
+      if (!existing) next[key] = value
+      else if (existing !== value) conflicts.push(`${id.replaceAll('_', ' ')} · eixo ${key.toUpperCase()}: digitado ${existing} / imagem ${value}`)
+    }
+    return next
+  }
   const extracted = (data.thyroidNodules ?? []).flatMap((nodule) => {
     if (!['lobo_direito', 'lobo_esquerdo', 'istmo'].includes(nodule.lobe)) return []
     const dimensions = [clean(nodule.c1), clean(nodule.c2), clean(nodule.c3)]
@@ -159,19 +173,31 @@ export function applyCompanionThyroid(
       localizacao: clean(nodule.location),
     }]
   })
-  const known = new Set(current.nodulos.map((n) => `${n.lobo}|${n.c1}|${n.c2}|${n.c3}|${n.localizacao}`))
+  const mergedNodules = current.nodulos.map((n) => ({ ...n }))
+  const known = new Map(mergedNodules.map((n) => [`${n.lobo}|${n.c1}|${n.c2}|${n.c3}|${n.localizacao}`, n]))
   const newNodules = extracted.filter((n) => {
     const key = `${n.lobo}|${n.c1}|${n.c2}|${n.c3}|${n.localizacao}`
-    if (known.has(key)) return false
-    known.add(key)
+    const existing = known.get(key)
+    if (existing) {
+      for (const descriptor of ['ecogenicidade', 'margem', 'halo', 'forma', 'calcificacoes', 'vascularizacao'] as const) {
+        if (!existing[descriptor] && n[descriptor]) existing[descriptor] = n[descriptor]
+        else if (existing[descriptor] && n[descriptor] && existing[descriptor] !== n[descriptor]) conflicts.push(`Nódulo ${mergedNodules.indexOf(existing) + 1} · ${descriptor}: digitado ${existing[descriptor]} / imagem ${n[descriptor]}`)
+      }
+      return false
+    }
+    known.set(key, n)
     return true
   })
+  const loboDireito = mergeLobe('lobo_direito', data.thyroidRightLobe)
+  const loboEsquerdo = mergeLobe('lobo_esquerdo', data.thyroidLeftLobe)
+  const istmo = mergeLobe('istmo', data.thyroidIsthmus)
   return {
     ...current,
-    lobo_direito: mergeLobe('lobo_direito', data.thyroidRightLobe),
-    lobo_esquerdo: mergeLobe('lobo_esquerdo', data.thyroidLeftLobe),
-    istmo: mergeLobe('istmo', data.thyroidIsthmus),
-    nodulos: [...current.nodulos, ...newNodules],
+    companionConflitos: [...new Set(conflicts)],
+    lobo_direito: loboDireito,
+    lobo_esquerdo: loboEsquerdo,
+    istmo,
+    nodulos: [...mergedNodules, ...newNodules],
   }
 }
 
