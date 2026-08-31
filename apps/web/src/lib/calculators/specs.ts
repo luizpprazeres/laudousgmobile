@@ -33,7 +33,7 @@ export type StandardCalcSpec = {
 export type CustomCalcSpec = {
   id: string
   name: string
-  kind: 'pre-eclampsia-fmf'
+  kind: 'pre-eclampsia-fmf' | 'trisomy-fmf'
 }
 
 export type CalcSpec = StandardCalcSpec | CustomCalcSpec
@@ -42,6 +42,12 @@ export const preEclampsiaFmfSpec: CustomCalcSpec = {
   id: 'pre-eclampsia-fmf',
   name: 'Pré-eclâmpsia FMF',
   kind: 'pre-eclampsia-fmf',
+}
+
+export const trisomyFmfSpec: CustomCalcSpec = {
+  id: 'trisomy-fmf',
+  name: 'Trissomias T21/T18/T13',
+  kind: 'trisomy-fmf',
 }
 
 // ── ACR TI-RADS ──────────────────────────────────────────────────────────────

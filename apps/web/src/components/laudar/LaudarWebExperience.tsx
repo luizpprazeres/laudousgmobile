@@ -27,6 +27,7 @@ import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
 import { CalcPanel } from './CalcPanel'
 import { PreEclampsiaFmfPanel } from './PreEclampsiaFmfPanel'
+import { TrisomyFmfPanel } from './TrisomyFmfPanel'
 import { ExamSectionNav } from './ExamSectionNav'
 import { LaudarRail } from './LaudarRail'
 import { lerAtual, lerDigitadoras, gravarAtual, type Digitadora } from '@/lib/digitadoras'
@@ -637,7 +638,18 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                       />
                     )
                   }
-                  return <CalcPanel spec={spec} examState={isTireoide ? undefined : examState} />
+                  if (spec.kind === 'trisomy-fmf') {
+                    return (
+                      <TrisomyFmfPanel
+                        insertedBlock={calculatorBlocks[spec.id]}
+                        onInsert={(block) => insertCalculatorBlock(spec.id, block)}
+                        onRemove={() => removeCalculatorBlock(spec.id)}
+                      />
+                    )
+                  }
+                  return 'fields' in spec
+                    ? <CalcPanel spec={spec} examState={isTireoide ? undefined : examState} />
+                    : null
                 })()
               ) : isTireoide ? (
                 <TireoideFormPanel

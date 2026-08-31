@@ -14,7 +14,7 @@ import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { criarCervicometriaAddonModule } from './cervicometriaAddon'
 import { criarDopplerAddonModule } from './dopplerObstetrico'
 import { computeIG, type Referencia } from '../../ig/computeIG'
-import { preEclampsiaFmfSpec } from '../../calculators/specs'
+import { preEclampsiaFmfSpec, trisomyFmfSpec } from '../../calculators/specs'
 
 const TECNICA =
   'Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
@@ -318,7 +318,10 @@ export const obstetrica: ExamCategory = {
     { id: 'doppler', label: 'Doppler', group: 'orgaos', module: dopplerModule },
     { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
   ],
-  calculators: [preEclampsiaFmfSpec],
+  calculators: [
+    preEclampsiaFmfSpec,
+    ...(process.env.NEXT_PUBLIC_FMF_TRISOMY_VALIDATION === 'true' ? [trisomyFmfSpec] : []),
+  ],
   // A IG sempre gera item de conclusão; este fallback é só defensivo.
   conclusionNormal: 'Gestação em torno de ____ semanas.',
 }
