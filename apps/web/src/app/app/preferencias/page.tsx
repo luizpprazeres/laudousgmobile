@@ -7,6 +7,7 @@ import { Digitadoras } from '@/components/preferencias/Digitadoras'
 import { Tema } from '@/components/preferencias/Tema'
 import { FrasesPessoais } from '@/components/preferencias/FrasesPessoais'
 import { ModelosPreferidos } from '@/components/preferencias/ModelosPreferidos'
+import { EstiloDeEscrita } from '@/components/preferencias/EstiloDeEscrita'
 import type { Assinatura, PlanoDoBanco } from '@/lib/planos'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +31,7 @@ export default async function PreferenciasPage({
   const veioDoPagamento = (await searchParams).assinatura === 'sucesso'
   const r = await lerPerfil()
   const corpo = (r.ok ? r.corpo : null) as {
-    profile?: PerfilDoMedico & { plan?: PlanoDoBanco }
+    profile?: PerfilDoMedico & { plan?: PlanoDoBanco; default_writing_style_id?: string | null }
     assinatura?: Assinatura
   } | null
   const perfil = corpo?.profile ?? null
@@ -98,6 +99,7 @@ export default async function PreferenciasPage({
               <PlanoCard plano={perfil.plan ?? 'free'} assinatura={corpo?.assinatura ?? null} />
             ) : null}
             <Tema />
+            <EstiloDeEscrita initial={perfil?.default_writing_style_id ?? null} />
             <ModelosPreferidos />
           </div>
         </div>

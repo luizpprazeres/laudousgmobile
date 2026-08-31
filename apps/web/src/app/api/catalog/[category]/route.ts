@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { buscarCatalogo, categoriaMigrada } from "@/lib/catalog/cliente";
+import { estiloDaConta } from '@/lib/perfil/estiloDaConta'
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ category: stri
     return Response.json({ error: "categoria ainda não migrada para o catálogo" }, { status: 404 });
   }
 
-  const r = await buscarCatalogo(category);
+  const r = await buscarCatalogo(category, await estiloDaConta(data.user.id));
   if (!r.ok) return Response.json({ error: r.erro }, { status: r.status });
   return Response.json(r.corpo, { status: r.status });
 }

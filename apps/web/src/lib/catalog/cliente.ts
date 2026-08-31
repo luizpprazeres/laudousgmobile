@@ -53,16 +53,8 @@ function configuracao(): { base: string; token: string } | null {
  */
 export { CATEGORIAS_MIGRADAS, categoriaMigrada } from "./migradas";
 
-/**
- * O estilo do piloto.
- *
- * Travado no servidor, não escondido na tela. O estilo objetivo tem três
- * defeitos que não são deste piloto — o título não identifica o Doppler, o
- * TI-RADS ditado não vence o cálculo, e ele afirma "Não há evidência de
- * linfonodomegalias" mesmo quando a cadeia não foi avaliada. Esconder o seletor
- * deixaria a rota aceitar `OBJETIVO` de qualquer jeito.
- */
-export const ESTILO_DO_PILOTO = "CLASSICO_COMPLETO";
+/** Fallback seguro para contas antigas que ainda não escolheram uma redação. */
+export const ESTILO_PADRAO = "CLASSICO_COMPLETO";
 
 async function chamar(caminho: string, init?: RequestInit): Promise<RespostaCatalogo> {
   const cfg = configuracao();
@@ -104,17 +96,17 @@ async function chamar(caminho: string, init?: RequestInit): Promise<RespostaCata
 }
 
 /** O modelo da categoria: padrão, cenários, projeção e alterações com lacunas. */
-export function buscarCatalogo(categoria: string, estilo = ESTILO_DO_PILOTO) {
+export function buscarCatalogo(categoria: string, estilo = ESTILO_PADRAO) {
   return chamar(`/api/catalog/${encodeURIComponent(categoria)}?estilo=${encodeURIComponent(estilo)}`);
 }
 
 /** O LAUDO das alterações escolhidas e do que o médico digitou. */
 export function renderizar(
   categoria: string,
-  corpo: { estilo?: string; alteracoes?: string[]; dados?: Record<string, unknown> },
+  corpo: { estilo: string; alteracoes?: string[]; dados?: Record<string, unknown> },
 ) {
   return chamar(`/api/catalog/${encodeURIComponent(categoria)}/render`, {
     method: "POST",
-    body: JSON.stringify({ ...corpo, estilo: ESTILO_DO_PILOTO }),
+    body: JSON.stringify(corpo),
   });
 }

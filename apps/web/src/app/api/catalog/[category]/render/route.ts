@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { categoriaMigrada, renderizar } from "@/lib/catalog/cliente";
+import { estiloDaConta } from '@/lib/perfil/estiloDaConta'
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,8 +20,8 @@ const Corpo = z.object({
  * autoridades sobre o mesmo laudo, e a segunda erraria exatamente onde o
  * cálculo importa.
  *
- * O `estilo` NÃO vem do cliente — é fixado no cliente de servidor. Ver
- * `ESTILO_DO_PILOTO`.
+ * O `estilo` NÃO vem do navegador — o servidor lê o estilo salvo na conta do
+ * médico antes de chamar o renderer.
  */
 export async function POST(req: Request, ctx: { params: Promise<{ category: string }> }) {
   const supabase = await createClient();
@@ -39,7 +40,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
     return Response.json({ error: "corpo inválido" }, { status: 400 });
   }
 
-  const r = await renderizar(category, corpo);
+  const r = await renderizar(category, { ...corpo, estilo: await estiloDaConta(data.user.id) });
   if (!r.ok) return Response.json({ error: r.erro }, { status: r.status });
   /**
    * O status do upstream atravessa — inclusive o 409 com os conflitos

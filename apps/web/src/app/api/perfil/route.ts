@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server'
 import { lerPerfil, salvarPerfil } from '@/lib/perfil/cliente'
+import { idDeEstiloValido } from '@/lib/perfil/estilos'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,10 +33,16 @@ export async function PATCH(req: Request) {
    * herdar todo campo que a rota canônica venha a aceitar no futuro — inclusive
    * um que não deveria vir da web.
    */
-  const patch: { name?: string | null; crm?: string | null; uf?: string | null } = {}
+  const patch: { name?: string | null; crm?: string | null; uf?: string | null; default_writing_style_id?: string | null } = {}
   if ('name' in c) patch.name = (c.name as string | null) ?? null
   if ('crm' in c) patch.crm = (c.crm as string | null) ?? null
   if ('uf' in c) patch.uf = (c.uf as string | null) ?? null
+  if ('default_writing_style_id' in c) {
+    if (!idDeEstiloValido(c.default_writing_style_id)) {
+      return NextResponse.json({ error: 'estilo de escrita inválido' }, { status: 400 })
+    }
+    patch.default_writing_style_id = c.default_writing_style_id
+  }
 
   const r = await salvarPerfil(patch)
   if (!r.ok) return NextResponse.json({ error: r.erro }, { status: r.status })
