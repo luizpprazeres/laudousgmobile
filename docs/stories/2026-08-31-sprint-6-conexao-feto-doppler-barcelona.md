@@ -36,8 +36,9 @@ Próximo passo clínico: portar o fluxo completo de crescimento fetal para um n�
 - [x] typecheck geral: 8/8 pacotes
 - [x] comando geral de testes: conclui sem falhas, mas o monorepo não possui tarefas `test` configuradas
 - [ ] lint global: bloqueado pela configuração preexistente; `next lint` abre o assistente interativo de ESLint em web, API e lab
-- [ ] commit e push dos dois repositórios
-- [ ] build TestFlight
+- [x] commit e push web/API/Android: `e357171`
+- [x] commit e push iOS: `6ff5aa1`
+- [x] build 157 enviada ao App Store Connect e aceita para processamento no TestFlight
 
 ## Arquivos principais
 
