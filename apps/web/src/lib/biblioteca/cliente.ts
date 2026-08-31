@@ -78,6 +78,12 @@ async function chamar(caminho: string, init?: RequestInit): Promise<Resposta> {
    * precisa mostrar — trocar por "erro ao salvar" apagaria justamente o que o
    * médico tem de ler.
    */
+  if (!resposta.ok) {
+    const erro = corpo && typeof corpo === "object" && "error" in corpo
+      ? String((corpo as { error: unknown }).error)
+      : `Biblioteca indisponível (${resposta.status}).`;
+    return { ok: false, status: resposta.status, erro };
+  }
   return { ok: true, status: resposta.status, corpo };
 }
 

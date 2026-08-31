@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, ChevronDown, Image, Mic, RotateCcw, Smartphone, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronDown, RotateCcw, Smartphone } from 'lucide-react'
 import {
   CATEGORIES,
   GENERIC_CATEGORIES,
@@ -568,10 +568,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
         {!workspaceV2 ? (
           <>
-            <ToolbarPill><Mic className="h-4 w-4" />Ditar</ToolbarPill>
-            <ToolbarPill><Image className="h-4 w-4" />Imagem</ToolbarPill>
             <ToolbarPill onClick={() => setCompanionOpen(true)}><Smartphone className="h-4 w-4" />Celular</ToolbarPill>
-            <ToolbarPill tone="purple">Múltiplos</ToolbarPill>
           </>
         ) : null}
         <div className="flex-1" />
@@ -602,14 +599,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           </label>
         ) : null}
 
-        {!workspaceV2 ? <ToolbarPill tone="primary"><Sparkles className="h-4 w-4" />Gerar com IA</ToolbarPill> : null}
       </header>
 
       <main className={`relative ${workspaceV2 ? 'h-[calc(100vh-92px)]' : 'h-[calc(100vh-64px)]'}`}>
         <LaudarRail workspaceV2={workspaceV2} />
         <div className={workspaceV2
-          ? 'ml-14 grid h-full grid-cols-[142px_minmax(330px,0.88fr)_minmax(420px,1.32fr)] gap-2'
-          : 'ml-16 grid h-full grid-cols-[196px_minmax(420px,1fr)_minmax(460px,1fr)]'}>
+          ? 'ml-14 grid h-full grid-cols-[142px_minmax(310px,0.76fr)_minmax(440px,1.44fr)] gap-2'
+          : 'ml-16 grid h-full grid-cols-[196px_minmax(380px,0.82fr)_minmax(500px,1.18fr)]'}>
           <ExamSectionNav
             sections={sections}
             activeId={activeSection?.id ?? ''}

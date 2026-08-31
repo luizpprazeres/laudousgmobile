@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, Lock, Undo2 } from 'lucide-react'
 import type { CategoriaDaBiblioteca, ModeloProjetado, Operation } from '@/lib/biblioteca/tipos'
@@ -52,7 +52,11 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
   const [edicoes, setEdicoes] = useState<Edicoes>(EDICOES_VAZIAS)
 
   const atual = categorias.find((c) => c.categoria === categoria)
-  const estilosDisponiveis = atual?.estilos_disponiveis ?? ['CLASSICO_COMPLETO']
+  const estilosDisponiveis = useMemo(
+    () => atual?.estilos_disponiveis ?? ['CLASSICO_COMPLETO'],
+    [atual],
+  )
+  const requisicaoAtual = useRef(0)
 
   const carregar = useCallback(async () => {
     if (!categoria) return
@@ -60,6 +64,7 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
       setEstilo(estilosDisponiveis[0] ?? 'CLASSICO_COMPLETO')
       return
     }
+    const requisicao = ++requisicaoAtual.current
     setCarregando(true)
     setErro(null)
     setAviso(null)
@@ -67,9 +72,9 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
     try {
       const r = await fetch(`/api/biblioteca/${categoria}?estilo=${estilo}`, { cache: 'no-store' })
       const d = (await r.json()) as Detalhe
+      if (requisicao !== requisicaoAtual.current) return
       if (!r.ok) {
         setErro(d.error ?? 'Não foi possível carregar o modelo.')
-        setDetalhe(null)
       } else {
         setDetalhe(d)
         /** O rascunho em curso reaparece como edição pendente, não como texto salvo. */
@@ -82,9 +87,9 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
         setEdicoes(pend)
       }
     } catch {
-      setErro('Não foi possível falar com o servidor.')
+      if (requisicao === requisicaoAtual.current) setErro('Não foi possível falar com o servidor.')
     } finally {
-      setCarregando(false)
+      if (requisicao === requisicaoAtual.current) setCarregando(false)
     }
   }, [categoria, estilo, estilosDisponiveis])
 
@@ -264,7 +269,7 @@ export function BibliotecaWorkspace({ categorias }: { categorias: CategoriaDaBib
             {erro ? <Faixa tom="erro">{erro}</Faixa> : null}
             {aviso ? <Faixa tom="ok">{aviso}</Faixa> : null}
 
-            {carregando ? (
+            {carregando && !modelo ? (
               <p className="py-10 text-center text-sm text-gray-400">Carregando o modelo…</p>
             ) : !modelo ? (
               <p className="py-10 text-center text-sm text-gray-400">
