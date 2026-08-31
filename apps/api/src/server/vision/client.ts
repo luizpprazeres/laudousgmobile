@@ -333,6 +333,42 @@ REGRAS FINAIS:
 5. Responda apenas com o objeto JSON, sem markdown.`;
   }
 
+  if (category === "DOPPLER_CAROTIDAS") {
+    return `Você é especialista em leitura de telas de Doppler de carótidas e vertebrais.
+
+Extraia SOMENTE valores e rótulos explicitamente visíveis. NÃO diagnostique, NÃO classifique grau de estenose, NÃO aplique critérios NASCET e NÃO recomende conduta.
+
+Retorne carotidMeasurements com um item por combinação de lado e vaso:
+- side: direita ou esquerda. Sem lado identificável, omita.
+- vessel: comum, interna, externa ou vertebral. Sem vaso identificável, omita.
+- psv: pico de velocidade sistólica/PSV/VPS em cm/s.
+- vdf: velocidade diastólica final/VDF/EDV em cm/s.
+- ir: índice de resistividade/IR/RI, somente se estiver impresso. Não calcule.
+- emi: espessura médio-intimal/EMI/IMT em mm, somente se estiver identificada para o lado.
+- flowDirection: anterogrado, retrogrado ou ausente, somente para vertebral quando explícito.
+
+Retorne carotidPlaques somente quando uma placa estiver explicitamente identificada:
+- side obrigatório; location é o local escrito; thickness em mm; stenosisPercent apenas se o percentual estiver impresso.
+- Não deduza composição ou superfície pela aparência da imagem.
+
+EXEMPLO:
+{
+  "carotidMeasurements": [
+    { "side": "direita", "vessel": "interna", "psv": "82", "vdf": "24", "ir": "0.71" },
+    { "side": "esquerda", "vessel": "vertebral", "psv": "41", "flowDirection": "anterogrado" }
+  ],
+  "carotidPlaques": [
+    { "side": "direita", "location": "bulbo carotídeo", "thickness": "2.1" }
+  ]
+}
+
+REGRAS FINAIS:
+1. Velocidades sempre em cm/s; EMI/espessura sempre em mm.
+2. Não confunda escala, PRF, ganho, profundidade, data ou frequência com medida.
+3. Campo ilegível deve ser omitido; nunca estime.
+4. Responda apenas com o objeto JSON.`;
+  }
+
   throw new Error(`Análise de imagem não suportada para categoria: ${category}`);
 }
 
@@ -451,6 +487,7 @@ export async function analyzeImage({
     category !== "MORFOLOGICO" &&
     category !== "TIREOIDE" &&
     category !== "MAMARIA"
+    && category !== "DOPPLER_CAROTIDAS"
   ) {
     throw new Error(`Análise de imagem não suportada para categoria: ${category}`);
   }

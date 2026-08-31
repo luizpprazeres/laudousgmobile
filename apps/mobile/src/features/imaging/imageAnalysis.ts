@@ -14,6 +14,7 @@ export const SUPPORTED_IMAGING_CATEGORIES = [
   "MORFOLOGICO",
   "TIREOIDE",
   "MAMARIA",
+  "DOPPLER_CAROTIDAS",
 ] as const;
 
 export type ImagingCategory = (typeof SUPPORTED_IMAGING_CATEGORIES)[number];
@@ -58,6 +59,8 @@ export type BiometricData = {
   thyroidIsthmus?: ThyroidMeasurements;
   thyroidNodules?: ThyroidNodule[];
   breastFindings?: BreastFinding[];
+  carotidMeasurements?: CarotidMeasurement[];
+  carotidPlaques?: CarotidPlaque[];
 };
 
 export type ThyroidMeasurements = { a?: string; b?: string; c?: string };
@@ -74,6 +77,14 @@ export type BreastFinding = {
   distanceSkin?: string; distanceNipple?: string; echogenicity?: string;
   shape?: string; margin?: string; orientation?: string; posterior?: string;
   calcifications?: string;
+};
+export type CarotidMeasurement = {
+  side: "direita" | "esquerda"; vessel: "comum" | "interna" | "externa" | "vertebral";
+  psv?: string; vdf?: string; ir?: string; emi?: string;
+  flowDirection?: "anterogrado" | "retrogrado" | "ausente";
+};
+export type CarotidPlaque = {
+  side: "direita" | "esquerda"; location?: string; thickness?: string; stenosisPercent?: string;
 };
 
 type AnalyzeResponse = {
@@ -167,6 +178,13 @@ export function mergeBiometric(results: BiometricData[]): BiometricData {
         out.breastFindings = existing;
         return;
       }
+      if ((k === "carotidMeasurements" || k === "carotidPlaques") && Array.isArray(next[k])) {
+        const existing = ((out[k] as unknown[]) ?? []);
+        const seen = new Set(existing.map((item) => JSON.stringify(item)));
+        for (const item of next[k] as unknown[]) if (!seen.has(JSON.stringify(item))) { existing.push(item); seen.add(JSON.stringify(item)); }
+        (out as unknown as Record<string, unknown>)[k] = existing;
+        return;
+      }
       if (out[k] === undefined && next[k] !== undefined) {
         (out as unknown as Record<string, unknown>)[k] = next[k];
       }
@@ -212,6 +230,16 @@ export function formatBiometric(
       const type = finding.type === "nodulo" ? "Nódulo" : finding.type === "cisto_simples" ? "Cisto simples" : finding.type === "multiplos_cistos" ? "Cistos múltiplos" : "Calcificações";
       return `${index + 1}. ${type} — mama ${finding.side}${details ? `: ${details}` : ""}`;
     }).join("\n");
+  }
+
+  if (category === "DOPPLER_CAROTIDAS") {
+    const measurements = (m.carotidMeasurements ?? []).map((item) => {
+      const vessel = item.vessel === "comum" ? "carótida comum" : item.vessel === "interna" ? "carótida interna" : item.vessel === "externa" ? "carótida externa" : "vertebral";
+      const values = [["PSV", item.psv], ["VDF", item.vdf], ["IR", item.ir], ["EMI", item.emi], ["Fluxo", item.flowDirection]].filter(([, v]) => v).map(([label, v]) => `${label} ${v}`);
+      return `${vessel} ${item.side}: ${values.join(" · ")}`;
+    });
+    const plaques = (m.carotidPlaques ?? []).map((item, index) => `Placa ${index + 1} ${item.side}: ${[item.location, item.thickness ? `${item.thickness} mm` : "", item.stenosisPercent ? `${item.stenosisPercent}% informado` : ""].filter(Boolean).join(" · ")}`);
+    return [...measurements, ...plaques].join("\n");
   }
 
   const biometria = rows([

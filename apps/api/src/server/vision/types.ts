@@ -3,7 +3,7 @@
  * Port do laudousg/lib/types.ts — categorias suportadas e schema BiometricData.
  */
 
-export type Category = "OBSTETRICA" | "DOPPLER_OBSTETRICO" | "MORFOLOGICO" | "TIREOIDE" | "MAMARIA";
+export type Category = "OBSTETRICA" | "DOPPLER_OBSTETRICO" | "MORFOLOGICO" | "TIREOIDE" | "MAMARIA" | "DOPPLER_CAROTIDAS";
 export type ImagingModule = "DOPPLER_OBSTETRICO";
 
 export const SUPPORTED_IMAGING_CATEGORIES: Category[] = [
@@ -12,6 +12,7 @@ export const SUPPORTED_IMAGING_CATEGORIES: Category[] = [
   "MORFOLOGICO",
   "TIREOIDE",
   "MAMARIA",
+  "DOPPLER_CAROTIDAS",
 ];
 
 export type ThyroidLobe = "lobo_direito" | "lobo_esquerdo" | "istmo";
@@ -52,6 +53,23 @@ export interface BreastFinding {
   orientation?: string;
   posterior?: string;
   calcifications?: string;
+}
+
+export interface CarotidMeasurement {
+  side: "direita" | "esquerda";
+  vessel: "comum" | "interna" | "externa" | "vertebral";
+  psv?: string;
+  vdf?: string;
+  ir?: string;
+  emi?: string;
+  flowDirection?: "anterogrado" | "retrogrado" | "ausente";
+}
+
+export interface CarotidPlaque {
+  side: "direita" | "esquerda";
+  location?: string;
+  thickness?: string;
+  stenosisPercent?: string;
 }
 
 export interface BiometricData {
@@ -99,4 +117,6 @@ export interface BiometricData {
 
   // Mamas — múltiplos achados, sem classificação BI-RADS automática pela visão.
   breastFindings?: BreastFinding[];
+  carotidMeasurements?: CarotidMeasurement[];
+  carotidPlaques?: CarotidPlaque[];
 }

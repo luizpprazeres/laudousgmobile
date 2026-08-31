@@ -2,7 +2,7 @@
 
 ## Status
 
-3D-C1 concluída; 3D-C2 em andamento.
+3D-C1 e 3D-C2 concluídas; 3D-C3 em andamento.
 
 ## Objetivo
 
@@ -66,7 +66,7 @@ para cada medida.
 - [x] A categoria abre na web com formulário bilateral completo.
 - [x] Os dois estilos produzem laudos coerentes e sem placeholders vazios.
 - [x] Mais de uma placa pode ser registrada no mesmo lado.
-- [ ] Android e iOS extraem e revisam medidas de até três imagens.
+- [x] Android e iOS extraem e revisam medidas de até três imagens.
 - [ ] A web aplica apenas campos confirmados pelo usuário.
 - [ ] Dados conflitantes são sinalizados, não sobrescritos silenciosamente.
 - [ ] Teste com imagens reais documenta acertos, lacunas e conflitos.
@@ -86,3 +86,12 @@ para cada medida.
 - `apps/web/src/lib/catalog/migradas.ts`
 - `apps/web/src/components/laudar/DopplerCarotidasFormPanel.tsx`
 - `apps/web/src/components/laudar/LaudarWebExperience.tsx`
+- `apps/api/src/server/vision/types.ts`
+- `apps/api/src/server/vision/client.ts`
+- `apps/api/src/server/vision/extractor.ts`
+- `apps/api/src/server/vision/vision-modules.manual.ts`
+- `apps/mobile/src/features/imaging/imageAnalysis.ts`
+- `apps/mobile/src/features/companion/CompanionSheet.tsx`
+- `LaudoUSG/Models/BiometricData.swift` no repositório iOS nativo
+- `LaudoUSG/Services/ImageAnalysisService.swift` no repositório iOS nativo
+- `LaudoUSGTests/ImageAnalysisServiceTests.swift` no repositório iOS nativo

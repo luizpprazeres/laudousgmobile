@@ -3,7 +3,7 @@
  * Port 1:1 do laudousg/lib/vision/extractor.ts.
  */
 
-import type { BiometricData, BreastFinding, Category, ThyroidMeasurements, ThyroidNodule } from "./types";
+import type { BiometricData, BreastFinding, CarotidMeasurement, CarotidPlaque, Category, ThyroidMeasurements, ThyroidNodule } from "./types";
 
 const THYROID_VALUES = {
   lobe: new Set(["lobo_direito", "lobo_esquerdo", "istmo"]),
@@ -100,6 +100,45 @@ function breastFindings(value: unknown): BreastFinding[] | undefined {
       calcifications: thyroidValue(row.calcifications, BREAST_VALUES.calcifications),
     };
     return finding.c1 || finding.c2 || finding.c3 || finding.type === "calcificacoes" ? [finding] : [];
+  });
+  return result.length ? result.slice(0, 20) : undefined;
+}
+
+function numericString(value: unknown, min: number, max: number): string | undefined {
+  const match = String(value ?? "").replace(",", ".").match(/-?\d+(?:\.\d+)?/);
+  if (!match) return undefined;
+  const n = Number.parseFloat(match[0]);
+  return Number.isFinite(n) && n >= min && n <= max ? String(Number(n.toFixed(2))) : undefined;
+}
+
+function carotidMeasurements(value: unknown): CarotidMeasurement[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const sides = new Set(["direita", "esquerda"]), vessels = new Set(["comum", "interna", "externa", "vertebral"]), directions = new Set(["anterogrado", "retrogrado", "ausente"]);
+  const result = value.flatMap((entry): CarotidMeasurement[] => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const row = entry as Record<string, unknown>;
+    const side = thyroidValue(row.side, sides), vessel = thyroidValue(row.vessel, vessels);
+    if (!side || !vessel) return [];
+    const item: CarotidMeasurement = {
+      side: side as CarotidMeasurement["side"], vessel: vessel as CarotidMeasurement["vessel"],
+      psv: numericString(row.psv, 0.1, 1000), vdf: numericString(row.vdf, 0, 1000),
+      ir: numericString(row.ir, 0, 1), emi: numericString(row.emi, 0.1, 20),
+      flowDirection: thyroidValue(row.flowDirection, directions) as CarotidMeasurement["flowDirection"],
+    };
+    return item.psv || item.vdf || item.ir || item.emi || item.flowDirection ? [item] : [];
+  });
+  return result.length ? result.slice(0, 24) : undefined;
+}
+
+function carotidPlaques(value: unknown): CarotidPlaque[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const sides = new Set(["direita", "esquerda"]);
+  const result = value.flatMap((entry): CarotidPlaque[] => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const row = entry as Record<string, unknown>, side = thyroidValue(row.side, sides);
+    if (!side) return [];
+    const item: CarotidPlaque = { side: side as CarotidPlaque["side"], location: typeof row.location === "string" ? row.location.trim().slice(0, 120) || undefined : undefined, thickness: numericString(row.thickness, 0.1, 20), stenosisPercent: numericString(row.stenosisPercent, 0, 100) };
+    return item.location || item.thickness || item.stenosisPercent ? [item] : [];
   });
   return result.length ? result.slice(0, 20) : undefined;
 }
@@ -229,6 +268,10 @@ export function validateBiometricData(
   }
 
   if (category === "MAMARIA") result.breastFindings = breastFindings(data.breastFindings);
+  if (category === "DOPPLER_CAROTIDAS") {
+    result.carotidMeasurements = carotidMeasurements(data.carotidMeasurements);
+    result.carotidPlaques = carotidPlaques(data.carotidPlaques);
+  }
 
   // Remove undefined keys
   for (const key of Object.keys(result) as (keyof BiometricData)[]) {
@@ -274,6 +317,14 @@ export function mergeBiometricData(
             if (!seen.has(id)) { existing.push(finding); seen.add(id); }
           }
           merged.breastFindings = existing;
+          continue;
+        }
+        if ((key === "carotidMeasurements" || key === "carotidPlaques") && Array.isArray(value)) {
+          const existing = (merged as unknown as Record<string, unknown[]>)[key] ?? [];
+          const signature = (item: unknown) => JSON.stringify(item);
+          const seen = new Set(existing.map(signature));
+          for (const item of value) if (!seen.has(signature(item))) { existing.push(item); seen.add(signature(item)); }
+          (merged as unknown as Record<string, unknown[]>)[key] = existing;
           continue;
         }
         if (value && !merged[key as keyof BiometricData]) {

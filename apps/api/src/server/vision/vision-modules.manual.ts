@@ -77,5 +77,23 @@ check("mama preserva múltiplos achados e converte mm", breastMerged.breastFindi
 check("achado mamário sem lado é recusado", breastMerged.breastFindings?.every((finding) => finding.side === "direita" || finding.side === "esquerda") === true);
 check("visão mamária não cria BI-RADS", breastMerged.breastFindings?.every((finding) => !("birads" in finding)) === true);
 
+const carotids = validateBiometricData({
+  carotidMeasurements: [
+    { side: "direita", vessel: "interna", psv: "82 cm/s", vdf: "24", ir: "0.71" },
+    { side: "esquerda", vessel: "vertebral", psv: "41", flowDirection: "anterogrado" },
+    { side: "", vessel: "interna", psv: "90" },
+  ],
+  carotidPlaques: [
+    { side: "direita", location: "bulbo carotídeo", thickness: "2,1 mm" },
+    { side: "esquerda", stenosisPercent: "120" },
+  ],
+  stenosisGrade: "grave",
+}, "DOPPLER_CAROTIDAS");
+check("carótidas exige lado e vaso", carotids.carotidMeasurements?.length === 2);
+check("carótidas normaliza velocidades", carotids.carotidMeasurements?.[0]?.psv === "82");
+check("carótidas preserva direção vertebral", carotids.carotidMeasurements?.[1]?.flowDirection === "anterogrado");
+check("carótidas rejeita percentual impossível", carotids.carotidPlaques?.[0]?.stenosisPercent === undefined);
+check("carótidas não aceita classificação da visão", !("stenosisGrade" in carotids));
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);
