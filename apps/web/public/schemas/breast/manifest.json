@@ -1,13 +1,13 @@
 {
-  "version": 4,
+  "version": 5,
   "generatedAt": "2026-09-01",
-  "generator": "OpenAI Image API — gpt-image-2",
-  "style": "original monochrome medical line illustration",
+  "generator": "component trace + Potrace + deterministic SVG",
+  "style": "high-fidelity monochrome clinical cartogram",
   "assets": [
     {
       "view": "frontal_bilateral",
-      "file": "frontal-v4.png",
-      "sha256": "75eb4c1d4bb75cf49b1ca2f3c4161918a623a130c430a8a902eea5f54ac0dacb"
+      "file": "frontal-v5.svg",
+      "sha256": "7e714f46f5f044cc0b41659fbd9409ab6b4191821aa65d399b640e9f1eeb2d13"
     }
   ]
 }

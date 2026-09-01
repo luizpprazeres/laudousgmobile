@@ -1,5 +1,5 @@
-# Cartograma mamário bilateral v4
+# Cartograma mamário bilateral v5
 
-Base bilateral original gerada com `gpt-image-2` pela OpenAI Image API e finalizada como cartograma clínico. A imagem publicada já contém as identificações `MAMA DIREITA` e `MAMA ESQUERDA`, mamilos, quadrantes e relógios completos. A camada SVG da web fica responsável somente pelos achados interativos.
+Cartograma reconstruído por componentes a partir da referência clínica aprovada. Os contornos direito e esquerdo foram isolados e vetorizados separadamente, preservando a cauda axilar, a curvatura lateral, o arco inferior e o término medial próprios de cada lado. Mamilos, relógios, quadrantes e títulos foram reconstruídos como camadas vetoriais independentes.
 
-A tentativa de editar diretamente a referência clínica foi recusada pelo filtro de segurança da API. A composição aprovada foi então produzida no mesmo modelo como cartograma radiológico abstrato, com a organização clínica exata aplicada de forma determinística para evitar erros de texto ou de numeração. O arquivo final mantém o desenho monocromático, os prolongamentos axilares laterais e espaço livre para os marcadores.
+O arquivo publicado é SVG puro, em preto e branco, sem anatomia inventada por geração de imagem. A camada interativa da web acrescenta somente os achados móveis. Essa separação mantém o desenho e os textos idênticos na tela, no PNG e no PDF.

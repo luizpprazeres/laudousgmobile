@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { BreastSchemaFinding } from '@/lib/visualSchemas/adapters'
 
-const VIEW = { width: 640, height: 427, cy: 216, rightX: 171, leftX: 472, rx: 104, ry: 112, maxCm: 6 }
-const ASSET = '/schemas/breast/frontal-v4.png'
+const VIEW = { width: 1608, height: 1138, cy: 686, rightX: 435, leftX: 1208, rx: 300, ry: 325, maxCm: 6 }
+const ASSET = '/schemas/breast/frontal-v5.svg'
 
 function angle(hour: number) { return (hour / 12) * Math.PI * 2 - Math.PI / 2 }
 function center(side: BreastSchemaFinding['side']) { return side === 'direita' ? VIEW.rightX : VIEW.leftX }
@@ -29,8 +29,8 @@ function fromPoint(x: number, y: number) {
 }
 
 function radius(finding: BreastSchemaFinding, max: number) {
-  if (!finding.sizeMaxMm) return 8
-  return 5 + Math.min(finding.sizeMaxMm / max, 1) * 9
+  if (!finding.sizeMaxMm) return 20
+  return 12 + Math.min(finding.sizeMaxMm / max, 1) * 24
 }
 
 function imageAsDataUrl(source: string, signal: AbortSignal) {
@@ -87,7 +87,7 @@ export function BreastSchema({ findings, svgRef, onMove }: { findings: BreastSch
     })
     buckets.forEach((bucket) => bucket.forEach((finding, index) => {
       const base = point(finding)
-      const offset = index === 0 ? { x: 0, y: 0 } : { x: ((index % 3) - 1) * 18, y: Math.ceil(index / 3) * 16 }
+      const offset = index === 0 ? { x: 0, y: 0 } : { x: ((index % 3) - 1) * 45, y: Math.ceil(index / 3) * 40 }
       result.set(finding.id, { x: base.x + offset.x, y: base.y + offset.y })
     }))
     return result
@@ -105,9 +105,9 @@ export function BreastSchema({ findings, svgRef, onMove }: { findings: BreastSch
       <rect width={VIEW.width} height={VIEW.height} fill="white" />
       {baseImage ? <image href={baseImage} x="0" y="0" width={VIEW.width} height={VIEW.height} preserveAspectRatio="none" /> : null}
       {findings.map((finding, index) => { const p = positions.get(finding.id) ?? point(finding); return <g key={finding.id} role="button" tabIndex={0} className="cursor-grab active:cursor-grabbing" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDragging(finding.id) }}>
-        <circle cx={p.x} cy={p.y} r={radius(finding, maximum) + 6} fill="transparent" />
+        <circle cx={p.x} cy={p.y} r={radius(finding, maximum) + 16} fill="transparent" />
         <Marker finding={finding} x={p.x} y={p.y} r={radius(finding, maximum)} />
-        <text x={p.x} y={p.y - radius(finding, maximum) - 7} textAnchor="middle" fontSize="9" fontWeight="700" fill="#111827">{index + 1}</text>
+        <text x={p.x} y={p.y - radius(finding, maximum) - 18} textAnchor="middle" fontSize="22" fontWeight="700" fill="#111827">{index + 1}</text>
       </g> })}
     </svg>
     {imageError ? <p className="mt-2 text-xs text-rose-600">{imageError}</p> : null}
