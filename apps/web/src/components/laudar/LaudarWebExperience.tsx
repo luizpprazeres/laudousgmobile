@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, ChevronDown, RotateCcw, Smartphone } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronDown, RotateCcw, ScanLine, Smartphone } from 'lucide-react'
 import {
   CATEGORIES,
   GENERIC_CATEGORIES,
@@ -12,6 +12,7 @@ import {
   tireoideSections,
   type ExamSection,
   type ExamState,
+  type OrganState,
   type TireoideState,
 } from '@/lib/deterministic'
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
@@ -57,6 +58,7 @@ import { OrganFormPanel } from './OrganFormPanel'
 import { TireoideFormPanel } from './TireoideFormPanel'
 import { MamariaFormPanel } from './MamariaFormPanel'
 import { DopplerCarotidasFormPanel } from './DopplerCarotidasFormPanel'
+import { VisualSchemaPanel } from '@/components/visualSchemas/VisualSchemaPanel'
 
 const TIREOIDE_ID = 'TIREOIDE'
 type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
@@ -179,6 +181,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, initialExamState(c)]))
   )
   const [tireoideState, setTireoideState] = useState<TireoideState>(() => initialTireoideState())
+  const [visualSchemaOpen, setVisualSchemaOpen] = useState(false)
   // Seção ativa por categoria.
   const [activeByCat, setActiveByCat] = useState<Record<string, string>>(() => ({
     ...Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, c.sections[0]?.id ?? ''])),
@@ -203,6 +206,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   }, [])
 
   const isTireoide = categoria === TIREOIDE_ID
+  const supportsVisualSchema = isTireoide || categoria === 'MAMARIA'
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
   // Controles de categoria (estado reservado em '__opts') — lido antes das seções
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
@@ -673,6 +677,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           </ToolbarPill>
         ) : null}
 
+        {supportsVisualSchema ? (
+          <ToolbarPill tone={visualSchemaOpen ? 'toggleOn' : 'neutral'} onClick={() => setVisualSchemaOpen((open) => !open)}>
+            <ScanLine className="h-4 w-4" />
+            {visualSchemaOpen ? 'Esquema aberto' : 'Esquema visual'}
+          </ToolbarPill>
+        ) : null}
+
         <ToolbarPill onClick={() => setCompanionOpen((open) => !open)}>
           <Smartphone className="h-4 w-4" />
           <span className={`h-2 w-2 rounded-full ${companionState.connected ? 'animate-pulse bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
@@ -884,7 +895,19 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               </p>
             ) : null}
 
-            <LaudoPreview
+            {visualSchemaOpen && supportsVisualSchema ? (
+              <VisualSchemaPanel
+                category={isTireoide ? 'TIREOIDE' : 'MAMARIA'}
+                breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
+                thyroidState={tireoideState}
+                onBreastChange={(nextState) => setExamStates((all) => ({
+                  ...all,
+                  MAMARIA: { ...all.MAMARIA, mamas: nextState },
+                }))}
+                onThyroidChange={setTireoideState}
+                onClose={() => setVisualSchemaOpen(false)}
+              />
+            ) : <LaudoPreview
               documentKey={categoria}
               text={preview}
               saveState={saveState}
@@ -904,7 +927,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               canUndoSuggestion={canUndoSuggestion}
               onUndoSuggestion={undoAcceptedSuggestion}
               updating={migrada && (laudoCanonico.carregando || laudoCanonico.desatualizado)}
-            />
+            />}
           </div>
         </div>
       </main>
