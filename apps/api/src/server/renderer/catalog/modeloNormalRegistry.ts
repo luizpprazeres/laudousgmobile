@@ -268,6 +268,13 @@ render: (f, o) =>
   {
     categoria: "MAMARIA", rotulo: "Mamas e axilas", schema: MamariaFindingsSchema,
     estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
+    /**
+     * `escopo_exame` é opcional no schema para aceitar achados antigos, mas o
+     * gerador genérico de normalidade representa enum opcional como `null` — e
+     * `null` não é um escopo válido. Sem o seed, a categoria inteira sumia da
+     * Biblioteca depois que os três escopos foram introduzidos na Sprint 15.
+     */
+    seed: { escopo_exame: "mamas" },
     render: (f, o) =>
       renderMamaria(f, undefined as never, {
         objetivo: o.objetivo,

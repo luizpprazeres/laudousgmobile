@@ -54,6 +54,8 @@ Resultado: Clássico e Objetivo funcionam de verdade nas sete categorias que ain
 
 A execução será dividida em três entregas curtas: `16A` para Abdome superior, Vias urinárias e Próstata suprapúbica; `16B` para Cervical e Cervicometria; `16C` para Partes moles e Musculoesquelético. Cada categoria só migra após comparar o mesmo conjunto de achados nos dois estilos. Musculoesquelético permanece separado porque exige mais texto livre e não pode receber frases estruturadas inventadas.
 
+Status em 31/08: `16A` concluída e validada. `16B` é a próxima entrega.
+
 ### Sprint 17 — Editor real e cópia com formatação
 
 Resultado: os controles acima do laudo passam a executar exatamente o que dizem.
@@ -100,4 +102,4 @@ Como referência de mercado, o Laudário anuncia laudos estruturados, cálculos 
 
 ## Próxima ação
 
-Começar pela Sprint 15. Ela resolve um erro já visível no laudo, fecha o escopo `axilas isoladas`, reorganiza a descrição conforme o raciocínio BI-RADS e cria a base clínica necessária para o primeiro esquema visual da web.
+Executar a Sprint 16B: migrar Cervical e Cervicometria para o renderer canônico, comparando os mesmos achados nos estilos Clássico e Objetivo e preservando a cervicometria isolada e complementar aos exames obstétricos.

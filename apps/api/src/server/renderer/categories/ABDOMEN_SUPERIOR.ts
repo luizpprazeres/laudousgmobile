@@ -333,8 +333,17 @@ export function renderAbdomenSuperiorClassico(f: AbdomenSuperiorFindings): strin
     // Reusa a lógica clínica por órgão do ABDOMEN_TOTAL (frases byte-a-byte,
     // litíase/esteatose/ateromatose/cisto/parede espessada/colecistectomia/gases).
     const rendered: OrganRender = renderOrgan(organ as AbdomenOrganKey, state);
-    const base = rendered.body !== null ? rendered.body : ORGAO_NORMAL_CLASSICO[organ];
-    aspectos.push(base);
+    /**
+     * `renderGenerico` devolve achados livres separados do corpo. Nesse caso,
+     * imprimir também a frase normal criaria contradição (ex.: "veia porta de
+     * calibre normal" seguida de "veia porta de calibre aumentado").
+     */
+    const base = rendered.body !== null
+      ? rendered.body
+      : rendered.freeSlotFindings.length > 0
+        ? null
+        : ORGAO_NORMAL_CLASSICO[organ];
+    if (base) aspectos.push(base);
     conclusaoItens.push(...rendered.conclusao);
     // Achados fora do catálogo determinístico (free-slot): no caminho clássico
     // determinístico (sem LLM secundário) preservamos o termo do médico no corpo
@@ -428,8 +437,12 @@ export function renderAbdomenSuperiorObjetivo(f: AbdomenSuperiorFindings): strin
     // Reusa a clínica por órgão do ABDOMEN_TOTAL (frases byte-a-byte; mesmas do
     // clássico). Órgão normal → frase normal objetiva (nReport).
     const rendered: OrganRender = renderOrgan(organ as AbdomenOrganKey, state);
-    const base = rendered.body !== null ? rendered.body : ORGAO_NORMAL_OBJETIVO[organ];
-    achadosLinhas.push(base);
+    const base = rendered.body !== null
+      ? rendered.body
+      : rendered.freeSlotFindings.length > 0
+        ? null
+        : ORGAO_NORMAL_OBJETIVO[organ];
+    if (base) achadosLinhas.push(base);
     impressaoItens.push(...rendered.conclusao);
     // Achados fora do catálogo determinístico (free-slot): preserva o termo do
     // médico no corpo para não perder o achado silenciosamente (espelha o clássico).

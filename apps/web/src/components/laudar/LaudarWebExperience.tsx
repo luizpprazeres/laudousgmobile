@@ -22,6 +22,9 @@ import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
 import { adaptarDopplerObstetrico } from '@/lib/catalog/dopplerParaCatalogo'
 import { adaptarDopplerCarotidas } from '@/lib/catalog/dopplerCarotidasParaCatalogo'
 import { adaptarAbdome } from '@/lib/catalog/abdomeParaCatalogo'
+import { adaptarAbdomeSuperior } from '@/lib/catalog/abdomeSuperiorParaCatalogo'
+import { adaptarViasUrinarias } from '@/lib/catalog/viasUrinariasParaCatalogo'
+import { adaptarProstataSuprapubica } from '@/lib/catalog/prostataParaCatalogo'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
@@ -260,6 +263,15 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'ABDOMEN_TOTAL') {
       return adaptarAbdome((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'ABDOMEN_SUPERIOR') {
+      return adaptarAbdomeSuperior((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'VIAS_URINARIAS') {
+      return adaptarViasUrinarias((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'PROSTATA_SUPRAPUBICA') {
+      return adaptarProstataSuprapubica((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
     if (categoria === 'MORFOLOGICO') {
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>

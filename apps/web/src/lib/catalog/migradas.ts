@@ -18,6 +18,9 @@
  * | OBSTETRICA | 22/08 | `obstetrica-ponta-a-ponta.manual.ts` |
  * | MORFOLOGICO | 22/08 | `morfologico-ponta-a-ponta.manual.ts` |
  * | ABDOMEN_TOTAL | 23/08 | `abdome-ponta-a-ponta.manual.ts` — só o CLÁSSICO |
+ * | ABDOMEN_SUPERIOR | 31/08 | `sprint16a-ponta-a-ponta.manual.ts` |
+ * | VIAS_URINARIAS | 31/08 | `sprint16a-ponta-a-ponta.manual.ts` |
+ * | PROSTATA_SUPRAPUBICA | 31/08 | `sprint16a-ponta-a-ponta.manual.ts` |
  */
 export const CATEGORIAS_MIGRADAS = [
   "TIREOIDE",
@@ -28,6 +31,9 @@ export const CATEGORIAS_MIGRADAS = [
   "DOPPLER_OBSTETRICO",
   "ABDOMEN_TOTAL",
   "DOPPLER_CAROTIDAS",
+  "ABDOMEN_SUPERIOR",
+  "VIAS_URINARIAS",
+  "PROSTATA_SUPRAPUBICA",
 ] as const
 
 export function categoriaMigrada(categoria: string): boolean {
