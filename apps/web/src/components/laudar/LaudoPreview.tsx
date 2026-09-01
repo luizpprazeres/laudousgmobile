@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { Check, Copy, RotateCcw, Save, Undo2, WandSparkles, X } from 'lucide-react'
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import { Check, Copy, Redo2, RotateCcw, Save, Undo2, X } from 'lucide-react'
 import type { SaveState } from './LaudarWebExperience'
 import type { ReportSuggestionDiff } from './reportSuggestion'
+import { reportHtmlToText, sanitizeReportHtml } from './reportRichText'
 
 type Props = {
   documentKey?: string
@@ -13,11 +14,12 @@ type Props = {
   onSave?: () => void
   workspaceV2?: boolean
   editable?: boolean
-  editableText?: string
+  editableHtml?: string
+  formattedHtml?: string
   draftDirty?: boolean
   sourceChanged?: boolean
   suggestionDiff?: ReportSuggestionDiff | null
-  onTextChange?: (text: string) => void
+  onDocumentChange?: (value: { text: string; html: string }) => void
   onResetDraft?: () => void
   onAcceptSuggestion?: () => void
   onRejectSuggestion?: () => void
@@ -65,27 +67,62 @@ function HeaderPrefix({ paragraph }: { paragraph: string }) {
   )
 }
 
-function ReportTextEditor({ value, onChange }: { value: string; onChange: (text: string) => void }) {
-  const ref = useRef<HTMLTextAreaElement>(null)
+type EditorCommand = 'bold' | 'italic' | 'underline' | 'highlight' | 'undo' | 'redo'
+
+type ReportTextEditorHandle = {
+  execute: (command: EditorCommand) => void
+}
+
+const ReportTextEditor = forwardRef<ReportTextEditorHandle, {
+  html: string
+  onChange: (value: { text: string; html: string }) => void
+}>(function ReportTextEditor({ html, onChange }, forwardedRef) {
+  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const element = ref.current
     if (!element) return
-    element.style.height = 'auto'
-    element.style.height = `${Math.max(element.scrollHeight, 520)}px`
-  }, [value])
+    const next = sanitizeReportHtml(html)
+    if (sanitizeReportHtml(element.innerHTML) !== next) element.innerHTML = next
+  }, [html])
+
+  const publish = () => {
+    const element = ref.current
+    if (!element) return
+    const safeHtml = sanitizeReportHtml(element.innerHTML)
+    onChange({ text: reportHtmlToText(safeHtml), html: safeHtml })
+  }
+
+  useImperativeHandle(forwardedRef, () => ({
+    execute(command) {
+      const element = ref.current
+      if (!element || typeof document === 'undefined') return
+      element.focus()
+      if (command === 'highlight') document.execCommand('hiliteColor', false, '#fde68a')
+      else document.execCommand(command, false)
+      publish()
+    },
+  }))
 
   return (
-    <textarea
+    <div
       ref={ref}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
+      contentEditable
+      suppressContentEditableWarning
+      onInput={publish}
+      onBlur={publish}
+      onPaste={(event) => {
+        event.preventDefault()
+        document.execCommand('insertText', false, event.clipboardData.getData('text/plain'))
+      }}
+      role="textbox"
+      aria-multiline="true"
       aria-label="Editar texto do laudo"
       spellCheck
-      className="block min-h-[520px] w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-sans text-[14px] leading-[1.75] text-gray-950 outline-none focus:ring-0 dark:text-gray-100"
+      className="block min-h-[520px] w-full cursor-text border-0 bg-transparent p-0 text-inherit outline-none focus:ring-0 [&_h1]:mb-7 [&_h1]:text-center [&_h1]:text-base [&_h1]:font-bold [&_h1]:uppercase [&_h1]:tracking-wide [&_mark]:rounded-sm [&_mark]:bg-amber-200 [&_mark]:px-0.5 [&_p]:mb-4 dark:[&_mark]:bg-amber-700/70"
     />
   )
-}
+})
 
 export function LaudoPreview({
   documentKey,
@@ -95,11 +132,12 @@ export function LaudoPreview({
   onSave,
   workspaceV2 = false,
   editable = false,
-  editableText = '',
+  editableHtml = '',
+  formattedHtml,
   draftDirty = false,
   sourceChanged = false,
   suggestionDiff,
-  onTextChange,
+  onDocumentChange,
   onResetDraft,
   onAcceptSuggestion,
   onRejectSuggestion,
@@ -109,15 +147,35 @@ export function LaudoPreview({
 }: Props) {
   const paragraphs = text.split('\n\n')
   const documentScrollRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<ReportTextEditorHandle>(null)
 
   useEffect(() => {
     if (documentScrollRef.current) documentScrollRef.current.scrollTop = 0
   }, [documentKey])
 
-  const copy = async () => {
+  const copyPlainText = async () => {
     if (typeof navigator === 'undefined' || !navigator.clipboard) return
     await navigator.clipboard.writeText(text)
   }
+
+  const copyFormatted = async () => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return
+    const safeHtml = sanitizeReportHtml(formattedHtml ?? editableHtml)
+    try {
+      if (safeHtml && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([safeHtml], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+        })])
+        return
+      }
+    } catch {
+      // Navegadores sem permissão para HTML ainda recebem o laudo em texto.
+    }
+    await navigator.clipboard.writeText(text)
+  }
+
+  const execute = (command: EditorCommand) => editorRef.current?.execute(command)
 
   return (
     <section className={workspaceV2
@@ -137,13 +195,20 @@ export function LaudoPreview({
         ? 'border-gray-100 bg-white/95 px-4 py-3 dark:border-gray-800 dark:bg-[#1C1C1E]/95'
         : 'border-gray-200 bg-white/95 px-4 py-2 dark:border-gray-800 dark:bg-gray-950/95'}`}>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          {!workspaceV2 ? (
+          {editable ? (
             <>
-              {['B', 'I', 'U'].map((label) => (
+              {([
+                ['B', 'Negrito', 'bold'],
+                ['I', 'Itálico', 'italic'],
+                ['U', 'Sublinhado', 'underline'],
+              ] as const).map(([label, title, command]) => (
                 <button
                   key={label}
                   type="button"
-                  title={{ B: 'Negrito', I: 'Itálico', U: 'Sublinhado' }[label]}
+                  title={title}
+                  aria-label={title}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => execute(command)}
                   className="h-7 w-7 rounded-md border border-gray-200 bg-white text-[13px] font-bold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
                   {label}
@@ -152,18 +217,31 @@ export function LaudoPreview({
               <button
                 type="button"
                 title="Destacar trecho"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => execute('highlight')}
                 className="h-7 rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Destacar
               </button>
               <button
                 type="button"
-                disabled
-                title="Refazer o texto com IA (em breve)"
-                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 text-[11px] font-semibold text-gray-400 dark:border-gray-800 dark:bg-gray-900/60 dark:text-gray-600"
+                title="Desfazer edição"
+                aria-label="Desfazer edição"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => execute('undo')}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
               >
-                <WandSparkles className="h-3.5 w-3.5" />
-                Refazer com IA
+                <Undo2 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                title="Refazer edição"
+                aria-label="Refazer edição"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => execute('redo')}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                <Redo2 className="h-3.5 w-3.5" />
               </button>
             </>
           ) : null}
@@ -173,7 +251,7 @@ export function LaudoPreview({
 
           <button
             type="button"
-            onClick={copy}
+            onClick={copyFormatted}
             title="Copiar com formatação"
             className="inline-flex h-7 items-center gap-1.5 rounded-md bg-emerald-600 px-2.5 text-[11px] font-bold text-white transition hover:bg-emerald-700"
           >
@@ -182,7 +260,7 @@ export function LaudoPreview({
           </button>
           <button
             type="button"
-            onClick={copy}
+            onClick={copyPlainText}
             title="Copiar sem formatação (texto puro)"
             aria-label="Copiar sem formatação"
             className="inline-flex h-7 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
@@ -254,8 +332,8 @@ export function LaudoPreview({
         <article aria-busy={updating} className={`${updating ? 'opacity-55 blur-[0.35px]' : 'opacity-100 blur-0'} transition-[filter,opacity] duration-200 ${workspaceV2
           ? 'mx-auto min-h-full max-w-[760px] bg-white px-6 py-5 font-sans text-[14px] leading-[1.65] text-gray-950 dark:bg-[#1C1C1E] dark:text-gray-100'
           : "mx-auto min-h-full max-w-[760px] rounded-sm bg-white px-12 py-12 font-['Times_New_Roman'] text-[15px] leading-[1.62] text-gray-950 shadow-xl"}`}>
-          {editable && onTextChange ? (
-            <ReportTextEditor value={editableText} onChange={onTextChange} />
+          {editable && onDocumentChange ? (
+            <ReportTextEditor ref={editorRef} html={editableHtml} onChange={onDocumentChange} />
           ) : paragraphs.map((paragraph, index) => {
             const trimmed = paragraph.trim()
             if (!trimmed) return null

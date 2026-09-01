@@ -123,9 +123,13 @@ function renderizar(categoria: string, dados: Record<string, unknown>) {
     'estado.alterado.diag': '',
   }
   const adaptado = adaptarMusculoesqueletico(estado)
-  assert.equal(adaptado.pendencias.length, 1)
-  assert.equal(adaptado.pendencias[0]?.bloqueia, true)
-  assert.match(adaptado.pendencias[0]?.motivo ?? '', /falta o diagnóstico/)
+  assert.deepEqual(adaptado.pendencias, [])
+  const textos = renderizar('MUSCULOESQUELETICO', adaptado.dados)
+  for (const texto of Object.values(textos)) {
+    assert.match(texto, /Bursa com pequena quantidade de líquido/)
+    assert.match(texto, /Alteração ecográfica na topografia de bursa SASD do ombro direito, a esclarecer/i)
+    assert.doesNotMatch(texto, /Ombro direito sem alterações ecográficas relevantes/)
+  }
 }
 
 console.log('sprint 16C: Partes moles e Musculoesquelético preservam achados nos estilos Clássico e Objetivo')

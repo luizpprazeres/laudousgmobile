@@ -14,5 +14,5 @@ export default async function GerarPage() {
 
   if (!user) redirect('/login?redirect=/app/gerar')
 
-  return <LaudarWebExperience />
+  return <LaudarWebExperience richEditor />
 }

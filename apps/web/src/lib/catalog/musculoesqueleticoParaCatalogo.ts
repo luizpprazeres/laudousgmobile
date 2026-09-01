@@ -14,8 +14,10 @@ const texto = (s: Secao, chave: string): string =>
 /**
  * MSK é deliberadamente uma ponte literal. A descrição digitada vira
  * `descricao_livre`, o diagnóstico digitado vira `diagnostico_conclusao` e o
- * slug permanece `outro`. Assim esta camada nunca deduz tendinopatia, rotura,
- * bursite ou qualquer outra morfologia a partir do texto do usuário.
+ * slug permanece `outro`. Se o médico descreveu uma alteração sem preencher a
+ * conclusão, esta ponte cria apenas um fechamento topográfico neutro. Assim ela
+ * não bloqueia o laudo nem deduz tendinopatia, rotura, bursite ou qualquer outra
+ * morfologia específica a partir do texto do usuário.
  */
 export function adaptarMusculoesqueletico(estado: Estado) {
   const opcoes = secao(estado, '__opts')
@@ -28,12 +30,7 @@ export function adaptarMusculoesqueletico(estado: Estado) {
     descricao_livre: string | null
     diagnostico_conclusao: string
   }> = []
-  const pendencias: Array<{
-    onde: string
-    valor: string
-    motivo: string
-    bloqueia: boolean
-  }> = []
+  const pendencias: Array<never> = []
 
   for (const estrutura of SEGMENTOS[segmento]!.estruturas) {
     const id = `${segmento}__${estrutura.id}`
@@ -42,21 +39,14 @@ export function adaptarMusculoesqueletico(estado: Estado) {
 
     const descricao = texto(s, 'estado.alterado.corpo')
     const diagnostico = texto(s, 'estado.alterado.diag')
-    if (!diagnostico) {
-      pendencias.push({
-        onde: estrutura.label,
-        valor: descricao,
-        motivo: 'foi marcado como alterado, mas falta o diagnóstico da conclusão',
-        bloqueia: true,
-      })
-      continue
-    }
+    const conclusao = diagnostico ||
+      `Alteração ecográfica na topografia de ${estrutura.label.toLowerCase()} do ${SEGMENTOS[segmento]!.label.toLowerCase()} ${lado}, a esclarecer.`
 
     alteracoes.push({
       estrutura: estrutura.id,
       achado_tipo: 'outro',
       descricao_livre: descricao || null,
-      diagnostico_conclusao: diagnostico,
+      diagnostico_conclusao: conclusao,
     })
   }
 

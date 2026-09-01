@@ -11,7 +11,7 @@ Fazer Partes moles e Musculoesquelético saírem do renderer canônico na web no
 - Musculoesquelético mantém o segmento e a lateralidade escolhidos na web.
 - A descrição livre vai somente para o corpo e o diagnóstico livre vai somente para a conclusão.
 - O adaptador MSK usa sempre `achado_tipo: outro`; ele não deduz tendinopatia, rotura, bursite ou morfologia canônica a partir do texto.
-- Diagnóstico sem descrição é aceito com frase corporal neutra. Descrição alterada sem diagnóstico bloqueia o laudo para evitar conclusão vazia ou normalidade contraditória.
+- Diagnóstico sem descrição é aceito com frase corporal neutra. Descrição alterada sem diagnóstico recebe uma conclusão topográfica neutra, sem inventar uma doença específica.
 
 ## Critérios de aceite
 
@@ -20,7 +20,7 @@ Fazer Partes moles e Musculoesquelético saírem do renderer canônico na web no
 - [x] Partes moles preserva medidas, localização, Doppler e campos específicos de hérnia.
 - [x] MSK preserva segmento, lado, descrição e diagnóstico informados.
 - [x] Texto livre de MSK não é classificado automaticamente em um achado canônico.
-- [x] Estrutura marcada como alterada sem diagnóstico bloqueia a geração.
+- [x] Estrutura marcada como alterada sem diagnóstico não bloqueia a geração nem resulta em conclusão normal contraditória.
 - [x] Os goldens existentes de Partes moles, MSK e passthrough permanecem verdes.
 - [x] A Biblioteca oferece modelo para todas as categorias migradas.
 - [x] Typecheck, build e `git diff --check` passam.
@@ -43,7 +43,7 @@ Este sprint não altera o writer com IA, o passthrough de laudo MSK pronto, o ed
 
 As duas últimas categorias que ainda dependiam do compositor local agora passam pelo renderer canônico. Em Partes moles, a ponte só traduz campos e unidades. Em Musculoesquelético, cada texto digitado permanece no papel escolhido pelo usuário: descrição no corpo e diagnóstico na conclusão.
 
-O MSK não tenta classificar o texto em uma doença. Quando há somente diagnóstico, o corpo recebe a frase neutra já protegida pelo renderer. Quando há descrição alterada sem diagnóstico, a web interrompe a montagem e informa o campo ausente, evitando conclusão vazia ou normalidade contraditória.
+O MSK não tenta classificar o texto em uma doença. Quando há somente diagnóstico, o corpo recebe a frase neutra já protegida pelo renderer. Quando há descrição alterada sem diagnóstico, a web conclui apenas que existe uma alteração naquela topografia, “a esclarecer”, evitando tanto o bloqueio quanto uma conclusão vazia ou uma normalidade contraditória.
 
 ## Validação
 

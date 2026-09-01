@@ -44,6 +44,12 @@ import { categoryCompactName, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
 import { CompanionPanel } from './CompanionPanel'
 import { diffReportBlocks } from './reportSuggestion'
+import {
+  appendInitialsToReportHtml,
+  attachReportPresentation,
+  mergeReportHtml,
+  textToReportHtml,
+} from './reportRichText'
 import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -68,13 +74,17 @@ type LaudarWebExperienceProps = {
 
 type ReportDraft = {
   text: string
+  html: string
   sourceText: string
+  sourceHtml: string
   dirty: boolean
 }
 
 type UndoSnapshot = {
   previousText: string
+  previousHtml: string
   appliedText: string
+  appliedHtml: string
 }
 
 function CategorySelector({
@@ -382,40 +392,61 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // Depois da primeira edição, uma nova composição nunca sobrescreve o rascunho.
   const [reportDrafts, setReportDrafts] = useState<Record<string, ReportDraft>>({})
   const [undoByCategory, setUndoByCategory] = useState<Record<string, UndoSnapshot | undefined>>({})
+  const generatedHtml = useMemo(() => textToReportHtml(composedText), [composedText])
   const storedDraft = reportDrafts[categoria]
   const activeDraft: ReportDraft = storedDraft ?? {
     text: composedText,
+    html: generatedHtml,
     sourceText: composedText,
+    sourceHtml: generatedHtml,
     dirty: false,
   }
   const documentText = richEditor && activeDraft.dirty ? activeDraft.text : composedText
+  const documentHtml = richEditor && activeDraft.dirty ? activeDraft.html : generatedHtml
   const sourceChanged = richEditor && activeDraft.dirty && activeDraft.sourceText !== composedText
   const suggestionDiff = useMemo(
     () => sourceChanged ? diffReportBlocks(documentText, composedText) : null,
     [composedText, documentText, sourceChanged]
   )
-  const onDocumentChange = (text: string) => {
+  const onDocumentChange = ({ text, html }: { text: string; html: string }) => {
     setUndoByCategory((undo) => ({ ...undo, [categoria]: undefined }))
     setReportDrafts((drafts) => {
       const sourceText = drafts[categoria]?.dirty ? drafts[categoria].sourceText : composedText
+      const sourceHtml = drafts[categoria]?.dirty ? drafts[categoria].sourceHtml : generatedHtml
       return {
         ...drafts,
         [categoria]: {
           text,
+          html,
           sourceText,
-          dirty: text !== sourceText,
+          sourceHtml,
+          dirty: text !== sourceText || html !== sourceHtml,
         },
       }
     })
   }
   const applyCurrentModel = () => {
+    const appliedHtml = activeDraft.dirty
+      ? mergeReportHtml(documentHtml, composedText)
+      : generatedHtml
     setUndoByCategory((undo) => ({
       ...undo,
-      [categoria]: { previousText: documentText, appliedText: composedText },
+      [categoria]: {
+        previousText: documentText,
+        previousHtml: documentHtml,
+        appliedText: composedText,
+        appliedHtml,
+      },
     }))
     setReportDrafts((drafts) => ({
       ...drafts,
-      [categoria]: { text: composedText, sourceText: composedText, dirty: false },
+      [categoria]: {
+        text: composedText,
+        html: appliedHtml,
+        sourceText: composedText,
+        sourceHtml: generatedHtml,
+        dirty: appliedHtml !== generatedHtml,
+      },
     }))
   }
   const resetDocumentDraft = () => {
@@ -423,7 +454,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       const confirmed = window.confirm('Substituir a edição manual pelo modelo gerado a partir dos campos atuais?')
       if (!confirmed) return
     }
-    applyCurrentModel()
+    setUndoByCategory((undo) => ({ ...undo, [categoria]: undefined }))
+    setReportDrafts((drafts) => ({
+      ...drafts,
+      [categoria]: {
+        text: composedText,
+        html: generatedHtml,
+        sourceText: composedText,
+        sourceHtml: generatedHtml,
+        dirty: false,
+      },
+    }))
   }
   const rejectCurrentModel = () => {
     setReportDrafts((drafts) => {
@@ -432,8 +473,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         ...drafts,
         [categoria]: {
           text: current.text,
+          html: current.html,
           sourceText: composedText,
-          dirty: current.text !== composedText,
+          sourceHtml: generatedHtml,
+          dirty: current.text !== composedText || current.html !== generatedHtml,
         },
       }
     })
@@ -445,8 +488,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       ...drafts,
       [categoria]: {
         text: snapshot.previousText,
+        html: snapshot.previousHtml,
         sourceText: composedText,
-        dirty: snapshot.previousText !== composedText,
+        sourceHtml: generatedHtml,
+        dirty: snapshot.previousText !== composedText || snapshot.previousHtml !== generatedHtml,
       },
     }))
     setUndoByCategory((undo) => ({ ...undo, [categoria]: undefined }))
@@ -455,11 +500,16 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const canUndoSuggestion = Boolean(
     undoSnapshot &&
     undoSnapshot.appliedText === composedText &&
+    undoSnapshot.appliedHtml === documentHtml &&
     documentText === composedText
   )
   const preview = useMemo(
     () => appendInitials(documentText, initials || undefined),
     [documentText, initials]
+  )
+  const previewHtml = useMemo(
+    () => appendInitialsToReportHtml(documentHtml, initials || undefined),
+    [documentHtml, initials]
   )
 
   // Persistência real (S9) — substitui o status falso. Volta a "idle" quando o
@@ -471,7 +521,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   useEffect(() => {
     setSaveState('idle')
     setSaveError(null)
-  }, [preview])
+  }, [preview, previewHtml])
   /**
    * SALVAR um laudo que já não corresponde ao formulário — o buraco fechado.
    *
@@ -484,8 +534,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
    * A recusa não vale para o texto EDITADO à mão: aí o médico assumiu a
    * redação, e ela é dele, não do motor.
    */
+  const textoFoiEditado = activeDraft.text !== activeDraft.sourceText
   const laudoNaoConfere =
-    migrada && !activeDraft.dirty && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
+    migrada && !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
 
   const onSave = async () => {
     if (laudoNaoConfere) {
@@ -504,7 +555,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         categoryCode: categoria,
         title: currentCategory.name,
         laudoText: preview,
-        examState: isTireoide ? tireoideState : examStates[categoria],
+        examState: attachReportPresentation(
+          isTireoide ? tireoideState : examStates[categoria],
+          previewHtml,
+        ),
       })
       setSaveState('saved')
     } catch (e) {
@@ -837,12 +891,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               saveError={saveError}
               onSave={onSave}
               workspaceV2={workspaceV2}
-              editable={workspaceV2 && richEditor}
-              editableText={documentText}
+              editable={richEditor}
+              editableHtml={documentHtml}
+              formattedHtml={previewHtml}
               draftDirty={activeDraft.dirty}
               sourceChanged={sourceChanged}
               suggestionDiff={suggestionDiff}
-              onTextChange={onDocumentChange}
+              onDocumentChange={onDocumentChange}
               onResetDraft={resetDocumentDraft}
               onAcceptSuggestion={applyCurrentModel}
               onRejectSuggestion={rejectCurrentModel}

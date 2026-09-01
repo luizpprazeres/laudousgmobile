@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Check, Copy, Trash2, X } from 'lucide-react'
 import { deleteWebReport } from '@/lib/webReports'
 import { categoriaLabel, dataFmt, type HistoryItem } from './HistoryItem'
+import { sanitizeReportHtml } from '@/components/laudar/reportRichText'
 
 /**
  * O laudo aberto — o MESMO conteúdo no painel do desktop e na folha do celular.
@@ -31,7 +32,19 @@ export function ReportDetail({
 
   const copiar = async () => {
     try {
-      await navigator.clipboard.writeText(item.text)
+      const safeHtml = item.html ? sanitizeReportHtml(item.html) : null
+      if (safeHtml && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({
+            'text/html': new Blob([safeHtml], { type: 'text/html' }),
+            'text/plain': new Blob([item.text], { type: 'text/plain' }),
+          })])
+        } catch {
+          await navigator.clipboard.writeText(item.text)
+        }
+      } else {
+        await navigator.clipboard.writeText(item.text)
+      }
       setCopiado(true)
       setTimeout(() => setCopiado(false), 2000)
     } catch {
@@ -119,9 +132,16 @@ export function ReportDetail({
         o médico vai colar num documento, e vê-lo aqui como ele sairá lá evita a
         surpresa na hora de assinar.
       */}
-      <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap px-6 py-5 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 dark:text-gray-200">
-        {item.text}
-      </pre>
+      {item.html ? (
+        <article
+          className="min-h-0 flex-1 overflow-y-auto px-6 py-5 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 [&_h1]:mb-7 [&_h1]:text-center [&_h1]:font-bold [&_h1]:uppercase [&_mark]:rounded-sm [&_mark]:bg-amber-200 [&_p]:mb-4 dark:text-gray-200 dark:[&_mark]:bg-amber-700/70"
+          dangerouslySetInnerHTML={{ __html: sanitizeReportHtml(item.html) }}
+        />
+      ) : (
+        <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap px-6 py-5 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 dark:text-gray-200">
+          {item.text}
+        </pre>
+      )}
     </div>
   )
 }

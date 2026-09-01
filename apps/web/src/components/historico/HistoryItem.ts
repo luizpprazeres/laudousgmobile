@@ -13,6 +13,8 @@ export type HistoryItem = {
   category: string
   title: string | null
   text: string
+  /** Camada opcional de apresentação dos laudos editados na web. */
+  html?: string | null
   date: string
 }
 
