@@ -159,7 +159,7 @@ const CASOS: Caso[] = [
   {
     nome: "apresentação pélvica",
     porque: "o achado mais simples de perder, e o que muda conduta.",
-    estado: com(medida(), "feto", { apresentacao: "pélvica" }),
+    estado: com(medida(), "feto", { "situacao.longitudinal.apresentacao": "pélvica" }),
     exige: ["pélvica"],
     proibe: ["cefálica"],
   },

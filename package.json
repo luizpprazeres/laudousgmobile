@@ -27,6 +27,7 @@
     "validate:sprint6": "tsx tests/doppler-barcelona/runner.ts && tsx apps/api/src/server/renderer/__tests__/situacao-fetal-golden.manual.ts && tsx apps/api/src/server/renderer/__tests__/doppler-obstetrico-golden.manual.ts",
     "validate:sprint17": "tsx apps/web/src/components/laudar/__tests__/report-rich-text.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/catalog/__tests__/sprint16c-ponta-a-ponta.manual.ts",
     "validate:sprint18": "tsx apps/web/src/lib/visualSchemas/__tests__/adapters.manual.ts",
+    "validate:sprint19": "tsx apps/web/src/lib/visualSchemas/__tests__/fetal-position.manual.ts",
     "validate:fetal-growth": "tsx tests/fetal-growth/runner.ts",
     "generate:fmf:trisomias": "node packages/fmf-trisomy/generate-params.mjs",
     "diff:bundle": "tsx scripts/diff-bundle-vs-original.ts"

@@ -163,7 +163,16 @@ const fetoModule: OrganModule = {
           },
         ],
       },
-      { key: 'dorso', label: 'Dorso (opcional)', kind: 'text', placeholder: 'à esquerda' },
+      {
+        key: 'dorso', label: 'Dorso (opcional)', kind: 'segmented',
+        options: [
+          { value: '', label: 'Não informar', isDefault: true },
+          { value: 'à esquerda', label: 'À esquerda' },
+          { value: 'à direita', label: 'À direita' },
+          { value: 'anterior', label: 'Anterior' },
+          { value: 'posterior', label: 'Posterior' },
+        ],
+      },
       { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '145' },
     ],
   },

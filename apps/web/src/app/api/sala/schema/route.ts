@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const examLabel = typeof body.examLabel === 'string' ? body.examLabel : ''
   const png = typeof body.png === 'string' ? body.png : ''
   const pdf = typeof body.pdf === 'string' ? body.pdf : undefined
-  if (!['MAMA', 'TIREOIDE'].includes(examType) || !examLabel || !png) return Response.json({ error: 'Esquema incompleto.' }, { status: 400 })
+  if (!['MAMA', 'TIREOIDE', 'FETAL_POSITION'].includes(examType) || !examLabel || !png) return Response.json({ error: 'Esquema incompleto.' }, { status: 400 })
   if (png.length > MAX_BASE64 || (pdf?.length ?? 0) > MAX_BASE64) return Response.json({ error: 'O esquema ficou grande demais para envio.' }, { status: 413 })
 
   try {

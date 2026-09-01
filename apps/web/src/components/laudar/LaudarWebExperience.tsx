@@ -59,6 +59,7 @@ import { TireoideFormPanel } from './TireoideFormPanel'
 import { MamariaFormPanel } from './MamariaFormPanel'
 import { DopplerCarotidasFormPanel } from './DopplerCarotidasFormPanel'
 import { VisualSchemaPanel } from '@/components/visualSchemas/VisualSchemaPanel'
+import { supportsFetalPositionSchema } from '@/lib/visualSchemas/fetalPosition'
 
 const TIREOIDE_ID = 'TIREOIDE'
 type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
@@ -206,11 +207,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   }, [])
 
   const isTireoide = categoria === TIREOIDE_ID
-  const supportsVisualSchema = isTireoide || categoria === 'MAMARIA'
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
   // Controles de categoria (estado reservado em '__opts') — lido antes das seções
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
   const opts = (examStates[categoria]?.['__opts'] as ExamState[string] | undefined) ?? {}
+  const supportsFetalSchema = supportsFetalPositionSchema(categoria, opts.trimestre)
+  const supportsVisualSchema = isTireoide || categoria === 'MAMARIA' || supportsFetalSchema
   const baseSections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -897,8 +899,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
             {visualSchemaOpen && supportsVisualSchema ? (
               <VisualSchemaPanel
-                category={isTireoide ? 'TIREOIDE' : 'MAMARIA'}
+                category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : 'FETAL_POSITION'}
                 breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
+                fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
                 thyroidState={tireoideState}
                 onBreastChange={(nextState) => setExamStates((all) => ({
                   ...all,

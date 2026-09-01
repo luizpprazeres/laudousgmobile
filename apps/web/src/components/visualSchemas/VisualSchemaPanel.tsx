@@ -4,30 +4,37 @@ import { useMemo, useRef, useState } from 'react'
 import { Download, FileDown, Move, Radio, X } from 'lucide-react'
 import type { OrganState, TireoideState } from '@/lib/deterministic'
 import { breastFindingsFromState, moveBreastFinding, moveThyroidFinding, thyroidFindingsFromState } from '@/lib/visualSchemas/adapters'
+import { fetalPositionFromState } from '@/lib/visualSchemas/fetalPosition'
 import { BreastSchema } from './BreastSchema'
+import { FetalPositionSchema } from './FetalPositionSchema'
 import { ThyroidSchema } from './ThyroidSchema'
 import { base64Only, downloadDataUrl, schemaPdf, schemaPng } from './exportSchema'
 
 type Props = {
-  category: 'MAMARIA' | 'TIREOIDE'
+  category: 'MAMARIA' | 'TIREOIDE' | 'FETAL_POSITION'
   breastState: OrganState
+  fetalState: OrganState
   thyroidState: TireoideState
   onBreastChange: (state: OrganState) => void
   onThyroidChange: (state: TireoideState) => void
   onClose: () => void
 }
 
-export function VisualSchemaPanel({ category, breastState, thyroidState, onBreastChange, onThyroidChange, onClose }: Props) {
+export function VisualSchemaPanel({ category, breastState, fetalState, thyroidState, onBreastChange, onThyroidChange, onClose }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [status, setStatus] = useState<'idle' | 'working' | 'sent' | 'error'>('idle')
   const [message, setMessage] = useState('')
   const breast = useMemo(() => breastFindingsFromState(breastState), [breastState])
+  const fetalPosition = useMemo(() => fetalPositionFromState(fetalState), [fetalState])
   const thyroid = useMemo(() => thyroidFindingsFromState(thyroidState), [thyroidState])
-  const findingsCount = category === 'MAMARIA' ? breast.length : thyroid.length
-  const name = category === 'MAMARIA' ? 'esquema-mamas' : 'esquema-tireoide'
+  const findingsCount = category === 'MAMARIA' ? breast.length : category === 'TIREOIDE' ? thyroid.length : 1
+  const name = category === 'MAMARIA' ? 'esquema-mamas' : category === 'TIREOIDE' ? 'esquema-tireoide' : 'esquema-posicao-fetal'
 
   async function createFiles() {
     if (!svgRef.current) throw new Error('O esquema ainda não está pronto.')
+    if (category === 'FETAL_POSITION' && svgRef.current.dataset.ready !== 'true') {
+      throw new Error('A imagem da posição fetal ainda está sendo preparada.')
+    }
     const png = await schemaPng(svgRef.current)
     const pdf = await schemaPdf(png, category === 'MAMARIA')
     return { png, pdf }
@@ -45,8 +52,8 @@ export function VisualSchemaPanel({ category, breastState, thyroidState, onBreas
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            examType: category === 'MAMARIA' ? 'MAMA' : 'TIREOIDE',
-            examLabel: category === 'MAMARIA' ? 'Esquema de mamas e axilas' : 'Esquema de tireoide',
+            examType: category === 'MAMARIA' ? 'MAMA' : category === 'TIREOIDE' ? 'TIREOIDE' : 'FETAL_POSITION',
+            examLabel: category === 'MAMARIA' ? 'Esquema de mamas e axilas' : category === 'TIREOIDE' ? 'Esquema de tireoide' : 'Esquema da posição fetal',
             png: base64Only(files.png),
             pdf: base64Only(files.pdf),
           }),
@@ -68,15 +75,19 @@ export function VisualSchemaPanel({ category, breastState, thyroidState, onBreas
   return <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]">
     <header className="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"><Move className="h-4 w-4" /></div>
-      <div className="min-w-0 flex-1"><h2 className="font-barlow text-lg font-bold">Esquema visual</h2><p className="text-[11px] text-gray-500">Arraste os marcadores. O formulário será atualizado junto.</p></div>
+      <div className="min-w-0 flex-1"><h2 className="font-barlow text-lg font-bold">Esquema visual</h2><p className="text-[11px] text-gray-500">{category === 'FETAL_POSITION' ? 'O desenho acompanha a situação fetal informada no formulário.' : 'Arraste os marcadores. O formulário será atualizado junto.'}</p></div>
       <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Voltar ao laudo"><X className="h-4 w-4" /></button>
     </header>
     <div className="min-h-0 flex-1 overflow-auto bg-gray-50 p-4 dark:bg-gray-950/40">
       {category === 'MAMARIA'
         ? <BreastSchema findings={breast} svgRef={svgRef} onMove={(id, position) => onBreastChange(moveBreastFinding(breastState, id, position))} />
-        : <ThyroidSchema findings={thyroid} svgRef={svgRef} onMove={(id, position) => onThyroidChange(moveThyroidFinding(thyroidState, id, position))} />}
+        : category === 'TIREOIDE'
+          ? <ThyroidSchema findings={thyroid} svgRef={svgRef} onMove={(id, position) => onThyroidChange(moveThyroidFinding(thyroidState, id, position))} />
+          : <FetalPositionSchema position={fetalPosition} svgRef={svgRef} />}
       <div className="mt-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
-        {findingsCount ? `${findingsCount} ${findingsCount === 1 ? 'marcador' : 'marcadores'} no esquema.` : 'Adicione um achado no formulário para ele aparecer aqui.'}
+        {category === 'FETAL_POSITION'
+          ? fetalPosition.title
+          : findingsCount ? `${findingsCount} ${findingsCount === 1 ? 'marcador' : 'marcadores'} no esquema.` : 'Adicione um achado no formulário para ele aparecer aqui.'}
         <span className="ml-1 text-gray-400">O desenho não muda classificações clínicas.</span>
       </div>
       {message ? <p className={`mt-2 text-xs ${status === 'error' ? 'text-rose-600' : status === 'sent' ? 'text-emerald-600' : 'text-gray-500'}`}>{message}</p> : null}

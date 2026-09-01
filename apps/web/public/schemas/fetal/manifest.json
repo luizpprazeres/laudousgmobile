@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-01",
+  "generator": "OpenAI built-in image generation",
+  "style": "medical monochrome line illustration",
+  "assets": [
+    {
+      "variant": "longitudinal_cefalica",
+      "file": "longitudinal-cefalica-v1.png",
+      "sha256": "bc75bd4f34d038f310b4880d68e65e8f3775177d32069289c3df249940932541"
+    },
+    {
+      "variant": "longitudinal_pelvica",
+      "file": "longitudinal-pelvica-v1.png",
+      "sha256": "ee6addef79aeab999fafcab741d9671bc180bc85cbd933a15d34f13b1f5de836"
+    },
+    {
+      "variant": "transversa_polo_direita",
+      "file": "transversa-polo-direita-v1.png",
+      "sha256": "daa407374b0c51f040ccb69e9bbd6e293fc75f58e1d4d687f2297887ec82f1c3"
+    },
+    {
+      "variant": "transversa_polo_esquerda",
+      "file": "transversa-polo-esquerda-v1.png",
+      "sha256": "651d90f21c7b765e1b5214a27fd03c3650e5f483e21ff431b3009e6fa1f09ff1"
+    }
+  ]
+}
