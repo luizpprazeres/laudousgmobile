@@ -32,6 +32,7 @@ export type AbdomenOrganKey = (typeof ABDOMEN_ORGAN_KEYS)[number];
 const FindingSchema = z.object({
   tipo: z.enum([
     "esteatose",
+    "hepatopatia_cronica",
     "cisto_simples",
     "imagem_cistica_complexa",
     "litiase",
@@ -111,6 +112,7 @@ const FINDING_JSON_SCHEMA = {
       type: "string",
       enum: [
         "esteatose",
+        "hepatopatia_cronica",
         "cisto_simples",
         "imagem_cistica_complexa",
         "litiase",

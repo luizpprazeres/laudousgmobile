@@ -98,6 +98,22 @@ Também serão medidos quatro resultados de produto: tempo até laudo pronto, n�
 
 O cartograma ginecológico começa pelo contrato estruturado de útero, miomas, DIU e adenomiose e só depois recebe as vistas frontal e sagital. O mapa cervical parte dos níveis linfonodais já presentes no formulário, com matriz bilateral fechada antes do desenho. A pesquisa de endometriose será uma frente própria: hoje não existe como categoria estruturada independente na web, portanto o primeiro aceite é criar categoria, formulário, renderer e persistência; o mapa vem depois e não será improvisado dentro de Pelve feminina. Cada base anatômica será original, versionada e revisada antes de receber a camada interativa.
 
+### Sprint 23 — auditoria clínica categoria por categoria
+
+Resultado: cada opção visível na web substitui corretamente a frase normal, escreve uma descrição suficiente no corpo e produz uma conclusão objetiva, sem repetição ou normalidade incompatível. A execução será dividida em 23A Abdome, 23B Obstetrícia, 23C Tireoide/Mamas/Ginecologia, 23D Urinário/Superficiais e 23E Musculoesquelético/categorias abertas. A especificação completa está em `docs/stories/2026-09-01-sprint-23-auditoria-clinica-categorias.md`.
+
+### Sprint 24 — cobertura das categorias já cadastradas
+
+Resultado: a web estrutura primeiro os exames que já existem no banco e no mobile, priorizando bolsa testicular com e sem Doppler, região inguinal, próstata transretal, parede abdominal, glândulas salivares, paratireoide, vascular de membros, fístula, Doppler renal, transfontanelar e quadril infantil.
+
+### Sprint 25 — ginecologia avançada e endometriose
+
+Resultado: pesquisa de endometriose, histerossonografia, histerossonossalpingografia e monitorização folicular passam a ter contratos próprios ou modos claramente delimitados, com cartogramas somente depois do estado estruturado.
+
+### Sprint 26 — exames especializados
+
+Resultado: ecocardiografia fetal, elastografia hepática, Doppler hepático/sistema porta, transplante renal, aorta/ilíacas, mesentéricas e temporais entram por prioridade de uso e disponibilidade de corpus validado.
+
 ## Critérios permanentes do ciclo
 
 Toda mudança clínica precisa de casos golden em Clássico e Objetivo. O relatório e o desenho devem nascer do mesmo estado estruturado. Imagens geradas precisam de revisão médica antes de entrar no produto. Nenhum botão sem função deve aparecer. Nenhuma promessa de segurança deve ser publicada sem correspondência demonstrável no código e no banco.
@@ -106,4 +122,4 @@ Como referência de mercado, o Laudário anuncia laudos estruturados, cálculos 
 
 ## Próxima ação
 
-Iniciar a Sprint 20A pela fundação vascular já aprovada: inventariar as vistas e campos estruturados existentes, selecionar as bases anatômicas versionadas e ligar cada segmento do formulário ao desenho antes de acrescentar medidas finas.
+Concluir a Sprint 23A antes de ampliar a biblioteca: revisar fígado, veia porta, vesícula, vias biliares, pâncreas, baço, rins, bexiga, aorta e veia cava opção por opção. Depois, retomar a Sprint 20A pela fundação vascular já aprovada, ligando cada segmento estruturado ao desenho antes de acrescentar medidas finas.

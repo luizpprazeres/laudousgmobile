@@ -82,9 +82,8 @@ function achadosDoFigado(s: EstadoDaSecao): Achado[] {
   const grau = ESTEATOSE[eco];
   if (grau) out.push(achado({ tipo: "esteatose", grau, termo_do_medico: "esteatose" }));
   else if (eco === "dhc") {
-    /** Hepatopatia crônica não é tipo do canônico — verbatim. */
     out.push(achado({
-      descricao_livre: "Fígado com alterações ecográficas sugestivas de hepatopatia crônica",
+      tipo: "hepatopatia_cronica",
       termo_do_medico: "hepatopatia crônica",
     }));
   }

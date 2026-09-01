@@ -111,8 +111,8 @@ function ecotexturaFrase(ecotextura: string, conclusion: string[]): string {
       conclusion.push('Esteatose hepática de grau acentuado')
       return 'ecotextura difusamente hiperecogênica com acentuada atenuação posterior, prejudicando a avaliação dos vasos intra-hepáticos e do diafragma, compatível com esteatose hepática de grau acentuado'
     case 'dhc':
-      conclusion.push('Achados sugestivos de hepatopatia crônica difusa, a correlacionar com dados clínicos e laboratoriais')
-      return 'contornos bocelados e ecotextura heterogênea, com aspecto sugestivo de hepatopatia crônica'
+      conclusion.push('Sinais ecográficos sugestivos de hepatopatia crônica difusa')
+      return 'contornos bocelados e ecotextura difusamente heterogênea'
     case 'homogenea':
     default:
       return 'contornos regulares e ecotextura homogênea'

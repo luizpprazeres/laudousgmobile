@@ -66,6 +66,7 @@ export type AbdomenSuperiorOrganKey = (typeof ABDOMEN_SUPERIOR_ORGAN_KEYS)[numbe
 
 const FINDING_TIPOS = [
   "esteatose",
+  "hepatopatia_cronica",
   "cisto_simples",
   "imagem_cistica_complexa",
   "litiase",
@@ -208,6 +209,8 @@ REGRAS OBRIGATÓRIAS:
    descricao_livre com as PALAVRAS DO MÉDICO (sem floreio).
 9. Tipos e onde usar:
    - esteatose (fígado; grau leve/moderado/acentuado)
+   - hepatopatia_cronica (fígado; quando o médico disser hepatopatia crônica,
+     cirrose ou descrever contornos bocelados associados a ecotextura heterogênea)
    - cisto_simples (fígado; medidas, localizacao)
    - imagem_cistica_complexa (fígado; descreva calcificações/septações em descricao_livre)
    - litiase (vesicula; quantidade unica/multiplas; medidas; localizacao;
@@ -223,6 +226,8 @@ REGRAS OBRIGATÓRIAS:
    - aorta + "imagens hiperecoicas aderidas às paredes" / "placas" → ateromatose
    - fígado + "aumento da ecogenicidade" → esteatose (discreto → leve;
      difuso/atenuação sonora → moderado)
+   - fígado + "hepatopatia crônica" / "cirrose" / contornos bocelados com
+     ecotextura heterogênea → hepatopatia_cronica
    - fígado + "imagem anecoica homogênea" → cisto_simples
 10. "observacoes_do_medico": instruções do médico sobre o laudo — texto corrido
     ou null.`;

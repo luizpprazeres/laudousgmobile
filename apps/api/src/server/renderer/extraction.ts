@@ -165,6 +165,8 @@ REGRAS OBRIGATÓRIAS:
    grau e lateralidade quando ditos).
 10. Tipos e onde usar:
    - esteatose (fígado; grau leve/moderado/acentuado)
+   - hepatopatia_cronica (fígado; quando o médico disser hepatopatia crônica,
+     cirrose ou descrever contornos bocelados associados a ecotextura heterogênea)
    - cisto_simples (fígado ou rins; medidas, localizacao)
    - imagem_cistica_complexa (rins; descreva calcificações etc em descricao_livre)
    - litiase (vesicula ou rins; quantidade unica/multiplas; medidas; localizacao;
@@ -187,6 +189,8 @@ REGRAS OBRIGATÓRIAS:
    - aorta + "imagens hiperecoicas aderidas às paredes" / "placas" → ateromatose
    - fígado + "aumento da ecogenicidade" → esteatose (discreto → leve;
      difuso/atenuação sonora → moderado)
+   - fígado + "hepatopatia crônica" / "cirrose" / contornos bocelados com
+     ecotextura heterogênea → hepatopatia_cronica
    - fígado + "imagem anecoica homogênea" → cisto_simples
 11. "observacoes_do_medico": instruções do médico sobre o laudo (ex: "inclua a
     tabela do Doppler") — texto corrido ou null.`;

@@ -89,6 +89,12 @@ function renderFigado(state: AbdomenOrganState): OrganRender {
         figadoFechado = true;
         out.conclusao.push("Esteatose hepática, grau leve.");
       }
+    } else if (f.tipo === "hepatopatia_cronica") {
+      figadoLine =
+        "Fígado de dimensões normais, com contornos bocelados e ecotextura difusamente heterogênea.";
+      vasosLine = "Os vasos intra-hepáticos apresentam calibre preservado.";
+      figadoFechado = true;
+      out.conclusao.push("Sinais ecográficos sugestivos de hepatopatia crônica difusa.");
     } else if (f.tipo === "cisto_simples") {
       const loc = localizacaoOuPlaceholder(f.localizacao);
       lines.push(
