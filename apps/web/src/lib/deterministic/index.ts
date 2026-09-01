@@ -12,6 +12,7 @@ import { mamaria } from './organs/mamaria'
 import { pelveFeminina } from './organs/pelveFeminina'
 import { abdomeSuperior } from './organs/abdomeSuperior'
 import { cervical } from './organs/cervical'
+import { cervicometria } from './organs/cervicometria'
 import { partesMoles } from './organs/partesMoles'
 import { musculoesqueletico } from './organs/musculoesqueletico'
 import { obstetrica } from './organs/obstetrica'
@@ -28,6 +29,7 @@ export { mamaria } from './organs/mamaria'
 export { pelveFeminina } from './organs/pelveFeminina'
 export { abdomeSuperior } from './organs/abdomeSuperior'
 export { cervical } from './organs/cervical'
+export { cervicometria } from './organs/cervicometria'
 export { partesMoles } from './organs/partesMoles'
 export { musculoesqueletico } from './organs/musculoesqueletico'
 export { obstetrica } from './organs/obstetrica'
@@ -44,7 +46,7 @@ export { vesiculaModule } from './organs/vesicula'
  * (Tireoide não entra aqui: ela foi a PILOTO da troca de motor e agora sai do
  *  `/render` canônico. Ver a nota em `organs/tireoide.ts`.)
  */
-export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina, cervical, partesMoles, musculoesqueletico, obstetrica, morfologico, dopplerObstetrico, dopplerCarotidas]
+export const GENERIC_CATEGORIES: ExamCategory[] = [abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria, pelveFeminina, cervical, cervicometria, partesMoles, musculoesqueletico, obstetrica, morfologico, dopplerObstetrico, dopplerCarotidas]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
 )

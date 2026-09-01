@@ -25,6 +25,8 @@ import { adaptarAbdome } from '@/lib/catalog/abdomeParaCatalogo'
 import { adaptarAbdomeSuperior } from '@/lib/catalog/abdomeSuperiorParaCatalogo'
 import { adaptarViasUrinarias } from '@/lib/catalog/viasUrinariasParaCatalogo'
 import { adaptarProstataSuprapubica } from '@/lib/catalog/prostataParaCatalogo'
+import { adaptarCervical } from '@/lib/catalog/cervicalParaCatalogo'
+import { adaptarCervicometria } from '@/lib/catalog/cervicometriaParaCatalogo'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
@@ -272,6 +274,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'PROSTATA_SUPRAPUBICA') {
       return adaptarProstataSuprapubica((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'CERVICAL') {
+      return adaptarCervical((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'CERVICOMETRIA') {
+      return adaptarCervicometria((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
     if (categoria === 'MORFOLOGICO') {
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>

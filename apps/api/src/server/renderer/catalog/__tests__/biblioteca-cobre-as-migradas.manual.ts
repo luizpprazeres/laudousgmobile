@@ -36,6 +36,8 @@ const MIGRADAS = [
   "ABDOMEN_SUPERIOR",
   "VIAS_URINARIAS",
   "PROSTATA_SUPRAPUBICA",
+  "CERVICAL",
+  "CERVICOMETRIA",
 ];
 
 async function principal() {

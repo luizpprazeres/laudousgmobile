@@ -21,6 +21,8 @@
  * | ABDOMEN_SUPERIOR | 31/08 | `sprint16a-ponta-a-ponta.manual.ts` |
  * | VIAS_URINARIAS | 31/08 | `sprint16a-ponta-a-ponta.manual.ts` |
  * | PROSTATA_SUPRAPUBICA | 31/08 | `sprint16a-ponta-a-ponta.manual.ts` |
+ * | CERVICAL | 31/08 | `sprint16b-ponta-a-ponta.manual.ts` |
+ * | CERVICOMETRIA | 31/08 | `sprint16b-ponta-a-ponta.manual.ts` |
  */
 export const CATEGORIAS_MIGRADAS = [
   "TIREOIDE",
@@ -34,6 +36,8 @@ export const CATEGORIAS_MIGRADAS = [
   "ABDOMEN_SUPERIOR",
   "VIAS_URINARIAS",
   "PROSTATA_SUPRAPUBICA",
+  "CERVICAL",
+  "CERVICOMETRIA",
 ] as const
 
 export function categoriaMigrada(categoria: string): boolean {
