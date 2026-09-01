@@ -11,7 +11,7 @@ const thyroidAssets = [
 ] as const
 
 const breastAssets = [
-  ['frontal-v3.png', 'e620c9c3ff7d4dedd7974ace67110c3a78c01b40f54f1fa9abcd38f8570dc3f2'],
+  ['frontal-v4.png', '75eb4c1d4bb75cf49b1ca2f3c4161918a623a130c430a8a902eea5f54ac0dacb'],
 ] as const
 
 for (const [file, expected] of thyroidAssets) {
