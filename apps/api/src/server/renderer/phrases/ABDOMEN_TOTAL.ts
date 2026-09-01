@@ -59,6 +59,43 @@ function localizacaoOuPlaceholder(l: string | null): string {
   return l && l.trim() !== "" ? l : "____";
 }
 
+function medidasOpcionais(medidas: number[] | null, prefixo = ", medindo "): string {
+  return medidas && medidas.length > 0 ? `${prefixo}${formatMedidasCm(medidas)}` : "";
+}
+
+type CanonicalAbdomenTipo =
+  | AbdomenFinding["tipo"]
+  | "hepatomegalia"
+  | "hemangioma_hepatico"
+  | "nodulo_hepatico"
+  | "calcificacao_hepatica"
+  | "liquido_perihepatico"
+  | "veia_porta_dilatada"
+  | "vesicula_contraida"
+  | "vesicula_distendida"
+  | "lama_biliar"
+  | "polipo_vesicular"
+  | "adenomiomatose"
+  | "colesterolose"
+  | "vesicula_porcelana"
+  | "polipo_vesicular_maior_10mm"
+  | "colecistite_alitiasica"
+  | "colecistostomia"
+  | "dilatacao_vias_intra"
+  | "coledoco_dilatado"
+  | "coledocolitiase"
+  | "pancreas_visualizacao_prejudicada"
+  | "pancreas_heterogeneo"
+  | "lipomatose_pancreatica"
+  | "wirsung_dilatado"
+  | "cisto_pancreatico"
+  | "nodulo_pancreatico"
+  | "esplenomegalia"
+  | "baco_heterogeneo"
+  | "cisto_esplenico"
+  | "calcificacao_esplenica"
+  | "baco_acessorio";
+
 // ---------------------------------------------------------------------------
 // Builders por órgão
 // ---------------------------------------------------------------------------
@@ -69,46 +106,66 @@ function renderFigado(state: AbdomenOrganState): OrganRender {
 
   const lines: string[] = [];
   let vasosLine = "Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.";
-  let figadoLine = "Fígado de dimensões normais, contornos regulares e ecotextura homogênea";
-  let figadoFechado = false;
+  let dimensoes = "dimensões normais";
+  let parenquima = "contornos regulares e ecotextura homogênea";
 
-  for (const f of state.achados) {
-    if (f.tipo === "esteatose") {
+  for (const raw of state.achados) {
+    const f = { ...raw, tipo: canonicalTipo("figado", raw) };
+    if (f.tipo === "hepatomegalia") {
+      const [loboDireito, loboEsquerdo] = f.medidas_cm ?? [];
+      const medidas = [
+        loboDireito !== undefined ? `lobo direito com diâmetro longitudinal de ${formatNumberPtBr(loboDireito)} cm` : "",
+        loboEsquerdo !== undefined ? `lobo esquerdo com diâmetro longitudinal de ${formatNumberPtBr(loboEsquerdo)} cm` : "",
+      ].filter(Boolean);
+      const descricaoMedidas = f.localizacao?.trim() || medidas.join(" e ");
+      dimensoes = `dimensões aumentadas${descricaoMedidas ? ` (${descricaoMedidas})` : ""}`;
+      out.conclusao.push("Hepatomegalia.");
+    } else if (f.tipo === "esteatose") {
       if (f.grau === "moderado" || f.grau === "acentuado") {
-        figadoLine =
-          "Fígado de dimensões normais, apresentando aumento difuso da ecogenicidade parenquimatosa e atenuação sonora.";
+        parenquima = "aumento difuso da ecogenicidade parenquimatosa e atenuação sonora";
         vasosLine =
           "Os vasos intra-hepáticos e o diafragma foram visualizados parcialmente.";
-        figadoFechado = true;
         out.conclusao.push(
           `Esteatose hepática, grau ${f.grau === "acentuado" ? "acentuado" : "moderado"}.`,
         );
       } else {
-        figadoLine =
-          "Fígado de dimensões normais, com discreto aumento da ecogenicidade parenquimatosa.";
-        figadoFechado = true;
+        parenquima = "discreto aumento da ecogenicidade parenquimatosa";
         out.conclusao.push("Esteatose hepática, grau leve.");
       }
     } else if (f.tipo === "hepatopatia_cronica") {
-      figadoLine =
-        "Fígado de dimensões normais, com contornos bocelados e ecotextura difusamente heterogênea.";
+      parenquima = "contornos bocelados e ecotextura difusamente heterogênea";
       vasosLine = "Os vasos intra-hepáticos apresentam calibre preservado.";
-      figadoFechado = true;
       out.conclusao.push("Sinais ecográficos sugestivos de hepatopatia crônica difusa.");
     } else if (f.tipo === "cisto_simples") {
-      const loc = localizacaoOuPlaceholder(f.localizacao);
+      const loc = f.localizacao?.trim() || "parênquima hepático";
       lines.push(
-        `Imagem anecoica homogênea, com margem regular, medindo ${formatMedidasCm(f.medidas_cm)}, situada no ${loc}.`,
+        `Imagem anecoica homogênea, com margem regular${medidasOpcionais(f.medidas_cm)}, situada no ${loc}.`,
       );
-      out.conclusao.push(`Cisto hepático sem septações no ${loc}.`);
-    } else if (f.tipo === "outro") {
-      out.freeSlotFindings.push(f);
+      out.conclusao.push(
+        f.quantidade === "multiplas"
+          ? "Cistos hepáticos simples."
+          : `Cisto hepático sem septações no ${loc}.`,
+      );
+    } else if (f.tipo === "hemangioma_hepatico") {
+      const loc = f.localizacao?.trim() || "parênquima hepático";
+      lines.push(`Imagem nodular hiperecogênica, homogênea e de contornos bem definidos${medidasOpcionais(f.medidas_cm)}, situada no ${loc}, sugestiva de hemangioma.`);
+      out.conclusao.push("Imagem hepática sugestiva de hemangioma.");
+    } else if (f.tipo === "nodulo_hepatico") {
+      const loc = f.localizacao?.trim() || "parênquima hepático";
+      lines.push(`Imagem nodular sólida${medidasOpcionais(f.medidas_cm)}, situada no ${loc}, de natureza indeterminada ao método.`);
+      out.conclusao.push("Nódulo hepático a esclarecer. Convém, a critério clínico, complementar a investigação com método contrastado.");
+    } else if (f.tipo === "calcificacao_hepatica") {
+      lines.push("Foco hiperecogênico com sombra acústica posterior, compatível com calcificação residual.");
+      out.conclusao.push("Calcificação hepática residual.");
+    } else if (f.tipo === "liquido_perihepatico") {
+      lines.push("Observa-se lâmina líquida peri-hepática.");
+      out.conclusao.push("Líquido livre peri-hepático.");
     } else {
-      out.freeSlotFindings.push(f);
+      out.freeSlotFindings.push(raw);
     }
   }
 
-  if (!figadoFechado) figadoLine += ".";
+  const figadoLine = `Fígado de ${dimensoes}, com ${parenquima}.`;
   out.body = [figadoLine, vasosLine, ...lines].join("\n");
   return out;
 }
@@ -137,16 +194,24 @@ function renderVesicula(state: AbdomenOrganState): OrganRender {
   // Prefixo da vesícula: topografia usual SEMPRE; parede fina por padrão,
   // espessada (com espessura) só quando o médico informa alteração da parede.
   const paredeEspessada = achados.find((f) => f.tipo === "parede_espessada");
+  const contraida = achados.some((f) => f.tipo === "vesicula_contraida");
+  const distendida = achados.some((f) => f.tipo === "vesicula_distendida");
   let prefixo: string;
   if (paredeEspessada) {
-    const esp = maiorEixoCentimetros(paredeEspessada.medidas_cm).replace(
-      "centímetros",
-      "cm",
-    );
-    prefixo = `Vesícula biliar de topografia usual, com parede espessada, medindo ${esp} no seu maior diâmetro`;
+    const esp = medidasOpcionais(paredeEspessada.medidas_cm, ", medindo ");
+    prefixo = `Vesícula biliar de topografia usual, com parede espessada${esp}`;
+    const suspeitaAguda = /agud|inflamat/i.test(paredeEspessada.termo_do_medico ?? "");
     out.conclusao.push(
-      "Espessamento da parede da vesícula biliar. Convém, a critério clínico, correlacionar com exames laboratoriais para investigação da possibilidade de colecistite.",
+      suspeitaAguda
+        ? "Espessamento da parede da vesícula biliar, a correlacionar com os demais critérios clínicos e laboratoriais de colecistite aguda."
+        : "Espessamento da parede da vesícula biliar.",
     );
+  } else if (contraida) {
+    prefixo = "Vesícula biliar contraída, com avaliação do conteúdo parcialmente prejudicada";
+    out.conclusao.push("Vesícula biliar contraída, com avaliação do conteúdo parcialmente prejudicada.");
+  } else if (distendida) {
+    prefixo = "Vesícula biliar distendida, de paredes finas";
+    out.conclusao.push("Distensão da vesícula biliar.");
   } else {
     prefixo = "Vesícula biliar de topografia usual e parede fina";
   }
@@ -155,29 +220,191 @@ function renderVesicula(state: AbdomenOrganState): OrganRender {
   for (const f of litiases) {
     const mobil = mobilidadeLabel(f.mobilidade, f.quantidade === "multiplas");
     if (f.quantidade === "multiplas") {
-      // "a menor medindo X" é OPCIONAL — omite a cláusula se não há medida.
-      const menor =
+      const maior =
         f.medidas_cm && f.medidas_cm.length > 0
-          ? `, a menor medindo aproximadamente ${maiorEixoCentimetros(f.medidas_cm)}`
+          ? `, a maior medindo aproximadamente ${maiorEixoCentimetros(f.medidas_cm)}`
           : "";
-      out.body = `${prefixo}, apresentando múltiplas imagens hiperecoicas, ${mobil}${menor}, ocasionando sombras acústicas.`;
+      out.body = `${prefixo}, apresentando múltiplas imagens hiperecoicas, ${mobil}${maior}, ocasionando sombras acústicas.`;
     } else {
-      out.body = `${prefixo}, apresentando imagem hiperecoica, ${mobil}, medindo ${maiorEixoCentimetros(f.medidas_cm)} no seu maior eixo, ocasionando sombra acústica.`;
+      const medida = f.medidas_cm && f.medidas_cm.length > 0 ? `, medindo ${maiorEixoCentimetros(f.medidas_cm)} no maior eixo` : "";
+      out.body = `${prefixo}, apresentando imagem hiperecoica, ${mobil}${medida}, ocasionando sombra acústica.`;
     }
     out.conclusao.push("Litíase da vesícula biliar.");
   }
 
-  // Parede espessada sem cálculo: a frase do prefixo é o corpo.
-  if (out.body === null && paredeEspessada) {
+  const adicionais: string[] = [];
+  for (const f of achados) {
+    if (f.tipo === "lama_biliar") {
+      adicionais.push("Conteúdo ecogênico móvel, sem sombra acústica, compatível com lama biliar.");
+      out.conclusao.push("Lama biliar.");
+    } else if (f.tipo === "polipo_vesicular") {
+      adicionais.push(`Imagem polipoide aderida à parede, sem mobilidade ou sombra acústica${medidasOpcionais(f.medidas_cm)}.`);
+      out.conclusao.push("Pólipo da vesícula biliar.");
+    } else if (f.tipo === "adenomiomatose") {
+      adicionais.push("Espessamento parietal focal com pequenas imagens císticas intramurais e artefatos em cauda de cometa, compatível com adenomiomatose.");
+      out.conclusao.push("Adenomiomatose da vesícula biliar.");
+    } else if (f.tipo === "colesterolose") {
+      adicionais.push("Pequenos focos ecogênicos parietais aderidos, sem sombra acústica, compatíveis com colesterolose.");
+      out.conclusao.push("Colesterolose da vesícula biliar.");
+    } else if (f.tipo === "vesicula_porcelana") {
+      adicionais.push("Parede difusamente calcificada, com sombra acústica posterior, compatível com vesícula em porcelana.");
+      out.conclusao.push("Vesícula em porcelana.");
+    } else if (f.tipo === "polipo_vesicular_maior_10mm") {
+      adicionais.push("Imagem polipoide séssil maior que 10 mm, aderida à parede e sem sombra acústica.");
+      out.conclusao.push("Pólipo da vesícula biliar maior que 10 mm. Convém avaliação especializada.");
+    } else if (f.tipo === "colecistite_alitiasica") {
+      adicionais.push("Vesícula biliar distendida, com espessamento parietal e sem cálculos identificáveis.");
+      out.conclusao.push("Achados que podem corresponder a colecistite alitiásica no contexto clínico apropriado.");
+    } else if (f.tipo === "colecistostomia") {
+      adicionais.push("Dreno de colecistostomia em posição no interior da vesícula biliar.");
+      out.conclusao.push("Colecistostomia em posição.");
+    }
+  }
+
+  if (adicionais.length > 0) {
+    out.body = [out.body ?? `${prefixo}.`, ...adicionais].join("\n");
+  }
+
+  // Alteração de estado/parede sem conteúdo adicional: o prefixo é o corpo.
+  if (out.body === null && (paredeEspessada || contraida || distendida)) {
     out.body = `${prefixo}.`;
   }
 
   // Achados de vesícula fora do catálogo (ex: pólipo) → free-slot.
-  for (const f of achados) {
-    if (f.tipo !== "litiase" && f.tipo !== "parede_espessada") {
-      out.freeSlotFindings.push(f);
+  const consumidos = new Set<CanonicalAbdomenTipo>([
+    "litiase", "parede_espessada", "vesicula_contraida", "vesicula_distendida",
+    "lama_biliar", "polipo_vesicular", "adenomiomatose", "colesterolose",
+    "vesicula_porcelana", "polipo_vesicular_maior_10mm", "colecistite_alitiasica", "colecistostomia",
+  ]);
+  for (const raw of state.achados) {
+    if (!consumidos.has(canonicalTipo("vesicula", raw))) {
+      out.freeSlotFindings.push(raw);
     }
   }
+  return out;
+}
+
+function renderVeiaPorta(state: AbdomenOrganState): OrganRender {
+  const out: OrganRender = { body: null, conclusao: [], freeSlotFindings: [] };
+  if (state.status !== "alterado") return out;
+
+  for (const raw of state.achados) {
+    const f = { ...raw, tipo: canonicalTipo("veia_porta", raw) };
+    if (f.tipo === "veia_porta_dilatada") {
+      out.body = `Veia porta pérvia, de calibre aumentado${medidasOpcionais(f.medidas_cm)}.`;
+      out.conclusao.push("Veia porta de calibre aumentado.");
+    } else {
+      out.freeSlotFindings.push(raw);
+    }
+  }
+  return out;
+}
+
+function renderViasBiliares(state: AbdomenOrganState): OrganRender {
+  const out: OrganRender = { body: null, conclusao: [], freeSlotFindings: [] };
+  if (state.status !== "alterado") return out;
+
+  const linhas: string[] = [];
+  for (const raw of state.achados) {
+    const f = { ...raw, tipo: canonicalTipo("vias_biliares", raw) };
+    if (f.tipo === "dilatacao_vias_intra") {
+      linhas.push("Vias biliares intra-hepáticas dilatadas.");
+      out.conclusao.push("Dilatação das vias biliares intra-hepáticas.");
+    } else if (f.tipo === "coledoco_dilatado") {
+      linhas.push(`Canal colédoco de calibre aumentado${medidasOpcionais(f.medidas_cm)}.`);
+      out.conclusao.push("Dilatação do canal colédoco.");
+    } else if (f.tipo === "coledocolitiase") {
+      linhas.push(`Imagem hiperecogênica com sombra acústica posterior no interior do canal colédoco${medidasOpcionais(f.medidas_cm)}.`);
+      out.conclusao.push("Coledocolitíase.");
+    } else {
+      out.freeSlotFindings.push(raw);
+    }
+  }
+
+  if (linhas.length > 0) out.body = linhas.join("\n");
+  return out;
+}
+
+function renderPancreas(state: AbdomenOrganState): OrganRender {
+  const out: OrganRender = { body: null, conclusao: [], freeSlotFindings: [] };
+  if (state.status !== "alterado") return out;
+
+  let visualizacaoPrejudicada = false;
+  let parenquima = "Pâncreas de dimensões e ecotextura normais";
+  let wirsung = "Ducto pancreático principal de calibre normal.";
+  const lesoes: string[] = [];
+
+  for (const raw of state.achados) {
+    const f = { ...raw, tipo: canonicalTipo("pancreas", raw) };
+    if (f.tipo === "pancreas_visualizacao_prejudicada") {
+      visualizacaoPrejudicada = true;
+      out.conclusao.push("Avaliação pancreática parcialmente prejudicada pela interposição gasosa.");
+    } else if (f.tipo === "pancreas_heterogeneo") {
+      parenquima = "Pâncreas de dimensões normais e ecotextura heterogênea";
+      out.conclusao.push("Ecotextura pancreática heterogênea, achado inespecífico.");
+    } else if (f.tipo === "lipomatose_pancreatica") {
+      parenquima = "Pâncreas de dimensões normais, com aumento difuso da ecogenicidade parenquimatosa";
+      out.conclusao.push("Lipomatose pancreática.");
+    } else if (f.tipo === "wirsung_dilatado") {
+      wirsung = "Ducto pancreático principal ectasiado.";
+      out.conclusao.push("Dilatação do ducto pancreático principal, a esclarecer.");
+    } else if (f.tipo === "cisto_pancreatico") {
+      lesoes.push(`Imagem cística pancreática${medidasOpcionais(f.medidas_cm)}.`);
+      out.conclusao.push("Cisto pancreático. Convém, a critério clínico, complementar a avaliação com método de imagem contrastado.");
+    } else if (f.tipo === "nodulo_pancreatico") {
+      lesoes.push(`Imagem nodular sólida pancreática${medidasOpcionais(f.medidas_cm)}, de natureza indeterminada ao método.`);
+      out.conclusao.push("Nódulo pancreático a esclarecer. Convém, a critério clínico, complementar a investigação com método de imagem contrastado.");
+    } else {
+      out.freeSlotFindings.push(raw);
+    }
+  }
+
+  if (visualizacaoPrejudicada) {
+    parenquima = parenquima.includes("normais")
+      ? "Pâncreas com avaliação parcialmente prejudicada pela interposição gasosa, sem alterações evidentes nas porções visibilizadas"
+      : `${parenquima}, com avaliação parcialmente prejudicada pela interposição gasosa`;
+  }
+  out.body = [`${parenquima}.`, ...lesoes, wirsung].join("\n");
+  return out;
+}
+
+function renderBaco(state: AbdomenOrganState): OrganRender {
+  const out: OrganRender = { body: null, conclusao: [], freeSlotFindings: [] };
+  if (state.status !== "alterado") return out;
+
+  let dimensoes = "dimensões normais";
+  let ecotextura = "ecotextura homogênea";
+  const lesoes: string[] = [];
+
+  for (const raw of state.achados) {
+    const f = { ...raw, tipo: canonicalTipo("baco", raw) };
+    if (f.tipo === "esplenomegalia") {
+      const [maior, menor] = f.medidas_cm ?? [];
+      const medidas = [
+        maior !== undefined ? `maior eixo medindo ${formatNumberPtBr(maior)} cm` : "",
+        menor !== undefined ? `menor eixo medindo ${formatNumberPtBr(menor)} cm` : "",
+      ].filter(Boolean);
+      const descricaoMedidas = f.localizacao?.trim() || medidas.join(" e ");
+      dimensoes = `dimensões aumentadas${descricaoMedidas ? `, com ${descricaoMedidas}` : ""}`;
+      out.conclusao.push("Esplenomegalia.");
+    } else if (f.tipo === "baco_heterogeneo") {
+      ecotextura = "ecotextura heterogênea";
+      out.conclusao.push("Ecotextura esplênica heterogênea, achado inespecífico.");
+    } else if (f.tipo === "cisto_esplenico") {
+      lesoes.push(`Imagem anecoica, de paredes finas e com reforço acústico posterior${medidasOpcionais(f.medidas_cm)}, compatível com cisto simples.`);
+      out.conclusao.push("Cisto esplênico simples.");
+    } else if (f.tipo === "calcificacao_esplenica") {
+      lesoes.push("Foco hiperecogênico com sombra acústica posterior, compatível com calcificação residual.");
+      out.conclusao.push("Calcificação esplênica residual.");
+    } else if (f.tipo === "baco_acessorio") {
+      lesoes.push("Imagem nodular homogênea junto ao hilo esplênico, com ecotextura semelhante à do baço, compatível com baço acessório.");
+      out.conclusao.push("Baço acessório.");
+    } else {
+      out.freeSlotFindings.push(raw);
+    }
+  }
+
+  out.body = [`Baço de ${dimensoes} e ${ecotextura}.`, ...lesoes].join("\n");
   return out;
 }
 
@@ -211,7 +438,7 @@ function renderRim(organ: AbdomenOrganKey) {
         out.body = `${prefixo}, apresentando imagem hiperecoica, medindo ${maiorEixoCentimetros(f.medidas_cm).replace("centímetros", "cm")} no seu maior eixo, situada em ${loc}.`;
         out.conclusao.push(`Litíase renal ${lado === "direito" ? "direita" : "esquerda"}.`);
       } else {
-        out.freeSlotFindings.push(f);
+        out.freeSlotFindings.push(raw);
       }
     }
     return out;
@@ -223,9 +450,40 @@ function renderRim(organ: AbdomenOrganKey) {
  * determinística de achados que a extração marcou como "outro" mas casam com
  * um padrão canônico — espelha os "GATILHOS DE APLICAÇÃO" do bundle.
  */
-function canonicalTipo(organ: AbdomenOrganKey, f: AbdomenFinding): AbdomenFinding["tipo"] {
-  if (f.tipo !== "outro" || !f.descricao_livre) return f.tipo;
-  const d = f.descricao_livre.toLowerCase();
+function canonicalTipo(organ: AbdomenOrganKey, f: AbdomenFinding): CanonicalAbdomenTipo {
+  if (f.tipo !== "outro") return f.tipo;
+  const d = `${f.termo_do_medico ?? ""} ${f.descricao_livre ?? ""}`.toLowerCase();
+  if (!d.trim()) return f.tipo;
+  if (organ === "figado" && /hepatomegal|f[íi]gado\s+(aumentad|de\s+dimens[õo]es\s+aumentadas)/.test(d)) return "hepatomegalia";
+  if (organ === "figado" && /hemangioma/.test(d)) return "hemangioma_hepatico";
+  if (organ === "figado" && /n[óo]dulo\s+hep[áa]tic|nodular\s+hep[áa]tic/.test(d)) return "nodulo_hepatico";
+  if (organ === "figado" && /calcifica/.test(d)) return "calcificacao_hepatica";
+  if (organ === "figado" && /l[íi]quido\s+peri[- ]?hep[áa]tic|l[âa]mina\s+l[íi]quida\s+peri[- ]?hep/.test(d)) return "liquido_perihepatico";
+  if (organ === "veia_porta" && /(porta|veia\s+porta).*(dilatad|calibre\s+aumentad)/.test(d)) return "veia_porta_dilatada";
+  if (organ === "vesicula" && /contra[íi]da/.test(d)) return "vesicula_contraida";
+  if (organ === "vesicula" && /distendid/.test(d) && !/colecistite\s+alit/.test(d)) return "vesicula_distendida";
+  if (organ === "vesicula" && /lama\s+biliar|barro\s+biliar/.test(d)) return "lama_biliar";
+  if (organ === "vesicula" && /adenomiomatose/.test(d)) return "adenomiomatose";
+  if (organ === "vesicula" && /colesterolose/.test(d)) return "colesterolose";
+  if (organ === "vesicula" && /porcelana/.test(d)) return "vesicula_porcelana";
+  if (organ === "vesicula" && /p[óo]lipo/.test(d) && /(maior\s+que\s+10|>\s*10)/.test(d)) return "polipo_vesicular_maior_10mm";
+  if (organ === "vesicula" && /p[óo]lipo/.test(d)) return "polipo_vesicular";
+  if (organ === "vesicula" && /colecistite\s+alit/.test(d)) return "colecistite_alitiasica";
+  if (organ === "vesicula" && /colecistostomia/.test(d)) return "colecistostomia";
+  if (organ === "vias_biliares" && /coledocolit/.test(d)) return "coledocolitiase";
+  if (organ === "vias_biliares" && /(col[ée]doco|canal\s+col[ée]doco).*(dilatad|ectasiad|calibre\s+aumentad)/.test(d)) return "coledoco_dilatado";
+  if (organ === "vias_biliares" && /vias\s+biliares\s+intra[- ]?hep[áa]ticas.*dilatad/.test(d)) return "dilatacao_vias_intra";
+  if (organ === "pancreas" && /visualiza|avalia[çc][ãa]o/.test(d) && /prejudicad/.test(d)) return "pancreas_visualizacao_prejudicada";
+  if (organ === "pancreas" && /heterog[eê]n/.test(d)) return "pancreas_heterogeneo";
+  if (organ === "pancreas" && /lipomatose|esteatose\s+pancre[áa]tic|ecogenicidade\s+pancre[áa]tica/.test(d)) return "lipomatose_pancreatica";
+  if (organ === "pancreas" && /(wirsung|ducto\s+pancre[áa]tico).*(dilatad|ectasiad)/.test(d)) return "wirsung_dilatado";
+  if (organ === "pancreas" && /cist.*pancre[áa]tic|pancre[áa]tic.*cist/.test(d)) return "cisto_pancreatico";
+  if (organ === "pancreas" && /n[óo]dulo.*pancre[áa]tic|nodular.*pancre[áa]tic/.test(d)) return "nodulo_pancreatico";
+  if (organ === "baco" && /esplenomegal|ba[çc]o.*dimens[õo]es\s+aumentad/.test(d)) return "esplenomegalia";
+  if (organ === "baco" && /heterog[eê]n/.test(d)) return "baco_heterogeneo";
+  if (organ === "baco" && /cist.*espl[eê]nic|espl[eê]nic.*cist/.test(d)) return "cisto_esplenico";
+  if (organ === "baco" && /calcifica/.test(d)) return "calcificacao_esplenica";
+  if (organ === "baco" && /ba[çc]o\s+acess[óo]rio/.test(d)) return "baco_acessorio";
   if (
     organ === "aorta" &&
     /(hiperecoic\w+\s+aderidas?|placas?\s+de\s+aterom|aterom)/.test(d)
@@ -274,7 +532,7 @@ function renderAorta(state: AbdomenOrganState): OrganRender {
         "Aorta abdominal de calibre normal, apresentando imagens hiperecoicas aderidas às suas paredes.";
       out.conclusao.push("Placas de ateromas na aorta abdominal.");
     } else {
-      out.freeSlotFindings.push(f);
+      out.freeSlotFindings.push(raw);
     }
   }
   return out;
@@ -330,8 +588,16 @@ export function renderOrgan(
   switch (organ) {
     case "figado":
       return renderFigado(state);
+    case "veia_porta":
+      return renderVeiaPorta(state);
     case "vesicula":
       return renderVesicula(state);
+    case "vias_biliares":
+      return renderViasBiliares(state);
+    case "pancreas":
+      return renderPancreas(state);
+    case "baco":
+      return renderBaco(state);
     case "rim_direito":
     case "rim_esquerdo":
       return renderRim(organ)(state);

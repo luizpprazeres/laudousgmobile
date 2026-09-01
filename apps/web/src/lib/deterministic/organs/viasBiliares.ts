@@ -5,11 +5,11 @@
 import type { Field, OrganComposition, OrganModule, OrganSchema, OrganState } from '../types'
 
 const coledocoSubFields: Field[] = [
-  { key: 'calibre', label: 'Calibre', kind: 'text', placeholder: '9 mm' },
+  { key: 'calibre', label: 'Calibre (mm)', kind: 'text', placeholder: '9' },
 ]
 
 const coledocolitiaseSubFields: Field[] = [
-  { key: 'dimensao', label: 'Dimensão', kind: 'text', placeholder: '6 mm' },
+  { key: 'dimensao', label: 'Dimensão (mm)', kind: 'text', placeholder: '6' },
 ]
 
 const schema: OrganSchema = {

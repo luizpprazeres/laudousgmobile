@@ -5,11 +5,12 @@
 import type { Field, OrganComposition, OrganModule, OrganSchema, OrganState } from '../types'
 
 const aumentadoSubFields: Field[] = [
-  { key: 'eixo', label: 'Maior eixo', kind: 'text', placeholder: '13 cm' },
+  { key: 'eixo', label: 'Maior eixo (cm)', kind: 'text', placeholder: '13' },
+  { key: 'eixo_menor', label: 'Menor eixo (cm)', kind: 'text', placeholder: '6' },
 ]
 
 const cistoSubFields: Field[] = [
-  { key: 'dimensao', label: 'Dimensão', kind: 'text', placeholder: '20 mm' },
+  { key: 'dimensao', label: 'Dimensão (mm)', kind: 'text', placeholder: '20' },
 ]
 
 const schema: OrganSchema = {
@@ -57,6 +58,7 @@ function initialState(): OrganState {
     ecotextura: 'homogenea',
     lesoes: [],
     'dimensoes.aumentado.eixo': '',
+    'dimensoes.aumentado.eixo_menor': '',
     'lesoes.cisto.dimensao': '',
   }
 }

@@ -4,8 +4,17 @@
 
 import type { Field, OrganComposition, OrganModule, OrganSchema, OrganState } from '../types'
 
+const hepatomegaliaSubFields: Field[] = [
+  { key: 'lobo_d', label: 'Lobo direito · longitudinal (cm)', kind: 'text', placeholder: '15' },
+  { key: 'lobo_e', label: 'Lobo esquerdo · longitudinal (cm)', kind: 'text', placeholder: '10' },
+]
+
+const portaDilatadaSubFields: Field[] = [
+  { key: 'calibre', label: 'Calibre da veia porta (mm)', kind: 'text', placeholder: '14' },
+]
+
 const lesionSubFields: Field[] = [
-  { key: 'dimensao', label: 'Dimensão', kind: 'text', placeholder: '20 mm' },
+  { key: 'dimensao', label: 'Dimensão (mm)', kind: 'text', placeholder: '20' },
   {
     key: 'local',
     label: 'Local',
@@ -29,7 +38,7 @@ const schema: OrganSchema = {
       hint: 'default: normais',
       options: [
         { value: 'normal', label: 'Normais', isDefault: true },
-        { value: 'aumentado', label: 'Aumentado' },
+        { value: 'aumentado', label: 'Aumentado', subFields: hepatomegaliaSubFields },
       ],
     },
     {
@@ -63,7 +72,7 @@ const schema: OrganSchema = {
       hint: 'default: normal',
       options: [
         { value: 'normal', label: 'Normal', isDefault: true },
-        { value: 'dilatada', label: 'Dilatada' },
+        { value: 'dilatada', label: 'Dilatada', subFields: portaDilatadaSubFields },
       ],
     },
   ],
@@ -87,6 +96,9 @@ function initialState(): OrganState {
     'lesoes.hemangioma.local': 'lobo_d',
     'lesoes.nodulo.dimensao': '',
     'lesoes.nodulo.local': 'lobo_d',
+    'dimensoes.aumentado.lobo_d': '',
+    'dimensoes.aumentado.lobo_e': '',
+    'porta.dilatada.calibre': '',
   }
 }
 

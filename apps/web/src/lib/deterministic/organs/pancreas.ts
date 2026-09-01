@@ -5,7 +5,7 @@
 import type { Field, OrganComposition, OrganModule, OrganSchema, OrganState } from '../types'
 
 const lesionSubFields: Field[] = [
-  { key: 'dimensao', label: 'Dimensão', kind: 'text', placeholder: '20 mm' },
+  { key: 'dimensao', label: 'Dimensão (mm)', kind: 'text', placeholder: '20' },
 ]
 
 const schema: OrganSchema = {

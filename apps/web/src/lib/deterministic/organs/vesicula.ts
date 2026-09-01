@@ -20,7 +20,7 @@ const colelitiaseSubFields: Field[] = [
       { value: 'repleta', label: 'Repleta' },
     ],
   },
-  { key: 'dimensao', label: 'Dimensão', kind: 'text', placeholder: '8 mm' },
+  { key: 'dimensao', label: 'Dimensão (mm)', kind: 'text', placeholder: '8' },
   {
     key: 'mobilidade',
     label: 'Mobilidade',

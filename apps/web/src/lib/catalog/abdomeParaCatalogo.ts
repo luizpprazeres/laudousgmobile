@@ -13,18 +13,18 @@
  * catálogo ganhou um `ContextoDeRender` — sem a máscara não há laudo, e o
  * renderer devolve `null`.
  *
- * ## 2. O catálogo de achados é FECHADO, e menor que a tela
+ * ## 2. O schema de transporte é FECHADO, e menor que a tela
  *
  * O canônico conhece nove tipos (esteatose, cisto simples, litíase…). A tela
- * oferece conceitos que ele não tem: hemangioma, nódulo, pólipo, lipomatose,
- * lama biliar, hepatopatia crônica. Esses viram `tipo: "outro"` com o texto do
- * médico em `descricao_livre`.
+ * oferece conceitos que ele não enumera: hemangioma, nódulo, pólipo,
+ * lipomatose e lama biliar. Esses atravessam o schema como `tipo: "outro"`,
+ * preservando o termo e a descrição, e são reclassificados de forma
+ * determinística pelo renderer antes da redação.
  *
  * ⚠️ E aí mora a armadilha que quase me pegou: `renderOrgan` empurra `outro`
- * para `freeSlotFindings`, esperando que o LLM os transforme em prosa. No
- * caminho da web não há LLM, e ignorá-los faria o achado sumir do laudo sem
- * erro nenhum. `renderAbdomenTotalClassico` emite o verbatim — sem polir, que
- * é o certo: na web o médico digita, e o que ele digitou já é a frase.
+ * para `freeSlotFindings` apenas quando não há correspondência segura. No
+ * caminho da web não há LLM: opções conhecidas precisam ser consumidas pelo
+ * renderer, enquanto um texto realmente livre continua preservado verbatim.
  */
 
 type EstadoDaSecao = Record<string, unknown>;
@@ -64,9 +64,35 @@ function secao(estado: EstadoDoAbdome, id: string): EstadoDaSecao {
 }
 const texto = (s: EstadoDaSecao, k: string) => (typeof s[k] === "string" ? (s[k] as string).trim() : "");
 const marcado = (s: EstadoDaSecao, k: string, v: string) => Array.isArray(s[k]) && (s[k] as string[]).includes(v);
-function medida(s: EstadoDaSecao, k: string): number[] | null {
-  const n = Number.parseFloat(texto(s, k).replace(",", "."));
-  return Number.isFinite(n) && n > 0 ? [n] : null;
+function medidasCm(s: EstadoDaSecao, k: string, unidadePadrao: "mm" | "cm" = "mm"): number[] | null {
+  const raw = texto(s, k);
+  if (!raw) return null;
+  const valores = raw.match(/\d+(?:[.,]\d+)?/g)?.map((item) => Number.parseFloat(item.replace(",", "."))) ?? [];
+  const validos = valores.filter((item) => Number.isFinite(item) && item > 0);
+  if (validos.length === 0) return null;
+  const digitadoEmMm = /\bmm\b/i.test(raw) || (!/\bcm\b/i.test(raw) && unidadePadrao === "mm");
+  return validos.map((item) => digitadoEmMm ? item / 10 : item);
+}
+
+function medidasDeCampos(
+  s: EstadoDaSecao,
+  campos: Array<{ chave: string; unidade: "mm" | "cm" }>,
+): number[] | null {
+  const valores = campos.flatMap(({ chave, unidade }) => medidasCm(s, chave, unidade) ?? []);
+  return valores.length > 0 ? valores : null;
+}
+
+const numeroPtBr = (valor: number): string => String(valor).replace(".", ",");
+
+function descricaoDeMedidas(
+  s: EstadoDaSecao,
+  campos: Array<{ chave: string; unidade: "mm" | "cm"; rotulo: string }>,
+): string | null {
+  const partes = campos.flatMap(({ chave, unidade, rotulo }) => {
+    const valor = medidasCm(s, chave, unidade)?.[0];
+    return valor === undefined ? [] : [`${rotulo} ${numeroPtBr(valor)} cm`];
+  });
+  return partes.length > 0 ? partes.join(" e ") : null;
 }
 
 /** O que a tela chama × o que o canônico entende. `null` = vira `outro`. */
@@ -78,6 +104,20 @@ const ESTEATOSE: Record<string, string | null> = {
 
 function achadosDoFigado(s: EstadoDaSecao): Achado[] {
   const out: Achado[] = [];
+  if (texto(s, "dimensoes") === "aumentado") {
+    out.push(achado({
+      medidas_cm: medidasDeCampos(s, [
+        { chave: "dimensoes.aumentado.lobo_d", unidade: "cm" },
+        { chave: "dimensoes.aumentado.lobo_e", unidade: "cm" },
+      ]),
+      localizacao: descricaoDeMedidas(s, [
+        { chave: "dimensoes.aumentado.lobo_d", unidade: "cm", rotulo: "lobo direito com diâmetro longitudinal de" },
+        { chave: "dimensoes.aumentado.lobo_e", unidade: "cm", rotulo: "lobo esquerdo com diâmetro longitudinal de" },
+      ]),
+      descricao_livre: "Hepatomegalia",
+      termo_do_medico: "hepatomegalia",
+    }));
+  }
   const eco = texto(s, "ecotextura");
   const grau = ESTEATOSE[eco];
   if (grau) out.push(achado({ tipo: "esteatose", grau, termo_do_medico: "esteatose" }));
@@ -87,38 +127,150 @@ function achadosDoFigado(s: EstadoDaSecao): Achado[] {
       termo_do_medico: "hepatopatia crônica",
     }));
   }
-  if (marcado(s, "lesoes", "cisto")) out.push(achado({ tipo: "cisto_simples", termo_do_medico: "cisto" }));
+  if (marcado(s, "lesoes", "cisto")) out.push(achado({
+    tipo: "cisto_simples",
+    medidas_cm: medidasCm(s, "lesoes.cisto.dimensao"),
+    localizacao: texto(s, "lesoes.cisto.local") === "lobo_e" ? "lobo esquerdo" : "lobo direito",
+    termo_do_medico: "cisto hepático",
+  }));
   if (marcado(s, "lesoes", "hemangioma")) {
-    out.push(achado({ descricao_livre: "Imagem hiperecoica de contornos regulares, compatível com hemangioma", termo_do_medico: "hemangioma" }));
+    out.push(achado({
+      medidas_cm: medidasCm(s, "lesoes.hemangioma.dimensao"),
+      localizacao: texto(s, "lesoes.hemangioma.local") === "lobo_e" ? "lobo esquerdo" : "lobo direito",
+      descricao_livre: "Imagem nodular hiperecogênica, homogênea e de contornos bem definidos, sugestiva de hemangioma",
+      termo_do_medico: "hemangioma hepático",
+    }));
   }
   if (marcado(s, "lesoes", "nodulo")) {
-    out.push(achado({ descricao_livre: "Imagem nodular hepática", termo_do_medico: "nódulo" }));
+    out.push(achado({
+      medidas_cm: medidasCm(s, "lesoes.nodulo.dimensao"),
+      localizacao: texto(s, "lesoes.nodulo.local") === "lobo_e" ? "lobo esquerdo" : "lobo direito",
+      descricao_livre: "Imagem nodular hepática sólida a esclarecer",
+      termo_do_medico: "nódulo hepático",
+    }));
+  }
+  if (marcado(s, "raros", "calcificacao")) {
+    out.push(achado({ descricao_livre: "Foco calcificado residual no parênquima hepático", termo_do_medico: "calcificação hepática residual" }));
+  }
+  if (marcado(s, "raros", "cistos_multiplos")) {
+    out.push(achado({ tipo: "cisto_simples", quantidade: "multiplas", termo_do_medico: "cistos hepáticos múltiplos" }));
+  }
+  if (marcado(s, "raros", "derrame")) {
+    out.push(achado({ descricao_livre: "Lâmina líquida peri-hepática", termo_do_medico: "líquido peri-hepático" }));
   }
   return out;
 }
 
 function achadosDaVesicula(s: EstadoDaSecao): Achado[] {
   const out: Achado[] = [];
+  const estado = texto(s, "estado");
+  if (estado === "contraida") out.push(achado({ descricao_livre: "Vesícula biliar contraída", termo_do_medico: "vesícula contraída" }));
+  if (estado === "distendida") out.push(achado({ descricao_livre: "Vesícula biliar distendida", termo_do_medico: "vesícula distendida" }));
   if (marcado(s, "conteudo", "colelitiase")) {
     const q = texto(s, "conteudo.colelitiase.quantidade");
     out.push(achado({
       tipo: "litiase",
-      quantidade: q === "multiplos" ? "multiplas" : q === "unico" ? "unica" : null,
-      medidas_cm: medida(s, "conteudo.colelitiase.dimensao"),
+      quantidade: q === "multiplos" || q === "repleta" ? "multiplas" : "unica",
+      medidas_cm: medidasCm(s, "conteudo.colelitiase.dimensao"),
       mobilidade: texto(s, "conteudo.colelitiase.mobilidade") === "impactado" ? "imovel" : "movel",
-      termo_do_medico: "cálculo",
+      termo_do_medico: q === "repleta" ? "vesícula repleta de cálculos" : "cálculo vesicular",
     }));
   }
   if (marcado(s, "conteudo", "lama")) {
-    out.push(achado({ descricao_livre: "Conteúdo ecogênico de permeio, compatível com lama biliar", termo_do_medico: "lama biliar" }));
+    out.push(achado({ descricao_livre: "Conteúdo ecogênico móvel, sem sombra acústica, compatível com lama biliar", termo_do_medico: "lama biliar" }));
   }
   if (marcado(s, "conteudo", "polipos")) {
-    out.push(achado({ descricao_livre: "Imagem polipoide aderida à parede", termo_do_medico: "pólipo" }));
+    out.push(achado({ descricao_livre: "Imagem polipoide aderida à parede, sem mobilidade ou sombra acústica", termo_do_medico: "pólipo vesicular" }));
   }
   const par = texto(s, "paredes");
   if (par === "espessada_aguda" || par === "espessada_cronica") {
-    out.push(achado({ tipo: "parede_espessada", termo_do_medico: par === "espessada_aguda" ? "parede espessada" : "parede espessada crônica" }));
+    out.push(achado({
+      tipo: "parede_espessada",
+      termo_do_medico: par === "espessada_aguda" ? "parede espessada com suspeita de processo inflamatório agudo" : "parede espessada de aspecto crônico",
+    }));
   }
+  const raros = Array.isArray(s.raros) ? s.raros as string[] : [];
+  const rarosMap: Record<string, [string, string]> = {
+    adenomiomatose: ["Espessamento parietal focal com imagens císticas intramurais e artefatos em cauda de cometa", "adenomiomatose"],
+    colesterolose: ["Focos ecogênicos parietais aderidos, sem sombra acústica", "colesterolose"],
+    porcelana: ["Parede vesicular difusamente calcificada com sombra acústica posterior", "vesícula em porcelana"],
+    polipo_adenomatoso: ["Imagem polipoide séssil maior que 10 mm aderida à parede", "pólipo vesicular maior que 10 mm"],
+    colecistite_alitiasica: ["Distensão e espessamento parietal sem cálculos identificáveis", "suspeita de colecistite alitiásica"],
+    colecistostomia: ["Dreno de colecistostomia em posição", "colecistostomia"],
+  };
+  for (const raro of raros) {
+    const item = rarosMap[raro];
+    if (item) out.push(achado({ descricao_livre: item[0], termo_do_medico: item[1] }));
+  }
+  return out;
+}
+
+function achadosDasViasBiliares(s: EstadoDaSecao): Achado[] {
+  const out: Achado[] = [];
+  if (texto(s, "intra") === "dilatadas") {
+    out.push(achado({ descricao_livre: "Vias biliares intra-hepáticas dilatadas", termo_do_medico: "dilatação das vias biliares intra-hepáticas" }));
+  }
+  if (texto(s, "coledoco") === "dilatado") {
+    out.push(achado({
+      medidas_cm: medidasCm(s, "coledoco.dilatado.calibre"),
+      descricao_livre: "Canal colédoco de calibre aumentado",
+      termo_do_medico: "colédoco dilatado",
+    }));
+  }
+  if (marcado(s, "conteudo", "coledocolitiase")) {
+    out.push(achado({
+      medidas_cm: medidasCm(s, "conteudo.coledocolitiase.dimensao"),
+      descricao_livre: "Imagem hiperecogênica com sombra acústica no interior do colédoco",
+      termo_do_medico: "coledocolitíase",
+    }));
+  }
+  return out;
+}
+
+function achadosDoPancreas(s: EstadoDaSecao): Achado[] {
+  const out: Achado[] = [];
+  if (texto(s, "visualizacao") === "prejudicada") {
+    out.push(achado({ descricao_livre: "Avaliação pancreática parcialmente prejudicada pela interposição gasosa", termo_do_medico: "visualização pancreática prejudicada" }));
+  }
+  const eco = texto(s, "ecotextura");
+  if (eco === "heterogenea") out.push(achado({ descricao_livre: "Pâncreas de ecotextura heterogênea", termo_do_medico: "ecotextura pancreática heterogênea" }));
+  if (eco === "lipomatose") out.push(achado({ descricao_livre: "Aumento difuso da ecogenicidade pancreática", termo_do_medico: "lipomatose pancreática" }));
+  if (texto(s, "wirsung") === "dilatado") out.push(achado({ descricao_livre: "Ducto pancreático principal ectasiado", termo_do_medico: "Wirsung dilatado" }));
+  if (marcado(s, "lesoes", "cisto")) out.push(achado({
+    medidas_cm: medidasCm(s, "lesoes.cisto.dimensao"),
+    descricao_livre: "Imagem cística pancreática",
+    termo_do_medico: "cisto pancreático",
+  }));
+  if (marcado(s, "lesoes", "nodulo")) out.push(achado({
+    medidas_cm: medidasCm(s, "lesoes.nodulo.dimensao"),
+    descricao_livre: "Imagem nodular sólida pancreática a esclarecer",
+    termo_do_medico: "nódulo pancreático",
+  }));
+  return out;
+}
+
+function achadosDoBaco(s: EstadoDaSecao): Achado[] {
+  const out: Achado[] = [];
+  if (texto(s, "dimensoes") === "aumentado") out.push(achado({
+    medidas_cm: medidasDeCampos(s, [
+      { chave: "dimensoes.aumentado.eixo", unidade: "cm" },
+      { chave: "dimensoes.aumentado.eixo_menor", unidade: "cm" },
+    ]),
+    localizacao: descricaoDeMedidas(s, [
+      { chave: "dimensoes.aumentado.eixo", unidade: "cm", rotulo: "maior eixo medindo" },
+      { chave: "dimensoes.aumentado.eixo_menor", unidade: "cm", rotulo: "menor eixo medindo" },
+    ]),
+    descricao_livre: "Baço de dimensões aumentadas",
+    termo_do_medico: "esplenomegalia",
+  }));
+  if (texto(s, "ecotextura") === "heterogenea") out.push(achado({ descricao_livre: "Baço de ecotextura heterogênea", termo_do_medico: "ecotextura esplênica heterogênea" }));
+  if (marcado(s, "lesoes", "cisto")) out.push(achado({
+    medidas_cm: medidasCm(s, "lesoes.cisto.dimensao"),
+    descricao_livre: "Imagem cística esplênica simples",
+    termo_do_medico: "cisto esplênico",
+  }));
+  if (marcado(s, "lesoes", "calcificacao")) out.push(achado({ descricao_livre: "Foco calcificado esplênico residual", termo_do_medico: "calcificação esplênica" }));
+  if (marcado(s, "lesoes", "acessorio")) out.push(achado({ descricao_livre: "Imagem nodular homogênea junto ao hilo esplênico", termo_do_medico: "baço acessório" }));
   return out;
 }
 
@@ -127,12 +279,12 @@ function achadosDoRim(s: EstadoDaSecao): Achado[] {
   if (marcado(s, "litiase", "calculo")) {
     out.push(achado({
       tipo: "litiase",
-      medidas_cm: medida(s, "litiase.calculo.dimensao"),
+      medidas_cm: medidasCm(s, "litiase.calculo.dimensao"),
       localizacao: texto(s, "litiase.calculo.polo") || null,
       termo_do_medico: "cálculo",
     }));
   }
-  if (marcado(s, "cistos", "simples")) out.push(achado({ tipo: "cisto_simples", medidas_cm: medida(s, "cistos.simples.dimensao"), termo_do_medico: "cisto" }));
+  if (marcado(s, "cistos", "simples")) out.push(achado({ tipo: "cisto_simples", medidas_cm: medidasCm(s, "cistos.simples.dimensao"), termo_do_medico: "cisto" }));
   if (marcado(s, "cistos", "multiplos")) out.push(achado({ tipo: "cisto_simples", quantidade: "multiplas", termo_do_medico: "cistos" }));
   const dil = texto(s, "dilatacao");
   if (dil && dil !== "ausente") {
@@ -140,14 +292,6 @@ function achadosDoRim(s: EstadoDaSecao): Achado[] {
   }
   if (texto(s, "diferenciacao") === "reduzida") {
     out.push(achado({ descricao_livre: "Diferenciação córtico-medular reduzida", termo_do_medico: "diferenciação reduzida" }));
-  }
-  return out;
-}
-
-function achadosSimples(s: EstadoDaSecao, mapa: { chave: string; valor: string; frase: string; termo: string }[]): Achado[] {
-  const out: Achado[] = [];
-  for (const m of mapa) {
-    if (texto(s, m.chave) === m.valor) out.push(achado({ descricao_livre: m.frase, termo_do_medico: m.termo }));
   }
   return out;
 }
@@ -164,19 +308,9 @@ export function adaptarAbdome(estado: EstadoDoAbdome): Adaptacao {
   const porOrgao: Record<string, Achado[]> = {
     figado: achadosDoFigado(secao(estado, "figado")),
     vesicula: achadosDaVesicula(secao(estado, "vesicula")),
-    vias_biliares: achadosSimples(secao(estado, "vias_biliares"), [
-      { chave: "coledoco", valor: "dilatado", frase: "Canal colédoco de calibre aumentado", termo: "colédoco dilatado" },
-      { chave: "dimensao", valor: "dilatadas", frase: "Vias biliares intra-hepáticas dilatadas", termo: "vias dilatadas" },
-    ]),
-    pancreas: achadosSimples(secao(estado, "pancreas"), [
-      { chave: "ecotextura", valor: "heterogenea", frase: "Pâncreas de ecotextura heterogênea", termo: "ecotextura heterogênea" },
-      { chave: "ecotextura", valor: "lipomatose", frase: "Pâncreas com aumento difuso da ecogenicidade, compatível com lipomatose", termo: "lipomatose" },
-      { chave: "wirsung", valor: "dilatado", frase: "Ducto de Wirsung de calibre aumentado", termo: "Wirsung dilatado" },
-    ]),
-    baco: achadosSimples(secao(estado, "baco"), [
-      { chave: "dimensao", valor: "aumentado", frase: "Baço de dimensões aumentadas", termo: "esplenomegalia" },
-      { chave: "ecotextura", valor: "heterogenea", frase: "Baço de ecotextura heterogênea", termo: "ecotextura heterogênea" },
-    ]),
+    vias_biliares: achadosDasViasBiliares(secao(estado, "vias_biliares")),
+    pancreas: achadosDoPancreas(secao(estado, "pancreas")),
+    baco: achadosDoBaco(secao(estado, "baco")),
     rim_direito: achadosDoRim(secao(estado, "rim_direito")),
     rim_esquerdo: achadosDoRim(secao(estado, "rim_esquerdo")),
   };
@@ -190,13 +324,20 @@ export function adaptarAbdome(estado: EstadoDoAbdome): Adaptacao {
   const orgaos: Record<string, unknown> = {};
   for (const k of DA_TELA) {
     const a = porOrgao[k] ?? [];
-    orgaos[k] = { status: a.length > 0 ? "alterado" : "normal", achados: a };
+    const status = k === "vesicula" && texto(secao(estado, "vesicula"), "estado") === "ausente"
+      ? "ausente_cirurgico"
+      : a.length > 0 ? "alterado" : "normal";
+    orgaos[k] = { status, achados: status === "ausente_cirurgico" ? [] : a };
   }
   for (const k of SO_DO_CANONICO) orgaos[k] = { status: "normal", achados: [] };
   if (portaDilatada) {
     orgaos.veia_porta = {
       status: "alterado",
-      achados: [achado({ descricao_livre: "Veia porta de calibre aumentado", termo_do_medico: "porta dilatada" })],
+      achados: [achado({
+        medidas_cm: medidasCm(secao(estado, "figado"), "porta.dilatada.calibre"),
+        descricao_livre: "Veia porta de calibre aumentado",
+        termo_do_medico: "porta dilatada",
+      })],
     };
   }
 

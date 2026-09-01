@@ -77,14 +77,37 @@ Uma categoria só termina quando todas as opções visíveis passaram pela matri
 - [x] Typecheck, build da web e build da API concluídos.
 - [ ] Demais opções do abdome ainda serão percorridas na Sprint 23A.
 
+## Entrega 23A1 — abdome superior
+
+Fígado, veia porta, vesícula biliar, vias biliares, pâncreas e baço foram percorridos opção por opção. Os estados que antes chegavam ao catálogo como texto livre agora têm redação determinística no corpo e conclusão pertinente nos estilos Clássico e Objetivo. A alteração substitui a normalidade do mesmo órgão, admite medidas ausentes sem imprimir lacunas e conserva achados combinados do mesmo órgão ou de órgãos diferentes.
+
+A conversão de unidades foi normalizada: campos identificados em milímetros são convertidos para centímetros no laudo; campos identificados em centímetros permanecem em centímetros. O protocolo de ultrassonografia do CBR de novembro de 2025 também levou à inclusão das medidas longitudinais dos lobos hepáticos na hepatomegalia, do calibre da veia porta quando dilatada e dos eixos maior e menor do baço na esplenomegalia.
+
+Foram validados 36 cenários de opções visíveis, além de combinações intraórgão e interórgãos. A matriz cobre exame normal, alteração isolada, alteração combinada, medidas preenchidas, medidas ausentes, entrada com unidade explícita e entrada numérica sem unidade. Os golden tests anteriores de abdome superior continuam passando integralmente.
+
+- [x] Fígado e veia porta.
+- [x] Vesícula e vias biliares.
+- [x] Pâncreas e baço.
+- [x] Paridade Clássico/Objetivo.
+- [x] Conversão segura de mm para cm.
+- [x] Campos adicionais alinhados à documentação recomendada pelo CBR.
+- [x] Matriz clínica 23A1 e golden tests preexistentes.
+- [ ] 23A2: rins, bexiga, aorta e veia cava.
+
 ## Arquivos desta primeira entrega
 
 - `apps/web/src/lib/catalog/abdomeParaCatalogo.ts`
 - `apps/web/src/lib/deterministic/organs/figado.ts`
+- `apps/web/src/lib/deterministic/organs/vesicula.ts`
+- `apps/web/src/lib/deterministic/organs/viasBiliares.ts`
+- `apps/web/src/lib/deterministic/organs/pancreas.ts`
+- `apps/web/src/lib/deterministic/organs/baco.ts`
 - `apps/api/src/server/renderer/findingsSchemas/ABDOMEN_TOTAL.ts`
 - `apps/api/src/server/renderer/extraction.ts`
 - `apps/api/src/server/renderer/categories/ABDOMEN_SUPERIOR.ts`
 - `apps/api/src/server/renderer/phrases/ABDOMEN_TOTAL.ts`
 - `apps/api/src/server/renderer/__tests__/abdomen-hepatopatia-cronica.manual.ts`
+- `apps/api/src/server/renderer/__tests__/abdomen-23a1-clinical-matrix.manual.ts`
+- `package.json`
 - `docs/plano-produto-web-sprints-15-22-2026-08-31.md`
 - `docs/stories/2026-09-01-sprint-23-auditoria-clinica-categorias.md`
