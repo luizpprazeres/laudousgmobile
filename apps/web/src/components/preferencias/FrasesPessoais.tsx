@@ -9,7 +9,7 @@ type Draft = { title: string; body: string; category_code: string }
 const EMPTY: Draft = { title: '', body: '', category_code: '' }
 const CATEGORIES = [
   ['ABDOMEN_TOTAL', 'Abdome total'], ['OBSTETRICA', 'Obstétrica'], ['DOPPLER_OBSTETRICO', 'Doppler obstétrico'],
-  ['MORFOLOGICO', 'Morfológica'], ['TIREOIDE', 'Tireoide'], ['MAMARIA', 'Mamas'], ['PELVE_FEMININA', 'Pelve feminina'],
+  ['MORFOLOGICO', 'Morfológica'], ['TIREOIDE', 'Tireoide'], ['MAMARIA', 'Mamas e axilas'], ['PELVE_FEMININA', 'Pelve feminina'],
   ['ABDOMEN_SUPERIOR', 'Abdome superior'], ['VIAS_URINARIAS', 'Vias urinárias'], ['PROSTATA_SUPRAPUBICA', 'Próstata'],
   ['CERVICAL', 'Cervical'], ['CERVICOMETRIA', 'Cervicometria'], ['PARTES_MOLES', 'Partes moles'], ['MUSCULOESQUELETICO', 'Musculoesquelético'],
 ] as const

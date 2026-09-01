@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sugerirBiradsMamaria } from "@laudousg/shared";
 
 /**
  * DET-5 — Renderer de MAMARIA (render PROGRAMÁTICO, estilo CLÁSSICO).
@@ -12,9 +13,8 @@ import { z } from "zod";
  * NUNCA "regular" (sempre circunscrita/indistinta/angular/microlobulada/
  * espiculada). Título dinâmico (axilas). Elastografia só descreve, não calcula.
  *
- * ⚠️ ONDA 2 (não neste arquivo): formato OBJETIVO (TÉCNICA/ANÁLISE/OPINIÃO) —
- * exige passar o writing style ao renderer. A heurística 4A/4B/4C é local e
- * precisa de validação clínica (review dex/Luiz).
+ * A sugestão 4A/4B/4C vem do núcleo compartilhado. Na web manual ela só entra
+ * no laudo depois da confirmação médica explícita.
  */
 
 // ---------------------------------------------------------------------------
@@ -98,6 +98,7 @@ const AchadoSchema = z.object({
   dist_mamilo_cm: z.number().nullable(),
   descricao_nao_nodular: z.string().nullable(), // NML: "área heterogênea, sem configuração nodular"
   birads_ditado: z.string().nullable(), // override verbatim (vence o cálculo)
+  permitir_birads_calculado: z.boolean().default(true),
 });
 export type MamariaAchado = z.infer<typeof AchadoSchema>;
 
@@ -111,6 +112,7 @@ const CorrelacaoSchema = z.object({
 });
 
 export const MamariaFindingsSchema = z.object({
+  escopo_exame: z.enum(["mamas", "axilas", "mamas_axilas"]).optional(),
   titulo_com_axilas: z.boolean(), // título "...E REGIÕES AXILARES"
   mama_masculina: z.boolean(),
   com_protese: z.boolean(),
@@ -141,7 +143,7 @@ const ACHADO_JSON = {
     "tipo", "lado", "ecogenicidade", "forma", "orientacao", "margem", "posterior",
     "calcificacoes", "elasticidade", "descritores", "medidas_cm", "medida_invalida",
     "localizacao", "horario", "dist_pele_cm", "dist_mamilo_cm", "descricao_nao_nodular",
-    "birads_ditado",
+    "birads_ditado", "permitir_birads_calculado",
   ],
   properties: {
     tipo: { type: "string", enum: [...TIPOS] },
@@ -162,6 +164,7 @@ const ACHADO_JSON = {
     dist_mamilo_cm: num,
     descricao_nao_nodular: str,
     birads_ditado: str,
+    permitir_birads_calculado: { type: "boolean" },
   },
 } as const;
 
@@ -169,10 +172,11 @@ export const MAMARIA_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
-    "titulo_com_axilas", "mama_masculina", "com_protese", "texto_fundo", "achados",
+    "escopo_exame", "titulo_com_axilas", "mama_masculina", "com_protese", "texto_fundo", "achados",
     "axilas_alteradas", "axilas_descricao", "correlacao", "achados_adicionais",
   ],
   properties: {
+    escopo_exame: { type: "string", enum: ["mamas", "axilas", "mamas_axilas"] },
     titulo_com_axilas: { type: "boolean" },
     mama_masculina: { type: "boolean" },
     com_protese: { type: "boolean" },
@@ -199,8 +203,10 @@ export const MAMARIA_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO do Laud
 Classifique o ditado no JSON tipado (léxico BI-RADS US). NÃO redija laudo. NÃO invente.
 
 REGRAS:
-1. titulo_com_axilas: true se as axilas foram avaliadas / o título inclui regiões
-   axilares; false se o médico disser "sem axilas"/"só mamas".
+1. escopo_exame: mamas | axilas | mamas_axilas conforme as regiões efetivamente
+   avaliadas. titulo_com_axilas: true nos escopos axilas e mamas_axilas; false
+   em mamas. Em cada achado, permitir_birads_calculado deve ser true neste fluxo
+   de extração; se o médico ditar a categoria, preencha também birads_ditado.
 2. mama_masculina: true se exame de mama masculina. com_protese: true se paciente
    com próteses mamárias.
 3. texto_fundo: só se o médico ditar um padrão de fundo diferente; senão null
@@ -264,63 +270,12 @@ function biradsRank(b: string | null): number {
 
 /** BI-RADS calculado por tipo+feições. Ditado vence (tratado fora). */
 function calcBirads(a: MamariaAchado): string | null {
-  switch (a.tipo) {
-    case "ginecomastia":
-    case "proteses":
-      return null; // sem categoria própria
-    case "cisto_simples":
-    case "multiplos_cistos":
-    case "linfonodo_intramamario":
-      return "2";
-    case "microcistos_agrupados":
-    case "cisto_complicado":
-      return "3";
-    case "calcificacoes":
-      // grosseiras benignas → 2; em nódulo/micro/intraductais suspeitas → 4
-      return a.calcificacoes === "em_nodulo" ||
-        a.calcificacoes === "microcalcificacoes" ||
-        a.calcificacoes === "intraductais"
-        ? "4"
-        : "2";
-    case "achado_nao_nodular": {
-      // NML não tem fórmula; default 4 (suspeito) salvo ditado. Conservador.
-      return "4";
-    }
-    case "nodulo_solido": {
-      const benigno =
-        a.forma === "oval" &&
-        a.margem === "circunscrita" &&
-        a.orientacao === "paralela" &&
-        a.posterior !== "sombra" &&
-        a.calcificacoes !== "em_nodulo" &&
-        a.calcificacoes !== "microcalcificacoes";
-      if (benigno) return "3";
-      // Heurística PONDERADA por peso clínico (review dex2 #7) — não só contagem.
-      // FORTES: espiculada, irregular, microcalcificações em nódulo, sombra+não-paralela.
-      // MODERADAS: microlobulada/angular/indistinta, não-paralela, sombra.
-      // Validação clínica final é do Luiz.
-      const fortes =
-        (a.margem === "espiculada" ? 1 : 0) +
-        (a.forma === "irregular" ? 1 : 0) +
-        (a.calcificacoes === "microcalcificacoes" || a.calcificacoes === "em_nodulo" ? 1 : 0) +
-        (a.posterior === "sombra" && a.orientacao === "nao_paralela" ? 1 : 0);
-      const moderadas =
-        (a.margem === "microlobulada" || a.margem === "angular" || a.margem === "indistinta" ? 1 : 0) +
-        (a.orientacao === "nao_paralela" ? 1 : 0) +
-        (a.posterior === "sombra" ? 1 : 0);
-      if (fortes >= 2) return "5";
-      if (fortes === 1) return "4C";
-      if (moderadas >= 2) return "4B";
-      return "4A";
-    }
-    default:
-      return null;
-  }
+  return sugerirBiradsMamaria(a);
 }
 
 /** Resolve o BI-RADS do achado: ditado vence o cálculo. */
 function biradsDoAchado(a: MamariaAchado): string | null {
-  return a.birads_ditado?.trim() || calcBirads(a);
+  return a.birads_ditado?.trim() || (a.permitir_birads_calculado === false ? null : calcBirads(a));
 }
 
 /**
@@ -443,16 +398,56 @@ function ladoSimples(l: Lado | null): string {
 
 const COMENTARIOS_PADRAO =
   "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+const COMENTARIOS_MAMAS_AXILAS =
+  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas e as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+const COMENTARIOS_AXILAS =
+  "Exame realizado com transdutor linear de alta frequência, abrangendo as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
 const COMENTARIOS_MASCULINA =
   "Exame realizado com transdutor de 12 MHz, abrangendo a região retroareolar e todos os quadrantes de ambas as mamas, bem como as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
 const COMENTARIOS_PROTESE =
   "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas, bem como as regiões axilares. Paciente com próteses mamárias.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
 
-const TEXTO_FUNDO_PADRAO = "Mamas com ecotextura de fundo com aspecto heterogêneo.";
+const TEXTO_FUNDO_PADRAO = "Mamas com ecotextura de fundo heterogênea.";
 const AUSENCIA_LESAO = "Não há sinais evidentes de imagem nodular sólida, cística ou complexa.";
 const AXILAR_NORMAL_CORPO =
   "Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.";
 const AXILAR_NORMAL_CONCLUSAO = "Linfonodos axilares normais.";
+
+type EscopoMamaria = "mamas" | "axilas" | "mamas_axilas";
+
+function escopoDe(f: MamariaFindings): EscopoMamaria {
+  if (f.escopo_exame) return f.escopo_exame;
+  return f.titulo_com_axilas ? "mamas_axilas" : "mamas";
+}
+
+function incluiMamas(escopo: EscopoMamaria): boolean {
+  return escopo !== "axilas";
+}
+
+function incluiAxilas(escopo: EscopoMamaria): boolean {
+  return escopo !== "mamas";
+}
+
+function tituloDoEscopo(escopo: EscopoMamaria): string {
+  if (escopo === "axilas") return "ULTRASSONOGRAFIA DAS REGIÕES AXILARES";
+  if (escopo === "mamas_axilas") return "ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES";
+  return "ULTRASSONOGRAFIA DAS MAMAS";
+}
+
+function comentariosDoEscopo(f: MamariaFindings, escopo: EscopoMamaria): string {
+  if (escopo === "axilas") return COMENTARIOS_AXILAS;
+  if (f.mama_masculina) {
+    return escopo === "mamas_axilas"
+      ? COMENTARIOS_MASCULINA
+      : COMENTARIOS_MASCULINA.replace(", bem como as regiões axilares", "");
+  }
+  if (f.com_protese) {
+    return escopo === "mamas_axilas"
+      ? COMENTARIOS_PROTESE
+      : COMENTARIOS_PROTESE.replace(", bem como as regiões axilares", "");
+  }
+  return escopo === "mamas_axilas" ? COMENTARIOS_MAMAS_AXILAS : COMENTARIOS_PADRAO;
+}
 
 /**
  * O que se escreve quando o médico marca as axilas como ALTERADAS e não
@@ -712,7 +707,7 @@ export function renderMamaria(
 
 /** Anexa as notas [REVISAR] do guard BI-RADS ao fim do texto (só-sinaliza). */
 function appendBiradsNotes(texto: string, f: MamariaFindings, biradsGuard: boolean): string {
-  if (!biradsGuard) return texto;
+  if (!biradsGuard || !incluiMamas(escopoDe(f))) return texto;
   const notas = biradsRevisarNotes(f);
   return notas.length > 0 ? `${texto}\n\n${notas.join("\n")}` : texto;
 }
@@ -723,20 +718,15 @@ function renderMamariaClassico(
   biradsGuard = false,
 ): string {
   const prefs = mergeMamariaPrefs(prefsInput);
-
-  const titulo = f.titulo_com_axilas
-    ? "ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES"
-    : "ULTRASSONOGRAFIA DAS MAMAS";
-
-  const comentarios = f.mama_masculina
-    ? COMENTARIOS_MASCULINA
-    : f.com_protese
-      ? COMENTARIOS_PROTESE
-      : COMENTARIOS_PADRAO;
+  const escopo = escopoDe(f);
+  const comMamas = incluiMamas(escopo);
+  const comAxilas = incluiAxilas(escopo);
+  const titulo = tituloDoEscopo(escopo);
+  const comentarios = comentariosDoEscopo(f, escopo);
 
   // ----- Corpo -----
-  const aspectos: string[] = [f.texto_fundo?.trim() || TEXTO_FUNDO_PADRAO];
-  const achados = f.achados ?? [];
+  const aspectos: string[] = [];
+  const achados = comMamas ? f.achados ?? [] : [];
   // P1 — "Não há sinais evidentes de imagem nodular sólida, cística ou complexa."
   // é OBRIGATÓRIA quando não há lesão nodular/cística descrita (exame normal E
   // também próteses/ginecomastia/calcificações isoladas — nunca remover).
@@ -745,15 +735,18 @@ function renderMamariaClassico(
     "cisto_complicado", "nodulo_solido", "achado_nao_nodular",
   ]);
   const temLesao = achados.some((a) => TIPOS_LESAO.has(a.tipo));
-  if (!temLesao) aspectos.push(AUSENCIA_LESAO);
-  for (const a of achados) aspectos.push(achadoCorpo(a));
+  if (comMamas) {
+    aspectos.push(f.texto_fundo?.trim() || TEXTO_FUNDO_PADRAO);
+    if (!temLesao) aspectos.push(AUSENCIA_LESAO);
+    for (const a of achados) aspectos.push(achadoCorpo(a));
+  }
   // Elastografia (frase adicional, sem cálculo).
   for (const a of achados) {
     if (a.elasticidade)
       aspectos.push(`À elastografia, a imagem apresenta elasticidade ${a.elasticidade === "intermediaria" ? "intermediária" : a.elasticidade}.`);
   }
   // Axilas: se o título inclui axilas, a frase aparece SEMPRE (decisão Luiz).
-  if (f.titulo_com_axilas) {
+  if (comAxilas) {
     /**
      * TRÊS estados, não dois. O `&&` juntava "alterada sem descrição" com
      * "normal" e escrevia a frase de normalidade sob uma conclusão que dizia o
@@ -776,9 +769,9 @@ function renderMamariaClassico(
     achados.map(biradsDoAchado).find((b) => b !== null && biradsRank(b) === maiorRank) ?? null;
 
   const conclusao: string[] = [];
-  if (achados.length === 0) {
+  if (comMamas && achados.length === 0) {
     conclusao.push("Mamas ecograficamente normais (Categoria BI-RADS® 1).");
-  } else {
+  } else if (comMamas) {
     // #3 — cistos simples em ambos os lados (ou um achado bilateral) agregam num
     // único item "Cistos mamários simples bilateralmente[, subcentimétricos]".
     const CISTO = new Set<Tipo>(["cisto_simples", "multiplos_cistos"]);
@@ -805,7 +798,7 @@ function renderMamariaClassico(
     }
   }
   // Axilas na conclusão (só quando o título inclui axilas).
-  if (f.titulo_com_axilas) {
+  if (comAxilas) {
     const descAx = f.axilas_descricao?.trim();
     conclusao.push(
       !f.axilas_alteradas
@@ -816,7 +809,7 @@ function renderMamariaClassico(
     );
   }
   // Correlação com exame prévio.
-  if (f.correlacao) {
+  if (comMamas && f.correlacao) {
     const cf = correlacaoFrase(f.correlacao);
     if (cf) conclusao.push(cf);
   }
@@ -846,8 +839,7 @@ function renderMamariaClassico(
     "CONCLUSÃO:",
     conclusaoTxt,
     ...(condutaSecao ? ["", condutaSecao] : []),
-    "",
-    RODAPE,
+    ...(comMamas ? ["", RODAPE] : []),
   ].join("\n");
 
   return appendBiradsNotes(corpo.replace(/\n{3,}/g, "\n\n").trim(), f, biradsGuard);
@@ -867,6 +859,8 @@ const TECNICA_OBJETIVO =
   "Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas.";
 const TECNICA_OBJETIVO_AXILAS =
   "Exame realizado com transdutor linear de alta frequência, abrangendo todos os quadrantes das mamas e as regiões axilares.";
+const TECNICA_OBJETIVO_SOMENTE_AXILAS =
+  "Exame realizado com transdutor linear de alta frequência, abrangendo as regiões axilares.";
 
 /** Frase do achado no ACHADOS (estilo objetivo, enxuto). */
 function achadoAchadoObjetivo(a: MamariaAchado): string {
@@ -882,25 +876,31 @@ function renderMamariaObjetivo(
   biradsGuard = false,
 ): string {
   const prefs = mergeMamariaPrefs(prefsInput);
+  const escopo = escopoDe(f);
+  const comMamas = incluiMamas(escopo);
+  const comAxilas = incluiAxilas(escopo);
+  const titulo = tituloDoEscopo(escopo);
+  const tecnica = escopo === "axilas"
+    ? TECNICA_OBJETIVO_SOMENTE_AXILAS
+    : escopo === "mamas_axilas"
+      ? TECNICA_OBJETIVO_AXILAS
+      : TECNICA_OBJETIVO;
 
-  const titulo = f.titulo_com_axilas
-    ? "ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES"
-    : "ULTRASSONOGRAFIA DAS MAMAS";
-  const tecnica = f.titulo_com_axilas ? TECNICA_OBJETIVO_AXILAS : TECNICA_OBJETIVO;
-
-  const achados = f.achados ?? [];
+  const achados = comMamas ? f.achados ?? [] : [];
 
   // ----- ACHADOS -----
   const linhas: string[] = [];
-  linhas.push("Pele e tecido celular subcutâneo de aspecto preservado.");
-  linhas.push(f.texto_fundo?.trim() || TEXTO_FUNDO_PADRAO);
+  if (comMamas) {
+    linhas.push("Pele e tecido celular subcutâneo de aspecto preservado.");
+    linhas.push(f.texto_fundo?.trim() || TEXTO_FUNDO_PADRAO);
+  }
 
   const TIPOS_LESAO = new Set<Tipo>([
     "cisto_simples", "multiplos_cistos", "microcistos_agrupados",
     "cisto_complicado", "nodulo_solido", "achado_nao_nodular",
   ]);
   const temLesao = achados.some((a) => TIPOS_LESAO.has(a.tipo));
-  if (!temLesao) linhas.push(AUSENCIA_LESAO);
+  if (comMamas && !temLesao) linhas.push(AUSENCIA_LESAO);
   for (const a of achados) linhas.push(achadoAchadoObjetivo(a));
   for (const a of achados) {
     if (a.elasticidade)
@@ -908,7 +908,7 @@ function renderMamariaObjetivo(
         `À elastografia, a imagem apresenta elasticidade ${a.elasticidade === "intermediaria" ? "intermediária" : a.elasticidade}.`,
       );
   }
-  if (f.titulo_com_axilas) {
+  if (comAxilas) {
     // Idem: três estados. Era o quarto lugar com o mesmo `&&`.
     const descAx = f.axilas_descricao?.trim();
     linhas.push(
@@ -929,9 +929,9 @@ function renderMamariaObjetivo(
     null;
 
   const impressao: string[] = [];
-  if (achados.length === 0) {
+  if (comMamas && achados.length === 0) {
     impressao.push("Mamas ecograficamente normais (Categoria BI-RADS® 1).");
-  } else {
+  } else if (comMamas) {
     const CISTO = new Set<Tipo>(["cisto_simples", "multiplos_cistos"]);
     const cistos = achados.filter((a) => CISTO.has(a.tipo));
     const ladosCisto = new Set(cistos.map((a) => a.lado));
@@ -956,7 +956,7 @@ function renderMamariaObjetivo(
       impressao.push(isMaior ? `${base} (Categoria BI-RADS® ${b}).` : `${base}.`);
     }
   }
-  if (f.titulo_com_axilas) {
+  if (comAxilas) {
     // Mesmos três estados do clássico — o `&&` mandava "alterada sem descrição"
     // para a frase de normalidade.
     const descAx = f.axilas_descricao?.trim();
@@ -968,7 +968,7 @@ function renderMamariaObjetivo(
           : AXILAR_ATIPICO_CONCLUSAO,
     );
   }
-  if (f.correlacao) {
+  if (comMamas && f.correlacao) {
     const cf = correlacaoFrase(f.correlacao);
     if (cf) impressao.push(cf);
   }
@@ -997,8 +997,7 @@ function renderMamariaObjetivo(
     "IMPRESSÃO:",
     impressaoTxt,
     ...(condutaSecao ? ["", condutaSecao] : []),
-    "",
-    RODAPE,
+    ...(comMamas ? ["", RODAPE] : []),
   ].join("\n");
 
   return appendBiradsNotes(corpo.replace(/\n{3,}/g, "\n\n").trim(), f, biradsGuard);

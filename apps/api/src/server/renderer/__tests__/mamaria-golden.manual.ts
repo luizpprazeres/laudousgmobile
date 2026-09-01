@@ -131,5 +131,50 @@ const solido = (p: object) => renderMamaria(F({ achados: [A({ tipo: "nodulo_soli
   check("BI-RADS 5 (2 fortes)", /\(Categoria BI-RADS® 5\)/.test(solido({ forma: "irregular", margem: "espiculada", orientacao: "nao_paralela", posterior: "sombra" })));
 }
 
+// ── Sprint 15: escopo explícito e confirmação médica do BI-RADS ──
+{
+  const somenteAxilas = renderMamaria(F({
+    escopo_exame: "axilas",
+    titulo_com_axilas: true,
+    achados: [A({ tipo: "nodulo_solido", birads_ditado: "5" })],
+  }));
+  check("escopo axilas: título próprio", /^ULTRASSONOGRAFIA DAS REGIÕES AXILARES/.test(somenteAxilas), somenteAxilas);
+  check("escopo axilas: não descreve mamas nem BI-RADS", !/ecotextura de fundo|Mamas ecograficamente|Breast Imaging Reporting/.test(somenteAxilas), somenteAxilas);
+  check("escopo axilas: mantém conclusão axilar", /Linfonodos axilares normais\./.test(somenteAxilas), somenteAxilas);
+
+  const somenteMamas = renderMamaria(F({
+    escopo_exame: "mamas",
+    titulo_com_axilas: true,
+    texto_fundo: "Mamas com ecotextura de fundo homogênea, predominantemente adiposa.",
+  }));
+  check("escopo mamas: ignora booleano legado de axilas", /^ULTRASSONOGRAFIA DAS MAMAS\n/.test(somenteMamas) && !/REGIÕES AXILARES|Linfonodos axilares/.test(somenteMamas), somenteMamas);
+  check("ecotextura: frase completa preservada", /Mamas com ecotextura de fundo homogênea, predominantemente adiposa\./.test(somenteMamas), somenteMamas);
+
+  const semConfirmacao = renderMamaria(F({
+    escopo_exame: "mamas",
+    achados: [A({
+      tipo: "nodulo_solido",
+      forma: "irregular",
+      margem: "espiculada",
+      orientacao: "nao_paralela",
+      permitir_birads_calculado: false,
+    })],
+  }));
+  check("BI-RADS: sugestão não vira decisão sem confirmação", !/Categoria BI-RADS®/.test(semConfirmacao), semConfirmacao);
+
+  const confirmado = renderMamaria(F({
+    escopo_exame: "mamas",
+    achados: [A({
+      tipo: "nodulo_solido",
+      forma: "irregular",
+      margem: "espiculada",
+      orientacao: "nao_paralela",
+      permitir_birads_calculado: false,
+      birads_ditado: "5",
+    })],
+  }));
+  check("BI-RADS: confirmação médica entra na conclusão", /Categoria BI-RADS® 5/.test(confirmado), confirmado);
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

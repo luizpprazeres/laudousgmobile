@@ -1726,7 +1726,7 @@ function prettyCategory(code: string): string {
     ABDOMEN_SUPERIOR: "Abdome superior",
     VIAS_URINARIAS: "Vias urinárias",
     TIREOIDE: "Tireoide",
-    MAMARIA: "Mamária",
+    MAMARIA: "Mamas e axilas",
     PELVE_FEMININA: "Pelve feminina",
     OBSTETRICA: "Obstétrica",
     DOPPLER_OBSTETRICO: "Doppler obstétrico",

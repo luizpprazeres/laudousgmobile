@@ -81,7 +81,7 @@ export const CATEGORIES_SEED: { code: string; label: string }[] = [
   { code: "PARATIREOIDE", label: "Paratireoide" },
   { code: "GLANDULAS_SALIVARES", label: "Glândulas Salivares" },
   { code: "CERVICAL", label: "Cervical" },
-  { code: "MAMARIA", label: "Mamária" },
+  { code: "MAMARIA", label: "Mamas e axilas" },
   { code: "PARTES_MOLES", label: "Partes Moles" },
 
   // MSK — V1 (legado) está marcado inactive=true no banco; só V2 vale.

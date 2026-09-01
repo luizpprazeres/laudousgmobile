@@ -85,9 +85,9 @@ const CALC_PARA_CANONICO: Record<string, string> = {
  * canônico.
  */
 const FUNDO: Record<string, string> = {
-  heterogeneo: "heterogênea",
-  denso: "fibroglandular densa",
-  adiposo: "predominantemente adiposa",
+  heterogeneo: "Mamas com ecotextura de fundo heterogênea.",
+  denso: "Mamas com ecotextura de fundo homogênea, predominantemente fibroglandular.",
+  adiposo: "Mamas com ecotextura de fundo homogênea, predominantemente adiposa.",
 };
 
 type Achado = Record<string, unknown>;
@@ -157,6 +157,7 @@ function acharNaMama(
      * existe, e a escala é a mesma dos dois lados (ACR).
      */
     birads_ditado: sub("birads") || null,
+    permitir_birads_calculado: false,
   };
 }
 
@@ -219,6 +220,7 @@ function acharPorId(
     dist_mamilo_cm: medidas(sub("dist_mamilo"))?.[0] ?? null,
     descricao_nao_nodular: null,
     birads_ditado: sub("birads") || null,
+    permitir_birads_calculado: false,
   };
 }
 
@@ -232,11 +234,21 @@ export function adaptarMamaria(estado: EstadoDaMama): Adaptacao {
   const pendencias: Pendencia[] = [];
   const m = secao(estado, "mamas");
   const ax = secao(estado, "axilas");
+  const opts = secao(estado, "__opts");
+  const escopoInformado = texto(opts, "escopo_exame");
+  const axilasLegadas = texto(ax, "axilas") || "nao";
+  const escopo = escopoInformado === "mamas" || escopoInformado === "axilas" || escopoInformado === "mamas_axilas"
+    ? escopoInformado
+    : axilasLegadas === "nao"
+      ? "mamas"
+      : "mamas_axilas";
+  const incluiMamas = escopo !== "axilas";
+  const incluiAxilas = escopo !== "mamas";
 
   const ids = Array.isArray(m.achados_ids)
     ? m.achados_ids.filter((id): id is string => typeof id === "string" && id.length > 0)
     : [];
-  const achados = (ids.length > 0
+  const achados = (!incluiMamas ? [] : ids.length > 0
     ? ids.map((id) => acharPorId(m, id, pendencias))
     : [
         acharNaMama(m, "md", "direita", pendencias),
@@ -244,7 +256,7 @@ export function adaptarMamaria(estado: EstadoDaMama): Adaptacao {
       ]
   ).filter((a): a is Achado => a !== null);
 
-  const axilas = texto(ax, "axilas") || "nao";
+  const axilas = texto(ax, "axilas") || (incluiAxilas ? "normais" : "nao");
 
   const dados: Record<string, unknown> = {
     /**
@@ -252,13 +264,14 @@ export function adaptarMamaria(estado: EstadoDaMama): Adaptacao {
      * laudo se anunciaria como exame das regiões axilares num exame em que
      * ninguém as olhou.
      */
-    titulo_com_axilas: axilas !== "nao",
+    escopo_exame: escopo,
+    titulo_com_axilas: incluiAxilas,
     mama_masculina: false,
     com_protese: false,
-    texto_fundo: FUNDO[texto(m, "fundo")] ?? FUNDO.heterogeneo,
+    texto_fundo: incluiMamas ? FUNDO[texto(m, "fundo")] ?? FUNDO.heterogeneo : null,
     achados,
-    axilas_alteradas: axilas === "alteradas",
-    axilas_descricao: axilas === "alteradas" ? texto(ax, "axilas.alteradas.desc") || null : null,
+    axilas_alteradas: incluiAxilas && axilas === "alteradas",
+    axilas_descricao: incluiAxilas && axilas === "alteradas" ? texto(ax, "axilas.alteradas.desc") || null : null,
     achados_adicionais: null,
     birads_final: null,
     exames_anteriores: [],

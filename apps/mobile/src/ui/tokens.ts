@@ -129,7 +129,7 @@ export const RADIUS = {
 export const CATS = [
   { id: "ABDOMEN_TOTAL",         label: "Abdome Total",        color: "#059669", sub: "Fígado, vias biliares, pâncreas…" },
   { id: "TIREOIDE",              label: "Tireoide",            color: "#0EA5E9", sub: "Tireoide e paratireoides" },
-  { id: "MAMARIA",               label: "Mamária",             color: "#F43F5E", sub: "BI-RADS" },
+  { id: "MAMARIA",               label: "Mamas e axilas",      color: "#F43F5E", sub: "BI-RADS" },
   { id: "PELVE_FEMININA",        label: "Pelve",               color: "#A855F7", sub: "Útero, ovários, anexos" },
   { id: "OBSTETRICA",            label: "Obstétrica",          color: "#EC4899", sub: "USG obstétrico" },
   { id: "DOPPLER_OBSTETRICO",    label: "Doppler Obstétrico",  color: "#F97316", sub: "Avaliação hemodinâmica" },

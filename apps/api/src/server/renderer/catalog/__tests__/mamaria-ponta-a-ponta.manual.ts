@@ -42,7 +42,7 @@ type Caso = {
 };
 
 function inicial(): Record<string, unknown> {
-  const st: Record<string, unknown> = {};
+  const st: Record<string, unknown> = { __opts: { escopo_exame: "mamas_axilas" } };
   for (const s of mamaria.sections) if (s.module) st[s.id] = s.module.initialState();
   return st;
 }
@@ -101,13 +101,14 @@ const CASOS: Caso[] = [
   },
   {
     nome: "cisto simples",
-    porque: "o achado benigno mais comum; tem de sair como tal.",
+    porque: "o achado benigno mais comum; a categoria sugerida só entra após confirmação.",
     estado: com(inicial(), "mamas", {
       md_tipo: "cisto_simples",
       "md_tipo.cisto_simples.medidas": "0,8 x 0,6 x 0,5",
       "md_tipo.cisto_simples.local": "quadrante superomedial",
     }),
     exige: ["0,8"],
+    proibeNaConclusao: ["BI-RADS"],
   },
   {
     nome: "cistos múltiplos, bilaterais",
@@ -119,6 +120,7 @@ const CASOS: Caso[] = [
       "me_tipo.multiplos_cistos.medidas": "0,6 x 0,5 x 0,4",
     }),
     exige: ["0,7", "0,6"],
+    proibeNaConclusao: ["BI-RADS"],
   },
   {
     nome: "calcificações grosseiras",
@@ -157,8 +159,15 @@ const CASOS: Caso[] = [
     nome: "axilas NÃO avaliadas",
     porque:
       "o inverso, e é o que protege: sem isto o laudo se anunciaria como exame das regiões axilares num exame em que ninguém as olhou.",
-    estado: inicial(),
+    estado: com(inicial(), "__opts", { escopo_exame: "mamas" }),
     proibe: ["AXILARES"],
+  },
+  {
+    nome: "axilas isoladas",
+    porque: "o exame pode avaliar somente as regiões axilares sem inventar avaliação mamária ou BI-RADS.",
+    estado: com(inicial(), "__opts", { escopo_exame: "axilas" }),
+    exige: ["ULTRASSONOGRAFIA DAS REGIÕES AXILARES", "Linfonodos axilares normais"],
+    proibe: ["ecotextura de fundo", "Breast Imaging Reporting"],
   },
   {
     nome: "axilas alteradas",
@@ -173,7 +182,7 @@ const CASOS: Caso[] = [
     nome: "mama de fundo adiposo",
     porque: "a ecotextura de fundo é escolha da tela e vira texto no canônico.",
     estado: com(inicial(), "mamas", { fundo: "adiposo" }),
-    exige: ["adiposa"],
+    exige: ["Mamas com ecotextura de fundo homogênea, predominantemente adiposa."],
   },
 ];
 

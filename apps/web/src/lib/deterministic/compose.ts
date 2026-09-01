@@ -31,6 +31,16 @@ export interface ComposedReport {
 /** Estado inicial do exame inteiro (defaults de cada módulo). */
 export function initialExamState(category: ExamCategory): ExamState {
   const state: ExamState = {}
+  const opts: OrganState = {}
+  for (const control of category.controls ?? []) {
+    if (control.kind === 'checklist') {
+      opts[control.key] = (control.options ?? []).filter((option) => option.isDefault).map((option) => option.value)
+      continue
+    }
+    const selected = (control.options ?? []).find((option) => option.isDefault)
+    if (selected) opts[control.key] = selected.value
+  }
+  if (Object.keys(opts).length > 0) state.__opts = opts
   for (const section of category.sections) {
     if (section.module) state[section.id] = section.module.initialState()
   }

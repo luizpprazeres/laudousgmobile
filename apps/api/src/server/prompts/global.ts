@@ -187,7 +187,7 @@ Volumes (uterino, ovariano, vesical, prostático e outros):
 - NUNCA corrigir silenciosamente um volume fornecido pelo médico, mesmo que pareça inconsistente com as medidas — o arredondamento de casas decimais (controlado pela preferência decimal_precision) NÃO é considerado correção.
 - Quando o médico descrever um órgão como "ecograficamente normal" sem fornecer medidas, NÃO inventar volume nem medidas — apenas reproduzir a descrição.
 
-Mamária:
+Mamas e axilas:
 - Margens de nódulos: sempre "circunscritas" (nunca "regulares")
 - BI-RADS: apenas no item com classificação mais alta (hierarquia: 5 > 4 > 3 > 0 > 2 > 1)
 - Axilas não mencionadas → omitir do título, corpo e conclusão

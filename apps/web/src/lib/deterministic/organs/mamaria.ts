@@ -66,9 +66,9 @@ const margemTxt: Record<string, string> = {
   espiculada: 'espiculada',
 }
 const FUNDO: Record<string, string> = {
-  heterogeneo: 'Mamas com ecotextura de fundo com aspecto heterogêneo.',
-  denso: 'Mamas com predominância de tecido fibroglandular denso.',
-  adiposo: 'Mamas com predominância de tecido adiposo.',
+  heterogeneo: 'Mamas com ecotextura de fundo heterogênea.',
+  denso: 'Mamas com ecotextura de fundo homogênea, predominantemente fibroglandular.',
+  adiposo: 'Mamas com ecotextura de fundo homogênea, predominantemente adiposa.',
 }
 const AUSENCIA_LESAO = 'Não há sinais evidentes de imagem nodular sólida, cística ou complexa.'
 const RODAPE = 'Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).'
@@ -220,10 +220,11 @@ const noduloSubs: Field[] = [
   ] },
   { key: 'posterior', label: 'Acústico post.', kind: 'mini-segmented', options: [
     { value: 'nenhuma', label: 'Nenhum', isDefault: true }, { value: 'reforco', label: 'Reforço' }, { value: 'sombra', label: 'Sombra' },
+    { value: 'combinado', label: 'Combinado' },
   ] },
   { key: 'calc', label: 'Calcificações', kind: 'checklist', options: [{ value: 'microcalc', label: 'Microcalc. de permeio' }] },
   { key: 'local', label: 'Localização', kind: 'text', placeholder: 'quadrante superolateral' },
-  { key: 'birads', label: 'BI-RADS (forçar)', kind: 'text', placeholder: 'ex.: 4A' },
+  { key: 'birads', label: 'BI-RADS definido pelo médico', kind: 'text', placeholder: 'ex.: 4A' },
 ]
 const cistoSubs: Field[] = [
   { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '0,8 x 0,6 x 0,5' },
@@ -235,7 +236,7 @@ const calcSubs: Field[] = [
     { value: 'em_nodulo', label: 'Em nódulo' }, { value: 'intraductais', label: 'Intraductais' }, { value: 'fora_nodulo', label: 'Extranodular' },
   ] },
   { key: 'local', label: 'Localização', kind: 'text', placeholder: 'quadrante superolateral' },
-  { key: 'birads', label: 'BI-RADS (forçar)', kind: 'text', placeholder: 'ex.: 4A' },
+  { key: 'birads', label: 'BI-RADS definido pelo médico', kind: 'text', placeholder: 'ex.: 4A' },
 ]
 
 function mamaTipoField(prefix: string): Field {
@@ -265,9 +266,9 @@ const schema: OrganSchema = {
       kind: 'segmented',
       hint: 'default: heterogêneo',
       options: [
-        { value: 'heterogeneo', label: 'Heterogêneo', isDefault: true },
-        { value: 'denso', label: 'Fibroglandular denso' },
-        { value: 'adiposo', label: 'Adiposo' },
+        { value: 'heterogeneo', label: 'Heterogênea', isDefault: true },
+        { value: 'denso', label: 'Homogênea · fibroglandular' },
+        { value: 'adiposo', label: 'Homogênea · adiposa' },
       ],
     },
     mamaTipoField('md'),
@@ -304,7 +305,7 @@ const axilasModule: OrganModule = {
       },
     ],
   },
-  initialState: (): OrganState => ({ axilas: 'nao', 'axilas.alteradas.desc': '' }),
+  initialState: (): OrganState => ({ axilas: 'normais', 'axilas.alteradas.desc': '' }),
   compose: (state): OrganComposition => {
     const axilas = String(state.axilas ?? 'nao')
     if (axilas === 'normais') {
@@ -363,15 +364,36 @@ const mamasModule: OrganModule = { schema, initialState, compose }
 
 export const mamaria: ExamCategory = {
   id: 'MAMARIA',
-  name: 'Mamária',
+  name: 'Mamas e axilas',
   title: 'ULTRASSONOGRAFIA DAS MAMAS',
   tecnica:
     'Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.',
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
+  controls: [
+    {
+      key: 'escopo_exame',
+      label: 'O que será avaliado?',
+      kind: 'segmented',
+      options: [
+        { value: 'mamas_axilas', label: 'Mamas e axilas', isDefault: true },
+        { value: 'mamas', label: 'Somente mamas' },
+        { value: 'axilas', label: 'Somente axilas' },
+      ],
+    },
+  ],
   sections: [
     { id: 'mamas', label: 'Mamas', group: 'orgaos', module: mamasModule },
     { id: 'axilas', label: 'Axilas', group: 'orgaos', module: axilasModule },
   ],
+  resolveSections: (opts) => {
+    const escopo = String(opts.escopo_exame ?? 'mamas_axilas')
+    if (escopo === 'mamas') return [{ id: 'mamas', label: 'Mamas', group: 'orgaos', module: mamasModule }]
+    if (escopo === 'axilas') return [{ id: 'axilas', label: 'Axilas', group: 'orgaos', module: axilasModule }]
+    return [
+      { id: 'mamas', label: 'Mamas', group: 'orgaos', module: mamasModule },
+      { id: 'axilas', label: 'Axilas', group: 'orgaos', module: axilasModule },
+    ]
+  },
   conclusionNormal: 'Mamas ecograficamente normais (Categoria BI-RADS® 1).',
   footer: RODAPE,
   calculators: [biRadsSpec],

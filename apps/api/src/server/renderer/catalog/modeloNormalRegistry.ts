@@ -266,7 +266,7 @@ render: (f, o) =>
       }),
   },
   {
-    categoria: "MAMARIA", rotulo: "Mamária", schema: MamariaFindingsSchema,
+    categoria: "MAMARIA", rotulo: "Mamas e axilas", schema: MamariaFindingsSchema,
     estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     render: (f, o) =>
       renderMamaria(f, undefined as never, {

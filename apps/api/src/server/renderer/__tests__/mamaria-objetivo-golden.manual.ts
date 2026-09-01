@@ -87,5 +87,13 @@ const render = (f: Parameters<typeof renderMamaria>[0], prefs?: { show_conduct_r
   check("conduta OFF: sem seção", !/Conduta sugerida:/.test(l), l);
 }
 
+// ── Sprint 15: axilas isoladas também funcionam no estilo objetivo ──
+{
+  const l = render(F({ escopo_exame: "axilas", titulo_com_axilas: true, achados: [] }));
+  check("axilas isoladas: título próprio", /^ULTRASSONOGRAFIA DAS REGIÕES AXILARES/.test(l), l);
+  check("axilas isoladas: técnica não afirma avaliação das mamas", /abrangendo as regiões axilares\./.test(l) && !/quadrantes das mamas/.test(l), l);
+  check("axilas isoladas: sem BI-RADS", !/BI-RADS|Breast Imaging Reporting/.test(l), l);
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

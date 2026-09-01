@@ -24,6 +24,7 @@ export const A = (p: Partial<MamariaAchado>): MamariaAchado => ({
   dist_mamilo_cm: null,
   descricao_nao_nodular: null,
   birads_ditado: null,
+  permitir_birads_calculado: true,
   ...p,
 });
 

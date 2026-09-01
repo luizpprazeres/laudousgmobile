@@ -24,7 +24,7 @@ export function categoriaLabel(code: string): string {
     ABDOMEN_SUPERIOR: 'Abdome superior',
     PROSTATA_SUPRAPUBICA: 'Próstata',
     VIAS_URINARIAS: 'Vias urinárias',
-    MAMARIA: 'Mamária',
+    MAMARIA: 'Mamas e axilas',
     PELVE_FEMININA: 'Pelve feminina',
     CERVICAL: 'Cervical',
     CERVICOMETRIA: 'Cervicometria',

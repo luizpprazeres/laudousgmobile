@@ -648,6 +648,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             contentGroupLabel={
               ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO'].includes(categoria)
                 ? 'Etapas do exame'
+                : categoria === 'MAMARIA'
+                  ? 'Partes do exame'
                 : categoria === 'MUSCULOESQUELETICO'
                   ? 'Estruturas'
                   : undefined
