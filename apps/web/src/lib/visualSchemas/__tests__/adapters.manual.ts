@@ -10,8 +10,17 @@ const thyroidAssets = [
   ['transverse-v2.png', '92cfd76df6dc12320118cb29ee9c7b250ff2ff2d2c6dead310f7d8a10e459a0e'],
 ] as const
 
+const breastAssets = [
+  ['frontal-v3.png', 'e620c9c3ff7d4dedd7974ace67110c3a78c01b40f54f1fa9abcd38f8570dc3f2'],
+] as const
+
 for (const [file, expected] of thyroidAssets) {
   const contents = readFileSync(resolve(process.cwd(), 'apps/web/public/schemas/thyroid', file))
+  assert.equal(createHash('sha256').update(contents).digest('hex'), expected, `${file} foi alterado sem atualizar a revisão clínica e o manifesto`)
+}
+
+for (const [file, expected] of breastAssets) {
+  const contents = readFileSync(resolve(process.cwd(), 'apps/web/public/schemas/breast', file))
   assert.equal(createHash('sha256').update(contents).digest('hex'), expected, `${file} foi alterado sem atualizar a revisão clínica e o manifesto`)
 }
 

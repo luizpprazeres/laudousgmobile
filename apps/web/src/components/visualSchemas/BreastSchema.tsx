@@ -1,10 +1,11 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { BreastSchemaFinding } from '@/lib/visualSchemas/adapters'
 
-const VIEW = { width: 640, height: 342, cy: 184, rightX: 168, leftX: 472, rx: 101, ry: 118, maxCm: 6 }
+const VIEW = { width: 640, height: 342, cy: 171, rightX: 154, leftX: 486, rx: 112, ry: 130, maxCm: 6 }
+const ASSET = '/schemas/breast/frontal-v3.png'
 
 function angle(hour: number) { return (hour / 12) * Math.PI * 2 - Math.PI / 2 }
 function center(side: BreastSchemaFinding['side']) { return side === 'direita' ? VIEW.rightX : VIEW.leftX }
@@ -32,49 +33,34 @@ function radius(finding: BreastSchemaFinding, max: number) {
   return 5 + Math.min(finding.sizeMaxMm / max, 1) * 9
 }
 
-function breastOutline(cx: number, side: BreastSchemaFinding['side']) {
-  const direction = side === 'direita' ? 1 : -1
-  const x = (value: number) => cx + value * direction
-  const y = (value: number) => VIEW.cy + value
-
-  return [
-    `M ${x(72)} ${y(-84)}`,
-    `C ${x(96)} ${y(-48)}, ${x(104)} ${y(15)}, ${x(83)} ${y(69)}`,
-    `C ${x(62)} ${y(108)}, ${x(25)} ${y(124)}, ${x(0)} ${y(126)}`,
-    `C ${x(-42)} ${y(124)}, ${x(-78)} ${y(106)}, ${x(-96)} ${y(67)}`,
-    `C ${x(-116)} ${y(20)}, ${x(-108)} ${y(-39)}, ${x(-87)} ${y(-78)}`,
-    `C ${x(-46)} ${y(-111)}, ${x(-17)} ${y(-119)}, ${x(15)} ${y(-115)}`,
-    `C ${x(42)} ${y(-112)}, ${x(62)} ${y(-101)}, ${x(72)} ${y(-84)}`,
-    'Z',
-  ].join(' ')
-}
-
-function axillaryExtensions(cx: number, side: BreastSchemaFinding['side']) {
-  const direction = side === 'direita' ? 1 : -1
-  const x = (value: number) => cx + value * direction
-  const y = (value: number) => VIEW.cy + value
-  return [
-    `M ${x(-87)} ${y(-78)} C ${x(-97)} ${y(-99)}, ${x(-104)} ${y(-121)}, ${x(-103)} ${y(-139)}`,
-    `M ${x(-87)} ${y(-78)} C ${x(-83)} ${y(-101)}, ${x(-74)} ${y(-121)}, ${x(-66)} ${y(-134)}`,
-  ]
-}
-
 function Breast({ cx, side }: { cx: number; side: BreastSchemaFinding['side'] }) {
   const hours = Array.from({ length: 12 }, (_, index) => index + 1)
   const q = side === 'direita'
     ? [['Q.S.L.', -52, -50], ['Q.S.M.', 52, -50], ['Q.I.L.', -52, 52], ['Q.I.M.', 52, 52]]
     : [['Q.S.M.', -52, -50], ['Q.S.L.', 52, -50], ['Q.I.M.', -52, 52], ['Q.I.L.', 52, 52]]
   return <g>
-    <path d={breastOutline(cx, side)} fill="white" stroke="#111827" strokeWidth="2.2" strokeLinejoin="round" />
-    {axillaryExtensions(cx, side).map((path) => <path key={path} d={path} fill="none" stroke="#111827" strokeWidth="2.2" strokeLinecap="round" />)}
     <line x1={cx - VIEW.rx + 5} x2={cx + VIEW.rx - 5} y1={VIEW.cy} y2={VIEW.cy} stroke="#d1d5db" strokeDasharray="4 5" />
     <line x1={cx} x2={cx} y1={VIEW.cy - VIEW.ry + 4} y2={VIEW.cy + VIEW.ry - 2} stroke="#d1d5db" strokeDasharray="4 5" />
     <circle cx={cx} cy={VIEW.cy} r="19" fill="white" stroke="#111827" strokeWidth="1.8" />
     <circle cx={cx} cy={VIEW.cy} r="6" fill="#111827" />
-    {hours.map((hour) => { const a = angle(hour); return <text key={hour} x={cx + 132 * Math.cos(a)} y={VIEW.cy + 132 * Math.sin(a)} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#4b5563">{String(hour).padStart(2, '0')}</text> })}
+    {hours.map((hour) => { const a = angle(hour); return <text key={hour} x={cx + 124 * Math.cos(a)} y={VIEW.cy + 136 * Math.sin(a)} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#4b5563">{String(hour).padStart(2, '0')}</text> })}
     {q.map(([label, dx, dy]) => <text key={String(label)} x={cx + Number(dx)} y={VIEW.cy + Number(dy)} textAnchor="middle" fontSize="8" fill="#9ca3af">{label}</text>)}
-    <text x={cx} y="22" textAnchor="middle" fontSize="13" fontWeight="700" fill="#111827">MAMA {side === 'direita' ? 'DIREITA' : 'ESQUERDA'}</text>
+    <text x={cx} y="17" textAnchor="middle" fontSize="13" fontWeight="700" fill="#111827">MAMA {side === 'direita' ? 'DIREITA' : 'ESQUERDA'}</text>
   </g>
+}
+
+function imageAsDataUrl(source: string, signal: AbortSignal) {
+  return fetch(source, { signal })
+    .then((response) => {
+      if (!response.ok) throw new Error('A base anatômica das mamas não foi carregada.')
+      return response.blob()
+    })
+    .then((blob) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(new Error('A base anatômica das mamas não foi preparada.'))
+      reader.readAsDataURL(blob)
+    }))
 }
 
 function Marker({ finding, x, y, r }: { finding: BreastSchemaFinding; x: number; y: number; r: number }) {
@@ -89,9 +75,25 @@ function Marker({ finding, x, y, r }: { finding: BreastSchemaFinding; x: number;
 
 export function BreastSchema({ findings, svgRef, onMove }: { findings: BreastSchemaFinding[]; svgRef: RefObject<SVGSVGElement>; onMove: (id: string, position: ReturnType<typeof fromPoint>) => void }) {
   const [dragging, setDragging] = useState<string | null>(null)
+  const [baseImage, setBaseImage] = useState<string | null>(null)
+  const [imageError, setImageError] = useState('')
   const internal = useRef<SVGSVGElement>(null)
   const ref = svgRef ?? internal
   const maximum = useMemo(() => Math.max(1, ...findings.map((item) => item.sizeMaxMm ?? 1)), [findings])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setBaseImage(null)
+    setImageError('')
+    void imageAsDataUrl(ASSET, controller.signal)
+      .then(setBaseImage)
+      .catch((reason) => {
+        if (reason instanceof DOMException && reason.name === 'AbortError') return
+        setImageError(reason instanceof Error ? reason.message : 'A base anatômica das mamas não foi carregada.')
+      })
+    return () => controller.abort()
+  }, [])
+
   const positions = useMemo(() => {
     const result = new Map<string, { x: number; y: number }>()
     const buckets = new Map<string, BreastSchemaFinding[]>()
@@ -112,15 +114,19 @@ export function BreastSchema({ findings, svgRef, onMove }: { findings: BreastSch
     const rect = svg.getBoundingClientRect()
     return { x: (clientX - rect.left) * VIEW.width / rect.width, y: (clientY - rect.top) * VIEW.height / rect.height }
   }, [ref])
-  return <svg ref={ref} viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} className="h-auto w-full touch-none rounded-2xl bg-white" aria-label="Esquema mamário interativo"
-    onPointerMove={(event) => { if (!dragging) return; const p = locate(event.clientX, event.clientY); if (p) onMove(dragging, fromPoint(p.x, p.y)) }}
-    onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)}>
-    <rect width={VIEW.width} height={VIEW.height} fill="white" />
-    <Breast cx={VIEW.rightX} side="direita" /><Breast cx={VIEW.leftX} side="esquerda" />
-    {findings.map((finding, index) => { const p = positions.get(finding.id) ?? point(finding); return <g key={finding.id} role="button" tabIndex={0} className="cursor-grab active:cursor-grabbing" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDragging(finding.id) }}>
-      <circle cx={p.x} cy={p.y} r={radius(finding, maximum) + 6} fill="transparent" />
-      <Marker finding={finding} x={p.x} y={p.y} r={radius(finding, maximum)} />
-      <text x={p.x} y={p.y - radius(finding, maximum) - 7} textAnchor="middle" fontSize="9" fontWeight="700" fill="#111827">{index + 1}</text>
-    </g> })}
-  </svg>
+  return <div>
+    <svg ref={ref} viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} data-ready={baseImage ? 'true' : 'false'} className="h-auto w-full touch-none rounded-2xl bg-white" aria-label="Esquema mamário interativo"
+      onPointerMove={(event) => { if (!dragging) return; const p = locate(event.clientX, event.clientY); if (p) onMove(dragging, fromPoint(p.x, p.y)) }}
+      onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)}>
+      <rect width={VIEW.width} height={VIEW.height} fill="white" />
+      {baseImage ? <image href={baseImage} x="0" y="0" width={VIEW.width} height={VIEW.height} preserveAspectRatio="none" /> : null}
+      <Breast cx={VIEW.rightX} side="direita" /><Breast cx={VIEW.leftX} side="esquerda" />
+      {findings.map((finding, index) => { const p = positions.get(finding.id) ?? point(finding); return <g key={finding.id} role="button" tabIndex={0} className="cursor-grab active:cursor-grabbing" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDragging(finding.id) }}>
+        <circle cx={p.x} cy={p.y} r={radius(finding, maximum) + 6} fill="transparent" />
+        <Marker finding={finding} x={p.x} y={p.y} r={radius(finding, maximum)} />
+        <text x={p.x} y={p.y - radius(finding, maximum) - 7} textAnchor="middle" fontSize="9" fontWeight="700" fill="#111827">{index + 1}</text>
+      </g> })}
+    </svg>
+    {imageError ? <p className="mt-2 text-xs text-rose-600">{imageError}</p> : null}
+  </div>
 }

@@ -1,0 +1,13 @@
+{
+  "version": 3,
+  "generatedAt": "2026-09-01",
+  "generator": "OpenAI Image API — gpt-image-2",
+  "style": "original monochrome medical line illustration",
+  "assets": [
+    {
+      "view": "frontal_bilateral",
+      "file": "frontal-v3.png",
+      "sha256": "e620c9c3ff7d4dedd7974ace67110c3a78c01b40f54f1fa9abcd38f8570dc3f2"
+    }
+  ]
+}
