@@ -32,11 +32,12 @@ export type EstadoDoAbdome = Record<string, EstadoDaSecao | unknown>;
 
 export type Pendencia = { onde: string; valor: string; motivo: string; bloqueia?: boolean };
 
-/** A tela cobre sete; o canônico conhece onze. Os quatro extras vão normais. */
+/** Todos os órgãos do abdome total estão expostos; a veia porta vive no card do fígado. */
 const DA_TELA = [
   "figado", "vesicula", "vias_biliares", "pancreas", "baco", "rim_direito", "rim_esquerdo",
+  "veia_cava", "aorta", "bexiga",
 ] as const;
-const SO_DO_CANONICO = ["veia_porta", "veia_cava", "aorta", "bexiga"] as const;
+const SO_DO_CANONICO = ["veia_porta"] as const;
 
 type Achado = {
   tipo: string;
@@ -80,6 +81,12 @@ function medidasDeCampos(
 ): number[] | null {
   const valores = campos.flatMap(({ chave, unidade }) => medidasCm(s, chave, unidade) ?? []);
   return valores.length > 0 ? valores : null;
+}
+
+function numeroPositivo(s: EstadoDaSecao, k: string): number | null {
+  const raw = texto(s, k).replace(",", ".");
+  const valor = Number.parseFloat(raw.match(/\d+(?:\.\d+)?/)?.[0] ?? "");
+  return Number.isFinite(valor) && valor > 0 ? valor : null;
 }
 
 const numeroPtBr = (valor: number): string => String(valor).replace(".", ",");
@@ -276,11 +283,29 @@ function achadosDoBaco(s: EstadoDaSecao): Achado[] {
 
 function achadosDoRim(s: EstadoDaSecao): Achado[] {
   const out: Achado[] = [];
+  const local: Record<string, string> = { sup: "polo superior", medio: "terço médio", inf: "polo inferior" };
+  const medidasRim = medidasCm(s, "medidas", "cm");
+  const espessura = medidasCm(s, "espessura", "cm")?.[0];
+  if (medidasRim || espessura !== undefined) {
+    const partes = [
+      medidasRim ? `medidas ${medidasRim.map(numeroPtBr).join(" x ")} cm` : "",
+      espessura !== undefined ? `espessura do parênquima ${numeroPtBr(espessura)} cm` : "",
+    ].filter(Boolean);
+    out.push(achado({
+      medidas_cm: medidasRim,
+      localizacao: espessura !== undefined ? numeroPtBr(espessura) : null,
+      descricao_livre: `Documentação renal: ${partes.join("; ")}`,
+      termo_do_medico: "medidas renais",
+    }));
+  }
+  if (texto(s, "dimensoes") === "reduzido") {
+    out.push(achado({ descricao_livre: "Rim de dimensões reduzidas", termo_do_medico: "dimensões renais reduzidas" }));
+  }
   if (marcado(s, "litiase", "calculo")) {
     out.push(achado({
       tipo: "litiase",
       medidas_cm: medidasCm(s, "litiase.calculo.dimensao"),
-      localizacao: texto(s, "litiase.calculo.polo") || null,
+      localizacao: local[texto(s, "litiase.calculo.polo")] || null,
       termo_do_medico: "cálculo",
     }));
   }
@@ -288,11 +313,103 @@ function achadosDoRim(s: EstadoDaSecao): Achado[] {
   if (marcado(s, "cistos", "multiplos")) out.push(achado({ tipo: "cisto_simples", quantidade: "multiplas", termo_do_medico: "cistos" }));
   const dil = texto(s, "dilatacao");
   if (dil && dil !== "ausente") {
-    out.push(achado({ descricao_livre: `Dilatação pielocalicial de grau ${dil}`, termo_do_medico: `dilatação ${dil}` }));
+    out.push(achado({ grau: dil === "moderada" ? "moderado" : dil === "acentuada" ? "acentuado" : "leve", descricao_livre: `Dilatação pielocalicial de grau ${dil}`, termo_do_medico: `hidronefrose ${dil}` }));
   }
   if (texto(s, "diferenciacao") === "reduzida") {
     out.push(achado({ descricao_livre: "Diferenciação córtico-medular reduzida", termo_do_medico: "diferenciação reduzida" }));
   }
+  if (marcado(s, "lesoes", "angiomiolipoma") || marcado(s, "raros", "angiomiolipoma")) {
+    out.push(achado({
+      medidas_cm: medidasCm(s, "lesoes.angiomiolipoma.dimensao"),
+      localizacao: local[texto(s, "lesoes.angiomiolipoma.polo")] || null,
+      descricao_livre: "Imagem nodular hiperecogênica e homogênea, sugestiva de angiomiolipoma",
+      termo_do_medico: "angiomiolipoma renal",
+    }));
+  }
+  if (marcado(s, "lesoes", "cisto_complexo") || marcado(s, "raros", "cisto_complexo")) {
+    out.push(achado({
+      tipo: "imagem_cistica_complexa",
+      medidas_cm: medidasCm(s, "lesoes.cisto_complexo.dimensao"),
+      localizacao: local[texto(s, "lesoes.cisto_complexo.polo")] || null,
+      descricao_livre: "aspecto complexo",
+      termo_do_medico: "imagem cística complexa renal",
+    }));
+  }
+  if (marcado(s, "raros", "nefrocalcinose")) {
+    out.push(achado({ descricao_livre: "Calcificações nas pirâmides medulares", termo_do_medico: "nefrocalcinose" }));
+  }
+  return out;
+}
+
+function achadosDaAorta(s: EstadoDaSecao): Achado[] {
+  const out: Achado[] = [];
+  const calibre = texto(s, "calibre");
+  if (calibre === "ectasia" || calibre === "aneurisma") {
+    out.push(achado({
+      medidas_cm: medidasCm(s, `calibre.${calibre}.diametro`, "cm"),
+      descricao_livre: calibre === "aneurisma" ? "Dilatação aneurismática da aorta abdominal" : "Ectasia da aorta abdominal",
+      termo_do_medico: calibre === "aneurisma" ? "aneurisma da aorta abdominal" : "aorta ectasiada",
+    }));
+  }
+  if (texto(s, "paredes") === "ateromatose") {
+    out.push(achado({ tipo: "ateromatose", termo_do_medico: "ateromatose da aorta abdominal" }));
+  }
+  return out;
+}
+
+function achadosDaVeiaCava(s: EstadoDaSecao): Achado[] {
+  const out: Achado[] = [];
+  if (texto(s, "calibre") === "dilatada") {
+    out.push(achado({
+      medidas_cm: medidasCm(s, "calibre.dilatada.diametro", "cm"),
+      descricao_livre: "Veia cava inferior de calibre aumentado",
+      termo_do_medico: "veia cava inferior dilatada",
+    }));
+  }
+  if (marcado(s, "conteudo", "trombo")) {
+    out.push(achado({
+      localizacao: texto(s, "conteudo.trombo.local") || null,
+      descricao_livre: "Material ecogênico no interior da veia cava inferior, compatível com trombo",
+      termo_do_medico: "trombo na veia cava inferior",
+    }));
+  }
+  return out;
+}
+
+function achadosDaBexiga(s: EstadoDaSecao): Achado[] {
+  const out: Achado[] = [];
+  if (texto(s, "replecao") === "insuficiente") {
+    out.push(achado({ descricao_livre: "Bexiga com repleção insuficiente para adequada avaliação", termo_do_medico: "repleção vesical insuficiente" }));
+    return out;
+  }
+  const parede = texto(s, "parede");
+  if (parede === "espessada" || parede === "trabeculada") {
+    out.push(achado({
+      medidas_cm: medidasCm(s, "espessura_parede"),
+      descricao_livre: parede === "espessada" ? "Parede vesical espessada" : "Parede vesical trabeculada",
+      termo_do_medico: parede === "espessada" ? "espessamento da parede vesical" : "trabeculação da parede vesical",
+    }));
+  } else if (medidasCm(s, "espessura_parede")) {
+    out.push(achado({
+      medidas_cm: medidasCm(s, "espessura_parede"),
+      descricao_livre: "Medida da espessura da parede vesical",
+      termo_do_medico: "espessura da parede vesical",
+    }));
+  }
+  for (const item of Array.isArray(s.conteudo) ? s.conteudo as string[] : []) {
+    const termos: Record<string, [string, string]> = {
+      debris: ["Ecos em suspensão no conteúdo vesical", "debris vesicais"],
+      calculo: ["Imagem hiperecogênica móvel com sombra acústica no interior da bexiga", "cálculo vesical"],
+      sonda: ["Balão de sonda vesical em seu interior", "sonda vesical"],
+      diverticulo: ["Imagem sacular comunicante com a luz vesical", "divertículo vesical"],
+    };
+    const termo = termos[item];
+    if (termo) out.push(achado({ descricao_livre: termo[0], termo_do_medico: termo[1] }));
+  }
+  const volume = numeroPositivo(s, "volume_pre");
+  if (volume !== null) out.push(achado({ tipo: "volume_pre_miccional", valor_ml: volume, termo_do_medico: "volume pré-miccional" }));
+  const residuo = numeroPositivo(s, "residuo");
+  if (residuo !== null) out.push(achado({ valor_ml: residuo, descricao_livre: "Resíduo pós-miccional", termo_do_medico: "resíduo pós-miccional" }));
   return out;
 }
 
@@ -313,6 +430,9 @@ export function adaptarAbdome(estado: EstadoDoAbdome): Adaptacao {
     baco: achadosDoBaco(secao(estado, "baco")),
     rim_direito: achadosDoRim(secao(estado, "rim_direito")),
     rim_esquerdo: achadosDoRim(secao(estado, "rim_esquerdo")),
+    veia_cava: achadosDaVeiaCava(secao(estado, "veia_cava")),
+    aorta: achadosDaAorta(secao(estado, "aorta")),
+    bexiga: achadosDaBexiga(secao(estado, "bexiga")),
   };
 
   /**

@@ -75,7 +75,7 @@ Uma categoria só termina quando todas as opções visíveis passaram pela matri
 - [x] A conclusão normal é substituída pela síntese pertinente.
 - [x] Abdome total e abdome superior foram validados nos estilos Clássico e Objetivo.
 - [x] Typecheck, build da web e build da API concluídos.
-- [ ] Demais opções do abdome ainda serão percorridas na Sprint 23A.
+- [x] Demais opções do abdome foram percorridas nas entregas 23A1 e 23A2.
 
 ## Entrega 23A1 — abdome superior
 
@@ -92,7 +92,36 @@ Foram validados 36 cenários de opções visíveis, além de combinações intra
 - [x] Conversão segura de mm para cm.
 - [x] Campos adicionais alinhados à documentação recomendada pelo CBR.
 - [x] Matriz clínica 23A1 e golden tests preexistentes.
-- [ ] 23A2: rins, bexiga, aorta e veia cava.
+- [x] 23A2: rins, bexiga, aorta e veia cava.
+
+## Entrega 23A2 — rins, bexiga, aorta e veia cava
+
+As quatro estruturas que faltavam no abdome total agora têm caminho completo entre a tela, o estado canônico e o laudo. Bexiga, aorta e veia cava deixaram de ser normalidades fixas e passaram a ter seções próprias. Nos rins, opções que já existiam mas se perdiam na adaptação — dimensões reduzidas, redução da diferenciação corticomedular, hidronefrose, angiomiolipoma, imagem cística complexa e nefrocalcinose — passaram a substituir a frase normal e produzir conclusão compatível.
+
+Medidas continuam opcionais e nunca geram lacunas vazias. Os rins aceitam medidas em três eixos e espessura do parênquima; lesões renais aceitam medidas e topografia; a bexiga aceita volume pré-miccional, espessura da parede e resíduo pós-miccional; aorta e veia cava aceitam calibre quando pertinente. A documentação renal segue a recomendação do protocolo de ultrassonografia do CBR de registrar diâmetro bipolar e espessura do parênquima no abdome total.
+
+Na bexiga foram estruturados repleção insuficiente, espessamento ou trabeculação parietal, debris, cálculo, sonda e divertículo. Na aorta foram estruturadas ectasia, dilatação aneurismática e ateromatose, inclusive em combinação. Na veia cava inferior foram estruturados calibre aumentado e material trombótico informado pelo médico. A plataforma não infere diagnóstico a partir de medida isolada: ectasia, aneurisma ou trombo só aparecem após seleção explícita.
+
+A matriz 23A2 validou 27 cenários visíveis e combinações intraórgão e interórgãos nos estilos Clássico e Objetivo. Os golden tests anteriores de abdome total, abdome superior e vias urinárias continuaram passando.
+
+- [x] Medidas renais e espessura do parênquima sem lacunas obrigatórias.
+- [x] Alterações difusas, obstrutivas e focais dos rins.
+- [x] Repleção, parede, conteúdo, volume e resíduo vesicais.
+- [x] Ectasia, aneurisma e ateromatose da aorta.
+- [x] Calibre e conteúdo da veia cava inferior.
+- [x] Paridade Clássico/Objetivo e combinações de achados.
+- [x] Regressão de abdome superior e vias urinárias.
+
+## Arquivos da entrega 23A2
+
+- `apps/web/src/lib/catalog/abdomeParaCatalogo.ts`
+- `apps/web/src/lib/deterministic/organs/abdomeTotal.ts`
+- `apps/web/src/lib/deterministic/organs/rim.ts`
+- `apps/web/src/lib/deterministic/organs/bexigaAbdome.ts`
+- `apps/web/src/lib/deterministic/organs/vasosAbdome.ts`
+- `apps/api/src/server/renderer/phrases/ABDOMEN_TOTAL.ts`
+- `apps/api/src/server/renderer/__tests__/abdomen-23a2-clinical-matrix.manual.ts`
+- `package.json`
 
 ## Arquivos desta primeira entrega
 

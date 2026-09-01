@@ -1,20 +1,17 @@
 /**
- * Categoria piloto — Abdome Total.
- *
- * A Vesícula é o órgão com motor determinístico interativo (piloto). Os demais
- * órgãos entram com frase normal padrão por enquanto — serão promovidos a módulos
- * interativos nas próximas entregas. O compositor (compose.ts) monta o laudo
- * canônico completo a partir disto.
+ * Abdome Total — módulos determinísticos por estrutura.
  */
 
 import type { Field, OrganModule, OrganState } from '../types'
 import type { CalcSpec } from '../../calculators/specs'
 import { bacoModule } from './baco'
+import { bexigaAbdomeModule } from './bexigaAbdome'
 import { figadoModule } from './figado'
 import { pancreasModule } from './pancreas'
 import { rimDireitoModule, rimEsquerdoModule } from './rim'
 import { vesiculaModule } from './vesicula'
 import { viasBiliaresModule } from './viasBiliares'
+import { aortaModule, veiaCavaModule } from './vasosAbdome'
 
 /** Entrada de seção do exame: ou um módulo interativo, ou texto normal fixo. */
 export interface ExamSection {
@@ -109,6 +106,9 @@ export const abdomeTotal: ExamCategory = {
       group: 'orgaos',
       module: rimEsquerdoModule,
     },
+    { id: 'veia_cava', label: 'Veia cava inferior', group: 'orgaos', module: veiaCavaModule },
+    { id: 'aorta', label: 'Aorta', group: 'orgaos', module: aortaModule },
+    { id: 'bexiga', label: 'Bexiga', group: 'orgaos', module: bexigaAbdomeModule },
   ],
   conclusionNormal: 'Exame ultrassonográfico do abdome total dentro dos limites da normalidade.',
   conclusionClosing: 'Demais estruturas abdominais sem alterações ecográficas.',

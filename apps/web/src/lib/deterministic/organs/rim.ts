@@ -21,7 +21,21 @@ const calculoSubFields: Field[] = [
 ]
 
 const cistoSubFields: Field[] = [
-  { key: 'dimensao', label: 'Dimensão', kind: 'text', placeholder: '20 mm' },
+  { key: 'dimensao', label: 'Dimensões (mm)', kind: 'text', placeholder: '20 x 18 x 16' },
+]
+
+const lesaoSubFields: Field[] = [
+  { key: 'dimensao', label: 'Dimensões (mm)', kind: 'text', placeholder: '12 x 10 x 9' },
+  {
+    key: 'polo',
+    label: 'Localização',
+    kind: 'mini-segmented',
+    options: [
+      { value: 'sup', label: 'Polo sup.', isDefault: true },
+      { value: 'medio', label: 'Terço médio' },
+      { value: 'inf', label: 'Polo inf.' },
+    ],
+  },
 ]
 
 function poloFrase(polo: string): string {
@@ -95,10 +109,20 @@ function criarSchema(lado: Lado): OrganSchema {
           { value: 'multiplos', label: 'Cistos múltiplos' },
         ],
       },
+      {
+        key: 'lesoes',
+        label: 'Outras lesões',
+        kind: 'checklist',
+        hint: 'marque se houver',
+        options: [
+          { value: 'angiomiolipoma', label: 'Angiomiolipoma', subFields: lesaoSubFields },
+          { value: 'cisto_complexo', label: 'Cisto complexo', subFields: lesaoSubFields },
+        ],
+      },
+      { key: 'medidas', label: 'Medidas do rim (L x AP x T cm)', kind: 'text', placeholder: '10,2 x 4,8 x 5,1' },
+      { key: 'espessura', label: 'Espessura do parênquima (cm)', kind: 'text', placeholder: '1,6' },
     ],
     rareFindings: [
-      { value: 'angiomiolipoma', label: 'Angiomiolipoma (imagem hiperecogênica)' },
-      { value: 'cisto_complexo', label: 'Cisto complexo (Bosniak ≥ II)' },
       { value: 'nefrocalcinose', label: 'Nefrocalcinose' },
     ],
   }
@@ -111,10 +135,17 @@ function initialState(): OrganState {
     litiase: [],
     dilatacao: 'ausente',
     cistos: [],
+    lesoes: [],
     raros: [],
     'litiase.calculo.dimensao': '',
     'litiase.calculo.polo': 'sup',
     'cistos.simples.dimensao': '',
+    'lesoes.angiomiolipoma.dimensao': '',
+    'lesoes.angiomiolipoma.polo': 'sup',
+    'lesoes.cisto_complexo.dimensao': '',
+    'lesoes.cisto_complexo.polo': 'sup',
+    medidas: '',
+    espessura: '',
   }
 }
 
@@ -129,6 +160,7 @@ export function criarRimModule(lado: Lado): OrganModule {
     const litiase = (state.litiase as string[]) || []
     const dilatacao = (state.dilatacao as string) || 'ausente'
     const cistos = (state.cistos as string[]) || []
+    const lesoes = (state.lesoes as string[]) || []
     const raros = (state.raros as string[]) || []
     const conclusion: string[] = []
     const achados: string[] = []
@@ -167,13 +199,17 @@ export function criarRimModule(lado: Lado): OrganModule {
       conclusion.push(`Cistos renais simples ${lat}`)
     }
 
-    if (raros.includes('angiomiolipoma')) {
-      achados.push('apresentando pequena imagem nodular hiperecogênica, homogênea, sugestiva de angiomiolipoma')
+    if (lesoes.includes('angiomiolipoma') || raros.includes('angiomiolipoma')) {
+      const dim = ((state['lesoes.angiomiolipoma.dimensao'] as string) || '').trim()
+      const polo = poloFrase((state['lesoes.angiomiolipoma.polo'] as string) || 'sup')
+      achados.push(`apresentando imagem nodular hiperecogênica e homogênea ${polo}${dim ? `, medindo ${dim}` : ''}, sugestiva de angiomiolipoma`)
       conclusion.push(`Imagem sugestiva de angiomiolipoma ${lat}`)
     }
-    if (raros.includes('cisto_complexo')) {
-      achados.push('apresentando imagem cística com septos/conteúdo espesso (Bosniak ≥ II)')
-      conclusion.push(`Cisto renal complexo ${lat} (Bosniak ≥ II). Convém, a critério clínico, complementar com método contrastado`)
+    if (lesoes.includes('cisto_complexo') || raros.includes('cisto_complexo')) {
+      const dim = ((state['lesoes.cisto_complexo.dimensao'] as string) || '').trim()
+      const polo = poloFrase((state['lesoes.cisto_complexo.polo'] as string) || 'sup')
+      achados.push(`apresentando imagem cística complexa ${polo}${dim ? `, medindo ${dim}` : ''}`)
+      conclusion.push(`Imagem cística complexa ${lat}, de natureza indeterminada ao método. Convém, a critério clínico, complementar a investigação com método contrastado`)
     }
     if (raros.includes('nefrocalcinose')) {
       achados.push('com calcificações nas pirâmides medulares, compatível com nefrocalcinose')
@@ -188,6 +224,7 @@ export function criarRimModule(lado: Lado): OrganModule {
       litiase.length === 0 &&
       dilatacao === 'ausente' &&
       cistos.length === 0 &&
+      lesoes.length === 0 &&
       raros.length === 0
 
     if (isNormal) {
