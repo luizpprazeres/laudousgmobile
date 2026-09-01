@@ -49,4 +49,3 @@ export function base64Only(dataUrl: string) {
   const comma = dataUrl.indexOf(',')
   return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl
 }
-

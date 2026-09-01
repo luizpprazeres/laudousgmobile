@@ -39,4 +39,3 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Não foi possível comunicar com a Sala.' }, { status: 503 })
   }
 }
-
