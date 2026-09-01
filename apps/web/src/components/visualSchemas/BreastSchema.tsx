@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { BreastSchemaFinding } from '@/lib/visualSchemas/adapters'
 
-const VIEW = { width: 640, height: 330, cy: 178, rightX: 168, leftX: 472, rx: 108, ry: 111, maxCm: 6 }
+const VIEW = { width: 640, height: 342, cy: 184, rightX: 168, leftX: 472, rx: 101, ry: 118, maxCm: 6 }
 
 function angle(hour: number) { return (hour / 12) * Math.PI * 2 - Math.PI / 2 }
 function center(side: BreastSchemaFinding['side']) { return side === 'direita' ? VIEW.rightX : VIEW.leftX }

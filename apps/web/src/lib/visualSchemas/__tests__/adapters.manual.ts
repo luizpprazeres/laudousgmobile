@@ -1,6 +1,19 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { breastFindingsFromState, moveBreastFinding, moveThyroidFinding, thyroidFindingsFromState } from '../adapters'
 import { initialTireoideState } from '../../deterministic'
+
+const thyroidAssets = [
+  ['frontal-v2.png', '6c9aac3ce785d7c872e0478c98acb72899a8f4f7d74970d8ca5bf82c8eeceac2'],
+  ['transverse-v2.png', '92cfd76df6dc12320118cb29ee9c7b250ff2ff2d2c6dead310f7d8a10e459a0e'],
+] as const
+
+for (const [file, expected] of thyroidAssets) {
+  const contents = readFileSync(resolve(process.cwd(), 'apps/web/public/schemas/thyroid', file))
+  assert.equal(createHash('sha256').update(contents).digest('hex'), expected, `${file} foi alterado sem atualizar a revisão clínica e o manifesto`)
+}
 
 const breast = {
   achados_ids: ['a'],

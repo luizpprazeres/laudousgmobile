@@ -78,7 +78,7 @@ Será criada uma matriz clínica fechada antes das imagens: longitudinal cefáli
 
 Resultado: a cartografia venosa já madura no iOS é portada para a web e integrada ao mesmo contrato de esquemas.
 
-Não serão adicionados desenhos decorativos a categorias que ainda não tenham campos estruturados correspondentes. Doppler de carótidas e vertebrais terá primeiro um mapa de dados e lateralidade; membros inferiores só entra quando a categoria e o renderer correspondentes estiverem oficialmente disponíveis na web.
+Este trabalho será executado em duas entregas. Na 20A entram as bases anatômicas já revisadas nas vistas necessárias, a projeção dos segmentos existentes e a exportação. Na 20B entram as medidas finas: distância das perfurantes a partir da planta do pé ou do ponto J, níveis de Cockett, calibres e validação da sincronização bidirecional. Não serão adicionados desenhos decorativos a categorias que ainda não tenham campos estruturados correspondentes. Doppler de carótidas e vertebrais terá primeiro um mapa de dados e lateralidade; membros inferiores só entra quando a categoria e o renderer correspondentes estiverem oficialmente disponíveis na web.
 
 ### Sprint 21 — Segurança e documentos legais
 
@@ -94,6 +94,10 @@ O sprint cobre responsividade em notebooks menores, nomes específicos por categ
 
 Também serão medidos quatro resultados de produto: tempo até laudo pronto, número de interações por exame, percentual de dados do celular aceitos sem correção e quantidade de alterações manuais após a geração. Esses indicadores ajudam a decidir as próximas categorias sem copiar funções de concorrentes apenas porque existem.
 
+### Sprints visuais posteriores ao ciclo 15–22
+
+O cartograma ginecológico começa pelo contrato estruturado de útero, miomas, DIU e adenomiose e só depois recebe as vistas frontal e sagital. O mapa cervical parte dos níveis linfonodais já presentes no formulário, com matriz bilateral fechada antes do desenho. A pesquisa de endometriose será uma frente própria: hoje não existe como categoria estruturada independente na web, portanto o primeiro aceite é criar categoria, formulário, renderer e persistência; o mapa vem depois e não será improvisado dentro de Pelve feminina. Cada base anatômica será original, versionada e revisada antes de receber a camada interativa.
+
 ## Critérios permanentes do ciclo
 
 Toda mudança clínica precisa de casos golden em Clássico e Objetivo. O relatório e o desenho devem nascer do mesmo estado estruturado. Imagens geradas precisam de revisão médica antes de entrar no produto. Nenhum botão sem função deve aparecer. Nenhuma promessa de segurança deve ser publicada sem correspondência demonstrável no código e no banco.
@@ -102,4 +106,4 @@ Como referência de mercado, o Laudário anuncia laudos estruturados, cálculos 
 
 ## Próxima ação
 
-Executar a Sprint 17: tornar funcionais os controles de negrito, itálico, sublinhado, destaque, desfazer/refazer e cópia com formatação, preservando as edições manuais quando um trecho automático do laudo for atualizado.
+Iniciar a Sprint 20A pela fundação vascular já aprovada: inventariar as vistas e campos estruturados existentes, selecionar as bases anatômicas versionadas e ligar cada segmento do formulário ao desenho antes de acrescentar medidas finas.

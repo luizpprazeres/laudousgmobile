@@ -32,11 +32,11 @@ export function VisualSchemaPanel({ category, breastState, fetalState, thyroidSt
 
   async function createFiles() {
     if (!svgRef.current) throw new Error('O esquema ainda não está pronto.')
-    if (category === 'FETAL_POSITION' && svgRef.current.dataset.ready !== 'true') {
-      throw new Error('A imagem da posição fetal ainda está sendo preparada.')
+    if (svgRef.current.dataset.ready === 'false') {
+      throw new Error('A base anatômica ainda está sendo preparada.')
     }
     const png = await schemaPng(svgRef.current)
-    const pdf = await schemaPdf(png, category === 'MAMARIA')
+    const pdf = await schemaPdf(png, category === 'MAMARIA' || category === 'TIREOIDE')
     return { png, pdf }
   }
 

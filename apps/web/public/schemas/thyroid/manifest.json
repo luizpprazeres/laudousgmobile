@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "generatedAt": "2026-09-01",
+  "generator": "OpenAI built-in image generation",
+  "style": "original monochrome medical line illustration",
+  "assets": [
+    {
+      "view": "frontal",
+      "file": "frontal-v2.png",
+      "sha256": "6c9aac3ce785d7c872e0478c98acb72899a8f4f7d74970d8ca5bf82c8eeceac2"
+    },
+    {
+      "view": "transverse",
+      "file": "transverse-v2.png",
+      "sha256": "92cfd76df6dc12320118cb29ee9c7b250ff2ff2d2c6dead310f7d8a10e459a0e"
+    }
+  ]
+}
