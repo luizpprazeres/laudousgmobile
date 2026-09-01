@@ -27,6 +27,8 @@ import { adaptarViasUrinarias } from '@/lib/catalog/viasUrinariasParaCatalogo'
 import { adaptarProstataSuprapubica } from '@/lib/catalog/prostataParaCatalogo'
 import { adaptarCervical } from '@/lib/catalog/cervicalParaCatalogo'
 import { adaptarCervicometria } from '@/lib/catalog/cervicometriaParaCatalogo'
+import { adaptarPartesMoles } from '@/lib/catalog/partesMolesParaCatalogo'
+import { adaptarMusculoesqueletico } from '@/lib/catalog/musculoesqueleticoParaCatalogo'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
@@ -280,6 +282,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'CERVICOMETRIA') {
       return adaptarCervicometria((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'PARTES_MOLES') {
+      return adaptarPartesMoles((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'MUSCULOESQUELETICO') {
+      return adaptarMusculoesqueletico((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
     if (categoria === 'MORFOLOGICO') {
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>

@@ -33,7 +33,7 @@ function frase(s: string): string {
 type Estrutura = { id: string; label: string; normal: string }
 type SegmentoDef = { titulo: string; label: string; estruturas: Estrutura[] }
 
-const SEGMENTOS: Record<string, SegmentoDef> = {
+export const SEGMENTOS: Record<string, SegmentoDef> = {
   ombro: {
     titulo: 'DO OMBRO',
     label: 'Ombro',

@@ -38,6 +38,8 @@ const MIGRADAS = [
   "PROSTATA_SUPRAPUBICA",
   "CERVICAL",
   "CERVICOMETRIA",
+  "PARTES_MOLES",
+  "MUSCULOESQUELETICO",
 ];
 
 async function principal() {
