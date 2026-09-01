@@ -32,16 +32,44 @@ function radius(finding: BreastSchemaFinding, max: number) {
   return 5 + Math.min(finding.sizeMaxMm / max, 1) * 9
 }
 
+function breastOutline(cx: number, side: BreastSchemaFinding['side']) {
+  const direction = side === 'direita' ? 1 : -1
+  const x = (value: number) => cx + value * direction
+  const y = (value: number) => VIEW.cy + value
+
+  return [
+    `M ${x(72)} ${y(-84)}`,
+    `C ${x(96)} ${y(-48)}, ${x(104)} ${y(15)}, ${x(83)} ${y(69)}`,
+    `C ${x(62)} ${y(108)}, ${x(25)} ${y(124)}, ${x(0)} ${y(126)}`,
+    `C ${x(-42)} ${y(124)}, ${x(-78)} ${y(106)}, ${x(-96)} ${y(67)}`,
+    `C ${x(-116)} ${y(20)}, ${x(-108)} ${y(-39)}, ${x(-87)} ${y(-78)}`,
+    `C ${x(-46)} ${y(-111)}, ${x(-17)} ${y(-119)}, ${x(15)} ${y(-115)}`,
+    `C ${x(42)} ${y(-112)}, ${x(62)} ${y(-101)}, ${x(72)} ${y(-84)}`,
+    'Z',
+  ].join(' ')
+}
+
+function axillaryExtensions(cx: number, side: BreastSchemaFinding['side']) {
+  const direction = side === 'direita' ? 1 : -1
+  const x = (value: number) => cx + value * direction
+  const y = (value: number) => VIEW.cy + value
+  return [
+    `M ${x(-87)} ${y(-78)} C ${x(-97)} ${y(-99)}, ${x(-104)} ${y(-121)}, ${x(-103)} ${y(-139)}`,
+    `M ${x(-87)} ${y(-78)} C ${x(-83)} ${y(-101)}, ${x(-74)} ${y(-121)}, ${x(-66)} ${y(-134)}`,
+  ]
+}
+
 function Breast({ cx, side }: { cx: number; side: BreastSchemaFinding['side'] }) {
   const hours = Array.from({ length: 12 }, (_, index) => index + 1)
   const q = side === 'direita'
     ? [['Q.S.L.', -52, -50], ['Q.S.M.', 52, -50], ['Q.I.L.', -52, 52], ['Q.I.M.', 52, 52]]
     : [['Q.S.M.', -52, -50], ['Q.S.L.', 52, -50], ['Q.I.M.', -52, 52], ['Q.I.L.', 52, 52]]
   return <g>
-    <ellipse cx={cx} cy={VIEW.cy} rx={VIEW.rx} ry={VIEW.ry} fill="white" stroke="#111827" strokeWidth="2" />
-    <line x1={cx - VIEW.rx} x2={cx + VIEW.rx} y1={VIEW.cy} y2={VIEW.cy} stroke="#6b7280" strokeDasharray="4 4" />
-    <line x1={cx} x2={cx} y1={VIEW.cy - VIEW.ry} y2={VIEW.cy + VIEW.ry} stroke="#6b7280" strokeDasharray="4 4" />
-    <circle cx={cx} cy={VIEW.cy} r="19" fill="white" stroke="#111827" strokeWidth="2" />
+    <path d={breastOutline(cx, side)} fill="white" stroke="#111827" strokeWidth="2.2" strokeLinejoin="round" />
+    {axillaryExtensions(cx, side).map((path) => <path key={path} d={path} fill="none" stroke="#111827" strokeWidth="2.2" strokeLinecap="round" />)}
+    <line x1={cx - VIEW.rx + 5} x2={cx + VIEW.rx - 5} y1={VIEW.cy} y2={VIEW.cy} stroke="#d1d5db" strokeDasharray="4 5" />
+    <line x1={cx} x2={cx} y1={VIEW.cy - VIEW.ry + 4} y2={VIEW.cy + VIEW.ry - 2} stroke="#d1d5db" strokeDasharray="4 5" />
+    <circle cx={cx} cy={VIEW.cy} r="19" fill="white" stroke="#111827" strokeWidth="1.8" />
     <circle cx={cx} cy={VIEW.cy} r="6" fill="#111827" />
     {hours.map((hour) => { const a = angle(hour); return <text key={hour} x={cx + 132 * Math.cos(a)} y={VIEW.cy + 132 * Math.sin(a)} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#4b5563">{String(hour).padStart(2, '0')}</text> })}
     {q.map(([label, dx, dy]) => <text key={String(label)} x={cx + Number(dx)} y={VIEW.cy + Number(dy)} textAnchor="middle" fontSize="8" fill="#9ca3af">{label}</text>)}

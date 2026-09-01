@@ -28,6 +28,7 @@ Trazer para a web os esquemas vetoriais já maduros no iOS para mamas/axilas e t
 - [x] Não existe lista paralela de achados do esquema.
 - [x] Alterar o formulário move o marcador; mover o marcador altera o formulário.
 - [x] O desenho permanece legível em impressão monocromática.
+- [x] A base mamária usa contornos anatômicos originais, sem depender de círculos genéricos.
 - [x] PNG e PDF são gerados a partir do mesmo SVG mostrado na tela.
 - [x] O esquema chega à Sala pelo fluxo atual, sem nova tabela.
 - [x] Typecheck, build, testes focados e `git diff --check` passam.
@@ -40,7 +41,7 @@ Posição fetal e mapas vasculares ficam para os Sprints 19 e 20. Este sprint n�
 
 A web agora mostra `Esquema visual` ao lado da conexão do celular somente em Mamas e axilas e Tireoide. O painel ocupa a área da prévia enquanto aberto, preservando o formulário. Os marcadores vêm do mesmo estado estruturado usado pelo renderer; o arraste mamário atualiza lado, relógio, quadrante e distância do mamilo, e o tireoidiano atualiza lobo/istmo e terço.
 
-O esquema mamário recebeu contorno discretamente mais elíptico. A tireoide passou a combinar duas ilustrações anatômicas originais com a camada vetorial interativa. O mesmo achado aparece numerado nas vistas frontal e transversa; mover na frontal atualiza lobo e terço, enquanto mover na transversa atualiza somente o lobo e preserva o terço existente. PNG e PDF em paisagem são derivados do SVG composto mostrado e podem ser baixados ou enviados manualmente à Sala. O envio passa por um proxy autenticado da web e reaproveita `sala_schemas`, com os tipos `MAMA` e `TIREOIDE` que a Sala já reconhece.
+O esquema mamário deixou de usar duas elipses genéricas e passou a ter contornos bilaterais próprios, discretamente assimétricos, com prolongamentos axilares e camadas separadas para anatomia, quadrantes, relógio e achados. A tireoide passou a combinar duas ilustrações anatômicas originais com a camada vetorial interativa. O mesmo achado aparece numerado nas vistas frontal e transversa; mover na frontal atualiza lobo e terço, enquanto mover na transversa atualiza somente o lobo e preserva o terço existente. PNG e PDF em paisagem são derivados do SVG composto mostrado e podem ser baixados ou enviados manualmente à Sala. O envio passa por um proxy autenticado da web e reaproveita `sala_schemas`, com os tipos `MAMA` e `TIREOIDE` que a Sala já reconhece.
 
 ## Validação
 
