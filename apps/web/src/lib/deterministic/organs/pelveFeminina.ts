@@ -4,8 +4,8 @@
  * Fonte: apps/api/src/server/renderer/categories/PELVE_FEMININA.ts (clássico).
  * Volume pelo elipsoide (L×AP×T×0,523). Grosso: VIA ta_tv (TA+TV, a mais comum) —
  * útero (posição/medidas/volume/miomas/adenomiose), endométrio (espessura/frase/DIU),
- * ovário D/E (medidas→volume, achados). Outras vias (tv/ta/pós-aborto) e o cálculo
- * de referência etária → curadoria futura (exigem título dinâmico).
+ * ovário D/E (medidas→volume, achados), Doppler opcional, monitorização folicular
+ * e avaliação pós-abortamento no mesmo módulo.
  *
  * Divergência consciente: conclusão de ovários POR LADO (não o item único combinado).
  */
@@ -19,14 +19,18 @@ const VIA_TITULO: Record<string, string> = {
   ta_tv: 'ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL',
   tv: 'ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL',
   ta: 'ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL',
+  pos_abortamento: 'ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL PÓS-ABORTAMENTO',
 }
 const VIA_TECNICA: Record<string, string> = {
   ta_tv:
     'Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
   tv: 'Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
   ta: 'Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
+  pos_abortamento: 'Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal, para avaliação pós-abortamento. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.',
 }
 function viaDe(opts?: OrganState): string {
+  if (opts?.modo_pelve === 'monitorizacao_folicular') return 'tv'
+  if (opts?.modo_pelve === 'pos_abortamento') return 'pos_abortamento'
   const v = String(opts?.via ?? 'ta_tv')
   return VIA_TITULO[v] ? v : 'ta_tv'
 }
@@ -98,6 +102,7 @@ const miomaSubs: Field[] = [
   { key: 'parede', label: 'Parede', kind: 'text', placeholder: 'parede anterior' },
   { key: 'figo', label: 'FIGO', kind: 'text', placeholder: 'ex.: 4' },
 ]
+const miomaExtraSubs: Field[] = miomaSubs.map((field) => ({ ...field }))
 const uteroModule: OrganModule = {
   schema: { id: 'utero', name: 'Útero', category: 'PELVE_FEMININA', fields: [
     { key: 'posicao', label: 'Posição', kind: 'segmented', hint: 'default: anteversão', options: [
@@ -109,10 +114,21 @@ const uteroModule: OrganModule = {
     ] },
     { key: 'miomatoso', label: 'Útero miomatoso (difuso)', kind: 'checklist', options: [{ value: 'sim', label: 'Miomatoso (nódulos não individualizáveis)' }] },
     { key: 'mioma', label: 'Mioma (individualizado)', kind: 'checklist', hint: 'marque se houver', options: [{ value: 'sim', label: 'Nódulo miomatoso', subFields: miomaSubs }] },
+    { key: 'mioma2', label: 'Segundo mioma', kind: 'checklist', options: [{ value: 'sim', label: 'Adicionar segundo mioma', subFields: miomaExtraSubs }] },
+    { key: 'mioma3', label: 'Terceiro mioma', kind: 'checklist', options: [{ value: 'sim', label: 'Adicionar terceiro mioma', subFields: miomaExtraSubs }] },
     { key: 'adenomiose', label: 'Adenomiose', kind: 'checklist', options: [{ value: 'sim', label: 'Achados de adenomiose' }] },
+    { key: 'istmocele', label: 'Istmocele', kind: 'checklist', options: [{ value: 'sim', label: 'Nicho de cicatriz cesárea', subFields: [
+      { key: 'tipo', label: 'Tipo', kind: 'mini-segmented', options: [{ value: 'simples', label: 'Simples', isDefault: true }, { value: 'complexo', label: 'Complexo' }] },
+      { key: 'descricao', label: 'Descrição', kind: 'text', placeholder: 'imagem anecoica triangular no istmo…' },
+    ] }] },
+    { key: 'cistos_naboth', label: 'Colo uterino', kind: 'checklist', options: [{ value: 'sim', label: 'Cistos de Naboth' }] },
   ] },
   initialState: () => ({ posicao: 'anteversão', medidas: '', volume_classe: 'normal', miomatoso: [], mioma: [], adenomiose: [],
-    'mioma.sim.medidas': '', 'mioma.sim.classificacao': 'intramural', 'mioma.sim.parede': '', 'mioma.sim.figo': '' }),
+    mioma2: [], mioma3: [], istmocele: [], cistos_naboth: [],
+    'mioma.sim.medidas': '', 'mioma.sim.classificacao': 'intramural', 'mioma.sim.parede': '', 'mioma.sim.figo': '',
+    'mioma2.sim.medidas': '', 'mioma2.sim.classificacao': 'intramural', 'mioma2.sim.parede': '', 'mioma2.sim.figo': '',
+    'mioma3.sim.medidas': '', 'mioma3.sim.classificacao': 'intramural', 'mioma3.sim.parede': '', 'mioma3.sim.figo': '',
+    'istmocele.sim.tipo': 'simples', 'istmocele.sim.descricao': '' }),
   compose: (st): OrganComposition => {
     const miomatoso = ((st.miomatoso as string[]) || []).includes('sim')
     const temMioma = ((st.mioma as string[]) || []).includes('sim')
@@ -163,15 +179,39 @@ const endometrioModule: OrganModule = {
       { value: 'padrao', label: 'Fase do ciclo', isDefault: true }, { value: 'menopausa', label: 'Menopausa' }, { value: 'reposicao_hormonal', label: 'Reposição hormonal' },
     ] },
     { key: 'achado', label: 'Achado patológico (texto livre)', kind: 'text', placeholder: 'pólipo endometrial medindo…' },
-    { key: 'diu', label: 'DIU', kind: 'checklist', options: [{ value: 'sim', label: 'DIU tópico' }] },
+    { key: 'achado_tipo', label: 'Achado estruturado', kind: 'segmented', options: [
+      { value: 'nenhum', label: 'Nenhum', isDefault: true },
+      { value: 'polipo', label: 'Pólipo' },
+      { value: 'espessamento', label: 'Espessamento' },
+      { value: 'sinequia', label: 'Sinéquia' },
+      { value: 'conteudo_cavitario', label: 'Conteúdo cavitário' },
+    ] },
+    { key: 'achado_medidas', label: 'Medidas do achado (cm)', kind: 'text', placeholder: '0,8 x 0,5' },
+    { key: 'vascularizacao', label: 'Vascularização do achado', kind: 'text', placeholder: 'pedículo vascular central' },
+    { key: 'diu', label: 'DIU', kind: 'segmented', options: [
+      { value: 'nenhum', label: 'Sem DIU', isDefault: true },
+      { value: 'bem_posicionado', label: 'Bem posicionado' },
+      { value: 'deslocado', label: 'Deslocado' },
+    ] },
+    { key: 'diu_descricao', label: 'Descrição do DIU (opcional)', kind: 'text', placeholder: 'extremidade inferior a ____ cm do fundo uterino' },
+    { key: 'liquido_livre', label: 'Fundo de saco', kind: 'checklist', options: [{ value: 'sim', label: 'Líquido livre', subFields: [
+      { key: 'descricao', label: 'Descrição', kind: 'text', placeholder: 'pequena quantidade no fundo de saco de Douglas' },
+    ] }] },
+    { key: 'produtos_retidos', label: 'Pós-abortamento', kind: 'segmented', options: [
+      { value: 'nao', label: 'Sem produtos retidos', isDefault: true },
+      { value: 'sim', label: 'Produtos retidos' },
+    ] },
+    { key: 'produtos_retidos_quantidade', label: 'Quantidade estimada', kind: 'segmented', options: [
+      { value: 'pequena', label: 'Pequena' }, { value: 'moderada', label: 'Moderada' }, { value: 'grande', label: 'Grande' },
+    ] },
   ] },
-  initialState: () => ({ espessura: '', eco: 'homogeneo', frase: 'padrao', achado: '', diu: [] }),
+  initialState: () => ({ espessura: '', eco: 'homogeneo', frase: 'padrao', achado: '', achado_tipo: 'nenhum', achado_medidas: '', vascularizacao: '', diu: 'nenhum', diu_descricao: '', liquido_livre: [], 'liquido_livre.sim.descricao': '', produtos_retidos: 'nao', produtos_retidos_quantidade: 'moderada' }),
   compose: (st, opts): OrganComposition => {
     const menopausa = isMenopausa(opts)
     const esp = parseNum(st.espessura)
     const ecoTxt: Record<string, string> = { homogeneo: 'homogêneo', heterogeneo: 'heterogêneo' }
     const achado = limpa(String(st.achado ?? ''))
-    const diu = ((st.diu as string[]) || []).includes('sim')
+    const diu = st.diu === 'bem_posicionado' || st.diu === 'deslocado'
 
     const body: string[] = []
     if (achado) body.push(`${achado.charAt(0).toUpperCase()}${achado.slice(1)}.`)
@@ -188,14 +228,21 @@ const endometrioModule: OrganModule = {
       else if (frase === 'reposicao_hormonal') conclusion.push('O endométrio tem espessura normal para a paciente submetida a terapêutica de reposição hormonal.')
       else conclusion.push('O endométrio tem espessura normal para a fase do ciclo menstrual.')
     }
-    if (diu) conclusion.push('DIU tópico, bem posicionado.')
+    if (diu) conclusion.push(st.diu === 'deslocado' ? 'DIU deslocado.' : 'DIU tópico, bem posicionado.')
 
     return { body: body.join('\n'), conclusion, isNormal: !achado && !diu }
   },
 }
 
 // ── Ovário (fábrica por lado) ────────────────────────────────────────────────
-const achadoOvSubs: Field[] = [{ key: 'medidas', label: 'Medidas da imagem (cm)', kind: 'text', placeholder: '3,0 x 2,5 x 2,0' }]
+const achadoOvSubs: Field[] = [
+  { key: 'medidas', label: 'Medidas da imagem (cm)', kind: 'text', placeholder: '3,0 x 2,5 x 2,0' },
+  { key: 'descricao', label: 'Descrição complementar', kind: 'text', placeholder: 'descritores morfológicos relevantes' },
+  { key: 'vascularizacao', label: 'Vascularização ao Doppler', kind: 'mini-segmented', options: [
+    { value: 'ausente', label: 'Ausente' }, { value: 'minima', label: 'Mínima' }, { value: 'moderada', label: 'Moderada' }, { value: 'intensa', label: 'Intensa' },
+  ] },
+  { key: 'orads', label: 'O-RADS confirmado pelo médico', kind: 'text', placeholder: 'ex.: 3' },
+]
 function ovarioSchema(lado: 'direito' | 'esquerdo'): OrganSchema {
   return { id: `ovario_${lado}`, name: `Ovário ${lado}`, category: 'PELVE_FEMININA', fields: [
     { key: 'visualizado', label: 'Visualização', kind: 'segmented', hint: 'default: visualizado', options: [
@@ -209,7 +256,13 @@ function ovarioSchema(lado: 'direito' | 'esquerdo'): OrganSchema {
       { value: 'endometrioma', label: 'Endometrioma', subFields: achadoOvSubs },
       { value: 'funcional', label: 'Funcional', subFields: achadoOvSubs },
       { value: 'sop', label: 'Aspecto policístico' },
+      { value: 'teratoma', label: 'Teratoma maduro', subFields: achadoOvSubs },
+      { value: 'hidrossalpinge', label: 'Hidrossalpinge', subFields: achadoOvSubs },
+      { value: 'cisto_paraovariano', label: 'Cisto paraovariano', subFields: achadoOvSubs },
+      { value: 'lesao_solida', label: 'Lesão sólida', subFields: achadoOvSubs },
+      { value: 'outro', label: 'Outro', subFields: achadoOvSubs },
     ] },
+    { key: 'foliculos_mm', label: 'Folículos (mm)', kind: 'text', placeholder: '8, 10, 12, 18' },
     { key: 'atrofico', label: 'Atrófico (menopausa)', kind: 'checklist', options: [{ value: 'sim', label: 'Poucos folículos' }] },
   ] }
 }
@@ -278,6 +331,17 @@ export const pelveFeminina: ExamCategory = {
   // Controles de categoria (acima dos órgãos): via + menopausa global.
   controls: [
     {
+      key: 'modo_pelve',
+      label: 'Finalidade',
+      kind: 'segmented',
+      options: [
+        { value: 'rotina', label: 'Rotina', isDefault: true },
+        { value: 'doppler', label: 'Com Doppler' },
+        { value: 'monitorizacao_folicular', label: 'Monitorização folicular' },
+        { value: 'pos_abortamento', label: 'Pós-abortamento' },
+      ],
+    },
+    {
       key: 'via',
       label: 'Via do exame',
       kind: 'segmented',
@@ -295,8 +359,15 @@ export const pelveFeminina: ExamCategory = {
       options: [{ value: 'sim', label: 'Paciente na menopausa' }],
     },
   ],
-  resolveTitle: (opts) => VIA_TITULO[viaDe(opts)] ?? VIA_TITULO.ta_tv!,
-  resolveTecnica: (opts) => VIA_TECNICA[viaDe(opts)] ?? VIA_TECNICA.ta_tv!,
+  resolveTitle: (opts) => opts?.modo_pelve === 'monitorizacao_folicular'
+    ? 'ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL – MONITORIZAÇÃO FOLICULAR'
+    : VIA_TITULO[viaDe(opts)] ?? VIA_TITULO.ta_tv!,
+  resolveTecnica: (opts) => {
+    const base = VIA_TECNICA[viaDe(opts)] ?? VIA_TECNICA.ta_tv!
+    return opts?.modo_pelve === 'doppler'
+      ? `${base} Foi realizado estudo complementar com Doppler colorido.`
+      : base
+  },
   // Útero primeiro (mais útil); bexiga no fim.
   sections: [
     { id: 'utero', label: 'Útero', group: 'orgaos', module: uteroModule },

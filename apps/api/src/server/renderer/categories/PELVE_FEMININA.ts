@@ -57,11 +57,17 @@ const OvarioAchadoSchema = z.object({
       "endometrioma",
       "funcional",
       "sop",
+      "teratoma",
+      "hidrossalpinge",
+      "cisto_paraovariano",
+      "lesao_solida",
       "outro",
     ])
     .nullable(),
   medidas_cm: z.array(z.number()).nullable(), // medidas da imagem (não do ovário)
   descricao: z.string().nullable(), // verbatim do médico p/ o achado
+  vascularizacao: z.enum(["ausente", "minima", "moderada", "intensa"]).nullable().optional(),
+  orads_ditado: z.string().nullable().optional(),
 });
 
 const OvarioSchema = z.object({
@@ -71,10 +77,13 @@ const OvarioSchema = z.object({
   alterado: z.boolean(), // true se há achado anormal neste ovário
   atrofico: z.boolean(), // menopausa: "poucas imagens anecoicas"
   achados: z.array(OvarioAchadoSchema),
+  foliculos_mm: z.array(z.number()).nullable().optional(),
 });
 
 export const PelveFemininaFindingsSchema = z.object({
   via: z.enum(ViaEnum).nullable(), // null → default "ta_tv"
+  modo: z.enum(["rotina", "doppler", "monitorizacao_folicular", "pos_abortamento"]).optional(),
+  doppler_realizado: z.boolean().optional(),
 
   // Útero
   utero_posicao: z.string().nullable(), // "anteversão", "anteversoflexão"...
@@ -100,6 +109,9 @@ export const PelveFemininaFindingsSchema = z.object({
   endometrio_motivo: z.string().nullable(), // só p/ "nao_correlacionavel"
   endometrio_achado: z.string().nullable(), // descrição patológica verbatim (pólipo/espessado)
   endometrio_conclusao: z.string().nullable(), // item de conclusão patológico verbatim
+  endometrio_tipo: z.enum(["polipo", "espessamento", "sinequia", "conteudo_cavitario"]).nullable().optional(),
+  endometrio_medidas_cm: z.array(z.number()).nullable().optional(),
+  endometrio_vascularizacao: z.string().nullable().optional(),
 
   // Ovários
   ovario_direito: OvarioSchema,
@@ -162,7 +174,7 @@ const MIOMA_JSON = {
 const OVARIO_ACHADO_JSON = {
   type: "object",
   additionalProperties: false,
-  required: ["lado", "tipo", "medidas_cm", "descricao"],
+  required: ["lado", "tipo", "medidas_cm", "descricao", "vascularizacao", "orads_ditado"],
   properties: {
     lado: { type: "string", enum: ["direito", "esquerdo"] },
     tipo: enumNull([
@@ -171,17 +183,23 @@ const OVARIO_ACHADO_JSON = {
       "endometrioma",
       "funcional",
       "sop",
+      "teratoma",
+      "hidrossalpinge",
+      "cisto_paraovariano",
+      "lesao_solida",
       "outro",
     ]),
     medidas_cm: numArr,
     descricao: str,
+    vascularizacao: enumNull(["ausente", "minima", "moderada", "intensa"]),
+    orads_ditado: str,
   },
 } as const;
 
 const OVARIO_JSON = {
   type: "object",
   additionalProperties: false,
-  required: ["visualizado", "medidas_cm", "volume_ml", "alterado", "atrofico", "achados"],
+  required: ["visualizado", "medidas_cm", "volume_ml", "alterado", "atrofico", "achados", "foliculos_mm"],
   properties: {
     visualizado: bool,
     medidas_cm: numArr,
@@ -189,6 +207,7 @@ const OVARIO_JSON = {
     alterado: bool,
     atrofico: bool,
     achados: { type: "array", items: OVARIO_ACHADO_JSON },
+    foliculos_mm: numArr,
   },
 } as const;
 
@@ -197,6 +216,8 @@ export const PELVE_FEMININA_JSON_SCHEMA = {
   additionalProperties: false,
   required: [
     "via",
+    "modo",
+    "doppler_realizado",
     "utero_posicao",
     "utero_medidas_cm",
     "utero_volume_ml",
@@ -210,6 +231,9 @@ export const PELVE_FEMININA_JSON_SCHEMA = {
     "endometrio_motivo",
     "endometrio_achado",
     "endometrio_conclusao",
+    "endometrio_tipo",
+    "endometrio_medidas_cm",
+    "endometrio_vascularizacao",
     "ovario_direito",
     "ovario_esquerdo",
     "diu",
@@ -232,6 +256,8 @@ export const PELVE_FEMININA_JSON_SCHEMA = {
   ],
   properties: {
     via: enumNull(ViaEnum),
+    modo: { type: "string", enum: ["rotina", "doppler", "monitorizacao_folicular", "pos_abortamento"] },
+    doppler_realizado: bool,
     utero_posicao: str,
     utero_medidas_cm: numArr,
     utero_volume_ml: num,
@@ -251,6 +277,9 @@ export const PELVE_FEMININA_JSON_SCHEMA = {
     endometrio_motivo: str,
     endometrio_achado: str,
     endometrio_conclusao: str,
+    endometrio_tipo: enumNull(["polipo", "espessamento", "sinequia", "conteudo_cavitario"]),
+    endometrio_medidas_cm: numArr,
+    endometrio_vascularizacao: str,
     ovario_direito: OVARIO_JSON,
     ovario_esquerdo: OVARIO_JSON,
     diu: enumNull(["bem_posicionado", "deslocado"]),
@@ -282,7 +311,9 @@ export const PELVE_FEMININA_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO 
 nada. Quem escolhe o modelo, calcula volumes e monta o laudo é o código.
 
 REGRAS:
-1. via: a TÉCNICA do exame —
+1. modo: rotina | doppler | monitorizacao_folicular | pos_abortamento. Use
+   doppler_realizado=true somente quando o estudo Doppler tiver sido realizado.
+   via: a TÉCNICA do exame —
    - "ta_tv": transabdominal E transvaginal (default quando ambíguo/não dito).
    - "tv": somente transvaginal ("apenas transvaginal", "só TV").
    - "ta": somente transabdominal ("apenas transabdominal", "endométrio limitado").
@@ -320,6 +351,9 @@ REGRAS:
      espessamento...); null se normal.
    - endometrio_conclusao: item de conclusão patológico verbatim (pólipo
      endometrial, espessamento c/ recomendação); null se normal.
+   - quando estruturável, use endometrio_tipo: polipo | espessamento | sinequia |
+     conteudo_cavitario; endometrio_medidas_cm para as medidas do achado e
+     endometrio_vascularizacao para o padrão vascular ditado.
 4. OVÁRIOS (ovario_direito, ovario_esquerdo), cada um:
    - visualizado: false se "ovário não visualizado"/"não caracterizado".
    - medidas_cm: [L, AP, T] do ovário em cm; null se não ditas.
@@ -327,8 +361,12 @@ REGRAS:
    - alterado: true se há achado anormal (cisto/endometrioma/SOP/funcional).
    - atrofico: true p/ ovário atrófico de menopausa ("poucas imagens anecoicas").
    - achados: lista de achados focais; para cada um: lado, tipo (cisto_simples |
-     cisto_complexo | endometrioma | funcional | sop | outro), medidas_cm da
-     imagem, descricao verbatim. [] se ovário normal.
+     cisto_complexo | endometrioma | funcional | sop | teratoma | hidrossalpinge |
+     cisto_paraovariano | lesao_solida | outro), medidas_cm da imagem e descricao
+     verbatim. vascularizacao só quando Doppler realizado. orads_ditado somente
+     quando o médico disser explicitamente a categoria; nunca calcule ou infira.
+   - foliculos_mm: diâmetros dos folículos em milímetros na monitorização
+     folicular; null fora desse modo ou se não informados.
 5. ACESSÓRIOS (só quando informados; senão null/false/[]):
    - diu: "bem_posicionado" | "deslocado"; diu_descricao verbatim.
    - istmocele: true se nicho de cicatriz de cesárea; istmocele_descricao
@@ -447,7 +485,10 @@ function resolveVia(via: Via | null): Via {
   return via ?? "ta_tv";
 }
 
-function tituloDaVia(via: Via): string {
+function tituloDaVia(via: Via, modo?: PelveFemininaFindings["modo"]): string {
+  if (modo === "monitorizacao_folicular") {
+    return "ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL – MONITORIZAÇÃO FOLICULAR";
+  }
   switch (via) {
     case "tv":
       return "ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL";
@@ -461,18 +502,27 @@ function tituloDaVia(via: Via): string {
   }
 }
 
-function comentariosDaVia(via: Via): string {
+function comentariosDaVia(via: Via, dopplerRealizado = false): string {
+  const complemento = dopplerRealizado
+    ? " Foi realizado estudo complementar com Doppler colorido das estruturas pélvicas e lesões individualizadas."
+    : "";
+  let base: string;
   switch (via) {
     case "tv":
-      return "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+      base = "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+      break;
     case "ta":
-      return "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+      base = "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+      break;
     case "pos_abortamento":
-      return "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+      base = "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+      break;
     case "ta_tv":
     default:
-      return "COMENTÁRIOS:\nExame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+      base = "COMENTÁRIOS:\nExame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+      break;
   }
+  return `${base}${complemento}`;
 }
 
 /** A bexiga entra (corpo e conclusão) em TA, TA+TV e pós-abortamento; não em TV puro. */
@@ -503,6 +553,25 @@ export function domingosReferenceLine(idade: number, grandeMultipara: boolean): 
 }
 
 const NOTA_FIGO = "FIGO: Federação Internacional de Ginecologia e Obstetrícia.";
+const NOTA_ORADS = "O-RADS® US: sistema de estratificação de risco de lesões ovarianas e anexiais do Colégio Americano de Radiologia.";
+
+function temOradsConfirmado(f: PelveFemininaFindings): boolean {
+  return [f.ovario_direito, f.ovario_esquerdo].some((ov) =>
+    (ov.achados ?? []).some((a) => !!a.orads_ditado?.trim()),
+  );
+}
+
+function monitorizacaoConclusao(f: PelveFemininaFindings): string | null {
+  if (f.modo !== "monitorizacao_folicular") return null;
+  const resumo = ([
+    ["direito", f.ovario_direito.foliculos_mm],
+    ["esquerdo", f.ovario_esquerdo.foliculos_mm],
+  ] as const)
+    .filter(([, valores]) => valores && valores.length > 0)
+    .map(([lado, valores]) => `ovário ${lado}: ${(valores ?? []).map((v) => `${ptBr(v)} mm`).join(", ")}`)
+    .join("; ");
+  return resumo ? `Monitorização folicular — ${resumo}.` : "Monitorização folicular sem medidas informadas.";
+}
 
 // ---------------------------------------------------------------------------
 // Helpers de miomas
@@ -577,6 +646,22 @@ function temMiomasComFigo(f: PelveFemininaFindings): boolean {
 
 /** Linha do endométrio no corpo. null = omitir (TA limitado sem medida). */
 function endometrioCorpo(f: PelveFemininaFindings, via: Via): string | null {
+  if (f.endometrio_tipo) {
+    const medida = medidas2Fmt(f.endometrio_medidas_cm ?? null);
+    const vascular = f.endometrio_vascularizacao?.trim()
+      ? `, apresentando ${f.endometrio_vascularizacao.trim().replace(/\.+$/, "")} ao Doppler colorido`
+      : "";
+    switch (f.endometrio_tipo) {
+      case "polipo":
+        return `Imagem ecogênica focal na cavidade endometrial, medindo ${medida}${vascular}, sugestiva de pólipo endometrial.`;
+      case "espessamento":
+        return `Endométrio espessado e de aspecto ${f.endometrio_eco?.trim() || "heterogêneo"}, medindo ${espFmt(f.endometrio_espessura_cm)} cm${vascular}.`;
+      case "sinequia":
+        return `Imagem linear ecogênica atravessando a cavidade endometrial${vascular}, sugestiva de sinéquia.`;
+      case "conteudo_cavitario":
+        return `Conteúdo heterogêneo na cavidade endometrial, medindo ${medida}${vascular}.`;
+    }
+  }
   // Achado patológico verbatim vence.
   if (f.endometrio_achado && f.endometrio_achado.trim() !== "") {
     return f.endometrio_achado.trim().replace(/\.+$/, "") + ".";
@@ -623,7 +708,7 @@ export function mergeMenopausaPelve(
 
 /**
  * ANTI-ALUCINAÇÃO (boletim 2026-06-30, laudo 900c411c): a extração LLM às vezes
- * DUPLICA uma coleção peri-ovariana (O-RADS 2) também como `liquido_livre`, gerando
+ * DUPLICA uma coleção peri-ovariana também como `liquido_livre`, gerando
  * um "líquido livre na cavidade pélvica" INEXISTENTE (corpo + conclusão). Se a
  * descrição do líquido livre repete a de um achado ovariano (≥60% dos tokens
  * significativos), é a MESMA coleção contada 2x → suprime o líquido livre.
@@ -657,6 +742,19 @@ export function mergePelveLiquidoLivre(
 function endometrioConclusao(f: PelveFemininaFindings, via: Via): string {
   if (f.endometrio_conclusao && f.endometrio_conclusao.trim() !== "") {
     return f.endometrio_conclusao.trim().replace(/\.+$/, "") + ".";
+  }
+  if (f.endometrio_achado && f.endometrio_achado.trim() !== "") {
+    return f.endometrio_achado.trim().replace(/\.+$/, "") + ".";
+  }
+  switch (f.endometrio_tipo) {
+    case "polipo":
+      return "Imagem sugestiva de pólipo endometrial.";
+    case "espessamento":
+      return "Espessamento endometrial.";
+    case "sinequia":
+      return "Imagem sugestiva de sinéquia uterina.";
+    case "conteudo_cavitario":
+      return "Conteúdo heterogêneo na cavidade endometrial.";
   }
   switch (f.endometrio_frase) {
     case "menopausa":
@@ -699,6 +797,10 @@ function ovarioCorpo(lado: "direito" | "esquerdo", ov: PelveOvario): string {
       .join("; ");
     return `${rotulo} medindo ${medidasFmt(ov.medidas_cm)}, apresentando ${descr}.`;
   }
+  if (ov.foliculos_mm && ov.foliculos_mm.length > 0) {
+    const lista = ov.foliculos_mm.map((v) => ptBr(v)).join(", ");
+    return `${rotulo} medindo ${medidasFmt(ov.medidas_cm)}, apresentando folículos medindo ${lista} mm.`;
+  }
   if (ov.atrofico) {
     return `${rotulo} medindo ${medidasFmt(ov.medidas_cm)}, apresentando poucas imagens anecoicas.`;
   }
@@ -708,20 +810,36 @@ function ovarioCorpo(lado: "direito" | "esquerdo", ov: PelveOvario): string {
 /** Descrição genérica de um achado ovariano quando não há verbatim. */
 function descreveAchadoOvario(a: z.infer<typeof OvarioAchadoSchema>): string {
   const med = a.medidas_cm ? `, medindo ${medidasFmt(a.medidas_cm)}` : "";
+  const doppler = a.vascularizacao
+    ? `, com vascularização ${a.vascularizacao === "minima" ? "mínima" : a.vascularizacao} ao Doppler colorido`
+    : "";
   switch (a.tipo) {
     case "cisto_simples":
-      return `imagem anecoica de paredes finas e regulares${med}`;
+      return `imagem anecoica de paredes finas e regulares${med}${doppler}`;
     case "cisto_complexo":
-      return `imagem cística de conteúdo heterogêneo${med}`;
+      return `imagem cística de conteúdo heterogêneo${med}${doppler}`;
     case "endometrioma":
-      return `imagem de baixa ecogenicidade com aspecto em vidro fosco${med}, sem componente sólido ou septações`;
+      return `imagem de baixa ecogenicidade com aspecto em vidro fosco${med}, sem componente sólido ou septações${doppler}`;
     case "funcional":
-      return `coleção líquida de aspecto funcional${med}`;
+      return `coleção líquida de aspecto funcional${med}${doppler}`;
     case "sop":
       return "mais de 20 folículos antrais distribuídos na periferia";
+    case "teratoma":
+      return `imagem heterogênea com componentes ecogênicos e sombra acústica${med}${doppler}`;
+    case "hidrossalpinge":
+      return `imagem tubular anecoica, separada do ovário${med}${doppler}`;
+    case "cisto_paraovariano":
+      return `imagem cística anecoica, separada do ovário${med}${doppler}`;
+    case "lesao_solida":
+      return `imagem sólida${med}${doppler}`;
     default:
-      return `imagem${med}`;
+      return `imagem${med}${doppler}`;
   }
+}
+
+function oradsSufixo(a: z.infer<typeof OvarioAchadoSchema> | undefined): string {
+  const categoria = a?.orads_ditado?.trim();
+  return categoria ? ` (O-RADS ${categoria.toUpperCase()})` : "";
 }
 
 /** Itens de conclusão dos ovários (item único se ambos normais). */
@@ -776,21 +894,27 @@ function ovariosConclusao(f: PelveFemininaFindings): string[] {
       // TODO ovário alterado leva o volume + classe na conclusão (decisão Luiz).
       const classe = classeVolumeOvario(vol);
       const vc = `de volume ${classe} (${volFmt(vol)} cm³)`;
+      const orads = oradsSufixo(primeiro);
       if (primeiro?.tipo === "endometrioma") {
-        return `Ovário ${nome} ${vc}, apresentando imagem de baixa ecogenicidade que tem como diagnóstico mais provável endometrioma (O-RADS 2).`;
+        return `Ovário ${nome} ${vc}, apresentando imagem de baixa ecogenicidade que tem como diagnóstico mais provável endometrioma${orads}.`;
       }
       if (primeiro?.tipo === "funcional") {
-        return `Ovário ${nome} ${vc}, apresentando coleção líquida provavelmente funcional (O-RADS 2).`;
+        return `Ovário ${nome} ${vc}, apresentando coleção líquida provavelmente funcional${orads}.`;
       }
       if (primeiro?.tipo === "sop") {
         return `Ovário ${nome} de volume aumentado (${volFmt(vol)} cm³), contendo mais de 20 folículos.`;
       }
-      // Imagem anecoica (cisto simples / coleção) → coleção líquida (O-RADS 2).
+      // Imagem anecoica (cisto simples / coleção) → coleção líquida.
+      // A categoria O-RADS só aparece quando confirmada pelo médico.
       if (achadoOvarioAnecoico(primeiro)) {
-        return `Ovário ${nome} ${vc}, apresentando coleção líquida (O-RADS 2).`;
+        return `Ovário ${nome} ${vc}, apresentando coleção líquida${orads}.`;
       }
+      if (primeiro?.tipo === "teratoma") return `Ovário ${nome} ${vc}, apresentando imagem sugestiva de teratoma maduro${orads}.`;
+      if (primeiro?.tipo === "hidrossalpinge") return `Imagem tubular anecoica na região anexial ${nome === "direito" ? "direita" : "esquerda"}, sugestiva de hidrossalpinge${orads}.`;
+      if (primeiro?.tipo === "cisto_paraovariano") return `Cisto paraovariano à ${nome === "direito" ? "direita" : "esquerda"}${orads}.`;
+      if (primeiro?.tipo === "lesao_solida") return `Ovário ${nome} ${vc}, apresentando imagem sólida${orads}.`;
       const desc = primeiro?.descricao ? ` (${primeiro.descricao.trim().replace(/\.+$/, "")})` : "";
-      return `Ovário ${nome} ${vc}, apresentando${desc || " alteração"}.`;
+      return `Ovário ${nome} ${vc}, apresentando${desc || " alteração"}${orads}.`;
     }
     if (atrof) {
       return `Ovário ${nome} ecograficamente normal (${volFmt(vol)} cm³), praticamente sem folículos.`;
@@ -862,9 +986,9 @@ export function renderPelveFeminina(
  * Estrutura/cabeçalhos/numeração garantidos; silêncio → normalidade.
  */
 function renderPelveFemininaClassico(f: PelveFemininaFindings, dedup = false): string {
-  const via = resolveVia(f.via);
-  const titulo = tituloDaVia(via);
-  const comentarios = comentariosDaVia(via);
+  const via = resolveVia(f.modo === "pos_abortamento" ? "pos_abortamento" : f.via);
+  const titulo = tituloDaVia(via, f.modo);
+  const comentarios = comentariosDaVia(via, f.doppler_realizado || f.modo === "doppler");
   const comBexiga = temBexiga(via);
 
   // ----- CORPO -----
@@ -990,6 +1114,8 @@ function renderPelveFemininaClassico(f: PelveFemininaFindings, dedup = false): s
 
   // Ovários.
   conclusao.push(...ovariosConclusao(f));
+  const monitorizacao = monitorizacaoConclusao(f);
+  if (monitorizacao) conclusao.push(monitorizacao);
 
   // SOP: recomendação de FSH/LH quando algum ovário é SOP.
   const temSop = [f.ovario_direito, f.ovario_esquerdo].some((ov) =>
@@ -1023,6 +1149,7 @@ function renderPelveFemininaClassico(f: PelveFemininaFindings, dedup = false): s
   // ----- Rodapés -----
   const rodapes: string[] = [];
   if (temMiomasComFigo(f)) rodapes.push(NOTA_FIGO);
+  if (temOradsConfirmado(f)) rodapes.push(NOTA_ORADS);
   if (f.referencia_idade_anos !== null)
     rodapes.push(domingosReferenceLine(f.referencia_idade_anos, f.referencia_grande_multipara));
 
@@ -1052,7 +1179,8 @@ function renderPelveFemininaClassico(f: PelveFemininaFindings, dedup = false): s
 // pós-aborto). Muda só a redação: cabeçalhos TÉCNICA/ACHADOS/IMPRESSÃO, frases
 // mais curtas, sem o ritual do clássico. Mantém os ajustes clínicos já feitos:
 // ovário alterado leva "de volume {classe} ({X} cm³)"; imagem anecoica → "coleção
-// líquida (O-RADS 2)"; endometrioma "imagem de baixa ecogenicidade". 1 casa
+// líquida"; endometrioma "imagem de baixa ecogenicidade". O-RADS só entra
+// quando confirmado pelo médico. 1 casa
 // decimal, concordância. A TÉCNICA varia pela VIA (ta/tv/ta_tv/pos_abortamento).
 
 /** Frase de TÉCNICA do objetivo, derivada da VIA (inspirado no nReport). */
@@ -1084,6 +1212,10 @@ function ovarioAchadoObjetivo(lado: "direito" | "esquerdo", ov: PelveOvario): st
       .join("; ");
     return `${nome} ${medVol}, apresentando ${descr}.`;
   }
+  if (ov.foliculos_mm && ov.foliculos_mm.length > 0) {
+    const lista = ov.foliculos_mm.map((v) => ptBr(v)).join(", ");
+    return `${nome} ${medVol}, com folículos medindo ${lista} mm.`;
+  }
   if (ov.atrofico) {
     return `${nome} ${medVol}, com poucas imagens anecoicas (aspecto atrófico).`;
   }
@@ -1095,9 +1227,12 @@ function ovarioAchadoObjetivo(lado: "direito" | "esquerdo", ov: PelveOvario): st
  * Reusa extração + cálculos + lógica de achados do clássico (conclusão).
  */
 function renderPelveFemininaObjetivo(f: PelveFemininaFindings, dedup = false): string {
-  const via = resolveVia(f.via);
-  const titulo = tituloDaVia(via);
-  const tecnica = tecnicaObjetivo(via);
+  const via = resolveVia(f.modo === "pos_abortamento" ? "pos_abortamento" : f.via);
+  const titulo = tituloDaVia(via, f.modo);
+  const tecnicaBase = tecnicaObjetivo(via);
+  const tecnica = f.doppler_realizado || f.modo === "doppler"
+    ? `${tecnicaBase} Estudo complementar realizado com Doppler colorido.`
+    : tecnicaBase;
   const comBexiga = temBexiga(via);
 
   // ----- ACHADOS -----
@@ -1227,6 +1362,8 @@ function renderPelveFemininaObjetivo(f: PelveFemininaFindings, dedup = false): s
   // Ovários (reusa a MESMA lógica do clássico: item único se ambos normais;
   // separados com volume+classe se alteração; O-RADS/endometrioma/SOP).
   impressao.push(...ovariosConclusao(f));
+  const monitorizacao = monitorizacaoConclusao(f);
+  if (monitorizacao) impressao.push(monitorizacao);
 
   // SOP: recomendação de FSH/LH.
   const temSop = [f.ovario_direito, f.ovario_esquerdo].some((ov) =>
@@ -1266,6 +1403,7 @@ function renderPelveFemininaObjetivo(f: PelveFemininaFindings, dedup = false): s
   // ----- Rodapés (mantém FIGO + tabela quando aplicável) -----
   const rodapes: string[] = [];
   if (temMiomasComFigo(f)) rodapes.push(NOTA_FIGO);
+  if (temOradsConfirmado(f)) rodapes.push(NOTA_ORADS);
   if (f.referencia_idade_anos !== null)
     rodapes.push(domingosReferenceLine(f.referencia_idade_anos, f.referencia_grande_multipara));
 
@@ -1330,7 +1468,7 @@ CONCLUSÃO (numerar "1)" "2)" …; item único = sem número):
 - Istmocele: "Nicho de cicatriz cesárea, tipo simples."
 - Naboth: "Cistos de Naboth (provável sequela de cervicite)."
 - DIU (imagem hiperecoica linear): "Dispositivo intrauterino (D.I.U.) normoposicionado."
-- Ovários: normal bilateral → "Ovários ecograficamente normais (o direito com {X} cm³ e o esquerdo {Y} cm³), ambos contendo folículos." Um alterado → item por ovário: "Ovário {lado} de volume aumentado ({V} cm³), às custas de {coleção líquida provavelmente funcional (O-RADS 2) / endometrioma / …}." Ovário atrófico (menopausa) → ver regra MENOPAUSA.
+- Ovários: normal bilateral → "Ovários ecograficamente normais (o direito com {X} cm³ e o esquerdo {Y} cm³), ambos contendo folículos." Um alterado → item por ovário: "Ovário {lado} de volume aumentado ({V} cm³), às custas de {coleção líquida provavelmente funcional / endometrioma / …}." Acrescente categoria O-RADS somente quando ela tiver sido explicitamente confirmada pelo médico. Ovário atrófico (menopausa) → ver regra MENOPAUSA.
 
 MENOPAUSA (o médico diz "menopausa"/"ovários atróficos"): SEMPRE
 - CORPO: cada ovário "apresentando poucas imagens anecoicas" (NUNCA só "imagens anecoicas").
@@ -1339,7 +1477,7 @@ MENOPAUSA (o médico diz "menopausa"/"ovários atróficos"): SEMPRE
 
 REGRAS:
 1. Preserve TODA medida, volume e lado ditados, exatamente. Vírgula decimal (ex.: 5,4 x 2,0 x 3,8 cm). Nunca invente medida; nunca escreva "____".
-2. ANTI-LÍQUIDO-LIVRE (segurança): uma coleção/cisto DENTRO ou JUNTO de um ovário é achado OVARIANO (entra no item do ovário como O-RADS 2). NUNCA a duplique como "líquido livre na cavidade pélvica". Só descreva líquido livre se o médico disser explicitamente que há líquido livre SEPARADO dos ovários.
+2. ANTI-LÍQUIDO-LIVRE (segurança): uma coleção/cisto DENTRO ou JUNTO de um ovário é achado OVARIANO. NUNCA a duplique como "líquido livre na cavidade pélvica". Só descreva líquido livre se o médico disser explicitamente que há líquido livre SEPARADO dos ovários. Não atribua categoria O-RADS por conta própria.
 3. Comandos são INSTRUÇÕES, execute-os e NUNCA os transcreva: "adicione/acrescente X", "na conclusão Y", "substitua a frase Z por W", "coloca a frase das artérias arqueadas", "no lugar de X coloque Y".
 4. Corrija garble ÓBVIO de transcrição (ex.: "estmocele"→istmocele, "miolétrico"→miométrio, "ecoeca"→anecoica, "outerímetro"→útero), só o inequívoco. NUNCA ecoe o garble.
 5. NÃO invente achado. NÃO drope nada ditado. Silêncio sobre um órgão = normal (use a frase de normalidade). NÃO repita a mesma frase de conclusão duas vezes.

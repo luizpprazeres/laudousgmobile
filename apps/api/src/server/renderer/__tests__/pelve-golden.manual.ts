@@ -167,7 +167,7 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
       volume_ml: null,
       alterado: true,
       atrofico: false,
-      achados: [{ lado: "direito", tipo: "cisto_simples", medidas_cm: [3.0, 2.8, 2.5], descricao: null }],
+      achados: [{ lado: "direito", tipo: "cisto_simples", medidas_cm: [3.0, 2.8, 2.5], descricao: null, orads_ditado: "2" }],
     },
   }));
   check("cisto: corpo descreve imagem no ovário direito", /Ovário direito medindo 4 x 3,5 x 3 cm, apresentando imagem anecoica de paredes finas e regulares, medindo 3 x 2,8 x 2,5 cm\./.test(l), l);

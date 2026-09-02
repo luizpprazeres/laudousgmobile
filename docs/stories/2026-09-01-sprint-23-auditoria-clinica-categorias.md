@@ -394,6 +394,33 @@ Validações executadas:
 - Typecheck isolado da API e da web aprovado.
 - Referências: [BI-RADS do ACR](https://www.acr.org/Clinical-Resources/Clinical-Tools-and-Reference/Reporting-and-Data-Systems/BI-RADS), [requisitos de laudo mamário do ACR](https://accreditationsupport.acr.org/support/solutions/articles/11000067043-reporting-breast-ultrasound) e [normatização de ultrassonografia do CBR](https://cbr.org.br/normatizacao-de-exames-de-ultrassonografia/).
 
+## Sprint 23C3 — pelve feminina e anexos
+
+O exame ginecológico passou a reunir no mesmo módulo a rotina pélvica, o complemento com Doppler, a monitorização folicular e a avaliação pós-abortamento. A finalidade escolhida ajusta título, técnica e conteúdo, sem criar categorias duplicadas. O Doppler só entra quando selecionado e só descreve vascularização efetivamente informada.
+
+O útero permite registrar até três miomas individualizados, com medidas, parede, classificação e categoria FIGO. Istmocele e cistos de Naboth também ficaram estruturados. O endométrio passou a distinguir pólipo, espessamento, sinéquia e conteúdo cavitário, preservando medida e vascularização; descrições livres anteriores continuam aceitas e agora substituem a conclusão normal incompatível. O DIU diferencia posição habitual e deslocamento, e líquido livre e produtos retidos permanecem achados explícitos.
+
+Os ovários passaram a cobrir cistos simples e complexos, endometrioma, imagem funcional, morfologia policística, teratoma maduro, hidrossalpinge, cisto paraovariano, lesão sólida e achado livre. A categoria O-RADS só é publicada quando confirmada pelo médico; o sistema não transforma descritores parciais em estratificação diagnóstica. Na monitorização folicular, os diâmetros de cada ovário são preservados e resumidos no laudo.
+
+Critérios de aceite:
+
+- [x] Rotina, Doppler, monitorização folicular e pós-abortamento usam o mesmo módulo.
+- [x] Dados categóricos normais permanecem predefinidos e medidas ausentes permanecem como placeholders.
+- [x] Até três miomas atravessam o formulário com localização, medidas e FIGO.
+- [x] Alteração endometrial estruturada ou livre substitui a conclusão normal incompatível.
+- [x] DIU, istmocele, cistos de Naboth, líquido livre e produtos retidos são preservados.
+- [x] O-RADS entra somente após confirmação explícita do médico.
+- [x] Doppler é opcional e não cria classificação automática.
+- [x] Clássico e Objetivo preservam os mesmos achados.
+- [x] Matriz clínica e regressões anteriores aprovadas.
+
+Validações executadas:
+
+- `pnpm validate:clinical-review:23c3`: oito cenários novos, 60 regressões clássicas, 39 regressões objetivas e a travessia ponta a ponta aprovados.
+- `pnpm typecheck`: oito pacotes aprovados; builds de produção da API e da web aprovados.
+- O comando geral `pnpm test` não possui tarefas cadastradas. O `pnpm lint` continua bloqueado pela configuração interativa antiga do Next nos três apps e não foi contado como aprovado.
+- Referências: [O-RADS US do ACR](https://www.acr.org/Clinical-Resources/Clinical-Tools-and-Reference/Reporting-and-Data-Systems/O-RADS/Ultrasound), [conceitos oficiais do O-RADS US v2022](https://cs.acr.org/-/media/ACR/Files/RADS/O-RADS/O-RADS--US-v2022-Governing-Concepts-only.pdf) e [normatização de ultrassonografia do CBR](https://cbr.org.br/normatizacao-de-exames-de-ultrassonografia/).
+
 ## Arquivos da entrega 23B1 e do ajuste mamário
 
 - `apps/web/src/lib/deterministic/organs/obstetrica.ts`

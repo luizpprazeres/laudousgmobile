@@ -82,6 +82,13 @@ function numero(bruto: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function numeros(bruto: string): number[] | null {
+  const valores = (bruto.match(/\d+(?:[.,]\d+)?/g) ?? [])
+    .map((v) => Number.parseFloat(v.replace(",", ".")))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  return valores.length ? valores : null;
+}
+
 type Ovario = {
   visualizado: boolean;
   medidas_cm: number[] | null;
@@ -93,13 +100,17 @@ type Ovario = {
     tipo: string | null;
     medidas_cm: number[] | null;
     descricao: string | null;
+    vascularizacao?: string | null;
+    orads_ditado?: string | null;
   }[];
+  foliculos_mm?: number[] | null;
 };
 
 function adaptarOvario(
   s: EstadoDaSecao,
   lado: "direito" | "esquerdo",
   pendencias: Pendencia[],
+  dopplerRealizado: boolean,
 ): Ovario {
   const visualizado = s.visualizado !== "nao";
   const m = medidas(texto(s, "medidas"));
@@ -107,12 +118,12 @@ function adaptarOvario(
   const temAchado = tipo !== "" && tipo !== "nenhum";
 
   /**
-   * Os quatro tipos da tela existem todos no canônico — conferido chave por
-   * chave em 21/08. Se um dia a tela ganhar um quinto sem par, ele BLOQUEIA:
+   * Todos os tipos da tela precisam existir no canônico. Se a tela ganhar
+   * uma opção sem par, ela BLOQUEIA:
    * sem tipo o achado sai do laudo, e o ovário passa a ser descrito como
    * normal. Perder um cisto em silêncio é o pior modo de falhar aqui.
    */
-  const TIPOS = ["cisto_simples", "cisto_complexo", "endometrioma", "funcional", "sop", "outro"];
+  const TIPOS = ["cisto_simples", "cisto_complexo", "endometrioma", "funcional", "sop", "teratoma", "hidrossalpinge", "cisto_paraovariano", "lesao_solida", "outro"];
   if (temAchado && !TIPOS.includes(tipo)) {
     pendencias.push({
       onde: `ovário ${lado}`,
@@ -135,10 +146,13 @@ function adaptarOvario(
             lado,
             tipo,
             medidas_cm: medidas(texto(s, `achado.${tipo}.medidas`)),
-            descricao: null,
+            descricao: texto(s, `achado.${tipo}.descricao`) || null,
+            vascularizacao: dopplerRealizado ? texto(s, `achado.${tipo}.vascularizacao`) || null : null,
+            orads_ditado: texto(s, `achado.${tipo}.orads`) || null,
           },
         ]
       : [],
+    foliculos_mm: numeros(texto(s, "foliculos_mm")),
   };
 }
 
@@ -161,7 +175,10 @@ export function adaptarPelve(
   const od = secao(estado, "ovario_direito");
   const oe = secao(estado, "ovario_esquerdo");
 
-  const via = typeof opcoes.via === "string" ? opcoes.via : "ta_tv";
+  const modo = typeof opcoes.modo_pelve === "string" ? opcoes.modo_pelve : "rotina";
+  const viaInformada = typeof opcoes.via === "string" ? opcoes.via : "ta_tv";
+  const via = modo === "pos_abortamento" ? "pos_abortamento" : modo === "monitorizacao_folicular" ? "tv" : viaInformada;
+  const dopplerRealizado = modo === "doppler";
   const menopausa = Array.isArray(opcoes.menopausa) && opcoes.menopausa.includes("sim");
 
   const uteroMedidas = medidas(texto(u, "medidas"));
@@ -171,18 +188,15 @@ export function adaptarPelve(
    * prefixo `mioma.sim.` — é a convenção do sistema genérico, não um detalhe
    * deste arquivo.
    */
-  const temMioma = marcado(u, "mioma");
-  const miomas = temMioma
-    ? [
-        {
-          classificacao: texto(u, "mioma.sim.classificacao") || null,
-          medidas_cm: medidas(texto(u, "mioma.sim.medidas")),
-          parede: texto(u, "mioma.sim.parede") || null,
-          relacao: null,
-          figo: texto(u, "mioma.sim.figo") || null,
-        },
-      ]
-    : [];
+  const miomas = ["mioma", "mioma2", "mioma3"]
+    .filter((chave) => marcado(u, chave))
+    .map((chave) => ({
+      classificacao: texto(u, `${chave}.sim.classificacao`) || null,
+      medidas_cm: medidas(texto(u, `${chave}.sim.medidas`)),
+      parede: texto(u, `${chave}.sim.parede`) || null,
+      relacao: null,
+      figo: texto(u, `${chave}.sim.figo`) || null,
+    }));
 
   /**
    * ADENOMIOSE — a tela marca, o canônico precisa da FRASE.
@@ -200,6 +214,8 @@ export function adaptarPelve(
 
   const espessura = numero(texto(e, "espessura"));
   const achadoEndometrio = texto(e, "achado");
+  const tipoEndometrio = texto(e, "achado_tipo");
+  const diu = texto(e, "diu");
 
   /**
    * O achado endometrial é TEXTO LIVRE na tela ("pólipo endometrial de 0,8 cm").
@@ -213,6 +229,8 @@ export function adaptarPelve(
    */
   const dados: Record<string, unknown> = {
     via,
+    modo,
+    doppler_realizado: dopplerRealizado,
 
     utero_posicao: texto(u, "posicao") || null,
     utero_medidas_cm: uteroMedidas,
@@ -235,30 +253,26 @@ export function adaptarPelve(
     endometrio_motivo: null,
     endometrio_achado: achadoEndometrio || null,
     endometrio_conclusao: null,
+    endometrio_tipo: tipoEndometrio && tipoEndometrio !== "nenhum" ? tipoEndometrio : null,
+    endometrio_medidas_cm: medidas(texto(e, "achado_medidas")),
+    endometrio_vascularizacao: dopplerRealizado ? texto(e, "vascularizacao") || null : null,
 
-    ovario_direito: adaptarOvario(od, "direito", pendencias),
-    ovario_esquerdo: adaptarOvario(oe, "esquerdo", pendencias),
+    ovario_direito: adaptarOvario(od, "direito", pendencias, dopplerRealizado),
+    ovario_esquerdo: adaptarOvario(oe, "esquerdo", pendencias, dopplerRealizado),
 
-    diu: marcado(e, "diu") ? "bem_posicionado" : null,
-    diu_descricao: null,
-    istmocele: false,
-    istmocele_descricao: null,
-    istmocele_tipo: null,
-    cistos_naboth: false,
+    diu: diu === "bem_posicionado" || diu === "deslocado" ? diu : marcado(e, "diu") ? "bem_posicionado" : null,
+    diu_descricao: texto(e, "diu_descricao") || null,
+    istmocele: marcado(u, "istmocele"),
+    istmocele_descricao: texto(u, "istmocele.sim.descricao") || null,
+    istmocele_tipo: texto(u, "istmocele.sim.tipo") || null,
+    cistos_naboth: marcado(u, "cistos_naboth"),
     calcificacao_arqueadas: false,
 
-    /**
-     * LÍQUIDO LIVRE é `false` fixo, e o Luiz confirmou que é o certo (21/08):
-     * *"não afirmado geralmente é avaliei e não tinha, e quando tem a gente
-     * fala"*. Ou seja, `false` não é uma lacuna disfarçada — é a prática dele.
-     *
-     * O inverso é que seria defeito: mandar `true` sem ele ter dito é alucinar
-     * um achado, e foi um defeito real de produção corrigido em 30/06.
-     */
-    liquido_livre: false,
-    liquido_livre_descricao: null,
-    produtos_retidos: false,
-    produtos_retidos_quantidade: null,
+    /** Só marca líquido livre quando selecionado explicitamente no formulário. */
+    liquido_livre: marcado(e, "liquido_livre"),
+    liquido_livre_descricao: texto(e, "liquido_livre.sim.descricao") || null,
+    produtos_retidos: modo === "pos_abortamento" && texto(e, "produtos_retidos") === "sim",
+    produtos_retidos_quantidade: texto(e, "produtos_retidos_quantidade") || null,
     observacoes_corpo: null,
     achados_adicionais: null,
     referencia_idade_anos: null,
