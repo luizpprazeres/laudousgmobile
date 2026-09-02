@@ -47,6 +47,7 @@ export const MorfologicoFindingsSchema = z.object({
   ccn_mm: z.number().nullable(),
   tn_mm: z.number().nullable(),
   osso_nasal: z.enum(["presente", "ausente"]).nullable(),
+  regurgitacao_tricuspide: z.enum(["ausente", "presente"]).nullable(),
   ducto_venoso: z.enum(["normal", "alterado"]).nullable(),
   uterina_ip_direita: z.number().nullable(),
   uterina_ip_esquerda: z.number().nullable(),
@@ -111,7 +112,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
   additionalProperties: false,
   required: [
     "trimestre", "apresentacao", "dorso", "polo_cefalico", "bcf_bpm",
-    "ccn_mm", "tn_mm", "osso_nasal", "ducto_venoso",
+    "ccn_mm", "tn_mm", "osso_nasal", "regurgitacao_tricuspide", "ducto_venoso",
     "uterina_ip_direita", "uterina_ip_esquerda",
     "dbp_mm", "cc_mm", "cerebelo_mm", "cisterna_magna_mm", "binocular_mm", "ca_mm",
     "femur_mm", "tibia_mm", "fibula_mm", "umero_mm", "radio_mm", "ulna_mm",
@@ -128,6 +129,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     apresentacao: str, dorso: str, polo_cefalico: str, bcf_bpm: num,
     ccn_mm: num, tn_mm: num,
     osso_nasal: { type: ["string", "null"], enum: ["presente", "ausente", null] },
+    regurgitacao_tricuspide: { type: ["string", "null"], enum: ["ausente", "presente", null] },
     ducto_venoso: { type: ["string", "null"], enum: ["normal", "alterado", null] },
     uterina_ip_direita: num, uterina_ip_esquerda: num,
     dbp_mm: num, cc_mm: num, cerebelo_mm: num, cisterna_magna_mm: num, binocular_mm: num, ca_mm: num,
@@ -167,8 +169,9 @@ REGRAS:
    cisterna magna→cisterna_magna_mm, distância binocular→binocular_mm. Valor não
    ditado → null (NUNCA inventar). ATENÇÃO: "CF" no bloco de biometria fetal é o
    comprimento femoral (femur_mm) — NUNCA o deixe null se "CF: X" foi ditado.
-3. osso_nasal: "presente"/"ausente". ducto_venoso: "normal"/"alterado" (onda A
-   reversa = alterado; onda A positiva/trifásica = normal).
+3. osso_nasal: "presente"/"ausente". regurgitacao_tricuspide:
+   "ausente"/"presente" somente quando avaliada. ducto_venoso:
+   "normal"/"alterado" (onda A reversa = alterado; onda A positiva/trifásica = normal).
 4. uterina_ip_direita/esquerda: IP das artérias uterinas (1t).
 5. apresentacao/dorso (2t/3t): só se ditados. Situação transversa/córmica não é
    apresentação: use apresentacao=null e registre a posição em polo_cefalico.
@@ -328,6 +331,11 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
     ...(f.osso_nasal === null
       ? []
       : [f.osso_nasal === "ausente" ? "Ausência de osso nasal." : "Presença de osso nasal."]),
+    ...(f.regurgitacao_tricuspide == null
+      ? []
+      : [f.regurgitacao_tricuspide === "presente"
+          ? "Presença de regurgitação tricúspide."
+          : "Ausência de regurgitação tricúspide."]),
     ...(f.ducto_venoso === null
       ? []
       : [f.ducto_venoso === "alterado"
@@ -363,7 +371,8 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
           ? "Doppler do ducto venoso alterado (onda A reversa)."
           : "Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
-    ...(temAchado || f.osso_nasal === "ausente" || f.ducto_venoso === "alterado"
+    ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
+    ...(temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -639,6 +648,11 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
     ...(f.osso_nasal === null
       ? []
       : [f.osso_nasal === "ausente" ? "Osso nasal ausente." : "Osso nasal presente."]),
+    ...(f.regurgitacao_tricuspide == null
+      ? []
+      : [f.regurgitacao_tricuspide === "presente"
+          ? "Regurgitação tricúspide presente."
+          : "Regurgitação tricúspide ausente."]),
     ...(f.ducto_venoso === null
       ? []
       : [f.ducto_venoso === "alterado"
@@ -678,7 +692,8 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
           ? "Doppler do ducto venoso alterado (onda A reversa)."
           : "Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
-    ...(temAchado || f.osso_nasal === "ausente" || f.ducto_venoso === "alterado"
+    ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
+    ...(temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),

@@ -561,14 +561,10 @@ function formatarBlocoPreEclampsia(
   const sem = Math.floor(g.gaDias / 7);
   const dias = g.gaDias % 7;
 
-  const usados = ["história materna"];
-  if (med.pamMmHg != null) usados.push("PAM");
-  if (med.utaPiMedio != null) usados.push("IP das artérias uterinas");
-
   const linhas: string[] = [
-    "RASTREIO DE PRÉ-ECLÂMPSIA (1º trimestre)",
+    "CÁLCULO DE RISCO DE PRÉ-ECLÂMPSIA (1º trimestre)",
     "",
-    `Idade gestacional: ${sem} semanas e ${dias} dias`,
+    `Idade gestacional: ${sem} semanas e ${dias} dias.`,
   ];
 
   if (med.pamMmHg != null) {
@@ -595,40 +591,32 @@ function formatarBlocoPreEclampsia(
   linhas.push(
     "",
     `Risco de pré-eclâmpsia com parto antes de 37 semanas: 1 em ${milhar(umEmN)}`,
-    `Calculado com: ${usados.join(", ")}.`,
     ""
   );
 
   if (altoRisco) {
     linhas.push(
-      "Risco AUMENTADO para pré-eclâmpsia pré-termo (corte de 1 em 100).",
-      "Recomenda-se profilaxia com ácido acetilsalicílico 150 mg à noite, do " +
+      "Alto risco para pré-eclâmpsia pré-termo (corte de 1 em 100). " +
+        "Recomenda-se profilaxia com ácido acetilsalicílico 150 mg à noite, do " +
         "primeiro trimestre até 36 semanas, conforme o ensaio ASPRE, a critério " +
         "do médico assistente."
     );
   } else {
     linhas.push(
-      "Risco não aumentado para pré-eclâmpsia pré-termo (corte de 1 em 100).",
-      "Seguimento pré-natal de rotina."
+      "Baixo risco para pré-eclâmpsia pré-termo (corte de 1 em 100). " +
+        "Seguimento pré-natal de rotina."
     );
   }
 
-  const ressalvas: string[] = [];
-  if (med.afericoesPam != null && med.afericoesPam < 4) {
-    ressalvas.push(
-      "a pressão arterial média foi obtida de " +
-        (med.afericoesPam === 1 ? "uma única aferição" : `${med.afericoesPam} aferições`) +
-        "; o protocolo da Fetal Medicine Foundation prevê quatro (ambos os " +
-        "braços, duas vezes), o que reduz a variabilidade da medida"
-    );
-  }
+  // A origem da PAM já aparece ao lado da medida. Repeti-la em um parágrafo de
+  // ressalvas tornava o bloco longo e visualmente pesado. Só permanece a
+  // advertência que muda a interpretação técnica do cálculo.
   if (marcadores.some((m) => m.truncado)) {
-    ressalvas.push(
-      "valor de marcador fora da faixa do modelo, truncado conforme a especificação"
+    linhas.push(
+      "",
+      "Observação técnica: valor de marcador fora da faixa do modelo, " +
+        "truncado conforme a especificação."
     );
-  }
-  if (ressalvas.length > 0) {
-    linhas.push("", `Ressalvas: ${ressalvas.join("; ")}.`);
   }
 
   linhas.push(

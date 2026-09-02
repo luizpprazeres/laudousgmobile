@@ -22,8 +22,8 @@
 import { MorfologicoFindingsSchema, renderMorfologico } from "../../categories/MORFOLOGICO";
 
 const BASE = {
-  trimestre: "2t", apresentacao: "cefálica", dorso: null, bcf_bpm: 148,
-  ccn_mm: null, tn_mm: null, osso_nasal: null, ducto_venoso: null,
+  trimestre: "2t", apresentacao: "cefálica", dorso: null, polo_cefalico: null, bcf_bpm: 148,
+  ccn_mm: null, tn_mm: null, osso_nasal: null, regurgitacao_tricuspide: null, ducto_venoso: null,
   uterina_ip_direita: null, uterina_ip_esquerda: null,
   dbp_mm: 51, cc_mm: 190, cerebelo_mm: 21, cisterna_magna_mm: 5, binocular_mm: 32,
   ca_mm: 168, femur_mm: 34, tibia_mm: 29, fibula_mm: 28, umero_mm: 32, radio_mm: 27,

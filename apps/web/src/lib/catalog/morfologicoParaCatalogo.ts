@@ -155,6 +155,10 @@ export function adaptarMorfologico(
       primeiroTrimestre && texto(f1, "osso_nasal") !== "na"
         ? texto(f1, "osso_nasal") || null
         : null,
+    regurgitacao_tricuspide:
+      primeiroTrimestre && texto(f1, "tricuspide") !== "na"
+        ? texto(f1, "tricuspide") || null
+        : null,
     ducto_venoso:
       primeiroTrimestre && texto(f1, "ducto_venoso") !== "na"
         ? texto(f1, "ducto_venoso") || null

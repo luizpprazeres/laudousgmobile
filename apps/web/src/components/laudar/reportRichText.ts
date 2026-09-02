@@ -33,8 +33,16 @@ function blocks(text: string): string[] {
     .filter(Boolean)
 }
 
+function isFmfReference(block: string): boolean {
+  return block.startsWith('Baseado no modelo de riscos competitivos da Fetal Medicine Foundation')
+    && block.endsWith('Não constitui software certificado pela FMF.')
+}
+
 function inlineHtml(block: string): string {
   const escaped = escapeHtml(block).replace(/\n/g, '<br>')
+  if (isFmfReference(block)) {
+    return `<em>${escaped}</em>`
+  }
   const headings = ['COMENTÁRIOS:', 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:', 'CONCLUSÃO:', 'TÉCNICA:', 'ACHADOS:', 'IMPRESSÃO:']
   const heading = headings.find((candidate) => block.startsWith(candidate))
   if (!heading) return escaped
@@ -120,7 +128,9 @@ export function mergeReportHtml(currentHtml: string, proposedText: string): stri
 
   return blocks(proposedText).map((block, index) => {
     const candidates = reusable.get(block)
-    const reused = candidates?.shift()
+    // A referência FMF tem apresentação clínica própria. Não reaproveitar um
+    // bloco antigo sem itálico quando o restante do texto não mudou.
+    const reused = isFmfReference(block) ? undefined : candidates?.shift()
     return reused ?? blockHtml(block, index)
   }).join('')
 }

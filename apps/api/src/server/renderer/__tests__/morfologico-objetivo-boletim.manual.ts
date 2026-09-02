@@ -17,7 +17,7 @@ import {
 
 const F = (p: Partial<MorfologicoFindings>): MorfologicoFindings => ({
   trimestre: "2t", apresentacao: null, dorso: null, polo_cefalico: null, bcf_bpm: 145,
-  ccn_mm: null, tn_mm: null, osso_nasal: null, ducto_venoso: null,
+  ccn_mm: null, tn_mm: null, osso_nasal: null, regurgitacao_tricuspide: null, ducto_venoso: null,
   uterina_ip_direita: null, uterina_ip_esquerda: null,
   dbp_mm: null, cc_mm: null, cerebelo_mm: null, cisterna_magna_mm: null, binocular_mm: null, ca_mm: null,
   femur_mm: null, tibia_mm: null, fibula_mm: null, umero_mm: null, radio_mm: null, ulna_mm: null,
@@ -40,7 +40,7 @@ const CASES: Caso[] = [
     descricao: "CCN, TN, osso nasal presente, ducto venoso normal, IP uterinas.",
     findings: F({
       trimestre: "1t", ig_semanas: 12, ig_dias: 3, bcf_bpm: 162,
-      ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: "presente", ducto_venoso: "normal",
+      ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: "presente", regurgitacao_tricuspide: "ausente", ducto_venoso: "normal",
       uterina_ip_direita: 1.2, uterina_ip_esquerda: 1.4,
       placenta_localizacao: "anterior", placenta_grau: "0",
     }),
@@ -50,7 +50,7 @@ const CASES: Caso[] = [
     descricao: "Onda A reversa → impressão de Doppler alterado.",
     findings: F({
       trimestre: "1t", ig_semanas: 13, ig_dias: 0, bcf_bpm: 158,
-      ccn_mm: 70.2, tn_mm: 3.1, osso_nasal: "ausente", ducto_venoso: "alterado",
+      ccn_mm: 70.2, tn_mm: 3.1, osso_nasal: "ausente", regurgitacao_tricuspide: "presente", ducto_venoso: "alterado",
     }),
   },
   {

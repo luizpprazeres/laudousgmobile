@@ -67,7 +67,31 @@ function medido(): Record<string, unknown> {
   return st;
 }
 
+function primeiroTrimestre(): Record<string, unknown> {
+  let st = inicial();
+  st = com(st, "ig", { bio_sem: "13", bio_dias: "0" });
+  st = com(st, "primeiro_trimestre", {
+    bcf: "154",
+    ccn: "68",
+    tn: "1,6",
+    osso_nasal: "presente",
+    tricuspide: "presente",
+    ducto_venoso: "normal",
+  });
+  return st;
+}
+
 const CASOS: Caso[] = [
+  {
+    nome: "1º trimestre — regurgitação tricúspide presente",
+    porque:
+      "o campo existe na tela e não pode sumir no adaptador; o achado precisa entrar no corpo e na conclusão, suprimindo a normalidade fetal.",
+    estado: primeiroTrimestre(),
+    opcoes: { trimestre: "1t" },
+    exige: ["Presença de regurgitação tricúspide"],
+    exigeNaConclusao: ["Presença de regurgitação tricúspide"],
+    proibeNaConclusao: ["Morfologia fetal normal"],
+  },
   {
     nome: "morfológico normal, tudo medido",
     porque: "o caso de todos os 279 morfológicos reais.",

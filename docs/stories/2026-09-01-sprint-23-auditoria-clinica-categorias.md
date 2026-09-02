@@ -131,7 +131,45 @@ A matriz 23B1 percorre os estados acima nos estilos Clássico e Objetivo e acres
 - [x] Inserção baixa, prévia marginal e prévia.
 - [x] Coleção retroplacentária, acretismo e lagos venosos.
 - [x] Paridade Clássico/Objetivo e combinações independentes.
-- [ ] Próximo corte 23B: Doppler obstétrico, morfológicos, cervicometria e crescimento fetal opção por opção.
+- [x] 23B2: contrato morfológico entre web, API e iOS; marcador tricúspide; bloco FMF compartilhado.
+- [ ] Próximo corte 23B: Doppler obstétrico, cervicometria e crescimento fetal opção por opção.
+
+## Entrega 23B2 — morfológico e pré-eclâmpsia web/iOS
+
+O aplicativo iOS foi auditado como cliente principal. A categoria Morfológico é enviada explicitamente à API como `MORFOLOGICO`, inclusive quando o ditado diz “morfológico do segundo trimestre”. No servidor, o roteamento foi validado contra 15 formas de ditado e não confunde o exame morfológico com a obstétrica simples ou com o Doppler obstétrico. Os renderers Clássico e Objetivo de 1º, 2º e 3º trimestres também passaram pelo gate que impede normalidade na conclusão diante de malformação, alteração do líquido ou diagnóstico livre.
+
+A regurgitação tricúspide era um campo órfão: aparecia na tela do morfológico de 1º trimestre, mas não era lida pelo adaptador nem existia no contrato canônico. Agora “ausente”, “presente” e “não avaliada” atravessam a tela, a extração e os dois estilos. Quando presente, o achado entra no corpo e na conclusão e suprime a frase de morfologia normal; quando não avaliado, nenhuma normalidade é inventada.
+
+O cálculo FMF permanece matematicamente inalterado e compartilhado por equivalência entre web e iOS. No iOS, os 342 casos golden continuaram idênticos. O bloco de inserção passou a usar o título “CÁLCULO DE RISCO DE PRÉ-ECLÂMPSIA”, explicita IG, PAM, origem da aferição, MoMs, risco “1 em N” e uma síntese única de baixo ou alto risco. A referência final permanece texto limpo no iOS e recebe itálico apenas na apresentação rica da web, sem asteriscos literais no laudo.
+
+- [x] 342 casos golden FMF no iOS sem divergência matemática.
+- [x] Redação do bloco de baixo risco e de alto risco validada no iOS.
+- [x] Inserção sem `Calculado com`, sem ressalva redundante da aferição única e sem asteriscos literais.
+- [x] Referência FMF em itálico na visualização rica da web, preservando o texto puro.
+- [x] Categoria `MORFOLOGICO` codificada corretamente pelo cliente iOS.
+- [x] Roteamento de “morfológico do segundo trimestre” e variantes validado no servidor.
+- [x] Regurgitação tricúspide coberta no corpo e na conclusão dos estilos Clássico e Objetivo.
+- [x] Gate de contradição dos quatro ramos morfológicos.
+- [x] Suíte completa do iOS: 50 testes executados, 47 aprovados e 3 testes WHO explicitamente adiados, sem falhas.
+
+### Arquivos da entrega 23B2 — monorepo
+
+- `packages/shared/src/calculators/preEclampsiaFmf.ts`
+- `apps/web/src/lib/calculators/preEclampsia.test.mts`
+- `apps/web/src/components/laudar/reportRichText.ts`
+- `apps/web/src/lib/catalog/morfologicoParaCatalogo.ts`
+- `apps/api/src/server/renderer/categories/MORFOLOGICO.ts`
+- `apps/api/src/server/renderer/catalog/__tests__/morfologico-ponta-a-ponta.manual.ts`
+- `apps/api/src/server/renderer/catalog/__tests__/morfologico-nao-contradiz.manual.ts`
+- `apps/api/src/server/renderer/__tests__/morfologico-objetivo-golden.manual.ts`
+- `apps/api/src/server/renderer/__tests__/morfologico-objetivo-boletim.manual.ts`
+- `apps/api/src/server/renderer/__tests__/ig-renderer.manual.ts`
+- `docs/morfologico-objetivo-boletim.html`
+
+### Arquivos da entrega 23B2 — aplicativo iOS
+
+- `LaudoUSG/Services/PreEclampsiaCalculator.swift`
+- `LaudoUSGTests/PreEclampsiaFmfGoldenTests.swift`
 
 ## Ajuste paralelo — esquema visual das mamas
 

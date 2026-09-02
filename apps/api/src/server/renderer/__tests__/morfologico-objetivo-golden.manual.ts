@@ -24,7 +24,7 @@ function check(name: string, cond: boolean, detail?: string) {
 
 const F = (p: Partial<MorfologicoFindings>): MorfologicoFindings => ({
   trimestre: "2t", apresentacao: null, dorso: null, polo_cefalico: null, bcf_bpm: 145,
-  ccn_mm: null, tn_mm: null, osso_nasal: null, ducto_venoso: null,
+  ccn_mm: null, tn_mm: null, osso_nasal: null, regurgitacao_tricuspide: null, ducto_venoso: null,
   uterina_ip_direita: null, uterina_ip_esquerda: null,
   dbp_mm: null, cc_mm: null, cerebelo_mm: null, cisterna_magna_mm: null, binocular_mm: null, ca_mm: null,
   femur_mm: null, tibia_mm: null, fibula_mm: null, umero_mm: null, radio_mm: null, ulna_mm: null,
@@ -40,7 +40,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
 
 // ── Estrutura objetivo (cabeçalhos), 1º trimestre ──
 {
-  const l = render(F({ trimestre: "1t", ig_semanas: 12, ig_dias: 3, ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: "presente", ducto_venoso: "normal" }));
+  const l = render(F({ trimestre: "1t", ig_semanas: 12, ig_dias: 3, ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: "presente", regurgitacao_tricuspide: "ausente", ducto_venoso: "normal" }));
   check("1t: título 'PRIMEIRO TRIMESTRE'", /ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE/.test(l), l);
   check("1t SEM doppler: título sem 'COM DOPPLER'", !/COM DOPPLER COLORIDO/.test(l), l);
   check("1t SEM doppler: sem frases de IP uterina", !/Artéria uterina/.test(l), l);
@@ -52,6 +52,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   check("1t: CCN 1 casa decimal '61,5 mm'", /Comprimento cabeça-nádegas \(CCN\): 61,5 mm\./.test(l), l);
   check("1t: TN '1,4 mm'", /Translucência nucal \(TN\): 1,4 mm\./.test(l), l);
   check("1t: osso nasal presente", /Osso nasal presente\./.test(l), l);
+  check("1t: regurgitação tricúspide ausente", /Regurgitação tricúspide ausente\./.test(l), l);
   check("1t: ducto venoso normal", /Ducto venoso com onda trifásica/.test(l), l);
   check("1t: impressão morfologia normal", /Morfologia fetal normal para esta fase/.test(l), l);
 }
@@ -67,18 +68,20 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
 
 // ── 1º trimestre: ducto venoso alterado ──
 {
-  const l = render(F({ trimestre: "1t", ducto_venoso: "alterado", osso_nasal: "ausente", ccn_mm: 70.2 }));
+  const l = render(F({ trimestre: "1t", ducto_venoso: "alterado", osso_nasal: "ausente", regurgitacao_tricuspide: "presente", ccn_mm: 70.2 }));
   check("1t alt.: 'onda A reversa' nos achados", /Ducto venoso com onda A reversa\./.test(l), l);
   check("1t alt.: impressão Doppler alterado", /Doppler do ducto venoso alterado \(onda A reversa\)/.test(l), l);
   check("1t alt.: osso nasal ausente", /Osso nasal ausente\./.test(l), l);
+  check("1t alt.: regurgitação tricúspide chega à impressão", /Presença de regurgitação tricúspide\./.test(l), l);
   check("1t alt.: não contradiz com morfologia normal", !/Morfologia fetal normal para esta fase/.test(l), l);
 }
 
 // ── 1º trimestre: marcador não avaliado não vira normal ──
 {
-  const l = render(F({ trimestre: "1t", ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: null, ducto_venoso: null }));
+  const l = render(F({ trimestre: "1t", ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: null, regurgitacao_tricuspide: null, ducto_venoso: null }));
   check("1t não avaliado: não inventa osso nasal presente", !/Osso nasal presente/.test(l), l);
   check("1t não avaliado: não inventa ducto venoso normal", !/Doppler do ducto venoso normal|onda trifásica/.test(l), l);
+  check("1t não avaliado: não inventa regurgitação tricúspide", !/tricúspide/.test(l), l);
 }
 
 // ── 2º trimestre: biometria 1 casa decimal + binocular presente + colo presente ──
