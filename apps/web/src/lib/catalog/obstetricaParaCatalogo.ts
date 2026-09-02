@@ -76,6 +76,9 @@ function cervicometriaDaTela(estado: EstadoObstetrico): Record<string, unknown> 
 function fetoDaTela(f: EstadoDaSecao, b: EstadoDaSecao) {
   const dorso = texto(f, "dorso");
   const transversa = texto(f, "situacao") === "transversa";
+  const vitalidade = texto(f, "vitalidade") || "normal";
+  const movimentos = texto(f, "movimentos") || "normais";
+  const cordao = texto(f, "cordao_vasos") || "nao_avaliado";
   return {
     rotulo: null,
     posicao_relativa: null,
@@ -86,7 +89,9 @@ function fetoDaTela(f: EstadoDaSecao, b: EstadoDaSecao) {
     polo_cefalico: transversa
       ? texto(f, "situacao.transversa.polo_cefalico") || "à direita"
       : null,
-    bcf_bpm: numero(f, "bcf"),
+    // Ao trocar para "atividade ausente", o valor anteriormente digitado pode
+    // continuar no estado visual. Ele não pode atravessar junto com o óbito.
+    bcf_bpm: vitalidade === "ausente" ? null : numero(f, "bcf"),
     dbp_mm: numero(b, "dbp"),
     cc_mm: numero(b, "cc"),
     ca_mm: numero(b, "ca"),
@@ -95,12 +100,12 @@ function fetoDaTela(f: EstadoDaSecao, b: EstadoDaSecao) {
     peso_g: numero(b, "peso"),
     peso_variacao_g: null,
     percentil: null,
-    bcf_alteracao: null,
-    movimentos_fetais: null,
+    bcf_alteracao: ["ausente", "bradicardia", "taquicardia"].includes(vitalidade) ? vitalidade : null,
+    movimentos_fetais: ["ausentes", "reduzidos"].includes(movimentos) ? movimentos : null,
     cranio_achado: null,
     cranio_medida_mm: null,
     cranio_lateralidade: null,
-    cordao_vasos: null,
+    cordao_vasos: cordao === "tres" || cordao === "dois" ? cordao : null,
   };
 }
 
@@ -139,6 +144,8 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
   const corrigir = usg || dum ? sub("corrigir") !== "nao" : null;
 
   const placentaDetalhada = texto(p, "estado") === "detalhar";
+  const placentaRelacao = texto(p, "relacao_orificio");
+  const placentaAchado = texto(p, "achado");
 
   /**
    * O LÍQUIDO, com a salvaguarda que já existia na tela preservada.
@@ -195,9 +202,18 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
     placenta_grau: placentaDetalhada
       ? texto(p, "estado.detalhar.grau").replace(/^grau\s*/i, "") || null
       : null,
-    placenta_relacao_orificio: null,
-    placenta_distancia_orificio_mm: null,
-    placenta_achado_medidas: null,
+    placenta_relacao_orificio: ["insercao_baixa", "marginal", "previa"].includes(placentaRelacao)
+      ? placentaRelacao
+      : null,
+    placenta_distancia_orificio_mm: placentaRelacao === "insercao_baixa"
+      ? numero(p, "relacao_orificio.insercao_baixa.distancia_mm")
+      : null,
+    placenta_achado: ["descolamento", "acretismo", "lagos_venosos"].includes(placentaAchado)
+      ? placentaAchado
+      : null,
+    placenta_achado_medidas: placentaAchado === "descolamento"
+      ? texto(p, "achado.descolamento.medidas") || null
+      : null,
 
     liquido_tipo: liquidoTipo,
     liquido_ila_cm: liquidoTipo === "ila" ? ila : null,

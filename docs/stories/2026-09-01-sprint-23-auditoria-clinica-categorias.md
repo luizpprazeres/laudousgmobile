@@ -30,6 +30,8 @@ Fígado, veia porta, vesícula, vias biliares, pâncreas, baço, rins, bexiga, a
 
 Obstétrica, Doppler obstétrico, morfológicos, cervicometria e crescimento fetal. Revisar trimestre, gemelaridade, situação/apresentação, placenta, líquido, anatomia, biometria, percentis, Doppler e os complementos opcionais sem duplicação de categorias.
 
+Primeiro corte entregue (23B1): a tela Obstétrica passou a expor vitalidade, movimentos fetais e vasos do cordão sem assumir avaliação não realizada. A placenta passou a separar localização, relação com o orifício interno e achado placentário, permitindo combinar, por exemplo, placenta anterior, prévia e sinais de acretismo sem perda de nenhum eixo. As mesmas decisões atravessam os estilos Clássico e Objetivo.
+
 ### 23C — Tireoide, mamas e ginecologia
 
 Tireoide, nódulos, tireoidites, linfonodos e Doppler; mamas/axilas, descritores BI-RADS e Doppler; pelve abdominal/transvaginal, miomas, adenomiose, endométrio e ovários. Classificações continuam determinísticas e validadas pelo médico.
@@ -111,6 +113,41 @@ A matriz 23A2 validou 27 cenários visíveis e combinações intraórgão e inte
 - [x] Calibre e conteúdo da veia cava inferior.
 - [x] Paridade Clássico/Objetivo e combinações de achados.
 - [x] Regressão de abdome superior e vias urinárias.
+
+## Entrega 23B1 — base obstétrica compartilhada
+
+Situação e apresentação permanecem conceitos separados: situação longitudinal abre apresentação cefálica ou pélvica; situação transversa usa polo cefálico e dorso opcional. Vitalidade ausente elimina qualquer frequência previamente digitada, suprime a afirmação de movimentos ativos e produz conclusão de óbito fetal. Bradicardia e taquicardia aceitam a frequência quando disponível e continuam renderizando sem lacuna quando o número não foi informado.
+
+O cordão umbilical começa em “Não informar”. A descrição de duas artérias e uma veia só aparece após seleção explícita; o estado de dois vasos produz “Artéria umbilical única” na conclusão. Movimentos reduzidos ou ausentes substituem a frase de atividade normal.
+
+A placenta agora mantém três eixos independentes: descrição/topografia, relação com o orifício interno e achado agudo. Inserção baixa aceita distância opcional; prévia marginal e prévia produzem descrição e conclusão próprias. Coleção retroplacentária renderiza com ou sem medidas, sem bloquear o laudo. Acretismo e lagos venosos substituem a falsa normalidade placentária. Combinações como placenta anterior + prévia + acretismo foram validadas sem perda ou repetição.
+
+A matriz 23B1 percorre os estados acima nos estilos Clássico e Objetivo e acrescenta proibições explícitas contra BCF antigo em feto sem vitalidade, movimentos ativos em óbito, cordão não avaliado e placenta normal ao lado de patologia. A equivalência preexistente de 4.320 combinações do catálogo Clássico permaneceu byte a byte.
+
+- [x] Situação longitudinal/transversa e apresentação coerente.
+- [x] Vitalidade normal, ausente, bradicardia e taquicardia.
+- [x] Movimentos ativos, reduzidos e ausentes.
+- [x] Cordão não avaliado, três vasos e artéria umbilical única.
+- [x] Inserção baixa, prévia marginal e prévia.
+- [x] Coleção retroplacentária, acretismo e lagos venosos.
+- [x] Paridade Clássico/Objetivo e combinações independentes.
+- [ ] Próximo corte 23B: Doppler obstétrico, morfológicos, cervicometria e crescimento fetal opção por opção.
+
+## Ajuste paralelo — esquema visual das mamas
+
+A região retroareolar passou a ser tratada como localização própria no esquema, inclusive após arrastar o marcador para junto do mamilo. A legenda diferencia cisto, nódulo, margem lobulada, margem espiculada e calcificações. Em “Cistos múltiplos”, o achado principal continua sendo o único descrito no laudo; o médico pode acrescentar e reposicionar cistos extras apenas no desenho. Esses marcadores visuais não criam novos achados, não alteram BI-RADS e são removidos automaticamente se o achado de cistos múltiplos deixar de existir.
+
+## Arquivos da entrega 23B1 e do ajuste mamário
+
+- `apps/web/src/lib/deterministic/organs/obstetrica.ts`
+- `apps/web/src/lib/catalog/obstetricaParaCatalogo.ts`
+- `apps/api/src/server/renderer/categories/OBSTETRICA.ts`
+- `apps/api/src/server/renderer/__tests__/obstetrica-23b1-clinical-matrix.manual.ts`
+- `apps/web/src/lib/visualSchemas/adapters.ts`
+- `apps/web/src/components/visualSchemas/BreastSchema.tsx`
+- `apps/web/src/components/visualSchemas/VisualSchemaPanel.tsx`
+- `apps/web/src/lib/visualSchemas/__tests__/adapters.manual.ts`
+- `package.json`
 
 ## Arquivos da entrega 23A2
 

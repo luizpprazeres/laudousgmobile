@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { breastFindingsFromState, moveBreastFinding, moveThyroidFinding, thyroidFindingsFromState } from '../adapters'
+import { addVisualBreastCyst, breastFindingsFromState, moveBreastFinding, moveThyroidFinding, removeVisualBreastCyst, thyroidFindingsFromState } from '../adapters'
 import { initialTireoideState } from '../../deterministic'
 
 const thyroidAssets = [
@@ -41,6 +41,37 @@ const movedBreast = moveBreastFinding(breast, 'a', { side: 'esquerda', hour: 2, 
 assert.equal(movedBreast['achados.a.lado'], 'esquerda')
 assert.equal(movedBreast['achados.a.local'], 'quadrante superolateral')
 assert.equal(movedBreast['achados.a.dist_mamilo'], '4,4')
+
+const retroareolarBreast = {
+  ...breast,
+  'achados.a.local': 'região retroareolar',
+  'achados.a.margem': 'espiculada',
+}
+assert.equal(breastFindingsFromState(retroareolarBreast)[0]?.retroareolar, true)
+assert.equal(breastFindingsFromState(retroareolarBreast)[0]?.type, 'solid_spiculated')
+const movedToRetroareolar = moveBreastFinding(retroareolarBreast, 'a', { side: 'direita', hour: 12, nippleDistanceCm: 0.6, retroareolar: true })
+assert.equal(movedToRetroareolar['achados.a.local'], 'região retroareolar')
+
+const multipleCysts = {
+  achados_ids: ['cistos'],
+  'achados.cistos.lado': 'direita',
+  'achados.cistos.tipo': 'multiplos_cistos',
+  'achados.cistos.medidas': '0,8 x 0,6 x 0,5 cm',
+  'achados.cistos.local': 'quadrante superolateral',
+  'achados.cistos.horario': '11 horas',
+  'achados.cistos.dist_mamilo': '2,0',
+}
+const withVisualCyst = addVisualBreastCyst(multipleCysts, 'cistos', 'extra-1')
+assert.deepEqual(withVisualCyst.achados_ids, ['cistos'], 'o cisto visual não pode criar outro achado no laudo')
+const projectedMultipleCysts = breastFindingsFromState(withVisualCyst)
+assert.equal(projectedMultipleCysts.length, 2)
+assert.equal(projectedMultipleCysts[1]?.visualOnly, true)
+assert.equal(projectedMultipleCysts[1]?.sourceFindingId, 'cistos')
+const movedVisualCyst = moveBreastFinding(withVisualCyst, 'visual-cyst:extra-1', { side: 'esquerda', hour: 4, nippleDistanceCm: 3.2 })
+assert.equal(movedVisualCyst['schema_visual_cysts.extra-1.lado'], 'esquerda')
+assert.equal(movedVisualCyst['achados.cistos.lado'], 'direita', 'arrastar o cisto visual não pode alterar o achado descrito')
+const withoutVisualCyst = removeVisualBreastCyst(movedVisualCyst, 'visual-cyst:extra-1')
+assert.equal(breastFindingsFromState(withoutVisualCyst).length, 1)
 
 const thyroid = initialTireoideState()
 thyroid.nodulos = [{ id: 'n', lobo: 'lobo_direito', ecogenicidade: 'anecoica', margem: 'regulares', halo: null, forma: null, calcificacoes: null, vascularizacao: null, c1: '1,1', c2: '', c3: '', localizacao: 'no terço superior' }]

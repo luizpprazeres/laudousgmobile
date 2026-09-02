@@ -189,13 +189,13 @@ const CASOS: Caso[] = [
   },
   {
     /**
-     * A tela não tem cordão, e o canônico tem. Este caso trava o defeito
-     * histórico: cordão de três vasos afirmado em 100% dos laudos, sem ninguém
-     * ter olhado (restaurado no gate `equivalencia-real` em 16/08).
+     * A tela agora tem cordão, mas começa explicitamente em "Não informar".
+     * Este caso trava o defeito histórico: cordão de três vasos afirmado em
+     * 100% dos laudos sem ninguém ter olhado.
      */
-    nome: "o cordão NÃO pode ser afirmado",
+    nome: "cordão não avaliado NÃO pode ser afirmado",
     porque:
-      "a tela não pergunta sobre o cordão. Afirmar três vasos sem ninguém ter olhado foi defeito real, e este caso impede que volte pela porta da web.",
+      "o campo começa em 'Não informar'. Afirmar três vasos sem o médico selecionar a avaliação foi defeito real, e este caso impede que volte pela porta da web.",
     estado: medida(),
     proibe: ["três vasos", "3 vasos"],
   },

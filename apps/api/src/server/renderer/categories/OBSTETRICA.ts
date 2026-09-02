@@ -145,8 +145,8 @@ export const ObstetricaFindingsSchema = z.object({
    * posterior de inserção baixa" é inexprimível: `posterior` é topografia,
    * `inserção baixa` é relação. Ver docs/plano-biblioteca-implementacao-2026-08-12.md §A.5.3.
    *
-   * Só é consumido pelo CATÁLOGO (dormente atrás de flag). O renderer clássico
-   * ignora — nada muda em produção enquanto a flag não subir.
+   * Consumido tanto pelo renderer direto quanto pelo catálogo estruturado.
+   * É independente da localização: posterior + inserção baixa é um estado válido.
    */
   placenta_relacao_orificio: z
     .enum(["insercao_baixa", "marginal", "previa"])
@@ -163,8 +163,7 @@ export const ObstetricaFindingsSchema = z.object({
    * ACHADOS PATOLÓGICOS — catálogo aprovado pelo Dr. Luiz em 2026-08-16.
    * Ver docs/catalogo-patologias-obstetrica-spec-2026-08-16.md.
    *
-   * Todos OPCIONAIS e consumidos SÓ pelo catálogo (dormente atrás de flag).
-   * O renderer clássico os ignora — nada muda em produção até a flag subir.
+   * Todos OPCIONAIS e consumidos pelo renderer direto e pelo catálogo.
    *
    * NÃO incluem biometria (PIG/CIR/GIG) nem classes de líquido: essas já
    * existem, mais completas, nas specs do Writer V2. Duplicar criaria uma
@@ -820,6 +819,21 @@ export function placentaFrase(f: ObstetricaFindings, grannum = false): string | 
   const grauTxt = grauFmt(f.placenta_grau);
   const paren = grannumParen(f.placenta_grau, grannum); // "" se OFF/sem grau
   const eco = placentaEco(f, grannum); // ditada ou inferida (flag) ou null
+  const relacao = f.placenta_relacao_orificio;
+  const completarRelacao = (base: string): string => {
+    let frase = base;
+    if (relacao === "insercao_baixa") {
+      frase += ", estendendo-se ao segmento uterino inferior";
+      if (f.placenta_distancia_orificio_mm != null) {
+        frase += `. Sua borda inferior dista cerca de ${ptBr(f.placenta_distancia_orificio_mm)} mm do orifício interno do colo uterino, sem recobri-lo`;
+      }
+    } else if (relacao === "marginal") {
+      frase += ", estendendo-se inferiormente e margeando o orifício interno do colo uterino, sem evidência de recobrimento";
+    } else if (relacao === "previa") {
+      frase += ", estendendo-se ao segmento uterino inferior e recobrindo amplamente o orifício interno do colo uterino";
+    }
+    return `${frase}.`;
+  };
   if (f.numero_fetos >= 2) {
     const base =
       qtd >= 2 ? `${qtd === 2 ? "Duas" : qtd === 3 ? "Três" : qtd} placentas` : "Placenta única";
@@ -827,16 +841,18 @@ export function placentaFrase(f: ObstetricaFindings, grannum = false): string | 
     // Flag ON: grau vira parentético no fim; OFF: inline (byte-idêntico).
     const grau = !grannum && grauTxt ? `, ${grauTxt}` : "";
     const ecoTxt = eco ? `, com ecotextura ${eco}` : "";
-    return `${base}${loc}${grau}${ecoTxt}${paren}.`;
+    return completarRelacao(`${base}${loc}${grau}${ecoTxt}${paren}`);
   }
-  if (!f.placenta_localizacao && !eco && !grauTxt)
+  if (!f.placenta_localizacao && !eco && !grauTxt && !relacao && f.placenta_achado != null)
+    return null;
+  if (!f.placenta_localizacao && !eco && !grauTxt && !relacao)
     return "Placenta de aspecto normal.";
   let frase = "Placenta";
   if (f.placenta_localizacao) frase += ` de localização ${f.placenta_localizacao}`;
   if (!grannum && grauTxt) frase += `, ${grauTxt}`;
   if (eco) frase += `, com ecotextura ${eco}`;
   frase += paren;
-  return `${frase}.`;
+  return completarRelacao(frase);
 }
 
 /**
@@ -1122,6 +1138,7 @@ export function renderObstetricaClassico(
 
   const aspectos: string[] = [];
   const conclusao: string[] = [];
+  conclusao.push(ig.conclusaoClassico);
 
   if (gemelar) {
     // Primeira frase personalizada com quantidade + individualização.
@@ -1144,10 +1161,30 @@ export function renderObstetricaClassico(
       if (!ft) continue;
       const rot = ft.rotulo ?? String.fromCharCode(65 + i);
       aspectos.push(`\nFeto ${rot}:`);
-      aspectos.push(`Batimentos cardíacos presentes (BCF = ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm).`);
+      const vitalidade = ft.bcf_alteracao == null
+        ? {
+            achado: `Batimentos cardíacos presentes (BCF = ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm).`,
+            conclusao: null,
+          }
+        : vitalidadeClassica(ft, f.gestacao_inicial, ehEmbriao(f));
+      aspectos.push(vitalidade.achado);
+      if (vitalidade.conclusao) {
+        conclusao.push(`${vitalidade.conclusao.replace(/\.$/, "")} (feto ${rot}).`);
+      }
+      if (ft.movimentos_fetais != null) {
+        const movimentos = movimentosClassicos(ft);
+        if (movimentos) aspectos.push(movimentos);
+      }
       if (!f.gestacao_inicial) aspectos.push(...biometriaLinhas(ft));
       else aspectos.push(`Comprimento crânio-nádegas (CCN) de ${mm(ft.ccn_mm)} mm.`);
       aspectos.push(pesoLinha(ft));
+      const cordao = cordaoObjetivo(ft);
+      if (cordao) {
+        aspectos.push(cordao.achado);
+        if (cordao.conclusao) {
+          conclusao.push(`${cordao.conclusao.replace(/\.$/, "")} (feto ${rot}).`);
+        }
+      }
     }
     // Peso médio + divergência (cálculo determinístico).
     const pond = calcPonderal(f.fetos);
@@ -1158,11 +1195,14 @@ export function renderObstetricaClassico(
     }
     const plc = placentaFrase(f, grannum);
     if (plc) aspectos.push(`\n${plc}`);
+    const placentaRelacao = placentaRelacaoConclusao(f);
+    if (placentaRelacao) conclusao.push(placentaRelacao);
+    const placentaAchado = placentaAchadoObjetivo(f);
+    aspectos.push(...placentaAchado.achados);
+    conclusao.push(...placentaAchado.conclusao);
     const liq = liquido(f);
     aspectos.push(liq.corpo);
 
-    // Conclusão gemelar — IG determinística (Domingos).
-    conclusao.push(ig.conclusaoClassico);
     conclusao.push(liq.conclusao);
     if (pond.divergenciaG !== null) {
       const significativa = (pond.divergenciaPct ?? 0) >= 20;
@@ -1182,13 +1222,12 @@ export function renderObstetricaClassico(
       // placeholder "____".
       aspectos.unshift(`Saco gestacional de forma normal, com diâmetro médio de ${mm(calcDsm(f))} mm.`);
     }
-    aspectos.push(
-      f.gestacao_inicial
-        ? `Batimentos cardíacos ritmados (BCF = ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm).`
-        : `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm).`,
-    );
+    const vitalidade = vitalidadeClassica(ft, f.gestacao_inicial, ehEmbriao(f));
+    aspectos.push(vitalidade.achado);
+    if (vitalidade.conclusao) conclusao.push(vitalidade.conclusao);
     if (!f.gestacao_inicial) {
-      aspectos.push("Os movimentos fetais são ativos.");
+      const movimentos = movimentosClassicos(ft);
+      if (movimentos) aspectos.push(movimentos);
       aspectos.push("\nAs considerações sobre a anatomia fetal são as seguintes:");
       aspectos.push("As estruturas cranianas e da coluna vertebral são normais.");
       aspectos.push("O estômago e a bexiga foram bem identificados e com ecotextura homogênea.");
@@ -1201,11 +1240,20 @@ export function renderObstetricaClassico(
       aspectos.push(`Comprimento crânio-nádegas (CCN) de ${mm(ft.ccn_mm)} mm.`);
       aspectos.push("Vesícula vitelina de forma e dimensões normais.");
     }
+    const cordao = cordaoObjetivo(ft);
+    if (cordao) {
+      aspectos.push(cordao.achado);
+      if (cordao.conclusao) conclusao.push(cordao.conclusao);
+    }
+    const placentaRelacao = placentaRelacaoConclusao(f);
+    if (placentaRelacao) conclusao.push(placentaRelacao);
+    const placentaAchado = placentaAchadoObjetivo(f);
+    aspectos.push(...placentaAchado.achados);
+    conclusao.push(...placentaAchado.conclusao);
     const liq = liquido(f);
     aspectos.push(liq.corpo);
     if (f.gestacao_inicial) aspectos.push("Ovários de aspecto normal.");
 
-    conclusao.push(ig.conclusaoClassico);
     if (!f.gestacao_inicial) conclusao.push(liq.conclusao);
   }
 
@@ -1315,12 +1363,148 @@ export function pesoLinhaObj(f: ObstetricaFindings["fetos"][number]): string {
   return `Peso fetal estimado: ${g0(f.peso_g)} g${sufixo}.`;
 }
 
+type FetoObstetrico = ObstetricaFindings["fetos"][number];
+
+function vitalidadeClassica(
+  ft: FetoObstetrico,
+  gestacaoInicial: boolean,
+  embriao: boolean,
+): { achado: string; conclusao: string | null } {
+  if (ft.bcf_alteracao != null) return vitalidadeObjetiva(ft, gestacaoInicial, embriao);
+  return {
+    achado: gestacaoInicial
+      ? `Batimentos cardíacos ritmados (BCF = ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm).`
+      : `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm).`,
+    conclusao: null,
+  };
+}
+
+function movimentosClassicos(ft: FetoObstetrico): string | null {
+  if (ft.bcf_alteracao === "ausente") return null;
+  if (ft.movimentos_fetais === "ausentes") {
+    return "Não foram observados movimentos fetais durante o exame.";
+  }
+  if (ft.movimentos_fetais === "reduzidos") return "Movimentos fetais reduzidos.";
+  return "Os movimentos fetais são ativos.";
+}
+
+function vitalidadeObjetiva(
+  ft: FetoObstetrico,
+  gestacaoInicial: boolean,
+  embriao: boolean,
+): { achado: string; conclusao: string | null } {
+  if (ft.bcf_alteracao === "ausente") {
+    return gestacaoInicial
+      ? {
+          achado: "Batimentos cardíacos fetais não visualizados pelo modo B ou pelo modo Doppler.",
+          conclusao: `${embriao ? "Embrião" : "Feto"} sem vitalidade.`,
+        }
+      : { achado: "Ausência de batimentos cardíacos fetais.", conclusao: "Óbito fetal." };
+  }
+  if (ft.bcf_alteracao === "bradicardia" || ft.bcf_alteracao === "taquicardia") {
+    const baixa = ft.bcf_alteracao === "bradicardia";
+    return {
+      achado: ft.bcf_bpm == null
+        ? `Batimentos cardíacos presentes, com frequência ${baixa ? "reduzida" : "aumentada"}.`
+        : `Batimentos cardíacos presentes, com frequência de ${ptBr(ft.bcf_bpm)} bpm.`,
+      conclusao: baixa ? "Bradicardia fetal." : "Taquicardia fetal.",
+    };
+  }
+  return {
+    achado: `Batimentos cardíacos fetais (BCF): ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm.`,
+    conclusao: null,
+  };
+}
+
+function movimentosObjetivos(ft: FetoObstetrico): string | null {
+  if (ft.bcf_alteracao === "ausente") return null;
+  if (ft.movimentos_fetais === "ausentes") {
+    return "Não foram observados movimentos fetais durante o exame.";
+  }
+  if (ft.movimentos_fetais === "reduzidos") return "Movimentos fetais reduzidos.";
+  return "Movimentos fetais ativos.";
+}
+
+function cordaoObjetivo(ft: FetoObstetrico): { achado: string; conclusao: string | null } | null {
+  if (ft.cordao_vasos === "tres") {
+    return {
+      achado: "O cordão umbilical tem aspecto normal, com duas artérias e uma veia.",
+      conclusao: null,
+    };
+  }
+  if (ft.cordao_vasos === "dois") {
+    return {
+      achado: "O cordão umbilical tem dois vasos, sendo uma artéria e uma veia.",
+      conclusao: "Artéria umbilical única.",
+    };
+  }
+  return null;
+}
+
+function placentaAchadoObjetivo(
+  f: ObstetricaFindings,
+): { achados: string[]; conclusao: string[] } {
+  if (f.placenta_achado === "descolamento") {
+    const medidas = f.placenta_achado_medidas?.trim();
+    return {
+      achados: [
+        `Imagem hipoecoica e heterogênea${medidas ? `, medindo ${medidas}` : ""}, situada entre a placenta e o miométrio, sem vascularização.`,
+      ],
+      conclusao: [
+        "Coleção retroplacentária, que tem como diagnóstico mais provável descolamento placentário.",
+      ],
+    };
+  }
+  if (f.placenta_achado === "acretismo") {
+    return {
+      achados: [
+        "Placenta apresentando perda focal da zona hipoecoica retroplacentária e acentuado adelgaçamento do miométrio subjacente. Ademais, imagens anecoicas intraplacentárias, irregulares, algumas apresentando fluxo turbulento ao estudo Doppler, associadas a aumento da vascularização na interface uterovesical.",
+      ],
+      conclusao: [
+        "Achados ultrassonográficos que aumentam a suspeição para espectro de acretismo placentário (PAS). Convém, a critério clínico, avaliação dirigida em serviço de alto risco e controle ultrassonográfico.",
+      ],
+    };
+  }
+  if (f.placenta_achado === "lagos_venosos") {
+    return {
+      achados: [
+        "Placenta apresentando imagens anecoicas intraparenquimatosas, bem delimitadas, de contornos regulares, algumas demonstrando fluxo de baixa velocidade ao estudo Doppler.",
+      ],
+      conclusao: ["Lagos venosos placentários."],
+    };
+  }
+  return { achados: [], conclusao: [] };
+}
+
+function placentaRelacaoConclusao(f: ObstetricaFindings): string | null {
+  if (f.placenta_relacao_orificio === "insercao_baixa") return "Placenta de inserção baixa.";
+  if (f.placenta_relacao_orificio === "marginal") return "Placenta prévia marginal.";
+  if (f.placenta_relacao_orificio === "previa") return "Placenta prévia.";
+  return null;
+}
+
 /** Placenta objetiva (frase enxuta). null = não descrita. */
 export function placentaFraseObj(f: ObstetricaFindings, grannum = false): string | null {
   const g = grauFmt(f.placenta_grau);
   const grauTxt = g ? `${g} de Grannum et al.` : null;
   const paren = grannumParen(f.placenta_grau, grannum);
   const eco = placentaEco(f, grannum);
+  const relacao = f.placenta_relacao_orificio;
+  const temDescricao = Boolean(f.placenta_localizacao || grauTxt || eco);
+  const completarRelacao = (base: string): string => {
+    let frase = base;
+    if (relacao === "insercao_baixa") {
+      frase += ", estendendo-se ao segmento uterino inferior";
+      if (f.placenta_distancia_orificio_mm != null) {
+        frase += `. Sua borda inferior dista cerca de ${ptBr(f.placenta_distancia_orificio_mm)} mm do orifício interno do colo uterino, sem recobri-lo`;
+      }
+    } else if (relacao === "marginal") {
+      frase += ", estendendo-se inferiormente e margeando o orifício interno do colo uterino, sem evidência de recobrimento";
+    } else if (relacao === "previa") {
+      frase += ", estendendo-se ao segmento uterino inferior e recobrindo amplamente o orifício interno do colo uterino";
+    }
+    return `${frase}.`;
+  };
   if (f.numero_fetos >= 2) {
     const qtd = f.placenta_quantidade ?? f.numero_fetos;
     const base =
@@ -1330,25 +1514,26 @@ export function placentaFraseObj(f: ObstetricaFindings, grannum = false): string
     const loc = f.placenta_localizacao ? `, ${f.placenta_localizacao}` : "";
     if (grannum) {
       const ecoTxt = eco ? `, com ecotextura ${eco}` : "";
-      return `${base}${loc}${ecoTxt}${paren}.`;
+      return completarRelacao(`${base}${loc}${ecoTxt}${paren}`);
     }
     const grau = grauTxt ? `, ${grauTxt}` : "";
-    return `${base}${loc}${grau}.`;
+    return completarRelacao(`${base}${loc}${grau}`);
   }
+  if (!temDescricao && !relacao && f.placenta_achado != null) return null;
   if (grannum) {
-    if (!f.placenta_localizacao && !eco && paren === "")
+    if (!f.placenta_localizacao && !eco && paren === "" && !relacao)
       return "Placenta de aspecto normal.";
     let frase = "Placenta";
     if (f.placenta_localizacao) frase += ` de localização ${f.placenta_localizacao}`;
     if (eco) frase += `, com ecotextura ${eco}`;
     frase += paren;
-    return `${frase}.`;
+    return completarRelacao(frase);
   }
-  if (!f.placenta_localizacao && !grauTxt) return "Placenta de aspecto normal.";
+  if (!f.placenta_localizacao && !grauTxt && !relacao) return "Placenta de aspecto normal.";
   let frase = "Placenta";
   if (f.placenta_localizacao) frase += ` de localização ${f.placenta_localizacao}`;
   if (grauTxt) frase += `, ${grauTxt}`;
-  return `${frase}.`;
+  return completarRelacao(frase);
 }
 
 /** Render objetivo do laudo obstétrico. */
@@ -1377,6 +1562,7 @@ export function renderObstetricaObjetivo(
 
   const achados: string[] = [];
   const impressao: string[] = [];
+  impressao.push(...ig.conclusaoObjetivo);
 
   if (gemelar) {
     const qtdLabel =
@@ -1404,15 +1590,28 @@ export function renderObstetricaObjetivo(
       if (!ft) continue;
       const rot = ft.rotulo ?? String.fromCharCode(65 + i);
       achados.push(`\nFeto ${rot}:`);
-      achados.push(
-        `Batimentos cardíacos fetais (BCF): ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm.`,
-      );
+      const vitalidade = vitalidadeObjetiva(ft, f.gestacao_inicial, ehEmbriao(f));
+      achados.push(vitalidade.achado);
+      if (vitalidade.conclusao) {
+        impressao.push(`${vitalidade.conclusao.replace(/\.$/, "")} (feto ${rot}).`);
+      }
+      if (ft.movimentos_fetais != null) {
+        const movimentos = movimentosObjetivos(ft);
+        if (movimentos) achados.push(movimentos);
+      }
       if (f.gestacao_inicial) {
         achados.push(`Comprimento crânio-nádegas (CCN): ${mm1(ft.ccn_mm)} mm.`);
       } else {
         achados.push(...biometriaLinhasObj(ft));
       }
       achados.push(pesoLinhaObj(ft));
+      const cordao = cordaoObjetivo(ft);
+      if (cordao) {
+        achados.push(cordao.achado);
+        if (cordao.conclusao) {
+          impressao.push(`${cordao.conclusao.replace(/\.$/, "")} (feto ${rot}).`);
+        }
+      }
     }
     const pond = calcPonderal(f.fetos);
     if (pond.pesoMedio !== null) {
@@ -1420,12 +1619,16 @@ export function renderObstetricaObjetivo(
         `\nPeso fetal médio: ${g0(pond.pesoMedio)} g. Divergência ponderal: ${g0(pond.divergenciaG)} g (${ptBr1(pond.divergenciaPct ?? 0)}%).`,
       );
     }
-    const plc = placentaFraseObj(f);
+    const plc = placentaFraseObj(f, grannum);
     if (plc) achados.push(plc);
+    const placentaRelacao = placentaRelacaoConclusao(f);
+    if (placentaRelacao) impressao.push(placentaRelacao);
+    const placentaAchado = placentaAchadoObjetivo(f);
+    achados.push(...placentaAchado.achados);
+    impressao.push(...placentaAchado.conclusao);
     const liq = liquido(f);
     achados.push(liq.corpo);
 
-    impressao.push(...ig.conclusaoObjetivo);
     impressao.push(liq.conclusao);
     if (pond.divergenciaG !== null) {
       const significativa = (pond.divergenciaPct ?? 0) >= 20;
@@ -1446,30 +1649,49 @@ export function renderObstetricaObjetivo(
       let fetoFrase = `${ehEmbriao(f) ? "Embrião" : "Feto"} único, em situação ${apres}`;
       if (ft.dorso) fetoFrase += `, com dorso ${ft.dorso}`;
       achados.push(`${fetoFrase}.`);
-      achados.push(
-        `Batimentos cardíacos fetais (BCF): ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm.`,
-      );
+      const vitalidade = vitalidadeObjetiva(ft, true, ehEmbriao(f));
+      achados.push(vitalidade.achado);
+      if (vitalidade.conclusao) impressao.push(vitalidade.conclusao);
       achados.push(`Comprimento crânio-nádegas (CCN): ${mm1(ft.ccn_mm)} mm.`);
       achados.push("Vesícula vitelina de forma e dimensões normais.");
+      const cordao = cordaoObjetivo(ft);
+      if (cordao) {
+        achados.push(cordao.achado);
+        if (cordao.conclusao) impressao.push(cordao.conclusao);
+      }
       const liq = liquido(f);
       achados.push(liq.corpo);
       achados.push("Ovários de aspecto normal.");
 
-      impressao.push(...ig.conclusaoObjetivo);
     } else {
       achados.push(fetoApresentacaoFrase(ft, false, false));
-      achados.push(
-        `Batimentos cardíacos fetais (BCF): ${ft.bcf_bpm !== null ? ptBr(ft.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
-      );
+      const vitalidade = vitalidadeObjetiva(ft, false, false);
+      const movimentos = movimentosObjetivos(ft);
+      if (ft.bcf_alteracao == null && ft.movimentos_fetais == null && movimentos) {
+        achados.push(`${vitalidade.achado} ${movimentos}`);
+      } else {
+        achados.push(vitalidade.achado);
+        if (movimentos) achados.push(movimentos);
+      }
+      if (vitalidade.conclusao) impressao.push(vitalidade.conclusao);
       achados.push("\nBiometria fetal:");
       achados.push(...biometriaLinhasObj(ft));
       achados.push(pesoLinhaObj(ft));
+      const cordao = cordaoObjetivo(ft);
+      if (cordao) {
+        achados.push(cordao.achado);
+        if (cordao.conclusao) impressao.push(cordao.conclusao);
+      }
       const plc = placentaFraseObj(f, grannum);
       if (plc) achados.push(plc);
+      const placentaRelacao = placentaRelacaoConclusao(f);
+      if (placentaRelacao) impressao.push(placentaRelacao);
+      const placentaAchado = placentaAchadoObjetivo(f);
+      achados.push(...placentaAchado.achados);
+      impressao.push(...placentaAchado.conclusao);
       const liq = liquido(f);
       achados.push(liq.corpo);
 
-      impressao.push(...ig.conclusaoObjetivo);
       impressao.push(liq.conclusao);
     }
   }

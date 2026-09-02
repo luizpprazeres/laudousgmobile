@@ -173,7 +173,33 @@ const fetoModule: OrganModule = {
           { value: 'posterior', label: 'Posterior' },
         ],
       },
+      {
+        key: 'vitalidade', label: 'Atividade cardíaca fetal', kind: 'segmented',
+        options: [
+          { value: 'normal', label: 'Presente', isDefault: true },
+          { value: 'ausente', label: 'Ausente' },
+          { value: 'bradicardia', label: 'Bradicardia' },
+          { value: 'taquicardia', label: 'Taquicardia' },
+        ],
+      },
       { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '145' },
+      {
+        key: 'movimentos', label: 'Movimentos fetais', kind: 'segmented',
+        options: [
+          { value: 'normais', label: 'Ativos', isDefault: true },
+          { value: 'reduzidos', label: 'Reduzidos' },
+          { value: 'ausentes', label: 'Ausentes' },
+        ],
+      },
+      {
+        key: 'cordao_vasos', label: 'Vasos do cordão umbilical', kind: 'segmented',
+        hint: 'só informe quando avaliado',
+        options: [
+          { value: 'nao_avaliado', label: 'Não informar', isDefault: true },
+          { value: 'tres', label: '2 artérias + 1 veia' },
+          { value: 'dois', label: 'Artéria umbilical única' },
+        ],
+      },
     ],
   },
   initialState: (): OrganState => ({
@@ -181,25 +207,57 @@ const fetoModule: OrganModule = {
     'situacao.longitudinal.apresentacao': 'cefálica',
     'situacao.transversa.polo_cefalico': 'à direita',
     dorso: '',
+    vitalidade: 'normal',
     bcf: '',
+    movimentos: 'normais',
+    cordao_vasos: 'nao_avaliado',
   }),
   compose: (st): OrganComposition => {
     const situacao = String(st.situacao || 'longitudinal')
     const apres = String(st['situacao.longitudinal.apresentacao'] || 'cefálica')
     const polo = String(st['situacao.transversa.polo_cefalico'] || 'à direita')
     const dorso = String(st.dorso || '').trim()
+    const vitalidade = String(st.vitalidade || 'normal')
+    const movimentos = String(st.movimentos || 'normais')
+    const cordao = String(st.cordao_vasos || 'nao_avaliado')
     const bcf = numOrNull(st.bcf)
+    const bcfLinha = vitalidade === 'ausente'
+      ? 'Ausência de batimentos cardíacos fetais.'
+      : vitalidade === 'bradicardia'
+        ? bcf === null
+          ? 'Batimentos cardíacos presentes, com frequência reduzida.'
+          : `Batimentos cardíacos presentes, com frequência de ${ptBr(bcf)} bpm.`
+      : vitalidade === 'taquicardia'
+        ? bcf === null
+          ? 'Batimentos cardíacos presentes, com frequência aumentada.'
+          : `Batimentos cardíacos presentes, com frequência de ${ptBr(bcf)} bpm.`
+        : `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`
+    const movimentosLinha = vitalidade === 'ausente'
+      ? null
+      : movimentos === 'ausentes'
+        ? 'Não foram observados movimentos fetais durante o exame.'
+        : movimentos === 'reduzidos' ? 'Movimentos fetais reduzidos.' : 'Os movimentos fetais são ativos.'
     const linhas = [
       situacao === 'transversa'
         ? `Feto único, em situação transversa, com polo cefálico ${polo}${dorso ? `, e dorso ${dorso}` : ''}.`
         : `Feto único, em apresentação ${apres}${dorso ? `, com dorso ${dorso}` : ''}.`,
-      `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`,
-      'Os movimentos fetais são ativos.',
+      bcfLinha,
+      movimentosLinha,
       '\nAs considerações sobre a anatomia fetal são as seguintes:',
       'As estruturas cranianas e da coluna vertebral são normais.',
       'O estômago e a bexiga foram bem identificados e com ecotextura homogênea.',
-    ]
-    return { body: linhas.join('\n'), conclusion: [], isNormal: true }
+      cordao === 'tres' ? 'O cordão umbilical tem aspecto normal, com duas artérias e uma veia.' : null,
+      cordao === 'dois' ? 'O cordão umbilical tem dois vasos, sendo uma artéria e uma veia.' : null,
+    ].filter((linha): linha is string => Boolean(linha))
+    const conclusion = [
+      vitalidade === 'ausente' ? 'Óbito fetal.' : null,
+      vitalidade === 'bradicardia' ? 'Bradicardia fetal.' : null,
+      vitalidade === 'taquicardia' ? 'Taquicardia fetal.' : null,
+      movimentos === 'ausentes' && vitalidade !== 'ausente' ? 'Ausência de movimentos fetais durante o exame.' : null,
+      movimentos === 'reduzidos' && vitalidade !== 'ausente' ? 'Movimentos fetais reduzidos.' : null,
+      cordao === 'dois' ? 'Artéria umbilical única.' : null,
+    ].filter((item): item is string => Boolean(item))
+    return { body: linhas.join('\n'), conclusion, isNormal: conclusion.length === 0 }
   },
 }
 
@@ -255,21 +313,82 @@ const placentaModule: OrganModule = {
           },
         ],
       },
+      {
+        key: 'relacao_orificio',
+        label: 'Relação com o orifício interno do colo',
+        kind: 'segmented',
+        hint: 'eixo independente da localização',
+        options: [
+          { value: 'nao_informada', label: 'Não informar', isDefault: true },
+          {
+            value: 'insercao_baixa',
+            label: 'Inserção baixa',
+            subFields: [{ key: 'distancia_mm', label: 'Distância da borda ao OI (mm, opcional)', kind: 'text', placeholder: '12' }],
+          },
+          { value: 'marginal', label: 'Prévia marginal' },
+          { value: 'previa', label: 'Prévia' },
+        ],
+      },
+      {
+        key: 'achado',
+        label: 'Achado placentário',
+        kind: 'segmented',
+        options: [
+          { value: 'nenhum', label: 'Sem achado', isDefault: true },
+          {
+            value: 'descolamento',
+            label: 'Coleção retroplacentária',
+            subFields: [{ key: 'medidas', label: 'Medidas (opcional)', kind: 'text', placeholder: '3,2 x 1,8 cm' }],
+          },
+          { value: 'acretismo', label: 'Sinais de acretismo' },
+          { value: 'lagos_venosos', label: 'Lagos venosos' },
+        ],
+      },
     ],
   },
-  initialState: (): OrganState => ({ estado: 'normal' }),
+  initialState: (): OrganState => ({ estado: 'normal', relacao_orificio: 'nao_informada', achado: 'nenhum' }),
   compose: (st): OrganComposition => {
-    if (String(st.estado) !== 'detalhar') {
-      return { body: 'Placenta de aspecto normal.', conclusion: [], isNormal: true }
-    }
+    const relacao = String(st.relacao_orificio || 'nao_informada')
+    const achado = String(st.achado || 'nenhum')
     const loc = String(st['estado.detalhar.localizacao'] || '').trim()
     const grau = String(st['estado.detalhar.grau'] || '').trim().replace(/^grau\s*/i, '')
     const eco = String(st['estado.detalhar.ecotextura'] || '').trim()
-    let frase = 'Placenta'
-    if (loc) frase += ` de localização ${loc}`
-    if (grau) frase += `, grau ${grau}`
-    if (eco) frase += `, com ecotextura ${eco}`
-    return { body: `${frase}.`, conclusion: [], isNormal: true }
+    const corpo: string[] = []
+    const conclusion: string[] = []
+    if (String(st.estado) === 'detalhar' || relacao !== 'nao_informada') {
+      let frase = 'Placenta'
+      if (loc) frase += ` de localização ${loc}`
+      if (grau) frase += `, grau ${grau}`
+      if (eco) frase += `, com ecotextura ${eco}`
+      if (relacao === 'insercao_baixa') {
+        frase += ', estendendo-se ao segmento uterino inferior'
+        const distancia = numOrNull(st['relacao_orificio.insercao_baixa.distancia_mm'])
+        if (distancia !== null) frase += `. Sua borda inferior dista cerca de ${ptBr(distancia)} mm do orifício interno do colo uterino, sem recobri-lo`
+        conclusion.push('Placenta de inserção baixa.')
+      } else if (relacao === 'marginal') {
+        frase += ', estendendo-se inferiormente e margeando o orifício interno do colo uterino, sem evidência de recobrimento'
+        conclusion.push('Placenta prévia marginal.')
+      } else if (relacao === 'previa') {
+        frase += ', estendendo-se ao segmento uterino inferior e recobrindo amplamente o orifício interno do colo uterino'
+        conclusion.push('Placenta prévia.')
+      }
+      corpo.push(`${frase}.`)
+    } else if (achado === 'nenhum') {
+      corpo.push('Placenta de aspecto normal.')
+    }
+
+    if (achado === 'descolamento') {
+      const medidas = String(st['achado.descolamento.medidas'] || '').trim()
+      corpo.push(`Imagem hipoecoica e heterogênea${medidas ? `, medindo ${medidas}` : ''}, situada entre a placenta e o miométrio, sem vascularização.`)
+      conclusion.push('Coleção retroplacentária, que tem como diagnóstico mais provável descolamento placentário.')
+    } else if (achado === 'acretismo') {
+      corpo.push('Placenta apresentando perda focal da zona hipoecoica retroplacentária e acentuado adelgaçamento do miométrio subjacente. Ademais, imagens anecoicas intraplacentárias, irregulares, algumas apresentando fluxo turbulento ao estudo Doppler, associadas a aumento da vascularização na interface uterovesical.')
+      conclusion.push('Achados ultrassonográficos que aumentam a suspeição para espectro de acretismo placentário (PAS). Convém, a critério clínico, avaliação dirigida em serviço de alto risco e controle ultrassonográfico.')
+    } else if (achado === 'lagos_venosos') {
+      corpo.push('Placenta apresentando imagens anecoicas intraparenquimatosas, bem delimitadas, de contornos regulares, algumas demonstrando fluxo de baixa velocidade ao estudo Doppler.')
+      conclusion.push('Lagos venosos placentários.')
+    }
+    return { body: corpo.join('\n'), conclusion, isNormal: conclusion.length === 0 }
   },
 }
 
