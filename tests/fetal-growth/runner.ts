@@ -71,9 +71,19 @@ const stage2 = classifyFetalGrowth({
   efwPercentile: 5,
   efwPercentileSource: source,
   umbilicalArteryEndDiastolicFlow: "absent",
+  umbilicalFlowAbnormalInMajorityBothArteries: true,
   umbilicalFlowConfirmedInRequiredInterval: true,
 });
 assert.equal(stage2.stage, 2);
+
+const absentUaIntervalOnly = classifyFetalGrowth({
+  efwPercentile: 5,
+  efwPercentileSource: source,
+  umbilicalArteryEndDiastolicFlow: "absent",
+  umbilicalFlowConfirmedInRequiredInterval: true,
+});
+assert.equal(absentUaIntervalOnly.stage, undefined);
+assert.match(absentUaIntervalOnly.pendingCriteria[0]?.confirmationRequirement ?? "", /50%.*duas artérias/i);
 
 const stage3 = classifyFetalGrowth({
   efwPercentile: 4,
@@ -177,6 +187,7 @@ assert.match(renderedNormal.achados.join(" "), /versão publicada em novembro de
 const estadoWebStage2 = structuredClone(estadoWebNormal);
 estadoWebStage2.doppler["realizado.sim.umbilical"] = "diastole_ausente";
 estadoWebStage2.doppler["realizado.sim.umbilical.diastole_ausente.confirmada"] = "sim";
+estadoWebStage2.doppler["realizado.sim.umbilical.diastole_ausente.mais_50_duas_arterias"] = "sim";
 const payloadStage2 = fetalGrowthDaTela(estadoWebStage2);
 assert.ok(payloadStage2);
 const renderedStage2 = renderFetalGrowthModule(
@@ -185,6 +196,21 @@ const renderedStage2 = renderFetalGrowthModule(
   0,
 );
 assert.match(renderedStage2.conclusao.join(" "), /estágio II/i);
+assert.match(renderedStage2.achados.join(" "), /percentil 6.*Intergrowth-21st/i);
+
+const estadoSemDoppler = {
+  ig: { bio_sem: "30", bio_dias: "0" },
+  crescimento_fetal: {
+    avaliar: "sim",
+    "avaliar.sim.percentil": "6",
+    "avaliar.sim.fonte": "Intergrowth-21st",
+  },
+};
+const payloadSemDoppler = fetalGrowthDaTela(estadoSemDoppler);
+assert.ok(payloadSemDoppler);
+assert.equal(payloadSemDoppler.umbilicalArteryEndDiastolicFlow, "present");
+assert.equal((payloadSemDoppler.ductusVenosus as Record<string, unknown>).diastolicFlow, "present");
+assert.equal(payloadSemDoppler.dopplerAssessmentCompleteAndNormal, false);
 
 const adapted = adaptarObstetrica(estadoWebStage2);
 const obstetricaParsed = ObstetricaFindingsSchema.parse(adapted.dados);
@@ -213,4 +239,4 @@ for (const objetivo of [false, true]) {
   assert.doesNotMatch(fullReport, /Perfil hemodinâmico fetal é normal/i);
 }
 
-console.log("fetal-growth: 54 verificações clínicas e de integração aprovadas");
+console.log("fetal-growth: matriz clínica e de integração aprovada");

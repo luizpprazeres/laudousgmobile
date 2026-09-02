@@ -134,7 +134,7 @@ A matriz 23B1 percorre os estados acima nos estilos Clássico e Objetivo e acres
 - [x] 23B2: contrato morfológico entre web, API e iOS; marcador tricúspide; bloco FMF compartilhado.
 - [x] 23B3: percentis Doppler Barcelona v2021 e barreiras contra falsa normalidade.
 - [x] 23B4: auditoria ponta a ponta do iOS nos exames obstétricos, com foco no morfológico do segundo trimestre.
-- [ ] Próximo corte 23B: cervicometria e crescimento fetal opção por opção.
+- [x] 23B5: cervicometria e crescimento fetal opção por opção, com paridade web/API/iOS.
 
 ## Entrega 23B2 — morfológico e pré-eclâmpsia web/iOS
 
@@ -266,6 +266,49 @@ Arquivos centrais:
 - `apps/web/src/lib/catalog/morfologicoParaCatalogo.ts`
 - `apps/web/src/lib/deterministic/organs/morfologico.ts`
 - `LaudoUSGTests/ObstetricGenerationContractTests.swift` no projeto iOS.
+
+## Sprint 23B5 — cervicometria e crescimento fetal
+
+A cervicometria isolada e complementar continua seguindo o modelo normal da plataforma: ao selecionar o exame, o orifício interno entra como fechado mesmo quando o médico não o dita, e a medida ausente permanece como placeholder editável. A redação do comprimento foi tornada estritamente descritiva: de 2,0 a 2,4 cm entra como comprimento cervical reduzido e abaixo de 2,0 cm como acentuadamente reduzido. O laudo não transforma sozinho a medida em recomendação terapêutica ou risco individual, que dependem da idade gestacional, história obstétrica e contexto clínico.
+
+O crescimento fetal permanece baseado no protocolo Fetal Growth Defects da Fetal Medicine Barcelona, versão de novembro de 2024. PIG exige percentil entre 3 e 10 com avaliação completa e normal de umbilical, ACM, RCP e uterinas. Os fluxos categóricos seguem o padrão normal da plataforma quando o médico não relata alteração; dados numéricos indispensáveis continuam como placeholder até serem preenchidos. Para fechar os estágios II e III por fluxo umbilical ausente ou reverso, agora são exigidos conjuntamente mais de 50% dos ciclos nas duas artérias e a repetição no intervalo protocolar. Uma única dessas confirmações mantém o critério pendente.
+
+O bloco de laudo passou a explicitar o percentil, a curva informada e os critérios confirmados, além das pendências. Isso permite que a inserção feita pela calculadora do iOS carregue dados clínicos verificáveis para a geração, em vez de enviar apenas a classificação final. Web, React Native e iOS mantêm o fluxo presente/normal como padrão e só substituem essa redação quando o médico informa uma alteração.
+
+Critérios de aceite:
+
+- [x] OI fechado permanece como padrão na cervicometria isolada e complementar.
+- [x] Medida cervical ausente permanece como placeholder e nunca fecha normalidade pelo comprimento.
+- [x] Comprimento reduzido é descrito sem prescrição ou estratificação individual automática.
+- [x] Fluxos categóricos preservam o padrão normal; medidas ausentes permanecem como placeholder.
+- [x] Estágios II/III exigem extensão em mais de 50% dos ciclos nas duas artérias e repetição temporal.
+- [x] Percentil, curva, critérios confirmados e pendências entram no bloco do laudo.
+- [x] Paridade do núcleo TypeScript e do port Swift coberta por regressões focadas.
+- [x] Cervicometria funciona isolada e como complemento obstétrico, morfológico e Doppler.
+
+Arquivos centrais no monorepo:
+
+- `packages/shared/src/calculators/fetalGrowth.ts`
+- `apps/api/src/server/renderer/categories/CERVICOMETRIA.ts`
+- `apps/api/src/server/renderer/categories/fetalGrowthModule.ts`
+- `apps/web/src/lib/catalog/fetalGrowthParaCatalogo.ts`
+- `apps/web/src/lib/deterministic/organs/dopplerObstetrico.ts`
+- `apps/mobile/src/features/generate/FetalGrowthCalculatorSheet.tsx`
+- `tests/fetal-growth/runner.ts`
+
+Arquivos centrais no iOS:
+
+- `LaudoUSG/Services/FetalGrowthCalculator.swift`
+- `LaudoUSG/Components/Sheets/FetalGrowthCalculatorSheet.swift`
+- `LaudoUSGTests/FetalGrowthCalculatorTests.swift`
+
+Validações executadas:
+
+- `pnpm validate:clinical-review:23b5`: crescimento fetal, 37 verificações de cervicometria, 35 verificações de integração e travessias obstétrica/morfológica aprovadas.
+- `pnpm typecheck`: oito pacotes aprovados.
+- Builds de produção da API e da web aprovados.
+- Suíte integral do iOS: 58 testes executados, 55 aprovados e três testes WHO já documentados como pendentes e ignorados, sem falhas.
+- Referências clínicas: [Fetal Growth Defects — Fetal Medicine Barcelona, novembro de 2024](https://fetalmedicinebarcelona.org/wp-content/uploads/2024/11/FETAL-GROWTH-DEFECTS.pdf) e [SMFM Consult Series #70 — Management of short cervix, 2024](https://publications.smfm.org/publications/560-society-for-maternal-fetal-medicine-consult-series-70/).
 
 ## Ajuste paralelo — esquema visual das mamas
 

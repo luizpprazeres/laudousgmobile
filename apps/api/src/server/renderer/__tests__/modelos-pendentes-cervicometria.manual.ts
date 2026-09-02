@@ -91,7 +91,7 @@ const cervico: CervicometriaFindings = {
 };
 const cervicoObj = renderCervicometria(cervico, null, { objetivo: true });
 objetivoValido("cervicometria", cervicoObj);
-check("cervicometria: limiar clínico preservado", /alto risco para trabalho de parto prematuro/.test(cervicoObj), cervicoObj);
+check("cervicometria: comprimento acentuadamente reduzido", /Comprimento cervical acentuadamente reduzido/.test(cervicoObj), cervicoObj);
 
 const mskObj = renderMusculoesqueletico(
   { laudos: [{ segmento: "ombro", lado: "direito", alteracoes: [] }] },

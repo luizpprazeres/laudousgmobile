@@ -220,6 +220,7 @@ for (const estilo of estilos({
     mcaPiBelowP5: { present: false, confirmed: false },
     meanUterinePiAboveP95: false,
     umbilicalArteryEndDiastolicFlow: "present",
+    umbilicalFlowAbnormalInMajorityBothArteries: false,
     umbilicalFlowConfirmedInRequiredInterval: false,
     ductusVenosus: {
       piAboveP95: false,

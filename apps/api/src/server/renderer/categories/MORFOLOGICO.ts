@@ -224,14 +224,16 @@ REGRAS:
    o objeto SOMENTE quando o médico disser que realizou/quer acrescentar a
    cervicometria ou ditar a medida do colo; caso contrário, null. A medida OI→OE
    e a distância da placenta são em cm (converta mm→cm). OI fechado é true por
-   padrão dentro do objeto e false só quando aberto/dilatado/afunilado. Nunca
-   invente a medida.
+   padrão dentro do modelo e false quando aberto/dilatado/afunilado. Nunca
+   invente a medida; quando ausente, o renderer mantém o placeholder.
 10. ${DOPPLER_MODULE_EXTRACTION_RULES}
 11. crescimento_fetal — use null por padrão. Só preencha quando o médico
     fornecer explicitamente o percentil do PFE e a curva/fonte. Confirmação de
     segunda medida só pode ser true quando tiver sido dita com o intervalo
-    exigido; NUNCA deduza confirmação, PIG ou estágio de Gratacós de uma medida
-    isolada. O servidor fará a classificação determinística.`;
+    exigido. Fluxo umbilical ausente/reverso só fecha estágio quando também foi
+    descrito em mais de 50% dos ciclos nas duas artérias. NUNCA deduza
+    confirmação, PIG ou estágio de Gratacós de uma medida isolada. O servidor
+    fará a classificação determinística.`;
 
 // ---------------------------------------------------------------------------
 function ptBr(n: number): string {

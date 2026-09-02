@@ -95,6 +95,9 @@ export function fetalGrowthDaTela(estado: EstadoExame): Record<string, unknown> 
     },
     meanUterinePiAboveP95: calculado.arteriasUterinas?.pathological === true,
     umbilicalArteryEndDiastolicFlow: umbilicalFlow,
+    umbilicalFlowAbnormalInMajorityBothArteries:
+      confirmationKey !== '' &&
+      texto(doppler, `${dopplerPrefix}umbilical.${flowRaw}.mais_50_duas_arterias`) === 'sim',
     umbilicalFlowConfirmedInRequiredInterval:
       confirmationKey !== '' && texto(doppler, confirmationKey) === 'sim',
     ductusVenosus: {

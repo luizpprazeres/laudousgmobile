@@ -185,7 +185,7 @@ const CASOS: Caso[] = [
       "realizada.sim.observacoes": "",
     }),
     exige: ["via transvaginal", "CERVICOMETRIA:", "2,2 cm"],
-    exigeNaConclusao: ["Colo uterino um pouco curto", "Pontos de cerclagem"],
+    exigeNaConclusao: ["Comprimento cervical reduzido", "Pontos de cerclagem"],
   },
   {
     /**

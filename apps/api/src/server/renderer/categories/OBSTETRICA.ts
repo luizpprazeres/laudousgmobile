@@ -608,7 +608,8 @@ para o valor mais parecido.
     o objeto SOMENTE quando o médico disser que realizou/quer acrescentar a
     cervicometria ou ditar a medida do colo. Caso contrário, cervicometria = null.
     Dentro do objeto: colo_oi_oe_cm é a distância OI→OE em cm (mm → cm);
-    orificio_interno_fechado = false só se aberto/dilatado/afunilado;
+    orificio_interno_fechado = true por padrão e false só se
+    aberto/dilatado/afunilado;
     placenta_distancia_cm é a distância da borda placentária ao OI em cm;
     placenta_distante = true só quando ele disser distante sem medir;
     cerclagem = true se houver pontos de cerclagem; observacoes recebe apenas
@@ -622,8 +623,10 @@ para o valor mais parecido.
     podem ser true quando o médico disser que foram repetidas no intervalo
     exigido; NUNCA as deduza de uma medida isolada. Não classifique PIG ou um
     estágio de Gratacós por conta própria: o servidor fará a classificação a
-    partir dos campos estruturados. Campo não dito deve permanecer false/default,
-    sem inventar Doppler normal, CTG patológico ou confirmação.`;
+    partir dos campos estruturados. Fluxo ausente/reverso da artéria umbilical
+    só fecha estágio quando também foi descrito em mais de 50% dos ciclos nas
+    duas artérias. Campo não dito deve permanecer false/null, sem inventar
+    Doppler normal, CTG patológico ou confirmação.`;
 
 // ---------------------------------------------------------------------------
 // Formatação e cálculos determinísticos

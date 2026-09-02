@@ -1,11 +1,12 @@
 /**
  * GOLDEN da CERVICOMETRIA (ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL p/ medida do colo).
  * Determinístico (sem LLM). Trava o formato da casa (ground truth aa95bb81), os
- * thresholds do colo (normal / um pouco curto / curto+TPP), a placenta (com medida /
+ * thresholds do colo (normal / reduzido / acentuadamente reduzido), a placenta (com medida /
  * distante / omitida), a placenta prévia por IG (>=32 sem) e a cerclagem.
  * Rodar: tsx src/server/renderer/__tests__/cervicometria-golden.manual.ts
  */
 import {
+  CERVICOMETRIA_EXTRACTION_PROMPT,
   renderCervicometria,
   CervicometriaFindingsSchema,
   type CervicometriaFindings,
@@ -31,6 +32,12 @@ function F(over: Partial<CervicometriaFindings>): CervicometriaFindings {
 }
 const concl = (l: string) => l.split("CONCLUSÃO:")[1] ?? "";
 
+check(
+  "extração mantém OI fechado como padrão do modelo",
+  /orificio_interno_fechado: true por padrão/.test(CERVICOMETRIA_EXTRACTION_PROMPT),
+  CERVICOMETRIA_EXTRACTION_PROMPT,
+);
+
 // ── Estrutura / formato da casa (ground truth aa95bb81) ──
 {
   const l = renderCervicometria(F({ colo_oi_oe_cm: 4.0, placenta_distancia_cm: 6.4 }));
@@ -47,11 +54,11 @@ const concl = (l: string) => l.split("CONCLUSÃO:")[1] ?? "";
 {
   check("L=3,0 → normal", /ecograficamente normal/.test(concl(renderCervicometria(F({ colo_oi_oe_cm: 3.0 })))));
   check("L=2,5 → normal (limite)", /ecograficamente normal/.test(concl(renderCervicometria(F({ colo_oi_oe_cm: 2.5 })))));
-  check("L=2,4 → um pouco curto", /um pouco curto \(medindo 2,4 cm\)/.test(concl(renderCervicometria(F({ colo_oi_oe_cm: 2.4 })))));
-  check("L=2,0 → um pouco curto (limite)", /um pouco curto \(medindo 2,0 cm\)/.test(concl(renderCervicometria(F({ colo_oi_oe_cm: 2.0 })))));
+  check("L=2,4 → comprimento reduzido", /Comprimento cervical reduzido \(medindo 2,4 cm\)/.test(concl(renderCervicometria(F({ colo_oi_oe_cm: 2.4 })))));
+  check("L=2,0 → comprimento reduzido (limite)", /Comprimento cervical reduzido \(medindo 2,0 cm\)/.test(concl(renderCervicometria(F({ colo_oi_oe_cm: 2.0 })))));
   {
     const c = concl(renderCervicometria(F({ colo_oi_oe_cm: 1.8 })));
-    check("L=1,8 → curto + alto risco TPP", /Colo uterino curto \(medindo 1,8 cm\), com alto risco para trabalho de parto prematuro\./.test(c), c);
+    check("L=1,8 → comprimento acentuadamente reduzido", /Comprimento cervical acentuadamente reduzido \(medindo 1,8 cm\)\./.test(c), c);
   }
 }
 
@@ -102,7 +109,7 @@ const concl = (l: string) => l.split("CONCLUSÃO:")[1] ?? "";
   const l = renderCervicometria(F({ orificio_interno_fechado: false }));
   const c = concl(l);
   check("OI aberto + colo null → item [REVISAR] medida", /não caracterizada pelo método\. \[REVISAR\]/.test(c), c);
-  check("OI aberto + colo null → TAMBÉM item de OI aberto", /Orifício interno do colo uterino aberto, com risco para trabalho de parto prematuro\./.test(c), c);
+  check("OI aberto + colo null → TAMBÉM item de OI aberto", /Orifício interno do colo uterino aberto\./.test(c), c);
   check("OI aberto + colo null → nunca 'ecograficamente normal'", !/ecograficamente normal/.test(c), c);
 }
 
@@ -112,7 +119,7 @@ const concl = (l: string) => l.split("CONCLUSÃO:")[1] ?? "";
   const l = renderCervicometria(F({ colo_oi_oe_cm: 3.2, orificio_interno_fechado: false }));
   check("OI aberto → corpo 'aberto'", /Orifício interno do colo uterino aberto\./.test(l), l);
   check("OI aberto → conclusão NÃO diz 'ecograficamente normal'", !/ecograficamente normal/.test(concl(l)), concl(l));
-  check("OI aberto → conclusão marca risco de TPP", /Orifício interno do colo uterino aberto \(colo medindo 3,2 cm\), com risco para trabalho de parto prematuro\./.test(concl(l)), concl(l));
+  check("OI aberto → conclusão descreve o achado", /Orifício interno do colo uterino aberto \(colo medindo 3,2 cm\)\./.test(concl(l)), concl(l));
 }
 
 // ── SEGURANÇA (review dex1): medida em mm → convertida p/ cm ──
@@ -123,7 +130,7 @@ const concl = (l: string) => l.split("CONCLUSÃO:")[1] ?? "";
 }
 {
   const l = renderCervicometria(F({ colo_oi_oe_cm: 18 })); // 18 mm = 1,8 cm → curto
-  check("colo 18 (mm) → 1,8 cm curto + TPP", /Colo uterino curto \(medindo 1,8 cm\), com alto risco/.test(concl(l)), concl(l));
+  check("colo 18 (mm) → 1,8 cm acentuadamente reduzido", /Comprimento cervical acentuadamente reduzido \(medindo 1,8 cm\)/.test(concl(l)), concl(l));
 }
 {
   const l = renderCervicometria(F({ colo_oi_oe_cm: 4.0 })); // já cm, não mexe

@@ -17,11 +17,10 @@ import { z } from "zod";
  * Regras clínicas (ditadas pelo Dr. Luiz, 2026-07-02 — thresholds a CONFIRMAR):
  *  - Comprimento do colo (distância OI→OE):
  *      L >= 2,5 cm            → "Colo uterino ecograficamente normal."
- *      2,0 <= L < 2,5 cm      → "Colo uterino um pouco curto (…)."
- *      L < 2,0 cm             → "Colo uterino curto (…), com alto risco para
- *                                trabalho de parto prematuro."
- *    (Dr. Luiz usa < 2,0 como corte de alto risco — mais conservador que a tabela
- *    clássica ~1,5 cm — para intervir e ajudar mais gestantes.)
+ *      2,0 <= L < 2,5 cm      → "Comprimento cervical reduzido (…)."
+ *      L < 2,0 cm             → "Comprimento cervical acentuadamente reduzido (…)."
+ *    A conclusão descreve o achado mensurável e não prescreve manejo nem atribui
+ *    risco individual sem história obstétrica e contexto clínico.
  *  - Placenta (distância OI→borda inferior): medida ditada → "distando cerca de
  *    {Y} cm"; muito distante → "distante do orifício interno do colo" (sem número).
  *  - Placenta prévia: só entra na conclusão a partir de 32 semanas (< 32 o Dr. Luiz
@@ -39,7 +38,7 @@ import { z } from "zod";
 export const CervicometriaFindingsSchema = z.object({
   /** Comprimento do colo = distância orifício interno → orifício externo (cm). */
   colo_oi_oe_cm: z.number().nullable(),
-  /** Orifício interno fechado (default clínico). false = aberto/dilatado (ditado). */
+  /** Orifício interno fechado (default do modelo). false = aberto/dilatado. */
   orificio_interno_fechado: z.boolean(),
   /** Distância orifício interno → borda inferior da placenta (cm). null = não medida. */
   placenta_distancia_cm: z.number().nullable(),
@@ -115,7 +114,7 @@ export const CERVICOMETRIA_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO d
 
 CAMPOS:
 1. colo_oi_oe_cm: a medida do COMPRIMENTO do colo = distância do orifício interno ao orifício externo do colo uterino, SEMPRE EM CENTÍMETROS. É a medida principal. null se não ditada. Converta "2,4" ou "2.4" → 2.4. CONVERTA MILÍMETROS PARA CENTÍMETROS: "30 mm"/"30 milímetros" → 3.0; "25 mm" → 2.5; "8 mm" → 0.8. O comprimento do colo é fisiologicamente ~0,5 a 5,0 cm — um número como 30 é milímetros (=3,0 cm).
-2. orificio_interno_fechado: true por padrão (o normal). false SOMENTE se o médico disser explicitamente que o orifício interno está aberto/dilatado/com afunilamento.
+2. orificio_interno_fechado: true por padrão (modelo normal). false SOMENTE se o médico disser explicitamente que o orifício interno está aberto/dilatado/com afunilamento.
 3. placenta_distancia_cm: distância do orifício interno até a borda (extremidade) inferior da placenta, SEMPRE EM CENTÍMETROS (converta mm→cm: "35 mm" → 3.5). null se não ditada.
 4. placenta_distante: true SOMENTE se o médico disser que a placenta está "distante"/"muito distante"/"longe" do orifício interno SEM dar um número. Se deu número, use placenta_distancia_cm e deixe placenta_distante = false. Se não falou de placenta, ambos ficam null/false.
 5. ig_semanas: idade gestacional em semanas, se o médico disser (ex.: "34 semanas", "com 33 semanas"). null se não disser.
@@ -160,7 +159,7 @@ const COMENTARIOS =
 const TECNICA_OBJETIVA =
   "Exame realizado pela via transvaginal, com transdutor endocavitário, para avaliação do colo uterino.";
 
-/** Classe do colo pelo comprimento (thresholds do Dr. Luiz — a confirmar). */
+/** Classe descritiva do comprimento cervical. */
 type ColoClasse = "normal" | "um_pouco_curto" | "curto";
 function classificarColo(l: number | null): ColoClasse {
   if (l === null || !Number.isFinite(l)) return "normal";
@@ -182,7 +181,7 @@ function coloConclusaoItens(f: CervicometriaFindings): string[] {
   if (l === null || !Number.isFinite(l)) {
     const itens = ["Medida do comprimento do colo uterino não caracterizada pelo método. [REVISAR]"];
     if (!f.orificio_interno_fechado) {
-      itens.push("Orifício interno do colo uterino aberto, com risco para trabalho de parto prematuro.");
+      itens.push("Orifício interno do colo uterino aberto.");
     }
     return itens;
   }
@@ -190,15 +189,15 @@ function coloConclusaoItens(f: CervicometriaFindings): string[] {
   const itens: string[] = [];
   // Orifício interno aberto: item próprio (nunca "normal").
   if (!f.orificio_interno_fechado) {
-    itens.push(`Orifício interno do colo uterino aberto (colo medindo ${cm(l)} cm), com risco para trabalho de parto prematuro.`);
+    itens.push(`Orifício interno do colo uterino aberto (colo medindo ${cm(l)} cm).`);
     return itens;
   }
   switch (classe) {
     case "curto":
-      itens.push(`Colo uterino curto (medindo ${cm(l)} cm), com alto risco para trabalho de parto prematuro.`);
+      itens.push(`Comprimento cervical acentuadamente reduzido (medindo ${cm(l)} cm).`);
       break;
     case "um_pouco_curto":
-      itens.push(`Colo uterino um pouco curto (medindo ${cm(l)} cm).`);
+      itens.push(`Comprimento cervical reduzido (medindo ${cm(l)} cm).`);
       break;
     case "normal":
     default:

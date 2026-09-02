@@ -24,6 +24,7 @@ export const FetalGrowthModuleSchema = z.object({
   mcaPiBelowP5: repeatedCriterionSchema,
   meanUterinePiAboveP95: z.boolean(),
   umbilicalArteryEndDiastolicFlow: z.enum(["present", "absent", "reversed"]),
+  umbilicalFlowAbnormalInMajorityBothArteries: z.boolean(),
   umbilicalFlowConfirmedInRequiredInterval: z.boolean(),
   ductusVenosus: ductusVenosusSchema,
   pathologicalCtg: z.boolean(),
@@ -52,6 +53,7 @@ export const FETAL_GROWTH_MODULE_JSON_SCHEMA = {
     "mcaPiBelowP5",
     "meanUterinePiAboveP95",
     "umbilicalArteryEndDiastolicFlow",
+    "umbilicalFlowAbnormalInMajorityBothArteries",
     "umbilicalFlowConfirmedInRequiredInterval",
     "ductusVenosus",
     "pathologicalCtg",
@@ -67,6 +69,7 @@ export const FETAL_GROWTH_MODULE_JSON_SCHEMA = {
       type: "string",
       enum: ["present", "absent", "reversed"],
     },
+    umbilicalFlowAbnormalInMajorityBothArteries: { type: "boolean" },
     umbilicalFlowConfirmedInRequiredInterval: { type: "boolean" },
     ductusVenosus: {
       type: "object",
@@ -103,13 +106,14 @@ export function renderFetalGrowthModule(
   };
   const result = classifyFetalGrowth(input);
   const achados = [
+    `Peso fetal estimado no percentil ${result.efwPercentile.toLocaleString("pt-BR")} pela curva ${result.efwPercentileSource}.`,
     result.conclusion,
+    ...result.confirmedCriteria.map((item) => `Critério confirmado: ${item.label}.`),
     ...result.pendingCriteria.map((item) =>
       `${item.label}: achado no exame atual; ${item.confirmationRequirement ?? "confirmação pendente"}`,
     ),
     ...result.warnings,
     result.reportReference,
-    `Curva informada para o percentil do peso: ${result.efwPercentileSource}.`,
   ];
   const conclusao = result.classification === "adequate_for_gestational_age"
     ? []

@@ -56,11 +56,17 @@ const MEDIDAS: Field[] = [
       { value: 'alterada', label: 'Alterada' },
       {
         value: 'diastole_ausente', label: 'Diástole ausente',
-        subFields: [{ key: 'confirmada', label: 'Confirmado após >12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
+        subFields: [
+          { key: 'mais_50_duas_arterias', label: '>50% dos ciclos nas duas artérias?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] },
+          { key: 'confirmada', label: 'Confirmado após >12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] },
+        ],
       },
       {
         value: 'diastole_reversa', label: 'Diástole reversa',
-        subFields: [{ key: 'confirmada', label: 'Confirmado após 6–12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
+        subFields: [
+          { key: 'mais_50_duas_arterias', label: '>50% dos ciclos nas duas artérias?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] },
+          { key: 'confirmada', label: 'Confirmado após 6–12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] },
+        ],
       },
     ],
   },

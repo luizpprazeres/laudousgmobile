@@ -51,6 +51,7 @@ export function FetalGrowthCalculatorSheet({
   const [mcaConfirmed, setMcaConfirmed] = useState<YesNo>("nao");
   const [uterines, setUterines] = useState<YesNo>("nao");
   const [uaFlow, setUaFlow] = useState<UaFlow>("present");
+  const [uaMajorityBothArteries, setUaMajorityBothArteries] = useState<YesNo>("nao");
   const [uaConfirmed, setUaConfirmed] = useState<YesNo>("nao");
   const [dv, setDv] = useState<DvState>("normal");
   const [dvConfirmed, setDvConfirmed] = useState<YesNo>("nao");
@@ -76,6 +77,7 @@ export function FetalGrowthCalculatorSheet({
       mcaPiBelowP5: { present: mca === "sim", confirmed: mcaConfirmed === "sim" },
       meanUterinePiAboveP95: uterines === "sim",
       umbilicalArteryEndDiastolicFlow: uaFlow,
+      umbilicalFlowAbnormalInMajorityBothArteries: uaMajorityBothArteries === "sim",
       umbilicalFlowConfirmedInRequiredInterval: uaConfirmed === "sim",
       ductusVenosus: {
         piAboveP95: dv === "piAboveP95",
@@ -94,7 +96,8 @@ export function FetalGrowthCalculatorSheet({
     }
   }, [
     cpr, cprConfirmed, ctg, days, dopplerNormal, dv, dvConfirmed, mca,
-    mcaConfirmed, percentile, source, uaConfirmed, uaFlow, uterines, weeks,
+    mcaConfirmed, percentile, source, uaConfirmed, uaFlow, uaMajorityBothArteries,
+    uterines, weeks,
   ]);
 
   return (
@@ -144,7 +147,12 @@ export function FetalGrowthCalculatorSheet({
           onChange={(v) => setUaFlow(v as UaFlow)}
           styles={styles}
         />
-        {uaFlow !== "present" ? <Choice label="Confirmado no intervalo exigido" value={uaConfirmed} options={[["nao", "Ainda não"], ["sim", "Sim"]]} onChange={(v) => setUaConfirmed(v as YesNo)} styles={styles} /> : null}
+        {uaFlow === "absent" || uaFlow === "reversed" ? (
+          <>
+            <Choice label=">50% dos ciclos, nas duas artérias" value={uaMajorityBothArteries} options={[["nao", "Ainda não"], ["sim", "Sim"]]} onChange={(v) => setUaMajorityBothArteries(v as YesNo)} styles={styles} />
+            <Choice label="Confirmado no intervalo exigido" value={uaConfirmed} options={[["nao", "Ainda não"], ["sim", "Sim"]]} onChange={(v) => setUaConfirmed(v as YesNo)} styles={styles} />
+          </>
+        ) : null}
 
         <Choice
           label="Ducto venoso"

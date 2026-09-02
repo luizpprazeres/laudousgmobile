@@ -65,6 +65,8 @@ export interface FetalGrowthInput {
   meanUterinePiAboveP95?: boolean;
 
   umbilicalArteryEndDiastolicFlow?: "present" | "absent" | "reversed";
+  /** Alteração em mais de 50% dos ciclos, documentada nas duas artérias. */
+  umbilicalFlowAbnormalInMajorityBothArteries?: boolean;
   /** Duas determinações: >12 h para fluxo ausente; >6–12 h para reverso. */
   umbilicalFlowConfirmedInRequiredInterval?: boolean;
 
@@ -100,9 +102,14 @@ export interface FetalGrowthResult {
   conclusion: string;
   reportReference: string;
   protocolVersion: typeof FETAL_GROWTH_PROTOCOL_VERSION;
+  efwPercentile: number;
   efwPercentileSource: string;
 }
 
+const UA_ABSENT_CONFIRMATION =
+  "Documentar em mais de 50% dos ciclos nas duas artérias e confirmar em duas determinações com intervalo superior a 12 horas.";
+const UA_REVERSED_CONFIRMATION =
+  "Documentar em mais de 50% dos ciclos nas duas artérias e confirmar em duas determinações com intervalo superior a 6–12 horas.";
 const TWO_AFTER_12_HOURS =
   "Confirmar em duas determinações com intervalo superior a 12 horas.";
 const TWO_AFTER_6_TO_12_HOURS =
@@ -204,18 +211,24 @@ export function classifyFetalGrowth(input: FetalGrowthInput): FetalGrowthResult 
       add(criterion(
         2,
         "umbilical_absent_end_diastolic_flow",
-        "fluxo diastólico ausente na artéria umbilical",
-        input.umbilicalFlowConfirmedInRequiredInterval === true,
-        TWO_AFTER_12_HOURS,
+        input.umbilicalFlowAbnormalInMajorityBothArteries
+          ? "fluxo diastólico ausente em mais de 50% dos ciclos nas duas artérias umbilicais"
+          : "fluxo diastólico ausente na artéria umbilical",
+        input.umbilicalFlowConfirmedInRequiredInterval === true &&
+          input.umbilicalFlowAbnormalInMajorityBothArteries === true,
+        UA_ABSENT_CONFIRMATION,
       ));
     }
     if (input.umbilicalArteryEndDiastolicFlow === "reversed") {
       add(criterion(
         3,
         "umbilical_reversed_end_diastolic_flow",
-        "fluxo diastólico reverso na artéria umbilical",
-        input.umbilicalFlowConfirmedInRequiredInterval === true,
-        TWO_AFTER_6_TO_12_HOURS,
+        input.umbilicalFlowAbnormalInMajorityBothArteries
+          ? "fluxo diastólico reverso em mais de 50% dos ciclos nas duas artérias umbilicais"
+          : "fluxo diastólico reverso na artéria umbilical",
+        input.umbilicalFlowConfirmedInRequiredInterval === true &&
+          input.umbilicalFlowAbnormalInMajorityBothArteries === true,
+        UA_REVERSED_CONFIRMATION,
       ));
     }
 
@@ -330,6 +343,7 @@ export function classifyFetalGrowth(input: FetalGrowthInput): FetalGrowthResult 
     conclusion,
     reportReference: FETAL_GROWTH_PROTOCOL_REFERENCE,
     protocolVersion: FETAL_GROWTH_PROTOCOL_VERSION,
+    efwPercentile: input.efwPercentile,
     efwPercentileSource: input.efwPercentileSource,
   };
   if (stage !== undefined) result.stage = stage;
@@ -339,12 +353,13 @@ export function classifyFetalGrowth(input: FetalGrowthInput): FetalGrowthResult 
 export function formatFetalGrowthReport(result: FetalGrowthResult): string {
   return [
     "CRESCIMENTO FETAL:",
+    `Peso fetal estimado no percentil ${result.efwPercentile.toLocaleString("pt-BR")} pela curva ${result.efwPercentileSource}.`,
     result.conclusion,
+    ...result.confirmedCriteria.map((item) => `Critério confirmado: ${item.label}.`),
     ...result.pendingCriteria.map((item) =>
       `${item.label}: achado no exame atual; ${item.confirmationRequirement ?? "confirmação pendente"}`,
     ),
     ...result.warnings,
     result.reportReference,
-    `Curva informada para o percentil do peso: ${result.efwPercentileSource}.`,
   ].join("\n");
 }
