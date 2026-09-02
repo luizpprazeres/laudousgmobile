@@ -43,6 +43,14 @@ export const MorfologicoFindingsSchema = z.object({
   dorso: z.string().nullable(),
   polo_cefalico: z.string().nullable(),
   bcf_bpm: z.number().nullable(),
+  /** Estados explícitos: null/ausente significa que o médico não informou. */
+  vitalidade: z.enum(["normal", "ausente", "bradicardia", "taquicardia"]).nullable().optional(),
+  movimentos_fetais: z.enum(["normais", "reduzidos", "ausentes"]).nullable().optional(),
+  cordao_vasos: z.enum(["tres", "dois"]).nullable().optional(),
+  liquido_avaliacao: z.enum(["normal", "oligoamnio", "polidramnio"]).nullable().optional(),
+  /** Survey anatômico explícito e sistemas que devem substituir a frase normal. */
+  anatomia_avaliada: z.boolean().nullable().optional(),
+  anatomia_alterada: z.array(z.enum(["snc", "face", "coracao", "visceras"])).nullable().optional(),
   // 1º trimestre
   ccn_mm: z.number().nullable(),
   tn_mm: z.number().nullable(),
@@ -112,6 +120,8 @@ export const MORFOLOGICO_JSON_SCHEMA = {
   additionalProperties: false,
   required: [
     "trimestre", "apresentacao", "dorso", "polo_cefalico", "bcf_bpm",
+    "vitalidade", "movimentos_fetais", "cordao_vasos", "liquido_avaliacao",
+    "anatomia_avaliada", "anatomia_alterada",
     "ccn_mm", "tn_mm", "osso_nasal", "regurgitacao_tricuspide", "ducto_venoso",
     "uterina_ip_direita", "uterina_ip_esquerda",
     "dbp_mm", "cc_mm", "cerebelo_mm", "cisterna_magna_mm", "binocular_mm", "ca_mm",
@@ -127,6 +137,15 @@ export const MORFOLOGICO_JSON_SCHEMA = {
   properties: {
     trimestre: { type: "string", enum: ["1t", "2t", "3t"] },
     apresentacao: str, dorso: str, polo_cefalico: str, bcf_bpm: num,
+    vitalidade: { type: ["string", "null"], enum: ["normal", "ausente", "bradicardia", "taquicardia", null] },
+    movimentos_fetais: { type: ["string", "null"], enum: ["normais", "reduzidos", "ausentes", null] },
+    cordao_vasos: { type: ["string", "null"], enum: ["tres", "dois", null] },
+    liquido_avaliacao: { type: ["string", "null"], enum: ["normal", "oligoamnio", "polidramnio", null] },
+    anatomia_avaliada: bool,
+    anatomia_alterada: {
+      type: ["array", "null"],
+      items: { type: "string", enum: ["snc", "face", "coracao", "visceras"] },
+    },
     ccn_mm: num, tn_mm: num,
     osso_nasal: { type: ["string", "null"], enum: ["presente", "ausente", null] },
     regurgitacao_tricuspide: { type: ["string", "null"], enum: ["ausente", "presente", null] },
@@ -175,9 +194,19 @@ REGRAS:
 4. uterina_ip_direita/esquerda: IP das artérias uterinas (1t).
 5. apresentacao/dorso (2t/3t): só se ditados. Situação transversa/córmica não é
    apresentação: use apresentacao=null e registre a posição em polo_cefalico.
+5b. vitalidade/movimentos_fetais/cordao_vasos: só preencha quando o médico
+   informar ou quando o dado objetivo sustentar o estado (BCF numérico sustenta
+   vitalidade normal). Cordão não citado = null; nunca invente três vasos.
+5c. anatomia_avaliada=true somente quando o médico disser que realizou o survey
+   anatômico/morfológico ou declarar a anatomia normal. Em anatomia_alterada,
+   marque os sistemas que possuem alteração: snc (crânio/SNC/coluna), face,
+   coracao ou visceras (tórax/abdome/rins/bexiga/aorta). A frase normal do mesmo
+   sistema será substituída pelo achado adicional. Não marque um sistema normal.
 6. peso_g/peso_variacao_g/percentil: só se ditados. genitalia: se ditada.
    placenta_localizacao e placenta_grau (Grannum: 0/1/2/3 — capture o número),
-   ila_cm: se ditados.
+   ila_cm: se ditados. liquido_avaliacao só quando o médico qualificar como
+   normal, oligoâmnio ou polidrâmnio; a medida de ILA também será classificada
+   deterministicamente. Sem medida e sem qualificação, use null.
 7. ig_semanas/ig_dias (IG ATUAL da biometria); dum como DD/MM/AAAA (extenso → numérico).
 7b. ÉPICO IG — referência precoce (só quando DITADO; senão null): data_exame
    (data/"hoje"); primeira_us_data + primeira_us_ig_semanas/dias (1ª US: data + IG
@@ -291,12 +320,12 @@ function acrescentarCrescimentoFetal(
   conclusao.push(...growth.conclusao);
 }
 
-/** Concordância: "apresentação" feminina → cefálica/pélvica/córmica. */
-function apresentacaoFmt(s: string | null): string {
-  if (!s) return "cefálica";
+/** Concordância: "apresentação" feminina → cefálica/pélvica. */
+function apresentacaoFmt(s: string | null): string | null {
+  if (!s) return null;
   const map: Record<string, string> = {
     cefálico: "cefálica", cefalico: "cefálica", pélvico: "pélvica",
-    pelvico: "pélvica", córmico: "córmica", cormico: "córmica", transverso: "transversa",
+    pelvico: "pélvica",
   };
   return map[s.trim().toLowerCase()] ?? s.trim();
 }
@@ -317,15 +346,140 @@ function grauPlacenta(s: string | null): string | null {
   return `grau ${romano[t] ?? t}`;
 }
 
+type SistemaAnatomico = "snc" | "face" | "coracao" | "visceras";
+
+const ANATOMIA_NORMAL_CLASSICA: Record<SistemaAnatomico, string> = {
+  snc: "As estruturas cranianas e da coluna vertebral são normais.",
+  face: "Nariz e narinas presentes.\nLábio superior sem solução de continuidade.",
+  coracao: "Coração com quatro câmaras visíveis.",
+  visceras:
+    "O estômago, a bexiga e os rins foram bem identificados e com ecotextura homogênea.\nA aorta abdominal fetal apresenta calibre normal.",
+};
+
+function sistemasAlterados(f: MorfologicoFindings): Set<SistemaAnatomico> {
+  return new Set(f.anatomia_alterada ?? []);
+}
+
+function anatomiaClassica(f: MorfologicoFindings): string[] {
+  if (f.anatomia_avaliada !== true) return [];
+  const alterados = sistemasAlterados(f);
+  const linhas = (Object.keys(ANATOMIA_NORMAL_CLASSICA) as SistemaAnatomico[])
+    .filter((sistema) => !alterados.has(sistema))
+    .flatMap((sistema) => ANATOMIA_NORMAL_CLASSICA[sistema].split("\n"));
+  return linhas.length > 0
+    ? ["", "As considerações sobre a anatomia fetal são as seguintes:", ...linhas]
+    : [];
+}
+
+function anatomiaObjetiva(f: MorfologicoFindings): string[] {
+  if (f.anatomia_avaliada !== true) return [];
+  const alterados = sistemasAlterados(f);
+  const preservados = [
+    ["snc", "crânio, SNC e coluna"],
+    ["face", "face"],
+    ["coracao", "coração com quatro câmaras"],
+    ["visceras", "tórax, abdome, rins, bexiga e aorta"],
+  ] as const;
+  const nomes = preservados
+    .filter(([id]) => !alterados.has(id))
+    .map(([, nome]) => nome);
+  if (nomes.length === 0) return [];
+  return [`Estruturas avaliadas sem alterações detectáveis pelo método: ${nomes.join(", ")}.`];
+}
+
+function linhaFeto(f: MorfologicoFindings): string {
+  const dorso = dorsoFmt(f.dorso);
+  if (f.polo_cefalico) {
+    return `Feto único, em situação transversa, com polo cefálico ${f.polo_cefalico}${dorso ? `, e dorso ${dorso}` : ""}.`;
+  }
+  const apresentacao = apresentacaoFmt(f.apresentacao);
+  if (apresentacao) {
+    return `Feto único, em apresentação ${apresentacao}${dorso ? `, com dorso ${dorso}` : ""}.`;
+  }
+  return dorso ? `Feto único, com dorso ${dorso}.` : "Feto único.";
+}
+
+function vitalidadeClassicaMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[] } {
+  const bpm = f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : null;
+  if (f.vitalidade === "ausente") {
+    return { corpo: ["Batimentos cardíacos fetais não identificados."], conclusao: ["Ausência de vitalidade fetal."] };
+  }
+  if (f.vitalidade === "bradicardia") {
+    return {
+      corpo: [`Batimentos cardíacos fetais presentes, com bradicardia${bpm ? ` (BCF = ${bpm} bpm)` : ""}.`],
+      conclusao: ["Bradicardia fetal."],
+    };
+  }
+  if (f.vitalidade === "taquicardia") {
+    return {
+      corpo: [`Batimentos cardíacos fetais presentes, com taquicardia${bpm ? ` (BCF = ${bpm} bpm)` : ""}.`],
+      conclusao: ["Taquicardia fetal."],
+    };
+  }
+  if (f.vitalidade === "normal" || bpm) {
+    return {
+      corpo: [`Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler${bpm ? ` (BCF = ${bpm} bpm)` : ""}.`],
+      conclusao: [],
+    };
+  }
+  return { corpo: [], conclusao: [] };
+}
+
+function movimentosMorfo(f: MorfologicoFindings): string[] {
+  if (f.vitalidade === "ausente") return [];
+  if (f.movimentos_fetais === "normais") return ["Os movimentos fetais são ativos."];
+  if (f.movimentos_fetais === "reduzidos") return ["Movimentos fetais reduzidos."];
+  if (f.movimentos_fetais === "ausentes") return ["Não foram observados movimentos fetais durante o exame."];
+  return [];
+}
+
+function cordaoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[] } {
+  if (f.cordao_vasos === "tres") {
+    return { corpo: ["Cordão umbilical com duas artérias e uma veia."], conclusao: [] };
+  }
+  if (f.cordao_vasos === "dois") {
+    return {
+      corpo: ["Cordão umbilical com dois vasos, sendo uma artéria e uma veia."],
+      conclusao: ["Artéria umbilical única."],
+    };
+  }
+  return { corpo: [], conclusao: [] };
+}
+
+function liquidoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[]; alterado: boolean } {
+  if (f.ila_cm !== null) {
+    const valor = ptBr(f.ila_cm);
+    if (f.ila_cm < 5) {
+      return { corpo: [`Índice do líquido amniótico de ${valor} cm.`], conclusao: [`Oligoâmnio (ILA de ${valor} cm).`], alterado: true };
+    }
+    if (f.ila_cm > 25) {
+      return { corpo: [`Índice do líquido amniótico de ${valor} cm.`], conclusao: [`Polidrâmnio (ILA de ${valor} cm).`], alterado: true };
+    }
+    return { corpo: [`Índice do líquido amniótico de ${valor} cm.`], conclusao: ["Líquido amniótico de quantidade normal."], alterado: false };
+  }
+  if (f.liquido_avaliacao === "normal") {
+    return { corpo: ["Líquido amniótico de quantidade normal pela análise subjetiva."], conclusao: ["Líquido amniótico de quantidade normal."], alterado: false };
+  }
+  if (f.liquido_avaliacao === "oligoamnio") {
+    return { corpo: ["Líquido amniótico de quantidade reduzida pela análise subjetiva."], conclusao: ["Oligoâmnio."], alterado: true };
+  }
+  if (f.liquido_avaliacao === "polidramnio") {
+    return { corpo: ["Líquido amniótico de quantidade aumentada pela análise subjetiva."], conclusao: ["Polidrâmnio."], alterado: true };
+  }
+  return { corpo: [], conclusao: [], alterado: false };
+}
+
 const COMENTARIOS_1T =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
 function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
   const ig = igResultMorfo(f, igCorrection);
+  const vitalidade = vitalidadeClassicaMorfo(f);
+  const liquido = liquidoMorfo(f);
   const aspectos: string[] = [
     "Feto único de situação variável.",
-    `Batimentos cardíacos presentes, bem caracterizados pelo modo Doppler (FC = ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm).`,
-    "Movimentos fetais são ativos.",
+    ...vitalidade.corpo,
+    ...movimentosMorfo(f),
     `Comprimento crânio-nádegas (CCN) de ${mm(f.ccn_mm)} mm.`,
     `Medida da translucência nucal (TN) de ${mm(f.tn_mm)} mm.`,
     ...(f.osso_nasal === null
@@ -343,9 +497,9 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
           : "Ducto venoso com aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas)."]),
   ];
   if (f.placenta_localizacao) {
-    aspectos.push(`Placenta de localização ${f.placenta_localizacao}, com ecotextura homogênea.`);
+    aspectos.push(`Placenta de localização ${f.placenta_localizacao}.`);
   }
-  aspectos.push("Líquido amniótico de quantidade normal pela análise subjetiva.");
+  aspectos.push(...liquido.corpo);
   if (f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null) {
     aspectos.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBr(f.uterina_ip_direita) : "____"}.`);
     aspectos.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBr(f.uterina_ip_esquerda) : "____"}.`);
@@ -364,7 +518,8 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
   const temAchado = (f.achados_adicionais ?? "").trim() !== "";
   const conclusao = [
     ig.conclusaoClassico,
-    "Líquido amniótico de quantidade normal.",
+    ...vitalidade.conclusao,
+    ...liquido.conclusao,
     ...(f.ducto_venoso === null
       ? []
       : [f.ducto_venoso === "alterado"
@@ -372,7 +527,7 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
           : "Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...(f.anatomia_avaliada !== true || temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -390,27 +545,23 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
-  const apres = apresentacaoFmt(f.apresentacao);
-  const dorso = dorsoFmt(f.dorso);
-  const linhaFeto = f.polo_cefalico
-    ? `Feto único, em situação transversa, com polo cefálico ${f.polo_cefalico}${dorso ? `, e dorso ${dorso}` : ""}.`
-    : dorso
-      ? `Feto único, em apresentação ${apres}, com dorso ${dorso}.`
-      : `Feto único, em apresentação ${apres}.`;
+  const vitalidade = vitalidadeClassicaMorfo(f);
+  const cordao = cordaoMorfo(f);
+  const liquido = liquidoMorfo(f);
+  const anexos = [
+    ...cordao.corpo,
+    ...(f.placenta_localizacao || f.placenta_grau
+      ? [`Placenta${f.placenta_localizacao ? ` de localização ${f.placenta_localizacao}` : ""}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}.`]
+      : []),
+    ...liquido.corpo,
+  ];
 
   const aspectos: string[] = [
-    linhaFeto,
-    `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm).`,
-    "Os movimentos fetais são ativos.",
-    "",
-    "As considerações sobre a anatomia fetal são as seguintes:",
-    "As estruturas cranianas e da coluna vertebral são normais.",
-    "Nariz e narinas presentes.",
-    "Lábio superior sem solução de continuidade.",
-    "Coração com quatro câmaras visíveis.",
-    "O estômago, a bexiga e os rins foram bem identificados e com ecotextura homogênea.",
-    "A aorta abdominal fetal apresenta calibre normal.",
-    `Genitália externa ${genitaliaFmt(f.genitalia)}.`,
+    linhaFeto(f),
+    ...vitalidade.corpo,
+    ...movimentosMorfo(f),
+    ...anatomiaClassica(f),
+    ...(f.genitalia ? [`Genitália externa ${genitaliaFmt(f.genitalia)}.`] : []),
     "",
     "A biometria fetal é a seguinte:",
     `Diâmetro biparietal (DBP) de ${mm(f.dbp_mm)} mm.`,
@@ -434,15 +585,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     `Comprimento da ulna direita de ${mm(f.ulna_mm)} mm.`,
     `Comprimento da ulna esquerda de ${mm(f.ulna_mm)} mm.`,
     pesoLinhaMorfo(f),
-    "",
-    "Análise extra-fetal:",
-    "Cordão umbilical com duas artérias e uma veia.",
-    `Placenta de localização ${f.placenta_localizacao ?? "____"}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}, com ecotextura ${terceiro ? "heterogênea, de acordo com a fase da gestação" : "homogênea"}.`,
-    `Índice do líquido amniótico de ${f.ila_cm !== null ? ptBr(f.ila_cm) : "____"} cm.`,
-    // Orifício interno do colo: 2º trimestre apenas (removido no 3º, decisão Luiz).
-    ...(terceiro || f.cervicometria
-      ? []
-      : ["Orifício interno do colo uterino encontra-se fechado."]),
+    ...(anexos.length > 0 ? ["", "Análise extra-fetal:", ...anexos] : []),
   ];
 
   /**
@@ -457,24 +600,19 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
    * Um laudo que se contradiz é pior que um laudo incompleto: quem lê a
    * conclusão não tem como saber que o corpo diz outra coisa.
    *
-   * Nunca mordeu em produção — dos 279 morfológicos reais, nenhum tem
-   * `achados_adicionais` nem `ila_cm` preenchidos (conferido em 22/08), então
-   * as duas condições preservam o texto de todos eles byte a byte.
-   *
-   * O que AINDA falta para o morfológico anormal: um canal de CONCLUSÃO para o
-   * achado. Hoje ele só chega ao corpo. Não asseverar normalidade é o mínimo;
-   * dizer o diagnóstico é o certo, e exige campo que o schema não tem.
+   * `itens_conclusao_livres` é o canal determinístico para a síntese diagnóstica
+   * ditada pelo médico; `anatomia_alterada` retira a normalidade incompatível
+   * do mesmo sistema.
    */
   const temAchado = (f.achados_adicionais ?? "").trim() !== "";
-  const classeLiquido =
-    f.ila_cm === null ? null : f.ila_cm < 5 ? "Oligoâmnio" : f.ila_cm > 25 ? "Polidrâmnio" : null;
+  const temSistemaAlterado = sistemasAlterados(f).size > 0;
 
   const conclusao = [
     ig.conclusaoClassico,
-    classeLiquido
-      ? `${classeLiquido} (ILA de ${ptBr(f.ila_cm as number)} cm).`
-      : "Líquido amniótico de quantidade normal.",
-    ...(temAchado
+    ...vitalidade.conclusao,
+    ...cordao.conclusao,
+    ...liquido.conclusao,
+    ...(f.anatomia_avaliada !== true || temAchado || temSistemaAlterado
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -635,6 +773,8 @@ function genitaliaFmt(g: string | null): string {
 
 function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
   const ig = igResultMorfo(f, igCorrection);
+  const vitalidade = vitalidadeClassicaMorfo(f);
+  const liquido = liquidoMorfo(f);
   // Doppler das uterinas = presença de IP. Só então o título leva "COM DOPPLER
   // COLORIDO" e entram as frases de IP + a conclusão de dopplervelocimetria.
   const comDoppler =
@@ -642,7 +782,8 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
 
   const achados: string[] = [
     "Feto único de situação variável.",
-    `Batimentos cardíacos fetais (BCF): ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
+    ...vitalidade.corpo,
+    ...movimentosMorfo(f),
     `Comprimento cabeça-nádegas (CCN): ${mm1(f.ccn_mm)} mm.`,
     `Translucência nucal (TN): ${mm1(f.tn_mm)} mm.`,
     ...(f.osso_nasal === null
@@ -661,10 +802,10 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   ];
   if (f.placenta_localizacao) {
     achados.push(
-      `Placenta de localização ${f.placenta_localizacao}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : ""}.`,
+      `Placenta de localização ${f.placenta_localizacao}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : "."}`,
     );
   }
-  achados.push("Líquido amniótico de quantidade normal pela análise subjetiva.");
+  achados.push(...liquido.corpo);
   if (comDoppler) {
     achados.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBr(f.uterina_ip_direita) : "____"}.`);
     achados.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBr(f.uterina_ip_esquerda) : "____"}.`);
@@ -685,7 +826,8 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   const temAchado = (f.achados_adicionais ?? "").trim() !== "";
   const impressao = [
     ...ig.conclusaoObjetivo,
-    "Líquido amniótico de quantidade normal.",
+    ...vitalidade.conclusao,
+    ...liquido.conclusao,
     ...(f.ducto_venoso === null
       ? []
       : [f.ducto_venoso === "alterado"
@@ -693,7 +835,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
           : "Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...(f.anatomia_avaliada !== true || temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -720,18 +862,24 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
-  const apres = apresentacaoFmt(f.apresentacao);
-  const dorso = dorsoFmt(f.dorso);
-  const linhaFeto = f.polo_cefalico
-    ? `Feto único, em situação transversa, com polo cefálico ${f.polo_cefalico}${dorso ? `, e dorso ${dorso}` : ""}.`
-    : dorso
-      ? `Feto único, em apresentação ${apres}, com dorso ${dorso}.`
-      : `Feto único, em apresentação ${apres}.`;
+  const vitalidade = vitalidadeClassicaMorfo(f);
+  const cordao = cordaoMorfo(f);
+  const liquido = liquidoMorfo(f);
+  const anexos = [
+    ...cordao.corpo,
+    ...(f.placenta_localizacao || f.placenta_grau
+      ? [`Placenta${f.placenta_localizacao ? ` de localização ${f.placenta_localizacao}` : ""}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : "."}`]
+      : []),
+    ...(f.ila_cm !== null
+      ? [`Índice de líquido amniótico (ILA): ${ptBr1(f.ila_cm)} cm.`]
+      : liquido.corpo),
+  ];
 
   const achados: string[] = [
-    linhaFeto,
-    `Batimentos cardíacos fetais (BCF): ${f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : "____"} bpm. Movimentos fetais ativos.`,
-    "Anatomia fetal sem alterações detectáveis pelo método (crânio, SNC, face, tórax, coração com quatro câmaras, abdome, rins, bexiga e extremidades).",
+    linhaFeto(f),
+    ...vitalidade.corpo,
+    ...movimentosMorfo(f),
+    ...anatomiaObjetiva(f),
     "",
     "Biometria fetal:",
     `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`,
@@ -755,29 +903,20 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     `Comprimento da ulna direita: ${mm1(f.ulna_mm)} mm.`,
     `Comprimento da ulna esquerda: ${mm1(f.ulna_mm)} mm.`,
     pesoLinhaObj(f),
-    `Genitália externa ${genitaliaFmt(f.genitalia)}.`,
-    "",
-    "Anexos:",
-    "Cordão umbilical com duas artérias e uma veia.",
-    `Placenta de localização ${f.placenta_localizacao ?? "____"}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : ""}.`,
-    `Índice de líquido amniótico (ILA): ${f.ila_cm !== null ? ptBr1(f.ila_cm) : "____"} cm.`,
-    // Orifício interno do colo: 2º trimestre apenas (decisão Luiz no clássico).
-    ...(terceiro || f.cervicometria
-      ? []
-      : ["Orifício interno do colo uterino fechado."]),
+    ...(f.genitalia ? [`Genitália externa ${genitaliaFmt(f.genitalia)}.`] : []),
+    ...(anexos.length > 0 ? ["", "Anexos:", ...anexos] : []),
   ];
 
   /** Mesma regra da ramificação clássica — ver a explicação longa lá. */
   const temAchadoObj = (f.achados_adicionais ?? "").trim() !== "";
-  const classeLiquidoObj =
-    f.ila_cm === null ? null : f.ila_cm < 5 ? "Oligoâmnio" : f.ila_cm > 25 ? "Polidrâmnio" : null;
+  const temSistemaAlterado = sistemasAlterados(f).size > 0;
 
   const impressao = [
     ...ig.conclusaoObjetivo,
-    classeLiquidoObj
-      ? `${classeLiquidoObj} (ILA de ${ptBr(f.ila_cm as number)} cm).`
-      : "Líquido amniótico de quantidade normal.",
-    ...(temAchadoObj
+    ...vitalidade.conclusao,
+    ...cordao.conclusao,
+    ...liquido.conclusao,
+    ...(f.anatomia_avaliada !== true || temAchadoObj || temSistemaAlterado
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),

@@ -17,6 +17,8 @@ import {
 
 const F = (p: Partial<MorfologicoFindings>): MorfologicoFindings => ({
   trimestre: "2t", apresentacao: null, dorso: null, polo_cefalico: null, bcf_bpm: 145,
+  vitalidade: "normal", movimentos_fetais: "normais", cordao_vasos: "tres",
+  liquido_avaliacao: "normal", anatomia_avaliada: true, anatomia_alterada: [],
   ccn_mm: null, tn_mm: null, osso_nasal: null, regurgitacao_tricuspide: null, ducto_venoso: null,
   uterina_ip_direita: null, uterina_ip_esquerda: null,
   dbp_mm: null, cc_mm: null, cerebelo_mm: null, cisterna_magna_mm: null, binocular_mm: null, ca_mm: null,

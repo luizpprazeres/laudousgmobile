@@ -54,12 +54,12 @@ const COM_REF: Partial<ObstetricaFindings> = {
   const on = renderObstetrica(O(COM_REF), null, { igCorrection: true });
   check(
     "OBST ON: conclusão com correção",
-    on.includes("Gestação em torno de 19 semanas e 4 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dias."),
+    on.includes("Gestação em torno de 19 semanas e 4 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dia."),
     on,
   );
   check(
     "OBST ON: prosa da 1ª US no corpo",
-    on.includes("Primeira ultrassonografia realizada 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dias."),
+    on.includes("Primeira ultrassonografia realizada 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dia."),
   );
 }
 
@@ -83,7 +83,7 @@ const COM_REF: Partial<ObstetricaFindings> = {
   );
   check(
     "OBST OBJ ON: item 2 corrigido",
-    on.includes("Gestação em torno de 17 semanas e 1 dias corrigido pela ultrassonografia precoce."),
+    on.includes("Gestação em torno de 17 semanas e 1 dia corrigido pela ultrassonografia precoce."),
   );
 }
 
@@ -114,7 +114,7 @@ const M = (p: Partial<MorfologicoFindings> = {}): MorfologicoFindings => ({
   const on = renderMorfologico(M(refM), null, { igCorrection: true });
   check(
     "MORFO ON: conclusão com correção",
-    on.includes("devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dias."),
+    on.includes("devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dia."),
     on,
   );
 }

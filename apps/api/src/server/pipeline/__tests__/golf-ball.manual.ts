@@ -94,10 +94,12 @@ check("stripGolfBallEcho remove só a sentença do foco", (() => {
 
 // ───────────── Integração: MORFOLOGICO 2º trimestre ─────────────
 
-const morfoBase = {
+const morfoBase = MorfologicoFindingsSchema.parse({
   ...nulled(MorfologicoFindingsSchema),
   trimestre: "2t",
-} as MorfologicoFindings;
+  anatomia_avaliada: true,
+  anatomia_alterada: [],
+}) satisfies MorfologicoFindings;
 
 {
   const g = { lado: "esquerdo" as const, medida: "0,3 cm" };

@@ -23,6 +23,8 @@ import { MorfologicoFindingsSchema, renderMorfologico } from "../../categories/M
 
 const BASE = {
   trimestre: "2t", apresentacao: "cefálica", dorso: null, polo_cefalico: null, bcf_bpm: 148,
+  vitalidade: "normal", movimentos_fetais: "normais", cordao_vasos: "tres",
+  liquido_avaliacao: "normal", anatomia_avaliada: true, anatomia_alterada: [],
   ccn_mm: null, tn_mm: null, osso_nasal: null, regurgitacao_tricuspide: null, ducto_venoso: null,
   uterina_ip_direita: null, uterina_ip_esquerda: null,
   dbp_mm: 51, cc_mm: 190, cerebelo_mm: 21, cisterna_magna_mm: 5, binocular_mm: 32,

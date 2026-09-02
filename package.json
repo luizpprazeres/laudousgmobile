@@ -33,6 +33,7 @@
     "validate:clinical-review:23a1": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/abdomen-23a1-clinical-matrix.manual.ts",
     "validate:clinical-review:23a2": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/abdomen-23a2-clinical-matrix.manual.ts",
     "validate:clinical-review:23b1": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/obstetrica-23b1-clinical-matrix.manual.ts",
+    "validate:clinical-review:23b4": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/morfologico-23b4-ios-clinical-matrix.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/pipeline/__tests__/morfologicoRouteSelection.manual.ts",
     "validate:fetal-growth": "tsx tests/fetal-growth/runner.ts",
     "generate:fmf:trisomias": "node packages/fmf-trisomy/generate-params.mjs",
     "diff:bundle": "tsx scripts/diff-bundle-vs-original.ts"

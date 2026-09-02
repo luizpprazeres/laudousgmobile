@@ -133,6 +133,7 @@ A matriz 23B1 percorre os estados acima nos estilos Clássico e Objetivo e acres
 - [x] Paridade Clássico/Objetivo e combinações independentes.
 - [x] 23B2: contrato morfológico entre web, API e iOS; marcador tricúspide; bloco FMF compartilhado.
 - [x] 23B3: percentis Doppler Barcelona v2021 e barreiras contra falsa normalidade.
+- [x] 23B4: auditoria ponta a ponta do iOS nos exames obstétricos, com foco no morfológico do segundo trimestre.
 - [ ] Próximo corte 23B: cervicometria e crescimento fetal opção por opção.
 
 ## Entrega 23B2 — morfológico e pré-eclâmpsia web/iOS
@@ -226,6 +227,45 @@ O comando genérico `pnpm test` continua sem tarefas cadastradas no Turbo e, por
 - `LaudoUSG/Features/Generate/GenerateViewModel.swift`
 - `LaudoUSGTests/DopplerParserTests.swift`
 - `LaudoUSGTests/DopplerRawPercentileTests.swift`
+
+## Sprint 23B4 — auditoria obstétrica ponta a ponta do iOS
+
+O aplicativo iOS é o cliente principal deste corte. A validação começa na categoria escolhida pelo médico, atravessa o JSON enviado pelo aplicativo, o roteamento da API, a extração estruturada e os renderers Clássico e Objetivo. O caso de regressão prioritário é o morfológico do segundo trimestre, que precisa manter título, trimestre e conteúdo próprios mesmo quando o ditado contém biometria, Doppler, cervicometria ou achados adicionais.
+
+O modelo normal continua economizando cliques, mas uma alteração nunca pode conviver com a normalidade incompatível do mesmo sistema. Dados clínicos que não possuem estado normal explícito ou que não foram extraídos — vitalidade, movimentos, vasos do cordão, placenta e líquido — não podem ser inventados pelo renderer. Ausência de medida pode gerar campo editável no modelo, mas não pode ser interpretada como resultado normal.
+
+Critérios de aceite:
+
+- [x] `OBSTETRICA`, `MORFOLOGICO` e `DOPPLER_OBSTETRICO` saem do iOS com a categoria exata selecionada.
+- [x] Morfológicos de primeiro, segundo e terceiro trimestres mantêm o ramo correto na API.
+- [x] Morfológico do segundo trimestre não é rebaixado para obstétrica simples nem convertido em Doppler isolado.
+- [x] Alteração anatômica substitui a normalidade do mesmo sistema no corpo e aparece na conclusão quando o médico fornece a síntese diagnóstica.
+- [x] Vitalidade, movimentos, cordão, placenta e líquido não são afirmados como normais sem estado ou dado correspondente.
+- [x] Cervicometria, Doppler e crescimento fetal permanecem complementos do mesmo morfológico e entram nas seções corretas.
+- [x] Estilos Clássico e Objetivo preservam o mesmo significado clínico.
+- [x] Matriz automatizada cobre entrada do iOS, roteamento e renderização, incluindo combinações e dados ausentes.
+
+## Entrega 23B4 — morfológico seguro no fluxo iOS
+
+O iOS passou a ter testes de contrato para as três categorias obstétricas, os três trimestres morfológicos e os complementos. Na API, o morfológico deixou de completar silenciosamente apresentação cefálica, vitalidade, movimentos, cordão de três vasos, líquido normal, placenta normal e survey anatômico normal. A versão web continua rápida porque esses estados permanecem explicitamente pré-marcados no formulário.
+
+Uma alteração por sistema agora retira somente a frase normal incompatível, preserva os demais sistemas efetivamente avaliados e usa `itens_conclusao_livres` para a síntese diagnóstica. Cervicometria, Doppler e crescimento fetal continuam dentro do mesmo laudo morfológico, em seções próprias.
+
+Validações executadas:
+
+- `pnpm validate:clinical-review:23b4`: 65 verificações clínicas e 15 casos de roteamento aprovados.
+- Regressões morfológicas, IG, Golf Ball, Doppler e cervicometria aprovadas.
+- `pnpm typecheck`: oito pacotes aprovados.
+- Builds de produção da API e da web aprovados.
+- Suíte integral do iOS: 58 testes, 55 aprovados, três testes WHO já documentados como pendentes e ignorados, sem falhas.
+
+Arquivos centrais:
+
+- `apps/api/src/server/renderer/categories/MORFOLOGICO.ts`
+- `apps/api/src/server/renderer/__tests__/morfologico-23b4-ios-clinical-matrix.manual.ts`
+- `apps/web/src/lib/catalog/morfologicoParaCatalogo.ts`
+- `apps/web/src/lib/deterministic/organs/morfologico.ts`
+- `LaudoUSGTests/ObstetricGenerationContractTests.swift` no projeto iOS.
 
 ## Ajuste paralelo — esquema visual das mamas
 

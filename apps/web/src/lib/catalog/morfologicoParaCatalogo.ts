@@ -137,6 +137,13 @@ export function adaptarMorfologico(
   const primeiroTrimestre =
     ((typeof opcoes.trimestre === "string" ? opcoes.trimestre : "") || "2t") === "1t";
   const transversa = texto(f, "situacao") === "transversa";
+  const vitalidade = primeiroTrimestre ? "normal" : texto(f, "vitalidade") || "normal";
+  const movimentos = primeiroTrimestre ? "normais" : texto(f, "movimentos") || "normais";
+  const cordao = primeiroTrimestre ? "nao_avaliado" : texto(f, "cordao_vasos") || "nao_avaliado";
+  const sistemasAlterados = SISTEMAS.filter((sistema) => texto(an, sistema) === "alterado");
+  const liquidoAvaliacao = primeiroTrimestre
+    ? "normal"
+    : texto(ex, "liquido_avaliacao") || "normal";
 
   const dados: Record<string, unknown> = {
     trimestre: (typeof opcoes.trimestre === "string" ? opcoes.trimestre : "") || "2t",
@@ -148,6 +155,15 @@ export function adaptarMorfologico(
       ? texto(f, "situacao.transversa.polo_cefalico") || "à direita"
       : null,
     bcf_bpm: primeiroTrimestre ? numero(f1, "bcf") : numero(f, "bcf"),
+    vitalidade,
+    movimentos_fetais: movimentos,
+    cordao_vasos: cordao === "tres" || cordao === "dois" ? cordao : null,
+    liquido_avaliacao:
+      liquidoAvaliacao === "normal" || liquidoAvaliacao === "oligoamnio" || liquidoAvaliacao === "polidramnio"
+        ? liquidoAvaliacao
+        : null,
+    anatomia_avaliada: true,
+    anatomia_alterada: sistemasAlterados,
 
     ccn_mm: primeiroTrimestre ? numero(f1, "ccn") : null,
     tn_mm: primeiroTrimestre ? numero(f1, "tn") : null,

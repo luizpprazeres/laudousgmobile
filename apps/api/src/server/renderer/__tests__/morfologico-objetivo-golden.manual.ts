@@ -24,6 +24,8 @@ function check(name: string, cond: boolean, detail?: string) {
 
 const F = (p: Partial<MorfologicoFindings>): MorfologicoFindings => ({
   trimestre: "2t", apresentacao: null, dorso: null, polo_cefalico: null, bcf_bpm: 145,
+  vitalidade: "normal", movimentos_fetais: "normais", cordao_vasos: "tres",
+  liquido_avaliacao: "normal", anatomia_avaliada: true, anatomia_alterada: [],
   ccn_mm: null, tn_mm: null, osso_nasal: null, regurgitacao_tricuspide: null, ducto_venoso: null,
   uterina_ip_direita: null, uterina_ip_esquerda: null,
   dbp_mm: null, cc_mm: null, cerebelo_mm: null, cisterna_magna_mm: null, binocular_mm: null, ca_mm: null,
@@ -100,7 +102,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   check("2t: distância binocular presente (2t)", /Distância binocular: 41,2 mm\./.test(l), l);
   check("2t: ILA 1 casa decimal '14,2 cm'", /Índice de líquido amniótico \(ILA\): 14,2 cm\./.test(l), l);
   check("2t: placenta grau I (romano)", /grau I/.test(l), l);
-  check("2t: orifício interno do colo presente (2t)", /Orifício interno do colo uterino fechado\./.test(l), l);
+  check("2t: sem cervicometria não inventa orifício interno fechado", !/Orifício interno do colo uterino fechado\./.test(l), l);
   check("2t: peso inteiro '480 g'", /Peso fetal estimado: 480 g \(percentil 45\)\./.test(l), l);
   check("2t: genitália feminino", /Genitália externa feminina\./.test(l), l);
   check("2t: placenta 'grau I de Grannum et al.'", /grau I de Grannum et al\./.test(l), l);

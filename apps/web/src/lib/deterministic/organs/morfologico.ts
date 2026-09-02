@@ -77,7 +77,33 @@ const fetoModule: OrganModule = {
           { value: 'posterior', label: 'Posterior' },
         ],
       },
+      {
+        key: 'vitalidade', label: 'Atividade cardíaca fetal', kind: 'segmented',
+        options: [
+          { value: 'normal', label: 'Presente', isDefault: true },
+          { value: 'ausente', label: 'Ausente' },
+          { value: 'bradicardia', label: 'Bradicardia' },
+          { value: 'taquicardia', label: 'Taquicardia' },
+        ],
+      },
       { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '145' },
+      {
+        key: 'movimentos', label: 'Movimentos fetais', kind: 'segmented',
+        options: [
+          { value: 'normais', label: 'Ativos', isDefault: true },
+          { value: 'reduzidos', label: 'Reduzidos' },
+          { value: 'ausentes', label: 'Ausentes' },
+        ],
+      },
+      {
+        key: 'cordao_vasos', label: 'Vasos do cordão umbilical', kind: 'segmented',
+        hint: 'só informe quando avaliado',
+        options: [
+          { value: 'nao_avaliado', label: 'Não informar', isDefault: true },
+          { value: 'tres', label: '2 artérias + 1 veia' },
+          { value: 'dois', label: 'Artéria umbilical única' },
+        ],
+      },
     ],
   },
   initialState: (): OrganState => ({
@@ -85,22 +111,52 @@ const fetoModule: OrganModule = {
     'situacao.longitudinal.apresentacao': 'cefálica',
     'situacao.transversa.polo_cefalico': 'à direita',
     dorso: '',
+    vitalidade: 'normal',
     bcf: '',
+    movimentos: 'normais',
+    cordao_vasos: 'nao_avaliado',
   }),
   compose: (st): OrganComposition => {
     const situacao = String(st.situacao || 'longitudinal')
     const apres = String(st['situacao.longitudinal.apresentacao'] || 'cefálica')
     const polo = String(st['situacao.transversa.polo_cefalico'] || 'à direita')
     const dorso = String(st.dorso || '').trim()
+    const vitalidade = String(st.vitalidade || 'normal')
+    const movimentos = String(st.movimentos || 'normais')
+    const cordao = String(st.cordao_vasos || 'nao_avaliado')
     const bcf = numOrNull(st.bcf)
+    const bcfLinha = vitalidade === 'ausente'
+      ? 'Batimentos cardíacos fetais não identificados.'
+      : vitalidade === 'bradicardia'
+        ? `Batimentos cardíacos fetais presentes, com bradicardia${bcf === null ? '' : ` (BCF = ${ptBr(bcf)} bpm)`}.`
+        : vitalidade === 'taquicardia'
+          ? `Batimentos cardíacos fetais presentes, com taquicardia${bcf === null ? '' : ` (BCF = ${ptBr(bcf)} bpm)`}.`
+          : `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler${bcf === null ? '' : ` (BCF = ${ptBr(bcf)} bpm)`}.`
+    const movimentosLinha = vitalidade === 'ausente'
+      ? null
+      : movimentos === 'ausentes'
+        ? 'Não foram observados movimentos fetais durante o exame.'
+        : movimentos === 'reduzidos'
+          ? 'Movimentos fetais reduzidos.'
+          : 'Os movimentos fetais são ativos.'
     const linhas = [
       situacao === 'transversa'
         ? `Feto único, em situação transversa, com polo cefálico ${polo}${dorso ? `, e dorso ${dorso}` : ''}.`
         : `Feto único, em apresentação ${apres}${dorso ? `, com dorso ${dorso}` : ''}.`,
-      `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`,
-      'Os movimentos fetais são ativos.',
-    ]
-    return { body: linhas.join('\n'), conclusion: [], isNormal: true }
+      bcfLinha,
+      movimentosLinha,
+      cordao === 'tres' ? 'Cordão umbilical com duas artérias e uma veia.' : null,
+      cordao === 'dois' ? 'Cordão umbilical com dois vasos, sendo uma artéria e uma veia.' : null,
+    ].filter((linha): linha is string => Boolean(linha))
+    const conclusion = [
+      vitalidade === 'ausente' ? 'Ausência de vitalidade fetal.' : null,
+      vitalidade === 'bradicardia' ? 'Bradicardia fetal.' : null,
+      vitalidade === 'taquicardia' ? 'Taquicardia fetal.' : null,
+      movimentos === 'ausentes' && vitalidade !== 'ausente' ? 'Ausência de movimentos fetais durante o exame.' : null,
+      movimentos === 'reduzidos' && vitalidade !== 'ausente' ? 'Movimentos fetais reduzidos.' : null,
+      cordao === 'dois' ? 'Artéria umbilical única.' : null,
+    ].filter((item): item is string => Boolean(item))
+    return { body: linhas.join('\n'), conclusion, isNormal: conclusion.length === 0 }
   },
 }
 
@@ -321,9 +377,18 @@ const extraFetalModule: OrganModule = {
       { key: 'placenta_loc', label: 'Placenta — localização', kind: 'text', placeholder: 'posterior' },
       { key: 'placenta_grau', label: 'Placenta — grau (0/I/II/III)', kind: 'text', placeholder: 'I' },
       { key: 'ila', label: 'ILA (cm)', kind: 'text', placeholder: '12' },
+      {
+        key: 'liquido_avaliacao', label: 'Líquido amniótico', kind: 'segmented',
+        options: [
+          { value: 'normal', label: 'Normal', isDefault: true },
+          { value: 'oligoamnio', label: 'Oligoâmnio' },
+          { value: 'polidramnio', label: 'Polidrâmnio' },
+          { value: 'nao_avaliado', label: 'Não informar' },
+        ],
+      },
     ],
   },
-  initialState: (): OrganState => ({ placenta_loc: '', placenta_grau: '', ila: '' }),
+  initialState: (): OrganState => ({ placenta_loc: '', placenta_grau: '', ila: '', liquido_avaliacao: 'normal' }),
   compose: (st, opts): OrganComposition => {
     const terceiro = is3t(opts)
     const loc = String(st.placenta_loc || '').trim() || '____'
@@ -332,22 +397,36 @@ const extraFetalModule: OrganModule = {
     const grau = grauRaw ? `, grau ${romano[grauRaw] ?? grauRaw}` : ''
     const eco = terceiro ? 'heterogênea, de acordo com a fase da gestação' : 'homogênea'
     const ilaV = numOrNull(st.ila)
+    const liquido = String(st.liquido_avaliacao || 'normal')
 
     const linhas = [
       'Análise extra-fetal:',
-      'Cordão umbilical com duas artérias e uma veia.',
       `Placenta de localização ${loc}${grau}, com ecotextura ${eco}.`,
-      `Índice do líquido amniótico de ${ilaV === null ? '____' : ptBr(ilaV)} cm.`,
+      ...(ilaV !== null
+        ? [`Índice do líquido amniótico de ${ptBr(ilaV)} cm.`]
+        : liquido === 'normal'
+          ? ['Líquido amniótico de quantidade normal pela análise subjetiva.']
+          : liquido === 'oligoamnio'
+            ? ['Líquido amniótico de quantidade reduzida pela análise subjetiva.']
+            : liquido === 'polidramnio'
+              ? ['Líquido amniótico de quantidade aumentada pela análise subjetiva.']
+              : []),
       ...(terceiro ? [] : ['Orifício interno do colo uterino encontra-se fechado.']),
     ]
     // Conclusão: líquido (classificado quando há ILA) + morfologia normal.
     const liquidoConcl =
       ilaV === null
-        ? 'Líquido amniótico de quantidade normal.'
+        ? liquido === 'normal'
+          ? 'Líquido amniótico de quantidade normal.'
+          : liquido === 'oligoamnio'
+            ? 'Oligoâmnio.'
+            : liquido === 'polidramnio'
+              ? 'Polidrâmnio.'
+              : ''
         : `${classeILA(ilaV).conclusao} (ILA de ${ptBr(ilaV)} cm).`
     // A conclusão de morfologia ("sem evidência" ou diagnósticos) vem do
     // anatomiaModule. Aqui só o líquido.
-    return { body: linhas.join('\n'), conclusion: [liquidoConcl], isNormal: true }
+    return { body: linhas.join('\n'), conclusion: liquidoConcl ? [liquidoConcl] : [], isNormal: liquido !== 'oligoamnio' && liquido !== 'polidramnio' }
   },
 }
 

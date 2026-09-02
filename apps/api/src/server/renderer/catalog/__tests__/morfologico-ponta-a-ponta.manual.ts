@@ -143,10 +143,9 @@ const CASOS: Caso[] = [
   {
     nome: "genitália não avaliada",
     porque:
-      "'na' na tela quer dizer NÃO AVALIADA. O renderer traduz `null` para 'não avaliada'; deixar o 'na' atravessar imprime literalmente \"Genitália externa na.\" no laudo — testei mutando o adaptador, e a primeira versão desta asserção (que só proibia 'masculina' e 'feminina') deixava passar.",
+      "'na' na tela quer dizer NÃO AVALIADA. O renderer omite o item em vez de transformar ausência de avaliação em achado clínico.",
     estado: medido(),
-    exige: ["Genitália externa não avaliada"],
-    proibe: ["Genitália externa na.", "Genitália externa masculina", "Genitália externa feminina"],
+    proibe: ["Genitália externa na.", "Genitália externa não avaliada", "Genitália externa masculina", "Genitália externa feminina"],
   },
   {
     nome: "genitália feminina",
