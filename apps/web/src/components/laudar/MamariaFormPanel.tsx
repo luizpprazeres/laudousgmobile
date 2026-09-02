@@ -94,7 +94,7 @@ export function MamariaFormPanel({ state, onChange }: Props) {
         <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">Ecotextura de fundo</div>
         <div className="flex flex-wrap gap-2">
           {[
-            ['heterogeneo', 'Heterogênea'], ['denso', 'Homogênea · fibroglandular'], ['adiposo', 'Homogênea · adiposa'],
+            ['heterogeneo', 'Heterogênea'], ['denso', 'Fibroglandular'], ['adiposo', 'Adiposa'],
           ].map(([value, label]) => (
             <button key={value} type="button" onClick={() => onChange({ ...state, fundo: value! })} className={choiceClass((state.fundo ?? 'heterogeneo') === value)}>{label}</button>
           ))}

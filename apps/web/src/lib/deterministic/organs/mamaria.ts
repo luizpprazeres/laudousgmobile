@@ -267,8 +267,8 @@ const schema: OrganSchema = {
       hint: 'default: heterogêneo',
       options: [
         { value: 'heterogeneo', label: 'Heterogênea', isDefault: true },
-        { value: 'denso', label: 'Homogênea · fibroglandular' },
-        { value: 'adiposo', label: 'Homogênea · adiposa' },
+        { value: 'denso', label: 'Fibroglandular' },
+        { value: 'adiposo', label: 'Adiposa' },
       ],
     },
     mamaTipoField('md'),
