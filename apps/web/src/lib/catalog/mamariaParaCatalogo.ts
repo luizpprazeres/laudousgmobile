@@ -58,6 +58,24 @@ function medidas(bruto: string): number[] | null {
   return nums.length > 0 ? nums : null;
 }
 
+function descricaoAxilar(s: EstadoDaSecao): string | null {
+  const livre = texto(s, "axilas.alteradas.desc");
+  const lado = texto(s, "axilas.alteradas.lado");
+  const forma = texto(s, "axilas.alteradas.forma");
+  const hilo = texto(s, "axilas.alteradas.hilo");
+  const cortical = texto(s, "axilas.alteradas.cortical_cm");
+  const medidasLinfonodo = texto(s, "axilas.alteradas.medidas");
+  const partes = [
+    forma ? `de forma ${forma}` : "",
+    hilo ? `com hilo gorduroso ${hilo}` : "",
+    cortical ? `com cortical medindo ${cortical.replace(".", ",")} cm` : "",
+    medidasLinfonodo ? `medindo ${medidasLinfonodo} cm` : "",
+    lado ? `${lado === "bilateral" ? "bilateralmente" : `na axila ${lado}`}` : "",
+  ].filter(Boolean);
+  const estruturada = partes.length ? `Linfonodo axilar ${partes.join(", ")}.` : "";
+  return [estruturada, livre].filter(Boolean).join(" ") || null;
+}
+
 /**
  * A tela diz `nodulo`; o canônico, `nodulo_solido`. Mesma coisa, nome diferente
  * — e chave desconhecida faz o Zod recusar o laudo INTEIRO, não só o achado.
@@ -65,8 +83,14 @@ function medidas(bruto: string): number[] | null {
 const TIPO_PARA_CANONICO: Record<string, string> = {
   cisto_simples: "cisto_simples",
   multiplos_cistos: "multiplos_cistos",
+  microcistos_agrupados: "microcistos_agrupados",
+  cisto_complicado: "cisto_complicado",
   nodulo: "nodulo_solido",
+  linfonodo_intramamario: "linfonodo_intramamario",
   calcificacoes: "calcificacoes",
+  ginecomastia: "ginecomastia",
+  proteses: "proteses",
+  achado_nao_nodular: "achado_nao_nodular",
 };
 
 /** `grosseiras` na tela é `grosseiras_benignas` no canônico. Mesmo caso. */
@@ -86,8 +110,8 @@ const CALC_PARA_CANONICO: Record<string, string> = {
  */
 const FUNDO: Record<string, string> = {
   heterogeneo: "Mamas com ecotextura de fundo heterogênea.",
-  denso: "Mamas com ecotextura de fundo homogênea, predominantemente fibroglandular.",
-  adiposo: "Mamas com ecotextura de fundo homogênea, predominantemente adiposa.",
+  denso: "Mamas com ecotextura de fundo predominantemente fibroglandular.",
+  adiposo: "Mamas com ecotextura de fundo predominantemente adiposa.",
 };
 
 type Achado = Record<string, unknown>;
@@ -144,6 +168,8 @@ function acharNaMama(
         ? "microcalcificacoes"
         : null,
     elasticidade: null,
+    vascularizacao: sub("vascularizacao") || null,
+    vascularizacao_descricao: sub("vascularizacao_descricao") || null,
     descritores: null,
     medidas_cm: medidas(sub("medidas")),
     medida_invalida: null,
@@ -151,7 +177,7 @@ function acharNaMama(
     horario: null,
     dist_pele_cm: null,
     dist_mamilo_cm: null,
-    descricao_nao_nodular: null,
+    descricao_nao_nodular: sub("descricao_nao_nodular") || null,
     /**
      * O BI-RADS forçado pelo médico VENCE o cálculo — é para isso que o campo
      * existe, e a escala é a mesma dos dois lados (ACR).
@@ -210,15 +236,17 @@ function acharPorId(
       : marcado(s, `${base}.calc`, "microcalc")
         ? "microcalcificacoes"
         : null,
-    elasticidade: null,
-    descritores: null,
+    elasticidade: sub("elasticidade") || null,
+    vascularizacao: sub("vascularizacao") || null,
+    vascularizacao_descricao: sub("vascularizacao_descricao") || null,
+    descritores: sub("descritores") || null,
     medidas_cm: medidas(sub("medidas")),
     medida_invalida: null,
     localizacao: sub("local") || null,
     horario: sub("horario") || null,
     dist_pele_cm: medidas(sub("dist_pele"))?.[0] ?? null,
     dist_mamilo_cm: medidas(sub("dist_mamilo"))?.[0] ?? null,
-    descricao_nao_nodular: null,
+    descricao_nao_nodular: sub("descricao_nao_nodular") || null,
     birads_ditado: sub("birads") || null,
     permitir_birads_calculado: false,
   };
@@ -244,6 +272,8 @@ export function adaptarMamaria(estado: EstadoDaMama): Adaptacao {
       : "mamas_axilas";
   const incluiMamas = escopo !== "axilas";
   const incluiAxilas = escopo !== "mamas";
+  const perfil = texto(opts, "perfil_mamario") || "padrao";
+  const dopplerRealizado = texto(opts, "doppler_mamario") === "sim";
 
   const ids = Array.isArray(m.achados_ids)
     ? m.achados_ids.filter((id): id is string => typeof id === "string" && id.length > 0)
@@ -266,12 +296,13 @@ export function adaptarMamaria(estado: EstadoDaMama): Adaptacao {
      */
     escopo_exame: escopo,
     titulo_com_axilas: incluiAxilas,
-    mama_masculina: false,
-    com_protese: false,
+    mama_masculina: perfil === "masculina",
+    com_protese: perfil === "proteses",
+    doppler_realizado: dopplerRealizado,
     texto_fundo: incluiMamas ? FUNDO[texto(m, "fundo")] ?? FUNDO.heterogeneo : null,
     achados,
     axilas_alteradas: incluiAxilas && axilas === "alteradas",
-    axilas_descricao: incluiAxilas && axilas === "alteradas" ? texto(ax, "axilas.alteradas.desc") || null : null,
+    axilas_descricao: incluiAxilas && axilas === "alteradas" ? descricaoAxilar(ax) : null,
     achados_adicionais: null,
     birads_final: null,
     exames_anteriores: [],

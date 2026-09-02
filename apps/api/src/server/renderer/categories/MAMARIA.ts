@@ -4,11 +4,12 @@ import { sugerirBiradsMamaria } from "@laudousg/shared";
 /**
  * DET-5 — Renderer de MAMARIA (render PROGRAMÁTICO, estilo CLÁSSICO).
  *
- * Spec: docs/det-5-mamaria.md (workflow do Luiz + léxico US do Atlas BI-RADS 5ª
- * ed + 10 decisões) e docs/det-5-mamaria-birads-pesquisa.md (léxico com páginas).
+ * Spec: docs/det-5-mamaria.md (workflow do Luiz + léxico ultrassonográfico
+ * BI-RADS) e docs/det-5-mamaria-birads-pesquisa.md.
  *
- * Diferenças-chave: BI-RADS é CALCULÁVEL (heurística local) mas o ditado do
- * médico VENCE; **maior BI-RADS vence** (a categoria do estudo = a mais alta, e
+ * Diferenças-chave: o BI-RADS final é CONFIRMADO pelo médico; a antiga
+ * heurística permanece somente como apoio visual da interface e não entra no
+ * laudo automaticamente. **Maior BI-RADS confirmado vence** (a categoria do estudo = a mais alta, e
  * só o item de maior categoria leva o rótulo "(Categoria BI-RADS® N)"). Margem
  * NUNCA "regular" (sempre circunscrita/indistinta/angular/microlobulada/
  * espiculada). Título dinâmico (axilas). Elastografia só descreve, não calcula.
@@ -71,6 +72,7 @@ const posteriorTxt: Record<string, string> = {
 };
 const CALCIF = ["sem", "grosseiras_benignas", "em_nodulo", "fora_nodulo", "intraductais", "microcalcificacoes"] as const;
 const ELASTICIDADE = ["macia", "intermediaria", "dura"] as const;
+const VASCULARIZACAO = ["ausente", "periferica", "interna", "mista"] as const;
 
 const LADO = ["direita", "esquerda", "bilateral"] as const;
 type Lado = (typeof LADO)[number];
@@ -89,6 +91,8 @@ const AchadoSchema = z.object({
   posterior: z.enum(POSTERIOR).nullable(),
   calcificacoes: z.enum(CALCIF).nullable(),
   elasticidade: z.enum(ELASTICIDADE).nullable(), // só descreve (v1)
+  vascularizacao: z.enum(VASCULARIZACAO).nullable().optional(),
+  vascularizacao_descricao: z.string().nullable().optional(),
   descritores: z.string().nullable(), // verbatim extras ("coalescentes", "agrupadas")
   medidas_cm: z.array(z.number()).nullable(),
   medida_invalida: z.string().nullable(), // medida ilegível → preservar + [?]
@@ -98,7 +102,7 @@ const AchadoSchema = z.object({
   dist_mamilo_cm: z.number().nullable(),
   descricao_nao_nodular: z.string().nullable(), // NML: "área heterogênea, sem configuração nodular"
   birads_ditado: z.string().nullable(), // override verbatim (vence o cálculo)
-  permitir_birads_calculado: z.boolean().default(true),
+  permitir_birads_calculado: z.boolean().default(false),
 });
 export type MamariaAchado = z.infer<typeof AchadoSchema>;
 
@@ -116,6 +120,7 @@ export const MamariaFindingsSchema = z.object({
   titulo_com_axilas: z.boolean(), // título "...E REGIÕES AXILARES"
   mama_masculina: z.boolean(),
   com_protese: z.boolean(),
+  doppler_realizado: z.boolean().default(false),
   texto_fundo: z.string().nullable(), // default heterogêneo; ou o ditado
   achados: z.array(AchadoSchema),
   axilas_alteradas: z.boolean(),
@@ -141,7 +146,7 @@ const ACHADO_JSON = {
   additionalProperties: false,
   required: [
     "tipo", "lado", "ecogenicidade", "forma", "orientacao", "margem", "posterior",
-    "calcificacoes", "elasticidade", "descritores", "medidas_cm", "medida_invalida",
+    "calcificacoes", "elasticidade", "vascularizacao", "vascularizacao_descricao", "descritores", "medidas_cm", "medida_invalida",
     "localizacao", "horario", "dist_pele_cm", "dist_mamilo_cm", "descricao_nao_nodular",
     "birads_ditado", "permitir_birads_calculado",
   ],
@@ -155,6 +160,8 @@ const ACHADO_JSON = {
     posterior: enumN(POSTERIOR),
     calcificacoes: enumN(CALCIF),
     elasticidade: enumN(ELASTICIDADE),
+    vascularizacao: enumN(VASCULARIZACAO),
+    vascularizacao_descricao: str,
     descritores: str,
     medidas_cm: numArr,
     medida_invalida: str,
@@ -172,7 +179,7 @@ export const MAMARIA_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
-    "escopo_exame", "titulo_com_axilas", "mama_masculina", "com_protese", "texto_fundo", "achados",
+    "escopo_exame", "titulo_com_axilas", "mama_masculina", "com_protese", "doppler_realizado", "texto_fundo", "achados",
     "axilas_alteradas", "axilas_descricao", "correlacao", "achados_adicionais",
   ],
   properties: {
@@ -180,6 +187,7 @@ export const MAMARIA_JSON_SCHEMA = {
     titulo_com_axilas: { type: "boolean" },
     mama_masculina: { type: "boolean" },
     com_protese: { type: "boolean" },
+    doppler_realizado: { type: "boolean" },
     texto_fundo: str,
     achados: { type: "array", items: ACHADO_JSON },
     axilas_alteradas: { type: "boolean" },
@@ -205,8 +213,9 @@ Classifique o ditado no JSON tipado (léxico BI-RADS US). NÃO redija laudo. NÃ
 REGRAS:
 1. escopo_exame: mamas | axilas | mamas_axilas conforme as regiões efetivamente
    avaliadas. titulo_com_axilas: true nos escopos axilas e mamas_axilas; false
-   em mamas. Em cada achado, permitir_birads_calculado deve ser true neste fluxo
-   de extração; se o médico ditar a categoria, preencha também birads_ditado.
+   em mamas. Em cada achado, permitir_birads_calculado deve ser false. O BI-RADS
+   só entra no laudo quando o médico o ditar ou confirmar explicitamente; nesse
+   caso, preencha birads_ditado.
 2. mama_masculina: true se exame de mama masculina. com_protese: true se paciente
    com próteses mamárias.
 3. texto_fundo: só se o médico ditar um padrão de fundo diferente; senão null
@@ -227,6 +236,8 @@ REGRAS:
    - calcificacoes: sem | grosseiras_benignas | em_nodulo | fora_nodulo |
      intraductais | microcalcificacoes.
    - elasticidade (elastografia): macia | intermediaria | dura (só se ditada).
+   - vascularizacao: ausente | periferica | interna | mista, somente quando o
+     Doppler tiver sido realizado. Preserve detalhes em vascularizacao_descricao.
 7. descritores: termos extras verbatim do médico ("coalescentes", "agrupadas")
    — preservar. medidas_cm: as 3 medidas em cm; null se não ditas.
    medida_invalida: se a medida for ilegível, o texto cru (o renderer marca [?]).
@@ -237,11 +248,14 @@ REGRAS:
 9. descricao_nao_nodular (só tipo achado_nao_nodular): a descrição verbatim do
    médico (ex.: "área heterogênea, sem configuração nodular").
 10. birads_ditado: a categoria BI-RADS que o médico DITAR explicitamente (ex.:
-    "2", "3", "4A", "5", "6") — verbatim. null se não ditada (o código calcula).
+    "2", "3", "4A", "5", "6") — verbatim. null se não ditada. A aplicação
+    jamais publica uma categoria inferida sem confirmação médica.
 11. axilas_alteradas / axilas_descricao: só se o médico descrever linfonodos
     axilares ANORMAIS. correlacao: se houver menção a mamografia/RM/US prévia ou
     biópsia (tipo_exame, data dd/mm/aaaa, efeito, birads_final).
-12. achados_adicionais: alterações reais fora dos tipos acima — incl. casos
+12. doppler_realizado: true somente se o Doppler mamário/axilar tiver sido
+    realizado; false no exame ultrassonográfico convencional.
+13. achados_adicionais: alterações reais fora dos tipos acima — incl. casos
     especiais do Atlas ainda NÃO modelados no v1 (necrose gordurosa, corpo
     estranho/implante, malformação arteriovenosa, pseudoaneurisma, doença de
     Mondor, coleção líquida pós-cirúrgica, distorção arquitetural, alterações
@@ -435,18 +449,24 @@ function tituloDoEscopo(escopo: EscopoMamaria): string {
 }
 
 function comentariosDoEscopo(f: MamariaFindings, escopo: EscopoMamaria): string {
-  if (escopo === "axilas") return COMENTARIOS_AXILAS;
+  const comDoppler = f.doppler_realizado
+    ? " Foi realizado estudo complementar com Doppler colorido."
+    : "";
+  if (escopo === "axilas") return `${COMENTARIOS_AXILAS}${comDoppler}`;
   if (f.mama_masculina) {
-    return escopo === "mamas_axilas"
+    const base = escopo === "mamas_axilas"
       ? COMENTARIOS_MASCULINA
       : COMENTARIOS_MASCULINA.replace(", bem como as regiões axilares", "");
+    return `${base}${comDoppler}`;
   }
   if (f.com_protese) {
-    return escopo === "mamas_axilas"
+    const base = escopo === "mamas_axilas"
       ? COMENTARIOS_PROTESE
       : COMENTARIOS_PROTESE.replace(", bem como as regiões axilares", "");
+    return `${base}${comDoppler}`;
   }
-  return escopo === "mamas_axilas" ? COMENTARIOS_MAMAS_AXILAS : COMENTARIOS_PADRAO;
+  const base = escopo === "mamas_axilas" ? COMENTARIOS_MAMAS_AXILAS : COMENTARIOS_PADRAO;
+  return `${base}${comDoppler}`;
 }
 
 /**
@@ -582,6 +602,23 @@ function achadoCorpo(a: MamariaAchado): string {
     }
     default:
       return `Imagem de ${mama}, medindo ${medidasFmt(a)}${localizacaoSufixo(a)}.`;
+  }
+}
+
+function vascularizacaoCorpo(a: MamariaAchado): string | null {
+  const livre = a.vascularizacao_descricao?.trim();
+  if (livre) return `Ao Doppler colorido, ${livre.replace(/\.+$/, "")}.`;
+  switch (a.vascularizacao) {
+    case "ausente":
+      return "Ao Doppler colorido, não se observa vascularização na imagem.";
+    case "periferica":
+      return "Ao Doppler colorido, observa-se vascularização predominantemente periférica na imagem.";
+    case "interna":
+      return "Ao Doppler colorido, observa-se vascularização interna na imagem.";
+    case "mista":
+      return "Ao Doppler colorido, observa-se vascularização periférica e interna na imagem.";
+    default:
+      return null;
   }
 }
 
@@ -738,7 +775,13 @@ function renderMamariaClassico(
   if (comMamas) {
     aspectos.push(f.texto_fundo?.trim() || TEXTO_FUNDO_PADRAO);
     if (!temLesao) aspectos.push(AUSENCIA_LESAO);
-    for (const a of achados) aspectos.push(achadoCorpo(a));
+    for (const a of achados) {
+      aspectos.push(achadoCorpo(a));
+      if (f.doppler_realizado) {
+        const vascular = vascularizacaoCorpo(a);
+        if (vascular) aspectos.push(vascular);
+      }
+    }
   }
   // Elastografia (frase adicional, sem cálculo).
   for (const a of achados) {
@@ -880,11 +923,14 @@ function renderMamariaObjetivo(
   const comMamas = incluiMamas(escopo);
   const comAxilas = incluiAxilas(escopo);
   const titulo = tituloDoEscopo(escopo);
-  const tecnica = escopo === "axilas"
+  const tecnicaBase = escopo === "axilas"
     ? TECNICA_OBJETIVO_SOMENTE_AXILAS
     : escopo === "mamas_axilas"
       ? TECNICA_OBJETIVO_AXILAS
       : TECNICA_OBJETIVO;
+  const tecnica = f.doppler_realizado
+    ? `${tecnicaBase} Estudo complementar realizado com Doppler colorido.`
+    : tecnicaBase;
 
   const achados = comMamas ? f.achados ?? [] : [];
 
@@ -901,7 +947,13 @@ function renderMamariaObjetivo(
   ]);
   const temLesao = achados.some((a) => TIPOS_LESAO.has(a.tipo));
   if (comMamas && !temLesao) linhas.push(AUSENCIA_LESAO);
-  for (const a of achados) linhas.push(achadoAchadoObjetivo(a));
+  for (const a of achados) {
+    linhas.push(achadoAchadoObjetivo(a));
+    if (f.doppler_realizado) {
+      const vascular = vascularizacaoCorpo(a);
+      if (vascular) linhas.push(vascular);
+    }
+  }
   for (const a of achados) {
     if (a.elasticidade)
       linhas.push(

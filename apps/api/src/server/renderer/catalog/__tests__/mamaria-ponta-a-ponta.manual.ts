@@ -182,7 +182,7 @@ const CASOS: Caso[] = [
     nome: "mama de fundo adiposo",
     porque: "a ecotextura de fundo é escolha da tela e vira texto no canônico.",
     estado: com(inicial(), "mamas", { fundo: "adiposo" }),
-    exige: ["Mamas com ecotextura de fundo homogênea, predominantemente adiposa."],
+    exige: ["Mamas com ecotextura de fundo predominantemente adiposa."],
   },
 ];
 

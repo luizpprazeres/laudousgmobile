@@ -7,13 +7,20 @@ import type { OrganState } from '@/lib/deterministic'
 type Props = {
   state: OrganState
   onChange: (next: OrganState) => void
+  dopplerEnabled?: boolean
 }
 
 const TIPOS = [
   ['cisto_simples', 'Cisto simples'],
   ['multiplos_cistos', 'Cistos múltiplos'],
+  ['microcistos_agrupados', 'Microcistos agrupados'],
+  ['cisto_complicado', 'Cisto complicado'],
   ['nodulo', 'Nódulo sólido'],
+  ['linfonodo_intramamario', 'Linfonodo intramamário'],
   ['calcificacoes', 'Calcificações'],
+  ['achado_nao_nodular', 'Achado não nodular'],
+  ['ginecomastia', 'Ginecomastia'],
+  ['proteses', 'Próteses'],
 ] as const
 
 const BIRADS = ['0', '1', '2', '3', '4', '4A', '4B', '4C', '5', '6'] as const
@@ -23,6 +30,8 @@ const DESCRITORES = {
   forma: [['oval', 'Oval'], ['redonda', 'Redonda'], ['irregular', 'Irregular']],
   orientacao: [['paralela', 'Paralela à pele'], ['nao_paralela', 'Não paralela']],
   posterior: [['nenhuma', 'Sem alteração'], ['reforco', 'Reforço'], ['sombra', 'Sombra'], ['combinado', 'Combinado']],
+  elasticidade: [['macia', 'Macia'], ['intermediaria', 'Intermediária'], ['dura', 'Dura']],
+  vascularizacao: [['ausente', 'Ausente'], ['periferica', 'Periférica'], ['interna', 'Interna'], ['mista', 'Periférica e interna']],
   margemNaoCircunscrita: [['indistinta', 'Indistinta'], ['angular', 'Angular'], ['microlobulada', 'Microlobulada'], ['espiculada', 'Espiculada']],
 } as const
 
@@ -30,7 +39,9 @@ const choiceClass = (active: boolean) => `rounded-md border px-2.5 py-1.5 text-x
   ? 'border-emerald-500 bg-emerald-600 text-white'
   : 'border-gray-200 bg-white text-gray-600 hover:border-emerald-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'}`
 
-export function MamariaFormPanel({ state, onChange }: Props) {
+const tipoCanonico = (tipo: string) => tipo === 'nodulo' ? 'nodulo_solido' : tipo
+
+export function MamariaFormPanel({ state, onChange, dopplerEnabled = false }: Props) {
   const ids = Array.isArray(state.achados_ids) ? state.achados_ids : []
   const conflicts = Array.isArray(state.companion_conflitos) ? state.companion_conflitos as string[] : []
   const get = (id: string, key: string) => String(state[`achados.${id}.${key}`] ?? '')
@@ -42,7 +53,7 @@ export function MamariaFormPanel({ state, onChange }: Props) {
     if (tipo === 'nodulo' && !margem) return null
     const microcalcificacoes = Array.isArray(state[`achados.${id}.calc`]) && (state[`achados.${id}.calc`] as string[]).includes('microcalc')
     return sugerirBiradsMamaria({
-      tipo: tipo === 'nodulo' ? 'nodulo_solido' : tipo,
+      tipo: tipoCanonico(tipo),
       forma: get(id, 'forma') || 'oval',
       margem,
       orientacao: get(id, 'orientacao') || 'paralela',
@@ -105,6 +116,8 @@ export function MamariaFormPanel({ state, onChange }: Props) {
         const tipo = get(id, 'tipo') || 'nodulo'
         const isNodulo = tipo === 'nodulo'
         const isCalc = tipo === 'calcificacoes'
+        const isNaoNodular = tipo === 'achado_nao_nodular'
+        const isSemMedidas = tipo === 'ginecomastia' || tipo === 'proteses'
         const margem = get(id, 'margem')
         const margemTipo = margem === 'circunscrita' ? 'circunscrita' : margem ? 'nao_circunscrita' : get(id, 'margem_tipo')
         const biradsDefinido = get(id, 'birads').toUpperCase()
@@ -132,7 +145,7 @@ export function MamariaFormPanel({ state, onChange }: Props) {
               {TIPOS.map(([value, label]) => <button key={value} type="button" onClick={() => set(id, 'tipo', value)} className={choiceClass(tipo === value)}>{label}</button>)}
             </div>
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-              {!isCalc ? input(id, 'medidas', 'Medidas (cm)', '1,2 x 1,0 x 0,8') : null}
+              {!isCalc && !isSemMedidas ? input(id, 'medidas', isNaoNodular ? 'Medidas (cm, dois eixos)' : 'Medidas (cm)', isNaoNodular ? '1,2 x 1,0' : '1,2 x 1,0 x 0,8') : null}
               {input(id, 'local', 'Localização', 'quadrante / posição')}
               {input(id, 'horario', 'Horário', '10 horas')}
               {input(id, 'dist_pele', 'Distância da pele (cm)', '0,5')}
@@ -156,10 +169,21 @@ export function MamariaFormPanel({ state, onChange }: Props) {
                 </div>
                 {choiceRow('Orientação', 'orientacao', DESCRITORES.orientacao)}
                 {choiceRow('Fenômeno acústico posterior', 'posterior', DESCRITORES.posterior)}
+                {choiceRow('Elasticidade (se realizada)', 'elasticidade', DESCRITORES.elasticidade)}
                 <label className="flex items-center gap-2 text-xs font-semibold">
                   <input type="checkbox" checked={Array.isArray(state[`achados.${id}.calc`]) && (state[`achados.${id}.calc`] as string[]).includes('microcalc')} onChange={(event) => set(id, 'calc', event.target.checked ? ['microcalc'] : [])} />
                   Microcalcificações de permeio
                 </label>
+              </div>
+            ) : null}
+            {isNaoNodular ? (
+              <div className="mt-3">
+                {input(id, 'descricao_nao_nodular', 'Descrição do achado não nodular', 'área heterogênea, sem configuração nodular')}
+              </div>
+            ) : null}
+            {tipo === 'cisto_complicado' || tipo === 'microcistos_agrupados' || tipo === 'proteses' ? (
+              <div className="mt-3">
+                {input(id, 'descritores', tipo === 'proteses' ? 'Plano / descrição das próteses' : 'Descritores adicionais', tipo === 'proteses' ? 'predominantemente retromusculares' : 'finos ecos internos / coalescentes')}
               </div>
             ) : null}
             {isCalc ? (
@@ -170,6 +194,12 @@ export function MamariaFormPanel({ state, onChange }: Props) {
                     ['grosseiras', 'Grosseiras'], ['microcalcificacoes', 'Microcalcificações'], ['em_nodulo', 'Em nódulo'], ['intraductais', 'Intraductais'], ['fora_nodulo', 'Extranodulares'],
                   ].map(([value, label]) => <button key={value} type="button" onClick={() => set(id, 'calc_sub', value!)} className={choiceClass((get(id, 'calc_sub') || 'grosseiras') === value)}>{label}</button>)}
                 </div>
+              </div>
+            ) : null}
+            {dopplerEnabled && !isSemMedidas ? (
+              <div className="mt-3 space-y-3 rounded-lg border border-sky-100 bg-sky-50/40 p-3 dark:border-sky-900/50 dark:bg-sky-950/20">
+                {choiceRow('Vascularização ao Doppler', 'vascularizacao', DESCRITORES.vascularizacao)}
+                {input(id, 'vascularizacao_descricao', 'Detalhe opcional do Doppler', 'vasos internos de baixo fluxo')}
               </div>
             ) : null}
             {biradsSugerido || biradsDefinido ? (

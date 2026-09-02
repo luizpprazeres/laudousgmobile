@@ -805,6 +805,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               ) : categoria === 'MAMARIA' && activeSection?.id === 'mamas' ? (
                 <MamariaFormPanel
                   state={examState?.mamas ?? activeSection.module?.initialState() ?? { fundo: 'heterogeneo', achados_ids: [] }}
+                  dopplerEnabled={opts.doppler_mamario === 'sim'}
                   onChange={(nextState) =>
                     setExamStates((all) => ({
                       ...all,

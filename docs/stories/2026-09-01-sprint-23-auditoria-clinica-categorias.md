@@ -368,6 +368,32 @@ Validações executadas:
 - O comando geral `pnpm test` não possui tarefas cadastradas; a validação real desta entrega é a matriz clínica e os testes focados acima. O `pnpm lint` continua bloqueado pela configuração interativa antiga do Next nos três apps e não foi contado como aprovado.
 - Referências: [ACR TI-RADS](https://www.acr.org/Clinical-Resources/Clinical-Tools-and-Reference/Reporting-and-Data-Systems/TI-RADS), [atlas oficial do ACR TI-RADS](https://www.acr.org/-/media/ACR/Files/RADS/TI-RADS/ACR-TI-RADS-Atlas.pdf) e [protocolos de ultrassonografia do CBR](https://cbr.org.br/wp-content/uploads/2025/11/Protocolos-de-Ultrassonografia_2025.pdf).
 
+## Sprint 23C2 — mamas e axilas
+
+O formulário de mamas passou a expor os tipos já compreendidos pelo renderer canônico: cisto simples, cistos múltiplos, microcistos agrupados, cisto complicado, nódulo sólido, linfonodo intramamário, calcificações, achado não nodular, ginecomastia e próteses. Ecotextura, descritores, medidas, localização, distâncias, elastografia e vascularização atravessam o adaptador sem virar texto solto ou desaparecer silenciosamente.
+
+O Doppler é um complemento opcional do exame. Quando selecionado, entra na técnica e permite descrever a vascularização de cada achado; quando não selecionado, não é citado. As axilas continuam normais por padrão, mas o estado alterado agora permite registrar lado, forma, hilo gorduroso, espessura cortical e medidas antes da descrição livre.
+
+A avaliação BI-RADS final permanece responsabilidade do médico. A sugestão interna pode auxiliar a interface, porém não entra no laudo até ser confirmada. O renderer preserva a categoria explicitamente ditada ou selecionada e não converte automaticamente um conjunto parcial de descritores em avaliação diagnóstica.
+
+Critérios de aceite:
+
+- [x] Todos os tipos mamários do contrato canônico estão disponíveis na tela.
+- [x] Ecotextura fibroglandular e adiposa não repetem “homogênea”.
+- [x] Medidas não informadas continuam como placeholders editáveis.
+- [x] BI-RADS sugerido não entra no laudo sem confirmação médica.
+- [x] Doppler mamário é opcional e sua vascularização não altera BI-RADS.
+- [x] Axilas normais permanecem como padrão; alteração estruturada substitui a normalidade.
+- [x] Exames de mamas, mamas e axilas, axilas isoladas, mama masculina e próteses usam o mesmo módulo.
+- [x] Clássico e Objetivo preservam os mesmos achados.
+- [x] Matriz clínica e regressões anteriores aprovadas.
+
+Validações executadas:
+
+- `pnpm validate:clinical-review:23c2`: seis cenários novos, 35 regressões clássicas, 25 regressões objetivas e a travessia ponta a ponta aprovados.
+- Typecheck isolado da API e da web aprovado.
+- Referências: [BI-RADS do ACR](https://www.acr.org/Clinical-Resources/Clinical-Tools-and-Reference/Reporting-and-Data-Systems/BI-RADS), [requisitos de laudo mamário do ACR](https://accreditationsupport.acr.org/support/solutions/articles/11000067043-reporting-breast-ultrasound) e [normatização de ultrassonografia do CBR](https://cbr.org.br/normatizacao-de-exames-de-ultrassonografia/).
+
 ## Arquivos da entrega 23B1 e do ajuste mamário
 
 - `apps/web/src/lib/deterministic/organs/obstetrica.ts`

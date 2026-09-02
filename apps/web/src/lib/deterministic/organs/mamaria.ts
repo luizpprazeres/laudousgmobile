@@ -300,12 +300,33 @@ const axilasModule: OrganModule = {
         options: [
           { value: 'nao', label: 'Não avaliadas', isDefault: true },
           { value: 'normais', label: 'Normais' },
-          { value: 'alteradas', label: 'Alteradas', subFields: [{ key: 'desc', label: 'Descrição', kind: 'text', placeholder: 'linfonodo axilar de cortical espessada…' }] },
+          { value: 'alteradas', label: 'Alteradas', subFields: [
+            { key: 'lado', label: 'Lado', kind: 'mini-segmented', options: [
+              { value: 'direita', label: 'Direita' }, { value: 'esquerda', label: 'Esquerda' }, { value: 'bilateral', label: 'Bilateral' },
+            ] },
+            { key: 'forma', label: 'Forma', kind: 'mini-segmented', options: [
+              { value: 'oval', label: 'Oval' }, { value: 'redonda', label: 'Redonda' }, { value: 'irregular', label: 'Irregular' },
+            ] },
+            { key: 'hilo', label: 'Hilo gorduroso', kind: 'mini-segmented', options: [
+              { value: 'preservado', label: 'Preservado' }, { value: 'reduzido', label: 'Reduzido' }, { value: 'ausente', label: 'Ausente' },
+            ] },
+            { key: 'cortical_cm', label: 'Espessura cortical (cm)', kind: 'text', placeholder: '0,4' },
+            { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '1,8 x 0,8' },
+            { key: 'desc', label: 'Descrição complementar', kind: 'text', placeholder: 'outros detalhes relevantes' },
+          ] },
         ],
       },
     ],
   },
-  initialState: (): OrganState => ({ axilas: 'normais', 'axilas.alteradas.desc': '' }),
+  initialState: (): OrganState => ({
+    axilas: 'normais',
+    'axilas.alteradas.lado': '',
+    'axilas.alteradas.forma': '',
+    'axilas.alteradas.hilo': '',
+    'axilas.alteradas.cortical_cm': '',
+    'axilas.alteradas.medidas': '',
+    'axilas.alteradas.desc': '',
+  }),
   compose: (state): OrganComposition => {
     const axilas = String(state.axilas ?? 'nao')
     if (axilas === 'normais') {
@@ -378,6 +399,25 @@ export const mamaria: ExamCategory = {
         { value: 'mamas_axilas', label: 'Mamas e axilas', isDefault: true },
         { value: 'mamas', label: 'Somente mamas' },
         { value: 'axilas', label: 'Somente axilas' },
+      ],
+    },
+    {
+      key: 'perfil_mamario',
+      label: 'Perfil',
+      kind: 'segmented',
+      options: [
+        { value: 'padrao', label: 'Padrão', isDefault: true },
+        { value: 'masculina', label: 'Mama masculina' },
+        { value: 'proteses', label: 'Com próteses' },
+      ],
+    },
+    {
+      key: 'doppler_mamario',
+      label: 'Doppler complementar',
+      kind: 'segmented',
+      options: [
+        { value: 'nao', label: 'Não', isDefault: true },
+        { value: 'sim', label: 'Sim' },
       ],
     },
   ],
