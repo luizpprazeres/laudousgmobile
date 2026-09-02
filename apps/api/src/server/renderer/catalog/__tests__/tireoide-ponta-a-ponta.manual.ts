@@ -271,21 +271,14 @@ const CASOS: Caso[] = [
   {
     nome: "Doppler com UM pico só",
     porque:
-      "a web omite o lado não preenchido; o canônico escreve '____ cm/s'. O renderer tem `omitPicoNull`; quem não o passa é o registry.",
+      "ao ativar o Doppler, o pico não informado permanece como placeholder numérico — a mesma regra dos demais campos mensuráveis do laudo.",
     estado: { ...medido(), doppler: true, picoDireito: "22" },
-    /**
-     * D5 resolvido: o registry passou a ler `TIREOIDE_PICO_OMIT`, a mesma flag
-     * que a produção lê. A asserção é condicional à flag porque o gate roda nos
-     * dois estados — e é justamente a divergência entre eles que o defeito era.
-     */
-    ...(process.env.TIREOIDE_PICO_OMIT === "true"
-      ? { proibe: ["esquerda de ____"], exige: ["22"] }
-      : { pendente: "rode com TIREOIDE_PICO_OMIT=true para conferir a política de produção (D5)" }),
+    exige: ["22", "esquerda de ____"],
   },
   {
     nome: "linfonodos suspeitos",
     porque:
-      "no canônico, `alterados=true` sem descrição faz o CORPO escrever a frase NORMAL e a conclusão dizer 'alterados' — laudo internamente contraditório. O cenário do catálogo evita isso cravando características que o médico não informou.",
+      "linfonodo suspeito sem descrição detalhada usa a frase atípica segura no corpo e na conclusão, sem reaproveitar a normalidade.",
     estado: { ...medido(), avaliarLinfonodos: true, linfonodos: "suspeitos" },
     proibe: ["morfologia preservada"],
   },
@@ -444,8 +437,12 @@ if (falhas === 0) {
    * recusa, ou vira pendência nomeada. Um verde sem esta linha seria lido como
    * "pode trocar a tela", que é o contrário do que estes casos mostram.
    */
-  console.log(`  ${pendentes} caso(s) o canônico ainda NÃO cobre — o médico os perderia hoje.`);
-  console.log("  Enquanto houver pendência, a categoria não migra inteira.");
+  if (pendentes > 0) {
+    console.log(`  ${pendentes} caso(s) o canônico ainda NÃO cobre — o médico os perderia hoje.`);
+    console.log("  Enquanto houver pendência, a categoria não migra inteira.");
+  } else {
+    console.log("  0 pendências bloqueantes nesta matriz.");
+  }
 } else {
   console.log(`✗ ${falhas} falha(s) · ${pendentes} pendente(s)`);
 }

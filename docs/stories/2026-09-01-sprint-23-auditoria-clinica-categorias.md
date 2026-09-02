@@ -36,6 +36,8 @@ Primeiro corte entregue (23B1): a tela Obstétrica passou a expor vitalidade, mo
 
 Tireoide, nódulos, tireoidites, linfonodos e Doppler; mamas/axilas, descritores BI-RADS e Doppler; pelve abdominal/transvaginal, miomas, adenomiose, endométrio e ovários. Classificações continuam determinísticas e validadas pelo médico.
 
+Primeiro corte (23C1): Tireoide. A Nota de Domingos e o ACR TI-RADS permanecem independentes. O sistema não chama de ACR uma categoria inferida a partir da tabela de Domingos: o ACR usa composição, ecogenicidade, forma, margem e focos ecogênicos próprios, com focos aditivos e conduta dependente do maior diâmetro. As alterações difusas, o Doppler e os linfonodos continuam combináveis com qualquer número de imagens nodulares.
+
 ### 23D — Urinário, próstata, cervical e superficiais
 
 Vias urinárias, próstata suprapúbica, próstata transretal, bolsa testicular, região inguinal, parede abdominal, glândulas salivares, paratireoide, cervical e partes moles.
@@ -313,6 +315,58 @@ Validações executadas:
 ## Ajuste paralelo — esquema visual das mamas
 
 A região retroareolar passou a ser tratada como localização própria no esquema, inclusive após arrastar o marcador para junto do mamilo. A legenda diferencia cisto, nódulo, margem lobulada, margem espiculada e calcificações. Em “Cistos múltiplos”, o achado principal continua sendo o único descrito no laudo; o médico pode acrescentar e reposicionar cistos extras apenas no desenho. Esses marcadores visuais não criam novos achados, não alteram BI-RADS e são removidos automaticamente se o achado de cistos múltiplos deixar de existir.
+
+## Sprint 23C1 — tireoide e classificações nodulares
+
+Critérios de aceite:
+
+- [x] ACR TI-RADS usa os cinco grupos oficiais, sem derivar composição ou ecogenicidade da Nota de Domingos.
+- [x] Focos ecogênicos compatíveis podem ser somados; “nenhum/cauda de cometa” é exclusivo dos demais.
+- [x] PAAF e seguimento respeitam categoria e maior diâmetro, sem recomendar intervenção quando a medida está ausente.
+- [x] Nota de Domingos continua disponível como classificação independente e nunca é rotulada como ACR.
+- [x] Ecotextura heterogênea selecionada em qualquer lobo substitui a normalidade correspondente no corpo e na conclusão.
+- [x] Medidas ausentes permanecem como placeholders; estados categóricos normais permanecem como defaults.
+- [x] Nódulo, tireoidopatia difusa, Doppler e linfonodos podem coexistir sem repetição ou conclusão normal incompatível.
+- [x] Clássico e Objetivo preservam o mesmo achado e a mesma categoria ACR.
+- [x] Web, React Native e iOS usam os mesmos pontos e limiares do ACR TI-RADS.
+- [x] Matriz clínica cobre normal, alteração isolada, combinação no mesmo órgão e combinação entre módulos.
+
+## Entrega 23C1 — tireoide e classificações nodulares
+
+O formulário web agora coleta os cinco grupos próprios do ACR TI-RADS — composição, ecogenicidade, forma, margem e focos ecogênicos — sem reaproveitar os seis eixos da Nota de Domingos. As duas classificações continuam disponíveis, mas são calculadas separadamente e identificadas pelo nome correto. Focos ecogênicos compatíveis são cumulativos; “nenhum/cauda de cometa” deixa de coexistir com um foco real.
+
+O corpo do laudo descreve as características ACR quando elas são a informação disponível, sem chamar automaticamente um nódulo misto de sólido. Clássico e Objetivo chegam à mesma categoria. A conduta opcional utiliza o maior eixo e os limiares oficiais de PAAF ou acompanhamento, incluindo os intervalos de controle; sem medida, o sistema não inventa recomendação. Medidas ausentes do exame e do Doppler continuam como placeholders, conforme o padrão da plataforma.
+
+A seleção de ecotextura heterogênea de um lobo passou a atravessar o adaptador da web e retirar as frases normais incompatíveis. Nódulo, alteração difusa, Doppler e linfonodo alterado foram testados simultaneamente. A avaliação linfonodal normal permanece como default do exame de tireoide.
+
+Web, React Native e iOS passaram a somar múltiplos focos ecogênicos. A calcificação periférica vale dois pontos nos três clientes. O iOS ganhou regressões próprias para pontuação máxima, exclusividade de “nenhum”, categorias e limites de conduta.
+
+Arquivos centrais no monorepo:
+
+- `apps/api/src/server/renderer/categories/TIREOIDE.ts`
+- `apps/api/src/server/renderer/__tests__/tireoide-23c1-clinical-matrix.manual.ts`
+- `apps/api/src/server/renderer/__tests__/tireoide-objetivo-golden.manual.ts`
+- `apps/web/src/components/laudar/TireoideFormPanel.tsx`
+- `apps/web/src/lib/catalog/tireoideParaCatalogo.ts`
+- `apps/web/src/lib/calculators/tiRads.ts`
+- `apps/mobile/src/shared/calculators/tirads.ts`
+- `apps/mobile/src/features/generate/TIRADSCalculatorSheet.tsx`
+
+Arquivos centrais no iOS:
+
+- `LaudoUSG/Services/TIRADSCalculator.swift`
+- `LaudoUSG/Components/Sheets/TIRADSCalculatorSheet.swift`
+- `LaudoUSGTests/TIRADSCalculatorTests.swift`
+
+Validações executadas:
+
+- `pnpm validate:clinical-review:23c1`: 29 verificações da matriz clínica e 36 regressões do laudo Objetivo aprovadas.
+- Prova ponta a ponta do catálogo e 12 regressões da política de placeholders do Doppler aprovadas.
+- `pnpm typecheck`: oito pacotes aprovados.
+- Builds de produção da API e da web aprovados.
+- Testes focados do iOS: três testes aprovados, sem falhas.
+- O comando geral `pnpm test` não possui tarefas cadastradas; a validação real desta entrega é a matriz clínica e os testes focados acima. O `pnpm lint` continua bloqueado pela configuração interativa antiga do Next nos três apps e não foi contado como aprovado.
+- Referências: [ACR TI-RADS](https://www.acr.org/Clinical-Resources/Clinical-Tools-and-Reference/Reporting-and-Data-Systems/TI-RADS), [atlas oficial do ACR TI-RADS](https://www.acr.org/-/media/ACR/Files/RADS/TI-RADS/ACR-TI-RADS-Atlas.pdf) e [protocolos de ultrassonografia do CBR](https://cbr.org.br/wp-content/uploads/2025/11/Protocolos-de-Ultrassonografia_2025.pdf).
 
 ## Arquivos da entrega 23B1 e do ajuste mamário
 

@@ -49,9 +49,9 @@ export function TIRADSCalculatorSheet({ open, onClose, onInsert }: Props) {
     useState<TIEcogenicidade>("Hipoecoico");
   const [forma, setForma] = useState<TIForma>("Mais larga que alta");
   const [margem, setMargem] = useState<TIMargem>("Lisa ou mal definida");
-  const [focos, setFocos] = useState<TIFocos>(
+  const [focos, setFocos] = useState<TIFocos[]>([
     "Nenhum ou caudas de cometa grandes",
-  );
+  ]);
   const [tamanho, setTamanho] = useState("");
 
   const result: TIRADSResult | null = useMemo(() => {
@@ -111,10 +111,10 @@ export function TIRADSCalculatorSheet({ open, onClose, onInsert }: Props) {
           value={margem}
           onChange={setMargem}
         />
-        <ChipRow
-          title="Focos ecogênicos"
+        <MultiChipRow
+          title="Focos ecogênicos (podem ser somados)"
           options={TI_FOCOS}
-          value={focos}
+          values={focos}
           onChange={setFocos}
         />
 
@@ -197,6 +197,44 @@ function ChipRow<T extends string>({
               <Text style={[styles.chipText, active && styles.chipTextActive]}>
                 {opt}
               </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function MultiChipRow<T extends string>({
+  title,
+  options,
+  values,
+  onChange,
+}: {
+  title: string;
+  options: readonly T[];
+  values: T[];
+  onChange: (v: T[]) => void;
+}) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const none = options[0];
+  return (
+    <View style={{ marginTop: 14 }}>
+      <Text style={styles.label}>{title}</Text>
+      <View style={styles.chipWrap}>
+        {options.map((opt) => {
+          const active = values.includes(opt);
+          return (
+            <Pressable
+              key={opt}
+              onPress={() => {
+                if (opt === none) onChange(active ? [] : [opt]);
+                else onChange(active ? values.filter((item) => item !== opt) : [...values.filter((item) => item !== none), opt]);
+              }}
+              style={[styles.chip, active && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt}</Text>
             </Pressable>
           );
         })}

@@ -43,6 +43,13 @@ export type NoduloCanonico = {
   descricao_raw: string | null;
   nota_domingos_ditada: string | null;
   ti_rads_ditado: string | null;
+  acr_tirads?: {
+    composicao: "cistico" | "espongiforme" | "misto" | "solido" | null;
+    ecogenicidade: "anecoico" | "hiper_ou_isoecoico" | "hipoecoico" | "muito_hipoecoico" | null;
+    forma: "mais_larga_que_alta" | "mais_alta_que_larga" | null;
+    margem: "lisa" | "mal_definida" | "lobulada_ou_irregular" | "extensao_extratireoidiana" | null;
+    focos_ecogenicos: Array<"nenhum_ou_cauda_cometa" | "macrocalcificacoes" | "calcificacoes_perifericas" | "focos_puntiformes">;
+  } | null;
 };
 
 export type LoboCanonico = {
@@ -200,6 +207,16 @@ function adaptarNodulo(n: NoduloTireoide, _pendencias: Pendencia[]): NoduloCanon
     descricao_raw: null,
     nota_domingos_ditada: null,
     ti_rads_ditado: null,
+    acr_tirads:
+      n.acrComposicao || n.acrEcogenicidade || n.acrForma || n.acrMargem || (n.acrFocos?.length ?? 0) > 0
+        ? {
+            composicao: n.acrComposicao ?? null,
+            ecogenicidade: n.acrEcogenicidade ?? null,
+            forma: n.acrForma ?? null,
+            margem: n.acrMargem ?? null,
+            focos_ecogenicos: n.acrFocos ?? [],
+          }
+        : null,
   };
 }
 
@@ -222,6 +239,9 @@ function adaptarLobo(
   return {
     medidas_cm: medidasDoLobo(l),
     volume_ml: volumeCalculado(l),
+    ...(l.ecotextura === "heterogenea"
+      ? { ecotextura_alterada: "com ecotextura heterogênea" }
+      : {}),
     nodulos: nodulos.filter((n) => n.lobo === loboId).map((n) => adaptarNodulo(n, pendencias)),
   };
 }

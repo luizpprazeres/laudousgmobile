@@ -29,6 +29,14 @@ function check(name: string, cond: boolean, detail?: string) {
 const render = (f: TireoideFindings, prefs?: Partial<TireoidePreferences>) =>
   renderTireoide(f, prefs, { objetivo: true });
 
+const A = (
+  composicao: "cistico" | "espongiforme" | "misto" | "solido",
+  ecogenicidade: "anecoico" | "hiper_ou_isoecoico" | "hipoecoico" | "muito_hipoecoico",
+  forma: "mais_larga_que_alta" | "mais_alta_que_larga" = "mais_larga_que_alta",
+  margem: "lisa" | "mal_definida" | "lobulada_ou_irregular" | "extensao_extratireoidiana" = "lisa",
+  focos_ecogenicos: Array<"nenhum_ou_cauda_cometa" | "macrocalcificacoes" | "calcificacoes_perifericas" | "focos_puntiformes"> = ["nenhum_ou_cauda_cometa"],
+) => ({ composicao, ecogenicidade, forma, margem, focos_ecogenicos });
+
 // ── Estrutura objetivo (cabeçalhos) ──
 {
   const l = render(F({}));
@@ -69,39 +77,39 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
 
 {
   // TR2: misto regular
-  const f = nodulo({ ecogenicidade: "solida_areas_anecoicas", margem: "regular", forma: "mais_larga_que_alta", medidas_cm: [0.8, 0.6, 0.5] });
+  const f = nodulo({ ecogenicidade: "solida_areas_anecoicas", margem: "regular", forma: "mais_larga_que_alta", acr_tirads: A("misto", "hiper_ou_isoecoico"), medidas_cm: [0.8, 0.6, 0.5] });
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("TR2: pontos=2, categoria=2", acr?.pontos === 2 && acr?.categoria === 2, JSON.stringify(acr));
   check("TR2: impressão '(ACR TI-RADS 2'", /\(ACR TI-RADS 2/.test(render(f)), render(f));
 }
 {
   // TR3: iso regular
-  const f = nodulo({ ecogenicidade: "isoecoica", margem: "regular", forma: "mais_larga_que_alta", calcificacoes: "sem", medidas_cm: [1.8, 1.4, 1.2] });
+  const f = nodulo({ ecogenicidade: "isoecoica", margem: "regular", forma: "mais_larga_que_alta", calcificacoes: "sem", acr_tirads: A("solido", "hiper_ou_isoecoico"), medidas_cm: [1.8, 1.4, 1.2] });
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("TR3: pontos=3, categoria=3", acr?.pontos === 3 && acr?.categoria === 3, JSON.stringify(acr));
   check("TR3: impressão '(ACR TI-RADS 3, características intermediárias)'", /\(ACR TI-RADS 3, características intermediárias\)/.test(render(f)), render(f));
 }
 {
   // TR4: hipo + irregular
-  const f = nodulo({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", medidas_cm: [1.6, 1.2, 1.0] });
+  const f = nodulo({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"), medidas_cm: [1.6, 1.2, 1.0] });
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("TR4: pontos=6, categoria=4", acr?.pontos === 6 && acr?.categoria === 4, JSON.stringify(acr));
   check("TR4: impressão '(ACR TI-RADS 4, características suspeitas)'", /\(ACR TI-RADS 4, características suspeitas\)/.test(render(f)), render(f));
 }
 {
   // TR5: hipo + alta + espiculada + micro
-  const f = nodulo({ ecogenicidade: "hipoecoica", margem: "espiculada", forma: "mais_alta_que_larga", calcificacoes: "micro", medidas_cm: [1.2, 1.0, 0.9] });
+  const f = nodulo({ ecogenicidade: "hipoecoica", margem: "espiculada", forma: "mais_alta_que_larga", calcificacoes: "micro", acr_tirads: A("solido", "hipoecoico", "mais_alta_que_larga", "lobulada_ou_irregular", ["focos_puntiformes"]), medidas_cm: [1.2, 1.0, 0.9] });
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("TR5: pontos=12, categoria=5", acr?.pontos === 12 && acr?.categoria === 5, JSON.stringify(acr));
   check("TR5: impressão '(ACR TI-RADS 5, altamente suspeitas)'", /\(ACR TI-RADS 5, altamente suspeitas\)/.test(render(f)), render(f));
 }
 {
   // Cisto → TR1
-  const f = nodulo({ ecogenicidade: "anecoica_homogenea", medidas_cm: [0.9, 0.7, 0.6] });
+  const f = nodulo({ ecogenicidade: "anecoica_homogenea", acr_tirads: A("cistico", "anecoico"), medidas_cm: [0.9, 0.7, 0.6] });
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("Cisto: pontos=0, categoria=1", acr?.pontos === 0 && acr?.categoria === 1, JSON.stringify(acr));
   const l = render(f);
-  check("Cisto: ACHADOS 'Cisto anecoico homogêneo'", /Cisto anecoico homogêneo/.test(l), l);
+  check("Cisto: ACHADOS descreve composição cística e conteúdo anecoico", /cística ou quase totalmente cística, anecoica/i.test(l), l);
   check("Cisto: impressão 'Cisto simples ... (ACR TI-RADS 1)'", /Cisto simples.*\(ACR TI-RADS 1\)/.test(l), l);
 }
 
@@ -134,14 +142,14 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
     }),
   );
   check("difusa: ACHADOS reflete ecotextura ditada", /difusamente heterogênea, compatível com tireoidite crônica/.test(l), l);
-  check("difusa: IMPRESSÃO 'Tireoidopatia difusa'", /Tireoidopatia difusa/.test(l), l);
+  check("difusa: IMPRESSÃO 'Sinais ecográficos de tireoidopatia'", /Sinais ecográficos de tireoidopatia/.test(l), l);
 }
 
 // ── 2 nódulos: maior categoria na conduta (toggle on) ──
 {
   const f = F({
-    lobo_direito: L({ medidas_cm: [5.0, 1.8, 1.6], volume_ml: 7.0, nodulos: [N({ ecogenicidade: "solida_areas_anecoicas", margem: "regular", forma: "mais_larga_que_alta", medidas_cm: [0.7, 0.5, 0.4] })] }),
-    lobo_esquerdo: L({ medidas_cm: [4.8, 1.7, 1.5], volume_ml: 6.0, nodulos: [N({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", medidas_cm: [1.7, 1.3, 1.1] })] }),
+    lobo_direito: L({ medidas_cm: [5.0, 1.8, 1.6], volume_ml: 7.0, nodulos: [N({ ecogenicidade: "solida_areas_anecoicas", margem: "regular", forma: "mais_larga_que_alta", acr_tirads: A("misto", "hiper_ou_isoecoico"), medidas_cm: [0.7, 0.5, 0.4] })] }),
+    lobo_esquerdo: L({ medidas_cm: [4.8, 1.7, 1.5], volume_ml: 6.0, nodulos: [N({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"), medidas_cm: [1.7, 1.3, 1.1] })] }),
   });
   const l = render(f, { show_conduct_recommendation: true });
   check("2 nódulos: impressão tem TR2 e TR4", /\(ACR TI-RADS 2/.test(l) && /\(ACR TI-RADS 4/.test(l), l);
@@ -151,14 +159,14 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
 
 // ── Conduta toggle OFF (default): sem seção de conduta ──
 {
-  const f = nodulo({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", medidas_cm: [1.6, 1.2, 1.0] });
+  const f = nodulo({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"), medidas_cm: [1.6, 1.2, 1.0] });
   const l = render(f);
   check("conduta OFF: SEM 'Conduta sugerida:'", !/Conduta sugerida:/.test(l), l);
 }
 
 // ── Conduta toggle ON: TR4 1,6 cm → PAAF em seção própria ──
 {
-  const f = nodulo({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", medidas_cm: [1.6, 1.2, 1.0] });
+  const f = nodulo({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"), medidas_cm: [1.6, 1.2, 1.0] });
   const l = render(f, { show_conduct_recommendation: true });
   check("conduta ON: seção 'Conduta sugerida:' fora da impressão", /\nConduta sugerida:\nACR TI-RADS 4\. punção aspirativa por agulha fina \(PAAF\)\./.test(l), l);
 }

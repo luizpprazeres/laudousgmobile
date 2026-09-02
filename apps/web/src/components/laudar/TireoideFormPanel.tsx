@@ -226,8 +226,42 @@ function newNodulo(): NoduloTireoide {
     c2: '',
     c3: '',
     localizacao: '',
+    acrComposicao: null,
+    acrEcogenicidade: null,
+    acrForma: null,
+    acrMargem: null,
+    acrFocos: [],
   }
 }
+
+const ACR_COMPOSICAO: Opcao[] = [
+  { value: 'cistico', label: 'Cístico/quase cístico' },
+  { value: 'espongiforme', label: 'Espongiforme' },
+  { value: 'misto', label: 'Misto' },
+  { value: 'solido', label: 'Sólido/quase sólido' },
+]
+const ACR_ECOGENICIDADE: Opcao[] = [
+  { value: 'anecoico', label: 'Anecoico' },
+  { value: 'hiper_ou_isoecoico', label: 'Hiper/isoecoico' },
+  { value: 'hipoecoico', label: 'Hipoecoico' },
+  { value: 'muito_hipoecoico', label: 'Muito hipoecoico' },
+]
+const ACR_FORMA: Opcao[] = [
+  { value: 'mais_larga_que_alta', label: 'Mais larga que alta' },
+  { value: 'mais_alta_que_larga', label: 'Mais alta que larga' },
+]
+const ACR_MARGEM: Opcao[] = [
+  { value: 'lisa', label: 'Lisa' },
+  { value: 'mal_definida', label: 'Mal definida' },
+  { value: 'lobulada_ou_irregular', label: 'Lobulada/irregular' },
+  { value: 'extensao_extratireoidiana', label: 'Extensão extratireoidiana' },
+]
+const ACR_FOCOS: Opcao[] = [
+  { value: 'nenhum_ou_cauda_cometa', label: 'Nenhum/cauda de cometa' },
+  { value: 'macrocalcificacoes', label: 'Macrocalcificações' },
+  { value: 'calcificacoes_perifericas', label: 'Periféricas' },
+  { value: 'focos_puntiformes', label: 'Puntiformes' },
+]
 
 /** Um eixo do escore: rótulo, opções, e a possibilidade de desmarcar. */
 function Eixo({
@@ -284,9 +318,9 @@ function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
           <div>
             <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Nódulos</h3>
             <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-gray-400">
-              Descreva o que você vê. A <strong className="font-semibold">nota de Domingos</strong> e o{' '}
-              <strong className="font-semibold">TI-RADS</strong> são calculados no laudo, a partir destes
-              eixos — você não precisa converter nada.
+              Descreva o que você vê. A <strong className="font-semibold">nota de Domingos</strong> é calculada
+              com estes eixos. O <strong className="font-semibold">ACR TI-RADS</strong> usa os cinco grupos
+              próprios logo abaixo — uma escala não é convertida na outra.
             </p>
           </div>
           <button
@@ -390,6 +424,39 @@ function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
               placeholder="no terço médio"
               onChange={(value) => updateNodulo(nodulo.id, { localizacao: value })}
             />
+
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 dark:border-emerald-900 dark:bg-emerald-950/20">
+              <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
+                ACR TI-RADS
+              </h4>
+              <p className="mb-3 mt-1 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+                Classificação oficial independente da Nota de Domingos. Complete os cinco grupos para calcular.
+              </p>
+              <div className="space-y-3">
+                <Eixo rotulo="Composição" opcoes={ACR_COMPOSICAO} valor={nodulo.acrComposicao ?? null} onChange={(v) => updateNodulo(nodulo.id, { acrComposicao: v as NoduloTireoide['acrComposicao'] })} />
+                <Eixo rotulo="Ecogenicidade" opcoes={ACR_ECOGENICIDADE} valor={nodulo.acrEcogenicidade ?? null} onChange={(v) => updateNodulo(nodulo.id, { acrEcogenicidade: v as NoduloTireoide['acrEcogenicidade'] })} />
+                <Eixo rotulo="Forma" opcoes={ACR_FORMA} valor={nodulo.acrForma ?? null} onChange={(v) => updateNodulo(nodulo.id, { acrForma: v as NoduloTireoide['acrForma'] })} />
+                <Eixo rotulo="Margem" opcoes={ACR_MARGEM} valor={nodulo.acrMargem ?? null} onChange={(v) => updateNodulo(nodulo.id, { acrMargem: v as NoduloTireoide['acrMargem'] })} />
+                <div>
+                  <FieldLabel>Focos ecogênicos <span className="ml-1.5 font-normal normal-case tracking-normal text-gray-400">podem ser somados</span></FieldLabel>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ACR_FOCOS.map((o) => {
+                      const current = nodulo.acrFocos ?? []
+                      const active = current.includes(o.value as NonNullable<NoduloTireoide['acrFocos']>[number])
+                      return <Chip key={o.value} active={active} onClick={() => {
+                        const value = o.value as NonNullable<NoduloTireoide['acrFocos']>[number]
+                        const next = value === 'nenhum_ou_cauda_cometa'
+                          ? (active ? [] : [value])
+                          : active
+                            ? current.filter((item) => item !== value)
+                            : [...current.filter((item) => item !== 'nenhum_ou_cauda_cometa'), value]
+                        updateNodulo(nodulo.id, { acrFocos: next })
+                      }}>{o.label}</Chip>
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       ))}

@@ -80,6 +80,20 @@ const formaKeys = Object.keys(FORMA) as FormaKey[];
 const calcKeys = Object.keys(CALCIFICACOES) as CalcKey[];
 const vascKeys = Object.keys(VASCULARIZACAO) as VascKey[];
 
+const ACR_COMPOSICAO = ["cistico", "espongiforme", "misto", "solido"] as const;
+const ACR_ECOGENICIDADE = ["anecoico", "hiper_ou_isoecoico", "hipoecoico", "muito_hipoecoico"] as const;
+const ACR_FORMA = ["mais_larga_que_alta", "mais_alta_que_larga"] as const;
+const ACR_MARGEM = ["lisa", "mal_definida", "lobulada_ou_irregular", "extensao_extratireoidiana"] as const;
+const ACR_FOCOS = ["nenhum_ou_cauda_cometa", "macrocalcificacoes", "calcificacoes_perifericas", "focos_puntiformes"] as const;
+
+const AcrTiradsSchema = z.object({
+  composicao: z.enum(ACR_COMPOSICAO).nullable(),
+  ecogenicidade: z.enum(ACR_ECOGENICIDADE).nullable(),
+  forma: z.enum(ACR_FORMA).nullable(),
+  margem: z.enum(ACR_MARGEM).nullable(),
+  focos_ecogenicos: z.array(z.enum(ACR_FOCOS)),
+});
+
 // ---------------------------------------------------------------------------
 // Schema de achados
 // ---------------------------------------------------------------------------
@@ -98,6 +112,8 @@ const NoduloSchema = z.object({
   descricao_raw: z.string().nullable(), // verbatim do médico (auditoria)
   nota_domingos_ditada: z.string().nullable(), // override verbatim — vence o cálculo
   ti_rads_ditado: z.string().nullable(), // override verbatim — vence o cálculo
+  /** ACR oficial: independente dos seis eixos da Nota de Domingos. */
+  acr_tirads: AcrTiradsSchema.nullable().optional(),
 });
 
 const LoboSchema = z.object({
@@ -180,6 +196,7 @@ const NODULO_JSON = {
     "descricao_raw",
     "nota_domingos_ditada",
     "ti_rads_ditado",
+    "acr_tirads",
   ],
   properties: {
     ecogenicidade: enumNull(ecoKeys),
@@ -194,6 +211,18 @@ const NODULO_JSON = {
     descricao_raw: str,
     nota_domingos_ditada: str,
     ti_rads_ditado: str,
+    acr_tirads: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      required: ["composicao", "ecogenicidade", "forma", "margem", "focos_ecogenicos"],
+      properties: {
+        composicao: enumNull(ACR_COMPOSICAO),
+        ecogenicidade: enumNull(ACR_ECOGENICIDADE),
+        forma: enumNull(ACR_FORMA),
+        margem: enumNull(ACR_MARGEM),
+        focos_ecogenicos: { type: "array", items: { type: "string", enum: [...ACR_FOCOS] } },
+      },
+    },
   },
 } as const;
 
@@ -296,6 +325,16 @@ REGRAS:
    - descricao_raw: a descrição verbatim do médico para esta imagem (auditoria).
    - nota_domingos_ditada / ti_rads_ditado: SOMENTE se o médico DITAR a nota e/ou
      o TI-RADS prontos (reproduzir); senão null (o código calcula).
+   - acr_tirads: classifique separadamente pelos cinco grupos oficiais do ACR:
+     composicao = cistico | espongiforme | misto | solido;
+     ecogenicidade = anecoico | hiper_ou_isoecoico | hipoecoico | muito_hipoecoico;
+     forma = mais_larga_que_alta | mais_alta_que_larga;
+     margem = lisa | mal_definida | lobulada_ou_irregular | extensao_extratireoidiana;
+     focos_ecogenicos pode conter mais de um entre macrocalcificacoes,
+     calcificacoes_perifericas e focos_puntiformes. Use
+     nenhum_ou_cauda_cometa somente quando nenhum dos outros estiver presente.
+     Deixe o grupo como null se a descrição não permitir classificá-lo. NUNCA
+     converta a Nota de Domingos em ACR TI-RADS.
 5. picos sistólicos (só Doppler): pico_sistolico_direito_cms /
    pico_sistolico_esquerdo_cms em cm/s; pico_arteria_direita/esquerda = "inferior"
    ou "superior" conforme ditado (default inferior se não especificado).
@@ -391,19 +430,6 @@ function caracteristicasDoTirads(tirads: number): string | null {
       3: "intermediárias",
       4: "suspeitas",
       5: "altamente suspeitas",
-    }[tirads] ?? null
-  );
-}
-
-/** TI-RADS → conduta (tabela Domingos + ACR 5). null fora de 1-5 (omite). */
-function condutaDoTirads(tirads: number): string | null {
-  return (
-    {
-      1: "controle anual",
-      2: "controle ou punção aspirativa por agulha fina (citopunção)",
-      3: "punção aspirativa por agulha fina (citopunção)",
-      4: "punção aspirativa por agulha fina (citopunção)",
-      5: "punção aspirativa por agulha fina (citopunção)",
     }[tirads] ?? null
   );
 }
@@ -634,12 +660,57 @@ const LINFONODOS_NORMAIS =
 const LINFONODOS_ATIPICOS_SEM_DESCRICAO =
   "Adicionalmente, evidenciam-se linfonodos cervicais de aspecto atípico.";
 
+const ACR_COMPOSICAO_TEXTO: Record<(typeof ACR_COMPOSICAO)[number], string> = {
+  cistico: "cística ou quase totalmente cística",
+  espongiforme: "espongiforme",
+  misto: "mista, com componentes sólido e cístico",
+  solido: "sólida ou quase totalmente sólida",
+};
+const ACR_ECO_TEXTO: Record<(typeof ACR_ECOGENICIDADE)[number], string> = {
+  anecoico: "anecoica",
+  hiper_ou_isoecoico: "hiperecoica ou isoecoica",
+  hipoecoico: "hipoecoica",
+  muito_hipoecoico: "acentuadamente hipoecoica",
+};
+const ACR_MARGEM_TEXTO: Record<(typeof ACR_MARGEM)[number], string> = {
+  lisa: "de margens lisas",
+  mal_definida: "de margens mal definidas",
+  lobulada_ou_irregular: "de margens lobuladas ou irregulares",
+  extensao_extratireoidiana: "com extensão extratireoidiana",
+};
+const ACR_FOCOS_TEXTO: Record<(typeof ACR_FOCOS)[number], string> = {
+  nenhum_ou_cauda_cometa: "sem focos ecogênicos suspeitos ou com artefatos em cauda de cometa",
+  macrocalcificacoes: "com macrocalcificações",
+  calcificacoes_perifericas: "com calcificações periféricas",
+  focos_puntiformes: "com focos ecogênicos puntiformes",
+};
+
+function descritorAcr(nod: TireoideNodulo): string | null {
+  const acr = nod.acr_tirads;
+  if (!acr?.composicao) return null;
+  const partes = [`imagem ${ACR_COMPOSICAO_TEXTO[acr.composicao]}`];
+  if (acr.ecogenicidade && acr.composicao !== "espongiforme") partes.push(ACR_ECO_TEXTO[acr.ecogenicidade]);
+  if (acr.margem) partes.push(ACR_MARGEM_TEXTO[acr.margem]);
+  if (acr.forma === "mais_alta_que_larga") partes.push("mais alta do que larga");
+  else if (acr.forma === "mais_larga_que_alta") partes.push("mais larga do que alta");
+  const focos = Array.from(new Set(acr.focos_ecogenicos));
+  const ativos = focos.filter((f) => f !== "nenhum_ou_cauda_cometa");
+  for (const foco of ativos.length ? ativos : focos) partes.push(ACR_FOCOS_TEXTO[foco]);
+  partes.push(`medindo ${medidasFmt(nod.medidas_cm)}`);
+  if (nod.localizacao) partes.push(`situada ${nod.localizacao}`);
+  return partes.join(", ");
+}
+
 // ---------------------------------------------------------------------------
 // Render do corpo
 // ---------------------------------------------------------------------------
 
 /** Descritor de uma imagem nodular no corpo (sem "nódulo", sem Chammas). */
 function noduloDescritor(nod: TireoideNodulo): string {
+  if (!nod.ecogenicidade) {
+    const acr = descritorAcr(nod);
+    if (acr) return acr;
+  }
   const partes: string[] = [
     `imagem ${nod.ecogenicidade ? ECOGENICIDADE[nod.ecogenicidade].txt : "nodular"}`,
   ];
@@ -725,20 +796,30 @@ function loboCorpo(
 // Render da conclusão (por lobo, imagens separadas por ";")
 // ---------------------------------------------------------------------------
 
-/** Trecho de uma imagem na conclusão (Domingos ON: nota+características+TI-RADS). */
+/** Trecho de uma imagem na conclusão, mantendo Domingos e ACR independentes. */
 function noduloConclusao(nod: TireoideNodulo, showDomingos: boolean): string {
-  const eco = nod.ecogenicidade ? ECOGENICIDADE[nod.ecogenicidade].txt : "nodular";
+  const eco = nod.ecogenicidade
+    ? ECOGENICIDADE[nod.ecogenicidade].txt
+    : nod.acr_tirads?.composicao === "cistico"
+      ? "cística"
+      : nod.acr_tirads?.composicao === "espongiforme"
+        ? "espongiforme"
+        : nod.acr_tirads?.composicao === "misto"
+          ? "mista"
+          : nod.acr_tirads?.composicao === "solido"
+            ? "sólida"
+            : "nodular";
   const loc = nod.localizacao ? ` ${nod.localizacao}` : "";
   const base = `imagem ${eco}${loc}`;
-  const { notaTxt, tirads, tiradsTxt } = classificarNodulo(nod);
+  const { notaTxt, tirads } = classificarNodulo(nod);
+  const acr = calcAcrTirads(nod);
+  const acrTxt = acr ? `; ACR TI-RADS ${acr.categoria}` : "";
   if (showDomingos && notaTxt !== null) {
     const caracTxt = tirads !== null ? caracteristicasDoTirads(tirads) : null;
-    const carac = caracTxt ? ` (características ${caracTxt})` : "";
-    const tr = tiradsTxt !== null ? `, equivalente ao TI-RADS ${tiradsTxt} ACR` : "";
-    return `${base} com NOTA FINAL ${notaTxt}${carac}${tr}`;
+    const carac = caracTxt ? ` (características ${caracTxt} pela escala de Domingos)` : "";
+    return `${base} com NOTA FINAL ${notaTxt}${carac}${acrTxt}`;
   }
-  // Domingos OFF (ou sem nota): só o TI-RADS quando disponível.
-  if (tiradsTxt !== null) return `${base} - TI-RADS ${tiradsTxt}`;
+  if (acr) return `${base} - ACR TI-RADS ${acr.categoria}`;
   return base;
 }
 
@@ -1033,17 +1114,22 @@ function renderTireoideClassico(
    */
   if (f.tireoidite_tipo) conclusao.push(TIREOIDITE[f.tireoidite_tipo].recomendacao);
 
-  // Conduta (toggle) — append do maior TI-RADS calculado/ditado entre as imagens.
+  // Conduta (toggle) — exclusivamente ACR oficial + maior diâmetro.
   if (prefs.show_conduct_recommendation) {
-    const tiradsList = lobosComAchado
+    const candidatos = lobosComAchado
       .flatMap((l) => l.lobo.nodulos)
-      .map((nod) => classificarNodulo(nod).tirads)
-      .filter((t): t is number => t !== null);
-    if (tiradsList.length > 0) {
-      const maxTirads = Math.max(...tiradsList);
-      const conduta = condutaDoTirads(maxTirads);
+      .map((nod) => ({ acr: calcAcrTirads(nod), diametro: maiorDiametroCm(nod) }))
+      .filter((item): item is { acr: { pontos: number; categoria: number }; diametro: number | null } => item.acr !== null);
+    if (candidatos.length > 0) {
+      const maxTirads = Math.max(...candidatos.map((item) => item.acr.categoria));
+      const maiorDiametro = candidatos
+        .filter((item) => item.acr.categoria === maxTirads)
+        .map((item) => item.diametro)
+        .filter((valor): valor is number => valor !== null)
+        .reduce<number | null>((acc, valor) => acc === null ? valor : Math.max(acc, valor), null);
+      const conduta = condutaAcr(maxTirads, maiorDiametro);
       if (conduta) {
-        conclusao.push(`Conduta sugerida (TI-RADS ${maxTirads}): ${conduta}.`);
+        conclusao.push(`Conduta sugerida (ACR TI-RADS ${maxTirads}): ${conduta}.`);
       }
     }
   }
@@ -1087,53 +1173,34 @@ function volumeTotal(f: TireoideFindings): number | null {
 // derivando a categoria (TR1-TR5) e a conduta por diâmetro. Override: ti_rads_ditado
 // vence o cálculo (reproduz verbatim a categoria ditada do médico).
 
-/** Pontos ACR — COMPOSIÇÃO (derivada da ecogenicidade): cístico 0, misto 1, sólido 2. */
-function acrComposicaoPts(eco: EcoKey): number {
-  switch (eco) {
-    case "anecoica_homogenea":
-    case "anecoica_finos_ecos":
-      return 0; // cístico/espongiforme
-    case "anecoica_septos":
-    case "anecoica_componentes_solidos":
-    case "solida_areas_anecoicas":
-      return 1; // misto cístico-sólido
-    default:
-      return 2; // sólido (hipo/iso/hiper/calcificação parietal)
-  }
-}
-
-/** Pontos ACR — ECOGENICIDADE. */
-function acrEcogenicidadePts(eco: EcoKey): number {
-  if (eco.startsWith("anecoica")) return 0; // anecoico
-  if (eco === "hiperecoica" || eco === "isoecoica") return 1;
-  if (eco === "hipoecoica") return 2;
-  return 1; // solida_* → default iso
-}
-
-/** Pontos ACR — FORMA. */
-function acrFormaPts(forma: FormaKey | null): number {
-  return forma === "mais_alta_que_larga" ? 3 : 0;
-}
-
-/** Pontos ACR — MARGEM. */
-function acrMargemPts(margem: MargemKey | null): number {
-  if (margem === "irregular" || margem === "espiculada") return 2;
-  return 0; // regular | null → lisa/regular
-}
-
-/** Pontos ACR — FOCOS ECOGÊNICOS (a partir das calcificações). */
-function acrFocosPts(calc: CalcKey | null): number {
-  switch (calc) {
-    case "grosseiras":
-      return 1; // macrocalcificações
-    case "casca_ovo":
-      return 2; // calcificações periféricas (em casca de ovo)
-    case "micro":
-      return 3; // focos ecogênicos puntiformes (microcalcificações)
-    default:
-      return 0; // sem | null
-  }
-}
+const ACR_COMPOSICAO_PTS: Record<(typeof ACR_COMPOSICAO)[number], number> = {
+  cistico: 0,
+  espongiforme: 0,
+  misto: 1,
+  solido: 2,
+};
+const ACR_ECOGENICIDADE_PTS: Record<(typeof ACR_ECOGENICIDADE)[number], number> = {
+  anecoico: 0,
+  hiper_ou_isoecoico: 1,
+  hipoecoico: 2,
+  muito_hipoecoico: 3,
+};
+const ACR_FORMA_PTS: Record<(typeof ACR_FORMA)[number], number> = {
+  mais_larga_que_alta: 0,
+  mais_alta_que_larga: 3,
+};
+const ACR_MARGEM_PTS: Record<(typeof ACR_MARGEM)[number], number> = {
+  lisa: 0,
+  mal_definida: 0,
+  lobulada_ou_irregular: 2,
+  extensao_extratireoidiana: 3,
+};
+const ACR_FOCOS_PTS: Record<(typeof ACR_FOCOS)[number], number> = {
+  nenhum_ou_cauda_cometa: 0,
+  macrocalcificacoes: 1,
+  calcificacoes_perifericas: 2,
+  focos_puntiformes: 3,
+};
 
 /** Categoria ACR (1-5) a partir da soma de pontos. */
 function acrCategoriaDosPontos(pts: number): number {
@@ -1146,15 +1213,15 @@ function acrCategoriaDosPontos(pts: number): number {
 
 const ACR_TEXTO: Record<number, string> = {
   1: "benigno",
-  2: "provavelmente benigno",
+  2: "não suspeito",
   3: "características intermediárias",
   4: "características suspeitas",
   5: "altamente suspeitas",
 };
 
 /**
- * Calcula o ACR TI-RADS de um nódulo a partir dos enums do escore.
- * Retorna null se a ecogenicidade for null (sem ecogenicidade não pontua).
+ * Calcula ACR TI-RADS apenas a partir dos cinco grupos oficiais. A Nota de
+ * Domingos não é atalho para ACR e nunca entra nesta soma.
  * Override: ti_rads_ditado (1-5) vence o cálculo (categoria ditada do médico).
  */
 export function calcAcrTirads(
@@ -1164,13 +1231,16 @@ export function calcAcrTirads(
   if (ditado && /^[1-5]$/.test(ditado)) {
     return { pontos: NaN, categoria: Number(ditado) };
   }
-  if (!nod.ecogenicidade) return null;
+  const acr = nod.acr_tirads;
+  if (!acr?.composicao || !acr.ecogenicidade || !acr.forma || !acr.margem) return null;
+  const focos = Array.from(new Set(acr.focos_ecogenicos));
+  const focosValidos = focos.filter((f) => f !== "nenhum_ou_cauda_cometa");
   const pontos =
-    acrComposicaoPts(nod.ecogenicidade) +
-    acrEcogenicidadePts(nod.ecogenicidade) +
-    acrFormaPts(nod.forma) +
-    acrMargemPts(nod.margem) +
-    acrFocosPts(nod.calcificacoes);
+    ACR_COMPOSICAO_PTS[acr.composicao] +
+    ACR_ECOGENICIDADE_PTS[acr.ecogenicidade] +
+    ACR_FORMA_PTS[acr.forma] +
+    ACR_MARGEM_PTS[acr.margem] +
+    focosValidos.reduce((sum, foco) => sum + ACR_FOCOS_PTS[foco], 0);
   return { pontos, categoria: acrCategoriaDosPontos(pontos) };
 }
 
@@ -1195,27 +1265,33 @@ function condutaAcr(categoria: number, diametroCm: number | null): string | null
   if (diametroCm === null) return null;
   if (categoria === 3) {
     if (diametroCm >= 2.5) return "punção aspirativa por agulha fina (PAAF)";
-    if (diametroCm >= 1.5) return "acompanhamento (controle ultrassonográfico)";
+    if (diametroCm >= 1.5) return "acompanhamento ultrassonográfico em 1, 3 e 5 anos";
     return null;
   }
   if (categoria === 4) {
     if (diametroCm >= 1.5) return "punção aspirativa por agulha fina (PAAF)";
-    if (diametroCm >= 1.0) return "acompanhamento (controle ultrassonográfico)";
+    if (diametroCm >= 1.0) return "acompanhamento ultrassonográfico em 1, 2, 3 e 5 anos";
     return null;
   }
   // categoria 5
   if (diametroCm >= 1.0) return "punção aspirativa por agulha fina (PAAF)";
-  if (diametroCm >= 0.5) return "acompanhamento (controle ultrassonográfico)";
+  if (diametroCm >= 0.5) return "acompanhamento ultrassonográfico anual por até 5 anos";
   return null;
 }
 
 /** É cisto (ecogenicidade anecoica)? Cisto simples → ACR TI-RADS 1. */
 function isCisto(nod: TireoideNodulo): boolean {
+  if (nod.acr_tirads?.composicao === "cistico") return true;
   return nod.ecogenicidade !== null && nod.ecogenicidade.startsWith("anecoica");
 }
 
 /** Frase enxuta (objetivo) de um nódulo no ACHADOS. */
 function noduloAchadoObjetivo(nod: TireoideNodulo): string {
+  const acrDesc = descritorAcr(nod);
+  if (acrDesc) {
+    const texto = acrDesc.charAt(0).toUpperCase() + acrDesc.slice(1);
+    return `${texto}.`;
+  }
   if (isCisto(nod)) {
     const partes = [
       `Cisto ${nod.ecogenicidade ? ECOGENICIDADE[nod.ecogenicidade].txtM : "simples"}`,
@@ -1386,7 +1462,15 @@ function renderTireoideObjetivo(
   // Item por nódulo com a categoria ACR calculada/ditada.
   for (const { lobo } of lobosComNodulo) {
     for (const nod of lobo.nodulos) {
-      const eco = nod.ecogenicidade ? ECOGENICIDADE[nod.ecogenicidade].txtM : "sólido";
+      const eco = nod.ecogenicidade
+        ? ECOGENICIDADE[nod.ecogenicidade].txtM
+        : nod.acr_tirads?.composicao === "espongiforme"
+          ? "espongiforme"
+          : nod.acr_tirads?.composicao === "misto"
+            ? "misto"
+            : nod.acr_tirads?.composicao === "solido"
+              ? "sólido"
+              : "nodular";
       const loc = nod.localizacao ? ` ${nod.localizacao}` : "";
       if (isCisto(nod)) {
         impressao.push(`Cisto simples${loc} (ACR TI-RADS 1).`);

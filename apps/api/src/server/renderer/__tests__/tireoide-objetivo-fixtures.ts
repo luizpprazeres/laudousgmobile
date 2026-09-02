@@ -23,6 +23,7 @@ export const N = (p: Partial<TireoideNodulo>): TireoideNodulo => ({
   descricao_raw: null,
   nota_domingos_ditada: null,
   ti_rads_ditado: null,
+  acr_tirads: null,
   ...p,
 });
 
@@ -49,7 +50,9 @@ export const F = (p: Partial<TireoideFindings>): TireoideFindings => ({
   pico_sistolico_direito_cms: null,
   pico_arteria_esquerda: null,
   pico_sistolico_esquerdo_cms: null,
-  linfonodos_descritos: false,
+  // A avaliação cervical é padrão no exame de tireoide; a ausência de relato
+  // explícito do médico mantém a descrição normal, assim como os demais defaults.
+  linfonodos_descritos: true,
   linfonodos_alterados: false,
   linfonodos_descricao: null,
   achados_adicionais: null,

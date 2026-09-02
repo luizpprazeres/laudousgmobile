@@ -5,9 +5,9 @@
  *   Lobo direito / Lobo esquerdo / Istmo (medidas A×B×C → volume) → Nódulos (lista,
  *   por lobo, formato Domingos + ACR TI-RADS) → Linfonodos → Doppler (opcional) → rodapé fixo.
  *
- * REGRA TRANCADA: Nota Domingos e TI-RADS NUNCA são calculados — vêm por seleção do
- * médico e são reproduzidos no formato exato. O VOLUME, ao contrário, é fórmula pura
- * (elipsoide) e é calculado pelo sistema.
+ * A tela coleta separadamente os seis eixos de Domingos e os cinco grupos
+ * oficiais do ACR TI-RADS. O renderer é a única autoridade que soma cada escala;
+ * uma nunca é convertida na outra. O volume também é fórmula pura (elipsoide).
  */
 
 // Fator do elipsoide (A×B×C×fator, medidas em cm → volume em ml).
@@ -54,6 +54,15 @@ export interface NoduloTireoide {
   c3: string
   /** Onde está, com a preposição: "no terço médio". Opcional. */
   localizacao: string
+  /**
+   * ACR TI-RADS oficial. Estes cinco grupos são independentes da Nota de
+   * Domingos; não se deriva uma escala da outra.
+   */
+  acrComposicao?: 'cistico' | 'espongiforme' | 'misto' | 'solido' | null
+  acrEcogenicidade?: 'anecoico' | 'hiper_ou_isoecoico' | 'hipoecoico' | 'muito_hipoecoico' | null
+  acrForma?: 'mais_larga_que_alta' | 'mais_alta_que_larga' | null
+  acrMargem?: 'lisa' | 'mal_definida' | 'lobulada_ou_irregular' | 'extensao_extratireoidiana' | null
+  acrFocos?: Array<'nenhum_ou_cauda_cometa' | 'macrocalcificacoes' | 'calcificacoes_perifericas' | 'focos_puntiformes'>
 }
 
 export type TireoiditeTipo = 'nenhuma' | 'hashimoto' | 'linfocitica' | 'granulomatosa' | 'riedel'

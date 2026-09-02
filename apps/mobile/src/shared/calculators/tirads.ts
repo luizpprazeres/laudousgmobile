@@ -140,7 +140,7 @@ export interface TIRADSInput {
   ecogenicidade: TIEcogenicidade;
   forma: TIForma;
   margem: TIMargem;
-  focosEcogenicos: TIFocos;
+  focosEcogenicos: TIFocos[];
   maiorEixoCm: number;
 }
 
@@ -189,7 +189,9 @@ export function calcularTIRADS(input: TIRADSInput): TIRADSResult {
   const pE = pontosEcogenicidade(input.ecogenicidade);
   const pF = pontosForma(input.forma);
   const pM = pontosMargem(input.margem);
-  const pFoc = pontosFocos(input.focosEcogenicos);
+  const focos = Array.from(new Set(input.focosEcogenicos));
+  const focosAtivos = focos.filter((foco) => foco !== "Nenhum ou caudas de cometa grandes");
+  const pFoc = focosAtivos.reduce((sum, foco) => sum + pontosFocos(foco), 0);
   const total = pC + pE + pF + pM + pFoc;
 
   let cat: TIRADSCategoria;
@@ -207,7 +209,7 @@ export function calcularTIRADS(input: TIRADSInput): TIRADSResult {
 - Ecogenicidade: ${input.ecogenicidade} (${pE} pts)
 - Forma: ${input.forma} (${pF} pts)
 - Margem: ${input.margem} (${pM} pts)
-- Focos ecogênicos: ${input.focosEcogenicos} (${pFoc} pts)
+- Focos ecogênicos: ${(focosAtivos.length ? focosAtivos : ["Nenhum ou caudas de cometa grandes"]).join(" + ")} (${pFoc} pts)
 - Pontuação total: ${total} pontos.
 
 Conclusão: ${tiradsLabel(cat)}. ${recomendacao}`;

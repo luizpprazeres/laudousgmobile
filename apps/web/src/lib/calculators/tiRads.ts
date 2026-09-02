@@ -1,8 +1,8 @@
 // ACR TI-RADS 2017 — Thyroid Imaging Reporting and Data System
 // Lógica determinística pura, sem chamadas de rede. < 50ms por cálculo.
 
-export type TiRadsComposicao = 'cistico_esponjoso' | 'misto' | 'solido'
-export type TiRadsEcogenicidade = 'anecoico_hiperecoico' | 'isoecoico' | 'hipoecóico' | 'muito_hipoecóico'
+export type TiRadsComposicao = 'cistico' | 'espongiforme' | 'misto' | 'solido'
+export type TiRadsEcogenicidade = 'anecoico' | 'hiperecoico_isoecoico' | 'hipoecóico' | 'muito_hipoecóico'
 export type TiRadsForma = 'mais_largo_que_alto' | 'mais_alto_que_largo'
 export type TiRadsMargens = 'lisas_mal_definidas' | 'lobuladas_irregulares' | 'extensao_extratireoidiana'
 export type TiRadsFocos = 'nenhum_cauda_cometa' | 'macrocalcificacoes' | 'calcificacoes_perifericas' | 'focos_ecogenicos_puntiformes'
@@ -12,7 +12,7 @@ export interface TiRadsInput {
   ecogenicidade?: TiRadsEcogenicidade
   forma?: TiRadsForma
   margens?: TiRadsMargens
-  focosEcogenicos?: TiRadsFocos
+  focosEcogenicos?: TiRadsFocos | TiRadsFocos[]
   tamanhoMm?: number
 }
 
@@ -28,14 +28,15 @@ export interface TiRadsResult {
 }
 
 const COMPOSICAO_PONTOS: Record<TiRadsComposicao, number> = {
-  cistico_esponjoso: 0,
+  cistico: 0,
+  espongiforme: 0,
   misto: 1,
   solido: 2,
 }
 
 const ECOGENICIDADE_PONTOS: Record<TiRadsEcogenicidade, number> = {
-  anecoico_hiperecoico: 1,
-  isoecoico: 1,
+  anecoico: 0,
+  hiperecoico_isoecoico: 1,
   hipoecóico: 2,
   muito_hipoecóico: 3,
 }
@@ -54,7 +55,7 @@ const MARGENS_PONTOS: Record<TiRadsMargens, number> = {
 const FOCOS_PONTOS: Record<TiRadsFocos, number> = {
   nenhum_cauda_cometa: 0,
   macrocalcificacoes: 1,
-  calcificacoes_perifericas: 1,
+  calcificacoes_perifericas: 2,
   focos_ecogenicos_puntiformes: 3,
 }
 
@@ -93,7 +94,10 @@ export function calcularTiRads(input: TiRadsInput): TiRadsResult {
   if (input.ecogenicidade) score += ECOGENICIDADE_PONTOS[input.ecogenicidade]
   if (input.forma) score += FORMA_PONTOS[input.forma]
   if (input.margens) score += MARGENS_PONTOS[input.margens]
-  if (input.focosEcogenicos) score += FOCOS_PONTOS[input.focosEcogenicos]
+  const focos = Array.isArray(input.focosEcogenicos)
+    ? Array.from(new Set(input.focosEcogenicos))
+    : input.focosEcogenicos ? [input.focosEcogenicos] : []
+  for (const foco of focos.filter((item) => item !== 'nenhum_cauda_cometa')) score += FOCOS_PONTOS[foco]
 
   const category = categoriaFromScore(score)
   const thresholds = THRESHOLDS[category]
@@ -107,7 +111,12 @@ export function calcularTiRads(input: TiRadsInput): TiRadsResult {
   } else if (tamanho >= thresholds.fna) {
     management = `FNA indicada (tamanho ${tamanho}mm ≥ ${thresholds.fna}mm)`
   } else if (tamanho >= thresholds.followup) {
-    management = `Seguimento ultrassonográfico recomendado (tamanho ${tamanho}mm ≥ ${thresholds.followup}mm)`
+    const agenda = category === 'TR3'
+      ? 'em 1, 3 e 5 anos'
+      : category === 'TR4'
+        ? 'em 1, 2, 3 e 5 anos'
+        : 'anual por até 5 anos'
+    management = `Seguimento ultrassonográfico recomendado ${agenda} (tamanho ${tamanho}mm ≥ ${thresholds.followup}mm)`
   } else {
     management = `Nenhuma ação pelo TI-RADS (tamanho ${tamanho}mm < ${thresholds.followup}mm)`
   }
@@ -123,14 +132,15 @@ export function calcularTiRads(input: TiRadsInput): TiRadsResult {
 }
 
 const COMPOSICAO_LABELS: Record<TiRadsComposicao, string> = {
-  cistico_esponjoso: 'cística/esponjosa',
+  cistico: 'cística ou quase totalmente cística',
+  espongiforme: 'espongiforme',
   misto: 'mista',
   solido: 'sólida',
 }
 
 const ECO_LABELS: Record<TiRadsEcogenicidade, string> = {
-  anecoico_hiperecoico: 'anecoica/hiperecoica',
-  isoecoico: 'isoecoica',
+  anecoico: 'anecoica',
+  hiperecoico_isoecoico: 'hiperecoica/isoecoica',
   hipoecóico: 'hipoecóica',
   muito_hipoecóico: 'muito hipoecóica',
 }
@@ -159,7 +169,14 @@ export function formatarBlocoTiRads(input: TiRadsInput, result: TiRadsResult): s
   if (input.ecogenicidade) partes.push(`Ecogenicidade: ${ECO_LABELS[input.ecogenicidade]} (${ECOGENICIDADE_PONTOS[input.ecogenicidade]}pts)`)
   if (input.forma) partes.push(`Forma: ${FORMA_LABELS[input.forma]} (${FORMA_PONTOS[input.forma]}pts)`)
   if (input.margens) partes.push(`Margens: ${MARGENS_LABELS[input.margens]} (${MARGENS_PONTOS[input.margens]}pts)`)
-  if (input.focosEcogenicos) partes.push(`Focos ecogênicos: ${FOCOS_LABELS[input.focosEcogenicos]} (${FOCOS_PONTOS[input.focosEcogenicos]}pts)`)
+  const focos = Array.isArray(input.focosEcogenicos)
+    ? Array.from(new Set(input.focosEcogenicos))
+    : input.focosEcogenicos ? [input.focosEcogenicos] : []
+  if (focos.length) {
+    const ativos = focos.filter((item) => item !== 'nenhum_cauda_cometa')
+    const usados = ativos.length ? ativos : ['nenhum_cauda_cometa' as const]
+    partes.push(`Focos ecogênicos: ${usados.map((item) => FOCOS_LABELS[item]).join(' + ')} (${usados.reduce((sum, item) => sum + FOCOS_PONTOS[item], 0)}pts)`)
+  }
 
   const tamanhoStr = input.tamanhoMm ? `Tamanho: ${input.tamanhoMm}mm — ` : ''
 

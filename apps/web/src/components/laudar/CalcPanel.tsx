@@ -7,6 +7,16 @@ import type { ExamStateLike, StandardCalcSpec } from '@/lib/calculators/specs'
 export function CalcPanel({ spec, examState }: { spec: StandardCalcSpec; examState?: ExamStateLike }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: s[k] === v ? '' : v }))
+  const setMultiple = (k: string, v: string) => setValues((s) => {
+    const current = new Set((s[k] ?? '').split('|').filter(Boolean))
+    if (v === 'nenhum_cauda_cometa') {
+      return { ...s, [k]: current.has(v) ? '' : v }
+    }
+    current.delete('nenhum_cauda_cometa')
+    if (current.has(v)) current.delete(v)
+    else current.add(v)
+    return { ...s, [k]: Array.from(current).join('|') }
+  })
 
   const extract = () => {
     if (!spec.extract || !examState) return
@@ -56,12 +66,14 @@ export function CalcPanel({ spec, examState }: { spec: StandardCalcSpec; examSta
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {(field.options ?? []).map((o) => {
-                  const active = values[field.key] === o.value
+                  const active = field.multiple
+                    ? (values[field.key] ?? '').split('|').includes(o.value)
+                    : values[field.key] === o.value
                   return (
                     <button
                       key={o.value}
                       type="button"
-                      onClick={() => set(field.key, o.value)}
+                      onClick={() => field.multiple ? setMultiple(field.key, o.value) : set(field.key, o.value)}
                       className={`rounded-lg px-2.5 py-1 text-[12px] font-semibold transition ${
                         active ? 'bg-emerald-600 text-white shadow-sm' : 'border border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:bg-emerald-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-emerald-950/40'
                       }`}

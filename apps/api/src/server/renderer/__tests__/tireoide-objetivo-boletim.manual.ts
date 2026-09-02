@@ -30,6 +30,14 @@ type Caso = {
 const render = (f: TireoideFindings, prefs?: Partial<TireoidePreferences>) =>
   renderTireoide(f, prefs, { objetivo: true });
 
+const A = (
+  composicao: "cistico" | "espongiforme" | "misto" | "solido",
+  ecogenicidade: "anecoico" | "hiper_ou_isoecoico" | "hipoecoico" | "muito_hipoecoico",
+  forma: "mais_larga_que_alta" | "mais_alta_que_larga" = "mais_larga_que_alta",
+  margem: "lisa" | "mal_definida" | "lobulada_ou_irregular" | "extensao_extratireoidiana" = "lisa",
+  focos_ecogenicos: Array<"nenhum_ou_cauda_cometa" | "macrocalcificacoes" | "calcificacoes_perifericas" | "focos_puntiformes"> = ["nenhum_ou_cauda_cometa"],
+) => ({ composicao, ecogenicidade, forma, margem, focos_ecogenicos });
+
 const CASES: Caso[] = [
   {
     nome: "1. Normal (sem achados)",
@@ -40,7 +48,7 @@ const CASES: Caso[] = [
   {
     nome: "2. Nódulo benigno (TR2)",
     feicoes: "Sólido com áreas anecoicas (misto), margem regular, 0,8 cm.",
-    esperado: "ACR TI-RADS 2 (provavelmente benigno)",
+    esperado: "ACR TI-RADS 2 (não suspeito)",
     findings: F({
       lobo_direito: L({
         medidas_cm: [5.0, 1.8, 1.6],
@@ -50,6 +58,7 @@ const CASES: Caso[] = [
             ecogenicidade: "solida_areas_anecoicas",
             margem: "regular",
             forma: "mais_larga_que_alta",
+            acr_tirads: A("misto", "hiper_ou_isoecoico"),
             medidas_cm: [0.8, 0.6, 0.5],
             localizacao: "no terço médio",
           }),
@@ -71,6 +80,7 @@ const CASES: Caso[] = [
             margem: "regular",
             forma: "mais_larga_que_alta",
             calcificacoes: "sem",
+            acr_tirads: A("solido", "hiper_ou_isoecoico"),
             medidas_cm: [1.8, 1.4, 1.2],
             localizacao: "no terço superior",
           }),
@@ -91,6 +101,7 @@ const CASES: Caso[] = [
             ecogenicidade: "hipoecoica",
             margem: "irregular",
             forma: "mais_larga_que_alta",
+            acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"),
             medidas_cm: [1.6, 1.2, 1.0],
             localizacao: "no terço inferior",
           }),
@@ -112,6 +123,7 @@ const CASES: Caso[] = [
             margem: "espiculada",
             forma: "mais_alta_que_larga",
             calcificacoes: "micro",
+            acr_tirads: A("solido", "hipoecoico", "mais_alta_que_larga", "lobulada_ou_irregular", ["focos_puntiformes"]),
             medidas_cm: [1.2, 1.0, 0.9],
             localizacao: "no terço médio",
           }),
@@ -130,6 +142,7 @@ const CASES: Caso[] = [
         nodulos: [
           N({
             ecogenicidade: "anecoica_homogenea",
+            acr_tirads: A("cistico", "anecoico"),
             medidas_cm: [0.9, 0.7, 0.6],
             localizacao: "no terço superior",
           }),
@@ -170,6 +183,7 @@ const CASES: Caso[] = [
             margem: "regular",
             forma: "mais_larga_que_alta",
             medidas_cm: [1.0, 0.8, 0.7],
+            acr_tirads: A("solido", "hiper_ou_isoecoico"),
             ti_rads_ditado: "5",
             localizacao: "no terço médio",
           }),
@@ -190,6 +204,7 @@ const CASES: Caso[] = [
             ecogenicidade: "solida_areas_anecoicas",
             margem: "regular",
             forma: "mais_larga_que_alta",
+            acr_tirads: A("misto", "hiper_ou_isoecoico"),
             medidas_cm: [0.7, 0.5, 0.4],
             localizacao: "no terço superior",
           }),
@@ -203,6 +218,7 @@ const CASES: Caso[] = [
             ecogenicidade: "hipoecoica",
             margem: "irregular",
             forma: "mais_larga_que_alta",
+            acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"),
             medidas_cm: [1.7, 1.3, 1.1],
             localizacao: "no terço inferior",
           }),
@@ -224,6 +240,7 @@ const CASES: Caso[] = [
             ecogenicidade: "hipoecoica",
             margem: "irregular",
             forma: "mais_larga_que_alta",
+            acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"),
             medidas_cm: [1.6, 1.2, 1.0],
             localizacao: "no terço inferior",
           }),

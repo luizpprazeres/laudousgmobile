@@ -11,6 +11,8 @@ export type CalcField = {
   key: string
   label: string
   type?: 'chips' | 'text'
+  /** Permite somar descritores independentes, como os focos ecogênicos do ACR TI-RADS. */
+  multiple?: boolean
   options?: { value: string; label: string }[]
   placeholder?: string
 }
@@ -56,10 +58,10 @@ export const tiRadsSpec: CalcSpec = {
   name: 'TI-RADS (ACR)',
   fields: [
     { key: 'composicao', label: 'Composição', options: [
-      { value: 'cistico_esponjoso', label: 'Cístico/espongiforme' }, { value: 'misto', label: 'Misto' }, { value: 'solido', label: 'Sólido' },
+      { value: 'cistico', label: 'Cístico/quase cístico' }, { value: 'espongiforme', label: 'Espongiforme' }, { value: 'misto', label: 'Misto' }, { value: 'solido', label: 'Sólido' },
     ] },
     { key: 'ecogenicidade', label: 'Ecogenicidade', options: [
-      { value: 'anecoico_hiperecoico', label: 'Anec./hiper.' }, { value: 'isoecoico', label: 'Iso' }, { value: 'hipoecóico', label: 'Hipo' }, { value: 'muito_hipoecóico', label: 'Muito hipo' },
+      { value: 'anecoico', label: 'Anecoico' }, { value: 'hiperecoico_isoecoico', label: 'Hiper/iso' }, { value: 'hipoecóico', label: 'Hipo' }, { value: 'muito_hipoecóico', label: 'Muito hipo' },
     ] },
     { key: 'forma', label: 'Forma', options: [
       { value: 'mais_largo_que_alto', label: 'Mais largo que alto' }, { value: 'mais_alto_que_largo', label: 'Mais alto que largo' },
@@ -67,18 +69,21 @@ export const tiRadsSpec: CalcSpec = {
     { key: 'margens', label: 'Margens', options: [
       { value: 'lisas_mal_definidas', label: 'Lisas/mal definidas' }, { value: 'lobuladas_irregulares', label: 'Lobuladas/irregulares' }, { value: 'extensao_extratireoidiana', label: 'Ext. extratireoidiana' },
     ] },
-    { key: 'focosEcogenicos', label: 'Focos ecogênicos', options: [
+    { key: 'focosEcogenicos', label: 'Focos ecogênicos', multiple: true, options: [
       { value: 'nenhum_cauda_cometa', label: 'Nenhum/cauda cometa' }, { value: 'macrocalcificacoes', label: 'Macrocalcif.' }, { value: 'calcificacoes_perifericas', label: 'Periféricas' }, { value: 'focos_ecogenicos_puntiformes', label: 'Puntiformes' },
     ] },
     { key: 'tamanhoMm', label: 'Tamanho (mm)', type: 'text', placeholder: '12' },
   ],
   compute: (v) => {
+    if (!v.composicao || !v.ecogenicidade || !v.forma || !v.margens || !v.focosEcogenicos) return null
     const input: TiRadsInput = {
       composicao: v.composicao as TiRadsInput['composicao'],
       ecogenicidade: v.ecogenicidade as TiRadsInput['ecogenicidade'],
       forma: v.forma as TiRadsInput['forma'],
       margens: v.margens as TiRadsInput['margens'],
-      focosEcogenicos: v.focosEcogenicos as TiRadsInput['focosEcogenicos'],
+      focosEcogenicos: v.focosEcogenicos
+        ? v.focosEcogenicos.split('|') as TiRadsInput['focosEcogenicos']
+        : undefined,
       tamanhoMm: v.tamanhoMm ? Number(String(v.tamanhoMm).replace(',', '.')) : undefined,
     }
     const r = calcularTiRads(input)
