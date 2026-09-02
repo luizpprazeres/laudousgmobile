@@ -34,8 +34,8 @@ const DOPPLER_VAZIO: DopplerObstetricoModule = {
   ir_umbilical: null, ip_umbilical: null, perc_umbilical: null,
   fluxo_diastolico_umbilical: null,
   ir_acm: null, ip_acm: null, perc_acm: null,
-  ir_ducto_venoso: null, ip_ducto_venoso: null,
-  ducto_venoso_qualitativo: null, rcp: null, perfil_hemodinamico: null,
+  ir_ducto_venoso: null, ip_ducto_venoso: null, perc_ducto_venoso: null,
+  ducto_venoso_qualitativo: null, rcp: null, perc_rcp: null, perfil_hemodinamico: null,
   umbilical_alterado: null, acm_alterado: null,
   incisura: null, ectasia: null, pre_centralizacao: null,
   centralizacao: null, uterinas_acima_p95: null,
@@ -108,6 +108,7 @@ const ISOLADO = (doppler: DopplerObstetricoModule) =>
   const alterado = ISOLADO({
     ...DOPPLER_NORMAL,
     ip_umbilical: 2.1,
+    perc_umbilical: 96,
     umbilical_alterado: null,
     incisura: true,
     centralizacao: true,

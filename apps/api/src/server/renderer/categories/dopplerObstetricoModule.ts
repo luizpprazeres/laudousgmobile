@@ -29,8 +29,10 @@ export const DopplerObstetricoModuleSchema = z.object({
   perc_acm: nullableNumber,
   ir_ducto_venoso: nullableNumber,
   ip_ducto_venoso: nullableNumber,
+  perc_ducto_venoso: nullableNumber,
   ducto_venoso_qualitativo: z.string().nullable(),
   rcp: nullableNumber,
+  perc_rcp: nullableNumber,
   perfil_hemodinamico: nullableNumber,
   umbilical_alterado: nullableBoolean,
   acm_alterado: nullableBoolean,
@@ -51,8 +53,8 @@ export const DOPPLER_OBSTETRICO_MODULE_JSON_SCHEMA = {
     "ip_medio_uterinas", "perc_medio_uterinas",
     "ir_umbilical", "ip_umbilical", "perc_umbilical", "fluxo_diastolico_umbilical",
     "ir_acm", "ip_acm", "perc_acm",
-    "ir_ducto_venoso", "ip_ducto_venoso", "ducto_venoso_qualitativo",
-    "rcp", "perfil_hemodinamico", "umbilical_alterado", "acm_alterado",
+    "ir_ducto_venoso", "ip_ducto_venoso", "perc_ducto_venoso", "ducto_venoso_qualitativo",
+    "rcp", "perc_rcp", "perfil_hemodinamico", "umbilical_alterado", "acm_alterado",
     "incisura", "ectasia", "pre_centralizacao", "centralizacao",
     "uterinas_acima_p95",
   ],
@@ -66,9 +68,9 @@ export const DOPPLER_OBSTETRICO_MODULE_JSON_SCHEMA = {
       enum: ["presente", "ausente", "reverso", null],
     },
     ir_acm: num, ip_acm: num, perc_acm: num,
-    ir_ducto_venoso: num, ip_ducto_venoso: num,
+    ir_ducto_venoso: num, ip_ducto_venoso: num, perc_ducto_venoso: num,
     ducto_venoso_qualitativo: str,
-    rcp: num, perfil_hemodinamico: num,
+    rcp: num, perc_rcp: num, perfil_hemodinamico: num,
     umbilical_alterado: bool, acm_alterado: bool,
     incisura: bool, ectasia: bool,
     pre_centralizacao: bool, centralizacao: bool, uterinas_acima_p95: bool,
@@ -111,8 +113,10 @@ export function toDopplerData(d: DopplerObstetricoModule): DopplerData {
     percACM: d.perc_acm ?? undefined,
     irDuctoVenoso: d.ir_ducto_venoso ?? undefined,
     ipDuctoVenoso: d.ip_ducto_venoso ?? undefined,
+    percDuctoVenoso: d.perc_ducto_venoso ?? undefined,
     ductoVenoso,
     rcp: d.rcp ?? undefined,
+    percRCP: d.perc_rcp ?? undefined,
     perfilHemodinamico: d.perfil_hemodinamico ?? undefined,
     umbilicalAlterado: d.umbilical_alterado ?? undefined,
     acmAlterado: d.acm_alterado ?? undefined,
@@ -131,9 +135,22 @@ function indices(ir: number | null, ip: number | null): string | null {
   return partes.length > 0 ? partes.join(" e ") : null;
 }
 
-function linhaVaso(rotulo: string, ir: number | null, ip: number | null): string | null {
+function fmtPercentil(percentil: number): string {
+  if (percentil <= 0) return "< 1";
+  if (percentil >= 100) return "> 99";
+  return fmt(percentil);
+}
+
+function linhaVaso(
+  rotulo: string,
+  ir: number | null,
+  ip: number | null,
+  percentil: number | null,
+): string | null {
   const valores = indices(ir, ip);
-  return valores ? `${rotulo} com ${valores}.` : null;
+  return valores
+    ? `${rotulo} com ${valores}${percentil !== null ? ` (percentil ${fmtPercentil(percentil)})` : ""}.`
+    : null;
 }
 
 export const DOPPLER_TECNICA_CLASSICO =
@@ -152,18 +169,20 @@ export function renderDopplerModule(
   if (options?.umbilicalSafety !== false) data = deriveUmbilicalSafety(data, options?.rawInput);
 
   const linhas: Array<string | null> = [
-    linhaVaso("Artéria uterina direita", module.ir_uterina_dir, module.ip_uterina_dir),
-    linhaVaso("Artéria uterina esquerda", module.ir_uterina_esq, module.ip_uterina_esq),
-    linhaVaso("Artéria umbilical", module.ir_umbilical, module.ip_umbilical),
-    linhaVaso("Artéria cerebral média", module.ir_acm, module.ip_acm),
-    linhaVaso("Ducto venoso", module.ir_ducto_venoso, module.ip_ducto_venoso),
+    linhaVaso("Artéria uterina direita", module.ir_uterina_dir, module.ip_uterina_dir, null),
+    linhaVaso("Artéria uterina esquerda", module.ir_uterina_esq, module.ip_uterina_esq, null),
+    linhaVaso("Artéria umbilical", module.ir_umbilical, module.ip_umbilical, module.perc_umbilical),
+    linhaVaso("Artéria cerebral média", module.ir_acm, module.ip_acm, module.perc_acm),
+    linhaVaso("Ducto venoso", module.ir_ducto_venoso, module.ip_ducto_venoso, module.perc_ducto_venoso),
   ];
   if (module.ip_medio_uterinas !== null) {
     linhas.push(
-      `Índice de pulsatilidade médio das artérias uterinas de ${fmt(module.ip_medio_uterinas)}${module.perc_medio_uterinas !== null ? ` (percentil ${fmt(module.perc_medio_uterinas)})` : ""}.`,
+      `Índice de pulsatilidade médio das artérias uterinas de ${fmt(module.ip_medio_uterinas)}${module.perc_medio_uterinas !== null ? ` (percentil ${fmtPercentil(module.perc_medio_uterinas)})` : ""}.`,
     );
   }
-  if (module.rcp !== null) linhas.push(`Relação cérebro-placentária de ${fmt(module.rcp)}.`);
+  if (module.rcp !== null) {
+    linhas.push(`Relação cérebro-placentária de ${fmt(module.rcp)}${module.perc_rcp !== null ? ` (percentil ${fmtPercentil(module.perc_rcp)})` : ""}.`);
+  }
   const perfil = computePerfilHemodinamico(data);
   const fluxoUmbilicalAnormal =
     module.fluxo_diastolico_umbilical === "ausente" ||
@@ -179,9 +198,9 @@ export function renderDopplerModule(
   if (module.ducto_venoso_qualitativo) {
     linhas.push(`Ducto venoso: ${module.ducto_venoso_qualitativo}.`);
   }
-  if (module.perc_medio_uterinas !== null || module.perc_umbilical !== null || module.perc_acm !== null) {
+  if (module.perc_medio_uterinas !== null || module.perc_umbilical !== null || module.perc_acm !== null || module.perc_ducto_venoso !== null || module.perc_rcp !== null) {
     linhas.push(
-      "Referência: percentis calculados com as equações da calculadora disponibilizada pela Fetal Medicine Barcelona.",
+      "Referência: percentis calculados com as equações da Calculadora v2021 disponibilizada pela Fetal Medicine Barcelona.",
     );
   }
 

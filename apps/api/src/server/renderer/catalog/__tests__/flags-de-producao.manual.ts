@@ -35,6 +35,8 @@ type Caso = {
   /** O que o laudo passa a dizer (ou deixa de dizer) com a flag ligada. */
   comFlag?: string;
   semFlag?: string;
+  /** Barreira incorporada ao contrato clínico: deve permanecer ativa mesmo com a flag desligada. */
+  sempreAtivo?: boolean;
 };
 
 const CASOS: Caso[] = [
@@ -42,10 +44,10 @@ const CASOS: Caso[] = [
     categoria: "DOPPLER_OBSTETRICO",
     flag: "DOPPLER_UMBILICAL_SAFETY",
     porque:
-      "GUARD DE SEGURANÇA — IP umbilical de 1,8 estava saindo como 'pulsatilidade normal'. É o falso-normal que a flag foi criada para matar, em julho, e que o catálogo ignorava.",
-    dados: { ip_umbilical: 1.8, perc_umbilical: null },
+      "GUARD DE SEGURANÇA — umbilical acima do p95 estava saindo como 'pulsatilidade normal'. O guard usa o percentil/IG e não um corte fixo de IP.",
+    dados: { ip_umbilical: 1.8, perc_umbilical: 96 },
     comFlag: "elevado na artéria umbilical",
-    semFlag: "normal nas artérias uterinas",
+    sempreAtivo: true,
   },
   {
     categoria: "OBSTETRICA",
@@ -83,6 +85,15 @@ for (const c of CASOS) {
   if (off === "" || on === "") {
     console.log("  ✗ NÃO RENDERIZOU — categoria sumiu (o sintoma do `env()` no caminho do render)");
     falhas++;
+    continue;
+  }
+  if (c.sempreAtivo) {
+    if (c.comFlag && (!off.includes(c.comFlag) || !on.includes(c.comFlag))) {
+      console.log(`  ✗ a barreira clínica não permaneceu ativa nos dois estados da flag`);
+      falhas++;
+    } else {
+      console.log("  ✓ barreira clínica incorporada ao renderer e ativa nos dois estados da flag");
+    }
     continue;
   }
   if (off === on) {

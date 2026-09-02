@@ -132,7 +132,8 @@ A matriz 23B1 percorre os estados acima nos estilos Clássico e Objetivo e acres
 - [x] Coleção retroplacentária, acretismo e lagos venosos.
 - [x] Paridade Clássico/Objetivo e combinações independentes.
 - [x] 23B2: contrato morfológico entre web, API e iOS; marcador tricúspide; bloco FMF compartilhado.
-- [ ] Próximo corte 23B: Doppler obstétrico, cervicometria e crescimento fetal opção por opção.
+- [x] 23B3: percentis Doppler Barcelona v2021 e barreiras contra falsa normalidade.
+- [ ] Próximo corte 23B: cervicometria e crescimento fetal opção por opção.
 
 ## Entrega 23B2 — morfológico e pré-eclâmpsia web/iOS
 
@@ -170,6 +171,61 @@ O cálculo FMF permanece matematicamente inalterado e compartilhado por equival�
 
 - `LaudoUSG/Services/PreEclampsiaCalculator.swift`
 - `LaudoUSGTests/PreEclampsiaFmfGoldenTests.swift`
+
+## Entrega 23B3 — percentis Doppler Barcelona v2021
+
+O motor compartilhado passou por comparação literal com o `calc.js` vigente da Calculadora v2021 da Fetal Medicine Barcelona. Permanecem versionadas as equações de IP da artéria umbilical, artéria cerebral média, média das artérias uterinas e relação cerebroplacentária; o ducto venoso, que não era calculado pelo núcleo, foi incorporado. Artérias uterinas são aceitas entre 11 e 44 semanas; umbilical, cerebral média, relação cerebroplacentária e ducto venoso entre 20 e 44 semanas. Sem idade gestacional válida, o sistema não inventa percentil.
+
+A conversão de Z-score agora reproduz os intervalos discretos usados pela calculadora oficial. O percentil 95 exato permanece dentro do limite e o primeiro valor acima dele passa a percentil 96; na cauda inferior, o percentil 5 exato permanece no limite e o primeiro valor abaixo passa a percentil 4. Resultados extremos são apresentados como `<P1` e `>P99`, sem arredondar um resultado patológico de volta para P5 ou P95.
+
+Foi removido o corte bruto fixo de IP umbilical igual a 1,5. Esse corte produzia falsa classificação porque o mesmo IP tem significado diferente conforme a idade gestacional: IP 1,8 está abaixo do p95 em 20 semanas e acima do p95 em 30 semanas. A barreira de segurança agora só classifica a artéria umbilical por percentil informado, idade gestacional válida ou alteração diastólica explícita. Sem esses elementos, conserva o valor e evita afirmar normalidade ou anormalidade.
+
+O corpo do laudo passou a mostrar, quando disponíveis, os percentis de umbilical, cerebral média, ducto venoso, média das uterinas e relação cerebroplacentária. ACM abaixo do p5, RCP abaixo do p5 e ducto venoso acima do p95 produzem conclusões próprias e eliminam o perfil hemodinâmico falsamente normal. P5 e P95 exatos não são tratados como patológicos.
+
+No iOS, as tabelas semanais duplicadas foram retiradas do caminho de cálculo. O cliente usa as mesmas equações Barcelona, considera semanas e dias e passou a extrair/calcular também o IP do ducto venoso. A calculadora isolada do ducto venoso deixou a aproximação antiga e adotou média `0,903 − 0,0116 × IG`, desvio-padrão `0,1483`, faixa de 20 a 44 semanas e limite superior estrito de Z maior que 1,645.
+
+O motor FMF de pré-eclâmpsia não foi alterado nesta entrega. O núcleo compartilhado mais recente utilizado pela web continua sendo a referência; o iOS permanece cliente validado por equivalência, sem reimplementar ou modificar coeficientes.
+
+Referências de conferência: [Calculadora v2021 da Fetal Medicine Barcelona](https://fetalmedicinebarcelona.org/calc/), [`calc.js` oficial](https://fetalmedicinebarcelona.org/calc/js/calc.js) e [Gómez et al., 2008 — referências de Doppler das artérias uterinas](https://pubmed.ncbi.nlm.nih.gov/18457355/).
+
+- [x] Equações oficiais comparadas com o código-fonte vigente da calculadora Barcelona.
+- [x] Limites exatos P5/P95 e caudas `<P1`/`>P99` cobertos por testes.
+- [x] Ducto venoso integrado ao núcleo compartilhado, web, API, mobile e iOS.
+- [x] Corte fixo inadequado da artéria umbilical removido.
+- [x] Percentis renderizados no corpo e alterações coerentes na conclusão.
+- [x] Idade gestacional completa, com semanas e dias, utilizada nos clientes.
+- [x] Regressões de Doppler isolado e combinado, extração e guards clínicos aprovadas.
+- [x] Typecheck dos oito pacotes e builds de produção da web e API aprovados.
+- [x] iOS: 15 testes focados de cálculo e parser aprovados, sem falhas.
+
+O comando genérico `pnpm test` continua sem tarefas cadastradas no Turbo e, portanto, não é usado como evidência clínica. O `pnpm lint` continua bloqueado pelo assistente interativo legado do `next lint`; typecheck, builds e as suítes manuais/diferenciais específicas foram executados separadamente.
+
+### Arquivos da entrega 23B3 — monorepo
+
+- `packages/shared/src/calculators/doppler.ts`
+- `apps/web/src/lib/catalog/dopplerParaCatalogo.ts`
+- `apps/mobile/src/shared/calculators/doppler.ts`
+- `apps/mobile/src/features/generate/DopplerCalculatorSheet.tsx`
+- `apps/api/src/server/pipeline/dopplerOverlay.ts`
+- `apps/api/src/server/renderer/categories/dopplerObstetricoModule.ts`
+- `apps/api/src/server/renderer/catalog/modeloNormalRegistry.ts`
+- `apps/api/src/server/pipeline/__tests__/dopplerUmbilicalSafety.manual.ts`
+- `apps/api/src/server/pipeline/__tests__/dopplerBrainSparing.manual.ts`
+- `apps/api/src/server/renderer/__tests__/doppler-obstetrico-golden.manual.ts`
+- `apps/api/src/server/renderer/__tests__/contrato-extracao-obstetrica.manual.ts`
+- `apps/api/src/server/renderer/catalog/__tests__/flags-de-producao.manual.ts`
+- `tests/doppler-barcelona/runner.ts`
+
+### Arquivos da entrega 23B3 — aplicativo iOS
+
+- `LaudoUSG/Services/DopplerCalculator.swift`
+- `LaudoUSG/Services/DopplerPercentileTable.swift`
+- `LaudoUSG/Services/DuctoVenosoCalculator.swift`
+- `LaudoUSG/Services/DopplerParser.swift`
+- `LaudoUSG/Components/Sheets/DuctoVenosoCalculatorSheet.swift`
+- `LaudoUSG/Features/Generate/GenerateViewModel.swift`
+- `LaudoUSGTests/DopplerParserTests.swift`
+- `LaudoUSGTests/DopplerRawPercentileTests.swift`
 
 ## Ajuste paralelo — esquema visual das mamas
 

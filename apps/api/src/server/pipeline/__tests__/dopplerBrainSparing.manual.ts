@@ -18,6 +18,12 @@ const check = (name: string, cond: boolean, detail?: string) => {
 };
 const joined = (raw: string) => buildDopplerConclusionItems(extractDopplerData(raw)).join("\n");
 
+const direto = extractDopplerData(
+  "IG 30 semanas. IP médio das artérias uterinas 0,80. Ducto venoso IP 0,55.",
+);
+check("0) IP médio uterino direto recebe percentil", direto.percMedioUterinas !== undefined);
+check("0) IP do ducto venoso é extraído e percentilizado", direto.ipDuctoVenoso === 0.55 && direto.percDuctoVenoso !== undefined);
+
 // 1) ACM p4 + centralização + uterinas >P95 (caso e5194370).
 const c1 = joined(
   "IP da artéria umbilical 0,9. IP da artéria cerebral média 1,0 percentil 4. Centralização fetal. Uterinas acima do percentil 95.",
@@ -46,13 +52,17 @@ check("5) RCP<1 → não afirma ACM normal", !/normais nas artérias umbilical e
 const c6 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,8 menor que o percentil 5.");
 check("6) 'menor que percentil 5' → ACM não-normal", !/normais nas artérias umbilical e cerebral m[ée]dia/i.test(c6), c6);
 
-// 7) ACM P≤5 sem palavra centralização → NÃO afirma 'Não há centralização'.
+// 7) ACM P<5 sem palavra centralização → NÃO afirma 'Não há centralização'.
 const c7 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,1 percentil 4.");
-check("7) ACM P≤5 → sem 'Não há ... centralização'", !/Não há sinais de pr[ée]-centraliza/i.test(c7), c7);
+check("7) ACM P<5 → sem 'Não há ... centralização'", !/Não há sinais de pr[ée]-centraliza/i.test(c7), c7);
 
-// 8) ACM P≤5 sem RCP calculável (só ACM) → não afirma perfil normal.
+// 8) ACM P<5 sem RCP calculável (só ACM) → não afirma perfil normal.
 const c8 = joined("IP da artéria cerebral média 1,1 percentil 4.");
-check("8) ACM P≤5 sem RCP → sem perfil normal", !/Perfil hemodin[âa]mico fetal é normal/i.test(c8), c8);
+check("8) ACM P<5 sem RCP → sem perfil normal", !/Perfil hemodin[âa]mico fetal é normal/i.test(c8), c8);
+
+// 9) p5 exato é o limite normal no calc.js Barcelona; não pode virar p4.
+const c9 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,1 percentil 5.");
+check("9) ACM p5 exato → normal preservado", /normais nas artérias umbilical e cerebral m[ée]dia/i.test(c9), c9);
 
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ""));
 if (fail) process.exit(1);

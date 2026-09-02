@@ -35,6 +35,7 @@ type FormState = {
   ipMCA: string;
   ipUterinaDireita: string;
   ipUterinaEsquerda: string;
+  ipDuctoVenoso: string;
 };
 
 const EMPTY: FormState = {
@@ -44,6 +45,7 @@ const EMPTY: FormState = {
   ipMCA: "",
   ipUterinaDireita: "",
   ipUterinaEsquerda: "",
+  ipDuctoVenoso: "",
 };
 
 /**
@@ -77,6 +79,7 @@ export function DopplerCalculatorSheet({
       ipMCA: auto.ipMCA ?? f.ipMCA,
       ipUterinaDireita: auto.ipUterinaDireita ?? f.ipUterinaDireita,
       ipUterinaEsquerda: auto.ipUterinaEsquerda ?? f.ipUterinaEsquerda,
+      ipDuctoVenoso: auto.ipDuctoVenoso ?? f.ipDuctoVenoso,
     }));
   }, [open, findingsText]);
 
@@ -87,15 +90,17 @@ export function DopplerCalculatorSheet({
     const acm = parseFloat(form.ipMCA.replace(",", "."));
     const utd = parseFloat(form.ipUterinaDireita.replace(",", "."));
     const ute = parseFloat(form.ipUterinaEsquerda.replace(",", "."));
+    const dv = parseFloat(form.ipDuctoVenoso.replace(",", "."));
     if (Number.isNaN(w) || Number.isNaN(d)) return null;
     const hasUterinas = !Number.isNaN(utd) && !Number.isNaN(ute);
-    const hasOutroVaso = !Number.isNaN(ua) || !Number.isNaN(acm);
+    const hasOutroVaso = !Number.isNaN(ua) || !Number.isNaN(acm) || !Number.isNaN(dv);
     if (!hasUterinas && !hasOutroVaso) return null;
     return {
       weeks: w,
       days: d,
       ...(!Number.isNaN(ua) ? { ipUmbilical: ua } : {}),
       ...(!Number.isNaN(acm) ? { ipMCA: acm } : {}),
+      ...(!Number.isNaN(dv) ? { ipDuctoVenoso: dv } : {}),
       ...(hasUterinas ? { ipUterinaDireita: utd, ipUterinaEsquerda: ute } : {}),
     };
   }, [form]);
@@ -167,6 +172,13 @@ export function DopplerCalculatorSheet({
               placeholder="Ex: 1,75"
               style={{ marginTop: 10 }}
             />
+            <Field
+              label="Ducto venoso"
+              value={form.ipDuctoVenoso}
+              onChange={(v) => update("ipDuctoVenoso", v)}
+              placeholder="Ex: 0,60"
+              style={{ marginTop: 10 }}
+            />
           </>
         )}
         <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
@@ -197,6 +209,7 @@ export function DopplerCalculatorSheet({
               />
             ) : null}
             {result.ratioCerebroplacentario ? <ResultLine label="RCP" v={result.ratioCerebroplacentario} /> : null}
+            {result.ductoVenoso ? <ResultLine label="Ducto venoso" v={result.ductoVenoso} /> : null}
             <Pressable
               onPress={handleInsert}
               style={({ pressed }) => [styles.insertBtn, pressed && { opacity: 0.7 }]}
@@ -263,7 +276,7 @@ function ResultLine({
       <Text style={styles.resLabel}>{label}</Text>
       <View style={{ alignItems: "flex-end" }}>
         <Text style={styles.resIP}>
-          IP {v.ip.toFixed(2)} · p{v.percentile}
+          IP {v.ip.toFixed(2)} · p{v.percentileLabel}
           {v.pathological ? "  ⚠" : ""}
         </Text>
         {extra ? <Text style={styles.resExtra}>{extra}</Text> : null}

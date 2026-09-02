@@ -1,14 +1,14 @@
 /**
  * SEGURANÇA P0 — guard umbilical do Doppler (boletim 03/07, caso 89ffa1ef).
  * Feto PIG com IP umbilical 2,11 + diástole zero ditada saiu "IP normal na
- * umbilical". NUNCA mais: IP bruto ≥ 1,5 ou diástole zero → alteração forçada.
+ * umbilical". NUNCA mais: a diástole prevalece e o IP só é classificado pela
+ * equação Barcelona quando a idade gestacional está disponível.
  * Rodar: tsx src/server/pipeline/__tests__/dopplerUmbilicalSafety.manual.ts
  */
 import {
   buildDopplerConclusionItems,
   deriveUmbilicalSafety,
   correctDopplerConclusion,
-  UMBILICAL_IP_ALERTA,
   type DopplerData,
 } from "../dopplerOverlay";
 
@@ -32,12 +32,17 @@ const RAW = "Ultrassonografia obstétrica com doppler ... maior bolsao vertical 
   ck(seguro.umbilicalAlterado === true, "guard: umbilicalAlterado forçado");
 }
 
-// ── IP umbilical elevado SEM diástole zero ditada (só o valor bruto) ──
+// ── O mesmo IP muda de significado com a idade gestacional ──
 {
-  const d = deriveUmbilicalSafety({ ipUmbilical: 1.8, ipACM: 1.2 }, "sem menção de diástole");
-  ck(d.umbilicalAlterado === true, "IP 1,8 (≥1,5) sozinho → alterado");
-  ck(!/normal/i.test(ipFrase(d)), "IP 1,8 → não afirma normal", ipFrase(d));
-  ck(/elevado/i.test(ipFrase(d)), "IP 1,8 sem diástole zero → 'IP elevado na umbilical'", ipFrase(d));
+  const semIg = deriveUmbilicalSafety({ ipUmbilical: 1.8, ipACM: 1.2 }, "sem menção de IG");
+  ck(semIg.umbilicalAlterado !== true, "IP 1,8 sem IG → não inventa classificação");
+
+  const ig20 = deriveUmbilicalSafety({ ipUmbilical: 1.8, gestationalWeeks: 20 }, "");
+  ck(ig20.umbilicalAlterado !== true, "IP 1,8 com 20 semanas → normal pela equação Barcelona");
+
+  const ig30 = deriveUmbilicalSafety({ ipUmbilical: 1.8, gestationalWeeks: 30 }, "");
+  ck(ig30.umbilicalAlterado === true, "IP 1,8 com 30 semanas → acima do p95");
+  ck(/elevado/i.test(ipFrase(ig30)), "IP 1,8 em 30 semanas → conclusão de IP elevado", ipFrase(ig30));
 }
 
 // ── diástole zero ditada SEM valor de IP ──
@@ -56,10 +61,12 @@ const RAW = "Ultrassonografia obstétrica com doppler ... maior bolsao vertical 
     "umbilical normal → segue afirmando normalidade", ipFrase(d));
 }
 
-// ── limiar exato ──
+// ── p95 exato é normal; acima dele é patológico no calc.js Barcelona ──
 {
-  ck(deriveUmbilicalSafety({ ipUmbilical: UMBILICAL_IP_ALERTA }, "").umbilicalAlterado === true, `IP = ${UMBILICAL_IP_ALERTA} (limiar) → alterado`);
-  ck(deriveUmbilicalSafety({ ipUmbilical: 1.49 }, "").umbilicalAlterado !== true, "IP 1,49 (< limiar) → intocado");
+  const media30 = 3.55219 - 0.13558 * 30 + 0.00174 * 30 * 30;
+  const p95 = media30 + 0.299 * 1.645;
+  ck(deriveUmbilicalSafety({ ipUmbilical: p95, gestationalWeeks: 30 }, "").umbilicalAlterado !== true, "z=1,645 / p95 exato → normal");
+  ck(deriveUmbilicalSafety({ ipUmbilical: media30 + 0.299 * 1.646, gestationalWeeks: 30 }, "").umbilicalAlterado === true, "z=1,646 / p96 → alterado");
 }
 
 // ── diástole zero em OUTRO vaso (ducto venoso) não força umbilical ──

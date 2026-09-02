@@ -5,8 +5,8 @@
  * Doppler), monta a seção DOPPLERVELOCIMETRIA (corpo) + itens de conclusão a
  * partir dos VALORES DITADOS, seguindo o spec clínico do médico:
  *
- *  - Umbilical / ACM = MANUAL: assume NORMAL por padrão; só vira frase de
- *    alteração se o médico DITAR alteração (não auto-percentiliza).
+ *  - No formulário estruturado, a classificação usa percentis Barcelona por
+ *    idade gestacional. No texto livre, nunca inventa percentil sem IG.
  *  - Uterinas = AUTOMÁTICO: incisura, ectasia ou IP médio > percentil 95
  *    alteram a conclusão sozinhos.
  *  - Perfil hemodinâmico fetal = SEMPRE 1/RCP (RCP = ACM/umbilical). RCP<1 →
@@ -17,6 +17,7 @@
  * Determinístico = a fraseologia é EXATAMENTE a do médico, sem variação do LLM
  * (padrão validado: "prompt não vence → determinístico").
  */
+import { calcularDopplerParcial } from "@laudousg/shared";
 import { parseConclusion, renderWithConclusion } from "./conclusionUtils";
 
 export interface DopplerData {
@@ -32,6 +33,8 @@ export interface DopplerData {
   percUmbilical?: number;
   percACM?: number;
   percMedioUterinas?: number;
+  percDuctoVenoso?: number;
+  percRCP?: number;
   ductoVenoso?: string;
   irDuctoVenoso?: number;
   ipDuctoVenoso?: number;
@@ -48,27 +51,35 @@ export interface DopplerData {
   ectasia?: boolean;
   /** Uterinas >P95 por comando/explícito ("uterinas acima do percentil 95"). */
   uterinasAcimaP95?: boolean;
+  acmAbaixoP5?: boolean;
+  rcpAbaixoP5?: boolean;
+  ductoAcimaP95?: boolean;
+  gestationalWeeks?: number;
+  gestationalDays?: number;
   /** SEGURANÇA: diástole zero/ausente/reversa na umbilical (força alteração). */
   diastoleZeroUmbilical?: boolean;
 }
 
 /**
- * SEGURANÇA P0 (boletim 03/07, caso 89ffa1ef reenviado 4×): NUNCA afirmar "IP
- * normal na umbilical" quando o IP umbilical BRUTO é grosseiramente elevado OU há
- * diástole zero/reversa ditada. A lógica de normalidade dependia só do flag
- * verbalizado (`umbilicalAlterado`) + percentil, ignorando o IP bruto (2,11) e a
- * diástole zero → laudo falso-normal em feto PIG (risco clínico direto).
- *
- * Limiar 1,5: acima do percentil 95 de QUALQUER IG obstétrica com Doppler (o P95
- * do IP umbilical varia ~0,8 a ~1,2). Conservador — não gera falso-positivo em
- * umbilical normal. Flag: DOPPLER_UMBILICAL_SAFETY (default OFF).
+ * Segurança umbilical: diástole ausente/reversa sempre prevalece. Para um IP
+ * isolado, a classificação só é feita quando existe IG válida e usa a equação
+ * Barcelona; não existe um corte fixo seguro para todas as idades gestacionais.
  */
-export const UMBILICAL_IP_ALERTA = 1.5;
 export function deriveUmbilicalSafety(d: DopplerData, rawInput?: string): DopplerData {
   const diastoleZero = rawInput
     ? /di[áa]stole\s+(?:zero|ausente|revers)/i.test(rawInput) && /umbilical/i.test(rawInput)
     : false;
-  const ipAlto = d.ipUmbilical !== undefined && d.ipUmbilical >= UMBILICAL_IP_ALERTA;
+  const calculado = d.ipUmbilical !== undefined && d.gestationalWeeks !== undefined
+    ? calcularDopplerParcial({
+        weeks: d.gestationalWeeks,
+        days: d.gestationalDays ?? 0,
+        ipUmbilical: d.ipUmbilical,
+      }).arteriaUmbilical
+    : undefined;
+  const ipAlto =
+    d.umbilicalAlterado === true ||
+    (d.percUmbilical !== undefined && d.percUmbilical > 95) ||
+    calculado?.pathological === true;
   if (!diastoleZero && !ipAlto) return d;
   return {
     ...d,
@@ -99,6 +110,12 @@ export function extractDopplerData(rawInput: string): DopplerData {
 
   const m = (re: RegExp): string | undefined => t.match(re)?.[1];
 
+  const ig = t.match(/(?:idade\s+gestacional|gesta[çc][ãa]o|\big\b)[^\d]{0,20}(\d{1,2})\s*semanas?(?:\s+e\s+(\d)\s*dias?)?/i);
+  if (ig) {
+    d.gestationalWeeks = Number(ig[1]);
+    d.gestationalDays = ig[2] ? Number(ig[2]) : 0;
+  }
+
   d.ipUmbilical = parseNum(
     m(new RegExp(`ip\\s+(?:d[ao]\\s+)?art[eé]ria\\s+umbilical\\s*(?:de\\s+|[=:]\\s*)?${IP}`, "i")) ??
       m(new RegExp(`umbilical[^.]{0,20}?ip\\s*(?:de\\s+|[=:]\\s*)?${IP}`, "i")) ??
@@ -126,6 +143,11 @@ export function extractDopplerData(rawInput: string): DopplerData {
     );
   }
 
+  d.ipDuctoVenoso = parseNum(
+    m(new RegExp(`ip\\s+(?:d[eo]\\s+)?ducto\\s+venoso\\s*(?:de\\s+|[=:]\\s*)?${IP}`, "i")) ??
+      m(new RegExp(`ducto\\s+venoso[^.]{0,20}?ip\\s*(?:de\\s+|[=:]\\s*)?${IP}`, "i")),
+  );
+
   // Percentis (opcionais) — NÃO cruzar vasos (F2): o percentil só conta se vier
   // ANTES de mencionar outro vaso (lookahead negativo entre o vaso e "percentil").
   d.percUmbilical = parseNum(
@@ -137,6 +159,15 @@ export function extractDopplerData(rawInput: string): DopplerData {
   d.percMedioUterinas = parseNum(
     m(/uterinas?(?:(?!umbilical|cerebral|\bacm\b|ducto)[^.])*?percentil\s+(\d{1,3})/i),
   );
+  d.percDuctoVenoso = parseNum(
+    m(/ducto\s+venoso(?:(?!umbilical|uterina|cerebral|\bacm\b)[^.])*?percentil\s+(\d{1,3})/i),
+  );
+  d.percRCP = parseNum(
+    m(/(?:rcp|rela[çc][ãa]o\s+c[eé]rebro[\s-]?placent[áa]ria)[^.]{0,40}?percentil\s+(\d{1,3})/i),
+  );
+  d.acmAbaixoP5 = /(?:acm|cerebral\s+m[eé]dia)[^.]{0,55}(?:menor|abaixo|inferior)\s+(?:que\s+)?(?:o\s+)?percentil\s*5\b/i.test(t);
+  d.rcpAbaixoP5 = /(?:rcp|rela[çc][ãa]o\s+c[eé]rebro[\s-]?placent[áa]ria)[^.]{0,55}(?:menor|abaixo|inferior)\s+(?:que\s+)?(?:o\s+)?percentil\s*5\b/i.test(t);
+  d.ductoAcimaP95 = /ducto\s+venoso[^.]{0,55}(?:maior|acima|superior)\s+(?:que\s+)?(?:o\s+)?percentil\s*95\b/i.test(t);
 
   // RCP
   d.rcp = parseNum(
@@ -178,6 +209,30 @@ export function extractDopplerData(rawInput: string): DopplerData {
   d.umbilicalAlterado = /umbilical[^.]{0,40}(?:elevad|alterad|aumentad|acima)/i.test(t);
   d.acmAlterado = /(?:acm|cerebral\s+m[eé]dia)[^.]{0,40}(?:reduzid|baixo|menor|inferior|alterad|diminu)/i.test(t);
 
+  if (d.gestationalWeeks !== undefined) {
+    const calculado = calcularDopplerParcial({
+      weeks: d.gestationalWeeks,
+      days: d.gestationalDays ?? 0,
+      ...(d.ipUmbilical !== undefined ? { ipUmbilical: d.ipUmbilical } : {}),
+      ...(d.ipACM !== undefined ? { ipMCA: d.ipACM } : {}),
+      ...(d.ipUterinaDir !== undefined ? { ipUterinaDireita: d.ipUterinaDir } : {}),
+      ...(d.ipUterinaEsq !== undefined ? { ipUterinaEsquerda: d.ipUterinaEsq } : {}),
+      ...(d.ipMedioUterinas !== undefined ? { ipMedioUterinas: d.ipMedioUterinas } : {}),
+      ...(d.ipDuctoVenoso !== undefined ? { ipDuctoVenoso: d.ipDuctoVenoso } : {}),
+    });
+    d.percUmbilical ??= calculado.arteriaUmbilical?.percentile;
+    d.percACM ??= calculado.arteriaCerebralMedia?.percentile;
+    d.percMedioUterinas ??= calculado.arteriasUterinas?.percentile;
+    d.percDuctoVenoso ??= calculado.ductoVenoso?.percentile;
+    d.percRCP ??= calculado.ratioCerebroplacentario?.percentile;
+    d.rcp ??= calculado.ratioCerebroplacentario?.ip;
+    d.umbilicalAlterado ||= calculado.arteriaUmbilical?.pathological === true;
+    d.acmAlterado ||= calculado.arteriaCerebralMedia?.pathological === true;
+    d.uterinasAcimaP95 ||= calculado.arteriasUterinas?.pathological === true;
+    d.rcpAbaixoP5 ||= calculado.ratioCerebroplacentario?.pathological === true;
+    d.ductoAcimaP95 ||= calculado.ductoVenoso?.pathological === true;
+  }
+
   return d;
 }
 
@@ -193,7 +248,11 @@ export function hasDopplerData(d: DopplerData): boolean {
     d.ipUterinaDir !== undefined ||
     d.irUterinaEsq !== undefined ||
     d.ipUterinaEsq !== undefined ||
+    d.percUmbilical !== undefined ||
+    d.percACM !== undefined ||
     d.percMedioUterinas !== undefined ||
+    d.percDuctoVenoso !== undefined ||
+    d.percRCP !== undefined ||
     d.rcp !== undefined ||
     d.ductoVenoso !== undefined ||
     d.irDuctoVenoso !== undefined ||
@@ -201,6 +260,9 @@ export function hasDopplerData(d: DopplerData): boolean {
     d.perfilHemodinamico !== undefined ||
     d.umbilicalAlterado === true ||
     d.acmAlterado === true ||
+    d.acmAbaixoP5 === true ||
+    d.rcpAbaixoP5 === true ||
+    d.ductoAcimaP95 === true ||
     d.incisura === true ||
     d.ectasia === true ||
     d.centralizacao === true ||
@@ -216,7 +278,8 @@ function sectionHasVessels(d: DopplerData): boolean {
     d.ipUterinaDir !== undefined ||
     d.ipUterinaEsq !== undefined ||
     d.ipMedioUterinas !== undefined ||
-    d.ductoVenoso !== undefined
+    d.ductoVenoso !== undefined ||
+    d.ipDuctoVenoso !== undefined
   );
 }
 
@@ -240,15 +303,16 @@ function computePerfil(d: DopplerData): number | undefined {
 /** Monta a seção DOPPLERVELOCIMETRIA (corpo). Campos opcionais omitidos. */
 export function buildDopplervelocimetriaSection(d: DopplerData): string {
   const lines: string[] = ["DOPPLERVELOCIMETRIA:"];
+  const pct = (value: number) => value <= 0 ? "< 1" : value >= 100 ? "> 99" : String(value);
 
   if (d.ipUmbilical !== undefined) {
     lines.push(
-      `Artéria umbilical: IP ${numFmt(d.ipUmbilical)}${d.percUmbilical !== undefined ? ` (percentil ${d.percUmbilical})` : ""}.`,
+      `Artéria umbilical: IP ${numFmt(d.ipUmbilical)}${d.percUmbilical !== undefined ? ` (percentil ${pct(d.percUmbilical)})` : ""}.`,
     );
   }
   if (d.ipACM !== undefined) {
     lines.push(
-      `Artéria cerebral média: IP ${numFmt(d.ipACM)}${d.percACM !== undefined ? ` (percentil ${d.percACM})` : ""}.`,
+      `Artéria cerebral média: IP ${numFmt(d.ipACM)}${d.percACM !== undefined ? ` (percentil ${pct(d.percACM)})` : ""}.`,
     );
   }
   if (d.ipUterinaDir !== undefined) {
@@ -259,15 +323,19 @@ export function buildDopplervelocimetriaSection(d: DopplerData): string {
   }
   if (d.ipMedioUterinas !== undefined) {
     lines.push(
-      `IP médio das artérias uterinas mede ${numFmt(d.ipMedioUterinas)}${d.percMedioUterinas !== undefined ? ` (percentil ${d.percMedioUterinas})` : ""}.`,
+      `IP médio das artérias uterinas mede ${numFmt(d.ipMedioUterinas)}${d.percMedioUterinas !== undefined ? ` (percentil ${pct(d.percMedioUterinas)})` : ""}.`,
     );
   }
-  if (d.ductoVenoso) {
-    lines.push(`Ducto venoso: ${d.ductoVenoso}.`);
+  if (d.ductoVenoso || d.ipDuctoVenoso !== undefined) {
+    const conteudo = [
+      d.ipDuctoVenoso !== undefined ? `IP ${numFmt(d.ipDuctoVenoso)}` : undefined,
+      d.ductoVenoso,
+    ].filter(Boolean).join(", ");
+    lines.push(`Ducto venoso: ${conteudo}${d.percDuctoVenoso !== undefined ? ` (percentil ${pct(d.percDuctoVenoso)})` : ""}.`);
   }
   const rcp = computeRCP(d);
   if (d.rcp !== undefined && rcp !== undefined) {
-    lines.push(`Relação cérebro-placentária (RCP): ${numFmt(rcp)}.`);
+    lines.push(`Relação cérebro-placentária (RCP): ${numFmt(rcp)}${d.percRCP !== undefined ? ` (percentil ${pct(d.percRCP)})` : ""}.`);
   }
   const perfil = computePerfil(d);
   if (perfil !== undefined && (d.rcp !== undefined || d.ipACM !== undefined)) {
@@ -319,14 +387,16 @@ function vasoMedido(d: DopplerData): { uterinas: boolean; umbilical: boolean; ac
  */
 function acmComprometida(d: DopplerData): boolean {
   const rcp = computeRCP(d);
+  const rcpComprometida =
+    d.rcpAbaixoP5 === true ||
+    (d.percRCP !== undefined ? d.percRCP < 5 : rcp !== undefined && rcp < 1);
   return (
     d.acmAlterado === true ||
     d.centralizacao === true ||
     d.preCentralizacao === true ||
-    // percentil ≤ 5 (inclui "menor que o percentil 5", que captura o número 5).
-    (d.percACM !== undefined && d.percACM <= 5) ||
-    // RCP < 1 = redistribuição (review dex2): ACM baixa relativa à umbilical.
-    (rcp !== undefined && rcp < 1)
+    d.acmAbaixoP5 === true ||
+    (d.percACM !== undefined && d.percACM < 5) ||
+    rcpComprometida
   );
 }
 
@@ -378,7 +448,7 @@ export function buildDopplerConclusionItems(
   // ACM. (Centralização sozinha não duplica: já tem o item de redistribuição;
   // mas continua excluindo a ACM da frase de normalidade via acmComprometida.)
   const acmAltExplicita =
-    d.acmAlterado === true || (d.percACM !== undefined && d.percACM <= 5);
+    d.acmAlterado === true || d.acmAbaixoP5 === true || (d.percACM !== undefined && d.percACM < 5);
   const umbOuAcmAlt = d.umbilicalAlterado || acmAltExplicita;
 
   // ── Frase do índice de pulsatilidade (umbilical/ACM) ──
@@ -400,7 +470,7 @@ export function buildDopplerConclusionItems(
     } else {
       // ACM alterada. Percentil < 5 → IP reduzido (brain sparing).
       items.push(
-        d.percACM !== undefined && d.percACM <= 5
+        d.acmAbaixoP5 === true || (d.percACM !== undefined && d.percACM < 5)
           ? "Índice de pulsatilidade reduzido na artéria cerebral média."
           : "Índice de pulsatilidade alterado na artéria cerebral média.",
       );
@@ -440,6 +510,13 @@ export function buildDopplerConclusionItems(
     items.push(
       "IP médio das artérias uterinas acima do percentil 95 para a idade gestacional.",
     );
+  }
+
+  if (d.rcpAbaixoP5 === true || (d.percRCP !== undefined && d.percRCP < 5)) {
+    items.push("Relação cérebro-placentária abaixo do percentil 5 para a idade gestacional.");
+  }
+  if (d.ductoAcimaP95 === true || (d.percDuctoVenoso !== undefined && d.percDuctoVenoso > 95)) {
+    items.push("Índice de pulsatilidade do ducto venoso acima do percentil 95 para a idade gestacional.");
   }
 
   // ── Incisuras (uterinas auto) ──

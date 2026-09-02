@@ -31,6 +31,8 @@ export function dopplerDaTela(
   const ipMedioCalculado = ipUterinaDireita !== null && ipUterinaEsquerda !== null
     ? Math.round(((ipUterinaDireita + ipUterinaEsquerda) / 2) * 1000) / 1000
     : null
+  const ipMedioInformado = numero(d, key('ip_ut_medio'))
+  const ipMedioUterinas = ipMedioCalculado ?? ipMedioInformado
   const weeks = standalone ? numero(d, 'ig_sem') : numero(ig, 'bio_sem')
   const days = (standalone ? numero(d, 'ig_dias') : numero(ig, 'bio_dias')) ?? 0
   const somenteIpUterinas = weeks !== null && weeks <= 15
@@ -38,12 +40,15 @@ export function dopplerDaTela(
   const ductoQualitativo = texto(d, key('ducto_fluxo')) || 'normal'
   const ipUmbilical = somenteIpUterinas ? null : numero(d, key('ip_umb'))
   const ipAcm = somenteIpUterinas ? null : numero(d, key('ip_acm'))
+  const ipDuctoVenoso = somenteIpUterinas ? null : numero(d, key('ip_dv'))
   const calculado = weeks !== null
     ? calcularDopplerParcial({
         weeks,
         days,
         ...(ipUmbilical !== null ? { ipUmbilical } : {}),
         ...(ipAcm !== null ? { ipMCA: ipAcm } : {}),
+        ...(ipDuctoVenoso !== null ? { ipDuctoVenoso } : {}),
+        ...(ipMedioUterinas !== null ? { ipMedioUterinas } : {}),
         ...(ipUterinaDireita !== null ? { ipUterinaDireita } : {}),
         ...(ipUterinaEsquerda !== null ? { ipUterinaEsquerda } : {}),
       })
@@ -54,7 +59,7 @@ export function dopplerDaTela(
     ip_uterina_dir: ipUterinaDireita,
     ir_uterina_esq: somenteIpUterinas ? null : numero(d, key('ir_ut_esq')),
     ip_uterina_esq: ipUterinaEsquerda,
-    ip_medio_uterinas: ipMedioCalculado ?? numero(d, key('ip_ut_medio')),
+    ip_medio_uterinas: ipMedioUterinas,
     perc_medio_uterinas: calculado.arteriasUterinas?.percentile ?? null,
     ir_umbilical: somenteIpUterinas ? null : numero(d, key('ir_umb')),
     ip_umbilical: ipUmbilical,
@@ -70,7 +75,8 @@ export function dopplerDaTela(
     ip_acm: ipAcm,
     perc_acm: calculado.arteriaCerebralMedia?.percentile ?? null,
     ir_ducto_venoso: somenteIpUterinas ? null : numero(d, key('ir_dv')),
-    ip_ducto_venoso: somenteIpUterinas ? null : numero(d, key('ip_dv')),
+    ip_ducto_venoso: ipDuctoVenoso,
+    perc_ducto_venoso: calculado.ductoVenoso?.percentile ?? null,
     ducto_venoso_qualitativo: somenteIpUterinas || ductoQualitativo === 'normal'
       ? null
       : ductoQualitativo === 'ip_acima_p95'
@@ -81,6 +87,7 @@ export function dopplerDaTela(
             ? 'fluxo diastólico reverso'
             : 'pulsações venosas dicróticas persistentes',
     rcp: somenteIpUterinas ? null : numero(d, key('rcp')) ?? rcpCalculada,
+    perc_rcp: calculado.ratioCerebroplacentario?.percentile ?? null,
     perfil_hemodinamico: somenteIpUterinas ? null : numero(d, key('perfil')),
     umbilical_alterado:
       !somenteIpUterinas && calculado.arteriaUmbilical?.pathological === true,
