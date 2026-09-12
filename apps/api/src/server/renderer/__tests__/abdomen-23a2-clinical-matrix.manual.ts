@@ -79,7 +79,7 @@ const casos: Caso[] = [
   { nome: "hidronefrose leve", patch: { rim_direito: { dilatacao: "leve" } }, inclui: ["grau leve", "Hidronefrose de grau leve à direita."] },
   { nome: "hidronefrose moderada", patch: { rim_direito: { dilatacao: "moderada" } }, inclui: ["grau moderado", "Hidronefrose de grau moderado à direita."] },
   { nome: "hidronefrose acentuada", patch: { rim_esquerdo: { dilatacao: "acentuada" } }, inclui: ["grau acentuado", "Hidronefrose de grau acentuado à esquerda."] },
-  { nome: "cisto renal simples", patch: { rim_direito: { cistos: ["simples"], "cistos.simples.dimensao": "20 x 18 x 16 mm" } }, inclui: ["medindo 2 x 1,8 x 1,6 cm", "Cisto simples no rim direito."] },
+  { nome: "cisto renal simples", patch: { rim_direito: { cistos: ["simples"], "cistos.simples.dimensao": "20 x 18 x 16 mm" } }, inclui: ["medindo 2,0 x 1,8 x 1,6 cm", "Cisto simples no rim direito."] },
   { nome: "cistos renais múltiplos", patch: { rim_esquerdo: { cistos: ["multiplos"] } }, inclui: ["múltiplas imagens anecoicas homogêneas", "Cistos simples no rim esquerdo."] },
   { nome: "angiomiolipoma", patch: { rim_direito: { lesoes: ["angiomiolipoma"], "lesoes.angiomiolipoma.dimensao": "12 mm", "lesoes.angiomiolipoma.polo": "medio" } }, inclui: ["medindo 1,2 cm", "terço médio", "sugestiva de angiomiolipoma"] },
   { nome: "imagem cística complexa", patch: { rim_esquerdo: { lesoes: ["cisto_complexo"], "lesoes.cisto_complexo.dimensao": "18 x 16 mm", "lesoes.cisto_complexo.polo": "sup" } }, inclui: ["imagem cística complexa, medindo 1,8 x 1,6 cm", "método contrastado"] },

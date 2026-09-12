@@ -120,7 +120,7 @@ const render = (f: AbdomenSuperiorFindings) => renderAbdomenSuperior(f, { objeti
       },
     }),
   );
-  check("cisto: corpo imagem anecoica homogênea", /Imagem anecoica homogênea, com margem regular, medindo 1,2 x 1 cm, situada no segmento VII\./.test(l), l);
+  check("cisto: corpo imagem anecoica homogênea", /Imagem anecoica homogênea, com margem regular, medindo 1,2 x 1,0 cm, situada no segmento VII\./.test(l), l);
   check("cisto: impressão cisto hepático sem septações", /Cisto hepático sem septações no segmento VII\./.test(l), l);
 }
 

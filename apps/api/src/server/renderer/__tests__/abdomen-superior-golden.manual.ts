@@ -115,8 +115,8 @@ const F = (over: Partial<AbdomenSuperiorFindings["orgaos"]>): AbdomenSuperiorFin
       },
     }),
   );
-  // formatNumberPtBr (helper reusado do ABDOMEN_TOTAL) preserva inteiros ditados: 1.0 → "1".
-  check("cisto: corpo imagem anecoica homogênea", /Imagem anecoica homogênea, com margem regular, medindo 1,2 x 1 cm, situada no segmento VII\./.test(l), l);
+  // T44: medidas em cm mantêm uma casa decimal também nos eixos inteiros.
+  check("cisto: corpo imagem anecoica homogênea", /Imagem anecoica homogênea, com margem regular, medindo 1,2 x 1,0 cm, situada no segmento VII\./.test(l), l);
   check("cisto: conclusão cisto hepático sem septações", /Cisto hepático sem septações no segmento VII\./.test(l), l);
 }
 

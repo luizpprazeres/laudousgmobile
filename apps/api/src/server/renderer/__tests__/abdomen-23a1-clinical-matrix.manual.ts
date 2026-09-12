@@ -118,7 +118,7 @@ type Caso = {
 const casos: Caso[] = [
   { nome: "hepatomegalia", patch: { figado: { dimensoes: "aumentado", "dimensoes.aumentado.lobo_d": "15", "dimensoes.aumentado.lobo_e": "10 cm" } }, inclui: ["lobo direito com diâmetro longitudinal de 15 cm", "lobo esquerdo com diâmetro longitudinal de 10 cm", "Hepatomegalia."] },
   { nome: "hepatomegalia só com medida do lobo esquerdo", patch: { figado: { dimensoes: "aumentado", "dimensoes.aumentado.lobo_e": "11" } }, inclui: ["lobo esquerdo com diâmetro longitudinal de 11 cm", "Hepatomegalia."] },
-  { nome: "hemangioma em mm", patch: { figado: { lesoes: ["hemangioma"], "lesoes.hemangioma.dimensao": "20", "lesoes.hemangioma.local": "lobo_e" } }, inclui: ["medindo 2 cm", "lobo esquerdo", "sugestiva de hemangioma"] },
+  { nome: "hemangioma em mm", patch: { figado: { lesoes: ["hemangioma"], "lesoes.hemangioma.dimensao": "20", "lesoes.hemangioma.local": "lobo_e" } }, inclui: ["medindo 2,0 cm", "lobo esquerdo", "sugestiva de hemangioma"] },
   { nome: "nódulo hepático", patch: { figado: { lesoes: ["nodulo"], "lesoes.nodulo.dimensao": "18 mm" } }, inclui: ["Imagem nodular sólida, medindo 1,8 cm", "Nódulo hepático a esclarecer"] },
   { nome: "calcificação hepática", patch: { figado: { raros: ["calcificacao"] } }, inclui: ["calcificação residual", "Calcificação hepática residual."] },
   { nome: "cistos hepáticos múltiplos", patch: { figado: { raros: ["cistos_multiplos"] } }, inclui: ["Cistos hepáticos simples."] },
@@ -144,12 +144,12 @@ const casos: Caso[] = [
   { nome: "pâncreas heterogêneo", patch: { pancreas: { ecotextura: "heterogenea" } }, inclui: ["ecotextura heterogênea", "achado inespecífico"] },
   { nome: "lipomatose pancreática", patch: { pancreas: { ecotextura: "lipomatose" } }, inclui: ["aumento difuso da ecogenicidade", "Lipomatose pancreática."] },
   { nome: "Wirsung dilatado", patch: { pancreas: { wirsung: "dilatado" } }, inclui: ["Ducto pancreático principal ectasiado", "Dilatação do ducto pancreático principal"] },
-  { nome: "cisto pancreático em mm", patch: { pancreas: { lesoes: ["cisto"], "lesoes.cisto.dimensao": "20" } }, inclui: ["Imagem cística pancreática, medindo 2 cm", "Cisto pancreático."] },
+  { nome: "cisto pancreático em mm", patch: { pancreas: { lesoes: ["cisto"], "lesoes.cisto.dimensao": "20" } }, inclui: ["Imagem cística pancreática, medindo 2,0 cm", "Cisto pancreático."] },
   { nome: "nódulo pancreático em mm", patch: { pancreas: { lesoes: ["nodulo"], "lesoes.nodulo.dimensao": "25 mm" } }, inclui: ["Imagem nodular sólida pancreática, medindo 2,5 cm", "Nódulo pancreático a esclarecer"] },
   { nome: "esplenomegalia em cm", patch: { baco: { dimensoes: "aumentado", "dimensoes.aumentado.eixo": "13", "dimensoes.aumentado.eixo_menor": "6 cm" } }, inclui: ["maior eixo medindo 13 cm", "menor eixo medindo 6 cm", "Esplenomegalia."] },
   { nome: "esplenomegalia só com menor eixo", patch: { baco: { dimensoes: "aumentado", "dimensoes.aumentado.eixo_menor": "6,5" } }, inclui: ["menor eixo medindo 6,5 cm", "Esplenomegalia."] },
   { nome: "baço heterogêneo", patch: { baco: { ecotextura: "heterogenea" } }, inclui: ["ecotextura heterogênea", "achado inespecífico"] },
-  { nome: "cisto esplênico em mm", patch: { baco: { lesoes: ["cisto"], "lesoes.cisto.dimensao": "20" } }, inclui: ["medindo 2 cm", "Cisto esplênico simples."] },
+  { nome: "cisto esplênico em mm", patch: { baco: { lesoes: ["cisto"], "lesoes.cisto.dimensao": "20" } }, inclui: ["medindo 2,0 cm", "Cisto esplênico simples."] },
   { nome: "calcificação esplênica", patch: { baco: { lesoes: ["calcificacao"] } }, inclui: ["calcificação residual", "Calcificação esplênica residual."] },
   { nome: "baço acessório", patch: { baco: { lesoes: ["acessorio"] } }, inclui: ["junto ao hilo esplênico", "Baço acessório."] },
 ];
@@ -177,7 +177,7 @@ for (const laudo of laudos({
 })) {
   assert.ok(laudo.includes("dimensões aumentadas"));
   assert.ok(laudo.includes("contornos bocelados"));
-  assert.ok(laudo.includes("medindo 2 cm"));
+  assert.ok(laudo.includes("medindo 2,0 cm"));
   assert.ok(laudo.includes("maior eixo medindo 14 cm"));
   assert.ok(laudo.includes("Hepatomegalia."));
   assert.ok(laudo.includes("Esplenomegalia."));
@@ -193,7 +193,7 @@ for (const laudo of laudos({
   },
 })) {
   assert.ok(laudo.includes("Vias biliares intra-hepáticas dilatadas"));
-  assert.ok(laudo.includes("Canal colédoco de calibre aumentado, medindo 1 cm"));
+  assert.ok(laudo.includes("Canal colédoco de calibre aumentado, medindo 1,0 cm"));
   assert.ok(laudo.includes("medindo 0,7 cm"));
   assert.ok(laudo.includes("Coledocolitíase."));
 }

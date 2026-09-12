@@ -23,21 +23,26 @@ export type OrganRender = {
   freeSlotFindings: AbdomenFinding[];
 };
 
-/** 2.1 → "2,1" (pt-BR, 1 casa decimal preservando inteiros ditados) */
+/** Formato geral: preserva inteiros em mL/mm; decimais usam uma casa. */
 export function formatNumberPtBr(n: number): string {
   const s = Number.isInteger(n) ? String(n) : n.toFixed(1);
   return s.replace(".", ",");
 }
 
+/** Medidas em cm sempre têm uma casa decimal, nos dois estilos. */
+function formatNumeroCm(n: number): string {
+  return n.toFixed(1).replace(".", ",");
+}
+
 /** [2.1,1.8,1.6] → "2,1 x 1,8 x 1,6 cm"; null/[] → "____" */
 export function formatMedidasCm(medidas: number[] | null): string {
   if (!medidas || medidas.length === 0) return "____";
-  return `${medidas.map(formatNumberPtBr).join(" x ")} cm`;
+  return `${medidas.map(formatNumeroCm).join(" x ")} cm`;
 }
 
 function maiorEixoCentimetros(medidas: number[] | null): string {
   if (!medidas || medidas.length === 0) return "____";
-  return `${formatNumberPtBr(Math.max(...medidas))} centímetros`;
+  return `${formatNumeroCm(Math.max(...medidas))} centímetros`;
 }
 
 const GRAU_QUANTIDADE: Record<string, string> = {
@@ -124,8 +129,8 @@ function renderFigado(state: AbdomenOrganState): OrganRender {
     if (f.tipo === "hepatomegalia") {
       const [loboDireito, loboEsquerdo] = f.medidas_cm ?? [];
       const medidas = [
-        loboDireito !== undefined ? `lobo direito com diâmetro longitudinal de ${formatNumberPtBr(loboDireito)} cm` : "",
-        loboEsquerdo !== undefined ? `lobo esquerdo com diâmetro longitudinal de ${formatNumberPtBr(loboEsquerdo)} cm` : "",
+        loboDireito !== undefined ? `lobo direito com diâmetro longitudinal de ${formatNumeroCm(loboDireito)} cm` : "",
+        loboEsquerdo !== undefined ? `lobo esquerdo com diâmetro longitudinal de ${formatNumeroCm(loboEsquerdo)} cm` : "",
       ].filter(Boolean);
       const descricaoMedidas = f.localizacao?.trim() || medidas.join(" e ");
       dimensoes = `dimensões aumentadas${descricaoMedidas ? ` (${descricaoMedidas})` : ""}`;
@@ -391,8 +396,8 @@ function renderBaco(state: AbdomenOrganState): OrganRender {
     if (f.tipo === "esplenomegalia") {
       const [maior, menor] = f.medidas_cm ?? [];
       const medidas = [
-        maior !== undefined ? `maior eixo medindo ${formatNumberPtBr(maior)} cm` : "",
-        menor !== undefined ? `menor eixo medindo ${formatNumberPtBr(menor)} cm` : "",
+        maior !== undefined ? `maior eixo medindo ${formatNumeroCm(maior)} cm` : "",
+        menor !== undefined ? `menor eixo medindo ${formatNumeroCm(menor)} cm` : "",
       ].filter(Boolean);
       const descricaoMedidas = f.localizacao?.trim() || medidas.join(" e ");
       dimensoes = `dimensões aumentadas${descricaoMedidas ? `, com ${descricaoMedidas}` : ""}`;
