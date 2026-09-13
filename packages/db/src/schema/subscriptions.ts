@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   index,
+  integer,
   pgPolicy,
   pgTable,
   text,
@@ -28,6 +29,18 @@ export const subscriptions = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     isTrial: boolean("is_trial").notNull().default(false),
     status: text("status").notNull().default("active"),
+    /**
+     * Posse: o `appAccountToken` que o app fixa na compra = id do usuário
+     * Supabase. Igual a `user_id` por construção; guardado à parte para
+     * auditoria e para o webhook atribuir uma assinatura que o app não chegou
+     * a registrar. Nulo só em linhas legadas (nenhuma em produção).
+     */
+    appAccountToken: uuid("app_account_token"),
+    /** `Production` | `Sandbox` — de onde veio o JWS verificado. */
+    environment: text("environment").notNull().default("Production"),
+    applePurchaseDate: timestamp("apple_purchase_date", { withTimezone: true }),
+    appleSignedDate: timestamp("apple_signed_date", { withTimezone: true }),
+    revision: integer("revision").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -43,6 +56,7 @@ export const subscriptions = pgTable(
     index("idx_subscriptions_active")
       .on(t.userId, t.status)
       .where(sql`${t.status} = 'active'`),
+    index("idx_subscriptions_app_account_token").on(t.appAccountToken),
     check("subscriptions_tier_check", sql`${t.tier} IN ('essencial', 'pro')`),
     check("subscriptions_period_check", sql`${t.period} IN ('monthly', 'yearly')`),
     check(

@@ -86,6 +86,25 @@ function estilos(patch: Partial<MorfologicoFindings>): Array<{ nome: string; tex
   ];
 }
 
+// Cada osso conserva seu proprio valor nos dois lados previstos pelo modelo.
+for (const estilo of estilos({
+  femur_mm: 41, tibia_mm: 36, fibula_mm: 35, umero_mm: 39, radio_mm: 32, ulna_mm: 34,
+})) {
+  for (const [osso, ladoA, ladoB, valor] of [
+    ["fêmur", "direito", "esquerdo", 41],
+    ["tíbia", "direita", "esquerda", 36],
+    ["fíbula", "direita", "esquerda", 35],
+    ["úmero", "direito", "esquerdo", 39],
+    ["rádio", "direito", "esquerdo", 32],
+    ["ulna", "direita", "esquerda", 34],
+  ] as const) {
+    for (const lado of [ladoA, ladoB]) {
+      check(`${estilo.nome}: preserva ${osso} ${lado} ${valor} mm`,
+        new RegExp(`${osso} ${lado}(?: de|:) ${valor}(?:,0)? mm`).test(estilo.texto));
+    }
+  }
+}
+
 // Entrada silenciosa do iOS: o servidor não completa o que não foi informado.
 for (const estilo of estilos({})) {
   check(`${estilo.nome}: mantém o título do 2º trimestre`, estilo.texto.includes("MORFOLÓGICA DO SEGUNDO TRIMESTRE"), estilo.texto);

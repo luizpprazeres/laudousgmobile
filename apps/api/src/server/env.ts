@@ -268,6 +268,30 @@ const ServerEnvSchema = z.object({
   // MapaVenoso é o mesmo; só muda o asset/coords/render no cliente. Fail-safe.
   VENOUS_SCHEME_4VIEW: z.string().default("false"),
   APPLE_BUNDLE_ID: z.string().default("com.laudousg.LaudoUSG"),
+  /**
+   * IAP — verificação de JWS com a biblioteca oficial da Apple
+   * (server/iap/verifier.ts). Nenhuma destas é segredo.
+   *
+   * APPLE_APP_APPLE_ID: o Apple ID numérico do app no App Store Connect.
+   * Obrigatório para verificar payloads de PRODUÇÃO (a biblioteca recusa sem
+   * ele). Default = o id do LaudoUSG (6770609540).
+   */
+  APPLE_APP_APPLE_ID: z.string().default("6770609540"),
+  /**
+   * Ambientes aceitos, CSV. Só `Production` e `Sandbox` são permitidos —
+   * `Xcode`/`LocalTesting` fazem a biblioteca PULAR a assinatura e nunca
+   * podem ser aceitos por um servidor. Sandbox fica ligado em produção porque
+   * é o que o revisor da Apple e o TestFlight usam; o ambiente é gravado na
+   * assinatura para auditoria.
+   */
+  APPLE_IAP_ENVIRONMENTS: z.string().default("Production,Sandbox"),
+  /**
+   * Checagem online da cadeia (OCSP/revogação) a cada verificação. "false"
+   * só em teste local sem rede; em produção fica ligado. Uma falha de rede no
+   * OCSP vira 503 `retryable` (o app não finaliza a transação e repete).
+   */
+  APPLE_IAP_ONLINE_CHECKS: z.string().default("true"),
+  /** Opcional: se definido, o webhook exige `?secret=` na URL (defesa extra). */
   APPLE_NOTIFICATION_SECRET: z.string().optional(),
   BETA_TESTER_EMAILS: z.string().optional(),
 });

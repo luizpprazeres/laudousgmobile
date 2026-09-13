@@ -49,6 +49,8 @@ async function main() {
     "0024_menor_privilegio_escrita.sql",
     "0025_crm_e_uf_separados.sql",
     "0026_companion_sessions.sql",
+    "0029_profile_plan_essencial.sql",
+    "0030_subscriptions_apple_ownership.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

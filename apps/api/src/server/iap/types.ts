@@ -6,6 +6,11 @@ export const ValidateReceiptRequestSchema = z.object({
 
 export type SubscriptionTier = "essencial" | "pro";
 export type SubscriptionPeriod = "monthly" | "yearly";
+/**
+ * `cancelled` existe no CHECK do banco mas não é escrito por este código: uma
+ * assinatura com auto-renovação desligada continua ATIVA até `expires_at`.
+ * Quem dá acesso é o par (status ∈ {active, grace}) + `expires_at` no futuro.
+ */
 export type SubscriptionStatus =
   | "active"
   | "expired"
@@ -13,34 +18,13 @@ export type SubscriptionStatus =
   | "cancelled"
   | "refunded";
 
-export type AppleSignedTransactionPayload = {
-  originalTransactionId: string;
-  transactionId: string;
-  productId: string;
-  expiresDate: number;
-  type?: string;
-  offerType?: number | string;
-};
-
-export const AppleNotificationPayloadSchema = z.object({
-  notificationType: z.string(),
-  subtype: z.string().optional(),
-  data: z.object({
-    signedTransactionInfo: z.string(),
-    signedRenewalInfo: z.string().optional(),
-  }),
-});
-
-export type AppleNotificationPayload = z.infer<
-  typeof AppleNotificationPayloadSchema
->;
-
 export type SubscriptionStatusOut = {
   tier: SubscriptionTier;
   period: SubscriptionPeriod;
   expires_at: string;
   is_trial: boolean;
   status: SubscriptionStatus;
+  environment: string;
 };
 
 export function parseProductId(

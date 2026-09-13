@@ -1,13 +1,28 @@
-import { eq } from "drizzle-orm";
-import { getDbClient, schema } from "@laudousg/db";
-import { decodeJws } from "@/server/iap/jws";
-import {
-  AppleNotificationPayloadSchema,
-  isIntroOffer,
-  parseProductId,
-  type AppleSignedTransactionPayload,
-  type SubscriptionStatus,
-} from "@/server/iap/types";
+/**
+ * POST /api/iap/notifications — App Store Server Notifications v2.
+ *
+ * A Apple assina o `signedPayload` inteiro; sem verificar a assinatura,
+ * qualquer um poderia expirar ou "renovar" assinaturas alheias com um POST.
+ * Agora: `SignedDataVerifier` oficial (raízes Apple, bundle, appAppleId,
+ * ambiente) e, dentro do payload, a transação e o renewal info são
+ * verificados de novo, cada um com a própria assinatura.
+ *
+ * Códigos HTTP e reentrega da Apple (ela reenvia quando não recebe 200):
+ *   200 — processada, ignorada, sem dono conhecido, ou TEST.
+ *   400 — corpo sem `signedPayload`.
+ *   401 — assinatura inválida / app ou ambiente errado. Definitivo; a Apple
+ *         ainda reenviaria, e será recusado de novo, o que é o desejado.
+ *   503 — OCSP ou banco indisponível. QUEREMOS a reentrega.
+ *
+ * `APPLE_NOTIFICATION_SECRET` (opcional): se definido, exige `?secret=` na
+ * URL configurada no App Store Connect. Defesa extra contra ruído; a
+ * autenticidade vem da assinatura.
+ */
+
+import { env } from "@/server/env";
+import { processNotification } from "@/server/iap/notifications";
+import { getSubscriptionRepo } from "@/server/iap/repo";
+import { AppleVerificationError, getAppleVerifier } from "@/server/iap/verifier";
 export { OPTIONS } from "@/server/cors";
 
 export const runtime = "nodejs";
@@ -15,143 +30,86 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  const secret = env().APPLE_NOTIFICATION_SECRET;
+  if (secret) {
+    const provided = new URL(req.url).searchParams.get("secret");
+    if (provided !== secret) return json({ error: "unauthorized" }, 401);
+  }
+
+  let body: { signedPayload?: unknown };
   try {
-    const body = (await req.json()) as { signedPayload?: unknown };
-    if (typeof body.signedPayload !== "string") {
-      console.log("[iap] notification missing signedPayload");
-      return json({ ok: true });
-    }
+    body = (await req.json()) as { signedPayload?: unknown };
+  } catch {
+    return json({ error: "invalid_json" }, 400);
+  }
+  if (typeof body.signedPayload !== "string" || body.signedPayload.length < 50) {
+    return json({ error: "missing_signed_payload" }, 400);
+  }
 
-    const notificationRaw = decodeJws<unknown>(body.signedPayload);
-    const notification = AppleNotificationPayloadSchema.safeParse(notificationRaw);
-    if (!notification.success) {
-      console.log("[iap] invalid notification payload", notification.error.format());
-      return json({ ok: true });
+  let verifier;
+  let verified;
+  try {
+    verifier = getAppleVerifier();
+    verified = await verifier.verifyNotification(body.signedPayload);
+  } catch (error) {
+    if (error instanceof AppleVerificationError) {
+      console.warn(
+        JSON.stringify({ evento: "IAP_NOTIFICACAO_RECUSADA", code: error.code, status: error.status }),
+      );
+      return error.retryable
+        ? json({ error: "verification_unavailable", retryable: true }, 503)
+        : json({ error: error.code }, 401);
     }
+    console.error("[iap] verificador indisponível", error);
+    return json({ error: "verifier_unavailable", retryable: true }, 503);
+  }
 
-    const tx = decodeJws<AppleSignedTransactionPayload>(
-      notification.data.data.signedTransactionInfo,
-    );
-    const product = parseProductId(tx.productId);
-    if (!product) {
-      console.log("[iap] notification invalid product", tx.productId);
-      return json({ ok: true });
-    }
-
-    await handleNotification({
-      notificationType: notification.data.notificationType,
-      tx,
-      tier: product.tier,
-      period: product.period,
+  const environment = verified.environment;
+  try {
+    const outcome = await processNotification({
+      payload: verified.payload,
+      environment,
+      repo: getSubscriptionRepo(),
+      verifyTransaction: async (jws) => (await verifier.verifyTransaction(jws)).payload,
+      verifyRenewalInfo: (jws) => verifier.verifyRenewalInfo(jws, environment),
     });
 
-    return json({ ok: true });
+    console.log(
+      JSON.stringify({
+        evento: "IAP_NOTIFICACAO",
+        notificationUUID: verified.payload.notificationUUID ?? null,
+        notificationType: verified.payload.notificationType ?? null,
+        subtype: verified.payload.subtype ?? null,
+        environment,
+        resultado: outcome.kind,
+        ...(outcome.kind === "processed"
+          ? { userId: outcome.userId, apply: outcome.apply.kind }
+          : {}),
+        ...(outcome.kind === "unassigned"
+          ? { originalTransactionId: outcome.originalTransactionId }
+          : {}),
+        ...(outcome.kind === "ignored" ? { motivo: outcome.reason } : {}),
+      }),
+    );
+    return json({ ok: true, outcome: outcome.kind });
   } catch (error) {
-    console.log("[iap] notification failure", error);
-    return json({ ok: true });
-  }
-}
-
-async function handleNotification(args: {
-  notificationType: string;
-  tx: AppleSignedTransactionPayload;
-  tier: "essencial" | "pro";
-  period: "monthly" | "yearly";
-}) {
-  switch (args.notificationType) {
-    case "SUBSCRIBED":
-    case "DID_RENEW":
-      await upsertKnownSubscription(args, "active");
-      break;
-    case "EXPIRED":
-    case "DID_FAIL_TO_RENEW":
-      await updateKnownSubscription(args.tx.originalTransactionId, "expired");
-      break;
-    case "REFUND":
-      await updateKnownSubscription(args.tx.originalTransactionId, "refunded", true);
-      break;
-    case "GRACE_PERIOD_EXPIRED":
-      await updateKnownSubscription(args.tx.originalTransactionId, "grace");
-      break;
-    case "DID_CHANGE_RENEWAL_PREF":
-    case "DID_CHANGE_RENEWAL_STATUS":
-    case "PRICE_INCREASE":
-      console.log("[iap] notification log only", args.notificationType);
-      break;
-    default:
-      console.log("[iap] notification ignored", args.notificationType);
-  }
-}
-
-async function upsertKnownSubscription(
-  args: {
-    tx: AppleSignedTransactionPayload;
-    tier: "essencial" | "pro";
-    period: "monthly" | "yearly";
-  },
-  status: SubscriptionStatus,
-) {
-  const db = getDbClient();
-  const [existing] = await db
-    .select()
-    .from(schema.subscriptions)
-    .where(
-      eq(
-        schema.subscriptions.appleOriginalTxId,
-        args.tx.originalTransactionId,
-      ),
-    )
-    .limit(1);
-
-  if (!existing) {
-    console.log("[iap] notification for unknown subscription", args.tx.originalTransactionId);
-    return;
-  }
-
-  await db
-    .update(schema.subscriptions)
-    .set({
-      productId: args.tx.productId,
-      tier: args.tier,
-      period: args.period,
-      appleLatestTxId: args.tx.transactionId,
-      expiresAt: new Date(args.tx.expiresDate),
-      isTrial: isIntroOffer(args.tx.offerType),
-      status,
-      updatedAt: new Date(),
-    })
-    .where(eq(schema.subscriptions.id, existing.id));
-
-  if (status === "active") {
-    await db
-      .update(schema.profiles)
-      .set({ plan: args.tier, updatedAt: new Date() })
-      .where(eq(schema.profiles.id, existing.userId));
-  }
-}
-
-async function updateKnownSubscription(
-  originalTransactionId: string,
-  status: SubscriptionStatus,
-  downgradeProfile = false,
-) {
-  const db = getDbClient();
-  const [subscription] = await db
-    .update(schema.subscriptions)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(schema.subscriptions.appleOriginalTxId, originalTransactionId))
-    .returning();
-
-  if (!subscription) {
-    console.log("[iap] status for unknown subscription", originalTransactionId);
-    return;
-  }
-
-  if (downgradeProfile) {
-    await db
-      .update(schema.profiles)
-      .set({ plan: "free", updatedAt: new Date() })
-      .where(eq(schema.profiles.id, subscription.userId));
+    if (error instanceof AppleVerificationError) {
+      // Transação/renewal dentro do envelope falhou na própria assinatura.
+      console.warn(
+        JSON.stringify({ evento: "IAP_NOTIFICACAO_CONTEUDO_RECUSADO", code: error.code, status: error.status }),
+      );
+      return error.retryable
+        ? json({ error: "verification_unavailable", retryable: true }, 503)
+        : json({ error: error.code }, 401);
+    }
+    console.error(
+      JSON.stringify({
+        evento: "IAP_NOTIFICACAO_FALHA",
+        motivo: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    // 5xx de propósito: a Apple reentrega.
+    return json({ error: "storage_unavailable", retryable: true }, 503);
   }
 }
 

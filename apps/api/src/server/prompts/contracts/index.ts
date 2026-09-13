@@ -9,6 +9,7 @@
  * adicionar novos imports aqui.
  */
 import type { WritingStyleCode } from "@laudousg/shared";
+import { MORFOLOGICO_CONTRACT } from "./MORFOLOGICO";
 import {
   ABDOMEN_TOTAL_CONTRACT,
   ABDOMEN_TOTAL_MODELO_OBJETIVO,
@@ -31,6 +32,7 @@ export const CATEGORY_CONTRACTS: Record<string, string> = {
   MAMARIA: MAMARIA_CONTRACT,
   PELVE_FEMININA: PELVE_FEMININA_CONTRACT,
   OBSTETRICA: OBSTETRICA_CONTRACT,
+  MORFOLOGICO: MORFOLOGICO_CONTRACT,
   // Alpha 5×1 FECHADO (P3=A). Próximas fases:
   // - β: DIRETO_OBJETIVO + DETALHADO_PROTOCOLAR pra estas 5 categorias
   // - γ: expandir cobertura pra 28 categorias restantes

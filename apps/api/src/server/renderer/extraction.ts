@@ -386,6 +386,7 @@ const PROGRESS_MILESTONES: { field: string; label: string }[] = [
 
 export async function runRendererExtraction(args: {
   categoryCode: string;
+  dopplerMode?: "combined" | "isolated";
   rawInput: string;
   signal?: AbortSignal;
   /** UX: streama a extração e emite "achado" por campo que aparece (flag). */
@@ -419,7 +420,9 @@ export async function runRendererExtraction(args: {
       },
     },
     messages: [
-      { role: "system" as const, content: extractor.prompt },
+      { role: "system" as const, content: extractor.prompt + (args.categoryCode === "OBSTETRICA" && args.dopplerMode === "combined"
+        ? "\nEXAME SELECIONADO: obstétrico com Doppler. Preserve toda a biometria e os achados obstétricos ditados. Preencha o módulo doppler, com null para índices e características não informados; não invente medidas ou normalidade vascular."
+        : "") },
       { role: "user" as const, content: `Ditado do médico:\n${rawInput}` },
     ],
   };
