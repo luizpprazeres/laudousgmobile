@@ -9,7 +9,7 @@ import * as importedReportRichText from '../../components/laudar/reportRichText.
 const preEclampsiaModule = importedPreEclampsia as typeof importedPreEclampsia & {
   default?: typeof importedPreEclampsia
 }
-const { calcularPreEclampsiaWeb } = preEclampsiaModule.default ?? preEclampsiaModule
+const { calcularPreEclampsiaWeb, trocarFonteIp } = preEclampsiaModule.default ?? preEclampsiaModule
 const reportRichTextModule = importedReportRichText as typeof importedReportRichText & {
   default?: typeof importedReportRichText
 }
@@ -116,6 +116,38 @@ try {
   mensagem = error instanceof Error ? error.message : ''
 }
 check('erro do núcleo não vira número fora da janela', mensagem.includes('fora da janela do modelo'), mensagem)
+
+const bilateral = { ...base(), utaPiFonte: 'bilateral' as const, utaPiDireito: '1,2', utaPiEsquerdo: '1,6', utaPiMedio: '5' }
+const lados = calcularPreEclampsiaWeb(bilateral)
+for (const [direito, esquerdo] of [['1.1', '1.3'], ['1.21', '1.24']]) {
+  const preciso = calcularPreEclampsiaWeb({...bilateral, utaPiDireito: direito, utaPiEsquerdo: esquerdo})
+  check('media chega ao kernel sem arredondamento de display', preciso.medidas.utaPiMedio === (Number(direito) + Number(esquerdo)) / 2)
+}
+check('bilateral usa media dos lados e ignora media residual', lados.medidas.utaPiMedio === 1.4)
+const manual = calcularPreEclampsiaWeb({ ...bilateral, utaPiFonte: 'manual', utaPiMedio: '1,4' })
+check('manual ignora lados e preserva risco do kernel', manual.resultado.umEmN === lados.resultado.umEmN)
+for (const form of [
+  { ...bilateral, utaPiEsquerdo: '' },
+  { ...bilateral, utaPiDireito: 'abc' },
+  { ...bilateral, utaPiDireito: '-1' },
+]) {
+  let erro = false
+  try { calcularPreEclampsiaWeb(form) } catch { erro = true }
+  check('bilateral incompleto/invalido nao produz resultado residual', erro)
+}
+const trocado = trocarFonteIp(bilateral, 'manual')
+check('troca fonte limpa os tres IPs', trocado.utaPiMedio === '' && trocado.utaPiDireito === '' && trocado.utaPiEsquerdo === '')
+check('troca fonte remove marcador anterior', calcularPreEclampsiaWeb(trocado).medidas.utaPiMedio === null)
+const historia = { ...base(), intervaloAnos: '3', igPartoAnterior: '35', zEscorePesoAnterior: '-1' }
+const nuli = calcularPreEclampsiaWeb(historia)
+check('nulipara exclui historia oculta', nuli.gestante.intervaloAnos === null && nuli.gestante.igPartoAnterior === null && nuli.gestante.zEscorePesoAnterior === null)
+const semPe = calcularPreEclampsiaWeb({ ...historia, paridade: 'multipara-sem-pe' })
+check('multipara sem PE preserva IG e intervalo, exclui z-score oculto', semPe.gestante.igPartoAnterior === 35 && semPe.gestante.intervaloAnos === 3 && semPe.gestante.zEscorePesoAnterior === null)
+const comPe = calcularPreEclampsiaWeb({ ...historia, paridade: 'multipara-com-pe' })
+check('multipara com PE preserva toda historia aplicavel', comPe.gestante.zEscorePesoAnterior === -1 && comPe.gestante.igPartoAnterior === 35)
+for (const total of [1, 2, 3, 4]) {
+  check(`preserva ${total} afericoes`, calcularPreEclampsiaWeb({ ...base(), afericoes: quatro.afericoes.slice(0, total) }).medidas.afericoesPam === total)
+}
 
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ''))
 if (fail) process.exit(1)

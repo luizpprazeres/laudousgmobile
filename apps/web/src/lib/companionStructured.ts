@@ -312,7 +312,6 @@ export function applyCompanionStructured(
       'avaliar.sim.fonte': 'outra',
       'avaliar.sim.fonte_outra': 'informado pelo aparelho',
     })
-    mergeSection('doppler', dopplerPatch(data, true))
   } else if (payload.category === 'MORFOLOGICO') {
     mergeSection('biometria', biometricPatch(data, true))
     mergeSection('ig', gestationalAgePatch(data))
@@ -330,7 +329,13 @@ export function applyCompanionStructured(
     mergeSection('doppler', dopplerPatch(data, true))
   } else if (payload.category === 'DOPPLER_OBSTETRICO') {
     mergeSection('doppler', dopplerPatch(data, false))
-    mergeSection('doppler', gestationalAgePatch(data, true))
+    const ig = gestationalAgePatch(data, true)
+    if (ig) mergeSection('ig', { bio_sem: ig.ig_sem, bio_dias: ig.ig_dias })
+    if (current.__opts?.somente_doppler !== 'sim') {
+      mergeSection('biometria', biometricPatch(data, false))
+      const ila = measurement(data.ila, 'cm')
+      if (ila) mergeSection('liquido', { tipo: 'ila', 'tipo.ila.cm': ila })
+    }
   }
   return next
 }

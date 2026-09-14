@@ -65,8 +65,10 @@ export function useLaudoCanonico(
   categoria: string,
   entrada: Entrada | null,
   ativo: boolean,
+  documentKey = categoria,
 ): EstadoDoLaudo {
-  const [estado, setEstado] = useState<EstadoDoLaudo>({
+  const [estado, setEstado] = useState<EstadoDoLaudo & { documentKey: string }>({
+    documentKey,
     texto: '',
     carregando: false,
     desatualizado: false,
@@ -95,6 +97,7 @@ export function useLaudoCanonico(
     if (travas.length > 0) {
       geracao.current++
       setEstado({
+        documentKey,
         texto: '',
         carregando: false,
         desatualizado: false,
@@ -105,7 +108,15 @@ export function useLaudoCanonico(
     }
 
     const minha = ++geracao.current
-    setEstado((e) => ({ ...e, carregando: true, desatualizado: e.texto !== '' }))
+    setEstado((e) => ({
+      ...e,
+      documentKey,
+      texto: e.documentKey === documentKey ? e.texto : '',
+      erro: null,
+      conflitos: [],
+      carregando: true,
+      desatualizado: e.documentKey === documentKey && e.texto !== '',
+    }))
 
     const timer = setTimeout(async () => {
       try {
@@ -133,6 +144,7 @@ export function useLaudoCanonico(
         }
 
         setEstado({
+          documentKey,
           texto: j.laudo,
           carregando: false,
           desatualizado: false,
@@ -151,8 +163,14 @@ export function useLaudoCanonico(
       }
     }, ESPERA_MS)
 
-    return () => clearTimeout(timer)
-  }, [categoria, corpo, bloqueado, ativo])
+    return () => {
+      clearTimeout(timer)
+      geracao.current++
+    }
+  }, [categoria, corpo, bloqueado, ativo, documentKey])
 
-  return estado
+  // Um modo nunca exibe nem salva o documento recebido para o outro.
+  return estado.documentKey === documentKey ? estado : {
+    texto: '', carregando: ativo, desatualizado: false, erro: null, conflitos: [],
+  }
 }

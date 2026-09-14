@@ -1,0 +1,26 @@
+Table S1 Equations for parameters and computation of Z-scores and centiles for estimated fetal weight according to gestational age
+
+
+Skewness
+λ(GA) = 9.43643 + 9.41579*(GA/10)-2  - 83.54220 * log(GA/10)*(GA/10)-2
+Mean
+μ(GA) = -2.42272 + 1.86478*GA0.5 - 1.93299e-5 * GA3
+Coefficient of variation
+σ(GA) = 0.0193557  + 0.0310716 * (GA/10)-2 - 0.0657587 * log(GA/10)*(GA/10)-2
+Z-score
+Y=log(EFW)
+
+If λ(GA)=0, Z(GA) = σ(GA)-1 × log[Y/μ(GA)]
+If λ(GA)≠0, Z(GA) = [σ(GA) × λ(GA)]-1 × [(Y/μ(GA))λ(GA) − 1]
+Centiles
+Zα defined by Pr(z ≤ Zα)=α for z ~ N(0,1), i.e. Zα = Φ-1(α)
+
+If λ(GA)=0, log[Cα(GA)] = μ(GA) × exp[σ(GA) × Zα]
+If λ(GA)≠0, log[Cα(GA)] = μ(GA) × [Zα × σ(GA) × λ(GA) +1]1/λ(GA)
+
+
+GA is for gestational age, in exact weeks; EFW: estimated fetal weight in g. The log function denotes the natural logarithm (base e).
+
+Publication: INTERGROWTH-21st standards for Hadlock's estimation of fetal weight. Stirnemann, J., Salomon, L.J. and Papageorghiou, A.T. (2020). Ultrasound Obstet Gynecol, 56: 946-948. https://doi.org/10.1002/uog.22000
+
+

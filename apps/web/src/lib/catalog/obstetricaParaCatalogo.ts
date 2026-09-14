@@ -115,7 +115,9 @@ export type Adaptacao = {
   pendencias: Pendencia[];
 };
 
-export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
+export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirDoppler?: boolean }): Adaptacao {
+  // OBSTETRICA nao consome indices legados ou recebidos enquanto ocultos.
+  if (!options?.incluirDoppler) estado = { ...estado, doppler: {} };
   const pendencias: Pendencia[] = [];
 
   const ig = secao(estado, "ig");
@@ -124,7 +126,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico): Adaptacao {
   const p = secao(estado, "placenta");
   const l = secao(estado, "liquido");
   const a = secao(estado, "achados");
-  const crescimento = fetalGrowthDaTela(estado);
+  const crescimento = fetalGrowthDaTela(estado, pendencias);
 
   const fonte = texto(ig, "referencia") || "nenhuma";
 

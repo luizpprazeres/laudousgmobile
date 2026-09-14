@@ -33,6 +33,9 @@ export type PeWebForm = {
   fumante: boolean
   afericoes: PeAfericaoForm[]
   utaPiMedio: string
+  utaPiFonte?: 'manual' | 'bilateral'
+  utaPiDireito?: string
+  utaPiEsquerdo?: string
 }
 
 export type PeWebCalculo = {
@@ -52,6 +55,22 @@ function numeroObrigatorio(valor: string, campo: string): number {
 function numeroOpcional(valor: string, campo: string): number | null {
   if (!valor.trim()) return null
   return numeroObrigatorio(valor, campo)
+}
+
+export function ipUterinoMedio(form: PeWebForm): number | null {
+  if (form.utaPiFonte !== 'bilateral') {
+    return numeroOpcional(form.utaPiMedio, 'IP médio das artérias uterinas')
+  }
+  const direito = numeroOpcional(form.utaPiDireito ?? '', 'IP uterino direito')
+  const esquerdo = numeroOpcional(form.utaPiEsquerdo ?? '', 'IP uterino esquerdo')
+  if (direito === null && esquerdo === null) return null
+  if (direito === null || esquerdo === null) throw new Error('Informe os IPs uterinos direito e esquerdo')
+  if (direito <= 0 || esquerdo <= 0) throw new Error('Os IPs uterinos devem ser positivos')
+  return (direito + esquerdo) / 2
+}
+
+export function trocarFonteIp(form: PeWebForm, fonte: 'manual' | 'bilateral'): PeWebForm {
+  return { ...form, utaPiFonte: fonte, utaPiMedio: '', utaPiDireito: '', utaPiEsquerdo: '' }
 }
 
 function montarPam(afericoesForm: PeAfericaoForm[]) {
@@ -130,7 +149,7 @@ export function calcularPreEclampsiaWeb(form: PeWebForm): PeWebCalculo {
   const medidas: PeMedidas = {
     pamMmHg: pam?.pamMmHg ?? null,
     afericoesPam: pam?.afericoes ?? null,
-    utaPiMedio: numeroOpcional(form.utaPiMedio, 'IP médio das artérias uterinas'),
+    utaPiMedio: ipUterinoMedio(form),
   }
 
   return {

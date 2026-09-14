@@ -95,7 +95,7 @@ export function adaptarMorfologico(
   const b = secao(estado, "biometria");
   const ex = secao(estado, "extrafetal");
   const ac = secao(estado, "achados");
-  const crescimento = fetalGrowthDaTela(estado);
+  const crescimento = fetalGrowthDaTela(estado, pendencias);
 
   /**
    * A ANATOMIA ALTERADA — descrição ao corpo, diagnóstico à conclusão.
