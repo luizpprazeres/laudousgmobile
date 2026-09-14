@@ -70,7 +70,7 @@ const template = ABDOMEN_ORGAN_KEYS.map(key => `{{orgao:${key}|Normal.}}`).join(
 for (const [style, report] of [
   ["Clássico", renderAbdomenTotalClassico(findings, template)],
   ["Objetivo", renderAbdomenTotalObjetivo(findings)],
-]) {
+] as const) {
   check(`${style}: eixos em cm`, () => assert.ok(report.includes("medindo 4,0 x 1,4 cm")));
   check(`${style}: maior eixo em centímetros`, () => assert.ok(report.includes("4,0 centímetros no maior eixo")));
   check(`${style}: volume inteiro em mL`, () => assert.ok(report.includes("Volume pré-miccional de 12 mL.")));
