@@ -82,7 +82,7 @@ export type Nivel = {
  * do perfil é só o reflexo dele.
  */
 export function nivelDe(plano: PlanoDoBanco, assinatura: Assinatura): Nivel {
-  if (assinatura) {
+  if (assinatura && !(plano === 'clinic' && assinatura.tier === 'essencial')) {
     return assinatura.tier === 'pro'
       ? { rotulo: 'Pro', coluna: 'profissional', origem: 'App Store', sugereUpgrade: null }
       : { rotulo: 'Essencial', coluna: 'essencial', origem: 'App Store', sugereUpgrade: null }

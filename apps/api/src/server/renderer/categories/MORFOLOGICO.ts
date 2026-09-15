@@ -131,7 +131,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "ig_semanas", "ig_dias", "dum",
     "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
     "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
-    "achados_adicionais", "cervicometria", "doppler",
+    "achados_adicionais", "itens_conclusao_livres", "cervicometria", "doppler",
     "crescimento_fetal",
   ],
   properties: {
@@ -529,7 +529,7 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
           : "Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(f.anatomia_avaliada !== true || temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...(f.anatomia_avaliada !== true || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -837,7 +837,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
           : "Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(f.anatomia_avaliada !== true || temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...(f.anatomia_avaliada !== true || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),

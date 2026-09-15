@@ -1,4 +1,5 @@
 import { GenerateRequestSchema } from "@laudousg/shared";
+import { requestedExamCategory, type DopplerMode } from "@/server/pipeline/requestedExam";
 import { after } from "next/server";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { sseResponse, nowIso } from "@/server/sse/stream";
@@ -164,7 +165,10 @@ function resolveEffectiveCategory(
   reportId: string,
   knownCodes: Set<string>,
   categoryHint?: string,
+  dopplerMode?: DopplerMode,
 ): string {
+  const requested = requestedExamCategory(categoryHint, dopplerMode);
+  if (requested && knownCodes.has(requested)) return requested;
   const morf = resolveMorfologicoCategory(detectedCategory, rawText);
   if (morf.overridden) {
     console.warn(
@@ -452,6 +456,7 @@ export async function POST(req: Request) {
           reportId,
           categoriesInfo.codes,
           reqInput.category_hint,
+          reqInput.doppler_mode,
         );
         auditState.category = effectiveCategory;
         auditState.contractHash = contractHashFor(
@@ -583,6 +588,7 @@ export async function POST(req: Request) {
             reportId,
             categoriesInfo.codes,
             reqInput.category_hint,
+            reqInput.doppler_mode,
           );
           findings = {
             schema_version: "v1",
@@ -623,6 +629,7 @@ export async function POST(req: Request) {
           reportId,
           categoriesInfo.codes,
           reqInput.category_hint,
+          reqInput.doppler_mode,
         );
         auditState.category = effectiveCategory;
         auditState.contractHash = contractHashFor(
@@ -949,6 +956,7 @@ export async function POST(req: Request) {
       const writerGen = useRenderer
         ? runRendererStream({
             categoryCode: effectiveCategory,
+            dopplerMode: reqInput.category_hint === "DOPPLER_OBSTETRICO" ? reqInput.doppler_mode : undefined,
             rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
             templateBody: rendererTemplateBody ?? "",
             signal,
@@ -1038,6 +1046,7 @@ export async function POST(req: Request) {
             },
           })
         : runWriterStream({
+            dopplerMode: reqInput.category_hint === "DOPPLER_OBSTETRICO" ? reqInput.doppler_mode : undefined,
             findings,
             ragBlocks: blocks,
             writingStyleCode: styleRow.code,
@@ -1096,6 +1105,7 @@ export async function POST(req: Request) {
           message: "Estrutura determinística indisponível para este ditado; gerando pelo modo padrão.",
         });
         const fallbackGen = runWriterStream({
+          dopplerMode: reqInput.category_hint === "DOPPLER_OBSTETRICO" ? reqInput.doppler_mode : undefined,
           findings,
           ragBlocks: blocks,
           writingStyleCode: styleRow.code,
@@ -1180,7 +1190,7 @@ export async function POST(req: Request) {
       const dopplerInput =
         reqInput.consolidated_transcript ?? reqInput.raw_input;
       if (
-        effectiveCategory === "DOPPLER_OBSTETRICO" ||
+        (effectiveCategory === "DOPPLER_OBSTETRICO" && reqInput.doppler_mode !== "isolated") ||
         effectiveCategory === "OBSTETRICA" ||
         effectiveCategory === "MORFOLOGICO"
       ) {
@@ -1317,10 +1327,12 @@ export async function POST(req: Request) {
         status: "generated",
         generatedOutput: finalText,
         sanityResult: deterministicOnlySanity,
-        metadata:
-          pipelineWarnings.length > 0
-            ? { pipeline_warnings: pipelineWarnings }
-            : undefined,
+        metadata: {
+          ...(pipelineWarnings.length > 0 ? { pipeline_warnings: pipelineWarnings } : {}),
+          ...(reqInput.category_hint === "DOPPLER_OBSTETRICO" && reqInput.doppler_mode
+            ? { selected_category: reqInput.category_hint, doppler_mode: reqInput.doppler_mode }
+            : {}),
+        },
       });
       // Apple Watch / clientes "publicação direta" — toca updated_at do report
       // para empurrar pro topo do feed da Sala do Auxiliar antes do "done" e da

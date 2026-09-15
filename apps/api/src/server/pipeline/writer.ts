@@ -4,6 +4,7 @@ import type {
   WritingStyleCode,
 } from "@laudousg/shared";
 import { env } from "../env";
+import { requestedExamInstruction } from "./requestedExam";
 import { writerClient, writerRequestParams } from "../ai/writerClient";
 import type { WriterModelConfig } from "./modelResolver";
 import { temperatureForCategory } from "./temperatureByCategory";
@@ -52,6 +53,7 @@ export function hasPolipoMention(rawInput: string): boolean {
  * Order de injeção do system message: ver prompts/buildSystemMessage.ts.
  */
 export async function* runWriterStream(args: {
+  dopplerMode?: "combined" | "isolated";
   findings: StructuredFindings;
   ragBlocks: RagBlockForPrompt[];
   writingStyleCode: WritingStyleCode;
@@ -111,7 +113,7 @@ export async function* runWriterStream(args: {
     hasPolipo:
       effectiveCategoryCode === "ABDOMEN_TOTAL" &&
       hasPolipoMention(sourceTranscript),
-  });
+  }) + requestedExamInstruction(effectiveCategoryCode, args.dopplerMode);
   args.onSystemMessage?.(systemMessage);
 
   const userMessage = args.rawUserMessage

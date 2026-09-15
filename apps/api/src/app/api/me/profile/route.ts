@@ -2,9 +2,15 @@ import { forbidden, unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { getDbClient, schema } from "@laudousg/db";
 export { OPTIONS } from "@/server/cors";
 import { ProfileSchema, UfSchema } from "@laudousg/shared";
-import { and, desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { isBetaTester } from "@/server/iap/betaWhitelist";
+import {
+  pickEntitledSubscription,
+  resolveEffectivePlan,
+  type ProfilePlan,
+} from "@/server/iap/entitlement";
+import { getSubscriptionRepo } from "@/server/iap/repo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,10 +38,11 @@ export async function GET(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
-  const profile = await loadProfile(user.id);
+  const assinatura = await loadAssinatura(user.id);
+  const profile = await loadProfile(user.id, assinatura?.tier ?? null);
   if (!profile) return json({ error: "profile_not_found" }, 404);
 
-  return json({ profile, assinatura: await loadAssinatura(user.id) });
+  return json({ profile, assinatura });
 }
 
 export async function PATCH(req: Request) {
@@ -100,13 +107,20 @@ export async function PATCH(req: Request) {
     .set(patch)
     .where(eq(schema.profiles.id, user.id));
 
-  const profile = await loadProfile(user.id);
+  const profile = await loadProfile(user.id, (await loadAssinatura(user.id))?.tier ?? null);
   if (!profile) return json({ error: "profile_not_found" }, 404);
 
   return json({ profile });
 }
 
-async function loadProfile(userId: string) {
+/**
+ * `plan` devolvido = PLANO EFETIVO: o maior entre o plano do site
+ * (`profiles.plan`) e a assinatura Apple vigente. A Apple não escreve em
+ * `profiles.plan` (ver server/iap/entitlement.ts) — por isso expirar ou
+ * reembolsar uma assinatura da App Store nunca apaga o que foi comprado no
+ * site. A whitelist beta continua valendo por cima de tudo.
+ */
+async function loadProfile(userId: string, appleTier: "essencial" | "pro" | null = null) {
   const db = getDbClient();
   const [row] = await db
     .select()
@@ -117,7 +131,9 @@ async function loadProfile(userId: string) {
   if (!row) return null;
   // Beta whitelist override: testers e Apple Reviewer veem plan='pro' sem tocar
   // no DB. Lista controlada por env BETA_TESTER_EMAILS (CSV).
-  const effectivePlan = isBetaTester(row.email) ? "pro" : row.plan;
+  const effectivePlan = isBetaTester(row.email)
+    ? "pro"
+    : resolveEffectivePlan(row.plan as ProfilePlan, appleTier);
   return ProfileSchema.parse({
     id: row.id,
     email: row.email,
@@ -146,11 +162,12 @@ async function loadProfile(userId: string) {
  * ativa conta — uma expirada não descreve o plano de hoje.
  *
  * ⚠️ NUNCA derruba o perfil. A tabela `subscriptions` está declarada no schema
- * do Drizzle mas **não existe neste banco** — descoberto em 21/08 quando a
+ * do Drizzle mas **não existia neste banco** até a migração
+ * `0030_subscriptions_apple_ownership.sql` — descoberto em 21/08 quando a
  * primeira versão desta função deixou `/api/me/profile` respondendo 500 em
  * produção, na rota que o iOS usa. O perfil é o dado essencial; a assinatura é
  * enriquecimento. Enriquecimento que quebra o essencial é defeito de desenho,
- * não azar.
+ * não azar. O try/catch fica: entre o deploy e a migração, o perfil segue.
  *
  * Aqui `null` também é a resposta CORRETA, não um remendo: sem tabela não há
  * assinatura da App Store registrada, e o rótulo do plano cai na nomenclatura
@@ -172,25 +189,12 @@ async function loadAssinatura(userId: string) {
 }
 
 async function buscarAssinatura(userId: string) {
-  const db = getDbClient();
-  const [row] = await db
-    .select({
-      tier: schema.subscriptions.tier,
-      period: schema.subscriptions.period,
-      expiresAt: schema.subscriptions.expiresAt,
-      isTrial: schema.subscriptions.isTrial,
-      status: schema.subscriptions.status,
-    })
-    .from(schema.subscriptions)
-    .where(
-      and(
-        eq(schema.subscriptions.userId, userId),
-        eq(schema.subscriptions.status, "active"),
-      ),
-    )
-    .orderBy(desc(schema.subscriptions.expiresAt))
-    .limit(1);
-
+  // Vigente = (active | grace) e ainda não vencida — decidido no domínio,
+  // não por uma coluna `status` que pode estar atrasada em relação ao relógio.
+  const row = pickEntitledSubscription(
+    await getSubscriptionRepo().listForUser(userId),
+    new Date(),
+  );
   if (!row) return null;
   return {
     origem: "apple" as const,
