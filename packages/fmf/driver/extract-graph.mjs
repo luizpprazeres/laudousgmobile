@@ -1,6 +1,6 @@
 // Extrai as curvas dos gráficos do app (SVG: polylines + ticks) e converte para dados.
 import { writeFileSync } from 'node:fs'
-import { connect, press, openCalculators } from './lib.mjs'
+import { connect, press, openCalculators, openPatient, setMaternal, setTrisomies, setPreeclampsia } from './lib.mjs'
 const { browser, page } = await connect()
 const grab = async (graphId, xLabelRe, yTicksMin) => {
   await press(page, graphId); await page.waitForTimeout(2000)
@@ -25,9 +25,15 @@ const fitAxis = (ticks, key) => { // v = a + b*px (regressão linear nos ticks)
   const n = ticks.length, sx = ticks.reduce((s, t) => s + t[key], 0), sy = ticks.reduce((s, t) => s + t.v, 0), sxx = ticks.reduce((s, t) => s + t[key] ** 2, 0), sxy = ticks.reduce((s, t) => s + t[key] * t.v, 0)
   const b = (n * sxy - sx * sy) / (n * sxx - sx * sx); return { a: (sy - b * sx) / n, b }
 }
+// caso padrão para os gráficos renderizarem (CRL, NT e FCF preenchidos)
+await openPatient(page, { name: 'TESTE', surname: 'DRIVER', dob: '01/01/1996' })
+await setMaternal(page, { dob: '06/07/1996', height: 164, weight: 69, ethnicity: 'White', smoking: false, gaWeeks: 12, gaDays: 3, conception: 'Spontaneous' })
+await setTrisomies(page, { crl: 60, nt: 1.8, fhr: 160 })
 await openCalculators(page); await press(page, 'trisomies-tab'); await page.waitForTimeout(600)
+console.log('ícones de gráfico na aba:', await page.evaluate(() => [...document.querySelectorAll('[data-testid^="graph"]')].map(e => e.getAttribute('data-testid')).join(' ')))
 const out = {}
-for (const id of ['graph-nt', 'graph-crl', 'graph-fhr']) {
+const GRAPHS = (await page.evaluate(() => [...document.querySelectorAll('[data-testid^="graph"]')].map(e => e.getAttribute('data-testid')))).filter((v, i, a) => a.indexOf(v) === i)
+for (const id of GRAPHS) {
   const g = await grab(id)
   if (!g) { console.log(id, ': sem svg com polylines'); continue }
   const ax = fitAxis(g.xTicks, 'x'), ay = fitAxis(g.yTicks, 'y')
@@ -38,4 +44,14 @@ for (const id of ['graph-nt', 'graph-crl', 'graph-fhr']) {
   for (const c of curves) console.log('   ', c.stroke, c.dash ?? 'cheia', 'início', JSON.stringify(c.data.slice(0, 3)), 'fim', JSON.stringify(c.data.slice(-2)))
 }
 writeFileSync('graphs-trisomies.json', JSON.stringify(out, null, 1))
+// pré-eclâmpsia: gráfico do IP uterino
+try {
+  await setPreeclampsia(page, { chronicHypertension: false, diabetes1: false, diabetes2: false, familyHistoryPE: false, sle: false, aps: false, parity: 'nulliparous', bp: [[120, 75], [120, 75], [120, 75], [120, 75]], utpi: [1.6, 1.4] })
+  await press(page, 'preeclampsia-tab'); await page.waitForTimeout(600)
+  const PG = (await page.evaluate(() => [...document.querySelectorAll('[data-testid^="graph"]')].map(e => e.getAttribute('data-testid')))).filter((v, i, a) => a.indexOf(v) === i)
+  console.log('ícones de gráfico na PE:', PG.join(' '))
+  const outPe = {}
+  for (const id of PG) { const g = await grab(id); if (!g) { console.log(id, ': sem svg'); continue }; const ax = fitAxis(g.xTicks, 'x'), ay = fitAxis(g.yTicks, 'y'); outPe[id] = { labels: g.labels, xTicks: g.xTicks.map(t => t.v), yTicks: g.yTicks.map(t => t.v), curves: g.polylines.map(p => ({ stroke: p.stroke, dash: p.dash, data: p.pts.filter(q => q.length === 2 && q.every(Number.isFinite)).map(([px, py]) => [Number((ax.a + ax.b * px).toFixed(3)), Number((ay.a + ay.b * py).toFixed(4))]) })), point: g.circles.map(c => [Number((ax.a + ax.b * c.cx).toFixed(3)), Number((ay.a + ay.b * c.cy).toFixed(4))]), viewBox: g.viewBox }; console.log(`${id}: ${g.labels.join(' / ')} | x ${g.xTicks.map(t => t.v).join(',')} | y ${g.yTicks.map(t => t.v).join(',')} | ${g.polylines.length} curvas | ponto ${JSON.stringify(outPe[id].point)}`) }
+  writeFileSync('graphs-pe.json', JSON.stringify(outPe, null, 1))
+} catch (e) { console.log('PE gráficos: erro', e.message.split('\n')[0]) }
 await browser.close()

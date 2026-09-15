@@ -67,6 +67,7 @@ import { ILA4QCalculatorSheet } from "@/features/generate/ILA4QCalculatorSheet";
 import { AnemiaCalculatorSheet } from "@/features/generate/AnemiaCalculatorSheet";
 import { DuctoVenosoCalculatorSheet } from "@/features/generate/DuctoVenosoCalculatorSheet";
 import { PreEclampsiaCalculatorSheet } from "@/features/generate/PreEclampsiaCalculatorSheet";
+import { TrisomyCalculatorSheet } from "@/features/generate/TrisomyCalculatorSheet";
 import { AFCCalculatorSheet } from "@/features/generate/AFCCalculatorSheet";
 import { BIRADSCalculatorSheet } from "@/features/generate/BIRADSCalculatorSheet";
 import { TIRADSCalculatorSheet } from "@/features/generate/TIRADSCalculatorSheet";
@@ -968,6 +969,11 @@ export default function GenerateScreen() {
       />
       <PreEclampsiaCalculatorSheet
         open={calcSheet === "preEclampsia"}
+        onClose={() => setCalcSheet(null)}
+        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+      />
+      <TrisomyCalculatorSheet
+        open={calcSheet === "trissomias"}
         onClose={() => setCalcSheet(null)}
         onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
       />

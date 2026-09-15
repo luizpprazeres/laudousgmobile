@@ -4,7 +4,7 @@ import { calcularTrissomias, crlToGaDays } from '/Users/luizprazeres/laudousgmob
 const EXAM = Date.UTC(2026, 8, 15)
 const ageAt = dob => { const [m, d, y] = dob.split('/').map(Number); return (EXAM - Date.UTC(y, m - 1, d)) / (365.25 * 86400000) }
 const ETN = { 'White': 'white', 'Black': 'black', 'South Asian': 'south_asian', 'East Asian': 'east_asian' }
-const LOTES = ['tri-matrix', 'tri-b40', 'tri2', 'tri3', 'tri4', 'tri5', 'tri6', 'tri7', 'tri-09-12']
+const LOTES = ['tri-matrix', 'tri-b40', 'tri2', 'tri3', 'tri4', 'tri5', 'tri6', 'tri7', 'tri8', 'tri-09-12']
 const all = []
 for (const b of LOTES) {
   let cases, res; try { cases = Object.fromEntries(JSON.parse(readFileSync(`cases-${b}.json`, 'utf8')).map(c => [c.id, c])); res = JSON.parse(readFileSync(`results-${b}.json`, 'utf8')) } catch { continue }

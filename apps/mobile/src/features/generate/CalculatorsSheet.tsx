@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Sheet } from "@/ui/Sheet";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
-import { Cal, Ruler, Bar, Layers, Sparkle } from "@/ui/icons";
+import { Cal, Ruler, Bar, Layers, Sparkle, Shield } from "@/ui/icons";
 
 export type CalcKey =
   | "ig"
@@ -14,6 +14,7 @@ export type CalcKey =
   | "anemia"
   | "ductoVenoso"
   | "preEclampsia"
+  | "trissomias"
   | "afc"
   | "birads"
   | "tirads"
@@ -97,6 +98,13 @@ const SECTIONS: Section[] = [
         sub: "Modelo FMF — risco 1 em N (11–13+6 sem)",
         Icon: Sparkle,
         color: "#D946EF",
+      },
+      {
+        key: "trissomias",
+        label: "Trissomias (FMF)",
+        sub: "Rastreio combinado T21/T18/T13 (11–13+6 sem)",
+        Icon: Shield,
+        color: "#2563EB",
       },
     ],
   },

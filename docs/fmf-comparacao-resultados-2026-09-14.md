@@ -211,3 +211,29 @@ Global (548 comparações não capadas): desvio mediano **5 %**, p90 **20 %**; T
 Classificação de T21 concorda em 256/264; os 8 divergentes estão a ±16 % dos cortes 1:100/1:1000.
 Web: formulário de trissomias agora pede data de nascimento (idade decimal), mostra T13/18 combinada
 e aplica teto/piso de exibição como o app. Android/iOS ainda não têm a calculadora de trissomias.
+
+## Rodada 8 — 15/09/2026, interação entre marcadores, saturação da bioquímica 13/18 e gráficos
+
+Lote de 50 casos (`resultados/cases-tri8.json`): grade hCG × PAPP-A no 13/18 (idade 38, NT 3,0)
+e combinações osso nasal × tricúspide × bioquímica × DV PI com T21 legível (idade 30, NT 1,8 e 2,5).
+
+- **Tricúspide × bioquímica multiplica** exatamente (app 1:3 = produto das LRs isoladas).
+- **Osso nasal ausente × bioquímica** fica ~4× abaixo do produto no app (NT 1,8: 1:8 contra 1:2 do
+  produto): a logística do osso nasal do app tem termos de bioquímica mais fortes que a extração
+  (o ajuste livre leva `pLmom` a −6,7, valor pouco plausível; **não aplicado**).
+- **Osso nasal × tricúspide** no 13/18 fica ~2× *abaixo* do produto em NT 1,8 (1:24) e ~2× *acima*
+  em NT 3,0 (1:3): há dependência de NT que o modelo atual não captura.
+- Saturação do 13/18 com hCG alto: a PAPP-A 2 (truncada) o resultado é plano em 1:840–870 para
+  qualquer hCG; a PAPP-A 1 satura em ~1:930–1100; a PAPP-A 0,5 continua caindo (1:2300 em hCG 5).
+  Consistente com o piso de LR por trissomia mais a correlação hCG×PAPP-A das distribuições de T18/T13.
+
+Decisão: **manter `cal-2026-09-15c`** (o golden de trissomias — `packages/fmf/validacao/golden-trissomias.json`,
+286 casos — é o contrato dos portes iOS/Android). Com os 633 pontos: mediana 5 %, p90 23 %;
+classificação de T21 concorda em 292/301. Refinamento futuro: termos de bioquímica e NT na logística do osso nasal.
+
+**Gráficos do app** (`packages/fmf/driver/resultados/graficos/`): só o de NT é SVG (curvas extraídas em
+`graphs-trisomies.json`: mediana e percentis 5/95 de NT por CRL 45–84). FCF e CRL são PNG:
+FCF = mediana `265,98 − 1,7631·IG + 0,0064445·IG²` (IG em dias; 11 sem → 168,4; 14 sem → 155,1),
+percentis 10/90 tracejados (±1,28 × 5,87 bpm) e 5/95 cheios (±1,645 × 5,87 bpm), eixo 11–14 semanas,
+ponto na IG DATADA; CRL = mediana e percentis 10/90 de Robinson por IG em dias. O IP uterino da PE
+(`graph-utapi`) não apareceu como ícone na aba com a paciente de teste — pendente.

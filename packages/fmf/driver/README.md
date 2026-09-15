@@ -88,10 +88,10 @@ O ícone abre o overlay "Assessments" com um `<svg>` (350×363, viewBox `-28 -0.
 `<line>`, ticks em `<text>` (CRL 45–80 mm no eixo X, NT 0–4 mm no eixo Y) e 1 `<circle>` para o
 feto. `extract-graph.mjs` ajusta os eixos pelos ticks e converte as polylines em pares
 (CRL, NT) → `resultados/graphs-trisomies.json` (base para replicar o gráfico nas plataformas).
-`graph-crl`/`graph-fhr` só renderizam com CRL/FCF preenchidos na aba — pendente.
+`graph-crl` e `graph-fhr` são **PNG** (base64), não SVG — imagens salvas em `resultados/graficos/`; as curvas
+são reproduzíveis por fórmula (FCF: mediana do motor ±1,28/±1,645 SD; CRL: Robinson), ver rodada 8 do doc de resultados.
 
 ## Próximos passos
 - Modelar a interação osso nasal × tricúspide × bioquímica do app (casos combinados).
-- Extrair `graph-crl`, `graph-fhr` e `graph-utapi` com os campos preenchidos.
-- Portar a calculadora de trissomias para Android e iOS (só a web consome o motor).
+- Extrair `graph-utapi` (o ícone não apareceu na aba de PE da paciente de teste).
 - Apagar as pacientes "TESTE DRIVER" duplicadas (o driver criou ~40 até corrigir o `openPatient`).

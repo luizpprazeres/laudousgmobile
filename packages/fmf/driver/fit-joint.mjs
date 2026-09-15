@@ -6,7 +6,7 @@ import { NASAL_BONE, TRICUSPID, GAUSS_MEAN_T21, GAUSS_MEAN_T18, GAUSS_MEAN_T13, 
 const EXAM = Date.UTC(2026, 8, 15)
 const ageAt = dob => { const [m, d, y] = dob.split('/').map(Number); return (EXAM - Date.UTC(y, m - 1, d)) / (365.25 * 86400000) }
 const ETN = { 'White': 'white', 'Black': 'black', 'South Asian': 'south_asian', 'East Asian': 'east_asian' }
-const LOTES = ['tri-matrix', 'tri-b40', 'tri2', 'tri3', 'tri4', 'tri5', 'tri6', 'tri7', 'tri-09-12']
+const LOTES = ['tri-matrix', 'tri-b40', 'tri2', 'tri3', 'tri4', 'tri5', 'tri6', 'tri7', 'tri8', 'tri-09-12']
 const odds = N => (1 / N) / (1 - 1 / N)
 // ---------- pontos ----------
 const pts = []
@@ -45,7 +45,7 @@ const P0 = {
   // bioquímica T18/T13 (médias log10 MoM; SD escala)
   hcg18: GAUSS_MEAN_T18.fbhcgT1.b0, pappa18: GAUSS_MEAN_T18.pappa.b0, hcg13: GAUSS_MEAN_T13.fbhcgT1.b0, pappa13: GAUSS_MEAN_T13.pappa.b0, sdScale18: 1, sdScale13: 1,
   // osso nasal / tricúspide
-  nbConst: NASAL_BONE.constant, nbNt: NASAL_BONE.nt, nbCrl: NASAL_BONE.crl, nbT21: NASAL_BONE.t21, nbT18: NASAL_BONE.t18,
+  nbConst: NASAL_BONE.constant, nbNt: NASAL_BONE.nt, nbCrl: NASAL_BONE.crl, nbPLmom: NASAL_BONE.pLmom, nbFLmom: NASAL_BONE.fLmom, nbT21: NASAL_BONE.t21, nbT18: NASAL_BONE.t18,
   trInt: TRICUSPID.intercept, trNt: TRICUSPID.nt, trT21: TRICUSPID.t21, trT18: TRICUSPID.t18, trT13: TRICUSPID.t13, nbT13: NASAL_BONE.t13,
   lrMin: 0.052, bioFloor: 0.0001, bioCap: 10000,
 }
@@ -65,7 +65,7 @@ function markerLR(P, p) {
   }
   if (p.tr === true) { const lpUn = P.trInt + P.trNt * p.nt + TRICUSPID.smoker * (p.smoking ? 1 : 0) + TRICUSPID.weight * p.weight; const g = c => sig(lpUn + c) / sig(lpUn); l21 *= g(P.trT21); l18 *= g(P.trT18); l13 *= g(P.trT13) }
   if (p.nb !== undefined) { const nb = p.nb ? 0 : 1; const eth = p.eth === 'black' ? NASAL_BONE.black : p.eth === 'south_asian' ? NASAL_BONE.asian : p.eth === 'east_asian' ? NASAL_BONE.oriental : p.eth === 'mixed' ? NASAL_BONE.mixed : 0
-    const lpUn = P.nbConst + NASAL_BONE.sm * (p.smoking ? 1 : 0) + P.nbNt * p.nt + P.nbCrl * p.crl + NASAL_BONE.pLmom * Math.log10(p.pappa ?? 1) + NASAL_BONE.fLmom * Math.log10(p.hcg ?? 1) + eth
+    const lpUn = P.nbConst + NASAL_BONE.sm * (p.smoking ? 1 : 0) + P.nbNt * p.nt + P.nbCrl * p.crl + P.nbPLmom * Math.log10(p.pappa ?? 1) + P.nbFLmom * Math.log10(p.hcg ?? 1) + eth
     const g = c => { const pu = sig(lpUn), pa = sig(lpUn + c); return (pa ** (1 - nb) * (1 - pa) ** nb) / (pu ** (1 - nb) * (1 - pu) ** nb) }
     l21 *= g(P.nbT21); l18 *= g(P.nbT18); l13 *= g(P.nbT13) }
   return { t21: Math.max(l21, P.lrMin), t18: Math.max(l18, P.lrMin), t13: Math.max(l13, P.lrMin) }
@@ -91,15 +91,17 @@ const show = (P, sel, label) => console.log(`${label}: n=${sel.length} rms log-o
 let P = { ...P0 }
 const selFhr = pts.filter(p => p.fhr != null && p.nb === undefined && !p.tr && p.hcg == null)
 const selBio = pts.filter(p => (p.hcg != null || p.pappa != null) && p.fhr == null && p.nb === undefined && !p.tr)
-const selNbTr = pts.filter(p => (p.nb !== undefined || p.tr) && p.fhr == null)
+const selNbTr = pts.filter(p => (p.nb !== undefined || p.tr) && p.fhr == null && p.hcg == null)
+const selInter = pts.filter(p => (p.nb !== undefined || p.tr) && p.fhr == null && p.hcg != null)
 const selAll = pts
 show(P, selFhr, 'FCF local'); show(P, selBio, 'bio local'); show(P, selNbTr, 'NB/TR local'); show(P, selAll, 'TOTAL local')
 if (selFhr.length) { P = fitBlock(P, ['fhrShift', 'fhrLo', 'fhrHi', 'fhrMu21', 'fhrSd21', 'fhrMu18', 'fhrSd18', 'fhrMu13b0', 'fhrMu13b1', 'fhrSd13'], [2, 2, 3, 1, 1, 1, 1, 2, 0.1, 1], selFhr, 6, 4000, { fhrMu13b1: [-0.6, -0.2], fhrSd21: [3, 15], fhrSd18: [3, 15], fhrSd13: [3, 15], fhrLo: [-6.5, -5.5], fhrHi: [17, 20], fhrShift: [-15, 15] }); show(P, selFhr, 'FCF ajustada') }
 if (selBio.length) { P = { ...P, bioFloor: 0.05 }; P = fitBlock(P, ['hcg18', 'pappa18', 'hcg13', 'pappa13', 'sdScale18', 'sdScale13', 'bioFloor', 'lrMin'], [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.01, 0.005], selBio, 5, 4000, { sdScale18: [0.5, 2.5], sdScale13: [0.5, 2.5], bioFloor: [0.0001, 0.2], lrMin: [0.01, 0.12] }); show(P, selBio, 'bio ajustada') }
 if (selNbTr.length) { P = fitBlock(P, ['nbConst', 'nbNt', 'nbCrl', 'nbT21', 'nbT18', 'nbT13', 'trInt', 'trNt', 'trT21', 'trT18', 'trT13'], [0.3, 0.1, 0.02, 0.3, 0.3, 0.3, 0.5, 0.2, 0.3, 0.3, 0.3], selNbTr, 5, 4000, { trInt: [-14, 0], trNt: [0, 4], nbNt: [0, 3], nbT21: [0, 8], nbT18: [0, 8], nbT13: [0, 8], trT21: [0, 8], trT18: [0, 8], trT13: [0, 8] }); show(P, selNbTr, 'NB/TR ajustados') }
+if (selInter.length) { P = fitBlock(P, ['nbPLmom', 'nbFLmom'], [0.2, 0.2], selInter, 4, 3000, { nbPLmom: [-3, 3], nbFLmom: [-3, 3] }); show(P, selInter, 'interação NB/TR×bio ajustada') }
 show(P, selAll, 'TOTAL após blocos')
 // polimento conjunto leve
-P = fitBlock(P, ['hcg18', 'pappa18', 'hcg13', 'pappa13', 'nbConst', 'nbT21', 'nbT18', 'trInt', 'trT21', 'trT18', 'trT13', 'nbT13', 'lrMin', 'bioFloor'], [0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.005, 0.005], selAll, 3, 3000, { bioFloor: [0.0001, 0.2], lrMin: [0.02, 0.12], trT13: [0, 8], nbT13: [0, 8], trInt: [-14, 0], trT21: [0, 8], trT18: [0, 8], nbT21: [0, 8], nbT18: [0, 8] })
+P = fitBlock(P, ['hcg18', 'pappa18', 'hcg13', 'pappa13', 'nbConst', 'nbT21', 'nbT18', 'trInt', 'trT21', 'trT18', 'trT13', 'nbT13', 'nbPLmom', 'nbFLmom', 'lrMin', 'bioFloor'], [0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.005, 0.005], selAll, 3, 3000, { bioFloor: [0.0001, 0.2], lrMin: [0.02, 0.12], trT13: [0, 8], nbT13: [0, 8], trInt: [-14, 0], trT21: [0, 8], trT18: [0, 8], nbT21: [0, 8], nbT18: [0, 8] })
 show(P, selAll, 'TOTAL polido')
 console.log(JSON.stringify(Object.fromEntries(Object.entries(P).map(([k, v]) => [k, Number(v.toFixed(6))]))))
 // piores resíduos
