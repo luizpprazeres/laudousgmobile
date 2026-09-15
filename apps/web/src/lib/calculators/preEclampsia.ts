@@ -72,8 +72,11 @@ const DATA_BR = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
  * (`apps/web/src/lib/deterministic/organs/obstetrica.ts`). Parse ESTRITO:
  * rejeita data inexistente (31/02). Sempre em UTC para a aritmética de dias
  * não depender do fuso horário de quem roda o cálculo.
+ *
+ * Exportado para reuso por outras calculadoras web (ex.: `trisomyFmf.ts`)
+ * que também precisam de idade decimal a partir de uma data dd/mm/aaaa.
  */
-function parseDataBr(valor: string, campo: string): Date {
+export function parseDataBr(valor: string, campo: string): Date {
   const m = valor.trim().match(DATA_BR)
   if (!m) throw new Error(`${campo}: use o formato dd/mm/aaaa`)
   const dia = Number(m[1])
@@ -87,7 +90,7 @@ function parseDataBr(valor: string, campo: string): Date {
 }
 
 /** Data de hoje (calendário local de quem preenche o formulário) como meia-noite UTC. */
-function hojeComoDataUtc(): Date {
+export function hojeComoDataUtc(): Date {
   const agora = new Date()
   return new Date(Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate()))
 }
@@ -97,9 +100,18 @@ function calcularDpp(dataExame: Date, gaDiasAtual: number): Date {
   return new Date(dataExame.getTime() + (280 - gaDiasAtual) * DIA_MS)
 }
 
+/**
+ * Idade decimal entre duas datas: (fim − início) / 365,25 — mesma convenção
+ * usada pelo app da FMF. Exportada para reuso (ex.: idade na data do exame
+ * da calculadora de trissomias, em vez da idade na DPP usada aqui).
+ */
+export function idadeDecimalEntreDatas(inicio: Date, fim: Date): number {
+  return (fim.getTime() - inicio.getTime()) / DIA_MS / 365.25
+}
+
 /** Idade decimal na DPP: (DPP − nascimento) / 365,25 — o app da FMF usa exatamente isso. */
 function idadeDecimalNaDpp(nascimento: Date, dpp: Date): number {
-  return (dpp.getTime() - nascimento.getTime()) / DIA_MS / 365.25
+  return idadeDecimalEntreDatas(nascimento, dpp)
 }
 
 /**

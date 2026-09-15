@@ -1,6 +1,6 @@
 // Injeta os MoMs do app no motor local para isolar prior × mediana; estima coeficientes de idade do app.
 import { readFileSync } from 'node:fs'
-import { calcularPreEclampsiaFmf, pamDeAfericoes, log10MapEsperada, log10UtaPiEsperado } from '../../shared/src/calculators/preEclampsiaFmf.ts'
+import { calcularPreEclampsiaFmf, pamDeAfericoes, log10MapEsperada, log10UtaPiEsperado } from '/Users/luizprazeres/laudousgmobile-def/packages/shared/src/calculators/preEclampsiaFmf.ts'
 const ETNIA = { 'White': 'branca', 'Black': 'afro', 'South Asian': 'sul-asiatica', 'East Asian': 'leste-asiatica' }
 const load = (cf, rf) => { const cases = Object.fromEntries(JSON.parse(readFileSync(cf, 'utf8')).map(c => [c.id, c])); return JSON.parse(readFileSync(rf, 'utf8')).filter(r => r.riskN).map(r => ({ r, c: cases[r.id] })) }
 const toG = (c, r) => { const m = c.maternal, pe = c.pe; return { idade: r.age, peso: m.weight, altura: m.height, gaDias: r.gaWeeks * 7 + r.gaDays, etnia: ETNIA[m.ethnicity] ?? 'branca', paridade: pe.parity === 'nulliparous' ? 'nulipara' : pe.previousPE ? 'multipara-com-pe' : 'multipara-sem-pe', intervaloAnos: pe.parity === 'nulliparous' ? null : r.interval, igPartoAnterior: pe.parity === 'nulliparous' ? null : pe.deliveryGAWeeks, zEscorePesoAnterior: null, histFamiliarPE: !!pe.familyHistoryPE, fiv: m.conception === 'In vitro fertilization', hipertensaoCronica: !!pe.chronicHypertension, diabetes: !!(pe.diabetes1 || pe.diabetes2), lesSaf: !!(pe.sle || pe.aps), fumante: !!m.smoking } }

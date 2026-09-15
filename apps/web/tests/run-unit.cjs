@@ -13,6 +13,7 @@ const files = [
   'tests/intergrowthBiometry.manual.ts',
   'tests/renalMeasurements.manual.ts',
   'src/lib/calculators/preEclampsia.test.mts',
+  'src/lib/calculators/trisomyFmf.test.mts',
   'src/lib/companionStructured.test.ts',
 ]
 for (const file of files) {

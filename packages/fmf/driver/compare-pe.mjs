@@ -1,6 +1,6 @@
 // Uso: node compare-pe.mjs cases.json results.json  → tabela app × motor local
 import { readFileSync } from 'node:fs'
-import { calcularPreEclampsiaFmf, pamDeAfericoes, mapMoM, utaPiMoM } from '../../shared/src/calculators/preEclampsiaFmf.ts'
+import { calcularPreEclampsiaFmf, pamDeAfericoes, mapMoM, utaPiMoM } from '/Users/luizprazeres/laudousgmobile-def/packages/shared/src/calculators/preEclampsiaFmf.ts'
 const [,, casesFile, resultsFile] = process.argv
 const cases = Object.fromEntries(JSON.parse(readFileSync(casesFile, 'utf8')).map(c => [c.id, c]))
 const results = JSON.parse(readFileSync(resultsFile, 'utf8'))

@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from 'react'
 import { FilePlus2, X } from 'lucide-react'
-import { calculateTrisomyWeb, type TrisomyWebForm } from '@/lib/calculators/trisomyFmf'
+import {
+  basalRatioT18T13,
+  calculateTrisomyWeb,
+  formatarRiscoExibicao,
+  idadeNaDataExamePreview,
+  type TrisomyWebForm,
+} from '@/lib/calculators/trisomyFmf'
 
 type Props = {
   initialValues?: Partial<TrisomyWebForm>
@@ -12,7 +18,7 @@ type Props = {
 }
 
 const INITIAL: TrisomyWebForm = {
-  maternalAge: '', crl: '', nt: '', fhr: '', ethnicity: 'white', weight: '', smoking: false,
+  maternalAge: '', dataNascimento: '', dataExame: '', crl: '', nt: '', fhr: '', ethnicity: 'white', weight: '', smoking: false,
   previousT21: false, previousT18: false, previousT13: false,
   freeBetaHcgMoM: '', pappaMoM: '', isMoMCorrected: false, dvPI: '', tricuspid: '', nasalBone: '',
 }
@@ -31,7 +37,8 @@ function Toggle({ label, active, onChange }: { label: string; active: boolean; o
 export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemove }: Props) {
   const [form, setForm] = useState<TrisomyWebForm>(() => ({ ...INITIAL, ...initialValues }))
   const set = <K extends keyof TrisomyWebForm>(key: K, value: TrisomyWebForm[K]) => setForm(current => ({ ...current, [key]: value }))
-  const ready = Boolean(form.maternalAge.trim() && form.crl.trim() && form.nt.trim())
+  const ready = Boolean((form.dataNascimento?.trim() || form.maternalAge?.trim()) && form.crl.trim() && form.nt.trim())
+  const idadeNaDataExame = useMemo(() => idadeNaDataExamePreview(form), [form])
   const calculation = useMemo(() => {
     if (!ready) return { status: 'waiting' as const }
     try { return { status: 'done' as const, value: calculateTrisomyWeb(form) } }
@@ -49,7 +56,8 @@ export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemo
     <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">Modo de homologação. O resultado ainda não deve ser usado isoladamente para decisão clínica.</div>
 
     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-      <Field label="Idade na DPP" value={form.maternalAge} onChange={v => set('maternalAge', v)} placeholder="32" />
+      <Field label="Data de nascimento" value={form.dataNascimento ?? ''} onChange={v => set('dataNascimento', v)} placeholder="15/03/1990" />
+      <Field label="Data do exame" value={form.dataExame ?? ''} onChange={v => set('dataExame', v)} placeholder="hoje" />
       <Field label="CCN (mm)" value={form.crl} onChange={v => set('crl', v)} placeholder="64" />
       <Field label="TN (mm)" value={form.nt} onChange={v => set('nt', v)} placeholder="1,5" />
       <Field label="FCF (bpm)" value={form.fhr} onChange={v => set('fhr', v)} placeholder="160" />
@@ -59,6 +67,11 @@ export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemo
       <label className="block"><span className={labelClass}>Osso nasal</span><select value={form.nasalBone} onChange={event => set('nasalBone', event.target.value as TrisomyWebForm['nasalBone'])} className={inputClass}><option value="">Não informado</option><option value="present">Presente</option><option value="absent">Ausente</option></select></label>
       <label className="block"><span className={labelClass}>Regurgitação tricúspide</span><select value={form.tricuspid} onChange={event => set('tricuspid', event.target.value as TrisomyWebForm['tricuspid'])} className={inputClass}><option value="">Não avaliada</option><option value="normal">Ausente</option><option value="regurgitation">Presente</option></select></label>
     </div>
+    {typeof idadeNaDataExame === 'number' ? (
+      <p className="mt-2 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+        {idadeNaDataExame.toFixed(1).replace('.', ',')} anos na data do exame — confira com a data de nascimento informada.
+      </p>
+    ) : null}
 
     <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
       <Toggle label="Fumante" active={form.smoking} onChange={v => set('smoking', v)} />
@@ -74,8 +87,20 @@ export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemo
     </details>
 
     <div className={`mt-4 rounded-xl border p-3 ${calculation.status === 'error' ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30' : 'border-violet-100 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20'}`}>
-      {calculation.status === 'waiting' ? <p className="text-xs text-gray-500">Preencha idade, CCN e TN.</p> : calculation.status === 'error' ? <p role="alert" className="text-xs font-semibold text-red-700 dark:text-red-300">{calculation.message}</p> : value ? <>
-        <div className="grid gap-2 sm:grid-cols-3">{(['t21', 't18', 't13'] as const).map(key => <div key={key} className="rounded-lg bg-white p-2.5 dark:bg-gray-950"><div className={labelClass}>{key.toUpperCase()}</div><div className="mt-1 text-lg font-extrabold">1 em {value.result[key].ratio.toLocaleString('pt-BR')}</div><div className="text-[10px] text-gray-500">basal: 1 em {value.result.basal[key].ratio.toLocaleString('pt-BR')}</div></div>)}</div>
+      {calculation.status === 'waiting' ? <p className="text-xs text-gray-500">Preencha a data de nascimento (ou idade materna), CCN e TN.</p> : calculation.status === 'error' ? <p role="alert" className="text-xs font-semibold text-red-700 dark:text-red-300">{calculation.message}</p> : value ? <>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="rounded-lg bg-white p-2.5 dark:bg-gray-950">
+            <div className={labelClass}>T21</div>
+            <div className="mt-1 text-lg font-extrabold">{formatarRiscoExibicao(value.result.t21, value.result)}</div>
+            <div className="text-[10px] text-gray-500">basal: {formatarRiscoExibicao(value.result.basal.t21, value.result)}</div>
+          </div>
+          <div className="rounded-lg bg-white p-2.5 dark:bg-gray-950">
+            <div className={labelClass}>Trissomias 13/18</div>
+            <div className="mt-1 text-lg font-extrabold">{formatarRiscoExibicao(value.result.t18t13, value.result)}</div>
+            <div className="text-[10px] text-gray-500">basal: {formatarRiscoExibicao({ probability: 0, ratio: basalRatioT18T13(value.result), category: 'baixo' }, value.result)}</div>
+          </div>
+        </div>
+        <p className="mt-2 text-[10px] text-gray-500 dark:text-gray-400">T18 isolada: {formatarRiscoExibicao(value.result.t18, value.result)} · T13 isolada: {formatarRiscoExibicao(value.result.t13, value.result)}</p>
         <p className="mt-3 text-[11px] text-gray-600 dark:text-gray-300">Usados: {value.result.markersUsed.join(', ')}.</p>
         {value.result.warnings.map(warning => <p key={warning} className="mt-1 text-[11px] font-semibold text-amber-800 dark:text-amber-200">{warning}</p>)}
         <pre className="mt-3 max-h-52 overflow-y-auto whitespace-pre-wrap rounded-lg bg-white p-2.5 font-sans text-[11px] leading-relaxed dark:bg-gray-950">{value.block}</pre>

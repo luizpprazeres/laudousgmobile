@@ -23,8 +23,8 @@ export async function typeInto(page, id, value) {
     await page.keyboard.press('Meta+A'); await page.keyboard.press('Backspace')
     // campos com máscara (datas) só aceitam apagar caractere a caractere
     for (let k = 0; k < 14 && (await el.inputValue().catch(() => '')) !== ''; k++) { await page.keyboard.press('End'); await page.keyboard.press('Backspace') }
-    await page.keyboard.type(want)
-    await page.keyboard.press('Tab')
+    await page.keyboard.type(want, { delay: 40 })
+    await page.keyboard.press('Tab'); await page.waitForTimeout(300)
     for (let k = 0; k < 6; k++) {
       await page.waitForTimeout(250)
       const got = await el.inputValue().catch(() => null)
@@ -97,7 +97,9 @@ export async function goPatients(page) { await goHome(page); await page.getByTex
 /** Abre (ou cria) a paciente de teste pelo sobrenome. */
 export async function openPatient(page, { name, surname, dob }) {
   await goPatients(page)
-  const row = page.locator(`xpath=//*[normalize-space(text())="${surname}"]/ancestor::*[contains(., "${name}")][1]`).first()
+  // a lista mostra "<id> NOME SOBRENOME" num único texto; NUNCA criar outra paciente se já existir uma
+  let row = page.getByText(new RegExp(`\\b${name}\\s+${surname}\\b`)).first()
+  if (!(await row.count())) row = page.locator(`xpath=//*[normalize-space(text())="${surname}"]/ancestor::*[contains(., "${name}")][1]`).first()
   if (await row.count()) { await row.click(); await page.waitForTimeout(1200) }
   else {
     await typeInto(page, 'search-name', name); await typeInto(page, 'search-surname', surname); await typeInto(page, 'date-of-birth', dob)
@@ -198,32 +200,62 @@ export async function readPreeclampsia(page) {
   }
 }
 
-/** Trissomias (1º trimestre). Campos descobertos no bundle; validar na primeira execução. */
+/** Trissomias (1º trimestre). Campos mapeados por sondagem em 15/09/2026. */
 export async function setTrisomies(page, t) {
   await openCalculators(page)
   await press(page, 'trisomies-tab'); await page.waitForTimeout(800)
+  const yn = (id, v) => pressRadio(page, `${id}-${v ? 'yes' : 'no'}`)
+  await yn('ch', !!t.chronicHypertension); await yn('db1', !!t.diabetes1); await yn('db2', !!t.diabetes2); await yn('fHist', !!t.familyHistoryPE); await yn('sle', !!t.sle); await yn('aps', !!t.aps)
+  await pressRadio(page, t.parous ? 'multip' : 'nullip')
+  await yn('prev-t21', !!t.previousT21); await yn('prev-t18', !!t.previousT18); await yn('prev-t13', !!t.previousT13)
+  await pressRadio(page, 'fha-present')
+  const clearIf = async (id, present) => { if (present) return; if (!(await has(page, id))) return; const el = T(page, id); if ((await el.inputValue().catch(() => '')) !== '') { await el.click({ timeout: 3000 }).catch(() => el.evaluate(i => i.focus())); await page.keyboard.press('Meta+A'); await page.keyboard.press('Backspace'); await page.keyboard.press('Tab'); await page.waitForTimeout(200) } }
+  if (t.crl != null) await typeInto(page, 'fetus-0-crl', t.crl)
   if (t.nt != null) await typeInto(page, 'nt-input', t.nt)
-  if (t.fhr != null) await typeInto(page, 'fhr-input', t.fhr)
+  await clearIf('fhr-input', t.fhr != null); if (t.fhr != null) await typeInto(page, 'fhr-input', t.fhr)
+  await clearIf('dvpi-input', t.dvpi != null)
+  await select(page, 'nasal-bone', t.nasalBone ?? 'Not examined')
+  await select(page, 'tricuspid', t.tricuspid ?? 'Not examined')
+  await select(page, 'dvawave', t.dvAWave ?? 'Not examined')
   if (t.dvpi != null) await typeInto(page, 'dvpi-input', t.dvpi)
-  if (t.freeBhcgMom != null) await typeInto(page, 'freebhcg', t.freeBhcgMom)
-  if (t.pappaMom != null) await typeInto(page, 'pappa', t.pappaMom)
-  if (t.plgfMom != null) await typeInto(page, 'plgf', t.plgfMom)
-  // nasal-bone / tricuspid / dvawave provavelmente são selects ou rádios: tratados na sondagem
-  for (let i = 0; i < 3; i++) {
-    const btn = page.locator('[data-testid="trisomies-calculate"]')
-    if (await btn.count()) { await btn.first().click({ timeout: 3000 }).catch(() => btn.first().dispatchEvent('click')); await page.waitForTimeout(2500) }
-    const r = await readTrisomies(page)
-    if (r.t21 != null) return r
-    await page.waitForTimeout(1500)
+  if (process.env.DEBUG_TRI) console.log('   selects:', await page.evaluate(() => ['nasal-bone-native','tricuspid-native','dvawave-native'].map(id => { const e = document.querySelector(`[data-testid="${id}"]`); return id + '=' + (e ? e.options[e.selectedIndex]?.text : '?') }).join(' ')))
+  for (const id of ['holoprosencephaly', 'diaphragmatic-hernia', 'av-septum-defect', 'megacystis']) await yn(id, false)
+  await select(page, 'exomphalos', 'No')
+  if (t.pappaMom != null || t.freeBhcgMom != null) {
+    if (!(await has(page, 'pappa-mom'))) { await press(page, 'biochemical-accordion'); await page.waitForTimeout(800) }
+    if (t.pappaMom != null) await typeInto(page, 'pappa-mom', t.pappaMom)
+    if (t.freeBhcgMom != null) await typeInto(page, 'freebhcg-mom', t.freeBhcgMom)
+  } else {
+    // bioquímica oculta continua valendo no cálculo: abrir o acordeão e limpar sempre que o caso não tiver MoMs
+    if (!(await has(page, 'pappa-mom'))) { await press(page, 'biochemical-accordion'); await page.waitForTimeout(800) }
+    for (const id of ['pappa-mom', 'freebhcg-mom']) { const el = T(page, id); if ((await el.inputValue().catch(() => '')) !== '') { await el.click({ timeout: 3000 }).catch(() => el.evaluate(i => i.focus())); await page.keyboard.press('Meta+A'); await page.keyboard.press('Backspace'); await page.keyboard.press('Tab'); await page.waitForTimeout(200) } }
   }
-  return readTrisomies(page)
+  const sig = JSON.stringify(t); const changed = lastTri.sig !== null && lastTri.sig !== sig
+  // "cutucar": re-digita o primeiro campo numérico presente (o RN Web às vezes não registra a mudança → sem botão de recálculo → leitura do caso anterior)
+  const nudge = async () => { for (const [id, v] of [['fhr-input', t.fhr], ['nt-input', t.nt], ['fetus-0-crl', t.crl]]) { if (v == null) continue; const el = T(page, id); await el.click({ timeout: 3000 }).catch(() => el.evaluate(i => i.focus())); await page.keyboard.press('Meta+A'); await page.keyboard.press('Backspace'); await page.waitForTimeout(200); await page.keyboard.type(String(v), { delay: 60 }); await page.keyboard.press('Tab'); await page.waitForTimeout(500); return } }
+  let r = null
+  for (let i = 0; i < 4; i++) {
+    if (!(await has(page, 'trisomies-calculate')) && (changed || lastTri.sig === null)) { if (i > 0 || changed) await nudge(); await page.waitForTimeout(400) }
+    if (await has(page, 'trisomies-calculate')) { await press(page, 'trisomies-calculate'); for (let k = 0; k < 12 && (await has(page, 'trisomies-calculate')); k++) await page.waitForTimeout(500); await page.waitForTimeout(800) }
+    r = await readTrisomies(page)
+    // leitura estável: relê após 1,5 s e exige igualdade (evita ler resultado do caso anterior)
+    for (let k = 0; k < 3; k++) { await page.waitForTimeout(1500); const r2 = await readTrisomies(page); if (r2.t21 === r.t21 && r2.t18t13 === r.t18t13) break; r = r2 }
+    const same = lastTri.r && r.t21 === lastTri.r.t21 && r.t18t13 === lastTri.r.t18t13 && r.prior21 === lastTri.r.prior21
+    if (r.t21 != null && !(changed && same)) { r.retries = i; break }
+    r.suspect = true; await page.waitForTimeout(800)
+  }
+  lastTri.sig = sig; lastTri.r = r
+  return r
 }
+const lastTri = { sig: null, r: null }
 export async function readTrisomies(page) {
-  const grab = async id => (await page.locator(`[data-testid="${id}"]`).first().innerText().catch(() => '')).replace(/\s+/g, ' ').trim()
   const t = await text(page)
-  const n = s => { const m = s.match(/1 in (\d+)/); return m ? Number(m[1]) : null }
-  const t21 = await grab('trisomy-risk-t21'), t1813 = await grab('trisomy-risk-t18t13'), p21 = await grab('trisomy-prior-t21'), p1813 = await grab('trisomy-prior-t18t13')
-  return { t21: n(t21), t18t13: n(t1813), prior21: n(p21), prior18t13: n(p1813), raw: { t21, t1813, p21, p1813 }, texto: t.match(/Trisomy 21.{0,200}/)?.[0] ?? null, calcPending: (await page.locator('[data-testid="trisomies-calculate"]').count()) > 0 }
+  const grab = async id => (await page.locator(`[data-testid="${id}"]`).first().innerText({ timeout: 2500 }).catch(() => '')).replace(/\s+/g, ' ').trim()
+  const n = s => { const m = String(s).match(/1 in (\d+)/); return m ? Number(m[1]) : null }
+  const raw = { t21: await grab('trisomy-risk-t21'), t18t13: await grab('trisomy-risk-t18t13'), p21: await grab('trisomy-prior-t21'), p18t13: await grab('trisomy-prior-t18t13') }
+  const i = t.indexOf('Trisomy 21'); const bloco = i >= 0 ? t.slice(i, i + 600) : null
+  const val = async id => (await T(page, id).inputValue().catch(() => null))
+  return { t21: n(raw.t21), t18t13: n(raw.t18t13), prior21: n(raw.p21), prior18t13: n(raw.p18t13), raw, bloco, crl: await val('fetus-0-crl'), nt: await val('nt-input'), calcPending: await has(page, 'trisomies-calculate') }
 }
 
 /** Relança o FMF com a porta de depuração (após "Target crashed") e reconecta. */

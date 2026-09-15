@@ -1,0 +1,16 @@
+import { readFileSync } from 'node:fs'
+import { calcularTrissomias, computeFmfNtLikelihoodRatios, crlToGaDays } from '/Users/luizprazeres/laudousgmobile-def/packages/shared/src/calculators/fmfTrisomy.ts'
+const cases = Object.fromEntries(JSON.parse(readFileSync('cases-tri2.json', 'utf8')).map(c => [c.id, c]))
+const res = JSON.parse(readFileSync('results-tri2.json', 'utf8')).filter(r => r.t21 && r.prior21)
+const EXAM = Date.UTC(2026, 8, 15); const ageAt = dob => { const [m, d, y] = dob.split('/').map(Number); return (EXAM - Date.UTC(y, m - 1, d)) / (365.25 * 86400000) }
+const odds = N => (1 / N) / (1 - 1 / N)
+const lrApp = r => ({ t21: odds(r.t21) / odds(r.prior21), t1813: odds(r.t18t13) / odds(r.prior18t13), cap: r.t21 >= 10000 || r.t18t13 >= 10000 })
+function local(c) { const t = c.tri, m = c.maternal; const o = calcularTrissomias({ maternalAge: ageAt(m.dob), crl: t.crl, nt: t.nt, freeBetaHcgMoM: t.freeBhcgMom, pappaMoM: t.pappaMom, dvPI: t.dvpi, fhr: t.fhr, tricuspidRegurgitation: t.tricuspid === 'Yes' ? true : t.tricuspid === 'No' ? false : undefined, nasalBoneAbsent: t.nasalBone === 'Absent' ? true : t.nasalBone === 'Present' ? false : undefined, weight: m.weight, ethnicity: 'white', isMoMCorrected: true }); const o21 = o.t21.probability / (1 - o.t21.probability), b21 = o.basal.t21.probability / (1 - o.basal.t21.probability); const p1813 = o.t18.probability + o.t13.probability, b1813 = o.basal.t18.probability + o.basal.t13.probability; return { t21: o21 / b21, t1813: (p1813 / (1 - p1813)) / (b1813 / (1 - b1813)), N21: o.t21.ratio, N1813: 1 / p1813, P21: o.basal.t21.ratio } }
+console.log('=== NT × CRL: LR T21 app / local (Wright 2008 portado) ===')
+const grid = res.filter(r => /^G-/.test(r.id))
+for (const crl of [45, 60, 75, 84]) { const row = grid.filter(r => cases[r.id].tri.crl === crl).map(r => { const a = lrApp(r), l = local(cases[r.id]); return `${cases[r.id].tri.nt}:${a.t21.toFixed(2)}/${l.t21.toFixed(2)}` }); console.log(`CRL ${crl}: ` + row.join('  ')) }
+console.log('\n=== NT × CRL: LR T13/18 app / local ===')
+for (const crl of [45, 60, 75, 84]) { const row = grid.filter(r => cases[r.id].tri.crl === crl).map(r => { const a = lrApp(r), l = local(cases[r.id]); return `${cases[r.id].tri.nt}:${a.t1813.toFixed(2)}/${l.t1813.toFixed(2)}` }); console.log(`CRL ${crl}: ` + row.join('  ')) }
+console.log('\n=== marcadores a 40 anos (base M40: NT 1,8, CRL 60): LR do marcador = LR total / LR(base) ===')
+const base = res.find(r => r.id === 'M40-base'); const ab = lrApp(base), lb = local(cases['M40-base'])
+for (const r of res.filter(r => /^(D40|M40|F-)/.test(r.id) && r.id !== 'M40-base')) { const a = lrApp(r), l = local(cases[r.id]); const baseR = r.id.startsWith('F-') ? res.find(x => x.id === 'G-crl60-nt2') : base; const abx = r.id.startsWith('F-') ? lrApp(res.find(x => x.id === 'G-crl60-nt1.6')) : ab; console.log(`${r.id.padEnd(26)} app T21 ${(a.t21 / abx.t21).toFixed(3)} local ${(l.t21 / (r.id.startsWith('F-') ? local(cases['G-crl60-nt1.6']).t21 : lb.t21)).toFixed(3)} | 13/18 app ${(a.t1813 / abx.t1813).toFixed(3)} local ${(l.t1813 / (r.id.startsWith('F-') ? local(cases['G-crl60-nt1.6']).t1813 : lb.t1813)).toFixed(3)}${a.cap ? ' [cap]' : ''}`) }

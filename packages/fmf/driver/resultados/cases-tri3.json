@@ -1,0 +1,962 @@
+[
+ {
+  "id": "NB-crl45-nt1.2-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 1.2
+  }
+ },
+ {
+  "id": "NB-crl45-nt1.2-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 1.2,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl45-nt1.2-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 1.2,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl45-nt1.2-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 1.2,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl45-nt1.8-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 1.8
+  }
+ },
+ {
+  "id": "NB-crl45-nt1.8-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 1.8,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl45-nt1.8-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 1.8,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl45-nt1.8-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 1.8,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl45-nt2.5-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 2.5
+  }
+ },
+ {
+  "id": "NB-crl45-nt2.5-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 2.5,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl45-nt2.5-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 2.5,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl45-nt2.5-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 2.5,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl45-nt3.5-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 3.5
+  }
+ },
+ {
+  "id": "NB-crl45-nt3.5-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 3.5,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl45-nt3.5-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 3.5,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl45-nt3.5-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 45,
+   "nt": 3.5,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl60-nt1.2-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.2
+  }
+ },
+ {
+  "id": "NB-crl60-nt1.2-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.2,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl60-nt1.2-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.2,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl60-nt1.2-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.2,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl60-nt1.8-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8
+  }
+ },
+ {
+  "id": "NB-crl60-nt1.8-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl60-nt1.8-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl60-nt1.8-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl60-nt2.5-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 2.5
+  }
+ },
+ {
+  "id": "NB-crl60-nt2.5-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 2.5,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl60-nt2.5-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 2.5,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl60-nt2.5-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 2.5,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl60-nt3.5-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 3.5
+  }
+ },
+ {
+  "id": "NB-crl60-nt3.5-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 3.5,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl60-nt3.5-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 3.5,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl60-nt3.5-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 3.5,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl84-nt1.2-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 1.2
+  }
+ },
+ {
+  "id": "NB-crl84-nt1.2-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 1.2,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl84-nt1.2-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 1.2,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl84-nt1.2-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 1.2,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl84-nt1.8-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 1.8
+  }
+ },
+ {
+  "id": "NB-crl84-nt1.8-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 1.8,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl84-nt1.8-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 1.8,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl84-nt1.8-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 1.8,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl84-nt2.5-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 2.5
+  }
+ },
+ {
+  "id": "NB-crl84-nt2.5-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 2.5,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl84-nt2.5-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 2.5,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl84-nt2.5-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 2.5,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-crl84-nt3.5-base",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 3.5
+  }
+ },
+ {
+  "id": "NB-crl84-nt3.5-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 3.5,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-crl84-nt3.5-present",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 3.5,
+   "nasalBone": "Present"
+  }
+ },
+ {
+  "id": "TR-crl84-nt3.5-yes",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 84,
+   "nt": 3.5,
+   "tricuspid": "Yes"
+  }
+ },
+ {
+  "id": "NB-etnia-Black-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "Black",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-etnia-SouthAsian-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "South Asian",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "NB-etnia-EastAsian-absent",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "East Asian",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "nasalBone": "Absent"
+  }
+ },
+ {
+  "id": "FHR-crl60-nt1.8-170",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "fhr": 170
+  }
+ },
+ {
+  "id": "FHR-crl60-nt1.8-175",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "fhr": 175
+  }
+ },
+ {
+  "id": "FHR-crl60-nt1.8-100",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 3,
+   "conception": "Spontaneous"
+  },
+  "tri": {
+   "crl": 60,
+   "nt": 1.8,
+   "fhr": 100
+  }
+ }
+]

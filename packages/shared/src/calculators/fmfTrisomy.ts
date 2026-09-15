@@ -4,10 +4,10 @@ import {
   GAUSS_MEAN_T21, GAUSS_MEAN_T18, GAUSS_MEAN_T13,
   GAUSS_SD, GAUSS_COR, GAUSS_TRUNCATION,
   LR_MIN, LR_MAX,
-  NT_TLIMITS, DVPI_TLIMITS_T21, DVPI_TLIMITS_T18, DVPI_TLIMITS_T13,
+  NT_TRUNC_NODES, BIO_LR_MIN, DVPI_TLIMITS_T21, DVPI_TLIMITS_T18, DVPI_TLIMITS_T13,
 } from './fmfTrisomyParams'
 
-export const FMF_TRISOMY_MODEL_VERSION = 'FMF-R-extract-2026-06-26/v2+cal-2026-09-15'
+export const FMF_TRISOMY_MODEL_VERSION = 'FMF-R-extract-2026-06-26/v3+cal-2026-09-15c'
 export const FMF_TRISOMY_PARAMETER_FINGERPRINT = FMF_TRISOMY_SOURCE_FINGERPRINT
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -28,7 +28,8 @@ export function crlToGaDays(crl: number): number {
 
 /** Expected FHR at gestational age (Kagan 2008) */
 function expectedFhr(gaDays: number): number {
-  return 265.98 - 1.7631 * gaDays + 0.0064445 * gaDays * gaDays
+  // −1,41 bpm: deslocamento calibrado ao app (cal-2026-09-15c)
+  return 265.98 - 1.410084 - 1.7631 * gaDays + 0.0064445 * gaDays * gaDays
 }
 
 /** Multivariate normal PDF for 2D or 3D (no external deps) */
@@ -124,6 +125,20 @@ function computePriorRisk(
 
 interface LRResult { t21: number; t18: number; t13: number }
 
+/** Limite de truncamento da NT calibrado (cal-2026-09-15 v3): interpolação linear entre os nós de CRL. */
+function ntTruncLimit(crl: number): number {
+  const nodes = NT_TRUNC_NODES
+  const first = nodes[0], last = nodes[nodes.length - 1]
+  if (!first || !last) return 1.01
+  if (crl <= first[0]) return first[1]
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const a = nodes[i], b = nodes[i + 1]
+    if (!a || !b) break
+    if (crl <= b[0]) return a[1] + (b[1] - a[1]) * (crl - a[0]) / (b[0] - a[0])
+  }
+  return last[1]
+}
+
 /** Exposto para validação contra o exemplo numérico publicado por Wright et al. */
 export function computeFmfNtLikelihoodRatios(nt: number, crl: number): LRResult {
   const p = NT_MIX
@@ -147,8 +162,7 @@ export function computeFmfNtLikelihoodRatios(nt: number, crl: number): LRResult 
   const likU = (1 - pu) * dnorm(logNt, mr, sr) + pu * dnorm(logNt, p.m1, sc)
 
   // Get truncation limit (identical for all trisomies)
-  const tlKey = Math.round(crlR * 10)
-  const truncLimit = NT_TLIMITS.get(tlKey) ?? 1.01
+  const truncLimit = ntTruncLimit(crlR)
 
   // Helper: compute LR with truncation
   function ntLR(pAff: number, mAff: number, sdAff: number): number {
@@ -253,10 +267,11 @@ function computeBiochemLR(
 
   if (likUn <= 0) return null
 
+  // piso por trissomia como no app (BIO_LR_MIN); teto LR_MAX
   return {
-    t21: clamp(likT21 / likUn, LR_MIN, LR_MAX),
-    t18: clamp(likT18 / likUn, LR_MIN, LR_MAX),
-    t13: clamp(likT13 / likUn, LR_MIN, LR_MAX),
+    t21: clamp(likT21 / likUn, BIO_LR_MIN, LR_MAX),
+    t18: clamp(likT18 / likUn, BIO_LR_MIN, LR_MAX),
+    t13: clamp(likT13 / likUn, BIO_LR_MIN, LR_MAX),
   }
 }
 
@@ -371,6 +386,9 @@ function makeRisk(prob: number, classifier: (p: number) => TrisomyRisk['category
 export function calcularTrissomias(input: FmfInput): FmfResult {
   validarEntrada(input)
   const gaDays = crlToGaDays(input.crl)
+  // O app usa a IG DATADA do exame na FCF esperada e nas médias da bioquímica (verificado 15/09/2026:
+  // mesmo CRL/FCF com datação diferente muda o risco); prior e NT seguem o CRL. Se não informada, = CRL.
+  const gaDaysDated = input.gaDaysDated ?? gaDays
   const roundedGaDays = Math.round(gaDays)
   const gaWeeks = Math.floor(roundedGaDays / 7)
   const gaDaysRemainder = roundedGaDays % 7
@@ -402,7 +420,7 @@ export function calcularTrissomias(input: FmfInput): FmfResult {
   if (fhr != null) markersUsed.push('FCF')
 
   const biochemLR = computeBiochemLR(
-    input.freeBetaHcgMoM, input.pappaMoM, fhr, gaDays
+    input.freeBetaHcgMoM, input.pappaMoM, fhr, gaDaysDated
   )
   if (input.freeBetaHcgMoM != null && (input.freeBetaHcgMoM < GAUSS_TRUNCATION.fbhcgT1.lower || input.freeBetaHcgMoM > GAUSS_TRUNCATION.fbhcgT1.upper)) {
     warnings.push(`Free β-hCG foi truncada para o intervalo ${GAUSS_TRUNCATION.fbhcgT1.lower}–${GAUSS_TRUNCATION.fbhcgT1.upper} MoM.`)
@@ -433,8 +451,11 @@ export function calcularTrissomias(input: FmfInput): FmfResult {
     markersUsed.push('Ducto venoso')
   }
 
-  // 5. Tricuspid
-  if (input.tricuspidRegurgitation != null) {
+  // 5. Tricuspid — no app FMF v1.0.44 (driver CDP, 15/09/2026) a regurgitação AUSENTE não altera
+  // o risco (LR 1); só a presente entra no cálculo. Mantemos o marcador listado como usado.
+  if (input.tricuspidRegurgitation === false) {
+    markersUsed.push('Tricúspide')
+  } else if (input.tricuspidRegurgitation === true) {
     const trLR = computeTricuspidLR(
       input.tricuspidRegurgitation, input.nt,
       input.smoking ?? false, input.weight ?? 69
@@ -457,6 +478,15 @@ export function calcularTrissomias(input: FmfInput): FmfResult {
     lrT13 *= nbLR.t13
     markersUsed.push('Osso nasal')
   }
+
+  // 6b. Piso do LR TOTAL dos marcadores (app FMF v1.0.44, medido 15/09/2026): com todos os
+  // marcadores favoráveis o app nunca reduz o risco além de ~1/19 do prior (T21 e T13/18:
+  // 63→1200 e 114→2200 aos 40 anos; aos 30 anos cai no teto "<1 in 10000"). Sem isso,
+  // bioquímica normal + DV normal levavam o local a 1:15000–1:90000.
+  const LR_TOTAL_MIN = 0.0528
+  lrT21 = Math.max(lrT21, LR_TOTAL_MIN)
+  lrT18 = Math.max(lrT18, LR_TOTAL_MIN)
+  lrT13 = Math.max(lrT13, LR_TOTAL_MIN)
 
   // 7. Posterior probabilities
   const postT21 = prior.t21 * lrT21
@@ -482,6 +512,8 @@ export function calcularTrissomias(input: FmfInput): FmfResult {
     // como o app da FMF exibe: "Trisomy 13/18" combinada e teto "<1 in 10000"
     t18t13: makeRisk(riskT18 + riskT13, classifyRiskT18T13),
     displayCapRatio: 10000,
+    // o app também não exibe risco maior que "1 in 2"
+    displayFloorRatio: 2,
     gaDays: roundedGaDays,
     gaWeeks,
     gaDaysRemainder,

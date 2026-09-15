@@ -1,0 +1,6 @@
+[
+ {"id":"T09-25-nt1.8-sembio","maternal":{"dob":"05/20/2001","height":164,"weight":69,"ethnicity":"White","smoking":false,"gaWeeks":12,"gaDays":3,"conception":"Spontaneous"},"tri":{"crl":60.0,"nt":1.8}},
+ {"id":"T10-25-nt4.0-bio","maternal":{"dob":"05/20/2001","height":164,"weight":69,"ethnicity":"White","smoking":false,"gaWeeks":12,"gaDays":3,"conception":"Spontaneous"},"tri":{"crl":60.0,"nt":4.0,"pappaMom":0.50,"freeBhcgMom":2.00}},
+ {"id":"T11-40-nt1.8-bio","maternal":{"dob":"05/20/1986","height":164,"weight":69,"ethnicity":"White","smoking":false,"gaWeeks":12,"gaDays":3,"conception":"Spontaneous"},"tri":{"crl":60.0,"nt":1.8,"pappaMom":0.50,"freeBhcgMom":2.00}},
+ {"id":"T12-40-nt4.0-sembio","maternal":{"dob":"05/20/1986","height":164,"weight":69,"ethnicity":"White","smoking":false,"gaWeeks":12,"gaDays":3,"conception":"Spontaneous"},"tri":{"crl":60.0,"nt":4.0}}
+]

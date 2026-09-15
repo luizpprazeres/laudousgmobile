@@ -188,3 +188,26 @@ significativos** e teto em "<1 in 10000"; T13 e T18 saem **combinadas** ("Trisom
 | **NT** (0,8–6,0 mm, CRL 60) | LR app/local cai de 0,68 (NT 1,8) a 0,21 (NT 6,0) | modelo de mistura do app difere do Wright 2008 portado — grade NT×CRL de 48 pontos em curso para ajustar |
 | Teto | app mostra "<1 in 10000" | local deve capar a exibição em 1:10000 |
 | Saída combinada 13/18 | app | local deve expor p13+p18 |
+
+## Rodada 7 — 15/09/2026, TRISSOMIAS: calibração `cal-2026-09-15c` (9 lotes, 560 leituras válidas)
+
+Lotes do driver: matriz (62), b40 (20), grade NT×CRL (48), NB/TR (54), FCF fina + combinações (52),
+FCF intercalada + bioquímica 13/18 (54), releituras + onda A (32), datação (12). Duas armadilhas
+do próprio driver foram descobertas e corrigidas nesta rodada: **leituras estagnadas** (o app não
+registrava a mudança de um campo numérico e mostrava o resultado do caso anterior — detectadas
+por lotes intercalados e por `mark-suspect.mjs`, 63 leituras descartadas) e **bioquímica oculta**
+(MoMs do caso anterior continuavam valendo com o acordeão fechado).
+
+| Componente | App × motor (antes → depois) | O que mudou no motor |
+|---|---|---|
+| NT (48 pontos) | rms log-LR 0,14 → 0,085; zona de transição em CRL 84 de −60 % para ±5 % | `NT_MIX` + limites de truncamento livres por CRL (`NT_TRUNC_NODES`) |
+| FCF (50 pontos) | rms 0,37 → 0,09 | o app usa a **IG datada** (não a do CRL) na FCF esperada; médias/SD de T21/T18/T13 e truncamento reajustados; `gaDaysDated` na entrada |
+| Bioquímica 13/18 (65 pontos) | rms 0,60 → 0,19 | médias de T18/T13 e SD reajustadas; piso da LR por trissomia (`BIO_LR_MIN` 0,052) |
+| Osso nasal / tricúspide (53 pontos) | rms 0,80 → 0,51 | coeficientes reajustados; "No" na tricúspide é neutro |
+| Onda A do DV | idêntica à base em todas as opções, com e sem DV PI | nada (motor já só usa DV PI) |
+| Combinações NB ausente + TR + bio | app 1:13 × motor 1:118 (13/18) | **não resolvido**: o app parece ter interação entre marcadores; ambos "alto risco" |
+
+Global (548 comparações não capadas): desvio mediano **5 %**, p90 **20 %**; T21 6 %/19 %, T13/18 5 %/23 %.
+Classificação de T21 concorda em 256/264; os 8 divergentes estão a ±16 % dos cortes 1:100/1:1000.
+Web: formulário de trissomias agora pede data de nascimento (idade decimal), mostra T13/18 combinada
+e aplica teto/piso de exibição como o app. Android/iOS ainda não têm a calculadora de trissomias.

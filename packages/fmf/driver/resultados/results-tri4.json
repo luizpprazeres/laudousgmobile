@@ -1,0 +1,961 @@
+[
+ {
+  "id": "H-crl60-base",
+  "t21": 3300,
+  "t18t13": 3700,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 3300",
+   "t18t13": "Trisomy 13/18: 1 in 3700",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 20545
+ },
+ {
+  "id": "H-crl60-fhr100",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 75010
+ },
+ {
+  "id": "H-crl60-fhr105",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4867,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr110",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4942,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr115",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4702,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr120",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4825,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr125",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4829,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr130",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4723,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr135",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 5080,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr140",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 5325,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr145",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4915,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr150",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 5255,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr155",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4955,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr160",
+  "t21": 4100,
+  "t18t13": 4000,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4100",
+   "t18t13": "Trisomy 13/18: 1 in 4000",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4922,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr165",
+  "t21": 3600,
+  "t18t13": 6800,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 3600",
+   "t18t13": "Trisomy 13/18: 1 in 6800",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6057
+ },
+ {
+  "id": "H-crl60-fhr170",
+  "t21": 3600,
+  "t18t13": 6800,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 3600",
+   "t18t13": "Trisomy 13/18: 1 in 6800",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4859,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr175",
+  "t21": 1100,
+  "t18t13": 1100,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 1100",
+   "t18t13": "Trisomy 13/18: 1 in 1100",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6149
+ },
+ {
+  "id": "H-crl60-fhr180",
+  "t21": 530,
+  "t18t13": 192,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 530",
+   "t18t13": "Trisomy 13/18: 1 in 192",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6064
+ },
+ {
+  "id": "H-crl60-fhr185",
+  "t21": 530,
+  "t18t13": 192,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 530",
+   "t18t13": "Trisomy 13/18: 1 in 192",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4691,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr190",
+  "t21": 530,
+  "t18t13": 192,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 530",
+   "t18t13": "Trisomy 13/18: 1 in 192",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4973,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr195",
+  "t21": 530,
+  "t18t13": 192,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 530",
+   "t18t13": "Trisomy 13/18: 1 in 192",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4887,
+  "suspect": true
+ },
+ {
+  "id": "H-crl60-fhr200",
+  "t21": 530,
+  "t18t13": 192,
+  "prior21": 550,
+  "prior18t13": 1000,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 530",
+   "t18t13": "Trisomy 13/18: 1 in 192",
+   "p21": "Trisomy 21: 1 in 550",
+   "p18t13": "Trisomy 13/18: 1 in 1000"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4837,
+  "suspect": true
+ },
+ {
+  "id": "H-crl45-base",
+  "t21": 530,
+  "t18t13": 2500,
+  "prior21": 520,
+  "prior18t13": 870,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 530",
+   "t18t13": "Trisomy 13/18: 1 in 2500",
+   "p21": "Trisomy 21: 1 in 520",
+   "p18t13": "Trisomy 13/18: 1 in 870"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "45.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6218
+ },
+ {
+  "id": "H-crl45-fhr120",
+  "t21": 650,
+  "t18t13": 4600,
+  "prior21": 520,
+  "prior18t13": 870,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 650",
+   "t18t13": "Trisomy 13/18: 1 in 4600",
+   "p21": "Trisomy 21: 1 in 520",
+   "p18t13": "Trisomy 13/18: 1 in 870"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "45.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 74766
+ },
+ {
+  "id": "H-crl45-fhr150",
+  "t21": 650,
+  "t18t13": 4600,
+  "prior21": 520,
+  "prior18t13": 870,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 650",
+   "t18t13": "Trisomy 13/18: 1 in 4600",
+   "p21": "Trisomy 21: 1 in 520",
+   "p18t13": "Trisomy 13/18: 1 in 870"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "45.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 5022,
+  "suspect": true
+ },
+ {
+  "id": "H-crl45-fhr160",
+  "t21": 650,
+  "t18t13": 4600,
+  "prior21": 520,
+  "prior18t13": 870,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 650",
+   "t18t13": "Trisomy 13/18: 1 in 4600",
+   "p21": "Trisomy 21: 1 in 520",
+   "p18t13": "Trisomy 13/18: 1 in 870"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "45.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4833,
+  "suspect": true
+ },
+ {
+  "id": "H-crl45-fhr165",
+  "t21": 560,
+  "t18t13": 6100,
+  "prior21": 520,
+  "prior18t13": 870,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 560",
+   "t18t13": "Trisomy 13/18: 1 in 6100",
+   "p21": "Trisomy 21: 1 in 520",
+   "p18t13": "Trisomy 13/18: 1 in 870"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "45.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 5998
+ },
+ {
+  "id": "H-crl45-fhr170",
+  "t21": 360,
+  "t18t13": 2400,
+  "prior21": 520,
+  "prior18t13": 870,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 360",
+   "t18t13": "Trisomy 13/18: 1 in 2400",
+   "p21": "Trisomy 21: 1 in 520",
+   "p18t13": "Trisomy 13/18: 1 in 870"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "45.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 5995
+ },
+ {
+  "id": "H-crl45-fhr180",
+  "t21": 360,
+  "t18t13": 2400,
+  "prior21": 520,
+  "prior18t13": 870,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 360",
+   "t18t13": "Trisomy 13/18: 1 in 2400",
+   "p21": "Trisomy 21: 1 in 520",
+   "p18t13": "Trisomy 13/18: 1 in 870"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "45.0",
+  "nt": "1.8",
+  "calcPending": true,
+  "ms": 4891,
+  "suspect": true
+ },
+ {
+  "id": "H-crl45-fhr190",
+  "t21": 86,
+  "t18t13": 59,
+  "prior21": 520,
+  "prior18t13": 870,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 86",
+   "t18t13": "Trisomy 13/18: 1 in 59",
+   "p21": "Trisomy 21: 1 in 520",
+   "p18t13": "Trisomy 13/18: 1 in 870"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "45.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6251
+ },
+ {
+  "id": "H-crl84-base",
+  "t21": 3600,
+  "t18t13": 4400,
+  "prior21": 580,
+  "prior18t13": 1100,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 3600",
+   "t18t13": "Trisomy 13/18: 1 in 4400",
+   "p21": "Trisomy 21: 1 in 580",
+   "p18t13": "Trisomy 13/18: 1 in 1100"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "84.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 74904
+ },
+ {
+  "id": "H-crl84-fhr120",
+  "t21": 4400,
+  "t18t13": 4800,
+  "prior21": 580,
+  "prior18t13": 1100,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4400",
+   "t18t13": "Trisomy 13/18: 1 in 4800",
+   "p21": "Trisomy 21: 1 in 580",
+   "p18t13": "Trisomy 13/18: 1 in 1100"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "84.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 75193
+ },
+ {
+  "id": "H-crl84-fhr150",
+  "t21": 4400,
+  "t18t13": 4800,
+  "prior21": 580,
+  "prior18t13": 1100,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4400",
+   "t18t13": "Trisomy 13/18: 1 in 4800",
+   "p21": "Trisomy 21: 1 in 580",
+   "p18t13": "Trisomy 13/18: 1 in 1100"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "84.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 5000,
+  "suspect": true
+ },
+ {
+  "id": "H-crl84-fhr160",
+  "t21": 4400,
+  "t18t13": 4800,
+  "prior21": 580,
+  "prior18t13": 1100,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 4400",
+   "t18t13": "Trisomy 13/18: 1 in 4800",
+   "p21": "Trisomy 21: 1 in 580",
+   "p18t13": "Trisomy 13/18: 1 in 1100"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "84.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4770,
+  "suspect": true
+ },
+ {
+  "id": "H-crl84-fhr165",
+  "t21": 3800,
+  "t18t13": 8100,
+  "prior21": 580,
+  "prior18t13": 1100,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 3800",
+   "t18t13": "Trisomy 13/18: 1 in 8100",
+   "p21": "Trisomy 21: 1 in 580",
+   "p18t13": "Trisomy 13/18: 1 in 1100"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "84.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 5942
+ },
+ {
+  "id": "H-crl84-fhr170",
+  "t21": 3800,
+  "t18t13": 8100,
+  "prior21": 580,
+  "prior18t13": 1100,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 3800",
+   "t18t13": "Trisomy 13/18: 1 in 8100",
+   "p21": "Trisomy 21: 1 in 580",
+   "p18t13": "Trisomy 13/18: 1 in 1100"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "84.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 4851,
+  "suspect": true
+ },
+ {
+  "id": "H-crl84-fhr180",
+  "t21": 2400,
+  "t18t13": 4900,
+  "prior21": 580,
+  "prior18t13": 1100,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2400",
+   "t18t13": "Trisomy 13/18: 1 in 4900",
+   "p21": "Trisomy 21: 1 in 580",
+   "p18t13": "Trisomy 13/18: 1 in 1100"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "84.0",
+  "nt": "1.8",
+  "calcPending": true,
+  "ms": 6144
+ },
+ {
+  "id": "H-crl84-fhr190",
+  "t21": 570,
+  "t18t13": 220,
+  "prior21": 580,
+  "prior18t13": 1100,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 570",
+   "t18t13": "Trisomy 13/18: 1 in 220",
+   "p21": "Trisomy 21: 1 in 580",
+   "p18t13": "Trisomy 13/18: 1 in 1100"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "84.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6234
+ },
+ {
+  "id": "C38-base",
+  "t21": 16,
+  "t18t13": 46,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 16",
+   "t18t13": "Trisomy 13/18: 1 in 46",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 82832
+ },
+ {
+  "id": "C38-nb",
+  "t21": 2,
+  "t18t13": 10,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2",
+   "t18t13": "Trisomy 13/18: 1 in 10",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 6503
+ },
+ {
+  "id": "C38-tr",
+  "t21": 2,
+  "t18t13": 17,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2",
+   "t18t13": "Trisomy 13/18: 1 in 17",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 6617
+ },
+ {
+  "id": "C38-nb-tr",
+  "t21": 2,
+  "t18t13": 3,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2",
+   "t18t13": "Trisomy 13/18: 1 in 3",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 6272
+ },
+ {
+  "id": "C38-bio",
+  "t21": 2,
+  "t18t13": 310,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2",
+   "t18t13": "Trisomy 13/18: 1 in 310",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 8441
+ },
+ {
+  "id": "C38-nb-bio",
+  "t21": 2,
+  "t18t13": 166,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2",
+   "t18t13": "Trisomy 13/18: 1 in 166",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 6982
+ },
+ {
+  "id": "C38-nb-tr-bio",
+  "t21": 2,
+  "t18t13": 13,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2",
+   "t18t13": "Trisomy 13/18: 1 in 13",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 6991
+ },
+ {
+  "id": "C38-nb-tr-bio-h1",
+  "t21": 2,
+  "t18t13": 6,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2",
+   "t18t13": "Trisomy 13/18: 1 in 6",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 6706
+ },
+ {
+  "id": "C38-nb-tr-dvpi1.4",
+  "t21": 2,
+  "t18t13": 3,
+  "prior21": 107,
+  "prior18t13": 194,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 2",
+   "t18t13": "Trisomy 13/18: 1 in 3",
+   "p21": "Trisomy 21: 1 in 107",
+   "p18t13": "Trisomy 13/18: 1 in 194"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "3.0",
+  "calcPending": false,
+  "ms": 6757
+ },
+ {
+  "id": "R40-p0.25-h1",
+  "t21": 27,
+  "t18t13": 60,
+  "prior21": 63,
+  "prior18t13": 114,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 27",
+   "t18t13": "Trisomy 13/18: 1 in 60",
+   "p21": "Trisomy 21: 1 in 63",
+   "p18t13": "Trisomy 13/18: 1 in 114"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 8795
+ },
+ {
+  "id": "R40-p0.5-h0.4",
+  "t21": 1200,
+  "t18t13": 250,
+  "prior21": 63,
+  "prior18t13": 114,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 1200",
+   "t18t13": "Trisomy 13/18: 1 in 250",
+   "p21": "Trisomy 21: 1 in 63",
+   "p18t13": "Trisomy 13/18: 1 in 114"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6523
+ },
+ {
+  "id": "R40-p1.5-h2",
+  "t21": 1200,
+  "t18t13": 2200,
+  "prior21": 63,
+  "prior18t13": 114,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 1200",
+   "t18t13": "Trisomy 13/18: 1 in 2200",
+   "p21": "Trisomy 21: 1 in 63",
+   "p18t13": "Trisomy 13/18: 1 in 114"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6315
+ },
+ {
+  "id": "R40-p0.25-h0.4",
+  "t21": 250,
+  "t18t13": 14,
+  "prior21": 63,
+  "prior18t13": 114,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 250",
+   "t18t13": "Trisomy 13/18: 1 in 14",
+   "p21": "Trisomy 21: 1 in 63",
+   "p18t13": "Trisomy 13/18: 1 in 114"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6339
+ },
+ {
+  "id": "R40-p0.5-h3",
+  "t21": 20,
+  "t18t13": 2300,
+  "prior21": 63,
+  "prior18t13": 114,
+  "raw": {
+   "t21": "Trisomy 21: 1 in 20",
+   "t18t13": "Trisomy 13/18: 1 in 2300",
+   "p21": "Trisomy 21: 1 in 63",
+   "p18t13": "Trisomy 13/18: 1 in 114"
+  },
+  "bloco": "Trisomy 21 Yes No Previous Trisomy 18 Yes No Previous Trisomy 13 Yes No Ultrasound assessment Fetal heart activity Present Absent Fetal heart rate bpm  Crown-rump length mm   Nuchal translucency mm %  Additional markers for aneuploidies Nasal bone Present Absent Not examined Tricuspid regurgitation No Yes Not examined Ductus venosus a-wave Positive Negative Reversed flow Absent DV Not examined Ductus venosus PI Major defects for aneuploidies risk Holoprosencephaly Yes No Diaphragmatic hernia Yes No Atrioventricular septum defect Yes No Megacystis Yes No Exomphalos No Yes with bowel only Ye",
+  "crl": "60.0",
+  "nt": "1.8",
+  "calcPending": false,
+  "ms": 6535
+ }
+]

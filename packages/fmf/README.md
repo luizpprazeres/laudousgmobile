@@ -90,6 +90,17 @@ publicado; peso truncado em 120 kg nas medianas; prior com idade decimal na DPP;
 janela até 14+0. Resultado: desvio médio 0,2 %, máximo 6 %, sem inversão de
 classificação fora do 1:100 exato. Os 8 pontos de 22/08 continuam passando.
 
+## Trissomias: calibração cal-2026-09-15c (15/09/2026) — 560 pontos pelo driver
+
+O motor de trissomias (`packages/shared/src/calculators/fmfTrisomy.ts`, só a web consome)
+foi calibrado contra o app v1.0.44 em 9 lotes do driver: prior (idade decimal na DPP),
+NT (mistura + truncamento por CRL), FCF (IG datada, médias/SD), bioquímica T18/T13,
+osso nasal, tricúspide ("No" neutro), pisos de LR (total 0,053; bioquímica 0,052) e
+teto/piso de exibição (1:10000 / 1:2). Desvio mediano 5 %, p90 20 %; classificação de
+T21 concorda em 256/264. Limitação conhecida: combinações osso nasal ausente + tricúspide
++ bioquímica alterada (app 2–9× mais alto no 13/18). Detalhes na rodada 7 de
+`docs/fmf-comparacao-resultados-2026-09-14.md` e em `driver/README.md`.
+
 ## O IP uterino: calibração de PE prévia (15/09/2026)
 
 Em nulíparas e multíparas sem PE o IP uterino bate SEM calibração (ponto H de

@@ -1,12 +1,16 @@
 {
-  "name": "@laudousg/fmf-driver",
-  "private": true,
-  "type": "module",
-  "description": "Driver do software oficial da FMF (Electron) via CDP para comparação automática com os motores locais",
+  "name": "fmf-driver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "gen": "node gen-matrix.mjs",
-    "run:pe": "node run-pe.mjs",
-    "compare:pe": "tsx compare-pe.mjs"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": { "playwright-core": "^1.63.0" }
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright-core": "^1.63.0"
+  }
 }

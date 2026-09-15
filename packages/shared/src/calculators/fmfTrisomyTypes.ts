@@ -5,6 +5,8 @@ export interface FmfInput {
   crl: number                  // mm (45-84)
   nt: number                   // mm
   fhr?: number                 // bpm (80-220)
+  /** IG DATADA do exame em dias (DUM/datação manual). O app da FMF usa esta IG na FCF esperada e na bioquímica; prior e NT usam o CRL. Se ausente, usa a IG do CRL. */
+  gaDaysDated?: number
   freeBetaHcgMoM?: number     // MoM corrigido
   pappaMoM?: number           // MoM corrigido
   dvPI?: number               // DV pulsatility index
@@ -42,6 +44,8 @@ export interface FmfResult {
   t18t13: TrisomyRisk
   /** O app da FMF exibe risco menor que 1:10000 como "<1 in 10000"; use este teto na apresentação. */
   displayCapRatio: number
+  /** O app não exibe risco maior que "1 in 2"; use este piso na apresentação. */
+  displayFloorRatio: number
   gaDays: number
   gaWeeks: number
   gaDaysRemainder: number

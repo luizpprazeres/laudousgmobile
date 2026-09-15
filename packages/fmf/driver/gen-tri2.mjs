@@ -1,0 +1,16 @@
+import { writeFileSync } from 'node:fs'
+const EXAM = new Date('2026-09-15T00:00:00Z')
+const fmt = d => `${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}/${d.getUTCFullYear()}`
+const dobForAge = age => fmt(new Date(Date.UTC(EXAM.getUTCFullYear() - age, EXAM.getUTCMonth(), EXAM.getUTCDate() - 100)))
+const mat = (age, extra = {}) => ({ dob: dobForAge(age), height: 164, weight: 69, ethnicity: 'White', smoking: false, gaWeeks: 12, gaDays: 3, conception: 'Spontaneous', ...extra })
+const cases = []; const add = (id, maternal, tri) => cases.push({ id, maternal, tri })
+for (const crl of [45, 60, 75, 84]) for (const nt of [0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.5, 5.0, 6.0]) add(`G-crl${crl}-nt${nt}`, mat(30), { crl, nt })
+for (const p of [0.25, 0.5, 1.0, 1.5, 2.5]) for (const h of [0.4, 1.0, 2.0, 3.0]) add(`B40-p${p}-h${h}`, mat(40), { crl: 60, nt: 1.8, pappaMom: p, freeBhcgMom: h })
+for (const f of [120, 140, 160, 180, 200]) add(`F-fhr${f}`, mat(30), { crl: 60, nt: 1.8, fhr: f })
+for (const d of [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8]) add(`D40-dvpi${d}`, mat(40), { crl: 60, nt: 1.8, dvpi: d })
+for (const nb of ['Present', 'Absent']) add(`M40-nb-${nb}`, mat(40), { crl: 60, nt: 1.8, nasalBone: nb })
+for (const tr of ['No', 'Yes']) add(`M40-tr-${tr}`, mat(40), { crl: 60, nt: 1.8, tricuspid: tr })
+for (const dv of ['Positive', 'Negative', 'Reversed flow']) add(`M40-dv-${dv.split(' ')[0]}`, mat(40), { crl: 60, nt: 1.8, dvAWave: dv })
+for (const dv of ['Negative', 'Reversed flow']) add(`M40-dv-${dv.split(' ')[0]}-dvpi1.2`, mat(40), { crl: 60, nt: 1.8, dvAWave: dv, dvpi: 1.2 })
+add('M40-base', mat(40), { crl: 60, nt: 1.8 })
+writeFileSync('cases-tri2.json', JSON.stringify(cases, null, 1)); console.log(cases.length, 'casos')

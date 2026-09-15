@@ -22,9 +22,13 @@ cd packages/fmf/driver && npm i
 node run-pe.mjs cases-01-03.json results.json        # ONLY=C02 para um caso só; DEBUG_PE=1 para diagnóstico
 ../../../node_modules/.bin/tsx compare-pe.mjs cases-01-03.json results.json   # tabela app × motor local
 node gen-matrix.mjs                                  # gera cases-matrix.json (44 casos)
+node run-tri.mjs cases-tri3.json results-tri3.json      # trissomias (mesmo formato; ver gen-tri3.mjs)
+../../../node_modules/.bin/tsx compare-tri.mjs cases-tri3.json results-tri3.json
+node gen-tri4.mjs                                    # gera cases-tri4.json (varredura de FCF + combinações)
+node extract-graph.mjs                               # extrai as curvas dos gráficos (SVG → dados) em graphs-trisomies.json
 ```
 
-Formato de caso: ver `cases-01-03.json` (`maternal` + `pe`). Datas em **mm/dd/yyyy**
+Formato de caso: ver `cases-01-03.json` (`maternal` + `pe`) e `resultados/cases-tri3.json` (`maternal` + `tri`). Datas em **mm/dd/yyyy**
 (formato atual do app). A idade e a IG usadas na comparação são as **lidas do app**.
 
 ## Mecânica do app (o que custou descobrir)
@@ -49,6 +53,45 @@ Testids úteis: `search-name/surname`, `date-of-birth`, `add-patient`, `new-preg
 `fha-present|absent`, `map-sr1 dr1 sl1 dl1 sr2 dr2 sl2 dl2`, `utpi-accordion`,
 `utpi-right|left|mean|mom`, `oa-accordion`, `biochemical-accordion`, `pe-calculate`.
 
+## Aba de trissomias (`trisomies-tab`)
+
+Testids: `prev-t21/t18/t13-yes|no`, `fha-present|absent`, `fhr-input`, `fetus-0-crl`, `nt-input`,
+`nasal-bone-native` (Present/Absent/Not examined), `tricuspid-native` (No/Yes/Not examined),
+`dvawave-native` (Positive/Negative/Reversed flow/Absent DV/Not examined), `dvpi-input`,
+`biochemical-accordion` → `pappa-mom`, `freebhcg-mom`; recálculo em `trisomies-calculate`.
+Saída: "Trisomy 21: 1 in N" e "Trisomy 13/18: 1 in N" (combinada), com o **prior** por idade/IG
+logo acima. `setTrisomies` limpa FCF/DV PI/bioquímica quando o caso não os traz (senão vazam
+entre casos) e lê o resultado duas vezes com intervalo (a tela demora a estabilizar).
+
+Achados do app (15/09/2026, 560 leituras válidas em 9 lotes, `resultados/`):
+
+| Fato | Consequência no motor `fmfTrisomy.ts` |
+|---|---|
+| Prior por idade = Cuckle com **idade decimal na DPP**, piso 0,0007 | implementado (rms 1,4 %) |
+| 2 algarismos significativos; teto "<1 in 10000"; **piso "1 in 2"** | `displayCapRatio` 10000 / `displayFloorRatio` 2 |
+| LR total dos marcadores nunca cai abaixo de ~0,053; LR da bioquímica/FCF também tem piso ~0,052 por trissomia | `LR_TOTAL_MIN` e `BIO_LR_MIN` |
+| NT: mistura com transição deslocada em CRL ≥ 75 vs Wright 2008 | `NT_MIX` + `NT_TRUNC_NODES` reajustados (48 pontos, rms log-LR 0,085) |
+| **FCF e bioquímica usam a IG DATADA do exame** (datação manual/DUM), não a IG do CRL; prior e NT usam o CRL | `FmfInput.gaDaysDated` (default = CRL) |
+| FCF: Kagan com FCF esperada −1,4 bpm, truncamento [−6,4; +19,4] e médias/SD de T21/T18/T13 reajustadas | `GAUSS_*.fhr` (50 pontos, rms 0,37 → 0,09) |
+| Bioquímica T18/T13: médias e SD reajustadas | `GAUSS_MEAN_T18/T13`, `GAUSS_SD` (65 pontos, rms 0,60 → 0,19) |
+| Osso nasal ausente ≈ 3,5× mais forte que a extração; tricúspide **"No" não altera o risco** (LR 1) | `NASAL_BONE`/`TRICUSPID` reajustados (53 pontos, rms 0,80 → 0,51); motor ignora "No" |
+| **Combinações NB ausente + TR + bioquímica** no app dão risco 13/18 ~2–9× maior que o motor | limitação conhecida (casos já "alto risco" nos dois) |
+| Onda A do DV qualitativa (Positive/Negative/Reversed/Absent DV) **não muda o risco**, com ou sem DV PI; só o DV PI conta | motor só usa DV PI (verificado com NT intercaladas) |
+
+Resultado global (`summary-tri.mjs`, 548 comparações não capadas): desvio mediano 5 %, p90 20 %;
+classificação de T21 (1:100 / 1:1000) concorda em 256/264, e os 8 divergentes estão a ±16 % do corte.
+
+## Gráficos do app (`graph-nt`, `graph-crl`, `graph-fhr`, `graph-utapi`)
+
+O ícone abre o overlay "Assessments" com um `<svg>` (350×363, viewBox `-28 -0.85 260 270`):
+3 `<polyline>` de 80 pontos (mediana em `#0066a5`, percentis 5 e 95 em `#aaaaaa`), grade em
+`<line>`, ticks em `<text>` (CRL 45–80 mm no eixo X, NT 0–4 mm no eixo Y) e 1 `<circle>` para o
+feto. `extract-graph.mjs` ajusta os eixos pelos ticks e converte as polylines em pares
+(CRL, NT) → `resultados/graphs-trisomies.json` (base para replicar o gráfico nas plataformas).
+`graph-crl`/`graph-fhr` só renderizam com CRL/FCF preenchidos na aba — pendente.
+
 ## Próximos passos
-- `setTrisomies` (aba `trisomies-tab`): sondar testids da NT/bioquímica e o botão de recálculo equivalente.
-- Rodar matrizes maiores (Latin hypercube) e consolidar em `docs/fmf-comparacao-*.md`.
+- Modelar a interação osso nasal × tricúspide × bioquímica do app (casos combinados).
+- Extrair `graph-crl`, `graph-fhr` e `graph-utapi` com os campos preenchidos.
+- Portar a calculadora de trissomias para Android e iOS (só a web consome o motor).
+- Apagar as pacientes "TESTE DRIVER" duplicadas (o driver criou ~40 até corrigir o `openPatient`).

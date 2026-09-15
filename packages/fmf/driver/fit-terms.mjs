@@ -1,7 +1,7 @@
 // Estima, por termo, o delta em log10 da mediana esperada (PAM e IP) que o app aplica,
 // comparando cada caso com o caso-base equivalente (mesmo nível de medida).
 import { readFileSync } from 'node:fs'
-import { pamDeAfericoes, log10MapEsperada, log10UtaPiEsperado } from '../../shared/src/calculators/preEclampsiaFmf.ts'
+import { pamDeAfericoes, log10MapEsperada, log10UtaPiEsperado } from '/Users/luizprazeres/laudousgmobile-def/packages/shared/src/calculators/preEclampsiaFmf.ts'
 const load = (cf, rf) => { const cases = Object.fromEntries(JSON.parse(readFileSync(cf, 'utf8')).map(c => [c.id, c])); return JSON.parse(readFileSync(rf, 'utf8')).filter(r => r.riskN && r.mapMom).map(r => ({ r, c: cases[r.id] })) }
 const all = [...load('cases-terms.json', 'results-terms.json'), ...load('cases-matrix.json', 'results-matrix.json')]
 const lvl = c => `${c.pe.bp[0][0]}/${c.pe.utpi?.[0]}`
