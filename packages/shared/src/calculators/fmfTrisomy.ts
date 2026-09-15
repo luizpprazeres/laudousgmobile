@@ -90,11 +90,16 @@ function computePriorRisk(
   ma: number, gaDays: number,
   prevT21 = false, prevT18 = false, prevT13 = false
 ): PriorResult {
-  ma = clamp(ma, 15, 50)
+  // App FMF v1.0.44 (medido 15/09/2026, 20 idades pelo driver): Cuckle 1987 com a
+  // idade DECIMAL na data provável do parto (exame + 280 − IG) e SEM o deslocamento
+  // de −0,5 ano. Com `ma` inteira no exame o prior ficava 12–35 % mais baixo.
+  const maEdd = clamp(ma + (280 - gaDays) / 365.25, 15, 51)
   const ga = gaDays
 
   // Cuckle model for T21 at term
-  const priorProb = 0.000627 + Math.exp(-16.2395 + 0.286 * (ma - 0.5))
+  // Piso calibrado: 0,0007 (Cuckle publica 0,000627) — com o expoente publicado, 28 pontos
+  // do app ficam em rms 1,4 % / máx 2,8 % (o app arredonda o prior a 2 algarismos).
+  const priorProb = 0.0007 + Math.exp(-16.2395 + 0.286 * maEdd)
 
   // Relative prevalence at gestational age (Snijders 1999)
   const lgGA7 = Math.log10(ga / 7)

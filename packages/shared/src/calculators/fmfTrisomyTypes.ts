@@ -1,7 +1,7 @@
 export type Ethnicity = 'white' | 'black' | 'south_asian' | 'east_asian' | 'mixed'
 
 export interface FmfInput {
-  maternalAge: number          // anos (15-50)
+  maternalAge: number          // anos, DECIMAL, na data do exame: (exame − nascimento)/365,25 (15-50). O motor converte para a idade na DPP como o app da FMF (15/09/2026).
   crl: number                  // mm (45-84)
   nt: number                   // mm
   fhr?: number                 // bpm (80-220)

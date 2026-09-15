@@ -164,3 +164,27 @@ pontos de 22/08 mantido; port TS fiel; golden regenerado (346 casos, 21 recusas)
 Pendente de produto (não é motor): os formulários web/Android/iOS ainda pedem
 idade inteira e não oferecem "mista" nem "diabetes tipo 1" — sem isso o motor
 não recebe esses termos.
+
+## Rodada 6 — 15/09/2026, TRISSOMIAS pelo driver (62 casos + 12 refeitos; grade fina de 90 em curso)
+
+Motor local: `packages/shared/src/calculators/fmfTrisomy.ts` (FMF-R-extract-2026-06-26/v1,
+`validation-pending`). Só a web consome; Android e iOS ainda não têm a calculadora.
+O app exibe o **prior** (só idade + IG) e o risco final, com **2 algarismos
+significativos** e teto em "<1 in 10000"; T13 e T18 saem **combinadas** ("Trisomy 13/18").
+
+| Componente | App × local | Diagnóstico / ação |
+|---|---|---|
+| Prior T21 por idade (20 idades, 16–48) | local 12–35 % mais baixo | app = Cuckle 1987 com **idade decimal na DPP** e sem o −0,5 ano; piso 0,0007. Implementado: rms 1,4 %, máx 2,8 % |
+| Prior T13/18 | razão prior(13/18)/prior(21) = 0,55 em todas as idades | igual ao local (prevalências relativas de Snijders) |
+| Prior vs IG (CRL 45–84) | app 1:520→1:570; local 1:636→1:701 | diferença é só a idade; a forma de Snijders bate |
+| Bioquímica (PAPP-A, β-hCG em MoM) | LR app/local 0,97–1,00 (fora do teto) | OK |
+| DV PI 1,2 / 1,6 | ×0,98 / ×0,97 | OK (0,8 cai no teto) |
+| Trissomia 21 prévia | ×0,98 | OK |
+| Osso nasal presente | ×1,07 | OK |
+| **Osso nasal ausente** | LR app 72 × local 20 (T21); 25 × 7,5 (13/18) | app 3,4–3,6× mais forte — a calibrar |
+| **Tricúspide "Não"** | app LR 1,00; local 0,67 | app não credita regurgitação ausente — a calibrar |
+| Tricúspide "Sim" | app 61 × local 42 (T21) | ×1,46 — a calibrar |
+| Onda A do DV (qualitativa) | app não muda com Positive/Negative/Reversed | driver confirmou o select aplicado; a checar com DV PI preenchido (grade em curso) |
+| **NT** (0,8–6,0 mm, CRL 60) | LR app/local cai de 0,68 (NT 1,8) a 0,21 (NT 6,0) | modelo de mistura do app difere do Wright 2008 portado — grade NT×CRL de 48 pontos em curso para ajustar |
+| Teto | app mostra "<1 in 10000" | local deve capar a exibição em 1:10000 |
+| Saída combinada 13/18 | app | local deve expor p13+p18 |
