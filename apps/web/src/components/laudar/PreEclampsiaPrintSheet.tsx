@@ -27,16 +27,21 @@ const PARIDADE_LABEL = {
   'multipara-com-pe': 'Multípara, com pré-eclâmpsia anterior',
 } as const
 
-type PeCampoBooleano = 'hipertensaoCronica' | 'diabetes' | 'lesSaf' | 'histFamiliarPE' | 'fiv' | 'fumante'
+type PeCampoBooleano = 'hipertensaoCronica' | 'lesSaf' | 'histFamiliarPE' | 'fiv' | 'fumante'
 
 const CONDICOES: { campo: PeCampoBooleano; label: string }[] = [
   { campo: 'hipertensaoCronica', label: 'Hipertensão arterial crônica' },
-  { campo: 'diabetes', label: 'Diabetes mellitus tipo 1 ou 2' },
   { campo: 'lesSaf', label: 'LES ou síndrome antifosfolípide' },
   { campo: 'histFamiliarPE', label: 'Mãe teve pré-eclâmpsia' },
   { campo: 'fiv', label: 'Fertilização in vitro' },
   { campo: 'fumante', label: 'Fumante' },
 ]
+
+/** Diabetes é tri-estado (não / tipo 1 / tipo 2) — não cabe na lista booleana acima. */
+function rotuloDiabetes(form: PeWebForm): string | null {
+  if (!form.diabetes) return null
+  return form.diabetesTipo1 ? 'Diabetes mellitus tipo 1' : 'Diabetes mellitus tipo 2'
+}
 
 /**
  * A folha é impressa a partir de um portal fora do root do app; as regras de
@@ -309,7 +314,11 @@ export function PreEclampsiaPrintSheet({ open, form, calculo, calculadoEm, onClo
   if (!open || !host) return null
 
   const { gestante, medidas, resultado } = calculo
-  const condicoes = CONDICOES.filter(({ campo }) => form[campo]).map(({ label }) => label)
+  const diabetesLabel = rotuloDiabetes(form)
+  const condicoes = [
+    ...(diabetesLabel ? [diabetesLabel] : []),
+    ...CONDICOES.filter(({ campo }) => form[campo]).map(({ label }) => label),
+  ]
   const dataHora = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(calculadoEm)
 
   return createPortal(

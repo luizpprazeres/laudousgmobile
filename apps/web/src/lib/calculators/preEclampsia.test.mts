@@ -49,6 +49,8 @@ const base = (): PeWebForm => ({
 })
 
 const unico = calcularPreEclampsiaWeb(base())
+check('compatibilidade: idade numérica antiga (sem data de nascimento) chega direto ao motor', unico.gestante.idade === 36)
+check('sem marcar diabetes, diabetesTipo1 chega false ao motor', unico.gestante.diabetes === false && unico.gestante.diabetesTipo1 === false)
 check('monta PeGestante sem transformar peso em IMC', unico.gestante.peso === 69 && unico.gestante.altura === 164)
 check('converte 12+0 para 84 dias', unico.gestante.gaDias === 84)
 check('preserva etnia, paridade e história', unico.gestante.etnia === 'branca' && unico.gestante.paridade === 'nulipara' && unico.gestante.histFamiliarPE)
@@ -148,6 +150,56 @@ check('multipara com PE preserva toda historia aplicavel', comPe.gestante.zEscor
 for (const total of [1, 2, 3, 4]) {
   check(`preserva ${total} afericoes`, calcularPreEclampsiaWeb({ ...base(), afericoes: quatro.afericoes.slice(0, total) }).medidas.afericoesPam === total)
 }
+
+// ── Data de nascimento → idade decimal na DPP ──────────────────────────────
+const comNascimento = calcularPreEclampsiaWeb({
+  ...base(),
+  idade: undefined,
+  dataNascimento: '01/03/1991',
+  dataExame: '15/09/2026',
+})
+const nascimentoUtcMs = Date.UTC(1991, 2, 1)
+const dppUtcMs = Date.UTC(2027, 2, 30) // exame 15/09/2026 + (280 - 84) dias, IG 12+0
+const idadeEsperada = (dppUtcMs - nascimentoUtcMs) / 86_400_000 / 365.25
+check(
+  'idade decimal na DPP bate com (DPP − nascimento)/365,25',
+  Math.abs(comNascimento.gestante.idade - idadeEsperada) < 1e-9,
+  `esperado ${idadeEsperada}, obtido ${comNascimento.gestante.idade}`,
+)
+check(
+  'exemplo do enunciado: nascimento 01/03/1991 + exame 15/09/2026 + IG 12+0 → 36,08 anos na DPP',
+  Math.abs(comNascimento.gestante.idade - 36.08) < 0.01,
+  String(comNascimento.gestante.idade),
+)
+
+const semDataExame = calcularPreEclampsiaWeb({ ...base(), idade: undefined, dataNascimento: '01/03/1991' })
+check('sem data do exame, usa hoje e ainda calcula uma idade finita', Number.isFinite(semDataExame.gestante.idade))
+
+let mensagemData = ''
+try {
+  calcularPreEclampsiaWeb({ ...base(), idade: undefined, dataNascimento: '31/02/1990' })
+} catch (error) {
+  mensagemData = error instanceof Error ? error.message : ''
+}
+check('data de nascimento inexistente (31/02) é rejeitada em português', mensagemData.includes('data de nascimento') && mensagemData.includes('inexistente'), mensagemData)
+
+let mensagemSemIdade = ''
+try {
+  calcularPreEclampsiaWeb({ ...base(), idade: undefined, dataNascimento: undefined })
+} catch (error) {
+  mensagemSemIdade = error instanceof Error ? error.message : ''
+}
+check('sem data de nascimento e sem idade, erro pede a data de nascimento', mensagemSemIdade.includes('data de nascimento'), mensagemSemIdade)
+
+// ── Etnia mista ─────────────────────────────────────────────────────────────
+const etniaMista = calcularPreEclampsiaWeb({ ...base(), etnia: 'mista' })
+check('etnia mista chega ao motor', etniaMista.gestante.etnia === 'mista')
+
+// ── Diabetes tri-estado ──────────────────────────────────────────────────────
+const diabetesTipo1 = calcularPreEclampsiaWeb({ ...base(), diabetes: true, diabetesTipo1: true })
+check('diabetes tipo 1 marca diabetes e diabetesTipo1 no motor', diabetesTipo1.gestante.diabetes === true && diabetesTipo1.gestante.diabetesTipo1 === true)
+const diabetesTipo2 = calcularPreEclampsiaWeb({ ...base(), diabetes: true, diabetesTipo1: false })
+check('diabetes tipo 2 marca diabetes mas não diabetesTipo1', diabetesTipo2.gestante.diabetes === true && diabetesTipo2.gestante.diabetesTipo1 === false)
 
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ''))
 if (fail) process.exit(1)

@@ -132,7 +132,7 @@ export interface PeResultado {
   riscos: { 37: number; 34: number; 32: number };
   /** `1 em N` para o corte de 37 semanas */
   umEmN: number;
-  /** o risco antes de 37 semanas atingiu o corte da FMF de 1:100 */
+  /** o risco antes de 37 semanas SUPERA o corte da FMF de 1:100 (1 em 100 exato não é alto, como no app) */
   altoRisco: boolean;
   /** bloco pronto para inserir no laudo */
   insertBloco: string;
@@ -562,7 +562,8 @@ export function calcularPreEclampsiaFmf(g: PeGestante, med: PeMedidas = {}): PeR
     nome: m.nome, mom: m.mom, truncado: m.truncado,
   }));
   const umEmN = riscos[37] > 0 ? Math.round(1 / riscos[37]) : Infinity;
-  const altoRisco = riscos[37] >= PE_CORTE_ALTO_RISCO;
+  // Estritamente MAIOR: o app da FMF exibe "1 in 100" como risco NÃO aumentado (medido 15/09/2026, casos LES e SAF).
+  const altoRisco = riscos[37] > PE_CORTE_ALTO_RISCO;
 
   return {
     versaoParametros: PE_VERSAO_PARAMETROS,

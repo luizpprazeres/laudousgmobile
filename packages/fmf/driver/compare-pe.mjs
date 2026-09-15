@@ -28,7 +28,7 @@ for (const r of results) {
   let local
   try { const out = calcularPreEclampsiaFmf(g, med); local = { n: out.umEmN, mapMom: mapMoM(pam, g), utpiMom: pe.utpi ? utaPiMoM(med.utaPiMedio, g) : null } } catch (e) { local = { erro: e.message } }
   const dev = local.n && r.riskN ? ((local.n / r.riskN - 1) * 100) : null
-  rows.push({ id: r.id, app: r.riskN, local: local.n ?? local.erro, 'desvio%': dev == null ? '' : dev.toFixed(1), 'MoMpam app/local': `${r.mapMom}/${local.mapMom?.toFixed(3) ?? '-'}`, 'MoMip app/local': `${r.utpiMom}/${local.utpiMom?.toFixed(3) ?? '-'}`, idade: r.age, IG: `${r.gaWeeks}+${r.gaDays}`, alto_app: r.highRisk, alto_local: local.n ? local.n <= 100 : '' })
+  rows.push({ id: r.id, app: r.riskN, local: local.n ?? local.erro, 'desvio%': dev == null ? '' : dev.toFixed(1), 'MoMpam app/local': `${r.mapMom}/${local.mapMom?.toFixed(3) ?? '-'}`, 'MoMip app/local': `${r.utpiMom}/${local.utpiMom?.toFixed(3) ?? '-'}`, idade: r.age, IG: `${r.gaWeeks}+${r.gaDays}`, alto_app: r.highRisk, alto_local: local.n ? local.n < 100 : '' })
 }
 console.table(rows)
 const devs = rows.map(r => Number(r['desvio%'])).filter(Number.isFinite)

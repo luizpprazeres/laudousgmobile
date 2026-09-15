@@ -15,7 +15,12 @@ export type PeAfericaoForm = {
 }
 
 export type PeWebForm = {
-  idade: string
+  /** compatibilidade com telas antigas: idade materna em anos, direto. Preferir `dataNascimento`. */
+  idade?: string
+  /** dd/mm/aaaa — usada para calcular a idade decimal na DPP, como o app oficial da FMF */
+  dataNascimento?: string
+  /** dd/mm/aaaa — data do exame; vazia usa a data de hoje */
+  dataExame?: string
   peso: string
   altura: string
   gaSemanas: string
@@ -29,6 +34,8 @@ export type PeWebForm = {
   fiv: boolean
   hipertensaoCronica: boolean
   diabetes: boolean
+  /** diabetes TIPO 1 (requer `diabetes: true`) — distingue de tipo 2, que só marca `diabetes` */
+  diabetesTipo1?: boolean
   lesSaf: boolean
   fumante: boolean
   afericoes: PeAfericaoForm[]
@@ -55,6 +62,79 @@ function numeroObrigatorio(valor: string, campo: string): number {
 function numeroOpcional(valor: string, campo: string): number | null {
   if (!valor.trim()) return null
   return numeroObrigatorio(valor, campo)
+}
+
+const DIA_MS = 86_400_000
+const DATA_BR = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+
+/**
+ * "DD/MM/AAAA" → data em UTC (meia-noite), como as outras datas da web
+ * (`apps/web/src/lib/deterministic/organs/obstetrica.ts`). Parse ESTRITO:
+ * rejeita data inexistente (31/02). Sempre em UTC para a aritmética de dias
+ * não depender do fuso horário de quem roda o cálculo.
+ */
+function parseDataBr(valor: string, campo: string): Date {
+  const m = valor.trim().match(DATA_BR)
+  if (!m) throw new Error(`${campo}: use o formato dd/mm/aaaa`)
+  const dia = Number(m[1])
+  const mes = Number(m[2])
+  const ano = Number(m[3])
+  const data = new Date(Date.UTC(ano, mes - 1, dia))
+  if (data.getUTCFullYear() !== ano || data.getUTCMonth() !== mes - 1 || data.getUTCDate() !== dia) {
+    throw new Error(`${campo}: data inexistente`)
+  }
+  return data
+}
+
+/** Data de hoje (calendário local de quem preenche o formulário) como meia-noite UTC. */
+function hojeComoDataUtc(): Date {
+  const agora = new Date()
+  return new Date(Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate()))
+}
+
+/** DPP = data do exame + (280 − IG atual em dias). */
+function calcularDpp(dataExame: Date, gaDiasAtual: number): Date {
+  return new Date(dataExame.getTime() + (280 - gaDiasAtual) * DIA_MS)
+}
+
+/** Idade decimal na DPP: (DPP − nascimento) / 365,25 — o app da FMF usa exatamente isso. */
+function idadeDecimalNaDpp(nascimento: Date, dpp: Date): number {
+  return (dpp.getTime() - nascimento.getTime()) / DIA_MS / 365.25
+}
+
+/**
+ * Idade materna para o motor. Preferimos a data de nascimento (idade decimal
+ * na DPP, igual ao app oficial da FMF); se o formulário só trouxer `idade`
+ * numérica — telas antigas —, usamos o valor direto por compatibilidade.
+ */
+function idadeMaternaParaMotor(form: PeWebForm, gaDiasAtual: number): number {
+  const nascimentoStr = form.dataNascimento?.trim()
+  if (nascimentoStr) {
+    const nascimento = parseDataBr(nascimentoStr, 'data de nascimento')
+    const exameStr = form.dataExame?.trim()
+    const dataExame = exameStr ? parseDataBr(exameStr, 'data do exame') : hojeComoDataUtc()
+    return idadeDecimalNaDpp(nascimento, calcularDpp(dataExame, gaDiasAtual))
+  }
+  const idadeStr = form.idade?.trim()
+  if (idadeStr) return numeroObrigatorio(idadeStr, 'idade materna')
+  throw new Error('informe a data de nascimento materna')
+}
+
+/**
+ * Prévia não destrutiva da idade na DPP, para o médico conferir na tela antes
+ * de calcular o risco. `null` quando os dados ainda não permitem calcular
+ * (não lança erro — é só uma prévia).
+ */
+export function idadeNaDppPreview(form: PeWebForm): number | null {
+  if (!form.dataNascimento?.trim()) return null
+  const semanas = Number(form.gaSemanas?.trim().replace(',', '.'))
+  const dias = Number(form.gaDias?.trim().replace(',', '.'))
+  if (!Number.isInteger(semanas) || !Number.isInteger(dias) || dias < 0 || dias > 6) return null
+  try {
+    return idadeMaternaParaMotor(form, semanas * 7 + dias)
+  } catch {
+    return null
+  }
 }
 
 export function ipUterinoMedio(form: PeWebForm): number | null {
@@ -123,11 +203,13 @@ export function calcularPreEclampsiaWeb(form: PeWebForm): PeWebCalculo {
     throw new Error('multípara exige o intervalo entre gestações em anos (> 0)')
   }
 
+  const gaDiasAtual = semanas * 7 + dias
+
   const gestante: PeGestante = {
-    idade: numeroObrigatorio(form.idade, 'idade materna'),
+    idade: idadeMaternaParaMotor(form, gaDiasAtual),
     peso: numeroObrigatorio(form.peso, 'peso'),
     altura: numeroObrigatorio(form.altura, 'altura'),
-    gaDias: semanas * 7 + dias,
+    gaDias: gaDiasAtual,
     etnia: form.etnia,
     paridade: form.paridade,
     intervaloAnos,
@@ -141,6 +223,7 @@ export function calcularPreEclampsiaWeb(form: PeWebForm): PeWebCalculo {
     fiv: form.fiv,
     hipertensaoCronica: form.hipertensaoCronica,
     diabetes: form.diabetes,
+    diabetesTipo1: form.diabetes ? Boolean(form.diabetesTipo1) : false,
     lesSaf: form.lesSaf,
     fumante: form.fumante,
   }

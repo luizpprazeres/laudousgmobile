@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from
 import {
   calcularPreEclampsiaFmf,
   pamDeAfericoes,
+  parseDateBR,
   PeErroDeDominio,
   type PeEtnia,
   type PeParidade,
@@ -11,6 +12,7 @@ import {
 import { Sheet } from "@/ui/Sheet";
 import { FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
+import { diabetesParaEngine, idadeNaDppAnos, type DiabetesEstado } from "./preEclampsiaAge";
 
 type Props = {
   open: boolean;
@@ -26,12 +28,19 @@ const ETNIAS: { v: PeEtnia; label: string }[] = [
   { v: "afro", label: "Negra" },
   { v: "sul-asiatica", label: "Sul-asiática" },
   { v: "leste-asiatica", label: "Leste-asiática" },
+  { v: "mista", label: "Mista" },
 ];
 
 const PARIDADES: { v: PeParidade; label: string }[] = [
   { v: "nulipara", label: "Nulípara" },
   { v: "multipara-sem-pe", label: "Multípara" },
   { v: "multipara-com-pe", label: "Multíp. com PE" },
+];
+
+const DIABETES_OPCOES: { v: DiabetesEstado; label: string }[] = [
+  { v: "nao", label: "Não" },
+  { v: "tipo1", label: "Tipo 1" },
+  { v: "tipo2", label: "Tipo 2" },
 ];
 
 /**
@@ -41,35 +50,39 @@ const PARIDADES: { v: PeParidade; label: string }[] = [
  *
  * A calculadora anterior somava pontos e devolvia categorias — era clinicamente
  * errada e foi removida. Ver `packages/fmf/README.md`.
+ *
+ * Idade: o motor exige a idade DECIMAL na data provável do parto (DPP), não a
+ * idade inteira no exame — o app oficial da FMF usa exatamente isso. Por isso
+ * a tela pede a data de nascimento (DD/MM/AAAA) e calcula:
+ *   DPP = hoje (data do exame) + (280 − IG em dias)
+ *   idade = (DPP − nascimento) / 365,25
+ * Se o campo não contiver uma data reconhecível, ele é aceito como idade em
+ * anos digitada direto — compatibilidade com o comportamento anterior.
  */
 export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
 
-  // ── dados maternos
-  const [idade, setIdade] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
   const [peso, setPeso] = useState("");
   const [altura, setAltura] = useState("");
   const [etnia, setEtnia] = useState<PeEtnia>("branca");
   const [fumante, setFumante] = useState(false);
 
-  // ── idade gestacional: por CCN (preferido) ou direto
   const [ccn, setCcn] = useState("");
   const [igSem, setIgSem] = useState("");
   const [igDias, setIgDias] = useState("");
 
-  // ── história
   const [paridade, setParidade] = useState<PeParidade>("nulipara");
   const [igAnterior, setIgAnterior] = useState("");
   const [intervalo, setIntervalo] = useState("");
   const [zPeso, setZPeso] = useState("");
   const [histFamiliarPE, setHistFamiliarPE] = useState(false);
   const [hipertensaoCronica, setHipertensaoCronica] = useState(false);
-  const [diabetes, setDiabetes] = useState(false);
+  const [diabetesEstado, setDiabetesEstado] = useState<DiabetesEstado>("nao");
   const [lesSaf, setLesSaf] = useState(false);
   const [fiv, setFiv] = useState(false);
 
-  // ── pressão: 1 a 4 aferições. Na rotina costuma vir uma só.
   const [pa, setPa] = useState([
     { sis: "", dia: "" },
     { sis: "", dia: "" },
@@ -78,7 +91,6 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
   ]);
   const [maisAfericoes, setMaisAfericoes] = useState(false);
 
-  // ── uterinas
   const [ipDir, setIpDir] = useState("");
   const [ipEsq, setIpEsq] = useState("");
 
@@ -93,6 +105,21 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
     if (s != null) return s * 7 + d;
     return null;
   }, [ccn, igSem, igDias]);
+
+  const nascParsed = useMemo(() => parseDateBR(dataNascimento), [dataNascimento]);
+
+  /** Idade decimal na DPP — só dá pra calcular com data de nascimento válida e IG já informada. */
+  const idadeNaDpp = useMemo(() => {
+    if (!nascParsed || gaDias == null) return null;
+    return idadeNaDppAnos(nascParsed, gaDias);
+  }, [nascParsed, gaDias]);
+
+  /** Idade que vai pro motor: calculada pela DPP, ou o número digitado direto (compat). */
+  const idadeParaCalculo = useMemo(() => {
+    if (idadeNaDpp != null) return idadeNaDpp;
+    if (nascParsed) return null; // data válida mas ainda sem IG — espera preencher
+    return dec(dataNascimento);
+  }, [idadeNaDpp, nascParsed, dataNascimento]);
 
   const pam = useMemo(() => {
     const afericoes = pa
@@ -119,7 +146,7 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
     result: PeResultado | null;
     erro: string | null;
   } => {
-    const i = dec(idade);
+    const i = idadeParaCalculo;
     const p = dec(peso);
     const a = dec(altura);
     if (i == null || p == null || a == null || gaDias == null) {
@@ -133,7 +160,9 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
             intervaloAnos: dec(intervalo),
             igPartoAnterior: dec(igAnterior),
             zEscorePesoAnterior: dec(zPeso),
-            histFamiliarPE, fiv, hipertensaoCronica, diabetes, lesSaf, fumante,
+            histFamiliarPE, fiv, hipertensaoCronica,
+            ...diabetesParaEngine(diabetesEstado),
+            lesSaf, fumante,
           },
           {
             pamMmHg: pam?.pamMmHg ?? null,
@@ -150,8 +179,8 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
       };
     }
   }, [
-    idade, peso, altura, gaDias, etnia, paridade, intervalo, igAnterior, zPeso,
-    histFamiliarPE, fiv, hipertensaoCronica, diabetes, lesSaf, fumante, pam, ipMedio,
+    idadeParaCalculo, peso, altura, gaDias, etnia, paridade, intervalo, igAnterior, zPeso,
+    histFamiliarPE, fiv, hipertensaoCronica, diabetesEstado, lesSaf, fumante, pam, ipMedio,
   ]);
 
   const momDe = (nome: "map" | "utaPi") =>
@@ -171,8 +200,20 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
         </Text>
 
         <Secao styles={styles}>Dados maternos</Secao>
+        <Campo
+          label="Nascimento (DD/MM/AAAA)"
+          value={dataNascimento}
+          onChange={setDataNascimento}
+          styles={styles}
+          keyboardType="numbers-and-punctuation"
+          maxLength={10}
+        />
+        {idadeNaDpp != null ? (
+          <Text style={styles.derivado}>{n1(idadeNaDpp)} anos na DPP</Text>
+        ) : nascParsed && gaDias == null ? (
+          <Text style={styles.nota}>Informe a idade gestacional para calcular a idade na DPP.</Text>
+        ) : null}
         <View style={styles.linha}>
-          <Campo label="Idade (anos)" value={idade} onChange={setIdade} styles={styles} keyboardType="number-pad" />
           <Campo label="Peso (kg)" value={peso} onChange={setPeso} styles={styles} keyboardType="decimal-pad" />
           <Campo label="Altura (cm)" value={altura} onChange={setAltura} styles={styles} keyboardType="decimal-pad" />
         </View>
@@ -255,7 +296,8 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
 
         <Secao styles={styles}>Antecedentes</Secao>
         <Toggle label="Hipertensão crônica" value={hipertensaoCronica} onChange={setHipertensaoCronica} styles={styles} />
-        <Toggle label="Diabetes (tipo 1 ou 2)" value={diabetes} onChange={setDiabetes} styles={styles} />
+        <Text style={styles.rotulo}>Diabetes</Text>
+        <Chips opcoes={DIABETES_OPCOES} valor={diabetesEstado} onSelect={setDiabetesEstado} styles={styles} />
         <Toggle label="LES ou SAF" value={lesSaf} onChange={setLesSaf} styles={styles} />
         <Toggle label="Mãe teve pré-eclâmpsia" value={histFamiliarPE} onChange={setHistFamiliarPE} styles={styles} />
         <Toggle label="Concepção por FIV" value={fiv} onChange={setFiv} styles={styles} />
@@ -288,7 +330,7 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
           </View>
         ) : (
           <Text style={styles.hint}>
-            Preencha idade, peso, altura e a idade gestacional para ver o risco.
+            Preencha data de nascimento, peso, altura e a idade gestacional para ver o risco.
             A pressão e o Doppler das uterinas refinam o resultado.
           </Text>
         )}
@@ -297,20 +339,19 @@ export function PreEclampsiaCalculatorSheet({ open, onClose, onInsert }: Props) 
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 function Secao({ children, styles }: { children: string; styles: Estilos }) {
   return <Text style={styles.secao}>{children}</Text>;
 }
 
 function Campo({
-  label, value, onChange, styles, keyboardType,
+  label, value, onChange, styles, keyboardType, maxLength,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   styles: Estilos;
   keyboardType?: "number-pad" | "decimal-pad" | "numbers-and-punctuation";
+  maxLength?: number;
 }) {
   return (
     <View style={{ flex: 1 }}>
@@ -319,6 +360,7 @@ function Campo({
         value={value}
         onChangeText={onChange}
         keyboardType={keyboardType}
+        maxLength={maxLength}
         style={styles.input}
         placeholderTextColor={styles.placeholderColor}
       />
@@ -375,6 +417,10 @@ function dec(s: string): number | null {
 function int(s: string): number | null {
   const v = parseInt(s, 10);
   return Number.isFinite(v) ? v : null;
+}
+/** Uma casa decimal, vírgula — "35,5". */
+function n1(v: number): string {
+  return v.toFixed(1).replace(".", ",");
 }
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 

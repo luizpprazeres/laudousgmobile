@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { FilePlus2, FileText, Plus, Trash2, X } from 'lucide-react'
 import {
   calcularPreEclampsiaWeb,
+  idadeNaDppPreview,
   ipUterinoMedio,
   trocarFonteIp,
   type PeAfericaoForm,
@@ -18,7 +19,8 @@ type Props = {
 }
 
 const INITIAL_FORM: PeWebForm = {
-  idade: '',
+  dataNascimento: '',
+  dataExame: '',
   peso: '',
   altura: '',
   gaSemanas: '',
@@ -32,6 +34,7 @@ const INITIAL_FORM: PeWebForm = {
   fiv: false,
   hipertensaoCronica: false,
   diabetes: false,
+  diabetesTipo1: false,
   lesSaf: false,
   fumante: false,
   afericoes: [{ sistolica: '', diastolica: '' }],
@@ -39,6 +42,13 @@ const INITIAL_FORM: PeWebForm = {
   utaPiFonte: 'bilateral',
   utaPiDireito: '',
   utaPiEsquerdo: '',
+}
+
+type DiabetesEstado = 'nao' | 'tipo1' | 'tipo2'
+
+function diabetesEstadoDoForm(form: PeWebForm): DiabetesEstado {
+  if (!form.diabetes) return 'nao'
+  return form.diabetesTipo1 ? 'tipo1' : 'tipo2'
 }
 
 const INPUT_CLASS = 'mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-[13px] text-gray-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900/50'
@@ -57,7 +67,7 @@ function Campo({
   value: string
   onChange: (value: string) => void
   placeholder?: string
-  inputMode?: 'decimal' | 'numeric'
+  inputMode?: 'decimal' | 'numeric' | 'text'
   disabled?: boolean
   readOnly?: boolean
 }) {
@@ -153,7 +163,7 @@ export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove }: Prop
   }
 
   const dadosBasicosPreenchidos = Boolean(
-    form.idade.trim() &&
+    form.dataNascimento?.trim() &&
     form.peso.trim() &&
     form.altura.trim() &&
     form.gaSemanas.trim() &&
@@ -161,6 +171,17 @@ export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove }: Prop
     form.etnia &&
     form.paridade
   )
+
+  const idadeNaDpp = useMemo(() => idadeNaDppPreview(form), [form])
+
+  const diabetesEstado = diabetesEstadoDoForm(form)
+  const setDiabetesEstado = (estado: DiabetesEstado) => {
+    setForm((atual) => ({
+      ...atual,
+      diabetes: estado !== 'nao',
+      diabetesTipo1: estado === 'tipo1',
+    }))
+  }
 
   const calculo = useMemo(() => {
     if (!dadosBasicosPreenchidos) return { estado: 'aguardando' as const }
@@ -247,14 +268,20 @@ export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove }: Prop
         <div>
           <div className="mb-2 text-[12px] font-bold text-gray-800 dark:text-gray-200">Dados maternos</div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Campo label="Idade na DPP (anos)" value={form.idade} onChange={(value) => setCampo('idade', value)} placeholder="36" />
+            <Campo label="Data de nascimento" value={form.dataNascimento ?? ''} onChange={(value) => setCampo('dataNascimento', value)} placeholder="15/03/1990" inputMode="text" />
             <Campo label="Peso (kg)" value={form.peso} onChange={(value) => setCampo('peso', value)} placeholder="69" />
             <Campo label="Altura (cm)" value={form.altura} onChange={(value) => setCampo('altura', value)} placeholder="164" />
           </div>
-          <div className="mt-3 grid grid-cols-[1fr_1fr] gap-2 sm:max-w-[260px]">
+          <div className="mt-3 grid grid-cols-[1fr_1fr_1fr] gap-2 sm:max-w-[360px]">
             <Campo label="IG — semanas" value={form.gaSemanas} onChange={(value) => setCampo('gaSemanas', value)} placeholder="12" inputMode="numeric" />
             <Campo label="IG — dias" value={form.gaDias} onChange={(value) => setCampo('gaDias', value)} placeholder="0" inputMode="numeric" />
+            <Campo label="Data do exame" value={form.dataExame ?? ''} onChange={(value) => setCampo('dataExame', value)} placeholder="hoje" inputMode="text" />
           </div>
+          {typeof idadeNaDpp === 'number' ? (
+            <p className="mt-2 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+              {idadeNaDpp.toFixed(1).replace('.', ',')} anos na DPP — confira com a data de nascimento informada.
+            </p>
+          ) : null}
         </div>
 
         <Escolha
@@ -266,6 +293,7 @@ export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove }: Prop
             { value: 'afro', label: 'Negra' },
             { value: 'sul-asiatica', label: 'Sul-asiática' },
             { value: 'leste-asiatica', label: 'Leste-asiática' },
+            { value: 'mista', label: 'Mista' },
           ]}
         />
 
@@ -301,9 +329,20 @@ export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove }: Prop
 
         <div>
           <div className="mb-2 text-[12px] font-bold text-gray-800 dark:text-gray-200">Condições maternas</div>
+          <div className="mb-3">
+            <Escolha
+              label="Diabetes mellitus pré-gestacional (não a gestacional/DMG)"
+              value={diabetesEstado}
+              onChange={setDiabetesEstado}
+              options={[
+                { value: 'nao', label: 'Não' },
+                { value: 'tipo1', label: 'Tipo 1' },
+                { value: 'tipo2', label: 'Tipo 2' },
+              ]}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
             <Toggle label="HAS crônica" description="Hipertensão arterial crônica" active={form.hipertensaoCronica} onChange={(value) => setCampo('hipertensaoCronica', value)} />
-            <Toggle label="DM tipo 1 ou 2" description="Diabetes mellitus pré-gestacional, tipo 1 ou 2; não diabetes gestacional (DMG)" active={form.diabetes} onChange={(value) => setCampo('diabetes', value)} />
             <Toggle label="LES ou SAF" active={form.lesSaf} onChange={(value) => setCampo('lesSaf', value)} />
             <Toggle label="Mãe teve pré-eclâmpsia" active={form.histFamiliarPE} onChange={(value) => setCampo('histFamiliarPE', value)} />
             <Toggle label="In vitro" description="Fertilização in vitro (FIV)" active={form.fiv} onChange={(value) => setCampo('fiv', value)} />
