@@ -1,6 +1,7 @@
 'use client'
 
 import type { ExamCategory, ExamSection, ExamState, Field, OrganState } from '@/lib/deterministic'
+import type { ReactNode } from 'react'
 
 type NavSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
 
@@ -17,6 +18,7 @@ type Props = {
   onOpts?: (key: string, value: string | string[]) => void
   workspaceV2?: boolean
   contentGroupLabel?: string
+  children?: ReactNode
 }
 
 function ControlsBlock({ controls, opts, onOpts }: { controls: Field[]; opts: OrganState; onOpts: (k: string, v: string | string[]) => void }) {
@@ -79,12 +81,13 @@ function sectionDone(section: NavSection, examState?: ExamState, completedIds?: 
   return JSON.stringify(examState[section.id] ?? {}) !== JSON.stringify(section.module.initialState())
 }
 
-export function ExamSectionNav({ sections, activeId, onSelect, examState, completedIds, controls, opts, onOpts, workspaceV2 = false, contentGroupLabel }: Props) {
+export function ExamSectionNav({ sections, activeId, onSelect, examState, completedIds, controls, opts, onOpts, workspaceV2 = false, contentGroupLabel, children }: Props) {
   const groups: NavSection['group'][] = ['cabecalho', 'orgaos', 'conclusao', 'calculos']
   return (
     <aside className={workspaceV2
       ? 'flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]'
       : 'flex h-full w-[196px] flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950'}>
+      {children}
       {controls && controls.length && opts && onOpts ? (
         <ControlsBlock controls={controls} opts={opts} onOpts={onOpts} />
       ) : null}

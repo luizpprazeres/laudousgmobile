@@ -14,16 +14,24 @@ assert.deepEqual(obstetrica.ig, { bio_sem: '32', bio_dias: '4' })
 assert.equal(obstetrica.crescimento_fetal?.avaliar, 'sim')
 assert.equal(obstetrica.crescimento_fetal?.['avaliar.sim.percentil'], '48')
 assert.equal(obstetrica.crescimento_fetal?.['avaliar.sim.fonte_outra'], 'informado pelo aparelho')
-assert.equal(obstetrica.doppler?.realizado, 'sim')
-assert.equal(obstetrica.doppler?.['realizado.sim.ip_ut_medio'], '0,70')
-assert.equal(obstetrica.doppler?.['realizado.sim.ip_umb'], '1,02')
+assert.equal(obstetrica.doppler, undefined)
 
-const isolado = applyCompanionStructured({}, {
+const isolado = applyCompanionStructured({ __opts: { somente_doppler: 'sim' } }, {
   category: 'DOPPLER_OBSTETRICO',
   data: { dbp: '90', gestAgeLMP: '28w3d', irUmbilical: '0,58', ipUmbilical: '1,00' },
 })
 assert.equal(isolado.biometria, undefined)
-assert.deepEqual(isolado.doppler, { ir_umb: '0,58', ip_umb: '1', ig_sem: '28', ig_dias: '3' })
+assert.deepEqual(isolado.doppler, { ir_umb: '0,58', ip_umb: '1' })
+assert.deepEqual(isolado.ig, { bio_sem: '28', bio_dias: '3' })
+
+const combinado = applyCompanionStructured({}, {
+  category: 'DOPPLER_OBSTETRICO',
+  data: { dbp: '9 cm', weight: '2 kg', gestAge: '32s2d', ipUmbilical: '1,00', ila: '120 mm' },
+})
+assert.deepEqual(combinado.biometria, { dbp: '90', peso: '2000' })
+assert.deepEqual(combinado.ig, { bio_sem: '32', bio_dias: '2' })
+assert.deepEqual(combinado.liquido, { tipo: 'ila', 'tipo.ila.cm': '12' })
+assert.equal(combinado.doppler.ip_umb, '1')
 
 const morfologico = applyCompanionStructured({ extrafetal: { placenta_loc: 'posterior' } }, {
   category: 'MORFOLOGICO',

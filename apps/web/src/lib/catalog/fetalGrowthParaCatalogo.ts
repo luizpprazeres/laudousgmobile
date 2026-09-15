@@ -18,12 +18,27 @@ function numero(s: Estado, key: string): number | null {
   return Number.isFinite(value) ? value : null
 }
 
-export function fetalGrowthDaTela(estado: EstadoExame): Record<string, unknown> | null {
+export function fetalGrowthDaTela(
+  estado: EstadoExame,
+  pendencias: { onde: string; valor: string; motivo: string; bloqueia?: boolean }[] = [],
+): Record<string, unknown> | null {
   const growth = secao(estado, 'crescimento_fetal')
   if (texto(growth, 'avaliar') !== 'sim') return null
   const prefix = 'avaliar.sim.'
-  const efwPercentile = numero(growth, `${prefix}percentil`)
-  if (efwPercentile === null || efwPercentile < 0 || efwPercentile > 100) return null
+  const raw = growth[`${prefix}percentil`]
+  const valor = raw == null ? '' : String(raw)
+  const normalizado = valor.trim()
+  const efwPercentile = Number(normalizado.replace(',', '.'))
+  if (typeof raw !== 'string' || !/^\d+(?:[.,]\d+)?$/.test(normalizado) ||
+      !Number.isFinite(efwPercentile) || efwPercentile < 0 || efwPercentile > 100) {
+    pendencias.push({
+      onde: 'Percentil do peso fetal',
+      valor,
+      motivo: 'Informe um número entre 0 e 100, sem %.',
+      bloqueia: true,
+    })
+    return null
+  }
 
   const ig = secao(estado, 'ig')
   const doppler = secao(estado, 'doppler')
@@ -76,10 +91,10 @@ export function fetalGrowthDaTela(estado: EstadoExame): Record<string, unknown> 
     !calculado.ratioCerebroplacentario?.pathological &&
     umbilicalFlow === 'present' && dvFlow === 'present'
 
-  const sourceRaw = texto(growth, `${prefix}fonte`) || 'Intergrowth-21st'
+  const sourceRaw = texto(growth, `${prefix}fonte`)
   const source = sourceRaw === 'outra'
-    ? texto(growth, `${prefix}fonte_outra`) || 'Outra curva informada pelo médico'
-    : sourceRaw
+    ? texto(growth, `${prefix}fonte_outra`) || 'não informada'
+    : !sourceRaw || sourceRaw === 'nao_informada' ? 'não informada' : sourceRaw
 
   return {
     efwPercentile,

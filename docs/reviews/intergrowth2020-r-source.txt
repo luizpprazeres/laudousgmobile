@@ -1,0 +1,12 @@
+Estimated Fetal Weight R Script Code
+
+
+###### BEGINNING OF SCRIPT ##########
+ #new IG centiles for hadlock EFW (from  https://doi.org/10.1002/uog.22000 )
+ Mu = function(t) -2.42272 + 1.86478*t^0.5 - 1.93299e-5 * t^3 Nu = function(t) 9.43643 + 9.41579*(t/10)^-2  - 83.54220 * log(t/10)*(t/10)^-2 Sigma = function(t) 0.0193557  + 0.0310716 * (t/10)^-2 - 0.0657587 * log(t/10)*(t/10)^-2  Q = function(Z,t)  exp(Mu(t)*((Z*Sigma(t)*Nu(t)+1)^(1/Nu(t))) ) IG2_Z = function(W,t)  (1/(Sigma(t)*Nu(t)))*((log(W)/Mu(t))^Nu(t) - 1)  #########    user examples   ###############  # get Z-score for given weight in grams and exact age in weeks (decimal) # example : weight=2000g at 32+3 weeks (i.e. 32+3/7=32.42857) example_Z <- IG2_Z(2000,32+3/7) example_Z #the Z-score #if user wants centile instead of Z-score  example_centile <- round(100*pnorm(example_Z)) example_centile   #get corresponding weight for given Z-score and exact age in weeks (decimal) # example : Z-score of 0.5 at 28+4 example_quantile <- Q(0.5, 28+4/7) example_quantile
+
+###### END OF SCRIPT ##########
+
+
+Based on publication:
+Stirnemann, J., Salomon, L.J. and Papageorghiou, A.T. (2020), INTERGROWTH-21st standards for Hadlock's estimation of fetal weight. Ultrasound Obstet Gynecol, 56: 946-948. https://doi.org/10.1002/uog.22000
