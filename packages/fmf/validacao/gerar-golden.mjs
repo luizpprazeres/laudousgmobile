@@ -67,6 +67,10 @@ const BORDAS = [
   ['todas-comorbidades', { hipertensaoCronica: true, diabetes: true, lesSaf: true, fiv: true, histFamiliarPE: true, fumante: true }, { pamMmHg: 100, utaPiMedio: 2.4 }],
   ['afro', { etnia: 'afro' }, { pamMmHg: 92, utaPiMedio: 1.9 }],
   ['sul-asiatica', { etnia: 'sul-asiatica' }, { pamMmHg: 90, utaPiMedio: 1.8 }],
+  ['leste-asiatica', { etnia: 'leste-asiatica' }, { pamMmHg: 90, utaPiMedio: 1.5 }],
+  ['mista', { etnia: 'mista' }, { pamMmHg: 90, utaPiMedio: 1.5 }],
+  ['dm1', { diabetes: true, diabetesTipo1: true }, { pamMmHg: 90, utaPiMedio: 1.5 }],
+  ['peso-140-trunca-mom', { peso: 140 }, { pamMmHg: 90, utaPiMedio: 1.5 }],
   ['leste-asiatica', { etnia: 'leste-asiatica' }, { pamMmHg: 90, utaPiMedio: 1.8 }],
 ];
 for (const [id, ov, med] of BORDAS) casos.push({ id, g: { ...BASE, ...ov }, med });
@@ -94,10 +98,11 @@ for (let i = 0; i < 300; i++) {
   casos.push({
     id: `aleatorio-${String(i).padStart(3, '0')}`,
     g: { idade: num(16, 48), peso: num(42, 150), altura: num(145, 190), gaDias: num(77, 99),
-      etnia: pick(['branca', 'afro', 'sul-asiatica', 'leste-asiatica']), paridade,
+      etnia: pick(['branca', 'afro', 'sul-asiatica', 'leste-asiatica', 'mista']), paridade,
       intervaloAnos: mp ? num(1, 12, 1) : null,
       igPartoAnterior: mp ? num(25, 42) : null,
       zEscorePesoAnterior: paridade === 'multipara-com-pe' ? num(-3, 3, 1) : null,
+      diabetesTipo1: false,
       histFamiliarPE: u() < 0.2, fiv: u() < 0.1, hipertensaoCronica: u() < 0.2,
       diabetes: u() < 0.15, lesSaf: u() < 0.08, fumante: u() < 0.15 },
     med: { pamMmHg: num(60, 130), utaPiMedio: num(0.5, 4, 2) },
@@ -105,7 +110,7 @@ for (let i = 0; i < 300; i++) {
 }
 
 // ── saída ───────────────────────────────────────────────────────────────────
-const saida = { versao: 'FMF/AJOG-2020+cal-2026-09-15', casos: [] };
+const saida = { versao: 'FMF/AJOG-2020+cal-2026-09-15b', casos: [] };
 let recusados = 0;
 for (const c of casos) {
   try {

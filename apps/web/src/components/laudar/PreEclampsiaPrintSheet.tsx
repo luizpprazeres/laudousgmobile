@@ -18,7 +18,7 @@ const ETNIA_LABEL = {
   branca: 'Branca',
   afro: 'Negra',
   'sul-asiatica': 'Sul-asiática',
-  'leste-asiatica': 'Leste-asiática',
+  'leste-asiatica': 'Leste-asiática', 'mista': 'Mista',
 } as const
 
 const PARIDADE_LABEL = {

@@ -40,8 +40,8 @@ function logDmvnorm(x, media, S) {
 
 const logDnorm = (t, mu, sd) => -0.5 * (((t - mu) / sd) ** 2 + LN_2PI) - Math.log(sd);
 
-/** Janela da visita de 12 semanas — Wright 2020, Apêndice: 77 a 99 dias. */
-export const JANELA_12S_DIAS = [77, 99];
+/** Janela da visita de 12 semanas — Wright 2020, Apêndice: 77 a 99 dias; o app v1.0.44 recusa 14+1 (medido 15/09/2026), então 77 a 98. */
+export const JANELA_12S_DIAS = [77, 98];
 
 const FAIXAS_MEDIDA = {
   pamMmHg:    [50, 180],

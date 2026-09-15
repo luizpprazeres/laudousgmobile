@@ -130,3 +130,37 @@ com PE (intervalo 1–10 a; parto 24–36 sem), HAS + PE prévia, combinação d
 
 Coeficientes definitivos saem da varredura de termos (55 casos, 2 níveis de medida)
 em andamento; ver `fit-terms.mjs`.
+
+## Rodada 5 — 15/09/2026, varredura de termos (55 casos) e calibração `cal-2026-09-15b`
+
+Coeficientes estimados do app (Δ em log10 da mediana esperada, 2 níveis de medida,
+`fit-terms.mjs` / `fit-base.mjs`) e adotados nos três motores:
+
+| Termo | PAM: app (publicado) | IP: app (publicado) |
+|---|---|---|
+| Idade materna (por ano) | **0** (+4,39·10⁻⁴) | **−6,8·10⁻⁴** (−1,12·10⁻³) |
+| IG (por dia) | publicado | **−4,69·10⁻³** (−4,41·10⁻³) |
+| Intercepto | 1,937277 | 0,263177 |
+| Negra | −0,0039 (−0,0015) | +0,0246 (+0,0181) |
+| Sul-asiática | 0 (0) | 0 (0) |
+| Asiática oriental | 0 | **+0,0092** (não publicado) |
+| Qualquer etnia mista | 0 | **+0,0135** (não publicado); prior como branca |
+| Tabagismo | **−0,0090** (−0,0045) | 0 |
+| Diabetes tipo 1 | +0,0040 (+0,0044) | **−0,0243** (não publicado) |
+| Diabetes tipo 2 | +0,0040 (+0,0044) | 0 |
+| História familiar | **+0,0080** (+0,0060) | 0 |
+| HAS crônica | **0,0505** (0,0510; 15/09 sugere 0,053, 22/08 ≤ 0,051) | 0 |
+| FIV | 0 (0) | 0 (0) |
+| Peso | truncado em **120 kg** nas medianas (não no prior) | idem |
+| Prior: idade | **decimal na DPP** = (exame + 280 − IG − nascimento)/365,25 | — |
+| Janela | 77 a **98** dias (app recusa 14+1) | — |
+
+Resultado offline com o motor recalibrado contra os 127 pontos lidos do app
+(idade decimal na DPP): matriz 43 casos, idades 28, termos 55 — desvio médio
+0,2 %, máximo 6 % (HAS a 120/75: 1:65 × 1:61, prior), classificação divergente só
+em 1:100 exato (o app não chama 1 em 100 de alto risco; o local sim). Gate dos 8
+pontos de 22/08 mantido; port TS fiel; golden regenerado (346 casos, 21 recusas).
+
+Pendente de produto (não é motor): os formulários web/Android/iOS ainda pedem
+idade inteira e não oferecem "mista" nem "diabetes tipo 1" — sem isso o motor
+não recebe esses termos.

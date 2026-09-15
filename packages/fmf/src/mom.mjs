@@ -60,14 +60,31 @@ const I = (b) => (b ? 1 : 0);
  * página; o caminho é `softwaresupport@fetalmedicine.org`.
  */
 export const CAL_MAP_HAS_PESO  = -1.8859e-4;    // substitui −4.211180e-4
-export const CAL_MAP_INTERCEPTO = -0.003568;    // soma a 1.943223919 (NEGATIVO:
+export const CAL_MAP_INTERCEPTO = -0.005947;    // cal-2026-09-15b (era −0.003568 com termo de idade); soma a 1.943223919 (NEGATIVO:
 // o MoM da FMF é MAIOR que o nosso ⇒ a mediana dela é MENOR ⇒ baixa o intercepto)
-export const CAL_ORIGEM = 'medição manual no FMF v1.0.44 em 22/08/2026, 8 pontos';
+export const CAL_ORIGEM = 'FMF v1.0.44: 8 pontos manuais em 22/08/2026 + 127 pontos pelo driver em 15/09/2026';
+/* ===== Calibração cal-2026-09-15b — 127 pontos lidos do app v1.0.44 pelo driver CDP
+ * (packages/fmf/driver; docs/fmf-comparacao-resultados-2026-09-14.md, rodadas 4–5).
+ * Valores em log10 da mediana esperada. Nenhum é parâmetro publicado. ===== */
+export const CAL_MAP_IDADE        = 0;           // app: MoM da PAM constante de 16 a 48 anos (pub +4.39271e-4/ano)
+export const CAL_MAP_FUMANTE      = -0.0090;     // pub −0.004523672
+export const CAL_MAP_AFRO_EXTRA   = -0.0024;     // soma ao termo publicado (app −0.0039 a 12+0; pub −0.0015)
+export const CAL_MAP_HIST_FAM     = 0.0080;      // pub 0.005976240
+export const CAL_MAP_HAS          = 0.0505;      // pub 0.051007216; app 15/09 sugere 0,053 e os 3 pontos de 22/08 sugerem ≤0,051 — meio-termo dentro do arredondamento dos dois
+export const CAL_UTA_PI_INTERCEPTO = 0.007446;   // mínimos quadrados, 66 pontos-base, com a IG livre (A = 0,263177)
+export const CAL_UTA_PI_IDADE     = -0.000679;   // pub −0.001117349 (interação idade×IG mantida)
+export const CAL_UTA_PI_IG        = -0.0046912;  // pub −0.004407905 (app cai mais rápido com a IG: 11+0 → 14+0)
+export const CAL_UTA_PI_AFRO      = 0.0246;      // pub 0.018069553
+export const CAL_UTA_PI_LESTE_ASIATICA = 0.0092; // não publicado; app aplica
+export const CAL_UTA_PI_MISTA     = 0.0135;      // qualquer etnia mista; app aplica no IP e NÃO na PAM nem no prior
+export const CAL_UTA_PI_DM1       = -0.0243;     // só diabetes tipo 1; tipo 2 não altera o IP
+export const CAL_PESO_MAX_MOM     = 120;         // app trunca o peso em 120 kg nas medianas (não no prior)
+
 
 /** log10 da PAM esperada — Wright A 2015, Tabela 2 (efeitos de 1º trimestre). */
 export function log10MapEsperada(p) {
   const ga = p.gaDias - 77;
-  const wt = p.peso - 69;
+  const wt = Math.min(p.peso, CAL_PESO_MAX_MOM) - 69;
   const ht = p.altura - 164;
   const age = p.idade - 35;
   const afro = I(p.etnia === 'afro');
@@ -76,17 +93,18 @@ export function log10MapEsperada(p) {
   return 1.943223919 + CAL_MAP_INTERCEPTO   // intercepto CALIBRADO (ver acima)
     + 0.000209037 * ga
     - 0.000020452 * ga * ga
-    + 0.000439271 * age                    // efeito de idade é específico do 1º tri
+    + CAL_MAP_IDADE * age                  // pub +0.000439271; app não aplica
     + 0.001193313 * wt
     - 0.000008823 * wt * wt
     - 0.000206306 * ht
-    - 0.004523672 * I(p.fumante)
+    + CAL_MAP_FUMANTE * I(p.fumante)       // pub −0.004523672
     - 0.001191227 * afro
     - 0.000050679 * afro * ga
-    + 0.051007216 * has
+    + CAL_MAP_AFRO_EXTRA * afro
+    + CAL_MAP_HAS * has                    // pub 0.051007216
     + CAL_MAP_HAS_PESO * has * wt          // interação HAS × peso — CALIBRADA (ver acima)
     + 0.004445020 * I(p.diabetes)
-    + 0.005976240 * I(p.histFamiliarPE)
+    + CAL_MAP_HIST_FAM * I(p.histFamiliarPE)  // pub 0.005976240
     - 0.009402127 * I(p.paridade === 'multipara-sem-pe')
     + 0.000744526 * (p.paridade === 'multipara-sem-pe' ? p.intervaloAnos : 0)
     + 0.006091903 * I(p.paridade === 'multipara-com-pe');
@@ -95,18 +113,21 @@ export function log10MapEsperada(p) {
 /** log10 do IP uterino esperado — Tayyar 2015, Tabela 2 (efeitos de 1º trimestre). */
 export function log10UtaPiEsperado(p) {
   const ga = p.gaDias - 77;
-  const wt = p.peso - 69;
+  const wt = Math.min(p.peso, CAL_PESO_MAX_MOM) - 69;
   const age = p.idade - 35;
   const comPE = p.paridade === 'multipara-com-pe';
 
-  return 0.255731426
-    - 0.004407905 * ga                      // efeito de 1º trimestre
+  return 0.255731426 + CAL_UTA_PI_INTERCEPTO
+    + CAL_UTA_PI_IG * ga                    // pub −0.004407905
     - 0.000888890 * wt
     + 0.000006006 * wt * wt
     + 0.000008322 * wt * ga
-    - 0.001117349 * age
+    + CAL_UTA_PI_IDADE * age                // pub −0.001117349
     + 0.000015061 * age * ga
-    + 0.018069553 * I(p.etnia === 'afro')
+    + CAL_UTA_PI_AFRO * I(p.etnia === 'afro')            // pub 0.018069553
+    + CAL_UTA_PI_LESTE_ASIATICA * I(p.etnia === 'leste-asiatica')
+    + CAL_UTA_PI_MISTA * I(p.etnia === 'mista')
+    + CAL_UTA_PI_DM1 * I(p.diabetesTipo1)
     + CAL_UTA_PI_PE_PREVIA * I(comPE);
 }
 

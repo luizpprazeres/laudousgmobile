@@ -78,6 +78,18 @@ intercepto, e ele é aplicado globalmente.
 Resultado: os 8 MoMs batem dentro de **±0,003** — abaixo do próprio arredondamento
 de 2 casas da tela.
 
+## Calibração cal-2026-09-15b (15/09/2026) — 127 pontos pelo driver
+
+Com o driver CDP (`packages/fmf/driver`) foram lidos 127 casos do app v1.0.44 em
+uma tarde: matriz de 44, varredura de 28 idades e varredura de 55 termos. Os
+coeficientes calibrados estão em `src/mom.mjs` (`CAL_*`) e a tabela completa em
+`docs/fmf-comparacao-resultados-2026-09-14.md` (rodada 5). Resumo: PAM sem termo de
+idade; IP com idade e IG recalibradas; termos novos para asiática oriental,
+etnias mistas e diabetes tipo 1; tabagismo e história familiar maiores que o
+publicado; peso truncado em 120 kg nas medianas; prior com idade decimal na DPP;
+janela até 14+0. Resultado: desvio médio 0,2 %, máximo 6 %, sem inversão de
+classificação fora do 1:100 exato. Os 8 pontos de 22/08 continuam passando.
+
 ## O IP uterino: calibração de PE prévia (15/09/2026)
 
 Em nulíparas e multíparas sem PE o IP uterino bate SEM calibração (ponto H de

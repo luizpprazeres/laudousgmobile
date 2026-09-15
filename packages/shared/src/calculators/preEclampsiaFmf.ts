@@ -23,17 +23,17 @@
 // Contrato
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type PeEtnia = "branca" | "afro" | "sul-asiatica" | "leste-asiatica";
+export type PeEtnia = "branca" | "afro" | "sul-asiatica" | "leste-asiatica" | "mista";
 export type PeParidade = "nulipara" | "multipara-sem-pe" | "multipara-com-pe";
 
 export interface PeGestante {
-  /** anos, na data provável do parto */
+  /** anos, na data provável do parto, COM DECIMAIS: (DPP − nascimento)/365,25. O app da FMF usa exatamente isso (medido 15/09/2026); idade inteira no exame dá até +8 % de erro acima de 35 anos. */
   idade: number;
   /** kg, aferido na consulta de 1º trimestre */
   peso: number;
   /** cm */
   altura: number;
-  /** idade gestacional ATUAL em dias (77 a 99) */
+  /** idade gestacional ATUAL em dias (77 a 98) */
   gaDias: number;
   etnia: PeEtnia;
   paridade: PeParidade;
@@ -50,6 +50,8 @@ export interface PeGestante {
   hipertensaoCronica: boolean;
   /** diabetes tipo 1 ou 2 */
   diabetes: boolean;
+  /** diabetes TIPO 1 — só afeta a mediana do IP uterino (app FMF, medido 15/09/2026). Requer `diabetes: true`. */
+  diabetesTipo1?: boolean;
   /** LES ou síndrome antifosfolípide */
   lesSaf: boolean;
   fumante: boolean;
@@ -154,7 +156,7 @@ export class PeErroDeDominio extends Error {
  */
 export const PE_CORTE_ALTO_RISCO = 1 / 100;
 
-export const PE_VERSAO_PARAMETROS = "FMF/AJOG-2020+cal-2026-09-15";
+export const PE_VERSAO_PARAMETROS = "FMF/AJOG-2020+cal-2026-09-15b";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A priori — Wright 2020, Tabela 1 (idêntica a Wright 2015, Tabela 2)
@@ -242,11 +244,29 @@ const I = (b: boolean) => (b ? 1 : 0);
  * O modelo do IP uterino bate SEM calibração.
  */
 const CAL_MAP_HAS_PESO = -1.8859e-4;
-const CAL_MAP_INTERCEPTO = -0.003568;
+const CAL_MAP_INTERCEPTO = -0.005947; // cal-2026-09-15b (era −0.003568 com termo de idade)
+
+/* ===== Calibração cal-2026-09-15b — 127 pontos lidos do app v1.0.44 pelo driver CDP
+ * (packages/fmf/driver; docs/fmf-comparacao-resultados-2026-09-14.md, rodadas 4–5).
+ * Valores em log10 da mediana esperada. Nenhum é parâmetro publicado. ===== */
+export const CAL_MAP_IDADE        = 0;           // app: MoM da PAM constante de 16 a 48 anos (pub +4.39271e-4/ano)
+export const CAL_MAP_FUMANTE      = -0.0090;     // pub −0.004523672
+export const CAL_MAP_AFRO_EXTRA   = -0.0024;     // soma ao termo publicado (app −0.0039 a 12+0; pub −0.0015)
+export const CAL_MAP_HIST_FAM     = 0.0080;      // pub 0.005976240
+export const CAL_MAP_HAS          = 0.0505;      // pub 0.051007216; app 15/09 sugere 0,053 e os 3 pontos de 22/08 sugerem ≤0,051 — meio-termo dentro do arredondamento dos dois
+export const CAL_UTA_PI_INTERCEPTO = 0.007446;   // mínimos quadrados, 66 pontos-base, com a IG livre (A = 0,263177)
+export const CAL_UTA_PI_IDADE     = -0.000679;   // pub −0.001117349 (interação idade×IG mantida)
+export const CAL_UTA_PI_IG        = -0.0046912;  // pub −0.004407905 (app cai mais rápido com a IG: 11+0 → 14+0)
+export const CAL_UTA_PI_AFRO      = 0.0246;      // pub 0.018069553
+export const CAL_UTA_PI_LESTE_ASIATICA = 0.0092; // não publicado; app aplica
+export const CAL_UTA_PI_MISTA     = 0.0135;      // qualquer etnia mista; app aplica no IP e NÃO na PAM nem no prior
+export const CAL_UTA_PI_DM1       = -0.0243;     // só diabetes tipo 1; tipo 2 não altera o IP
+export const CAL_PESO_MAX_MOM     = 120;         // app trunca o peso em 120 kg nas medianas (não no prior)
+
 
 export function log10MapEsperada(g: PeGestante): number {
   const ga = g.gaDias - 77;
-  const wt = g.peso - 69;
+  const wt = Math.min(g.peso, CAL_PESO_MAX_MOM) - 69;
   const ht = g.altura - 164;
   const age = g.idade - 35;
   const afro = I(g.etnia === "afro");
@@ -256,17 +276,18 @@ export function log10MapEsperada(g: PeGestante): number {
     1.943223919 + CAL_MAP_INTERCEPTO +
     0.000209037 * ga -
     0.000020452 * ga * ga +
-    0.000439271 * age +
+    CAL_MAP_IDADE * age +
     0.001193313 * wt -
     0.000008823 * wt * wt -
-    0.000206306 * ht -
-    0.004523672 * I(g.fumante) -
+    0.000206306 * ht +
+    CAL_MAP_FUMANTE * I(g.fumante) -
     0.001191227 * afro -
     0.000050679 * afro * ga +
-    0.051007216 * has +
+    CAL_MAP_AFRO_EXTRA * afro +
+    CAL_MAP_HAS * has +
     CAL_MAP_HAS_PESO * has * wt +
     0.004445020 * I(g.diabetes) +
-    0.005976240 * I(g.histFamiliarPE) -
+    CAL_MAP_HIST_FAM * I(g.histFamiliarPE) -
     0.009402127 * I(g.paridade === "multipara-sem-pe") +
     0.000744526 * (g.paridade === "multipara-sem-pe" ? (g.intervaloAnos as number) : 0) +
     0.006091903 * I(g.paridade === "multipara-com-pe")
@@ -275,19 +296,22 @@ export function log10MapEsperada(g: PeGestante): number {
 
 export function log10UtaPiEsperado(g: PeGestante): number {
   const ga = g.gaDias - 77;
-  const wt = g.peso - 69;
+  const wt = Math.min(g.peso, CAL_PESO_MAX_MOM) - 69;
   const age = g.idade - 35;
   const comPE = g.paridade === "multipara-com-pe";
 
   return (
-    0.255731426 -
-    0.004407905 * ga -
+    0.255731426 + CAL_UTA_PI_INTERCEPTO +
+    CAL_UTA_PI_IG * ga -
     0.000888890 * wt +
     0.000006006 * wt * wt +
-    0.000008322 * wt * ga -
-    0.001117349 * age +
+    0.000008322 * wt * ga +
+    CAL_UTA_PI_IDADE * age +
     0.000015061 * age * ga +
-    0.018069553 * I(g.etnia === "afro") +
+    CAL_UTA_PI_AFRO * I(g.etnia === "afro") +
+    CAL_UTA_PI_LESTE_ASIATICA * I(g.etnia === "leste-asiatica") +
+    CAL_UTA_PI_MISTA * I(g.etnia === "mista") +
+    CAL_UTA_PI_DM1 * I(!!g.diabetesTipo1) +
     CAL_UTA_PI_PE_PREVIA * I(comPE)
   );
 }
@@ -395,8 +419,8 @@ function pnorm(z: number): number {
   return 0.5 * (x >= 0 ? ans : 2 - ans);
 }
 
-/** Janela da visita de 12 semanas — Wright 2020: 77 a 99 dias. */
-export const PE_JANELA_DIAS: readonly [number, number] = [77, 99];
+/** Janela da visita de 12 semanas — Wright 2020: 77 a 99 dias; o app v1.0.44 recusa 14+1 (medido 15/09/2026): 77 a 98. */
+export const PE_JANELA_DIAS: readonly [number, number] = [77, 98];
 
 const FAIXAS_MEDIDA = { pamMmHg: [50, 180], utaPiMedio: [0.2, 6] } as const;
 const FAIXAS_PLAUSIVEL = { idade: [8, 70], peso: [20, 300], altura: [100, 230] } as const;

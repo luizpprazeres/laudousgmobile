@@ -5,6 +5,9 @@ const [,, casesFile, resultsFile] = process.argv
 const cases = Object.fromEntries(JSON.parse(readFileSync(casesFile, 'utf8')).map(c => [c.id, c]))
 const results = JSON.parse(readFileSync(resultsFile, 'utf8'))
 const ETNIA = { 'White': 'branca', 'Black': 'afro', 'South Asian': 'sul-asiatica', 'East Asian': 'leste-asiatica', 'White - Black': 'mista', 'White - South Asian': 'mista', 'White - East Asian': 'mista', 'Black - South Asian': 'mista', 'Black - East Asian': 'mista', 'South Asian - East Asian': 'mista' }
+const parseMdy = s => { const [m, d, y] = s.split('/').map(Number); return Date.UTC(y, m - 1, d) }
+// idade como o app usa: decimal na DPP (exame + 280 − IG) — ver preEclampsiaFmf.ts
+const idadeNaDpp = (dob, examDate, gaDias) => (Date.UTC(...examDate.split('-').map((v, i) => i === 1 ? Number(v) - 1 : Number(v))) + (280 - gaDias) * 86400000 - parseMdy(dob)) / (365.25 * 86400000)
 const dias = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000)
 const rows = []
 for (const r of results) {
@@ -13,12 +16,12 @@ for (const r of results) {
   const gaDias = r.gaWeeks * 7 + r.gaDays
   const examDate = c.examDate ?? '2026-09-15'
   const g = {
-    idade: r.age, peso: m.weight, altura: m.height, gaDias, etnia: ETNIA[m.ethnicity] ?? m.ethnicity,
+    idade: m.dob ? idadeNaDpp(m.dob, examDate, gaDias) : r.age, peso: m.weight, altura: m.height, gaDias, etnia: ETNIA[m.ethnicity] ?? m.ethnicity,
     paridade: pe.parity === 'nulliparous' ? 'nulipara' : pe.previousPE ? 'multipara-com-pe' : 'multipara-sem-pe',
     intervaloAnos: pe.parity === 'nulliparous' ? null : (Number.isFinite(r.interval) ? r.interval : dias(pe.deliveryDate.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2'), examDate) / 365.25),
     igPartoAnterior: pe.parity === 'nulliparous' ? null : pe.deliveryGAWeeks + (pe.deliveryGADays ?? 0) / 7,
     zEscorePesoAnterior: null, histFamiliarPE: !!pe.familyHistoryPE, fiv: m.conception === 'In vitro fertilization', hipertensaoCronica: !!pe.chronicHypertension,
-    diabetes: !!(pe.diabetes1 || pe.diabetes2), lesSaf: !!(pe.sle || pe.aps), fumante: !!m.smoking,
+    diabetes: !!(pe.diabetes1 || pe.diabetes2), diabetesTipo1: !!pe.diabetes1, lesSaf: !!(pe.sle || pe.aps), fumante: !!m.smoking,
   }
   const pam = pamDeAfericoes(pe.bp.map(([s, d]) => ({ sistolica: s, diastolica: d }))).pamMmHg
   const med = { pamMmHg: pam, utaPiMedio: pe.utpi ? (pe.utpi[0] + pe.utpi[1]) / 2 : null, afericoesPam: 4 }
