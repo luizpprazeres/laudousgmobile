@@ -6,6 +6,9 @@ import { runWriterStream } from "../writer";
 import { obstetricaPlainConflictWarning, obstetricaPlainOutputWarning } from "../../prompts/obstetricaPlainPolicy";
 
 // Synthetic data only. Reads validated bundles; calls the writer, never /generate.
+const PLAIN_MODEL = process.env.PLAIN_MODEL ?? "gpt-5.4-mini";
+const PLAIN_REASONING = process.env.PLAIN_REASONING ?? "none";
+const SUFFIX = process.env.PLAIN_MODEL ? `-${PLAIN_MODEL}` : "";
 const base = "34 semanas e 2 dias. Feto único cefálico, dorso à esquerda. BCF 145 bpm. DBP 84 mm, CC 320 mm, CA 293 mm, CF 65 mm. Peso 2300 g, variação 320 g. Placenta posterior homogênea. Maior bolsão vertical 5 cm.";
 const cases = [
   { name: "indices-residuais", raw: `${base} IP uterina direita 0,44, IP esquerda 0,74, IP umbilical 0,92, IP cerebral média 1,32, IR ducto venoso 0,38.`, extra: /placenta[^\n]*posterior/i },
@@ -39,7 +42,7 @@ async function main() {
           sourceTranscript: scenario.raw,
           findings: { schema_version: "v1", categoria_detectada: "OBSTETRICA", tipo_exame: "Obstétrica",
             achados: { texto: scenario.raw }, comandos_do_medico: [], trechos_confusos: [], nivel_de_confianca: "alta" },
-          modelConfig: { provider: "openai", model: "gpt-5.4-mini", reasoningEffort: "none", credentialRef: "default" },
+          modelConfig: { provider: "openai", model: PLAIN_MODEL, reasoningEffort: PLAIN_REASONING, credentialRef: "default" },
           signal: AbortSignal.timeout(90000),
         });
         let output = "";
@@ -80,8 +83,8 @@ async function main() {
   }
   const directory = resolve("tmp-review");
   mkdirSync(directory, { recursive: true });
-  const file = resolve(directory, legitimate ? "obstetrica-legitimate-plain-live.json" : replay ? "obstetrica-plain-writer-recheck.json" : control ? "obstetrica-plain-writer-control.json" : "obstetrica-plain-writer-live.json");
-  writeFileSync(file, JSON.stringify({ model: "gpt-5.4-mini", reasoningEffort: "none", records }, null, 2));
+  const file = resolve(directory, (legitimate ? "obstetrica-legitimate-plain-live" : replay ? "obstetrica-plain-writer-recheck" : control ? "obstetrica-plain-writer-control" : "obstetrica-plain-writer-live") + SUFFIX + ".json");
+  writeFileSync(file, JSON.stringify({ model: PLAIN_MODEL, reasoningEffort: PLAIN_REASONING, records }, null, 2));
   console.log(`${count - failures.length}/${count} passed; evidence: ${file}`);
   assert.equal(failures.length, 0, failures.join("\n"));
 }

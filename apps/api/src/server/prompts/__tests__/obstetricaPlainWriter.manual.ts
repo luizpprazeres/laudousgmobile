@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { buildSystemMessage } from "../buildSystemMessage";
-import { OBSTETRICA_PLAIN_WRITER_POLICY, obstetricaPlainConflictWarning, obstetricaPlainOutputWarning } from "../obstetricaPlainPolicy";
+import { OBSTETRICA_PLAIN_WRITER_POLICY, obstetricaPlainConflictWarning, obstetricaPlainOutputWarning, stripDopplerClauses } from "../obstetricaPlainPolicy";
 import { WritingStyleCodeSchema } from "@laudousg/shared";
 
 const route = readFileSync(new URL("../../../app/api/generate/route.ts", import.meta.url), "utf8");
@@ -70,4 +70,11 @@ assert.ok(obstetricaPlainOutputWarning("OBSTETRICA", "Doppler umbilical com diá
 assert.ok(obstetricaPlainOutputWarning("OBSTETRICA", "DOPPLERVELOCIMETRIA: IP umbilical 0,92."));
 assert.equal(obstetricaPlainOutputWarning("OBSTETRICA", "Colo uterino: ____. Batimentos cardíacos presentes, modo M e modo Doppler."), undefined);
 assert.equal(obstetricaPlainOutputWarning("MORFOLOGICO", "Doppler umbilical com diástole ausente."), undefined);
+const plainBase = "34 semanas e 2 dias. BCF 145 bpm, modo M e modo Doppler. DBP 84 mm. Peso 2300 g, variação 320 g.";
+assert.equal(stripDopplerClauses(plainBase), plainBase, "ditado sem Doppler fica intacto");
+assert.equal(stripDopplerClauses(`${plainBase} IP umbilical 0,92, IP cerebral média 1,32.`), plainBase);
+assert.equal(stripDopplerClauses(`${plainBase} Doppler umbilical com diástole ausente. Pelve renal esquerda dilatada, medindo 8 mm.`), `${plainBase} Pelve renal esquerda dilatada, medindo 8 mm.`);
+assert.equal(stripDopplerClauses(`${plainBase} Sem dilatação das pelves renais. Acrescente Doppler com IP umbilical 0,92.`), `${plainBase} Sem dilatação das pelves renais.`);
+assert.equal(stripDopplerClauses("Doppler anterior normal. DBP 84 mm."), "Doppler anterior normal. DBP 84 mm.", "menção a exame anterior não é cláusula vascular atual");
+assert.equal(obstetricaPlainConflictWarning("OBSTETRICA", stripDopplerClauses(`${plainBase} RCP 1,2. IR uterina 0,58.`)), undefined, "após o strip não resta conflito");
 console.log(`${count} prompt comparisons passed; primary/fallback option, V2 bypass prevention and rejection guards passed`);

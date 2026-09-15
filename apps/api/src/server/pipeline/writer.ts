@@ -1,3 +1,4 @@
+import { stripDopplerClauses } from "../prompts/obstetricaPlainPolicy";
 import type {
   RagBlockForPrompt,
   StructuredFindings,
@@ -95,7 +96,17 @@ export async function* runWriterStream(args: {
   const plainObstetrica = requestedCategory === "OBSTETRICA" && args.includeDoppler === false;
   const writerExam = resolveWriterExam(requestedCategory, plainObstetrica ? undefined : args.dopplerMode);
   const effectiveCategoryCode = writerExam.categoryCode;
-  const sourceTranscript = args.sourceTranscript ?? args.rawUserMessage ?? "";
+  // Obstétrica simples: o writer não vê cláusulas vasculares do ditado (segunda
+  // barreira; a rota já recusa o ditado com Doppler antes de chegar aqui).
+  const plainRawUserMessage = plainObstetrica && args.rawUserMessage
+    ? stripDopplerClauses(args.rawUserMessage)
+    : args.rawUserMessage;
+  const plainFindings = plainObstetrica && typeof args.findings.achados?.texto === "string"
+    ? { ...args.findings, achados: { ...args.findings.achados, texto: stripDopplerClauses(args.findings.achados.texto) } }
+    : args.findings;
+  const sourceTranscript = plainObstetrica
+    ? stripDopplerClauses(args.sourceTranscript ?? args.rawUserMessage ?? "")
+    : args.sourceTranscript ?? args.rawUserMessage ?? "";
 
   const systemMessage = buildSystemMessage({
     // Reforço de intenção e completude — flag WRITER_HARDENING, default OFF.
@@ -125,9 +136,9 @@ export async function* runWriterStream(args: {
   });
   args.onSystemMessage?.(systemMessage);
 
-  const userMessage = args.rawUserMessage
-    ? buildRawUserMessage(args.rawUserMessage, writerExam.dopplerMode === "isolated")
-    : buildUserMessage(args.findings);
+  const userMessage = plainRawUserMessage
+    ? buildRawUserMessage(plainRawUserMessage, writerExam.dopplerMode === "isolated")
+    : buildUserMessage(plainFindings);
 
   const modelConfig = args.modelConfig ?? {
     provider: "openai" as const,

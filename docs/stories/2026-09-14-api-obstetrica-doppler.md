@@ -137,7 +137,27 @@ As mudancas paralelas de MORFOLOGICO e seu renderer foram preservadas.
 - [x] 16 comparacoes de prompt, ligacoes reais de argumentos principal/fallback,
   desvio V2 e avisos SSE/persistidos testados localmente.
 - [x] 96 casos de conexao e 384 comparacoes de prompt passaram.
-- [ ] Fidelidade live completa: 13/18, cinco falhas reais. NAO aprovado.
+- [x] Fidelidade live completa: 18/18 em duas rodadas com a politica final (14/09, Claude). Historico: 13/18 (Codex), 6/18 no baseline reproduzido, 9/18 so com a politica reforcada, 18/18 + 17/18 + 18/18 apos a sanitizacao do ditado; a unica falha intermediaria (MBV convertido em ILA) virou regra explicita.
+
+### Fechamento da fidelidade live — 14/09/2026 (Claude)
+
+Causa raiz das falhas: a politica antiga pedia "preserve todos os achados" e
+"nao acrescente Doppler" ao mesmo tempo, e o modelo (gpt-5.4-mini, o mesmo de
+producao segundo generation_audit) resolvia o conflito transcrevendo os indices
+ditados. Mudancas em `obstetricaPlainPolicy.ts` e `writer.ts`:
+
+1. `stripDopplerClauses`: quando o escopo e obstetrica simples, o writer nao
+   recebe as clausulas vasculares do ditado (raw, transcript e achados.texto).
+   Segunda barreira; a rota continua recusando o ditado com Doppler antes.
+2. Politica reforcada: medida com unidade, peso + variacao juntos, negacoes como
+   frase propria, achado fora do modelo entra no corpo (nao so na conclusao),
+   MBV nao vira ILA, conferencia item a item ao final.
+3. Teste live parametrizado por PLAIN_MODEL/PLAIN_REASONING (padrao inalterado).
+
+Evidencias (nao versionadas): apps/api/tmp-review/obstetrica-plain-writer-live-v3-run1.json
+(18/18), -v3-run2.json (17/18), -v4-run1.json (18/18), obstetrica-legitimate-plain-live.json (2/2).
+Offline: obstetricaPlainWriter (16 prompts + strip), obstetricaPlainDoppler (24),
+obstetricaPlainFailClosed (19+12+6), obstetricDopplerFlow (96), requestedExam (11).
 
 Live: gpt-5.4-mini, reasoning none, bundles OBSTETRICA validados lidos pelo loader
 real, dados sinteticos, tres cenarios x dois estilos x tres entradas. As entradas
