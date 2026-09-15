@@ -77,10 +77,10 @@ function validar(p, med) {
       throw new ErroDeDominio(`${k}=${med[k]} fora da faixa aceita (${lo}–${hi})`);
     }
   }
-  // Sem imputação silenciosa — o modelo de MoM do IP uterino usa estes campos.
+  // Sem imputação silenciosa — o prior usa a IG do parto anterior. O Z-score do
+  // peso ao nascer deixou de entrar no cálculo (o app da FMF o ignora — 15/09/2026).
   if (p.paridade === 'multipara-com-pe') {
     if (p.igPartoAnterior == null) throw new ErroDeDominio('multípara com PE anterior exige a IG do parto anterior');
-    if (p.zEscorePesoAnterior == null) throw new ErroDeDominio('multípara com PE anterior exige o Z-score do peso ao nascer anterior');
   }
   if (p.paridade === 'multipara-sem-pe') {
     if (p.igPartoAnterior == null) throw new ErroDeDominio('multípara exige a IG do parto anterior');

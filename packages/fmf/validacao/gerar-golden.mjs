@@ -83,7 +83,7 @@ const RECUSAS = [
   ['recusa-peso-absurdo', { peso: 500 }, { pamMmHg: 88, utaPiMedio: 1.7 }],
   ['recusa-multip-sem-intervalo', { paridade: 'multipara-sem-pe', igPartoAnterior: 40, intervaloAnos: null }, { pamMmHg: 88, utaPiMedio: 1.7 }],
   ['recusa-multip-sem-ig-anterior', { paridade: 'multipara-sem-pe', igPartoAnterior: null, intervaloAnos: 3 }, { pamMmHg: 88, utaPiMedio: 1.7 }],
-  ['recusa-multip-pe-sem-zscore', { paridade: 'multipara-com-pe', igPartoAnterior: 32, intervaloAnos: 3, zEscorePesoAnterior: null }, { pamMmHg: 88, utaPiMedio: 1.7 }],
+  ['multip-com-pe-sem-zscore-aceito', { paridade: 'multipara-com-pe', igPartoAnterior: 32, intervaloAnos: 3, zEscorePesoAnterior: null }, { pamMmHg: 88, utaPiMedio: 1.7 }],
 ];
 for (const [id, ov, med] of RECUSAS) casos.push({ id, g: { ...BASE, ...ov }, med });
 
@@ -105,7 +105,7 @@ for (let i = 0; i < 300; i++) {
 }
 
 // ── saída ───────────────────────────────────────────────────────────────────
-const saida = { versao: 'FMF/AJOG-2020+cal-2026-08-22', casos: [] };
+const saida = { versao: 'FMF/AJOG-2020+cal-2026-09-15', casos: [] };
 let recusados = 0;
 for (const c of casos) {
   try {

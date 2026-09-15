@@ -78,6 +78,33 @@ intercepto, e ele é aplicado globalmente.
 Resultado: os 8 MoMs batem dentro de **±0,003** — abaixo do próprio arredondamento
 de 2 casas da tela.
 
+## O IP uterino: calibração de PE prévia (15/09/2026)
+
+Em nulíparas e multíparas sem PE o IP uterino bate SEM calibração (ponto H de
+22/08 e casos 01/02 de 14/09: MoM 0,92 e 1,01, iguais ao app). Em **multípara
+com PE prévia** o app NÃO aplica os termos de Tayyar 2015 para IG do parto e
+Z-score do peso ao nascer. Medido à mão em 15/09/2026 (v1.0.44), paciente
+30 anos · 164 cm · 69 kg · branca · 11+6 · PAM 88,0 · IP 1,73 · intervalo 3,13 a:
+
+| IG do parto anterior | Peso ao nascer | MoM IP no app | Risco < 37 sem |
+|---|---|---|---|
+| 32 sem | em branco | 0,98 | 1 em 36 |
+| 32 sem | 1500 g (p2) | 0,98 | 1 em 36 |
+| 32 sem | 2500 g (p99) | 0,98 | 1 em 36 |
+| 36 sem | em branco | 0,98 | 1 em 71 |
+| 40 sem | em branco | 0,98 | 1 em 210 |
+
+Conclusão: ajuste **constante** para PE prévia. Com os coeficientes publicados o
+MoM seria 0,907 (32 sem) e o risco 1 em 42. Adotado `CAL_UTA_PI_PE_PREVIA = 0,0124`
+em log10 (faixa 0,0102–0,0146 pelo arredondamento do MoM a 2 casas), substituindo
+`+0,004971474 − 0,006836336·Z − 0,005119599·(IG − 40)`. O Z-score deixou de ser
+exigido. Versão dos parâmetros: `FMF/AJOG-2020+cal-2026-09-15`.
+
+Resíduo após a calibração (local sempre um pouco MAIS alto que o app): caso 01
+284 × 290 (−2 %), caso 02 889 × 910 (−2 %), caso 03 35 × 36, 36 sem 68 × 71,
+40 sem 202 × 210 (−4 %). Não explicado pela idade (testado) nem pelos MoMs
+(iguais); candidato: prior ou a calibração ad hoc da PAM de 22/08. Aberto.
+
 ## O IP uterino bate SEM calibração
 
 Medido no ponto H (1,73 a 13s6d, 69 kg): a FMF exibe **1,17**, o nosso dá

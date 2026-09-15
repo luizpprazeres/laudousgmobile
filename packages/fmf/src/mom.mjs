@@ -107,10 +107,19 @@ export function log10UtaPiEsperado(p) {
     - 0.001117349 * age
     + 0.000015061 * age * ga
     + 0.018069553 * I(p.etnia === 'afro')
-    + 0.004971474 * I(comPE)
-    - 0.006836336 * (comPE && p.zEscorePesoAnterior != null ? p.zEscorePesoAnterior : 0)
-    - 0.005119599 * (comPE && p.igPartoAnterior != null ? p.igPartoAnterior - 40 : 0);
+    + CAL_UTA_PI_PE_PREVIA * I(comPE);
 }
+
+/**
+ * PE prévia — MEDIDO no software oficial (v1.0.44, 15/09/2026, 3 pontos: parto
+ * anterior em 32, 36 e 40 semanas, peso ao nascer em branco, 1500 g ou 2500 g):
+ * o MoM exibido foi 0,98 em todos, ou seja, o app aplica um ajuste CONSTANTE e
+ * ignora a IG do parto e o Z-score do peso. Tayyar 2015 (Tab. 2) publica
+ * +0,004971474 − 0,006836336·Z − 0,005119599·(IG − 40); com parto em 32 sem isso
+ * daria +0,0459 e MoM 0,907 — o app não faz isso. Valor central 0,0124 (faixa
+ * 0,0102–0,0146 pelo arredondamento do MoM a 2 casas). Ver packages/fmf/README.md.
+ */
+export const CAL_UTA_PI_PE_PREVIA = 0.0124;
 
 export const mapMoM    = (medida, p) => medida / Math.pow(10, log10MapEsperada(p));
 export const utaPiMoM  = (medida, p) => medida / Math.pow(10, log10UtaPiEsperado(p));

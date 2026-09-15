@@ -85,3 +85,20 @@ FMF realmente usa; com 01h separa-se prior de verossimilhança nos 2 % dos casos
 **Pendente**: prints de 03 (32 sem), 03a (40 sem) e um novo 03d (36 sem) com a seção
 "Uterine artery PI" ABERTA, para ler o MoM em três pontos e estimar o coeficiente
 da IG do parto que o FMF usa de fato.
+
+## Rodada 3 — 15/09/2026 10:16 (MoM do IP visível em 32, 36 e 40 sem)
+
+| IG do parto | FMF MoM IP | FMF risco | Local ANTES (Z=0) | Local DEPOIS (cal-2026-09-15) |
+|---|---|---|---|---|
+| 32 | 0,98 | 1 em 36 | 1 em 42 (MoM 0,907) | 1 em 35 (MoM 0,980) |
+| 36 | 0,98 | 1 em 71 | — | 1 em 68 |
+| 40 | 0,98 | 1 em 210 | 1 em 194 (MoM 0,997) | 1 em 202 |
+
+**Fechado**: o app usa ajuste constante para PE prévia na mediana do IP, sem IG do
+parto nem Z-score. Implementado `CAL_UTA_PI_PE_PREVIA = 0,0124` nos três motores
+(mjs de referência, TypeScript, Swift), Z-score não exigido, golden regenerado
+(342 casos, 10 recusas), versão `FMF/AJOG-2020+cal-2026-09-15`.
+
+**Resíduo aberto**: local 2–4 % mais alto em todos os cinco pontos (MoMs iguais).
+Próximo passo: casos 04–08 do protocolo para ver se o viés é constante; se for,
+uma correção única no prior/PAM resolve.
