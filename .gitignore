@@ -88,3 +88,4 @@ apps/api/_writer_v2_harness.*
 scripts/asr-bench/audio/
 scripts/asr-bench/bench_results.json
 scripts/asr-bench/keyterms.json
+packages/fmf/driver/node_modules/

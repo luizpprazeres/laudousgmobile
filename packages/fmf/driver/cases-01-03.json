@@ -1,0 +1,8 @@
+[
+ {"id":"C01","maternal":{"dob":"10/03/1996","height":165,"weight":65,"ethnicity":"White","smoking":false,"gaWeeks":12,"gaDays":5,"conception":"Spontaneous"},
+  "pe":{"chronicHypertension":false,"diabetes1":false,"diabetes2":false,"familyHistoryPE":false,"sle":false,"aps":false,"parity":"nulliparous","bp":[[120,75],[120,75],[120,75],[120,75]],"utpi":[1.50,1.50]}},
+ {"id":"C02","maternal":{"dob":"03/01/1996","height":164,"weight":69,"ethnicity":"White","smoking":false,"gaWeeks":11,"gaDays":6,"conception":"Spontaneous"},
+  "pe":{"chronicHypertension":false,"diabetes1":false,"diabetes2":false,"familyHistoryPE":false,"sle":false,"aps":false,"parity":"parous","previousPE":false,"deliveryDate":"06/14/2023","deliveryGAWeeks":39,"bp":[[116,74],[114,75],[112,76],[118,73]],"utpi":[1.73,1.73]}},
+ {"id":"C03","maternal":{"dob":"01/03/1996","height":164,"weight":69,"ethnicity":"White","smoking":false,"gaWeeks":11,"gaDays":6,"conception":"Spontaneous"},
+  "pe":{"chronicHypertension":false,"diabetes1":false,"diabetes2":false,"familyHistoryPE":false,"sle":false,"aps":false,"parity":"parous","previousPE":true,"deliveryDate":"05/05/2023","deliveryGAWeeks":32,"bp":[[116,74],[114,75],[112,76],[118,73]],"utpi":[1.73,1.73]}}
+]
