@@ -55,3 +55,33 @@ Basal local (só história): 01 → 1 em 203; 02 → 1 em 672; 03 → 1 em 18.
 
 Com 03a–03c dá para estimar os coeficientes da IG do parto e do Z-score que o
 FMF realmente usa; com 01h separa-se prior de verossimilhança nos 2 % dos casos 01/02.
+
+## Rodada 2 — 15/09/2026 10:10 (prints 03a, 03b, 03c; 01h impossível)
+
+| Teste | FMF | Local (Z = 0) | Observação |
+|---|---|---|---|
+| 03a: IG do parto 40 sem, peso em branco | **1 em 210** (MoM IP não visível, seção recolhida) | 1 em 194 (MoM 0,997) | local 8 % mais alto |
+| 03b: IG 32 sem, peso 1500 g (FMF: percentil 2) | **1 em 36** | 1 em 45 com Z = −2 | FMF não muda com o peso |
+| 03c: IG 32 sem, peso 2500 g (FMF: percentil 99) | **1 em 36** | 1 em 39 com Z = +2 | idem |
+| 01h: só história | não calcula — o FMF exige as pressões | 1 em 203 | prior não isolável por essa via |
+
+**Conclusões desta rodada**
+
+1. **O FMF ignora o peso ao nascer anterior** no cálculo de PE: 1500 g (p2) e 2500 g
+   (p99) dão o mesmo 1 em 36. O motor local aplica −0,006836·Z na mediana do IP
+   (Tayyar 2015) e o risco muda de 1:39 a 1:45. O termo do Z-score deve ser
+   removido (ou zerado) para paridade com o software oficial. Isso também elimina a
+   recusa "multípara com PE anterior exige o Z-score", que hoje bloqueia o cálculo.
+2. **Prior e verossimilhança batem no caso 03**: forçando MoM IP = 0,98 (o valor do
+   FMF) no motor local, o risco sai 1 em 35 contra 1 em 36 do FMF. Toda a
+   divergência de 42 × 36 está na mediana esperada do IP uterino em PE prévia.
+3. **Tamanho do ajuste do FMF para PE prévia com parto em 32 sem**: +0,0124 em log10
+   (intervalo 0,010–0,015 pelo arredondamento do MoM). O local aplica +0,0459
+   (= 0,00497 fixo + 0,00512·8 semanas). Com parto em 40 sem, o FMF dá 1:210, que
+   no motor local corresponde a MoM ≈ 0,96–0,97, ou seja, ajuste ≈ +0,017–0,022 —
+   MAIOR que em 32 sem, o oposto do sinal do termo local. Falta ver o MoM do IP que
+   o FMF exibe em 40 sem para fechar o coeficiente.
+
+**Pendente**: prints de 03 (32 sem), 03a (40 sem) e um novo 03d (36 sem) com a seção
+"Uterine artery PI" ABERTA, para ler o MoM em três pontos e estimar o coeficiente
+da IG do parto que o FMF usa de fato.
