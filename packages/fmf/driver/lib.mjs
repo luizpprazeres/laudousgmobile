@@ -14,6 +14,7 @@ const text = async page => (await page.evaluate(() => document.body.innerText)).
 export async function typeInto(page, id, value) {
   const el = T(page, id)
   const want = String(value)
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(want)) return typeDate(page, el, want)
   const cur = await el.inputValue().catch(() => null)
   if (cur !== null && cur === want) return
   await el.scrollIntoViewIfNeeded().catch(() => {})
@@ -31,6 +32,23 @@ export async function typeInto(page, id, value) {
     }
   }
   throw new Error(`campo ${id}: esperado "${want}", ficou "${await el.inputValue().catch(() => '?')}"`)
+}
+/** Campos de data com máscara: só aceitam digitação a partir do vazio; a máscara demora a refletir. */
+async function typeDate(page, el, want) {
+  const cur = await el.inputValue().catch(() => '')
+  if (cur === want) return
+  await el.scrollIntoViewIfNeeded().catch(() => {})
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try { await el.click({ timeout: 3000 }) } catch { await el.evaluate(i => i.focus()) }
+    await page.keyboard.press('End')
+    for (let k = 0; k < 12; k++) await page.keyboard.press('Backspace')
+    await page.waitForTimeout(200)
+    if ((await el.inputValue().catch(() => '')) !== '') { await el.evaluate(i => { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(i, ''); i.dispatchEvent(new Event('input', { bubbles: true })) }); await page.waitForTimeout(200) }
+    await page.keyboard.type(want, { delay: 30 })
+    await page.keyboard.press('Tab')
+    for (let k = 0; k < 8; k++) { await page.waitForTimeout(250); if ((await el.inputValue().catch(() => '')) === want) return }
+  }
+  throw new Error(`data: esperado "${want}", ficou "${await el.inputValue().catch(() => '?')}"`)
 }
 export async function press(page, id) {
   const el = T(page, id)
@@ -146,14 +164,16 @@ export async function setPreeclampsia(page, pe) {
   const ids = ['map-sr1', 'map-dr1', 'map-sl1', 'map-dl1', 'map-sr2', 'map-dr2', 'map-sl2', 'map-dl2']
   const flat = bp.flat(); for (let i = 0; i < 8; i++) await typeInto(page, ids[i], flat[i])
   await dbg(page, 'após BP')
-  if (pe.utpi) {
-    if (!(await has(page, 'utpi-right'))) { await T(page, 'utpi-accordion').click(); await page.waitForTimeout(500) }
-    await typeInto(page, 'utpi-right', pe.utpi[0]); await typeInto(page, 'utpi-left', pe.utpi[1])
-  }
+  if (!(await has(page, 'utpi-right'))) { await press(page, 'utpi-accordion'); await page.waitForTimeout(500) }
+  if (pe.utpi) { await typeInto(page, 'utpi-right', pe.utpi[0]); await typeInto(page, 'utpi-left', pe.utpi[1]) }
+  else { for (const id of ['utpi-right', 'utpi-left', 'utpi-mean']) { const el = T(page, id); if ((await el.inputValue().catch(() => '')) !== '') { await el.click({ timeout: 3000 }).catch(() => el.evaluate(i => i.focus())); await page.keyboard.press('Meta+A'); await page.keyboard.press('Backspace'); await page.keyboard.press('Tab'); await page.waitForTimeout(200) } } }
   await dbg(page, 'antes do calc')
   for (let i = 0; i < 3; i++) {
-    const btn = page.locator('[data-testid="pe-calculate"]')
-    if (await btn.count()) { await btn.first().click({ timeout: 3000 }).catch(() => btn.first().dispatchEvent('click')); await page.waitForTimeout(2500) }
+    if (await has(page, 'pe-calculate')) {
+      await press(page, 'pe-calculate')
+      for (let k = 0; k < 12 && (await has(page, 'pe-calculate')); k++) await page.waitForTimeout(500)
+      await page.waitForTimeout(800)
+    }
     const r = await readPreeclampsia(page)
     if (process.env.DEBUG_PE) console.log(`   [calc ${i}] ${(await text(page)).match(/Risk of preeclampsia.{0,120}/)?.[0] ?? 'SEM BLOCO DE RISCO'} | recalc: ${await page.locator('[data-testid="pe-calculate"]').count()}`)
     if (r.riskN != null && !r.recalcPending) return r
@@ -176,4 +196,44 @@ export async function readPreeclampsia(page) {
     interval: Number(await page.evaluate(() => { const lab = [...document.querySelectorAll('div,span')].find(el => el.children.length === 0 && el.innerText?.trim() === 'Inter-pregnancy interval'); const all = [...document.querySelectorAll('input')]; return all.find(i => lab && (lab.compareDocumentPosition(i) & Node.DOCUMENT_POSITION_FOLLOWING))?.value }) || NaN),
     highRisk: /increased risk/.test(t), recalcPending: (await page.locator('[data-testid="pe-calculate"]').count()) > 0,
   }
+}
+
+/** Trissomias (1º trimestre). Campos descobertos no bundle; validar na primeira execução. */
+export async function setTrisomies(page, t) {
+  await openCalculators(page)
+  await press(page, 'trisomies-tab'); await page.waitForTimeout(800)
+  if (t.nt != null) await typeInto(page, 'nt-input', t.nt)
+  if (t.fhr != null) await typeInto(page, 'fhr-input', t.fhr)
+  if (t.dvpi != null) await typeInto(page, 'dvpi-input', t.dvpi)
+  if (t.freeBhcgMom != null) await typeInto(page, 'freebhcg', t.freeBhcgMom)
+  if (t.pappaMom != null) await typeInto(page, 'pappa', t.pappaMom)
+  if (t.plgfMom != null) await typeInto(page, 'plgf', t.plgfMom)
+  // nasal-bone / tricuspid / dvawave provavelmente são selects ou rádios: tratados na sondagem
+  for (let i = 0; i < 3; i++) {
+    const btn = page.locator('[data-testid="trisomies-calculate"]')
+    if (await btn.count()) { await btn.first().click({ timeout: 3000 }).catch(() => btn.first().dispatchEvent('click')); await page.waitForTimeout(2500) }
+    const r = await readTrisomies(page)
+    if (r.t21 != null) return r
+    await page.waitForTimeout(1500)
+  }
+  return readTrisomies(page)
+}
+export async function readTrisomies(page) {
+  const grab = async id => (await page.locator(`[data-testid="${id}"]`).first().innerText().catch(() => '')).replace(/\s+/g, ' ').trim()
+  const t = await text(page)
+  const n = s => { const m = s.match(/1 in (\d+)/); return m ? Number(m[1]) : null }
+  const t21 = await grab('trisomy-risk-t21'), t1813 = await grab('trisomy-risk-t18t13'), p21 = await grab('trisomy-prior-t21'), p1813 = await grab('trisomy-prior-t18t13')
+  return { t21: n(t21), t18t13: n(t1813), prior21: n(p21), prior18t13: n(p1813), raw: { t21, t1813, p21, p1813 }, texto: t.match(/Trisomy 21.{0,200}/)?.[0] ?? null, calcPending: (await page.locator('[data-testid="trisomies-calculate"]').count()) > 0 }
+}
+
+/** Relança o FMF com a porta de depuração (após "Target crashed") e reconecta. */
+export async function relaunchApp(port = 9222) {
+  const { execSync } = await import('node:child_process')
+  try { execSync(`osascript -e 'tell application "FMF" to quit'`, { stdio: 'ignore' }) } catch {}
+  for (let i = 0; i < 10; i++) { try { execSync('pgrep -x FMF', { stdio: 'ignore' }); await new Promise(r => setTimeout(r, 1000)) } catch { break } }
+  try { execSync('pkill -x FMF', { stdio: 'ignore' }) } catch {}
+  execSync(`open -a FMF --args --remote-debugging-port=${port}`)
+  for (let i = 0; i < 30; i++) { await new Promise(r => setTimeout(r, 1000)); try { const res = await fetch(`http://127.0.0.1:${port}/json`); const pages = await res.json(); if (pages.some(p => p.url.includes('refractionx'))) break } catch {} }
+  await new Promise(r => setTimeout(r, 4000))
+  return connect(port)
 }

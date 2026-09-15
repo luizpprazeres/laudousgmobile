@@ -1,0 +1,1979 @@
+[
+ {
+  "id": "N01-base",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N02-idade18",
+  "maternal": {
+   "dob": "06/07/2008",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N03-idade40",
+  "maternal": {
+   "dob": "06/07/1986",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N04-idade45",
+  "maternal": {
+   "dob": "06/07/1981",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N05-peso45",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 45,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N06-peso110",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 110,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N07-peso140",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 140,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N08-alt150",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 150,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N09-alt185",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 185,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N10-black",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "Black",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N11-southasian",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "South Asian",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N12-eastasian",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "East Asian",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N13-white-black",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White - Black",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N14-fumante",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": true,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N15-fiv",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "In vitro fertilization"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N16-histfam",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": true,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N17-dm1",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": true,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N18-dm2",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": true,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N19-les",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": true,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N20-saf",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": true,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N21-has",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": true,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N22-has-pa150",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": true,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     150,
+     95
+    ],
+    [
+     150,
+     95
+    ],
+    [
+     150,
+     95
+    ],
+    [
+     150,
+     95
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N23-pam-alta",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     145,
+     95
+    ],
+    [
+     145,
+     95
+    ],
+    [
+     145,
+     95
+    ],
+    [
+     145,
+     95
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N24-pam-baixa",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     95,
+     55
+    ],
+    [
+     95,
+     55
+    ],
+    [
+     95,
+     55
+    ],
+    [
+     95,
+     55
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N25-ip-baixo",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    0.6,
+    0.6
+   ]
+  }
+ },
+ {
+  "id": "N26-ip-alto",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    3,
+    3
+   ]
+  }
+ },
+ {
+  "id": "N27-so-pam",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": null
+  }
+ },
+ {
+  "id": "N28-ig11+0",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 11,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N29-ig13+6",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 13,
+   "gaDays": 6,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N30-ig14+0",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 14,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "N31-ig14+1",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 14,
+   "gaDays": 1,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ },
+ {
+  "id": "M01-int0.5",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": false,
+   "deliveryDate": "03/16/2026",
+   "deliveryGAWeeks": 39,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M02-int1",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": false,
+   "deliveryDate": "09/15/2025",
+   "deliveryGAWeeks": 39,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M03-int5",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": false,
+   "deliveryDate": "09/15/2021",
+   "deliveryGAWeeks": 39,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M04-int15",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": false,
+   "deliveryDate": "09/15/2011",
+   "deliveryGAWeeks": 39,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M05-parto34",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": false,
+   "deliveryDate": "09/15/2023",
+   "deliveryGAWeeks": 34,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M06-parto42",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": false,
+   "deliveryDate": "09/15/2023",
+   "deliveryGAWeeks": 42,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M07-pe-int1-36",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": true,
+   "deliveryDate": "09/15/2025",
+   "deliveryGAWeeks": 36,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M08-pe-int10-28",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": true,
+   "deliveryDate": "09/14/2016",
+   "deliveryGAWeeks": 28,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M09-pe-parto24",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": true,
+   "deliveryDate": "09/15/2023",
+   "deliveryGAWeeks": 24,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M10-pe-has",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": true,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": true,
+   "deliveryDate": "09/15/2023",
+   "deliveryGAWeeks": 34,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "M11-sempe-dm2-histfam",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": true,
+   "familyHistoryPE": true,
+   "sle": false,
+   "aps": false,
+   "parity": "parous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ],
+   "previousPE": false,
+   "deliveryDate": "09/15/2023",
+   "deliveryGAWeeks": 39,
+   "deliveryGADays": 0
+  }
+ },
+ {
+  "id": "X01-combo-alto",
+  "maternal": {
+   "dob": "06/07/1988",
+   "height": 164,
+   "weight": 95,
+   "ethnicity": "Black",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "In vitro fertilization"
+  },
+  "pe": {
+   "chronicHypertension": true,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     135,
+     88
+    ],
+    [
+     135,
+     88
+    ],
+    [
+     135,
+     88
+    ],
+    [
+     135,
+     88
+    ]
+   ],
+   "utpi": [
+    2.2,
+    2.2
+   ]
+  }
+ },
+ {
+  "id": "N01-base-repeat",
+  "maternal": {
+   "dob": "06/07/1996",
+   "height": 164,
+   "weight": 69,
+   "ethnicity": "White",
+   "smoking": false,
+   "gaWeeks": 12,
+   "gaDays": 0,
+   "conception": "Spontaneous"
+  },
+  "pe": {
+   "chronicHypertension": false,
+   "diabetes1": false,
+   "diabetes2": false,
+   "familyHistoryPE": false,
+   "sle": false,
+   "aps": false,
+   "parity": "nulliparous",
+   "bp": [
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ],
+    [
+     120,
+     75
+    ]
+   ],
+   "utpi": [
+    1.5,
+    1.5
+   ]
+  }
+ }
+]

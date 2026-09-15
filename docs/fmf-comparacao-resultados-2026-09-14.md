@@ -102,3 +102,31 @@ parto nem Z-score. Implementado `CAL_UTA_PI_PE_PREVIA = 0,0124` nos três motore
 **Resíduo aberto**: local 2–4 % mais alto em todos os cinco pontos (MoMs iguais).
 Próximo passo: casos 04–08 do protocolo para ver se o viés é constante; se for,
 uma correção única no prior/PAM resolve.
+
+## Rodada 4 — 15/09/2026, comparação AUTOMÁTICA (driver CDP, `packages/fmf/driver`)
+
+72 casos lidos do app pelo driver (matriz de 44 + varredura de 28 idades), zero erros
+na execução final. Dados brutos em `packages/fmf/driver/resultados/`. Todos os riscos
+"History, MAP, UtA-PI" a 12+0, 164 cm, 69 kg, branca, salvo indicação.
+
+### O que bate (desvio ≤ 3 %, MoMs iguais nas 2 casas)
+Peso 45–140 kg, altura 150–185 cm, negra, sul-asiática, FIV, história familiar,
+diabetes tipo 2, PAM alta (MoM 1,29) e baixa (0,79), IP baixo (0,35) e alto (1,75),
+IG 11+0 a 14+0, multíparas sem PE (intervalo 0,5–15 a; parto 34–42 sem), multíparas
+com PE (intervalo 1–10 a; parto 24–36 sem), HAS + PE prévia, combinação de alto risco.
+
+### O que NÃO bate e por quê
+
+| Termo | App | Local | Diagnóstico |
+|---|---|---|---|
+| **Idade materna** (16–48 a) | MoM PAM **constante** (1,04); MoM IP 0,86→0,89 | MoM PAM 1,053→1,020; MoM IP 0,855→0,921 | mediana da PAM **sem termo de idade** no app; IP com coeficiente ≈ −5,8·10⁻⁴/ano (local −1,01·10⁻³). Risco: −9 % a +14 % |
+| **Prior ≥ 35 anos** | — | com MoMs do app injetados, local ainda +5…8 % acima de 35 | app usa **idade decimal na DPP** (exame + 196 d a 12+0). Com essa idade, desvio médio 0,3 %, máx 2,6 % |
+| Janela | recusa **14+1** | aceita até 14+1 (99 d) | limitar a 98 d |
+| Asiática oriental | MoM IP 0,86 | 0,883 | app tem termo de IP (≈ +0,012 log10) |
+| Mista branca-negra | MoM IP 0,85 | 0,883 | app trata etnias mistas com efeito parcial |
+| Tabagismo | MoM PAM 1,06 | 1,049 | coeficiente ≈ 1,8× o publicado |
+| Diabetes tipo 1 | MoM IP 0,93; risco 1:83 | 0,883; 1:95 | app tem termo de IP para DM1 (≈ −0,024 log10) e distingue DM1 de DM2 (DM2: 1:96 = local) |
+| HAS | 1:65 / 1:14 | 1:61 / 1:13 | MoMs iguais; prior 3–6 % |
+
+Coeficientes definitivos saem da varredura de termos (55 casos, 2 níveis de medida)
+em andamento; ver `fit-terms.mjs`.
