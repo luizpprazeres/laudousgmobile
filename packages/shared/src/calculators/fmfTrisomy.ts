@@ -7,7 +7,7 @@ import {
   NT_TLIMITS, DVPI_TLIMITS_T21, DVPI_TLIMITS_T18, DVPI_TLIMITS_T13,
 } from './fmfTrisomyParams'
 
-export const FMF_TRISOMY_MODEL_VERSION = 'FMF-R-extract-2026-06-26/v1'
+export const FMF_TRISOMY_MODEL_VERSION = 'FMF-R-extract-2026-06-26/v2+cal-2026-09-15'
 export const FMF_TRISOMY_PARAMETER_FINGERPRINT = FMF_TRISOMY_SOURCE_FINGERPRINT
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -479,6 +479,9 @@ export function calcularTrissomias(input: FmfInput): FmfResult {
     t21: makeRisk(riskT21, classifyRiskT21),
     t18: makeRisk(riskT18, classifyRiskT18T13),
     t13: makeRisk(riskT13, classifyRiskT18T13),
+    // como o app da FMF exibe: "Trisomy 13/18" combinada e teto "<1 in 10000"
+    t18t13: makeRisk(riskT18 + riskT13, classifyRiskT18T13),
+    displayCapRatio: 10000,
     gaDays: roundedGaDays,
     gaWeeks,
     gaDaysRemainder,

@@ -2,7 +2,37 @@
 // Fonte congelada: packages/fmf-trisomy/source/*.csv
 export const FMF_TRISOMY_SOURCE_FINGERPRINT = 'sha256:5630d228803ccb2d1969051b5d588c8358eb36ba393eca5d27148a18cbca725f'
 
+/**
+ * CALIBRAÇÃO cal-2026-09-15 (driver CDP, packages/fmf/driver): ajuste conjunto dos 17
+ * parâmetros da mistura da NT aos 96 LRs implícitos do app v1.0.44 (48 pontos
+ * NT 0,8–6,0 mm × CRL 45/60/75/84 para T21 e para T13/18 combinada). Rms do log-LR
+ * caiu de 0,61 (Wright 2008 portado) para 0,10 — o arredondamento de 2 algarismos
+ * do app explica ~0,07. p21 e p13 foram ao limite (≈1: componente único). Não são
+ * parâmetros publicados. Ver docs/fmf-comparacao-resultados-2026-09-14.md, rodada 6.
+ */
 export const NT_MIX = {
+  "a0": 0.15117,
+  "a1": -0.03667,
+  "b0": -0.80577,
+  "b1": 0.02671,
+  "b2": -0.00016,
+  "m1": 0.17684,
+  "m13": 0.57380,
+  "m18": 0.74804,
+  "m21": 0.65763,
+  "p21": 0.99950,
+  "p13": 0.99950,
+  "p18": 0.69810,
+  "sd": 0.08217,
+  "sdB": 0.34746,
+  "sdOp": 0.0289,
+  "sdT18": 0.08293,
+  "sdT13": 0.14375,
+  "sdT21": 0.40462
+} as const
+
+/** Wright 2008 como extraído do R (referência; NÃO é o que o app aplica). */
+export const NT_MIX_WRIGHT2008 = {
   "a0": -0.3319,
   "a1": -0.0379,
   "b0": -0.8951,

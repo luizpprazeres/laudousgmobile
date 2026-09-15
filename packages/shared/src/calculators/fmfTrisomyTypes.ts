@@ -38,6 +38,10 @@ export interface FmfResult {
   t21: TrisomyRisk
   t18: TrisomyRisk
   t13: TrisomyRisk
+  /** T13 e T18 combinadas (p13 + p18), como o app da FMF exibe ("Trisomy 13/18"). */
+  t18t13: TrisomyRisk
+  /** O app da FMF exibe risco menor que 1:10000 como "<1 in 10000"; use este teto na apresentação. */
+  displayCapRatio: number
   gaDays: number
   gaWeeks: number
   gaDaysRemainder: number
