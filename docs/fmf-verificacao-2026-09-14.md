@@ -3,6 +3,12 @@
 ## Confirmado
 
 Em 14/09/2026 a interface do FMF instalado mostrou versao interna **1.0.44**.
+Reconfirmado por captura de tela enviada por Luiz em 14/09/2026 as 22:27: barra
+superior "version 1.0.44", tela inicial Patients / Performance Audits. O banner
+"A new version is available (v1.0.41)" mostra numero MENOR que o instalado, entao
+nao indica atualizacao pendente; a versao instalada e considerada conforme para
+as comparacoes desta rodada. Protocolo de casos em
+docs/fmf-protocolo-comparacao-2026-09-14.md.
 O pacote macOS informa **1.0.3**: numeros de camadas diferentes, nao prova de
 desatualizacao. Nao foi confirmada a ultima versao oficial disponivel.
 Nao foram alterados pacientes. O controle por clique falhou com
