@@ -1,4 +1,5 @@
 import { env } from "../env";
+import type { DopplerMode } from "./requestedExam";
 import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
 import { openai } from "../ai/openai";
@@ -219,6 +220,9 @@ export type RendererStreamResult = {
 
 export async function* runRendererStream(args: {
   categoryCode: string;
+  dopplerMode?: DopplerMode;
+  /** Explicit plain OBSTETRICA only; omitted preserves direct-call composition. */
+  includeDoppler?: boolean;
   rawInput: string;
   templateBody: string;
   signal?: AbortSignal;
@@ -482,6 +486,8 @@ export async function* runRendererStream(args: {
   args.onProgress?.({ stage: "interpretando", label: "Interpretando o ditado…" });
   const extraction = await runRendererExtraction({
     categoryCode: args.categoryCode,
+    dopplerMode: args.dopplerMode,
+    includeDoppler: args.includeDoppler,
     rawInput: args.rawInput,
     signal: args.signal,
     stream: !!args.onProgress,

@@ -1,6 +1,6 @@
 import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganComposition, OrganModule, OrganState } from '../types'
-import { criarCervicometriaAddonModule } from './cervicometriaAddon'
+import { obstetrica } from './obstetrica'
 
 const MEDIDAS: Field[] = [
   { key: 'ir_ut_dir', label: 'IR uterina direita (opcional)', kind: 'text', placeholder: '0,59', halfWidth: true, minGestationalWeeks: 16 },
@@ -123,11 +123,24 @@ export function criarDopplerAddonModule(
 }
 
 const dopplerIsoladoModule: OrganModule = {
-  schema: { id: 'doppler', name: 'Doppler obstétrico', category: 'DOPPLER_OBSTETRICO', fields: [...IDADE_GESTACIONAL, ...MEDIDAS] },
+  schema: { id: 'doppler', name: 'Doppler obstétrico', category: 'DOPPLER_OBSTETRICO', fields: MEDIDAS },
   initialState: () => ({ ...DEFAULTS }),
   compose: (): OrganComposition => ({ body: '', conclusion: [], isNormal: true }),
 }
-const cervicometriaModule = criarCervicometriaAddonModule('DOPPLER_OBSTETRICO')
+const igDopplerModule: OrganModule = {
+  schema: {
+    id: 'ig', name: 'Idade gestacional', category: 'DOPPLER_OBSTETRICO',
+    fields: IDADE_GESTACIONAL.map((field) => ({ ...field, key: field.key === 'ig_sem' ? 'bio_sem' : 'bio_dias' })),
+  },
+  initialState: () => ({ bio_sem: '', bio_dias: '' }),
+  compose: (): OrganComposition => ({ body: '', conclusion: [], isNormal: true }),
+}
+const dopplerSection = { id: 'doppler', label: 'Índices Doppler', group: 'orgaos' as const, module: dopplerIsoladoModule }
+const combinedSections = [...obstetrica.sections, dopplerSection]
+const isolatedSections = [
+  { id: 'ig', label: 'Idade gestacional', group: 'orgaos' as const, module: igDopplerModule },
+  dopplerSection,
+]
 
 export const dopplerObstetrico: ExamCategory = {
   id: 'DOPPLER_OBSTETRICO',
@@ -135,9 +148,8 @@ export const dopplerObstetrico: ExamCategory = {
   title: 'DOPPLERVELOCIMETRIA OBSTÉTRICA',
   tecnica: 'Avaliação das artérias maternas e fetais por Doppler pulsado e colorido.',
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
-  sections: [
-    { id: 'doppler', label: 'Índices Doppler', group: 'orgaos', module: dopplerIsoladoModule },
-    { id: 'cervicometria', label: 'Cervicometria', group: 'orgaos', module: cervicometriaModule },
-  ],
+  sections: combinedSections,
+  resolveSections: (opts) => opts.somente_doppler === 'sim' ? isolatedSections : combinedSections,
+  resolveCalculators: (opts) => opts.somente_doppler === 'sim' ? [] : obstetrica.calculators ?? [],
   conclusionNormal: 'Dados Doppler insuficientes para conclusão hemodinâmica.',
 }

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import type { Field, OrganSchema, OrganState } from '@/lib/deterministic'
+import { RenalMeasurementsFields } from './RenalMeasurementsFields'
+import { hasRenalMeasurementsGroup, RENAL_MEASUREMENT_KEYS } from './renalMeasurementsState'
 
 type Props = {
   schema: OrganSchema
@@ -27,6 +29,7 @@ function visibleHint(hint?: string) {
 
 export function OrganFormPanel({ schema, state, onChange, compact = false, gestationalWeeks }: Props) {
   const [rareOpen, setRareOpen] = useState(false)
+  const renalMeasurements = hasRenalMeasurementsGroup(schema)
 
   const fieldCardClass = compact
     ? 'rounded-lg border border-gray-100 bg-gray-50/65 px-2.5 py-2 dark:border-gray-800 dark:bg-gray-900/55'
@@ -92,6 +95,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
   }
 
   const renderField = (field: Field) => {
+    if (renalMeasurements && RENAL_MEASUREMENT_KEYS.some(key => key === field.key)) return null
     if (
       field.minGestationalWeeks !== undefined &&
       gestationalWeeks !== undefined &&
@@ -174,6 +178,9 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
               })}
             </div>
           </div>
+          {renalMeasurements && field.key === 'dimensoes' ? (
+            <RenalMeasurementsFields schema={schema} state={state} onChange={onChange} />
+          ) : null}
           {(field.options ?? []).map((option) =>
             isSelected(state, field, option.value) && option.subFields?.length ? (
               <div
@@ -198,22 +205,22 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
             <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</h3>
             {visibleHint(field.hint) ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
           </div>
-          <div className={compact ? 'grid grid-cols-3 gap-1' : 'space-y-1.5'}>
+          <div className={compact ? (renalMeasurements ? 'grid grid-cols-2 gap-1' : 'grid grid-cols-3 gap-1') : 'space-y-1.5'}>
             {(field.options ?? []).map((option) => {
               const active = selected.includes(option.value)
               return (
-                <div key={option.value} className={`rounded-md border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40 ${compact && active && option.subFields?.length ? 'col-span-3' : ''}`}>
+                <div key={option.value} className={`rounded-md border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40 ${renalMeasurements ? 'min-w-0' : ''} ${compact && active && option.subFields?.length ? (renalMeasurements ? 'col-span-2' : 'col-span-3') : ''}`}>
                   <button
                     type="button"
                     onClick={() => toggleChecklist(field, option.value)}
-                    className={`flex w-full items-center text-left ${compact ? 'gap-1.5 px-2 py-1.5' : 'gap-2.5 px-3 py-2'}`}
+                    className={`flex w-full items-center text-left ${renalMeasurements ? 'min-h-9 min-w-0' : ''} ${compact ? 'gap-1.5 px-2 py-1.5' : 'gap-2.5 px-3 py-2'}`}
                   >
                     <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border text-[10px] font-bold ${
                       active ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-gray-300 bg-white text-transparent dark:border-gray-600 dark:bg-gray-900'
                     }`}>
                       ✓
                     </span>
-                    <span className={`${compact ? 'text-[11.5px] leading-tight' : 'text-[13px]'} flex-1 font-semibold text-gray-800 dark:text-gray-200`}>{option.label}</span>
+                    <span className={`${compact ? 'text-[11.5px] leading-tight' : 'text-[13px]'} ${renalMeasurements ? 'min-w-0 whitespace-normal [overflow-wrap:anywhere]' : ''} flex-1 font-semibold text-gray-800 dark:text-gray-200`}>{option.label}</span>
                   </button>
                   {active && option.subFields?.length ? (
                     <div className="mx-3 mb-3 grid grid-cols-2 gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">

@@ -1,4 +1,6 @@
 import { GenerateRequestSchema } from "@laudousg/shared";
+import { requestedExamCategory, resolveDopplerMode, resolveWriterExam, type DopplerMode } from "@/server/pipeline/requestedExam";
+import { obstetricaPlainConflictWarning, obstetricaPlainOutputWarning } from "@/server/prompts/obstetricaPlainPolicy";
 import { after } from "next/server";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { sseResponse, nowIso } from "@/server/sse/stream";
@@ -164,7 +166,10 @@ function resolveEffectiveCategory(
   reportId: string,
   knownCodes: Set<string>,
   categoryHint?: string,
+  dopplerMode?: DopplerMode,
 ): string {
+  const requested = requestedExamCategory(categoryHint, dopplerMode);
+  if (requested && knownCodes.has(requested)) return requested;
   const morf = resolveMorfologicoCategory(detectedCategory, rawText);
   if (morf.overridden) {
     console.warn(
@@ -301,6 +306,12 @@ export async function POST(req: Request) {
 
     try {
       emit({ type: "open", ts: nowIso(), report_id: reportId });
+
+      const plainConflict = obstetricaPlainConflictWarning(
+        reqInput.category_hint,
+        reqInput.consolidated_transcript ?? reqInput.raw_input,
+      );
+      if (plainConflict) throw new Error(plainConflict.message);
 
       // Resolver writing_style_id → code/name antes (fix codex #4).
       // Carregar categorias conhecidas pro validator (fix codex #2).
@@ -452,6 +463,7 @@ export async function POST(req: Request) {
           reportId,
           categoriesInfo.codes,
           reqInput.category_hint,
+          reqInput.doppler_mode,
         );
         auditState.category = effectiveCategory;
         auditState.contractHash = contractHashFor(
@@ -523,6 +535,7 @@ export async function POST(req: Request) {
         const writerV2UserId =
           env().WRITER_V2_USER_ID || env().WRITER_V2_ABDOME_USER_ID;
         const useWriterV2 =
+          reqInput.category_hint !== "OBSTETRICA" &&
           writerV2Categories.includes(draftCategory) &&
           writerV2UserId !== "" &&
           (user.id === writerV2UserId ||
@@ -583,6 +596,7 @@ export async function POST(req: Request) {
             reportId,
             categoriesInfo.codes,
             reqInput.category_hint,
+            reqInput.doppler_mode,
           );
           findings = {
             schema_version: "v1",
@@ -623,6 +637,7 @@ export async function POST(req: Request) {
           reportId,
           categoriesInfo.codes,
           reqInput.category_hint,
+          reqInput.doppler_mode,
         );
         auditState.category = effectiveCategory;
         auditState.contractHash = contractHashFor(
@@ -768,17 +783,21 @@ export async function POST(req: Request) {
       const ragT0 = Date.now();
       const skipped: RagBlockForPrompt[] = [];
       const queryText = "[deterministic_bundle]";
+      const dopplerMode = resolveDopplerMode(reqInput.category_hint ?? effectiveCategory, reqInput.doppler_mode);
+      const writerExam = resolveWriterExam(effectiveCategory, dopplerMode);
       // DET-3 + DET-5 ONDA 2: numa única query, a variante preferida pela conta
       // (usada só quando o ditado não decide por contexto) E os toggles do
       // renderer (consumidos no caminho renderer, mais abaixo).
       const { variantKey: accountVariantKey, rendererPreferences } =
         await resolveAccountReportPreference(user.id, effectiveCategory);
-      const bundle = await loadDeterministicBundle({
-        categoryCode: effectiveCategory,
-        writingStyleId: effectiveWritingStyleId,
-        rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
-        accountVariantKey,
-      });
+      const bundle = dopplerMode === "isolated"
+        ? { blocks: [] as RagBlockForPrompt[], variantKey: "isolated-code", error: null }
+        : await loadDeterministicBundle({
+            categoryCode: writerExam.categoryCode,
+            writingStyleId: effectiveWritingStyleId,
+            rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+            accountVariantKey: writerExam.categoryCode === effectiveCategory ? accountVariantKey : undefined,
+          });
       // Categorias renderer PROGRAMÁTICO (PELVE, OBSTETRICA, MORFOLOGICO...) montam
       // o laudo 100% em código a partir da extração e NÃO usam o modelo do bundle.
       // Um erro de bundle/variante (ex.: ASR sujo "transaginal" que não resolve
@@ -948,7 +967,9 @@ export async function POST(req: Request) {
           : undefined;
       const writerGen = useRenderer
         ? runRendererStream({
-            categoryCode: effectiveCategory,
+            categoryCode: requestedExamCategory(effectiveCategory, dopplerMode) ?? effectiveCategory,
+            dopplerMode,
+            includeDoppler: reqInput.category_hint === "OBSTETRICA" ? false : undefined,
             rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
             templateBody: rendererTemplateBody ?? "",
             signal,
@@ -1038,6 +1059,8 @@ export async function POST(req: Request) {
             },
           })
         : runWriterStream({
+            dopplerMode,
+            includeDoppler: reqInput.category_hint === "OBSTETRICA" ? false : undefined,
             findings,
             ragBlocks: blocks,
             writingStyleCode: styleRow.code,
@@ -1077,7 +1100,7 @@ export async function POST(req: Request) {
             break;
           }
           finalText += next.value;
-          emit({ type: "token", ts: nowIso(), delta: next.value });
+          if (reqInput.category_hint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
         }
       } catch (rendererErr) {
         // NEVER-BLOCK (graceful degradation): se o RENDERER falhar (ex.: a extração
@@ -1085,6 +1108,9 @@ export async function POST(req: Request) {
         // no writer em vez de bloquear a geração. Só o caminho renderer; só se nada
         // do laudo saiu ainda (a extração é a 1ª etapa, então no erro finalText="").
         if (!useRenderer || finalText !== "") throw rendererErr;
+        if (dopplerMode === "combined" && bundle.error) {
+          throw new Error(`Doppler combined writer fallback blocked: ${bundle.error.code}`);
+        }
         console.error(
           `[generate ${reportId}] renderer falhou (${(rendererErr as Error).message}); fallback → writer.`,
         );
@@ -1096,6 +1122,8 @@ export async function POST(req: Request) {
           message: "Estrutura determinística indisponível para este ditado; gerando pelo modo padrão.",
         });
         const fallbackGen = runWriterStream({
+          dopplerMode,
+          includeDoppler: reqInput.category_hint === "OBSTETRICA" ? false : undefined,
           findings,
           ragBlocks: blocks,
           writingStyleCode: styleRow.code,
@@ -1117,7 +1145,7 @@ export async function POST(req: Request) {
             break;
           }
           finalText += next.value;
-          emit({ type: "token", ts: nowIso(), delta: next.value });
+          if (reqInput.category_hint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
         }
       }
       finalText = writerResult?.fullText ?? finalText;
@@ -1180,7 +1208,7 @@ export async function POST(req: Request) {
       const dopplerInput =
         reqInput.consolidated_transcript ?? reqInput.raw_input;
       if (
-        effectiveCategory === "DOPPLER_OBSTETRICO" ||
+        (effectiveCategory === "DOPPLER_OBSTETRICO" && dopplerMode !== "isolated") ||
         effectiveCategory === "OBSTETRICA" ||
         effectiveCategory === "MORFOLOGICO"
       ) {
@@ -1288,6 +1316,8 @@ export async function POST(req: Request) {
       // preventiva via prompts. Bloqueio = UX confusa.
       // S21: roda APÓS emit done — usuário não espera os ~2-5s da sanity IA.
       currentStage = "sanity";
+      const plainOutputWarning = obstetricaPlainOutputWarning(reqInput.category_hint, finalText);
+      if (plainOutputWarning) throw new Error(plainOutputWarning.message);
       const deterministicSanity = runDeterministicSanity({
         findings,
         finalText,
@@ -1317,10 +1347,12 @@ export async function POST(req: Request) {
         status: "generated",
         generatedOutput: finalText,
         sanityResult: deterministicOnlySanity,
-        metadata:
-          pipelineWarnings.length > 0
-            ? { pipeline_warnings: pipelineWarnings }
-            : undefined,
+        metadata: {
+          ...(pipelineWarnings.length > 0 ? { pipeline_warnings: pipelineWarnings } : {}),
+          ...(dopplerMode
+            ? { selected_category: "DOPPLER_OBSTETRICO", doppler_mode: dopplerMode }
+            : {}),
+        },
       });
       // Apple Watch / clientes "publicação direta" — toca updated_at do report
       // para empurrar pro topo do feed da Sala do Auxiliar antes do "done" e da
@@ -1342,6 +1374,7 @@ export async function POST(req: Request) {
         }
       }
 
+      if (reqInput.category_hint === "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: finalText });
       emit({
         type: "done",
         ts: nowIso(),

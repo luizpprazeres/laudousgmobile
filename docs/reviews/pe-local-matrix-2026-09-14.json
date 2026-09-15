@@ -1,0 +1,1080 @@
+{
+  "kind": "local regression, not external validation",
+  "count": 28,
+  "cases": [
+    {
+      "id": "base",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.003505369940255935,
+      "oneIn": 285,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": {
+        "oneIn": 290,
+        "source": "user screenshot 2026-09-14 12:17:20; age convention not established"
+      }
+    },
+    {
+      "id": "base-repeat",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.003505369940255935,
+      "oneIn": 285,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "history",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {}
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.004937065322451809,
+      "oneIn": 203,
+      "moms": [],
+      "external": null
+    },
+    {
+      "id": "map-only",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.005500124801306105,
+      "oneIn": 182,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "utpi-only",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0031935432138383256,
+      "oneIn": 313,
+      "moms": [
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "map-80",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 80,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0012608635555208245,
+      "oneIn": 793,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 0.9358102397639858,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "map-100",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 100,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.008496871850060412,
+      "oneIn": 118,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.1697627997049822,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "utpi-1",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0013812962006989346,
+      "oneIn": 724,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.6155001300073188,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "utpi-2",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 2
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.007018670880380828,
+      "oneIn": 142,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 1.2310002600146377,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "peso-50",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 50,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0032035156457914746,
+      "oneIn": 312,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.1048007119572256,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.8941532265849771,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "peso-90",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 90,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.004588709904144652,
+      "oneIn": 218,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 0.991419063406632,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9604892489981236,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "altura-155",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 155,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.005344777843013167,
+      "oneIn": 187,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.0477972527866715,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "altura-175",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 175,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0022408977660368355,
+      "oneIn": 446,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.0577995439355343,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "idade-25",
+      "inputs": {
+        "g": {
+          "idade": 25,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0035683021335348696,
+      "oneIn": 280,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.058124256857947,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9133480860971944,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "idade-40",
+      "inputs": {
+        "g": {
+          "idade": 40,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.005102505599124793,
+      "oneIn": 196,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.0421916887450953,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9433776393503007,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "gaDias-77",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 77,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.002595822852590291,
+      "oneIn": 385,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.051728569602084,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.8149321134139245,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "gaDias-97",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 97,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.00458218926360668,
+      "oneIn": 218,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.061460240886348,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 1.003347544264862,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "histFamiliarPE",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": true,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0060964691677954435,
+      "oneIn": 164,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.0383985557937963,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "fiv",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": true,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.006619631460730722,
+      "oneIn": 151,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "hipertensaoCronica",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": true,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.019118734627511264,
+      "oneIn": 52,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 0.9344987815085012,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "diabetes",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": true,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.011427257467961159,
+      "oneIn": 88,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.0420661661644481,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "lesSaf",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": true,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.01102449660788769,
+      "oneIn": 91,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "fumante",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": true
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0038315594088961934,
+      "oneIn": 261,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.0638098015686694,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "afro",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "afro",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.009061292013652987,
+      "oneIn": 110,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.057157488312962,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.8856249744365486,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "sul-asiatica",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "sul-asiatica",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0054715324423803705,
+      "oneIn": 183,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "leste-asiatica",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "leste-asiatica",
+          "paridade": "nulipara",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.003505369940255935,
+      "oneIn": 285,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.052786519734484,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "multipara-sem-pe",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "multipara-sem-pe",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false,
+          "intervaloAnos": 3,
+          "igPartoAnterior": 39
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.0010544133738981047,
+      "oneIn": 948,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.070308228884388,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.9232501950109783,
+          "truncado": false
+        }
+      ],
+      "external": null
+    },
+    {
+      "id": "multipara-com-pe",
+      "inputs": {
+        "g": {
+          "idade": 30,
+          "peso": 65,
+          "altura": 165,
+          "gaDias": 89,
+          "etnia": "branca",
+          "paridade": "multipara-com-pe",
+          "histFamiliarPE": false,
+          "fiv": false,
+          "hipertensaoCronica": false,
+          "diabetes": false,
+          "lesSaf": false,
+          "fumante": false,
+          "intervaloAnos": 3,
+          "igPartoAnterior": 34,
+          "zEscorePesoAnterior": 0
+        },
+        "m": {
+          "pamMmHg": 90,
+          "utaPiMedio": 1.5
+        }
+      },
+      "version": "FMF/AJOG-2020+cal-2026-08-22",
+      "risk": 0.017798680507566455,
+      "oneIn": 56,
+      "moms": [
+        {
+          "nome": "map",
+          "mom": 1.0381220422637825,
+          "truncado": false
+        },
+        {
+          "nome": "utaPi",
+          "mom": 0.8504138803144815,
+          "truncado": false
+        }
+      ],
+      "external": null
+    }
+  ]
+}

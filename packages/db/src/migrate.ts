@@ -49,6 +49,13 @@ async function main() {
     "0024_menor_privilegio_escrita.sql",
     "0025_crm_e_uf_separados.sql",
     "0026_companion_sessions.sql",
+    // Retira grants administrativos também das tabelas criadas após 0024.
+    "0028_revoke_authenticated_maintenance.sql",
+    // IAP Apple: enum em arquivo próprio (valor novo de enum não pode ser
+    // usado na mesma transação), depois a tabela `subscriptions` com posse
+    // (app_account_token) e ambiente. Idempotentes; grants declarados nelas.
+    "0029_profile_plan_essencial.sql",
+    "0030_subscriptions_apple_ownership.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

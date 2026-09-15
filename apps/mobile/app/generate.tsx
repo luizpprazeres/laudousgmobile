@@ -10,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -91,6 +92,7 @@ import { useShareIntentContext } from "expo-share-intent";
 import { FeedbackCard } from "@/features/feedback/FeedbackCard";
 import { ImageAnalysisSheet } from "@/features/imaging/ImageAnalysisSheet";
 import { VenousSchemeView } from "@/features/generate/VenousSchemeView";
+import { dopplerRequestFields, type DopplerMode } from "@/features/generate/dopplerMode";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -103,6 +105,8 @@ export default function GenerateScreen() {
   const [state, dispatch] = useReducer(generateReducer, initialGenerateState);
   const [tab, setTab] = useState<Tab>("achados");
   const [cat, setCat] = useState<Category>(CATS[0]);
+  const [dopplerMode, setDopplerMode] = useState<DopplerMode>("combined");
+  useEffect(() => { setDopplerMode("combined"); }, [cat.id]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
@@ -287,6 +291,7 @@ export default function GenerateScreen() {
           // Categoria escolhida pelo médico tem prioridade — structurer ainda
           // pode reclassificar se discordar do texto.
           category_hint: cat.id,
+          ...dopplerRequestFields(cat.id, dopplerMode),
           mode: hardMode ? "hard" : "standard",
         },
         ac.signal,
@@ -578,6 +583,17 @@ export default function GenerateScreen() {
       </View>
 
       {/* Tabs */}
+      {cat.id === "DOPPLER_OBSTETRICO" ? (
+        <View style={{ paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={{ color: t.text, fontFamily: FONT.medium }}>Somente Doppler</Text>
+          <Switch
+            accessibilityLabel="Somente Doppler"
+            value={dopplerMode === "isolated"}
+            disabled={generating || micBusy || state.kind === "clarifying" || imageOpen}
+            onValueChange={(isolated) => setDopplerMode(isolated ? "isolated" : "combined")}
+          />
+        </View>
+      ) : null}
       <View style={{ paddingTop: 4 }}>
         <Segment<Tab>
           value={tab}
@@ -707,6 +723,7 @@ export default function GenerateScreen() {
                       raw_input: state.text,
                       writing_style_id: writingStyleId,
                       category_hint: cat.id,
+                      ...dopplerRequestFields(cat.id, dopplerMode),
                       resume_from_report_id: state.reportId,
                       clarify_answers: answers,
                       mode: hardMode ? "hard" : "standard",
@@ -869,6 +886,7 @@ export default function GenerateScreen() {
           setSharedImageUris(null); // share consumido — próximo abre limpo
         }}
         categoryId={cat.id}
+        dopplerMode={dopplerMode}
         onInsert={(block) => dispatch({ type: "APPEND_TEXT", text: block })}
         onExtract={companionConnection ? (results, block) => {
           setCompanionImage({ data: mergeBiometric(results), summary: block, insertedText: block });

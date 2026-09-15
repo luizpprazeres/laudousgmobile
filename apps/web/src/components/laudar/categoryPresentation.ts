@@ -25,6 +25,21 @@ const CATEGORY_COMPACT_NAMES: Record<string, string> = {
   MUSCULOESQUELETICO: 'MSK',
 }
 
+const CATEGORY_CONTENT_GROUP_LABELS: Record<string, string> = {
+  ABDOMEN_TOTAL: 'Órgãos',
+  ABDOMEN_SUPERIOR: 'Órgãos',
+  MUSCULOESQUELETICO: 'Estruturas',
+  PARTES_MOLES: 'Estruturas',
+  OBSTETRICA: 'Etapas do exame',
+  DOPPLER_OBSTETRICO: 'Etapas do exame',
+  MORFOLOGICO: 'Etapas do exame',
+  MAMARIA: 'Partes do exame',
+}
+
+export function categoryContentGroupLabel(categoryId: string) {
+  return CATEGORY_CONTENT_GROUP_LABELS[categoryId] ?? 'Órgãos'
+}
+
 export function categoryDotClass(categoryId: string) {
   return CATEGORY_DOT_CLASSES[categoryId] ?? 'bg-emerald-600'
 }

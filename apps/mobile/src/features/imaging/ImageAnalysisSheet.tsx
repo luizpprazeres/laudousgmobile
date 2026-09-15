@@ -13,6 +13,7 @@ import * as FileSystem from "expo-file-system";
 import { Sheet } from "@/ui/Sheet";
 import { FONT, RADIUS, SPACING, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
+import type { DopplerMode } from "../generate/dopplerMode";
 import {
   analyzeImages,
   canAnalyzeCategory,
@@ -38,10 +39,12 @@ export function ImageAnalysisSheet({
   onInsert,
   onExtract,
   sharedUris,
+  dopplerMode = "combined",
 }: {
   open: boolean;
   onClose: () => void;
   categoryId: string;
+  dopplerMode?: DopplerMode;
   onInsert: (text: string) => void;
   onExtract?: (results: BiometricData[], text: string) => void;
   /** Imagens vindas do share do sistema (WhatsApp/galeria → LaudoUSG).
@@ -57,7 +60,7 @@ export function ImageAnalysisSheet({
   const [dopplerEnabled, setDopplerEnabled] = useState(false);
 
   const supported = canAnalyzeCategory(categoryId);
-  const canAddDoppler = categoryId === "OBSTETRICA" || categoryId === "MORFOLOGICO";
+  const canAddDoppler = categoryId === "MORFOLOGICO";
 
   useEffect(() => {
     if (!open || !canAddDoppler) setDopplerEnabled(false);
@@ -156,9 +159,9 @@ export function ImageAnalysisSheet({
           setProgress(
             done < total ? `Analisando ${done + 1} de ${total}…` : "Formatando…",
           ),
-        { includeDoppler: dopplerEnabled },
+        { includeDoppler: dopplerEnabled, dopplerMode },
       );
-      const text = formatBiometric(results, categoryId as ImagingCategory);
+      const text = formatBiometric(results, categoryId as ImagingCategory, { includeDoppler: dopplerEnabled, dopplerMode });
       if (!text.trim()) {
         setError(
           "Não encontrei medidas nas imagens. Use fotos da tela do aparelho com a biometria visível.",

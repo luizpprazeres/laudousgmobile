@@ -29,6 +29,7 @@
     "validate:sprint18": "tsx apps/web/src/lib/visualSchemas/__tests__/adapters.manual.ts",
     "validate:sprint19": "tsx apps/web/src/lib/visualSchemas/__tests__/fetal-position.manual.ts",
     "validate:sprint20": "tsx apps/web/src/lib/visualSchemas/__tests__/venous-schema.manual.ts",
+    "validate:iap": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/iap/__tests__/iap-jws.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/iap/__tests__/iap-entitlement.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/iap/__tests__/iap-notifications.manual.ts",
     "validate:clinical-review": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/abdomen-hepatopatia-cronica.manual.ts",
     "validate:clinical-review:23a1": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/abdomen-23a1-clinical-matrix.manual.ts",
     "validate:clinical-review:23a2": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/abdomen-23a2-clinical-matrix.manual.ts",

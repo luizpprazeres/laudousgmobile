@@ -20,7 +20,7 @@ import { adaptarPelve } from '@/lib/catalog/pelveParaCatalogo'
 import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
 import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
-import { adaptarDopplerObstetrico } from '@/lib/catalog/dopplerParaCatalogo'
+import { adaptarDopplerWeb, categoriaRenderDoppler, chaveDocumentoDoppler, estadoDopplerVisivel, somenteDoppler } from '@/lib/catalog/dopplerWebMode'
 import { adaptarDopplerCarotidas } from '@/lib/catalog/dopplerCarotidasParaCatalogo'
 import { adaptarAbdome } from '@/lib/catalog/abdomeParaCatalogo'
 import { adaptarAbdomeSuperior } from '@/lib/catalog/abdomeSuperiorParaCatalogo'
@@ -41,7 +41,7 @@ import { LaudarRail } from './LaudarRail'
 import { lerAtual, lerDigitadoras, gravarAtual, type Digitadora } from '@/lib/digitadoras'
 import { LaudoPreview } from './LaudoPreview'
 import { saveWebReport } from '@/lib/webReports'
-import { categoryCompactName, categoryDotClass } from './categoryPresentation'
+import { categoryCompactName, categoryContentGroupLabel, categoryDotClass } from './categoryPresentation'
 import { WorkspaceInputDock } from './WorkspaceInputDock'
 import { CompanionPanel } from './CompanionPanel'
 import { diffReportBlocks } from './reportSuggestion'
@@ -52,14 +52,25 @@ import {
   textToReportHtml,
 } from './reportRichText'
 import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
+import { companionReenviaPercentil, invalidarPercentilManual } from './fetalGrowthContext'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
 import { TireoideFormPanel } from './TireoideFormPanel'
 import { MamariaFormPanel } from './MamariaFormPanel'
 import { DopplerCarotidasFormPanel } from './DopplerCarotidasFormPanel'
+import { BiometryGrowthPanel } from './BiometryGrowthPanel'
+import {
+  BIOMETRY_GROWTH_SECTION_ID,
+  BIOMETRY_SECTION_ID,
+  GROWTH_SECTION_ID,
+  agruparBiometriaCrescimento,
+  idsConcluidosAgrupados,
+  resolverSecaoAtivaAgrupada,
+} from './biometryGrowthSections'
 import { VisualSchemaPanel } from '@/components/visualSchemas/VisualSchemaPanel'
 import { supportsFetalPositionSchema } from '@/lib/visualSchemas/fetalPosition'
+import { ExamCategoryPicker } from './ExamCategoryPicker'
 
 const TIREOIDE_ID = 'TIREOIDE'
 type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
@@ -90,6 +101,10 @@ type UndoSnapshot = {
   appliedHtml: string
 }
 
+function categoryVisualName(categoryId: string, fallback: string) {
+  return categoryId === 'DOPPLER_OBSTETRICO' ? 'Obstétrica com Doppler' : fallback
+}
+
 function CategorySelector({
   categoria,
   currentName,
@@ -118,13 +133,13 @@ function CategorySelector({
       >
         {GENERIC_CATEGORIES.map((category) => (
           <option key={category.id} value={category.id}>
-            {category.name}
+            {categoryVisualName(category.id, category.name)}
           </option>
         ))}
         <option value={TIREOIDE_ID}>Tireoide</option>
       </select>
       {compact ? <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${categoryDotClass(categoria)}`} /> : null}
-      <span className="truncate">{compact ? categoryCompactName(categoria, currentName) : currentName}</span>
+      <span className="truncate">{categoryVisualName(categoria, compact ? categoryCompactName(categoria, currentName) : currentName)}</span>
       <ChevronDown className={`absolute right-3 ${compact ? 'h-3.5 w-3.5 text-gray-400' : 'h-4 w-4'}`} />
     </label>
   )
@@ -176,6 +191,7 @@ function completedTireoideSections(state: TireoideState) {
 }
 
 export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, agentWorkspace = false }: LaudarWebExperienceProps) {
+  const [choosingCategory, setChoosingCategory] = useState(true)
   const [categoria, setCategoria] = useState<string>(GENERIC_CATEGORIES[0]?.id ?? 'ABDOMEN_TOTAL')
   // Um ExamState por categoria genérica (preserva o preenchimento ao alternar).
   const [examStates, setExamStates] = useState<Record<string, ExamState>>(() =>
@@ -211,11 +227,19 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // Controles de categoria (estado reservado em '__opts') — lido antes das seções
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
   const opts = (examStates[categoria]?.['__opts'] as ExamState[string] | undefined) ?? {}
+  const documentKey = chaveDocumentoDoppler(categoria, examStates[categoria] ?? {})
   const supportsFetalSchema = supportsFetalPositionSchema(categoria, opts.trimestre)
   const supportsVisualSchema = isTireoide || categoria === 'MAMARIA' || supportsFetalSchema
-  const baseSections: UiSection[] = isTireoide
+  const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
+  /**
+   * Biometria e crescimento fetal dividem um painel só — agrupamento de
+   * apresentação, com os dois módulos intactos no estado. Doppler isolado e
+   * morfológico de 1º trimestre não têm os dois módulos e seguem sem alteração.
+   */
+  const biometryGrowth = agruparBiometriaCrescimento(isTireoide ? TIREOIDE_ID : categoria, categorySections)
+  const baseSections: UiSection[] = biometryGrowth.sections
   // Calculadoras pertinentes → seção "Cálculos".
   const calculators = isTireoide
     ? [tiRadsSpec]
@@ -237,12 +261,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   }, [categoria, examStates, opts.trimestre])
   const calcSections: UiSection[] = calculators.map((c) => ({ id: `calc:${c.id}`, label: c.name, group: 'calculos' as const }))
   const sections: UiSection[] = [...baseSections, ...calcSections]
-  const activeSectionId = activeByCat[categoria] ?? sections[0]?.id ?? ''
+  // Uma seção ativa gravada como 'biometria'/'crescimento_fetal' (rascunho
+  // anterior ou envio do celular) continua levando ao painel agrupado.
+  const activeSectionId = resolverSecaoAtivaAgrupada(sections, activeByCat[categoria] ?? sections[0]?.id ?? '')
   const setActiveSectionId = (id: string) => setActiveByCat((s) => ({ ...s, [categoria]: id }))
   const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0]
   const currentCategory = isTireoide ? TIREOIDE_CATEGORY : genericCategory!
   const examState = isTireoide ? undefined : examStates[categoria]
   const tireoideCompleted = useMemo(() => completedTireoideSections(tireoideState), [tireoideState])
+  const biometryGrowthCompleted = biometryGrowth.biometry && biometryGrowth.growth
+    ? idsConcluidosAgrupados(sections, biometryGrowth, examState)
+    : undefined
 
   // Controles de categoria (via, menopausa, segmento…).
   const controls = isTireoide ? [] : genericCategory?.controls ?? []
@@ -311,7 +340,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       return adaptarMorfologico(estado, opcoes)
     }
     if (categoria === 'DOPPLER_OBSTETRICO') {
-      return adaptarDopplerObstetrico((examStates[categoria] ?? {}) as Record<string, unknown>)
+      return adaptarDopplerWeb(examStates[categoria] ?? {})
     }
     if (categoria === 'DOPPLER_CAROTIDAS') {
       return adaptarDopplerCarotidas((examStates[categoria] ?? {}) as Record<string, unknown>)
@@ -319,7 +348,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     return null
   }, [categoria, examStates, isTireoide, tireoideState])
 
-  const laudoCanonico = useLaudoCanonico(categoria, achadosCanonicos, migrada)
+  const renderCategory = categoria === 'DOPPLER_OBSTETRICO'
+    ? categoriaRenderDoppler(examStates[categoria] ?? {})
+    : categoria
+  const laudoCanonico = useLaudoCanonico(renderCategory, achadosCanonicos, migrada && !choosingCategory, documentKey)
 
   const generatedText = useMemo(() => {
     if (migrada) return laudoCanonico.texto
@@ -368,9 +400,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
    * ele editou é dele, e nada sobrescreve sem ele mandar.
    */
   const [calculatorBlocksByCategory, setCalculatorBlocksByCategory] = useState<Record<string, Record<string, string>>>({})
-  const calculatorBlocks = calculatorBlocksByCategory[categoria] ?? {}
+  const calculatorBlocks = calculatorBlocksByCategory[documentKey] ?? {}
   const [companionNotesByCategory, setCompanionNotesByCategory] = useState<Record<string, string[]>>({})
-  const companionNotes = companionNotesByCategory[categoria] ?? []
+  const companionNotes = companionNotesByCategory[documentKey] ?? []
   const composedText = useMemo(
     () => [
       generatedText,
@@ -382,24 +414,24 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const insertCalculatorBlock = (calculatorId: string, block: string) => {
     setCalculatorBlocksByCategory((all) => ({
       ...all,
-      [categoria]: { ...(all[categoria] ?? {}), [calculatorId]: block },
+      [documentKey]: { ...(all[documentKey] ?? {}), [calculatorId]: block },
     }))
   }
   const removeCalculatorBlock = (calculatorId: string) => {
     setCalculatorBlocksByCategory((all) => {
-      const current = { ...(all[categoria] ?? {}) }
+      const current = { ...(all[documentKey] ?? {}) }
       delete current[calculatorId]
-      return { ...all, [categoria]: current }
+      return { ...all, [documentKey]: current }
     })
   }
 
-  // O texto manual é preservado por categoria. Enquanto o usuário não editar,
+  // O texto manual é preservado por categoria e modo Doppler. Enquanto o usuário não editar,
   // os controles determinísticos continuam atualizando o documento ao vivo.
   // Depois da primeira edição, uma nova composição nunca sobrescreve o rascunho.
   const [reportDrafts, setReportDrafts] = useState<Record<string, ReportDraft>>({})
   const [undoByCategory, setUndoByCategory] = useState<Record<string, UndoSnapshot | undefined>>({})
   const generatedHtml = useMemo(() => textToReportHtml(composedText), [composedText])
-  const storedDraft = reportDrafts[categoria]
+  const storedDraft = reportDrafts[documentKey]
   const activeDraft: ReportDraft = storedDraft ?? {
     text: composedText,
     html: generatedHtml,
@@ -415,13 +447,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     [composedText, documentText, sourceChanged]
   )
   const onDocumentChange = ({ text, html }: { text: string; html: string }) => {
-    setUndoByCategory((undo) => ({ ...undo, [categoria]: undefined }))
+    setUndoByCategory((undo) => ({ ...undo, [documentKey]: undefined }))
     setReportDrafts((drafts) => {
-      const sourceText = drafts[categoria]?.dirty ? drafts[categoria].sourceText : composedText
-      const sourceHtml = drafts[categoria]?.dirty ? drafts[categoria].sourceHtml : generatedHtml
+      const sourceText = drafts[documentKey]?.dirty ? drafts[documentKey].sourceText : composedText
+      const sourceHtml = drafts[documentKey]?.dirty ? drafts[documentKey].sourceHtml : generatedHtml
       return {
         ...drafts,
-        [categoria]: {
+        [documentKey]: {
           text,
           html,
           sourceText,
@@ -437,7 +469,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       : generatedHtml
     setUndoByCategory((undo) => ({
       ...undo,
-      [categoria]: {
+      [documentKey]: {
         previousText: documentText,
         previousHtml: documentHtml,
         appliedText: composedText,
@@ -446,7 +478,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }))
     setReportDrafts((drafts) => ({
       ...drafts,
-      [categoria]: {
+      [documentKey]: {
         text: composedText,
         html: appliedHtml,
         sourceText: composedText,
@@ -460,10 +492,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       const confirmed = window.confirm('Substituir a edição manual pelo modelo gerado a partir dos campos atuais?')
       if (!confirmed) return
     }
-    setUndoByCategory((undo) => ({ ...undo, [categoria]: undefined }))
+    setUndoByCategory((undo) => ({ ...undo, [documentKey]: undefined }))
     setReportDrafts((drafts) => ({
       ...drafts,
-      [categoria]: {
+      [documentKey]: {
         text: composedText,
         html: generatedHtml,
         sourceText: composedText,
@@ -474,10 +506,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   }
   const rejectCurrentModel = () => {
     setReportDrafts((drafts) => {
-      const current = drafts[categoria] ?? activeDraft
+      const current = drafts[documentKey] ?? activeDraft
       return {
         ...drafts,
-        [categoria]: {
+        [documentKey]: {
           text: current.text,
           html: current.html,
           sourceText: composedText,
@@ -488,11 +520,11 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     })
   }
   const undoAcceptedSuggestion = () => {
-    const snapshot = undoByCategory[categoria]
+    const snapshot = undoByCategory[documentKey]
     if (!snapshot || snapshot.appliedText !== composedText || documentText !== composedText) return
     setReportDrafts((drafts) => ({
       ...drafts,
-      [categoria]: {
+      [documentKey]: {
         text: snapshot.previousText,
         html: snapshot.previousHtml,
         sourceText: composedText,
@@ -500,9 +532,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         dirty: snapshot.previousText !== composedText || snapshot.previousHtml !== generatedHtml,
       },
     }))
-    setUndoByCategory((undo) => ({ ...undo, [categoria]: undefined }))
+    setUndoByCategory((undo) => ({ ...undo, [documentKey]: undefined }))
   }
-  const undoSnapshot = undoByCategory[categoria]
+  const undoSnapshot = undoByCategory[documentKey]
   const canUndoSuggestion = Boolean(
     undoSnapshot &&
     undoSnapshot.appliedText === composedText &&
@@ -559,10 +591,15 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     try {
       await saveWebReport({
         categoryCode: categoria,
-        title: currentCategory.name,
+        title: categoria === 'DOPPLER_OBSTETRICO'
+          ? somenteDoppler(examStates[categoria] ?? {}) ? 'Somente Doppler obstétrico' : 'Obstétrica com Doppler'
+          : currentCategory.name,
         laudoText: preview,
         examState: attachReportPresentation(
-          isTireoide ? tireoideState : examStates[categoria],
+          isTireoide ? tireoideState
+            : categoria === 'DOPPLER_OBSTETRICO' ? estadoDopplerVisivel(examStates[categoria] ?? {})
+            : categoria === 'OBSTETRICA' ? { ...examStates[categoria], doppler: {} }
+            : examStates[categoria],
           previewHtml,
         ),
       })
@@ -579,6 +616,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (choosingCategory) return
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         const select = document.querySelector<HTMLSelectElement>('[data-category-selector] select')
@@ -598,7 +636,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [activeSection?.id, next, previous])
+  }, [activeSection?.id, next, previous, choosingCategory])
 
   const resetActive = () => {
     if (!activeSection) return
@@ -623,19 +661,82 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       return
     }
 
+    // O painel agrupado limpa os DOIS módulos numa única atualização — meio
+    // reset deixaria na tela um percentil órfão das medidas que o justificavam.
+    if (activeSection.id === BIOMETRY_GROWTH_SECTION_ID && biometryGrowth.biometry && biometryGrowth.growth) {
+      const biometryInitial = biometryGrowth.biometry.initialState()
+      const growthInitial = biometryGrowth.growth.initialState()
+      setExamStates((all) => ({
+        ...all,
+        [categoria]: {
+          ...all[categoria],
+          [BIOMETRY_SECTION_ID]: biometryInitial,
+          [GROWTH_SECTION_ID]: growthInitial,
+        },
+      }))
+      return
+    }
+
     if (!activeSection.module) return
     const mod = activeSection.module
     setExamStates((all) => ({
       ...all,
-      [categoria]: { ...all[categoria], [activeSection.id]: mod.initialState() },
+      [categoria]: invalidarPercentilManual(all[categoria], { ...all[categoria], [activeSection.id]: mod.initialState() }),
     }))
   }
 
   return (
-    <div className={`min-h-screen overflow-hidden text-gray-900 dark:text-gray-100 ${workspaceV2 ? 'bg-[#F2F2F7] p-2 dark:bg-[#0B0B0F]' : 'bg-gray-100 dark:bg-gray-950'}`}>
+    <>
+    {choosingCategory && <ExamCategoryPicker onSelect={(id) => {
+      setCategoria(id)
+      setChoosingCategory(false)
+    }} />}
+    <div hidden={choosingCategory} className={`laudar-web-responsive min-h-screen overflow-hidden text-gray-900 dark:text-gray-100 ${workspaceV2 ? 'bg-[#F2F2F7] p-2 dark:bg-[#0B0B0F]' : 'bg-gray-100 dark:bg-gray-950'}`}>
+      <style>{`
+        @media (max-width: 1279px) {
+          .laudar-web-responsive { overflow: visible; overflow-wrap: anywhere; }
+          .laudar-web-responsive > header {
+            position: relative; height: auto; flex-wrap: wrap; padding: 12px;
+          }
+          .laudar-web-responsive > header > * { min-width: 0; max-width: 100%; }
+          .laudar-web-responsive [data-category-selector] {
+            min-width: 0; max-width: 100%; height: auto; min-height: 40px;
+            padding-top: 8px; padding-bottom: 8px;
+          }
+          .laudar-web-responsive [data-category-selector] > span {
+            white-space: normal; overflow: visible; text-overflow: clip;
+          }
+          .laudar-web-responsive > main { height: auto; }
+          .laudar-web-responsive .laudar-layout {
+            height: auto; grid-template-columns: minmax(0, 1fr); row-gap: 12px;
+          }
+          .laudar-web-responsive .laudar-layout > * {
+            min-width: 0; width: 100%; height: auto; overflow: visible;
+          }
+          .laudar-web-responsive .laudar-layout nav button > span:first-child {
+            white-space: normal; overflow: visible; text-overflow: clip;
+          }
+          .laudar-web-responsive .laudar-layout input,
+          .laudar-web-responsive .laudar-layout select,
+          .laudar-web-responsive .laudar-layout textarea { min-width: 0; max-width: 100%; }
+          .laudar-web-responsive .laudar-layout > section > footer {
+            position: static; flex-wrap: wrap; padding: 12px;
+          }
+          .laudar-web-responsive .laudar-layout article {
+            padding: 20px 16px; min-width: 0; overflow-wrap: anywhere;
+          }
+          .laudar-web-responsive .laudar-layout article h1 { overflow-wrap: anywhere; }
+          .laudar-web-responsive .laudar-layout > div > section > div { min-width: 0; }
+          .laudar-web-responsive .laudar-layout > div > section > div:last-child { padding: 12px; }
+        }
+      `}</style>
       <header className={workspaceV2
         ? 'sticky top-0 z-40 flex h-[76px] items-center gap-3 bg-transparent px-2'
         : 'sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/70 px-5 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/70'}>
+        <button type="button" onClick={() => setChoosingCategory(true)} aria-label="Voltar às categorias" title="Voltar às categorias"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-emerald-600 dark:hover:bg-gray-800">
+          <ArrowLeft aria-hidden="true" className="h-5 w-5" />
+        </button>
         {workspaceV2 ? (
           <div className="flex flex-col items-start gap-1.5">
             <div className="flex items-end gap-2">
@@ -727,29 +828,34 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       <main className={`relative ${workspaceV2 ? 'h-[calc(100vh-92px)]' : 'h-[calc(100vh-64px)]'}`}>
         <LaudarRail workspaceV2={workspaceV2} />
         <div className={workspaceV2
-          ? 'ml-14 grid h-full grid-cols-[142px_minmax(310px,0.76fr)_minmax(440px,1.44fr)] gap-2'
-          : 'ml-16 grid h-full grid-cols-[196px_minmax(380px,0.82fr)_minmax(500px,1.18fr)]'}>
+          ? 'laudar-layout ml-14 grid h-full grid-cols-[142px_minmax(310px,0.76fr)_minmax(440px,1.44fr)] gap-2'
+          : 'laudar-layout ml-16 grid h-full grid-cols-[196px_minmax(380px,0.82fr)_minmax(500px,1.18fr)]'}>
           <ExamSectionNav
             sections={sections}
             activeId={activeSection?.id ?? ''}
             onSelect={setActiveSectionId}
             examState={isTireoide ? undefined : examState}
-            completedIds={isTireoide ? tireoideCompleted : undefined}
+            completedIds={isTireoide ? tireoideCompleted : biometryGrowthCompleted}
             category={currentCategory}
             controls={controls}
             opts={opts}
             onOpts={onOpts}
             workspaceV2={workspaceV2}
-            contentGroupLabel={
-              ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO'].includes(categoria)
-                ? 'Etapas do exame'
-                : categoria === 'MAMARIA'
-                  ? 'Partes do exame'
-                : categoria === 'MUSCULOESQUELETICO'
-                  ? 'Estruturas'
-                  : undefined
-            }
-          />
+            contentGroupLabel={categoryContentGroupLabel(categoria)}
+          >
+            {categoria === 'DOPPLER_OBSTETRICO' ? (
+              <label className="flex cursor-pointer items-center gap-2 border-b border-gray-200 px-3 py-3 text-xs font-semibold dark:border-gray-800">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  className="h-4 w-4 shrink-0 accent-emerald-600"
+                  checked={opts.somente_doppler === 'sim'}
+                  onChange={(event) => onOpts('somente_doppler', event.target.checked ? 'sim' : 'nao')}
+                />
+                Somente Doppler
+              </label>
+            ) : null}
+          </ExamSectionNav>
 
           <section className={`min-h-0 ${workspaceV2 ? 'flex flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]' : 'overflow-y-auto bg-gray-50 dark:bg-gray-900'}`}>
             <div className={workspaceV2
@@ -824,6 +930,27 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                     }))
                   }
                 />
+              ) : activeSection?.id === BIOMETRY_GROWTH_SECTION_ID && biometryGrowth.biometry && biometryGrowth.growth ? (
+                <BiometryGrowthPanel
+                  biometry={biometryGrowth.biometry}
+                  biometryState={examState?.[BIOMETRY_SECTION_ID] ?? biometryGrowth.biometry.initialState()}
+                  onBiometryChange={(nextState) =>
+                    setExamStates((all) => ({
+                      ...all,
+                      [categoria]: invalidarPercentilManual(all[categoria], { ...all[categoria], [BIOMETRY_SECTION_ID]: nextState }),
+                    }))
+                  }
+                  growth={biometryGrowth.growth}
+                  growthState={examState?.[GROWTH_SECTION_ID] ?? biometryGrowth.growth.initialState()}
+                  igState={examState?.ig ?? {}}
+                  onGrowthChange={(nextState) =>
+                    setExamStates((all) => ({
+                      ...all,
+                      [categoria]: { ...all[categoria], [GROWTH_SECTION_ID]: nextState },
+                    }))
+                  }
+                  compact={workspaceV2}
+                />
               ) : activeSection?.module ? (
                 <OrganFormPanel
                   schema={activeSection.module.schema}
@@ -831,16 +958,14 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   compact={workspaceV2}
                   gestationalWeeks={(() => {
                     if (activeSection.id !== 'doppler') return undefined
-                    const raw = categoria === 'DOPPLER_OBSTETRICO'
-                      ? examState?.doppler?.ig_sem
-                      : examState?.ig?.bio_sem
+                    const raw = examState?.ig?.bio_sem
                     const value = Number.parseFloat(String(raw ?? '').replace(',', '.'))
                     return Number.isFinite(value) ? value : null
                   })()}
                   onChange={(nextState) =>
                     setExamStates((all) => ({
                       ...all,
-                      [categoria]: { ...all[categoria], [activeSection.id]: nextState },
+                      [categoria]: invalidarPercentilManual(all[categoria], { ...all[categoria], [activeSection.id]: nextState }),
                     }))
                   }
                 />
@@ -912,7 +1037,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 onClose={() => setVisualSchemaOpen(false)}
               />
             ) : <LaudoPreview
-              documentKey={categoria}
+              documentKey={documentKey}
               text={preview}
               saveState={saveState}
               saveError={saveError}
@@ -941,7 +1066,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         onStateChange={setCompanionState}
         onApplyText={(text) => setCompanionNotesByCategory((all) => ({
           ...all,
-          [categoria]: [...(all[categoria] ?? []), text],
+          [documentKey]: [...(all[documentKey] ?? []), text],
         }))}
         onApplyStructured={(payload: CompanionStructuredPayload) => {
           if (payload.category === 'TIREOIDE') {
@@ -962,9 +1087,14 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             setActiveByCat((all) => ({ ...all, DOPPLER_CAROTIDAS: 'direita' }))
             return
           }
+          // Peso/IG vindos do celular também invalidam percentil que não veio junto.
           setExamStates((all) => ({
             ...all,
-            [payload.category]: applyCompanionStructured(all[payload.category] ?? {}, payload),
+            [payload.category]: invalidarPercentilManual(
+              all[payload.category],
+              applyCompanionStructured(all[payload.category] ?? {}, payload),
+              companionReenviaPercentil(payload),
+            ),
           }))
           setCategoria(payload.category)
           setActiveByCat((all) => ({
@@ -974,5 +1104,6 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         }}
       />
     </div>
+    </>
   )
 }

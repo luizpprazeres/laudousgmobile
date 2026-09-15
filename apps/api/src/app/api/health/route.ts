@@ -1,8 +1,6 @@
-export const runtime = "nodejs";
+import { createHealthHandler } from "@/server/health/probes";
 
-export async function GET() {
-  return new Response(
-    JSON.stringify({ ok: true, service: "laudousg-api", ts: new Date().toISOString() }),
-    { status: 200, headers: { "content-type": "application/json" } },
-  );
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export const GET = createHealthHandler();

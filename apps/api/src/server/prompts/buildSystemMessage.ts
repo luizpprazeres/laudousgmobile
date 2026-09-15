@@ -17,6 +17,25 @@ import { ABDOMEN_POLIPO_BLOCK } from "./contracts/ABDOMEN_TOTAL";
 import { toObjectiveHeaders } from "./contracts/objective";
 import { getStyleOverlay } from "./styles";
 import { LIVRE_SYSTEM_PROMPT } from "../pipeline/livreSystemPrompt";
+import { requestedExamInstruction, resolveWriterExam, type DopplerMode } from "../pipeline/requestedExam";
+import { DOPPLER_OBSTETRICO_CONTRACT, DOPPLER_OBSTETRICO_MODELO_BASE } from "./contracts/DOPPLER_OBSTETRICO";
+import { MORFOLOGICO_CONTRACT } from "./contracts/MORFOLOGICO";
+import { OBSTETRICA_PLAIN_WRITER_POLICY } from "./obstetricaPlainPolicy";
+
+const DOPPLER_COMBINED_CONTRACT = `FUNÇÃO: gerar ultrassonografia obstétrica com Doppler usando integralmente o modelo combinado da biblioteca ativa.
+Preserve título, ordem e seções do modelo combinado, incluindo biometria, placenta, líquido amniótico e Doppler. Não substitua por modelo obstétrico simples nem por avaliação vascular isolada.
+Preserve medidas, lateralidades, negações e achados ditados. Não invente medidas, índices, normalidade vascular ou conclusões sem evidência. IR e IP são independentes; omita índices não informados.`;
+
+/** Remove only the two legacy rounding instructions, not adjacent safety rules. */
+function globalSectionForCategory(text: string, categoryCode: string): string {
+  if (categoryCode !== "MORFOLOGICO") return text;
+  return text
+    .replace(
+      'Quando o médico informar um percentil decimal (ex.: 47,8 ou 12,4), ARREDONDE para o inteiro mais próximo (47,8 → 48; 12,4 → 12). ',
+      "",
+    )
+    .replace("Percentil decimal → arredondar para INTEIRO. ", "");
+}
 
 /**
  * Monta o system message do writer seguindo a ordem do LaudoUSG original
@@ -44,6 +63,8 @@ import { LIVRE_SYSTEM_PROMPT } from "../pipeline/livreSystemPrompt";
  */
 export function buildSystemMessage(args: {
   categoryCode: string;
+  dopplerMode?: DopplerMode;
+  includeDoppler?: boolean;
   categoryLabel: string;
   writingStyleCode: WritingStyleCode;
   ragBlocks: RagBlockForPrompt[];
@@ -63,10 +84,12 @@ export function buildSystemMessage(args: {
       : LIVRE_SYSTEM_PROMPT;
   }
 
-  const contract = getCategoryContract(
-    args.categoryCode,
-    args.writingStyleCode,
-  );
+  const plainObstetrica = args.categoryCode === "OBSTETRICA" && args.includeDoppler === false;
+  const writerExam = resolveWriterExam(args.categoryCode, plainObstetrica ? undefined : args.dopplerMode);
+  const isolated = writerExam.dopplerMode === "isolated";
+  const contract = isolated ? DOPPLER_OBSTETRICO_CONTRACT
+    : writerExam.dopplerMode === "combined" ? DOPPLER_COMBINED_CONTRACT
+    : getCategoryContract(args.categoryCode, args.writingStyleCode);
   const styleOverlay = getStyleOverlay(args.writingStyleCode);
   const formatSection =
     args.writingStyleCode === "OBJETIVO" ? toObjectiveHeaders : (text: string) => text;
@@ -76,10 +99,12 @@ export function buildSystemMessage(args: {
   // Converte-os para TÉCNICA / ACHADOS / IMPRESSÃO ANTES de injetar — senão o LLM
   // copia o cabeçalho clássico do template e ignora o overlay (ex.: DOPPLER_VENOSO
   // saindo com "CONCLUSÃO:" em vez de "IMPRESSÃO:").
+  // The isolated model is code-owned, never mixed with combined DB snippets.
+  const selectedBlocks = isolated ? [] : args.ragBlocks;
   const ragBlocks =
     args.writingStyleCode === "OBJETIVO"
-      ? args.ragBlocks.map((b) => ({ ...b, content: toObjectiveHeaders(b.content) }))
-      : args.ragBlocks;
+      ? selectedBlocks.map((b) => ({ ...b, content: toObjectiveHeaders(b.content) }))
+      : selectedBlocks;
 
   const fewShots = ragBlocks.filter((b) => b.kind === "exemplo");
   const otherBlocks = ragBlocks.filter((b) => b.kind !== "exemplo");
@@ -105,7 +130,7 @@ export function buildSystemMessage(args: {
   if (
     (args.categoryCode === "OBSTETRICA" ||
       args.categoryCode === "DOPPLER_OBSTETRICO") &&
-    args.hasPlacenta
+    args.hasPlacenta && !isolated
   ) {
     sections.push(PLACENTA_BLOCK);
   }
@@ -120,9 +145,11 @@ export function buildSystemMessage(args: {
 
   // 2. subspecialty — TODO
 
-  sections.push(formatSection(GLOBAL_RULES_BLOCK));
+  sections.push(formatSection(globalSectionForCategory(GLOBAL_RULES_BLOCK, args.categoryCode)));
 
   if (styleOverlay) sections.push(styleOverlay);
+
+  if (isolated) sections.push(formatSection(DOPPLER_OBSTETRICO_MODELO_BASE));
 
   // Fix codex MÉDIO #5: blocos RAG normativos (modelo/regra/frase/conclusao/
   // excecao/comentario_tecnico) entram ANTES dos few-shots. Few-shots têm
@@ -147,9 +174,18 @@ export function buildSystemMessage(args: {
 
   if (args.hardening) sections.push(formatSection(WRITER_HARDENING_BLOCK));
   sections.push(formatSection(GLOBAL_PROHIBITIONS));
-  sections.push(formatSection(buildCoTInstruction(args.categoryLabel)));
+  sections.push(formatSection(globalSectionForCategory(buildCoTInstruction(args.categoryLabel), args.categoryCode)));
 
-  return sections.join("\n\n");
+  if (args.categoryCode === "MORFOLOGICO") {
+    sections.push(
+      "PRECEDÊNCIA ESPECÍFICA DO MORFOLÓGICO: as regras abaixo prevalecem sobre regras globais, exemplos e exigências conflitantes do modelo. Não arredonde percentis informados. Quando houver cervicometria transvaginal associada informada, inclua obrigatoriamente o complemento no título e na técnica, mesmo que o modelo exija título exato sem complemento. Preserve a medida cervical ditada.\n" +
+      formatSection(MORFOLOGICO_CONTRACT),
+    );
+  }
+
+  if (plainObstetrica) sections.push(OBSTETRICA_PLAIN_WRITER_POLICY);
+
+  return sections.join("\n\n") + (isolated ? "" : requestedExamInstruction(writerExam.categoryCode, writerExam.dopplerMode));
 }
 
 function formatRagSection(blocks: RagBlockForPrompt[]): string {

@@ -72,6 +72,19 @@ export const MorfologicoFindingsSchema = z.object({
   umero_mm: z.number().nullable(),
   radio_mm: z.number().nullable(),
   ulna_mm: z.number().nullable(),
+  // Opcionais para preservar os achados legados sem lateralidade.
+  femur_dir_mm: z.number().nullable().optional(),
+  femur_esq_mm: z.number().nullable().optional(),
+  tibia_dir_mm: z.number().nullable().optional(),
+  tibia_esq_mm: z.number().nullable().optional(),
+  fibula_dir_mm: z.number().nullable().optional(),
+  fibula_esq_mm: z.number().nullable().optional(),
+  umero_dir_mm: z.number().nullable().optional(),
+  umero_esq_mm: z.number().nullable().optional(),
+  radio_dir_mm: z.number().nullable().optional(),
+  radio_esq_mm: z.number().nullable().optional(),
+  ulna_dir_mm: z.number().nullable().optional(),
+  ulna_esq_mm: z.number().nullable().optional(),
   peso_g: z.number().nullable(),
   peso_variacao_g: z.number().nullable(),
   percentil: z.number().nullable(),
@@ -126,12 +139,15 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "uterina_ip_direita", "uterina_ip_esquerda",
     "dbp_mm", "cc_mm", "cerebelo_mm", "cisterna_magna_mm", "binocular_mm", "ca_mm",
     "femur_mm", "tibia_mm", "fibula_mm", "umero_mm", "radio_mm", "ulna_mm",
+    "femur_dir_mm", "femur_esq_mm", "tibia_dir_mm", "tibia_esq_mm",
+    "fibula_dir_mm", "fibula_esq_mm", "umero_dir_mm", "umero_esq_mm",
+    "radio_dir_mm", "radio_esq_mm", "ulna_dir_mm", "ulna_esq_mm",
     "peso_g", "peso_variacao_g", "percentil", "genitalia",
     "placenta_localizacao", "placenta_grau", "ila_cm",
     "ig_semanas", "ig_dias", "dum",
     "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
     "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
-    "achados_adicionais", "cervicometria", "doppler",
+    "achados_adicionais", "itens_conclusao_livres", "cervicometria", "doppler",
     "crescimento_fetal",
   ],
   properties: {
@@ -153,6 +169,9 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     uterina_ip_direita: num, uterina_ip_esquerda: num,
     dbp_mm: num, cc_mm: num, cerebelo_mm: num, cisterna_magna_mm: num, binocular_mm: num, ca_mm: num,
     femur_mm: num, tibia_mm: num, fibula_mm: num, umero_mm: num, radio_mm: num, ulna_mm: num,
+    femur_dir_mm: num, femur_esq_mm: num, tibia_dir_mm: num, tibia_esq_mm: num,
+    fibula_dir_mm: num, fibula_esq_mm: num, umero_dir_mm: num, umero_esq_mm: num,
+    radio_dir_mm: num, radio_esq_mm: num, ulna_dir_mm: num, ulna_esq_mm: num,
     peso_g: num, peso_variacao_g: num, percentil: num, genitalia: str,
     placenta_localizacao: str, placenta_grau: str, ila_cm: num,
     ig_semanas: num, ig_dias: num, dum: str,
@@ -187,7 +206,26 @@ REGRAS:
    úmero→umero_mm, rádio→radio_mm, ulna→ulna_mm, cerebelo→cerebelo_mm,
    cisterna magna→cisterna_magna_mm, distância binocular→binocular_mm. Valor não
    ditado → null (NUNCA inventar). ATENÇÃO: "CF" no bloco de biometria fetal é o
-   comprimento femoral (femur_mm) — NUNCA o deixe null se "CF: X" foi ditado.
+   comprimento femoral (femur_mm, quando sem lateralidade) — NUNCA o deixe null
+   se "CF: X" foi ditado sem lado.
+2b. LATERALIDADE DOS OSSOS — priorize os campos específicos quando houver lado:
+   fêmur direito/esquerdo → femur_dir_mm/femur_esq_mm;
+   tíbia direita/esquerda → tibia_dir_mm/tibia_esq_mm;
+   fíbula direita/esquerda → fibula_dir_mm/fibula_esq_mm;
+   úmero direito/esquerdo → umero_dir_mm/umero_esq_mm;
+   rádio direito/esquerdo → radio_dir_mm/radio_esq_mm;
+   ulna direita/esquerda → ulna_dir_mm/ulna_esq_mm.
+   Preserve valores distintos, inclusive casas decimais e a regra de unidades.
+   Lado não ditado → null; NUNCA copie o lado informado para o contralateral
+   nem para o campo genérico. Campo genérico (*_mm sem dir/esq) só recebe medida
+   explicitamente ditada SEM lateralidade. Não calcule média entre os lados.
+   Ex.: "fêmur direito 41 mm, esquerdo 39 mm" → femur_dir_mm=41,
+   femur_esq_mm=39, femur_mm=null. "tíbia esquerda 36 mm" → tibia_esq_mm=36,
+   tibia_dir_mm=null, tibia_mm=null. "CF 41 mm" → femur_mm=41 e lados null.
+   Se ambos os lados forem explicitamente ditados com o mesmo valor, preencha
+   ambos os específicos. Se coexistirem medida genérica e lateral, preserve-as
+   nos respectivos campos; o renderer prioriza as laterais, sem completar o
+   lado ausente com a genérica.
 3. osso_nasal: "presente"/"ausente". regurgitacao_tricuspide:
    "ausente"/"presente" somente quando avaliada. ducto_venoso:
    "normal"/"alterado" (onda A reversa = alterado; onda A positiva/trifásica = normal).
@@ -241,6 +279,17 @@ function ptBr(n: number): string {
 }
 function mm(v: number | null): string {
   return v === null ? "____" : ptBr(v);
+}
+function medidaOsso(
+  f: MorfologicoFindings,
+  osso: "femur" | "tibia" | "fibula" | "umero" | "radio" | "ulna",
+  lado: "dir" | "esq",
+): number | null {
+  // Um lado informado impede que a medida genérica invente o contralateral.
+  if (f[`${osso}_dir_mm`] != null || f[`${osso}_esq_mm`] != null) {
+    return f[`${osso}_${lado}_mm`] ?? null;
+  }
+  return f[`${osso}_mm`];
 }
 function formatIg(semanas: number | null, dias: number | null): string {
   if (semanas === null) return "____ semanas";
@@ -529,7 +578,7 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
           : "Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(f.anatomia_avaliada !== true || temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...(f.anatomia_avaliada !== true || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -573,19 +622,18 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     // Distância binocular: 2º trimestre apenas (removida no 3º, decisão Luiz).
     ...(terceiro ? [] : [`Distância binocular de ${mm(f.binocular_mm)} mm.`]),
     `Circunferência abdominal (CA) de ${mm(f.ca_mm)} mm.`,
-    // Ossos longos bilaterais — mesmo valor p/ ambos os lados (regra curada).
-    `Comprimento do fêmur direito de ${mm(f.femur_mm)} mm.`,
-    `Comprimento do fêmur esquerdo de ${mm(f.femur_mm)} mm.`,
-    `Comprimento da tíbia direita de ${mm(f.tibia_mm)} mm.`,
-    `Comprimento da tíbia esquerda de ${mm(f.tibia_mm)} mm.`,
-    `Comprimento da fíbula direita de ${mm(f.fibula_mm)} mm.`,
-    `Comprimento da fíbula esquerda de ${mm(f.fibula_mm)} mm.`,
-    `Comprimento do úmero direito de ${mm(f.umero_mm)} mm.`,
-    `Comprimento do úmero esquerdo de ${mm(f.umero_mm)} mm.`,
-    `Comprimento do rádio direito de ${mm(f.radio_mm)} mm.`,
-    `Comprimento do rádio esquerdo de ${mm(f.radio_mm)} mm.`,
-    `Comprimento da ulna direita de ${mm(f.ulna_mm)} mm.`,
-    `Comprimento da ulna esquerda de ${mm(f.ulna_mm)} mm.`,
+    `Comprimento do fêmur direito de ${mm(medidaOsso(f, "femur", "dir"))} mm.`,
+    `Comprimento do fêmur esquerdo de ${mm(medidaOsso(f, "femur", "esq"))} mm.`,
+    `Comprimento da tíbia direita de ${mm(medidaOsso(f, "tibia", "dir"))} mm.`,
+    `Comprimento da tíbia esquerda de ${mm(medidaOsso(f, "tibia", "esq"))} mm.`,
+    `Comprimento da fíbula direita de ${mm(medidaOsso(f, "fibula", "dir"))} mm.`,
+    `Comprimento da fíbula esquerda de ${mm(medidaOsso(f, "fibula", "esq"))} mm.`,
+    `Comprimento do úmero direito de ${mm(medidaOsso(f, "umero", "dir"))} mm.`,
+    `Comprimento do úmero esquerdo de ${mm(medidaOsso(f, "umero", "esq"))} mm.`,
+    `Comprimento do rádio direito de ${mm(medidaOsso(f, "radio", "dir"))} mm.`,
+    `Comprimento do rádio esquerdo de ${mm(medidaOsso(f, "radio", "esq"))} mm.`,
+    `Comprimento da ulna direita de ${mm(medidaOsso(f, "ulna", "dir"))} mm.`,
+    `Comprimento da ulna esquerda de ${mm(medidaOsso(f, "ulna", "esq"))} mm.`,
     pesoLinhaMorfo(f),
     ...(anexos.length > 0 ? ["", "Análise extra-fetal:", ...anexos] : []),
   ];
@@ -837,7 +885,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
           : "Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(f.anatomia_avaliada !== true || temAchado || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...(f.anatomia_avaliada !== true || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -891,19 +939,18 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     // Distância binocular: 2º trimestre apenas (decisão Luiz no clássico).
     ...(terceiro ? [] : [`Distância binocular: ${mm1(f.binocular_mm)} mm.`]),
     `Circunferência abdominal (CA): ${mm1(f.ca_mm)} mm.`,
-    // Ossos longos repetidos por membro (decisão Luiz, 2º/3º trimestre).
-    `Comprimento do fêmur direito: ${mm1(f.femur_mm)} mm.`,
-    `Comprimento do fêmur esquerdo: ${mm1(f.femur_mm)} mm.`,
-    `Comprimento da tíbia direita: ${mm1(f.tibia_mm)} mm.`,
-    `Comprimento da tíbia esquerda: ${mm1(f.tibia_mm)} mm.`,
-    `Comprimento da fíbula direita: ${mm1(f.fibula_mm)} mm.`,
-    `Comprimento da fíbula esquerda: ${mm1(f.fibula_mm)} mm.`,
-    `Comprimento do úmero direito: ${mm1(f.umero_mm)} mm.`,
-    `Comprimento do úmero esquerdo: ${mm1(f.umero_mm)} mm.`,
-    `Comprimento do rádio direito: ${mm1(f.radio_mm)} mm.`,
-    `Comprimento do rádio esquerdo: ${mm1(f.radio_mm)} mm.`,
-    `Comprimento da ulna direita: ${mm1(f.ulna_mm)} mm.`,
-    `Comprimento da ulna esquerda: ${mm1(f.ulna_mm)} mm.`,
+    `Comprimento do fêmur direito: ${mm1(medidaOsso(f, "femur", "dir"))} mm.`,
+    `Comprimento do fêmur esquerdo: ${mm1(medidaOsso(f, "femur", "esq"))} mm.`,
+    `Comprimento da tíbia direita: ${mm1(medidaOsso(f, "tibia", "dir"))} mm.`,
+    `Comprimento da tíbia esquerda: ${mm1(medidaOsso(f, "tibia", "esq"))} mm.`,
+    `Comprimento da fíbula direita: ${mm1(medidaOsso(f, "fibula", "dir"))} mm.`,
+    `Comprimento da fíbula esquerda: ${mm1(medidaOsso(f, "fibula", "esq"))} mm.`,
+    `Comprimento do úmero direito: ${mm1(medidaOsso(f, "umero", "dir"))} mm.`,
+    `Comprimento do úmero esquerdo: ${mm1(medidaOsso(f, "umero", "esq"))} mm.`,
+    `Comprimento do rádio direito: ${mm1(medidaOsso(f, "radio", "dir"))} mm.`,
+    `Comprimento do rádio esquerdo: ${mm1(medidaOsso(f, "radio", "esq"))} mm.`,
+    `Comprimento da ulna direita: ${mm1(medidaOsso(f, "ulna", "dir"))} mm.`,
+    `Comprimento da ulna esquerda: ${mm1(medidaOsso(f, "ulna", "esq"))} mm.`,
     pesoLinhaObj(f),
     ...(f.genitalia ? [`Genitália externa ${genitaliaFmt(f.genitalia)}.`] : []),
     ...(anexos.length > 0 ? ["", "Anexos:", ...anexos] : []),

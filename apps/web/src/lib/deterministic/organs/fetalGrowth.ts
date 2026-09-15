@@ -20,7 +20,8 @@ export function criarFetalGrowthModule(category: string): OrganModule {
               {
                 key: 'fonte', label: 'Curva do percentil', kind: 'mini-segmented',
                 options: [
-                  { value: 'Intergrowth-21st', label: 'Intergrowth', isDefault: true },
+                  { value: 'nao_informada', label: 'Não informada', isDefault: true },
+                  { value: 'Intergrowth-21st', label: 'Intergrowth' },
                   { value: 'Hadlock 1991', label: 'Hadlock' },
                   { value: 'outra', label: 'Outra' },
                 ],
@@ -50,7 +51,7 @@ export function criarFetalGrowthModule(category: string): OrganModule {
     initialState: (): OrganState => ({
       avaliar: 'nao',
       'avaliar.sim.percentil': '',
-      'avaliar.sim.fonte': 'Intergrowth-21st',
+      'avaliar.sim.fonte': 'nao_informada',
       'avaliar.sim.fonte_outra': '',
       'avaliar.sim.rcp_confirmada': 'nao',
       'avaliar.sim.acm_confirmada': 'nao',

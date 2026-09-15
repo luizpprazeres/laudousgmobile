@@ -4,6 +4,8 @@ import type {
   WritingStyleCode,
 } from "@laudousg/shared";
 import { env } from "../env";
+import { resolveWriterExam } from "./requestedExam";
+import { prepareMorfologicoBlocks } from "../prompts/morfologicoTemplate";
 import { writerClient, writerRequestParams } from "../ai/writerClient";
 import type { WriterModelConfig } from "./modelResolver";
 import { temperatureForCategory } from "./temperatureByCategory";
@@ -52,6 +54,9 @@ export function hasPolipoMention(rawInput: string): boolean {
  * Order de injeção do system message: ver prompts/buildSystemMessage.ts.
  */
 export async function* runWriterStream(args: {
+  dopplerMode?: "combined" | "isolated";
+  /** Explicit plain OBSTETRICA; omitted preserves existing direct calls. */
+  includeDoppler?: boolean;
   findings: StructuredFindings;
   ragBlocks: RagBlockForPrompt[];
   writingStyleCode: WritingStyleCode;
@@ -86,8 +91,10 @@ export async function* runWriterStream(args: {
 > {
   const t0 = Date.now();
 
-  const effectiveCategoryCode =
-    args.categoryCode ?? args.findings.categoria_detectada;
+  const requestedCategory = args.categoryCode ?? args.findings.categoria_detectada;
+  const plainObstetrica = requestedCategory === "OBSTETRICA" && args.includeDoppler === false;
+  const writerExam = resolveWriterExam(requestedCategory, plainObstetrica ? undefined : args.dopplerMode);
+  const effectiveCategoryCode = writerExam.categoryCode;
   const sourceTranscript = args.sourceTranscript ?? args.rawUserMessage ?? "";
 
   const systemMessage = buildSystemMessage({
@@ -95,9 +102,13 @@ export async function* runWriterStream(args: {
     // Bloco adicional; não altera nem desliga os condicionais existentes.
     hardening: env().WRITER_HARDENING === "true",
     categoryCode: effectiveCategoryCode,
+    dopplerMode: writerExam.dopplerMode,
+    includeDoppler: args.includeDoppler,
     categoryLabel: args.categoryLabel,
     writingStyleCode: args.writingStyleCode,
-    ragBlocks: args.ragBlocks,
+    ragBlocks: effectiveCategoryCode === "MORFOLOGICO"
+      ? prepareMorfologicoBlocks(args.ragBlocks, sourceTranscript)
+      : args.ragBlocks,
     hasAnexial:
       effectiveCategoryCode === "PELVE_FEMININA" &&
       hasAnexialMention(sourceTranscript),
@@ -115,7 +126,7 @@ export async function* runWriterStream(args: {
   args.onSystemMessage?.(systemMessage);
 
   const userMessage = args.rawUserMessage
-    ? buildRawUserMessage(args.rawUserMessage)
+    ? buildRawUserMessage(args.rawUserMessage, writerExam.dopplerMode === "isolated")
     : buildUserMessage(args.findings);
 
   const modelConfig = args.modelConfig ?? {
@@ -205,7 +216,7 @@ function buildUserMessage(f: StructuredFindings): string {
  * sem a etapa estruturadora. Instrui o modelo a tratar o texto como o ditado
  * (achados + comandos juntos) e seguir as regras/modelo do system message.
  */
-function buildRawUserMessage(rawInput: string): string {
+function buildRawUserMessage(rawInput: string, isolated = false): string {
   return [
     "=== DITADO DO MÉDICO (achados + instruções) ===",
     rawInput.trim(),
@@ -223,5 +234,7 @@ function buildRawUserMessage(rawInput: string): string {
     "3. Preserve TODAS as medidas, lateralidades e negações exatamente como ditadas.",
     "4. NÃO invente achados que o médico não mencionou.",
     "Retorne apenas o laudo técnico completo.",
-  ].join("\n");
+  ].join("\n") + (isolated
+    ? "\nEXCEÇÃO DO EXAME ISOLADO: omita índices ausentes, sem placeholders. As frases normais do modelo só podem ser usadas quando sustentadas pelo ditado ou cálculo fornecido. Não acrescente biometria, placenta ou conclusão obstétrica."
+    : "");
 }

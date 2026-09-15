@@ -1,0 +1,77 @@
+[
+  {
+    "id": "ABDOMEN_TOTAL",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-2f78a254-6bac-474c-84c3-45bbd58ef0db.png",
+    "file": "abdomen-total-v1.webp"
+  },
+  {
+    "id": "ABDOMEN_SUPERIOR",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-ab8aa292-6390-44e3-93b6-599cb9edbfa4.png",
+    "file": "abdomen-superior-v1.webp"
+  },
+  {
+    "id": "PROSTATA_SUPRAPUBICA",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-555fd554-e812-4290-bf07-7a4e2017fd6a.png",
+    "file": "prostata-v1.webp"
+  },
+  {
+    "id": "VIAS_URINARIAS",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-0c4e8f57-022c-4445-a336-6a14b1ded730.png",
+    "file": "vias-urinarias-v1.webp"
+  },
+  {
+    "id": "MAMARIA",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-70a2ded0-80d6-4041-a959-9816896269e7.png",
+    "file": "mamaria-v1.webp"
+  },
+  {
+    "id": "PELVE_FEMININA",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-f796c878-2ec7-4813-8f1d-640617889276.png",
+    "file": "pelve-v1.webp"
+  },
+  {
+    "id": "CERVICAL",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-bcdf51e9-b52b-46d7-be4d-e9176e484841.png",
+    "file": "cervical-v1.webp"
+  },
+  {
+    "id": "CERVICOMETRIA",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-c6d2fe0a-62d0-4e2d-98da-6c12a67a8415.png",
+    "file": "cervicometria-v1.webp"
+  },
+  {
+    "id": "PARTES_MOLES",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-ea62629d-3c78-453b-b38c-a33065981dc3.png",
+    "file": "partes-moles-v1.webp"
+  },
+  {
+    "id": "MUSCULOESQUELETICO",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-10bf9311-a08f-4e35-9a21-50ffea17b867.png",
+    "file": "msk-v1.webp"
+  },
+  {
+    "id": "OBSTETRICA",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-ea3e4714-067f-443c-b72a-71eae62e619c.png",
+    "file": "obstetrica-v1.webp"
+  },
+  {
+    "id": "MORFOLOGICO",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-50c9939c-b607-4937-b5fb-c7aa16efb762.png",
+    "file": "morfologico-v1.webp"
+  },
+  {
+    "id": "DOPPLER_OBSTETRICO",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-f9865b6e-eb7d-4819-b970-db1783c0d8cb.png",
+    "file": "doppler-obstetrico-v1.webp"
+  },
+  {
+    "id": "DOPPLER_CAROTIDAS",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-4344b9c6-d87e-4e45-baa4-b7cfa66cc4c7.png",
+    "file": "carotidas-v1.webp"
+  },
+  {
+    "id": "TIREOIDE",
+    "source": "/Users/luizprazeres/.codex/generated_images/019e1cc1-ebd9-7d52-9fe3-6051f6ff775d/exec-e348f660-2d3c-4f05-b5cf-6391b28b0950.png",
+    "file": "tireoide-v1.webp"
+  }
+]

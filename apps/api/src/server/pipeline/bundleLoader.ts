@@ -117,10 +117,21 @@ const MODEL_VARIANT_SELECTORS: Record<string, ModelVariantSelector> = {
   // gatilhos fortes; 2T é o caminho seguro quando nada aponta os extremos.
   MORFOLOGICO: {
     rules: [
+      // O trimestre nomeado vence marcadores, inclusive Doppler do ducto venoso.
+      {
+        variant: "2t",
+        trigger: /segundo\s+trimestre|\b2[ºo]?\s*trimestre\b|\b2t\b/i,
+        negation: /n[ãa]o\s+(?:é|e)\s+(?:o\s+)?segundo\s+trimestre/i,
+      },
+      {
+        variant: "3t",
+        trigger: /terceiro\s+trimestre|\b3[ºo]?\s*trimestre\b|\b3t\b/i,
+        negation: /n[ãa]o\s+(?:é|e)\s+(?:o\s+)?terceiro\s+trimestre/i,
+      },
       {
         variant: "1t",
         trigger:
-          /primeiro\s+trimestre|\b1[ºo]?\s*trimestre\b|\b1t\b|transluc[êe]ncia\s+nucal|\btn\b|\bccn\b|osso\s+nasal|ducto\s+venoso|\b(?:1[0-3]|[5-9])\s*semanas\b/i,
+          /primeiro\s+trimestre|\b1[ºo]?\s*trimestre\b|\b1t\b|transluc[êe]ncia\s+nucal|\btn\b|\bccn\b|\b(?:1[0-4]|[5-9])\s*semanas\b/i,
         negation: /n[ãa]o\s+(?:é|e)\s+(?:o\s+)?primeiro\s+trimestre|n[ãa]o\s+(?:é|e)\s+1[ºo]?\s*trimestre/i,
       },
       {
@@ -288,7 +299,7 @@ export async function loadDeterministicBundle(args: {
   };
 }
 
-function applyModeloVariantSelection<
+export function applyModeloVariantSelection<
   T extends { kind: string; tags: string[] },
 >(
   rows: T[],

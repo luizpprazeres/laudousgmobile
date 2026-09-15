@@ -1,6 +1,7 @@
 import { env } from "../env";
 import { normalizeAsrClinical } from "../pipeline/asrClinical";
 import { openai } from "../ai/openai";
+import { DOPPLER_MODULE_EXTRACTION_RULES } from "./categories/dopplerObstetricoModule";
 // Esquema visual venoso (DESENHO): schema per-segmento vindo do pacote
 // @laudousg/schemes. É SEPARADO do writer DOPPLER_VENOSO_MMII (texto do laudo) —
 // registrado abaixo sob a chave DOPPLER_VENOSO_MMII_SCHEME. O prompt é aliasado
@@ -386,6 +387,9 @@ const PROGRESS_MILESTONES: { field: string; label: string }[] = [
 
 export async function runRendererExtraction(args: {
   categoryCode: string;
+  dopplerMode?: "combined" | "isolated";
+  /** false opts out only for OBSTETRICA; undefined keeps the shared add-on. */
+  includeDoppler?: boolean;
   rawInput: string;
   signal?: AbortSignal;
   /** UX: streama a extração e emite "achado" por campo que aparece (flag). */
@@ -400,6 +404,22 @@ export async function runRendererExtraction(args: {
   }
   const t0 = Date.now();
   const e = env();
+  const plainObstetrica = args.categoryCode === "OBSTETRICA" && args.includeDoppler === false;
+  const extractionPrompt = plainObstetrica
+    ? extractor.prompt.replace(
+        DOPPLER_MODULE_EXTRACTION_RULES,
+        "\nEXAME SELECIONADO: obstétrico simples, sem complemento Doppler. O campo doppler deve ser null mesmo se houver índices vasculares residuais no ditado. Não transfira esses índices para observações ou conclusão nem acrescente técnica ou título Doppler. Preserve os demais achados obstétricos.",
+      )
+    : extractor.prompt;
+  const jsonSchema = plainObstetrica
+    ? {
+        ...extractor.jsonSchema,
+        properties: {
+          ...(extractor.jsonSchema.properties as Record<string, unknown>),
+          doppler: { type: "null" },
+        },
+      }
+    : extractor.jsonSchema;
   // Boletim 2026-06-30: normaliza garble de ASR clínico inequívoco ANTES da
   // extração (flag ASR_CLINICAL) — o LLM não ecoa/perde o dado. OFF = intocado.
   const rawInput =
@@ -415,11 +435,13 @@ export async function runRendererExtraction(args: {
       json_schema: {
         name: extractor.schemaName,
         strict: true,
-        schema: extractor.jsonSchema,
+        schema: jsonSchema,
       },
     },
     messages: [
-      { role: "system" as const, content: extractor.prompt },
+      { role: "system" as const, content: extractionPrompt + (!plainObstetrica && args.categoryCode === "OBSTETRICA" && args.dopplerMode === "combined"
+        ? "\nEXAME SELECIONADO: obstétrico com Doppler. Preserve toda a biometria e os achados obstétricos ditados. Preencha o módulo doppler, com null para índices e características não informados; não invente medidas ou normalidade vascular."
+        : "") },
       { role: "user" as const, content: `Ditado do médico:\n${rawInput}` },
     ],
   };
@@ -462,7 +484,13 @@ export async function runRendererExtraction(args: {
   }
 
   if (!raw) throw new Error("renderer extraction: resposta vazia");
-  const findings = extractor.parse(JSON.parse(raw));
+  const parsed = JSON.parse(raw);
+  // Enforce the explicit choice even if the provider ignores the null-only schema.
+  const findings = extractor.parse(
+    plainObstetrica && parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? { ...parsed, doppler: null }
+      : parsed,
+  );
 
   return { findings, latencyMs: Date.now() - t0, inputTokens, outputTokens };
 }

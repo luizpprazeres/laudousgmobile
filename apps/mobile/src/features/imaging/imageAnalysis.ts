@@ -1,4 +1,4 @@
-import { getAccessToken } from "@/lib/api";
+import type { DopplerMode } from "../generate/dopplerMode";
 
 /**
  * Análise de imagem de USG (biometria obstétrica) — espelho fiel do
@@ -98,11 +98,40 @@ type AnalyzeResponse = {
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
+export type ImagingOptions = { includeDoppler?: boolean; dopplerMode?: DopplerMode };
+
+export function imagingRequestFields(category: ImagingCategory, options: ImagingOptions = {}) {
+  const combined = category === "DOPPLER_OBSTETRICO" && options.dopplerMode !== "isolated";
+  return {
+    category: combined ? "OBSTETRICA" : category,
+    gemelar: false,
+    modules: combined || (category === "MORFOLOGICO" && options.includeDoppler === true)
+      ? ["DOPPLER_OBSTETRICO"] : [],
+  };
+}
+
+const DOPPLER_KEYS: (keyof BiometricData)[] = [
+  "irRightUterine", "ipRightUterine", "irLeftUterine", "ipLeftUterine",
+  "irUmbilical", "ipUmbilical", "irMCA", "ipMCA", "irDuctusVenosus", "ipDuctusVenosus",
+];
+
+// Filtra tambem os dados enviados ao companion, nao apenas o texto visivel.
+export function selectImagingData(data: BiometricData, category: ImagingCategory, options: ImagingOptions = {}): BiometricData {
+  const isolated = category === "DOPPLER_OBSTETRICO" && options.dopplerMode === "isolated";
+  const withoutDoppler = category === "OBSTETRICA" || (category === "MORFOLOGICO" && !options.includeDoppler);
+  return Object.fromEntries(Object.entries(data).filter(([key]) => {
+    const doppler = DOPPLER_KEYS.includes(key as keyof BiometricData);
+    return isolated ? doppler : withoutDoppler ? !doppler : true;
+  })) as BiometricData;
+}
+
 async function analyzeOne(
   imageBase64: string,
   category: ImagingCategory,
-  includeDoppler: boolean,
+  options: ImagingOptions,
 ): Promise<BiometricData | null> {
+  // Carregamento tardio permite testar a formatacao sem inicializar modulos nativos.
+  const { getAccessToken } = require("@/lib/api") as typeof import("@/lib/api");
   const token = await getAccessToken();
   const res = await fetch(`${API_URL}/api/analyze-image`, {
     method: "POST",
@@ -112,12 +141,7 @@ async function analyzeOne(
     },
     body: JSON.stringify({
       imageBase64,
-      category,
-      gemelar: false,
-      modules:
-        includeDoppler && category !== "DOPPLER_OBSTETRICO"
-          ? ["DOPPLER_OBSTETRICO"]
-          : [],
+      ...imagingRequestFields(category, options),
     }),
   });
   let payload: AnalyzeResponse;
@@ -130,7 +154,7 @@ async function analyzeOne(
     throw new Error(payload.error || `Falha ao analisar imagem (HTTP ${res.status}).`);
   }
   if (payload.empty || !payload.data) return null;
-  return payload.data;
+  return selectImagingData(payload.data, category, options);
 }
 
 /** Analisa até 3 imagens em sequência (como o iOS). Retorna os dados válidos. */
@@ -138,7 +162,7 @@ export async function analyzeImages(
   imagesBase64: string[],
   category: ImagingCategory,
   onProgress?: (done: number, total: number) => void,
-  options?: { includeDoppler?: boolean },
+  options: ImagingOptions = {},
 ): Promise<BiometricData[]> {
   const batch = imagesBase64.slice(0, 3);
   const results: BiometricData[] = [];
@@ -146,7 +170,7 @@ export async function analyzeImages(
     const data = await analyzeOne(
       batch[i],
       category,
-      category === "DOPPLER_OBSTETRICO" || options?.includeDoppler === true,
+      options,
     );
     if (data) results.push(data);
     onProgress?.(i + 1, batch.length);
@@ -203,8 +227,9 @@ function rows(pairs: Array<[string, string | undefined]>): string[] {
 export function formatBiometric(
   results: BiometricData[],
   category: ImagingCategory,
+  options: ImagingOptions = {},
 ): string {
-  const m = mergeBiometric(results);
+  const m = selectImagingData(mergeBiometric(results), category, options);
   const sections: string[] = [];
 
   if (category === "TIREOIDE") {
@@ -254,7 +279,7 @@ export function formatBiometric(
     ["IG pela DUM", m.gestAgeLMP],
     ["IG pela biometria", m.gestAgeBiometry],
   ]);
-  if (category !== "DOPPLER_OBSTETRICO" && biometria.length > 0) {
+  if (biometria.length > 0) {
     sections.push("Biometria fetal:\n" + biometria.join("\n"));
   }
 

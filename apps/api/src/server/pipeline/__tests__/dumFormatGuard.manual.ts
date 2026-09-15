@@ -1,79 +1,74 @@
+/**
+ * T42 — corpus de 100 casos gerado pelo gate, inteiramente sintético.
+ * Não lê laudos reais, scratchpads, banco, rede nem arquivos temporários.
+ * Em apps/api: pnpm exec tsx src/server/pipeline/__tests__/dumFormatGuard.manual.ts
+ */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { normalizeDumFormat } from "../dumFormatGuard";
 
-const P =
-  "/private/tmp/claude-501/-Users-luizprazeres-laudousgmobile-def/83768434-1e5b-4631-8bc5-978481f2a0fd/scratchpad/laudos-100.json";
-const raw = JSON.parse(readFileSync(P, "utf8"));
-const arr: Array<{
-  report_id: string;
-  category_code: string;
-  generated_output: string;
-}> = Array.isArray(raw) ? raw : raw.laudos ?? raw.rows ?? [];
+type Fixture = { id: string; input: string; expected: string };
+const fixtures: Fixture[] = [];
 
-// --- 1. Idempotência + byte-identidade nos laudos SEM assinatura de defeito ---
-const changed: string[] = [];
-for (const r of arr) {
-  const g = r.generated_output ?? "";
-  const once = normalizeDumFormat(g);
-  const twice = normalizeDumFormat(once);
-  assert.equal(twice, once, `NÃO idempotente em ${r.report_id}`);
-  if (once !== g) changed.push(r.report_id);
-}
-console.log(`laudos alterados: ${changed.length}/${arr.length}`);
-console.log(changed.join(", "));
+// Dez cenários, dez datas/idades sintéticas distribuídas em duas grafias do cabeçalho.
+// As saídas esperadas são independentes do guard; não usamos sua saída como golden.
+for (const [headerIndex, header] of ["CONCLUSÃO:", "CONCLUSAO:"].entries()) {
+  for (let seed = 1; seed <= 5; seed++) {
+    const variant = headerIndex * 5 + seed;
+    const date = `${String(variant).padStart(2, "0")}/02/2030`;
+    const weeks = 20 + variant;
+    const body = `Exame sintético de ${date}.`;
+    const conclusion = (items: string[]) => `${body}\n\n${header}\n${items.join("\n")}`;
+    const add = (scenario: string, input: string, expected = input) => {
+      fixtures.push({ id: `${scenario}/${header}/${seed}`, input, expected });
+    };
 
-// --- 2. Nenhum efeito colateral fora das 4 assinaturas de defeito ---
-// Todo laudo alterado DEVE conter pelo menos uma assinatura conhecida.
-const SIGNATURES = [
-  /Primeira ultrassonografia realizada\s+\d{2}\/\d{2}\/\d{4}\s+com\s+/i,
-  /Data da [uú]ltima menstrua[çc][ãa]o correspondente a\s+.+?\s+na data do exame\./i,
-  /\b1 dias\b/,
-  /Gesta[çc][ãa]o em torno de\s+_+\s*semanas/i,
-];
-for (const id of changed) {
-  const g = arr.find((r) => r.report_id === id)!.generated_output;
-  assert.ok(
-    SIGNATURES.some((re) => re.test(g)),
-    `${id} mudou mas não tem assinatura de defeito conhecida (efeito colateral!)`,
-  );
-}
-
-// --- 3. Correções pontuais nos casos reais ---
-function gen(id: string): string {
-  const r = arr.find((x) => x.report_id.startsWith(id));
-  if (!r) return "";
-  return normalizeDumFormat(r.generated_output);
-}
-
-// c0c85ac5: "Primeira ultrassonografia realizada 20/01/2026 com..." → canônica
-const c0 = gen("c0c85ac5");
-if (c0) {
-  assert.ok(!/Primeira ultrassonografia realizada/i.test(c0), "c0: frase drift persiste");
-  assert.ok(/Primeira USG:\s*20\/01\/2026,\s*com/i.test(c0), "c0: canônica ausente");
-}
-
-// 4d8d3cb5 / f541e337: linha fabricada de DUM → idade gestacional
-for (const id of ["4d8d3cb5", "f541e337"]) {
-  const t = gen(id);
-  if (t) {
-    assert.ok(
-      !/Data da [uú]ltima menstrua[çc][ãa]o correspondente a/i.test(t),
-      `${id}: linha fabricada de DUM persiste`,
+    add(
+      "primeira-usg-drift",
+      `Primeira ultrassonografia realizada ${date} com idade gestacional de ${weeks} semanas e 2 dias.`,
+      `Primeira USG: ${date}, com idade gestacional de ${weeks} semanas e 2 dias.`,
     );
-    assert.ok(/Idade gestacional de\s+37 semanas e 2 dias\./i.test(t), `${id}: IG ausente`);
+    add(
+      "dum-fabricada",
+      `Data da última menstruação correspondente a ${weeks} semanas e 2 dias na data do exame.`,
+      `Idade gestacional de ${weeks} semanas e 2 dias.`,
+    );
+    add(
+      "singular-dia",
+      `Idade gestacional de ${weeks} semanas e 1 dias.`,
+      `Idade gestacional de ${weeks} semanas e 1 dia.`,
+    );
+    add(
+      "placeholder-removido-e-renumerado",
+      conclusion([
+        "1) Gestação em torno de ____ semanas.",
+        `2) Gestação de ${weeks} semanas e 2 dias.`,
+        "3) Vitalidade fetal preservada.",
+      ]),
+      conclusion([
+        `1) Gestação de ${weeks} semanas e 2 dias.`,
+        "2) Vitalidade fetal preservada.",
+      ]),
+    );
+
+    // Preservar conteúdo correto, outros números e a conclusão única.
+    add("primeira-usg-canonica", `Primeira USG: ${date}, com idade gestacional de ${weeks} semanas e 2 dias.`);
+    add("dum-data-preservada", `Data da última menstruação: ${date}.`);
+    add("vinte-e-um-dias", `Exame sintético ${variant}: retorno em 21 dias.`);
+    add("placeholder-unico-preservado", conclusion(["1) Gestação em torno de ____ semanas."]));
+    add("placeholder-fora-conclusao", `${body}\nGestação em torno de ____ semanas.`);
+    add("texto-sem-defeito", conclusion([`1) Gestação de ${weeks} semanas e 2 dias.`, "2) Vitalidade fetal preservada."]));
   }
 }
 
-// e9e44aec / 19e3816b: placeholder de gestação removido da conclusão
-for (const id of ["e9e44aec", "19e3816b"]) {
-  const t = gen(id);
-  if (t) {
-    assert.ok(
-      !/\d+\)\s*Gesta[çc][ãa]o em torno de\s+_+\s*semanas/i.test(t),
-      `${id}: item placeholder de gestação persiste`,
-    );
-  }
+assert.equal(fixtures.length, 100, "corpus sintético incompleto");
+assert.equal(new Set(fixtures.map((fixture) => fixture.id)).size, 100, "ids de fixture duplicados");
+assert.equal(new Set(fixtures.map((fixture) => fixture.input)).size, 100, "entradas de fixture duplicadas");
+let changed = 0;
+for (const fixture of fixtures) {
+  const once = normalizeDumFormat(fixture.input);
+  assert.equal(once, fixture.expected, `${fixture.id}: resultado divergente`);
+  assert.equal(normalizeDumFormat(once), once, `${fixture.id}: guard não idempotente`);
+  if (once !== fixture.input) changed++;
 }
-
-console.log("dumFormatGuard: TODOS OS ASSERTS PASS");
+assert.equal(changed, 40, "as quatro correções devem agir; os 60 controles devem permanecer byte-idênticos");
+console.log(`dumFormatGuard: ${fixtures.length}/100 casos sintéticos passaram; ${changed} corrigidos, ${fixtures.length - changed} preservados; todos idempotentes.`);

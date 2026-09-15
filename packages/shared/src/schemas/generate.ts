@@ -11,6 +11,8 @@ export const GenerateRequestSchema = z.object({
   raw_input: z.string().min(2).max(20_000),
   // Hint de categoria (opcional). O structurer pode discordar.
   category_hint: CategoryCodeSchema.optional(),
+  // Ausente preserva o comportamento dos clientes anteriores.
+  doppler_mode: z.enum(["combined", "isolated"]).optional(),
   writing_style_id: z.string().uuid(),
   // Quando o app já consolidou texto a partir de transcrição live
   consolidated_transcript: z.string().optional(),

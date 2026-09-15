@@ -12,6 +12,7 @@
     "check:deepgram": "tsx --env-file=../../.env src/server/asr/__tests__/deepgram-saude.manual.ts"
   },
   "dependencies": {
+    "@apple/app-store-server-library": "3.1.0",
     "@laudousg/db": "workspace:*",
     "@laudousg/schemes": "workspace:*",
     "@laudousg/shared": "workspace:*",

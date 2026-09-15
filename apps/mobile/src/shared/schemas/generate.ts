@@ -11,6 +11,7 @@ export const GenerateRequestSchema = z.object({
   raw_input: z.string().min(2).max(20_000),
   // Hint de categoria (opcional). O structurer pode discordar.
   category_hint: CategoryCodeSchema.optional(),
+  doppler_mode: z.enum(["combined", "isolated"]).optional(),
   writing_style_id: z.string().uuid(),
   // Modo de geração. "hard" = toggle "laudo difícil" (writer premium, sem
   // renderer determinístico). O server só ativa se HARD_MODE_ENABLED=true.

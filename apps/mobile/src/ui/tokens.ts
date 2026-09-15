@@ -132,7 +132,7 @@ export const CATS = [
   { id: "MAMARIA",               label: "Mamas e axilas",      color: "#F43F5E", sub: "BI-RADS" },
   { id: "PELVE_FEMININA",        label: "Pelve",               color: "#A855F7", sub: "Útero, ovários, anexos" },
   { id: "OBSTETRICA",            label: "Obstétrica",          color: "#EC4899", sub: "USG obstétrico" },
-  { id: "DOPPLER_OBSTETRICO",    label: "Doppler Obstétrico",  color: "#F97316", sub: "Avaliação hemodinâmica" },
+  { id: "DOPPLER_OBSTETRICO",    label: "Obstétrica com Doppler", color: "#F97316", sub: "Obstétrica e avaliação hemodinâmica" },
   { id: "MORFOLOGICO",           label: "Morfológico",         color: "#8B5CF6", sub: "Anatomia fetal completa" },
   { id: "VIAS_URINARIAS",        label: "Vias Urinárias",      color: "#06B6D4", sub: "Rins, ureteres, bexiga" },
   { id: "MUSCULOESQUELETICO_V2", label: "Musculoesquelético",  color: "#84CC16", sub: "Articulações e partes moles" },

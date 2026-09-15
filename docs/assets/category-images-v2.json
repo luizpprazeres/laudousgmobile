@@ -1,0 +1,14 @@
+{
+  "purpose": "Navigation only, white background, not transparent or diagnostic",
+  "assets": [
+    {"file": "prostata-v2.webp", "source": "exec-725904a2-8f09-4579-9d9f-13c1dfc37cea.png"},
+    {"file": "abdomen-total-v2.webp", "source": "exec-d76d642a-ed3c-4e57-a409-ffd08fb768db.png"},
+    {"file": "abdomen-superior-v2.webp", "source": "exec-49f6a265-de17-4adf-b5d2-8e804f806cf1.png"}
+  ],
+  "font": {
+    "family": "Barlow Condensed Light",
+    "weight": 300,
+    "source": "https://github.com/google/fonts/tree/main/ofl/barlowcondensed",
+    "license": "apps/web/public/fonts/BarlowCondensed-OFL.txt"
+  }
+}

@@ -98,7 +98,7 @@ const OrganStateSchema = z.object({
   achados: z.array(FindingSchema),
 });
 
-export const AbdomenSuperiorFindingsSchema = z.object({
+const AbdomenSuperiorFindingsBaseSchema = z.object({
   orgaos: z.object({
     figado: OrganStateSchema,
     veia_porta: OrganStateSchema,
@@ -112,7 +112,12 @@ export const AbdomenSuperiorFindingsSchema = z.object({
   observacoes_do_medico: z.string().nullable(),
 });
 
-export type AbdomenSuperiorFindings = z.infer<typeof AbdomenSuperiorFindingsSchema>;
+export type AbdomenSuperiorFindings = z.infer<typeof AbdomenSuperiorFindingsBaseSchema>;
+
+// O extractor chama este parser: normalizar aqui impede perder achados com status normal.
+export const AbdomenSuperiorFindingsSchema = AbdomenSuperiorFindingsBaseSchema.transform(
+  normalizeAbdomenSuperior,
+);
 
 // ---------------------------------------------------------------------------
 // JSON Schema strict p/ OpenAI structured outputs (todos required,
