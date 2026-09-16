@@ -13,6 +13,7 @@ import { loadDeterministicBundle } from "@/server/pipeline/bundleLoader";
 import { loadSpecV2 } from "@/server/pipeline/writerV2/loadSpec";
 import { runWriterV2 } from "@/server/pipeline/writerV2/runWriterV2";
 import { resolveMorfologicoCategory } from "@/server/pipeline/morfologicoRouteSelection";
+import { resolveEffectiveCategory } from "@/server/pipeline/effectiveCategory";
 import { normalizeCategoryCode } from "@/server/pipeline/categoryNormalization";
 import {
   extractDopplerData,
@@ -151,43 +152,6 @@ function formatObjectiveEnumerations(text: string) {
         ),
     )
     .join("\n");
-}
-
-/**
- * Resolve a categoria EFETIVA em 2 passos determinísticos:
- *  1. Guard morfológico (morfológico+Doppler → MORFOLOGICO).
- *  2. Normalização contra a lista de categorias válidas (clampa códigos
- *     não-canônicos inventados pelo structurer → código real; evita crash de FK).
- * Loga override e normalização pra auditoria em prod. Devolve só a categoria.
- */
-function resolveEffectiveCategory(
-  detectedCategory: string,
-  rawText: string,
-  reportId: string,
-  knownCodes: Set<string>,
-  categoryHint?: string,
-  dopplerMode?: DopplerMode,
-): string {
-  const requested = requestedExamCategory(categoryHint, dopplerMode);
-  if (requested && knownCodes.has(requested)) return requested;
-  const morf = resolveMorfologicoCategory(detectedCategory, rawText);
-  if (morf.overridden) {
-    console.warn(
-      `[generate ${reportId}] category_override: ${detectedCategory} -> ${morf.category} (reason=${morf.reason})`,
-    );
-  }
-  const norm = normalizeCategoryCode(
-    morf.category,
-    knownCodes,
-    rawText,
-    categoryHint,
-  );
-  if (norm.normalized) {
-    console.warn(
-      `[generate ${reportId}] category_normalized: ${morf.category} -> ${norm.category}`,
-    );
-  }
-  return norm.category;
 }
 
 export async function POST(req: Request) {
