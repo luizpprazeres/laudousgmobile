@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { databaseSslOptions } from "@laudousg/db/supabase-tls";
 
 export const HEALTH_TIMEOUT_MS = 2_000;
 type Check = { ok: true } | { ok: false; code: "timeout" | "unavailable" | "misconfigured" | "invalid_response" };
@@ -29,9 +30,8 @@ const defaults: HealthDependencies = {
     const client = postgres(url, {
       max: 1,
       prepare: false,
-      // No driver instalado, ssl:"require" usa rejectUnauthorized:false.
-      // Exigir TLS sem relaxar a verificação do certificado/hostname.
-      ssl: { rejectUnauthorized: true },
+      // A CA pública oficial da Supabase permite TLS com validação completa.
+      ssl: databaseSslOptions(url),
       connect_timeout: 2,
       // Sem GUC de sessão: DATABASE_URL pode apontar para transaction pooling.
       // O deadline aborta o probe e end({timeout:0}) destrói o cliente próprio.

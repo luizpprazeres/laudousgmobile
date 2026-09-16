@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
+import { databaseSslOptions } from "./supabaseTls";
 
 /**
  * Cliente Drizzle para uso no backend (apps/api).
@@ -17,6 +18,7 @@ export function getDbClient() {
   _client = postgres(url, {
     prepare: false, // Supabase pgbouncer (transaction mode) não suporta
     max: 10,
+    ssl: databaseSslOptions(url),
   });
   return drizzle(_client, { schema });
 }

@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/schema/index.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./supabase-tls": "./src/supabaseTls.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate",
