@@ -56,6 +56,10 @@ export type GenerateAction =
   // inserts assíncronos de calculadoras/análise de imagem; review Dex1 04/07)
   | { type: "APPEND_TEXT"; text: string }
   | { type: "EDIT_FINAL"; text: string }
+  // Acrescenta um bloco (ex.: calculadora de trissomias) ao FINAL do laudo já
+  // gerado — diferente de APPEND_TEXT, que escreve nos achados. Só se aplica
+  // com o laudo pronto ("done"); no-op fora disso.
+  | { type: "APPEND_TO_REPORT"; text: string }
   | { type: "START_REC" }
   | { type: "STOP_REC" }
   | { type: "TRANSCRIPTION_DONE"; text: string }
@@ -67,6 +71,17 @@ export type GenerateAction =
   | { type: "FAIL"; message: string };
 
 export const initialGenerateState: GenerateState = { kind: "idle", text: "" };
+
+/**
+ * Acrescenta `addition` ao final de `base`, separado por uma linha em
+ * branco — mesma regra do APPEND_TEXT (achados), usada tanto pelo reducer
+ * (APPEND_TO_REPORT) quanto pelo autosave do laudo em generate.tsx, para não
+ * duplicar a lógica de junção em dois lugares.
+ */
+export function appendToReportText(base: string, addition: string): string {
+  const trimmed = base.trimEnd();
+  return trimmed ? `${trimmed}\n\n${addition}` : addition;
+}
 
 export function generateReducer(
   state: GenerateState,
@@ -110,6 +125,12 @@ export function generateReducer(
       // Edição inline do laudo final (paridade iOS: TextEditor + autosave).
       if (state.kind !== "done") return state;
       return { ...state, finalText: action.text };
+
+    case "APPEND_TO_REPORT":
+      // Resultado de calculadora (ex.: trissomias) pertence ao LAUDO, não aos
+      // achados — só se aplica com o laudo já pronto.
+      if (state.kind !== "done") return state;
+      return { ...state, finalText: appendToReportText(state.finalText, action.text) };
 
     case "START_REC":
       return { kind: "recording", text: state.text };

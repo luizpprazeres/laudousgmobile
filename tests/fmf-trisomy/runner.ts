@@ -44,7 +44,10 @@ for (const testCase of golden.cases) {
   assert.deepEqual([result.t21.ratio, result.t18.ratio, result.t13.ratio], testCase.expected.ratios)
   assert.deepEqual(result.markersUsed, testCase.expected.markers)
   assert.equal(result.clinicalStatus, 'validation-pending')
-  assert.match(formatarBlocoTrissomias(testCase.input, result), /risco basal.*risco corrigido/s)
+  assert.match(
+    formatarBlocoTrissomias(testCase.input, result),
+    /^RASTREIO COMBINADO DE TRISSOMIAS \(1º trimestre, FMF\)\nRisco basal.*\nRisco ajustado pelos marcadores/s,
+  )
   console.log(`✓ ${testCase.name}`)
 }
 

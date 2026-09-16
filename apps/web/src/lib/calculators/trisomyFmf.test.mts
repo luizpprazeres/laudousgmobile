@@ -44,7 +44,72 @@ check(
 )
 // 21 antes da calibração cal-2026-09-15c (FCF com IG datada, médias/SD reajustadas ao app da FMF); 19 depois
 check('compatibilidade maternalAge: risco T21 calculado', fhrOnly.result.t21.ratio === 19, String(fhrOnly.result.t21.ratio))
-check('bloco menciona validação clínica pendente', /validação clínica externa pendente/i.test(fhrOnly.block))
+// --- bloco enxuto do laudo (packages/shared/fmfTrisomyFormatter.ts) ---
+check(
+  'bloco começa com o título do rastreio combinado',
+  fhrOnly.block.startsWith('RASTREIO COMBINADO DE TRISSOMIAS (1º trimestre, FMF)'),
+  fhrOnly.block,
+)
+check(
+  'bloco enxuto não repete marcadores utilizados/não utilizados nem versão do modelo',
+  !/Marcadores utilizados/i.test(fhrOnly.block) &&
+    !/Marcadores não informados/i.test(fhrOnly.block) &&
+    !/Modelo /.test(fhrOnly.block) &&
+    !/validação clínica externa pendente/i.test(fhrOnly.block),
+  fhrOnly.block,
+)
+check(
+  'bloco traz o risco basal (idade materna + IG) para trissomia 21 e trissomias 13/18',
+  /Risco basal, pela idade materna e idade gestacional: trissomia 21 — 1 em [\d.,<> ]+; trissomias 13\/18 — 1 em [\d.,<> ]+\./.test(
+    fhrOnly.block,
+  ),
+  fhrOnly.block,
+)
+check(
+  'bloco traz o risco ajustado com os marcadores usados entre parênteses, sem "Idade materna"',
+  fhrOnly.block.includes('Risco ajustado pelos marcadores (TN, FCF): trissomia 21'),
+  fhrOnly.block,
+)
+check(
+  // ratio 19 (comentário acima) cai na faixa de alto risco (≤ 100)
+  'bloco classifica corretamente o risco alto de T21',
+  fhrOnly.block.includes(
+    'Alto risco para trissomia 21 (≥ 1 em 100): recomenda-se aconselhamento genético e oferta de teste diagnóstico invasivo, a critério do médico assistente.',
+  ),
+  fhrOnly.block,
+)
+check(
+  'bloco de risco alto não menciona a linha de baixo risco',
+  !fhrOnly.block.includes('Baixo risco para trissomia 21'),
+  fhrOnly.block,
+)
+
+// idade jovem e TN normal, sem marcadores extras além dos obrigatórios → baixo risco esperado
+const baixoRisco = calculateTrisomyWeb({ ...base, maternalAge: '22', nt: '1,5', fhr: '' })
+check(
+  'bloco de baixo risco traz a linha "Baixo risco para trissomia 21 (< 1 em 1.000)."',
+  baixoRisco.result.t21.category === 'baixo' &&
+    baixoRisco.block.includes('Baixo risco para trissomia 21 (< 1 em 1.000).'),
+  `categoria=${baixoRisco.result.t21.category}\n${baixoRisco.block}`,
+)
+check(
+  'bloco sem avisos do motor não tem linha "Observação"',
+  baixoRisco.result.warnings.length === 0 && !baixoRisco.block.includes('Observação:'),
+  baixoRisco.block,
+)
+
+// Free β-hCG fora do intervalo truncado (0,1–10 MoM) gera aviso do motor
+const comAviso = calculateTrisomyWeb({
+  ...base,
+  freeBetaHcgMoM: '15',
+  pappaMoM: '0,7',
+  isMoMCorrected: true,
+})
+check(
+  'bloco reflete o aviso do motor na última linha, prefixado por "Observação:"',
+  comAviso.result.warnings.length > 0 && comAviso.block.endsWith(`Observação: ${comAviso.result.warnings.join(' ')}`),
+  comAviso.block,
+)
 
 let mensagemMoM = ''
 try {

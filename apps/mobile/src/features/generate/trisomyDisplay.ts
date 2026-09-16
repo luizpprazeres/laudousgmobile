@@ -12,7 +12,13 @@
  *
  *   pnpm exec tsx src/features/generate/trisomyDisplay.manual.ts
  */
-import type { FmfResult, TrisomyRisk } from "@laudousg/shared";
+import {
+  arredondarDoisAlgarismos as arredondarDoisAlgarismosShared,
+  basalRatioT18T13 as basalRatioT18T13Shared,
+  formatarRazaoTrissomia,
+  type FmfResult,
+  type TrisomyRisk,
+} from "@laudousg/shared";
 
 const DIA_MS = 86_400_000;
 
@@ -25,38 +31,30 @@ export function idadeNaDataExameAnos(nascimento: Date, dataExame: Date = new Dat
 /**
  * Arredonda para 2 algarismos significativos, como o app oficial da FMF
  * exibe o denominador N de "1 in N" (ex.: 3.287 → 3.300, 549 → 550, 63 → 63).
+ * Reexporta a implementação do shared (mesma lógica da web/iOS).
  */
 export function arredondarDoisAlgarismos(n: number): number {
-  if (!Number.isFinite(n) || n <= 0) return n;
-  const expoente = Math.floor(Math.log10(n));
-  const fator = Math.pow(10, expoente - 1);
-  return Math.round(n / fator) * fator;
+  return arredondarDoisAlgarismosShared(n);
 }
 
 /**
  * Formata um risco como "1 em N", aplicando o teto/piso de exibição do app
  * da FMF (`displayCapRatio`/`displayFloorRatio`) e arredondando N para 2
- * algarismos significativos — igual à web (`formatarRiscoExibicao`).
+ * algarismos significativos — igual à web (`formatarRiscoExibicao`), via
+ * `formatarRazaoTrissomia` do shared.
  */
 export function formatarRiscoExibicao(
   risco: TrisomyRisk,
   limites: Pick<FmfResult, "displayCapRatio" | "displayFloorRatio">,
 ): string {
-  if (risco.ratio > limites.displayCapRatio) {
-    return `< 1 em ${limites.displayCapRatio.toLocaleString("pt-BR")}`;
-  }
-  if (risco.ratio < limites.displayFloorRatio) {
-    return `1 em ${limites.displayFloorRatio.toLocaleString("pt-BR")}`;
-  }
-  return `1 em ${arredondarDoisAlgarismos(risco.ratio).toLocaleString("pt-BR")}`;
+  return formatarRazaoTrissomia(risco.ratio, limites.displayCapRatio, limites.displayFloorRatio);
 }
 
 /**
  * Risco BASAL combinado T13/18 (soma das probabilidades basais de T13 e
  * T18), para exibir ao lado do basal de T21 — o motor só expõe a combinação
- * pós-marcadores em `result.t18t13`.
+ * pós-marcadores em `result.t18t13`. Reexporta a implementação do shared.
  */
 export function basalRatioT18T13(result: FmfResult): number {
-  const probabilidade = result.basal.t18.probability + result.basal.t13.probability;
-  return Math.round(1 / Math.max(probabilidade, 1e-10));
+  return basalRatioT18T13Shared(result);
 }

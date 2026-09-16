@@ -18,6 +18,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onInsert: (bloco: string) => void;
+  /** Falso enquanto não existe laudo gerado — o resultado pertence ao laudo, não aos achados. */
+  canInsert: boolean;
 };
 
 const ETNIAS: { v: Ethnicity; label: string }[] = [
@@ -58,7 +60,7 @@ const TRICUSPID_OPCOES: { v: Tricuspid; label: string }[] = [
  * `apps/web/src/lib/calculators/trisomyFmf.ts`, replicada em
  * `./trisomyDisplay.ts`.
  */
-export function TrisomyCalculatorSheet({ open, onClose, onInsert }: Props) {
+export function TrisomyCalculatorSheet({ open, onClose, onInsert, canInsert }: Props) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
 
@@ -286,13 +288,25 @@ export function TrisomyCalculatorSheet({ open, onClose, onInsert }: Props) {
               : null}
             <Pressable
               onPress={() => {
-                if (bloco) onInsert(bloco);
+                if (!canInsert || !bloco) return;
+                onInsert(bloco);
                 onClose();
               }}
-              style={({ pressed }) => [styles.insertBtn, pressed && { opacity: 0.7 }]}
+              disabled={!canInsert}
+              style={({ pressed }) => [
+                styles.insertBtn,
+                !canInsert && { opacity: 0.5 },
+                canInsert && pressed && { opacity: 0.7 },
+              ]}
             >
               <Text style={styles.insertBtnText}>Inserir no laudo</Text>
             </Pressable>
+            {!canInsert ? (
+              <Text style={styles.insertHint}>
+                Gere o laudo primeiro. O preenchimento fica guardado: volte aqui depois e toque em
+                Inserir para levar o resultado à aba Laudo.
+              </Text>
+            ) : null}
           </View>
         ) : (
           <Text style={styles.hint}>
@@ -440,6 +454,7 @@ function makeStyles(t: ColorTokens) {
         paddingVertical: 12, alignItems: "center",
       },
       insertBtnText: { fontFamily: FONT.semibold, fontSize: 15, color: t.bg },
+      insertHint: { fontFamily: FONT.body, fontSize: 12, lineHeight: 17, color: t.textMute, marginTop: 8 },
       hint: { fontFamily: FONT.body, fontSize: 13, lineHeight: 19, color: t.textMute, marginTop: 24 },
     }),
     placeholderColor: t.textMute,

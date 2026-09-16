@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import {
+  appendToReportText,
   generateReducer,
   initialGenerateState,
 } from "@/features/generate/state";
@@ -255,6 +256,22 @@ export default function GenerateScreen() {
     dispatch({ type: "EDIT_FINAL", text: nextText });
     setSaveStatus("saving");
     pendingSaveRef.current = { reportId, text: nextText };
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => flushRef.current(), 600);
+  }
+
+  // Resultado de calculadora (trissomias) pertence ao LAUDO gerado, não aos
+  // achados — acrescenta ao final do laudo e leva o médico direto pra aba
+  // Laudo. Só funciona com o laudo pronto (o botão do sheet fica desabilitado
+  // até lá — ver TrisomyCalculatorSheet `canInsert`).
+  function onInsertToReport(bloco: string) {
+    if (state.kind !== "done") return;
+    const reportId = state.reportId;
+    const merged = appendToReportText(state.finalText, bloco);
+    dispatch({ type: "APPEND_TO_REPORT", text: bloco });
+    setTab("laudo");
+    setSaveStatus("saving");
+    pendingSaveRef.current = { reportId, text: merged };
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => flushRef.current(), 600);
   }
@@ -975,7 +992,8 @@ export default function GenerateScreen() {
       <TrisomyCalculatorSheet
         open={calcSheet === "trissomias"}
         onClose={() => setCalcSheet(null)}
-        onInsert={(bloco) => dispatch({ type: "APPEND_TEXT", text: bloco })}
+        onInsert={onInsertToReport}
+        canInsert={state.kind === "done"}
       />
       <AFCCalculatorSheet
         open={calcSheet === "afc"}
