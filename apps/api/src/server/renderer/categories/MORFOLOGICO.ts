@@ -106,6 +106,8 @@ export const MorfologicoFindingsSchema = z.object({
   /** Só quando ditada; null = padrão do trimestre (homogênea; 3T heterogênea). */
   placenta_ecotextura: z.enum(["homogenea", "heterogenea"]).nullable().optional(),
   ila_cm: z.number().nullable(),
+  /** Maior bolsão vertical em cm. NÃO é ILA: limiares e frase são outros. */
+  mbv_cm: z.number().nullable().optional(),
   // comum
   ig_semanas: z.number().nullable(),
   ig_dias: z.number().nullable(),
@@ -157,7 +159,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "fibula_dir_mm", "fibula_esq_mm", "umero_dir_mm", "umero_esq_mm",
     "radio_dir_mm", "radio_esq_mm", "ulna_dir_mm", "ulna_esq_mm",
     "peso_g", "peso_variacao_g", "percentil", "genitalia",
-    "placenta_localizacao", "placenta_grau", "placenta_ecotextura", "ila_cm",
+    "placenta_localizacao", "placenta_grau", "placenta_ecotextura", "ila_cm", "mbv_cm",
     "ig_semanas", "ig_dias", "dum",
     "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
     "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
@@ -189,7 +191,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     peso_g: num, peso_variacao_g: num, percentil: num, genitalia: str,
     placenta_localizacao: str, placenta_grau: str,
     placenta_ecotextura: { type: ["string", "null"], enum: ["homogenea", "heterogenea", null] },
-    ila_cm: num,
+    ila_cm: num, mbv_cm: num,
     ig_semanas: num, ig_dias: num, dum: str,
     data_exame: str, primeira_us_data: str,
     primeira_us_ig_semanas: num, primeira_us_ig_dias: num,
@@ -275,6 +277,11 @@ REGRAS:
    ila_cm: se ditados. placenta_ecotextura: "homogenea"/"heterogenea" SOMENTE
    quando o médico qualificar a ecotextura da placenta; null = não ditada (o
    modelo assume homogênea no 1º/2º trimestre e heterogênea no 3º).
+   ila_cm é o ÍNDICE DE LÍQUIDO AMNIÓTICO (soma dos quatro quadrantes) e
+   mbv_cm é o MAIOR BOLSÃO VERTICAL (bolsa única). São medidas DIFERENTES, com
+   limiares diferentes: NUNCA coloque o maior bolsão em ila_cm. "maior bolsão
+   vertical de 4,1 cm" → mbv_cm 4.1 e ila_cm null. PRESERVE a casa decimal em
+   cm ("4,1 cm" → 4.1; NUNCA 41).
    liquido_avaliacao: null = não ditado (o modelo assume quantidade normal);
    "oligoamnio"/"polidramnio" SOMENTE quando ditados; "normal" se o médico
    qualificar como normal. A medida de ILA também será classificada
@@ -545,6 +552,22 @@ function cordaoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: stri
 }
 
 function liquidoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[]; alterado: boolean } {
+  /**
+   * MAIOR BOLSÃO VERTICAL ≠ ILA. Até 16/09/2026 o morfológico não tinha campo de
+   * bolsão: a extração jogava a medida em ila_cm e o laudo concluía OLIGOÂMNIO
+   * para um bolsão de 4,1 cm (normal). Limiares: bolsão 2–8 cm, ILA 5–25 cm.
+   */
+  if (f.mbv_cm != null) {
+    const valor = ptBr(f.mbv_cm);
+    const corpo = [`Maior bolsão vertical de ${valor} cm.`];
+    if (f.mbv_cm < 2) {
+      return { corpo, conclusao: [`Oligoâmnio (maior bolsão vertical de ${valor} cm).`], alterado: true };
+    }
+    if (f.mbv_cm > 8) {
+      return { corpo, conclusao: [`Polidrâmnio (maior bolsão vertical de ${valor} cm).`], alterado: true };
+    }
+    return { corpo, conclusao: [`Líquido amniótico de quantidade normal (maior bolsão vertical de ${valor} cm).`], alterado: false };
+  }
   if (f.ila_cm !== null) {
     const valor = ptBr(f.ila_cm);
     if (f.ila_cm < 5) {
@@ -1003,9 +1026,11 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
   const anexos = [
     ...cordao.corpo,
     ...placentaObjMorfo(f, terceiro),
-    ...(f.ila_cm !== null
-      ? [`Índice de líquido amniótico (ILA): ${ptBr1(f.ila_cm)} cm.`]
-      : liquido.corpo),
+    ...(f.mbv_cm != null
+      ? [`Maior bolsão vertical: ${ptBr1(f.mbv_cm)} cm.`]
+      : f.ila_cm !== null
+        ? [`Índice de líquido amniótico (ILA): ${ptBr1(f.ila_cm)} cm.`]
+        : liquido.corpo),
     ...(terceiro || f.cervicometria ? [] : ["Orifício interno do colo uterino fechado."]),
   ];
 
