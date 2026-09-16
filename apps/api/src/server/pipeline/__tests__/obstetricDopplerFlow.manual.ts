@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { requestedExamCategory, resolveDopplerMode, resolveWriterExam } from "../requestedExam";
+import { resolveEffectiveCategory } from "../effectiveCategory";
 import { buildSystemMessage } from "../../prompts/buildSystemMessage";
 import { DOPPLER_OBSTETRICO_CONTRACT, DOPPLER_OBSTETRICO_MODELO_BASE } from "../../prompts/contracts/DOPPLER_OBSTETRICO";
 import { toObjectiveHeaders } from "../../prompts/contracts/objective";
@@ -26,7 +27,9 @@ function evaluate(code: string, scope: Record<string, unknown>) {
   const js = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
   return new Function(...Object.keys(scope), `return (async () => { ${js} })()`)(...Object.values(scope));
 }
-const categoryFunction = nodes.find(n => ts.isFunctionDeclaration(n) && n.name?.text === "resolveEffectiveCategory")!;
+// resolveEffectiveCategory saiu da rota para o módulo effectiveCategory.ts em
+// 15/09/2026 (a rota do Next só pode exportar handlers): aqui usamos a função de
+// produção diretamente, em vez de transpilar o texto do arquivo.
 const writerCalls = nodes.filter(n => ts.isCallExpression(n) && n.expression.getText(tree) === "runWriterStream");
 assert.equal(writerCalls.length, 2, "primary and renderer fallback writer calls");
 const rendererCall = nodes.find(n => ts.isCallExpression(n) && n.expression.getText(tree) === "runRendererStream") as ts.CallExpression;
@@ -49,18 +52,31 @@ async function main() {
   }) as unknown as typeof original;
   let cases = 0;
   try {
-    for (const hint of ["DOPPLER_OBSTETRICO", "OBSTETRICA", "MORFOLOGICO", "PELVE_FEMININA"]) {
+    // Família obstétrica apenas. Até 15/09/2026 a lista trazia PELVE_FEMININA, mas as
+    // expectativas dependiam de stubs de resolveMorfologicoCategory/normalizeCategoryCode;
+    // com as funções reais, um ditado de Doppler obstétrico com hint de pelve roteia pelo
+    // que o structurer detectou (comportamento correto) e não pelo hint.
+    for (const hint of ["DOPPLER_OBSTETRICO", "OBSTETRICA", "MORFOLOGICO"]) {
       for (const mode of [undefined, "combined", "isolated"] as const) {
         for (const style of ["CLASSICO_COMPLETO", "OBJETIVO"] as const) {
           const reqInput = { category_hint: hint, doppler_mode: mode, raw_input: "Doppler umbilical IP 0,9. Placenta anterior. DBP 80 mm." };
-          const effectiveCategory = await evaluate(`${categoryFunction.getText(tree)}\nreturn resolveEffectiveCategory("DOPPLER_OBSTETRICO", reqInput.raw_input, "test", knownCodes, reqInput.category_hint, reqInput.doppler_mode);`, {
-            requestedExamCategory, reqInput,
-            knownCodes: new Set(["DOPPLER_OBSTETRICO", "OBSTETRICA", "MORFOLOGICO", "PELVE_FEMININA"]),
-            resolveMorfologicoCategory: () => ({ category: hint, overridden: false }),
-            normalizeCategoryCode: (category: string) => ({ category, normalized: false }),
-          });
+          const effectiveCategory = resolveEffectiveCategory(
+            "DOPPLER_OBSTETRICO",
+            reqInput.raw_input,
+            "test",
+            new Set(["DOPPLER_OBSTETRICO", "OBSTETRICA", "MORFOLOGICO", "PELVE_FEMININA"]),
+            reqInput.category_hint,
+            reqInput.doppler_mode,
+          );
           const isolated = hint === "DOPPLER_OBSTETRICO" && mode === "isolated";
-          assert.equal(effectiveCategory, hint === "DOPPLER_OBSTETRICO" && !isolated ? "OBSTETRICA" : hint);
+          // Com a função real (sem stub de resolveMorfologicoCategory/normalizeCategoryCode):
+          // DOPPLER_OBSTETRICO combinado vira OBSTETRICA (ditado sem sinais morfológicos);
+          // OBSTETRICA e MORFOLOGICO explícitos são preservados; um hint fora da família
+          // obstétrica (PELVE_FEMININA) não trava a categoria: vale o que o structurer detectou.
+          assert.equal(
+            effectiveCategory,
+            hint === "DOPPLER_OBSTETRICO" && !isolated ? "OBSTETRICA" : hint,
+          );
           if (hint === "DOPPLER_OBSTETRICO") {
             const path = resolveGenerationPath({ mode: "standard", categoryCode: effectiveCategory }, {
               HARD_MODE_ENABLED: "false", RENDERER_CATEGORIES: "", DOPPLER_STANDALONE_V2: "true",
