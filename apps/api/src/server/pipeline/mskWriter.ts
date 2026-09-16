@@ -17,6 +17,7 @@ import { buildMskWriterSystemMessage } from "../renderer/categories/MUSCULOESQUE
 import { MSK_FEWSHOTS } from "../renderer/categories/mskFewshots";
 import { auditMskFacts, auditRevisarNote, type MskAudit } from "./mskWriterAudit";
 import { normalizeMskWriterFormat } from "./mskWriterFormat";
+import type { RagBlockForPrompt } from "@laudousg/shared";
 
 export type MskWriterResult = {
   fullText: string;
@@ -31,6 +32,8 @@ export type MskWriterResult = {
 /** Streama o laudo MSK escrito pelo LLM. Yields deltas; retorna o texto + métricas. */
 export async function* runMskWriterStream(args: {
   rawInput: string;
+  /** Biblioteca determinística já carregada por categoria+estilo no route. */
+  ragBlocks?: RagBlockForPrompt[];
   signal?: AbortSignal;
 }): AsyncGenerator<string, MskWriterResult, void> {
   const model = env().MSK_WRITER_MODEL;
@@ -45,6 +48,14 @@ export async function* runMskWriterStream(args: {
     { role: "assistant" as const, content: f.laudo },
   ]);
 
+  // O modelo-base continua no prompt dedicado abaixo. Aqui entram apenas as
+  // regras/frases clínicas validadas do banco; assim uma atualização da
+  // biblioteca passa a valer para web, iOS e Android sem duplicação por cliente.
+  const validatedLibrary = (args.ragBlocks ?? [])
+    .filter((block) => block.kind !== "modelo" && block.kind !== "exemplo")
+    .map((block) => `### ${block.title}\n${block.content.trim()}`)
+    .join("\n\n");
+
   const stream = await openai().chat.completions.create(
     {
       model,
@@ -52,7 +63,10 @@ export async function* runMskWriterStream(args: {
       stream: true,
       stream_options: { include_usage: true },
       messages: [
-        { role: "system", content: buildMskWriterSystemMessage() },
+        {
+          role: "system",
+          content: buildMskWriterSystemMessage({ validatedLibrary }),
+        },
         ...fewshotMsgs,
         { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
       ],

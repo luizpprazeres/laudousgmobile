@@ -1,4 +1,5 @@
 import { env } from "../env";
+import type { RagBlockForPrompt } from "@laudousg/shared";
 import type { DopplerMode } from "./requestedExam";
 import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
@@ -225,6 +226,9 @@ export async function* runRendererStream(args: {
   includeDoppler?: boolean;
   rawInput: string;
   templateBody: string;
+  /** Bundle validado da categoria. O MSK writer_guarded consome as frases e
+   * regras para compartilhar a mesma biblioteca entre todos os clientes. */
+  ragBlocks?: RagBlockForPrompt[];
   signal?: AbortSignal;
   onSystemMessage?: (message: string) => void;
   /** DET-5 ONDA 2 — toggles do renderer da conta (TIREOIDE: Domingos; MAMARIA:
@@ -335,13 +339,14 @@ export async function* runRendererStream(args: {
     args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
     const res = yield* runMskWriterStream({
       rawInput: args.rawInput,
+      ragBlocks: args.ragBlocks,
       signal: args.signal,
     });
     // Observabilidade (dex1): modelo, TTFT, audit pass/fail + fatos que falharam.
     const a = res.audit;
     const auditMsg = a.ok
       ? "audit=ok"
-      : `audit=FAIL(medidas:${a.missingMeasures.join("/") || "-"};lados:${a.missingSides.join("/") || "-"};extra:${a.extraStructures.join("/") || "-"})`;
+      : `audit=FAIL(medidas:${a.missingMeasures.join("/") || "-"};lados:${a.missingSides.join("/") || "-"};exames:${a.missingExams.join("/") || "-"};extra:${a.extraStructures.join("/") || "-"})`;
     const systemMessage = `[${RENDERER_VERSION}] MSK writer_guarded (${res.model}, ttft=${res.ttftMs}ms, ${res.outputTokens ?? "?"}tok, ${auditMsg})`;
     args.onSystemMessage?.(systemMessage);
     return {

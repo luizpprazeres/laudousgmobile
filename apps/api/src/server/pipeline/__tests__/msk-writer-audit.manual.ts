@@ -52,5 +52,35 @@ function check(name: string, cond: boolean, detail?: string) {
   check("mm² preservado: audit ok", a.ok, JSON.stringify(a));
 }
 
+// 6) Dois segmentos do mesmo lado: um bloco não encobre o outro.
+{
+  const raw = "ombro direito com tendinopatia e joelho direito com cisto de Baker";
+  const laudo = "ULTRASSONOGRAFIA DO OMBRO DIREITO\n\nCONCLUSÃO:\nTendinopatia do supraespinhal direito.";
+  const a = auditMskFacts(raw, laudo);
+  check(
+    "multiarticular mesmo lado: joelho direito ausente",
+    !a.ok && a.missingExams.includes("joelho:direito"),
+    JSON.stringify(a),
+  );
+  check(
+    "multiarticular mesmo lado: ombro direito presente",
+    !a.missingExams.includes("ombro:direito"),
+    JSON.stringify(a),
+  );
+}
+
+// 7) Quatro blocos mão/punho bilateral: todos reconhecidos individualmente.
+{
+  const raw = "mão direita, mão esquerda, punho direito e punho esquerdo normais";
+  const laudo = [
+    "ULTRASSONOGRAFIA DA MÃO DIREITA",
+    "ULTRASSONOGRAFIA DA MÃO ESQUERDA",
+    "ULTRASSONOGRAFIA DO PUNHO DIREITO",
+    "ULTRASSONOGRAFIA DO PUNHO ESQUERDO",
+  ].join("\n\n");
+  const a = auditMskFacts(raw, laudo);
+  check("multiarticular bilateral completo: audit ok", a.ok, JSON.stringify(a));
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

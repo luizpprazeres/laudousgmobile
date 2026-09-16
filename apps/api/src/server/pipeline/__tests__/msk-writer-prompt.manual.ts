@@ -27,7 +27,15 @@ check("preserva medida/lado; nunca ____", /Preserve TODA medida/.test(p) && /nun
 check("comandos são instruções (quer dizer/pode colocar)", /quer dizer/.test(p) && /pode colocar/.test(p));
 check("corrige garble sem ecoar", /NUNCA ecoe o garble/.test(p));
 check("não drope nada ditado", /NÃO drope NADA/.test(p));
+check("multiarticular exige bloco por segmento+lado", /cada combinação segmento\+lado/.test(p));
+check("mesmo lado não encobre outro segmento", /nunca cobre outro segmento/i.test(p));
+check("placeholders da biblioteca não podem vazar", /NUNCA imprima colchetes, alternativas, lacunas ou placeholders/.test(p));
 check("técnica fixa da casa presente", /transdutor linear de alta frequência 12 MHz/.test(p));
+
+const pComBiblioteca = buildMskWriterSystemMessage({
+  validatedLibrary: "FRASE VALIDADA: Tendão infraespinhal com espessamento.",
+});
+check("injeta biblioteca validada do banco", /BIBLIOTECA CLÍNICA VALIDADA/.test(pComBiblioteca) && /Tendão infraespinhal/.test(pComBiblioteca));
 
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

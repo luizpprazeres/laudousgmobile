@@ -972,6 +972,7 @@ export async function POST(req: Request) {
             includeDoppler: reqInput.category_hint === "OBSTETRICA" ? false : undefined,
             rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
             templateBody: rendererTemplateBody ?? "",
+            ragBlocks: blocks,
             signal,
             // DET-5 ONDA 2 — toggles resolvidos junto da variante (sem 2ª query).
             rendererPreferences,

@@ -187,5 +187,49 @@ const alt = (
   check("guard: conclusão intacta (do LLM)", /CONCLUSÃO:\nTendinopatia da pata de ganso à direita\.$/.test(l), l);
 }
 
+// 14) Ombro, SÓ-DIAGNÓSTICO: infraespinhal usa a frase clínica validada.
+{
+  const l = renderMusculoesqueletico(F([{
+    segmento: "ombro", lado: "direito",
+    alteracoes: [alt("infraespinhal", "", { achado_tipo: "tendinopatia_infraespinhal", descricao_livre: null })],
+  }]));
+  check("infraespinhal: corpo usa frase clínica validada", /Tendão infraespinhal com espessamento, perda do padrão fibrilar e modificação do padrão ecotextural, sem sinais de rotura\./.test(l), l);
+  check("infraespinhal: conclusão específica", /CONCLUSÃO:\nTendinopatia do tendão infraespinhal\.$/.test(l), l);
+}
+
+// 15) Acromioclavicular: preserva o termo explicativo entre parênteses.
+{
+  const l = renderMusculoesqueletico(F([{
+    segmento: "ombro", lado: "esquerdo",
+    alteracoes: [alt("acromioclavicular", "", { achado_tipo: "degeneracao_acromioclavicular", descricao_livre: null })],
+  }]));
+  check("acromioclavicular: corpo descritivo", /irregularidade cortical e osteófitos marginais/i.test(l), l);
+  check("acromioclavicular: conclusão mantém '(artrose)'", /Alterações degenerativas da articulação acromioclavicular \(artrose\)\./.test(l), l);
+}
+
+// 16) Quadril: o roteiro normal inclui o labrum e a alteração validada o substitui.
+{
+  const normal = renderMusculoesqueletico(F([{ segmento: "quadril", lado: "direito", alteracoes: [] }]));
+  check("quadril normal: cobre labrum", /Labrum anterossuperior sem alterações ecográficas evidentes\./.test(normal), normal);
+
+  const alterado = renderMusculoesqueletico(F([{
+    segmento: "quadril", lado: "esquerdo",
+    alteracoes: [alt("labrum", "", { achado_tipo: "alteracao_labrum_anterossuperior", descricao_livre: null })],
+  }]));
+  check("labrum: corpo usa descrição validada", /Labrum anterossuperior espessado e heterogêneo/.test(alterado), alterado);
+  check("labrum: conclusão específica", /Alteração do labrum anterossuperior, de avaliação limitada ao método\./.test(alterado), alterado);
+}
+
+// 17) Multiarticular: articulações diferentes do mesmo lado geram blocos independentes.
+{
+  const l = renderMusculoesqueletico(F([
+    { segmento: "ombro", lado: "direito", alteracoes: [] },
+    { segmento: "joelho", lado: "direito", alteracoes: [] },
+  ]));
+  check("multiarticular: título do ombro", /^ULTRASSONOGRAFIA DO OMBRO DIREITO$/m.test(l), l);
+  check("multiarticular: título do joelho", /^ULTRASSONOGRAFIA DO JOELHO DIREITO$/m.test(l), l);
+  check("multiarticular: dois blocos completos", (l.match(/^COMENTÁRIOS:$/gm) ?? []).length === 2 && (l.match(/^CONCLUSÃO:$/gm) ?? []).length === 2, l);
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

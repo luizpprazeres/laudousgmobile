@@ -137,6 +137,16 @@ export const ACHADOS_CANONICOS: Readonly<Record<string, AchadoCanonico>> = {
     conclusao: "Tendinopatia do supraespinhal",
     segmentos: ["ombro"], estruturas: ["supraespinhal"],
   },
+  tendinopatia_infraespinhal: {
+    corpo: "Tendão infraespinhal com espessamento, perda do padrão fibrilar e modificação do padrão ecotextural, sem sinais de rotura.",
+    conclusao: "Tendinopatia do tendão infraespinhal",
+    segmentos: ["ombro"], estruturas: ["infraespinhal"],
+  },
+  tendinopatia_subescapular: {
+    corpo: "Tendão subescapular com espessamento, perda do padrão fibrilar e modificação do padrão ecotextural, sem sinais de rotura.",
+    conclusao: "Tendinopatia do tendão subescapular",
+    segmentos: ["ombro"], estruturas: ["subescapular"],
+  },
   ruptura_parcial_supraespinhal: {
     corpo: "Tendão supraespinhal com afilamento e foco de solução de continuidade das fibras, compatível com ruptura parcial.",
     conclusao: "Ruptura parcial do supraespinhal",
@@ -146,6 +156,21 @@ export const ACHADOS_CANONICOS: Readonly<Record<string, AchadoCanonico>> = {
     corpo: "Distensão e espessamento da bursa subacromial-subdeltoidea, com conteúdo líquido.",
     conclusao: "Bursite subacromial-subdeltoidea",
     segmentos: ["ombro"], estruturas: ["bursa"],
+  },
+  espessamento_bursa_subacromial: {
+    corpo: "Bursa subacromial-subdeltoidea apresentando espessamento.",
+    conclusao: "Bursite subacromial-subdeltoidea",
+    segmentos: ["ombro"], estruturas: ["bursa"],
+  },
+  distensao_bursa_subacromial: {
+    corpo: "Bursa subacromial-subdeltoidea apresentando distensão líquida.",
+    conclusao: "Bursite subacromial-subdeltoidea",
+    segmentos: ["ombro"], estruturas: ["bursa"],
+  },
+  degeneracao_acromioclavicular: {
+    corpo: "Irregularidade cortical e osteófitos marginais na topografia da articulação acromioclavicular.",
+    conclusao: "Alterações degenerativas da articulação acromioclavicular (artrose)",
+    segmentos: ["ombro"], estruturas: ["acromioclavicular"],
   },
   tendinopatia_cabo_longo_biceps: {
     corpo: "Cabo longo do bíceps com espessamento e heterogeneidade ecotextural, tópico.",
@@ -189,6 +214,26 @@ export const ACHADOS_CANONICOS: Readonly<Record<string, AchadoCanonico>> = {
     corpo: "Distensão da bursa trocantérica, com conteúdo líquido.",
     conclusao: "Bursite trocantérica",
     segmentos: ["quadril"], estruturas: ["bursa_trocanterica"],
+  },
+  tendinopatia_glutea: {
+    corpo: "Tendão glúteo espessado e heterogêneo em sua inserção trocantérica, com desorganização fibrilar.",
+    conclusao: "Tendinopatia insercional glútea",
+    segmentos: ["quadril"], estruturas: ["gluteos"],
+  },
+  tendinopatia_iliopsoas: {
+    corpo: "Tendão do iliopsoas apresentando espessamento e modificação do padrão ecotextural.",
+    conclusao: "Tendinopatia do iliopsoas",
+    segmentos: ["quadril"], estruturas: ["iliopsoas"],
+  },
+  derrame_quadril: {
+    corpo: "Distensão do recesso articular anterior por conteúdo líquido.",
+    conclusao: "Derrame articular no quadril",
+    segmentos: ["quadril"], estruturas: ["coxofemoral"],
+  },
+  alteracao_labrum_anterossuperior: {
+    corpo: "Labrum anterossuperior espessado e heterogêneo, com irregularidade.",
+    conclusao: "Alteração do labrum anterossuperior, de avaliação limitada ao método",
+    segmentos: ["quadril"], estruturas: ["labrum"],
   },
 };
 
@@ -295,6 +340,7 @@ export const ROTEIRO: Record<Segmento, SegmentoRoteiro> = {
       { chave: "gluteos", normal: "Tendões glúteo médio e mínimo de espessura e ecotextura preservadas." },
       { chave: "bursa_trocanterica", normal: "Bursa trocantérica sem distensão." },
       { chave: "iliopsoas", normal: "Tendão iliopsoas de aspecto preservado." },
+      { chave: "labrum", normal: "Labrum anterossuperior sem alterações ecográficas evidentes." },
     ],
     fechamentoNormal: (l) => `Quadril ${l} ecograficamente normal.`,
   },
@@ -329,10 +375,13 @@ function normalizeNomenclaturaMecanica(s: string): string {
  * escolha "artrose" é do médico (review dex1).
  */
 export function normalizeNomenclatura(s: string): string {
-  return normalizeNomenclaturaMecanica(s).replace(
-    /\bartrose\b/gi,
-    "alterações degenerativas",
-  );
+  const parenthetical = "__MSK_ARTROSE_PAREN__";
+  return normalizeNomenclaturaMecanica(s)
+    // A redação validada permite "alterações degenerativas (...) (artrose)";
+    // a regra da casa proíbe apenas "artrose" como diagnóstico isolado.
+    .replace(/\(\s*artrose\s*\)/gi, parenthetical)
+    .replace(/\bartrose\b/gi, "alterações degenerativas")
+    .replaceAll(parenthetical, "(artrose)");
 }
 
 /**
@@ -370,8 +419,11 @@ function corpoDaAlteracao(a: Alteracao, segmento: Segmento): string {
 /** Diagnóstico da CONCLUSÃO: o do LLM, ou o canônico como fallback. */
 function conclusaoDaAlteracao(a: Alteracao): string {
   const diag = a.diagnostico_conclusao?.trim();
-  if (diag) return normalizeNomenclatura(diag);
-  return ACHADOS_CANONICOS[a.achado_tipo]?.conclusao ?? "";
+  const texto = diag
+    ? normalizeNomenclatura(diag)
+    : ACHADOS_CANONICOS[a.achado_tipo]?.conclusao ?? "";
+  if (!texto) return "";
+  return /[.!?]$/u.test(texto) ? texto : `${texto}.`;
 }
 
 function renderLaudo(
@@ -496,7 +548,12 @@ function roteiroParaPrompt(): string {
  * misturados), guiado pelo ROTEIRO DA CASA (cobertura exata, sem inventar estrutura).
  * Prompt PURO/estável → cacheável pelo provedor (byte-idêntico entre requests).
  */
-export function buildMskWriterSystemMessage(): string {
+export function buildMskWriterSystemMessage(args?: {
+  /** Blocos clínicos validados carregados do banco. O texto é estável por
+   * categoria+estilo e passa a ser a fonte compartilhada entre web e apps. */
+  validatedLibrary?: string;
+}): string {
+  const validatedLibrary = args?.validatedLibrary?.trim();
   return `Você é um médico radiologista brasileiro redigindo laudos de ULTRASSONOGRAFIA MUSCULOESQUELÉTICA. Escreva o laudo FINAL a partir do ditado do médico, ENTENDENDO linguagem natural (medidas, comandos e conteúdo misturados no mesmo ditado).
 
 FORMATO (um bloco por segmento/lado examinado — é comum vários no mesmo exame):
@@ -524,7 +581,10 @@ REGRAS:
 5. Nomenclatura: polias A1/A2/A3 (nunca "polia a 2"); "quirodáctilo" (não "dedo"); nunca "artrose" isolada → "alterações degenerativas".
 6. Corrija garble ÓBVIO de transcrição (ex.: terinopatia→tendinopatia, tenores→tendões, subafromial→subacromial, osteóficos→osteófitos, aquática/anecóica→anecoica), só o inequívoco. NUNCA ecoe o garble (não escreva o termo errado entre parênteses).
 7. Comandos ditados são INSTRUÇÕES, execute-os e NUNCA os transcreva literalmente: "pode colocar X" (adicione X), "na conclusão Y" (Y vai na conclusão), "quer dizer Z" (correção do que veio antes — use Z, descarte o anterior).
-8. NÃO invente achados nem estruturas fora do roteiro. NÃO drope NADA que o médico ditou (todo achado e toda medida entram no laudo).`;
+8. NÃO invente achados nem estruturas fora do roteiro. NÃO drope NADA que o médico ditou (todo achado e toda medida entram no laudo).
+9. MULTIARTICULAR: cada combinação segmento+lado explicitamente examinada recebe um bloco completo e independente, mesmo quando duas articulações têm o mesmo lado. A presença de "direito" ou "esquerdo" em um bloco nunca cobre outro segmento. Em exames bilaterais, gere um bloco para cada lado.
+10. Se uma frase validada contiver alternativas ou campos entre colchetes, use SOMENTE a alternativa e os dados fornecidos pelo médico. Quando um dado opcional não foi informado, omita a oração correspondente. NUNCA imprima colchetes, alternativas, lacunas ou placeholders.
+${validatedLibrary ? `\nBIBLIOTECA CLÍNICA VALIDADA PELO MÉDICO — use estas redações quando o achado correspondente tiver sido informado; elas não autorizam inventar achados:\n${validatedLibrary}` : ""}`;
 }
 
 // ───────────────────────── Extração (LLM) ─────────────────────────

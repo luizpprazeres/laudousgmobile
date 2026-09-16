@@ -117,6 +117,7 @@ export const SEGMENTOS: Record<string, SegmentoDef> = {
       { id: 'gluteos', label: 'Glúteos', normal: 'Tendões glúteo médio e mínimo de espessura e ecotextura preservadas.' },
       { id: 'bursa_trocanterica', label: 'Bursa trocantérica', normal: 'Bursa trocantérica sem distensão.' },
       { id: 'iliopsoas', label: 'Iliopsoas', normal: 'Tendão iliopsoas de aspecto preservado.' },
+      { id: 'labrum', label: 'Labrum anterossuperior', normal: 'Labrum anterossuperior sem alterações ecográficas evidentes.' },
     ],
   },
 }
