@@ -779,6 +779,14 @@ export function ehEmbriao(f: ObstetricaFindings): boolean {
   return f.ig_semanas < 10;
 }
 
+/** Lado ditado sem preposição ("direita") — a frase do laudo pede "à direita". */
+function ladoFmt(s: string | null): string | null {
+  if (!s) return null;
+  const t = s.trim();
+  if (/^(direita|esquerda)$/i.test(t)) return `à ${t.toLowerCase()}`;
+  return t;
+}
+
 export function fetoApresentacaoFrase(
   f: ObstetricaFindings["fetos"][number],
   inicial: boolean,
@@ -788,14 +796,14 @@ export function fetoApresentacaoFrase(
   // que é escolha de modelo. Só o substantivo passou a depender da IG.
   const subst = embriao ? "Embrião" : "Feto";
   if (f.polo_cefalico) {
-    const dorso = f.dorso ? `, e dorso ${f.dorso}` : "";
-    return `${subst} único, em situação transversa, com polo cefálico ${f.polo_cefalico}${dorso}.`;
+    const dorso = f.dorso ? `, e dorso ${ladoFmt(f.dorso)}` : "";
+    return `${subst} único, em situação transversa, com polo cefálico ${ladoFmt(f.polo_cefalico)}${dorso}.`;
   }
   const apres = apresentacaoFmt(f.apresentacao) ?? (inicial ? "transversa" : "cefálica");
   const conector = inicial ? "em situação" : "em apresentação";
   let frase = `${subst} único, ${conector} ${apres}`;
-  if (f.dorso) frase += `, com dorso ${f.dorso}`;
-  if (f.polo_cefalico) frase += `, com polo cefálico ${f.polo_cefalico}`;
+  if (f.dorso) frase += `, com dorso ${ladoFmt(f.dorso)}`;
+  if (f.polo_cefalico) frase += `, com polo cefálico ${ladoFmt(f.polo_cefalico)}`;
   return `${frase}.`;
 }
 

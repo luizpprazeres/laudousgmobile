@@ -424,6 +424,14 @@ function dorsoFmt(s: string | null): string | null {
   return t;
 }
 
+/** Polo cefálico: o ditado costuma vir só "direita"/"esquerda" — a preposição é da frase. */
+function poloFmt(s: string | null): string | null {
+  if (!s) return null;
+  const t = s.trim();
+  if (/^(direita|esquerda)$/i.test(t)) return `à ${t.toLowerCase()}`;
+  return t;
+}
+
 /** Grau de placenta (Grannum) → romano. */
 function grauPlacenta(s: string | null): string | null {
   if (!s) return null;
@@ -478,7 +486,7 @@ function anatomiaObjetiva(f: MorfologicoFindings): string[] {
 function linhaFeto(f: MorfologicoFindings): string {
   const dorso = dorsoFmt(f.dorso);
   if (f.polo_cefalico) {
-    return `Feto único, em situação transversa, com polo cefálico ${f.polo_cefalico}${dorso ? `, e dorso ${dorso}` : ""}.`;
+    return `Feto único, em situação transversa, com polo cefálico ${poloFmt(f.polo_cefalico)}${dorso ? `, e dorso ${dorso}` : ""}.`;
   }
   const apresentacao = apresentacaoFmt(f.apresentacao);
   if (apresentacao) {
@@ -606,7 +614,7 @@ function placentaObjMorfo(f: MorfologicoFindings, terceiro: boolean): string[] {
 function linhaFeto1t(f: MorfologicoFindings): string {
   const dorso = dorsoFmt(f.dorso);
   if (f.polo_cefalico) {
-    return `Feto único de situação transversa, com polo cefálico ${f.polo_cefalico}${dorso ? `, e dorso ${dorso}` : ""}.`;
+    return `Feto único de situação transversa, com polo cefálico ${poloFmt(f.polo_cefalico)}${dorso ? `, e dorso ${dorso}` : ""}.`;
   }
   const apresentacao = apresentacaoFmt(f.apresentacao);
   if (apresentacao) {
