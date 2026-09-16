@@ -161,19 +161,29 @@ export const DOPPLER_TECNICA_OBJETIVO =
 
 export function renderDopplerModule(
   module: DopplerObstetricoModule,
-  options?: { rawInput?: string; umbilicalSafety?: boolean },
+  options?: {
+    rawInput?: string;
+    umbilicalSafety?: boolean;
+    /**
+     * "ip": obstétrico/morfológico COM Doppler (combinado) — o laudo do médico usa só o IP;
+     * o IR só entra quando é o único índice do vaso. Ausente/"todos": Doppler isolado, IR e IP.
+     */
+    indices?: "todos" | "ip";
+  },
 ): { achados: string[]; conclusao: string[] } {
   let data = toDopplerData(module);
   // No módulo v2 a barreira é parte do contrato clínico. `false` existe apenas
   // para comparação/rollback explícito em diagnóstico; ausência significa ON.
   if (options?.umbilicalSafety !== false) data = deriveUmbilicalSafety(data, options?.rawInput);
 
+  const soIp = options?.indices === "ip";
+  const ir = (irValor: number | null, ipValor: number | null) => (soIp && ipValor !== null ? null : irValor);
   const linhas: Array<string | null> = [
-    linhaVaso("Artéria uterina direita", module.ir_uterina_dir, module.ip_uterina_dir, null),
-    linhaVaso("Artéria uterina esquerda", module.ir_uterina_esq, module.ip_uterina_esq, null),
-    linhaVaso("Artéria umbilical", module.ir_umbilical, module.ip_umbilical, module.perc_umbilical),
-    linhaVaso("Artéria cerebral média", module.ir_acm, module.ip_acm, module.perc_acm),
-    linhaVaso("Ducto venoso", module.ir_ducto_venoso, module.ip_ducto_venoso, module.perc_ducto_venoso),
+    linhaVaso("Artéria uterina direita", ir(module.ir_uterina_dir, module.ip_uterina_dir), module.ip_uterina_dir, null),
+    linhaVaso("Artéria uterina esquerda", ir(module.ir_uterina_esq, module.ip_uterina_esq), module.ip_uterina_esq, null),
+    linhaVaso("Artéria umbilical", ir(module.ir_umbilical, module.ip_umbilical), module.ip_umbilical, module.perc_umbilical),
+    linhaVaso("Artéria cerebral média", ir(module.ir_acm, module.ip_acm), module.ip_acm, module.perc_acm),
+    linhaVaso("Ducto venoso", ir(module.ir_ducto_venoso, module.ip_ducto_venoso), module.ip_ducto_venoso, module.perc_ducto_venoso),
   ];
   if (module.ip_medio_uterinas !== null) {
     linhas.push(

@@ -105,15 +105,18 @@ for (const estilo of estilos({
   }
 }
 
-// Entrada silenciosa do iOS: o servidor não completa o que não foi informado.
+// Entrada silenciosa do iOS. MODELO COMPLETO (decisão do médico, 15/09/2026): as
+// frases de normalidade fazem parte do modelo e saem por padrão; o ditado só ALTERA
+// o que for diferente. O que o servidor continua NÃO inventando é DADO do exame —
+// apresentação, batimentos, medidas — que não tem valor normal presumível.
 for (const estilo of estilos({})) {
   check(`${estilo.nome}: mantém o título do 2º trimestre`, estilo.texto.includes("MORFOLÓGICA DO SEGUNDO TRIMESTRE"), estilo.texto);
   check(`${estilo.nome}: não inventa apresentação cefálica`, !estilo.texto.includes("apresentação cefálica"), estilo.texto);
   check(`${estilo.nome}: não inventa vitalidade`, !/Batimentos cardíacos (?:fetais )?(?:presentes|não identificados)/.test(estilo.texto), estilo.texto);
-  check(`${estilo.nome}: não inventa movimentos`, !/movimentos fetais/i.test(estilo.texto), estilo.texto);
-  check(`${estilo.nome}: não inventa cordão de três vasos`, !/duas artérias e uma veia/.test(estilo.texto), estilo.texto);
-  check(`${estilo.nome}: não inventa líquido normal`, !/Líquido amniótico de quantidade normal/.test(estilo.texto), estilo.texto);
-  check(`${estilo.nome}: não inventa survey anatômico normal`, !/estruturas cranianas.+normais|Anatomia fetal sem alterações|Estruturas avaliadas sem alterações/.test(estilo.texto), estilo.texto);
+  check(`${estilo.nome}: modelo traz movimentos ativos`, /movimentos fetais são ativos/i.test(estilo.texto), estilo.texto);
+  check(`${estilo.nome}: modelo traz cordão de três vasos`, /duas artérias e uma veia/.test(estilo.texto), estilo.texto);
+  check(`${estilo.nome}: modelo traz líquido normal`, /Líquido amniótico de quantidade normal/.test(estilo.texto), estilo.texto);
+  check(`${estilo.nome}: modelo traz o survey anatômico normal`, /estruturas cranianas.+normais|Estruturas avaliadas sem alterações/i.test(estilo.texto), estilo.texto);
 }
 
 const NORMAL: Partial<MorfologicoFindings> = {

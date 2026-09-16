@@ -24,14 +24,20 @@ function test(name: string, run: () => void): void {
   }
 }
 
-// SHA-256 da saida completa capturada antes da correcao, incluindo dirty existente.
+// SHA-256 da saida completa — guarda de byte-identidade da lateralidade dos ossos.
+//
+// BASE ATUALIZADA EM 15/09/2026: a decisao de MODELO COMPLETO trouxe de volta as
+// frases padrao de normalidade (movimentos ativos, survey anatomico, cordao de
+// tres vasos, placenta com ecotextura, liquido normal, orificio interno fechado
+// no 2t). O texto dos ossos nao mudou; a diferenca e so o modelo ao redor, e foi
+// conferida linha a linha antes de regravar os hashes.
 const LEGACY_HASHES = [
-  ["1t", false, "d58689a75ef822ee48a14e785e55cf1889e3a7a42592cf7cbd3cf239d1b91e3a"],
-  ["1t", true, "5e3ff706d19e44e745370b4a71a77515c111a6da90302019a723c961334d45ab"],
-  ["2t", false, "73bcfdbe32403f920eea87f867734f922165cbfc3f2806c0cd121224e055652b"],
-  ["2t", true, "7eb00078907317d5b87ec78db8f9edc378f306e5fc840684552442452b9a9db2"],
-  ["3t", false, "ded915f292a1d1cd3786048b63301a64c2f8404ba2bf5c9177674c2fb7c2814c"],
-  ["3t", true, "dd8127d9b8b426f5b4e526899a0868c34714129e0184517a1eb179062cf04648"],
+  ["1t", false, "4a78e849ea86c23a9f155e01ca0f22b5169acd381ad596424f13939fde04f188"],
+  ["1t", true, "2928ad37574ca058094c957a03da4e42a9ca4c8eb23d4daa943f9bcfc7468a7c"],
+  ["2t", false, "f669cf88651c3dd9a6145e1b8ff61767b3be039c6465985419ffa8fb224c3452"],
+  ["2t", true, "c4832a61fcb3c79eab8640242d27eef2361711d8a78477b7d0417700fc844b43"],
+  ["3t", false, "1d7e13126d8507ff4182ccdec3784606e1ff778d7042e80a132ad6c4d8545f78"],
+  ["3t", true, "36d9150fa2754b455e9c737425d8777354b83be5230d586d3a593f428f43f0dd"],
 ] as const;
 for (const [trimestre, objetivo, hash] of LEGACY_HASHES) {
   test(`${trimestre} ${objetivo ? "Objetivo" : "Classico"} legacy six bones byte-identical`, () => {

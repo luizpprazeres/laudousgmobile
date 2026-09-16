@@ -1284,7 +1284,7 @@ export function renderObstetricaClassico(
     conclusao.push(...cervico.conclusao);
   }
   if (f.doppler) {
-    const doppler = renderDopplerModule(f.doppler, { rawInput, umbilicalSafety });
+    const doppler = renderDopplerModule(f.doppler, { rawInput, umbilicalSafety, indices: "ip" });
     aspectos.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
     conclusao.push(...doppler.conclusao);
   }
@@ -1719,7 +1719,7 @@ export function renderObstetricaObjetivo(
     impressao.push(...cervico.conclusao);
   }
   if (f.doppler) {
-    const doppler = renderDopplerModule(f.doppler, { rawInput, umbilicalSafety });
+    const doppler = renderDopplerModule(f.doppler, { rawInput, umbilicalSafety, indices: "ip" });
     achados.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
     impressao.push(...doppler.conclusao);
   }

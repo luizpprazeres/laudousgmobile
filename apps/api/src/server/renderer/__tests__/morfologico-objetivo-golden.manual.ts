@@ -78,12 +78,13 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   check("1t alt.: não contradiz com morfologia normal", !/Morfologia fetal normal para esta fase/.test(l), l);
 }
 
-// ── 1º trimestre: marcador não avaliado não vira normal ──
+// ── 1º trimestre: MODELO COMPLETO — marcador não ditado sai com a frase normal ──
+// (decisão do médico, 15/09/2026: o ditado só ALTERA o que for diferente)
 {
   const l = render(F({ trimestre: "1t", ccn_mm: 61.5, tn_mm: 1.4, osso_nasal: null, regurgitacao_tricuspide: null, ducto_venoso: null }));
-  check("1t não avaliado: não inventa osso nasal presente", !/Osso nasal presente/.test(l), l);
-  check("1t não avaliado: não inventa ducto venoso normal", !/Doppler do ducto venoso normal|onda trifásica/.test(l), l);
-  check("1t não avaliado: não inventa regurgitação tricúspide", !/tricúspide/.test(l), l);
+  check("1t modelo: osso nasal presente por padrão", /Osso nasal presente/.test(l), l);
+  check("1t modelo: ducto venoso normal por padrão", /Doppler do ducto venoso normal|onda trifásica|onda A positiva/.test(l), l);
+  check("1t modelo: tricúspide ausente por padrão", /tricúspide ausente/i.test(l), l);
 }
 
 // ── 2º trimestre: biometria 1 casa decimal + binocular presente + colo presente ──
@@ -102,7 +103,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   check("2t: distância binocular presente (2t)", /Distância binocular: 41,2 mm\./.test(l), l);
   check("2t: ILA 1 casa decimal '14,2 cm'", /Índice de líquido amniótico \(ILA\): 14,2 cm\./.test(l), l);
   check("2t: placenta grau I (romano)", /grau I/.test(l), l);
-  check("2t: sem cervicometria não inventa orifício interno fechado", !/Orifício interno do colo uterino fechado\./.test(l), l);
+  check("2t: modelo traz o orifício interno fechado (sem cervicometria)", /Orifício interno do colo uterino fechado\./.test(l), l);
   check("2t: peso inteiro '480 g'", /Peso fetal estimado: 480 g \(percentil 45\)\./.test(l), l);
   check("2t: genitália feminino", /Genitália externa feminina\./.test(l), l);
   check("2t: placenta 'grau I de Grannum et al.'", /grau I de Grannum et al\./.test(l), l);

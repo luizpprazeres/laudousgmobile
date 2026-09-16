@@ -283,16 +283,19 @@ export function formatBiometric(
     sections.push("Biometria fetal:\n" + biometria.join("\n"));
   }
 
+  // IR só no Doppler ISOLADO; no obstétrico com Doppler (combinado) o laudo usa apenas o IP.
+  // O IR extraído da imagem vazava para o ditado e o laudo citava os dois (relato de 16/09/2026).
+  const comIR = category === "DOPPLER_OBSTETRICO" && options.dopplerMode === "isolated";
   const doppler = rows([
-    ["IR uterina direita", m.irRightUterine],
+    ["IR uterina direita", comIR ? m.irRightUterine : undefined],
     ["IP uterina direita", m.ipRightUterine],
-    ["IR uterina esquerda", m.irLeftUterine],
+    ["IR uterina esquerda", comIR ? m.irLeftUterine : undefined],
     ["IP uterina esquerda", m.ipLeftUterine],
-    ["IR artéria umbilical", m.irUmbilical],
+    ["IR artéria umbilical", comIR ? m.irUmbilical : undefined],
     ["IP artéria umbilical", m.ipUmbilical],
-    ["IR artéria cerebral média", m.irMCA],
+    ["IR artéria cerebral média", comIR ? m.irMCA : undefined],
     ["IP artéria cerebral média", m.ipMCA],
-    ["IR ducto venoso", m.irDuctusVenosus],
+    ["IR ducto venoso", comIR ? m.irDuctusVenosus : undefined],
     ["IP ducto venoso", m.ipDuctusVenosus],
   ]);
   if (doppler.length > 0) {

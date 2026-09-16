@@ -43,12 +43,24 @@ export const MorfologicoFindingsSchema = z.object({
   dorso: z.string().nullable(),
   polo_cefalico: z.string().nullable(),
   bcf_bpm: z.number().nullable(),
-  /** Estados explícitos: null/ausente significa que o médico não informou. */
+  /**
+   * MODELO COMPLETO (decisão do médico, 15/09/2026): o laudo é um modelo com as
+   * frases de normalidade presentes; o ditado só ALTERA o que for diferente.
+   * Nestes campos, null = "não ditado" e o renderer mantém a frase padrão
+   * (movimentos ativos, cordão de três vasos, líquido normal, anatomia normal,
+   * osso nasal presente, tricúspide ausente, ducto venoso trifásico). O valor
+   * alterado só sai quando o médico o ditou.
+   */
   vitalidade: z.enum(["normal", "ausente", "bradicardia", "taquicardia"]).nullable().optional(),
   movimentos_fetais: z.enum(["normais", "reduzidos", "ausentes"]).nullable().optional(),
   cordao_vasos: z.enum(["tres", "dois"]).nullable().optional(),
   liquido_avaliacao: z.enum(["normal", "oligoamnio", "polidramnio"]).nullable().optional(),
-  /** Survey anatômico explícito e sistemas que devem substituir a frase normal. */
+  /**
+   * anatomia_avaliada: null/true = frases normais dos sistemas presentes;
+   * false SOMENTE quando o médico disser que a anatomia não foi avaliada
+   * (aí as frases normais e a conclusão de morfologia normal saem do laudo).
+   * anatomia_alterada: sistemas cuja frase normal é substituída pelo achado.
+   */
   anatomia_avaliada: z.boolean().nullable().optional(),
   anatomia_alterada: z.array(z.enum(["snc", "face", "coracao", "visceras"])).nullable().optional(),
   // 1º trimestre
@@ -91,6 +103,8 @@ export const MorfologicoFindingsSchema = z.object({
   genitalia: z.string().nullable(),
   placenta_localizacao: z.string().nullable(),
   placenta_grau: z.string().nullable(),
+  /** Só quando ditada; null = padrão do trimestre (homogênea; 3T heterogênea). */
+  placenta_ecotextura: z.enum(["homogenea", "heterogenea"]).nullable().optional(),
   ila_cm: z.number().nullable(),
   // comum
   ig_semanas: z.number().nullable(),
@@ -143,7 +157,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "fibula_dir_mm", "fibula_esq_mm", "umero_dir_mm", "umero_esq_mm",
     "radio_dir_mm", "radio_esq_mm", "ulna_dir_mm", "ulna_esq_mm",
     "peso_g", "peso_variacao_g", "percentil", "genitalia",
-    "placenta_localizacao", "placenta_grau", "ila_cm",
+    "placenta_localizacao", "placenta_grau", "placenta_ecotextura", "ila_cm",
     "ig_semanas", "ig_dias", "dum",
     "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
     "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
@@ -173,7 +187,9 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     fibula_dir_mm: num, fibula_esq_mm: num, umero_dir_mm: num, umero_esq_mm: num,
     radio_dir_mm: num, radio_esq_mm: num, ulna_dir_mm: num, ulna_esq_mm: num,
     peso_g: num, peso_variacao_g: num, percentil: num, genitalia: str,
-    placenta_localizacao: str, placenta_grau: str, ila_cm: num,
+    placenta_localizacao: str, placenta_grau: str,
+    placenta_ecotextura: { type: ["string", "null"], enum: ["homogenea", "heterogenea", null] },
+    ila_cm: num,
     ig_semanas: num, ig_dias: num, dum: str,
     data_exame: str, primeira_us_data: str,
     primeira_us_ig_semanas: num, primeira_us_ig_dias: num,
@@ -190,6 +206,14 @@ export const MORFOLOGICO_JSON_SCHEMA = {
 
 export const MORFOLOGICO_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO do LaudoUSG para ULTRASSONOGRAFIA MORFOLÓGICA.
 Organize o ditado no JSON tipado. NÃO redija laudo. NÃO invente nada.
+
+PRINCÍPIO — MODELO COMPLETO: o laudo é um modelo com as frases de normalidade
+já presentes (movimentos fetais ativos, cordão de três vasos, líquido normal,
+anatomia normal, osso nasal presente, tricúspide ausente, ducto venoso
+trifásico, placenta homogênea). O ditado só ALTERA o que for diferente. Por
+isso, nos campos de estado, null significa "não ditado" e o renderer mantém a
+frase padrão de normalidade. Preencha o valor NORMAL só se o médico o disse;
+preencha o valor ALTERADO só se o médico o ditou; nunca deduza alteração.
 
 REGRAS:
 1. trimestre: detecte "1t" (CCN, translucência nucal, osso nasal, ducto venoso,
@@ -227,24 +251,34 @@ REGRAS:
    nos respectivos campos; o renderer prioriza as laterais, sem completar o
    lado ausente com a genérica.
 3. osso_nasal: "presente"/"ausente". regurgitacao_tricuspide:
-   "ausente"/"presente" somente quando avaliada. ducto_venoso:
-   "normal"/"alterado" (onda A reversa = alterado; onda A positiva/trifásica = normal).
+   "ausente"/"presente". ducto_venoso: "normal"/"alterado" (onda A reversa =
+   alterado; onda A positiva/trifásica = normal). Nos três, null = não ditado
+   (o modelo assume presente / ausente / normal). "ausente" (osso nasal),
+   "presente" (tricúspide) e "alterado" (ducto) SOMENTE quando ditados.
 4. uterina_ip_direita/esquerda: IP das artérias uterinas (1t).
 5. apresentacao/dorso (2t/3t): só se ditados. Situação transversa/córmica não é
    apresentação: use apresentacao=null e registre a posição em polo_cefalico.
-5b. vitalidade/movimentos_fetais/cordao_vasos: só preencha quando o médico
-   informar ou quando o dado objetivo sustentar o estado (BCF numérico sustenta
-   vitalidade normal). Cordão não citado = null; nunca invente três vasos.
-5c. anatomia_avaliada=true somente quando o médico disser que realizou o survey
-   anatômico/morfológico ou declarar a anatomia normal. Em anatomia_alterada,
-   marque os sistemas que possuem alteração: snc (crânio/SNC/coluna), face,
-   coracao ou visceras (tórax/abdome/rins/bexiga/aorta). A frase normal do mesmo
-   sistema será substituída pelo achado adicional. Não marque um sistema normal.
+5b. vitalidade/movimentos_fetais/cordao_vasos: null = não ditado (o modelo
+   assume BCF presente quando há valor, movimentos ativos e cordão de três
+   vasos). Preencha "ausente"/"bradicardia"/"taquicardia", "reduzidos"/
+   "ausentes" e "dois" SOMENTE quando o médico ditar a alteração. BCF numérico
+   sustenta vitalidade normal.
+5c. anatomia_avaliada: null = não ditado (as frases normais dos sistemas ficam
+   no modelo); true quando o médico disser que fez o survey ou que a anatomia é
+   normal; false SOMENTE quando disser que a anatomia NÃO foi avaliada / foi
+   limitada. Em anatomia_alterada, marque os sistemas que possuem alteração:
+   snc (crânio/SNC/coluna), face, coracao ou visceras (tórax/abdome/rins/
+   bexiga/aorta). A frase normal do mesmo sistema será substituída pelo achado
+   adicional. Não marque um sistema normal.
 6. peso_g/peso_variacao_g/percentil: só se ditados. genitalia: se ditada.
    placenta_localizacao e placenta_grau (Grannum: 0/1/2/3 — capture o número),
-   ila_cm: se ditados. liquido_avaliacao só quando o médico qualificar como
-   normal, oligoâmnio ou polidrâmnio; a medida de ILA também será classificada
-   deterministicamente. Sem medida e sem qualificação, use null.
+   ila_cm: se ditados. placenta_ecotextura: "homogenea"/"heterogenea" SOMENTE
+   quando o médico qualificar a ecotextura da placenta; null = não ditada (o
+   modelo assume homogênea no 1º/2º trimestre e heterogênea no 3º).
+   liquido_avaliacao: null = não ditado (o modelo assume quantidade normal);
+   "oligoamnio"/"polidramnio" SOMENTE quando ditados; "normal" se o médico
+   qualificar como normal. A medida de ILA também será classificada
+   deterministicamente.
 7. ig_semanas/ig_dias (IG ATUAL da biometria); dum como DD/MM/AAAA (extenso → numérico).
 7b. ÉPICO IG — referência precoce (só quando DITADO; senão null): data_exame
    (data/"hoje"); primeira_us_data + primeira_us_ig_semanas/dias (1ª US: data + IG
@@ -351,7 +385,8 @@ function acrescentarDoppler(
   options?: { umbilicalSafety?: boolean; rawInput?: string },
 ): void {
   if (!f.doppler) return;
-  const doppler = renderDopplerModule(f.doppler, options);
+  // Morfológico COM Doppler também é exame combinado: o laudo do médico usa só o IP.
+  const doppler = renderDopplerModule(f.doppler, { ...options, indices: "ip" });
   corpo.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
   conclusao.push(...doppler.conclusao);
 }
@@ -412,7 +447,9 @@ function sistemasAlterados(f: MorfologicoFindings): Set<SistemaAnatomico> {
 }
 
 function anatomiaClassica(f: MorfologicoFindings): string[] {
-  if (f.anatomia_avaliada !== true) return [];
+  // MODELO COMPLETO: as frases normais fazem parte do modelo. Só saem quando o
+  // médico disser que a anatomia NÃO foi avaliada (anatomia_avaliada === false).
+  if (f.anatomia_avaliada === false) return [];
   const alterados = sistemasAlterados(f);
   const linhas = (Object.keys(ANATOMIA_NORMAL_CLASSICA) as SistemaAnatomico[])
     .filter((sistema) => !alterados.has(sistema))
@@ -423,7 +460,7 @@ function anatomiaClassica(f: MorfologicoFindings): string[] {
 }
 
 function anatomiaObjetiva(f: MorfologicoFindings): string[] {
-  if (f.anatomia_avaliada !== true) return [];
+  if (f.anatomia_avaliada === false) return [];
   const alterados = sistemasAlterados(f);
   const preservados = [
     ["snc", "crânio, SNC e coluna"],
@@ -481,7 +518,8 @@ function movimentosMorfo(f: MorfologicoFindings): string[] {
   if (f.movimentos_fetais === "normais") return ["Os movimentos fetais são ativos."];
   if (f.movimentos_fetais === "reduzidos") return ["Movimentos fetais reduzidos."];
   if (f.movimentos_fetais === "ausentes") return ["Não foram observados movimentos fetais durante o exame."];
-  return [];
+  // Padrão do modelo quando o médico não ditou nada sobre os movimentos.
+  return ["Os movimentos fetais são ativos."];
 }
 
 function cordaoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[] } {
@@ -494,7 +532,8 @@ function cordaoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: stri
       conclusao: ["Artéria umbilical única."],
     };
   }
-  return { corpo: [], conclusao: [] };
+  // Padrão do modelo: cordão de três vasos.
+  return { corpo: ["Cordão umbilical com duas artérias e uma veia."], conclusao: [] };
 }
 
 function liquidoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[]; alterado: boolean } {
@@ -517,7 +556,63 @@ function liquidoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: str
   if (f.liquido_avaliacao === "polidramnio") {
     return { corpo: ["Líquido amniótico de quantidade aumentada pela análise subjetiva."], conclusao: ["Polidrâmnio."], alterado: true };
   }
-  return { corpo: [], conclusao: [], alterado: false };
+  // Padrão do modelo: líquido normal pela análise subjetiva.
+  return {
+    corpo: ["Líquido amniótico de quantidade normal pela análise subjetiva."],
+    conclusao: ["Líquido amniótico de quantidade normal."],
+    alterado: false,
+  };
+}
+
+/**
+ * Placenta: a ecotextura faz parte da frase do modelo (homogênea; no 3º trimestre
+ * heterogênea, de acordo com a fase da gestação). O médico só precisa ditar quando
+ * for diferente. Sem localização ditada não há frase — localização não se inventa.
+ */
+function placentaMorfo(f: MorfologicoFindings, terceiro: boolean): string[] {
+  if (!f.placenta_localizacao && !f.placenta_grau) return [];
+  const grau = grauPlacenta(f.placenta_grau);
+  const ecotextura =
+    f.placenta_ecotextura === "heterogenea"
+      ? "heterogênea, de acordo com a fase da gestação"
+      : f.placenta_ecotextura === "homogenea"
+        ? "homogênea"
+        : terceiro
+          ? "heterogênea, de acordo com a fase da gestação"
+          : "homogênea";
+  return [
+    `Placenta${f.placenta_localizacao ? ` de localização ${f.placenta_localizacao}` : ""}${grau ? `, ${grau}` : ""}, com ecotextura ${ecotextura}.`,
+  ];
+}
+
+/** Mesma regra da placenta na redação objetiva (grau citado como "de Grannum et al."). */
+function placentaObjMorfo(f: MorfologicoFindings, terceiro: boolean): string[] {
+  if (!f.placenta_localizacao && !f.placenta_grau) return [];
+  const grau = grauPlacenta(f.placenta_grau);
+  const ecotextura =
+    f.placenta_ecotextura === "heterogenea"
+      ? "heterogênea, de acordo com a fase da gestação"
+      : f.placenta_ecotextura === "homogenea"
+        ? "homogênea"
+        : terceiro
+          ? "heterogênea, de acordo com a fase da gestação"
+          : "homogênea";
+  return [
+    `Placenta${f.placenta_localizacao ? ` de localização ${f.placenta_localizacao}` : ""}${grau ? `, ${grau} de Grannum et al.` : ""}, com ecotextura ${ecotextura}.`,
+  ];
+}
+
+/** 1º trimestre: situação transversa quando há polo cefálico; senão o padrão do modelo. */
+function linhaFeto1t(f: MorfologicoFindings): string {
+  const dorso = dorsoFmt(f.dorso);
+  if (f.polo_cefalico) {
+    return `Feto único de situação transversa, com polo cefálico ${f.polo_cefalico}${dorso ? `, e dorso ${dorso}` : ""}.`;
+  }
+  const apresentacao = apresentacaoFmt(f.apresentacao);
+  if (apresentacao) {
+    return `Feto único, em apresentação ${apresentacao}${dorso ? `, com dorso ${dorso}` : ""}.`;
+  }
+  return "Feto único de situação variável.";
 }
 
 const COMENTARIOS_1T =
@@ -527,29 +622,23 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
   const ig = igResultMorfo(f, igCorrection);
   const vitalidade = vitalidadeClassicaMorfo(f);
   const liquido = liquidoMorfo(f);
+  // MODELO COMPLETO: marcadores do 1º trimestre saem com a frase normal; o ditado
+  // só troca a frase quando o achado é diferente.
   const aspectos: string[] = [
-    "Feto único de situação variável.",
+    linhaFeto1t(f),
     ...vitalidade.corpo,
     ...movimentosMorfo(f),
     `Comprimento crânio-nádegas (CCN) de ${mm(f.ccn_mm)} mm.`,
     `Medida da translucência nucal (TN) de ${mm(f.tn_mm)} mm.`,
-    ...(f.osso_nasal === null
-      ? []
-      : [f.osso_nasal === "ausente" ? "Ausência de osso nasal." : "Presença de osso nasal."]),
-    ...(f.regurgitacao_tricuspide == null
-      ? []
-      : [f.regurgitacao_tricuspide === "presente"
-          ? "Presença de regurgitação tricúspide."
-          : "Ausência de regurgitação tricúspide."]),
-    ...(f.ducto_venoso === null
-      ? []
-      : [f.ducto_venoso === "alterado"
-          ? "Ducto venoso com onda reversa na sístole atrial."
-          : "Ducto venoso com aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas)."]),
+    f.osso_nasal === "ausente" ? "Ausência de osso nasal." : "Presença de osso nasal.",
+    f.regurgitacao_tricuspide === "presente"
+      ? "Presença de regurgitação tricúspide."
+      : "Ausência de regurgitação tricúspide.",
+    f.ducto_venoso === "alterado"
+      ? "Ducto venoso com onda reversa na sístole atrial."
+      : "Ducto venoso com aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas).",
   ];
-  if (f.placenta_localizacao) {
-    aspectos.push(`Placenta de localização ${f.placenta_localizacao}.`);
-  }
+  aspectos.push(...placentaMorfo(f, false));
   aspectos.push(...liquido.corpo);
   if (f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null) {
     aspectos.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBr(f.uterina_ip_direita) : "____"}.`);
@@ -571,14 +660,12 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
     ig.conclusaoClassico,
     ...vitalidade.conclusao,
     ...liquido.conclusao,
-    ...(f.ducto_venoso === null
-      ? []
-      : [f.ducto_venoso === "alterado"
-          ? "Doppler do ducto venoso alterado (onda A reversa)."
-          : "Doppler do ducto venoso normal."]),
+    f.ducto_venoso === "alterado"
+      ? "Doppler do ducto venoso alterado (onda A reversa)."
+      : "Doppler do ducto venoso normal.",
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(f.anatomia_avaliada !== true || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...(f.anatomia_avaliada === false || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -601,10 +688,11 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
   const liquido = liquidoMorfo(f);
   const anexos = [
     ...cordao.corpo,
-    ...(f.placenta_localizacao || f.placenta_grau
-      ? [`Placenta${f.placenta_localizacao ? ` de localização ${f.placenta_localizacao}` : ""}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)}` : ""}.`]
-      : []),
+    ...placentaMorfo(f, terceiro),
     ...liquido.corpo,
+    // Orifício interno: parte do modelo no 2º trimestre; no 3º e com cervicometria
+    // própria a frase não entra (decisão do médico).
+    ...(terceiro || f.cervicometria ? [] : ["Orifício interno do colo uterino fechado."]),
   ];
 
   const aspectos: string[] = [
@@ -662,7 +750,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     ...vitalidade.conclusao,
     ...cordao.conclusao,
     ...liquido.conclusao,
-    ...(f.anatomia_avaliada !== true || temAchado || temSistemaAlterado
+    ...(f.anatomia_avaliada === false || temAchado || temSistemaAlterado
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -830,31 +918,22 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   const comDoppler =
     f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null;
 
+  // MODELO COMPLETO (mesma regra do clássico): marcadores saem com a frase normal.
   const achados: string[] = [
-    "Feto único de situação variável.",
+    linhaFeto1t(f),
     ...vitalidade.corpo,
     ...movimentosMorfo(f),
     `Comprimento cabeça-nádegas (CCN): ${mm1(f.ccn_mm)} mm.`,
     `Translucência nucal (TN): ${mm1(f.tn_mm)} mm.`,
-    ...(f.osso_nasal === null
-      ? []
-      : [f.osso_nasal === "ausente" ? "Osso nasal ausente." : "Osso nasal presente."]),
-    ...(f.regurgitacao_tricuspide == null
-      ? []
-      : [f.regurgitacao_tricuspide === "presente"
-          ? "Regurgitação tricúspide presente."
-          : "Regurgitação tricúspide ausente."]),
-    ...(f.ducto_venoso === null
-      ? []
-      : [f.ducto_venoso === "alterado"
-          ? "Ducto venoso com onda A reversa."
-          : "Ducto venoso com onda trifásica (onda A positiva)."]),
+    f.osso_nasal === "ausente" ? "Osso nasal ausente." : "Osso nasal presente.",
+    f.regurgitacao_tricuspide === "presente"
+      ? "Regurgitação tricúspide presente."
+      : "Regurgitação tricúspide ausente.",
+    f.ducto_venoso === "alterado"
+      ? "Ducto venoso com onda A reversa."
+      : "Ducto venoso com onda trifásica (onda A positiva).",
   ];
-  if (f.placenta_localizacao) {
-    achados.push(
-      `Placenta de localização ${f.placenta_localizacao}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : "."}`,
-    );
-  }
+  achados.push(...placentaObjMorfo(f, false));
   achados.push(...liquido.corpo);
   if (comDoppler) {
     achados.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBr(f.uterina_ip_direita) : "____"}.`);
@@ -878,14 +957,12 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
     ...ig.conclusaoObjetivo,
     ...vitalidade.conclusao,
     ...liquido.conclusao,
-    ...(f.ducto_venoso === null
-      ? []
-      : [f.ducto_venoso === "alterado"
-          ? "Doppler do ducto venoso alterado (onda A reversa)."
-          : "Doppler do ducto venoso normal."]),
+    f.ducto_venoso === "alterado"
+      ? "Doppler do ducto venoso alterado (onda A reversa)."
+      : "Doppler do ducto venoso normal.",
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(f.anatomia_avaliada !== true || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...(f.anatomia_avaliada === false || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
@@ -917,12 +994,11 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
   const liquido = liquidoMorfo(f);
   const anexos = [
     ...cordao.corpo,
-    ...(f.placenta_localizacao || f.placenta_grau
-      ? [`Placenta${f.placenta_localizacao ? ` de localização ${f.placenta_localizacao}` : ""}${grauPlacenta(f.placenta_grau) ? `, ${grauPlacenta(f.placenta_grau)} de Grannum et al.` : "."}`]
-      : []),
+    ...placentaObjMorfo(f, terceiro),
     ...(f.ila_cm !== null
       ? [`Índice de líquido amniótico (ILA): ${ptBr1(f.ila_cm)} cm.`]
       : liquido.corpo),
+    ...(terceiro || f.cervicometria ? [] : ["Orifício interno do colo uterino fechado."]),
   ];
 
   const achados: string[] = [
@@ -965,7 +1041,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     ...vitalidade.conclusao,
     ...cordao.conclusao,
     ...liquido.conclusao,
-    ...(f.anatomia_avaliada !== true || temAchadoObj || temSistemaAlterado
+    ...(f.anatomia_avaliada === false || temAchadoObj || temSistemaAlterado
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
