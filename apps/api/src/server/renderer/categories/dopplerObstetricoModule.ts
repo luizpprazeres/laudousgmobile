@@ -94,6 +94,10 @@ DOPPLER OBSTÉTRICO OPCIONAL:
 const fmt = (n: number) =>
   n.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
+/** Índices de vaso saem sempre com duas casas: 0,60 e não 0,6 (decisão de 18/09/2026). */
+const fmtIndice = (n: number) =>
+  n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 export function toDopplerData(d: DopplerObstetricoModule): DopplerData {
   const ductoVenoso =
     d.ducto_venoso_qualitativo ??
@@ -130,9 +134,44 @@ export function toDopplerData(d: DopplerObstetricoModule): DopplerData {
 
 function indices(ir: number | null, ip: number | null): string | null {
   const partes: string[] = [];
-  if (ir !== null) partes.push(`índice de resistividade de ${fmt(ir)}`);
-  if (ip !== null) partes.push(`índice de pulsatilidade de ${fmt(ip)}`);
+  if (ir !== null) partes.push(`índice de resistividade de ${fmtIndice(ir)}`);
+  if (ip !== null) partes.push(`índice de pulsatilidade de ${fmtIndice(ip)}`);
   return partes.length > 0 ? partes.join(" e ") : null;
+}
+
+/**
+ * MODELO DO DOPPLER ISOLADO (decisão do médico, 18/09/2026): uterinas e cerebral
+ * média ganham UMA LINHA POR ÍNDICE; a umbilical fica em linha única com a nota
+ * das três medidas; o ducto venoso tem frase própria. O exame combinado mantém a
+ * linha única por vaso, já validada.
+ */
+const NOTA_UMBILICAL =
+  "(média de três medidas realizadas próximo à inserção na placenta, próximo ao abdome fetal e em alça livre)";
+
+function linhasPorIndice(rotulo: string, ir: number | null, ip: number | null, percentil: number | null): string[] {
+  const linhas: string[] = [];
+  if (ir !== null) linhas.push(`Índice de resistividade da ${rotulo} de ${fmtIndice(ir)}.`);
+  if (ip !== null) {
+    linhas.push(
+      `Índice de pulsatilidade da ${rotulo} de ${fmtIndice(ip)}${percentil !== null ? ` (percentil ${fmtPercentil(percentil)})` : ""}.`,
+    );
+  }
+  return linhas;
+}
+
+function linhaUmbilicalIsolada(ir: number | null, ip: number | null, percentil: number | null): string | null {
+  const valores = indices(ir, ip);
+  if (!valores) return null;
+  const comRotulo = valores.replace("índice de resistividade de", "Índice de resistividade da artéria umbilical de");
+  const texto = ir !== null ? comRotulo : `Índice de pulsatilidade da artéria umbilical de ${fmtIndice(ip as number)}`;
+  return `${texto}${percentil !== null ? ` (percentil ${fmtPercentil(percentil)})` : ""}. ${NOTA_UMBILICAL}.`;
+}
+
+function linhaDuctoIsolada(ir: number | null, ip: number | null, percentil: number | null): string | null {
+  const valores = indices(ir, ip);
+  return valores
+    ? `O ducto venoso tem ${valores}${percentil !== null ? ` (percentil ${fmtPercentil(percentil)})` : ""}.`
+    : null;
 }
 
 function fmtPercentil(percentil: number): string {
@@ -178,20 +217,28 @@ export function renderDopplerModule(
 
   const soIp = options?.indices === "ip";
   const ir = (irValor: number | null, ipValor: number | null) => (soIp && ipValor !== null ? null : irValor);
-  const linhas: Array<string | null> = [
-    linhaVaso("Artéria uterina direita", ir(module.ir_uterina_dir, module.ip_uterina_dir), module.ip_uterina_dir, null),
-    linhaVaso("Artéria uterina esquerda", ir(module.ir_uterina_esq, module.ip_uterina_esq), module.ip_uterina_esq, null),
-    linhaVaso("Artéria umbilical", ir(module.ir_umbilical, module.ip_umbilical), module.ip_umbilical, module.perc_umbilical),
-    linhaVaso("Artéria cerebral média", ir(module.ir_acm, module.ip_acm), module.ip_acm, module.perc_acm),
-    linhaVaso("Ducto venoso", ir(module.ir_ducto_venoso, module.ip_ducto_venoso), module.ip_ducto_venoso, module.perc_ducto_venoso),
-  ];
+  const linhas: Array<string | null> = soIp
+    ? [
+        linhaVaso("Artéria uterina direita", ir(module.ir_uterina_dir, module.ip_uterina_dir), module.ip_uterina_dir, null),
+        linhaVaso("Artéria uterina esquerda", ir(module.ir_uterina_esq, module.ip_uterina_esq), module.ip_uterina_esq, null),
+        linhaVaso("Artéria umbilical", ir(module.ir_umbilical, module.ip_umbilical), module.ip_umbilical, module.perc_umbilical),
+        linhaVaso("Artéria cerebral média", ir(module.ir_acm, module.ip_acm), module.ip_acm, module.perc_acm),
+        linhaVaso("Ducto venoso", ir(module.ir_ducto_venoso, module.ip_ducto_venoso), module.ip_ducto_venoso, module.perc_ducto_venoso),
+      ]
+    : [
+        ...linhasPorIndice("artéria uterina direita", module.ir_uterina_dir, module.ip_uterina_dir, null),
+        ...linhasPorIndice("artéria uterina esquerda", module.ir_uterina_esq, module.ip_uterina_esq, null),
+        linhaUmbilicalIsolada(module.ir_umbilical, module.ip_umbilical, module.perc_umbilical),
+        ...linhasPorIndice("artéria cerebral média", module.ir_acm, module.ip_acm, module.perc_acm),
+        linhaDuctoIsolada(module.ir_ducto_venoso, module.ip_ducto_venoso, module.perc_ducto_venoso),
+      ];
   if (module.ip_medio_uterinas !== null) {
     linhas.push(
-      `Índice de pulsatilidade médio das artérias uterinas de ${fmt(module.ip_medio_uterinas)}${module.perc_medio_uterinas !== null ? ` (percentil ${fmtPercentil(module.perc_medio_uterinas)})` : ""}.`,
+      `Índice de pulsatilidade médio das artérias uterinas de ${fmtIndice(module.ip_medio_uterinas)}${module.perc_medio_uterinas !== null ? ` (percentil ${fmtPercentil(module.perc_medio_uterinas)})` : ""}.`,
     );
   }
   if (module.rcp !== null) {
-    linhas.push(`Relação cérebro-placentária de ${fmt(module.rcp)}${module.perc_rcp !== null ? ` (percentil ${fmtPercentil(module.perc_rcp)})` : ""}.`);
+    linhas.push(`Relação cérebro-placentária de ${fmtIndice(module.rcp)}${module.perc_rcp !== null ? ` (percentil ${fmtPercentil(module.perc_rcp)})` : ""}.`);
   }
   const perfil = computePerfilHemodinamico(data);
   const fluxoUmbilicalAnormal =
@@ -203,7 +250,7 @@ export function renderDopplerModule(
     linhas.push("Fluxo diastólico reverso na artéria umbilical.");
   }
   if (perfil !== undefined && !fluxoUmbilicalAnormal) {
-    linhas.push(`Perfil hemodinâmico fetal de ${fmt(perfil)}.`);
+    linhas.push(`Perfil hemodinâmico fetal de ${fmtIndice(perfil)}.`);
   }
   if (module.ducto_venoso_qualitativo) {
     linhas.push(`Ducto venoso: ${module.ducto_venoso_qualitativo}.`);
@@ -217,7 +264,21 @@ export function renderDopplerModule(
   const achados = linhas.filter((v): v is string => Boolean(v));
   if (achados.length === 0) achados.push("Não foram informados índices Doppler mensuráveis.");
 
-  let conclusao = buildDopplerConclusionItems(data, { strictEvidence: true });
+  /**
+   * No exame combinado o laudo não cita resistividade: a conclusão também não pode
+   * dizer "índices de resistividade e de pulsatilidade normais". Zeramos o IR dos
+   * vasos que têm IP (os mesmos que saem só com IP no corpo) antes de concluir.
+   */
+  const dataConclusao = soIp
+    ? {
+        ...data,
+        irUterinaDir: data.ipUterinaDir !== undefined ? undefined : data.irUterinaDir,
+        irUterinaEsq: data.ipUterinaEsq !== undefined ? undefined : data.irUterinaEsq,
+        irUmbilical: data.ipUmbilical !== undefined ? undefined : data.irUmbilical,
+        irACM: data.ipACM !== undefined ? undefined : data.irACM,
+      }
+    : data;
+  let conclusao = buildDopplerConclusionItems(dataConclusao, { strictEvidence: true });
   if (fluxoUmbilicalAnormal) {
     conclusao = conclusao.filter((item) =>
       !/^Perfil hemodinâmico fetal é normal/i.test(item) &&

@@ -57,13 +57,13 @@ const F = (p: Partial<ObstetricaFindings>): ObstetricaFindings => ({
   check("A3: feto único MBV sem '(feto A)'", !/\(feto\s/i.test(laudo), laudo);
   check("A3: feto único sem 'ambos os fetos'", !/ambos os fetos/i.test(laudo), laudo);
   check(
-    "A3: corpo 'Maior bolsão vertical de 4,1 cm.'",
-    /Maior bolsão vertical de 4,1 cm\./.test(laudo),
+    "A3: corpo 'O maior bolsão vertical (MBV) mede 4,1 cm.'",
+    /O maior bolsão vertical \(MBV\) mede 4,1 cm\./.test(laudo),
     laudo,
   );
   check(
     "A3: conclusão líquido sem feto",
-    /Líquido amniótico em quantidade normal \(maior bolsão vertical de 4,1 cm\)\./.test(laudo),
+    /Líquido amniótico de quantidade normal \(o maior bolsão vertical mede 4,1 cm\)\./.test(laudo),
     laudo,
   );
 }

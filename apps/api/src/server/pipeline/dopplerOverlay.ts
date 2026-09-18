@@ -165,7 +165,7 @@ export function extractDopplerData(rawInput: string): DopplerData {
   d.percRCP = parseNum(
     m(/(?:rcp|rela[çc][ãa]o\s+c[eé]rebro[\s-]?placent[áa]ria)[^.]{0,40}?percentil\s+(\d{1,3})/i),
   );
-  d.acmAbaixoP5 = /(?:acm|cerebral\s+m[eé]dia)[^.]{0,55}(?:menor|abaixo|inferior)\s+(?:que\s+)?(?:o\s+)?percentil\s*5\b/i.test(t);
+  d.acmAbaixoP5 = /(?:acm|cerebral\s+m[eé]dia)[^.]{0,55}(?:menor|abaixo|inferior)\s+(?:que\s+|d[eoa]\s+|ao\s+)?(?:o\s+)?percentil\s*5\b/i.test(t);
   d.rcpAbaixoP5 = /(?:rcp|rela[çc][ãa]o\s+c[eé]rebro[\s-]?placent[áa]ria)[^.]{0,55}(?:menor|abaixo|inferior)\s+(?:que\s+)?(?:o\s+)?percentil\s*5\b/i.test(t);
   d.ductoAcimaP95 = /ducto\s+venoso[^.]{0,55}(?:maior|acima|superior)\s+(?:que\s+)?(?:o\s+)?percentil\s*95\b/i.test(t);
 
@@ -395,7 +395,6 @@ function acmComprometida(d: DopplerData): boolean {
     d.centralizacao === true ||
     d.preCentralizacao === true ||
     d.acmAbaixoP5 === true ||
-    (d.percACM !== undefined && d.percACM < 5) ||
     rcpComprometida
   );
 }
@@ -447,8 +446,14 @@ export function buildDopplerConclusionItems(
   // ACM alterada EXPLÍCITA (ditada alterada ou percentil < 5) → item próprio de
   // ACM. (Centralização sozinha não duplica: já tem o item de redistribuição;
   // mas continua excluindo a ACM da frase de normalidade via acmComprometida.)
-  const acmAltExplicita =
-    d.acmAlterado === true || d.acmAbaixoP5 === true || (d.percACM !== undefined && d.percACM < 5);
+  /**
+   * DECISÃO DO MÉDICO (18/09/2026): o percentil CALCULADO da ACM não alerta sozinho.
+   * A centralização passa a ser julgada pelo perfil hemodinâmico (1/RCP) e pelo que
+   * o médico ditar — "ACM abaixo do percentil 5", "centralização", "ACM alterada"
+   * continuam valendo. Antes, uma ACM em P4 com perfil normal saía como
+   * "índice de pulsatilidade reduzido na artéria cerebral média".
+   */
+  const acmAltExplicita = d.acmAlterado === true || d.acmAbaixoP5 === true;
   const umbOuAcmAlt = d.umbilicalAlterado || acmAltExplicita;
 
   // ── Frase do índice de pulsatilidade (umbilical/ACM) ──
@@ -470,7 +475,7 @@ export function buildDopplerConclusionItems(
     } else {
       // ACM alterada. Percentil < 5 → IP reduzido (brain sparing).
       items.push(
-        d.acmAbaixoP5 === true || (d.percACM !== undefined && d.percACM < 5)
+        d.acmAbaixoP5 === true
           ? "Índice de pulsatilidade reduzido na artéria cerebral média."
           : "Índice de pulsatilidade alterado na artéria cerebral média.",
       );
@@ -520,9 +525,12 @@ export function buildDopplerConclusionItems(
   }
 
   // ── Incisuras (uterinas auto) ──
+  // DECISÃO DO MÉDICO (18/09/2026): a ausência de incisuras faz parte do texto padrão
+  // sempre que as uterinas foram medidas — antes só saía quando ditada.
+  const vasos = vasoMedido(d);
   if (d.incisura) {
     items.push("Presença de incisura protodiastólica nas artérias uterinas.");
-  } else if (!options?.strictEvidence || d.incisura === false) {
+  } else if (!options?.strictEvidence || d.incisura === false || vasos.uterinas) {
     items.push("Ausência de sinais de incisuras.");
   }
 
@@ -535,7 +543,15 @@ export function buildDopplerConclusionItems(
     items.push(
       "Achados compatíveis com sinais iniciais de centralização fetal (pré-centralização).",
     );
-  } else if ((!options?.strictEvidence || d.centralizacao === false || d.preCentralizacao === false) && !acmComprometida(d)) {
+  } else if (
+    (!options?.strictEvidence ||
+      d.centralizacao === false ||
+      d.preCentralizacao === false ||
+      // Padrão do modelo: com umbilical E cerebral média medidas, a centralização é
+      // avaliável e a frase entra no laudo.
+      (vasos.umbilical && vasos.acm)) &&
+    !acmComprometida(d)
+  ) {
     // Só afirma ausência de centralização quando a ACM NÃO está comprometida
     // (ACM P≤5 / RCP<1 são a fisiologia inicial do brain sparing — review dex2).
     items.push("Não há sinais de pré-centralização ou de centralização.");
@@ -549,9 +565,16 @@ export function buildDopplerConclusionItems(
     } else {
       items.push(`Perfil hemodinâmico fetal alterado, maior de 1.0.`);
     }
-  } else if (!options?.strictEvidence && !acmComprometida(d)) {
+  } else if (
+    !options?.strictEvidence &&
+    !acmComprometida(d) &&
+    // Sem RCP para julgar, uma ACM em percentil baixo impede afirmar perfil normal.
+    // (A decisão de 18/09 tirou o ALERTA isolado da ACM, não a prudência de não
+    // afirmar o que não foi calculado.)
+    !(d.percACM !== undefined && d.percACM < 5)
+  ) {
     // Sem RCP calculável: só afirma perfil normal se a ACM NÃO estiver comprometida
-    // (centralização / P≤5 / RCP<1 não podem coexistir com perfil "normal" — dex2).
+    // (centralização / RCP<1 não podem coexistir com perfil "normal" — dex2).
     items.push("Perfil hemodinâmico fetal é normal, menor de 1.0.");
   }
 

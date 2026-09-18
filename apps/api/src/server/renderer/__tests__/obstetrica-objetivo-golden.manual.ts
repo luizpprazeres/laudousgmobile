@@ -68,7 +68,7 @@ const render = (f: ObstetricaFindings) => renderObstetrica(f, null, { objetivo: 
   );
   check("único: SEM '(feto A)'", !/\(feto\s/i.test(l), l);
   check("único: SEM 'ambos os fetos'", !/ambos os fetos/i.test(l), l);
-  check("único: 'Maior bolsão vertical de 4,1 cm.'", /Maior bolsão vertical de 4,1 cm\./.test(l), l);
+  check("único: 'O maior bolsão vertical (MBV) mede 4,1 cm.'", /O maior bolsão vertical \(MBV\) mede 4,1 cm\./.test(l), l);
   check("único: apresentação cefálica (concordância)", /Feto único, em apresentação cefálica/.test(l), l);
   check("único: NÃO é título gemelar", !/GEMELAR/.test(l), l);
 }

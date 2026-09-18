@@ -1,6 +1,13 @@
 /**
  * Golden brain sparing (boletim 2026-06-19, risco clínico CRÍTICO): ACM
- * comprometida (centralização / percentil < 5) NUNCA pode ser afirmada normal.
+ * comprometida NUNCA pode ser afirmada normal.
+ *
+ * DECISÃO DO MÉDICO (18/09/2026): o percentil da ACM, sozinho, deixou de alertar.
+ * Com o perfil hemodinâmico (1/RCP) normal, uma ACM em percentil baixo entra como
+ * normal — a centralização passa a ser julgada pelo perfil e pelo que for ditado
+ * ("centralização", "ACM abaixo do percentil 5", "ACM alterada"). O que continua
+ * valendo: RCP < 1, centralização ditada e ACM dita alterada comprometem a ACM, e
+ * sem RCP calculável o laudo não afirma perfil normal.
  * Rodar: npx tsx src/server/pipeline/__tests__/dopplerBrainSparing.manual.ts
  */
 import { extractDopplerData, buildDopplerConclusionItems } from "../dopplerOverlay";
@@ -30,11 +37,12 @@ const c1 = joined(
 );
 check("1) NÃO afirma ACM normal", !/normais? nas artérias[^.]*cerebral m[ée]dia/i.test(c1) && !/normal nas artérias[^.]*cerebral m[ée]dia/i.test(c1), c1);
 check("1) tem brain sparing", /brain sparing|redistribui/i.test(c1));
-check("1) tem IP reduzido na ACM", /reduzido na artéria cerebral m[ée]dia/i.test(c1), c1);
+check("1) centralização ditada domina a conclusão", /brain sparing|redistribui/i.test(c1) && !/normal.*cerebral m[ée]dia/i.test(c1), c1);
 
 // 2) ACM percentil 4 SEM a palavra centralização.
 const c2 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,1 percentil 4.");
-check("2) p<5 sem centralização → ACM não-normal + reduzida", /reduzido na artéria cerebral m[ée]dia/i.test(c2) && !/normais.*cerebral/i.test(c2), c2);
+// Perfil 0,82 (normal): pela decisão do médico a ACM entra como normal e não há alerta isolado.
+check("2) p<5 com perfil normal → ACM normal, sem alerta isolado", /normais nas artérias umbilical e cerebral m[ée]dia/i.test(c2) && !/reduzido na artéria cerebral/i.test(c2), c2);
 
 // 3) ACM normal (percentil 50) → continua afirmando normalidade.
 const c3 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,8 percentil 50.");
@@ -52,9 +60,13 @@ check("5) RCP<1 → não afirma ACM normal", !/normais nas artérias umbilical e
 const c6 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,8 menor que o percentil 5.");
 check("6) 'menor que percentil 5' → ACM não-normal", !/normais nas artérias umbilical e cerebral m[ée]dia/i.test(c6), c6);
 
-// 7) ACM P<5 sem palavra centralização → NÃO afirma 'Não há centralização'.
+// 7) ACM P<5 com perfil normal → a frase de ausência de centralização entra (decisão de 18/09).
 const c7 = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,1 percentil 4.");
-check("7) ACM P<5 → sem 'Não há ... centralização'", !/Não há sinais de pr[ée]-centraliza/i.test(c7), c7);
+check("7) ACM P<5 com perfil normal → afirma ausência de centralização", /Não há sinais de pr[ée]-centraliza/i.test(c7), c7);
+
+// 7b) ACM DITADA abaixo do percentil 5 → continua comprometendo (não é o percentil calculado).
+const c7b = joined("IP da artéria umbilical 0,9. IP da artéria cerebral média 1,1 abaixo do percentil 5.");
+check("7b) ACM dita abaixo do percentil 5 → alerta preservado", /reduzido na artéria cerebral m[ée]dia/i.test(c7b) && !/Não há sinais de pr[ée]-centraliza/i.test(c7b), c7b);
 
 // 8) ACM P<5 sem RCP calculável (só ACM) → não afirma perfil normal.
 const c8 = joined("IP da artéria cerebral média 1,1 percentil 4.");

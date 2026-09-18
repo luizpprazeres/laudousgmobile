@@ -56,7 +56,9 @@ async function main() {
       );
       console.log(`\n${output}\n`);
       check("estrutura do exame isolado", /^DOPPLERVELOCIMETRIA OBSTÉTRICA[\s\S]+COMENTÁRIOS:[\s\S]+CONCLUSÃO:/.test(output));
-      check("sem biometria obstétrica", !/DBP|placenta|líquido amniótico|peso fetal/i.test(output));
+      // A nota das três medidas da umbilical cita a placenta: o guard mira a LINHA da
+      // placenta, não a palavra solta (decisão de 18/09/2026).
+      check("sem biometria obstétrica", !/DBP|Placenta de localização|líquido amniótico|peso (?:fetal|aproximado)/i.test(output));
       check("sem placeholders", !/____/.test(output));
       check("preserva ao menos um índice", /índice de (?:resistividade|pulsatilidade)/i.test(output));
     } catch (error) {

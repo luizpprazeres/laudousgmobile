@@ -676,10 +676,18 @@ function grannumParen(grau: string | null, grannum: boolean): string {
  * da gestação. Retorna null se nada disponível.
  */
 function placentaEco(f: ObstetricaFindings, grannum: boolean): string | null {
-  if (f.placenta_ecotextura) return f.placenta_ecotextura;
+  if (f.placenta_ecotextura) return comFaseDaGestacao(f.placenta_ecotextura);
   if (!grannum || !f.placenta_grau) return null;
   const g = f.placenta_grau.trim().replace(/^grau\s*/i, "");
   return g === "0" ? "homogênea" : "heterogênea, de acordo com a fase da gestação";
+}
+
+/** Placenta heterogênea leva a ressalva da fase (decisão do médico, 18/09/2026). */
+function comFaseDaGestacao(eco: string): string {
+  const t = eco.trim();
+  if (!/heterog[êe]nea/i.test(t)) return t;
+  if (/de acordo com a fase/i.test(t)) return t;
+  return `${t}, de acordo com a fase da gestação`;
 }
 function mm(v: number | null): string {
   return v === null ? "____" : ptBr(v);
@@ -731,6 +739,23 @@ export function calcDsm(f: ObstetricaFindings): number | null {
 
 const COMENTARIOS =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+
+/**
+ * COMENTÁRIOS com os complementos DENTRO do parágrafo (decisão do médico, 18/09/2026):
+ * a técnica do Doppler e a da cervicometria entram depois de "abdome da gestante" e
+ * antes da documentação fotográfica, como nos laudos dele. Antes eram parágrafos soltos.
+ */
+const COMENTARIOS_DOPPLER = "Foi utilizado Doppler colorido para avaliação hemodinâmica fetal.";
+const COMENTARIOS_CERVICO = "Foi realizada avaliação complementar do colo uterino pela via transvaginal.";
+
+function comentariosCom(extras: Array<string | null>): string {
+  const frases = extras.filter((f): f is string => Boolean(f));
+  if (frases.length === 0) return COMENTARIOS;
+  return COMENTARIOS.replace(
+    " A documentação fotográfica",
+    ` ${frases.join(" ")} A documentação fotográfica`,
+  );
+}
 
 /**
  * "Embrião" ou "Feto"? — corte em 10 SEMANAS, não em 13s6d.
@@ -819,10 +844,11 @@ export function biometriaLinhas(f: ObstetricaFindings["fetos"][number]): string[
 
 export function pesoLinha(f: ObstetricaFindings["fetos"][number]): string {
   const extras: string[] = [];
-  if (f.peso_variacao_g !== null) extras.push(`+- ${gramas(f.peso_variacao_g)} gramas`);
+  // "g" em vez de "gramas", igual ao morfológico (decisão do médico, 18/09/2026).
+  if (f.peso_variacao_g !== null) extras.push(`+- ${gramas(f.peso_variacao_g)} g`);
   if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
   const sufixo = extras.length > 0 ? ` (${extras.join(", ")})` : "";
-  return `Peso aproximado de ${gramas(f.peso_g)} gramas${sufixo}.`;
+  return `Peso aproximado de ${gramas(f.peso_g)} g${sufixo}.`;
 }
 
 export function placentaFrase(f: ObstetricaFindings, grannum = false): string | null {
@@ -915,11 +941,12 @@ export function liquido(f: ObstetricaFindings): { corpo: string; conclusao: stri
       const v = f.liquido_mbv_por_feto_cm[0];
       const mbvTxt = v !== undefined ? `${ptBr(v)} cm` : "____ cm";
       const classe = f.liquido_classe ?? (v !== undefined ? classeDaMedida(v, "mbv") : null);
+      // Redação do médico (18/09/2026): "O maior bolsão vertical (MBV) mede X cm."
       return {
-        corpo: `Maior bolsão vertical de ${mbvTxt}.`,
+        corpo: `O maior bolsão vertical (MBV) mede ${mbvTxt}.`,
         conclusao: classe
-          ? `${classe.charAt(0).toUpperCase()}${classe.slice(1)} (maior bolsão vertical de ${mbvTxt}).`
-          : `Líquido amniótico em quantidade normal (maior bolsão vertical de ${mbvTxt}).`,
+          ? `${classe.charAt(0).toUpperCase()}${classe.slice(1)} (o maior bolsão vertical mede ${mbvTxt}).`
+          : `Líquido amniótico de quantidade normal (o maior bolsão vertical mede ${mbvTxt}).`,
       };
     }
     const labels = f.liquido_mbv_por_feto_cm
@@ -1312,11 +1339,10 @@ export function renderObstetricaClassico(
     dumLinha,
     igProse,
     [
-      COMENTARIOS,
-      f.cervicometria
-        ? "Foi realizada avaliação complementar do colo uterino pela via transvaginal."
-        : null,
-      f.doppler ? DOPPLER_TECNICA_CLASSICO : null,
+      comentariosCom([
+        f.doppler ? COMENTARIOS_DOPPLER : null,
+        f.cervicometria ? COMENTARIOS_CERVICO : null,
+      ]),
     ].filter(Boolean).join("\n"),
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",

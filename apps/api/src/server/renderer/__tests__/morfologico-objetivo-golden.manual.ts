@@ -63,7 +63,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
 {
   const l = render(F({ trimestre: "1t", ig_semanas: 12, ccn_mm: 61.5, uterina_ip_direita: 1.2, uterina_ip_esquerda: 1.4 }));
   // médio = (1.2+1.4)/2 = 1.3
-  check("1t: IP médio uterinas 1,3", /IP médio das artérias uterinas: 1,3\./.test(l), l);
+  check("1t: IP médio uterinas 1,30 (duas casas)", /IP médio das artérias uterinas: 1,30\./.test(l), l);
   check("1t: impressão Dopplervelocimetria normal", /Dopplervelocimetria normal das artérias uterinas/.test(l), l);
   check("1t COM doppler: título 'COM DOPPLER COLORIDO'", /PRIMEIRO TRIMESTRE COM DOPPLER COLORIDO/.test(l), l);
 }

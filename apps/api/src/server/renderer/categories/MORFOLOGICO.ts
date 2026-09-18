@@ -318,6 +318,10 @@ REGRAS:
 function ptBr(n: number): string {
   return (Number.isInteger(n) ? String(n) : n.toFixed(1)).replace(".", ",");
 }
+/** Índices Doppler saem com DUAS casas: um IP de 2,38 não pode virar 2,4. */
+function ptBrIndice(n: number): string {
+  return n.toFixed(2).replace(".", ",");
+}
 function mm(v: number | null): string {
   return v === null ? "____" : ptBr(v);
 }
@@ -371,7 +375,8 @@ function pesoLinhaMorfo(f: MorfologicoFindings): string {
   if (f.peso_variacao_g !== null) extras.push(`+- ${ptBr(f.peso_variacao_g)} g`);
   if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
   const sufixo = extras.length > 0 ? ` (${extras.join(", ")})` : "";
-  return `Peso fetal estimado em ${f.peso_g !== null ? ptBr(f.peso_g) : "____"} g${sufixo}.`;
+  // Mesma frase do obstétrico (decisão do médico, 18/09/2026).
+  return `Peso aproximado de ${f.peso_g !== null ? ptBr(f.peso_g) : "____"} g${sufixo}.`;
 }
 
 function acrescentarCervicometria(
@@ -389,7 +394,7 @@ function acrescentarDoppler(
   f: MorfologicoFindings,
   corpo: string[],
   conclusao: string[],
-  options?: { umbilicalSafety?: boolean; rawInput?: string },
+  options?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): void {
   if (!f.doppler) return;
   // Morfológico COM Doppler também é exame combinado: o laudo do médico usa só o IP.
@@ -417,8 +422,8 @@ function acrescentarCrescimentoFetal(
 function apresentacaoFmt(s: string | null): string | null {
   if (!s) return null;
   const map: Record<string, string> = {
-    cefálico: "cefálica", cefalico: "cefálica", pélvico: "pélvica",
-    pelvico: "pélvica",
+    cefálico: "cefálica", cefalico: "cefálica", cefalica: "cefálica",
+    pélvico: "pélvica", pelvico: "pélvica", pelvica: "pélvica", pélvica: "pélvica",
   };
   return map[s.trim().toLowerCase()] ?? s.trim();
 }
@@ -559,14 +564,14 @@ function liquidoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: str
    */
   if (f.mbv_cm != null) {
     const valor = ptBr(f.mbv_cm);
-    const corpo = [`Maior bolsão vertical de ${valor} cm.`];
+    const corpo = [`O maior bolsão vertical (MBV) mede ${valor} cm.`];
     if (f.mbv_cm < 2) {
-      return { corpo, conclusao: [`Oligoâmnio (maior bolsão vertical de ${valor} cm).`], alterado: true };
+      return { corpo, conclusao: [`Oligoâmnio (o maior bolsão vertical mede ${valor} cm).`], alterado: true };
     }
     if (f.mbv_cm > 8) {
-      return { corpo, conclusao: [`Polidrâmnio (maior bolsão vertical de ${valor} cm).`], alterado: true };
+      return { corpo, conclusao: [`Polidrâmnio (o maior bolsão vertical mede ${valor} cm).`], alterado: true };
     }
-    return { corpo, conclusao: [`Líquido amniótico de quantidade normal (maior bolsão vertical de ${valor} cm).`], alterado: false };
+    return { corpo, conclusao: [`Líquido amniótico de quantidade normal (o maior bolsão vertical mede ${valor} cm).`], alterado: false };
   }
   if (f.ila_cm !== null) {
     const valor = ptBr(f.ila_cm);
@@ -603,31 +608,26 @@ function liquidoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: str
 function placentaMorfo(f: MorfologicoFindings, terceiro: boolean): string[] {
   if (!f.placenta_localizacao && !f.placenta_grau) return [];
   const grau = grauPlacenta(f.placenta_grau);
-  const ecotextura =
-    f.placenta_ecotextura === "heterogenea"
-      ? "heterogênea, de acordo com a fase da gestação"
-      : f.placenta_ecotextura === "homogenea"
-        ? "homogênea"
-        : terceiro
-          ? "heterogênea, de acordo com a fase da gestação"
-          : "homogênea";
+  const ecotextura = ecotexturaPlacenta(f, terceiro);
   return [
     `Placenta${f.placenta_localizacao ? ` de localização ${f.placenta_localizacao}` : ""}${grau ? `, ${grau}` : ""}, com ecotextura ${ecotextura}.`,
   ];
+}
+
+/** Heterogênea sempre leva a ressalva da fase (decisão do médico, 18/09/2026). */
+function ecotexturaPlacenta(f: MorfologicoFindings, terceiro: boolean): string {
+  if (f.placenta_ecotextura === "homogenea") return "homogênea";
+  if (f.placenta_ecotextura === "heterogenea" || terceiro) {
+    return "heterogênea, de acordo com a fase da gestação";
+  }
+  return "homogênea";
 }
 
 /** Mesma regra da placenta na redação objetiva (grau citado como "de Grannum et al."). */
 function placentaObjMorfo(f: MorfologicoFindings, terceiro: boolean): string[] {
   if (!f.placenta_localizacao && !f.placenta_grau) return [];
   const grau = grauPlacenta(f.placenta_grau);
-  const ecotextura =
-    f.placenta_ecotextura === "heterogenea"
-      ? "heterogênea, de acordo com a fase da gestação"
-      : f.placenta_ecotextura === "homogenea"
-        ? "homogênea"
-        : terceiro
-          ? "heterogênea, de acordo com a fase da gestação"
-          : "homogênea";
+  const ecotextura = ecotexturaPlacenta(f, terceiro);
   return [
     `Placenta${f.placenta_localizacao ? ` de localização ${f.placenta_localizacao}` : ""}${grau ? `, ${grau} de Grannum et al.` : ""}, com ecotextura ${ecotextura}.`,
   ];
@@ -649,7 +649,20 @@ function linhaFeto1t(f: MorfologicoFindings): string {
 const COMENTARIOS_1T =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
-function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
+/** Complementos DENTRO do parágrafo, como no obstétrico (decisão do médico, 18/09/2026). */
+const COMENTARIOS_DOPPLER = "Foi utilizado Doppler colorido para avaliação hemodinâmica fetal.";
+const COMENTARIOS_CERVICO = "Foi realizada avaliação complementar do colo uterino pela via transvaginal.";
+
+function comentariosMorfoCom(extras: Array<string | null>): string {
+  const frases = extras.filter((f): f is string => Boolean(f));
+  if (frases.length === 0) return COMENTARIOS_1T;
+  return COMENTARIOS_1T.replace(
+    " A documentação fotográfica",
+    ` ${frases.join(" ")} A documentação fotográfica`,
+  );
+}
+
+function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
   const ig = igResultMorfo(f, igCorrection);
   const vitalidade = vitalidadeClassicaMorfo(f);
   const liquido = liquidoMorfo(f);
@@ -672,11 +685,11 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
   aspectos.push(...placentaMorfo(f, false));
   aspectos.push(...liquido.corpo);
   if (f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null) {
-    aspectos.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBr(f.uterina_ip_direita) : "____"}.`);
-    aspectos.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBr(f.uterina_ip_esquerda) : "____"}.`);
+    aspectos.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBrIndice(f.uterina_ip_direita) : "____"}.`);
+    aspectos.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBrIndice(f.uterina_ip_esquerda) : "____"}.`);
     if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
       const medio = (f.uterina_ip_direita + f.uterina_ip_esquerda) / 2;
-      aspectos.push(`Índice de pulsatilidade médio das artérias uterinas: ${ptBr(Math.round(medio * 100) / 100)}.`);
+      aspectos.push(`Índice de pulsatilidade médio das artérias uterinas: ${ptBrIndice(medio)}.`);
     }
   }
 
@@ -706,10 +719,11 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
   }
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
-  return assemble("ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE", f, aspectos, conclusao, ig.fraseReferencia, dopplerOptions);
+  const comUterinas = f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null;
+  return assemble("ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE", f, aspectos, conclusao, ig.fraseReferencia, { ...dopplerOptions, uterinas: comUterinas });
 }
 
-function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
+function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
   const ig = igResultMorfo(f, igCorrection);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
@@ -791,19 +805,33 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
   return assemble(titulo, f, aspectos, conclusao, ig.fraseReferencia, dopplerOptions);
 }
 
+/**
+ * TÍTULO COMPOSTO (decisão do médico, 18/09/2026): o exame morfológico costuma vir
+ * acrescido de Doppler e de cervicometria transvaginal, e o título precisa dizer isso.
+ * Antes reconhecia só o Doppler — e no 1º trimestre, onde o Doppler das uterinas fica
+ * fora do módulo, nem isso.
+ */
+function tituloComposto(titulo: string, f: MorfologicoFindings, dopplerUterinas = false): string {
+  const complementos: string[] = [];
+  if (f.doppler || dopplerUterinas) complementos.push("DOPPLER COLORIDO");
+  if (f.cervicometria) complementos.push("CERVICOMETRIA TRANSVAGINAL");
+  return complementos.length > 0 ? `${titulo} COM ${complementos.join(" E ")}` : titulo;
+}
+
 function assemble(
   titulo: string,
   f: MorfologicoFindings,
   aspectos: string[],
   conclusao: string[],
   fraseReferencia: string | null = null,
-  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string },
+  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): string {
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
   }
-  acrescentarCervicometria(f, aspectos, conclusao);
+  // Ordem do médico (18/09/2026): a dopplervelocimetria vem antes da cervicometria.
   acrescentarDoppler(f, aspectos, conclusao, dopplerOptions);
+  acrescentarCervicometria(f, aspectos, conclusao);
   acrescentarCrescimentoFetal(f, aspectos, conclusao);
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = fraseReferencia ? `${fraseReferencia}\n` : "";
@@ -812,16 +840,13 @@ function assemble(
       ? conclusao[0] ?? ""
       : conclusao.map((it, i) => `${i + 1}) ${it}`).join("\n");
   return [
-    f.doppler ? `${titulo} COM DOPPLER COLORIDO` : titulo,
+    tituloComposto(titulo, f, dopplerOptions?.uterinas),
     dumLinha,
     igProse,
-    [
-      COMENTARIOS_1T,
-      f.cervicometria
-        ? "Foi realizada avaliação complementar do colo uterino pela via transvaginal."
-        : null,
-      f.doppler ? DOPPLER_TECNICA_CLASSICO : null,
-    ].filter(Boolean).join("\n"),
+    comentariosMorfoCom([
+      f.doppler || dopplerOptions?.uterinas ? COMENTARIOS_DOPPLER : null,
+      f.cervicometria ? COMENTARIOS_CERVICO : null,
+    ]),
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     aspectos.join("\n"),
@@ -842,7 +867,7 @@ function assemble(
 export function renderMorfologico(
   f: MorfologicoFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null; umbilicalSafety?: boolean; rawInput?: string },
+  opts?: { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null; umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): string {
   const igc = opts?.igCorrection ?? false;
   const g = opts?.golfBall ?? null;
@@ -892,13 +917,13 @@ function assembleObj(
   achados: string[],
   impressao: string[],
   fraseReferencia: string | null = null,
-  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string },
+  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): string {
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push(`\n${f.achados_adicionais.trim()}`);
   }
-  acrescentarCervicometria(f, achados, impressao);
   acrescentarDoppler(f, achados, impressao, dopplerOptions);
+  acrescentarCervicometria(f, achados, impressao);
   acrescentarCrescimentoFetal(f, achados, impressao);
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = fraseReferencia ? `\n${fraseReferencia}` : "";
@@ -907,7 +932,7 @@ function assembleObj(
       ? impressao[0] ?? ""
       : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
   return [
-    f.doppler ? `${titulo} COM DOPPLER COLORIDO` : titulo,
+    tituloComposto(titulo, f, dopplerOptions?.uterinas),
     dumLinha,
     igProse,
     "",
@@ -917,7 +942,7 @@ function assembleObj(
       f.cervicometria
         ? "Avaliação complementar do colo uterino realizada pela via transvaginal."
         : null,
-      f.doppler ? DOPPLER_TECNICA_OBJETIVO : null,
+      f.doppler || dopplerOptions?.uterinas ? DOPPLER_TECNICA_OBJETIVO : null,
     ].filter(Boolean).join(" "),
     "",
     "ACHADOS:",
@@ -940,7 +965,7 @@ function genitaliaFmt(g: string | null): string {
   return g.trim();
 }
 
-function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
+function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
   const ig = igResultMorfo(f, igCorrection);
   const vitalidade = vitalidadeClassicaMorfo(f);
   const liquido = liquidoMorfo(f);
@@ -967,12 +992,12 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   achados.push(...placentaObjMorfo(f, false));
   achados.push(...liquido.corpo);
   if (comDoppler) {
-    achados.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBr(f.uterina_ip_direita) : "____"}.`);
-    achados.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBr(f.uterina_ip_esquerda) : "____"}.`);
+    achados.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBrIndice(f.uterina_ip_direita) : "____"}.`);
+    achados.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBrIndice(f.uterina_ip_esquerda) : "____"}.`);
     if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
       const medio = (f.uterina_ip_direita + f.uterina_ip_esquerda) / 2;
       achados.push(
-        `IP médio das artérias uterinas: ${ptBr(Math.round(medio * 100) / 100)}.`,
+        `IP médio das artérias uterinas: ${ptBrIndice(medio)}.`,
       );
     }
   }
@@ -1004,18 +1029,16 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
   return assembleObj(
-    comDoppler && !f.doppler
-      ? "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE COM DOPPLER COLORIDO"
-      : "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
+    "ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE",
     f,
     achados,
     impressao,
     ig.fraseReferencia,
-    dopplerOptions,
+    { ...dopplerOptions, uterinas: comDoppler },
   );
 }
 
-function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string }): string {
+function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
   const ig = igResultMorfo(f, igCorrection);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
@@ -1088,7 +1111,7 @@ export function renderMorfologicoObjetivo(
   f: MorfologicoFindings,
   igCorrection = false,
   golfBall: GolfBall | null = null,
-  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string },
+  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): string {
   if (f.trimestre === "1t") return render1tObj(f, igCorrection, golfBall, dopplerOptions);
   return render2t3tObj(f, f.trimestre === "3t", igCorrection, golfBall, dopplerOptions);

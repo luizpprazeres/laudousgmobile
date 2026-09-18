@@ -65,8 +65,9 @@ const ISOLADO = (doppler: DopplerObstetricoModule) =>
 {
   const laudo = renderDopplerObstetrico(ISOLADO(DOPPLER_NORMAL));
   check("isolado: título puro", laudo.startsWith("DOPPLERVELOCIMETRIA OBSTÉTRICA"), laudo);
-  check("isolado: não carrega biometria", !/DBP|placenta|líquido amniótico|BCF/.test(laudo), laudo);
-  check("isolado: IR e IP por vaso", /Artéria umbilical com índice de resistividade de 0,58 e índice de pulsatilidade de 1\./.test(laudo), laudo);
+  check("isolado: não carrega biometria", !/DBP|Placenta de localização|Líquido amniótico|BCF/.test(laudo), laudo);
+  check("isolado: umbilical em linha única com a nota das três medidas", /Índice de resistividade da artéria umbilical de 0,58 e índice de pulsatilidade de 1,00\. \(média de três medidas/.test(laudo), laudo);
+  check("isolado: uma linha por índice nas uterinas", /Índice de resistividade da artéria uterina direita de [\d,]+\.\nÍndice de pulsatilidade da artéria uterina direita de [\d,]+\./.test(laudo), laudo);
   check("isolado: conclusão IR e IP", /Índices de resistividade e de pulsatilidade normais nas artérias uterinas, umbilical e artéria cerebral média\./.test(laudo), laudo);
   check("isolado: quatro conclusões normais", /4\) Perfil hemodinâmico fetal é normal, menor de 1\.0\.$/.test(laudo), laudo);
 }
@@ -80,7 +81,7 @@ const ISOLADO = (doppler: DopplerObstetricoModule) =>
 {
   const parcial = ISOLADO({ ...DOPPLER_VAZIO, ir_uterina_dir: 0.59 });
   const laudo = renderDopplerObstetrico(parcial);
-  check("parcial: preserva IR isolado", /Artéria uterina direita com índice de resistividade de 0,59\./.test(laudo), laudo);
+  check("parcial: preserva IR isolado", /Índice de resistividade da artéria uterina direita de 0,59\./.test(laudo), laudo);
   check("parcial: não inventa IP nem lacuna", !/____|índice de pulsatilidade de/.test(laudo), laudo);
 }
 
@@ -164,9 +165,11 @@ const morfoBase = MorfologicoFindingsSchema.parse({
 });
 {
   const composto = renderMorfologico({ ...morfoBase, cervicometria: CERVICO, doppler: DOPPLER_NORMAL });
-  check("morfológico composto: título", /^ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE COM DOPPLER COLORIDO/.test(composto), composto);
-  check("morfológico composto: cervix e Doppler coexistem", /CERVICOMETRIA:[\s\S]+DOPPLERVELOCIMETRIA:/.test(composto), composto);
-  check("morfológico composto: conclusão Doppler ao final", /Perfil hemodinâmico fetal é normal, menor de 1\.0\.$/.test(composto), composto);
+  check("morfológico composto: título começa pelo exame", /^ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE COM DOPPLER/.test(composto), composto);
+  // Ordem do médico (18/09/2026): a dopplervelocimetria vem ANTES da cervicometria.
+  check("morfológico composto: Doppler antes da cervicometria", /DOPPLERVELOCIMETRIA:[\s\S]+CERVICOMETRIA:/.test(composto), composto);
+  check("morfológico composto: título compõe Doppler e cervicometria", /^ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE COM DOPPLER COLORIDO E CERVICOMETRIA TRANSVAGINAL/.test(composto), composto);
+  check("morfológico composto: conclusão traz o perfil hemodinâmico", /Perfil hemodinâmico fetal é normal, menor de 1\.0\./.test(composto), composto);
 }
 
 {
