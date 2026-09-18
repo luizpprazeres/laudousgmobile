@@ -953,8 +953,8 @@ export function liquido(f: ObstetricaFindings): { corpo: string; conclusao: stri
       .map((v, i) => `${ptBr(v)} cm (feto ${rotuloFeto(f, i)})`)
       .join(" e ");
     return {
-      corpo: `Maior bolsão vertical de ${labels}.`,
-      conclusao: `Líquido amniótico em quantidade normal para ambos os fetos (maior bolsão vertical de ${labels}).`,
+      corpo: `O maior bolsão vertical (MBV) mede ${labels}.`,
+      conclusao: `Líquido amniótico de quantidade normal para ambos os fetos (o maior bolsão vertical mede ${labels}).`,
     };
   }
   if (tipo === "ila" && f.liquido_ila_cm !== null) {

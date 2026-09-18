@@ -93,6 +93,15 @@ const ABDOMEN_ORGAOS_NORMAIS = Object.fromEntries(
   ABDOMEN_ORGAN_KEYS.map((k) => [k, { status: "normal", achados: [] }]),
 );
 
+/**
+ * OS CENÁRIOS COMPOSTOS (obstétrico com Doppler, morfológico com Doppler e
+ * cervicometria) AINDA NÃO ENTRAM AQUI. O pedido do médico (18/09/2026) é ver e
+ * personalizar o exame como usa, mas a personalização vive no catálogo, e o
+ * catálogo ainda não escreve nem a seção Doppler nem a cervicometria: esses exames
+ * são renderizados pelo caminho clássico. Mostrar o cenário na Biblioteca antes
+ * disso ofereceria um modelo que a personalização não alcança. Próximo passo:
+ * ensinar o catálogo os dois complementos e então trazer os cenários para cá.
+ */
 export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   {
     categoria: "ABDOMEN_TOTAL", rotulo: "Abdome total",
@@ -164,7 +173,7 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
       }),
   },
   {
-    categoria: "DOPPLER_OBSTETRICO", rotulo: "Doppler obstétrico",
+    categoria: "DOPPLER_OBSTETRICO", rotulo: "Doppler obstétrico (isolado)",
     estilos: ["CLASSICO_COMPLETO", "OBJETIVO"],
     schema: DopplerObstetricoFindingsSchema,
     /**

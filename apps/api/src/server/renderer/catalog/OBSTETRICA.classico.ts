@@ -58,7 +58,13 @@ function grannumParen(grau: string | null, grannum: boolean): string {
   return g ? ` (${g} de Grannum et al.)` : "";
 }
 function placentaEco(f: F, grannum: boolean): string | null {
-  if (f.placenta_ecotextura) return f.placenta_ecotextura;
+  // Heterogênea sempre leva a ressalva da fase (decisão do médico, 18/09/2026).
+  if (f.placenta_ecotextura) {
+    const t = f.placenta_ecotextura.trim();
+    return /heterog[êe]nea/i.test(t) && !/de acordo com a fase/i.test(t)
+      ? `${t}, de acordo com a fase da gestação`
+      : t;
+  }
   if (!grannum || !f.placenta_grau) return null;
   const g = f.placenta_grau.trim().replace(/^grau\s*/i, "");
   return g === "0" ? "homogênea" : "heterogênea, de acordo com a fase da gestação";
@@ -308,7 +314,7 @@ export function varsObstetrica(ctx: Ctx): Record<string, string> {
   const pond = calcPonderal(f.fetos);
 
   const extras: string[] = [];
-  if (ft?.peso_variacao_g != null) extras.push(`+- ${gramas(ft.peso_variacao_g)} gramas`);
+  if (ft?.peso_variacao_g != null) extras.push(`+- ${gramas(ft.peso_variacao_g)} g`);
   if (ft?.percentil != null) extras.push(`percentil ${ptBr(ft.percentil)}`);
 
   const qtd = f.numero_fetos;
@@ -799,7 +805,7 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
     { id: "ca", obrigatorio: true, placeholdersObrigatorios: ["ca"], variantes: [{ id: "normal", frase: "Circunferência abdominal (CA) de {ca} mm." }] },
     { id: "cf", obrigatorio: true, placeholdersObrigatorios: ["cf"], variantes: [{ id: "normal", frase: "Comprimento do fêmur (CF) de {cf} mm." }] },
     { id: "ccn", placeholdersObrigatorios: ["ccn"], variantes: [{ id: "normal", frase: "Comprimento crânio-nádegas (CCN) de {ccn} mm." }] },
-    { id: "peso_fetal", obrigatorio: true, placeholdersObrigatorios: ["peso"], variantes: [{ id: "normal", frase: "Peso aproximado de {peso} gramas{peso_extras}." }] },
+    { id: "peso_fetal", obrigatorio: true, placeholdersObrigatorios: ["peso"], variantes: [{ id: "normal", frase: "Peso aproximado de {peso} g{peso_extras}." }] },
     {
       id: "ponderal",
       incluirSe: (c) => calcPonderal(c.findings.fetos).pesoMedio !== null,
@@ -947,14 +953,14 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
         {
           id: "mbv_unico",
           quando: (c) => liquidoKind(c.findings) === "mbv_unico",
-          frase: "Maior bolsão vertical de {mbv}.",
-          conclusao: "Líquido amniótico em quantidade normal (maior bolsão vertical de {mbv}).",
+          frase: "O maior bolsão vertical (MBV) mede {mbv}.",
+          conclusao: "Líquido amniótico de quantidade normal (o maior bolsão vertical mede {mbv}).",
         },
         {
           id: "mbv_gemelar",
           quando: (c) => liquidoKind(c.findings) === "mbv_gemelar",
-          frase: "Maior bolsão vertical de {mbv_gemelar}.",
-          conclusao: "Líquido amniótico em quantidade normal para ambos os fetos (maior bolsão vertical de {mbv_gemelar}).",
+          frase: "O maior bolsão vertical (MBV) mede {mbv_gemelar}.",
+          conclusao: "Líquido amniótico de quantidade normal para ambos os fetos (o maior bolsão vertical mede {mbv_gemelar}).",
           // A lista por feto é montada pelo motor, mas chega como UM dado: a
           // redação é do médico desde que ela não seja descartada.
           placeholdersObrigatorios: ["mbv_gemelar"],

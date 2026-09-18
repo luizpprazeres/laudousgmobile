@@ -589,8 +589,17 @@ export async function* runRendererStream(args: {
         // 100% dos laudos — a flag está ligada em produção —, o que tornava
         // MODEL_CATALOG_CATEGORIES inócua sem que nada indicasse isso.
         // Descoberto pelo harness contra laudos reais, 12/08.
+        /**
+         * O catálogo ainda não escreve os COMPLEMENTOS do exame: nem a seção Doppler
+         * (excluída desde 26cb805) nem a cervicometria. Com a cervicometria dentro do
+         * catálogo o laudo saía SEM a seção e SEM o item de conclusão do colo — o
+         * médico ditava e a medida sumia (achado de 18/09/2026, reproduzido em
+         * produção). Enquanto o catálogo não cobrir os dois, exame composto vai pelo
+         * renderer clássico, que os escreve; o custo é a personalização não alcançar
+         * esses laudos, e é o próximo passo combinado com o médico.
+         */
         const catalogoCobreEsteCaso =
-          !objetivo && golfBallObst === null && !igSanityAtua && !ofnd.doppler;
+          !objetivo && golfBallObst === null && !igSanityAtua && !ofnd.doppler && !ofnd.cervicometria;
 
         if (usaCatalogo("OBSTETRICA") && catalogoCobreEsteCaso) {
           // Item 7: o overlay do médico entra aqui, e só aqui. Sem
