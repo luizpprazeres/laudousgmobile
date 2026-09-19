@@ -127,6 +127,36 @@ const POR_CATEGORIA: Record<string, Record<string, SementeDeExemplo>> = {
       peso_g: 1900, percentil: 50, ila_cm: 12,
       placenta_localizacao: "posterior", ig_semanas: 32, ig_dias: 2,
     },
+    /**
+     * Os complementos (índices do Doppler, medida do colo) vêm no seed do
+     * CENÁRIO, em `modeloNormalRegistry`. Aqui entra só a biometria do exame
+     * principal — a semente é indexada pelo NOME do cenário, e um nome sem
+     * entrada aqui rende exemplo com "____" na biometria inteira.
+     */
+    "2º trimestre com Doppler": {
+      bcf_bpm: 148, dbp_mm: 51, cc_mm: 190, ca_mm: 168,
+      cerebelo_mm: 21, cisterna_magna_mm: 5, binocular_mm: 32,
+      femur_mm: 34, tibia_mm: 29, fibula_mm: 28,
+      umero_mm: 32, radio_mm: 27, ulna_mm: 30,
+      peso_g: 390, percentil: 50, ila_cm: 14,
+      placenta_localizacao: "anterior", ig_semanas: 20, ig_dias: 4,
+    },
+    "2º trimestre com Doppler e cervicometria": {
+      bcf_bpm: 148, dbp_mm: 51, cc_mm: 190, ca_mm: 168,
+      cerebelo_mm: 21, cisterna_magna_mm: 5, binocular_mm: 32,
+      femur_mm: 34, tibia_mm: 29, fibula_mm: 28,
+      umero_mm: 32, radio_mm: 27, ulna_mm: 30,
+      peso_g: 390, percentil: 50, ila_cm: 14,
+      placenta_localizacao: "anterior", ig_semanas: 20, ig_dias: 4,
+    },
+    "3º trimestre com Doppler": {
+      bcf_bpm: 142, dbp_mm: 82, cc_mm: 295, ca_mm: 285,
+      cerebelo_mm: 42, cisterna_magna_mm: 6, binocular_mm: 52,
+      femur_mm: 62, tibia_mm: 54, fibula_mm: 52,
+      umero_mm: 55, radio_mm: 48, ulna_mm: 53,
+      peso_g: 1900, percentil: 50, ila_cm: 12,
+      placenta_localizacao: "posterior", ig_semanas: 32, ig_dias: 2,
+    },
   },
 
   TIREOIDE: {

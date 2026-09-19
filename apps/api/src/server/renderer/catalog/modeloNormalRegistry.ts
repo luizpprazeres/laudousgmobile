@@ -262,6 +262,26 @@ render: (f, o) =>
       { nome: "Primeiro trimestre", seed: { trimestre: "1t" } },
       { nome: "Segundo trimestre", seed: { trimestre: "2t" } },
       { nome: "Terceiro trimestre", seed: { trimestre: "3t" } },
+      /**
+       * O morfológico com Doppler é o que o médico pede de verdade no 2º e no
+       * 3º trimestre. A personalização do morfológico é a de FRASE
+       * (`frasesPersonalizadas`), aplicada sobre o laudo pronto: ela reconhece
+       * a frase onde ela sair, então a redação dele vale igual no exame
+       * composto. Mostrar o cenário aqui é o que faltava para ele CONFERIR o
+       * exame como usa.
+       */
+      {
+        nome: "2º trimestre com Doppler",
+        seed: { trimestre: "2t", doppler: DOPPLER_DO_EXAME_COMBINADO },
+      },
+      {
+        nome: "2º trimestre com Doppler e cervicometria",
+        seed: { trimestre: "2t", doppler: DOPPLER_DO_EXAME_COMBINADO, cervicometria: CERVICOMETRIA_DO_EXAME },
+      },
+      {
+        nome: "3º trimestre com Doppler",
+        seed: { trimestre: "3t", doppler: DOPPLER_DO_EXAME_COMBINADO },
+      },
     ],
     render: (f, o) =>
       renderMorfologico(f, null as never, {
