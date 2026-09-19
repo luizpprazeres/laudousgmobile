@@ -85,7 +85,12 @@ const CASES: Case[] = [
     ].join("\n"),
     instruction: "troque só a frase da artéria umbilical para IP 1,2",
     target: "body",
-    expected: /Artéria umbilical com índice de pulsatilidade de 1,2\./,
+    /**
+     * DUAS CASAS, sempre (decisão do médico, 18/09/2026 — `fmtIndice` no módulo
+     * Doppler). O médico dita "1,2" e o laudo escreve "1,20", como nos laudos
+     * dele. A expectativa antiga exigia "1,2" e reprovava a formatação certa.
+     */
+    expected: /Artéria umbilical com índice de pulsatilidade de 1,20\./,
     expectedSection: "body",
   },
   {
