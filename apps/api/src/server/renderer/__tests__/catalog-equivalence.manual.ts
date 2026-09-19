@@ -144,6 +144,49 @@ const D_EXTRAS: Dim[] = [
   },
 ];
 
+/**
+ * COMPLEMENTOS DO EXAME — Doppler e cervicometria.
+ *
+ * Esta dimensão só passou a existir em 18/09/2026, quando o catálogo aprendeu a
+ * escrever os dois. Antes deles o catálogo simplesmente não era usado nesses
+ * exames, e a cervicometria chegou a SUMIR do laudo por causa disso. Cobre os
+ * quatro pontos de injeção: sufixo do título, frase de técnica dentro dos
+ * comentários, seção no corpo e item na conclusão.
+ */
+const DOPPLER_NORMAL: NonNullable<ObstetricaFindings["doppler"]> = {
+  ir_uterina_dir: 0.48, ip_uterina_dir: 0.78, ir_uterina_esq: 0.5, ip_uterina_esq: 0.82,
+  ip_medio_uterinas: 0.8, perc_medio_uterinas: null,
+  ir_umbilical: 0.58, ip_umbilical: 0.94, perc_umbilical: null,
+  fluxo_diastolico_umbilical: "presente",
+  ir_acm: 0.79, ip_acm: 1.72, perc_acm: null,
+  ir_ducto_venoso: null, ip_ducto_venoso: 0.52, perc_ducto_venoso: null,
+  ducto_venoso_qualitativo: null,
+  rcp: null, perc_rcp: null, perfil_hemodinamico: null,
+  umbilical_alterado: null, acm_alterado: null, incisura: false, ectasia: null,
+  pre_centralizacao: null, centralizacao: null, uterinas_acima_p95: null,
+};
+
+const CERVICO_NORMAL: NonNullable<ObstetricaFindings["cervicometria"]> = {
+  colo_oi_oe_cm: 3.4, orificio_interno_fechado: true,
+  placenta_distancia_cm: null, placenta_distante: false,
+  cerclagem: false, observacoes: null,
+};
+
+const D_COMPLEMENTO: Dim[] = [
+  { nome: "sem-complemento", aplicar: (f) => f },
+  { nome: "doppler", aplicar: (f) => ({ ...f, doppler: { ...DOPPLER_NORMAL } }) },
+  { nome: "cervico", aplicar: (f) => ({ ...f, cervicometria: { ...CERVICO_NORMAL } }) },
+  {
+    nome: "doppler+cervico",
+    aplicar: (f) => ({ ...f, doppler: { ...DOPPLER_NORMAL }, cervicometria: { ...CERVICO_NORMAL } }),
+  },
+  {
+    // Colo curto: o complemento muda a CONCLUSÃO, não só o corpo.
+    nome: "colo-curto",
+    aplicar: (f) => ({ ...f, cervicometria: { ...CERVICO_NORMAL, colo_oi_oe_cm: 1.8 } }),
+  },
+];
+
 /** Combinações de flags que importam — incluindo as que estão ON em produção. */
 const D_FLAGS: { nome: string; flags: Flags }[] = [
   { nome: "off", flags: { igCorrection: false, flexivel: false, grannum: false, objetivo: false } },
@@ -173,9 +216,10 @@ for (const g of D_GESTACAO)
     for (const l of D_LIQUIDO)
       for (const p of D_PLACENTA)
         for (const e of D_EXTRAS)
+          for (const cm of D_COMPLEMENTO)
           for (const fl of D_FLAGS) {
-            const nome = `${g.nome}/${n.nome}/${l.nome}/${p.nome}/${e.nome}/${fl.nome}`;
-            const f = e.aplicar(p.aplicar(l.aplicar(n.aplicar(g.aplicar(base())))));
+            const nome = `${g.nome}/${n.nome}/${l.nome}/${p.nome}/${e.nome}/${cm.nome}/${fl.nome}`;
+            const f = cm.aplicar(e.aplicar(p.aplicar(l.aplicar(n.aplicar(g.aplicar(base()))))));
             total++;
             let esperado: string, obtido: string;
             try {

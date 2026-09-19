@@ -10,10 +10,16 @@
  */
 import { buildIgInput, computeIg } from "../ig";
 import {
+  COMENTARIOS_CERVICO,
+  COMENTARIOS_DOPPLER,
   filterFreeBodyItems,
   filterFreeConclusionItems,
+  inserirComentariosExtras,
   type ObstetricaFindings,
 } from "../categories/OBSTETRICA";
+import { renderCervicometriaBloco } from "../categories/CERVICOMETRIA";
+import { renderDopplerModule } from "../categories/dopplerObstetricoModule";
+import { renderFetalGrowthModule } from "../categories/fetalGrowthModule";
 import { buildDoc, serialize } from "./engine";
 import { OBSTETRICA_CLASSICO, conclusaoLiquidoAplicavel, rotuloFeto, varsObstetrica } from "./OBSTETRICA.classico";
 import type { Catalog, ReportDoc, Segment, SlotContext } from "./types";
@@ -31,7 +37,62 @@ export type RenderArgs = {
   catalog?: Catalog<ObstetricaFindings>;
   customSlots?: Set<string>;
   extraConclusao?: string[];
+  /** Ditado cru — o módulo Doppler usa para não afirmar o que não foi medido. */
+  rawInput?: string;
+  umbilicalSafety?: boolean;
 };
+
+/**
+ * COMPLEMENTOS DO EXAME — Doppler, cervicometria e crescimento fetal.
+ *
+ * Eles não são slots do catálogo: são MÓDULOS, com schema e renderer próprios,
+ * compartilhados com o Doppler isolado e com o morfológico. O catálogo os chama,
+ * em vez de reescrevê-los, por dois motivos. O texto sai idêntico ao do renderer
+ * clássico (é o mesmo código), e uma regra clínica corrigida em um lugar vale nos
+ * três exames — foi a duplicação do módulo em 26cb805 que fez o IR reaparecer no
+ * obstétrico com Doppler, o erro que o médico relatou em 15/09/2026.
+ *
+ * O que a personalização alcança, então, é o exame principal (os slots) e o
+ * preâmbulo. Os complementos seguem escritos pelo sistema. É a divisão certa: o
+ * médico personaliza a normalidade que ele redige, não a medida que ele mediu.
+ */
+function complementosDoExame(
+  f: ObstetricaFindings,
+  args: { rawInput?: string; umbilicalSafety?: boolean },
+): { corpo: string[]; conclusao: string[]; comentarios: Array<string | null>; comDoppler: boolean } {
+  const corpo: string[] = [];
+  const conclusao: string[] = [];
+
+  // A ORDEM É A DO RENDERER CLÁSSICO: cervicometria, Doppler, crescimento.
+  if (f.cervicometria) {
+    const cervico = renderCervicometriaBloco(f.cervicometria, f.ig_semanas);
+    corpo.push("\nCERVICOMETRIA:", ...cervico.achados);
+    conclusao.push(...cervico.conclusao);
+  }
+  if (f.doppler) {
+    // indices: "ip" — no exame COMBINADO o laudo cita só o IP. O IR é do Doppler
+    // isolado (decisão do médico, 15/09/2026).
+    const doppler = renderDopplerModule(f.doppler, {
+      rawInput: args.rawInput,
+      umbilicalSafety: args.umbilicalSafety,
+      indices: "ip",
+    });
+    corpo.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
+    conclusao.push(...doppler.conclusao);
+  }
+  if (f.crescimento_fetal) {
+    const growth = renderFetalGrowthModule(f.crescimento_fetal, f.ig_semanas, f.ig_dias);
+    corpo.push("\nCRESCIMENTO FETAL:", ...growth.achados);
+    conclusao.push(...growth.conclusao);
+  }
+
+  return {
+    corpo,
+    conclusao,
+    comentarios: [f.doppler ? COMENTARIOS_DOPPLER : null, f.cervicometria ? COMENTARIOS_CERVICO : null],
+    comDoppler: Boolean(f.doppler),
+  };
+}
 
 /** Constrói o documento estruturado. A string só aparece em `renderObstetricaCatalogo`. */
 export function buildObstetricaDoc(args: RenderArgs): { doc: ReportDoc; catalog: Catalog<ObstetricaFindings> } {
@@ -64,6 +125,8 @@ export function buildObstetricaDoc(args: RenderArgs): { doc: ReportDoc; catalog:
     ),
   );
 
+  const comp = complementosDoExame(f, { rawInput: args.rawInput, umbilicalSafety: args.umbilicalSafety });
+
   const raw = buildDoc({
     catalog,
     findings: f,
@@ -71,15 +134,27 @@ export function buildObstetricaDoc(args: RenderArgs): { doc: ReportDoc; catalog:
     gemelar,
     instancias,
     flags,
+    // O título ganha o sufixo do Doppler; a base continua vindo do catálogo.
+    titulo: comp.comDoppler
+      ? `${catalog.titulo({ findings: f, fetoIndex: 0, gemelar, flags })} COM DOPPLER COLORIDO`
+      : undefined,
+    // A técnica dos complementos entra DENTRO do parágrafo de comentários — o do
+    // catálogo, inclusive quando o médico o personalizou.
+    preambulo: catalog.preambulo ? inserirComentariosExtras(catalog.preambulo, comp.comentarios) : undefined,
     preLinhas: [f.dum ? `\nDUM: ${f.dum}.\n` : "", ig.fraseReferencia ? `${ig.fraseReferencia}\n` : ""],
     customSlots: args.customSlots,
     // Camada flexível (flag FLEXIBLE_CONCLUSION), lado do CORPO: observação
     // clínica que o médico ditou fora dos slots. Mesmo dedup do renderer.
-    extraCorpo: flags.flexivel ? filterFreeBodyItems(f.observacoes_corpo_livres) : [],
+    extraCorpo: [
+      ...(flags.flexivel ? filterFreeBodyItems(f.observacoes_corpo_livres) : []),
+      // Os complementos SEMPRE fecham o corpo, depois dos itens livres.
+      ...comp.corpo,
+    ],
     // Camada flexível (flag FLEXIBLE_CONCLUSION): itens livres do médico entram
     // ao fim da conclusão, após o mesmo dedup determinístico do renderer.
     extraConclusao: [
       ...(flags.flexivel ? filterFreeConclusionItems(f.itens_conclusao_livres) : []),
+      ...comp.conclusao,
       ...(args.extraConclusao ?? []),
     ],
   });

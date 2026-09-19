@@ -90,6 +90,14 @@ const POR_CATEGORIA: Record<string, Record<string, SementeDeExemplo>> = {
       ig_semanas: 32,
       ig_dias: 2,
     },
+    /**
+     * Os complementos (índices do Doppler, medida do colo) já vêm no seed do
+     * CENÁRIO, em `modeloNormalRegistry`. Aqui entra só a biometria do exame
+     * principal, como nos demais: a semente de exemplo é indexada pelo NOME do
+     * cenário, e um nome sem entrada aqui devolve exemplo com "____" na biometria.
+     */
+    "Com Doppler": { fetos: [FETO_32_SEMANAS], ig_semanas: 32, ig_dias: 2 },
+    "Com Doppler e cervicometria": { fetos: [FETO_32_SEMANAS], ig_semanas: 32, ig_dias: 2 },
   },
 
   DOPPLER_OBSTETRICO: {

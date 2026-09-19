@@ -590,16 +590,22 @@ export async function* runRendererStream(args: {
         // MODEL_CATALOG_CATEGORIES inócua sem que nada indicasse isso.
         // Descoberto pelo harness contra laudos reais, 12/08.
         /**
-         * O catálogo ainda não escreve os COMPLEMENTOS do exame: nem a seção Doppler
-         * (excluída desde 26cb805) nem a cervicometria. Com a cervicometria dentro do
-         * catálogo o laudo saía SEM a seção e SEM o item de conclusão do colo — o
-         * médico ditava e a medida sumia (achado de 18/09/2026, reproduzido em
-         * produção). Enquanto o catálogo não cobrir os dois, exame composto vai pelo
-         * renderer clássico, que os escreve; o custo é a personalização não alcançar
-         * esses laudos, e é o próximo passo combinado com o médico.
+         * OS COMPLEMENTOS DO EXAME VOLTARAM PARA O CATÁLOGO (18/09/2026).
+         *
+         * A seção Doppler saíra daqui em 26cb805 e a cervicometria nunca entrara.
+         * O preço apareceu em produção: laudo obstétrico com cervicometria saía SEM
+         * a seção e SEM o item de conclusão do colo — o médico media e a medida
+         * sumia. E mesmo sem perda, era o exame que ele mais usa ficando fora da
+         * personalização.
+         *
+         * Agora `buildObstetricaDoc` chama os MESMOS módulos do renderer clássico
+         * (OBSTETRICA.render.ts, `complementosDoExame`), então o texto é o mesmo
+         * código, não uma segunda redação que pode divergir — foi justamente a
+         * duplicação que trouxe o IR de volta ao Doppler combinado em 15/09.
+         * Provado em catalog-equivalence: 21600/21600 byte-a-byte, com as quatro
+         * combinações de complemento na matriz.
          */
-        const catalogoCobreEsteCaso =
-          !objetivo && golfBallObst === null && !igSanityAtua && !ofnd.doppler && !ofnd.cervicometria;
+        const catalogoCobreEsteCaso = !objetivo && golfBallObst === null && !igSanityAtua;
 
         if (usaCatalogo("OBSTETRICA") && catalogoCobreEsteCaso) {
           // Item 7: o overlay do médico entra aqui, e só aqui. Sem
@@ -635,6 +641,10 @@ export async function* runRendererStream(args: {
                 texto: renderObstetricaCatalogo({
                   findings: ofnd,
                   flags: { objetivo, igCorrection, flexivel, grannum },
+                  // O módulo Doppler precisa dos dois para não afirmar o que não
+                  // foi medido — mesmos valores que o renderer clássico recebe.
+                  umbilicalSafety: true,
+                  rawInput: args.rawInput,
                   ...(p?.aplicar
                     ? { catalog: p.catalog, customSlots: p.customSlots, extraConclusao: p.extraConclusao }
                     : {}),
@@ -650,6 +660,8 @@ export async function* runRendererStream(args: {
                     texto: renderObstetricaCatalogo({
                       findings: ofnd,
                       flags: { objetivo, igCorrection, flexivel, grannum },
+                      umbilicalSafety: true,
+                      rawInput: args.rawInput,
                     }),
                     degrau: "catalogo_base" as const,
                     erro: e1,

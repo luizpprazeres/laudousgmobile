@@ -24,7 +24,8 @@ import { PelveFemininaFindingsSchema, renderPelveFeminina } from "../categories/
 import { ProstataSuprapubicaFindingsSchema, renderProstataSuprapubica } from "../categories/PROSTATA_SUPRAPUBICA";
 import { TireoideFindingsSchema, renderTireoide } from "../categories/TIREOIDE";
 import { ViasUrinariasFindingsSchema, renderViasUrinarias } from "../categories/VIAS_URINARIAS";
-import { ObstetricaFindingsSchema, renderObstetrica } from "../categories/OBSTETRICA";
+import { ObstetricaFindingsSchema, renderObstetrica, type ObstetricaFindings } from "../categories/OBSTETRICA";
+import { DopplerObstetricoModuleSchema } from "../categories/dopplerObstetricoModule";
 import {
   ABDOMEN_ORGAN_KEYS,
   AbdomenTotalFindingsSchema,
@@ -94,14 +95,28 @@ const ABDOMEN_ORGAOS_NORMAIS = Object.fromEntries(
 );
 
 /**
- * OS CENÁRIOS COMPOSTOS (obstétrico com Doppler, morfológico com Doppler e
- * cervicometria) AINDA NÃO ENTRAM AQUI. O pedido do médico (18/09/2026) é ver e
- * personalizar o exame como usa, mas a personalização vive no catálogo, e o
- * catálogo ainda não escreve nem a seção Doppler nem a cervicometria: esses exames
- * são renderizados pelo caminho clássico. Mostrar o cenário na Biblioteca antes
- * disso ofereceria um modelo que a personalização não alcança. Próximo passo:
- * ensinar o catálogo os dois complementos e então trazer os cenários para cá.
+ * COMPLEMENTOS DO EXAME — o obstétrico como o médico realmente pede (18/09/2026).
+ *
+ * Ele quase nunca pede "obstétrico" puro: pede obstétrico COM Doppler, e às vezes
+ * com a cervicometria transvaginal junto. Esses eram exatamente os exames que a
+ * Biblioteca não mostrava, e portanto os que a personalização não alcançava.
+ *
+ * O Doppler aqui é o do exame COMBINADO: só o IP, porque o IR é do Doppler
+ * isolado, que tem entrada própria na Biblioteca ("Doppler obstétrico (isolado)").
  */
+const DOPPLER_DO_EXAME_COMBINADO: NonNullable<ObstetricaFindings["doppler"]> = {
+  ...(achadoNormalDe(DopplerObstetricoModuleSchema) as NonNullable<ObstetricaFindings["doppler"]>),
+  ip_uterina_dir: 0.78, ip_uterina_esq: 0.82, ip_medio_uterinas: 0.8,
+  ip_umbilical: 0.94, ip_acm: 1.72, ip_ducto_venoso: 0.52,
+  fluxo_diastolico_umbilical: "presente", incisura: false,
+};
+
+const CERVICOMETRIA_DO_EXAME: NonNullable<ObstetricaFindings["cervicometria"]> = {
+  colo_oi_oe_cm: 3.4, orificio_interno_fechado: true,
+  placenta_distancia_cm: null, placenta_distante: false,
+  cerclagem: false, observacoes: null,
+};
+
 export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
   {
     categoria: "ABDOMEN_TOTAL", rotulo: "Abdome total",
@@ -147,6 +162,17 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
       { nome: "Gestação padrão", seed: { numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL] } },
       { nome: "Gestação inicial", seed: { numero_fetos: 1, gestacao_inicial: true, fetos: [FETO_NORMAL] } },
       { nome: "Gemelar", seed: { numero_fetos: 2, gestacao_inicial: false, fetos: [FETO_NORMAL, FETO_NORMAL] } },
+      {
+        nome: "Com Doppler",
+        seed: { numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL], doppler: DOPPLER_DO_EXAME_COMBINADO },
+      },
+      {
+        nome: "Com Doppler e cervicometria",
+        seed: {
+          numero_fetos: 1, gestacao_inicial: false, fetos: [FETO_NORMAL],
+          doppler: DOPPLER_DO_EXAME_COMBINADO, cervicometria: CERVICOMETRIA_DO_EXAME,
+        },
+      },
     ],
     /**
      * AS FLAGS DE PRODUÇÃO ATRAVESSAM — o mesmo defeito do `omitPicoNull` da

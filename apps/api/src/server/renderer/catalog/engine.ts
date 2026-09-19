@@ -109,6 +109,8 @@ export type BuildArgs<F> = {
   flags: SlotContext<F>["flags"];
   titulo?: string;
   preLinhas?: string[];
+  /** Sobrescreve o preâmbulo do catálogo neste laudo (ver ReportDoc.preambulo). */
+  preambulo?: string;
   /** Slots cujo texto veio de personalização (para marcar origin). */
   customSlots?: Set<string>;
   /** Itens extras de conclusão (personalização / camada flexível). */
@@ -246,6 +248,7 @@ export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
     catalogVersao: catalog.versao,
     titulo: args.titulo ?? catalog.titulo(base),
     preLinhas: args.preLinhas ?? [],
+    preambulo: args.preambulo,
     segments,
   };
 }
@@ -266,7 +269,8 @@ export function serialize<F>(doc: ReportDoc, catalog: Catalog<F>): string {
 
   const partes: string[] = [doc.titulo, ...doc.preLinhas];
   if (catalog.cabecalhos.tecnica) partes.push("", catalog.cabecalhos.tecnica);
-  if (catalog.preambulo) partes.push("", catalog.preambulo);
+  const preambulo = doc.preambulo ?? catalog.preambulo;
+  if (preambulo) partes.push("", preambulo);
   partes.push("", catalog.cabecalhos.corpo, corpo.join("\n"), "", catalog.cabecalhos.conclusao, conclTxt);
 
   return partes.join("\n").replace(/\n{3,}/g, "\n\n").trim();

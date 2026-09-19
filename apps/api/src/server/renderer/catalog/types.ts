@@ -235,6 +235,12 @@ export type ReportDoc = {
   titulo: string;
   /** Linhas soltas entre o título e o preâmbulo (DUM, referência de IG). */
   preLinhas: string[];
+  /**
+   * Preâmbulo DESTE laudo, quando difere do preâmbulo do catálogo — hoje só o
+   * obstétrico com complementos, que acrescenta a técnica do Doppler e a da
+   * cervicometria dentro do parágrafo de comentários. Ausente = usa o do catálogo.
+   */
+  preambulo?: string;
   segments: Segment[];
 };
 

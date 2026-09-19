@@ -343,3 +343,68 @@ CONCLUSÃO:
 6) Não há sinais de pré-centralização ou de centralização.
 7) Perfil hemodinâmico fetal é normal, menor de 1.0.
 ```
+
+---
+
+## Biblioteca e personalização — o exame composto (19/09/2026)
+
+O pedido do médico era curto: *"Na biblioteca a gente deixa da mesma forma um
+obstétrico com Doppler e um toggle para a apenas o Doppler, para personalizações."*
+Atendê-lo exigiu mexer onde a personalização mora, porque o obstétrico com
+Doppler simplesmente não passava por lá.
+
+### O que estava errado
+
+A personalização do médico é aplicada sobre o **catálogo** (`OBSTETRICA.classico.ts`),
+e o catálogo só sabia escrever o exame principal. Os **complementos** — a seção
+DOPPLERVELOCIMETRIA e a seção CERVICOMETRIA — ficavam de fora:
+
+- o Doppler saiu do caminho do catálogo em `26cb805`;
+- a cervicometria nunca entrou.
+
+Com a cervicometria caindo no catálogo, o laudo saía **sem a seção e sem o item de
+conclusão do colo**: o médico media o colo e a medida desaparecia. Reproduzido
+contra a produção em 18/09/2026. A correção imediata (tirar o exame composto do
+catálogo) parou a perda, mas deixava de pé o problema de fundo: o exame que ele
+mais pede era o único que a personalização não alcançava.
+
+### O que foi feito
+
+`buildObstetricaDoc` passou a chamar os **mesmos módulos** do renderer clássico
+(`complementosDoExame`, em `OBSTETRICA.render.ts`), em vez de reescrever o texto.
+São quatro pontos de injeção:
+
+| Ponto | De onde vem |
+|---|---|
+| Sufixo do título (`COM DOPPLER COLORIDO`) | do renderer, sobre o título do catálogo |
+| Frase de técnica dentro de COMENTÁRIOS | `inserirComentariosExtras`, sobre o preâmbulo **do catálogo** (preserva personalização) |
+| Seções no corpo | `renderCervicometriaBloco`, `renderDopplerModule({ indices: "ip" })`, `renderFetalGrowthModule` |
+| Itens da conclusão | os mesmos módulos |
+
+Chamar o módulo, e não copiar a redação, é a parte que importa: foi a duplicação
+do módulo Doppler que trouxe o IR de volta ao exame combinado, o erro relatado em
+15/09. Agora uma regra clínica corrigida em um lugar vale nos três exames.
+
+O que a personalização alcança é o **exame principal e o preâmbulo**. Os
+complementos seguem escritos pelo sistema — o médico personaliza a normalidade que
+ele redige, não a medida que ele mediu.
+
+### Prova
+
+`catalog-equivalence` ganhou a dimensão de complemento (sem, Doppler, cervicometria,
+os dois, colo curto): **21.600/21.600 byte-a-byte idênticas ao renderer clássico**.
+Eram 4.320 combinações antes.
+
+### Na Biblioteca
+
+- **Obstétrica** ganhou dois cenários: *Com Doppler* e *Com Doppler e cervicometria*.
+- **Doppler obstétrico** virou *Doppler obstétrico (isolado)* — é o que usa IR e IP.
+
+A semente de exemplo é indexada pelo **nome do cenário** (`exemplos.ts`); um cenário
+novo sem entrada lá rende exemplo com `____` na biometria. Custou uma rodada descobrir.
+
+### Extração
+
+Reforçada uma regra no líquido amniótico: **a medida vence a palavra**. Ditar
+"líquido amniótico normal, maior bolsão de 4,6 cm" fazia o extrator escolher
+`normal` e descartar o 4,6 — a medida sumia do laudo. Achado ao validar em produção.

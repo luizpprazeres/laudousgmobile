@@ -485,6 +485,9 @@ REGRAS:
     gemelar usa um valor por feto na ordem dos fetos), "alterado" (com
     liquido_classe = oligoâmnio/polidrâmnio). PRESERVE a casa decimal do ILA/MBV
     em cm ("4,1 cm" → 4.1; NUNCA 41).
+    A MEDIDA VENCE A PALAVRA: se o médico disser "normal" E der a medida
+    ("líquido amniótico normal, maior bolsão de 4,6 cm"), o tipo é "mbv"/"ila"
+    com o valor, nunca "normal" — senão a medida que ele ditou some do laudo.
 11. apresentacao/dorso/polo_cefalico só quando ditados (senão null — o renderer
     usa defaults clínicos).
 12. achados_adicionais: SOMENTE malformações ou ALTERAÇÕES patológicas reais,
@@ -745,16 +748,26 @@ const COMENTARIOS =
  * a técnica do Doppler e a da cervicometria entram depois de "abdome da gestante" e
  * antes da documentação fotográfica, como nos laudos dele. Antes eram parágrafos soltos.
  */
-const COMENTARIOS_DOPPLER = "Foi utilizado Doppler colorido para avaliação hemodinâmica fetal.";
-const COMENTARIOS_CERVICO = "Foi realizada avaliação complementar do colo uterino pela via transvaginal.";
+export const COMENTARIOS_DOPPLER = "Foi utilizado Doppler colorido para avaliação hemodinâmica fetal.";
+export const COMENTARIOS_CERVICO = "Foi realizada avaliação complementar do colo uterino pela via transvaginal.";
+
+/**
+ * Insere as frases de técnica dos complementos em UM parágrafo de comentários.
+ *
+ * Recebe o parágrafo-base porque o catálogo tem o seu próprio, que pode ter sido
+ * PERSONALIZADO pelo médico. Se esta função fixasse `COMENTARIOS`, todo exame com
+ * Doppler ou cervicometria descartaria em silêncio a personalização do preâmbulo.
+ */
+export function inserirComentariosExtras(base: string, extras: Array<string | null>): string {
+  const frases = extras.filter((f): f is string => Boolean(f));
+  if (frases.length === 0) return base;
+  return base.includes(" A documentação fotográfica")
+    ? base.replace(" A documentação fotográfica", ` ${frases.join(" ")} A documentação fotográfica`)
+    : `${base} ${frases.join(" ")}`;
+}
 
 function comentariosCom(extras: Array<string | null>): string {
-  const frases = extras.filter((f): f is string => Boolean(f));
-  if (frases.length === 0) return COMENTARIOS;
-  return COMENTARIOS.replace(
-    " A documentação fotográfica",
-    ` ${frases.join(" ")} A documentação fotográfica`,
-  );
+  return inserirComentariosExtras(COMENTARIOS, extras);
 }
 
 /**
