@@ -145,16 +145,16 @@ export function buildObstetricaDoc(args: RenderArgs): { doc: ReportDoc; catalog:
     customSlots: args.customSlots,
     // Camada flexível (flag FLEXIBLE_CONCLUSION), lado do CORPO: observação
     // clínica que o médico ditou fora dos slots. Mesmo dedup do renderer.
-    extraCorpo: [
-      ...(flags.flexivel ? filterFreeBodyItems(f.observacoes_corpo_livres) : []),
-      // Os complementos SEMPRE fecham o corpo, depois dos itens livres.
-      ...comp.corpo,
-    ],
+    extraCorpo: flags.flexivel ? filterFreeBodyItems(f.observacoes_corpo_livres) : [],
+    // Os complementos SEMPRE fecham o corpo e a conclusão, depois dos itens
+    // livres. Vão por campo próprio para a projeção não os confundir com o
+    // texto que o médico ditou fora dos slots.
+    complementoCorpo: comp.corpo,
+    complementoConclusao: comp.conclusao,
     // Camada flexível (flag FLEXIBLE_CONCLUSION): itens livres do médico entram
     // ao fim da conclusão, após o mesmo dedup determinístico do renderer.
     extraConclusao: [
       ...(flags.flexivel ? filterFreeConclusionItems(f.itens_conclusao_livres) : []),
-      ...comp.conclusao,
       ...(args.extraConclusao ?? []),
     ],
   });

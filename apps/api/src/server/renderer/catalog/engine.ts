@@ -123,6 +123,17 @@ export type BuildArgs<F> = {
    */
   extraCorpo?: string[];
   extraConclusao?: string[];
+  /**
+   * COMPLEMENTOS DO EXAME — seções escritas pelos módulos (Doppler, cervicometria,
+   * crescimento fetal), não pelo médico.
+   *
+   * Separados de `extraCorpo`/`extraConclusao` porque a PROJEÇÃO os expõe para a
+   * tela: como `corpo_extra`/`custom` eles apareceriam como texto livre ditado
+   * pelo médico, e a Biblioteca ofereceria personalizar uma medida. Aqui saem com
+   * `slotId: "complemento"` e `origin: "computed"`, como o item de IG.
+   */
+  complementoCorpo?: string[];
+  complementoConclusao?: string[];
 };
 
 export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
@@ -233,6 +244,22 @@ export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
     });
   }
 
+  // Os complementos fecham o corpo, DEPOIS do texto livre do médico — a mesma
+  // ordem do renderer clássico.
+  for (const linha of args.complementoCorpo ?? []) {
+    let i = -1;
+    for (let k = segments.length - 1; k >= 0; k--) {
+      if (segments[k]!.kind === "corpo") { i = k; break; }
+    }
+    segments.splice(i + 1, 0, {
+      slotId: "complemento",
+      variantId: "modulo",
+      kind: "corpo",
+      text: linha,
+      origin: "computed",
+    });
+  }
+
   for (const extra of args.extraConclusao ?? []) {
     segments.push({
       slotId: "conclusao_extra",
@@ -240,6 +267,16 @@ export function buildDoc<F>(args: BuildArgs<F>): ReportDoc {
       kind: "conclusao",
       text: extra,
       origin: "custom",
+    });
+  }
+
+  for (const item of args.complementoConclusao ?? []) {
+    segments.push({
+      slotId: "complemento",
+      variantId: "modulo",
+      kind: "conclusao",
+      text: item,
+      origin: "computed",
     });
   }
 
