@@ -156,15 +156,35 @@ console.log("\nOs defeitos que o Luiz encontrou");
 }
 {
   const linhas = (projetar("DOPPLER_OBSTETRICO").modelos ?? []).flatMap((m) => m.linhas);
-  t("o Doppler traz as artérias", linhas.some((l) => /Artéria umbilical/i.test(l.frase)),
+  t("o Doppler traz as artérias", linhas.some((l) => /art[ée]ria umbilical/i.test(l.frase)),
     "a seção DOPPLERVELOCIMETRIA saía vazia");
-  t("…e com o índice como LACUNA, não com o valor do seed",
-    linhas.some((l) => /Artéria umbilical com índice de resistividade de ____ e índice de pulsatilidade de ____\./.test(l.frase)),
-    linhas.find((l) => /Artéria umbilical/i.test(l.frase))?.frase ?? "");
+  /**
+   * O TEXTO DA UMBILICAL MUDOU EM 18/09/2026 (decisão do médico): no Doppler
+   * ISOLADO a linha é "Índice de resistividade da artéria umbilical de X e
+   * índice de pulsatilidade de Y (percentil P). (média de três medidas…)".
+   * A expectativa antiga era a redação anterior ("Artéria umbilical com índice
+   * de…") e sem o percentil, que o seed traz. O que este teste guarda é a
+   * LACUNA — o valor do seed não pode vazar para o modelo.
+   */
+  t("…e com os índices como LACUNA, não com o valor do seed",
+    linhas.some((l) => /[ÍI]ndice de resistividade da artéria umbilical de ____ e índice de pulsatilidade de ____/.test(l.frase)),
+    linhas.find((l) => /art[ée]ria umbilical/i.test(l.frase))?.frase ?? "");
+  t("…e sem nenhum número do seed na linha da umbilical",
+    !/\b0,5\d|\b1,00\b|\b50\b/.test(linhas.find((l) => /art[ée]ria umbilical/i.test(l.frase))?.frase ?? ""),
+    linhas.find((l) => /art[ée]ria umbilical/i.test(l.frase))?.frase ?? "");
 }
 {
   const ms = projetar("MORFOLOGICO").modelos ?? [];
-  t("o morfológico tem os três trimestres", ms.length === 3, ms.map((m) => m.nome).join(", "));
+  /**
+   * O QUE IMPORTA É OS TRÊS TRIMESTRES ESTAREM LÁ, não quantos modelos existem.
+   * A asserção era `ms.length === 3` e passou a reprovar quando o morfológico
+   * com Doppler entrou na Biblioteca (19/09/2026) — o defeito que ela nasceu
+   * para pegar era o oposto: só o 1º trimestre aparecia.
+   */
+  for (const t3 of ["Primeiro trimestre", "Segundo trimestre", "Terceiro trimestre"]) {
+    t(`o morfológico traz o modelo de ${t3.toLowerCase()}`,
+      ms.some((m) => m.nome === t3), ms.map((m) => m.nome).join(", "));
+  }
   t("e o de 2º trimestre tem a anatomia dele",
     ms.some((m) => m.linhas.some((l) => /quatro câmaras/i.test(l.frase))));
 }

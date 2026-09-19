@@ -408,3 +408,44 @@ novo sem entrada lá rende exemplo com `____` na biometria. Custou uma rodada de
 Reforçada uma regra no líquido amniótico: **a medida vence a palavra**. Ditar
 "líquido amniótico normal, maior bolsão de 4,6 cm" fazia o extrator escolher
 `normal` e descartar o 4,6 — a medida sumia do laudo. Achado ao validar em produção.
+
+---
+
+## Onde a personalização realmente mora (19/09/2026)
+
+Vale registrar, porque é fácil errar: **existem dois caminhos de personalização**,
+e eu mesmo confundi os dois ao listar os próximos passos.
+
+| Caminho | Quem usa | Como funciona |
+|---|---|---|
+| **Catálogo escrito** | só `OBSTETRICA/CLASSICO_COMPLETO` | monta o laudo slot a slot com as frases do médico |
+| **Frase derivada** | as outras doze categorias | o renderer monta o laudo, e a redação troca linha por linha, ancorada pelo `idDaFrase` |
+
+O caminho de frase é o que cobre morfológico, Doppler isolado, abdome, tireoide,
+mama, pelve e o resto. Ele é deliberadamente menos elegante e tem três
+propriedades que compensam: **nada é reconstruído** (o laudo continua sendo o do
+renderer de produção), **é fail-safe** (a troca só ocorre onde a frase-base casa,
+então no pior caso a personalização não aplica — nunca sai laudo errado) e **o
+dado sobrevive** (as medidas da linha real são reinseridas na redação).
+
+Consequência prática: para mostrar o morfológico com Doppler na Biblioteca **não
+foi preciso escrever catálogo nenhum**. A redação que o médico faz no modelo
+simples já valia no exame composto, porque a âncora é a frase, e a frase é a
+mesma. Faltava só ele poder conferir o exame como usa.
+
+Isso virou gate em `redacao-alcanca-exame-composto.manual.ts`: pega uma frase de
+normalidade do modelo simples, confirma que ela aparece no exame composto, aplica
+a redação e verifica que o complemento fica intacto — seções presentes e medidas
+do Doppler byte-a-byte iguais. Se a Biblioteca passar a prometer o que o laudo não
+entrega, o teste reprova.
+
+### E a Pelve feminina
+
+Estava ausente da Biblioteca por um defeito de derivação, não de modelo:
+`achadoNormalDe` devolvia `null` tanto para `.nullable()` quanto para
+`.optional()`. Mas `.optional()` sem `.nullable()` não aceita `null`: o Zod
+recusava o laudo derivado, e `laudoPadraoDe` engole a exceção para que uma
+categoria quebrada não derrube a Biblioteca — então a categoria **sumia em
+silêncio**. Dois campos da pelve (`modo`, `doppler_realizado`) caíam nisso.
+`ZodOptional` agora desce no tipo interno. Junto saíram 28 cenários de pelve que
+não renderizavam em `cenario-sem-numero-fantasma`.

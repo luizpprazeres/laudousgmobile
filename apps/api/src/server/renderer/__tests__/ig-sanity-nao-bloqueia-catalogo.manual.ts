@@ -49,17 +49,27 @@ for (const s of OBSTETRICA_SAMPLES) {
   const classico = renderObstetrica(semVitalidade, null, { ...FLAGS, igSanity: true });
   const catalogo = renderObstetricaCatalogo({ findings: semVitalidade, flags: FLAGS });
 
-  t("o CLÁSSICO afirma batimentos que não existem",
-    classico.includes("Batimentos cardíacos ritmados"),
-    "se isto falhar, o clássico foi corrigido e o teste precisa mudar");
-  t("o CATÁLOGO diz que não foram visualizados",
-    catalogo.includes("não visualizados pelo modo B ou pelo modo Doppler"),
-    catalogo.split("\n").find((l) => l.includes("Batimento")) ?? "sem linha de BCF");
-  t("…e conclui a ausência de vitalidade",
-    /sem vitalidade/i.test(catalogo),
-    catalogo.split("CONCLUS")[1]?.slice(0, 120) ?? "");
-  t("o clássico NÃO conclui nada sobre vitalidade",
-    !/sem vitalidade/i.test(classico));
+  /**
+   * O CLÁSSICO FOI CORRIGIDO — era o que o próprio teste mandava conferir.
+   *
+   * Até aqui ele afirmava "Batimentos cardíacos ritmados" num laudo de óbito
+   * fetal e não concluía nada sobre vitalidade; o catálogo já acertava, e as
+   * duas asserções antigas GUARDAVAM o defeito, com o bilhete "se isto falhar,
+   * o clássico foi corrigido e o teste precisa mudar". Falhou em 19/09/2026.
+   *
+   * O que o teste guarda agora é o acordo entre os dois caminhos: nenhum pode
+   * voltar a afirmar batimento onde não há.
+   */
+  for (const [nome, texto] of [["clássico", classico], ["catálogo", catalogo]] as const) {
+    t(`o ${nome} diz que os batimentos não foram visualizados`,
+      texto.includes("não visualizados pelo modo B ou pelo modo Doppler"),
+      texto.split("\n").find((l) => l.includes("Batimento")) ?? "sem linha de BCF");
+    t(`…e o ${nome} conclui a ausência de vitalidade`,
+      /sem vitalidade/i.test(texto),
+      texto.split("CONCLUS")[1]?.slice(0, 120) ?? "");
+    t(`…e o ${nome} NÃO afirma batimento ritmado`,
+      !/Batimentos cardíacos ritmados/i.test(texto));
+  }
 }
 
 // 3 · quando a sanidade REALMENTE atua, o catálogo se abstém
