@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, ChevronDown, RotateCcw, ScanLine, Smartphone } from 'lucide-react'
 import {
   CATEGORIES,
@@ -85,6 +85,8 @@ type LaudarWebExperienceProps = {
   richEditor?: boolean
   agentWorkspace?: boolean
 }
+
+type WorkspacePane = 'achados' | 'laudo'
 
 type ReportDraft = {
   text: string
@@ -172,6 +174,102 @@ function ToolbarPill({
   )
 }
 
+function WorkspaceTabs({
+  active,
+  onChange,
+  laudoState,
+	}: {
+	  active: WorkspacePane
+	  onChange: (pane: WorkspacePane) => void
+	  laudoState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error'
+	}) {
+  const tabs: Array<{ id: WorkspacePane; label: string }> = [
+    { id: 'achados', label: 'Achados' },
+    { id: 'laudo', label: 'Laudo' },
+  ]
+  const refs = useRef<Array<HTMLButtonElement | null>>([])
+  const select = (index: number) => {
+    const tab = tabs[index]
+    if (!tab) return
+    onChange(tab.id)
+    refs.current[index]?.focus()
+  }
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const current = tabs.findIndex((tab) => tab.id === active)
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault()
+      select((current + 1) % tabs.length)
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      select((current - 1 + tabs.length) % tabs.length)
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      select(0)
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      select(tabs.length - 1)
+    }
+  }
+	  const indicatorClass = {
+	    idle: '',
+	    updating: 'bg-amber-400',
+	    suggestion: 'bg-sky-500',
+	    dirty: 'bg-violet-500',
+	    error: 'bg-red-500',
+	  }[laudoState]
+	  const indicatorLabel = {
+	    idle: '',
+	    updating: 'Laudo atualizando',
+	    suggestion: 'Laudo com sugestão dos campos atuais',
+	    dirty: 'Laudo editado manualmente',
+	    error: 'Erro no laudo',
+	  }[laudoState]
+
+  return (
+    <div
+      role="tablist"
+      aria-label="Alternar área de trabalho"
+      onKeyDown={onKeyDown}
+	      className="inline-grid min-h-11 min-w-[224px] grid-cols-2 rounded-full border border-gray-200 bg-gray-100 p-1 shadow-inner dark:border-gray-700 dark:bg-gray-900"
+    >
+      {tabs.map((tab, index) => {
+        const selected = active === tab.id
+        const showIndicator = tab.id === 'laudo' && laudoState !== 'idle'
+        return (
+          <button
+            key={tab.id}
+            ref={(node) => { refs.current[index] = node }}
+            type="button"
+            role="tab"
+            id={`workspace-tab-${tab.id}`}
+            aria-selected={selected}
+            aria-controls={`workspace-panel-${tab.id}`}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(tab.id)}
+	            className={`relative inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-4 text-sm font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:focus-visible:ring-offset-gray-900 ${
+              selected
+                ? 'bg-white text-gray-950 shadow-sm dark:bg-gray-100 dark:text-gray-950'
+                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100'
+            }`}
+          >
+            <span>{tab.label}</span>
+            {showIndicator ? (
+              <>
+                <span
+                  data-laudo-tab-indicator={laudoState}
+                  aria-hidden="true"
+                  className={`h-2 w-2 rounded-full ${indicatorClass}`}
+                />
+                <span className="sr-only">{indicatorLabel}</span>
+              </>
+            ) : null}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function sectionIndex(sections: UiSection[], id: string) {
   return Math.max(0, sections.findIndex((section) => section.id === id))
 }
@@ -191,8 +289,75 @@ function completedTireoideSections(state: TireoideState) {
 }
 
 export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, agentWorkspace = false }: LaudarWebExperienceProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const tabsBarRef = useRef<HTMLDivElement>(null)
   const [choosingCategory, setChoosingCategory] = useState(true)
+  const [activePane, setActivePane] = useState<WorkspacePane>('achados')
   const [categoria, setCategoria] = useState<string>(GENERIC_CATEGORIES[0]?.id ?? 'ABDOMEN_TOTAL')
+  const activePaneRef = useRef<WorkspacePane>('achados')
+  const restoringScrollRef = useRef(false)
+  const scrollYByPaneRef = useRef<Record<WorkspacePane, number>>({ achados: 0, laudo: 0 })
+  const selectPane = useCallback((pane: WorkspacePane) => {
+    if (typeof window !== 'undefined') {
+      scrollYByPaneRef.current[activePaneRef.current] = window.scrollY
+    }
+    if (pane !== activePaneRef.current) setActivePane(pane)
+  }, [])
+  const selectCategory = useCallback((nextCategory: string) => {
+    if (nextCategory !== categoria) selectPane('achados')
+    setCategoria(nextCategory)
+  }, [categoria, selectPane])
+
+  useLayoutEffect(() => {
+    activePaneRef.current = activePane
+  }, [activePane])
+
+  useEffect(() => {
+    const saveScroll = () => {
+      if (restoringScrollRef.current) return
+      scrollYByPaneRef.current[activePaneRef.current] = window.scrollY
+    }
+    window.addEventListener('scroll', saveScroll, { passive: true })
+    return () => window.removeEventListener('scroll', saveScroll)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (choosingCategory || typeof window === 'undefined') return
+    restoringScrollRef.current = true
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollYByPaneRef.current[activePane] ?? 0, left: 0, behavior: 'auto' })
+      restoringScrollRef.current = false
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      restoringScrollRef.current = false
+    }
+  }, [activePane, choosingCategory])
+
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    const header = headerRef.current
+    const tabsBar = tabsBarRef.current
+    if (!root || !header || !tabsBar) return
+
+    const update = () => {
+      root.style.setProperty('--laudar-header-height', `${header.offsetHeight}px`)
+      root.style.setProperty('--laudar-tabs-height', `${tabsBar.offsetHeight}px`)
+    }
+    update()
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', update)
+      return () => window.removeEventListener('resize', update)
+    }
+
+    const observer = new ResizeObserver(update)
+    observer.observe(header)
+    observer.observe(tabsBar)
+    return () => observer.disconnect()
+  }, [choosingCategory, workspaceV2])
+
   // Um ExamState por categoria genérica (preserva o preenchimento ao alternar).
   const [examStates, setExamStates] = useState<Record<string, ExamState>>(() =>
     Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, initialExamState(c)]))
@@ -264,7 +429,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // Uma seção ativa gravada como 'biometria'/'crescimento_fetal' (rascunho
   // anterior ou envio do celular) continua levando ao painel agrupado.
   const activeSectionId = resolverSecaoAtivaAgrupada(sections, activeByCat[categoria] ?? sections[0]?.id ?? '')
-  const setActiveSectionId = (id: string) => setActiveByCat((s) => ({ ...s, [categoria]: id }))
+  const setActiveSectionId = useCallback((id: string) => {
+    setActiveByCat((s) => ({ ...s, [categoria]: id }))
+  }, [categoria])
   const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0]
   const currentCategory = isTireoide ? TIREOIDE_CATEGORY : genericCategory!
   const examState = isTireoide ? undefined : examStates[categoria]
@@ -575,6 +742,15 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const textoFoiEditado = activeDraft.text !== activeDraft.sourceText
   const laudoNaoConfere =
     migrada && !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
+  const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = laudoCanonico.erro || saveState === 'error'
+    ? 'error'
+    : migrada && (laudoCanonico.carregando || laudoCanonico.desatualizado)
+      ? 'updating'
+      : sourceChanged
+        ? 'suggestion'
+        : activeDraft.dirty
+          ? 'dirty'
+          : 'idle'
 
   const onSave = async () => {
     if (laudoNaoConfere) {
@@ -627,8 +803,11 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         return
       }
       if (event.key !== 'Tab' || event.metaKey || event.ctrlKey || event.altKey) return
+      if (activePane !== 'achados') return
       const target = event.target as HTMLElement | null
-      if (target?.matches('input, textarea, select, [contenteditable="true"]')) return
+      if (!target?.closest('#workspace-panel-achados [data-section-tab-region]')) return
+      if (target.closest('[role="tablist"], #workspace-panel-laudo')) return
+      if (target.closest('input, textarea, select, button, a, [contenteditable="true"], [tabindex]:not([tabindex="-1"])')) return
       const destination = event.shiftKey ? previous : next
       if (!destination || destination.id === activeSection?.id) return
       event.preventDefault()
@@ -636,7 +815,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [activeSection?.id, next, previous, choosingCategory])
+  }, [activePane, activeSection?.id, next, previous, choosingCategory, setActiveSectionId])
 
   const resetActive = () => {
     if (!activeSection) return
@@ -687,101 +866,170 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
   return (
     <>
-    {choosingCategory && <ExamCategoryPicker onSelect={(id) => {
-      setCategoria(id)
-      setChoosingCategory(false)
-    }} />}
-    <div hidden={choosingCategory} className={`laudar-web-responsive min-h-screen overflow-hidden text-gray-900 dark:text-gray-100 ${workspaceV2 ? 'bg-[#F2F2F7] p-2 dark:bg-[#0B0B0F]' : 'bg-gray-100 dark:bg-gray-950'}`}>
-      <style>{`
-        @media (max-width: 1279px) {
-          .laudar-web-responsive { overflow: visible; overflow-wrap: anywhere; }
-          .laudar-web-responsive > header {
-            position: relative; height: auto; flex-wrap: wrap; padding: 12px;
+      {choosingCategory && <ExamCategoryPicker onSelect={(id) => {
+        selectCategory(id)
+        setChoosingCategory(false)
+      }} />}
+      <div
+        ref={rootRef}
+        hidden={choosingCategory}
+        className={`laudar-web-responsive min-h-screen overflow-hidden text-gray-900 dark:text-gray-100 ${workspaceV2 ? 'bg-[#F2F2F7] p-2 dark:bg-[#0B0B0F]' : 'bg-gray-100 dark:bg-gray-950'}`}
+      >
+        <style>{`
+          .laudar-web-responsive [hidden] { display: none !important; }
+          .laudar-web-responsive > main {
+            height: calc(100vh - var(--laudar-header-height, 64px) - var(--laudar-tabs-height, 56px));
           }
-          .laudar-web-responsive > header > * { min-width: 0; max-width: 100%; }
-          .laudar-web-responsive [data-category-selector] {
-            min-width: 0; max-width: 100%; height: auto; min-height: 40px;
-            padding-top: 8px; padding-bottom: 8px;
+          .laudar-web-responsive .achados-form-body {
+            max-width: 960px;
           }
-          .laudar-web-responsive [data-category-selector] > span {
-            white-space: normal; overflow: visible; text-overflow: clip;
+          .laudar-web-responsive .workspace-tabs-shell {
+            top: var(--laudar-header-height, 64px);
           }
-          .laudar-web-responsive > main { height: auto; }
-          .laudar-web-responsive .laudar-layout {
-            height: auto; grid-template-columns: minmax(0, 1fr); row-gap: 12px;
+          @media (max-width: 1279px) {
+            .laudar-web-responsive { overflow: visible; overflow-wrap: anywhere; }
+            .laudar-web-responsive > header {
+              position: relative; top: auto; height: auto; flex-wrap: wrap; padding: 12px;
+            }
+            .laudar-web-responsive .workspace-tabs-shell { top: 0; }
+            .laudar-web-responsive > header > * { min-width: 0; max-width: 100%; }
+            .laudar-web-responsive [data-category-selector] {
+              min-width: 0; max-width: 100%; height: auto; min-height: 40px;
+              padding-top: 8px; padding-bottom: 8px;
+            }
+            .laudar-web-responsive [data-category-selector] > span {
+              white-space: normal; overflow: visible; text-overflow: clip;
+            }
+            .laudar-web-responsive > main {
+              height: auto;
+              min-height: calc(100vh - var(--laudar-header-height, 96px) - var(--laudar-tabs-height, 56px));
+            }
+            .laudar-web-responsive .achados-layout {
+              height: auto;
+              grid-template-columns: minmax(148px, 176px) minmax(0, 1fr);
+              gap: 10px;
+            }
+            .laudar-web-responsive .laudo-layout { height: auto; min-height: 70vh; }
+            .laudar-web-responsive .achados-layout,
+            .laudar-web-responsive .laudo-layout {
+              margin-left: 64px;
+              padding-right: 12px;
+            }
+            .laudar-web-responsive .achados-layout > *,
+            .laudar-web-responsive .laudo-layout > * {
+              min-width: 0; width: 100%; height: auto; overflow: visible;
+            }
+            .laudar-web-responsive .achados-layout nav button > span:first-child {
+              white-space: normal; overflow: visible; text-overflow: clip;
+            }
+            .laudar-web-responsive .achados-layout input,
+            .laudar-web-responsive .achados-layout select,
+            .laudar-web-responsive .achados-layout textarea,
+            .laudar-web-responsive .laudo-layout input,
+            .laudar-web-responsive .laudo-layout select,
+            .laudar-web-responsive .laudo-layout textarea { min-width: 0; max-width: 100%; }
+            .laudar-web-responsive .achados-layout > section > footer {
+              position: static; flex-wrap: wrap; padding: 12px;
+            }
+            .laudar-web-responsive .laudo-layout article {
+              padding: 20px 16px; min-width: 0; overflow-wrap: anywhere;
+            }
+            .laudar-web-responsive .laudo-layout article h1 { overflow-wrap: anywhere; }
+            .laudar-web-responsive .laudo-layout > div > section > div { min-width: 0; }
+            .laudar-web-responsive .laudo-layout > div > section > div:last-child { padding: 12px; }
           }
-          .laudar-web-responsive .laudar-layout > * {
-            min-width: 0; width: 100%; height: auto; overflow: visible;
+          @media (max-width: 767px) {
+            .laudar-web-responsive > main > aside {
+              display: none;
+            }
+            .laudar-web-responsive > main {
+              padding-bottom: 76px;
+            }
+            .laudar-web-responsive .achados-layout,
+            .laudar-web-responsive .laudo-layout {
+              margin-left: 0;
+              grid-template-columns: minmax(0, 1fr);
+              gap: 10px;
+              padding-right: 8px;
+              padding-left: 8px;
+            }
+            .laudar-web-responsive .achados-layout > aside {
+              height: auto;
+              overflow: visible;
+            }
+            .laudar-web-responsive .achados-layout > aside nav {
+              display: flex; gap: 10px; overflow-x: auto; overflow-y: visible; padding: 10px;
+            }
+            .laudar-web-responsive .achados-layout > aside nav > div {
+              min-width: min(240px, 80vw); flex: 0 0 auto; margin-bottom: 0;
+            }
+            .laudar-web-responsive .achados-layout > section,
+            .laudar-web-responsive .laudo-layout > div {
+              border-radius: 18px;
+            }
           }
-          .laudar-web-responsive .laudar-layout nav button > span:first-child {
-            white-space: normal; overflow: visible; text-overflow: clip;
+          @media (max-width: 639px) {
+            .laudar-web-responsive [role="tablist"] {
+              width: 100%;
+            }
           }
-          .laudar-web-responsive .laudar-layout input,
-          .laudar-web-responsive .laudar-layout select,
-          .laudar-web-responsive .laudar-layout textarea { min-width: 0; max-width: 100%; }
-          .laudar-web-responsive .laudar-layout > section > footer {
-            position: static; flex-wrap: wrap; padding: 12px;
-          }
-          .laudar-web-responsive .laudar-layout article {
-            padding: 20px 16px; min-width: 0; overflow-wrap: anywhere;
-          }
-          .laudar-web-responsive .laudar-layout article h1 { overflow-wrap: anywhere; }
-          .laudar-web-responsive .laudar-layout > div > section > div { min-width: 0; }
-          .laudar-web-responsive .laudar-layout > div > section > div:last-child { padding: 12px; }
-        }
-      `}</style>
-      <header className={workspaceV2
-        ? 'sticky top-0 z-40 flex h-[76px] items-center gap-3 bg-transparent px-2'
-        : 'sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/70 px-5 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/70'}>
-        <button type="button" onClick={() => setChoosingCategory(true)} aria-label="Voltar às categorias" title="Voltar às categorias"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-emerald-600 dark:hover:bg-gray-800">
-          <ArrowLeft aria-hidden="true" className="h-5 w-5" />
-        </button>
-        {workspaceV2 ? (
-          <div className="flex flex-col items-start gap-1.5">
-            <div className="flex items-end gap-2">
-              <div className="flex items-end gap-0.5 font-barlow text-[19px] leading-none tracking-tight">
-                <span className="font-extrabold text-emerald-800 dark:text-emerald-300">Laudo</span>
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">USG</span>
+        `}</style>
+        <header ref={headerRef} className={workspaceV2
+          ? 'sticky top-0 z-40 flex h-[76px] items-center gap-3 bg-transparent px-2'
+          : 'sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/70 px-5 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/70'}>
+          <button type="button" onClick={() => setChoosingCategory(true)} aria-label="Voltar às categorias" title="Voltar às categorias"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-emerald-600 dark:hover:bg-gray-800">
+            <ArrowLeft aria-hidden="true" className="h-5 w-5" />
+          </button>
+          {workspaceV2 ? (
+            <div className="flex flex-col items-start gap-1.5">
+              <div className="flex items-end gap-2">
+                <div className="flex items-end gap-0.5 font-barlow text-[19px] leading-none tracking-tight">
+                  <span className="font-extrabold text-emerald-800 dark:text-emerald-300">Laudo</span>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">USG</span>
+                </div>
+                <span className="font-barlow text-xs font-medium text-gray-400 dark:text-gray-500">Web</span>
               </div>
-              <span className="font-barlow text-xs font-medium text-gray-400 dark:text-gray-500">Web</span>
+              <CategorySelector
+                categoria={categoria}
+                currentName={currentCategory.name}
+                compact
+                onChange={selectCategory}
+              />
             </div>
-            <CategorySelector
-              categoria={categoria}
-              currentName={currentCategory.name}
-              compact
-              onChange={setCategoria}
-            />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-end gap-0.5 font-barlow text-[22px] leading-none tracking-tight">
-              <span className="font-extrabold text-emerald-700 dark:text-emerald-500">Laudo</span>
-              <span className="font-normal text-emerald-600 dark:text-emerald-400">USG</span>
-              <span className="mb-1 ml-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
-            </div>
-            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
-            <span className="font-barlow text-base font-medium text-gray-500 dark:text-gray-400">Web</span>
-            <CategorySelector
-              categoria={categoria}
-              currentName={currentCategory.name}
-              compact={false}
-              onChange={setCategoria}
-            />
-          </>
-        )}
+          ) : (
+            <>
+              <div className="flex items-end gap-0.5 font-barlow text-[22px] leading-none tracking-tight">
+                <span className="font-extrabold text-emerald-700 dark:text-emerald-500">Laudo</span>
+                <span className="font-normal text-emerald-600 dark:text-emerald-400">USG</span>
+                <span className="mb-1 ml-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
+              </div>
+              <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
+              <span className="font-barlow text-base font-medium text-gray-500 dark:text-gray-400">Web</span>
+              <CategorySelector
+                categoria={categoria}
+                currentName={currentCategory.name}
+                compact={false}
+                onChange={selectCategory}
+              />
+            </>
+          )}
 
-        {isTireoide ? (
-          <ToolbarPill
-            tone={tireoideState.doppler ? 'toggleOn' : 'neutral'}
-            onClick={() => setTireoideState((state) => ({ ...state, doppler: !state.doppler }))}
-          >
-            Doppler
-          </ToolbarPill>
-        ) : null}
+          {isTireoide ? (
+            <ToolbarPill
+              tone={tireoideState.doppler ? 'toggleOn' : 'neutral'}
+              onClick={() => setTireoideState((state) => ({ ...state, doppler: !state.doppler }))}
+            >
+              Doppler
+            </ToolbarPill>
+          ) : null}
 
         {supportsVisualSchema ? (
-          <ToolbarPill tone={visualSchemaOpen ? 'toggleOn' : 'neutral'} onClick={() => setVisualSchemaOpen((open) => !open)}>
+          <ToolbarPill tone={visualSchemaOpen ? 'toggleOn' : 'neutral'} onClick={() => {
+            const nextOpen = !visualSchemaOpen
+            setVisualSchemaOpen(nextOpen)
+            if (nextOpen) selectPane('laudo')
+          }}>
             <ScanLine className="h-4 w-4" />
             {visualSchemaOpen ? 'Esquema aberto' : 'Esquema visual'}
           </ToolbarPill>
@@ -823,13 +1071,25 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           </label>
         ) : null}
 
-      </header>
+        </header>
+        <div
+          ref={tabsBarRef}
+          className="workspace-tabs-shell sticky z-30 flex justify-center border-b border-gray-200/70 bg-white/85 px-3 py-2 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/85"
+        >
+          <WorkspaceTabs active={activePane} onChange={selectPane} laudoState={laudoTabState} />
+        </div>
 
-      <main className={`relative ${workspaceV2 ? 'h-[calc(100vh-92px)]' : 'h-[calc(100vh-64px)]'}`}>
+        <main className="relative">
         <LaudarRail workspaceV2={workspaceV2} />
-        <div className={workspaceV2
-          ? 'laudar-layout ml-14 grid h-full grid-cols-[142px_minmax(310px,0.76fr)_minmax(440px,1.44fr)] gap-2'
-          : 'laudar-layout ml-16 grid h-full grid-cols-[196px_minmax(380px,0.82fr)_minmax(500px,1.18fr)]'}>
+        <div
+          id="workspace-panel-achados"
+          role="tabpanel"
+          aria-labelledby="workspace-tab-achados"
+          hidden={activePane !== 'achados'}
+          aria-hidden={activePane !== 'achados'}
+          className={workspaceV2
+            ? 'achados-layout ml-16 grid h-full grid-cols-[142px_minmax(0,1fr)] gap-2'
+            : 'achados-layout ml-16 grid h-full grid-cols-[196px_minmax(0,1fr)]'}>
           <ExamSectionNav
             sections={sections}
             activeId={activeSection?.id ?? ''}
@@ -857,7 +1117,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             ) : null}
           </ExamSectionNav>
 
-          <section className={`min-h-0 ${workspaceV2 ? 'flex flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]' : 'overflow-y-auto bg-gray-50 dark:bg-gray-900'}`}>
+          <section data-section-tab-region className={`min-h-0 ${workspaceV2 ? 'flex flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]' : 'overflow-y-auto bg-gray-50 dark:bg-gray-900'}`}>
             <div className={workspaceV2
               ? 'sticky top-0 z-10 border-b border-gray-100 bg-white/95 px-4 py-2 backdrop-blur-xl dark:border-gray-800 dark:bg-[#1C1C1E]/95'
               : 'border-b border-gray-200 bg-white px-6 py-2 dark:border-gray-800 dark:bg-gray-950'}>
@@ -875,7 +1135,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             </div>
 
             <div className={workspaceV2 ? 'min-h-0 flex-1 overflow-y-auto px-3 py-2.5' : 'px-6 py-5'}>
-              {activeSection?.id?.startsWith('calc:') ? (
+              <div className="achados-form-body w-full">
+                {activeSection?.id?.startsWith('calc:') ? (
                 (() => {
                   const spec = calculators.find((c) => `calc:${c.id}` === activeSection.id)
                   if (!spec) return null
@@ -975,7 +1236,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">Este trecho entra automaticamente no laudo normal.</p>
                   {activeSection?.normalBody ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-gray-600 dark:bg-gray-950 dark:text-gray-300">{activeSection.normalBody}</p> : null}
                 </div>
-              )}
+                )}
+              </div>
             </div>
 
             {workspaceV2 && agentWorkspace ? (
@@ -994,7 +1256,6 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               <footer className={`sticky bottom-0 flex items-center gap-3 border-t backdrop-blur-xl ${workspaceV2 ? 'border-gray-100 bg-white/95 px-4 py-3 dark:border-gray-800 dark:bg-[#1C1C1E]/95' : 'border-gray-200 bg-white/90 px-7 py-4 dark:border-gray-800 dark:bg-gray-950/90'}`}>
                 <span className="text-xs text-gray-500 dark:text-gray-400">Atalhos</span>
                 <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">⌘K</kbd>
-                <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">Tab</kbd>
                 <div className="flex-1" />
                 <button type="button" onClick={() => previous && setActiveSectionId(previous.id)} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" disabled={!previous || previous.id === activeSection?.id}>
                   <ArrowLeft className="h-4 w-4" /> anterior
@@ -1005,7 +1266,16 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               </footer>
             )}
           </section>
+        </div>
 
+        <div
+          id="workspace-panel-laudo"
+          role="tabpanel"
+          aria-labelledby="workspace-tab-laudo"
+          hidden={activePane !== 'laudo'}
+          aria-hidden={activePane !== 'laudo'}
+          className={workspaceV2 ? 'laudo-layout ml-16 h-full' : 'laudo-layout ml-16 h-full'}
+        >
           {/*
             O ESTADO DO MOTOR, acima do laudo.
             
@@ -1023,40 +1293,47 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               </p>
             ) : null}
 
-            {visualSchemaOpen && supportsVisualSchema ? (
-              <VisualSchemaPanel
-                category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : 'FETAL_POSITION'}
-                breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
-                fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
-                thyroidState={tireoideState}
-                onBreastChange={(nextState) => setExamStates((all) => ({
-                  ...all,
-                  MAMARIA: { ...all.MAMARIA, mamas: nextState },
-                }))}
-                onThyroidChange={setTireoideState}
-                onClose={() => setVisualSchemaOpen(false)}
+            <div className="relative flex min-h-0 flex-1">
+              <LaudoPreview
+                documentKey={documentKey}
+                text={preview}
+                saveState={saveState}
+                saveError={saveError}
+                onSave={onSave}
+                workspaceV2={workspaceV2}
+                editable={richEditor}
+                editableHtml={documentHtml}
+                formattedHtml={previewHtml}
+                draftDirty={activeDraft.dirty}
+                sourceChanged={sourceChanged}
+                suggestionDiff={suggestionDiff}
+                onDocumentChange={onDocumentChange}
+                onResetDraft={resetDocumentDraft}
+                onAcceptSuggestion={applyCurrentModel}
+                onRejectSuggestion={rejectCurrentModel}
+                canUndoSuggestion={canUndoSuggestion}
+                onUndoSuggestion={undoAcceptedSuggestion}
+                updating={migrada && (laudoCanonico.carregando || laudoCanonico.desatualizado)}
               />
-            ) : <LaudoPreview
-              documentKey={documentKey}
-              text={preview}
-              saveState={saveState}
-              saveError={saveError}
-              onSave={onSave}
-              workspaceV2={workspaceV2}
-              editable={richEditor}
-              editableHtml={documentHtml}
-              formattedHtml={previewHtml}
-              draftDirty={activeDraft.dirty}
-              sourceChanged={sourceChanged}
-              suggestionDiff={suggestionDiff}
-              onDocumentChange={onDocumentChange}
-              onResetDraft={resetDocumentDraft}
-              onAcceptSuggestion={applyCurrentModel}
-              onRejectSuggestion={rejectCurrentModel}
-              canUndoSuggestion={canUndoSuggestion}
-              onUndoSuggestion={undoAcceptedSuggestion}
-              updating={migrada && (laudoCanonico.carregando || laudoCanonico.desatualizado)}
-            />}
+              {visualSchemaOpen && supportsVisualSchema ? (
+                <div className="absolute inset-0 z-20 flex bg-gray-100/85 p-2 backdrop-blur-sm dark:bg-gray-950/80 sm:p-4">
+                  <div className="mx-auto h-full w-full max-w-[1100px]">
+                    <VisualSchemaPanel
+                      category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : 'FETAL_POSITION'}
+                      breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
+                      fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
+                      thyroidState={tireoideState}
+                      onBreastChange={(nextState) => setExamStates((all) => ({
+                        ...all,
+                        MAMARIA: { ...all.MAMARIA, mamas: nextState },
+                      }))}
+                      onThyroidChange={setTireoideState}
+                      onClose={() => setVisualSchemaOpen(false)}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </main>
@@ -1071,19 +1348,19 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         onApplyStructured={(payload: CompanionStructuredPayload) => {
           if (payload.category === 'TIREOIDE') {
             setTireoideState((state) => applyCompanionThyroid(state, payload))
-            setCategoria(TIREOIDE_ID)
+            selectCategory(TIREOIDE_ID)
             setActiveByCat((all) => ({ ...all, [TIREOIDE_ID]: payload.data.thyroidNodules?.length ? 'nodulos' : 'lobo_direito' }))
             return
           }
           if (payload.category === 'MAMARIA') {
             setExamStates((all) => ({ ...all, MAMARIA: applyCompanionBreast(all.MAMARIA ?? {}, payload) }))
-            setCategoria('MAMARIA')
+            selectCategory('MAMARIA')
             setActiveByCat((all) => ({ ...all, MAMARIA: 'mamas' }))
             return
           }
           if (payload.category === 'DOPPLER_CAROTIDAS') {
             setExamStates((all) => ({ ...all, DOPPLER_CAROTIDAS: applyCompanionCarotids(all.DOPPLER_CAROTIDAS ?? {}, payload) }))
-            setCategoria('DOPPLER_CAROTIDAS')
+            selectCategory('DOPPLER_CAROTIDAS')
             setActiveByCat((all) => ({ ...all, DOPPLER_CAROTIDAS: 'direita' }))
             return
           }
@@ -1096,7 +1373,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               companionReenviaPercentil(payload),
             ),
           }))
-          setCategoria(payload.category)
+          selectCategory(payload.category)
           setActiveByCat((all) => ({
             ...all,
             [payload.category]: payload.category === 'DOPPLER_OBSTETRICO' ? 'doppler' : 'biometria',

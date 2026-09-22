@@ -59,6 +59,25 @@ function Row({ icon: Icon, label, active, disabled, soon }: { icon: IconType; la
   )
 }
 
+function MobileNavItem({ item, active }: { item: NavItem; active: boolean }) {
+  const Icon = item.icon
+  if (!item.href) return null
+  return (
+    <Link
+      href={item.href}
+      aria-label={item.label}
+      className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold ${
+        active
+          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/45 dark:text-emerald-300'
+          : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+      <span className="max-w-full truncate">{item.label}</span>
+    </Link>
+  )
+}
+
 export function LaudarRail({ workspaceV2 = false }: { workspaceV2?: boolean }) {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
@@ -82,30 +101,62 @@ export function LaudarRail({ workspaceV2 = false }: { workspaceV2?: boolean }) {
     )
   }
 
+  const mobileItems = ITEMS.filter((item) => ['Laudar', 'Histórico', 'Analytics', 'Biblioteca', 'Preferências'].includes(item.label))
+
   return (
-    <aside className={`group absolute inset-y-0 left-0 z-30 flex flex-col overflow-hidden py-3 shadow-none transition-[width,box-shadow] duration-300 hover:w-[220px] hover:shadow-2xl ${workspaceV2 ? 'w-14 rounded-2xl border border-transparent bg-transparent hover:border-gray-200 hover:bg-white dark:hover:border-gray-800 dark:hover:bg-[#1C1C1E]' : 'w-16 border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900'}`}>
-      <div className="mb-2 flex h-12 w-16 items-center justify-center" aria-hidden="true">
-        <span className="h-7 w-1 rounded-full bg-emerald-600 shadow-[0_0_14px_rgba(5,150,105,0.22)]" />
-      </div>
-      <div className="flex-1">{ITEMS.map(renderNav)}</div>
-      <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
-        <button type="button" disabled aria-label="Guia rápido (em breve)" className={rowClass(false, true)}>
-          <Row icon={HelpCircle} label="Guia rápido" soon />
-        </button>
-        <button
-          type="button"
-          onClick={() => setTheme(isDark ? 'light' : 'dark')}
-          aria-label={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-          className={rowClass(false, false)}
-        >
-          <Row icon={isDark ? Sun : Moon} label={isDark ? 'Tema claro' : 'Tema escuro'} />
-        </button>
-        <form action="/auth/signout" method="post">
-          <button type="submit" aria-label="Sair" className={rowClass(false, false)}>
-            <Row icon={LogOut} label="Sair" />
+    <>
+      <aside className={`group absolute inset-y-0 left-0 z-30 flex flex-col overflow-hidden py-3 shadow-none transition-[width,box-shadow] duration-300 hover:w-[220px] hover:shadow-2xl ${workspaceV2 ? 'w-14 rounded-2xl border border-transparent bg-transparent hover:border-gray-200 hover:bg-white dark:hover:border-gray-800 dark:hover:bg-[#1C1C1E]' : 'w-16 border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900'}`}>
+        <div className="mb-2 flex h-12 w-16 items-center justify-center" aria-hidden="true">
+          <span className="h-7 w-1 rounded-full bg-emerald-600 shadow-[0_0_14px_rgba(5,150,105,0.22)]" />
+        </div>
+        <div className="flex-1">{ITEMS.map(renderNav)}</div>
+        <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
+          <button type="button" disabled aria-label="Guia rápido (em breve)" className={rowClass(false, true)}>
+            <Row icon={HelpCircle} label="Guia rápido" soon />
           </button>
-        </form>
-      </div>
-    </aside>
+          <button
+            type="button"
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            aria-label={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            className={rowClass(false, false)}
+          >
+            <Row icon={isDark ? Sun : Moon} label={isDark ? 'Tema claro' : 'Tema escuro'} />
+          </button>
+          <form action="/auth/signout" method="post">
+            <button type="submit" aria-label="Sair" className={rowClass(false, false)}>
+              <Row icon={LogOut} label="Sair" />
+            </button>
+          </form>
+        </div>
+      </aside>
+      <nav
+        className="laudar-mobile-navigation fixed inset-x-2 bottom-2 z-50 flex items-stretch gap-1 rounded-2xl border border-gray-200 bg-white/95 p-1 shadow-xl backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/95 md:hidden"
+        aria-label="Navegação principal"
+      >
+        {mobileItems.map((item) => <MobileNavItem key={item.label} item={item} active={pathname === item.href} />)}
+        <details className="relative flex min-w-[54px] flex-col">
+          <summary className="flex h-full cursor-pointer list-none flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold text-gray-500 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:text-gray-400 dark:hover:bg-gray-800 [&::-webkit-details-marker]:hidden">
+            {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            Mais
+          </summary>
+          <div className="absolute bottom-[calc(100%+8px)] right-0 w-52 rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl dark:border-gray-800 dark:bg-gray-950">
+            <button
+              type="button"
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
+              className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
+            >
+              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {isDark ? 'Tema claro' : 'Tema escuro'}
+            </button>
+            <form action="/auth/signout" method="post">
+              <button type="submit" className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800">
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
+            </form>
+          </div>
+        </details>
+      </nav>
+    </>
   )
 }

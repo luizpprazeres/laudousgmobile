@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaudoUSG — Achados por órgão (prévia)</title>
+<meta name="description" content="Prévia autônoma do workspace de laudo: grade de cards por órgão, sem coluna de navegação." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --emerald-50:#ecfdf5; --emerald-100:#d1fae5; --emerald-200:#a7f3d0;
+    --emerald-500:#10b981; --emerald-600:#059669; --emerald-700:#047857; --emerald-800:#065f46;
+    --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb; --gray-300:#d1d5db;
+    --gray-400:#9ca3af; --gray-500:#6b7280; --gray-600:#4b5563; --gray-700:#374151; --gray-900:#111827;
+    --amber-50:#fffbeb; --amber-200:#fde68a; --amber-500:#f59e0b; --amber-800:#92400e;
+    --violet-50:#f5f3ff; --violet-200:#ddd6fe; --violet-500:#8b5cf6; --violet-700:#6d28d9;
+    --rail-w:56px;
+    --header-h:68px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:var(--gray-50);
+    color:var(--gray-900);
+    -webkit-font-smoothing:antialiased;
+  }
+  .barlow{font-family:"Barlow",-apple-system,sans-serif;}
+  button{font:inherit;cursor:pointer;}
+  input{font:inherit;}
+  a{color:inherit;}
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+
+  /* ---------- Rail principal (fino) ---------- */
+  .rail{
+    position:fixed; inset:0 auto 0 0; width:var(--rail-w);
+    display:flex; flex-direction:column; align-items:center;
+    padding:12px 0; background:#fff; border-right:1px solid var(--gray-200); z-index:40;
+  }
+  .rail-brand-dot{width:5px;height:26px;border-radius:99px;background:var(--emerald-600);box-shadow:0 0 14px rgba(5,150,105,.25);margin-bottom:10px;flex:none;}
+  .rail-items{display:flex;flex-direction:column;gap:2px;width:100%;flex:1;}
+  .rail-item{
+    position:relative; width:100%; height:44px; display:flex; align-items:center; justify-content:center;
+    background:none; border:0; border-left:3px solid transparent; color:var(--gray-500);
+  }
+  .rail-item:hover{background:var(--gray-50); color:var(--gray-700);}
+  .rail-item.active{border-left-color:var(--emerald-600); background:var(--emerald-50); color:var(--emerald-700);}
+  .rail-item svg{width:18px;height:18px;}
+  .rail-tip{
+    position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%) translateX(-4px);
+    background:var(--gray-900); color:#fff; font-size:12px; font-weight:600; padding:5px 9px; border-radius:8px;
+    white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:60;
+  }
+  .rail-item:hover .rail-tip{opacity:1; transform:translateY(-50%) translateX(0);}
+  .rail-foot{display:flex;flex-direction:column;gap:2px;width:100%;border-top:1px solid var(--gray-100);padding-top:8px;}
+
+  /* ---------- Header ---------- */
+  .app-shell{margin-left:var(--rail-w); min-height:100vh; display:flex; flex-direction:column;}
+  .topbar{
+    position:sticky; top:0; z-index:30; height:var(--header-h);
+    display:flex; align-items:center; gap:14px; padding:0 18px;
+    background:rgba(255,255,255,.72); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--gray-200);
+  }
+  .brand-zone{display:flex; align-items:center; gap:10px; flex:none;}
+  .brand{display:flex; align-items:baseline; gap:1px; font-size:19px; line-height:1;}
+  .brand b{font-weight:800; color:var(--emerald-800);}
+  .brand span{font-weight:500; color:var(--emerald-600);}
+  .brand-sep{width:1px; height:22px; background:var(--gray-200); flex:none;}
+  .cat-select{position:relative;}
+  .cat-trigger{
+    display:flex; align-items:center; gap:7px; height:32px; padding:0 10px 0 8px; border-radius:99px;
+    border:1px solid var(--gray-200); background:#fff; color:var(--gray-700); font-size:13px; font-weight:600;
+  }
+  .cat-trigger:hover{border-color:var(--emerald-200); background:var(--emerald-50);}
+  .cat-dot{width:8px;height:8px;border-radius:99px;background:var(--emerald-600);flex:none;}
+  .cat-trigger svg{width:14px;height:14px;color:var(--gray-400);}
+  .cat-menu{
+    position:absolute; top:calc(100% + 6px); left:0; min-width:200px; background:#fff; border:1px solid var(--gray-200);
+    border-radius:14px; box-shadow:0 18px 40px -12px rgba(0,0,0,.18); padding:6px; display:none; z-index:50;
+  }
+  .cat-select[data-open="true"] .cat-menu{display:block;}
+  .cat-option{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:9px;border:0;background:none;text-align:left;font-size:13px;font-weight:600;color:var(--gray-600);}
+  .cat-option:hover{background:var(--gray-50);}
+  .cat-option.current{color:var(--emerald-700);background:var(--emerald-50);}
+  .cat-option .cat-dot{opacity:.85;}
+
+  .tabs-zone{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);}
+  .tabs{
+    display:inline-grid; grid-auto-flow:column; min-height:40px; border-radius:99px;
+    background:var(--gray-100); border:1px solid var(--gray-200); padding:4px; box-shadow:inset 0 1px 2px rgba(0,0,0,.03);
+  }
+  .tab{
+    position:relative; min-width:106px; height:32px; border-radius:99px; border:0; background:none;
+    font-size:13.5px; font-weight:600; color:var(--gray-500); display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:color .15s ease;
+  }
+  .tab[aria-selected="true"]{background:#fff; color:var(--gray-900); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .tab .dot{width:6px;height:6px;border-radius:99px;background:var(--violet-500);}
+
+  .right-zone{margin-left:auto; display:flex; align-items:center; gap:10px; flex:none;}
+  .phone-pill{
+    display:flex; align-items:center; gap:8px; height:34px; padding:0 12px; border-radius:99px;
+    border:1px solid var(--gray-200); background:#fff; font-size:12.5px; font-weight:600; color:var(--gray-600);
+  }
+  .phone-pill:hover{background:var(--gray-50);}
+  .phone-pill svg{width:15px;height:15px;color:var(--gray-500);}
+  .status-dot{width:7px;height:7px;border-radius:99px;background:var(--gray-300);}
+  .status-dot.on{background:var(--emerald-500); box-shadow:0 0 0 3px rgba(16,185,129,.18); animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+  .pending-badge{background:var(--amber-500); color:#241a00; font-size:10px; font-weight:800; padding:1px 6px; border-radius:99px;}
+
+  /* ---------- Content area ---------- */
+  .content{flex:1; padding:20px 22px 64px; max-width:1400px; width:100%; margin:0 auto;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;}
+  .section-head h1{font-size:15px; font-weight:700; color:var(--gray-900); margin:0;}
+  .section-head p{font-size:12.5px; color:var(--gray-500); margin:2px 0 0;}
+  .progress-chip{font-size:12px; font-weight:700; color:var(--emerald-700); background:var(--emerald-50); border:1px solid var(--emerald-100); padding:5px 11px; border-radius:99px; flex:none;}
+
+  .organ-grid{
+    display:grid; grid-template-columns:1fr; gap:14px; align-items:start;
+  }
+  @media (min-width:768px){ .organ-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (min-width:1280px){ .organ-grid{grid-template-columns:repeat(3,1fr);} }
+
+  .organ-card{
+    background:#fff; border:1px solid var(--gray-200); border-radius:18px; padding:14px 15px 15px;
+    box-shadow:0 1px 2px rgba(16,24,40,.04); display:flex; flex-direction:column; gap:10px;
+    transition:box-shadow .15s ease, border-color .15s ease;
+  }
+  .organ-card:hover{box-shadow:0 10px 28px -14px rgba(5,150,105,.28); border-color:var(--emerald-200);}
+  .organ-card-head{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .organ-name{font-size:14.5px; font-weight:700; color:var(--gray-900);}
+  .organ-badge{font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:99px; letter-spacing:.02em; flex:none;}
+  .organ-badge.normal{color:var(--emerald-700); background:var(--emerald-50); border:1px solid var(--emerald-100);}
+  .organ-badge.alt{color:var(--amber-800); background:var(--amber-50); border:1px solid var(--amber-200);}
+
+  .field-block{display:flex; flex-direction:column; gap:6px;}
+  .field-label{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--gray-500);}
+  .chip-row{display:flex; flex-wrap:wrap; gap:6px;}
+  .chip{
+    display:inline-flex; align-items:center; gap:4px; width:auto; flex:0 0 auto;
+    padding:5px 11px; border-radius:99px; border:1px solid var(--gray-200); background:var(--gray-50);
+    font-size:12px; font-weight:600; color:var(--gray-600); white-space:nowrap;
+  }
+  .chip:hover{border-color:var(--emerald-200); background:var(--emerald-50);}
+  .chip[aria-pressed="true"]{background:var(--emerald-600); border-color:var(--emerald-600); color:#fff; box-shadow:0 1px 2px rgba(5,150,105,.35);}
+  .chip.check[aria-pressed="true"]{background:#fff; border-color:var(--emerald-600); color:var(--emerald-700);}
+  .chip.check .mark{width:13px;height:13px;border-radius:4px;border:1.5px solid var(--gray-300); display:inline-flex; align-items:center; justify-content:center; flex:none;}
+  .chip.check[aria-pressed="true"] .mark{background:var(--emerald-600); border-color:var(--emerald-600); color:#fff;}
+  .chip.check[aria-pressed="true"] .mark svg{width:9px;height:9px;}
+
+  .subfields{display:flex; flex-wrap:wrap; gap:8px; margin-top:2px; padding:8px 10px; background:var(--emerald-50); border:1px solid var(--emerald-100); border-radius:11px;}
+  .mini-field{display:flex; flex-direction:column; gap:3px;}
+  .mini-field label{font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--emerald-700);}
+  .mini-input{width:74px; height:26px; border-radius:7px; border:1px solid var(--gray-200); padding:0 8px; font-size:12px; background:#fff;}
+  .mini-input:focus{outline:2px solid var(--emerald-200); border-color:var(--emerald-600);}
+
+  .text-field-row{display:flex; align-items:center; gap:8px;}
+  .text-input{height:30px; border-radius:8px; border:1px solid var(--gray-200); padding:0 9px; font-size:12.5px; background:#fff; width:112px;}
+  .text-input:focus{outline:2px solid var(--emerald-100); border-color:var(--emerald-600);}
+  .unit{font-size:11.5px; color:var(--gray-500);}
+
+  .rare-toggle{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
+    border:1px dashed var(--gray-300); border-radius:10px; padding:7px 10px; background:#fff; margin-top:2px;
+    font-size:12px; font-weight:600; color:var(--gray-600);
+  }
+  .rare-toggle .count{font-size:10.5px; font-weight:800; color:var(--violet-700); background:var(--violet-50); border-radius:99px; padding:1px 7px;}
+  .rare-list{display:none; flex-direction:column; gap:5px; margin-top:6px;}
+  .rare-list.open{display:flex;}
+  .rare-item{display:flex; align-items:center; gap:8px; padding:6px 9px; border-radius:9px; border:1px solid var(--gray-200); font-size:12.5px; color:var(--gray-600); background:var(--gray-50);}
+  .rare-item[aria-pressed="true"]{border-color:var(--violet-200); background:var(--violet-50); color:var(--violet-700); font-weight:600;}
+  .rare-item .mark{width:13px;height:13px;border-radius:4px;border:1.5px solid var(--gray-300);flex:none;}
+  .rare-item[aria-pressed="true"] .mark{background:var(--violet-500); border-color:var(--violet-500);}
+
+  /* ---------- Laudo (demonstrativo) ---------- */
+  .demo-banner{
+    display:flex; align-items:flex-start; gap:9px; background:var(--amber-50); border:1px solid var(--amber-200);
+    color:var(--amber-800); border-radius:12px; padding:10px 13px; font-size:12.5px; font-weight:600; margin-bottom:16px; max-width:760px;
+  }
+  .demo-banner svg{width:16px;height:16px;flex:none;margin-top:1px;}
+  .laudo-sheet{
+    max-width:760px; background:#fff; border:1px solid var(--gray-200); border-radius:18px; padding:28px 32px;
+    box-shadow:0 1px 3px rgba(16,24,40,.05); font-size:13.5px; line-height:1.72; color:var(--gray-700);
+  }
+  .laudo-sheet h2{font-size:14px; letter-spacing:.04em; color:var(--gray-900); margin:0 0 4px;}
+  .laudo-sheet .tecnica{font-size:12px; color:var(--gray-500); margin-bottom:18px;}
+  .laudo-org{margin-bottom:11px;}
+  .laudo-org b{color:var(--gray-900);}
+  .laudo-empty{color:var(--gray-400); font-style:italic;}
+
+  @media (max-width:900px){
+    .tabs-zone{position:static; transform:none; order:3; width:100%; display:flex; justify-content:center; margin-top:8px;}
+    .topbar{flex-wrap:wrap; height:auto; min-height:var(--header-h); padding:10px 14px;}
+    .right-zone{order:2;}
+  }
+  @media (max-width:480px){
+    .content{padding:14px 12px 56px;}
+    .laudo-sheet{padding:20px 18px;}
+    .brand{font-size:17px;}
+  }
+</style>
+</head>
+<body>
+
+<aside class="rail" aria-label="Navegação principal">
+  <span class="rail-brand-dot" aria-hidden="true"></span>
+  <nav class="rail-items">
+    <button type="button" class="rail-item active" aria-current="page">
+      <span class="rail-tip">Laudar</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+    </button>
+    <button type="button" class="rail-item">
+      <span class="rail-tip">Histórico</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+    </button>
+    <button type="button" class="rail-item">
+      <span class="rail-tip">Analytics</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+    </button>
+    <button type="button" class="rail-item">
+      <span class="rail-tip">Biblioteca</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </button>
+    <button type="button" class="rail-item">
+      <span class="rail-tip">Segurança</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    </button>
+    <button type="button" class="rail-item">
+      <span class="rail-tip">Preferências</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg>
+    </button>
+  </nav>
+  <div class="rail-foot">
+    <button type="button" class="rail-item">
+      <span class="rail-tip">Sair</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+    </button>
+  </div>
+</aside>
+
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand-zone">
+      <div class="brand barlow"><b>Laudo</b><span>USG</span></div>
+      <div class="brand-sep" aria-hidden="true"></div>
+      <div class="cat-select" id="catSelect">
+        <button type="button" class="cat-trigger" id="catTrigger" aria-haspopup="listbox" aria-expanded="false">
+          <span class="cat-dot" aria-hidden="true"></span>
+          <span id="catLabel">Abdome total</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="cat-menu" role="listbox">
+          <button type="button" class="cat-option current" role="option" aria-selected="true"><span class="cat-dot"></span>Abdome total</button>
+          <button type="button" class="cat-option" role="option" aria-selected="false"><span class="cat-dot" style="background:#f59e0b"></span>Abdome superior</button>
+          <button type="button" class="cat-option" role="option" aria-selected="false"><span class="cat-dot" style="background:#0284c7"></span>Tireoide</button>
+          <button type="button" class="cat-option" role="option" aria-selected="false"><span class="cat-dot" style="background:#a855f7"></span>Pelve feminina</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs-zone">
+      <div class="tabs" role="tablist" aria-label="Alternar área de trabalho">
+        <button type="button" class="tab" id="tabAchados" role="tab" aria-selected="true">Achados</button>
+        <button type="button" class="tab" id="tabLaudo" role="tab" aria-selected="false">Laudo<span class="dot" id="laudoDot" aria-hidden="true" hidden></span></button>
+      </div>
+    </div>
+
+    <div class="right-zone">
+      <button type="button" class="phone-pill" id="phonePill" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+        <span class="status-dot on" id="phoneDot"></span>
+        <span id="phoneLabel">Celular conectado</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="content">
+    <section class="panel active" id="panelAchados" aria-labelledby="tabAchados">
+      <div class="section-head">
+        <div>
+          <h1>Órgãos — Abdome total</h1>
+          <p>Grade de cards por órgão. Selecione os achados; o Laudo atualiza sozinho.</p>
+        </div>
+        <span class="progress-chip" id="progressChip">10 órgãos · 0 com achados</span>
+      </div>
+      <div class="organ-grid" id="organGrid"></div>
+    </section>
+
+    <section class="panel" id="panelLaudo" aria-labelledby="tabLaudo">
+      <div class="demo-banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>Prévia demonstrativa da estrutura do laudo. O texto reflete apenas os campos preenchidos ao lado e não deve ser usado clinicamente.</span>
+      </div>
+      <article class="laudo-sheet">
+        <h2>ABDOME TOTAL</h2>
+        <p class="tecnica">Exame realizado com transdutor convexo, com paciente em jejum. Avaliados fígado, vias biliares, pâncreas, baço, rins, bexiga e grandes vasos abdominais.</p>
+        <div id="laudoBody"></div>
+      </article>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  // ---------------------------------------------------------------
+  // Schemas: espelham os campos e rótulos reais do abdome total
+  // (apps/web/src/lib/deterministic/organs). Nenhuma opção clínica
+  // nova foi criada; apenas os campos existentes foram reorganizados
+  // em grade de cards.
+  // ---------------------------------------------------------------
+  var ORGANS = [
+    {
+      id:'figado', name:'Fígado',
+      fields:[
+        { key:'dimensoes', label:'Dimensões', kind:'seg', options:[
+          { v:'normal', l:'Normais', def:true },
+          { v:'aumentado', l:'Aumentado', sub:[{k:'lobo_d',l:'Lobo D. long. (cm)',ph:'15'},{k:'lobo_e',l:'Lobo E. long. (cm)',ph:'10'}] },
+        ]},
+        { key:'ecotextura', label:'Ecotextura', kind:'seg', options:[
+          { v:'homogenea', l:'Homogênea', def:true },
+          { v:'esteatose_leve', l:'Esteatose leve' },
+          { v:'esteatose_moderada', l:'Esteatose moderada' },
+          { v:'esteatose_acentuada', l:'Esteatose acentuada' },
+          { v:'dhc', l:'Hepatopatia crônica' },
+        ]},
+        { key:'lesoes', label:'Lesões', kind:'check', options:[
+          { v:'cisto', l:'Cisto simples', sub:[{k:'dimensao',l:'Dimensão (mm)',ph:'20'}] },
+          { v:'hemangioma', l:'Hemangioma', sub:[{k:'dimensao',l:'Dimensão (mm)',ph:'20'}] },
+          { v:'nodulo', l:'Nódulo a esclarecer', sub:[{k:'dimensao',l:'Dimensão (mm)',ph:'20'}] },
+        ]},
+        { key:'porta', label:'Porta', kind:'seg', options:[
+          { v:'normal', l:'Normal', def:true },
+          { v:'dilatada', l:'Dilatada', sub:[{k:'calibre',l:'Calibre (mm)',ph:'14'}] },
+        ]},
+      ],
+      rare:[ {v:'calcificacao',l:'Calcificação residual'}, {v:'cistos_multiplos',l:'Cistos hepáticos múltiplos'}, {v:'derrame',l:'Líquido peri-hepático'} ],
+      compose:function(s){
+        var partes=[];
+        var dim = s.dimensoes==='aumentado' ? 'Fígado com dimensões aumentadas' : 'Fígado de dimensões normais';
+        var eco = {homogenea:'ecotextura homogênea', esteatose_leve:'esteatose hepática leve', esteatose_moderada:'esteatose hepática moderada', esteatose_acentuada:'esteatose hepática acentuada', dhc:'ecotextura heterogênea, compatível com hepatopatia crônica'}[s.ecotextura];
+        partes.push(dim+', '+eco+'.');
+        var achados=[];
+        if(hasChk(s.lesoes,'cisto')) achados.push('imagem cística simples'+withDim(s,'lesoes.cisto.dimensao'));
+        if(hasChk(s.lesoes,'hemangioma')) achados.push('imagem hiperecogênica homogênea, compatível com hemangioma'+withDim(s,'lesoes.hemangioma.dimensao'));
+        if(hasChk(s.lesoes,'nodulo')) achados.push('imagem nodular a esclarecer'+withDim(s,'lesoes.nodulo.dimensao'));
+        if(achados.length) partes.push('Observa-se '+achados.join('; ')+'.');
+        if(s.porta==='dilatada') partes.push('Veia porta dilatada'+withDim(s,'porta.dilatada.calibre',true)+'.');
+        return partes.join(' ');
+      }
+    },
+    {
+      id:'vesicula', name:'Vesícula',
+      fields:[
+        { key:'estado', label:'Estado', kind:'seg', options:[
+          { v:'normal', l:'Normal', def:true }, { v:'contraida', l:'Contraída' }, { v:'distendida', l:'Distendida' }, { v:'ausente', l:'Ausente' },
+        ]},
+        { key:'conteudo', label:'Conteúdo', kind:'check', options:[
+          { v:'anecoico', l:'Anecoico', def:true },
+          { v:'colelitiase', l:'Colelitíase', sub:[{k:'dimensao',l:'Dimensão (mm)',ph:'8'}] },
+          { v:'lama', l:'Lama biliar' },
+          { v:'polipos', l:'Pólipos' },
+        ]},
+        { key:'paredes', label:'Paredes', kind:'seg', options:[
+          { v:'finas', l:'Finas', def:true }, { v:'espessada_aguda', l:'Espessada · aguda' }, { v:'espessada_cronica', l:'Espessada · crônica' },
+        ]},
+      ],
+      rare:[ {v:'adenomiomatose',l:'Adenomiomatose'}, {v:'colesterolose',l:'Colesterolose'}, {v:'porcelana',l:'Vesícula em porcelana'}, {v:'polipo_adenomatoso',l:'Pólipo adenomatoso (> 10 mm)'} ],
+      compose:function(s){
+        var estadoTxt = {normal:'Vesícula biliar normodistendida', contraida:'Vesícula biliar contraída', distendida:'Vesícula biliar distendida', ausente:'Vesícula biliar ausente (status pós-colecistectomia)'}[s.estado];
+        if(s.estado==='ausente') return estadoTxt+'.';
+        var paredeTxt = {finas:'de paredes finas', espessada_aguda:'de paredes espessadas, com sinais sugestivos de processo inflamatório agudo', espessada_cronica:'de paredes espessadas, em provável relação com processo inflamatório crônico'}[s.paredes];
+        var conteudoTxt;
+        if(hasChk(s.conteudo,'colelitiase')) conteudoTxt='apresentando em seu interior imagem hiperecogênica com sombra acústica posterior'+withDim(s,'conteudo.colelitiase.dimensao')+', compatível com colelitíase';
+        else if(hasChk(s.conteudo,'lama')) conteudoTxt='com conteúdo espesso em seu interior, compatível com lama biliar';
+        else if(hasChk(s.conteudo,'polipos')) conteudoTxt='apresentando imagem(ns) polipoide(s) sem sombra acústica, aderida(s) à parede';
+        else conteudoTxt='de conteúdo anecoico';
+        return estadoTxt+', '+paredeTxt+', '+conteudoTxt+'.';
+      }
+    },
+    {
+      id:'vias_biliares', name:'Vias biliares',
+      fields:[
+        { key:'intra', label:'Intra-hepáticas', kind:'seg', options:[ {v:'normais',l:'Normais',def:true}, {v:'dilatadas',l:'Dilatadas'} ]},
+        { key:'coledoco', label:'Colédoco', kind:'seg', options:[ {v:'normal',l:'Normal',def:true}, {v:'dilatado',l:'Dilatado', sub:[{k:'calibre',l:'Calibre (mm)',ph:'9'}]} ]},
+        { key:'conteudo', label:'Conteúdo', kind:'check', options:[ {v:'coledocolitiase',l:'Coledocolitíase', sub:[{k:'dimensao',l:'Dimensão (mm)',ph:'6'}]} ]},
+      ],
+      compose:function(s){
+        if(s.intra==='normais' && s.coledoco==='normal' && !hasChk(s.conteudo,'coledocolitiase'))
+          return 'Vias biliares intra e extra-hepáticas de calibre normal, sem sinais de dilatação.';
+        var partes=[];
+        if(s.intra==='dilatadas') partes.push('vias biliares intra-hepáticas dilatadas');
+        if(s.coledoco==='dilatado') partes.push('colédoco ectasiado'+withDim(s,'coledoco.dilatado.calibre',true));
+        var body = partes.length ? ('Observam-se '+partes.join(' e ')+'.') : 'Vias biliares intra e extra-hepáticas sem sinais de dilatação.';
+        if(hasChk(s.conteudo,'coledocolitiase')) body += ' Imagem hiperecogênica com sombra acústica no interior do colédoco'+withDim(s,'conteudo.coledocolitiase.dimensao')+', compatível com coledocolitíase.';
+        return body;
+      }
+    },
+    {
+      id:'pancreas', name:'Pâncreas',
+      fields:[
+        { key:'visualizacao', label:'Visualização', kind:'seg', options:[ {v:'adequada',l:'Adequada',def:true}, {v:'prejudicada',l:'Prejudicada'} ]},
+        { key:'ecotextura', label:'Ecotextura', kind:'seg', options:[ {v:'normal',l:'Normal',def:true}, {v:'heterogenea',l:'Heterogênea'}, {v:'lipomatose',l:'Lipomatose'} ]},
+        { key:'wirsung', label:'Wirsung', kind:'seg', options:[ {v:'normal',l:'Normal',def:true}, {v:'dilatado',l:'Dilatado'} ]},
+        { key:'lesoes', label:'Lesões', kind:'check', options:[ {v:'cisto',l:'Cisto', sub:[{k:'dimensao',l:'Dimensão (mm)',ph:'20'}]}, {v:'nodulo',l:'Nódulo a esclarecer', sub:[{k:'dimensao',l:'Dimensão (mm)',ph:'20'}]} ]},
+      ],
+      compose:function(s){
+        var partes=[];
+        if(s.visualizacao==='prejudicada') partes.push('avaliação parcialmente prejudicada pela interposição gasosa');
+        var eco = {normal:'dimensões e ecotextura normais', heterogenea:'ecotextura heterogênea', lipomatose:'parênquima difusamente hiperecogênico, compatível com lipomatose pancreática'}[s.ecotextura];
+        var body = 'Pâncreas de '+eco+(partes.length?(', com '+partes.join('; ')):'')+'.';
+        var achados=[];
+        if(hasChk(s.lesoes,'cisto')) achados.push('imagem cística'+withDim(s,'lesoes.cisto.dimensao'));
+        if(hasChk(s.lesoes,'nodulo')) achados.push('imagem nodular sólida a esclarecer'+withDim(s,'lesoes.nodulo.dimensao'));
+        if(achados.length) body += ' Observa-se '+achados.join('; ')+'.';
+        body += s.wirsung==='dilatado' ? ' Ducto pancreático principal ectasiado.' : ' Ducto pancreático principal de calibre normal.';
+        return body;
+      }
+    },
+    {
+      id:'baco', name:'Baço',
+      fields:[
+        { key:'dimensoes', label:'Dimensões', kind:'seg', options:[ {v:'normal',l:'Normais',def:true}, {v:'aumentado',l:'Aumentado', sub:[{k:'eixo',l:'Maior eixo (cm)',ph:'13'},{k:'eixo_menor',l:'Menor eixo (cm)',ph:'6'}]} ]},
+        { key:'ecotextura', label:'Ecotextura', kind:'seg', options:[ {v:'homogenea',l:'Homogênea',def:true}, {v:'heterogenea',l:'Heterogênea'} ]},
+        { key:'lesoes', label:'Lesões', kind:'check', options:[ {v:'cisto',l:'Cisto', sub:[{k:'dimensao',l:'Dimensão (mm)',ph:'20'}]}, {v:'calcificacao',l:'Calcificação'}, {v:'acessorio',l:'Baço acessório'} ]},
+      ],
+      compose:function(s){
+        var body = s.dimensoes==='aumentado' ? ('Baço aumentado de dimensões'+withDim(s,'dimensoes.aumentado.eixo',true)+' (esplenomegalia)') : 'Baço de dimensões normais';
+        body += s.ecotextura==='heterogenea' ? ' e ecotextura heterogênea.' : ' e ecotextura homogênea.';
+        var achados=[];
+        if(hasChk(s.lesoes,'cisto')) achados.push('imagem anecoica de paredes finas, compatível com cisto'+withDim(s,'lesoes.cisto.dimensao'));
+        if(hasChk(s.lesoes,'calcificacao')) achados.push('foco hiperecogênico com sombra acústica, compatível com calcificação');
+        if(hasChk(s.lesoes,'acessorio')) achados.push('imagem nodular homogênea junto ao hilo, compatível com baço acessório');
+        if(achados.length) body += ' Observa-se '+achados.join('; ')+'.';
+        return body;
+      }
+    },
+    rimSchema('rim_direito','Rim direito'),
+    rimSchema('rim_esquerdo','Rim esquerdo'),
+    {
+      id:'bexiga', name:'Bexiga',
+      fields:[
+        { key:'replecao', label:'Repleção', kind:'seg', options:[ {v:'adequada',l:'Adequada',def:true}, {v:'insuficiente',l:'Insuficiente'} ]},
+        { key:'parede', label:'Parede', kind:'seg', options:[ {v:'normal',l:'Regular e fina',def:true}, {v:'espessada',l:'Espessada'}, {v:'trabeculada',l:'Trabeculada'} ]},
+        { key:'conteudo', label:'Conteúdo e alterações', kind:'check', options:[ {v:'debris',l:'Debris'}, {v:'calculo',l:'Cálculo'}, {v:'sonda',l:'Sonda vesical'}, {v:'diverticulo',l:'Divertículo'} ]},
+        { key:'volume_pre', label:'Volume pré-miccional (mL)', kind:'text', ph:'250' },
+        { key:'residuo', label:'Resíduo pós-miccional (mL)', kind:'text', ph:'20' },
+      ],
+      compose:function(s){
+        if(s.replecao==='insuficiente') return 'Bexiga com repleção insuficiente no momento do exame, prejudicando a sua adequada avaliação.';
+        var paredeTxt = {normal:'paredes regulares e finas', espessada:'paredes espessadas', trabeculada:'paredes trabeculadas'}[s.parede];
+        var itens = {debris:'ecos em suspensão (debris)', calculo:'imagem hiperecogênica móvel com sombra acústica, compatível com cálculo', sonda:'balão de sonda vesical em seu interior', diverticulo:'imagem sacular comunicante com a luz vesical, compatível com divertículo'};
+        var conteudo = (s.conteudo&&s.conteudo.length) ? s.conteudo.map(function(i){return itens[i];}).join('; ') : 'conteúdo anecoico e homogêneo';
+        var body = 'Bexiga com adequada repleção, '+paredeTxt+', apresentando '+conteudo+'.';
+        if(s.volume_pre) body += ' Volume pré-miccional de '+s.volume_pre+' mL.';
+        if(s.residuo) body += ' Resíduo pós-miccional de '+s.residuo+' mL.';
+        return body;
+      }
+    },
+    {
+      id:'aorta', name:'Aorta',
+      fields:[
+        { key:'calibre', label:'Calibre', kind:'seg', options:[ {v:'normal',l:'Normal',def:true}, {v:'ectasia',l:'Ectasia', sub:[{k:'diametro',l:'Maior diâm. (cm)',ph:'2,6'}]}, {v:'aneurisma',l:'Aneurisma', sub:[{k:'diametro',l:'Maior diâm. (cm)',ph:'4,2'}]} ]},
+        { key:'paredes', label:'Paredes', kind:'seg', options:[ {v:'regulares',l:'Regulares',def:true}, {v:'ateromatose',l:'Ateromatose'} ]},
+      ],
+      compose:function(s){
+        var body;
+        if(s.calibre==='aneurisma') body='Aorta abdominal com dilatação aneurismática'+withDim(s,'calibre.aneurisma.diametro',true)+'.';
+        else if(s.calibre==='ectasia') body='Aorta abdominal ectasiada'+withDim(s,'calibre.ectasia.diametro',true)+'.';
+        else body='Aorta abdominal de calibre normal.';
+        if(s.paredes==='ateromatose') body += ' Observam-se imagens hiperecogênicas aderidas às paredes, compatíveis com placas ateromatosas.';
+        return body;
+      }
+    },
+    {
+      id:'veia_cava', name:'Veia cava inferior',
+      fields:[
+        { key:'calibre', label:'Calibre', kind:'seg', options:[ {v:'normal',l:'Normal',def:true}, {v:'dilatada',l:'Dilatada', sub:[{k:'diametro',l:'Calibre (cm)',ph:'2,5'}]} ]},
+        { key:'conteudo', label:'Conteúdo', kind:'check', options:[ {v:'trombo',l:'Material trombótico', sub:[{k:'local',l:'Localização',ph:'segmento infra-hepático'}]} ]},
+      ],
+      compose:function(s){
+        var body = s.calibre==='dilatada' ? ('Veia cava inferior de calibre aumentado'+withDim(s,'calibre.dilatada.diametro',true)+'.') : 'Veia cava inferior de calibre normal.';
+        if(hasChk(s.conteudo,'trombo')){
+          var local = s['conteudo.trombo.local'];
+          body += ' Material ecogênico no interior da veia cava'+(local?(', no '+local):'')+', compatível com trombo.';
+        }
+        return body;
+      }
+    },
+  ];
+
+  function rimSchema(id,name){
+    return {
+      id:id, name:name,
+      fields:[
+        { key:'dimensoes', label:'Dimensões', kind:'seg', options:[ {v:'normal',l:'Normais',def:true}, {v:'reduzido',l:'Reduzido'} ]},
+        { key:'diferenciacao', label:'Diferenciação', kind:'seg', options:[ {v:'preservada',l:'Preservada',def:true}, {v:'reduzida',l:'Reduzida'} ]},
+        { key:'litiase', label:'Litíase', kind:'check', options:[ {v:'calculo',l:'Cálculo', sub:[{k:'dimensao',l:'Dimensão',ph:'5 mm'}]} ]},
+        { key:'dilatacao', label:'Dilatação', kind:'seg', options:[ {v:'ausente',l:'Ausente',def:true}, {v:'leve',l:'Leve'}, {v:'moderada',l:'Moderada'}, {v:'acentuada',l:'Acentuada'} ]},
+        { key:'cistos', label:'Cistos', kind:'check', options:[ {v:'simples',l:'Cisto simples', sub:[{k:'dimensao',l:'Dimensões (mm)',ph:'20x18x16'}]}, {v:'multiplos',l:'Cistos múltiplos'} ]},
+        { key:'medidas', label:'Medidas do rim (L x AP x T cm)', kind:'text', ph:'10,2 x 4,8 x 5,1' },
+      ],
+      rare:[ {v:'nefrocalcinose',l:'Nefrocalcinose'} ],
+      compose:function(s){
+        var body = s.dimensoes==='reduzido' ? (name+' de dimensões reduzidas') : (name+' de dimensões normais');
+        body += s.diferenciacao==='reduzida' ? ', com diferenciação corticomedular reduzida.' : ', com diferenciação corticomedular preservada.';
+        if(hasChk(s.litiase,'calculo')) body += ' Imagem hiperecogênica com sombra acústica, compatível com cálculo'+withDim(s,'litiase.calculo.dimensao')+'.';
+        if(s.dilatacao && s.dilatacao!=='ausente') body += ' Dilatação pielocalicial '+({leve:'leve',moderada:'moderada',acentuada:'acentuada'}[s.dilatacao])+'.';
+        if(hasChk(s.cistos,'simples')) body += ' Imagem anecoica de paredes finas, compatível com cisto simples'+withDim(s,'cistos.simples.dimensao')+'.';
+        if(hasChk(s.cistos,'multiplos')) body += ' Múltiplos cistos corticais simples bilaterais.';
+        if(s.medidas) body += ' Medindo '+s.medidas+' cm.';
+        return body;
+      }
+    };
+  }
+
+  function hasChk(arr,v){ return Array.isArray(arr) && arr.indexOf(v)>-1; }
+  function withDim(state,path,paren){
+    var v = state[path];
+    if(!v) return '';
+    return paren ? (', medindo até '+v+' cm') : (', medindo '+v);
+  }
+
+  // ---------------- state ----------------
+  var state = {};
+  ORGANS.forEach(function(o){
+    var s = {};
+    o.fields.forEach(function(f){
+      if(f.kind==='seg'){
+        var d = f.options.filter(function(op){return op.def;})[0] || f.options[0];
+        s[f.key] = d.v;
+      } else if(f.kind==='check'){
+        s[f.key] = f.options.filter(function(op){return op.def;}).map(function(op){return op.v;});
+      } else if(f.kind==='text'){
+        s[f.key] = '';
+      }
+    });
+    s.__rare = [];
+    state[o.id] = s;
+  });
+
+  function isDefaultOrgan(organ){
+    var s = state[organ.id];
+    if(s.__rare.length) return false;
+    return organ.fields.every(function(f){
+      if(f.kind==='seg'){
+        var d = f.options.filter(function(op){return op.def;})[0] || f.options[0];
+        return s[f.key]===d.v;
+      }
+      if(f.kind==='check'){
+        var d = f.options.filter(function(op){return op.def;}).map(function(op){return op.v;});
+        var cur = s[f.key]||[];
+        return d.length===cur.length && d.every(function(v){return cur.indexOf(v)>-1;});
+      }
+      if(f.kind==='text') return !s[f.key];
+      return true;
+    });
+  }
+
+  // ---------------- render cards ----------------
+  var grid = document.getElementById('organGrid');
+
+  function fieldHTML(organ,f){
+    var s = state[organ.id];
+    var out = '<div class="field-block">';
+    out += '<span class="field-label">'+f.label+'</span>';
+    if(f.kind==='text'){
+      out += '<div class="text-field-row"><input class="text-input" type="text" placeholder="'+(f.ph||'')+'" data-organ="'+organ.id+'" data-field="'+f.key+'" data-kind="text" value="'+(s[f.key]||'')+'" /></div>';
+      out += '</div>';
+      return out;
+    }
+    out += '<div class="chip-row">';
+    f.options.forEach(function(op){
+      var active = f.kind==='seg' ? (s[f.key]===op.v) : hasChk(s[f.key],op.v);
+      if(f.kind==='seg'){
+        out += '<button type="button" class="chip" aria-pressed="'+active+'" data-organ="'+organ.id+'" data-field="'+f.key+'" data-kind="seg" data-value="'+op.v+'">'+op.l+'</button>';
+      } else {
+        out += '<button type="button" class="chip check" aria-pressed="'+active+'" data-organ="'+organ.id+'" data-field="'+f.key+'" data-kind="check" data-value="'+op.v+'">'+
+               '<span class="mark">'+(active?CHECK_SVG:'')+'</span>'+op.l+'</button>';
+      }
+      if(op.sub && active){
+        out += '<div class="subfields" style="flex-basis:100%;">';
+        op.sub.forEach(function(sf){
+          var path = f.key+'.'+op.v+'.'+sf.k;
+          out += '<div class="mini-field"><label>'+sf.l+'</label><input class="mini-input" type="text" placeholder="'+(sf.ph||'')+'" data-organ="'+organ.id+'" data-field="'+path+'" data-kind="subtext" value="'+(s[path]||'')+'" /></div>';
+        });
+        out += '</div>';
+      }
+    });
+    out += '</div></div>';
+    return out;
+  }
+
+  function cardHTML(organ){
+    var normal = isDefaultOrgan(organ);
+    var s = state[organ.id];
+    var html = '<article class="organ-card" data-organ-card="'+organ.id+'">';
+    html += '<div class="organ-card-head"><span class="organ-name">'+organ.name+'</span>';
+    html += '<span class="organ-badge '+(normal?'normal':'alt')+'">'+(normal?'Normal':'Alterado')+'</span></div>';
+    organ.fields.forEach(function(f){ html += fieldHTML(organ,f); });
+    if(organ.rare && organ.rare.length){
+      var n = s.__rare.length;
+      html += '<button type="button" class="rare-toggle" data-rare-toggle="'+organ.id+'">+ Achados raros'+(n?(' <span class="count">'+n+'</span>'):'')+'</button>';
+      html += '<div class="rare-list" data-rare-list="'+organ.id+'">';
+      organ.rare.forEach(function(r){
+        var active = s.__rare.indexOf(r.v)>-1;
+        html += '<button type="button" class="rare-item" aria-pressed="'+active+'" data-organ="'+organ.id+'" data-kind="rare" data-value="'+r.v+'"><span class="mark"></span>'+r.l+'</button>';
+      });
+      html += '</div>';
+    }
+    html += '</article>';
+    return html;
+  }
+
+  var rareOpenState = {};
+
+  function renderGrid(){
+    grid.innerHTML = ORGANS.map(cardHTML).join('');
+    if(document.activeElement===document.body){/* noop */}
+    ORGANS.forEach(function(o){
+      var list = grid.querySelector('[data-rare-list="'+o.id+'"]');
+      if(list && rareOpenState[o.id]) list.classList.add('open');
+    });
+    updateProgress();
+  }
+
+  function updateProgress(){
+    var altered = ORGANS.filter(function(o){ return !isDefaultOrgan(o); }).length;
+    document.getElementById('progressChip').textContent = ORGANS.length+' órgãos · '+altered+' com achados';
+    document.getElementById('laudoDot').hidden = altered===0;
+  }
+
+  grid.addEventListener('click', function(e){
+    var rareToggle = e.target.closest('[data-rare-toggle]');
+    if(rareToggle){
+      var id = rareToggle.getAttribute('data-rare-toggle');
+      rareOpenState[id] = !rareOpenState[id];
+      grid.querySelector('[data-rare-list="'+id+'"]').classList.toggle('open', rareOpenState[id]);
+      return;
+    }
+    var chip = e.target.closest('button[data-organ]');
+    if(!chip) return;
+    var organId = chip.getAttribute('data-organ');
+    var kind = chip.getAttribute('data-kind');
+    var s = state[organId];
+    if(kind==='seg'){
+      s[chip.getAttribute('data-field')] = chip.getAttribute('data-value');
+    } else if(kind==='check'){
+      var key = chip.getAttribute('data-field'), val = chip.getAttribute('data-value');
+      var arr = s[key] || (s[key]=[]);
+      var idx = arr.indexOf(val);
+      if(idx>-1) arr.splice(idx,1); else arr.push(val);
+    } else if(kind==='rare'){
+      var val2 = chip.getAttribute('data-value');
+      var i2 = s.__rare.indexOf(val2);
+      if(i2>-1) s.__rare.splice(i2,1); else s.__rare.push(val2);
+    }
+    renderGrid();
+    updateLaudo();
+  });
+
+  grid.addEventListener('input', function(e){
+    var input = e.target.closest('input[data-organ]');
+    if(!input) return;
+    var s = state[input.getAttribute('data-organ')];
+    s[input.getAttribute('data-field')] = input.value;
+    var card = input.closest('.organ-card');
+    var organ = ORGANS.filter(function(o){return o.id===input.getAttribute('data-organ');})[0];
+    var badge = card.querySelector('.organ-badge');
+    var normal = isDefaultOrgan(organ);
+    badge.textContent = normal ? 'Normal' : 'Alterado';
+    badge.className = 'organ-badge '+(normal?'normal':'alt');
+    updateProgress();
+    updateLaudo();
+  });
+
+  // ---------------- laudo (demonstrativo) ----------------
+  function updateLaudo(){
+    var container = document.getElementById('laudoBody');
+    container.innerHTML = ORGANS.map(function(o){
+      var text;
+      try { text = o.compose(state[o.id]); } catch(err){ text = ''; }
+      var rareSel = state[o.id].__rare || [];
+      if(rareSel.length && o.rare){
+        var labels = o.rare.filter(function(r){return rareSel.indexOf(r.v)>-1;}).map(function(r){return r.l.toLowerCase();});
+        text += (text?' ':'')+'Observa-se, em caráter incidental, '+labels.join('; ')+'.';
+      }
+      return '<p class="laudo-org"><b>'+o.name+'.</b> '+(text||'<span class="laudo-empty">sem achados registrados</span>')+'</p>';
+    }).join('');
+  }
+
+  renderGrid();
+  updateLaudo();
+
+  // ---------------- tabs ----------------
+  var tabAchados = document.getElementById('tabAchados');
+  var tabLaudo = document.getElementById('tabLaudo');
+  var panelAchados = document.getElementById('panelAchados');
+  var panelLaudo = document.getElementById('panelLaudo');
+
+  function selectTab(name){
+    var achados = name==='achados';
+    tabAchados.setAttribute('aria-selected', String(achados));
+    tabLaudo.setAttribute('aria-selected', String(!achados));
+    panelAchados.classList.toggle('active', achados);
+    panelLaudo.classList.toggle('active', !achados);
+    if(!achados) updateLaudo();
+  }
+  tabAchados.addEventListener('click', function(){ selectTab('achados'); });
+  tabLaudo.addEventListener('click', function(){ selectTab('laudo'); });
+  document.querySelector('.tabs').addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+      var achadosOn = tabAchados.getAttribute('aria-selected')==='true';
+      selectTab(achadosOn?'laudo':'achados');
+      (achadosOn?tabLaudo:tabAchados).focus();
+    }
+  });
+
+  // ---------------- category dropdown ----------------
+  var catSelect = document.getElementById('catSelect');
+  var catTrigger = document.getElementById('catTrigger');
+  catTrigger.addEventListener('click', function(){
+    var open = catSelect.getAttribute('data-open')==='true';
+    catSelect.setAttribute('data-open', String(!open));
+    catTrigger.setAttribute('aria-expanded', String(!open));
+  });
+  document.addEventListener('click', function(e){
+    if(!catSelect.contains(e.target)) catSelect.setAttribute('data-open','false');
+  });
+  catSelect.querySelectorAll('.cat-option').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      document.getElementById('catLabel').textContent = opt.textContent.trim();
+      catSelect.querySelectorAll('.cat-option').forEach(function(o){o.classList.remove('current'); o.setAttribute('aria-selected','false');});
+      opt.classList.add('current'); opt.setAttribute('aria-selected','true');
+      catSelect.setAttribute('data-open','false');
+    });
+  });
+
+  // ---------------- phone pill ----------------
+  var phonePill = document.getElementById('phonePill');
+  var phoneDot = document.getElementById('phoneDot');
+  var phoneLabel = document.getElementById('phoneLabel');
+  phonePill.addEventListener('click', function(){
+    var on = phonePill.getAttribute('aria-pressed')==='true';
+    phonePill.setAttribute('aria-pressed', String(!on));
+    phoneDot.classList.toggle('on', !on);
+    phoneLabel.textContent = !on ? 'Celular conectado' : 'Celular desconectado';
+  });
+})();
+</script>
+</body>
+</html>

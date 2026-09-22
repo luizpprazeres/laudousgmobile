@@ -55,13 +55,13 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
     if (!open) return null
 
     return (
-      <aside className="fixed left-[clamp(18rem,32vw,36rem)] top-[4.5rem] z-50 w-[min(420px,calc(100vw-20rem))] rounded-2xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-[#1C1C1E]" aria-label="Entradas do celular conectado">
+	      <aside className="fixed inset-x-0 bottom-0 z-50 max-h-[82vh] overflow-hidden rounded-t-2xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-[#1C1C1E] sm:inset-auto sm:left-[clamp(18rem,32vw,36rem)] sm:top-[4.5rem] sm:w-[min(420px,calc(100vw-20rem))] sm:rounded-2xl" aria-label="Entradas do celular conectado">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"><Smartphone className="h-4 w-4" /></span>
           <div className="min-w-0 flex-1"><p className="text-sm font-bold">Celular conectado</p><p className="text-[11px] text-gray-500">Turno ativo · entradas aparecem aqui</p></div>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Minimizar"><X className="h-4 w-4" /></button>
         </div>
-        <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+	        <div className="mt-3 max-h-[52vh] space-y-2 overflow-y-auto sm:max-h-64">
           {events.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-3 text-center text-xs text-gray-400 dark:border-gray-700">Aguardando uma entrada do médico.</p> : events.map((event) => (
             <div key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
               <p className={`mb-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${event.kind === 'structured_findings' ? 'text-sky-600 dark:text-sky-300' : 'text-violet-600 dark:text-violet-300'}`}>
