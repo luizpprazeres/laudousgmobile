@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, ChevronDown, RotateCcw, ScanLine, Smartphone } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ScanLine, Smartphone } from 'lucide-react'
 import {
   CATEGORIES,
   GENERIC_CATEGORIES,
@@ -30,13 +30,17 @@ import { adaptarCervical } from '@/lib/catalog/cervicalParaCatalogo'
 import { adaptarCervicometria } from '@/lib/catalog/cervicometriaParaCatalogo'
 import { adaptarPartesMoles } from '@/lib/catalog/partesMolesParaCatalogo'
 import { adaptarMusculoesqueletico } from '@/lib/catalog/musculoesqueleticoParaCatalogo'
+import { migrateLegacyMskState } from '@/lib/deterministic/organs/musculoesqueletico'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
+import { LiverQuantificationPanel } from './LiverQuantificationPanel'
+import { buildLiverQuantificationBlock } from '@/lib/deterministic/liverQuantification'
+import { RecommendationsPanel } from './RecommendationsPanel'
 import { CalcPanel } from './CalcPanel'
 import { PreEclampsiaFmfPanel } from './PreEclampsiaFmfPanel'
 import { TrisomyFmfPanel } from './TrisomyFmfPanel'
-import { ExamSectionNav } from './ExamSectionNav'
+import { ExamOptionsBar, WorkspaceSectionGrid, type SectionCardSize, type WorkspaceSection } from './WorkspaceSectionGrid'
 import { LaudarRail } from './LaudarRail'
 import { lerAtual, lerDigitadoras, gravarAtual, type Digitadora } from '@/lib/digitadoras'
 import { LaudoPreview } from './LaudoPreview'
@@ -56,7 +60,8 @@ import { companionReenviaPercentil, invalidarPercentilManual } from './fetalGrow
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 import { OrganFormPanel } from './OrganFormPanel'
-import { TireoideFormPanel } from './TireoideFormPanel'
+import { TireoideCompanionNotice, TireoideFormPanel } from './TireoideFormPanel'
+import { MamariaBiradsPanel } from './MamariaBiradsPanel'
 import { MamariaFormPanel } from './MamariaFormPanel'
 import { DopplerCarotidasFormPanel } from './DopplerCarotidasFormPanel'
 import { BiometryGrowthPanel } from './BiometryGrowthPanel'
@@ -65,7 +70,6 @@ import {
   BIOMETRY_SECTION_ID,
   GROWTH_SECTION_ID,
   agruparBiometriaCrescimento,
-  idsConcluidosAgrupados,
   resolverSecaoAtivaAgrupada,
 } from './biometryGrowthSections'
 import { VisualSchemaPanel } from '@/components/visualSchemas/VisualSchemaPanel'
@@ -79,6 +83,10 @@ const TIREOIDE_CATEGORY = {
   id: TIREOIDE_ID,
   name: 'Tireoide',
 }
+
+const TIREOIDE_RESETAVEIS = new Set(['lobo_direito', 'lobo_esquerdo', 'istmo', 'nodulos', 'linfonodos'])
+/** Painéis que já são grades próprias ocupam a linha inteira da grade de cards. */
+const FULL_WIDTH_SECTIONS = new Set([BIOMETRY_GROWTH_SECTION_ID, 'nodulos', 'mamas'])
 
 type LaudarWebExperienceProps = {
   workspaceV2?: boolean
@@ -150,24 +158,24 @@ function CategorySelector({
 function ToolbarPill({
   children,
   tone = 'neutral',
+  pressed,
   onClick,
 }: {
   children: React.ReactNode
-  tone?: 'neutral' | 'category' | 'purple' | 'primary' | 'toggleOn'
+  tone?: 'neutral' | 'toggleOn'
+  pressed?: boolean
   onClick?: () => void
 }) {
   const styles = {
     neutral: 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
-    category: 'border-rose-200 bg-rose-50 font-bold text-rose-500 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300',
-    purple: 'border-violet-200 bg-violet-50 font-bold text-violet-600 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-300',
-    primary: 'border-emerald-600 bg-emerald-600 font-bold text-white shadow-sm hover:bg-emerald-700 dark:hover:bg-emerald-500',
     toggleOn: 'border-emerald-600 bg-emerald-600 font-bold text-white shadow-sm hover:bg-emerald-700 dark:hover:bg-emerald-500',
   }
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition ${styles[tone]}`}
+      aria-pressed={pressed}
+      className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 ${styles[tone]}`}
     >
       {children}
     </button>
@@ -270,28 +278,9 @@ function WorkspaceTabs({
   )
 }
 
-function sectionIndex(sections: UiSection[], id: string) {
-  return Math.max(0, sections.findIndex((section) => section.id === id))
-}
-
-function hasLoboData(lobo: TireoideState['lobo_direito']) {
-  return Boolean(lobo.a || lobo.b || lobo.c || lobo.ecotextura !== 'normal')
-}
-
-function completedTireoideSections(state: TireoideState) {
-  const completed = new Set<string>()
-  if (hasLoboData(state.lobo_direito) || state.picoDireito) completed.add('lobo_direito')
-  if (hasLoboData(state.lobo_esquerdo) || state.picoEsquerdo) completed.add('lobo_esquerdo')
-  if (hasLoboData(state.istmo)) completed.add('istmo')
-  if (state.nodulos.length > 0) completed.add('nodulos')
-  if (state.linfonodos !== 'preservados') completed.add('linfonodos')
-  return completed
-}
-
 export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, agentWorkspace = false }: LaudarWebExperienceProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
-  const tabsBarRef = useRef<HTMLDivElement>(null)
   const [choosingCategory, setChoosingCategory] = useState(true)
   const [activePane, setActivePane] = useState<WorkspacePane>('achados')
   const [categoria, setCategoria] = useState<string>(GENERIC_CATEGORIES[0]?.id ?? 'ABDOMEN_TOTAL')
@@ -305,7 +294,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (pane !== activePaneRef.current) setActivePane(pane)
   }, [])
   const selectCategory = useCallback((nextCategory: string) => {
-    if (nextCategory !== categoria) selectPane('achados')
+    if (nextCategory !== categoria) {
+      selectPane('achados')
+      // A nova categoria começa pelo primeiro card; alternar apenas a aba
+      // continua restaurando a posição de leitura dentro do mesmo exame.
+      scrollYByPaneRef.current = { achados: 0, laudo: 0 }
+    }
     setCategoria(nextCategory)
   }, [categoria, selectPane])
 
@@ -333,17 +327,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       window.cancelAnimationFrame(frame)
       restoringScrollRef.current = false
     }
-  }, [activePane, choosingCategory])
+  }, [activePane, choosingCategory, categoria])
 
+  // A altura do header (que agora carrega as abas) alimenta o sticky, o
+  // scroll-margin dos cards e a altura do painel do laudo.
   useLayoutEffect(() => {
     const root = rootRef.current
     const header = headerRef.current
-    const tabsBar = tabsBarRef.current
-    if (!root || !header || !tabsBar) return
+    if (!root || !header) return
 
     const update = () => {
       root.style.setProperty('--laudar-header-height', `${header.offsetHeight}px`)
-      root.style.setProperty('--laudar-tabs-height', `${tabsBar.offsetHeight}px`)
     }
     update()
 
@@ -354,7 +348,6 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
     const observer = new ResizeObserver(update)
     observer.observe(header)
-    observer.observe(tabsBar)
     return () => observer.disconnect()
   }, [choosingCategory, workspaceV2])
 
@@ -363,12 +356,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, initialExamState(c)]))
   )
   const [tireoideState, setTireoideState] = useState<TireoideState>(() => initialTireoideState())
-  const [visualSchemaOpen, setVisualSchemaOpen] = useState(false)
-  // Seção ativa por categoria.
-  const [activeByCat, setActiveByCat] = useState<Record<string, string>>(() => ({
-    ...Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, c.sections[0]?.id ?? ''])),
-    [TIREOIDE_ID]: 'lobo_direito',
-  }))
+  const [visualSchemaOpen, setVisualSchemaOpen] = useState(true)
+  /**
+   * Sem sub-nav, não há mais "seção ativa". O que sobra dela é o pedido de
+   * REVELAR um card — quando o celular preenche uma seção, a grade rola até
+   * ela e a destaca por um instante.
+   */
+  const [revealRequest, setRevealRequest] = useState<{ category: string; id: string; nonce: number } | null>(null)
+  const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(null)
+  const revealSection = useCallback((category: string, id: string) => {
+    setRevealRequest({ category, id, nonce: Date.now() })
+  }, [])
   /**
    * A DIGITADORA escolhida. Cadastro em Preferências, escolha na barra do topo.
    *
@@ -392,9 +390,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // Controles de categoria (estado reservado em '__opts') — lido antes das seções
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
   const opts = (examStates[categoria]?.['__opts'] as ExamState[string] | undefined) ?? {}
+  const axilasOnly = categoria === 'MAMARIA' && opts.escopo_exame === 'axilas'
   const documentKey = chaveDocumentoDoppler(categoria, examStates[categoria] ?? {})
   const supportsFetalSchema = supportsFetalPositionSchema(categoria, opts.trimestre)
-  const supportsVisualSchema = isTireoide || categoria === 'MAMARIA' || supportsFetalSchema
+  const supportsVisualSchema = isTireoide || (categoria === 'MAMARIA' && !axilasOnly) || supportsFetalSchema
   const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -406,9 +405,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const biometryGrowth = agruparBiometriaCrescimento(isTireoide ? TIREOIDE_ID : categoria, categorySections)
   const baseSections: UiSection[] = biometryGrowth.sections
   // Calculadoras pertinentes → seção "Cálculos".
-  const calculators = isTireoide
+  const calculators = (isTireoide
     ? [tiRadsSpec]
-    : genericCategory?.resolveCalculators?.(opts) ?? genericCategory?.calculators ?? []
+    : genericCategory?.resolveCalculators?.(opts) ?? genericCategory?.calculators ?? [])
+    .filter(spec => !(axilasOnly && spec.id === 'bi-rads'))
   const trisomyInitialValues = useMemo(() => {
     if (categoria !== 'MORFOLOGICO' || opts.trimestre !== '1t') return undefined
     const first = examStates[categoria]?.primeiro_trimestre ?? {}
@@ -425,28 +425,27 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
   }, [categoria, examStates, opts.trimestre])
   const calcSections: UiSection[] = calculators.map((c) => ({ id: `calc:${c.id}`, label: c.name, group: 'calculos' as const }))
-  const sections: UiSection[] = [...baseSections, ...calcSections]
-  // Uma seção ativa gravada como 'biometria'/'crescimento_fetal' (rascunho
-  // anterior ou envio do celular) continua levando ao painel agrupado.
-  const activeSectionId = resolverSecaoAtivaAgrupada(sections, activeByCat[categoria] ?? sections[0]?.id ?? '')
-  const setActiveSectionId = useCallback((id: string) => {
-    setActiveByCat((s) => ({ ...s, [categoria]: id }))
-  }, [categoria])
-  const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0]
+  const sections: UiSection[] = [
+    ...baseSections,
+    ...(supportsVisualSchema && visualSchemaOpen ? [{ id: 'visual-schema', label: 'Esquema anatômico', group: 'orgaos' as const }] : []),
+    ...(['ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR'].includes(categoria) ? [{ id: 'liver-quantification', label: 'Elastografia e gordura hepática', group: 'calculos' as const }] : []),
+    { id: 'recommendations', label: 'Recomendações', group: 'conclusao' as const },
+    ...calcSections,
+  ]
   const currentCategory = isTireoide ? TIREOIDE_CATEGORY : genericCategory!
   const examState = isTireoide ? undefined : examStates[categoria]
-  const tireoideCompleted = useMemo(() => completedTireoideSections(tireoideState), [tireoideState])
-  const biometryGrowthCompleted = biometryGrowth.biometry && biometryGrowth.growth
-    ? idsConcluidosAgrupados(sections, biometryGrowth, examState)
-    : undefined
 
   // Controles de categoria (via, menopausa, segmento…).
   const controls = isTireoide ? [] : genericCategory?.controls ?? []
   const onOpts = (key: string, value: string | string[]) =>
-    setExamStates((all) => ({
-      ...all,
-      [categoria]: { ...all[categoria], __opts: { ...((all[categoria]?.['__opts'] as Record<string, string | string[]>) ?? {}), [key]: value } },
-    }))
+    setExamStates((all) => {
+      const current = all[categoria] ?? {}
+      const migrated = categoria === 'MUSCULOESQUELETICO' ? migrateLegacyMskState(current) : current
+      return {
+        ...all,
+        [categoria]: { ...migrated, __opts: { ...((migrated['__opts'] as Record<string, string | string[]>) ?? {}), [key]: value } },
+      }
+    })
 
   /**
    * AS CATEGORIAS MIGRADAS saem do RENDERER canônico; as demais compõem local.
@@ -567,16 +566,22 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
    * ele editou é dele, e nada sobrescreve sem ele mandar.
    */
   const [calculatorBlocksByCategory, setCalculatorBlocksByCategory] = useState<Record<string, Record<string, string>>>({})
-  const calculatorBlocks = calculatorBlocksByCategory[documentKey] ?? {}
+  const calculatorBlocks = useMemo(() => calculatorBlocksByCategory[documentKey] ?? {}, [calculatorBlocksByCategory, documentKey])
   const [companionNotesByCategory, setCompanionNotesByCategory] = useState<Record<string, string[]>>({})
-  const companionNotes = companionNotesByCategory[documentKey] ?? []
+  const companionNotes = useMemo(() => companionNotesByCategory[documentKey] ?? [], [companionNotesByCategory, documentKey])
+  const recommendation = String(examStates[categoria]?.__recommendations?.inserted ?? '')
+  const liverMeasurements = examStates[categoria]?.__liver_quantification ?? {}
+  const liverResult = buildLiverQuantificationBlock(liverMeasurements)
+  const liverInserted = !liverResult.errors.length && liverMeasurements.inserted === liverResult.text ? liverResult.text : ''
   const composedText = useMemo(
-    () => [
+    () => generatedText ? [
       generatedText,
       ...Object.values(calculatorBlocks),
+      recommendation ? `RECOMENDAÇÕES:\n${recommendation}` : '',
+      liverInserted,
       ...companionNotes.map((note) => `OBSERVAÇÃO DO MÉDICO:\n${note}`),
-    ].filter(Boolean).join('\n\n'),
-    [calculatorBlocks, companionNotes, generatedText]
+    ].filter(Boolean).join('\n\n') : '',
+    [calculatorBlocks, companionNotes, generatedText, recommendation, liverInserted]
   )
   const insertCalculatorBlock = (calculatorId: string, block: string) => {
     setCalculatorBlocksByCategory((all) => ({
@@ -772,7 +777,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           : currentCategory.name,
         laudoText: preview,
         examState: attachReportPresentation(
-          isTireoide ? tireoideState
+          isTireoide ? { ...tireoideState, __recommendations: examStates[categoria]?.__recommendations }
             : categoria === 'DOPPLER_OBSTETRICO' ? estadoDopplerVisivel(examStates[categoria] ?? {})
             : categoria === 'OBSTETRICA' ? { ...examStates[categoria], doppler: {} }
             : examStates[categoria],
@@ -786,10 +791,6 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
   }
 
-  const currentIndex = sectionIndex(sections, activeSection?.id ?? '')
-  const previous = sections[Math.max(0, currentIndex - 1)]
-  const next = sections[Math.min(sections.length - 1, currentIndex + 1)]
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (choosingCategory) return
@@ -800,49 +801,68 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         if (select && 'showPicker' in select) {
           try { select.showPicker() } catch { /* o foco já permite usar as setas */ }
         }
-        return
       }
-      if (event.key !== 'Tab' || event.metaKey || event.ctrlKey || event.altKey) return
-      if (activePane !== 'achados') return
-      const target = event.target as HTMLElement | null
-      if (!target?.closest('#workspace-panel-achados [data-section-tab-region]')) return
-      if (target.closest('[role="tablist"], #workspace-panel-laudo')) return
-      if (target.closest('input, textarea, select, button, a, [contenteditable="true"], [tabindex]:not([tabindex="-1"])')) return
-      const destination = event.shiftKey ? previous : next
-      if (!destination || destination.id === activeSection?.id) return
-      event.preventDefault()
-      setActiveSectionId(destination.id)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [activePane, activeSection?.id, next, previous, choosingCategory, setActiveSectionId])
+  }, [choosingCategory])
 
-  const resetActive = () => {
-    if (!activeSection) return
+  // Rola até o card que o celular acabou de preencher e o destaca. Um
+  // 'biometria'/'crescimento_fetal' vindo do celular cai no card agrupado.
+  useEffect(() => {
+    if (!revealRequest || choosingCategory || revealRequest.category !== categoria) return
+    if (activePaneRef.current !== 'achados') return
+    const id = resolverSecaoAtivaAgrupada(sections, revealRequest.id)
+    const frame = window.requestAnimationFrame(() => {
+      const card = document.querySelector<HTMLElement>(`#workspace-panel-achados [data-section-id="${CSS.escape(id)}"]`)
+      if (!card) return
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      card.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' })
+      setHighlightedSectionId(id)
+    })
+    const timeout = window.setTimeout(() => setHighlightedSectionId(null), 2200)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timeout)
+    }
+    // `sections` é recriado a cada render; o pedido só precisa rodar uma vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealRequest, categoria, choosingCategory])
+
+  const isBiometryGrowthCard = (section: WorkspaceSection) =>
+    section.id === BIOMETRY_GROWTH_SECTION_ID && Boolean(biometryGrowth.biometry && biometryGrowth.growth)
+
+  const canResetSection = (section: WorkspaceSection) => {
+    if (section.id.startsWith('calc:')) return false
+    if (isTireoide) return TIREOIDE_RESETAVEIS.has(section.id)
+    return isBiometryGrowthCard(section) || Boolean(section.module)
+  }
+
+  const resetSection = (section: WorkspaceSection) => {
     if (isTireoide) {
-      if (activeSection.id === 'nodulos') {
+      if (section.id === 'nodulos') {
         setTireoideState((state) => ({ ...state, nodulos: [] }))
         return
       }
-      if (activeSection.id === 'linfonodos') {
+      if (section.id === 'linfonodos') {
         setTireoideState((state) => ({ ...state, linfonodos: 'preservados' }))
         return
       }
-      if (activeSection.id === 'lobo_direito' || activeSection.id === 'lobo_esquerdo' || activeSection.id === 'istmo') {
+      if (section.id === 'lobo_direito' || section.id === 'lobo_esquerdo' || section.id === 'istmo') {
         const empty = { a: '', b: '', c: '', ecotextura: 'normal' as const }
         setTireoideState((state) => ({
           ...state,
-          [activeSection.id]: empty,
-          ...(activeSection.id === 'lobo_direito' ? { picoDireito: '' } : {}),
-          ...(activeSection.id === 'lobo_esquerdo' ? { picoEsquerdo: '' } : {}),
+          [section.id]: empty,
+          ...(section.id === 'lobo_direito' ? { picoDireito: '' } : {}),
+          ...(section.id === 'lobo_esquerdo' ? { picoEsquerdo: '' } : {}),
         }))
       }
       return
     }
 
-    // O painel agrupado limpa os DOIS módulos numa única atualização — meio
+    // O card agrupado limpa os DOIS módulos numa única atualização — meio
     // reset deixaria na tela um percentil órfão das medidas que o justificavam.
-    if (activeSection.id === BIOMETRY_GROWTH_SECTION_ID && biometryGrowth.biometry && biometryGrowth.growth) {
+    if (isBiometryGrowthCard(section) && biometryGrowth.biometry && biometryGrowth.growth) {
       const biometryInitial = biometryGrowth.biometry.initialState()
       const growthInitial = biometryGrowth.growth.initialState()
       setExamStates((all) => ({
@@ -856,13 +876,204 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       return
     }
 
-    if (!activeSection.module) return
-    const mod = activeSection.module
+    if (!section.module) return
+    const mod = section.module
     setExamStates((all) => ({
       ...all,
-      [categoria]: invalidarPercentilManual(all[categoria], { ...all[categoria], [activeSection.id]: mod.initialState() }),
+      [categoria]: invalidarPercentilManual(all[categoria], { ...all[categoria], [section.id]: mod.initialState() }),
     }))
   }
+
+  /**
+   * LARGURA DO CARD — só apresentação. `full` ocupa a linha inteira (painéis
+   * que já são grades próprias); `wide` ocupa duas colunas quando há três.
+   */
+  const sectionCardSize = (section: WorkspaceSection): SectionCardSize => {
+    if (section.id === 'visual-schema' || section.id === 'liver-quantification') return 'wide'
+    if (FULL_WIDTH_SECTIONS.has(section.id)) return 'full'
+    if (section.id === 'feto') return 'wide'
+    if (section.id.startsWith('calc:')) {
+      const spec = calculators.find((c) => `calc:${c.id}` === section.id)
+      return spec && (spec.kind === 'pre-eclampsia-fmf' || spec.kind === 'trisomy-fmf') ? 'full' : 'wide'
+    }
+    if (categoria === 'DOPPLER_CAROTIDAS') return section.id === 'conclusao' ? 'wide' : 'regular'
+    const fields = section.module?.schema.fields.length ?? 0
+    return fields >= 9 ? 'wide' : 'regular'
+  }
+
+  const updateSectionState = (sectionId: string, nextState: OrganState, invalidatePercentile = true) =>
+    setExamStates((all) => ({
+      ...all,
+      [categoria]: invalidatePercentile
+        ? invalidarPercentilManual(all[categoria], { ...all[categoria], [sectionId]: nextState })
+        : { ...all[categoria], [sectionId]: nextState },
+    }))
+
+  const renderSectionBody = (section: WorkspaceSection) => {
+    if (section.id === 'calc:bi-rads' && categoria === 'MAMARIA') return <MamariaBiradsPanel state={examState?.mamas ?? {}} onChange={state => updateSectionState('mamas', state, false)} />
+    if (section.id === 'liver-quantification') return <div className="space-y-3">
+      <LiverQuantificationPanel state={liverMeasurements} onChange={state => updateSectionState('__liver_quantification', { ...state, inserted: '' }, false)} />
+      {liverResult.text || liverInserted ? <div className="flex flex-wrap items-center gap-2">
+        <button type="button" disabled={Boolean(liverResult.errors.length) || Boolean(liverInserted)}
+          onClick={() => updateSectionState('__liver_quantification', { ...liverMeasurements, inserted: liverResult.text }, false)}
+          className="min-h-11 rounded-full bg-emerald-600 px-3 text-xs font-semibold text-white disabled:opacity-40 md:min-h-8">Incluir medidas no laudo</button>
+        {liverInserted ? <button type="button" onClick={() => updateSectionState('__liver_quantification', { ...liverMeasurements, inserted: '' }, false)}
+          className="min-h-11 rounded-full border px-3 text-xs md:min-h-8">Remover medidas do laudo</button> : null}
+        <span role="status" className="text-xs text-gray-500">{liverInserted ? 'Medidas incluídas no modelo.' : 'Confira os valores antes de incluir. Alterar uma medida exige nova inclusão.'}</span>
+      </div> : null}
+    </div>
+    if (section.id === 'recommendations') return <RecommendationsPanel state={examStates[categoria]?.__recommendations ?? {}} onChange={state => updateSectionState('__recommendations', state, false)} />
+    if (section.id === 'visual-schema') return (
+                    <VisualSchemaPanel
+                      category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : 'FETAL_POSITION'}
+                      breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
+                      fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
+                      thyroidState={tireoideState}
+                      onBreastChange={(nextState) => setExamStates((all) => ({
+                        ...all,
+                        MAMARIA: { ...all.MAMARIA, mamas: nextState },
+                      }))}
+                      onThyroidChange={setTireoideState}
+                      embedded
+                      onClose={() => setVisualSchemaOpen(false)}
+                    />
+    )
+    if (section.id.startsWith('calc:')) {
+      const spec = calculators.find((c) => `calc:${c.id}` === section.id)
+      if (!spec) return null
+      if (spec.kind === 'pre-eclampsia-fmf') {
+        return (
+          <PreEclampsiaFmfPanel
+            insertedBlock={calculatorBlocks[spec.id]}
+            onInsert={(block) => insertCalculatorBlock(spec.id, block)}
+            onRemove={() => removeCalculatorBlock(spec.id)}
+          />
+        )
+      }
+      if (spec.kind === 'trisomy-fmf') {
+        return (
+          <TrisomyFmfPanel
+            initialValues={trisomyInitialValues}
+            insertedBlock={calculatorBlocks[spec.id]}
+            onInsert={(block) => insertCalculatorBlock(spec.id, block)}
+            onRemove={() => removeCalculatorBlock(spec.id)}
+          />
+        )
+      }
+      return 'fields' in spec
+        ? <CalcPanel spec={spec} examState={isTireoide ? undefined : examState} />
+        : null
+    }
+    if (isTireoide) {
+      return <TireoideFormPanel section={section.id} state={tireoideState} onChange={setTireoideState} showCompanionConflicts={false} />
+    }
+    if (categoria === 'MAMARIA' && section.id === 'mamas') {
+      return (
+        <MamariaFormPanel
+          state={examState?.mamas ?? section.module?.initialState() ?? { fundo: 'heterogeneo', achados_ids: [] }}
+          dopplerEnabled={opts.doppler_mamario === 'sim'}
+          onChange={(nextState) => updateSectionState('mamas', nextState, false)}
+        />
+      )
+    }
+    if (categoria === 'DOPPLER_CAROTIDAS' && section.module) {
+      return (
+        <DopplerCarotidasFormPanel
+          section={section.id}
+          state={examState?.[section.id] ?? section.module.initialState()}
+          onChange={(nextState) => updateSectionState(section.id, nextState, false)}
+        />
+      )
+    }
+    if (isBiometryGrowthCard(section) && biometryGrowth.biometry && biometryGrowth.growth) {
+      return (
+        <BiometryGrowthPanel
+          biometry={biometryGrowth.biometry}
+          biometryState={examState?.[BIOMETRY_SECTION_ID] ?? biometryGrowth.biometry.initialState()}
+          onBiometryChange={(nextState) => updateSectionState(BIOMETRY_SECTION_ID, nextState)}
+          growth={biometryGrowth.growth}
+          growthState={examState?.[GROWTH_SECTION_ID] ?? biometryGrowth.growth.initialState()}
+          igState={examState?.ig ?? {}}
+          onGrowthChange={(nextState) => updateSectionState(GROWTH_SECTION_ID, nextState, false)}
+          compact
+        />
+      )
+    }
+    if (section.module) {
+      const mod = section.module
+      return (
+        <OrganFormPanel
+          schema={mod.schema}
+          state={examState?.[section.id] ?? mod.initialState()}
+          compact
+          gestationalWeeks={(() => {
+            if (section.id !== 'doppler') return undefined
+            const raw = examState?.ig?.bio_sem
+            const value = Number.parseFloat(String(raw ?? '').replace(',', '.'))
+            return Number.isFinite(value) ? value : null
+          })()}
+          onChange={(nextState) => updateSectionState(section.id, nextState)}
+        />
+      )
+    }
+    return (
+      <div>
+        <p className="text-[12px] font-medium text-gray-500 dark:text-gray-400">Texto padrão — entra automaticamente no laudo normal.</p>
+        {section.normalBody ? (
+          <p className="mt-2.5 rounded-2xl bg-gray-50 px-3.5 py-3 text-[13px] leading-relaxed text-gray-600 dark:bg-white/[0.04] dark:text-gray-300">{section.normalBody}</p>
+        ) : null}
+      </div>
+    )
+  }
+
+  const phoneStatus = companionState.connected ? 'Celular conectado' : 'Celular desconectado'
+  const pendingLabel = companionState.pending > 0
+    ? `, ${companionState.pending} ${companionState.pending === 1 ? 'envio pendente' : 'envios pendentes'}`
+    : ''
+
+  /** Ferramentas que valem para as duas abas: esquema visual e digitadora. */
+  const secondaryTools = (
+    <>
+      {supportsVisualSchema ? (
+        <ToolbarPill tone={visualSchemaOpen ? 'toggleOn' : 'neutral'} onClick={() => {
+          setVisualSchemaOpen(true)
+          selectPane('achados')
+          revealSection(categoria, 'visual-schema')
+        }}>
+          <ScanLine aria-hidden="true" className="h-4 w-4" />
+          Esquema visual
+        </ToolbarPill>
+      ) : null}
+
+      {/*
+        QUEM DIGITOU — decisão de antes de escrever. Some quando não há
+        ninguém cadastrado: um seletor vazio é ruído para quem digita os
+        próprios laudos.
+      */}
+      {digitadoras.length > 0 ? (
+        <label className="inline-flex items-center gap-1.5" title="Quem digitou — as iniciais saem no fim do laudo">
+          <span className="sr-only">Digitadora</span>
+          <select
+            value={initials}
+            onChange={(e) => {
+              setInitials(e.target.value)
+              gravarAtual(e.target.value)
+            }}
+            className="h-9 max-w-full rounded-full border border-gray-200 bg-white px-3 text-[13px] font-semibold text-gray-600 outline-none transition hover:bg-gray-50 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:ring-emerald-900/40"
+          >
+            <option value="">Sem digitadora</option>
+            {digitadoras.map((d) => (
+              <option key={d.iniciais} value={d.iniciais}>
+                {d.nome || d.iniciais.toUpperCase()} · /{d.iniciais}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+    </>
+  )
+  const hasSecondaryTools = supportsVisualSchema || digitadoras.length > 0
+  const hasExamOptions = controls.length > 0 || isTireoide || categoria === 'DOPPLER_OBSTETRICO'
 
   return (
     <>
@@ -873,123 +1084,136 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       <div
         ref={rootRef}
         hidden={choosingCategory}
-        className={`laudar-web-responsive min-h-screen overflow-hidden text-gray-900 dark:text-gray-100 ${workspaceV2 ? 'bg-[#F2F2F7] p-2 dark:bg-[#0B0B0F]' : 'bg-gray-100 dark:bg-gray-950'}`}
+        className="laudar-web-responsive min-h-screen overflow-x-clip bg-[#F2F2F7] text-gray-900 dark:bg-[#0B0B0F] dark:text-gray-100"
       >
         <style>{`
           .laudar-web-responsive [hidden] { display: none !important; }
-          .laudar-web-responsive > main {
-            height: calc(100vh - var(--laudar-header-height, 64px) - var(--laudar-tabs-height, 56px));
+
+          @container organ-card (min-width: 580px) {
+                .renal-pair-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+              }
+              /* HEADER — três colunas: as abas ficam no centro geométrico. */
+          .laudar-web-responsive .laudar-header-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            grid-template-areas: "start center end";
+            align-items: center;
+            column-gap: 16px;
+            min-height: 64px;
+            padding: 8px 20px;
           }
-          .laudar-web-responsive .achados-form-body {
-            max-width: 960px;
+          .laudar-web-responsive .laudar-header-start { grid-area: start; }
+          .laudar-web-responsive .laudar-header-center { grid-area: center; }
+          .laudar-web-responsive .laudar-header-end { grid-area: end; }
+          .laudar-web-responsive [data-category-selector] { min-width: 0; max-width: 100%; }
+
+          /* CONTEÚDO — margem do rail no desktop. */
+          .laudar-web-responsive .achados-layout,
+          .laudar-web-responsive .laudo-layout {
+            margin-left: ${workspaceV2 ? '56px' : '64px'};
+            padding: 20px 24px 40px;
           }
-          .laudar-web-responsive .workspace-tabs-shell {
-            top: var(--laudar-header-height, 64px);
+          .laudar-web-responsive .laudo-frame {
+            height: calc(100dvh - var(--laudar-header-height, 64px) - 112px);
+            min-height: 480px;
           }
-          @media (max-width: 1279px) {
-            .laudar-web-responsive { overflow: visible; overflow-wrap: anywhere; }
-            .laudar-web-responsive > header {
-              position: relative; top: auto; height: auto; flex-wrap: wrap; padding: 12px;
+          .laudar-web-responsive .laudo-frame > section { border-left-width: 0; }
+
+          /* GRADE DE CARDS */
+          .laudar-web-responsive .workspace-section-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+          }
+          .laudar-web-responsive .workspace-section-card {
+            scroll-margin-top: calc(var(--laudar-header-height, 64px) + 16px);
+            container-type: inline-size;
+            container-name: organ-card;
+          }
+          @container organ-card (min-width: 700px) {
+            [data-organ-schema="feto"] {
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 8px;
+              align-items: start;
             }
-            .laudar-web-responsive .workspace-tabs-shell { top: 0; }
-            .laudar-web-responsive > header > * { min-width: 0; max-width: 100%; }
-            .laudar-web-responsive [data-category-selector] {
-              min-width: 0; max-width: 100%; height: auto; min-height: 40px;
-              padding-top: 8px; padding-bottom: 8px;
+            [data-organ-schema="feto"] > * { margin-top: 0 !important; }
+          }
+          @media (min-width: 900px) {
+            .laudar-web-responsive .workspace-section-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .laudar-web-responsive .workspace-section-grid > [data-card-size="full"] { grid-column: 1 / -1; }
+          }
+          @media (min-width: 1360px) {
+            .laudar-web-responsive .workspace-section-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .laudar-web-responsive .workspace-section-grid > [data-card-size="wide"] { grid-column: span 2; }
+          }
+          @media (max-width: 1023px) {
+            .laudar-web-responsive .laudar-header-grid {
+              grid-template-columns: minmax(0, 1fr) auto;
+              grid-template-areas: "start end" "center center";
+              row-gap: 8px;
+              padding: 8px 12px;
             }
-            .laudar-web-responsive [data-category-selector] > span {
-              white-space: normal; overflow: visible; text-overflow: clip;
-            }
-            .laudar-web-responsive > main {
-              height: auto;
-              min-height: calc(100vh - var(--laudar-header-height, 96px) - var(--laudar-tabs-height, 56px));
-            }
-            .laudar-web-responsive .achados-layout {
-              height: auto;
-              grid-template-columns: minmax(148px, 176px) minmax(0, 1fr);
-              gap: 10px;
-            }
-            .laudar-web-responsive .laudo-layout { height: auto; min-height: 70vh; }
+            .laudar-web-responsive .laudo-frame { height: auto; min-height: 70vh; }
             .laudar-web-responsive .achados-layout,
-            .laudar-web-responsive .laudo-layout {
-              margin-left: 64px;
-              padding-right: 12px;
-            }
-            .laudar-web-responsive .achados-layout > *,
-            .laudar-web-responsive .laudo-layout > * {
-              min-width: 0; width: 100%; height: auto; overflow: visible;
-            }
-            .laudar-web-responsive .achados-layout nav button > span:first-child {
-              white-space: normal; overflow: visible; text-overflow: clip;
-            }
-            .laudar-web-responsive .achados-layout input,
-            .laudar-web-responsive .achados-layout select,
-            .laudar-web-responsive .achados-layout textarea,
-            .laudar-web-responsive .laudo-layout input,
-            .laudar-web-responsive .laudo-layout select,
-            .laudar-web-responsive .laudo-layout textarea { min-width: 0; max-width: 100%; }
-            .laudar-web-responsive .achados-layout > section > footer {
-              position: static; flex-wrap: wrap; padding: 12px;
-            }
-            .laudar-web-responsive .laudo-layout article {
-              padding: 20px 16px; min-width: 0; overflow-wrap: anywhere;
-            }
-            .laudar-web-responsive .laudo-layout article h1 { overflow-wrap: anywhere; }
-            .laudar-web-responsive .laudo-layout > div > section > div { min-width: 0; }
-            .laudar-web-responsive .laudo-layout > div > section > div:last-child { padding: 12px; }
+            .laudar-web-responsive .laudo-layout { padding: 16px 16px 32px; }
           }
           @media (max-width: 767px) {
             .laudar-web-responsive > main > aside {
               display: none;
             }
             .laudar-web-responsive > main {
-              padding-bottom: 76px;
+              padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+            }
+            .laudar-web-responsive .laudar-mobile-navigation {
+              bottom: calc(8px + env(safe-area-inset-bottom, 0px));
             }
             .laudar-web-responsive .achados-layout,
             .laudar-web-responsive .laudo-layout {
               margin-left: 0;
-              grid-template-columns: minmax(0, 1fr);
-              gap: 10px;
-              padding-right: 8px;
-              padding-left: 8px;
-            }
-            .laudar-web-responsive .achados-layout > aside {
-              height: auto;
-              overflow: visible;
-            }
-            .laudar-web-responsive .achados-layout > aside nav {
-              display: flex; gap: 10px; overflow-x: auto; overflow-y: visible; padding: 10px;
-            }
-            .laudar-web-responsive .achados-layout > aside nav > div {
-              min-width: min(240px, 80vw); flex: 0 0 auto; margin-bottom: 0;
-            }
-            .laudar-web-responsive .achados-layout > section,
-            .laudar-web-responsive .laudo-layout > div {
-              border-radius: 18px;
+              padding: 12px 12px 24px;
             }
           }
           @media (max-width: 639px) {
-            .laudar-web-responsive [role="tablist"] {
+            .laudar-web-responsive .laudar-brand-divider,
+            .laudar-web-responsive .laudar-phone-label { display: none; }
+            .laudar-web-responsive .laudar-header-start {
+              display: grid;
+              grid-template-columns: 32px minmax(0, 1fr);
+              grid-template-areas: "back brand" "back category";
+              gap: 5px 6px;
+            }
+            .laudar-web-responsive .laudar-header-start > button {
+              grid-area: back;
+              width: 32px;
+            }
+            .laudar-web-responsive .laudar-header-start > .laudar-brand { grid-area: brand; }
+            .laudar-web-responsive .laudar-header-start > [data-category-selector] { grid-area: category; }
+            .laudar-web-responsive .laudar-header-center [role="tablist"] {
               width: 100%;
+              min-width: 0;
             }
           }
         `}</style>
-        <header ref={headerRef} className={workspaceV2
-          ? 'sticky top-0 z-40 flex h-[76px] items-center gap-3 bg-transparent px-2'
-          : 'sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/70 px-5 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/70'}>
-          <button type="button" onClick={() => setChoosingCategory(true)} aria-label="Voltar às categorias" title="Voltar às categorias"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-emerald-600 dark:hover:bg-gray-800">
-            <ArrowLeft aria-hidden="true" className="h-5 w-5" />
-          </button>
-          {workspaceV2 ? (
-            <div className="flex flex-col items-start gap-1.5">
-              <div className="flex items-end gap-2">
-                <div className="flex items-end gap-0.5 font-barlow text-[19px] leading-none tracking-tight">
+        <header
+          ref={headerRef}
+          className="sticky top-0 z-40 border-b border-black/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.08] dark:bg-[#111113]/70"
+        >
+          <div className="laudar-header-grid">
+            <div className="laudar-header-start flex min-w-0 items-center gap-2.5">
+              <button type="button" onClick={() => setChoosingCategory(true)} aria-label="Voltar às categorias" title="Voltar às categorias"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 transition hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:text-gray-300 dark:hover:bg-white/10">
+                <ArrowLeft aria-hidden="true" className="h-5 w-5" />
+              </button>
+              <div className="laudar-brand flex shrink-0 items-baseline gap-1.5 font-barlow leading-none tracking-tight">
+                <span className="text-[19px]">
                   <span className="font-extrabold text-emerald-800 dark:text-emerald-300">Laudo</span>
                   <span className="font-medium text-emerald-600 dark:text-emerald-400">USG</span>
-                </div>
-                <span className="font-barlow text-xs font-medium text-gray-400 dark:text-gray-500">Web</span>
+                </span>
+                <span className="text-[13px] font-medium text-gray-400 dark:text-gray-500">Web</span>
               </div>
+              <span aria-hidden="true" className="laudar-brand-divider h-5 w-px shrink-0 bg-gray-200 dark:bg-gray-700" />
               <CategorySelector
                 categoria={categoria}
                 currentName={currentCategory.name}
@@ -997,87 +1221,30 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 onChange={selectCategory}
               />
             </div>
-          ) : (
-            <>
-              <div className="flex items-end gap-0.5 font-barlow text-[22px] leading-none tracking-tight">
-                <span className="font-extrabold text-emerald-700 dark:text-emerald-500">Laudo</span>
-                <span className="font-normal text-emerald-600 dark:text-emerald-400">USG</span>
-                <span className="mb-1 ml-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
-              </div>
-              <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
-              <span className="font-barlow text-base font-medium text-gray-500 dark:text-gray-400">Web</span>
-              <CategorySelector
-                categoria={categoria}
-                currentName={currentCategory.name}
-                compact={false}
-                onChange={selectCategory}
-              />
-            </>
-          )}
 
-          {isTireoide ? (
-            <ToolbarPill
-              tone={tireoideState.doppler ? 'toggleOn' : 'neutral'}
-              onClick={() => setTireoideState((state) => ({ ...state, doppler: !state.doppler }))}
-            >
-              Doppler
-            </ToolbarPill>
-          ) : null}
+            <div className="laudar-header-center flex min-w-0 justify-center">
+              <WorkspaceTabs active={activePane} onChange={selectPane} laudoState={laudoTabState} />
+            </div>
 
-        {supportsVisualSchema ? (
-          <ToolbarPill tone={visualSchemaOpen ? 'toggleOn' : 'neutral'} onClick={() => {
-            const nextOpen = !visualSchemaOpen
-            setVisualSchemaOpen(nextOpen)
-            if (nextOpen) selectPane('laudo')
-          }}>
-            <ScanLine className="h-4 w-4" />
-            {visualSchemaOpen ? 'Esquema aberto' : 'Esquema visual'}
-          </ToolbarPill>
-        ) : null}
-
-        <ToolbarPill onClick={() => setCompanionOpen((open) => !open)}>
-          <Smartphone className="h-4 w-4" />
-          <span className={`h-2 w-2 rounded-full ${companionState.connected ? 'animate-pulse bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-          {companionState.connected ? 'Celular conectado' : 'Celular desconectado'}
-          {companionState.pending > 0 ? (
-            <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-gray-950">{companionState.pending}</span>
-          ) : null}
-        </ToolbarPill>
-        <div className="flex-1" />
-
-        {/*
-          QUEM DIGITOU — a escolha vive aqui, junto da categoria, porque é
-          decisão de antes de escrever. Some quando não há ninguém cadastrado:
-          um seletor vazio é ruído para quem digita os próprios laudos.
-        */}
-        {digitadoras.length > 0 ? (
-          <label className="inline-flex items-center gap-1.5" title="Quem digitou — as iniciais saem no fim do laudo">
-            <span className="sr-only">Digitadora</span>
-            <select
-              value={initials}
-              onChange={(e) => {
-                setInitials(e.target.value)
-                gravarAtual(e.target.value)
-              }}
-              className="h-8 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 outline-none transition hover:bg-gray-50 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:ring-emerald-900/40"
-            >
-              <option value="">Sem digitadora</option>
-              {digitadoras.map((d) => (
-                <option key={d.iniciais} value={d.iniciais}>
-                  {d.nome || d.iniciais.toUpperCase()} · /{d.iniciais}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-
+            <div className="laudar-header-end flex min-w-0 items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setCompanionOpen((open) => !open)}
+                aria-label={`${phoneStatus}${pendingLabel}`}
+                aria-expanded={companionOpen}
+                title={phoneStatus}
+                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-black/[0.08] bg-white/80 px-3 text-[13px] font-semibold text-gray-600 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-gray-300 dark:hover:bg-white/10"
+              >
+                <Smartphone aria-hidden="true" className="h-4 w-4" />
+                <span aria-hidden="true" className={`h-2 w-2 rounded-full ${companionState.connected ? 'animate-pulse bg-emerald-500 motion-reduce:animate-none' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                <span className="laudar-phone-label whitespace-nowrap">{phoneStatus}</span>
+                {companionState.pending > 0 ? (
+                  <span aria-hidden="true" className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-gray-950">{companionState.pending}</span>
+                ) : null}
+              </button>
+            </div>
+          </div>
         </header>
-        <div
-          ref={tabsBarRef}
-          className="workspace-tabs-shell sticky z-30 flex justify-center border-b border-gray-200/70 bg-white/85 px-3 py-2 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/85"
-        >
-          <WorkspaceTabs active={activePane} onChange={selectPane} laudoState={laudoTabState} />
-        </div>
 
         <main className="relative">
         <LaudarRail workspaceV2={workspaceV2} />
@@ -1087,185 +1254,76 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           aria-labelledby="workspace-tab-achados"
           hidden={activePane !== 'achados'}
           aria-hidden={activePane !== 'achados'}
-          className={workspaceV2
-            ? 'achados-layout ml-16 grid h-full grid-cols-[142px_minmax(0,1fr)] gap-2'
-            : 'achados-layout ml-16 grid h-full grid-cols-[196px_minmax(0,1fr)]'}>
-          <ExamSectionNav
-            sections={sections}
-            activeId={activeSection?.id ?? ''}
-            onSelect={setActiveSectionId}
-            examState={isTireoide ? undefined : examState}
-            completedIds={isTireoide ? tireoideCompleted : biometryGrowthCompleted}
-            category={currentCategory}
-            controls={controls}
-            opts={opts}
-            onOpts={onOpts}
-            workspaceV2={workspaceV2}
-            contentGroupLabel={categoryContentGroupLabel(categoria)}
-          >
-            {categoria === 'DOPPLER_OBSTETRICO' ? (
-              <label className="flex cursor-pointer items-center gap-2 border-b border-gray-200 px-3 py-3 text-xs font-semibold dark:border-gray-800">
-                <input
-                  type="checkbox"
-                  role="switch"
-                  className="h-4 w-4 shrink-0 accent-emerald-600"
-                  checked={opts.somente_doppler === 'sim'}
-                  onChange={(event) => onOpts('somente_doppler', event.target.checked ? 'sim' : 'nao')}
-                />
-                Somente Doppler
-              </label>
-            ) : null}
-          </ExamSectionNav>
-
-          <section data-section-tab-region className={`min-h-0 ${workspaceV2 ? 'flex flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]' : 'overflow-y-auto bg-gray-50 dark:bg-gray-900'}`}>
-            <div className={workspaceV2
-              ? 'sticky top-0 z-10 border-b border-gray-100 bg-white/95 px-4 py-2 backdrop-blur-xl dark:border-gray-800 dark:bg-[#1C1C1E]/95'
-              : 'border-b border-gray-200 bg-white px-6 py-2 dark:border-gray-800 dark:bg-gray-950'}>
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                  {isTireoide
-                    ? 'Preencha medidas, nódulos e classificações informadas pelo médico.'
-                    : 'Tudo pré-marcado como normal. Mude só o que estiver alterado.'}
-                </p>
-                <button type="button" onClick={resetActive} className="inline-flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800">
-                  <RotateCcw className="h-3 w-3" />
-                  Reset
-                </button>
-              </div>
-            </div>
-
-            <div className={workspaceV2 ? 'min-h-0 flex-1 overflow-y-auto px-3 py-2.5' : 'px-6 py-5'}>
-              <div className="achados-form-body w-full">
-                {activeSection?.id?.startsWith('calc:') ? (
-                (() => {
-                  const spec = calculators.find((c) => `calc:${c.id}` === activeSection.id)
-                  if (!spec) return null
-                  if (spec.kind === 'pre-eclampsia-fmf') {
-                    return (
-                      <PreEclampsiaFmfPanel
-                        insertedBlock={calculatorBlocks[spec.id]}
-                        onInsert={(block) => insertCalculatorBlock(spec.id, block)}
-                        onRemove={() => removeCalculatorBlock(spec.id)}
-                      />
-                    )
-                  }
-                  if (spec.kind === 'trisomy-fmf') {
-                    return (
-                      <TrisomyFmfPanel
-                        initialValues={trisomyInitialValues}
-                        insertedBlock={calculatorBlocks[spec.id]}
-                        onInsert={(block) => insertCalculatorBlock(spec.id, block)}
-                        onRemove={() => removeCalculatorBlock(spec.id)}
-                      />
-                    )
-                  }
-                  return 'fields' in spec
-                    ? <CalcPanel spec={spec} examState={isTireoide ? undefined : examState} />
-                    : null
-                })()
-              ) : isTireoide ? (
-                <TireoideFormPanel
-                  section={activeSection?.id ?? ''}
-                  state={tireoideState}
-                  onChange={setTireoideState}
-                />
-              ) : categoria === 'MAMARIA' && activeSection?.id === 'mamas' ? (
-                <MamariaFormPanel
-                  state={examState?.mamas ?? activeSection.module?.initialState() ?? { fundo: 'heterogeneo', achados_ids: [] }}
-                  dopplerEnabled={opts.doppler_mamario === 'sim'}
-                  onChange={(nextState) =>
-                    setExamStates((all) => ({
-                      ...all,
-                      [categoria]: { ...all[categoria], mamas: nextState },
-                    }))
-                  }
-                />
-              ) : categoria === 'DOPPLER_CAROTIDAS' && activeSection?.module ? (
-                <DopplerCarotidasFormPanel
-                  section={activeSection.id}
-                  state={examState?.[activeSection.id] ?? activeSection.module.initialState()}
-                  onChange={(nextState) =>
-                    setExamStates((all) => ({
-                      ...all,
-                      [categoria]: { ...all[categoria], [activeSection.id]: nextState },
-                    }))
-                  }
-                />
-              ) : activeSection?.id === BIOMETRY_GROWTH_SECTION_ID && biometryGrowth.biometry && biometryGrowth.growth ? (
-                <BiometryGrowthPanel
-                  biometry={biometryGrowth.biometry}
-                  biometryState={examState?.[BIOMETRY_SECTION_ID] ?? biometryGrowth.biometry.initialState()}
-                  onBiometryChange={(nextState) =>
-                    setExamStates((all) => ({
-                      ...all,
-                      [categoria]: invalidarPercentilManual(all[categoria], { ...all[categoria], [BIOMETRY_SECTION_ID]: nextState }),
-                    }))
-                  }
-                  growth={biometryGrowth.growth}
-                  growthState={examState?.[GROWTH_SECTION_ID] ?? biometryGrowth.growth.initialState()}
-                  igState={examState?.ig ?? {}}
-                  onGrowthChange={(nextState) =>
-                    setExamStates((all) => ({
-                      ...all,
-                      [categoria]: { ...all[categoria], [GROWTH_SECTION_ID]: nextState },
-                    }))
-                  }
-                  compact={workspaceV2}
-                />
-              ) : activeSection?.module ? (
-                <OrganFormPanel
-                  schema={activeSection.module.schema}
-                  state={examState?.[activeSection.id] ?? activeSection.module.initialState()}
-                  compact={workspaceV2}
-                  gestationalWeeks={(() => {
-                    if (activeSection.id !== 'doppler') return undefined
-                    const raw = examState?.ig?.bio_sem
-                    const value = Number.parseFloat(String(raw ?? '').replace(',', '.'))
-                    return Number.isFinite(value) ? value : null
-                  })()}
-                  onChange={(nextState) =>
-                    setExamStates((all) => ({
-                      ...all,
-                      [categoria]: invalidarPercentilManual(all[categoria], { ...all[categoria], [activeSection.id]: nextState }),
-                    }))
-                  }
-                />
-              ) : (
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                  <div className="font-barlow text-xl font-bold text-gray-900 dark:text-gray-100">Seção de texto padrão</div>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">Este trecho entra automaticamente no laudo normal.</p>
-                  {activeSection?.normalBody ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-gray-600 dark:bg-gray-950 dark:text-gray-300">{activeSection.normalBody}</p> : null}
+          className="achados-layout"
+        >
+          <div className="mx-auto w-full max-w-[1440px] space-y-4">
+            {hasExamOptions ? (
+              <ExamOptionsBar controls={controls} opts={opts} onOpts={onOpts}>
+                {categoria === 'DOPPLER_OBSTETRICO' ? (
+                  <label className="flex min-h-9 cursor-pointer items-center gap-2 self-end text-[13px] font-semibold text-gray-700 dark:text-gray-200">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      className="h-4 w-4 shrink-0 accent-emerald-600"
+                      checked={opts.somente_doppler === 'sim'}
+                      onChange={(event) => onOpts('somente_doppler', event.target.checked ? 'sim' : 'nao')}
+                    />
+                    Somente Doppler
+                  </label>
+                ) : null}
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-2 self-end">
+                  {isTireoide ? (
+                    <ToolbarPill
+                      tone={tireoideState.doppler ? 'toggleOn' : 'neutral'}
+                      pressed={tireoideState.doppler}
+                      onClick={() => setTireoideState((state) => ({ ...state, doppler: !state.doppler }))}
+                    >
+                      Doppler
+                    </ToolbarPill>
+                  ) : null}
+                  {secondaryTools}
                 </div>
-                )}
-              </div>
+              </ExamOptionsBar>
+            ) : null}
+
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <p className="text-[12.5px] text-gray-500 dark:text-gray-400">
+                {isTireoide
+                  ? 'Preencha medidas, nódulos e classificações informadas pelo médico.'
+                  : 'Tudo pré-marcado como normal. Mude só o que estiver alterado.'}
+              </p>
+              {!hasExamOptions && hasSecondaryTools ? <div className="flex flex-wrap items-center gap-2">{secondaryTools}</div> : null}
             </div>
+
+            {isTireoide ? <TireoideCompanionNotice state={tireoideState} /> : null}
+
+            <WorkspaceSectionGrid
+              scopeKey={categoria}
+              sections={sections}
+              contentGroupLabel={categoryContentGroupLabel(categoria)}
+              sizeOf={sectionCardSize}
+              canReset={canResetSection}
+              onReset={resetSection}
+              renderBody={renderSectionBody}
+              highlightedId={highlightedSectionId}
+            />
 
             {workspaceV2 && agentWorkspace ? (
-              <WorkspaceInputDock
-                canGoPrevious={Boolean(previous && previous.id !== activeSection?.id)}
-                canGoNext={Boolean(next && next.id !== activeSection?.id)}
-                onPrevious={() => previous && setActiveSectionId(previous.id)}
-                onNext={() => next && setActiveSectionId(next.id)}
-                hasPendingSuggestion={sourceChanged}
-                canUndoSuggestion={canUndoSuggestion}
-                onAcceptSuggestion={applyCurrentModel}
-                onRejectSuggestion={rejectCurrentModel}
-                onUndoSuggestion={undoAcceptedSuggestion}
-              />
-            ) : (
-              <footer className={`sticky bottom-0 flex items-center gap-3 border-t backdrop-blur-xl ${workspaceV2 ? 'border-gray-100 bg-white/95 px-4 py-3 dark:border-gray-800 dark:bg-[#1C1C1E]/95' : 'border-gray-200 bg-white/90 px-7 py-4 dark:border-gray-800 dark:bg-gray-950/90'}`}>
-                <span className="text-xs text-gray-500 dark:text-gray-400">Atalhos</span>
-                <kbd className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[10px] text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">⌘K</kbd>
-                <div className="flex-1" />
-                <button type="button" onClick={() => previous && setActiveSectionId(previous.id)} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" disabled={!previous || previous.id === activeSection?.id}>
-                  <ArrowLeft className="h-4 w-4" /> anterior
-                </button>
-                <button type="button" onClick={() => next && setActiveSectionId(next.id)} className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900" disabled={!next || next.id === activeSection?.id}>
-                  próxima <ArrowRight className="h-4 w-4" />
-                </button>
-              </footer>
-            )}
-          </section>
+              <div className="overflow-hidden rounded-[22px] border border-black/[0.06] dark:border-white/[0.08]">
+                <WorkspaceInputDock
+                  canGoPrevious={false}
+                  canGoNext={false}
+                  onPrevious={() => undefined}
+                  onNext={() => undefined}
+                  hasPendingSuggestion={sourceChanged}
+                  canUndoSuggestion={canUndoSuggestion}
+                  onAcceptSuggestion={applyCurrentModel}
+                  onRejectSuggestion={rejectCurrentModel}
+                  onUndoSuggestion={undoAcceptedSuggestion}
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div
@@ -1274,26 +1332,30 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           aria-labelledby="workspace-tab-laudo"
           hidden={activePane !== 'laudo'}
           aria-hidden={activePane !== 'laudo'}
-          className={workspaceV2 ? 'laudo-layout ml-16 h-full' : 'laudo-layout ml-16 h-full'}
+          className="laudo-layout"
         >
           {/*
             O ESTADO DO MOTOR, acima do laudo.
-            
+
             As categorias migradas vêm do renderer, e isso é assíncrono: entre a tecla
             e a resposta há um intervalo em que o texto na tela não corresponde
             ao formulário. Sem dizer isso, o médico leria como atual um laudo de
             dois segundos atrás — e no erro, um laudo de antes da falha.
           */}
-          <div className="flex h-full min-h-0 flex-col">
+          <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-3">
+            {hasSecondaryTools ? (
+              <div className="flex flex-wrap items-center justify-end gap-2">{secondaryTools}</div>
+            ) : null}
+
             {migrada && laudoCanonico.erro ? (
-              <p className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+              <p className="rounded-2xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
                 <strong className="font-semibold">O laudo não foi montado.</strong>{' '}
                 {laudoCanonico.erro}
                 {laudoCanonico.texto ? ' O texto abaixo é de antes desta falha.' : ''}
               </p>
             ) : null}
 
-            <div className="relative flex min-h-0 flex-1">
+            <div className="laudo-frame relative flex min-h-0 overflow-hidden rounded-[22px] border border-black/[0.06] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_28px_-20px_rgba(15,23,42,0.22)] dark:border-white/[0.08] dark:bg-[#1C1C1E]">
               <LaudoPreview
                 documentKey={documentKey}
                 text={preview}
@@ -1315,24 +1377,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 onUndoSuggestion={undoAcceptedSuggestion}
                 updating={migrada && (laudoCanonico.carregando || laudoCanonico.desatualizado)}
               />
-              {visualSchemaOpen && supportsVisualSchema ? (
-                <div className="absolute inset-0 z-20 flex bg-gray-100/85 p-2 backdrop-blur-sm dark:bg-gray-950/80 sm:p-4">
-                  <div className="mx-auto h-full w-full max-w-[1100px]">
-                    <VisualSchemaPanel
-                      category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : 'FETAL_POSITION'}
-                      breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
-                      fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
-                      thyroidState={tireoideState}
-                      onBreastChange={(nextState) => setExamStates((all) => ({
-                        ...all,
-                        MAMARIA: { ...all.MAMARIA, mamas: nextState },
-                      }))}
-                      onThyroidChange={setTireoideState}
-                      onClose={() => setVisualSchemaOpen(false)}
-                    />
-                  </div>
-                </div>
-              ) : null}
+
             </div>
           </div>
         </div>
@@ -1349,19 +1394,19 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           if (payload.category === 'TIREOIDE') {
             setTireoideState((state) => applyCompanionThyroid(state, payload))
             selectCategory(TIREOIDE_ID)
-            setActiveByCat((all) => ({ ...all, [TIREOIDE_ID]: payload.data.thyroidNodules?.length ? 'nodulos' : 'lobo_direito' }))
+            revealSection(TIREOIDE_ID, payload.data.thyroidNodules?.length ? 'nodulos' : 'lobo_direito')
             return
           }
           if (payload.category === 'MAMARIA') {
             setExamStates((all) => ({ ...all, MAMARIA: applyCompanionBreast(all.MAMARIA ?? {}, payload) }))
             selectCategory('MAMARIA')
-            setActiveByCat((all) => ({ ...all, MAMARIA: 'mamas' }))
+            revealSection('MAMARIA', 'mamas')
             return
           }
           if (payload.category === 'DOPPLER_CAROTIDAS') {
             setExamStates((all) => ({ ...all, DOPPLER_CAROTIDAS: applyCompanionCarotids(all.DOPPLER_CAROTIDAS ?? {}, payload) }))
             selectCategory('DOPPLER_CAROTIDAS')
-            setActiveByCat((all) => ({ ...all, DOPPLER_CAROTIDAS: 'direita' }))
+            revealSection('DOPPLER_CAROTIDAS', 'direita')
             return
           }
           // Peso/IG vindos do celular também invalidam percentil que não veio junto.
@@ -1374,10 +1419,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             ),
           }))
           selectCategory(payload.category)
-          setActiveByCat((all) => ({
-            ...all,
-            [payload.category]: payload.category === 'DOPPLER_OBSTETRICO' ? 'doppler' : 'biometria',
-          }))
+          revealSection(payload.category, payload.category === 'DOPPLER_OBSTETRICO' ? 'doppler' : 'biometria')
         }}
       />
     </div>

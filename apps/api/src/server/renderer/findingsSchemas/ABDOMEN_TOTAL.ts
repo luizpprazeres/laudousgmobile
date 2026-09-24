@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SharedBladderSchema, SharedKidneySchema } from "../categories/sharedUrinary";
 
 /**
  * DET-5 — Schema de achados tipados de ABDOMEN_TOTAL (piloto do renderer).
@@ -81,6 +82,12 @@ export const AbdomenTotalFindingsSchema = z.object({
   }),
   achados_extra_abdominais: z.array(FindingSchema),
   observacoes_do_medico: z.string().nullable(),
+  /** Contratos compartilhados da web; opcionais preservam ditado e apps legados. */
+  bexiga_detalhada: SharedBladderSchema.optional(),
+  rins_detalhados: z.object({
+    direito: SharedKidneySchema,
+    esquerdo: SharedKidneySchema,
+  }).optional(),
 });
 
 export type AbdomenFinding = z.infer<typeof FindingSchema>;

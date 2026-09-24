@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  renderSharedBladder,
+  renderSharedKidney,
+  SharedBladderSchema,
+  SharedKidneySchema,
+} from "./sharedUrinary";
 
 /**
  * DET-5 — Renderer de ULTRASSONOGRAFIA DAS VIAS URINÁRIAS (rins e vias
@@ -51,6 +57,9 @@ const ACHADO_TIPO = {
   cisto_complexo: "cisto complexo",
   nodulo: "nódulo",
   ectasia: "ectasia pielocalicial",
+  cistos_multiplos: "cistos simples múltiplos",
+  angiomiolipoma: "angiomiolipoma",
+  nefrocalcinose: "nefrocalcinose",
 } as const;
 type AchadoTipoKey = keyof typeof ACHADO_TIPO;
 
@@ -91,6 +100,7 @@ const RimSchema = z.object({
   medidas_cm: z.array(z.number()).nullable(), // [longitudinal, AP, transverso]
   espessura_parenquima_cm: z.number().nullable(),
   dimensao: z.enum(dimensaoKeys as [DimensaoKey, ...DimensaoKey[]]).nullable(), // estado dimensional (default normal)
+  diferenciacao: z.enum(["preservada", "reduzida"]).optional(),
   situacao_baixa: z.boolean(), // situação baixa (ectopia/situação alterada)
   rotacao: z.boolean(), // rotação alterada
   drc: z.boolean(), // doença renal crônica (dimensões reduzidas + dif. corticomedular reduzida)
@@ -112,6 +122,12 @@ export const ViasUrinariasFindingsSchema = z.object({
   rim_direito: RimSchema,
   rim_esquerdo: RimSchema,
   bexiga: BexigaSchema,
+  /** Contrato compartilhado usado pela web; o legado permanece para ditado/apps antigos. */
+  bexiga_detalhada: SharedBladderSchema.optional(),
+  rins_detalhados: z.object({
+    direito: SharedKidneySchema,
+    esquerdo: SharedKidneySchema,
+  }).optional(),
   dilatacao_ureteral: z.boolean(), // true se houver dilatação ureteral
   dilatacao_ureteral_descricao: z.string().nullable(), // lado/grau verbatim quando alterada
   achados_adicionais: z.string().nullable(),
@@ -411,6 +427,12 @@ function descreveAchado(ach: ViasUrinariasAchado): string {
       )}, ${situadoLoc(ach)}`;
     case "ectasia":
       return `ectasia pielocalicial ${localFmt(ach)}`;
+    case "cistos_multiplos":
+      return "múltiplas imagens anecóicas corticais, com margens regulares e reforço acústico posterior";
+    case "angiomiolipoma":
+      return `imagem nodular hiperecoica e homogênea${ach.medidas_cm ? `, medindo ${medidasFmt(ach.medidas_cm)}` : ""}, ${situadoLoc(ach)}`;
+    case "nefrocalcinose":
+      return "calcificações nas pirâmides medulares";
     default:
       return "";
   }
@@ -441,6 +463,8 @@ function rimCorpo(lado: string, rim: ViasUrinariasRim): string {
     // Doença renal crônica: redução da diferenciação corticomedular.
     final =
       "ecotextura do seio renal e diferenciação corticomedular reduzidas";
+  } else if (rim.diferenciacao === "reduzida") {
+    final = "ecotextura do seio renal preservada e diferenciação corticomedular reduzida";
   } else if (rim.situacao_baixa || rim.rotacao) {
     // Situação/rotação sem outro achado: parênquima normal.
     final = "ecotextura do seio renal e ecotextura corticomedular normais";
@@ -495,6 +519,24 @@ function bexigaCorpo(bex: ViasUrinariasBexiga): string {
   return partes.join("\n");
 }
 
+function bexigaCompartilhada(f: ViasUrinariasFindings) {
+  return f.bexiga_detalhada
+    ? renderSharedBladder(f.bexiga_detalhada, {
+        normalBody: BEXIGA_NORMAL,
+        normalConclusion: "Bexiga ecograficamente normal.",
+      })
+    : null;
+}
+
+function rinsCompartilhados(f: ViasUrinariasFindings) {
+  return f.rins_detalhados
+    ? {
+        direito: renderSharedKidney(f.rins_detalhados.direito, "direito"),
+        esquerdo: renderSharedKidney(f.rins_detalhados.esquerdo, "esquerdo"),
+      }
+    : null;
+}
+
 // ---------------------------------------------------------------------------
 // Interpretação diagnóstica de cada achado (CONCLUSÃO)
 // ---------------------------------------------------------------------------
@@ -531,6 +573,12 @@ function concluiAchado(ach: ViasUrinariasAchado, lado: string): string {
       return `Imagem nodular sólida no rim ${ladoConcl}${loc}, a esclarecer. Correlacionar com dados clínicos.`;
     case "ectasia":
       return `Ectasia pielocalicial no rim ${ladoConcl}${loc}.`;
+    case "cistos_multiplos":
+      return `Cistos simples no rim ${ladoConcl}.`;
+    case "angiomiolipoma":
+      return `Imagem sugestiva de angiomiolipoma no rim ${ladoConcl}${loc}.`;
+    case "nefrocalcinose":
+      return `Nefrocalcinose no rim ${ladoConcl}.`;
     default:
       return "";
   }
@@ -558,18 +606,20 @@ export function renderViasUrinarias(
 // ---------------------------------------------------------------------------
 
 function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
+  const sharedBladder = bexigaCompartilhada(f);
+  const sharedKidneys = rinsCompartilhados(f);
   // ----- OS SEGUINTES ASPECTOS FORAM OBSERVADOS -----
   const aspectos: string[] = [];
-  aspectos.push(rimCorpo("direito", f.rim_direito));
+  aspectos.push(sharedKidneys ? sharedKidneys.direito.body.join("\n") : rimCorpo("direito", f.rim_direito));
   aspectos.push("");
-  aspectos.push(rimCorpo("esquerdo", f.rim_esquerdo));
+  aspectos.push(sharedKidneys ? sharedKidneys.esquerdo.body.join("\n") : rimCorpo("esquerdo", f.rim_esquerdo));
   aspectos.push("");
 
   if (f.dilatacao_ureteral && f.dilatacao_ureteral_descricao) {
     aspectos.push(limpa(f.dilatacao_ureteral_descricao).concat("."));
   }
 
-  aspectos.push(bexigaCorpo(f.bexiga));
+  aspectos.push(sharedBladder ? sharedBladder.body.join("\n") : bexigaCorpo(f.bexiga));
 
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     aspectos.push("");
@@ -580,6 +630,10 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
   const conclusao: string[] = [];
 
   // 1) Rins.
+  if (sharedKidneys) {
+    if (sharedKidneys.direito.isNormal && sharedKidneys.esquerdo.isNormal) conclusao.push("Rins ecograficamente normais.");
+    else conclusao.push(...sharedKidneys.direito.conclusion, ...sharedKidneys.esquerdo.conclusion);
+  } else {
   const ladosRim: { lado: string; rim: ViasUrinariasRim }[] = [
     { lado: "direito", rim: f.rim_direito },
     { lado: "esquerdo", rim: f.rim_esquerdo },
@@ -588,6 +642,7 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
     r.achados.length > 0 ||
     !!r.alteracao_difusa ||
     r.drc ||
+    r.diferenciacao === "reduzida" ||
     r.situacao_baixa ||
     r.rotacao ||
     !!(r.hidronefrose && r.hidronefrose !== "ausente");
@@ -608,6 +663,10 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
         conclusao.push(
           `Rim ${ladoConcl} de dimensões reduzidas, com redução da diferenciação corticomedular, podendo corresponder a doença renal crônica.`,
         );
+      }
+
+      if (!rim.drc && rim.diferenciacao === "reduzida") {
+        conclusao.push(`Redução da diferenciação corticomedular do rim ${ladoConcl}.`);
       }
 
       // Situação / rotação.
@@ -642,6 +701,7 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
       }
     }
   }
+  }
 
   // 2) Ureteres.
   if (f.dilatacao_ureteral) {
@@ -654,7 +714,9 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
   }
 
   // 3) Bexiga.
-  if (!f.bexiga.avaliada) {
+  if (sharedBladder) {
+    conclusao.push(...sharedBladder.conclusion);
+  } else if (!f.bexiga.avaliada) {
     conclusao.push("Bexiga com repleção insuficiente para adequada avaliação.");
   } else if (f.bexiga.parede_alterada || f.bexiga.conteudo_alterado) {
     const sub: string[] = [];
@@ -666,7 +728,7 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
   }
 
   // 4) Resíduo pós-miccional (quando informado).
-  if (f.bexiga.residuo_pos_miccional_ml !== null) {
+  if (!sharedBladder && f.bexiga.residuo_pos_miccional_ml !== null) {
     conclusao.push(
       `Resíduo pós-miccional de ${ptBr1(f.bexiga.residuo_pos_miccional_ml)} cm³.`,
     );
@@ -756,11 +818,13 @@ function rimCorpoObjetivo(lado: string, rim: ViasUrinariasRim): string {
 }
 
 function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
+  const sharedBladder = bexigaCompartilhada(f);
+  const sharedKidneys = rinsCompartilhados(f);
   // ----- ACHADOS (estilo objetivo: frase enxuta + achados em linhas separadas) -----
   const achados: string[] = [];
-  achados.push(rimCorpoObjetivo("direito", f.rim_direito));
+  achados.push(sharedKidneys ? sharedKidneys.direito.body.join("\n") : rimCorpoObjetivo("direito", f.rim_direito));
   achados.push("");
-  achados.push(rimCorpoObjetivo("esquerdo", f.rim_esquerdo));
+  achados.push(sharedKidneys ? sharedKidneys.esquerdo.body.join("\n") : rimCorpoObjetivo("esquerdo", f.rim_esquerdo));
   achados.push("");
 
   if (f.dilatacao_ureteral && f.dilatacao_ureteral_descricao) {
@@ -769,7 +833,7 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
     achados.push("Não há sinais de dilatação ureteral.");
   }
 
-  achados.push(bexigaCorpo(f.bexiga));
+  achados.push(sharedBladder ? sharedBladder.body.join("\n") : bexigaCorpo(f.bexiga));
 
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push("");
@@ -779,6 +843,10 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
   // ----- IMPRESSÃO (mesma lógica do clássico, sem numeração com ")" — usa "N.") -----
   const impressao: string[] = [];
 
+  if (sharedKidneys) {
+    if (sharedKidneys.direito.isNormal && sharedKidneys.esquerdo.isNormal) impressao.push("Rins ecograficamente normais.");
+    else impressao.push(...sharedKidneys.direito.conclusion, ...sharedKidneys.esquerdo.conclusion);
+  } else {
   const ladosRim: { lado: string; rim: ViasUrinariasRim }[] = [
     { lado: "direito", rim: f.rim_direito },
     { lado: "esquerdo", rim: f.rim_esquerdo },
@@ -787,6 +855,7 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
     r.achados.length > 0 ||
     !!r.alteracao_difusa ||
     r.drc ||
+    r.diferenciacao === "reduzida" ||
     r.situacao_baixa ||
     r.rotacao ||
     !!(r.hidronefrose && r.hidronefrose !== "ausente");
@@ -806,6 +875,11 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
         impressao.push(
           `Rim ${ladoConcl} de dimensões reduzidas, com redução da diferenciação corticomedular, podendo corresponder a doença renal crônica.`,
         );
+      }
+
+
+      if (!rim.drc && rim.diferenciacao === "reduzida") {
+        impressao.push(`Redução da diferenciação corticomedular do rim ${ladoConcl}.`);
       }
 
       if (rim.situacao_baixa || rim.rotacao) {
@@ -836,6 +910,7 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
       }
     }
   }
+  }
 
   // Ureteres.
   if (f.dilatacao_ureteral) {
@@ -848,7 +923,9 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
   }
 
   // Bexiga.
-  if (!f.bexiga.avaliada) {
+  if (sharedBladder) {
+    impressao.push(...sharedBladder.conclusion);
+  } else if (!f.bexiga.avaliada) {
     impressao.push("Bexiga com repleção insuficiente para adequada avaliação.");
   } else if (f.bexiga.parede_alterada || f.bexiga.conteudo_alterado) {
     const sub: string[] = [];
@@ -860,7 +937,7 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
   }
 
   // Resíduo pós-miccional (quando informado).
-  if (f.bexiga.residuo_pos_miccional_ml !== null) {
+  if (!sharedBladder && f.bexiga.residuo_pos_miccional_ml !== null) {
     impressao.push(
       `Resíduo pós-miccional de ${ptBr1(f.bexiga.residuo_pos_miccional_ml)} cm³.`,
     );

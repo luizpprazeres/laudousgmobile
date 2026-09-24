@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { renderSharedBladder, SharedBladderSchema } from "./sharedUrinary";
 
 /**
  * S6 / DET-5 — Renderer de PROSTATA_SUPRAPUBICA (via transabdominal).
@@ -35,6 +36,7 @@ export const ProstataSuprapubicaFindingsSchema = z.object({
   volume_pre_miccional_ml: z.number().nullable(),
   residuo_pos_miccional_ml: z.number().nullable(),
   residuo_desprezivel: z.boolean(),
+  bexiga_detalhada: SharedBladderSchema.optional(),
   achados_adicionais: z.string().nullable(),
 });
 
@@ -151,12 +153,18 @@ function blocosProstata(f: ProstataSuprapubicaFindings): {
   const aspectos: string[] = [];
   const conclusao: string[] = [];
   const aumentada = f.hiperplasia;
+  const sharedBladder = f.bexiga_detalhada
+    ? renderSharedBladder(f.bexiga_detalhada, {
+        normalBody: "Bexiga de forma, ecotextura e contornos regulares.",
+        normalConclusion: "Bexiga ecograficamente normal.",
+      })
+    : null;
 
-  const bexigaBody =
+  const bexigaBody = sharedBladder ? sharedBladder.body.join("\n") :
     f.bexiga_achado && f.bexiga_achado.trim() !== ""
       ? `Bexiga com ${f.bexiga_achado.trim()}.`
       : "Bexiga de forma, ecotextura e contornos regulares.";
-  const volTxt =
+  const volTxt = sharedBladder ? "" :
     f.volume_pre_miccional_ml !== null
       ? ` Volume pré-miccional de ${intStr(f.volume_pre_miccional_ml)} mL.`
       : "";
@@ -181,18 +189,19 @@ function blocosProstata(f: ProstataSuprapubicaFindings): {
     aspectos.push(f.achados_adicionais.trim());
   }
 
-  conclusao.push(
-    f.bexiga_achado && f.bexiga_achado.trim() !== ""
-      ? `Alterações vesicais (${f.bexiga_achado.trim()}), a correlacionar com obstrução infravesical.`
-      : "Bexiga ecograficamente normal.",
-  );
-  if (f.residuo_pos_miccional_ml !== null) {
+  if (sharedBladder) conclusao.push(...sharedBladder.conclusion);
+  else conclusao.push(
+      f.bexiga_achado && f.bexiga_achado.trim() !== ""
+        ? `Alterações vesicais (${f.bexiga_achado.trim()}), a correlacionar com obstrução infravesical.`
+        : "Bexiga ecograficamente normal.",
+    );
+  if (!sharedBladder && f.residuo_pos_miccional_ml !== null) {
     conclusao.push(
       f.residuo_pos_miccional_ml > 100
         ? `Resíduo pós-miccional elevado (${intStr(f.residuo_pos_miccional_ml)} mL).`
         : `Resíduo pós-miccional de ${intStr(f.residuo_pos_miccional_ml)} mL.`,
     );
-  } else if (f.residuo_desprezivel) {
+  } else if (!sharedBladder && f.residuo_desprezivel) {
     conclusao.push("Resíduo pós-miccional desprezível.");
   }
   const pesoTxt = peso

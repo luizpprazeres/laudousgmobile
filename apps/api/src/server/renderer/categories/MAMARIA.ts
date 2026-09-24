@@ -593,8 +593,18 @@ function achadoCorpo(a: MamariaAchado): string {
     case "nodulo_solido": {
       const eco = a.ecogenicidade ? ecoTxt[a.ecogenicidade] : "hipoecoica";
       const partes = [`Imagem ${eco} de ${mama}`];
+      /**
+       * Forma e orientação que AFASTAM da provável benignidade entram no texto.
+       * "Oval" segue omitida (padrão da casa, snippet nodulo-solido: a frase
+       * não tem forma), e laudos ovais/paralelos continuam byte a byte iguais.
+       * Antes, "irregular" e "não paralela" chegavam ao renderer e sumiam — o
+       * laudo descrevia um nódulo suspeito sem os descritores que o tornam
+       * suspeito.
+       */
+      if (a.forma === "irregular" || a.forma === "redonda") partes.push(`de forma ${a.forma}`);
       if (a.margem) partes.push(`com margem ${margemTxt[a.margem]}`);
       if (a.orientacao === "paralela") partes.push("maior eixo paralelo à pele");
+      else if (a.orientacao === "nao_paralela") partes.push("maior eixo não paralelo à pele");
       partes.push(`medindo ${medidasFmt(a)}`);
       if (a.calcificacoes && a.calcificacoes !== "sem") partes.push("com calcificações de permeio");
       if (a.posterior && a.posterior !== "nenhuma") partes.push(posteriorTxt[a.posterior] as string);

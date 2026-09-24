@@ -219,10 +219,9 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
       { caminho: "axilas_descricao", rotulo: "Descrição dos linfonodos axilares", tipo: "texto", esperado: true },
     ],
     seed: {
-      // `titulo_com_axilas` é PRÉ-REQUISITO, não enfeite: a frase das axilas só
-      // entra no corpo quando o título as inclui (MAMARIA.ts:730). Sem ele o
-      // cenário não mudava nada, e `previaDaAlteracao` o descartou — que é o
-      // desenho funcionando: spec que não muda o laudo some da lista.
+      // O escopo explícito governa a presença das axilas no renderer atual.
+      // Só mudar o título deixava o achado selecionado fora do laudo.
+      escopo_exame: "mamas_axilas",
       titulo_com_axilas: true,
       axilas_alteradas: true,
     },

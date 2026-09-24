@@ -1,5 +1,7 @@
 # LaudoUSG — Backend Mobile (monorepo)
 
+> **Web — revisão de 24/09/2026:** cartões por órgão, formulários compartilhados de bexiga/rins, mamas compactas, sugestões BI-RADS revisáveis, MSK bilateral e blocos de recomendações/medidas hepáticas. Estado, comandos de validação e limites em [`docs/stories/2026-09-24-clinical-ui-evolution.md`](docs/stories/2026-09-24-clinical-ui-evolution.md). A prévia local não salva no banco nem valida a Sala real.
+
 > ## 📍 Retomando o trabalho? Leia também `docs/plano-web-workspace-2026-08-20.md`
 >
 > Ele tem o estado do **web.laudousg.com** e a fila do que falta. E abre com o

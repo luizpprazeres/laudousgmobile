@@ -1,0 +1,13 @@
+FAIL nódulo trocado por cisto simples sai anecoico, sem descritores sólidos :: The input did not match the regular expression /Imagem anecoica de mama direita, com margem circunscrita, medi
+FAIL descritores do cisto complicado não vazam para cistos múltiplos :: The input was expected to not match the regular expression /finos ecos internos/. Input:
+FAIL medida digitada antes não vaza para calcificações :: The input was expected to not match the regular expression /2,3/. Input:
+FAIL microcalcificação do nódulo não vaza para o linfonodo :: Expected values to be strictly equal:
+ok   o que continua visível atravessa em qualquer tipo
+FAIL forma irregular e orientação não paralela entram no corpo :: The input did not match the regular expression /Imagem hipoecoica de mama direita, de forma irregular, com mar
+FAIL forma redonda entra no corpo :: The input did not match the regular expression /de forma redonda, com margem circunscrita/. Input:
+ok   oval e paralela: texto idêntico ao de antes (forma oval segue omitida)
+FAIL renderer direto (contrato do app): forma nula e oval dão o mesmo texto :: Expected "actual" to be strictly unequal to:
+FAIL calcificações sem padrão → pendência que bloqueia, nenhum texto de grosseiras :: Expected values to be strictly equal:
+ok   calcificações grosseiras escolhidas → frase de grosseiras
+ok   rascunho legado md/me continua adaptado
+mamariaAdapter: 4 casos OK

@@ -39,8 +39,10 @@ const schema: OrganSchema = {
   fields: [
     {
       key: 'estado',
-      label: 'Estado',
+      label: 'Aspecto da vesícula',
       kind: 'segmented',
+      presentation: 'select',
+      hideLabel: true,
       hint: 'default: normal',
       options: [
         { value: 'normal', label: 'Normal', isDefault: true },

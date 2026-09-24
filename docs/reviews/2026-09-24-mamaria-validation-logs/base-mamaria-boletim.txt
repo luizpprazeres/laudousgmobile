@@ -1,0 +1,2 @@
+✓ boletim gerado: /Users/luizprazeres/laudousgmobile-def/docs/mamaria-boletim-avaliacao.html
+  20 casos renderizados

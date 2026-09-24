@@ -1,0 +1,90 @@
+══════════════════════════════════════════════════════════════════════════
+MAMÁRIA — a travessia para o renderer canônico
+══════════════════════════════════════════════════════════════════════════
+
+▸ cobertura de campo
+  ✓ 19 campos da tela, todos lidos pelo adaptador
+
+
+▸ exame normal
+  o mais comum. Se este divergir em capacidade, não há piloto.
+  ✓ renderiza · 12 linhas
+  conclusão: 1. Mamas ecograficamente normais (Categoria BI-RADS® 1). | 2. Linfonodos axilares normais.
+
+
+▸ nódulo sólido benigno à direita
+  prova a tradução do TIPO: a tela diz `nodulo`, o canônico `nodulo_solido`. Chave desconhecida faz o Zod recusar o laudo INTEIRO — não é detalhe de nome.
+  ✓ renderiza · 12 linhas
+  conclusão: 1. Imagem sólida em mama direita no quadrante superolateral. | 2. Linfonodos axilares normais.
+
+
+▸ nódulo com TODOS os descritores suspeitos
+  a conclusão não pode tranquilizar sobre um achado que pede investigação.
+  ✓ renderiza · 12 linhas
+  conclusão: 1. Imagem sólida em mama direita no quadrante superolateral. | 2. Linfonodos axilares normais.
+
+
+▸ cisto simples
+  o achado benigno mais comum; a categoria sugerida só entra após confirmação.
+  ✓ renderiza · 12 linhas
+  conclusão: 1. Cisto simples em mama direita no quadrante superomedial. | 2. Linfonodos axilares normais.
+
+
+▸ cistos múltiplos, bilaterais
+  um achado em cada mama — os dois têm de sobreviver.
+  ✓ renderiza · 13 linhas
+  conclusão: 1. Cistos mamários simples bilateralmente, subcentimétricos. | 2. Linfonodos axilares normais.
+
+
+▸ calcificações grosseiras
+  prova a segunda tradução: a tela diz `grosseiras`, o canônico `grosseiras_benignas`.
+  ✓ renderiza · 13 linhas
+  conclusão: 1. Calcificações grosseiras de aspecto benigno em mama direita no quadrante inferolateral. | 2. Linfonodos axilares normais.
+
+
+▸ microcalcificações
+  o extremo oposto do caso acima — não pode sair como benigno.
+  ✓ renderiza · 13 linhas
+  conclusão: 1. Microcalcificações agrupadas em mama direita. | 2. Linfonodos axilares normais.
+
+
+▸ BI-RADS forçado pelo médico
+  a tela deixa forçar e o canônico aceita `birads_ditado`. Diferente da tireoide, aqui é seguro: a escala é a mesma (ACR) dos dois lados. Prova que a decisão dele vence o cálculo.
+  ✓ renderiza · 12 linhas
+  conclusão: 1. Imagem sólida em mama direita no quadrante superolateral (Categoria BI-RADS® 4A). | 2. Linfonodos axilares normais.
+
+
+▸ axilas avaliadas e normais
+  o título só menciona axilas quando elas foram olhadas.
+  ✓ renderiza · 12 linhas
+  conclusão: 1. Mamas ecograficamente normais (Categoria BI-RADS® 1). | 2. Linfonodos axilares normais.
+
+
+▸ axilas NÃO avaliadas
+  o inverso, e é o que protege: sem isto o laudo se anunciaria como exame das regiões axilares num exame em que ninguém as olhou.
+  ✓ renderiza · 10 linhas
+  conclusão: Mamas ecograficamente normais (Categoria BI-RADS® 1).
+
+
+▸ axilas isoladas
+  o exame pode avaliar somente as regiões axilares sem inventar avaliação mamária ou BI-RADS.
+  ✓ renderiza · 8 linhas
+  conclusão: Linfonodos axilares normais.
+
+
+▸ axilas alteradas
+  o achado axilar tem de chegar à conclusão, não só ao corpo.
+  ✓ renderiza · 12 linhas
+  conclusão: 1. Mamas ecograficamente normais (Categoria BI-RADS® 1). | 2. Linfonodos axilares de aspecto atípico (Linfonodo com cortical espessada de 0,6 cm à direita).
+
+
+▸ mama de fundo adiposo
+  a ecotextura de fundo é escolha da tela e vira texto no canônico.
+  ✓ renderiza · 12 linhas
+  conclusão: 1. Mamas ecograficamente normais (Categoria BI-RADS® 1). | 2. Linfonodos axilares normais.
+
+
+══════════════════════════════════════════════════════════════════════════
+✓ nenhum achado perdido nem invertido em silêncio
+  0 caso(s) o canônico ainda NÃO cobre — o médico os perderia hoje.
+══════════════════════════════════════════════════════════════════════════

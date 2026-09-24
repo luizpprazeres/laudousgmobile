@@ -94,7 +94,9 @@ for (const style of ['CLASSICO_COMPLETO', 'OBJETIVO']) {
     if (!r.ok) return
     assert.match(r.texto, /DOPPLERVELOCIMETRIA OBSTÉTRICA/)
     assert.match(r.texto, /umbilical/i)
-    assert.doesNotMatch(r.texto, /1900|1\.900|OBSERVACAO OBSTETRICA TESTE|placenta|biometria|cervicometria/i)
+    // "inserção na placenta" descreve a técnica de aquisição do Doppler e é
+    // legítimo. O que não pode vazar é uma seção de avaliação placentária.
+    assert.doesNotMatch(r.texto, /1900|1\.900|OBSERVACAO OBSTETRICA TESTE|^\s*Placenta\b|biometria|cervicometria/im)
   })
 }
 console.log(`${cases} Doppler web cases passed`)

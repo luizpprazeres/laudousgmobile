@@ -55,7 +55,7 @@ export function BiometryGrowthPanel({
       : `Aplicar ${hadlock.valor} g ao peso estimado`
     : ''
   return (
-    <div className={`min-w-0 ${compact ? 'space-y-3' : 'space-y-4'}`}>
+    <div className="grid min-w-0 grid-cols-1 gap-4 min-[1100px]:grid-cols-2 min-[1100px]:gap-6">
       <section className="min-w-0">
         <h2 className={headingClass}>Biometria</h2>
         <OrganFormPanel
@@ -87,7 +87,7 @@ export function BiometryGrowthPanel({
           )}
         </div>
       </section>
-      <section className={`min-w-0 border-t pt-3 ${compact ? 'border-gray-100 dark:border-gray-800' : 'border-gray-200 dark:border-gray-800'}`}>
+      <section className={`min-w-0 border-t pt-3 min-[1100px]:border-l min-[1100px]:border-t-0 min-[1100px]:pl-6 min-[1100px]:pt-0 ${compact ? 'border-gray-100 dark:border-gray-800' : 'border-gray-200 dark:border-gray-800'}`}>
         {printable && <div className="mb-1 flex justify-end">
           <button type="button" onClick={() => setPrintOpen(true)} aria-label="Abrir folha de crescimento fetal" title="Abrir folha de crescimento fetal"
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">

@@ -12,6 +12,7 @@
 
 import type { ExamCategory } from './abdomeTotal'
 import type { OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
+import { createSharedBladderModule } from './urinaryShared'
 
 // ── helpers (espelham o renderer) ────────────────────────────────────────────
 function parseCm(v: unknown): number | null {
@@ -55,90 +56,7 @@ export function ippGrau(cm: number): string {
   return 'protrusão acentuada'
 }
 
-// ── Bexiga ───────────────────────────────────────────────────────────────────
-const bexigaSchema: OrganSchema = {
-  id: 'bexiga',
-  name: 'Bexiga',
-  category: 'PROSTATA_SUPRAPUBICA',
-  fields: [
-    {
-      key: 'achados',
-      label: 'Alterações',
-      kind: 'checklist',
-      hint: 'marque se houver',
-      options: [
-        { value: 'espessamento', label: 'Espessamento parietal' },
-        { value: 'trabeculacao', label: 'Trabeculação' },
-        { value: 'calculo', label: 'Cálculo vesical' },
-        { value: 'diverticulo', label: 'Divertículo' },
-      ],
-    },
-    { key: 'volume_pre', label: 'Volume pré-miccional (mL)', kind: 'text', placeholder: '250' },
-    {
-      key: 'residuo',
-      label: 'Resíduo pós-miccional',
-      kind: 'segmented',
-      options: [
-        { value: 'nao_informado', label: 'Não informado', isDefault: true },
-        { value: 'desprezivel', label: 'Desprezível' },
-        {
-          value: 'valor',
-          label: 'Valor',
-          subFields: [{ key: 'ml', label: 'mL', kind: 'text', placeholder: '80' }],
-        },
-      ],
-    },
-  ],
-}
-
-const BEXIGA_ACHADO_BODY: Record<string, string> = {
-  espessamento: 'espessamento parietal',
-  trabeculacao: 'trabeculação parietal',
-  calculo: 'imagem hiperecogênica com sombra acústica de permeio (cálculo)',
-  diverticulo: 'imagem sacular comunicante (divertículo)',
-}
-
-function bexigaInitial(): OrganState {
-  return { achados: [], volume_pre: '', residuo: 'nao_informado', 'residuo.valor.ml': '' }
-}
-
-function bexigaCompose(state: OrganState): OrganComposition {
-  const achados = (state.achados as string[]) || []
-  const volume = intStr(state.volume_pre)
-  const residuo = (state.residuo as string) || 'nao_informado'
-  const residuoMl = intStr(state['residuo.valor.ml'])
-
-  const volTxt = volume ? ` Volume pré-miccional de ${volume} mL.` : ''
-  const conclusion: string[] = []
-
-  let body: string
-  if (achados.length > 0) {
-    const lista = achados.map((a) => BEXIGA_ACHADO_BODY[a] ?? a).join(', ')
-    body = `Bexiga com ${lista}.${volTxt}`
-    conclusion.push(`Alterações vesicais (${lista}), a correlacionar com obstrução infravesical.`)
-  } else {
-    body = `Bexiga de forma, ecotextura e contornos regulares.${volTxt}`
-    conclusion.push('Bexiga ecograficamente normal.')
-  }
-
-  if (residuo === 'valor' && residuoMl) {
-    conclusion.push(
-      Number(residuoMl) > 100
-        ? `Resíduo pós-miccional elevado (${residuoMl} mL).`
-        : `Resíduo pós-miccional de ${residuoMl} mL.`
-    )
-  } else if (residuo === 'desprezivel') {
-    conclusion.push('Resíduo pós-miccional desprezível.')
-  }
-
-  return { body, conclusion, isNormal: achados.length === 0 }
-}
-
-const bexigaModule: OrganModule = {
-  schema: bexigaSchema,
-  initialState: bexigaInitial,
-  compose: bexigaCompose,
-}
+const bexigaModule = createSharedBladderModule('PROSTATA_SUPRAPUBICA')
 
 // ── Próstata ─────────────────────────────────────────────────────────────────
 const prostataSchema: OrganSchema = {

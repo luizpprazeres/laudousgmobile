@@ -1,0 +1,10 @@
+  • o suspeito recebe TI-RADS alto
+  • o benigno recebe TI-RADS baixo
+  • …e traz as duas classificações
+  • MAMARIA/CLASSICO_COMPLETO · axilas_atipicas: renderiza e muda o laudo
+  • MAMARIA/OBJETIVO · axilas_atipicas: renderiza e muda o laudo
+  • o suspeito recebe BI-RADS alto
+  • o benigno recebe BI-RADS baixo
+  • …e a classificação calculada
+  • MAMARIA/CLASSICO_COMPLETO: fora do padrão diz ATÍPICO
+  • MAMARIA/OBJETIVO: fora do padrão diz ATÍPICO

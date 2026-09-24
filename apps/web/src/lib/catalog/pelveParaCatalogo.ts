@@ -26,6 +26,12 @@
  *   renderer. Duas autoridades sobre o mesmo laudo, não.
  */
 
+import {
+  bladderStateConflicts,
+  bladderInputIssues,
+  normalizeBladderState,
+} from "../deterministic/organs/urinaryShared";
+
 /** O que a tela guarda de uma seção. Nada aqui é tipado pelo compilador. */
 type EstadoDaSecao = Record<string, unknown>;
 export type EstadoDaPelve = Record<string, EstadoDaSecao | unknown>;
@@ -174,12 +180,19 @@ export function adaptarPelve(
   const e = secao(estado, "endometrio");
   const od = secao(estado, "ovario_direito");
   const oe = secao(estado, "ovario_esquerdo");
+  const bexiga = normalizeBladderState(secao(estado, "bexiga"));
 
   const modo = typeof opcoes.modo_pelve === "string" ? opcoes.modo_pelve : "rotina";
   const viaInformada = typeof opcoes.via === "string" ? opcoes.via : "ta_tv";
   const via = modo === "pos_abortamento" ? "pos_abortamento" : modo === "monitorizacao_folicular" ? "tv" : viaInformada;
   const dopplerRealizado = modo === "doppler";
   const menopausa = Array.isArray(opcoes.menopausa) && opcoes.menopausa.includes("sim");
+
+  if (via !== "tv") {
+    for (const motivo of [...bladderStateConflicts(bexiga), ...bladderInputIssues(secao(estado, "bexiga"))]) {
+      pendencias.push({ onde: "bexiga", valor: bexiga.replecao, motivo, bloqueia: true });
+    }
+  }
 
   const uteroMedidas = medidas(texto(u, "medidas"));
 
@@ -231,6 +244,7 @@ export function adaptarPelve(
     via,
     modo,
     doppler_realizado: dopplerRealizado,
+    bexiga: via === "tv" ? null : bexiga,
 
     utero_posicao: texto(u, "posicao") || null,
     utero_medidas_cm: uteroMedidas,

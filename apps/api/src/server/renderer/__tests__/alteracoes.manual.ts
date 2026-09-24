@@ -45,16 +45,30 @@ console.log("2 · a MEDIDA vira lacuna — o modelo não crava o número do cen�
   t("…sem nenhum número do seed", !/1,3|1,2 cm|0,9 x/.test(linha), linha);
 }
 
-console.log("3 · o RENDERER é quem classifica — o cenário não diz TI-RADS\n");
+console.log("3 · o RENDERER é quem classifica — o cenário não diz a NOTA\n");
 {
+  /**
+   * CONTRATO ATUAL (TIREOIDE.ts, `noduloConclusao`): o clássico classifica pelo
+   * escore de DOMINGOS — "NOTA FINAL n (características … pela escala de
+   * Domingos)", categorias 1-4 (≤3, ≤5, ≤9, ≥10). O ACR TI-RADS é uma conta
+   * INDEPENDENTE, feita só dos cinco grupos ACR, e "a Nota de Domingos não é
+   * atalho para ACR". Este gate afirmava "TI-RADS 4/5" — do tempo em que a nota
+   * era convertida em TI-RADS; a asserção ficou obsoleta, o princípio não.
+   */
   const suspeito = previaDaAlteracao(CAT, "CLASSICO_COMPLETO", de("nodulo_solido_suspeito"))!;
   const benigno = previaDaAlteracao(CAT, "CLASSICO_COMPLETO", de("nodulo_solido_benigno"))!;
   const cSus = suspeito.entram.join(" ");
   const cBen = benigno.entram.join(" ");
-  t("o suspeito recebe TI-RADS alto", /TI-RADS [45]/.test(cSus), cSus.slice(0, 110));
-  t("o benigno recebe TI-RADS baixo", /TI-RADS [123]/.test(cBen), cBen.slice(0, 110));
-  t("os dois recebem classificações DIFERENTES",
-    (cSus.match(/TI-RADS \d/)?.[0] ?? "a") !== (cBen.match(/TI-RADS \d/)?.[0] ?? "b"));
+  const nota = (c: string) => Number(c.match(/NOTA FINAL (\d+)/)?.[1] ?? Number.NaN);
+  const nSus = nota(cSus);
+  const nBen = nota(cBen);
+  t("o suspeito recebe NOTA FINAL alta (categoria 4 de Domingos: ≥ 10)", nSus >= 10, cSus.slice(-140));
+  t("…e o renderer o descreve como SUSPEITO", /características suspeitas pela escala de Domingos/.test(cSus), cSus.slice(-140));
+  t("o benigno recebe NOTA FINAL baixa (categoria 1 de Domingos: ≤ 3)", nBen <= 3, cBen.slice(-140));
+  t("…e o renderer o descreve como BENIGNO", /características benignas pela escala de Domingos/.test(cBen), cBen.slice(-140));
+  t("as duas notas são DIFERENTES", Number.isFinite(nSus) && Number.isFinite(nBen) && nSus !== nBen, `${nSus} × ${nBen}`);
+  // Contraposição: sem os cinco grupos ACR no cenário, nenhum ACR TI-RADS é inventado.
+  t("a nota de Domingos NÃO é convertida em ACR TI-RADS", !/ACR TI-RADS/.test(`${cSus} ${cBen}`), `${cSus.slice(-100)}`);
   // A prova de que a classificação não está escrita no cenário:
   t("nenhum cenário menciona TI-RADS ou nota",
     !JSON.stringify(specs).match(/TI-RADS|NOTA FINAL/i));
@@ -99,7 +113,9 @@ console.log("4 · combinar duas alterações dá um laudo COERENTE\n");
     // não concatenada pela tela.
     const concl = r.texto.split(/CONCLUS[ÃA]O:/)[1] ?? "";
     t("a conclusão numera os quatro itens", /(^|\n)\s*4[.)]/.test(concl), concl.trim().slice(0, 140));
-    t("…e traz as duas classificações", (concl.match(/TI-RADS/g) ?? []).length === 2);
+    // Uma NOTA FINAL de Domingos por imagem (contrato atual); ACR só com os cinco grupos ACR.
+    t("…e traz as duas classificações", (concl.match(/NOTA FINAL \d+/g) ?? []).length === 2, concl.trim().slice(0, 200));
+    t("…sem inventar ACR TI-RADS", !/ACR TI-RADS/.test(concl));
   }
 }
 
@@ -164,6 +180,9 @@ console.log("7 · o desenho GENERALIZA — vale para toda categoria curada\n");
         // Um cenário pode valer só num estilo — e declara isso. O que não pode
         // é aparecer na lista e não fazer nada ao ser clicado.
         if (spec.estilos && !spec.estilos.includes(estilo)) continue;
+        // Regressão real corrigida: axilas_atipicas precisa declarar
+        // `escopo_exame: "mamas_axilas"` para não desaparecer do catálogo.
+        // Evidência: docs/reviews/2026-09-24-alteracoes-manual-evidence.md
         const p = previaDaAlteracao(cat, estilo, spec);
         t(`${cat}/${estilo} · ${spec.id}: renderiza e muda o laudo`, p !== null);
       }
@@ -174,17 +193,50 @@ console.log("7 · o desenho GENERALIZA — vale para toda categoria curada\n");
   }
 }
 
-console.log("8 · MAMÁRIA — outra classificação calculada, mesmo mecanismo\n");
+console.log("8 · MAMÁRIA — a categoria BI-RADS é do MÉDICO; o cálculo só entra com permissão\n");
 {
+  /**
+   * CONTRATO ATUAL (MAMARIA.ts, `biradsDoAchado`): BI-RADS DITADO vence; sem
+   * ditado, o cálculo só existe com `permitir_birads_calculado = true`. Os
+   * cenários não o ligam — clicar "nódulo suspeito" não classifica ninguém. A
+   * versão antiga deste gate exigia "BI-RADS 4/5" direto do cenário; isso era o
+   * comportamento que a decisão de 09/2026 (sugestão ≠ decisão) removeu de
+   * propósito. Mantém-se o que sempre foi o princípio — o RENDERER classifica, o
+   * cenário não — e acrescentam-se as contraposições do contrato novo.
+   */
   const m = (id: string) => alteracoesDe("MAMARIA").find((s) => s.id === id)!;
   const suspeito = previaDaAlteracao("MAMARIA", "CLASSICO_COMPLETO", m("nodulo_solido_suspeito"))!;
   const benigno = previaDaAlteracao("MAMARIA", "CLASSICO_COMPLETO", m("nodulo_solido_benigno"))!;
   const cSus = suspeito.entram.join(" ");
   const cBen = benigno.entram.join(" ");
-  t("o suspeito recebe BI-RADS alto", /BI-RADS® [45]/.test(cSus), cSus.slice(0, 120));
-  t("o benigno recebe BI-RADS baixo", /BI-RADS® [123]/.test(cBen), cBen.slice(0, 120));
-  t("as categorias são diferentes",
-    (cSus.match(/BI-RADS® \d/)?.[0] ?? "a") !== (cBen.match(/BI-RADS® \d/)?.[0] ?? "b"));
+  const categoria = (texto: string) => texto.match(/Categoria BI-RADS® (\w+)/)?.[1] ?? null;
+
+  // 1 · sem ditado e sem permissão: NENHUMA categoria é inventada.
+  t("sem ditado nem permissão, o suspeito NÃO recebe categoria", !/BI-RADS® \d/.test(cSus), cSus.slice(-140));
+  t("sem ditado nem permissão, o benigno NÃO recebe categoria", !/BI-RADS® \d/.test(cBen), cBen.slice(-140));
+
+  const comAchados = (id: string, extra: Record<string, unknown>) => {
+    const seed = m(id).seed as { achados: Record<string, unknown>[] };
+    return { ...seed, achados: seed.achados.map((a) => ({ ...a, ...extra })) };
+  };
+  for (const estilo of ["CLASSICO_COMPLETO", "OBJETIVO"]) {
+    const render = (id: string, extra: Record<string, unknown>) =>
+      laudoPadraoDe("MAMARIA", estilo, comAchados(id, extra)) ?? "";
+
+    // 2 · com permissão, é o RENDERER quem calcula — e distingue os dois cenários.
+    const catSus = categoria(render("nodulo_solido_suspeito", { permitir_birads_calculado: true }));
+    const catBen = categoria(render("nodulo_solido_benigno", { permitir_birads_calculado: true }));
+    t(`${estilo}: permitido, o suspeito recebe BI-RADS alto (4/5)`, /^[45]/.test(catSus ?? ""), String(catSus));
+    t(`${estilo}: permitido, o benigno recebe BI-RADS baixo (1-3)`, /^[123]/.test(catBen ?? ""), String(catBen));
+    t(`${estilo}: as categorias são diferentes`, catSus !== null && catBen !== null && catSus !== catBen);
+
+    // 3 · o DITADO vence o cálculo (nos dois sentidos) e vale mesmo sem permissão.
+    t(`${estilo}: ditado 2 vence o cálculo do suspeito`,
+      categoria(render("nodulo_solido_suspeito", { permitir_birads_calculado: true, birads_ditado: "2" })) === "2");
+    t(`${estilo}: ditado 5 vale sem permissão de cálculo`,
+      categoria(render("nodulo_solido_benigno", { birads_ditado: "5" })) === "5");
+  }
+
   // A frase normal "não há sinais evidentes" precisa SAIR quando há achado —
   // é o mesmo princípio de não deixar normalidade encobrir patologia.
   t("a frase de normalidade sai quando há nódulo",
@@ -296,7 +348,7 @@ console.log("\n10 · o que se DIGITA não pode apagar o achado do cenário\n");
   t("tireoidite E nódulo convivem", juntos.ok);
   t("…com a alteração difusa", juntos.ok && juntos.texto.includes("difusamente heterogênea"));
   t("…com o nódulo", juntos.ok && juntos.texto.includes("hipoecoica"));
-  t("…e a classificação calculada", juntos.ok && /TI-RADS \d/.test(juntos.texto));
+  t("…e a classificação calculada", juntos.ok && /NOTA FINAL \d+/.test(juntos.texto));
 }
 
 console.log("\n11 · chave de protótipo não contamina o achado\n");
@@ -410,8 +462,11 @@ console.log("\n13 · linfonodo fora do padrão é ATÍPICO — a palavra é do m
       { linfonodos_descritos: true, linfonodos_alterados: false },
       { linfonodos_descritos: true, linfonodos_alterados: true }],
     ["MAMARIA",
-      { titulo_com_axilas: true, axilas_alteradas: false },
-      { titulo_com_axilas: true, axilas_alteradas: true }],
+      // `escopo_exame` GOVERNA as axilas (MAMARIA.ts `escopoDe`): o achado normal
+      // derivado do schema o preenche com "mamas", e só `titulo_com_axilas`
+      // não basta. Os seeds antigos não o informavam e não chegavam a ter axilas.
+      { escopo_exame: "mamas_axilas", titulo_com_axilas: true, axilas_alteradas: false },
+      { escopo_exame: "mamas_axilas", titulo_com_axilas: true, axilas_alteradas: true }],
   ];
 
   /**

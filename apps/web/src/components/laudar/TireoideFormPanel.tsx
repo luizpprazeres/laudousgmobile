@@ -25,6 +25,7 @@ type Props = {
   section: string
   state: TireoideState
   onChange: (next: TireoideState) => void
+  showCompanionConflicts?: boolean
 }
 
 const LOBO_LABELS: Record<LoboId, string> = {
@@ -553,8 +554,13 @@ function LinfonodosPanel({ state, onChange }: Omit<Props, 'section'>) {
   )
 }
 
-export function TireoideFormPanel({ section, state, onChange }: Props) {
+export function TireoideCompanionNotice({ state }: { state: TireoideState }) {
   const conflicts = state.companionConflitos ?? []
+  if (!conflicts.length) return null
+  return <div role="status" className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"><strong>A imagem trouxe dados diferentes dos já digitados.</strong><div className="mt-1">Mantivemos o formulário. Revise: {conflicts.join(' · ')}</div></div>
+}
+
+export function TireoideFormPanel({ section, state, onChange, showCompanionConflicts = true }: Props) {
   let content: React.ReactNode
   if (section === 'nodulos') content = <NodulosPanel state={state} onChange={onChange} />
   else if (section === 'parenquima') content = <ParenquimaPanel state={state} onChange={onChange} />
@@ -568,7 +574,7 @@ export function TireoideFormPanel({ section, state, onChange }: Props) {
   )
 
   return <>
-    {conflicts.length ? <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"><strong>A imagem trouxe dados diferentes dos já digitados.</strong><div className="mt-1">Mantivemos o formulário. Revise: {conflicts.join(' · ')}</div></div> : null}
+    {showCompanionConflicts ? <TireoideCompanionNotice state={state} /> : null}
     {content}
   </>
 }

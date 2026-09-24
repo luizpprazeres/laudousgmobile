@@ -4,6 +4,9 @@ const { resolve } = require('node:path')
 const cwd = resolve(__dirname, '..')
 const files = [
   'tests/biometryGrowthSections.manual.ts',
+  'tests/liverQuantification.manual.ts',
+  'tests/mamariaBirads.manual.ts',
+  'tests/mamariaAdapter.manual.ts',
   'tests/dopplerWebMode.manual.ts',
   'tests/fetalGrowthContext.manual.ts',
   'tests/fetalGrowthPercentile.manual.ts',

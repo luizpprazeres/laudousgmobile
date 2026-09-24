@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, RefObject } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useMotivationalQuote } from "@/lib/useMotivationalQuote";
 import type { Quote } from "@/lib/motivationalQuotes";
 
@@ -1352,9 +1353,9 @@ function InvalidState({ reason }: { reason: InvalidReason }) {
         {copy.titlePrefix} <em>{copy.titleAccent}</em>.
       </h1>
       <p className="state-body">{copy.body}</p>
-      <a href="/sala" className="ghost-button">
+      <Link href="/sala" className="ghost-button">
         ← {copy.cta}
-      </a>
+      </Link>
     </div>
   );
 }

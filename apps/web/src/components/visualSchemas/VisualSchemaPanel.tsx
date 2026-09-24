@@ -20,10 +20,11 @@ type Props = {
   venousMap?: MapaVenoso
   onBreastChange: (state: OrganState) => void
   onThyroidChange: (state: TireoideState) => void
+  embedded?: boolean
   onClose: () => void
 }
 
-export function VisualSchemaPanel({ category, breastState, fetalState, thyroidState, venousMap, onBreastChange, onThyroidChange, onClose }: Props) {
+export function VisualSchemaPanel({ category, breastState, fetalState, thyroidState, venousMap, onBreastChange, onThyroidChange, onClose, embedded = false }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [status, setStatus] = useState<'idle' | 'working' | 'sent' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -80,13 +81,13 @@ export function VisualSchemaPanel({ category, breastState, fetalState, thyroidSt
     }
   }
 
-  return <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]">
+  return <section data-visual-schema-inline={embedded || undefined} className={embedded ? "flex min-w-0 flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#1C1C1E]" : "flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1C1C1E]"}>
     <header className="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"><Move className="h-4 w-4" /></div>
       <div className="min-w-0 flex-1"><h2 className="font-barlow text-lg font-bold">{category === 'VENOUS' ? 'Cartografia venosa' : 'Esquema visual'}</h2><p className="text-[11px] text-gray-500">{category === 'FETAL_POSITION' ? 'O desenho acompanha a situação fetal informada no formulário.' : category === 'VENOUS' ? 'Os segmentos alterados são projetados a partir dos mesmos achados estruturados do laudo.' : 'Arraste os marcadores. O formulário será atualizado junto.'}</p></div>
-      <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Voltar ao laudo"><X className="h-4 w-4" /></button>
+      <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label={embedded ? "Ocultar esquema" : "Voltar ao laudo"}><X className="h-4 w-4" /></button>
     </header>
-    <div className="min-h-0 flex-1 overflow-auto bg-gray-50 p-4 dark:bg-gray-950/40">
+    <div className={embedded ? "min-w-0 bg-gray-50 p-2 dark:bg-gray-950/40 sm:p-3" : "min-h-0 flex-1 overflow-auto bg-gray-50 p-4 dark:bg-gray-950/40"}>
       {category === 'MAMARIA'
         ? <>
           <BreastSchema findings={breast} svgRef={svgRef} onMove={(id, position) => onBreastChange(moveBreastFinding(breastState, id, position))} />

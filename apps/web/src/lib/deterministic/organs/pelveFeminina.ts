@@ -13,6 +13,7 @@
 import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
 import { oRadsSpec, figoMiomaSpec } from '../../calculators/specs'
+import { createSharedBladderModule } from './urinaryShared'
 
 // ── Via do exame (controle de categoria) ─────────────────────────────────────
 const VIA_TITULO: Record<string, string> = {
@@ -76,22 +77,7 @@ function limpa(s: string): string {
   return s.trim().replace(/\.+$/, '')
 }
 
-// ── Bexiga (sempre normal nesta via) ─────────────────────────────────────────
-const bexigaModule: OrganModule = {
-  schema: { id: 'bexiga', name: 'Bexiga', category: 'PELVE_FEMININA', fields: [
-    { key: 'estado', label: 'Estado', kind: 'segmented', hint: 'default: normal', options: [{ value: 'normal', label: 'Normal', isDefault: true }] },
-  ] },
-  initialState: () => ({ estado: 'normal' }),
-  compose: (_state, opts): OrganComposition => {
-    // Na via transvaginal pura a bexiga não é avaliada.
-    if (viaDe(opts) === 'tv') return { body: '', conclusion: [], isNormal: true }
-    return {
-      body: 'Bexiga de forma, contorno e ecotextura normais.',
-      conclusion: ['Bexiga ecograficamente normal.'],
-      isNormal: true,
-    }
-  },
-}
+const bexigaModule = createSharedBladderModule('PELVE_FEMININA')
 
 // ── Útero ────────────────────────────────────────────────────────────────────
 const miomaSubs: Field[] = [
@@ -321,6 +307,14 @@ function makeOvarioModule(lado: 'direito' | 'esquerdo'): OrganModule {
 }
 
 // ── Categoria ────────────────────────────────────────────────────────────────
+const pelveSections: ExamCategory['sections'] = [
+  { id: 'utero', label: 'Útero', group: 'orgaos', module: uteroModule },
+  { id: 'endometrio', label: 'Endométrio', group: 'orgaos', module: endometrioModule },
+  { id: 'ovario_direito', label: 'Ovário direito', group: 'orgaos', module: makeOvarioModule('direito') },
+  { id: 'ovario_esquerdo', label: 'Ovário esquerdo', group: 'orgaos', module: makeOvarioModule('esquerdo') },
+  { id: 'bexiga', label: 'Bexiga', group: 'orgaos', module: bexigaModule },
+]
+
 export const pelveFeminina: ExamCategory = {
   id: 'PELVE_FEMININA',
   name: 'Pelve (feminina)',
@@ -369,13 +363,10 @@ export const pelveFeminina: ExamCategory = {
       : base
   },
   // Útero primeiro (mais útil); bexiga no fim.
-  sections: [
-    { id: 'utero', label: 'Útero', group: 'orgaos', module: uteroModule },
-    { id: 'endometrio', label: 'Endométrio', group: 'orgaos', module: endometrioModule },
-    { id: 'ovario_direito', label: 'Ovário direito', group: 'orgaos', module: makeOvarioModule('direito') },
-    { id: 'ovario_esquerdo', label: 'Ovário esquerdo', group: 'orgaos', module: makeOvarioModule('esquerdo') },
-    { id: 'bexiga', label: 'Bexiga', group: 'orgaos', module: bexigaModule },
-  ],
+  sections: pelveSections,
+  resolveSections: (opts) => viaDe(opts) === 'tv'
+    ? pelveSections.filter((section) => section.id !== 'bexiga')
+    : pelveSections,
   conclusionNormal: 'Exame ultrassonográfico da pelve dentro dos limites da normalidade.',
   calculators: [oRadsSpec, figoMiomaSpec],
 }

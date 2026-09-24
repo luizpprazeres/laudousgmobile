@@ -43,7 +43,7 @@ function inlineHtml(block: string): string {
   if (isFmfReference(block)) {
     return `<em>${escaped}</em>`
   }
-  const headings = ['COMENTÁRIOS:', 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:', 'CONCLUSÃO:', 'TÉCNICA:', 'ACHADOS:', 'IMPRESSÃO:']
+  const headings = ['COMENTÁRIOS:', 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:', 'CONCLUSÃO:', 'TÉCNICA:', 'ACHADOS:', 'IMPRESSÃO:', 'RECOMENDAÇÕES:']
   const heading = headings.find((candidate) => block.startsWith(candidate))
   if (!heading) return escaped
   const encodedHeading = escapeHtml(heading)

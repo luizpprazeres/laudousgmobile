@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { renderSharedBladder, SharedBladderSchema } from "./sharedUrinary";
 
 /**
  * DET-5 — Renderer de PELVE_FEMININA (ultrassonografia pélvica ginecológica),
@@ -84,6 +85,8 @@ export const PelveFemininaFindingsSchema = z.object({
   via: z.enum(ViaEnum).nullable(), // null → default "ta_tv"
   modo: z.enum(["rotina", "doppler", "monitorizacao_folicular", "pos_abortamento"]).optional(),
   doppler_realizado: z.boolean().optional(),
+  /** Presente no formulário web; null/ausente mantém compatibilidade com extração antiga. */
+  bexiga: SharedBladderSchema.nullable().optional(),
 
   // Útero
   utero_posicao: z.string().nullable(), // "anteversão", "anteversoflexão"...
@@ -990,12 +993,18 @@ function renderPelveFemininaClassico(f: PelveFemininaFindings, dedup = false): s
   const titulo = tituloDaVia(via, f.modo);
   const comentarios = comentariosDaVia(via, f.doppler_realizado || f.modo === "doppler");
   const comBexiga = temBexiga(via);
+  const sharedBladder = comBexiga && f.bexiga
+    ? renderSharedBladder(f.bexiga, {
+        normalBody: "Bexiga de forma, contorno e ecotextura normais.",
+        normalConclusion: "Bexiga ecograficamente normal.",
+      })
+    : null;
 
   // ----- CORPO -----
   const aspectos: string[] = [];
 
   if (comBexiga) {
-    aspectos.push("Bexiga de forma, contorno e ecotextura normais.");
+    aspectos.push(...(sharedBladder?.body ?? ["Bexiga de forma, contorno e ecotextura normais."]));
   }
 
   // Útero.
@@ -1061,7 +1070,7 @@ function renderPelveFemininaClassico(f: PelveFemininaFindings, dedup = false): s
   const conclusao: string[] = [];
 
   if (comBexiga) {
-    conclusao.push("Bexiga ecograficamente normal.");
+    conclusao.push(...(sharedBladder?.conclusion ?? ["Bexiga ecograficamente normal."]));
   }
 
   // Útero (volume) — útero miomatoso tem item próprio.
@@ -1234,12 +1243,18 @@ function renderPelveFemininaObjetivo(f: PelveFemininaFindings, dedup = false): s
     ? `${tecnicaBase} Estudo complementar realizado com Doppler colorido.`
     : tecnicaBase;
   const comBexiga = temBexiga(via);
+  const sharedBladder = comBexiga && f.bexiga
+    ? renderSharedBladder(f.bexiga, {
+        normalBody: "Bexiga de paredes regulares e finas, com conteúdo anecoico.",
+        normalConclusion: "Bexiga ecograficamente normal.",
+      })
+    : null;
 
   // ----- ACHADOS -----
   const achados: string[] = [];
 
   if (comBexiga) {
-    achados.push("Bexiga de paredes regulares e finas, com conteúdo anecoico.");
+    achados.push(...(sharedBladder?.body ?? ["Bexiga de paredes regulares e finas, com conteúdo anecoico."]));
   }
 
   // Útero (posição, medidas, volume calculado/ditado).
@@ -1311,6 +1326,12 @@ function renderPelveFemininaObjetivo(f: PelveFemininaFindings, dedup = false): s
   // miomas/FIGO, O-RADS, endometrioma, SOP, pós-aborto) — só sem a bexiga e sem
   // numerar com ")" (a impressão objetiva numera com ".").
   const impressao: string[] = [];
+
+  // A normalidade morfológica fica nos achados do objetivo. Conclusões adicionais
+  // (por exemplo, resíduo medido ou desprezível) não podem sumir junto com ela.
+  if (sharedBladder) {
+    impressao.push(...sharedBladder.conclusion.filter((item) => item !== "Bexiga ecograficamente normal."));
+  }
 
   // Útero.
   if (f.utero_miomatoso) {

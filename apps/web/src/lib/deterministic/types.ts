@@ -37,6 +37,9 @@ export interface Field {
   /** Rótulo curto (UPPERCASE mono na UI). */
   label: string
   kind: FieldKind
+  /** Apresentação compacta sem alterar o valor ou o contrato clínico. */
+  presentation?: 'select'
+  hideLabel?: boolean
   /** Texto auxiliar à direita do label (ex.: "default: normal", "marque se houver"). */
   hint?: string
   /** Opções (para segmented/checklist/mini-segmented). */

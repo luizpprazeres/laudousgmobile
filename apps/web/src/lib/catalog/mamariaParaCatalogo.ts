@@ -188,6 +188,29 @@ function acharNaMama(
 }
 
 /**
+ * Campos que o MamariaFormPanel mostra para cada tipo. Localização, horário,
+ * distâncias e BI-RADS aparecem em todos; o resto depende do tipo. Mudou a
+ * visibilidade na tela, muda aqui — senão volta a atravessar campo escondido.
+ */
+const CAMPOS_COMUNS = new Set(["local", "horario", "dist_pele", "dist_mamilo", "birads"]);
+const COM_DOPPLER = ["vascularizacao", "vascularizacao_descricao"];
+const CAMPOS_VISIVEIS: Record<string, Set<string>> = {
+  // `calc_sub` no nódulo vem da leitura de imagem (companion); a tela o mostra
+  // no card do nódulo, com opção de remover.
+  nodulo: new Set(["medidas", "eco", "forma", "margem", "orientacao", "posterior", "elasticidade", "calc", "calc_sub", ...COM_DOPPLER]),
+  cisto_simples: new Set(["medidas", ...COM_DOPPLER]),
+  multiplos_cistos: new Set(["medidas", ...COM_DOPPLER]),
+  microcistos_agrupados: new Set(["medidas", "descritores", ...COM_DOPPLER]),
+  cisto_complicado: new Set(["medidas", "descritores", ...COM_DOPPLER]),
+  linfonodo_intramamario: new Set(["medidas", ...COM_DOPPLER]),
+  // `calc` = ["microcalc"] é como o companion grava microcalcificações.
+  calcificacoes: new Set(["calc_sub", "calc", ...COM_DOPPLER]),
+  achado_nao_nodular: new Set(["medidas", "descricao_nao_nodular", ...COM_DOPPLER]),
+  ginecomastia: new Set([]),
+  proteses: new Set(["descritores"]),
+};
+
+/**
  * Estado novo da tela: cada achado tem id próprio e pode coexistir com outros
  * na mesma mama. O formato achatado mantém compatibilidade com o motor genérico
  * e com os rascunhos antigos, sem serializar objetos dentro de inputs.
@@ -221,32 +244,64 @@ function acharPorId(
     return null;
   }
 
+  /**
+   * SÓ O QUE A TELA MOSTRA PARA ESTE TIPO.
+   *
+   * Trocar o tipo não apaga as chaves do tipo anterior — e nem deve, porque o
+   * médico pode voltar. Mas campo escondido não é achado: um "Nódulo sólido"
+   * trocado por "Cisto simples" carregava ecogenicidade hipoecoica, forma e
+   * margem para o renderer, e o cisto saía descrito como "Imagem hipoecoica".
+   * As mesmas regras de visibilidade do MamariaFormPanel decidem aqui o que
+   * atravessa.
+   */
   const sub = (k: string) => texto(s, `${base}.${k}`);
-  const calcSub = sub("calc_sub");
+  const visivel = (k: string) => (CAMPOS_VISIVEIS[tipoTela]?.has(k) ?? false) || CAMPOS_COMUNS.has(k);
+  const doTipo = (k: string) => (visivel(k) ? sub(k) : "");
+  const microcalcMarcada = visivel("calc") && marcado(s, `${base}.calc`, "microcalc");
+  /**
+   * No achado de CALCIFICAÇÕES o padrão é a lista; o companion grava
+   * microcalcificações como `calc: ["microcalc"]`, e isso também é padrão
+   * escolhido — a tela mostra "Microcalcificações" nesse caso.
+   */
+  const calcSub = doTipo("calc_sub") || (tipoTela === "calcificacoes" && microcalcMarcada ? "microcalcificacoes" : "");
+  if (tipoTela === "calcificacoes" && !calcSub) {
+    /**
+     * BLOQUEIA. A lista não tem padrão escolhido, e o renderer, sem padrão,
+     * escreve a frase das calcificações GROSSEIRAS — o laudo afirmaria um
+     * padrão benigno que ninguém marcou.
+     */
+    pendencias.push({
+      onde: `mama ${lado}`,
+      valor: "calcificações",
+      motivo: "escolha o padrão das calcificações",
+      bloqueia: true,
+    });
+    return null;
+  }
   return {
     tipo,
     lado,
-    ecogenicidade: sub("eco") || null,
-    forma: sub("forma") || null,
-    orientacao: sub("orientacao") || null,
-    margem: sub("margem") || null,
-    posterior: sub("posterior") || null,
+    ecogenicidade: doTipo("eco") || null,
+    forma: doTipo("forma") || null,
+    orientacao: doTipo("orientacao") || null,
+    margem: doTipo("margem") || null,
+    posterior: doTipo("posterior") || null,
     calcificacoes: calcSub
       ? (CALC_PARA_CANONICO[calcSub] ?? null)
-      : marcado(s, `${base}.calc`, "microcalc")
+      : microcalcMarcada
         ? "microcalcificacoes"
         : null,
-    elasticidade: sub("elasticidade") || null,
-    vascularizacao: sub("vascularizacao") || null,
-    vascularizacao_descricao: sub("vascularizacao_descricao") || null,
-    descritores: sub("descritores") || null,
-    medidas_cm: medidas(sub("medidas")),
+    elasticidade: doTipo("elasticidade") || null,
+    vascularizacao: doTipo("vascularizacao") || null,
+    vascularizacao_descricao: doTipo("vascularizacao_descricao") || null,
+    descritores: doTipo("descritores") || null,
+    medidas_cm: medidas(doTipo("medidas")),
     medida_invalida: null,
     localizacao: sub("local") || null,
     horario: sub("horario") || null,
     dist_pele_cm: medidas(sub("dist_pele"))?.[0] ?? null,
     dist_mamilo_cm: medidas(sub("dist_mamilo"))?.[0] ?? null,
-    descricao_nao_nodular: sub("descricao_nao_nodular") || null,
+    descricao_nao_nodular: doTipo("descricao_nao_nodular") || null,
     birads_ditado: sub("birads") || null,
     permitir_birads_calculado: false,
   };

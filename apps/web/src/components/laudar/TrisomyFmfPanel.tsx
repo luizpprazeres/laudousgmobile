@@ -35,8 +35,12 @@ function Toggle({ label, active, onChange }: { label: string; active: boolean; o
 }
 
 export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemove }: Props) {
-  const [form, setForm] = useState<TrisomyWebForm>(() => ({ ...INITIAL, ...initialValues }))
-  const set = <K extends keyof TrisomyWebForm>(key: K, value: TrisomyWebForm[K]) => setForm(current => ({ ...current, [key]: value }))
+  // O card permanece montado enquanto os achados são preenchidos. Medidas
+  // ainda não editadas aqui acompanham a origem; uma edição manual, inclusive
+  // apagar um campo, sempre prevalece sobre atualizações vindas dos achados.
+  const [overrides, setOverrides] = useState<Partial<TrisomyWebForm>>({})
+  const form = useMemo<TrisomyWebForm>(() => ({ ...INITIAL, ...initialValues, ...overrides }), [initialValues, overrides])
+  const set = <K extends keyof TrisomyWebForm>(key: K, value: TrisomyWebForm[K]) => setOverrides(current => ({ ...current, [key]: value }))
   const ready = Boolean((form.dataNascimento?.trim() || form.maternalAge?.trim()) && form.crl.trim() && form.nt.trim())
   const idadeNaDataExame = useMemo(() => idadeNaDataExamePreview(form), [form])
   const calculation = useMemo(() => {

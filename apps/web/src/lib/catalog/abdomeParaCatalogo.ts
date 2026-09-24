@@ -27,6 +27,14 @@
  * renderer, enquanto um texto realmente livre continua preservado verbatim.
  */
 
+import {
+  bladderStateConflicts,
+  bladderInputIssues,
+  kidneyInputIssues,
+  normalizeBladderState,
+  normalizeKidneyState,
+} from "../deterministic/organs/urinaryShared";
+
 type EstadoDaSecao = Record<string, unknown>;
 export type EstadoDoAbdome = Record<string, EstadoDaSecao | unknown>;
 
@@ -421,6 +429,15 @@ export type Adaptacao = {
 
 export function adaptarAbdome(estado: EstadoDoAbdome): Adaptacao {
   const pendencias: Pendencia[] = [];
+  const bexigaDetalhada = normalizeBladderState(secao(estado, "bexiga"));
+  for (const motivo of [...bladderStateConflicts(bexigaDetalhada), ...bladderInputIssues(secao(estado, "bexiga"))]) {
+    pendencias.push({ onde: "bexiga", valor: bexigaDetalhada.replecao, motivo, bloqueia: true });
+  }
+  for (const lado of ["direito", "esquerdo"] as const) {
+    for (const motivo of kidneyInputIssues(secao(estado, `rim_${lado}`))) {
+      pendencias.push({ onde: `rim ${lado}`, valor: "medida inválida", motivo, bloqueia: true });
+    }
+  }
 
   const porOrgao: Record<string, Achado[]> = {
     figado: achadosDoFigado(secao(estado, "figado")),
@@ -462,7 +479,16 @@ export function adaptarAbdome(estado: EstadoDoAbdome): Adaptacao {
   }
 
   return {
-    dados: { orgaos, achados_extra_abdominais: [], observacoes_do_medico: "" },
+    dados: {
+      orgaos,
+      achados_extra_abdominais: [],
+      observacoes_do_medico: "",
+      bexiga_detalhada: bexigaDetalhada,
+      rins_detalhados: {
+        direito: normalizeKidneyState(secao(estado, "rim_direito")),
+        esquerdo: normalizeKidneyState(secao(estado, "rim_esquerdo")),
+      },
+    },
     alteracoes: [],
     pendencias,
   };

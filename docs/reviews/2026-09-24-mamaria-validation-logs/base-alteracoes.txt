@@ -1,0 +1,53 @@
+
+1 · toda alteração declarada renderiza e MUDA o laudo
+
+2 · a MEDIDA vira lacuna — o modelo não crava o número do cenário
+
+3 · o RENDERER é quem classifica — o cenário não diz TI-RADS
+
+4 · combinar duas alterações dá um laudo COERENTE
+
+5 · o que NÃO combina é recusado, não remendado
+
+6 · nenhuma seleção volta ao normal por acidente
+
+7 · o desenho GENERALIZA — vale para toda categoria curada
+
+8 · MAMÁRIA — outra classificação calculada, mesmo mecanismo
+
+9 · o cenário difere do normal SÓ naquilo de que ele trata
+
+
+10 · o que se DIGITA não pode apagar o achado do cenário
+
+
+11 · chave de protótipo não contamina o achado
+
+
+12 · a ALTERAÇÃO DIFUSA conclui com a frase do MÉDICO
+
+
+13 · linfonodo fora do padrão é ATÍPICO — a palavra é do médico
+
+
+14 · as TIREOIDITES NOMEADAS — recurso pedido pelo Luiz
+
+
+══════════════════════════════════════════════════════════════════════════
+✗ 10 de 286 FALHARAM
+
+  • o suspeito recebe TI-RADS alto
+        Lobo direito medindo ____ x ____ x ____ cm (volume de ____ ml), apresentando imagem hipoecoica, com margem irr
+  • o benigno recebe TI-RADS baixo
+        Lobo direito medindo ____ x ____ x ____ cm (volume de ____ ml), apresentando imagem isoecoica, com margem regu
+  • …e traz as duas classificações
+  • MAMARIA/CLASSICO_COMPLETO · axilas_atipicas: renderiza e muda o laudo
+  • MAMARIA/OBJETIVO · axilas_atipicas: renderiza e muda o laudo
+  • o suspeito recebe BI-RADS alto
+        Imagem hipoecoica de mama ____, com margem espiculada, medindo ____ x ____ x ____ cm, com calcificações de permeio, com
+  • o benigno recebe BI-RADS baixo
+        Imagem hipoecoica de mama ____, com margem circunscrita, maior eixo paralelo à pele, medindo ____ x ____ x ____ cm. Imag
+  • …e a classificação calculada
+  • MAMARIA/CLASSICO_COMPLETO: fora do padrão diz ATÍPICO
+  • MAMARIA/OBJETIVO: fora do padrão diz ATÍPICO
+══════════════════════════════════════════════════════════════════════════

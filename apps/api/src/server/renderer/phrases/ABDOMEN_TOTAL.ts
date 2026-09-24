@@ -5,6 +5,7 @@ import type {
   AbdomenTotalFindings,
 } from "../findingsSchemas/ABDOMEN_TOTAL";
 import { ABDOMEN_ORGAN_KEYS } from "../findingsSchemas/ABDOMEN_TOTAL";
+import { renderSharedBladder, renderSharedKidney } from "../categories/sharedUrinary";
 
 /**
  * DET-5 — Biblioteca de frases de ABDOMEN_TOTAL, transcrita das regras
@@ -22,6 +23,20 @@ export type OrganRender = {
   conclusao: string[];
   freeSlotFindings: AbdomenFinding[];
 };
+
+function renderRimCompartilhado(
+  f: AbdomenTotalFindings,
+  organ: "rim_direito" | "rim_esquerdo",
+): OrganRender | null {
+  if (!f.rins_detalhados) return null;
+  const lado = organ === "rim_direito" ? "direito" : "esquerdo";
+  const rendered = renderSharedKidney(f.rins_detalhados[lado], lado);
+  return {
+    body: rendered.body.join("\n"),
+    conclusao: rendered.isNormal ? [] : rendered.conclusion,
+    freeSlotFindings: [],
+  };
+}
 
 /** Formato geral: preserva inteiros em mL/mm; decimais usam uma casa. */
 export function formatNumberPtBr(n: number): string {
@@ -922,7 +937,17 @@ export function assembleAbdomenObjetivo(args: {
 export function renderAbdomenTotalObjetivo(f: AbdomenTotalFindings): string {
   const organRenders = new Map<AbdomenOrganKey, OrganRender>();
   for (const organ of ABDOMEN_ORGAN_KEYS) {
-    organRenders.set(organ, renderOrgan(organ, f.orgaos[organ]));
+    if (organ === "bexiga" && f.bexiga_detalhada) {
+      const bladder = renderSharedBladder(f.bexiga_detalhada, {
+        normalBody: "Bexiga com adequada repleção, de paredes regulares e conteúdo anecoico.",
+        normalConclusion: "Bexiga ecograficamente normal.",
+      });
+      organRenders.set(organ, { body: bladder.body.join("\n"), conclusao: bladder.conclusion, freeSlotFindings: [] });
+    } else if (organ === "rim_direito" || organ === "rim_esquerdo") {
+      organRenders.set(organ, renderRimCompartilhado(f, organ) ?? renderOrgan(organ, f.orgaos[organ]));
+    } else {
+      organRenders.set(organ, renderOrgan(organ, f.orgaos[organ]));
+    }
   }
 
   return assembleAbdomenObjetivo({
@@ -994,7 +1019,17 @@ export function renderAbdomenTotalClassico(
 
   const organRenders = new Map<AbdomenOrganKey, OrganRender>();
   for (const organ of ABDOMEN_ORGAN_KEYS) {
-    organRenders.set(organ, renderOrgan(organ, f.orgaos[organ]));
+    if (organ === "bexiga" && f.bexiga_detalhada) {
+      const bladder = renderSharedBladder(f.bexiga_detalhada, {
+        normalBody: "Bexiga com adequada repleção, de paredes regulares e conteúdo anecoico.",
+        normalConclusion: "Bexiga ecograficamente normal.",
+      });
+      organRenders.set(organ, { body: bladder.body.join("\n"), conclusao: bladder.conclusion, freeSlotFindings: [] });
+    } else if (organ === "rim_direito" || organ === "rim_esquerdo") {
+      organRenders.set(organ, renderRimCompartilhado(f, organ) ?? renderOrgan(organ, f.orgaos[organ]));
+    } else {
+      organRenders.set(organ, renderOrgan(organ, f.orgaos[organ]));
+    }
   }
   const extraRenders = f.achados_extra_abdominais.map(renderExtraAbdominal);
 

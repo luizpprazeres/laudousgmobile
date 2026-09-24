@@ -1,3 +1,9 @@
+import {
+  bladderStateConflicts,
+  bladderInputIssues,
+  normalizeBladderState,
+} from '../deterministic/organs/urinaryShared'
+
 type Secao = Record<string, unknown>
 type Estado = Record<string, unknown>
 
@@ -26,6 +32,7 @@ const BEXIGA: Record<string, string> = {
 
 export function adaptarProstataSuprapubica(estado: Estado) {
   const bexiga = secao(estado, 'bexiga')
+  const bexigaDetalhada = normalizeBladderState(bexiga)
   const prostata = secao(estado, 'prostata')
   const alteracoesBexiga = Array.isArray(bexiga.achados)
     ? (bexiga.achados as unknown[])
@@ -39,6 +46,10 @@ export function adaptarProstataSuprapubica(estado: Estado) {
   const residuo = texto(bexiga, 'residuo')
   const aumentada = texto(prostata, 'volume') === 'aumentada'
 
+  const pendencias = [...bladderStateConflicts(bexigaDetalhada), ...bladderInputIssues(bexiga)].map((motivo) => ({
+    onde: 'bexiga', valor: bexigaDetalhada.replecao, motivo, bloqueia: true,
+  }))
+
   return {
     dados: {
       prostata_d1_cm: numero(prostata, 'd1', true),
@@ -51,9 +62,10 @@ export function adaptarProstataSuprapubica(estado: Estado) {
       volume_pre_miccional_ml: numero(bexiga, 'volume_pre'),
       residuo_pos_miccional_ml: residuo === 'valor' ? numero(bexiga, 'residuo.valor.ml') : null,
       residuo_desprezivel: residuo === 'desprezivel',
+      bexiga_detalhada: bexigaDetalhada,
       achados_adicionais: null,
     },
     alteracoes: [],
-    pendencias: [],
+    pendencias,
   }
 }
