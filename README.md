@@ -1,5 +1,7 @@
 # LaudoUSG — Backend Mobile (monorepo)
 
+> **Revisão de 26/09/2026:** seleção de exames em cinco grupos, composição Web de **abdome total + próstata suprapúbica** e **mamas/axilas + pelve feminina**, com reabertura para edição. O contrato `clinical-composition/v1` e o renderer ficam na API compartilhada; a interface e o histórico de composições ficam na Web (`web_reports`), ainda sem integração dessa funcionalidade às interfaces iOS/Android ou à Sala. A rodada também amplia os campos urinários/próstata e trata medidas e descrições incompletas. Escopo, validações e limites em [`docs/stories/2026-09-26-clinical-composition-categories.md`](docs/stories/2026-09-26-clinical-composition-categories.md).
+
 > **Web — revisão de 24/09/2026:** cartões por órgão, formulários compartilhados de bexiga/rins, mamas compactas, sugestões BI-RADS revisáveis, MSK bilateral e blocos de recomendações/medidas hepáticas. Estado, comandos de validação e limites em [`docs/stories/2026-09-24-clinical-ui-evolution.md`](docs/stories/2026-09-24-clinical-ui-evolution.md). A prévia local não salva no banco nem valida a Sala real.
 
 > ## 📍 Retomando o trabalho? Leia também `docs/plano-web-workspace-2026-08-20.md`

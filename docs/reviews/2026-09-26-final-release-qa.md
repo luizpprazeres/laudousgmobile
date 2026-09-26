@@ -1,0 +1,31 @@
+# QA final independente — composição clínica e categorias Web (26/09/2026)
+
+Revisão do checkout `feat/clinical-composition-category-groups`, HEAD `d1f0b76da16ebeb3616bf65f5bde60e5d18ccd24`, com alterações de trabalho ainda não commitadas. Esta decisão cobre o código local revisado, não produção, banco remoto ou deploy. Atlas liberou a janela do build Web antes da execução; não houve build Web simultâneo. Nenhum arquivo de implementação ou item do git index foi alterado por este QA.
+
+## Gates executados
+
+`pnpm lint` — **FAIL global**, log `/tmp/laudousg-2026-09-26-final-lint.log`. O Turbo iniciou API, Web e LAB, mas `apps/lab` abriu o assistente interativo do `next lint` porque não tem configuração ESLint; os demais jobs foram cancelados. Essa ausência já está no HEAD (na árvore rastreada de `apps/lab` há `.env.example`, mas nenhum arquivo de configuração ESLint) e não é regressão do diff. Para isolar o escopo, `pnpm --filter @laudousg/web lint` e `pnpm --filter @laudousg/api lint` passaram; logs `/tmp/laudousg-2026-09-26-final-web-lint.log` e `/tmp/laudousg-2026-09-26-final-api-lint.log`. Há avisos não bloqueadores de acessibilidade/imagem/hooks; dois avisos de `<img>` no novo `ExamCategoryPicker.tsx`, sem erro de lint.
+
+`pnpm typecheck` — **PASS**, 8/8 tarefas Turbo, repetido após Atlas liberar o primeiro teste novo; log `/tmp/laudousg-2026-09-26-final-typecheck-after-atlas.log`. O resultado anterior está em `/tmp/laudousg-2026-09-26-final-typecheck.log`.
+
+`pnpm --filter @laudousg/web typecheck` — **PASS** após Atlas liberar os dois testes novos; log `/tmp/laudousg-2026-09-26-final-web-tsc.log`. O `apps/web/tsconfig.json` do checkout ainda restringe o `include` a `src`, configuração Next e seus tipos: **não inclui `tests/`**. Por isso rodei também `pnpm exec tsc --project /tmp/laudousg-2026-09-26-web-tests-tsconfig.json --noEmit` — **PASS**, log `/tmp/laudousg-2026-09-26-final-web-tests-tsc.log`. Esse config temporário estende o Web, acrescenta explicitamente `compositionPersistence.real.manual.ts` e `compositionRls.pg.manual.ts`, e alinha os aliases da API/Drizzle necessários aos imports cruzados. `--listFilesOnly` confirmou os dois arquivos no programa TypeScript. A primeira tentativa, sem esses aliases, falhou em imports da API/duas instâncias tipadas do Drizzle, não nos testes; a configuração ajustada passou. Nenhum `tsconfig` versionado foi alterado.
+
+`pnpm test` — **PASS**, 1/1 tarefa Turbo (`@laudousg/web`, 16 suítes); log `/tmp/laudousg-2026-09-26-final-test.log`. `apps/web/tests/run-unit.cjs` lista `composition.manual.ts`, mas **não** lista `compositionRoutes.route.manual.ts`. O `21 passed, 0 failed` nesse log pertence a `liverQuantification.manual.ts`, não aos handlers reais.
+
+`cd apps/web && node --import tsx tests/compositionRoutes.route.manual.ts` — **PASS separado**, 21/21 casos; log `/tmp/laudousg-2026-09-26-final-composition-routes.log`. Este teste importa os handlers reais, com Supabase/fetch externo simulados; não equivale a teste com sessão ou banco remoto.
+
+`compositionRls.pg.manual.ts` — **9/9 PASS informados pelo root**, em PostgreSQL 17 nativo temporário, cobrindo políticas RLS reais e corrida simultânea. Não executei esse teste nesta frente nem inspecionei sua saída bruta; é evidência local de SQL, não valida Supabase Auth/PostgREST nem produção. `compositionPersistence.real.manual.ts` permanece sem execução contra stack Supabase por este QA.
+
+`pnpm build` — **FAIL global**, 2/3 tarefas: API e Web concluíram compilação, lint, páginas estáticas (API 5/5, Web 17/17) e otimização; `apps/lab` falhou no prerender de `/` com `NEXT_PUBLIC_SUPABASE_URL ausente`. Log `/tmp/laudousg-2026-09-26-final-build.log`. O LAB não foi modificado pelo diff. Não usei env sintético: `apps/lab/src/app/page.tsx:70-71` chama `getDashboardData()`, que em `apps/lab/src/lib/supabase/queries.ts:65-89` consulta `knowledge_blocks` e `generation_audit` durante o prerender. Um URL localhost falso levaria a tentativa de rede, não a uma validação limpa. Credenciais de produção não foram usadas.
+
+`git diff --check` — **PASS** para arquivos rastreados modificados; não verifica untracked.
+
+## Revisão focada de bloqueadores
+
+GET/PATCH em `apps/web/src/app/api/web-reports/[id]/route.ts` exigem usuário autenticado, restringem a linha por `id` e `user_id`, conferem envelope/texto e usam `updated_at` como trava de concorrência no update. O proxy Web rejeita `writingStyle` do navegador e injeta o estilo da conta; a rota API exige token de serviço. O envelope exige versão conhecida, ids coerentes, revisão e iniciais normalizadas. O teste **separado** dos handlers reais cobre 401, 404, 400/409/422, update sem sobrescrita em conflito, texto/HTML e limites. Nenhum defeito bloqueador concreto adicional foi encontrado nesses caminhos.
+
+No `useComposicaoCanonica.ts:129-130,214-223`, remover a associação não invalida `ultimoPedido` se já houver fetch em voo. A resposta antiga ainda pode atualizar o estado **interno** do hook; porém, com `session === null` a saída pública é vazia, e uma nova associação recebe outro `compositionId`, que a checagem de saída também isola. Em `LaudarWebExperience.tsx:836-896`, salvar composição requer request aceito e estado não carregando/desatualizado/erro. Não reproduzi texto antigo salvo ou reutilizado em outra sessão; portanto registro a corrida como risco não bloqueador, não como defeito comprovado. Os testes existentes de resposta fora de ordem e remoção/reassociação passaram, mas não são prova de todos os interleavings possíveis.
+
+## Decisão
+
+**GO de QA para o snapshot API/Web examinado, com exceções globais explícitas de LAB.** Typecheck global e Web passaram; ambos os testes novos foram também incluídos e aprovados no `tsc` temporário. Testes globais e handlers reais separados passaram; o root informou 9/9 em políticas SQL locais; lint e build de API/Web passaram. O teste com Supabase Auth/PostgREST real não foi executado por este QA. O monorepo **não tem lint/build globais verdes neste ambiente** pelas condições preexistentes do LAB descritas acima. Não há blocker de segurança, envelope ou persistência reproduzido no diff revisado. A publicação na `main` e qualquer validação de produção pertencem ao coordenador; este QA não publica nem altera o index.

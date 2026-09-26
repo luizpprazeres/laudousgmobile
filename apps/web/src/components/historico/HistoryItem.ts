@@ -15,6 +15,11 @@ export type HistoryItem = {
   text: string
   /** Camada opcional de apresentação dos laudos editados na web. */
   html?: string | null
+  /**
+   * Composição de exames associados com envelope que esta versão reabre para
+   * edição. Laudos avulsos (legado) continuam só texto.
+   */
+  reopenable?: boolean
   date: string
 }
 
@@ -38,6 +43,8 @@ export function categoriaLabel(code: string): string {
     DOPPLER_OBSTETRICO: 'Doppler obstétrico',
     DOPPLER_RENAL: 'Doppler renal',
     DOPPLER_VENOSO_MMII: 'Doppler venoso (MMII)',
+    ABDOMEN_TOTAL__PROSTATA_SUPRAPUBICA: 'Abdome total + Próstata',
+    MAMARIA__PELVE_FEMININA: 'Mamas e axilas + Pelve feminina',
   }
   return map[code] ?? code.charAt(0) + code.slice(1).toLowerCase().replace(/_/g, ' ')
 }

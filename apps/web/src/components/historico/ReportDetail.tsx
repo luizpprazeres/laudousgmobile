@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Copy, Trash2, X } from 'lucide-react'
+import Link from 'next/link'
+import { Check, Copy, Pencil, Trash2, X } from 'lucide-react'
 import { deleteWebReport } from '@/lib/webReports'
 import { categoriaLabel, dataFmt, type HistoryItem } from './HistoryItem'
 import { sanitizeReportHtml } from '@/components/laudar/reportRichText'
@@ -80,6 +81,21 @@ export function ReportDetail({
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
+          {/*
+            Só a composição com estado versionado reabre para edição. O laudo
+            salvo só como texto não tem de onde reconstruir os campos — reabri-lo
+            "editável" seria inventar um formulário que ninguém preencheu.
+          */}
+          {item.origin === 'web' && item.reopenable ? (
+            <Link
+              href={`/app/gerar?reabrir=${encodeURIComponent(item.id)}`}
+              data-reopen-report={item.id}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Reabrir para editar
+            </Link>
+          ) : null}
           <button
             type="button"
             onClick={copiar}

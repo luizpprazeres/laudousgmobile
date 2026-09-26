@@ -177,8 +177,24 @@ const bladderFields: Field[] = [
         subFields: [
           { key: 'topografia', label: 'Topografia', kind: 'text', placeholder: 'parede lateral direita' },
           { key: 'dimensoes', label: 'Dimensões (cm)', kind: 'text', placeholder: '2,0 x 1,5 x 1,0', halfWidth: true },
-          { key: 'descricao', label: 'Descrição morfológica', kind: 'text', placeholder: 'imagem polipoide' },
+          {
+            key: 'forma',
+            label: 'Forma',
+            kind: 'mini-segmented',
+            options: [
+              { value: 'nao_informada', label: 'Não informada', isDefault: true },
+              { value: 'polipoide', label: 'Polipoide' },
+              { value: 'sessil', label: 'Séssil' },
+            ],
+          },
+          { key: 'descricao', label: 'Descrição complementar', kind: 'text', placeholder: 'somente o observado' },
           doppler,
+          {
+            key: 'calcificacao',
+            label: 'Calcificação',
+            kind: 'mini-segmented',
+            options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }],
+          },
         ],
       },
     ],
@@ -250,6 +266,9 @@ export type BladderFinding = {
   doppler: 'nao_avaliado' | 'sem_fluxo' | 'com_fluxo'
   topografia: string | null
   calculo_associado_mm: number | null
+  /** Só em `lesao_focal`; ausente nos demais achados e em payloads antigos. */
+  forma?: 'polipoide' | 'sessil' | null
+  calcificacao?: boolean
 }
 
 export type BladderState = {
@@ -291,7 +310,8 @@ const finding = (tipo: BladderFindingType, state: Estado): BladderFinding => {
   return {
     tipo,
     medidas_cm: medidas(state[`${prefix}.dimensoes`] ?? state[`${prefix}.dimensao`], 'cm'),
-    descricao: texto(state, `${prefix}.descricao`) || null,
+    // Texto livre em linha única: quebra de linha não pode virar cabeçalho no laudo.
+    descricao: texto(state, `${prefix}.descricao`).replace(/\s+/g, ' ') || null,
     mobilidade: tipo === 'calculo' && ['movel', 'imovel', 'juv'].includes(texto(state, `${prefix}.mobilidade`))
       ? texto(state, `${prefix}.mobilidade`) as BladderFinding['mobilidade']
       : null,
@@ -299,8 +319,16 @@ const finding = (tipo: BladderFindingType, state: Estado): BladderFinding => {
     multiplos: texto(state, `${prefix}.multiplicidade`) === 'multiplos',
     nivel_liquido: texto(state, `${prefix}.nivel_liquido`) === 'sim',
     doppler: dopplerValue === 'sem_fluxo' || dopplerValue === 'com_fluxo' ? dopplerValue : 'nao_avaliado',
-    topografia: texto(state, `${prefix}.topografia`) || null,
+    topografia: texto(state, `${prefix}.topografia`).replace(/\s+/g, ' ') || null,
     calculo_associado_mm: numero(state[`${prefix}.calculo_mm`], 'mm'),
+    ...(tipo === 'lesao_focal'
+      ? {
+          forma: ['polipoide', 'sessil'].includes(texto(state, `${prefix}.forma`))
+            ? texto(state, `${prefix}.forma`) as 'polipoide' | 'sessil'
+            : null,
+          calcificacao: texto(state, `${prefix}.calcificacao`) === 'sim',
+        }
+      : {}),
   }
 }
 
@@ -416,6 +444,14 @@ function rawInvalid(state: Estado, key: string, parser: (raw: unknown) => unknow
   return raw !== '' && parser(raw) === null
 }
 
+/** Opção presente fora da lista (ou não textual) é inválida; ausente/vazia usa o padrão. */
+function opcaoInvalida(state: Estado, key: string, validas: string[]): boolean {
+  if (!temChave(state, key)) return false
+  const raw = state[key]
+  if (typeof raw !== 'string') return raw !== null && raw !== undefined
+  return raw.trim() !== '' && !validas.includes(raw.trim())
+}
+
 /** Campos visíveis inválidos bloqueiam o render; subcampos de opção removida são ignorados. */
 export function bladderInputIssues(state: Estado): string[] {
   const issues: string[] = []
@@ -466,6 +502,13 @@ export function bladderInputIssues(state: Estado): string[] {
       issues.push(`${finding.tipo}: dimensões têm formato inválido`)
     }
     if (rawInvalid(state, `${prefix}.calculo_mm`, (raw) => numero(raw, 'mm'))) issues.push(`${finding.tipo}: medida do cálculo tem formato inválido`)
+    if (finding.tipo === 'coagulo' || finding.tipo === 'lesao_focal') {
+      if (opcaoInvalida(state, `${prefix}.doppler`, ['nao_avaliado', 'sem_fluxo', 'com_fluxo'])) issues.push(`${finding.tipo}: Doppler tem opção inválida`)
+    }
+    if (finding.tipo === 'lesao_focal') {
+      if (opcaoInvalida(state, `${prefix}.forma`, ['nao_informada', 'polipoide', 'sessil'])) issues.push('lesao_focal: forma tem opção inválida')
+      if (opcaoInvalida(state, `${prefix}.calcificacao`, ['nao', 'sim'])) issues.push('lesao_focal: calcificação tem opção inválida')
+    }
   }
   if (normalized.jatos.estado === 'ausencia_unilateral' && rawInvalid(state, 'jatos.ausencia_unilateral.calculo_mm', (raw) => numero(raw, 'mm'))) {
     issues.push('jatos: medida do cálculo associado tem formato inválido')

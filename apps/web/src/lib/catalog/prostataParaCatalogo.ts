@@ -3,6 +3,7 @@ import {
   bladderInputIssues,
   normalizeBladderState,
 } from '../deterministic/organs/urinaryShared'
+import { lerMedidaProstataCm, lerVesiculasSeminais, prostataInputIssues } from '../deterministic/organs/prostataSuprapubica'
 
 type Secao = Record<string, unknown>
 type Estado = Record<string, unknown>
@@ -15,12 +16,10 @@ const secao = (estado: Estado, chave: string): Secao => {
 const texto = (s: Secao, chave: string): string =>
   typeof s[chave] === 'string' ? (s[chave] as string).trim() : ''
 
-function numero(s: Secao, chave: string, converteMm = false): number | null {
-  const bruto = texto(s, chave).toLowerCase().replace(',', '.')
-  if (!bruto) return null
-  const valor = Number.parseFloat(bruto)
-  if (!Number.isFinite(valor) || valor < 0) return null
-  return converteMm && bruto.includes('mm') ? valor / 10 : valor
+/** Medida estrita da próstata; inválida vira `null` aqui e pendência bloqueante abaixo. */
+function medidaCm(s: Secao, chave: string): number | null {
+  const lida = lerMedidaProstataCm(s[chave])
+  return lida === 'invalida' ? null : lida
 }
 
 const BEXIGA: Record<string, string> = {
@@ -43,26 +42,43 @@ export function adaptarProstataSuprapubica(estado: Estado) {
   const extrasProstata = Array.isArray(prostata.extra)
     ? (prostata.extra as unknown[]).filter((valor): valor is string => typeof valor === 'string')
     : []
-  const residuo = texto(bexiga, 'residuo')
   const aumentada = texto(prostata, 'volume') === 'aumentada'
 
-  const pendencias = [...bladderStateConflicts(bexigaDetalhada), ...bladderInputIssues(bexiga)].map((motivo) => ({
-    onde: 'bexiga', valor: bexigaDetalhada.replecao, motivo, bloqueia: true,
-  }))
+  const pendencias = [
+    ...[...bladderStateConflicts(bexigaDetalhada), ...bladderInputIssues(bexiga)].map((motivo) => ({
+      onde: 'bexiga', valor: bexigaDetalhada.replecao, motivo, bloqueia: true,
+    })),
+    ...prostataInputIssues(prostata).map((motivo) => ({
+      onde: 'próstata', valor: 'medida ou opção inválida', motivo, bloqueia: true,
+    })),
+  ]
+  const vesiculas = lerVesiculasSeminais(secao(estado, 'vesiculas_seminais'))
+  pendencias.push(...vesiculas.issues.map((motivo) => ({
+    onde: 'vesículas seminais', valor: 'opção inválida', motivo, bloqueia: true,
+  })))
+  // Medidas parciais não são impressas pela metade: o laudo só recebe as três juntas.
+  const d1 = medidaCm(prostata, 'd1')
+  const d2 = medidaCm(prostata, 'd2')
+  const d3 = medidaCm(prostata, 'd3')
+  const completas = d1 !== null && d2 !== null && d3 !== null
 
   return {
     dados: {
-      prostata_d1_cm: numero(prostata, 'd1', true),
-      prostata_d2_cm: numero(prostata, 'd2', true),
-      prostata_d3_cm: numero(prostata, 'd3', true),
+      prostata_d1_cm: completas ? d1 : null,
+      prostata_d2_cm: completas ? d2 : null,
+      prostata_d3_cm: completas ? d3 : null,
       hiperplasia: aumentada,
       calcificacoes: extrasProstata.includes('calcificacoes'),
-      ipp_cm: aumentada ? numero(prostata, 'volume.aumentada.ipp', true) : null,
+      ipp_cm: aumentada ? medidaCm(prostata, 'volume.aumentada.ipp') : null,
       bexiga_achado: alteracoesBexiga.length > 0 ? alteracoesBexiga.join(', ') : null,
-      volume_pre_miccional_ml: numero(bexiga, 'volume_pre'),
-      residuo_pos_miccional_ml: residuo === 'valor' ? numero(bexiga, 'residuo.valor.ml') : null,
-      residuo_desprezivel: residuo === 'desprezivel',
+      // Campos vesicais legados espelham o estado compartilhado já validado; o
+      // renderer usa `bexiga_detalhada` quando presente.
+      volume_pre_miccional_ml: bexigaDetalhada.volume_pre_miccional_ml,
+      residuo_pos_miccional_ml: bexigaDetalhada.residuo_estado === 'valor' ? bexigaDetalhada.residuo_pos_miccional_ml : null,
+      residuo_desprezivel: bexigaDetalhada.residuo_estado === 'desprezivel',
       bexiga_detalhada: bexigaDetalhada,
+      // Opcional: ausente = frase normal histórica (payload igual ao antigo).
+      ...(vesiculas.contrato ? { vesiculas_seminais: vesiculas.contrato } : {}),
       achados_adicionais: null,
     },
     alteracoes: [],

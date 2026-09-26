@@ -11,6 +11,10 @@ const BladderFindingSchema = z.object({
   doppler: z.enum(["nao_avaliado", "sem_fluxo", "com_fluxo"]),
   topografia: z.string().min(1).nullable(),
   calculo_associado_mm: z.number().nonnegative().nullable(),
+  // Opcionais, só descritivos da lesão focal (sem histologia). Ausentes em
+  // payloads antigos e nos demais achados: o texto fica idêntico ao anterior.
+  forma: z.enum(["polipoide", "sessil"]).nullable().optional(),
+  calcificacao: z.boolean().optional(),
 });
 
 export const SharedBladderSchema = z.object({
@@ -82,6 +86,128 @@ export const SharedKidneySchema = z.object({
 });
 
 export type SharedBladder = z.infer<typeof SharedBladderSchema>;
+/**
+ * Lesão focal vesical vinda do DITADO (iOS/Android/Web por voz). Mesmo
+ * vocabulário descritivo do achado `lesao_focal` compartilhado, mas tolerante a
+ * topografia/medida não ditadas (o ditado não tem pendência bloqueante). Sem
+ * histologia: a conclusão é sempre "natureza indeterminada ao método".
+ */
+/**
+ * Texto livre interpolado numa frase do laudo vira UMA linha: quebras e
+ * espaços repetidos colapsam. Sem isso, "cisto\n\nCONCLUSÃO:\n..." injeta um
+ * cabeçalho falso dentro dos achados (QA 26/09, B1/B2).
+ */
+export const linhaUnica = (value: string): string => value.replace(/\s+/g, " ").trim();
+
+/**
+ * Aplica `linhaUnica` a TODA string de um achado (objetos e listas aninhados),
+ * antes de renderizar. Cobre texto livre legado do ditado (`achados_adicionais`,
+ * `bexiga_achado`, campos verbatim) e do contrato compartilhado (QA 26/09, B4).
+ * Sem quebra de linha nem espaço duplo, o resultado é o mesmo objeto de valores.
+ */
+export function textoEmLinhaUnica<T>(value: T): T {
+  if (typeof value === "string") return linhaUnica(value) as T;
+  if (Array.isArray(value)) return value.map((item) => textoEmLinhaUnica(item)) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, textoEmLinhaUnica(v)])) as T;
+  }
+  return value;
+}
+
+/** String vazia do extrator = não ditado (`null`); texto real passa em linha única. */
+export const textoDitadoOpcional = z.preprocess(
+  (value) => (typeof value === "string" ? (linhaUnica(value) === "" ? null : linhaUnica(value)) : value),
+  z.string().trim().min(1).nullable(),
+);
+
+const medidaDitadaInvalida = (value: unknown): boolean =>
+  Array.isArray(value) && value.length > 0 && value.some((n) => typeof n !== "number" || !Number.isFinite(n) || n <= 0);
+
+export const DictatedBladderLesionSchema = z.preprocess(
+  // Medidas ditadas mas inválidas (≤ 0/não finitas) são descartadas SEM sumir em
+  // silêncio: `medida_descartada` leva a [REVISAR] na frase. Lista vazia = não ditada.
+  (value) => value && typeof value === "object" && !Array.isArray(value) && medidaDitadaInvalida((value as Record<string, unknown>).medidas_cm)
+    ? { ...(value as Record<string, unknown>), medidas_cm: null, medida_descartada: true }
+    : value,
+  z.object({
+    topografia: textoDitadoOpcional,
+    // Lista vazia = medida não ditada (null). O ditado não tem pendência
+    // bloqueante: derrubar o parse aqui mandaria o laudo inteiro ao writer
+    // genérico (RENDERER_FALLBACK, QA 26/09 B5).
+    medidas_cm: z.preprocess(
+      (value) => (Array.isArray(value) && value.length === 0 ? null : value),
+      z.array(z.number().positive()).min(1).max(3).nullable(),
+    ),
+    forma: z.enum(["polipoide", "sessil"]).nullable(),
+    doppler: z.enum(["nao_avaliado", "sem_fluxo", "com_fluxo"]).nullable(),
+    calcificacao: z.boolean(),
+    descricao: textoDitadoOpcional,
+    /** Interno (não está no JSON Schema): medidas ditadas foram descartadas por inválidas. */
+    medida_descartada: z.boolean().optional(),
+  }),
+);
+export type DictatedBladderLesion = z.infer<typeof DictatedBladderLesionSchema>;
+
+/** JSON Schema strict (structured outputs) do objeto acima; `null` = não ditada. */
+export const DICTATED_BLADDER_LESION_JSON = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  required: ["topografia", "medidas_cm", "forma", "doppler", "calcificacao", "descricao"],
+  properties: {
+    topografia: { type: ["string", "null"] },
+    medidas_cm: { type: ["array", "null"], items: { type: "number" } },
+    forma: { type: ["string", "null"], enum: ["polipoide", "sessil", null] },
+    doppler: { type: ["string", "null"], enum: ["nao_avaliado", "sem_fluxo", "com_fluxo", null] },
+    calcificacao: { type: "boolean" },
+    descricao: { type: ["string", "null"] },
+  },
+} as const;
+
+/** Regra de extração comum (Próstata e Vias). Só o que foi ditado. */
+export const DICTATED_BLADDER_LESION_PROMPT = `bexiga_lesao_focal: SOMENTE se o médico ditar EXPLICITAMENTE lesão/massa/imagem
+   focal (sólida/vegetante/polipoide) NA BEXIGA; senão null. Quando preencher, NÃO repita
+   a lesão no campo de texto livre da bexiga. topografia: local ditado (ex.: "parede
+   lateral direita", "trígono") ou null. medidas_cm: dimensões ditadas em cm (mm ÷ 10) ou
+   null. forma: "polipoide" ou "sessil" SÓ se essas palavras forem ditadas; senão null.
+   doppler: "com_fluxo" se ditado vascularizada/com fluxo; "sem_fluxo" se ditado sem
+   fluxo/avascular; "nao_avaliado" se ditado não avaliado; senão null. calcificacao: true
+   SÓ se ditada calcificação na lesão; senão false. descricao: outros descritores ditados
+   (ex.: "hipoecogênica") ou null. NUNCA escreva natureza/histologia (neoplasia,
+   carcinoma, papiloma etc.).`;
+
+/**
+ * Frase ÚNICA da lesão focal vesical (bexiga compartilhada e ditado). Com
+ * topografia e medida presentes — sempre no contrato compartilhado — o texto é o
+ * mesmo de antes byte a byte.
+ */
+export function fraseLesaoFocalVesical(lesao: {
+  topografia: string | null;
+  medidas_cm: number[] | null;
+  descricao: string | null;
+  doppler: "nao_avaliado" | "sem_fluxo" | "com_fluxo" | null;
+  forma?: "polipoide" | "sessil" | null;
+  calcificacao?: boolean;
+  medida_descartada?: boolean;
+}): string {
+  const itens: string[] = [];
+  if (lesao.forma === "polipoide") itens.push("de aspecto polipoide");
+  else if (lesao.forma === "sessil") itens.push("de base de implantação larga (séssil)");
+  const descricao = lesao.descricao ? linhaUnica(lesao.descricao) : "";
+  const topografia = lesao.topografia ? linhaUnica(lesao.topografia) : "";
+  if (descricao) itens.push(descricao);
+  if (topografia) itens.push(`situada em ${topografia}`);
+  const dimension = measures(lesao.medidas_cm);
+  if (dimension) itens.push(`medindo ${dimension}`);
+  const doppler = lesao.doppler === "sem_fluxo" ? " sem fluxo detectável ao Doppler" : lesao.doppler === "com_fluxo" ? " com fluxo detectável ao Doppler" : " sem avaliação Doppler informada";
+  const calcification = lesao.calcificacao ? ", com focos de calcificação de permeio" : "";
+  const frase = itens.length > 0
+    ? `Lesão focal vesical ${itens.join(", ")},${doppler}${calcification}.`
+    : `Lesão focal vesical${doppler}${calcification}.`;
+  return lesao.medida_descartada ? `${frase} [REVISAR: medida ditada inválida]` : frase;
+}
+
+export const LESAO_FOCAL_VESICAL_CONCLUSAO = "Lesão focal vesical, de natureza indeterminada ao método.";
+
 export type SharedKidney = z.infer<typeof SharedKidneySchema>;
 
 const ptBr = (value: number): string =>
@@ -105,6 +231,7 @@ export function renderSharedBladder(
   bladder: SharedBladder,
   wording?: { normalBody?: string; normalConclusion?: string },
 ): SharedBladderRender {
+  bladder = textoEmLinhaUnica(bladder);
   if (bladder.replecao === "insuficiente" || bladder.replecao === "vazia") {
     const empty = bladder.replecao === "vazia";
     return {
@@ -154,7 +281,7 @@ export function renderSharedBladder(
         }
         case "coagulo": {
           const doppler = finding.doppler === "sem_fluxo" ? ", sem fluxo detectável ao Doppler" : finding.doppler === "com_fluxo" ? ", com fluxo detectável ao Doppler" : "";
-          body.push(`${finding.descricao}${dimension ? `, medindo ${dimension}` : ""}${doppler}.`);
+          body.push(`${linhaUnica(finding.descricao ?? "")}${dimension ? `, medindo ${dimension}` : ""}${doppler}.`);
           conclusion.push("Material intracavitário descrito como coágulo/hematoma.");
           break;
         }
@@ -169,13 +296,10 @@ export function renderSharedBladder(
           body.push(`Imagem cística na topografia da junção ureterovesical ${finding.lateralidade}${dimension ? `, medindo ${dimension}` : ""}${finding.calculo_associado_mm !== null ? `, com cálculo associado de ${ptBr(finding.calculo_associado_mm)} mm` : ""}.`);
           conclusion.push(`Ureterocele ${side(finding.lateralidade)}.`);
           break;
-        case "lesao_focal": {
-          const doppler = finding.doppler === "sem_fluxo" ? " sem fluxo detectável ao Doppler" : finding.doppler === "com_fluxo" ? " com fluxo detectável ao Doppler" : "";
-          const description = finding.descricao ? `${finding.descricao}, ` : "";
-          body.push(`Lesão focal vesical ${description}situada em ${finding.topografia}, medindo ${dimension},${doppler || " sem avaliação Doppler informada"}.`);
-          conclusion.push("Lesão focal vesical, de natureza indeterminada ao método.");
+        case "lesao_focal":
+          body.push(fraseLesaoFocalVesical(finding));
+          conclusion.push(LESAO_FOCAL_VESICAL_CONCLUSAO);
           break;
-        }
       }
     }
   }
@@ -220,6 +344,7 @@ export function renderSharedKidney(
   kidney: SharedKidney,
   lado: "direito" | "esquerdo",
 ): SharedKidneyRender {
+  kidney = textoEmLinhaUnica(kidney);
   const body: string[] = [];
   const conclusion: string[] = [];
   const altered = kidney.dimensao === "reduzida_discreta" || kidney.dimensao === "reduzida" ||

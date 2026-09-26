@@ -359,8 +359,9 @@ export function adaptarMamaria(estado: EstadoDaMama): Adaptacao {
     axilas_alteradas: incluiAxilas && axilas === "alteradas",
     axilas_descricao: incluiAxilas && axilas === "alteradas" ? descricaoAxilar(ax) : null,
     achados_adicionais: null,
-    birads_final: null,
-    exames_anteriores: [],
+    // Sem `birads_final` nem `exames_anteriores` no topo: o schema canônico
+    // não os tem (só `correlacao.birads_final`). A rota simples os descartava
+    // em silêncio; a composição estrita os recusa — e está certa.
   };
 
   return { dados, alteracoes: [], pendencias };

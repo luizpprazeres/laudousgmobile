@@ -15,16 +15,64 @@ import type { OrganModule, OrganSchema, OrganState, OrganComposition } from '../
 import { createSharedBladderModule } from './urinaryShared'
 
 // ── helpers (espelham o renderer) ────────────────────────────────────────────
-function parseCm(v: unknown): number | null {
-  const s = String(v ?? '').trim().toLowerCase().replace(',', '.')
+/**
+ * Lê uma medida linear da próstata em cm. O campo inteiro precisa ser um número
+ * positivo, opcionalmente seguido de `cm` ou `mm` (mm → cm). Vazio = `null`
+ * (não medido); qualquer outra coisa = `'invalida'`, nunca um número adivinhado.
+ */
+/** Menor medida imprimível com 1 casa decimal em cm (espelha o renderer). */
+export const MENOR_MEDIDA_CM = 0.05
+
+export function lerMedidaProstataCm(raw: unknown): number | null | 'invalida' {
+  if (raw === null || raw === undefined) return null
+  if (typeof raw !== 'string' && typeof raw !== 'number') return 'invalida'
+  const s = String(raw).trim().toLowerCase().replace(',', '.')
   if (!s) return null
-  const isMm = s.includes('mm')
-  const m = s.match(/-?\d+(\.\d+)?/)
-  if (!m) return null
-  let n = Number(m[0])
-  if (!Number.isFinite(n)) return null
-  if (isMm) n = n / 10 // usuário digitou em mm → converte p/ cm
-  return n
+  const m = s.match(/^(\d+(?:\.\d+)?)\s*(cm|mm)?$/)
+  if (!m) return 'invalida'
+  const n = Number(m[1])
+  if (!Number.isFinite(n) || n <= 0) return 'invalida'
+  const cm = m[2] === 'mm' ? n / 10 : n
+  // Abaixo de 0,05 cm o laudo (1 casa) imprimiria "0,0": precisão de exibição.
+  return cm < MENOR_MEDIDA_CM ? 'invalida' : cm
+}
+
+const MEDIDAS_PROSTATA = ['d1', 'd2', 'd3'] as const
+const VOLUMES_PROSTATA = ['normal', 'aumentada']
+const EXTRAS_PROSTATA = ['calcificacoes']
+
+/**
+ * Pendências bloqueantes da seção próstata. Campo visível inválido, medida
+ * parcial ou opção desconhecida impedem o laudo; o IPP só é lido quando a opção
+ * "Aumentada" está ativa (subcampo oculto é ignorado, não bloqueia).
+ */
+export function prostataInputIssues(state: Record<string, unknown>): string[] {
+  const issues: string[] = []
+  const lidas = MEDIDAS_PROSTATA.map((key) => lerMedidaProstataCm(state[key]))
+  MEDIDAS_PROSTATA.forEach((key, i) => {
+    if (lidas[i] === 'invalida') issues.push(`medida ${i + 1} da próstata tem formato inválido (use valor em cm ou mm, a partir de 0,05 cm)`)
+  })
+  const preenchidas = lidas.filter((v) => v !== null).length
+  if (preenchidas > 0 && preenchidas < 3) issues.push('medidas da próstata incompletas: informe as três dimensões ou nenhuma')
+  const volume = state.volume
+  if (volume !== undefined && (typeof volume !== 'string' || !VOLUMES_PROSTATA.includes(volume))) {
+    issues.push('volume da próstata tem opção inválida')
+  }
+  if (volume === 'aumentada' && lerMedidaProstataCm(state['volume.aumentada.ipp']) === 'invalida') {
+    issues.push('IPP tem formato inválido (use valor em cm ou mm, a partir de 0,05 cm)')
+  }
+  const extra = state.extra
+  if (extra !== undefined && !Array.isArray(extra)) issues.push('achados da próstata têm formato inválido')
+  if (Array.isArray(extra)) {
+    const invalidos = extra.filter((v) => typeof v !== 'string' || !EXTRAS_PROSTATA.includes(v))
+    if (invalidos.length > 0) issues.push(`achados da próstata têm opção inválida: ${invalidos.map(String).join(', ')}`)
+  }
+  return issues
+}
+
+function parseCm(v: unknown): number | null {
+  const lida = lerMedidaProstataCm(v)
+  return lida === 'invalida' ? null : lida
 }
 function ptBr1(n: number): string {
   return n.toFixed(1).replace('.', ',')
@@ -142,8 +190,24 @@ const prostataModule: OrganModule = {
 }
 
 // ── Vesículas seminais ───────────────────────────────────────────────────────
-// Na via transabdominal o renderer sempre descreve as vesículas seminais como
-// normais (não há extração de alteração). Mantemos fixo normal (fidelidade).
+// Padrão histórico: descritas como normais (fidelidade ao renderer). O médico
+// pode registrar, como fato do exame, que não foram caracterizadas adequadamente
+// pela via, ou descrever uma alteração com o lado. Não há frase diagnóstica
+// automática: a alteração sai com as palavras do médico.
+export const VESICULAS_ESTADOS = ['normal', 'nao_caracterizadas', 'alteradas'] as const
+export const VESICULAS_LADOS = ['bilateral', 'direita', 'esquerda'] as const
+
+const ladoVesiculas = (key: string): OrganSchema['fields'][number] => ({
+  key,
+  label: 'Lado',
+  kind: 'mini-segmented',
+  options: [
+    { value: 'bilateral', label: 'Ambas', isDefault: true },
+    { value: 'direita', label: 'Direita' },
+    { value: 'esquerda', label: 'Esquerda' },
+  ],
+})
+
 const vesiculasSchema: OrganSchema = {
   id: 'vesiculas_seminais',
   name: 'Vesículas seminais',
@@ -153,8 +217,23 @@ const vesiculasSchema: OrganSchema = {
       key: 'estado',
       label: 'Estado',
       kind: 'segmented',
-      hint: 'descritas como normais nesta via',
-      options: [{ value: 'normal', label: 'Normais', isDefault: true }],
+      hint: 'default: normais',
+      options: [
+        { value: 'normal', label: 'Normais', isDefault: true },
+        {
+          value: 'nao_caracterizadas',
+          label: 'Não caracterizadas adequadamente',
+          subFields: [ladoVesiculas('lado')],
+        },
+        {
+          value: 'alteradas',
+          label: 'Alteração observada',
+          subFields: [
+            ladoVesiculas('lado'),
+            { key: 'descricao', label: 'Descrição observada', kind: 'text', placeholder: 'descrever somente o observado' },
+          ],
+        },
+      ],
     },
   ],
 }
@@ -163,12 +242,65 @@ function vesiculasInitial(): OrganState {
   return { estado: 'normal' }
 }
 
-function vesiculasCompose(_state: OrganState): OrganComposition {
-  return {
-    body: 'Vesículas seminais de dimensões, ecogenicidade e contornos normais.',
-    conclusion: ['Vesículas seminais ecograficamente normais.'],
-    isNormal: true,
+export type VesiculasSeminaisContrato = {
+  estado: 'nao_caracterizadas' | 'alteradas'
+  lateralidade: 'bilateral' | 'direita' | 'esquerda'
+  descricao: string | null
+}
+
+/**
+ * Lê a seção vesículas seminais. `contrato` é `null` no estado normal (o
+ * renderer mantém a frase histórica e o payload fica igual ao antigo). Opção ou
+ * lado desconhecido, e alteração sem descrição, viram pendência bloqueante.
+ * Subcampos da opção não selecionada são ignorados.
+ */
+export function lerVesiculasSeminais(state: Record<string, unknown>): {
+  contrato: VesiculasSeminaisContrato | null
+  issues: string[]
+} {
+  const estado = state.estado === undefined ? 'normal' : state.estado
+  if (typeof estado !== 'string' || !(VESICULAS_ESTADOS as readonly string[]).includes(estado)) {
+    return { contrato: null, issues: ['vesículas seminais têm opção inválida'] }
   }
+  if (estado === 'normal') return { contrato: null, issues: [] }
+  const issues: string[] = []
+  const ladoRaw = state[`estado.${estado}.lado`]
+  const lado = ladoRaw === undefined || ladoRaw === '' ? 'bilateral' : ladoRaw
+  if (typeof lado !== 'string' || !(VESICULAS_LADOS as readonly string[]).includes(lado)) {
+    issues.push('vesículas seminais têm lado inválido')
+  }
+  const descricaoRaw = state[`estado.${estado}.descricao`]
+  // Uma linha só: quebra de linha no texto livre não pode virar cabeçalho no laudo.
+  const descricao = typeof descricaoRaw === 'string' ? descricaoRaw.replace(/\s+/g, ' ').trim().replace(/\.+$/, '') : ''
+  if (estado === 'alteradas' && descricaoRaw !== undefined && typeof descricaoRaw !== 'string') {
+    issues.push('descrição das vesículas seminais tem formato inválido')
+  } else if (estado === 'alteradas' && !descricao) {
+    issues.push('alteração das vesículas seminais exige descrição do observado')
+  }
+  if (issues.length > 0) return { contrato: null, issues }
+  return {
+    contrato: {
+      estado,
+      lateralidade: lado as VesiculasSeminaisContrato['lateralidade'],
+      descricao: estado === 'alteradas' ? descricao : null,
+    } as VesiculasSeminaisContrato,
+    issues: [],
+  }
+}
+
+function vesiculasCompose(state: OrganState): OrganComposition {
+  const { contrato, issues } = lerVesiculasSeminais(state)
+  if (issues.length > 0) {
+    return { body: 'Vesículas seminais: seleção pendente de correção.', conclusion: [], isNormal: false }
+  }
+  if (!contrato) {
+    return {
+      body: 'Vesículas seminais de dimensões, ecogenicidade e contornos normais.',
+      conclusion: ['Vesículas seminais ecograficamente normais.'],
+      isNormal: true,
+    }
+  }
+  return { body: 'Vesículas seminais com seleção detalhada no renderer canônico.', conclusion: [], isNormal: false }
 }
 
 const vesiculasSeminaisModule: OrganModule = {

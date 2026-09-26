@@ -15,6 +15,7 @@ const files = [
   'tests/intergrowth2020.manual.ts',
   'tests/intergrowthBiometry.manual.ts',
   'tests/renalMeasurements.manual.ts',
+  'tests/composition.manual.ts',
   'src/lib/calculators/preEclampsia.test.mts',
   'src/lib/calculators/trisomyFmf.test.mts',
   'src/lib/companionStructured.test.ts',

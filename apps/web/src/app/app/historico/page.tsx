@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { HistoryList, type HistoryItem } from '@/components/historico/HistoryList'
 import { extractReportPresentation } from '@/components/laudar/reportRichText'
+import { parseEnvelope } from '@/lib/composition/envelope'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,7 @@ export default async function HistoricoPage() {
       title: (r.title as string | null) ?? null,
       text: r.laudo_text as string,
       html: extractReportPresentation(r.exam_state),
+      reopenable: parseEnvelope(r.exam_state).kind === 'composition',
       date: r.created_at as string,
     })),
     ...(ia.data ?? []).map((r) => ({

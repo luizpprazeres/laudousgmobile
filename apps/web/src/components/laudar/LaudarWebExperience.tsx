@@ -75,6 +75,22 @@ import {
 import { VisualSchemaPanel } from '@/components/visualSchemas/VisualSchemaPanel'
 import { supportsFetalPositionSchema } from '@/lib/visualSchemas/fetalPosition'
 import { ExamCategoryPicker } from './ExamCategoryPicker'
+import { AssociationPanel, nameOf } from './AssociationPanel'
+import {
+  associationByCode,
+  hiddenSharedSections,
+  removeComponent,
+  startAssociation,
+  updateComponentState,
+  type AssociationDefinition,
+  type CompositionComponentRef,
+  type CompositionSession,
+} from '@/lib/composition/associations'
+import type { CompositionCategoryCode } from '@/lib/composition/contract'
+import { useComposicaoCanonica } from '@/lib/composition/useComposicaoCanonica'
+import { buildEnvelope, parseEnvelope, savedTextOf } from '@/lib/composition/envelope'
+import { loadCompositionReport, saveCompositionReport, updateCompositionReport } from '@/lib/webReports'
+import type { CalcSpec } from '@/lib/calculators/specs'
 
 const TIREOIDE_ID = 'TIREOIDE'
 type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
@@ -92,6 +108,35 @@ type LaudarWebExperienceProps = {
   workspaceV2?: boolean
   richEditor?: boolean
   agentWorkspace?: boolean
+  /** `web_reports.id` de uma composição salva para reabrir e editar. */
+  reopenReportId?: string
+}
+
+/**
+ * O ESCOPO de um grupo de cards: a categoria, o estado que o alimenta e como
+ * gravá-lo. No exame avulso é a categoria aberta; numa associação, cada
+ * componente é um escopo próprio — o estado de um nunca é escrito no outro.
+ */
+type SectionScope = {
+  key: string
+  categoria: string
+  state: ExamState
+  update: (fn: (state: ExamState) => ExamState) => void
+  calculators: CalcSpec[]
+}
+
+const LIVER_SECTION = { id: 'liver-quantification', label: 'Elastografia e gordura hepática', group: 'calculos' as const }
+const RECOMMENDATIONS_SECTION = { id: 'recommendations', label: 'Recomendações', group: 'conclusao' as const }
+
+function calculatorsFor(categoria: string, opts: Record<string, unknown>): CalcSpec[] {
+  const category = CATEGORIES[categoria]
+  const axilas = categoria === 'MAMARIA' && opts.escopo_exame === 'axilas'
+  return (category?.resolveCalculators?.(opts as never) ?? category?.calculators ?? [])
+    .filter((spec) => !(axilas && spec.id === 'bi-rads'))
+}
+
+function compositionKey(compositionId: string) {
+  return `COMP:${compositionId}`
 }
 
 type WorkspacePane = 'achados' | 'laudo'
@@ -278,7 +323,7 @@ function WorkspaceTabs({
   )
 }
 
-export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, agentWorkspace = false }: LaudarWebExperienceProps) {
+export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, agentWorkspace = false, reopenReportId }: LaudarWebExperienceProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
   const [choosingCategory, setChoosingCategory] = useState(true)
@@ -356,6 +401,18 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     Object.fromEntries(GENERIC_CATEGORIES.map((c) => [c.id, initialExamState(c)]))
   )
   const [tireoideState, setTireoideState] = useState<TireoideState>(() => initialTireoideState())
+  /**
+   * A ASSOCIAÇÃO em curso (Abdome + Próstata, Mamas + Pelve). Enquanto existe,
+   * os estados dos componentes moram nela — não em `examStates` — e o laudo
+   * vem do endpoint de composição, não do render de uma categoria só.
+   */
+  const [composition, setComposition] = useState<CompositionSession | null>(null)
+  /** A linha salva desta composição, para regravar a mesma e não duplicar. */
+  const [savedComposition, setSavedComposition] = useState<{ compositionId: string; id: string; updatedAt: string } | null>(null)
+  const [compositionBaseRevision, setCompositionBaseRevision] = useState(0)
+  const [reopenState, setReopenState] = useState<{ status: 'idle' | 'loading' | 'error'; message?: string }>(
+    () => (reopenReportId ? { status: 'loading' } : { status: 'idle' }),
+  )
   const [visualSchemaOpen, setVisualSchemaOpen] = useState(true)
   /**
    * Sem sub-nav, não há mais "seção ativa". O que sobra dela é o pedido de
@@ -391,9 +448,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
   const opts = (examStates[categoria]?.['__opts'] as ExamState[string] | undefined) ?? {}
   const axilasOnly = categoria === 'MAMARIA' && opts.escopo_exame === 'axilas'
-  const documentKey = chaveDocumentoDoppler(categoria, examStates[categoria] ?? {})
+  const documentKey = composition
+    ? compositionKey(composition.compositionId)
+    : chaveDocumentoDoppler(categoria, examStates[categoria] ?? {})
   const supportsFetalSchema = supportsFetalPositionSchema(categoria, opts.trimestre)
-  const supportsVisualSchema = isTireoide || (categoria === 'MAMARIA' && !axilasOnly) || supportsFetalSchema
+  // O esquema visual edita o estado avulso da categoria; numa associação ele
+  // escreveria fora do componente, então fica fora até ter escopo próprio.
+  const supportsVisualSchema = !composition && (isTireoide || (categoria === 'MAMARIA' && !axilasOnly) || supportsFetalSchema)
   const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -517,13 +578,20 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const renderCategory = categoria === 'DOPPLER_OBSTETRICO'
     ? categoriaRenderDoppler(examStates[categoria] ?? {})
     : categoria
-  const laudoCanonico = useLaudoCanonico(renderCategory, achadosCanonicos, migrada && !choosingCategory, documentKey)
+  const laudoCanonico = useLaudoCanonico(renderCategory, achadosCanonicos, migrada && !choosingCategory && !composition, documentKey)
+  const composicao = useComposicaoCanonica(composition, Boolean(composition) && !choosingCategory, compositionBaseRevision)
+  /** O laudo em tela depende de rede: exame avulso migrado ou composição. */
+  const remoto = migrada || Boolean(composition)
+  const motor = composition
+    ? { carregando: composicao.carregando, desatualizado: composicao.desatualizado, erro: composicao.erro }
+    : { carregando: laudoCanonico.carregando, desatualizado: laudoCanonico.desatualizado, erro: laudoCanonico.erro }
 
   const generatedText = useMemo(() => {
+    if (composition) return composicao.texto
     if (migrada) return laudoCanonico.texto
     const cat = CATEGORIES[categoria]
     return cat ? composeReport(cat, examStates[categoria]).text : ''
-  }, [categoria, examStates, migrada, laudoCanonico.texto])
+  }, [categoria, composition, composicao.texto, examStates, migrada, laudoCanonico.texto])
 
   /**
    * OS BLOCOS DE CALCULADORA — e por que isto NÃO fura a regra do §3.2.
@@ -569,8 +637,19 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const calculatorBlocks = useMemo(() => calculatorBlocksByCategory[documentKey] ?? {}, [calculatorBlocksByCategory, documentKey])
   const [companionNotesByCategory, setCompanionNotesByCategory] = useState<Record<string, string[]>>({})
   const companionNotes = useMemo(() => companionNotesByCategory[documentKey] ?? [], [companionNotesByCategory, documentKey])
-  const recommendation = String(examStates[categoria]?.__recommendations?.inserted ?? '')
-  const liverMeasurements = examStates[categoria]?.__liver_quantification ?? {}
+  /**
+   * Recomendações moram no componente que abriu a associação; a quantificação
+   * hepática, no componente de abdome. No exame avulso, na própria categoria.
+   */
+  const recommendationState = composition
+    ? composition.states[composition.primaryComponentId]
+    : examStates[categoria]
+  const liverComponent = composition?.components.find((c) => c.categoryCode === 'ABDOMEN_TOTAL') ?? null
+  const liverState = composition
+    ? (liverComponent ? composition.states[liverComponent.componentId] : undefined)
+    : examStates[categoria]
+  const recommendation = String(recommendationState?.__recommendations?.inserted ?? '')
+  const liverMeasurements = liverState?.__liver_quantification ?? {}
   const liverResult = buildLiverQuantificationBlock(liverMeasurements)
   const liverInserted = !liverResult.errors.length && liverMeasurements.inserted === liverResult.text ? liverResult.text : ''
   const composedText = useMemo(
@@ -728,10 +807,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const [companionOpen, setCompanionOpen] = useState(false)
   const [companionState, setCompanionState] = useState({ connected: false, pending: 0 })
   const [saveError, setSaveError] = useState<string | null>(null)
+  // Também quando o MOTOR muda de estado: com rascunho manual o texto não
+  // muda, e uma recusa de salvar por falha já resolvida ficaria presa na tela.
   useEffect(() => {
     setSaveState('idle')
     setSaveError(null)
-  }, [preview, previewHtml])
+  }, [preview, previewHtml, composicao.requestId, composicao.erro])
   /**
    * SALVAR um laudo que já não corresponde ao formulário — o buraco fechado.
    *
@@ -745,11 +826,22 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
    * redação, e ela é dele, não do motor.
    */
   const textoFoiEditado = activeDraft.text !== activeDraft.sourceText
-  const laudoNaoConfere =
-    migrada && !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
-  const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = laudoCanonico.erro || saveState === 'error'
+  /**
+   * NA ASSOCIAÇÃO a recusa vale MESMO com texto editado à mão. O que se grava
+   * não é só o texto: é o estado dos dois componentes, que reabre para edição.
+   * Se um componente falhou ou ainda não voltou, esse estado não foi conferido
+   * pelo renderer, e salvá-lo como exame completo seria prometer uma
+   * reabertura que produz outro laudo.
+   */
+  const composicaoNaoConfere = Boolean(composition) && (
+    composicao.carregando || composicao.desatualizado || composicao.erro !== null || !composicao.requestId
+  )
+  const laudoNaoConfere = composition
+    ? composicaoNaoConfere
+    : migrada && !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
+  const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = motor.erro || saveState === 'error'
     ? 'error'
-    : migrada && (laudoCanonico.carregando || laudoCanonico.desatualizado)
+    : remoto && (motor.carregando || motor.desatualizado)
       ? 'updating'
       : sourceChanged
         ? 'suggestion'
@@ -761,14 +853,54 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (laudoNaoConfere) {
       setSaveState('error')
       setSaveError(
-        laudoCanonico.erro
-          ? 'O laudo não foi montado — não dá para salvar o texto anterior como se fosse este exame.'
+        motor.erro
+          ? composition
+            ? 'O laudo associado não foi montado por inteiro — nada é salvo enquanto um dos exames estiver com falha, nem com texto editado.'
+            : 'O laudo não foi montado — não dá para salvar o texto anterior como se fosse este exame.'
           : 'Espere o laudo terminar de montar: o texto na tela ainda é o anterior.',
       )
       return
     }
     setSaveState('saving')
     setSaveError(null)
+    if (composition) {
+      try {
+        const envelope = attachReportPresentation(
+          buildEnvelope({
+            session: composition,
+            rendered: {
+              requestId: composicao.requestId!,
+              revision: composicao.revision,
+              fullText: composicao.texto,
+              blocks: composicao.blocks,
+            },
+            extras: { calculatorBlocks, companionNotes },
+            // O rascunho salvo é o que está NA TELA: editado, o do médico; não
+            // editado, o modelo atual (um rascunho limpo antigo não vale).
+            draft: richEditor && activeDraft.dirty
+              ? activeDraft
+              : { text: composedText, html: generatedHtml, sourceText: composedText, sourceHtml: generatedHtml, dirty: false },
+            initials,
+          }),
+          previewHtml,
+        )
+        const laudoText = savedTextOf(envelope as Parameters<typeof savedTextOf>[0])
+        // O texto gravado é DERIVADO do envelope; se não for o que o médico vê,
+        // algo divergiu e não se grava.
+        if (laudoText !== preview) throw new Error('O texto na tela não corresponde ao estado a salvar. Recarregue o laudo.')
+        const definition = associationByCode(composition.associationCode)
+        const payload = { title: definition.label, laudoText, envelope }
+        const saved = savedComposition?.compositionId === composition.compositionId
+          ? await updateCompositionReport(savedComposition.id, { ...payload, expectedUpdatedAt: savedComposition.updatedAt })
+          : await saveCompositionReport({ ...payload, associationCode: composition.associationCode })
+        setSavedComposition({ compositionId: composition.compositionId, ...saved })
+        setSaveState('saved')
+      } catch (e) {
+        setSaveState('error')
+        setSaveError(e instanceof Error ? e.message : 'Erro ao salvar.')
+      }
+      return
+    }
     try {
       await saveWebReport({
         categoryCode: categoria,
@@ -909,7 +1041,29 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         : { ...all[categoria], [sectionId]: nextState },
     }))
 
-  const renderSectionBody = (section: WorkspaceSection) => {
+  const singleScope: SectionScope = {
+    key: categoria,
+    categoria,
+    state: examState ?? {},
+    update: (fn) => setExamStates((all) => ({ ...all, [categoria]: fn(all[categoria] ?? {}) })),
+    calculators,
+  }
+
+  /**
+   * O corpo do card, dentro de um ESCOPO. As variáveis locais sombreiam as do
+   * exame avulso de propósito: o mesmo painel serve à categoria aberta e a
+   * cada componente de uma associação, e nenhum deles alcança o estado do outro.
+   */
+  const renderSectionBodyIn = (scope: SectionScope, section: WorkspaceSection) => {
+    const categoria = scope.categoria
+    const examState = scope.state
+    const opts = ((scope.state.__opts as Record<string, string | string[]> | undefined) ?? {}) as Record<string, string | string[]>
+    const calculators = scope.calculators
+    const updateSectionState = (sectionId: string, nextState: OrganState, invalidatePercentile = true) =>
+      scope.update((current) => invalidatePercentile
+        ? invalidarPercentilManual(current, { ...current, [sectionId]: nextState })
+        : { ...current, [sectionId]: nextState })
+
     if (section.id === 'calc:bi-rads' && categoria === 'MAMARIA') return <MamariaBiradsPanel state={examState?.mamas ?? {}} onChange={state => updateSectionState('mamas', state, false)} />
     if (section.id === 'liver-quantification') return <div className="space-y-3">
       <LiverQuantificationPanel state={liverMeasurements} onChange={state => updateSectionState('__liver_quantification', { ...state, inserted: '' }, false)} />
@@ -922,7 +1076,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         <span role="status" className="text-xs text-gray-500">{liverInserted ? 'Medidas incluídas no modelo.' : 'Confira os valores antes de incluir. Alterar uma medida exige nova inclusão.'}</span>
       </div> : null}
     </div>
-    if (section.id === 'recommendations') return <RecommendationsPanel state={examStates[categoria]?.__recommendations ?? {}} onChange={state => updateSectionState('__recommendations', state, false)} />
+    if (section.id === 'recommendations') return <RecommendationsPanel state={examState?.__recommendations ?? {}} onChange={state => updateSectionState('__recommendations', state, false)} />
     if (section.id === 'visual-schema') return (
                     <VisualSchemaPanel
                       category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : 'FETAL_POSITION'}
@@ -961,7 +1115,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         )
       }
       return 'fields' in spec
-        ? <CalcPanel spec={spec} examState={isTireoide ? undefined : examState} />
+        ? <CalcPanel spec={spec} examState={isTireoide && !composition ? undefined : examState} />
         : null
     }
     if (isTireoide) {
@@ -1025,6 +1179,176 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       </div>
     )
   }
+  const renderSectionBody = (section: WorkspaceSection) => renderSectionBodyIn(singleScope, section)
+
+  /**
+   * TRANSFERÊNCIA DO DOCUMENTO entre chaves (avulso ↔ composição).
+   *
+   * Rascunho do médico, blocos de calculadora e observações do celular são
+   * DELE, e seguem o exame quando ele associa ou desassocia. O texto editado à
+   * mão nunca é sobrescrito: com a composição, o modelo novo aparece como
+   * sugestão sobre o rascunho, pelo mecanismo que já existe. A chave de origem
+   * é esvaziada — voltar a ela não pode ressuscitar um rascunho antigo.
+   */
+  const moveDocument = (from: string, to: string) => {
+    const move = <T,>(all: Record<string, T | undefined>) => {
+      const next = { ...all }
+      if (next[from] !== undefined) next[to] = next[from]
+      else delete next[to]
+      delete next[from]
+      return next
+    }
+    setReportDrafts((all) => move(all) as Record<string, ReportDraft>)
+    setUndoByCategory((all) => {
+      const next = { ...all }
+      delete next[from]
+      delete next[to]
+      return next
+    })
+    setCalculatorBlocksByCategory((all) => move(all) as Record<string, Record<string, string>>)
+    setCompanionNotesByCategory((all) => move(all) as Record<string, string[]>)
+  }
+
+  const dropDocument = (key: string) => {
+    const drop = <T,>(all: Record<string, T>) => {
+      const next = { ...all }
+      delete next[key]
+      return next
+    }
+    setReportDrafts(drop)
+    setUndoByCategory(drop)
+    setCalculatorBlocksByCategory(drop)
+    setCompanionNotesByCategory(drop)
+  }
+
+  const startCompositionWith = (definition: AssociationDefinition) => {
+    if (composition || isTireoide) return
+    const primary = categoria as CompositionCategoryCode
+    const session = startAssociation(
+      definition,
+      primary,
+      examStates[primary] ?? {},
+      (category) => initialExamState(CATEGORIES[category]),
+      () => crypto.randomUUID(),
+    )
+    moveDocument(documentKey, compositionKey(session.compositionId))
+    // O estado avulso da categoria foi PARA a sessão. O que fica em
+    // `examStates` volta ao inicial, para que sair da associação não reabra
+    // achados que já pertencem a ela.
+    setExamStates((all) => ({ ...all, [primary]: initialExamState(CATEGORIES[primary]) }))
+    setComposition(session)
+    setSavedComposition(null)
+    setCompositionBaseRevision(0)
+  }
+
+  const removeCompositionComponent = (componentId: string) => {
+    if (!composition) return
+    const removed = composition.components.find((c) => c.componentId === componentId)
+    if (!removed) return
+    if (typeof window !== 'undefined' && !window.confirm(
+      `Remover ${nameOf(removed.categoryCode)} da associação? Os achados preenchidos neste exame serão descartados.`,
+    )) return
+    const remaining = removeComponent(composition, componentId)
+    moveDocument(compositionKey(composition.compositionId), remaining.category)
+    setExamStates((all) => ({ ...all, [remaining.category]: remaining.state }))
+    setComposition(null)
+    setSavedComposition(null)
+    setCategoria(remaining.category)
+  }
+
+  /** Trocar de categoria com uma associação aberta encerra a associação. */
+  const changeCategory = (nextCategory: string) => {
+    if (composition) {
+      if (typeof window !== 'undefined' && !window.confirm(
+        'Sair da associação de exames? Os achados dos exames associados serão descartados desta tela.',
+      )) return
+      dropDocument(compositionKey(composition.compositionId))
+      setComposition(null)
+      setSavedComposition(null)
+    }
+    selectCategory(nextCategory)
+  }
+
+  const compositionScopes: Array<{ ref: CompositionComponentRef; scope: SectionScope; sections: WorkspaceSection[] }> = composition
+    ? composition.components.map((ref) => {
+        const state = composition.states[ref.componentId] ?? {}
+        const opts = (state.__opts as Record<string, unknown> | undefined) ?? {}
+        const category = CATEGORIES[ref.categoryCode]
+        const hidden = hiddenSharedSections(composition, ref.componentId)
+        const scopeCalculators = calculatorsFor(ref.categoryCode, opts)
+        const baseList: WorkspaceSection[] = (category?.resolveSections?.(opts as never) ?? category?.sections ?? [])
+          .filter((section) => !hidden.has(section.id))
+        const scope: SectionScope = {
+          key: ref.componentId,
+          categoria: ref.categoryCode,
+          state,
+          update: (fn) => setComposition((current) => current && current.compositionId === composition.compositionId
+            ? updateComponentState(current, ref.componentId, fn)
+            : current),
+          calculators: scopeCalculators,
+        }
+        const sections: WorkspaceSection[] = [
+          ...baseList,
+          ...(ref.categoryCode === 'ABDOMEN_TOTAL' ? [LIVER_SECTION] : []),
+          ...(ref.componentId === composition.primaryComponentId ? [RECOMMENDATIONS_SECTION] : []),
+          ...scopeCalculators.map((c) => ({ id: `calc:${c.id}`, label: c.name, group: 'calculos' as const })),
+        ]
+        return { ref, scope, sections }
+      })
+    : []
+
+  const compositionSectionSize = (scope: SectionScope, section: WorkspaceSection): SectionCardSize => {
+    if (section.id === 'liver-quantification') return 'wide'
+    if (FULL_WIDTH_SECTIONS.has(section.id)) return 'full'
+    if (section.id.startsWith('calc:')) return 'wide'
+    const fields = section.module?.schema.fields.length ?? 0
+    return fields >= 9 ? 'wide' : 'regular'
+  }
+
+  const resetCompositionSection = (scope: SectionScope, section: WorkspaceSection) => {
+    const mod = section.module
+    if (!mod) return
+    scope.update((current) => ({ ...current, [section.id]: mod.initialState() }))
+  }
+
+  /**
+   * REABRIR uma composição salva. O estado vem pela rota autenticada, o
+   * envelope é conferido de novo aqui, e o texto do médico volta como estava —
+   * inclusive o rascunho editado, que continua sendo dele.
+   */
+  useEffect(() => {
+    if (!reopenReportId) return
+    let cancelled = false
+    loadCompositionReport(reopenReportId)
+      .then((saved) => {
+        if (cancelled) return
+        const parsed = parseEnvelope(saved.envelope)
+        if (parsed.kind !== 'composition') {
+          setReopenState({ status: 'error', message: parsed.kind === 'legacy' ? 'Este laudo foi salvo só como texto e não reabre para edição.' : parsed.motivo })
+          return
+        }
+        const { envelope, session } = parsed
+        const key = compositionKey(session.compositionId)
+        const primary = session.components.find((c) => c.componentId === session.primaryComponentId)!
+        setReportDrafts((all) => ({ ...all, [key]: envelope.draft }))
+        setCalculatorBlocksByCategory((all) => ({ ...all, [key]: envelope.extras.calculatorBlocks }))
+        setCompanionNotesByCategory((all) => ({ ...all, [key]: envelope.extras.companionNotes }))
+        setCompositionBaseRevision(envelope.revision)
+        // As iniciais fazem parte do texto salvo: reabrir com as de hoje
+        // mostraria outro laudo. Não grava a escolha como padrão.
+        setInitials(envelope.initials)
+        setComposition(session)
+        setSavedComposition({ compositionId: session.compositionId, id: saved.id, updatedAt: saved.updatedAt })
+        setCategoria(primary.categoryCode)
+        setChoosingCategory(false)
+        setReopenState({ status: 'idle' })
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        setReopenState({ status: 'error', message: error instanceof Error ? error.message : 'Não foi possível reabrir o laudo.' })
+      })
+    return () => { cancelled = true }
+  }, [reopenReportId])
 
   const phoneStatus = companionState.connected ? 'Celular conectado' : 'Celular desconectado'
   const pendingLabel = companionState.pending > 0
@@ -1077,8 +1401,21 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
   return (
     <>
-      {choosingCategory && <ExamCategoryPicker onSelect={(id) => {
-        selectCategory(id)
+      {reopenState.status !== 'idle' ? (
+        <div
+          role={reopenState.status === 'error' ? 'alert' : 'status'}
+          data-reopen-state={reopenState.status}
+          className={`mx-auto mt-4 w-[min(100%-32px,720px)] rounded-2xl border px-4 py-3 text-sm ${reopenState.status === 'error'
+            ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300'
+            : 'border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'}`}
+        >
+          {reopenState.status === 'error'
+            ? <><strong className="font-semibold">Não foi possível reabrir para edição.</strong> {reopenState.message} O texto salvo continua no histórico.</>
+            : 'Reabrindo o laudo salvo…'}
+        </div>
+      ) : null}
+      {choosingCategory && reopenState.status !== 'loading' && <ExamCategoryPicker onSelect={(id) => {
+        changeCategory(id)
         setChoosingCategory(false)
       }} />}
       <div
@@ -1216,9 +1553,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               <span aria-hidden="true" className="laudar-brand-divider h-5 w-px shrink-0 bg-gray-200 dark:bg-gray-700" />
               <CategorySelector
                 categoria={categoria}
-                currentName={currentCategory.name}
+                currentName={composition ? associationByCode(composition.associationCode).label : currentCategory.name}
                 compact
-                onChange={selectCategory}
+                onChange={changeCategory}
               />
             </div>
 
@@ -1257,7 +1594,66 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           className="achados-layout"
         >
           <div className="mx-auto w-full max-w-[1440px] space-y-4">
-            {hasExamOptions ? (
+            {!isTireoide ? (
+              <AssociationPanel
+                categoria={categoria}
+                session={composition}
+                onAssociate={startCompositionWith}
+                onRemove={removeCompositionComponent}
+              />
+            ) : null}
+
+            {composition ? (
+              <>
+                {compositionScopes.map(({ ref, scope, sections: groupSections }) => {
+                  const category = CATEGORIES[ref.categoryCode]
+                  const groupOpts = (scope.state.__opts as Record<string, string | string[]> | undefined) ?? {}
+                  const hidden = hiddenSharedSections(composition, ref.componentId)
+                  return (
+                    <section
+                      key={ref.componentId}
+                      data-composition-component={ref.categoryCode}
+                      data-component-id={ref.componentId}
+                      aria-labelledby={`composition-group-${ref.componentId}`}
+                      className="space-y-3 rounded-[26px] border border-black/[0.05] bg-white/40 p-3 dark:border-white/[0.06] dark:bg-white/[0.02] sm:p-4"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 px-1">
+                        <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${categoryDotClass(ref.categoryCode)}`} />
+                        <h2 id={`composition-group-${ref.componentId}`} className="text-[15px] font-bold text-gray-900 dark:text-gray-100">
+                          {nameOf(ref.categoryCode)}
+                        </h2>
+                        {hidden.has('bexiga') ? (
+                          <span data-shared-bladder-note className="text-[12px] text-gray-500 dark:text-gray-400">
+                            Bexiga: avaliada no grupo {nameOf('ABDOMEN_TOTAL')} (compartilhada).
+                          </span>
+                        ) : null}
+                      </div>
+                      {category?.controls?.length ? (
+                        <ExamOptionsBar
+                          controls={category.controls}
+                          opts={groupOpts}
+                          onOpts={(key, value) => scope.update((current) => ({
+                            ...current,
+                            __opts: { ...((current.__opts as Record<string, string | string[]>) ?? {}), [key]: value },
+                          }))}
+                        />
+                      ) : null}
+                      <WorkspaceSectionGrid
+                        scopeKey={ref.componentId}
+                        sections={groupSections}
+                        contentGroupLabel={categoryContentGroupLabel(ref.categoryCode)}
+                        sizeOf={(section) => compositionSectionSize(scope, section)}
+                        canReset={(section) => Boolean(section.module)}
+                        onReset={(section) => resetCompositionSection(scope, section)}
+                        renderBody={(section) => renderSectionBodyIn(scope, section)}
+                      />
+                    </section>
+                  )
+                })}
+              </>
+            ) : null}
+
+            {!composition && hasExamOptions ? (
               <ExamOptionsBar controls={controls} opts={opts} onOpts={onOpts}>
                 {categoria === 'DOPPLER_OBSTETRICO' ? (
                   <label className="flex min-h-9 cursor-pointer items-center gap-2 self-end text-[13px] font-semibold text-gray-700 dark:text-gray-200">
@@ -1286,6 +1682,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               </ExamOptionsBar>
             ) : null}
 
+            {!composition ? <>
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <p className="text-[12.5px] text-gray-500 dark:text-gray-400">
                 {isTireoide
@@ -1307,6 +1704,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               renderBody={renderSectionBody}
               highlightedId={highlightedSectionId}
             />
+            </> : null}
 
             {workspaceV2 && agentWorkspace ? (
               <div className="overflow-hidden rounded-[22px] border border-black/[0.06] dark:border-white/[0.08]">
@@ -1347,12 +1745,33 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               <div className="flex flex-wrap items-center justify-end gap-2">{secondaryTools}</div>
             ) : null}
 
-            {migrada && laudoCanonico.erro ? (
-              <p className="rounded-2xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
-                <strong className="font-semibold">O laudo não foi montado.</strong>{' '}
-                {laudoCanonico.erro}
-                {laudoCanonico.texto ? ' O texto abaixo é de antes desta falha.' : ''}
+            {remoto && motor.erro ? (
+              <p data-laudo-error className="rounded-2xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                <strong className="font-semibold">{composition ? 'O laudo associado não foi montado por inteiro.' : 'O laudo não foi montado.'}</strong>{' '}
+                {motor.erro}
+                {composition && composicao.componentesComFalha.length
+                  ? ` Com falha: ${composition.components.filter((c) => composicao.componentesComFalha.includes(c.componentId)).map((c) => nameOf(c.categoryCode)).join(', ')}.`
+                  : ''}
+                {composition && composicao.conflitos.length
+                  ? ` ${composicao.conflitos.map((c) => c.motivo).join(' · ')}`
+                  : ''}
+                {(composition ? composicao.texto : laudoCanonico.texto) ? ' O texto abaixo é de antes desta falha e não pode ser salvo.' : ''}
               </p>
+            ) : null}
+
+            {composition && composicao.blocks.length && !motor.erro ? (
+              <details data-composition-provenance className="rounded-2xl border border-black/[0.06] bg-white px-3.5 py-2 text-xs text-gray-600 dark:border-white/[0.08] dark:bg-[#1C1C1E] dark:text-gray-300">
+                <summary className="cursor-pointer font-semibold">Origem dos blocos do laudo</summary>
+                <ul className="mt-2 space-y-1">
+                  {composicao.blocks.map((block) => (
+                    <li key={block.blockId} data-block-id={block.blockId} className="flex flex-wrap gap-1.5">
+                      <span className="font-semibold">{{ title: 'Título', technique: 'Técnica', findings: 'Achados', conclusion: 'Conclusão' }[block.section]}</span>
+                      <span>·</span>
+                      <span>{block.structureCode === 'URINARY_BLADDER' ? 'Bexiga (compartilhada)' : block.categoryCodes.map((c) => nameOf(c)).join(' + ')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             ) : null}
 
             <div className="laudo-frame relative flex min-h-0 overflow-hidden rounded-[22px] border border-black/[0.06] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_28px_-20px_rgba(15,23,42,0.22)] dark:border-white/[0.08] dark:bg-[#1C1C1E]">
@@ -1375,7 +1794,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 onRejectSuggestion={rejectCurrentModel}
                 canUndoSuggestion={canUndoSuggestion}
                 onUndoSuggestion={undoAcceptedSuggestion}
-                updating={migrada && (laudoCanonico.carregando || laudoCanonico.desatualizado)}
+                updating={remoto && (motor.carregando || motor.desatualizado)}
               />
 
             </div>
@@ -1391,6 +1810,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           [documentKey]: [...(all[documentKey] ?? []), text],
         }))}
         onApplyStructured={(payload: CompanionStructuredPayload) => {
+          // O envio estruturado escreve no estado AVULSO da categoria. Numa
+          // associação isso cairia fora dos componentes — e sumiria em silêncio.
+          if (composition) {
+            window.alert('O envio estruturado do celular não é aplicado a exames associados. Remova a associação para usá-lo.')
+            return
+          }
           if (payload.category === 'TIREOIDE') {
             setTireoideState((state) => applyCompanionThyroid(state, payload))
             selectCategory(TIREOIDE_ID)

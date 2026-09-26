@@ -1,9 +1,16 @@
 import { z } from "zod";
 import {
+  DICTATED_BLADDER_LESION_JSON,
+  DICTATED_BLADDER_LESION_PROMPT,
+  DictatedBladderLesionSchema,
+  fraseLesaoFocalVesical,
+  LESAO_FOCAL_VESICAL_CONCLUSAO,
   renderSharedBladder,
   renderSharedKidney,
   SharedBladderSchema,
   SharedKidneySchema,
+  textoEmLinhaUnica,
+  type DictatedBladderLesion,
 } from "./sharedUrinary";
 
 /**
@@ -124,6 +131,8 @@ export const ViasUrinariasFindingsSchema = z.object({
   bexiga: BexigaSchema,
   /** Contrato compartilhado usado pela web; o legado permanece para ditado/apps antigos. */
   bexiga_detalhada: SharedBladderSchema.optional(),
+  /** Lesão focal vesical DITADA (caminho legado). Ausente/null = comportamento anterior; ignorada com bexiga_detalhada. */
+  bexiga_lesao_focal: DictatedBladderLesionSchema.nullable().optional(),
   rins_detalhados: z.object({
     direito: SharedKidneySchema,
     esquerdo: SharedKidneySchema,
@@ -219,6 +228,7 @@ export const VIAS_URINARIAS_JSON_SCHEMA = {
     "dilatacao_ureteral",
     "dilatacao_ureteral_descricao",
     "achados_adicionais",
+    "bexiga_lesao_focal",
   ],
   properties: {
     rim_direito: RIM_JSON,
@@ -227,6 +237,7 @@ export const VIAS_URINARIAS_JSON_SCHEMA = {
     dilatacao_ureteral: { type: "boolean" },
     dilatacao_ureteral_descricao: str,
     achados_adicionais: str,
+    bexiga_lesao_focal: DICTATED_BLADDER_LESION_JSON,
   },
 } as const;
 
@@ -288,7 +299,8 @@ REGRAS:
    - residuo_pos_miccional_ml: resíduo pós-miccional em mL/cm³ quando ditado; senão null.
 5. dilatacao_ureteral: true se houver dilatação ureteral; false caso contrário
    (default = sem dilatação). dilatacao_ureteral_descricao: lado/grau verbatim quando alterada; senão null.
-6. achados_adicionais: SOMENTE alterações reais fora do padrão acima; null se não houver.`;
+6. achados_adicionais: SOMENTE alterações reais fora do padrão acima; null se não houver.
+7. ${DICTATED_BLADDER_LESION_PROMPT}`;
 
 // ---------------------------------------------------------------------------
 // Helpers de formatação
@@ -491,7 +503,7 @@ function rimCorpo(lado: string, rim: ViasUrinariasRim): string {
 // Bexiga (corpo)
 // ---------------------------------------------------------------------------
 
-function bexigaCorpo(bex: ViasUrinariasBexiga): string {
+function bexigaCorpo(bex: ViasUrinariasBexiga, lesao: DictatedBladderLesion | null = null): string {
   const partes: string[] = [];
   if (!bex.avaliada) {
     partes.push(
@@ -502,9 +514,12 @@ function bexigaCorpo(bex: ViasUrinariasBexiga): string {
     if (bex.parede_alterada) sub.push(limpa(bex.parede_alterada));
     if (bex.conteudo_alterado) sub.push(limpa(bex.conteudo_alterado));
     partes.push(`${sub.join(", ")}.`);
-  } else {
+  } else if (!lesao) {
     partes.push(BEXIGA_NORMAL);
   }
+  // Lesão ditada: descrita mesmo com repleção limitada (o dado não some) e
+  // nunca ao lado da frase de bexiga normal.
+  if (lesao) partes.push(fraseLesaoFocalVesical(lesao));
 
   if (bex.volume_pre_miccional_ml !== null) {
     partes.push(`Volume pré-miccional de ${ptBr1(bex.volume_pre_miccional_ml)} mL.`);
@@ -597,8 +612,10 @@ export function renderViasUrinarias(
   f: ViasUrinariasFindings,
   opts?: { objetivo?: boolean },
 ): string {
-  if (opts?.objetivo) return renderViasUrinariasObjetivo(f);
-  return renderViasUrinariasClassico(f);
+  // Texto livre (ditado ou Web) em linha única: nenhuma quebra vira cabeçalho.
+  const limpo = textoEmLinhaUnica(f);
+  if (opts?.objetivo) return renderViasUrinariasObjetivo(limpo);
+  return renderViasUrinariasClassico(limpo);
 }
 
 // ---------------------------------------------------------------------------
@@ -619,7 +636,7 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
     aspectos.push(limpa(f.dilatacao_ureteral_descricao).concat("."));
   }
 
-  aspectos.push(sharedBladder ? sharedBladder.body.join("\n") : bexigaCorpo(f.bexiga));
+  aspectos.push(sharedBladder ? sharedBladder.body.join("\n") : bexigaCorpo(f.bexiga, f.bexiga_lesao_focal ?? null));
 
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     aspectos.push("");
@@ -716,15 +733,18 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
   // 3) Bexiga.
   if (sharedBladder) {
     conclusao.push(...sharedBladder.conclusion);
-  } else if (!f.bexiga.avaliada) {
-    conclusao.push("Bexiga com repleção insuficiente para adequada avaliação.");
-  } else if (f.bexiga.parede_alterada || f.bexiga.conteudo_alterado) {
-    const sub: string[] = [];
-    if (f.bexiga.parede_alterada) sub.push(limpa(f.bexiga.parede_alterada));
-    if (f.bexiga.conteudo_alterado) sub.push(limpa(f.bexiga.conteudo_alterado));
-    conclusao.push(`Bexiga ${sub.join(", ")}.`);
   } else {
-    conclusao.push("Bexiga ecograficamente normal.");
+    if (!f.bexiga.avaliada) {
+      conclusao.push("Bexiga com repleção insuficiente para adequada avaliação.");
+    } else if (f.bexiga.parede_alterada || f.bexiga.conteudo_alterado) {
+      const sub: string[] = [];
+      if (f.bexiga.parede_alterada) sub.push(limpa(f.bexiga.parede_alterada));
+      if (f.bexiga.conteudo_alterado) sub.push(limpa(f.bexiga.conteudo_alterado));
+      conclusao.push(`Bexiga ${sub.join(", ")}.`);
+    } else if (!f.bexiga_lesao_focal) {
+      conclusao.push("Bexiga ecograficamente normal.");
+    }
+    if (f.bexiga_lesao_focal) conclusao.push(LESAO_FOCAL_VESICAL_CONCLUSAO);
   }
 
   // 4) Resíduo pós-miccional (quando informado).
@@ -833,7 +853,7 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
     achados.push("Não há sinais de dilatação ureteral.");
   }
 
-  achados.push(sharedBladder ? sharedBladder.body.join("\n") : bexigaCorpo(f.bexiga));
+  achados.push(sharedBladder ? sharedBladder.body.join("\n") : bexigaCorpo(f.bexiga, f.bexiga_lesao_focal ?? null));
 
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push("");
@@ -925,15 +945,18 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
   // Bexiga.
   if (sharedBladder) {
     impressao.push(...sharedBladder.conclusion);
-  } else if (!f.bexiga.avaliada) {
-    impressao.push("Bexiga com repleção insuficiente para adequada avaliação.");
-  } else if (f.bexiga.parede_alterada || f.bexiga.conteudo_alterado) {
-    const sub: string[] = [];
-    if (f.bexiga.parede_alterada) sub.push(limpa(f.bexiga.parede_alterada));
-    if (f.bexiga.conteudo_alterado) sub.push(limpa(f.bexiga.conteudo_alterado));
-    impressao.push(`Bexiga ${sub.join(", ")}.`);
   } else {
-    impressao.push("Bexiga ecograficamente normal.");
+    if (!f.bexiga.avaliada) {
+      impressao.push("Bexiga com repleção insuficiente para adequada avaliação.");
+    } else if (f.bexiga.parede_alterada || f.bexiga.conteudo_alterado) {
+      const sub: string[] = [];
+      if (f.bexiga.parede_alterada) sub.push(limpa(f.bexiga.parede_alterada));
+      if (f.bexiga.conteudo_alterado) sub.push(limpa(f.bexiga.conteudo_alterado));
+      impressao.push(`Bexiga ${sub.join(", ")}.`);
+    } else if (!f.bexiga_lesao_focal) {
+      impressao.push("Bexiga ecograficamente normal.");
+    }
+    if (f.bexiga_lesao_focal) impressao.push(LESAO_FOCAL_VESICAL_CONCLUSAO);
   }
 
   // Resíduo pós-miccional (quando informado).
