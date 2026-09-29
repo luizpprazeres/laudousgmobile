@@ -10,7 +10,7 @@ Sala: leitura vertical, seleção estável, nome local com expiração, estados 
 
 Landing: quatro casos em 3–5 segundos, digitação numérica, intervenção manual, clipboard somente com clique, movimento reduzido, exemplos calculados e esquemas fictícios. Quinze imagens GPT compartilhadas entre landing e seletor. Build, typecheck, testes unitários e QA de geometria/interação passaram; prévia local em 3001. Landing publicada em dpl_95q5tmkMojLcLTcPZR1v3ULcQVeZ; aliases laudousg.com.br, www.laudousg.com.br e web.laudousg.com conferidos pelo agente DevOps. QA completo do build isolado 3013 aprovado em 1920/1440/1024/390/320, reduced motion e rede lenta.
 
-iOS: build e testes específicos aprovados; duas falhas em testes de análise de imagens na suíte ampla, baseline não reexecutado. Android: typecheck e contratos aprovados. Alterações locais ainda não distribuídas aos aparelhos.
+iOS: suíte completa concluída com 94 testes aprovados, 3 ignorados e zero falhas. E2E sintético autenticado no simulador comprovou chegada pendente, revisão explícita, invalidação após edição, nova revisão, cópia sem nome local, acréscimos separados, navegação entre dois laudos e redirecionamento autenticado. Build 209 foi assinado, exportado e enviado ao TestFlight; processamento pela Apple em andamento. Android: typecheck, contratos e build debug ARM64 passaram; APK autocontido instalado no emulador e entrada pelo teclado corrigida. O E2E autenticado Android ainda não foi comprovado.
 
 ## Pendências que impedem conclusão
 
@@ -18,6 +18,6 @@ Usuário autenticou Hostinger. Registro A sala = 76.76.21.21 TTL 300 criado e co
 
 Cutover concluído em dpl_GzTRZyscnEfHZRduwJboELmesVTi, três aliases conferidos. Raiz/URL longa/código curto antigos 307, query preservada e novo host 200 sem loop. APIs nos três hosts: token inválido false200, POST sem JWT401 e OPTIONS204 sem redirect. Flag canonical=true persistida no projeto API production. Evidência detalhada e rollback em docs/reviews/2026-09-29-sala-api-release.md.
 
-Validar com conta e laudos sintéticos nos apps Android/iOS: gerar, editar, liberar explicitamente e observar a mesma versão na Sala nova; editar novamente e confirmar invalidação. Testes locais de contrato não substituem essa prova.
+Concluir no Android, com conta e laudos sintéticos, o mesmo fluxo já comprovado no iOS: gerar, editar, liberar explicitamente, observar a versão na Sala nova e confirmar invalidação após nova edição. Testes locais de contrato não substituem essa prova.
 
-Commits locais c704fed, 2d2ea51 e bcd12b3 criados no monorepo com allowlist; push ainda não realizado porque renovação GitHub aguarda verificação do usuário. Build Android debug ARM64 e typecheck passaram; app iOS build atual instalado em simulador isolado e login de conta de testes aguarda senha inserida pelo usuário. Distribuição pública dos apps e E2E autenticado ainda não realizados. Preservar trabalho local e manifest da API já publicada ao preparar essas entregas.
+Monorepo publicado em `main` até `02bc4b6`, incluindo isolamento das anotações por laudo durante a navegação; API/Sala automática `dpl_DxGsw3uNNM4qi7E1a8ctN7CQDmCg` ficou Ready. Swift publicado em `main` até `c7499bc`. Distribuição externa/App Store não foi iniciada; o TestFlight 209 aguarda processamento. Preservar arquivos não relacionados que continuam fora dos commits.
