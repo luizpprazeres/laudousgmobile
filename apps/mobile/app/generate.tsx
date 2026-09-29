@@ -27,6 +27,7 @@ import {
   getMeProfile,
   pushReportToSala,
   updateReportFinalOutput,
+  reviewReportForSala,
   type MockScenario,
 } from "@/lib/api";
 import { Banner, type BannerSeverity } from "@/ui/Banner";
@@ -207,6 +208,9 @@ export default function GenerateScreen() {
   // que sair rápido não perde texto (review Dex1 04/07).
   const pendingSaveRef = useRef<{ reportId: string; text: string } | null>(null);
 
+  const [reviewing, setReviewing] = useState(false);
+  const reviewBusyRef = useRef(false);
+
   function flushPendingSave() {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -215,7 +219,7 @@ export default function GenerateScreen() {
     const pending = pendingSaveRef.current;
     pendingSaveRef.current = null;
     if (!pending) return;
-    updateReportFinalOutput(pending.reportId, stripReviewMarkers(pending.text))
+    return updateReportFinalOutput(pending.reportId, stripReviewMarkers(pending.text))
       .then(() => setSaveStatus("saved"))
       .catch((err) => {
         console.warn("[mobile] autosave do laudo falhou:", err);
@@ -251,6 +255,7 @@ export default function GenerateScreen() {
   }
 
   function onEditFinal(nextText: string) {
+    if (reviewBusyRef.current) return;
     if (state.kind !== "done") return;
     const reportId = state.reportId;
     dispatch({ type: "EDIT_FINAL", text: nextText });
@@ -265,6 +270,7 @@ export default function GenerateScreen() {
   // Laudo. Só funciona com o laudo pronto (o botão do sheet fica desabilitado
   // até lá — ver TrisomyCalculatorSheet `canInsert`).
   function onInsertToReport(bloco: string) {
+    if (reviewBusyRef.current) return;
     if (state.kind !== "done") return;
     const reportId = state.reportId;
     const merged = appendToReportText(state.finalText, bloco);
@@ -274,6 +280,19 @@ export default function GenerateScreen() {
     pendingSaveRef.current = { reportId, text: merged };
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => flushRef.current(), 600);
+  }
+
+  async function onReviewForSala() {
+    if (state.kind !== "done" || reviewBusyRef.current) return;
+    reviewBusyRef.current = true;
+    setReviewing(true);
+    try {
+      await flushPendingSave();
+      await reviewReportForSala(state.reportId, stripReviewMarkers(state.finalText));
+      Alert.alert("Revisado", "Este texto foi liberado para a Sala. Novas edições exigem outra revisão.");
+    } catch (error) {
+      Alert.alert("Não foi possível liberar", error instanceof Error ? error.message : "Verifique a conexão e tente novamente.");
+    } finally { reviewBusyRef.current = false; setReviewing(false); }
   }
 
   async function onCopyLaudo() {
@@ -702,6 +721,8 @@ export default function GenerateScreen() {
                 const found = CATS.find((c) => c.id === code);
                 if (found) setCat(found);
               }}
+              reviewing={reviewing}
+              onReview={onReviewForSala}
               editing={editingLaudo}
               saveStatus={saveStatus}
               onToggleEdit={toggleEditingLaudo}
@@ -1289,6 +1310,8 @@ type LaudoProps = {
   state: GenerateState;
   cat: Category;
   onUseCategory: (code: string) => void;
+  reviewing: boolean;
+  onReview: () => void;
   editing: boolean;
   saveStatus: "idle" | "saving" | "saved" | "error";
   onToggleEdit: () => void;
@@ -1312,6 +1335,8 @@ function LaudoBody({
   state,
   cat,
   onUseCategory,
+  reviewing,
+  onReview,
   editing,
   saveStatus,
   onToggleEdit,
@@ -1394,9 +1419,16 @@ function LaudoBody({
           </View>
         ) : null}
 
+        {state.kind === "done" && text ? (
+          <Pressable accessibilityRole="button" disabled={reviewing || saveStatus === "saving"} onPress={onReview} style={[styles.textBtn, { paddingVertical: 14, opacity: reviewing || saveStatus === "saving" ? 0.5 : 1 }]}>
+            <Text style={styles.textBtnLabel}>{reviewing ? "Liberando…" : "Revisado — liberar para a Sala"}</Text>
+          </Pressable>
+        ) : null}
+
         {state.kind === "done" && editing ? (
           <TextInput
             value={state.finalText}
+            editable={!reviewing}
             onChangeText={onEditFinal}
             multiline
             autoFocus

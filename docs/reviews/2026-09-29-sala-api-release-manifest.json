@@ -1,0 +1,97 @@
+{
+  "base": "5a8a6a04defc7011c4e06b3538ecf8dea7f64a6f",
+  "files": [
+    {
+      "path": "apps/api/src/app/api/reports/[id]/review/route.ts",
+      "sha256": "693baf82a9133dc913ffb337bec7923d15cb3be52b763ec7b0c8702217a71f27"
+    },
+    {
+      "path": "apps/api/src/app/api/reports/[id]/route.ts",
+      "sha256": "6d53a6b9274baa6097391736a4e38f2e9acce7c3bc7b9889a551aff5238dd867"
+    },
+    {
+      "path": "apps/api/src/app/api/sala/latest/route.ts",
+      "sha256": "da6e83e59cad8e6d65f3baafa317aeda9d59d1e0b675fc5b821b6fcba04d723d"
+    },
+    {
+      "path": "apps/api/src/app/api/sala/pair/generate/route.ts",
+      "sha256": "7f273d1995b8a62bea37483a841ba5a0ff8082f305e44743a0c808485067e1c4"
+    },
+    {
+      "path": "apps/api/src/app/api/sala/report/route.ts",
+      "sha256": "d577c0fa70683464d634a70186e7637ac38ff819bcd69210d23fbabd4de99572"
+    },
+    {
+      "path": "apps/api/src/app/sala/[token]/_lib/__tests__/sala-ui.manual.ts",
+      "sha256": "7ad9408f9fd28326783ee9b7232af83d8c32a65c66e0589ed64d709761a6fc2c"
+    },
+    {
+      "path": "apps/api/src/app/sala/[token]/_lib/compose.ts",
+      "sha256": "2443e0f17058d039327fccedda7a042615d1ece040c495d1176a041743c8b9ef"
+    },
+    {
+      "path": "apps/api/src/app/sala/[token]/_lib/copyPlan.ts",
+      "sha256": "46343ea549585cc97fcfee531c2bcbaf349a3711f4a6c996456faf47e9663841"
+    },
+    {
+      "path": "apps/api/src/app/sala/[token]/_lib/freshness.ts",
+      "sha256": "ec84ef780827941982d468bcc034d4bb74abeafd5e9c88a1ba1a22d6268581f6"
+    },
+    {
+      "path": "apps/api/src/app/sala/[token]/_lib/localNames.ts",
+      "sha256": "1015a4310222420443ea67cfc6fa6fbd2a2c6652f5659ca862d201c020421cee"
+    },
+    {
+      "path": "apps/api/src/app/sala/[token]/_lib/review.ts",
+      "sha256": "6845c27f07ac16b5d5d6241e6897e256036b4f631c64a3811ccf48ba39a82674"
+    },
+    {
+      "path": "apps/api/src/app/sala/[token]/_lib/selection.ts",
+      "sha256": "ad3b10b0e2ceadb1dc17c51e2555114986b946d16789e8d2b1537a03bccfd086"
+    },
+    {
+      "path": "apps/api/src/app/sala/[token]/page.tsx",
+      "sha256": "1b70de5d1c6d922b4ca543b3cee50488f2ae9b8a6b9024a44b7fa4f5c6dcc0f2"
+    },
+    {
+      "path": "apps/api/src/middleware.ts",
+      "sha256": "1e13c510babc170225e22597b4fd5e31700b7d74c835d7e27eb413737b6ded0a"
+    },
+    {
+      "path": "apps/api/src/server/sala/__tests__/domain.manual.ts",
+      "sha256": "9773ed57ab91ddf087af5fd3596ab41a6c5925e1f5f1450778e015e8728258f3"
+    },
+    {
+      "path": "apps/api/src/server/sala/__tests__/middleware.manual.ts",
+      "sha256": "665edbb72f13a04ebf43b472fc0504d17a1a2c5355c2c8fb1cd6fddc074e4715"
+    },
+    {
+      "path": "apps/api/src/server/sala/__tests__/reportContract.manual.ts",
+      "sha256": "2ba33219989a4b7dbb4dfc8f43c3c3d53539efa1dadde168c17f93f21f9755dc"
+    },
+    {
+      "path": "apps/api/src/server/sala/domain.ts",
+      "sha256": "629fbb5b5481c8e2c599ebc306af3321b37ca0b4301b325e53fb197b16687141"
+    },
+    {
+      "path": "apps/api/src/server/sala/reportContract.ts",
+      "sha256": "25b7282ab471ca3795fb1fb7ce2299d506f483e6d14b71fb1d20c33fd8674525"
+    },
+    {
+      "path": "packages/db/src/schema/reports.ts",
+      "sha256": "2e23c79faa97ab8dd8996318eaf3d05a4d17f6931f74f2dc84e036b7f3991cf2"
+    },
+    {
+      "path": "packages/db/tests/report-medical-review.sql",
+      "sha256": "25d803bbc322825e28dac52bee7bee598bb5454e01fca9cc98ff93e3f5a11f7e"
+    },
+    {
+      "path": "packages/shared/src/schemas/report.ts",
+      "sha256": "f965f34ca03b08545645b3a1a4629641a85da407842465a1e8e413fc117ca5ae"
+    },
+    {
+      "path": "supabase/migrations/20260928231237_report_medical_review.sql",
+      "sha256": "95bbf4298bbabf4f7f1c96097e2f9fa1fce62188fe656963c0a67695f7b0e8b8"
+    }
+  ]
+}

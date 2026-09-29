@@ -9,8 +9,7 @@
  * O preview deve ser LOCAL. Este script nunca chama checkout, geração de laudo
  * ou microfone reais: intercepta as tentativas e falha se a landing as fizer.
  * Contratos lidos dos componentes v2 integrados: seção
- * [data-landing-section="mobile"][data-stage] com cinco IDs nomeados e nav
- * button[data-stage][aria-current]; [data-hero-demo] com grupo de órgãos e painel no mobile,
+ * [data-landing-section="mobile"][data-stage] com sete etapas controladas pela rolagem e vídeo pausado; [data-hero-demo] com grupo de órgãos e painel no mobile,
  * fieldsets e article[aria-label="Laudo de exemplo"] no desktop.
  */
 import assert from 'node:assert/strict'
@@ -36,11 +35,12 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const shots = process.env.LANDING_QA_SHOTS
 const mobileStageSelector = '[data-landing-section="mobile"]'
 const mobileControlsSelector = `${mobileStageSelector} nav[aria-label="Etapas da demonstração"] button[data-stage]`
-const expectedStages = ['abrir', 'ditar', 'categoria', 'gerar', 'laudo']
+const expectedStages = ['inicio', 'categoria', 'gravacao', 'achados', 'geracao', 'laudo', 'sala']
 const expectedGroups = ['Medicina interna', 'Obstetrícia', 'Saúde da mulher', 'Pequenas partes', 'Musculoesquelético']
 
 function isForbiddenRequest(raw: string): 'hero-video' | 'api' | null {
   const url = new URL(raw)
+  if (url.origin === origin && url.pathname === '/landing/mobile-real/demonstracao-real.mp4') return null
   if (/hero-loop|\.(?:mp4|webm)(?:$|\?)/i.test(url.pathname)) return 'hero-video'
   if (url.origin === origin && /^\/api\//.test(url.pathname)) return 'api'
   return null
@@ -139,7 +139,7 @@ async function checkSchemes(page: any, viewport: Viewport) {
   assert.equal(await section.count(), 1, `${viewport.width}: seção de esquemas ausente/duplicada`)
   await section.scrollIntoViewIfNeeded()
   await geometry(page, `${viewport.width} esquemas`)
-  const ids = ['mama', 'tireoide', 'fetal', 'venoso']
+  const ids = ['mama', 'tireoide', 'venoso']
   if (viewport.width >= 1024) {
     const deck = section.locator('[data-scheme-deck]')
     assert.ok(await deck.isVisible(), `${viewport.width}: baralho desktop invisível`)
@@ -168,6 +168,11 @@ async function checkSchemes(page: any, viewport: Viewport) {
       assert.equal(await card.getAttribute('data-scheme-card'), ids[i], `${viewport.width}: esquema mobile fora de ordem`)
       await card.scrollIntoViewIfNeeded()
       assert.ok(await card.isVisible(), `${viewport.width}: esquema mobile invisível`)
+      // O snap horizontal pode terminar depois do scrollIntoView; medir o alvo estabilizado.
+      await page.waitForFunction((node: HTMLElement) => {
+        const r = node.getBoundingClientRect()
+        return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('li[data-scheme-card]') === node
+      }, await card.elementHandle(), { timeout: 2000 })
       const hit = await card.evaluate((node: HTMLElement) => {
         const box = node.getBoundingClientRect()
         return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.closest('li[data-scheme-card]') === node
@@ -178,6 +183,15 @@ async function checkSchemes(page: any, viewport: Viewport) {
         return Boolean(image?.complete && image.naturalWidth > 0)
       }, ids[i], { timeout: 5000 })
     }
+  }
+  assert.equal(await section.locator('[data-scheme-card="fetal"]').count(), 0, 'posição fetal removida reapareceu')
+  const visibleCards = section.locator('[data-scheme-card]:visible')
+  for (const card of await visibleCards.all()) {
+    assert.match(await card.innerText(), /Caso fictício/i, 'esquema sem identificação demonstrativa')
+    const id = await card.getAttribute('data-scheme-card')
+    assert.match(await card.innerText(), id === 'venoso' ? /TVP · Veia femoral direita/ : /N1[\s\S]*C1/)
+    assert.equal(await card.locator('img').getAttribute('src'), `/landing/esquemas/demo-${id}.svg`)
+    if (id === 'venoso') assert.match(await card.innerText(), /Em breve/)
   }
   const images = section.locator('img[alt]')
   assert.ok(await images.count() >= ids.length, `${viewport.width}: imagens de esquema faltando`)
@@ -232,10 +246,19 @@ async function checkScroll(page: any, viewport: Viewport) {
   const range = await mobileScrollRange(page, viewport)
   let cursor = range.start
   const seen: string[] = []
+  const forwardTimes: number[] = []
+  const video = page.locator(`${mobileStageSelector} video`)
   for (const expected of expectedStages) {
     cursor = await seekStage(page, viewport, expected, cursor, range.end, 1)
     seen.push((await stageAt(page)) ?? '')
+    await page.waitForFunction(() => { const v = document.querySelector('#mobile video') as HTMLVideoElement | null; return !!v && v.readyState >= 2 && !v.seeking }, undefined, { timeout: 12000 })
+    forwardTimes.push(await video.evaluate((v: HTMLVideoElement) => v.currentTime))
+    assert.equal(await video.evaluate((v: HTMLVideoElement) => v.paused), true, 'vídeo tocando sem rolagem')
   }
+  assert.ok(forwardTimes.at(-1)! > forwardTimes[0] + 70, 'rolagem não avançou a captura real')
+  const stopped = await video.evaluate((v: HTMLVideoElement) => v.currentTime)
+  await page.waitForTimeout(700)
+  assert.ok(Math.abs(await video.evaluate((v: HTMLVideoElement) => v.currentTime) - stopped) < 0.05, 'vídeo avançou com rolagem parada')
   cursor = range.end
   const reverse: string[] = []
   for (const expected of [...expectedStages].reverse()) {
@@ -244,118 +267,122 @@ async function checkScroll(page: any, viewport: Viewport) {
   }
   assert.deepEqual(seen, expectedStages, `${viewport.width}: sequência progressiva`)
   assert.deepEqual(reverse, [...expectedStages].reverse(), `${viewport.width}: sequência reversa`)
-  return { seen, reverse }
+  await page.waitForFunction(() => { const v = document.querySelector('#mobile video') as HTMLVideoElement | null; return !!v && !v.seeking && v.currentTime < 4 }, undefined, { timeout: 12000 })
+  assert.equal(await video.evaluate((v: HTMLVideoElement) => v.paused), true, 'vídeo em playback após retroceder')
+  return { seen, reverse, forwardTimes }
 }
 
 async function checkWebDemo(page: any, viewport: Viewport) {
   const demo = page.locator('[data-hero-demo]')
   assert.equal(await demo.count(), 1, `${viewport.width}: demo Web ausente/duplicada`)
+  const tabs = demo.getByRole('group', { name: 'Exames de exemplo' }).getByRole('button')
+  const cases = [
+    ['Abdome total', 'abdome-total'], ['Abdome superior', 'abdome-superior'],
+    ['Pelve TV', 'pelve'], ['Tireoide', 'tireoide'],
+  ]
+  assert.equal(await tabs.count(), cases.length, `${viewport.width}: casos demonstrativos incompletos`)
+  for (const [label, id] of cases) {
+    const tab = demo.getByRole('button', { name: label, exact: true })
+    await tab.focus()
+    await page.keyboard.press('Enter')
+    assert.equal(await demo.getAttribute('data-hero-mode'), 'manual', `${viewport.width}: foco/tecla não interrompeu autoplay`)
+    assert.equal(await demo.getAttribute('data-hero-case'), id, `${viewport.width}: aba não mudou o caso`)
+    assert.equal(await tab.getAttribute('aria-pressed'), 'true', `${viewport.width}: aba não selecionada`)
+  }
+  await demo.getByRole('button', { name: 'Abdome total', exact: true }).click()
+  const report = demo.locator('article[aria-label="Laudo de exemplo"]')
+  let field: any
+  let shownReport: any
   if (viewport.width < 768) {
     const organs = demo.getByRole('group', { name: 'Escolher órgão de exemplo' }).getByRole('button')
-    const organIds = ['figado', 'vesicula', 'rim', 'bexiga']
+    const organIds = ['figado', 'vesicula', 'rim']
     const panel = demo.locator('[data-hero-organ]')
-    const desktopReport = demo.locator('article[aria-label="Laudo de exemplo"]')
-    assert.equal(await organs.count(), 4, `${viewport.width}: seletores de órgãos incompletos`)
-    assert.ok(await panel.isVisible(), `${viewport.width}: trecho do laudo mobile invisível`)
-    assert.equal(await desktopReport.isVisible(), false, `${viewport.width}: laudo desktop indevidamente visível`)
+    assert.equal(await organs.count(), 3, `${viewport.width}: seletores de órgãos incompletos`)
+    assert.ok(await panel.isVisible(), `${viewport.width}: trecho mobile invisível`)
+    assert.equal(await report.isVisible(), false, `${viewport.width}: laudo desktop indevidamente visível`)
     const reportLines: string[] = []
-    for (let i = 0; i < await organs.count(); i += 1) {
+    for (let i = 0; i < organIds.length; i += 1) {
       const organ = organs.nth(i)
       const box = await organ.boundingBox()
-      assert.ok(box && box.height >= 43.5, `${viewport.width}: seletor de órgão menor que 44px (${box?.height})`)
+      assert.ok(box && box.height >= 43.5, `${viewport.width}: seletor menor que 44px`)
       await organ.focus()
       await page.keyboard.press('Enter')
-      assert.equal(await organ.getAttribute('aria-pressed'), 'true', `${viewport.width}: botão não selecionou órgão`)
+      assert.equal(await organ.getAttribute('aria-pressed'), 'true', `${viewport.width}: órgão não selecionado`)
       assert.equal(await panel.getAttribute('data-hero-organ'), organIds[i], `${viewport.width}: painel não acompanhou órgão`)
-      assert.ok((await panel.locator('p').first().innerText()).includes((await organ.innerText()).trim()), `${viewport.width}: título do painel não acompanhou órgão`)
-      const line = (await panel.locator('p').nth(2).innerText()).trim()
+      assert.ok((await panel.locator('p').first().innerText()).includes((await organ.innerText()).trim()), `${viewport.width}: título não acompanhou órgão`)
+      await panel.getByRole('button', { name: 'Normal', exact: true }).click()
+      await page.waitForFunction(() => document.querySelector('[data-hero-demo]')?.getAttribute('data-stage') !== 'redigindo')
+      const line = (await panel.getByText('No laudo', { exact: true }).locator('xpath=following-sibling::div[1]').innerText()).trim()
       assert.ok(line, `${viewport.width}: trecho do laudo vazio na aba ${i}`)
       reportLines.push(line)
     }
-    assert.equal(new Set(reportLines).size, 4, `${viewport.width}: trocar órgão não mudou o texto do laudo`)
-    const before = reportLines.at(-1)!
-    const alternatives = panel.locator('button[aria-pressed="false"]')
-    assert.ok(await alternatives.count() > 0, `${viewport.width}: opção alternativa mobile ausente`)
-    const finding = await alternatives.first().elementHandle()
-    assert.ok(finding, `${viewport.width}: opção mobile desapareceu`)
-    const box = await finding.boundingBox()
-    assert.ok(box && box.height >= 43.5, `${viewport.width}: opção mobile menor que 44px (${box?.height})`)
-    await finding.click()
-    assert.equal(await finding.getAttribute('aria-pressed'), 'true', `${viewport.width}: opção mobile não foi selecionada`)
-    await page.waitForFunction(
-      (oldText: string) => {
-        const text = document.querySelectorAll('[data-hero-organ] p')[2]?.textContent?.trim() ?? ''
-        return Boolean(text && text !== oldText)
-      }, before, { timeout: 2500 },
-    )
-    assert.ok((await panel.locator('p').nth(2).innerText()).trim(), `${viewport.width}: clique gerou trecho vazio`)
-    assert.ok(['redigindo', 'laudo'].includes((await demo.getAttribute('data-stage')) ?? ''), `${viewport.width}: etapa do hero não acompanhou achado mobile`)
-    return
+    assert.equal(new Set(reportLines).size, 3, `${viewport.width}: trocar órgão não mudou texto do laudo`)
+    await organs.nth(1).click()
+    field = panel
+    shownReport = panel.getByText('No laudo', { exact: true }).locator('xpath=following-sibling::div[1]')
+  } else {
+    assert.equal(await report.count(), 1, `${viewport.width}: laudo ausente/duplicado`)
+    assert.ok(await report.isVisible(), `${viewport.width}: laudo desktop invisível`)
+    field = demo.getByRole('group', { name: 'Vesícula', exact: true })
+    shownReport = report
   }
-  const report = demo.locator('article[aria-label="Laudo de exemplo"]')
-  assert.equal(await report.count(), 1, `${viewport.width}: laudo demonstrativo ausente/duplicado`)
-  assert.ok(await report.isVisible(), `${viewport.width}: laudo desktop invisível`)
-  const before = (await report.innerText()).trim()
-  const findings = demo.locator('fieldset button[aria-pressed="false"]')
-  assert.ok(await findings.count() > 0, `${viewport.width}: nenhum achado alternativo clicável`)
-  const finding = await findings.first().elementHandle()
-  assert.ok(finding, `${viewport.width}: achado alternativo desapareceu`)
-  await finding.scrollIntoViewIfNeeded()
+  await field.getByRole('button', { name: 'Normal', exact: true }).click()
+  const finding = field.getByRole('button', { name: 'Litíase', exact: true })
+  if (viewport.width < 768) {
+    const box = await finding.boundingBox()
+    assert.ok(box && box.height >= 43.5, `${viewport.width}: opção menor que 44px`)
+  }
   await finding.click()
-  assert.equal(await finding.getAttribute('aria-pressed'), 'true', `${viewport.width}: achado não foi selecionado`)
-  await page.waitForFunction(
-    ([selector, oldText]: string[]) => (document.querySelector(selector)?.textContent?.trim() ?? '') !== oldText,
-    ['[data-hero-demo] article[aria-label="Laudo de exemplo"]', before], { timeout: 2500 },
-  )
-  assert.ok((await report.innerText()).trim(), `${viewport.width}: interação gerou laudo vazio`)
-  assert.ok(['redigindo', 'laudo'].includes((await demo.getAttribute('data-stage')) ?? ''), `${viewport.width}: etapa do hero não acompanhou achado`)
+  assert.equal(await finding.getAttribute('aria-pressed'), 'true', `${viewport.width}: achado não selecionado`)
+  const input = field.getByRole('textbox', { name: 'Maior eixo', exact: true })
+  assert.equal(await input.inputValue(), '', `${viewport.width}: Litíase inventou medida antes da digitação`)
+  assert.match(await shownReport.innerText(), /aguardando/i, `${viewport.width}: medida pendente não informada`)
+  await input.fill('2,7')
+  await page.waitForFunction(() => document.querySelector('[data-hero-demo]')?.getAttribute('data-stage') !== 'redigindo')
+  assert.match(await shownReport.innerText(), /medindo 2,7 cm/, `${viewport.width}: medida manual não chegou ao laudo`)
+  assert.equal(await demo.getAttribute('data-stage'), 'laudo', `${viewport.width}: etapa não acompanhou achado`)
+  await page.waitForTimeout(5100)
+  assert.equal(await input.inputValue(), '2,7', `${viewport.width}: autoplay sobrescreveu medida manual`)
+  assert.equal(await demo.getAttribute('data-hero-case'), 'abdome-total', `${viewport.width}: autoplay retomou após interação`)
+  assert.equal(await page.evaluate(() => (window as any).__landingQaCopies.length), 0, `${viewport.width}: clipboard escrito sem clique`)
+  await demo.locator('button:visible').filter({ hasText: /^Copiar exemplo$/ }).click()
+  const copies = await page.evaluate(() => (window as any).__landingQaCopies as string[])
+  assert.equal(copies.length, 1, `${viewport.width}: clique não fez exatamente uma cópia`)
+  assert.match(copies[0], /DADOS SINTÉTICOS/)
+  assert.match(copies[0], /medindo 2,7 cm/)
+  await geometry(page, `${viewport.width} hero manual`)
 }
 
-async function checkMobileControls(page: any, viewport: Viewport) {
-  const controls = page.locator(mobileControlsSelector)
-  assert.equal(await controls.count(), expectedStages.length, `${viewport.width}: quantidade de botões mobile`)
-  assert.deepEqual(await controls.evaluateAll((nodes: HTMLElement[]) => nodes.map((node) => node.dataset.stage)), expectedStages)
-  const texts: string[] = []
-  for (let index = 0; index < expectedStages.length; index += 1) {
-    const control = controls.nth(index)
-    const expected = expectedStages[index]!
-    await control.scrollIntoViewIfNeeded()
-    assert.ok((await control.getAttribute('aria-label')) || (await control.innerText()).trim(), `${viewport.width}: etapa sem nome acessível`)
-    await control.focus()
-    await page.keyboard.press('Enter')
-    assert.ok(await awaitStage(page, expected, 4000), `${viewport.width}: teclado não selecionou etapa ${expected}`)
-    assert.equal(await control.getAttribute('aria-current'), 'step', `${viewport.width}: aria-current não acompanhou ${expected}`)
-    await page.waitForFunction((selector: string) => {
-      const section = document.querySelector(selector)
-      const title = section?.querySelector('[aria-live="polite"] h3')?.textContent?.trim()
-      return Boolean(title && section?.querySelector('[role="img"]')?.getAttribute('aria-label')?.includes(title))
-    }, mobileStageSelector, { timeout: 1800 })
-    const title = (await page.locator(`${mobileStageSelector} [aria-live="polite"] h3`).innerText()).trim()
-    assert.ok(title, `${viewport.width}: texto da etapa ${expected} vazio`)
-    assert.ok((await page.locator(`${mobileStageSelector} [role="img"]`).getAttribute('aria-label'))?.includes(title), `${viewport.width}: iPhone e texto fora de sincronia em ${expected}`)
-    texts.push(title)
-    if (viewport.width <= 390) {
-      await control.tap()
-      assert.ok(await awaitStage(page, expected, 4000), `${viewport.width}: toque não selecionou etapa ${expected}`)
-    }
-  }
-  assert.equal(new Set(texts).size, expectedStages.length, `${viewport.width}: textos das etapas não mudam`)
+async function checkMobilePresentation(page: any, viewport: Viewport) {
+  const section = page.locator(mobileStageSelector)
+  assert.equal(await page.locator(mobileControlsSelector).count(), 0, `${viewport.width}: navegação de capítulos removida reapareceu`)
+  await page.waitForFunction((selector: string) => {
+    const section = document.querySelector(selector)
+    const title = section?.querySelector('[aria-live="polite"] h3')?.textContent?.trim()
+    return Boolean(title && section?.querySelector('[role="group"]')?.getAttribute('aria-label')?.includes(title))
+  }, mobileStageSelector, { timeout: 1800 })
+  assert.ok((await section.locator('[aria-live="polite"] h3').innerText()).trim(), `${viewport.width}: título da etapa vazio`)
+  assert.equal(await section.getByRole('button', { name: /Pausar|Rever|Reproduzir/ }).count(), 0, `${viewport.width}: playback manual incompatível com scroll reapareceu`)
 }
 
 async function checkReducedMotion(page: any, viewport: Viewport) {
-  const controls = page.locator(mobileControlsSelector)
-  if (await controls.count() >= expectedStages.length) {
-    await checkMobileControls(page, viewport)
-    return { mode: 'clickable' }
+  const section = page.locator(mobileStageSelector)
+  await section.scrollIntoViewIfNeeded()
+  assert.equal(await section.getAttribute('data-stage'), 'sala', `${viewport.width}: reduced-motion não mostra a composição final`)
+  assert.equal(await section.locator('video').count(), 0, `${viewport.width}: reduced-motion carregou vídeo`)
+  assert.match(await section.innerText(), /Capturas reais · movimento reduzido/)
+  const images = section.getByRole('group', { name: /^Demonstração do aplicativo LaudoUSG:/ }).locator('img')
+  assert.equal(await images.count(), 2, `${viewport.width}: faltam captura do laudo e da Sala`)
+  for (const image of await images.all()) {
+    await image.evaluate((node: HTMLImageElement) => node.decode())
+    assert.ok(await image.isVisible(), `${viewport.width}: captura reduzida invisível`)
   }
-  const staticSteps = page.locator('[data-mobile-static-step]')
-  assert.ok(await staticSteps.count() >= expectedStages.length, `${viewport.width}: reduced-motion sem botões nem cinco etapas estáticas`)
-  for (let index = 0; index < expectedStages.length; index += 1) {
-    const step = staticSteps.nth(index)
-    assert.ok(await step.isVisible(), `${viewport.width}: etapa estática ${index} invisível`)
-    assert.ok((await step.innerText()).trim(), `${viewport.width}: etapa estática ${index} vazia`)
-  }
-  return { mode: 'static' }
+  const before = await section.innerText()
+  await page.waitForTimeout(700)
+  assert.equal(await section.innerText(), before, `${viewport.width}: captura reduzida continuou animando etapas`)
+  await checkMobilePresentation(page, viewport)
+  await geometry(page, `${viewport.width} reduced-motion`)
+  return { mode: 'static-final' }
 }
 
 async function runViewport(browser: any, viewport: Viewport, reducedMotion: 'reduce' | 'no-preference') {
@@ -365,6 +392,8 @@ async function runViewport(browser: any, viewport: Viewport, reducedMotion: 'red
   const pageErrors: string[] = []
   page.on('pageerror', (error: Error) => pageErrors.push(error.stack ?? error.message))
   await page.addInitScript(`
+    Object.defineProperty(window, '__landingQaCopies', { value: [], configurable: true });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (text) => { window.__landingQaCopies.push(text); } } });
     Object.defineProperty(window, '__landingQaMicCalls', { value: [], configurable: true });
     if (navigator.mediaDevices) Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
       configurable: true,
@@ -400,7 +429,7 @@ async function runViewport(browser: any, viewport: Viewport, reducedMotion: 'red
     const stages = reducedMotion === 'reduce'
       ? await checkReducedMotion(page, viewport)
       : await checkScroll(page, viewport)
-    if (reducedMotion !== 'reduce') await checkMobileControls(page, viewport)
+    if (reducedMotion !== 'reduce') await checkMobilePresentation(page, viewport)
     const micCalls = await page.evaluate(() => (window as any).__landingQaMicCalls.length)
     assert.equal(micCalls, 0, `${viewport.width}: demo tentou usar microfone real`)
     assert.deepEqual(forbidden, [], `${viewport.width}: recurso proibido requisitado`)

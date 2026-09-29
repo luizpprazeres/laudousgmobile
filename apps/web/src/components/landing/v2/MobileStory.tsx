@@ -1,6 +1,8 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import Image from 'next/image'
+import { MousePointer2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import {
   AnimatePresence,
   motion,
@@ -8,294 +10,196 @@ import {
   useMotionValueEvent,
   useScroll,
   useTransform,
+  useVelocity,
+  useSpring,
   type MotionValue,
 } from 'framer-motion'
-import { Check, Copy, Mic, Search } from 'lucide-react'
 import styles from './mobile-story.module.css'
+import StoreAvailability from './StoreAvailability'
 import { useReducedMotionSafe } from './useReducedMotionSafe'
 
-/**
- * SEÇÃO MOBILE — o app do iPhone usado de ponta a ponta, guiado pela rolagem.
- *
- * O progresso da rolagem (0 a 1) vira uma MotionValue e cada detalhe do aparelho
- * é um `useTransform` dela: as telas se sucedem ao descer e voltam ao subir, sem
- * vídeo e sem estado React a cada pixel. O React só re-renderiza quando a ETAPA
- * muda (5 vezes), para trocar o texto ao lado.
- *
- * Com `prefers-reduced-motion`, nada é preso à rolagem: os botões de etapa trocam
- * a tela na hora, e cada tela aparece no seu estado final.
- *
- * Dados fictícios de demonstração. Interface recriada a partir do app iOS
- * (GenerateView, RecordingOverlay, CategorySheet), sem áudio nem rede.
- */
+/** Captura real controlada exclusivamente pela rolagem, sem reprodução automática. */
 
-const STEPS = [
+type Step = {
+  id: string
+  label: string
+  title: string
+  body: string
+  src: string
+  alt: string
+}
+
+const BASE = '/landing/mobile-real'
+
+const STEPS: Step[] = [
   {
-    id: 'abrir',
-    label: 'Abrir',
+    id: 'inicio',
+    label: 'Início',
     title: 'No celular, ao lado do aparelho.',
-    body: 'O app abre na tela de ditado, com o exame à vista.',
-  },
-  {
-    id: 'ditar',
-    label: 'Ditar',
-    title: 'Dite com o gel na mão.',
-    body: 'Fale os achados. Confira o texto antes de gerar o laudo.',
+    body: 'O app abre pronto para o exame. O microfone fica ao alcance do polegar.',
+    src: `${BASE}/inicio.jpg`,
+    alt: 'Tela inicial do aplicativo LaudoUSG no iPhone, com o botão de microfone no rodapé',
   },
   {
     id: 'categoria',
     label: 'Exame',
     title: 'Escolha o exame.',
-    body: 'As mais comuns ficam no topo. A busca encontra as demais.',
+    body: 'As categorias mais usadas ficam à mão. A busca encontra as outras.',
+    src: `${BASE}/categoria.jpg`,
+    alt: 'Lista de categorias de exame no aplicativo, com a escolha do exame',
   },
   {
-    id: 'gerar',
+    id: 'gravacao',
+    label: 'Ditar',
+    title: 'Dite com o gel na mão.',
+    body: 'Fale os achados enquanto examina. A transcrição aparece na hora.',
+    src: `${BASE}/gravacao.jpg`,
+    alt: 'Tela de gravação do aplicativo ouvindo o ditado, com a transcrição aparecendo',
+  },
+  {
+    id: 'achados',
+    label: 'Achados',
+    title: 'Confira o que foi entendido.',
+    body: 'Os achados aparecem em texto antes de gerar o laudo.',
+    src: `${BASE}/achados.jpg`,
+    alt: 'Achados ditados, transcritos na tela do aplicativo',
+  },
+  {
+    id: 'geracao',
     label: 'Gerar',
     title: 'Um toque para gerar.',
-    body: 'Achados organizados, medidas e lado conferidos, texto no padrão do exame.',
+    body: 'O app organiza os achados e redige no padrão do exame.',
+    src: `${BASE}/geracao.jpg`,
+    alt: 'Tela do aplicativo gerando o laudo',
   },
   {
     id: 'laudo',
     label: 'Laudo',
     title: 'O laudo pronto para revisar.',
-    body: 'Leia, ajuste o que quiser e copie para o sistema da clínica.',
+    body: 'Leia, ajuste o que quiser e copie. A revisão final é sempre sua.',
+    src: `${BASE}/laudo.jpg`,
+    alt: 'Laudo gerado exibido no aplicativo, em caso demonstrativo',
   },
-] as const
+  {
+    id: 'sala',
+    label: 'Sala',
+    title: 'A sala acompanha.',
+    body: 'Do celular para a Sala do Auxiliar. A equipe recebe o mesmo laudo e pode copiar ou imprimir.',
+    src: `${BASE}/sala.png`,
+    alt: 'Sala do Auxiliar aberta no navegador, mostrando o laudo recebido do celular',
+  },
+]
 
 const N = STEPS.length
-/**
- * Ponto de "etapa completa": toda revelação e barra termina até 0,88 da etapa,
- * e o cruzamento com a próxima tela só começa em 0,94. Botões e o modo de
- * movimento reduzido param aqui, com a tela inteira e sem mistura.
- */
+const SALA = N - 1
+/** Ponto de "etapa completa": botões e movimento reduzido param aqui. */
 const COMPLETA = 0.92
 
-const DITADO = [
-  'Fígado com aumento difuso da ecogenicidade.',
-  'Vesícula com cálculo móvel de 1,2 cm.',
-  'Rim direito com cisto simples de 2,1 cm no polo superior.',
-]
-
-const ACHADOS = ['Esteatose hepática', 'Colelitíase, cálculo de 1,2 cm', 'Cisto simples no rim direito, 2,1 cm']
-
-const CATEGORIAS = [
-  { nome: 'Abdome total', sub: 'Fígado, vias biliares, pâncreas, baço, rins' },
-  { nome: 'Pelve', sub: 'Útero e ovários' },
-  { nome: 'Obstétrica', sub: 'Biometria e vitalidade' },
-  { nome: 'Tireoide', sub: 'Lobos, istmo e nódulos' },
-]
-
-const ETAPAS_GERACAO = ['Organizando os achados', 'Conferindo medidas e lateralidade', 'Redigindo o laudo']
-
-const LAUDO: Array<{ kind: 'note' | 'title' | 'heading' | 'line'; text: string }> = [
-  { kind: 'note', text: 'Trecho ilustrativo, não é um laudo completo' },
-  { kind: 'title', text: 'ULTRASSONOGRAFIA DE ABDOME TOTAL' },
-  { kind: 'heading', text: 'ACHADOS' },
-  { kind: 'line', text: 'Fígado de dimensões normais, com aumento difuso da ecogenicidade do parênquima.' },
-  { kind: 'line', text: 'Vesícula biliar com imagem hiperecogênica móvel, com sombra acústica, medindo 1,2 cm.' },
-  { kind: 'line', text: 'Rim direito com imagem anecoica de paredes finas no polo superior, medindo 2,1 cm.' },
-  { kind: 'heading', text: 'IMPRESSÃO' },
-  { kind: 'line', text: 'Esteatose hepática. Colelitíase. Cisto renal simples à direita.' },
-]
-
-/** Faixa [a, b] do progresso global que pertence à etapa `i`, em frações locais. */
-const faixa = (i: number, a: number, b: number): [number, number] => [(i + a) / N, (i + b) / N]
-
-/** Opacidade de uma tela: entra no início da etapa e sai no fim, com cruzamento curto. */
-function useLayer(progress: MotionValue<number>, i: number) {
-  const f = 0.06 / N
-  const start = i / N
-  const end = (i + 1) / N
-  const input = i === 0 ? [0, end - f, end + f] : i === N - 1 ? [start - f, start + f, 1] : [start - f, start + f, end - f, end + f]
-  const output = i === 0 ? [1, 1, 0] : i === N - 1 ? [0, 1, 1] : [0, 1, 1, 0]
-  const opacity = useTransform(progress, input, output)
-  const y = useTransform(progress, input, output.map((o) => (o === 1 ? 0 : 12)))
-  return { opacity, y }
+// Times in the public clip (source recording starts at 00:14).
+const CHAPTERS = [0, 4, 12, 59, 62, 71.5, 87] as const
+// O ditado ocupa menos rolagem, preservando todos os quadros da captura.
+const SCROLL_STOPS = [0, .15, .319, .419, .519, .659, .859, 1]
+function storyProgressAt(value: number) {
+  const v = Math.max(0, Math.min(1, value))
+  const i = Math.min(SALA, SCROLL_STOPS.findIndex((_, i) => v < SCROLL_STOPS[i + 1]) < 0
+    ? SALA : SCROLL_STOPS.findIndex((_, i) => v < SCROLL_STOPS[i + 1]))
+  return (i + (v - SCROLL_STOPS[i]) / (SCROLL_STOPS[i + 1] - SCROLL_STOPS[i])) / N
+}
+function filmTimeAt(progress: number) {
+  const t = Math.max(0, Math.min(SALA, progress * N))
+  const i = Math.min(5, Math.floor(t))
+  return Math.min(86.9, CHAPTERS[i] + (t - i) * (CHAPTERS[i + 1] - CHAPTERS[i]))
 }
 
-function Reveal({ progress, range, children, className }: {
-  progress: MotionValue<number>
-  range: [number, number]
-  children: React.ReactNode
-  className?: string
+/**
+ * A cena: telefone e, na última etapa, o monitor da Sala. O telefone recua
+ * para o canto e o monitor entra maior; os dois continuam sem distorção.
+ */
+function Scene({ progress, still, stepTitle, activeStep, videoRef, onLoaded, failed }: {
+  progress: MotionValue<number>; still: boolean; stepTitle: string; activeStep: number
+  videoRef: RefObject<HTMLVideoElement>; onLoaded: () => void; failed: boolean
 }) {
-  const opacity = useTransform(progress, range, [0, 1])
-  const y = useTransform(progress, range, [8, 0])
-  return <motion.div className={className} style={{ opacity, y }}>{children}</motion.div>
-}
-
-function StatusBar({ progress }: { progress: MotionValue<number> }) {
-  // Clara só sobre a tela escura de gravação (etapa "ditar"), acompanhando a rolagem.
-  const f = 0.06 / N
-  const color = useTransform(progress, [1 / N - f, 1 / N + f, 2 / N - f, 2 / N + f], ['#111827', '#ecfdf5', '#ecfdf5', '#111827'])
+  const sceneRef = useRef<HTMLDivElement>(null)
+  const [categoryZoom, setCategoryZoom] = useState(1.65)
+  const [salaOffset, setSalaOffset] = useState(-62)
+  useEffect(() => {
+    const scene = sceneRef.current
+    const phone = scene?.querySelector<HTMLElement>(`.${styles.phone}`)
+    if (!scene || !phone) return
+    const measure = () => {
+      setCategoryZoom(Math.min(1.9, (scene.clientWidth - 28) / phone.offsetWidth))
+      setSalaOffset(scene.clientWidth < 500 ? -25 : -62)
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(scene)
+    observer.observe(phone)
+    measure()
+    return () => observer.disconnect()
+  }, [])
+  const local = (v: number) => Math.max(0, Math.min(1, v * N - SALA))
+  // Camera keyframes act on the complete device, not on the screen image.
+  const camera = (v: number, values: number[]) => {
+    const stops = [0, .8, 1.2, 1.85, 2, 2.1, 2.25, 2.8, 3, 3.6, 4, 4.4, 5, 5.6, 6]
+    const t = v * N
+    const i = stops.findIndex((stop, i) => i < stops.length - 1 && t <= stops[i + 1])
+    if (i < 0) return values[values.length - 1]
+    const mix = Math.max(0, Math.min(1, (t - stops[i]) / (stops[i + 1] - stops[i])))
+    const ease = mix * mix * (3 - 2 * mix)
+    return values[i] + (values[i + 1] - values[i]) * ease
+  }
+  const phoneScale = useTransform(progress, v => v * N >= SALA
+    ? 1 - Math.min(local(v) / .38, 1) * .32
+    : still ? 1 : camera(v, [1, 1, categoryZoom, categoryZoom, 1.7, 1.7, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1.55, 1.55, 1]))
+  const phoneX = useTransform(progress, v => `${v * N >= SALA
+    ? salaOffset * Math.min(local(v) / .38, 1)
+    : still ? 0 : camera(v, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])}%`)
+  const phoneY = useTransform(progress, v => `${v * N >= SALA
+    ? 50 * Math.min(local(v) / .38, 1)
+    : still ? 0 : camera(v, [0, 0, 32, 32, -36, -36, -8, -8, -8, -8, -25, 0, 18, 18, 0])}%`)
+  const pointerTop = useTransform(progress, v => `${v * N < 1 ? 9 : v * N < 2 ? 27 : v * N < 2.11 ? 92.5 : v * N < 3 ? 72 : 92.5}%`)
+  const pointerLeft = useTransform(progress, v => `${v * N < 1 ? 78 : v * N < 2 ? 57 : v * N < 2.11 ? 90 : v * N < 3 ? 73 : 50}%`)
+  const pointerOpacity = useTransform(progress, v => {
+    const t = v * N
+    if (still) return 0
+    const windows = [[.78, .99], [1.78, 1.99], [2.045, 2.105], [2.97, 2.999], [4, 4.2]]
+    const w = windows.find(([a, b]) => t >= a && t <= b)
+    return w ? Math.min(1, (t - w[0]) / ((w[1] - w[0]) * .2)) : 0
+  })
+  const monitorX = useTransform(progress, (v) => `${24 * (1 - Math.min(local(v) / 0.75, 1))}%`)
+  const monitorScale = useTransform(progress, (v) => 0.8 + 0.2 * Math.min(local(v) / 0.75, 1))
+  const xNumber = useTransform(phoneX, v => parseFloat(v))
+  const yNumber = useTransform(phoneY, v => parseFloat(v))
+  const scaleSpeed = useVelocity(phoneScale)
+  const xSpeed = useVelocity(xNumber)
+  const ySpeed = useVelocity(yNumber)
+  const blurTarget = useTransform(() => still ? 0 : Math.min(2.8,
+    Math.abs(scaleSpeed.get()) * .7 + Math.abs(xSpeed.get()) * .018 + Math.abs(ySpeed.get()) * .018))
+  const blur = useSpring(blurTarget, { stiffness: 240, damping: 28 })
+  const phoneFilter = useTransform(blur, v => still || v < .025 ? 'none' : `blur(${v.toFixed(2)}px)`)
+  const sala = STEPS[SALA]
   return (
-    <motion.div className={styles.statusBar} style={{ color }} aria-hidden="true">
-      <span>9:41</span>
-      <span className={styles.statusIcons}><span /><span /></span>
-    </motion.div>
-  )
-}
-
-function AppHeader() {
-  return (
-    <div className={styles.appHeader}>
-      <span className={styles.wordmark}><b>Laudo</b><span>USG</span></span>
-      <span className={styles.chip}><span className={styles.chipDot} />Abdome total</span>
-    </div>
-  )
-}
-
-function ScreenAbrir({ progress, animate }: { progress: MotionValue<number>; animate: boolean }) {
-  const layer = useLayer(progress, 0)
-  const scale = useTransform(progress, [0, faixa(0, 0, 0.5)[1]], [animate ? 0.94 : 1, 1])
-  return (
-    <motion.div className={styles.layer} style={{ ...layer, scale }}>
-      <AppHeader />
-      <div className={styles.panel}>
-        <span className={styles.panelTitle}>Achados</span>
-        <p className={styles.hint}>Toque no microfone e dite os achados do exame.</p>
-      </div>
-      <div className={styles.micRow}><span className={styles.mic}><Mic strokeWidth={2.2} /></span></div>
-    </motion.div>
-  )
-}
-
-function WaveBar({ progress, i }: { progress: MotionValue<number>; i: number }) {
-  // Altura ligada à rolagem (sobe e desce com ela), não a um loop infinito.
-  const scaleY = useTransform(progress, faixa(1, 0, 1), [1, 1 + ((i * 7) % 5) * 0.55 + Math.sin(i) * 0.4])
-  return <motion.span style={{ scaleY }} />
-}
-
-function ScreenDitar({ progress }: { progress: MotionValue<number> }) {
-  const layer = useLayer(progress, 1)
-  return (
-    <motion.div className={`${styles.layer} ${styles.recording}`} style={layer}>
-      <div className={styles.listening}><span className={styles.pulse} />OUVINDO</div>
-      <div className={styles.wave} aria-hidden="true">
-        {Array.from({ length: 14 }, (_, i) => <WaveBar key={i} progress={progress} i={i} />)}
-      </div>
-      <div className={styles.transcript}>
-        {DITADO.map((linha, k) => (
-          <Reveal key={linha} progress={progress} range={faixa(1, 0.12 + k * 0.22, 0.28 + k * 0.22)}>{linha}</Reveal>
-        ))}
-      </div>
-      <div className={styles.recordingActions}>
-        <span className={styles.ghostButton}>Cancelar</span>
-        <span className={styles.solidButton}>Parar e usar</span>
-      </div>
-    </motion.div>
-  )
-}
-
-function ScreenCategoria({ progress }: { progress: MotionValue<number> }) {
-  const layer = useLayer(progress, 2)
-  const sheetY = useTransform(progress, faixa(2, 0.3, 0.55), ['100%', '0%'])
-  const scrim = useTransform(progress, faixa(2, 0.3, 0.55), [0, 1])
-  const pick = useTransform(progress, faixa(2, 0.62, 0.78), [0, 1])
-  return (
-    <motion.div className={styles.layer} style={layer}>
-      <AppHeader />
-      <div className={styles.panel}>
-        <span className={styles.panelTitle}>Achados reconhecidos</span>
-        {ACHADOS.map((achado, k) => (
-          <Reveal key={achado} progress={progress} range={faixa(2, 0.02 + k * 0.08, 0.12 + k * 0.08)} className={styles.findingRow}>
-            <span className={styles.findingTick}><Check strokeWidth={3} /></span>
-            <span>{achado}</span>
-          </Reveal>
-        ))}
-      </div>
-      <motion.div className={styles.scrim} style={{ opacity: scrim }} />
-      <motion.div className={styles.sheet} style={{ y: sheetY }}>
-        <span className={styles.grabber} />
-        <span className={styles.sheetTitle}>Escolher categoria</span>
-        <span className={styles.search}><Search strokeWidth={2.2} />Buscar categoria</span>
-        <span className={styles.panelTitle}>Mais usadas</span>
-        {CATEGORIAS.map((c, k) => (
-          <span key={c.nome} className={styles.categoryRow}>
-            {k === 0 ? <motion.span className={styles.categoryPick} style={{ opacity: pick }} /> : null}
-            <span style={{ position: 'relative' }}>{c.nome}<small>{c.sub}</small></span>
-          </span>
-        ))}
-      </motion.div>
-    </motion.div>
-  )
-}
-
-function StageRow({ progress, k }: { progress: MotionValue<number>; k: number }) {
-  const done = useTransform(progress, faixa(3, 0.25 + k * 0.22, 0.32 + k * 0.22), [0, 1])
-  return (
-    <div className={styles.stageRow}>
-      <span className={styles.stageIcon}>
-        <motion.span className={styles.stageIconDone} style={{ opacity: done, scale: done }}><Check strokeWidth={3} /></motion.span>
-      </span>
-      <span>{ETAPAS_GERACAO[k]}</span>
-    </div>
-  )
-}
-
-function ScreenGerar({ progress }: { progress: MotionValue<number> }) {
-  const layer = useLayer(progress, 3)
-  const press = useTransform(progress, faixa(3, 0.08, 0.14), [1, 0.96])
-  const fill = useTransform(progress, faixa(3, 0.18, 0.88), [0, 1])
-  return (
-    <motion.div className={styles.layer} style={layer}>
-      <AppHeader />
-      <div className={styles.panel}>
-        <span className={styles.panelTitle}>Gerando o laudo</span>
-        {ETAPAS_GERACAO.map((etapa, k) => <StageRow key={etapa} progress={progress} k={k} />)}
-        <div className={styles.progressTrack}><motion.div className={styles.progressFill} style={{ scaleX: fill }} /></div>
-      </div>
-      <motion.div className={styles.primaryButton} style={{ scale: press }}>Gerar laudo</motion.div>
-    </motion.div>
-  )
-}
-
-function ScreenLaudo({ progress }: { progress: MotionValue<number> }) {
-  const layer = useLayer(progress, 4)
-  const passo = 0.7 / LAUDO.length // última linha termina em 0,74
-  return (
-    <motion.div className={styles.layer} style={layer}>
-      <AppHeader />
-      <div className={styles.report}>
-        {LAUDO.map((item, k) => (
-          <Reveal
-            key={item.text}
-            progress={progress}
-            range={faixa(4, 0.04 + k * passo, 0.04 + (k + 1) * passo)}
-            className={item.kind === 'note' ? styles.reportNote : item.kind === 'title' ? styles.reportTitle : item.kind === 'heading' ? styles.reportHeading : undefined}
-          >
-            {item.text}
-          </Reveal>
-        ))}
-      </div>
-      <Reveal progress={progress} range={faixa(4, 0.78, 0.88)} className={styles.copyButton}>
-        <Copy strokeWidth={2.2} />Copiar laudo
-      </Reveal>
-    </motion.div>
-  )
-}
-
-function Phone({ progress, animate, stepTitle }: { progress: MotionValue<number>; animate: boolean; stepTitle: string }) {
-  return (
-    <div className={styles.phoneWrap}>
-      <div className={styles.phone} role="img" aria-label={`Demonstração do aplicativo LaudoUSG no iPhone: ${stepTitle}`}>
-        <div className={styles.screen} aria-hidden="true">
-          <span className={styles.island} />
-          <StatusBar progress={progress} />
-          <ScreenAbrir progress={progress} animate={animate} />
-          <ScreenDitar progress={progress} />
-          <ScreenCategoria progress={progress} />
-          <ScreenGerar progress={progress} />
-          <ScreenLaudo progress={progress} />
+    <div ref={sceneRef} className={styles.scene} role="group" aria-label={`Demonstração do aplicativo LaudoUSG: ${stepTitle}`}>
+      <motion.div className={styles.monitor} style={{ x: monitorX, scale: monitorScale }} initial={{ opacity: 0 }} animate={{ opacity: activeStep === SALA ? 1 : 0 }} transition={{ duration: still ? 0 : 0.3 }} data-screen={sala.id}>
+        <div className={styles.monitorScreen}>
+          <Image src={sala.src} alt={sala.alt} fill sizes="(max-width: 899px) 150vw, 1400px" className={styles.monitorImage} />
         </div>
-      </div>
+        <span className={styles.monitorChin} aria-hidden="true">iMac</span>
+        <span className={styles.monitorStand} aria-hidden="true" />
+      </motion.div>
+
+      <motion.div className={styles.phoneWrap} style={{ scale: phoneScale, x: phoneX, y: phoneY, filter: phoneFilter }}>
+        <div className={styles.phone}>
+          <div className={styles.screen}>
+            {still || failed ? <Image src={STEPS[Math.min(activeStep, 5)].src} alt={STEPS[Math.min(activeStep, 5)].alt} fill sizes="(max-width: 899px) 55vw, 340px" className={styles.shotImage} /> : null}
+            {!still && <video ref={videoRef} className={styles.realVideo} muted playsInline preload="none" style={{ opacity: failed ? 0 : 1 }} poster={`${BASE}/inicio.jpg`} onLoadedMetadata={onLoaded} aria-label="Gravação real: escolha do abdome, microfone, ditado, geração e revisão do laudo" />}
+            <motion.div aria-hidden="true" className={styles.touchPointer} style={{ top: pointerTop, left: pointerLeft, opacity: pointerOpacity }}>
+              <span className={styles.touchRing} /><MousePointer2 fill="white" size={20} />
+            </motion.div>
+          </div>
+        </div>
+      </motion.div>
     </div>
   )
-}
-
-function StepFill({ progress, i }: { progress: MotionValue<number>; i: number }) {
-  const scaleX = useTransform(progress, [i / N, (i + 1) / N], [0, 1])
-  return <motion.span className={styles.stepFill} style={{ scaleX }} aria-hidden="true" />
 }
 
 export default function MobileStory() {
@@ -304,35 +208,58 @@ export default function MobileStory() {
   const sectionRef = useRef<HTMLElement>(null)
   const [step, setStep] = useState(0)
   const stepRef = useRef(0)
-
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const pendingTime = useRef(0)
+  const [failed, setFailed] = useState(false)
+  const [visible, setVisible] = useState(false)
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
-  // Movimento reduzido: o progresso é posto pelos botões, no estado final da etapa.
-  const manual = useMotionValue(COMPLETA / N)
-  const progress = reduce ? manual : scrollYProgress
+  const scrollProgress = useTransform(scrollYProgress, storyProgressAt)
+  const manual = useMotionValue((SALA + COMPLETA) / N)
+  const progress = reduce ? manual : scrollProgress
 
-  useMotionValueEvent(scrollYProgress, 'change', (v) => {
-    if (reduce) return
-    const next = Math.min(N - 1, Math.max(0, Math.floor(v * N)))
-    if (next !== stepRef.current) {
-      stepRef.current = next
-      setStep(next)
+  // Serializa seeks: rolagem rápida substitui o destino pendente em vez de
+  // acumular capítulos ou iniciar playback. Ao parar, exibe o último destino.
+  const flushSeek = useCallback(() => {
+    const video = videoRef.current
+    if (!video || video.readyState < 1 || video.seeking) return
+    video.pause()
+    if (Math.abs(video.currentTime - pendingTime.current) > 1 / 60)
+      video.currentTime = pendingTime.current
+  }, [])
+  const syncProgress = useCallback((v: number) => {
+    const next = Math.min(SALA, Math.max(0, Math.floor(v * N)))
+    if (next !== stepRef.current) { stepRef.current = next; setStep(next) }
+    pendingTime.current = filmTimeAt(v)
+    flushSeek()
+  }, [flushSeek])
+  useMotionValueEvent(scrollProgress, 'change', v => { if (!reduce) syncProgress(v) })
+  useEffect(() => {
+    if (reduce) { stepRef.current = SALA; setStep(SALA) }
+    else syncProgress(scrollProgress.get())
+  }, [reduce, scrollProgress, syncProgress])
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting))
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || reduce) return
+    const error = () => setFailed(true)
+    video.addEventListener('seeked', flushSeek)
+    video.addEventListener('error', error)
+    if (visible && !video.getAttribute('src')) {
+      video.src = `${BASE}/demonstracao-real.mp4`
+      video.load()
     }
-  })
-
-  const goTo = useCallback((i: number) => {
-    if (reduce) {
-      stepRef.current = i
-      manual.set((i + COMPLETA) / N)
-      setStep(i)
-      return
+    return () => {
+      video.removeEventListener('seeked', flushSeek)
+      video.removeEventListener('error', error)
     }
-    const el = sectionRef.current
-    if (!el) return
-    const top = el.getBoundingClientRect().top + window.scrollY
-    const trilha = el.offsetHeight - window.innerHeight
-    // Etapa completa: frases e barras já terminaram, sem cruzar com a próxima.
-    window.scrollTo({ top: top + trilha * ((i + COMPLETA) / N), behavior: 'smooth' })
-  }, [manual, reduce])
+  }, [visible, reduce, flushSeek])
+  const onLoaded = flushSeek
 
   const atual = STEPS[step]
 
@@ -366,26 +293,14 @@ export default function MobileStory() {
               </motion.div>
             </AnimatePresence>
           </div>
-          <span className={styles.demoLabel}>Demonstração com dados fictícios</span>
+          <span className={styles.demoLabel}>{reduce ? "Capturas reais · movimento reduzido" : failed ? "Vídeo indisponível · captura real" : "Role para explorar · captura real"}</span>
+          <div className={styles.stores}><StoreAvailability /></div>
         </div>
 
-        <Phone progress={progress} animate={!reduce} stepTitle={atual.title} />
+        <Scene progress={progress} still={reduce} stepTitle={atual.title} activeStep={step}
+          videoRef={videoRef} onLoaded={onLoaded} failed={failed} />
 
-        <nav className={styles.nav} aria-label="Etapas da demonstração">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              data-stage={s.id}
-              aria-current={i === step ? 'step' : undefined}
-              className={styles.stepButton}
-              onClick={() => goTo(i)}
-            >
-              {!reduce ? <StepFill progress={scrollYProgress} i={i} /> : null}
-              <span className={styles.stepButtonLabel}>{s.label}</span>
-            </button>
-          ))}
-        </nav>
+
       </div>
     </section>
   )

@@ -1,0 +1,270 @@
+{
+  "base": "5a8a6a04defc7011c4e06b3538ecf8dea7f64a6f",
+  "files": [
+    {
+      "path": "apps/web/public/categories/lineart-v1/abdomen-superior.webp",
+      "sha256": "d0bf96a8fe01d3bdd4c74eb07b24b2c1242ffa1fb2f609e4cbe5fe385a953382",
+      "bytes": 4464
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/abdomen-total.webp",
+      "sha256": "25394840aeb65f4a4f34008aa185eda4fba2351871431e9cb547ed3776a92d44",
+      "bytes": 4940
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/carotidas.webp",
+      "sha256": "3e2e541fb24f37de315557598b842297439e05bec44c67e3075b30ccbe488334",
+      "bytes": 4244
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/cervical.webp",
+      "sha256": "5cd58479177efab88ce95404821769a10fbbff6d847ba0811976b1b3f2fd266d",
+      "bytes": 4818
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/cervicometria.webp",
+      "sha256": "dc25d41a51142bd462f417343ea811cef35cfc099b717b6e044ba9618ee83d47",
+      "bytes": 5042
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/doppler-obstetrico.webp",
+      "sha256": "680fb3de525355e8ba25522f6ac24ab9b843c3bdb09c1efbfcc2bc5e9773ce52",
+      "bytes": 5996
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/mamaria.webp",
+      "sha256": "f386a6247341ec058ccf72eb4e81c4f8157dc6b280987ebb1539b195dfffdb39",
+      "bytes": 3402
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/morfologico.webp",
+      "sha256": "996181d4a3d6aa72f5db25662eda84c24ad95a445250226f38f2f2a9fac212f5",
+      "bytes": 4614
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/msk.webp",
+      "sha256": "f350388f39b0664c21afb7768eb09f1a1cf18301694967760ea277de548991fc",
+      "bytes": 3022
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/obstetrica.webp",
+      "sha256": "28a0d81426e402285a5a66e4dbefe050ccce11e7f39da25a0728fec189a11bb9",
+      "bytes": 6090
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/partes-moles.webp",
+      "sha256": "a557f46926257aca71b60a883aaa9ac4bfbe1ae1f65f579fabed4a25c71afe29",
+      "bytes": 4232
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/pelve.webp",
+      "sha256": "465df805f7f590f7b5758e6a3ea9037460624c70b33ab647ab3a952650c97fe3",
+      "bytes": 5144
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/prostata.webp",
+      "sha256": "be3903eb2c288a8c59b337923c1bf522ff136c356ce7286df7761c2f7be549ab",
+      "bytes": 2920
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/tireoide.webp",
+      "sha256": "8fae2a918ca5d8d81f8aed1fa9c4f50d3cc03a76eba1518919cd3748bd85d16d",
+      "bytes": 4580
+    },
+    {
+      "path": "apps/web/public/categories/lineart-v1/vias-urinarias.webp",
+      "sha256": "0b64013acc47a71c29ee23cb1d0dcc0320b7ccbf6b26235fba33151ca7715833",
+      "bytes": 4342
+    },
+    {
+      "path": "apps/web/public/landing/esquemas/demo-mama.svg",
+      "sha256": "347c1eab5af7469fa326f73d3cd0a9a3724127fb7adb9fe74e911d0a61fe4785",
+      "bytes": 31111
+    },
+    {
+      "path": "apps/web/public/landing/esquemas/demo-tireoide.svg",
+      "sha256": "98f1a8c812e33530c0250495f2820daa787aeabae4c990558cfc3ca959d5b629",
+      "bytes": 29904
+    },
+    {
+      "path": "apps/web/public/landing/esquemas/demo-venoso.svg",
+      "sha256": "b94bef7c0d065587f5aa6936e308acd41548896921a227690776b83e07a38ae9",
+      "bytes": 316267
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/README.md",
+      "sha256": "300b867b257de7b575392a9af91978a860da5eb47223d292e3107bfc735eabe3",
+      "bytes": 1671
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/achados.jpg",
+      "sha256": "69fcde6ebd49996d4bd3857e2a634c5b73016ca7c0201620e58f43f4b0642435",
+      "bytes": 121050
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/categoria.jpg",
+      "sha256": "73f5df925d1074ff326773f328abe7c29895f80644403c4f9493c155367bb47e",
+      "bytes": 160457
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/demonstracao-real.mp4",
+      "sha256": "f20565d76bf496d1ee6b073add270c533e44bc13e563e7e4b051a1f9527e30ed",
+      "bytes": 15347773
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/geracao.jpg",
+      "sha256": "7d80c53181473addad2fb1ddabe19041074fe6262f8711aa3329e92f90b0b235",
+      "bytes": 53411
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/gravacao.jpg",
+      "sha256": "91794fed66608301665a462eed495b49f35082181bf46d8c757cf7290ba2ffdc",
+      "bytes": 90896
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/inicio.jpg",
+      "sha256": "6350ace18a1cf4f3f62a4dcd659e076ca40684647b4c80aa0c591017e6d78998",
+      "bytes": 60503
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/laudo.jpg",
+      "sha256": "33400244db764ea19999b443716109f2a46a5994c03f83077fc9f72ad7ce4790",
+      "bytes": 342880
+    },
+    {
+      "path": "apps/web/public/landing/mobile-real/sala.png",
+      "sha256": "f09f14528209dc4f500a6de4f71be113b8e4367eb6ac54ae9899f44df87a774d",
+      "bytes": 259640
+    },
+    {
+      "path": "apps/web/src/app/page.tsx",
+      "sha256": "50e2c0cc0fe2e71f738e6f9dd64f0cc5e8ea10c6fed2a2acbe89c7692fa91b02",
+      "bytes": 1804
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/CalculatorStory.tsx",
+      "sha256": "7e8e198d9d05bbba105449beb0044e030f49c3813cf4c7a31cbcaa8788b4de87",
+      "bytes": 8261
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/HeroWorkspace.tsx",
+      "sha256": "add8050e1f13e58a72544e401b8d4678f05cf8cabbdb903207a70ea70e8f12f4",
+      "bytes": 3391
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/LandingFaq.tsx",
+      "sha256": "c66f418238706a01b2f5ed0ca844da0e23528a3676c85374617831f456f5e96f",
+      "bytes": 5677
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/LandingNav.tsx",
+      "sha256": "c2c314d3746cecbf030fb63c1b4f53a961694c97507d32d083d7a716fe77e660",
+      "bytes": 3614
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/MobileStory.tsx",
+      "sha256": "9e344993e39cd305456932045ba544f322fb398ebc69e33d2f01b6481e02fdac",
+      "bytes": 13285
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/SchemeDeck.tsx",
+      "sha256": "bae173b05bf85323bfc3bd9c111ebf5128311c19903b429a939358f350043109",
+      "bytes": 8974
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/SignupPill.module.css",
+      "sha256": "834c574fd479e0271e219d32989332df365b504f94dfc689cd7a6164002999a2",
+      "bytes": 694
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/Specialties.tsx",
+      "sha256": "26680eb15327be9b7a3ed3eabb48ba18461132cb025c61ac1a3fe7e985e53ee7",
+      "bytes": 4877
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/StoreAvailability.tsx",
+      "sha256": "e67f93b3aba7530ea64308e317b1846593224c1d531a1dd2a5fcbe85b16f4348",
+      "bytes": 960
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/WorkflowRibbon.tsx",
+      "sha256": "843255dcd6846d711e503f04282397cad4900f89ca32ab1dfb80c65994d37033",
+      "bytes": 682
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/calculator-story.module.css",
+      "sha256": "e1ee0f26a43c1e9be31ce4d1eff8c68f1a4704fa5ca014ef389473bdf6a3acce",
+      "bytes": 7684
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/clinical-demo-fixtures.ts",
+      "sha256": "38d598bb04470ff88f2b319bde551426cb643b21ba29129c56011bb3a5c1b55f",
+      "bytes": 3354
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/hero/HeroDemo.tsx",
+      "sha256": "dbc0a7a95d7c17b030215b6356fe7af47d9f3cecf85fd99920cb55e036a85d1b",
+      "bytes": 11634
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/hero/HeroFieldControl.tsx",
+      "sha256": "4cd7eca21385022d808b525c29e36f9f15d2cbb3004420fe509932e187e8d8c7",
+      "bytes": 3941
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/hero/HeroMeshLight.tsx",
+      "sha256": "830902295d1bb7af97bf40dd9bffcf53965875529c8802fed086194de73ce0bf",
+      "bytes": 5839
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/hero/heroAutoplay.ts",
+      "sha256": "532005b7732d8f7f2f4f043a246fe06ba029eb21b42d124b5b6f031295c81d60",
+      "bytes": 8135
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/hero/heroCases.ts",
+      "sha256": "53dad275619017cc71b75c2f6ec5e408f115663dfd9f8b0c994e0c3650714027",
+      "bytes": 13393
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/hero/heroDemo.test.mts",
+      "sha256": "c3241beec6dd18db5a16158ab780530eb89b508387a78163795b27105db46d9d",
+      "bytes": 9808
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/hero/useHeroDemo.ts",
+      "sha256": "59a2c2543dc52cc0ecacc19774856438e3f18f31d382dc8162bca0a8afe162a0",
+      "bytes": 3001
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/landing-faq.module.css",
+      "sha256": "67c7e3f3088241656df4282dc2ebfd6a164c099e15b3eb850a56e93e2f3ed664",
+      "bytes": 2349
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/mobile-story.module.css",
+      "sha256": "f4e49248652884a10a01c7483ec563d9edaef5cda6cb7376aa49a2a46fe88ead",
+      "bytes": 15734
+    },
+    {
+      "path": "apps/web/src/components/landing/v2/workflow-ribbon.module.css",
+      "sha256": "249d715dae6c3d31eb3aa0e7e27e0e862526f97d3a46b514dd0b831a7e34cbbd",
+      "bytes": 928
+    },
+    {
+      "path": "apps/web/src/components/laudar/examCategoryImages.ts",
+      "sha256": "0d06071ecab1503552c8fab33f40f31a7024716d03b15ecc11322f3002186a1b",
+      "bytes": 1041
+    },
+    {
+      "path": "apps/web/tests/landingScrollytelling.browser.manual.ts",
+      "sha256": "0c41a46c0b1493a246472993892079751f59483dbde578639aa2beca148ae4db",
+      "bytes": 29119
+    },
+    {
+      "path": "apps/web/tests/run-unit.cjs",
+      "sha256": "e3e4bd2c7aba4ce4a8915c788db1fe6c9984525bb25638554dbcc6bd4a2a3eae",
+      "bytes": 1216
+    }
+  ]
+}

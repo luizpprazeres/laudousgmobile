@@ -46,7 +46,7 @@ function Tile({ id, className = '' }: { id: string; className?: string }) {
       className={`flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 pr-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_14px_30px_-18px_rgba(5,150,105,0.45)] ${className}`}
     >
       {src ? (
-        <Image src={src} alt="" width={56} height={56} loading="lazy" className="h-14 w-14 flex-none rounded-xl bg-slate-50 object-cover" />
+        <Image src={src} alt="" width={56} height={56} loading="lazy" className="h-14 w-14 flex-none rounded-xl bg-slate-50 object-cover grayscale" />
       ) : null}
       <span className="text-[0.92rem] font-semibold leading-snug text-slate-900">{NAMES[id] ?? id}</span>
     </li>

@@ -1,3 +1,4 @@
+import { salaPairingPayload } from "@/server/sala/domain";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { getServiceClient } from "@/server/supabaseService";
 export { OPTIONS } from "@/server/cors";
@@ -81,13 +82,7 @@ export async function POST(req: Request) {
     }
   }
 
-  return json({
-    code,
-    token: code,
-    expires_at: expiresAt,
-    sala_url: `https://sala.laudousg.com/${code}`,
-    sala_short_url: "https://sala.laudousg.com",
-  });
+  return json(salaPairingPayload(code, expiresAt));
 }
 
 function json(body: Record<string, unknown>, status = 200) {

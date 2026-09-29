@@ -78,6 +78,7 @@ function toReport(row: typeof schema.reports.$inferSelect) {
     category_code: row.categoryCode,
     writing_style_id: row.writingStyleId,
     status: row.status,
+    content_revision: row.contentRevision,
     raw_input: row.rawInput,
     consolidated_transcript: row.consolidatedTranscript,
     structured_findings: row.structuredFindings,

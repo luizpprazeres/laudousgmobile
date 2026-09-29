@@ -1,3 +1,4 @@
+import { reviewedRevision } from "@/features/sala/reviewContract";
 import {
   GenerateRequestSchema,
   GenerateSSEEventSchema,
@@ -288,7 +289,28 @@ export async function pushSchemaToSala(
   };
 }
 
-export async function updateReportFinalOutput(
+const reportWrites = new Map<string, Promise<void>>();
+export async function reviewReportForSala(reportId: string, expectedText: string): Promise<void> {
+  await reportWrites.get(reportId);
+  const detail = await authedFetch(`/api/reports/${encodeURIComponent(reportId)}`, { method: "GET" });
+  const revision = reviewedRevision(await readJsonOrThrow(detail, "conferir versão do laudo"), expectedText);
+  const response = await authedFetch(`/api/reports/${encodeURIComponent(reportId)}/review`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedRevision: revision, expectedText }),
+  });
+  if (response.status === 409) throw new Error("O laudo foi alterado durante a revisão. Reabra, confira a versão atual e libere novamente.");
+  await readJsonOrThrow(response, "liberar laudo revisado para a Sala");
+}
+
+export function updateReportFinalOutput(reportId: string, finalOutput: string): Promise<void> {
+  const write = (reportWrites.get(reportId) ?? Promise.resolve()).catch(() => undefined)
+    .then(() => writeReportFinalOutput(reportId, finalOutput));
+  reportWrites.set(reportId, write);
+  // Preserve failed writes until a subsequent save succeeds; review must not ignore failures.
+  return write;
+}
+
+async function writeReportFinalOutput(
   reportId: string,
   finalOutput: string,
 ): Promise<void> {

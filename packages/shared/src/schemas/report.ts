@@ -19,6 +19,7 @@ export const ReportSchema = z.object({
   category_code: CategoryCodeSchema,
   writing_style_id: z.string().uuid(),
   status: ReportStatusSchema,
+  content_revision: z.number().int().positive().optional(),
   raw_input: z.string(),
   consolidated_transcript: z.string().nullable(),
   structured_findings: StructuredFindingsSchema.nullable(),

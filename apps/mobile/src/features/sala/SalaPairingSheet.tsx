@@ -132,7 +132,7 @@ export function SalaPairingSheet({ open, onClose }: Props) {
               <Text style={styles.sectionLabel}>COMO FUNCIONA</Text>
               <Text style={styles.instructions}>
                 Gere a sessão no início do turno. O auxiliar digita o código UMA
-                VEZ em sala.laudousg.com e fica conectado pelo resto do dia.
+                VEZ em sala.laudousg.com.br e fica conectado pelo resto do dia.
                 Cada laudo que você enviar aparece automaticamente lá.
               </Text>
             </View>
@@ -152,7 +152,7 @@ export function SalaPairingSheet({ open, onClose }: Props) {
               <Text style={styles.secondaryBtnText}>
                 {didCopyURL
                   ? "URL copiada"
-                  : "Copiar URL (sala.laudousg.com)"}
+                  : "Copiar URL (sala.laudousg.com.br)"}
               </Text>
             </Pressable>
 
@@ -174,7 +174,7 @@ export function SalaPairingSheet({ open, onClose }: Props) {
               </Text>
               <Text style={styles.introBody}>
                 Gere a sessão no início do turno. O auxiliar digita o código UMA
-                VEZ em sala.laudousg.com e fica conectado pelo resto do dia.
+                VEZ em sala.laudousg.com.br e fica conectado pelo resto do dia.
                 Cada laudo que você enviar aparece automaticamente lá.
               </Text>
             </View>

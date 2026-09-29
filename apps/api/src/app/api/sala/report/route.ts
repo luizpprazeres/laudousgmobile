@@ -1,3 +1,4 @@
+import { salaDayStart, serializeSalaReport, loadMedicalReviews } from "@/server/sala/reportContract";
 import { getServiceClient } from "@/server/supabaseService";
 export { OPTIONS } from "@/server/cors";
 
@@ -43,12 +44,11 @@ export async function GET(req: Request) {
     return json({ tokenValid: false, report: null, reason: "expired" });
   }
 
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDay = salaDayStart();
 
   const { data: report, error: reportErr } = await service
     .from("reports")
-    .select("id, final_output, generated_output, category_code, created_at")
+    .select("id, final_output, generated_output, category_code, created_at, content_revision, sanity_result")
     .eq("user_id", room.user_id as string)
     .eq("id", reportId)
     .gte("created_at", startOfDay.toISOString())
@@ -58,23 +58,9 @@ export async function GET(req: Request) {
     return json({ tokenValid: true, report: null });
   }
 
-  const outputText =
-    (report.final_output as string | null) ??
-    (report.generated_output as string | null);
-
-  if (!outputText) {
-    return json({ tokenValid: true, report: null });
-  }
-
-  return json({
-    tokenValid: true,
-    report: {
-      id: report.id as string,
-      outputText,
-      category: report.category_code as string | null,
-      createdAt: report.created_at as string,
-    },
-  });
+  const reviews = await loadMedicalReviews(service, [report.id]);
+  const serialized = serializeSalaReport(report, reviews.get(report.id));
+  return json({ tokenValid: true, report: serialized.outputText.trim() ? serialized : null });
 }
 
 function json(body: Record<string, unknown>, status = 200) {

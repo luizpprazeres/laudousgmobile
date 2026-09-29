@@ -1,0 +1,14 @@
+.ribbon { overflow: hidden; background: #eef3ef; border-block: 1px solid #dce5df; color: #365247; padding-block: 19px; }
+.track { display: flex; width: max-content; animation: drift 65s linear infinite; }
+.group { display: flex; flex-shrink: 0; align-items: center; }
+.group span { display: flex; align-items: center; gap: 32px; padding-right: 32px; font-size: 13px; letter-spacing: .035em; white-space: nowrap; }
+.group i { width: 4px; height: 4px; border-radius: 50%; background: #668f7a; }
+.ribbon:hover .track, .ribbon:focus .track { animation-play-state: paused; }
+.ribbon:focus-visible { outline: 2px solid #059669; outline-offset: -3px; }
+@keyframes drift { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+ .track { animation: none; width: auto; }
+ .group { flex-wrap: wrap; justify-content: center; gap: 12px; }
+ .group span { white-space: normal; }
+ .group + .group { display: none; }
+}

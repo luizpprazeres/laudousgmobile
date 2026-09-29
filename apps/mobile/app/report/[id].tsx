@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getReport, updateReportFinalOutput, type ReportDetail } from "@/lib/api";
+import { reviewReportForSala, getReport, updateReportFinalOutput, type ReportDetail } from "@/lib/api";
 import {
   renderReviewHighlighted,
   stripReviewMarkers,
@@ -78,6 +78,9 @@ export default function ReportDetailScreen() {
   // ao sair antes do debounce de 1200ms (review Dex1 04/07).
   const pendingSaveRef = useRef<{ reportId: string; text: string } | null>(null);
 
+  const [reviewing, setReviewing] = useState(false);
+  const reviewBusyRef = useRef(false);
+
   function flushPendingSave() {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -86,7 +89,7 @@ export default function ReportDetailScreen() {
     const pending = pendingSaveRef.current;
     pendingSaveRef.current = null;
     if (!pending) return;
-    updateReportFinalOutput(pending.reportId, stripReviewMarkers(pending.text))
+    return updateReportFinalOutput(pending.reportId, stripReviewMarkers(pending.text))
       .then(() => setSaveStatus("saved"))
       .catch((err) => {
         console.warn("[mobile] autosave do laudo (detalhe) falhou:", err);
@@ -115,6 +118,7 @@ export default function ReportDetailScreen() {
   }
 
   function onEditText(next: string) {
+    if (reviewBusyRef.current) return;
     if (!data) return;
     const reportId = data.report.id;
     setEditedText(next);
@@ -122,6 +126,19 @@ export default function ReportDetailScreen() {
     pendingSaveRef.current = { reportId, text: next };
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => flushRef.current(), 1200);
+  }
+
+  async function reviewForSala() {
+    if (!data || reviewBusyRef.current) return;
+    reviewBusyRef.current = true;
+    setReviewing(true);
+    try {
+      await flushPendingSave();
+      await reviewReportForSala(data.report.id, stripReviewMarkers(finalText));
+      Alert.alert("Revisado", "Este texto foi liberado para a Sala. Novas edições exigem outra revisão.");
+    } catch (error) {
+      Alert.alert("Não foi possível liberar", error instanceof Error ? error.message : "Verifique a conexão e tente novamente.");
+    } finally { reviewBusyRef.current = false; setReviewing(false); }
   }
 
   async function copyReport() {
@@ -227,6 +244,10 @@ export default function ReportDetailScreen() {
           </Pressable>
         </View>
 
+        <Pressable accessibilityRole="button" onPress={reviewForSala} disabled={!finalText || reviewing || saveStatus === "saving"} style={[styles.actionButton, { paddingVertical: 14, opacity: !finalText || reviewing || saveStatus === "saving" ? 0.5 : 1 }]}>
+          <Text style={styles.actionText}>{reviewing ? "Liberando…" : "Revisado — liberar para a Sala"}</Text>
+        </Pressable>
+
         <Segment value={tab} onChange={setTab} options={TABS} />
 
         {tab === "report" && saveStatus !== "idle" ? (
@@ -249,6 +270,7 @@ export default function ReportDetailScreen() {
             <View style={styles.card}>
               <TextInput
                 value={finalText}
+                editable={!reviewing}
                 onChangeText={onEditText}
                 multiline
                 autoFocus

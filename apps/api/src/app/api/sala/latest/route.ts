@@ -1,3 +1,4 @@
+import { salaDayStart, serializeSalaReport, loadMedicalReviews } from "@/server/sala/reportContract";
 import { getServiceClient } from "@/server/supabaseService";
 export { OPTIONS } from "@/server/cors";
 
@@ -43,26 +44,16 @@ export async function GET(req: Request) {
   if (!room.active || room.revoked_at) {
     return json({ tokenValid: false, report: null, reason: "revoked" });
   }
-  if (expiresAt < Date.now()) {
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
     return json({ tokenValid: false, report: null, reason: "expired" });
   }
 
-  // Início do dia em BRT (UTC-3) — o servidor (Vercel) roda em UTC, então
-  // setHours daria meia-noite UTC (= 21h BRT). Aqui o "hoje" reseta à meia-noite
-  // LOCAL (Brasília), pra contagem bater com o dia de trabalho do médico.
-  const BRT_OFFSET_MS = -3 * 60 * 60 * 1000;
-  const nowBRT = new Date(Date.now() + BRT_OFFSET_MS);
-  const brtMidnight = Date.UTC(
-    nowBRT.getUTCFullYear(),
-    nowBRT.getUTCMonth(),
-    nowBRT.getUTCDate(),
-    0, 0, 0, 0,
-  );
-  const startOfDay = new Date(brtMidnight - BRT_OFFSET_MS);
+  const tokenExpiresAt = new Date(expiresAt).toISOString();
+  const startOfDay = salaDayStart();
 
   const { data: reports, error: reportErr } = await service
     .from("reports")
-    .select("id, final_output, generated_output, category_code, created_at, updated_at")
+    .select("id, final_output, generated_output, category_code, created_at, updated_at, content_revision, sanity_result")
     .eq("user_id", room.user_id as string)
     .gte("created_at", startOfDay.toISOString())
     .order("updated_at", { ascending: false, nullsFirst: false })
@@ -71,38 +62,15 @@ export async function GET(req: Request) {
 
   if (reportErr) {
     console.error("[sala/latest] report lookup falhou", reportErr);
-    return json({ tokenValid: true, report: null, reportsToday: [] });
+    return json({ tokenValid: true, tokenExpiresAt, report: null, reportsToday: [] });
   }
 
   const list = reports ?? [];
-  const latest = list[0];
-  const rawOutput = latest
-    ? (latest.final_output as string | null) ??
-      (latest.generated_output as string | null)
-    : null;
-  // Defesa: remove marcadores "[REVISAR …]" (anotação pro médico conferir; não
-  // deve aparecer pro auxiliar). Cobre qualquer cliente que não fez o strip.
-  const latestOutput = rawOutput?.replace(/\s*\[REVISAR\b[^\]]*\]/g, "") ?? null;
-
-  const reportsToday = list.map((r) => ({
-    id: r.id as string,
-    category: r.category_code as string | null,
-    createdAt: r.created_at as string,
-  }));
-
-  return json({
-    tokenValid: true,
-    report:
-      latest && latestOutput
-        ? {
-            id: latest.id as string,
-            outputText: latestOutput,
-            category: latest.category_code as string | null,
-            createdAt: latest.created_at as string,
-          }
-        : null,
-    reportsToday,
-  });
+  const reviews = await loadMedicalReviews(service, list.map((r) => r.id));
+  const serialized = list.map((r) => serializeSalaReport(r, reviews.get(r.id)));
+  const latest = serialized.find((r) => r.outputText.trim());
+  const reportsToday = serialized.map(({ outputText: _text, ...entry }) => entry);
+  return json({ tokenValid: true, tokenExpiresAt, report: latest ?? null, reportsToday });
 }
 
 function json(body: Record<string, unknown>, status = 200) {

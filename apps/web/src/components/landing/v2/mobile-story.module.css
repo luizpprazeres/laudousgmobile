@@ -1,11 +1,11 @@
 /*
- * Seção mobile da landing: iPhone sticky com a demonstração guiada pela rolagem.
- * Grafite com luz lateral esmeralda. As cores do app seguem os tokens do iOS
- * (Color+Tokens.swift): primary #059669, wordmark #18533F.
+ * Seção mobile da landing: iPhone sticky com CAPTURAS REAIS guiadas pela
+ * rolagem e, no fim, o monitor da Sala do Auxiliar na mesma cena.
+ * Grafite com luz lateral esmeralda.
  */
 
 .section {
-  --steps: 5;
+  --steps: 7;
   --graphite: #111614;
   --graphite-2: #171d1b;
   --ink: #eef3f0;
@@ -24,11 +24,8 @@
   position: relative;
   /* Altura da trilha de rolagem: uma "tela" por etapa, mais folga para o fim. */
   height: calc(var(--viewport) * (var(--steps) + 0.6) + var(--header));
-  /* Entra pelo tom da seção anterior (#0B1220, esquemas) e assenta no grafite. */
-  background:
-    radial-gradient(60% 55% at 88% 42%, rgb(5 150 105 / 0.28), transparent 70%),
-    radial-gradient(40% 35% at 8% 90%, rgb(110 231 183 / 0.08), transparent 70%),
-    linear-gradient(180deg, #0b1220 0%, var(--graphite) 14%, var(--graphite-2) 100%);
+  /* Fundo opaco barato de pintar em toda a trilha; luz limitada ao viewport. */
+  background: var(--graphite);
   color: var(--ink);
   overflow-x: clip; /* clip não cria contêiner de rolagem: o sticky continua valendo */
 }
@@ -47,20 +44,30 @@
 
 .stage {
   position: sticky;
+  isolation: isolate;
   top: var(--header);
   height: var(--viewport);
   display: grid;
-  grid-template-columns: minmax(0, 34rem) auto;
+  grid-template-columns: minmax(0, 30rem) minmax(0, 46rem);
   justify-content: center;
   grid-template-areas:
-    "copy phone"
-    "nav phone";
-  grid-template-rows: 1fr auto;
+    "copy phone";
+  grid-template-rows: 1fr;
   align-items: center;
   column-gap: clamp(3rem, 7vw, 7.5rem);
   max-width: 1440px;
   margin: 0 auto;
   padding: clamp(1rem, 3svh, 2.5rem) 1.5rem;
+}
+
+/* A luz acompanha o sticky, sem rasterizar um gradiente de sete telas. */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(60% 55% at 88% 42%, rgb(5 150 105 / 0.22), transparent 70%);
 }
 
 @media (min-width: 1024px) {
@@ -193,28 +200,40 @@
   position: relative;
 }
 
-/* ----------------------------------------------------------------- phone */
+/* ----------------------------------------------------------------- cena */
 
-.phoneWrap {
+/*
+ * A cena reserva a largura do monitor desde o início: o telefone nasce no
+ * centro e, na etapa da Sala, recua para o canto sem empurrar o layout.
+ */
+.scene {
   grid-area: phone;
   position: relative;
+  width: 100%;
+  height: var(--phone-h);
   display: flex;
   align-items: center;
   justify-content: center;
+  --phone-h: min(850px, calc(var(--viewport) - 2rem));
 }
 
 /* Luz lateral e sombra no chão, sem brilho neon. */
-.phoneWrap::before {
+.scene::before {
   content: "";
   position: absolute;
-  inset: 12% -18% 6% -18%;
-  background: radial-gradient(50% 50% at 50% 50%, rgb(5 150 105 / 0.35), transparent 70%);
+  inset: 10% 8% 4% 8%;
+  background: radial-gradient(50% 50% at 50% 50%, rgb(5 150 105 / 0.32), transparent 70%);
   filter: blur(40px);
   pointer-events: none;
 }
 
+.phoneWrap {
+  position: relative;
+  z-index: 2;
+  transform-origin: 50% 50%;
+}
+
 .phone {
-  --phone-h: min(660px, calc(var(--viewport) - 4rem));
   position: relative;
   height: var(--phone-h);
   aspect-ratio: 9 / 19.5;
@@ -224,7 +243,7 @@
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 0.12),
     inset 0 0 0 3px #080a09,
-    -24px 30px 60px -20px rgb(0 0 0 / 0.65),
+    -24px 30px 60px -20px rgb(0 0 0 / 0.7),
     18px -6px 50px -30px rgb(110 231 183 / 0.35);
 }
 
@@ -256,447 +275,64 @@
   height: 100%;
   border-radius: calc(var(--phone-h) * 0.07);
   overflow: hidden;
-  background: var(--app-bg);
-  color: #111827;
-  font-size: calc(var(--phone-h) * 0.0205);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  background: #0b0f0e;
 }
 
-.island {
-  position: absolute;
-  top: 1.1%;
-  left: 50%;
-  width: 30%;
-  height: 4.2%;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: #050606;
-  z-index: 5;
-}
-
-.statusBar {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 6.5%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 8.5%;
-  font-size: 1em;
-  font-weight: 600;
-  z-index: 4;
-  color: #111827;
-}
-
-.statusIcons {
-  display: flex;
-  gap: 0.35em;
-  align-items: center;
-}
-
-.statusIcons span {
-  display: block;
-  width: 1.05em;
-  height: 0.62em;
-  border-radius: 0.14em;
-  background: currentColor;
-}
-
-.statusIcons span:first-child {
-  width: 0.9em;
-  opacity: 0.7;
-}
-
-/* Cada tela do fluxo ocupa o aparelho inteiro, empilhada. */
+/* Cada captura ocupa a tela inteira, empilhada. */
 .layer {
   position: absolute;
   inset: 0;
-  padding: 16% 6% 6%;
-  display: flex;
-  flex-direction: column;
 }
 
-.appHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 5%;
-}
-
-.wordmark {
-  font-family: var(--font-barlow), system-ui, sans-serif;
-  font-size: 1.55em;
-  line-height: 1;
-}
-
-.wordmark b {
-  font-weight: 800;
-  color: var(--app-wordmark);
-}
-
-.wordmark span {
-  font-weight: 500;
-  color: #4a8a6a;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4em;
-  border-radius: 999px;
-  border: 1px solid #a7f3d0;
-  background: #ecfdf5;
-  color: #065f46;
-  font-weight: 600;
-  font-size: 0.9em;
-  padding: 0.35em 0.8em;
-  white-space: nowrap;
-}
-
-.chipDot {
-  width: 0.5em;
-  height: 0.5em;
-  border-radius: 999px;
-  background: var(--app-primary);
-}
-
-.panel {
-  flex: 1;
-  border-radius: 1.1em;
-  background: #fff;
-  border: 1px solid var(--app-line);
-  padding: 6%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6em;
-  overflow: hidden;
-}
-
-.panelTitle {
-  font-size: 0.78em;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--app-gray);
-}
-
-.hint {
-  margin: auto 0;
-  text-align: center;
-  color: var(--app-gray);
-  line-height: 1.45;
-}
-
-.micRow {
-  display: flex;
-  justify-content: center;
-  padding-top: 7%;
-}
-
-.mic {
-  width: 3.9em;
-  height: 3.9em;
-  border-radius: 999px;
-  background: var(--app-primary);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 0.6em 1.4em -0.4em rgb(5 150 105 / 0.6);
-}
-
-.mic svg {
-  width: 45%;
-  height: 45%;
-}
-
-.primaryButton {
-  margin-top: 5%;
-  border-radius: 0.9em;
-  background: var(--app-primary);
-  color: #fff;
-  font-weight: 700;
-  text-align: center;
-  padding: 0.85em;
-}
-
-/* Gravação (RecordingOverlay do iOS). */
-.recording {
-  background: linear-gradient(180deg, #0b2a20 0%, #052017 100%);
-  color: #ecfdf5;
-}
-
-.listening {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  font-size: 0.82em;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: #6ee7b7;
-}
-
-.pulse {
-  width: 0.6em;
-  height: 0.6em;
-  border-radius: 999px;
-  background: #34d399;
-}
-
-.wave {
-  display: flex;
-  align-items: center;
-  gap: 3%;
-  height: 12%;
-  margin: 7% 0;
-}
-
-.wave span {
-  flex: 1;
-  border-radius: 999px;
-  background: #34d399;
-  height: 30%;
-  transform-origin: center;
-}
-
-.transcript {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55em;
-  line-height: 1.45;
-  font-size: 1.05em;
-}
-
-.recordingActions {
-  display: grid;
-  grid-template-columns: 1fr 1.4fr;
-  gap: 4%;
-}
-
-.ghostButton,
-.solidButton {
-  border-radius: 999px;
-  padding: 0.75em;
-  text-align: center;
-  font-weight: 700;
-}
-
-.ghostButton {
-  border: 1px solid rgb(236 253 245 / 0.3);
-  color: #ecfdf5;
-}
-
-.solidButton {
-  background: #ecfdf5;
-  color: #065f46;
-}
-
-/* Achados reconhecidos + folha de categoria. */
-.findingRow {
-  display: flex;
-  gap: 0.5em;
-  align-items: flex-start;
-  line-height: 1.4;
-}
-
-.findingTick {
-  flex: none;
-  width: 1.2em;
-  height: 1.2em;
-  border-radius: 999px;
-  background: #d1fae5;
-  color: #047857;
-  display: grid;
-  place-items: center;
-  margin-top: 0.05em;
-}
-
-.findingTick svg {
-  width: 70%;
-  height: 70%;
-}
-
-.scrim {
+.shot {
   position: absolute;
   inset: 0;
-  background: rgb(17 24 39 / 0.35);
-  z-index: 2;
 }
 
-.sheet {
+/* A captura do iPhone tem a proporção da tela: cover corta só a borda. */
+.shotImage {
+  object-fit: cover;
+  object-position: 50% 0%;
+}
+
+/* ------------------------------------------------------------- monitor */
+
+.monitor {
   position: absolute;
-  inset: auto 0 0 0;
-  height: 70%;
-  border-radius: 1.6em 1.6em 0 0;
-  background: #fff;
-  z-index: 3;
-  padding: 3% 6% 6%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.7em;
-}
-
-.grabber {
-  align-self: center;
-  width: 12%;
-  height: 0.3em;
-  border-radius: 999px;
-  background: #d1d5db;
-  margin-bottom: 0.4em;
-}
-
-.sheetTitle {
-  font-weight: 700;
-  font-size: 1.2em;
-}
-
-.search {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  border-radius: 0.8em;
-  background: #f3f4f6;
-  color: var(--app-gray);
-  padding: 0.7em 0.8em;
-}
-
-.search svg {
-  width: 1.1em;
-  height: 1.1em;
-}
-
-.categoryRow {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 0.8em;
-  padding: 0.75em 0.8em;
-  border: 1px solid var(--app-line);
-}
-
-.categoryRow small {
-  display: block;
-  color: var(--app-gray);
-  font-size: 0.8em;
-}
-
-.categoryPick {
-  position: absolute;
-  inset: -1px;
-  border-radius: 0.8em;
-  border: 2px solid var(--app-primary);
-  background: rgb(236 253 245 / 0.6);
+  z-index: 1;
+  right: 0;
+  top: 50%;
+  width: min(100%, 44rem);
+  translate: 0 -50%;
   pointer-events: none;
 }
 
-/* Processamento. */
-.stageRow {
-  display: flex;
-  align-items: center;
-  gap: 0.6em;
-  padding: 0.55em 0;
-}
-
-.stageIcon {
+.monitorScreen {
   position: relative;
-  flex: none;
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: 999px;
-  border: 2px solid var(--app-line);
-  display: grid;
-  place-items: center;
-}
-
-.stageIconDone {
-  position: absolute;
-  inset: -2px;
-  border-radius: 999px;
-  background: var(--app-primary);
-  color: #fff;
-  display: grid;
-  place-items: center;
-}
-
-.stageIconDone svg {
-  width: 62%;
-  height: 62%;
-}
-
-.progressTrack {
-  height: 0.35em;
-  border-radius: 999px;
+  aspect-ratio: 1920 / 1080; /* proporção real da captura da Sala */
+  border-radius: 14px;
+  border: 10px solid #0d110f;
+  background: #0b0f0e;
   overflow: hidden;
-  background: #e5e7eb;
-  margin-top: auto;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    -30px 40px 80px -30px rgb(0 0 0 / 0.75),
+    20px -10px 60px -40px rgb(110 231 183 / 0.3);
 }
 
-.progressFill {
-  height: 100%;
-  background: var(--app-primary);
-  transform-origin: left center;
+/* Captura da Sala sem distorção: cabe inteira, o bezel absorve a sobra. */
+.monitorImage {
+  object-fit: contain;
+  object-position: 50% 0%;
 }
 
-/* Laudo. */
-.report {
-  flex: 1;
-  border-radius: 1.1em;
-  background: #fff;
-  border: 1px solid var(--app-line);
-  padding: 7% 6%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55em;
-  font-size: 0.92em;
-  line-height: 1.5;
-  overflow: hidden;
-}
-
-.reportNote {
-  align-self: center;
-  font-size: 0.78em;
-  font-weight: 600;
-  color: #065f46;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 999px;
-  padding: 0.2em 0.75em;
-}
-
-.reportTitle {
-  text-align: center;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  font-size: 0.95em;
-  margin-bottom: 0.4em;
-}
-
-.reportHeading {
-  font-weight: 800;
-  font-size: 0.82em;
-  letter-spacing: 0.05em;
-  color: #374151;
-  margin-top: 0.3em;
-}
-
-.copyButton {
-  margin-top: 4%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45em;
-  border-radius: 0.9em;
-  border: 1px solid #a7f3d0;
-  background: #ecfdf5;
-  color: #065f46;
-  font-weight: 700;
-  padding: 0.75em;
-}
-
-.copyButton svg {
-  width: 1.1em;
-  height: 1.1em;
+.monitorChin {
+  display: block;
+  width: 22%;
+  height: 10px;
+  margin: 0 auto;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(180deg, #1a201e, #0d110f);
 }
 
 /* ------------------------------------------------ mobile (coluna única) */
@@ -711,9 +347,8 @@
     justify-content: stretch;
     grid-template-areas:
       "copy"
-      "phone"
-      "nav";
-    grid-template-rows: auto 1fr auto;
+      "phone";
+    grid-template-rows: auto 1fr;
     row-gap: 0.9rem;
     padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
   }
@@ -745,28 +380,34 @@
     font-size: 0.72rem;
   }
 
-  .phone {
-    --phone-h: min(560px, calc(var(--viewport) - 15.5rem));
+  .scene {
+    --phone-h: min(560px, calc(var(--viewport) - 17.5rem));
   }
 
+  /* Monitor da Sala no celular: largura total, telefone pequeno por cima. */
+  .monitor {
+    width: 100%;
+  }
+
+  /* Sete etapas em duas linhas (4 + 3), alvos de 44px, sem estourar 320px. */
   .nav {
     justify-content: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 0.35rem;
   }
 
   .stepButton {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 0 0.4rem;
+    flex: 1 1 calc(25% - 0.35rem);
+    min-width: 44px;
+    padding: 0 0.3rem;
     font-size: 0.8rem;
   }
 
   .static .stage {
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto;
   }
 
-  .static .phone {
+  .static .scene {
     --phone-h: min(520px, 110vw);
   }
 }
@@ -788,8 +429,8 @@
     font-size: 1.08rem;
   }
 
-  .phone {
-    --phone-h: max(250px, calc(var(--viewport) - 13rem));
+  .scene {
+    --phone-h: max(220px, calc(var(--viewport) - 16rem));
   }
 }
 
@@ -799,7 +440,7 @@
     margin-bottom: 0.9rem;
   }
 
-  .phone {
+  .scene {
     --phone-h: max(400px, calc(var(--viewport) - 2.5rem));
   }
 }
@@ -814,4 +455,128 @@
   .stepButton {
     transition: none;
   }
+}
+
+/* A disponibilidade acompanha a demonstração, sem sugerir download ativo. */
+.stores { margin-top: 1rem; }
+@media (max-width: 899px) {
+  .stores { margin-top: 0.5rem; }
+  .scene { --phone-h: min(500px, max(200px, calc(var(--viewport) - 22rem))); }
+}
+
+/* Reserva os controles inteiros também em celulares de pouca altura. */
+@media (max-width: 899px) and (max-height: 640px) {
+  .stage { grid-template-rows: auto minmax(0, 1fr); row-gap: 0.5rem; }
+  .scene { --phone-h: max(140px, calc(var(--viewport) - 20.25rem)); }
+  .static .stage { grid-template-rows: auto auto; }
+  .static .scene { --phone-h: min(420px, 95vw); }
+}
+
+@media (max-width: 899px) {
+  .static .stepText { min-height: 7rem; }
+}
+
+/* O zoom pertence ao aparelho: moldura, botões e captura se movem juntos. */
+.phone { height: calc(var(--phone-h) / 1.04); }
+.stage { transition: grid-template-columns 450ms ease; }
+.transferLegend {
+  position: absolute; top: 6%; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  color: #a7f3d0; font-size: 12px; z-index: 3;
+}
+.transferLegend span { display: inline-flex; align-items: center; gap: 5px; }
+@media (min-width: 900px) {
+  .section[data-stage="sala"] .stage { grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.35fr); column-gap: 2rem; }
+  .section[data-stage="sala"] .monitor { width: 100%; }
+  .section[data-stage="sala"] .lead { font-size: clamp(1.8rem, 3vw, 2.7rem); }
+}
+@media (max-width: 899px) {
+  .transferLegend { top: -8px; font-size: 10px; gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { .stage { transition: none; } }
+
+/* Camera crop is confined to the scene so zoom never covers copy or controls. */
+.scene { overflow: clip; }
+.categoryWindow { position: absolute; inset: 20% 0 0; overflow: hidden; background: #09090f; }
+.categoryList { position: absolute; top: -25%; left: 0; width: 100%; height: 125%; }
+.touchPointer { position: absolute; z-index: 8; pointer-events: none; color: #059669; filter: drop-shadow(0 2px 3px #0008); }
+.touchRing { position: absolute; width: 20px; height: 20px; left: -10px; top: -10px; border: 1.5px solid #6ee7b7; border-radius: 50%; background: #6ee7b733; }
+
+.realVideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.filmControls { position: absolute; right: 4px; bottom: 4px; z-index: 10; display: flex; gap: 4px; }
+.filmControls button { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #ffffff30; border-radius: 50%; background: #111614e8; color: #eef3f0; cursor: pointer; }
+.filmControls button:focus-visible { outline: 2px solid #6ee7b7; outline-offset: 2px; }
+
+/* Sala em tamanho editorial: o recorte termina junto à seção. */
+.section[data-stage="sala"] .monitor {
+  top: 22%; left: 4%; right: auto; translate: none;
+  width: 100%;
+  mask-image: linear-gradient(to right, #000 35%, transparent 96%);
+  -webkit-mask-image: linear-gradient(to right, #000 35%, transparent 96%);
+}
+.section[data-stage="sala"] .monitorScreen { width: max(145%, 1100px); border-width: 7px; }
+.section[data-stage="sala"] .monitorChin { display: none; }
+@media (min-width: 900px) {
+  .section[data-stage="sala"] .stage { max-width: none; padding-right: 0; padding-bottom: 0; }
+  .section[data-stage="sala"] .scene { height: 100%; align-self: stretch; }
+  .section[data-stage="sala"] .nav { padding-bottom: 2rem; }
+}
+@media (max-width: 899px) {
+  .section[data-stage="sala"] .monitor { top: 15%; left: 0; width: 100%; }
+  .section[data-stage="sala"] .monitorScreen { width: max(150%, 650px); }
+  .section[data-stage="sala"] .transferLegend { top: 0; }
+}
+
+/* Sem a navegação por capítulos, a cena usa a altura antes ocupada pelos pills. */
+@media (max-width: 899px) {
+  .scene { --phone-h: min(620px, max(200px, calc(var(--viewport) - 16rem))); }
+}
+@media (max-width: 899px) and (max-height: 640px) {
+  .scene { --phone-h: max(140px, calc(var(--viewport) - 13rem)); }
+}
+
+/* Na Sala, o papel desaparece no grafite, sem receber a luz verde da cena. */
+.section[data-stage="sala"] .stage::before,
+.section[data-stage="sala"] .scene::before { background: none; }
+
+/* Luz ampla, sem terminar nas bordas do recorte do telefone. */
+.stage::before {
+  left: calc((100% - 100vw) / 2); right: calc((100% - 100vw) / 2);
+  background: radial-gradient(ellipse 38% 48% at 72% 48%, rgb(5 150 105 / .15), transparent 100%);
+}
+.scene::before { display: none; }
+
+/* Sala: alumínio escuro, vidro, câmera e pedestal de um desktop Mac. */
+.section[data-stage="sala"] .monitor {
+  top: 12%; left: 5%; width: 108%;
+  filter: drop-shadow(-20px 28px 24px rgb(0 0 0 / .4));
+}
+.section[data-stage="sala"] .monitorScreen {
+  width: 100%; border: 12px solid #171c1b; border-top-width: 24px;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -1px 0 #b7c2bf66, -2px 0 0 #71817a55, 0 0 60px #a8c6b412;
+}
+.section[data-stage="sala"] .monitor::before {
+  content: ''; position: absolute; top: 9px; left: 50%; width: 6px; height: 6px;
+  background: #080c0b; border: 1px solid #51655e; border-radius: 50%; z-index: 3;
+}
+.section[data-stage="sala"] .monitorChin {
+  display: flex; width: 100%; height: 42px; margin: 0; align-items: center; justify-content: center;
+  color: #b4bfba; font-size: 13px; letter-spacing: .04em;
+  border-radius: 0 0 16px 16px; border-bottom: 1px solid #a0afa750;
+  background: linear-gradient(110deg, #7a8881, #39463f 45%, #1e2722);
+}
+.monitorStand {
+  display: block; position: relative; width: 22%; height: 76px; margin: 0 auto;
+  clip-path: polygon(20% 0, 80% 0, 86% 85%, 100% 93%, 100% 100%, 0 100%, 0 93%, 14% 85%);
+  background: linear-gradient(180deg, #202a25, #74867b 86%, #9aa9a0 92%, #303e35);
+}
+.section[data-stage="sala"] .stage::before {
+  background: radial-gradient(ellipse 40% 45% at 76% 50%, rgb(179 204 188 / .10), transparent 100%);
+}
+@media (max-width: 899px) {
+  .section[data-stage="sala"] .monitor { top: 10%; left: 3%; width: 145%; }
+  .section[data-stage="sala"] .monitorScreen { width: 100%; border-width: 7px; border-top-width: 18px; }
+  .section[data-stage="sala"] .monitorChin { height: 26px; font-size: 10px; }
+  .monitorStand { height: 45px; }
 }

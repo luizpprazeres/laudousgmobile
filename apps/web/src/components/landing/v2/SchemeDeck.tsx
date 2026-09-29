@@ -8,7 +8,7 @@ import { useReducedMotionSafe } from './useReducedMotionSafe'
 /**
  * ESQUEMAS: a cena de mockups sobrepostos, em grafite, com luz lateral.
  *
- * Só RECORTES. Cada imagem em `/landing/esquemas/` foi cortada do asset do
+ * Exemplos fictícios com marcadores vetoriais sobre RECORTES. Cada imagem em `/landing/esquemas/` foi cortada do asset do
  * produto antes de publicar: o arquivo servido é o fragmento, não o esquema
  * inteiro escondido por CSS. Isso reduz o que se entrega; não é proteção
  * contra cópia e não se afirma como tal.
@@ -17,13 +17,12 @@ import { useReducedMotionSafe } from './useReducedMotionSafe'
  * `reunidos` → `abertos`). Tocar num card o traz para a frente.
  */
 
-type Card = { id: string; title: string; caption: string; src: string; w: number; h: number; alt: string; soon?: boolean }
+type Card = { id: string; title: string; caption: string; src: string; w: number; h: number; alt: string; findings: string[]; soon?: boolean }
 
 const CARDS: Card[] = [
-  { id: 'mama', title: 'Mamas', caption: 'Horas e quadrantes', src: '/landing/esquemas/esquema-mama.jpg', w: 520, h: 422, alt: 'Recorte do esquema de mama com as posições em horas' },
-  { id: 'tireoide', title: 'Tireoide', caption: 'Lobos e istmo', src: '/landing/esquemas/esquema-tireoide.jpg', w: 416, h: 520, alt: 'Recorte do esquema da tireoide mostrando um lobo e a traqueia' },
-  { id: 'fetal', title: 'Posição fetal', caption: 'Apresentação e situação', src: '/landing/esquemas/esquema-fetal.jpg', w: 440, h: 440, alt: 'Recorte da ilustração de posição fetal' },
-  { id: 'venoso', title: 'Mapa venoso', caption: 'Trajeto das safenas', src: '/landing/esquemas/esquema-venoso.jpg', w: 196, h: 560, alt: 'Recorte de uma vista do mapa venoso de membro inferior', soon: true },
+  { id: 'mama', title: 'Mamas', caption: 'Mama direita', src: '/landing/esquemas/demo-mama.svg', w: 520, h: 470, alt: 'Caso fictício: mama direita com nódulo às 4 horas e cisto às 8 horas', findings: ['N1 · Nódulo às 4h · 1,2 cm', 'C1 · Cisto às 8h · 0,8 cm'] },
+  { id: 'tireoide', title: 'Tireoide', caption: 'Lobo esquerdo', src: '/landing/esquemas/demo-tireoide.svg', w: 400, h: 540, alt: 'Caso fictício: lobo esquerdo da tireoide com nódulo no terço médio e cisto no terço inferior', findings: ['N1 · Terço médio · 1,4 cm', 'C1 · Terço inferior · 0,6 cm'] },
+  { id: 'venoso', title: 'Mapa venoso', caption: 'Membro direito', src: '/landing/esquemas/demo-venoso.svg', w: 420, h: 800, alt: 'Caso fictício: trombose venosa profunda na veia femoral direita, destacada em vinho', findings: ['TVP · Veia femoral direita', 'Exemplo de trombose oclusiva'], soon: true },
 ]
 
 /**
@@ -33,8 +32,7 @@ const CARDS: Card[] = [
  */
 const OPEN = [
   { x: -90, y: 8, r: -7 },
-  { x: -30, y: -6, r: -2 },
-  { x: 30, y: 6, r: 3 },
+  { x: 0, y: -6, r: -2 },
   { x: 90, y: -8, r: 8 },
 ]
 
@@ -83,12 +81,17 @@ function CardFace({ card }: { card: Card }) {
           alt={card.alt}
           width={card.w}
           height={card.h}
+          unoptimized
           loading="lazy"
           sizes="(min-width: 1024px) 360px, 70vw"
           className="mx-auto block h-[240px] w-full object-contain p-3 sm:h-[280px]"
         />
         {/* Luz lateral: a folha escurece para a direita, como sob uma luminária. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0)_40%,rgba(15,23,42,0.18))]" />
+      </div>
+      <div className="border-t border-slate-100 bg-[#f7f9f8] px-4 py-3 text-[#253c34]">
+        <p className="mb-2 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-slate-500">Caso fictício · {card.caption}</p>
+        {card.findings.map((finding) => <p key={finding} className="text-[0.73rem] leading-relaxed">{finding}</p>)}
       </div>
     </>
   )
@@ -119,10 +122,10 @@ export default function SchemeDeck() {
       <div className="mx-auto grid max-w-[1440px] grid-cols-1 items-center gap-12 px-5 sm:px-8 lg:grid-cols-12 lg:px-12">
         <div className="lg:col-span-4">
           <h2 className="font-barlow text-[2.3rem] font-extrabold leading-[1.02] tracking-[-0.025em] sm:text-[3rem]">
-            Esquemas que nascem do laudo.
+            Esquemas visuais que nascem do seu laudo.
           </h2>
           <p className="mt-5 max-w-[30rem] text-[1.02rem] leading-relaxed text-slate-300">
-            Mama, tireoide e posição fetal acompanham os achados descritos. O mapa venoso vem em breve. Aqui você vê recortes; o esquema inteiro fica no seu exame.
+            Nódulos, cistos e suas localizações ficam mais fáceis de visualizar. Veja recortes preenchidos com casos fictícios de mama e tireoide — e uma prévia do mapa venoso, em breve.
           </p>
         </div>
 

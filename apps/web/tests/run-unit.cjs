@@ -19,6 +19,7 @@ const files = [
   'src/lib/calculators/preEclampsia.test.mts',
   'src/lib/calculators/trisomyFmf.test.mts',
   'src/lib/companionStructured.test.ts',
+  'src/components/landing/v2/hero/heroDemo.test.mts',
 ]
 for (const file of files) {
   const result = spawnSync(process.execPath, ['--import', 'tsx', file], {

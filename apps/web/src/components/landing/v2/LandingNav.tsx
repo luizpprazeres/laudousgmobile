@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import styles from './SignupPill.module.css'
 import LaudoUSGLogo from '@/components/LaudoUSGLogo'
 
 /**
@@ -55,11 +56,16 @@ export default function LandingNav() {
           <Link
             href="/signup"
             data-cta="signup"
-            className={`ml-1 inline-flex h-11 items-center whitespace-nowrap rounded-full px-4 text-[0.84rem] font-semibold transition-colors active:scale-[0.98] ${
+            aria-label="Criar conta grátis"
+            className={`${styles.pill} ml-1 inline-flex h-11 items-center whitespace-nowrap rounded-full px-[14px] text-[0.84rem] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
               onDark ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : 'bg-slate-950 text-white hover:bg-slate-800'
             }`}
           >
-            Criar conta grátis
+            <svg aria-hidden="true" className="h-[17px] w-[17px] flex-none" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="9" cy="7" r="3" />
+              <path d="M4 16c0-3 2.2-5 5-5s5 2 5 5" />
+            </svg>
+            <span className={styles.label}>Criar conta grátis</span>
           </Link>
         </nav>
       </div>

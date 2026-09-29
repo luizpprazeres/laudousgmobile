@@ -7,6 +7,7 @@ import {
   timestamp,
   pgPolicy,
   index,
+  integer,
 } from "drizzle-orm/pg-core";
 import { reportStatusEnum } from "./enums";
 import { authenticatedRole, profiles } from "./profiles";
@@ -32,6 +33,7 @@ export const reports = pgTable(
       .notNull()
       .references(() => writingStyles.id, { onDelete: "restrict" }),
     status: reportStatusEnum("status").notNull().default("draft"),
+    contentRevision: integer("content_revision").notNull().default(1),
     rawInput: text("raw_input").notNull(),
     consolidatedTranscript: text("consolidated_transcript"),
     structuredFindings: jsonb("structured_findings"),

@@ -1,20 +1,51 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { CSSProperties, RefObject } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMotivationalQuote } from "@/lib/useMotivationalQuote";
 import type { Quote } from "@/lib/motivationalQuotes";
+import { reviewOf, type ReviewView } from "./_lib/review";
+import { composeReport } from "./_lib/compose";
+import { copyPlan, type CopyMode } from "./_lib/copyPlan";
+import {
+  initialSelection,
+  orderByCreation,
+  positionOf,
+  selectionReducer,
+} from "./_lib/selection";
+import {
+  contentChanged,
+  acceptResponse,
+  isCurrentPoll,
+  shouldRefetchSelected,
+  selectedReportIsStale,
+} from "./_lib/freshness";
+import {
+  clearAllNames,
+  loadNames,
+  restampNames,
+  saveName,
+  sessionNameStorage,
+  type NameMap,
+} from "./_lib/localNames";
 
-type SalaReport = {
+/** Campos de revisão vêm do contrato `reportContract`; ausentes = pending. */
+type RevisionFields = {
+  contentRevision?: number | null;
+  reviewStatus?: unknown;
+  reviewedAt?: unknown;
+};
+
+type SalaReport = RevisionFields & {
   id: string;
   outputText: string;
   category: string | null;
   createdAt: string;
 };
 
-type TimelineEntry = {
+type TimelineEntry = RevisionFields & {
   id: string;
   category: string | null;
   createdAt: string;
@@ -24,23 +55,6 @@ type Theme = "light" | "dark";
 const HIDDEN_IDS_KEY = "sala-hidden-ids";
 const THEME_KEY = "sala-theme";
 const HIGHLIGHT_KEY = "sala-highlight";
-const SEEN_IDS_KEY = "sala-seen-ids";
-
-type ActivityKind =
-  | "received"
-  | "viewed"
-  | "copied"
-  | "highlight-on"
-  | "highlight-off"
-  | "note"
-  | "back-live";
-
-type ActivityEntry = {
-  id: string;
-  kind: ActivityKind;
-  at: number;
-  label?: string;
-};
 
 type InvalidReason = "invalid_format" | "not_found" | "revoked" | "expired";
 
@@ -49,6 +63,8 @@ type SalaResponse = {
   report: SalaReport | null;
   reportsToday?: TimelineEntry[];
   reason?: InvalidReason;
+  /** Opcional (proposta ao backend): validade do código, limita os nomes locais. */
+  tokenExpiresAt?: string | null;
 };
 
 type SalaSchema = {
@@ -63,6 +79,7 @@ type SalaSchema = {
 };
 
 type ActiveMainTab = "report" | "schemas";
+type ShellStatus = "loading" | "invalid" | "waiting" | "live" | "report-error";
 
 /**
  * Esquemas visuais (`sala_schemas.exam_type`) que pertencem a cada categoria de
@@ -83,10 +100,8 @@ const SCHEMA_EXAM_TYPES_BY_CATEGORY: Record<string, string[]> = {
 };
 
 const POLL_INTERVAL_MS = 3000;
-
-const A4_PAGE_WIDTH_PX = 794;
-const A4_PAGE_HEIGHT_PX = 1123;
-const A4_PAGE_GAP_PX = 24;
+/** Poll pendurado vira falha: libera o próximo em vez de travar a fila. */
+const POLL_TIMEOUT_MS = 10_000;
 
 type Placement = "after-title" | "in-conclusion" | "footer";
 type PhraseSource = "native" | "global";
@@ -122,22 +137,26 @@ type PhrasesState = {
 
 const EMPTY_PHRASES: PhrasesState = { natives: [], globals: [] };
 
+/** Falhas seguidas de polling antes de avisar "Sem conexão". */
+const OFFLINE_AFTER_FAILURES = 3;
+
+type Connection = "opening" | "online" | "offline" | "off";
+
 export default function SalaTokenPage() {
   const params = useParams<{ token: string }>();
   const token = (params?.token ?? "").toUpperCase();
 
   const [tokenValid, setTokenValid] = useState(true);
   const [invalidReason, setInvalidReason] = useState<InvalidReason | null>(null);
-  const [report, setReport] = useState<SalaReport | null>(null);
+  const [latest, setLatest] = useState<SalaReport | null>(null);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lastFetch, setLastFetch] = useState<Date | null>(null);
-  const [tick, setTick] = useState(0);
-  const [updatedFlash, setUpdatedFlash] = useState(0);
+  const [failures, setFailures] = useState(0);
+  const [pollSeq, setPollSeq] = useState(0);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<Theme>("light");
   const [highlightOn, setHighlightOn] = useState<boolean>(true);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<CopyMode | null>(null);
   const [copyError, setCopyError] = useState(false);
   const [phrases, setPhrases] = useState<PhrasesState>(EMPTY_PHRASES);
   const [insertedPhrases, setInsertedPhrases] = useState<InsertedPhrase[]>([]);
@@ -150,21 +169,42 @@ export default function SalaTokenPage() {
   const [justAddedAnnotationId, setJustAddedAnnotationId] = useState<
     string | null
   >(null);
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const [selectedReport, setSelectedReport] = useState<SalaReport | null>(null);
-  const [selectedLoading, setSelectedLoading] = useState(false);
-  const [clock, setClock] = useState<string>(() => formatClock(new Date()));
+  // Cache por id: o laudo aberto nunca depende de ser o "latest" do polling.
+  const [reportsById, setReportsById] = useState<Record<string, SalaReport>>({});
+  const [selection, dispatchSelection] = useReducer(selectionReducer, initialSelection);
+  const [selectedError, setSelectedError] = useState(false);
+  const [changedNoticeId, setChangedNoticeId] = useState<string | null>(null);
+  const [names, setNames] = useState<NameMap>({});
+  const [listOpen, setListOpen] = useState(false);
+  // Vazio no SSR: hora só no cliente, para não divergir na hidratação.
+  const [clock, setClock] = useState<string>("");
   const [noteDraft, setNoteDraft] = useState("");
-  const [activity, setActivity] = useState<ActivityEntry[]>([]);
-  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [schemas, setSchemas] = useState<SalaSchema[]>([]);
   const [activeMainTab, setActiveMainTab] = useState<ActiveMainTab>("report");
-  const lastSignatureRef = useRef<string | null>(null);
+  const reportsRef = useRef<Record<string, SalaReport>>({});
+  // Ordem das respostas: geração muda com o código; seq ordena os polls;
+  // requestClock marca o INÍCIO de toda requisição de laudo (latest ou report).
+  const generationRef = useRef(0);
+  const pollSeqRef = useRef(0);
+  const lastAppliedSeqRef = useRef(0);
+  const pollInFlightRef = useRef(false);
+  const requestClockRef = useRef(0);
+  const appliedAtRef = useRef<Record<string, number>>({});
+  const tokenExpiresAtRef = useRef<string | null>(null);
+  /** Toda requisição de laudo em voo; abortadas ao trocar de código/desmontar. */
+  const controllersRef = useRef<Set<AbortController>>(new Set());
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
+  const pollsSinceFetchRef = useRef(0);
+  const inFlightRef = useRef<Set<string>>(new Set());
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
   const annotationHighlightTimeoutRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
+
+  const selectedId = selection.selectedId;
+  selectedIdRef.current = selectedId;
 
   useEffect(() => {
     try {
@@ -181,14 +221,11 @@ export default function SalaTokenPage() {
         const arr = JSON.parse(storedHidden) as string[];
         setHiddenIds(new Set(arr));
       }
-      const storedSeen = localStorage.getItem(SEEN_IDS_KEY);
-      if (storedSeen) {
-        setSeenIds(new Set(JSON.parse(storedSeen) as string[]));
-      }
     } catch {}
   }, []);
 
   useEffect(() => {
+    setClock(formatClock(new Date()));
     const id = setInterval(() => setClock(formatClock(new Date())), 1000);
     return () => clearInterval(id);
   }, []);
@@ -201,15 +238,44 @@ export default function SalaTokenPage() {
     };
   }, []);
 
-  function pushActivity(kind: ActivityKind, label?: string) {
-    setActivity((prev) => [
-      { id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, kind, at: Date.now(), label },
-      ...prev,
-    ].slice(0, 40));
+  // Nomes locais: revalida a validade (envelope expiresAt) a cada minuto, ao
+  // voltar o foco e ao reexibir a aba — um computador parado da noite para o
+  // dia não mostra nomes vencidos nem por um instante após voltar.
+  useEffect(() => {
+    if (!token) return;
+    const refresh = () => setNames(loadNames(sessionNameStorage(), token, new Date()));
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    refresh();
+    const id = setInterval(refresh, 60_000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [token]);
+
+  // Código revogado, expirado ou inexistente: nenhum nome sobrevive.
+  useEffect(() => {
+    if (!loading && !tokenValid) {
+      clearAllNames(sessionNameStorage());
+      setNames({});
+    }
+  }, [loading, tokenValid]);
+
+  function setPatientName(reportId: string, value: string) {
+    setNames(
+      saveName(sessionNameStorage(), token, new Date(), reportId, value, tokenExpiresAtRef.current),
+    );
   }
 
-  function persistSeen(next: Set<string>) {
-    try { localStorage.setItem(SEEN_IDS_KEY, JSON.stringify(Array.from(next))); } catch {}
+  function leave() {
+    clearAllNames(sessionNameStorage());
+    setNames({});
+    window.location.assign("/sala");
   }
 
   function flashAnnotationWarning(message: string) {
@@ -308,16 +374,6 @@ export default function SalaTokenPage() {
     ]);
   }
 
-  function markSeen(id: string) {
-    setSeenIds((prev) => {
-      if (prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.add(id);
-      persistSeen(next);
-      return next;
-    });
-  }
-
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     try { localStorage.setItem(THEME_KEY, theme); } catch {}
@@ -336,40 +392,72 @@ export default function SalaTokenPage() {
       } catch {}
       return next;
     });
-    if (selectedReportId === id) {
-      setSelectedReportId(null);
-      setSelectedReport(null);
-    }
+    if (selectedIdRef.current === id) dispatchSelection({ type: "clear" });
   }
 
-  async function selectReport(id: string) {
-    if (id === selectedReportId) return;
-    setSelectedReportId(id);
-    setSelectedReport(null);
-    setSelectedLoading(true);
-    let loadedReport: SalaReport | null = null;
+  /**
+   * Única porta de entrada de laudo no cache; avisa se o aberto mudou.
+   * `startedAt` = relógio do início da requisição: resposta atrasada (mesmo
+   * com a mesma revisão, ex.: reviewed → pending) é descartada.
+   */
+  function upsertReport(next: SalaReport, startedAt: number) {
+    const prev = reportsRef.current[next.id];
+    if (!acceptResponse({ prev, next, startedAt, appliedAt: appliedAtRef.current[next.id] })) return;
+    appliedAtRef.current[next.id] = startedAt;
+    if (next.id === selectedIdRef.current && contentChanged(prev, next)) {
+      setChangedNoticeId(next.id);
+    }
+    const merged = { ...reportsRef.current, [next.id]: next };
+    reportsRef.current = merged;
+    setReportsById(merged);
+  }
+
+  async function loadReport(id: string) {
+    if (inFlightRef.current.has(id)) return;
+    inFlightRef.current.add(id);
+    const isSelected = () => selectedIdRef.current === id;
+    const generation = generationRef.current;
+    const startedAt = ++requestClockRef.current;
+    const controller = new AbortController();
+    controllersRef.current.add(controller);
     try {
       const res = await fetch(
         `/api/sala/report?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`,
-        { cache: "no-store" },
+        { cache: "no-store", signal: controller.signal },
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { report: SalaReport | null };
-      loadedReport = data.report ?? null;
-      setSelectedReport(loadedReport);
-    } catch {
-      setSelectedReport(null);
-    } finally {
-      setSelectedLoading(false);
-      if (loadedReport) {
-        pushActivity("viewed", prettyCategory(loadedReport.category ?? ""));
+      if (generation !== generationRef.current) return;
+      if (data.report) {
+        upsertReport(data.report, startedAt);
+        if (isSelected()) setSelectedError(false);
+      } else if (!reportsRef.current[id] && isSelected()) {
+        setSelectedError(true);
       }
+    } catch {
+      // Com cópia em cache o laudo continua na tela; sem ela, pede nova tentativa.
+      if (generation !== generationRef.current) return;
+      if (!reportsRef.current[id] && isSelected()) setSelectedError(true);
+    } finally {
+      controllersRef.current.delete(controller);
+      inFlightRef.current.delete(id);
+      if (isSelected()) pollsSinceFetchRef.current = 0;
     }
   }
 
-  function backToLive() {
-    setSelectedReportId(null);
-    setSelectedReport(null);
-    pushActivity("back-live");
+  function openReport(id: string) {
+    dispatchSelection({ type: "select", id });
+    setListOpen(false);
+  }
+
+  function stepReport(delta: 1 | -1) {
+    dispatchSelection({ type: "step", delta, entries: visibleTimeline });
+  }
+
+  function retrySelected() {
+    if (!selectedId) return;
+    setSelectedError(false);
+    void loadReport(selectedId);
   }
 
   function toggleTheme() {
@@ -377,85 +465,167 @@ export default function SalaTokenPage() {
   }
 
   function toggleHighlight() {
-    setHighlightOn((v) => {
-      pushActivity(v ? "highlight-off" : "highlight-on");
-      return !v;
-    });
+    setHighlightOn((v) => !v);
   }
 
-  async function onCopy() {
+  /**
+   * "medical" = só o texto do médico (o único coberto pela revisão).
+   * "with-additions" = com as frases/anotações da Sala; sempre rascunho.
+   * Nunca leva nome local nem estado de revisão.
+   */
+  async function onCopy(mode: CopyMode = "medical") {
     if (!displayReport) return;
     setCopyError(false);
-    const ok = await copyReportToClipboard(displayReport, persistedAnnotations);
+    const ok = await copyReportToClipboard(
+      displayReport,
+      mode,
+      insertedPhrases,
+      persistedAnnotations,
+    );
     if (!ok) {
       setCopyError(true);
-      setTimeout(() => setCopyError(false), 2400);
+      setTimeout(() => setCopyError(false), 4000);
       return;
     }
-    setCopied(true);
-    pushActivity("copied");
-    setTimeout(() => setCopied(false), 1800);
+    setCopied(mode);
+    setTimeout(() => setCopied((c) => (c === mode ? null : c)), 1800);
   }
 
   async function fetchLatest() {
+    // Serializado: um poll por vez. Um pendurado cai no timeout e vira falha.
+    if (pollInFlightRef.current || !token) return;
+    pollInFlightRef.current = true;
+    const generation = generationRef.current;
+    const seq = ++pollSeqRef.current;
+    const startedAt = ++requestClockRef.current;
+    const controller = new AbortController();
+    controllersRef.current.add(controller);
+    const timeout = setTimeout(() => controller.abort(), POLL_TIMEOUT_MS);
+    const current = () =>
+      isCurrentPoll({
+        generation,
+        currentGeneration: generationRef.current,
+        seq,
+        lastAppliedSeq: lastAppliedSeqRef.current,
+      });
     try {
       const [latestRes, schemasData] = await Promise.all([
         fetch(`/api/sala/latest?token=${encodeURIComponent(token)}`, {
           cache: "no-store",
+          signal: controller.signal,
         }),
         fetch(`/api/sala/${encodeURIComponent(token)}/schemas`, {
           cache: "no-store",
+          signal: controller.signal,
         })
           .then((r) => (r.ok ? r.json() : { schemas: [] }))
           .catch(() => ({ schemas: [] })),
       ]);
+      if (!latestRes.ok) throw new Error(`HTTP ${latestRes.status}`);
       const data = (await latestRes.json()) as SalaResponse;
+      if (!current()) return;
+      lastAppliedSeqRef.current = seq;
       setSchemas((schemasData as { schemas?: SalaSchema[] }).schemas ?? []);
       setLoading(false);
-      setLastFetch(new Date());
+      setFailures(0);
+      setLastSyncAt(new Date().toISOString());
       setTokenValid(data.tokenValid);
       setInvalidReason(data.tokenValid ? null : data.reason ?? "not_found");
-      setTimeline(data.reportsToday ?? []);
-      if (data.report) {
-        const sig = data.report.outputText + (data.report.createdAt ?? "");
-        if (lastSignatureRef.current && lastSignatureRef.current !== sig) {
-          setUpdatedFlash((n) => n + 1);
-          pushActivity("received", prettyCategory(data.report.category ?? ""));
-        } else if (!lastSignatureRef.current) {
-          pushActivity("received", prettyCategory(data.report.category ?? ""));
-        }
-        lastSignatureRef.current = sig;
-        setReport(data.report);
-      } else {
-        setReport(null);
+      const expires = typeof data.tokenExpiresAt === "string" ? data.tokenExpiresAt : null;
+      if (expires !== tokenExpiresAtRef.current) {
+        tokenExpiresAtRef.current = expires;
+        setNames(restampNames(sessionNameStorage(), token, new Date(), expires));
       }
+      setTimeline(data.tokenValid ? data.reportsToday ?? [] : []);
+      if (data.report) upsertReport(data.report, startedAt);
+      setLatest(data.report ?? null);
+      pollsSinceFetchRef.current += 1;
+      setPollSeq((n) => n + 1);
     } catch {
-      setLoading(false);
+      // Mantém o que está na tela; só avisa depois de algumas falhas seguidas.
+      if (generation === generationRef.current) setFailures((n) => n + 1);
+    } finally {
+      clearTimeout(timeout);
+      controllersRef.current.delete(controller);
+      if (generation === generationRef.current) pollInFlightRef.current = false;
     }
   }
 
+  // Troca de código: nova geração, nada da sessão anterior sobrevive (cache,
+  // ordem de respostas, seleção, validade) e respostas antigas são ignoradas.
   useEffect(() => {
+    generationRef.current += 1;
+    pollInFlightRef.current = false;
+    inFlightRef.current = new Set();
+    lastAppliedSeqRef.current = pollSeqRef.current;
+    appliedAtRef.current = {};
+    reportsRef.current = {};
+    tokenExpiresAtRef.current = null;
+    setReportsById({});
+    setTimeline([]);
+    setLatest(null);
+    setLoading(true);
+    setFailures(0);
+    setLastSyncAt(null);
+    setTokenValid(true);
+    setInvalidReason(null);
+    dispatchSelection({ type: "reset" });
     if (!token) return;
     fetchLatest();
     const intId = setInterval(fetchLatest, POLL_INTERVAL_MS);
-    const tickId = setInterval(() => setTick((t) => t + 1), 1000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void fetchLatest();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    const controllers = controllersRef.current;
     return () => {
       clearInterval(intId);
-      clearInterval(tickId);
+      document.removeEventListener("visibilitychange", onVisible);
+      // Cancela de fato o que está em voo e invalida o que ainda chegar.
+      generationRef.current += 1;
+      for (const c of controllers) c.abort();
+      controllers.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const secondsSinceFetch = useMemo(() => {
-    void tick;
-    if (!lastFetch) return null;
-    return Math.max(0, Math.floor((Date.now() - lastFetch.getTime()) / 1000));
-  }, [tick, lastFetch]);
-
   const visibleTimeline = useMemo(
-    () => timeline.filter((e) => !hiddenIds.has(e.id)),
+    () => orderByCreation(timeline.filter((e) => !hiddenIds.has(e.id))),
     [timeline, hiddenIds],
   );
+
+  useEffect(() => {
+    dispatchSelection({ type: "feed", entries: visibleTimeline });
+  }, [visibleTimeline]);
+
+  // Troca de laudo: avisos do anterior não valem para o novo.
+  useEffect(() => {
+    setChangedNoticeId(null);
+    setSelectedError(false);
+    setCopied(null);
+    setCopyError(false);
+    pollsSinceFetchRef.current = 0;
+  }, [selectedId]);
+
+  // Laudo aberto que não é o "latest": recarrega quando a revisão da lista muda
+  // (ou periodicamente, com backend sem revisão). Assim uma edição do médico
+  // num laudo antigo chega à tela sem trocar a seleção.
+  useEffect(() => {
+    if (!selectedId || !tokenValid || selectedError) return;
+    const entry = timeline.find((e) => e.id === selectedId);
+    if (
+      shouldRefetchSelected({
+        loaded: reportsRef.current[selectedId],
+        listed: entry,
+        isLatest: latest?.id === selectedId,
+        pollsSinceFetch: pollsSinceFetchRef.current,
+      })
+    ) {
+      void loadReport(selectedId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pollSeq, selectedId, selectedError]);
+
   const summary = useMemo(() => summarize(visibleTimeline), [visibleTimeline]);
   const stats = useMemo<
     {
@@ -513,13 +683,14 @@ export default function SalaTokenPage() {
       new Date(newest.createdAt).getTime() - new Date(oldest.createdAt).getTime();
     return { total, rawCount, avgMs: Math.max(0, Math.floor(span / (total - 1))), buckets };
   }, [visibleTimeline]);
-  const latestReport = useMemo(
-    () => (report && !hiddenIds.has(report.id) ? report : null),
-    [report, hiddenIds],
-  );
-  const isViewingPast = selectedReportId !== null && selectedReportId !== latestReport?.id;
-  const displayReport: SalaReport | null = isViewingPast ? selectedReport : latestReport;
-  const activeId = displayReport?.id ?? latestReport?.id ?? null;
+  const displayReport: SalaReport | null = selectedId
+    ? reportsById[selectedId] ?? null
+    : null;
+  const review: ReviewView = reviewOf(displayReport);
+  const position = positionOf(visibleTimeline, selectedId);
+  const arrivalEntry = selection.arrivalId
+    ? visibleTimeline.find((e) => e.id === selection.arrivalId) ?? null
+    : null;
   // Esquemas do laudo em exibição. Vínculo primário por report_id (o push do
   // app grava o laudo de origem) — impede tanto o vazamento entre categorias
   // quanto entre dois laudos da MESMA categoria. Linhas legadas sem report_id
@@ -532,15 +703,24 @@ export default function SalaTokenPage() {
       s.reportId !== null ? s.reportId === rep.id : allowed.includes(s.examType),
     );
   }, [schemas, displayReport]);
-  const status: "loading" | "invalid" | "waiting" | "live" = loading
+  const status: ShellStatus = loading
     ? "loading"
     : !tokenValid
       ? "invalid"
-      : selectedLoading
-        ? "loading"
-        : !displayReport
-          ? "waiting"
-          : "live";
+      : !selectedId
+        ? "waiting"
+        : displayReport
+          ? "live"
+          : selectedError
+            ? "report-error"
+            : "loading";
+  const connection: Connection = !loading && !tokenValid
+    ? "off"
+    : failures >= OFFLINE_AFTER_FAILURES
+      ? "offline"
+      : loading
+        ? "opening"
+        : "online";
 
   useEffect(() => {
     if (visibleSchemas.length === 0 && activeMainTab === "schemas") {
@@ -555,27 +735,12 @@ export default function SalaTokenPage() {
       return tag === "input" || tag === "textarea" || target.isContentEditable;
     }
 
-    function selectRelative(delta: number) {
-      if (visibleTimeline.length === 0) return;
-      const currentIndex = activeId
-        ? visibleTimeline.findIndex((entry) => entry.id === activeId)
-        : -1;
-      const nextIndex = Math.min(
-        Math.max(currentIndex + delta, 0),
-        visibleTimeline.length - 1,
-      );
-      const next = visibleTimeline[nextIndex];
-      if (next) selectReport(next.id);
-    }
-
     function onKeyDown(e: KeyboardEvent) {
       if (isTypingTarget(e.target)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "Escape") {
-        if (shortcutsOpen) {
-          setShortcutsOpen(false);
-          return;
-        }
-        if (isViewingPast) backToLive();
+        if (shortcutsOpen) setShortcutsOpen(false);
+        if (listOpen) setListOpen(false);
         return;
       }
       if (e.key === "?" || (e.key === "/" && e.shiftKey)) {
@@ -583,14 +748,15 @@ export default function SalaTokenPage() {
         setShortcutsOpen(true);
         return;
       }
-      if (e.key === "j" || e.key === "ArrowDown") {
+      // ↑/↓ ficam livres para rolar o laudo (leitura vertical).
+      if (e.key === "j" || e.key === "ArrowRight") {
         e.preventDefault();
-        selectRelative(1);
+        stepReport(1);
         return;
       }
-      if (e.key === "k" || e.key === "ArrowUp") {
+      if (e.key === "k" || e.key === "ArrowLeft") {
         e.preventDefault();
-        selectRelative(-1);
+        stepReport(-1);
         return;
       }
       if (e.key === "c") {
@@ -611,7 +777,8 @@ export default function SalaTokenPage() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeId, displayReport, isViewingPast, shortcutsOpen, visibleTimeline]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayReport, persistedAnnotations, shortcutsOpen, listOpen, visibleTimeline]);
 
   useEffect(() => {
     setInsertedPhrases([]);
@@ -621,10 +788,10 @@ export default function SalaTokenPage() {
     useMotivationalQuote();
 
   useEffect(() => {
-    if (latestReport?.id) {
+    if (latest?.id) {
       rotateMotivationalQuote();
     }
-  }, [latestReport?.id, rotateMotivationalQuote]);
+  }, [latest?.id, rotateMotivationalQuote]);
 
   useEffect(() => {
     if (!token) {
@@ -676,41 +843,34 @@ export default function SalaTokenPage() {
     };
   }, [token, displayReport?.id]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const calcScale = () => {
-      const isMobile = window.matchMedia("(max-width: 760px)").matches;
-      if (isMobile) {
-        document.documentElement.style.setProperty("--paper-scale", "1");
-        return;
-      }
-      const useful = window.innerHeight - 120;
-      const scale = Math.min(1, Math.max(0.55, useful / A4_PAGE_HEIGHT_PX));
-      document.documentElement.style.setProperty("--paper-scale", scale.toFixed(3));
-    };
-    calcScale();
-    window.addEventListener("resize", calcScale);
-    return () => window.removeEventListener("resize", calcScale);
-  }, []);
-
   return (
     <>
       <Shell
         status={status}
+        connection={connection}
         invalidReason={invalidReason}
         report={displayReport}
+        review={review}
         timeline={visibleTimeline}
-        activeId={activeId}
-        isViewingPast={isViewingPast}
+        activeId={selectedId}
+        position={position}
+        freshIds={selection.fresh}
+        changedIds={selection.changed}
+        arrival={arrivalEntry}
+        changedNotice={!!displayReport && changedNoticeId === displayReport.id}
+        missingFromList={!!displayReport && position === 0}
+        names={names}
+        listOpen={listOpen}
         summary={summary}
         stats={stats}
-        secondsSinceFetch={secondsSinceFetch}
-        updatedFlash={updatedFlash}
         theme={theme}
         clock={clock}
         highlightOn={highlightOn}
         copied={copied}
         copyError={copyError}
+        reportStale={selectedReportIsStale(displayReport, timeline.find((entry) => entry.id === selectedId))}
+        offline={connection === "offline"}
+        lastSyncAt={lastSyncAt}
         noteDraft={noteDraft}
         phrases={phrases}
         insertedPhrases={insertedPhrases}
@@ -728,8 +888,14 @@ export default function SalaTokenPage() {
         onCopy={onCopy}
         onPrint={() => window.print()}
         onHide={hideEntry}
-        onSelect={selectReport}
-        onBackToLive={backToLive}
+        onSelect={openReport}
+        onStep={stepReport}
+        onToggleList={() => setListOpen((v) => !v)}
+        onDismissArrival={() => dispatchSelection({ type: "dismissArrival" })}
+        onDismissChanged={() => setChangedNoticeId(null)}
+        onRetryReport={retrySelected}
+        onPatientName={setPatientName}
+        onLeave={leave}
         onSubmitAnnotation={submitAnnotation}
         onNoteDraft={setNoteDraft}
         onDeleteAnnotation={deleteAnnotation}
@@ -746,20 +912,30 @@ export default function SalaTokenPage() {
 
 function Shell({
   status,
+  connection,
   invalidReason,
   report,
+  review,
   timeline,
   activeId,
-  isViewingPast,
+  position,
+  freshIds,
+  changedIds,
+  arrival,
+  changedNotice,
+  missingFromList,
+  names,
+  listOpen,
   summary,
   stats,
-  secondsSinceFetch,
-  updatedFlash,
   theme,
   clock,
   highlightOn,
   copied,
   copyError,
+  offline,
+  reportStale,
+  lastSyncAt,
   noteDraft,
   phrases,
   insertedPhrases,
@@ -778,7 +954,13 @@ function Shell({
   onPrint,
   onHide,
   onSelect,
-  onBackToLive,
+  onStep,
+  onToggleList,
+  onDismissArrival,
+  onDismissChanged,
+  onRetryReport,
+  onPatientName,
+  onLeave,
   onSubmitAnnotation,
   onNoteDraft,
   onDeleteAnnotation,
@@ -787,21 +969,31 @@ function Shell({
   onActiveMainTab,
   formatClock,
 }: {
-  status: "loading" | "invalid" | "waiting" | "live";
+  status: ShellStatus;
+  connection: Connection;
   invalidReason: InvalidReason | null;
   report: SalaReport | null;
+  review: ReviewView;
   timeline: TimelineEntry[];
   activeId: string | null;
-  isViewingPast: boolean;
+  position: number;
+  freshIds: string[];
+  changedIds: string[];
+  arrival: TimelineEntry | null;
+  changedNotice: boolean;
+  missingFromList: boolean;
+  names: NameMap;
+  listOpen: boolean;
   summary: { label: string; count: number }[];
   stats: { total: number; rawCount: number; avgMs: number | null; buckets: { label: string; count: number }[] } | null;
-  secondsSinceFetch: number | null;
-  updatedFlash: number;
   theme: Theme;
   clock: string;
   highlightOn: boolean;
-  copied: boolean;
+  copied: CopyMode | null;
   copyError: boolean;
+  offline: boolean;
+  reportStale: boolean;
+  lastSyncAt: string | null;
   noteDraft: string;
   phrases: PhrasesState;
   insertedPhrases: InsertedPhrase[];
@@ -816,11 +1008,17 @@ function Shell({
   salaToken: string;
   onToggleTheme: () => void;
   onToggleHighlight: () => void;
-  onCopy: () => void;
+  onCopy: (mode?: CopyMode) => void;
   onPrint: () => void;
   onHide: (id: string) => void;
   onSelect: (id: string) => void;
-  onBackToLive: () => void;
+  onStep: (delta: 1 | -1) => void;
+  onToggleList: () => void;
+  onDismissArrival: () => void;
+  onDismissChanged: () => void;
+  onRetryReport: () => void;
+  onPatientName: (reportId: string, value: string) => void;
+  onLeave: () => void;
   onSubmitAnnotation: () => void;
   onNoteDraft: (value: string) => void;
   onDeleteAnnotation: (id: string) => void;
@@ -834,13 +1032,15 @@ function Shell({
   formatClock: (date: Date) => string;
 }) {
   const pillState =
-    status === "invalid" ? "off" : status === "live" ? "live" : "waiting";
+    connection === "online" ? "live" : connection === "off" ? "off" : "waiting";
   const pillLabel =
-    status === "invalid"
-      ? "Sessão off"
-      : status === "live"
-        ? "Ao vivo"
-        : "Aguardando";
+    connection === "online"
+      ? "Conectado"
+      : connection === "offline"
+        ? "Sem conexão"
+        : connection === "off"
+          ? "Sala encerrada"
+          : "Abrindo…";
 
   return (
     <main className="page">
@@ -920,31 +1120,6 @@ function Shell({
               </button>
               <button
                 type="button"
-                className={`topbar-tool ${copied ? "is-copied" : ""} ${copyError ? "is-error" : ""}`}
-                onClick={onCopy}
-                title={copyError ? "Falha ao copiar — verifique permissão da área de transferência" : "Copiar laudo (C)"}
-              >
-                {copyError ? (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                ) : copied ? (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" />
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  </svg>
-                )}
-                <span className="topbar-tool-label">
-                  {copyError ? "Falhou" : copied ? "Copiado" : "Copiar"}
-                </span>
-              </button>
-              <button
-                type="button"
                 className="topbar-tool"
                 onClick={onPrint}
                 title="Imprimir laudo"
@@ -958,8 +1133,25 @@ function Shell({
               </button>
             </div>
           )}
+          {connection !== "off" && (
+            <button
+              type="button"
+              className="topbar-tool"
+              onClick={onLeave}
+              title="Sair e apagar os nomes digitados neste computador"
+            >
+              <span className="topbar-tool-label">Sair</span>
+            </button>
+          )}
         </div>
       </header>
+
+      {connection === "offline" && (
+        <div className="offline-banner" role="status">
+          <strong>Sem conexão.</strong> Tentando de novo… O laudo aberto continua
+          aqui e pode ser copiado.
+        </div>
+      )}
 
       <div className="layout">
         <aside className="sidebar">
@@ -1020,52 +1212,80 @@ function Shell({
             )}
           </SidebarSection>
 
-          <SidebarSection title={`HOJE · ${timeline.length}`}>
-            {timeline.length === 0 ? (
-              <p className="muted">A timeline aparece aqui durante o turno.</p>
-            ) : (
-              <ol className="timeline">
-                {timeline.map((entry, i) => {
-                  const isLatest = i === 0;
-                  const isActive = entry.id === activeId;
-                  return (
-                    <li
-                      key={entry.id}
-                      className={`timeline-item ${isLatest ? "is-latest" : ""} ${isActive ? "is-active" : ""}`}
-                    >
-                      <button
-                        type="button"
-                        className="timeline-row"
-                        onClick={() => onSelect(entry.id)}
-                        aria-current={isActive ? "true" : undefined}
-                        aria-label={`Visualizar ${prettyCategory(entry.category ?? "")} de ${formatTime(entry.createdAt)}`}
-                        title="Visualizar este laudo"
+          <button
+            type="button"
+            className="daylist-toggle"
+            aria-expanded={listOpen}
+            aria-controls="sala-daylist"
+            onClick={onToggleList}
+          >
+            <span>Laudos de hoje ({timeline.length})</span>
+            <span aria-hidden="true">{listOpen ? "▴" : "▾"}</span>
+          </button>
+          <div
+            id="sala-daylist"
+            className={`daylist-wrap ${listOpen ? "is-open" : ""}`}
+          >
+            <SidebarSection title={`Laudos de hoje · ${timeline.length}`}>
+              {timeline.length === 0 ? (
+                <p className="muted">Os laudos do dia aparecem aqui.</p>
+              ) : (
+                <ol className="timeline">
+                  {timeline.map((entry) => {
+                    const isActive = entry.id === activeId;
+                    const isFresh = freshIds.includes(entry.id);
+                    const isChanged = changedIds.includes(entry.id);
+                    const entryReview = reviewOf(entry);
+                    const category = prettyCategory(entry.category ?? "");
+                    const time = formatTime(entry.createdAt);
+                    const name = names[entry.id];
+                    return (
+                      <li
+                        key={entry.id}
+                        className={`timeline-item ${isActive ? "is-active" : ""}`}
                       >
-                        <span className="timeline-time">
-                          {formatTime(entry.createdAt)}
-                        </span>
-                        <span className="timeline-label">
-                          {prettyCategory(entry.category ?? "")}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="timeline-x"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onHide(entry.id);
-                        }}
-                        aria-label="Ocultar este laudo da sala"
-                        title="Ocultar"
-                      >
-                        ×
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-          </SidebarSection>
+                        <button
+                          type="button"
+                          className="timeline-row"
+                          onClick={() => onSelect(entry.id)}
+                          aria-current={isActive ? "true" : undefined}
+                          aria-label={`${category} das ${time}${name ? `, ${name}` : ""}. ${reviewLabel(entryReview.status)}${isFresh ? ". Novo" : ""}${isChanged ? ". Alterado" : ""}`}
+                        >
+                          <span className="timeline-top">
+                            <span className="timeline-time">{time}</span>
+                            {isFresh && <span className="tl-flag tl-flag--new">Novo</span>}
+                            {isChanged && <span className="tl-flag">Alterado</span>}
+                          </span>
+                          <span className="timeline-label">{category}</span>
+                          <span className={`timeline-name ${name ? "" : "is-empty"}`}>
+                            {name ?? "sem nome"}
+                          </span>
+                          <span className={`tl-review tl-review--${entryReview.status}`}>
+                            <span aria-hidden="true">
+                              {entryReview.status === "reviewed" ? "✓" : "◷"}
+                            </span>{" "}
+                            {entryReview.status === "reviewed" ? "Revisado" : "Aguardando revisão"}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="timeline-x"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onHide(entry.id);
+                          }}
+                          aria-label={`Ocultar ${category} das ${time} desta tela`}
+                          title="Ocultar desta tela"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </SidebarSection>
+          </div>
 
           <div className="privacy-strip">
             <svg
@@ -1079,7 +1299,7 @@ function Shell({
             >
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
-            <span>link pessoal · efêmero</span>
+            <span>Nomes digitados ficam só neste computador</span>
           </div>
         </aside>
 
@@ -1095,19 +1315,35 @@ function Shell({
             <SchemasGallery token={salaToken} schemas={schemas} />
           )}
           {status === "waiting" && activeMainTab === "report" && <WaitingState />}
+          {status === "report-error" && activeMainTab === "report" && (
+            <div className="card card--centered" role="alert">
+              <p className="state-body">Não foi possível abrir este laudo.</p>
+              <button type="button" className="ghost-button" onClick={onRetryReport}>
+                Tentar de novo
+              </button>
+            </div>
+          )}
           {status === "live" && activeMainTab === "report" && report && (
             <ReportView
               report={report}
-              secondsSinceFetch={secondsSinceFetch}
-              updatedFlash={updatedFlash}
+              review={review}
+              position={position}
+              total={timeline.length}
+              patientName={names[report.id] ?? ""}
+              changedNotice={changedNotice}
+              missingFromList={missingFromList}
               highlightOn={highlightOn}
               copied={copied}
-              isViewingPast={isViewingPast}
+              copyError={copyError}
+              reportStale={reportStale}
+              offline={offline}
+              lastSyncAt={lastSyncAt}
               insertedPhrases={insertedPhrases}
               persistedAnnotations={persistedAnnotations}
-              onToggleHighlight={onToggleHighlight}
               onCopy={onCopy}
-              onBackToLive={onBackToLive}
+              onStep={onStep}
+              onPatientName={onPatientName}
+              onDismissChanged={onDismissChanged}
             />
           )}
         </section>
@@ -1232,19 +1468,39 @@ function Shell({
         </aside>
       </div>
 
-      <footer className="shortcut-footer">press ? for shortcuts</footer>
+      {arrival && (
+        <div className="arrival-toast" role="status" aria-live="polite">
+          <span>
+            Chegou um laudo novo · {prettyCategory(arrival.category ?? "")} ·{" "}
+            {formatTime(arrival.createdAt)}
+          </span>
+          <button type="button" className="arrival-open" onClick={() => onSelect(arrival.id)}>
+            Abrir
+          </button>
+          <button
+            type="button"
+            className="arrival-close"
+            onClick={onDismissArrival}
+            aria-label="Fechar aviso"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      <footer className="shortcut-footer">? atalhos</footer>
 
       {shortcutsOpen && (
         <div className="shortcut-backdrop" onClick={onCloseShortcuts}>
           <div className="shortcut-popover" role="dialog" aria-label="Atalhos" onClick={(e) => e.stopPropagation()}>
             <div className="shortcut-title">Atalhos</div>
             <dl className="shortcut-list">
-              <div><dt>j / ↓</dt><dd>próximo laudo</dd></div>
-              <div><dt>k / ↑</dt><dd>laudo anterior</dd></div>
-              <div><dt>c</dt><dd>copiar laudo</dd></div>
-              <div><dt>h</dt><dd>destacar cabeçalhos</dd></div>
+              <div><dt>j / →</dt><dd>próximo laudo da lista</dd></div>
+              <div><dt>k / ←</dt><dd>laudo anterior da lista</dd></div>
+              <div><dt>c</dt><dd>copiar o laudo aberto</dd></div>
+              <div><dt>h</dt><dd>destacar títulos</dd></div>
               <div><dt>n</dt><dd>nova anotação</dd></div>
-              <div><dt>Esc</dt><dd>voltar ou fechar</dd></div>
+              <div><dt>Esc</dt><dd>fechar</dd></div>
             </dl>
           </div>
         </div>
@@ -1411,13 +1667,9 @@ function WaitingState() {
         Aguardando o <em>primeiro laudo</em>.
       </h1>
       <p className="state-body">
-        A sessão está conectada. Cada laudo que o médico gerar aparece aqui em
-        segundos.
+        Nenhum laudo hoje ainda. Assim que o médico gerar, ele aparece aqui
+        sozinho.
       </p>
-      <div className="poll-strip">
-        <span className="poll-blip" />
-        <span>Sincronizando a cada 5 segundos</span>
-      </div>
     </div>
   );
 }
@@ -1469,150 +1721,252 @@ function SchemasGallery({
   );
 }
 
+function reviewLabel(status: ReviewView["status"]): string {
+  return status === "reviewed" ? "Revisado pelo médico" : "Aguardando revisão do médico";
+}
+
 function ReportView({
   report,
-  secondsSinceFetch,
-  updatedFlash,
+  review,
+  position,
+  total,
+  patientName,
+  changedNotice,
+  missingFromList,
   highlightOn,
   copied,
-  isViewingPast,
+  copyError,
+  offline,
+  reportStale,
+  lastSyncAt,
   insertedPhrases,
   persistedAnnotations,
-  onToggleHighlight,
   onCopy,
-  onBackToLive,
+  onStep,
+  onPatientName,
+  onDismissChanged,
 }: {
   report: SalaReport;
-  secondsSinceFetch: number | null;
-  updatedFlash: number;
+  review: ReviewView;
+  position: number;
+  total: number;
+  patientName: string;
+  changedNotice: boolean;
+  missingFromList: boolean;
   highlightOn: boolean;
-  copied: boolean;
-  isViewingPast: boolean;
+  copied: CopyMode | null;
+  copyError: boolean;
+  offline: boolean;
+  reportStale: boolean;
+  lastSyncAt: string | null;
   insertedPhrases: InsertedPhrase[];
   persistedAnnotations: PersistedAnnotation[];
-  onToggleHighlight: () => void;
-  onCopy: () => void;
-  onBackToLive: () => void;
+  onCopy: (mode?: CopyMode) => void;
+  onStep: (delta: 1 | -1) => void;
+  onPatientName: (reportId: string, value: string) => void;
+  onDismissChanged: () => void;
 }) {
   const { heading, body: rawBody } = useMemo(
     () => splitHeading(report.outputText),
     [report.outputText],
   );
-  const body = useMemo(
-    () => renderWithAnnotations(rawBody, insertedPhrases, persistedAnnotations),
+  const composed = useMemo(
+    () => composeReport(rawBody, insertedPhrases, persistedAnnotations),
     [rawBody, insertedPhrases, persistedAnnotations],
   );
+  const plan = copyPlan({
+    review,
+    offline,
+  reportStale,
+    additionCount: composed.additionCount,
+    lastSyncLabel: lastSyncAt ? formatTime(lastSyncAt) : null,
+  });
+  const reviewed = plan.banner === "reviewed";
+  const labelFor = (mode: CopyMode, label: string) =>
+    copyError ? "Não copiou" : copied === mode ? "Copiado" : label;
+  const canPrev = position > 1;
+  const canNext = position > 0 && position < total;
 
-  const measureRef = useRef<HTMLDivElement | null>(null);
-  const [pageCount, setPageCount] = useState(1);
+  const copyButton = (
+    action: { mode: CopyMode; label: string; tone: "approved" | "draft" },
+    extraClass = "",
+  ) => (
+    <button
+      type="button"
+      className={`copy-btn ${action.tone === "approved" ? "copy-btn--primary" : "copy-btn--draft"} ${copied === action.mode ? "is-copied" : ""} ${copyError ? "is-error" : ""} ${extraClass}`}
+      onClick={() => onCopy(action.mode)}
+      data-copy-mode={action.mode}
+    >
+      {labelFor(action.mode, action.label)}
+    </button>
+  );
 
-  useLayoutEffect(() => {
-    const el = measureRef.current;
-    if (!el) return;
-    const measure = () => {
-      const h = el.scrollHeight;
-      const pages = Math.max(1, Math.ceil(h / A4_PAGE_HEIGHT_PX));
-      setPageCount((prev) => (prev !== pages ? pages : prev));
-    };
-    measure();
-    const obs = new ResizeObserver(measure);
-    obs.observe(el);
-    if (typeof document !== "undefined" && document.fonts?.ready) {
-      document.fonts.ready.then(measure).catch(() => {});
-    }
-    return () => obs.disconnect();
-  }, [body, heading, highlightOn]);
-
-  const flowStyle: CSSProperties | undefined =
-    pageCount > 1
-      ? {
-          columnCount: pageCount,
-          columnFill: "auto",
-          height: `${A4_PAGE_HEIGHT_PX}px`,
-          width: `${pageCount * A4_PAGE_WIDTH_PX + (pageCount - 1) * A4_PAGE_GAP_PX}px`,
-        }
-      : undefined;
+  const nav = (extraClass = "") => (
+    <div className={`reader-nav ${extraClass}`}>
+      <button
+        type="button"
+        className="nav-btn"
+        onClick={() => onStep(-1)}
+        disabled={!canPrev}
+        aria-label="Laudo anterior da lista"
+      >
+        ‹<span className="nav-word"> Anterior</span>
+      </button>
+      <span className="nav-pos" aria-live="polite">
+        {position > 0 ? `${position} de ${total}` : "fora da lista"}
+      </span>
+      <button
+        type="button"
+        className="nav-btn"
+        onClick={() => onStep(1)}
+        disabled={!canNext}
+        aria-label="Próximo laudo da lista"
+      >
+        <span className="nav-word">Próximo </span>›
+      </button>
+    </div>
+  );
 
   return (
-    <div
-      key={report.id}
-      className="report-stage report-anim"
-      data-update={updatedFlash}
-    >
-      <div className="paper-scroll">
-        <article className="paper-spread" data-pages={pageCount}>
-          <div className="paper-pages-bg" aria-hidden="true">
-            {Array.from({ length: pageCount }, (_, i) => (
-              <div key={i} className="paper-page" />
-            ))}
-          </div>
-          <div className="paper-flow" style={flowStyle}>
-            {heading && (
-              <h1
-                className={`report-heading ${highlightOn ? "report-heading--highlight" : ""}`}
-              >
-                {heading}
-              </h1>
+    // key só pelo id: uma edição do médico atualiza o texto sem remontar nem
+    // perder a rolagem.
+    <div key={report.id} className="report-stage report-anim">
+      <div
+        className={`review-banner review-banner--${plan.banner}`}
+        role="status"
+      >
+        <div className="review-text">
+          <strong>
+            <span aria-hidden="true">
+              {plan.banner === "reviewed" ? "✓ " : plan.banner === "stale" ? "⚠ " : "◷ "}
+            </span>
+            {plan.title}
+            {reviewed && review.reviewedAt && (
+              <> · {formatTime(review.reviewedAt)}</>
             )}
-            <div className="report-body">{renderBody(body, highlightOn)}</div>
-          </div>
-        </article>
-        <div
-          ref={measureRef}
-          className="paper-flow paper-flow--measure"
-          aria-hidden="true"
-        >
-          {heading && <h1 className="report-heading">{heading}</h1>}
-          <div className="report-body">{renderBody(body, highlightOn)}</div>
+          </strong>
+          <span>{plan.detail}</span>
+        </div>
+        <div className="banner-actions">
+          {copyButton(plan.primary, "copy-btn--main")}
+          {plan.secondary && copyButton(plan.secondary, "copy-btn--secondary")}
         </div>
       </div>
-      <div className="report-toolbar">
-        <div className="report-toolbar-meta">
+      {copyError && (
+        <p className="inline-alert" role="alert">
+          Não foi possível copiar. Selecione o texto do laudo e use Ctrl+C.
+        </p>
+      )}
+      {changedNotice && (
+        <p className="inline-note" role="status">
+          O médico alterou este laudo agora. O texto abaixo já é o novo.
+          <button type="button" onClick={onDismissChanged}>Ok</button>
+        </p>
+      )}
+      {missingFromList && (
+        <p className="inline-note" role="status">
+          Este laudo não está mais na lista de hoje.
+        </p>
+      )}
+
+      <div className="reader-head">
+        <div className="reader-meta">
           {report.category && (
             <span className="badge">{prettyCategory(report.category)}</span>
           )}
           <time className="meta-time">{formatStamp(report.createdAt)}</time>
-          {isViewingPast && (
-            <button
-              type="button"
-              className="past-pill"
-              onClick={onBackToLive}
-              title="Voltar ao laudo mais recente"
-            >
-              <span className="past-pill-dot" />
-              <span>Histórico · voltar ao vivo</span>
-            </button>
-          )}
         </div>
+        {nav()}
       </div>
-      <div className="status-row">
-        <span className="status-dot" />
-        <span>
-          Polling a cada 5s
-          {secondsSinceFetch !== null && (
-            <>
-              <span style={{ margin: "0 8px", color: "var(--ink-mute)" }}>
-                ·
-              </span>
-              <span>última sincronização há {secondsSinceFetch}s</span>
-            </>
+
+      <PatientNameField
+        key={report.id}
+        reportId={report.id}
+        saved={patientName}
+        onChange={onPatientName}
+      />
+
+      <article className="paper">
+        <div className="paper-flow">
+          {heading && (
+            <h1
+              className={`report-heading ${highlightOn ? "report-heading--highlight" : ""}`}
+            >
+              {heading}
+            </h1>
           )}
-        </span>
+          <div className="report-body">
+            {renderBody(composed.text, highlightOn, composed.added)}
+          </div>
+        </div>
+      </article>
+
+      <div className="mobile-bar">
+        {nav("reader-nav--compact")}
+        {copyButton(plan.primary, "copy-btn--compact")}
       </div>
     </div>
   );
 }
 
-function renderBody(text: string, highlightOn: boolean): React.ReactNode[] {
+/**
+ * Nome do paciente só para a auxiliar se orientar. Estado local de digitação
+ * (o valor salvo é normalizado) e persistência só em sessionStorage.
+ */
+function PatientNameField({
+  reportId,
+  saved,
+  onChange,
+}: {
+  reportId: string;
+  saved: string;
+  onChange: (reportId: string, value: string) => void;
+}) {
+  const [draft, setDraft] = useState(saved);
+  const inputId = `sala-patient-${reportId}`;
+  return (
+    <div className="patient-field">
+      <label htmlFor={inputId}>Paciente (opcional)</label>
+      <input
+        id={inputId}
+        type="text"
+        value={draft}
+        maxLength={60}
+        autoComplete="off"
+        spellCheck={false}
+        placeholder="Digite para achar este laudo na lista"
+        onChange={(e) => {
+          setDraft(e.target.value);
+          onChange(reportId, e.target.value);
+        }}
+      />
+      <span className="patient-hint">
+        Fica só neste computador até sair ou virar o dia. Não entra no laudo, na
+        cópia nem na impressão.
+      </span>
+    </div>
+  );
+}
+
+function renderBody(
+  text: string,
+  highlightOn: boolean,
+  added: boolean[] = [],
+): React.ReactNode[] {
   const lines = text.split(/\r?\n/);
   return lines.map((line, i) => {
     const isHeading = isAllCapsHeading(line.trim());
-    const cls = isHeading && highlightOn ? "doc-line doc-line--heading" : "doc-line";
+    let cls = isHeading && highlightOn ? "doc-line doc-line--heading" : "doc-line";
+    // Acréscimo da Sala: marcado para não se confundir com o texto revisado.
+    if (added[i] && line.trim()) cls += " doc-line--added";
+    // Quebra de linha fora do span: a etiqueta do acréscimo fica na mesma linha.
     return (
-      <span key={i} className={cls}>
-        {line}
+      <Fragment key={i}>
+        <span className={cls} data-added={added[i] && line.trim() ? "sala" : undefined}>
+          {line}
+        </span>
         {i < lines.length - 1 ? "\n" : ""}
-      </span>
+      </Fragment>
     );
   });
 }
@@ -1627,12 +1981,16 @@ function isAllCapsHeading(trimmed: string): boolean {
 
 async function copyReportToClipboard(
   report: SalaReport,
-  annotations: PersistedAnnotation[] = [],
+  mode: CopyMode,
+  inserted: InsertedPhrase[],
+  annotations: PersistedAnnotation[],
 ): Promise<boolean> {
   const { heading, body: rawBody } = splitHeading(report.outputText);
+  // "medical": exatamente o texto do médico. "with-additions": o que a tela
+  // mostra (frases inseridas + anotações), sempre como rascunho.
   const body =
-    annotations.length > 0
-      ? renderWithAnnotations(rawBody, [], annotations)
+    mode === "with-additions"
+      ? composeReport(rawBody, inserted, annotations).text
       : rawBody;
   const headingHtml = heading
     ? `<p><strong>${escapeHtml(heading)}</strong></p><p>&nbsp;</p>`
@@ -1698,16 +2056,6 @@ function summarize(entries: TimelineEntry[]): { label: string; count: number }[]
     .sort((a, b) => b.count - a.count);
 }
 
-function labelForActivity(a: ActivityEntry): string {
-  if (a.kind === "received") return a.label ? `laudo recebido · ${a.label}` : "laudo recebido";
-  if (a.kind === "viewed") return a.label ? `visualizou histórico · ${a.label}` : "visualizou histórico";
-  if (a.kind === "copied") return "copiou laudo";
-  if (a.kind === "highlight-on") return "destacou cabeçalhos: on";
-  if (a.kind === "highlight-off") return "destacou cabeçalhos: off";
-  if (a.kind === "note") return a.label ? `anotação: ${a.label}` : "anotação";
-  return "voltou ao vivo";
-}
-
 function splitHeading(text: string): { heading: string | null; body: string } {
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
@@ -1766,68 +2114,6 @@ function formatTime(iso: string): string {
   } catch {
     return "--:--";
   }
-}
-
-function findConclusionInfo(body: string): {
-  lastN: number;
-  hasConclusion: boolean;
-} {
-  const match = body.match(/CONCLUS[ÃA]O\s*:/i);
-  if (!match || match.index === undefined) {
-    return { lastN: 0, hasConclusion: false };
-  }
-  const tail = body.slice(match.index);
-  const numberMatches = [...tail.matchAll(/^\s*(\d+)\)\s/gm)];
-  if (numberMatches.length === 0) return { lastN: 0, hasConclusion: true };
-  const last = Math.max(
-    ...numberMatches.map((m) => parseInt(m[1] ?? "0", 10)),
-  );
-  return { lastN: last, hasConclusion: true };
-}
-
-function renderWithAnnotations(
-  body: string,
-  inserted: InsertedPhrase[],
-  annotations: PersistedAnnotation[],
-): string {
-  const info = findConclusionInfo(body);
-
-  const afterTitle = inserted
-    .filter((p) => p.placement === "after-title")
-    .map((p) => p.text);
-  const inConclusionTexts: string[] = [
-    ...inserted.filter((p) => p.placement === "in-conclusion").map((p) => p.text),
-    ...annotations
-      .filter((a) => a.placement === "in-conclusion")
-      .map((a) => a.text),
-  ];
-  const footer: string[] = [
-    ...inserted.filter((p) => p.placement === "footer").map((p) => p.text),
-    ...annotations.filter((a) => a.placement === "footer").map((a) => a.text),
-  ];
-
-  let result = body;
-
-  if (afterTitle.length > 0) {
-    result = afterTitle.join("\n\n") + "\n\n" + result;
-  }
-
-  if (inConclusionTexts.length > 0) {
-    if (info.hasConclusion) {
-      const numbered = inConclusionTexts
-        .map((text, i) => `${info.lastN + i + 1}) ${text}`)
-        .join("\n");
-      result = result + "\n" + numbered;
-    } else {
-      footer.push(...inConclusionTexts);
-    }
-  }
-
-  if (footer.length > 0) {
-    result = result + "\n\n" + footer.join("\n\n");
-  }
-
-  return result;
 }
 
 function formatDuration(ms: number): string {
@@ -1934,6 +2220,13 @@ function GlobalStyles() {
         --amber-soft: #f1f5f9;
         --highlight: #fff5cc;
         --highlight-ink: #6b4f00;
+        --ok-bg: #ecfdf5;
+        --ok-line: #059669;
+        --ok-ink: #065f46;
+        --wait-bg: #fffbeb;
+        --wait-line: #b45309;
+        --wait-ink: #7c2d12;
+        --alert-ink: #991b1b;
       }
 
       [data-theme="dark"] {
@@ -1953,6 +2246,13 @@ function GlobalStyles() {
         --amber-soft: rgba(251, 191, 36, 0.18);
         --highlight: rgba(251, 191, 36, 0.18);
         --highlight-ink: #fbd97a;
+        --ok-bg: rgba(16, 185, 129, 0.14);
+        --ok-line: #34d399;
+        --ok-ink: #a7f3d0;
+        --wait-bg: rgba(245, 158, 11, 0.14);
+        --wait-line: #f59e0b;
+        --wait-ink: #fde68a;
+        --alert-ink: #fca5a5;
       }
 
       * { box-sizing: border-box; }
@@ -2224,7 +2524,7 @@ function ScopedStyles() {
       .layout {
         flex: 1;
         display: grid;
-        grid-template-columns: 200px 1fr 280px;
+        grid-template-columns: 240px minmax(0, 1fr) 280px;
         gap: 0;
         width: 100%;
       }
@@ -2464,32 +2764,8 @@ function ScopedStyles() {
         background: rgba(179, 38, 30, 0.08);
       }
 
-      .past-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 5px 11px;
-        border-radius: 999px;
-        border: 1px solid var(--amber-soft);
-        background: var(--amber-soft);
-        color: var(--amber);
-        font-family: "JetBrains Mono", monospace;
-        font-size: 10.5px;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, color 120ms ease, border-color 120ms ease;
-      }
 
-      .past-pill:hover { filter: brightness(0.95); }
-      .past-pill:active { transform: scale(0.96); }
 
-      .past-pill-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 999px;
-        background: var(--amber);
-      }
 
       .privacy-strip {
         margin-top: auto;
@@ -2880,7 +3156,7 @@ function ScopedStyles() {
       }
 
       .report-stage {
-        max-width: 1320px;
+        max-width: 210mm;
         margin: 0 auto;
         width: 100%;
         display: flex;
@@ -3002,30 +3278,8 @@ function ScopedStyles() {
         animation: report-in 360ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
       }
 
-      .report-toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-        padding: 0 4px;
-      }
 
-      .report-toolbar-meta {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-family: "JetBrains Mono", monospace;
-        font-size: 10.5px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--ink-mute);
-      }
 
-      .report-toolbar-actions {
-        display: inline-flex;
-        gap: 8px;
-      }
 
       .tool-btn {
         display: inline-flex;
@@ -3079,33 +3333,11 @@ function ScopedStyles() {
         line-height: 1;
       }
 
-      .paper-scroll {
+      /* Leitura vertical: uma coluna do tamanho de uma folha A4, rolando para baixo. */
+      .paper {
         width: 100%;
-        overflow-x: auto;
-        position: relative;
-        padding-bottom: 8px;
-      }
-
-      .paper-spread {
-        position: relative;
-        margin: 0 auto calc((var(--paper-scale, 1) - 1) * 297mm);
-        width: max-content;
-        transform: scale(var(--paper-scale, 1));
-        transform-origin: top center;
-      }
-
-      .paper-pages-bg {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        gap: 24px;
-        pointer-events: none;
-      }
-
-      .paper-page {
-        flex-shrink: 0;
-        width: 210mm;
-        height: 297mm;
+        max-width: 210mm;
+        margin: 0 auto;
         background: var(--paper);
         border: 1px solid var(--line);
         border-radius: 6px;
@@ -3114,33 +3346,243 @@ function ScopedStyles() {
           0 2px 8px rgba(15, 23, 42, 0.04);
       }
 
-      [data-theme="dark"] .paper-page {
+      [data-theme="dark"] .paper {
         box-shadow:
           0 1px 0 rgba(255, 255, 255, 0.04) inset,
           0 28px 60px -32px rgba(0, 0, 0, 0.5);
       }
 
       .paper-flow {
-        position: relative;
-        z-index: 1;
-        width: 210mm;
-        min-height: 297mm;
-        padding: 56px 48px;
-        column-gap: 120px; /* 24px gap entre páginas + 48px de margem interna de cada lado */
+        padding: 56px 48px 64px;
         font-size: 18.5px;
         line-height: 1.55;
+        overflow-wrap: anywhere;
       }
 
-      .paper-flow--measure {
-        position: absolute;
-        left: -99999px;
-        top: 0;
-        visibility: hidden;
-        pointer-events: none;
-        user-select: none;
-        min-height: 0;
-        height: auto;
+      /* ---- Faixa de revisão: texto + ícone + cor, sempre juntos ---- */
+      .review-banner {
+        position: sticky;
+        top: 60px;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 18px;
+        border-radius: 10px;
+        border: 2px solid;
       }
+      .review-banner--reviewed { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok-ink); }
+      .review-banner--pending { background: var(--wait-bg); border-color: var(--wait-line); color: var(--wait-ink); }
+      /* Sem conexão: neutro, nunca verde — a versão na tela pode estar velha. */
+      .review-banner--stale { background: var(--paper-shade); border-color: var(--ink-soft); border-style: dashed; color: var(--ink); }
+      .banner-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; flex-shrink: 0; }
+      .copy-btn--secondary { font-size: 13.5px; min-height: 40px; }
+
+      /* Acréscimo da Sala (frase/anotação): fora da revisão médica. */
+      .doc-line--added {
+        background: var(--wait-bg);
+        box-shadow: inset 3px 0 0 var(--wait-line);
+        padding-left: 8px;
+      }
+      .doc-line--added::after {
+        content: " · acréscimo da Sala, não revisado";
+        font-size: 0.7em;
+        font-weight: 700;
+        color: var(--wait-ink);
+      }
+      .review-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .review-text strong { font-size: 17px; font-weight: 800; letter-spacing: 0.01em; }
+      .review-text span { font-size: 14px; }
+
+      .copy-btn {
+        flex-shrink: 0;
+        min-height: 44px;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 120ms ease, filter 120ms ease;
+      }
+      .copy-btn:active { transform: scale(0.97); }
+      .copy-btn:focus-visible, .nav-btn:focus-visible, .daylist-toggle:focus-visible,
+      .arrival-toast button:focus-visible, .inline-note button:focus-visible {
+        outline: 3px solid var(--ink);
+        outline-offset: 2px;
+      }
+      .copy-btn--primary { background: #047857; color: #ffffff; border: 2px solid #047857; }
+      .copy-btn--primary:hover { filter: brightness(1.08); }
+      .copy-btn--draft { background: var(--paper); color: var(--wait-ink); border: 2px dashed var(--wait-line); }
+      .copy-btn.is-copied { background: var(--ok-bg); color: var(--ok-ink); border-style: solid; border-color: var(--ok-line); }
+      /* Rascunho copiado: confirmação neutra, nunca o verde de "revisado". */
+      .copy-btn--draft.is-copied { background: var(--paper-shade); color: var(--ink); border-color: var(--ink-soft); border-style: dashed; }
+      .copy-btn.is-error { background: var(--paper); color: var(--alert-ink); border-color: currentColor; }
+
+      .inline-alert, .inline-note {
+        margin: 0;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .inline-alert { color: var(--alert-ink); border: 1px solid currentColor; background: var(--paper); }
+      .inline-note { color: var(--ink); background: var(--paper-shade); border: 1px solid var(--line-strong); }
+      .inline-note button {
+        min-height: 32px; padding: 4px 12px; border-radius: 6px; font: inherit; font-weight: 600;
+        border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); cursor: pointer;
+      }
+
+      .reader-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .reader-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+      .reader-nav { display: inline-flex; align-items: center; gap: 8px; }
+      .nav-btn {
+        min-height: 40px;
+        padding: 6px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line-strong);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .nav-btn:disabled { opacity: 0.45; cursor: default; }
+      .nav-pos { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; min-width: 56px; text-align: center; }
+
+      .patient-field {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 4px 12px;
+      }
+      .patient-field label { font-size: 14px; font-weight: 700; color: var(--ink); }
+      .patient-field input {
+        width: 100%;
+        max-width: 420px;
+        min-height: 40px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line-strong);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        font-size: 15px;
+      }
+      .patient-field input:focus-visible { outline: 3px solid var(--brand-soft); border-color: var(--brand); }
+      .patient-hint { grid-column: 2; font-size: 12.5px; color: var(--ink-soft); }
+
+      /* ---- Lista do dia ---- */
+      .timeline-top { display: inline-flex; align-items: center; gap: 6px; }
+      .tl-flag {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 1px 6px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        color: var(--ink);
+      }
+      .tl-flag--new { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+      .timeline-name { font-size: 12.5px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+      .timeline-name.is-empty { font-weight: 400; font-style: italic; color: var(--ink-soft); }
+      .tl-review { font-size: 11.5px; font-weight: 700; }
+      .tl-review--reviewed { color: var(--ok-ink); }
+      .tl-review--pending { color: var(--wait-ink); }
+
+      .daylist-toggle {
+        display: none;
+        width: 100%;
+        min-height: 44px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line-strong);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .offline-banner {
+        padding: 10px clamp(16px, 3vw, 28px);
+        background: var(--paper-shade);
+        border-bottom: 1px solid var(--line-strong);
+        color: var(--ink);
+        font-size: 14px;
+      }
+
+      .arrival-toast {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        transform: translateX(-50%);
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: max-content;
+        max-width: calc(100vw - 32px);
+        padding: 10px 10px 10px 16px;
+        border-radius: 12px;
+        background: var(--ink);
+        color: var(--paper);
+        font-size: 14px;
+        box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.45);
+      }
+      .arrival-toast span { min-width: 0; }
+      .arrival-open {
+        min-height: 36px; padding: 6px 14px; border-radius: 8px; border: 0;
+        background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer;
+      }
+      .arrival-close {
+        min-width: 36px; min-height: 36px; border-radius: 8px; border: 1px solid currentColor;
+        background: transparent; color: inherit; font-size: 18px; cursor: pointer;
+      }
+
+      .mobile-bar {
+        display: none;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 15;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        background: var(--paper);
+        border-top: 1px solid var(--line-strong);
+      }
+      .reader-nav--compact { gap: 2px; flex-shrink: 0; }
+      .reader-nav--compact .nav-btn { min-width: 44px; min-height: 44px; padding: 6px 10px; font-size: 18px; }
+      .reader-nav--compact .nav-word { display: none; }
+      .reader-nav--compact .nav-pos { min-width: 44px; }
+      .copy-btn--compact { flex: 1 1 auto; min-width: 0; padding: 8px 10px; font-size: 14px; white-space: normal; line-height: 1.2; }
 
       @keyframes report-in {
         from { opacity: 0; transform: translateY(16px) scale(0.97); }
@@ -3209,22 +3651,7 @@ function ScopedStyles() {
         border-color: var(--brand);
       }
 
-      .poll-strip {
-        margin-top: 8px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-family: "JetBrains Mono", monospace;
-        font-size: 11.5px;
-        letter-spacing: 0.04em;
-        color: var(--ink-mute);
-      }
 
-      .poll-blip {
-        width: 6px; height: 6px; border-radius: 999px;
-        background: var(--brand);
-        animation: blip 1.4s ease-in-out infinite;
-      }
 
       @keyframes blip {
         0%, 100% { opacity: 0.25; }
@@ -3295,23 +3722,7 @@ function ScopedStyles() {
         font-weight: 800;
       }
 
-      .status-row {
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-family: "JetBrains Mono", monospace;
-        font-size: 10.5px;
-        letter-spacing: 0.06em;
-        color: var(--ink-mute);
-        text-transform: uppercase;
-      }
 
-      .status-dot {
-        width: 7px; height: 7px; border-radius: 999px;
-        background: var(--brand);
-        animation: pulse-brand 2.2s ease-in-out infinite;
-      }
 
       .shortcut-footer {
         position: fixed;
@@ -3408,7 +3819,7 @@ function ScopedStyles() {
 
       @media (max-width: 1100px) {
         .layout {
-          grid-template-columns: 200px 1fr;
+          grid-template-columns: 240px minmax(0, 1fr);
         }
         .activity-panel {
           display: none;
@@ -3450,28 +3861,41 @@ function ScopedStyles() {
         }
         .privacy-strip { margin-top: 12px; }
         .brand-sub { display: none; }
-        .paper-scroll { overflow-x: visible; padding-bottom: 0; }
-        .paper-spread {
-          width: 100% !important;
-          transform: none !important;
-          margin-bottom: 0 !important;
-        }
-        .paper-pages-bg { display: none !important; }
-        .paper-flow {
-          column-count: 1 !important;
-          width: 100% !important;
-          height: auto !important;
-          min-height: 0 !important;
-          padding: 28px 22px !important;
-          background: var(--paper);
-          border: 1px solid var(--line);
-          border-radius: 6px;
-          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
-        }
+        .paper { border-radius: 6px; }
+        .paper-flow { padding: 24px 18px 32px; font-size: 16.5px; }
+        .main { padding: 16px 16px 96px; }
+        .sidebar { gap: 12px; }
+        .sidebar > .sidebar-section:first-child { display: none; }
+        .daylist-toggle { display: flex; }
+        .daylist-wrap { display: none; }
+        .daylist-wrap.is-open { display: block; }
+        .reader-head .reader-nav { display: none; }
+        .review-banner .copy-btn--main { display: none; }
+        .review-banner { flex-direction: column; align-items: stretch; }
+        .review-banner { position: static; }
+        .mobile-bar { display: flex; }
+        .shortcut-footer { display: none; }
+        .arrival-toast { bottom: 84px; left: 16px; right: 16px; width: auto; transform: none; }
+        .daylist-wrap .sidebar-title { display: none; }
         .schema-meta {
           align-items: flex-start;
           flex-direction: column;
         }
+      }
+
+      /* Impressão: só o texto do laudo. Nome local, faixa de revisão e
+         controles nunca vão para o papel. */
+      @media print {
+        .topbar, .sidebar, .activity-panel, .offline-banner, .review-banner,
+        .inline-alert, .inline-note, .reader-head, .patient-field, .mobile-bar,
+        .arrival-toast, .shortcut-footer, .shortcut-backdrop { display: none !important; }
+        .layout { display: block !important; }
+        .main { padding: 0 !important; background: #fff !important; }
+        .report-anim { animation: none !important; }
+        .paper { max-width: none; border: 0; box-shadow: none !important; }
+        .paper-flow { padding: 0; color: #000; }
+        .doc-line--added { background: none; box-shadow: none; padding-left: 0; }
+        .doc-line--added::after { content: none; }
       }
     `}} />
   );
