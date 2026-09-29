@@ -19,3 +19,11 @@ Estado: preparação/build confirmados; E2E autenticado NÃO executado. Bloqueio
 Imagem Android35 GoogleAPIs ARM64 completou download oficial (1.778.933.980 bytes; instalada 3,8 GB). AVD `LaudoUSG_Sala_QA` criado; boot confirmado sys.boot_completed=1; APK atual instalado com sucesso em emulator-5554. Metro porta8085 responde packager-status:running (PID59032). AVD visível PID62260 após encerramento limpo do headless.
 
 App iniciou, mas mostrou ausência do bundle; menu de desenvolvimento chegou a Change Bundle Location. Login Android NÃO está pronto. Qt/qemu não aparece no inventário CUA e getApp(nome/caminho) retorna Invalid app. Alternativa Android Studio abriu projeto, porém cliques de Search Everywhere e atalho não produziram alteração verificável na UI; chamadas eventuais noWindowsAvailable. Tentativas interrompidas conforme root para não disputar foco usuário; AVD, Metro e Studio mantidos. Nenhuma senha ou token de auth lido. Login iOS/GitHub ficam sob handoff do root; retomar Android com foco compartilhado.
+
+## Correção do erro de bundle
+
+Em nova rodada, Metro estava saudável mas sem pedidos JS. APK debug padrão não empacotava JS; app mostrava fallback de bundle inexistente. Gerado APK debug autocontido via init Gradle temporário `/tmp/sala-bundled-debug.gradle` definindo react.debuggableVariants=[] somente para esta build. Nenhuma configuração versionada alterada. Task createBundleDebugJsAndAssets executou; build PASS em 1m15s (619 tarefas). APK contém assets/index.android.bundle de 3.635.624 bytes e instalação adb retornou Success. Log `/tmp/sala-android-bundled-build.log`. Validação UI aguarda liberação de foco pela frente iOS; ainda não afirmar login/E2E confirmado.
+
+## Entrada de teclado
+
+Usuário confirmou abertura do app após APK autocontido, mas não conseguia digitar email. Configuração do AVD tinha `hw.keyboard=no`; corrigida para `yes` e AVD reiniciado preservando dados (PID70728). Login RN usa campos editable={!busy}; nenhuma alteração de produto foi feita. CUA segue sem acesso operacional à janela Qt e retorna noWindowsAvailable para coordenadas no Studio, logo digitação ainda depende de confirmação visual/usuário. Não foi preenchida senha nem lido authstorage.

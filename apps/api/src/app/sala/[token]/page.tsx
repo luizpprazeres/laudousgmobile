@@ -8,6 +8,7 @@ import { useMotivationalQuote } from "@/lib/useMotivationalQuote";
 import type { Quote } from "@/lib/motivationalQuotes";
 import { reviewOf, type ReviewView } from "./_lib/review";
 import { composeReport } from "./_lib/compose";
+import { annotationsFor, annotationsReducer, initialAnnotations } from "./_lib/annotations";
 import { copyPlan, type CopyMode } from "./_lib/copyPlan";
 import {
   initialSelection,
@@ -160,9 +161,9 @@ export default function SalaTokenPage() {
   const [copyError, setCopyError] = useState(false);
   const [phrases, setPhrases] = useState<PhrasesState>(EMPTY_PHRASES);
   const [insertedPhrases, setInsertedPhrases] = useState<InsertedPhrase[]>([]);
-  const [persistedAnnotations, setPersistedAnnotations] = useState<
-    PersistedAnnotation[]
-  >([]);
+  const [annotationState, dispatchAnnotations] = useReducer(annotationsReducer, initialAnnotations);
+  const annotationStateRef = useRef(annotationState);
+  annotationStateRef.current = annotationState;
   const [annotationWarning, setAnnotationWarning] = useState<string | null>(
     null,
   );
@@ -204,6 +205,7 @@ export default function SalaTokenPage() {
   > | null>(null);
 
   const selectedId = selection.selectedId;
+  const persistedAnnotations = annotationsFor(annotationState, token, selectedId);
   selectedIdRef.current = selectedId;
 
   useEffect(() => {
@@ -317,7 +319,7 @@ export default function SalaTokenPage() {
       }
       const data = (await res.json()) as { annotation?: PersistedAnnotation };
       if (data.annotation) {
-        setPersistedAnnotations((prev) => [...prev, data.annotation!]);
+        dispatchAnnotations({ type: "upsert", token, reportId: displayReport.id, item: data.annotation });
         setJustAddedAnnotationId(data.annotation.id);
         if (annotationHighlightTimeoutRef.current) {
           clearTimeout(annotationHighlightTimeoutRef.current);
@@ -339,7 +341,9 @@ export default function SalaTokenPage() {
   async function deleteAnnotation(id: string) {
     const snapshot = persistedAnnotations.find((a) => a.id === id);
     if (!snapshot) return;
-    setPersistedAnnotations((prev) => prev.filter((a) => a.id !== id));
+    const reportId = displayReport?.id;
+    if (!reportId) return;
+    dispatchAnnotations({ type: "remove", token, reportId, id });
     try {
       const res = await fetch(
         `/api/sala/${encodeURIComponent(token)}/annotations/${encodeURIComponent(id)}`,
@@ -348,11 +352,7 @@ export default function SalaTokenPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (e) {
       console.error("[sala] deleteAnnotation falhou — rollback", e);
-      setPersistedAnnotations((prev) =>
-        [...prev, snapshot].sort((a, b) =>
-          a.createdAt.localeCompare(b.createdAt),
-        ),
-      );
+      dispatchAnnotations({ type: "upsert", token, reportId, item: snapshot });
       flashAnnotationWarning("Não foi possível remover anotação.");
     }
   }
@@ -822,25 +822,31 @@ export default function SalaTokenPage() {
   }, [token, displayReport?.category]);
 
   useEffect(() => {
-    if (!displayReport?.id || !token) {
-      setPersistedAnnotations([]);
-      return;
-    }
+    dispatchAnnotations({ type: "reset", token });
+  }, [token]);
+
+  useEffect(() => {
+    if (!displayReport?.id || !token) return;
+    const reportId = displayReport.id;
+    const version = annotationStateRef.current.token === token
+      ? annotationStateRef.current.reports[reportId]?.version ?? 0 : 0;
     let cancelled = false;
-    const url = `/api/sala/${encodeURIComponent(token)}/annotations?reportId=${encodeURIComponent(displayReport.id)}`;
+    const url = `/api/sala/${encodeURIComponent(token)}/annotations?reportId=${encodeURIComponent(reportId)}`;
     fetch(url, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : { annotations: [] }))
+      .then((r) => {
+        if (!r.ok) throw new Error("annotations_fetch_failed");
+        return r.json();
+      })
       .then((data: { annotations?: PersistedAnnotation[] }) => {
-        if (!cancelled) {
-          setPersistedAnnotations(data.annotations ?? []);
+        if (!cancelled && Array.isArray(data.annotations)) {
+          dispatchAnnotations({ type: "load", token, reportId, version, items: data.annotations });
         }
       })
       .catch(() => {
-        if (!cancelled) setPersistedAnnotations([]);
+        // Keep this report's known additions; a failed refetch is not deletion.
+        if (!cancelled) flashAnnotationWarning("Não foi possível atualizar as anotações. Tente novamente.");
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [token, displayReport?.id]);
 
   return (

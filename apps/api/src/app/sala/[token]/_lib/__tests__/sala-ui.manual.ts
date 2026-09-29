@@ -8,6 +8,7 @@ import {
 } from "../localNames";
 import { composeReport, type Addition } from "../compose";
 import { copyPlan } from "../copyPlan";
+import { annotationsFor, annotationsReducer, initialAnnotations, type Annotation } from "../annotations";
 
 // ---------- revisão: na dúvida, nunca "revisado" ----------
 assert.deepEqual(reviewOf(undefined), { status: "pending", reviewedAt: null });
@@ -17,6 +18,23 @@ assert.deepEqual(reviewOf({ reviewStatus: true }), { status: "pending", reviewed
 assert.deepEqual(reviewOf({ reviewStatus: "pending", reviewedAt: "2026-09-28T12:00:00Z" }), { status: "pending", reviewedAt: null });
 assert.deepEqual(reviewOf({ reviewStatus: "reviewed", reviewedAt: "2026-09-28T12:00:00Z" }), { status: "reviewed", reviewedAt: "2026-09-28T12:00:00Z" });
 assert.deepEqual(reviewOf({ reviewStatus: "reviewed", reviewedAt: null }), { status: "reviewed", reviewedAt: null });
+
+// ---------- anotações: cache isolado por laudo e respostas tardias seguras ----------
+const noteA: Annotation = { id: "note-a", reportId: "report-a", text: "A", placement: "footer", createdAt: "2026-09-29T10:00:00Z" };
+const noteB: Annotation = { id: "note-b", reportId: "report-b", text: "B", placement: "footer", createdAt: "2026-09-29T10:01:00Z" };
+let notes = annotationsReducer(initialAnnotations, { type: "reset", token: "token-1" });
+notes = annotationsReducer(notes, { type: "load", token: "token-1", reportId: "report-a", version: 0, items: [noteA] });
+notes = annotationsReducer(notes, { type: "load", token: "token-1", reportId: "report-b", version: 0, items: [noteB] });
+assert.deepEqual(annotationsFor(notes, "token-1", "report-a"), [noteA]);
+assert.deepEqual(annotationsFor(notes, "token-1", "report-b"), [noteB]);
+assert.deepEqual(annotationsFor(notes, "token-1", null), []);
+// Uma resposta GET iniciada antes de uma inclusão local não pode apagar a inclusão.
+notes = annotationsReducer(notes, { type: "upsert", token: "token-1", reportId: "report-a", item: { ...noteA, id: "note-a2", text: "A2" } });
+notes = annotationsReducer(notes, { type: "load", token: "token-1", reportId: "report-a", version: 0, items: [] });
+assert.equal(annotationsFor(notes, "token-1", "report-a").length, 2);
+// Token e reportId divergentes não contaminam o laudo atual.
+assert.equal(annotationsReducer(notes, { type: "upsert", token: "other", reportId: "report-a", item: noteA }), notes);
+assert.equal(annotationsReducer(notes, { type: "upsert", token: "token-1", reportId: "report-b", item: noteA }), notes);
 
 // ---------- ordenação por criação, estável ----------
 const a: FeedEntry = { id: "a", createdAt: "2026-09-28T12:00:00Z", contentRevision: 1 };
