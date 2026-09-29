@@ -1,4 +1,4 @@
-# API/Sala: candidato isolado, sem promoção
+# API/Sala: publicação e migração canônica
 
 Worktree detached: `/tmp/laudousg-sala-release-20260929`, base `5a8a6a04defc7011c4e06b3538ecf8dea7f64a6f`. Snapshot final de 23 arquivos exclusivamente API/Sala, DB/shared e migração/testes. Landing e Android/iOS não incluídos. Manifest: `2026-09-29-sala-api-release-manifest.json`; SHA256 do manifest `efbf4af9d9f2e778a25a66191e6971f786ba02af4e646b3f394bcb3c2c865713`. Comparação original versus isolado sem divergências no congelamento.
 
