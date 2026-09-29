@@ -20,4 +20,4 @@ Cutover concluído em dpl_GzTRZyscnEfHZRduwJboELmesVTi, três aliases conferidos
 
 Validar com conta e laudos sintéticos nos apps Android/iOS: gerar, editar, liberar explicitamente e observar a mesma versão na Sala nova; editar novamente e confirmar invalidação. Testes locais de contrato não substituem essa prova.
 
-Distribuição dos apps e commit/push não realizados nesta onda. Preservar trabalho local e manifest da API já publicada ao preparar essas entregas.
+Commits locais c704fed, 2d2ea51 e bcd12b3 criados no monorepo com allowlist; push ainda não realizado porque renovação GitHub aguarda verificação do usuário. Build Android debug ARM64 e typecheck passaram; app iOS build atual instalado em simulador isolado e login de conta de testes aguarda senha inserida pelo usuário. Distribuição pública dos apps e E2E autenticado ainda não realizados. Preservar trabalho local e manifest da API já publicada ao preparar essas entregas.
