@@ -13,3 +13,9 @@ Typecheck RN e teste `apps/mobile/src/features/sala/__tests__/reviewContract.man
 Conta sintética oficial aguardando informação do usuário solicitada pelo root. Não reutilizar contas históricas ambíguas. Após imagem/AVD: instalar APK, iniciar Metro dedicado, login normal na conta sintética, produzir laudo fictício, abrir Sala nova, observar pending, liberar pelo app, verificar reviewed, editar, observar pending novamente, liberar, conferir texto idêntico e redirect legado preservando código. Não registrar token/código em relatório público nem usar dados reais.
 
 Estado: preparação/build confirmados; E2E autenticado NÃO executado. Bloqueios precisos: runtime Android sem imagem instalada + credencial de conta sintética oficial pendente.
+
+## Atualização de preparo
+
+Imagem Android35 GoogleAPIs ARM64 completou download oficial (1.778.933.980 bytes; instalada 3,8 GB). AVD `LaudoUSG_Sala_QA` criado; boot confirmado sys.boot_completed=1; APK atual instalado com sucesso em emulator-5554. Metro porta8085 responde packager-status:running (PID59032). AVD visível PID62260 após encerramento limpo do headless.
+
+App iniciou, mas mostrou ausência do bundle; menu de desenvolvimento chegou a Change Bundle Location. Login Android NÃO está pronto. Qt/qemu não aparece no inventário CUA e getApp(nome/caminho) retorna Invalid app. Alternativa Android Studio abriu projeto, porém cliques de Search Everywhere e atalho não produziram alteração verificável na UI; chamadas eventuais noWindowsAvailable. Tentativas interrompidas conforme root para não disputar foco usuário; AVD, Metro e Studio mantidos. Nenhuma senha ou token de auth lido. Login iOS/GitHub ficam sob handoff do root; retomar Android com foco compartilhado.
