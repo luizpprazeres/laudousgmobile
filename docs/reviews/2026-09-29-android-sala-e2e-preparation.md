@@ -27,3 +27,7 @@ Em nova rodada, Metro estava saudável mas sem pedidos JS. APK debug padrão nã
 ## Entrada de teclado
 
 Usuário confirmou abertura do app após APK autocontido, mas não conseguia digitar email. Configuração do AVD tinha `hw.keyboard=no`; corrigida para `yes` e AVD reiniciado preservando dados (PID70728). Login RN usa campos editable={!busy}; nenhuma alteração de produto foi feita. CUA segue sem acesso operacional à janela Qt e retorna noWindowsAvailable para coordenadas no Studio, logo digitação ainda depende de confirmação visual/usuário. Não foi preenchida senha nem lido authstorage.
+
+## Gate final automático
+
+Após o usuário confirmar que a interação no Android ficou normal, o typecheck RN e o teste manual do contrato de revisão passaram novamente. Um novo `:app:assembleDebug` terminou e atualizou o APK em 29/09/2026 às 13:14; o emulador `emulator-5554` permaneceu conectado com `com.laudousg.LaudoUSG/.MainActivity` em primeiro plano. A confirmação do usuário resolve o problema de entrada/login, mas não documenta por si só o percurso clínico completo de gerar, revisar, editar e revisar novamente; esse E2E continua pendente.
