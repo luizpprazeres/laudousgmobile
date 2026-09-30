@@ -36,7 +36,9 @@ export async function POST(request: Request) {
   const { data: profile } = await supabase.from('profiles').select('default_writing_style_id').eq('id', userData.user.id).maybeSingle()
   const selectedStyle = profile?.default_writing_style_id
   const writingStyleId = idDeEstiloValido(selectedStyle) ? selectedStyle : WRITING_STYLE_IDS.CLASSICO_COMPLETO
-  const base = process.env.CATALOG_API_URL?.trim().replace(/\/+$/, '')
+  const base = [process.env.CATALOG_API_URL, process.env.NEXT_PUBLIC_API_URL]
+    .map((value) => value?.trim().replace(/\/+$/, ''))
+    .find(Boolean)
   if (!base) return Response.json({ error: 'Gerador indisponível: serviço não configurado.' }, { status: 503 })
 
   let upstream: Response
