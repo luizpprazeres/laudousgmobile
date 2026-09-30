@@ -8,8 +8,8 @@ import { PRECOS, type Assinatura, type PlanoDoBanco, fmtBRL, inclui, nivelDe } f
 /**
  * O PLANO — o que o médico tem, o que isso inclui, e para onde subir.
  *
- * Sem medidor de uso, de propósito. A tabela de preços promete "10 laudos
- * vitalício" e "800/mês", mas **nada disso é imposto**: não existe cota
+ * Sem medidor de uso, de propósito. A tabela de preços promete "30 laudos
+ * grátis" e "800/mês", mas **nada disso é imposto**: não existe cota
  * implementada em lugar nenhum do sistema (procurado em 21/08). Um contador
  * aqui pareceria estar medindo um limite que não existe — e o médico decidiria
  * uma compra com base nele.

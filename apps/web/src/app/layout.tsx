@@ -29,7 +29,7 @@ const softwareAppSchema = {
       name: 'Plano Gratuito',
       price: '0',
       priceCurrency: 'BRL',
-      description: '10 laudos vitalícios — gratuito para sempre',
+      description: '30 laudos grátis para testar na sua rotina',
     },
     {
       '@type': 'Offer',

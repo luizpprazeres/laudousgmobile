@@ -122,25 +122,40 @@ export const RADIUS = {
  * do Supabase (ver packages/db/src/seeds/data.ts). Se trocar um ID, o
  * /api/generate não acha RAG nem aceita a categoria.
  *
- * 9 listadas (cobertura piloto + comuns). DB tem 32 ativas — quando expandir
- * pra cobertura completa, idealmente buscar de /api/categories ao invés
- * de hardcoded.
+ * Conjunto de categorias com cobertura aprovada para o seletor Android.
+ * Não espelhar automaticamente todo o seed: há categorias ainda sem cobertura
+ * clínica liberada neste fluxo. A Biblioteca busca sua lista separadamente.
  */
 export const CATS = [
   { id: "ABDOMEN_TOTAL",         label: "Abdome Total",        color: "#059669", sub: "Fígado, vias biliares, pâncreas…" },
-  { id: "TIREOIDE",              label: "Tireoide",            color: "#0EA5E9", sub: "Tireoide e paratireoides" },
+  { id: "ABDOMEN_SUPERIOR",      label: "Abdome Superior",     color: "#10B981", sub: "Fígado, vesícula, pâncreas e baço" },
+  { id: "PAREDE_ABDOMINAL",      label: "Parede Abdominal",    color: "#34D399", sub: "Parede abdominal e região de interesse" },
+  { id: "VIAS_URINARIAS",        label: "Vias Urinárias",      color: "#06B6D4", sub: "Rins, ureteres, bexiga" },
+  { id: "PROSTATA_SUPRAPUBICA", label: "Próstata Suprapúbica", color: "#0891B2", sub: "Próstata por via suprapúbica" },
+  { id: "PROSTATA_TRANSRETAL",   label: "Próstata Transretal", color: "#0E7490", sub: "Próstata por via transretal" },
+  { id: "ESCROTAL",              label: "Escrotal",            color: "#0284C7", sub: "Testículos e estruturas escrotais" },
+  { id: "REGIAO_INGUINAL",      label: "Região Inguinal",     color: "#0369A1", sub: "Região inguinal" },
+  { id: "DOPPLER_RENAL",         label: "Doppler Renal",       color: "#06B6D4", sub: "Artérias renais" },
+  { id: "DOPPLER_CAROTIDAS",     label: "Doppler Carótidas",   color: "#2563EB", sub: "Carótidas e vertebrais" },
+  { id: "DOPPLER_VENOSO_MMII",   label: "Doppler Venoso MMII", color: "#3B82F6", sub: "TVP / insuficiência venosa" },
+  { id: "DOPPLER_VENOSO_MMII_MEDIDAS", label: "Doppler Venoso MMII — Completo", color: "#1D4ED8", sub: "Avaliação venosa com medidas" },
+  { id: "DOPPLER_ARTERIAL_MMII", label: "Doppler Arterial MMII", color: "#EF4444", sub: "Doença arterial periférica" },
+  { id: "DOPPLER_FISTULA_AV",    label: "Doppler Fístula AV", color: "#DC2626", sub: "Avaliação de fístula arteriovenosa" },
+  { id: "TIREOIDE",              label: "Tireoide",            color: "#0EA5E9", sub: "Glândula tireoide e nódulos" },
+  { id: "PARATIREOIDE",          label: "Paratireoide",        color: "#38BDF8", sub: "Glândulas paratireoides" },
+  { id: "CERVICAL",              label: "Cervical",            color: "#0EA5E9", sub: "Linfonodos, massas e cistos cervicais" },
+  { id: "GLANDULAS_SALIVARES",   label: "Glândulas Salivares", color: "#14B8A6", sub: "Parótidas e submandibulares" },
+  { id: "PARTES_MOLES",         label: "Partes Moles",        color: "#2DD4BF", sub: "Tecidos superficiais" },
   { id: "MAMARIA",               label: "Mamas e axilas",      color: "#F43F5E", sub: "BI-RADS" },
   { id: "PELVE_FEMININA",        label: "Pelve",               color: "#A855F7", sub: "Útero, ovários, anexos" },
   { id: "OBSTETRICA",            label: "Obstétrica",          color: "#EC4899", sub: "USG obstétrico" },
   { id: "DOPPLER_OBSTETRICO",    label: "Obstétrica com Doppler", color: "#F97316", sub: "Obstétrica e avaliação hemodinâmica" },
   { id: "MORFOLOGICO",           label: "Morfológico",         color: "#8B5CF6", sub: "Anatomia fetal completa" },
-  { id: "VIAS_URINARIAS",        label: "Vias Urinárias",      color: "#06B6D4", sub: "Rins, ureteres, bexiga" },
+  { id: "CERVICOMETRIA",        label: "Cervicometria",       color: "#C026D3", sub: "Comprimento do colo uterino" },
   { id: "MUSCULOESQUELETICO_V2", label: "Musculoesquelético",  color: "#84CC16", sub: "Articulações e partes moles" },
-  { id: "CERVICAL",              label: "Cervical",            color: "#0EA5E9", sub: "Linfonodos, massas e cistos cervicais" },
-  { id: "DOPPLER_VENOSO_MMII",   label: "Doppler Venoso MMII", color: "#3B82F6", sub: "TVP / insuficiência venosa" },
-  { id: "DOPPLER_ARTERIAL_MMII", label: "Doppler Arterial MMII", color: "#EF4444", sub: "Doença arterial periférica" },
-  { id: "DOPPLER_RENAL",         label: "Doppler Renal",       color: "#06B6D4", sub: "Artérias renais" },
-  { id: "GLANDULAS_SALIVARES",   label: "Glândulas Salivares", color: "#14B8A6", sub: "Parótidas e submandibulares" },
+  { id: "TRANSFONTANELA",       label: "Transfontanela",      color: "#65A30D", sub: "Ultrassonografia transfontanelar" },
+  { id: "OCULAR",               label: "Ocular",              color: "#4F46E5", sub: "Ultrassonografia ocular" },
+  { id: "LIVRE",                label: "Laudo Livre",         color: "#64748B", sub: "Exame sem categoria específica" },
 ] as const;
 
 export type Category = (typeof CATS)[number];

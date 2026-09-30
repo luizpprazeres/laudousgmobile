@@ -163,7 +163,7 @@ function LoginForm() {
         </Link>
       </p>
       <p className="text-center text-xs text-gray-300 dark:text-gray-600 mt-5 leading-relaxed">
-        Plano gratuito: 10 laudos vitalício · Essencial R$ 99,00/mês · Profissional R$ 169,90/mês
+        Plano gratuito: 30 laudos grátis · Essencial R$ 99,00/mês · Profissional R$ 169,90/mês
       </p>
     </div>
   )

@@ -95,6 +95,8 @@ import { useShareIntentContext } from "expo-share-intent";
 import { FeedbackCard } from "@/features/feedback/FeedbackCard";
 import { ImageAnalysisSheet } from "@/features/imaging/ImageAnalysisSheet";
 import { VenousSchemeView } from "@/features/generate/VenousSchemeView";
+import { AnatomicalSchemeView } from "@/features/generate/AnatomicalSchemeView";
+import type { VisualCategory, VisualMarker } from "@/features/generate/visualSchemeState";
 import { dopplerRequestFields, type DopplerMode } from "@/features/generate/dopplerMode";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
@@ -106,6 +108,7 @@ export default function GenerateScreen() {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   const [state, dispatch] = useReducer(generateReducer, initialGenerateState);
+  const [visualDraft, setVisualDraft] = useState<{ reportId: string; category: VisualCategory; markers: VisualMarker[] } | null>(null);
   const [tab, setTab] = useState<Tab>("achados");
   const [cat, setCat] = useState<Category>(CATS[0]);
   const [dopplerMode, setDopplerMode] = useState<DopplerMode>("combined");
@@ -316,6 +319,7 @@ export default function GenerateScreen() {
 
   const startGenerate = async () => {
     if (state.kind !== "ready") return;
+    setVisualDraft(null);
     setTab("laudo");
     dispatch({ type: "GENERATE" });
     const ac = new AbortController();
@@ -786,8 +790,11 @@ export default function GenerateScreen() {
               onOpenReport={(id) => router.push(`/report/${id}`)}
               onReset={() => {
                 dispatch({ type: "RESET" });
+                setVisualDraft(null);
                 setTab("achados");
               }}
+              visualDraft={visualDraft}
+              onVisualChange={setVisualDraft}
             />
           )}
 
@@ -1322,6 +1329,8 @@ type LaudoProps = {
   onResume: () => void;
   onOpenReport: (id: string) => void;
   onReset: () => void;
+  visualDraft: { reportId: string; category: VisualCategory; markers: VisualMarker[] } | null;
+  onVisualChange: (draft: { reportId: string; category: VisualCategory; markers: VisualMarker[] }) => void;
 };
 
 const SAVE_LABEL: Record<"idle" | "saving" | "saved" | "error", string> = {
@@ -1347,6 +1356,8 @@ function LaudoBody({
   onResume,
   onOpenReport,
   onReset,
+  visualDraft,
+  onVisualChange,
 }: LaudoProps) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
@@ -1459,6 +1470,16 @@ function LaudoBody({
             map={state.venousMap}
             reportId={state.reportId}
             assetVersion={state.venousAssetVersion}
+          />
+        ) : null}
+
+        {state.kind === "done" &&
+        (state.structured?.categoria_detectada === "TIREOIDE" || state.structured?.categoria_detectada === "MAMARIA") ? (
+          <AnatomicalSchemeView
+            category={state.structured.categoria_detectada}
+            reportId={state.reportId}
+            markers={visualDraft?.reportId === state.reportId && visualDraft.category === state.structured.categoria_detectada ? visualDraft.markers : []}
+            onChange={(markers) => onVisualChange({ reportId: state.reportId, category: state.structured!.categoria_detectada as VisualCategory, markers })}
           />
         ) : null}
 

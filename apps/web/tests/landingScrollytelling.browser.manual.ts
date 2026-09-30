@@ -123,8 +123,20 @@ async function checkPricing(page: any, viewport: Viewport) {
   for (const plan of ['Gratuito', 'Essencial', 'Profissional']) {
     assert.equal(await section.getByText(plan, { exact: true }).count(), 1, `${viewport.width}: plano ${plan} ausente/duplicado`)
   }
+  assert.equal(await section.getByText('30 laudos grátis', { exact: true }).count(), 1, `${viewport.width}: oferta gratuita diferente de 30 laudos`)
+  assert.equal(await section.getByText('Esquemas visuais (mama, tireoide e mapa venoso)', { exact: true }).count(), 1, `${viewport.width}: esquemas visuais anunciados não conferem`)
+  assert.equal(await section.locator('[data-landing-free-trial-copy]').count(), 1, `${viewport.width}: explicação da oferta gratuita ausente/duplicada`)
+  const trialCopy = await section.locator('[data-landing-free-trial-copy]').innerText()
+  assert.match(trialCopy, /Teste na sua rotina do dia a dia/)
+  assert.match(trialCopy, /um turno inteiro/i)
+  assert.doesNotMatch(trialCopy, /10 laudos/i, `${viewport.width}: copy antiga de 10 laudos reapareceu`)
+  assert.doesNotMatch(await page.locator('main').innerText(), /10 laudos/i, `${viewport.width}: promessa pública de 10 laudos ainda aparece na landing`)
   assert.equal(await section.locator('a[href="/signup"]').count(), 1, `${viewport.width}: CTA gratuito incorreto`)
   assert.equal(await section.locator('a[href="/precos"]').count(), 2, `${viewport.width}: CTAs de assinatura incorretos`)
+  const finalCta = page.locator('[data-landing-section="cta-final"]')
+  assert.match(await finalCta.innerText(), /Teste na sua rotina do dia a dia/)
+  assert.match(await finalCta.innerText(), /30 laudos grátis/)
+  assert.doesNotMatch(await finalCta.innerText(), /10 laudos/i, `${viewport.width}: CTA final conserva a oferta antiga`)
 }
 
 async function checkSpecialties(page: any, viewport: Viewport) {
@@ -217,13 +229,14 @@ async function checkSchemes(page: any, viewport: Viewport) {
     }
   }
   assert.equal(await section.locator('[data-scheme-card="fetal"]').count(), 0, 'posição fetal removida reapareceu')
+  assert.equal(await section.getByText('Em breve', { exact: true }).count(), 0, `${viewport.width}: mapa venoso ainda aparece como planejado`)
   const visibleCards = section.locator('[data-scheme-card]:visible')
   for (const card of await visibleCards.all()) {
     assert.match(await card.innerText(), /Caso fictício/i, 'esquema sem identificação demonstrativa')
     const id = await card.getAttribute('data-scheme-card')
     assert.match(await card.innerText(), id === 'venoso' ? /TVP · Veia femoral direita/ : /N1[\s\S]*C1/)
     assert.equal(await card.locator('img').getAttribute('src'), `/landing/esquemas/demo-${id}.svg`)
-    if (id === 'venoso') assert.match(await card.innerText(), /Em breve/)
+    if (id === 'venoso') assert.match(await card.innerText(), /Mapa venoso/)
   }
   const images = section.locator('img[alt]')
   assert.ok(await images.count() >= ids.length, `${viewport.width}: imagens de esquema faltando`)

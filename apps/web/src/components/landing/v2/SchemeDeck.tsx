@@ -17,12 +17,12 @@ import { useReducedMotionSafe } from './useReducedMotionSafe'
  * `reunidos` → `abertos`). Tocar num card o traz para a frente.
  */
 
-type Card = { id: string; title: string; caption: string; src: string; w: number; h: number; alt: string; findings: string[]; soon?: boolean }
+type Card = { id: string; title: string; caption: string; src: string; w: number; h: number; alt: string; findings: string[] }
 
 const CARDS: Card[] = [
   { id: 'mama', title: 'Mamas', caption: 'Mama direita', src: '/landing/esquemas/demo-mama.svg', w: 520, h: 470, alt: 'Caso fictício: mama direita com nódulo às 4 horas e cisto às 8 horas', findings: ['N1 · Nódulo às 4h · 1,2 cm', 'C1 · Cisto às 8h · 0,8 cm'] },
   { id: 'tireoide', title: 'Tireoide', caption: 'Lobo esquerdo', src: '/landing/esquemas/demo-tireoide.svg', w: 400, h: 540, alt: 'Caso fictício: lobo esquerdo da tireoide com nódulo no terço médio e cisto no terço inferior', findings: ['N1 · Terço médio · 1,4 cm', 'C1 · Terço inferior · 0,6 cm'] },
-  { id: 'venoso', title: 'Mapa venoso', caption: 'Membro direito', src: '/landing/esquemas/demo-venoso.svg', w: 420, h: 800, alt: 'Caso fictício: trombose venosa profunda na veia femoral direita, destacada em vinho', findings: ['TVP · Veia femoral direita', 'Exemplo de trombose oclusiva'], soon: true },
+  { id: 'venoso', title: 'Mapa venoso', caption: 'Membro direito', src: '/landing/esquemas/demo-venoso.svg', w: 420, h: 800, alt: 'Caso fictício: trombose venosa profunda na veia femoral direita, destacada em vinho', findings: ['TVP · Veia femoral direita', 'Exemplo de trombose oclusiva'] },
 ]
 
 /**
@@ -69,11 +69,7 @@ function CardFace({ card }: { card: Card }) {
     <>
       <div className="flex items-center justify-between bg-[#161B22] px-4 py-3">
         <span className="text-[0.86rem] font-semibold text-white">{card.title}</span>
-        {card.soon ? (
-          <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[0.68rem] font-semibold text-emerald-300">Em breve</span>
-        ) : (
-          <span className="text-[0.72rem] text-slate-400">{card.caption}</span>
-        )}
+        <span className="text-[0.72rem] text-slate-400">{card.caption}</span>
       </div>
       <div className="relative bg-white">
         <Image
@@ -125,7 +121,7 @@ export default function SchemeDeck() {
             Esquemas visuais que nascem do seu laudo.
           </h2>
           <p className="mt-5 max-w-[30rem] text-[1.02rem] leading-relaxed text-slate-300">
-            Nódulos, cistos e suas localizações ficam mais fáceis de visualizar. Veja recortes preenchidos com casos fictícios de mama e tireoide — e uma prévia do mapa venoso, em breve.
+            Nódulos, cistos e suas localizações ficam mais fáceis de visualizar. Veja exemplos preenchidos com casos fictícios de mama, tireoide e Doppler venoso.
           </p>
         </div>
 

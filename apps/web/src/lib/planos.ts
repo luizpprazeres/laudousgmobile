@@ -26,7 +26,7 @@ export type LinhaComparativa = {
 }
 
 export const COMPARATIVO: LinhaComparativa[] = [
-  { label: 'Laudos', free: '10 vitalício', essencial: '800/mês', profissional: 'Ilimitados' },
+  { label: 'Laudos', free: '30 grátis', essencial: '800/mês', profissional: 'Ilimitados' },
   { label: 'Categorias de USG', free: true, essencial: true, profissional: true },
   { label: 'Geração com e sem IA', free: true, essencial: true, profissional: true },
   { label: 'Link de sala (auxiliar)', free: false, essencial: true, profissional: true },

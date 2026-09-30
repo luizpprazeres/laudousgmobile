@@ -159,7 +159,7 @@ export default function PrecosPage() {
                 <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">R$&nbsp;0</span>
                 <span className="text-sm text-gray-400 dark:text-gray-500 pb-0.5">/para sempre</span>
               </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">10 laudos vitalício</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">30 laudos grátis</p>
             </div>
 
             <ul className="flex flex-col gap-2.5 flex-1">

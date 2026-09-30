@@ -418,7 +418,7 @@ export function ModeloEditor({ categoria: categoriaInicial = "OBSTETRICA" }: Pro
           </View>
         ) : (
           <Text style={{ color: t.textSec, fontSize: 13, marginBottom: 14, lineHeight: 19 }}>
-            Este é o modelo padrão do laudo obstétrico. Toque em qualquer frase para
+            Este é o modelo padrão desta categoria. Toque em qualquer frase para
             mudar a redação, tirá-la do laudo, ou acrescentar outra depois dela.
           </Text>
         )}

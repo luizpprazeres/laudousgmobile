@@ -400,7 +400,13 @@ render: (f, o) =>
 ];
 
 export function modeloNormalDe(categoria: string): EntradaModeloNormal | undefined {
-  return MODELOS_NORMAIS.find((m) => m.categoria === categoria);
+  // O banco e os apps usam MUSCULOESQUELETICO_V2. A Web estruturada ainda
+  // conserva o id legado MUSCULOESQUELETICO. Ambos representam o mesmo
+  // contrato clínico; sem este alias a Biblioteca dos apps listava a categoria
+  // canônica, mas não conseguia carregar seu modelo normal.
+  const categoriaDoRegistro =
+    categoria === "MUSCULOESQUELETICO_V2" ? "MUSCULOESQUELETICO" : categoria;
+  return MODELOS_NORMAIS.find((m) => m.categoria === categoriaDoRegistro);
 }
 
 export function categoriasComModeloNormal(): {

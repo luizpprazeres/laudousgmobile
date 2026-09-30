@@ -5,6 +5,7 @@ import type {
   SanityResult,
 } from "@/shared";
 import type { MapaVenoso } from "@laudousg/schemes";
+import { venousSchemeFromEvent } from "./venousSchemeEvent";
 
 /**
  * Máquina de estado da tela Generate.
@@ -177,12 +178,14 @@ function applySse(
   // aceita sanity também no done, senão o card nunca aparece (review Dex1).
   if (state.kind === "done") {
     if (ev.type === "sanity") return { ...state, sanity: ev.result };
-    if (ev.type === "scheme")
-      return {
+    if (ev.type === "scheme") {
+      const scheme = venousSchemeFromEvent(ev);
+      return scheme ? {
         ...state,
-        venousMap: ev.map as MapaVenoso,
-        venousAssetVersion: ev.asset_version,
-      };
+        venousMap: scheme.map,
+        venousAssetVersion: scheme.assetVersion,
+      } : state;
+    }
     return state;
   }
   if (state.kind !== "generating") return state;

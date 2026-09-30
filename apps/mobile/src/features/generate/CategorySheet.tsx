@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Sheet } from "@/ui/Sheet";
 import { CATS, Category, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
@@ -14,9 +15,11 @@ type Props = {
 
 export function CategorySheet({ open, onClose, current, onPick }: Props) {
   const t = useColorTokens();
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(t), [t]);
   return (
-    <Sheet open={open} onClose={onClose} title="Escolher especialidade" height={620}>
+    <Sheet open={open} onClose={onClose} title="Escolher especialidade" height={Math.min(620, Math.max(260, windowHeight - insets.bottom - 40))}>
       <View style={{ paddingHorizontal: 12, paddingTop: 4, paddingBottom: 32 }}>
         {CATS.map((cat) => {
           const active = cat.id === current;

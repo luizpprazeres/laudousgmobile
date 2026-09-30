@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Termos de Uso" updatedAt="19 de junho de 2026">
+    <LegalPage title="Termos de Uso" updatedAt="30 de setembro de 2026">
       <p>
         Estes Termos de Uso regem o acesso e a utilização da plataforma <strong>LaudoUSG</strong>.
         Ao criar uma conta ou usar o serviço, você declara ter lido e concordado com estes termos.
@@ -48,7 +48,7 @@ export default function TermsPage() {
         <h2>4. Planos e pagamento</h2>
         <ul>
           <li>
-            O plano <strong>Gratuito</strong> oferece 10 laudos vitalícios, sem cobrança.
+            O plano <strong>Gratuito</strong> oferece 30 laudos, sem cobrança.
           </li>
           <li>
             Os planos <strong>Essencial</strong> e <strong>Profissional</strong> são assinaturas

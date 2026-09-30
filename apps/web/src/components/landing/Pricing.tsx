@@ -48,7 +48,10 @@ export default function Pricing() {
         <h2 className="mb-3 font-barlow text-[2rem] font-extrabold leading-[1.12] tracking-[-0.025em] text-white sm:text-[2.5rem]">
           Escolha o plano ideal<br />para a sua rotina
         </h2>
-        <p className="mb-12 text-base text-slate-400">Comece grátis. Escale conforme sua demanda. Cobrança mensal, sem fidelidade.</p>
+        <p data-landing-free-trial-copy className="mb-12 max-w-3xl text-base leading-relaxed text-slate-400">
+          Teste na sua rotina do dia a dia. São 30 laudos grátis — o bastante para acompanhar um turno inteiro e sentir o ganho de tempo na prática.
+          Depois, escolha o plano que acompanha a sua demanda, sem fidelidade.
+        </p>
 
         {/* Essencial central e maior; o destaque vem da borda e da escala, não de brilho. */}
         <div className="grid grid-cols-1 items-center gap-4 lg:grid-cols-[1fr_1.18fr_1fr]">
@@ -60,7 +63,7 @@ export default function Pricing() {
             </div>
             <p className="mb-4 text-[0.8125rem] text-slate-400">para sempre</p>
             <div className="mb-4 h-px bg-white/[0.08]" />
-            {['10 laudos vitalício', 'Link para auxiliar de sala', 'Exportação .docx'].map((f) => (
+            {['30 laudos grátis', 'Link para auxiliar de sala', 'Exportação .docx'].map((f) => (
               <PlanFeature key={f}>{f}</PlanFeature>
             ))}
             <Link
@@ -88,7 +91,7 @@ export default function Pricing() {
               'Todas as categorias de exame',
               'Calibração ao seu estilo',
               'Sala do Auxiliar personalizada',
-              'Esquemas visuais (mama, tireoide, miomas)',
+              'Esquemas visuais (mama, tireoide e mapa venoso)',
             ].map((f) => (
               <PlanFeature key={f} bright>{f}</PlanFeature>
             ))}

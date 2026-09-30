@@ -7,8 +7,7 @@ import { PlansLink, SignupCta } from './Cta'
  * Ordem no celular: frase, nome, oferta — a frase não é interrompida pelos
  * botões. No desktop a oferta sobe para a direita da primeira linha.
  *
- * A oferta de entrada é a mesma de hoje (10 laudos grátis, sem cartão),
- * repetida do plano Gratuito para não inventar condição nova.
+ * Reforça a oferta gratuita de 30 laudos e convida o médico a testar na rotina.
  */
 export default function FinalCta() {
   return (
@@ -18,7 +17,7 @@ export default function FinalCta() {
           id="cta-final-title"
           className="font-barlow text-[2.4rem] font-extrabold leading-[1.02] tracking-[-0.03em] text-slate-950 [text-wrap:balance] sm:text-[3.4rem] lg:col-span-8 lg:row-start-1 lg:self-end xl:text-[4.2rem]"
         >
-          Faça o próximo laudo no<span className="sr-only"> LaudoUSG.</span>
+          Teste na sua rotina do dia a dia.<span className="sr-only"> LaudoUSG.</span>
         </h2>
 
         {/* Nome em tamanho de assinatura, nas cores e pesos do logotipo. */}
@@ -31,7 +30,7 @@ export default function FinalCta() {
 
         <div className="mt-10 lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:mt-0 lg:self-end lg:pb-2">
           <p className="max-w-[26rem] text-[1rem] leading-relaxed text-slate-600">
-            Comece com 10 laudos grátis, sem cartão. Assine quando fizer sentido para a sua rotina.
+            Comece com 30 laudos grátis, sem cartão. Use durante um turno inteiro e veja quanto tempo volta para você. Assine quando fizer sentido para a sua rotina.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <SignupCta size="lg" />
