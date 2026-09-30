@@ -27,13 +27,13 @@ const CARDS: Card[] = [
 
 /**
  * Posição aberta de cada card. O `x`/`y` em % do transform é relativo ao
- * PRÓPRIO card (não à cena): -90% a 90% abre o baralho em diagonal com
+ * PRÓPRIO card (não à cena): -106% a 106% abre o baralho em diagonal com
  * sobreposição parcial, sem esconder um card inteiro atrás do outro.
  */
 const OPEN = [
-  { x: -90, y: 8, r: -7 },
+  { x: -106, y: 8, r: -7 },
   { x: 0, y: -6, r: -2 },
-  { x: 90, y: -8, r: 8 },
+  { x: 106, y: -8, r: 8 },
 ]
 
 function DeckCard({
@@ -54,7 +54,7 @@ function DeckCard({
       onClick={onSelect}
       style={{ x, y, rotate, zIndex: active ? 20 : 10 + index }}
       whileHover={{ scale: 1.02 }}
-      className={`absolute inset-0 m-auto h-fit w-[min(34%,320px)] overflow-hidden rounded-[18px] border text-left transition-[box-shadow,border-color] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+      className={`absolute inset-0 m-auto h-fit w-[min(31%,300px)] overflow-hidden rounded-[18px] border text-left transition-[box-shadow,border-color] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
         active ? 'border-white/25 shadow-[0_60px_120px_-40px_rgba(0,0,0,0.9),0_0_0_1px_rgba(52,211,153,0.35)]' : 'border-white/10 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.85)]'
       }`}
       data-scheme-card={card.id}
@@ -113,7 +113,7 @@ export default function SchemeDeck() {
       ref={ref}
       data-landing-section="esquemas"
       data-nav-dark
-      className="relative isolate -mt-[6vw] overflow-hidden bg-[#0B0F14] pb-24 pt-[calc(6vw+6rem)] text-white [clip-path:polygon(0_6vw,100%_0,100%_100%,0_100%)] lg:pb-32"
+      className="relative isolate -mt-[6vw] overflow-hidden bg-[#111614] pb-24 pt-[calc(6vw+6rem)] text-white [clip-path:polygon(0_6vw,100%_0,100%_100%,0_100%)] lg:pb-32"
     >
       {/* Fonte de luz à esquerda, fora da tela. */}
       <div aria-hidden className="pointer-events-none absolute -left-[20%] top-1/4 -z-10 h-[70%] w-[70%] rounded-full bg-[radial-gradient(closest-side,rgba(255,255,255,0.10),transparent)]" />

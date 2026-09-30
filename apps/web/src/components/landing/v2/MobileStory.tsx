@@ -165,8 +165,12 @@ function Scene({ progress, still, stepTitle, activeStep, videoRef, onLoaded, fai
     const w = windows.find(([a, b]) => t >= a && t <= b)
     return w ? Math.min(1, (t - w[0]) / ((w[1] - w[0]) * .2)) : 0
   })
-  const monitorX = useTransform(progress, (v) => `${24 * (1 - Math.min(local(v) / 0.75, 1))}%`)
-  const monitorScale = useTransform(progress, (v) => 0.8 + 0.2 * Math.min(local(v) / 0.75, 1))
+  // Sala: o monitor já nasce no tamanho final e entra da esquerda para a direita,
+  // no mesmo trecho de rolagem em que o telefone recua. Opacidade e posição seguem
+  // a rolagem (nos dois sentidos), sem salto de tempo na troca de etapa.
+  const salaIn = (v: number) => { const t = Math.min(1, local(v) / 0.45); return t * t * (3 - 2 * t) }
+  const monitorX = useTransform(progress, (v) => `${-14 * (1 - salaIn(v))}%`)
+  const monitorOpacity = useTransform(progress, (v) => salaIn(v))
   const xNumber = useTransform(phoneX, v => parseFloat(v))
   const yNumber = useTransform(phoneY, v => parseFloat(v))
   const scaleSpeed = useVelocity(phoneScale)
@@ -179,11 +183,11 @@ function Scene({ progress, still, stepTitle, activeStep, videoRef, onLoaded, fai
   const sala = STEPS[SALA]
   return (
     <div ref={sceneRef} className={styles.scene} role="group" aria-label={`Demonstração do aplicativo LaudoUSG: ${stepTitle}`}>
-      <motion.div className={styles.monitor} style={{ x: monitorX, scale: monitorScale }} initial={{ opacity: 0 }} animate={{ opacity: activeStep === SALA ? 1 : 0 }} transition={{ duration: still ? 0 : 0.3 }} data-screen={sala.id}>
+      <motion.div className={styles.monitor} style={still ? { opacity: activeStep === SALA ? 1 : 0 } : { x: monitorX, opacity: monitorOpacity }} data-screen={sala.id}>
         <div className={styles.monitorScreen}>
           <Image src={sala.src} alt={sala.alt} fill sizes="(max-width: 899px) 150vw, 1400px" className={styles.monitorImage} />
         </div>
-        <span className={styles.monitorChin} aria-hidden="true">iMac</span>
+        <span className={styles.monitorChin} aria-hidden="true" />
         <span className={styles.monitorStand} aria-hidden="true" />
       </motion.div>
 
@@ -290,6 +294,12 @@ export default function MobileStory() {
               >
                 <h3 className={styles.stepTitle}>{atual.title}</h3>
                 <p className={styles.stepBody}>{atual.body}</p>
+                {/* Fim da trilha: quem se convenceu no pico vai direto à oferta. */}
+                {atual.id === 'sala' && (
+                  <a href="#precos" data-cta="plans" className={styles.salaPlans}>
+                    Ver planos <span aria-hidden>→</span>
+                  </a>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>

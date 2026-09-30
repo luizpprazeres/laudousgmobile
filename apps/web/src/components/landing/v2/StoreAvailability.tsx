@@ -10,7 +10,7 @@ export default function StoreAvailability() {
       ].map((store) => (
         <div key={store.name} className="flex min-w-0 items-center gap-2 rounded-xl border border-white/20 bg-black/25 px-2 py-3 sm:px-3 text-white">
           <Image src={store.icon} alt="" width={25} height={25} className="shrink-0" />
-          <span className="leading-tight"><span className="block whitespace-nowrap text-[0.62rem] sm:text-[0.68rem] text-slate-300">Disponível em breve</span><span className="block text-[0.95rem] sm:text-[1rem] font-semibold">{store.name}</span></span>
+          <span className="leading-tight"><span className="block whitespace-nowrap text-[0.7rem] sm:text-[0.72rem] text-slate-300">Disponível em breve</span><span className="block text-[0.95rem] sm:text-[1rem] font-semibold">{store.name}</span></span>
         </div>
       ))}
     </div>

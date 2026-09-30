@@ -34,7 +34,7 @@ function Illustration({ index }: { index: number }) {
   </div>
   if (index === 2) return <div className={styles.illustration}>
     <div className={styles.sampleHeader}><span>{TRISOMY_DEMO.caso}</span></div>
-    <dl className={styles.trisomies}>{TRISOMY_DEMO.riscos.map(r => <div key={r.id}><dt>Trissomia {r.id}</dt><dd>{r.risco}</dd></div>)}</dl>
+    <dl className={styles.trisomies}>{TRISOMY_DEMO.riscos.map(r => <div key={r.id}><dt>{r.rotulo}</dt><dd>{r.risco}</dd></div>)}</dl>
     <Excerpt lines={TRISOMY_DEMO.trecho} />
   </div>
   return <div className={styles.illustration}>
@@ -84,7 +84,8 @@ export default function CalculatorStory() {
   const staticMode = reduce || compact
   const { scrollYProgress } = useScroll({ target: section, offset: ['start start', 'end end'] })
   const progress = useTransform(scrollYProgress, [0, .12, .88, 1], [0, 0, 3, 3])
-  useMotionValueEvent(progress, 'change', v => setActive(Math.max(0, Math.min(3, Math.floor(v + .1)))))
+  // Arredondar: o índice acompanha a carta que domina o deck, não a que está saindo.
+  useMotionValueEvent(progress, 'change', v => setActive(Math.max(0, Math.min(3, Math.round(v)))))
   const select = (index: number) => {
     if (staticMode) { document.getElementById(`calculadora-${ITEMS[index].id}`)?.scrollIntoView({ behavior: 'auto', block: 'center' }); return }
     const el = section.current

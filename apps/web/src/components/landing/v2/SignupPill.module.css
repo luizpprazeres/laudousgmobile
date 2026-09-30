@@ -8,7 +8,11 @@
   margin-left: 8px;
   transition: max-width 350ms cubic-bezier(.4, 0, .2, 1), margin-left 350ms cubic-bezier(.4, 0, .2, 1);
 }
-@media (hover: hover) and (pointer: fine) and (min-width: 640px) {
+/* A partir de 1024px o CTA principal tem sempre texto: só o ícone parecia "perfil/entrar". */
+@media (min-width: 1024px) {
+  .pill { padding-right: 20px; }
+}
+@media (hover: hover) and (pointer: fine) and (min-width: 640px) and (max-width: 1023px) {
   .label { max-width: 0; margin-left: 0; }
   .pill:hover, .pill:focus-visible { padding-right: 20px; }
   .pill:hover .label, .pill:focus-visible .label { max-width: 160px; margin-left: 8px; }

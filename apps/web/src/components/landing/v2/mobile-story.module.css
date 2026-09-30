@@ -487,7 +487,7 @@
 .transferLegend span { display: inline-flex; align-items: center; gap: 5px; }
 @media (min-width: 900px) {
   .section[data-stage="sala"] .stage { grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.35fr); column-gap: 2rem; }
-  .section[data-stage="sala"] .monitor { width: 100%; }
+  .monitor { width: 100%; }
   .section[data-stage="sala"] .lead { font-size: clamp(1.8rem, 3vw, 2.7rem); }
 }
 @media (max-width: 899px) {
@@ -495,8 +495,13 @@
 }
 @media (prefers-reduced-motion: reduce) { .stage { transition: none; } }
 
-/* Camera crop is confined to the scene so zoom never covers copy or controls. */
-.scene { overflow: clip; }
+/*
+ * O zoom só é recortado na vertical (nunca cobre a copy acima dele no celular).
+ * Na horizontal o telefone já cabe na cena por construção (categoryZoom), e
+ * recortar ali cortava reto o brilho e a sombra do aparelho: aparecia uma
+ * linha vertical entre o telefone e o texto.
+ */
+.scene { overflow-x: visible; overflow-y: clip; }
 .categoryWindow { position: absolute; inset: 20% 0 0; overflow: hidden; background: #09090f; }
 .categoryList { position: absolute; top: -25%; left: 0; width: 100%; height: 125%; }
 .touchPointer { position: absolute; z-index: 8; pointer-events: none; color: #059669; filter: drop-shadow(0 2px 3px #0008); }
@@ -508,22 +513,22 @@
 .filmControls button:focus-visible { outline: 2px solid #6ee7b7; outline-offset: 2px; }
 
 /* Sala em tamanho editorial: o recorte termina junto à seção. */
-.section[data-stage="sala"] .monitor {
+.monitor {
   top: 22%; left: 4%; right: auto; translate: none;
   width: 100%;
   mask-image: linear-gradient(to right, #000 35%, transparent 96%);
   -webkit-mask-image: linear-gradient(to right, #000 35%, transparent 96%);
 }
-.section[data-stage="sala"] .monitorScreen { width: max(145%, 1100px); border-width: 7px; }
-.section[data-stage="sala"] .monitorChin { display: none; }
+.monitorScreen { width: max(145%, 1100px); border-width: 7px; }
+.monitorChin { display: none; }
 @media (min-width: 900px) {
   .section[data-stage="sala"] .stage { max-width: none; padding-right: 0; padding-bottom: 0; }
   .section[data-stage="sala"] .scene { height: 100%; align-self: stretch; }
   .section[data-stage="sala"] .nav { padding-bottom: 2rem; }
 }
 @media (max-width: 899px) {
-  .section[data-stage="sala"] .monitor { top: 15%; left: 0; width: 100%; }
-  .section[data-stage="sala"] .monitorScreen { width: max(150%, 650px); }
+  .monitor { top: 15%; left: 0; width: 100%; }
+  .monitorScreen { width: max(150%, 650px); }
   .section[data-stage="sala"] .transferLegend { top: 0; }
 }
 
@@ -535,9 +540,24 @@
   .scene { --phone-h: max(140px, calc(var(--viewport) - 13rem)); }
 }
 
-/* Na Sala, o papel desaparece no grafite, sem receber a luz verde da cena. */
-.section[data-stage="sala"] .stage::before,
-.section[data-stage="sala"] .scene::before { background: none; }
+/*
+ * Luz em duas camadas fixas no stage, independentes do telefone e do texto:
+ * ::before é a luz verde das etapas do celular, ::after a luz neutra da Sala.
+ * A troca é um crossfade de opacidade, nunca uma troca seca de background.
+ */
+.stage::before { transition: opacity 900ms cubic-bezier(.4, 0, .2, 1); }
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms cubic-bezier(.4, 0, .2, 1);
+}
+.section[data-stage="sala"] .stage::before { opacity: 0; }
+.section[data-stage="sala"] .stage::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .stage::before, .stage::after { transition: none; } }
 
 /* Luz ampla, sem terminar nas bordas do recorte do telefone. */
 .stage::before {
@@ -547,20 +567,20 @@
 .scene::before { display: none; }
 
 /* Sala: alumínio escuro, vidro, câmera e pedestal de um desktop Mac. */
-.section[data-stage="sala"] .monitor {
+.monitor {
   top: 12%; left: 5%; width: 108%;
   filter: drop-shadow(-20px 28px 24px rgb(0 0 0 / .4));
 }
-.section[data-stage="sala"] .monitorScreen {
+.monitorScreen {
   width: 100%; border: 12px solid #171c1b; border-top-width: 24px;
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -1px 0 #b7c2bf66, -2px 0 0 #71817a55, 0 0 60px #a8c6b412;
 }
-.section[data-stage="sala"] .monitor::before {
+.monitor::before {
   content: ''; position: absolute; top: 9px; left: 50%; width: 6px; height: 6px;
   background: #080c0b; border: 1px solid #51655e; border-radius: 50%; z-index: 3;
 }
-.section[data-stage="sala"] .monitorChin {
+.monitorChin {
   display: flex; width: 100%; height: 42px; margin: 0; align-items: center; justify-content: center;
   color: #b4bfba; font-size: 13px; letter-spacing: .04em;
   border-radius: 0 0 16px 16px; border-bottom: 1px solid #a0afa750;
@@ -571,12 +591,82 @@
   clip-path: polygon(20% 0, 80% 0, 86% 85%, 100% 93%, 100% 100%, 0 100%, 0 93%, 14% 85%);
   background: linear-gradient(180deg, #202a25, #74867b 86%, #9aa9a0 92%, #303e35);
 }
-.section[data-stage="sala"] .stage::before {
+.stage::after {
+  left: calc((100% - 100vw) / 2); right: calc((100% - 100vw) / 2);
   background: radial-gradient(ellipse 40% 45% at 76% 50%, rgb(179 204 188 / .10), transparent 100%);
 }
 @media (max-width: 899px) {
-  .section[data-stage="sala"] .monitor { top: 10%; left: 3%; width: 145%; }
-  .section[data-stage="sala"] .monitorScreen { width: 100%; border-width: 7px; border-top-width: 18px; }
-  .section[data-stage="sala"] .monitorChin { height: 26px; font-size: 10px; }
+  .monitor { top: 10%; left: 3%; width: 145%; }
+  .monitorScreen { width: 100%; border-width: 7px; border-top-width: 18px; }
+  .monitorChin { height: 26px; font-size: 10px; }
   .monitorStand { height: 45px; }
+}
+
+/*
+ * Câmera no desktop (crítica 28/09): o recorte do zoom não pode desenhar uma
+ * caixa no meio da tela. A cena se estende até as bordas do stage sticky
+ * (logo abaixo do header e no fim da viewport): o corte vertical coincide com
+ * as bordas da tela e some; na horizontal não há recorte.
+ */
+@media (min-width: 900px) {
+  .section:not(.static) .scene {
+    align-self: stretch;
+    height: auto;
+    margin-block: calc(-1 * clamp(1rem, 3svh, 2.5rem));
+  }
+
+  /*
+   * Sala com a copy parada: mesmas colunas, mesmo gap, mesmo padding e mesmo
+   * título das outras etapas. Só o monitor cresce, para a direita.
+   */
+  .section[data-stage="sala"] .stage {
+    grid-template-columns: minmax(0, 30rem) minmax(0, 46rem);
+    column-gap: clamp(3rem, 7vw, 7.5rem);
+    max-width: 1440px;
+    padding: clamp(1rem, 3svh, 2.5rem) 3rem;
+  }
+  .section[data-stage="sala"] .lead { font-size: clamp(1.9rem, 3.4vw, 3.1rem); }
+  .monitor { width: calc(108% + 12vw); }
+}
+/* Telas largas: o monitor recupera a escala editorial sangrando mais à direita, sem mover a copy. */
+@media (min-width: 1800px) {
+  .monitor { width: calc(108% + 30vw); }
+}
+
+/* Atalho para os planos no fim da trilha (só no desktop, onde cabe no espaço já reservado). */
+.salaPlans {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 0.4rem;
+  color: var(--emerald-soft); font-weight: 600; font-size: 1rem; text-decoration: none;
+}
+.salaPlans:hover { color: #fff; }
+.salaPlans:focus-visible { outline: 2px solid #6ee7b7; outline-offset: 3px; border-radius: 6px; }
+@media (max-width: 899px) { .salaPlans { display: none; } }
+
+/*
+ * Sombra e brilho do telefone como gradientes, não box-shadow. Com o zoom
+ * (até 1,9×) o navegador trunca a cauda do desfoque do box-shadow, e sobre a
+ * luz do stage isso virava uma linha vertical que acompanhava o telefone.
+ * Um gradiente radial termina exatamente em zero: não há borda para aparecer.
+ * Posições equivalentes às da sombra anterior (luz vindo da direita).
+ */
+.phone {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.12),
+    inset 0 0 0 3px #080a09;
+}
+.phoneWrap::before,
+.phoneWrap::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+.phoneWrap::before {
+  inset: -6% -14% -12% -22%;
+  translate: -3% 4%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.28) 55%, rgb(0 0 0 / 0) 100%);
+}
+.phoneWrap::after {
+  inset: -4% -30% 30% 45%;
+  background: radial-gradient(closest-side, rgb(110 231 183 / 0.1), rgb(110 231 183 / 0) 100%);
 }

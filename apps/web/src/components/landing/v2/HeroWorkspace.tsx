@@ -46,7 +46,7 @@ export default function HeroWorkspace() {
             O laudo se escreve enquanto você <span className="text-emerald-600">examina.</span>
           </h1>
           <p className="mt-4 max-w-[34rem] text-[0.98rem] leading-relaxed text-slate-600 min-[360px]:mt-6 min-[360px]:text-[1.06rem]">
-            Marque os achados em cards por órgão. O laudo aparece redigido no seu estilo, pronto para revisar e copiar.
+            Marque os achados. O laudo aparece redigido no seu estilo, pronto para revisar e copiar.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-2 min-[360px]:mt-8">
             <SignupCta size="lg" />

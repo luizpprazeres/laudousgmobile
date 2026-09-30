@@ -95,7 +95,7 @@ export default function Specialties() {
           {CATEGORY_GROUPS.map((group) => (
             <div key={group.id} data-specialty-group={group.label}>
               <h3 className="mb-3 font-barlow text-[1.1rem] font-bold text-slate-950">{group.label}</h3>
-              <ul className="-mx-5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-2 sm:-mx-8 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <ul className="-mx-5 flex snap-x snap-mandatory scroll-px-5 gap-2.5 overflow-x-auto px-5 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {group.categories.map((id) => (
                   <Tile key={id} id={id} className="w-[78%] flex-none snap-start sm:w-[46%]" />
                 ))}

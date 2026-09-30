@@ -96,7 +96,7 @@
 
 .answer {
   padding: 0 1rem 1.3rem;
-  max-width: 44rem;
+  max-width: 38rem; /* ~72 caracteres por linha */
   color: #475569;
   font-size: 0.98rem;
   line-height: 1.7;

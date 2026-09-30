@@ -32,32 +32,32 @@
 .percentile > span { position: absolute; inset: 0 5%; background: #8aa493; border-radius: 10px; }
 .percentile > i { position: absolute; top: -6px; width: 3px; height: 18px; background: #1b5439; }
 .scaleLabels { display: flex; justify-content: space-between; font-size: 10px; margin: 10px 5% 0; }
-.illustration small { display: block; font-size: 10px; opacity: .75; margin-top: 18px; }
+.illustration small { display: block; font-size: 11px; opacity: .75; margin-top: 18px; }
 .gestation { display: flex; gap: 16px; align-items: center; margin: 12px 0; }
 .gestation > strong { font-size: 76px; font-weight: 550; line-height: 1.2; letter-spacing: -.04em; }
 .gestation > span { font-size: 15px; line-height: 1.7; }
 .dateRows { display: grid; gap: 8px; font-size: 12px; }
 .dateRows > span { display: flex; justify-content: space-between; gap: 10px; }
 .dateRows b { font-weight: 550; font-variant-numeric: tabular-nums; }
-.trisomies { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin: 18px 0 0; }
+.trisomies { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 18px 0 0; }
 .trisomies > div { padding: 12px 8px; border: 1px solid #ffffff30; border-radius: 12px; text-align: center; background: #ffffff08; }
-.trisomies dt { font-size: 10px; opacity: .8; }
+.trisomies dt { font-size: 12px; opacity: .8; }
 .trisomies dd { margin: 4px 0 0; font-size: clamp(14px,1.5vw,18px); font-weight: 550; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .peResult { margin: 16px 0 12px; }
 .peResult > span { display: block; font-size: 11px; opacity: .75; }
 .peResult > strong { display: block; font-size: clamp(34px,3.6vw,50px); font-weight: 550; line-height: 1.15; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
 .peMarkers { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 0; padding: 10px 0; border-block: 1px solid #ffffff20; }
-.peMarkers dt { font-size: 10px; opacity: .6; }
+.peMarkers dt { font-size: 11px; opacity: .6; }
 .peMarkers dd { margin: 2px 0 0; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .excerpt { margin: 16px 0 0; }
-.excerpt figcaption { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; opacity: .65; margin-bottom: 6px; }
+.excerpt figcaption { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .65; margin-bottom: 6px; }
 .excerpt blockquote { margin: 0; padding: 10px 12px; border-left: 2px solid #9bbca4; background: #ffffff0d; border-radius: 0 8px 8px 0; font-size: 11.5px; line-height: 1.5; }
 .excerpt p { margin: 0; }
 .excerpt p + p { margin-top: 4px; }
 .cardCopy { padding-top: 22px; border-top: 1px solid currentColor; border-color: color-mix(in srgb,currentColor 20%,transparent); }
 .cardCopy h3 { margin: 0 0 10px; font-size: clamp(21px,2vw,27px); font-weight: 650; line-height: 1.15; letter-spacing: -.025em; }
 .cardCopy p { margin: 0; font-size: 14px; line-height: 1.6; opacity: .85; }
-.reference { display: block; margin-top: 16px; font-size: 10px; line-height: 1.5; opacity: .75; }
+.reference { display: block; margin-top: 16px; font-size: 12px; line-height: 1.5; opacity: .75; }
 .static { height: auto; }
 .static .stage { position: relative; height: auto; min-height: 0; align-items: start; overflow: visible; padding-block: 80px; }
 .static .deck { height: auto; min-height: 0; display: grid; gap: 24px; }
@@ -85,4 +85,4 @@
  .navigation svg { transition: none; }
 }
 
-.cardTop > .availability { margin-left: auto; margin-right: 14px; font-family: inherit; font-size: 10px; font-weight: 500; line-height: 1.35; border: 1px solid currentColor; border-color: color-mix(in srgb,currentColor 25%,transparent); padding: 5px 8px; border-radius: 6px; max-width: 160px; }
+.cardTop > .availability { margin-left: auto; margin-right: 14px; font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.35; border: 1px solid currentColor; border-color: color-mix(in srgb,currentColor 25%,transparent); padding: 5px 8px; border-radius: 6px; max-width: 160px; }

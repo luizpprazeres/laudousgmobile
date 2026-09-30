@@ -88,10 +88,11 @@ const tri = calculateTrisomyWeb(TRISOMY_DEMO_FORM)
 
 export const TRISOMY_DEMO = {
   caso: 'Caso sintético B · 11 a 13+6 semanas, CCN 62 mm',
+  // Mesmos grupos do trecho do laudo e do app da FMF: T21 e T13/18 combinada.
+  // Mostrar T18 e T13 separadas ao lado do "trissomias 13/18" do laudo parecia contradição.
   riscos: [
-    { id: '21', risco: formatarRiscoExibicao(tri.result.t21, tri.result) },
-    { id: '18', risco: formatarRiscoExibicao(tri.result.t18, tri.result) },
-    { id: '13', risco: formatarRiscoExibicao(tri.result.t13, tri.result) },
+    { id: '21', rotulo: 'Trissomia 21', risco: formatarRiscoExibicao(tri.result.t21, tri.result) },
+    { id: '13-18', rotulo: 'Trissomias 13/18', risco: formatarRiscoExibicao(tri.result.t18t13, tri.result) },
   ],
   versao: tri.result.modelVersion,
   bloco: tri.block,

@@ -4,11 +4,19 @@ import { useEffect, useRef, type RefObject } from 'react'
 
 const SPACING = 22
 const REACH = 150
-const REST = { x: 0.78, y: 0.72 } // repouso: perto do canto superior esquerdo do mockup
+// Repouso: perto do canto superior esquerdo do mockup (mesmo ponto de antes,
+// agora em coordenadas da seção inteira).
+const REST = { x: 0.57, y: 0.46 }
+// Alcance da malha visível em volta da luz: fora dele os pontos somem.
+const FIELD = REACH * 3.2
 
 /**
  * Luz de fundo do hero: uma malha de pontos quase invisível que acende em
  * verde, bem de leve, perto do ponteiro, com fios discretos entre os nós.
+ *
+ * O canvas cobre o hero inteiro e a malha só existe em volta da luz, sumindo
+ * em degradê (como uma lanterna). Assim o efeito acompanha o ponteiro também
+ * sobre o título, sem nenhuma borda de recorte.
  *
  * - O ponteiro é lido do `host` (a seção inteira), mas o canvas não recebe
  *   eventos: nada nele é clicável.
@@ -77,7 +85,10 @@ export function HeroMeshLight({ host, reduce }: { host: RefObject<HTMLElement | 
               ctx.stroke()
             }
           }
-          ctx.fillStyle = k > 0.02 ? `rgba(5,150,105,${0.12 + k * 0.45})` : 'rgba(100,116,139,0.10)'
+          // Fora da região iluminada, o ponto de base esmaece com a distância até zero.
+          const base = d < FIELD ? 0.1 * (1 - d / FIELD) ** 1.6 : 0
+          if (k <= 0.02 && base < 0.004) continue
+          ctx.fillStyle = k > 0.02 ? `rgba(5,150,105,${0.12 + k * 0.45})` : `rgba(100,116,139,${base.toFixed(3)})`
           ctx.beginPath()
           ctx.arc(px, py, 0.9 + k * 0.9, 0, Math.PI * 2)
           ctx.fill()
@@ -153,7 +164,7 @@ export function HeroMeshLight({ host, reduce }: { host: RefObject<HTMLElement | 
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none absolute left-[26%] top-[4%] -z-10 hidden h-[58%] w-[40%] [mask-image:radial-gradient(ellipse_at_70%_60%,black_30%,transparent_72%)] lg:block"
+      className="pointer-events-none absolute inset-0 -z-10 hidden h-full w-full [mask-image:linear-gradient(to_bottom,black_80%,transparent)] lg:block"
     />
   )
 }
