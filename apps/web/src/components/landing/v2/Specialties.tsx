@@ -1,107 +1,110 @@
 'use client'
 
-import Image from 'next/image'
-import { useRef } from 'react'
-import { motion, useScroll, useTransform, type MotionValue } from 'framer-motion'
-import { useReducedMotionSafe } from './useReducedMotionSafe'
 import { CATEGORY_GROUPS } from '@/components/laudar/categoryGroups'
-import { EXAM_CATEGORY_IMAGES } from '@/components/laudar/examCategoryImages'
+import {
+  ACTIVE_EXAM_COUNT,
+  ACTIVE_EXAM_NAMES,
+  MUSCULOSKELETAL_REGIONS,
+  UPCOMING_EXAMS,
+} from '@/components/landing/v2/specialtyCatalog'
 
-/**
- * ESPECIALIDADES: exatamente os grupos e exames do seletor da Web.
- *
- * Os nomes repetem os do catálogo (sem importar o motor determinístico, que
- * não cabe no bundle da landing). Se uma categoria entrar no seletor, ela
- * aparece aqui pelo `CATEGORY_GROUPS`; se não tiver nome abaixo, cai no id.
- *
- * Desktop: cinco colunas que deslizam em ritmos diferentes com a rolagem,
- * ocupando a largura toda. Mobile: uma faixa horizontal por grupo, com snap.
- */
-
-const NAMES: Record<string, string> = {
-  ABDOMEN_TOTAL: 'Abdome total',
-  ABDOMEN_SUPERIOR: 'Abdome superior',
-  VIAS_URINARIAS: 'Vias urinárias',
-  PROSTATA_SUPRAPUBICA: 'Próstata',
-  DOPPLER_CAROTIDAS: 'Doppler de carótidas e vertebrais',
-  OBSTETRICA: 'Obstétrica',
-  DOPPLER_OBSTETRICO: 'Obstétrica com Doppler',
-  MORFOLOGICO: 'Morfológica',
-  CERVICOMETRIA: 'Cervicometria',
-  PELVE_FEMININA: 'Pelve feminina',
-  MAMARIA: 'Mamas e axilas',
-  TIREOIDE: 'Tireoide',
-  CERVICAL: 'Cervical',
-  PARTES_MOLES: 'Partes moles',
-  MUSCULOESQUELETICO: 'Musculoesquelético',
-}
-
-const DRIFT = [40, -30, 60, -50, 30]
-
-function Tile({ id, className = '' }: { id: string; className?: string }) {
-  const src = EXAM_CATEGORY_IMAGES[id]
-  return (
-    <li
-      data-category-tile={id}
-      className={`flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 pr-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_14px_30px_-18px_rgba(5,150,105,0.45)] ${className}`}
-    >
-      {src ? (
-        <Image src={src} alt="" width={56} height={56} loading="lazy" className="h-14 w-14 flex-none rounded-xl bg-slate-50 object-cover grayscale" />
-      ) : null}
-      <span className="text-[0.92rem] font-semibold leading-snug text-slate-900">{NAMES[id] ?? id}</span>
-    </li>
-  )
-}
-
-function Column({ index, progress, label, ids }: { index: number; progress: MotionValue<number>; label: string; ids: string[] }) {
-  const reduce = useReducedMotionSafe()
-  const y = useTransform(progress, [0, 1], reduce ? [0, 0] : [DRIFT[index], -DRIFT[index]])
-  return (
-    <motion.div style={{ y }} className="min-w-0" data-specialty-group={label}>
-      <h3 className="mb-3 px-1 font-barlow text-[1.15rem] font-bold text-slate-950">{label}</h3>
-      <ul className="flex flex-col gap-2.5">
-        {ids.map((id) => <Tile key={id} id={id} />)}
-      </ul>
-    </motion.div>
-  )
+function groupLayout(id: string) {
+  if (id === 'medicina_interna' || id === 'obstetricia' || id === 'saude_mulher') return 'xl:col-span-4'
+  if (id === 'pequenas_partes') return 'xl:col-span-4'
+  return 'xl:col-span-8'
 }
 
 export default function Specialties() {
-  const ref = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const total = CATEGORY_GROUPS.reduce((n, g) => n + g.categories.length, 0)
-
   return (
-    <section ref={ref} data-landing-section="especialidades" className="relative overflow-hidden bg-slate-50 py-24 lg:py-32">
+    <section
+      data-landing-section="especialidades"
+      aria-labelledby="specialties-title"
+      className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#eef3ef_0%,#f7faf7_13%,#f0f2ed_100%)] py-20 text-slate-950 sm:py-24 lg:py-28"
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-48 top-0 -z-10 h-[34rem] w-[48rem] rounded-full bg-[radial-gradient(closest-side,rgba(16,185,129,0.08),transparent)]"
+      />
       <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
-        <div className="max-w-[46rem]">
-          <h2 className="font-barlow text-[2.2rem] font-extrabold leading-[1.04] tracking-[-0.025em] text-slate-950 sm:text-[3rem]">
-            {total} exames, organizados como você pensa o dia.
-          </h2>
-          <p className="mt-4 max-w-[38rem] text-[1.02rem] leading-relaxed text-slate-600">
-            Da medicina interna ao musculoesquelético, cada exame abre com os órgãos do jeito que você examina.
+        <header className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-10">
+          <div className="lg:col-span-8">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800">
+              Exames disponíveis
+            </p>
+            <h2
+              id="specialties-title"
+              className="max-w-[58rem] font-barlow text-[2.15rem] font-extrabold leading-[1.02] tracking-[-0.035em] text-slate-950 min-[360px]:text-[2.55rem] sm:text-[3.2rem] xl:text-[3.7rem]"
+            >
+              {ACTIVE_EXAM_COUNT} exames para acompanhar o seu raciocínio.
+            </h2>
+          </div>
+          <p className="max-w-[31rem] text-[0.98rem] leading-relaxed text-slate-700 lg:col-span-4 lg:justify-self-end lg:pb-1">
+            Modalidades específicas e regiões musculoesqueléticas em uma lista clara — sem misturar exames diferentes.
           </p>
-        </div>
+        </header>
 
-        {/* Desktop: colunas com deriva na rolagem. */}
-        <div className="mt-14 hidden grid-cols-5 gap-5 lg:grid">
-          {CATEGORY_GROUPS.map((group, i) => (
-            <Column key={group.id} index={i} progress={scrollYProgress} label={group.label} ids={group.categories} />
-          ))}
-        </div>
+        <div className="mt-12 grid grid-cols-1 gap-x-9 gap-y-9 sm:grid-cols-2 xl:mt-16 xl:grid-cols-12 xl:gap-x-10 xl:gap-y-12">
+          {CATEGORY_GROUPS.map((group, index) => {
+            const upcoming = UPCOMING_EXAMS[group.id] ?? []
+            return (
+              <section
+                key={group.id}
+                data-specialty-group={group.label}
+                aria-labelledby={`specialty-group-${group.id}`}
+                className={`min-w-0 border-t border-emerald-950/20 pt-4 ${groupLayout(group.id)}`}
+              >
+                <div className="flex items-baseline gap-3">
+                  <span aria-hidden="true" className="font-mono text-[0.7rem] tabular-nums text-emerald-800/70">
+                    0{index + 1}
+                  </span>
+                  <h3 id={`specialty-group-${group.id}`} className="font-barlow text-[1.2rem] font-bold leading-tight text-slate-950">
+                    {group.label}
+                  </h3>
+                </div>
 
-        {/* Mobile e tablet: um grupo por faixa, rolagem lateral com snap. */}
-        <div className="mt-10 space-y-8 lg:hidden">
-          {CATEGORY_GROUPS.map((group) => (
-            <div key={group.id} data-specialty-group={group.label}>
-              <h3 className="mb-3 font-barlow text-[1.1rem] font-bold text-slate-950">{group.label}</h3>
-              <ul className="-mx-5 flex snap-x snap-mandatory scroll-px-5 gap-2.5 overflow-x-auto px-5 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {group.categories.map((id) => (
-                  <Tile key={id} id={id} className="w-[78%] flex-none snap-start sm:w-[46%]" />
-                ))}
-              </ul>
-            </div>
-          ))}
+                <ul aria-label="Exames disponíveis" className="mt-4 grid grid-cols-1 gap-x-5 gap-y-2.5 min-[420px]:grid-cols-2 xl:grid-cols-2">
+                  {group.categories.map((id) => (
+                    <li key={id} data-category-tile={id} data-exam-status="available" className="min-w-0">
+                      <div className="flex items-start gap-2.5 text-[0.94rem] font-medium leading-snug text-slate-800">
+                        <span aria-hidden="true" className="mt-[0.48rem] h-1.5 w-1.5 flex-none rounded-full bg-emerald-700" />
+                        <span className="min-w-0">{ACTIVE_EXAM_NAMES[id] ?? id}</span>
+                      </div>
+                      {id === 'MUSCULOESQUELETICO' ? (
+                        <ul
+                          data-msk-regions
+                          aria-label="Regiões musculoesqueléticas disponíveis"
+                          className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 pl-4 min-[420px]:grid-cols-2 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-4"
+                        >
+                          {MUSCULOSKELETAL_REGIONS.map((region) => (
+                            <li key={region} data-msk-region={region} className="flex items-center gap-2 text-[0.82rem] leading-snug text-slate-600">
+                              <span aria-hidden="true" className="h-px w-2.5 flex-none bg-emerald-800/50" />
+                              {region}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+
+                {upcoming.length > 0 ? (
+                  <div className="mt-5 border-t border-emerald-950/10 pt-3.5">
+                    <h4 className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-slate-500">Em breve</h4>
+                    <ul aria-label="Exames planejados" className="mt-2.5 flex flex-wrap gap-x-5 gap-y-2">
+                      {upcoming.map((name) => (
+                        <li key={name} data-coming-soon={name} data-exam-status="upcoming" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-[0.88rem] leading-snug text-slate-600">
+                          <span>{name}</span>
+                          <span aria-label="Em breve" className="rounded-full bg-emerald-900/[0.06] px-2 py-0.5 text-[0.65rem] font-medium leading-none text-emerald-900/75">
+                            Em breve
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </section>
+            )
+          })}
         </div>
       </div>
     </section>

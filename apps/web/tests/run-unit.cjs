@@ -3,6 +3,7 @@ const { resolve } = require('node:path')
 
 const cwd = resolve(__dirname, '..')
 const files = [
+  'tests/biometryAutomation.manual.ts',
   'tests/biometryGrowthSections.manual.ts',
   'tests/liverQuantification.manual.ts',
   'tests/mamariaBirads.manual.ts',
@@ -16,6 +17,8 @@ const files = [
   'tests/intergrowthBiometry.manual.ts',
   'tests/renalMeasurements.manual.ts',
   'tests/composition.manual.ts',
+  'src/lib/deterministic/organs/abdomeTotalGrid.manual.ts',
+  'src/lib/visualSchemas/__tests__/breast-geometry.manual.ts',
   'src/lib/calculators/preEclampsia.test.mts',
   'src/lib/calculators/trisomyFmf.test.mts',
   'src/lib/companionStructured.test.ts',

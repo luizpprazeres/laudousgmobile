@@ -1,39 +1,22 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent, PointerEvent } from 'react'
 import type { RefObject } from 'react'
 import type { BreastSchemaFinding } from '@/lib/visualSchemas/adapters'
+import { BREAST_VIEW, breastPositionFromPoint, pointForBreastFinding } from '@/lib/visualSchemas/breastGeometry'
+import type { BreastPlacement, BreastPosition } from '@/lib/visualSchemas/breastGeometry'
 
-const VIEW = { width: 1608, height: 1240, anatomyHeight: 1138, cy: 686, rightX: 435, leftX: 1208, rx: 300, ry: 325, maxCm: 6 }
 const ASSET = '/schemas/breast/frontal-v5.svg'
-const RETROAREOLAR_FRACTION = 0.16
 
-function angle(hour: number) { return (hour / 12) * Math.PI * 2 - Math.PI / 2 }
-function center(side: BreastSchemaFinding['side']) { return side === 'direita' ? VIEW.rightX : VIEW.leftX }
-
-function point(finding: BreastSchemaFinding) {
-  const hour = finding.hour ?? 12
-  const fraction = finding.retroareolar
-    ? RETROAREOLAR_FRACTION
-    : finding.nippleDistanceCm == null ? 0.55 : Math.min(finding.nippleDistanceCm / VIEW.maxCm, 0.94)
-  const a = angle(hour)
-  return { x: center(finding.side) + fraction * VIEW.rx * Math.cos(a), y: VIEW.cy + fraction * VIEW.ry * Math.sin(a) }
+function samePosition(a: Pick<BreastSchemaFinding, 'side' | 'hour' | 'nippleDistanceCm' | 'retroareolar'>, b: BreastPosition) {
+  return a.side === b.side && a.hour === b.hour
+    && a.nippleDistanceCm === b.nippleDistanceCm
+    && a.retroareolar === b.retroareolar
 }
 
-function fromPoint(x: number, y: number) {
-  const side: BreastSchemaFinding['side'] = x < VIEW.width / 2 ? 'direita' : 'esquerda'
-  const cx = center(side)
-  const dx = x - cx
-  const dy = y - VIEW.cy
-  let hour = Math.round((((Math.atan2(dy / VIEW.ry, dx / VIEW.rx) + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2)) * 12)
-  if (hour === 0) hour = 12
-  const fraction = Math.min(Math.hypot(dx / VIEW.rx, dy / VIEW.ry), 0.94)
-  return {
-    side,
-    hour,
-    nippleDistanceCm: Math.round(fraction * VIEW.maxCm * 10) / 10,
-    retroareolar: fraction <= RETROAREOLAR_FRACTION * 1.35,
-  }
+function positionLabel(position: BreastPosition) {
+  return `${position.hour} h · ${position.nippleDistanceCm.toFixed(1).replace('.', ',')} cm do mamilo`
 }
 
 function radius(finding: BreastSchemaFinding, max: number) {
@@ -86,12 +69,17 @@ const LEGEND: Array<{ type: BreastSchemaFinding['type']; label: string }> = [
   { type: 'calcification', label: 'Calcificação' },
 ]
 
-export function BreastSchema({ findings, svgRef, onMove }: { findings: BreastSchemaFinding[]; svgRef: RefObject<SVGSVGElement>; onMove: (id: string, position: ReturnType<typeof fromPoint>) => void }) {
+export function BreastSchema({ findings, svgRef, onMove }: { findings: BreastSchemaFinding[]; svgRef: RefObject<SVGSVGElement>; onMove: (id: string, position: BreastPosition) => void }) {
   const [dragging, setDragging] = useState<string | null>(null)
+  const [focused, setFocused] = useState<string | null>(null)
+  const [visualPositions, setVisualPositions] = useState<Record<string, BreastPlacement>>({})
+  const [announcement, setAnnouncement] = useState('')
   const [baseImage, setBaseImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState('')
+  const instructionsId = useId()
   const internal = useRef<SVGSVGElement>(null)
   const ref = svgRef ?? internal
+  const activePointer = useRef<{ id: string; side: BreastPosition['side']; pointerId: number; offsetX: number; offsetY: number; moved: boolean; last: BreastPosition } | null>(null)
   const maximum = useMemo(() => Math.max(1, ...findings.map((item) => item.sizeMaxMm ?? 1)), [findings])
 
   useEffect(() => {
@@ -115,30 +103,118 @@ export function BreastSchema({ findings, svgRef, onMove }: { findings: BreastSch
       buckets.set(key, [...(buckets.get(key) ?? []), finding])
     })
     buckets.forEach((bucket) => bucket.forEach((finding, index) => {
-      const base = point(finding)
+      const base = pointForBreastFinding(finding)
       const offset = index === 0 ? { x: 0, y: 0 } : { x: ((index % 3) - 1) * 45, y: Math.ceil(index / 3) * 40 }
-      result.set(finding.id, { x: base.x + offset.x, y: base.y + offset.y })
+      const bounded = breastPositionFromPoint(finding.side, base.x + offset.x, base.y + offset.y)
+      result.set(finding.id, { x: bounded.x, y: bounded.y })
     }))
     return result
   }, [findings])
+
   const locate = useCallback((clientX: number, clientY: number) => {
     const svg = ref.current
     if (!svg) return null
     const rect = svg.getBoundingClientRect()
-    return { x: (clientX - rect.left) * VIEW.width / rect.width, y: (clientY - rect.top) * VIEW.height / rect.height }
+    if (!rect.width || !rect.height) return null
+    return { x: (clientX - rect.left) * BREAST_VIEW.width / rect.width, y: (clientY - rect.top) * BREAST_VIEW.height / rect.height }
   }, [ref])
+
+  function publish(id: string, placement: BreastPlacement, previous: Pick<BreastSchemaFinding, 'side' | 'hour' | 'nippleDistanceCm' | 'retroareolar'>) {
+    setVisualPositions((current) => ({ ...current, [id]: placement }))
+    if (!samePosition(previous, placement)) {
+      onMove(id, {
+        side: placement.side,
+        hour: placement.hour,
+        nippleDistanceCm: placement.nippleDistanceCm,
+        retroareolar: placement.retroareolar,
+      })
+    }
+  }
+
+  function movePointer(event: PointerEvent<SVGSVGElement>) {
+    const active = activePointer.current
+    if (!active || active.pointerId !== event.pointerId) return
+    const cursor = locate(event.clientX, event.clientY)
+    if (!cursor) return
+    const placement = breastPositionFromPoint(active.side, cursor.x - active.offsetX, cursor.y - active.offsetY, active.last.hour)
+    active.moved = true
+    publish(active.id, placement, active.last)
+    active.last = placement
+  }
+
+  function endPointer(event: PointerEvent<SVGSVGElement>, cancelled: boolean) {
+    const active = activePointer.current
+    if (!active || active.pointerId !== event.pointerId) return
+    if (!cancelled && active.moved) movePointer(event)
+    activePointer.current = null
+    setDragging(null)
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+
+  function moveWithKeyboard(event: KeyboardEvent<SVGGElement>, finding: BreastSchemaFinding, current: { x: number; y: number }) {
+    const step = event.shiftKey ? 24 : 8
+    const delta = event.key === 'ArrowLeft' ? { x: -step, y: 0 }
+      : event.key === 'ArrowRight' ? { x: step, y: 0 }
+        : event.key === 'ArrowUp' ? { x: 0, y: -step }
+          : event.key === 'ArrowDown' ? { x: 0, y: step } : null
+    if (!delta) return
+    event.preventDefault()
+    const placement = breastPositionFromPoint(finding.side, current.x + delta.x, current.y + delta.y, finding.hour ?? 12)
+    publish(finding.id, placement, finding)
+    setAnnouncement(`${finding.side}: ${positionLabel(placement)}`)
+  }
+
   return <div>
-    <svg ref={ref} viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} data-ready={baseImage ? 'true' : 'false'} className="h-auto w-full touch-none rounded-2xl bg-white" aria-label="Esquema mamário interativo"
-      onPointerMove={(event) => { if (!dragging) return; const p = locate(event.clientX, event.clientY); if (p) onMove(dragging, fromPoint(p.x, p.y)) }}
-      onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)}>
-      <rect width={VIEW.width} height={VIEW.height} fill="white" />
-      {baseImage ? <image href={baseImage} x="0" y="0" width={VIEW.width} height={VIEW.anatomyHeight} preserveAspectRatio="none" /> : null}
-      {findings.map((finding, index) => { const p = positions.get(finding.id) ?? point(finding); return <g key={finding.id} role="button" tabIndex={0} aria-label={finding.visualOnly ? 'Cisto adicional somente no esquema' : `Achado ${index + 1}`} className="cursor-grab active:cursor-grabbing" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDragging(finding.id) }}>
-        <circle cx={p.x} cy={p.y} r={radius(finding, maximum) + 16} fill="transparent" />
-        <Marker finding={finding} x={p.x} y={p.y} r={radius(finding, maximum)} />
-        {!finding.visualOnly ? <text x={p.x} y={p.y - radius(finding, maximum) - 18} textAnchor="middle" fontSize="22" fontWeight="700" fill="#111827">{findings.slice(0, index + 1).filter((item) => !item.visualOnly).length}</text> : null}
-      </g> })}
-      <line x1="96" x2={VIEW.width - 96} y1="1148" y2="1148" stroke="#d1d5db" strokeWidth="1.5" />
+    <p id={instructionsId} className="sr-only">Selecione um marcador e use as setas para ajustar a posição. Segure Shift para mover mais rápido.</p>
+    <svg ref={ref} viewBox={`0 0 ${BREAST_VIEW.width} ${BREAST_VIEW.height}`} data-ready={baseImage ? 'true' : 'false'} className="h-auto w-full touch-none rounded-2xl bg-white" aria-label="Esquema mamário interativo"
+      onPointerMove={movePointer} onPointerUp={(event) => endPointer(event, false)} onPointerCancel={(event) => endPointer(event, true)}
+      onLostPointerCapture={() => { activePointer.current = null; setDragging(null) }}>
+      <rect width={BREAST_VIEW.width} height={BREAST_VIEW.height} fill="white" />
+      {baseImage ? <image href={baseImage} x="0" y="0" width={BREAST_VIEW.width} height={BREAST_VIEW.anatomyHeight} preserveAspectRatio="none" /> : null}
+      {findings.map((finding, index) => {
+        const local = visualPositions[finding.id]
+        const p = local && (dragging === finding.id || focused === finding.id || samePosition(finding, local)) ? local : positions.get(finding.id) ?? pointForBreastFinding(finding)
+        const derived = breastPositionFromPoint(finding.side, p.x, p.y, finding.hour ?? 12)
+        const placement = local && (dragging === finding.id || focused === finding.id || samePosition(finding, local))
+          ? local : {
+            ...derived,
+            hour: finding.hour ?? derived.hour,
+            nippleDistanceCm: finding.nippleDistanceCm ?? derived.nippleDistanceCm,
+            retroareolar: finding.retroareolar,
+          }
+        const showFeedback = dragging === finding.id || focused === finding.id
+        const feedbackX = p.x + 42 + 320 <= BREAST_VIEW.width ? p.x + 42 : p.x - 362
+        const feedbackY = Math.max(18, p.y - 98)
+        return <g key={finding.id} role="button" tabIndex={0} aria-describedby={instructionsId}
+          aria-label={`${finding.visualOnly ? 'Cisto adicional somente no esquema' : `Achado ${findings.slice(0, index + 1).filter((item) => !item.visualOnly).length}`}, mama ${finding.side}, ${positionLabel(placement)}`}
+          className="cursor-grab focus:outline-none active:cursor-grabbing"
+          onFocus={() => setFocused(finding.id)} onBlur={() => setFocused(null)}
+          onKeyDown={(event) => moveWithKeyboard(event, finding, p)}
+          onPointerDown={(event) => {
+            if (activePointer.current || (event.pointerType === 'mouse' && event.button !== 0)) return
+            const svg = ref.current
+            const cursor = locate(event.clientX, event.clientY)
+            if (!svg || !cursor) return
+            event.preventDefault()
+            activePointer.current = {
+              id: finding.id, side: finding.side, pointerId: event.pointerId,
+              offsetX: cursor.x - p.x, offsetY: cursor.y - p.y, moved: false,
+              last: { side: finding.side, hour: finding.hour ?? placement.hour, nippleDistanceCm: finding.nippleDistanceCm ?? placement.nippleDistanceCm, retroareolar: finding.retroareolar },
+            }
+            svg.setPointerCapture(event.pointerId)
+            setDragging(finding.id)
+          }}>
+          <circle cx={p.x} cy={p.y} r={radius(finding, maximum) + 16} fill="transparent" />
+          {focused === finding.id ? <circle cx={p.x} cy={p.y} r={radius(finding, maximum) + 12} fill="none" stroke="#059669" strokeWidth="5" /> : null}
+          <Marker finding={finding} x={p.x} y={p.y} r={radius(finding, maximum)} />
+          {!finding.visualOnly ? <text x={p.x} y={p.y - radius(finding, maximum) - 18} textAnchor="middle" fontSize="22" fontWeight="700" fill="#111827">{findings.slice(0, index + 1).filter((item) => !item.visualOnly).length}</text> : null}
+          {showFeedback ? <g pointerEvents="none" transform={`translate(${feedbackX} ${feedbackY})`}>
+            <rect width="320" height="58" rx="12" fill="#111827" />
+            <text x="16" y="38" fontSize="25" fontWeight="700" fill="white">{positionLabel(placement)}</text>
+          </g> : null}
+        </g>
+      })}
+      <line x1="96" x2={BREAST_VIEW.width - 96} y1="1148" y2="1148" stroke="#d1d5db" strokeWidth="1.5" />
       <text x="98" y="1183" fontSize="19" fontWeight="700" fill="#374151">LEGENDA</text>
       {LEGEND.map((item, index) => {
         const x = 270 + index * 260
@@ -149,6 +225,7 @@ export function BreastSchema({ findings, svgRef, onMove }: { findings: BreastSch
         </g>
       })}
     </svg>
+    <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
     {imageError ? <p className="mt-2 text-xs text-rose-600">{imageError}</p> : null}
   </div>
 }

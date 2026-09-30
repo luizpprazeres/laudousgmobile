@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowDownToLine, Printer } from 'lucide-react'
+import { Printer } from 'lucide-react'
 import type { OrganModule, OrganState } from '@/lib/deterministic'
-import { chaveFemurDoSchema, pesoHadlock1985DaBiometria, pesoJaAplicado } from '@/lib/calculators/fetalWeight'
+import { chaveFemurDoSchema, pesoHadlock1985DaBiometria } from '@/lib/calculators/fetalWeight'
+import { biometryWeightMode, setBiometryWeightMode, updateBiometryMeasurements } from './biometryAutomation'
 import { OrganFormPanel } from './OrganFormPanel'
 import { IntergrowthPreview } from './IntergrowthPreview'
 import { IntergrowthPrintSheet } from './IntergrowthPrintSheet'
@@ -20,16 +21,9 @@ type Props = {
   compact?: boolean
 }
 
-/**
- * As duas metades de uma mesma leitura: as medidas (DBP, CC, CA, CF e o peso
- * estimado) e, logo abaixo, a classificação do crescimento — percentil e
- * curva, informados pelo médico.
- *
- * O peso Hadlock 1985 usa quatro medidas em mm. Ele
- * aparece ao lado, mas só entra no campo `peso` quando o médico aplica pelo
- * botão; até lá o peso digitado fica como está. A aplicação passa pelo
- * `onBiometryChange` de sempre, que invalida o percentil se o peso mudar.
- * A previa INTERGROWTH usa separadamente Hadlock CC/CA/CF, sem alterar campos.
+/** Medidas e peso automático compartilham a atualização que invalida percentis antigos.
+ * Pesos existentes/importados permanecem manuais até escolha explícita do médico.
+ * INTERGROWTH continua uma prévia independente, com sua fórmula de três medidas.
  */
 export function BiometryGrowthPanel({
   biometry,
@@ -48,43 +42,37 @@ export function BiometryGrowthPanel({
   useEffect(() => { if (!printable) setPrintOpen(false) }, [printable])
   const headingClass = 'mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400'
   const hadlock = pesoHadlock1985DaBiometria(biometryState, chaveFemurDoSchema(biometry.schema.fields))
-  const aplicado = hadlock ? pesoJaAplicado(biometryState.peso, hadlock.valor) : false
-  const aplicarLabel = hadlock
-    ? aplicado
-      ? `Peso estimado já está em ${hadlock.valor} g`
-      : `Aplicar ${hadlock.valor} g ao peso estimado`
-    : ''
+  const mode = biometryWeightMode(biometryState)
+  const measurementSchema = mode === 'automatico'
+    ? { ...biometry.schema, fields: biometry.schema.fields.filter((field) => field.key !== 'peso') }
+    : biometry.schema
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4 min-[1100px]:grid-cols-2 min-[1100px]:gap-6">
       <section className="min-w-0">
         <h2 className={headingClass}>Biometria</h2>
         <OrganFormPanel
-          schema={biometry.schema}
+          schema={measurementSchema}
           state={biometryState}
           compact={compact}
-          onChange={onBiometryChange}
+          onChange={(next) => onBiometryChange(updateBiometryMeasurements(biometryState, next, femurKey))}
         />
-        <div className="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-0.5" role="status" aria-live="polite">
-          <span className="min-w-0 font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
-            Peso calculado · Hadlock (DBP/CC/CA/CF)
-          </span>
-          {hadlock ? (
-            <span className="flex items-center gap-1.5">
-              <span className="text-[13px] font-semibold tabular-nums text-gray-900 dark:text-gray-100">{hadlock.valor} g</span>
-              <button
-                type="button"
-                onClick={() => onBiometryChange({ ...biometryState, peso: hadlock.valor })}
-                disabled={aplicado}
-                aria-label={aplicarLabel}
-                title={aplicarLabel}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-emerald-700 transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-100 disabled:cursor-default disabled:text-gray-300 disabled:hover:border-gray-200 disabled:hover:bg-white dark:border-gray-700 dark:bg-gray-900 dark:text-emerald-300 dark:hover:bg-emerald-950/40 dark:focus-visible:ring-emerald-900/50 dark:disabled:text-gray-600 dark:disabled:hover:bg-gray-900"
-              >
-                <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </span>
-          ) : (
-            <span className="text-[12px] text-gray-400 dark:text-gray-500">Indisponível: informe DBP, CC, CA e CF válidos em mm</span>
-          )}
+        <div className="mt-3 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Peso do laudo · {mode === 'manual' ? 'Manual' : 'Automático'}</span>
+            <button type="button"
+              onClick={() => onBiometryChange(setBiometryWeightMode(biometryState, femurKey, mode === 'manual' ? 'automatico' : 'manual'))}
+              className="min-h-9 rounded-md border border-gray-200 px-3 text-xs text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:border-gray-700 dark:text-emerald-300">
+              {mode === 'manual' ? 'Usar peso automático' : 'Informar peso manual'}
+            </button>
+          </div>
+          <p role="status" aria-live="polite" className="text-xs text-gray-600 dark:text-gray-400">
+            Hadlock DBP/CC/CA/CF: {hadlock ? `${hadlock.valor} g` : 'aguardando DBP, CC, CA e CF válidos em mm.'}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {mode === 'manual'
+              ? 'O peso manual é preservado quando as medidas mudam. A curva ao lado usa seu próprio peso calculado.'
+              : 'Ao editar as medidas, o peso do laudo é recalculado. Se faltar uma medida, o peso automático é removido.'}
+          </p>
         </div>
       </section>
       <section className={`min-w-0 border-t pt-3 min-[1100px]:border-l min-[1100px]:border-t-0 min-[1100px]:pl-6 min-[1100px]:pt-0 ${compact ? 'border-gray-100 dark:border-gray-800' : 'border-gray-200 dark:border-gray-800'}`}>
@@ -95,7 +83,8 @@ export function BiometryGrowthPanel({
           </button>
         </div>}
         <IntergrowthPreview biometryState={biometryState} chaveFemur={chaveFemurDoSchema(biometry.schema.fields)} igState={igState} />
-        <h2 className={headingClass}>Crescimento fetal</h2>
+        <h2 className={headingClass}>Crescimento fetal · avaliação manual</h2>
+        <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">O percentil abaixo é informado pelo médico para o peso do laudo e a curva escolhida. A prévia não substitui esse valor.</p>
         <OrganFormPanel
           schema={growth.schema}
           state={growthState}

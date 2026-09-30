@@ -374,12 +374,20 @@ async function main() {
     }
 
     await selectCategory(page, 'MAMARIA')
+    const mammaryLayout = page.locator('[data-workspace-layout="mammary"]')
+    assert.equal(await mammaryLayout.count(), 1, 'Breast controls and schema use the dedicated workspace')
+    assert.equal(await mammaryLayout.locator('[data-mammary-controls] [data-section-id="mamas"]').count(), 1, 'Breast findings stay in the controls column')
+    assert.equal(await mammaryLayout.locator('[data-mammary-controls] [data-section-id="axilas"]').count(), 1, 'Axilla controls stay below breast findings')
+    assert.equal(await mammaryLayout.locator('[data-mammary-schema] [data-section-id="visual-schema"]').count(), 1, 'Breast schema remains visible beside the controls')
     const breastScope = page.locator('[data-exam-options]').getByRole('group', { name: 'O que será avaliado?', exact: true })
     await breastScope.getByRole('button', { name: 'Somente axilas', exact: true }).click()
     assert.equal(await page.locator('[data-section-id="calc:bi-rads"]').count(), 0, 'Axilla-only scope has no breast BI-RADS suggestions')
     assert.equal(await page.locator('[data-section-id="visual-schema"]').count(), 0, 'Axilla-only scope does not show the breast schema')
     await breastScope.getByRole('button', { name: 'Mamas e axilas', exact: true }).click()
     assert.equal(await page.locator('[data-section-id="calc:bi-rads"]').count(), 1, 'Breast calculator returns with breast scope')
+
+    await selectCategory(page, 'OBSTETRICA')
+    assert.equal(await page.locator('[data-section-id="visual-schema"]').count(), 0, 'Obstetrics no longer reserves space for the fetal-position schema')
 
     await selectCategory(page, 'MUSCULOESQUELETICO')
     const mskSide = page.locator('[data-exam-options]').getByRole('group', { name: 'Lado', exact: true })
@@ -451,6 +459,9 @@ async function main() {
     assert.doesNotMatch(await editor.innerText(), /Comparar com o exame anterior disponível/i)
     await achadosTab.click()
     assert.equal(await page.locator('[data-bilateral-group="rins"] [data-organ-card]').count(), 2, 'Kidneys share one group with independent cards')
+    assert.equal(await page.locator('[data-related-group="vesicula-vias-biliares"] [data-organ-card]').count(), 2, 'Gallbladder and bile ducts share one visual block with independent state')
+    assert.equal(await page.locator('[data-related-group="pancreas-baco"] [data-organ-card]').count(), 2, 'Pancreas and spleen share one wide visual block')
+    assert.equal(await page.locator('[data-related-group="vasos-abdominais"] [data-organ-card]').count(), 2, 'Aorta and vena cava share one compact visual block')
 
     const bladderCard = page.locator('[data-section-id="bexiga"]')
     const volumeDimensions = ['L', 'AP', 'T'].map(axis => bladderCard.getByLabel(`Volume pré-miccional — ${axis} (cm)`, { exact: true }))

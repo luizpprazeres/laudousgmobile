@@ -73,7 +73,6 @@ import {
   resolverSecaoAtivaAgrupada,
 } from './biometryGrowthSections'
 import { VisualSchemaPanel } from '@/components/visualSchemas/VisualSchemaPanel'
-import { supportsFetalPositionSchema } from '@/lib/visualSchemas/fetalPosition'
 import { ExamCategoryPicker } from './ExamCategoryPicker'
 import { AssociationPanel, nameOf } from './AssociationPanel'
 import {
@@ -451,10 +450,11 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const documentKey = composition
     ? compositionKey(composition.compositionId)
     : chaveDocumentoDoppler(categoria, examStates[categoria] ?? {})
-  const supportsFetalSchema = supportsFetalPositionSchema(categoria, opts.trimestre)
   // O esquema visual edita o estado avulso da categoria; numa associação ele
   // escreveria fora do componente, então fica fora até ter escopo próprio.
-  const supportsVisualSchema = !composition && (isTireoide || (categoria === 'MAMARIA' && !axilasOnly) || supportsFetalSchema)
+  // O antigo esquema de posição fetal foi retirado da Web: ele ocupava espaço
+  // sem ajudar a decisão clínica. Mama e tireoide mantêm os mapas interativos.
+  const supportsVisualSchema = !composition && (isTireoide || (categoria === 'MAMARIA' && !axilasOnly))
   const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -1485,6 +1485,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             .laudar-web-responsive .workspace-section-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .laudar-web-responsive .workspace-section-grid > [data-card-size="wide"] { grid-column: span 2; }
           }
+          .laudar-web-responsive [data-workspace-layout="mammary"] .mammary-controls .workspace-section-grid {
+            grid-template-columns: minmax(0, 1fr);
+          }
           @media (max-width: 1023px) {
             .laudar-web-responsive .laudar-header-grid {
               grid-template-columns: minmax(0, 1fr) auto;
@@ -1646,6 +1649,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                         canReset={(section) => Boolean(section.module)}
                         onReset={(section) => resetCompositionSection(scope, section)}
                         renderBody={(section) => renderSectionBodyIn(scope, section)}
+                        layout={ref.categoryCode === 'ABDOMEN_TOTAL' ? 'abdomen-total' : 'default'}
                       />
                     </section>
                   )
@@ -1703,6 +1707,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               onReset={resetSection}
               renderBody={renderSectionBody}
               highlightedId={highlightedSectionId}
+              layout={
+                categoria === 'MAMARIA' && !axilasOnly
+                  ? 'mammary'
+                  : categoria === 'ABDOMEN_TOTAL'
+                    ? 'abdomen-total'
+                    : 'default'
+              }
             />
             </> : null}
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { progressiveIntergrowthWeight } from './biometryAutomation'
 import type { ChaveFemur } from '@/lib/calculators/fetalWeight'
 import {
   INTERGROWTH2020_EFW_MAX_GA_DAYS,
@@ -198,6 +199,7 @@ function IntergrowthChart({ preview, percentilTexto }: { preview: IntergrowthBio
  */
 export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props) {
   const preview = intergrowthBiometryPreview(biometryState, chaveFemur, igState)
+  const progressiveWeight = progressiveIntergrowthWeight(biometryState, chaveFemur)
   const percentilTexto = preview ? formatarPercentilIntergrowth(preview.percentile) : null
 
   return (
@@ -206,6 +208,7 @@ export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props
         <h3 className={HEADING_CLASS}>{INTERGROWTH2020_EFW_VERSION}</h3>
         <span className={LABEL_CLASS}>Prévia · somente leitura</span>
       </div>
+      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">A IG vem do campo de idade gestacional do exame; não é estimada por estas medidas. Peso e percentil desta curva são calculados automaticamente, sem alterar os valores manuais do laudo.</p>
       {preview && percentilTexto ? (
         <div className="min-w-0 space-y-2">
           <dl className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-4">
@@ -214,7 +217,7 @@ export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props
               <dd className="text-[12px] text-gray-900 dark:text-gray-100">{preview.formula}</dd>
             </div>
             <div className="min-w-0">
-              <dt className={LABEL_CLASS}>IG da biometria</dt>
+              <dt className={LABEL_CLASS}>IG informada</dt>
               <dd className="text-[12px] tabular-nums text-gray-900 dark:text-gray-100">{formatarIgBiometria(preview.ig)}</dd>
             </div>
             <div className="min-w-0">
@@ -230,7 +233,9 @@ export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props
         </div>
       ) : (
         <p role="status" className="text-[12px] text-gray-400 dark:text-gray-500">
-          Dados incompletos: informe CC, CA e CF em mm e IG entre 18+0 e 40+0 semanas.
+          {progressiveWeight
+            ? `Peso Hadlock CC/CA/CF: ${progressiveWeight} g. Para percentil e gráfico, informe a IG entre 18+0 e 40+0 semanas, com dias de 0 a 6.`
+            : 'Para calcular o peso da curva, informe CC, CA e CF válidos em mm. Percentil e gráfico também precisam da IG entre 18+0 e 40+0 semanas.'}
         </p>
       )}
     </section>

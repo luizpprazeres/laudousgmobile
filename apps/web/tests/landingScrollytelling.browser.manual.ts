@@ -37,6 +37,16 @@ const mobileStageSelector = '[data-landing-section="mobile"]'
 const mobileControlsSelector = `${mobileStageSelector} nav[aria-label="Etapas da demonstração"] button[data-stage]`
 const expectedStages = ['inicio', 'categoria', 'gravacao', 'achados', 'geracao', 'laudo', 'sala']
 const expectedGroups = ['Medicina interna', 'Obstetrícia', 'Saúde da mulher', 'Pequenas partes', 'Musculoesquelético']
+const activeExams = [
+  'ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'DOPPLER_CAROTIDAS',
+  'OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA', 'PELVE_FEMININA', 'MAMARIA',
+  'TIREOIDE', 'CERVICAL', 'PARTES_MOLES', 'MUSCULOESQUELETICO',
+]
+const upcomingExams = [
+  'Próstata transretal', 'Doppler renal', 'Região inguinal', 'Parede abdominal', 'Doppler de fístula arteriovenosa',
+  'Transfontanelar', 'Escrotal', 'Ocular', 'Paratireoide',
+]
+const mskRegions = ['Ombro', 'Cotovelo', 'Punho', 'Mão', 'Quadril', 'Joelho', 'Tornozelo', 'Pé']
 
 function isForbiddenRequest(raw: string): 'hero-video' | 'api' | null {
   const url = new URL(raw)
@@ -130,8 +140,30 @@ async function checkSpecialties(page: any, viewport: Viewport) {
     for (let j = 0; j < await tiles.count(); j += 1) {
       assert.ok((await tiles.nth(j).getAttribute('data-category-tile'))?.trim(), `${viewport.width}: tile sem categoria`)
       assert.ok((await tiles.nth(j).innerText()).trim(), `${viewport.width}: tile sem nome`)
+      assert.equal(await tiles.nth(j).getAttribute('data-exam-status'), 'available', `${viewport.width}: exame ativo sem estado explícito`)
+      assert.equal(await tiles.nth(j).locator('button, a').count(), 0, `${viewport.width}: exame apresentado como botão/cartão independente`)
     }
   }
+
+  const available = section.locator('[data-category-tile]')
+  const ids: string[] = []
+  for (let i = 0; i < await available.count(); i += 1) ids.push((await available.nth(i).getAttribute('data-category-tile')) ?? '')
+  assert.deepEqual(ids, activeExams, `${viewport.width}: catálogo ativo deixou de preservar os 15 exames ou mudou sua ordem`)
+  const text = await section.innerText()
+  assert.match(text, /Próstata transabdominal \(suprapúbica\)/, `${viewport.width}: modalidade suprapúbica sem técnica explícita`)
+
+  const regions = section.locator('[data-msk-region]')
+  assert.deepEqual(await regions.evaluateAll((nodes: HTMLElement[]) => nodes.map((node) => node.getAttribute('data-msk-region'))), mskRegions, `${viewport.width}: regiões musculoesqueléticas incompletas`)
+
+  const upcoming = section.locator('[data-coming-soon]')
+  assert.deepEqual(await upcoming.evaluateAll((nodes: HTMLElement[]) => nodes.map((node) => node.getAttribute('data-coming-soon'))), upcomingExams, `${viewport.width}: lista de planejados alterada/incompleta`)
+  for (let i = 0; i < await upcoming.count(); i += 1) {
+    const exam = upcoming.nth(i)
+    assert.equal(await exam.getAttribute('data-exam-status'), 'upcoming', `${viewport.width}: exame futuro sem estado`)
+    assert.equal(await exam.getByLabel('Em breve').count(), 1, `${viewport.width}: selo Em breve ausente/duplicado`)
+    assert.equal(await exam.locator('button, a').count(), 0, `${viewport.width}: exame futuro aparenta estar selecionável`)
+  }
+  assert.doesNotMatch(text, /abdome total\s*\+\s*pr[oó]stata|procedimentos guiados/i, `${viewport.width}: mistura composição de exames ou procedimento guiado`)
 }
 
 async function checkSchemes(page: any, viewport: Viewport) {

@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { RotateCcw } from 'lucide-react'
 import type { ExamSection, Field, OrganState } from '@/lib/deterministic'
+import { planAbdomeTotalVisualCards } from '@/lib/deterministic/organs/abdomeTotalGrid'
 
 /**
  * A GRADE DE CARDS da aba Achados — todas as seções da categoria ao mesmo
@@ -48,6 +49,8 @@ type GridProps = {
   renderBody: (section: WorkspaceSection) => ReactNode
   /** Seção destacada (ex.: a que o celular acabou de preencher). */
   highlightedId?: string | null
+  /** Layout clínico especializado sem alterar o estado ou os módulos. */
+  layout?: 'default' | 'mammary' | 'abdomen-total'
 }
 
 export function WorkspaceSectionGrid({
@@ -59,56 +62,100 @@ export function WorkspaceSectionGrid({
   onReset,
   renderBody,
   highlightedId,
+  layout = 'default',
 }: GridProps) {
-  const groups = GROUP_ORDER
-    .map((group) => ({ group, items: sections.filter((section) => section.group === group) }))
+  const groupsFor = (source: WorkspaceSection[]) => GROUP_ORDER
+    .map((group) => ({ group, items: source.filter((section) => section.group === group) }))
     .filter(({ items }) => items.length > 0)
-  const showGroupTitles = groups.length > 1
+  const groups = groupsFor(sections)
+  const card = (item: WorkspaceSection, embedded = false) => (
+    <SectionCard
+      key={`${scopeKey}:${item.id}`}
+      section={item}
+      size={sizeOf(item)}
+      resettable={canReset(item)}
+      onReset={() => onReset(item)}
+      highlighted={highlightedId === item.id}
+      embedded={embedded}
+    >
+      {renderBody(item)}
+    </SectionCard>
+  )
+
+  const groupedCard = (id: string, label: string, items: WorkspaceSection[], wide: boolean) => (
+    <div
+      key={`${scopeKey}:${id}`}
+      data-related-group={id}
+      data-bilateral-group={id === 'rins' ? 'rins' : undefined}
+      data-card-size={wide ? 'wide' : 'regular'}
+      className={`workspace-section-card min-w-0 rounded-[22px] border border-black/[0.06] bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-[#1C1C1E] sm:p-5 ${wide ? 'min-[900px]:col-span-2' : ''}`}
+    >
+      <h3 className="mb-3 text-[15px] font-semibold">{label}</h3>
+      <div className={`grid min-w-0 grid-cols-1 gap-5 ${wide ? 'min-[620px]:grid-cols-2' : ''}`}>
+        {items.map(item => card(item, true))}
+      </div>
+    </div>
+  )
+
+  const renderItems = (items: WorkspaceSection[]) => {
+    if (layout === 'abdomen-total' && items.some((item) => item.id === 'figado')) {
+      return planAbdomeTotalVisualCards(items).map((planned) => planned.sections.length === 1
+        ? card(planned.sections[0])
+        : groupedCard(planned.id, planned.label, planned.sections, planned.size === 'wide'))
+    }
+    return items.map((section) => {
+      const renalPair = ['rim_direito', 'rim_esquerdo'].map(id => items.find(item => item.id === id))
+      const kidneysPaired = renalPair.every(Boolean)
+      if (kidneysPaired && section.id === 'rim_esquerdo') return null
+      if (kidneysPaired && section.id === 'rim_direito') return groupedCard('rins', 'Rins', renalPair as WorkspaceSection[], true)
+
+      const biliaryPair = ['vesicula', 'vias_biliares'].map(id => items.find(item => item.id === id))
+      const biliaryPaired = biliaryPair.every(Boolean)
+      if (biliaryPaired && section.id === 'vias_biliares') return null
+      if (biliaryPaired && section.id === 'vesicula') return groupedCard('vesicula-vias-biliares', 'Vesícula e vias biliares', biliaryPair as WorkspaceSection[], true)
+      return card(section)
+    })
+  }
+
+  const renderGroups = (sourceGroups: typeof groups) => {
+    const showGroupTitles = sourceGroups.length > 1
+    return sourceGroups.map(({ group, items }) => {
+      const title = group === 'orgaos' && contentGroupLabel ? contentGroupLabel : GROUP_LABELS[group]
+      return (
+        <div key={group} data-section-group-block={group}>
+          {showGroupTitles ? (
+            <h2 className="mb-2.5 px-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">
+              {title}
+            </h2>
+          ) : null}
+          <div className="workspace-section-grid">
+            {renderItems(items)}
+          </div>
+        </div>
+      )
+    })
+  }
+
+  if (layout === 'mammary') {
+    const schema = sections.find((section) => section.id === 'visual-schema')
+    const controls = sections.filter((section) => section.id !== 'visual-schema')
+    return (
+      <div data-workspace-layout="mammary" className="grid min-w-0 grid-cols-1 items-start gap-5 min-[1180px]:grid-cols-2 min-[1180px]:gap-6">
+        <div data-mammary-controls className="mammary-controls min-w-0 space-y-6">
+          {renderGroups(groupsFor(controls))}
+        </div>
+        {schema ? (
+          <div data-mammary-schema className="min-w-0 min-[1180px]:sticky min-[1180px]:top-[calc(var(--laudar-header-height,64px)+16px)]">
+            {card(schema)}
+          </div>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      {groups.map(({ group, items }) => {
-        const title = group === 'orgaos' && contentGroupLabel ? contentGroupLabel : GROUP_LABELS[group]
-        return (
-          <div key={group} data-section-group-block={group}>
-            {showGroupTitles ? (
-              <h2 className="mb-2.5 px-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">
-                {title}
-              </h2>
-            ) : null}
-            <div className="workspace-section-grid">
-              {items.map((section) => {
-                const renalPair = ['rim_direito', 'rim_esquerdo'].map(id => items.find(item => item.id === id))
-                const paired = renalPair.every(Boolean)
-                if (paired && section.id === 'rim_esquerdo') return null
-                const card = (item: WorkspaceSection, embedded = false) => (
-                  <SectionCard
-                    key={`${scopeKey}:${item.id}`}
-                    section={item}
-                    size={sizeOf(item)}
-                    resettable={canReset(item)}
-                    onReset={() => onReset(item)}
-                    highlighted={highlightedId === item.id}
-                    embedded={embedded}
-                  >
-                    {renderBody(item)}
-                  </SectionCard>
-                )
-                if (paired && section.id === 'rim_direito') return (
-                  <div key={`${scopeKey}:rins`} data-bilateral-group="rins" data-card-size="wide"
-                    className="workspace-section-card min-w-0 rounded-[22px] border border-black/[0.06] bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-[#1C1C1E] sm:p-5">
-                    <h3 className="mb-3 text-[15px] font-semibold">Rins</h3>
-                    <div className="renal-pair-grid grid min-w-0 grid-cols-1 gap-5">
-                      {renalPair.map(item => card(item!, true))}
-                    </div>
-                  </div>
-                )
-                return card(section)
-              })}
-            </div>
-          </div>
-        )
-      })}
+      {renderGroups(groups)}
     </div>
   )
 }
