@@ -8,7 +8,7 @@ A allowlist Web de writer contém somente `PAREDE_ABDOMINAL`, `PROSTATA_TRANSRET
 
 ## Contrato e fonte de verdade
 
-O seletor diferencia categorias determinísticas (“Estruturado”) de writer (“Por texto”). O ramo writer só coleta texto digitado/ditado e o `category_hint`; não envia achados estruturados fabricados nem monta texto clínico no navegador. A rota Web confirma sessão, injeta o `writing_style_id` salvo no perfil, força `source: web` e repassa o JWT da mesma sessão a `POST /api/generate`. O `CATALOG_SERVICE_TOKEN` não é usado nem exposto.
+O seletor roteia internamente cada categoria para o formulário determinístico ou para o writer, sem expor esse detalhe técnico nos cards. O ramo writer só coleta texto digitado/ditado e o `category_hint`; não envia achados estruturados fabricados nem monta texto clínico no navegador. A rota Web confirma sessão, injeta o `writing_style_id` salvo no perfil, força `source: web` e repassa o JWT da mesma sessão a `POST /api/generate`. O `CATALOG_SERVICE_TOKEN` não é usado nem exposto.
 
 O consumo SSE valida cada evento com `GenerateSSEEventSchema`. `clarify` pausa e retoma usando `resume_from_report_id` e respostas, preservando o mesmo `reportId`; `blocked`, `sanity`, `done` e `error` têm estados próprios. O mapa só é montado após um evento `scheme` para `VENOSO_MMII` com versão e estrutura reconhecidas. Ausência/invalidade do evento não cria mapa nem achados.
 
