@@ -6,10 +6,12 @@ import { GENERIC_CATEGORIES } from '@/lib/deterministic'
 import { categoryDotClass } from './categoryPresentation'
 import { EXAM_CATEGORY_IMAGES } from './examCategoryImages'
 import { groupCategories, matchesCategory, type CategoryEntry } from './categoryGroups'
+import { STRUCTURED_WEB_CATEGORY_CODES, WRITER_CATEGORY_OPTIONS } from '@/lib/writerCategories'
 
 const catalog = [
-  ...GENERIC_CATEGORIES.map(({ id, name }) => ({ id, name })),
-  { id: 'TIREOIDE', name: 'Tireoide' },
+  ...GENERIC_CATEGORIES.filter(({ id }) => (STRUCTURED_WEB_CATEGORY_CODES as readonly string[]).includes(id)).map(({ id, name }) => ({ id, name, mode: 'structured' as const })),
+  { id: 'TIREOIDE', name: 'Tireoide', mode: 'structured' as const },
+  ...WRITER_CATEGORY_OPTIONS.map(({ id, name }) => ({ id, name, mode: 'writer' as const })),
 ]
 
 function CategoryArtwork({ categoryId }: { categoryId: string }) {
@@ -24,7 +26,8 @@ function CategoryArtwork({ categoryId }: { categoryId: string }) {
 
 function CategoryCard({ entry, onSelect }: { entry: CategoryEntry; onSelect: (id: string) => void }) {
   return (
-    <button type="button" onClick={() => onSelect(entry.id)} data-category-id={entry.id}
+    <button type="button" onClick={() => onSelect(entry.id)} data-category-id={entry.id} data-generation-mode={entry.mode}
+      aria-label={entry.name}
       className="exam-category-item flex flex-col items-center justify-between gap-2 rounded-2xl border border-gray-200 bg-white text-left transition hover:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
       <span aria-hidden="true" className={`absolute right-3 top-3 h-2 w-2 rounded-full ${categoryDotClass(entry.id)}`} />
       <CategoryArtwork categoryId={entry.id} />
@@ -56,16 +59,14 @@ export function ExamCategoryPicker({ onSelect }: { onSelect: (id: string) => voi
       <style>{`
         @font-face { font-family: 'Category Condensed'; src: url('/fonts/BarlowCondensed-Light.ttf') format('truetype'); font-style: normal; font-weight: 300; font-display: swap; }
         .exam-category-picker { letter-spacing: 0; color-scheme: light; background: #fff; color: #111827; }
-        .exam-category-groups { display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch; }
+        .exam-category-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 14px; align-items: stretch; }
         .exam-category-group {
           --n: 1;
-          flex: var(--n) 1 calc(var(--n) * 148px + (var(--n) - 1) * 10px + 34px);
-          max-width: calc(var(--n) * 280px + (var(--n) - 1) * 10px + 34px);
           min-width: min(100%, 250px);
           background: #f7f8f9; border: 1px solid #eceef1; border-radius: 22px; padding: 12px 16px 16px;
         }
         .exam-category-group-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); gap: 10px; }
-        .exam-category-item { position: relative; min-width: 0; min-height: 150px; padding: 14px 12px 12px; animation: category-enter 180ms ease-out both; }
+        .exam-category-item { position: relative; width: 100%; max-width: 290px; min-width: 0; min-height: 138px; padding: 14px 12px 12px; animation: category-enter 180ms ease-out both; }
         .exam-category-art { display: flex; flex: 0 0 84px; width: 84px; height: 84px; align-items: center; justify-content: center; align-self: center; }
         .exam-category-art img { display: block; width: 84px; height: 84px; object-fit: contain; border-radius: 4px; filter: grayscale(1); opacity: 0.8; }
         .exam-category-label, .exam-category-title, .exam-category-group-title { font-family: 'Category Condensed', 'Arial Narrow', sans-serif; font-weight: 300; text-transform: uppercase; letter-spacing: 0; }
@@ -74,9 +75,10 @@ export function ExamCategoryPicker({ onSelect }: { onSelect: (id: string) => voi
         .exam-category-item:hover { transform: translateY(-2px); }
         @keyframes category-enter { from { opacity: 0; } to { opacity: 1; } }
         @media (max-width: 480px) {
-          .exam-category-group { flex-basis: 100%; max-width: none; padding: 10px 10px 12px; border-radius: 18px; }
+          .exam-category-groups { grid-template-columns: 1fr; }
+          .exam-category-group { max-width: none; padding: 10px 10px 12px; border-radius: 18px; }
           .exam-category-group-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-          .exam-category-item { min-height: 132px; padding: 12px 8px 10px; }
+          .exam-category-item { min-height: 120px; padding: 12px 8px 10px; }
           .exam-category-art { flex-basis: 68px; width: 68px; height: 68px; }
           .exam-category-art img { width: 68px; height: 68px; }
           .exam-category-label { font-size: 17px; }
@@ -86,7 +88,7 @@ export function ExamCategoryPicker({ onSelect }: { onSelect: (id: string) => voi
           .exam-category-item { min-height: 76px; flex-direction: row; align-items: center; }
           .exam-category-art { flex-basis: 56px; width: 56px; height: 56px; }
           .exam-category-art img { width: 56px; height: 56px; }
-          .exam-category-label { min-height: 0; }
+          .exam-category-label { width: auto; min-width: 0; min-height: 0; flex: 1; }
         }
         @media (prefers-reduced-motion: reduce) {
           .exam-category-item { animation: none; transition: none; }

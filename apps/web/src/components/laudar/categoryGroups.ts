@@ -9,7 +9,7 @@
  * exame pelo que o médico digita ("joelho", "tiroide", "gravidez").
  */
 
-export type CategoryGroupId = 'medicina_interna' | 'obstetricia' | 'saude_mulher' | 'pequenas_partes' | 'musculoesqueletico'
+export type CategoryGroupId = 'medicina_interna' | 'obstetricia' | 'saude_mulher' | 'pequenas_partes' | 'musculoesqueletico' | 'vascular' | 'outros_exames'
 
 export type CategoryGroup = {
   id: CategoryGroupId
@@ -24,7 +24,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'medicina_interna',
     label: 'Medicina interna',
-    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'DOPPLER_CAROTIDAS'],
+    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
   },
   {
     id: 'obstetricia',
@@ -39,13 +39,23 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'pequenas_partes',
     label: 'Pequenas partes',
-    categories: ['TIREOIDE', 'CERVICAL', 'PARTES_MOLES'],
+    categories: ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES'],
     shortcuts: ['MAMARIA'],
   },
   {
     id: 'musculoesqueletico',
     label: 'Musculoesquelético',
     categories: ['MUSCULOESQUELETICO'],
+  },
+  {
+    id: 'vascular',
+    label: 'Vascular',
+    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_FISTULA_AV', 'DOPPLER_RENAL'],
+  },
+  {
+    id: 'outros_exames',
+    label: 'Outros exames',
+    categories: ['TRANSFONTANELA', 'OCULAR', 'LIVRE'],
   },
 ]
 
@@ -73,6 +83,20 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   PELVE_FEMININA: ['pelvica', 'utero', 'ovarios', 'endometrio', 'transvaginal', 'ginecologica'],
   MAMARIA: ['mama', 'mamas', 'mamaria', 'axila', 'axilas', 'bi-rads', 'birads'],
   TIREOIDE: ['tiroide', 'tireoide', 'ti-rads', 'tirads', 'nodulo tireoidiano'],
+  PAREDE_ABDOMINAL: ['parede', 'hernia'],
+  PROSTATA_TRANSRETAL: ['prostata', 'transretal'],
+  ESCROTAL: ['testiculo', 'bolsa escrotal'],
+  REGIAO_INGUINAL: ['inguinal', 'virilha'],
+  PARATIREOIDE: ['paratireoides', 'paratiroide'],
+  GLANDULAS_SALIVARES: ['salivar', 'parotida', 'submandibular'],
+  DOPPLER_VENOSO_MMII: ['doppler venoso', 'membros inferiores', 'mapa venoso'],
+  DOPPLER_VENOSO_MMII_MEDIDAS: ['doppler venoso medidas', 'medidas venosas'],
+  DOPPLER_ARTERIAL_MMII: ['doppler arterial', 'arterial membros inferiores'],
+  DOPPLER_FISTULA_AV: ['fistula', 'acesso vascular'],
+  DOPPLER_RENAL: ['doppler renal', 'arterias renais'],
+  TRANSFONTANELA: ['fontanela', 'transfontanelar'],
+  OCULAR: ['olho', 'ocular'],
+  LIVRE: ['livre', 'ditado livre'],
   CERVICAL: ['pescoco', 'linfonodos cervicais', 'glandulas salivares', 'parotida', 'submandibular'],
   PARTES_MOLES: ['partes moles', 'subcutaneo', 'lipoma', 'parede'],
   MUSCULOESQUELETICO: ['msk', 'articular', 'tendao', 'ombro', 'cotovelo', 'punho', 'mao', 'quadril', 'joelho', 'tornozelo', 'pe'],
@@ -82,7 +106,7 @@ export function normalizeSearch(text: string) {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 }
 
-export type CategoryEntry = { id: string; name: string; groupId: CategoryGroupId; groupLabel: string }
+export type CategoryEntry = { id: string; name: string; groupId: CategoryGroupId; groupLabel: string; mode: 'structured' | 'writer' }
 
 /**
  * Busca global sem acento: cada termo digitado precisa COMEÇAR uma palavra do
@@ -99,7 +123,7 @@ export function matchesCategory(entry: CategoryEntry, query: string): boolean {
 }
 
 /** Categorias agrupadas, na ordem de exibição; ids fora dos grupos vão para o fim do primeiro. */
-export function groupCategories(catalog: Array<{ id: string; name: string }>): Array<CategoryGroup & { entries: CategoryEntry[] }> {
+export function groupCategories(catalog: Array<{ id: string; name: string; mode?: 'structured' | 'writer' }>): Array<CategoryGroup & { entries: CategoryEntry[] }> {
   const byId = new Map(catalog.map((item) => [item.id, item]))
   const placed = new Set<string>()
   const groups = CATEGORY_GROUPS.map((group) => {
@@ -107,7 +131,7 @@ export function groupCategories(catalog: Array<{ id: string; name: string }>): A
       .filter((id) => byId.has(id) && !placed.has(id))
       .map((id) => {
         placed.add(id)
-        return { id, name: CATEGORY_DISPLAY_NAMES[id] ?? byId.get(id)!.name, groupId: group.id, groupLabel: group.label }
+        return { id, name: CATEGORY_DISPLAY_NAMES[id] ?? byId.get(id)!.name, groupId: group.id, groupLabel: group.label, mode: byId.get(id)!.mode ?? 'structured' }
       })
     return { ...group, entries }
   })
@@ -115,7 +139,7 @@ export function groupCategories(catalog: Array<{ id: string; name: string }>): A
   const orphans = catalog.filter((item) => !placed.has(item.id))
   if (orphans.length && groups[0]) {
     groups[0].entries.push(...orphans.map((item) => ({
-      id: item.id, name: CATEGORY_DISPLAY_NAMES[item.id] ?? item.name, groupId: groups[0].id, groupLabel: groups[0].label,
+      id: item.id, name: CATEGORY_DISPLAY_NAMES[item.id] ?? item.name, groupId: groups[0].id, groupLabel: groups[0].label, mode: item.mode ?? 'structured',
     })))
   }
   return groups

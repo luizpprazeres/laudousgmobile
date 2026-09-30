@@ -60,6 +60,7 @@ import {
   updateReportRagBlocks,
   finalizeReport,
   markReportStatus,
+  setReportAwaitingClarify,
   loadReportForResume,
 } from "@/server/db/reportsRepo";
 import {
@@ -90,6 +91,7 @@ import {
 } from "@/server/db/lookups";
 import { runRendererStream } from "@/server/pipeline/renderer";
 import { decidirDescarte } from "@/server/pipeline/descarteDecision";
+import { pendingClarifyMetadata } from "@/server/pipeline/pendingClarify";
 import { ehDerivado } from "@/server/renderer/catalog/registry";
 import { resolverPersonalizacao } from "@/server/customization/resolve";
 import { resolverFrasesPersonalizadas } from "@/server/customization/resolveFrases";
@@ -683,7 +685,10 @@ export async function POST(req: Request) {
 
       if (!validator.ok && validator.questions.length > 0) {
         outcome = "clarify";
-        await markReportStatus({ reportId, status: "awaiting_clarify" });
+        await setReportAwaitingClarify({
+          reportId,
+          metadata: pendingClarifyMetadata(validator.questions),
+        });
         emit({
           type: "clarify",
           ts: nowIso(),

@@ -19,6 +19,7 @@ const files = [
   'tests/composition.manual.ts',
   'src/lib/deterministic/organs/abdomeTotalGrid.manual.ts',
   'src/lib/visualSchemas/__tests__/breast-geometry.manual.ts',
+  'src/lib/writerGeneration.test.mts',
   'src/lib/calculators/preEclampsia.test.mts',
   'src/lib/calculators/trisomyFmf.test.mts',
   'src/lib/companionStructured.test.ts',

@@ -14,11 +14,13 @@ import { extname, join, resolve } from 'node:path'
 import { build } from 'esbuild'
 
 const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
-  ['medicina_interna', ['ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'DOPPLER_CAROTIDAS']],
+  ['medicina_interna', ['ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS']],
   ['obstetricia', ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA']],
   ['saude_mulher', ['PELVE_FEMININA', 'MAMARIA']],
-  ['pequenas_partes', ['TIREOIDE', 'CERVICAL', 'PARTES_MOLES']],
+  ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES']],
   ['musculoesqueletico', ['MUSCULOESQUELETICO']],
+  ['vascular', ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_FISTULA_AV', 'DOPPLER_RENAL']],
+  ['outros_exames', ['TRANSFONTANELA', 'OCULAR', 'LIVRE']],
 ]
 const TODOS = GRUPOS_ESPERADOS.flatMap(([, ids]) => ids)
 const TIPOS: Record<string, string> = { '.webp': 'image/webp', '.png': 'image/png', '.ttf': 'font/ttf' }
@@ -80,9 +82,9 @@ async function main() {
         els.map((el) => [el.dataset.categoryGroup, Array.from(el.querySelectorAll<HTMLElement>('.exam-category-item')).map((c) => c.dataset.categoryId)]))
       assert.deepEqual(estrutura, GRUPOS_ESPERADOS)
       assert.equal(new Set(await idsVisiveis()).size, TODOS.length, 'cada exame uma vez')
-      assert.equal(await page.locator('.exam-category-art img').evaluateAll((imgs: HTMLImageElement[]) => new Set(imgs.map((i) => i.src)).size), TODOS.length)
+      assert.equal(await page.locator('.exam-category-art img').evaluateAll((imgs: HTMLImageElement[]) => new Set(imgs.map((i) => i.src)).size), 15)
       assert.deepEqual(await page.getByRole('heading', { level: 2 }).allTextContents(),
-        ['Medicina interna', 'Obstetrícia', 'Saúde da mulher', 'Pequenas partes', 'Musculoesquelético'])
+        ['Medicina interna', 'Obstetrícia', 'Saúde da mulher', 'Pequenas partes', 'Musculoesquelético', 'Vascular', 'Outros exames'])
       const atalho = page.locator('[data-category-shortcut="MAMARIA"]')
       assert.equal(await atalho.count(), 1)
       assert.equal(await page.locator('[data-category-group="pequenas_partes"] [data-category-shortcut="MAMARIA"]').count(), 1)
@@ -90,11 +92,12 @@ async function main() {
       // --- layout: sem rolagem horizontal, largura usada, alvos -------------------
       const pagina = await page.evaluate(() => ({ s: document.documentElement.scrollWidth, c: document.documentElement.clientWidth }))
       assert.ok(pagina.s <= pagina.c, `${width}: rolagem horizontal ${pagina.s} > ${pagina.c}`)
-      assert.ok(await cards.evaluateAll((els: HTMLElement[]) => els.every((el) => el.scrollWidth <= el.clientWidth)), `${width}: rótulo estourando`)
+      const overflowingCards = await cards.evaluateAll((els: HTMLElement[]) => els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => ({ id: el.dataset.categoryId, scroll: el.scrollWidth, client: el.clientWidth, text: el.innerText })))
+      assert.deepEqual(overflowingCards, [], `${width}: rótulo estourando`)
       const grupos = await page.locator('[data-category-group]').evaluateAll((els: HTMLElement[]) => els.map((el) => el.getBoundingClientRect()).map((r) => ({ top: Math.round(r.top), left: r.left, right: r.right })))
       const linhas = new Set(grupos.map((g) => g.top)).size
       const usado = Math.max(...grupos.map((g) => g.right)) - Math.min(...grupos.map((g) => g.left))
-      if (width === 1920) assert.ok(linhas <= 2, `1920: ${linhas} linhas de famílias`)
+      if (width === 1920) assert.ok(linhas <= 3, `1920: ${linhas} linhas de famílias`)
       if (width === 1440) assert.ok(linhas <= 3, `1440: ${linhas} linhas de famílias`)
       if (!mobile) assert.ok(usado >= width * 0.88 || usado >= 1790, `${width}: famílias usam só ${Math.round(usado)}px`)
       const cardLarguras = await cards.evaluateAll((els: HTMLElement[]) => els.map((el) => el.getBoundingClientRect().width))
@@ -133,7 +136,7 @@ async function main() {
         }))
       }
       // Ordem do DOM = ordem visual: famílias em sequência; o atalho fecha Pequenas partes.
-      assert.deepEqual(ordem, [...TODOS.slice(0, 14), 'atalho:MAMARIA', ...TODOS.slice(14)])
+      assert.deepEqual(ordem, [...TODOS.slice(0, 20), 'atalho:MAMARIA', ...TODOS.slice(20)])
       await page.getByLabel('Buscar categoria').focus()
       await page.keyboard.press('Tab'); await page.keyboard.press('Tab')
       await page.keyboard.press('Enter')
@@ -143,12 +146,15 @@ async function main() {
       const busca = page.getByLabel('Buscar categoria')
       const buscar = async (texto: string) => { await busca.fill(texto); return idsVisiveis() }
       assert.deepEqual(await buscar('obstetrica'), ['OBSTETRICA', 'DOPPLER_OBSTETRICO'])
-      assert.deepEqual(await buscar('próstata'), ['PROSTATA_SUPRAPUBICA'])
+      assert.deepEqual(await buscar('próstata'), ['PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL'])
       assert.deepEqual(await buscar('tiroide'), ['TIREOIDE'])
       assert.deepEqual(await buscar('joelho'), ['MUSCULOESQUELETICO'])
       assert.deepEqual(await buscar('gravidez'), ['OBSTETRICA'])
       assert.deepEqual(await buscar('saude da mulher'), ['PELVE_FEMININA', 'MAMARIA'])
-      assert.deepEqual(await buscar('pequenas partes'), ['TIREOIDE', 'CERVICAL', 'PARTES_MOLES'])
+      assert.deepEqual(await buscar('pequenas partes'), ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES'])
+      assert.deepEqual(await buscar('prostata transretal'), ['PROSTATA_TRANSRETAL'])
+      assert.deepEqual(await buscar('mapa venoso'), ['DOPPLER_VENOSO_MMII'])
+      assert.deepEqual(await buscar('medidas venosas'), ['DOPPLER_VENOSO_MMII_MEDIDAS'])
       assert.deepEqual(await buscar('mama'), ['MAMARIA'])
       assert.equal(await page.locator('[data-category-shortcut]').count(), 0, 'atalho não duplica resultado de busca')
       assert.deepEqual(await buscar('colo'), ['CERVICOMETRIA'])
@@ -156,6 +162,11 @@ async function main() {
       await page.getByRole('status').getByText('Nenhum exame encontrado.').waitFor()
       await page.getByRole('button', { name: 'Limpar busca' }).click()
       assert.equal(await cards.count(), TODOS.length)
+      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 15)
+      assert.equal(await page.locator('[data-generation-mode="writer"]').count(), 14)
+      for (const forbidden of ['ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_VENOSO_MMSS', 'QUADRIL_INFANTIL', 'TORAX', 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
+        assert.equal(await page.locator(`[data-category-id="${forbidden}"]`).count(), 0, `${forbidden} não pode aparecer no seletor`)
+      }
       // Um resultado só: Enter na busca abre o exame.
       await busca.fill('tiroide')
       await busca.press('Enter')

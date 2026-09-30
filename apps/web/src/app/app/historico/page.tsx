@@ -21,8 +21,8 @@ export default async function HistoricoPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('reports')
-      .select('id, category_code, final_output, created_at')
-      .not('final_output', 'is', null)
+      .select('id, category_code, final_output, generated_output, created_at')
+      .or('final_output.not.is.null,generated_output.not.is.null')
       .order('created_at', { ascending: false })
       .limit(100),
   ])
@@ -43,7 +43,7 @@ export default async function HistoricoPage() {
       origin: 'ia' as const,
       category: r.category_code as string,
       title: null,
-      text: (r.final_output as string) ?? '',
+      text: ((r.final_output as string | null) ?? (r.generated_output as string | null)) ?? '',
       date: r.created_at as string,
     })),
   ].sort((a, b) => b.date.localeCompare(a.date))

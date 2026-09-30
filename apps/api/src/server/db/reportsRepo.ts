@@ -94,6 +94,26 @@ export async function markReportStatus(args: {
 }
 
 /**
+ * Pausa o mesmo relatório para esclarecimento sem apagar ou substituir texto
+ * clínico que já possa existir. As perguntas ficam versionadas no metadata e
+ * a retomada continua protegida pelo ownership de `loadReportForResume`.
+ */
+export async function setReportAwaitingClarify(args: {
+  reportId: string;
+  metadata: Record<string, unknown>;
+}): Promise<void> {
+  const db = getDbClient();
+  await db
+    .update(schema.reports)
+    .set({
+      status: "awaiting_clarify",
+      generationMetadata: args.metadata as never,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.reports.id, args.reportId));
+}
+
+/**
  * Carrega report pra resume após clarify. Valida ownership via user_id.
  * Retorna null se não existir ou pertencer a outro usuário.
  */

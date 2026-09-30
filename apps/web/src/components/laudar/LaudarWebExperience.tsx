@@ -32,6 +32,8 @@ import { adaptarPartesMoles } from '@/lib/catalog/partesMolesParaCatalogo'
 import { adaptarMusculoesqueletico } from '@/lib/catalog/musculoesqueleticoParaCatalogo'
 import { migrateLegacyMskState } from '@/lib/deterministic/organs/musculoesqueletico'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
+import { isWriterCategory } from '@/lib/writerCategories'
+import { WriterCategoryWorkspace } from './WriterCategoryWorkspace'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
 import { LiverQuantificationPanel } from './LiverQuantificationPanel'
@@ -1398,6 +1400,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   )
   const hasSecondaryTools = supportsVisualSchema || digitadoras.length > 0
   const hasExamOptions = controls.length > 0 || isTireoide || categoria === 'DOPPLER_OBSTETRICO'
+
+  if (!choosingCategory && !composition && isWriterCategory(categoria)) {
+    return <WriterCategoryWorkspace category={categoria} onBack={() => setChoosingCategory(true)} />
+  }
 
   return (
     <>
