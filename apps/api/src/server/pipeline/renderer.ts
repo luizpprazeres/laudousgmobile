@@ -1,5 +1,8 @@
 import { env } from "../env";
-import type { RagBlockForPrompt } from "@laudousg/shared";
+import {
+  renderClinicalModelReport,
+  type RagBlockForPrompt,
+} from "@laudousg/shared";
 import type { DopplerMode } from "./requestedExam";
 import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
@@ -522,7 +525,12 @@ export async function* runRendererStream(args: {
     args.categoryCode === "PROSTATA_SUPRAPUBICA" ||
     args.categoryCode === "DOPPLER_OBSTETRICO" ||
     args.categoryCode === "DOPPLER_CAROTIDAS" ||
-    args.categoryCode === "CERVICOMETRIA"
+    args.categoryCode === "CERVICOMETRIA" ||
+    args.categoryCode === "ABDOMEN_TOTAL_DOPPLER" ||
+    args.categoryCode === "DOPPLER_VENOSO_MMSS" ||
+    args.categoryCode === "DOPPLER_ARTERIAL_MMSS" ||
+    args.categoryCode === "TORAX" ||
+    args.categoryCode === "QUADRIL_INFANTIL"
   ) {
     const objetivo = isEstiloObjetivo(args.writingStyleId);
     // Épico IG determinística (Domingos) — atrás de flag (default OFF).
@@ -832,6 +840,20 @@ export async function* runRendererStream(args: {
         // Cervicometria (ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL p/ medida do colo).
         // Exame simples e 100% determinístico. Sem variante objetivo (clássico só).
         fullText = renderCervicometria(fnd as CervicometriaFindings);
+        break;
+      case "ABDOMEN_TOTAL_DOPPLER":
+      case "DOPPLER_VENOSO_MMSS":
+      case "DOPPLER_ARTERIAL_MMSS":
+      case "TORAX":
+      case "QUADRIL_INFANTIL":
+        // Contrato clínico compartilhado entre Web, iOS, Android e API.
+        // A função valida antes de renderizar e falha fechada em qualquer
+        // pendência clínica. Revisão médica não é pré-condição de geração: o
+        // rascunho nasce pendente e a aprovação ocorre após persistência. Isso
+        // é especialmente importante no abdome com Doppler:
+        // sem um abdome completo já estruturado, não reduzimos o exame a uma
+        // frase genérica nem inventamos normalidade de órgão.
+        fullText = renderClinicalModelReport(fnd);
         break;
       default:
         fullText = renderViasUrinarias(fnd as Parameters<typeof renderViasUrinarias>[0], { objetivo });

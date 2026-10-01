@@ -43,6 +43,11 @@ export function categoriaLabel(code: string): string {
     DOPPLER_OBSTETRICO: 'Doppler obstétrico',
     DOPPLER_RENAL: 'Doppler renal',
     DOPPLER_VENOSO_MMII: 'Doppler venoso (MMII)',
+    ABDOMEN_TOTAL_DOPPLER: 'Abdome total com Doppler',
+    DOPPLER_VENOSO_MMSS: 'Doppler venoso (MMSS)',
+    DOPPLER_ARTERIAL_MMSS: 'Doppler arterial (MMSS)',
+    TORAX: 'Ultrassonografia de tórax',
+    QUADRIL_INFANTIL: 'Quadril infantil',
     ABDOMEN_TOTAL__PROSTATA_SUPRAPUBICA: 'Abdome total + Próstata',
     MAMARIA__PELVE_FEMININA: 'Mamas e axilas + Pelve feminina',
   }

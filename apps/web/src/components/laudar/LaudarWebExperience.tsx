@@ -34,6 +34,8 @@ import { migrateLegacyMskState } from '@/lib/deterministic/organs/musculoesquele
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { isWriterCategory } from '@/lib/writerCategories'
 import { WriterCategoryWorkspace } from './WriterCategoryWorkspace'
+import { isClinicalWebModel } from '@/lib/clinicalModels'
+import { ClinicalModelWorkspace } from './ClinicalModelWorkspace'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
 import { LiverQuantificationPanel } from './LiverQuantificationPanel'
@@ -456,7 +458,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // escreveria fora do componente, então fica fora até ter escopo próprio.
   // O antigo esquema de posição fetal foi retirado da Web: ele ocupava espaço
   // sem ajudar a decisão clínica. Mama e tireoide mantêm os mapas interativos.
-  const supportsVisualSchema = !composition && (isTireoide || (categoria === 'MAMARIA' && !axilasOnly))
+  const supportsVisualSchema = !composition && (isTireoide || categoria === 'PELVE_FEMININA' || (categoria === 'MAMARIA' && !axilasOnly))
   const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -1081,15 +1083,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (section.id === 'recommendations') return <RecommendationsPanel state={examState?.__recommendations ?? {}} onChange={state => updateSectionState('__recommendations', state, false)} />
     if (section.id === 'visual-schema') return (
                     <VisualSchemaPanel
-                      category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : 'FETAL_POSITION'}
+                      category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : categoria === 'PELVE_FEMININA' ? 'MYOMA' : 'FETAL_POSITION'}
                       breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
                       fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
                       thyroidState={tireoideState}
+                      myomaState={(examState?.utero ?? {}) as OrganState}
                       onBreastChange={(nextState) => setExamStates((all) => ({
                         ...all,
                         MAMARIA: { ...all.MAMARIA, mamas: nextState },
                       }))}
                       onThyroidChange={setTireoideState}
+                      onMyomaChange={(nextState) => updateSectionState('utero', nextState, false)}
                       embedded
                       onClose={() => setVisualSchemaOpen(false)}
                     />
@@ -1403,6 +1407,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
   if (!choosingCategory && !composition && isWriterCategory(categoria)) {
     return <WriterCategoryWorkspace category={categoria} onBack={() => setChoosingCategory(true)} />
+  }
+
+  if (!choosingCategory && !composition && isClinicalWebModel(categoria)) {
+    return <ClinicalModelWorkspace category={categoria} onBack={() => setChoosingCategory(true)} />
   }
 
   return (

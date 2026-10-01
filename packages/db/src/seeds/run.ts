@@ -36,10 +36,13 @@ async function main() {
   for (const c of CATEGORIES_SEED) {
     await db
       .insert(schema.categories)
-      .values({ code: c.code, label: c.label })
+      .values({ code: c.code, label: c.label, active: c.active ?? true })
       .onConflictDoUpdate({
         target: schema.categories.code,
-        set: { label: c.label },
+        set: {
+          label: c.label,
+          ...(c.active === undefined ? {} : { active: c.active }),
+        },
       });
   }
 

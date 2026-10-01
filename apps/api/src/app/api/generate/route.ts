@@ -112,6 +112,7 @@ import {
   contractHashFor,
   PROMPT_VERSION,
 } from "@/server/prompts/version";
+import { clinicalRendererFallbackBlocked } from "@/server/clinicalReports/fallbackPolicy";
 
 // Recomendações do codex já incorporadas:
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
@@ -1078,6 +1079,12 @@ export async function POST(req: Request) {
         // no writer em vez de bloquear a geração. Só o caminho renderer; só se nada
         // do laudo saiu ainda (a extração é a 1ª etapa, então no erro finalText="").
         if (!useRenderer || finalText !== "") throw rendererErr;
+        // Os quatro modelos inteiramente estruturados falham fechados: cair no
+        // writer após contrato incompleto poderia inventar normalidade, Graf ou
+        // volume. Abdome total com Doppler é a exceção deliberada porque pode
+        // reutilizar o writer abdominal completo, sem reduzir o exame a uma
+        // frase genérica.
+        if (clinicalRendererFallbackBlocked(effectiveCategory)) throw rendererErr;
         if (dopplerMode === "combined" && bundle.error) {
           throw new Error(`Doppler combined writer fallback blocked: ${bundle.error.code}`);
         }

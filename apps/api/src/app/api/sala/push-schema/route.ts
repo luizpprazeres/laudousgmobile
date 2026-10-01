@@ -1,5 +1,6 @@
 import { verifyJwt, unauthorized } from "@/server/auth/verifyJwt";
 import { getServiceClient } from "@/server/supabaseService";
+import { MyomaSchemeContractSchema } from "@laudousg/schemes";
 export { OPTIONS } from "@/server/cors";
 
 export const runtime = "nodejs";
@@ -29,6 +30,8 @@ export async function POST(req: Request) {
     reportId?: unknown;
     examType?: unknown;
     examLabel?: unknown;
+    contractVersion?: unknown;
+    findings?: unknown;
     png?: unknown;
     pdf?: unknown;
   };
@@ -50,6 +53,13 @@ export async function POST(req: Request) {
   if (!examType || !examLabel || !png) {
     return json({ error: "missing_fields" }, 400);
   }
+  // Clientes novos enviam o contrato estruturado; builds móveis já publicados
+  // continuam aceitos durante a migração e ainda entregam somente a imagem.
+  const hasMyomaContract = body.contractVersion !== undefined || body.findings !== undefined;
+  const myomaContract = examType === "MIOMAS" && hasMyomaContract
+    ? MyomaSchemeContractSchema.safeParse({ contractVersion: body.contractVersion, examType, findings: body.findings })
+    : null;
+  if (myomaContract && !myomaContract.success) return json({ error: "invalid_myoma_contract" }, 400);
   if (png.length > MAX_B64 || (pdf?.length ?? 0) > MAX_B64) {
     return json({ error: "payload_too_large" }, 413);
   }
@@ -89,7 +99,7 @@ export async function POST(req: Request) {
       console.error("[sala/push-schema] update falhou", error);
       return json({ error: "update_failed" }, 500);
     }
-    return json({ ok: true, replaced: true });
+    return json({ ok: true, replaced: true, ...(myomaContract?.success ? { contractVersion: myomaContract.data.contractVersion } : {}) });
   }
 
   const { error } = await service.from("sala_schemas").insert({
@@ -104,7 +114,7 @@ export async function POST(req: Request) {
     console.error("[sala/push-schema] insert falhou", error);
     return json({ error: "insert_failed" }, 500);
   }
-  return json({ ok: true, replaced: false });
+  return json({ ok: true, replaced: false, ...(myomaContract?.success ? { contractVersion: myomaContract.data.contractVersion } : {}) });
 }
 
 function json(body: Record<string, unknown>, status = 200) {

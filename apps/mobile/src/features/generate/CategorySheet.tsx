@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Sheet } from "@/ui/Sheet";
 import { CATS, Category, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 import { CheckCircle } from "@/ui/icons";
+import { CATEGORY_IMAGES } from "@/features/generate/categoryImages";
 
 type Props = {
   open: boolean;
@@ -34,10 +35,14 @@ export function CategorySheet({ open, onClose, current, onPick }: Props) {
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
-              <View style={[styles.iconBox, { backgroundColor: cat.color + "22" }]}>
-                <Text style={[styles.iconLetter, { color: cat.color }]}>
-                  {cat.label[0]}
-                </Text>
+              <View style={[styles.iconBox, { backgroundColor: cat.color + "14" }]}>
+                {CATEGORY_IMAGES[cat.id] ? (
+                  <Image source={CATEGORY_IMAGES[cat.id]} style={styles.categoryImage} resizeMode="contain" />
+                ) : (
+                  <Text style={[styles.iconLetter, { color: cat.color }]}>
+                    {cat.label[0]}
+                  </Text>
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>{cat.label}</Text>
@@ -76,6 +81,10 @@ function makeStyles(t: ColorTokens) {
     iconLetter: {
       fontSize: 17,
       fontFamily: FONT.bold,
+    },
+    categoryImage: {
+      width: 30,
+      height: 30,
     },
     label: {
       color: t.text,

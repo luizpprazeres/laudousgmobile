@@ -24,7 +24,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'medicina_interna',
     label: 'Medicina interna',
-    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
+    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
   },
   {
     id: 'obstetricia',
@@ -50,12 +50,12 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'vascular',
     label: 'Vascular',
-    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_FISTULA_AV', 'DOPPLER_RENAL'],
+    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_RENAL'],
   },
   {
     id: 'outros_exames',
     label: 'Outros exames',
-    categories: ['TRANSFONTANELA', 'OCULAR', 'LIVRE'],
+    categories: ['QUADRIL_INFANTIL', 'TRANSFONTANELA', 'OCULAR', 'LIVRE'],
   },
 ]
 
@@ -72,6 +72,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
  */
 export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   ABDOMEN_TOTAL: ['abdome', 'abdomen', 'abdominal', 'figado', 'vesicula', 'pancreas', 'baco', 'rins', 'aorta'],
+  ABDOMEN_TOTAL_DOPPLER: ['abdome', 'abdomen', 'doppler esplancnico', 'veia porta', 'portal'],
   ABDOMEN_SUPERIOR: ['abdome', 'abdomen', 'figado', 'vesicula', 'vias biliares', 'pancreas', 'baco'],
   VIAS_URINARIAS: ['rins', 'renal', 'bexiga', 'ureteres', 'trato urinario', 'urinario'],
   PROSTATA_SUPRAPUBICA: ['prostata', 'suprapubica', 'vesiculas seminais'],
@@ -92,11 +93,15 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   DOPPLER_VENOSO_MMII: ['doppler venoso', 'membros inferiores', 'mapa venoso'],
   DOPPLER_VENOSO_MMII_MEDIDAS: ['doppler venoso medidas', 'medidas venosas'],
   DOPPLER_ARTERIAL_MMII: ['doppler arterial', 'arterial membros inferiores'],
+  DOPPLER_VENOSO_MMSS: ['doppler venoso', 'membros superiores', 'braco', 'cateter'],
+  DOPPLER_ARTERIAL_MMSS: ['doppler arterial', 'membros superiores', 'braco', 'desfiladeiro toracico'],
   DOPPLER_FISTULA_AV: ['fistula', 'acesso vascular'],
   DOPPLER_RENAL: ['doppler renal', 'arterias renais'],
   TRANSFONTANELA: ['fontanela', 'transfontanelar'],
   OCULAR: ['olho', 'ocular'],
   LIVRE: ['livre', 'ditado livre'],
+  TORAX: ['torax', 'pulmao', 'pulmonar', 'pleura', 'derrame pleural', 'linhas b'],
+  QUADRIL_INFANTIL: ['quadril', 'infantil', 'lactente', 'graf'],
   CERVICAL: ['pescoco', 'linfonodos cervicais', 'glandulas salivares', 'parotida', 'submandibular'],
   PARTES_MOLES: ['partes moles', 'subcutaneo', 'lipoma', 'parede'],
   MUSCULOESQUELETICO: ['msk', 'articular', 'tendao', 'ombro', 'cotovelo', 'punho', 'mao', 'quadril', 'joelho', 'tornozelo', 'pe'],

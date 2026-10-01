@@ -126,7 +126,14 @@ export const RADIUS = {
  * Não espelhar automaticamente todo o seed: há categorias ainda sem cobertura
  * clínica liberada neste fluxo. A Biblioteca busca sua lista separadamente.
  */
-export const CATS = [
+type CategoryShape = {
+  readonly id: string;
+  readonly label: string;
+  readonly color: string;
+  readonly sub: string;
+};
+
+export const RELEASED_CATS = [
   { id: "ABDOMEN_TOTAL",         label: "Abdome Total",        color: "#059669", sub: "Fígado, vias biliares, pâncreas…" },
   { id: "ABDOMEN_SUPERIOR",      label: "Abdome Superior",     color: "#10B981", sub: "Fígado, vesícula, pâncreas e baço" },
   { id: "PAREDE_ABDOMINAL",      label: "Parede Abdominal",    color: "#34D399", sub: "Parede abdominal e região de interesse" },
@@ -156,6 +163,28 @@ export const CATS = [
   { id: "TRANSFONTANELA",       label: "Transfontanela",      color: "#65A30D", sub: "Ultrassonografia transfontanelar" },
   { id: "OCULAR",               label: "Ocular",              color: "#4F46E5", sub: "Ultrassonografia ocular" },
   { id: "LIVRE",                label: "Laudo Livre",         color: "#64748B", sub: "Exame sem categoria específica" },
-] as const;
+] as const satisfies readonly CategoryShape[];
 
-export type Category = (typeof CATS)[number];
+/**
+ * Modelos aprovados em 30/09/2026, preparados no Android mas deliberadamente
+ * ocultos até Web, iOS, Android e backend fecharem o mesmo gate de lançamento.
+ * A ativação é uma mudança de release coordenada, não uma flag remota que possa
+ * deixar só um cliente expondo um contrato incompleto.
+ */
+export const APPROVED_PENDING_CATS = [
+  { id: "ABDOMEN_TOTAL_DOPPLER", label: "Abdome Total com Doppler", color: "#047857", sub: "Abdome total e sistema esplâncnico" },
+  { id: "DOPPLER_VENOSO_MMSS", label: "Doppler Venoso MMSS", color: "#2563EB", sub: "Membro superior unilateral ou bilateral" },
+  { id: "DOPPLER_ARTERIAL_MMSS", label: "Doppler Arterial MMSS", color: "#DC2626", sub: "Membro superior e manobras dinâmicas" },
+  { id: "TORAX", label: "Tórax", color: "#475569", sub: "Avaliação pulmonar e pleural" },
+  { id: "QUADRIL_INFANTIL", label: "Quadril infantil", color: "#65A30D", sub: "Técnica de Graf, de 0 a 6 meses" },
+] as const satisfies readonly CategoryShape[];
+
+export type Category = (typeof RELEASED_CATS)[number] | (typeof APPROVED_PENDING_CATS)[number];
+
+// Só mudar para true no commit de ativação simultânea das três plataformas.
+export const APPROVED_CLINICAL_MODELS_ENABLED = false;
+
+export const CATS: readonly Category[] = [
+  ...RELEASED_CATS,
+  ...(APPROVED_CLINICAL_MODELS_ENABLED ? APPROVED_PENDING_CATS : []),
+];

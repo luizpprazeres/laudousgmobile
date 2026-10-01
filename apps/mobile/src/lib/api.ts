@@ -1,5 +1,11 @@
 import { reviewedRevision } from "@/features/sala/reviewContract";
 import {
+  ClinicalModelInputSchema,
+  type ClinicalModelInput,
+  type ClinicalModelIssue,
+} from "@laudousg/shared";
+import type { MyomaSchemeContract } from "@laudousg/schemes/myoma";
+import {
   GenerateRequestSchema,
   GenerateSSEEventSchema,
   GenerationRunSchema,
@@ -124,6 +130,106 @@ export async function readJsonOrThrow(res: Response, label: string) {
     throw new Error(`${label} falhou: ${res.status} ${detail}`);
   }
   return res.json();
+}
+
+const ClinicalModelIssueResponseSchema = z.object({
+  code: z.string(),
+  severity: z.enum(["error", "warning"]),
+  path: z.string(),
+  message: z.string(),
+});
+
+const ClinicalReportCreateResponseSchema = z.object({
+  report: z.object({
+    id: z.string().uuid(),
+    category_code: z.string(),
+    status: z.string(),
+    content_revision: z.number().int().positive(),
+    review_status: z.literal("pending"),
+    physician_reviewed: z.literal(false),
+    generated_output: z.string().min(1),
+    contract: ClinicalModelInputSchema,
+    warnings: z.array(ClinicalModelIssueResponseSchema),
+    created_at: z.string(),
+  }),
+});
+
+const ClinicalReportReviewResponseSchema = z.object({
+  ok: z.literal(true),
+  reviewStatus: z.literal("reviewed"),
+}).passthrough();
+
+export type PersistedClinicalReport = {
+  id: string;
+  categoryCode: string;
+  status: string;
+  contentRevision: number;
+  reviewStatus: "pending";
+  physicianReviewed: false;
+  generatedOutput: string;
+  contract: ClinicalModelInput;
+  warnings: ClinicalModelIssue[];
+  createdAt: string;
+};
+
+export async function createClinicalReportV1(
+  contract: ClinicalModelInput,
+  writingStyleId?: string,
+): Promise<PersistedClinicalReport> {
+  const safeContract = ClinicalModelInputSchema.parse({
+    ...contract,
+    physicianReviewed: false,
+  });
+  const res = await authedFetch("/api/v1/clinical-reports", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({
+      contract: safeContract,
+      ...(writingStyleId ? { writing_style_id: writingStyleId } : {}),
+    }),
+  });
+  const { report } = ClinicalReportCreateResponseSchema.parse(
+    await readJsonOrThrow(res, "gerar laudo clínico"),
+  );
+  return {
+    id: report.id,
+    categoryCode: report.category_code,
+    status: report.status,
+    contentRevision: report.content_revision,
+    reviewStatus: report.review_status,
+    physicianReviewed: report.physician_reviewed,
+    generatedOutput: report.generated_output,
+    contract: report.contract,
+    warnings: report.warnings,
+    createdAt: report.created_at,
+  };
+}
+
+export async function reviewClinicalReportV1(input: {
+  reportId: string;
+  expectedRevision: number;
+  expectedText: string;
+}): Promise<void> {
+  const res = await authedFetch(
+    `/api/v1/clinical-reports/${encodeURIComponent(input.reportId)}/review`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        expectedRevision: input.expectedRevision,
+        expectedText: input.expectedText,
+      }),
+    },
+  );
+  ClinicalReportReviewResponseSchema.parse(
+    await readJsonOrThrow(res, "revisar laudo clínico"),
+  );
 }
 
 export async function getReport(id: string): Promise<ReportDetail> {
@@ -268,6 +374,8 @@ export type PushSchemaToSalaInput = {
   reportId?: string | null;
   examType: string;
   examLabel: string;
+  contractVersion?: MyomaSchemeContract["contractVersion"];
+  findings?: MyomaSchemeContract["findings"];
   png: string;
   pdf?: string | null;
 };

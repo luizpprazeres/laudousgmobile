@@ -7,11 +7,13 @@ import { categoryDotClass } from './categoryPresentation'
 import { EXAM_CATEGORY_IMAGES } from './examCategoryImages'
 import { groupCategories, matchesCategory, type CategoryEntry } from './categoryGroups'
 import { STRUCTURED_WEB_CATEGORY_CODES, WRITER_CATEGORY_OPTIONS } from '@/lib/writerCategories'
+import { CLINICAL_WEB_MODELS, CLINICAL_WEB_MODELS_ENABLED } from '@/lib/clinicalModels'
 
 const catalog = [
   ...GENERIC_CATEGORIES.filter(({ id }) => (STRUCTURED_WEB_CATEGORY_CODES as readonly string[]).includes(id)).map(({ id, name }) => ({ id, name, mode: 'structured' as const })),
   { id: 'TIREOIDE', name: 'Tireoide', mode: 'structured' as const },
   ...WRITER_CATEGORY_OPTIONS.map(({ id, name }) => ({ id, name, mode: 'writer' as const })),
+  ...(CLINICAL_WEB_MODELS_ENABLED ? CLINICAL_WEB_MODELS.map(({ id, name }) => ({ id, name, mode: 'structured' as const })) : []),
 ]
 
 function CategoryArtwork({ categoryId }: { categoryId: string }) {

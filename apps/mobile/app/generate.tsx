@@ -23,9 +23,11 @@ import {
   initialGenerateState,
 } from "@/features/generate/state";
 import {
+  createClinicalReportV1,
   generateReportStream,
   getMeProfile,
   pushReportToSala,
+  reviewClinicalReportV1,
   updateReportFinalOutput,
   reviewReportForSala,
   type MockScenario,
@@ -96,8 +98,11 @@ import { FeedbackCard } from "@/features/feedback/FeedbackCard";
 import { ImageAnalysisSheet } from "@/features/imaging/ImageAnalysisSheet";
 import { VenousSchemeView } from "@/features/generate/VenousSchemeView";
 import { AnatomicalSchemeView } from "@/features/generate/AnatomicalSchemeView";
+import { MyomaSchemeView } from "@/features/generate/MyomaSchemeView";
 import type { VisualCategory, VisualMarker } from "@/features/generate/visualSchemeState";
 import { dopplerRequestFields, type DopplerMode } from "@/features/generate/dopplerMode";
+import { ClinicalModelWorkspace } from "@/features/generate/ClinicalModelWorkspace";
+import { isClinicalModelCode } from "@laudousg/shared";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -111,6 +116,7 @@ export default function GenerateScreen() {
   const [visualDraft, setVisualDraft] = useState<{ reportId: string; category: VisualCategory; markers: VisualMarker[] } | null>(null);
   const [tab, setTab] = useState<Tab>("achados");
   const [cat, setCat] = useState<Category>(CATS[0]);
+  const clinicalCategory = isClinicalModelCode(cat.id) ? cat.id : null;
   const [dopplerMode, setDopplerMode] = useState<DopplerMode>("combined");
   useEffect(() => { setDopplerMode("combined"); }, [cat.id]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -624,7 +630,7 @@ export default function GenerateScreen() {
       </View>
 
       {/* Tabs */}
-      {cat.id === "DOPPLER_OBSTETRICO" ? (
+      {!clinicalCategory && cat.id === "DOPPLER_OBSTETRICO" ? (
         <View style={{ paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <Text style={{ color: t.text, fontFamily: FONT.medium }}>Somente Doppler</Text>
           <Switch
@@ -635,7 +641,7 @@ export default function GenerateScreen() {
           />
         </View>
       ) : null}
-      <View style={{ paddingTop: 4 }}>
+      {!clinicalCategory ? <View style={{ paddingTop: 4 }}>
         <Segment<Tab>
           value={tab}
           onChange={setTab}
@@ -644,7 +650,7 @@ export default function GenerateScreen() {
             { value: "laudo", label: "Laudo" },
           ]}
         />
-      </View>
+      </View> : null}
 
       {notice ? (
         <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
@@ -694,7 +700,28 @@ export default function GenerateScreen() {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {tab === "achados" && (
+          {clinicalCategory ? <ClinicalModelWorkspace
+            category={clinicalCategory}
+            onCreate={async ({ examState }) => {
+              const report = await createClinicalReportV1(examState, writingStyleId);
+              if (!isClinicalModelCode(report.categoryCode)) {
+                throw new Error("A API devolveu uma categoria clínica inválida.");
+              }
+              return {
+                reportId: report.id,
+                categoryCode: report.categoryCode,
+                contentRevision: report.contentRevision,
+                reportText: report.generatedOutput,
+                examState: report.contract,
+                warnings: report.warnings.map((warning) => warning.message),
+              };
+            }}
+            onRelease={async ({ reportId, expectedRevision, expectedText }) => {
+              await reviewClinicalReportV1({ reportId, expectedRevision, expectedText });
+            }}
+          /> : null}
+
+          {!clinicalCategory && tab === "achados" && (
             <AchadosBody
               text={text}
               hasContent={hasContent}
@@ -717,7 +744,7 @@ export default function GenerateScreen() {
             />
           )}
 
-          {tab === "laudo" && (
+          {!clinicalCategory && tab === "laudo" && (
             <LaudoBody
               state={state}
               cat={cat}
@@ -803,7 +830,7 @@ export default function GenerateScreen() {
       </KeyboardAvoidingView>
 
       {/* Composer */}
-      <View
+      {!clinicalCategory ? <View
         style={[
           styles.composer,
           { paddingBottom: insets.bottom > 0 ? insets.bottom + 6 : 22 },
@@ -895,7 +922,7 @@ export default function GenerateScreen() {
             )}
           </Pressable>
         </View>
-      </View>
+      </View> : null}
 
       {/* Overlays */}
       {recording ? (
@@ -1481,6 +1508,10 @@ function LaudoBody({
             markers={visualDraft?.reportId === state.reportId && visualDraft.category === state.structured.categoria_detectada ? visualDraft.markers : []}
             onChange={(markers) => onVisualChange({ reportId: state.reportId, category: state.structured!.categoria_detectada as VisualCategory, markers })}
           />
+        ) : null}
+
+        {state.kind === "done" && state.structured?.categoria_detectada === "PELVE_FEMININA" ? (
+          <MyomaSchemeView reportId={state.reportId} reportText={state.finalText} />
         ) : null}
 
         {state.kind === "done" && text ? (

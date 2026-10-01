@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./vascular": "./src/vascular/index.ts"
+    "./vascular": "./src/vascular/index.ts",
+    "./myoma": "./src/myoma/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

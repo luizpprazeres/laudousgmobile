@@ -4,7 +4,8 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@laudousg/schemes/myoma": ["../../packages/schemes/src/myoma/index.ts"]
     },
     "types": ["expo-router"]
   },

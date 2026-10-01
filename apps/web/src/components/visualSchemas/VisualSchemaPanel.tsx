@@ -3,28 +3,32 @@
 import { useMemo, useRef, useState } from 'react'
 import { Download, FileDown, Move, Plus, Radio, Trash2, X } from 'lucide-react'
 import type { OrganState, TireoideState } from '@/lib/deterministic'
-import type { MapaVenoso } from '@laudousg/schemes'
+import { createMyomaSchemeContract, type MapaVenoso } from '@laudousg/schemes'
 import { addVisualBreastCyst, breastFindingsFromState, moveBreastFinding, moveThyroidFinding, removeVisualBreastCyst, thyroidFindingsFromState } from '@/lib/visualSchemas/adapters'
 import { fetalPositionFromState } from '@/lib/visualSchemas/fetalPosition'
+import { myomaFindingsFromPelvisState } from '@/lib/visualSchemas/myomaAdapter'
 import { BreastSchema } from './BreastSchema'
 import { FetalPositionSchema } from './FetalPositionSchema'
 import { ThyroidSchema } from './ThyroidSchema'
 import { VenousSchema } from './VenousSchema'
+import { MyomaSchemaEditor } from './MyomaSchemaEditor'
 import { base64Only, downloadDataUrl, schemaPdf, schemaPng } from './exportSchema'
 
 type Props = {
-  category: 'MAMARIA' | 'TIREOIDE' | 'FETAL_POSITION' | 'VENOUS'
+  category: 'MAMARIA' | 'TIREOIDE' | 'FETAL_POSITION' | 'VENOUS' | 'MYOMA'
   breastState: OrganState
   fetalState: OrganState
   thyroidState: TireoideState
   venousMap?: MapaVenoso
+  myomaState?: OrganState
   onBreastChange: (state: OrganState) => void
   onThyroidChange: (state: TireoideState) => void
+  onMyomaChange?: (state: OrganState) => void
   embedded?: boolean
   onClose: () => void
 }
 
-export function VisualSchemaPanel({ category, breastState, fetalState, thyroidState, venousMap, onBreastChange, onThyroidChange, onClose, embedded = false }: Props) {
+export function VisualSchemaPanel({ category, breastState, fetalState, thyroidState, venousMap, myomaState = {}, onBreastChange, onThyroidChange, onMyomaChange, onClose, embedded = false }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [status, setStatus] = useState<'idle' | 'working' | 'sent' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -34,8 +38,10 @@ export function VisualSchemaPanel({ category, breastState, fetalState, thyroidSt
   const multipleCystSources = useMemo(() => breastReportFindings.filter((finding) => breastState[`achados.${finding.id}.tipo`] === 'multiplos_cistos'), [breastReportFindings, breastState])
   const fetalPosition = useMemo(() => fetalPositionFromState(fetalState), [fetalState])
   const thyroid = useMemo(() => thyroidFindingsFromState(thyroidState), [thyroidState])
-  const findingsCount = category === 'MAMARIA' ? breastReportFindings.length : category === 'TIREOIDE' ? thyroid.length : category === 'VENOUS' ? venousMap?.lesoes.length ?? 0 : 1
-  const name = category === 'MAMARIA' ? 'esquema-mamas' : category === 'TIREOIDE' ? 'esquema-tireoide' : category === 'VENOUS' ? 'cartografia-venosa-mmii' : 'esquema-posicao-fetal'
+  const myomas = useMemo(() => myomaFindingsFromPelvisState(myomaState), [myomaState])
+  const myomaContract = useMemo(() => createMyomaSchemeContract(myomas), [myomas])
+  const findingsCount = category === 'MAMARIA' ? breastReportFindings.length : category === 'TIREOIDE' ? thyroid.length : category === 'VENOUS' ? venousMap?.lesoes.length ?? 0 : category === 'MYOMA' ? myomas.length : 1
+  const name = category === 'MAMARIA' ? 'esquema-mamas' : category === 'TIREOIDE' ? 'esquema-tireoide' : category === 'VENOUS' ? 'cartografia-venosa-mmii' : category === 'MYOMA' ? 'esquema-miomas' : 'esquema-posicao-fetal'
 
   async function createFiles() {
     if (!svgRef.current) throw new Error('O esquema ainda não está pronto.')
@@ -45,7 +51,7 @@ export function VisualSchemaPanel({ category, breastState, fetalState, thyroidSt
     // A base venosa já tem 2048×3072 px. Ampliá-la 3× criaria um canvas de
     // aproximadamente 240 MB sem acrescentar detalhe e pode derrubar notebooks.
     const png = await schemaPng(svgRef.current, category === 'VENOUS' ? 1 : 3)
-    const pdf = await schemaPdf(png, category === 'MAMARIA' || category === 'TIREOIDE')
+    const pdf = await schemaPdf(png, category === 'MAMARIA' || category === 'TIREOIDE' || category === 'MYOMA')
     return { png, pdf }
   }
 
@@ -57,12 +63,15 @@ export function VisualSchemaPanel({ category, breastState, fetalState, thyroidSt
       if (action === 'png') downloadDataUrl(files.png, `${name}.png`)
       if (action === 'pdf') downloadDataUrl(files.pdf, `${name}.pdf`)
       if (action === 'sala') {
+        if (category === 'MYOMA' && !myomaContract) throw new Error('Confirme a classificação FIGO de todos os miomas antes de enviar.')
         const response = await fetch('/api/sala/schema', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            examType: category === 'MAMARIA' ? 'MAMA' : category === 'TIREOIDE' ? 'TIREOIDE' : category === 'VENOUS' ? 'VENOSO_MMII' : 'FETAL_POSITION',
-            examLabel: category === 'MAMARIA' ? 'Esquema de mamas e axilas' : category === 'TIREOIDE' ? 'Esquema de tireoide' : category === 'VENOUS' ? 'Cartografia venosa dos membros inferiores' : 'Esquema da posição fetal',
+            examType: category === 'MAMARIA' ? 'MAMA' : category === 'TIREOIDE' ? 'TIREOIDE' : category === 'VENOUS' ? 'VENOSO_MMII' : category === 'MYOMA' ? 'MIOMAS' : 'FETAL_POSITION',
+            examLabel: category === 'MAMARIA' ? 'Esquema de mamas e axilas' : category === 'TIREOIDE' ? 'Esquema de tireoide' : category === 'VENOUS' ? 'Cartografia venosa dos membros inferiores' : category === 'MYOMA' ? 'Esquema de miomas' : 'Esquema da posição fetal',
+            contractVersion: category === 'MYOMA' ? myomaContract?.contractVersion : undefined,
+            findings: category === 'MYOMA' ? myomaContract?.findings : undefined,
             png: base64Only(files.png),
             pdf: base64Only(files.pdf),
           }),
@@ -121,12 +130,16 @@ export function VisualSchemaPanel({ category, breastState, fetalState, thyroidSt
             ? venousMap
               ? <VenousSchema map={venousMap} svgRef={svgRef} />
               : <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">A cartografia ainda não recebeu os achados estruturados deste exame.</p>
-            : <FetalPositionSchema position={fetalPosition} svgRef={svgRef} />}
+            : category === 'MYOMA'
+              ? <MyomaSchemaEditor state={myomaState} onChange={onMyomaChange ?? (() => {})} svgRef={svgRef} />
+              : <FetalPositionSchema position={fetalPosition} svgRef={svgRef} />}
       <div className="mt-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
         {category === 'FETAL_POSITION'
           ? fetalPosition.title
           : category === 'VENOUS'
             ? findingsCount ? `${findingsCount} ${findingsCount === 1 ? 'alteração vascular projetada' : 'alterações vasculares projetadas'} no mapa.` : 'O mapa permanece anatômico até receber achados estruturados.'
+          : category === 'MYOMA'
+            ? findingsCount ? `${findingsCount} ${findingsCount === 1 ? 'mioma individualizado' : 'miomas individualizados'} no esquema.` : 'Adicione um mioma para iniciar o esquema.'
           : category === 'MAMARIA' && visualCysts.length
             ? `${findingsCount} ${findingsCount === 1 ? 'achado descrito' : 'achados descritos'} e ${visualCysts.length} ${visualCysts.length === 1 ? 'cisto adicional somente no desenho' : 'cistos adicionais somente no desenho'}.`
             : findingsCount ? `${findingsCount} ${findingsCount === 1 ? 'marcador' : 'marcadores'} no esquema.` : 'Adicione um achado no formulário para ele aparecer aqui.'}

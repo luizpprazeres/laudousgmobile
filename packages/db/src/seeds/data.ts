@@ -55,7 +55,7 @@ export const WRITING_STYLES_SEED = [
  * Nota: `DOPPLER` existe no enum original mas SEM prompt nativo — usado
  * apenas como bucket de keyterms para Deepgram. Não incluído aqui.
  */
-export const CATEGORIES_SEED: { code: string; label: string }[] = [
+export const CATEGORIES_SEED: { code: string; label: string; active?: boolean }[] = [
   // Obstétrico
   { code: "OBSTETRICA", label: "Obstétrica" },
   { code: "DOPPLER_OBSTETRICO", label: "Doppler Obstétrico" },
@@ -64,7 +64,7 @@ export const CATEGORIES_SEED: { code: string; label: string }[] = [
 
   // Abdome
   { code: "ABDOMEN_TOTAL", label: "Abdome Total" },
-  { code: "ABDOMEN_TOTAL_DOPPLER", label: "Abdome Total c/ Doppler" },
+  { code: "ABDOMEN_TOTAL_DOPPLER", label: "Abdome Total c/ Doppler", active: true },
   { code: "ABDOMEN_SUPERIOR", label: "Abdome Superior" },
   { code: "PAREDE_ABDOMINAL", label: "Parede Abdominal" },
 
@@ -97,14 +97,14 @@ export const CATEGORIES_SEED: { code: string; label: string }[] = [
   { code: "DOPPLER_ARTERIAL_MMII", label: "Doppler Arterial MMII" },
   { code: "DOPPLER_FISTULA_AV", label: "Doppler Fístula AV" },
   { code: "DOPPLER_RENAL", label: "Doppler Renal" },
-  { code: "DOPPLER_VENOSO_MMSS", label: "Doppler Venoso MMSS" },
-  { code: "DOPPLER_ARTERIAL_MMSS", label: "Doppler Arterial MMSS" },
+  { code: "DOPPLER_VENOSO_MMSS", label: "Doppler Venoso MMSS", active: true },
+  { code: "DOPPLER_ARTERIAL_MMSS", label: "Doppler Arterial MMSS", active: true },
 
   // Outros
   { code: "TRANSFONTANELA", label: "Transfontanela" },
   { code: "OCULAR", label: "Ocular" },
-  { code: "TORAX", label: "Tórax" },
-  { code: "QUADRIL_INFANTIL", label: "Quadril Infantil" },
+  { code: "TORAX", label: "Tórax", active: true },
+  { code: "QUADRIL_INFANTIL", label: "Quadril Infantil", active: true },
   { code: "LIVRE", label: "Livre" },
   { code: "TESTE", label: "Teste" },
 ];

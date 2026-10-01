@@ -14,6 +14,7 @@ import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
 import { oRadsSpec, figoMiomaSpec } from '../../calculators/specs'
 import { createSharedBladderModule } from './urinaryShared'
+import { MyomaFindingSchema, type MyomaFinding } from '@laudousg/schemes'
 
 // ── Via do exame (controle de categoria) ─────────────────────────────────────
 const VIA_TITULO: Record<string, string> = {
@@ -83,12 +84,31 @@ const bexigaModule = createSharedBladderModule('PELVE_FEMININA')
 const miomaSubs: Field[] = [
   { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '3,0 x 2,5 x 2,0' },
   { key: 'classificacao', label: 'Classificação', kind: 'mini-segmented', options: [
-    { value: 'intramural', label: 'Intramural', isDefault: true }, { value: 'subseroso', label: 'Subseroso' }, { value: 'submucoso', label: 'Submucoso' },
+    { value: 'intramural', label: 'Intramural', isDefault: true }, { value: 'subseroso', label: 'Subseroso' }, { value: 'submucoso', label: 'Submucoso' }, { value: 'outro', label: 'Outra localização' },
   ] },
   { key: 'parede', label: 'Parede', kind: 'text', placeholder: 'parede anterior' },
   { key: 'figo', label: 'FIGO', kind: 'text', placeholder: 'ex.: 4' },
+  { key: 'ecotextura', label: 'Ecotextura', kind: 'mini-segmented', options: [
+    { value: 'hipoecoica', label: 'Hipoecoica' }, { value: 'heterogenea', label: 'Heterogênea' },
+    { value: 'calcificada', label: 'Calcificada' }, { value: 'degenerada', label: 'Degenerada' },
+  ] },
 ]
 const miomaExtraSubs: Field[] = miomaSubs.map((field) => ({ ...field }))
+function extraMyomas(st: OrganState): MyomaFinding[] {
+  try {
+    const raw = JSON.parse(String(st['__myoma.extraFindings'] ?? '[]')) as unknown
+    if (!Array.isArray(raw)) return []
+    return raw.flatMap((item) => {
+      const parsed = MyomaFindingSchema.safeParse(item)
+      return parsed.success ? [parsed.data] : []
+    }).slice(0, 17)
+  } catch { return [] }
+}
+const myomaLocationText: Record<MyomaFinding['location'], string> = {
+  not_informed: '', anterior: 'parede anterior', posterior: 'parede posterior',
+  lateral_direita: 'parede lateral direita', lateral_esquerda: 'parede lateral esquerda',
+  fundo: 'região fúndica', cervical: 'região cervical',
+}
 const uteroModule: OrganModule = {
   schema: { id: 'utero', name: 'Útero', category: 'PELVE_FEMININA', fields: [
     { key: 'posicao', label: 'Posição', kind: 'segmented', hint: 'default: anteversão', options: [
@@ -111,13 +131,15 @@ const uteroModule: OrganModule = {
   ] },
   initialState: () => ({ posicao: 'anteversão', medidas: '', volume_classe: 'normal', miomatoso: [], mioma: [], adenomiose: [],
     mioma2: [], mioma3: [], istmocele: [], cistos_naboth: [],
-    'mioma.sim.medidas': '', 'mioma.sim.classificacao': 'intramural', 'mioma.sim.parede': '', 'mioma.sim.figo': '',
-    'mioma2.sim.medidas': '', 'mioma2.sim.classificacao': 'intramural', 'mioma2.sim.parede': '', 'mioma2.sim.figo': '',
-    'mioma3.sim.medidas': '', 'mioma3.sim.classificacao': 'intramural', 'mioma3.sim.parede': '', 'mioma3.sim.figo': '',
+    'mioma.sim.medidas': '', 'mioma.sim.classificacao': 'intramural', 'mioma.sim.parede': '', 'mioma.sim.figo': '', 'mioma.sim.ecotextura': '',
+    'mioma2.sim.medidas': '', 'mioma2.sim.classificacao': 'intramural', 'mioma2.sim.parede': '', 'mioma2.sim.figo': '', 'mioma2.sim.ecotextura': '',
+    'mioma3.sim.medidas': '', 'mioma3.sim.classificacao': 'intramural', 'mioma3.sim.parede': '', 'mioma3.sim.figo': '', 'mioma3.sim.ecotextura': '',
     'istmocele.sim.tipo': 'simples', 'istmocele.sim.descricao': '' }),
   compose: (st): OrganComposition => {
     const miomatoso = ((st.miomatoso as string[]) || []).includes('sim')
-    const temMioma = ((st.mioma as string[]) || []).includes('sim')
+    const miomaKeys = ['mioma', 'mioma2', 'mioma3'].filter((key) => ((st[key] as string[]) || []).includes('sim'))
+    const miomasExtras = extraMyomas(st)
+    const temMioma = miomaKeys.length + miomasExtras.length > 0
     const adenomiose = ((st.adenomiose as string[]) || []).includes('sim')
     const vol = volume(st.medidas)
     const classe = String(st.volume_classe || 'normal')
@@ -127,9 +149,20 @@ const uteroModule: OrganModule = {
     if (miomatoso) {
       body.push('Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas, coalescentes, ocasionando atenuação sonora, que impede a avaliação individualizada.')
     } else if (temMioma) {
-      const partes = ['Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares', `medindo ${medidasFmt(st['mioma.sim.medidas'])}`]
-      if (st['mioma.sim.parede']) partes.push(`situada na ${limpa(String(st['mioma.sim.parede']))}`)
-      body.push(`${partes.join(', ')}.`)
+      miomaKeys.forEach((key, index) => {
+        const eco: Record<string, string> = { hipoecoica: 'hipoecoica', heterogenea: 'heterogênea', calcificada: 'com calcificações', degenerada: 'com sinais de degeneração' }
+        const partes = [`${index ? 'Outra imagem' : 'Miométrio apresentando imagem'} ${eco[String(st[`${key}.sim.ecotextura`])] ?? 'hipoecoica e heterogênea'}, com margens regulares`, `medindo ${medidasFmt(st[`${key}.sim.medidas`])}`]
+        if (st[`${key}.sim.parede`]) partes.push(`situada na ${limpa(String(st[`${key}.sim.parede`]))}`)
+        body.push(`${partes.join(', ')}.`)
+      })
+      miomasExtras.forEach((finding, extraIndex) => {
+        const eco: Record<string, string> = { hipoecoica: 'hipoecoica', heterogenea: 'heterogênea', calcificada: 'com calcificações', degenerada: 'com sinais de degeneração' }
+        const partes = [`${miomaKeys.length + extraIndex ? 'Outra imagem' : 'Miométrio apresentando imagem'} ${finding.echo ? eco[finding.echo] : 'sólida'}, com margens regulares`]
+        if (finding.sizeMaxMm != null) partes.push(`com maior medida de ${ptBr(finding.sizeMaxMm / 10)} cm`)
+        const location = myomaLocationText[finding.location]
+        if (location) partes.push(`situada na ${location}`)
+        body.push(`${partes.join(', ')}.`)
+      })
     } else if (adenomiose) {
       body.push('Miométrio de ecotextura heterogênea, com estrias e/ou pequenos cistos miometriais, sugestivos de adenomiose.')
     } else {
@@ -144,9 +177,19 @@ const uteroModule: OrganModule = {
     }
     // Útero miomatoso difuso já tem item próprio; não lista mioma individualizado junto.
     if (temMioma && !miomatoso) {
-      const cls = st['mioma.sim.classificacao'] ? `nódulo miomatoso ${st['mioma.sim.classificacao']}` : 'nódulo miomatoso'
-      const figo = st['mioma.sim.figo'] ? ` (categoria FIGO ${limpa(String(st['mioma.sim.figo']))})` : ''
-      conclusion.push(`Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável ${cls}${figo}.`)
+      miomaKeys.forEach((key) => {
+        const cls = st[`${key}.sim.classificacao`] ? `nódulo miomatoso ${st[`${key}.sim.classificacao`]}` : 'nódulo miomatoso'
+        const figo = st[`${key}.sim.figo`] ? ` (categoria FIGO ${limpa(String(st[`${key}.sim.figo`]))})` : ''
+        conclusion.push(`Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável ${cls}${figo}.`)
+      })
+      miomasExtras.forEach((finding) => {
+        if (!finding.figoConfirmed) {
+          conclusion.push('Nódulo miomatoso sem classificação FIGO confirmada.')
+          return
+        }
+        const cls = finding.figo <= 2 ? 'submucoso' : finding.figo <= 4 ? 'intramural' : finding.figo <= 7 ? 'subseroso' : 'de localização atípica'
+        conclusion.push(`Nódulo miomatoso ${cls} (categoria FIGO ${finding.figo}).`)
+      })
     }
     if (adenomiose) conclusion.push('Achados compatíveis com adenomiose.')
 

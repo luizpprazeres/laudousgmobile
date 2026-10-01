@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { MyomaSchemeContractSchema } from '@laudousg/schemes'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,20 +17,22 @@ export async function POST(request: Request) {
   const base = process.env.CATALOG_API_URL?.trim().replace(/\/+$/, '')
   if (!base) return Response.json({ error: 'Envio para a Sala não está configurado.' }, { status: 503 })
 
-  let body: { examType?: unknown; examLabel?: unknown; png?: unknown; pdf?: unknown }
+  let body: { examType?: unknown; examLabel?: unknown; contractVersion?: unknown; findings?: unknown; png?: unknown; pdf?: unknown }
   try { body = await request.json() } catch { return Response.json({ error: 'Dados do esquema inválidos.' }, { status: 400 }) }
   const examType = typeof body.examType === 'string' ? body.examType : ''
   const examLabel = typeof body.examLabel === 'string' ? body.examLabel : ''
   const png = typeof body.png === 'string' ? body.png : ''
   const pdf = typeof body.pdf === 'string' ? body.pdf : undefined
-  if (!['MAMA', 'TIREOIDE', 'FETAL_POSITION'].includes(examType) || !examLabel || !png) return Response.json({ error: 'Esquema incompleto.' }, { status: 400 })
+  if (!['MAMA', 'TIREOIDE', 'FETAL_POSITION', 'VENOSO_MMII', 'MIOMAS'].includes(examType) || !examLabel || !png) return Response.json({ error: 'Esquema incompleto.' }, { status: 400 })
+  const myomaContract = examType === 'MIOMAS' ? MyomaSchemeContractSchema.safeParse({ contractVersion: body.contractVersion, examType, findings: body.findings }) : null
+  if (myomaContract && !myomaContract.success) return Response.json({ error: 'Contrato de miomas incompleto ou não confirmado.' }, { status: 400 })
   if (png.length > MAX_BASE64 || (pdf?.length ?? 0) > MAX_BASE64) return Response.json({ error: 'O esquema ficou grande demais para envio.' }, { status: 413 })
 
   try {
     const response = await fetch(`${base}/api/sala/push-schema`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ examType, examLabel, png, pdf }),
+      body: JSON.stringify({ examType, examLabel, png, pdf, ...(myomaContract?.success ? { contractVersion: myomaContract.data.contractVersion, findings: myomaContract.data.findings } : {}) }),
       cache: 'no-store',
     })
     const result = await response.json().catch(() => null) as { error?: string } | null

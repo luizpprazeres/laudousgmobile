@@ -96,6 +96,7 @@ import {
   DOPPLER_CAROTIDAS_EXTRACTION_PROMPT,
   DopplerCarotidasFindingsSchema,
 } from "./categories/DOPPLER_CAROTIDAS";
+import { CLINICAL_MODEL_EXTRACTORS } from "./categories/CLINICAL_MODELS_V1";
 
 /**
  * DET-5 — Extração tipada por categoria para o caminho RENDERER.
@@ -135,6 +136,11 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "DOPPLER_RENAL",
   "DOPPLER_VENOSO_MMII",
   "DOPPLER_CAROTIDAS",
+  "ABDOMEN_TOTAL_DOPPLER",
+  "DOPPLER_VENOSO_MMSS",
+  "DOPPLER_ARTERIAL_MMSS",
+  "TORAX",
+  "QUADRIL_INFANTIL",
 ]);
 
 export type RendererExtractionResult = {
@@ -344,6 +350,7 @@ export const EXTRACTORS: Record<string, Extractor> = {
     prompt: DOPPLER_CAROTIDAS_EXTRACTION_PROMPT,
     parse: (raw) => DopplerCarotidasFindingsSchema.parse(raw),
   },
+  ...CLINICAL_MODEL_EXTRACTORS,
   // Esquema visual venoso (DESENHO) — extração per-segmento SEPARADA do writer
   // DOPPLER_VENOSO_MMII acima (que faz o TEXTO do laudo). Chave distinta para não
   // colidir; consumida SÓ pelo side-channel extractVenousMap (flag
@@ -383,6 +390,11 @@ const PROGRESS_MILESTONES: { field: string; label: string }[] = [
   { field: '"birads"', label: "categoria BI-RADS" },
   { field: '"tirads"', label: "categoria TI-RADS" },
   { field: '"achados_adicionais"', label: "observações" },
+  { field: '"portalVein"', label: "veia porta" },
+  { field: '"psvMeasurements"', label: "velocidades arteriais" },
+  { field: '"linesB"', label: "linhas B" },
+  { field: '"effusion"', label: "derrame pleural" },
+  { field: '"alphaDeg"', label: "ângulos de Graf" },
 ];
 
 export async function runRendererExtraction(args: {
