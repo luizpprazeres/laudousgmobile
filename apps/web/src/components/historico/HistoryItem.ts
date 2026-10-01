@@ -1,3 +1,5 @@
+import { categoryDisplayLabel } from '@laudousg/shared'
+
 /**
  * O item do histórico e as duas traduções que toda tela dele precisa.
  *
@@ -51,7 +53,7 @@ export function categoriaLabel(code: string): string {
     ABDOMEN_TOTAL__PROSTATA_SUPRAPUBICA: 'Abdome total + Próstata',
     MAMARIA__PELVE_FEMININA: 'Mamas e axilas + Pelve feminina',
   }
-  return map[code] ?? code.charAt(0) + code.slice(1).toLowerCase().replace(/_/g, ' ')
+  return map[code] ?? categoryDisplayLabel(code)
 }
 
 /** `2026-08-21T10:14:00Z` → `21/08/2026 10:14`. */

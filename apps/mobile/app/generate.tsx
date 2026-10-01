@@ -102,7 +102,7 @@ import { MyomaSchemeView } from "@/features/generate/MyomaSchemeView";
 import type { VisualCategory, VisualMarker } from "@/features/generate/visualSchemeState";
 import { dopplerRequestFields, type DopplerMode } from "@/features/generate/dopplerMode";
 import { ClinicalModelWorkspace } from "@/features/generate/ClinicalModelWorkspace";
-import { isClinicalModelCode } from "@laudousg/shared";
+import { categoryDisplayLabel, isClinicalModelCode } from "@laudousg/shared";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -1645,7 +1645,7 @@ function SanityCard({
 function catLabelFor(code: string): string {
   return (
     CATS.find((c) => c.id === code)?.label ??
-    code.replaceAll("_", " ").toLowerCase().replace(/^./, (m) => m.toUpperCase())
+    categoryDisplayLabel(code)
   );
 }
 

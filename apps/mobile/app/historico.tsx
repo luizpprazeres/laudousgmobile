@@ -20,6 +20,7 @@ import { useColorTokens } from "@/ui/useColorTokens";
 import { supabase } from "@/lib/supabase";
 import { pushReportToSala } from "@/lib/api";
 import { stripReviewMarkers } from "@/features/generate/reviewMarkers";
+import { categoryDisplayLabel } from "@laudousg/shared";
 
 type ReportRow = {
   id: string;
@@ -509,7 +510,7 @@ function categoryFor(code: string) {
   return (
     CATEGORY_MAP.get(code as (typeof CATS)[number]["id"]) ?? {
       id: code,
-      label: code.replaceAll("_", " "),
+      label: categoryDisplayLabel(code),
       color: "#9CA3AF",
       sub: "",
     }

@@ -1,3 +1,5 @@
+import { categoryDisplayLabel } from '@laudousg/shared'
+
 /**
  * FAMÍLIAS DE EXAME no seletor de categoria da Web — só navegação.
  *
@@ -63,6 +65,10 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
 export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   DOPPLER_OBSTETRICO: 'Obstétrica com Doppler',
   TIREOIDE: 'Tireoide',
+}
+
+function displayName(id: string) {
+  return CATEGORY_DISPLAY_NAMES[id] ?? categoryDisplayLabel(id)
 }
 
 /**
@@ -136,7 +142,7 @@ export function groupCategories(catalog: Array<{ id: string; name: string; mode?
       .filter((id) => byId.has(id) && !placed.has(id))
       .map((id) => {
         placed.add(id)
-        return { id, name: CATEGORY_DISPLAY_NAMES[id] ?? byId.get(id)!.name, groupId: group.id, groupLabel: group.label, mode: byId.get(id)!.mode ?? 'structured' }
+        return { id, name: displayName(id), groupId: group.id, groupLabel: group.label, mode: byId.get(id)!.mode ?? 'structured' }
       })
     return { ...group, entries }
   })
@@ -144,7 +150,7 @@ export function groupCategories(catalog: Array<{ id: string; name: string; mode?
   const orphans = catalog.filter((item) => !placed.has(item.id))
   if (orphans.length && groups[0]) {
     groups[0].entries.push(...orphans.map((item) => ({
-      id: item.id, name: CATEGORY_DISPLAY_NAMES[item.id] ?? item.name, groupId: groups[0].id, groupLabel: groups[0].label, mode: item.mode ?? 'structured',
+      id: item.id, name: displayName(item.id), groupId: groups[0].id, groupLabel: groups[0].label, mode: item.mode ?? 'structured',
     })))
   }
   return groups

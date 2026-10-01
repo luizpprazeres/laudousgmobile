@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Check, Copy, Image, Loader2, Mic, RefreshCw, Smartphone, X } from 'lucide-react'
+import { categoryDisplayLabel } from '@laudousg/shared'
 import type { CompanionStructuredPayload } from '@/lib/companionStructured'
 import {
   createCompanionSession,
@@ -66,7 +67,7 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
             <div key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
               <p className={`mb-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${event.kind === 'structured_findings' ? 'text-sky-600 dark:text-sky-300' : 'text-violet-600 dark:text-violet-300'}`}>
                 {event.kind === 'structured_findings' ? <Image className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
-                {event.kind === 'structured_findings' ? `Medidas extraídas · ${event.payload.category?.replaceAll('_', ' ') ?? ''}` : 'Achados do médico'}
+                {event.kind === 'structured_findings' ? `Medidas extraídas · ${categoryDisplayLabel(event.payload.category)}` : 'Achados do médico'}
               </p>
               <p className="line-clamp-4 whitespace-pre-wrap text-xs leading-relaxed text-gray-700 dark:text-gray-200">{event.payload.text || event.payload.summary || 'Entrada sem texto'}</p>
               <div className="mt-2 flex justify-end gap-2">

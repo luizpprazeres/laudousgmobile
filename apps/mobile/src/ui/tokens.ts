@@ -136,7 +136,7 @@ type CategoryShape = {
 export const RELEASED_CATS = [
   { id: "ABDOMEN_TOTAL",         label: "Abdome Total",        color: "#059669", sub: "Fígado, vias biliares, pâncreas…" },
   { id: "ABDOMEN_SUPERIOR",      label: "Abdome Superior",     color: "#10B981", sub: "Fígado, vesícula, pâncreas e baço" },
-  { id: "PAREDE_ABDOMINAL",      label: "Parede Abdominal",    color: "#34D399", sub: "Parede abdominal e região de interesse" },
+  { id: "PAREDE_ABDOMINAL",      label: "Parede abdominal",    color: "#34D399", sub: "Parede abdominal e região de interesse" },
   { id: "VIAS_URINARIAS",        label: "Vias Urinárias",      color: "#06B6D4", sub: "Rins, ureteres, bexiga" },
   { id: "PROSTATA_SUPRAPUBICA", label: "Próstata Suprapúbica", color: "#0891B2", sub: "Próstata por via suprapúbica" },
   { id: "PROSTATA_TRANSRETAL",   label: "Próstata Transretal", color: "#0E7490", sub: "Próstata por via transretal" },

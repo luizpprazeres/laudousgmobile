@@ -1,3 +1,5 @@
+import { categoryDisplayLabel } from '@laudousg/shared'
+
 export type ReportOrigin = 'ia' | 'web'
 export type PeriodFilter = '7d' | '30d' | '90d' | 'all'
 export type FeedbackValue = 'positive' | 'negative'
@@ -83,11 +85,11 @@ export const PERIODS: { label: string; value: PeriodFilter }[] = [
 ]
 
 export function categoryLabel(code: string) {
-  return CATEGORY_LABELS[code] ?? code
+  return CATEGORY_LABELS[code] ?? categoryDisplayLabel(code)
 }
 
 export function shortCategoryLabel(code: string) {
-  return SHORT_CATEGORY_LABELS[code] ?? CATEGORY_LABELS[code] ?? code
+  return SHORT_CATEGORY_LABELS[code] ?? CATEGORY_LABELS[code] ?? categoryDisplayLabel(code)
 }
 
 export function filterByPeriod(reports: AnalyticsReport[], period: PeriodFilter) {

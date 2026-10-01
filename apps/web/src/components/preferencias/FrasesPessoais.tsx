@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Pencil, Plus, Trash2, X } from 'lucide-react'
+import { categoryDisplayLabel } from '@laudousg/shared'
 
 type Phrase = { id: string; title: string; body: string; category_code: string | null; position: number }
 type Draft = { title: string; body: string; category_code: string }
@@ -62,7 +63,9 @@ export function FrasesPessoais() {
     await load()
   }
 
-  const categoryName = (code: string | null) => CATEGORIES.find(([value]) => value === code)?.[1] ?? 'Todas as categorias'
+  const categoryName = (code: string | null) => code
+    ? CATEGORIES.find(([value]) => value === code)?.[1] ?? categoryDisplayLabel(code)
+    : 'Todas as categorias'
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">

@@ -23,6 +23,7 @@ import { SHORT_MEDICAL_DISCLAIMER } from "@/legal/documents";
 import { Segment } from "@/ui/Segment";
 import { CATS, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
+import { categoryDisplayLabel } from "@laudousg/shared";
 
 // RAG saiu (pipeline atual usa writers/renderers, igual ao iOS); a aba
 // "Achados" mostra o que o médico ditou/digitou (raw_input) — antes era um
@@ -183,7 +184,7 @@ export default function ReportDetailScreen() {
   const { report, latest_run: latestRun } = data;
   const catLabel =
     CATS.find((c) => c.id === report.category_code)?.label ??
-    report.category_code;
+    categoryDisplayLabel(report.category_code);
 
   return (
     <View style={styles.screen}>

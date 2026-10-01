@@ -5,6 +5,7 @@ import { associationsFor, associationByCode, type AssociationDefinition, type Co
 import type { CompositionCategoryCode } from '@/lib/composition/contract'
 import { CATEGORIES } from '@/lib/deterministic'
 import { categoryDotClass } from './categoryPresentation'
+import { categoryDisplayLabel } from '@laudousg/shared'
 
 /**
  * "ASSOCIAR EXAME" — só oferece os pares com contrato de composição.
@@ -85,5 +86,5 @@ export function AssociationPanel({
 }
 
 export function nameOf(category: CompositionCategoryCode | string) {
-  return CATEGORIES[category]?.name ?? category
+  return CATEGORIES[category]?.name ?? categoryDisplayLabel(category)
 }
