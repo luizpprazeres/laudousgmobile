@@ -111,11 +111,11 @@ export function createHeroReducer(cases: HeroCase[] = HERO_CASES) {
 
 export type TimelineStep = { at: number; action: HeroAction }
 
-export const TIMING = { firstChoice: 650, betweenChoices: 800, keystroke: 170, afterTyping: 650, readyToCopy: 650, copyToNext: 750 }
+export const TIMING = { firstChoice: 900, betweenChoices: 800, keystroke: 170, afterTyping: 650, readyToCopy: 1150, copyToNext: 1000 }
 
 /**
  * Roteiro de UM caso, em ms desde a entrada. Com os tempos padrão cada caso
- * dura entre 3 e 5 s (conferido em teste).
+ * dura entre 5 e 6 s (conferido em teste).
  */
 export function caseTimeline(heroCase: HeroCase, caseIndex: number, t = TIMING): TimelineStep[] {
   const steps: TimelineStep[] = [{ at: 0, action: { type: 'enterCase', caseIndex, reset: true } }]

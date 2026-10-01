@@ -320,6 +320,12 @@ async function checkScroll(page: any, viewport: Viewport) {
 async function checkWebDemo(page: any, viewport: Viewport) {
   const demo = page.locator('[data-hero-demo]')
   assert.equal(await demo.count(), 1, `${viewport.width}: demo Web ausente/duplicada`)
+  const frames: Array<{ width: number; height: number; state: string }> = []
+  const captureFrame = async (state: string) => {
+    const box = await demo.boundingBox()
+    assert.ok(box, `${viewport.width}: demo sem geometria em ${state}`)
+    frames.push({ width: box.width, height: box.height, state })
+  }
   const tabs = demo.getByRole('group', { name: 'Exames de exemplo' }).getByRole('button')
   const cases = [
     ['Abdome total', 'abdome-total'], ['Abdome superior', 'abdome-superior'],
@@ -333,6 +339,8 @@ async function checkWebDemo(page: any, viewport: Viewport) {
     assert.equal(await demo.getAttribute('data-hero-mode'), 'manual', `${viewport.width}: foco/tecla não interrompeu autoplay`)
     assert.equal(await demo.getAttribute('data-hero-case'), id, `${viewport.width}: aba não mudou o caso`)
     assert.equal(await tab.getAttribute('aria-pressed'), 'true', `${viewport.width}: aba não selecionada`)
+    await afterPaint(page)
+    await captureFrame(id)
   }
   await demo.getByRole('button', { name: 'Abdome total', exact: true }).click()
   const report = demo.locator('article[aria-label="Laudo de exemplo"]')
@@ -378,6 +386,8 @@ async function checkWebDemo(page: any, viewport: Viewport) {
     assert.ok(box && box.height >= 43.5, `${viewport.width}: opção menor que 44px`)
   }
   await finding.click()
+  await afterPaint(page)
+  await captureFrame('campo de medida visível')
   assert.equal(await finding.getAttribute('aria-pressed'), 'true', `${viewport.width}: achado não selecionado`)
   const input = field.getByRole('textbox', { name: 'Maior eixo', exact: true })
   assert.equal(await input.inputValue(), '', `${viewport.width}: Litíase inventou medida antes da digitação`)
@@ -386,6 +396,7 @@ async function checkWebDemo(page: any, viewport: Viewport) {
   await page.waitForFunction(() => document.querySelector('[data-hero-demo]')?.getAttribute('data-stage') !== 'redigindo')
   assert.match(await shownReport.innerText(), /medindo 2,7 cm/, `${viewport.width}: medida manual não chegou ao laudo`)
   assert.equal(await demo.getAttribute('data-stage'), 'laudo', `${viewport.width}: etapa não acompanhou achado`)
+  await captureFrame('laudo atualizado')
   await page.waitForTimeout(5100)
   assert.equal(await input.inputValue(), '2,7', `${viewport.width}: autoplay sobrescreveu medida manual`)
   assert.equal(await demo.getAttribute('data-hero-case'), 'abdome-total', `${viewport.width}: autoplay retomou após interação`)
@@ -395,6 +406,10 @@ async function checkWebDemo(page: any, viewport: Viewport) {
   assert.equal(copies.length, 1, `${viewport.width}: clique não fez exatamente uma cópia`)
   assert.match(copies[0], /DADOS SINTÉTICOS/)
   assert.match(copies[0], /medindo 2,7 cm/)
+  const heightDelta = Math.max(...frames.map((frame) => frame.height)) - Math.min(...frames.map((frame) => frame.height))
+  const widthDelta = Math.max(...frames.map((frame) => frame.width)) - Math.min(...frames.map((frame) => frame.width))
+  assert.ok(heightDelta <= 1, `${viewport.width}: moldura variou ${heightDelta}px (${frames.map((frame) => `${frame.state}:${frame.height}`).join(', ')})`)
+  assert.ok(widthDelta <= 1, `${viewport.width}: moldura variou ${widthDelta}px (${frames.map((frame) => `${frame.state}:${frame.width}`).join(', ')})`)
   await geometry(page, `${viewport.width} hero manual`)
 }
 

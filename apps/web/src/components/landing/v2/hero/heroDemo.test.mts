@@ -11,7 +11,7 @@ import type { HeroAction, HeroState } from './heroAutoplay.ts'
 const casesModule = (importedCases as typeof importedCases & { default?: typeof importedCases }).default ?? importedCases
 const autoplayModule = (importedAutoplay as typeof importedAutoplay & { default?: typeof importedAutoplay }).default ?? importedAutoplay
 const { HERO_CASES, checkMeasure, composeCase, buildClipboardText, baselineValues } = casesModule
-const { createAutoplay, createHeroReducer, initialHeroState, caseDuration, showcaseState } = autoplayModule
+const { createAutoplay, createHeroReducer, initialHeroState, caseDuration, showcaseState, TIMING } = autoplayModule
 
 let passed = 0
 const test = (name: string, fn: () => void) => {
@@ -79,11 +79,13 @@ const bodyTexts = (s: HeroState) => {
   return composeCase(c, s.values[c.id]).body.flatMap((l) => (l.kind === 'text' ? [l.text] : []))
 }
 
-test('4 casos: 2 abdome, 1 pelve, 1 tireoide; 3 a 5 s cada', () => {
+test('4 casos: 2 abdome, 1 pelve, 1 tireoide; cada laudo ganhou exatamente 1 s', () => {
   assert.deepEqual(HERO_CASES.map((c) => c.source), ['ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR', 'PELVE_FEMININA', 'TIREOIDE'])
+  const previousTiming = { ...TIMING, firstChoice: 650, readyToCopy: 650, copyToNext: 750 }
   for (const c of HERO_CASES) {
     const d = caseDuration(c)
-    assert.ok(d >= 3000 && d <= 5000, `${c.id} dura ${d} ms`)
+    assert.ok(d >= 5000 && d <= 6000, `${c.id} dura ${d} ms`)
+    assert.equal(d - caseDuration(c, previousTiming), 1000, `${c.id} não ganhou exatamente 1 s`)
   }
 })
 
@@ -152,7 +154,7 @@ test('interação humana para a autoplay na hora e não perde o que foi digitado
   h.player.start()
   // No meio da digitação da vesícula ("1," já escrito).
   const firstInput = h.log.length
-  h.clock.advance(1450 + 2 * 170 + 10)
+  h.clock.advance(TIMING.firstChoice + TIMING.betweenChoices + 2 * TIMING.keystroke + 10)
   assert.equal(h.state.values['abdome-total'].vesicula.input, '1,')
   assert.ok(h.log.length > firstInput)
   h.player.stop()

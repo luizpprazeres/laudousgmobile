@@ -17,7 +17,7 @@ Escopo cumprido: somente `HeroWorkspace.tsx` e módulos novos em `apps/web/src/c
 
 ## Comportamento
 
-- **Casos (em ordem):** Abdome total (`ABDOMEN_TOTAL`), Abdome superior (`ABDOMEN_SUPERIOR`), Pelve TV (`PELVE_FEMININA`), Tireoide (`TIREOIDE`). Duração 4,0 a 4,5 s cada (teste garante 3 a 5 s), em loop.
+- **Casos (em ordem):** Abdome total (`ABDOMEN_TOTAL`), Abdome superior (`ABDOMEN_SUPERIOR`), Pelve TV (`PELVE_FEMININA`), Tireoide (`TIREOIDE`). Duração 5,0 a 5,5 s cada (teste garante 5 a 6 s), em loop.
 - **Roteiro por caso:** escolhe as opções, digita a medida caractere a caractere no campo real (ex.: Litíase, depois "1,2" no campo "Maior eixo"), redige a frase, "Pronto para revisar" e "Copiado (simulação)". Nenhum rótulo de botão contém medida.
 - **Medidas:** aceitam vírgula ou ponto, até 2 casas. Vazio ou "1," = aguardando (sem frase no laudo, linha âmbar "aguardando maior eixo"). Letras ou dois separadores = inválido. Fora da faixa = erro com a faixa. "0" a caminho de "0,9" não conta como erro. Faixas clínicas onde a frase depende disso: colédoco "alargado" só acima de 0,6 cm; endométrio "normal para o ciclo" até 1,6 cm.
 - **"Pronto" nunca aparece com medida pendente** (o reducer recusa).

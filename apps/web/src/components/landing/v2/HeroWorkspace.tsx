@@ -37,10 +37,10 @@ export default function HeroWorkspace() {
       />
       {/* Malha discreta entre o título e o mockup, acende perto do ponteiro. */}
       <HeroMeshLight host={section} reduce={reduce} />
-      <div className="mx-auto grid max-w-[1440px] grid-cols-1 items-center gap-6 px-5 pb-16 sm:px-8 lg:min-h-[calc(100dvh-7rem)] lg:grid-cols-12 lg:gap-8 lg:px-12 lg:pb-24">
+      <div className="mx-auto grid max-w-[1440px] grid-cols-1 items-center gap-6 px-5 pb-16 sm:px-8 lg:min-h-[calc(100dvh-7rem)] lg:grid-cols-12 lg:items-start lg:gap-8 lg:px-12 lg:pb-24">
         {/* Título e produto visíveis já no HTML do servidor: nada da primeira
             dobra depende de JS para aparecer em rede lenta. */}
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-5 lg:pt-16 xl:pt-20">
           <p className="mb-5 text-[0.78rem] font-semibold uppercase tracking-[0.14em] text-emerald-700">Para ultrassonografistas</p>
           <h1 className="font-barlow text-[2.1rem] font-extrabold leading-[1.02] tracking-[-0.03em] text-slate-950 min-[360px]:text-[2.6rem] sm:text-[3.2rem] xl:text-[3.9rem]">
             O laudo se escreve enquanto você <span className="text-emerald-600">examina.</span>
@@ -57,7 +57,7 @@ export default function HeroWorkspace() {
         {/* O produto: sai da coluna e encosta na borda direita no desktop. */}
         <motion.div
           style={{ y: windowY }}
-          className="lg:col-span-7 lg:-mr-12 xl:-mr-[max(3rem,calc((100vw-1440px)/2+3rem))]"
+          className="min-w-0 w-full lg:col-span-7 lg:-mr-12 xl:-mr-[max(3rem,calc((100vw-1440px)/2+3rem))]"
         >
           <HeroDemo reduce={reduce} />
         </motion.div>
