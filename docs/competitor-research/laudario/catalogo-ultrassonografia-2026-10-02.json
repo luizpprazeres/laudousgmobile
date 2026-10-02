@@ -1,0 +1,26 @@
+{
+  "competitor": "Laudário",
+  "observed_at": "2026-10-02T00:00:00-03:00",
+  "surface": "Laudos > Ultrassonografia",
+  "totals": { "all": 99, "base": 84, "combined": 15 },
+  "sections": [
+    { "id": "abdome", "exams": ["Abdome Superior", "Abdome Superior com Doppler", "Abdome Total", "Avaliação Multiparamétrica Hepática", "Elastografia Hepática"] },
+    { "id": "urologia", "exams": ["Aparelho Urinário", "Aparelho Urinário com Doppler", "Bolsa Testicular", "Bolsa Testicular com Doppler", "Próstata Abdominal", "Próstata Transretal"] },
+    { "id": "pequenas_partes", "exams": ["Axilas", "Cervical", "Cervical (Linfonodos)", "Cervical com Doppler", "Glândulas Salivares", "Parede Abdominal", "Partes Moles", "Região Inguinal Bilateral", "Região Inguinal Unilateral", "Tireoide", "Tireoide com Doppler"] },
+    { "id": "ginecologia", "exams": ["Histerossonografia com Infusão Salina", "Histerossonossalpingografia", "Pélvico Abdominal", "Pélvico Transvaginal", "Pélvico Transvaginal - Monitorização Folicular", "Pélvico Transvaginal com Doppler", "Pesquisa de Endometriose"] },
+    { "id": "mama", "exams": ["Mama Masculina", "Mamas", "Mamas com Doppler", "Mamas e Axilas", "Mamas e Axilas com Doppler"] },
+    { "id": "obstetrica_unica", "exams": ["Ecocardiografia Fetal", "Morfológico 1º Trimestre", "Morfológico 2º Trimestre", "Morfológico 3º Trimestre", "Obstétrico 1º Trimestre", "Obstétrico 1º Trimestre com Doppler", "Obstétrico 2º/3º Trimestre", "Obstétrico 2º/3º Trimestre com Doppler", "Obstétrico 3D/4D"] },
+    { "id": "obstetrica_gemelar", "exams": ["Ecocardiografia Fetal - Gemelar", "Morfológico 1º Trimestre - Gemelar", "Morfológico 2º Trimestre - Gemelar", "Obstétrico 1º Trimestre - Gemelar", "Obstétrico 2º/3º Trimestre - Gemelar", "Obstétrico 2º/3º Trimestre com Doppler - Gemelar"] },
+    { "id": "obstetrica_outros", "exams": ["Cervicometria", "Perfil Biofísico Fetal"] },
+    { "id": "vascular_arterial", "exams": ["Doppler Arterial de Membro Inferior", "Doppler Arterial de Membro Superior", "Doppler Arterial de Membros Inferiores Bilateral", "Doppler de Artérias Temporais", "Doppler de Carótidas e Vertebrais", "Doppler de Fístula Arteriovenosa (FAV)"] },
+    { "id": "vascular_venoso", "exams": ["Doppler Venoso de Membro Inferior", "Doppler Venoso de Membro Inferior (TVP)", "Doppler Venoso de Membro Superior", "Doppler Venoso de Membros Inferiores Bilateral"] },
+    { "id": "vascular_abdominal", "exams": ["Doppler Aortorrenal", "Doppler de Aorta e Artérias Ilíacas", "Doppler de Artérias Mesentéricas", "Doppler de Transplante Renal", "Doppler Hepático"] },
+    { "id": "msk_superior", "exams": ["Cotovelo Bilateral", "Cotovelo Unilateral", "Mão Bilateral", "Mão Unilateral", "Ombro Bilateral", "Ombro Unilateral", "Punho Bilateral", "Punho Unilateral"] },
+    { "id": "msk_inferior", "exams": ["Joelho Bilateral", "Joelho Unilateral", "Pé Bilateral", "Pé Unilateral", "Quadril Bilateral", "Quadril Unilateral", "Tornozelo Bilateral", "Tornozelo Unilateral"] },
+    { "id": "pediatria", "exams": ["Quadril Infantil", "Transfontanelar"] },
+    { "id": "combinados_abdome", "exams": ["Abdome Superior e Rins", "Abdome Total e Pélvico (Ginecológico)", "Abdome Total e Pélvico Transvaginal", "Abdome Total e Próstata"] },
+    { "id": "combinados_ginecologia", "exams": ["Pélvico e Transvaginal (Ginecológico)", "Pélvico e Transvaginal com Doppler", "Pélvico Transvaginal + HyCoSy", "Pélvico Transvaginal e Mamas", "Pesquisa de Endometriose + HyCoSy"] },
+    { "id": "combinados_urologia", "exams": ["Aparelho Urinário e Bolsa Testicular", "Aparelho Urinário e Próstata"] },
+    { "id": "combinados_obstetricia", "exams": ["Obstétrico 2º/3º Trimestre + Perfil Biofísico Fetal", "Obstétrico 2º/3º Trimestre + Perfil Biofísico Fetal - Gemelar", "Obstétrico 2º/3º Trimestre com Doppler + Perfil Biofísico Fetal", "Obstétrico 2º/3º Trimestre com Doppler + Perfil Biofísico Fetal - Gemelar"] }
+  ]
+}
