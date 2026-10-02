@@ -33,7 +33,7 @@ Legenda: **sim** = disponível para iniciar exame; **não** = não aparece; **es
 | CERVICAL | 12 | renderer programático | sim | sim | estruturado | liberado |
 | MAMARIA | 24 | renderer programático | sim | sim | estruturado | liberado; esquema visual disponível |
 | PARTES_MOLES | 16 | renderer programático | sim | sim | estruturado | liberado |
-| PELVE_FEMININA | 34 | renderer programático | sim | sim | estruturado | liberado; iOS tem esquema de miomas |
+| PELVE_FEMININA | 34 | renderer programático | sim | sim | estruturado | liberado; esquema de miomas nas três plataformas |
 | OBSTETRICA | 41 | renderer programático | sim | sim | estruturado | liberado |
 | DOPPLER_OBSTETRICO | 68 | renderer programático | sim | sim | estruturado | liberado |
 | MORFOLOGICO | 54 | renderer programático | sim | sim | estruturado | liberado |
@@ -62,7 +62,7 @@ Legenda: **sim** = disponível para iniciar exame; **não** = não aparece; **es
 | Mama | interativo | interativo | manual, com envio à Sala | Android usa a mesma base anatômica, sem inferir BI-RADS nem alterar o texto |
 | Tireoide | frontal + transversal | frontal + transversal atualizados | frontal + transversal, manual | iOS e Android deixaram de depender da apresentação tireoidiana antiga |
 | Mapa venoso MMII | painel montado após evento SSE válido | disponível | disponível | Web consome o evento `scheme` real; sem evento válido, nenhum mapa é criado |
-| Miomas | ausente | disponível | ausente | recurso específico do iOS; não anunciado como multiplataforma |
+| Miomas | editor no esquema da pelve | disponível | editor manual, com envio à Sala | contrato compartilhado `myoma-scheme/v1` (`c4acf1c`, 30/09); FIGO só segue para a Sala depois de confirmado pelo médico |
 | Posição fetal | retirado do fluxo | não tratado como esquema principal | ausente | não reintroduzir |
 
 ## Pendências que dependem de decisão clínica

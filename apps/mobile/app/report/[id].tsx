@@ -4,6 +4,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -14,7 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { reviewReportForSala, getReport, updateReportFinalOutput, type ReportDetail } from "@/lib/api";
+import { reviewReportForSala, getReport, getReportSchemes, updateReportFinalOutput, type ReportDetail, type ReportScheme } from "@/lib/api";
 import {
   renderReviewHighlighted,
   stripReviewMarkers,
@@ -283,6 +284,7 @@ export default function ReportDetailScreen() {
             <ReportTab text={finalText} />
           )
         ) : null}
+        {tab === "report" ? <SavedSchemes reportId={report.id} /> : null}
         {tab === "findings" ? (
           <FindingsTab text={report.raw_input} />
         ) : null}
@@ -309,6 +311,58 @@ function ReportTab({ text }: { text: string }) {
           </Text>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * Esquemas que o médico enviou à Sala para ESTE laudo, reabertos como imagem.
+ * Somente leitura: o banco guarda o PNG enviado, não os achados do desenho, e o
+ * esquema nunca altera o texto do laudo. Sem envio, a seção não aparece.
+ */
+function SavedSchemes({ reportId }: { reportId: string }) {
+  const t = useColorTokens();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const [schemes, setSchemes] = useState<ReportScheme[]>([]);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    setSchemes([]);
+    setFailed(false);
+    getReportSchemes(reportId)
+      .then((result) => { if (alive) setSchemes(result); })
+      .catch((err) => {
+        console.warn("[mobile] esquemas do laudo não carregaram:", err);
+        if (alive) setFailed(true);
+      });
+    return () => { alive = false; };
+  }, [reportId]);
+
+  if (failed) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.subtitle}>Não foi possível carregar os esquemas enviados à Sala.</Text>
+      </View>
+    );
+  }
+  if (!schemes.length) return null;
+  return (
+    <View style={styles.card}>
+      <Text style={styles.schemesTitle}>Esquemas enviados à Sala</Text>
+      <Text style={styles.subtitle}>Cópia da imagem enviada, somente leitura. O esquema não altera o laudo.</Text>
+      {schemes.map((scheme) => (
+        <View key={scheme.id} style={styles.schemeItem}>
+          <Text style={styles.schemeLabel}>{scheme.exam_label}</Text>
+          <Image
+            source={{ uri: `data:image/png;base64,${scheme.png_base64}` }}
+            accessibilityLabel={`${scheme.exam_label}, enviado em ${formatDate(scheme.updated_at)}`}
+            resizeMode="contain"
+            style={[styles.schemeImage, { aspectRatio: scheme.width / scheme.height }]}
+          />
+          <Text style={styles.subtitle}>Enviado em {formatDate(scheme.updated_at)}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -492,6 +546,25 @@ function makeStyles(t: ColorTokens) {
       overflow: "hidden",
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.separator,
+    },
+    schemesTitle: {
+      color: t.text,
+      fontSize: 16,
+      fontFamily: FONT.bold,
+    },
+    schemeItem: {
+      marginTop: 14,
+      gap: 6,
+    },
+    schemeLabel: {
+      color: t.text,
+      fontSize: 14,
+      fontFamily: FONT.bold,
+    },
+    schemeImage: {
+      width: "100%",
+      borderRadius: 8,
+      backgroundColor: "#FFFFFF",
     },
     reportText: {
       color: t.text,

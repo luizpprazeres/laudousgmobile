@@ -96,6 +96,12 @@ export function removeMyomaFromPelvisState(state: OrganState, id: string): Organ
   const extras = myomaFindingsFromPelvisState(state).filter((finding) => !SLOTS.includes(finding.id as typeof SLOTS[number]) && finding.id !== id)
   return { ...state, [EXTRA_KEY]: JSON.stringify(extras) }
 }
+/**
+ * Leva ao formulário SÓ o que mudou em relação ao que ele já descreve. Reescrever
+ * todos os campos a cada arrasto trocava a classificação escolhida (subseroso →
+ * intramural), reduzia "3,0 x 2,5 x 2,0" a "3" e encurtava a parede no laudo.
+ * Posição no desenho fica em chaves `__myoma.*`, que o laudo não lê.
+ */
 export function updateMyomaInPelvisState(state: OrganState, finding: MyomaFinding): OrganState {
   const slot = SLOTS.find((candidate) => candidate === finding.id)
   if (!slot) {
@@ -104,17 +110,24 @@ export function updateMyomaInPelvisState(state: OrganState, finding: MyomaFindin
       .map((item) => item.id === finding.id ? finding : item)
     return { ...state, [EXTRA_KEY]: JSON.stringify(extras) }
   }
-  return {
+  const current = selected(state, slot) ? myomaFindingsFromPelvisState(state).find((item) => item.id === slot) : undefined
+  const next: OrganState = {
     ...state,
     [slot]: ['sim'],
-    [`${slot}.sim.figo`]: finding.figoConfirmed ? String(finding.figo) : '',
-    [`${slot}.sim.classificacao`]: finding.figo <= 2 ? 'submucoso' : finding.figo <= 4 ? 'intramural' : finding.figo <= 7 ? 'subseroso' : 'outro',
-    [`${slot}.sim.parede`]: LOCATION_TEXT[finding.location],
-    [`${slot}.sim.medidas`]: finding.sizeMaxMm == null ? '' : String(finding.sizeMaxMm / 10).replace('.', ','),
-    [`${slot}.sim.ecotextura`]: finding.echo ?? '',
     [`__myoma.${slot}.sagittalPoint`]: finding.sagittalPoint ? JSON.stringify(finding.sagittalPoint) : '',
     [`__myoma.${slot}.axialPoint`]: finding.axialPoint ? JSON.stringify(finding.axialPoint) : '',
   }
+  const figoChanged = !current || current.figoConfirmed !== finding.figoConfirmed || (finding.figoConfirmed && current.figo !== finding.figo)
+  if (figoChanged) {
+    next[`${slot}.sim.figo`] = finding.figoConfirmed ? String(finding.figo) : ''
+    // A família decorre da categoria FIGO escolhida pelo médico; sem FIGO
+    // confirmado, a classificação do formulário permanece a que ele marcou.
+    if (finding.figoConfirmed) next[`${slot}.sim.classificacao`] = finding.figo <= 2 ? 'submucoso' : finding.figo <= 4 ? 'intramural' : finding.figo <= 7 ? 'subseroso' : 'outro'
+  }
+  if (!current || current.location !== finding.location) next[`${slot}.sim.parede`] = LOCATION_TEXT[finding.location]
+  if (!current || current.sizeMaxMm !== finding.sizeMaxMm) next[`${slot}.sim.medidas`] = finding.sizeMaxMm == null ? '' : String(finding.sizeMaxMm / 10).replace('.', ',')
+  if (!current || current.echo !== finding.echo) next[`${slot}.sim.ecotextura`] = finding.echo ?? ''
+  return next
 }
 export function resetMyomaPoint(state: OrganState, finding: MyomaFinding): OrganState {
   return updateMyomaInPelvisState(state, { ...finding, sagittalPoint: canonicalSagittalPoint(finding.figo), axialPoint: canonicalAxialPoint(finding.location) })

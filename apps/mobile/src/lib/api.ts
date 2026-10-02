@@ -245,6 +245,36 @@ export async function getReport(id: string): Promise<ReportDetail> {
   );
 }
 
+const ReportSchemesResponseSchema = z.object({
+  schemes: z.array(
+    z.object({
+      id: z.string(),
+      exam_type: z.string(),
+      exam_label: z.string(),
+      png_base64: z.string().min(1),
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+      updated_at: z.string(),
+    }),
+  ),
+});
+export type ReportScheme = z.infer<typeof ReportSchemesResponseSchema>["schemes"][number];
+
+/**
+ * Imagens de esquema já enviadas à Sala para este laudo (somente leitura). 404 =
+ * backend anterior à rota: o histórico segue sem esquemas, sem erro.
+ */
+export async function getReportSchemes(id: string): Promise<ReportScheme[]> {
+  const res = await authedFetch(`/api/reports/${encodeURIComponent(id)}/schemas`, {
+    method: "GET",
+    headers: { accept: "application/json" },
+  });
+  if (res.status === 404) return [];
+  return ReportSchemesResponseSchema.parse(
+    await readJsonOrThrow(res, "buscar esquemas do laudo"),
+  ).schemes;
+}
+
 export async function getMeAnalytics(): Promise<MeAnalytics> {
   const res = await authedFetch("/api/me/analytics", {
     method: "GET",

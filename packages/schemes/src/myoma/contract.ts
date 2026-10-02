@@ -94,7 +94,7 @@ export function canonicalSagittalPoint(figo: number) {
     3: { x: 150, y: 300 }, 4: { x: 272, y: 300 }, 5: { x: 120, y: 210 },
     6: { x: 304, y: 168 }, 7: { x: 360, y: 108 }, 8: { x: 232, y: 440 },
   };
-  return points[figo] ?? points[8];
+  return points[figo] ?? points[8]!;
 }
 
 export function canonicalAxialPoint(location: MyomaLocation) {
@@ -107,31 +107,72 @@ export function canonicalAxialPoint(location: MyomaLocation) {
   return points[location];
 }
 
+export type MyomaPlane = "sagittal" | "axial";
 export type MyomaDrawingPoint =
   | { plane: "sagittal"; point: { x: number; y: number } }
   | { plane: "axial"; point: { x: number; y: number } };
 
+/** PNG canônico do esquema de miomas, igual em Web, Android, iOS e Sala. */
+export const MYOMA_EXPORT_WIDTH = 820;
+export const MYOMA_EXPORT_HEIGHT = 560;
+
+/**
+ * Geometria dos dois cortes no PNG canônico. `rect` é o painel tocável,
+ * `origin`/`scale` levam o ponto editável ao PNG e `bounds` limita o ponto
+ * editável para o marcador nunca sair do útero desenhado.
+ */
+export const MYOMA_PLANES = {
+  sagittal: {
+    rect: { x0: 24, y0: 76, x1: 386, y1: 456 },
+    origin: { x: 44, y: 78 },
+    scale: { x: 320 / 420, y: 355 / 520 },
+    bounds: { minX: 70, maxX: 370, minY: 40, maxY: 480 },
+  },
+  axial: {
+    rect: { x0: 410, y0: 76, x1: 796, y1: 456 },
+    origin: { x: 430, y: 105 },
+    scale: { x: 330 / 560, y: 300 / 400 },
+    bounds: { minX: 50, maxX: 510, minY: 20, maxY: 380 },
+  },
+} as const;
+
+/** Ponto editável → coordenada no PNG canônico. */
+export function myomaExportPoint(plane: MyomaPlane, point: { x: number; y: number }) {
+  const geometry = MYOMA_PLANES[plane];
+  return { x: geometry.origin.x + point.x * geometry.scale.x, y: geometry.origin.y + point.y * geometry.scale.y };
+}
+
+/** Coordenada no PNG canônico → ponto editável do corte, limitado ao útero. */
+export function myomaPointInPlane(plane: MyomaPlane, exportX: number, exportY: number) {
+  const geometry = MYOMA_PLANES[plane];
+  return {
+    x: Math.max(geometry.bounds.minX, Math.min(geometry.bounds.maxX, (exportX - geometry.origin.x) / geometry.scale.x)),
+    y: Math.max(geometry.bounds.minY, Math.min(geometry.bounds.maxY, (exportY - geometry.origin.y) / geometry.scale.y)),
+  };
+}
+
 /** Converte um toque no PNG canônico (820 × 560) para a geometria editável. */
 export function myomaPointFromExportTouch(exportX: number, exportY: number): MyomaDrawingPoint | null {
-  if (exportX >= 24 && exportX <= 386 && exportY >= 76 && exportY <= 456) {
-    return {
-      plane: "sagittal",
-      point: {
-        x: Math.max(70, Math.min(370, (exportX - 44) / (320 / 420))),
-        y: Math.max(40, Math.min(480, (exportY - 78) / (355 / 520))),
-      },
-    };
-  }
-  if (exportX >= 410 && exportX <= 796 && exportY >= 76 && exportY <= 456) {
-    return {
-      plane: "axial",
-      point: {
-        x: Math.max(50, Math.min(510, (exportX - 430) / (330 / 560))),
-        y: Math.max(20, Math.min(380, (exportY - 105) / (300 / 400))),
-      },
-    };
+  for (const plane of ["sagittal", "axial"] as const) {
+    const { rect } = MYOMA_PLANES[plane];
+    if (exportX >= rect.x0 && exportX <= rect.x1 && exportY >= rect.y0 && exportY <= rect.y1) {
+      return { plane, point: myomaPointInPlane(plane, exportX, exportY) } as MyomaDrawingPoint;
+    }
   }
   return null;
+}
+
+/** Menor alvo de toque aceito para um marcador, em pixels de tela (WCAG 2.5.5 / HIG). */
+export const MYOMA_MIN_TOUCH_TARGET_PX = 44;
+
+/**
+ * Raio da área tocável de um marcador, em unidades do PNG canônico. Num painel
+ * estreito o desenho encolhe; a área tocável cresce para continuar com
+ * `MYOMA_MIN_TOUCH_TARGET_PX` de diâmetro na tela.
+ */
+export function myomaHitRadius(markerRadius: number, renderedWidthPx: number) {
+  const pxPerUnit = renderedWidthPx > 0 ? renderedWidthPx / MYOMA_EXPORT_WIDTH : 1;
+  return Math.max(markerRadius + 8, MYOMA_MIN_TOUCH_TARGET_PX / 2 / pxPerUnit);
 }
 
 function match(pattern: RegExp, text: string) {
