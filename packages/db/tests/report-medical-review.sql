@@ -15,6 +15,7 @@ BEGIN
   SELECT content_revision INTO v FROM public.reports WHERE id = '10000000-0000-4000-8000-000000000001';
   IF v <> 1 THEN RAISE EXCEPTION 'touch invalidated or revision forged'; END IF;
 END $$;
+
 -- Simulates the existing authenticated PostgREST PATCH path, bypassing API.
 SET ROLE authenticated;
 UPDATE public.reports SET final_output = 'Laudo corrigido', content_revision = 1 WHERE id = '10000000-0000-4000-8000-000000000001';
@@ -51,4 +52,53 @@ BEGIN
  SELECT content_revision INTO v FROM public.reports WHERE id = '10000000-0000-4000-8000-000000000001';
  result := public.review_report_content('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', v, 'Laudo corrigido');
  IF result->>'error' <> 'report_not_ready' THEN RAISE EXCEPTION 'critical issue with warning verdict approved'; END IF;
+END $$;
+
+-- Uma alteração estruturada pode manter o texto final idêntico. Ainda assim,
+-- representa novo payload clínico e precisa invalidar a revisão anterior.
+DO $$
+DECLARE before_revision integer; after_revision integer; stored_review_revision integer; result jsonb;
+BEGIN
+ UPDATE public.reports
+ SET status = 'generated', sanity_result = '{"verdict":"ok","issues":[]}'::jsonb
+ WHERE id = '10000000-0000-4000-8000-000000000001';
+ SELECT content_revision INTO before_revision FROM public.reports
+ WHERE id = '10000000-0000-4000-8000-000000000001';
+ result := public.review_report_content(
+   '10000000-0000-4000-8000-000000000001',
+   '20000000-0000-4000-8000-000000000001',
+   before_revision,
+   'Laudo corrigido'
+ );
+ IF result->>'reviewStatus' <> 'reviewed' THEN RAISE EXCEPTION 'setup structured review failed'; END IF;
+
+ UPDATE public.reports
+ SET structured_findings = '{"schema_version":"hepatic-assessment/v1","achados":{"revision":2}}'::jsonb
+ WHERE id = '10000000-0000-4000-8000-000000000001';
+ SELECT content_revision INTO after_revision FROM public.reports
+ WHERE id = '10000000-0000-4000-8000-000000000001';
+ SELECT m.reviewed_revision INTO stored_review_revision FROM public.report_medical_reviews AS m
+ WHERE m.report_id = '10000000-0000-4000-8000-000000000001';
+ IF after_revision <> before_revision + 1 OR stored_review_revision = after_revision THEN
+   RAISE EXCEPTION 'structured payload retained approval';
+ END IF;
+
+ result := public.review_report_content(
+   '10000000-0000-4000-8000-000000000001',
+   '20000000-0000-4000-8000-000000000001',
+   after_revision,
+   'Laudo corrigido'
+ );
+ IF result->>'reviewStatus' <> 'reviewed' THEN RAISE EXCEPTION 'structured reapproval failed'; END IF;
+ before_revision := after_revision;
+ UPDATE public.reports
+ SET generation_metadata = '{"api_contract":"hepatic-reports/v1","hepatic_revision":3}'::jsonb
+ WHERE id = '10000000-0000-4000-8000-000000000001';
+ SELECT content_revision INTO after_revision FROM public.reports
+ WHERE id = '10000000-0000-4000-8000-000000000001';
+ SELECT m.reviewed_revision INTO stored_review_revision FROM public.report_medical_reviews AS m
+ WHERE m.report_id = '10000000-0000-4000-8000-000000000001';
+ IF after_revision <> before_revision + 1 OR stored_review_revision = after_revision THEN
+   RAISE EXCEPTION 'generation metadata retained approval';
+ END IF;
 END $$;

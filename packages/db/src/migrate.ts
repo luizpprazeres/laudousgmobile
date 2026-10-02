@@ -56,6 +56,9 @@ async function main() {
     // (app_account_token) e ambiente. Idempotentes; grants declarados nelas.
     "0029_profile_plan_essencial.sql",
     "0030_subscriptions_apple_ownership.sql",
+    // Reserva categorias hepáticas como inativas. Idempotente e não reverte
+    // uma ativação explícita feita depois do rollout.
+    "0031_inactive_hepatic_categories.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

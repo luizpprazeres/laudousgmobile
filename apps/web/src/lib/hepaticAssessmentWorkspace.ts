@@ -164,10 +164,10 @@ export function upsertHepaticMeasurement(
   key: HepaticModuleKey,
   measurement: HepaticMeasurement,
 ): HepaticAssessment {
-  const module = value.modules[key]
-  const measurements = module.measurements.filter((item) => item.role !== measurement.role)
+  const moduleValue = value.modules[key]
+  const measurements = moduleValue.measurements.filter((item) => item.role !== measurement.role)
   measurements.push(measurement)
-  return replaceHepaticModule(value, key, { ...module, measurements })
+  return replaceHepaticModule(value, key, { ...moduleValue, measurements })
 }
 
 export function clearHepaticMeasurement(value: HepaticAssessment, key: HepaticModuleKey, role: HepaticMeasurement['role']) {

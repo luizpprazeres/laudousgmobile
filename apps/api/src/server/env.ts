@@ -72,6 +72,9 @@ const ServerEnvSchema = z.object({
   // precisa de template_body na variante resolvida — senão cai no writer
   // (fallback automático, rollback trivial = tirar da lista).
   RENDERER_CATEGORIES: z.string().default(""),
+  // Modelos hepáticos estruturados. O endpoint dedicado permanece indisponível
+  // até a ativação explícita; cadastrar a rota não publica categorias novas.
+  HEPATIC_REPORTS_V1_ENABLED: z.string().default("false"),
   // Sprint Doppler v2: a categoria passa a ser o exame Doppler ISOLADO e usa o
   // renderer novo mesmo antes de a allowlist histórica ser atualizada no
   // Vercel. Rollback explícito: false volta ao writer antigo.

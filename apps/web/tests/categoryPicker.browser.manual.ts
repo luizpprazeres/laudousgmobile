@@ -14,8 +14,9 @@ import { extname, join, resolve } from 'node:path'
 import { build } from 'esbuild'
 
 const NOVOS_MODELOS_ATIVOS = process.env.NEXT_PUBLIC_CLINICAL_MODELS_V1 === 'true'
+const MODELOS_HEPATICOS_ATIVOS = process.env.NEXT_PUBLIC_HEPATIC_MODELS_V1 === 'true'
 const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
-  ['medicina_interna', ['ABDOMEN_TOTAL', ...(NOVOS_MODELOS_ATIVOS ? ['ABDOMEN_TOTAL_DOPPLER'] : []), 'ABDOMEN_SUPERIOR', ...(NOVOS_MODELOS_ATIVOS ? ['TORAX'] : []), 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS']],
+  ['medicina_interna', ['ABDOMEN_TOTAL', ...(NOVOS_MODELOS_ATIVOS ? ['ABDOMEN_TOTAL_DOPPLER'] : []), 'ABDOMEN_SUPERIOR', ...(MODELOS_HEPATICOS_ATIVOS ? ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA'] : []), ...(NOVOS_MODELOS_ATIVOS ? ['TORAX'] : []), 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS']],
   ['obstetricia', ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA']],
   ['saude_mulher', ['PELVE_FEMININA', 'MAMARIA']],
   ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES']],
@@ -35,6 +36,7 @@ async function main() {
     define: {
       'process.env.NODE_ENV': '"test"',
       'process.env.NEXT_PUBLIC_CLINICAL_MODELS_V1': JSON.stringify(process.env.NEXT_PUBLIC_CLINICAL_MODELS_V1 ?? ''),
+      'process.env.NEXT_PUBLIC_HEPATIC_MODELS_V1': JSON.stringify(process.env.NEXT_PUBLIC_HEPATIC_MODELS_V1 ?? ''),
     },
     // Módulos do catálogo leem outras variáveis de ambiente; no navegador elas não existem.
     banner: { js: 'var process = globalThis.process || { env: {} };' },
@@ -166,6 +168,10 @@ async function main() {
         assert.deepEqual(await buscar('derrame pleural'), ['TORAX'])
         assert.deepEqual(await buscar('graf'), ['QUADRIL_INFANTIL'])
       }
+      if (MODELOS_HEPATICOS_ATIVOS) {
+        assert.deepEqual(await buscar('multiparametrica'), ['AVALIACAO_MULTIPARAMETRICA_HEPATICA'])
+        assert.deepEqual(await buscar('fibrose'), ['ELASTOGRAFIA_HEPATICA'])
+      }
       assert.deepEqual(await buscar('mama'), ['MAMARIA'])
       assert.equal(await page.locator('[data-category-shortcut]').count(), 0, 'atalho não duplica resultado de busca')
       assert.deepEqual(await buscar('colo'), ['CERVICOMETRIA'])
@@ -173,9 +179,9 @@ async function main() {
       await page.getByRole('status').getByText('Nenhum exame encontrado.').waitFor()
       await page.getByRole('button', { name: 'Limpar busca' }).click()
       assert.equal(await cards.count(), TODOS.length)
-      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), NOVOS_MODELOS_ATIVOS ? 20 : 15)
+      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 15 + (NOVOS_MODELOS_ATIVOS ? 5 : 0) + (MODELOS_HEPATICOS_ATIVOS ? 2 : 0))
       assert.equal(await page.locator('[data-generation-mode="writer"]').count(), 14)
-      for (const forbidden of [...(NOVOS_MODELOS_ATIVOS ? [] : ['ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_VENOSO_MMSS', 'QUADRIL_INFANTIL', 'TORAX']), 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
+      for (const forbidden of [...(NOVOS_MODELOS_ATIVOS ? [] : ['ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_VENOSO_MMSS', 'QUADRIL_INFANTIL', 'TORAX']), ...(MODELOS_HEPATICOS_ATIVOS ? [] : ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA']), 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
         assert.equal(await page.locator(`[data-category-id="${forbidden}"]`).count(), 0, `${forbidden} não pode aparecer no seletor`)
       }
       // Um resultado só: Enter na busca abre o exame.

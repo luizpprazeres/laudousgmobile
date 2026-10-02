@@ -36,6 +36,8 @@ import { isWriterCategory } from '@/lib/writerCategories'
 import { WriterCategoryWorkspace } from './WriterCategoryWorkspace'
 import { isClinicalWebModel } from '@/lib/clinicalModels'
 import { ClinicalModelWorkspace } from './ClinicalModelWorkspace'
+import { isHepaticWebModel } from '@/lib/hepaticModels'
+import { HepaticReportWorkspace } from './HepaticReportWorkspace'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
 import { tiRadsSpec } from '@/lib/calculators/specs'
 import { LiverQuantificationPanel } from './LiverQuantificationPanel'
@@ -1411,6 +1413,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
   if (!choosingCategory && !composition && isClinicalWebModel(categoria)) {
     return <ClinicalModelWorkspace category={categoria} onBack={() => setChoosingCategory(true)} />
+  }
+
+  if (!choosingCategory && !composition && isHepaticWebModel(categoria)) {
+    return <HepaticReportWorkspace key={categoria} category={categoria} onBack={() => setChoosingCategory(true)} />
   }
 
   return (

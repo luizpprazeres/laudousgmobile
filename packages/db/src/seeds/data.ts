@@ -55,7 +55,13 @@ export const WRITING_STYLES_SEED = [
  * Nota: `DOPPLER` existe no enum original mas SEM prompt nativo — usado
  * apenas como bucket de keyterms para Deepgram. Não incluído aqui.
  */
-export const CATEGORIES_SEED: { code: string; label: string; active?: boolean }[] = [
+export const CATEGORIES_SEED: {
+  code: string;
+  label: string;
+  active?: boolean;
+  /** Não reverta uma ativação explícita posterior quando o seed rodar novamente. */
+  preserveActiveOnConflict?: boolean;
+}[] = [
   // Obstétrico
   { code: "OBSTETRICA", label: "Obstétrica" },
   { code: "DOPPLER_OBSTETRICO", label: "Doppler Obstétrico" },
@@ -67,6 +73,18 @@ export const CATEGORIES_SEED: { code: string; label: string; active?: boolean }[
   { code: "ABDOMEN_TOTAL_DOPPLER", label: "Abdome Total c/ Doppler", active: true },
   { code: "ABDOMEN_SUPERIOR", label: "Abdome Superior" },
   { code: "PAREDE_ABDOMINAL", label: "Parede Abdominal" },
+  {
+    code: "AVALIACAO_MULTIPARAMETRICA_HEPATICA",
+    label: "Avaliação multiparamétrica hepática",
+    active: false,
+    preserveActiveOnConflict: true,
+  },
+  {
+    code: "ELASTOGRAFIA_HEPATICA",
+    label: "Elastografia hepática",
+    active: false,
+    preserveActiveOnConflict: true,
+  },
 
   // Urinário / pelve / reprodutor
   { code: "VIAS_URINARIAS", label: "Vias Urinárias" },

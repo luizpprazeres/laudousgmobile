@@ -26,7 +26,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'medicina_interna',
     label: 'Medicina interna',
-    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
+    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA', 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
   },
   {
     id: 'obstetricia',
@@ -79,6 +79,8 @@ function displayName(id: string) {
 export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   ABDOMEN_TOTAL: ['abdome', 'abdomen', 'abdominal', 'figado', 'vesicula', 'pancreas', 'baco', 'rins', 'aorta'],
   ABDOMEN_TOTAL_DOPPLER: ['abdome', 'abdomen', 'doppler esplancnico', 'veia porta', 'portal'],
+  AVALIACAO_MULTIPARAMETRICA_HEPATICA: ['figado', 'hepatica', 'gordura', 'rigidez', 'elastografia', 'multiparametrica'],
+  ELASTOGRAFIA_HEPATICA: ['figado', 'hepatica', 'rigidez', 'fibrose', 'swe', 'arfi'],
   ABDOMEN_SUPERIOR: ['abdome', 'abdomen', 'figado', 'vesicula', 'vias biliares', 'pancreas', 'baco'],
   VIAS_URINARIAS: ['rins', 'renal', 'bexiga', 'ureteres', 'trato urinario', 'urinario'],
   PROSTATA_SUPRAPUBICA: ['prostata', 'suprapubica', 'vesiculas seminais'],

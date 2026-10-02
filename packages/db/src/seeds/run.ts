@@ -41,7 +41,9 @@ async function main() {
         target: schema.categories.code,
         set: {
           label: c.label,
-          ...(c.active === undefined ? {} : { active: c.active }),
+          ...(c.active === undefined || c.preserveActiveOnConflict
+            ? {}
+            : { active: c.active }),
         },
       });
   }
