@@ -74,7 +74,7 @@ Os dois apps não têm as categorias, formulário, calculadora ou contrato estru
 
 ## 8. Sala do Auxiliar
 
-O Web salva em `web_reports`, enquanto a Sala lê e reenvia laudos da tabela `reports`. Portanto um laudo hepático construído na Web não chega à Sala pelo fluxo atual. Nos apps, laudos textuais podem chegar, mas sem um contrato hepático preservado. Além disso, Android publica após a geração antes da revisão explícita, enquanto iOS usa outro caminho de envio.
+O Web salva em `web_reports`, enquanto a Sala lê e reenvia laudos da tabela `reports`. Portanto um laudo hepático construído na Web não chega à Sala pelo fluxo atual. Nos apps, laudos textuais podem chegar, mas sem um contrato hepático preservado. O Android transmite o rascunho pendente após a geração e possui uma ação posterior de revisão; a Sala só marca como revisado quando a revisão médica corresponde à mesma versão do conteúdo. O iOS usa outro caminho de envio.
 
 **Lacuna confirmada:** não há travessia Web → Sala e o estado de revisão móvel não é uniforme.
 
@@ -84,11 +84,11 @@ O Web salva em `web_reports`, enquanto a Sala lê e reenvia laudos da tabela `re
 
 O teste do bloco Web passou com 21 cenários. Também passaram os testes focados do renderer abdominal para hepatopatia crônica, a seleção de categorias Android e a seleção de categorias iOS. Não existem testes móveis de gordura ou rigidez porque os recursos ainda não existem.
 
-Não foram verificados equipamentos físicos, configuração de produção, limiares clínicos aprovados nem fluxo ponta a ponta Web/app → Sala para esse exame. A elastografia esplênica e a tabela evolutiva foram apenas identificadas como superfícies, sem teste funcional. Os intervalos vistos no concorrente são evidência de comportamento do produto, não decisão clínica para implementação.
+Não foram verificados equipamentos físicos, configuração de produção, limiares clínicos aprovados nem fluxo ponta a ponta Web/app → Sala para esse exame. A elastografia esplênica foi sondada funcionalmente no exame independente; a tabela evolutiva foi apenas inventariada, sem cenário longitudinal. Os intervalos vistos no concorrente são evidência de comportamento do produto, não decisão clínica para implementação.
 
 ## Ordem de implementação proposta
 
-Primeiro, definir o contrato compartilhado e versionado com método, equipamento, unidade, aquisições, qualidade, fatores, fonte e interpretação confirmada. Depois, adaptar o módulo Web existente e validar no servidor, corrigindo também o envio Web para a Sala. Em seguida, criar as categorias próprias e levar a mesma interface para iOS e Android. A ativação deve ocorrer em paridade e cobrir estado normal, gordura com qualidade adequada e inadequada, rigidez aumentada com e sem qualidade, medida apagada com derivação residual, discordância entre modalidades e envio revisado à Sala. Elastografia esplênica e comparação longitudinal permanecem candidatas até a próxima sondagem confirmar seu contrato e valor clínico no fluxo.
+Primeiro, definir o contrato compartilhado e versionado com método, equipamento, unidade, aquisições, qualidade, fatores, fonte e interpretação confirmada. Depois, adaptar o módulo Web existente e validar no servidor, corrigindo também o envio Web para a Sala. Em seguida, criar as categorias próprias e levar a mesma interface para iOS e Android. A ativação deve ocorrer em paridade e cobrir estado normal, gordura com qualidade adequada e inadequada, rigidez aumentada com e sem qualidade, medida apagada com derivação residual, discordância entre modalidades e envio revisado à Sala. A elastografia esplênica já teve o fluxo funcional sondado, mas ainda depende de contrato e aprovação clínica; a comparação longitudinal continua sem cenário funcional e também sem decisão clínica aprovada.
 
 ## Evidências principais no LaudoUSG
 

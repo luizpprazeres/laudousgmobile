@@ -28,7 +28,8 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Doppler Venoso de Membro Inferior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, refluxo superficial, TVP sintética, recomendações e cartograma auto-sincronizado.
 - Mamas e Axilas: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, cisto simples, nódulo sólido suspeito, BI-RADS, recomendações e cartograma.
 - Avaliação Multiparamétrica Hepática: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, gordura por USFF, rigidez por 2D-SWE, qualidade, interpretação e restauração de valores derivados.
-- Próxima prioridade: Elastografia Hepática como exame independente; depois, Doppler Hepático.
+- Elastografia Hepática: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, rigidez normal, algoritmo hepatoesplênico, qualidade, fatores de confusão e inventário longitudinal.
+- Próxima prioridade: Doppler Hepático.
 
 ## Limites desta fotografia
 

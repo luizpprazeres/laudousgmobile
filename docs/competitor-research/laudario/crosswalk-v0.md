@@ -67,3 +67,11 @@ O Laudário reúne abdome superior, Doppler, gordura e elastografia em um exame 
 O LaudoUSG Web já possui um bloco complementar mais conservador: documenta CAP, atenuação, fração gordurosa e rigidez sem conversão ou classificação universal. Ainda faltam categorias próprias, contrato compartilhado, gates técnicos por método, correlação entre modo B e quantificação, paridade móvel, validação no servidor e travessia Web para a Sala.
 
 O cruzamento técnico está em [crosswalk-avaliacao-multiparametrica-hepatica-2026-10-02.md](crosswalk-avaliacao-multiparametrica-hepatica-2026-10-02.md). A prioridade é versionar o contrato clínico, adaptar o módulo Web e o transporte à Sala e depois ativar Web, iOS e Android em paridade.
+
+## Elastografia Hepática — qualidade, baço e evolução
+
+O exame independente confirmou que a classificação hepática ocorre antes do preenchimento do IQR/mediana. Também expôs elastografia esplênica e seguimento longitudinal. No cenário sintético, fígado abaixo de 16 kPa e baço abaixo de 26,6 kPa em 2D-SWE produziram uma interpretação combinada; ativar o baço sem medida inseriu uma instrução de preenchimento dentro do laudo.
+
+O LaudoUSG Web documenta rigidez hepática sem converter ou classificar automaticamente, mas ainda aceita medida sem gate completo de qualidade e pode conservar uma interpretação antiga após mudança da aquisição. Categoria própria, rigidez esplênica, evolução, validação de servidor, mobile e Sala estão ausentes.
+
+O cruzamento técnico está em [crosswalk-elastografia-hepatica-2026-10-02.md](crosswalk-elastografia-hepatica-2026-10-02.md). A implementação deve começar pelo contrato e pela limpeza das dependências; os algoritmos hepatoesplênicos e longitudinais dependem de aprovação clínica específica.
