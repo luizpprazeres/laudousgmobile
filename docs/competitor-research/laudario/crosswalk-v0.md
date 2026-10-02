@@ -1,6 +1,6 @@
 # Cruzamento inicial Laudário × LaudoUSG
 
-Estado: triagem, ainda sem declarar gaps clínicos definitivos.
+Estado: triagem contínua. Os lotes concluídos abaixo já contêm lacunas confirmadas; os demais itens permanecem candidatos até cruzamento com o código.
 
 O catálogo observado tem 99 entradas, contra 34 categorias atualmente expostas na landing do LaudoUSG. A diferença bruta superestima o gap: o Laudário separa lateralidade, Doppler, gestação gemelar e combinações em modelos próprios, enquanto o LaudoUSG pode tratar parte dessas variações dentro de uma categoria ou por composição.
 
@@ -43,3 +43,11 @@ O Laudário estrutura o exame por compartimentos, avaliação dinâmica, recomen
 O cruzamento com o LaudoUSG deve buscar cobertura real de compartimentos, medidas intestinalmente relevantes, recomendações, cartograma e regras que impeçam combinações incompatíveis. Endometrioma já existe em Pelve feminina, mas isso não comprova cobertura do protocolo completo de pesquisa de endometriose.
 
 O cruzamento técnico está em [crosswalk-pesquisa-endometriose-2026-10-02.md](crosswalk-pesquisa-endometriose-2026-10-02.md). A categoria estruturada está ausente nas três plataformas; Pelve feminina cobre parcialmente endometrioma, mas não compartimentos, avaliação dinâmica, lesão intestinal ou cartograma específico.
+
+## Doppler Venoso de Membro Inferior — contrato e cartograma
+
+O Laudário separa superficial e profundo, modela refluxo por segmento, sugere recomendações e sincroniza os achados com um flebograma editável. No cenário sintético, refluxo da junção e da safena magna atualizou texto, conclusão e mapa. A TVP proximal completa também foi representada na vista profunda.
+
+O fluxo revelou uma fragilidade clínica: criar uma linha de trombose com segmento e extensão já produziu conclusão positiva antes da confirmação de material intraluminal, não compressibilidade e ausência de fluxo. O LaudoUSG deve implementar essa exigência de critérios e distinguir suspeita, achados, idade e diagnóstico confirmado.
+
+O cruzamento técnico está em [crosswalk-doppler-venoso-mmii-2026-10-02.md](crosswalk-doppler-venoso-mmii-2026-10-02.md). A categoria e o mapa já existem, mas o texto e o desenho ainda usam contratos separados; a variante com medidas não percorre todo o caminho da categoria base; e faltam gates estruturais para impedir conclusão ou representação de TVP sem critérios suficientes.

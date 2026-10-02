@@ -25,7 +25,8 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Abdome Total: primeira rodada funcional concluída com estado normal, esteatose leve, hepatite aguda com repercussão vesicular e colelitíase sintética; cruzamento técnico em andamento.
 - Obstétrico 1º Trimestre: primeira rodada funcional e cruzamento técnico concluídos, com datação por CCN, ausência de atividade cardíaca e rastreio sintético de trissomias.
 - Pesquisa de Endometriose: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, endometrioma, lesão intestinal, avaliação dinâmica, recomendações e cartograma.
-- Próximas prioridades: Doppler Venoso de Membro Inferior e Mamas/Axilas.
+- Doppler Venoso de Membro Inferior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, refluxo superficial, TVP sintética, recomendações e cartograma auto-sincronizado.
+- Próxima prioridade: Mamas/Axilas.
 
 ## Limites desta fotografia
 
