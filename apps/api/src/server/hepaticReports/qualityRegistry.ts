@@ -64,19 +64,19 @@ export function validateHepaticQualityRegistry(args: {
   const registry = args.registry ?? APPROVED_HEPATIC_QUALITY_CRITERIA;
   const issues: HepaticIssue[] = [];
   for (const key of ["fat", "stiffness"] as const) {
-    const module = args.assessment.modules[key];
-    if (module.status !== "performed" && module.status !== "partially_limited") continue;
-    const quality = module.quality;
+    const assessmentModule = args.assessment.modules[key];
+    if (assessmentModule.status !== "performed" && assessmentModule.status !== "partially_limited") continue;
+    const quality = assessmentModule.quality;
     if (!quality) continue; // O contrato base emitirá ADEQUATE_QUALITY_REQUIRED.
     if (quality.physicianId !== args.actorId) {
       issues.push({ path: `modules.${key}.quality.physicianId`, code: "QUALITY_PHYSICIAN_ACTOR_MISMATCH" });
     }
     const criterion = quality.criterion;
     const approved = registry.find((entry) => entry.module === key
-      && entry.method === module.method
-      && entry.manufacturer === module.equipment?.manufacturer
-      && entry.equipmentModel === module.equipment?.model
-      && entry.unit === module.measurements.find((measurement) => measurement.role === "median")?.unit
+      && entry.method === assessmentModule.method
+      && entry.manufacturer === assessmentModule.equipment?.manufacturer
+      && entry.equipmentModel === assessmentModule.equipment?.model
+      && entry.unit === assessmentModule.measurements.find((measurement) => measurement.role === "median")?.unit
       && entry.method === criterion.method
       && entry.manufacturer === criterion.manufacturer
       && entry.equipmentModel === criterion.equipmentModel

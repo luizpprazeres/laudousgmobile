@@ -106,8 +106,8 @@ async function execute(scenario: Scenario) {
     } },
     "@/server/pipeline/deterministicSanity": { runDeterministicSanity: () => ({ issues: [], hardBlocked: false }) },
   };
-  const module = { exports: {} as { POST: (req: Request) => Promise<Response> } };
-  runInNewContext(compiled, { module, exports: module.exports, Request, Response, AbortController, crypto, console: { log() {}, warn() {}, error(...args: unknown[]) { errors.push(args.map(String).join(" ")); } },
+  const commonJsModule = { exports: {} as { POST: (req: Request) => Promise<Response> } };
+  runInNewContext(compiled, { module: commonJsModule, exports: commonJsModule.exports, Request, Response, AbortController, crypto, console: { log() {}, warn() {}, error(...args: unknown[]) { errors.push(args.map(String).join(" ")); } },
     require: (id: string) => new Proxy(mocks[id] ?? {}, { get(target, property: string) {
       if (property in target) return target[property];
       if (property === "__esModule") return true;
@@ -117,7 +117,7 @@ async function execute(scenario: Scenario) {
   }, { filename: routePath });
   const body = JSON.stringify({ category_hint: selected, raw_input: scenario.rawInput ?? "Synthetic dictated examination", mode: scenario.hard ? "hard" : "standard",
     fast_path: scenario.fast ?? false, writing_style_id: "11111111-1111-4111-8111-111111111111" });
-  await module.exports.POST(new Request("http://localhost/api/generate", { method: "POST", headers: { "content-type": "application/json" },
+  await commonJsModule.exports.POST(new Request("http://localhost/api/generate", { method: "POST", headers: { "content-type": "application/json" },
     body,
   }));
   return { events, statuses, writerCalls, writerV2Calls, rendererCalls, errors, requestHadHint: Object.hasOwn(JSON.parse(body), "category_hint") };
