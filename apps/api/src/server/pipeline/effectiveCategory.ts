@@ -5,6 +5,7 @@
 import { requestedExamCategory, type DopplerMode } from "./requestedExam";
 import { resolveMorfologicoCategory } from "./morfologicoRouteSelection";
 import { normalizeCategoryCode } from "./categoryNormalization";
+import { structuredClinicalIntent } from "../clinicalReports/fallbackPolicy";
 
 /**
  * Resolve a categoria EFETIVA em 2 passos determinísticos:
@@ -21,6 +22,9 @@ export function resolveEffectiveCategory(
   categoryHint?: string,
   dopplerMode?: DopplerMode,
 ): string {
+  // Structured selection/explicit title cannot be downgraded by a valid ordinary guess.
+  const clinicalIntent = structuredClinicalIntent(categoryHint, rawText) ?? structuredClinicalIntent(detectedCategory);
+  if (clinicalIntent) return clinicalIntent;
   const requested = requestedExamCategory(categoryHint, dopplerMode);
   if (requested && knownCodes.has(requested)) {
     /**

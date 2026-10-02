@@ -112,7 +112,7 @@ import {
   contractHashFor,
   PROMPT_VERSION,
 } from "@/server/prompts/version";
-import { clinicalRendererFallbackBlocked } from "@/server/clinicalReports/fallbackPolicy";
+import { clinicalRendererFallbackBlocked, canonicalClinicalCategory, structuredClinicalIntent, earlyWriterV2Allowed } from "@/server/clinicalReports/fallbackPolicy";
 
 // Recomendações do codex já incorporadas:
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
@@ -187,6 +187,8 @@ export async function POST(req: Request) {
   // do iOS e clientes antigos (o Whisper já chega normalizado).
   const reqInput = {
     ...parsed.data,
+    category_hint: structuredClinicalIntent(parsed.data.category_hint, parsed.data.consolidated_transcript ?? parsed.data.raw_input)
+      ?? (parsed.data.category_hint ? canonicalClinicalCategory(parsed.data.category_hint) : undefined),
     raw_input: normalizeAsrTranscript(parsed.data.raw_input),
     consolidated_transcript:
       parsed.data.consolidated_transcript === undefined
@@ -502,7 +504,7 @@ export async function POST(req: Request) {
         const writerV2UserId =
           env().WRITER_V2_USER_ID || env().WRITER_V2_ABDOME_USER_ID;
         const useWriterV2 =
-          reqInput.category_hint !== "OBSTETRICA" &&
+          earlyWriterV2Allowed(parsed.data.category_hint, categoriesInfo.codes) &&
           !clinicalRendererFallbackBlocked(reqInput.category_hint ?? draftCategory) &&
           writerV2Categories.includes(draftCategory) &&
           writerV2UserId !== "" &&
@@ -891,7 +893,7 @@ export async function POST(req: Request) {
       // A categoria estruturada não pode entrar diretamente no writer por flag
       // OFF/hard mode, nem perder seu contrato pelo palpite do structurer.
       if (
-        (clinicalRendererFallbackBlocked(effectiveCategory) && !useRenderer) ||
+        (clinicalRendererFallbackBlocked(effectiveCategory) && (!useRenderer || !categoriesInfo.codes.has(effectiveCategory))) ||
         (clinicalRendererFallbackBlocked(reqInput.category_hint ?? "") &&
           (!useRenderer || effectiveCategory !== reqInput.category_hint))
       ) {
