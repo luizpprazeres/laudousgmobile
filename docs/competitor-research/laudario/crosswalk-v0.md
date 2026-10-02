@@ -35,3 +35,11 @@ O Laudário deriva idade gestacional e DPP do CCN, relaciona ausência de ativid
 O cruzamento com o LaudoUSG deve separar quatro camadas: cálculo, texto descritivo, conclusão clínica e decisão de publicar os números. A presença de uma calculadora isolada não comprova que essas quatro camadas estejam conectadas.
 
 O cruzamento técnico está em [crosswalk-obstetrico-1t-2026-10-02.md](crosswalk-obstetrico-1t-2026-10-02.md). A datação por CCN não alimenta a DPP nos clientes atuais; a conclusão de ausência de vitalidade ainda não valida o limiar biométrico; e a proveniência do cálculo de trissomias não chega de forma estruturada à Sala.
+
+## Pesquisa de Endometriose — compartimentos e coerência
+
+O Laudário estrutura o exame por compartimentos, avaliação dinâmica, recomendações e cartograma. Endometrioma e lesão intestinal atualizam o corpo e a conclusão; recomendações e tabela-resumo têm confirmação própria. Anatomia e dinâmica permanecem independentes, permitindo uma contradição temporária entre sigmoide aderido e ausência de processo aderencial.
+
+O cruzamento com o LaudoUSG deve buscar cobertura real de compartimentos, medidas intestinalmente relevantes, recomendações, cartograma e regras que impeçam combinações incompatíveis. Endometrioma já existe em Pelve feminina, mas isso não comprova cobertura do protocolo completo de pesquisa de endometriose.
+
+O cruzamento técnico está em [crosswalk-pesquisa-endometriose-2026-10-02.md](crosswalk-pesquisa-endometriose-2026-10-02.md). A categoria estruturada está ausente nas três plataformas; Pelve feminina cobre parcialmente endometrioma, mas não compartimentos, avaliação dinâmica, lesão intestinal ou cartograma específico.
