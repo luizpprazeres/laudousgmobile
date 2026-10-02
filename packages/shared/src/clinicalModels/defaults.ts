@@ -6,7 +6,7 @@ const arterialSide = (examined: boolean) => ({ examined, status: "normal" as con
 const thoraxSide = () => ({ pleuralLine: "regular" as const, sliding: "present" as const, linesB: { count: 0, distribution: "none" as const }, effusion: { present: false as const }, consolidation: "not_seen" as const, atelectasis: "not_seen" as const, pneumothorax: "not_seen" as const });
 const hipSide = () => ({ adequateStandardPlane: true, bonyRoof: "normal" as const, cartilaginousRoof: "normal" as const, femoralHead: "centered" as const, labrumPosition: "normal" as const, classificationConfirmed: false });
 
-const NORMAL_ABDOMEN_REPORT = "Fígado de margens regulares, dimensões e ecotextura normais. Vasos intra-hepáticos bem visíveis e de calibre anatômico. Vesícula biliar de topografia usual e parede fina, sem cálculos. Vias biliares sem dilatação. Pâncreas e baço sem alterações. Rins tópicos, com dimensões e diferenciação corticomedular preservadas. Aorta e veia cava inferior de calibres normais. Bexiga de paredes finas e conteúdo anecoico homogêneo.";
+const NORMAL_ABDOMEN_REPORT = "Fígado de margens regulares, dimensões e ecotextura normais. Vasos intra-hepáticos bem visíveis e de calibre anatômico. Não há sinais de processo expansivo hepático. Vesícula biliar de topografia usual e parede fina, sem cálculos. Vias biliares sem dilatação. Pâncreas e baço sem alterações. Rins tópicos, com dimensões e diferenciação corticomedular preservadas. Aorta e veia cava inferior de calibres normais. Bexiga de paredes finas e conteúdo anecoico homogêneo.";
 
 export function createInitialClinicalModelInput(code: ClinicalModelCode): ClinicalModelInput {
   switch (code) {

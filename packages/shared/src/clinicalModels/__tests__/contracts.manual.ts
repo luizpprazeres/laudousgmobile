@@ -39,6 +39,7 @@ abdomen.portalVein = { caliberCm: 1.1, velocityCms: 22, flow: "hepatopetal" };
 abdomen.physicianReviewed = true;
 assert.equal(validateClinicalModelInput(abdomen).success, true);
 assert.match(renderClinicalModelReport(abdomen), /Fígado de margens regulares/);
+assert.match(renderClinicalModelReport(abdomen), /Não há sinais de processo expansivo hepático\./);
 abdomen.portalPathology = { status: "confirmed", kind: "portal_thrombosis", physicianConfirmed: false };
 assert.ok(errorCodes(abdomen).includes("PORTAL_CONCLUSION_INCOMPLETE"));
 abdomen.portalPathology = { status: "confirmed", kind: "portal_thrombosis", evidence: "Material ecogênico intraluminal e ausência de fluxo ao Doppler", physicianConfirmed: true };
