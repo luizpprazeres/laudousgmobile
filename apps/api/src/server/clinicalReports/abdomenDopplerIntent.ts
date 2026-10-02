@@ -90,3 +90,25 @@ export function classifyAbdomenDopplerMentions(rawInput: string): AbdomenDoppler
 export function mentionsCurrentAbdomenTotalDoppler(rawInput: string): boolean {
   return classifyAbdomenDopplerMentions(rawInput).some((mention) => mention.accepted);
 }
+
+const DOPPLER_WORD = /\bdoppler\b/g;
+/** Negação colada à palavra, com no máximo três palavras de ligação ("sem o estudo Doppler"). */
+const NEGATION_RIGHT_BEFORE_DOPPLER =
+  /(?:^|\s)(?:sem|nem|nao\s+(?:(?:foi|e|sera|seria)\s+)?(?:realizad|feit|solicitad|indicad|executad|efetuad|inclu[ií]d)[oa]s?|nao\s+(?:realizamos|realizei|inclui|incluiu))\s+(?:(?:o|a|os|as|de|do|da|com|estudo|mapeamento|avaliacao|analise|exame|uso)\s+){0,3}$/;
+const DOPPLER_MODIFIERS = /^(?:(?:colorido|espectral|pulsado|power|de\s+amplitude)\s+)*/;
+
+/**
+ * true quando o ditado tem ao menos uma menção a Doppler que não está negada.
+ * "Sem Doppler", "não foi realizado estudo Doppler" e "Doppler não realizado"
+ * não contam; "fígado sem alterações ao Doppler" conta, porque a negação ali
+ * recai sobre os achados, não sobre o método.
+ */
+export function hasAffirmedDopplerMention(rawInput: string): boolean {
+  const text = fold(rawInput);
+  for (const match of text.matchAll(DOPPLER_WORD)) {
+    const start = match.index ?? 0;
+    const after = phraseAfter(text, start + match[0].length).replace(DOPPLER_MODIFIERS, "");
+    if (!NEGATION_RIGHT_BEFORE_DOPPLER.test(clauseBefore(text, start)) && !NEGATION_AFTER.test(after)) return true;
+  }
+  return false;
+}

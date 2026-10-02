@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   BALIK_PLEURAL_EFFUSION_METHOD,
+  PHYSIOLOGICAL_FLOW_DIRECTION,
   calculateBalikPleuralEffusionVolume,
   calculateGrafSuggestion,
   createInitialClinicalModelInput,
@@ -64,7 +65,7 @@ const normalFlowBase = (): AbdomenTotalDopplerInput => ({
 const evaluated = (flow: "hepatopetal" | "hepatofugal" | "ausente" | "outro") => ({ evaluated: true as const, caliberCm: 0.6, velocityCms: 18, flow });
 for (const [key, flow] of [
   ["portalVein", "ausente"], ["portalVein", "outro"],
-  ["hepaticVeins", "ausente"], ["hepaticVeins", "outro"],
+  ["hepaticVeins", "ausente"], ["hepaticVeins", "outro"], ["hepaticVeins", "hepatopetal"],
   ["splenicVein", "hepatofugal"], ["superiorMesentericVein", "hepatofugal"], ["commonHepaticArtery", "hepatofugal"],
   ["splenicVein", "ausente"],
 ] as const) {
@@ -76,11 +77,21 @@ for (const [key, flow] of [
   candidate.portalPathology = { status: "suspected", kind: "other", evidence: "Alteração de fluxo descrita pelo médico", physicianConfirmed: true };
   assert.equal(validateClinicalModelInput(candidate).success, true, `${key}=${flow} com alteração registrada`);
 }
-for (const [key, flow] of [["splenicVein", "hepatopetal"], ["hepaticVeins", "hepatopetal"], ["hepaticVeins", "hepatofugal"]] as const) {
+// Direção fisiológica: veias hepáticas drenam em sentido hepatofugal; os demais vasos são hepatopetais.
+assert.deepEqual(PHYSIOLOGICAL_FLOW_DIRECTION, { portalVein: "hepatopetal", hepaticVeins: "hepatofugal", splenicVein: "hepatopetal", superiorMesentericVein: "hepatopetal", commonHepaticArtery: "hepatopetal" });
+for (const [key, flow] of [["splenicVein", "hepatopetal"], ["superiorMesentericVein", "hepatopetal"], ["commonHepaticArtery", "hepatopetal"], ["hepaticVeins", "hepatofugal"]] as const) {
   const candidate = normalFlowBase();
   candidate[key] = evaluated(flow);
-  assert.equal(validateClinicalModelInput(candidate).success, true, `${key}=${flow}: direção sem regra nova`);
+  assert.equal(validateClinicalModelInput(candidate).success, true, `${key}=${flow}: direção fisiológica com conclusão normal`);
 }
+const physiologicalHepaticVeins = normalFlowBase();
+physiologicalHepaticVeins.hepaticVeins = evaluated("hepatofugal");
+const physiologicalReport = renderClinicalModelReport(physiologicalHepaticVeins);
+assert.match(physiologicalReport, /Veias hepáticas com calibre de 0,6 cm, velocidade de 18 cm\/s e fluxo hepatofugal\./);
+assert.match(physiologicalReport, /CONCLUSÃO:\nEstudo Doppler do sistema esplâncnico sem alterações nos parâmetros informados\./);
+const reversedHepaticVeins = normalFlowBase();
+reversedHepaticVeins.hepaticVeins = evaluated("hepatopetal");
+assert.ok(validateClinicalModelInput(reversedHepaticVeins).issues.some((entry) => entry.code === "ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING" && entry.path === "hepaticVeins.flow"), "veias hepáticas hepatopetais não aceitam conclusão normal");
 // Veia porta hepatofugal é anormal: além do código específico, entra na regra geral.
 const portalHepatofugal = normalFlowBase();
 portalHepatofugal.portalVein = { ...portalHepatofugal.portalVein, flow: "hepatofugal" };

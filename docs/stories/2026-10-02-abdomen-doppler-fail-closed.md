@@ -33,4 +33,9 @@ Feita no worktree `claude/five-models-parity`, a partir de `0129786`. Flags e ca
 - **Renderer**: suspeita de tipo “outro” não vira alteração afirmada na conclusão. Textos livres (evidência portal, padrão distal, limitação) não duplicam o ponto final.
 - **API**: `/api/v1/clinical-reports/[id]/review` passa a usar o mesmo gate conjunto da criação. Com rollout OFF, responde 404.
 
-Pendências para decisão médica: o renderer hepático aprovado e o teste dele tratam “hepatopetal” como normal nas veias hepáticas, e fisiologicamente o fluxo delas é hepatofugal. O validador Swift (`PendingClinicalModelContracts.swift`) não tem as duas regras novas; a API rejeita com 422 o que o iOS aceitar.
+Pendência: o validador Swift (`PendingClinicalModelContracts.swift`) não tem as duas regras novas; a API rejeita com 422 o que o iOS aceitar.
+
+### Follow-up: normalização e fisiologia das veias hepáticas
+
+- **Normalização** (`categoryNormalization.ts`): a promoção para `ABDOMEN_TOTAL_DOPPLER`, tanto por substring quanto por família, exige menção afirmada a Doppler (`hasAffirmedDopplerMention`). “Sem Doppler”, “sem o estudo Doppler”, “não foi realizado Doppler” e “Doppler (colorido) não realizado” não promovem. “Fígado sem alterações ao Doppler” continua promovendo, porque ali a negação recai sobre o achado, não sobre o método. Outros pares Doppler, como o obstétrico, mantêm a regra histórica.
+- **Direção fisiológica** (`PHYSIOLOGICAL_FLOW_DIRECTION` no contrato compartilhado): veias hepáticas são hepatofugais; porta, esplênica, mesentérica superior e artéria hepática comum são hepatopetais. Com situação portal ausente, a direção oposta bloqueia a conclusão normal. O renderer hepático usa o mesmo mapa. O fixture hepático passou a usar veias hepáticas hepatofugais. Não há limiar de calibre ou velocidade. Flags continuam OFF.

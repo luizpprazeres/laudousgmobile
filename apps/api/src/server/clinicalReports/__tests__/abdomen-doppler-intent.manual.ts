@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { classifyAbdomenDopplerMentions, mentionsCurrentAbdomenTotalDoppler } from "../abdomenDopplerIntent";
+import { classifyAbdomenDopplerMentions, hasAffirmedDopplerMention, mentionsCurrentAbdomenTotalDoppler } from "../abdomenDopplerIntent";
 import { structuredClinicalIntent } from "../fallbackPolicy";
 import { resolveEffectiveCategory } from "../../pipeline/effectiveCategory";
 
@@ -73,4 +73,28 @@ assert.equal(resolveEffectiveCategory("ABDOMEN_TOTAL", "Abdome total com Doppler
 // O palpite estruturado do structurer continua fechando o caminho.
 assert.equal(resolveEffectiveCategory("ABDOMEN_TOTAL_DOPPLER", "Exame anterior de abdome total com Doppler.", "t", known), "ABDOMEN_TOTAL_DOPPLER");
 
-console.log(`✓ detector abdome total com Doppler: ${accepted.length} aceitos, ${negated.length} negados, ${prior.length} anteriores`);
+// Menção genérica a Doppler (usada na normalização): negação do método não conta.
+const affirmedDoppler = [
+  "Doppler da veia porta com fluxo hepatopetal.",
+  "Fígado sem alterações ao Doppler.",
+  "Doppler sem alterações.",
+  "Abdome total com Doppler colorido.",
+  "Sem Doppler no primeiro exame. Doppler da porta hoje: normal.",
+  "ESTUDO DOPPLER: veia porta pérvia.",
+];
+const negatedDoppler = [
+  "Abdome total sem Doppler.",
+  "Abdome total, sem o estudo Doppler.",
+  "Não foi realizado Doppler.",
+  "Não realizado estudo Doppler.",
+  "Exame não incluiu Doppler.",
+  "Doppler não realizado.",
+  "Doppler colorido: não foi possível realizar.",
+  "Doppler cancelado.",
+  "Fígado normal. Nem Doppler.",
+];
+for (const text of affirmedDoppler) assert.equal(hasAffirmedDopplerMention(text), true, `Doppler afirmado: ${text}`);
+for (const text of negatedDoppler) assert.equal(hasAffirmedDopplerMention(text), false, `Doppler negado: ${text}`);
+assert.equal(hasAffirmedDopplerMention("Abdome total sem alterações."), false, "sem menção a Doppler");
+
+console.log(`✓ detector abdome total com Doppler: ${accepted.length} aceitos, ${negated.length} negados, ${prior.length} anteriores; Doppler genérico ${affirmedDoppler.length} afirmados, ${negatedDoppler.length} negados`);

@@ -1,5 +1,5 @@
 import type { AbdomenTotalDopplerInput } from "../clinicalModels/contracts";
-import { validateClinicalModelInput } from "../clinicalModels/contracts";
+import { ABDOMEN_VESSEL_KEYS, PHYSIOLOGICAL_FLOW_DIRECTION, validateClinicalModelInput } from "../clinicalModels/contracts";
 import type { HepaticAssessment, HepaticModule, HepaticModuleKey } from "./contracts";
 import { evaluateHepaticConclusion } from "./contracts";
 
@@ -130,11 +130,15 @@ export function renderHepaticDopplerReport(value: unknown): string {
     vesselLine("Tronco da veia porta", data.portalVein),
     ...optional.flatMap(([label, vessel]) => vessel.evaluated ? [vesselLine(label, vessel)] : []),
   ];
-  const evaluatedFlows = [data.portalVein, ...optional.flatMap(([, vessel]) => vessel.evaluated ? [vessel] : [])];
+  const evaluatedFlows = ABDOMEN_VESSEL_KEYS.flatMap((key) => {
+    const vessel = data[key];
+    return "flow" in vessel ? [{ flow: vessel.flow, expected: PHYSIOLOGICAL_FLOW_DIRECTION[key] }] : [];
+  });
   if (evaluatedFlows.some((vessel) => vessel.flow === "outro")) {
     throw new Error("Conclusão Doppler hepática bloqueada: fluxo classificado como outro exige descrição estruturada antes da renderização.");
   }
-  if (data.portalPathology.status === "absent" && evaluatedFlows.some((vessel) => vessel.flow === "ausente" || vessel.flow === "hepatofugal")) {
+  // Veias hepáticas são fisiologicamente hepatofugais; os demais vasos, hepatopetais.
+  if (data.portalPathology.status === "absent" && evaluatedFlows.some((vessel) => vessel.flow !== vessel.expected)) {
     throw new Error("Conclusão Doppler hepática bloqueada: direção ou ausência de fluxo incompatível com conclusão normal.");
   }
   let conclusion: string;

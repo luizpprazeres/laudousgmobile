@@ -125,7 +125,7 @@ function doppler(physicianReviewed = true) {
     documentationPhoto: "omit" as const,
     abdomenReport: "Texto abdominal sintético suficientemente longo para satisfazer o contrato compartilhado sem ser inserido no laudo Doppler hepático independente.",
     portalVein: { caliberCm: 1.1, velocityCms: 24, flow: "hepatopetal" as const },
-    hepaticVeins: { evaluated: true as const, caliberCm: 0.8, velocityCms: 28, flow: "hepatopetal" as const },
+    hepaticVeins: { evaluated: true as const, caliberCm: 0.8, velocityCms: 28, flow: "hepatofugal" as "hepatopetal" | "hepatofugal" | "ausente" | "outro" },
     splenicVein: offVessel,
     superiorMesentericVein: offVessel,
     commonHepaticArtery: offVessel,
@@ -183,7 +183,7 @@ test("Doppler hepático reutiliza somente vasos avaliados e exige revisão médi
   const report = renderHepaticDopplerReport(doppler());
   assert.match(report, /^DOPPLER HEPÁTICO/);
   assert.match(report, /Tronco da veia porta com calibre de 1,1 cm/);
-  assert.match(report, /Veias hepáticas com calibre de 0,8 cm/);
+  assert.match(report, /Veias hepáticas com calibre de 0,8 cm, velocidade de 28 cm\/s e fluxo hepatofugal\./);
   assert.doesNotMatch(report, /Veia esplênica|Artéria hepática comum|Texto abdominal sintético/);
   assert.match(report, /Estudo Doppler hepático sem alterações hemodinâmicas significativas nos vasos avaliados\./);
   assert.throws(() => renderHepaticDopplerReport(doppler(false)), /MODEL_NOT_REVIEWED/);
@@ -211,6 +211,15 @@ test("Doppler hepático bloqueia vaso incompleto e alteração portal sem confir
   const undescribed = doppler();
   undescribed.hepaticVeins.flow = "outro";
   assert.throws(() => renderHepaticDopplerReport(undescribed), /hepaticVeins\.flow:ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING|exige descrição estruturada/);
+
+  // Veias hepáticas drenam fisiologicamente em sentido hepatofugal; o inverso não é normal.
+  const reversedHepaticVeins = doppler();
+  reversedHepaticVeins.hepaticVeins.flow = "hepatopetal";
+  assert.throws(() => renderHepaticDopplerReport(reversedHepaticVeins), /hepaticVeins\.flow:ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING/);
+
+  const reversedPortal = doppler();
+  reversedPortal.portalVein.flow = "hepatofugal" as never;
+  assert.throws(() => renderHepaticDopplerReport(reversedPortal), /portalVein\.flow:ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING/);
 
   const undescribedAltered = doppler();
   undescribedAltered.hepaticVeins.flow = "outro";

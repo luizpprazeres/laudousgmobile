@@ -20,6 +20,8 @@
  * NÃO depende de banco — recebe o conjunto de códigos válidos (categoriesInfo).
  */
 
+import { hasAffirmedDopplerMention } from "../clinicalReports/abdomenDopplerIntent";
+
 /**
  * Pares base → variante-Doppler. Quando o match cai na categoria base mas o
  * input tem Doppler, sobe pra variante (nomes divergem demais pra inferir por
@@ -121,6 +123,11 @@ export function normalizeCategoryCode(
   }
 
   const hasDoppler = /\bdoppler\b/i.test(rawInput);
+  // Abdome com Doppler é contrato estruturado: "sem Doppler" ou "Doppler não
+  // realizado" não promovem. As demais variantes mantêm a regra histórica.
+  const abdomenDopplerAffirmed = hasAffirmedDopplerMention(rawInput);
+  const dopplerSupports = (code: string) =>
+    code === "ABDOMEN_TOTAL_DOPPLER" ? abdomenDopplerAffirmed : hasDoppler;
 
   // 2. Contém um código válido como substring (desempate por Doppler quando há
   // par com/sem Doppler, ex.: OBSTETRICA vs DOPPLER_OBSTETRICO).
@@ -134,7 +141,7 @@ export function normalizeCategoryCode(
   if (best) {
     // upgrade pra variante-Doppler quando aplicável.
     const upgraded = DOPPLER_UPGRADE[best];
-    if (hasDoppler && upgraded && knownCodes.has(upgraded)) {
+    if (upgraded && knownCodes.has(upgraded) && dopplerSupports(upgraded)) {
       return { category: upgraded, normalized: true };
     }
     return { category: best, normalized: true };
@@ -147,7 +154,7 @@ export function normalizeCategoryCode(
   // O desempate por Doppler usa hasDoppler (texto), separado do match de família.
   const detSpaced = detectedCategory.replace(/_/g, " ");
   for (const rule of FAMILY_RULES) {
-    if (rule.needsDoppler && !hasDoppler) continue;
+    if (rule.needsDoppler && !dopplerSupports(rule.code)) continue;
     if (rule.test.test(detSpaced) && knownCodes.has(rule.code)) {
       return { category: rule.code, normalized: true };
     }
