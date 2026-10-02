@@ -59,3 +59,11 @@ O Laudário conecta descritores, BI-RADS, recomendações e cartograma durante o
 O LaudoUSG possui cobertura clínica mais conservadora e mantém o BI-RADS como confirmação médica, mas ainda permite finalizar um achado suspeito sem categoria confirmada. Nos apps móveis, o cartograma já chega à Sala ligado ao laudo por `reportId`, porém texto, lesão e desenho não compartilham identidade por lesão; a Web ainda depende de fallback por categoria. No iOS, o editor manual grava uma distância da papila não informada e o parser pode criar topografia aproximada; no Android, o desenho é manual e não conserva medidas ou quadrante.
 
 O cruzamento técnico está em [crosswalk-mamas-e-axilas-2026-10-02.md](crosswalk-mamas-e-axilas-2026-10-02.md). As prioridades são remover topografia inventada, bloquear lesão suspeita sem BI-RADS confirmado e criar contrato compartilhado por lesão, preservando o vínculo móvel já existente e levando `reportId` também no fluxo Web.
+
+## Avaliação Multiparamétrica Hepática — método, qualidade e dependências
+
+O Laudário reúne abdome superior, Doppler, gordura e elastografia em um exame próprio. A rodada confirmou quantificação por método e fabricante e interpretação automática de rigidez. Também revelou duas fragilidades que o LaudoUSG não deve reproduzir: a gordura foi classificada antes do preenchimento do índice de qualidade, e um valor de m/s derivado permaneceu ativo após apagar kPa, mantendo uma conclusão positiva.
+
+O LaudoUSG Web já possui um bloco complementar mais conservador: documenta CAP, atenuação, fração gordurosa e rigidez sem conversão ou classificação universal. Ainda faltam categorias próprias, contrato compartilhado, gates técnicos por método, correlação entre modo B e quantificação, paridade móvel, validação no servidor e travessia Web para a Sala.
+
+O cruzamento técnico está em [crosswalk-avaliacao-multiparametrica-hepatica-2026-10-02.md](crosswalk-avaliacao-multiparametrica-hepatica-2026-10-02.md). A prioridade é versionar o contrato clínico, adaptar o módulo Web e o transporte à Sala e depois ativar Web, iOS e Android em paridade.
