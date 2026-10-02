@@ -1,4 +1,5 @@
 import { CATEGORY_GROUPS } from '@/components/laudar/categoryGroups'
+import { categoryDisplayLabel } from '@laudousg/shared'
 
 export const ACTIVE_EXAM_NAMES: Record<string, string> = {
   ABDOMEN_TOTAL: 'Abdome total',
@@ -18,18 +19,23 @@ export const ACTIVE_EXAM_NAMES: Record<string, string> = {
   MUSCULOESQUELETICO: 'Musculoesquelético',
 }
 
+/**
+ * Mantém a copy específica da landing quando existe e usa a apresentação
+ * clínica compartilhada para qualquer categoria nova. Identificadores internos
+ * nunca devem aparecer para o usuário.
+ */
+export function activeExamName(id: string) {
+  return ACTIVE_EXAM_NAMES[id] ?? categoryDisplayLabel(id)
+}
+
 export const UPCOMING_EXAMS: Record<string, string[]> = {
-  medicina_interna: [
-    'Próstata transretal',
-    'Doppler renal',
-    'Região inguinal',
-    'Parede abdominal',
-    'Doppler de fístula arteriovenosa',
-  ],
-  obstetricia: ['Transfontanelar'],
+  medicina_interna: [],
+  obstetricia: [],
   saude_mulher: [],
-  pequenas_partes: ['Escrotal', 'Ocular', 'Paratireoide'],
+  pequenas_partes: [],
   musculoesqueletico: [],
+  vascular: [],
+  outros_exames: [],
 }
 
 export const MUSCULOSKELETAL_REGIONS = [

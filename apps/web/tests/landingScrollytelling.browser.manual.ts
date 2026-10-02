@@ -16,6 +16,7 @@ import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { CATEGORY_GROUPS } from '../src/components/laudar/categoryGroups.ts'
 
 type Viewport = { width: number; height: number }
 const viewports: Viewport[] = [
@@ -36,16 +37,9 @@ const shots = process.env.LANDING_QA_SHOTS
 const mobileStageSelector = '[data-landing-section="mobile"]'
 const mobileControlsSelector = `${mobileStageSelector} nav[aria-label="Etapas da demonstração"] button[data-stage]`
 const expectedStages = ['inicio', 'categoria', 'gravacao', 'achados', 'geracao', 'laudo', 'sala']
-const expectedGroups = ['Medicina interna', 'Obstetrícia', 'Saúde da mulher', 'Pequenas partes', 'Musculoesquelético']
-const activeExams = [
-  'ABDOMEN_TOTAL', 'ABDOMEN_SUPERIOR', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'DOPPLER_CAROTIDAS',
-  'OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA', 'PELVE_FEMININA', 'MAMARIA',
-  'TIREOIDE', 'CERVICAL', 'PARTES_MOLES', 'MUSCULOESQUELETICO',
-]
-const upcomingExams = [
-  'Próstata transretal', 'Doppler renal', 'Região inguinal', 'Parede abdominal', 'Doppler de fístula arteriovenosa',
-  'Transfontanelar', 'Escrotal', 'Ocular', 'Paratireoide',
-]
+const expectedGroups = CATEGORY_GROUPS.map((group) => group.label)
+const activeExams = CATEGORY_GROUPS.flatMap((group) => group.categories)
+const upcomingExams: string[] = []
 const mskRegions = ['Ombro', 'Cotovelo', 'Punho', 'Mão', 'Quadril', 'Joelho', 'Tornozelo', 'Pé']
 
 function isForbiddenRequest(raw: string): 'hero-video' | 'api' | null {
@@ -143,7 +137,7 @@ async function checkSpecialties(page: any, viewport: Viewport) {
   const section = page.locator('[data-landing-section="especialidades"]')
   assert.equal(await section.count(), 1, `${viewport.width}: seção de especialidades ausente/duplicada`)
   const groups = section.locator('[data-specialty-group]:visible')
-  assert.equal(await groups.count(), 5, `${viewport.width}: grupos de especialidades visíveis != 5`)
+  assert.equal(await groups.count(), expectedGroups.length, `${viewport.width}: quantidade de grupos de especialidades incorreta`)
   for (let i = 0; i < expectedGroups.length; i += 1) {
     const group = groups.nth(i)
     assert.equal(await group.getAttribute('data-specialty-group'), expectedGroups[i], `${viewport.width}: grupo fora de ordem`)
@@ -160,8 +154,14 @@ async function checkSpecialties(page: any, viewport: Viewport) {
   const available = section.locator('[data-category-tile]')
   const ids: string[] = []
   for (let i = 0; i < await available.count(); i += 1) ids.push((await available.nth(i).getAttribute('data-category-tile')) ?? '')
-  assert.deepEqual(ids, activeExams, `${viewport.width}: catálogo ativo deixou de preservar os 15 exames ou mudou sua ordem`)
+  assert.deepEqual(ids, activeExams, `${viewport.width}: catálogo ativo deixou de preservar os ${activeExams.length} exames ou mudou sua ordem`)
   const text = await section.innerText()
+  assert.doesNotMatch(text, /\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9]+(?:_[A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9]+)+\b/, `${viewport.width}: identificador interno apareceu na lista pública`)
+  assert.match(text, /Abdome total com Doppler/, `${viewport.width}: nome legível do abdome com Doppler ausente`)
+  assert.match(text, /Parede abdominal/, `${viewport.width}: nome legível da parede abdominal ausente`)
+  assert.match(text, /Próstata transretal/, `${viewport.width}: nome legível da próstata transretal ausente`)
+  assert.match(text, /Região inguinal/, `${viewport.width}: nome legível da região inguinal ausente`)
+  assert.match(text, /Ultrassonografia de tórax/, `${viewport.width}: nome legível da ultrassonografia de tórax ausente`)
   assert.match(text, /Próstata transabdominal \(suprapúbica\)/, `${viewport.width}: modalidade suprapúbica sem técnica explícita`)
 
   const regions = section.locator('[data-msk-region]')

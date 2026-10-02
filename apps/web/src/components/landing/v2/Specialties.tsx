@@ -3,7 +3,7 @@
 import { CATEGORY_GROUPS } from '@/components/laudar/categoryGroups'
 import {
   ACTIVE_EXAM_COUNT,
-  ACTIVE_EXAM_NAMES,
+  activeExamName,
   MUSCULOSKELETAL_REGIONS,
   UPCOMING_EXAMS,
 } from '@/components/landing/v2/specialtyCatalog'
@@ -67,7 +67,7 @@ export default function Specialties() {
                     <li key={id} data-category-tile={id} data-exam-status="available" className="min-w-0">
                       <div className="flex items-start gap-2.5 text-[0.94rem] font-medium leading-snug text-slate-800">
                         <span aria-hidden="true" className="mt-[0.48rem] h-1.5 w-1.5 flex-none rounded-full bg-emerald-700" />
-                        <span className="min-w-0">{ACTIVE_EXAM_NAMES[id] ?? id}</span>
+                        <span className="min-w-0">{activeExamName(id)}</span>
                       </div>
                       {id === 'MUSCULOESQUELETICO' ? (
                         <ul
