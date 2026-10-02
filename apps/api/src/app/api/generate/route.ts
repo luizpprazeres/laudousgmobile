@@ -503,6 +503,7 @@ export async function POST(req: Request) {
           env().WRITER_V2_USER_ID || env().WRITER_V2_ABDOME_USER_ID;
         const useWriterV2 =
           reqInput.category_hint !== "OBSTETRICA" &&
+          !clinicalRendererFallbackBlocked(reqInput.category_hint ?? draftCategory) &&
           writerV2Categories.includes(draftCategory) &&
           writerV2UserId !== "" &&
           (user.id === writerV2UserId ||
@@ -887,6 +888,15 @@ export async function POST(req: Request) {
       // `let` (não const): no fallback gracioso abaixo, se o RENDERER falhar
       // (ex.: extração não valida o schema), cai para o writer e marca como writer.
       let useRenderer = programmatic || rendererTemplateBody !== null;
+      // A categoria estruturada não pode entrar diretamente no writer por flag
+      // OFF/hard mode, nem perder seu contrato pelo palpite do structurer.
+      if (
+        (clinicalRendererFallbackBlocked(effectiveCategory) && !useRenderer) ||
+        (clinicalRendererFallbackBlocked(reqInput.category_hint ?? "") &&
+          (!useRenderer || effectiveCategory !== reqInput.category_hint))
+      ) {
+        throw new Error("Structured clinical renderer unavailable or category changed; free writer blocked.");
+      }
       // UX (flag RENDERER_PROGRESS): emite progresso da extração via SSE para o
       // app mostrar status em vez de tela muda. OFF = sem stage events.
       const progressEnabled = env().RENDERER_PROGRESS === "true";
@@ -1079,11 +1089,9 @@ export async function POST(req: Request) {
         // no writer em vez de bloquear a geração. Só o caminho renderer; só se nada
         // do laudo saiu ainda (a extração é a 1ª etapa, então no erro finalText="").
         if (!useRenderer || finalText !== "") throw rendererErr;
-        // Os quatro modelos inteiramente estruturados falham fechados: cair no
+        // Os cinco modelos inteiramente estruturados falham fechados: cair no
         // writer após contrato incompleto poderia inventar normalidade, Graf ou
-        // volume. Abdome total com Doppler é a exceção deliberada porque pode
-        // reutilizar o writer abdominal completo, sem reduzir o exame a uma
-        // frase genérica.
+        // volume, incluindo abdome total com Doppler sem dados mínimos.
         if (clinicalRendererFallbackBlocked(effectiveCategory)) throw rendererErr;
         if (dopplerMode === "combined" && bundle.error) {
           throw new Error(`Doppler combined writer fallback blocked: ${bundle.error.code}`);

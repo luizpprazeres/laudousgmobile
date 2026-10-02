@@ -117,7 +117,7 @@ mustBlock("ABDOMEN_TOTAL_DOPPLER", {
 assert.throws(
   () => parse("ABDOMEN_TOTAL_DOPPLER", { ...abdomenNormalRaw, abdomenReport: "" }),
   /String must contain at least 80 character|too_small/i,
-  "abdome incompleto aciona fallback em vez de gerar descrição genérica",
+  "abdome incompleto deve falhar fechado em vez de gerar descrição genérica",
 );
 
 // DOPPLER VENOSO DE MMSS — normal, trombose associada a cateter e fase não confirmada.

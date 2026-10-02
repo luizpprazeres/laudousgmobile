@@ -336,7 +336,7 @@ export const CLINICAL_MODEL_EXTRACTORS: Record<string, ClinicalExtractor> = {
     jsonSchema: ABDOMEN_TOTAL_DOPPLER_JSON_SCHEMA,
     prompt: promptFor(
       "ABDOMEN_TOTAL_DOPPLER",
-      "abdomenReport deve copiar integralmente um laudo abdominal completo já presente no input. Não crie esse texto durante a extração; sem laudo completo, use string vazia para acionar o fallback seguro do writer.",
+      "abdomenReport deve copiar integralmente um laudo abdominal completo já presente no input. Não crie esse texto durante a extração; sem laudo completo, use string vazia para bloquear a geração por contrato incompleto. Nunca recorrer ao writer livre.",
     ),
     parse: parseAbdomen,
   },

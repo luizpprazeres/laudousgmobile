@@ -1,0 +1,15 @@
+# Abdome total com Doppler: fechamento do fallback legado
+
+Base `b1ee522`, branch `codex/hepatic-fail-closed-20261002`, somente no worktree isolado. Sem push, ativação de flags/categorias ou mudança na Sala.
+
+`ABDOMEN_TOTAL_DOPPLER` passou a integrar a política fail-closed dos cinco modelos clínicos estruturados. Falha de extração ou dados mínimos incompletos deixa a geração com erro, sem recorrer ao writer livre. O prompt de extração e os testes anteriores foram alinhados: ausência do abdome completo bloqueia, em vez de solicitar fallback. O contrato clínico compartilhado não foi alterado.
+
+Alterar somente o Set era insuficiente: `/api/generate` podia selecionar o writer diretamente quando o renderer não estivesse disponível, inclusive com flag desligada ou modo hard. O structurer também podia reclassificar uma categoria estruturada selecionada para uma comum. A rota agora rejeita esses caminhos antes de construir o gerador. Não força renderer nem ativa categoria: indisponibilidade continua sendo erro. O catch existente também bloqueia falha do renderer para abdome com Doppler.
+
+Outro desvio efetivo precedia esse guard: com a categoria selecionada ausente do catálogo, o hint podia ser reduzido a `ABDOMEN_TOTAL`, que tem spec do writer V2. O opt-in V2 agora exclui pedidos de categorias estruturadas, preservando o hint original. Writer direto, fallback e V2 continuam disponíveis para as categorias comuns conforme suas regras anteriores.
+
+O novo `generate-fail-closed.manual.ts` transpila e executa o handler POST real. Simula banco, LLM, transporte SSE e pós-processadores; usa a política, resolução de caminhos/categorias, registros de renderer, parser de extração e validação/renderização clínica reais. Os 14 cenários verificam ausência de chamadas ao writer, tokens, done e persistência generated para extração sem abdome completo ou sem mínimos da veia porta, tanto em fast-path quanto em fluxo normal. Cobrem renderer desligado, hard, reclassificação pelo structurer, categoria ausente com V2 configurado e geração estruturada completa. Contraprovas verificam writer direto em Livre/Teste/Abdome total, fallback do abdome comum e writer V2 legítimo. Configurações são locais ao harness e não alteram o ambiente do aplicativo. Isso não é teste de banco, rede, produção ou dispositivo.
+
+Validação: `tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/clinicalReports/__tests__/generate-fail-closed.manual.ts` passou 14/14; `clinical-reports-v1.manual.ts` e `renderer/__tests__/clinical-models-v1.manual.ts` passaram; `pipeline/__tests__/livreTesteCategories.manual.ts` passou 6/6. Typechecks de `@laudousg/api` e `@laudousg/shared` passaram, assim como `git diff --check`.
+
+O primeiro typecheck da API encontrou links de dependências Web ausentes no worktree. A instalação com lockfile congelado e scripts desativados restaurou os links locais; a repetição passou sem alteração de manifest ou lockfile. Nenhum teste/processo travou ou precisou ser interrompido. CodeRabbit NÃO EXECUTADO.

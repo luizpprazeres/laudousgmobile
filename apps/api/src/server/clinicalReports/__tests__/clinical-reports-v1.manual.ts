@@ -23,9 +23,12 @@ assert.equal(clinicalRendererFallbackBlocked("QUADRIL_INFANTIL"), true, "Graf in
 assert.equal(clinicalRendererFallbackBlocked("TORAX"), true, "tórax incompleto não pode inventar achado no writer");
 assert.equal(
   clinicalRendererFallbackBlocked("ABDOMEN_TOTAL_DOPPLER"),
-  false,
-  "abdome preserva fallback para o writer abdominal completo",
+  true,
+  "abdome com Doppler incompleto não pode cair no writer livre",
 );
+for (const category of ["ABDOMEN_TOTAL", "LIVRE", "TESTE", "MUSCULOESQUELETICO_V2"]) {
+  assert.equal(clinicalRendererFallbackBlocked(category), false, `${category}: writer legítimo preservado`);
+}
 
 const thorax = prepareClinicalReport({
   schemaVersion: 1,
