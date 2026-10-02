@@ -49,6 +49,55 @@ abdomen.portalPathology = { status: "absent", physicianConfirmed: false };
 assert.ok(errorCodes(abdomen).includes("HEPATOFUGAL_FLOW_WITHOUT_PORTAL_FINDING"));
 abdomen.portalPathology = { status: "suspected", kind: "portal_hypertension", evidence: "Inversão da direção do fluxo portal", physicianConfirmed: true };
 assert.match(renderClinicalModelReport(abdomen), /Achados suspeitos de hipertensão portal/);
+abdomen.portalPathology = { status: "suspected", kind: "other", evidence: "Fluxo portal monofásico, sem sinais de trombose.", physicianConfirmed: true };
+const suspectedOther = renderClinicalModelReport(abdomen);
+assert.match(suspectedOther, /Fluxo portal monofásico, sem sinais de trombose\.\n/, "evidência termina com um único ponto");
+assert.doesNotMatch(suspectedOther, /\.\./);
+assert.match(suspectedOther, /CONCLUSÃO:\nAchados suspeitos de alteração do sistema portal/, "suspeita não vira alteração afirmada");
+
+// Conclusão normal não convive com fluxo ausente, padrão não descrito ou direção anormal.
+const normalFlowBase = (): AbdomenTotalDopplerInput => ({
+  ...(createInitialClinicalModelInput("ABDOMEN_TOTAL_DOPPLER") as AbdomenTotalDopplerInput),
+  physicianReviewed: true,
+  portalVein: { caliberCm: 1.1, velocityCms: 22, flow: "hepatopetal" },
+});
+const evaluated = (flow: "hepatopetal" | "hepatofugal" | "ausente" | "outro") => ({ evaluated: true as const, caliberCm: 0.6, velocityCms: 18, flow });
+for (const [key, flow] of [
+  ["portalVein", "ausente"], ["portalVein", "outro"],
+  ["hepaticVeins", "ausente"], ["hepaticVeins", "outro"],
+  ["splenicVein", "hepatofugal"], ["superiorMesentericVein", "hepatofugal"], ["commonHepaticArtery", "hepatofugal"],
+  ["splenicVein", "ausente"],
+] as const) {
+  const candidate = normalFlowBase();
+  if (key === "portalVein") candidate.portalVein = { ...candidate.portalVein, flow };
+  else candidate[key] = evaluated(flow);
+  assert.ok(errorCodes(candidate).includes("ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING"), `${key}=${flow} com situação portal ausente`);
+  assert.throws(() => renderClinicalModelReport(candidate), /não pode afirmar normalidade/);
+  candidate.portalPathology = { status: "suspected", kind: "other", evidence: "Alteração de fluxo descrita pelo médico", physicianConfirmed: true };
+  assert.equal(validateClinicalModelInput(candidate).success, true, `${key}=${flow} com alteração registrada`);
+}
+for (const [key, flow] of [["splenicVein", "hepatopetal"], ["hepaticVeins", "hepatopetal"], ["hepaticVeins", "hepatofugal"]] as const) {
+  const candidate = normalFlowBase();
+  candidate[key] = evaluated(flow);
+  assert.equal(validateClinicalModelInput(candidate).success, true, `${key}=${flow}: direção sem regra nova`);
+}
+// Veia porta hepatofugal é anormal: além do código específico, entra na regra geral.
+const portalHepatofugal = normalFlowBase();
+portalHepatofugal.portalVein = { ...portalHepatofugal.portalVein, flow: "hepatofugal" };
+assert.ok(errorCodes(portalHepatofugal).includes("HEPATOFUGAL_FLOW_WITHOUT_PORTAL_FINDING"));
+assert.ok(errorCodes(portalHepatofugal).includes("ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING"), "porta hepatofugal exige achado portal");
+assert.ok(validateClinicalModelInput(portalHepatofugal).issues.some((entry) => entry.code === "ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING" && entry.path === "portalVein.flow"));
+assert.throws(() => renderClinicalModelReport(portalHepatofugal), /não pode afirmar normalidade/);
+portalHepatofugal.portalPathology = { status: "suspected", kind: "portal_hypertension", evidence: "Inversão do fluxo portal", physicianConfirmed: true };
+assert.equal(validateClinicalModelInput(portalHepatofugal).success, true, "porta hepatofugal com achado portal registrado é válida");
+const portalHepatopetal = normalFlowBase();
+assert.equal(validateClinicalModelInput(portalHepatopetal).success, true, "porta hepatopetal segue normal");
+
+const mismatched = normalFlowBase();
+mismatched.portalPathology = { status: "absent", kind: "portal_thrombosis", physicianConfirmed: false };
+assert.ok(errorCodes(mismatched).includes("PORTAL_FINDING_STATUS_MISMATCH"), "tipo de alteração com situação ausente é contraditório");
+mismatched.portalPathology = { status: "absent", physicianConfirmed: true };
+assert.ok(errorCodes(mismatched).includes("PORTAL_FINDING_STATUS_MISMATCH"));
 
 const venous = createInitialClinicalModelInput("DOPPLER_VENOSO_MMSS") as DopplerVenosoMmssInput;
 assert.ok(errorCodes(venous).includes("MODEL_NOT_REVIEWED"));
@@ -78,6 +127,9 @@ arterial.right = { ...arterial.right, status: "normal", stenosisPercent: 50, per
 assert.ok(errorCodes(arterial).includes("STENOSIS_PERCENT_STATUS_MISMATCH"));
 arterial.right = { ...arterial.right, status: "stenosis", stenosisPercent: 70, thoracicOutlet: { evaluated: true, maneuvers: "abdução sustentada", positions: "neutra e abdução", result: "positive", physicianConfirmed: true } };
 assert.match(renderClinicalModelReport(arterial), /CONCLUSÃO:[\s\S]*Manobras posicionais positivas/);
+arterial.right = { ...arterial.right, distalPattern: "fluxo amortecido, com reenchimento distal." };
+assert.match(renderClinicalModelReport(arterial), /Padrão distal: fluxo amortecido, com reenchimento distal\.\n/);
+assert.doesNotMatch(renderClinicalModelReport(arterial), /\.\./, "texto livre com ponto final não duplica pontuação");
 
 const thorax = createInitialClinicalModelInput("TORAX") as ThoraxInput;
 assert.ok(errorCodes(thorax).includes("MODEL_NOT_REVIEWED"));

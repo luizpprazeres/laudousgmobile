@@ -9,6 +9,8 @@ import type {
 import { BALIK_PLEURAL_EFFUSION_METHOD, calculateBalikPleuralEffusionVolume, isBalikEligible, validateClinicalModelInput } from "./contracts";
 
 const pt = (value: number) => value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+/** Texto livre do médico vira uma frase com um único ponto final. */
+const sentence = (text: string) => `${text.trim().replace(/[.;,:\s]+$/u, "")}.`;
 const sideName = (side: "right" | "left") => side === "right" ? "direito" : "esquerdo";
 const flowLabel = { hepatopetal: "hepatopetal", hepatofugal: "hepatofugal", ausente: "ausente", outro: "com padrão descrito pelo médico" } as const;
 
@@ -20,13 +22,14 @@ function renderAbdomen(data: AbdomenTotalDopplerInput) {
     ["Veia mesentérica superior", data.superiorMesentericVein], ["Artéria hepática comum", data.commonHepaticArtery],
   ] as const;
   const lines = [vessel("Tronco da veia porta", data.portalVein), ...optional.flatMap(([label, value]) => value.evaluated ? [vessel(label, value)] : [])];
-  if (data.portalPathology.status !== "absent") lines.push(`${data.portalPathology.evidence}.`);
-  const portalPrefix = data.portalPathology.status === "suspected" ? "Achados suspeitos de" : "Sinais ultrassonográficos de";
+  if (data.portalPathology.status !== "absent") lines.push(sentence(data.portalPathology.evidence!));
+  const suspected = data.portalPathology.status === "suspected";
+  const portalPrefix = suspected ? "Achados suspeitos de" : "Sinais ultrassonográficos de";
   const conclusion = data.portalPathology.status === "absent"
     ? "Estudo Doppler do sistema esplâncnico sem alterações nos parâmetros informados."
     : data.portalPathology.kind === "portal_thrombosis" ? `${portalPrefix} trombose portal.`
       : data.portalPathology.kind === "portal_hypertension" ? `${portalPrefix} hipertensão portal.`
-        : "Alteração do sistema portal, conforme descrita acima.";
+        : suspected ? "Achados suspeitos de alteração do sistema portal, conforme descritos acima." : "Alteração do sistema portal, conforme descrita acima.";
   return `ULTRASSONOGRAFIA DO ABDOME TOTAL COM DOPPLER COLORIDO\n\nCOMENTÁRIOS:\nExame realizado com transdutor convexo multifrequencial, abrangendo todo o abdome. Foram realizados múltiplos cortes em planos ortogonais.${data.documentationPhoto === "include" ? " A documentação fotográfica foi realizada conforme a preferência configurada." : ""}\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\n${data.abdomenReport}\n\nDOPPLER DO SISTEMA ESPLÂNCNICO:\n${lines.join("\n")}\n\nCONCLUSÃO:\n${conclusion}`;
 }
 
@@ -69,7 +72,7 @@ function arterialSide(data: DopplerArterialMmssInput, side: "right" | "left") {
   const velocities = Object.entries(s.psvCms).map(([vessel, value]) => `${vessel}: velocidade de pico sistólico de ${pt(value)} cm/s.`);
   const lines = [`Membro superior ${sideName(side)}:`, s.status === "normal" ? "Artérias avaliadas pérvias, com padrão espectral preservado." : `${arterialStatusLabel[s.status]} em ${s.affectedVessel}.`, ...velocities];
   if (s.stenosisPercent != null) lines.push(`Estenose estimada em ${pt(s.stenosisPercent)}%.`);
-  if (s.distalPattern) lines.push(`Padrão distal: ${s.distalPattern}.`);
+  if (s.distalPattern) lines.push(`Padrão distal: ${sentence(s.distalPattern)}`);
   if (s.thoracicOutlet.evaluated) lines.push(`Desfiladeiro torácico: manobras ${s.thoracicOutlet.maneuvers}; posições ${s.thoracicOutlet.positions}; resultado ${outletResultLabel[s.thoracicOutlet.result]}.`);
   return lines.join("\n");
 }
@@ -128,7 +131,7 @@ function renderThorax(data: ThoraxInput) {
   const hasEffusion = [data.right, data.left].some((side) => side.effusion.present && isBalikEligible(side.effusion.context));
   const methodNote = hasEffusion ? `\n\nNOTA DA ESTIMATIVA:\n${BALIK_PLEURAL_EFFUSION_METHOD.formula}; ${BALIK_PLEURAL_EFFUSION_METHOD.population}; ${BALIK_PLEURAL_EFFUSION_METHOD.measurement}. DOI ${BALIK_PLEURAL_EFFUSION_METHOD.doi}. Erro absoluto médio aproximado de ${BALIK_PLEURAL_EFFUSION_METHOD.meanAbsoluteErrorMl} mL; a estimativa não determina conduta automaticamente.` : "";
   const conclusion = `${thoraxConclusionSide(data, "right")}\n${thoraxConclusionSide(data, "left")}${data.correlationSuggested ? "\nSugere-se correlação clínica." : ""}`;
-  return `ULTRASSONOGRAFIA DE TÓRAX\n\nCOMENTÁRIOS:\nExame realizado com transdutores convexo e linear, com avaliação bilateral das regiões anterior, lateral e posterior do tórax.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\n${thoraxSide(data, "right")}\n\n${thoraxSide(data, "left")}\n${data.limitation ? `\nLimitação: ${data.limitation}.` : ""}${methodNote}\n\nCONCLUSÃO:\n${conclusion}`;
+  return `ULTRASSONOGRAFIA DE TÓRAX\n\nCOMENTÁRIOS:\nExame realizado com transdutores convexo e linear, com avaliação bilateral das regiões anterior, lateral e posterior do tórax.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\n${thoraxSide(data, "right")}\n\n${thoraxSide(data, "left")}\n${data.limitation ? `\nLimitação: ${sentence(data.limitation)}` : ""}${methodNote}\n\nCONCLUSÃO:\n${conclusion}`;
 }
 
 const roofLabel = { normal: "bem formado", rounded: "arredondado", deficient: "deficiente", not_assessed: "não avaliado" } as const;

@@ -23,3 +23,14 @@ Antes de policy/classificação, a intenção estruturada é preservada: o alias
 O harness agora permite `category: null`, que realmente omite `category_hint` do JSON, e verifica essa ausência. Cobre ausência/alias/hint canônico/hint comum, intenção explícita Doppler, V2 configurado, detecção comum e fast-path ON/OFF. Cobre ainda alias sem título com renderer ON/OFF, input comum sem hint e alias comum: não usam V2 antecipado, mas preservam writer comum depois da resolução normal. O antigo cenário de reclassificação agora chega ao renderer estruturado e bloqueia por contrato incompleto, em vez de aceitar o palpite comum.
 
 Gates desta correção: handler 25/25; API clínica v1 e cinco renderers clínicos; resolução de categoria 8/8, normalização 11/11, Livre/Teste 6/6; typechecks API/shared e diff-check aprovados. Harness local com dependências simuladas, sem validação de produção. Sem mudança de flags/categorias/Sala. CodeRabbit NÃO EXECUTADO.
+
+## Auditoria dos cinco modelos e detector contextual (02/10)
+
+Feita no worktree `claude/five-models-parity`, a partir de `0129786`. Flags e categorias continuam OFF. Não houve deploy, e Sala, landing, Web UI, mobile e iOS não foram alterados.
+
+- **Detector contextual** (`apps/api/src/server/clinicalReports/abdomenDopplerIntent.ts`): substitui a regex do título. O texto é dobrado sem diacríticos, então “abdômen/abdómen” passa a ser aceito. Antes, “ABDÔMEN TOTAL COM DOPPLER” não casava e caía no writer comum; a contraprova contra a política antiga confirmou isso. Rejeita negação próxima (“não foi realizado…”, “… não realizado/cancelado”) e referência a outro exame (“exame anterior de…”, “comparado ao…”, “… prévio”, “… de outro serviço”, “… há 3 meses”). Vírgula e ponto isolam a pista anterior, e uma menção afirmativa basta. A seleção estruturada explícita continua soberana.
+- **Contrato compartilhado**: novo erro `ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING` para situação portal “ausente” (conclusão normal) com fluxo `ausente`/`outro` em qualquer vaso, ou `hepatofugal` em porta, esplênica, mesentérica superior e artéria hepática. Na porta hepatofugal, ele convive com o código específico já existente. A direção das veias hepáticas ficou fora da regra (ver pendência). Novo erro `PORTAL_FINDING_STATUS_MISMATCH` para tipo, critérios ou confirmação com situação “ausente”.
+- **Renderer**: suspeita de tipo “outro” não vira alteração afirmada na conclusão. Textos livres (evidência portal, padrão distal, limitação) não duplicam o ponto final.
+- **API**: `/api/v1/clinical-reports/[id]/review` passa a usar o mesmo gate conjunto da criação. Com rollout OFF, responde 404.
+
+Pendências para decisão médica: o renderer hepático aprovado e o teste dele tratam “hepatopetal” como normal nas veias hepáticas, e fisiologicamente o fluxo delas é hepatofugal. O validador Swift (`PendingClinicalModelContracts.swift`) não tem as duas regras novas; a API rejeita com 422 o que o iOS aceitar.

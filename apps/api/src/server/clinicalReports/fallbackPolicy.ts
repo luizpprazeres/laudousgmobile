@@ -1,3 +1,5 @@
+import { mentionsCurrentAbdomenTotalDoppler } from "./abdomenDopplerIntent";
+
 const FAIL_CLOSED_CLINICAL_RENDERERS = new Set([
   "ABDOMEN_TOTAL_DOPPLER",
   "DOPPLER_VENOSO_MMSS",
@@ -14,10 +16,13 @@ export function canonicalClinicalCategory(categoryCode: string): string {
   return categoryCode === "ABDOME_TOTAL_DOPPLER" ? "ABDOMEN_TOTAL_DOPPLER" : categoryCode;
 }
 
-/** Explicit exam selection/title only; a bare Doppler mention is not sufficient. */
+/**
+ * Explicit exam selection/title only; a bare Doppler mention is not sufficient.
+ * The title must name the current exam: negated or prior-exam mentions do not count.
+ */
 export function structuredClinicalIntent(categoryHint?: string, rawInput = ""): string | undefined {
   if (categoryHint && clinicalRendererFallbackBlocked(categoryHint)) return canonicalClinicalCategory(categoryHint);
-  if (/\b(?:abdome|abdomen)[_\s]+total[_\s]+(?:(?:com|c\/)\s+)?doppler\b/i.test(rawInput)) return "ABDOMEN_TOTAL_DOPPLER";
+  if (mentionsCurrentAbdomenTotalDoppler(rawInput)) return "ABDOMEN_TOTAL_DOPPLER";
   return undefined;
 }
 

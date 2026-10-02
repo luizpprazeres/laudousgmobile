@@ -113,6 +113,10 @@ for (const route of [
 ]) {
   const source = readFileSync(resolve(process.cwd(), route), "utf8");
   assert.match(source, /verifyJwt\(req\)/, `${route}: autenticação ausente`);
+  // Verificação estática: o gate conjunto precede qualquer leitura/escrita do laudo.
+  const gate = source.indexOf("clinicalModelsV1Enabled(env().RENDERER_CATEGORIES)");
+  const action = Math.max(source.indexOf("createClinicalReport({"), source.indexOf("reviewPersistedReport({"));
+  assert.ok(gate > 0 && action > gate, `${route}: rollout OFF deve fechar a rota antes da ação`);
 }
 
 async function assertRoutesRequireAuth() {

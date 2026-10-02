@@ -282,6 +282,27 @@ export function validateClinicalModelInput(value: unknown, options: { requirePhy
     if (p.status !== "absent" && (!p.kind || !p.evidence || !p.physicianConfirmed)) {
       issues.push(issue("PORTAL_CONCLUSION_INCOMPLETE", "Hipertensão ou trombose portal exige tipo, critérios descritos e confirmação médica.", "portalPathology"));
     }
+    if (p.status === "absent" && (p.kind || p.evidence || p.physicianConfirmed)) {
+      issues.push(issue("PORTAL_FINDING_STATUS_MISMATCH", "Tipo, critérios ou confirmação de alteração portal exigem situação marcada como suspeita ou confirmada.", "portalPathology.status"));
+    }
+    // Com situação portal ausente a conclusão afirma normalidade; fluxo ausente
+    // ou com padrão não descrito não pode coexistir com ela em nenhum vaso.
+    // Direção: só os vasos de fluxo fisiologicamente hepatopetal são checados;
+    // a convenção de direção das veias hepáticas fica fora desta regra.
+    if (p.status === "absent") {
+      const vessels = [
+        ["portalVein", data.portalVein, true],
+        ["hepaticVeins", data.hepaticVeins, false],
+        ["splenicVein", data.splenicVein, true],
+        ["superiorMesentericVein", data.superiorMesentericVein, true],
+        ["commonHepaticArtery", data.commonHepaticArtery, true],
+      ] as const;
+      for (const [key, vessel, hepatopetalExpected] of vessels) {
+        const flow = "flow" in vessel ? vessel.flow : undefined;
+        const abnormal = flow === "ausente" || flow === "outro" || (hepatopetalExpected && flow === "hepatofugal");
+        if (abnormal) issues.push(issue("ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING", "Fluxo ausente, invertido ou com padrão não descrito exige registrar a suspeita ou alteração e os critérios revisados; a conclusão não pode afirmar normalidade.", `${key}.flow`));
+      }
+    }
   }
 
   if (data.categoryCode === "DOPPLER_VENOSO_MMSS") {

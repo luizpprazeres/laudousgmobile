@@ -201,6 +201,26 @@ async function main() {
     assert(ordinary.events.some(e => e.type === "done"));
     checks++;
   }
+  // Detector contextual: "abdômen" acentuado preserva o contrato; título negado ou
+  // de exame anterior não sequestra um abdome total comum.
+  for (const hint of [null, "ABDOMEN_TOTAL"] as const) {
+    const accented = await execute({ category: hint, rawInput: "ULTRASSONOGRAFIA DO ABDÔMEN TOTAL COM DOPPLER. Dados incompletos.", detectedCategory: "ABDOMEN_TOTAL", writerV2: true });
+    assert.equal(accented.writerCalls + accented.writerV2Calls, 0, `${hint}: abdômen com Doppler não abre writer`);
+    assert.equal(accented.rendererCalls, 1, `${hint}: abdômen com Doppler chega ao renderer estruturado`);
+    assert(!accented.events.some(e => e.type === "token" || e.type === "done"));
+    checks++;
+    for (const rawInput of [
+      "Ultrassonografia de abdome total. Não foi realizado abdome total com Doppler.",
+      "Ultrassonografia de abdome total. Exame anterior de abdome total com Doppler sem alterações.",
+      "Abdome total. Comparado ao abdômen total com Doppler de 2024, fígado inalterado.",
+    ]) {
+      const ordinary = await execute({ category: hint, rawInput, detectedCategory: "ABDOMEN_TOTAL", rendererCategories: "" });
+      assert.equal(ordinary.rendererCalls, 0, `${hint}: menção negada/anterior não força o contrato: ${rawInput}`);
+      assert.equal(ordinary.writerCalls, 1, `${hint}: abdome total comum segue no writer legítimo: ${ordinary.errors.join("\n")}`);
+      assert(ordinary.events.some(e => e.type === "done"));
+      checks++;
+    }
+  }
   assert(fallbackPolicy.clinicalRendererFallbackBlocked("ABDOME_TOTAL_DOPPLER"));
   assert.equal(fallbackPolicy.earlyWriterV2Allowed(undefined, new Set(["ABDOMEN_TOTAL"])), false);
   assert.equal(fallbackPolicy.earlyWriterV2Allowed("ABDOMEN_TOTAL", new Set()), false);

@@ -205,11 +205,17 @@ test("Doppler hepático bloqueia vaso incompleto e alteração portal sem confir
 
   const incompatibleNormal = doppler();
   incompatibleNormal.hepaticVeins.flow = "ausente";
-  assert.throws(() => renderHepaticDopplerReport(incompatibleNormal), /incompatível com conclusão normal/);
+  // O contrato compartilhado já barra antes do renderer hepático; ambos falham fechados.
+  assert.throws(() => renderHepaticDopplerReport(incompatibleNormal), /hepaticVeins\.flow:ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING|incompatível com conclusão normal/);
 
   const undescribed = doppler();
   undescribed.hepaticVeins.flow = "outro";
-  assert.throws(() => renderHepaticDopplerReport(undescribed), /exige descrição estruturada/);
+  assert.throws(() => renderHepaticDopplerReport(undescribed), /hepaticVeins\.flow:ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING|exige descrição estruturada/);
+
+  const undescribedAltered = doppler();
+  undescribedAltered.hepaticVeins.flow = "outro";
+  undescribedAltered.portalPathology = { status: "suspected", kind: "other", evidence: "Padrão sintético descrito", physicianConfirmed: true } as never;
+  assert.throws(() => renderHepaticDopplerReport(undescribedAltered), /exige descrição estruturada/);
 });
 
 test("renderizadores hepáticos não registram nem ativam novas categorias", () => {
