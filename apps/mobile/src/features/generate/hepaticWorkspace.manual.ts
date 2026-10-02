@@ -17,16 +17,19 @@ import {
   buildHepaticQuality,
   buildHepaticTechniquePatch,
   calculateHepaticIqrRatio,
+  canCalculateHepaticIqrRatio,
   changeHepaticMethod,
   changeHepaticModuleStatus,
   changeHepaticUnit,
   clearHepaticMeasurement,
   editHepaticModule,
   hepaticWorkspaceReadiness,
+  optionalHepaticText,
   parseHepaticNumber,
   replaceHepaticAssessmentContext,
   reviewHepaticAssessment,
   reviewHepaticModule,
+  tryHepaticEdit,
   upsertHepaticMeasurement,
   type HepaticQualityConfiguration,
 } from "./hepaticWorkspace";
@@ -219,4 +222,48 @@ test("módulo parcialmente limitado exige motivo", () => {
   assert.ok(codes.includes("LIMITATION_REASON_REQUIRED"), JSON.stringify(codes));
   const module: HepaticModule = limited.modules.stiffness;
   assert.equal(module.interpretation, undefined);
+});
+
+// ---- Regressões da revisão adversarial (02/10): texto livre e exceções ----
+test("texto livre: espaço não lança nem some; vazio vira undefined", () => {
+  assert.equal(optionalHepaticText(""), undefined);
+  assert.equal(optionalHepaticText("   "), undefined);
+  assert.equal(optionalHepaticText(" Rastreio de "), "Rastreio de".trim());
+  // O defeito: mandar " " direto ao contrato lança (schema trim + min(1)).
+  const limited = changeHepaticModuleStatus(elastography(), "stiffness", "partially_limited");
+  assert.throws(() => editHepaticModule(limited, "stiffness", { reason: " " }));
+  assert.throws(() => replaceHepaticAssessmentContext(limited, { indication: " " }));
+  // Com a normalização, a mesma digitação é aceita e não grava nada.
+  const ok = tryHepaticEdit(() => editHepaticModule(limited, "stiffness", { reason: optionalHepaticText(" ") }));
+  assert.equal(ok.ok, true);
+  if (ok.ok) assert.equal(ok.value.modules.stiffness.reason, undefined);
+  // "Rastreio de" (com espaço digitado no fim) não perde palavras: o campo mostra o rascunho, o contrato o texto aparado.
+  const typed = replaceHepaticAssessmentContext(limited, { indication: optionalHepaticText("Rastreio de ") });
+  assert.equal(typed.indication, "Rastreio de");
+});
+
+test("entrada fora do schema vira mensagem, não exceção no toque", () => {
+  const done = elastography();
+  const cases: Array<[string, () => HepaticAssessment]> = [
+    ["texto acima de 2000", () => replaceHepaticAssessmentContext(done, { indication: "x".repeat(2001) })],
+    ["mais de 50 fatores", () => editHepaticModule(done, "stiffness", { confounders: { reviewed: true, etiologicContext: "contexto", items: Array.from({ length: 51 }, (_, i) => `fator ${i}`) } })],
+    ["IQR/mediana com mediana zero", () => calculateHepaticIqrRatio(upsertHepaticMeasurement(done, "stiffness", { id: "stiffness-median", role: "median", value: 0, unit: "kPa", origin: "manual", source: reference }), "stiffness")],
+    ["interpretação vazia", () => reviewHepaticModule(done, "stiffness", review("   "))],
+  ];
+  for (const [label, edit] of cases) {
+    const result = tryHepaticEdit(edit);
+    assert.equal(result.ok, false, label);
+    if (!result.ok) assert.match(result.message, /não é aceita/);
+  }
+  assert.equal(tryHepaticEdit(() => done).ok, true);
+});
+
+test("botão IQR/mediana só com mediana positiva e mesma unidade", () => {
+  const done = elastography();
+  assert.equal(canCalculateHepaticIqrRatio(done.modules.stiffness), true);
+  const zero = upsertHepaticMeasurement(done, "stiffness", { id: "stiffness-median", role: "median", value: 0, unit: "kPa", origin: "manual", source: reference });
+  assert.equal(canCalculateHepaticIqrRatio(zero.modules.stiffness), false);
+  assert.equal(canCalculateHepaticIqrRatio(clearHepaticMeasurement(done, "stiffness", "iqr").modules.stiffness), false);
+  const mixed = upsertHepaticMeasurement(done, "stiffness", { id: "stiffness-iqr", role: "iqr", value: 0.6, unit: "m/s", origin: "manual", source: reference });
+  assert.equal(canCalculateHepaticIqrRatio(mixed.modules.stiffness), false);
 });

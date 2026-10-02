@@ -152,3 +152,14 @@ test("máquina de estados: só libera cópia após revisão confirmada; edição
   assert.equal(edited.persisted?.id, EXAM, "linha salva continua como âncora da próxima atualização");
   assert.equal(startHepaticReportReview(edited).phase, "editing", "não revisa versão desatualizada");
 });
+
+test("resposta é comparada ao payload normalizado que saiu do aparelho", () => {
+  // Estado com texto não aparado (ex.: criado fora das operações): o servidor
+  // devolve a versão normalizada pelo schema, e isso é o mesmo conteúdo.
+  const raw = { ...sent(), indication: "  Indicação sintética  " };
+  const normalized = { ...raw, indication: "Indicação sintética" };
+  assert.deepEqual(buildHepaticPersistBody(raw, null), { assessment: normalized });
+  assert.equal(parseHepaticPersistResponse(okBody(normalized), raw).assessment.indication, "Indicação sintética");
+  // Conteúdo realmente diferente continua recusado.
+  assert.throws(() => parseHepaticPersistResponse(okBody({ ...normalized, indication: "Outra" }), raw));
+});

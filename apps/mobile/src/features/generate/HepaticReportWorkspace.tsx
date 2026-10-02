@@ -27,16 +27,19 @@ import {
   buildHepaticQuality,
   buildHepaticTechniquePatch,
   calculateHepaticIqrRatio,
+  canCalculateHepaticIqrRatio,
   changeHepaticMethod,
   changeHepaticModuleStatus,
   changeHepaticUnit,
   clearHepaticMeasurement,
   editHepaticModule,
   hepaticWorkspaceReadiness,
+  optionalHepaticText,
   parseHepaticNumber,
   replaceHepaticAssessmentContext,
   reviewHepaticAssessment,
   reviewHepaticModule,
+  tryHepaticEdit,
   upsertHepaticMeasurement,
   type HepaticCorrelationDraft,
   type HepaticMethod,
@@ -88,6 +91,8 @@ export function HepaticReportWorkspace({ category, send, getPhysicianId }: Props
   const [authError, setAuthError] = useState<string | null>(null);
   const [flow, setFlow] = useState(initialHepaticReportFlow);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const [editError, setEditError] = useState<string | null>(null);
+  const [indicationDraft, setIndicationDraft] = useState(value.indication ?? "");
   const editRevision = useRef(0);
 
   useEffect(() => {
@@ -114,6 +119,15 @@ export function HepaticReportWorkspace({ category, send, getPhysicianId }: Props
     setValue(next);
     setFlow((current) => invalidateHepaticReportFlow(current));
     setCopyState("idle");
+  }
+
+  /** Toda edição do contrato passa aqui: entrada recusada vira aviso, não exceção. */
+  function apply(edit: () => HepaticAssessment) {
+    if (busy) return;
+    const result = tryHepaticEdit(edit);
+    if (!result.ok) { setEditError(result.message); return; }
+    setEditError(null);
+    update(result.value);
   }
 
   async function persist() {
@@ -165,6 +179,7 @@ export function HepaticReportWorkspace({ category, send, getPhysicianId }: Props
         <Text style={{ color: t.textSec, fontSize: 12 }}>Revisão {value.revision} · ativação conjunta pendente</Text>
       </View>
       {authError ? <Notice tone="error" t={t}>{authError}</Notice> : null}
+      {editError ? <Notice tone="error" t={t}>{editError}</Notice> : null}
       {lacksQualityRegistry ? (
         <Notice tone="warn" t={t}>
           Configuração técnica ainda pendente. Os métodos podem ser preenchidos, mas a conclusão permanece bloqueada até existir
@@ -177,8 +192,12 @@ export function HepaticReportWorkspace({ category, send, getPhysicianId }: Props
           <Card title="Dados do exame" t={t}>
             <Input
               label="Indicação clínica"
-              value={value.indication ?? ""}
-              onChange={(indication) => update(replaceHepaticAssessmentContext(value, { indication: indication || undefined }))}
+              value={indicationDraft}
+              onChange={(raw) => {
+                setIndicationDraft(raw);
+                const indication = optionalHepaticText(raw);
+                if (indication !== value.indication) apply(() => replaceHepaticAssessmentContext(value, { indication }));
+              }}
               t={t}
             />
           </Card>
@@ -187,14 +206,14 @@ export function HepaticReportWorkspace({ category, send, getPhysicianId }: Props
               key={`${key}-${value.modules[key].status}`}
               moduleKey={key}
               value={value}
-              onChange={update}
+              apply={apply}
               physicianId={physicianId}
               configuration={HEPATIC_ANDROID_CONFIGURATION[key]}
               t={t}
             />
           ))}
           {value.purpose === "multiparametric" ? (
-            <CorrelationEditor value={value} onChange={update} physicianId={physicianId} t={t} />
+            <CorrelationEditor value={value} apply={apply} physicianId={physicianId} t={t} />
           ) : null}
           <View
             accessibilityRole="summary"
@@ -249,16 +268,17 @@ export function HepaticReportWorkspace({ category, send, getPhysicianId }: Props
   );
 }
 
-function ModuleEditor({ moduleKey, value, onChange, physicianId, configuration, t }: {
+function ModuleEditor({ moduleKey, value, apply, physicianId, configuration, t }: {
   moduleKey: HepaticModuleKey;
   value: HepaticAssessment;
-  onChange: (next: HepaticAssessment) => void;
+  apply: (edit: () => HepaticAssessment) => void;
   physicianId: string;
   configuration: HepaticModuleConfiguration;
   t: Tokens;
 }) {
   const moduleValue = value.modules[moduleKey];
   const [interpretation, setInterpretation] = useState(moduleValue.interpretation?.text ?? "");
+  const [reasonDraft, setReasonDraft] = useState(moduleValue.reason ?? "");
   const [qualityMetrics, setQualityMetrics] = useState<Record<string, string>>({});
   const [unitDraft, setUnitDraft] = useState<HepaticUnit | "">(moduleValue.measurements.find((item) => item.role === "median")?.unit ?? "");
   const [medianDraft, setMedianDraft] = useState(() => draftOf(moduleValue, "median"));
@@ -286,15 +306,15 @@ function ModuleEditor({ moduleKey, value, onChange, physicianId, configuration, 
   const unit: HepaticUnit | undefined = median?.unit ?? (unitDraft || units[0]);
   const qualityConfiguration = moduleValue.method ? configuration.qualityByMethod[moduleValue.method] : undefined;
   const techniquePatch = buildHepaticTechniquePatch(technique, configuration.protocolReference);
-  const patch = (next: Partial<HepaticModule>) => onChange(editHepaticModule(value, moduleKey, next));
+  const patch = (next: Partial<HepaticModule>) => apply(() => editHepaticModule(value, moduleKey, next));
 
   function setMeasurement(role: "median" | "iqr", raw: string) {
     (role === "median" ? setMedianDraft : setIqrDraft)(raw);
-    if (!raw.trim()) return onChange(clearHepaticMeasurement(value, moduleKey, role));
+    if (!raw.trim()) return apply(() => clearHepaticMeasurement(value, moduleKey, role));
     const parsed = parseHepaticNumber(raw);
     // Digitação parcial ("5,") fica só no rascunho do campo, fora do contrato.
     if (parsed === null || !unit) return;
-    onChange(upsertHepaticMeasurement(value, moduleKey, {
+    apply(() => upsertHepaticMeasurement(value, moduleKey, {
       id: `${moduleKey}-${role}`, role, value: parsed, unit, origin: "manual", source: configuration.measurementReference,
     }));
   }
@@ -317,11 +337,20 @@ function ModuleEditor({ moduleKey, value, onChange, physicianId, configuration, 
           { value: "partially_limited", label: "Parcialmente limitado" },
           { value: "not_feasible", label: "Não realizável" },
         ]}
-        onChange={(status) => onChange(changeHepaticModuleStatus(value, moduleKey, status as HepaticModule["status"]))}
+        onChange={(status) => apply(() => changeHepaticModuleStatus(value, moduleKey, status as HepaticModule["status"]))}
         t={t}
       />
       {moduleValue.status === "partially_limited" || moduleValue.status === "not_feasible" ? (
-        <Input label="Motivo da limitação" value={moduleValue.reason ?? ""} onChange={(reason) => patch({ reason: reason || undefined })} t={t} />
+        <Input
+          label="Motivo da limitação"
+          value={reasonDraft}
+          onChange={(raw) => {
+            setReasonDraft(raw);
+            const reason = optionalHepaticText(raw);
+            if (reason !== moduleValue.reason) patch({ reason });
+          }}
+          t={t}
+        />
       ) : null}
       {active ? (
         <>
@@ -333,7 +362,7 @@ function ModuleEditor({ moduleKey, value, onChange, physicianId, configuration, 
               const method = raw as HepaticMethod;
               setUnitDraft(HEPATIC_UNITS[method][0] ?? "");
               setMedianDraft(""); setIqrDraft("");
-              onChange(changeHepaticMethod(value, moduleKey, method));
+              apply(() => changeHepaticMethod(value, moduleKey, method));
             }}
             t={t}
           />
@@ -391,7 +420,7 @@ function ModuleEditor({ moduleKey, value, onChange, physicianId, configuration, 
               setUnitDraft(raw as HepaticUnit);
               if (raw === unit) return;
               setMedianDraft(""); setIqrDraft("");
-              if (moduleValue.measurements.length || moduleValue.quality) onChange(changeHepaticUnit(value, moduleKey));
+              if (moduleValue.measurements.length || moduleValue.quality) apply(() => changeHepaticUnit(value, moduleKey));
             }}
             t={t}
           />
@@ -399,7 +428,7 @@ function ModuleEditor({ moduleKey, value, onChange, physicianId, configuration, 
             <>
               <Input label={`Mediana (${unit ?? "—"})`} value={medianDraft} onChange={(raw) => setMeasurement("median", raw)} numeric t={t} />
               <Input label={`IQR (${unit ?? "—"})`} value={iqrDraft} onChange={(raw) => setMeasurement("iqr", raw)} numeric t={t} />
-              <Action label="Calcular IQR/mediana" disabled={!median || !iqr} onPress={() => onChange(calculateHepaticIqrRatio(value, moduleKey))} t={t} />
+              <Action label="Calcular IQR/mediana" disabled={!canCalculateHepaticIqrRatio(moduleValue)} onPress={() => apply(() => calculateHepaticIqrRatio(value, moduleKey))} t={t} />
               {moduleValue.derived[0] ? (
                 <Text style={{ color: t.textSec, fontSize: 12 }}>IQR/mediana: {moduleValue.derived[0].value.toFixed(1).replace(".", ",")}%</Text>
               ) : null}
@@ -445,7 +474,7 @@ function ModuleEditor({ moduleKey, value, onChange, physicianId, configuration, 
             <Action
               label="Confirmar interpretação deste módulo"
               disabled={!interpretation.trim()}
-              onPress={() => onChange(reviewHepaticModule(value, moduleKey, {
+              onPress={() => apply(() => reviewHepaticModule(value, moduleKey, {
                 text: interpretation, physicianId, confirmedAt: now(), reference: configuration.interpretationReference,
               }))}
               primary
@@ -466,9 +495,9 @@ function draftOf(moduleValue: HepaticModule, role: "median" | "iqr"): string {
   return measurement ? String(measurement.value).replace(".", ",") : "";
 }
 
-function CorrelationEditor({ value, onChange, physicianId, t }: {
+function CorrelationEditor({ value, apply, physicianId, t }: {
   value: HepaticAssessment;
-  onChange: (next: HepaticAssessment) => void;
+  apply: (edit: () => HepaticAssessment) => void;
   physicianId: string;
   t: Tokens;
 }) {
@@ -497,7 +526,7 @@ function CorrelationEditor({ value, onChange, physicianId, t }: {
       <Action
         label={value.correlation ? "Aplicar alterações da correlação" : "Aplicar correlação"}
         disabled={!correlation}
-        onPress={() => correlation && onChange(replaceHepaticAssessmentContext(value, { correlation }))}
+        onPress={() => correlation && apply(() => replaceHepaticAssessmentContext(value, { correlation }))}
         t={t}
       />
       <SubCard title="Conclusão integrada" hint="Confirme depois de revisar os dois módulos; qualquer edição exige nova confirmação." t={t}>
@@ -505,7 +534,7 @@ function CorrelationEditor({ value, onChange, physicianId, t }: {
         <Action
           label="Confirmar conclusão integrada"
           disabled={!integrated.trim()}
-          onPress={() => onChange(reviewHepaticAssessment(value, {
+          onPress={() => apply(() => reviewHepaticAssessment(value, {
             text: integrated, physicianId, confirmedAt: now(), reference: HEPATIC_INTEGRATED_INTERPRETATION_REFERENCE,
           }))}
           primary
@@ -558,6 +587,8 @@ function Input({ label, value, onChange, t, numeric = false, multiline = false }
         value={value}
         onChangeText={onChange}
         keyboardType={numeric ? "decimal-pad" : "default"}
+        // Limite do schema compartilhado para textos (2000).
+        maxLength={2000}
         multiline={multiline}
         textAlignVertical={multiline ? "top" : "center"}
         style={{ minHeight: multiline ? 86 : 44, color: t.text, backgroundColor: t.bg, borderWidth: 1, borderColor: t.separator, borderRadius: 11, paddingHorizontal: 11, paddingVertical: multiline ? 10 : 0 }}

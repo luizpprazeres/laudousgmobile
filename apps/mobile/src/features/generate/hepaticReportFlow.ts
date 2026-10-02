@@ -135,7 +135,9 @@ export function parseHepaticPersistResponse(body: unknown, sent: HepaticAssessme
     throw new Error("A API devolveu uma categoria hepática incompatível com o rascunho.");
   }
   if (report.id !== sent.examId) throw new Error("A API devolveu outro laudo para este exame.");
-  if (!sameHepaticAssessment(report.assessment, sent)) {
+  // Compara com o payload normalizado que de fato saiu do aparelho.
+  const normalized = HepaticAssessmentSchema.safeParse(sent);
+  if (!normalized.success || !sameHepaticAssessment(report.assessment, normalized.data)) {
     throw new Error("A API devolveu dados hepáticos diferentes dos que foram enviados.");
   }
   return {

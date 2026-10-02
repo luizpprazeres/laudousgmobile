@@ -71,6 +71,41 @@ export function parseHepaticNumber(raw: string): number | null {
   return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
+/**
+ * Texto livre opcional do contrato: o schema compartilhado faz `trim()` e exige
+ * `min(1)`. Digitação vai para um rascunho local; o contrato recebe só o texto
+ * normalizado (ou `undefined` quando vazio), senão um espaço digitado lança
+ * exceção ou some do campo controlado.
+ */
+export function optionalHepaticText(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+export type HepaticEditResult =
+  | { ok: true; value: HepaticAssessment }
+  | { ok: false; message: string };
+
+/**
+ * As operações do contrato lançam exceção para entrada fora do schema (texto
+ * acima do limite, mais de 50 fatores, razão com mediana zero...). Na tela,
+ * isso vira mensagem, nunca exceção dentro do handler de toque.
+ */
+export function tryHepaticEdit(edit: () => HepaticAssessment): HepaticEditResult {
+  try {
+    return { ok: true, value: edit() };
+  } catch {
+    return { ok: false, message: "Esta alteração não é aceita pelo contrato hepático. Revise o valor informado." };
+  }
+}
+
+/** IQR/mediana só com ambas na mesma unidade nativa e mediana positiva (senão o contrato recusa). */
+export function canCalculateHepaticIqrRatio(module: HepaticModule): boolean {
+  const median = module.measurements.filter((item) => item.role === "median");
+  const iqr = module.measurements.filter((item) => item.role === "iqr");
+  return median.length === 1 && iqr.length === 1 && median[0]!.value > 0 && median[0]!.unit === iqr[0]!.unit;
+}
+
 /** Objetos do contrato são atômicos: digitação incompleta fica fora do payload clínico. */
 export function buildHepaticTechniquePatch(
   draft: HepaticTechniqueDraft,

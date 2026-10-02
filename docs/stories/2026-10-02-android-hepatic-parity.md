@@ -46,3 +46,22 @@ Os critérios de qualidade, mínimos e referências dos testes são **sintético
 - Não há reabertura de rascunho hepático pelo histórico nem retomada após fechar a tela. O rascunho vive na sessão da tela, como na Web.
 - iOS continua sem paridade (fase própria). Complementos de abdome (`abdomen_total`/`abdomen_superior`) não foram expostos.
 - CodeRabbit NÃO EXECUTADO.
+
+## Revisão adversarial de 99b0db1
+
+Feita contra o contrato compartilhado, a API e a migração de revisão.
+
+**Confirmado sem defeito:**
+- Gate desligado. O seletor e a reabertura pelo histórico só usam `CATS`, e `generate.tsx` só roteia com `isEnabledHepaticAndroidModel`.
+- Autenticação pelo JWT de `authedFetch`. As confirmações usam `supabase.auth.getUser()`, e a API recusa outro ator.
+- Revisão fail-closed: só `ok: true` libera, e `review_report_content` não altera `content_revision`, então a atualização posterior continua válida.
+- Nenhum limiar, normalidade ou interpretação criados. O registro de qualidade continua vazio.
+
+**Defeitos corrigidos em commit separado:**
+1. A indicação e o motivo da limitação escreviam direto no contrato a cada tecla. Como o schema faz `trim()` + `min(1)`, um espaço lançava exceção dentro do handler e o espaço digitado depois de uma palavra sumia do campo. Agora há rascunho local + `optionalHepaticText`.
+2. Operações do contrato que lançam (texto > 2000, > 50 fatores, razão com mediana zero, interpretação vazia) passam por `tryHepaticEdit` e viram aviso na tela. O botão IQR/mediana usa `canCalculateHepaticIqrRatio`, e os campos têm `maxLength` 2000.
+3. A resposta da API passa a ser comparada com o payload **normalizado** que foi enviado, e não com o estado bruto.
+
+**Regressões novas:** `hepaticWorkspace` 12/12 e `hepaticReportFlow` 8/8. Elas reproduzem a exceção original e falham no código anterior.
+
+A lacuna dos testes era não exercitar entradas de digitação real. A tela continua sem teste de interface: a cobertura é das funções puras que ela usa.
