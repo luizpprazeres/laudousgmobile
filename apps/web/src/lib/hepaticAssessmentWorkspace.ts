@@ -62,6 +62,58 @@ function draftNumber(raw: string) {
   return Number.isFinite(value) ? value : null
 }
 
+/**
+ * Optional free text. The shared schema applies `trim()` + `min(1)`: typing
+ * stays in a local draft and the contract only receives the trimmed value
+ * (or `undefined` when empty). Writing raw keystrokes into the contract throws
+ * on a leading space and drops a trailing space from the controlled field.
+ */
+export function optionalHepaticText(raw: string): string | undefined {
+  const trimmed = raw.trim()
+  return trimmed ? trimmed : undefined
+}
+
+export type HepaticEditResult =
+  | { ok: true; value: HepaticAssessment }
+  | { ok: false; message: string }
+
+/**
+ * Contract operations throw for input outside the schema (text over the limit,
+ * more than 50 confounders, ratio with a zero median...). The UI turns that
+ * into a message instead of an exception inside an event handler.
+ */
+export function tryHepaticEdit(edit: () => HepaticAssessment): HepaticEditResult {
+  try {
+    return { ok: true, value: edit() }
+  } catch {
+    return { ok: false, message: 'Esta alteração não é aceita pelo contrato hepático. Revise o valor informado.' }
+  }
+}
+
+/** Typed number (comma or dot); empty, invalid or negative = null. */
+export function parseHepaticNumber(raw: string): number | null {
+  if (!raw.trim()) return null
+  const value = Number(raw.replace(',', '.'))
+  return Number.isFinite(value) && value >= 0 ? value : null
+}
+
+/**
+ * Numeric fields keep the typed text ("5," while typing "5,2") in a draft. If
+ * the contract no longer has the value (status, method or unit change cleared
+ * it) and the draft is a complete number, the draft is cleared so the field
+ * never shows a number that is not in the clinical payload.
+ */
+export function syncHepaticNumberDraft(draft: string, contractValue: number | undefined): string {
+  return contractValue === undefined && parseHepaticNumber(draft) !== null ? '' : draft
+}
+
+/** IQR/median needs both native values in the same unit and a positive median, otherwise the contract rejects it. */
+export function canCalculateHepaticIqrRatio(module: HepaticModule) {
+  const median = module.measurements.filter((item) => item.role === 'median')
+  const iqr = module.measurements.filter((item) => item.role === 'iqr')
+  return median.length === 1 && iqr.length === 1 && median[0]!.value > 0 && median[0]!.unit === iqr[0]!.unit
+}
+
 /** Contract objects are atomic: incomplete typing remains outside the clinical payload. */
 export function buildHepaticTechniquePatch(
   draft: HepaticTechniqueDraft,
