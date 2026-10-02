@@ -51,3 +51,11 @@ O Laudário separa superficial e profundo, modela refluxo por segmento, sugere r
 O fluxo revelou uma fragilidade clínica: criar uma linha de trombose com segmento e extensão já produziu conclusão positiva antes da confirmação de material intraluminal, não compressibilidade e ausência de fluxo. O LaudoUSG deve implementar essa exigência de critérios e distinguir suspeita, achados, idade e diagnóstico confirmado.
 
 O cruzamento técnico está em [crosswalk-doppler-venoso-mmii-2026-10-02.md](crosswalk-doppler-venoso-mmii-2026-10-02.md). A categoria e o mapa já existem, mas o texto e o desenho ainda usam contratos separados; a variante com medidas não percorre todo o caminho da categoria base; e faltam gates estruturais para impedir conclusão ou representação de TVP sem critérios suficientes.
+
+## Mamas e Axilas — classificação, topografia e Sala
+
+O Laudário conecta descritores, BI-RADS, recomendações e cartograma durante o preenchimento. O estudo confirmou estado normal, cisto simples e nódulo sólido suspeito. Também revelou uma fragilidade que o LaudoUSG não deve reproduzir: ativar um nódulo ainda sem medidas já gerou categoria e seguimento.
+
+O LaudoUSG possui cobertura clínica mais conservadora e mantém o BI-RADS como confirmação médica, mas ainda permite finalizar um achado suspeito sem categoria confirmada. Nos apps móveis, o cartograma já chega à Sala ligado ao laudo por `reportId`, porém texto, lesão e desenho não compartilham identidade por lesão; a Web ainda depende de fallback por categoria. No iOS, o editor manual grava uma distância da papila não informada e o parser pode criar topografia aproximada; no Android, o desenho é manual e não conserva medidas ou quadrante.
+
+O cruzamento técnico está em [crosswalk-mamas-e-axilas-2026-10-02.md](crosswalk-mamas-e-axilas-2026-10-02.md). As prioridades são remover topografia inventada, bloquear lesão suspeita sem BI-RADS confirmado e criar contrato compartilhado por lesão, preservando o vínculo móvel já existente e levando `reportId` também no fluxo Web.

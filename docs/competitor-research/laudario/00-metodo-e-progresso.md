@@ -26,7 +26,8 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Obstétrico 1º Trimestre: primeira rodada funcional e cruzamento técnico concluídos, com datação por CCN, ausência de atividade cardíaca e rastreio sintético de trissomias.
 - Pesquisa de Endometriose: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, endometrioma, lesão intestinal, avaliação dinâmica, recomendações e cartograma.
 - Doppler Venoso de Membro Inferior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, refluxo superficial, TVP sintética, recomendações e cartograma auto-sincronizado.
-- Próxima prioridade: Mamas/Axilas.
+- Mamas e Axilas: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, cisto simples, nódulo sólido suspeito, BI-RADS, recomendações e cartograma.
+- Próxima prioridade: Avaliação Multiparamétrica Hepática e Elastografia Hepática.
 
 ## Limites desta fotografia
 
