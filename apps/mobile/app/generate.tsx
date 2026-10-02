@@ -23,7 +23,9 @@ import {
   initialGenerateState,
 } from "@/features/generate/state";
 import {
+  authedFetch,
   createClinicalReportV1,
+  getAuthenticatedUserId,
   generateReportStream,
   getMeProfile,
   pushReportToSala,
@@ -102,6 +104,8 @@ import { MyomaSchemeView } from "@/features/generate/MyomaSchemeView";
 import type { VisualCategory, VisualMarker } from "@/features/generate/visualSchemeState";
 import { dopplerRequestFields, type DopplerMode } from "@/features/generate/dopplerMode";
 import { ClinicalModelWorkspace } from "@/features/generate/ClinicalModelWorkspace";
+import { HepaticReportWorkspace } from "@/features/generate/HepaticReportWorkspace";
+import { isEnabledHepaticAndroidModel } from "@/features/generate/hepaticModels";
 import { categoryDisplayLabel, isClinicalModelCode } from "@laudousg/shared";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
@@ -117,6 +121,10 @@ export default function GenerateScreen() {
   const [tab, setTab] = useState<Tab>("achados");
   const [cat, setCat] = useState<Category>(CATS[0]);
   const clinicalCategory = isClinicalModelCode(cat.id) ? cat.id : null;
+  // Gate desligado: com HEPATIC_ANDROID_MODELS_ENABLED=false isto é sempre null.
+  const hepaticCategory = isEnabledHepaticAndroidModel(cat.id) ? cat.id : null;
+  // Modelos estruturados substituem o fluxo de ditado/achados/laudo livre.
+  const structuredCategory = clinicalCategory ?? hepaticCategory;
   const [dopplerMode, setDopplerMode] = useState<DopplerMode>("combined");
   useEffect(() => { setDopplerMode("combined"); }, [cat.id]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -630,7 +638,7 @@ export default function GenerateScreen() {
       </View>
 
       {/* Tabs */}
-      {!clinicalCategory && cat.id === "DOPPLER_OBSTETRICO" ? (
+      {!structuredCategory && cat.id === "DOPPLER_OBSTETRICO" ? (
         <View style={{ paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <Text style={{ color: t.text, fontFamily: FONT.medium }}>Somente Doppler</Text>
           <Switch
@@ -641,7 +649,7 @@ export default function GenerateScreen() {
           />
         </View>
       ) : null}
-      {!clinicalCategory ? <View style={{ paddingTop: 4 }}>
+      {!structuredCategory ? <View style={{ paddingTop: 4 }}>
         <Segment<Tab>
           value={tab}
           onChange={setTab}
@@ -721,7 +729,14 @@ export default function GenerateScreen() {
             }}
           /> : null}
 
-          {!clinicalCategory && tab === "achados" && (
+          {hepaticCategory ? <HepaticReportWorkspace
+            key={hepaticCategory}
+            category={hepaticCategory}
+            send={authedFetch}
+            getPhysicianId={getAuthenticatedUserId}
+          /> : null}
+
+          {!structuredCategory && tab === "achados" && (
             <AchadosBody
               text={text}
               hasContent={hasContent}
@@ -744,7 +759,7 @@ export default function GenerateScreen() {
             />
           )}
 
-          {!clinicalCategory && tab === "laudo" && (
+          {!structuredCategory && tab === "laudo" && (
             <LaudoBody
               state={state}
               cat={cat}
@@ -830,7 +845,7 @@ export default function GenerateScreen() {
       </KeyboardAvoidingView>
 
       {/* Composer */}
-      {!clinicalCategory ? <View
+      {!structuredCategory ? <View
         style={[
           styles.composer,
           { paddingBottom: insets.bottom > 0 ? insets.bottom + 6 : 22 },

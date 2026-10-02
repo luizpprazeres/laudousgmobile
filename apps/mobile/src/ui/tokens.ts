@@ -179,12 +179,30 @@ export const APPROVED_PENDING_CATS = [
   { id: "QUADRIL_INFANTIL", label: "Quadril infantil", color: "#65A30D", sub: "Técnica de Graf, de 0 a 6 meses" },
 ] as const satisfies readonly CategoryShape[];
 
-export type Category = (typeof RELEASED_CATS)[number] | (typeof APPROVED_PENDING_CATS)[number];
+/**
+ * Modelos hepáticos estruturados (`hepatic-assessment/v1`), preparados no
+ * Android e ocultos. Ativar exige categorias ativas no banco e critérios de
+ * qualidade aprovados no servidor, em release conjunta com Web e iOS; o fluxo
+ * fica em `features/generate/hepaticModels.ts`.
+ */
+export const HEPATIC_PENDING_CATS = [
+  { id: "AVALIACAO_MULTIPARAMETRICA_HEPATICA", label: "Avaliação hepática multiparamétrica", color: "#B45309", sub: "Gordura, rigidez e correlação" },
+  { id: "ELASTOGRAFIA_HEPATICA", label: "Elastografia hepática", color: "#92400E", sub: "Rigidez hepática quantitativa" },
+] as const satisfies readonly CategoryShape[];
+
+export type Category =
+  | (typeof RELEASED_CATS)[number]
+  | (typeof APPROVED_PENDING_CATS)[number]
+  | (typeof HEPATIC_PENDING_CATS)[number];
 
 // Só mudar para true no commit de ativação simultânea das três plataformas.
 export const APPROVED_CLINICAL_MODELS_ENABLED = false;
 
+// Gate dos modelos hepáticos. Mesma regra: só no commit de ativação conjunta.
+export const HEPATIC_ANDROID_MODELS_ENABLED = false;
+
 export const CATS: readonly Category[] = [
   ...RELEASED_CATS,
   ...(APPROVED_CLINICAL_MODELS_ENABLED ? APPROVED_PENDING_CATS : []),
+  ...(HEPATIC_ANDROID_MODELS_ENABLED ? HEPATIC_PENDING_CATS : []),
 ];

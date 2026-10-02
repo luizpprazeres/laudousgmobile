@@ -119,6 +119,16 @@ export async function authedFetch(path: string, init: RequestInit = {}) {
   });
 }
 
+/**
+ * Id do médico autenticado (Supabase). Os modelos hepáticos usam como autor
+ * das confirmações; a API recusa confirmação de outro ator.
+ */
+export async function getAuthenticatedUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) throw new Error("não autenticado");
+  return data.user.id;
+}
+
 export async function readJsonOrThrow(res: Response, label: string) {
   if (!res.ok) {
     let detail = "";
