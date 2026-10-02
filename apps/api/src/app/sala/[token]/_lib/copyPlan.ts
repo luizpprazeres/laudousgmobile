@@ -33,7 +33,8 @@ export function copyPlan(args: {
       ? ` ${additionCount === 1 ? "Há 1 acréscimo da Sala" : `Há ${additionCount} acréscimos da Sala`}, marcado${additionCount === 1 ? "" : "s"} no texto, que o médico não revisou.`
       : "";
 
-  // Sem conexão: nada parece atual nem aprovado, mesmo que a última versão fosse.
+  // Versão na tela atrás da lista (recarga do laudo falhou/pendente), mesmo
+  // com o latest respondendo: nunca verde nem "atual".
   if (args.reportStale && !offline) {
     return {
       banner: "stale", title: "Laudo desatualizado · aguardando atualização",
@@ -41,6 +42,7 @@ export function copyPlan(args: {
       primary: { mode: "medical", label: "Copiar rascunho · versão anterior", tone: "draft" }, secondary,
     };
   }
+  // Sem conexão: nada parece atual nem aprovado, mesmo que a última versão fosse.
   if (offline) {
     return {
       banner: "stale",

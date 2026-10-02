@@ -687,6 +687,11 @@ export default function SalaTokenPage() {
     ? reportsById[selectedId] ?? null
     : null;
   const review: ReviewView = reviewOf(displayReport);
+  // Por laudo, independente da conexão global: some só com recarga bem-sucedida.
+  const reportStale = selectedReportIsStale(
+    displayReport,
+    selectedId ? timeline.find((entry) => entry.id === selectedId) : undefined,
+  );
   const position = positionOf(visibleTimeline, selectedId);
   const arrivalEntry = selection.arrivalId
     ? visibleTimeline.find((e) => e.id === selection.arrivalId) ?? null
@@ -863,7 +868,7 @@ export default function SalaTokenPage() {
         freshIds={selection.fresh}
         changedIds={selection.changed}
         arrival={arrivalEntry}
-        changedNotice={!!displayReport && changedNoticeId === displayReport.id}
+        changedNotice={!!displayReport && changedNoticeId === displayReport.id && !reportStale}
         missingFromList={!!displayReport && position === 0}
         names={names}
         listOpen={listOpen}
@@ -874,7 +879,7 @@ export default function SalaTokenPage() {
         highlightOn={highlightOn}
         copied={copied}
         copyError={copyError}
-        reportStale={selectedReportIsStale(displayReport, timeline.find((entry) => entry.id === selectedId))}
+        reportStale={reportStale}
         offline={connection === "offline"}
         lastSyncAt={lastSyncAt}
         noteDraft={noteDraft}

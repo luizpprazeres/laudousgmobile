@@ -100,6 +100,26 @@ Achados de passagem, também corrigidos:
 
 **Mudança de comportamento a registrar:** "Copiar com acréscimos" inclui as frases inseridas na sessão, além das anotações, para bater com o que a tela mostra. Antes, a cópia única levava só as anotações.
 
+## Rodada 3 — laudo aberto desatualizado (29/09)
+
+**Achado (P1):** se `/api/sala/report` falha com o laudo em cache, `selectedError` continua falso e o `latest` bem-sucedido zera `failures`. Resultado: com a lista já mostrando revisão, status ou horário novos, o laudo antigo aberto seguia verde e "online".
+
+**Correção:**
+- Houve edição concorrente nesta rodada (às 13:16), que já trazia `selectedReportIsStale` em `_lib/freshness.ts` e `reportStale` em `_lib/copyPlan.ts`. **Convergi nela.** Removi a minha versão equivalente (`isOutdated` / ramo `outdated`) para não haver duas regras.
+- **Regra:** um laudo fica desatualizado quando a lista do dia discorda da versão na tela em revisão, `reviewStatus` ou `reviewedAt`, ou quando o laudo não está mais na lista. O cálculo é **por laudo, independente da conexão global**, e o estado só some com uma recarga bem-sucedida. Cache com revisão maior que a lista (lista alguns segundos atrás) não conta.
+- **Faixa:** neutra e tracejada, com "⚠ Laudo desatualizado · aguardando atualização" e o botão "Copiar rascunho · versão anterior". A cópia continua possível e nunca fica verde. Se também estiver sem conexão, prevalece a mensagem de "Sem conexão".
+- **Tentativas:** a recarga continua a cada poll enquanto houver discordância, com cache presente e o `inFlight` impedindo duplicatas.
+- **Aviso contraditório:** "O médico alterou este laudo agora. O texto abaixo já é o novo." deixa de aparecer enquanto o laudo estiver desatualizado. Achado pela captura.
+- `page.tsx` calcula `reportStale` uma vez e usa o mesmo valor na faixa e no aviso.
+
+**`tokenExpiresAt`:** o backend já devolve o campo no `latest` com esse nome, e a UI consome sem mudança (validade dos nomes = mínimo entre a meia-noite BRT e a validade do código).
+
+**Regressões:**
+- Unitárias: aprovação nova não carregada, fora da lista, lista atrás do cache, desatualizado nunca verde com ou sem acréscimos, e precedência do offline. O `console.log("ok")` foi movido para o fim do arquivo; antes aparecia antes dos últimos asserts.
+- E2E "`/report` falha + `latest` OK" num laudo aprovado aberto que não é o latest: o médico edita (rev 3, pending), a faixa fica desatualizada e não verde, não aparece "sem conexão", o texto novo ainda não está na tela, a cópia de rascunho funciona e não há o aviso contraditório. Com a recarga de volta, entra o texto novo, a faixa passa a "Aguardando revisão" e o aviso de desatualizado some. Captura: `1440-report-falhou.png`.
+
+**Verificação:** unitários ok, `tsc` ok, lint só com o aviso `<img>` que já existia, e E2E ok em 2 execuções seguidas com servidor limpo. Uma execução intermediária falhou porque uma instância antiga do `next dev` continuava na porta 3012 servindo código anterior. Encerrada essa instância, o E2E passou.
+
 ## Pendências e riscos para o root
 
 1. **Validade do código:** sem `tokenExpiresAt` no `latest`, os nomes valem até a meia-noite BRT ou até o servidor responder revogado/expirado, o que vier antes.

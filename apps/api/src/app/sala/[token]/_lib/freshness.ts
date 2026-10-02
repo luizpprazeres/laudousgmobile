@@ -85,7 +85,13 @@ export function isCurrentPoll(args: {
   return args.generation === args.currentGeneration && args.seq > args.lastAppliedSeq;
 }
 
-/** A cached approval is not current when the day's metadata disagrees. */
+/**
+ * O laudo na tela ficou para trás da lista do dia (revisão, status ou horário
+ * de revisão diferentes, ou fora da lista)? Vale até uma recarga BEM-SUCEDIDA,
+ * independente da conexão global: se `/api/sala/report` falha mas o `latest`
+ * responde, a tela não pode continuar parecendo atual (nem verde). Cache com
+ * revisão MAIOR que a lista (lista alguns segundos atrás) não conta.
+ */
 export function selectedReportIsStale(loaded: LoadedReport | null | undefined, listed: ListedMeta | null | undefined): boolean {
   if (!loaded) return false;
   if (!listed) return true;

@@ -338,7 +338,6 @@ const throwing: NameStorage = {
 assert.deepEqual(saveName(throwing, "ABC234", day1, "r1", "Ana"), { r1: "Ana" });
 clearAllNames(throwing);
 
-console.log("sala-ui.manual: ok");
 
 // Selected report endpoint fails while latest succeeds: cached approval is stale.
 const cachedApproved = { id: "older", outputText: "old", contentRevision: 2, reviewStatus: "reviewed", reviewedAt: "2026-09-28T12:00:00Z" };
@@ -350,3 +349,23 @@ const stalePlan = copyPlan({ review: reviewOf(cachedApproved), offline: false, r
 assert.equal(stalePlan.banner, "stale");
 assert.equal(stalePlan.primary.tone, "draft");
 assert.match(stalePlan.title, /desatualizado/);
+// Fora da lista do dia também não pode parecer atual/verde.
+assert.equal(selectedReportIsStale(cachedApproved, undefined), true);
+assert.equal(selectedReportIsStale(null, { contentRevision: 1 }), false);
+// Aprovação nova (mesma revisão, outro horário) ainda não carregada = desatualizado.
+assert.equal(selectedReportIsStale(cachedApproved, { ...cachedApproved, reviewedAt: "2026-09-28T12:30:00Z" }), true);
+// Lista atrás do cache (poll de alguns segundos antes) não é atraso.
+assert.equal(selectedReportIsStale({ ...cachedApproved, contentRevision: 4 }, { contentRevision: 3, reviewStatus: "pending" }), false);
+// Desatualizado nunca verde, com ou sem acréscimos; offline tem precedência na mensagem.
+for (const n of [0, 2]) {
+  const p = copyPlan({ review: reviewOf(cachedApproved), offline: false, reportStale: true, additionCount: n, lastSyncLabel: null });
+  assert.equal(p.primary.tone, "draft");
+  assert.match(p.primary.label, /versão anterior/);
+  assert.doesNotMatch(p.detail, /Pode copiar e imprimir/);
+  if (p.secondary) assert.equal(p.secondary.tone, "draft");
+}
+const offStale = copyPlan({ review: reviewOf(cachedApproved), offline: true, reportStale: true, additionCount: 0, lastSyncLabel: "12:00" });
+assert.match(offStale.title, /Sem conexão/);
+assert.equal(offStale.primary.tone, "draft");
+
+console.log("sala-ui.manual: ok");
