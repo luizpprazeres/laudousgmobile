@@ -24,6 +24,15 @@ const Derived = z.object({
   inputs: z.tuple([HepaticMeasurementSchema, HepaticMeasurementSchema]),
 }).strict();
 
+const ConfirmationAttestation = z.object({
+  version: z.literal("hepatic-confirmation/v1"),
+  examId: z.string().uuid(),
+  revision: z.number().int().nonnegative(),
+  scope: z.enum(["fat", "stiffness", "integrated"]),
+  /** Immutable deterministic binding, not a cryptographic signature. */
+  payloadSnapshot: z.string().min(1).max(1_000_000),
+}).strict().readonly();
+
 const Interpretation = z.object({
   text: Text,
   status: z.enum(["suggested", "physician_confirmed"]),
@@ -32,7 +41,22 @@ const Interpretation = z.object({
   reference: Reference,
   /** Canonical snapshot, not a signature or authorization token. */
   contextSnapshot: z.string().min(1).max(1_000_000),
+  attestation: ConfirmationAttestation.optional(),
 }).strict();
+
+const InterpretationConfirmation = Interpretation.pick({
+  text: true, physicianId: true, confirmedAt: true, reference: true,
+}).required();
+export type HepaticInterpretationConfirmation = z.infer<typeof InterpretationConfirmation>;
+
+/** Numerical comparison of percent ratios; tolerances are percentage points. */
+export const HEPATIC_RATIO_TOLERANCE = Object.freeze({ absolute: 0.0000005, relative: 0.000000000001 });
+
+function equivalentRatio(actual: number, expected: number): boolean {
+  return Number.isFinite(actual) && Number.isFinite(expected) &&
+    Math.abs(actual - expected) <= HEPATIC_RATIO_TOLERANCE.absolute +
+      HEPATIC_RATIO_TOLERANCE.relative * Math.max(Math.abs(actual), Math.abs(expected));
+}
 
 export const HepaticModuleSchema = z.object({
   status: z.enum(["not_performed", "performed", "partially_limited", "not_feasible"]),
@@ -113,12 +137,48 @@ export function hepaticAssessmentSnapshot(assessment: HepaticAssessment): string
   return canonical(context);
 }
 
+type InterpretationValue = z.infer<typeof Interpretation>;
+type ConfirmationScope = z.infer<typeof ConfirmationAttestation>["scope"];
+
+function attestationFor(assessment: HepaticAssessment, scope: ConfirmationScope, interpretation: InterpretationValue) {
+  const { attestation: _previous, ...payload } = interpretation;
+  const identity = { version: "hepatic-confirmation/v1" as const, examId: assessment.examId, revision: assessment.revision, scope };
+  return { ...identity,
+    payloadSnapshot: canonical({ contractVersion: assessment.contractVersion, ...identity, interpretation: payload }),
+  };
+}
+
+function validAttestation(assessment: HepaticAssessment, scope: ConfirmationScope, interpretation: InterpretationValue): boolean {
+  // Rebuild from current context/payload; a stored confirmation cannot be edited or transplanted.
+  const expected = attestationFor(assessment, scope, interpretation);
+  return !!interpretation.attestation && canonical(interpretation.attestation) === canonical(expected);
+}
+
+/** Explicit local confirmation. A future authenticated server must own this operation. */
+export function confirmHepaticModuleInterpretation(value: HepaticAssessment, key: HepaticModuleKey, input: HepaticInterpretationConfirmation): HepaticAssessment {
+  const current = HepaticAssessmentSchema.parse(value);
+  const interpretation: InterpretationValue = { ...InterpretationConfirmation.parse(input), status: "physician_confirmed",
+    contextSnapshot: hepaticModuleSnapshot(current.modules[key]) };
+  interpretation.attestation = ConfirmationAttestation.parse(attestationFor(current, key, interpretation));
+  const { integratedInterpretation: _previousIntegrated, ...assessment } = current;
+  return { ...assessment, modules: { ...current.modules, [key]: { ...current.modules[key], interpretation } } };
+}
+
+export function confirmHepaticIntegratedInterpretation(value: HepaticAssessment, input: HepaticInterpretationConfirmation): HepaticAssessment {
+  const current = HepaticAssessmentSchema.parse(value);
+  const interpretation: InterpretationValue = { ...InterpretationConfirmation.parse(input), status: "physician_confirmed",
+    contextSnapshot: hepaticAssessmentSnapshot(current) };
+  interpretation.attestation = ConfirmationAttestation.parse(attestationFor(current, "integrated", interpretation));
+  return { ...current, integratedInterpretation: interpretation };
+}
+
 const unitsByMethod: Record<NonNullable<HepaticModule["method"]>, string[]> = {
   "2D-SWE": ["kPa", "m/s"], "pSWE/ARFI": ["kPa", "m/s"], TE: ["kPa"],
   CAP: ["dB/m"], ATI: ["dB/cm/MHz"], UGAP: ["dB/cm/MHz"], UDFF: ["%"], USFF: ["%"],
 };
 
-function moduleIssues(module: HepaticModule, key: HepaticModuleKey): HepaticIssue[] {
+function moduleIssues(assessment: HepaticAssessment, key: HepaticModuleKey): HepaticIssue[] {
+  const module = assessment.modules[key];
   const issues: HepaticIssue[] = [];
   const add = (code: string, field = "") => issues.push({ code, path: `modules.${key}${field ? `.${field}` : ""}` });
   if (module.status === "not_performed" || module.status === "not_feasible") {
@@ -159,11 +219,12 @@ function moduleIssues(module: HepaticModule, key: HepaticModuleKey): HepaticIssu
   for (const derived of module.derived) {
     const [iqr, sourceMedian] = derived.inputs;
     const expected = iqr.value / sourceMedian.value * 100;
-    if (iqr.role !== "iqr" || sourceMedian.role !== "median" || iqr.unit !== sourceMedian.unit || sourceMedian.value <= 0 || !Number.isFinite(expected) || derived.value !== expected || derived.inputs.some(input => !module.measurements.some(m => canonical(m) === canonical(input)))) add("STALE_OR_INVALID_DERIVATION", "derived");
+    if (iqr.role !== "iqr" || sourceMedian.role !== "median" || iqr.unit !== sourceMedian.unit || sourceMedian.value <= 0 || !equivalentRatio(derived.value, expected) || derived.inputs.some(input => !module.measurements.some(m => canonical(m) === canonical(input)))) add("STALE_OR_INVALID_DERIVATION", "derived");
   }
   const interpretation = module.interpretation;
   if (!interpretation || interpretation.status !== "physician_confirmed" || !interpretation.physicianId || !interpretation.confirmedAt) add("PHYSICIAN_INTERPRETATION_REQUIRED", "interpretation");
   if (interpretation && interpretation.contextSnapshot !== hepaticModuleSnapshot(module)) add("STALE_INTERPRETATION", "interpretation");
+  if (interpretation && !validAttestation(assessment, key, interpretation)) add("INVALID_CONFIRMATION_ATTESTATION", "interpretation.attestation");
   return issues;
 }
 
@@ -176,8 +237,8 @@ export function evaluateHepaticConclusion(value: unknown) {
     modules: { fat: false, stiffness: false },
   };
   const data = parsed.data;
-  const fat = moduleIssues(data.modules.fat, "fat");
-  const stiffness = moduleIssues(data.modules.stiffness, "stiffness");
+  const fat = moduleIssues(data, "fat");
+  const stiffness = moduleIssues(data, "stiffness");
   const issues = [...fat, ...stiffness];
   const active = (module: HepaticModule) => module.status === "performed" || module.status === "partially_limited";
   if (!data.indication) issues.push({ path: "indication", code: "INDICATION_REQUIRED" });
@@ -188,7 +249,7 @@ export function evaluateHepaticConclusion(value: unknown) {
   }
   if (data.purpose === "multiparametric" || data.integratedInterpretation) {
     const review = data.integratedInterpretation;
-    if (!review || review.status !== "physician_confirmed" || !review.physicianId || !review.confirmedAt || review.contextSnapshot !== hepaticAssessmentSnapshot(data)) issues.push({ path: "integratedInterpretation", code: "INTEGRATED_REVIEW_REQUIRED" });
+    if (!review || review.status !== "physician_confirmed" || !review.physicianId || !review.confirmedAt || review.contextSnapshot !== hepaticAssessmentSnapshot(data) || !validAttestation(data, "integrated", review)) issues.push({ path: "integratedInterpretation", code: "INTEGRATED_REVIEW_REQUIRED" });
   }
   return { canConclude: issues.length === 0, data, issues, modules: {
     fat: active(data.modules.fat) && fat.length === 0,
@@ -202,7 +263,10 @@ export function replaceHepaticModule(value: HepaticAssessment, key: HepaticModul
   const next = HepaticModuleSchema.parse(replacement);
   const { interpretation: _interpretation, ...context } = next;
   const { integratedInterpretation: _integrated, ...assessment } = current;
-  return { ...assessment, revision: current.revision + 1, modules: { ...current.modules, [key]: { ...context, derived: [] } } };
+  // Global revision: all module confirmations must be renewed, but independent data/derivations survive.
+  const { interpretation: _fatReview, ...fat } = current.modules.fat;
+  const { interpretation: _stiffnessReview, ...stiffness } = current.modules.stiffness;
+  return { ...assessment, revision: current.revision + 1, modules: { fat, stiffness, [key]: { ...context, derived: [] } } };
 }
 
 export function removeHepaticMeasurement(value: HepaticAssessment, key: HepaticModuleKey, sourceId: string): HepaticAssessment {
