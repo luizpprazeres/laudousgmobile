@@ -23,7 +23,8 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Catálogo de Ultrassonografia inventariado: 99 entradas, sendo 84 modelos simples e 15 combinações.
 - Tireoide: primeira rodada concluída, incluindo arquitetura, preset de parênquima, nódulo, TI-RADS, recomendação e cruzamento técnico com Web, iOS e Android.
 - Abdome Total: primeira rodada funcional concluída com estado normal, esteatose leve, hepatite aguda com repercussão vesicular e colelitíase sintética; cruzamento técnico em andamento.
-- Próximas prioridades: Obstétrico 1º Trimestre, Pesquisa de Endometriose, Doppler Venoso de Membro Inferior e Mamas/Axilas.
+- Obstétrico 1º Trimestre: primeira rodada funcional e cruzamento técnico concluídos, com datação por CCN, ausência de atividade cardíaca e rastreio sintético de trissomias.
+- Próximas prioridades: Pesquisa de Endometriose, Doppler Venoso de Membro Inferior e Mamas/Axilas.
 
 ## Limites desta fotografia
 

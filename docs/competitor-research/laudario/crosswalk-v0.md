@@ -27,3 +27,11 @@ O Laudário oferece presets de tireoidopatia que preenchem múltiplos controles,
 O formulário é dividido por estruturas e inclui módulos específicos de veias hepáticas, veia porta, quantificação gordurosa e recomendações. A primeira rodada mostrou macros que ultrapassam o órgão selecionado: hepatopatia aguda modifica simultaneamente a descrição hepática, a vesícula biliar e a conclusão. Esteatose leve e cálculo vesicular único também geram corpo e conclusão coerentes a partir de poucos controles. O cruzamento com o LaudoUSG deve avaliar essas dependências, e não somente a presença das frases isoladas.
 
 O cruzamento técnico está em [crosswalk-abdome-total-2026-10-02.md](crosswalk-abdome-total-2026-10-02.md). Esteatose leve e cálculo móvel já existem no núcleo do LaudoUSG; a cascata hepatite aguda → espessamento reativo da vesícula é uma lacuna confirmada no contrato determinístico atual.
+
+## Obstétrico de primeiro trimestre — cálculos e confirmação
+
+O Laudário deriva idade gestacional e DPP do CCN, relaciona ausência de atividade cardíaca ao limiar biométrico e calcula risco combinado de trissomias a partir dos fatores disponíveis. A classificação qualitativa do risco aparece na conclusão; a tabela com riscos basal e corrigido depende de uma escolha separada do médico. O ducto venoso descrito como normal entra no texto, mas só participa do cálculo quando há índice de pulsatilidade, distinção exibida pela própria interface.
+
+O cruzamento com o LaudoUSG deve separar quatro camadas: cálculo, texto descritivo, conclusão clínica e decisão de publicar os números. A presença de uma calculadora isolada não comprova que essas quatro camadas estejam conectadas.
+
+O cruzamento técnico está em [crosswalk-obstetrico-1t-2026-10-02.md](crosswalk-obstetrico-1t-2026-10-02.md). A datação por CCN não alimenta a DPP nos clientes atuais; a conclusão de ausência de vitalidade ainda não valida o limiar biométrico; e a proveniência do cálculo de trissomias não chega de forma estruturada à Sala.
