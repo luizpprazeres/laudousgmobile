@@ -1,6 +1,6 @@
 # Abdome total com Doppler: fechamento do fallback legado
 
-Base `b1ee522`, branch `codex/hepatic-fail-closed-20261002`, somente no worktree isolado. Sem push, ativação de flags/categorias ou mudança na Sala.
+Implementação preparada a partir da base `b1ee522` na branch isolada `codex/hepatic-fail-closed-20261002` e integrada à `main` após os gates e a revisão independente. Não houve ativação de flags/categorias nem mudança na Sala.
 
 `ABDOMEN_TOTAL_DOPPLER` passou a integrar a política fail-closed dos cinco modelos clínicos estruturados. Falha de extração ou dados mínimos incompletos deixa a geração com erro, sem recorrer ao writer livre. O prompt de extração e os testes anteriores foram alinhados: ausência do abdome completo bloqueia, em vez de solicitar fallback. O contrato clínico compartilhado não foi alterado.
 
@@ -22,4 +22,4 @@ Antes de policy/classificação, a intenção estruturada é preservada: o alias
 
 O harness agora permite `category: null`, que realmente omite `category_hint` do JSON, e verifica essa ausência. Cobre ausência/alias/hint canônico/hint comum, intenção explícita Doppler, V2 configurado, detecção comum e fast-path ON/OFF. Cobre ainda alias sem título com renderer ON/OFF, input comum sem hint e alias comum: não usam V2 antecipado, mas preservam writer comum depois da resolução normal. O antigo cenário de reclassificação agora chega ao renderer estruturado e bloqueia por contrato incompleto, em vez de aceitar o palpite comum.
 
-Gates desta correção: handler 25/25; API clínica v1 e cinco renderers clínicos; resolução de categoria 8/8, normalização 11/11, Livre/Teste 6/6; typechecks API/shared e diff-check aprovados. Harness local com dependências simuladas, sem validação de produção. Sem mudança de flags/categorias/Sala, sem push. CodeRabbit NÃO EXECUTADO.
+Gates desta correção: handler 25/25; API clínica v1 e cinco renderers clínicos; resolução de categoria 8/8, normalização 11/11, Livre/Teste 6/6; typechecks API/shared e diff-check aprovados. Harness local com dependências simuladas, sem validação de produção. Sem mudança de flags/categorias/Sala. CodeRabbit NÃO EXECUTADO.
