@@ -75,8 +75,8 @@
       <div class="brand"><span class="mark">L</span><span>Laudo<em>USG</em></span></div>
       <div class="title">Revisão clínica dos novos modelos normais</div>
       <div class="topmeta">
-        <span class="pill"><span class="dot"></span> Rascunhos para aprovação</span>
-        <span class="pill" id="progress">0 de 4 decididos</span>
+        <span class="pill"><span class="dot"></span> Redação clínica aprovada</span>
+        <span class="pill" id="progress">4 de 4 decididos</span>
       </div>
     </div>
   </header>
@@ -84,7 +84,7 @@
     <aside>
       <div class="eyebrow">Decisão clínica</div>
       <h1>Quatro modelos, frase por frase.</h1>
-      <p class="intro">Revise a redação normal e os campos que liberam cada trecho. Nenhum modelo desta página está ativo na plataforma.</p>
+      <p class="intro">Redação aprovada em 02/10/2026. Consulte os campos que liberam cada trecho. Nenhum modelo desta página está ativo na plataforma.</p>
       <div class="scope"><strong>Base estudada</strong>Estado normal e alterações sintéticas selecionadas, estrutura dos formulários, dependências entre campos, reset e resultado no laudo. Não representa teste exaustivo de todas as combinações.</div>
       <nav aria-label="Modelos para aprovação">
         <button class="step active" data-index="0"><span class="num">01</span><span><b>Avaliação multiparamétrica</b><small>Modo B + Doppler + quantificação</small></span><span class="state"></span></button>
@@ -142,7 +142,7 @@
             <p>A aquisição apresenta qualidade técnica adequada conforme <span class="var">[critério, fonte e versão]</span>.</p>
             <p class="conditional">Não foram identificados fatores técnicos ou clínicos capazes de limitar a interpretação.</p>
             <h4>CONCLUSÃO:</h4>
-            <div class="conclusion"><p>Rigidez hepática dentro dos parâmetros de referência adotados para o método empregado.</p><p>Sem evidências elastográficas de aumento significativo da rigidez hepática.</p></div>
+            <div class="conclusion"><p>Rigidez hepática dentro dos parâmetros de referência adotados para o método empregado.</p></div>
           </div></div>
           <div class="rail">
             <div class="card"><h3>Quando o texto pode aparecer</h3>
@@ -201,7 +201,7 @@
             <p>Exame realizado com transdutor convexo multifrequencial, abrangendo todo o abdome, com avaliação pelos modos bidimensional e Doppler colorido, complementada por análise espectral dos vasos selecionados.</p>
             <p>Foram obtidos cortes em planos ortogonais, em <span class="var">[posições utilizadas]</span>. A documentação fotográfica foi realizada conforme a preferência configurada.</p>
             <h4>OS SEGUINTES ASPECTOS FORAM OBSERVADOS:</h4>
-            <p>Fígado de dimensões normais, contornos regulares e ecotextura homogênea. Os vasos intra-hepáticos são bem visíveis e de calibre anatômico.</p>
+            <p>Fígado de dimensões normais, contornos regulares e ecotextura homogênea. Os vasos intra-hepáticos são bem visíveis e de calibre anatômico. Não há sinais de processo expansivo hepático.</p>
             <p>Vesícula biliar de topografia usual e parede fina, sem cálculos. Vias biliares sem dilatação.</p>
             <p>Pâncreas com dimensões e ecotextura preservadas nos segmentos visualizados.</p>
             <p>Baço de dimensões normais e ecotextura homogênea.</p>
@@ -211,7 +211,7 @@
             <h4>DOPPLER DO SISTEMA ESPLÂNCNICO:</h4>
             <p>Veia porta pérvia, com calibre de <span class="var">[valor] cm</span>, velocidade de <span class="var">[valor] cm/s</span> e fluxo hepatopetal.</p>
             <p class="conditional">Veias hepáticas avaliadas apresentam calibre e fluxo preservados.</p>
-            <p class="conditional">Demais vasos avaliados: <span class="var">[descrição e medidas]</span>.</p>
+            <p class="conditional"><span class="var">[nome do vaso]</span> pérvio, com calibre de <span class="var">[valor] cm</span>, velocidade de <span class="var">[valor] cm/s</span> e fluxo <span class="var">[direção]</span>.</p>
             <h4>CONCLUSÃO:</h4>
             <div class="conclusion"><p>Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas.</p><p>Estudo Doppler do sistema esplâncnico sem alterações hemodinâmicas nos vasos avaliados.</p></div>
           </div></div>
@@ -236,7 +236,7 @@
 <script>
   const panels=[...document.querySelectorAll('.panel')];
   const steps=[...document.querySelectorAll('.step')];
-  const decisions=panels.map(()=>({status:null,note:''}));
+  const decisions=panels.map(()=>({status:'Aprovado',note:''}));
   let active=0;
   function show(index){
     active=Math.max(0,Math.min(panels.length-1,index));
@@ -246,6 +246,7 @@
   }
   function update(){
     steps.forEach((s,i)=>{s.classList.toggle('approved',decisions[i].status==='Aprovado');s.classList.toggle('adjust',decisions[i].status==='Ajustar')});
+    panels.forEach((panel,i)=>panel.querySelector('.yes').classList.toggle('selected',decisions[i].status==='Aprovado'));
     document.getElementById('progress').textContent=`${decisions.filter(d=>d.status).length} de 4 decididos`;
   }
   steps.forEach((s)=>s.addEventListener('click',()=>show(Number(s.dataset.index))));
@@ -263,6 +264,7 @@
     try{await navigator.clipboard.writeText(text);e.currentTarget.textContent='Resumo copiado ✓';setTimeout(()=>e.currentTarget.textContent='Copiar resumo das decisões',1800)}catch{e.currentTarget.textContent='Selecione e copie as observações'}
   });
   document.addEventListener('keydown',(e)=>{if(e.key==='ArrowRight')show(active+1);if(e.key==='ArrowLeft')show(active-1)});
+  update();
 </script>
 </body>
 </html>
