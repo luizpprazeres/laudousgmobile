@@ -142,9 +142,12 @@ type ConfirmationScope = z.infer<typeof ConfirmationAttestation>["scope"];
 
 function attestationFor(assessment: HepaticAssessment, scope: ConfirmationScope, interpretation: InterpretationValue) {
   const { attestation: _previous, ...payload } = interpretation;
+  // Bind every exam-level field, including purpose, indication and correlation.
+  // Module data is already in contextSnapshot; reviews must not bind each other recursively.
+  const { modules: _modules, integratedInterpretation: _integratedReview, ...globalContext } = assessment;
   const identity = { version: "hepatic-confirmation/v1" as const, examId: assessment.examId, revision: assessment.revision, scope };
   return { ...identity,
-    payloadSnapshot: canonical({ contractVersion: assessment.contractVersion, ...identity, interpretation: payload }),
+    payloadSnapshot: canonical({ globalContext, ...identity, interpretation: payload }),
   };
 }
 

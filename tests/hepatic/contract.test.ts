@@ -16,11 +16,21 @@ function confirm(module: HepaticModule, revision = 0): HepaticModule {
   const key = ["CAP", "ATI", "UGAP", "UDFF", "USFF"].includes(module.method ?? "") ? "fat" : "stiffness";
   const inactive: HepaticModule = { status: "not_performed", measurements: [], derived: [] };
   const value: HepaticAssessment = { contractVersion: HEPATIC_CONTRACT_VERSION, examId, revision,
-    purpose: "elastography", modules: { fat: inactive, stiffness: inactive, [key]: module } };
+    purpose: "elastography", indication: "Synthetic indication", modules: { fat: inactive, stiffness: inactive, [key]: module } };
   return confirmHepaticModuleInterpretation(value, key, reviewInput).modules[key];
 }
 function confirmIntegrated(value: HepaticAssessment) {
   value.integratedInterpretation = confirmHepaticIntegratedInterpretation(value, reviewInput).integratedInterpretation;
+}
+function confirmModules(value: HepaticAssessment): HepaticAssessment {
+  let confirmed = value;
+  for (const key of ["fat", "stiffness"] as const) {
+    const status = confirmed.modules[key].status;
+    if (status === "performed" || status === "partially_limited") {
+      confirmed = confirmHepaticModuleInterpretation(confirmed, key, reviewInput);
+    }
+  }
+  return confirmed;
 }
 function module(method: NonNullable<HepaticModule["method"]> = "2D-SWE", unit: "kPa" | "m/s" | "dB/m" | "dB/cm/MHz" | "%" = "kPa"): HepaticModule {
   return confirm({
@@ -116,7 +126,8 @@ test("preserves kPa and m/s without conversion; TE rejects m/s", () => {
 });
 test("CAP, ATI, UGAP, UDFF, USFF stay method specific", () => {
   for (const [method, unit] of [["CAP", "dB/m"], ["ATI", "dB/cm/MHz"], ["UGAP", "dB/cm/MHz"], ["UDFF", "%"], ["USFF", "%"]] as const) {
-    const value = exam(); value.purpose = "abdomen_total"; value.modules.fat = module(method, unit);
+    let value = exam(); value.purpose = "abdomen_total"; value.modules.fat = module(method, unit);
+    value = confirmModules(value);
     assert.equal(evaluateHepaticConclusion(value).canConclude, true, method);
     assert.deepEqual(HepaticAssessmentSchema.parse(value).modules.fat.measurements, value.modules.fat.measurements);
     if (unit !== "%") {
@@ -217,18 +228,21 @@ test("invalid fat does not hide valid stiffness readiness; whole conclusion stay
   const result = evaluateHepaticConclusion(value);
   assert.equal(result.modules.stiffness, true); assert.equal(result.modules.fat, false); assert.equal(result.canConclude, false);
 });
-test("shared modules are reusable in both abdominal purposes", () => {
+test("shared modules are reusable in both abdominal purposes only after confirmation in the new context", () => {
   for (const purpose of ["abdomen_total", "abdomen_superior"] as const) {
     const value = exam(); value.purpose = purpose;
-    assert.equal(evaluateHepaticConclusion(value).canConclude, true);
+    assert.equal(evaluateHepaticConclusion(value).canConclude, false);
+    assert(has(value, "INVALID_CONFIRMATION_ATTESTATION"));
+    assert.equal(evaluateHepaticConclusion(confirmModules(value)).canConclude, true);
   }
 });
 test("multiparametric discordance needs resolution and integrated current medical review", () => {
-  const value = exam(); value.purpose = "multiparametric"; value.modules.fat = module("USFF", "%");
+  let value = exam(); value.purpose = "multiparametric"; value.modules.fat = module("USFF", "%");
   value.correlation = { modeB: "Synthetic B", doppler: "Synthetic Doppler", concordance: "discordant" };
   assert(has(value, "CORRELATION_REVIEW_REQUIRED"));
   value.correlation.physicianResolution = "Synthetic resolution";
   assert(has(value, "INTEGRATED_REVIEW_REQUIRED"));
+  value = confirmModules(value);
   confirmIntegrated(value);
   assert.equal(evaluateHepaticConclusion(value).canConclude, true);
   value.indication = "Changed context";
@@ -406,4 +420,66 @@ test("P2: tolerance is absolute plus relative; non-equivalent rounded or adulter
   value.modules.stiffness.measurements[1]!.value = 0.1;
   const derived = deriveHepaticIqrRatio(value, "stiffness"); derived.modules.stiffness.derived[0]!.value = 33.3;
   assert(has(confirmHepaticModuleInterpretation(derived, "stiffness", reviewInput), "STALE_OR_INVALID_DERIVATION"));
+});
+
+test("P1: changing purpose invalidates module attestations even without a revision increment", () => {
+  for (const purpose of ["abdomen_total", "abdomen_superior", "multiparametric"] as const) {
+    let value = exam(); value.modules.fat = module("USFF", "%");
+    value = confirmModules(value);
+    const before = structuredClone(value);
+    assert.equal(evaluateHepaticConclusion(value).canConclude, true);
+    value.purpose = purpose;
+    const result = evaluateHepaticConclusion(value);
+    assert.equal(result.canConclude, false);
+    assert.equal(result.modules.fat, false);
+    assert.equal(result.modules.stiffness, false);
+    for (const key of ["fat", "stiffness"] as const) {
+      assert(result.issues.some(i => i.path === `modules.${key}.interpretation.attestation` && i.code === "INVALID_CONFIRMATION_ATTESTATION"));
+    }
+    assert.equal(value.revision, before.revision);
+    assert.deepEqual(value.modules, before.modules, "only clinical context changed; data and stored proofs survive for validation");
+    if (purpose !== "multiparametric") assert.equal(evaluateHepaticConclusion(confirmModules(value)).canConclude, true);
+  }
+});
+
+test("P1: changing or deleting indication invalidates both modules until explicit reconfirmation", () => {
+  let value = exam(); value.indication = "Rastreamento"; value.modules.fat = module("USFF", "%");
+  value = confirmModules(value);
+  assert.equal(evaluateHepaticConclusion(value).canConclude, true);
+  const oldProofs = structuredClone(value.modules);
+  value.indication = "Cirrose descompensada";
+  const result = evaluateHepaticConclusion(JSON.parse(JSON.stringify(value)));
+  assert.equal(result.canConclude, false);
+  assert.deepEqual(result.modules, { fat: false, stiffness: false });
+  assert.equal(result.issues.filter(i => i.code === "INVALID_CONFIRMATION_ATTESTATION").length, 2);
+  assert.equal(value.revision, 0);
+  const renewed = confirmModules(value);
+  assert.equal(evaluateHepaticConclusion(renewed).canConclude, true);
+  for (const key of ["fat", "stiffness"] as const) {
+    assert.notEqual(renewed.modules[key].interpretation!.attestation!.payloadSnapshot, oldProofs[key].interpretation!.attestation!.payloadSnapshot);
+  }
+  const missing = structuredClone(renewed); delete missing.indication;
+  assert(has(missing, "INVALID_CONFIRMATION_ATTESTATION"));
+  assert(has(missing, "INDICATION_REQUIRED"));
+});
+
+test("P1: every global correlation field participates in module confirmation context", () => {
+  let value = exam(); value.modules.fat = module("USFF", "%");
+  value.correlation = { modeB: "Synthetic B", doppler: "Synthetic Doppler", concordance: "concordant", physicianResolution: "Synthetic resolution" };
+  value = confirmModules(value);
+  assert.equal(evaluateHepaticConclusion(value).canConclude, true);
+  const edits = [
+    (v: HepaticAssessment) => { v.correlation!.modeB = "Changed B"; },
+    (v: HepaticAssessment) => { v.correlation!.doppler = "Changed Doppler"; },
+    (v: HepaticAssessment) => { v.correlation!.concordance = "discordant"; },
+    (v: HepaticAssessment) => { v.correlation!.physicianResolution = "Changed resolution"; },
+    (v: HepaticAssessment) => { delete v.correlation; },
+  ];
+  for (const edit of edits) {
+    const changed = structuredClone(value); edit(changed);
+    const result = evaluateHepaticConclusion(changed);
+    assert.equal(result.canConclude, false);
+    assert.deepEqual(result.modules, { fat: false, stiffness: false });
+    assert.equal(evaluateHepaticConclusion(confirmModules(changed)).canConclude, true);
+  }
 });
