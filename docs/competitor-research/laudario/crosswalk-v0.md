@@ -75,3 +75,11 @@ O exame independente confirmou que a classificação hepática ocorre antes do p
 O LaudoUSG Web documenta rigidez hepática sem converter ou classificar automaticamente, mas ainda aceita medida sem gate completo de qualidade e pode conservar uma interpretação antiga após mudança da aquisição. Categoria própria, rigidez esplênica, evolução, validação de servidor, mobile e Sala estão ausentes.
 
 O cruzamento técnico está em [crosswalk-elastografia-hepatica-2026-10-02.md](crosswalk-elastografia-hepatica-2026-10-02.md). A implementação deve começar pelo contrato e pela limpeza das dependências; os algoritmos hepatoesplênicos e longitudinais dependem de aprovação clínica específica.
+
+## Doppler Hepático — portal, transplante e TIPS
+
+O exame independente mostrou um formulário vascular amplo. O estado inicial presume normalidade de vários vasos. Selecionar trombose portal parcial gerou conclusão e recomendações imediatamente. No módulo TIPS, ativar sem medidas já produziu normalidade; velocidades reduzidas foram classificadas automaticamente, e apagar as medidas não retirou a interpretação até uma correção manual.
+
+O LaudoUSG já tem um contrato mais conservador para Abdome total com Doppler no fluxo clínico v1: veia porta obrigatória, vasos opcionais e confirmação de alterações portais. O fallback legado ainda não é fail-closed para essa categoria. Também faltam o exame independente, detalhe vascular, transplante, TIPS, recomendações confirmadas e ativação simultânea nas plataformas.
+
+O cruzamento técnico está em [crosswalk-doppler-hepatico-2026-10-02.md](crosswalk-doppler-hepatico-2026-10-02.md). A prioridade é reaproveitar o núcleo portal aprovado, acrescentar dados sem inferência e só depois ativar regras clínicas versionadas.

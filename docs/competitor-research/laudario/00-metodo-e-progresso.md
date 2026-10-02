@@ -29,7 +29,8 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Mamas e Axilas: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, cisto simples, nódulo sólido suspeito, BI-RADS, recomendações e cartograma.
 - Avaliação Multiparamétrica Hepática: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, gordura por USFF, rigidez por 2D-SWE, qualidade, interpretação e restauração de valores derivados.
 - Elastografia Hepática: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, rigidez normal, algoritmo hepatoesplênico, qualidade, fatores de confusão e inventário longitudinal.
-- Próxima prioridade: Doppler Hepático.
+- Doppler Hepático: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, trombose portal parcial, TIPS, recomendações e inventário de transplante.
+- Próxima prioridade: Doppler arterial ou venoso de membro superior, conforme a fila clínica.
 
 ## Limites desta fotografia
 
