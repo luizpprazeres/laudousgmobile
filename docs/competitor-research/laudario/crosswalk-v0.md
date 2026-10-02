@@ -21,3 +21,9 @@ O catálogo observado tem 99 entradas, contra 34 categorias atualmente expostas 
 ## Tireoide — diferença funcional já observada
 
 O Laudário oferece presets de tireoidopatia que preenchem múltiplos controles, ACR TI-RADS calculado por nódulo, cartograma e recomendação automática com confirmação independente de inclusão no laudo. O cruzamento técnico do LaudoUSG está em [crosswalk-tireoide-2026-10-02.md](crosswalk-tireoide-2026-10-02.md): o núcleo clínico já existe, mas formulário, calculadora, recomendação e cartograma ainda estão desacoplados em graus diferentes na Web, iOS e Android.
+
+## Abdome Total — encadeamentos observados
+
+O formulário é dividido por estruturas e inclui módulos específicos de veias hepáticas, veia porta, quantificação gordurosa e recomendações. A primeira rodada mostrou macros que ultrapassam o órgão selecionado: hepatopatia aguda modifica simultaneamente a descrição hepática, a vesícula biliar e a conclusão. Esteatose leve e cálculo vesicular único também geram corpo e conclusão coerentes a partir de poucos controles. O cruzamento com o LaudoUSG deve avaliar essas dependências, e não somente a presença das frases isoladas.
+
+O cruzamento técnico está em [crosswalk-abdome-total-2026-10-02.md](crosswalk-abdome-total-2026-10-02.md). Esteatose leve e cálculo móvel já existem no núcleo do LaudoUSG; a cascata hepatite aguda → espessamento reativo da vesícula é uma lacuna confirmada no contrato determinístico atual.
