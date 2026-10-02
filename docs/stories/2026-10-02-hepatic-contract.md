@@ -8,7 +8,7 @@ Status: candidato implementado para revisão, sem aprovação clínica e sem ati
 
 `purpose` identifica avaliação multiparamétrica, elastografia, complemento de Abdome total ou complemento de Abdome superior. Esses identificadores são contextos do contrato, não códigos de categorias registradas. Gordura e rigidez usam a mesma estrutura e regras em todos os contextos. Nenhum consumidor atual passou a enviar ou aceitar este contrato.
 
-As fontes desta fase são o [caso observado](../competitor-research/laudario/cases/avaliacao-multiparametrica-hepatica-2026-10-02.md), o [crosswalk](../competitor-research/laudario/crosswalk-avaliacao-multiparametrica-hepatica-2026-10-02.md) e a leitura do checkout. Cortes vistos no concorrente não foram promovidos a critérios clínicos. Elastografia Hepática independente ainda requer a sondagem de protocolo indicada no caso. Não há classificador de esteatose, fibrose, doença avançada ou hipertensão portal.
+As fontes desta fase são o [caso multiparamétrico observado](../competitor-research/laudario/cases/avaliacao-multiparametrica-hepatica-2026-10-02.md), seu [crosswalk](../competitor-research/laudario/crosswalk-avaliacao-multiparametrica-hepatica-2026-10-02.md), o [caso de Elastografia Hepática](../competitor-research/laudario/cases/elastografia-hepatica-2026-10-02.md), o [crosswalk da elastografia](../competitor-research/laudario/crosswalk-elastografia-hepatica-2026-10-02.md) e a leitura do checkout. Cortes vistos no concorrente não foram promovidos a critérios clínicos. Não há classificador de esteatose, fibrose, doença avançada ou hipertensão portal.
 
 ## Modelo de dados e gates
 
@@ -60,7 +60,7 @@ O crosswalk permanece evidência histórica. A afirmação ampla de ausência de
 
 ## Próximas fases e critérios de saída
 
-Fase 2: revisão clínica deste candidato, identificação dos equipamentos/protocolos e fontes aprovadas, sondagem da elastografia independente e definição de mínimos por método. Decidir composição parcial multiparamétrica, quais métricas são obrigatórias e como registrar qualidade manual. Se forem aprovadas sugestões clínicas, implementar regras por método/equipamento/etiologia com fonte/versionamento e testes de fronteira; não transportar tabelas do concorrente como diretriz.
+Fase 2: revisão clínica deste candidato, identificação dos equipamentos/protocolos e fontes aprovadas e definição de mínimos por método, usando o inventário já concluído da elastografia independente como referência funcional. Decidir composição parcial multiparamétrica, quais métricas são obrigatórias e como registrar qualidade manual. Se forem aprovadas sugestões clínicas, implementar regras por método/equipamento/etiologia com fonte/versionamento e testes de fronteira; não transportar tabelas do concorrente como diretriz.
 
 Fase 3: adapter do painel Web para o contrato aprovado, estados de pendência por módulo e renderer compartilhado. Acrescentar validação do contrato no servidor e persistência/reabertura versionadas. Migração do legado deve manter medidas/unidades e marcar campos não conhecidos como pendentes, sem reinterpretar medidas. Validar edição, exclusão, alteração de método e qualidade, discordância e mudança durante revisão. Sem ativação de categorias próprias nessa fase até autorização explícita.
 
