@@ -8,6 +8,7 @@
     "node": ">=20.11.0"
   },
   "scripts": {
+    "validate:hepatic-contract": "tsx --test tests/hepatic/contract.test.ts",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
