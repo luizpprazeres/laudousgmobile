@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { deflateSync } from "node:zlib";
-import { pngSize, toStoredSchemes } from "../storedSchemes";
+import { REPORT_SCHEMES_MAX_BYTES, budgetStoredSchemes, pngSize, toStoredSchemes, type StoredScheme } from "../storedSchemes";
 
 /** PNG mínimo e válido (RGB, branco), gerado aqui — sem dado de paciente. */
 function png(width: number, height: number): string {
@@ -47,4 +47,24 @@ assert.deepEqual(rows.map((row) => row.id), ["a", "b"], "linhas inválidas somem
 assert.equal(rows[0]!.exam_label, "MIOMAS", "rótulo vazio cai no tipo, nunca em texto inventado");
 assert.deepEqual({ w: rows[1]!.width, h: rows[1]!.height }, { w: 40, h: 60 });
 assert.equal(rows[0]!.png_base64, myoma, "imagem devolvida byte a byte, sem reprocessar");
+
+// Orçamento da resposta: nunca passa de 4,5 MB e nunca some sem aviso.
+const VERCEL_LIMIT = 4_500_000;
+assert.ok(REPORT_SCHEMES_MAX_BYTES + 1_000 < VERCEL_LIMIT, "orçamento + envelope abaixo do limite da Vercel");
+const heavy = (id: string, examType: string, chars: number): StoredScheme => ({
+  id, exam_type: examType, exam_label: examType, png_base64: myoma + "A".repeat(chars), width: 820, height: 560, updated_at: "2026-10-02T09:00:00.000Z",
+});
+const maxPush = 2_800_000; // MAX_B64 aceito em push-schema
+const twoBig = budgetStoredSchemes([heavy("m", "MIOMAS", maxPush), heavy("v", "VENOSO_MMII", maxPush), heavy("t", "TIREOIDE", 1_000)]);
+assert.deepEqual(twoBig.schemes.map((item) => item.id), ["m", "t"], "o que não cabe é pulado; o menor seguinte ainda entra");
+assert.deepEqual({ truncated: twoBig.truncated, omitted: twoBig.omitted }, { truncated: true, omitted: 1 });
+const body = Buffer.byteLength(JSON.stringify(twoBig), "utf8");
+assert.ok(body <= VERCEL_LIMIT, `corpo final ${body} bytes`);
+
+const single = budgetStoredSchemes([heavy("g", "MAMA", 50)], 100);
+assert.deepEqual({ n: single.schemes.length, truncated: single.truncated, omitted: single.omitted }, { n: 0, truncated: true, omitted: 1 }, "esquema único grande demais: sinalizado, não vira lista vazia muda");
+
+const fits = budgetStoredSchemes(rows);
+assert.deepEqual({ n: fits.schemes.length, truncated: fits.truncated, omitted: fits.omitted }, { n: 2, truncated: false, omitted: 0 });
+assert.deepEqual(budgetStoredSchemes([]), { schemes: [], truncated: false, omitted: 0 });
 console.log("stored report schemes: OK");

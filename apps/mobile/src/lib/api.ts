@@ -257,22 +257,26 @@ const ReportSchemesResponseSchema = z.object({
       updated_at: z.string(),
     }),
   ),
+  // O servidor limita a resposta (~4 MB) e conta o que ficou de fora.
+  truncated: z.boolean().default(false),
+  omitted: z.number().int().nonnegative().default(0),
 });
 export type ReportScheme = z.infer<typeof ReportSchemesResponseSchema>["schemes"][number];
+export type ReportSchemes = z.infer<typeof ReportSchemesResponseSchema>;
 
 /**
  * Imagens de esquema já enviadas à Sala para este laudo (somente leitura). 404 =
  * backend anterior à rota: o histórico segue sem esquemas, sem erro.
  */
-export async function getReportSchemes(id: string): Promise<ReportScheme[]> {
+export async function getReportSchemes(id: string): Promise<ReportSchemes> {
   const res = await authedFetch(`/api/reports/${encodeURIComponent(id)}/schemas`, {
     method: "GET",
     headers: { accept: "application/json" },
   });
-  if (res.status === 404) return [];
+  if (res.status === 404) return { schemes: [], truncated: false, omitted: 0 };
   return ReportSchemesResponseSchema.parse(
     await readJsonOrThrow(res, "buscar esquemas do laudo"),
-  ).schemes;
+  );
 }
 
 export async function getMeAnalytics(): Promise<MeAnalytics> {

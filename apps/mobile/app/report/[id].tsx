@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { reviewReportForSala, getReport, getReportSchemes, updateReportFinalOutput, type ReportDetail, type ReportScheme } from "@/lib/api";
+import { reviewReportForSala, getReport, getReportSchemes, updateReportFinalOutput, type ReportDetail, type ReportSchemes } from "@/lib/api";
 import {
   renderReviewHighlighted,
   stripReviewMarkers,
@@ -323,15 +323,15 @@ function ReportTab({ text }: { text: string }) {
 function SavedSchemes({ reportId }: { reportId: string }) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
-  const [schemes, setSchemes] = useState<ReportScheme[]>([]);
+  const [result, setResult] = useState<ReportSchemes>({ schemes: [], truncated: false, omitted: 0 });
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    setSchemes([]);
+    setResult({ schemes: [], truncated: false, omitted: 0 });
     setFailed(false);
     getReportSchemes(reportId)
-      .then((result) => { if (alive) setSchemes(result); })
+      .then((next) => { if (alive) setResult(next); })
       .catch((err) => {
         console.warn("[mobile] esquemas do laudo não carregaram:", err);
         if (alive) setFailed(true);
@@ -346,11 +346,19 @@ function SavedSchemes({ reportId }: { reportId: string }) {
       </View>
     );
   }
-  if (!schemes.length) return null;
+  const { schemes, truncated, omitted } = result;
+  if (!schemes.length && !truncated) return null;
   return (
     <View style={styles.card}>
       <Text style={styles.schemesTitle}>Esquemas enviados à Sala</Text>
       <Text style={styles.subtitle}>Cópia da imagem enviada, somente leitura. O esquema não altera o laudo.</Text>
+      {truncated ? (
+        <Text accessibilityRole="alert" style={styles.schemesTruncated}>
+          {omitted === 1
+            ? "1 esquema enviado não coube nesta tela por tamanho. Ele continua disponível na Sala."
+            : `${omitted} esquemas enviados não couberam nesta tela por tamanho. Eles continuam disponíveis na Sala.`}
+        </Text>
+      ) : null}
       {schemes.map((scheme) => (
         <View key={scheme.id} style={styles.schemeItem}>
           <Text style={styles.schemeLabel}>{scheme.exam_label}</Text>
@@ -551,6 +559,12 @@ function makeStyles(t: ColorTokens) {
       color: t.text,
       fontSize: 16,
       fontFamily: FONT.bold,
+    },
+    schemesTruncated: {
+      color: "#B45309",
+      fontSize: 13,
+      fontFamily: FONT.body,
+      marginTop: 8,
     },
     schemeItem: {
       marginTop: 14,

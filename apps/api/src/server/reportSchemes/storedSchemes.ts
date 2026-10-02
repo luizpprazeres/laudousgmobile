@@ -42,6 +42,32 @@ export function pngSize(base64: string): { width: number; height: number } | nul
   return { width, height };
 }
 
+/**
+ * Orçamento da resposta. A Vercel recusa corpos acima de 4,5 MB e cada PNG
+ * aceito em `push-schema` pode ter ~2,8 MB de base64; 4 MB deixa folga para o
+ * envelope JSON.
+ */
+export const REPORT_SCHEMES_MAX_BYTES = 4_000_000;
+
+export type BudgetedSchemes = { schemes: StoredScheme[]; truncated: boolean; omitted: number };
+
+/**
+ * Cabe o que couber, na ordem, sem descartar em silêncio: o que ficou de fora
+ * é contado em `omitted` e sinalizado por `truncated` para o app avisar.
+ */
+export function budgetStoredSchemes(schemes: StoredScheme[], maxBytes = REPORT_SCHEMES_MAX_BYTES): BudgetedSchemes {
+  const included: StoredScheme[] = [];
+  let used = 0;
+  for (const scheme of schemes) {
+    const bytes = Buffer.byteLength(JSON.stringify(scheme), "utf8") + 1;
+    if (used + bytes > maxBytes) continue;
+    included.push(scheme);
+    used += bytes;
+  }
+  const omitted = schemes.length - included.length;
+  return { schemes: included, truncated: omitted > 0, omitted };
+}
+
 /** Falha fechado por linha: imagem ilegível não é exibida como se fosse esquema. */
 export function toStoredSchemes(rows: StoredSchemeRow[]): StoredScheme[] {
   return rows

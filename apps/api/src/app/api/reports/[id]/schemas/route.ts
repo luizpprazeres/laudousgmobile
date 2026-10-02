@@ -1,6 +1,6 @@
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { getServiceClient } from "@/server/supabaseService";
-import { toStoredSchemes } from "@/server/reportSchemes/storedSchemes";
+import { budgetStoredSchemes, toStoredSchemes } from "@/server/reportSchemes/storedSchemes";
 export { OPTIONS } from "@/server/cors";
 
 export const runtime = "nodejs";
@@ -32,7 +32,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     return json({ error: "read_failed" }, 500);
   }
 
-  return json({ schemes: toStoredSchemes(data ?? []) });
+  return json(budgetStoredSchemes(toStoredSchemes(data ?? [])));
 }
 
 function json(body: Record<string, unknown>, status = 200) {
