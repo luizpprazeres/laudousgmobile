@@ -17,6 +17,10 @@ import { createRequire } from 'node:module'
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { CATEGORY_GROUPS } from '../src/components/laudar/categoryGroups.ts'
+import {
+  isLandingExamAvailable,
+  UPCOMING_EXAMS,
+} from '../src/components/landing/v2/specialtyCatalog.ts'
 
 type Viewport = { width: number; height: number }
 const viewports: Viewport[] = [
@@ -38,8 +42,8 @@ const mobileStageSelector = '[data-landing-section="mobile"]'
 const mobileControlsSelector = `${mobileStageSelector} nav[aria-label="Etapas da demonstração"] button[data-stage]`
 const expectedStages = ['inicio', 'categoria', 'gravacao', 'achados', 'geracao', 'laudo', 'sala']
 const expectedGroups = CATEGORY_GROUPS.map((group) => group.label)
-const activeExams = CATEGORY_GROUPS.flatMap((group) => group.categories)
-const upcomingExams: string[] = []
+const activeExams = CATEGORY_GROUPS.flatMap((group) => group.categories.filter(isLandingExamAvailable))
+const upcomingExams = CATEGORY_GROUPS.flatMap((group) => UPCOMING_EXAMS[group.id] ?? [])
 const mskRegions = ['Ombro', 'Cotovelo', 'Punho', 'Mão', 'Quadril', 'Joelho', 'Tornozelo', 'Pé']
 
 function isForbiddenRequest(raw: string): 'hero-video' | 'api' | null {

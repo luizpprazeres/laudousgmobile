@@ -4,6 +4,7 @@ import { CATEGORY_GROUPS } from '@/components/laudar/categoryGroups'
 import {
   ACTIVE_EXAM_COUNT,
   activeExamName,
+  isLandingExamAvailable,
   MUSCULOSKELETAL_REGIONS,
   UPCOMING_EXAMS,
 } from '@/components/landing/v2/specialtyCatalog'
@@ -63,7 +64,7 @@ export default function Specialties() {
                 </div>
 
                 <ul aria-label="Exames disponíveis" className="mt-4 grid grid-cols-1 gap-x-5 gap-y-2.5 min-[420px]:grid-cols-2 xl:grid-cols-2">
-                  {group.categories.map((id) => (
+                  {group.categories.filter(isLandingExamAvailable).map((id) => (
                     <li key={id} data-category-tile={id} data-exam-status="available" className="min-w-0">
                       <div className="flex items-start gap-2.5 text-[0.94rem] font-medium leading-snug text-slate-800">
                         <span aria-hidden="true" className="mt-[0.48rem] h-1.5 w-1.5 flex-none rounded-full bg-emerald-700" />
