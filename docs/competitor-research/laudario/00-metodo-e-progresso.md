@@ -34,7 +34,8 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Doppler Arterial de Membro Superior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, estenose subclávia, razão automática de velocidades, oclusão crônica, padrão tardus-parvus e inventário de desfiladeiro torácico; foram documentadas uma incoerência distal do concorrente e uma diferença de paridade entre iOS, Web e Android/RN no LaudoUSG.
 - Ultrassonografia de Tórax: ausência confirmada no catálogo de Ultrassonografia da conta estudada; o LaudoUSG já possui contrato pulmonar e pleural bilateral, sem equivalente funcional disponível para comparação nesta rodada.
 - Quadril Infantil: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, alfa intermediário sem idade, classificação IIa- e cenário IIc; foi documentada classificação normal do concorrente sem medidas numéricas, e a perda da posição do labrum nos renderizadores do LaudoUSG foi corrigida.
-- Próxima prioridade: Doppler Arterial de Membro Inferior.
+- Doppler Arterial de Membro Inferior: primeira rodada funcional e cruzamento técnico concluídos, com estenose femoral superficial e razão automática, aneurisma poplíteo com trombo mural e oclusão tibial anterior; foi confirmado que o LaudoUSG possui categoria e base clínica para writer, mas ainda não tem contrato estruturado por vaso, cálculo determinístico da razão, aneurisma, ITB integrado ou revascularização.
+- Próxima prioridade: Doppler de Fístula Arteriovenosa.
 
 ## Limites desta fotografia
 
