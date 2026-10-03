@@ -6,7 +6,7 @@
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 17,
+    "base_functionally_studied": 18,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1
   },
@@ -112,6 +112,12 @@
       "laudousg_code": null,
       "case": "cases/perfil-biofisico-fetal-2026-10-03.md",
       "crosswalk": "crosswalk-perfil-biofisico-fetal-2026-10-03.md"
+    },
+    {
+      "competitor_exam": "Bolsa Testicular com Doppler",
+      "laudousg_code": "ESCROTAL",
+      "case": "cases/bolsa-testicular-doppler-2026-10-03.md",
+      "crosswalk": "crosswalk-bolsa-testicular-doppler-2026-10-03.md"
     }
   ],
   "absence_checks": [
@@ -122,7 +128,6 @@
     }
   ],
   "queue": [
-    "Bolsa testicular com Doppler",
     "Histerossonografia com infusão salina",
     "Histerossonossalpingografia / HyCoSy",
     "Transfontanelar",
@@ -131,6 +136,7 @@
     "Doppler de artérias temporais",
     "Doppler de artérias mesentéricas",
     "Aparelho urinário com Doppler",
-    "Ecocardiografia fetal gemelar"
+    "Ecocardiografia fetal gemelar",
+    "Primeiro exame combinado"
   ]
 }

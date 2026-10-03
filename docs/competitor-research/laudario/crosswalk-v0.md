@@ -36,6 +36,12 @@ O exame observado calcula quatro componentes ultrassonográficos e cardiotocogra
 
 O LaudoUSG possui fragmentos de movimentos fetais e líquido amniótico em categorias obstétricas, mas não reúne os cinco componentes nem calcula o escore. Falta uma categoria própria com estados explícitos, cálculo compartilhado e validação de numerador/denominador no servidor. O estudo completo está em [crosswalk-perfil-biofisico-fetal-2026-10-03.md](crosswalk-perfil-biofisico-fetal-2026-10-03.md).
 
+## Bolsa testicular com Doppler — categoria presente, contrato ausente
+
+O Laudário separa modo B, Doppler espectral, plexos pampiniformes e recomendações. A ausência isolada de fluxo à direita já gerou conclusão compatível com torção, mesmo sem sinal morfológico ou contexto clínico preenchido. Acrescentar o sinal do redemoinho tornou o corpo mais completo, mas não mudou a conclusão. No cenário de varicocele direita, calibre e extensão do refluxo geraram classificação de Sarteschi e uma sugestão de investigação secundária.
+
+O LaudoUSG já expõe `ESCROTAL` nos três clientes e possui corpus clínico mais amplo, mas ainda depende do writer genérico. Faltam contrato bilateral, renderer, validação de lateralidade, gate para torção, cálculo de varicocele e transporte estruturado à Sala. O estudo completo está em [crosswalk-bolsa-testicular-doppler-2026-10-03.md](crosswalk-bolsa-testicular-doppler-2026-10-03.md).
+
 ## Tireoide — diferença funcional já observada
 
 O Laudário oferece presets de tireoidopatia que preenchem múltiplos controles, ACR TI-RADS calculado por nódulo, cartograma e recomendação automática com confirmação independente de inclusão no laudo. O cruzamento técnico do LaudoUSG está em [crosswalk-tireoide-2026-10-02.md](crosswalk-tireoide-2026-10-02.md): o núcleo clínico já existe, mas formulário, calculadora, recomendação e cartograma ainda estão desacoplados em graus diferentes na Web, iOS e Android.
