@@ -9,6 +9,27 @@ import {
 import { composeReport, type Addition } from "../compose";
 import { copyPlan } from "../copyPlan";
 import { annotationsFor, annotationsReducer, initialAnnotations, type Annotation } from "../annotations";
+import { paginateReport } from "../pagination";
+
+// ---------- paginação visual: pares verticais sem perder texto ----------
+const shortPages = paginateReport("ACHADOS:\nFígado normal.\n\nCONCLUSÃO:\nExame normal.", [], true);
+assert.equal(shortPages.length, 2, "a abertura sempre mostra duas folhas");
+assert.equal(shortPages[1]?.empty, true, "segunda folha fica limpa quando não é necessária");
+assert.equal(shortPages.filter((p) => !p.empty).map((p) => p.text).join("\n"), "ACHADOS:\nFígado normal.\n\nCONCLUSÃO:\nExame normal.");
+
+const longLines = Array.from({ length: 95 }, (_, i) => `Linha clínica ${i + 1}.`).join("\n");
+const longPages = paginateReport(longLines, [], true);
+assert.equal(longPages.length % 2, 0, "laudos longos completam a última dupla");
+assert.ok(longPages.length >= 4, "laudos longos continuam em novas duplas");
+assert.equal(longPages.filter((p) => !p.empty).map((p) => p.text).join("\n"), longLines);
+
+const nearBreak = `${Array.from({ length: 27 }, (_, i) => `Achado ${i + 1}.`).join("\n")}\nCONCLUSÃO:\nExame sem alterações.`;
+const headingPages = paginateReport(nearBreak);
+assert.equal(
+  headingPages.some((page) => page.text.trimEnd().endsWith("CONCLUSÃO:")),
+  false,
+  "cabeçalho não fica órfão no fim da folha",
+);
 
 // ---------- revisão: na dúvida, nunca "revisado" ----------
 assert.deepEqual(reviewOf(undefined), { status: "pending", reviewedAt: null });

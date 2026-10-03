@@ -1,14 +1,12 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import type { CSSProperties, RefObject } from "react";
+import type { CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMotivationalQuote } from "@/lib/useMotivationalQuote";
 import type { Quote } from "@/lib/motivationalQuotes";
 import { reviewOf, type ReviewView } from "./_lib/review";
-import { composeReport } from "./_lib/compose";
-import { annotationsFor, annotationsReducer, initialAnnotations } from "./_lib/annotations";
 import { copyPlan, type CopyMode } from "./_lib/copyPlan";
 import {
   initialSelection,
@@ -31,6 +29,7 @@ import {
   sessionNameStorage,
   type NameMap,
 } from "./_lib/localNames";
+import { paginateReport } from "./_lib/pagination";
 
 /** Campos de revisão vêm do contrato `reportContract`; ausentes = pending. */
 type RevisionFields = {
@@ -104,40 +103,6 @@ const POLL_INTERVAL_MS = 3000;
 /** Poll pendurado vira falha: libera o próximo em vez de travar a fila. */
 const POLL_TIMEOUT_MS = 10_000;
 
-type Placement = "after-title" | "in-conclusion" | "footer";
-type PhraseSource = "native" | "global";
-
-type Phrase = {
-  id: string;
-  title: string;
-  body: string;
-  categoryCode?: string | null;
-  categoryCodes?: string[];
-};
-
-type InsertedPhrase = {
-  id: string;
-  text: string;
-  title: string;
-  placement: Placement;
-  source: PhraseSource;
-};
-
-type PersistedAnnotation = {
-  id: string;
-  reportId: string | null;
-  text: string;
-  placement: Placement;
-  createdAt: string;
-};
-
-type PhrasesState = {
-  natives: Phrase[];
-  globals: Phrase[];
-};
-
-const EMPTY_PHRASES: PhrasesState = { natives: [], globals: [] };
-
 /** Falhas seguidas de polling antes de avisar "Sem conexão". */
 const OFFLINE_AFTER_FAILURES = 3;
 
@@ -159,17 +124,6 @@ export default function SalaTokenPage() {
   const [highlightOn, setHighlightOn] = useState<boolean>(true);
   const [copied, setCopied] = useState<CopyMode | null>(null);
   const [copyError, setCopyError] = useState(false);
-  const [phrases, setPhrases] = useState<PhrasesState>(EMPTY_PHRASES);
-  const [insertedPhrases, setInsertedPhrases] = useState<InsertedPhrase[]>([]);
-  const [annotationState, dispatchAnnotations] = useReducer(annotationsReducer, initialAnnotations);
-  const annotationStateRef = useRef(annotationState);
-  annotationStateRef.current = annotationState;
-  const [annotationWarning, setAnnotationWarning] = useState<string | null>(
-    null,
-  );
-  const [justAddedAnnotationId, setJustAddedAnnotationId] = useState<
-    string | null
-  >(null);
   // Cache por id: o laudo aberto nunca depende de ser o "latest" do polling.
   const [reportsById, setReportsById] = useState<Record<string, SalaReport>>({});
   const [selection, dispatchSelection] = useReducer(selectionReducer, initialSelection);
@@ -179,7 +133,6 @@ export default function SalaTokenPage() {
   const [listOpen, setListOpen] = useState(false);
   // Vazio no SSR: hora só no cliente, para não divergir na hidratação.
   const [clock, setClock] = useState<string>("");
-  const [noteDraft, setNoteDraft] = useState("");
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [schemas, setSchemas] = useState<SalaSchema[]>([]);
   const [activeMainTab, setActiveMainTab] = useState<ActiveMainTab>("report");
@@ -199,13 +152,7 @@ export default function SalaTokenPage() {
   const selectedIdRef = useRef<string | null>(null);
   const pollsSinceFetchRef = useRef(0);
   const inFlightRef = useRef<Set<string>>(new Set());
-  const noteInputRef = useRef<HTMLTextAreaElement>(null);
-  const annotationHighlightTimeoutRef = useRef<ReturnType<
-    typeof setTimeout
-  > | null>(null);
-
   const selectedId = selection.selectedId;
-  const persistedAnnotations = annotationsFor(annotationState, token, selectedId);
   selectedIdRef.current = selectedId;
 
   useEffect(() => {
@@ -230,14 +177,6 @@ export default function SalaTokenPage() {
     setClock(formatClock(new Date()));
     const id = setInterval(() => setClock(formatClock(new Date())), 1000);
     return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (annotationHighlightTimeoutRef.current) {
-        clearTimeout(annotationHighlightTimeoutRef.current);
-      }
-    };
   }, []);
 
   // Nomes locais: revalida a validade (envelope expiresAt) a cada minuto, ao
@@ -278,100 +217,6 @@ export default function SalaTokenPage() {
     clearAllNames(sessionNameStorage());
     setNames({});
     window.location.assign("/sala");
-  }
-
-  function flashAnnotationWarning(message: string) {
-    setAnnotationWarning(message);
-    setTimeout(() => {
-      setAnnotationWarning((prev) => (prev === message ? null : prev));
-    }, 4000);
-  }
-
-  async function submitAnnotation() {
-    const text = noteDraft.trim();
-    if (!text || !displayReport?.id || !token) return;
-    try {
-      const res = await fetch(
-        `/api/sala/${encodeURIComponent(token)}/annotations`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            text,
-            reportId: displayReport.id,
-            placement: "in-conclusion",
-          }),
-        },
-      );
-      if (!res.ok) {
-        if (res.status === 429) {
-          flashAnnotationWarning(
-            "Muitas anotações em pouco tempo. Tente de novo em alguns segundos.",
-          );
-        } else if (res.status === 422) {
-          flashAnnotationWarning(
-            "Limite de anotações por laudo atingido (30). Remova alguma antes.",
-          );
-        } else {
-          flashAnnotationWarning("Não foi possível salvar a anotação.");
-        }
-        return;
-      }
-      const data = (await res.json()) as { annotation?: PersistedAnnotation };
-      if (data.annotation) {
-        dispatchAnnotations({ type: "upsert", token, reportId: displayReport.id, item: data.annotation });
-        setJustAddedAnnotationId(data.annotation.id);
-        if (annotationHighlightTimeoutRef.current) {
-          clearTimeout(annotationHighlightTimeoutRef.current);
-        }
-        annotationHighlightTimeoutRef.current = setTimeout(() => {
-          setJustAddedAnnotationId((prev) =>
-            prev === data.annotation?.id ? null : prev,
-          );
-          annotationHighlightTimeoutRef.current = null;
-        }, 1400);
-        setNoteDraft("");
-      }
-    } catch (e) {
-      console.error("[sala] submitAnnotation falhou", e);
-      flashAnnotationWarning("Erro de conexão ao salvar anotação.");
-    }
-  }
-
-  async function deleteAnnotation(id: string) {
-    const snapshot = persistedAnnotations.find((a) => a.id === id);
-    if (!snapshot) return;
-    const reportId = displayReport?.id;
-    if (!reportId) return;
-    dispatchAnnotations({ type: "remove", token, reportId, id });
-    try {
-      const res = await fetch(
-        `/api/sala/${encodeURIComponent(token)}/annotations/${encodeURIComponent(id)}`,
-        { method: "DELETE" },
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (e) {
-      console.error("[sala] deleteAnnotation falhou — rollback", e);
-      dispatchAnnotations({ type: "upsert", token, reportId, item: snapshot });
-      flashAnnotationWarning("Não foi possível remover anotação.");
-    }
-  }
-
-  function insertPhrase(
-    phrase: Phrase,
-    source: PhraseSource,
-    placement: Placement,
-  ) {
-    setInsertedPhrases((prev) => [
-      ...prev,
-      {
-        id: `${source}-${phrase.id}-${Date.now()}`,
-        text: phrase.body,
-        title: phrase.title,
-        placement,
-        source,
-      },
-    ]);
   }
 
   useEffect(() => {
@@ -468,20 +313,11 @@ export default function SalaTokenPage() {
     setHighlightOn((v) => !v);
   }
 
-  /**
-   * "medical" = só o texto do médico (o único coberto pela revisão).
-   * "with-additions" = com as frases/anotações da Sala; sempre rascunho.
-   * Nunca leva nome local nem estado de revisão.
-   */
+  /** Copia exatamente o laudo do médico, sem nome local nem estado de revisão. */
   async function onCopy(mode: CopyMode = "medical") {
     if (!displayReport) return;
     setCopyError(false);
-    const ok = await copyReportToClipboard(
-      displayReport,
-      mode,
-      insertedPhrases,
-      persistedAnnotations,
-    );
+    const ok = await copyReportToClipboard(displayReport);
     if (!ok) {
       setCopyError(true);
       setTimeout(() => setCopyError(false), 4000);
@@ -774,20 +610,12 @@ export default function SalaTokenPage() {
         toggleHighlight();
         return;
       }
-      if (e.key === "n") {
-        e.preventDefault();
-        noteInputRef.current?.focus();
-      }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayReport, persistedAnnotations, shortcutsOpen, listOpen, visibleTimeline]);
-
-  useEffect(() => {
-    setInsertedPhrases([]);
-  }, [displayReport?.id]);
+  }, [displayReport, shortcutsOpen, listOpen, visibleTimeline]);
 
   const { quote: motivationalQuote, next: rotateMotivationalQuote } =
     useMotivationalQuote();
@@ -797,62 +625,6 @@ export default function SalaTokenPage() {
       rotateMotivationalQuote();
     }
   }, [latest?.id, rotateMotivationalQuote]);
-
-  useEffect(() => {
-    if (!token) {
-      setPhrases(EMPTY_PHRASES);
-      return;
-    }
-    const cat = displayReport?.category ?? "";
-    const url = `/api/sala/${encodeURIComponent(token)}/phrases${
-      cat ? `?categoryCode=${encodeURIComponent(cat)}` : ""
-    }`;
-    let cancelled = false;
-    fetch(url, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : EMPTY_PHRASES))
-      .then((data: PhrasesState) => {
-        if (!cancelled) {
-          setPhrases({
-            natives: data.natives ?? [],
-            globals: data.globals ?? [],
-          });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setPhrases(EMPTY_PHRASES);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [token, displayReport?.category]);
-
-  useEffect(() => {
-    dispatchAnnotations({ type: "reset", token });
-  }, [token]);
-
-  useEffect(() => {
-    if (!displayReport?.id || !token) return;
-    const reportId = displayReport.id;
-    const version = annotationStateRef.current.token === token
-      ? annotationStateRef.current.reports[reportId]?.version ?? 0 : 0;
-    let cancelled = false;
-    const url = `/api/sala/${encodeURIComponent(token)}/annotations?reportId=${encodeURIComponent(reportId)}`;
-    fetch(url, { cache: "no-store" })
-      .then((r) => {
-        if (!r.ok) throw new Error("annotations_fetch_failed");
-        return r.json();
-      })
-      .then((data: { annotations?: PersistedAnnotation[] }) => {
-        if (!cancelled && Array.isArray(data.annotations)) {
-          dispatchAnnotations({ type: "load", token, reportId, version, items: data.annotations });
-        }
-      })
-      .catch(() => {
-        // Keep this report's known additions; a failed refetch is not deletion.
-        if (!cancelled) flashAnnotationWarning("Não foi possível atualizar as anotações. Tente novamente.");
-      });
-    return () => { cancelled = true; };
-  }, [token, displayReport?.id]);
 
   return (
     <>
@@ -882,15 +654,8 @@ export default function SalaTokenPage() {
         reportStale={reportStale}
         offline={connection === "offline"}
         lastSyncAt={lastSyncAt}
-        noteDraft={noteDraft}
-        phrases={phrases}
-        insertedPhrases={insertedPhrases}
-        persistedAnnotations={persistedAnnotations}
-        justAddedAnnotationId={justAddedAnnotationId}
-        annotationWarning={annotationWarning}
         motivationalQuote={motivationalQuote}
         shortcutsOpen={shortcutsOpen}
-        noteInputRef={noteInputRef}
         schemas={visibleSchemas}
         activeMainTab={activeMainTab}
         salaToken={token}
@@ -907,10 +672,6 @@ export default function SalaTokenPage() {
         onRetryReport={retrySelected}
         onPatientName={setPatientName}
         onLeave={leave}
-        onSubmitAnnotation={submitAnnotation}
-        onNoteDraft={setNoteDraft}
-        onDeleteAnnotation={deleteAnnotation}
-        onInsertPhrase={insertPhrase}
         onCloseShortcuts={() => setShortcutsOpen(false)}
         onActiveMainTab={setActiveMainTab}
         formatClock={formatClock}
@@ -947,15 +708,8 @@ function Shell({
   offline,
   reportStale,
   lastSyncAt,
-  noteDraft,
-  phrases,
-  insertedPhrases,
-  persistedAnnotations,
-  justAddedAnnotationId,
-  annotationWarning,
   motivationalQuote,
   shortcutsOpen,
-  noteInputRef,
   schemas,
   activeMainTab,
   salaToken,
@@ -972,10 +726,6 @@ function Shell({
   onRetryReport,
   onPatientName,
   onLeave,
-  onSubmitAnnotation,
-  onNoteDraft,
-  onDeleteAnnotation,
-  onInsertPhrase,
   onCloseShortcuts,
   onActiveMainTab,
   formatClock,
@@ -1005,15 +755,8 @@ function Shell({
   offline: boolean;
   reportStale: boolean;
   lastSyncAt: string | null;
-  noteDraft: string;
-  phrases: PhrasesState;
-  insertedPhrases: InsertedPhrase[];
-  persistedAnnotations: PersistedAnnotation[];
-  justAddedAnnotationId: string | null;
-  annotationWarning: string | null;
   motivationalQuote: Quote | null;
   shortcutsOpen: boolean;
-  noteInputRef: RefObject<HTMLTextAreaElement>;
   schemas: SalaSchema[];
   activeMainTab: ActiveMainTab;
   salaToken: string;
@@ -1030,14 +773,6 @@ function Shell({
   onRetryReport: () => void;
   onPatientName: (reportId: string, value: string) => void;
   onLeave: () => void;
-  onSubmitAnnotation: () => void;
-  onNoteDraft: (value: string) => void;
-  onDeleteAnnotation: (id: string) => void;
-  onInsertPhrase: (
-    phrase: Phrase,
-    source: PhraseSource,
-    placement: Placement,
-  ) => void;
   onCloseShortcuts: () => void;
   onActiveMainTab: (tab: ActiveMainTab) => void;
   formatClock: (date: Date) => string;
@@ -1262,21 +997,18 @@ function Shell({
                           aria-current={isActive ? "true" : undefined}
                           aria-label={`${category} das ${time}${name ? `, ${name}` : ""}. ${reviewLabel(entryReview.status)}${isFresh ? ". Novo" : ""}${isChanged ? ". Alterado" : ""}`}
                         >
-                          <span className="timeline-top">
+                          <span className="timeline-primary">
                             <span className="timeline-time">{time}</span>
-                            {isFresh && <span className="tl-flag tl-flag--new">Novo</span>}
-                            {isChanged && <span className="tl-flag">Alterado</span>}
-                          </span>
-                          <span className="timeline-label">{category}</span>
-                          <span className={`timeline-name ${name ? "" : "is-empty"}`}>
-                            {name ?? "sem nome"}
-                          </span>
-                          <span className={`tl-review tl-review--${entryReview.status}`}>
-                            <span aria-hidden="true">
+                            <span className="timeline-label" title={category}>{category}</span>
+                            <span
+                              className={`tl-review tl-review--${entryReview.status} ${isChanged ? "has-changed" : isFresh ? "has-new" : ""}`}
+                              title={`${reviewLabel(entryReview.status)}${isFresh ? " · Novo" : ""}${isChanged ? " · Alterado" : ""}`}
+                              aria-hidden="true"
+                            >
                               {entryReview.status === "reviewed" ? "✓" : "◷"}
-                            </span>{" "}
-                            {entryReview.status === "reviewed" ? "Revisado" : "Aguardando revisão"}
+                            </span>
                           </span>
+                          {name && <span className="timeline-name" title={name}>{name}</span>}
                         </button>
                         <button
                           type="button"
@@ -1349,8 +1081,6 @@ function Shell({
               reportStale={reportStale}
               offline={offline}
               lastSyncAt={lastSyncAt}
-              insertedPhrases={insertedPhrases}
-              persistedAnnotations={persistedAnnotations}
               onCopy={onCopy}
               onStep={onStep}
               onPatientName={onPatientName}
@@ -1359,124 +1089,6 @@ function Shell({
           )}
         </section>
 
-        <aside className="activity-panel">
-          <section className="panel-section">
-            <h2 className="panel-title">Anotações</h2>
-            {annotationWarning && (
-              <p className="annotation-warning" role="alert">
-                {annotationWarning}
-              </p>
-            )}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                onSubmitAnnotation();
-              }}
-              className="note-form"
-            >
-              <textarea
-                ref={noteInputRef}
-                value={noteDraft}
-                onChange={(e) => onNoteDraft(e.target.value)}
-                placeholder={
-                  report
-                    ? "Acrescente uma observação..."
-                    : "Aguardando laudo do médico..."
-                }
-                rows={3}
-                className="note-input"
-                disabled={!report}
-              />
-              <button
-                type="submit"
-                className="note-submit"
-                disabled={!noteDraft.trim() || !report}
-              >
-                Adicionar à conclusão
-              </button>
-            </form>
-            {persistedAnnotations.length > 0 && (
-              <ul className="notes-list">
-                {persistedAnnotations.slice().reverse().map((a) => (
-                  <li
-                    key={a.id}
-                    className={`note-item ${a.id === justAddedAnnotationId ? "annotation--just-added" : ""}`}
-                  >
-                    <time>{formatTime(a.createdAt)}</time>
-                    <p>{a.text}</p>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteAnnotation(a.id)}
-                      aria-label="Remover anotação"
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="panel-section">
-            <h2 className="panel-title">Frases nativas</h2>
-            {phrases.natives.length === 0 ? (
-              <p className="muted">
-                {report
-                  ? "Nenhuma frase nativa cadastrada pra esta categoria."
-                  : "Aguardando laudo pra sugerir frases."}
-              </p>
-            ) : (
-              <div className="phrase-list">
-                {phrases.natives.map((p) => (
-                  <PhraseCard
-                    key={`native-${p.id}`}
-                    phrase={p}
-                    source="native"
-                    insertedCount={
-                      insertedPhrases.filter(
-                        (ip) => ip.source === "native" && ip.text === p.body,
-                      ).length
-                    }
-                    onInsert={(placement) =>
-                      onInsertPhrase(p, "native", placement)
-                    }
-                    disabled={!report}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="panel-section">
-            <h2 className="panel-title">Frases globais</h2>
-            {phrases.globals.length === 0 ? (
-              <p className="muted">
-                {report
-                  ? "Nenhuma frase global pra esta categoria."
-                  : "Aguardando laudo pra sugerir frases."}
-              </p>
-            ) : (
-              <div className="phrase-list">
-                {phrases.globals.map((p) => (
-                  <PhraseCard
-                    key={p.id}
-                    phrase={p}
-                    source="global"
-                    insertedCount={
-                      insertedPhrases.filter(
-                        (ip) => ip.source === "global" && ip.text === p.body,
-                      ).length
-                    }
-                    onInsert={(placement) =>
-                      onInsertPhrase(p, "global", placement)
-                    }
-                    disabled={!report}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        </aside>
       </div>
 
       {arrival && (
@@ -1510,7 +1122,6 @@ function Shell({
               <div><dt>k / ←</dt><dd>laudo anterior da lista</dd></div>
               <div><dt>c</dt><dd>copiar o laudo aberto</dd></div>
               <div><dt>h</dt><dd>destacar títulos</dd></div>
-              <div><dt>n</dt><dd>nova anotação</dd></div>
               <div><dt>Esc</dt><dd>fechar</dd></div>
             </dl>
           </div>
@@ -1532,70 +1143,6 @@ function SidebarSection({
       <h2 className="sidebar-title">{title}</h2>
       {children}
     </div>
-  );
-}
-
-function PhraseCard({
-  phrase,
-  source,
-  insertedCount,
-  onInsert,
-  disabled,
-}: {
-  phrase: Phrase;
-  source: PhraseSource;
-  insertedCount: number;
-  onInsert: (placement: Placement) => void;
-  disabled?: boolean;
-}) {
-  const [placement, setPlacement] = useState<Placement>("in-conclusion");
-  return (
-    <article className={`phrase-card phrase-card--${source}`}>
-      <header className="phrase-card-head">
-        <h4 className="phrase-card-title">{phrase.title}</h4>
-        {insertedCount > 0 && (
-          <span className="phrase-card-badge" title="Vezes inserida no laudo atual">
-            ×{insertedCount}
-          </span>
-        )}
-      </header>
-      <p className="phrase-card-body">{phrase.body}</p>
-      <div
-        className="phrase-placement"
-        role="radiogroup"
-        aria-label="Onde inserir esta frase"
-      >
-        {(
-          [
-            { value: "after-title", label: "Após título" },
-            { value: "in-conclusion", label: "Na conclusão" },
-            { value: "footer", label: "Rodapé" },
-          ] as { value: Placement; label: string }[]
-        ).map((opt) => (
-          <label
-            key={opt.value}
-            className={`phrase-placement-chip ${placement === opt.value ? "is-selected" : ""}`}
-          >
-            <input
-              type="radio"
-              name={`placement-${source}-${phrase.id}`}
-              value={opt.value}
-              checked={placement === opt.value}
-              onChange={() => setPlacement(opt.value)}
-            />
-            <span>{opt.label}</span>
-          </label>
-        ))}
-      </div>
-      <button
-        type="button"
-        className="phrase-insert"
-        onClick={() => onInsert(placement)}
-        disabled={disabled}
-      >
-        + Inserir no laudo
-      </button>
-    </article>
   );
 }
 
@@ -1750,8 +1297,6 @@ function ReportView({
   offline,
   reportStale,
   lastSyncAt,
-  insertedPhrases,
-  persistedAnnotations,
   onCopy,
   onStep,
   onPatientName,
@@ -1770,8 +1315,6 @@ function ReportView({
   offline: boolean;
   reportStale: boolean;
   lastSyncAt: string | null;
-  insertedPhrases: InsertedPhrase[];
-  persistedAnnotations: PersistedAnnotation[];
   onCopy: (mode?: CopyMode) => void;
   onStep: (delta: 1 | -1) => void;
   onPatientName: (reportId: string, value: string) => void;
@@ -1781,15 +1324,16 @@ function ReportView({
     () => splitHeading(report.outputText),
     [report.outputText],
   );
-  const composed = useMemo(
-    () => composeReport(rawBody, insertedPhrases, persistedAnnotations),
-    [rawBody, insertedPhrases, persistedAnnotations],
+  const pages = useMemo(
+    () => paginateReport(rawBody, [], Boolean(heading)),
+    [rawBody, heading],
   );
+  const contentPageCount = pages.filter((page) => !page.empty).length || 1;
   const plan = copyPlan({
     review,
     offline,
   reportStale,
-    additionCount: composed.additionCount,
+    additionCount: 0,
     lastSyncLabel: lastSyncAt ? formatTime(lastSyncAt) : null,
   });
   const reviewed = plan.banner === "reviewed";
@@ -1887,30 +1431,43 @@ function ReportView({
           )}
           <time className="meta-time">{formatStamp(report.createdAt)}</time>
         </div>
+        <PatientNameField
+          key={report.id}
+          reportId={report.id}
+          saved={patientName}
+          onChange={onPatientName}
+        />
         {nav()}
       </div>
 
-      <PatientNameField
-        key={report.id}
-        reportId={report.id}
-        saved={patientName}
-        onChange={onPatientName}
-      />
-
-      <article className="paper">
-        <div className="paper-flow">
-          {heading && (
-            <h1
-              className={`report-heading ${highlightOn ? "report-heading--highlight" : ""}`}
-            >
-              {heading}
-            </h1>
-          )}
-          <div className="report-body">
-            {renderBody(composed.text, highlightOn, composed.added)}
-          </div>
-        </div>
-      </article>
+      <div className="paper-spread" aria-label={`Laudo em ${contentPageCount} página${contentPageCount === 1 ? "" : "s"}`}>
+        {pages.map((page, index) => {
+          const contentIndex = pages.slice(0, index + 1).filter((item) => !item.empty).length;
+          return (
+          <article
+            key={`${report.id}-page-${index + 1}`}
+            className={`paper ${page.empty ? "is-empty is-placeholder" : ""}`}
+            data-page-label={page.empty ? "" : `${contentIndex} / ${contentPageCount}`}
+            data-empty={page.empty ? "true" : "false"}
+            aria-label={page.empty ? undefined : `Página ${contentIndex} de ${contentPageCount}`}
+            aria-hidden={page.empty ? "true" : undefined}
+          >
+            <div className="paper-flow">
+              {index === 0 && heading && (
+                <h1
+                  className={`report-heading ${highlightOn ? "report-heading--highlight" : ""}`}
+                >
+                  {heading}
+                </h1>
+              )}
+              <div className="report-body">
+                {renderBody(page.text, highlightOn, page.added)}
+              </div>
+            </div>
+          </article>
+          );
+        })}
+      </div>
 
       <div className="mobile-bar">
         {nav("reader-nav--compact")}
@@ -1935,9 +1492,13 @@ function PatientNameField({
 }) {
   const [draft, setDraft] = useState(saved);
   const inputId = `sala-patient-${reportId}`;
+  const hintId = `${inputId}-hint`;
   return (
     <div className="patient-field">
-      <label htmlFor={inputId}>Paciente (opcional)</label>
+      <label className="sr-only" htmlFor={inputId}>Nome do paciente (opcional)</label>
+      <span className="sr-only" id={hintId}>
+        Usado só para localizar este laudo nesta sala. Não entra no laudo, na cópia nem na impressão.
+      </span>
       <input
         id={inputId}
         type="text"
@@ -1945,16 +1506,13 @@ function PatientNameField({
         maxLength={60}
         autoComplete="off"
         spellCheck={false}
-        placeholder="Digite para achar este laudo na lista"
+        placeholder="Nome do paciente (opcional)"
+        aria-describedby={hintId}
         onChange={(e) => {
           setDraft(e.target.value);
           onChange(reportId, e.target.value);
         }}
       />
-      <span className="patient-hint">
-        Fica só neste computador até sair ou virar o dia. Não entra no laudo, na
-        cópia nem na impressão.
-      </span>
     </div>
   );
 }
@@ -1990,19 +1548,9 @@ function isAllCapsHeading(trimmed: string): boolean {
   return true;
 }
 
-async function copyReportToClipboard(
-  report: SalaReport,
-  mode: CopyMode,
-  inserted: InsertedPhrase[],
-  annotations: PersistedAnnotation[],
-): Promise<boolean> {
+async function copyReportToClipboard(report: SalaReport): Promise<boolean> {
   const { heading, body: rawBody } = splitHeading(report.outputText);
-  // "medical": exatamente o texto do médico. "with-additions": o que a tela
-  // mostra (frases inseridas + anotações), sempre como rascunho.
-  const body =
-    mode === "with-additions"
-      ? composeReport(rawBody, inserted, annotations).text
-      : rawBody;
+  const body = rawBody;
   const headingHtml = heading
     ? `<p><strong>${escapeHtml(heading)}</strong></p><p>&nbsp;</p>`
     : "";
@@ -2267,6 +1815,17 @@ function GlobalStyles() {
       }
 
       * { box-sizing: border-box; }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
       html, body {
         margin: 0;
         padding: 0;
@@ -2535,7 +2094,7 @@ function ScopedStyles() {
       .layout {
         flex: 1;
         display: grid;
-        grid-template-columns: 240px minmax(0, 1fr) 280px;
+        grid-template-columns: 252px minmax(0, 1fr);
         gap: 0;
         width: 100%;
       }
@@ -2704,7 +2263,7 @@ function ScopedStyles() {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        gap: 3px;
+        gap: 5px;
         background: transparent;
         border: 0;
         padding: 5px 4px 5px 0;
@@ -2737,11 +2296,13 @@ function ScopedStyles() {
       }
 
       .timeline-label {
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         font-size: 11.5px;
         line-height: 1.3;
-        word-break: break-word;
-        hyphens: auto;
-        align-self: stretch;
       }
 
       .timeline-x {
@@ -2802,346 +2363,6 @@ function ScopedStyles() {
         background: var(--bg);
       }
 
-      .activity-panel {
-        border-left: 1px solid var(--line);
-        padding: 16px 14px;
-        background: var(--paper);
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        position: sticky;
-        top: 52px;
-        align-self: start;
-        max-height: calc(100vh - 52px);
-        overflow-y: auto;
-      }
-
-      .annotation-warning {
-        margin: 0;
-        padding: 6px 10px;
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        border-radius: 6px;
-        color: #b91c1c;
-        font-size: 11.5px;
-        line-height: 1.4;
-      }
-
-      [data-theme="dark"] .annotation-warning {
-        background: rgba(220, 38, 38, 0.12);
-        border-color: rgba(220, 38, 38, 0.3);
-        color: #fca5a5;
-      }
-
-      .phrase-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .phrase-card {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 10px 12px;
-        background: var(--paper-shade);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        transition: border-color 140ms ease, background 140ms ease;
-      }
-
-      .phrase-card:hover {
-        border-color: var(--line-strong);
-      }
-
-      .phrase-card--native {
-        background: var(--brand-tint);
-        border-color: var(--brand-soft);
-      }
-
-      .phrase-card-head {
-        display: flex;
-        align-items: baseline;
-        gap: 8px;
-      }
-
-      .phrase-card-title {
-        margin: 0;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--ink);
-        flex: 1;
-        line-height: 1.3;
-      }
-
-      .phrase-card-badge {
-        font-family: "JetBrains Mono", monospace;
-        font-size: 10px;
-        color: var(--brand-deep);
-        background: var(--brand-tint);
-        border: 1px solid var(--brand-soft);
-        border-radius: 999px;
-        padding: 1px 6px;
-        line-height: 1.3;
-      }
-
-      .phrase-card-body {
-        margin: 0;
-        font-size: 11.5px;
-        line-height: 1.4;
-        color: var(--ink-soft);
-      }
-
-      .phrase-placement {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-      }
-
-      .phrase-placement-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 3px 8px;
-        font-size: 10.5px;
-        color: var(--ink-mute);
-        background: var(--paper);
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        cursor: pointer;
-        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
-        user-select: none;
-      }
-
-      .phrase-placement-chip input[type="radio"] {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-        width: 0;
-        height: 0;
-      }
-
-      .phrase-placement-chip:hover {
-        color: var(--ink);
-        border-color: var(--line-strong);
-      }
-
-      .phrase-placement-chip.is-selected {
-        color: var(--brand-deep);
-        background: var(--brand-tint);
-        border-color: var(--brand-soft);
-        font-weight: 500;
-      }
-
-      .phrase-insert {
-        align-self: flex-end;
-        padding: 5px 12px;
-        border-radius: 7px;
-        border: 1px solid var(--brand-soft);
-        background: var(--brand-tint);
-        color: var(--brand-deep);
-        cursor: pointer;
-        font-size: 11.5px;
-        font-weight: 500;
-        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, border-color 120ms ease;
-      }
-
-      .phrase-insert:hover:not(:disabled) {
-        background: var(--brand-soft);
-      }
-
-      .phrase-insert:active:not(:disabled) {
-        transform: scale(0.96);
-      }
-
-      .phrase-insert:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-
-      .panel-section {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .panel-title {
-        font-family: "JetBrains Mono", monospace;
-        font-size: 10.5px;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: var(--ink-mute);
-        margin: 0;
-        font-weight: 500;
-      }
-
-      .note-form {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .note-input {
-        width: 100%;
-        resize: vertical;
-        min-height: 60px;
-        font: inherit;
-        font-size: 13px;
-        padding: 10px 12px;
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        background: var(--paper-shade);
-        color: var(--ink);
-        transition: border-color 120ms ease;
-      }
-
-      .note-input:focus {
-        outline: none;
-        border-color: var(--brand);
-      }
-
-      .note-submit {
-        align-self: flex-end;
-        padding: 6px 14px;
-        border-radius: 8px;
-        border: 1px solid var(--brand-soft);
-        background: var(--brand-tint);
-        color: var(--brand-deep);
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: 500;
-        transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 120ms ease, color 120ms ease, border-color 120ms ease;
-      }
-
-      .note-submit:active {
-        transform: scale(0.96);
-      }
-
-      .note-submit:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .note-submit:disabled:active {
-        transform: none;
-      }
-
-      .notes-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .note-item {
-        display: grid;
-        grid-template-columns: 42px 1fr 18px;
-        gap: 8px;
-        align-items: start;
-        padding: 8px 10px;
-        background: var(--paper-shade);
-        border-radius: 8px;
-      }
-
-      .annotation--just-added {
-        animation: annotation-added 1400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      }
-
-      .note-item time {
-        font-family: "JetBrains Mono", monospace;
-        color: var(--ink-mute);
-        font-size: 11px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .note-item p {
-        color: var(--ink);
-        line-height: 1.4;
-        font-size: 12.5px;
-        margin: 0;
-      }
-
-      .note-item button {
-        opacity: 0;
-        border: 0;
-        background: transparent;
-        color: var(--ink-mute);
-        cursor: pointer;
-        padding: 0;
-        font-size: 16px;
-        line-height: 1;
-        transition: opacity 120ms ease, color 120ms ease;
-      }
-
-      .note-item:hover button,
-      .note-item button:focus-visible {
-        opacity: 1;
-      }
-
-      .note-item button:hover {
-        color: var(--ink);
-      }
-
-      .activity-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .activity-item {
-        display: flex;
-        align-items: baseline;
-        gap: 10px;
-        padding: 4px 0;
-        font-size: 12px;
-        color: var(--ink-soft);
-      }
-
-      .activity-item::before {
-        content: "";
-        width: 6px;
-        height: 6px;
-        border-radius: 999px;
-        background: var(--ink-mute);
-        flex-shrink: 0;
-        margin-top: 5px;
-      }
-
-      .activity-item time {
-        font-family: "JetBrains Mono", monospace;
-        color: var(--ink-mute);
-        font-size: 11px;
-        min-width: 42px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .activity-received::before,
-      .activity-back-live::before {
-        background: var(--brand);
-      }
-
-      .activity-copied::before {
-        background: var(--amber);
-      }
-
-      .activity-highlight-on::before,
-      .activity-highlight-off::before {
-        background: var(--ink-mute);
-      }
-
-      .activity-note::before {
-        background: var(--brand-deep);
-      }
-
-      .activity-viewed::before {
-        background: var(--ink-soft);
-      }
-
       .card {
         background: var(--paper);
         border: 1px solid var(--line);
@@ -3167,7 +2388,7 @@ function ScopedStyles() {
       }
 
       .report-stage {
-        max-width: 210mm;
+        max-width: 1480px;
         margin: 0 auto;
         width: 100%;
         display: flex;
@@ -3344,17 +2565,37 @@ function ScopedStyles() {
         line-height: 1;
       }
 
-      /* Leitura vertical: uma coluna do tamanho de uma folha A4, rolando para baixo. */
+      /* Duas folhas por linha; laudos maiores continuam em novas duplas abaixo. */
+      .paper-spread {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+        gap: clamp(12px, 1.4vw, 22px);
+        width: 100%;
+      }
+
       .paper {
         width: 100%;
-        max-width: 210mm;
-        margin: 0 auto;
+        min-width: 0;
+        aspect-ratio: 210 / 297;
+        position: relative;
         background: var(--paper);
         border: 1px solid var(--line);
         border-radius: 6px;
         box-shadow:
           0 1px 3px rgba(15, 23, 42, 0.08),
           0 2px 8px rgba(15, 23, 42, 0.04);
+      }
+
+      .paper::after {
+        content: attr(data-page-label);
+        position: absolute;
+        right: clamp(18px, 2.5vw, 38px);
+        bottom: 14px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        color: var(--ink-mute);
       }
 
       [data-theme="dark"] .paper {
@@ -3364,9 +2605,9 @@ function ScopedStyles() {
       }
 
       .paper-flow {
-        padding: 56px 48px 64px;
-        font-size: 18.5px;
-        line-height: 1.55;
+        padding: clamp(30px, 3.1vw, 50px) clamp(24px, 2.8vw, 46px) clamp(42px, 3.5vw, 58px);
+        font-size: clamp(15px, 1vw, 16px);
+        line-height: 1.48;
         overflow-wrap: anywhere;
       }
 
@@ -3449,11 +2690,10 @@ function ScopedStyles() {
       }
 
       .reader-head {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(max-content, auto) minmax(220px, 420px) max-content;
         align-items: center;
-        justify-content: space-between;
         gap: 12px;
-        flex-wrap: wrap;
       }
       .reader-meta {
         display: inline-flex;
@@ -3482,15 +2722,10 @@ function ScopedStyles() {
       .nav-pos { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; min-width: 56px; text-align: center; }
 
       .patient-field {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        align-items: center;
-        gap: 4px 12px;
+        min-width: 0;
       }
-      .patient-field label { font-size: 14px; font-weight: 700; color: var(--ink); }
       .patient-field input {
         width: 100%;
-        max-width: 420px;
         min-height: 40px;
         padding: 8px 12px;
         border-radius: 8px;
@@ -3501,10 +2736,15 @@ function ScopedStyles() {
         font-size: 15px;
       }
       .patient-field input:focus-visible { outline: 3px solid var(--brand-soft); border-color: var(--brand); }
-      .patient-hint { grid-column: 2; font-size: 12.5px; color: var(--ink-soft); }
 
       /* ---- Lista do dia ---- */
-      .timeline-top { display: inline-flex; align-items: center; gap: 6px; }
+      .timeline-primary {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        width: 100%;
+        min-width: 0;
+      }
       .tl-flag {
         font-size: 10px;
         font-weight: 800;
@@ -3516,11 +2756,57 @@ function ScopedStyles() {
         color: var(--ink);
       }
       .tl-flag--new { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-      .timeline-name { font-size: 12.5px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
-      .timeline-name.is-empty { font-weight: 400; font-style: italic; color: var(--ink-soft); }
-      .tl-review { font-size: 11.5px; font-weight: 700; }
+      .timeline-name {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .tl-review {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 19px;
+        height: 19px;
+        flex: 0 0 19px;
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1;
+      }
       .tl-review--reviewed { color: var(--ok-ink); }
       .tl-review--pending { color: var(--wait-ink); }
+      .tl-review.has-new::after,
+      .tl-review.has-changed::after {
+        content: "";
+        position: absolute;
+        right: -4px;
+        top: -5px;
+        border: 2px solid var(--paper);
+        border-radius: 999px;
+        background: var(--brand);
+      }
+      .tl-review.has-new::after {
+        width: 7px;
+        height: 7px;
+      }
+      .tl-review.has-changed::after {
+        content: "!";
+        width: 14px;
+        height: 14px;
+        display: grid;
+        place-items: center;
+        background: #dc2626;
+        color: #fff;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        line-height: 1;
+      }
 
       .daylist-toggle {
         display: none;
@@ -3830,11 +3116,11 @@ function ScopedStyles() {
 
       @media (max-width: 1100px) {
         .layout {
-          grid-template-columns: 240px minmax(0, 1fr);
+          grid-template-columns: 220px minmax(0, 1fr);
         }
-        .activity-panel {
-          display: none;
-        }
+        .main { padding: 20px; }
+        .reader-head { grid-template-columns: 1fr minmax(200px, 320px); }
+        .reader-head .reader-nav { grid-column: 1 / -1; justify-self: end; }
         .motivational-quote {
           max-width: 240px;
           font-size: 10px;
@@ -3872,14 +3158,17 @@ function ScopedStyles() {
         }
         .privacy-strip { margin-top: 12px; }
         .brand-sub { display: none; }
-        .paper { border-radius: 6px; }
-        .paper-flow { padding: 24px 18px 32px; font-size: 16.5px; }
+        .paper-spread { grid-template-columns: 1fr; }
+        .paper.is-empty { display: none; }
+        .paper { aspect-ratio: auto; min-height: 0; border-radius: 6px; }
+        .paper-flow { padding: 24px 18px 38px; font-size: 16.5px; }
         .main { padding: 16px 16px 96px; }
         .sidebar { gap: 12px; }
         .sidebar > .sidebar-section:first-child { display: none; }
         .daylist-toggle { display: flex; }
         .daylist-wrap { display: none; }
         .daylist-wrap.is-open { display: block; }
+        .reader-head { display: flex; align-items: stretch; flex-direction: column; }
         .reader-head .reader-nav { display: none; }
         .review-banner .copy-btn--main { display: none; }
         .review-banner { flex-direction: column; align-items: stretch; }
@@ -3894,6 +3183,15 @@ function ScopedStyles() {
         }
       }
 
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
       /* Impressão: só o texto do laudo. Nome local, faixa de revisão e
          controles nunca vão para o papel. */
       @media print {
@@ -3903,7 +3201,10 @@ function ScopedStyles() {
         .layout { display: block !important; }
         .main { padding: 0 !important; background: #fff !important; }
         .report-anim { animation: none !important; }
-        .paper { max-width: none; border: 0; box-shadow: none !important; }
+        .paper-spread { display: block !important; }
+        .paper { aspect-ratio: auto; max-width: none; border: 0; box-shadow: none !important; break-after: page; }
+        .paper[data-empty="true"] { display: none !important; }
+        .paper::after { content: none; }
         .paper-flow { padding: 0; color: #000; }
         .doc-line--added { background: none; box-shadow: none; padding-left: 0; }
         .doc-line--added::after { content: none; }
