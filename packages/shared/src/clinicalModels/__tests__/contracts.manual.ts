@@ -187,6 +187,7 @@ for (const side of ["right", "left"] as const) hip[side] = { ...hip[side], alpha
 assert.equal(validateClinicalModelInput(hip).success, true);
 const hipReport = renderClinicalModelReport(hip);
 assert.match(hipReport, /Classificação de Graf I/);
+assert.match(hipReport, /labrum em posição habitual/, "o achado usado na classificação precisa permanecer rastreável no corpo do laudo");
 hip.right.grafClassification = "IIB";
 assert.ok(errorCodes(hip).includes("GRAF_CLASSIFICATION_MISMATCH"));
 

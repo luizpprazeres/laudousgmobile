@@ -137,10 +137,11 @@ function renderThorax(data: ThoraxInput) {
 const roofLabel = { normal: "bem formado", rounded: "arredondado", deficient: "deficiente", not_assessed: "não avaliado" } as const;
 const cartilageLabel = { normal: "preservado", displaced: "deslocado", not_assessed: "não avaliado" } as const;
 const headLabel = { centered: "centrada", decentered: "descentrada", dislocated: "luxada", not_assessed: "não avaliada" } as const;
+const labrumLabel = { normal: "em posição habitual", everted: "evertido", interposed: "interposto", not_assessed: "não avaliado" } as const;
 function hipSide(data: QuadrilInfantilInput, side: "right" | "left") {
   const s = data[side];
   if (!s.adequateStandardPlane) return `Quadril ${sideName(side)}: corte padrão inadequado; classificação não emitida.`;
-  return `Quadril ${sideName(side)}: teto ósseo ${roofLabel[s.bonyRoof]}, teto cartilaginoso ${cartilageLabel[s.cartilaginousRoof]}, cabeça femoral ${headLabel[s.femoralHead]}, ângulo alfa de ${pt(s.alphaDeg!)}°, ângulo beta de ${pt(s.betaDeg!)}°${s.coveragePercent != null ? ` e cobertura de ${pt(s.coveragePercent)}%` : ""}. Classificação de Graf ${s.grafClassification}.`;
+  return `Quadril ${sideName(side)}: teto ósseo ${roofLabel[s.bonyRoof]}, teto cartilaginoso ${cartilageLabel[s.cartilaginousRoof]}, cabeça femoral ${headLabel[s.femoralHead]}, labrum ${labrumLabel[s.labrumPosition]}, ângulo alfa de ${pt(s.alphaDeg!)}°, ângulo beta de ${pt(s.betaDeg!)}°${s.coveragePercent != null ? ` e cobertura de ${pt(s.coveragePercent)}%` : ""}. Classificação de Graf ${s.grafClassification}.`;
 }
 function renderHip(data: QuadrilInfantilInput) {
   return `ULTRASSONOGRAFIA DOS QUADRIS DO LACTENTE\n\nCOMENTÁRIOS:\nExame realizado com transdutor linear de alta frequência, utilizando cortes coronais padronizados segundo a técnica de Graf. Idade: ${data.ageDays!} dias.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\n${hipSide(data, "right")}\n${hipSide(data, "left")}\n\nCONCLUSÃO:\nQuadril direito classificado como Graf ${data.right.grafClassification}.\nQuadril esquerdo classificado como Graf ${data.left.grafClassification}.${data.recommendation ? `\n${data.recommendation}` : ""}`;

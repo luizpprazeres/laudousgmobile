@@ -32,7 +32,9 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Doppler Hepático: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, trombose portal parcial, TIPS, recomendações e inventário de transplante.
 - Doppler Venoso de Membro Superior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, trombose relacionada a cateter, trombose superficial basílica e TVP axilar; foram documentadas contradição entre corpo e conclusão e falhas de concordância do concorrente.
 - Doppler Arterial de Membro Superior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, estenose subclávia, razão automática de velocidades, oclusão crônica, padrão tardus-parvus e inventário de desfiladeiro torácico; foram documentadas uma incoerência distal do concorrente e uma diferença de paridade entre iOS, Web e Android/RN no LaudoUSG.
-- Próxima prioridade: Ultrassonografia de Tórax.
+- Ultrassonografia de Tórax: ausência confirmada no catálogo de Ultrassonografia da conta estudada; o LaudoUSG já possui contrato pulmonar e pleural bilateral, sem equivalente funcional disponível para comparação nesta rodada.
+- Quadril Infantil: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, alfa intermediário sem idade, classificação IIa- e cenário IIc; foi documentada classificação normal do concorrente sem medidas numéricas, e a perda da posição do labrum nos renderizadores do LaudoUSG foi corrigida.
+- Próxima prioridade: Doppler Arterial de Membro Inferior.
 
 ## Limites desta fotografia
 
