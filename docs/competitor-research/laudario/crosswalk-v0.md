@@ -24,6 +24,12 @@ O Laudário separa técnica, perviedade, padrão hemodinâmico, critérios diret
 
 O LaudoUSG expõe Doppler renal nos três clientes e possui writer dedicado. O cruzamento confirmou ausência de contrato compartilhado e revelou falsa normalidade por omissão, auditoria sem contexto e avisos não bloqueantes. Esses riscos imediatos foram corrigidos no mesmo lote; permanecem a estruturação completa, paridade de formulário, estilo/personalização e regras renais ainda fora do caminho ativo. O estudo completo está em [crosswalk-doppler-aortorrenal-2026-10-03.md](crosswalk-doppler-aortorrenal-2026-10-03.md).
 
+## Ecocardiografia fetal — categoria própria ausente
+
+O Laudário organiza o exame por anatomia sequencial, ritmo, função, medidas, recomendações e modelos de cardiopatias. A CIV muscular medida substituiu a normalidade incompatível e chegou à conclusão. As extrassístoles expuseram um risco relevante: origem atrial, condução ventricular e caráter isolado foram publicados a partir de opções preselecionadas. Uma limitação técnica significativa atenuou a conclusão, mas não retirou as normalidades anatômicas completas do corpo.
+
+No LaudoUSG, ecocardiografia fetal aparece somente como recomendação dentro de exames obstétricos. A categoria, o contrato, os renderizadores e o catálogo estão ausentes nas três plataformas. A implementação futura deve ser própria, com variante gemelar no mesmo contrato, confirmação explícita de qualificadores e escopo de avaliação por bloco. O estudo completo está em [crosswalk-ecocardiografia-fetal-2026-10-03.md](crosswalk-ecocardiografia-fetal-2026-10-03.md).
+
 ## Tireoide — diferença funcional já observada
 
 O Laudário oferece presets de tireoidopatia que preenchem múltiplos controles, ACR TI-RADS calculado por nódulo, cartograma e recomendação automática com confirmação independente de inclusão no laudo. O cruzamento técnico do LaudoUSG está em [crosswalk-tireoide-2026-10-02.md](crosswalk-tireoide-2026-10-02.md): o núcleo clínico já existe, mas formulário, calculadora, recomendação e cartograma ainda estão desacoplados em graus diferentes na Web, iOS e Android.
