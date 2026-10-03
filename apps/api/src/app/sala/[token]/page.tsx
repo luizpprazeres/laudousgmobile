@@ -29,7 +29,12 @@ import {
   sessionNameStorage,
   type NameMap,
 } from "./_lib/localNames";
-import { paginateReport } from "./_lib/pagination";
+import {
+  DEFAULT_PAGINATION_METRICS,
+  paginateReport,
+  paginationMetricsFromGeometry,
+  type PaginationMetrics,
+} from "./_lib/pagination";
 
 /** Campos de revisão vêm do contrato `reportContract`; ausentes = pending. */
 type RevisionFields = {
@@ -1324,10 +1329,84 @@ function ReportView({
     () => splitHeading(report.outputText),
     [report.outputText],
   );
-  const pages = useMemo(
-    () => paginateReport(rawBody, [], Boolean(heading)),
-    [rawBody, heading],
+  const spreadRef = useRef<HTMLDivElement>(null);
+  const [paginationMetrics, setPaginationMetrics] = useState<PaginationMetrics>(
+    DEFAULT_PAGINATION_METRICS,
   );
+  const pages = useMemo(
+    () => paginateReport(rawBody, [], Boolean(heading), paginationMetrics),
+    [rawBody, heading, paginationMetrics],
+  );
+
+  useEffect(() => {
+    const spread = spreadRef.current;
+    if (!spread) return;
+    let active = true;
+
+    const measure = () => {
+      if (!active) return;
+      if (window.matchMedia("(max-width: 760px)").matches) {
+        setPaginationMetrics(DEFAULT_PAGINATION_METRICS);
+        return;
+      }
+
+      const paper = spread.querySelector<HTMLElement>(".paper");
+      const flow = paper?.querySelector<HTMLElement>(".paper-flow");
+      const body = flow?.querySelector<HTMLElement>(".report-body");
+      if (!paper || !flow || !body) return;
+
+      const paperRect = paper.getBoundingClientRect();
+      const flowStyle = window.getComputedStyle(flow);
+      const bodyStyle = window.getComputedStyle(body);
+      const paddingLeft = Number.parseFloat(flowStyle.paddingLeft) || 0;
+      const paddingRight = Number.parseFloat(flowStyle.paddingRight) || 0;
+      const paddingTop = Number.parseFloat(flowStyle.paddingTop) || 0;
+      const paddingBottom = Number.parseFloat(flowStyle.paddingBottom) || 0;
+      const lineHeight = Number.parseFloat(bodyStyle.lineHeight) || 24;
+      const contentWidth = paperRect.width - paddingLeft - paddingRight;
+      const contentHeight = paperRect.height - paddingTop - paddingBottom;
+
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      let averageCharWidth = (Number.parseFloat(bodyStyle.fontSize) || 16) * 0.5;
+      let headingTextWidth = 0;
+      if (context) {
+        context.font = `${bodyStyle.fontWeight} ${bodyStyle.fontSize} ${bodyStyle.fontFamily}`;
+        const sample = rawBody.replace(/\s+/g, " ").trim().slice(0, 800)
+          || "Laudo ultrassonográfico com medidas e descrição dos achados.";
+        averageCharWidth = context.measureText(sample).width / sample.length;
+        if (heading) {
+          context.font = `800 ${bodyStyle.fontSize} ${bodyStyle.fontFamily}`;
+          headingTextWidth = context.measureText(heading).width;
+        }
+      }
+
+      const next = paginationMetricsFromGeometry({
+        contentWidthPx: contentWidth,
+        contentHeightPx: contentHeight,
+        lineHeightPx: lineHeight,
+        averageCharWidthPx: averageCharWidth,
+        headingTextWidthPx: headingTextWidth,
+        headingMarginBottomPx: heading ? 14 : 0,
+      });
+      setPaginationMetrics((previous) =>
+        previous.rowsPerPage === next.rowsPerPage
+        && previous.charsPerRow === next.charsPerRow
+        && Math.abs(previous.headingRows - next.headingRows) < 0.01
+          ? previous
+          : next,
+      );
+    };
+
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(spread);
+    if (document.fonts?.ready) void document.fonts.ready.then(measure);
+    return () => {
+      active = false;
+      observer?.disconnect();
+    };
+  }, [heading, rawBody]);
   const contentPageCount = pages.filter((page) => !page.empty).length || 1;
   const plan = copyPlan({
     review,
@@ -1440,7 +1519,7 @@ function ReportView({
         {nav()}
       </div>
 
-      <div className="paper-spread" aria-label={`Laudo em ${contentPageCount} página${contentPageCount === 1 ? "" : "s"}`}>
+      <div ref={spreadRef} className="paper-spread" aria-label={`Laudo em ${contentPageCount} página${contentPageCount === 1 ? "" : "s"}`}>
         {pages.map((page, index) => {
           const contentIndex = pages.slice(0, index + 1).filter((item) => !item.empty).length;
           return (

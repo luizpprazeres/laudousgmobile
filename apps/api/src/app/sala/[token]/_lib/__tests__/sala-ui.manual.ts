@@ -9,7 +9,7 @@ import {
 import { composeReport, type Addition } from "../compose";
 import { copyPlan } from "../copyPlan";
 import { annotationsFor, annotationsReducer, initialAnnotations, type Annotation } from "../annotations";
-import { paginateReport } from "../pagination";
+import { paginateReport, paginationMetricsFromGeometry } from "../pagination";
 
 // ---------- paginação visual: pares verticais sem perder texto ----------
 const shortPages = paginateReport("ACHADOS:\nFígado normal.\n\nCONCLUSÃO:\nExame normal.", [], true);
@@ -30,6 +30,40 @@ assert.equal(
   false,
   "cabeçalho não fica órfão no fim da folha",
 );
+
+// Regressão: em uma folha A4 larga do spread, este laudo de joelho ocupa pouco
+// mais de metade da página. A estimativa fixa antiga deslocava a conclusão para
+// a segunda folha apesar do espaço visual disponível.
+const kneeReport = [
+  "COMENTÁRIOS:",
+  "Exame realizado com transdutor linear de alta frequência 12 MHz. Foram realizados múltiplos cortes longitudinais e transversais do segmento avaliado. Avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
+  "",
+  "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
+  "Tendão quadricipital de espessura, continuidade e ecotextura preservadas.",
+  "Tendão patelar de espessura, continuidade e ecotextura preservadas.",
+  "Tendões da pata de ganso de espessura e ecotextura preservadas.",
+  "Ausência de derrame articular significativo.",
+  "Fossa poplítea sem coleções ou cisto de Baker.",
+  "Planos musculares e subcutâneos avaliados sem alterações relevantes.",
+  "",
+  "Observa-se espessamento e aumento da ecogenicidade do tecido sinovial ao redor do ligamento colateral lateral, compatível com tenossinovite.",
+  "Bursa infrapatelar profunda distendida por conteúdo líquido.",
+  "",
+  "CONCLUSÃO:",
+  "1) Tenossinovite do ligamento colateral lateral do joelho esquerdo.",
+  "2) Bursite infrapatelar profunda à esquerda.",
+].join("\n");
+const wideA4Metrics = paginationMetricsFromGeometry({
+  contentWidthPx: 620,
+  contentHeightPx: 880,
+  lineHeightPx: 23.68,
+  averageCharWidthPx: 7.1,
+  headingTextWidthPx: 310,
+  headingMarginBottomPx: 14,
+});
+const kneePages = paginateReport(kneeReport, [], true, wideA4Metrics);
+assert.equal(kneePages.filter((page) => !page.empty).length, 1, "laudo do exemplo cabe em uma folha A4");
+assert.match(kneePages[0]?.text ?? "", /CONCLUSÃO:\n1\) Tenossinovite/);
 
 // ---------- revisão: na dúvida, nunca "revisado" ----------
 assert.deepEqual(reviewOf(undefined), { status: "pending", reviewedAt: null });

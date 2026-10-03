@@ -4,9 +4,55 @@ export type ReportPage = {
   empty: boolean;
 };
 
-// Conservador para manter o texto legível mesmo nas duas folhas de notebooks.
-const PAGE_ROWS = 31;
-const CHARS_PER_ROW = 56;
+export type PaginationMetrics = {
+  rowsPerPage: number;
+  charsPerRow: number;
+  headingRows: number;
+};
+
+export type PaginationGeometry = {
+  contentWidthPx: number;
+  contentHeightPx: number;
+  lineHeightPx: number;
+  averageCharWidthPx: number;
+  headingTextWidthPx?: number;
+  headingMarginBottomPx?: number;
+};
+
+// Primeiro render e ambientes sem medição (SSR/mobile). No desktop, a Sala
+// substitui estes valores pela geometria real da folha A4 exibida.
+export const DEFAULT_PAGINATION_METRICS: PaginationMetrics = {
+  rowsPerPage: 31,
+  charsPerRow: 56,
+  headingRows: 3,
+};
+
+/**
+ * Converte a geometria útil da folha A4 em capacidade de texto. A pequena
+ * reserva horizontal absorve quebra por palavras; uma linha vertical fica de
+ * segurança para não encostar o conteúdo no rodapé.
+ */
+export function paginationMetricsFromGeometry({
+  contentWidthPx,
+  contentHeightPx,
+  lineHeightPx,
+  averageCharWidthPx,
+  headingTextWidthPx = 0,
+  headingMarginBottomPx = 0,
+}: PaginationGeometry): PaginationMetrics {
+  const safeLineHeight = lineHeightPx > 0 ? lineHeightPx : 1;
+  const safeCharWidth = averageCharWidthPx > 0 ? averageCharWidthPx : 1;
+  const safeContentWidth = contentWidthPx > 0 ? contentWidthPx : 1;
+  const headingTextRows = headingTextWidthPx > 0
+    ? Math.max(1, Math.ceil(headingTextWidthPx / safeContentWidth))
+    : 0;
+
+  return {
+    rowsPerPage: Math.max(12, Math.floor(contentHeightPx / safeLineHeight) - 1),
+    charsPerRow: Math.max(28, Math.floor((safeContentWidth / safeCharWidth) * 0.9)),
+    headingRows: headingTextRows + headingMarginBottomPx / safeLineHeight,
+  };
+}
 
 function isHeading(line: string): boolean {
   const trimmed = line.trim();
@@ -17,11 +63,11 @@ function isHeading(line: string): boolean {
   );
 }
 
-function estimatedRows(line: string): number {
+function estimatedRows(line: string, charsPerRow: number): number {
   const trimmed = line.trim();
   if (!trimmed) return 0.65;
 
-  const wrappedRows = Math.max(1, Math.ceil(trimmed.length / CHARS_PER_ROW));
+  const wrappedRows = Math.max(1, Math.ceil(trimmed.length / charsPerRow));
   const headingSpacing = isHeading(trimmed) ? 0.55 : 0;
   return wrappedRows + headingSpacing;
 }
@@ -34,12 +80,13 @@ export function paginateReport(
   text: string,
   added: boolean[] = [],
   hasHeading = false,
+  metrics: PaginationMetrics = DEFAULT_PAGINATION_METRICS,
 ): ReportPage[] {
   const lines = text.split(/\r?\n/);
   const pages: ReportPage[] = [];
   let currentLines: string[] = [];
   let currentAdded: boolean[] = [];
-  let usedRows = hasHeading ? 3 : 0;
+  let usedRows = hasHeading ? metrics.headingRows : 0;
 
   const flush = () => {
     pages.push({
@@ -53,13 +100,15 @@ export function paginateReport(
   };
 
   lines.forEach((line, index) => {
-    const rows = estimatedRows(line);
-    const nextRows = index + 1 < lines.length ? estimatedRows(lines[index + 1] ?? "") : 0;
+    const rows = estimatedRows(line, metrics.charsPerRow);
+    const nextRows = index + 1 < lines.length
+      ? estimatedRows(lines[index + 1] ?? "", metrics.charsPerRow)
+      : 0;
     const keepHeadingWithNext = isHeading(line) && nextRows > 0;
     if (
       currentLines.length > 0 &&
-      (usedRows + rows > PAGE_ROWS ||
-        (keepHeadingWithNext && usedRows + rows + Math.min(nextRows, 2) > PAGE_ROWS))
+      (usedRows + rows > metrics.rowsPerPage ||
+        (keepHeadingWithNext && usedRows + rows + Math.min(nextRows, 2) > metrics.rowsPerPage))
     ) {
       flush();
     }
