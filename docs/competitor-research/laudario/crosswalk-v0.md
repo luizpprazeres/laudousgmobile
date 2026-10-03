@@ -42,6 +42,12 @@ O Laudário separa modo B, Doppler espectral, plexos pampiniformes e recomendaç
 
 O LaudoUSG já expõe `ESCROTAL` nos três clientes e possui corpus clínico mais amplo, mas ainda depende do writer genérico. Faltam contrato bilateral, renderer, validação de lateralidade, gate para torção, cálculo de varicocele e transporte estruturado à Sala. O estudo completo está em [crosswalk-bolsa-testicular-doppler-2026-10-03.md](crosswalk-bolsa-testicular-doppler-2026-10-03.md).
 
+## Histerossonografia — procedimento ausente com componentes reutilizáveis
+
+O modelo concorrente separa técnica, canal endocervical, cavidade, distensão, intercorrências e recomendações. A seleção geral de pólipo já publicou conclusão antes da individualização da lesão. Com distensão inadequada, o texto manteve normalidade da cavidade e acrescentou limitação, criando uma contradição clínica explícita.
+
+O LaudoUSG possui pólipo, sinéquia e istmocele em `PELVE_FEMININA`, mas não possui a categoria nem o contrato do procedimento. A implementação deve compartilhar os tipos anatômicos e criar técnica, qualidade, escopo e gates próprios. O estudo completo está em [crosswalk-histerossonografia-2026-10-03.md](crosswalk-histerossonografia-2026-10-03.md).
+
 ## Tireoide — diferença funcional já observada
 
 O Laudário oferece presets de tireoidopatia que preenchem múltiplos controles, ACR TI-RADS calculado por nódulo, cartograma e recomendação automática com confirmação independente de inclusão no laudo. O cruzamento técnico do LaudoUSG está em [crosswalk-tireoide-2026-10-02.md](crosswalk-tireoide-2026-10-02.md): o núcleo clínico já existe, mas formulário, calculadora, recomendação e cartograma ainda estão desacoplados em graus diferentes na Web, iOS e Android.

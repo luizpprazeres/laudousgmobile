@@ -6,7 +6,7 @@
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 18,
+    "base_functionally_studied": 19,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1
   },
@@ -118,6 +118,12 @@
       "laudousg_code": "ESCROTAL",
       "case": "cases/bolsa-testicular-doppler-2026-10-03.md",
       "crosswalk": "crosswalk-bolsa-testicular-doppler-2026-10-03.md"
+    },
+    {
+      "competitor_exam": "Histerossonografia com Infusão Salina",
+      "laudousg_code": null,
+      "case": "cases/histerossonografia-2026-10-03.md",
+      "crosswalk": "crosswalk-histerossonografia-2026-10-03.md"
     }
   ],
   "absence_checks": [
@@ -128,7 +134,6 @@
     }
   ],
   "queue": [
-    "Histerossonografia com infusão salina",
     "Histerossonossalpingografia / HyCoSy",
     "Transfontanelar",
     "Doppler de transplante renal",
@@ -137,6 +142,7 @@
     "Doppler de artérias mesentéricas",
     "Aparelho urinário com Doppler",
     "Ecocardiografia fetal gemelar",
-    "Primeiro exame combinado"
+    "Primeiro exame combinado",
+    "Monitorização folicular"
   ]
 }
