@@ -41,8 +41,9 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Perfil Biofísico Fetal: primeira rodada funcional e cruzamento técnico concluídos, com perfil 10/10, componente respiratório ausente e líquido reduzido em perfil 6/8 sem cardiotocografia. A categoria está ausente nas três plataformas. Foi documentada a necessidade de separar componente não avaliado de nota zero e de recalcular o denominador no contrato compartilhado.
 - Bolsa Testicular com Doppler: primeira rodada funcional e cruzamento técnico concluídos, com ausência isolada de fluxo, sinal do redemoinho e varicocele direita sintética. `ESCROTAL` já existe nas três plataformas e possui corpus clínico, mas não tem contrato ou renderer específico. Foi documentado que o concorrente conclui torção com ausência isolada de fluxo e que o LaudoUSG deve exigir confirmação médica e critérios estruturados.
 - Histerossonografia com Infusão Salina: primeira rodada funcional e cruzamento técnico concluídos, com cavidade normal, pólipo endometrial individualizado e distensão inadequada. A categoria está ausente nas três plataformas; `PELVE_FEMININA` oferece componentes anatômicos reutilizáveis, mas não cobre o procedimento. Foi documentado que o concorrente conclui pólipo antes dos dados mínimos e mantém normalidade incompatível em exame limitado.
-- Cobertura funcional atual: 19 de 84 modelos-base (22,6%) e nenhum dos 15 exames combinados. A fila e o mapa de nomes estão em [fila-e-mapa-canonico-2026-10-03.md](fila-e-mapa-canonico-2026-10-03.md).
-- Próxima prioridade: Histerossonossalpingografia / HyCoSy.
+- Histerossonossalpingografia / HyCoSy: primeira rodada funcional e cruzamento técnico concluídos, com perviedade bilateral, obstrução proximal direita e espasmo direito com limitação. A categoria está ausente nas três plataformas. Foi documentada a necessidade de estado bilateral explícito, derivados coerentes e preservação de indeterminação sem converter espasmo em obstrução.
+- Cobertura funcional atual: 20 de 84 modelos-base (23,8%) e nenhum dos 15 exames combinados. A fila e o mapa de nomes estão em [fila-e-mapa-canonico-2026-10-03.md](fila-e-mapa-canonico-2026-10-03.md).
+- Próxima prioridade: Transfontanelar.
 
 ## Limites desta fotografia
 

@@ -48,6 +48,12 @@ O modelo concorrente separa técnica, canal endocervical, cavidade, distensão, 
 
 O LaudoUSG possui pólipo, sinéquia e istmocele em `PELVE_FEMININA`, mas não possui a categoria nem o contrato do procedimento. A implementação deve compartilhar os tipos anatômicos e criar técnica, qualidade, escopo e gates próprios. O estudo completo está em [crosswalk-histerossonografia-2026-10-03.md](crosswalk-histerossonografia-2026-10-03.md).
 
+## HyCoSy — avaliação bilateral ausente
+
+O concorrente organiza técnica, contraste, cavidade e cada tuba separadamente. Obstrução proximal direita substituiu a normalidade apenas daquele lado e tornou o Sinal de Cotte negativo. Espasmo tornou a avaliação direita indeterminada e preservou a perviedade esquerda; uma limitação adicional explicitou a dificuldade de distingui-lo de obstrução orgânica.
+
+O LaudoUSG não possui categoria, contrato ou conteúdo específico. A implementação deve usar objetos laterais, estados explícitos e derivados validados, sem reduzir indeterminação a normalidade ou obstrução. O estudo completo está em [crosswalk-hycosy-2026-10-03.md](crosswalk-hycosy-2026-10-03.md).
+
 ## Tireoide — diferença funcional já observada
 
 O Laudário oferece presets de tireoidopatia que preenchem múltiplos controles, ACR TI-RADS calculado por nódulo, cartograma e recomendação automática com confirmação independente de inclusão no laudo. O cruzamento técnico do LaudoUSG está em [crosswalk-tireoide-2026-10-02.md](crosswalk-tireoide-2026-10-02.md): o núcleo clínico já existe, mas formulário, calculadora, recomendação e cartograma ainda estão desacoplados em graus diferentes na Web, iOS e Android.

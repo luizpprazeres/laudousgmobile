@@ -6,7 +6,7 @@
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 19,
+    "base_functionally_studied": 20,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1
   },
@@ -124,6 +124,12 @@
       "laudousg_code": null,
       "case": "cases/histerossonografia-2026-10-03.md",
       "crosswalk": "crosswalk-histerossonografia-2026-10-03.md"
+    },
+    {
+      "competitor_exam": "Histerossonossalpingografia",
+      "laudousg_code": null,
+      "case": "cases/hycosy-2026-10-03.md",
+      "crosswalk": "crosswalk-hycosy-2026-10-03.md"
     }
   ],
   "absence_checks": [
@@ -134,7 +140,6 @@
     }
   ],
   "queue": [
-    "Histerossonossalpingografia / HyCoSy",
     "Transfontanelar",
     "Doppler de transplante renal",
     "Doppler de aorta e artérias ilíacas",
@@ -143,6 +148,7 @@
     "Aparelho urinário com Doppler",
     "Ecocardiografia fetal gemelar",
     "Primeiro exame combinado",
-    "Monitorização folicular"
+    "Monitorização folicular",
+    "Morfológico de 3º trimestre"
   ]
 }
