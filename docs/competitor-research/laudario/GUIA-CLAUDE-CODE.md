@@ -14,9 +14,24 @@ Leia, nesta ordem:
 
 Trabalhe em um único exame por rodada e use no máximo três cenários sintéticos. Não use dados de pacientes. Não salve credenciais, cookies ou tokens. Use apenas a interface visível do navegador; não consulte endpoints privados e não automatize varreduras. Não copie, imprima, finalize ou envie o laudo. Se aparecer CAPTCHA, bloqueio, novos termos ou pedido de permissão, pare e reporte.
 
+## Objetivo final do estudo
+
+O estudo não termina no caso observado, no crosswalk ou na lista de lacunas. Esses artefatos são a matéria-prima de uma segunda etapa obrigatória, conduzida por um terminal Codex com GPT 6.1 Sol High: transformar a cobertura clínica acumulada em um pacote original do LaudoUSG.
+
+Esse pacote deve conter, para cada categoria:
+
+- modelo basal completo de exame normal;
+- biblioteca estruturada de alterações, com texto para `OS SEGUINTES ASPECTOS FORAM OBSERVADOS` e texto correspondente para `CONCLUSÃO` ou `IMPRESSÃO`;
+- campos, estados, dependências, medidas, unidades, lateralidade, cálculos e condições de publicação;
+- roteiro e exemplos que alimentam o prompt da categoria nos aplicativos móveis;
+- contrato e opções selecionáveis que alimentam o formulário Web;
+- casos sintéticos normais, alterados, incompletos e contraditórios para validação.
+
+O mesmo conceito clínico precisa ter uma única identidade no contrato compartilhado. O prompt mobile e o formulário Web são duas formas de entrada para esse contrato, não duas bibliotecas clínicas independentes. O concorrente orienta cobertura e combinações; a redação final é original, no estilo Domingos, e passa por revisão médica antes da ativação.
+
 ## Divisão de trabalho
 
-O operador do navegador documenta o comportamento real do Laudário. O Claude Code cruza esse comportamento com o código do LaudoUSG e prepara o plano técnico. Um achado observado no concorrente não vira automaticamente requisito clínico.
+O operador do navegador documenta o comportamento real do Laudário. O Claude Code cruza esse comportamento com o código do LaudoUSG, separa observação de inferência e prepara uma ficha de síntese sem copiar a redação do concorrente. O GPT 6.1 Sol High recebe os estudos revisados e produz o pacote clínico original destinado ao prompt mobile e ao formulário Web. Um achado observado no concorrente não vira automaticamente requisito clínico.
 
 Quando o Claude Code também tiver acesso autorizado ao navegador, ele pode assumir a observação, mantendo o mesmo limite de um exame e três cenários. No fim, deve restaurar o modelo ao estado inicial.
 
@@ -59,8 +74,12 @@ Crie `cases/<slug>-AAAA-MM-DD.md` para a observação funcional e `crosswalk-<sl
 
 O crosswalk precisa conter estado por plataforma, lacunas confirmadas, comportamento útil do concorrente, comportamento que não deve ser reproduzido, contrato mínimo proposto e provas necessárias antes de ativar. Cite caminhos e linhas do código. Não altere código clínico durante a rodada de estudo.
 
-## Regra de implementação
+Além dos arquivos de caso e crosswalk, deixe explícito o insumo para a síntese clínica: estruturas examinadas, estados selecionáveis, alterações observadas, medidas e unidades, dependências entre campos, trechos que pertencem ao corpo, trechos que pertencem à conclusão e riscos que exigem confirmação médica. Essa ficha deve ser suficiente para o terminal de síntese trabalhar sem voltar ao texto integral do concorrente.
 
-O estudo termina em requisito clínico original. A implementação começa por um contrato compartilhado e versionado, com estados explícitos para não avaliado, normal, alterado e limitado. Web, Android/RN e iOS devem consumir o mesmo contrato; renderizadores locais podem variar apenas na apresentação. Derivações clínicas precisam ser determinísticas, e classificações ou diagnósticos positivos exigem dados mínimos e confirmação médica quando previsto.
+## Regra de síntese e implementação
+
+O estudo termina em requisito clínico original e pacote clínico revisável. A implementação começa por um contrato compartilhado e versionado, com estados explícitos para não avaliado, normal, alterado e limitado. Web, Android/RN e iOS devem consumir o mesmo contrato; renderizadores locais podem variar apenas na apresentação. Derivações clínicas precisam ser determinísticas, e classificações ou diagnósticos positivos exigem dados mínimos e confirmação médica quando previsto.
+
+O terminal GPT 6.1 Sol High não deve ativar uma categoria diretamente. Primeiro ele gera o pacote clínico em estado dormente e uma prévia legível para aprovação médica. Depois da aprovação, a implementação liga o pacote ao prompt mobile, ao formulário Web e aos renderers. Categorias existentes passam pelo mesmo processo para receber novas opções ou corrigir frases sem criar regressões.
 
 Ative um modelo somente depois de testar casos normais, alterados, incompletos, lateralidade, unidades, limites e serialização ponta a ponta. Um gate verde isolado não comprova paridade entre as três plataformas.

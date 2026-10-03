@@ -25,6 +25,14 @@ Por isso, Doppler renal e Doppler venoso de membros inferiores estão disponíve
 | Ocular | Genérico | Genérico | Genérico | Estudar antes de definir contrato |
 | Laudo livre | Genérico por definição | Genérico por definição | Genérico por definição | Manter livre |
 
+## Esteira do estudo à aplicação
+
+Cada exame estudado passa por cinco etapas. O Claude Code observa até três cenários sintéticos no Laudário, documenta controles e efeitos e cruza a cobertura com o LaudoUSG. Depois, um terminal com GPT 6.1 Sol High consolida todo o material revisado em um pacote clínico original: modelo normal, frases de alterações no corpo, conclusões correspondentes, contrato de campos, regras de dependência e casos de validação.
+
+Esse pacote é a fonte comum da categoria. No mobile, ele abastece o prompt, o roteiro clínico e os exemplos usados para interpretar o ditado. No Web, ele abastece as opções selecionáveis e o renderer que monta o laudo. O estado preenchido precisa poder produzir o mesmo resultado clínico independentemente de ter vindo de seleção Web ou interpretação do ditado mobile.
+
+Para categorias novas, o pacote cria o modelo basal e a biblioteca de alterações. Para categorias já existentes, o cruzamento identifica opções ausentes, frases desatualizadas, conclusões incompletas e regras que precisam ser incrementadas. Nada é ativado antes de uma prévia clínica legível e da aprovação do Luiz.
+
 ## Ordem de execução
 
 A primeira onda será Doppler renal e Doppler venoso de membros inferiores, porque já há estudo funcional, writer, base clínica e componentes aproveitáveis. O formulário será criado primeiro no Web para validar a experiência, mas o contrato nascerá em `packages/shared`, evitando uma segunda regra clínica exclusiva do navegador.
@@ -39,4 +47,4 @@ A segunda onda reunirá Doppler arterial de MMII, fístula AV e escrotal, que j�
 
 Cada categoria só deixa o modo genérico quando possui contrato compartilhado versionado, formulário Web, validações clínicas, renderer determinístico, persistência do estado, retomada sem perda, casos sintéticos normais e alterados e prova de que nenhuma informação manual é sobrescrita. Depois da aprovação no Web, o mesmo contrato será ligado a Android/RN e iOS; a liberação pública continuará simultânea nas três plataformas.
 
-O estudo do Laudário orienta a variedade de controles e os cenários que precisamos cobrir. A redação, as regras e o desenho final serão próprios do LaudoUSG, no estilo Domingos e com gates mais conservadores quando o concorrente inferir diagnóstico sem dados suficientes.
+O estudo do Laudário orienta a variedade de controles e os cenários que precisamos cobrir. A redação, as regras e o desenho final serão próprios do LaudoUSG, no estilo Domingos e com gates mais conservadores quando o concorrente inferir diagnóstico sem dados suficientes. A entrega só está completa quando o conteúdo aprovado estiver disponível tanto para o prompt mobile quanto para o formulário selecionável Web, com o mesmo contrato clínico por baixo.
