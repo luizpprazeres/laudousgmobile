@@ -74,6 +74,17 @@ Crie `cases/<slug>-AAAA-MM-DD.md` para a observação funcional e `crosswalk-<sl
 
 O crosswalk precisa conter estado por plataforma, lacunas confirmadas, comportamento útil do concorrente, comportamento que não deve ser reproduzido, contrato mínimo proposto e provas necessárias antes de ativar. Cite caminhos e linhas do código. Não altere código clínico durante a rodada de estudo.
 
+Inclua também uma seção obrigatória chamada `Melhorias sugeridas ao LaudoUSG`. Não espere a síntese final para apontar uma oportunidade relevante. Para cada item ausente ou incompleto, descreva:
+
+- qual controle, dado ou estado clínico deve existir;
+- como ele afeta o corpo do laudo e a conclusão;
+- quais condições, medidas, lateralidade e confirmações evitam inferências indevidas;
+- como deve aparecer no formulário Web e como deve orientar o prompt dos aplicativos móveis;
+- prioridade clínica e operacional;
+- evidência disponível e o que ainda precisa ser validado.
+
+Uma sugestão não é automaticamente uma decisão de produto. Marque claramente se ela corrige um `gap confirmado`, melhora algo já existente ou ainda depende de revisão médica. Quando a sugestão puder ajudar outro agente ou outra categoria relacionada, avise o orquestrador para que o aprendizado seja reaproveitado.
+
 Além dos arquivos de caso e crosswalk, deixe explícito o insumo para a síntese clínica: estruturas examinadas, estados selecionáveis, alterações observadas, medidas e unidades, dependências entre campos, trechos que pertencem ao corpo, trechos que pertencem à conclusão e riscos que exigem confirmação médica. Essa ficha deve ser suficiente para o terminal de síntese trabalhar sem voltar ao texto integral do concorrente.
 
 ## Regra de síntese e implementação

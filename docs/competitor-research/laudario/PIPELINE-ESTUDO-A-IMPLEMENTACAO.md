@@ -14,6 +14,8 @@ Estudar um exame e no máximo três cenários sintéticos. Registrar controles, 
 
 Confirmar o estado real no Web, Android/RN, iOS, API, banco e contratos compartilhados. Classificar a categoria como ausente, genérica, parcial, estruturada dormente ou estruturada ativa. Identificar o que pode ser incrementado quando a categoria já existe.
 
+O cruzamento deve transformar cada lacuna relevante em uma sugestão objetiva de melhoria, separando controle clínico, efeito no corpo, efeito na conclusão, validações, uso no formulário Web e uso nos prompts mobile. A sugestão deve trazer prioridade, evidência e pendências para revisão médica. O agente comunica ao orquestrador os achados que possam melhorar estudos paralelos ou categorias relacionadas.
+
 ### 3. Síntese clínica — GPT 6.1 Sol High
 
 Receber apenas estudos revisados e produzir um pacote original no estilo Domingos com:
