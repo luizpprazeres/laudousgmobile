@@ -1,0 +1,45 @@
+{
+  "competitor": "Laudário",
+  "updated_at": "2026-10-03T13:38:00-03:00",
+  "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
+  "totals": {
+    "catalog_all": 99,
+    "catalog_base": 84,
+    "catalog_combined": 15,
+    "base_functionally_studied": 15,
+    "combined_functionally_studied": 0,
+    "absence_checks_outside_catalog": 1
+  },
+  "completed": [
+    { "competitor_exam": "Tireoide", "laudousg_code": "TIREOIDE", "case": "cases/tireoide-2026-10-02.md", "crosswalk": "crosswalk-tireoide-2026-10-02.md" },
+    { "competitor_exam": "Abdome Total", "laudousg_code": "ABDOMEN_TOTAL", "case": "cases/abdome-total-2026-10-02.md", "crosswalk": "crosswalk-abdome-total-2026-10-02.md" },
+    { "competitor_exam": "Obstétrico 1º Trimestre", "laudousg_code": "OBSTETRICA", "case": "cases/obstetrico-1t-2026-10-02.md", "crosswalk": "crosswalk-obstetrico-1t-2026-10-02.md" },
+    { "competitor_exam": "Pesquisa de Endometriose", "laudousg_code": null, "case": "cases/pesquisa-endometriose-2026-10-02.md", "crosswalk": "crosswalk-pesquisa-endometriose-2026-10-02.md" },
+    { "competitor_exam": "Doppler Venoso de Membro Inferior", "laudousg_code": "DOPPLER_VENOSO_MMII", "case": "cases/doppler-venoso-mmii-2026-10-02.md", "crosswalk": "crosswalk-doppler-venoso-mmii-2026-10-02.md" },
+    { "competitor_exam": "Mamas e Axilas", "laudousg_code": "MAMARIA", "case": "cases/mamas-e-axilas-2026-10-02.md", "crosswalk": "crosswalk-mamas-e-axilas-2026-10-02.md" },
+    { "competitor_exam": "Avaliação Multiparamétrica Hepática", "laudousg_code": null, "case": "cases/avaliacao-multiparametrica-hepatica-2026-10-02.md", "crosswalk": "crosswalk-avaliacao-multiparametrica-hepatica-2026-10-02.md" },
+    { "competitor_exam": "Elastografia Hepática", "laudousg_code": null, "case": "cases/elastografia-hepatica-2026-10-02.md", "crosswalk": "crosswalk-elastografia-hepatica-2026-10-02.md" },
+    { "competitor_exam": "Doppler Hepático", "laudousg_code": null, "case": "cases/doppler-hepatico-2026-10-02.md", "crosswalk": "crosswalk-doppler-hepatico-2026-10-02.md" },
+    { "competitor_exam": "Doppler Venoso de Membro Superior", "laudousg_code": "DOPPLER_VENOSO_MMSS", "case": "cases/doppler-venoso-mmss-2026-10-02.md", "crosswalk": "crosswalk-doppler-venoso-mmss-2026-10-02.md" },
+    { "competitor_exam": "Doppler Arterial de Membro Superior", "laudousg_code": "DOPPLER_ARTERIAL_MMSS", "case": "cases/doppler-arterial-mmss-2026-10-03.md", "crosswalk": "crosswalk-doppler-arterial-mmss-2026-10-03.md" },
+    { "competitor_exam": "Quadril Infantil", "laudousg_code": "QUADRIL_INFANTIL", "case": "cases/quadril-infantil-2026-10-03.md", "crosswalk": "crosswalk-quadril-infantil-2026-10-03.md" },
+    { "competitor_exam": "Doppler Arterial de Membro Inferior", "laudousg_code": "DOPPLER_ARTERIAL_MMII", "case": "cases/doppler-arterial-mmii-2026-10-03.md", "crosswalk": "crosswalk-doppler-arterial-mmii-2026-10-03.md" },
+    { "competitor_exam": "Doppler de Fístula Arteriovenosa (FAV)", "laudousg_code": "DOPPLER_FISTULA_AV", "case": "cases/doppler-fistula-av-2026-10-03.md", "crosswalk": "crosswalk-doppler-fistula-av-2026-10-03.md" },
+    { "competitor_exam": "Doppler Aortorrenal", "laudousg_code": "DOPPLER_RENAL", "case": "cases/doppler-aortorrenal-2026-10-03.md", "crosswalk": "crosswalk-doppler-aortorrenal-2026-10-03.md" }
+  ],
+  "absence_checks": [
+    { "exam": "Ultrassonografia de Tórax", "case": "cases/torax-ausente-2026-10-03.md", "crosswalk": "crosswalk-torax-2026-10-03.md" }
+  ],
+  "queue": [
+    "Ecocardiografia fetal",
+    "Perfil biofísico fetal",
+    "Bolsa testicular com Doppler",
+    "Histerossonografia com infusão salina",
+    "Histerossonossalpingografia / HyCoSy",
+    "Transfontanelar",
+    "Doppler de transplante renal",
+    "Doppler de aorta e artérias ilíacas",
+    "Doppler de artérias temporais",
+    "Doppler de artérias mesentéricas"
+  ]
+}

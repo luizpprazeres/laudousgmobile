@@ -151,6 +151,22 @@ const SPECIALTY_KEYTERMS = {
   ],
 } as const;
 
+/// Termos que só devem disputar o decode dentro de uma categoria específica.
+/// Eles ficam fora de `ALL_MEDICAL_ASR_KEYTERMS`: o fallback legado já consome
+/// 136 das 137 palavras validadas contra o Deepgram.
+const CATEGORY_KEYTERMS: Record<string, readonly string[]> = {
+  DOPPLER_RENAL: [
+    "artéria renal",
+    "aortorrenal",
+    "relação aorto-renal",
+    "RAR",
+    "VPS",
+    "índice de resistência",
+    "intrarrenal",
+    "tardus-parvus",
+  ],
+};
+
 const CATEGORY_GROUPS: Record<string, readonly (keyof typeof SPECIALTY_KEYTERMS)[]> = {
   OBSTETRICA: ["obstetrico"],
   DOPPLER_OBSTETRICO: ["obstetrico", "vascular"],
@@ -259,5 +275,6 @@ export function medicalAsrKeytermsForCategory(category: string | null): string[]
   return unique([
     ...BASE_KEYTERMS,
     ...groups.flatMap((group) => SPECIALTY_KEYTERMS[group]),
+    ...(CATEGORY_KEYTERMS[normalized] ?? []),
   ]);
 }

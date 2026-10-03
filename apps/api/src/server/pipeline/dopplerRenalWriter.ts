@@ -11,8 +11,8 @@ import { env } from "../env";
 import { buildDopplerRenalWriterSystemMessage } from "../renderer/categories/DOPPLER_RENAL";
 import { DOPPLER_RENAL_FEWSHOTS } from "../renderer/categories/dopplerRenalFewshots";
 import {
+  assertDopplerRenalAuditPassed,
   auditDopplerRenalFacts,
-  dopplerRenalRevisarNote,
   type DopplerRenalAudit,
 } from "./dopplerRenalWriterAudit";
 import { normalizeMskWriterFormat } from "./mskWriterFormat";
@@ -61,19 +61,17 @@ export async function* runDopplerRenalWriterStream(args: {
     if (delta) {
       if (!ttftMs) ttftMs = Date.now() - t0;
       full += delta;
-      yield delta;
     }
     if (chunk.usage?.completion_tokens) outputTokens = chunk.usage.completion_tokens;
   }
 
-  let fullText = normalizeMskWriterFormat(full);
+  const fullText = normalizeMskWriterFormat(full);
 
   const audit = auditDopplerRenalFacts(args.rawInput, fullText);
-  const nota = dopplerRenalRevisarNote(audit);
-  if (nota) {
-    fullText = `${fullText}\n\n${nota}`;
-    yield `\n\n${nota}`;
-  }
+  // O stream do provedor é deliberadamente retido até a auditoria terminar. Um texto
+  // inválido não pode ser "desenviado" depois de ter chegado ao cliente.
+  assertDopplerRenalAuditPassed(audit);
+  yield fullText;
 
   return { fullText, latencyMs: Date.now() - t0, ttftMs, model, outputTokens, audit };
 }

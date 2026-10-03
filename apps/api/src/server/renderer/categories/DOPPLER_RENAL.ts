@@ -74,7 +74,7 @@ FORMATO:
 ULTRASSONOGRAFIA COM DOPPLER COLORIDO DAS ARTÉRIAS RENAIS
 
 COMENTÁRIOS:
-Exame realizado com transdutor convexo (3-5 MHz). Ângulo Doppler ≤ 60° para todas as aferições. Foram avaliadas a aorta abdominal infrarrenal, as artérias renais principais bilateralmente e o parênquima renal (artérias segmentares/interlobares) com aferição do índice de resistência (IR).
+Exame realizado com transdutor convexo (3-5 MHz). Ângulo Doppler ≤ 60° para as aferições descritas. Os vasos, lados e parâmetros efetivamente avaliados estão discriminados abaixo.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 (uma linha por achado ditado; ver ROTEIRO)
@@ -83,7 +83,7 @@ CONCLUSÃO:
 (ver REGRAS DE CONCLUSÃO)
 
 ROTEIRO DO CORPO — emita SÓ o que o médico ditou, nesta ordem:
-- Aorta abdominal: se VPS ditado → "Aorta abdominal de calibre preservado, com VPS de {N} cm/s ao nível das emergências das artérias renais."; se não ditado o VPS → "Aorta abdominal de calibre e contornos preservados."
+- Aorta abdominal: SOMENTE se o médico mencionar a aorta. Se VPS ditado → "Aorta abdominal com VPS de {N} cm/s ao nível das emergências das artérias renais.". Só descreva calibre ou contornos como preservados se isso também tiver sido ditado. Se a aorta não foi mencionada, não escreva nenhuma frase sobre ela.
 - Artéria renal direita: "Artéria renal direita: VPS de {N} cm/s." (só os segmentos ditados; se ele só deu um VPS, NÃO invente ostial/médio/distal)
 - Artéria renal esquerda: idem.
 - Relação aorto-renal (RAR): "Relação aorto-renal (RAR) de {N} à direita e {N} à esquerda." (só os lados ditados)
@@ -93,12 +93,14 @@ ROTEIRO DO CORPO — emita SÓ o que o médico ditou, nesta ordem:
 REGRAS CRÍTICAS:
 1. NUNCA escreva "____". Emita SOMENTE os valores e segmentos que o médico ditou. Segmento não medido simplesmente NÃO aparece (não é lacuna).
 2. Preserve TODA medida ditada, exatamente (VPS em cm/s inteiro; RAR e IR com vírgula decimal, ex.: 1,3 e 0,62).
-3. ESTENOSE (segurança) — a conclusão SÓ afirma "estenose hemodinamicamente significativa" se o médico ditou VPS > 250 cm/s na artéria renal OU RAR > 3,2 (critérios JVB 2005, independentes) OU disser explicitamente "estenose"/"tardus-parvus". Caso contrário, NÃO afirme estenose.
+2A. LATERALIDADE E ESCOPO: preserve o parâmetro e o lado de cada medida. Nunca troque direita por esquerda, VPS por RAR/IR ou RAR por IR. Não transforme avaliação unilateral em bilateral.
+2B. NORMALIDADE NÃO PRESUMIDA: não afirme aorta normal se a aorta não foi descrita; não afirme fluxo preservado bilateralmente se os dois lados não foram avaliados ou declarados normais; não afirme IR normal se o IR não foi ditado. Se houver dados normais de apenas um lado, limite a frase àquele lado e aos parâmetros efetivamente informados.
+3. ESTENOSE (segurança) — a conclusão SÓ afirma "estenose hemodinamicamente significativa" se o médico ditou VPS > 250 cm/s na artéria renal OU RAR > 3,2 (critérios JVB 2005, independentes) OU confirmou explicitamente "estenose significativa". Menção isolada a "estenose", "suspeita de estenose" ou "tardus-parvus" é achado sugestivo, não confirmação de significância hemodinâmica.
 4. NUNCA classifique PERCENTUAL de estenose (o Doppler não tem precisão para isso).
-5. Se houver indício de estenose mas SEM critério forte (VPS/RAR abaixo do corte, ou dado incompleto), use linguagem SUGESTIVA: "achados sugestivos de..., convém correlação clínica e avaliação complementar (angiotomografia/arteriografia)" — não asseverar grau.
+5. Se houver indício de estenose mas SEM critério forte (VPS/RAR abaixo do corte, dado incompleto, suspeita clínica ou tardus-parvus isolado), use linguagem SUGESTIVA: "achados sugestivos de..., convém correlação clínica e avaliação complementar (angiotomografia/arteriografia)" — não asseverar grau.
 
 REGRAS DE CONCLUSÃO (numerar 1) 2) só se houver 2+ itens; item único sem número; só achados relevantes/anormais viram item — normal não vira item):
-- Exame normal (sem critério de estenose): "Artérias renais com fluxo preservado bilateralmente, sem evidência ecográfica de estenose hemodinamicamente significativa. Índices de resistência intrarrenais dentro dos limites da normalidade."
+- Exame normal: use "Artérias renais com fluxo preservado bilateralmente, sem evidência ecográfica de estenose hemodinamicamente significativa." SOMENTE quando o ditado sustentar avaliação normal dos dois lados. Acrescente "Índices de resistência intrarrenais dentro dos limites da normalidade." SOMENTE se o IR tiver sido informado como normal nos dois lados. Para avaliação unilateral, escreva uma conclusão unilateral e restrita aos parâmetros ditados. Se os dados não sustentarem uma conclusão segura, não complete com normalidade presumida.
 - Estenose confirmada (VPS>250 ou RAR>3,2): "Artéria renal {lado} com sinais ecográficos de estenose hemodinamicamente significativa (VPS de {N} cm/s e RAR de {N})." (ou bilateral). Recomendação de angiotomografia/arteriografia SÓ se o médico mencionar contexto de investigação/intervenção.
 
 6. Comandos ditados são INSTRUÇÕES, execute-os e NUNCA os transcreva ("acrescente", "na conclusão", "no lugar de X").

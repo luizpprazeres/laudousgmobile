@@ -38,7 +38,7 @@ crosswalk:
     - apps/api/src/app/api/sala/latest/route.ts
     - apps/mobile/src/ui/tokens.ts
     - LaudoUSG/LaudoUSG/Models/Category.swift
-  status: complete
+  status: confirmed_gap
   notes: Web possui rigidez hepática descritiva; categoria própria, elastografia esplênica, evolução longitudinal, contrato móvel e transporte Web para a Sala são lacunas confirmadas; limiares e valor clínico ainda dependem de aprovação
 next_probe: estudar Doppler Hepático separadamente e cruzar os critérios vasculares com o contrato de Abdome total com Doppler
 ```

@@ -113,6 +113,7 @@ import {
   PROMPT_VERSION,
 } from "@/server/prompts/version";
 import { clinicalRendererFallbackBlocked, canonicalClinicalCategory, structuredClinicalIntent, earlyWriterV2Allowed } from "@/server/clinicalReports/fallbackPolicy";
+import { isDopplerRenalAuditError } from "@/server/pipeline/dopplerRenalWriterAudit";
 
 // Recomendações do codex já incorporadas:
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
@@ -1086,6 +1087,9 @@ export async function POST(req: Request) {
           if (reqInput.category_hint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
         }
       } catch (rendererErr) {
+        // A auditoria renal roda antes do primeiro token. Cair no writer genérico
+        // após ela rejeitar o texto recriaria exatamente o laudo inseguro bloqueado.
+        if (isDopplerRenalAuditError(rendererErr)) throw rendererErr;
         // NEVER-BLOCK (graceful degradation): se o RENDERER falhar (ex.: a extração
         // não validou o schema — caso Pelve/0 fetos) ANTES de emitir o laudo, cai
         // no writer em vez de bloquear a geração. Só o caminho renderer; só se nada

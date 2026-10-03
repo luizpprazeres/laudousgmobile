@@ -22,7 +22,7 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 
 - Catálogo de Ultrassonografia inventariado: 99 entradas, sendo 84 modelos simples e 15 combinações.
 - Tireoide: primeira rodada concluída, incluindo arquitetura, preset de parênquima, nódulo, TI-RADS, recomendação e cruzamento técnico com Web, iOS e Android.
-- Abdome Total: primeira rodada funcional concluída com estado normal, esteatose leve, hepatite aguda com repercussão vesicular e colelitíase sintética; cruzamento técnico em andamento.
+- Abdome Total: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, esteatose leve, hepatite aguda com repercussão vesicular e colelitíase sintética.
 - Obstétrico 1º Trimestre: primeira rodada funcional e cruzamento técnico concluídos, com datação por CCN, ausência de atividade cardíaca e rastreio sintético de trissomias.
 - Pesquisa de Endometriose: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, endometrioma, lesão intestinal, avaliação dinâmica, recomendações e cartograma.
 - Doppler Venoso de Membro Inferior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, refluxo superficial, TVP sintética, recomendações e cartograma auto-sincronizado.
@@ -36,8 +36,10 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Quadril Infantil: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, alfa intermediário sem idade, classificação IIa- e cenário IIc; foi documentada classificação normal do concorrente sem medidas numéricas, e a perda da posição do labrum nos renderizadores do LaudoUSG foi corrigida.
 - Doppler Arterial de Membro Inferior: primeira rodada funcional e cruzamento técnico concluídos, com estenose femoral superficial e razão automática, aneurisma poplíteo com trombo mural e oclusão tibial anterior; foi confirmado que o LaudoUSG possui categoria e base clínica para writer, mas ainda não tem contrato estruturado por vaso, cálculo determinístico da razão, aneurisma, ITB integrado ou revascularização.
 - Doppler de Fístula Arteriovenosa: primeira rodada funcional e cruzamento técnico concluídos, com baixo fluxo e queda longitudinal, alto fluxo, estenose juxta-anastomótica e medidas quantitativas; foram documentadas uma negativa cardíaca presumida e a permanência de valores derivados após desativar achados no concorrente. No LaudoUSG, a categoria está exposta nos três clientes, mas não possui contrato estruturado nem corpus versionado no checkout atual.
-- Próxima prioridade: Doppler renal.
+- Doppler Aortorrenal: primeira rodada funcional e cruzamento técnico concluídos, com estenose direita por critério direto, tardus-parvus com e sem medida e limitação técnica. No LaudoUSG, a categoria está exposta nos três clientes e possui writer dedicado. Os riscos de falsa normalidade, troca de contexto de medidas, tardus-parvus superinterpretado e falha não bloqueante foram corrigidos nesta rodada; o contrato compartilhado e outras regras renais ainda estão pendentes. O gate `RENDERER_CATEGORIES` foi verificado vazio em produção, então o writer renal continua desligado até validação e ativação deliberada.
+- Cobertura funcional atual: 15 de 84 modelos-base (17,9%) e nenhum dos 15 exames combinados. A fila e o mapa de nomes estão em [fila-e-mapa-canonico-2026-10-03.md](fila-e-mapa-canonico-2026-10-03.md).
+- Próxima prioridade: Ecocardiografia fetal.
 
 ## Limites desta fotografia
 
-Este é um retrato da interface visível em 02/10/2026. Nomes, regras e disponibilidade podem mudar. A presença de um botão ou opção não prova correção clínica; casos de fronteira precisam ser testados e comparados com fonte médica apropriada.
+Este é um retrato da interface visível entre 02 e 03/10/2026. Nomes, regras e disponibilidade podem mudar. A presença de um botão ou opção não prova correção clínica; casos de fronteira precisam ser testados e comparados com fonte médica apropriada.

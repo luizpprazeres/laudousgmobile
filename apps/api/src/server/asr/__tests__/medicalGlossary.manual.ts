@@ -10,6 +10,8 @@ import {
 const EXPECTED_MAX = {
   TIREOIDE: 55, MAMARIA: 55, ABDOMEN_TOTAL: 55, OBSTETRICA: 55,
   DOPPLER_VENOSO_MMII: 55, MUSCULOESQUELETICO_V2: 55, PELVE_FEMININA: 55,
+  // Combina os blocos vascular + abdominal e mais o vocabulário renal próprio.
+  DOPPLER_RENAL: 70,
 } as const;
 
 const currentDeepgramTerms = [
@@ -50,6 +52,24 @@ assert.ok(!msk.includes("colédoco"), "categoria MSK recebeu glossário abdomina
 const vascular = medicalAsrKeytermsForCategory("DOPPLER_VENOSO_MMII");
 assert.ok(vascular.includes("safena magna"));
 assert.ok(vascular.includes("perfurante"));
+
+const dopplerRenal = medicalAsrKeytermsForCategory("DOPPLER_RENAL");
+for (const term of [
+  "artéria renal",
+  "aortorrenal",
+  "relação aorto-renal",
+  "RAR",
+  "VPS",
+  "índice de resistência",
+  "intrarrenal",
+  "tardus-parvus",
+]) {
+  assert.ok(dopplerRenal.includes(term), `termo de Doppler renal ausente: ${term}`);
+}
+assert.ok(
+  !vascular.includes("aortorrenal"),
+  "DOPPLER_VENOSO_MMII recebeu termo específico de Doppler renal",
+);
 
 assert.deepEqual(
   medicalAsrKeytermsForCategory(null),

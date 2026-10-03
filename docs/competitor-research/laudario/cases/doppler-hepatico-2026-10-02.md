@@ -46,7 +46,7 @@ crosswalk:
     - packages/db/src/seeds/data.ts
     - ../laudousg-swift/LaudoUSG/LaudoUSG/Models/PendingClinicalModelContracts.swift
     - ../laudousg-swift/LaudoUSG/LaudoUSG/Models/ClinicalModelReportRenderer.swift
-  status: complete_with_limits
+  status: confirmed_gap
   notes: LaudoUSG possui Abdome total com Doppler e contrato portal básico ainda oculto; exame hepático independente, transplante e TIPS são lacunas confirmadas
 next_probe: revisar os gaps no checkout e definir o contrato vascular hepático compartilhado sem importar limiares automaticamente
 ```

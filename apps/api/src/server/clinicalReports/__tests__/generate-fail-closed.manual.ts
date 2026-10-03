@@ -13,6 +13,7 @@ import { loadSpecV2 } from "../../pipeline/writerV2/loadSpec";
 import { CLINICAL_MODEL_EXTRACTORS } from "../../renderer/categories/CLINICAL_MODELS_V1";
 import { RENDERER_SUPPORTED_CATEGORIES, RENDERER_PROGRAMMATIC_CATEGORIES } from "../../renderer/extraction";
 import * as fallbackPolicy from "../fallbackPolicy";
+import { isDopplerRenalAuditError } from "../../pipeline/dopplerRenalWriterAudit";
 
 const routePath = resolve(process.cwd(), "apps/api/src/app/api/generate/route.ts");
 const compiled = ts.transpileModule(readFileSync(routePath, "utf8"), {
@@ -89,6 +90,7 @@ async function execute(scenario: Scenario) {
     "@/server/renderer/catalog/registry": { ehDerivado: () => false },
     "@/server/customization/resolve": { resolverPersonalizacao: async () => ({ aplicar: false }) },
     "@/server/clinicalReports/fallbackPolicy": fallbackPolicy,
+    "@/server/pipeline/dopplerRenalWriterAudit": { isDopplerRenalAuditError },
     "@/server/pipeline/descarteDecision": { decidirDescarte },
     "@/server/pipeline/renderer": { runRendererStream: async function* (args: { categoryCode: string }) {
       rendererCalls++;

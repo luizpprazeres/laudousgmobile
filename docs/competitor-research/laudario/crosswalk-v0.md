@@ -6,17 +6,23 @@ O catálogo observado tem 99 entradas, contra 34 categorias atualmente expostas 
 
 ## Candidatos de alta prioridade para confirmação
 
-**Hepático:** Avaliação Multiparamétrica Hepática e Elastografia Hepática. Verificar cobertura real de gordura, rigidez, métodos/fabricantes, conclusões e referências.
+**Ginecologia:** Histerossonografia com infusão salina, histerossonossalpingografia, monitorização folicular e Doppler pélvico. Distinguir categoria ausente de bloco já coberto em Pelve feminina.
 
-**Ginecologia:** Histerossonografia com infusão salina, histerossonossalpingografia, monitorização folicular, Doppler pélvico e pesquisa de endometriose. Distinguir categoria ausente de bloco já coberto em Pelve feminina.
-
-**Vascular abdominal:** Aortorrenal, aorta/ilíacas, mesentéricas, transplante renal e Doppler hepático. Comparar critérios determinísticos e campos obrigatórios, não apenas nomes.
+**Vascular abdominal:** aorta/ilíacas, mesentéricas e transplante renal. Comparar critérios determinísticos e campos obrigatórios, não apenas nomes.
 
 **Obstetrícia especializada:** Ecocardiografia fetal, terceiro trimestre morfológico, 3D/4D, perfil biofísico e versões gemelares. Verificar se o LaudoUSG cobre como variante interna ou não oferece o fluxo.
 
 **Combinações:** o Laudário expõe 15 modelos combinados. O LaudoUSG já tem contrato de composição Web para alguns pares, mas ainda precisa cruzar cobertura, edição e paridade iOS/Android/Sala.
 
 **MSK e lateralidade:** o Laudário separa unilateral e bilateral por região. O LaudoUSG precisa ser avaliado por campos e resultado final, pois uma categoria única pode ter maior flexibilidade apesar de menor número aparente.
+
+A fila atualizada e o mapa de equivalências de nomes estão em [fila-e-mapa-canonico-2026-10-03.md](fila-e-mapa-canonico-2026-10-03.md).
+
+## Doppler Aortorrenal — paridade de catálogo e segurança clínica
+
+O Laudário separa técnica, perviedade, padrão hemodinâmico, critérios diretos e indiretos. No cenário direto, a medida gerou alerta, mas a conclusão positiva dependeu da seleção médica do padrão anormal. Na limitação técnica, o lado não avaliado deixou de ser tratado como normal. Em contraste, o tardus-parvus qualitativo isolado já produziu conclusão de estenose significativa antes de qualquer medida indireta.
+
+O LaudoUSG expõe Doppler renal nos três clientes e possui writer dedicado. O cruzamento confirmou ausência de contrato compartilhado e revelou falsa normalidade por omissão, auditoria sem contexto e avisos não bloqueantes. Esses riscos imediatos foram corrigidos no mesmo lote; permanecem a estruturação completa, paridade de formulário, estilo/personalização e regras renais ainda fora do caminho ativo. O estudo completo está em [crosswalk-doppler-aortorrenal-2026-10-03.md](crosswalk-doppler-aortorrenal-2026-10-03.md).
 
 ## Tireoide — diferença funcional já observada
 
