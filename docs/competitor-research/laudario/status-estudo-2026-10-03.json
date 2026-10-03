@@ -1,12 +1,12 @@
 {
   "competitor": "Laudário",
-  "updated_at": "2026-10-03T15:43:32-03:00",
+  "updated_at": "2026-10-03T15:51:08-03:00",
   "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
   "totals": {
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 21,
+    "base_functionally_studied": 22,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1
   },
@@ -136,6 +136,13 @@
       "laudousg_code": "TRANSFONTANELA",
       "case": "cases/transfontanelar-2026-10-03.md",
       "crosswalk": "crosswalk-transfontanelar-2026-10-03.md"
+    },
+    {
+      "competitor_exam": "Doppler de Transplante Renal",
+      "laudousg_code": null,
+      "proposed_code": "DOPPLER_TRANSPLANTE_RENAL",
+      "case": "cases/doppler-transplante-renal-2026-10-03.md",
+      "crosswalk": "crosswalk-doppler-transplante-renal-2026-10-03.md"
     }
   ],
   "absence_checks": [
@@ -146,7 +153,6 @@
     }
   ],
   "queue": [
-    "Doppler de transplante renal",
     "Doppler de aorta e artérias ilíacas",
     "Doppler de artérias temporais",
     "Doppler de artérias mesentéricas",
