@@ -2,6 +2,43 @@
 
 Data: 03/10/2026. Conta autorizada pelo Luiz. Estudo realizado pela interface normal do navegador, com medidas sintéticas e sem dados de pacientes. Não houve cópia, impressão, finalização ou envio de laudo. O modelo foi restaurado ao estado normal no fim.
 
+```yaml
+competitor: Laudário
+observed_at: 2026-10-03T15:42:00-03:00
+exam: Doppler de Transplante Renal
+surface: Laudos > Ultrassonografia > Vascular > Doppler de Transplante Renal
+baseline:
+  controls: enxerto em fossa ilíaca direita; morfologia, perfusão, anastomose, índices e veia normais; sem medidas
+  report_structure: técnica; indicação; enxerto; estudo Doppler; conclusão
+scenarios:
+  - id: velocidades_elevadas_com_confirmacao
+    input: VPS ilíaca sintética de 100 cm/s e VPS anastomótica de 300 cm/s; depois estenose confirmada pelo médico
+    cascades: razão 3,0 e alertas apareceram; a conclusão só mudou após confirmação; recomendação foi sugerida sem publicação
+    output: medidas anormais coexistiram temporariamente com conclusão normal; depois corpo e conclusão registraram estenose
+    reset_verified: true
+  - id: ausencia_fluxo_arterial
+    input: ausência de fluxo arterial, com causa mantida como não determinada
+    cascades: frases normais vasculares foram suprimidas e recomendações urgentes sugeridas sem publicação
+    output: corpo e conclusão registraram trombose arterial do enxerto
+    reset_verified: true
+evidence:
+  observed: medidas, razão, alertas, confirmação, recomendações, texto, conclusão e restauração foram vistos no navegador
+  inferred: a razão anastomose/ilíaca provavelmente depende das duas medidas de origem; o comportamento com uma única medida ainda precisa de prova
+crosswalk:
+  laudousg_paths_checked:
+    - apps/web/src/lib/writerCategories.ts
+    - apps/mobile/src/ui/tokens.ts
+    - apps/api/src/server/pipeline/categoryNormalization.ts
+    - apps/api/src/server/pipeline/renderer.ts
+    - packages/shared/src/clinicalModels/contracts.ts
+    - packages/db/src/seeds/data.ts
+    - packages/knowledge/snippets/DOPPLER_RENAL/excecao/__rev__/rim-transplantado.md
+    - laudousg-swift/LaudoUSG/LaudoUSG/Models/Category.swift
+  status: confirmed_gap
+  notes: a categoria de transplante está ausente; o modelo de rim nativo não deve receber silenciosamente um exame de enxerto
+next_probe: testar VPS anastomótica isolada, IR elevado unilateral, anatomia vascular múltipla, veia não avaliada e rins nativos
+```
+
 ## Organização observada
 
 O formulário possui as abas Dados do Paciente, Técnica, Indicação, Enxerto Renal, Estudo Doppler, Exames Comparativos, Achados Adicionais e Recomendações.

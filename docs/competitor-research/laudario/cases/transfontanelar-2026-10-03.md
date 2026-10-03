@@ -2,6 +2,41 @@
 
 Data: 03/10/2026. Conta autorizada pelo Luiz. Estudo realizado pela interface normal do navegador, com dados sintéticos, sem copiar, imprimir, finalizar ou enviar laudos. O modelo foi restaurado ao estado normal ao final.
 
+```yaml
+competitor: Laudário
+observed_at: 2026-10-03T15:10:00-03:00
+exam: Transfontanelar
+surface: Laudos > Ultrassonografia > Pediatria > Transfontanelar
+baseline:
+  controls: anatomia e sistema ventricular normais; sem medidas, idade ou Doppler
+  report_structure: técnica; parênquima; linha média; sistema ventricular; conclusão
+scenarios:
+  - id: dilatacao_ventricular_qualitativa
+    input: ventrículos laterais dilatados, sem medidas ou graduação
+    cascades: duas recomendações foram sugeridas e permaneceram fora do texto até a chave geral ser ligada
+    output: corpo e conclusão declararam dilatação ventricular sem medida
+    reset_verified: true
+  - id: hemorragia_grau_2
+    input: grau 2 selecionado; depois lado esquerdo e medidas sintéticas de 1,0 por 0,6 cm
+    cascades: o diagnóstico surgiu antes de lado e medidas; depois a lateralidade chegou ao corpo e à conclusão
+    output: normalidade do sulco caudotalâmico coexistiu com a lesão; valores ficaram guardados após desativar o achado
+    reset_verified: true
+evidence:
+  observed: organização, controles, recomendações, texto, conclusão, lateralidade, persistência de valores e restauração foram vistos no navegador
+  inferred: critérios clínicos mínimos de dilatação e hemorragia não foram validados nesta rodada
+crosswalk:
+  laudousg_paths_checked:
+    - apps/web/src/lib/writerCategories.ts
+    - apps/mobile/src/features/generate/categories.manual.ts
+    - apps/api/src/server/pipeline/categoryNormalization.ts
+    - packages/shared/src/clinicalModels/contracts.ts
+    - packages/db/src/seeds/data.ts
+    - laudousg-swift/LaudoUSG/LaudoUSG/Models/Category.swift
+  status: partial
+  notes: a categoria existe nos três clientes, mas permanece genérica e sem contrato neonatal, renderer ou auditoria específicos
+next_probe: testar medidas ventriculares com idade, limitação técnica por estrutura, Doppler e lateralidade incompleta antes de definir o contrato
+```
+
 ## Organização observada
 
 O exame fica no grupo Pediatria. O formulário possui as abas Dados do Paciente, Técnica, Indicação, Parênquima, Linha Média, Ventrículos e Medidas, Doppler, Achados Patológicos, Exames Comparativos, Achados Adicionais e Recomendações. O texto é atualizado à direita durante as seleções.

@@ -4,20 +4,19 @@ Atualizado em 03/10/2026. A fila considera impacto clínico, uso provável, dife
 
 ## Cobertura
 
-Foram concluídas rodadas funcionais de 22 dos 84 modelos-base do catálogo, aproximadamente 26,2%. Isso representa 22 das 99 entradas totais, aproximadamente 22,2%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
+Foram concluídas rodadas funcionais de 23 dos 84 modelos-base do catálogo, aproximadamente 27,4%. Isso representa 23 das 99 entradas totais, aproximadamente 23,2%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
 
 ## Próximas prioridades
 
 | Ordem | Exame | Motivo | Próxima prova mínima |
 | --- | --- | --- | --- |
-| 1 | Doppler de aorta e artérias ilíacas | Ausente | normal; aneurisma; estenose/oclusão |
-| 2 | Doppler de artérias temporais | Ausente e clinicamente sensível | normal; halo; dado unilateral incompleto |
-| 3 | Doppler de artérias mesentéricas | Ausente | normal; estenose; preparo/limitação |
-| 4 | Aparelho urinário com Doppler | Confirmar se deve compor o contrato renal ou ser categoria própria | normal; alteração unilateral; escopo incompleto |
-| 5 | Ecocardiografia fetal gemelar | Reutilizar contrato por feto; não duplicar regras clínicas | dois fetos normais; alteração em um feto; limitação por feto |
-| 6 | Primeiro exame combinado | Validar composição sem duplicar contratos | combinação normal; achado em um componente; conflito entre componentes |
-| 7 | Monitorização folicular | Confirmar o que reaproveita de Pelve feminina | ciclo basal; folículo dominante; dados incompletos |
-| 8 | Morfológico de 3º trimestre | Confirmar variante ou contrato próprio | normal; biometria discordante; limitação |
+| 1 | Doppler de artérias temporais | Ausente e clinicamente sensível | normal; halo; dado unilateral incompleto |
+| 2 | Doppler de artérias mesentéricas | Ausente | normal; estenose; preparo/limitação |
+| 3 | Aparelho urinário com Doppler | Confirmar se deve compor o contrato renal ou ser categoria própria | normal; alteração unilateral; escopo incompleto |
+| 4 | Ecocardiografia fetal gemelar | Reutilizar contrato por feto; não duplicar regras clínicas | dois fetos normais; alteração em um feto; limitação por feto |
+| 5 | Primeiro exame combinado | Validar composição sem duplicar contratos | combinação normal; achado em um componente; conflito entre componentes |
+| 6 | Monitorização folicular | Confirmar o que reaproveita de Pelve feminina | ciclo basal; folículo dominante; dados incompletos |
+| 7 | Morfológico de 3º trimestre | Confirmar variante ou contrato próprio | normal; biometria discordante; limitação |
 
 Depois entram Aparelho Urinário com Doppler, variantes gemelares após os modelos singleton equivalentes e o primeiro exame combinado. O primeiro combinado deve ser escolhido apenas depois de comparar o contrato de composição existente com o comportamento real da combinação concorrente.
 
@@ -33,6 +32,7 @@ Depois entram Aparelho Urinário com Doppler, variantes gemelares após os model
 | Histerossonossalpingografia | Histerossonossalpingografia / HyCoSy | `HYCOSY` proposto | categoria bilateral própria; não reduzir a Pelve feminina |
 | Transfontanelar | Transfontanelar | `TRANSFONTANELA` | corrigir somente rótulo; preservar código |
 | Doppler de Transplante Renal | Doppler de transplante renal | `DOPPLER_TRANSPLANTE_RENAL` proposto | categoria própria; não encaminhar para o modelo de rim nativo |
+| Doppler de Aorta e Artérias Ilíacas | Doppler de aorta e artérias ilíacas | `DOPPLER_AORTA_ILIACAS` proposto | categoria própria; não reduzir a Abdome Total, Doppler renal ou arterial de membros inferiores |
 | Próstata Abdominal | Próstata suprapúbica | `PROSTATA_SUPRAPUBICA` | tratar como equivalência de via, não como novo exame |
 | Doppler de Fístula Arteriovenosa (FAV) | Doppler de fístula AV | `DOPPLER_FISTULA_AV` | mesma categoria |
 | Doppler Aortorrenal / Doppler de Transplante Renal | Doppler renal / Doppler de transplante renal | códigos distintos | transplante não é variante implícita do modelo nativo |
