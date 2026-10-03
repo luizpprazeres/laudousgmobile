@@ -30,6 +30,12 @@ O Laudário organiza o exame por anatomia sequencial, ritmo, função, medidas, 
 
 No LaudoUSG, ecocardiografia fetal aparece somente como recomendação dentro de exames obstétricos. A categoria, o contrato, os renderizadores e o catálogo estão ausentes nas três plataformas. A implementação futura deve ser própria, com variante gemelar no mesmo contrato, confirmação explícita de qualificadores e escopo de avaliação por bloco. O estudo completo está em [crosswalk-ecocardiografia-fetal-2026-10-03.md](crosswalk-ecocardiografia-fetal-2026-10-03.md).
 
+## Perfil biofísico fetal — escore e denominador ausentes
+
+O exame observado calcula quatro componentes ultrassonográficos e cardiotocografia opcional. Quando a cardiotocografia não é avaliada, ela aparece com nota zero no corpo, mas fica fora do denominador; o perfil basal é 8/8. Cardiotocografia reativa produz 10/10. Líquido reduzido com ILA preenchido altera a conclusão e sugere acompanhamento, sem publicar a recomendação automaticamente.
+
+O LaudoUSG possui fragmentos de movimentos fetais e líquido amniótico em categorias obstétricas, mas não reúne os cinco componentes nem calcula o escore. Falta uma categoria própria com estados explícitos, cálculo compartilhado e validação de numerador/denominador no servidor. O estudo completo está em [crosswalk-perfil-biofisico-fetal-2026-10-03.md](crosswalk-perfil-biofisico-fetal-2026-10-03.md).
+
 ## Tireoide — diferença funcional já observada
 
 O Laudário oferece presets de tireoidopatia que preenchem múltiplos controles, ACR TI-RADS calculado por nódulo, cartograma e recomendação automática com confirmação independente de inclusão no laudo. O cruzamento técnico do LaudoUSG está em [crosswalk-tireoide-2026-10-02.md](crosswalk-tireoide-2026-10-02.md): o núcleo clínico já existe, mas formulário, calculadora, recomendação e cartograma ainda estão desacoplados em graus diferentes na Web, iOS e Android.

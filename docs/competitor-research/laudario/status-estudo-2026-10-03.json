@@ -1,12 +1,12 @@
 {
   "competitor": "Laudário",
-  "updated_at": "2026-10-03T14:05:19-03:00",
+  "updated_at": "2026-10-03T14:20:00-03:00",
   "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
   "totals": {
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 16,
+    "base_functionally_studied": 17,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1
   },
@@ -106,6 +106,12 @@
       "laudousg_code": null,
       "case": "cases/ecocardiografia-fetal-2026-10-03.md",
       "crosswalk": "crosswalk-ecocardiografia-fetal-2026-10-03.md"
+    },
+    {
+      "competitor_exam": "Perfil Biofísico Fetal",
+      "laudousg_code": null,
+      "case": "cases/perfil-biofisico-fetal-2026-10-03.md",
+      "crosswalk": "crosswalk-perfil-biofisico-fetal-2026-10-03.md"
     }
   ],
   "absence_checks": [
@@ -116,7 +122,6 @@
     }
   ],
   "queue": [
-    "Perfil biofísico fetal",
     "Bolsa testicular com Doppler",
     "Histerossonografia com infusão salina",
     "Histerossonossalpingografia / HyCoSy",
@@ -125,6 +130,7 @@
     "Doppler de aorta e artérias ilíacas",
     "Doppler de artérias temporais",
     "Doppler de artérias mesentéricas",
-    "Aparelho urinário com Doppler"
+    "Aparelho urinário com Doppler",
+    "Ecocardiografia fetal gemelar"
   ]
 }
