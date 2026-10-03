@@ -4,22 +4,21 @@ Atualizado em 03/10/2026. A fila considera impacto clínico, uso provável, dife
 
 ## Cobertura
 
-Foram concluídas rodadas funcionais de 20 dos 84 modelos-base do catálogo, aproximadamente 23,8%. Isso representa 20 das 99 entradas totais, aproximadamente 20,2%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
+Foram concluídas rodadas funcionais de 21 dos 84 modelos-base do catálogo, exatamente 25,0%. Isso representa 21 das 99 entradas totais, aproximadamente 21,2%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
 
 ## Próximas prioridades
 
 | Ordem | Exame | Motivo | Próxima prova mínima |
 | --- | --- | --- | --- |
-| 1 | Transfontanelar | Writer exposto sem contrato determinístico | normal; hemorragia; medida incompleta |
-| 2 | Doppler de transplante renal | Ausente; material preliminar está em quarentena | inventário e fontes antes de qualquer cenário |
-| 3 | Doppler de aorta e artérias ilíacas | Ausente | normal; aneurisma; estenose/oclusão |
-| 4 | Doppler de artérias temporais | Ausente e clinicamente sensível | normal; halo; dado unilateral incompleto |
-| 5 | Doppler de artérias mesentéricas | Ausente | normal; estenose; preparo/limitação |
-| 6 | Aparelho urinário com Doppler | Confirmar se deve compor o contrato renal ou ser categoria própria | normal; alteração unilateral; escopo incompleto |
-| 7 | Ecocardiografia fetal gemelar | Reutilizar contrato por feto; não duplicar regras clínicas | dois fetos normais; alteração em um feto; limitação por feto |
-| 8 | Primeiro exame combinado | Validar composição sem duplicar contratos | combinação normal; achado em um componente; conflito entre componentes |
-| 9 | Monitorização folicular | Confirmar o que reaproveita de Pelve feminina | ciclo basal; folículo dominante; dados incompletos |
-| 10 | Morfológico de 3º trimestre | Confirmar variante ou contrato próprio | normal; biometria discordante; limitação |
+| 1 | Doppler de transplante renal | Ausente; material preliminar está em quarentena | inventário e fontes antes de qualquer cenário |
+| 2 | Doppler de aorta e artérias ilíacas | Ausente | normal; aneurisma; estenose/oclusão |
+| 3 | Doppler de artérias temporais | Ausente e clinicamente sensível | normal; halo; dado unilateral incompleto |
+| 4 | Doppler de artérias mesentéricas | Ausente | normal; estenose; preparo/limitação |
+| 5 | Aparelho urinário com Doppler | Confirmar se deve compor o contrato renal ou ser categoria própria | normal; alteração unilateral; escopo incompleto |
+| 6 | Ecocardiografia fetal gemelar | Reutilizar contrato por feto; não duplicar regras clínicas | dois fetos normais; alteração em um feto; limitação por feto |
+| 7 | Primeiro exame combinado | Validar composição sem duplicar contratos | combinação normal; achado em um componente; conflito entre componentes |
+| 8 | Monitorização folicular | Confirmar o que reaproveita de Pelve feminina | ciclo basal; folículo dominante; dados incompletos |
+| 9 | Morfológico de 3º trimestre | Confirmar variante ou contrato próprio | normal; biometria discordante; limitação |
 
 Depois entram Aparelho Urinário com Doppler, variantes gemelares após os modelos singleton equivalentes e o primeiro exame combinado. O primeiro combinado deve ser escolhido apenas depois de comparar o contrato de composição existente com o comportamento real da combinação concorrente.
 
