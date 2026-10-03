@@ -31,7 +31,8 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Elastografia Hepática: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, rigidez normal, algoritmo hepatoesplênico, qualidade, fatores de confusão e inventário longitudinal.
 - Doppler Hepático: primeira rodada funcional e cruzamento técnico concluídos, com estado inicial, trombose portal parcial, TIPS, recomendações e inventário de transplante.
 - Doppler Venoso de Membro Superior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, trombose relacionada a cateter, trombose superficial basílica e TVP axilar; foram documentadas contradição entre corpo e conclusão e falhas de concordância do concorrente.
-- Próxima prioridade: Doppler Arterial de Membro Superior.
+- Doppler Arterial de Membro Superior: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, estenose subclávia, razão automática de velocidades, oclusão crônica, padrão tardus-parvus e inventário de desfiladeiro torácico; foram documentadas uma incoerência distal do concorrente e uma diferença de paridade entre iOS, Web e Android/RN no LaudoUSG.
+- Próxima prioridade: Ultrassonografia de Tórax.
 
 ## Limites desta fotografia
 
