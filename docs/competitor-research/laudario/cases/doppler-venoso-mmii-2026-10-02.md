@@ -4,7 +4,9 @@ Observado em 02/10/2026, com achados exclusivamente sintéticos. O modelo foi re
 
 ```yaml
 competitor: Laudário
-observed_at: 2026-10-02T09:54:50-03:00
+observed_at: null
+observation_date: 2026-10-02
+observed_at_note: horário exato e fuso não foram registrados durante a observação
 exam: Doppler Venoso de Membro Inferior
 surface: Laudos > Ultrassonografia > Vascular > Doppler Venoso de Membro Inferior
 baseline:
@@ -16,11 +18,13 @@ scenarios:
     cascades: nenhuma
     output: sistemas superficial e profundo descritos como competentes, sem trombose
     reset_verified: true
+    reset_note: não houve alteração do estado-base
   - id: refluxo_jsf_vsm
     input: JSF incompetente; refluxo acima de 0,5 segundo; VSM incompetente em todo o trajeto
     cascades: incompetência da VSM e bloco de refluxo ativados; cartograma atualizado; recomendações sugeridas
     output: insuficiência da JSF e VSM; recomendações não publicadas sem confirmação separada
-    reset_verified: true
+    reset_verified: false
+    reset_note: reset intermediário não registrado de forma independente; a restauração global ao final foi confirmada
   - id: tvp_aguda_oclusiva
     input: veia femoral comum direita proximal; material intraluminal; não compressibilidade; ausência de fluxo; sinais agudos
     cascades: conclusão positiva apareceu antes do preenchimento dos critérios; cartograma profundo atualizado
@@ -71,7 +75,7 @@ O cartograma estava em auto-sincronização e marcou a junção e o trajeto da s
 
 **Implicação:** achado, extensão, recomendação, desenho e publicação do desenho são estados diferentes. A automação visual é útil, mas deve derivar do mesmo contrato clínico do texto e permitir correção manual com proveniência.
 
-**Reset verificado:** verdadeiro; JSF e VSM retornaram ao estado competente antes do cenário de TVP.
+**Reset intermediário:** não verificado de forma independente. A restauração global ao final do lote foi confirmada.
 
 ## Cenário 3 — TVP aguda oclusiva proximal
 
