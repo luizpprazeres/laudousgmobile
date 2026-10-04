@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revisão clínica — Doppler renal e venoso de MMII</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172122;
+      --muted: #5d6a6a;
+      --paper: #f3f0e9;
+      --card: #fffdf8;
+      --line: #d9d5ca;
+      --teal: #0d6464;
+      --teal-soft: #dceeed;
+      --blue: #245f91;
+      --blue-soft: #e4eef7;
+      --amber: #9a5a0a;
+      --amber-soft: #fff0d6;
+      --red: #9b3030;
+      --red-soft: #f9e3df;
+      --green: #2f6d4b;
+      --green-soft: #e2f0e7;
+      --shadow: 0 16px 40px rgba(29, 47, 48, .08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 100% 0, rgba(13, 100, 100, .10), transparent 32rem),
+        var(--paper);
+      color: var(--ink);
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: inherit; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+
+    .hero {
+      padding: 58px 0 32px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, h4 { line-height: 1.15; letter-spacing: -.025em; }
+    h1 { max-width: 820px; margin: 0; font-size: clamp(34px, 6vw, 64px); }
+    .lede { max-width: 790px; margin: 20px 0 0; color: var(--muted); font-size: 18px; }
+
+    .status-row, .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .status-row { margin-top: 24px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.55);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .chip.ok { color: var(--green); background: var(--green-soft); border-color: #b7d8c4; }
+    .chip.pending { color: var(--amber); background: var(--amber-soft); border-color: #eccd99; }
+    .chip.blocked { color: var(--red); background: var(--red-soft); border-color: #e8bcb5; }
+    .chip.info { color: var(--blue); background: var(--blue-soft); border-color: #bfd4e6; }
+
+    .sticky-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(243, 240, 233, .93);
+      backdrop-filter: blur(14px);
+    }
+    .sticky-nav .shell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 58px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .sticky-nav a, .ghost-button {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      color: var(--muted);
+      background: transparent;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 720;
+    }
+    .sticky-nav a:hover, .ghost-button:hover { color: var(--teal); border-color: var(--line); background: var(--card); }
+    .nav-spacer { flex: 1; }
+    .decision-counter { white-space: nowrap; color: var(--teal); font-size: 12px; font-weight: 800; }
+
+    main { padding: 34px 0 80px; }
+    section { scroll-margin-top: 78px; }
+    .section { margin-top: 64px; }
+    .section-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; margin-bottom: 20px; }
+    .section-head h2 { margin: 0; font-size: clamp(28px, 4vw, 42px); }
+    .section-head p { max-width: 760px; margin: 10px 0 0; color: var(--muted); }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .card-pad { padding: 22px; }
+    .card h3, .card h4 { margin: 0; }
+    .card p:last-child { margin-bottom: 0; }
+    .quiet { color: var(--muted); }
+    .small { font-size: 13px; }
+
+    .callout {
+      padding: 16px 18px;
+      border: 1px solid #e7c990;
+      border-left: 5px solid var(--amber);
+      border-radius: 12px;
+      background: var(--amber-soft);
+    }
+    .callout strong { color: #704006; }
+    .callout.danger { border-color: #e8bcb5; border-left-color: var(--red); background: var(--red-soft); }
+    .callout.danger strong { color: var(--red); }
+    .callout.info { border-color: #bfd4e6; border-left-color: var(--blue); background: var(--blue-soft); }
+    .callout.info strong { color: var(--blue); }
+
+    .audit-card { position: relative; overflow: hidden; }
+    .audit-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--red); }
+    .audit-card h3 { font-size: 17px; }
+    .audit-card p { margin: 8px 0 0; color: var(--muted); }
+
+    .report-preview { overflow: hidden; }
+    .report-header { padding: 18px 22px; border-bottom: 1px solid var(--line); background: #f8f6ef; }
+    .report-header h3 { font-size: 18px; }
+    .report-body { padding: 24px; }
+    .report-title { margin: 0 0 18px; text-align: center; font-size: 16px; font-weight: 850; letter-spacing: .02em; }
+    .report-label { margin: 20px 0 8px; font-size: 12px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .report-text { white-space: pre-line; font-family: Georgia, "Times New Roman", serif; font-size: 16px; line-height: 1.7; }
+    .report-note { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 12px; }
+
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; }
+    .comparison > div { min-width: 0; padding: 20px; }
+    .comparison > div + div { border-left: 1px solid var(--line); }
+    .comparison h4 { margin-bottom: 10px; color: var(--teal); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+    .pending-box { min-height: 92px; padding: 14px; border: 1px dashed #dda94e; border-radius: 12px; color: var(--amber); background: #fff8ea; font-weight: 700; }
+    .no-output { min-height: 92px; padding: 14px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); background: #f7f5ef; }
+
+    .alteration-list { display: grid; gap: 12px; }
+    details.alteration { border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: 0 8px 24px rgba(29,47,48,.05); }
+    details.alteration summary { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 16px 18px; cursor: pointer; list-style: none; }
+    details.alteration summary::-webkit-details-marker { display: none; }
+    details.alteration summary::before { content: "+"; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; color: var(--teal); background: var(--teal-soft); font-weight: 900; }
+    details.alteration[open] summary::before { content: "−"; }
+    .alteration-title strong { display: block; }
+    .alteration-title span { color: var(--muted); font-size: 12px; }
+    .alteration-content { border-top: 1px solid var(--line); }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 13px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #f5f3ec; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { font-weight: 750; }
+
+    .scenario-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .scenario { display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+    .scenario-number { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: #ece9df; font-size: 12px; font-weight: 850; }
+    .scenario strong { display: block; font-size: 13px; }
+    .scenario span { color: var(--muted); font-size: 12px; }
+
+    .decision-list { display: grid; gap: 14px; }
+    .decision {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: 0 8px 22px rgba(29,47,48,.05);
+    }
+    .decision-top { display: flex; gap: 12px; align-items: flex-start; }
+    .decision-id { flex: 0 0 auto; padding: 4px 8px; border-radius: 8px; color: var(--amber); background: var(--amber-soft); font-size: 11px; font-weight: 900; }
+    .decision h3 { margin: 2px 0 4px; font-size: 17px; }
+    .decision p { margin: 0; color: var(--muted); font-size: 13px; }
+    .choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+    .choice { position: relative; }
+    .choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .choice label { display: block; height: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: #faf8f2; cursor: pointer; font-size: 13px; }
+    .choice label strong { display: block; margin-bottom: 3px; }
+    .choice input:focus-visible + label { outline: 3px solid rgba(36,95,145,.28); }
+    .choice input:checked + label { border-color: var(--teal); color: var(--teal); background: var(--teal-soft); box-shadow: inset 0 0 0 1px var(--teal); }
+    .select-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+    .select-row label { color: var(--muted); font-size: 11px; font-weight: 800; }
+    .select-row select { width: 100%; margin-top: 4px; padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: white; }
+
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .flow-step { position: relative; padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+    .flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -15px; top: 50%; z-index: 2; color: var(--teal); font-weight: 900; }
+    .flow-step b { display: block; color: var(--teal); font-size: 12px; }
+    .flow-step span { color: var(--muted); font-size: 12px; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .primary-button { padding: 10px 14px; border: 0; border-radius: 10px; color: white; background: var(--teal); font-weight: 800; }
+    .secondary-button { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--card); font-weight: 750; }
+    footer { padding: 30px 0 50px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 860px) {
+      .grid.two, .grid.three, .comparison, .scenario-grid, .choices, .select-row, .flow { grid-template-columns: 1fr; }
+      .comparison > div + div { border-left: 0; border-top: 1px solid var(--line); }
+      .flow-step:not(:last-child)::after { content: "↓"; right: 18px; top: auto; bottom: -17px; }
+      .section-head { grid-template-columns: 1fr; }
+      .sticky-nav .decision-counter { display: none; }
+    }
+
+    @media print {
+      body { background: white; font-size: 11px; }
+      .sticky-nav, .actions { display: none; }
+      .shell { width: 100%; }
+      .hero { padding-top: 20px; }
+      h1 { font-size: 32px; }
+      .section { margin-top: 32px; }
+      .card, .decision, details.alteration { box-shadow: none; break-inside: avoid; }
+      details.alteration > * { display: block; }
+      details.alteration summary::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="shell">
+      <p class="eyebrow">LaudoUSG · primeiro lote clínico dormente · 04/10/2026</p>
+      <h1>Doppler renal + Doppler venoso de MMII</h1>
+      <p class="lede">Prévia original para decisão médica. Esta página reúne modelos basais, alterações, campos, cenários e escolhas pendentes. Não ativa categoria, não altera prompts e não publica nenhum texto clínico.</p>
+      <div class="status-row">
+        <span class="chip ok">Contrato dormente validado</span>
+        <span class="chip info">Conteúdo original LaudoUSG</span>
+        <span class="chip pending">Revisão médica pendente</span>
+        <span class="chip blocked">Ativação bloqueada</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="sticky-nav" aria-label="Navegação da revisão">
+    <div class="shell">
+      <a href="#visao-geral">Visão geral</a>
+      <a href="#renal">Renal</a>
+      <a href="#venoso">Venoso MMII</a>
+      <a href="#decisoes">Decisões</a>
+      <a href="#depois">Após aprovação</a>
+      <span class="nav-spacer"></span>
+      <span class="decision-counter" id="decisionCounter">0 decisões registradas</span>
+      <button class="ghost-button" type="button" onclick="window.print()">Imprimir</button>
+    </div>
+  </nav>
+
+  <main class="shell">
+    <section id="visao-geral">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Leitura rápida</p>
+          <h2>O que já está firme e o que ainda não está</h2>
+          <p>Os contratos já preservam lateralidade, anatomia, unidade original, valor canônico, origem e revisão. Derivações são aritméticas e rastreáveis. Classificação, diagnóstico e conduta continuam bloqueados quando dependem de decisão clínica.</p>
+        </div>
+      </div>
+
+      <div class="grid three">
+        <article class="card card-pad">
+          <span class="chip ok">Pode revisar</span>
+          <h3 style="margin-top:12px">Forma e cobertura</h3>
+          <p class="quiet">Campos, estados, lateralidade, segmentos, medidas, limitações, remoção e conflitos já estão representados no contrato.</p>
+        </article>
+        <article class="card card-pad">
+          <span class="chip pending">Precisa decidir</span>
+          <h3 style="margin-top:12px">Regras clínicas</h3>
+          <p class="quiet">Confirmação de estenose, limites exatos, mínimos de TVP, fases, refluxo, perfurantes e recomendações.</p>
+        </article>
+        <article class="card card-pad">
+          <span class="chip blocked">Não entra agora</span>
+          <h3 style="margin-top:12px">Integração</h3>
+          <p class="quiet">Web, mobile, renderer, mapa, Sala, banco, gates e prompts ativos permanecem intocados.</p>
+        </article>
+      </div>
+
+      <div class="section" style="margin-top:28px">
+        <h3>Problemas do caminho atual que este lote não deve repetir</h3>
+        <div class="grid three" style="margin-top:14px">
+          <article class="card card-pad audit-card">
+            <h3>Renal: diagnóstico solto</h3>
+            <p>O schema ativo resume o exame a números e um booleano independente de estenose. O candidato liga cada medida a lado, segmento, unidade e fonte.</p>
+          </article>
+          <article class="card card-pad audit-card">
+            <h3>Venoso: TVP solta</h3>
+            <p>O schema atual aceita <span class="code">tvp_presente</span> sem vínculo obrigatório com segmento e evidências. O candidato deriva os índices das observações.</p>
+          </article>
+          <article class="card card-pad audit-card">
+            <h3>Mapa: inferência indevida</h3>
+            <p>Hoje, ausência de estado pode aparecer como normal e trombose sem extensão pode virar oclusiva. O novo mapa fica bloqueado até consumir o contrato aprovado.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="renal">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Categoria 1 · <span class="code">DOPPLER_RENAL</span></p>
+          <h2>Doppler renal</h2>
+          <p>Escopo proposto: rins nativos e artérias renais, com aorta apenas como referência hemodinâmica. Transplante é redirecionado. Veias renais, pós-stent, oclusão diagnóstica e índice de aceleração ficam fora enquanto não houver fonte aprovada.</p>
+        </div>
+        <span class="chip pending">6 grupos de decisão</span>
+      </div>
+
+      <div class="callout info">
+        <strong>Como ler os textos abaixo.</strong> “Candidato” significa redação original sustentada pelos dados sintéticos e pelo conhecimento interno, ainda sujeita à aprovação médica. “Pendente” significa que a regra ou a fonte não permite redigir uma conclusão segura.
+      </div>
+
+      <h3 style="margin-top:30px">Modelo basal normal bilateral</h3>
+      <div class="grid two" style="margin-top:14px">
+        <article class="card report-preview">
+          <div class="report-header">
+            <div class="chip-row">
+              <span class="chip ok">Candidato original</span>
+              <span class="chip info">Dados sintéticos</span>
+            </div>
+            <h3 style="margin-top:10px">Prévia no estilo Domingos</h3>
+          </div>
+          <div class="report-body">
+            <p class="report-title">ULTRASSONOGRAFIA COM DOPPLER COLORIDO DAS ARTÉRIAS RENAIS</p>
+            <p class="report-label">Comentários</p>
+            <div class="report-text">Exame dirigido às artérias renais e à circulação intrarrenal, com descrição restrita às estruturas e medidas efetivamente avaliadas.</div>
+            <p class="report-label">Os seguintes aspectos foram observados</p>
+            <div class="report-text">Aorta abdominal com velocidade de pico sistólico de 80 cm/s ao nível das emergências das artérias renais.
+
+Artérias renais principais pérvias, com velocidades de pico sistólico máximas de 110 cm/s à direita e 105 cm/s à esquerda.
+
+Relações aorto-renais calculadas em 1,38 à direita e 1,31 à esquerda.
+
+Índices de resistência intrarrenais de 0,63 à direita e 0,61 à esquerda.
+
+Rins com comprimentos bipolares de 10,2 cm à direita e 9,8 cm à esquerda.</div>
+            <p class="report-label">Conclusão</p>
+            <div class="report-text">Ausência de sinais Doppler de estenose hemodinamicamente significativa nas artérias renais.
+
+Índices de resistência intrarrenais preservados.</div>
+            <p class="report-note">Publicar somente se os dois lados tiverem avaliação explícita e confirmação médica de normalidade. A VPS aórtica medida não autoriza descrever a morfologia da aorta como normal.</p>
+          </div>
+        </article>
+
+        <article class="card card-pad">
+          <h3>Dados mínimos usados nesta prévia</h3>
+          <div class="chip-row" style="margin-top:12px">
+            <span class="chip">Aorta 80 cm/s</span>
+            <span class="chip">VPS D 110 cm/s</span>
+            <span class="chip">VPS E 105 cm/s</span>
+            <span class="chip">RAR D 1,38</span>
+            <span class="chip">RAR E 1,31</span>
+            <span class="chip">IR D 0,63</span>
+            <span class="chip">IR E 0,61</span>
+          </div>
+          <div class="callout" style="margin-top:18px">
+            <strong>Antes de aprovar:</strong> confirmar se o basal exige sempre declaração médica explícita de normalidade bilateral, além dos valores numéricos.
+          </div>
+          <p class="small quiet">A RAR é derivada da maior VPS renal ipsilateral dividida pela VPS aórtica. O cálculo permanece marcado como clinicamente bloqueado até definir elegibilidade da aorta e tolerância contra a RAR ditada.</p>
+        </article>
+      </div>
+
+      <h3 style="margin-top:34px">Alterações e correspondência com a conclusão</h3>
+      <div class="alteration-list" style="margin-top:14px">
+        <details class="alteration" open>
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R1 · Um lado normal e o outro limitado</strong><span>Negativa restrita ao território realmente avaliado</span></span>
+            <span class="chip ok">Sustentado</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Artéria renal direita pérvia, com velocidade de pico sistólico máxima de 120 cm/s. Índice de resistência intrarrenal de 0,62 à direita. A avaliação da artéria renal esquerda ficou limitada por interposição gasosa.</p></div>
+            <div><h4>Conclusão</h4><p>Artéria renal direita sem sinais Doppler de estenose hemodinamicamente significativa. Avaliação limitada da artéria renal esquerda.</p></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R2 · VPS na faixa limítrofe</strong><span>Exemplo sintético: VPS 220 cm/s, RAR 2,4</span></span>
+            <span class="chip pending">Conclusão pendente</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Artéria renal direita com velocidade de pico sistólico máxima de 220 cm/s e relação aorto-renal de 2,4.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — decidir se a faixa limítrofe recebe item próprio ou permanece apenas no corpo, sem diagnóstico de estenose.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R3 · Critério direto por VPS</strong><span>Exemplo sintético: VPS 290 cm/s à esquerda, sem RAR disponível</span></span>
+            <span class="chip pending">Confirmação pendente</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Artéria renal esquerda com velocidade de pico sistólico de 290 cm/s no segmento proximal. A relação aorto-renal não foi calculada por ausência de VPS aórtica válida.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — a frase positiva de estenose depende da política de confirmação médica. Não exigir RAR quando a via aprovada for VPS isolada.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R4 · Critério direto por RAR</strong><span>RAR calculada acima do critério, com os dois operandos vinculados</span></span>
+            <span class="chip pending">Confirmação pendente</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Relação aorto-renal direita calculada em 3,4, a partir da maior VPS renal direita e da VPS aórtica registradas no exame.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — definir confirmação, tolerância contra valor ditado e elegibilidade clínica da VPS aórtica.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R5 · Padrão tardus-parvus isolado</strong><span>Sem critério direto ipsilateral</span></span>
+            <span class="chip pending">Texto sugestivo pendente</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Traçado espectral intrarrenal direito com morfologia tardus-parvus, índice de resistência de 0,52 e artéria renal principal com VPS de 160 cm/s.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — não concluir estenose significativa. Aprovar ou excluir uma frase estritamente sugestiva de alteração proximal.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R6 · IR elevado bilateral</strong><span>Exemplo sintético afastado da fronteira: 0,84 e 0,86</span></span>
+            <span class="chip ok">Candidato sustentado</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Índices de resistência intrarrenais elevados, medindo 0,84 à direita e 0,86 à esquerda.</p></div>
+            <div><h4>Conclusão</h4><p>Elevação bilateral dos índices de resistência intrarrenais, achado inespecífico.</p><p class="small quiet">Não atribuir etiologia. O valor exatamente 0,80 continua pendente.</p></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R7 · Assimetria de comprimento renal</strong><span>Exemplo sintético: diferença absoluta de 1,8 cm</span></span>
+            <span class="chip pending">Semântica pendente</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Rins com comprimentos bipolares de 10,8 cm à direita e 9,0 cm à esquerda, com diferença absoluta de 1,8 cm.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — confirmar que “diferença interpolar” corresponde à diferença entre comprimentos bipolares e se deve aparecer na conclusão.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R8 · Artéria acessória identificada</strong><span>Presença anatômica não equivale a doença</span></span>
+            <span class="chip ok">Descrição apenas</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Identificada artéria renal acessória à direita, com VPS de 115 cm/s.</p></div>
+            <div><h4>Conclusão</h4><div class="no-output">Sem item patológico de conclusão apenas pela presença da artéria acessória.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>R9 · Ausência de fluxo, pós-stent e extensões</strong><span>Veias renais, índice de aceleração e relação renal/segmentar</span></span>
+            <span class="chip blocked">Sem fonte aprovada</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><div class="pending-box">PENDENTE — preservar o dado bruto no contrato, sem criar frase clínica nesta versão.</div></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — nenhum diagnóstico ou critério de reestenose será sintetizado sem fonte e decisão de escopo.</div></div>
+          </div>
+        </details>
+      </div>
+
+      <h3 style="margin-top:34px">Campos e controles propostos para Web</h3>
+      <div class="table-wrap" style="margin-top:14px">
+        <table>
+          <thead><tr><th>Bloco</th><th>Controles</th><th>Proteção clínica</th></tr></thead>
+          <tbody>
+            <tr><td>Exame</td><td>Lateralidade, qualidade, indicação, limitação e território.</td><td>Selecionar lado não marca estrutura como avaliada.</td></tr>
+            <tr><td>Aorta</td><td>Estado e VPS no nível das emergências renais.</td><td>VPS não implica morfologia aórtica normal.</td></tr>
+            <tr><td>Artérias D/E</td><td>Perviedade, VPS por segmento ou máxima sem segmento, aliasing/turbulência e acessória.</td><td>Medida sempre ligada a lado e segmento; ausência de fluxo não vira oclusão automaticamente.</td></tr>
+            <tr><td>RAR</td><td>Valor ditado e calculado, operandos visíveis e origem.</td><td>Divergência gera pendência; nunca sobrescrever valor ditado.</td></tr>
+            <tr><td>Intrarrenal</td><td>IR por polo ou resumo sem polo, padrão espectral e TA com unidade original.</td><td>Média mostra quantos polos entraram; sem regra clínica automática.</td></tr>
+            <tr><td>Rins</td><td>Comprimento bipolar, ecogenicidade e diferenciação corticomedular opcionais.</td><td>Diferença bilateral fica bloqueada até confirmar semântica.</td></tr>
+            <tr><td>Revisão</td><td>Pendências, confirmação, origem, revisão e desfazer.</td><td>Remover fonte apaga derivado e invalida confirmação na mesma revisão.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:34px">Cenários sintéticos para o gate renal</h3>
+      <div class="scenario-grid" style="margin-top:14px">
+        <div class="scenario"><span class="scenario-number">1</span><div><strong>Normal bilateral completo</strong><span>Basal com VPS, RAR e IR vinculados.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">2</span><div><strong>Normal unilateral + lado limitado</strong><span>Negativa restrita e motivo obrigatório.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">3</span><div><strong>VPS 220, RAR 2,4</strong><span>Corpo pronto; conclusão em decisão.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">4</span><div><strong>VPS isolada sem aorta</strong><span>Sem RAR; política positiva pendente.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">5</span><div><strong>RAR derivada isolada</strong><span>Operandos obrigatórios e tolerância pendente.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">6</span><div><strong>Estenose bilateral</strong><span>Confirmação por lado.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">7</span><div><strong>Tardus-parvus isolado</strong><span>Nunca promove diagnóstico positivo sozinho.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">8</span><div><strong>Tardus-parvus + critério direto</strong><span>Adjunto ipsilateral.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">9</span><div><strong>IR 0,84/0,86</strong><span>Elevação bilateral inespecífica.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">10</span><div><strong>IR elevado unilateral</strong><span>Sem regra de conclusão.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">11</span><div><strong>IR 0,75</strong><span>Faixa sem regra.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">12</span><div><strong>Assimetria de 1,8 cm</strong><span>Semântica e conclusão pendentes.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">13</span><div><strong>Troca de lado/parâmetro</strong><span>Bloqueio obrigatório.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">14</span><div><strong>RAR ditada ≠ derivada</strong><span>Preserva ambas e abre pendência.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">15</span><div><strong>TA em segundos</strong><span>Converte para ms e preserva original.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">16</span><div><strong>Medida conflitante com “normal”</strong><span>Bloqueia a revisão.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">17</span><div><strong>Remoção de fonte</strong><span>RAR/média/diferença recompostas.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">18</span><div><strong>Ditado de transplante</strong><span>Recusa e redirecionamento.</span></div><span class="chip ok">excluído</span></div>
+        <div class="scenario"><span class="scenario-number">19</span><div><strong>Limites exatos</strong><span>180, 250, 3,2 e 0,80.</span></div><span class="chip pending">decidir</span></div>
+        <div class="scenario"><span class="scenario-number">20</span><div><strong>Round trip clientes</strong><span>Unidades, lados e revisão sem perda.</span></div><span class="chip pending">integração</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="venoso">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Categoria 2 · <span class="code">DOPPLER_VENOSO_MMII</span></p>
+          <h2>Doppler venoso de MMII</h2>
+          <p>Um contrato para as apresentações comum e “com medidas”. O protocolo é explícito: completo, investigação de TVP ou mapeamento com medidas. Lado não solicitado e sistema fora do protocolo permanecem não avaliados.</p>
+        </div>
+        <span class="chip pending">8 grupos de decisão</span>
+      </div>
+
+      <div class="callout danger">
+        <strong>Bloqueio central.</strong> O conjunto mínimo para excluir ou confirmar TVP ainda não foi decidido. Por isso, os modelos normais abaixo mostram redação candidata condicionada, sem aprovar publicação automática.
+      </div>
+
+      <h3 style="margin-top:30px">Modelos basais normais por protocolo</h3>
+      <div class="grid two" style="margin-top:14px">
+        <article class="card report-preview">
+          <div class="report-header">
+            <span class="chip pending">Condicionado ao mínimo negativo</span>
+            <h3 style="margin-top:10px">Protocolo completo · unilateral direito</h3>
+          </div>
+          <div class="report-body">
+            <p class="report-title">ULTRASSONOGRAFIA COM DOPPLER COLORIDO VENOSO DO MEMBRO INFERIOR DIREITO</p>
+            <p class="report-label">Comentários</p>
+            <div class="report-text">Sistema profundo avaliado com compressão segmentar e análise do fluxo. Sistema superficial avaliado sob manobras de competência documentadas.</div>
+            <p class="report-label">Os seguintes aspectos foram observados</p>
+            <div class="report-text">Veias femoral comum, femoral, femoral profunda, poplítea, tibiais posteriores, tibiais anteriores e fibulares direitas pérvias e compressíveis, sem material intraluminal, com fluxo espontâneo e fásico.
+
+Junções safenofemoral e safenopoplítea, safenas magna e parva avaliadas sob manobras documentadas, sem refluxo registrado.</div>
+            <p class="report-label">Conclusão candidata após aprovação dos mínimos</p>
+            <div class="report-text">Ausência de sinais de trombose venosa profunda no membro inferior direito.
+
+Ausência de refluxo venoso superficial significativo no território avaliado.</div>
+            <p class="report-note">Nenhuma estrutura omitida pode ser tratada como normal. A conclusão superficial exige teste de competência documentado.</p>
+          </div>
+        </article>
+
+        <article class="card report-preview">
+          <div class="report-header">
+            <span class="chip pending">Condicionado ao mínimo negativo</span>
+            <h3 style="margin-top:10px">Protocolo TVP-only · unilateral direito</h3>
+          </div>
+          <div class="report-body">
+            <p class="report-title">ULTRASSONOGRAFIA COM DOPPLER COLORIDO VENOSO DO MEMBRO INFERIOR DIREITO — INVESTIGAÇÃO DE TVP</p>
+            <p class="report-label">Comentários</p>
+            <div class="report-text">Exame restrito ao sistema venoso profundo, com compressão segmentar e análise do fluxo nos territórios registrados. O sistema superficial não foi avaliado.</div>
+            <p class="report-label">Os seguintes aspectos foram observados</p>
+            <div class="report-text">Veias femoral comum, femoral, femoral profunda, poplítea, tibiais posteriores e fibulares direitas pérvias e compressíveis, sem material intraluminal, com fluxo espontâneo e fásico.</div>
+            <p class="report-label">Conclusão candidata após aprovação dos mínimos</p>
+            <div class="report-text">Ausência de sinais de trombose venosa profunda nos segmentos avaliados do membro inferior direito.</div>
+            <p class="report-note">Não incluir qualquer frase sobre safenas, perfurantes, tributárias ou competência do sistema superficial.</p>
+          </div>
+        </article>
+      </div>
+
+      <h3 style="margin-top:34px">Alterações e correspondência com a conclusão</h3>
+      <div class="alteration-list" style="margin-top:14px">
+        <details class="alteration" open>
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V1 · Refluxo quantificado em safena magna</strong><span>Tempo, manobra, posição, lado e extensão registrados</span></span>
+            <span class="chip pending">Classificação pendente</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Refluxo na safena magna direita, desde a junção safenofemoral até a perna proximal, com duração de 1,2 s durante compressão distal em ortostase.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — aprovar limiar, fronteira exata e manobra válida antes de concluir insuficiência. A JSF não propaga automaticamente o refluxo por toda a safena.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V2 · Refluxo descrito sem tempo</strong><span>Observação preservada sem classe automática</span></span>
+            <span class="chip ok">Corpo apenas</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Refluxo observado na safena magna direita durante manobra documentada, sem quantificação temporal.</p></div>
+            <div><h4>Conclusão</h4><div class="no-output">Sem conclusão automática de insuficiência. O dado permanece descritivo até quantificação ou confirmação conforme regra aprovada.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V3 · Observação compatível com trombose profunda</strong><span>Segmento, compressibilidade, material, fluxo e oclusão explicitamente documentados</span></span>
+            <span class="chip pending">TVP e fase bloqueadas</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Veia femoral direita incompressível, contendo material intraluminal hipoecoico, sem fluxo detectável no segmento examinado. Oclusão descrita como total.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — definir conjunto mínimo positivo e critérios de fase. “Aguda” não será publicada apenas por seleção isolada, e “oclusiva” só aparece quando informada.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V4 · Alterações crônicas/recanalizadas</strong><span>Parede, recanalização, colaterais e refluxo associados</span></span>
+            <span class="chip pending">Fase pendente</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Espessamento parietal e recanalização parcial da veia poplítea esquerda, com canais de fluxo e colaterais documentadas.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — aprovar os critérios que diferenciam alteração crônica/recanalizada, indeterminada e mista.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V5 · Perfurante alterada</strong><span>Topografia, referência, distância, diâmetro, conexão e refluxo</span></span>
+            <span class="chip pending">Regra conflitante</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Perfurante medial na perna distal direita, a 8 cm do maléolo medial, medindo 4,0 mm, com refluxo de 0,8 s e conexão superficial–profunda documentada.</p></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — escolher se refluxo, diâmetro e conexão são cumulativos e definir a fronteira exata.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V6 · Calibre de safena isolado</strong><span>Medida não determina insuficiência</span></span>
+            <span class="chip ok">Sem inferência</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>Safena magna direita medindo 5,5 mm na coxa proximal.</p></div>
+            <div><h4>Conclusão</h4><div class="no-output">Sem item de conclusão. Calibre isolado não classifica competência, insuficiência ou hipoplasia.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V7 · Limitação por edema</strong><span>Território não testável explícito</span></span>
+            <span class="chip ok">Sustentado</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><p>A avaliação das veias profundas da panturrilha direita ficou limitada por edema, com compressibilidade não testável nesse território.</p></div>
+            <div><h4>Conclusão</h4><p>Estudo limitado das veias profundas da panturrilha direita.</p><p class="small quiet">Qualquer negativa deve ficar restrita aos segmentos avaliados.</p></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V8 · Conflito entre refluxo e “safenas competentes”</strong><span>Não escolher silenciosamente um dos estados</span></span>
+            <span class="chip blocked">Bloqueia publicação</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><div class="pending-box">CONFLITO — refluxo registrado no mesmo território declarado competente. Exigir correção médica.</div></div>
+            <div><h4>Conclusão</h4><div class="no-output">Nenhuma conclusão é gerada enquanto o conflito estiver aberto.</div></div>
+          </div>
+        </details>
+
+        <details class="alteration">
+          <summary>
+            <span></span>
+            <span class="alteration-title"><strong>V9 · TVS, pós-ablação e CEAP</strong><span>Cobertura adicional sem regra completa</span></span>
+            <span class="chip blocked">Excluído nesta versão</span>
+          </summary>
+          <div class="alteration-content comparison">
+            <div><h4>Corpo</h4><div class="pending-box">PENDENTE — não produzir texto sem fonte, campos clínicos e decisão de escopo.</div></div>
+            <div><h4>Conclusão</h4><div class="pending-box">PENDENTE — nenhuma fase, classe CEAP ou conduta intervencionista será inferida.</div></div>
+          </div>
+        </details>
+      </div>
+
+      <h3 style="margin-top:34px">Campos e controles propostos para Web</h3>
+      <div class="table-wrap" style="margin-top:14px">
+        <table>
+          <thead><tr><th>Bloco</th><th>Controles</th><th>Proteção clínica</th></tr></thead>
+          <tbody>
+            <tr><td>Exame</td><td>Protocolo, lateralidade, indicação, posição, manobras, qualidade e limitação.</td><td>Mudar protocolo preserva dados conflitantes e exige decisão; não apaga em silêncio.</td></tr>
+            <tr><td>Profundo</td><td>Segmentos por lado, compressibilidade, material, ecogenicidade, fluxo, fasicidade e resposta distal.</td><td>TVP não existe como booleano independente.</td></tr>
+            <tr><td>Junções e safenas</td><td>JSF/JSP, oito pontos da VSM, três da VSP, variantes, calibres e teste de competência.</td><td>JSF não propaga automaticamente estado para toda VSM.</td></tr>
+            <tr><td>Refluxo</td><td>Início/fim, tempo, unidade original, manobra, posição e confirmação.</td><td>Sem tempo ou regra aprovada, observação sem classe automática.</td></tr>
+            <tr><td>Trombose</td><td>Extensão, oclusão explícita, parede, recanalização, colaterais e fase com evidências.</td><td>Fase sem trombose e oclusão não informada são bloqueadas.</td></tr>
+            <tr><td>Perfurantes</td><td>Lado, face, nível, distância/referência, diâmetro, refluxo e conexão.</td><td>Classificação permanece pendente até regra única.</td></tr>
+            <tr><td>Mapa</td><td>Prévia e inclusão independentes.</td><td>Não avaliado é distinto de normal; correção manual volta ao contrato.</td></tr>
+            <tr><td>Revisão</td><td>Pendências, confirmação, recomendações, revisão e desfazer.</td><td>Remover achado limpa índices, texto futuro, conclusão futura e mapa futuro.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:34px">Cenários sintéticos para o gate venoso</h3>
+      <div class="scenario-grid" style="margin-top:14px">
+        <div class="scenario"><span class="scenario-number">1</span><div><strong>Completo unilateral normal</strong><span>Mínimo negativo ainda depende de decisão.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">2</span><div><strong>TVP-only bilateral normal</strong><span>Nenhuma frase superficial.</span></div><span class="chip pending">pendente</span></div>
+        <div class="scenario"><span class="scenario-number">3</span><div><strong>Lado solicitado não examinado</strong><span>Pendência explícita.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">4</span><div><strong>JSF + VSM com tempo</strong><span>Sem propagação automática.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">5</span><div><strong>Refluxo segmentar</strong><span>Extensão própria.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">6</span><div><strong>Refluxo abaixo do limiar</strong><span>Fronteira exata pendente.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">7</span><div><strong>Refluxo sem tempo</strong><span>Descritivo, sem classe.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">8</span><div><strong>Perfurante incompleta</strong><span>Não classificar.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">9</span><div><strong>TVP aguda oclusiva completa</strong><span>Mínimo positivo e fase pendentes.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">10</span><div><strong>TVP com segmento apenas</strong><span>Bloqueio.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">11</span><div><strong>Idade indeterminada</strong><span>Vocabulário de fase pendente.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">12</span><div><strong>Crônica recanalizada</strong><span>Critérios exatos pendentes.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">13</span><div><strong>Quadro misto</strong><span>Componente recente exige evidência.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">14</span><div><strong>TVP distal isolada</strong><span>Topografia derivada após escopo.</span></div><span class="chip pending">regra</span></div>
+        <div class="scenario"><span class="scenario-number">15</span><div><strong>Veia muscular</strong><span>Escopo e fonte pendentes.</span></div><span class="chip blocked">bloqueado</span></div>
+        <div class="scenario"><span class="scenario-number">16</span><div><strong>Limitação por edema</strong><span>Território e negativa restrita.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">17</span><div><strong>Tempo em ms</strong><span>Conversão preserva original.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">18</span><div><strong>Oito pontos bilaterais</strong><span>Apresentação com medidas.</span></div><span class="chip ok">contrato</span></div>
+        <div class="scenario"><span class="scenario-number">19</span><div><strong>Giacomini competente</strong><span>Só se testada.</span></div><span class="chip ok">contrato</span></div>
+        <div class="scenario"><span class="scenario-number">20</span><div><strong>Refluxo × competência</strong><span>Conflito bloqueia.</span></div><span class="chip ok">coberto</span></div>
+        <div class="scenario"><span class="scenario-number">21</span><div><strong>Remoção de achado</strong><span>Índices recompostos; mapa bloqueado.</span></div><span class="chip ok">coberto</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="decisoes">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Decisão médica</p>
+          <h2>Escolhas curtas para fechar o conteúdo</h2>
+          <p>As escolhas ficam apenas neste navegador e podem ser exportadas como JSON. Nenhuma opção muda código, contrato ou produção.</p>
+        </div>
+      </div>
+
+      <h3>Doppler renal</h3>
+      <div class="decision-list" style="margin-top:14px">
+        <article class="decision" data-decision="renal-confirmacao">
+          <div class="decision-top"><span class="decision-id">R1</span><div><h3>Quando publicar estenose significativa?</h3><p>Escolha a suficiência do critério numérico e da confirmação médica.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="r1a" name="renal-confirmacao" value="criterio_e_confirmacao"><label for="r1a"><strong>Critério + confirmação</strong>As duas condições são obrigatórias.</label></div>
+            <div class="choice"><input type="radio" id="r1b" name="renal-confirmacao" value="criterio_basta"><label for="r1b"><strong>Critério basta</strong>Confirmação faz parte da revisão geral.</label></div>
+            <div class="choice"><input type="radio" id="r1c" name="renal-confirmacao" value="afirmacao_sem_medida"><label for="r1c"><strong>Afirmação sem medida</strong>Permitir confirmação médica explícita isolada.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="renal-limites">
+          <div class="decision-top"><span class="decision-id">R2</span><div><h3>Onde ficam os valores exatos?</h3><p>Selecione o destino de cada fronteira. “Pendente” mantém a publicação bloqueada.</p></div></div>
+          <div class="select-row">
+            <label>VPS 180<select name="renal-vps-180"><option value="">Pendente</option><option value="normal">Normal</option><option value="limitrofe">Limítrofe</option></select></label>
+            <label>VPS 250<select name="renal-vps-250"><option value="">Pendente</option><option value="limitrofe">Limítrofe</option><option value="significativa">Significativa</option></select></label>
+            <label>RAR 3,2<select name="renal-rar-32"><option value="">Pendente</option><option value="nao_significativa">Não significativa</option><option value="significativa">Significativa</option></select></label>
+            <label>IR 0,80<select name="renal-ir-080"><option value="">Pendente</option><option value="nao_elevado">Não elevado</option><option value="elevado">Elevado</option></select></label>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="renal-ir">
+          <div class="decision-top"><span class="decision-id">R3</span><div><h3>Como tratar IR ainda sem regra?</h3><p>Inclui 0,71–0,79, elevação unilateral e IR baixo sem morfologia espectral.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="r3a" name="renal-ir" value="descrever_sem_concluir"><label for="r3a"><strong>Descrever sem concluir</strong>Valor permanece apenas no corpo.</label></div>
+            <div class="choice"><input type="radio" id="r3b" name="renal-ir" value="excluir_v1"><label for="r3b"><strong>Excluir da v1</strong>Não criar variantes até nova fonte.</label></div>
+            <div class="choice"><input type="radio" id="r3c" name="renal-ir" value="fornecer_regra"><label for="r3c"><strong>Fornecer regra</strong>Luiz define a interpretação em etapa seguinte.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="renal-rar">
+          <div class="decision-top"><span class="decision-id">R4</span><div><h3>RAR ditada sem operandos pode sustentar conclusão?</h3><p>A tolerância contra a RAR calculada também precisa ser definida se ambas existirem.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="r4a" name="renal-rar" value="exigir_operandos"><label for="r4a"><strong>Exigir operandos</strong>RAR sem as duas VPS não publica diagnóstico.</label></div>
+            <div class="choice"><input type="radio" id="r4b" name="renal-rar" value="aceitar_confirmada"><label for="r4b"><strong>Aceitar se confirmada</strong>Valor ditado pode ser usado com confirmação.</label></div>
+            <div class="choice"><input type="radio" id="r4c" name="renal-rar" value="excluir_rar_ditada"><label for="r4c"><strong>Excluir RAR ditada</strong>Usar apenas cálculo rastreável.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="renal-escopo">
+          <div class="decision-top"><span class="decision-id">R5</span><div><h3>Extensões sem fonte entram na v1?</h3><p>Veias renais, diagnóstico de oclusão, pós-stent, índice de aceleração e comparativos.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="r5a" name="renal-escopo" value="excluir"><label for="r5a"><strong>Excluir todas</strong>Manter apenas dado bruto fora do renderer.</label></div>
+            <div class="choice"><input type="radio" id="r5b" name="renal-escopo" value="buscar_fontes"><label for="r5b"><strong>Buscar fontes</strong>Abrir nova rodada antes da síntese.</label></div>
+            <div class="choice"><input type="radio" id="r5c" name="renal-escopo" value="definir_item_a_item"><label for="r5c"><strong>Decidir item a item</strong>Registrar inclusões separadamente.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="renal-recomendacao">
+          <div class="decision-top"><span class="decision-id">R6</span><div><h3>Recomendação complementar</h3><p>Não será derivada automaticamente de limitação, suspeita ou medida.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="r6a" name="renal-recomendacao" value="contexto_confirmacao"><label for="r6a"><strong>Contexto + confirmação</strong>Sugerir e publicar em etapas separadas.</label></div>
+            <div class="choice"><input type="radio" id="r6b" name="renal-recomendacao" value="excluir_v1"><label for="r6b"><strong>Excluir da v1</strong>Nenhuma recomendação no pacote inicial.</label></div>
+            <div class="choice"><input type="radio" id="r6c" name="renal-recomendacao" value="texto_manual"><label for="r6c"><strong>Somente texto manual</strong>Sem sugestão do sistema.</label></div>
+          </div>
+        </article>
+      </div>
+
+      <h3 style="margin-top:32px">Doppler venoso de MMII</h3>
+      <div class="decision-list" style="margin-top:14px">
+        <article class="decision" data-decision="venoso-tvp-positivo">
+          <div class="decision-top"><span class="decision-id">V1</span><div><h3>Mínimo para TVP positiva</h3><p>Defina a âncora diagnóstica e o caso em que a compressão não é testável.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="v1a" name="venoso-tvp-positivo" value="incompressibilidade"><label for="v1a"><strong>Incompressibilidade</strong>Material atua como evidência auxiliar.</label></div>
+            <div class="choice"><input type="radio" id="v1b" name="venoso-tvp-positivo" value="incompressibilidade_material"><label for="v1b"><strong>Compressão + material</strong>Exigir as duas evidências.</label></div>
+            <div class="choice"><input type="radio" id="v1c" name="venoso-tvp-positivo" value="nova_regra"><label for="v1c"><strong>Outra combinação</strong>Fornecer regra completa depois.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="venoso-tvp-negativo">
+          <div class="decision-top"><span class="decision-id">V2</span><div><h3>Mínimo para excluir TVP</h3><p>A negativa sempre fica restrita aos segmentos avaliados.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="v2a" name="venoso-tvp-negativo" value="compressibilidade_fluxo"><label for="v2a"><strong>Compressão + fluxo</strong>Exigir ambos por segmento.</label></div>
+            <div class="choice"><input type="radio" id="v2b" name="venoso-tvp-negativo" value="compressibilidade"><label for="v2b"><strong>Compressão documentada</strong>Fluxo fica complementar.</label></div>
+            <div class="choice"><input type="radio" id="v2c" name="venoso-tvp-negativo" value="fornecer_protocolo"><label for="v2c"><strong>Fornecer protocolo</strong>Definir conjunto por território.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="venoso-fases">
+          <div class="decision-top"><span class="decision-id">V3</span><div><h3>Vocabulário de fase</h3><p>Aguda, crônica/recanalizada, mista, indeterminada e eventual subaguda.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="v3a" name="venoso-fases" value="sem_subaguda"><label for="v3a"><strong>Sem subaguda</strong>Manter quatro classes do MMII.</label></div>
+            <div class="choice"><input type="radio" id="v3b" name="venoso-fases" value="harmonizar_mmss"><label for="v3b"><strong>Harmonizar com MMSS</strong>Incluir subaguda com critérios.</label></div>
+            <div class="choice"><input type="radio" id="v3c" name="venoso-fases" value="fase_manual"><label for="v3c"><strong>Fase só manual</strong>Sem derivação automática na v1.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="venoso-refluxo">
+          <div class="decision-top"><span class="decision-id">V4</span><div><h3>Refluxo: fronteira e manobras</h3><p>Os valores exatos no limiar e a manobra válida por segmento precisam de regra única.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="v4a" name="venoso-refluxo" value="maior_que"><label for="v4a"><strong>Estritamente maior</strong>Valor exato não é patológico.</label></div>
+            <div class="choice"><input type="radio" id="v4b" name="venoso-refluxo" value="maior_igual"><label for="v4b"><strong>Maior ou igual</strong>Valor exato entra no critério.</label></div>
+            <div class="choice"><input type="radio" id="v4c" name="venoso-refluxo" value="bloquear_exato"><label for="v4c"><strong>Bloquear valor exato</strong>Manter pendente até nova fonte.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="venoso-perfurante">
+          <div class="decision-top"><span class="decision-id">V5</span><div><h3>Perfurante incompetente</h3><p>Resolver a divergência entre refluxo, diâmetro e conexão superficial–profunda.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="v5a" name="venoso-perfurante" value="tres_criterios"><label for="v5a"><strong>Três critérios</strong>Exigir refluxo, diâmetro e conexão.</label></div>
+            <div class="choice"><input type="radio" id="v5b" name="venoso-perfurante" value="refluxo_diametro"><label for="v5b"><strong>Refluxo + diâmetro</strong>Conexão fica descritiva.</label></div>
+            <div class="choice"><input type="radio" id="v5c" name="venoso-perfurante" value="descritiva_v1"><label for="v5c"><strong>Somente descritiva</strong>Sem classificar na v1.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="venoso-anatomia">
+          <div class="decision-top"><span class="decision-id">V6</span><div><h3>Ilíacas e veias musculares</h3><p>O protocolo atual não sustenta automaticamente topografia ilíaca nem classificação das musculares.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="v6a" name="venoso-anatomia" value="excluir_v1"><label for="v6a"><strong>Excluir da v1</strong>Não avaliadas ou bloqueadas.</label></div>
+            <div class="choice"><input type="radio" id="v6b" name="venoso-anatomia" value="buscar_fontes"><label for="v6b"><strong>Buscar fontes</strong>Abrir estudo específico.</label></div>
+            <div class="choice"><input type="radio" id="v6c" name="venoso-anatomia" value="incluir_protocolo"><label for="v6c"><strong>Incluir com protocolo</strong>Luiz define escopo e critérios.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="venoso-cobertura">
+          <div class="decision-top"><span class="decision-id">V7</span><div><h3>TVS e pós-safenectomia/ablação</h3><p>Não há fonte suficiente nesta rodada.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="v7a" name="venoso-cobertura" value="excluir_v1"><label for="v7a"><strong>Excluir da v1</strong>Sem campos ou frases.</label></div>
+            <div class="choice"><input type="radio" id="v7b" name="venoso-cobertura" value="buscar_fontes"><label for="v7b"><strong>Buscar fontes</strong>Nova rodada antes da síntese.</label></div>
+            <div class="choice"><input type="radio" id="v7c" name="venoso-cobertura" value="somente_anatomia"><label for="v7c"><strong>Somente anatomia prévia</strong>Registrar cirurgia sem classificar.</label></div>
+          </div>
+        </article>
+
+        <article class="decision" data-decision="venoso-conduta">
+          <div class="decision-top"><span class="decision-id">V8</span><div><h3>CEAP e recomendações</h3><p>CEAP exige clínica explícita. Urgência e conduta intervencionista não podem ser inferidas.</p></div></div>
+          <div class="choices">
+            <div class="choice"><input type="radio" id="v8a" name="venoso-conduta" value="excluir_ambos"><label for="v8a"><strong>Excluir ambos da v1</strong>Sem CEAP nem recomendação.</label></div>
+            <div class="choice"><input type="radio" id="v8b" name="venoso-conduta" value="confirmacao_separada"><label for="v8b"><strong>Confirmação separada</strong>Sugerir e publicar em etapas distintas.</label></div>
+            <div class="choice"><input type="radio" id="v8c" name="venoso-conduta" value="somente_manual"><label for="v8c"><strong>Somente manual</strong>Sem sugestão automática.</label></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="actions">
+        <button class="primary-button" type="button" id="exportDecisions">Exportar decisões em JSON</button>
+        <button class="secondary-button" type="button" id="clearDecisions">Limpar escolhas locais</button>
+      </div>
+    </section>
+
+    <section class="section" id="depois">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Depois da aprovação clínica</p>
+          <h2>O que entra em Web e prompts mobile</h2>
+          <p>As duas entradas preencherão o mesmo contrato. A diferença será apenas a forma de captura e apresentação.</p>
+        </div>
+      </div>
+
+      <div class="flow" aria-label="Fluxo futuro após aprovação">
+        <div class="flow-step"><b>1 · Entrada</b><span>Ditado mobile ou seleção Web.</span></div>
+        <div class="flow-step"><b>2 · Contrato</b><span>Mesmo estado versionado e rastreável.</span></div>
+        <div class="flow-step"><b>3 · Validação</b><span>Conflitos e pendências antes da prosa.</span></div>
+        <div class="flow-step"><b>4 · Confirmação</b><span>Médico confirma apenas o que exige decisão.</span></div>
+        <div class="flow-step"><b>5 · Saídas</b><span>Texto, conclusão e mapa na mesma revisão.</span></div>
+      </div>
+
+      <div class="grid two" style="margin-top:18px">
+        <article class="card card-pad">
+          <span class="chip info">Web</span>
+          <h3 style="margin-top:12px">Formulários estruturados</h3>
+          <p>Colunas por lado, estados explícitos, unidades visíveis, derivados somente leitura, origem da medida, pendências, confirmação e desfazer. O venoso “com medidas” abre mais pontos, mas grava o mesmo contrato.</p>
+        </article>
+        <article class="card card-pad">
+          <span class="chip info">Mobile</span>
+          <h3 style="margin-top:12px">Prompt como extrator orientado</h3>
+          <p>O ditado resolve protocolo, lado, estrutura, medida e limitação. Dado ausente gera pendência; transplante ou escopo incompatível gera redirecionamento. O prompt não escreve conclusão livre antes da validação.</p>
+        </article>
+      </div>
+
+      <div class="callout danger" style="margin-top:18px">
+        <strong>Mesmo após aprovar esta página:</strong> ainda serão necessários biblioteca versionada, adapters, renderer, testes pareados Web/iOS/Android/API/Sala, mapa derivado do contrato e autorização separada para ativar qualquer gate.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      Documento estático de revisão clínica. Fontes: contratos dormentes <span class="code">doppler-renal/v1-candidate</span> e <span class="code">doppler-venoso-mmii/v1-candidate</span>, plano do primeiro lote e fichas de síntese de 03/10/2026. Sem dados de pacientes e sem redação copiada do concorrente.
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      const storageKey = "laudousg:first-batch-clinical-review:v1";
+      const controls = [...document.querySelectorAll("input[type=radio], select")];
+      const counter = document.getElementById("decisionCounter");
+
+      function currentState() {
+        const state = {};
+        for (const control of controls) {
+          if (control.type === "radio") {
+            if (control.checked) state[control.name] = control.value;
+          } else if (control.value) {
+            state[control.name] = control.value;
+          }
+        }
+        return state;
+      }
+
+      function renderCount() {
+        const count = Object.keys(currentState()).length;
+        counter.textContent = `${count} ${count === 1 ? "decisão registrada" : "decisões registradas"}`;
+      }
+
+      function persist() {
+        localStorage.setItem(storageKey, JSON.stringify(currentState()));
+        renderCount();
+      }
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        for (const control of controls) {
+          if (!(control.name in saved)) continue;
+          if (control.type === "radio") control.checked = control.value === saved[control.name];
+          else control.value = saved[control.name];
+        }
+      } catch (_) {
+        localStorage.removeItem(storageKey);
+      }
+
+      controls.forEach((control) => control.addEventListener("change", persist));
+      renderCount();
+
+      document.getElementById("clearDecisions").addEventListener("click", () => {
+        controls.forEach((control) => {
+          if (control.type === "radio") control.checked = false;
+          else control.value = "";
+        });
+        localStorage.removeItem(storageKey);
+        renderCount();
+      });
+
+      document.getElementById("exportDecisions").addEventListener("click", () => {
+        const payload = {
+          review: "primeiro-lote-renal-venoso-mmii",
+          contractVersions: ["doppler-renal/v1-candidate", "doppler-venoso-mmii/v1-candidate"],
+          exportedAt: new Date().toISOString(),
+          decisions: currentState(),
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "decisoes-primeiro-lote-doppler.json";
+        link.click();
+        URL.revokeObjectURL(link.href);
+      });
+    })();
+  </script>
+</body>
+</html>
