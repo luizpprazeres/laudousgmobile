@@ -9,6 +9,7 @@ import {
   composeReport,
   initialExamState,
   initialTireoideState,
+  pendenciasLocais,
   tireoideSections,
   type ExamSection,
   type ExamState,
@@ -610,6 +611,15 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     const cat = CATEGORIES[categoria]
     return cat ? composeReport(cat, examStates[categoria]).text : ''
   }, [categoria, composition, composicao.texto, examStates, migrada, laudoCanonico.texto])
+  /**
+   * Pendências do compositor local (categorias ainda não migradas): dado
+   * essencial ausente ou inválido. O texto segue visível, com lacunas "____" e
+   * sem a conclusão diagnóstica, mas não é salvo enquanto houver pendência.
+   */
+  const pendenciasLocaisAtuais = useMemo(
+    () => (composition || migrada || isTireoide ? [] : pendenciasLocais(categoria, examStates[categoria])),
+    [categoria, composition, examStates, isTireoide, migrada],
+  )
 
   /**
    * OS BLOCOS DE CALCULADORA — e por que isto NÃO fura a regra do §3.2.
@@ -869,6 +879,11 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           : 'idle'
 
   const onSave = async () => {
+    if (pendenciasLocaisAtuais.length > 0 && !textoFoiEditado) {
+      setSaveState('error')
+      setSaveError(`Complete os dados essenciais antes de salvar: ${pendenciasLocaisAtuais.join(' ')}`)
+      return
+    }
     if (laudoNaoConfere) {
       setSaveState('error')
       setSaveError(
@@ -1802,6 +1817,15 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   : ''}
                 {(composition ? composicao.texto : laudoCanonico.texto) ? ' O texto abaixo é de antes desta falha e não pode ser salvo.' : ''}
               </p>
+            ) : null}
+
+            {pendenciasLocaisAtuais.length > 0 ? (
+              <div data-laudo-pendencias className="rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                <strong className="font-semibold">Dados essenciais pendentes — o laudo não será salvo assim.</strong>
+                <ul className="mt-1 list-disc pl-4">
+                  {pendenciasLocaisAtuais.map((pendencia) => <li key={pendencia}>{pendencia}</li>)}
+                </ul>
+              </div>
             ) : null}
 
             {composition && composicao.blocks.length && !motor.erro ? (

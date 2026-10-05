@@ -175,8 +175,8 @@ async function main() {
       await page.getByRole('status').getByText('Nenhum exame encontrado.').waitFor()
       await page.getByRole('button', { name: 'Limpar busca' }).click()
       assert.equal(await cards.count(), TODOS.length)
-      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 21 + (MODELOS_HEPATICOS_ATIVOS ? 2 : 0))
-      assert.equal(await page.locator('[data-generation-mode="writer"]').count(), 13)
+      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 24 + (MODELOS_HEPATICOS_ATIVOS ? 2 : 0))
+      assert.equal(await page.locator('[data-generation-mode="writer"]').count(), 10)
       for (const forbidden of [...(MODELOS_HEPATICOS_ATIVOS ? [] : ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA']), 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
         assert.equal(await page.locator(`[data-category-id="${forbidden}"]`).count(), 0, `${forbidden} não pode aparecer no seletor`)
       }

@@ -25,6 +25,9 @@ import { dopplerHepatico } from './organs/dopplerHepatico'
 import { paredeAbdominal } from './organs/paredeAbdominal'
 import { regiaoInguinal } from './organs/regiaoInguinal'
 import { escrotal } from './organs/escrotal'
+import { prostataTransretal } from './organs/prostataTransretal'
+import { paratireoide } from './organs/paratireoide'
+import { glandulasSalivares } from './organs/glandulasSalivares'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
@@ -47,6 +50,10 @@ export { dopplerHepatico } from './organs/dopplerHepatico'
 export { paredeAbdominal } from './organs/paredeAbdominal'
 export { regiaoInguinal } from './organs/regiaoInguinal'
 export { escrotal } from './organs/escrotal'
+export { prostataTransretal } from './organs/prostataTransretal'
+export { paratireoide } from './organs/paratireoide'
+export { glandulasSalivares } from './organs/glandulasSalivares'
+export { pendenciasLocais } from './organs/pendenciasLocais'
 export type { ExamCategory, ExamSection } from './organs/abdomeTotal'
 export { vesiculaModule } from './organs/vesicula'
 
@@ -62,6 +69,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   pelveFeminina, cervical, cervicometria, partesMoles, musculoesqueletico,
   obstetrica, morfologico, dopplerObstetrico, dopplerCarotidas, dopplerRenal, dopplerHepatico, dopplerVenosoMmii, dopplerVenosoMmiiMedidas,
   paredeAbdominal, regiaoInguinal, escrotal,
+  prostataTransretal, paratireoide, glandulasSalivares,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
