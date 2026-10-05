@@ -31,7 +31,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'obstetricia',
     label: 'Obstetrícia',
-    categories: ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA', 'PERFIL_BIOFISICO_FETAL', 'ECOCARDIOGRAFIA_FETAL'],
+    categories: ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO_1T', 'MORFOLOGICO_2T', 'MORFOLOGICO_3T', 'CERVICOMETRIA', 'PERFIL_BIOFISICO_FETAL', 'ECOCARDIOGRAFIA_FETAL'],
   },
   {
     id: 'saude_mulher',
@@ -80,6 +80,9 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   MSK_TORNOZELO: 'Tornozelo unilateral',
   MSK_TORNOZELO_BILATERAL: 'Tornozelo bilateral',
   DOPPLER_OBSTETRICO: 'Obstétrica com Doppler',
+  MORFOLOGICO_1T: 'Morfológico 1º trimestre',
+  MORFOLOGICO_2T: 'Morfológico 2º trimestre',
+  MORFOLOGICO_3T: 'Morfológico 3º trimestre',
   DOPPLER_HEPATICO: 'Doppler hepático',
   TIREOIDE: 'Tireoide',
   TIREOIDE_DOPPLER: 'Tireoide com Doppler',
@@ -116,6 +119,9 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   OBSTETRICA: ['gestacao', 'gravidez', 'gestante', 'pre-natal', 'feto', 'fetal', 'biometria fetal'],
   DOPPLER_OBSTETRICO: ['doppler fetal', 'arteria umbilical', 'cerebral media', 'ducto venoso', 'uterinas'],
   MORFOLOGICO: ['morfologico', 'morfologia fetal', 'anatomia fetal', 'translucencia nucal', 'primeiro trimestre', 'segundo trimestre'],
+  MORFOLOGICO_1T: ['morfologico', 'morfologia fetal', 'primeiro trimestre', 'translucencia nucal', 'osso nasal'],
+  MORFOLOGICO_2T: ['morfologico', 'morfologia fetal', 'segundo trimestre', 'anatomia fetal'],
+  MORFOLOGICO_3T: ['morfologico', 'morfologia fetal', 'terceiro trimestre', 'anatomia fetal'],
   CERVICOMETRIA: ['colo uterino', 'comprimento do colo', 'colo do utero', 'transvaginal'],
   PERFIL_BIOFISICO_FETAL: ['perfil biofisico', 'pbf', 'vitalidade fetal', 'bem-estar fetal', 'cardiotocografia', 'manning'],
   ECOCARDIOGRAFIA_FETAL: ['ecocardiografia fetal', 'ecocardiograma fetal', 'eco fetal', 'coracao fetal', 'cardiopatia congenita', 'arritmia fetal'],

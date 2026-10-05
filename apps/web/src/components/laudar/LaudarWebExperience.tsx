@@ -40,6 +40,7 @@ import { adaptarCervicometria } from '@/lib/catalog/cervicometriaParaCatalogo'
 import { adaptarPartesMoles } from '@/lib/catalog/partesMolesParaCatalogo'
 import { adaptarMskPreset, adaptarMusculoesqueletico } from '@/lib/catalog/musculoesqueleticoParaCatalogo'
 import { mskPresetDe } from '@/lib/deterministic/organs/mskPresets'
+import { morfologicoPresetDe } from '@/lib/deterministic/organs/morfologicoPresets'
 import { migrateLegacyMskState } from '@/lib/deterministic/organs/musculoesqueletico'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { isWriterCategory } from '@/lib/writerCategories'
@@ -616,6 +617,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
       const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
       return adaptarMorfologico(estado, opcoes)
+    }
+    const morfologicoPreset = morfologicoPresetDe(categoria)
+    if (morfologicoPreset) {
+      return adaptarMorfologico(
+        (examStates[categoria] ?? {}) as Record<string, unknown>,
+        { trimestre: morfologicoPreset.trimestre },
+      )
     }
     if (categoria === 'DOPPLER_OBSTETRICO') {
       return adaptarDopplerWeb(examStates[categoria] ?? {})

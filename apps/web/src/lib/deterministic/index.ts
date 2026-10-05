@@ -49,6 +49,7 @@ import { mamaMasculina } from './organs/mamaMasculina'
 import { bolsaTesticularDoppler } from './organs/bolsaTesticularDoppler'
 import { MSK_PRESET_CATEGORIES } from './organs/mskPresets'
 import { PELVE_PRESET_CATEGORIES } from './organs/pelvePresets'
+import { MORFOLOGICO_PRESET_CATEGORIES } from './organs/morfologicoPresets'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
@@ -105,6 +106,7 @@ export { vesiculaModule } from './organs/vesicula'
  *  `/render` canônico. Ver a nota em `organs/tireoide.ts`.)
  */
 export { MSK_PRESETS, MSK_PRESET_IDS, MSK_PRESET_CATEGORIES, mskPresetDe } from './organs/mskPresets'
+export { MORFOLOGICO_PRESETS, MORFOLOGICO_PRESET_CATEGORIES, morfologicoPresetDe } from './organs/morfologicoPresets'
 export const GENERIC_CATEGORIES: ExamCategory[] = [
   abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria,
   pelveFeminina, cervical, cervicometria, partesMoles, musculoesqueletico,
@@ -130,6 +132,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   pesquisaEndometriose,
   ...MSK_PRESET_CATEGORIES,
   ...PELVE_PRESET_CATEGORIES,
+  ...MORFOLOGICO_PRESET_CATEGORIES,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])

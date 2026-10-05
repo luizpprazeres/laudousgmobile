@@ -96,6 +96,9 @@ export const CATEGORIAS_DERIVADAS: Readonly<Record<string, (typeof CATEGORIAS_MI
   MSK_QUADRIL_BILATERAL: "MUSCULOESQUELETICO",
   MSK_TORNOZELO: "MUSCULOESQUELETICO",
   MSK_TORNOZELO_BILATERAL: "MUSCULOESQUELETICO",
+  MORFOLOGICO_1T: "MORFOLOGICO",
+  MORFOLOGICO_2T: "MORFOLOGICO",
+  MORFOLOGICO_3T: "MORFOLOGICO",
 }
 
 /** A categoria cujo renderer canônico monta o laudo (a própria, ou a mãe da derivada). */
