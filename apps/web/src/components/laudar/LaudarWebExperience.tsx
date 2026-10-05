@@ -34,6 +34,7 @@ import { adaptarAbdomeSuperior } from '@/lib/catalog/abdomeSuperiorParaCatalogo'
 import { adaptarViasUrinarias } from '@/lib/catalog/viasUrinariasParaCatalogo'
 import { adaptarProstataSuprapubica } from '@/lib/catalog/prostataParaCatalogo'
 import { adaptarCervical } from '@/lib/catalog/cervicalParaCatalogo'
+import { adaptarCervicalDoppler, adaptarMamasDoppler, adaptarTireoideDoppler } from '@/lib/catalog/dopplerPresetsParaCatalogo'
 import { adaptarCervicometria } from '@/lib/catalog/cervicometriaParaCatalogo'
 import { adaptarPartesMoles } from '@/lib/catalog/partesMolesParaCatalogo'
 import { adaptarMskPreset, adaptarMusculoesqueletico } from '@/lib/catalog/musculoesqueleticoParaCatalogo'
@@ -106,6 +107,9 @@ import { loadCompositionReport, saveCompositionReport, updateCompositionReport }
 import type { CalcSpec } from '@/lib/calculators/specs'
 
 const TIREOIDE_ID = 'TIREOIDE'
+const TIREOIDE_DOPPLER_ID = 'TIREOIDE_DOPPLER'
+/** Cards da mama: o próprio MAMARIA e os atalhos com Doppler (mesmo painel). */
+const MAMARIA_CARDS = new Set(['MAMARIA', 'MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER'])
 type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normalBody'>
 
 const TIREOIDE_CATEGORY = {
@@ -143,7 +147,7 @@ const RECOMMENDATIONS_SECTION = { id: 'recommendations', label: 'Recomendações
 
 function calculatorsFor(categoria: string, opts: Record<string, unknown>): CalcSpec[] {
   const category = CATEGORIES[categoria]
-  const axilas = categoria === 'MAMARIA' && opts.escopo_exame === 'axilas'
+  const axilas = MAMARIA_CARDS.has(categoria) && opts.escopo_exame === 'axilas'
   return (category?.resolveCalculators?.(opts as never) ?? category?.calculators ?? [])
     .filter((spec) => !(axilas && spec.id === 'bi-rads'))
 }
@@ -456,7 +460,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   }, [])
 
   const isVenousMmii = categoria === 'DOPPLER_VENOSO_MMII' || categoria === 'DOPPLER_VENOSO_MMII_MEDIDAS'
-  const isTireoide = categoria === TIREOIDE_ID
+  const isTireoideDoppler = categoria === TIREOIDE_DOPPLER_ID
+  const isTireoide = categoria === TIREOIDE_ID || isTireoideDoppler
+  const isMamaria = MAMARIA_CARDS.has(categoria)
+  const mamariaDoppler = categoria === 'MAMAS_DOPPLER' || categoria === 'MAMAS_AXILAS_DOPPLER'
   /** Pelve com útero (inclui a derivada transvaginal): esquema de miomas. */
   const isPelvis = categoria === 'PELVE_FEMININA' || categoria === 'PELVICO_TRANSVAGINAL' || categoria === 'PELVICO_TRANSABDOMINAL'
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
@@ -464,6 +471,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
   const opts = (examStates[categoria]?.['__opts'] as ExamState[string] | undefined) ?? {}
   const axilasOnly = categoria === 'MAMARIA' && opts.escopo_exame === 'axilas'
+  /** No card com Doppler, o painel sempre trabalha com o Doppler realizado. */
+  const tireoidePainel = isTireoideDoppler ? { ...tireoideState, doppler: true } : tireoideState
   const documentKey = composition
     ? compositionKey(composition.compositionId)
     : chaveDocumentoDoppler(categoria, examStates[categoria] ?? {})
@@ -471,7 +480,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // escreveria fora do componente, então fica fora até ter escopo próprio.
   // O antigo esquema de posição fetal foi retirado da Web: ele ocupava espaço
   // sem ajudar a decisão clínica. Mama e tireoide mantêm os mapas interativos.
-  const supportsVisualSchema = !composition && (isVenousMmii || isTireoide || isPelvis || (categoria === 'MAMARIA' && !axilasOnly))
+  const supportsVisualSchema = !composition && (isVenousMmii || isTireoide || isPelvis || (isMamaria && !axilasOnly))
   const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -510,7 +519,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     { id: 'recommendations', label: 'Recomendações', group: 'conclusao' as const },
     ...calcSections,
   ]
-  const currentCategory = isTireoide ? TIREOIDE_CATEGORY : genericCategory!
+  const currentCategory = isTireoideDoppler ? { id: TIREOIDE_DOPPLER_ID, name: 'Tireoide com Doppler' } : isTireoide ? TIREOIDE_CATEGORY : genericCategory!
   const examState = isTireoide ? undefined : examStates[categoria]
 
   // Controles de categoria (via, menopausa, segmento…).
@@ -538,6 +547,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
    */
   const migrada = categoriaMigrada(categoria)
   const achadosCanonicos = useMemo(() => {
+    if (isTireoideDoppler) {
+      return adaptarTireoideDoppler(tireoideState)
+    }
     if (isTireoide) {
       const a = adaptarTireoide(tireoideState)
       return { dados: a.dados as unknown as Record<string, unknown>, alteracoes: a.alteracoes, pendencias: a.pendencias }
@@ -559,6 +571,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'MAMARIA') {
       return adaptarMamaria((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'MAMAS_DOPPLER' || categoria === 'MAMAS_AXILAS_DOPPLER') {
+      return adaptarMamasDoppler((examStates[categoria] ?? {}) as Record<string, unknown>, categoria)
+    }
+    if (categoria === 'CERVICAL_DOPPLER') {
+      return adaptarCervicalDoppler((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
     if (categoria === 'OBSTETRICA') {
       return adaptarObstetrica((examStates[categoria] ?? {}) as Record<string, unknown>)
@@ -620,7 +638,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       return adaptarDopplerArteriasTemporais(examStates[categoria] ?? {})
     }
     return null
-  }, [categoria, examStates, isTireoide, tireoideState])
+  }, [categoria, examStates, isTireoide, isTireoideDoppler, tireoideState])
 
   const renderCategory = categoria === 'DOPPLER_OBSTETRICO'
     ? categoriaRenderDoppler(examStates[categoria] ?? {})
@@ -1136,7 +1154,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         ? invalidarPercentilManual(current, { ...current, [sectionId]: nextState })
         : { ...current, [sectionId]: nextState })
 
-    if (section.id === 'calc:bi-rads' && categoria === 'MAMARIA') return <MamariaBiradsPanel state={examState?.mamas ?? {}} onChange={state => updateSectionState('mamas', state, false)} />
+    if (section.id === 'calc:bi-rads' && isMamaria) return <MamariaBiradsPanel state={examState?.mamas ?? {}} onChange={state => updateSectionState('mamas', state, false)} />
     if (section.id === 'liver-quantification') return <div className="space-y-3">
       <LiverQuantificationPanel state={liverMeasurements} onChange={state => updateSectionState('__liver_quantification', { ...state, inserted: '' }, false)} />
       {liverResult.text || liverInserted ? <div className="flex flex-wrap items-center gap-2">
@@ -1151,7 +1169,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (section.id === 'recommendations') return <RecommendationsPanel state={examState?.__recommendations ?? {}} onChange={state => updateSectionState('__recommendations', state, false)} />
     if (section.id === 'visual-schema') return (
                     <VisualSchemaPanel
-                      category={isVenousMmii ? 'VENOUS' : isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : isPelvis ? 'MYOMA' : 'FETAL_POSITION'}
+                      category={isVenousMmii ? 'VENOUS' : isTireoide ? 'TIREOIDE' : isMamaria ? 'MAMARIA' : isPelvis ? 'MYOMA' : 'FETAL_POSITION'}
                       breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
                       fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
                       thyroidState={tireoideState}
@@ -1194,13 +1212,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         : null
     }
     if (isTireoide) {
-      return <TireoideFormPanel section={section.id} state={tireoideState} onChange={setTireoideState} showCompanionConflicts={false} />
+      return <TireoideFormPanel section={section.id} state={tireoidePainel} onChange={setTireoideState} showCompanionConflicts={false} />
     }
-    if (categoria === 'MAMARIA' && section.id === 'mamas') {
+    if (isMamaria && section.id === 'mamas') {
       return (
         <MamariaFormPanel
           state={examState?.mamas ?? section.module?.initialState() ?? { fundo: 'heterogeneo', achados_ids: [] }}
-          dopplerEnabled={opts.doppler_mamario === 'sim'}
+          dopplerEnabled={mamariaDoppler || opts.doppler_mamario === 'sim'}
           onChange={(nextState) => updateSectionState('mamas', nextState, false)}
         />
       )
@@ -1759,7 +1777,20 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   </label>
                 ) : null}
                 <div className="ml-auto flex flex-wrap items-center justify-end gap-2 self-end">
-                  {isTireoide ? (
+                  {isTireoideDoppler ? (
+                    <label className="flex items-center gap-2 text-[12px] font-semibold text-gray-600 dark:text-gray-300">
+                      Vascularização do parênquima
+                      <select
+                        value={tireoideState.vascularizacaoParenquima ?? 'nao_informada'}
+                        onChange={(event) => setTireoideState((state) => ({ ...state, vascularizacaoParenquima: event.target.value as NonNullable<TireoideState['vascularizacaoParenquima']> }))}
+                        className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-[12px] dark:border-gray-700 dark:bg-gray-950"
+                      >
+                        <option value="nao_informada">Não informada</option>
+                        <option value="normal">Normal ao Doppler</option>
+                        <option value="alterada">Alterada</option>
+                      </select>
+                    </label>
+                  ) : isTireoide ? (
                     <ToolbarPill
                       tone={tireoideState.doppler ? 'toggleOn' : 'neutral'}
                       pressed={tireoideState.doppler}
@@ -1795,7 +1826,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               renderBody={renderSectionBody}
               highlightedId={highlightedSectionId}
               layout={
-                categoria === 'MAMARIA' && !axilasOnly
+                isMamaria && !axilasOnly
                   ? 'mammary'
                   : categoria === 'ABDOMEN_TOTAL'
                     ? 'abdomen-total'

@@ -104,6 +104,10 @@ export interface TireoideState {
   picoEsquerdo: string
   /** Tireoidite difusa selecionada (modifica achados + conclusão). */
   tireoidite: TireoiditeTipo
+  /** Card TIREOIDE_DOPPLER: padrão vascular do parênquima, informado pelo médico. */
+  vascularizacaoParenquima?: 'nao_informada' | 'normal' | 'alterada'
+  /** O médico tocou nos linfonodos — o padrão "preservados" sozinho não é dado. */
+  linfonodosConfirmados?: boolean
 }
 
 export const TIREOIDITES: { value: TireoiditeTipo; label: string }[] = [

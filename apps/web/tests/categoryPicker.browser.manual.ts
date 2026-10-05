@@ -17,8 +17,8 @@ const MODELOS_HEPATICOS_ATIVOS = process.env.NEXT_PUBLIC_HEPATIC_MODELS_V1 !== '
 const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
   ['medicina_interna', ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'DOPPLER_HEPATICO', ...(MODELOS_HEPATICOS_ATIVOS ? ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA'] : []), 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'BOLSA_TESTICULAR_DOPPLER', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS']],
   ['obstetricia', ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA', 'PERFIL_BIOFISICO_FETAL', 'ECOCARDIOGRAFIA_FETAL']],
-  ['saude_mulher', ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA']],
-  ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA', 'AXILAS']],
+  ['saude_mulher', ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA', 'MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER']],
+  ['pequenas_partes', ['TIREOIDE', 'TIREOIDE_DOPPLER', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'CERVICAL_DOPPLER', 'PARTES_MOLES', 'MAMA_MASCULINA', 'AXILAS']],
   ['musculoesqueletico', ['MUSCULOESQUELETICO', 'MSK_COTOVELO', 'MSK_COTOVELO_BILATERAL', 'MSK_JOELHO', 'MSK_JOELHO_BILATERAL', 'MSK_MAO', 'MSK_MAO_BILATERAL', 'MSK_OMBRO', 'MSK_OMBRO_BILATERAL', 'MSK_PUNHO', 'MSK_PUNHO_BILATERAL', 'MSK_PE', 'MSK_PE_BILATERAL', 'MSK_QUADRIL', 'MSK_QUADRIL_BILATERAL', 'MSK_TORNOZELO', 'MSK_TORNOZELO_BILATERAL']],
   ['vascular', ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_TRANSPLANTE_RENAL', 'DOPPLER_MESENTERICO']],
   ['outros_exames', ['QUADRIL_INFANTIL', 'TRANSFONTANELA', 'OCULAR', 'LIVRE']],
@@ -158,11 +158,11 @@ async function main() {
       assert.deepEqual(await buscar('joelho'), ['MUSCULOESQUELETICO', 'MSK_JOELHO', 'MSK_JOELHO_BILATERAL'])
       assert.deepEqual(await buscar('ombro bilateral'), ['MSK_OMBRO_BILATERAL'])
       assert.deepEqual(await buscar('gravidez'), ['OBSTETRICA'])
-      assert.deepEqual(await buscar('saude da mulher'), ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA'])
+      assert.deepEqual(await buscar('saude da mulher'), ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA', 'MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER'])
       assert.deepEqual(await buscar('endometriose'), ['PESQUISA_ENDOMETRIOSE'])
       assert.deepEqual(await buscar('endovaginal'), ['PELVICO_TRANSVAGINAL'])
       assert.deepEqual(await buscar('pelvico abdominal'), ['PELVICO_TRANSABDOMINAL'])
-      assert.deepEqual(await buscar('pequenas partes'), ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA', 'AXILAS'])
+      assert.deepEqual(await buscar('pequenas partes'), ['TIREOIDE', 'TIREOIDE_DOPPLER', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'CERVICAL_DOPPLER', 'PARTES_MOLES', 'MAMA_MASCULINA', 'AXILAS'])
       assert.deepEqual(await buscar('prostata transretal'), ['PROSTATA_TRANSRETAL'])
       assert.deepEqual(await buscar('mapa venoso'), ['DOPPLER_VENOSO_MMII'])
       assert.deepEqual(await buscar('medidas venosas'), ['DOPPLER_VENOSO_MMII_MEDIDAS'])
@@ -178,7 +178,8 @@ async function main() {
         assert.deepEqual(await buscar('multiparametrica'), ['AVALIACAO_MULTIPARAMETRICA_HEPATICA'])
         assert.deepEqual(await buscar('fibrose'), ['ELASTOGRAFIA_HEPATICA'])
       }
-      assert.deepEqual(await buscar('mama'), ['MAMARIA', 'MAMA_MASCULINA'])
+      assert.deepEqual(await buscar('mama'), ['MAMARIA', 'MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER', 'MAMA_MASCULINA'])
+      assert.deepEqual(await buscar('doppler mamario'), ['MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER'])
       assert.deepEqual(await buscar('ginecomastia'), ['MAMA_MASCULINA'])
       assert.equal(await page.locator('[data-category-shortcut]').count(), 0, 'atalho não duplica resultado de busca')
       assert.deepEqual(await buscar('colo'), ['CERVICOMETRIA'])

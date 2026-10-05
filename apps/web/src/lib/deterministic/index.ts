@@ -12,6 +12,7 @@ import { mamaria } from './organs/mamaria'
 import { pelveFeminina } from './organs/pelveFeminina'
 import { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
 import { pelvicoTransabdominal } from './organs/pelvicoTransabdominal'
+import { cervicalDoppler, mamasDoppler, mamasAxilasDoppler } from './organs/dopplerPresets'
 import { histerossonografia } from './organs/histerossonografia'
 import { pesquisaEndometriose } from './organs/pesquisaEndometriose'
 import { hycosy } from './organs/hycosy'
@@ -57,6 +58,7 @@ export { mamaria } from './organs/mamaria'
 export { pelveFeminina } from './organs/pelveFeminina'
 export { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
 export { pelvicoTransabdominal } from './organs/pelvicoTransabdominal'
+export { cervicalDoppler, mamasDoppler, mamasAxilasDoppler } from './organs/dopplerPresets'
 export { histerossonografia } from './organs/histerossonografia'
 export { pesquisaEndometriose } from './organs/pesquisaEndometriose'
 export { hycosy } from './organs/hycosy'
@@ -118,6 +120,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   bolsaTesticularDoppler,
   pelvicoTransvaginal,
   pelvicoTransabdominal,
+  cervicalDoppler, mamasDoppler, mamasAxilasDoppler,
   histerossonografia,
   hycosy,
   perfilBiofisicoFetal,

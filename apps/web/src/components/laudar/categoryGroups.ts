@@ -36,12 +36,12 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'saude_mulher',
     label: 'Saúde da mulher',
-    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA'],
+    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA', 'MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER'],
   },
   {
     id: 'pequenas_partes',
     label: 'Pequenas partes',
-    categories: ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA', 'AXILAS'],
+    categories: ['TIREOIDE', 'TIREOIDE_DOPPLER', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'CERVICAL_DOPPLER', 'PARTES_MOLES', 'MAMA_MASCULINA', 'AXILAS'],
     shortcuts: ['MAMARIA'],
   },
   {
@@ -82,6 +82,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   DOPPLER_OBSTETRICO: 'Obstétrica com Doppler',
   DOPPLER_HEPATICO: 'Doppler hepático',
   TIREOIDE: 'Tireoide',
+  TIREOIDE_DOPPLER: 'Tireoide com Doppler',
   TRANSFONTANELA: 'Transfontanelar',
   DOPPLER_AORTA_ILIACAS: 'Doppler de aorta e ilíacas',
   PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
@@ -122,6 +123,10 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   PESQUISA_ENDOMETRIOSE: ['endometriose', 'endometriose profunda', 'endometrioma', 'mapeamento de endometriose', 'adenomiose', 'sinal de deslizamento'],
   HYCOSY: ['hycosy', 'histerossonossalpingografia', 'histerossalpingo', 'tubas', 'trompas', 'perviedade tubaria', 'permeabilidade tubaria', 'infertilidade'],
   MAMARIA: ['mama', 'mamas', 'mamaria', 'axila', 'axilas', 'bi-rads', 'birads'],
+  MAMAS_DOPPLER: ['doppler mamario', 'mama doppler', 'vascularizacao mamaria'],
+  MAMAS_AXILAS_DOPPLER: ['doppler mamario', 'mama doppler', 'axilas doppler'],
+  TIREOIDE_DOPPLER: ['tireoide doppler', 'doppler tireoidiano', 'vascularizacao tireoidiana', 'hipertireoidismo'],
+  CERVICAL_DOPPLER: ['doppler cervical', 'linfonodo doppler', 'pescoco doppler'],
   AXILAS: ['axila', 'axilas', 'regioes axilares', 'linfonodo axilar', 'linfonodos axilares'],
   MAMA_MASCULINA: ['mama masculina', 'ginecomastia', 'homem', 'masculino', 'retroareolar'],
   TIREOIDE: ['tiroide', 'tireoide', 'ti-rads', 'tirads', 'nodulo tireoidiano'],

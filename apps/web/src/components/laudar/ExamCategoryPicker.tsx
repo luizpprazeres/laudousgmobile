@@ -15,6 +15,7 @@ const catalog = [
     (STRUCTURED_WEB_CATEGORY_CODES as readonly string[]).includes(id)
   ).map(({ id, name }) => ({ id, name, mode: 'structured' as const })),
   { id: 'TIREOIDE', name: 'Tireoide', mode: 'structured' as const },
+  { id: 'TIREOIDE_DOPPLER', name: 'Tireoide com Doppler', mode: 'structured' as const },
   ...WRITER_CATEGORY_OPTIONS
     .filter(({ id }) => !(STRUCTURED_WEB_CATEGORY_CODES as readonly string[]).includes(id))
     .map(({ id, name }) => ({ id, name, mode: 'writer' as const })),

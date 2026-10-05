@@ -527,7 +527,7 @@ function LinfonodosPanel({ state, onChange }: Omit<Props, 'section'>) {
         <Segmented
           label="Avaliar linfonodos cervicais?"
           value={state.avaliarLinfonodos ? 'sim' : 'nao'}
-          onChange={(value) => onChange({ ...state, avaliarLinfonodos: value === 'sim' })}
+          onChange={(value) => onChange({ ...state, avaliarLinfonodos: value === 'sim', linfonodosConfirmados: true })}
           options={[
             { value: 'sim', label: 'Sim' },
             { value: 'nao', label: 'Não avaliar' },
@@ -542,7 +542,7 @@ function LinfonodosPanel({ state, onChange }: Omit<Props, 'section'>) {
           <Segmented
             label="Linfonodos"
             value={state.linfonodos}
-            onChange={(value) => onChange({ ...state, linfonodos: value as TireoideState['linfonodos'] })}
+            onChange={(value) => onChange({ ...state, linfonodos: value as TireoideState['linfonodos'], linfonodosConfirmados: true })}
             options={[
               { value: 'preservados', label: 'Preservados' },
               { value: 'suspeitos', label: 'Suspeitos' },

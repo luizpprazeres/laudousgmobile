@@ -62,11 +62,18 @@ export const CATEGORIAS_MIGRADAS = [
  * | derivada | renderer | o que muda |
  * |---|---|---|
  * | PELVICO_TRANSVAGINAL | PELVE_FEMININA | via fixa `tv`, sem bexiga; portão de completude no adaptador |
+ * | TIREOIDE_DOPPLER | TIREOIDE | Doppler fixo; parênquima, medidas e linfonodos informados |
+ * | CERVICAL_DOPPLER | CERVICAL | Doppler declarado; vascularização do linfonodo obrigatória |
+ * | MAMAS_DOPPLER, MAMAS_AXILAS_DOPPLER | MAMARIA | escopo e Doppler fixos; vascularização por achado |
  * | PELVICO_TRANSABDOMINAL | PELVE_FEMININA | via fixa `ta`, repleção confirmada, endométrio não medido = limitado pela técnica |
  */
 export const CATEGORIAS_DERIVADAS: Readonly<Record<string, (typeof CATEGORIAS_MIGRADAS)[number]>> = {
   PELVICO_TRANSVAGINAL: "PELVE_FEMININA",
   PELVICO_TRANSABDOMINAL: "PELVE_FEMININA",
+  TIREOIDE_DOPPLER: "TIREOIDE",
+  CERVICAL_DOPPLER: "CERVICAL",
+  MAMAS_DOPPLER: "MAMARIA",
+  MAMAS_AXILAS_DOPPLER: "MAMARIA",
   // Atalhos MSK (organs/mskPresets.ts): segmento e lado fixados pelo card.
   MSK_COTOVELO: "MUSCULOESQUELETICO",
   MSK_COTOVELO_BILATERAL: "MUSCULOESQUELETICO",
