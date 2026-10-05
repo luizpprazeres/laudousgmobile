@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { categoryDisplayLabel } from "../categoryPresentation";
 
 assert.equal(categoryDisplayLabel("PAREDE_ABDOMINAL"), "Parede abdominal");
+assert.equal(categoryDisplayLabel("MORFOLOGICO_1T"), "Morfológico 1º trimestre");
 assert.equal(categoryDisplayLabel("DOPPLER_VENOSO_MMSS"), "Doppler venoso de membros superiores");
 assert.equal(
   categoryDisplayLabel("ABDOMEN_TOTAL__PROSTATA_SUPRAPUBICA"),
