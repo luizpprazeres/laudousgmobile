@@ -38,6 +38,7 @@ export function categoriaLabel(code: string): string {
     PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
     HISTEROSSONOGRAFIA: 'Histerossonografia',
     PESQUISA_ENDOMETRIOSE: 'Pesquisa de endometriose',
+    HYCOSY: 'Histerossonossalpingografia (HyCoSy)',
     CERVICAL: 'Cervical',
     CERVICOMETRIA: 'Cervicometria',
     PARTES_MOLES: 'Partes moles',

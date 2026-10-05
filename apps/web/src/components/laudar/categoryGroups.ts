@@ -36,7 +36,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'saude_mulher',
     label: 'Saúde da mulher',
-    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'HISTEROSSONOGRAFIA', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA'],
+    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA'],
   },
   {
     id: 'pequenas_partes',
@@ -70,6 +70,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   DOPPLER_AORTA_ILIACAS: 'Doppler de aorta e ilíacas',
   PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
   HISTEROSSONOGRAFIA: 'Histerossonografia',
+  HYCOSY: 'Histerossonossalpingografia (HyCoSy)',
 }
 
 function displayName(id: string) {
@@ -101,6 +102,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   PELVICO_TRANSVAGINAL: ['pelvico', 'pelvica', 'transvaginal', 'endovaginal', 'utero', 'ovarios', 'endometrio', 'ginecologica'],
   HISTEROSSONOGRAFIA: ['histerossonografia', 'sono-histerografia', 'infusao salina', 'cavidade uterina', 'polipo endometrial', 'sinequia', 'istmocele', 'septo uterino'],
   PESQUISA_ENDOMETRIOSE: ['endometriose', 'endometriose profunda', 'endometrioma', 'mapeamento de endometriose', 'adenomiose', 'sinal de deslizamento'],
+  HYCOSY: ['hycosy', 'histerossonossalpingografia', 'histerossalpingo', 'tubas', 'trompas', 'perviedade tubaria', 'permeabilidade tubaria', 'infertilidade'],
   MAMARIA: ['mama', 'mamas', 'mamaria', 'axila', 'axilas', 'bi-rads', 'birads'],
   MAMA_MASCULINA: ['mama masculina', 'ginecomastia', 'homem', 'masculino', 'retroareolar'],
   TIREOIDE: ['tiroide', 'tireoide', 'ti-rads', 'tirads', 'nodulo tireoidiano'],

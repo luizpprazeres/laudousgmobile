@@ -10,6 +10,7 @@ export const EXAM_CATEGORY_IMAGES: Record<string, string> = {
   HISTEROSSONOGRAFIA: '/categories/lineart-v1/histerossonografia.webp',
   PESQUISA_ENDOMETRIOSE: '/categories/lineart-v1/pesquisa-endometriose.webp',
   ECOCARDIOGRAFIA_FETAL: '/categories/lineart-v1/ecocardiografia-fetal.webp',
+  HYCOSY: '/categories/lineart-v1/hycosy.png',
   CERVICAL: '/categories/lineart-v1/cervical.webp',
   CERVICOMETRIA: '/categories/lineart-v1/cervicometria.webp',
   PARTES_MOLES: '/categories/lineart-v1/partes-moles.webp',
