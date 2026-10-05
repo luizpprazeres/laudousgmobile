@@ -5,6 +5,7 @@ export const EXAM_CATEGORY_IMAGES: Record<string, string> = {
   PROSTATA_SUPRAPUBICA: '/categories/lineart-v1/prostata.webp',
   VIAS_URINARIAS: '/categories/lineart-v1/vias-urinarias.webp',
   MAMARIA: '/categories/lineart-v1/mamaria.webp',
+  MAMA_MASCULINA: '/categories/lineart-v1/mamaria.webp',
   PELVE_FEMININA: '/categories/lineart-v1/pelve.webp',
   CERVICAL: '/categories/lineart-v1/cervical.webp',
   CERVICOMETRIA: '/categories/lineart-v1/cervicometria.webp',

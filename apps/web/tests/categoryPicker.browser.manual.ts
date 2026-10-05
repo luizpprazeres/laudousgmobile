@@ -18,7 +18,7 @@ const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
   ['medicina_interna', ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'DOPPLER_HEPATICO', ...(MODELOS_HEPATICOS_ATIVOS ? ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA'] : []), 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS']],
   ['obstetricia', ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA']],
   ['saude_mulher', ['PELVE_FEMININA', 'MAMARIA']],
-  ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES']],
+  ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA']],
   ['musculoesqueletico', ['MUSCULOESQUELETICO']],
   ['vascular', ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_TRANSPLANTE_RENAL', 'DOPPLER_MESENTERICO']],
   ['outros_exames', ['QUADRIL_INFANTIL', 'TRANSFONTANELA', 'OCULAR', 'LIVRE']],
@@ -174,7 +174,8 @@ async function main() {
         assert.deepEqual(await buscar('multiparametrica'), ['AVALIACAO_MULTIPARAMETRICA_HEPATICA'])
         assert.deepEqual(await buscar('fibrose'), ['ELASTOGRAFIA_HEPATICA'])
       }
-      assert.deepEqual(await buscar('mama'), ['MAMARIA'])
+      assert.deepEqual(await buscar('mama'), ['MAMARIA', 'MAMA_MASCULINA'])
+      assert.deepEqual(await buscar('ginecomastia'), ['MAMA_MASCULINA'])
       assert.equal(await page.locator('[data-category-shortcut]').count(), 0, 'atalho não duplica resultado de busca')
       assert.deepEqual(await buscar('colo'), ['CERVICOMETRIA'])
       assert.deepEqual(await buscar('exame inexistente'), [])

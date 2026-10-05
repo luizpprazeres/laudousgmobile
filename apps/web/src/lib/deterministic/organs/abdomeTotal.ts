@@ -45,6 +45,9 @@ export interface ExamCategory {
   conclusionClosing?: string
   /** Texto livre após a CONCLUSÃO (ex.: observação da via transabdominal). */
   footer?: string
+  /** Rodapé dinâmico conforme os controles (ex.: rodapé BI-RADS só com categoria definida).
+   *  Tem precedência sobre `footer`; `undefined` = sem rodapé. */
+  resolveFooter?: (opts: OrganState) => string | undefined
   /** Calculadoras pertinentes (seção "Cálculos"). */
   calculators?: CalcSpec[]
   /** Calculadoras visíveis conforme os controles da categoria. */

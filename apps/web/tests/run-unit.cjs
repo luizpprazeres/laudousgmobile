@@ -20,6 +20,7 @@ const files = [
   'tests/dopplerArterialFistulaStructured.manual.ts',
   'tests/dopplerMesentericoStructured.manual.ts',
   'tests/dopplerArteriasTemporaisStructured.manual.ts',
+  'tests/mamaMasculinaStructured.manual.ts',
   'tests/fetalGrowthContext.manual.ts',
   'tests/fetalGrowthPercentile.manual.ts',
   'tests/fetalGrowthSource.manual.ts',

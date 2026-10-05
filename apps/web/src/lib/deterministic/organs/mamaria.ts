@@ -52,13 +52,13 @@ function maiorEixo(raw: unknown): number | null {
   return isMm ? mx / 10 : mx
 }
 
-const ecoTxt: Record<string, string> = {
+export const ecoTxt: Record<string, string> = {
   anecoico: 'anecoica',
   hipoecoico: 'hipoecoica',
   isoecoico: 'isoecoica',
   hiperecoico: 'hiperecoica',
 }
-const margemTxt: Record<string, string> = {
+export const margemTxt: Record<string, string> = {
   circunscrita: 'circunscrita',
   indistinta: 'indistinta',
   angular: 'angular',
@@ -70,8 +70,8 @@ const FUNDO: Record<string, string> = {
   denso: 'Mamas com ecotextura de fundo homogênea, predominantemente fibroglandular.',
   adiposo: 'Mamas com ecotextura de fundo homogênea, predominantemente adiposa.',
 }
-const AUSENCIA_LESAO = 'Não há sinais evidentes de imagem nodular sólida, cística ou complexa.'
-const RODAPE = 'Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).'
+export const AUSENCIA_LESAO = 'Não há sinais evidentes de imagem nodular sólida, cística ou complexa.'
+export const RODAPE = 'Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).'
 
 function mamaTxt(lado: string): string {
   return lado === 'direita' ? 'mama direita' : 'mama esquerda'
@@ -202,7 +202,7 @@ function achadoConclusao(a: Achado): string {
 }
 
 // ── schema (campos por mama via subFields do tipo) ───────────────────────────
-const noduloSubs: Field[] = [
+export const noduloSubs: Field[] = [
   { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '1,2 x 1,0 x 0,8' },
   { key: 'eco', label: 'Ecogenicidade', kind: 'mini-segmented', options: [
     { value: 'hipoecoico', label: 'Hipo', isDefault: true }, { value: 'isoecoico', label: 'Iso' },
@@ -226,7 +226,7 @@ const noduloSubs: Field[] = [
   { key: 'local', label: 'Localização', kind: 'text', placeholder: 'quadrante superolateral' },
   { key: 'birads', label: 'BI-RADS definido pelo médico', kind: 'text', placeholder: 'ex.: 4A' },
 ]
-const cistoSubs: Field[] = [
+export const cistoSubs: Field[] = [
   { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '0,8 x 0,6 x 0,5' },
   { key: 'local', label: 'Localização', kind: 'text', placeholder: 'quadrante superolateral' },
 ]
@@ -283,7 +283,7 @@ function initialState(): OrganState {
   }
 }
 
-const AXILAR_NORMAL_CORPO = 'Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.'
+export const AXILAR_NORMAL_CORPO = 'Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.'
 
 // ── Axilas (seção própria) ───────────────────────────────────────────────────
 const axilasModule: OrganModule = {

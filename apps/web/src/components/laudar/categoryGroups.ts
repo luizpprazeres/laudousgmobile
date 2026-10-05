@@ -41,7 +41,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'pequenas_partes',
     label: 'Pequenas partes',
-    categories: ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES'],
+    categories: ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA'],
     shortcuts: ['MAMARIA'],
   },
   {
@@ -95,6 +95,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   CERVICOMETRIA: ['colo uterino', 'comprimento do colo', 'colo do utero', 'transvaginal'],
   PELVE_FEMININA: ['pelvica', 'utero', 'ovarios', 'endometrio', 'transvaginal', 'ginecologica'],
   MAMARIA: ['mama', 'mamas', 'mamaria', 'axila', 'axilas', 'bi-rads', 'birads'],
+  MAMA_MASCULINA: ['mama masculina', 'ginecomastia', 'homem', 'masculino', 'retroareolar'],
   TIREOIDE: ['tiroide', 'tireoide', 'ti-rads', 'tirads', 'nodulo tireoidiano'],
   PAREDE_ABDOMINAL: ['parede', 'hernia'],
   PROSTATA_TRANSRETAL: ['prostata', 'transretal'],

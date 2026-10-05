@@ -145,7 +145,8 @@ export function composeReport(
     ...bodyParts,
     `CONCLUSÃO:\n${conclusionBlock}`,
   ]
-  if (category.footer) parts.push(category.footer)
+  const footer = category.resolveFooter ? category.resolveFooter(optsState) : category.footer
+  if (footer) parts.push(footer)
   const text = parts.join('\n\n')
 
   return { text, conclusion, pendencias, alteredCount }

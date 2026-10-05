@@ -42,6 +42,7 @@ export const CATEGORY_DISPLAY_LABELS: Readonly<Record<string, string>> = {
   DOPPLER_ARTERIAS_TEMPORAIS: "Doppler de artérias temporais",
   DOPPLER_AORTA_ILIACAS: "Doppler de aorta e artérias ilíacas",
   DOPPLER_TRANSPLANTE_RENAL: "Doppler de transplante renal",
+  MAMA_MASCULINA: "Mama masculina",
   DOPPLER_RENAL: "Doppler renal",
   DOPPLER_HEPATICO: "Doppler hepático",
   TRANSFONTANELA: "Transfontanela",
