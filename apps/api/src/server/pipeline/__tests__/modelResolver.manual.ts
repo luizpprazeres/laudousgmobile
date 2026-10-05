@@ -18,6 +18,7 @@ const baseEnv = {
   RENDERER_CATEGORIES: "ABDOMEN_TOTAL,TIREOIDE",
   DOPPLER_STANDALONE_V2: "true",
   DOPPLER_RENAL_WRITER_ENABLED: "true",
+  DOPPLER_VENOSO_MMII_WRITER_ENABLED: "true",
 };
 
 let passed = 0;
@@ -176,6 +177,36 @@ check(
     DOPPLER_RENAL_WRITER_ENABLED: "false",
   }),
 );
+
+for (const categoryCode of ["DOPPLER_VENOSO_MMII", "DOPPLER_VENOSO_MMII_MEDIDAS"]) {
+  const venousDedicated = resolveGenerationPath(
+    { mode: "standard", categoryCode },
+    { ...baseEnv, RENDERER_CATEGORIES: "" },
+  );
+  check(`${categoryCode} usa writer venoso dedicado sem allowlist`, venousDedicated.path === "renderer");
+  const venousHard = resolveGenerationPath(
+    { mode: "hard", categoryCode },
+    { ...hardEnabledEnv, RENDERER_CATEGORIES: "" },
+  );
+  check(`${categoryCode} não perde o fact-audit no modo hard`, venousHard.path === "renderer");
+  const venousRollback = resolveGenerationPath(
+    { mode: "standard", categoryCode },
+    {
+      ...baseEnv,
+      RENDERER_CATEGORIES: categoryCode,
+      DOPPLER_VENOSO_MMII_WRITER_ENABLED: "false",
+    },
+  );
+  check(`${categoryCode} respeita rollback fail-closed`, venousRollback.path === "writer-pure");
+  check(
+    `${categoryCode} rollback vence allowlist histórica`,
+    !rendererCategoryEnabled(categoryCode, {
+      RENDERER_CATEGORIES: categoryCode,
+      DOPPLER_STANDALONE_V2: "true",
+      DOPPLER_VENOSO_MMII_WRITER_ENABLED: "false",
+    }),
+  );
+}
 
 const hardPathOff = resolveGenerationPath(
   { mode: "hard", categoryCode: "ABDOMEN_TOTAL" },

@@ -31,7 +31,11 @@ export function caminhoDeGeracao(
   const e = env();
 
   // Eixo vascular: writer sempre, sem flag e sem variante objetiva.
-  if (categoria === "DOPPLER_VENOSO_MMII" || categoria === "DOPPLER_RENAL") return "writer";
+  if (
+    categoria === "DOPPLER_VENOSO_MMII" ||
+    categoria === "DOPPLER_VENOSO_MMII_MEDIDAS" ||
+    categoria === "DOPPLER_RENAL"
+  ) return "writer";
 
   // MSK: categoria aberta, o writer escreve em qualquer estilo.
   if (

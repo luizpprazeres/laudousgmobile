@@ -17,9 +17,9 @@ const { questionsFromPendingClarify } = pending
 
 const reportId = '11111111-1111-4111-8111-111111111111'
 
-test('allowlist separa as 16 categorias estruturadas das 13 categorias writer', () => {
-  assert.equal(STRUCTURED_WEB_CATEGORY_CODES.length, 16)
-  assert.equal(WRITER_CATEGORY_CODES.length, 13)
+test('allowlist separa as 18 categorias estruturadas das 11 categorias writer', () => {
+  assert.equal(STRUCTURED_WEB_CATEGORY_CODES.length, 18)
+  assert.equal(WRITER_CATEGORY_CODES.length, 11)
   assert.equal(new Set([...STRUCTURED_WEB_CATEGORY_CODES, ...WRITER_CATEGORY_CODES]).size, 29)
   for (const category of WRITER_CATEGORY_CODES) assert.equal(isWriterCategory(category), true)
   for (const category of ['ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_VENOSO_MMSS', 'QUADRIL_INFANTIL', 'TORAX', 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {

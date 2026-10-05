@@ -22,6 +22,7 @@ import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
 import { adaptarDopplerWeb, categoriaRenderDoppler, chaveDocumentoDoppler, estadoDopplerVisivel, somenteDoppler } from '@/lib/catalog/dopplerWebMode'
 import { adaptarDopplerCarotidas } from '@/lib/catalog/dopplerCarotidasParaCatalogo'
+import { adaptarDopplerVenosoMmii } from '@/lib/catalog/dopplerVenosoMmiiParaCatalogo'
 import { adaptarDopplerRenal } from '@/lib/catalog/dopplerRenalParaCatalogo'
 import { adaptarAbdome } from '@/lib/catalog/abdomeParaCatalogo'
 import { adaptarAbdomeSuperior } from '@/lib/catalog/abdomeSuperiorParaCatalogo'
@@ -448,6 +449,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     setInitials(lerAtual())
   }, [])
 
+  const isVenousMmii = categoria === 'DOPPLER_VENOSO_MMII' || categoria === 'DOPPLER_VENOSO_MMII_MEDIDAS'
   const isTireoide = categoria === TIREOIDE_ID
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
   // Controles de categoria (estado reservado em '__opts') — lido antes das seções
@@ -461,7 +463,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // escreveria fora do componente, então fica fora até ter escopo próprio.
   // O antigo esquema de posição fetal foi retirado da Web: ele ocupava espaço
   // sem ajudar a decisão clínica. Mama e tireoide mantêm os mapas interativos.
-  const supportsVisualSchema = !composition && (isTireoide || categoria === 'PELVE_FEMININA' || (categoria === 'MAMARIA' && !axilasOnly))
+  const supportsVisualSchema = !composition && (isVenousMmii || isTireoide || categoria === 'PELVE_FEMININA' || (categoria === 'MAMARIA' && !axilasOnly))
   const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -577,6 +579,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'DOPPLER_CAROTIDAS') {
       return adaptarDopplerCarotidas((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'DOPPLER_VENOSO_MMII' || categoria === 'DOPPLER_VENOSO_MMII_MEDIDAS') {
+      return adaptarDopplerVenosoMmii(examStates[categoria] ?? {}, categoria)
     }
     if (categoria === 'DOPPLER_RENAL') {
       return adaptarDopplerRenal((examStates[categoria] ?? {}) as Record<string, unknown>)
@@ -1089,11 +1094,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (section.id === 'recommendations') return <RecommendationsPanel state={examState?.__recommendations ?? {}} onChange={state => updateSectionState('__recommendations', state, false)} />
     if (section.id === 'visual-schema') return (
                     <VisualSchemaPanel
-                      category={isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : categoria === 'PELVE_FEMININA' ? 'MYOMA' : 'FETAL_POSITION'}
+                      category={isVenousMmii ? 'VENOUS' : isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : categoria === 'PELVE_FEMININA' ? 'MYOMA' : 'FETAL_POSITION'}
                       breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
                       fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
                       thyroidState={tireoideState}
                       myomaState={(examState?.utero ?? {}) as OrganState}
+                      venousMap={laudoCanonico.venousMap}
                       onBreastChange={(nextState) => setExamStates((all) => ({
                         ...all,
                         MAMARIA: { ...all.MAMARIA, mamas: nextState },

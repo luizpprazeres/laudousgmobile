@@ -1393,7 +1393,8 @@ export async function POST(req: Request) {
       // Flag VENOUS_SCHEME_MAP (default OFF).
       if (
         env().VENOUS_SCHEME_MAP === "true" &&
-        effectiveCategory === "DOPPLER_VENOSO_MMII"
+        (effectiveCategory === "DOPPLER_VENOSO_MMII" ||
+          effectiveCategory === "DOPPLER_VENOSO_MMII_MEDIDAS")
       ) {
         const venousMap = await extractVenousMap(
           reqInput.consolidated_transcript ?? reqInput.raw_input,

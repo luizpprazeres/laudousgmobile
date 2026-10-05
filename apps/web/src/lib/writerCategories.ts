@@ -4,7 +4,7 @@ export const STRUCTURED_WEB_CATEGORY_CODES = [
   'DOPPLER_CAROTIDAS', 'OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO',
   'CERVICOMETRIA', 'PELVE_FEMININA', 'MAMARIA', 'TIREOIDE', 'CERVICAL',
   'PARTES_MOLES', 'MUSCULOESQUELETICO',
-  'DOPPLER_RENAL',
+  'DOPPLER_RENAL', 'DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS',
 ] as const
 
 export const WRITER_CATEGORY_OPTIONS = [
@@ -24,10 +24,12 @@ export const WRITER_CATEGORY_OPTIONS = [
 ] as const
 
 export type WriterCategory = (typeof WRITER_CATEGORY_OPTIONS)[number]['id']
-export const WRITER_CATEGORY_CODES = WRITER_CATEGORY_OPTIONS.map(({ id }) => id) as readonly WriterCategory[]
+export const WRITER_CATEGORY_CODES = WRITER_CATEGORY_OPTIONS
+  .map(({ id }) => id)
+  .filter(id => !(STRUCTURED_WEB_CATEGORY_CODES as readonly string[]).includes(id)) as readonly WriterCategory[]
 
 export function isWriterCategory(value: string): value is WriterCategory {
-  return (WRITER_CATEGORY_CODES as readonly string[]).includes(value)
+  return !(STRUCTURED_WEB_CATEGORY_CODES as readonly string[]).includes(value) && (WRITER_CATEGORY_CODES as readonly string[]).includes(value)
 }
 
 export function writerCategoryName(value: string): string {

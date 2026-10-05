@@ -439,7 +439,10 @@ export async function* runRendererStream(args: {
   // médico dita compacto → o LLM emite só o ditado (nunca ____), com critérios JVB.
   // DOPPLER_VENOSO_MMII writer_guarded (2ª modalidade vascular). Gate = membership
   // em RENDERER_CATEGORIES. Segurança: TVP-only não afirma competência do superficial.
-  if (args.categoryCode === "DOPPLER_VENOSO_MMII") {
+  if (
+    args.categoryCode === "DOPPLER_VENOSO_MMII" ||
+    args.categoryCode === "DOPPLER_VENOSO_MMII_MEDIDAS"
+  ) {
     args.onProgress?.({ stage: "interpretando", label: "Escrevendo o laudo…" });
     const res = yield* runDopplerVenosoMmiiWriterStream({
       rawInput: args.rawInput,

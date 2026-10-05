@@ -89,6 +89,10 @@ const ServerEnvSchema = z.object({
   // `DOPPLER_RENAL_WRITER_ENABLED=false` suspende a geração renal em fail-closed;
   // nunca a devolve silenciosamente ao writer geral.
   DOPPLER_RENAL_WRITER_ENABLED: z.string().default("true"),
+  // Doppler venoso de MMII aprovado: as duas apresentações (padrão e medidas)
+  // usam o mesmo writer dedicado e auditado. `false` suspende ambas em
+  // fail-closed; nunca devolve silenciosamente ao writer geral.
+  DOPPLER_VENOSO_MMII_WRITER_ENABLED: z.string().default("true"),
   // Projeto modelos (docs/projeto-modelos/): categorias cujo renderer monta o
   // laudo a partir do CATÁLOGO (renderer/catalog/) em vez das frases literais
   // em código. Lista CSV de category_codes. Vazio = comportamento atual, byte

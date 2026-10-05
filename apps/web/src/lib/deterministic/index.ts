@@ -19,6 +19,7 @@ import { obstetrica } from './organs/obstetrica'
 import { morfologico } from './organs/morfologico'
 import { dopplerObstetrico } from './organs/dopplerObstetrico'
 import { dopplerCarotidas } from './organs/dopplerCarotidas'
+import { dopplerVenosoMmii, dopplerVenosoMmiiMedidas } from './organs/dopplerVenosoMmii'
 import { dopplerRenal } from './organs/dopplerRenal'
 import type { ExamCategory } from './organs/abdomeTotal'
 
@@ -51,7 +52,7 @@ export { vesiculaModule } from './organs/vesicula'
 export const GENERIC_CATEGORIES: ExamCategory[] = [
   abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria,
   pelveFeminina, cervical, cervicometria, partesMoles, musculoesqueletico,
-  obstetrica, morfologico, dopplerObstetrico, dopplerCarotidas, dopplerRenal,
+  obstetrica, morfologico, dopplerObstetrico, dopplerCarotidas, dopplerRenal, dopplerVenosoMmii, dopplerVenosoMmiiMedidas,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])

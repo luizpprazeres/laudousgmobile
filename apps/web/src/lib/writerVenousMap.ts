@@ -15,6 +15,13 @@ const mapSchema = z.object({
   anotacoes: z.array(z.object({ lado: side, tipo: z.enum(['calibre', 'perfurante', 'refluxo']), texto: z.string(), segmento: segment.optional(), topografia: topography.optional() })).optional(),
 })
 
+/** A resposta estruturada usa a mesma validação e versão do mapa por SSE. */
+export function venousMapFromCatalog(map: unknown, assetVersion: unknown): MapaVenoso | undefined {
+  if (assetVersion !== 'venous-4view-1') return undefined
+  const parsed = mapSchema.safeParse(map)
+  return parsed.success ? parsed.data as MapaVenoso : undefined
+}
+
 /** Evento auxiliar não significa mapa: só aceita mapa venoso completo e versão conhecida. */
 export function venousMapFromEvent(event: SchemeEvent): { map: MapaVenoso; assetVersion: string } | null {
   if (event.exam_type !== 'VENOSO_MMII') return null

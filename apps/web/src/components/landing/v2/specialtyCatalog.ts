@@ -34,13 +34,8 @@ export function activeExamName(id: string) {
  * mesmo rollout chegar à Web, ao iOS e ao Android.
  */
 export const UPCOMING_EXAM_IDS = new Set([
-  'ABDOMEN_TOTAL_DOPPLER',
   'AVALIACAO_MULTIPARAMETRICA_HEPATICA',
   'ELASTOGRAFIA_HEPATICA',
-  'TORAX',
-  'DOPPLER_VENOSO_MMSS',
-  'DOPPLER_ARTERIAL_MMSS',
-  'QUADRIL_INFANTIL',
 ])
 
 export function isLandingExamAvailable(id: string) {
@@ -49,17 +44,15 @@ export function isLandingExamAvailable(id: string) {
 
 export const UPCOMING_EXAMS: Record<string, string[]> = {
   medicina_interna: [
-    'Abdome total com Doppler',
     'Avaliação multiparamétrica hepática',
     'Elastografia hepática',
-    'Ultrassonografia de tórax',
   ],
   obstetricia: [],
   saude_mulher: [],
   pequenas_partes: [],
   musculoesqueletico: [],
-  vascular: ['Doppler venoso de membro superior', 'Doppler arterial de membro superior'],
-  outros_exames: ['Quadril infantil'],
+  vascular: [],
+  outros_exames: [],
 }
 
 export const MUSCULOSKELETAL_REGIONS = [

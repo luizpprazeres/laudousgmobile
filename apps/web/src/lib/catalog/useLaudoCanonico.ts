@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { MapaVenoso } from '@laudousg/schemes'
+import { venousMapFromCatalog } from '../writerVenousMap'
 
 /**
  * O LAUDO VEM DO RENDERER — a troca de motor da TIREOIDE (§3.2).
@@ -43,6 +45,7 @@ import { useEffect, useRef, useState } from 'react'
 export type EstadoDoLaudo = {
   /** O último laudo que o renderer devolveu. Vazio antes da primeira resposta. */
   texto: string
+  venousMap?: MapaVenoso
   /** Há uma chamada em curso — o texto na tela pode não refletir o formulário. */
   carregando: boolean
   /** O texto exibido é de uma versão anterior dos achados. */
@@ -114,6 +117,7 @@ export function useLaudoCanonico(
       texto: e.documentKey === documentKey ? e.texto : '',
       erro: null,
       conflitos: [],
+      venousMap: undefined,
       carregando: true,
       desatualizado: e.documentKey === documentKey && e.texto !== '',
     }))
@@ -129,7 +133,7 @@ export function useLaudoCanonico(
         if (minha !== geracao.current) return
 
         const j = (await r.json().catch(() => null)) as
-          | { laudo?: string; error?: string; conflitos?: { motivo: string }[] }
+          | { laudo?: string; error?: string; conflitos?: { motivo: string }[]; venousMap?: unknown; assetVersion?: unknown }
           | null
 
         if (!r.ok || typeof j?.laudo !== 'string') {
@@ -146,6 +150,7 @@ export function useLaudoCanonico(
         setEstado({
           documentKey,
           texto: j.laudo,
+          venousMap: venousMapFromCatalog(j.venousMap, j.assetVersion),
           carregando: false,
           desatualizado: false,
           erro: null,

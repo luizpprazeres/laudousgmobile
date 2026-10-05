@@ -9,6 +9,8 @@ const FAIL_CLOSED_CLINICAL_RENDERERS = new Set([
   // Writer dedicado aprovado. Se modelo/audit/rota falhar, nunca entregar um
   // texto plausível do writer geral sem as regras renais aprovadas.
   "DOPPLER_RENAL",
+  "DOPPLER_VENOSO_MMII",
+  "DOPPLER_VENOSO_MMII_MEDIDAS",
 ]);
 
 export function clinicalRendererFallbackBlocked(categoryCode: string): boolean {

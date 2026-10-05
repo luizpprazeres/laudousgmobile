@@ -20,6 +20,8 @@ assert.equal(
   "abdome com Doppler incompleto não pode cair no writer livre",
 );
 assert.equal(clinicalRendererFallbackBlocked("DOPPLER_RENAL"), true, "writer renal auditado não pode cair no writer geral");
+assert.equal(clinicalRendererFallbackBlocked("DOPPLER_VENOSO_MMII"), true, "writer venoso auditado não pode cair no writer geral");
+assert.equal(clinicalRendererFallbackBlocked("DOPPLER_VENOSO_MMII_MEDIDAS"), true, "variante com medidas não pode cair no writer geral");
 for (const category of ["ABDOMEN_TOTAL", "LIVRE", "TESTE", "MUSCULOESQUELETICO_V2"]) {
   assert.equal(clinicalRendererFallbackBlocked(category), false, `${category}: writer legítimo preservado`);
 }

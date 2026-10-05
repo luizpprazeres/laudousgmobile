@@ -135,6 +135,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "CERVICOMETRIA",
   "DOPPLER_RENAL",
   "DOPPLER_VENOSO_MMII",
+  "DOPPLER_VENOSO_MMII_MEDIDAS",
   "DOPPLER_CAROTIDAS",
   "ABDOMEN_TOTAL_DOPPLER",
   "DOPPLER_VENOSO_MMSS",
@@ -339,6 +340,12 @@ export const EXTRACTORS: Record<string, Extractor> = {
     parse: (raw) => DopplerRenalFindingsSchema.parse(raw),
   },
   DOPPLER_VENOSO_MMII: {
+    schemaName: "DopplerVenosoMmiiFindings",
+    jsonSchema: DOPPLER_VENOSO_MMII_JSON_SCHEMA as unknown as Record<string, unknown>,
+    prompt: DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT,
+    parse: (raw) => DopplerVenosoMmiiFindingsSchema.parse(raw),
+  },
+  DOPPLER_VENOSO_MMII_MEDIDAS: {
     schemaName: "DopplerVenosoMmiiFindings",
     jsonSchema: DOPPLER_VENOSO_MMII_JSON_SCHEMA as unknown as Record<string, unknown>,
     prompt: DOPPLER_VENOSO_MMII_EXTRACTION_PROMPT,

@@ -121,7 +121,7 @@ export default function Pricing() {
             ].map((f) => (
               <PlanFeature key={f}>{f}</PlanFeature>
             ))}
-            <PlanFeature soon>Cartografia automática no Doppler</PlanFeature>
+            <PlanFeature>Cartografia automática no Doppler</PlanFeature>
             <Link
               href="/precos"
               className="mt-auto flex min-h-11 items-center justify-center rounded-lg border border-white/15 py-2.5 text-center text-sm font-bold text-slate-200 transition-[transform,border-color,color] duration-150 hover:border-white/30 hover:text-white active:scale-[0.97]"

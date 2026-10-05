@@ -94,7 +94,11 @@ export function WriterCategoryWorkspace({ category, onBack }: Props) {
       }
       for await (const event of generateWriterReport(request, controller.signal)) {
         if (event.type === 'done' || event.type === 'clarify' || event.type === 'blocked' || event.type === 'error') terminal = true
-        if (event.type === 'scheme' && category !== 'DOPPLER_VENOSO_MMII') continue
+        if (
+          event.type === 'scheme' &&
+          category !== 'DOPPLER_VENOSO_MMII' &&
+          category !== 'DOPPLER_VENOSO_MMII_MEDIDAS'
+        ) continue
         dispatch({ type: 'event', event })
       }
       if (!terminal) dispatch({ type: 'error', message: 'A conexão terminou sem resultado final. Confira o Histórico antes de reenviar para evitar duplicidade.' })
@@ -198,7 +202,7 @@ export function WriterCategoryWorkspace({ category, onBack }: Props) {
         {mapOpen ? <VisualSchemaPanel category="VENOUS" breastState={{}} fetalState={{}} thyroidState={{} as TireoideState} venousMap={flow.venousMap}
           onBreastChange={() => undefined} onThyroidChange={() => undefined} onClose={() => setMapOpen(false)} embedded />
           : <button type="button" onClick={() => setMapOpen(true)} className="mt-2 min-h-10 rounded-full border border-gray-200 px-4 text-sm dark:border-gray-700">Abrir cartografia</button>}
-      </section> : category === 'DOPPLER_VENOSO_MMII' ? <p role="status" data-venous-map-received="false" className="rounded-xl bg-gray-100 p-3 text-sm text-gray-600 dark:bg-gray-900 dark:text-gray-300">Nenhuma cartografia válida foi recebida para este relatório.</p> : null}
+      </section> : category === 'DOPPLER_VENOSO_MMII' || category === 'DOPPLER_VENOSO_MMII_MEDIDAS' ? <p role="status" data-venous-map-received="false" className="rounded-xl bg-gray-100 p-3 text-sm text-gray-600 dark:bg-gray-900 dark:text-gray-300">Nenhuma cartografia válida foi recebida para este relatório.</p> : null}
       <p className="text-xs text-gray-500">Relatório {flow.reportId} · {writerCategoryName(category)} · origem única: Histórico de laudos IA.</p>
     </section> : null}
   </main>
