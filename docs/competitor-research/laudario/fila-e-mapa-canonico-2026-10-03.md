@@ -8,17 +8,39 @@ Foram concluídas rodadas funcionais de 23 dos 84 modelos-base do catálogo, apr
 
 ## Próximas prioridades
 
-| Ordem | Exame | Motivo | Próxima prova mínima |
-| --- | --- | --- | --- |
-| 1 | Doppler de artérias temporais | Ausente e clinicamente sensível | normal; halo; dado unilateral incompleto |
-| 2 | Doppler de artérias mesentéricas | Ausente | normal; estenose; preparo/limitação |
-| 3 | Aparelho urinário com Doppler | Confirmar se deve compor o contrato renal ou ser categoria própria | normal; alteração unilateral; escopo incompleto |
-| 4 | Ecocardiografia fetal gemelar | Reutilizar contrato por feto; não duplicar regras clínicas | dois fetos normais; alteração em um feto; limitação por feto |
-| 5 | Primeiro exame combinado | Validar composição sem duplicar contratos | combinação normal; achado em um componente; conflito entre componentes |
-| 6 | Monitorização folicular | Confirmar o que reaproveita de Pelve feminina | ciclo basal; folículo dominante; dados incompletos |
-| 7 | Morfológico de 3º trimestre | Confirmar variante ou contrato próprio | normal; biometria discordante; limitação |
+Atualizado em 05/10/2026. Desde 05/10, a observação do Laudário está bloqueada por falta de navegador. As rodadas desse dia foram preflights e provas sintéticas do LaudoUSG, em três lotes, com 19 entradas do catálogo. Elas não contam como estudo funcional do concorrente; a cobertura funcional segue em 23 de 84. O índice está em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e as sínteses em `synthesis/`.
 
-Depois entram Aparelho Urinário com Doppler, variantes gemelares após os modelos singleton equivalentes e o primeiro exame combinado. O primeiro combinado deve ser escolhido apenas depois de comparar o contrato de composição existente com o comportamento real da combinação concorrente.
+### A. Rodada funcional no Laudário (quando houver navegador)
+
+Os cenários já estão definidos nos relatórios de cada exame. Basta executá-los e comparar.
+
+| Ordem | Exame | Relatório com os cenários |
+| --- | --- | --- |
+| 1 | Pélvico transvaginal | `audits/preflight-pelvico-transvaginal-2026-10-05.md` |
+| 2 | Obstétrico 2º/3º trimestre | `audits/preflight-obstetrico-2-3-trimestre-2026-10-05.md` |
+| 3 | Doppler de carótidas e vertebrais | `audits/lote2/doppler-carotidas-vertebrais-2026-10-05.md` |
+| 4 | Morfológico 2º trimestre | `audits/lote2/morfologico-2-trimestre-2026-10-05.md` |
+| 5 | Doppler de artérias temporais | `audits/lote2/doppler-arterias-temporais-2026-10-05.md` |
+| 6 | Doppler de artérias mesentéricas | `audits/lote2/doppler-arterias-mesentericas-2026-10-05.md` |
+| 7 | Monitorização folicular | `audits/lote3/monitorizacao-folicular-2026-10-05.md` |
+| 8 | Obstétrico gemelar 2º/3º trimestre | `audits/lote3/obstetrico-gemelar-2026-10-05.md` |
+
+### B. Próximo lote de prova sintética (ainda sem relatório)
+
+| Ordem | Exame | Motivo | Prova mínima |
+| --- | --- | --- | --- |
+| 1 | Aparelho urinário com Doppler | não há composição entre `VIAS_URINARIAS` e `DOPPLER_RENAL` | normal; alteração unilateral; escopo incompleto |
+| 2 | Abdome superior com Doppler | não há variante; o ditado fica sem campos de Doppler | normal; trombose portal; Doppler não realizado |
+| 3 | Pélvico transvaginal com Doppler | o modo Doppler só altera a técnica | normal; lesão vascularizada; Doppler não realizado |
+| 4 | Obstétrico com Doppler (1º e 2º/3º trimestre) | fronteira com `DOPPLER_OBSTETRICO` | normal; umbilical alterada; incisura uterina |
+| 5 | Musculoesquelético por articulação | o formulário Web existe, sem prova | normal; rotura lateralizada; lado não avaliado |
+| 6 | Doppler venoso de membro inferior (TVP) e bilaterais | variantes do contrato venoso | TVP unilateral; bilateral assimétrico |
+| 7 | Gemelares (eco fetal, morfológico) | dependem do contrato gemelar | dois fetos normais; alteração em um feto |
+| 8 | Obstétrico 3D/4D e primeiro exame combinado | menor prioridade | — |
+
+### C. Implementação a partir de estudo já concluído, sem reestudo
+
+Histerossonossalpingografia (HyCoSy) e Pesquisa de endometriose ainda não têm caminho Web. Ecocardiografia fetal, Perfil biofísico fetal, Histerossonografia, Transplante renal, Aorta e ilíacas, Temporais, Mesentéricas, Mama masculina e Bolsa testicular com Doppler ganharam MVP Web em 05/10.
 
 ## Mapa de nomes
 
@@ -40,3 +62,18 @@ Depois entram Aparelho Urinário com Doppler, variantes gemelares após os model
 Este mapa serve para comparação e roteamento. Os nomes do concorrente não serão copiados para a redação clínica nem usados para inferir equivalência sem conferir o escopo.
 
 O índice legível por máquina está em [status-estudo-2026-10-03.json](status-estudo-2026-10-03.json).
+
+### Acréscimos de 05/10/2026 (propostas, sem decisão)
+
+| Nome observado no Laudário | Proposta LaudoUSG | Código | Regra |
+| --- | --- | --- | --- |
+| Pélvico Transvaginal - Monitorização Folicular | Monitorização folicular | `MONITORIZACAO_FOLICULAR` proposto | contrato próprio, com tipos de útero e ovário reaproveitados da pelve |
+| Pélvico Abdominal | Pélvico transabdominal | `PELVICO_TRANSABDOMINAL` proposto | card derivado, com via fixa e mesmo renderer |
+| Axilas | Axilas | `AXILAS` proposto | card derivado de `MAMARIA` com escopo fixo; linfonodo no contrato `LINFONODO_REGIONAL` |
+| Mamas com Doppler / Mamas e Axilas com Doppler | Mamária com Doppler | `MAMARIA` | modo Doppler; não cria código |
+| Obstétrico 2º/3º Trimestre - Gemelar | Obstétrico gemelar | `OBSTETRICA` | N fetos no mesmo contrato |
+| Morfológico 1º / 3º Trimestre | Morfológico 1º / 3º trimestre | `MORFOLOGICO` | variante por trimestre |
+| Tireoide com Doppler | Tireoide com Doppler | `TIREOIDE` | modo Doppler |
+| Cervical com Doppler | Cervical com Doppler | `CERVICAL` | modo Doppler com campo explícito de Doppler realizado |
+| Doppler de Artérias Temporais | Doppler de artérias temporais | `DOPPLER_ARTERIAS_TEMPORAIS` | MVP Web em 05/10 |
+| Doppler de Artérias Mesentéricas | Doppler mesentérico | `DOPPLER_MESENTERICO` | MVP Web em 05/10 |

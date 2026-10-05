@@ -1,6 +1,6 @@
 {
   "competitor": "Laudário",
-  "updated_at": "2026-10-03T16:05:00-03:00",
+  "updated_at": "2026-10-05T18:30:00-03:00",
   "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
   "totals": {
     "catalog_all": 99,
@@ -8,7 +8,8 @@
     "catalog_combined": 15,
     "base_functionally_studied": 23,
     "combined_functionally_studied": 0,
-    "absence_checks_outside_catalog": 1
+    "absence_checks_outside_catalog": 1,
+    "laudousg_synthetic_probe_entries": 19
   },
   "completed": [
     {
@@ -160,12 +161,206 @@
     }
   ],
   "queue": [
-    "Doppler de artérias temporais",
-    "Doppler de artérias mesentéricas",
-    "Aparelho urinário com Doppler",
-    "Ecocardiografia fetal gemelar",
-    "Primeiro exame combinado",
-    "Monitorização folicular",
-    "Morfológico de 3º trimestre"
+    "Rodada funcional no Laudário (quando houver navegador): Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais, Morfológico 2º Trimestre, Doppler de Artérias Temporais, Doppler de Artérias Mesentéricas",
+    "Aparelho Urinário com Doppler",
+    "Abdome Superior com Doppler",
+    "Pélvico Transvaginal com Doppler",
+    "Obstétrico 1º Trimestre com Doppler / 2º-3º com Doppler (fronteira com DOPPLER_OBSTETRICO)",
+    "Doppler Venoso de Membro Inferior (TVP) e bilaterais (variantes)",
+    "Ecocardiografia fetal gemelar e morfológicos gemelares (após contrato gemelar)",
+    "Musculoesquelético por articulação (formulário Web já existe; prova sintética pendente)",
+    "Obstétrico 3D/4D",
+    "Primeiro exame combinado"
+  ],
+  "competitor_observation": {
+    "status": "bloqueada desde 2026-10-05",
+    "motivo": "navegador indisponível na sessão; nenhuma observação funcional nova do Laudário",
+    "efeito": "totals.base_functionally_studied permanece 23; rodadas de 05/10 são preflight e prova sintética do LaudoUSG"
+  },
+  "preflights": [
+    {
+      "exam": "Doppler de artérias temporais",
+      "file": "audits/preflight-doppler-arterias-temporais-2026-10-03.md"
+    },
+    {
+      "exam": "Doppler de artérias mesentéricas",
+      "file": "audits/preflight-doppler-arterias-mesentericas-2026-10-05.md"
+    },
+    {
+      "exam": "Doppler de carótidas e vertebrais",
+      "file": "audits/preflight-doppler-carotidas-vertebrais-2026-10-05.md"
+    },
+    {
+      "exam": "Pélvico transvaginal",
+      "file": "audits/preflight-pelvico-transvaginal-2026-10-05.md"
+    },
+    {
+      "exam": "Obstétrico 2º/3º trimestre",
+      "file": "audits/preflight-obstetrico-2-3-trimestre-2026-10-05.md"
+    }
+  ],
+  "laudousg_synthetic_probes": [
+    {
+      "competitor_exam": "Pélvico Transvaginal",
+      "laudousg_code": "PELVE_FEMININA / PELVICO_TRANSVAGINAL",
+      "file": "audits/execucao-sintetica-pelve-obstetrico-2026-10-05.md",
+      "lote": 1,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Obstétrico 2º/3º Trimestre",
+      "laudousg_code": "OBSTETRICA",
+      "file": "audits/execucao-sintetica-pelve-obstetrico-2026-10-05.md",
+      "lote": 1,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Doppler de Carótidas e Vertebrais",
+      "laudousg_code": "DOPPLER_CAROTIDAS",
+      "file": "audits/lote2/doppler-carotidas-vertebrais-2026-10-05.md",
+      "lote": 2,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Doppler de Artérias Temporais",
+      "laudousg_code": "DOPPLER_ARTERIAS_TEMPORAIS",
+      "file": "audits/lote2/doppler-arterias-temporais-2026-10-05.md",
+      "lote": 2,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Doppler de Artérias Mesentéricas",
+      "laudousg_code": "DOPPLER_MESENTERICO",
+      "file": "audits/lote2/doppler-arterias-mesentericas-2026-10-05.md",
+      "lote": 2,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Aparelho Urinário",
+      "laudousg_code": "VIAS_URINARIAS",
+      "file": "audits/lote2/aparelho-urinario-2026-10-05.md",
+      "lote": 2,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Abdome Superior",
+      "laudousg_code": "ABDOMEN_SUPERIOR",
+      "file": "audits/lote2/abdome-superior-2026-10-05.md",
+      "lote": 2,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Cervical / Cervical (Linfonodos)",
+      "laudousg_code": "CERVICAL",
+      "file": "audits/lote2/cervical-linfonodos-2026-10-05.md",
+      "lote": 2,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Morfológico 2º Trimestre",
+      "laudousg_code": "MORFOLOGICO",
+      "file": "audits/lote2/morfologico-2-trimestre-2026-10-05.md",
+      "lote": 2,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Cervicometria",
+      "laudousg_code": "CERVICOMETRIA",
+      "file": "audits/lote2/cervicometria-2026-10-05.md",
+      "lote": 2,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Pélvico Transvaginal - Monitorização Folicular",
+      "laudousg_code": "MONITORIZACAO_FOLICULAR (proposto)",
+      "file": "audits/lote3/monitorizacao-folicular-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Pélvico Abdominal",
+      "laudousg_code": "PELVICO_TRANSABDOMINAL (proposto, card derivado)",
+      "file": "audits/lote3/pelvico-abdominal-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Axilas",
+      "laudousg_code": "AXILAS (proposto, card derivado de MAMARIA)",
+      "file": "audits/lote3/axilas-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Mamas com Doppler / Mamas e Axilas com Doppler",
+      "laudousg_code": "MAMARIA (modo Doppler)",
+      "file": "audits/lote3/mamas-doppler-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Obstétrico 2º/3º Trimestre - Gemelar",
+      "laudousg_code": "OBSTETRICA (N fetos)",
+      "file": "audits/lote3/obstetrico-gemelar-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Morfológico 1º Trimestre",
+      "laudousg_code": "MORFOLOGICO (1t)",
+      "file": "audits/lote3/morfologico-1-trimestre-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Morfológico 3º Trimestre",
+      "laudousg_code": "MORFOLOGICO (3t)",
+      "file": "audits/lote3/morfologico-3-trimestre-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Tireoide com Doppler",
+      "laudousg_code": "TIREOIDE (modo Doppler)",
+      "file": "audits/lote3/tireoide-doppler-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    },
+    {
+      "competitor_exam": "Cervical com Doppler",
+      "laudousg_code": "CERVICAL (modo Doppler)",
+      "file": "audits/lote3/cervical-doppler-2026-10-05.md",
+      "lote": 3,
+      "competitor_observed": false,
+      "date": "2026-10-05"
+    }
+  ],
+  "syntheses": [
+    "synthesis/sintese-preflights-2026-10-05.md",
+    "synthesis/requisitos-pelve-obstetrico-2026-10-05.md",
+    "synthesis/sintese-lote2-2026-10-05.md",
+    "synthesis/sintese-lote3-2026-10-05.md"
+  ],
+  "implementation_from_existing_study_without_web": [
+    "Histerossonossalpingografia (HyCoSy)",
+    "Pesquisa de Endometriose"
   ]
 }

@@ -100,3 +100,31 @@ O que for observado é comportamento do concorrente. Critérios de positividade 
 - O contrato mínimo deve ter lado e ramo com os estados não avaliado, normal, alterado e limitado; halo e compressão como achados tipados; espessura com unidade; contexto clínico opcional; e conclusão restrita ao escopo avaliado, com confirmação médica para qualquer hipótese de vasculite.
 - Avaliar uma proteção no LaudoUSG para que conteúdo temporal ditado em Carótidas não termine com a conclusão padrão normal.
 - Antes de ativar, testar normal, alterado, incompleto, lateralidade, ramo, unidades e serialização ponta a ponta nas três plataformas (`docs/competitor-research/laudario/GUIA-CLAUDE-CODE.md:66`).
+
+## Reconferência — 05/10/2026
+
+Feita sem navegador, no worktree `docs/laudario-preflights-2026-10-05` em `4d5ad45`, que já inclui os MVPs Web estruturados de arterial MMII, FAV, transfontanelar, ocular e pequenas partes. A observação funcional continua pendente: o navegador não estava disponível nesta sessão.
+
+- A mesma busca por `temporais`, `artéria temporal`, `arterite`, `Horton`, `células gigantes`, `polimialgia` e `temporal superficial` segue **sem ocorrência clínica** em Web, Android/RN, iOS, API, shared, seed, migrações e conhecimento. O gap confirmado por busca se mantém.
+- `STRUCTURED_WEB_CATEGORY_CODES` passou a ocupar `apps/web/src/lib/writerCategories.ts:2-12` e `ClinicalModelCodeSchema` passou a `packages/shared/src/clinicalModels/contracts.ts:3-10`; nenhum dos dois inclui temporais.
+- As linhas do renderer de carótidas citadas acima continuam válidas (`DOPPLER_CAROTIDAS.ts:186`, `:188`, `:204`, `:219-223`, `:235`, `:241`). A referência ao render programático mudou para `apps/api/src/server/pipeline/renderer.ts:542`.
+- “halo” continua restrito a tireoide, MSK e ao formulário companheiro da Web (`apps/web/src/lib/companionStructured.ts:182`). A colisão de vocabulário segue válida.
+- **Padrão novo a reaproveitar:** os contratos Web MVP de arterial MMII e FAV já modelam segmento com `not_assessed | evaluated | limited`, medidas de origem e achado positivo com `physicianConfirmed` (`packages/shared/src/clinicalModels/dopplerArterialMmii.ts:36-47`; `packages/shared/src/clinicalModels/dopplerFistulaAv.ts:31-40`). O contrato de temporais deve seguir esse formato, com lado × ramo (tronco, frontal, parietal) e, se o escopo clínico aprovar, axilares opcionais.
+
+### Melhorias sugeridas ao LaudoUSG
+
+Corrigem `gap confirmado` por busca; critérios de positividade dependem de fonte própria e revisão médica.
+
+| Controle ou dado | Efeito no corpo e na conclusão | Salvaguardas | Web e prompt mobile | Prioridade |
+| --- | --- | --- | --- | --- |
+| Lado × ramo com `não avaliado / avaliado / limitado` | corpo só descreve ramos avaliados; conclusão restrita ao escopo | lado não avaliado nunca vira normal | grade lado × ramo; prompt pede lado e ramo | alta |
+| Halo (sim/não/indeterminado) por ramo, campo próprio | achado no corpo; conclusão descritiva sem confirmação | não reaproveitar enum de tireoide | toggle por ramo | alta |
+| Espessura de parede em mm por ramo | medida no corpo com unidade | escala validada; derivado nunca classifica sozinho | campo numérico | alta |
+| Sinal de compressão (positivo/negativo/não testado) | corpo; reforça a descrição | “não testado” explícito | tri-estado | média |
+| Hipótese de vasculite com `physicianConfirmed` | conclusão só com confirmação e dados mínimos | sem diagnóstico por marcador único | checkbox de confirmação | alta |
+| Contexto: corticoide prévio e tempo de uso | limitação na conclusão quando presente | não presumir ausência | campo opcional; prompt pergunta | média |
+| Pendência em `DOPPLER_CAROTIDAS` para termos temporais | evita conclusão normal de carótidas com halo nos achados adicionais | não reencaminha sozinho | aviso no formulário | média |
+
+## Atualização — 05/10/2026, após b36391f (DOPPLER_ARTERIAS_TEMPORAIS)
+
+A `main` (`01155d0`) passou a ter um MVP Web estruturado desta categoria, commit b36391f (DOPPLER_ARTERIAS_TEMPORAIS), no grupo Vascular (`apps/web/src/components/laudar/categoryGroups.ts:55`) e em `STRUCTURED_WEB_CATEGORY_CODES` (`apps/web/src/lib/writerCategories.ts:12`). A classificação **Web: ausente** acima vale só para a base anterior. A prova por execução do MVP, o estado em Android/RN e iOS e o cumprimento dos requisitos deste preflight estão em `audits/lote2/`.

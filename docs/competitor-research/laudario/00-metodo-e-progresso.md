@@ -46,7 +46,8 @@ Ao abrir um exame, a coluna esquerda vira um formulário dividido em abas clíni
 - Doppler de Transplante Renal: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, medidas arteriais acima dos critérios exibidos, interpretação de estenose e ausência de fluxo arterial sintética. A categoria está ausente nas três plataformas. Foram documentados razão automática, separação entre alerta e confirmação médica, possível coexistência temporária de medidas anormais com conclusão normal, sugestões de urgência com publicação separada e o risco de encaminhar enxerto pelo writer de rim nativo.
 - Doppler de Aorta e Artérias Ilíacas: primeira rodada funcional e cruzamento técnico concluídos, com estado normal, diâmetro aórtico sintético, aneurisma confirmado, estenose e oclusão da ilíaca comum esquerda. A categoria está ausente nas três plataformas. Foram documentados alerta sem reclassificação automática, presets anatômicos publicados sem medidas próprias, graduação de estenose sem valores registrados e coexistência temporária de estados incompatíveis.
 - Cobertura funcional atual: 23 de 84 modelos-base (27,4%) e nenhum dos 15 exames combinados. A fila e o mapa de nomes estão em [fila-e-mapa-canonico-2026-10-03.md](fila-e-mapa-canonico-2026-10-03.md).
-- Próxima prioridade: Doppler de artérias temporais.
+- 05/10/2026: a observação do Laudário ficou bloqueada por falta de navegador. Foram feitos preflights e provas sintéticas do próprio LaudoUSG, em três lotes e 19 entradas do catálogo, sem contar como estudo funcional. Os defeitos foram provados por execução do caminho Web, e os requisitos são originais. Arquivos em `audits/lote2/`, `audits/lote3/`, `audits/execucao-sintetica-pelve-obstetrico-2026-10-05.md` e nas sínteses de `synthesis/`.
+- Próxima prioridade: rodada funcional no Laudário dos exames com prova sintética (fila, seção A) e o lote B de prova sintética.
 
 ## Limites desta fotografia
 
