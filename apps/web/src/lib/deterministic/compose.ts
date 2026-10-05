@@ -6,7 +6,7 @@
  * "\n" simples = quebra interna. O espaçamento visual é do CSS, não do texto.
  */
 
-import type { OrganState } from './types'
+import type { OrganState, PendenciaLocal } from './types'
 import type { ExamCategory } from './organs/abdomeTotal'
 /**
  * Caminho RELATIVO, não o alias `@/`. Este módulo é importado também de fora do
@@ -24,6 +24,9 @@ export interface ComposedReport {
   text: string
   /** Itens de conclusão (para destaque/preview granular, se preciso). */
   conclusion: string[]
+  /** Dado essencial ausente. Com pendência, `text` sai VAZIO: o formulário
+   *  bloqueia em vez de imprimir placeholder ou conclusão provisória. */
+  pendencias: PendenciaLocal[]
   /** Quantas seções de órgão estão alteradas. */
   alteredCount: number
 }
@@ -85,6 +88,7 @@ export function composeReport(
 
   const bodyParts: string[] = []
   const conclusion: string[] = []
+  const pendencias: PendenciaLocal[] = []
   let alteredCount = 0
 
   // Controles de categoria (via, menopausa…) — estado reservado em '__opts'.
@@ -99,6 +103,7 @@ export function composeReport(
       const c = section.module.compose(s, optsState)
       if (c.body) bodyParts.push(c.body) // pula seções sem corpo (ex.: ureteres normal)
       conclusion.push(...c.conclusion)
+      pendencias.push(...(c.pendencias ?? []))
       if (!c.isNormal) alteredCount += 1
     } else if (section.normalBody) {
       bodyParts.push(section.normalBody)
@@ -132,7 +137,7 @@ export function composeReport(
     `CONCLUSÃO:\n${conclusionBlock}`,
   ]
   if (category.footer) parts.push(category.footer)
-  const text = parts.join('\n\n')
+  const text = pendencias.length ? '' : parts.join('\n\n')
 
-  return { text, conclusion, alteredCount }
+  return { text, conclusion, pendencias, alteredCount }
 }

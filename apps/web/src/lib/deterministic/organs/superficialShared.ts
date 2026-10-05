@@ -4,11 +4,11 @@
  * Medidas são PRESERVADAS como o médico digitou: só troca ponto por vírgula e
  * normaliza o separador de eixos. Nada de arredondar nem converter unidade —
  * se veio em mm, sai em mm. Medida ausente ou inválida devolve null e quem
- * chama decide: placeholder `____` no corpo e conclusão pendente, nunca um
- * diagnóstico montado em cima de dado faltando.
+ * chama decide: pendência bloqueante do formulário (o laudo não é montado),
+ * nunca placeholder impresso nem diagnóstico em cima de dado faltando.
  */
 
-import type { OrganState } from '../types'
+import type { OrganState, PendenciaLocal } from '../types'
 
 export type Lado = 'direito' | 'esquerdo'
 
@@ -63,9 +63,9 @@ export function marcado(state: OrganState, key: string, value: string): boolean 
   return Array.isArray(list) && list.includes(value)
 }
 
-/** Item de conclusão que segura o diagnóstico até o dado essencial chegar. */
-export function conclusaoPendente(achado: string, faltando: string[]): string {
-  return `Conclusão pendente (${achado}): informe ${faltando.join(', ')}.`
+/** Pendência bloqueante: o achado fica sem laudo até o dado essencial chegar. */
+export function pendencia(achado: string, faltando: string[]): PendenciaLocal {
+  return { onde: achado, motivo: `informe ${faltando.join(', ')}` }
 }
 
 export const CONTEUDO_HERNIA_OPTIONS = [

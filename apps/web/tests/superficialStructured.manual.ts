@@ -12,6 +12,16 @@ function test(name: string, run: () => void) {
   console.log(`ok ${cases} - ${name}`)
 }
 
+/** Pendência bloqueia o laudo inteiro: texto vazio, motivo só na pendência. */
+function bloqueado(report: ReturnType<typeof composeReport>, onde: string, motivo: RegExp) {
+  assert.equal(report.text, '', `laudo deveria estar bloqueado: ${onde}`)
+  assert.doesNotMatch(report.text, /____|Conclusão pendente/)
+  const item = report.pendencias.find((p) => p.onde === onde)
+  assert.ok(item, `sem pendência "${onde}" em ${JSON.stringify(report.pendencias)}`)
+  assert.match(item.motivo, motivo)
+  assert.doesNotMatch(report.conclusion.join('\n'), /____|Conclusão pendente/)
+}
+
 const conclusao = (text: string) => text.split('CONCLUSÃO:\n')[1] ?? ''
 const achados = (text: string) => text.split('OS SEGUINTES ASPECTOS FORAM OBSERVADOS:\n\n')[1]?.split('\n\nCONCLUSÃO:')[0] ?? ''
 
@@ -48,10 +58,9 @@ test('hérnia umbilical preserva colo/saco e só nomeia hérnia na conclusão', 
 test('hérnia incisional sem lado e sem redutibilidade não conclui diagnóstico', () => {
   const state = initialExamState(paredeAbdominal)
   Object.assign(state.parede_abdominal, { achado: 'hernia', 'achado.hernia.local': 'incisional', 'achado.hernia.conteudo': 'alca' })
-  const { text } = composeReport(paredeAbdominal, state)
-  assert.doesNotMatch(conclusao(text), /Hérnia/)
-  assert.match(conclusao(text), /Conclusão pendente .*lado, redutibilidade/)
-  assert.match(achados(text), /redutibilidade ____/)
+  const incompleto = composeReport(paredeAbdominal, state)
+  assert.doesNotMatch(incompleto.conclusion.join(' '), /Hérnia/)
+  bloqueado(incompleto, 'defeito da parede abdominal', /lado, redutibilidade/)
   state.parede_abdominal['achado.hernia.lado'] = 'direita'
   state.parede_abdominal['achado.hernia.redutibilidade'] = 'nao_redutivel'
   assert.match(conclusao(composeReport(paredeAbdominal, state).text), /^1\. Hérnia incisional à direita, de conteúdo entérico, não redutível\. Convém, a critério clínico, avaliação cirúrgica\.$/)
@@ -60,7 +69,7 @@ test('hérnia incisional sem lado e sem redutibilidade não conclui diagnóstico
 test('diástase exige distância inter-retos e preserva os dois níveis', () => {
   const state = initialExamState(paredeAbdominal)
   state.parede_abdominal.achado = 'diastase'
-  assert.match(conclusao(composeReport(paredeAbdominal, state).text), /Conclusão pendente/)
+  bloqueado(composeReport(paredeAbdominal, state), 'afastamento dos retos', /distância inter-retos/)
   Object.assign(state.parede_abdominal, { 'achado.diastase.supra': '3,8', 'achado.diastase.infra': '2,2' })
   assert.equal(conclusao(composeReport(paredeAbdominal, state).text),
     '1. Diástase dos músculos retos abdominais, com distância intermuscular de 3,8 cm na região supraumbilical e de 2,2 cm na região infraumbilical.')
@@ -98,7 +107,7 @@ test('hérnia inguinal indireta mantém lado, relação com a epigástrica e fec
 test('linfonodo inguinal proeminente sem medidas fica pendente', () => {
   const state = initialExamState(regiaoInguinal)
   state.inguinal_esquerda.linfonodos = 'proeminente'
-  assert.match(conclusao(composeReport(regiaoInguinal, state).text), /Conclusão pendente \(linfonodo inguinal à esquerda\): informe medidas/)
+  bloqueado(composeReport(regiaoInguinal, state), 'linfonodo inguinal à esquerda', /medidas/)
   state.inguinal_esquerda['linfonodos.proeminente.medidas'] = '2,0 x 1,0'
   assert.match(conclusao(composeReport(regiaoInguinal, state).text), /1\. Linfonodo inguinal proeminente à esquerda, medindo 2,0 x 1,0 cm/)
 })
@@ -111,13 +120,13 @@ test('escrotal normal preserva medidas por lado e usa a conclusão do modelo-bas
   assert.equal(alteredCount, 0)
   assert.match(achados(text), /Testículo direito medindo 3,7 x 1,9 x 2,7 cm, apresentando ecogenicidade/)
   assert.match(achados(text), /Testículo esquerdo medindo 3,8 x 1,8 x 3,1 cm,/)
-  assert.equal(conclusao(text), '1. Testículos ecograficamente normais.\n2. Cabeças do epidídimo ecograficamente normais.\n3. Não há sinais evidentes de varicocele.')
+  assert.equal(conclusao(text), '1. Testículos ecograficamente normais.\n2. Cabeças dos epidídimos ecograficamente normais.\n3. Não há sinais evidentes de varicocele.')
 })
 
 test('varicocele à esquerda só com critério documentado; demais achados mantêm o lado', () => {
   const state = initialExamState(escrotal)
   Object.assign(state.escroto_esquerdo, { plexo: 'dilatado', 'plexo.dilatado.repouso': '2,8', 'plexo.dilatado.valsalva': '3,2' })
-  assert.match(conclusao(composeReport(escrotal, state).text), /Conclusão pendente \(plexo pampiniforme esquerdo\)/)
+  bloqueado(composeReport(escrotal, state), 'plexo pampiniforme esquerdo', /critério de varicocele/)
   state.escroto_esquerdo['plexo.dilatado.valsalva'] = '3,6'
   Object.assign(state.escroto_direito, {
     epididimo: 'cisto', 'epididimo.cisto.medida': '0,8',
@@ -137,15 +146,48 @@ test('nódulo e microlitíase sem dado essencial não viram diagnóstico', () =>
   const state = initialExamState(escrotal)
   state.escroto_direito.parenquima = 'nodulo'
   state.escroto_esquerdo.parenquima = 'microlitiase'
-  let text = conclusao(composeReport(escrotal, state).text)
-  assert.doesNotMatch(text, /Nódulo sólido|Microlitíase/)
-  assert.match(text, /imagem sólida no testículo direito\): informe terço, medidas/)
-  assert.match(text, /focos hiperecoicos no testículo esquerdo\): informe número de focos/)
+  const incompleto = composeReport(escrotal, state)
+  assert.doesNotMatch(incompleto.conclusion.join(' '), /Nódulo sólido|Microlitíase/)
+  bloqueado(incompleto, 'imagem sólida no testículo direito', /terço, medidas/)
+  bloqueado(incompleto, 'focos hiperecoicos no testículo esquerdo', /número de focos/)
   Object.assign(state.escroto_direito, { 'parenquima.nodulo.terco': 'medio', 'parenquima.nodulo.medidas': '1,2 x 0,9 x 1,1', 'parenquima.nodulo.vasc': 'presente' })
   state.escroto_esquerdo['parenquima.microlitiase.grau'] = 'classica'
-  text = conclusao(composeReport(escrotal, state).text)
+  const text = conclusao(composeReport(escrotal, state).text)
   assert.match(text, /1\. Nódulo sólido no terço médio do testículo direito, medindo 1,2 x 0,9 x 1,1 cm\. Convém/)
   assert.match(text, /2\. Microlitíase testicular à esquerda\./)
+})
+
+test('regressão: nenhum achado incompleto imprime placeholder ou conclusão pendente', () => {
+  type Caso = [string, typeof paredeAbdominal, (state: ReturnType<typeof initialExamState>) => void, string]
+  const casos: Caso[] = [
+    ['hérnia da parede sem conteúdo', paredeAbdominal, (s) => { s.parede_abdominal.achado = 'hernia' }, 'defeito da parede abdominal'],
+    ['coleção da parede sem medidas', paredeAbdominal, (s) => { s.parede_abdominal.achado = 'colecao' }, 'coleção na parede abdominal'],
+    ['hérnia inguinal sem redutibilidade', regiaoInguinal, (s) => { Object.assign(s.inguinal_direita, { hernia: 'presente', 'hernia.presente.conteudo': 'gordura' }) }, 'defeito inguinal à direita'],
+    ['linfonodo inguinal sem medidas', regiaoInguinal, (s) => { s.inguinal_direita.linfonodos = 'proeminente' }, 'linfonodo inguinal à direita'],
+    ['nódulo testicular sem medidas', escrotal, (s) => { Object.assign(s.escroto_esquerdo, { parenquima: 'nodulo', 'parenquima.nodulo.terco': 'superior' }) }, 'imagem sólida no testículo esquerdo'],
+    ['microlitíase sem contagem', escrotal, (s) => { s.escroto_direito.parenquima = 'microlitiase' }, 'focos hiperecoicos no testículo direito'],
+    ['cisto de epidídimo sem medida', escrotal, (s) => { s.escroto_esquerdo.epididimo = 'cisto' }, 'imagem cística no epidídimo esquerdo'],
+    ['plexo dilatado sem calibre', escrotal, (s) => { s.escroto_direito.plexo = 'dilatado' }, 'plexo pampiniforme direito'],
+  ]
+  for (const [nome, categoria, preparar, onde] of casos) {
+    const state = initialExamState(categoria)
+    preparar(state)
+    const report = composeReport(categoria, state)
+    assert.equal(report.text, '', nome)
+    assert.ok(report.pendencias.some((p) => p.onde === onde), `${nome}: ${JSON.stringify(report.pendencias)}`)
+    for (const c of report.conclusion) assert.doesNotMatch(c, /____|Conclusão pendente/, nome)
+  }
+  for (const categoria of [paredeAbdominal, regiaoInguinal, escrotal]) {
+    const normal = composeReport(categoria, initialExamState(categoria))
+    assert.deepEqual(normal.pendencias, [], categoria.id)
+    assert.doesNotMatch(normal.text, /____|Conclusão pendente/, categoria.id)
+  }
+})
+
+test('regressão: conclusão escrotal normal usa "Cabeças dos epidídimos"', () => {
+  const { text } = composeReport(escrotal, initialExamState(escrotal))
+  assert.match(conclusao(text), /^2\. Cabeças dos epidídimos ecograficamente normais\.$/m)
+  assert.doesNotMatch(text, /Cabeças do epidídimo/)
 })
 
 console.log(`${cases} superficial structured web cases passed`)

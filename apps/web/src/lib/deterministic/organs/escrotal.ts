@@ -11,8 +11,8 @@
  */
 
 import type { ExamCategory } from './abdomeTotal'
-import type { OrganComposition, OrganModule, OrganState } from '../types'
-import { FALTANDO, conclusaoPendente, marcado, medida, medidas, texto, valorNumerico, type Lado } from './superficialShared'
+import type { OrganComposition, OrganModule, OrganState, PendenciaLocal } from '../types'
+import { FALTANDO, pendencia, marcado, medida, medidas, texto, valorNumerico, type Lado } from './superficialShared'
 
 const FEM: Record<Lado, string> = { direito: 'direita', esquerdo: 'esquerda' }
 
@@ -25,7 +25,7 @@ const VOLUME_HIDROCELE: Record<string, string> = { pequeno: 'de pequeno volume',
 const VARICOCELE_REPOUSO_MM = 3.0
 const VARICOCELE_VALSALVA_MM = 3.5
 
-function testiculo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[]) {
+function testiculo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[], pendencias: PendenciaLocal[]) {
   const dims = medidas(st.medidas)
   const medindo = dims ? ` medindo ${dims},` : ''
   const parenquima = texto(st, 'parenquima')
@@ -43,7 +43,7 @@ function testiculo(st: OrganState, lado: Lado, linhas: string[], conclusion: str
     linhas.push(`Imagens hiperecoicas puntiformes, que não ocasionam sombra acústica, distribuídas pelo parênquima do testículo ${lado}, totalizando ${focos}.`)
     if (grau === 'classica') conclusion.push(`Microlitíase testicular à ${ladoF}. Convém, a critério clínico, seguimento ultrassonográfico periódico.`)
     else if (grau === 'limitada') conclusion.push(`Focos hiperecoicos puntiformes esparsos no testículo ${lado}, em número inferior a 5 por campo.`)
-    else conclusion.push(conclusaoPendente(`focos hiperecoicos no testículo ${lado}`, ['número de focos por campo']))
+    else pendencias.push(pendencia(`focos hiperecoicos no testículo ${lado}`, ['número de focos por campo']))
     return
   }
   if (parenquima === 'nodulo') {
@@ -58,14 +58,14 @@ function testiculo(st: OrganState, lado: Lado, linhas: string[], conclusion: str
     linhas.push(`Testículo ${lado}${medindo} apresentando vascularização preservada no parênquima restante.`)
     linhas.push(`No ${terco ?? `${FALTANDO} terço`} do testículo ${lado}, observa-se imagem sólida ${eco}, com ${margens}, medindo ${nod ?? FALTANDO}${vascTexto}.`)
     const faltando = [!terco && 'terço', !nod && 'medidas'].filter(Boolean) as string[]
-    if (faltando.length) conclusion.push(conclusaoPendente(`imagem sólida no testículo ${lado}`, faltando))
+    if (faltando.length) pendencias.push(pendencia(`imagem sólida no testículo ${lado}`, faltando))
     else conclusion.push(`Nódulo sólido no ${terco} do testículo ${lado}, medindo ${nod}. Convém, a critério clínico, correlacionar com exame físico, dosagem de marcadores tumorais (alfa-fetoproteína, beta-HCG, LDH) e avaliação urológica complementar.`)
     return
   }
   linhas.push(`Testículo ${lado}${medindo} apresentando ecogenicidade, ecotextura e vascularização normais.`)
 }
 
-function epididimo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[]) {
+function epididimo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[], pendencias: PendenciaLocal[]) {
   const estado = texto(st, 'epididimo')
   if (estado === 'cisto') {
     const p = 'epididimo.cisto.'
@@ -74,7 +74,7 @@ function epididimo(st: OrganState, lado: Lado, linhas: string[], conclusion: str
     const tamanho = medida(st[`${p}medida`])
     const conteudo = espermatocele ? 'com ecos puntiformes finos em suspensão' : 'anecoica'
     linhas.push(`Na ${porcao} do epidídimo ${lado}, observa-se imagem cística ${conteudo}, de paredes finas e contornos regulares, medindo ${tamanho ?? FALTANDO} no maior eixo.`)
-    if (!tamanho) conclusion.push(conclusaoPendente(`imagem cística no epidídimo ${lado}`, ['medida']))
+    if (!tamanho) pendencias.push(pendencia(`imagem cística no epidídimo ${lado}`, ['medida']))
     else conclusion.push(`${espermatocele ? 'Espermatocele' : 'Cisto'} da ${porcao} do epidídimo ${lado}, medindo ${tamanho}.`)
     return
   }
@@ -87,7 +87,7 @@ function epididimo(st: OrganState, lado: Lado, linhas: string[], conclusion: str
   linhas.push(`Cabeça do epidídimo ${lado} apresentando contornos regulares e ecotextura homogênea.`)
 }
 
-function plexo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[]) {
+function plexo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[], pendencias: PendenciaLocal[]) {
   if (texto(st, 'plexo') !== 'dilatado') {
     linhas.push(`Veias do plexo pampiniforme ${lado} de calibres normais.`)
     return
@@ -103,7 +103,7 @@ function plexo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[
 
   const ladoF = FEM[lado]
   if (!calibres) {
-    conclusion.push(conclusaoPendente(`plexo pampiniforme ${lado}`, ['calibre em repouso ou à Valsalva']))
+    pendencias.push(pendencia(`plexo pampiniforme ${lado}`, ['calibre em repouso ou à Valsalva']))
     return
   }
   const r = valorNumerico(st[`${p}repouso`])
@@ -112,7 +112,7 @@ function plexo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[
   const emCm = /cm/i.test(`${st[`${p}repouso`] ?? ''}${st[`${p}valsalva`] ?? ''}`)
   const criterio = refluxo === 'presente' || (!emCm && ((r !== null && r > VARICOCELE_REPOUSO_MM) || (v !== null && v > VARICOCELE_VALSALVA_MM)))
   if (criterio) conclusion.push(`Varicocele à ${ladoF}.`)
-  else conclusion.push(conclusaoPendente(`plexo pampiniforme ${lado}`, [`refluxo ou calibre acima de 3,0 mm em repouso / 3,5 mm à Valsalva (critério de varicocele)`]))
+  else pendencias.push(pendencia(`plexo pampiniforme ${lado}`, [`refluxo ou calibre acima de 3,0 mm em repouso / 3,5 mm à Valsalva (critério de varicocele)`]))
 }
 
 function hidrocele(st: OrganState, lado: Lado, linhas: string[], conclusion: string[]) {
@@ -265,11 +265,12 @@ function sideModule(lado: Lado): OrganModule {
     compose: (st): OrganComposition => {
       const linhas: string[] = []
       const conclusion: string[] = []
-      testiculo(st, lado, linhas, conclusion)
-      epididimo(st, lado, linhas, conclusion)
-      plexo(st, lado, linhas, conclusion)
+      const pendencias: PendenciaLocal[] = []
+      testiculo(st, lado, linhas, conclusion, pendencias)
+      epididimo(st, lado, linhas, conclusion, pendencias)
+      plexo(st, lado, linhas, conclusion, pendencias)
       hidrocele(st, lado, linhas, conclusion)
-      return { body: linhas.join('\n'), conclusion, isNormal: conclusion.length === 0 }
+      return { body: linhas.join('\n'), conclusion, pendencias, isNormal: conclusion.length === 0 && pendencias.length === 0 }
     },
   }
 }
@@ -286,6 +287,6 @@ export const escrotal: ExamCategory = {
     { id: 'escroto_esquerdo', label: 'Hemiescroto esquerdo', group: 'orgaos', module: sideModule('esquerdo') },
   ],
   conclusionNormal:
-    '1. Testículos ecograficamente normais.\n2. Cabeças do epidídimo ecograficamente normais.\n3. Não há sinais evidentes de varicocele.',
+    '1. Testículos ecograficamente normais.\n2. Cabeças dos epidídimos ecograficamente normais.\n3. Não há sinais evidentes de varicocele.',
   conclusionClosing: 'Demais estruturas escrotais examinadas sem evidência de alterações ecográficas.',
 }

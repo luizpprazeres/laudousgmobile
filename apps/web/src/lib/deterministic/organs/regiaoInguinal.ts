@@ -9,10 +9,10 @@
  */
 
 import type { ExamCategory, ExamSection } from './abdomeTotal'
-import type { OrganComposition, OrganModule, OrganState } from '../types'
+import type { OrganComposition, OrganModule, OrganState, PendenciaLocal } from '../types'
 import {
   CONDUTA_NAO_REDUTIVEL, CONTEUDO_HERNIA_OPTIONS, FALTANDO, REDUTIBILIDADE_OPTIONS,
-  complementoHernia, conclusaoPendente, corpoHernia, faltandoHernia, medida, medidas, texto,
+  complementoHernia, pendencia, corpoHernia, faltandoHernia, medida, medidas, texto,
   type HerniaDados,
 } from './superficialShared'
 
@@ -103,6 +103,7 @@ function sideModule(lado: LadoInguinal): OrganModule {
     compose: (st): OrganComposition => {
       const linhas: string[] = []
       const conclusion: string[] = []
+      const pendencias: PendenciaLocal[] = []
 
       if (texto(st, 'hernia') === 'presente') {
         const tipo = (texto(st, `${h}tipo`) || 'nao_classificada') as Tipo
@@ -116,7 +117,7 @@ function sideModule(lado: LadoInguinal): OrganModule {
         linhas.push(...corpoHernia(dados))
         const faltando = faltandoHernia(dados)
         if (faltando.length) {
-          conclusion.push(conclusaoPendente(`defeito inguinal à ${lado}`, faltando))
+          pendencias.push(pendencia(`defeito inguinal à ${lado}`, faltando))
         } else {
           let item = `${NOME_HERNIA[tipo] ?? NOME_HERNIA.nao_classificada} à ${lado}, ${complementoHernia(dados)}.`
           if (dados.redutibilidade === 'nao_redutivel') item += ` ${CONDUTA_NAO_REDUTIVEL}`
@@ -131,7 +132,7 @@ function sideModule(lado: LadoInguinal): OrganModule {
         const hiloAusente = texto(st, `${l}hilo`) === 'ausente'
         const hilo = hiloAusente ? 'sem hilo hiperecoico identificável' : 'com hilo hiperecoico mantido'
         linhas.push(`Linfonodo inguinal à ${lado} de dimensões aumentadas, medindo ${dims ?? FALTANDO}, ${hilo}.`)
-        if (!dims) conclusion.push(conclusaoPendente(`linfonodo inguinal à ${lado}`, ['medidas']))
+        if (!dims) pendencias.push(pendencia(`linfonodo inguinal à ${lado}`, ['medidas']))
         else conclusion.push(hiloAusente
           ? `Linfonodo inguinal à ${lado} medindo ${dims}, sem hilo hiperecoico identificável. Correlacionar com dados clínicos.`
           : `Linfonodo inguinal proeminente à ${lado}, medindo ${dims}, com hilo hiperecoico mantido.`)
@@ -139,7 +140,7 @@ function sideModule(lado: LadoInguinal): OrganModule {
         linhas.push(`Linfonodos inguinais à ${lado} de morfologia preservada, com hilo hiperecoico mantido.`)
       }
 
-      return { body: linhas.join('\n'), conclusion, isNormal: conclusion.length === 0 }
+      return { body: linhas.join('\n'), conclusion, pendencias, isNormal: conclusion.length === 0 && pendencias.length === 0 }
     },
   }
 }

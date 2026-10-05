@@ -4,14 +4,14 @@
  * (normal, hérnia umbilical, diástase dos retos).
  *
  * MVP: um achado principal por exame (defeito herniário, diástase ou coleção).
- * Sem dado essencial, o corpo mostra `____` e a conclusão fica pendente.
+ * Sem dado essencial, o achado vira pendência bloqueante e o laudo não é montado.
  */
 
 import type { ExamCategory } from './abdomeTotal'
 import type { OrganComposition, OrganModule, OrganState } from '../types'
 import {
   CONDUTA_NAO_REDUTIVEL, CONTEUDO_HERNIA_OPTIONS, FALTANDO, REDUTIBILIDADE_OPTIONS,
-  complementoHernia, conclusaoPendente, corpoHernia, faltandoHernia, medida, medidas, texto,
+  complementoHernia, pendencia, corpoHernia, faltandoHernia, medida, medidas, texto,
   type HerniaDados,
 } from './superficialShared'
 
@@ -59,7 +59,7 @@ function hernia(st: OrganState): OrganComposition {
   if (!LOCAL_CONCLUSAO[local]) faltando.unshift('localização')
   else if (precisaLado && !ladoTexto) faltando.unshift('lado')
   if (faltando.length) {
-    return { body, conclusion: [conclusaoPendente('defeito da parede abdominal', faltando)], isNormal: false }
+    return { body, conclusion: [], pendencias: [pendencia('defeito da parede abdominal', faltando)], isNormal: false }
   }
   let item = `${LOCAL_CONCLUSAO[local]}${ladoTexto ? ` ${ladoTexto}` : ''}, ${complementoHernia(dados)}.`
   if (dados.redutibilidade === 'nao_redutivel') item += ` ${CONDUTA_NAO_REDUTIVEL}`
@@ -77,7 +77,7 @@ function diastase(st: OrganState): OrganComposition {
     SEM_COLECOES,
   ].join('\n')
   if (!niveis.length) {
-    return { body, conclusion: [conclusaoPendente('afastamento dos retos', ['ao menos uma distância inter-retos'])], isNormal: false }
+    return { body, conclusion: [], pendencias: [pendencia('afastamento dos retos', ['ao menos uma distância inter-retos'])], isNormal: false }
   }
   return { body, conclusion: [`Diástase dos músculos retos abdominais, com distância intermuscular de ${niveis.join(' e de ')}.`], isNormal: false }
 }
@@ -91,7 +91,7 @@ function colecao(st: OrganState): OrganComposition {
     PLANOS_NORMAIS,
   ].join('\n')
   const faltando = [!local && 'localização', !dims && 'medidas'].filter(Boolean) as string[]
-  if (faltando.length) return { body, conclusion: [conclusaoPendente('coleção na parede abdominal', faltando)], isNormal: false }
+  if (faltando.length) return { body, conclusion: [], pendencias: [pendencia('coleção na parede abdominal', faltando)], isNormal: false }
   return { body, conclusion: [`Coleção na parede abdominal, ${local}, medindo ${dims}.`], isNormal: false }
 }
 

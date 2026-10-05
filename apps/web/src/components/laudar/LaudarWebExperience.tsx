@@ -609,25 +609,31 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const composicao = useComposicaoCanonica(composition, Boolean(composition) && !choosingCategory, compositionBaseRevision)
   /** O laudo em tela depende de rede: exame avulso migrado ou composição. */
   const remoto = migrada || Boolean(composition)
+  /**
+   * Composição LOCAL (categorias não migradas). Pendência bloqueante aqui tem o
+   * mesmo efeito do bloqueio do canônico: sem laudo, com o motivo na tela, e o
+   * salvar recusa — nunca placeholder nem conclusão provisória impressos.
+   */
+  const laudoLocal = useMemo(() => {
+    if (composition || migrada) return null
+    const cat = CATEGORIES[categoria]
+    return cat ? composeReport(cat, examStates[categoria]) : null
+  }, [categoria, composition, examStates, migrada])
+  const pendenciasLocaisAtuais = useMemo(() => {
+    if (composition || migrada || isTireoide) return []
+    const estruturadas = (laudoLocal?.pendencias ?? []).map((p) => `${p.onde}: ${p.motivo}`)
+    return Array.from(new Set([...estruturadas, ...pendenciasLocais(categoria, examStates[categoria])]))
+  }, [categoria, composition, examStates, isTireoide, laudoLocal, migrada])
+  const erroLocal = pendenciasLocaisAtuais.length ? pendenciasLocaisAtuais.join(' · ') : null
   const motor = composition
     ? { carregando: composicao.carregando, desatualizado: composicao.desatualizado, erro: composicao.erro }
-    : { carregando: laudoCanonico.carregando, desatualizado: laudoCanonico.desatualizado, erro: laudoCanonico.erro }
+    : { carregando: laudoCanonico.carregando, desatualizado: laudoCanonico.desatualizado, erro: migrada ? laudoCanonico.erro : erroLocal }
 
   const generatedText = useMemo(() => {
     if (composition) return composicao.texto
     if (migrada) return laudoCanonico.texto
-    const cat = CATEGORIES[categoria]
-    return cat ? composeReport(cat, examStates[categoria]).text : ''
-  }, [categoria, composition, composicao.texto, examStates, migrada, laudoCanonico.texto])
-  /**
-   * Pendências do compositor local (categorias ainda não migradas): dado
-   * essencial ausente ou inválido. O texto segue visível, com lacunas "____" e
-   * sem a conclusão diagnóstica, mas não é salvo enquanto houver pendência.
-   */
-  const pendenciasLocaisAtuais = useMemo(
-    () => (composition || migrada || isTireoide ? [] : pendenciasLocais(categoria, examStates[categoria])),
-    [categoria, composition, examStates, isTireoide, migrada],
-  )
+    return laudoLocal?.text ?? ''
+  }, [composition, composicao.texto, migrada, laudoCanonico.texto, laudoLocal])
 
   /**
    * OS BLOCOS DE CALCULADORA — e por que isto NÃO fura a regra do §3.2.
@@ -874,8 +880,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   )
   const laudoNaoConfere = composition
     ? composicaoNaoConfere
-    : migrada && !textoFoiEditado &&
-      (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
+    : migrada
+      ? !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
+      : !textoFoiEditado && erroLocal !== null
   const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = motor.erro || saveState === 'error'
     ? 'error'
     : remoto && (motor.carregando || motor.desatualizado)
@@ -1813,7 +1820,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               <div className="flex flex-wrap items-center justify-end gap-2">{secondaryTools}</div>
             ) : null}
 
-            {remoto && motor.erro ? (
+            {motor.erro ? (
               <p data-laudo-error className="rounded-2xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
                 <strong className="font-semibold">{composition ? 'O laudo associado não foi montado por inteiro.' : 'O laudo não foi montado.'}</strong>{' '}
                 {motor.erro}
