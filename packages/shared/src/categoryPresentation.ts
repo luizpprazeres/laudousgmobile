@@ -38,6 +38,7 @@ export const CATEGORY_DISPLAY_LABELS: Readonly<Record<string, string>> = {
   DOPPLER_VENOSO_MMSS: "Doppler venoso de membros superiores",
   DOPPLER_ARTERIAL_MMSS: "Doppler arterial de membros superiores",
   DOPPLER_FISTULA_AV: "Doppler de fístula arteriovenosa",
+  DOPPLER_MESENTERICO: "Doppler de artérias mesentéricas",
   DOPPLER_RENAL: "Doppler renal",
   DOPPLER_HEPATICO: "Doppler hepático",
   TRANSFONTANELA: "Transfontanela",

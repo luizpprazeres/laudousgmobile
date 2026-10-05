@@ -11,6 +11,7 @@ import type { OrganState } from '../types'
 import { prostataTransretalIssuesDoExame } from './prostataTransretal'
 import { paratireoideIssuesDoExame } from './paratireoide'
 import { glandulasSalivaresIssuesDoExame } from './glandulasSalivares'
+import { dopplerMesentericoIssuesDoExame } from './dopplerMesenterico'
 
 type Exame = Record<string, OrganState>
 
@@ -18,6 +19,7 @@ const REGISTRO: Record<string, (state: Exame) => string[]> = {
   PROSTATA_TRANSRETAL: prostataTransretalIssuesDoExame,
   PARATIREOIDE: paratireoideIssuesDoExame,
   GLANDULAS_SALIVARES: glandulasSalivaresIssuesDoExame,
+  DOPPLER_MESENTERICO: dopplerMesentericoIssuesDoExame,
 }
 
 export function pendenciasLocais(categoria: string, state: Exame | undefined): string[] {
