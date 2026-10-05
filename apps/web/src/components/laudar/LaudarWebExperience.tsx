@@ -26,6 +26,8 @@ import { adaptarDopplerCarotidas } from '@/lib/catalog/dopplerCarotidasParaCatal
 import { adaptarDopplerVenosoMmii } from '@/lib/catalog/dopplerVenosoMmiiParaCatalogo'
 import { adaptarDopplerRenal } from '@/lib/catalog/dopplerRenalParaCatalogo'
 import { adaptarDopplerHepatico } from '@/lib/catalog/dopplerHepaticoParaCatalogo'
+import { adaptarDopplerArterialMmii } from '@/lib/catalog/dopplerArterialMmiiParaCatalogo'
+import { adaptarDopplerFistulaAv } from '@/lib/catalog/dopplerFistulaAvParaCatalogo'
 import { adaptarAbdome } from '@/lib/catalog/abdomeParaCatalogo'
 import { adaptarAbdomeSuperior } from '@/lib/catalog/abdomeSuperiorParaCatalogo'
 import { adaptarViasUrinarias } from '@/lib/catalog/viasUrinariasParaCatalogo'
@@ -590,6 +592,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'DOPPLER_HEPATICO') {
       return adaptarDopplerHepatico((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (categoria === 'DOPPLER_ARTERIAL_MMII') {
+      return adaptarDopplerArterialMmii(examStates[categoria] ?? {})
+    }
+    if (categoria === 'DOPPLER_FISTULA_AV') {
+      return adaptarDopplerFistulaAv(examStates[categoria] ?? {})
     }
     return null
   }, [categoria, examStates, isTireoide, tireoideState])

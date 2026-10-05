@@ -15,6 +15,7 @@ const files = [
   'tests/superficialStructured.manual.ts',
   'tests/urologyNeckStructured.manual.ts',
   'tests/neuroOcularStructured.manual.ts',
+  'tests/dopplerArterialFistulaStructured.manual.ts',
   'tests/fetalGrowthContext.manual.ts',
   'tests/fetalGrowthPercentile.manual.ts',
   'tests/fetalGrowthSource.manual.ts',
