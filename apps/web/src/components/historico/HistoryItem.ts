@@ -37,6 +37,7 @@ export function categoriaLabel(code: string): string {
     PELVE_FEMININA: 'Pelve feminina',
     PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
     HISTEROSSONOGRAFIA: 'Histerossonografia',
+    PESQUISA_ENDOMETRIOSE: 'Pesquisa de endometriose',
     CERVICAL: 'Cervical',
     CERVICOMETRIA: 'Cervicometria',
     PARTES_MOLES: 'Partes moles',

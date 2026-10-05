@@ -36,7 +36,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'saude_mulher',
     label: 'Saúde da mulher',
-    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'HISTEROSSONOGRAFIA', 'MAMARIA'],
+    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'HISTEROSSONOGRAFIA', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA'],
   },
   {
     id: 'pequenas_partes',
@@ -100,6 +100,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   PELVE_FEMININA: ['pelvica', 'utero', 'ovarios', 'endometrio', 'transvaginal', 'ginecologica'],
   PELVICO_TRANSVAGINAL: ['pelvico', 'pelvica', 'transvaginal', 'endovaginal', 'utero', 'ovarios', 'endometrio', 'ginecologica'],
   HISTEROSSONOGRAFIA: ['histerossonografia', 'sono-histerografia', 'infusao salina', 'cavidade uterina', 'polipo endometrial', 'sinequia', 'istmocele', 'septo uterino'],
+  PESQUISA_ENDOMETRIOSE: ['endometriose', 'endometriose profunda', 'endometrioma', 'mapeamento de endometriose', 'adenomiose', 'sinal de deslizamento'],
   MAMARIA: ['mama', 'mamas', 'mamaria', 'axila', 'axilas', 'bi-rads', 'birads'],
   MAMA_MASCULINA: ['mama masculina', 'ginecomastia', 'homem', 'masculino', 'retroareolar'],
   TIREOIDE: ['tiroide', 'tireoide', 'ti-rads', 'tirads', 'nodulo tireoidiano'],

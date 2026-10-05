@@ -110,6 +110,8 @@ export function composeReport(
     }
   }
 
+  pendencias.push(...(category.resolvePendencias?.(state) ?? []))
+
   // Achado marcado sem os dados que o descrevem: nenhum texto, só o motivo.
   if (pendencias.length > 0) return { text: '', conclusion: [], alteredCount, pendencias }
 

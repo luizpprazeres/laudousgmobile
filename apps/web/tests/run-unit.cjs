@@ -24,6 +24,7 @@ const files = [
   'tests/dopplerMesentericoStructured.manual.ts',
   'tests/dopplerArteriasTemporaisStructured.manual.ts',
   'tests/mamaMasculinaStructured.manual.ts',
+  'tests/pesquisaEndometrioseStructured.manual.ts',
   'tests/perfilBiofisicoFetal.manual.ts',
   'tests/ecocardiografiaFetalStructured.manual.ts',
   'tests/fetalGrowthContext.manual.ts',

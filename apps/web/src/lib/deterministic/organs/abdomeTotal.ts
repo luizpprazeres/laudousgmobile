@@ -2,7 +2,7 @@
  * Abdome Total — módulos determinísticos por estrutura.
  */
 
-import type { Field, OrganModule, OrganState } from '../types'
+import type { Field, OrganModule, OrganState, PendenciaLocal } from '../types'
 import type { CalcSpec } from '../../calculators/specs'
 import { bacoModule } from './baco'
 import { bexigaAbdomeModule } from './bexigaAbdome'
@@ -70,6 +70,9 @@ export interface ExamCategory {
   /** Consolida itens de conclusão entre seções (ex.: achado bilateral em um
    *  item só). Recebe os itens na ordem das seções e o estado do exame. */
   resolveConclusionItems?: (items: string[], state: Record<string, OrganState>) => string[]
+  /** Pendências que dependem de mais de uma seção (coerência entre compartimentos).
+   *  Bloqueiam o laudo igual às pendências de módulo. */
+  resolvePendencias?: (state: Record<string, OrganState>) => PendenciaLocal[]
 }
 
 export const abdomeTotal: ExamCategory = {
