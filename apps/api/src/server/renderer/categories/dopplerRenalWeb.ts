@@ -15,10 +15,24 @@ const Psv = z.object({
 const Point = <T extends z.ZodTypeAny>(territory: T, value = NonNegative) =>
   z.object({ territory, value }).strict();
 
+const Extensions = z.object({
+  indirect_conclusion_confirmed: z.boolean().default(false),
+  elevated_ri_confirmed: z.boolean().default(false),
+  flow: z.enum(["not_assessed", "detected", "not_detected"]).default("not_assessed"),
+  flow_segment: z.string().trim().min(1).max(150).nullable().default(null),
+  accessory_identified: z.boolean().default(false),
+  accessory_psv_cms: Positive.nullable().default(null),
+  renal_vein: z.enum(["not_assessed", "patent", "not_detected"]).default("not_assessed"),
+  stent_present: z.boolean().default(false),
+  stent_psv_cms: Positive.nullable().default(null),
+  renal_segmental_ratio: NonNegative.nullable().default(null),
+}).strict();
+
 const RenalSide = z.object({
   assessment: Assessment,
   limitation: Limitation,
   kidney: SharedKidneySchema,
+  extensions: Extensions.default({}),
   artery: z.object({
     psv_cms: z.array(Psv).max(8),
     documented_rar: NonNegative.nullable(),
@@ -32,7 +46,20 @@ const RenalSide = z.object({
 }).strict().superRefine((side, ctx) => {
   const hasData = side.artery.psv_cms.length > 0 || side.artery.documented_rar !== null ||
     side.intrarenal.ri.length > 0 || side.intrarenal.spectral_pattern !== "not_assessed" ||
-    side.intrarenal.acceleration_time_ms.length > 0 || side.intrarenal.acceleration_index_cms2.length > 0;
+    side.intrarenal.acceleration_time_ms.length > 0 || side.intrarenal.acceleration_index_cms2.length > 0 ||
+    side.extensions.flow !== "not_assessed" || side.extensions.renal_vein !== "not_assessed" ||
+    side.extensions.accessory_identified || side.extensions.stent_present;
+  const ext = side.extensions;
+  const issue = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["extensions"], message });
+  if (ext.indirect_conclusion_confirmed && side.intrarenal.spectral_pattern !== "tardus_parvus") issue("conclusão indireta exige padrão tardus-parvus documentado");
+  if (ext.elevated_ri_confirmed && !side.intrarenal.ri.some((p) => p.value > 0.8)) issue("elevação do IR requer medida acima de 0,80; o limite permanece pendente");
+  if (ext.accessory_psv_cms !== null && !ext.accessory_identified) issue("VPS acessória exige identificação da artéria");
+  if (ext.stent_psv_cms !== null && !ext.stent_present) issue("VPS no stent exige presença do stent");
+  if (ext.flow_segment && ext.flow === "not_assessed") issue("segmento de fluxo exige estado de avaliação");
+  if (ext.flow === "not_detected" && !ext.flow_segment) issue("fluxo não detectado exige segmento");
+  if (ext.flow === "not_detected" && side.artery.psv_cms.some((p) => (p.segment === "distal" && /distal/i.test(ext.flow_segment ?? "")) || (p.segment === "middle" && /médio|medio/i.test(ext.flow_segment ?? "")) || (p.segment === "ostial_or_proximal" && /ostial|proximal/i.test(ext.flow_segment ?? "")))) issue("fluxo ausente conflita com VPS no mesmo segmento");
+  if (ext.flow === "not_detected" && (side.artery.psv_cms.some((p) => p.segment === "maximum_unspecified") || ext.stent_psv_cms !== null)) issue("fluxo ausente e velocidade sem segmento ou no stent são conflitantes");
+  if (side.assessment === "normal" && (ext.flow === "not_detected" || ext.renal_vein === "not_detected" || ext.elevated_ri_confirmed)) issue("achado informado conflita com avaliação normal");
   if (side.assessment === "not_assessed") {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["assessment"], message: "lado bilateral precisa ser avaliado" });
   }
@@ -42,7 +69,7 @@ const RenalSide = z.object({
   if (side.assessment === "abnormal" && !hasData) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "estado alterado exige pelo menos um achado vascular objetivo" });
   }
-  if (side.assessment === "normal" && side.artery.psv_cms.some((item) => item.value > 250)) {
+  if (!ext.stent_present && side.assessment === "normal" && side.artery.psv_cms.some((item) => item.value > 250)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["artery", "psv_cms"], message: "VPS acima de 250 cm/s conflita com avaliação sem alteração" });
   }
   if (side.assessment === "normal" && ["tardus_parvus", "indeterminate"].includes(side.intrarenal.spectral_pattern)) {
@@ -124,12 +151,19 @@ function pt(value: number, digits = 2): string {
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits }).format(value);
 }
 
-function vascularBody(side: Side, data: Input["sides"][Side]): string[] {
+function vascularBody(side: Side, data: Input["sides"][Side], aorticPsv: number | null): string[] {
   const label = labels[side];
   const body: string[] = [];
   if (data.assessment === "normal") body.push(`Artéria renal ${label.artery} com fluxo preservado ao estudo Doppler.`);
   if (data.assessment === "limited" && data.limitation) body.push(`Avaliação da artéria renal ${label.artery} limitada por ${linhaUnica(data.limitation).replace(/\.+$/, "")}.`);
+  const ext = data.extensions;
+  const r3 = !ext.stent_present && aorticPsv === null && data.artery.documented_rar === null;
   for (const psv of data.artery.psv_cms) {
+    if (r3 && psv.value > 250) {
+      const at = psv.segment === "maximum_unspecified" ? "" : ` no segmento ${segment[psv.segment]}`;
+      body.push(`Artéria renal ${label.artery} com sinais de estenose, apresentando velocidade de pico sistólico de ${pt(psv.value)} cm/s${at} e relação aorto-renal de ____.`);
+      continue;
+    }
     body.push(`Artéria renal ${label.artery}, segmento ${segment[psv.segment]}: VPS de ${pt(psv.value)} cm/s.`);
   }
   if (data.artery.documented_rar !== null) {
@@ -147,6 +181,13 @@ function vascularBody(side: Side, data: Input["sides"][Side]): string[] {
   for (const ia of data.intrarenal.acceleration_index_cms2) {
     body.push(`Índice de aceleração no ${territory[ia.territory]} do rim ${label.kidney}: ${pt(ia.value)} cm/s².`);
   }
+  if (ext.flow === "detected") body.push(`Fluxo detectável na artéria renal ${label.artery}${ext.flow_segment ? `, segmento ${linhaUnica(ext.flow_segment)}` : ""}.`);
+  if (ext.flow === "not_detected") body.push(`Não foi detectado fluxo na artéria renal ${label.artery}, no segmento ${linhaUnica(ext.flow_segment!)}.`);
+  if (ext.accessory_identified) body.push(`Identificada artéria renal acessória à ${label.artery}${ext.accessory_psv_cms !== null ? `, com VPS de ${pt(ext.accessory_psv_cms)} cm/s` : ""}.`);
+  if (ext.renal_vein === "patent") body.push(`Veia renal ${label.artery} pérvia, com fluxo detectável ao Doppler.`);
+  if (ext.renal_vein === "not_detected") body.push(`Não foi detectado fluxo ao Doppler na veia renal ${label.artery}.`);
+  if (ext.stent_present) body.push(`Stent na artéria renal ${label.artery}${ext.stent_psv_cms !== null ? `, com fluxo detectável em seu interior e VPS de ${pt(ext.stent_psv_cms)} cm/s` : ""}.`);
+  if (ext.renal_segmental_ratio !== null) body.push(`Relação renal/segmentar à ${label.artery} de ${pt(ext.renal_segmental_ratio, 3)}.`);
   return body;
 }
 
@@ -187,9 +228,9 @@ export function renderDopplerRenalWeb(input: unknown, style: string): DopplerRen
       ? [`Avaliação da aorta limitada por ${linhaUnica(data.aorta.limitation).replace(/\.+$/, "")}.`]
       : []),
     ...rightKidney.body,
-    ...vascularBody("right", data.sides.right),
+    ...vascularBody("right", data.sides.right, data.aorta.psv_cms),
     ...leftKidney.body,
-    ...vascularBody("left", data.sides.left),
+    ...vascularBody("left", data.sides.left, data.aorta.psv_cms),
   ];
 
   const conclusion: string[] = [];
@@ -197,15 +238,27 @@ export function renderDopplerRenalWeb(input: unknown, style: string): DopplerRen
   if (!leftKidney.isNormal) conclusion.push(...leftKidney.conclusion);
   for (const side of ["right", "left"] as const) {
     const maximum = Math.max(0, ...data.sides[side].artery.psv_cms.map((item) => item.value));
-    if (maximum > 250) {
+    if (maximum > 250 && !data.sides[side].extensions.stent_present) {
       conclusion.push(`Artéria renal ${labels[side].artery} com sinais ecográficos de estenose hemodinamicamente significativa (VPS de ${pt(maximum)} cm/s).`);
     }
   }
+  for (const side of ["right", "left"] as const) {
+    const current = data.sides[side];
+    const maximum = Math.max(0, ...current.artery.psv_cms.map((p) => p.value));
+    if (current.extensions.indirect_conclusion_confirmed && maximum <= 250 && !current.extensions.stent_present) {
+      conclusion.push(`Achados indiretos sugestivos de alteração hemodinâmica proximal na artéria renal ${labels[side].artery}, sem critério direto documentado de estenose significativa.`);
+    }
+  }
+  const elevated = (["right", "left"] as const).filter((side) => data.sides[side].extensions.elevated_ri_confirmed);
+  if (elevated.length === 2) conclusion.push("Elevação bilateral dos índices de resistência intrarrenais, achado inespecífico.");
+  else if (elevated.length === 1) conclusion.push(`Elevação dos índices de resistência intrarrenais no rim ${labels[elevated[0]!].kidney}, achado inespecífico.`);
   const difference = strictDifference(data);
   if (difference !== null && difference > 1.8 && Math.abs(difference - 1.8) > 1e-10 * Math.max(1, difference, 1.8)) {
     conclusion.push(`Assimetria renal, com diferença de ${pt(difference)} cm entre as maiores medidas dos rins.`);
   }
-  const bothNormal = data.sides.right.assessment === "normal" && data.sides.left.assessment === "normal";
+  const bothNormal = data.sides.right.assessment === "normal" && data.sides.left.assessment === "normal" &&
+    !data.sides.right.extensions.stent_present && !data.sides.left.extensions.stent_present &&
+    !Object.values(data.sides).some((s) => s.artery.psv_cms.some((p) => p.value >= 180));
   if (bothNormal && !conclusion.some((item) => /estenose/i.test(item))) {
     conclusion.push("Artérias renais com fluxo preservado bilateralmente, sem evidência ecográfica de estenose hemodinamicamente significativa.");
   }

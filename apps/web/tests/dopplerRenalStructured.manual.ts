@@ -131,4 +131,24 @@ test('entrada inválida e dados sem estado de avaliação geram bloqueios nomead
   assert.ok(pending.some((item) => item.onde === 'artéria renal direita' && item.motivo.includes('estado')))
 })
 
+test('R3 mantém formulário utilizável sem VPS aórtica quando renal >250 e RAR pendente', () => {
+  const state = initialExamState(dopplerRenal)
+  state.arteria_renal_direita = { ...state.arteria_renal_direita, assessment: 'abnormal', psv_proximal_cms: '290' }
+  state.arteria_renal_esquerda = { ...state.arteria_renal_esquerda, assessment: 'normal' }
+  assert.deepEqual(adaptarDopplerRenal(state).pendencias, [])
+})
+
+test('extensões opcionais preservam lado e exigem confirmação de seus dados', () => {
+  const state = initialExamState(dopplerRenal)
+  state.aorta = { ...state.aorta, assessment: 'normal', vps_cms: '80' }
+  state.arteria_renal_direita = { ...state.arteria_renal_direita, assessment: 'abnormal', spectral_pattern: 'tardus_parvus', indirect_conclusion: 'confirmed', ir_upper: '0,84', ri_conclusion: 'confirmed', accessory: 'identified', accessory_psv_cms: '115', renal_vein: 'patent', stent: 'present', stent_psv_cms: '290', renal_segmental_ratio: '3,2' }
+  state.arteria_renal_esquerda = { ...state.arteria_renal_esquerda, assessment: 'normal' }
+  const result = adaptarDopplerRenal(state)
+  assert.deepEqual(result.pendencias, [])
+  assert.equal(result.dados.sides.right.extensions.accessory_psv_cms, 115)
+  assert.equal(result.dados.sides.left.extensions.accessory_identified, false)
+  state.arteria_renal_direita.stent = 'not_assessed'
+  assert.ok(adaptarDopplerRenal(state).pendencias.some((p) => /stent/.test(p.motivo)))
+})
+
 console.log(`${cases} Doppler renal structured web cases passed`)

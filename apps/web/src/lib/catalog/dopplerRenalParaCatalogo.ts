@@ -27,6 +27,18 @@ type DopplerRenalSideDraft = {
     psv_cms: Array<SegmentPoint<'ostial_or_proximal' | 'middle' | 'distal' | 'maximum_unspecified'>>
     documented_rar: number | null
   }
+  extensions: {
+    indirect_conclusion_confirmed: boolean
+    elevated_ri_confirmed: boolean
+    flow: 'not_assessed' | 'detected' | 'not_detected'
+    flow_segment: string | null
+    accessory_identified: boolean
+    accessory_psv_cms: number | null
+    renal_vein: 'not_assessed' | 'patent' | 'not_detected'
+    stent_present: boolean
+    stent_psv_cms: number | null
+    renal_segmental_ratio: number | null
+  }
   intrarenal: {
     ri: Array<NumericPoint<'upper_pole' | 'middle_pole' | 'lower_pole' | 'summary_unspecified'>>
     spectral_pattern: 'not_assessed' | 'normal' | 'tardus_parvus' | 'indeterminate'
@@ -146,6 +158,33 @@ function sideDraft(
   const accelerationTime = populated(vascular, TA_FIELDS, pending, true)
   const accelerationIndex = populated(vascular, IA_FIELDS, pending, true)
   const pattern = spectralPattern(vascular, `padrão espectral ${ptSide}`, pending)
+  const choice = <T extends string>(key: string, allowed: T[], fallback: T): T => {
+    const value = text(vascular, key) || fallback
+    if (allowed.includes(value as T)) return value as T
+    pending.push({ onde: `${key} ${ptSide}`, valor: value, motivo: 'opção inválida', bloqueia: true })
+    return fallback
+  }
+  const extensions: DopplerRenalSideDraft['extensions'] = {
+    indirect_conclusion_confirmed: choice('indirect_conclusion', ['no', 'confirmed'], 'no') === 'confirmed',
+    elevated_ri_confirmed: choice('ri_conclusion', ['no', 'confirmed'], 'no') === 'confirmed',
+    flow: choice('flow', ['not_assessed', 'detected', 'not_detected'], 'not_assessed'),
+    flow_segment: text(vascular, 'flow_segment') || null,
+    accessory_identified: choice('accessory', ['not_assessed', 'identified'], 'not_assessed') === 'identified',
+    accessory_psv_cms: numberField(vascular, 'accessory_psv_cms', `VPS acessória ${ptSide}`, pending),
+    renal_vein: choice('renal_vein', ['not_assessed', 'patent', 'not_detected'], 'not_assessed'),
+    stent_present: choice('stent', ['not_assessed', 'present'], 'not_assessed') === 'present',
+    stent_psv_cms: numberField(vascular, 'stent_psv_cms', `VPS no stent ${ptSide}`, pending),
+    renal_segmental_ratio: numberField(vascular, 'renal_segmental_ratio', `Relação renal/segmentar ${ptSide}`, pending, true),
+  }
+  const issue = (motivo: string) => pending.push({ onde: `artéria renal ${ptSide}`, valor: 'extensão opcional', motivo, bloqueia: true })
+  if (extensions.indirect_conclusion_confirmed && pattern !== 'tardus_parvus') issue('a conclusão indireta exige padrão tardus-parvus documentado')
+  if (extensions.elevated_ri_confirmed && !ri.some((p) => p.value > 0.8)) issue('a elevação do IR exige medida acima de 0,80; o limite permanece pendente')
+  if (extensions.accessory_psv_cms !== null && !extensions.accessory_identified) issue('confirme a identificação da artéria acessória')
+  if (extensions.stent_psv_cms !== null && !extensions.stent_present) issue('confirme a presença do stent')
+  if (extensions.flow_segment && extensions.flow === 'not_assessed') issue('selecione o fluxo do segmento informado')
+  if (extensions.flow === 'not_detected' && !extensions.flow_segment) issue('informe o segmento em que o fluxo não foi detectado')
+  if (sideAssessment === 'normal' && (extensions.flow === 'not_detected' || extensions.renal_vein === 'not_detected' || extensions.elevated_ri_confirmed)) issue('o achado informado conflita com avaliação sem alteração')
+
 
   for (const issue of kidneyInputIssues(kidneySection)) {
     pending.push({ onde: `rim ${ptSide}`, valor: 'campo renal', motivo: issue, bloqueia: true })
@@ -157,10 +196,12 @@ function sideDraft(
     pending.push({ onde: `artéria renal ${ptSide}`, valor: 'não avaliada', motivo: 'selecione o estado da avaliação vascular', bloqueia: true })
   }
   const hasVascularData = psv.length > 0 || documentedRar !== null || ri.length > 0 ||
-    accelerationTime.length > 0 || accelerationIndex.length > 0 || pattern !== 'not_assessed'
+    accelerationTime.length > 0 || accelerationIndex.length > 0 || pattern !== 'not_assessed' ||
+    extensions.flow !== 'not_assessed' || extensions.renal_vein !== 'not_assessed' || extensions.stent_present || extensions.accessory_identified
   if (sideAssessment === 'abnormal' && !hasVascularData) {
     pending.push({ onde: `artéria renal ${ptSide}`, valor: 'com alteração', motivo: 'informe ao menos uma medida ou o padrão espectral observado', bloqueia: true })
   }
+  if (sideAssessment === 'normal' && !extensions.stent_present && psv.some((p) => p.value > 250)) issue('VPS acima de 250 cm/s conflita com avaliação sem alteração')
   if (sideAssessment === 'normal' && (pattern === 'tardus_parvus' || pattern === 'indeterminate')) {
     pending.push({ onde: `artéria renal ${ptSide}`, valor: pattern, motivo: 'o padrão espectral conflita com a avaliação sem alteração', bloqueia: true })
   }
@@ -170,6 +211,7 @@ function sideDraft(
     limitation,
     kidney: normalizeKidneyState(kidneySection),
     artery: { psv_cms: psv, documented_rar: documentedRar },
+    extensions,
     intrarenal: {
       ri,
       spectral_pattern: pattern,
@@ -192,9 +234,7 @@ export function adaptarDopplerRenal(exam: ExamState) {
   if (aortaAssessment === 'not_assessed' && aorticPsv !== null) {
     pending.push({ onde: 'aorta', valor: 'VPS preenchida', motivo: 'selecione o estado da avaliação da aorta', bloqueia: true })
   }
-  if (aortaAssessment === 'not_assessed' && aorticPsv === null) {
-    pending.push({ onde: 'aorta', valor: 'não avaliada', motivo: 'selecione o estado da avaliação da aorta', bloqueia: true })
-  }
+
   if (aortaAssessment === 'abnormal' && aorticPsv === null) {
     pending.push({ onde: 'aorta', valor: 'com alteração', motivo: 'informe a VPS da aorta', bloqueia: true })
   }
@@ -202,6 +242,10 @@ export function adaptarDopplerRenal(exam: ExamState) {
   const sides = {
     right: sideDraft(exam, 'right', pending),
     left: sideDraft(exam, 'left', pending),
+  }
+  const r3 = Object.values(sides).some((side) => !side.extensions.stent_present && side.artery.documented_rar === null && side.artery.psv_cms.some((p) => p.value > 250))
+  if (aortaAssessment === 'not_assessed' && aorticPsv === null && !r3) {
+    pending.push({ onde: 'aorta', valor: 'não avaliada', motivo: 'selecione o estado da avaliação da aorta', bloqueia: true })
   }
   const rightMaximum = sides.right.kidney.medidas_cm?.length === 3
     ? Math.max(...sides.right.kidney.medidas_cm)

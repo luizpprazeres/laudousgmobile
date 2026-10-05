@@ -75,6 +75,37 @@ function vascularSideModule(side: VascularSide): OrganModule {
         },
         ...territoryFields('ta_ms', 'Tempo de aceleração (TA)', 'ms'),
         ...territoryFields('ia_cms2', 'Índice de aceleração (IA)', 'cm/s²'),
+        { key: 'indirect_conclusion', label: 'Conclusão indireta', kind: 'segmented', presentation: 'select', options: [
+          { value: 'no', label: 'Somente descrição', isDefault: true },
+          { value: 'confirmed', label: 'Confirmar alteração hemodinâmica proximal sugestiva' },
+        ] },
+        { key: 'ri_conclusion', label: 'IR elevado — interpretação médica', kind: 'segmented', presentation: 'select', options: [
+          { value: 'no', label: 'Somente valores', isDefault: true },
+          { value: 'confirmed', label: 'Confirmar elevação inespecífica do IR' },
+        ] },
+        { key: 'flow', label: 'Fluxo arterial', kind: 'segmented', presentation: 'select', options: [
+          { value: 'not_assessed', label: 'Não especificado', isDefault: true },
+          { value: 'detected', label: 'Detectável' },
+          { value: 'not_detected', label: 'Não detectado' },
+        ] },
+        { key: 'flow_segment', label: 'Segmento da avaliação do fluxo', kind: 'text', placeholder: 'ostial, proximal, médio ou distal' },
+        { key: 'accessory', label: 'Artéria renal acessória', kind: 'segmented', presentation: 'select', options: [
+          { value: 'not_assessed', label: 'Não especificada', isDefault: true },
+          { value: 'identified', label: 'Identificada' },
+        ] },
+        { key: 'accessory_psv_cms', label: 'VPS da artéria acessória (cm/s)', kind: 'text', placeholder: '115' },
+        { key: 'renal_vein', label: 'Veia renal', kind: 'segmented', presentation: 'select', options: [
+          { value: 'not_assessed', label: 'Não avaliada', isDefault: true },
+          { value: 'patent', label: 'Pérvia, com fluxo detectável' },
+          { value: 'not_detected', label: 'Fluxo não detectado' },
+        ] },
+        { key: 'stent', label: 'Stent na artéria renal', kind: 'segmented', presentation: 'select', options: [
+          { value: 'not_assessed', label: 'Não especificado', isDefault: true },
+          { value: 'present', label: 'Presente' },
+        ] },
+        { key: 'stent_psv_cms', label: 'VPS no interior do stent (cm/s)', kind: 'text', placeholder: '180' },
+        { key: 'renal_segmental_ratio', label: 'Relação renal/segmentar documentada', kind: 'text', placeholder: 'valor medido — uso descritivo' },
+
       ],
     },
     initialState: (): OrganState => ({
@@ -85,6 +116,9 @@ function vascularSideModule(side: VascularSide): OrganModule {
       psv_distal_cms: '',
       psv_maximum_cms: '',
       rar: '',
+      indirect_conclusion: 'no', ri_conclusion: 'no', flow: 'not_assessed', flow_segment: '',
+      accessory: 'not_assessed', accessory_psv_cms: '', renal_vein: 'not_assessed',
+      stent: 'not_assessed', stent_psv_cms: '', renal_segmental_ratio: '',
       ir_upper: '',
       ir_middle: '',
       ir_lower: '',

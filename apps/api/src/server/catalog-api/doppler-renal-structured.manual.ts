@@ -93,6 +93,47 @@ const contradictoryPattern = structuredClone(input());
 contradictoryPattern.sides.right.intrarenal.spectral_pattern = "tardus_parvus";
 assert.equal(renderDopplerRenalWeb(contradictoryPattern, "CLASSICO_COMPLETO").ok, false);
 
+// Decision regressions: R2/R3/R5/R6/R8/R9.
+const renderText = (value: unknown) => {
+  const result = renderDopplerRenalWeb(value, "CLASSICO_COMPLETO");
+  assert.equal(result.ok, true, JSON.stringify(result));
+  if (!result.ok) throw new Error("renderer bloqueado");
+  return result.text;
+};
+for (const vps of [180, 200, 250]) {
+  const text = renderText(input(vps));
+  assert.match(text, new RegExp(`VPS de ${vps} cm/s`));
+  assert.doesNotMatch(text.split("CONCLUSÃO:")[1] ?? "", /estenose/);
+}
+const r3 = input(290);
+const r3Text = renderText({ ...r3, aorta: { assessment: "not_assessed", limitation: null, psv_cms: null }, sides: { ...r3.sides, right: { ...r3.sides.right, artery: { ...r3.sides.right.artery, documented_rar: null } } } });
+assert.match(r3Text, /290 cm\/s no segmento ostial\/proximal e relação aorto-renal de ____/);
+assert.doesNotMatch(r3Text, /não foi possível calcular/i);
+const extInput = (extensions: Record<string, unknown>, ri = 0.84) => {
+  const value = input();
+  return { ...value, sides: { ...value.sides, right: { ...value.sides.right, assessment: "abnormal", intrarenal: { ...value.sides.right.intrarenal, spectral_pattern: "tardus_parvus", ri: [{ territory: "summary_unspecified", value: ri }] }, extensions } } };
+};
+const indirect = renderText(extInput({ indirect_conclusion_confirmed: true, elevated_ri_confirmed: true }));
+assert.match(indirect, /Achados indiretos sugestivos/);
+assert.match(indirect, /Elevação dos índices.*achado inespecífico/);
+assert.doesNotMatch(indirect, /nefroesclerose|nefropatia|com sinais ecográficos de estenose/);
+assert.equal(renderDopplerRenalWeb(extInput({ elevated_ri_confirmed: true }, 0.8), "CLASSICO_COMPLETO").ok, false);
+const optional = renderText(extInput({ accessory_identified: true, accessory_psv_cms: 115, renal_vein: "patent", renal_segmental_ratio: 3.2 }));
+assert.match(optional, /artéria renal acessória à direita, com VPS de 115/);
+assert.match(optional, /Veia renal direita pérvia/);
+assert.doesNotMatch(optional.split("CONCLUSÃO:")[1] ?? "", /acessória|trombose/);
+const noFlow = renderText(extInput({ flow: "not_detected", flow_segment: "distal", renal_vein: "not_detected" }));
+assert.match(noFlow, /Não foi detectado fluxo na artéria renal direita, no segmento distal/);
+assert.doesNotMatch(noFlow, /oclusão|trombose/);
+const stentBase = input(320);
+const stent = renderText({ ...stentBase, sides: { ...stentBase.sides, right: { ...stentBase.sides.right, extensions: { stent_present: true, stent_psv_cms: 320 } } } });
+assert.match(stent, /Stent na artéria renal direita/);
+assert.doesNotMatch(stent, /estenose|reestenose/);
+assert.equal(renderDopplerRenalWeb(extInput({ accessory_psv_cms: 115 }), "CLASSICO_COMPLETO").ok, false);
+assert.equal(renderDopplerRenalWeb(extInput({ stent_psv_cms: 115 }), "CLASSICO_COMPLETO").ok, false);
+assert.equal(renderDopplerRenalWeb(extInput({ flow: "not_detected" }), "CLASSICO_COMPLETO").ok, false);
+assert.equal(renderDopplerRenalWeb(extInput({ flow: "not_detected", flow_segment: "proximal" }), "CLASSICO_COMPLETO").ok, false);
+
 const response = await POST(new Request("https://x/api/catalog/DOPPLER_RENAL/render", {
   method: "POST",
   headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
