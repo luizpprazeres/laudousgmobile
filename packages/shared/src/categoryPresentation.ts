@@ -11,6 +11,7 @@ export const CATEGORY_DISPLAY_LABELS: Readonly<Record<string, string>> = {
   MORFOLOGICO: "Morfológico",
   CERVICOMETRIA: "Cervicometria",
   PERFIL_BIOFISICO_FETAL: "Perfil biofísico fetal",
+  ECOCARDIOGRAFIA_FETAL: "Ecocardiografia fetal",
   HISTEROSSONOGRAFIA: "Histerossonografia",
   ABDOMEN_TOTAL: "Abdome total",
   ABDOMEN_TOTAL_DOPPLER: "Abdome total com Doppler",

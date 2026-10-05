@@ -14,6 +14,7 @@ import { glandulasSalivaresIssuesDoExame } from './glandulasSalivares'
 import { dopplerMesentericoIssuesDoExame } from './dopplerMesenterico'
 import { dopplerTransplanteRenalIssuesDoExame } from './dopplerTransplanteRenal'
 import { bolsaTesticularDopplerIssuesDoExame } from './bolsaTesticularDoppler'
+import { ecocardiografiaFetalIssuesDoExame } from './ecocardiografiaFetal'
 
 type Exame = Record<string, OrganState>
 
@@ -24,6 +25,7 @@ const REGISTRO: Record<string, (state: Exame) => string[]> = {
   DOPPLER_MESENTERICO: dopplerMesentericoIssuesDoExame,
   DOPPLER_TRANSPLANTE_RENAL: dopplerTransplanteRenalIssuesDoExame,
   BOLSA_TESTICULAR_DOPPLER: bolsaTesticularDopplerIssuesDoExame,
+  ECOCARDIOGRAFIA_FETAL: ecocardiografiaFetalIssuesDoExame,
 }
 
 export function pendenciasLocais(categoria: string, state: Exame | undefined): string[] {

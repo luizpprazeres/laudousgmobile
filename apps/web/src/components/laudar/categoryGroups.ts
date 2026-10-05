@@ -31,7 +31,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'obstetricia',
     label: 'Obstetrícia',
-    categories: ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA', 'PERFIL_BIOFISICO_FETAL'],
+    categories: ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA', 'PERFIL_BIOFISICO_FETAL', 'ECOCARDIOGRAFIA_FETAL'],
   },
   {
     id: 'saude_mulher',
@@ -96,6 +96,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   MORFOLOGICO: ['morfologico', 'morfologia fetal', 'anatomia fetal', 'translucencia nucal', 'primeiro trimestre', 'segundo trimestre'],
   CERVICOMETRIA: ['colo uterino', 'comprimento do colo', 'colo do utero', 'transvaginal'],
   PERFIL_BIOFISICO_FETAL: ['perfil biofisico', 'pbf', 'vitalidade fetal', 'bem-estar fetal', 'cardiotocografia', 'manning'],
+  ECOCARDIOGRAFIA_FETAL: ['ecocardiografia fetal', 'ecocardiograma fetal', 'eco fetal', 'coracao fetal', 'cardiopatia congenita', 'arritmia fetal'],
   PELVE_FEMININA: ['pelvica', 'utero', 'ovarios', 'endometrio', 'transvaginal', 'ginecologica'],
   PELVICO_TRANSVAGINAL: ['pelvico', 'pelvica', 'transvaginal', 'endovaginal', 'utero', 'ovarios', 'endometrio', 'ginecologica'],
   HISTEROSSONOGRAFIA: ['histerossonografia', 'sono-histerografia', 'infusao salina', 'cavidade uterina', 'polipo endometrial', 'sinequia', 'istmocele', 'septo uterino'],
