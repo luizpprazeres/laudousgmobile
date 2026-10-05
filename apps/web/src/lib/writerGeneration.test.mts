@@ -17,7 +17,7 @@ const { questionsFromPendingClarify } = pending
 
 const reportId = '11111111-1111-4111-8111-111111111111'
 
-test('allowlist separa as 63 categorias estruturadas da categoria livre', () => {
+test('allowlist separa as 66 categorias estruturadas da categoria livre', () => {
   assert.equal(STRUCTURED_WEB_CATEGORY_CODES.length, 66)
   assert.equal(WRITER_CATEGORY_CODES.length, 1)
   assert.equal(new Set([...STRUCTURED_WEB_CATEGORY_CODES, ...WRITER_CATEGORY_CODES]).size, 67)
