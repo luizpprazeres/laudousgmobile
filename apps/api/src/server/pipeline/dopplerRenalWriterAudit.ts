@@ -1,8 +1,8 @@
 /**
  * Fact-audit determinístico do DOPPLER_RENAL writer_guarded (guards do Dex2, 03/07).
  * Sinaliza [REVISAR] quando: placeholder ____; classificação de % de estenose;
- * afirmação de estenose SEM critério forte no ditado (VPS>250 OU RAR>3,2 OU
- * confirmação médica explícita); medida (VPS/RAR/IR) ditada ausente do laudo.
+ * afirmação de estenose SEM critério numérico rastreável no ditado; medida renal
+ * ditada ausente do laudo. O gate continua externo a este arquivo.
  */
 
 export type DopplerRenalAudit = {
@@ -20,7 +20,7 @@ export type DopplerRenalAudit = {
   unsupportedAssertions: string[];
 };
 
-type MeasureParameter = "VPS" | "RAR" | "IR";
+type MeasureParameter = "VPS" | "RAR" | "IR" | "TA" | "IA";
 type MeasureSide = "direita" | "esquerda" | "bilateral" | "aorta" | null;
 type MeasureFact = { parameter: MeasureParameter; side: MeasureSide; value: number };
 
@@ -28,11 +28,13 @@ const MEASURE_LABELS: ReadonlyArray<{ parameter: MeasureParameter; re: RegExp }>
   { parameter: "VPS", re: /\bvps\b|velocidade\s+de\s+pico\s+sist[óo]lic[oa]/gi },
   { parameter: "RAR", re: /\brar\b|rela[çc][ãa]o\s+(?:aorto-?renal|renal\s+aorta)/gi },
   { parameter: "IR", re: /\bir\b|[íi]ndices?\s+de\s+resist(?:[êe]ncia|ividade)/gi },
+  { parameter: "TA", re: /\bta\b|tempo\s+de\s+acelera[çc][ãa]o/gi },
+  { parameter: "IA", re: /\bia\b|[íi]ndice\s+de\s+acelera[çc][ãa]o/gi },
 ];
 
 function nearestSide(sentence: string, valueIndex: number, valueLength: number): MeasureSide {
   const occurrences: Array<{ side: Exclude<MeasureSide, null>; index: number }> = [];
-  const sideRe = /\b(direit[ao]|esquerd[ao]|bilateral(?:mente)?|aorta(?:\s+abdominal)?)\b/gi;
+  const sideRe = /\b(direit[ao]|esquerd[ao]|bilateral(?:mente)?|aorta(?:\s+abdominal)?|a[óo]rtic[ao])\b/gi;
   let m: RegExpExecArray | null;
   while ((m = sideRe.exec(sentence)) !== null) {
     const token = m[1]!.toLowerCase();
@@ -46,10 +48,10 @@ function nearestSide(sentence: string, valueIndex: number, valueLength: number):
     occurrences.push({ side, index: m.index });
   }
   const before = occurrences
-    .filter((o) => o.index < valueIndex && valueIndex - o.index <= 65)
+    .filter((o) => o.index < valueIndex && valueIndex - o.index <= 120)
     .sort((a, b) => b.index - a.index)[0];
   const after = occurrences
-    .filter((o) => o.index >= valueIndex + valueLength && o.index - (valueIndex + valueLength) <= 65)
+    .filter((o) => o.index >= valueIndex + valueLength && o.index - (valueIndex + valueLength) <= 120)
     .sort((a, b) => a.index - b.index)[0];
 
   if (after) {
@@ -79,10 +81,17 @@ function extractMeasureFacts(text: string): MeasureFact[] {
     let nm: RegExpExecArray | null;
     while ((nm = numberRe.exec(sentence)) !== null) {
       const value = Number(nm[0].replace(",", "."));
-      const nearestLabel = labels
-        .map((l) => ({ ...l, distance: Math.abs(l.index - nm!.index) }))
-        .filter((l) => l.distance <= 80)
+      const labelBefore = labels
+        .map((l) => ({ ...l, distance: nm!.index - l.index }))
+        .filter((l) => l.distance >= 0 && l.distance <= 80)
         .sort((a, b) => a.distance - b.distance)[0];
+      const labelAfter = labels
+        .map((l) => ({ ...l, distance: l.index - nm!.index }))
+        .filter((l) => l.distance > 0 && l.distance <= 80)
+        .sort((a, b) => a.distance - b.distance)[0];
+      // Em frases compostas, o rótulo imediatamente anterior pertence ao valor;
+      // um novo rótulo depois do número já inicia o parâmetro seguinte.
+      const nearestLabel = labelBefore ?? labelAfter;
       if (!nearestLabel) continue;
 
       // RAR/IR são decimais; isto evita capturar números de frequência/ângulo próximos.
@@ -173,7 +182,11 @@ function extractVps(text: string): number[] {
   // "VPS ... 120", "velocidade de pico sistólico ... 95", "120 cm/s".
   const rotulado = collect(/(?:vps|velocidade\s+de\s+pico\s+sist[óo]lico)[^0-9]{0,18}?(\d{2,3})|(\d{2,3})\s*(?:cm\/s|cent[íi]metros?\s+por\s+segundo)/gi, text);
   // "à direita 120", "à esquerda 110" (int 2-3 dígitos, NÃO decimal → não pega RAR/IR).
-  const lateral = collect(/(?:à\s+)?(?:direita|esquerda)\s+(\d{2,3})(?![.,]?\d)/gi, text);
+  const lateral = text.split(/[.!?\n]+/).flatMap((sentence) =>
+    /\bvps\b|velocidade\s+de\s+pico\s+sist/i.test(sentence)
+      ? collect(/(?:à\s+)?(?:direita|esquerda)\s+(\d{2,3})(?![.,]?\d)/gi, sentence)
+      : [],
+  );
   return [...rotulado, ...lateral];
 }
 
@@ -206,25 +219,39 @@ const RE_ESTENOSE_FRASE = /estenose\s+hemodinamicamente\s+significativa/i;
 const RE_ESTENOSE_NEGADA =
   /(?:sem\s+(?:evid[êe]ncia|sinais?)[^.]{0,45}?|aus[êe]ncia\s+de[^.]{0,25}?|n[ãa]o\s+h[áa][^.]{0,25}?)estenose\s+hemodinamicamente\s+significativa/i;
 
-export function auditDopplerRenalFacts(rawInput: string, laudo: string): DopplerRenalAudit {
-  const rawLc = rawInput.toLowerCase();
+function kidneyMaxAxes(text: string): Partial<Record<"direita" | "esquerda", number>> {
+  const out: Partial<Record<"direita" | "esquerda", number>> = {};
+  for (const side of ["direita", "esquerda"] as const) {
+    const re = new RegExp(`rim\\s+${side.replace("a", "[oa]")}[^.\\n]{0,220}?(\\d+[,.]\\d+)\\s*(?:cm\\s*)?(?:x|×|por)\\s*(\\d+[,.]\\d+)\\s*(?:cm\\s*)?(?:x|×|por)\\s*(\\d+[,.]\\d+)`, "i");
+    const m = text.match(re);
+    if (m) out[side] = Math.max(...m.slice(1, 4).map((v) => Number(v!.replace(",", "."))));
+  }
+  return out;
+}
 
-  const placeholder = laudo.includes("____");
+function allowedRarPlaceholder(rawInput: string, laudo: string, vps: number[]): boolean {
+  if (!laudo.includes("____")) return false;
+  const occurrences = laudo.match(/____/g)?.length ?? 0;
+  const exact = /Art[ée]ria renal (?:direita|esquerda) com sinais de estenose, apresentando velocidade de pico sist[óo]lico de \d{2,3} cm\/s no segmento [^.,;\n]+ e rela[çc][ãa]o aorto-renal de ____\./i.test(laudo);
+  const rawExplainsMissingAorta = /\brar\b/i.test(rawInput) &&
+    /n[ãa]o\s+(?:foi\s+)?poss[íi]vel\s+calcular|n[ãa]o\s+calculad|pendente/i.test(rawInput) &&
+    /aorta|a[óo]rtic/i.test(rawInput);
+  return occurrences === 1 && exact && rawExplainsMissingAorta && vps.some((v) => v > 250);
+}
+
+export function auditDopplerRenalFacts(rawInput: string, laudo: string): DopplerRenalAudit {
+  const vps = extractVps(rawInput);
+  const placeholder = laudo.includes("____") && !allowedRarPlaceholder(rawInput, laudo, vps);
 
   // % de estenose no laudo (proibido).
   const percentEstenose = /estenose[^.]{0,40}\d{1,3}\s*%|\d{1,3}\s*%[^.]{0,40}estenose/i.test(laudo);
 
   // Critério forte de estenose PRESENTE no ditado?
-  const vps = extractVps(rawInput);
   const rar = extractRar(rawInput);
   const hasVpsHigh = vps.some((v) => v > 250);
-  const hasRarHigh = rar.some((r) => r > 3.2);
-  const estenoseNegada = /sem\s+(?:sinais?\s+de\s+)?estenose|aus[êe]ncia\s+de\s+estenose/i.test(rawLc);
-  const estenoseSignificativaConfirmada =
-    /estenose(?:\s+hemodinamicamente)?\s+significativa/i.test(rawLc) &&
-    !estenoseNegada &&
-    !/(?:suspeit|sugestiv|poss[ií]vel|prov[aá]vel)[^.\n]{0,35}estenose/i.test(rawLc);
-  const criterioForte = hasVpsHigh || hasRarHigh || estenoseSignificativaConfirmada;
+  // RAR e confirmação verbal isolada não autorizam conclusão enquanto o limiar
+  // da RAR estiver clinicamente pendente.
+  const criterioForte = hasVpsHigh;
 
   const estenoseAfirmadaNoLaudo = RE_ESTENOSE_FRASE.test(laudo) && !RE_ESTENOSE_NEGADA.test(laudo);
   const estenoseSemCriterio = estenoseAfirmadaNoLaudo && !criterioForte;
@@ -246,6 +273,26 @@ export function auditDopplerRenalFacts(rawInput: string, laudo: string): Doppler
     .map(formatMeasureFact);
   const unsupportedAssertions = findUnsupportedAssertions(rawInput, laudo, rawFacts);
 
+  const rawAxes = kidneyMaxAxes(rawInput);
+  const axisDifference = rawAxes.direita !== undefined && rawAxes.esquerda !== undefined
+    ? Math.abs(rawAxes.direita - rawAxes.esquerda)
+    : null;
+  const conclusion = laudo.split(/CONCLUS[ÃA]O:/i)[1] ?? "";
+  const concludesAsymmetry = /assimetria\s+renal/i.test(conclusion);
+  if (axisDifference !== null && axisDifference > 1.8001 && !concludesAsymmetry) {
+    unsupportedAssertions.push("assimetria renal > 1,8 cm ausente da conclusão");
+  }
+  if (axisDifference !== null && axisDifference <= 1.8001 && concludesAsymmetry) {
+    unsupportedAssertions.push("assimetria renal concluída sem diferença estritamente > 1,8 cm");
+  }
+
+  if (/\boclus[ãa]o|\boclu[ií]d/i.test(laudo) && !/\boclus[ãa]o|\boclu[ií]d/i.test(rawInput)) {
+    unsupportedAssertions.push("oclusão inferida a partir de fluxo não detectado");
+  }
+  if (/reestenose/i.test(laudo) && !/reestenose/i.test(rawInput)) {
+    unsupportedAssertions.push("reestenose classificada sem confirmação no ditado");
+  }
+
   return {
     ok: !placeholder && !percentEstenose && !estenoseSemCriterio && missingMeasures.length === 0 &&
       mismatchedMeasures.length === 0 && unsupportedAssertions.length === 0,
@@ -263,7 +310,7 @@ export function dopplerRenalRevisarNote(a: DopplerRenalAudit): string | null {
   const partes: string[] = [];
   if (a.placeholder) partes.push(`placeholder "____" no laudo`);
   if (a.percentEstenose) partes.push(`classificação de % de estenose (Doppler não classifica percentual)`);
-  if (a.estenoseSemCriterio) partes.push(`estenose hemodinamicamente significativa afirmada SEM critério forte no ditado (VPS>250 ou RAR>3,2)`);
+  if (a.estenoseSemCriterio) partes.push(`estenose hemodinamicamente significativa afirmada SEM VPS renal >250 cm/s no ditado`);
   if (a.missingMeasures.length) partes.push(`medida(s) ditada(s) não localizada(s): ${a.missingMeasures.join(", ")}`);
   if (a.mismatchedMeasures.length) partes.push(`parâmetro/lateralidade divergente: ${a.mismatchedMeasures.join(", ")}`);
   if (a.unsupportedAssertions.length) partes.push(...a.unsupportedAssertions);

@@ -1,7 +1,3 @@
-/**
- * Golden PURO do DOPPLER_RENAL writer (prompt + fact-audit, sem LLM).
- * Rodar: tsx src/server/pipeline/__tests__/doppler-renal-writer.manual.ts
- */
 import { buildDopplerRenalWriterSystemMessage } from "../../renderer/categories/DOPPLER_RENAL";
 import { DOPPLER_RENAL_FEWSHOTS } from "../../renderer/categories/dopplerRenalFewshots";
 import {
@@ -18,143 +14,121 @@ function check(name: string, cond: boolean, detail?: string) {
   else { fail++; console.error(`✗ ${name}${detail ? `\n   ${detail}` : ""}`); }
 }
 
-// ── Prompt ──
 const p = buildDopplerRenalWriterSystemMessage();
-check("título das artérias renais", /ULTRASSONOGRAFIA COM DOPPLER COLORIDO DAS ARTÉRIAS RENAIS/.test(p));
-check("COMENTÁRIOS transdutor convexo + ângulo ≤60", /transdutor convexo \(3-5 MHz\)/.test(p) && /Ângulo Doppler ≤ 60°/.test(p));
-check("regra NUNCA ____", /NUNCA escreva "____"/.test(p) && /Segmento não medido/.test(p));
-check("critério estenose VPS>250 ou RAR>3,2", /VPS > 250 cm\/s.*RAR > 3,2|RAR > 3,2/.test(p) && /JVB 2005/.test(p));
-check("proíbe % de estenose", /NUNCA classifique PERCENTUAL/.test(p));
-check("default sugestivo sem critério forte", /linguagem SUGESTIVA/.test(p) && /não asseverar grau/.test(p));
-check("conclusão normal canônica", /fluxo preservado bilateralmente, sem evidência ecográfica de estenose/.test(p));
-check("aorta não é presumida", /Se a aorta não foi mencionada, não escreva nenhuma frase sobre ela/.test(p));
-check("normalidade bilateral e IR dependem do ditado", /não afirme fluxo preservado bilateralmente/.test(p) && /não afirme IR normal/.test(p));
-check("tardus-parvus isolado permanece sugestivo", /tardus-parvus" é achado sugestivo/.test(p));
-check("comandos são instruções", /Comandos ditados são INSTRUÇÕES/.test(p));
+check("frase aórtica no singular", /nível da emergência das artérias renais/.test(p) && !/nível das emergências/.test(p));
+check("rins por lado, L × AP × T e espessura", /cada lado separadamente/.test(p) && /longitudinal × anteroposterior × transversal/.test(p) && /espessura do parênquima/.test(p));
+check("TA e IA adjuvantes", /Tempo de aceleração \(TA\) e índice de aceleração \(IA\)/.test(p) && /parâmetros adjuvantes/.test(p));
+check("limítrofe só no corpo", /Faixa limítrofe[^\n]+apenas no CORPO/.test(p));
+check("RAR bloqueada para diagnóstico", /qualquer valor de RAR/.test(p) && /limiar diagnóstico da RAR permanece bloqueado/.test(p));
+check("confirmação verbal isolada não basta", /Confirmação verbal isolada/.test(p));
+check("assimetria estrita >1,8 pelo maior eixo", /maior eixo de cada lado/.test(p) && /estritamente maior que 1,8/.test(p));
+check("R9 descritivo sem inferência", /Não transforme fluxo não detectado em oclusão/.test(p) && /reestenose/.test(p));
+check("placeholder limitado a R3", /EXCETO no cenário R3/.test(p) && /Nenhum outro placeholder é permitido/.test(p));
+check("seis few-shots", DOPPLER_RENAL_FEWSHOTS.length === 6);
+check("few-shots passam no audit", DOPPLER_RENAL_FEWSHOTS.every((f) => auditDopplerRenalFacts(f.raw, f.laudo).ok), JSON.stringify(DOPPLER_RENAL_FEWSHOTS.map((f) => auditDopplerRenalFacts(f.raw, f.laudo))));
 
-// ── Few-shots ──
-check("few-shots: 4 pares", DOPPLER_RENAL_FEWSHOTS.length === 4);
-check("few-shots: nenhum tem ____", DOPPLER_RENAL_FEWSHOTS.every((f) => !f.laudo.includes("____")));
-check("few-shots: todo laudo tem cabeçalhos", DOPPLER_RENAL_FEWSHOTS.every((f) =>
-  /^ULTRASSONOGRAFIA COM DOPPLER/.test(f.laudo) && f.laudo.includes("COMENTÁRIOS:") && f.laudo.includes("CONCLUSÃO:")));
-check("few-shots: todos passam no auditor renal", DOPPLER_RENAL_FEWSHOTS.every((f) =>
-  auditDopplerRenalFacts(f.raw, f.laudo).ok));
-check("few-shot estenose: afirma só com VPS 320 + RAR 3,8", DOPPLER_RENAL_FEWSHOTS.some((f) =>
-  /320/.test(f.raw) && /estenose hemodinamicamente significativa/.test(f.laudo)));
-check("few-shot sugestivo: não afirma estenose significativa (VPS 210/RAR 2,8)", DOPPLER_RENAL_FEWSHOTS.some((f) =>
-  /210/.test(f.raw) && /sugestivos de estenose/.test(f.laudo) && !/hemodinamicamente significativa/.test(f.laudo)));
+{
+  const a = auditDopplerRenalFacts("RAR direita 3,4. Confirmo estenose significativa.", "RAR de 3,4 à direita. CONCLUSÃO: Estenose hemodinamicamente significativa da artéria renal direita.");
+  check("RAR 3,4 e confirmação verbal não autorizam estenose", a.estenoseSemCriterio && !a.ok, JSON.stringify(a));
+}
+{
+  const a = auditDopplerRenalFacts("Renal direita VPS 290 no segmento proximal. Não foi possível calcular a RAR direita porque a VPS aórtica não foi obtida.", "Artéria renal direita com sinais de estenose, apresentando velocidade de pico sistólico de 290 cm/s no segmento proximal e relação aorto-renal de ____. CONCLUSÃO: Estenose hemodinamicamente significativa da artéria renal direita.");
+  check("placeholder R3 exato permitido", a.ok, JSON.stringify(a));
+}
+{
+  const a = auditDopplerRenalFacts("Renal direita VPS 120.", "Artéria renal direita VPS 120 cm/s e ____ no segmento médio.");
+  check("outro placeholder bloqueado", a.placeholder && !a.ok, JSON.stringify(a));
+}
+{
+  const ok = auditDopplerRenalFacts("TA direita 78 ms. IA direita 2,8 m/s².", "Tempo de aceleração à direita de 78 ms. Índice de aceleração à direita de 2,8 m/s².");
+  check("TA e IA preservadas por lado", ok.ok, JSON.stringify(ok));
+  const bad = auditDopplerRenalFacts("TA direita 78 ms. IA direita 2,8 m/s².", "TA 78 ms e IA 2,8 m/s² à direita. CONCLUSÃO: Estenose hemodinamicamente significativa da artéria renal direita.");
+  check("TA e IA isolados não autorizam estenose", bad.estenoseSemCriterio && !bad.ok, JSON.stringify(bad));
+}
+{
+  const a = auditDopplerRenalFacts("Rim direito 11,0 x 4,0 x 3,5 cm. Rim esquerdo 9,1 x 5,0 x 4,0 cm.", "Rim direito 11,0 x 4,0 x 3,5 cm. Rim esquerdo 9,1 x 5,0 x 4,0 cm. CONCLUSÃO:");
+  check("assimetria >1,8 exigida", !a.ok && a.unsupportedAssertions.some((x) => x.includes("ausente")), JSON.stringify(a));
+}
+{
+  const a = auditDopplerRenalFacts("Rim direito 10,9 x 4,0 x 3,5 cm. Rim esquerdo 9,1 x 4,0 x 3,5 cm.", "CONCLUSÃO: Assimetria renal.");
+  check("1,8 exato não conclui assimetria", !a.ok && a.unsupportedAssertions.some((x) => x.includes("estritamente")), JSON.stringify(a));
+}
+{
+  const a = auditDopplerRenalFacts("Fluxo não detectado no stent renal direito.", "CONCLUSÃO: Oclusão do stent renal direito.");
+  check("R9 não infere oclusão", !a.ok && a.unsupportedAssertions.some((x) => x.includes("oclusão")), JSON.stringify(a));
+}
 
-// ── Fact-audit ──
-// Normal → ok.
+// Regressões do audit anterior que continuam obrigatórias.
 {
   const raw = "Aorta VPS 90. Renal direita VPS 120, esquerda 110. RAR 1,3 e 1,2. IR 0,62 bilateral. Sem estenose.";
-  const laudo = "Aorta abdominal com VPS de 90 cm/s. Artéria renal direita: VPS de 120 cm/s. Artéria renal esquerda: VPS de 110 cm/s. RAR de 1,3 à direita e 1,2 à esquerda. IR intrarrenal de 0,62 bilateralmente.\n\nCONCLUSÃO:\nArtérias renais com fluxo preservado bilateralmente, sem evidência ecográfica de estenose hemodinamicamente significativa.";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("audit normal: ok", a.ok, JSON.stringify(a));
+  const laudo = "Aorta abdominal com VPS de 90 cm/s. Artéria renal direita: VPS de 120 cm/s. Artéria renal esquerda: VPS de 110 cm/s. RAR de 1,3 à direita e 1,2 à esquerda. IR intrarrenal de 0,62 bilateralmente. CONCLUSÃO: Artérias renais com fluxo preservado bilateralmente, sem evidência ecográfica de estenose hemodinamicamente significativa.";
+  check("audit normal permanece válido", auditDopplerRenalFacts(raw, laudo).ok, JSON.stringify(auditDopplerRenalFacts(raw, laudo)));
 }
-
-// Troca direita/esquerda com os mesmos números presentes → falha por contexto.
 {
-  const raw = "VPS direita 120, esquerda 110. RAR direita 1,3, esquerda 1,2.";
-  const laudo = "VPS de 110 cm/s à direita e 120 cm/s à esquerda. RAR de 1,2 à direita e 1,3 à esquerda.";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("audit: troca de lateralidade detectada", !a.ok && a.mismatchedMeasures.includes("VPS direita 120") && a.mismatchedMeasures.includes("RAR esquerda 1,2"), JSON.stringify(a));
+  const a = auditDopplerRenalFacts(
+    "VPS direita 120, esquerda 110. RAR direita 1,3, esquerda 1,2.",
+    "VPS de 110 cm/s à direita e 120 cm/s à esquerda. RAR de 1,2 à direita e 1,3 à esquerda.",
+  );
+  check("troca de lateralidade continua bloqueada", !a.ok && a.mismatchedMeasures.includes("VPS direita 120") && a.mismatchedMeasures.includes("RAR esquerda 1,2"), JSON.stringify(a));
 }
-
-// Mesmo número associado ao parâmetro errado não satisfaz a auditoria.
 {
-  const raw = "RAR direita 1,3. IR direita 0,62.";
-  const laudo = "IR intrarrenal de 1,3 à direita. RAR de 0,62 à direita.";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("audit: troca RAR/IR detectada", !a.ok && a.mismatchedMeasures.includes("RAR direita 1,3") && a.mismatchedMeasures.includes("IR direita 0,62"), JSON.stringify(a));
+  const a = auditDopplerRenalFacts("RAR direita 1,3. IR direita 0,62.", "IR intrarrenal de 1,3 à direita. RAR de 0,62 à direita.");
+  check("troca RAR/IR continua bloqueada", !a.ok && a.mismatchedMeasures.includes("RAR direita 1,3") && a.mismatchedMeasures.includes("IR direita 0,62"), JSON.stringify(a));
 }
-
-// Normalidades não ditadas não podem completar o exame.
 {
-  const raw = "Artéria renal direita VPS 120.";
-  const laudo = "Aorta abdominal de calibre preservado. Artéria renal direita com VPS de 120 cm/s.\nCONCLUSÃO:\nArtérias renais com fluxo preservado bilateralmente, sem evidência ecográfica de estenose hemodinamicamente significativa. Índices de resistência intrarrenais dentro dos limites da normalidade.";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("audit: aorta/fluxo bilateral/IR não ditados detectados", !a.ok && a.unsupportedAssertions.length === 3, JSON.stringify(a));
+  const a = auditDopplerRenalFacts(
+    "Artéria renal direita VPS 120.",
+    "Aorta abdominal de calibre preservado. Artéria renal direita com VPS de 120 cm/s. CONCLUSÃO: Artérias renais com fluxo preservado bilateralmente, sem evidência ecográfica de estenose hemodinamicamente significativa. Índices de resistência intrarrenais dentro dos limites da normalidade.",
+  );
+  check("normalidades não ditadas continuam bloqueadas", !a.ok && a.unsupportedAssertions.length === 3, JSON.stringify(a));
   let blocked = false;
   try { assertDopplerRenalAuditPassed(a); } catch (error) { blocked = error instanceof DopplerRenalAuditError; }
-  check("writer guard: falha crítica lança erro e bloqueia entrega", blocked);
-  check("route guard: erro renal é reconhecido sem fallback genérico", isDopplerRenalAuditError({ code: "DOPPLER_RENAL_AUDIT_FAILED" }));
+  check("writer guard continua fail-closed", blocked);
+  check("erro renal continua reconhecível pela rota", isDopplerRenalAuditError({ code: "DOPPLER_RENAL_AUDIT_FAILED" }));
 }
-
-// Padrão indireto ou suspeita isolada não autorizam upgrade para estenose significativa.
 for (const raw of ["Tardus-parvus intrarrenal à direita.", "Suspeita de estenose da artéria renal direita."]) {
-  const laudo = "CONCLUSÃO:\nEstenose hemodinamicamente significativa da artéria renal direita.";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check(`audit: ${raw.split(".")[0]} não confirma significância`, a.estenoseSemCriterio && !a.ok, JSON.stringify(a));
+  const a = auditDopplerRenalFacts(raw, "CONCLUSÃO: Estenose hemodinamicamente significativa da artéria renal direita.");
+  check(`${raw.split(".")[0]} isolado não confirma significância`, a.estenoseSemCriterio && !a.ok, JSON.stringify(a));
 }
-
-// IR fora da faixa adotada não pode receber conclusão bilateral normal.
 {
-  const raw = "IR intrarrenal de 0,85 à direita e 0,62 à esquerda.";
-  const laudo = "IR intrarrenal de 0,85 à direita e 0,62 à esquerda.\nCONCLUSÃO:\nÍndices de resistência intrarrenais dentro dos limites da normalidade bilateralmente.";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("audit: IR elevado não pode ser concluído como normal", a.unsupportedAssertions.includes("IR fora da faixa adotada tratado como normal") && !a.ok, JSON.stringify(a));
+  const a = auditDopplerRenalFacts(
+    "IR intrarrenal de 0,85 à direita e 0,62 à esquerda.",
+    "IR intrarrenal de 0,85 à direita e 0,62 à esquerda. CONCLUSÃO: Índices de resistência intrarrenais dentro dos limites da normalidade bilateralmente.",
+  );
+  check("IR elevado não vira normal", !a.ok && a.unsupportedAssertions.includes("IR fora da faixa adotada tratado como normal"), JSON.stringify(a));
 }
-// Placeholder → detecta.
 {
-  const a = auditDopplerRenalFacts("renal VPS 120", "Artéria renal direita: VPS de 120 cm/s no ostio, ____ cm/s no terço médio.");
-  check("audit: placeholder ____ detectado", a.placeholder && !a.ok);
+  const a = auditDopplerRenalFacts("renal direita VPS 300", "Estenose de 70% na artéria renal direita.");
+  check("percentual de estenose continua proibido", a.percentEstenose && !a.ok, JSON.stringify(a));
 }
-// % de estenose → detecta.
 {
-  const a = auditDopplerRenalFacts("renal direita VPS 300, estenose", "Estenose de 70% na artéria renal direita.");
-  check("audit: % de estenose detectado", a.percentEstenose && !a.ok, JSON.stringify(a));
+  const a = auditDopplerRenalFacts("renal esquerda VPS 210, RAR 2,8", "Artéria renal esquerda com sinais de estenose hemodinamicamente significativa (VPS de 210 cm/s).");
+  check("VPS abaixo do corte não confirma estenose", a.estenoseSemCriterio && !a.ok, JSON.stringify(a));
+  check("nota de revisão explica ausência de VPS alta", /SEM VPS renal >250/i.test(dopplerRenalRevisarNote(a) ?? ""));
 }
-// Estenose afirmada SEM critério forte → detecta.
 {
-  const raw = "renal esquerda VPS 210, RAR 2,8"; // 210<250, 2,8<3,2, sem "estenose"
-  const laudo = "Artéria renal esquerda com sinais de estenose hemodinamicamente significativa (VPS de 210 cm/s).";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("audit: estenose sem critério forte detectada", a.estenoseSemCriterio && !a.ok, JSON.stringify(a));
-  check("nota [REVISAR] cita estenose sem critério", /sem crit[ée]rio forte/i.test(dopplerRenalRevisarNote(a) ?? ""));
+  const raw = "renal direita VPS 320, RAR 3,8";
+  const laudo = "Artéria renal direita: VPS de 320 cm/s. RAR de 3,8 à direita. CONCLUSÃO: Artéria renal direita com sinais ecográficos de estenose hemodinamicamente significativa (VPS de 320 cm/s).";
+  check("VPS acima do corte sustenta R3 sem usar RAR como critério", auditDopplerRenalFacts(raw, laudo).ok, JSON.stringify(auditDopplerRenalFacts(raw, laudo)));
 }
-// Estenose COM critério forte (VPS>250) → não flag de critério.
 {
-  const raw = "renal direita VPS 320, RAR 3,8, estenose significativa";
-  const laudo = "Artéria renal direita: VPS de 320 cm/s. RAR de 3,8 à direita.\nCONCLUSÃO:\nArtéria renal direita com sinais ecográficos de estenose hemodinamicamente significativa (VPS de 320 cm/s e RAR de 3,8).";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("audit: estenose com critério (VPS 320/RAR 3,8) → ok", a.ok, JSON.stringify(a));
+  const a = auditDopplerRenalFacts("renal direita VPS 120, RAR 1,3", "Artéria renal direita: VPS de 120 cm/s.");
+  check("medida ditada ausente continua bloqueada", !a.ok && a.missingMeasures.includes("1,3"), JSON.stringify(a));
 }
-// Medida ditada ausente → detecta.
-{
-  const raw = "renal direita VPS 120, RAR 1,3";
-  const laudo = "Artéria renal direita: VPS de 120 cm/s."; // dropou RAR 1,3
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("audit: RAR 1,3 dropada detectada", !a.ok && a.missingMeasures.includes("1,3"), JSON.stringify(a));
-}
-
-// ── Apertos do review dex1 ──
-// (#1) Afirmação "pelada" de estenose (sem lead "com sinais") SEM critério → detecta.
-{
-  const raw = "renal direita VPS 180, RAR 2,0"; // sem critério forte
-  const laudo = "CONCLUSÃO:\nEstenose hemodinamicamente significativa da artéria renal direita.";
-  const a = auditDopplerRenalFacts(raw, laudo);
-  check("dex1 #1: afirmação pelada de estenose sem critério detectada", a.estenoseSemCriterio && !a.ok, JSON.stringify(a));
-}
-// (#1) Forma NEGADA normal não é afirmação.
 {
   const a = auditDopplerRenalFacts("renal 120 e 110, sem estenose", "sem evidência ecográfica de estenose hemodinamicamente significativa.");
-  check("dex1 #1: 'sem evidência de estenose...' não é afirmação", !a.estenoseSemCriterio && a.ok, JSON.stringify(a));
+  check("negação de estenose não é falsa afirmação", !a.estenoseSemCriterio && a.ok, JSON.stringify(a));
 }
-// (#2) Formato compacto "VPS à direita 120 e à esquerda 110" — ambos extraídos.
 {
   const raw = "Doppler renal. VPS à direita 120 e à esquerda 110. Sem estenose.";
-  const laudoOk = "Artéria renal direita: VPS de 120 cm/s. Artéria renal esquerda: VPS de 110 cm/s.\nCONCLUSÃO:\nArtérias renais com fluxo preservado.";
-  const laudoDrop = "Artéria renal direita: VPS de 120 cm/s.\nCONCLUSÃO:\nnormal."; // dropou 110
-  check("dex1 #2: VPS compacto ambos presentes → ok", auditDopplerRenalFacts(raw, laudoOk).ok, JSON.stringify(auditDopplerRenalFacts(raw, laudoOk)));
-  check("dex1 #2: VPS compacto — drop de 110 detectado", auditDopplerRenalFacts(raw, laudoDrop).missingMeasures.includes("110"));
+  const ok = "Artéria renal direita: VPS de 120 cm/s. Artéria renal esquerda: VPS de 110 cm/s. CONCLUSÃO: Artérias renais com fluxo preservado.";
+  const drop = "Artéria renal direita: VPS de 120 cm/s. CONCLUSÃO: normal.";
+  check("VPS compactas dos dois lados permanecem auditáveis", auditDopplerRenalFacts(raw, ok).ok, JSON.stringify(auditDopplerRenalFacts(raw, ok)));
+  check("drop da segunda VPS continua detectado", auditDopplerRenalFacts(raw, drop).missingMeasures.includes("110"));
 }
-// (#2) "RAR direita 1,3, esquerda 1,2" — 2º valor sem rótulo detectado se dropado.
 {
-  const raw = "RAR direita 1,3, esquerda 1,2.";
-  const laudoDrop = "Relação aorto-renal (RAR) de 1,3 à direita.\nCONCLUSÃO:\nnormal."; // dropou 1,2
-  const a = auditDopplerRenalFacts(raw, laudoDrop);
-  check("dex1 #2: RAR 2º valor (1,2) sem rótulo — drop detectado", a.missingMeasures.includes("1,2"), JSON.stringify(a));
+  const a = auditDopplerRenalFacts("RAR direita 1,3, esquerda 1,2.", "Relação aorto-renal (RAR) de 1,3 à direita.");
+  check("drop da segunda RAR continua detectado", a.missingMeasures.includes("1,2"), JSON.stringify(a));
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);
