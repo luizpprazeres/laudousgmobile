@@ -304,7 +304,16 @@ const ventriculosModule: OrganModule = {
       conclusion.push(`Focos hiperecogênicos ${onde}, que podem corresponder a calcificações.${sorologias}`)
     }
 
-    return { body: lines.join('\n'), conclusion, isNormal: !altered }
+    const pendencias = hemorragia
+      ? [
+          ...(hLado ? [] : [{ onde: 'Hemorragia peri-intraventricular', motivo: 'informe o lado' }]),
+          ...(hExt ? [] : [{ onde: 'Hemorragia peri-intraventricular', motivo: 'informe a extensão' }]),
+          ...(hExt === 'parenquimatosa' && !sub(st, 'hemorragia', 'presente', 'regiao')
+            ? [{ onde: 'Hemorragia peri-intraventricular', motivo: 'informe a região parenquimatosa' }]
+            : []),
+        ]
+      : []
+    return { body: lines.join('\n'), conclusion, isNormal: !altered, pendencias }
   },
 }
 

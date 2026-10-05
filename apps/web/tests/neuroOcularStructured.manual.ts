@@ -128,12 +128,54 @@ test('limitação técnica e estrutura não avaliada retiram a normalidade globa
   assert.match(text, /1\. Estudo limitado pela janela acústica\.\n2\. Fossa posterior não avaliada\.\n3\. Demais estruturas avaliadas/)
 })
 
+test('hemorragia presente sem lado ou extensão bloqueia o laudo, sem texto com lacuna', () => {
+  const base = patch(initialExamState(transfontanela), 'parenquima_ventriculos', { hemorragia: 'presente' })
+  let report = composeReport(transfontanela, base)
+  assert.equal(report.text, '')
+  assert.deepEqual(report.pendencias.map((p) => p.motivo), ['informe o lado', 'informe a extensão'])
+
+  report = composeReport(transfontanela, patch(base, 'parenquima_ventriculos', { 'hemorragia.presente.lado': 'direito' }))
+  assert.equal(report.text, '')
+  assert.deepEqual(report.pendencias.map((p) => p.motivo), ['informe a extensão'])
+
+  report = composeReport(transfontanela, patch(base, 'parenquima_ventriculos', { 'hemorragia.presente.extensao': 'matriz' }))
+  assert.equal(report.text, '')
+  assert.deepEqual(report.pendencias.map((p) => p.motivo), ['informe o lado'])
+
+  report = composeReport(transfontanela, patch(base, 'parenquima_ventriculos', {
+    'hemorragia.presente.lado': 'esquerdo', 'hemorragia.presente.extensao': 'parenquimatosa',
+  }))
+  assert.equal(report.text, '')
+  assert.deepEqual(report.pendencias.map((p) => p.motivo), ['informe a região parenquimatosa'])
+
+  report = composeReport(transfontanela, patch(base, 'parenquima_ventriculos', {
+    'hemorragia.presente.lado': 'esquerdo', 'hemorragia.presente.extensao': 'matriz',
+  }))
+  assert.deepEqual(report.pendencias, [])
+  assert.match(report.text, /Imagem hiperecogênica no sulco caudotalâmico à esquerda\./)
+  assert.doesNotMatch(report.text, /____/)
+})
+
+test('composições sem achado incompleto não carregam pendência', () => {
+  assert.deepEqual(composeReport(transfontanela, initialExamState(transfontanela)).pendencias, [])
+  assert.deepEqual(composeReport(ocular, initialExamState(ocular)).pendencias, [])
+})
+
+test('modelo ocular usa "anecoica", nunca "anecogênica"', () => {
+  const { text } = composeReport(ocular, initialExamState(ocular))
+  assert.equal((text.match(/Câmara vítrea anecoica, sem ecos internos\./g) ?? []).length, 2)
+  assert.doesNotMatch(text, /anecog/i)
+  const labels = ocular.sections.flatMap((s) => s.module!.schema.fields).flatMap((f) => (f.options ?? []).map((o) => o.label))
+  assert.ok(labels.includes('Anecoica'))
+  assert.ok(!labels.some((label) => /anecog/i.test(label)))
+})
+
 // ------------------------------------------------------------- OCULAR
 
 test('ocular normal bilateral reproduz o modelo da casa', () => {
   const report = composeReport(ocular, initialExamState(ocular))
   assert.match(report.text, /^ULTRASSONOGRAFIA OCULAR/)
-  assert.match(report.text, /Olho direito:\nCâmara anterior de profundidade normal\. Cristalino tópico e de ecogenicidade habitual\.\nCâmara vítrea anecogênica, sem ecos internos\.\nRetina aplicada em toda a sua extensão\.\nNervo óptico de aspecto ecográfico normal\./)
+  assert.match(report.text, /Olho direito:\nCâmara anterior de profundidade normal\. Cristalino tópico e de ecogenicidade habitual\.\nCâmara vítrea anecoica, sem ecos internos\.\nRetina aplicada em toda a sua extensão\.\nNervo óptico de aspecto ecográfico normal\./)
   assert.match(report.text, /Olho esquerdo:/)
   assert.match(report.text, /CONCLUSÃO:\nUltrassonografia ocular sem alterações ecográficas significativas\.$/)
   semIdentificadorCru(report.text)
@@ -174,7 +216,7 @@ test('hemorragia vítrea, DVP e cristalino opacificado ficam no olho certo', () 
     'Opacificação do cristalino do olho esquerdo.',
     'Descolamento vítreo posterior no olho esquerdo.',
   ])
-  assert.doesNotMatch(text, /Câmara vítrea anecogênica/)
+  assert.doesNotMatch(text, /Câmara vítrea anecoica/)
 })
 
 test('bainha do nervo óptico: medida alta nunca convive com normalidade; aumentada sem medida vira lacuna', () => {

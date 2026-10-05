@@ -28,7 +28,7 @@ const olhoFields: Field[] = [
     opt('nao_avaliado', 'Não avaliado'),
   ]),
   segmented('vitreo', 'Câmara vítrea', [
-    opt('normal', 'Anecogênica', { isDefault: true }),
+    opt('normal', 'Anecoica', { isDefault: true }),
     opt('hemorragia', 'Ecos móveis (hemorragia)'),
     opt('dvp', 'Membrana livre (DVP)'),
     opt('nao_avaliado', 'Não avaliada'),
@@ -94,7 +94,7 @@ function olhoModule(olho: Olho): OrganModule {
           naoAvaliados.push('câmara vítrea')
           break
         default:
-          lines.push(descolamento ? 'Câmara vítrea sem outros ecos internos.' : 'Câmara vítrea anecogênica, sem ecos internos.')
+          lines.push(descolamento ? 'Câmara vítrea sem outros ecos internos.' : 'Câmara vítrea anecoica, sem ecos internos.')
       }
 
       if (descolamento) {

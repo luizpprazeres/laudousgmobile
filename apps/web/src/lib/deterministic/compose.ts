@@ -110,6 +110,12 @@ export function composeReport(
     }
   }
 
+  // Achado marcado sem os dados que o descrevem: nenhum texto, só o motivo.
+  if (pendencias.length > 0) return { text: '', conclusion: [], alteredCount, pendencias }
+
+  // Achado marcado sem os dados que o descrevem: nenhum texto, só o motivo.
+  if (pendencias.length > 0) return { text: '', conclusion: [], alteredCount, pendencias }
+
   // Monta a conclusão numerada (ou frase de normalidade).
   let conclusionBlock: string
   if (conclusion.length === 0) {
@@ -137,7 +143,7 @@ export function composeReport(
     `CONCLUSÃO:\n${conclusionBlock}`,
   ]
   if (category.footer) parts.push(category.footer)
-  const text = pendencias.length ? '' : parts.join('\n\n')
+  const text = parts.join('\n\n')
 
   return { text, conclusion, pendencias, alteredCount }
 }

@@ -607,8 +607,6 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     : categoria
   const laudoCanonico = useLaudoCanonico(renderCategory, achadosCanonicos, migrada && !choosingCategory && !composition, documentKey)
   const composicao = useComposicaoCanonica(composition, Boolean(composition) && !choosingCategory, compositionBaseRevision)
-  /** O laudo em tela depende de rede: exame avulso migrado ou composição. */
-  const remoto = migrada || Boolean(composition)
   /**
    * Composição LOCAL (categorias não migradas). Pendência bloqueante aqui tem o
    * mesmo efeito do bloqueio do canônico: sem laudo, com o motivo na tela, e o
@@ -625,9 +623,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     return Array.from(new Set([...estruturadas, ...pendenciasLocais(categoria, examStates[categoria])]))
   }, [categoria, composition, examStates, isTireoide, laudoLocal, migrada])
   const erroLocal = pendenciasLocaisAtuais.length ? pendenciasLocaisAtuais.join(' · ') : null
+  /** O laudo em tela depende de rede (exame migrado ou composição) ou está travado por pendência local. */
+  const remoto = migrada || Boolean(composition)
   const motor = composition
     ? { carregando: composicao.carregando, desatualizado: composicao.desatualizado, erro: composicao.erro }
-    : { carregando: laudoCanonico.carregando, desatualizado: laudoCanonico.desatualizado, erro: migrada ? laudoCanonico.erro : erroLocal }
+    : migrada
+      ? { carregando: laudoCanonico.carregando, desatualizado: laudoCanonico.desatualizado, erro: laudoCanonico.erro }
+      : { carregando: false, desatualizado: false, erro: erroLocal }
 
   const generatedText = useMemo(() => {
     if (composition) return composicao.texto
@@ -882,7 +884,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     ? composicaoNaoConfere
     : migrada
       ? !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
-      : !textoFoiEditado && erroLocal !== null
+      // Pendência local bloqueia mesmo com texto editado: o estado salvo descreve um achado incompleto.
+      : erroLocal !== null
   const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = motor.erro || saveState === 'error'
     ? 'error'
     : remoto && (motor.carregando || motor.desatualizado)
@@ -1820,7 +1823,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               <div className="flex flex-wrap items-center justify-end gap-2">{secondaryTools}</div>
             ) : null}
 
-            {motor.erro ? (
+            {(remoto || erroLocal) && motor.erro ? (
               <p data-laudo-error className="rounded-2xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
                 <strong className="font-semibold">{composition ? 'O laudo associado não foi montado por inteiro.' : 'O laudo não foi montado.'}</strong>{' '}
                 {motor.erro}

@@ -86,11 +86,12 @@ export interface OrganComposition {
   conclusion: string[]
   /** True quando o órgão está 100% nos defaults (nenhuma alteração). */
   isNormal: boolean
-  /** Dado essencial ausente: bloqueia o laudo inteiro até ser preenchido. */
+  /** Dados que faltam para descrever um achado marcado. Qualquer pendência
+   *  bloqueia o laudo inteiro: nenhum texto é montado, só o motivo. */
   pendencias?: PendenciaLocal[]
 }
 
-/** Pendência bloqueante do formulário — nunca vira texto de laudo. */
+/** Pendência bloqueante da composição local (mesma semântica do `/render`). */
 export interface PendenciaLocal {
   onde: string
   motivo: string
