@@ -164,6 +164,10 @@ async function main() {
       assert.deepEqual(await buscar('medidas venosas'), ['DOPPLER_VENOSO_MMII_MEDIDAS'])
       assert.deepEqual(await buscar('veia porta'), ['ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_HEPATICO'])
       assert.deepEqual(await buscar('membros superiores'), ['DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS'])
+      assert.deepEqual(await buscar('iliacas'), ['DOPPLER_AORTA_ILIACAS'])
+      assert.deepEqual(await buscar('transplante renal'), ['DOPPLER_TRANSPLANTE_RENAL'])
+      assert.deepEqual(await buscar('arterias temporais'), ['DOPPLER_ARTERIAS_TEMPORAIS'])
+      assert.deepEqual(await buscar('mesenterica'), ['DOPPLER_MESENTERICO'])
       assert.deepEqual(await buscar('derrame pleural'), ['TORAX'])
       assert.deepEqual(await buscar('graf'), ['QUADRIL_INFANTIL'])
       if (MODELOS_HEPATICOS_ATIVOS) {
@@ -177,7 +181,7 @@ async function main() {
       await page.getByRole('status').getByText('Nenhum exame encontrado.').waitFor()
       await page.getByRole('button', { name: 'Limpar busca' }).click()
       assert.equal(await cards.count(), TODOS.length)
-      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 35 + (MODELOS_HEPATICOS_ATIVOS ? 2 : 0))
+      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), TODOS.filter((id) => id !== 'LIVRE').length)
       assert.equal(await page.locator('[data-generation-mode="writer"]').count(), 1)
       assert.equal(await page.locator('[data-category-id="LIVRE"][data-generation-mode="writer"]').count(), 1)
       for (const forbidden of [...(MODELOS_HEPATICOS_ATIVOS ? [] : ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA']), 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
