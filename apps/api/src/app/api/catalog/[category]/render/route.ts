@@ -80,6 +80,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
       estilo: corpo.estilo,
       alteracoes: [],
       laudo: rendered.text,
+      ...(rendered.venousMap ? { venousMap: rendered.venousMap, assetVersion: rendered.assetVersion } : {}),
     });
   }
 

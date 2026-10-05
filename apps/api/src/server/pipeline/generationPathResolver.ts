@@ -4,12 +4,12 @@ import type { GenerationMode } from "./modelResolver";
 type GenerationPathConfig = Pick<
   ReturnType<typeof env>,
   "HARD_MODE_ENABLED" | "RENDERER_CATEGORIES" | "DOPPLER_STANDALONE_V2"
-> & Partial<Pick<ReturnType<typeof env>, "DOPPLER_RENAL_WRITER_ENABLED" | "DOPPLER_VENOSO_MMII_WRITER_ENABLED" | "CLINICAL_MODELS_V1_ENABLED">>;
+> & Partial<Pick<ReturnType<typeof env>, "DOPPLER_HEPATICO_WRITER_ENABLED" | "DOPPLER_RENAL_WRITER_ENABLED" | "DOPPLER_VENOSO_MMII_WRITER_ENABLED" | "CLINICAL_MODELS_V1_ENABLED">>;
 
 type RendererCategoryConfig = Pick<
   ReturnType<typeof env>,
   "RENDERER_CATEGORIES" | "DOPPLER_STANDALONE_V2"
-> & Partial<Pick<ReturnType<typeof env>, "DOPPLER_RENAL_WRITER_ENABLED" | "DOPPLER_VENOSO_MMII_WRITER_ENABLED" | "CLINICAL_MODELS_V1_ENABLED">>;
+> & Partial<Pick<ReturnType<typeof env>, "DOPPLER_HEPATICO_WRITER_ENABLED" | "DOPPLER_RENAL_WRITER_ENABLED" | "DOPPLER_VENOSO_MMII_WRITER_ENABLED" | "CLINICAL_MODELS_V1_ENABLED">>;
 
 const APPROVED_CLINICAL_RENDERERS = new Set([
   "ABDOMEN_TOTAL_DOPPLER",
@@ -38,6 +38,8 @@ export function resolveGenerationPath(
   // auditado para o writer genérico, nem quando a tela envia `mode: hard`.
   const dedicatedRenalWriter =
     ctx.categoryCode === "DOPPLER_RENAL" && config.DOPPLER_RENAL_WRITER_ENABLED !== "false";
+  const dedicatedHepaticWriter =
+    ctx.categoryCode === "DOPPLER_HEPATICO" && config.DOPPLER_HEPATICO_WRITER_ENABLED !== "false";
   const dedicatedVenousWriter =
     DOPPLER_VENOSO_MMII_CATEGORIES.has(ctx.categoryCode) &&
     config.DOPPLER_VENOSO_MMII_WRITER_ENABLED !== "false";
@@ -45,7 +47,7 @@ export function resolveGenerationPath(
     APPROVED_CLINICAL_RENDERERS.has(ctx.categoryCode) && config.CLINICAL_MODELS_V1_ENABLED !== "false";
   const hardEnabled =
     ctx.mode === "hard" && config.HARD_MODE_ENABLED === "true" &&
-    !dedicatedRenalWriter && !dedicatedVenousWriter && !approvedClinicalRenderer;
+    !dedicatedRenalWriter && !dedicatedVenousWriter && !dedicatedHepaticWriter && !approvedClinicalRenderer;
   if (hardEnabled || ctx.categoryCode === "LIVRE" || ctx.categoryCode === "TESTE") {
     return {
       path: "writer-pure",
@@ -74,6 +76,7 @@ export function rendererCategoryEnabled(
     // `false` vence inclusive uma allowlist antiga: este é o rollback inequívoco.
     return config.DOPPLER_RENAL_WRITER_ENABLED !== "false";
   }
+  if (categoryCode === "DOPPLER_HEPATICO") return config.DOPPLER_HEPATICO_WRITER_ENABLED !== "false";
   if (DOPPLER_VENOSO_MMII_CATEGORIES.has(categoryCode)) {
     return config.DOPPLER_VENOSO_MMII_WRITER_ENABLED !== "false";
   }

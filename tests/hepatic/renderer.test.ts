@@ -227,10 +227,7 @@ test("Doppler hepático bloqueia vaso incompleto e alteração portal sem confir
   assert.throws(() => renderHepaticDopplerReport(undescribedAltered), /exige descrição estruturada/);
 });
 
-test("renderizadores hepáticos não registram nem ativam novas categorias", () => {
-  assert.equal(CLINCAL_CODES_HAS_HEPATIC(), false);
+test("registra apenas o Doppler hepático independente já aprovado", () => {
+  assert.equal(CLINICAL_MODEL_CODES.includes("DOPPLER_HEPATICO"), true);
+  assert.equal(CLINICAL_MODEL_CODES.some((code) => code === ("ELASTOGRAFIA_HEPATICA" as never)), false);
 });
-
-function CLINCAL_CODES_HAS_HEPATIC() {
-  return CLINICAL_MODEL_CODES.some((code) => code === ("ELASTOGRAFIA_HEPATICA" as never) || code === ("DOPPLER_HEPATICO" as never));
-}

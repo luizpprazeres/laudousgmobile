@@ -17,12 +17,12 @@ const { questionsFromPendingClarify } = pending
 
 const reportId = '11111111-1111-4111-8111-111111111111'
 
-test('allowlist separa as 18 categorias estruturadas das 11 categorias writer', () => {
-  assert.equal(STRUCTURED_WEB_CATEGORY_CODES.length, 18)
+test('allowlist separa as 19 categorias estruturadas das 11 categorias writer', () => {
+  assert.equal(STRUCTURED_WEB_CATEGORY_CODES.length, 19)
   assert.equal(WRITER_CATEGORY_CODES.length, 11)
-  assert.equal(new Set([...STRUCTURED_WEB_CATEGORY_CODES, ...WRITER_CATEGORY_CODES]).size, 29)
+  assert.equal(new Set([...STRUCTURED_WEB_CATEGORY_CODES, ...WRITER_CATEGORY_CODES]).size, 30)
   for (const category of WRITER_CATEGORY_CODES) assert.equal(isWriterCategory(category), true)
-  for (const category of ['ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_VENOSO_MMSS', 'QUADRIL_INFANTIL', 'TORAX', 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
+  for (const category of ['ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_HEPATICO', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_VENOSO_MMSS', 'QUADRIL_INFANTIL', 'TORAX', 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
     assert.equal(isWriterCategory(category), false, category)
     assert.throws(() => validateWriterRequest({ raw_input: 'Achados ditados', category_hint: category }), /Categoria não disponível/)
   }

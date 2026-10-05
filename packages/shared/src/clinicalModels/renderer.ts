@@ -7,6 +7,7 @@ import type {
   ThoraxInput,
 } from "./contracts";
 import { BALIK_PLEURAL_EFFUSION_METHOD, calculateBalikPleuralEffusionVolume, isBalikEligible, validateClinicalModelInput } from "./contracts";
+import { renderDopplerHepaticoReport } from "./dopplerHepatico";
 
 const pt = (value: number) => value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 /** Texto livre do médico vira uma frase com um único ponto final. */
@@ -153,6 +154,7 @@ export function renderClinicalModelReport(value: unknown): string {
   const data: ClinicalModelInput = validated.data;
   switch (data.categoryCode) {
     case "ABDOMEN_TOTAL_DOPPLER": return renderAbdomen(data);
+    case "DOPPLER_HEPATICO": return renderDopplerHepaticoReport(data, { requirePhysicianReview: false });
     case "DOPPLER_VENOSO_MMSS": return renderVenous(data);
     case "DOPPLER_ARTERIAL_MMSS": return renderArterial(data);
     case "TORAX": return renderThorax(data);

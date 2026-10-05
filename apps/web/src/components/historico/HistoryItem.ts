@@ -44,6 +44,7 @@ export function categoriaLabel(code: string): string {
     MORFOLOGICO: 'Morfológica',
     DOPPLER_OBSTETRICO: 'Doppler obstétrico',
     DOPPLER_RENAL: 'Doppler renal',
+    DOPPLER_HEPATICO: 'Doppler hepático',
     DOPPLER_VENOSO_MMII: 'Doppler venoso (MMII)',
     ABDOMEN_TOTAL_DOPPLER: 'Abdome total com Doppler',
     DOPPLER_VENOSO_MMSS: 'Doppler venoso (MMSS)',

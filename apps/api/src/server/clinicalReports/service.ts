@@ -16,6 +16,7 @@ const CLASSIC_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
 export const CLINICAL_MODEL_LABELS = {
   ABDOMEN_TOTAL_DOPPLER: "Abdome Total c/ Doppler",
+  DOPPLER_HEPATICO: "Doppler hepático",
   DOPPLER_VENOSO_MMSS: "Doppler Venoso MMSS",
   DOPPLER_ARTERIAL_MMSS: "Doppler Arterial MMSS",
   TORAX: "Tórax",

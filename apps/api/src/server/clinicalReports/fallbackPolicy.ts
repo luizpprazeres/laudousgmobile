@@ -2,6 +2,8 @@ import { mentionsCurrentAbdomenTotalDoppler } from "./abdomenDopplerIntent";
 
 const FAIL_CLOSED_CLINICAL_RENDERERS = new Set([
   "ABDOMEN_TOTAL_DOPPLER",
+  // Contrato e extração dedicada; falha de evidências nunca vira writer geral.
+  "DOPPLER_HEPATICO",
   "DOPPLER_VENOSO_MMSS",
   "DOPPLER_ARTERIAL_MMSS",
   "TORAX",

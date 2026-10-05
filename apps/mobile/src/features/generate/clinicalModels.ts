@@ -1,7 +1,12 @@
 import {
   calculateGrafSuggestion,
+  AbdomenTotalDopplerSchema,
   CLINICAL_MODEL_CODES,
+  DopplerArterialMmssSchema,
+  DopplerHepaticoSchema,
+  DopplerVenosoMmssSchema,
   QuadrilInfantilSchema,
+  ThoraxSchema,
   validateClinicalModelInput,
   type ClinicalModelCode,
   type QuadrilInfantilInput,
@@ -10,6 +15,16 @@ import {
 export const APPROVED_ANDROID_MODEL_CODES: readonly ClinicalModelCode[] = CLINICAL_MODEL_CODES;
 
 export type ApprovedAndroidModelCode = ClinicalModelCode;
+
+/** Contrato canônico usado pelo cliente para cada workspace estruturado. */
+export const CLINICAL_CONTRACTS = {
+  ABDOMEN_TOTAL_DOPPLER: AbdomenTotalDopplerSchema,
+  DOPPLER_HEPATICO: DopplerHepaticoSchema,
+  DOPPLER_VENOSO_MMSS: DopplerVenosoMmssSchema,
+  DOPPLER_ARTERIAL_MMSS: DopplerArterialMmssSchema,
+  TORAX: ThoraxSchema,
+  QUADRIL_INFANTIL: QuadrilInfantilSchema,
+} as const satisfies Record<ApprovedAndroidModelCode, unknown>;
 
 /**
  * Contrato de apresentação Android. O texto clínico continua vindo do renderer
@@ -22,6 +37,16 @@ export const ANDROID_MODEL_POLICIES = {
     requiredVessels: ["veia_porta"],
     optionalVessels: ["veia_porta_direita", "veia_porta_esquerda", "veia_esplenica", "veia_mesenterica_superior", "arteria_hepatica_comum"],
     dimensionTerm: "calibre",
+  },
+  DOPPLER_HEPATICO: {
+    requiresPhysicianReview: true,
+    ownCategory: true,
+    requiredVessels: ["veia_porta"],
+    optionalVessels: ["veias_hepaticas", "veia_esplenica", "veia_mesenterica_superior", "arteria_hepatica_comum"],
+    normalConclusionRequiresExplicitConfirmation: true,
+    optionalVesselsAppearOnlyWhenEvaluated: true,
+    automaticThresholdClassification: false,
+    excludedModules: ["tips", "transplante_hepatico"],
   },
   DOPPLER_VENOSO_MMSS: {
     requiresPhysicianReview: true,

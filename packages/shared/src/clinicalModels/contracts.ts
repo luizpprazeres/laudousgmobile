@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const ClinicalModelCodeSchema = z.enum([
   "ABDOMEN_TOTAL_DOPPLER",
+  "DOPPLER_HEPATICO",
   "DOPPLER_VENOSO_MMSS",
   "DOPPLER_ARTERIAL_MMSS",
   "TORAX",
@@ -14,41 +15,68 @@ export const CLINICAL_MODEL_CODES = ClinicalModelCodeSchema.options;
 const PositiveNumber = z.number().finite().positive();
 const NonNegativeNumber = z.number().finite().nonnegative();
 const FlowDirectionSchema = z.enum(["hepatopetal", "hepatofugal", "ausente", "outro"]);
+const VascularPatencySchema = z.enum(["not_assessed", "patent", "thrombosis"]);
+const SpectralPatternSchema = z.enum(["not_assessed", "preserved", "altered", "other"]);
 
 const RequiredVesselSchema = z.object({
+  patency: VascularPatencySchema.optional(),
   caliberCm: PositiveNumber.optional(),
-  velocityCms: PositiveNumber.optional(),
+  velocityCms: NonNegativeNumber.optional(),
   flow: FlowDirectionSchema.optional(),
+  spectralPattern: SpectralPatternSchema.optional(),
+  peakSystolicVelocityCms: PositiveNumber.optional(),
+  endDiastolicVelocityCms: NonNegativeNumber.optional(),
+  resistanceIndex: z.number().finite().min(0).max(1).optional(),
 }).strict();
 
 const OptionalVesselSchema = z.discriminatedUnion("evaluated", [
   z.object({ evaluated: z.literal(false) }).strict(),
   z.object({
     evaluated: z.literal(true),
+    patency: VascularPatencySchema.optional(),
     caliberCm: PositiveNumber.optional(),
-    velocityCms: PositiveNumber.optional(),
+    velocityCms: NonNegativeNumber.optional(),
     flow: FlowDirectionSchema.optional(),
+    spectralPattern: SpectralPatternSchema.optional(),
+    peakSystolicVelocityCms: PositiveNumber.optional(),
+    endDiastolicVelocityCms: NonNegativeNumber.optional(),
+    resistanceIndex: z.number().finite().min(0).max(1).optional(),
   }).strict(),
 ]);
 
-export const AbdomenTotalDopplerSchema = z.object({
-  schemaVersion: z.literal(1),
-  categoryCode: z.literal("ABDOMEN_TOTAL_DOPPLER"),
-  physicianReviewed: z.boolean(),
-  documentationPhoto: z.enum(["include", "omit"]),
-  /** Texto completo produzido pelo contrato/formulário canônico de ABDOMEN_TOTAL. */
-  abdomenReport: z.string().trim().min(80).max(20_000),
+export const HepaticVascularCoreSchema = z.object({
   portalVein: RequiredVesselSchema,
   hepaticVeins: OptionalVesselSchema,
   splenicVein: OptionalVesselSchema,
   superiorMesentericVein: OptionalVesselSchema,
   commonHepaticArtery: OptionalVesselSchema,
   portalPathology: z.object({
-    status: z.enum(["absent", "suspected", "confirmed"]),
+    status: z.enum(["not_assessed", "absent", "suspected", "confirmed"]),
     kind: z.enum(["portal_hypertension", "portal_thrombosis", "other"]).optional(),
     evidence: z.string().trim().min(3).max(1000).optional(),
     physicianConfirmed: z.boolean(),
   }).strict(),
+});
+
+export const AbdomenTotalDopplerSchema = HepaticVascularCoreSchema.extend({
+  schemaVersion: z.literal(1),
+  categoryCode: z.literal("ABDOMEN_TOTAL_DOPPLER"),
+  physicianReviewed: z.boolean(),
+  documentationPhoto: z.enum(["include", "omit"]),
+  /** Texto completo produzido pelo contrato/formulário canônico de ABDOMEN_TOTAL. */
+  abdomenReport: z.string().trim().min(80).max(20_000),
+}).strict();
+
+/**
+ * Doppler hepático básico aprovado. Transplante, TIPS, índices de congestão,
+ * colaterais e classificações automáticas permanecem deliberadamente fora do
+ * contrato até aprovação clínica específica.
+ */
+export const DopplerHepaticoSchema = HepaticVascularCoreSchema.extend({
+  schemaVersion: z.literal(1),
+  categoryCode: z.literal("DOPPLER_HEPATICO"),
+  physicianReviewed: z.boolean(),
+  normalHemodynamicsConfirmed: z.boolean(),
 }).strict();
 
 const VenousSideSchema = z.object({
@@ -171,6 +199,7 @@ export const QuadrilInfantilSchema = z.object({
 
 export const ClinicalModelInputSchema = z.discriminatedUnion("categoryCode", [
   AbdomenTotalDopplerSchema,
+  DopplerHepaticoSchema,
   DopplerVenosoMmssSchema,
   DopplerArterialMmssSchema,
   ThoraxSchema,
@@ -178,6 +207,8 @@ export const ClinicalModelInputSchema = z.discriminatedUnion("categoryCode", [
 ]);
 
 export type AbdomenTotalDopplerInput = z.infer<typeof AbdomenTotalDopplerSchema>;
+export type DopplerHepaticoInput = z.infer<typeof DopplerHepaticoSchema>;
+export type HepaticVascularCoreInput = z.infer<typeof HepaticVascularCoreSchema>;
 export type DopplerVenosoMmssInput = z.infer<typeof DopplerVenosoMmssSchema>;
 export type DopplerArterialMmssInput = z.infer<typeof DopplerArterialMmssSchema>;
 export type ThoraxInput = z.infer<typeof ThoraxSchema>;
@@ -266,6 +297,99 @@ function issue(code: string, message: string, path: string, severity: "error" | 
   return { code, message, path, severity };
 }
 
+function validateHepaticVascularCore(
+  data: HepaticVascularCoreInput,
+  issues: ClinicalModelIssue[],
+  mode: "abdomen" | "hepatic_doppler",
+) {
+  if (data.portalVein.caliberCm == null || data.portalVein.velocityCms == null || data.portalVein.flow == null) {
+    issues.push(issue("PORTAL_VEIN_REQUIRED", "Veia porta exige calibre, velocidade e direção do fluxo informados pelo médico.", "portalVein"));
+  }
+  if (data.portalVein.velocityCms === 0 && data.portalVein.flow !== "ausente") {
+    issues.push(issue("ZERO_VELOCITY_WITH_PRESENT_FLOW", "Velocidade zero só pode ser registrada quando o fluxo estiver ausente.", "portalVein.velocityCms"));
+  }
+
+  const optional = {
+    hepaticVeins: data.hepaticVeins,
+    splenicVein: data.splenicVein,
+    superiorMesentericVein: data.superiorMesentericVein,
+    commonHepaticArtery: data.commonHepaticArtery,
+  } as const;
+  for (const [key, vessel] of Object.entries(optional)) {
+    if (!vessel.evaluated) continue;
+    const missingGeneric = vessel.caliberCm == null || vessel.flow == null;
+    const missingVelocity = key !== "commonHepaticArtery" || mode === "abdomen"
+      ? vessel.velocityCms == null
+      : false;
+    if (missingGeneric || missingVelocity) {
+      issues.push(issue("OPTIONAL_VESSEL_INCOMPLETE", "Vaso marcado como avaliado exige calibre, velocidade aplicável e direção do fluxo.", key));
+    }
+    if (vessel.velocityCms === 0 && vessel.flow !== "ausente") {
+      issues.push(issue("ZERO_VELOCITY_WITH_PRESENT_FLOW", "Velocidade zero só pode ser registrada quando o fluxo estiver ausente.", `${key}.velocityCms`));
+    }
+  }
+
+  const p = data.portalPathology;
+  if (p.status === "not_assessed") {
+    issues.push(issue("PORTAL_STATUS_REQUIRED", "Revise a situação portal antes de liberar o laudo.", "portalPathology.status"));
+  }
+  if (data.portalVein.flow === "hepatofugal" && p.status === "absent") {
+    issues.push(issue("HEPATOFUGAL_FLOW_WITHOUT_PORTAL_FINDING", "Fluxo hepatofugal não pode coexistir com situação portal marcada como ausente. Registre a suspeita ou alteração e os critérios revisados.", "portalPathology.status"));
+  }
+  if ((p.status === "suspected" || p.status === "confirmed") && (!p.kind || !p.evidence || !p.physicianConfirmed)) {
+    issues.push(issue("PORTAL_CONCLUSION_INCOMPLETE", "Hipertensão, trombose ou outra alteração vascular exige tipo, critérios descritos e confirmação médica.", "portalPathology"));
+  }
+  if ((p.status === "absent" || p.status === "not_assessed") && (p.kind || p.evidence || p.physicianConfirmed)) {
+    issues.push(issue("PORTAL_FINDING_STATUS_MISMATCH", "Tipo, critérios ou confirmação de alteração vascular exigem situação marcada como suspeita ou confirmada.", "portalPathology.status"));
+  }
+  if (p.status === "absent") {
+    for (const key of ABDOMEN_VESSEL_KEYS) {
+      const vessel = data[key];
+      const flow = "flow" in vessel ? vessel.flow : undefined;
+      if (flow != null && flow !== PHYSIOLOGICAL_FLOW_DIRECTION[key]) {
+        issues.push(issue("ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING", "Fluxo ausente, de direção não fisiológica ou com padrão não descrito exige registrar a suspeita ou alteração e os critérios revisados; a conclusão não pode afirmar normalidade.", `${key}.flow`));
+      }
+    }
+  }
+
+  if (mode !== "hepatic_doppler") return;
+  const hepatic = data as DopplerHepaticoInput;
+  if (hepatic.portalVein.patency == null || hepatic.portalVein.patency === "not_assessed") {
+    issues.push(issue("PORTAL_PATENCY_REQUIRED", "Informe a perviedade da veia porta.", "portalVein.patency"));
+  }
+  for (const [key, vessel] of Object.entries(optional)) {
+    if (!vessel.evaluated) continue;
+    if (vessel.patency == null || vessel.patency === "not_assessed") {
+      issues.push(issue("VESSEL_PATENCY_REQUIRED", "Vaso marcado como avaliado exige perviedade informada.", `${key}.patency`));
+    }
+  }
+  if (hepatic.hepaticVeins.evaluated && (hepatic.hepaticVeins.spectralPattern == null || hepatic.hepaticVeins.spectralPattern === "not_assessed")) {
+    issues.push(issue("HEPATIC_VEINS_PATTERN_REQUIRED", "Veias hepáticas avaliadas exigem padrão espectral informado.", "hepaticVeins.spectralPattern"));
+  }
+  if (hepatic.commonHepaticArtery.evaluated) {
+    const artery = hepatic.commonHepaticArtery;
+    if (artery.peakSystolicVelocityCms == null || artery.endDiastolicVelocityCms == null || artery.resistanceIndex == null || artery.spectralPattern == null || artery.spectralPattern === "not_assessed") {
+      issues.push(issue("HEPATIC_ARTERY_HEMODYNAMICS_REQUIRED", "Artéria hepática comum avaliada exige velocidades sistólica e diastólica, índice de resistência e padrão espectral.", "commonHepaticArtery"));
+    }
+  }
+  if (p.status === "absent") {
+    const evaluatedVessels = [hepatic.portalVein, ...Object.values(optional).filter((vessel) => vessel.evaluated)];
+    if (evaluatedVessels.some((vessel) => vessel.patency !== "patent")) {
+      issues.push(issue("NONPATENT_VESSEL_WITHOUT_FINDING", "Perviedade alterada ou não avaliada não pode coexistir com conclusão vascular normal.", "portalPathology.status"));
+    }
+    const alteredPattern = [hepatic.hepaticVeins, hepatic.commonHepaticArtery]
+      .some((vessel) => vessel.evaluated && vessel.spectralPattern !== "preserved");
+    if (alteredPattern) {
+      issues.push(issue("ALTERED_PATTERN_WITHOUT_FINDING", "Padrão espectral alterado ou não descrito exige registrar a alteração e os critérios revisados.", "portalPathology.status"));
+    }
+    if (!hepatic.normalHemodynamicsConfirmed) {
+      issues.push(issue("NORMAL_HEMODYNAMICS_UNCONFIRMED", "A conclusão normal exige confirmação médica explícita de coerência entre medidas, fluxos e contexto do exame.", "normalHemodynamicsConfirmed"));
+    }
+  } else if (hepatic.normalHemodynamicsConfirmed) {
+    issues.push(issue("NORMAL_CONFIRMATION_STATUS_MISMATCH", "A confirmação de normalidade só pode ser usada quando a situação vascular foi revisada como ausente.", "normalHemodynamicsConfirmed"));
+  }
+}
+
 export function validateClinicalModelInput(value: unknown, options: { requirePhysicianReview?: boolean } = {}): ClinicalModelValidation {
   const parsed = ClinicalModelInputSchema.safeParse(value);
   if (!parsed.success) {
@@ -285,35 +409,11 @@ export function validateClinicalModelInput(value: unknown, options: { requirePhy
     issues.push(issue("MODEL_NOT_REVIEWED", "Revise todos os achados e confirme o modelo antes de liberar o laudo.", "physicianReviewed"));
   }
   if (data.categoryCode === "ABDOMEN_TOTAL_DOPPLER") {
-    if (data.portalVein.caliberCm == null || data.portalVein.velocityCms == null || data.portalVein.flow == null) {
-      issues.push(issue("PORTAL_VEIN_REQUIRED", "Veia porta exige calibre, velocidade e direção do fluxo informados pelo médico.", "portalVein"));
-    }
-    for (const [key, vessel] of Object.entries({ hepaticVeins: data.hepaticVeins, splenicVein: data.splenicVein, superiorMesentericVein: data.superiorMesentericVein, commonHepaticArtery: data.commonHepaticArtery })) {
-      if (vessel.evaluated && (vessel.caliberCm == null || vessel.velocityCms == null || vessel.flow == null)) issues.push(issue("OPTIONAL_VESSEL_INCOMPLETE", "Vaso marcado como avaliado exige calibre, velocidade e direção do fluxo.", key));
-    }
-    const p = data.portalPathology;
-    if (data.portalVein.flow === "hepatofugal" && p.status === "absent") {
-      issues.push(issue("HEPATOFUGAL_FLOW_WITHOUT_PORTAL_FINDING", "Fluxo hepatofugal não pode coexistir com situação portal marcada como ausente. Registre a suspeita ou alteração e os critérios revisados.", "portalPathology.status"));
-    }
-    if (p.status !== "absent" && (!p.kind || !p.evidence || !p.physicianConfirmed)) {
-      issues.push(issue("PORTAL_CONCLUSION_INCOMPLETE", "Hipertensão ou trombose portal exige tipo, critérios descritos e confirmação médica.", "portalPathology"));
-    }
-    if (p.status === "absent" && (p.kind || p.evidence || p.physicianConfirmed)) {
-      issues.push(issue("PORTAL_FINDING_STATUS_MISMATCH", "Tipo, critérios ou confirmação de alteração portal exigem situação marcada como suspeita ou confirmada.", "portalPathology.status"));
-    }
-    // Com situação portal ausente a conclusão afirma normalidade; fluxo ausente,
-    // padrão não descrito ou direção oposta à fisiológica não podem coexistir com ela.
-    if (p.status === "absent") {
-      for (const key of ABDOMEN_VESSEL_KEYS) {
-        const vessel = data[key];
-        const flow = "flow" in vessel ? vessel.flow : undefined;
-        if (flow == null) continue;
-        // "ausente" e "outro" nunca coincidem com a direção fisiológica.
-        if (flow !== PHYSIOLOGICAL_FLOW_DIRECTION[key]) {
-          issues.push(issue("ABNORMAL_FLOW_WITHOUT_PORTAL_FINDING", "Fluxo ausente, de direção não fisiológica ou com padrão não descrito exige registrar a suspeita ou alteração e os critérios revisados; a conclusão não pode afirmar normalidade.", `${key}.flow`));
-        }
-      }
-    }
+    validateHepaticVascularCore(data, issues, "abdomen");
+  }
+
+  if (data.categoryCode === "DOPPLER_HEPATICO") {
+    validateHepaticVascularCore(data, issues, "hepatic_doppler");
   }
 
   if (data.categoryCode === "DOPPLER_VENOSO_MMSS") {

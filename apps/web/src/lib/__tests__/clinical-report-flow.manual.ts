@@ -35,6 +35,7 @@ async function main() {
   try {
     assert.equal(CLINICAL_WEB_MODELS.length, 5)
     for (const { id } of CLINICAL_WEB_MODELS) assert.equal(isClinicalWebModel(id), true, `${id} deve estar ativo na Web`)
+    assert.equal(isClinicalWebModel('DOPPLER_HEPATICO'), false, 'Doppler hepático usa o formulário canônico integrado ao workspace principal')
     assert.equal(isClinicalWebModel('TESTE'), false)
 
     let state = initialClinicalReportFlow

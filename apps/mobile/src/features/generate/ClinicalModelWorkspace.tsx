@@ -9,6 +9,7 @@ import {
   type ClinicalModelCode,
   type ClinicalModelInput,
   type DopplerArterialMmssInput,
+  type DopplerHepaticoInput,
   type DopplerVenosoMmssInput,
   type QuadrilInfantilInput,
   type ThoraxInput,
@@ -164,6 +165,7 @@ export function ClinicalModelWorkspace({ category, onCreate, onRelease }: Props)
     </View>
 
     {category === "ABDOMEN_TOTAL_DOPPLER" ? <AbdomenForm value={value as AbdomenTotalDopplerInput} onChange={change} t={t} /> : null}
+    {category === "DOPPLER_HEPATICO" ? <DopplerHepaticoForm value={value as DopplerHepaticoInput} onChange={change} t={t} /> : null}
     {category === "DOPPLER_VENOSO_MMSS" ? <VenousForm value={value as DopplerVenosoMmssInput} onChange={change} t={t} /> : null}
     {category === "DOPPLER_ARTERIAL_MMSS" ? <ArterialForm value={value as DopplerArterialMmssInput} onChange={change} t={t} /> : null}
     {category === "TORAX" ? <ThoraxForm value={value as ThoraxInput} onChange={change} t={t} /> : null}
@@ -179,7 +181,7 @@ export function ClinicalModelWorkspace({ category, onCreate, onRelease }: Props)
 }
 
 function modelName(code: ClinicalModelCode) {
-  return ({ ABDOMEN_TOTAL_DOPPLER: "Abdome total com Doppler", DOPPLER_VENOSO_MMSS: "Doppler venoso de membro superior", DOPPLER_ARTERIAL_MMSS: "Doppler arterial de membro superior", TORAX: "Ultrassonografia de tórax", QUADRIL_INFANTIL: "Quadril infantil" } as const)[code];
+  return ({ ABDOMEN_TOTAL_DOPPLER: "Abdome total com Doppler", DOPPLER_HEPATICO: "Doppler hepático", DOPPLER_VENOSO_MMSS: "Doppler venoso de membro superior", DOPPLER_ARTERIAL_MMSS: "Doppler arterial de membro superior", TORAX: "Ultrassonografia de tórax", QUADRIL_INFANTIL: "Quadril infantil" } as const)[code];
 }
 function Card({ title, t, children }: { title: string; t: Tokens; children: ReactNode }) { return <View style={{ gap: 9, borderRadius: 16, padding: 14, backgroundColor: t.card, borderWidth: 1, borderColor: t.separator }}><Text style={{ color: t.text, fontFamily: FONT.bold }}>{title}</Text>{children}</View>; }
 function Label({ children, t }: { children: ReactNode; t: Tokens }) { return <Text style={{ color: t.textSec, fontSize: 12, fontFamily: FONT.medium }}>{children}</Text>; }
@@ -196,6 +198,88 @@ function AbdomenForm({ value, onChange, t }: { value: AbdomenTotalDopplerInput; 
     <Card title="Abdome" t={t}><Input label="Descrição completa" value={value.abdomenReport} onChange={(abdomenReport) => set({ abdomenReport })} t={t} multiline /><Select label="Documentação fotográfica" value={value.documentationPhoto} options={[{ value: "include", label: "Incluir" }, { value: "omit", label: "Omitir" }]} onChange={(documentationPhoto) => set({ documentationPhoto: documentationPhoto as typeof value.documentationPhoto })} t={t} /></Card>
     <Card title="Vasos opcionais" t={t}>{([['hepaticVeins', 'Veias hepáticas'], ['splenicVein', 'Veia esplênica'], ['superiorMesentericVein', 'Veia mesentérica superior'], ['commonHepaticArtery', 'Artéria hepática comum']] as const).map(([key, label]) => { const vessel = value[key]; return <View key={key} style={{ gap: 7, borderTopWidth: 1, borderTopColor: t.separator, paddingTop: 7 }}><Toggle label={label} value={vessel.evaluated} onChange={(evaluated) => set({ [key]: evaluated ? { evaluated: true } : { evaluated: false } } as Partial<AbdomenTotalDopplerInput>)} t={t} />{vessel.evaluated ? <><NumberField label="Calibre (cm)" value={vessel.caliberCm} onChange={(caliberCm) => set({ [key]: { ...vessel, caliberCm } } as Partial<AbdomenTotalDopplerInput>)} t={t} /><NumberField label="Velocidade (cm/s)" value={vessel.velocityCms} onChange={(velocityCms) => set({ [key]: { ...vessel, velocityCms } } as Partial<AbdomenTotalDopplerInput>)} t={t} /><Select label="Fluxo" value={vessel.flow ?? ""} options={FLOW} onChange={(flow) => set({ [key]: { ...vessel, flow: flow || undefined } } as Partial<AbdomenTotalDopplerInput>)} t={t} /></> : null}</View>; })}</Card>
     <Card title="Conclusão portal" t={t}><Select label="Situação" value={value.portalPathology.status} options={[{ value: "absent", label: "Ausente" }, { value: "suspected", label: "Suspeita" }, { value: "confirmed", label: "Confirmada" }]} onChange={(status) => set({ portalPathology: { status: status as typeof value.portalPathology.status, physicianConfirmed: status === "absent" } })} t={t} />{value.portalPathology.status !== "absent" ? <><Select label="Tipo" value={value.portalPathology.kind ?? ""} options={[{ value: "", label: "Selecione" }, { value: "portal_hypertension", label: "Hipertensão portal" }, { value: "portal_thrombosis", label: "Trombose portal" }, { value: "other", label: "Outra" }]} onChange={(kind) => set({ portalPathology: { ...value.portalPathology, kind: kind ? kind as NonNullable<typeof value.portalPathology.kind> : undefined } })} t={t} /><Input label="Critérios e achados" value={value.portalPathology.evidence ?? ""} onChange={(evidence) => set({ portalPathology: { ...value.portalPathology, evidence } })} t={t} multiline /><Toggle label="Conclusão confirmada" value={value.portalPathology.physicianConfirmed} onChange={(physicianConfirmed) => set({ portalPathology: { ...value.portalPathology, physicianConfirmed } })} t={t} /></> : null}</Card>
+  </>;
+}
+
+const VASCULAR_PATENCY: Option[] = [
+  { value: "not_assessed", label: "Pendente" },
+  { value: "patent", label: "Pérvio" },
+  { value: "thrombosis", label: "Trombose" },
+];
+const SPECTRAL_PATTERN: Option[] = [
+  { value: "not_assessed", label: "Pendente" },
+  { value: "preserved", label: "Preservado" },
+  { value: "altered", label: "Alterado" },
+  { value: "other", label: "Outro" },
+];
+
+function DopplerHepaticoForm({ value, onChange, t }: { value: DopplerHepaticoInput; onChange: (value: ClinicalModelInput) => void; t: Tokens }) {
+  const set = (patch: Partial<DopplerHepaticoInput>) => onChange({ ...value, ...patch, normalHemodynamicsConfirmed: false });
+  const setVessel = (
+    key: "hepaticVeins" | "splenicVein" | "superiorMesentericVein" | "commonHepaticArtery",
+    vessel: DopplerHepaticoInput[typeof key],
+  ) => set({ [key]: vessel } as Partial<DopplerHepaticoInput>);
+  const optional = [
+    ["hepaticVeins", "Veias hepáticas"],
+    ["splenicVein", "Veia esplênica"],
+    ["superiorMesentericVein", "Veia mesentérica superior"],
+    ["commonHepaticArtery", "Artéria hepática comum"],
+  ] as const;
+
+  return <>
+    <Card title="Veia porta · obrigatória" t={t}>
+      <Select label="Perviedade" value={value.portalVein.patency ?? "not_assessed"} options={VASCULAR_PATENCY} onChange={(patency) => set({ portalVein: { ...value.portalVein, patency: patency as NonNullable<typeof value.portalVein.patency> } })} t={t} />
+      <NumberField label="Calibre (cm)" value={value.portalVein.caliberCm} onChange={(caliberCm) => set({ portalVein: { ...value.portalVein, caliberCm } })} t={t} />
+      <NumberField label="Velocidade (cm/s)" value={value.portalVein.velocityCms} onChange={(velocityCms) => set({ portalVein: { ...value.portalVein, velocityCms } })} t={t} />
+      <Select label="Direção do fluxo" value={value.portalVein.flow ?? ""} options={FLOW} onChange={(flow) => set({ portalVein: { ...value.portalVein, flow: flow ? flow as NonNullable<typeof value.portalVein.flow> : undefined } })} t={t} />
+    </Card>
+
+    <Card title="Vasos opcionais" t={t}>
+      {optional.map(([key, label]) => {
+        const vessel = value[key];
+        return <View key={key} style={{ gap: 7, borderTopWidth: 1, borderTopColor: t.separator, paddingTop: 7 }}>
+          <Toggle label={label} value={vessel.evaluated} onChange={(evaluated) => setVessel(key, evaluated ? { evaluated: true, patency: "not_assessed" } : { evaluated: false })} t={t} />
+          {vessel.evaluated ? <>
+            <Select label="Perviedade" value={vessel.patency ?? "not_assessed"} options={VASCULAR_PATENCY} onChange={(patency) => setVessel(key, { ...vessel, patency: patency as NonNullable<typeof vessel.patency> })} t={t} />
+            <NumberField label="Calibre (cm)" value={vessel.caliberCm} onChange={(caliberCm) => setVessel(key, { ...vessel, caliberCm })} t={t} />
+            {key !== "commonHepaticArtery" ? <NumberField label="Velocidade (cm/s)" value={vessel.velocityCms} onChange={(velocityCms) => setVessel(key, { ...vessel, velocityCms })} t={t} /> : null}
+            <Select label="Direção do fluxo" value={vessel.flow ?? ""} options={FLOW} onChange={(flow) => setVessel(key, { ...vessel, flow: flow ? flow as NonNullable<typeof vessel.flow> : undefined })} t={t} />
+            {key === "hepaticVeins" ? <Select label="Padrão espectral" value={vessel.spectralPattern ?? "not_assessed"} options={SPECTRAL_PATTERN} onChange={(spectralPattern) => setVessel(key, { ...vessel, spectralPattern: spectralPattern as NonNullable<typeof vessel.spectralPattern> })} t={t} /> : null}
+            {key === "commonHepaticArtery" ? <>
+              <NumberField label="Velocidade de pico sistólico (cm/s)" value={vessel.peakSystolicVelocityCms} onChange={(peakSystolicVelocityCms) => setVessel(key, { ...vessel, peakSystolicVelocityCms })} t={t} />
+              <NumberField label="Velocidade diastólica final (cm/s)" value={vessel.endDiastolicVelocityCms} onChange={(endDiastolicVelocityCms) => setVessel(key, { ...vessel, endDiastolicVelocityCms })} t={t} />
+              <NumberField label="Índice de resistência" value={vessel.resistanceIndex} onChange={(resistanceIndex) => setVessel(key, { ...vessel, resistanceIndex })} t={t} />
+              <Select label="Padrão espectral" value={vessel.spectralPattern ?? "not_assessed"} options={SPECTRAL_PATTERN} onChange={(spectralPattern) => setVessel(key, { ...vessel, spectralPattern: spectralPattern as NonNullable<typeof vessel.spectralPattern> })} t={t} />
+            </> : null}
+          </> : null}
+        </View>;
+      })}
+    </Card>
+
+    <Card title="Conclusão vascular" t={t}>
+      <Select
+        label="Situação"
+        value={value.portalPathology.status}
+        options={[{ value: "not_assessed", label: "Pendente" }, { value: "absent", label: "Sem alteração" }, { value: "suspected", label: "Suspeita" }, { value: "confirmed", label: "Confirmada" }]}
+        onChange={(status) => set({ portalPathology: { status: status as typeof value.portalPathology.status, physicianConfirmed: false } })}
+        t={t}
+      />
+      {value.portalPathology.status === "suspected" || value.portalPathology.status === "confirmed" ? <>
+        <Select label="Tipo" value={value.portalPathology.kind ?? ""} options={[{ value: "", label: "Selecione" }, { value: "portal_hypertension", label: "Hipertensão portal" }, { value: "portal_thrombosis", label: "Trombose portal" }, { value: "other", label: "Outra alteração" }]} onChange={(kind) => set({ portalPathology: { ...value.portalPathology, kind: kind ? kind as NonNullable<typeof value.portalPathology.kind> : undefined, physicianConfirmed: false } })} t={t} />
+        <Input label="Critérios e achados" value={value.portalPathology.evidence ?? ""} onChange={(evidence) => set({ portalPathology: { ...value.portalPathology, evidence, physicianConfirmed: false } })} t={t} multiline />
+        <Toggle label="Confirmo a conclusão da alteração" value={value.portalPathology.physicianConfirmed} onChange={(physicianConfirmed) => set({ portalPathology: { ...value.portalPathology, physicianConfirmed } })} t={t} />
+      </> : null}
+      {value.portalPathology.status === "absent" ? <Toggle
+        label="Confirmo a coerência entre medidas, fluxos e conclusão normal"
+        value={value.normalHemodynamicsConfirmed}
+        onChange={(normalHemodynamicsConfirmed) => onChange({ ...value, normalHemodynamicsConfirmed })}
+        t={t}
+      /> : null}
+    </Card>
+
+    <View style={{ padding: 11, borderRadius: 12, backgroundColor: t.fill2 }}>
+      <Text style={{ color: t.textSec, fontSize: 12 }}>Transplante hepático e TIPS ainda não fazem parte deste contrato.</Text>
+    </View>
   </>;
 }
 

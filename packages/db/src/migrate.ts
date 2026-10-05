@@ -59,6 +59,8 @@ async function main() {
     // Reserva categorias hepáticas como inativas. Idempotente e não reverte
     // uma ativação explícita feita depois do rollout.
     "0031_inactive_hepatic_categories.sql",
+    // Categoria independente aprovada, com renderer estruturado fail-closed.
+    "0032_activate_doppler_hepatico.sql",
   ];
   for (const file of sqlFiles) {
     console.log(`→ aplicando ${file}…`);

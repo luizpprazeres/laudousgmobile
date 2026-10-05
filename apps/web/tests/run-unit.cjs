@@ -10,6 +10,7 @@ const files = [
   'tests/mamariaAdapter.manual.ts',
   'tests/dopplerWebMode.manual.ts',
   'tests/dopplerRenalStructured.manual.ts',
+  'tests/dopplerHepaticoStructured.manual.ts',
   'tests/dopplerVenosoMmiiStructured.manual.ts',
   'tests/fetalGrowthContext.manual.ts',
   'tests/fetalGrowthPercentile.manual.ts',

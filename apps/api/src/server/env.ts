@@ -238,6 +238,8 @@ const ServerEnvSchema = z.object({
   // pelo LLM (writer_guarded) — o médico dita compacto e o template rígido enche de
   // ____. Gate próprio acima fica ON por padrão. pipeline/dopplerRenalWriter.ts.
   DOPPLER_RENAL_WRITER_MODEL: z.string().default("gpt-4.1"),
+  DOPPLER_HEPATICO_WRITER_ENABLED: z.string().default("true"),
+  DOPPLER_HEPATICO_WRITER_MODEL: z.string().default("gpt-4.1"),
   // Eixo vascular — DOPPLER_VENOSO_MMII writer_guarded (2ª modalidade). Gate =
   // membership em RENDERER_CATEGORIES. Segurança: TVP-only não afirma superficial.
   DOPPLER_VENOSO_WRITER_MODEL: z.string().default("gpt-4.1"),

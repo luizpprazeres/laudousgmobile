@@ -17,7 +17,7 @@ if (CLINICAL_WEB_MODELS.some((entry) => !CLINICAL_MODEL_CODES.includes(entry.id)
 }
 
 export function isClinicalWebModel(value: string): value is ClinicalModelCode {
-  return isClinicalModelCode(value)
+  return isClinicalModelCode(value) && CLINICAL_WEB_MODELS.some((entry) => entry.id === value)
 }
 
 export function clinicalModelName(value: ClinicalModelCode) {

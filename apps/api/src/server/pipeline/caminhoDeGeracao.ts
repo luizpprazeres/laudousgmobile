@@ -34,7 +34,8 @@ export function caminhoDeGeracao(
   if (
     categoria === "DOPPLER_VENOSO_MMII" ||
     categoria === "DOPPLER_VENOSO_MMII_MEDIDAS" ||
-    categoria === "DOPPLER_RENAL"
+    categoria === "DOPPLER_RENAL" ||
+    categoria === "DOPPLER_HEPATICO"
   ) return "writer";
 
   // MSK: categoria aberta, o writer escreve em qualquer estilo.

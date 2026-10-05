@@ -24,13 +24,14 @@ const incompleteAbdomen = { ...shared.createInitialClinicalModelInput(category),
 const incompletePortal = shared.createInitialClinicalModelInput(category);
 const completeAbdomen = { ...incompletePortal, portalVein: { caliberCm: 1.2, velocityCms: 20, flow: "hepatopetal" } };
 type Event = { type: string; code?: string; message?: string; final_text?: string };
-type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean };
+type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hepaticEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean };
 
 async function execute(scenario: Scenario) {
   const selected = scenario.category === null ? undefined : scenario.category ?? category;
   const detected = scenario.detectedCategory ?? selected ?? "ABDOMEN_TOTAL";
   const config = { RENDERER_CATEGORIES: scenario.rendererCategories ?? category,
     DOPPLER_STANDALONE_V2: "false", DOPPLER_RENAL_WRITER_ENABLED: scenario.renalEnabled === false ? "false" : "true",
+    DOPPLER_HEPATICO_WRITER_ENABLED: scenario.hepaticEnabled === false ? "false" : "true",
     HARD_MODE_ENABLED: "true", FAST_PATH_DEFAULT: "false",
     GENERATION_AUDIT_ENABLED: "false", WRITER_V2_CATEGORIES: scenario.writerV2 ? "ABDOMEN_TOTAL" : "", WRITER_V2_USER_ID: scenario.writerV2 ? "synthetic-user" : "",
     WRITER_V2_ABDOME_USER_ID: "", COMMAND_OPERATIONS: "false", OPENAI_MODEL_WRITER: "test" };
@@ -162,6 +163,15 @@ async function main() {
   assert(!renalRollback.events.some(e => e.type === "token" || e.type === "done"));
   assert(!renalRollback.statuses.includes("generated"));
   checks++;
+  for (const scenario of [{}, { hard: true }, { fast: true }, { hepaticEnabled: false }]) {
+    const hepatic = await execute({ ...scenario, category: "DOPPLER_HEPATICO", detectedCategory: "DOPPLER_HEPATICO", rendererCategories: "DOPPLER_HEPATICO" });
+    assert.equal(hepatic.writerCalls + hepatic.writerV2Calls, 0, "hepatic extraction failure/rollback cannot open free writer");
+    assert.equal(hepatic.rendererCalls, scenario.hepaticEnabled === false ? 0 : 1);
+    assert(hepatic.events.some(e => e.type === "error"));
+    assert(!hepatic.events.some(e => e.type === "token" || e.type === "done" || e.code === "RENDERER_FALLBACK"));
+    assert(!hepatic.statuses.includes("generated"));
+    checks++;
+  }
   const complete = await execute({ extracted: completeAbdomen });
   assert.equal(complete.rendererCalls, 1);
   assert.equal(complete.writerCalls, 0);

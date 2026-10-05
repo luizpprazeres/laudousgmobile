@@ -3,6 +3,7 @@ import {
   validateDopplerVenosoMmii,
 } from "@laudousg/shared";
 import type { StructuredCatalogRender } from "../../catalog-api/structuredRenderers";
+import { projectStructuredVenousMap } from "../../vascular/structuredVenousMap";
 
 type Presentation = "DOPPLER_VENOSO_MMII" | "DOPPLER_VENOSO_MMII_MEDIDAS";
 
@@ -28,8 +29,10 @@ export function renderDopplerVenosoMmiiWeb(
     };
   }
   const text = renderDopplerVenosoMmii(validation.data, style === "CLASSICO_COMPLETO" ? "CLASSICO_COMPLETO" : "OBJETIVO");
+  const venousMap = projectStructuredVenousMap(validation.data);
   return {
     ok: true,
     text,
+    ...(venousMap ? { venousMap, assetVersion: "venous-4view-1" as const } : {}),
   };
 }

@@ -11,6 +11,7 @@ const NORMAL_ABDOMEN_REPORT = "Fígado de margens regulares, dimensões e ecotex
 export function createInitialClinicalModelInput(code: ClinicalModelCode): ClinicalModelInput {
   switch (code) {
     case "ABDOMEN_TOTAL_DOPPLER": return { schemaVersion: 1, categoryCode: code, physicianReviewed: false, documentationPhoto: "include", abdomenReport: NORMAL_ABDOMEN_REPORT, portalVein: {}, hepaticVeins: optionalVessel(), splenicVein: optionalVessel(), superiorMesentericVein: optionalVessel(), commonHepaticArtery: optionalVessel(), portalPathology: { status: "absent", physicianConfirmed: false } };
+    case "DOPPLER_HEPATICO": return { schemaVersion: 1, categoryCode: code, physicianReviewed: false, normalHemodynamicsConfirmed: false, portalVein: { patency: "not_assessed" }, hepaticVeins: optionalVessel(), splenicVein: optionalVessel(), superiorMesentericVein: optionalVessel(), commonHepaticArtery: optionalVessel(), portalPathology: { status: "not_assessed", physicianConfirmed: false } };
     case "DOPPLER_VENOSO_MMSS": return { schemaVersion: 1, categoryCode: code, physicianReviewed: false, indication: "elective", laterality: "right", right: venousSide(true), left: venousSide(false) };
     case "DOPPLER_ARTERIAL_MMSS": return { schemaVersion: 1, categoryCode: code, physicianReviewed: false, laterality: "right", right: arterialSide(true), left: arterialSide(false) };
     case "TORAX": return { schemaVersion: 1, categoryCode: code, physicianReviewed: false, right: thoraxSide(), left: thoraxSide(), correlationSuggested: false };

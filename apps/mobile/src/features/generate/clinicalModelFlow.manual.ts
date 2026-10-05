@@ -13,6 +13,7 @@ import type {
   AbdomenTotalDopplerInput,
   ClinicalModelInput,
   DopplerArterialMmssInput,
+  DopplerHepaticoInput,
   DopplerVenosoMmssInput,
   QuadrilInfantilInput,
   ThoraxInput,
@@ -22,6 +23,11 @@ function complete(code: ClinicalModelInput["categoryCode"]): ClinicalModelInput 
   const value = createAndroidClinicalDraft(code);
   if (value.categoryCode === "ABDOMEN_TOTAL_DOPPLER") {
     (value as AbdomenTotalDopplerInput).portalVein = { caliberCm: 1.1, velocityCms: 22, flow: "hepatopetal" };
+  } else if (value.categoryCode === "DOPPLER_HEPATICO") {
+    const hepatic = value as DopplerHepaticoInput;
+    hepatic.portalVein = { patency: "patent", caliberCm: 1.1, velocityCms: 22, flow: "hepatopetal" };
+    hepatic.portalPathology = { status: "absent", physicianConfirmed: false };
+    hepatic.normalHemodynamicsConfirmed = true;
   } else if (value.categoryCode === "QUADRIL_INFANTIL") {
     const hip = value as QuadrilInfantilInput;
     hip.ageDays = 60;
@@ -30,7 +36,7 @@ function complete(code: ClinicalModelInput["categoryCode"]): ClinicalModelInput 
   return value;
 }
 
-for (const code of ["ABDOMEN_TOTAL_DOPPLER", "DOPPLER_VENOSO_MMSS", "DOPPLER_ARTERIAL_MMSS", "TORAX", "QUADRIL_INFANTIL"] as const) {
+for (const code of ["ABDOMEN_TOTAL_DOPPLER", "DOPPLER_HEPATICO", "DOPPLER_VENOSO_MMSS", "DOPPLER_ARTERIAL_MMSS", "TORAX", "QUADRIL_INFANTIL"] as const) {
   test(`${code}: rascunho válido gera prévia sem forjar revisão médica`, () => {
     const draft = complete(code);
     assert.equal(draft.physicianReviewed, false);
@@ -49,6 +55,18 @@ test("achado obrigatório incompleto bloqueia prévia e persistência", () => {
   const abdomen = createAndroidClinicalDraft("ABDOMEN_TOTAL_DOPPLER") as AbdomenTotalDopplerInput;
   assert.equal(validateAndroidClinicalDraft(abdomen).success, false);
   assert.equal(canReleaseAndroidClinicalDraft(abdomen), false);
+});
+
+test("Doppler hepático não presume normalidade e rejeita módulos fora do contrato", () => {
+  const initial = createAndroidClinicalDraft("DOPPLER_HEPATICO") as DopplerHepaticoInput;
+  assert.equal(initial.portalVein.patency, "not_assessed");
+  assert.equal(initial.portalPathology.status, "not_assessed");
+  assert.equal(initial.normalHemodynamicsConfirmed, false);
+  assert.equal(validateAndroidClinicalDraft(initial).success, false);
+
+  const completeHepatic = complete("DOPPLER_HEPATICO") as DopplerHepaticoInput;
+  assert.match(generateAndroidClinicalPreview(completeHepatic), /Estudo Doppler hepático sem alterações/);
+  assert.throws(() => deserializeAndroidClinicalDraft(JSON.stringify({ ...completeHepatic, tips: { status: "patent" } })));
 });
 
 test("alterações vasculares, derrame e Graf continuam serializáveis", () => {

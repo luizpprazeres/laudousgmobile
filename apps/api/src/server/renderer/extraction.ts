@@ -1,4 +1,5 @@
 import { env } from "../env";
+import { DOPPLER_HEPATICO_JSON_SCHEMA, DOPPLER_HEPATICO_EXTRACTION_PROMPT, HepaticDopplerExtractionSchema } from "./categories/DOPPLER_HEPATICO";
 import { normalizeAsrClinical } from "../pipeline/asrClinical";
 import { openai } from "../ai/openai";
 import { DOPPLER_MODULE_EXTRACTION_RULES } from "./categories/dopplerObstetricoModule";
@@ -134,6 +135,7 @@ export const RENDERER_PROGRAMMATIC_CATEGORIES = new Set([
   "DOPPLER_OBSTETRICO",
   "CERVICOMETRIA",
   "DOPPLER_RENAL",
+  "DOPPLER_HEPATICO",
   "DOPPLER_VENOSO_MMII",
   "DOPPLER_VENOSO_MMII_MEDIDAS",
   "DOPPLER_CAROTIDAS",
@@ -358,6 +360,12 @@ export const EXTRACTORS: Record<string, Extractor> = {
     parse: (raw) => DopplerCarotidasFindingsSchema.parse(raw),
   },
   ...CLINICAL_MODEL_EXTRACTORS,
+  DOPPLER_HEPATICO: {
+    schemaName: "HepaticDopplerEvidence",
+    jsonSchema: DOPPLER_HEPATICO_JSON_SCHEMA,
+    prompt: DOPPLER_HEPATICO_EXTRACTION_PROMPT,
+    parse: (raw) => HepaticDopplerExtractionSchema.parse(raw),
+  },
   // Esquema visual venoso (DESENHO) — extração per-segmento SEPARADA do writer
   // DOPPLER_VENOSO_MMII acima (que faz o TEXTO do laudo). Chave distinta para não
   // colidir; consumida SÓ pelo side-channel extractVenousMap (flag

@@ -65,6 +65,7 @@ import { runMskWriterStream } from "./mskWriter";
 import { runPartesMolesWriterStream } from "./partesMolesWriter";
 import { runPelveWriterStream } from "./pelveWriter";
 import { runDopplerRenalWriterStream } from "./dopplerRenalWriter";
+import { runDopplerHepaticoWriterStream } from "./dopplerHepaticoWriter";
 import { runDopplerVenosoMmiiWriterStream } from "./dopplerVenosoMmiiWriter";
 import {
   renderDopplerObstetrico,
@@ -431,6 +432,18 @@ export async function* runRendererStream(args: {
       extraction: { findings: null, latencyMs: 0 },
       freeSlotCount: 0,
       passthrough: true,
+    };
+  }
+
+  if (args.categoryCode === "DOPPLER_HEPATICO") {
+    args.onProgress?.({ stage: "interpretando", label: "Conferindo vasos e medidas…" });
+    const result = yield* runDopplerHepaticoWriterStream({ rawInput: args.rawInput, signal: args.signal, objective: isEstiloObjetivo(args.writingStyleId) });
+    const systemMessage = `[${RENDERER_VERSION}] DOPPLER_HEPATICO writer_contract_guarded (${result.model}, audit=ok)`;
+    args.onSystemMessage?.(systemMessage);
+    return {
+      fullText: result.fullText, latencyMs: result.latencyMs, systemMessage,
+      inputTokens: result.inputTokens, outputTokens: result.outputTokens, cachedInputTokens: undefined,
+      extraction: { findings: null, latencyMs: result.latencyMs }, freeSlotCount: 0, passthrough: true,
     };
   }
 

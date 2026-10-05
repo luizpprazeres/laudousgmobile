@@ -1,5 +1,6 @@
 import type { AbdomenTotalDopplerInput } from "../clinicalModels/contracts";
 import { ABDOMEN_VESSEL_KEYS, PHYSIOLOGICAL_FLOW_DIRECTION, validateClinicalModelInput } from "../clinicalModels/contracts";
+import { renderDopplerHepaticoReport } from "../clinicalModels/dopplerHepatico";
 import type { HepaticAssessment, HepaticModule, HepaticModuleKey } from "./contracts";
 import { evaluateHepaticConclusion } from "./contracts";
 
@@ -112,6 +113,9 @@ function vesselLine(label: string, vessel: { caliberCm?: number; velocityCms?: n
  * uma categoria ou um segundo contrato. A revisão médica global é obrigatória.
  */
 export function renderHepaticDopplerReport(value: unknown): string {
+  if (typeof value === "object" && value !== null && "categoryCode" in value && value.categoryCode === "DOPPLER_HEPATICO") {
+    return renderDopplerHepaticoReport(value);
+  }
   const validation = validateClinicalModelInput(value, { requirePhysicianReview: true });
   if (!validation.success) {
     throw new Error(`Conclusão Doppler hepática bloqueada: ${validation.issues.map((entry) => `${entry.path}:${entry.code}`).join(", ")}`);

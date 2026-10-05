@@ -1,14 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { APPROVED_CLINICAL_CATS, CATS } from "../../ui/tokens";
-import { ANDROID_MODEL_POLICIES, APPROVED_ANDROID_MODEL_CODES, canCommitGrafClassification, grafReadiness } from "./clinicalModels";
+import { ANDROID_MODEL_POLICIES, APPROVED_ANDROID_MODEL_CODES, CLINICAL_CONTRACTS, canCommitGrafClassification, grafReadiness } from "./clinicalModels";
 
-test("cinco modelos aprovados ficam disponíveis juntos no seletor Android", () => {
+test("modelos aprovados ficam disponíveis juntos no seletor Android", () => {
   assert.deepEqual(APPROVED_CLINICAL_CATS.map((category) => category.id), APPROVED_ANDROID_MODEL_CODES);
   for (const code of APPROVED_ANDROID_MODEL_CODES) {
     assert.equal(CATS.filter((category) => category.id === code).length, 1, `${code} deve aparecer uma vez`);
     assert.ok(ANDROID_MODEL_POLICIES[code]);
+    assert.ok(CLINICAL_CONTRACTS[code]);
   }
+});
+
+test("Doppler hepático expõe contrato próprio sem módulos avançados", () => {
+  assert.deepEqual(ANDROID_MODEL_POLICIES.DOPPLER_HEPATICO.excludedModules, ["tips", "transplante_hepatico"]);
+  assert.equal(ANDROID_MODEL_POLICIES.DOPPLER_HEPATICO.normalConclusionRequiresExplicitConfirmation, true);
 });
 
 const completeGraf = {

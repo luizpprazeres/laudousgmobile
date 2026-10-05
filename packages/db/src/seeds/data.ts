@@ -115,6 +115,7 @@ export const CATEGORIES_SEED: {
   { code: "DOPPLER_ARTERIAL_MMII", label: "Doppler Arterial MMII" },
   { code: "DOPPLER_FISTULA_AV", label: "Doppler Fístula AV" },
   { code: "DOPPLER_RENAL", label: "Doppler Renal" },
+  { code: "DOPPLER_HEPATICO", label: "Doppler hepático", active: true },
   { code: "DOPPLER_VENOSO_MMSS", label: "Doppler Venoso MMSS", active: true },
   { code: "DOPPLER_ARTERIAL_MMSS", label: "Doppler Arterial MMSS", active: true },
 

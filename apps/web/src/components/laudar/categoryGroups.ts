@@ -26,7 +26,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'medicina_interna',
     label: 'Medicina interna',
-    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA', 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
+    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'DOPPLER_HEPATICO', 'AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA', 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
   },
   {
     id: 'obstetricia',
@@ -64,6 +64,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
 /** Nome exibido no seletor quando difere do nome do catálogo. */
 export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   DOPPLER_OBSTETRICO: 'Obstétrica com Doppler',
+  DOPPLER_HEPATICO: 'Doppler hepático',
   TIREOIDE: 'Tireoide',
 }
 
@@ -79,6 +80,7 @@ function displayName(id: string) {
 export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   ABDOMEN_TOTAL: ['abdome', 'abdomen', 'abdominal', 'figado', 'vesicula', 'pancreas', 'baco', 'rins', 'aorta'],
   ABDOMEN_TOTAL_DOPPLER: ['abdome', 'abdomen', 'doppler esplancnico', 'veia porta', 'portal'],
+  DOPPLER_HEPATICO: ['figado', 'hepatica', 'doppler hepatico', 'veia porta', 'sistema portal'],
   AVALIACAO_MULTIPARAMETRICA_HEPATICA: ['figado', 'hepatica', 'gordura', 'rigidez', 'elastografia', 'multiparametrica'],
   ELASTOGRAFIA_HEPATICA: ['figado', 'hepatica', 'rigidez', 'fibrose', 'swe', 'arfi'],
   ABDOMEN_SUPERIOR: ['abdome', 'abdomen', 'figado', 'vesicula', 'vias biliares', 'pancreas', 'baco'],

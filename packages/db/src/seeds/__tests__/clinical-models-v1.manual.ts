@@ -4,6 +4,7 @@ import { CATEGORIES_SEED } from "../data";
 
 const expectedLabels = new Map<string, string>([
   ["ABDOMEN_TOTAL_DOPPLER", "Abdome Total c/ Doppler"],
+  ["DOPPLER_HEPATICO", "Doppler hepático"],
   ["DOPPLER_VENOSO_MMSS", "Doppler Venoso MMSS"],
   ["DOPPLER_ARTERIAL_MMSS", "Doppler Arterial MMSS"],
   ["TORAX", "Tórax"],
@@ -19,4 +20,4 @@ for (const code of CLINICAL_MODEL_CODES) {
   assert.equal(rows[0]?.active, true, `${code}: deve estar ativo no catálogo`);
 }
 
-console.log("✓ seed dos cinco modelos está em paridade com @laudousg/shared");
+console.log(`✓ seed dos ${CLINICAL_MODEL_CODES.length} modelos está em paridade com @laudousg/shared`);

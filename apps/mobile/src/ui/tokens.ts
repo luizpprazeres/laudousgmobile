@@ -168,6 +168,7 @@ export const RELEASED_CATS = [
 /** Modelos clínicos estruturados aprovados e disponíveis no Android. */
 export const APPROVED_CLINICAL_CATS = [
   { id: "ABDOMEN_TOTAL_DOPPLER", label: "Abdome Total com Doppler", color: "#047857", sub: "Abdome total e sistema esplâncnico" },
+  { id: "DOPPLER_HEPATICO", label: "Doppler hepático", color: "#0F766E", sub: "Sistema portal e vasos hepáticos" },
   { id: "DOPPLER_VENOSO_MMSS", label: "Doppler Venoso MMSS", color: "#2563EB", sub: "Membro superior unilateral ou bilateral" },
   { id: "DOPPLER_ARTERIAL_MMSS", label: "Doppler Arterial MMSS", color: "#DC2626", sub: "Membro superior e manobras dinâmicas" },
   { id: "TORAX", label: "Tórax", color: "#475569", sub: "Avaliação pulmonar e pleural" },
