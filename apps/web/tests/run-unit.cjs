@@ -14,6 +14,7 @@ const files = [
   'tests/dopplerVenosoMmiiStructured.manual.ts',
   'tests/pelvicoTransvaginal.manual.ts',
   'tests/pelvicoTransabdominal.manual.ts',
+  'tests/pelvePresets.manual.ts',
   'tests/dopplerPresets.manual.ts',
   'tests/histerossonografiaStructured.manual.ts',
   'tests/hycosyStructured.manual.ts',

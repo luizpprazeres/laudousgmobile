@@ -17,7 +17,8 @@ import {
   type TireoideState,
 } from '@/lib/deterministic'
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
-import { adaptarPelve, adaptarPelveTransabdominal, adaptarPelveTransvaginal } from '@/lib/catalog/pelveParaCatalogo'
+import { adaptarPelve, adaptarPelvePreset, adaptarPelveTransabdominal, adaptarPelveTransvaginal } from '@/lib/catalog/pelveParaCatalogo'
+import { pelvePresetDe } from '@/lib/deterministic/organs/pelvePresets'
 import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
 import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
@@ -465,7 +466,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const isMamaria = MAMARIA_CARDS.has(categoria)
   const mamariaDoppler = categoria === 'MAMAS_DOPPLER' || categoria === 'MAMAS_AXILAS_DOPPLER'
   /** Pelve com útero (inclui a derivada transvaginal): esquema de miomas. */
-  const isPelvis = categoria === 'PELVE_FEMININA' || categoria === 'PELVICO_TRANSVAGINAL' || categoria === 'PELVICO_TRANSABDOMINAL'
+  const isPelvis = categoria === 'PELVE_FEMININA' || categoria === 'PELVICO_TRANSVAGINAL' || categoria === 'PELVICO_TRANSABDOMINAL' || Boolean(pelvePresetDe(categoria))
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
   // Controles de categoria (estado reservado em '__opts') — lido antes das seções
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
@@ -568,6 +569,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
       const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
       return adaptarPelveTransabdominal(estado, opcoes)
+    }
+    if (pelvePresetDe(categoria)) {
+      return adaptarPelvePreset((examStates[categoria] ?? {}) as Record<string, unknown>, categoria)
     }
     if (categoria === 'MAMARIA') {
       return adaptarMamaria((examStates[categoria] ?? {}) as Record<string, unknown>)

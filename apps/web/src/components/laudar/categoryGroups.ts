@@ -36,7 +36,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'saude_mulher',
     label: 'Saúde da mulher',
-    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA', 'MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER'],
+    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSVAGINAL_DOPPLER', 'PELVICO_TRANSABDOMINAL', 'PELVICO_TRANSABDOMINAL_DOPPLER', 'MONITORIZACAO_FOLICULAR', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA', 'MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER'],
   },
   {
     id: 'pequenas_partes',
@@ -87,6 +87,9 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   DOPPLER_AORTA_ILIACAS: 'Doppler de aorta e ilíacas',
   PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
   PELVICO_TRANSABDOMINAL: 'Pélvico abdominal',
+  PELVICO_TRANSVAGINAL_DOPPLER: 'Pélvico transvaginal com Doppler',
+  PELVICO_TRANSABDOMINAL_DOPPLER: 'Pélvico abdominal com Doppler',
+  MONITORIZACAO_FOLICULAR: 'Monitorização folicular',
   HISTEROSSONOGRAFIA: 'Histerossonografia',
   HYCOSY: 'HyCoSy',
 }
@@ -119,6 +122,9 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   PELVE_FEMININA: ['pelvica', 'utero', 'ovarios', 'endometrio', 'transvaginal', 'ginecologica'],
   PELVICO_TRANSVAGINAL: ['pelvico', 'pelvica', 'transvaginal', 'endovaginal', 'utero', 'ovarios', 'endometrio', 'ginecologica'],
   PELVICO_TRANSABDOMINAL: ['pelvico abdominal', 'pelvica abdominal', 'transabdominal', 'via abdominal', 'pelve suprapubica'],
+  PELVICO_TRANSVAGINAL_DOPPLER: ['doppler pelvico', 'doppler ginecologico', 'transvaginal com doppler'],
+  PELVICO_TRANSABDOMINAL_DOPPLER: ['doppler pelvico', 'pelvico abdominal com doppler', 'transabdominal com doppler'],
+  MONITORIZACAO_FOLICULAR: ['monitorizacao folicular', 'foliculometria', 'foliculos', 'ovulacao', 'inducao de ovulacao'],
   HISTEROSSONOGRAFIA: ['histerossonografia', 'sono-histerografia', 'infusao salina', 'cavidade uterina', 'polipo endometrial', 'sinequia', 'istmocele', 'septo uterino'],
   PESQUISA_ENDOMETRIOSE: ['endometriose', 'endometriose profunda', 'endometrioma', 'mapeamento de endometriose', 'adenomiose', 'sinal de deslizamento'],
   HYCOSY: ['hycosy', 'histerossonossalpingografia', 'histerossalpingo', 'tubas', 'trompas', 'perviedade tubaria', 'permeabilidade tubaria', 'infertilidade'],

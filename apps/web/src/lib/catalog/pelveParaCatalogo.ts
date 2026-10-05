@@ -31,6 +31,7 @@ import {
   bladderInputIssues,
   normalizeBladderState,
 } from "../deterministic/organs/urinaryShared";
+import { pelvePresetDe } from "../deterministic/organs/pelvePresets";
 
 /** O que a tela guarda de uma seção. Nada aqui é tipado pelo compilador. */
 type EstadoDaSecao = Record<string, unknown>;
@@ -461,4 +462,62 @@ export function adaptarPelveTransabdominal(
     dados.endometrio_frase = "ta_limitado";
   }
   return { ...base, dados, pendencias };
+}
+
+// ── ATALHOS DA PELVE (Doppler TV/TA e monitorização folicular) ───────────────
+
+/** Folículos: lista estrita de diâmetros em mm ("8, 10, 12,5"). */
+function foliculosEstritos(bruto: string): number[] | null | "invalida" {
+  if (!bruto.trim()) return null;
+  const partes = bruto.replace(/\s*mm\s*$/i, "").split(/\s*[;,]\s*(?=\d)|\s+/).filter(Boolean);
+  if (!partes.every((p) => /^\d+(?:[.,]\d+)?$/.test(p))) return "invalida";
+  const nums = partes.map((p) => Number.parseFloat(p.replace(",", ".")));
+  return nums.every((n) => n > 0) ? nums : "invalida";
+}
+
+/**
+ * Adaptador dos atalhos: o adaptador do card-base (TV ou TA, com o portão de
+ * completude da via) com o modo fixado, mais o dado que o modo exige.
+ * - Doppler: achado ovariano focal precisa da vascularização informada (o
+ *   renderer só a escreve quando informada; sem ela, o "estudo com Doppler" da
+ *   técnica ficaria sem resultado para o achado).
+ * - Monitorização folicular: folículos medidos em ao menos um ovário; lista
+ *   ilegível bloqueia em vez de ser lida pela metade.
+ */
+export function adaptarPelvePreset(
+  estado: EstadoDaPelve,
+  categoria: string,
+): Adaptacao {
+  const preset = pelvePresetDe(categoria);
+  if (!preset) throw new Error(`${categoria} não é um atalho da pelve`);
+  const opcoes: Record<string, string | string[]> = { ...(secao(estado, "__opts") as Record<string, string | string[]>), modo_pelve: preset.modo };
+  if (preset.modo === "monitorizacao_folicular") delete opcoes.menopausa;
+  const base = preset.via === "ta" ? adaptarPelveTransabdominal(estado, opcoes) : adaptarPelveTransvaginal(estado, opcoes);
+  const pendencias: Pendencia[] = [...base.pendencias];
+  const falta = (onde: string, valor: string, motivo: string) =>
+    pendencias.push({ onde, valor, motivo, bloqueia: true });
+
+  if (preset.modo === "doppler") {
+    for (const lado of ["direito", "esquerdo"] as const) {
+      const s = secao(estado, `ovario_${lado}`);
+      const tipo = texto(s, "achado");
+      if (s.visualizado === "nao" || !ACHADOS_FOCAIS.includes(tipo)) continue;
+      if (!texto(s, `achado.${tipo}.vascularizacao`)) {
+        falta(`ovário ${lado}`, tipo, `informe a vascularização ao Doppler do achado no ovário ${lado}`);
+      }
+    }
+  } else {
+    let algum = false;
+    for (const lado of ["direito", "esquerdo"] as const) {
+      const s = secao(estado, `ovario_${lado}`);
+      const foliculos = foliculosEstritos(texto(s, "foliculos_mm"));
+      if (foliculos === "invalida") falta(`ovário ${lado}`, texto(s, "foliculos_mm"), `folículos do ovário ${lado} ilegíveis: use diâmetros em mm separados por vírgula (ex.: 8, 10, 12)`);
+      if (Array.isArray(foliculos)) {
+        algum = true;
+        if (s.visualizado === "nao") falta(`ovário ${lado}`, "não visualizado", `ovário ${lado} não visualizado não pode ter folículos medidos`);
+      }
+    }
+    if (!algum) falta("folículos", "", "informe os diâmetros dos folículos (mm) de ao menos um ovário");
+  }
+  return { ...base, pendencias };
 }

@@ -66,10 +66,15 @@ export const CATEGORIAS_MIGRADAS = [
  * | CERVICAL_DOPPLER | CERVICAL | Doppler declarado; vascularização do linfonodo obrigatória |
  * | MAMAS_DOPPLER, MAMAS_AXILAS_DOPPLER | MAMARIA | escopo e Doppler fixos; vascularização por achado |
  * | PELVICO_TRANSABDOMINAL | PELVE_FEMININA | via fixa `ta`, repleção confirmada, endométrio não medido = limitado pela técnica |
+ * | PELVICO_TRANSVAGINAL_DOPPLER, PELVICO_TRANSABDOMINAL_DOPPLER, MONITORIZACAO_FOLICULAR | PELVE_FEMININA | modo fixo sobre os cards TV/TA; portão da via + dado do modo |
  */
 export const CATEGORIAS_DERIVADAS: Readonly<Record<string, (typeof CATEGORIAS_MIGRADAS)[number]>> = {
   PELVICO_TRANSVAGINAL: "PELVE_FEMININA",
   PELVICO_TRANSABDOMINAL: "PELVE_FEMININA",
+  // Atalhos da pelve (organs/pelvePresets.ts): modo fixo sobre os cards TV/TA.
+  PELVICO_TRANSVAGINAL_DOPPLER: "PELVE_FEMININA",
+  PELVICO_TRANSABDOMINAL_DOPPLER: "PELVE_FEMININA",
+  MONITORIZACAO_FOLICULAR: "PELVE_FEMININA",
   TIREOIDE_DOPPLER: "TIREOIDE",
   CERVICAL_DOPPLER: "CERVICAL",
   MAMAS_DOPPLER: "MAMARIA",

@@ -48,6 +48,7 @@ import { dopplerTransplanteRenal } from './organs/dopplerTransplanteRenal'
 import { mamaMasculina } from './organs/mamaMasculina'
 import { bolsaTesticularDoppler } from './organs/bolsaTesticularDoppler'
 import { MSK_PRESET_CATEGORIES } from './organs/mskPresets'
+import { PELVE_PRESET_CATEGORIES } from './organs/pelvePresets'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
@@ -128,6 +129,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   axilas,
   pesquisaEndometriose,
   ...MSK_PRESET_CATEGORIES,
+  ...PELVE_PRESET_CATEGORIES,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
