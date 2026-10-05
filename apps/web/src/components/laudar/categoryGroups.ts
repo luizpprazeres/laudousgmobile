@@ -31,7 +31,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'obstetricia',
     label: 'Obstetrícia',
-    categories: ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO_1T', 'MORFOLOGICO_2T', 'MORFOLOGICO_3T', 'CERVICOMETRIA', 'PERFIL_BIOFISICO_FETAL', 'ECOCARDIOGRAFIA_FETAL'],
+    categories: ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO_1T', 'MORFOLOGICO_2T', 'MORFOLOGICO_3T', 'MORFOLOGICO', 'CERVICOMETRIA', 'PERFIL_BIOFISICO_FETAL', 'ECOCARDIOGRAFIA_FETAL'],
   },
   {
     id: 'saude_mulher',
@@ -83,6 +83,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   MORFOLOGICO_1T: 'Morfológico 1º trimestre',
   MORFOLOGICO_2T: 'Morfológico 2º trimestre',
   MORFOLOGICO_3T: 'Morfológico 3º trimestre',
+  MORFOLOGICO: 'Morfológico · escolher trimestre',
   DOPPLER_HEPATICO: 'Doppler hepático',
   TIREOIDE: 'Tireoide',
   TIREOIDE_DOPPLER: 'Tireoide com Doppler',
