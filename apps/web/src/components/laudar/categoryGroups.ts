@@ -52,7 +52,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'vascular',
     label: 'Vascular',
-    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_MESENTERICO'],
+    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_TRANSPLANTE_RENAL', 'DOPPLER_MESENTERICO'],
   },
   {
     id: 'outros_exames',
@@ -112,6 +112,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   DOPPLER_ARTERIAS_TEMPORAIS: ['temporal', 'arterias temporais', 'arterite', 'halo'],
   DOPPLER_AORTA_ILIACAS: ['aorta', 'iliacas', 'iliaca', 'aneurisma de aorta', 'doppler aorta'],
   DOPPLER_RENAL: ['doppler renal', 'arterias renais'],
+  DOPPLER_TRANSPLANTE_RENAL: ['transplante renal', 'enxerto renal', 'rim transplantado', 'doppler renal'],
   TRANSFONTANELA: ['fontanela', 'transfontanelar', 'neonatal', 'cranio', 'hemorragia peri-intraventricular'],
   OCULAR: ['olho', 'olhos', 'ocular', 'retina', 'vitreo', 'nervo optico'],
   LIVRE: ['livre', 'ditado livre'],

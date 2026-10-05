@@ -40,6 +40,8 @@ export const CATEGORY_DISPLAY_LABELS: Readonly<Record<string, string>> = {
   DOPPLER_FISTULA_AV: "Doppler de fístula arteriovenosa",
   DOPPLER_MESENTERICO: "Doppler de artérias mesentéricas",
   DOPPLER_ARTERIAS_TEMPORAIS: "Doppler de artérias temporais",
+  DOPPLER_AORTA_ILIACAS: "Doppler de aorta e artérias ilíacas",
+  DOPPLER_TRANSPLANTE_RENAL: "Doppler de transplante renal",
   DOPPLER_RENAL: "Doppler renal",
   DOPPLER_HEPATICO: "Doppler hepático",
   TRANSFONTANELA: "Transfontanela",

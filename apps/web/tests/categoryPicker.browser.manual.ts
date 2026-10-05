@@ -20,7 +20,7 @@ const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
   ['saude_mulher', ['PELVE_FEMININA', 'MAMARIA']],
   ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES']],
   ['musculoesqueletico', ['MUSCULOESQUELETICO']],
-  ['vascular', ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_MESENTERICO']],
+  ['vascular', ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_TRANSPLANTE_RENAL', 'DOPPLER_MESENTERICO']],
   ['outros_exames', ['QUADRIL_INFANTIL', 'TRANSFONTANELA', 'OCULAR', 'LIVRE']],
 ]
 const TODOS = GRUPOS_ESPERADOS.flatMap(([, ids]) => ids)
@@ -177,7 +177,7 @@ async function main() {
       await page.getByRole('status').getByText('Nenhum exame encontrado.').waitFor()
       await page.getByRole('button', { name: 'Limpar busca' }).click()
       assert.equal(await cards.count(), TODOS.length)
-      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 34 + (MODELOS_HEPATICOS_ATIVOS ? 2 : 0))
+      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 35 + (MODELOS_HEPATICOS_ATIVOS ? 2 : 0))
       assert.equal(await page.locator('[data-generation-mode="writer"]').count(), 1)
       assert.equal(await page.locator('[data-category-id="LIVRE"][data-generation-mode="writer"]').count(), 1)
       for (const forbidden of [...(MODELOS_HEPATICOS_ATIVOS ? [] : ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA']), 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {

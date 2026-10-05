@@ -12,6 +12,7 @@ import { prostataTransretalIssuesDoExame } from './prostataTransretal'
 import { paratireoideIssuesDoExame } from './paratireoide'
 import { glandulasSalivaresIssuesDoExame } from './glandulasSalivares'
 import { dopplerMesentericoIssuesDoExame } from './dopplerMesenterico'
+import { dopplerTransplanteRenalIssuesDoExame } from './dopplerTransplanteRenal'
 
 type Exame = Record<string, OrganState>
 
@@ -20,6 +21,7 @@ const REGISTRO: Record<string, (state: Exame) => string[]> = {
   PARATIREOIDE: paratireoideIssuesDoExame,
   GLANDULAS_SALIVARES: glandulasSalivaresIssuesDoExame,
   DOPPLER_MESENTERICO: dopplerMesentericoIssuesDoExame,
+  DOPPLER_TRANSPLANTE_RENAL: dopplerTransplanteRenalIssuesDoExame,
 }
 
 export function pendenciasLocais(categoria: string, state: Exame | undefined): string[] {
