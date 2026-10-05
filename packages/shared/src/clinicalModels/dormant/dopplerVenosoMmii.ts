@@ -111,7 +111,7 @@ const ThrombosisFindingSchema = z.object({
   collaterals: z.enum(["not_assessed", "absent", "present"]),
   phase: z.enum(["not_assessed", "acute", "chronic_recanalized", "mixed", "indeterminate"]),
   physicianConfirmedObservation: z.boolean(),
-  publication: z.literal("blocked_pending_tvp_minimum_criteria_and_phase_rules"),
+  publication: z.literal("incompressibility_anchor_approved_phase_rules_pending"),
 }).strict();
 
 const CaliberFindingSchema = z.object({
@@ -177,17 +177,17 @@ export const DopplerVenosoMmiiDormantSchema = z.object({
   sides: z.object({ right: VenousSideSchema, left: VenousSideSchema }).strict(),
   derived: VenousDerivedSchema,
   clinicalPolicy: z.object({
-    tvpPositiveMinimum: z.literal("blocked_pending_minimum_criteria"),
-    tvpNegativeMinimum: z.literal("blocked_pending_negative_exam_criteria"),
-    thrombosisPhase: z.literal("blocked_pending_phase_rules"),
-    refluxThresholds: z.literal("blocked_pending_boundaries_and_maneuvers"),
-    perforatorCompetence: z.literal("blocked_pending_combined_rule"),
+    tvpPositiveMinimum: z.literal("incompressibility_anchor_material_is_adjunct"),
+    tvpNegativeMinimum: z.literal("documented_compressibility_by_assessed_segment"),
+    thrombosisPhase: z.literal("no_subacute_category_remaining_phase_rules_pending"),
+    refluxThresholds: z.literal("strictly_greater_than_values_and_maneuvers_pending"),
+    perforatorCompetence: z.literal("requires_reflux_and_diameter_thresholds_pending"),
     iliacVeins: z.literal("excluded_pending_protocol_decision"),
     muscularVeinThrombosis: z.literal("blocked_pending_scope_and_source"),
     superficialThrombosis: z.literal("excluded_pending_source"),
     postAblationOrSaphenectomy: z.literal("excluded_pending_source"),
     ceap: z.literal("excluded_pending_clinical_inputs_and_rule"),
-    recommendations: z.literal("blocked_pending_confirmation_and_conduct_policy"),
+    recommendations: z.literal("separate_physician_confirmation_required"),
   }).strict(),
 }).strict();
 
@@ -394,7 +394,9 @@ export function validateDopplerVenosoMmiiDormant(value: unknown): DopplerVenosoM
           issues.push(contractIssue("REFLUX_CLASSIFICATION_RULE_PENDING", `${path}.${finding.id}`, "pending"));
         }
         if (finding.kind === "thrombosis_observation") {
-          issues.push(contractIssue("TVP_MINIMUM_CRITERIA_PENDING", `${path}.${finding.id}`, "pending"));
+          if (finding.compressibility !== "partial" && finding.compressibility !== "absent") {
+            issues.push(contractIssue("TVP_INCOMPRESSIBILITY_REQUIRED", `${path}.${finding.id}.compressibility`));
+          }
           if (finding.phase !== "not_assessed") {
             issues.push(contractIssue("THROMBOSIS_PHASE_RULE_PENDING", `${path}.${finding.id}.phase`, "pending"));
           }
@@ -424,6 +426,9 @@ export function validateDopplerVenosoMmiiDormant(value: unknown): DopplerVenosoM
         issues.push(contractIssue("PROTOCOL_SCOPE_CONFLICT", path));
       }
       if (perforator.assessment === "abnormal") {
+        if (!perforator.refluxTime || !perforator.diameter) {
+          issues.push(contractIssue("PERFORATOR_REFLUX_AND_DIAMETER_REQUIRED", path));
+        }
         issues.push(contractIssue("PERFORATOR_RULE_PENDING", path, "pending"));
       }
     }

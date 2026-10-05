@@ -35,6 +35,8 @@ const RatioMeasurementSchema = MeasurementIdentitySchema.extend({
   side: SideSchema,
   original: z.object({ value: NonNegative, unit: z.literal("ratio") }).strict(),
   canonical: z.object({ value: NonNegative, unit: z.literal("ratio") }).strict(),
+  /** Ordem fixa: VPS renal usada no numerador, depois VPS aórtica usada no denominador. */
+  inputIds: z.tuple([z.string(), z.string()]),
 }).strict();
 
 const RiMeasurementSchema = MeasurementIdentitySchema.extend({
@@ -51,11 +53,33 @@ const AccelerationTimeMeasurementSchema = MeasurementIdentitySchema.extend({
   canonical: z.object({ value: NonNegative, unit: z.literal("ms") }).strict(),
 }).strict();
 
-const LengthMeasurementSchema = MeasurementIdentitySchema.extend({
+const AccelerationIndexMeasurementSchema = MeasurementIdentitySchema.extend({
   side: SideSchema,
-  axis: z.literal("bipolar"),
+  territory: z.enum(["upper_pole", "middle_pole", "lower_pole", "unspecified"]),
+  original: z.object({ value: NonNegative, unit: z.enum(["cm/s²", "m/s²"]) }).strict(),
+  canonical: z.object({ value: NonNegative, unit: z.literal("cm/s²") }).strict(),
+}).strict();
+
+const RenalLinearMeasurementBaseSchema = MeasurementIdentitySchema.extend({
+  side: SideSchema,
   original: z.object({ value: Positive, unit: z.enum(["cm", "mm"]) }).strict(),
   canonical: z.object({ value: Positive, unit: z.literal("cm") }).strict(),
+}).strict();
+
+const BipolarLengthMeasurementSchema = RenalLinearMeasurementBaseSchema.extend({
+  axis: z.literal("bipolar"),
+}).strict();
+
+const AnteroposteriorDiameterMeasurementSchema = RenalLinearMeasurementBaseSchema.extend({
+  axis: z.literal("anteroposterior"),
+}).strict();
+
+const TransverseDiameterMeasurementSchema = RenalLinearMeasurementBaseSchema.extend({
+  axis: z.literal("transverse"),
+}).strict();
+
+const ParenchymalThicknessMeasurementSchema = RenalLinearMeasurementBaseSchema.extend({
+  axis: z.literal("parenchymal_thickness"),
 }).strict();
 
 const RenalSideSchema = z.object({
@@ -72,9 +96,13 @@ const RenalSideSchema = z.object({
     ri: z.array(RiMeasurementSchema).max(8),
     spectralPattern: z.enum(["not_assessed", "normal", "tardus_parvus", "indeterminate"]),
     accelerationTime: z.array(AccelerationTimeMeasurementSchema).max(4),
+    accelerationIndex: z.array(AccelerationIndexMeasurementSchema).max(4),
   }).strict(),
   kidney: z.object({
-    bipolarLength: LengthMeasurementSchema.optional(),
+    bipolarLength: BipolarLengthMeasurementSchema.optional(),
+    anteroposteriorDiameter: AnteroposteriorDiameterMeasurementSchema.optional(),
+    transverseDiameter: TransverseDiameterMeasurementSchema.optional(),
+    parenchymalThickness: ParenchymalThicknessMeasurementSchema.optional(),
     echogenicity: z.enum(["not_assessed", "preserved", "increased", "other"]),
     corticomedullaryDifferentiation: z.enum(["not_assessed", "preserved", "reduced"]),
   }).strict(),
@@ -86,7 +114,7 @@ const DerivedRarSchema = z.object({
   unit: z.literal("ratio"),
   algorithm: z.literal("max-renal-psv/aortic-psv/v1"),
   inputIds: z.tuple([z.string(), z.string()]),
-  clinicalUse: z.literal("blocked_pending_aortic_eligibility_and_tolerance"),
+  clinicalUse: z.literal("eligible_only_with_traceable_renal_and_aortic_psv"),
 }).strict();
 
 const DerivedMeanRiSchema = z.object({
@@ -103,12 +131,37 @@ const DerivedLengthDifferenceSchema = z.object({
   unit: z.literal("cm"),
   algorithm: z.literal("absolute-bipolar-length-difference/v1"),
   inputIds: z.tuple([z.string(), z.string()]),
-  clinicalUse: z.literal("blocked_pending_length_difference_semantics"),
+  thresholdCm: z.literal(1.8),
+  criterion: z.literal("strictly_greater_than"),
+  conclusionCandidate: z.boolean(),
+  clinicalUse: z.literal("candidate_only_no_final_text"),
+}).strict();
+
+const DerivedAccelerationTimeAdjunctSchema = z.object({
+  side: SideSchema,
+  measurementId: z.string(),
+  valueMs: NonNegative,
+  thresholdMs: z.literal(70),
+  criterion: z.literal("strictly_greater_than"),
+  adjunctCandidate: z.boolean(),
+  clinicalUse: z.literal("adjunct_only_no_isolated_conclusion"),
+}).strict();
+
+const DerivedAccelerationIndexAdjunctSchema = z.object({
+  side: SideSchema,
+  measurementId: z.string(),
+  valueCmPerS2: NonNegative,
+  thresholdCmPerS2: z.literal(300),
+  criterion: z.literal("strictly_less_than"),
+  adjunctCandidate: z.boolean(),
+  clinicalUse: z.literal("adjunct_only_no_isolated_conclusion"),
 }).strict();
 
 const RenalDerivedSchema = z.object({
   rar: z.array(DerivedRarSchema).max(2),
   meanRi: z.array(DerivedMeanRiSchema).max(2),
+  accelerationTimeAdjuncts: z.array(DerivedAccelerationTimeAdjunctSchema).max(8),
+  accelerationIndexAdjuncts: z.array(DerivedAccelerationIndexAdjunctSchema).max(8),
   bipolarLengthDifference: DerivedLengthDifferenceSchema.optional(),
 }).strict();
 
@@ -131,16 +184,18 @@ export const DopplerRenalDormantSchema = z.object({
   sides: z.object({ right: RenalSideSchema, left: RenalSideSchema }).strict(),
   derived: RenalDerivedSchema,
   clinicalPolicy: z.object({
-    stenosisPublication: z.literal("blocked_pending_physician_confirmation_policy"),
-    numericBoundaries: z.literal("blocked_pending_boundary_decisions"),
+    stenosisPublication: z.literal("numeric_criterion_requires_general_review_only"),
+    borderlineRange: z.literal("body_only_no_stenosis_diagnosis"),
+    numericBoundaries: z.literal("blocked_pending_remaining_boundary_decisions"),
     riInterpretation: z.literal("blocked_pending_ri_rules"),
-    accelerationTimeInterpretation: z.literal("blocked_pending_unit_and_threshold"),
-    rarClinicalEligibility: z.literal("blocked_pending_aortic_eligibility_and_tolerance"),
+    accelerationTimeInterpretation: z.literal("adjunct_strict_gt_70ms_no_isolated_conclusion"),
+    rarClinicalEligibility: z.literal("requires_traceable_renal_and_aortic_psv"),
+    renalLengthDifference: z.literal("conclusion_candidate_strict_gt_1_8cm"),
     transplant: z.literal("excluded_redirect_required"),
     renalVeins: z.literal("excluded_pending_source"),
     occlusionDiagnosis: z.literal("excluded_pending_source"),
     postStent: z.literal("excluded_pending_source"),
-    accelerationIndex: z.literal("excluded_pending_source"),
+    accelerationIndex: z.literal("adjunct_strict_lt_3m_per_s2_no_isolated_conclusion"),
     recommendations: z.literal("blocked_pending_context_and_confirmation_policy"),
   }).strict(),
 }).strict();
@@ -161,15 +216,27 @@ function canonicalAccelerationTime(value: z.infer<typeof AccelerationTimeMeasure
   return value.original.unit === "s" ? value.original.value * 1000 : value.original.value;
 }
 
-function canonicalLength(value: z.infer<typeof LengthMeasurementSchema>): number {
+function canonicalAccelerationIndex(value: z.infer<typeof AccelerationIndexMeasurementSchema>): number {
+  return value.original.unit === "m/s²" ? value.original.value * 100 : value.original.value;
+}
+
+function canonicalLength(value: z.infer<typeof RenalLinearMeasurementBaseSchema>): number {
   return value.original.unit === "mm" ? value.original.value / 10 : value.original.value;
 }
 
-function emptyDerived(): DopplerRenalDormant["derived"] {
-  return { rar: [], meanRi: [] };
+function strictlyGreaterThan(value: number, threshold: number): boolean {
+  return value > threshold && !nearlyEqual(value, threshold);
 }
 
-/** Arithmetic only. No threshold, diagnosis or prose is produced. */
+function strictlyLessThan(value: number, threshold: number): boolean {
+  return value < threshold && !nearlyEqual(value, threshold);
+}
+
+function emptyDerived(): DopplerRenalDormant["derived"] {
+  return { rar: [], meanRi: [], accelerationTimeAdjuncts: [], accelerationIndexAdjuncts: [] };
+}
+
+/** Recomputes arithmetic and approved candidate flags; it never produces a diagnosis or prose. */
 export function recomputeDopplerRenalDerived(value: DopplerRenalDormant): DopplerRenalDormant {
   const parsed = DopplerRenalDormantSchema.parse(value);
   const derived = emptyDerived();
@@ -187,7 +254,7 @@ export function recomputeDopplerRenalDerived(value: DopplerRenalDormant): Dopple
         unit: "ratio",
         algorithm: "max-renal-psv/aortic-psv/v1",
         inputIds: [maximum.id, aortic.id],
-        clinicalUse: "blocked_pending_aortic_eligibility_and_tolerance",
+        clinicalUse: "eligible_only_with_traceable_renal_and_aortic_psv",
       });
     }
 
@@ -204,17 +271,44 @@ export function recomputeDopplerRenalDerived(value: DopplerRenalDormant): Dopple
         clinicalUse: "blocked_pending_ri_aggregation_rule",
       });
     }
+
+    for (const measurement of sideData.intrarenal.accelerationTime) {
+      derived.accelerationTimeAdjuncts.push({
+        side,
+        measurementId: measurement.id,
+        valueMs: measurement.canonical.value,
+        thresholdMs: 70,
+        criterion: "strictly_greater_than",
+        adjunctCandidate: strictlyGreaterThan(measurement.canonical.value, 70),
+        clinicalUse: "adjunct_only_no_isolated_conclusion",
+      });
+    }
+    for (const measurement of sideData.intrarenal.accelerationIndex) {
+      derived.accelerationIndexAdjuncts.push({
+        side,
+        measurementId: measurement.id,
+        valueCmPerS2: measurement.canonical.value,
+        thresholdCmPerS2: 300,
+        criterion: "strictly_less_than",
+        adjunctCandidate: strictlyLessThan(measurement.canonical.value, 300),
+        clinicalUse: "adjunct_only_no_isolated_conclusion",
+      });
+    }
   }
 
   const rightLength = parsed.sides.right.kidney.bipolarLength;
   const leftLength = parsed.sides.left.kidney.bipolarLength;
   if (rightLength && leftLength) {
+    const difference = Math.abs(rightLength.canonical.value - leftLength.canonical.value);
     derived.bipolarLengthDifference = {
-      value: Math.abs(rightLength.canonical.value - leftLength.canonical.value),
+      value: difference,
       unit: "cm",
       algorithm: "absolute-bipolar-length-difference/v1",
       inputIds: [rightLength.id, leftLength.id],
-      clinicalUse: "blocked_pending_length_difference_semantics",
+      thresholdCm: 1.8,
+      criterion: "strictly_greater_than",
+      conclusionCandidate: strictlyGreaterThan(difference, 1.8),
+      clinicalUse: "candidate_only_no_final_text",
     };
   }
 
@@ -226,7 +320,9 @@ function sideHasPayload(side: DopplerRenalDormant["sides"]["right"]): boolean {
     side.artery.aliasingOrTurbulence !== "not_assessed" ||
     side.artery.accessoryArtery !== "not_assessed" || !!side.documentedRar ||
     side.intrarenal.ri.length > 0 || side.intrarenal.spectralPattern !== "not_assessed" ||
-    side.intrarenal.accelerationTime.length > 0 || !!side.kidney.bipolarLength ||
+    side.intrarenal.accelerationTime.length > 0 || side.intrarenal.accelerationIndex.length > 0 ||
+    !!side.kidney.bipolarLength || !!side.kidney.anteroposteriorDiameter ||
+    !!side.kidney.transverseDiameter || !!side.kidney.parenchymalThickness ||
     side.kidney.echogenicity !== "not_assessed" ||
     side.kidney.corticomedullaryDifferentiation !== "not_assessed";
 }
@@ -240,7 +336,15 @@ function allMeasurementIds(data: DopplerRenalDormant): string[] {
     if (value.documentedRar) ids.push(value.documentedRar.id);
     ids.push(...value.intrarenal.ri.map((measurement) => measurement.id));
     ids.push(...value.intrarenal.accelerationTime.map((measurement) => measurement.id));
-    if (value.kidney.bipolarLength) ids.push(value.kidney.bipolarLength.id);
+    ids.push(...value.intrarenal.accelerationIndex.map((measurement) => measurement.id));
+    for (const measurement of [
+      value.kidney.bipolarLength,
+      value.kidney.anteroposteriorDiameter,
+      value.kidney.transverseDiameter,
+      value.kidney.parenchymalThickness,
+    ]) {
+      if (measurement) ids.push(measurement.id);
+    }
   }
   return ids;
 }
@@ -319,6 +423,11 @@ export function validateDopplerRenalDormant(value: unknown): DopplerRenalValidat
       if (!nearlyEqual(sideData.documentedRar.original.value, sideData.documentedRar.canonical.value)) {
         issues.push(contractIssue("CANONICAL_UNIT_MISMATCH", `${path}.documentedRar`));
       }
+      const [renalPsvId, aorticPsvId] = sideData.documentedRar.inputIds;
+      if (!data.aorta.psv || aorticPsvId !== data.aorta.psv.id ||
+        !sideData.artery.psv.some((measurement) => measurement.id === renalPsvId)) {
+        issues.push(contractIssue("RAR_SOURCE_PSV_REQUIRED", `${path}.documentedRar`));
+      }
     }
     for (const measurement of sideData.intrarenal.ri) {
       if (measurement.side !== side) issues.push(contractIssue("SIDE_MISMATCH", `${path}.intrarenal.ri.${measurement.id}`));
@@ -331,13 +440,23 @@ export function validateDopplerRenalDormant(value: unknown): DopplerRenalValidat
       if (!nearlyEqual(measurement.canonical.value, canonicalAccelerationTime(measurement))) {
         issues.push(contractIssue("CANONICAL_UNIT_MISMATCH", `${path}.intrarenal.accelerationTime.${measurement.id}`));
       }
-      issues.push(contractIssue("ACCELERATION_TIME_RULE_PENDING", `${path}.intrarenal.accelerationTime.${measurement.id}`, "pending"));
     }
-    const length = sideData.kidney.bipolarLength;
-    if (length) {
-      if (length.side !== side) issues.push(contractIssue("SIDE_MISMATCH", `${path}.kidney.bipolarLength`));
-      if (!nearlyEqual(length.canonical.value, canonicalLength(length))) {
-        issues.push(contractIssue("CANONICAL_UNIT_MISMATCH", `${path}.kidney.bipolarLength`));
+    for (const measurement of sideData.intrarenal.accelerationIndex) {
+      if (measurement.side !== side) issues.push(contractIssue("SIDE_MISMATCH", `${path}.intrarenal.accelerationIndex.${measurement.id}`));
+      if (!nearlyEqual(measurement.canonical.value, canonicalAccelerationIndex(measurement))) {
+        issues.push(contractIssue("CANONICAL_UNIT_MISMATCH", `${path}.intrarenal.accelerationIndex.${measurement.id}`));
+      }
+    }
+    for (const [field, measurement] of [
+      ["bipolarLength", sideData.kidney.bipolarLength],
+      ["anteroposteriorDiameter", sideData.kidney.anteroposteriorDiameter],
+      ["transverseDiameter", sideData.kidney.transverseDiameter],
+      ["parenchymalThickness", sideData.kidney.parenchymalThickness],
+    ] as const) {
+      if (!measurement) continue;
+      if (measurement.side !== side) issues.push(contractIssue("SIDE_MISMATCH", `${path}.kidney.${field}`));
+      if (!nearlyEqual(measurement.canonical.value, canonicalLength(measurement))) {
+        issues.push(contractIssue("CANONICAL_UNIT_MISMATCH", `${path}.kidney.${field}`));
       }
     }
   }
@@ -377,17 +496,34 @@ export function removeDopplerRenalMeasurement(
     const psv = current.artery.psv.filter((measurement) => measurement.id !== measurementId);
     const ri = current.intrarenal.ri.filter((measurement) => measurement.id !== measurementId);
     const accelerationTime = current.intrarenal.accelerationTime.filter((measurement) => measurement.id !== measurementId);
+    const accelerationIndex = current.intrarenal.accelerationIndex.filter((measurement) => measurement.id !== measurementId);
     const documentedRar = current.documentedRar?.id === measurementId ? undefined : current.documentedRar;
     const bipolarLength = current.kidney.bipolarLength?.id === measurementId ? undefined : current.kidney.bipolarLength;
+    const anteroposteriorDiameter = current.kidney.anteroposteriorDiameter?.id === measurementId
+      ? undefined : current.kidney.anteroposteriorDiameter;
+    const transverseDiameter = current.kidney.transverseDiameter?.id === measurementId
+      ? undefined : current.kidney.transverseDiameter;
+    const parenchymalThickness = current.kidney.parenchymalThickness?.id === measurementId
+      ? undefined : current.kidney.parenchymalThickness;
     if (psv.length !== current.artery.psv.length || ri.length !== current.intrarenal.ri.length ||
       accelerationTime.length !== current.intrarenal.accelerationTime.length ||
-      documentedRar !== current.documentedRar || bipolarLength !== current.kidney.bipolarLength) removed = true;
+      accelerationIndex.length !== current.intrarenal.accelerationIndex.length ||
+      documentedRar !== current.documentedRar || bipolarLength !== current.kidney.bipolarLength ||
+      anteroposteriorDiameter !== current.kidney.anteroposteriorDiameter ||
+      transverseDiameter !== current.kidney.transverseDiameter ||
+      parenchymalThickness !== current.kidney.parenchymalThickness) removed = true;
     sides[side] = {
       ...current,
       artery: { ...current.artery, psv },
       documentedRar,
-      intrarenal: { ...current.intrarenal, ri, accelerationTime },
-      kidney: { ...current.kidney, bipolarLength },
+      intrarenal: { ...current.intrarenal, ri, accelerationTime, accelerationIndex },
+      kidney: {
+        ...current.kidney,
+        bipolarLength,
+        anteroposteriorDiameter,
+        transverseDiameter,
+        parenchymalThickness,
+      },
     };
   }
 
