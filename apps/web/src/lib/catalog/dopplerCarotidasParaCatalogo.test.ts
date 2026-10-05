@@ -96,4 +96,39 @@ test('incompleto e conflitos bloqueiam: classificação, placas, VDF > PSV, núm
   assert.deepEqual(motivos({ direita: { ...ladoNormal }, esquerda: { ...ladoNormal }, conclusao: { conclusao_livre: 'Texto do médico' } }), [])
 })
 
+// ── Correções do QA de 9edf0ac ───────────────────────────────────────────────
+const placa = (pct: string) => ({ avaliacao: 'avaliado', placas_status: 'presentes', placas_ids: ['p1'], 'placas.p1.localizacao': 'bulbo', 'placas.p1.estenose': pct })
+
+test('ateromatose com placas ausentes bloqueia; com placa registrada passa', () => {
+  const exam: Exam = { direita: { ...ladoNormal }, esquerda: { ...ladoNormal }, conclusao: { classificacao_direita: 'ateromatose_sem_estenose_significativa', classificacao_esquerda: 'normal' } }
+  assert.ok(motivos(exam).includes('Lado direito: ateromatose conflita com "sem placas"; registre as placas ou revise a classificação.'))
+  exam.direita = placa('')
+  assert.match(laudo(exam), /Ateromatose carotídea à direita/)
+})
+
+test('vertebral sem fluxo com PSV bloqueia; sem PSV passa', () => {
+  const exam: Exam = { direita: { ...ladoNormal }, esquerda: { ...ladoNormal, vertebral_direcao: 'ausente', vertebral_vps: '40' }, conclusao: { classificacao_direita: 'normal', classificacao_esquerda: 'normal' } }
+  assert.ok(motivos(exam).some(m => /vertebral sem fluxo não pode ter PSV/.test(m)))
+  exam.esquerda!.vertebral_vps = ''
+  const text = laudo(exam)
+  assert.match(text, /Artéria vertebral esquerda: fluxo não detectado\./)
+  assert.doesNotMatch(text, /PSV de 40/)
+})
+
+test('redução da placa incompatível com a classificação bloqueia; maior placa dentro da faixa passa', () => {
+  const conclusao = (c: string) => ({ classificacao_direita: c, classificacao_esquerda: 'normal' })
+  const casos: Array<[string, string, boolean]> = [
+    ['85', 'estenose_menor_50', false], ['85', 'ateromatose_sem_estenose_significativa', false],
+    ['85', 'estenose_70_99', true], ['60', 'estenose_50_69', true], ['45', 'estenose_50_69', false],
+    ['100', 'estenose_70_99', false], ['100', 'oclusao', true], ['30', 'estenose_menor_50', true],
+  ]
+  for (const [pct, classe, valido] of casos) {
+    const m = motivos({ direita: placa(pct), esquerda: { ...ladoNormal }, conclusao: conclusao(classe) })
+    assert.equal(m.some(x => /incompatível com a classificação/.test(x)), !valido, `${pct}% × ${classe}: ${JSON.stringify(m)}`)
+  }
+  // Várias placas: vale a maior; placa sem percentual não conta.
+  const duas = { ...placa('30'), placas_ids: ['p1', 'p2', 'p3'], 'placas.p2.estenose': '60', 'placas.p3.localizacao': 'carótida comum' }
+  assert.deepEqual(motivos({ direita: duas, esquerda: { ...ladoNormal }, conclusao: conclusao('estenose_50_69') }), [])
+})
+
 console.log(`# ${cases} casos`)

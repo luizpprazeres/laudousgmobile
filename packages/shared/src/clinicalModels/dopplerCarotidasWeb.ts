@@ -77,6 +77,19 @@ export function indiceResistividadeWeb(vps: number | null, vdf: number | null): 
   return Math.round(((vps - vdf) / vps) * 100) / 100;
 }
 
+/**
+ * Faixa de redução luminal coerente com cada classificação (maior placa do lado).
+ * Não deriva a classificação: só impede que o laudo traga placa e conclusão
+ * contraditórias. "normal" já é bloqueado com placas presentes.
+ */
+const FAIXA_REDUCAO: Partial<Record<(typeof DOPPLER_CAROTIDAS_CLASSIFICACOES)[number], { min: number; max: number }>> = {
+  ateromatose_sem_estenose_significativa: { min: 0, max: 49.99 },
+  estenose_menor_50: { min: 0, max: 49.99 },
+  estenose_50_69: { min: 50, max: 69.99 },
+  estenose_70_99: { min: 70, max: 99.99 },
+  oclusao: { min: 100, max: 100 },
+};
+
 const temMedidas = (l: DopplerCarotidasWebLado) =>
   l.emi_mm !== null || l.placas.length > 0 || l.vertebral.vps_cms !== null || l.vertebral.direcao !== null
   || [l.comum, l.interna, l.externa].some(m => m.vps_cms !== null || m.vdf_cms !== null);
@@ -112,6 +125,20 @@ export function validateDopplerCarotidasWeb(value: unknown): DopplerCarotidasWeb
     if (!livre && l.classificacao === null) add("classificacao_pendente", `${id}.classificacao`, `${r}: selecione a classificação do médico ou escreva a conclusão livre.`);
     if (l.classificacao === "normal" && l.placas_status === "presentes") {
       add("normal_com_placas", `${id}.classificacao`, `${r}: classificação normal conflita com placas presentes.`);
+    }
+    if (l.classificacao === "ateromatose_sem_estenose_significativa" && l.placas_status === "ausentes") {
+      add("ateromatose_sem_placas", `${id}.classificacao`, `${r}: ateromatose conflita com "sem placas"; registre as placas ou revise a classificação.`);
+    }
+    if (l.vertebral.direcao === "ausente" && l.vertebral.vps_cms !== null) {
+      add("vertebral_sem_fluxo_com_psv", `${id}.vertebral`, `${r}: artéria vertebral sem fluxo não pode ter PSV; apague a velocidade ou revise a direção.`);
+    }
+    const faixa = l.classificacao ? FAIXA_REDUCAO[l.classificacao] : undefined;
+    const reducoes = l.placas.map(p => p.estenose_percentual).filter((v): v is number => v !== null);
+    if (faixa && reducoes.length) {
+      const maior = Math.max(...reducoes);
+      if (maior < faixa.min || maior > faixa.max) {
+        add("reducao_incompativel", `${id}.placas`, `${r}: maior redução luminal informada (${fmt(maior)}%) incompatível com a classificação; revise a placa ou a classificação.`);
+      }
     }
   }
   if (LADOS.every(id => data[id].avaliacao === "nao_avaliado")) add("nenhum_lado", "", "Avalie ao menos um lado.");
