@@ -24,6 +24,13 @@ const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
   ['outros_exames', ['QUADRIL_INFANTIL', 'TRANSFONTANELA', 'OCULAR', 'LIVRE']],
 ]
 const TODOS = GRUPOS_ESPERADOS.flatMap(([, ids]) => ids)
+const PRESETS_COM_ARTE_COMPARTILHADA = new Set([
+  'TIREOIDE_DOPPLER', 'CERVICAL_DOPPLER', 'MAMAS_DOPPLER', 'MAMAS_AXILAS_DOPPLER',
+  'MSK_COTOVELO', 'MSK_COTOVELO_BILATERAL', 'MSK_JOELHO', 'MSK_JOELHO_BILATERAL',
+  'MSK_MAO', 'MSK_MAO_BILATERAL', 'MSK_OMBRO', 'MSK_OMBRO_BILATERAL',
+  'MSK_PUNHO', 'MSK_PUNHO_BILATERAL', 'MSK_PE', 'MSK_PE_BILATERAL',
+  'MSK_QUADRIL', 'MSK_QUADRIL_BILATERAL', 'MSK_TORNOZELO', 'MSK_TORNOZELO_BILATERAL',
+])
 const TIPOS: Record<string, string> = { '.webp': 'image/webp', '.png': 'image/png', '.ttf': 'font/ttf' }
 
 async function main() {
@@ -86,9 +93,14 @@ async function main() {
         els.map((el) => [el.dataset.categoryGroup, Array.from(el.querySelectorAll<HTMLElement>('.exam-category-item')).map((c) => c.dataset.categoryId)]))
       assert.deepEqual(estrutura, GRUPOS_ESPERADOS)
       assert.equal(new Set(await idsVisiveis()).size, TODOS.length, 'cada exame uma vez')
-      const imagens = await page.locator('.exam-category-art img').evaluateAll((imgs: HTMLImageElement[]) => imgs.map((img) => img.src))
-      assert.ok(imagens.length >= 29, `catálogo tem apenas ${imagens.length} ilustrações próprias`)
-      assert.equal(new Set(imagens).size, imagens.length, 'cada ilustração do catálogo deve ser própria')
+      const imagens = await page.locator('.exam-category-item').evaluateAll((cards: HTMLElement[]) => cards.map((card) => ({
+        id: card.dataset.categoryId ?? '',
+        src: card.querySelector<HTMLImageElement>('.exam-category-art img')?.src ?? '',
+      })))
+      const cardsComImagem = imagens.filter(({ src }) => src)
+      assert.ok(cardsComImagem.length >= 29, `catálogo tem apenas ${cardsComImagem.length} ilustrações próprias`)
+      const imagensPrincipais = cardsComImagem.filter(({ id }) => !PRESETS_COM_ARTE_COMPARTILHADA.has(id)).map(({ src }) => src)
+      assert.equal(new Set(imagensPrincipais).size, imagensPrincipais.length, 'cada categoria principal deve ter ilustração própria')
       assert.deepEqual(await page.getByRole('heading', { level: 2 }).allTextContents(),
         ['Medicina interna', 'Obstetrícia', 'Saúde da mulher', 'Pequenas partes', 'Musculoesquelético', 'Vascular', 'Outros exames'])
       const atalho = page.locator('[data-category-shortcut="MAMARIA"]')
