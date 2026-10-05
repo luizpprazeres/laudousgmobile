@@ -15,17 +15,18 @@ const cervicometriaIsoladaModule: OrganModule = {
     name: 'Medida do colo uterino',
     category: 'CERVICOMETRIA',
     fields: [
-      { key: 'colo_cm', label: 'Comprimento do colo OI–OE (cm)', kind: 'text', placeholder: '3,4' },
+      { key: 'colo_cm', label: 'Comprimento do colo OI–OE (cm; ou com "mm")', kind: 'text', placeholder: '3,4 ou 34 mm' },
       {
         key: 'orificio',
         label: 'Orifício interno',
         kind: 'segmented',
+        hint: 'obrigatório: sem padrão',
         options: [
-          { value: 'fechado', label: 'Fechado', isDefault: true },
+          { value: 'fechado', label: 'Fechado' },
           { value: 'aberto', label: 'Aberto' },
         ],
       },
-      { key: 'placenta_cm', label: 'Distância da placenta ao OI (cm, opcional)', kind: 'text', placeholder: '4,2' },
+      { key: 'placenta_cm', label: 'Distância da placenta ao OI (cm ou mm, opcional)', kind: 'text', placeholder: '4,2' },
       {
         key: 'placenta_distante',
         label: 'Placenta distante, sem medida',
@@ -50,7 +51,8 @@ const cervicometriaIsoladaModule: OrganModule = {
   },
   initialState: (): OrganState => ({
     colo_cm: '',
-    orificio: 'fechado',
+    // Sem padrão: o orifício interno só é descrito depois de o médico escolher.
+    orificio: '',
     placenta_cm: '',
     placenta_distante: 'nao',
     ig_semanas: '',
