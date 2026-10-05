@@ -66,6 +66,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   DOPPLER_OBSTETRICO: 'Obstétrica com Doppler',
   DOPPLER_HEPATICO: 'Doppler hepático',
   TIREOIDE: 'Tireoide',
+  TRANSFONTANELA: 'Transfontanelar',
 }
 
 function displayName(id: string) {
@@ -107,8 +108,8 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   DOPPLER_ARTERIAL_MMSS: ['doppler arterial', 'membros superiores', 'braco', 'desfiladeiro toracico'],
   DOPPLER_FISTULA_AV: ['fistula', 'acesso vascular'],
   DOPPLER_RENAL: ['doppler renal', 'arterias renais'],
-  TRANSFONTANELA: ['fontanela', 'transfontanelar'],
-  OCULAR: ['olho', 'ocular'],
+  TRANSFONTANELA: ['fontanela', 'transfontanelar', 'neonatal', 'cranio', 'hemorragia peri-intraventricular'],
+  OCULAR: ['olho', 'olhos', 'ocular', 'retina', 'vitreo', 'nervo optico'],
   LIVRE: ['livre', 'ditado livre'],
   TORAX: ['torax', 'pulmao', 'pulmonar', 'pleura', 'derrame pleural', 'linhas b'],
   QUADRIL_INFANTIL: ['quadril', 'infantil', 'lactente', 'graf'],
