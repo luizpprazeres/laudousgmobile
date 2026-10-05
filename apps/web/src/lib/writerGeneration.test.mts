@@ -17,12 +17,12 @@ const { questionsFromPendingClarify } = pending
 
 const reportId = '11111111-1111-4111-8111-111111111111'
 
-test('allowlist separa as 31 categorias estruturadas da categoria livre', () => {
-  assert.equal(STRUCTURED_WEB_CATEGORY_CODES.length, 31)
+test('allowlist separa as 32 categorias estruturadas da categoria livre', () => {
+  assert.equal(STRUCTURED_WEB_CATEGORY_CODES.length, 32)
   assert.equal(WRITER_CATEGORY_CODES.length, 1)
-  assert.equal(new Set([...STRUCTURED_WEB_CATEGORY_CODES, ...WRITER_CATEGORY_CODES]).size, 32)
+  assert.equal(new Set([...STRUCTURED_WEB_CATEGORY_CODES, ...WRITER_CATEGORY_CODES]).size, 33)
   for (const category of WRITER_CATEGORY_CODES) assert.equal(isWriterCategory(category), true)
-  for (const category of ['PAREDE_ABDOMINAL', 'REGIAO_INGUINAL', 'ESCROTAL', 'PROSTATA_TRANSRETAL', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'TRANSFONTANELA', 'OCULAR', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_FISTULA_AV', 'DOPPLER_MESENTERICO', 'DOPPLER_ARTERIAS_TEMPORAIS', 'ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_HEPATICO', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_VENOSO_MMSS', 'QUADRIL_INFANTIL', 'TORAX', 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
+  for (const category of ['PAREDE_ABDOMINAL', 'REGIAO_INGUINAL', 'ESCROTAL', 'PROSTATA_TRANSRETAL', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'TRANSFONTANELA', 'OCULAR', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_FISTULA_AV', 'DOPPLER_MESENTERICO', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_AORTA_ILIACAS', 'ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_HEPATICO', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_VENOSO_MMSS', 'QUADRIL_INFANTIL', 'TORAX', 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
     assert.equal(isWriterCategory(category), false, category)
     assert.throws(() => validateWriterRequest({ raw_input: 'Achados ditados', category_hint: category }), /Categoria não disponível/)
   }

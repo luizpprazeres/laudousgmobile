@@ -52,7 +52,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'vascular',
     label: 'Vascular',
-    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_MESENTERICO'],
+    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_MESENTERICO'],
   },
   {
     id: 'outros_exames',
@@ -67,6 +67,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   DOPPLER_HEPATICO: 'Doppler hepático',
   TIREOIDE: 'Tireoide',
   TRANSFONTANELA: 'Transfontanelar',
+  DOPPLER_AORTA_ILIACAS: 'Doppler de aorta e ilíacas',
 }
 
 function displayName(id: string) {
@@ -109,6 +110,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   DOPPLER_FISTULA_AV: ['fistula', 'acesso vascular'],
   DOPPLER_MESENTERICO: ['mesenterica', 'mesenterico', 'tronco celiaco', 'celiaco', 'isquemia mesenterica'],
   DOPPLER_ARTERIAS_TEMPORAIS: ['temporal', 'arterias temporais', 'arterite', 'halo'],
+  DOPPLER_AORTA_ILIACAS: ['aorta', 'iliacas', 'iliaca', 'aneurisma de aorta', 'doppler aorta'],
   DOPPLER_RENAL: ['doppler renal', 'arterias renais'],
   TRANSFONTANELA: ['fontanela', 'transfontanelar', 'neonatal', 'cranio', 'hemorragia peri-intraventricular'],
   OCULAR: ['olho', 'olhos', 'ocular', 'retina', 'vitreo', 'nervo optico'],
