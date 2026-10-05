@@ -28,10 +28,16 @@ test('as duas categorias são formulários estruturados locais e saem do writer'
   }
 })
 
+/** Formulário em branco não afirma normalidade: os testes de conteúdo partem do modelo normal explícito. */
+function normal(): ExamState {
+  const state = initialExamState(transfontanela)
+  return { ...state, __opts: { ...state.__opts, modelo: 'normal' } }
+}
+
 // ------------------------------------------------------------- TRANSFONTANELA
 
 test('transfontanelar normal reproduz o modelo da casa sem medida nem idade inventadas', () => {
-  const report = composeReport(transfontanela, initialExamState(transfontanela))
+  const report = composeReport(transfontanela, normal())
   assert.match(report.text, /^ULTRASSONOGRAFIA TRANSFONTANELAR/)
   assert.match(report.text, /Ventrículos laterais de calibre normal e simétricos\./)
   assert.match(report.text, /sem sinais de leucomalácia/)
@@ -42,16 +48,20 @@ test('transfontanelar normal reproduz o modelo da casa sem medida nem idade inve
 })
 
 test('dados neonatais e medidas entram só quando informados, com unidade convertida', () => {
-  let state = initialExamState(transfontanela)
+  let state = normal()
   state = patch(state, 'dados_neonatais', { dias_vida: '10', ig_nascimento: '32+4', ig_corrigida: 'abc' })
   state = patch(state, 'parenquima_ventriculos', { levene_d: '0,9 cm', levene_e: '9' })
+  const invalida = composeReport(transfontanela, state)
+  assert.equal(invalida.text, '')
+  assert.deepEqual(invalida.pendencias.map((p) => p.onde), ['IG corrigida'])
+  state = patch(state, 'dados_neonatais', { ig_corrigida: '34+1' })
   const { text } = composeReport(transfontanela, state)
-  assert.match(text, /Dados informados: 10 dias de vida; idade gestacional ao nascimento de 32 semanas e 4 dias; idade gestacional corrigida de ____\./)
+  assert.match(text, /Dados informados: 10 dias de vida; idade gestacional ao nascimento de 32 semanas e 4 dias; idade gestacional corrigida de 34 semanas e 1 dia\./)
   assert.match(text, /índice de Levene: 9 mm à direita e 9 mm à esquerda/)
 })
 
 test('hemorragia unilateral suprime a normalidade do lado acometido e só gradua com confirmação', () => {
-  let state = initialExamState(transfontanela)
+  let state = normal()
   state = patch(state, 'parenquima_ventriculos', {
     hemorragia: 'presente',
     'hemorragia.presente.lado': 'esquerdo',
@@ -71,8 +81,8 @@ test('hemorragia unilateral suprime a normalidade do lado acometido e só gradua
   semIdentificadorCru(report.text)
 })
 
-test('hemorragia com dilatação exige Levene do lado e desativar o achado limpa o texto', () => {
-  let state = initialExamState(transfontanela)
+test('hemorragia com dilatação sem Levene fica descritiva e desativar o achado limpa o texto', () => {
+  let state = normal()
   state = patch(state, 'parenquima_ventriculos', {
     hemorragia: 'presente',
     'hemorragia.presente.lado': 'direito',
@@ -80,7 +90,7 @@ test('hemorragia com dilatação exige Levene do lado e desativar o achado limpa
     'hemorragia.presente.grau': 'incluir',
   })
   let text = composeReport(transfontanela, state).text
-  assert.match(text, /Ventrículo lateral direito com calibre aumentado \(índice de Levene: ____ mm à direita\)\./)
+  assert.match(text, /Ventrículo lateral direito com calibre aumentado\./)
   assert.match(text, /Ventrículo lateral esquerdo de calibre normal\./)
   assert.match(text, /grau III de Papile à direita/)
 
@@ -91,18 +101,20 @@ test('hemorragia com dilatação exige Levene do lado e desativar o achado limpa
 })
 
 test('dilatação qualitativa não é graduada nem medida por conta própria', () => {
-  let state = initialExamState(transfontanela)
-  state = patch(state, 'parenquima_ventriculos', { laterais: 'dilatados' })
+  let state = normal()
+  state = patch(state, 'parenquima_ventriculos', { laterais: 'dilatados', 'laterais.dilatados.lado': 'bilateral' })
   const { text } = composeReport(transfontanela, state)
-  assert.match(text, /Ventrículos laterais com calibre aumentado \(índice de Levene: ____ mm à direita e ____ mm à esquerda\)\./)
+  assert.match(text, /Ventrículos laterais com calibre aumentado\./)
+  assert.doesNotMatch(text, /____|Levene/)
   assert.match(text, /1\. Dilatação dos ventrículos laterais\./)
   assert.doesNotMatch(text, /leve|moderad|acentuad|calibre normal e simétricos/)
 })
 
 test('leucomalácia e calcificações suprimem parênquima normal; recomendação só quando marcada', () => {
-  let state = initialExamState(transfontanela)
+  let state = normal()
   state = patch(state, 'parenquima_ventriculos', {
     periventricular: 'cistica',
+    'periventricular.cistica.lado': 'bilateral',
     calcificacoes: 'presente',
     'calcificacoes.presente.local': 'periventriculares',
   })
@@ -119,7 +131,7 @@ test('leucomalácia e calcificações suprimem parênquima normal; recomendaçã
 })
 
 test('limitação técnica e estrutura não avaliada retiram a normalidade global', () => {
-  let state = initialExamState(transfontanela)
+  let state = normal()
   state = patch(state, 'dados_neonatais', { janela: 'limitada', 'janela.limitada.motivo': 'fontanela anterior pequena' })
   state = patch(state, 'linha_media', { fossa_posterior: 'nao_avaliada' })
   const { text } = composeReport(transfontanela, state)
@@ -129,7 +141,7 @@ test('limitação técnica e estrutura não avaliada retiram a normalidade globa
 })
 
 test('hemorragia presente sem lado ou extensão bloqueia o laudo, sem texto com lacuna', () => {
-  const base = patch(initialExamState(transfontanela), 'parenquima_ventriculos', { hemorragia: 'presente' })
+  const base = patch(normal(), 'parenquima_ventriculos', { hemorragia: 'presente' })
   let report = composeReport(transfontanela, base)
   assert.equal(report.text, '')
   assert.deepEqual(report.pendencias.map((p) => p.motivo), ['informe o lado', 'informe a extensão'])
@@ -157,7 +169,7 @@ test('hemorragia presente sem lado ou extensão bloqueia o laudo, sem texto com 
 })
 
 test('composições sem achado incompleto não carregam pendência', () => {
-  assert.deepEqual(composeReport(transfontanela, initialExamState(transfontanela)).pendencias, [])
+  assert.deepEqual(composeReport(transfontanela, normal()).pendencias, [])
   assert.deepEqual(composeReport(ocular, initialExamState(ocular)).pendencias, [])
 })
 

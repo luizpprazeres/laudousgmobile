@@ -14,6 +14,7 @@ import { glandulasSalivaresIssuesDoExame } from './glandulasSalivares'
 import { dopplerMesentericoIssuesDoExame } from './dopplerMesenterico'
 import { dopplerTransplanteRenalIssuesDoExame } from './dopplerTransplanteRenal'
 import { bolsaTesticularDopplerIssuesDoExame } from './bolsaTesticularDoppler'
+import { transfontanelaIssuesDoExame } from './transfontanela'
 import { ecocardiografiaFetalIssuesDoExame } from './ecocardiografiaFetal'
 import { hycosyIssuesDoExame } from './hycosy'
 
@@ -26,6 +27,7 @@ const REGISTRO: Record<string, (state: Exame) => string[]> = {
   DOPPLER_MESENTERICO: dopplerMesentericoIssuesDoExame,
   DOPPLER_TRANSPLANTE_RENAL: dopplerTransplanteRenalIssuesDoExame,
   BOLSA_TESTICULAR_DOPPLER: bolsaTesticularDopplerIssuesDoExame,
+  TRANSFONTANELA: transfontanelaIssuesDoExame,
   ECOCARDIOGRAFIA_FETAL: ecocardiografiaFetalIssuesDoExame,
   HYCOSY: hycosyIssuesDoExame,
 }

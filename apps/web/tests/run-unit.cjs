@@ -24,6 +24,7 @@ const files = [
   'tests/superficialStructured.manual.ts',
   'tests/urologyNeckStructured.manual.ts',
   'tests/neuroOcularStructured.manual.ts',
+  'tests/transfontanelaFailClosed.manual.ts',
   'tests/dopplerArterialFistulaStructured.manual.ts',
   'tests/dopplerMesentericoStructured.manual.ts',
   'tests/dopplerArteriasTemporaisStructured.manual.ts',
