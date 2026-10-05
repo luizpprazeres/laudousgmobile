@@ -210,8 +210,12 @@ export function renderDopplerArterialMmii(value: unknown, style: "CLASSICO_COMPL
       } else if (s.plaque === "present") findings.push(`Placas ateromatosas na ${lower(label)} do ${limb}, sem aceleração focal do fluxo documentada.`);
       if (s.waveform === "monophasic") findings.push(`Padrão espectral monofásico na ${lower(label)} do ${limb}.`);
       if (s.waveform === "biphasic") biphasic.push(lower(label));
-      if (s.assessment === "evaluated" && parts.length) lines.push(`${label}: ${parts.join(", ")}.`);
-      if (s.assessment === "evaluated" && s.waveform === "triphasic" && s.plaque !== "present" && !s.stenosis) preserved.push(lower(label));
+      const isPreserved = s.assessment === "evaluated" && s.waveform === "triphasic" && s.plaque !== "present" && !s.stenosis;
+      if (isPreserved) {
+        // Já resumido na frase de segmentos preservados; a linha própria só traz a medida.
+        preserved.push(lower(label));
+        if (s.psvCms !== undefined) lines.push(`${label}: VPS de ${pt(s.psvCms)} cm/s.`);
+      } else if (s.assessment === "evaluated" && parts.length) lines.push(`${label}: ${parts.join(", ")}.`);
     }
     const abi = dopplerArterialMmiiAbi(data, side);
     if (abi !== null) {

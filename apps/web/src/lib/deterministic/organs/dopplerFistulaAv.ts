@@ -46,7 +46,7 @@ const accessSection: ExamSection = {
     vascularNumber('flow_volume_ml_min', 'Volume de fluxo (mL/min)', '850'),
     vascularSelect('flow_site', 'Local da medida', [['feeding_artery', 'Artéria nutridora'], ['draining_vein', 'Veia de drenagem']]),
     vascularSelect('flow_classification', 'Classificação do volume', [['not_classified', 'Não classificar'], ['low', 'Reduzido'], ['high', 'Elevado']]),
-    vascularSelect('flow_confirmed', 'Classificação do volume', CONFIRM),
+    vascularSelect('flow_confirmed', 'Confirmação médica da classificação do volume', CONFIRM),
   ]),
 }
 

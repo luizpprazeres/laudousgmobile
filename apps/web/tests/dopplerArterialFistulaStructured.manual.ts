@@ -56,6 +56,30 @@ test('arterial: modelo normal bilateral gera conclusão de normalidade sem medid
   assert.match(conclusion(text), /Artérias avaliadas do membro inferior direito pérvias, com fluxo de padrão trifásico/)
   assert.match(conclusion(text), /membro inferior esquerdo pérvias/)
   assert.doesNotMatch(text, /cm\/s|ITB|Estenose|Oclusão/)
+  // Cada segmento preservado aparece uma vez: na frase-resumo, não de novo linha a linha.
+  assert.equal(text.match(/artéria poplítea/gi)?.length, 2)
+  assert.doesNotMatch(text, /^Artéria .*: fluxo de padrão trifásico/m)
+})
+
+test('arterial: VPS informada em segmento normal fica numa linha só com a medida', () => {
+  const state = arterial()
+  state.right_popliteal = { ...state.right_popliteal, psv_cms: '75' }
+  const body = arterialText(state).split('CONCLUSÃO:')[0]
+  assert.match(body, /^Artéria poplítea: VPS de 75 cm\/s\.$/m)
+  assert.equal(body.match(/artéria poplítea/gi)?.length, 2)
+})
+
+test('campos de confirmação médica têm rótulo explícito', () => {
+  const labels = (category: typeof dopplerArterialMmii, sectionId: string) => {
+    const fields = category.sections.find(s => s.id === sectionId)!.module!.schema.fields
+    return fields.flatMap(f => [f.label, ...(f.options ?? []).flatMap(o => (o.subFields ?? []).map(sf => sf.label))])
+  }
+  const arterialLabels = labels(dopplerArterialMmii, 'right_popliteal')
+  assert.ok(arterialLabels.includes('Confirmação médica da graduação'))
+  assert.equal(arterialLabels.filter(l => l === 'Graduação').length, 1)
+  const accessLabels = labels(dopplerFistulaAv, 'access')
+  assert.ok(accessLabels.includes('Confirmação médica da classificação do volume'))
+  assert.equal(accessLabels.filter(l => l === 'Classificação do volume').length, 1)
 })
 
 test('arterial: estenose sem confirmação descreve a aceleração sem percentual', () => {

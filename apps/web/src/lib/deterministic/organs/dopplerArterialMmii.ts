@@ -38,7 +38,7 @@ function segmentSection(side: VascularWebSide, segment: typeof DOPPLER_ARTERIAL_
           vascularNumber('lesion_psv_cms', 'VPS na lesão (cm/s)', '320'),
           vascularNumber('reference_psv_cms', 'VPS de referência proximal (cm/s)', '110'),
           vascularSelect('grade', 'Graduação', [['not_classified', 'Não graduar'], ['ge50', '50% ou mais'], ['ge70', '70% ou mais']]),
-          vascularSelect('confirmed', 'Graduação', CONFIRM),
+          vascularSelect('confirmed', 'Confirmação médica da graduação', CONFIRM),
         ] },
         { value: 'no_flow', label: 'Fluxo não detectado', subFields: [
           vascularSelect('collaterals', 'Circulação colateral', [['not_assessed', 'Não informada'], ['present', 'Presente'], ['absent', 'Ausente']]),
