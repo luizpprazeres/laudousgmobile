@@ -159,7 +159,7 @@ async function main() {
       assert.deepEqual(await buscar('gravidez'), ['OBSTETRICA'])
       assert.deepEqual(await buscar('saude da mulher'), ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'HISTEROSSONOGRAFIA', 'MAMARIA'])
       assert.deepEqual(await buscar('endovaginal'), ['PELVICO_TRANSVAGINAL'])
-      assert.deepEqual(await buscar('pequenas partes'), ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES'])
+      assert.deepEqual(await buscar('pequenas partes'), ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA'])
       assert.deepEqual(await buscar('prostata transretal'), ['PROSTATA_TRANSRETAL'])
       assert.deepEqual(await buscar('mapa venoso'), ['DOPPLER_VENOSO_MMII'])
       assert.deepEqual(await buscar('medidas venosas'), ['DOPPLER_VENOSO_MMII_MEDIDAS'])
