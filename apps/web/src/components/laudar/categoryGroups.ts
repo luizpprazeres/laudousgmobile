@@ -71,7 +71,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
   PELVICO_TRANSABDOMINAL: 'Pélvico abdominal',
   HISTEROSSONOGRAFIA: 'Histerossonografia',
-  HYCOSY: 'Histerossonossalpingografia (HyCoSy)',
+  HYCOSY: 'HyCoSy',
 }
 
 function displayName(id: string) {
