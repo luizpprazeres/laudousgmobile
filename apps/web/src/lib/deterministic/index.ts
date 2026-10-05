@@ -10,6 +10,7 @@ import { prostataSuprapubica } from './organs/prostataSuprapubica'
 import { viasUrinarias } from './organs/viasUrinarias'
 import { mamaria } from './organs/mamaria'
 import { pelveFeminina } from './organs/pelveFeminina'
+import { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
 import { abdomeSuperior } from './organs/abdomeSuperior'
 import { cervical } from './organs/cervical'
 import { cervicometria } from './organs/cervicometria'
@@ -44,6 +45,7 @@ export { prostataSuprapubica } from './organs/prostataSuprapubica'
 export { viasUrinarias } from './organs/viasUrinarias'
 export { mamaria } from './organs/mamaria'
 export { pelveFeminina } from './organs/pelveFeminina'
+export { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
 export { abdomeSuperior } from './organs/abdomeSuperior'
 export { cervical } from './organs/cervical'
 export { cervicometria } from './organs/cervicometria'
@@ -92,6 +94,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   dopplerArteriasTemporais,
   dopplerAortaIliacas,
   dopplerTransplanteRenal,
+  pelvicoTransvaginal,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])

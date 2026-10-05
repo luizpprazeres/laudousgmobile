@@ -36,7 +36,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'saude_mulher',
     label: 'Saúde da mulher',
-    categories: ['PELVE_FEMININA', 'MAMARIA'],
+    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'MAMARIA'],
   },
   {
     id: 'pequenas_partes',
@@ -68,6 +68,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   TIREOIDE: 'Tireoide',
   TRANSFONTANELA: 'Transfontanelar',
   DOPPLER_AORTA_ILIACAS: 'Doppler de aorta e ilíacas',
+  PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
 }
 
 function displayName(id: string) {
@@ -94,6 +95,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   MORFOLOGICO: ['morfologico', 'morfologia fetal', 'anatomia fetal', 'translucencia nucal', 'primeiro trimestre', 'segundo trimestre'],
   CERVICOMETRIA: ['colo uterino', 'comprimento do colo', 'colo do utero', 'transvaginal'],
   PELVE_FEMININA: ['pelvica', 'utero', 'ovarios', 'endometrio', 'transvaginal', 'ginecologica'],
+  PELVICO_TRANSVAGINAL: ['pelvico', 'pelvica', 'transvaginal', 'endovaginal', 'utero', 'ovarios', 'endometrio', 'ginecologica'],
   MAMARIA: ['mama', 'mamas', 'mamaria', 'axila', 'axilas', 'bi-rads', 'birads'],
   TIREOIDE: ['tiroide', 'tireoide', 'ti-rads', 'tirads', 'nodulo tireoidiano'],
   PAREDE_ABDOMINAL: ['parede', 'hernia'],

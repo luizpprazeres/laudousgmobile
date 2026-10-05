@@ -17,7 +17,7 @@ import {
   type TireoideState,
 } from '@/lib/deterministic'
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
-import { adaptarPelve } from '@/lib/catalog/pelveParaCatalogo'
+import { adaptarPelve, adaptarPelveTransvaginal } from '@/lib/catalog/pelveParaCatalogo'
 import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
 import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
@@ -456,6 +456,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
   const isVenousMmii = categoria === 'DOPPLER_VENOSO_MMII' || categoria === 'DOPPLER_VENOSO_MMII_MEDIDAS'
   const isTireoide = categoria === TIREOIDE_ID
+  /** Pelve com útero (inclui a derivada transvaginal): esquema de miomas. */
+  const isPelvis = categoria === 'PELVE_FEMININA' || categoria === 'PELVICO_TRANSVAGINAL'
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
   // Controles de categoria (estado reservado em '__opts') — lido antes das seções
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
@@ -468,7 +470,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // escreveria fora do componente, então fica fora até ter escopo próprio.
   // O antigo esquema de posição fetal foi retirado da Web: ele ocupava espaço
   // sem ajudar a decisão clínica. Mama e tireoide mantêm os mapas interativos.
-  const supportsVisualSchema = !composition && (isVenousMmii || isTireoide || categoria === 'PELVE_FEMININA' || (categoria === 'MAMARIA' && !axilasOnly))
+  const supportsVisualSchema = !composition && (isVenousMmii || isTireoide || isPelvis || (categoria === 'MAMARIA' && !axilasOnly))
   const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -543,6 +545,11 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
       const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
       return adaptarPelve(estado, opcoes)
+    }
+    if (categoria === 'PELVICO_TRANSVAGINAL') {
+      const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
+      const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
+      return adaptarPelveTransvaginal(estado, opcoes)
     }
     if (categoria === 'MAMARIA') {
       return adaptarMamaria((examStates[categoria] ?? {}) as Record<string, unknown>)
@@ -1135,7 +1142,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (section.id === 'recommendations') return <RecommendationsPanel state={examState?.__recommendations ?? {}} onChange={state => updateSectionState('__recommendations', state, false)} />
     if (section.id === 'visual-schema') return (
                     <VisualSchemaPanel
-                      category={isVenousMmii ? 'VENOUS' : isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : categoria === 'PELVE_FEMININA' ? 'MYOMA' : 'FETAL_POSITION'}
+                      category={isVenousMmii ? 'VENOUS' : isTireoide ? 'TIREOIDE' : categoria === 'MAMARIA' ? 'MAMARIA' : isPelvis ? 'MYOMA' : 'FETAL_POSITION'}
                       breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
                       fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
                       thyroidState={tireoideState}

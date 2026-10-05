@@ -51,6 +51,27 @@ export const CATEGORIAS_MIGRADAS = [
   "DOPPLER_ARTERIAS_TEMPORAIS",
 ] as const
 
+/**
+ * CATEGORIAS DERIVADAS — um card próprio no seletor, o MESMO renderer por baixo.
+ *
+ * O id do card é dele (histórico, busca, rascunho), mas o laudo sai do
+ * renderer da categoria-mãe, que já passou pelo gate. Por isso a derivada conta
+ * como migrada: `composeReport` a recusa, e nenhum motor local volta a escrever
+ * a pelve por um caminho novo.
+ *
+ * | derivada | renderer | o que muda |
+ * |---|---|---|
+ * | PELVICO_TRANSVAGINAL | PELVE_FEMININA | via fixa `tv`, sem bexiga; portão de completude no adaptador |
+ */
+export const CATEGORIAS_DERIVADAS: Readonly<Record<string, (typeof CATEGORIAS_MIGRADAS)[number]>> = {
+  PELVICO_TRANSVAGINAL: "PELVE_FEMININA",
+}
+
+/** A categoria cujo renderer canônico monta o laudo (a própria, ou a mãe da derivada). */
+export function categoriaDeRender(categoria: string): string {
+  return CATEGORIAS_DERIVADAS[categoria] ?? categoria
+}
+
 export function categoriaMigrada(categoria: string): boolean {
-  return (CATEGORIAS_MIGRADAS as readonly string[]).includes(categoria)
+  return (CATEGORIAS_MIGRADAS as readonly string[]).includes(categoria) || categoria in CATEGORIAS_DERIVADAS
 }

@@ -35,6 +35,7 @@ export function categoriaLabel(code: string): string {
     VIAS_URINARIAS: 'Vias urinárias',
     MAMARIA: 'Mamas e axilas',
     PELVE_FEMININA: 'Pelve feminina',
+    PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
     CERVICAL: 'Cervical',
     CERVICOMETRIA: 'Cervicometria',
     PARTES_MOLES: 'Partes moles',

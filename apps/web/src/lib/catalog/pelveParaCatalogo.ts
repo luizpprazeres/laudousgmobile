@@ -315,3 +315,90 @@ export function adaptarPelve(
 
   return { dados, alteracoes, pendencias };
 }
+
+// ── PÉLVICO TRANSVAGINAL ────────────────────────────────────────────────────
+
+/** Três eixos estritos ("7,8 x 4,2 x 4,8"); qualquer sobra torna a medida inválida. */
+function tresEixos(bruto: string): number[] | null | "invalida" {
+  if (!bruto) return null;
+  const partes = bruto.toLowerCase().replace(/\s*cm$/, "").split(/\s*[x×]\s*/);
+  if (partes.length !== 3 || partes.some((p) => !/^\d+(?:[.,]\d+)?$/.test(p.trim()))) return "invalida";
+  const nums = partes.map((p) => Number.parseFloat(p.trim().replace(",", ".")));
+  return nums.every((n) => n > 0) ? nums : "invalida";
+}
+
+/** Achados ovarianos focais: precisam de medida para entrar no laudo. */
+const ACHADOS_FOCAIS = ["cisto_simples", "cisto_complexo", "endometrioma", "funcional", "teratoma", "hidrossalpinge", "cisto_paraovariano", "lesao_solida", "outro"];
+
+/**
+ * Regras já existentes no repositório (`apps/api/src/server/pipeline/deterministicSanity/pelveFeminina.ts`),
+ * que no laudo ditado só AVISAM. No formulário estruturado viram bloqueio:
+ * - endométrio > 5 mm na pós-menopausa sem achado endometrial descrito;
+ * - cisto/lesão anexial > 7 cm sem O-RADS.
+ */
+const ENDOMETRIO_MENOPAUSA_LIMITE_CM = 0.5;
+const ANEXIAL_SEM_ORADS_LIMITE_CM = 7;
+
+/**
+ * Adaptador do PÉLVICO TRANSVAGINAL: o da pelve com a via fixada em `tv`, mais
+ * o portão de completude. O canônico preenche medida ausente com "____" e
+ * mesmo assim conclui "útero de volume normal", "endométrio de espessura
+ * normal", "ovários ecograficamente normais" — o estado vazio afirmaria
+ * normalidade. Aqui, sem medida, não há laudo: há a lista do que falta.
+ */
+export function adaptarPelveTransvaginal(
+  estado: EstadoDaPelve,
+  opcoes: Record<string, string | string[]>,
+): Adaptacao {
+  const { via: _via, ...semVia } = opcoes;
+  void _via;
+  const base = adaptarPelve(estado, { ...semVia, via: "tv" });
+  const pendencias: Pendencia[] = [...base.pendencias];
+  const falta = (onde: string, valor: string, motivo: string) =>
+    pendencias.push({ onde, valor, motivo, bloqueia: true });
+
+  const u = secao(estado, "utero");
+  const uteroMedidas = tresEixos(texto(u, "medidas"));
+  if (uteroMedidas === null) falta("útero", "", "informe as três medidas do útero (L x AP x T, em cm)");
+  if (uteroMedidas === "invalida") falta("útero", texto(u, "medidas"), "medidas do útero inválidas: use L x AP x T em cm");
+
+  const e = secao(estado, "endometrio");
+  const espessuraBruta = texto(e, "espessura");
+  const espessura = espessuraBruta && /^\d+(?:[.,]\d+)?(?:\s*cm)?$/i.test(espessuraBruta) ? numero(espessuraBruta) : null;
+  if (!espessuraBruta) falta("endométrio", "", "informe a espessura do endométrio (cm)");
+  else if (espessura === null || espessura <= 0) falta("endométrio", espessuraBruta, "espessura do endométrio inválida: use cm");
+
+  const menopausa = (Array.isArray(opcoes.menopausa) && opcoes.menopausa.includes("sim")) || texto(e, "frase") === "menopausa";
+  const tipoEndometrio = texto(e, "achado_tipo");
+  const achadoEndometrial = Boolean(texto(e, "achado")) || (tipoEndometrio !== "" && tipoEndometrio !== "nenhum");
+  if (menopausa && espessura !== null && espessura > ENDOMETRIO_MENOPAUSA_LIMITE_CM && !achadoEndometrial) {
+    falta(
+      "endométrio",
+      espessuraBruta,
+      "endométrio acima de 0,5 cm na menopausa não pode sair como espessura normal: descreva o achado endometrial ou revise a medida",
+    );
+  }
+
+  for (const lado of ["direito", "esquerdo"] as const) {
+    const s = secao(estado, `ovario_${lado}`);
+    const onde = `ovário ${lado}`;
+    const tipo = texto(s, "achado");
+    const temAchado = tipo !== "" && tipo !== "nenhum";
+    const medidasOvario = tresEixos(texto(s, "medidas"));
+    if (s.visualizado === "nao") {
+      if (medidasOvario !== null || temAchado) falta(onde, tipo, "ovário marcado como não visualizado tem medidas ou achado preenchidos");
+      continue;
+    }
+    if (medidasOvario === null) falta(onde, "", `informe as três medidas do ovário ${lado} ou marque não visualizado`);
+    if (medidasOvario === "invalida") falta(onde, texto(s, "medidas"), `medidas do ovário ${lado} inválidas: use L x AP x T em cm`);
+    if (!ACHADOS_FOCAIS.includes(tipo)) continue;
+    const medidasAchado = medidas(texto(s, `achado.${tipo}.medidas`));
+    if (!medidasAchado) falta(onde, tipo, `informe as medidas do achado no ovário ${lado}`);
+    if (tipo === "outro" && !texto(s, `achado.${tipo}.descricao`)) falta(onde, tipo, `descreva o achado "outro" no ovário ${lado}`);
+    if (medidasAchado && Math.max(...medidasAchado) > ANEXIAL_SEM_ORADS_LIMITE_CM && !texto(s, `achado.${tipo}.orads`)) {
+      falta(onde, tipo, `lesão anexial acima de 7 cm no ovário ${lado} exige O-RADS confirmado pelo médico`);
+    }
+  }
+
+  return { ...base, pendencias };
+}
