@@ -13,6 +13,7 @@ const files = [
   'tests/dopplerHepaticoStructured.manual.ts',
   'tests/dopplerVenosoMmiiStructured.manual.ts',
   'tests/pelvicoTransvaginal.manual.ts',
+  'tests/histerossonografiaStructured.manual.ts',
   'tests/dopplerAortaIliacasStructured.manual.ts',
   'tests/dopplerTransplanteRenalStructured.manual.ts',
   'tests/bolsaTesticularDopplerStructured.manual.ts',

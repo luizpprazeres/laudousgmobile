@@ -36,6 +36,7 @@ export function categoriaLabel(code: string): string {
     MAMARIA: 'Mamas e axilas',
     PELVE_FEMININA: 'Pelve feminina',
     PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
+    HISTEROSSONOGRAFIA: 'Histerossonografia',
     CERVICAL: 'Cervical',
     CERVICOMETRIA: 'Cervicometria',
     PARTES_MOLES: 'Partes moles',

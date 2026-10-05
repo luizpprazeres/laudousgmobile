@@ -11,6 +11,7 @@ import { viasUrinarias } from './organs/viasUrinarias'
 import { mamaria } from './organs/mamaria'
 import { pelveFeminina } from './organs/pelveFeminina'
 import { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
+import { histerossonografia } from './organs/histerossonografia'
 import { abdomeSuperior } from './organs/abdomeSuperior'
 import { cervical } from './organs/cervical'
 import { cervicometria } from './organs/cervicometria'
@@ -48,6 +49,7 @@ export { viasUrinarias } from './organs/viasUrinarias'
 export { mamaria } from './organs/mamaria'
 export { pelveFeminina } from './organs/pelveFeminina'
 export { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
+export { histerossonografia } from './organs/histerossonografia'
 export { abdomeSuperior } from './organs/abdomeSuperior'
 export { cervical } from './organs/cervical'
 export { cervicometria } from './organs/cervicometria'
@@ -101,6 +103,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   mamaMasculina,
   bolsaTesticularDoppler,
   pelvicoTransvaginal,
+  histerossonografia,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])

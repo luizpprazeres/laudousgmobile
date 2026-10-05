@@ -17,7 +17,7 @@ const MODELOS_HEPATICOS_ATIVOS = process.env.NEXT_PUBLIC_HEPATIC_MODELS_V1 !== '
 const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
   ['medicina_interna', ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'DOPPLER_HEPATICO', ...(MODELOS_HEPATICOS_ATIVOS ? ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA'] : []), 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'BOLSA_TESTICULAR_DOPPLER', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS']],
   ['obstetricia', ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA']],
-  ['saude_mulher', ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'MAMARIA']],
+  ['saude_mulher', ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'HISTEROSSONOGRAFIA', 'MAMARIA']],
   ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA']],
   ['musculoesqueletico', ['MUSCULOESQUELETICO']],
   ['vascular', ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_TRANSPLANTE_RENAL', 'DOPPLER_MESENTERICO']],
@@ -157,7 +157,7 @@ async function main() {
       assert.deepEqual(await buscar('tiroide'), ['TIREOIDE'])
       assert.deepEqual(await buscar('joelho'), ['MUSCULOESQUELETICO'])
       assert.deepEqual(await buscar('gravidez'), ['OBSTETRICA'])
-      assert.deepEqual(await buscar('saude da mulher'), ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'MAMARIA'])
+      assert.deepEqual(await buscar('saude da mulher'), ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'HISTEROSSONOGRAFIA', 'MAMARIA'])
       assert.deepEqual(await buscar('endovaginal'), ['PELVICO_TRANSVAGINAL'])
       assert.deepEqual(await buscar('pequenas partes'), ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES'])
       assert.deepEqual(await buscar('prostata transretal'), ['PROSTATA_TRANSRETAL'])
