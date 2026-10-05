@@ -36,7 +36,8 @@ import { adaptarProstataSuprapubica } from '@/lib/catalog/prostataParaCatalogo'
 import { adaptarCervical } from '@/lib/catalog/cervicalParaCatalogo'
 import { adaptarCervicometria } from '@/lib/catalog/cervicometriaParaCatalogo'
 import { adaptarPartesMoles } from '@/lib/catalog/partesMolesParaCatalogo'
-import { adaptarMusculoesqueletico } from '@/lib/catalog/musculoesqueleticoParaCatalogo'
+import { adaptarMskPreset, adaptarMusculoesqueletico } from '@/lib/catalog/musculoesqueleticoParaCatalogo'
+import { mskPresetDe } from '@/lib/deterministic/organs/mskPresets'
 import { migrateLegacyMskState } from '@/lib/deterministic/organs/musculoesqueletico'
 import { categoriaMigrada } from '@/lib/catalog/migradas'
 import { isWriterCategory } from '@/lib/writerCategories'
@@ -585,6 +586,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     }
     if (categoria === 'MUSCULOESQUELETICO') {
       return adaptarMusculoesqueletico((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
+    if (mskPresetDe(categoria)) {
+      return adaptarMskPreset((examStates[categoria] ?? {}) as Record<string, unknown>, categoria)
     }
     if (categoria === 'MORFOLOGICO') {
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>

@@ -6,6 +6,7 @@ import {
   type AlteracaoMsk,
   type LadoMsk,
 } from '../deterministic/organs/musculoesqueletico'
+import { CONFIRMACAO_CONTROL_KEY, mskPresetDe, opcoesDoPreset } from '../deterministic/organs/mskPresets'
 
 export { migrateLegacyMskState } from '../deterministic/organs/musculoesqueletico'
 
@@ -91,4 +92,50 @@ export function adaptarMusculoesqueletico(estado: Estado) {
     alteracoes: [],
     pendencias,
   }
+}
+
+// ── ATALHOS MSK (16 cards derivados) ────────────────────────────────────────
+
+/**
+ * Adaptador dos atalhos: o MESMO `adaptarMusculoesqueletico`, com o segmento
+ * (e o lado, no bilateral) fixados pelo card, mais duas pendências próprias:
+ * lado não escolhido no unilateral e estruturas normais ainda não revisadas.
+ * O motor-base não é alterado; o estado recebido não é mutado.
+ */
+export function adaptarMskPreset(estado: Estado, categoria: string) {
+  const preset = mskPresetDe(categoria)
+  if (!preset) throw new Error(`${categoria} não é um atalho musculoesquelético`)
+  const opcoes = secao(estado, '__opts')
+  const efetivas = opcoesDoPreset(preset, opcoes as never)
+  const base = adaptarMusculoesqueletico({ ...estado, __opts: efetivas })
+  const pendencias = [...base.pendencias]
+  const lado = texto(opcoes, 'lado')
+  if (!preset.bilateral && lado !== 'direito' && lado !== 'esquerdo') {
+    pendencias.push({ onde: 'Lado', valor: lado, motivo: 'escolha o lado examinado (direito ou esquerdo)', bloqueia: true })
+  }
+  // Unilateral: achado digitado no OUTRO lado (antes de escolher o lado, ou
+  // depois de trocá-lo) sairia do laudo em silêncio. Bloqueia e nomeia.
+  if (!preset.bilateral && (lado === 'direito' || lado === 'esquerdo')) {
+    const outro: LadoMsk = lado === 'direito' ? 'esquerdo' : 'direito'
+    for (const estrutura of SEGMENTOS[preset.segmento]!.estruturas) {
+      const st = estado[idSecaoMsk(preset.segmento, outro, estrutura.id)]
+      if (st && typeof st === 'object' && interpretarEstrutura(preset.segmento, outro, estrutura.id, st as Secao).tipo !== 'normal') {
+        pendencias.push({
+          onde: estrutura.label,
+          valor: outro,
+          motivo: `há achado registrado no lado ${outro}, mas o lado escolhido é ${lado}: revise o lado ou volte a estrutura para normal`,
+          bloqueia: true,
+        })
+      }
+    }
+  }
+  if (texto(opcoes, CONFIRMACAO_CONTROL_KEY) !== 'confirmado') {
+    pendencias.push({
+      onde: 'Estruturas sem alteração',
+      valor: '',
+      motivo: 'confirme que as estruturas não alteradas foram revisadas e estão normais',
+      bloqueia: true,
+    })
+  }
+  return { ...base, pendencias }
 }

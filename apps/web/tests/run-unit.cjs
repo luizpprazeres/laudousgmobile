@@ -42,6 +42,7 @@ const files = [
   'src/lib/visualSchemas/__tests__/breast-geometry.manual.ts',
   'src/lib/visualSchemas/__tests__/myoma-adapter.manual.ts',
   'src/lib/__tests__/clinical-report-flow.manual.ts',
+  'tests/mskPresets.manual.ts',
   'src/lib/writerGeneration.test.mts',
   'src/lib/calculators/preEclampsia.test.mts',
   'src/lib/calculators/trisomyFmf.test.mts',

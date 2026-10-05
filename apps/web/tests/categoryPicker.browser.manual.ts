@@ -19,7 +19,7 @@ const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
   ['obstetricia', ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA', 'PERFIL_BIOFISICO_FETAL', 'ECOCARDIOGRAFIA_FETAL']],
   ['saude_mulher', ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA']],
   ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA', 'AXILAS']],
-  ['musculoesqueletico', ['MUSCULOESQUELETICO']],
+  ['musculoesqueletico', ['MUSCULOESQUELETICO', 'MSK_COTOVELO', 'MSK_COTOVELO_BILATERAL', 'MSK_JOELHO', 'MSK_JOELHO_BILATERAL', 'MSK_MAO', 'MSK_MAO_BILATERAL', 'MSK_OMBRO', 'MSK_OMBRO_BILATERAL', 'MSK_PUNHO', 'MSK_PUNHO_BILATERAL', 'MSK_PE', 'MSK_PE_BILATERAL', 'MSK_QUADRIL', 'MSK_QUADRIL_BILATERAL', 'MSK_TORNOZELO', 'MSK_TORNOZELO_BILATERAL']],
   ['vascular', ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_AORTA_ILIACAS', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_TRANSPLANTE_RENAL', 'DOPPLER_MESENTERICO']],
   ['outros_exames', ['QUADRIL_INFANTIL', 'TRANSFONTANELA', 'OCULAR', 'LIVRE']],
 ]
@@ -155,7 +155,8 @@ async function main() {
       assert.deepEqual(await buscar('obstetrica'), ['OBSTETRICA', 'DOPPLER_OBSTETRICO'])
       assert.deepEqual(await buscar('próstata'), ['PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL'])
       assert.deepEqual(await buscar('tiroide'), ['TIREOIDE'])
-      assert.deepEqual(await buscar('joelho'), ['MUSCULOESQUELETICO'])
+      assert.deepEqual(await buscar('joelho'), ['MUSCULOESQUELETICO', 'MSK_JOELHO', 'MSK_JOELHO_BILATERAL'])
+      assert.deepEqual(await buscar('ombro bilateral'), ['MSK_OMBRO_BILATERAL'])
       assert.deepEqual(await buscar('gravidez'), ['OBSTETRICA'])
       assert.deepEqual(await buscar('saude da mulher'), ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA'])
       assert.deepEqual(await buscar('endometriose'), ['PESQUISA_ENDOMETRIOSE'])

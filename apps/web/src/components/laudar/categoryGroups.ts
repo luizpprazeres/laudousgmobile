@@ -47,7 +47,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'musculoesqueletico',
     label: 'Musculoesquelético',
-    categories: ['MUSCULOESQUELETICO'],
+    categories: ['MUSCULOESQUELETICO', 'MSK_COTOVELO', 'MSK_COTOVELO_BILATERAL', 'MSK_JOELHO', 'MSK_JOELHO_BILATERAL', 'MSK_MAO', 'MSK_MAO_BILATERAL', 'MSK_OMBRO', 'MSK_OMBRO_BILATERAL', 'MSK_PUNHO', 'MSK_PUNHO_BILATERAL', 'MSK_PE', 'MSK_PE_BILATERAL', 'MSK_QUADRIL', 'MSK_QUADRIL_BILATERAL', 'MSK_TORNOZELO', 'MSK_TORNOZELO_BILATERAL'],
   },
   {
     id: 'vascular',
@@ -63,6 +63,22 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
 
 /** Nome exibido no seletor quando difere do nome do catálogo. */
 export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  MSK_COTOVELO: 'Cotovelo unilateral',
+  MSK_COTOVELO_BILATERAL: 'Cotovelo bilateral',
+  MSK_JOELHO: 'Joelho unilateral',
+  MSK_JOELHO_BILATERAL: 'Joelho bilateral',
+  MSK_MAO: 'Mão unilateral',
+  MSK_MAO_BILATERAL: 'Mão bilateral',
+  MSK_OMBRO: 'Ombro unilateral',
+  MSK_OMBRO_BILATERAL: 'Ombro bilateral',
+  MSK_PUNHO: 'Punho unilateral',
+  MSK_PUNHO_BILATERAL: 'Punho bilateral',
+  MSK_PE: 'Pé unilateral',
+  MSK_PE_BILATERAL: 'Pé bilateral',
+  MSK_QUADRIL: 'Quadril unilateral',
+  MSK_QUADRIL_BILATERAL: 'Quadril bilateral',
+  MSK_TORNOZELO: 'Tornozelo unilateral',
+  MSK_TORNOZELO_BILATERAL: 'Tornozelo bilateral',
   DOPPLER_OBSTETRICO: 'Obstétrica com Doppler',
   DOPPLER_HEPATICO: 'Doppler hepático',
   TIREOIDE: 'Tireoide',
@@ -135,6 +151,22 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   CERVICAL: ['pescoco', 'linfonodos cervicais', 'glandulas salivares', 'parotida', 'submandibular'],
   PARTES_MOLES: ['partes moles', 'subcutaneo', 'lipoma', 'parede'],
   MUSCULOESQUELETICO: ['msk', 'articular', 'tendao', 'ombro', 'cotovelo', 'punho', 'mao', 'quadril', 'joelho', 'tornozelo', 'pe'],
+  MSK_COTOVELO: ['cotovelo', 'cotovelos', 'epicondilite', 'unilateral', 'msk'],
+  MSK_COTOVELO_BILATERAL: ['cotovelo', 'cotovelos', 'epicondilite', 'bilateral', 'ambos', 'msk'],
+  MSK_JOELHO: ['joelho', 'joelhos', 'patelar', 'unilateral', 'msk'],
+  MSK_JOELHO_BILATERAL: ['joelho', 'joelhos', 'patelar', 'bilateral', 'ambos', 'msk'],
+  MSK_MAO: ['mao', 'maos', 'dedo', 'polia', 'unilateral', 'msk'],
+  MSK_MAO_BILATERAL: ['mao', 'maos', 'dedo', 'polia', 'bilateral', 'ambos', 'msk'],
+  MSK_OMBRO: ['ombro', 'ombros', 'manguito', 'unilateral', 'msk'],
+  MSK_OMBRO_BILATERAL: ['ombro', 'ombros', 'manguito', 'bilateral', 'ambos', 'msk'],
+  MSK_PUNHO: ['punho', 'punhos', 'tunel do carpo', 'unilateral', 'msk'],
+  MSK_PUNHO_BILATERAL: ['punho', 'punhos', 'tunel do carpo', 'bilateral', 'ambos', 'msk'],
+  MSK_PE: ['pe', 'pes', 'fascia plantar', 'unilateral', 'msk'],
+  MSK_PE_BILATERAL: ['pe', 'pes', 'fascia plantar', 'bilateral', 'ambos', 'msk'],
+  MSK_QUADRIL: ['quadril', 'quadris', 'trocanter', 'unilateral', 'msk'],
+  MSK_QUADRIL_BILATERAL: ['quadril', 'quadris', 'trocanter', 'bilateral', 'ambos', 'msk'],
+  MSK_TORNOZELO: ['tornozelo', 'tornozelos', 'tendao calcaneo', 'unilateral', 'msk'],
+  MSK_TORNOZELO_BILATERAL: ['tornozelo', 'tornozelos', 'tendao calcaneo', 'bilateral', 'ambos', 'msk'],
 }
 
 export function normalizeSearch(text: string) {
