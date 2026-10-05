@@ -59,6 +59,11 @@ export interface ExamCategory {
   /** Seções visíveis conforme os controles (ex.: segmento do MSK). `sections`
    *  é a UNIÃO de todas; este filtra para a seleção atual. */
   resolveSections?: (opts: OrganState) => ExamSection[]
+  /** Frase de normalidade dinâmica (ex.: região inguinal só de um lado). */
+  resolveConclusionNormal?: (opts: OrganState) => string
+  /** Fechamento dinâmico; recebe quantas seções ativas estão alteradas.
+   *  `undefined` = sem fechamento. Tem precedência sobre `conclusionClosing`. */
+  resolveConclusionClosing?: (opts: OrganState, alteredCount: number, sectionCount: number) => string | undefined
 }
 
 export const abdomeTotal: ExamCategory = {

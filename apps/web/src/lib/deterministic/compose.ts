@@ -108,13 +108,16 @@ export function composeReport(
   // Monta a conclusão numerada (ou frase de normalidade).
   let conclusionBlock: string
   if (conclusion.length === 0) {
-    conclusionBlock = category.conclusionNormal
+    conclusionBlock = category.resolveConclusionNormal?.(optsState) ?? category.conclusionNormal
   } else {
     const items = conclusion.map((c, i) => `${i + 1}. ${c}`)
     // Quando há alteração, fecha lembrando que o restante está normal (se a
     // categoria definir um fechamento genérico — próstata, p.ex., não usa).
-    if (alteredCount > 0 && category.conclusionClosing) {
-      items.push(`${conclusion.length + 1}. ${category.conclusionClosing}`)
+    const closing = category.resolveConclusionClosing
+      ? category.resolveConclusionClosing(optsState, alteredCount, sections.filter((s) => s.module).length)
+      : category.conclusionClosing
+    if (alteredCount > 0 && closing) {
+      items.push(`${conclusion.length + 1}. ${closing}`)
     }
     conclusionBlock = items.join('\n')
   }

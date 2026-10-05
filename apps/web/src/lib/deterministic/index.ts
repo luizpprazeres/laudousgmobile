@@ -22,6 +22,9 @@ import { dopplerCarotidas } from './organs/dopplerCarotidas'
 import { dopplerVenosoMmii, dopplerVenosoMmiiMedidas } from './organs/dopplerVenosoMmii'
 import { dopplerRenal } from './organs/dopplerRenal'
 import { dopplerHepatico } from './organs/dopplerHepatico'
+import { paredeAbdominal } from './organs/paredeAbdominal'
+import { regiaoInguinal } from './organs/regiaoInguinal'
+import { escrotal } from './organs/escrotal'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
@@ -41,6 +44,9 @@ export { dopplerObstetrico } from './organs/dopplerObstetrico'
 export { dopplerCarotidas } from './organs/dopplerCarotidas'
 export { dopplerRenal } from './organs/dopplerRenal'
 export { dopplerHepatico } from './organs/dopplerHepatico'
+export { paredeAbdominal } from './organs/paredeAbdominal'
+export { regiaoInguinal } from './organs/regiaoInguinal'
+export { escrotal } from './organs/escrotal'
 export type { ExamCategory, ExamSection } from './organs/abdomeTotal'
 export { vesiculaModule } from './organs/vesicula'
 
@@ -55,6 +61,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   abdomeTotal, abdomeSuperior, prostataSuprapubica, viasUrinarias, mamaria,
   pelveFeminina, cervical, cervicometria, partesMoles, musculoesqueletico,
   obstetrica, morfologico, dopplerObstetrico, dopplerCarotidas, dopplerRenal, dopplerHepatico, dopplerVenosoMmii, dopplerVenosoMmiiMedidas,
+  paredeAbdominal, regiaoInguinal, escrotal,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
