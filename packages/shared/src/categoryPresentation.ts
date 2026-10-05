@@ -18,6 +18,7 @@ export const CATEGORY_DISPLAY_LABELS: Readonly<Record<string, string>> = {
   VIAS_URINARIAS: "Vias urinárias",
   PELVE_FEMININA: "Pelve feminina",
   ESCROTAL: "Escrotal",
+  BOLSA_TESTICULAR_DOPPLER: "Bolsa testicular com Doppler",
   REGIAO_INGUINAL: "Região inguinal",
   PROSTATA_TRANSRETAL: "Próstata transretal",
   PROSTATA_SUPRAPUBICA: "Próstata suprapúbica",

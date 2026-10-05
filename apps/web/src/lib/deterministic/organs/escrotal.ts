@@ -11,7 +11,7 @@
  */
 
 import type { ExamCategory } from './abdomeTotal'
-import type { OrganComposition, OrganModule, OrganState, PendenciaLocal } from '../types'
+import type { Field, OrganComposition, OrganModule, OrganState, PendenciaLocal } from '../types'
 import { FALTANDO, pendencia, marcado, medida, medidas, texto, valorNumerico, type Lado } from './superficialShared'
 
 const FEM: Record<Lado, string> = { direito: 'direita', esquerdo: 'esquerda' }
@@ -25,7 +25,7 @@ const VOLUME_HIDROCELE: Record<string, string> = { pequeno: 'de pequeno volume',
 const VARICOCELE_REPOUSO_MM = 3.0
 const VARICOCELE_VALSALVA_MM = 3.5
 
-function testiculo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[], pendencias: PendenciaLocal[]) {
+function testiculo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[], pendencias: PendenciaLocal[], doppler: boolean) {
   const dims = medidas(st.medidas)
   const medindo = dims ? ` medindo ${dims},` : ''
   const parenquima = texto(st, 'parenquima')
@@ -37,7 +37,8 @@ function testiculo(st: OrganState, lado: Lado, linhas: string[], conclusion: str
     return
   }
   if (parenquima === 'microlitiase') {
-    linhas.push(`Testículo ${lado}${medindo} apresentando ecotextura e vascularização normais.`)
+    // Na variante com Doppler, a perfusão sai do bloco Doppler — o modo B não a afirma.
+    linhas.push(`Testículo ${lado}${medindo} apresentando ecotextura ${doppler ? 'normal' : 'e vascularização normais'}.`)
     const grau = texto(st, 'parenquima.microlitiase.grau')
     const focos = grau === 'classica' ? '5 ou mais focos por campo' : grau === 'limitada' ? 'menos de 5 focos por campo' : `${FALTANDO} focos por campo`
     linhas.push(`Imagens hiperecoicas puntiformes, que não ocasionam sombra acústica, distribuídas pelo parênquima do testículo ${lado}, totalizando ${focos}.`)
@@ -55,14 +56,14 @@ function testiculo(st: OrganState, lado: Lado, linhas: string[], conclusion: str
     const vasc = texto(st, `${p}vasc`)
     const vascTexto = vasc === 'presente' ? ', apresentando vascularização própria ao Doppler colorido'
       : vasc === 'ausente' ? ', sem vascularização própria ao Doppler colorido' : ''
-    linhas.push(`Testículo ${lado}${medindo} apresentando vascularização preservada no parênquima restante.`)
+    linhas.push(`Testículo ${lado}${medindo} ${doppler ? 'com parênquima restante de aspecto habitual' : 'apresentando vascularização preservada no parênquima restante'}.`)
     linhas.push(`No ${terco ?? `${FALTANDO} terço`} do testículo ${lado}, observa-se imagem sólida ${eco}, com ${margens}, medindo ${nod ?? FALTANDO}${vascTexto}.`)
     const faltando = [!terco && 'terço', !nod && 'medidas'].filter(Boolean) as string[]
     if (faltando.length) pendencias.push(pendencia(`imagem sólida no testículo ${lado}`, faltando))
     else conclusion.push(`Nódulo sólido no ${terco} do testículo ${lado}, medindo ${nod}. Convém, a critério clínico, correlacionar com exame físico, dosagem de marcadores tumorais (alfa-fetoproteína, beta-HCG, LDH) e avaliação urológica complementar.`)
     return
   }
-  linhas.push(`Testículo ${lado}${medindo} apresentando ecogenicidade, ecotextura e vascularização normais.`)
+  linhas.push(`Testículo ${lado}${medindo} apresentando ecogenicidade${doppler ? ' e ecotextura normais' : ', ecotextura e vascularização normais'}.`)
 }
 
 function epididimo(st: OrganState, lado: Lado, linhas: string[], conclusion: string[], pendencias: PendenciaLocal[]) {
@@ -130,116 +131,117 @@ function hidrocele(st: OrganState, lado: Lado, linhas: string[], conclusion: str
     : `Hidrocele à ${FEM[lado]}${volume ? `, ${volume}` : ''}.`)
 }
 
-function sideModule(lado: Lado): OrganModule {
-  return {
-    schema: {
-      id: `escroto_${lado}`,
-      name: `Hemiescroto ${lado}`,
-      category: 'ESCROTAL',
-      fields: [
-        { key: 'medidas', label: `Testículo ${lado} — medidas (cm)`, kind: 'text', placeholder: '3,7 x 1,9 x 2,7' },
-        {
-          key: 'parenquima',
-          label: 'Parênquima testicular',
-          kind: 'segmented',
-          hint: 'default: normal',
-          options: [
-            { value: 'normal', label: 'Normal', isDefault: true },
-            { value: 'microlitiase', label: 'Microlitíase', subFields: [
-              { key: 'grau', label: 'Focos por campo', kind: 'mini-segmented', options: [
-                { value: 'nao_informado', label: 'Não informado', isDefault: true },
-                { value: 'limitada', label: 'Menos de 5' },
-                { value: 'classica', label: '5 ou mais' },
-              ] },
-            ] },
-            { value: 'nodulo', label: 'Nódulo', subFields: [
-              { key: 'terco', label: 'Terço', kind: 'mini-segmented', options: [
-                { value: 'nao_informado', label: 'Não informado', isDefault: true },
-                { value: 'superior', label: 'Superior' },
-                { value: 'medio', label: 'Médio' },
-                { value: 'inferior', label: 'Inferior' },
-              ] },
-              { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '1,2 x 0,9 x 1,1' },
-              { key: 'eco', label: 'Ecogenicidade', kind: 'mini-segmented', options: [
-                { value: 'hipoecoica', label: 'Hipoecoica', isDefault: true },
-                { value: 'hiperecoica', label: 'Hiperecoica' },
-                { value: 'mista', label: 'Mista' },
-              ] },
-              { key: 'margens', label: 'Margens', kind: 'mini-segmented', options: [
-                { value: 'regulares', label: 'Regulares', isDefault: true },
-                { value: 'irregulares', label: 'Irregulares' },
-              ] },
-              { key: 'vasc', label: 'Vascularização própria', kind: 'mini-segmented', options: [
-                { value: 'nao_avaliada', label: 'Não informada', isDefault: true },
-                { value: 'presente', label: 'Presente' },
-                { value: 'ausente', label: 'Ausente' },
-              ] },
-            ] },
-            { value: 'nao_identificado', label: 'Não identificado na bolsa' },
-          ],
-        },
-        {
-          key: 'epididimo',
-          label: 'Epidídimo',
-          kind: 'segmented',
-          hint: 'default: normal',
-          options: [
-            { value: 'normal', label: 'Normal', isDefault: true },
-            { value: 'cisto', label: 'Cisto / espermatocele', subFields: [
-              { key: 'porcao', label: 'Porção', kind: 'mini-segmented', options: [
-                { value: 'cabeca', label: 'Cabeça', isDefault: true },
-                { value: 'corpo', label: 'Corpo' },
-                { value: 'cauda', label: 'Cauda' },
-              ] },
-              { key: 'tipo', label: 'Conteúdo', kind: 'mini-segmented', options: [
-                { value: 'cisto', label: 'Anecoico (cisto)', isDefault: true },
-                { value: 'espermatocele', label: 'Ecos finos (espermatocele)' },
-              ] },
-              { key: 'medida', label: 'Maior eixo (cm)', kind: 'text', placeholder: '0,8' },
-            ] },
-            { value: 'aumentado', label: 'Aumentado', subFields: [
-              { key: 'hipervascular', label: 'Doppler', kind: 'checklist', options: [{ value: 'sim', label: 'Vascularização aumentada' }] },
-            ] },
-          ],
-        },
-        {
-          key: 'plexo',
-          label: 'Plexo pampiniforme',
-          kind: 'segmented',
-          hint: 'default: calibres normais',
-          options: [
-            { value: 'normal', label: 'Calibres normais', isDefault: true },
-            { value: 'dilatado', label: 'Veias dilatadas', subFields: [
-              { key: 'repouso', label: 'Calibre em repouso (mm)', kind: 'text', placeholder: '3,2', halfWidth: true },
-              { key: 'valsalva', label: 'Calibre à Valsalva (mm)', kind: 'text', placeholder: '3,8', halfWidth: true },
-              { key: 'refluxo', label: 'Refluxo à Valsalva', kind: 'mini-segmented', options: [
-                { value: 'nao_avaliado', label: 'Não informado', isDefault: true },
-                { value: 'presente', label: 'Presente' },
-                { value: 'ausente', label: 'Ausente' },
-              ] },
-            ] },
-          ],
-        },
-        {
-          key: 'hidrocele',
-          label: 'Hidrocele',
-          kind: 'segmented',
-          hint: 'default: ausente',
-          options: [
-            { value: 'ausente', label: 'Ausente', isDefault: true },
-            { value: 'presente', label: 'Presente', subFields: [
-              { key: 'volume', label: 'Volume', kind: 'mini-segmented', options: [
-                { value: 'nao_informado', label: 'Não informado', isDefault: true },
-                { value: 'pequeno', label: 'Pequeno' },
-                { value: 'moderado', label: 'Moderado' },
-                { value: 'volumoso', label: 'Volumoso' },
-              ] },
-              { key: 'complexa', label: 'Aspecto', kind: 'checklist', options: [{ value: 'sim', label: 'Septações / ecos em suspensão' }] },
-            ] },
-          ],
-        },
+/**
+ * Hemiescroto em modo B. Reutilizado por BOLSA_TESTICULAR_DOPPLER com `doppler`:
+ * perfusão, fluxo epididimário e pesquisa de varicocele passam ao bloco Doppler,
+ * então este módulo deixa de afirmar vascularização e de compor o plexo.
+ */
+export function escrotoSideModule(lado: Lado, category = 'ESCROTAL', doppler = false): OrganModule {
+  const fields: Field[] = [
+    { key: 'medidas', label: `Testículo ${lado} — medidas (cm)`, kind: 'text', placeholder: '3,7 x 1,9 x 2,7' },
+    {
+      key: 'parenquima',
+      label: 'Parênquima testicular',
+      kind: 'segmented',
+      hint: 'default: normal',
+      options: [
+        { value: 'normal', label: 'Normal', isDefault: true },
+        { value: 'microlitiase', label: 'Microlitíase', subFields: [
+          { key: 'grau', label: 'Focos por campo', kind: 'mini-segmented', options: [
+            { value: 'nao_informado', label: 'Não informado', isDefault: true },
+            { value: 'limitada', label: 'Menos de 5' },
+            { value: 'classica', label: '5 ou mais' },
+          ] },
+        ] },
+        { value: 'nodulo', label: 'Nódulo', subFields: [
+          { key: 'terco', label: 'Terço', kind: 'mini-segmented', options: [
+            { value: 'nao_informado', label: 'Não informado', isDefault: true },
+            { value: 'superior', label: 'Superior' },
+            { value: 'medio', label: 'Médio' },
+            { value: 'inferior', label: 'Inferior' },
+          ] },
+          { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '1,2 x 0,9 x 1,1' },
+          { key: 'eco', label: 'Ecogenicidade', kind: 'mini-segmented', options: [
+            { value: 'hipoecoica', label: 'Hipoecoica', isDefault: true },
+            { value: 'hiperecoica', label: 'Hiperecoica' },
+            { value: 'mista', label: 'Mista' },
+          ] },
+          { key: 'margens', label: 'Margens', kind: 'mini-segmented', options: [
+            { value: 'regulares', label: 'Regulares', isDefault: true },
+            { value: 'irregulares', label: 'Irregulares' },
+          ] },
+          { key: 'vasc', label: 'Vascularização própria', kind: 'mini-segmented', options: [
+            { value: 'nao_avaliada', label: 'Não informada', isDefault: true },
+            { value: 'presente', label: 'Presente' },
+            { value: 'ausente', label: 'Ausente' },
+          ] },
+        ] },
+        { value: 'nao_identificado', label: 'Não identificado na bolsa' },
       ],
     },
+    {
+      key: 'epididimo',
+      label: 'Epidídimo',
+      kind: 'segmented',
+      hint: 'default: normal',
+      options: [
+        { value: 'normal', label: 'Normal', isDefault: true },
+        { value: 'cisto', label: 'Cisto / espermatocele', subFields: [
+          { key: 'porcao', label: 'Porção', kind: 'mini-segmented', options: [
+            { value: 'cabeca', label: 'Cabeça', isDefault: true },
+            { value: 'corpo', label: 'Corpo' },
+            { value: 'cauda', label: 'Cauda' },
+          ] },
+          { key: 'tipo', label: 'Conteúdo', kind: 'mini-segmented', options: [
+            { value: 'cisto', label: 'Anecoico (cisto)', isDefault: true },
+            { value: 'espermatocele', label: 'Ecos finos (espermatocele)' },
+          ] },
+          { key: 'medida', label: 'Maior eixo (cm)', kind: 'text', placeholder: '0,8' },
+        ] },
+        { value: 'aumentado', label: 'Aumentado', subFields: doppler ? [] : [
+          { key: 'hipervascular', label: 'Doppler', kind: 'checklist', options: [{ value: 'sim', label: 'Vascularização aumentada' }] },
+        ] },
+      ],
+    },
+    ...(doppler ? [] : [{
+      key: 'plexo',
+      label: 'Plexo pampiniforme',
+      kind: 'segmented',
+      hint: 'default: calibres normais',
+      options: [
+        { value: 'normal', label: 'Calibres normais', isDefault: true },
+        { value: 'dilatado', label: 'Veias dilatadas', subFields: [
+          { key: 'repouso', label: 'Calibre em repouso (mm)', kind: 'text', placeholder: '3,2', halfWidth: true },
+          { key: 'valsalva', label: 'Calibre à Valsalva (mm)', kind: 'text', placeholder: '3,8', halfWidth: true },
+          { key: 'refluxo', label: 'Refluxo à Valsalva', kind: 'mini-segmented', options: [
+            { value: 'nao_avaliado', label: 'Não informado', isDefault: true },
+            { value: 'presente', label: 'Presente' },
+            { value: 'ausente', label: 'Ausente' },
+          ] },
+        ] },
+      ],
+    } satisfies Field]),
+    {
+      key: 'hidrocele',
+      label: 'Hidrocele',
+      kind: 'segmented',
+      hint: 'default: ausente',
+      options: [
+        { value: 'ausente', label: 'Ausente', isDefault: true },
+        { value: 'presente', label: 'Presente', subFields: [
+          { key: 'volume', label: 'Volume', kind: 'mini-segmented', options: [
+            { value: 'nao_informado', label: 'Não informado', isDefault: true },
+            { value: 'pequeno', label: 'Pequeno' },
+            { value: 'moderado', label: 'Moderado' },
+            { value: 'volumoso', label: 'Volumoso' },
+          ] },
+          { key: 'complexa', label: 'Aspecto', kind: 'checklist', options: [{ value: 'sim', label: 'Septações / ecos em suspensão' }] },
+        ] },
+      ],
+    },
+  ]
+  return {
+    schema: { id: `escroto_${lado}`, name: `Hemiescroto ${lado}`, category, fields },
     initialState: (): OrganState => ({
       medidas: '',
       parenquima: 'normal',
@@ -266,9 +268,9 @@ function sideModule(lado: Lado): OrganModule {
       const linhas: string[] = []
       const conclusion: string[] = []
       const pendencias: PendenciaLocal[] = []
-      testiculo(st, lado, linhas, conclusion, pendencias)
+      testiculo(st, lado, linhas, conclusion, pendencias, doppler)
       epididimo(st, lado, linhas, conclusion, pendencias)
-      plexo(st, lado, linhas, conclusion, pendencias)
+      if (!doppler) plexo(st, lado, linhas, conclusion, pendencias)
       hidrocele(st, lado, linhas, conclusion)
       return { body: linhas.join('\n'), conclusion, pendencias, isNormal: conclusion.length === 0 && pendencias.length === 0 }
     },
@@ -283,8 +285,8 @@ export const escrotal: ExamCategory = {
     'Exame realizado com transdutor de 12 MHz, abrangendo todo o conteúdo escrotal. Foram realizados múltiplos cortes dos epidídimos, dos testículos e dos plexos pampiniformes. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias. Exame realizado com o paciente em ortostase e com manobra de Valsalva.',
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [
-    { id: 'escroto_direito', label: 'Hemiescroto direito', group: 'orgaos', module: sideModule('direito') },
-    { id: 'escroto_esquerdo', label: 'Hemiescroto esquerdo', group: 'orgaos', module: sideModule('esquerdo') },
+    { id: 'escroto_direito', label: 'Hemiescroto direito', group: 'orgaos', module: escrotoSideModule('direito') },
+    { id: 'escroto_esquerdo', label: 'Hemiescroto esquerdo', group: 'orgaos', module: escrotoSideModule('esquerdo') },
   ],
   conclusionNormal:
     '1. Testículos ecograficamente normais.\n2. Cabeças dos epidídimos ecograficamente normais.\n3. Não há sinais evidentes de varicocele.',

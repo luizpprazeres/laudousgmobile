@@ -26,7 +26,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'medicina_interna',
     label: 'Medicina interna',
-    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'DOPPLER_HEPATICO', 'AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA', 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
+    categories: ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'DOPPLER_HEPATICO', 'AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA', 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'BOLSA_TESTICULAR_DOPPLER', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS'],
   },
   {
     id: 'obstetricia',
@@ -100,6 +100,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   PAREDE_ABDOMINAL: ['parede', 'hernia'],
   PROSTATA_TRANSRETAL: ['prostata', 'transretal'],
   ESCROTAL: ['testiculo', 'bolsa escrotal'],
+  BOLSA_TESTICULAR_DOPPLER: ['bolsa testicular', 'doppler escrotal', 'doppler testicular', 'testiculo doppler', 'varicocele', 'torcao testicular', 'orquite', 'epididimite'],
   REGIAO_INGUINAL: ['inguinal', 'virilha'],
   PARATIREOIDE: ['paratireoides', 'paratiroide'],
   GLANDULAS_SALIVARES: ['salivar', 'parotida', 'submandibular'],

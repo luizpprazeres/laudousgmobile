@@ -52,6 +52,7 @@ export function categoriaLabel(code: string): string {
     DOPPLER_AORTA_ILIACAS: 'Doppler de aorta e ilíacas',
     DOPPLER_TRANSPLANTE_RENAL: 'Doppler de transplante renal',
     MAMA_MASCULINA: 'Mama masculina',
+    BOLSA_TESTICULAR_DOPPLER: 'Bolsa testicular com Doppler',
     ABDOMEN_TOTAL_DOPPLER: 'Abdome total com Doppler',
     DOPPLER_VENOSO_MMSS: 'Doppler venoso (MMSS)',
     DOPPLER_ARTERIAL_MMSS: 'Doppler arterial (MMSS)',
