@@ -97,13 +97,15 @@ const MEDIDAS = ['d1', 'd2', 'd3'] as const
 const PADROES = ['normal', 'aumentada', 'hpb']
 const ACHADOS = ['calcificacoes', 'prostatite']
 
-function medidasProstata(state: OrganState): number[] | null {
+function medidasProstata(state: OrganState): [number, number, number] | null {
   const lidas = MEDIDAS.map((key) => lerMedida(state[key], 'cm'))
-  return lidas.every((v): v is number => typeof v === 'number') ? lidas : null
+  return lidas.every((v): v is number => typeof v === 'number')
+    ? [lidas[0]!, lidas[1]!, lidas[2]!]
+    : null
 }
 
 /** Volume elipsoide (cm³), uma casa. Exige as três medidas. */
-export function volumeProstaticoCm3(d: number[] | null): number | null {
+export function volumeProstaticoCm3(d: [number, number, number] | null): number | null {
   if (!d) return null
   return Math.round(d[0] * d[1] * d[2] * 0.5233 * 10) / 10
 }
@@ -199,7 +201,7 @@ const prostataModule: OrganModule = {
     }
 
     const volume = volumeProstaticoCm3(medidas)
-    const peso = medidas ? calcPesoProstatico(medidas[0], medidas[1], medidas[2]) : null
+    const peso = medidas ? calcPesoProstatico(...medidas) : null
     const medidasConclusao = volume !== null && peso !== null
       ? ` (volume estimado de ${ptBr1(volume)} cm³ e peso aproximado de ${ptBr1(peso)} gramas)`
       : ''

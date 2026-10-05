@@ -188,7 +188,7 @@ const lojasModule: OrganModule = {
         ? `Imagens hipoecoicas ${imagens.map(topografia).join(' e ')}, a esclarecer. Convém, a critério clínico, correlacionar com as dosagens de cálcio sérico e PTH, com objetivo de prosseguir a investigação.`
         : `Múltiplas imagens nodulares ${imagens.map(topografia).join(' e ')}, a correlacionar com hiperplasia das paratireoides. Convém, a critério clínico, correlacionar com as dosagens de cálcio sérico e PTH, com objetivo de prosseguir a investigação.`
     } else {
-      const img = imagens[0]
+      const img = imagens[0]!
       conclusion = esclarecer
         ? `Imagem hipoecoica ${topografia(img)}, a esclarecer. Convém, a critério clínico, correlacionar com as dosagens laboratoriais de cálcio e PTH, com objetivo de prosseguir a investigação.`
         : `Imagem hipoecoica ${topografia(img)}, que tem como diagnóstico mais provável adenoma de paratireoide. Convém, a critério clínico, correlacionar com as dosagens laboratoriais de cálcio e PTH, com objetivo de acompanhar a evolução.`

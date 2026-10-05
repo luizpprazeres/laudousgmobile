@@ -13,9 +13,9 @@ import { tmpdir } from 'node:os'
 import { extname, join, resolve } from 'node:path'
 import { build } from 'esbuild'
 
-const MODELOS_HEPATICOS_ATIVOS = process.env.NEXT_PUBLIC_HEPATIC_MODELS_V1 === 'true'
+const MODELOS_HEPATICOS_ATIVOS = process.env.NEXT_PUBLIC_HEPATIC_MODELS_V1 !== 'false'
 const GRUPOS_ESPERADOS: Array<[string, string[]]> = [
-  ['medicina_interna', ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', ...(MODELOS_HEPATICOS_ATIVOS ? ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA'] : []), 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS']],
+  ['medicina_interna', ['ABDOMEN_TOTAL', 'ABDOMEN_TOTAL_DOPPLER', 'ABDOMEN_SUPERIOR', 'DOPPLER_HEPATICO', ...(MODELOS_HEPATICOS_ATIVOS ? ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA'] : []), 'TORAX', 'PAREDE_ABDOMINAL', 'VIAS_URINARIAS', 'PROSTATA_SUPRAPUBICA', 'PROSTATA_TRANSRETAL', 'ESCROTAL', 'REGIAO_INGUINAL', 'DOPPLER_CAROTIDAS']],
   ['obstetricia', ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO', 'CERVICOMETRIA']],
   ['saude_mulher', ['PELVE_FEMININA', 'MAMARIA']],
   ['pequenas_partes', ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES']],
@@ -86,7 +86,9 @@ async function main() {
         els.map((el) => [el.dataset.categoryGroup, Array.from(el.querySelectorAll<HTMLElement>('.exam-category-item')).map((c) => c.dataset.categoryId)]))
       assert.deepEqual(estrutura, GRUPOS_ESPERADOS)
       assert.equal(new Set(await idsVisiveis()).size, TODOS.length, 'cada exame uma vez')
-      assert.equal(await page.locator('.exam-category-art img').evaluateAll((imgs: HTMLImageElement[]) => new Set(imgs.map((i) => i.src)).size), 15)
+      const imagens = await page.locator('.exam-category-art img').evaluateAll((imgs: HTMLImageElement[]) => imgs.map((img) => img.src))
+      assert.ok(imagens.length >= 29, `catálogo tem apenas ${imagens.length} ilustrações próprias`)
+      assert.equal(new Set(imagens).size, imagens.length, 'cada ilustração do catálogo deve ser própria')
       assert.deepEqual(await page.getByRole('heading', { level: 2 }).allTextContents(),
         ['Medicina interna', 'Obstetrícia', 'Saúde da mulher', 'Pequenas partes', 'Musculoesquelético', 'Vascular', 'Outros exames'])
       const atalho = page.locator('[data-category-shortcut="MAMARIA"]')
@@ -160,7 +162,7 @@ async function main() {
       assert.deepEqual(await buscar('prostata transretal'), ['PROSTATA_TRANSRETAL'])
       assert.deepEqual(await buscar('mapa venoso'), ['DOPPLER_VENOSO_MMII'])
       assert.deepEqual(await buscar('medidas venosas'), ['DOPPLER_VENOSO_MMII_MEDIDAS'])
-      assert.deepEqual(await buscar('veia porta'), ['ABDOMEN_TOTAL_DOPPLER'])
+      assert.deepEqual(await buscar('veia porta'), ['ABDOMEN_TOTAL_DOPPLER', 'DOPPLER_HEPATICO'])
       assert.deepEqual(await buscar('membros superiores'), ['DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS'])
       assert.deepEqual(await buscar('derrame pleural'), ['TORAX'])
       assert.deepEqual(await buscar('graf'), ['QUADRIL_INFANTIL'])
@@ -175,8 +177,9 @@ async function main() {
       await page.getByRole('status').getByText('Nenhum exame encontrado.').waitFor()
       await page.getByRole('button', { name: 'Limpar busca' }).click()
       assert.equal(await cards.count(), TODOS.length)
-      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 24 + (MODELOS_HEPATICOS_ATIVOS ? 2 : 0))
-      assert.equal(await page.locator('[data-generation-mode="writer"]').count(), 10)
+      assert.equal(await page.locator('[data-generation-mode="structured"]').count(), 34 + (MODELOS_HEPATICOS_ATIVOS ? 2 : 0))
+      assert.equal(await page.locator('[data-generation-mode="writer"]').count(), 1)
+      assert.equal(await page.locator('[data-category-id="LIVRE"][data-generation-mode="writer"]').count(), 1)
       for (const forbidden of [...(MODELOS_HEPATICOS_ATIVOS ? [] : ['AVALIACAO_MULTIPARAMETRICA_HEPATICA', 'ELASTOGRAFIA_HEPATICA']), 'TESTE', 'MUSCULOESQUELETICO_RARAS']) {
         assert.equal(await page.locator(`[data-category-id="${forbidden}"]`).count(), 0, `${forbidden} não pode aparecer no seletor`)
       }

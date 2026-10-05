@@ -31,17 +31,17 @@ test('allowlist separa as 29 categorias estruturadas da categoria livre', () => 
 test('payload preserva achados, category_hint e retomada no mesmo reportId', () => {
   assert.deepEqual(validateWriterRequest({
     raw_input: 'Achados observados e ditados pelo médico.',
-    category_hint: 'PROSTATA_TRANSRETAL',
+    category_hint: 'LIVRE',
     resume_from_report_id: reportId,
     clarify_answers: [{ question_id: 'lado', answer: 'direito' }],
   }), {
     raw_input: 'Achados observados e ditados pelo médico.',
-    category_hint: 'PROSTATA_TRANSRETAL',
+    category_hint: 'LIVRE',
     resume_from_report_id: reportId,
     clarify_answers: [{ question_id: 'lado', answer: 'direito' }],
   })
-  assert.throws(() => validateWriterRequest({ raw_input: 'a', category_hint: 'ESCROTAL' }), /Pedido de geração inválido/)
-  assert.throws(() => validateWriterRequest({ raw_input: 'Achados válidos', category_hint: 'ESCROTAL', auto_push_to_sala: true }), /Pedido de geração inválido/)
+  assert.throws(() => validateWriterRequest({ raw_input: 'a', category_hint: 'LIVRE' }), /Pedido de geração inválido/)
+  assert.throws(() => validateWriterRequest({ raw_input: 'Achados válidos', category_hint: 'LIVRE', auto_push_to_sala: true }), /Pedido de geração inválido/)
 })
 
 test('retomada carregada valida versão/perguntas persistidas antes de reabrir clarify', () => {

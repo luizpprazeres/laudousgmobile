@@ -104,7 +104,7 @@ function initialState(glandula: Glandula): OrganState {
 }
 
 export function glandulaIssues(glandula: Glandula, lado: Lado, state: OrganState): string[] {
-  const rotulo = `${NOME[glandula][0].toUpperCase()}${NOME[glandula].slice(1)} ${lado}`
+  const rotulo = `${NOME[glandula].charAt(0).toUpperCase()}${NOME[glandula].slice(1)} ${lado}`
   const issues: string[] = []
   if (lerEixos(state.medidas, 2, 'mm') === 'invalida') issues.push(`${rotulo}: dimensões com formato inválido (ex.: 32 x 58).`)
   if (!PARENQUIMA.includes(str(state.parenquima) || 'normal')) issues.push(`${rotulo}: parênquima com opção inválida.`)
@@ -217,7 +217,7 @@ function compose(glandula: Glandula, lado: Lado, state: OrganState): OrganCompos
 
 function glandulaModule(glandula: Glandula, lado: Lado): OrganModule {
   return {
-    schema: { id: `${glandula}_${lado}`, name: `${NOME[glandula][0].toUpperCase()}${NOME[glandula].slice(1)} ${lado}`, category: CATEGORIA, fields: fields(glandula) },
+    schema: { id: `${glandula}_${lado}`, name: `${NOME[glandula].charAt(0).toUpperCase()}${NOME[glandula].slice(1)} ${lado}`, category: CATEGORIA, fields: fields(glandula) },
     initialState: () => initialState(glandula),
     compose: (state) => compose(glandula, lado, state),
   }
@@ -233,7 +233,7 @@ export function glandulasSalivaresIssuesDoExame(state: Record<string, OrganState
 
 const sections: ExamSection[] = GLANDULAS.map(([g, l]) => ({
   id: `${g}_${l}`,
-  label: `${NOME[g][0].toUpperCase()}${NOME[g].slice(1)} ${l}`,
+  label: `${NOME[g].charAt(0).toUpperCase()}${NOME[g].slice(1)} ${l}`,
   group: 'orgaos',
   module: glandulaModule(g, l),
 }))
