@@ -36,6 +36,7 @@ export function categoriaLabel(code: string): string {
     MAMARIA: 'Mamas e axilas',
     PELVE_FEMININA: 'Pelve feminina',
     PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
+    PELVICO_TRANSABDOMINAL: 'Pélvico abdominal',
     HISTEROSSONOGRAFIA: 'Histerossonografia',
     PESQUISA_ENDOMETRIOSE: 'Pesquisa de endometriose',
     HYCOSY: 'Histerossonossalpingografia (HyCoSy)',

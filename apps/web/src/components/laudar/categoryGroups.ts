@@ -36,7 +36,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'saude_mulher',
     label: 'Saúde da mulher',
-    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA'],
+    categories: ['PELVE_FEMININA', 'PELVICO_TRANSVAGINAL', 'PELVICO_TRANSABDOMINAL', 'HISTEROSSONOGRAFIA', 'HYCOSY', 'PESQUISA_ENDOMETRIOSE', 'MAMARIA'],
   },
   {
     id: 'pequenas_partes',
@@ -69,6 +69,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   TRANSFONTANELA: 'Transfontanelar',
   DOPPLER_AORTA_ILIACAS: 'Doppler de aorta e ilíacas',
   PELVICO_TRANSVAGINAL: 'Pélvico transvaginal',
+  PELVICO_TRANSABDOMINAL: 'Pélvico abdominal',
   HISTEROSSONOGRAFIA: 'Histerossonografia',
   HYCOSY: 'Histerossonossalpingografia (HyCoSy)',
 }
@@ -100,6 +101,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   ECOCARDIOGRAFIA_FETAL: ['ecocardiografia fetal', 'ecocardiograma fetal', 'eco fetal', 'coracao fetal', 'cardiopatia congenita', 'arritmia fetal'],
   PELVE_FEMININA: ['pelvica', 'utero', 'ovarios', 'endometrio', 'transvaginal', 'ginecologica'],
   PELVICO_TRANSVAGINAL: ['pelvico', 'pelvica', 'transvaginal', 'endovaginal', 'utero', 'ovarios', 'endometrio', 'ginecologica'],
+  PELVICO_TRANSABDOMINAL: ['pelvico abdominal', 'pelvica abdominal', 'transabdominal', 'via abdominal', 'pelve suprapubica'],
   HISTEROSSONOGRAFIA: ['histerossonografia', 'sono-histerografia', 'infusao salina', 'cavidade uterina', 'polipo endometrial', 'sinequia', 'istmocele', 'septo uterino'],
   PESQUISA_ENDOMETRIOSE: ['endometriose', 'endometriose profunda', 'endometrioma', 'mapeamento de endometriose', 'adenomiose', 'sinal de deslizamento'],
   HYCOSY: ['hycosy', 'histerossonossalpingografia', 'histerossalpingo', 'tubas', 'trompas', 'perviedade tubaria', 'permeabilidade tubaria', 'infertilidade'],

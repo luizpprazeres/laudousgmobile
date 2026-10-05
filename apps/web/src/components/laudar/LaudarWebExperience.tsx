@@ -17,7 +17,7 @@ import {
   type TireoideState,
 } from '@/lib/deterministic'
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
-import { adaptarPelve, adaptarPelveTransvaginal } from '@/lib/catalog/pelveParaCatalogo'
+import { adaptarPelve, adaptarPelveTransabdominal, adaptarPelveTransvaginal } from '@/lib/catalog/pelveParaCatalogo'
 import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
 import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
@@ -457,7 +457,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const isVenousMmii = categoria === 'DOPPLER_VENOSO_MMII' || categoria === 'DOPPLER_VENOSO_MMII_MEDIDAS'
   const isTireoide = categoria === TIREOIDE_ID
   /** Pelve com útero (inclui a derivada transvaginal): esquema de miomas. */
-  const isPelvis = categoria === 'PELVE_FEMININA' || categoria === 'PELVICO_TRANSVAGINAL'
+  const isPelvis = categoria === 'PELVE_FEMININA' || categoria === 'PELVICO_TRANSVAGINAL' || categoria === 'PELVICO_TRANSABDOMINAL'
   const genericCategory = isTireoide ? null : CATEGORIES[categoria]
   // Controles de categoria (estado reservado em '__opts') — lido antes das seções
   // porque o MSK filtra as estruturas pelo segmento selecionado (resolveSections).
@@ -550,6 +550,11 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
       const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
       return adaptarPelveTransvaginal(estado, opcoes)
+    }
+    if (categoria === 'PELVICO_TRANSABDOMINAL') {
+      const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
+      const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
+      return adaptarPelveTransabdominal(estado, opcoes)
     }
     if (categoria === 'MAMARIA') {
       return adaptarMamaria((examStates[categoria] ?? {}) as Record<string, unknown>)

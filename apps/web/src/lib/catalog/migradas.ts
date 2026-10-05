@@ -62,9 +62,11 @@ export const CATEGORIAS_MIGRADAS = [
  * | derivada | renderer | o que muda |
  * |---|---|---|
  * | PELVICO_TRANSVAGINAL | PELVE_FEMININA | via fixa `tv`, sem bexiga; portão de completude no adaptador |
+ * | PELVICO_TRANSABDOMINAL | PELVE_FEMININA | via fixa `ta`, repleção confirmada, endométrio não medido = limitado pela técnica |
  */
 export const CATEGORIAS_DERIVADAS: Readonly<Record<string, (typeof CATEGORIAS_MIGRADAS)[number]>> = {
   PELVICO_TRANSVAGINAL: "PELVE_FEMININA",
+  PELVICO_TRANSABDOMINAL: "PELVE_FEMININA",
 }
 
 /** A categoria cujo renderer canônico monta o laudo (a própria, ou a mãe da derivada). */

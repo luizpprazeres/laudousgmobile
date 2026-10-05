@@ -11,6 +11,7 @@ import { viasUrinarias } from './organs/viasUrinarias'
 import { mamaria } from './organs/mamaria'
 import { pelveFeminina } from './organs/pelveFeminina'
 import { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
+import { pelvicoTransabdominal } from './organs/pelvicoTransabdominal'
 import { histerossonografia } from './organs/histerossonografia'
 import { pesquisaEndometriose } from './organs/pesquisaEndometriose'
 import { hycosy } from './organs/hycosy'
@@ -53,6 +54,7 @@ export { viasUrinarias } from './organs/viasUrinarias'
 export { mamaria } from './organs/mamaria'
 export { pelveFeminina } from './organs/pelveFeminina'
 export { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
+export { pelvicoTransabdominal } from './organs/pelvicoTransabdominal'
 export { histerossonografia } from './organs/histerossonografia'
 export { pesquisaEndometriose } from './organs/pesquisaEndometriose'
 export { hycosy } from './organs/hycosy'
@@ -111,6 +113,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   mamaMasculina,
   bolsaTesticularDoppler,
   pelvicoTransvaginal,
+  pelvicoTransabdominal,
   histerossonografia,
   hycosy,
   perfilBiofisicoFetal,

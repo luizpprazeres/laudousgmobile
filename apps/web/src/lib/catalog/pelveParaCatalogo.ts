@@ -353,7 +353,20 @@ export function adaptarPelveTransvaginal(
   const { via: _via, ...semVia } = opcoes;
   void _via;
   const base = adaptarPelve(estado, { ...semVia, via: "tv" });
-  const pendencias: Pendencia[] = [...base.pendencias];
+  return { ...base, pendencias: [...base.pendencias, ...pendenciasDeCompletude(estado, opcoes, true)] };
+}
+
+/**
+ * Portão de completude comum às vias fixas (TV e TA). Sem medida, não há laudo.
+ * `exigeEndometrio`: na TV a espessura é obrigatória; na TA, vazia vira
+ * "limitado pela técnica" (o renderer tem a frase própria).
+ */
+function pendenciasDeCompletude(
+  estado: EstadoDaPelve,
+  opcoes: Record<string, string | string[]>,
+  exigeEndometrio: boolean,
+): Pendencia[] {
+  const pendencias: Pendencia[] = [];
   const falta = (onde: string, valor: string, motivo: string) =>
     pendencias.push({ onde, valor, motivo, bloqueia: true });
 
@@ -365,8 +378,9 @@ export function adaptarPelveTransvaginal(
   const e = secao(estado, "endometrio");
   const espessuraBruta = texto(e, "espessura");
   const espessura = espessuraBruta && /^\d+(?:[.,]\d+)?(?:\s*cm)?$/i.test(espessuraBruta) ? numero(espessuraBruta) : null;
-  if (!espessuraBruta) falta("endométrio", "", "informe a espessura do endométrio (cm)");
-  else if (espessura === null || espessura <= 0) falta("endométrio", espessuraBruta, "espessura do endométrio inválida: use cm");
+  if (!espessuraBruta) {
+    if (exigeEndometrio) falta("endométrio", "", "informe a espessura do endométrio (cm)");
+  } else if (espessura === null || espessura <= 0) falta("endométrio", espessuraBruta, "espessura do endométrio inválida: use cm");
 
   const menopausa = (Array.isArray(opcoes.menopausa) && opcoes.menopausa.includes("sim")) || texto(e, "frase") === "menopausa";
   const tipoEndometrio = texto(e, "achado_tipo");
@@ -400,5 +414,51 @@ export function adaptarPelveTransvaginal(
     }
   }
 
-  return { ...base, pendencias };
+  return pendencias;
+}
+
+// ── PÉLVICO ABDOMINAL (TA isolada) ──────────────────────────────────────────
+
+/** Repleções em que a técnica TA canônica ("bexiga repleta") seria falsa. */
+const REPLECAO_INCOMPATIVEL_TA = ["pequena", "insuficiente", "vazia"];
+
+/**
+ * Adaptador do PÉLVICO ABDOMINAL: a pelve com via fixa `ta`, o portão comum e
+ * duas regras da via (audits/lote3/pelvico-abdominal-2026-10-05.md):
+ *  - repleção vesical é obrigatória e precisa sustentar "bexiga repleta";
+ *  - endométrio sem espessura sai como LIMITADO PELA TÉCNICA (corpo e
+ *    conclusão), nunca "espessura normal" — nem com menopausa marcada.
+ */
+export function adaptarPelveTransabdominal(
+  estado: EstadoDaPelve,
+  opcoes: Record<string, string | string[]>,
+): Adaptacao {
+  const { via: _via, ...semVia } = opcoes;
+  void _via;
+  const modo = typeof opcoes.modo_pelve === "string" && ["rotina", "doppler"].includes(opcoes.modo_pelve) ? opcoes.modo_pelve : "rotina";
+  const base = adaptarPelve(estado, { ...semVia, modo_pelve: modo, via: "ta" });
+
+  const replecao = texto(secao(estado, "bexiga"), "replecao");
+  // Repleção vazia é "não confirmada" (pendência própria abaixo), não "opção inválida".
+  const pendencias: Pendencia[] = base.pendencias.filter(
+    (p) => !(replecao === "" && p.onde === "bexiga" && /repleção tem opção inválida/.test(p.motivo)),
+  );
+  const falta = (onde: string, valor: string, motivo: string) =>
+    pendencias.push({ onde, valor, motivo, bloqueia: true });
+
+  if (!replecao) falta("bexiga", "", "confirme a repleção vesical: a técnica transabdominal pressupõe bexiga repleta");
+  else if (REPLECAO_INCOMPATIVEL_TA.includes(replecao)) {
+    falta("bexiga", replecao, "repleção vesical insuficiente para a via transabdominal isolada: o laudo afirmaria bexiga repleta");
+  }
+  pendencias.push(...pendenciasDeCompletude(estado, opcoes, false));
+
+  const e = secao(estado, "endometrio");
+  const temAchado = Boolean(texto(e, "achado")) || !["", "nenhum"].includes(texto(e, "achado_tipo"));
+  const dados = { ...base.dados };
+  if (!texto(e, "espessura") && !temAchado) {
+    dados.endometrio_espessura_cm = null;
+    dados.endometrio_eco = null;
+    dados.endometrio_frase = "ta_limitado";
+  }
+  return { ...base, dados, pendencias };
 }
