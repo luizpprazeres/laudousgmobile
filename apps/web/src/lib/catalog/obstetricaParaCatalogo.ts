@@ -33,6 +33,7 @@
 
 import { dopplerDaTela } from "./dopplerParaCatalogo";
 import { fetalGrowthDaTela } from "./fetalGrowthParaCatalogo";
+import { cervicometriaComplemento } from "./cervicometriaLeitura";
 
 type EstadoDaSecao = Record<string, unknown>;
 export type EstadoObstetrico = Record<string, EstadoDaSecao | unknown>;
@@ -52,21 +53,6 @@ function texto(s: EstadoDaSecao, chave: string): string {
 function numero(s: EstadoDaSecao, chave: string): number | null {
   const n = Number.parseFloat(texto(s, chave).replace(",", "."));
   return Number.isFinite(n) ? n : null;
-}
-
-function cervicometriaDaTela(estado: EstadoObstetrico): Record<string, unknown> | null {
-  const c = secao(estado, "cervicometria");
-  if (texto(c, "realizada") !== "sim") return null;
-  return {
-    colo_oi_oe_cm: numero(c, "realizada.sim.colo_cm"),
-    orificio_interno_fechado: texto(c, "realizada.sim.orificio") !== "aberto",
-    placenta_distancia_cm: numero(c, "realizada.sim.placenta_cm"),
-    placenta_distante:
-      texto(c, "realizada.sim.placenta_distante") === "sim" &&
-      numero(c, "realizada.sim.placenta_cm") === null,
-    cerclagem: texto(c, "realizada.sim.cerclagem") === "sim",
-    observacoes: texto(c, "realizada.sim.observacoes") || null,
-  };
 }
 
 /**
@@ -170,6 +156,12 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
     : tipoLiquido === "ila" && ila !== null ? "ila"
     : "normal";
 
+  // Complemento de cervicometria: leitura estrita e portões (cervicometriaLeitura.ts),
+  // com a mesma IG que vai ao renderer.
+  const igSemanas = numero(ig, "bio_sem");
+  const cervico = cervicometriaComplemento(secao(estado, "cervicometria"), igSemanas);
+  pendencias.push(...cervico.pendencias);
+
   const dados: Record<string, unknown> = {
     /**
      * A tela é de gestação ÚNICA de 2º/3º trimestre. Gemelar e gestação inicial
@@ -183,7 +175,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
       percentil: crescimento ? crescimento.efwPercentile : null,
     }],
 
-    ig_semanas: numero(ig, "bio_sem"),
+    ig_semanas: igSemanas,
     ig_dias: numero(ig, "bio_dias"),
     dum: dum ? sub("dum_data") || null : null,
     data_exame: (usg || dum ? sub("exame_data") : "") || null,
@@ -231,7 +223,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
     achados_adicionais: texto(a, "texto") || null,
     itens_conclusao_livres: [],
     observacoes_corpo_livres: [],
-    cervicometria: cervicometriaDaTela(estado),
+    cervicometria: cervico.dados,
     doppler: dopplerDaTela(estado),
     crescimento_fetal: crescimento,
   };

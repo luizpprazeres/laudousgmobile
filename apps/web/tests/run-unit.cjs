@@ -47,6 +47,7 @@ const files = [
   'src/lib/__tests__/clinical-report-flow.manual.ts',
   'tests/mskPresets.manual.ts',
   'tests/cervicometriaStructured.manual.ts',
+  'tests/cervicometriaComplemento.manual.ts',
   'src/lib/writerGeneration.test.mts',
   'src/lib/calculators/preEclampsia.test.mts',
   'src/lib/calculators/trisomyFmf.test.mts',

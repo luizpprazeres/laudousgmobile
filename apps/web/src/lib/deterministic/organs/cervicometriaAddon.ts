@@ -25,22 +25,23 @@ export function criarCervicometriaAddonModule(category: string): OrganModule {
               subFields: [
                 {
                   key: 'colo_cm',
-                  label: 'Comprimento do colo OI–OE (cm)',
+                  label: 'Comprimento do colo OI–OE (cm; ou com "mm")',
                   kind: 'text',
-                  placeholder: '3,4',
+                  placeholder: '3,4 ou 34 mm',
                 },
                 {
                   key: 'orificio',
                   label: 'Orifício interno',
                   kind: 'mini-segmented',
+                  hint: 'obrigatório: sem padrão',
                   options: [
-                    { value: 'fechado', label: 'Fechado', isDefault: true },
+                    { value: 'fechado', label: 'Fechado' },
                     { value: 'aberto', label: 'Aberto' },
                   ],
                 },
                 {
                   key: 'placenta_cm',
-                  label: 'Distância da placenta ao OI (cm, opcional)',
+                  label: 'Distância da placenta ao OI (cm ou mm, opcional)',
                   kind: 'text',
                   placeholder: '4,2',
                 },
@@ -77,7 +78,8 @@ export function criarCervicometriaAddonModule(category: string): OrganModule {
     initialState: (): OrganState => ({
       realizada: 'nao',
       'realizada.sim.colo_cm': '',
-      'realizada.sim.orificio': 'fechado',
+      // Sem padrão: o orifício interno só é descrito depois de o médico escolher.
+      'realizada.sim.orificio': '',
       'realizada.sim.placenta_cm': '',
       'realizada.sim.placenta_distante': 'nao',
       'realizada.sim.cerclagem': 'nao',

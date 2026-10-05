@@ -1,4 +1,5 @@
 import { calcularDopplerParcial } from '@laudousg/shared'
+import { cervicometriaComplemento } from './cervicometriaLeitura'
 
 type Estado = Record<string, unknown>
 type EstadoExame = Record<string, Estado | unknown>
@@ -106,27 +107,20 @@ export function adaptarDopplerObstetrico(estado: EstadoExame) {
   const d = dRaw && typeof dRaw === 'object' ? dRaw as Estado : {}
   const cRaw = estado.cervicometria
   const c = cRaw && typeof cRaw === 'object' ? cRaw as Estado : {}
-  const cervicometria = texto(c, 'realizada') === 'sim'
-    ? {
-        colo_oi_oe_cm: numero(c, 'realizada.sim.colo_cm'),
-        orificio_interno_fechado: texto(c, 'realizada.sim.orificio') !== 'aberto',
-        placenta_distancia_cm: numero(c, 'realizada.sim.placenta_cm'),
-        placenta_distante:
-          texto(c, 'realizada.sim.placenta_distante') === 'sim' &&
-          numero(c, 'realizada.sim.placenta_cm') === null,
-        cerclagem: texto(c, 'realizada.sim.cerclagem') === 'sim',
-        observacoes: texto(c, 'realizada.sim.observacoes') || null,
-      }
-    : null
+  // Complemento de cervicometria: leitura estrita e portões (cervicometriaLeitura.ts),
+  // com a mesma IG que vai ao renderer.
+  const igSemanas = numero(d, 'ig_sem')
+  const cervico = cervicometriaComplemento(c, igSemanas)
+  const cervicometria = cervico.dados
   return {
     dados: {
       ...(dopplerDaTela(estado, { standalone: true }) ?? {}),
       observacoes_adicionais: null,
       itens_conclusao_livres: [],
-      ig_semanas: numero(d, 'ig_sem'),
+      ig_semanas: igSemanas,
       cervicometria,
     },
     alteracoes: [] as string[],
-    pendencias: [] as Array<{ onde: string; valor: string; motivo: string; bloqueia?: boolean }>,
+    pendencias: cervico.pendencias as Array<{ onde: string; valor: string; motivo: string; bloqueia?: boolean }>,
   }
 }
