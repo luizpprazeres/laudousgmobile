@@ -5,6 +5,7 @@ export type UrinaryCategory =
   | 'VIAS_URINARIAS'
   | 'PELVE_FEMININA'
   | 'PROSTATA_SUPRAPUBICA'
+  | 'DOPPLER_RENAL'
 
 type Lado = 'direito' | 'esquerdo'
 type Estado = Record<string, unknown>

@@ -232,11 +232,11 @@ test("removing the aortic source clears both RAR derivations in the same revisio
   assert.equal(validateDopplerRenalDormant(next).canGenerateFinalText, false);
 });
 
-test("removing one kidney length clears the bilateral difference", () => {
+test("removing one of the six renal axes clears the bilateral maximum difference", () => {
   const fixture = renalFixture();
-  assert.ok(fixture.derived.bipolarLengthDifference);
-  const next = removeDopplerRenalMeasurement(fixture, "left-length");
-  assert.equal(next.derived.bipolarLengthDifference, undefined);
+  assert.ok(fixture.derived.maximumRenalMeasurementDifference);
+  const next = removeDopplerRenalMeasurement(fixture, "left-ap");
+  assert.equal(next.derived.maximumRenalMeasurementDifference, undefined);
   assert.equal(next.sides.right.kidney.bipolarLength?.canonical.value, 10.2);
 });
 
@@ -267,15 +267,33 @@ test("renal size difference becomes a conclusion candidate only when strictly gr
   left.original.value = 8.4;
   left.canonical.value = 8.4;
   let recomputed = recomputeDopplerRenalDerived(fixture);
-  assert.ok(Math.abs((recomputed.derived.bipolarLengthDifference?.value ?? 0) - 1.8) < 1e-10);
-  assert.equal(recomputed.derived.bipolarLengthDifference?.conclusionCandidate, false);
+  assert.ok(Math.abs((recomputed.derived.maximumRenalMeasurementDifference?.value ?? 0) - 1.8) < 1e-10);
+  assert.equal(recomputed.derived.maximumRenalMeasurementDifference?.conclusionCandidate, false);
 
   left.original.value = 8.3;
   left.canonical.value = 8.3;
   recomputed = recomputeDopplerRenalDerived(fixture);
-  assert.ok((recomputed.derived.bipolarLengthDifference?.value ?? 0) > 1.8);
-  assert.equal(recomputed.derived.bipolarLengthDifference?.conclusionCandidate, true);
+  assert.ok((recomputed.derived.maximumRenalMeasurementDifference?.value ?? 0) > 1.8);
+  assert.equal(recomputed.derived.maximumRenalMeasurementDifference?.conclusionCandidate, true);
+  assert.equal(recomputed.derived.maximumRenalMeasurementDifference?.rightMaximumInputId, "right-length");
+  assert.equal(recomputed.derived.maximumRenalMeasurementDifference?.leftMaximumInputId, "left-length");
   assert.equal(validateDopplerRenalDormant(recomputed).canGenerateFinalText, false);
+});
+
+test("renal asymmetry compares the largest of L, AP and T on each side", () => {
+  const fixture = renalFixture();
+  const rightTransverse = fixture.sides.right.kidney.transverseDiameter;
+  const leftTransverse = fixture.sides.left.kidney.transverseDiameter;
+  assert.ok(rightTransverse && leftTransverse);
+  rightTransverse.original = { value: 13, unit: "cm" };
+  rightTransverse.canonical.value = 13;
+  leftTransverse.original = { value: 10.5, unit: "cm" };
+  leftTransverse.canonical.value = 10.5;
+  const recomputed = recomputeDopplerRenalDerived(fixture);
+  assert.equal(recomputed.derived.maximumRenalMeasurementDifference?.value, 2.5);
+  assert.equal(recomputed.derived.maximumRenalMeasurementDifference?.rightMaximumInputId, "right-transverse");
+  assert.equal(recomputed.derived.maximumRenalMeasurementDifference?.leftMaximumInputId, "left-transverse");
+  assert.equal(recomputed.derived.maximumRenalMeasurementDifference?.conclusionCandidate, true);
 });
 
 test("renal excluded and pending decisions are part of the strict contract", () => {

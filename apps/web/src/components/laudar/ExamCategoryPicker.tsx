@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type CSSProperties } from 'react'
 import { ArrowRight, ScanLine, Search, X } from 'lucide-react'
-import { GENERIC_CATEGORIES } from '@/lib/deterministic'
+import { DOPPLER_RENAL_STRUCTURED_WEB_ENABLED, GENERIC_CATEGORIES } from '@/lib/deterministic'
 import { categoryDotClass } from './categoryPresentation'
 import { EXAM_CATEGORY_IMAGES } from './examCategoryImages'
 import { groupCategories, matchesCategory, type CategoryEntry } from './categoryGroups'
@@ -11,9 +11,14 @@ import { CLINICAL_WEB_MODELS, CLINICAL_WEB_MODELS_ENABLED } from '@/lib/clinical
 import { HEPATIC_WEB_MODELS, HEPATIC_WEB_MODELS_ENABLED } from '@/lib/hepaticModels'
 
 const catalog = [
-  ...GENERIC_CATEGORIES.filter(({ id }) => (STRUCTURED_WEB_CATEGORY_CODES as readonly string[]).includes(id)).map(({ id, name }) => ({ id, name, mode: 'structured' as const })),
+  ...GENERIC_CATEGORIES.filter(({ id }) =>
+    (STRUCTURED_WEB_CATEGORY_CODES as readonly string[]).includes(id) ||
+    (DOPPLER_RENAL_STRUCTURED_WEB_ENABLED && id === 'DOPPLER_RENAL')
+  ).map(({ id, name }) => ({ id, name, mode: 'structured' as const })),
   { id: 'TIREOIDE', name: 'Tireoide', mode: 'structured' as const },
-  ...WRITER_CATEGORY_OPTIONS.map(({ id, name }) => ({ id, name, mode: 'writer' as const })),
+  ...WRITER_CATEGORY_OPTIONS
+    .filter(({ id }) => !(DOPPLER_RENAL_STRUCTURED_WEB_ENABLED && id === 'DOPPLER_RENAL'))
+    .map(({ id, name }) => ({ id, name, mode: 'writer' as const })),
   ...(CLINICAL_WEB_MODELS_ENABLED ? CLINICAL_WEB_MODELS.map(({ id, name }) => ({ id, name, mode: 'structured' as const })) : []),
   ...(HEPATIC_WEB_MODELS_ENABLED ? HEPATIC_WEB_MODELS.map(({ id, name }) => ({ id, name, mode: 'structured' as const })) : []),
 ]

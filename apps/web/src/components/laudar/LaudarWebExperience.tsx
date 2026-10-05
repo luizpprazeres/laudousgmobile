@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { ArrowLeft, ChevronDown, ScanLine, Smartphone } from 'lucide-react'
 import {
   CATEGORIES,
+  DOPPLER_RENAL_STRUCTURED_WEB_ENABLED,
   GENERIC_CATEGORIES,
   appendInitials,
   composeReport,
@@ -22,6 +23,7 @@ import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
 import { adaptarMorfologico } from '@/lib/catalog/morfologicoParaCatalogo'
 import { adaptarDopplerWeb, categoriaRenderDoppler, chaveDocumentoDoppler, estadoDopplerVisivel, somenteDoppler } from '@/lib/catalog/dopplerWebMode'
 import { adaptarDopplerCarotidas } from '@/lib/catalog/dopplerCarotidasParaCatalogo'
+import { adaptarDopplerRenal } from '@/lib/catalog/dopplerRenalParaCatalogo'
 import { adaptarAbdome } from '@/lib/catalog/abdomeParaCatalogo'
 import { adaptarAbdomeSuperior } from '@/lib/catalog/abdomeSuperiorParaCatalogo'
 import { adaptarViasUrinarias } from '@/lib/catalog/viasUrinariasParaCatalogo'
@@ -526,6 +528,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
    * alguém o chamasse sem perceber. `composeReport` recusa categoria migrada.
    */
   const migrada = categoriaMigrada(categoria)
+  const dopplerRenalEstruturadoDormente =
+    DOPPLER_RENAL_STRUCTURED_WEB_ENABLED && categoria === 'DOPPLER_RENAL'
 
   const achadosCanonicos = useMemo(() => {
     if (isTireoide) {
@@ -578,8 +582,11 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (categoria === 'DOPPLER_CAROTIDAS') {
       return adaptarDopplerCarotidas((examStates[categoria] ?? {}) as Record<string, unknown>)
     }
+    if (categoria === 'DOPPLER_RENAL' && dopplerRenalEstruturadoDormente) {
+      return adaptarDopplerRenal((examStates[categoria] ?? {}) as Record<string, unknown>)
+    }
     return null
-  }, [categoria, examStates, isTireoide, tireoideState])
+  }, [categoria, dopplerRenalEstruturadoDormente, examStates, isTireoide, tireoideState])
 
   const renderCategory = categoria === 'DOPPLER_OBSTETRICO'
     ? categoriaRenderDoppler(examStates[categoria] ?? {})
@@ -595,9 +602,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const generatedText = useMemo(() => {
     if (composition) return composicao.texto
     if (migrada) return laudoCanonico.texto
+    if (dopplerRenalEstruturadoDormente) return ''
     const cat = CATEGORIES[categoria]
     return cat ? composeReport(cat, examStates[categoria]).text : ''
-  }, [categoria, composition, composicao.texto, examStates, migrada, laudoCanonico.texto])
+  }, [categoria, composition, composicao.texto, dopplerRenalEstruturadoDormente, examStates, migrada, laudoCanonico.texto])
 
   /**
    * OS BLOCOS DE CALCULADORA — e por que isto NÃO fura a regra do §3.2.
@@ -844,7 +852,10 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   )
   const laudoNaoConfere = composition
     ? composicaoNaoConfere
-    : migrada && !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
+    : dopplerRenalEstruturadoDormente || (
+      migrada && !textoFoiEditado &&
+      (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
+    )
   const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = motor.erro || saveState === 'error'
     ? 'error'
     : remoto && (motor.carregando || motor.desatualizado)
@@ -1407,7 +1418,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const hasSecondaryTools = supportsVisualSchema || digitadoras.length > 0
   const hasExamOptions = controls.length > 0 || isTireoide || categoria === 'DOPPLER_OBSTETRICO'
 
-  if (!choosingCategory && !composition && isWriterCategory(categoria)) {
+  if (!choosingCategory && !composition && isWriterCategory(categoria) && !dopplerRenalEstruturadoDormente) {
     return <WriterCategoryWorkspace category={categoria} onBack={() => setChoosingCategory(true)} />
   }
 

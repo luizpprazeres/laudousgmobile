@@ -129,8 +129,13 @@ const DerivedMeanRiSchema = z.object({
 const DerivedLengthDifferenceSchema = z.object({
   value: NonNegative,
   unit: z.literal("cm"),
-  algorithm: z.literal("absolute-bipolar-length-difference/v1"),
-  inputIds: z.tuple([z.string(), z.string()]),
+  algorithm: z.literal("absolute-maximum-of-three-axes-difference/v1"),
+  /** Ordem fixa: L, AP e T direitos; depois L, AP e T esquerdos. */
+  inputIds: z.tuple([z.string(), z.string(), z.string(), z.string(), z.string(), z.string()]),
+  rightMaximumCm: Positive,
+  leftMaximumCm: Positive,
+  rightMaximumInputId: z.string(),
+  leftMaximumInputId: z.string(),
   thresholdCm: z.literal(1.8),
   criterion: z.literal("strictly_greater_than"),
   conclusionCandidate: z.boolean(),
@@ -162,7 +167,7 @@ const RenalDerivedSchema = z.object({
   meanRi: z.array(DerivedMeanRiSchema).max(2),
   accelerationTimeAdjuncts: z.array(DerivedAccelerationTimeAdjunctSchema).max(8),
   accelerationIndexAdjuncts: z.array(DerivedAccelerationIndexAdjunctSchema).max(8),
-  bipolarLengthDifference: DerivedLengthDifferenceSchema.optional(),
+  maximumRenalMeasurementDifference: DerivedLengthDifferenceSchema.optional(),
 }).strict();
 
 export const DopplerRenalDormantSchema = z.object({
@@ -296,15 +301,33 @@ export function recomputeDopplerRenalDerived(value: DopplerRenalDormant): Dopple
     }
   }
 
-  const rightLength = parsed.sides.right.kidney.bipolarLength;
-  const leftLength = parsed.sides.left.kidney.bipolarLength;
-  if (rightLength && leftLength) {
-    const difference = Math.abs(rightLength.canonical.value - leftLength.canonical.value);
-    derived.bipolarLengthDifference = {
+  const rightMeasurements = [
+    parsed.sides.right.kidney.bipolarLength,
+    parsed.sides.right.kidney.anteroposteriorDiameter,
+    parsed.sides.right.kidney.transverseDiameter,
+  ];
+  const leftMeasurements = [
+    parsed.sides.left.kidney.bipolarLength,
+    parsed.sides.left.kidney.anteroposteriorDiameter,
+    parsed.sides.left.kidney.transverseDiameter,
+  ];
+  if (rightMeasurements.every(Boolean) && leftMeasurements.every(Boolean)) {
+    const completeRight = rightMeasurements as Array<NonNullable<(typeof rightMeasurements)[number]>>;
+    const completeLeft = leftMeasurements as Array<NonNullable<(typeof leftMeasurements)[number]>>;
+    const rightMaximum = completeRight.reduce((current, item) =>
+      item.canonical.value > current.canonical.value ? item : current);
+    const leftMaximum = completeLeft.reduce((current, item) =>
+      item.canonical.value > current.canonical.value ? item : current);
+    const difference = Math.abs(rightMaximum.canonical.value - leftMaximum.canonical.value);
+    derived.maximumRenalMeasurementDifference = {
       value: difference,
       unit: "cm",
-      algorithm: "absolute-bipolar-length-difference/v1",
-      inputIds: [rightLength.id, leftLength.id],
+      algorithm: "absolute-maximum-of-three-axes-difference/v1",
+      inputIds: [...completeRight.map((measurement) => measurement.id), ...completeLeft.map((measurement) => measurement.id)] as [string, string, string, string, string, string],
+      rightMaximumCm: rightMaximum.canonical.value,
+      leftMaximumCm: leftMaximum.canonical.value,
+      rightMaximumInputId: rightMaximum.id,
+      leftMaximumInputId: leftMaximum.id,
       thresholdCm: 1.8,
       criterion: "strictly_greater_than",
       conclusionCandidate: strictlyGreaterThan(difference, 1.8),
