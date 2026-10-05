@@ -43,6 +43,7 @@ export function categoriaLabel(code: string): string {
     TIREOIDE: 'Tireoide',
     MUSCULOESQUELETICO: 'Musculoesquelético',
     OBSTETRICA: 'Obstétrica',
+    PERFIL_BIOFISICO_FETAL: 'Perfil biofísico fetal',
     MORFOLOGICO: 'Morfológica',
     DOPPLER_OBSTETRICO: 'Doppler obstétrico',
     DOPPLER_RENAL: 'Doppler renal',

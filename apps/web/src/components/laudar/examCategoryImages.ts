@@ -12,6 +12,7 @@ export const EXAM_CATEGORY_IMAGES: Record<string, string> = {
   PARTES_MOLES: '/categories/lineart-v1/partes-moles.webp',
   MUSCULOESQUELETICO: '/categories/lineart-v1/msk.webp',
   OBSTETRICA: '/categories/lineart-v1/obstetrica.webp',
+  PERFIL_BIOFISICO_FETAL: '/categories/lineart-v1/obstetrica.webp',
   MORFOLOGICO: '/categories/lineart-v1/morfologico.webp',
   DOPPLER_OBSTETRICO: '/categories/lineart-v1/doppler-obstetrico.webp',
   DOPPLER_CAROTIDAS: '/categories/lineart-v1/carotidas.webp',

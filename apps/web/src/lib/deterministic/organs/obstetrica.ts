@@ -392,7 +392,7 @@ const placentaModule: OrganModule = {
 }
 
 // ── Líquido amniótico (MBV/ILA com classificação segura — boletim) ────────────
-function classeMBV(v: number): { classe: string; conclusao: string } {
+export function classeMBV(v: number): { classe: string; conclusao: string } {
   if (v < 2) return { classe: 'reduzida', conclusao: 'Oligoâmnio' }
   if (v > 8) return { classe: 'aumentada', conclusao: 'Polidrâmnio' }
   return { classe: 'normal', conclusao: 'Líquido amniótico em quantidade normal' }

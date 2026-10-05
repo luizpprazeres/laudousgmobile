@@ -12,6 +12,7 @@ import { mamaria } from './organs/mamaria'
 import { pelveFeminina } from './organs/pelveFeminina'
 import { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
 import { histerossonografia } from './organs/histerossonografia'
+import { perfilBiofisicoFetal } from './organs/perfilBiofisicoFetal'
 import { abdomeSuperior } from './organs/abdomeSuperior'
 import { cervical } from './organs/cervical'
 import { cervicometria } from './organs/cervicometria'
@@ -50,6 +51,7 @@ export { mamaria } from './organs/mamaria'
 export { pelveFeminina } from './organs/pelveFeminina'
 export { pelvicoTransvaginal } from './organs/pelvicoTransvaginal'
 export { histerossonografia } from './organs/histerossonografia'
+export { perfilBiofisicoFetal } from './organs/perfilBiofisicoFetal'
 export { abdomeSuperior } from './organs/abdomeSuperior'
 export { cervical } from './organs/cervical'
 export { cervicometria } from './organs/cervicometria'
@@ -104,6 +106,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   bolsaTesticularDoppler,
   pelvicoTransvaginal,
   histerossonografia,
+  perfilBiofisicoFetal,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])
