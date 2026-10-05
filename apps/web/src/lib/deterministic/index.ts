@@ -33,6 +33,7 @@ import { ocular } from './organs/ocular'
 import { dopplerArterialMmii } from './organs/dopplerArterialMmii'
 import { dopplerFistulaAv } from './organs/dopplerFistulaAv'
 import { dopplerMesenterico } from './organs/dopplerMesenterico'
+import { dopplerArteriasTemporais } from './organs/dopplerArteriasTemporais'
 import type { ExamCategory } from './organs/abdomeTotal'
 
 export * from './types'
@@ -64,6 +65,7 @@ export { ocular } from './organs/ocular'
 export { dopplerArterialMmii } from './organs/dopplerArterialMmii'
 export { dopplerFistulaAv } from './organs/dopplerFistulaAv'
 export { dopplerMesenterico } from './organs/dopplerMesenterico'
+export { dopplerArteriasTemporais } from './organs/dopplerArteriasTemporais'
 export type { ExamCategory, ExamSection } from './organs/abdomeTotal'
 export { vesiculaModule } from './organs/vesicula'
 
@@ -83,6 +85,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   transfontanela, ocular,
   dopplerArterialMmii, dopplerFistulaAv,
   dopplerMesenterico,
+  dopplerArteriasTemporais,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(
   GENERIC_CATEGORIES.map((c) => [c.id, c])

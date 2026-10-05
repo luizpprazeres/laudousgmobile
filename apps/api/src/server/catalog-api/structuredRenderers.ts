@@ -2,7 +2,7 @@ import { renderDopplerRenalWeb } from "../renderer/categories/dopplerRenalWeb";
 import { renderDopplerVenosoMmiiWeb } from "../renderer/categories/dopplerVenosoMmiiWeb";
 import type { MapaVenoso } from "@laudousg/schemes/vascular";
 import { renderDopplerHepaticoWeb } from "../renderer/categories/dopplerHepaticoWeb";
-import { renderDopplerArterialMmiiWeb, renderDopplerFistulaAvWeb } from "../renderer/categories/dopplerArterialFistulaWeb";
+import { renderDopplerArterialMmiiWeb, renderDopplerArteriasTemporaisWeb, renderDopplerFistulaAvWeb } from "../renderer/categories/dopplerArterialFistulaWeb";
 
 export type StructuredCatalogRender =
   | { ok: true; text: string; venousMap?: MapaVenoso; assetVersion?: "venous-4view-1" }
@@ -18,6 +18,7 @@ const STRUCTURED_RENDERERS: Readonly<Record<string, Renderer>> = {
   DOPPLER_VENOSO_MMII_MEDIDAS: (input, style) => renderDopplerVenosoMmiiWeb(input, style, "DOPPLER_VENOSO_MMII_MEDIDAS"),
   DOPPLER_ARTERIAL_MMII: renderDopplerArterialMmiiWeb,
   DOPPLER_FISTULA_AV: renderDopplerFistulaAvWeb,
+  DOPPLER_ARTERIAS_TEMPORAIS: renderDopplerArteriasTemporaisWeb,
 };
 
 export function structuredRendererFor(category: string): Renderer | null {

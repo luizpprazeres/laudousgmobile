@@ -52,7 +52,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'vascular',
     label: 'Vascular',
-    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_RENAL', 'DOPPLER_MESENTERICO'],
+    categories: ['DOPPLER_VENOSO_MMII', 'DOPPLER_VENOSO_MMII_MEDIDAS', 'DOPPLER_ARTERIAL_MMII', 'DOPPLER_VENOSO_MMSS', 'DOPPLER_ARTERIAL_MMSS', 'DOPPLER_FISTULA_AV', 'DOPPLER_ARTERIAS_TEMPORAIS', 'DOPPLER_RENAL', 'DOPPLER_MESENTERICO'],
   },
   {
     id: 'outros_exames',
@@ -108,6 +108,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   DOPPLER_ARTERIAL_MMSS: ['doppler arterial', 'membros superiores', 'braco', 'desfiladeiro toracico'],
   DOPPLER_FISTULA_AV: ['fistula', 'acesso vascular'],
   DOPPLER_MESENTERICO: ['mesenterica', 'mesenterico', 'tronco celiaco', 'celiaco', 'isquemia mesenterica'],
+  DOPPLER_ARTERIAS_TEMPORAIS: ['temporal', 'arterias temporais', 'arterite', 'halo'],
   DOPPLER_RENAL: ['doppler renal', 'arterias renais'],
   TRANSFONTANELA: ['fontanela', 'transfontanelar', 'neonatal', 'cranio', 'hemorragia peri-intraventricular'],
   OCULAR: ['olho', 'olhos', 'ocular', 'retina', 'vitreo', 'nervo optico'],

@@ -48,6 +48,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   DOPPLER_OBSTETRICO: 'Doppler obstétrico',
   DOPPLER_CAROTIDAS: 'Doppler carótidas',
   DOPPLER_FISTULA_AV: 'Doppler fístula AV',
+  DOPPLER_ARTERIAS_TEMPORAIS: 'Doppler artérias temporais',
   // Composições (exames associados): contam como UM laudo na categoria composta,
   // não como um por órgão — dividir exigiria decisão de produto.
   ABDOMEN_TOTAL__PROSTATA_SUPRAPUBICA: 'Abdome total + Próstata',
@@ -73,6 +74,7 @@ export const SHORT_CATEGORY_LABELS: Record<string, string> = {
   DOPPLER_OBSTETRICO: 'Dopp. Obs.',
   DOPPLER_CAROTIDAS: 'Carótidas',
   DOPPLER_FISTULA_AV: 'Fístula AV',
+  DOPPLER_ARTERIAS_TEMPORAIS: 'Temporais',
   ABDOMEN_TOTAL__PROSTATA_SUPRAPUBICA: 'Abd. + Próst.',
   MAMARIA__PELVE_FEMININA: 'Mamas + Pelve',
 }

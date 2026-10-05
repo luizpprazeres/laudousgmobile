@@ -1,7 +1,9 @@
 import {
   renderDopplerArterialMmii,
+  renderDopplerArteriasTemporais,
   renderDopplerFistulaAv,
   validateDopplerArterialMmii,
+  validateDopplerArteriasTemporais,
   validateDopplerFistulaAv,
 } from "@laudousg/shared";
 import type { StructuredCatalogRender } from "../../catalog-api/structuredRenderers";
@@ -31,3 +33,5 @@ export const renderDopplerArterialMmiiWeb = (input: unknown, style: string) =>
   renderStructured(input, style, "Doppler arterial", validateDopplerArterialMmii, renderDopplerArterialMmii);
 export const renderDopplerFistulaAvWeb = (input: unknown, style: string) =>
   renderStructured(input, style, "Doppler de fístula AV", validateDopplerFistulaAv, renderDopplerFistulaAv);
+export const renderDopplerArteriasTemporaisWeb = (input: unknown, style: string) =>
+  renderStructured(input, style, "Doppler de artérias temporais", validateDopplerArteriasTemporais, renderDopplerArteriasTemporais);

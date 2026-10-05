@@ -48,6 +48,7 @@ export function categoriaLabel(code: string): string {
     DOPPLER_VENOSO_MMII: 'Doppler venoso (MMII)',
     DOPPLER_ARTERIAL_MMII: 'Doppler arterial (MMII)',
     DOPPLER_FISTULA_AV: 'Doppler de fístula AV',
+    DOPPLER_ARTERIAS_TEMPORAIS: 'Doppler de artérias temporais',
     ABDOMEN_TOTAL_DOPPLER: 'Abdome total com Doppler',
     DOPPLER_VENOSO_MMSS: 'Doppler venoso (MMSS)',
     DOPPLER_ARTERIAL_MMSS: 'Doppler arterial (MMSS)',
