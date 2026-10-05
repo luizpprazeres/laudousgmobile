@@ -64,6 +64,9 @@ export interface ExamCategory {
   /** Fechamento dinâmico; recebe quantas seções ativas estão alteradas.
    *  `undefined` = sem fechamento. Tem precedência sobre `conclusionClosing`. */
   resolveConclusionClosing?: (opts: OrganState, alteredCount: number, sectionCount: number) => string | undefined
+  /** Consolida itens de conclusão entre seções (ex.: achado bilateral em um
+   *  item só). Recebe os itens na ordem das seções e o estado do exame. */
+  resolveConclusionItems?: (items: string[], state: Record<string, OrganState>) => string[]
 }
 
 export const abdomeTotal: ExamCategory = {

@@ -36,6 +36,37 @@ const PARENQUIMA = ['normal', 'aguda', 'cronica']
 const ACHADOS = ['calculo', 'nodulo', 'colecao']
 
 const nomeGlandula = (g: Glandula, l: Lado) => `glândula ${NOME[g]} ${l}`
+const PLURAL: Record<Glandula, string> = { parotida: 'parótidas', submandibular: 'submandibulares' }
+
+type Sialoadenite = 'aguda' | 'cronica'
+const RECOMENDACAO: Record<Sialoadenite, string> = {
+  aguda: 'Convém, a critério clínico, complementar com avaliação clínica dirigida para definição da etiologia.',
+  cronica: 'Convém, a critério clínico, complementar com correlação clínica para definição etiológica.',
+}
+
+/** "nas glândulas parótidas bilateralmente e submandibular direita". */
+function glandulasAcometidas(lista: [Glandula, Lado][]): string {
+  const partes = (['parotida', 'submandibular'] as const).flatMap((g) => {
+    const lados = lista.filter(([x]) => x === g).map(([, l]) => l)
+    if (lados.length === 2) return [`${PLURAL[g]} bilateralmente`]
+    return lados.map((l) => `${NOME[g]} ${l}`)
+  })
+  const juntas = partes.length > 1 ? `${partes.slice(0, -1).join(', ')} e ${partes[partes.length - 1]}` : partes[0]
+  return `nas glândulas ${juntas}`
+}
+
+/** Item de conclusão da sialoadenite: uma glândula ou várias, recomendação uma vez só. */
+export function conclusaoSialoadenite(tipo: Sialoadenite, lista: [Glandula, Lado][]): string {
+  if (lista.length === 1) {
+    const [g, l] = lista[0]!
+    return tipo === 'aguda'
+      ? `Sinais ecográficos de sialoadenite aguda em ${nomeGlandula(g, l)}, caracterizada por aumento volumétrico, ecotextura difusamente hipoecoica e hipervascularização ao Doppler. ${RECOMENDACAO.aguda}`
+      : `Glândula ${NOME[g]} ${l} com ecotextura heterogênea e múltiplas áreas hipoecoicas difusas. Achados ecográficos compatíveis com sialoadenite crônica. ${RECOMENDACAO.cronica}`
+  }
+  return tipo === 'aguda'
+    ? `Sinais ecográficos de sialoadenite aguda ${glandulasAcometidas(lista)}, caracterizada por aumento volumétrico, ecotextura difusamente hipoecoica e hipervascularização ao Doppler. ${RECOMENDACAO.aguda}`
+    : `Ecotextura heterogênea com múltiplas áreas hipoecoicas difusas ${glandulasAcometidas(lista)}. Achados ecográficos compatíveis com sialoadenite crônica. ${RECOMENDACAO.cronica}`
+}
 
 function fields(glandula: Glandula): Field[] {
   const noduloSub: Field[] = [
@@ -108,8 +139,10 @@ export function glandulaIssues(glandula: Glandula, lado: Lado, state: OrganState
   const issues: string[] = []
   if (lerEixos(state.medidas, 2, 'mm') === 'invalida') issues.push(`${rotulo}: dimensões com formato inválido (ex.: 32 x 58).`)
   if (!PARENQUIMA.includes(str(state.parenquima) || 'normal')) issues.push(`${rotulo}: parênquima com opção inválida.`)
-  if (str(state.ducto) === 'visivel' && lerMedida(state['ducto.visivel.calibre'], 'mm') === 'invalida') {
-    issues.push(`${rotulo}: calibre do ducto com formato inválido.`)
+  if (str(state.ducto) === 'visivel') {
+    const calibre = lerMedida(state['ducto.visivel.calibre'], 'mm')
+    if (calibre === null) issues.push(`${rotulo}: informe o calibre do ducto visível.`)
+    if (calibre === 'invalida') issues.push(`${rotulo}: calibre do ducto com formato inválido.`)
   }
   const achados = state.achados
   if (achados !== undefined && (!Array.isArray(achados) || achados.some((a) => !ACHADOS.includes(a)))) {
@@ -147,10 +180,10 @@ function compose(glandula: Glandula, lado: Lado, state: OrganState): OrganCompos
   const dimensoes = Array.isArray(medidas) ? ` com dimensões de ${formatarEixos(medidas, 'mm')} (eixos anteroposterior x longitudinal)` : ''
   if (parenquima === 'aguda') {
     body.push(`${Nome}${dimensoes}, aumentada, com ecotextura difusamente hipoecoica e hipervascularização ao Doppler colorido.`)
-    conclusion.push(`Sinais ecográficos de sialoadenite aguda em ${nome}, caracterizada por aumento volumétrico, ecotextura difusamente hipoecoica e hipervascularização ao Doppler. Convém, a critério clínico, complementar com avaliação clínica dirigida para definição da etiologia.`)
+    conclusion.push(conclusaoSialoadenite('aguda', [[glandula, lado]]))
   } else if (parenquima === 'cronica') {
     body.push(`${Nome}${dimensoes}, com ecotextura heterogênea, apresentando múltiplas áreas hipoecoicas difusamente distribuídas.`)
-    conclusion.push(`${Nome} com ecotextura heterogênea e múltiplas áreas hipoecoicas difusas. Achados ecográficos compatíveis com sialoadenite crônica. Convém, a critério clínico, complementar com correlação clínica para definição etiológica.`)
+    conclusion.push(conclusaoSialoadenite('cronica', [[glandula, lado]]))
   } else if (normal) {
     body.push(`${Nome}${dimensoes}${dimensoes ? ', de' : ' de'} ${dimensoes ? 'ecotextura homogênea' : 'dimensões e ecotextura preservadas'}, sem nódulos, cálculos ou dilatação ductal.`)
   } else {
@@ -160,7 +193,7 @@ function compose(glandula: Glandula, lado: Lado, state: OrganState): OrganCompos
   if (typeof calibre === 'number') {
     body.push(`Ducto de ${ducto} visível, com calibre de ${ptBr1(calibre)} mm.`)
   } else if (str(state.ducto) === 'visivel') {
-    body.push(`Ducto de ${ducto} visível, com calibre de ____ mm.`)
+    body.push(`Ducto de ${ducto} visível, calibre pendente.`)
   }
 
   if (achados.includes('calculo')) {
@@ -181,6 +214,8 @@ function compose(glandula: Glandula, lado: Lado, state: OrganState): OrganCompos
     }
   } else if (typeof calibre === 'number') {
     conclusion.push(`Ducto de ${ducto} da ${nome} visível, com calibre de ${ptBr1(calibre)} mm. Convém, a critério clínico, correlação clínica.`)
+  } else if (str(state.ducto) === 'visivel') {
+    conclusion.push(`Ducto de ${ducto} da ${nome} visível, calibre pendente.`)
   }
 
   if (achados.includes('nodulo')) {
@@ -238,6 +273,23 @@ const sections: ExamSection[] = GLANDULAS.map(([g, l]) => ({
   module: glandulaModule(g, l),
 }))
 
+/** Mesma sialoadenite em mais de uma glândula vira um item só, no lugar do primeiro. */
+function consolidarSialoadenite(items: string[], state: Record<string, OrganState>): string[] {
+  let resultado = items
+  for (const tipo of ['aguda', 'cronica'] as const) {
+    const acometidas = GLANDULAS.filter(([g, l]) => str(state[`${g}_${l}`]?.parenquima) === tipo)
+    if (acometidas.length < 2) continue
+    const individuais = new Set(acometidas.map((gl) => conclusaoSialoadenite(tipo, [gl])))
+    let inserido = false
+    resultado = resultado.flatMap((item) => {
+      if (!individuais.has(item)) return [item]
+      if (inserido) return []
+      inserido = true
+      return [conclusaoSialoadenite(tipo, acometidas)]
+    })
+  }
+  return resultado
+}
 
 export const glandulasSalivares: ExamCategory = {
   id: CATEGORIA,
@@ -248,5 +300,8 @@ export const glandulasSalivares: ExamCategory = {
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections,
   conclusionNormal: 'Glândulas parótidas e submandibulares com dimensões e ecotextura preservadas bilateralmente, sem evidência de nódulos, cálculos ou dilatação ductal.',
-  conclusionClosing: 'Demais glândulas salivares maiores avaliadas sem alterações ecográficas.',
+  // "Demais…" só quando ao menos uma glândula ficou sem alteração.
+  resolveConclusionClosing: (_opts, alteredCount, sectionCount) =>
+    alteredCount < sectionCount ? 'Demais glândulas salivares maiores avaliadas sem alterações ecográficas.' : undefined,
+  resolveConclusionItems: consolidarSialoadenite,
 }

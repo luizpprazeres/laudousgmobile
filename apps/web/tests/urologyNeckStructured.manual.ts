@@ -93,7 +93,7 @@ test('próstata transretal bloqueia inferência sem dados essenciais', () => {
   assert.doesNotMatch(text, /zona periférica (direita|esquerda)/)
   assert.match(text, /dados pendentes/)
   const issues = pendenciasLocais('PROSTATA_TRANSRETAL', state)
-  assert.ok(issues.some((i) => /exige as três medidas/.test(i)))
+  assert.ok(issues.includes('Próstata: informe as três medidas.'))
   assert.ok(issues.some((i) => /lado/.test(i)))
   assert.ok(issues.some((i) => /três medidas da imagem/.test(i)))
 })
@@ -209,6 +209,70 @@ test('glândulas salivares: cálculo sem medida e sem sombra bloqueiam a afirma�
   assert.ok(pendenciasLocais('GLANDULAS_SALIVARES', state).some((i) => /tamanho do cálculo/.test(i)))
   state.parotida_direita['achados.calculo.tamanho'] = '1,5'
   assert.match(composeReport(glandulasSalivares, state).text, /sugestiva de cálculo de pequenas dimensões/)
+})
+
+// ── Correções do QA (05/10) ──────────────────────────────────────────────────
+test('próstata transretal normal sem as três medidas: pendência, sem lacuna e sem "dimensões normais"', () => {
+  for (const medidas of [{}, { d1: '4,2', d2: '3,0' }]) {
+    const state = initialExamState(prostataTransretal)
+    state.prostata = { ...state.prostata, ...medidas }
+    const { text } = composeReport(prostataTransretal, state)
+    assert.doesNotMatch(text, /____/)
+    assert.doesNotMatch(text, /dimensões normais/)
+    assert.match(text, /Próstata: medidas pendentes\./)
+    const issues = pendenciasLocais('PROSTATA_TRANSRETAL', state)
+    assert.ok(issues.includes('Próstata: informe as três medidas.'), JSON.stringify(issues))
+  }
+})
+
+test('ducto salivar visível sem calibre: pendência, sem lacuna e sem conclusão normal', () => {
+  const state = initialExamState(glandulasSalivares)
+  state.submandibular_direita = { ...state.submandibular_direita, ducto: 'visivel' }
+  const { text } = composeReport(glandulasSalivares, state)
+  assert.doesNotMatch(text, /____/)
+  assert.doesNotMatch(text, /CONCLUSÃO:\nGlândulas parótidas e submandibulares com dimensões e ecotextura preservadas/)
+  assert.match(text, /Ducto de Wharton da glândula submandibular direita visível, calibre pendente\./)
+  assert.deepEqual(pendenciasLocais('GLANDULAS_SALIVARES', state), ['Submandibular direita: informe o calibre do ducto visível.'])
+  state.submandibular_direita['ducto.visivel.calibre'] = '2,5'
+  assert.deepEqual(pendenciasLocais('GLANDULAS_SALIVARES', state), [])
+  assert.match(composeReport(glandulasSalivares, state).text, /visível, com calibre de 2,5 mm/)
+})
+
+test('glândulas salivares: todas alteradas não concluem "demais sem alterações"', () => {
+  const state = initialExamState(glandulasSalivares)
+  state.parotida_direita = { ...state.parotida_direita, parenquima: 'aguda' }
+  state.parotida_esquerda = { ...state.parotida_esquerda, ducto: 'visivel', 'ducto.visivel.calibre': '2,2' }
+  state.submandibular_direita = { ...state.submandibular_direita, achados: ['nodulo'], 'achados.nodulo.medidas': '12 x 9 x 8' }
+  state.submandibular_esquerda = { ...state.submandibular_esquerda, parenquima: 'cronica' }
+  assert.doesNotMatch(composeReport(glandulasSalivares, state).text, /Demais glândulas/)
+  state.submandibular_esquerda = initialExamState(glandulasSalivares).submandibular_esquerda
+  assert.match(composeReport(glandulasSalivares, state).text, /Demais glândulas salivares maiores avaliadas sem alterações ecográficas\./)
+})
+
+test('sialoadenite bilateral: um item consolidado, recomendação uma vez', () => {
+  const state = initialExamState(glandulasSalivares)
+  state.parotida_direita = { ...state.parotida_direita, parenquima: 'cronica' }
+  state.parotida_esquerda = { ...state.parotida_esquerda, parenquima: 'cronica' }
+  let text = composeReport(glandulasSalivares, state).text
+  assert.match(text, /1\. Ecotextura heterogênea com múltiplas áreas hipoecoicas difusas nas glândulas parótidas bilateralmente\. Achados ecográficos compatíveis com sialoadenite crônica\. Convém/)
+  assert.equal(text.match(/sialoadenite crônica/g)?.length, 1)
+  assert.equal(text.match(/definição etiológica/g)?.length, 1)
+  assert.match(text, /2\. Demais glândulas salivares maiores avaliadas sem alterações ecográficas\./)
+  // Corpo continua descrevendo cada glândula com o lado.
+  assert.match(text, /Glândula parótida direita, com ecotextura heterogênea/)
+  assert.match(text, /Glândula parótida esquerda, com ecotextura heterogênea/)
+
+  const aguda = initialExamState(glandulasSalivares)
+  aguda.parotida_esquerda = { ...aguda.parotida_esquerda, parenquima: 'aguda' }
+  aguda.submandibular_esquerda = { ...aguda.submandibular_esquerda, parenquima: 'aguda' }
+  text = composeReport(glandulasSalivares, aguda).text
+  assert.match(text, /Sinais ecográficos de sialoadenite aguda nas glândulas parótida esquerda e submandibular esquerda/)
+  assert.equal(text.match(/definição da etiologia/g)?.length, 1)
+
+  // Uma glândula só mantém a frase individual.
+  const unica = initialExamState(glandulasSalivares)
+  unica.parotida_direita = { ...unica.parotida_direita, parenquima: 'cronica' }
+  assert.match(composeReport(glandulasSalivares, unica).text, /1\. Glândula parótida direita com ecotextura heterogênea/)
 })
 
 console.log(`# ${cases} casos`)

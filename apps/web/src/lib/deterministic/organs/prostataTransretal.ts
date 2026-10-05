@@ -117,12 +117,11 @@ export function prostataTransretalIssues(state: OrganState): string[] {
     if (v === 'invalida') issues.push(`Próstata: medida ${i + 1} com formato inválido (use cm ou mm).`)
   })
   const preenchidas = lidas.filter((v) => v !== null).length
-  if (preenchidas > 0 && preenchidas < 3) issues.push('Próstata: informe as três medidas ou nenhuma.')
+  // As três medidas são essenciais em qualquer padrão: sem elas não há laudo
+  // de dimensões (nem normais, nem aumentadas).
+  if (preenchidas < 3) issues.push('Próstata: informe as três medidas.')
   const padrao = str(state.padrao) || 'normal'
   if (!PADROES.includes(padrao)) issues.push('Próstata: padrão com opção inválida.')
-  if ((padrao === 'aumentada' || padrao === 'hpb') && preenchidas === 0) {
-    issues.push('Próstata: volume aumentado ou HPB exige as três medidas.')
-  }
   if (padrao === 'aumentada' || padrao === 'hpb') {
     if (lerMedida(state[`padrao.${padrao}.ipp`], 'cm') === 'invalida') issues.push('Próstata: IPP com formato inválido (use cm ou mm).')
   }
@@ -179,10 +178,13 @@ const prostataModule: OrganModule = {
     const achados = Array.isArray(state.achados) ? state.achados : []
     const prostatite = achados.includes('prostatite')
     const calcificacoes = achados.includes('calcificacoes')
-    const textoMedidas = medidas ? formatarEixos(medidas, 'cm') : '____ x ____ x ____ cm'
+    const textoMedidas = medidas ? formatarEixos(medidas, 'cm') : ''
 
     const body: string[] = []
-    if (padrao === 'hpb') {
+    if (!medidas) {
+      // Pendência bloqueante: nada de lacuna "____" nem de dimensões afirmadas.
+      body.push('Próstata: medidas pendentes.')
+    } else if (padrao === 'hpb') {
       body.push(`Próstata medindo ${textoMedidas}, de contornos regulares, com aumento volumétrico da zona de transição, que apresenta ecotextura heterogênea, comprimindo a zona periférica.`)
     } else if (padrao === 'aumentada') {
       body.push(`Próstata aumentada de volume, medindo ${textoMedidas}, de contornos regulares.`)
@@ -206,11 +208,12 @@ const prostataModule: OrganModule = {
       ? ` (volume estimado de ${ptBr1(volume)} cm³ e peso aproximado de ${ptBr1(peso)} gramas)`
       : ''
     const conclusion: string[] = []
-    if (padrao === 'hpb') {
-      // Sem as três medidas a pendência bloqueia; a frase não afirma o diagnóstico.
-      conclusion.push(medidas ? `Hiperplasia prostática benigna${medidasConclusao}.` : 'Próstata com aumento da zona de transição, medidas pendentes.')
+    if (!medidas) {
+      conclusion.push('Próstata: medidas pendentes.')
+    } else if (padrao === 'hpb') {
+      conclusion.push(`Hiperplasia prostática benigna${medidasConclusao}.`)
     } else if (padrao === 'aumentada') {
-      conclusion.push(medidas ? `Próstata de volume aumentado${medidasConclusao}.` : 'Próstata de volume aumentado, medidas pendentes.')
+      conclusion.push(`Próstata de volume aumentado${medidasConclusao}.`)
     } else {
       conclusion.push(`Próstata de dimensões normais${medidasConclusao}.`)
     }
@@ -218,7 +221,7 @@ const prostataModule: OrganModule = {
     if (calcificacoes) conclusion.push('Calcificações prostáticas.')
     if (prostatite) conclusion.push('Alterações ecográficas que podem corresponder a prostatite, a correlacionar clinicamente.')
 
-    return { body: body.join('\n'), conclusion, isNormal: padrao === 'normal' && achados.length === 0 }
+    return { body: body.join('\n'), conclusion, isNormal: Boolean(medidas) && padrao === 'normal' && achados.length === 0 }
   },
 }
 

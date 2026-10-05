@@ -113,8 +113,11 @@ export function composeReport(
   // Achado marcado sem os dados que o descrevem: nenhum texto, só o motivo.
   if (pendencias.length > 0) return { text: '', conclusion: [], alteredCount, pendencias }
 
-  // Achado marcado sem os dados que o descrevem: nenhum texto, só o motivo.
-  if (pendencias.length > 0) return { text: '', conclusion: [], alteredCount, pendencias }
+  // Consolidação opcional entre seções (ex.: mesmo achado bilateral em um item só).
+  if (category.resolveConclusionItems) {
+    const consolidated = category.resolveConclusionItems([...conclusion], state)
+    conclusion.splice(0, conclusion.length, ...consolidated)
+  }
 
   // Monta a conclusão numerada (ou frase de normalidade).
   let conclusionBlock: string
