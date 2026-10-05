@@ -29,6 +29,7 @@ const files = [
   'tests/pesquisaEndometrioseStructured.manual.ts',
   'tests/perfilBiofisicoFetal.manual.ts',
   'tests/ecocardiografiaFetalStructured.manual.ts',
+  'tests/axilasStructured.manual.ts',
   'tests/fetalGrowthContext.manual.ts',
   'tests/fetalGrowthPercentile.manual.ts',
   'tests/fetalGrowthSource.manual.ts',

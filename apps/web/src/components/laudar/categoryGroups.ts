@@ -41,7 +41,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'pequenas_partes',
     label: 'Pequenas partes',
-    categories: ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA'],
+    categories: ['TIREOIDE', 'PARATIREOIDE', 'GLANDULAS_SALIVARES', 'CERVICAL', 'PARTES_MOLES', 'MAMA_MASCULINA', 'AXILAS'],
     shortcuts: ['MAMARIA'],
   },
   {
@@ -106,6 +106,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   PESQUISA_ENDOMETRIOSE: ['endometriose', 'endometriose profunda', 'endometrioma', 'mapeamento de endometriose', 'adenomiose', 'sinal de deslizamento'],
   HYCOSY: ['hycosy', 'histerossonossalpingografia', 'histerossalpingo', 'tubas', 'trompas', 'perviedade tubaria', 'permeabilidade tubaria', 'infertilidade'],
   MAMARIA: ['mama', 'mamas', 'mamaria', 'axila', 'axilas', 'bi-rads', 'birads'],
+  AXILAS: ['axila', 'axilas', 'regioes axilares', 'linfonodo axilar', 'linfonodos axilares'],
   MAMA_MASCULINA: ['mama masculina', 'ginecomastia', 'homem', 'masculino', 'retroareolar'],
   TIREOIDE: ['tiroide', 'tireoide', 'ti-rads', 'tirads', 'nodulo tireoidiano'],
   PAREDE_ABDOMINAL: ['parede', 'hernia'],

@@ -17,6 +17,7 @@ import { pesquisaEndometriose } from './organs/pesquisaEndometriose'
 import { hycosy } from './organs/hycosy'
 import { perfilBiofisicoFetal } from './organs/perfilBiofisicoFetal'
 import { ecocardiografiaFetal } from './organs/ecocardiografiaFetal'
+import { axilas } from './organs/axilas'
 import { abdomeSuperior } from './organs/abdomeSuperior'
 import { cervical } from './organs/cervical'
 import { cervicometria } from './organs/cervicometria'
@@ -60,6 +61,7 @@ export { pesquisaEndometriose } from './organs/pesquisaEndometriose'
 export { hycosy } from './organs/hycosy'
 export { perfilBiofisicoFetal } from './organs/perfilBiofisicoFetal'
 export { ecocardiografiaFetal } from './organs/ecocardiografiaFetal'
+export { axilas } from './organs/axilas'
 export { abdomeSuperior } from './organs/abdomeSuperior'
 export { cervical } from './organs/cervical'
 export { cervicometria } from './organs/cervicometria'
@@ -118,6 +120,7 @@ export const GENERIC_CATEGORIES: ExamCategory[] = [
   hycosy,
   perfilBiofisicoFetal,
   ecocardiografiaFetal,
+  axilas,
   pesquisaEndometriose,
 ]
 export const CATEGORIES: Record<string, ExamCategory> = Object.fromEntries(

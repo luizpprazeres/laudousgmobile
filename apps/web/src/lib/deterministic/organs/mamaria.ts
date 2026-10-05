@@ -15,7 +15,7 @@
  */
 
 import type { ExamCategory } from './abdomeTotal'
-import type { Field, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
+import type { Field, FieldOption, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
 import { biRadsSpec } from '../../calculators/specs'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -284,6 +284,15 @@ function initialState(): OrganState {
 }
 
 export const AXILAR_NORMAL_CORPO = 'Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.'
+export const AXILAR_NORMAL_CONCLUSAO = 'Linfonodos axilares normais.'
+
+/** Descritores do linfonodo axilar — reaproveitados pelo card AXILAS (organs/axilas.ts). */
+export const AXILA_FORMA_OPTIONS: FieldOption[] = [
+  { value: 'oval', label: 'Oval' }, { value: 'redonda', label: 'Redonda' }, { value: 'irregular', label: 'Irregular' },
+]
+export const AXILA_HILO_OPTIONS: FieldOption[] = [
+  { value: 'preservado', label: 'Preservado' }, { value: 'reduzido', label: 'Reduzido' }, { value: 'ausente', label: 'Ausente' },
+]
 
 // ── Axilas (seção própria) ───────────────────────────────────────────────────
 const axilasModule: OrganModule = {
@@ -304,12 +313,8 @@ const axilasModule: OrganModule = {
             { key: 'lado', label: 'Lado', kind: 'mini-segmented', options: [
               { value: 'direita', label: 'Direita' }, { value: 'esquerda', label: 'Esquerda' }, { value: 'bilateral', label: 'Bilateral' },
             ] },
-            { key: 'forma', label: 'Forma', kind: 'mini-segmented', options: [
-              { value: 'oval', label: 'Oval' }, { value: 'redonda', label: 'Redonda' }, { value: 'irregular', label: 'Irregular' },
-            ] },
-            { key: 'hilo', label: 'Hilo gorduroso', kind: 'mini-segmented', options: [
-              { value: 'preservado', label: 'Preservado' }, { value: 'reduzido', label: 'Reduzido' }, { value: 'ausente', label: 'Ausente' },
-            ] },
+            { key: 'forma', label: 'Forma', kind: 'mini-segmented', options: AXILA_FORMA_OPTIONS },
+            { key: 'hilo', label: 'Hilo gorduroso', kind: 'mini-segmented', options: AXILA_HILO_OPTIONS },
             { key: 'cortical_cm', label: 'Espessura cortical (cm)', kind: 'text', placeholder: '0,4' },
             { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '1,8 x 0,8' },
             { key: 'desc', label: 'Descrição complementar', kind: 'text', placeholder: 'outros detalhes relevantes' },
@@ -330,7 +335,7 @@ const axilasModule: OrganModule = {
   compose: (state): OrganComposition => {
     const axilas = String(state.axilas ?? 'nao')
     if (axilas === 'normais') {
-      return { body: AXILAR_NORMAL_CORPO, conclusion: ['Linfonodos axilares normais.'], isNormal: false }
+      return { body: AXILAR_NORMAL_CORPO, conclusion: [AXILAR_NORMAL_CONCLUSAO], isNormal: false }
     }
     if (axilas === 'alteradas') {
       const d = String(state['axilas.alteradas.desc'] ?? '').trim()

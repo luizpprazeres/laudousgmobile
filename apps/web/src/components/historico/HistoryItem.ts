@@ -48,6 +48,7 @@ export function categoriaLabel(code: string): string {
     OBSTETRICA: 'Obstétrica',
     PERFIL_BIOFISICO_FETAL: 'Perfil biofísico fetal',
     ECOCARDIOGRAFIA_FETAL: 'Ecocardiografia fetal',
+    AXILAS: 'Axilas',
     MORFOLOGICO: 'Morfológica',
     DOPPLER_OBSTETRICO: 'Doppler obstétrico',
     DOPPLER_RENAL: 'Doppler renal',
