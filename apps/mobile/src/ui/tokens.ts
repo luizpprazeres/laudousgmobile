@@ -165,13 +165,8 @@ export const RELEASED_CATS = [
   { id: "LIVRE",                label: "Laudo Livre",         color: "#64748B", sub: "Exame sem categoria específica" },
 ] as const satisfies readonly CategoryShape[];
 
-/**
- * Modelos aprovados em 30/09/2026, preparados no Android mas deliberadamente
- * ocultos até Web, iOS, Android e backend fecharem o mesmo gate de lançamento.
- * A ativação é uma mudança de release coordenada, não uma flag remota que possa
- * deixar só um cliente expondo um contrato incompleto.
- */
-export const APPROVED_PENDING_CATS = [
+/** Modelos clínicos estruturados aprovados e disponíveis no Android. */
+export const APPROVED_CLINICAL_CATS = [
   { id: "ABDOMEN_TOTAL_DOPPLER", label: "Abdome Total com Doppler", color: "#047857", sub: "Abdome total e sistema esplâncnico" },
   { id: "DOPPLER_VENOSO_MMSS", label: "Doppler Venoso MMSS", color: "#2563EB", sub: "Membro superior unilateral ou bilateral" },
   { id: "DOPPLER_ARTERIAL_MMSS", label: "Doppler Arterial MMSS", color: "#DC2626", sub: "Membro superior e manobras dinâmicas" },
@@ -192,17 +187,14 @@ export const HEPATIC_PENDING_CATS = [
 
 export type Category =
   | (typeof RELEASED_CATS)[number]
-  | (typeof APPROVED_PENDING_CATS)[number]
+  | (typeof APPROVED_CLINICAL_CATS)[number]
   | (typeof HEPATIC_PENDING_CATS)[number];
-
-// Só mudar para true no commit de ativação simultânea das três plataformas.
-export const APPROVED_CLINICAL_MODELS_ENABLED = false;
 
 // Gate dos modelos hepáticos. Mesma regra: só no commit de ativação conjunta.
 export const HEPATIC_ANDROID_MODELS_ENABLED = false;
 
 export const CATS: readonly Category[] = [
   ...RELEASED_CATS,
-  ...(APPROVED_CLINICAL_MODELS_ENABLED ? APPROVED_PENDING_CATS : []),
+  ...APPROVED_CLINICAL_CATS,
   ...(HEPATIC_ANDROID_MODELS_ENABLED ? HEPATIC_PENDING_CATS : []),
 ];

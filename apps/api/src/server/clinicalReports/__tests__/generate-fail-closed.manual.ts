@@ -24,13 +24,14 @@ const incompleteAbdomen = { ...shared.createInitialClinicalModelInput(category),
 const incompletePortal = shared.createInitialClinicalModelInput(category);
 const completeAbdomen = { ...incompletePortal, portalVein: { caliberCm: 1.2, velocityCms: 20, flow: "hepatopetal" } };
 type Event = { type: string; code?: string; message?: string; final_text?: string };
-type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean };
+type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean };
 
 async function execute(scenario: Scenario) {
   const selected = scenario.category === null ? undefined : scenario.category ?? category;
   const detected = scenario.detectedCategory ?? selected ?? "ABDOMEN_TOTAL";
   const config = { RENDERER_CATEGORIES: scenario.rendererCategories ?? category,
-    DOPPLER_STANDALONE_V2: "false", HARD_MODE_ENABLED: "true", FAST_PATH_DEFAULT: "false",
+    DOPPLER_STANDALONE_V2: "false", DOPPLER_RENAL_WRITER_ENABLED: scenario.renalEnabled === false ? "false" : "true",
+    HARD_MODE_ENABLED: "true", FAST_PATH_DEFAULT: "false",
     GENERATION_AUDIT_ENABLED: "false", WRITER_V2_CATEGORIES: scenario.writerV2 ? "ABDOMEN_TOTAL" : "", WRITER_V2_USER_ID: scenario.writerV2 ? "synthetic-user" : "",
     WRITER_V2_ABDOME_USER_ID: "", COMMAND_OPERATIONS: "false", OPENAI_MODEL_WRITER: "test" };
   const events: Event[] = [];
@@ -73,7 +74,7 @@ async function execute(scenario: Scenario) {
     "@/server/pipeline/bundleLoader": { loadDeterministicBundle: async () => ({ blocks: [], error: null }) },
     "@/server/db/lookups": {
       getWritingStyleById: async () => ({ active: true, code: "CLASSICO_COMPLETO" }),
-      getKnownCategories: async () => ({ codes: new Set([...(scenario.knownStructured === false ? [] : [category]), "ABDOMEN_TOTAL", "LIVRE", "TESTE"]), labels: new Map() }),
+      getKnownCategories: async () => ({ codes: new Set([...(scenario.knownStructured === false ? [] : [category, ...(selected ? [selected] : [])]), "ABDOMEN_TOTAL", "LIVRE", "TESTE"]), labels: new Map() }),
       resolveAccountReportPreference: async () => ({ rendererPreferences: {} }),
       getVariantTemplateBody: async () => "synthetic-template",
     },
@@ -138,15 +139,29 @@ async function main() {
       checks++;
     }
   }
+  // Modelos aprovados não dependem mais da allowlist histórica, e o modo hard
+  // não pode contornar o contrato estruturado.
   for (const scenario of [{ rendererCategories: "" }, { hard: true }]) {
     const result = await execute(scenario);
-    assert.equal(result.rendererCalls, 0);
+    assert.equal(result.rendererCalls, 1);
     assert.equal(result.writerCalls, 0);
-    assert(result.events.some(e => e.type === "error" && /free writer blocked/.test(e.message ?? "")));
+    assert(result.events.some(e => e.type === "error" && /80 character|Veia porta exige/.test(e.message ?? "")));
     assert(!result.events.some(e => e.type === "token" || e.type === "done"));
     assert(!result.statuses.includes("generated"));
     checks++;
   }
+  const renalRollback = await execute({
+    category: "DOPPLER_RENAL",
+    detectedCategory: "DOPPLER_RENAL",
+    rendererCategories: "DOPPLER_RENAL",
+    renalEnabled: false,
+  });
+  assert.equal(renalRollback.rendererCalls, 0, "rollback renal desliga o writer dedicado");
+  assert.equal(renalRollback.writerCalls, 0, "rollback renal nunca abre o writer geral");
+  assert(renalRollback.events.some(e => e.type === "error" && /free writer blocked/.test(e.message ?? "")));
+  assert(!renalRollback.events.some(e => e.type === "token" || e.type === "done"));
+  assert(!renalRollback.statuses.includes("generated"));
+  checks++;
   const complete = await execute({ extracted: completeAbdomen });
   assert.equal(complete.rendererCalls, 1);
   assert.equal(complete.writerCalls, 0);

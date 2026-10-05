@@ -5,6 +5,7 @@ import { ehEstiloVivo } from "@/server/renderer/catalog/registry";
 import { renderizarSelecao } from "@/server/renderer/catalog/alteracoes";
 import { contextoDeRender } from "@/server/renderer/catalog/contextoDeRender";
 import { alteracoesDe } from "@/server/renderer/catalog/alteracoes/index";
+import { structuredRendererFor } from "@/server/catalog-api/structuredRenderers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,6 +61,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
       { error: "estilo desconhecido", suportados: ["CLASSICO_COMPLETO", "OBJETIVO"] },
       { status: 400 },
     );
+  }
+
+  const structuredRenderer = structuredRendererFor(category);
+  if (structuredRenderer) {
+    if (corpo.alteracoes.length > 0) {
+      return Response.json({ error: "esta categoria recebe dados estruturados, não ids de alteração" }, { status: 400 });
+    }
+    const rendered = structuredRenderer(corpo.dados, corpo.estilo);
+    if (!rendered.ok) {
+      return Response.json(
+        { error: rendered.error, conflitos: rendered.issues.map((issue) => ({ motivo: `${issue.path}: ${issue.message}` })) },
+        { status: 409 },
+      );
+    }
+    return Response.json({
+      categoria: category,
+      estilo: corpo.estilo,
+      alteracoes: [],
+      laudo: rendered.text,
+    });
   }
 
   const disponiveis = alteracoesDe(category);

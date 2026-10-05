@@ -16,11 +16,8 @@ if (CLINICAL_WEB_MODELS.some((entry) => !CLINICAL_MODEL_CODES.includes(entry.id)
   throw new Error('Catálogo Web divergente do contrato compartilhado dos novos modelos clínicos.')
 }
 
-/** Gate conjunto: default ausente/false mantém os cinco modelos fora do seletor. */
-export const CLINICAL_WEB_MODELS_ENABLED = process.env.NEXT_PUBLIC_CLINICAL_MODELS_V1 === 'true'
-
 export function isClinicalWebModel(value: string): value is ClinicalModelCode {
-  return CLINICAL_WEB_MODELS_ENABLED && isClinicalModelCode(value)
+  return isClinicalModelCode(value)
 }
 
 export function clinicalModelName(value: ClinicalModelCode) {

@@ -4,6 +4,7 @@ export const STRUCTURED_WEB_CATEGORY_CODES = [
   'DOPPLER_CAROTIDAS', 'OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO',
   'CERVICOMETRIA', 'PELVE_FEMININA', 'MAMARIA', 'TIREOIDE', 'CERVICAL',
   'PARTES_MOLES', 'MUSCULOESQUELETICO',
+  'DOPPLER_RENAL',
 ] as const
 
 export const WRITER_CATEGORY_OPTIONS = [
@@ -17,7 +18,6 @@ export const WRITER_CATEGORY_OPTIONS = [
   { id: 'DOPPLER_VENOSO_MMII_MEDIDAS', name: 'Doppler venoso MMII · medidas', family: 'Vascular' },
   { id: 'DOPPLER_ARTERIAL_MMII', name: 'Doppler arterial MMII', family: 'Vascular' },
   { id: 'DOPPLER_FISTULA_AV', name: 'Doppler de fístula AV', family: 'Vascular' },
-  { id: 'DOPPLER_RENAL', name: 'Doppler renal', family: 'Vascular' },
   { id: 'TRANSFONTANELA', name: 'Transfontanelar', family: 'Outros exames' },
   { id: 'OCULAR', name: 'Ocular', family: 'Outros exames' },
   { id: 'LIVRE', name: 'Laudo livre', family: 'Outros exames' },

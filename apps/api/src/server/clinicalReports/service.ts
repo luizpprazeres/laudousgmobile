@@ -39,11 +39,8 @@ export class ClinicalReportError extends Error {
   }
 }
 
-export function clinicalModelsV1Enabled(rendererCategories: string): boolean {
-  const enabled = new Set(
-    rendererCategories.split(",").map((code) => code.trim()).filter(Boolean),
-  );
-  return CLINICAL_MODEL_CODES.every((code) => enabled.has(code));
+export function clinicalModelsV1Enabled(flag = "true"): boolean {
+  return flag !== "false";
 }
 
 export function normalizeContractForGeneration(input: ClinicalModelInput): ClinicalModelInput {

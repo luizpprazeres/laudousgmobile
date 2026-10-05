@@ -49,13 +49,17 @@ for (const code of [
 ]) {
   assert.equal(
     rendererCategoryEnabled(code, { RENDERER_CATEGORIES: "", DOPPLER_STANDALONE_V2: "true" }),
-    false,
-    `${code}: gate deve continuar desligado por padrão`,
+    true,
+    `${code}: modelo aprovado deve ficar ativo por padrão`,
   );
   assert.equal(
-    rendererCategoryEnabled(code, { RENDERER_CATEGORIES: code, DOPPLER_STANDALONE_V2: "true" }),
-    true,
-    `${code}: gate deve responder apenas à allowlist explícita`,
+    rendererCategoryEnabled(code, {
+      RENDERER_CATEGORIES: code,
+      DOPPLER_STANDALONE_V2: "true",
+      CLINICAL_MODELS_V1_ENABLED: "false",
+    }),
+    false,
+    `${code}: rollback deve vencer a allowlist histórica`,
   );
 }
 

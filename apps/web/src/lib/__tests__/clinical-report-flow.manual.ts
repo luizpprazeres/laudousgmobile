@@ -11,6 +11,7 @@ import {
   startClinicalReportPersistence,
   startClinicalReportReview,
 } from '../clinicalReportFlow'
+import { CLINICAL_WEB_MODELS, isClinicalWebModel } from '../clinicalModels'
 
 const originalFetch = globalThis.fetch
 const requests: Array<{ url: string; body: unknown }> = []
@@ -32,6 +33,10 @@ async function main() {
   }
 
   try {
+    assert.equal(CLINICAL_WEB_MODELS.length, 5)
+    for (const { id } of CLINICAL_WEB_MODELS) assert.equal(isClinicalWebModel(id), true, `${id} deve estar ativo na Web`)
+    assert.equal(isClinicalWebModel('TESTE'), false)
+
     let state = initialClinicalReportFlow
     assert.equal(canReleaseClinicalReport(state), false)
 

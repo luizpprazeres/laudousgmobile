@@ -20,10 +20,8 @@ export type HepaticAndroidModelCode = (typeof HEPATIC_ANDROID_MODELS)[number]["i
 
 /**
  * Gate fail-closed, desligado (definido em `ui/tokens.ts`, junto do seletor).
- * Como em `APPROVED_CLINICAL_MODELS_ENABLED`, ativar é uma mudança de release
- * coordenada com Web, iOS e backend (categorias ativas + registro de critérios
- * de qualidade aprovado), não uma flag remota que deixe só este cliente
- * expondo o contrato.
+ * Ativar continua sendo uma mudança coordenada com Web, iOS e backend
+ * (categorias ativas + registro de critérios de qualidade aprovado).
  */
 export { HEPATIC_ANDROID_MODELS_ENABLED };
 

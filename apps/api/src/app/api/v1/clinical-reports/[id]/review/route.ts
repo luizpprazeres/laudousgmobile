@@ -17,8 +17,8 @@ const json = (body: unknown, status = 200) => Response.json(body, {
 export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
-  // Mesmo gate conjunto da criação: com o rollout OFF a superfície v1 inteira some.
-  if (!clinicalModelsV1Enabled(env().RENDERER_CATEGORIES)) {
+  // Mesmo rollback conjunto da criação: `false` suspende a superfície inteira.
+  if (!clinicalModelsV1Enabled(env().CLINICAL_MODELS_V1_ENABLED)) {
     return json({ error: "clinical_models_v1_unavailable" }, 404);
   }
   const { id } = await context.params;

@@ -72,6 +72,11 @@ const ServerEnvSchema = z.object({
   // precisa de template_body na variante resolvida — senão cai no writer
   // (fallback automático, rollback trivial = tirar da lista).
   RENDERER_CATEGORIES: z.string().default(""),
+  // Cinco modelos clínicos já aprovados (abdome total com Doppler, Doppler
+  // venoso/arterial de MMSS, tórax e quadril infantil). Ativos por padrão e
+  // independentes da allowlist histórica. `false` suspende o conjunto em
+  // fail-closed, sem encaminhar para o writer geral.
+  CLINICAL_MODELS_V1_ENABLED: z.string().default("true"),
   // Modelos hepáticos estruturados. O endpoint dedicado permanece indisponível
   // até a ativação explícita; cadastrar a rota não publica categorias novas.
   HEPATIC_REPORTS_V1_ENABLED: z.string().default("false"),
@@ -79,6 +84,11 @@ const ServerEnvSchema = z.object({
   // renderer novo mesmo antes de a allowlist histórica ser atualizada no
   // Vercel. Rollback explícito: false volta ao writer antigo.
   DOPPLER_STANDALONE_V2: z.string().default("true"),
+  // Doppler renal aprovado: o writer dedicado e auditado fica ativo por padrão,
+  // sem depender da allowlist histórica. Rollback operacional explícito:
+  // `DOPPLER_RENAL_WRITER_ENABLED=false` suspende a geração renal em fail-closed;
+  // nunca a devolve silenciosamente ao writer geral.
+  DOPPLER_RENAL_WRITER_ENABLED: z.string().default("true"),
   // Projeto modelos (docs/projeto-modelos/): categorias cujo renderer monta o
   // laudo a partir do CATÁLOGO (renderer/catalog/) em vez das frases literais
   // em código. Lista CSV de category_codes. Vazio = comportamento atual, byte
@@ -220,10 +230,9 @@ const ServerEnvSchema = z.object({
   PELVE_WRITER: z.string().default("false"),
   // Modelo do PELVE writer_guarded (mesma justificativa do MSK_WRITER_MODEL).
   PELVE_WRITER_MODEL: z.string().default("gpt-4.1"),
-  // Eixo vascular Doppler (piloto, decisão Claude+Dex2 03/07): DOPPLER_RENAL escrita
+  // Eixo vascular Doppler: DOPPLER_RENAL escrita
   // pelo LLM (writer_guarded) — o médico dita compacto e o template rígido enche de
-  // ____. Gate = membership em RENDERER_CATEGORIES (como DOPPLER_OBSTETRICO); fora da
-  // env → writer geral atual. pipeline/dopplerRenalWriter.ts. Modelo configurável.
+  // ____. Gate próprio acima fica ON por padrão. pipeline/dopplerRenalWriter.ts.
   DOPPLER_RENAL_WRITER_MODEL: z.string().default("gpt-4.1"),
   // Eixo vascular — DOPPLER_VENOSO_MMII writer_guarded (2ª modalidade). Gate =
   // membership em RENDERER_CATEGORIES. Segurança: TVP-only não afirma superficial.

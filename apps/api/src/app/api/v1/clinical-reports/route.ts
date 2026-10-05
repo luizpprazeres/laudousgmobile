@@ -21,9 +21,9 @@ export async function POST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
-  // Rollout conjunto: a rota só abre quando os cinco códigos estiverem na
-  // allowlist do backend. O default vazio mantém o recurso integralmente OFF.
-  if (!clinicalModelsV1Enabled(env().RENDERER_CATEGORIES)) {
+  // Os cinco modelos aprovados ficam ativos por padrão. O gate próprio existe
+  // apenas como rollback fail-closed do conjunto.
+  if (!clinicalModelsV1Enabled(env().CLINICAL_MODELS_V1_ENABLED)) {
     return json({ error: "clinical_models_v1_unavailable" }, 404);
   }
 

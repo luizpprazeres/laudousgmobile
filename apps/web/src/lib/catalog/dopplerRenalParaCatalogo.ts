@@ -153,10 +153,16 @@ function sideDraft(
   if (sideAssessment === 'limited' && !limitation) {
     pending.push({ onde: `artéria renal ${ptSide}`, valor: 'avaliação limitada', motivo: 'descreva a limitação técnica', bloqueia: true })
   }
+  if (sideAssessment === 'not_assessed') {
+    pending.push({ onde: `artéria renal ${ptSide}`, valor: 'não avaliada', motivo: 'selecione o estado da avaliação vascular', bloqueia: true })
+  }
   const hasVascularData = psv.length > 0 || documentedRar !== null || ri.length > 0 ||
     accelerationTime.length > 0 || accelerationIndex.length > 0 || pattern !== 'not_assessed'
-  if (sideAssessment === 'not_assessed' && hasVascularData) {
-    pending.push({ onde: `artéria renal ${ptSide}`, valor: 'medidas preenchidas', motivo: 'selecione o estado da avaliação vascular', bloqueia: true })
+  if (sideAssessment === 'abnormal' && !hasVascularData) {
+    pending.push({ onde: `artéria renal ${ptSide}`, valor: 'com alteração', motivo: 'informe ao menos uma medida ou o padrão espectral observado', bloqueia: true })
+  }
+  if (sideAssessment === 'normal' && (pattern === 'tardus_parvus' || pattern === 'indeterminate')) {
+    pending.push({ onde: `artéria renal ${ptSide}`, valor: pattern, motivo: 'o padrão espectral conflita com a avaliação sem alteração', bloqueia: true })
   }
 
   return {
@@ -173,10 +179,7 @@ function sideDraft(
   }
 }
 
-/**
- * Projeção única do formulário Web. Preserva medidas e lado; não gera texto nem
- * classifica estenose enquanto o contrato clínico permanecer dormente.
- */
+/** Projeção única do formulário Web para o renderer canônico. */
 export function adaptarDopplerRenal(exam: ExamState) {
   const pending: DopplerRenalPending[] = []
   const aortaState = section(exam, 'aorta')
@@ -188,6 +191,12 @@ export function adaptarDopplerRenal(exam: ExamState) {
   }
   if (aortaAssessment === 'not_assessed' && aorticPsv !== null) {
     pending.push({ onde: 'aorta', valor: 'VPS preenchida', motivo: 'selecione o estado da avaliação da aorta', bloqueia: true })
+  }
+  if (aortaAssessment === 'not_assessed' && aorticPsv === null) {
+    pending.push({ onde: 'aorta', valor: 'não avaliada', motivo: 'selecione o estado da avaliação da aorta', bloqueia: true })
+  }
+  if (aortaAssessment === 'abnormal' && aorticPsv === null) {
+    pending.push({ onde: 'aorta', valor: 'com alteração', motivo: 'informe a VPS da aorta', bloqueia: true })
   }
 
   const sides = {
@@ -207,16 +216,9 @@ export function adaptarDopplerRenal(exam: ExamState) {
     maximumMeasurementDifference > 1.8 &&
     Math.abs(maximumMeasurementDifference - 1.8) > 1e-10 * Math.max(1, maximumMeasurementDifference, 1.8)
 
-  pending.push({
-    onde: 'laudo final',
-    valor: 'DOPPLER_RENAL',
-    motivo: 'o contrato estruturado renal permanece em revisão; os achados foram preservados, mas a publicação final ainda não está habilitada',
-    bloqueia: true,
-  })
-
   return {
     dados: {
-      contract_version: 'doppler-renal/web-draft-v1',
+      contract_version: 'doppler-renal/web-v1',
       category_code: 'DOPPLER_RENAL',
       laterality: 'bilateral' as const,
       aorta: {

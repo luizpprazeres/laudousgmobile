@@ -9,16 +9,9 @@ import {
 import { ReviewReportInputSchema } from "../review";
 import { clinicalRendererFallbackBlocked } from "../fallbackPolicy";
 
-const five = [
-  "ABDOMEN_TOTAL_DOPPLER",
-  "DOPPLER_VENOSO_MMSS",
-  "DOPPLER_ARTERIAL_MMSS",
-  "TORAX",
-  "QUADRIL_INFANTIL",
-].join(",");
-assert.equal(clinicalModelsV1Enabled(""), false, "default deve manter o endpoint OFF");
-assert.equal(clinicalModelsV1Enabled("TORAX"), false, "rollout parcial não pode abrir o endpoint");
-assert.equal(clinicalModelsV1Enabled(five), true, "os cinco juntos abrem o endpoint");
+assert.equal(clinicalModelsV1Enabled(), true, "modelos aprovados devem ficar ativos por padrão");
+assert.equal(clinicalModelsV1Enabled("true"), true, "gate explícito mantém o conjunto ativo");
+assert.equal(clinicalModelsV1Enabled("false"), false, "rollback explícito suspende o conjunto");
 assert.equal(clinicalRendererFallbackBlocked("QUADRIL_INFANTIL"), true, "Graf incompleto não pode cair no writer");
 assert.equal(clinicalRendererFallbackBlocked("TORAX"), true, "tórax incompleto não pode inventar achado no writer");
 assert.equal(
@@ -26,6 +19,7 @@ assert.equal(
   true,
   "abdome com Doppler incompleto não pode cair no writer livre",
 );
+assert.equal(clinicalRendererFallbackBlocked("DOPPLER_RENAL"), true, "writer renal auditado não pode cair no writer geral");
 for (const category of ["ABDOMEN_TOTAL", "LIVRE", "TESTE", "MUSCULOESQUELETICO_V2"]) {
   assert.equal(clinicalRendererFallbackBlocked(category), false, `${category}: writer legítimo preservado`);
 }
@@ -114,9 +108,9 @@ for (const route of [
   const source = readFileSync(resolve(process.cwd(), route), "utf8");
   assert.match(source, /verifyJwt\(req\)/, `${route}: autenticação ausente`);
   // Verificação estática: o gate conjunto precede qualquer leitura/escrita do laudo.
-  const gate = source.indexOf("clinicalModelsV1Enabled(env().RENDERER_CATEGORIES)");
+  const gate = source.indexOf("clinicalModelsV1Enabled(env().CLINICAL_MODELS_V1_ENABLED)");
   const action = Math.max(source.indexOf("createClinicalReport({"), source.indexOf("reviewPersistedReport({"));
-  assert.ok(gate > 0 && action > gate, `${route}: rollout OFF deve fechar a rota antes da ação`);
+  assert.ok(gate > 0 && action > gate, `${route}: rollback deve fechar a rota antes da ação`);
 }
 
 async function assertRoutesRequireAuth() {

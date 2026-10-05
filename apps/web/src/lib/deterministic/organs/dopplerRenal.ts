@@ -2,10 +2,6 @@ import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganComposition, OrganModule, OrganState } from '../types'
 import { createSharedKidneyModule } from './urinaryShared'
 
-/** Gate independente: o formulário existe para revisão, mas permanece oculto por padrão. */
-export const DOPPLER_RENAL_STRUCTURED_WEB_ENABLED =
-  process.env.NEXT_PUBLIC_DOPPLER_RENAL_STRUCTURED_WEB === 'true'
-
 const assessmentField: Field = {
   key: 'assessment',
   label: 'Avaliação',

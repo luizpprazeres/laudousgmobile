@@ -3,8 +3,8 @@
  * MSK/PARTES_MOLES/PELVE: prompt base (roteiro + critérios JVB + guards) + few-shots
  * hand-crafted + fact-audit determinístico + guard de formato + streaming.
  *
- * Gate: membership em RENDERER_CATEGORIES (como DOPPLER_OBSTETRICO). Fora da env →
- * o route nem chama isto (cai no writer geral atual). Guard de formato reusa o do MSK.
+ * Gate dedicado ativo por padrão. Falha de auditoria é fail-closed e nunca cai no
+ * writer geral. Rollback explícito suspende a categoria. Guard de formato reusa o MSK.
  */
 import { openai } from "../ai/openai";
 import { env } from "../env";

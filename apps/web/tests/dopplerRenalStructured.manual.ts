@@ -71,17 +71,20 @@ test('preserva três eixos, espessura e medidas vasculares separadas por lado', 
   assert.equal(adapted.dados.sides.right.intrarenal.spectral_pattern, 'tardus_parvus')
   assert.equal(adapted.dados.sides.left.intrarenal.spectral_pattern, 'normal')
   assert.equal(adapted.dados.derived.conclusion_candidate_strict_gt_1_8_cm, true)
-  assert.deepEqual(adapted.pendencias.map((item) => item.onde), ['laudo final'])
+  assert.deepEqual(adapted.pendencias, [])
 })
 
-test('limite de 1,8 cm é estrito e publicação permanece bloqueada', () => {
+test('limite de 1,8 cm é estrito e somente os dados clínicos mínimos bloqueiam', () => {
   const state = initialExamState(dopplerRenal)
   state.rim_direito = { ...state.rim_direito, medidas: '10,2 x 4,8 x 5,1' }
   state.rim_esquerdo = { ...state.rim_esquerdo, medidas: '12,0 x 5,2 x 5,4' }
   const adapted = adaptarDopplerRenal(state)
   assert.equal(adapted.dados.derived.maximum_renal_measurement_difference_cm, 1.8000000000000007)
   assert.equal(adapted.dados.derived.conclusion_candidate_strict_gt_1_8_cm, false)
-  assert.ok(adapted.pendencias.some((item) => item.onde === 'laudo final' && item.bloqueia))
+  assert.ok(adapted.pendencias.some((item) => item.onde === 'aorta' && item.bloqueia))
+  assert.ok(adapted.pendencias.some((item) => item.onde === 'artéria renal direita' && item.bloqueia))
+  assert.ok(adapted.pendencias.some((item) => item.onde === 'artéria renal esquerda' && item.bloqueia))
+  assert.ok(!adapted.pendencias.some((item) => item.onde === 'laudo final'))
 })
 
 test('assimetria usa a maior entre L, AP e T de cada rim', () => {
@@ -93,6 +96,25 @@ test('assimetria usa a maior entre L, AP e T de cada rim', () => {
   assert.equal(adapted.dados.derived.left_maximum_measurement_cm, 10.5)
   assert.equal(adapted.dados.derived.maximum_renal_measurement_difference_cm, 2.5)
   assert.equal(adapted.dados.derived.conclusion_candidate_strict_gt_1_8_cm, true)
+})
+
+test('estado alterado sem dado objetivo falha fechado', () => {
+  const state = initialExamState(dopplerRenal)
+  state.aorta = { ...state.aorta, assessment: 'abnormal' }
+  state.arteria_renal_direita = { ...state.arteria_renal_direita, assessment: 'abnormal' }
+  state.arteria_renal_esquerda = { ...state.arteria_renal_esquerda, assessment: 'normal' }
+  const adapted = adaptarDopplerRenal(state)
+  assert.ok(adapted.pendencias.some((item) => item.onde === 'aorta' && item.motivo.includes('VPS')))
+  assert.ok(adapted.pendencias.some((item) => item.onde === 'artéria renal direita' && item.motivo.includes('medida')))
+})
+
+test('padrão tardus-parvus conflita com avaliação sem alteração', () => {
+  const state = initialExamState(dopplerRenal)
+  state.aorta = { ...state.aorta, assessment: 'normal', vps_cms: '80' }
+  state.arteria_renal_direita = { ...state.arteria_renal_direita, assessment: 'normal', spectral_pattern: 'tardus_parvus' }
+  state.arteria_renal_esquerda = { ...state.arteria_renal_esquerda, assessment: 'normal' }
+  const adapted = adaptarDopplerRenal(state)
+  assert.ok(adapted.pendencias.some((item) => item.onde === 'artéria renal direita' && item.motivo.includes('conflita')))
 })
 
 test('entrada inválida e dados sem estado de avaliação geram bloqueios nomeados', () => {

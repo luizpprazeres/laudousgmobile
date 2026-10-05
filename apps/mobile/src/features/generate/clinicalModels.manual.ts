@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { APPROVED_CLINICAL_MODELS_ENABLED, APPROVED_PENDING_CATS, CATS } from "../../ui/tokens";
+import { APPROVED_CLINICAL_CATS, CATS } from "../../ui/tokens";
 import { ANDROID_MODEL_POLICIES, APPROVED_ANDROID_MODEL_CODES, canCommitGrafClassification, grafReadiness } from "./clinicalModels";
 
-test("cinco modelos aprovados ficam preparados mas fora do seletor antes do gate simultaneo", () => {
-  assert.equal(APPROVED_CLINICAL_MODELS_ENABLED, false);
-  assert.deepEqual(APPROVED_PENDING_CATS.map((category) => category.id), APPROVED_ANDROID_MODEL_CODES);
+test("cinco modelos aprovados ficam disponíveis juntos no seletor Android", () => {
+  assert.deepEqual(APPROVED_CLINICAL_CATS.map((category) => category.id), APPROVED_ANDROID_MODEL_CODES);
   for (const code of APPROVED_ANDROID_MODEL_CODES) {
-    assert.equal(CATS.some((category) => category.id === code), false, `${code} apareceu antes do gate`);
+    assert.equal(CATS.filter((category) => category.id === code).length, 1, `${code} deve aparecer uma vez`);
     assert.ok(ANDROID_MODEL_POLICIES[code]);
   }
 });

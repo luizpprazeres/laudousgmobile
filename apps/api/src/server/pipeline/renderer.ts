@@ -434,9 +434,8 @@ export async function* runRendererStream(args: {
     };
   }
 
-  // DOPPLER_RENAL writer_guarded (piloto vascular, decisão Claude+Dex2). Gate =
-  // membership em RENDERER_CATEGORIES (o route só chama runRendererStream se a
-  // categoria está na env); aqui sempre roteia p/ o writer (não há renderer). O
+  // DOPPLER_RENAL writer_guarded aprovado. O gate próprio fica ativo por padrão;
+  // aqui sempre roteia p/ o writer dedicado (não há renderer determinístico). O
   // médico dita compacto → o LLM emite só o ditado (nunca ____), com critérios JVB.
   // DOPPLER_VENOSO_MMII writer_guarded (2ª modalidade vascular). Gate = membership
   // em RENDERER_CATEGORIES. Segurança: TVP-only não afirma competência do superficial.

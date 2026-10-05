@@ -2,7 +2,7 @@ import {
   resolveWriterModel,
   WriterModelResolutionError,
 } from "../modelResolver";
-import { resolveGenerationPath } from "../generationPathResolver";
+import { rendererCategoryEnabled, resolveGenerationPath } from "../generationPathResolver";
 import { writerRequestParams } from "../../ai/writerClient";
 
 const baseEnv = {
@@ -17,6 +17,7 @@ const baseEnv = {
   TESTE_ALLOWED_USER_ID: "luiz",
   RENDERER_CATEGORIES: "ABDOMEN_TOTAL,TIREOIDE",
   DOPPLER_STANDALONE_V2: "true",
+  DOPPLER_RENAL_WRITER_ENABLED: "true",
 };
 
 let passed = 0;
@@ -150,6 +151,30 @@ const dopplerRollback = resolveGenerationPath(
 check(
   "Doppler v2 tem rollback explícito para o writer",
   dopplerRollback.path === "writer-pure" && dopplerRollback.guardsMode === "full",
+);
+
+const renalDedicated = resolveGenerationPath(
+  { mode: "standard", categoryCode: "DOPPLER_RENAL" },
+  { ...baseEnv, RENDERER_CATEGORIES: "" },
+);
+check("Doppler renal aprovado usa writer dedicado sem allowlist", renalDedicated.path === "renderer");
+const renalHard = resolveGenerationPath(
+  { mode: "hard", categoryCode: "DOPPLER_RENAL" },
+  { ...hardEnabledEnv, RENDERER_CATEGORIES: "" },
+);
+check("modo hard não contorna o fact-audit renal", renalHard.path === "renderer");
+const renalRollback = resolveGenerationPath(
+  { mode: "standard", categoryCode: "DOPPLER_RENAL" },
+  { ...baseEnv, RENDERER_CATEGORIES: "", DOPPLER_RENAL_WRITER_ENABLED: "false" },
+);
+check("Doppler renal mantém rollback explícito", renalRollback.path === "writer-pure");
+check(
+  "rollback renal vence allowlist histórica",
+  !rendererCategoryEnabled("DOPPLER_RENAL", {
+    RENDERER_CATEGORIES: "DOPPLER_RENAL",
+    DOPPLER_STANDALONE_V2: "true",
+    DOPPLER_RENAL_WRITER_ENABLED: "false",
+  }),
 );
 
 const hardPathOff = resolveGenerationPath(

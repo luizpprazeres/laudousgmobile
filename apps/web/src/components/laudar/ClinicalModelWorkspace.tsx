@@ -86,7 +86,7 @@ export function ClinicalModelWorkspace({ category, onBack }: Props) {
       <header className="mb-5 flex flex-wrap items-center gap-3">
         <button type="button" onClick={onBack} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold dark:border-gray-700 dark:bg-gray-900"><ArrowLeft className="h-4 w-4" /> Exames</button>
         <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[.14em] text-emerald-700 dark:text-emerald-300">Modelo clínico estruturado</p><h1 className="truncate text-xl font-bold">{clinicalModelName(category)}</h1></div>
-        <span className="ml-auto rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">Ativação conjunta pendente</span>
+        <span className="ml-auto rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">Disponível</span>
       </header>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(420px,.9fr)]">
