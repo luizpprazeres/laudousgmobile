@@ -279,10 +279,13 @@ export function auditDopplerRenalFacts(rawInput: string, laudo: string): Doppler
     : null;
   const conclusion = laudo.split(/CONCLUS[ÃA]O:/i)[1] ?? "";
   const concludesAsymmetry = /assimetria\s+renal/i.test(conclusion);
-  if (axisDifference !== null && axisDifference > 1.8001 && !concludesAsymmetry) {
+  const exceedsAsymmetryThreshold = axisDifference !== null
+    && axisDifference > 1.8
+    && Math.abs(axisDifference - 1.8) > Number.EPSILON * Math.max(1, axisDifference, 1.8) * 8;
+  if (exceedsAsymmetryThreshold && !concludesAsymmetry) {
     unsupportedAssertions.push("assimetria renal > 1,8 cm ausente da conclusão");
   }
-  if (axisDifference !== null && axisDifference <= 1.8001 && concludesAsymmetry) {
+  if (axisDifference !== null && !exceedsAsymmetryThreshold && concludesAsymmetry) {
     unsupportedAssertions.push("assimetria renal concluída sem diferença estritamente > 1,8 cm");
   }
 
