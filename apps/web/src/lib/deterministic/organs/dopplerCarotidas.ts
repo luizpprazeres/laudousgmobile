@@ -4,9 +4,11 @@ import type { OrganModule, OrganState } from '../types'
 function sideModule(id: 'direita' | 'esquerda'): OrganModule {
   return {
     schema: { id, name: id === 'direita' ? 'Lado direito' : 'Lado esquerdo', category: 'DOPPLER_CAROTIDAS', fields: [] },
+    // Nada presume normalidade: avaliação, placas e direção vertebral começam vazias.
     initialState: (): OrganState => ({
+      avaliacao: '', limitacao: '', placas_status: '',
       emi: '', comum_vps: '', comum_vdf: '', interna_vps: '', interna_vdf: '',
-      externa_vps: '', externa_vdf: '', vertebral_vps: '', vertebral_direcao: 'anterogrado',
+      externa_vps: '', externa_vdf: '', vertebral_vps: '', vertebral_direcao: '',
       placas_ids: [],
     }),
     compose: () => ({ body: '', conclusion: [], isNormal: true }),
@@ -15,7 +17,7 @@ function sideModule(id: 'direita' | 'esquerda'): OrganModule {
 
 const conclusionModule: OrganModule = {
   schema: { id: 'conclusao', name: 'Conclusão', category: 'DOPPLER_CAROTIDAS', fields: [] },
-  initialState: (): OrganState => ({ classificacao: 'normal', lado: '', conclusao_livre: '', achados_adicionais: '' }),
+  initialState: (): OrganState => ({ classificacao_direita: '', classificacao_esquerda: '', conclusao_livre: '', achados_adicionais: '' }),
   compose: () => ({ body: '', conclusion: [], isNormal: true }),
 }
 

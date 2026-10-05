@@ -2,6 +2,7 @@ import { renderDopplerRenalWeb } from "../renderer/categories/dopplerRenalWeb";
 import { renderDopplerVenosoMmiiWeb } from "../renderer/categories/dopplerVenosoMmiiWeb";
 import type { MapaVenoso } from "@laudousg/schemes/vascular";
 import { renderDopplerHepaticoWeb } from "../renderer/categories/dopplerHepaticoWeb";
+import { renderDopplerCarotidasWebRoute } from "../renderer/categories/dopplerCarotidasWeb";
 import { renderDopplerArterialMmiiWeb, renderDopplerArteriasTemporaisWeb, renderDopplerFistulaAvWeb } from "../renderer/categories/dopplerArterialFistulaWeb";
 
 export type StructuredCatalogRender =
@@ -19,6 +20,7 @@ const STRUCTURED_RENDERERS: Readonly<Record<string, Renderer>> = {
   DOPPLER_ARTERIAL_MMII: renderDopplerArterialMmiiWeb,
   DOPPLER_FISTULA_AV: renderDopplerFistulaAvWeb,
   DOPPLER_ARTERIAS_TEMPORAIS: renderDopplerArteriasTemporaisWeb,
+  DOPPLER_CAROTIDAS: renderDopplerCarotidasWebRoute,
 };
 
 export function structuredRendererFor(category: string): Renderer | null {

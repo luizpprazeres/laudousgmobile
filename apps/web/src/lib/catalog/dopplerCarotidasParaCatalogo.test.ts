@@ -1,35 +1,99 @@
 import assert from 'node:assert/strict'
+import { renderDopplerCarotidasWeb } from '@laudousg/shared'
 import { adaptarDopplerCarotidas } from './dopplerCarotidasParaCatalogo'
+import { initialExamState } from '../deterministic/compose'
+import { dopplerCarotidas } from '../deterministic/organs/dopplerCarotidas'
 
-const result = adaptarDopplerCarotidas({
-  direita: {
-    emi: '0,8', comum_vps: '80', comum_vdf: '20', interna_vps: '120', interna_vdf: '30',
-    externa_vps: '90', externa_vdf: '18', vertebral_vps: '45', vertebral_direcao: 'anterogrado',
-    placas_ids: ['p1', 'p2'],
-    'placas.p1.localizacao': 'bulbo direito', 'placas.p1.composicao': 'mista',
-    'placas.p1.superficie': 'regular', 'placas.p1.espessura': '2,1', 'placas.p1.estenose': '',
-    'placas.p1.descricao': '',
-    'placas.p2.localizacao': 'carótida interna', 'placas.p2.composicao': 'calcificada',
-    'placas.p2.superficie': 'irregular', 'placas.p2.espessura': '1,4', 'placas.p2.estenose': '35',
-    'placas.p2.descricao': '',
-  },
-  esquerda: { placas_ids: [], vertebral_direcao: 'anterogrado' },
-  conclusao: { classificacao: 'ateromatose_sem_estenose_significativa', lado: 'direita', conclusao_livre: '', achados_adicionais: '' },
+let cases = 0
+function test(name: string, run: () => void) { run(); console.log(`ok ${++cases} - ${name}`) }
+type Exam = Record<string, Record<string, unknown>>
+const laudo = (exam: Exam) => {
+  const a = adaptarDopplerCarotidas(exam)
+  assert.deepEqual(a.pendencias, [], JSON.stringify(a.pendencias))
+  return renderDopplerCarotidasWeb(a.dados)
+}
+const motivos = (exam: Exam) => adaptarDopplerCarotidas(exam).pendencias.map(p => `${p.onde}: ${p.motivo}`)
+const ladoNormal = { avaliacao: 'avaliado', placas_status: 'ausentes', placas_ids: [] }
+
+test('estado inicial não presume normalidade: avaliação, placas, vertebral e classificação vazios', () => {
+  const st = initialExamState(dopplerCarotidas) as Exam
+  assert.equal(st.direita!.vertebral_direcao, '')
+  assert.equal(st.direita!.avaliacao, '')
+  assert.equal(st.conclusao!.classificacao_direita, '')
+  const m = motivos(st)
+  assert.ok(m.includes('Lado direito: informe se foi avaliado.'))
+  assert.ok(m.includes('Lado esquerdo: informe se foi avaliado.'))
 })
 
-const data = result.dados as any
-assert.equal(data.direita.emi_mm, 0.8)
-assert.equal(data.direita.interna.vps_cms, 120)
-assert.equal(data.direita.placas.length, 2)
-assert.equal(data.direita.placas[1].estenose_percentual, 35)
-assert.equal(data.esquerda.comum.vps_cms, null)
-assert.equal(data.classificacao_explicita, 'ateromatose_sem_estenose_significativa')
-assert.equal(data.lado_classificacao, 'direita')
-assert.deepEqual(result.alteracoes, [])
-const invalid = adaptarDopplerCarotidas({
-  direita: { placas_ids: ['x'], interna_vps: '20', interna_vdf: '30', 'placas.x.estenose': '120' },
-  esquerda: { placas_ids: [] },
-  conclusao: {},
+test('normal explícito bilateral: sem velocidades inventadas; vertebrais só se informadas', () => {
+  const base: Exam = { direita: { ...ladoNormal }, esquerda: { ...ladoNormal }, conclusao: { classificacao_direita: 'normal', classificacao_esquerda: 'normal' } }
+  let text = laudo(base)
+  assert.match(text, /para avaliação bilateral das artérias carótidas\./)
+  assert.doesNotMatch(text.split('COMENTÁRIOS:')[1]!, /vertebra|PSV|VDF|IR de|Razão|aspecto habitual|anterógrado/i)
+  assert.match(text, /CONCLUSÃO:\nEstudo Doppler das artérias carótidas dentro dos limites da normalidade\.$/)
+  base.direita!.vertebral_direcao = 'anterogrado'
+  base.esquerda!.vertebral_direcao = 'anterogrado'
+  text = laudo(base)
+  assert.match(text, /artérias carótidas e vertebrais\./)
+  assert.match(text, /Artéria vertebral direita: fluxo anterógrado\./)
+  assert.match(text, /CONCLUSÃO:\nEstudo Doppler das artérias carótidas e vertebrais dentro dos limites da normalidade\.$/)
 })
-assert.equal(invalid.pendencias.filter((item) => item.bloqueia).length, 2)
-console.log('doppler-carotidas-adapter: 9 verificações aprovadas')
+
+test('velocidades, IR e razão ACI/ACC só quando preenchidos', () => {
+  const exam: Exam = {
+    direita: { ...ladoNormal, comum_vps: '80', interna_vps: '120', interna_vdf: '30', externa_vps: '90' },
+    esquerda: { ...ladoNormal, interna_vps: '100' },
+    conclusao: { classificacao_direita: 'normal', classificacao_esquerda: 'normal' },
+  }
+  const text = laudo(exam)
+  assert.match(text, /Carótida comum direita: PSV de 80 cm\/s\./)
+  assert.match(text, /Carótida interna direita: PSV de 120 cm\/s, VDF de 30 cm\/s, IR de 0,75\./)
+  assert.match(text, /Razão PSV carótida interna\/comum à direita: 1,5\./)
+  assert.match(text, /Carótida interna esquerda: PSV de 100 cm\/s\./)
+  assert.doesNotMatch(text, /Razão PSV carótida interna\/comum à esquerda|Carótida comum esquerda|Carótida externa esquerda/)
+})
+
+test('lados separados: classificação própria por lado, placas e vertebral alterada', () => {
+  const exam: Exam = {
+    direita: {
+      avaliacao: 'avaliado', placas_status: 'presentes', placas_ids: ['p1'], interna_vps: '160', interna_vdf: '45',
+      'placas.p1.localizacao': 'bulbo carotídeo', 'placas.p1.composicao': 'mista', 'placas.p1.estenose': '55',
+    },
+    esquerda: { ...ladoNormal, vertebral_direcao: 'retrogrado' },
+    conclusao: { classificacao_direita: 'estenose_50_69', classificacao_esquerda: 'normal' },
+  }
+  const text = laudo(exam)
+  assert.match(text, /Placa ateromatosa em bulbo carotídeo, de composição mista, redução luminal informada de 55%\./)
+  assert.match(text, /1\) Estenose carotídea de 50 a 69% à direita\.\n2\) Artérias carótidas à esquerda sem alterações ao estudo Doppler\.\n3\) Fluxo retrógrado na artéria vertebral esquerda\./)
+  assert.doesNotMatch(text, /Não se observam placas ateromatosas à direita/)
+})
+
+test('lado não avaliado e avaliação limitada não viram normal', () => {
+  const exam: Exam = {
+    direita: { avaliacao: 'limitado', limitacao: 'bifurcação alta', placas_status: 'ausentes' },
+    esquerda: { avaliacao: 'nao_avaliado' },
+    conclusao: { classificacao_direita: 'normal' },
+  }
+  const text = laudo(exam)
+  assert.match(text, /para avaliação das artérias carótidas à direita\./)
+  assert.match(text, /Avaliação limitada: bifurcação alta\./)
+  assert.match(text, /Lado esquerdo não avaliado neste exame\./)
+  assert.match(text, /1\) Artérias carótidas à direita sem alterações ao estudo Doppler \(avaliação limitada\)\.\n2\) Lado esquerdo não avaliado\./)
+  assert.doesNotMatch(text, /dentro dos limites da normalidade/)
+})
+
+test('incompleto e conflitos bloqueiam: classificação, placas, VDF > PSV, número inválido', () => {
+  const m = motivos({
+    direita: { avaliacao: 'avaliado', placas_status: 'presentes', interna_vps: '20', interna_vdf: '30', emi: '0,8 mm' },
+    esquerda: { avaliacao: 'nao_avaliado', comum_vps: '80' },
+    conclusao: { classificacao_direita: 'normal' },
+  })
+  for (const esperado of [/registre ao menos uma placa/, /normal conflita com placas presentes/, /VDF não pode superar a PSV/, /espessura médio-intimal direita: valor numérico inválido/, /não avaliado, mas há medidas/]) {
+    assert.ok(m.some(x => esperado.test(x)), `${esperado} em ${JSON.stringify(m)}`)
+  }
+  const semClassificacao = motivos({ direita: { ...ladoNormal }, esquerda: { ...ladoNormal }, conclusao: {} })
+  assert.ok(semClassificacao.some(x => /selecione a classificação/.test(x)))
+  assert.deepEqual(motivos({ direita: { ...ladoNormal }, esquerda: { ...ladoNormal }, conclusao: { conclusao_livre: 'Texto do médico' } }), [])
+})
+
+console.log(`# ${cases} casos`)
