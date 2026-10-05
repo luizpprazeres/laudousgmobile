@@ -90,7 +90,7 @@ const KNOWN_ERRORS: Record<string, string> = {
   hepatic_category_unavailable: "A categoria hepática ainda não está ativa no servidor.",
   hepatic_contract_incomplete: "Revise os dados técnicos e as confirmações médicas antes de gerar.",
   invalid_hepatic_contract: "Os dados hepáticos não passaram na validação do servidor.",
-  hepatic_quality_criterion_unapproved: "O critério técnico deste método ou equipamento ainda não foi aprovado.",
+  hepatic_quality_criterion_unapproved: "Revise o critério técnico: método/equipamento, jejum, IQR/mediana e confirmação do protocolo.",
   hepatic_confirmation_actor_mismatch: "As confirmações precisam ser feitas pelo médico desta sessão.",
   hepatic_report_content_changed: "Este laudo foi atualizado em outra sessão. Reabra a versão mais recente.",
   hepatic_report_idempotency_conflict: "Este exame já existe com outro conteúdo. Reabra a versão salva.",

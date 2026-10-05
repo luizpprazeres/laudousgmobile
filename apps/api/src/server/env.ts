@@ -77,9 +77,9 @@ const ServerEnvSchema = z.object({
   // independentes da allowlist histórica. `false` suspende o conjunto em
   // fail-closed, sem encaminhar para o writer geral.
   CLINICAL_MODELS_V1_ENABLED: z.string().default("true"),
-  // Modelos hepáticos estruturados. O endpoint dedicado permanece indisponível
-  // até a ativação explícita; cadastrar a rota não publica categorias novas.
-  HEPATIC_REPORTS_V1_ENABLED: z.string().default("false"),
+  // Modelos hepáticos aprovados, ativos com validação técnica versionada.
+  // false desativa o endpoint como rollback explícito.
+  HEPATIC_REPORTS_V1_ENABLED: z.string().default("true"),
   // Sprint Doppler v2: a categoria passa a ser o exame Doppler ISOLADO e usa o
   // renderer novo mesmo antes de a allowlist histórica ser atualizada no
   // Vercel. Rollback explícito: false volta ao writer antigo.

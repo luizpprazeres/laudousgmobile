@@ -1,3 +1,4 @@
+import { hepaticQualityAcquisitionIssues } from "@laudousg/shared";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as Clipboard from "expo-clipboard";
 import { Pressable, Text, TextInput, View } from "react-native";
@@ -304,7 +305,9 @@ function ModuleEditor({ moduleKey, value, apply, physicianId, configuration, t }
   const iqr = moduleValue.measurements.find((item) => item.role === "iqr");
   const units = moduleValue.method ? HEPATIC_UNITS[moduleValue.method] : [];
   const unit: HepaticUnit | undefined = median?.unit ?? (unitDraft || units[0]);
+  const acquisitionIssues = hepaticQualityAcquisitionIssues(moduleValue);
   const qualityConfiguration = moduleValue.method ? configuration.qualityByMethod[moduleValue.method] : undefined;
+  useEffect(() => { setQualityMetrics({}); }, [moduleValue.method, unit, moduleValue.equipment?.manufacturer, moduleValue.equipment?.model]);
   const techniquePatch = buildHepaticTechniquePatch(technique, configuration.protocolReference);
   const patch = (next: Partial<HepaticModule>) => apply(() => editHepaticModule(value, moduleKey, next));
 
@@ -451,7 +454,12 @@ function ModuleEditor({ moduleKey, value, apply, physicianId, configuration, t }
           </SubCard>
 
           <SubCard title="Qualidade técnica" t={t}>
-            {qualityConfiguration ? qualityConfiguration.metrics.map((metric) => (
+            {acquisitionIssues.length > 0 && <Text style={{ color: "#B45309", fontSize: 12 }}>{acquisitionIssues.join(" ")}</Text>}
+            {qualityConfiguration ? qualityConfiguration.metrics.map((metric) => metric.code === "protocol-confirmed" ? (
+              <Action key={metric.code} label={`${qualityMetrics[metric.code] === "1" ? "✓ " : "□ "}${metric.label}`} onPress={() => { setQualityMetrics((current) => ({ ...current, [metric.code]: current[metric.code] === "1" ? "" : "1" })); if (moduleValue.quality) patch({ quality: undefined }); }} t={t} />
+            ) : metric.source === "derived_iqr_median_percent" ? (
+              <Text key={metric.code} style={{ color: t.text, fontSize: 12 }}>IQR/mediana: {moduleValue.derived[0] ? `${moduleValue.derived[0].value.toFixed(1)}%` : "calcule a partir da mediana e do IQR"}</Text>
+            ) : (
               <Input
                 key={metric.code}
                 label={`${metric.label} (${metric.unit})`}
@@ -463,7 +471,7 @@ function ModuleEditor({ moduleKey, value, apply, physicianId, configuration, t }
             )) : <Text style={{ color: "#B45309", fontSize: 12 }}>Critério versionado não configurado para este método.</Text>}
             <Action
               label={moduleValue.quality?.assessment === "adequate" ? "Qualidade adequada registrada" : "Registrar qualidade adequada"}
-              disabled={!qualityConfiguration || !moduleValue.equipment || !unit}
+              disabled={!qualityConfiguration || !moduleValue.equipment || !unit || !moduleValue.derived[0] || qualityMetrics["protocol-confirmed"] !== "1" || acquisitionIssues.length > 0}
               onPress={registerQuality}
               t={t}
             />

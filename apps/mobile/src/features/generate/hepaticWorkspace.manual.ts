@@ -85,7 +85,7 @@ function elastography(): HepaticAssessment {
 
 test("métodos e unidades nativas por módulo, sem conversão", () => {
   assert.deepEqual(HEPATIC_METHODS.stiffness, ["2D-SWE", "pSWE/ARFI", "TE"]);
-  assert.deepEqual(HEPATIC_METHODS.fat, ["CAP", "ATI", "UGAP", "UDFF", "USFF"]);
+  assert.deepEqual(HEPATIC_METHODS.fat, ["ATI", "UGAP"]);
   assert.deepEqual(HEPATIC_UNITS.TE, ["kPa"]);
   assert.deepEqual(HEPATIC_UNITS["2D-SWE"], ["kPa", "m/s"]);
   assert.deepEqual(HEPATIC_UNITS.CAP, ["dB/m"]);

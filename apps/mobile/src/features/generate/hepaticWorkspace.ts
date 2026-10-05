@@ -26,7 +26,7 @@ type Reference = HepaticInterpretationConfirmation["reference"];
 export type HepaticQualityConfiguration = {
   reference: Reference;
   minimumAcquisitions: number;
-  metrics: Array<{ code: string; label: string; unit: string }>;
+  metrics: Array<{ code: string; label: string; unit: string; source?: "reported" | "derived_iqr_median_percent" }>;
 };
 
 export type HepaticTechniqueDraft = {
@@ -49,7 +49,7 @@ export type HepaticCorrelationDraft = {
 
 export const HEPATIC_METHODS: Record<HepaticModuleKey, HepaticMethod[]> = {
   stiffness: ["2D-SWE", "pSWE/ARFI", "TE"],
-  fat: ["CAP", "ATI", "UGAP", "UDFF", "USFF"],
+  fat: ["ATI", "UGAP"],
 };
 
 /** Unidades nativas aceitas pelo contrato; nunca há conversão entre elas. */
@@ -236,7 +236,7 @@ export function buildHepaticQuality(args: {
   if (!module.method || !module.equipment || !configuration || !unit) return null;
   const metrics = configuration.metrics.map((metric) => ({
     code: metric.code,
-    value: parseHepaticNumber(metricDrafts[metric.code] ?? ""),
+    value: metric.source === "derived_iqr_median_percent" ? module.derived.find((item) => item.id === "iqr-median-percent")?.value ?? null : parseHepaticNumber(metricDrafts[metric.code] ?? ""),
     unit: metric.unit,
   }));
   if (metrics.some((metric) => metric.value === null)) return null;

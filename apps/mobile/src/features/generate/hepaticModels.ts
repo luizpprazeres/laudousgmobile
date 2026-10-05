@@ -1,5 +1,6 @@
 import {
   HEPATIC_CONTRACT_VERSION,
+  hepaticQualityByMethod,
   type HepaticAssessment,
   type HepaticInterpretationConfirmation,
   type HepaticModuleKey,
@@ -19,9 +20,8 @@ export const HEPATIC_ANDROID_MODELS = [
 export type HepaticAndroidModelCode = (typeof HEPATIC_ANDROID_MODELS)[number]["id"];
 
 /**
- * Gate fail-closed, desligado (definido em `ui/tokens.ts`, junto do seletor).
- * Ativar continua sendo uma mudança coordenada com Web, iOS e backend
- * (categorias ativas + registro de critérios de qualidade aprovado).
+ * Gate de catálogo ativo, definido em ui/tokens.ts. O servidor mantém validação
+ * de método, qualidade técnica e confirmação antes da geração.
  */
 export { HEPATIC_ANDROID_MODELS_ENABLED };
 
@@ -87,18 +87,16 @@ export type HepaticModuleConfiguration = {
 export type HepaticAndroidConfiguration = Record<HepaticModuleKey, HepaticModuleConfiguration>;
 
 /**
- * Proveniência de entrada e revisão, não diretriz clínica. Critérios de
- * qualidade ficam VAZIOS até existir registro aprovado por equipamento no
- * servidor (`APPROVED_HEPATIC_QUALITY_CRITERIA` também está vazio): sem eles a
- * qualidade não pode ser registrada e a conclusão permanece bloqueada.
+ * Proveniência de entrada e revisão. Perfis técnicos compartilhados com Web
+ * e servidor; nenhuma classificação diagnóstica automática.
  */
 const manualEntry: Reference = { id: "android-manual-entry", version: "v1", citation: "Valor informado manualmente pelo médico" };
 const physicianReview: Reference = { id: "physician-review", version: "v1", citation: "Interpretação confirmada pelo médico responsável" };
 const documentedProtocol: Reference = { id: "documented-protocol", version: "v1", citation: "Protocolo de aquisição documentado pelo médico" };
 
 export const HEPATIC_ANDROID_CONFIGURATION: HepaticAndroidConfiguration = {
-  fat: { measurementReference: manualEntry, interpretationReference: physicianReview, protocolReference: documentedProtocol, qualityByMethod: {} },
-  stiffness: { measurementReference: manualEntry, interpretationReference: physicianReview, protocolReference: documentedProtocol, qualityByMethod: {} },
+  fat: { measurementReference: manualEntry, interpretationReference: physicianReview, protocolReference: documentedProtocol, qualityByMethod: hepaticQualityByMethod("fat") },
+  stiffness: { measurementReference: manualEntry, interpretationReference: physicianReview, protocolReference: documentedProtocol, qualityByMethod: hepaticQualityByMethod("stiffness") },
 };
 
 export const HEPATIC_INTEGRATED_INTERPRETATION_REFERENCE = physicianReview;

@@ -29,7 +29,7 @@ function message(body: unknown, fallback: string) {
   const known: Record<string, string> = {
     hepatic_reports_v1_unavailable: 'Os modelos hepáticos ainda não foram ativados no servidor.',
     hepatic_contract_incomplete: 'Revise os dados técnicos e as confirmações médicas antes de gerar.',
-    hepatic_quality_criterion_unapproved: 'O critério técnico deste método ou equipamento ainda não foi aprovado.',
+    hepatic_quality_criterion_unapproved: 'Revise o critério técnico: método/equipamento, jejum, IQR/mediana e confirmação do protocolo.',
     hepatic_report_content_changed: 'Este laudo foi atualizado em outra sessão. Reabra a versão mais recente.',
     hepatic_report_idempotency_conflict: 'Este exame já existe com outro conteúdo. Reabra a versão salva.',
     content_changed: 'O conteúdo mudou. Gere e revise uma nova versão.',

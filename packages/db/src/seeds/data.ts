@@ -76,13 +76,13 @@ export const CATEGORIES_SEED: {
   {
     code: "AVALIACAO_MULTIPARAMETRICA_HEPATICA",
     label: "Avaliação multiparamétrica hepática",
-    active: false,
+    active: true,
     preserveActiveOnConflict: true,
   },
   {
     code: "ELASTOGRAFIA_HEPATICA",
     label: "Elastografia hepática",
-    active: false,
+    active: true,
     preserveActiveOnConflict: true,
   },
 

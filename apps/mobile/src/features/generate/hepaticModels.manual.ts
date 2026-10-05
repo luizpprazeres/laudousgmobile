@@ -15,15 +15,15 @@ import {
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-test("gate hepático desligado: categorias preparadas, fora do seletor e sem roteamento", () => {
-  assert.equal(HEPATIC_ANDROID_MODELS_ENABLED, false);
+test("gate hepático ativo: categorias publicadas e roteadas para o fluxo estruturado", () => {
+  assert.equal(HEPATIC_ANDROID_MODELS_ENABLED, true);
   // Mesmos códigos da Web e de /api/v1/hepatic-reports.
   assert.deepEqual(HEPATIC_ANDROID_MODELS.map((model) => model.id), ["AVALIACAO_MULTIPARAMETRICA_HEPATICA", "ELASTOGRAFIA_HEPATICA"]);
   assert.deepEqual(HEPATIC_PENDING_CATS.map((category) => category.id), HEPATIC_ANDROID_MODELS.map((model) => model.id));
   for (const model of HEPATIC_ANDROID_MODELS) {
-    assert.equal(CATS.some((category) => category.id === model.id), false, `${model.id} apareceu no seletor com o gate desligado`);
+    assert.equal(CATS.some((category) => category.id === model.id), true, `${model.id} apareceu no seletor com o gate desligado`);
     assert.equal(isHepaticAndroidModelCode(model.id), true);
-    assert.equal(isEnabledHepaticAndroidModel(model.id), false, "desligado não pode rotear para o fluxo hepático");
+    assert.equal(isEnabledHepaticAndroidModel(model.id), true, "desligado não pode rotear para o fluxo hepático");
     assert.equal(isEnabledHepaticAndroidModel(model.id, true), true);
   }
   assert.equal(isEnabledHepaticAndroidModel("ABDOMEN_TOTAL", true), false);
@@ -67,9 +67,9 @@ test("examId é UUID v4 válido para o contrato, único e determinístico com by
   }
 });
 
-test("nenhum critério de qualidade nasce aprovado no cliente", () => {
-  assert.equal(hasApprovedHepaticQualityConfiguration(HEPATIC_ANDROID_CONFIGURATION), false);
+test("critérios comuns publicados no cliente", () => {
+  assert.equal(hasApprovedHepaticQualityConfiguration(HEPATIC_ANDROID_CONFIGURATION), true);
   for (const key of ["fat", "stiffness"] as const) {
-    assert.deepEqual(HEPATIC_ANDROID_CONFIGURATION[key].qualityByMethod, {});
+    assert.ok(Object.keys(HEPATIC_ANDROID_CONFIGURATION[key].qualityByMethod).length > 0);
   }
 });

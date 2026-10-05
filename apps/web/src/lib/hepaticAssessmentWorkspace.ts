@@ -19,7 +19,7 @@ export type HepaticUnit = HepaticMeasurement['unit']
 export type HepaticQualityConfiguration = {
   reference: HepaticInterpretationConfirmation['reference']
   minimumAcquisitions: number
-  metrics: Array<{ code: string; label: string; unit: string }>
+  metrics: Array<{ code: string; label: string; unit: string; source?: "reported" | "derived_iqr_median_percent" }>
 }
 
 export type HepaticTechniqueDraft = {
@@ -42,7 +42,7 @@ export type HepaticCorrelationDraft = {
 
 export const HEPATIC_METHODS: Record<HepaticModuleKey, HepaticMethod[]> = {
   stiffness: ['2D-SWE', 'pSWE/ARFI', 'TE'],
-  fat: ['CAP', 'ATI', 'UGAP', 'UDFF', 'USFF'],
+  fat: ['ATI', 'UGAP'],
 }
 
 export const HEPATIC_UNITS: Record<HepaticMethod, HepaticUnit[]> = {

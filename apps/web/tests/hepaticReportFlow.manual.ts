@@ -17,7 +17,7 @@ const assessment = createInitialHepaticAssessment('ELASTOGRAFIA_HEPATICA', 'c2c4
 assert.equal(assessment.purpose, 'elastography')
 assert.equal(assessment.modules.fat.status, 'not_performed')
 assert.equal(assessment.modules.stiffness.status, 'not_performed')
-assert.equal(hasApprovedHepaticQualityConfiguration(HEPATIC_WORKSPACE_CONFIGURATION), false, 'sem registro técnico aprovado a geração fica bloqueada')
+assert.equal(hasApprovedHepaticQualityConfiguration(HEPATIC_WORKSPACE_CONFIGURATION), true, 'perfis técnicos publicados permitem concluir exames válidos')
 
 const requests: Array<{ url: string; body: unknown }> = []
 globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {

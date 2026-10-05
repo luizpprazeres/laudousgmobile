@@ -191,8 +191,8 @@ export type Category =
   | (typeof APPROVED_CLINICAL_CATS)[number]
   | (typeof HEPATIC_PENDING_CATS)[number];
 
-// Gate dos modelos hepáticos. Mesma regra: só no commit de ativação conjunta.
-export const HEPATIC_ANDROID_MODELS_ENABLED = false;
+// Modelos hepáticos aprovados, com registro técnico compartilhado no servidor.
+export const HEPATIC_ANDROID_MODELS_ENABLED = true;
 
 export const CATS: readonly Category[] = [
   ...RELEASED_CATS,
