@@ -350,7 +350,7 @@ function makeOvarioModule(lado: 'direito' | 'esquerdo'): OrganModule {
 }
 
 // ── Categoria ────────────────────────────────────────────────────────────────
-const pelveSections: ExamCategory['sections'] = [
+export const pelveSections: ExamCategory['sections'] = [
   { id: 'utero', label: 'Útero', group: 'orgaos', module: uteroModule },
   { id: 'endometrio', label: 'Endométrio', group: 'orgaos', module: endometrioModule },
   { id: 'ovario_direito', label: 'Ovário direito', group: 'orgaos', module: makeOvarioModule('direito') },

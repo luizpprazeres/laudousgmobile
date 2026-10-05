@@ -51,7 +51,7 @@ function configuracao(): { base: string; token: string } | null {
  * local (no cliente) precisa consultá-la para se recusar a rodar no que já
  * migrou.
  */
-export { CATEGORIAS_MIGRADAS, categoriaMigrada } from "./migradas";
+export { CATEGORIAS_MIGRADAS, categoriaDeRender, categoriaMigrada } from "./migradas";
 
 /** Fallback seguro para contas antigas que ainda não escolheram uma redação. */
 export const ESTILO_PADRAO = "CLASSICO_COMPLETO";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { categoriaMigrada, renderizar } from "@/lib/catalog/cliente";
+import { categoriaDeRender, categoriaMigrada, renderizar } from "@/lib/catalog/cliente";
 import { estiloDaConta } from '@/lib/perfil/estiloDaConta'
 
 export const runtime = "nodejs";
@@ -40,7 +40,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
     return Response.json({ error: "corpo inválido" }, { status: 400 });
   }
 
-  const r = await renderizar(category, { ...corpo, estilo: await estiloDaConta(data.user.id) });
+  // Derivada (ex.: PELVICO_TRANSVAGINAL) é montada pelo renderer da categoria-mãe.
+  const r = await renderizar(categoriaDeRender(category), { ...corpo, estilo: await estiloDaConta(data.user.id) });
   if (!r.ok) return Response.json({ error: r.erro }, { status: r.status });
   /**
    * O status do upstream atravessa — inclusive o 409 com os conflitos
