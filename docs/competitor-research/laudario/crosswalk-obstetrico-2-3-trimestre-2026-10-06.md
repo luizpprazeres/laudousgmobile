@@ -72,3 +72,13 @@ O conjunto mínimo deve provar baseline sem placeholders; biometria completa id�
 ## Evidências relacionadas
 
 O caso funcional está em [cases/obstetrico-2-3-trimestre-2026-10-06.md](cases/obstetrico-2-3-trimestre-2026-10-06.md). O estado do código e as linhas de evidência estão em [audits/preflight-obstetrico-2-3-trimestre-2026-10-05.md](audits/preflight-obstetrico-2-3-trimestre-2026-10-05.md) e [audits/execucao-sintetica-pelve-obstetrico-2026-10-05.md](audits/execucao-sintetica-pelve-obstetrico-2026-10-05.md).
+
+## Complemento — contrato e experiência dos gráficos
+
+A sondagem específica confirmou cinco figuras publicáveis e uma comparação longitudinal por pontos. O comportamento útil é a separação entre visualizar e publicar: o médico pode conferir a curva sem acrescentá-la ao laudo. As limitações observadas foram a distância entre biometria e gráficos, controles repetidos em cinco cards, identificação visual pouco explícita dos pontos atual/anterior e publicação rasterizada em uma imagem única quando todos são selecionados.
+
+O LaudoUSG já possuía uma prévia INTERGROWTH-21st 2020 para PFE, derivada de CC/CA/CF e da IG informada, além de uma folha de impressão separada. A primeira evolução Web mantém essa fonte existente e acrescenta interação na curva, inclusão explícita na prévia do laudo e persistência da escolha no estado do exame. Se os dados mínimos deixam de ser válidos, a seleção do gráfico é retirada para impedir a permanência de uma figura obsoleta.
+
+O contrato futuro deve representar a figura por especificação estruturada: tipo de medida, fórmula, curva e versão, unidade, IG, valor atual, observações anteriores com data e origem, configuração visual e estado de publicação. O gráfico sempre será uma projeção desse contrato. Alterar uma medida precisa atualizar texto e figura juntos; apagar um dado mínimo precisa remover ponto, percentil e publicação derivada.
+
+Para o Web, a sequência recomendada é manter PFE como primeiro gráfico funcional, depois acrescentar séries históricas com origem explícita e, somente após validar curvas próprias, ampliar para DBP, CC, CA e CF. Os controles devem usar escolhas clínicas curtas, como “PFE”, “medidas relevantes” e “todos”, com layout automático compacto ou largura total. O tamanho em percentual bruto não precisa ser reproduzido.

@@ -18,6 +18,8 @@ type Props = {
   growthState: OrganState
   igState: OrganState
   onGrowthChange: (next: OrganState) => void
+  chartState?: OrganState
+  onChartStateChange?: (next: OrganState) => void
   compact?: boolean
 }
 
@@ -33,13 +35,21 @@ export function BiometryGrowthPanel({
   growthState,
   igState,
   onGrowthChange,
+  chartState = {},
+  onChartStateChange,
   compact = false,
 }: Props) {
   const [printOpen, setPrintOpen] = useState(false)
   const closePrint = useCallback(() => setPrintOpen(false), [])
   const femurKey = chaveFemurDoSchema(biometry.schema.fields)
   const printable = intergrowthBiometryPreview(biometryState, femurKey, igState) !== null
+  const chartIncluded = chartState.incluir === 'sim'
   useEffect(() => { if (!printable) setPrintOpen(false) }, [printable])
+  useEffect(() => {
+    if (!printable && chartIncluded && onChartStateChange) {
+      onChartStateChange({ ...chartState, incluir: 'nao' })
+    }
+  }, [chartIncluded, chartState, onChartStateChange, printable])
   const headingClass = 'mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400'
   const hadlock = pesoHadlock1985DaBiometria(biometryState, chaveFemurDoSchema(biometry.schema.fields))
   const mode = biometryWeightMode(biometryState)
@@ -76,7 +86,19 @@ export function BiometryGrowthPanel({
         </div>
       </section>
       <section className={`min-w-0 border-t pt-3 min-[1100px]:border-l min-[1100px]:border-t-0 min-[1100px]:pl-6 min-[1100px]:pt-0 ${compact ? 'border-gray-100 dark:border-gray-800' : 'border-gray-200 dark:border-gray-800'}`}>
-        {printable && <div className="mb-1 flex justify-end">
+        {printable && <div className="mb-2 flex flex-wrap items-center justify-end gap-2">
+          {onChartStateChange ? (
+            <button
+              type="button"
+              onClick={() => onChartStateChange({ ...chartState, incluir: chartIncluded ? 'nao' : 'sim' })}
+              aria-pressed={chartIncluded}
+              className={`min-h-8 rounded-md border px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${chartIncluded
+                ? 'border-emerald-600 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
+                : 'border-gray-200 text-emerald-700 hover:bg-emerald-50 dark:border-gray-700 dark:text-emerald-300'}`}
+            >
+              {chartIncluded ? 'Remover gráfico do laudo' : 'Incluir gráfico no laudo'}
+            </button>
+          ) : null}
           <button type="button" onClick={() => setPrintOpen(true)} aria-label="Abrir folha de crescimento fetal" title="Abrir folha de crescimento fetal"
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
             <Printer className="h-4 w-4" aria-hidden="true" />

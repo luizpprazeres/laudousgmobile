@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, type ReactNode } from 'react'
 import { Check, Copy, Redo2, RotateCcw, Save, Undo2, X } from 'lucide-react'
 import type { SaveState } from './LaudarWebExperience'
 import type { ReportSuggestionDiff } from './reportSuggestion'
@@ -26,6 +26,36 @@ type Props = {
   canUndoSuggestion?: boolean
   onUndoSuggestion?: () => void
   updating?: boolean
+  reportFigure?: ReactNode
+}
+
+async function figureClipboardHtml(root: HTMLDivElement | null): Promise<string> {
+  const svg = root?.querySelector('svg')
+  if (!svg || typeof XMLSerializer === 'undefined') return ''
+  const viewBox = svg.viewBox.baseVal
+  const width = Math.max(560, Math.round(viewBox.width || svg.getBoundingClientRect().width || 560))
+  const height = Math.max(220, Math.round(viewBox.height || svg.getBoundingClientRect().height || 220))
+  const markup = new XMLSerializer().serializeToString(svg)
+  const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
+  const png = await new Promise<string>((resolve) => {
+    const image = new Image()
+    image.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = width * 2
+      canvas.height = height * 2
+      const context = canvas.getContext('2d')
+      if (!context) return resolve('')
+      context.fillStyle = '#ffffff'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    image.onerror = () => resolve('')
+    image.src = source
+  })
+  if (!png) return ''
+  const caption = root?.querySelector('figcaption')?.textContent?.replace(/\s+/g, ' ').trim() ?? 'Gráfico de crescimento fetal'
+  return `<figure><img src="${png}" alt="Gráfico de crescimento fetal" style="display:block;width:100%;max-width:700px;height:auto"><figcaption>${caption.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</figcaption></figure>`
 }
 
 /**
@@ -144,10 +174,12 @@ export function LaudoPreview({
   canUndoSuggestion = false,
   onUndoSuggestion,
   updating = false,
+  reportFigure,
 }: Props) {
   const paragraphs = text.split('\n\n')
   const documentScrollRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<ReportTextEditorHandle>(null)
+  const reportFigureRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (documentScrollRef.current) documentScrollRef.current.scrollTop = 0
@@ -161,10 +193,12 @@ export function LaudoPreview({
   const copyFormatted = async () => {
     if (typeof navigator === 'undefined' || !navigator.clipboard) return
     const safeHtml = sanitizeReportHtml(formattedHtml ?? editableHtml)
+    const figureHtml = await figureClipboardHtml(reportFigureRef.current)
     try {
       if (safeHtml && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+        const combinedHtml = figureHtml ? `${safeHtml}${figureHtml}` : safeHtml
         await navigator.clipboard.write([new ClipboardItem({
-          'text/html': new Blob([safeHtml], { type: 'text/html' }),
+          'text/html': new Blob([combinedHtml], { type: 'text/html' }),
           'text/plain': new Blob([text], { type: 'text/plain' }),
         })])
         return
@@ -350,6 +384,7 @@ export function LaudoPreview({
               </p>
             )
           })}
+          {reportFigure ? <div ref={reportFigureRef}>{reportFigure}</div> : null}
           {workspaceV2 ? (
             <footer className="mt-10 flex items-center justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
               {canUndoSuggestion && onUndoSuggestion ? (

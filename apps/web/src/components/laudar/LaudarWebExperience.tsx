@@ -82,6 +82,9 @@ import { MamariaBiradsPanel } from './MamariaBiradsPanel'
 import { MamariaFormPanel } from './MamariaFormPanel'
 import { DopplerCarotidasFormPanel } from './DopplerCarotidasFormPanel'
 import { BiometryGrowthPanel } from './BiometryGrowthPanel'
+import { IntergrowthReportFigure } from './IntergrowthPreview'
+import { chaveFemurDoSchema } from '@/lib/calculators/fetalWeight'
+import { intergrowthBiometryPreview } from '@/lib/calculators/intergrowthBiometry'
 import {
   BIOMETRY_GROWTH_SECTION_ID,
   BIOMETRY_SECTION_ID,
@@ -523,6 +526,26 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   ]
   const currentCategory = isTireoideDoppler ? { id: TIREOIDE_DOPPLER_ID, name: 'Tireoide com Doppler' } : isTireoide ? TIREOIDE_CATEGORY : genericCategory!
   const examState = isTireoide ? undefined : examStates[categoria]
+  const reportGrowthRequested = !composition && examState?.__growth_chart?.incluir === 'sim'
+  const reportGrowthPreview = useMemo(() => {
+    if (!reportGrowthRequested || !biometryGrowth.biometry) return null
+    return intergrowthBiometryPreview(
+      examState?.[BIOMETRY_SECTION_ID] ?? {},
+      chaveFemurDoSchema(biometryGrowth.biometry.schema.fields),
+      examState?.ig ?? {},
+    )
+  }, [biometryGrowth.biometry, examState, reportGrowthRequested])
+
+  useEffect(() => {
+    if (!reportGrowthRequested || reportGrowthPreview) return
+    setExamStates((all) => ({
+      ...all,
+      [categoria]: {
+        ...all[categoria],
+        __growth_chart: { ...(all[categoria]?.__growth_chart ?? {}), incluir: 'nao' },
+      },
+    }))
+  }, [categoria, reportGrowthPreview, reportGrowthRequested])
 
   // Controles de categoria (via, menopausa, segmento…).
   const controls = isTireoide ? [] : genericCategory?.controls ?? []
@@ -1105,6 +1128,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           ...all[categoria],
           [BIOMETRY_SECTION_ID]: biometryInitial,
           [GROWTH_SECTION_ID]: growthInitial,
+          __growth_chart: { incluir: 'nao' },
         },
       }))
       return
@@ -1254,6 +1278,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           growthState={examState?.[GROWTH_SECTION_ID] ?? biometryGrowth.growth.initialState()}
           igState={examState?.ig ?? {}}
           onGrowthChange={(nextState) => updateSectionState(GROWTH_SECTION_ID, nextState, false)}
+          chartState={examState?.__growth_chart ?? {}}
+          onChartStateChange={composition ? undefined : (nextState) => updateSectionState('__growth_chart', nextState, false)}
           compact
         />
       )
@@ -1945,6 +1971,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 canUndoSuggestion={canUndoSuggestion}
                 onUndoSuggestion={undoAcceptedSuggestion}
                 updating={remoto && (motor.carregando || motor.desatualizado)}
+                reportFigure={reportGrowthPreview ? <IntergrowthReportFigure preview={reportGrowthPreview} /> : null}
               />
 
             </div>

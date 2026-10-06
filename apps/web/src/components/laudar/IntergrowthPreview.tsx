@@ -34,12 +34,12 @@ const MARGIN = { top: 10, right: 34, bottom: 34, left: 46 }
 const CURVES = intergrowthPreviewCurves()
 const CURVES_MAX_G = Math.max(...CURVES.flatMap((curve) => curve.points.map((p) => p.weightG)))
 
-const CURVE_STYLE: Record<IntergrowthCurve['label'], { className: string; width: number; dash?: string }> = {
-  P3: { className: 'stroke-gray-300 dark:stroke-gray-600', width: 1, dash: '4 3' },
-  P10: { className: 'stroke-gray-400 dark:stroke-gray-500', width: 1 },
-  P50: { className: 'stroke-gray-600 dark:stroke-gray-300', width: 1.5 },
-  P90: { className: 'stroke-gray-400 dark:stroke-gray-500', width: 1 },
-  P97: { className: 'stroke-gray-300 dark:stroke-gray-600', width: 1, dash: '4 3' },
+const CURVE_STYLE: Record<IntergrowthCurve['label'], { className: string; color: string; width: number; dash?: string }> = {
+  P3: { className: 'stroke-gray-300 dark:stroke-gray-600', color: '#d1d5db', width: 1, dash: '4 3' },
+  P10: { className: 'stroke-gray-400 dark:stroke-gray-500', color: '#9ca3af', width: 1 },
+  P50: { className: 'stroke-gray-600 dark:stroke-gray-300', color: '#4b5563', width: 1.5 },
+  P90: { className: 'stroke-gray-400 dark:stroke-gray-500', color: '#9ca3af', width: 1 },
+  P97: { className: 'stroke-gray-300 dark:stroke-gray-600', color: '#d1d5db', width: 1, dash: '4 3' },
 }
 
 function useLarguraElemento<T extends HTMLElement>() {
@@ -64,8 +64,19 @@ function useLarguraElemento<T extends HTMLElement>() {
  * Posição do peso Hadlock 3 calculado nas curvas P3..P97 de 18 a 40 semanas.
  * O eixo de peso cresce para incluir o ponto; nada é recortado ou extrapolado.
  */
-function IntergrowthChart({ preview, percentilTexto }: { preview: IntergrowthBiometryPreviewResult; percentilTexto: string }) {
+export function IntergrowthChart({
+  preview,
+  percentilTexto,
+  interactive = true,
+  reportMode = false,
+}: {
+  preview: IntergrowthBiometryPreviewResult
+  percentilTexto: string
+  interactive?: boolean
+  reportMode?: boolean
+}) {
   const [ref, largura] = useLarguraElemento<HTMLDivElement>()
+  const [hoverGaDays, setHoverGaDays] = useState<number | null>(null)
   const width = largura > 0 ? largura : CHART_FALLBACK_WIDTH
   const plotW = Math.max(1, width - MARGIN.left - MARGIN.right)
   const plotH = CHART_HEIGHT - MARGIN.top - MARGIN.bottom
@@ -82,6 +93,17 @@ function IntergrowthChart({ preview, percentilTexto }: { preview: IntergrowthBio
   for (let g = 0; g <= yMax; g += yStep) pesos.push(g)
   const px = x(preview.ig.gaDays)
   const py = y(preview.weightG)
+  const activeGaDays = hoverGaDays ?? preview.ig.gaDays
+  const activeX = x(activeGaDays)
+  const activeCurves = CURVES.map((curve) => ({
+    label: curve.label,
+    weightG: curve.points.find((point) => point.gaDays === activeGaDays)?.weightG ?? 0,
+  }))
+  const tooltipOnRight = activeX < MARGIN.left + plotW / 2
+  const tooltipWidth = 112
+  const tooltipHeight = 76
+  const tooltipX = tooltipOnRight ? activeX + 8 : activeX - tooltipWidth - 8
+  const tooltipY = MARGIN.top + 4
   const rotuloADireita = px < MARGIN.left + plotW / 2
   const ariaLabel =
     `Gráfico ${INTERGROWTH2020_EFW_VERSION}: curvas de peso fetal estimado P3, P10, P50, P90 e P97 de 18 a 40 semanas. ` +
@@ -97,6 +119,25 @@ function IntergrowthChart({ preview, percentilTexto }: { preview: IntergrowthBio
         height={CHART_HEIGHT}
         viewBox={`0 0 ${width} ${CHART_HEIGHT}`}
         className="block overflow-visible"
+        tabIndex={interactive ? 0 : undefined}
+        onFocus={interactive ? () => setHoverGaDays(preview.ig.gaDays) : undefined}
+        onBlur={interactive ? () => setHoverGaDays(null) : undefined}
+        onPointerLeave={interactive ? () => setHoverGaDays(null) : undefined}
+        onPointerMove={interactive ? (event) => {
+          const rect = event.currentTarget.getBoundingClientRect()
+          if (!rect.width) return
+          const localX = ((event.clientX - rect.left) / rect.width) * width
+          const ratio = Math.min(1, Math.max(0, (localX - MARGIN.left) / plotW))
+          setHoverGaDays(Math.round(INTERGROWTH2020_EFW_MIN_GA_DAYS + ratio * (INTERGROWTH2020_EFW_MAX_GA_DAYS - INTERGROWTH2020_EFW_MIN_GA_DAYS)))
+        } : undefined}
+        onKeyDown={interactive ? (event) => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End') return
+          event.preventDefault()
+          if (event.key === 'Home') return setHoverGaDays(INTERGROWTH2020_EFW_MIN_GA_DAYS)
+          if (event.key === 'End') return setHoverGaDays(INTERGROWTH2020_EFW_MAX_GA_DAYS)
+          const delta = event.key === 'ArrowLeft' ? -1 : 1
+          setHoverGaDays((current) => Math.min(INTERGROWTH2020_EFW_MAX_GA_DAYS, Math.max(INTERGROWTH2020_EFW_MIN_GA_DAYS, (current ?? preview.ig.gaDays) + delta)))
+        } : undefined}
       >
         {pesos.map((g) => (
           <g key={`y-${g}`}>
@@ -106,10 +147,11 @@ function IntergrowthChart({ preview, percentilTexto }: { preview: IntergrowthBio
               y1={y(g)}
               y2={y(g)}
               strokeWidth={1}
+              style={reportMode ? { stroke: g === 0 ? '#d1d5db' : '#f3f4f6' } : undefined}
               className={g === 0 ? 'stroke-gray-300 dark:stroke-gray-700' : 'stroke-gray-100 dark:stroke-gray-800'}
             />
             <text x={MARGIN.left - 6} y={y(g)} dy="0.32em" textAnchor="end" className="fill-gray-500 font-mono text-[9px] tabular-nums dark:fill-gray-400">
-              {g}
+              <tspan style={reportMode ? { fill: '#6b7280', fontSize: 9 } : undefined}>{g}</tspan>
             </text>
           </g>
         ))}
@@ -120,17 +162,19 @@ function IntergrowthChart({ preview, percentilTexto }: { preview: IntergrowthBio
             y={MARGIN.top + plotH + 13}
             textAnchor="middle"
             className="fill-gray-500 font-mono text-[9px] tabular-nums dark:fill-gray-400"
+            style={reportMode ? { fill: '#6b7280', fontSize: 9 } : undefined}
           >
             {s}
           </text>
         ))}
         <text x={MARGIN.left + plotW / 2} y={CHART_HEIGHT - 4} textAnchor="middle" className="fill-gray-500 text-[9.5px] dark:fill-gray-400">
-          Idade gestacional (semanas)
+          <tspan style={reportMode ? { fill: '#6b7280', fontSize: 9.5 } : undefined}>Idade gestacional (semanas)</tspan>
         </text>
         <text
           transform={`translate(10 ${MARGIN.top + plotH / 2}) rotate(-90)`}
           textAnchor="middle"
           className="fill-gray-500 text-[9.5px] dark:fill-gray-400"
+          style={reportMode ? { fill: '#6b7280', fontSize: 9.5 } : undefined}
         >
           Peso (g)
         </text>
@@ -140,25 +184,40 @@ function IntergrowthChart({ preview, percentilTexto }: { preview: IntergrowthBio
           const last = curve.points[curve.points.length - 1]
           return (
             <g key={curve.label}>
-              <path d={d} fill="none" strokeWidth={style.width} strokeDasharray={style.dash} className={style.className} />
+              <path d={d} fill="none" strokeWidth={style.width} strokeDasharray={style.dash} className={style.className} style={reportMode ? { stroke: style.color } : undefined} />
               {last && (
                 <text x={x(last.gaDays) + 4} y={y(last.weightG)} dy="0.32em" className="fill-gray-500 font-mono text-[8.5px] dark:fill-gray-400">
-                  {curve.label}
+                  <tspan style={reportMode ? { fill: '#6b7280', fontSize: 8.5 } : undefined}>{curve.label}</tspan>
                 </text>
               )}
             </g>
           )
         })}
-        <circle cx={px} cy={py} r={4} strokeWidth={1.5} className="fill-emerald-600 stroke-white dark:fill-emerald-400 dark:stroke-gray-950" />
+        <circle cx={px} cy={py} r={4} strokeWidth={1.5} className="fill-emerald-600 stroke-white dark:fill-emerald-400 dark:stroke-gray-950" style={reportMode ? { fill: '#059669', stroke: '#ffffff' } : undefined} />
         <text
           x={px + (rotuloADireita ? 8 : -8)}
           y={py}
           dy="0.32em"
           textAnchor={rotuloADireita ? 'start' : 'end'}
           className="fill-emerald-700 text-[10px] font-semibold tabular-nums dark:fill-emerald-300"
+          style={reportMode ? { fill: '#047857', fontSize: 10, fontWeight: 600 } : undefined}
         >
           {preview.weightRounded} g (calculado)
         </text>
+        {interactive && hoverGaDays !== null ? (
+          <g aria-hidden="true" pointerEvents="none">
+            <line x1={activeX} x2={activeX} y1={MARGIN.top} y2={MARGIN.top + plotH} stroke="#059669" strokeWidth={1} strokeDasharray="3 3" opacity={0.75} />
+            <rect x={tooltipX} y={tooltipY} width={tooltipWidth} height={tooltipHeight} rx={5} fill="white" stroke="#d1d5db" />
+            <text x={tooltipX + 7} y={tooltipY + 13} fill="#111827" fontSize={9.5} fontWeight={700}>
+              {Math.floor(activeGaDays / 7)}+{activeGaDays % 7} semanas
+            </text>
+            {activeCurves.map((item, index) => (
+              <text key={item.label} x={tooltipX + 7} y={tooltipY + 27 + index * 10} fill="#4b5563" fontSize={8.5}>
+                {item.label}: {Math.round(item.weightG)} g
+              </text>
+            ))}
+          </g>
+        ) : null}
       </svg>
       <ul className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
         <li className="flex items-center gap-1.5">
@@ -187,6 +246,25 @@ function IntergrowthChart({ preview, percentilTexto }: { preview: IntergrowthBio
         </li>
       </ul>
     </div>
+  )
+}
+
+/** Figura derivada do mesmo resultado da prévia. É renderizada no laudo apenas
+ * após ação explícita do médico e usa cores fixas para copiar/imprimir sem
+ * depender do tema do navegador. */
+export function IntergrowthReportFigure({ preview }: { preview: IntergrowthBiometryPreviewResult }) {
+  const percentilTexto = formatarPercentilIntergrowth(preview.percentile)
+  if (!percentilTexto) return null
+  return (
+    <figure data-report-figure="fetal-growth-intergrowth" className="mt-7 break-inside-avoid border-t border-gray-200 pt-5 text-gray-900">
+      <figcaption className="mb-3">
+        <strong className="block text-[12px] uppercase tracking-wide">Crescimento fetal · {preview.version}</strong>
+        <span className="text-[11px] text-gray-600">
+          {preview.weightRounded} g · percentil {percentilTexto} · {formatarIgBiometria(preview.ig)} · {preview.formula}
+        </span>
+      </figcaption>
+      <IntergrowthChart preview={preview} percentilTexto={percentilTexto} interactive={false} reportMode />
+    </figure>
   )
 }
 

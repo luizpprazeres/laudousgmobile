@@ -67,3 +67,17 @@ Idade gestacional, BCF, todas as medidas biométricas, ILA e distância placent�
 São fatos observados os controles, os cálculos, os efeitos no corpo e na conclusão e a restauração descritos acima. As propostas para o LaudoUSG são originais e dependem de revisão médica antes de ativação clínica. Uma rodada futura pode testar curva ou fórmula configurável, Doppler, sexo fetal, acretismo e um achado morfológico isolado.
 
 O cruzamento técnico está em [crosswalk-obstetrico-2-3-trimestre-2026-10-06.md](../crosswalk-obstetrico-2-3-trimestre-2026-10-06.md).
+
+## Complemento — gráficos de crescimento
+
+O módulo foi reaberto em 06/10/2026 para uma sondagem específica dos gráficos, novamente com dados sintéticos e sem finalizar, imprimir ou enviar laudo. O estado foi restaurado e reaberto ao final.
+
+O painel reúne cinco gráficos: DBP, CC, CA e CF por idade gestacional, com referência Hadlock 1984, e PFE por idade gestacional, com referência Hadlock 1991. Todos começam fora do laudo. Há inclusão individual, inclusão conjunta, ajuste global de tamanho entre 100% e 200%, aproximação no ponto atual e barras de percentil na tabela biométrica.
+
+Com IG de 28+0 semanas, DBP 72 mm, DOF 92 mm, CC 260 mm, CA 230 mm e CF 52 mm, a interface mostrou pontos atuais em vermelho e aproximou automaticamente a janela ao redor deles. Ao desligar a aproximação, voltou a exibir a curva inteira, de aproximadamente 14 a 40 semanas. A inclusão isolada do DBP gerou uma imagem no corpo do laudo; a inclusão conjunta gerou uma única imagem composta com os cinco gráficos. A escala mudou a largura publicada, sem alterar o cálculo.
+
+No DBP foi acrescentado um exame anterior sintético de 24+0 semanas e 58 mm. O gráfico exibiu o ponto anterior em azul e o atual em vermelho, sem linha ligando os dois pontos e sem rótulo textual visível sobre sua origem. Não foi possível comprovar tooltip na interface. Também não foi determinado o número máximo de exames anteriores.
+
+As barras de percentil foram publicadas como imagens pequenas na tabela biométrica. Tanto os gráficos quanto as barras chegaram ao editor como imagens rasterizadas. A publicação permanece opt-in, o que evita acrescentar figuras ao laudo sem uma ação médica explícita.
+
+Como oportunidade de produto, a visualização pode ficar dentro do próprio fluxo de biometria, aparecer assim que medida e IG válidas existirem e manter a publicação como decisão separada. Um único card compacto pode selecionar PFE ou medidas individuais, identificar ponto atual e anteriores, oferecer leitura por toque/mouse/teclado e usar o mesmo resultado versionado que alimenta peso, percentil, corpo e conclusão. A figura do laudo deve ser derivada desse estado estruturado, em vez de se tornar a fonte clínica do dado.
