@@ -80,7 +80,7 @@ async function main() {
           return
         }
       }
-      if (request.url !== '/' && request.url !== '/history') {
+      if (request.url !== '/' && request.url !== '/history' && request.url !== '/history-invalid') {
         response.statusCode = 404
         response.end()
         return
@@ -158,6 +158,24 @@ async function main() {
     await historyFigure.waitFor()
     assert.match(await historyFigure.getByRole('img').getAttribute('aria-label'), /870 g.*24\+3.*99,5/)
     assert.match(await historyFigure.textContent(), /INTERGROWTH-21st 2020.*870 g.*24\+3/s)
+    await page.addScriptTag({ content: 'window.print = () => { window.__growthPrintCalls = (window.__growthPrintCalls || 0) + 1 }' })
+    const historyPrintButton = page.getByRole('button', { name: 'Imprimir ou salvar gráfico em PDF', exact: true })
+    await historyPrintButton.click()
+    const printDialog = page.getByRole('dialog', { name: /Crescimento fetal — INTERGROWTH-21st 2020/ })
+    await printDialog.waitFor()
+    assert.match(await printDialog.textContent(), /24\+3 semanas.*DUM · exame em 21\/06\/2026.*230 mm.*210 mm.*50 mm/s)
+    assert.match(await printDialog.getByRole('img').getAttribute('aria-label'), /870 g.*24\+3.*99,5/)
+    await printDialog.getByRole('button', { name: 'Imprimir ou salvar como PDF', exact: true }).click()
+    assert.equal(await page.evaluate(() => (window as any).__growthPrintCalls), 1)
+    await page.emulateMedia({ media: 'print' })
+    assert.equal(await page.locator('body > #root').evaluate((element) => getComputedStyle(element).display), 'none')
+    assert.equal(await page.locator('[data-ig-print-root]').evaluate((element) => getComputedStyle(element).display), 'block')
+    await page.emulateMedia({ media: 'screen' })
+    await page.keyboard.press('Escape')
+    await printDialog.waitFor({ state: 'detached' })
+    assert.equal(await historyPrintButton.evaluate((element) => document.activeElement === element), true)
+    assert.equal(await page.locator('body > [inert]').count(), 0)
+    assert.equal(await page.locator('[data-ig-print-root]').count(), 0)
     await page.addScriptTag({ content: `
       window.ClipboardItem = class ClipboardItemMock {
         constructor(data) { this.data = data }
@@ -175,8 +193,12 @@ async function main() {
     const copiedHtml = await page.evaluate(() => (window as any).__copiedGrowthHtml as string)
     assert.match(copiedHtml, /Laudo sintético/)
     assert.match(copiedHtml, /<img src="data:image\/png/)
+    await page.goto(`${origin}/history-invalid`)
+    await page.getByText('Obstétrica com gráfico salvo', { exact: true }).waitFor()
+    assert.equal(await page.locator('[data-report-figure="fetal-growth-intergrowth"]').count(), 0)
+    assert.equal(await page.getByRole('button', { name: 'Imprimir ou salvar gráfico em PDF', exact: true }).count(), 0)
     assert.deepEqual(errors, [])
-    console.log('Growth chart browser: datação, inclusão, persistência e histórico aprovados')
+    console.log('Growth chart browser: datação, inclusão, persistência, impressão e histórico aprovados')
   } finally {
     await browser.close()
     await new Promise<void>(resolveClose => server.close(() => resolveClose()))

@@ -6,7 +6,7 @@ import { storedGrowthChartFromPreview } from '../src/lib/calculators/growthChart
 
 const root = createRoot(document.getElementById('root')!)
 
-if (location.pathname === '/history') {
+if (location.pathname === '/history' || location.pathname === '/history-invalid') {
   const preview = intergrowthBiometryPreviewFromDating(
     { cc: '230', ca: '210', cf: '50' },
     'cf',
@@ -16,6 +16,7 @@ if (location.pathname === '/history') {
       'referencia.dum.exame_data': '21/06/2026',
     },
   )!
+  const storedGrowthChart = storedGrowthChartFromPreview(preview)!
   root.render(
     <div className="h-screen">
       <ReportDetail
@@ -26,7 +27,9 @@ if (location.pathname === '/history') {
           title: 'Obstétrica com gráfico salvo',
           text: 'ULTRASSONOGRAFIA OBSTÉTRICA\n\nLaudo sintético.',
           html: '<h1 data-report-block="true">ULTRASSONOGRAFIA OBSTÉTRICA</h1><p data-report-block="true">Laudo sintético.</p>',
-          growthChart: storedGrowthChartFromPreview(preview),
+          growthChart: location.pathname === '/history-invalid'
+            ? { ...storedGrowthChart, percentile: storedGrowthChart.percentile - 1 }
+            : storedGrowthChart,
           date: '2026-10-06T18:00:00Z',
         }}
         onDeleted={() => undefined}

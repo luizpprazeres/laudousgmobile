@@ -1,12 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Check, Copy, Pencil, Trash2, X } from 'lucide-react'
+import { Check, Copy, Pencil, Printer, Trash2, X } from 'lucide-react'
 import { deleteWebReport } from '@/lib/webReports'
 import { categoriaLabel, dataFmt, type HistoryItem } from './HistoryItem'
 import { sanitizeReportHtml } from '@/components/laudar/reportRichText'
 import { IntergrowthReportFigure } from '@/components/laudar/IntergrowthPreview'
+import { IntergrowthPreviewPrintSheet } from '@/components/laudar/IntergrowthPrintSheet'
 import { reportFigureClipboardHtml } from '@/components/laudar/reportFigureClipboard'
 import { storedGrowthChartToPreview } from '@/lib/calculators/growthChartPersistence'
 
@@ -31,8 +32,10 @@ export function ReportDetail({
   onDeleted: (id: string) => void
 }) {
   const [copiado, setCopiado] = useState(false)
+  const [impressaoAberta, setImpressaoAberta] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const fecharImpressao = useCallback(() => setImpressaoAberta(false), [])
   const reportFigureRef = useRef<HTMLDivElement>(null)
   const growthPreview = item.growthChart ? storedGrowthChartToPreview(item.growthChart) : null
 
@@ -113,6 +116,19 @@ export function ReportDetail({
             {copiado ? 'Copiado' : 'Copiar'}
           </button>
 
+          {growthPreview ? (
+            <button
+              type="button"
+              onClick={() => setImpressaoAberta(true)}
+              title="Imprimir ou salvar gráfico em PDF"
+              aria-label="Imprimir ou salvar gráfico em PDF"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Imprimir / PDF
+            </button>
+          ) : null}
+
           {/*
             Só laudo da web se exclui. Os da IA vêm da tabela `reports`, que o
             app e o histórico do médico compartilham — apagar aqui removeria o
@@ -167,6 +183,11 @@ export function ReportDetail({
           </div>
         ) : null}
       </article>
+      <IntergrowthPreviewPrintSheet
+        open={impressaoAberta}
+        preview={growthPreview}
+        onClose={fecharImpressao}
+      />
     </div>
   )
 }

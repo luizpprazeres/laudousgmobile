@@ -9,14 +9,21 @@ import {
   formatarIgBiometria,
   formatarPercentilIntergrowth,
   intergrowthBiometryPreviewFromDating,
+  type IntergrowthBiometryPreviewResult,
 } from '@/lib/calculators/intergrowthBiometry'
-import { IntergrowthPreview } from './IntergrowthPreview'
+import { IntergrowthChart } from './IntergrowthPreview'
 
-type Props = {
+type LiveProps = {
   open: boolean
   biometryState: Readonly<Record<string, unknown>>
   chaveFemur: ChaveFemur | null
   igState: Readonly<Record<string, unknown>>
+  onClose: () => void
+}
+
+type PreviewProps = {
+  open: boolean
+  preview: IntergrowthBiometryPreviewResult | null
   onClose: () => void
 }
 
@@ -216,13 +223,23 @@ function Dado({ rotulo, valor }: { rotulo: string; valor: string }) {
  * derivado das props a cada render pelo mesmo helper da prévia; estado inválido
  * não monta o portal, então nunca imprime um resultado anterior.
  */
-export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState, onClose }: Props) {
+export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState, onClose }: LiveProps) {
+  const preview = open ? intergrowthBiometryPreviewFromDating(biometryState, chaveFemur, igState) : null
+  return <IntergrowthPreviewPrintSheet open={open} preview={preview} onClose={onClose} />
+}
+
+/**
+ * Folha A4 reconstruída de um resultado já validado. O histórico passa aqui
+ * somente o preview derivado do descritor versionado; se o descritor falhar na
+ * validação, `preview` é nulo e nenhuma folha pode ser impressa.
+ */
+export function IntergrowthPreviewPrintSheet({ open, preview, onClose }: PreviewProps) {
   const [host, setHost] = useState<HTMLElement | null>(null)
   const shellRef = useRef<HTMLDivElement>(null)
   const tituloId = useId()
-  const preview = open ? intergrowthBiometryPreviewFromDating(biometryState, chaveFemur, igState) : null
-  const percentilTexto = preview ? formatarPercentilIntergrowth(preview.percentile) : null
-  const ativo = preview !== null && percentilTexto !== null
+  const activePreview = open ? preview : null
+  const percentilTexto = activePreview ? formatarPercentilIntergrowth(activePreview.percentile) : null
+  const ativo = activePreview !== null && percentilTexto !== null
 
   useEffect(() => {
     if (!ativo) return
@@ -281,7 +298,17 @@ export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState
     if (host) shellRef.current?.focus()
   }, [host])
 
-  if (!preview || !percentilTexto || !host) return null
+  if (!activePreview || !percentilTexto || !host) return null
+
+  const examDate = activePreview.dating?.examDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  const datingSource = activePreview.dating?.source === 'dum'
+    ? 'DUM'
+    : activePreview.dating?.source === 'early-ultrasound'
+      ? 'US precoce'
+      : null
+  const datingValue = datingSource && examDate
+    ? `${datingSource} · exame em ${examDate[3]}/${examDate[2]}/${examDate[1]}`
+    : datingSource ?? 'Não informada'
 
   return createPortal(
     <>
@@ -306,8 +333,8 @@ export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState
               <button
                 type="button"
                 className="ig-print-btn"
-                title="Imprimir folha"
-                aria-label="Imprimir folha"
+                title="Imprimir ou salvar como PDF"
+                aria-label="Imprimir ou salvar como PDF"
                 onClick={() => window.print()}
               >
                 <Printer className="h-4 w-4" aria-hidden="true" />
@@ -331,17 +358,18 @@ export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState
                   Crescimento fetal — {INTERGROWTH2020_EFW_VERSION}
                 </h2>
                 <p className="ig-sheet-subtitle">
-                  Peso fetal calculado por {preview.formula} a partir da biometria digitada nesta consulta.
+                  Peso fetal calculado por {activePreview.formula} a partir da biometria registrada no laudo.
                 </p>
               </header>
 
               <section className="ig-sheet-block">
                 <h3 className="ig-sheet-block-title">Biometria usada no cálculo</h3>
                 <dl className="ig-sheet-grid">
-                  <Dado rotulo="IG pela datação" valor={formatarIgBiometria(preview.ig)} />
-                  <Dado rotulo="Circunferência cefálica (CC)" valor={mm(preview.medidasMm.ccMm)} />
-                  <Dado rotulo="Circunferência abdominal (CA)" valor={mm(preview.medidasMm.caMm)} />
-                  <Dado rotulo="Comprimento do fêmur (CF)" valor={mm(preview.medidasMm.cfMm)} />
+                  <Dado rotulo="IG pela datação" valor={formatarIgBiometria(activePreview.ig)} />
+                  <Dado rotulo="Referência da datação" valor={datingValue} />
+                  <Dado rotulo="Circunferência cefálica (CC)" valor={mm(activePreview.medidasMm.ccMm)} />
+                  <Dado rotulo="Circunferência abdominal (CA)" valor={mm(activePreview.medidasMm.caMm)} />
+                  <Dado rotulo="Comprimento do fêmur (CF)" valor={mm(activePreview.medidasMm.cfMm)} />
                 </dl>
               </section>
 
@@ -349,7 +377,7 @@ export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState
                 <h3 className="ig-sheet-block-title">Resultado</h3>
                 <div className="ig-sheet-resultado">
                   <p className="ig-sheet-valor">
-                    {preview.weightRounded} g
+                    {activePreview.weightRounded} g
                     <small>Peso calculado por Hadlock CC/CA/CF (não é o peso informado)</small>
                   </p>
                   <p className="ig-sheet-valor">
@@ -361,7 +389,7 @@ export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState
 
               <section className="ig-sheet-block ig-sheet-chart">
                 <h3 className="ig-sheet-block-title">Curvas P3, P10, P50, P90 e P97</h3>
-                <IntergrowthPreview biometryState={biometryState} chaveFemur={chaveFemur} igState={igState} />
+                <IntergrowthChart preview={activePreview} percentilTexto={percentilTexto} interactive={false} reportMode />
               </section>
 
               <footer className="ig-sheet-foot">
