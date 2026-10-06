@@ -7,3 +7,4 @@ export * from "./fmfTrisomyTypes";
 export * from "./fmfTrisomyFormatter";
 export * from "./fetalGrowth";
 export * from "./mamariaBirads";
+export * from "./monochorionicTwins";
