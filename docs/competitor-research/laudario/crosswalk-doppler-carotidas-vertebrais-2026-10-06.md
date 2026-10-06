@@ -4,40 +4,40 @@ Data: 06/10/2026. O Laudário foi observado com dados sintéticos e restaurado a
 
 ## Síntese
 
-O Laudário possui um modelo vascular amplo, por vaso e lado, com dois modos de classificação, placas múltiplas, razões calculadas, limitação técnica e graduação do roubo da subclávia. O LaudoUSG tem um formulário Web estruturado mais simples e clientes móveis ainda dependentes do writer genérico. A rodada confirmou que os principais riscos do LaudoUSG não são exigências inevitáveis do exame: é possível representar lado, vaso, limitação e derivados de forma estruturada.
+O Laudário possui um modelo vascular amplo, por vaso e lado, com dois modos de classificação, placas múltiplas, razões calculadas, limitação técnica e graduação do roubo da subclávia. O LaudoUSG já tem um MVP Web compartilhado que começa vazio, separa os lados, calcula a razão ACI/ACC e bloqueia conflitos entre placas e classe. Os clientes móveis ainda dependem do writer genérico, e o renderer legado permanece dormente. A rodada confirmou que lado, vaso, limitação e derivados precisam chegar ao mesmo contrato antes da ativação no mobile.
 
 | Cenário | Laudário observado | LaudoUSG atual | Classificação |
 | --- | --- | --- | --- |
-| Baseline sem medidas | publica todos os vasos bilaterais como habituais e conclui normalidade | também publica normalidade, placas ausentes e vertebrais anterógradas por padrão | risco confirmado nos dois produtos |
-| ACI direita 280/95 nos campos basais | tabela de velocidades, mas placa permanece <50% sem alerta | velocidade e classificação são independentes; conclusão pode continuar normal | coerência insuficiente nos dois produtos |
-| ACI direita 280/95 nos campos da placa | deriva 70–79%, lateraliza a conclusão e sugere seguimento | não calcula razão ACI/ACC nem deriva classe; uma classificação atende o exame inteiro | cobertura parcial e gap estrutural |
-| ACC ipsilateral 80/20 | calcula três razões no formulário | não possui razão ACI/ACC | gap confirmado |
-| Roubo total à esquerda | corpo e conclusão coerentes e laterais | vertebral retrógrada pode coexistir com conclusão normal | defeito P0 confirmado no LaudoUSG |
-| Limitação por vaso | opção presente em cada vaso relevante | contrato não representa vaso limitado | gap confirmado |
+| Baseline sem medidas | publica todos os vasos bilaterais como habituais e conclui normalidade | Web v2 começa vazio e bloqueia a geração; o renderer legado ainda presume normalidade se for ativado | Web já corrigida; risco dormente no mobile |
+| ACI direita 280/95 nos campos basais | tabela de velocidades, mas placa permanece <50% sem alerta | Web registra as velocidades e exige classe explícita; não possui contexto de velocidade dentro da lesão | cobertura parcial |
+| ACI direita 280/95 nos campos da placa | deriva 70–79%, lateraliza a conclusão e sugere seguimento | Web não deriva classe por velocidade; valida a classe contra o percentual de redução informado | comportamento deliberadamente mais conservador |
+| ACC ipsilateral 80/20 | calcula três razões no formulário | Web calcula e publica PSV ACI/PSV ACC do mesmo lado; mobile não compartilha esse derivado | paridade incompleta |
+| Roubo total à esquerda | corpo e conclusão coerentes e laterais | Web representa retrógrado ou ausente e inclui o achado na conclusão, mas não gradua o roubo; legado pode concluir normalidade | Web segura, contrato incompleto |
+| Limitação por vaso | opção presente em cada vaso relevante | Web representa limitação apenas no nível do lado | gap confirmado |
 
 ## Escopo e defaults
 
-O concorrente oferece mais estados por vaso, mas ainda abre publicando normalidade completa. No LaudoUSG, o estado inicial também materializa classificação normal e direção vertebral anterógrada, além de afirmar espessura médio-intimal habitual e ausência de placas.
+O concorrente oferece mais estados por vaso, mas ainda abre publicando normalidade completa. O MVP Web atual do LaudoUSG começa com avaliação, placas, vertebral e classificação vazias e não gera o texto enquanto os dados mínimos não forem preenchidos. O risco de normalidade presumida permanece no renderer legado do pipeline móvel, hoje fora do caminho ativo.
 
 **Requisito proposto:** cada vaso deve registrar `não avaliado`, `avaliado normal`, `alterado` ou `limitado`. Um preset normal pode manter a produtividade, desde que seja uma ação explícita do médico e registre o escopo aplicado. A técnica, o corpo e a conclusão devem usar o mesmo escopo.
 
 ## Medidas, placas e classificação
 
-O cenário mostrou que a localização semântica do valor importa. No concorrente, 280/95 nos campos basais não reclassificou a placa; os mesmos números nos campos da maior estenose ativaram a classificação multiparamétrica. A interface não alertou sobre a divergência temporária.
+O cenário mostrou que a localização semântica do valor importa. No concorrente, 280/95 nos campos basais não reclassificou a placa; os mesmos números nos campos da maior estenose ativaram a classificação multiparamétrica. A interface não alertou sobre a divergência temporária. No LaudoUSG Web, VPS e VDF pertencem ao vaso, sem campo próprio para o ponto de maior estenose; o médico escolhe a classe e o validador cruza essa classe com o percentual de redução informado na placa.
 
 **Requisito proposto:** o LaudoUSG deve distinguir velocidade basal, velocidade no ponto de maior estenose e velocidade de referência, com origem única e rótulo inequívoco. A classe selecionada ou calculada precisa ser validada contra as medidas disponíveis. Critérios e limiares só podem ser implementados a partir de fonte clínica própria, versionada e aprovada; os valores observados no concorrente não serão copiados.
 
 ## Razões e lateralidade
 
-O Laudário calcula razões quando recebe velocidades da ACI e da ACC ipsilateral. O LaudoUSG não calcula ACI/ACC e tem uma só classe com um só lado para o exame inteiro.
+O Laudário calcula razões quando recebe velocidades da ACI e da ACC ipsilateral. O LaudoUSG Web v2 já calcula PSV ACI/PSV ACC, com duas casas, e possui uma classe independente por lado. O renderer legado ainda tem uma classe única e não calcula a razão.
 
-**Gap confirmado:** o contrato atual não representa graus diferentes em vasos ou lados distintos e não possui o derivado ACI/ACC.
+**Gap confirmado:** Web, mobile e renderer legado ainda não usam a mesma estrutura. Mesmo no Web v2, a classe é lateral e não identifica qual vaso ou lesão a sustenta.
 
 **Requisito proposto:** representar cada lesão com lado, vaso, segmento, medidas-fonte, método de classificação e classe confirmada. A razão deve ser determinística, somente leitura e calculada apenas entre medidas compatíveis do mesmo lado. Fórmula, arredondamento e uso clínico dependem de validação médica.
 
 ## Vertebrais e roubo da subclávia
 
-O concorrente diferencia limitação técnica de ausência/oclusão/aplasia e gradua o padrão de roubo. O LaudoUSG reduz a direção a anterógrada, retrógrada ou ausente e não leva o achado obrigatoriamente à conclusão.
+O concorrente diferencia limitação técnica de ausência/oclusão/aplasia e gradua o padrão de roubo. O LaudoUSG Web reduz a direção a anterógrada, retrógrada ou ausente, mas já leva retrógrado e ausência à conclusão e bloqueia ausência de fluxo acompanhada de VPS. A limitação é lateral, não específica da vertebral.
 
 **Requisito proposto:** ampliar o estado vertebral para incluir limitação, ausência de fluxo, fluxo alternante/bidirecional e retrógrado, preservando o termo ditado. Um padrão alterado deve impedir conclusão normal. A hipótese de roubo da subclávia deve exigir confirmação médica e não nascer apenas de um texto livre ou de vaso não visualizado.
 
@@ -49,11 +49,11 @@ A ateromatose no concorrente sugeriu correlação e seguimento, mantendo sugest�
 
 ## Ordem sugerida
 
-Primeiro bloquear conclusão normal incompatível com placa, estenose, vertebral alterada ou texto adicional. Depois introduzir estado por vaso e classe por lesão/lado. Em seguida unificar o contrato entre Web, iOS, Android/RN e API, acrescentando razões determinísticas e proveniência das medidas. Critérios multiparamétricos, percentis de espessura médio-intimal e recomendações entram somente após revisão clínica e testes sintéticos de fronteira.
+Primeiro levar o contrato Web v2, suas guardas e seus testes ao caminho mobile, desativando a possibilidade de retorno ao renderer legado. Depois introduzir estado por vaso, contexto da medida e classe por lesão. Critérios multiparamétricos, percentis de espessura médio-intimal e recomendações entram somente após revisão clínica e testes sintéticos de fronteira.
 
 ## Testes de aceite propostos
 
-O conjunto mínimo deve provar baseline sem normalidade silenciosa; placa sem classe gerando pendência; medidas basais não reclassificando uma lesão; medidas na estenose alimentando apenas o cálculo aprovado; lados diferentes com classes independentes; vertebral retrógrada bloqueando conclusão normal; não visualizada gerando limitação em vez de oclusão; remoção da placa invalidando seus derivados e sua classe; e recomendações fora do laudo até confirmação.
+Os nove casos do MVP Web já provam baseline vazio, normal explícito, razão ACI/ACC, lados independentes, limitação lateral, conflitos de placa, VDF maior que VPS, ausência de fluxo com VPS e coerência entre percentual e classe. O próximo conjunto deve provar paridade desses estados no mobile, contexto basal versus lesão, limitação por vaso, remoção da placa invalidando dependências e recomendações fora do laudo até confirmação.
 
 ## Evidências relacionadas
 
