@@ -4,11 +4,11 @@ Atualizado em 06/10/2026. A fila considera impacto clínico, uso provável, dife
 
 ## Cobertura
 
-Foram concluídas rodadas funcionais de 26 dos 84 modelos-base do catálogo, aproximadamente 31,0%. Isso representa 26 das 99 entradas totais, aproximadamente 26,3%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
+Foram concluídas rodadas funcionais de 27 dos 84 modelos-base do catálogo, aproximadamente 32,1%. Isso representa 27 das 99 entradas totais, aproximadamente 27,3%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
 
 ## Próximas prioridades
 
-Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre e Doppler de Carótidas e Vertebrais foram concluídas. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
+Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais e Aparelho Urinário foram concluídas. A última incluiu comparação do mesmo painel em Abdome Total e Doppler Aortorrenal. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
 
 ### A. Rodada funcional no Laudário
 

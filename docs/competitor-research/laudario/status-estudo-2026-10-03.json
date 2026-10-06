@@ -1,12 +1,12 @@
 {
   "competitor": "Laudário",
-  "updated_at": "2026-10-06T10:24:30-03:00",
+  "updated_at": "2026-10-06T14:35:00-03:00",
   "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
   "totals": {
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 26,
+    "base_functionally_studied": 27,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1,
     "laudousg_synthetic_probe_entries": 19
@@ -170,6 +170,12 @@
       "laudousg_code": "DOPPLER_CAROTIDAS",
       "case": "cases/doppler-carotidas-vertebrais-2026-10-06.md",
       "crosswalk": "crosswalk-doppler-carotidas-vertebrais-2026-10-06.md"
+    },
+    {
+      "competitor_exam": "Aparelho Urinário",
+      "laudousg_code": "VIAS_URINARIAS",
+      "case": "cases/aparelho-urinario-2026-10-06.md",
+      "crosswalk": "crosswalk-aparelho-urinario-2026-10-06.md"
     }
   ],
   "absence_checks": [
@@ -193,8 +199,8 @@
   ],
   "competitor_observation": {
     "status": "ativa em 2026-10-06",
-    "motivo": "navegador autenticado disponível; rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre e Doppler de Carótidas e Vertebrais concluídas e restauradas",
-    "efeito": "totals.base_functionally_studied atualizado para 26; rodadas de 05/10 permanecem classificadas como preflight e prova sintética do LaudoUSG"
+    "motivo": "navegador autenticado disponível; rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais e Aparelho Urinário concluídas e restauradas",
+    "efeito": "totals.base_functionally_studied atualizado para 27; a rodada urinária comparou o mesmo painel em Abdome Total e Doppler Aortorrenal"
   },
   "preflights": [
     {

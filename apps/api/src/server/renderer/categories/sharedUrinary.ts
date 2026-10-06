@@ -72,6 +72,24 @@ export const SharedKidneyFindingSchema = z.object({
   descricao_raw: z.string().nullable(),
 });
 
+const SharedUreterSchema = z.object({
+  dilatado: z.boolean(),
+  extensao: z.enum(["jup", "proximal", "medio", "distal", "juv"]).nullable(),
+  calibre_cm: z.number().positive().nullable(),
+  calculo: z.object({
+    localizacao: z.enum(["jup", "proximal", "medio", "distal", "juv"]),
+    dimensao_mm: z.number().positive(),
+    twinkle: z.enum(["nao_avaliado", "ausente", "presente"]),
+  }).nullable(),
+});
+
+const URETER_DEFAULT = {
+  dilatado: false,
+  extensao: null,
+  calibre_cm: null,
+  calculo: null,
+} as const;
+
 export const SharedKidneySchema = z.object({
   medidas_cm: z.array(z.number().positive()).min(1).max(3).nullable(),
   espessura_parenquima_cm: z.number().positive().nullable(),
@@ -82,7 +100,21 @@ export const SharedKidneySchema = z.object({
   drc: z.boolean(),
   alteracao_difusa: z.string().nullable(),
   hidronefrose: z.enum(["ausente", "leve", "moderada", "acentuada"]).nullable(),
+  ureter: SharedUreterSchema.optional().default(URETER_DEFAULT),
   achados: z.array(SharedKidneyFindingSchema),
+}).superRefine((kidney, ctx) => {
+  for (const [index, finding] of kidney.achados.entries()) {
+    if (["litiase", "cisto_simples", "cisto_complexo", "nodulo", "angiomiolipoma"].includes(finding.tipo)) {
+      if (!finding.medidas_cm) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["achados", index, "medidas_cm"], message: "achado renal exige dimensões" });
+      if (!finding.localizacao) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["achados", index, "localizacao"], message: "achado renal exige localização" });
+    }
+  }
+  if (kidney.ureter.dilatado && !kidney.ureter.extensao) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ureter", "extensao"], message: "dilatação ureteral exige extensão" });
+  }
+  if (!kidney.ureter.dilatado && (kidney.ureter.extensao || kidney.ureter.calibre_cm !== null)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ureter"], message: "extensão/calibre ureteral exige dilatação selecionada" });
+  }
 });
 
 export type SharedBladder = z.infer<typeof SharedBladderSchema>;
@@ -219,6 +251,14 @@ const measures = (values: number[] | null, unit = "cm"): string =>
 const side = (value: "direita" | "esquerda" | null): string =>
   value === "direita" ? "à direita" : value === "esquerda" ? "à esquerda" : "";
 
+const ureterLocation = (value: "jup" | "proximal" | "medio" | "distal" | "juv"): string => ({
+  jup: "junção ureteropiélica",
+  proximal: "terço proximal",
+  medio: "terço médio",
+  distal: "terço distal",
+  juv: "junção ureterovesical",
+})[value];
+
 export type SharedBladderRender = {
   body: string[];
   conclusion: string[];
@@ -350,7 +390,7 @@ export function renderSharedKidney(
   const altered = kidney.dimensao === "reduzida_discreta" || kidney.dimensao === "reduzida" ||
     kidney.diferenciacao === "reduzida" || kidney.situacao_baixa || kidney.rotacao || kidney.drc ||
     kidney.hidronefrose === "leve" || kidney.hidronefrose === "moderada" || kidney.hidronefrose === "acentuada" ||
-    kidney.achados.length > 0 || Boolean(kidney.alteracao_difusa);
+    kidney.ureter.dilatado || kidney.ureter.calculo !== null || kidney.achados.length > 0 || Boolean(kidney.alteracao_difusa);
 
   const position = kidney.situacao_baixa ? "em situação baixa" : "em topografia habitual";
   const rotation = kidney.rotacao ? ", com rotação alterada" : "";
@@ -373,7 +413,26 @@ export function renderSharedKidney(
   if (kidney.hidronefrose && kidney.hidronefrose !== "ausente") {
     const degree = kidney.hidronefrose === "leve" ? "leve" : kidney.hidronefrose === "moderada" ? "moderada" : "acentuada";
     body.push(`Dilatação pielocalicial ${degree} no rim ${lado}.`);
-    conclusion.push(`Hidronefrose ${degree} no rim ${lado}.`);
+    if (!kidney.ureter.calculo) conclusion.push(`Hidronefrose ${degree} no rim ${lado}.`);
+  }
+
+  if (kidney.ureter.dilatado && kidney.ureter.extensao) {
+    const caliber = kidney.ureter.calibre_cm !== null ? `, com calibre máximo de ${ptBr(kidney.ureter.calibre_cm)} cm` : "";
+    body.push(`Dilatação do ureter ${lado} até ${ureterLocation(kidney.ureter.extensao)}${caliber}.`);
+    if (!kidney.ureter.calculo) conclusion.push(`Dilatação do ureter ${lado}.`);
+  }
+
+  if (kidney.ureter.calculo) {
+    const twinkle = kidney.ureter.calculo.twinkle === "presente"
+      ? ", com artefato de cintilação ao Doppler"
+      : kidney.ureter.calculo.twinkle === "ausente"
+        ? ", sem artefato de cintilação detectado ao Doppler"
+        : "";
+    body.push(`Cálculo no ureter ${lado}, em ${ureterLocation(kidney.ureter.calculo.localizacao)}, medindo ${ptBr(kidney.ureter.calculo.dimensao_mm)} mm${twinkle}.`);
+    const hydro = kidney.hidronefrose && kidney.hidronefrose !== "ausente"
+      ? `, associada a hidronefrose ${kidney.hidronefrose === "moderada" ? "moderada" : kidney.hidronefrose}`
+      : "";
+    conclusion.push(`Ureterolitíase à ${lado === "direito" ? "direita" : "esquerda"}${hydro}.`);
   }
 
   for (const finding of kidney.achados) {

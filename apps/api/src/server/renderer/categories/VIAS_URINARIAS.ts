@@ -552,6 +552,12 @@ function rinsCompartilhados(f: ViasUrinariasFindings) {
     : null;
 }
 
+function ureterCompartilhadoAlterado(f: ViasUrinariasFindings): boolean {
+  if (!f.rins_detalhados) return false;
+  return [f.rins_detalhados.direito, f.rins_detalhados.esquerdo]
+    .some((rim) => rim.ureter.dilatado || rim.ureter.calculo !== null);
+}
+
 // ---------------------------------------------------------------------------
 // Interpretação diagnóstica de cada achado (CONCLUSÃO)
 // ---------------------------------------------------------------------------
@@ -625,6 +631,7 @@ export function renderViasUrinarias(
 function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
   const sharedBladder = bexigaCompartilhada(f);
   const sharedKidneys = rinsCompartilhados(f);
+  const sharedUreterAlterado = ureterCompartilhadoAlterado(f);
   // ----- OS SEGUINTES ASPECTOS FORAM OBSERVADOS -----
   const aspectos: string[] = [];
   aspectos.push(sharedKidneys ? sharedKidneys.direito.body.join("\n") : rimCorpo("direito", f.rim_direito));
@@ -632,7 +639,7 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
   aspectos.push(sharedKidneys ? sharedKidneys.esquerdo.body.join("\n") : rimCorpo("esquerdo", f.rim_esquerdo));
   aspectos.push("");
 
-  if (f.dilatacao_ureteral && f.dilatacao_ureteral_descricao) {
+  if (!sharedUreterAlterado && f.dilatacao_ureteral && f.dilatacao_ureteral_descricao) {
     aspectos.push(limpa(f.dilatacao_ureteral_descricao).concat("."));
   }
 
@@ -721,7 +728,9 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
   }
 
   // 2) Ureteres.
-  if (f.dilatacao_ureteral) {
+  if (sharedUreterAlterado) {
+    // O ureter já foi descrito e concluído dentro do rim compartilhado do lado correto.
+  } else if (f.dilatacao_ureteral) {
     const desc = f.dilatacao_ureteral_descricao?.trim();
     conclusao.push(
       desc ? `Dilatação ureteral (${limpa(desc)}).` : "Dilatação ureteral.",
@@ -840,6 +849,7 @@ function rimCorpoObjetivo(lado: string, rim: ViasUrinariasRim): string {
 function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
   const sharedBladder = bexigaCompartilhada(f);
   const sharedKidneys = rinsCompartilhados(f);
+  const sharedUreterAlterado = ureterCompartilhadoAlterado(f);
   // ----- ACHADOS (estilo objetivo: frase enxuta + achados em linhas separadas) -----
   const achados: string[] = [];
   achados.push(sharedKidneys ? sharedKidneys.direito.body.join("\n") : rimCorpoObjetivo("direito", f.rim_direito));
@@ -847,7 +857,9 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
   achados.push(sharedKidneys ? sharedKidneys.esquerdo.body.join("\n") : rimCorpoObjetivo("esquerdo", f.rim_esquerdo));
   achados.push("");
 
-  if (f.dilatacao_ureteral && f.dilatacao_ureteral_descricao) {
+  if (sharedUreterAlterado) {
+    // O ureter já foi descrito dentro do rim compartilhado do lado correto.
+  } else if (f.dilatacao_ureteral && f.dilatacao_ureteral_descricao) {
     achados.push(limpa(f.dilatacao_ureteral_descricao).concat("."));
   } else {
     achados.push("Não há sinais de dilatação ureteral.");
@@ -933,7 +945,9 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
   }
 
   // Ureteres.
-  if (f.dilatacao_ureteral) {
+  if (sharedUreterAlterado) {
+    // A impressão ureteral já veio do contrato renal compartilhado.
+  } else if (f.dilatacao_ureteral) {
     const desc = f.dilatacao_ureteral_descricao?.trim();
     impressao.push(
       desc ? `Dilatação ureteral (${limpa(desc)}).` : "Dilatação ureteral.",

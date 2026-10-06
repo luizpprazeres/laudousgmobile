@@ -39,7 +39,9 @@ export function adaptarViasUrinarias(estado: Estado) {
     direito: normalizeKidneyState(secao(estado, 'rim_direito')),
     esquerdo: normalizeKidneyState(secao(estado, 'rim_esquerdo')),
   }
-  const dilatacaoUreteral = texto(ureteres, 'dilatacao') === 'sim'
+  const usaUreterCompartilhado = Object.prototype.hasOwnProperty.call(secao(estado, 'rim_direito'), 'ureter') ||
+    Object.prototype.hasOwnProperty.call(secao(estado, 'rim_esquerdo'), 'ureter')
+  const dilatacaoUreteral = !usaUreterCompartilhado && texto(ureteres, 'dilatacao') === 'sim'
 
   for (const motivo of [...bladderStateConflicts(bladder), ...bladderInputIssues(secao(estado, 'bexiga'))]) {
     pendencias.push({ onde: 'bexiga', valor: bladder.replecao, motivo, bloqueia: true })

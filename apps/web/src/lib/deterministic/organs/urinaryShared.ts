@@ -543,22 +543,29 @@ export function createSharedBladderModule(category: UrinaryCategory): OrganModul
   }
 }
 
+const localizacaoRenalOptions = [
+  { value: 'nao_informada', label: 'Selecione', isDefault: true },
+  { value: 'sup', label: 'Polo superior' },
+  { value: 'medio', label: 'Terço médio' },
+  { value: 'inf', label: 'Polo inferior' },
+]
+
+const localizacaoUreteralOptions = [
+  { value: 'jup', label: 'Junção ureteropiélica' },
+  { value: 'proximal', label: 'Terço proximal' },
+  { value: 'medio', label: 'Terço médio' },
+  { value: 'distal', label: 'Terço distal' },
+  { value: 'juv', label: 'Junção ureterovesical' },
+]
+
 const calculoSubFields: Field[] = [
   { key: 'dimensao', label: 'Dimensão', kind: 'text', placeholder: '5 mm', halfWidth: true },
-  { key: 'polo', label: 'Localização', kind: 'mini-segmented', options: [
-    { value: 'sup', label: 'Polo superior', isDefault: true },
-    { value: 'medio', label: 'Terço médio' },
-    { value: 'inf', label: 'Polo inferior' },
-  ] },
+  { key: 'polo', label: 'Localização', kind: 'mini-segmented', options: localizacaoRenalOptions },
 ]
 
 const lesaoSubFields: Field[] = [
   { key: 'dimensao', label: 'Dimensões', kind: 'text', placeholder: '12 x 10 x 9 mm', halfWidth: true },
-  { key: 'polo', label: 'Localização', kind: 'mini-segmented', options: [
-    { value: 'sup', label: 'Polo superior', isDefault: true },
-    { value: 'medio', label: 'Terço médio' },
-    { value: 'inf', label: 'Polo inferior' },
-  ] },
+  { key: 'polo', label: 'Localização', kind: 'mini-segmented', options: localizacaoRenalOptions },
 ]
 
 function kidneySchema(category: UrinaryCategory, lado: Lado): OrganSchema {
@@ -591,7 +598,10 @@ function kidneySchema(category: UrinaryCategory, lado: Lado): OrganSchema {
         { value: 'calculo', label: 'Cálculo', subFields: calculoSubFields },
       ] },
       { key: 'cistos', label: 'Cistos', kind: 'checklist', hint: 'marque se houver', options: [
-        { value: 'simples', label: 'Cisto simples', subFields: [{ key: 'dimensao', label: 'Dimensões', kind: 'text', placeholder: '20 x 18 x 16 mm' }] },
+        { value: 'simples', label: 'Cisto simples', subFields: [
+          { key: 'dimensao', label: 'Dimensões', kind: 'text', placeholder: '20 x 18 x 16 mm', halfWidth: true },
+          { key: 'polo', label: 'Localização', kind: 'mini-segmented', options: localizacaoRenalOptions },
+        ] },
         { value: 'multiplos', label: 'Cistos múltiplos' },
       ] },
       { key: 'lesoes', label: 'Outras alterações', kind: 'checklist', hint: 'marque se houver', options: [
@@ -602,6 +612,27 @@ function kidneySchema(category: UrinaryCategory, lado: Lado): OrganSchema {
         { value: 'nodulo', label: 'Nódulo sólido', subFields: lesaoSubFields },
         { value: 'angiomiolipoma', label: 'Angiomiolipoma', subFields: lesaoSubFields },
         { value: 'ectasia', label: 'Ectasia pielocalicial', subFields: [{ key: 'local', label: 'Localização', kind: 'text', placeholder: 'pelve renal' }] },
+      ] },
+      { key: 'ureter', label: 'Ureter ipsilateral', kind: 'checklist', hint: 'marque se houver', options: [
+        { value: 'dilatacao', label: 'Dilatação ureteral', subFields: [
+          { key: 'extensao', label: 'Extensão até', kind: 'mini-segmented', options: [
+            { value: 'nao_informada', label: 'Selecione', isDefault: true },
+            ...localizacaoUreteralOptions,
+          ] },
+          { key: 'calibre_cm', label: 'Calibre máximo (cm)', kind: 'text', placeholder: '0,7', halfWidth: true },
+        ] },
+        { value: 'calculo', label: 'Cálculo ureteral', subFields: [
+          { key: 'localizacao', label: 'Localização', kind: 'mini-segmented', options: [
+            { value: 'nao_informada', label: 'Selecione', isDefault: true },
+            ...localizacaoUreteralOptions,
+          ] },
+          { key: 'dimensao_mm', label: 'Dimensão (mm)', kind: 'text', placeholder: '6', halfWidth: true },
+          { key: 'twinkle', label: 'Artefato de cintilação', kind: 'mini-segmented', options: [
+            { value: 'nao_avaliado', label: 'Não avaliado', isDefault: true },
+            { value: 'ausente', label: 'Ausente' },
+            { value: 'presente', label: 'Presente' },
+          ] },
+        ] },
       ] },
       { key: 'alteracao_difusa', label: 'Alteração difusa (descrição)', kind: 'text', placeholder: 'descrever somente o observado' },
       { key: 'medidas', label: 'Medidas do rim (L x AP x T cm)', kind: 'text', placeholder: '10,2 x 4,8 x 5,1', halfWidth: true },
@@ -614,13 +645,15 @@ function kidneySchema(category: UrinaryCategory, lado: Lado): OrganSchema {
 function kidneyInitialState(): OrganState {
   return {
     dimensoes: 'normal', diferenciacao: 'preservada', estrutura: [], dilatacao: 'ausente',
-    litiase: [], cistos: [], lesoes: [], raros: [], alteracao_difusa: '', medidas: '', espessura: '',
-    'litiase.calculo.dimensao': '', 'litiase.calculo.polo': 'sup',
-    'cistos.simples.dimensao': '',
-    'lesoes.cisto_complexo.dimensao': '', 'lesoes.cisto_complexo.polo': 'sup', 'lesoes.cisto_complexo.carac': '',
-    'lesoes.nodulo.dimensao': '', 'lesoes.nodulo.polo': 'sup',
-    'lesoes.angiomiolipoma.dimensao': '', 'lesoes.angiomiolipoma.polo': 'sup',
+    litiase: [], cistos: [], lesoes: [], ureter: [], raros: [], alteracao_difusa: '', medidas: '', espessura: '',
+    'litiase.calculo.dimensao': '', 'litiase.calculo.polo': 'nao_informada',
+    'cistos.simples.dimensao': '', 'cistos.simples.polo': 'nao_informada',
+    'lesoes.cisto_complexo.dimensao': '', 'lesoes.cisto_complexo.polo': 'nao_informada', 'lesoes.cisto_complexo.carac': '',
+    'lesoes.nodulo.dimensao': '', 'lesoes.nodulo.polo': 'nao_informada',
+    'lesoes.angiomiolipoma.dimensao': '', 'lesoes.angiomiolipoma.polo': 'nao_informada',
     'lesoes.ectasia.local': '',
+    'ureter.dilatacao.extensao': 'nao_informada', 'ureter.dilatacao.calibre_cm': '',
+    'ureter.calculo.localizacao': 'nao_informada', 'ureter.calculo.dimensao_mm': '', 'ureter.calculo.twinkle': 'nao_avaliado',
   }
 }
 
@@ -642,11 +675,26 @@ export type KidneyState = {
   drc: boolean
   alteracao_difusa: string | null
   hidronefrose: 'ausente' | 'leve' | 'moderada' | 'acentuada'
+  ureter: {
+    dilatado: boolean
+    extensao: 'jup' | 'proximal' | 'medio' | 'distal' | 'juv' | null
+    calibre_cm: number | null
+    calculo: {
+      localizacao: 'jup' | 'proximal' | 'medio' | 'distal' | 'juv'
+      dimensao_mm: number
+      twinkle: 'nao_avaliado' | 'ausente' | 'presente'
+    } | null
+  }
   achados: KidneyFinding[]
 }
 
 const polo = (value: string): string | null =>
-  value === 'sup' ? 'polo superior' : value === 'medio' ? 'terço médio' : value === 'inf' ? 'polo inferior' : value || null
+  value === 'sup' ? 'polo superior' : value === 'medio' ? 'terço médio' : value === 'inf' ? 'polo inferior' : null
+
+const localUreteral = (value: string): KidneyState['ureter']['extensao'] =>
+  ['jup', 'proximal', 'medio', 'distal', 'juv'].includes(value)
+    ? value as KidneyState['ureter']['extensao']
+    : null
 
 /** Aceita a forma compartilhada nova e a forma legada de Vias Urinárias. */
 export function normalizeKidneyState(state: Estado): KidneyState {
@@ -675,7 +723,7 @@ export function normalizeKidneyState(state: Estado): KidneyState {
     caracteristica: null,
     descricao_raw: null,
   })
-  if (usaCistosCompartilhados && lista(state, 'cistos').includes('simples')) add({ tipo: 'cisto_simples', medidas_cm: medidas(state['cistos.simples.dimensao'], 'mm'), localizacao: null, caracteristica: null, descricao_raw: null })
+  if (usaCistosCompartilhados && lista(state, 'cistos').includes('simples')) add({ tipo: 'cisto_simples', medidas_cm: medidas(state['cistos.simples.dimensao'], 'mm'), localizacao: polo(texto(state, 'cistos.simples.polo')), caracteristica: null, descricao_raw: null })
   if (usaCistosCompartilhados && lista(state, 'cistos').includes('multiplos')) add({ tipo: 'cistos_multiplos', medidas_cm: null, localizacao: null, caracteristica: null, descricao_raw: null })
   for (const tipo of usaLesoesCompartilhadas ? lista(state, 'lesoes') : []) {
     if (!['cisto_complexo', 'nodulo', 'angiomiolipoma', 'ectasia'].includes(tipo)) continue
@@ -710,6 +758,11 @@ export function normalizeKidneyState(state: Estado): KidneyState {
     })
   }
 
+  const ureterSelecionado = lista(state, 'ureter')
+  const calculoUreteralAtivo = ureterSelecionado.includes('calculo')
+  const calculoUreteralMm = numero(state['ureter.calculo.dimensao_mm'], 'mm')
+  const localizacaoCalculo = localUreteral(texto(state, 'ureter.calculo.localizacao'))
+
   return {
     medidas_cm: medidas(state.medidas, 'cm'),
     espessura_parenquima_cm: medidaEscalar(state.espessura, 'cm'),
@@ -720,6 +773,20 @@ export function normalizeKidneyState(state: Estado): KidneyState {
     drc: estrutura.includes('drc'),
     alteracao_difusa: texto(state, 'alteracao_difusa') || null,
     hidronefrose,
+    ureter: {
+      dilatado: ureterSelecionado.includes('dilatacao'),
+      extensao: ureterSelecionado.includes('dilatacao') ? localUreteral(texto(state, 'ureter.dilatacao.extensao')) : null,
+      calibre_cm: ureterSelecionado.includes('dilatacao') ? medidaEscalar(state['ureter.dilatacao.calibre_cm'], 'cm') : null,
+      calculo: calculoUreteralAtivo && calculoUreteralMm !== null && localizacaoCalculo
+        ? {
+            localizacao: localizacaoCalculo,
+            dimensao_mm: calculoUreteralMm,
+            twinkle: ['ausente', 'presente'].includes(texto(state, 'ureter.calculo.twinkle'))
+              ? texto(state, 'ureter.calculo.twinkle') as 'ausente' | 'presente'
+              : 'nao_avaliado',
+          }
+        : null,
+    },
     achados: out,
   }
 }
@@ -729,6 +796,7 @@ export function kidneyInputIssues(state: Estado): string[] {
   const usaLitiaseCompartilhada = temChave(state, 'litiase')
   const usaCistosCompartilhados = temChave(state, 'cistos')
   const usaLesoesCompartilhadas = temChave(state, 'lesoes')
+  const usaUreterCompartilhado = temChave(state, 'ureter')
   const usaRarosCompartilhados = temChave(state, 'raros')
   const dimensaoKey = temChave(state, 'dimensoes') ? 'dimensoes' : 'dimensao'
   const dimensoesValidas = dimensaoKey === 'dimensoes'
@@ -762,6 +830,7 @@ export function kidneyInputIssues(state: Estado): string[] {
   if (usaLitiaseCompartilhada) validarLista('litiase', ['calculo'], 'litíase renal')
   if (usaCistosCompartilhados) validarLista('cistos', ['simples', 'multiplos'], 'cistos renais')
   if (usaLesoesCompartilhadas) validarLista('lesoes', ['cisto_complexo', 'nodulo', 'angiomiolipoma', 'ectasia'], 'lesões renais')
+  if (usaUreterCompartilhado) validarLista('ureter', ['dilatacao', 'calculo'], 'achados ureterais')
   if (usaRarosCompartilhados) validarLista('raros', ['nefrocalcinose'], 'achados renais raros')
   const todosGruposLegadosSubstituidos = usaLitiaseCompartilhada && usaCistosCompartilhados && usaLesoesCompartilhadas
   const achadosLegadosAtivos = lista(state, 'achados').filter((type) => {
@@ -780,15 +849,29 @@ export function kidneyInputIssues(state: Estado): string[] {
   if (rawInvalid(state, 'medidas', (raw) => medidas(raw, 'cm'))) issues.push('medidas renais têm formato inválido')
   if (rawInvalid(state, 'espessura', (raw) => medidaEscalar(raw, 'cm'))) issues.push('espessura do parênquima tem formato inválido')
   if (usaLitiaseCompartilhada && lista(state, 'litiase').includes('calculo')) {
-    if (rawInvalid(state, 'litiase.calculo.dimensao', (raw) => medidas(raw, 'mm'))) issues.push('dimensão do cálculo renal tem formato inválido')
-    if (!['sup', 'medio', 'inf'].includes(texto(state, 'litiase.calculo.polo'))) issues.push('localização do cálculo renal tem opção inválida')
+    const dimensao = medidas(state['litiase.calculo.dimensao'], 'mm')
+    if (!dimensao) issues.push('informe uma dimensão válida para o cálculo renal')
+    if (!['sup', 'medio', 'inf'].includes(texto(state, 'litiase.calculo.polo'))) issues.push('informe a localização do cálculo renal')
   }
-  if (usaCistosCompartilhados && lista(state, 'cistos').includes('simples') && rawInvalid(state, 'cistos.simples.dimensao', (raw) => medidas(raw, 'mm'))) issues.push('dimensões do cisto simples têm formato inválido')
+  if (usaCistosCompartilhados && lista(state, 'cistos').includes('simples')) {
+    if (!medidas(state['cistos.simples.dimensao'], 'mm')) issues.push('informe dimensões válidas para o cisto simples')
+    if (!['sup', 'medio', 'inf'].includes(texto(state, 'cistos.simples.polo'))) issues.push('informe a localização do cisto simples')
+  }
   for (const type of usaLesoesCompartilhadas ? lista(state, 'lesoes') : []) {
     if (['cisto_complexo', 'nodulo', 'angiomiolipoma'].includes(type)) {
-      if (rawInvalid(state, `lesoes.${type}.dimensao`, (raw) => medidas(raw, 'mm'))) issues.push(`${type}: dimensões têm formato inválido`)
-      if (!['sup', 'medio', 'inf'].includes(texto(state, `lesoes.${type}.polo`))) issues.push(`${type}: localização tem opção inválida`)
+      if (!medidas(state[`lesoes.${type}.dimensao`], 'mm')) issues.push(`${type}: informe dimensões válidas`)
+      if (!['sup', 'medio', 'inf'].includes(texto(state, `lesoes.${type}.polo`))) issues.push(`${type}: informe a localização`)
     }
+  }
+  const ureterAtivo = usaUreterCompartilhado ? lista(state, 'ureter') : []
+  if (ureterAtivo.includes('dilatacao')) {
+    if (!localUreteral(texto(state, 'ureter.dilatacao.extensao'))) issues.push('dilatação ureteral: informe até onde se estende')
+    if (rawInvalid(state, 'ureter.dilatacao.calibre_cm', (raw) => medidaEscalar(raw, 'cm'))) issues.push('dilatação ureteral: calibre tem formato inválido')
+  }
+  if (ureterAtivo.includes('calculo')) {
+    if (!localUreteral(texto(state, 'ureter.calculo.localizacao'))) issues.push('cálculo ureteral: informe a localização')
+    if (numero(state['ureter.calculo.dimensao_mm'], 'mm') === null) issues.push('cálculo ureteral: informe uma dimensão válida')
+    if (opcaoInvalida(state, 'ureter.calculo.twinkle', ['nao_avaliado', 'ausente', 'presente'])) issues.push('cálculo ureteral: artefato de cintilação tem opção inválida')
   }
   for (const type of achadosLegadosAtivos) {
     const key = type === 'litiase' ? `achados.${type}.medida` : `achados.${type}.medidas`
@@ -800,7 +883,8 @@ export function kidneyInputIssues(state: Estado): string[] {
 function kidneyCompose(lado: Lado, state: OrganState): OrganComposition {
   const kidney = normalizeKidneyState(state)
   const altered = kidney.dimensao !== 'normal' || kidney.diferenciacao !== 'preservada' || kidney.situacao_baixa ||
-    kidney.rotacao || kidney.drc || kidney.hidronefrose !== 'ausente' || kidney.achados.length > 0 || kidney.alteracao_difusa !== null
+    kidney.rotacao || kidney.drc || kidney.hidronefrose !== 'ausente' || kidney.ureter.dilatado || kidney.ureter.calculo !== null ||
+    kidney.achados.length > 0 || kidney.alteracao_difusa !== null
   return {
     body: altered
       ? `Rim ${lado} com alterações selecionadas, detalhadas no renderer canônico.`

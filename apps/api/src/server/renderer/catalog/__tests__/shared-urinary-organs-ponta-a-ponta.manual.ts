@@ -1,16 +1,19 @@
 import assert from "node:assert/strict";
 import { renderizarSelecao } from "../alteracoes";
 import { adaptarAbdome } from "../../../../../../web/src/lib/catalog/abdomeParaCatalogo";
+import { adaptarDopplerRenal } from "../../../../../../web/src/lib/catalog/dopplerRenalParaCatalogo";
 import { adaptarPelve } from "../../../../../../web/src/lib/catalog/pelveParaCatalogo";
 import { adaptarProstataSuprapubica } from "../../../../../../web/src/lib/catalog/prostataParaCatalogo";
 import { adaptarViasUrinarias } from "../../../../../../web/src/lib/catalog/viasUrinariasParaCatalogo";
 import {
   abdomeTotal,
+  dopplerRenal,
   pelveFeminina,
   prostataSuprapubica,
   viasUrinarias,
   type ExamCategory,
 } from "../../../../../../web/src/lib/deterministic";
+import { renderDopplerRenalWeb } from "../../categories/dopplerRenalWeb";
 
 type State = Record<string, unknown>;
 
@@ -262,11 +265,15 @@ check("rins compartilham semântica entre Abdome e Vias, preservando lados e omi
     "litiase.calculo.polo": "inf",
     cistos: ["simples", "multiplos"],
     "cistos.simples.dimensao": "12 x 10 mm",
+    "cistos.simples.polo": "medio",
     lesoes: ["angiomiolipoma", "cisto_complexo", "nodulo", "ectasia"],
     "lesoes.angiomiolipoma.dimensao": "8 mm",
+    "lesoes.angiomiolipoma.polo": "sup",
     "lesoes.cisto_complexo.dimensao": "14 x 12 mm",
+    "lesoes.cisto_complexo.polo": "inf",
     "lesoes.cisto_complexo.carac": "septado",
     "lesoes.nodulo.dimensao": "9 mm",
+    "lesoes.nodulo.polo": "medio",
     "lesoes.ectasia.local": "pelve renal",
     raros: ["nefrocalcinose"],
     medidas: "",
@@ -286,6 +293,60 @@ check("rins compartilham semântica entre Abdome e Vias, preservando lados e omi
     }
     assert.match(report, /Rim esquerdo[^\n]*(?:preservada|ecograficamente normal)/i);
     assert.doesNotMatch(report, /Medidas do rim direito: ____|Medida do rim direito: ____/i);
+  }
+});
+
+check("ureter estruturado mantém o mesmo achado em Abdome, Vias e Doppler renal", () => {
+  const ureter = {
+    dilatacao: "moderada",
+    ureter: ["dilatacao", "calculo"],
+    "ureter.dilatacao.extensao": "distal",
+    "ureter.dilatacao.calibre_cm": "0,7",
+    "ureter.calculo.localizacao": "distal",
+    "ureter.calculo.dimensao_mm": "6",
+    "ureter.calculo.twinkle": "presente",
+  };
+  const abdomen = adaptarAbdome(patch(initial(abdomeTotal), "rim_direito", ureter));
+  const vias = adaptarViasUrinarias(patch(initial(viasUrinarias), "rim_direito", ureter));
+  noBlockingPending(abdomen);
+  noBlockingPending(vias);
+
+  let dopplerState = patch(initial(dopplerRenal), "rim_direito", ureter);
+  dopplerState = patch(dopplerState, "aorta", { assessment: "normal" });
+  dopplerState = patch(dopplerState, "arteria_renal_direita", { assessment: "normal" });
+  dopplerState = patch(dopplerState, "arteria_renal_esquerda", { assessment: "normal" });
+  const doppler = adaptarDopplerRenal(dopplerState);
+  noBlockingPending(doppler);
+  const dopplerRendered = renderDopplerRenalWeb(doppler.dados, "CLASSICO_COMPLETO");
+  assert.equal(dopplerRendered.ok, true, JSON.stringify(dopplerRendered));
+
+  const reports = [
+    render("ABDOMEN_TOTAL", abdomen.dados, ABDOMEN_TEMPLATE),
+    render("VIAS_URINARIAS", vias.dados),
+    (dopplerRendered as { ok: true; text: string }).text,
+  ];
+  for (const report of reports) {
+    assert.match(report, /Dilatação do ureter direito até terço distal, com calibre máximo de 0,7 cm/i);
+    assert.match(report, /Cálculo no ureter direito, em terço distal, medindo 6 mm, com artefato de cintilação ao Doppler/i);
+    assert.match(report, /Ureterolitíase à direita, associada a hidronefrose moderada/i);
+    assert.doesNotMatch(report, /Não há sinais de dilatação ureteral/i);
+  }
+  assert.equal(viasUrinarias.sections.some((section) => section.id === "ureteres"), false);
+});
+
+check("lesão renal marcada sem medida ou localização bloqueia antes do laudo", () => {
+  const cases: State[] = [
+    { litiase: ["calculo"] },
+    { cistos: ["simples"] },
+    { lesoes: ["cisto_complexo"] },
+    { lesoes: ["nodulo"] },
+    { lesoes: ["angiomiolipoma"] },
+    { ureter: ["dilatacao"] },
+    { ureter: ["calculo"] },
+  ];
+  for (const kidney of cases) {
+    const adapted = adaptarViasUrinarias(patch(initial(viasUrinarias), "rim_direito", kidney));
+    assert.ok(adapted.pendencias.some((item) => item.bloqueia), JSON.stringify(adapted.pendencias));
   }
 });
 
@@ -340,7 +401,7 @@ check("opções vesicais legadas de Abdome, Vias e Próstata são preservadas", 
 
 check("reset remove achado de um órgão sem contaminar os demais", () => {
   const base = initial(viasUrinarias);
-  const withFindings = patch(patch(base, "rim_direito", { litiase: ["calculo"], "litiase.calculo.dimensao": "5 mm" }), "bexiga", { conteudo: ["debris"] });
+  const withFindings = patch(patch(base, "rim_direito", { litiase: ["calculo"], "litiase.calculo.dimensao": "5 mm", "litiase.calculo.polo": "inf" }), "bexiga", { conteudo: ["debris"] });
   const before = adaptarViasUrinarias(withFindings);
   assert.match(render("VIAS_URINARIAS", before.dados), /Litíase no rim direito/i);
   const resetRight = viasUrinarias.sections.find((section) => section.id === "rim_direito")?.module?.initialState();
