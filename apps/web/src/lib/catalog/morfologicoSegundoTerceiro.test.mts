@@ -65,6 +65,39 @@ assert.ok(vitalidadeContraditoria.pendencias.some((p) => p.bloqueia && p.onde ==
 assert.equal(vitalidadeContraditoria.dados.bcf_bpm, null)
 
 const base3t = estadoInicial('3t')
+
+for (const [trimestre, base] of [['2t', base2t], ['3t', base3t]] as const) {
+  const semCordaoInformado = adaptarMorfologico(base, { trimestre })
+  assert.equal(semCordaoInformado.dados.cordao_vasos, 'nao_avaliado')
+  const comTresVasos = adaptarMorfologico({
+    ...base,
+    feto: { ...base.feto, cordao_vasos: 'tres' },
+  }, { trimestre })
+
+  for (const objetivo of [false, true]) {
+    const laudoSemCordao = renderMorfologico(
+      MorfologicoFindingsSchema.parse(semCordaoInformado.dados),
+      null,
+      { objetivo },
+    )
+    assert.doesNotMatch(laudoSemCordao, /Cordão umbilical com duas artérias e uma veia/)
+
+    const laudoLegadoSemCordaoDitado = renderMorfologico(
+      MorfologicoFindingsSchema.parse({ ...semCordaoInformado.dados, cordao_vasos: null }),
+      null,
+      { objetivo },
+    )
+    assert.match(laudoLegadoSemCordaoDitado, /Cordão umbilical com duas artérias e uma veia\./)
+
+    const laudoComTresVasos = renderMorfologico(
+      MorfologicoFindingsSchema.parse(comTresVasos.dados),
+      null,
+      { objetivo },
+    )
+    assert.match(laudoComTresVasos, /Cordão umbilical com duas artérias e uma veia\./)
+  }
+}
+
 const binocularOculta = adaptarMorfologico({
   ...base3t,
   biometria: { ...base3t.biometria, binocular: '30 mm' },

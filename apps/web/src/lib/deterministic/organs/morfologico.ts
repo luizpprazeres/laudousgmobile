@@ -99,7 +99,7 @@ const fetoModule: OrganModule = {
         key: 'cordao_vasos', label: 'Vasos do cordão umbilical', kind: 'segmented',
         hint: 'só informe quando avaliado',
         options: [
-          { value: 'nao_avaliado', label: 'Não informar', isDefault: true },
+          { value: 'nao_avaliado', label: 'Não avaliado', isDefault: true },
           { value: 'tres', label: '2 artérias + 1 veia' },
           { value: 'dois', label: 'Artéria umbilical única' },
         ],

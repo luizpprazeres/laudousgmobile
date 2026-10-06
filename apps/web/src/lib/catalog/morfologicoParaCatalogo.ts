@@ -374,7 +374,9 @@ export function adaptarMorfologico(
       : vitalidade === "ausente" ? null : typeof bcfSegundoTerceiroLido === "number" ? bcfSegundoTerceiroLido : null,
     vitalidade,
     movimentos_fetais: movimentos,
-    cordao_vasos: cordao === "tres" || cordao === "dois" ? cordao : null,
+    cordao_vasos: primeiroTrimestre
+      ? null
+      : cordao === "tres" || cordao === "dois" || cordao === "nao_avaliado" ? cordao : null,
     liquido_avaliacao:
       liquidoAvaliacao === "normal" || liquidoAvaliacao === "oligoamnio" || liquidoAvaliacao === "polidramnio" || liquidoAvaliacao === "nao_avaliado"
         ? liquidoAvaliacao

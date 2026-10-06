@@ -99,11 +99,12 @@ export const MorfologicoFindingsSchema = z.object({
    * Nestes campos, null = "não ditado" e o renderer mantém a frase padrão
    * (movimentos ativos, cordão de três vasos, líquido normal, anatomia normal,
    * osso nasal presente, tricúspide ausente, ducto venoso trifásico). O valor
-   * alterado só sai quando o médico o ditou.
+   * alterado só sai quando o médico o ditou. A Web envia "nao_avaliado" quando
+   * o médico escolhe omitir a contagem de vasos do cordão.
    */
   vitalidade: z.enum(["normal", "ausente", "bradicardia", "taquicardia", "nao_avaliada"]).nullable().optional(),
   movimentos_fetais: z.enum(["normais", "reduzidos", "ausentes", "nao_avaliados"]).nullable().optional(),
-  cordao_vasos: z.enum(["tres", "dois"]).nullable().optional(),
+  cordao_vasos: z.enum(["tres", "dois", "nao_avaliado"]).nullable().optional(),
   liquido_avaliacao: z.enum(["normal", "oligoamnio", "polidramnio", "nao_avaliado"]).nullable().optional(),
   /**
    * anatomia_avaliada: null/true = frases normais dos sistemas presentes;
@@ -225,7 +226,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     apresentacao: str, dorso: str, polo_cefalico: str, bcf_bpm: num,
     vitalidade: { type: ["string", "null"], enum: ["normal", "ausente", "bradicardia", "taquicardia", "nao_avaliada", null] },
     movimentos_fetais: { type: ["string", "null"], enum: ["normais", "reduzidos", "ausentes", "nao_avaliados", null] },
-    cordao_vasos: { type: ["string", "null"], enum: ["tres", "dois", null] },
+    cordao_vasos: { type: ["string", "null"], enum: ["tres", "dois", "nao_avaliado", null] },
     liquido_avaliacao: { type: ["string", "null"], enum: ["normal", "oligoamnio", "polidramnio", "nao_avaliado", null] },
     anatomia_avaliada: bool,
     anatomia_alterada: {
@@ -341,7 +342,8 @@ REGRAS:
    assume BCF presente quando há valor, movimentos ativos e cordão de três
    vasos). Preencha "ausente"/"bradicardia"/"taquicardia", "reduzidos"/
    "ausentes" e "dois" SOMENTE quando o médico ditar a alteração. BCF numérico
-   sustenta vitalidade normal.
+   sustenta vitalidade normal. Use cordao_vasos="nao_avaliado" somente quando o
+   médico disser explicitamente que o número de vasos não foi avaliado.
 5c. anatomia_avaliada: null = não ditado (as frases normais dos sistemas ficam
    no modelo); true quando o médico disser que fez o survey ou que a anatomia é
    normal; false SOMENTE quando disser que a anatomia NÃO foi avaliada de forma
@@ -655,6 +657,9 @@ function movimentosMorfo(f: MorfologicoFindings): string[] {
 }
 
 function cordaoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[] } {
+  if (f.cordao_vasos === "nao_avaliado") {
+    return { corpo: [], conclusao: [] };
+  }
   if (f.cordao_vasos === "tres") {
     return { corpo: ["Cordão umbilical com duas artérias e uma veia."], conclusao: [] };
   }
@@ -664,7 +669,7 @@ function cordaoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: stri
       conclusao: ["Artéria umbilical única."],
     };
   }
-  // Padrão do modelo: cordão de três vasos.
+  // Compatibilidade do modelo oficial usado pelo ditado e pelos apps móveis.
   return { corpo: ["Cordão umbilical com duas artérias e uma veia."], conclusao: [] };
 }
 
