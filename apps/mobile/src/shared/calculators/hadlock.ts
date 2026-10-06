@@ -172,15 +172,28 @@ const INTERGROWTH_UNISEX: Record<number, PercentileBand> = {
   40: { p3: 2554, p10: 2805, p50: 3338, p90: 3871, p97: 4121 },
 };
 
-function intergrowthLookup(igWeeks: number, igDays: number): PercentileBand | null {
+function validGestationalAge(
+  igWeeks: number,
+  igDays: number,
+  minWeeks: number,
+  maxWeeks: number,
+): boolean {
+  if (!Number.isInteger(igWeeks) || !Number.isInteger(igDays)) return false;
+  if (igWeeks < 0 || igDays < 0 || igDays > 6) return false;
   const totalDays = igWeeks * 7 + igDays;
-  const clampedWeek = Math.max(22, Math.min(40, Math.trunc(totalDays / 7)));
-  const fraction = (totalDays - clampedWeek * 7) / 7;
-  const band = INTERGROWTH_UNISEX[clampedWeek];
+  return totalDays >= minWeeks * 7 && totalDays <= maxWeeks * 7;
+}
+
+function intergrowthLookup(igWeeks: number, igDays: number): PercentileBand | null {
+  if (!validGestationalAge(igWeeks, igDays, 22, 40)) return null;
+  const totalDays = igWeeks * 7 + igDays;
+  const week = Math.trunc(totalDays / 7);
+  const fraction = (totalDays - week * 7) / 7;
+  const band = INTERGROWTH_UNISEX[week];
   if (!band) return null;
   if (fraction === 0) return band;
-  const nextBand = INTERGROWTH_UNISEX[clampedWeek + 1];
-  if (clampedWeek >= 40 || !nextBand) return band;
+  const nextBand = INTERGROWTH_UNISEX[week + 1];
+  if (!nextBand) return null;
   return interpolateBand(band, nextBand, fraction);
 }
 
@@ -209,14 +222,15 @@ const HADLOCK_UNISEX: Record<number, PercentileBand> = {
 };
 
 function hadlockLookup(igWeeks: number, igDays: number): PercentileBand | null {
+  if (!validGestationalAge(igWeeks, igDays, 24, 41)) return null;
   const totalDays = igWeeks * 7 + igDays;
-  const clampedWeek = Math.max(24, Math.min(41, Math.trunc(totalDays / 7)));
-  const fraction = (totalDays - clampedWeek * 7) / 7;
-  const band = HADLOCK_UNISEX[clampedWeek];
+  const week = Math.trunc(totalDays / 7);
+  const fraction = (totalDays - week * 7) / 7;
+  const band = HADLOCK_UNISEX[week];
   if (!band) return null;
   if (fraction === 0) return band;
-  const nextBand = HADLOCK_UNISEX[clampedWeek + 1];
-  if (clampedWeek >= 41 || !nextBand) return band;
+  const nextBand = HADLOCK_UNISEX[week + 1];
+  if (!nextBand) return null;
   return interpolateBand(band, nextBand, fraction);
 }
 
@@ -278,16 +292,18 @@ function percentileLookup(
   switch (source) {
     case "intergrowth21st": {
       const band = intergrowthLookup(igWeeks, igDays);
+      if (!band) return null;
       return {
-        percentile: band ? percentileForBand(weight, band) : 50,
+        percentile: percentileForBand(weight, band),
         sexUsed: "unisex",
         version: INTERGROWTH_VERSION,
       };
     }
     case "hadlock1991": {
       const band = hadlockLookup(igWeeks, igDays);
+      if (!band) return null;
       return {
-        percentile: band ? percentileForBand(weight, band) : 50,
+        percentile: percentileForBand(weight, band),
         sexUsed: "unisex",
         version: HADLOCK_VERSION,
       };
@@ -306,9 +322,18 @@ function percentileLookup(
 
 // ─── Normalização de medidas ──────────────────────────────────────────
 
-// Se >20, assume mm → converte pra cm (idêntico ao Swift normalizeCm).
-function normalizeCm(value: number): number {
-  return value > 20 ? value / 10 : value;
+type BiometryMeasure = "dbp" | "cc" | "ca" | "cf";
+
+// Mesmo limiar do iOS: fica entre o maior valor plausível em cm e o menor em mm.
+const MM_THRESHOLD: Record<BiometryMeasure, number> = {
+  dbp: 12,
+  cc: 45,
+  ca: 45,
+  cf: 10,
+};
+
+function normalizeCm(value: number, measure: BiometryMeasure): number {
+  return value >= MM_THRESHOLD[measure] ? value / 10 : value;
 }
 
 // ─── Bloco de inserção (texto IDÊNTICO ao Swift) ──────────────────────
@@ -342,10 +367,10 @@ export function calcularHadlock(
   percentileSource: PercentileSource = "intergrowth21st",
 ): BiometryResult | null {
   const sex = input.sex ?? "unisex";
-  const dbpCm = normalizeCm(input.dbp);
-  const ccCm = normalizeCm(input.cc);
-  const caCm = normalizeCm(input.ca);
-  const cfCm = normalizeCm(input.cf);
+  const dbpCm = normalizeCm(input.dbp, "dbp");
+  const ccCm = normalizeCm(input.cc, "cc");
+  const caCm = normalizeCm(input.ca, "ca");
+  const cfCm = normalizeCm(input.cf, "cf");
 
   if (!(dbpCm > 1 && ccCm > 1 && caCm > 1 && cfCm > 1)) return null;
 

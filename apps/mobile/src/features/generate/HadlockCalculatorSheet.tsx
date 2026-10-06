@@ -19,7 +19,8 @@ type Props = {
   onInsert: (bloco: string) => void;
 };
 
-const WEEK_OPTIONS = Array.from({ length: 22 }, (_, i) => 20 + i); // 20..41
+// A curva Intergrowth-21st 2016 usada nesta tela só possui tabela de 22+0 a 40+0.
+const WEEK_OPTIONS = Array.from({ length: 19 }, (_, i) => 22 + i); // 22..40
 const DAY_OPTIONS = [0, 1, 2, 3, 4, 5, 6];
 
 /**
