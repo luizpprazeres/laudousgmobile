@@ -55,6 +55,23 @@ assert.equal(numerosValidos.dados.dbp_mm, 52.3)
 assert.equal(numerosValidos.dados.ca_mm, 152.5)
 assert.equal(numerosValidos.dados.peso_g, 480)
 assert.equal(numerosValidos.dados.ila_cm, 14.2)
+assert.equal(numerosValidos.dados.biometria_apenas_preenchida, true)
+
+for (const objetivo of [false, true]) {
+  const laudoParcial = renderMorfologico(
+    MorfologicoFindingsSchema.parse(numerosValidos.dados),
+    null,
+    { objetivo },
+  )
+  assert.match(laudoParcial, /Diâmetro biparietal \(DBP\)/)
+  assert.match(laudoParcial, /Circunferência (?:da cabeça|cefálica) \(CC\)/)
+  assert.match(laudoParcial, /Circunferência abdominal \(CA\)/)
+  assert.match(laudoParcial, /fêmur direito/)
+  assert.match(laudoParcial, /480 g/)
+  assert.doesNotMatch(laudoParcial, /Cerebelo/)
+  assert.doesNotMatch(laudoParcial, /Cisterna magna/)
+  assert.doesNotMatch(laudoParcial, /____ mm/)
+}
 
 const vitalidadeContraditoria = adaptarMorfologico({
   ...base2t,
@@ -83,6 +100,8 @@ for (const [trimestre, base] of [['2t', base2t], ['3t', base3t]] as const) {
     )
     assert.doesNotMatch(laudoSemCordao, /Cordão umbilical com duas artérias e uma veia/)
     assert.doesNotMatch(laudoSemCordao, /Orifício interno do colo uterino fechado/)
+    assert.doesNotMatch(laudoSemCordao, /(?:A biometria fetal é a seguinte|Biometria fetal:)/)
+    assert.doesNotMatch(laudoSemCordao, /____ mm/)
 
     const laudoLegadoSemCordaoDitado = renderMorfologico(
       MorfologicoFindingsSchema.parse({ ...semCordaoInformado.dados, cordao_vasos: null }),
@@ -90,6 +109,14 @@ for (const [trimestre, base] of [['2t', base2t], ['3t', base3t]] as const) {
       { objetivo },
     )
     assert.match(laudoLegadoSemCordaoDitado, /Cordão umbilical com duas artérias e uma veia\./)
+
+    const laudoLegadoComModeloBiometrico = renderMorfologico(
+      MorfologicoFindingsSchema.parse({ ...semCordaoInformado.dados, biometria_apenas_preenchida: null }),
+      null,
+      { objetivo },
+    )
+    assert.match(laudoLegadoComModeloBiometrico, /(?:A biometria fetal é a seguinte|Biometria fetal:)/)
+    assert.match(laudoLegadoComModeloBiometrico, /____ mm/)
 
     const laudoComTresVasos = renderMorfologico(
       MorfologicoFindingsSchema.parse(comTresVasos.dados),

@@ -434,6 +434,9 @@ export function adaptarMorfologico(
         ? numero(doppler, "realizado.sim.ip_ut_esq")
         : null,
 
+    // O formulário Web não deve levar placeholders de medidas que o médico não preencheu.
+    // null no 1T e nos caminhos legados preserva o modelo oficial do renderer.
+    biometria_apenas_preenchida: primeiroTrimestre ? null : true,
     dbp_mm: primeiroTrimestre ? (typeof dbpPrecoceLido === "number" ? dbpPrecoceLido : null) : typeof biometriaSegundoTerceiro.dbp?.valor === "number" ? biometriaSegundoTerceiro.dbp.valor : null,
     cc_mm: primeiroTrimestre ? (typeof ccPrecoceLido === "number" ? ccPrecoceLido : null) : typeof biometriaSegundoTerceiro.cc?.valor === "number" ? biometriaSegundoTerceiro.cc.valor : null,
     cerebelo_mm: primeiroTrimestre ? null : typeof biometriaSegundoTerceiro.cerebelo?.valor === "number" ? biometriaSegundoTerceiro.cerebelo.valor : null,

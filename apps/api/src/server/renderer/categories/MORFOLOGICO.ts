@@ -128,6 +128,8 @@ export const MorfologicoFindingsSchema = z.object({
   uterina_ip_direita: z.number().nullable(),
   uterina_ip_esquerda: z.number().nullable(),
   // 2º/3º trimestre — biometria
+  /** true na Web: renderiza somente medidas preenchidas; null preserva o modelo legado. */
+  biometria_apenas_preenchida: z.boolean().nullable().optional(),
   dbp_mm: z.number().nullable(),
   cc_mm: z.number().nullable(),
   cerebelo_mm: z.number().nullable(),
@@ -209,6 +211,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "anatomia_avaliada", "anatomia_alterada", "anatomia_limitada",
     "ccn_mm", "tn_mm", "tn_classificacao", "anatomia_precoce", "osso_nasal", "regurgitacao_tricuspide", "ducto_venoso",
     "uterina_ip_direita", "uterina_ip_esquerda",
+    "biometria_apenas_preenchida",
     "dbp_mm", "cc_mm", "cerebelo_mm", "cisterna_magna_mm", "binocular_mm", "ca_mm",
     "femur_mm", "tibia_mm", "fibula_mm", "umero_mm", "radio_mm", "ulna_mm",
     "femur_dir_mm", "femur_esq_mm", "tibia_dir_mm", "tibia_esq_mm",
@@ -255,6 +258,9 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     regurgitacao_tricuspide: { type: ["string", "null"], enum: ["ausente", "presente", "nao_avaliado", null] },
     ducto_venoso: { type: ["string", "null"], enum: ["normal", "alterado", "nao_avaliado", null] },
     uterina_ip_direita: num, uterina_ip_esquerda: num,
+    // O extrator por ditado só pode preservar o modelo oficial. A Web envia true
+    // diretamente e é validada pelo Zod acima, fora deste schema de extração.
+    biometria_apenas_preenchida: { type: "null" },
     dbp_mm: num, cc_mm: num, cerebelo_mm: num, cisterna_magna_mm: num, binocular_mm: num, ca_mm: num,
     femur_mm: num, tibia_mm: num, fibula_mm: num, umero_mm: num, radio_mm: num, ulna_mm: num,
     femur_dir_mm: num, femur_esq_mm: num, tibia_dir_mm: num, tibia_esq_mm: num,
@@ -324,6 +330,8 @@ REGRAS:
    ambos os específicos. Se coexistirem medida genérica e lateral, preserve-as
    nos respectivos campos; o renderer prioriza as laterais, sem completar o
    lado ausente com a genérica.
+2c. biometria_apenas_preenchida é um controle da Web. Na extração por ditado,
+   envie null para preservar o modelo oficial com os campos biométricos.
 3. osso_nasal: "presente"/"ausente"/"nao_avaliado". regurgitacao_tricuspide:
    "ausente"/"presente"/"nao_avaliado". ducto_venoso: "normal"/"alterado"/"nao_avaliado" (onda A reversa =
    alterado; onda A positiva/trifásica = normal). Nos três, null = não ditado
@@ -464,6 +472,37 @@ function pesoLinhaMorfo(f: MorfologicoFindings): string {
   const sufixo = extras.length > 0 ? ` (${extras.join(", ")})` : "";
   // Mesma frase do obstétrico (decisão do médico, 18/09/2026).
   return `Peso aproximado de ${f.peso_g !== null ? ptBr(f.peso_g) : "____"} g${sufixo}.`;
+}
+
+function biometriaClassicaMorfo(f: MorfologicoFindings, terceiro: boolean): string[] {
+  const somentePreenchida = f.biometria_apenas_preenchida === true;
+  const linhas: string[] = [];
+  const incluir = (valor: number | null, linha: () => string): void => {
+    if (!somentePreenchida || valor !== null) linhas.push(linha());
+  };
+
+  incluir(f.dbp_mm, () => `Diâmetro biparietal (DBP) de ${mm(f.dbp_mm)} mm.`);
+  incluir(f.cc_mm, () => `Circunferência da cabeça (CC) de ${mm(f.cc_mm)} mm.`);
+  incluir(f.cerebelo_mm, () => `Cerebelo mede ${mm(f.cerebelo_mm)} mm.`);
+  incluir(f.cisterna_magna_mm, () => `Cisterna magna mede ${mm(f.cisterna_magna_mm)} mm.`);
+  if (!terceiro) incluir(f.binocular_mm, () => `Distância binocular de ${mm(f.binocular_mm)} mm.`);
+  incluir(f.ca_mm, () => `Circunferência abdominal (CA) de ${mm(f.ca_mm)} mm.`);
+  for (const [osso, rotulo, artigo, direito, esquerdo] of [
+    ["femur", "fêmur", "do", "direito", "esquerdo"],
+    ["tibia", "tíbia", "da", "direita", "esquerda"],
+    ["fibula", "fíbula", "da", "direita", "esquerda"],
+    ["umero", "úmero", "do", "direito", "esquerdo"],
+    ["radio", "rádio", "do", "direito", "esquerdo"],
+    ["ulna", "ulna", "da", "direita", "esquerda"],
+  ] as const) {
+    for (const [lado, ladoRotulo] of [["dir", direito], ["esq", esquerdo]] as const) {
+      const valor = medidaOsso(f, osso, lado);
+      incluir(valor, () => `Comprimento ${artigo} ${rotulo} ${ladoRotulo} de ${mm(valor)} mm.`);
+    }
+  }
+  if (!somentePreenchida || f.peso_g !== null) linhas.push(pesoLinhaMorfo(f));
+
+  return linhas.length > 0 ? ["", "A biometria fetal é a seguinte:", ...linhas] : [];
 }
 
 function acrescentarCervicometria(
@@ -991,28 +1030,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     ...anatomiaClassica(f),
     ...anatomiaLimitadaCorpo(f),
     ...(f.genitalia ? [`Genitália externa ${genitaliaFmt(f.genitalia)}.`] : []),
-    "",
-    "A biometria fetal é a seguinte:",
-    `Diâmetro biparietal (DBP) de ${mm(f.dbp_mm)} mm.`,
-    `Circunferência da cabeça (CC) de ${mm(f.cc_mm)} mm.`,
-    `Cerebelo mede ${mm(f.cerebelo_mm)} mm.`,
-    `Cisterna magna mede ${mm(f.cisterna_magna_mm)} mm.`,
-    // Distância binocular: 2º trimestre apenas (removida no 3º, decisão Luiz).
-    ...(terceiro ? [] : [`Distância binocular de ${mm(f.binocular_mm)} mm.`]),
-    `Circunferência abdominal (CA) de ${mm(f.ca_mm)} mm.`,
-    `Comprimento do fêmur direito de ${mm(medidaOsso(f, "femur", "dir"))} mm.`,
-    `Comprimento do fêmur esquerdo de ${mm(medidaOsso(f, "femur", "esq"))} mm.`,
-    `Comprimento da tíbia direita de ${mm(medidaOsso(f, "tibia", "dir"))} mm.`,
-    `Comprimento da tíbia esquerda de ${mm(medidaOsso(f, "tibia", "esq"))} mm.`,
-    `Comprimento da fíbula direita de ${mm(medidaOsso(f, "fibula", "dir"))} mm.`,
-    `Comprimento da fíbula esquerda de ${mm(medidaOsso(f, "fibula", "esq"))} mm.`,
-    `Comprimento do úmero direito de ${mm(medidaOsso(f, "umero", "dir"))} mm.`,
-    `Comprimento do úmero esquerdo de ${mm(medidaOsso(f, "umero", "esq"))} mm.`,
-    `Comprimento do rádio direito de ${mm(medidaOsso(f, "radio", "dir"))} mm.`,
-    `Comprimento do rádio esquerdo de ${mm(medidaOsso(f, "radio", "esq"))} mm.`,
-    `Comprimento da ulna direita de ${mm(medidaOsso(f, "ulna", "dir"))} mm.`,
-    `Comprimento da ulna esquerda de ${mm(medidaOsso(f, "ulna", "esq"))} mm.`,
-    pesoLinhaMorfo(f),
+    ...biometriaClassicaMorfo(f, terceiro),
     ...(anexos.length > 0 ? ["", "Análise extra-fetal:", ...anexos] : []),
   ];
 
@@ -1156,6 +1174,37 @@ function pesoLinhaObj(f: MorfologicoFindings): string {
   if (f.percentil !== null) extras.push(`percentil ${ptBr(f.percentil)}`);
   const sufixo = extras.length > 0 ? ` (${extras.join(", ")})` : "";
   return `Peso fetal estimado: ${f.peso_g !== null ? String(Math.round(f.peso_g)) : "____"} g${sufixo}.`;
+}
+
+function biometriaObjetivaMorfo(f: MorfologicoFindings, terceiro: boolean): string[] {
+  const somentePreenchida = f.biometria_apenas_preenchida === true;
+  const linhas: string[] = [];
+  const incluir = (valor: number | null, linha: () => string): void => {
+    if (!somentePreenchida || valor !== null) linhas.push(linha());
+  };
+
+  incluir(f.dbp_mm, () => `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`);
+  incluir(f.cc_mm, () => `Circunferência cefálica (CC): ${mm1(f.cc_mm)} mm.`);
+  incluir(f.cerebelo_mm, () => `Cerebelo: ${mm1(f.cerebelo_mm)} mm.`);
+  incluir(f.cisterna_magna_mm, () => `Cisterna magna: ${mm1(f.cisterna_magna_mm)} mm.`);
+  if (!terceiro) incluir(f.binocular_mm, () => `Distância binocular: ${mm1(f.binocular_mm)} mm.`);
+  incluir(f.ca_mm, () => `Circunferência abdominal (CA): ${mm1(f.ca_mm)} mm.`);
+  for (const [osso, rotulo, artigo, direito, esquerdo] of [
+    ["femur", "fêmur", "do", "direito", "esquerdo"],
+    ["tibia", "tíbia", "da", "direita", "esquerda"],
+    ["fibula", "fíbula", "da", "direita", "esquerda"],
+    ["umero", "úmero", "do", "direito", "esquerdo"],
+    ["radio", "rádio", "do", "direito", "esquerdo"],
+    ["ulna", "ulna", "da", "direita", "esquerda"],
+  ] as const) {
+    for (const [lado, ladoRotulo] of [["dir", direito], ["esq", esquerdo]] as const) {
+      const valor = medidaOsso(f, osso, lado);
+      incluir(valor, () => `Comprimento ${artigo} ${rotulo} ${ladoRotulo}: ${mm1(valor)} mm.`);
+    }
+  }
+  if (!somentePreenchida || f.peso_g !== null) linhas.push(pesoLinhaObj(f));
+
+  return linhas.length > 0 ? ["", "Biometria fetal:", ...linhas] : [];
 }
 
 function assembleObj(
@@ -1318,28 +1367,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     ...movimentosMorfo(f),
     ...anatomiaObjetiva(f),
     ...anatomiaLimitadaCorpo(f),
-    "",
-    "Biometria fetal:",
-    `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`,
-    `Circunferência cefálica (CC): ${mm1(f.cc_mm)} mm.`,
-    `Cerebelo: ${mm1(f.cerebelo_mm)} mm.`,
-    `Cisterna magna: ${mm1(f.cisterna_magna_mm)} mm.`,
-    // Distância binocular: 2º trimestre apenas (decisão Luiz no clássico).
-    ...(terceiro ? [] : [`Distância binocular: ${mm1(f.binocular_mm)} mm.`]),
-    `Circunferência abdominal (CA): ${mm1(f.ca_mm)} mm.`,
-    `Comprimento do fêmur direito: ${mm1(medidaOsso(f, "femur", "dir"))} mm.`,
-    `Comprimento do fêmur esquerdo: ${mm1(medidaOsso(f, "femur", "esq"))} mm.`,
-    `Comprimento da tíbia direita: ${mm1(medidaOsso(f, "tibia", "dir"))} mm.`,
-    `Comprimento da tíbia esquerda: ${mm1(medidaOsso(f, "tibia", "esq"))} mm.`,
-    `Comprimento da fíbula direita: ${mm1(medidaOsso(f, "fibula", "dir"))} mm.`,
-    `Comprimento da fíbula esquerda: ${mm1(medidaOsso(f, "fibula", "esq"))} mm.`,
-    `Comprimento do úmero direito: ${mm1(medidaOsso(f, "umero", "dir"))} mm.`,
-    `Comprimento do úmero esquerdo: ${mm1(medidaOsso(f, "umero", "esq"))} mm.`,
-    `Comprimento do rádio direito: ${mm1(medidaOsso(f, "radio", "dir"))} mm.`,
-    `Comprimento do rádio esquerdo: ${mm1(medidaOsso(f, "radio", "esq"))} mm.`,
-    `Comprimento da ulna direita: ${mm1(medidaOsso(f, "ulna", "dir"))} mm.`,
-    `Comprimento da ulna esquerda: ${mm1(medidaOsso(f, "ulna", "esq"))} mm.`,
-    pesoLinhaObj(f),
+    ...biometriaObjetivaMorfo(f, terceiro),
     ...(f.genitalia ? [`Genitália externa ${genitaliaFmt(f.genitalia)}.`] : []),
     ...(anexos.length > 0 ? ["", "Anexos:", ...anexos] : []),
   ];

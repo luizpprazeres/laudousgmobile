@@ -137,4 +137,6 @@ O P1 confirmado do cordão também foi corrigido: “Não avaliado” envia `cor
 
 A mesma salvaguarda foi aplicada ao orifício interno do colo no 2º trimestre. O formulário agora começa em “Não avaliado” e só inclui a frase de fechamento após a seleção explícita “Fechado”. Quando a cervicometria é acrescentada, o bloco próprio continua sendo a única fonte da informação; o 1º e o 3º trimestres não ganham o novo controle. O valor legado `null` preserva o modelo oficial fora da Web.
 
+A Web também deixou de preencher o laudo com uma lista de medidas biométricas vazias. No 2º e no 3º trimestres, aparecem somente as medidas efetivamente registradas; sem nenhuma medida, o bloco biométrico é omitido. O ditado, o mobile e o modelo oficial continuam aceitando o formato legado com placeholders, por meio de um controle explícito no contrato.
+
 Esta entrega corrige o cenário M4 dentro da granularidade atual. Ela não representa nova observação funcional do Laudário e não fecha M9 para limitação global ditada, nem a expansão de estruturas descrita em 5.1. A rodada funcional no concorrente continua pendente para confirmar controles e interações sem copiar redação.
