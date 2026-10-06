@@ -68,6 +68,13 @@ for (const caso of casos) {
   for (const secao of morfologico.sections) {
     if (secao.module) estado[secao.id] = secao.module.initialState();
   }
+  estado.primeiro_trimestre = {
+    ...(estado.primeiro_trimestre as Record<string, unknown>),
+    vitalidade: "normal",
+    bcf: "156",
+    ccn: "62",
+    tn: "1,6",
+  };
   const anatomia = { ...(estado.anatomia as Record<string, unknown>) };
   for (const sistema of caso.sistemas) {
     anatomia[sistema] = "alterado";
@@ -88,7 +95,7 @@ for (const caso of casos) {
     for (const sistema of caso.sistemas) {
       assert.equal(conclusao.split(achados[sistema].diagnostico).length - 1, 1, `${nome}: diagnóstico perdido ou duplicado`);
     }
-    assert.equal(conclusao.includes("Morfologia fetal normal para esta fase da gestação."), caso.nome === "normal",
+    assert.equal(conclusao.includes("Morfologia fetal normal para esta fase da gestação."), false,
       `${nome}: conclusão normal contradiz diagnóstico`);
     console.log(`✓ ${nome}`);
     casosVerificados++;

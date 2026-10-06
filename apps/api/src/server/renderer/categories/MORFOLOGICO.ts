@@ -37,6 +37,51 @@ const num = { type: ["number", "null"] } as const;
 const str = { type: ["string", "null"] } as const;
 const bool = { type: ["boolean", "null"] } as const;
 
+const AnatomiaPrecoceEstadoSchema = z.enum(["normal", "alterada", "limitada", "nao_avaliada"]);
+const AnatomiaPrecoceSchema = z.object({
+  estruturas: z.object({
+    cranio: AnatomiaPrecoceEstadoSchema,
+    face: AnatomiaPrecoceEstadoSchema,
+    coluna: AnatomiaPrecoceEstadoSchema,
+    coracao: AnatomiaPrecoceEstadoSchema,
+    parede_abdominal: AnatomiaPrecoceEstadoSchema,
+    estomago_bexiga: AnatomiaPrecoceEstadoSchema,
+    membros: AnatomiaPrecoceEstadoSchema,
+  }),
+  achado: z.string().nullable(),
+  conclusao: z.string().nullable(),
+  limitacao: z.string().nullable(),
+});
+
+const anatomiaPrecoceEstadoJson = {
+  type: "string",
+  enum: ["normal", "alterada", "limitada", "nao_avaliada"],
+} as const;
+const ANATOMIA_PRECOCE_JSON_SCHEMA = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  required: ["estruturas", "achado", "conclusao", "limitacao"],
+  properties: {
+    estruturas: {
+      type: "object",
+      additionalProperties: false,
+      required: ["cranio", "face", "coluna", "coracao", "parede_abdominal", "estomago_bexiga", "membros"],
+      properties: {
+        cranio: anatomiaPrecoceEstadoJson,
+        face: anatomiaPrecoceEstadoJson,
+        coluna: anatomiaPrecoceEstadoJson,
+        coracao: anatomiaPrecoceEstadoJson,
+        parede_abdominal: anatomiaPrecoceEstadoJson,
+        estomago_bexiga: anatomiaPrecoceEstadoJson,
+        membros: anatomiaPrecoceEstadoJson,
+      },
+    },
+    achado: str,
+    conclusao: str,
+    limitacao: str,
+  },
+} as const;
+
 export const MorfologicoFindingsSchema = z.object({
   trimestre: z.enum(["1t", "2t", "3t"]),
   apresentacao: z.string().nullable(),
@@ -51,10 +96,10 @@ export const MorfologicoFindingsSchema = z.object({
    * osso nasal presente, tricúspide ausente, ducto venoso trifásico). O valor
    * alterado só sai quando o médico o ditou.
    */
-  vitalidade: z.enum(["normal", "ausente", "bradicardia", "taquicardia"]).nullable().optional(),
-  movimentos_fetais: z.enum(["normais", "reduzidos", "ausentes"]).nullable().optional(),
+  vitalidade: z.enum(["normal", "ausente", "bradicardia", "taquicardia", "nao_avaliada"]).nullable().optional(),
+  movimentos_fetais: z.enum(["normais", "reduzidos", "ausentes", "nao_avaliados"]).nullable().optional(),
   cordao_vasos: z.enum(["tres", "dois"]).nullable().optional(),
-  liquido_avaliacao: z.enum(["normal", "oligoamnio", "polidramnio"]).nullable().optional(),
+  liquido_avaliacao: z.enum(["normal", "oligoamnio", "polidramnio", "nao_avaliado"]).nullable().optional(),
   /**
    * anatomia_avaliada: null/true = frases normais dos sistemas presentes;
    * false SOMENTE quando o médico disser que a anatomia não foi avaliada
@@ -66,9 +111,11 @@ export const MorfologicoFindingsSchema = z.object({
   // 1º trimestre
   ccn_mm: z.number().nullable(),
   tn_mm: z.number().nullable(),
-  osso_nasal: z.enum(["presente", "ausente"]).nullable(),
-  regurgitacao_tricuspide: z.enum(["ausente", "presente"]).nullable(),
-  ducto_venoso: z.enum(["normal", "alterado"]).nullable(),
+  tn_classificacao: z.enum(["normal", "limitrofe", "aumentada"]).nullable().optional(),
+  anatomia_precoce: AnatomiaPrecoceSchema.nullable().optional(),
+  osso_nasal: z.enum(["presente", "ausente", "nao_avaliado"]).nullable(),
+  regurgitacao_tricuspide: z.enum(["ausente", "presente", "nao_avaliado"]).nullable(),
+  ducto_venoso: z.enum(["normal", "alterado", "nao_avaliado"]).nullable(),
   uterina_ip_direita: z.number().nullable(),
   uterina_ip_esquerda: z.number().nullable(),
   // 2º/3º trimestre — biometria
@@ -151,7 +198,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "trimestre", "apresentacao", "dorso", "polo_cefalico", "bcf_bpm",
     "vitalidade", "movimentos_fetais", "cordao_vasos", "liquido_avaliacao",
     "anatomia_avaliada", "anatomia_alterada",
-    "ccn_mm", "tn_mm", "osso_nasal", "regurgitacao_tricuspide", "ducto_venoso",
+    "ccn_mm", "tn_mm", "tn_classificacao", "anatomia_precoce", "osso_nasal", "regurgitacao_tricuspide", "ducto_venoso",
     "uterina_ip_direita", "uterina_ip_esquerda",
     "dbp_mm", "cc_mm", "cerebelo_mm", "cisterna_magna_mm", "binocular_mm", "ca_mm",
     "femur_mm", "tibia_mm", "fibula_mm", "umero_mm", "radio_mm", "ulna_mm",
@@ -169,19 +216,21 @@ export const MORFOLOGICO_JSON_SCHEMA = {
   properties: {
     trimestre: { type: "string", enum: ["1t", "2t", "3t"] },
     apresentacao: str, dorso: str, polo_cefalico: str, bcf_bpm: num,
-    vitalidade: { type: ["string", "null"], enum: ["normal", "ausente", "bradicardia", "taquicardia", null] },
-    movimentos_fetais: { type: ["string", "null"], enum: ["normais", "reduzidos", "ausentes", null] },
+    vitalidade: { type: ["string", "null"], enum: ["normal", "ausente", "bradicardia", "taquicardia", "nao_avaliada", null] },
+    movimentos_fetais: { type: ["string", "null"], enum: ["normais", "reduzidos", "ausentes", "nao_avaliados", null] },
     cordao_vasos: { type: ["string", "null"], enum: ["tres", "dois", null] },
-    liquido_avaliacao: { type: ["string", "null"], enum: ["normal", "oligoamnio", "polidramnio", null] },
+    liquido_avaliacao: { type: ["string", "null"], enum: ["normal", "oligoamnio", "polidramnio", "nao_avaliado", null] },
     anatomia_avaliada: bool,
     anatomia_alterada: {
       type: ["array", "null"],
       items: { type: "string", enum: ["snc", "face", "coracao", "visceras"] },
     },
     ccn_mm: num, tn_mm: num,
-    osso_nasal: { type: ["string", "null"], enum: ["presente", "ausente", null] },
-    regurgitacao_tricuspide: { type: ["string", "null"], enum: ["ausente", "presente", null] },
-    ducto_venoso: { type: ["string", "null"], enum: ["normal", "alterado", null] },
+    tn_classificacao: { type: ["string", "null"], enum: ["normal", "limitrofe", "aumentada", null] },
+    anatomia_precoce: ANATOMIA_PRECOCE_JSON_SCHEMA,
+    osso_nasal: { type: ["string", "null"], enum: ["presente", "ausente", "nao_avaliado", null] },
+    regurgitacao_tricuspide: { type: ["string", "null"], enum: ["ausente", "presente", "nao_avaliado", null] },
+    ducto_venoso: { type: ["string", "null"], enum: ["normal", "alterado", "nao_avaliado", null] },
     uterina_ip_direita: num, uterina_ip_esquerda: num,
     dbp_mm: num, cc_mm: num, cerebelo_mm: num, cisterna_magna_mm: num, binocular_mm: num, ca_mm: num,
     femur_mm: num, tibia_mm: num, fibula_mm: num, umero_mm: num, radio_mm: num, ulna_mm: num,
@@ -219,7 +268,7 @@ preencha o valor ALTERADO só se o médico o ditou; nunca deduza alteração.
 
 REGRAS:
 1. trimestre: detecte "1t" (CCN, translucência nucal, osso nasal, ducto venoso,
-   IG ≤ 14 semanas, sem biometria DBP/CC), "2t" (15–28 sem; biometria completa)
+   IG ≤ 14 semanas; pode haver biometria precoce opcional), "2t" (15–28 sem; biometria completa)
    ou "3t" (≥ 29 sem). Se o médico disser explicitamente, respeite.
 2. BIOMETRIA — NÃO ASSUMA UNIDADE. Extraia o número EXATAMENTE como ditado:
    PRESERVE a casa decimal (vírgula → ponto: "2,4" → 2.4); NUNCA remova a vírgula
@@ -252,11 +301,19 @@ REGRAS:
    ambos os específicos. Se coexistirem medida genérica e lateral, preserve-as
    nos respectivos campos; o renderer prioriza as laterais, sem completar o
    lado ausente com a genérica.
-3. osso_nasal: "presente"/"ausente". regurgitacao_tricuspide:
-   "ausente"/"presente". ducto_venoso: "normal"/"alterado" (onda A reversa =
+3. osso_nasal: "presente"/"ausente"/"nao_avaliado". regurgitacao_tricuspide:
+   "ausente"/"presente"/"nao_avaliado". ducto_venoso: "normal"/"alterado"/"nao_avaliado" (onda A reversa =
    alterado; onda A positiva/trifásica = normal). Nos três, null = não ditado
    (o modelo assume presente / ausente / normal). "ausente" (osso nasal),
    "presente" (tricúspide) e "alterado" (ducto) SOMENTE quando ditados.
+3b. tn_classificacao: "limitrofe" SOMENTE quando o médico disser que a TN é
+   limítrofe. Nos demais casos, classifique deterministicamente pelo valor:
+   "aumentada" quando TN >= 3.5 mm e "normal" quando TN < 3.5 mm. Sem TN, null.
+3c. anatomia_precoce: objeto OPCIONAL exclusivo do 1º trimestre. Use null quando
+   o médico não disser que realizou a avaliação precoce. Quando realizada,
+   registre cada estrutura como "normal", "alterada", "limitada" ou
+   "nao_avaliada" sem completar estruturas não mencionadas. Preserve em achado
+   e conclusao o texto ditado para alterações; em limitacao, o motivo ditado.
 4. uterina_ip_direita/esquerda: IP das artérias uterinas (1t).
 5. apresentacao/dorso (2t/3t): só se ditados. Situação transversa/córmica não é
    apresentação: use apresentacao=null e registre a posição em polo_cefalico.
@@ -398,7 +455,11 @@ function acrescentarDoppler(
 ): void {
   if (!f.doppler) return;
   // Morfológico COM Doppler também é exame combinado: o laudo do médico usa só o IP.
-  const doppler = renderDopplerModule(f.doppler, { ...options, indices: "ip" });
+  const doppler = renderDopplerModule(f.doppler, {
+    ...options,
+    indices: "ip",
+    omitirAusenciasUterinas: options?.uterinas === true,
+  });
   corpo.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
   conclusao.push(...doppler.conclusao);
 }
@@ -508,6 +569,7 @@ function linhaFeto(f: MorfologicoFindings): string {
 }
 
 function vitalidadeClassicaMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[] } {
+  if (f.vitalidade === "nao_avaliada") return { corpo: [], conclusao: [] };
   const bpm = f.bcf_bpm !== null ? ptBr(f.bcf_bpm) : null;
   if (f.vitalidade === "ausente") {
     return { corpo: ["Batimentos cardíacos fetais não identificados."], conclusao: ["Ausência de vitalidade fetal."] };
@@ -535,6 +597,7 @@ function vitalidadeClassicaMorfo(f: MorfologicoFindings): { corpo: string[]; con
 
 function movimentosMorfo(f: MorfologicoFindings): string[] {
   if (f.vitalidade === "ausente") return [];
+  if (f.movimentos_fetais === "nao_avaliados") return [];
   if (f.movimentos_fetais === "normais") return ["Os movimentos fetais são ativos."];
   if (f.movimentos_fetais === "reduzidos") return ["Movimentos fetais reduzidos."];
   if (f.movimentos_fetais === "ausentes") return ["Não foram observados movimentos fetais durante o exame."];
@@ -582,6 +645,9 @@ function liquidoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: str
       return { corpo: [`Índice do líquido amniótico de ${valor} cm.`], conclusao: [`Polidrâmnio (ILA de ${valor} cm).`], alterado: true };
     }
     return { corpo: [`Índice do líquido amniótico de ${valor} cm.`], conclusao: ["Líquido amniótico de quantidade normal."], alterado: false };
+  }
+  if (f.liquido_avaliacao === "nao_avaliado") {
+    return { corpo: [], conclusao: [], alterado: false };
   }
   if (f.liquido_avaliacao === "normal") {
     return { corpo: ["Líquido amniótico de quantidade normal pela análise subjetiva."], conclusao: ["Líquido amniótico de quantidade normal."], alterado: false };
@@ -646,6 +712,110 @@ function linhaFeto1t(f: MorfologicoFindings): string {
   return "Feto único de situação variável.";
 }
 
+type EstruturaPrecoce = "cranio" | "face" | "coluna" | "coracao" | "parede_abdominal" | "estomago_bexiga" | "membros";
+
+const ANATOMIA_PRECOCE_NORMAL: Record<EstruturaPrecoce, string> = {
+  cranio: "Contorno craniano regular, com linha média e plexos coroides identificados.",
+  face: "Perfil facial identificado, sem alteração detectável nesta fase.",
+  coluna: "Coluna vertebral com alinhamento preservado.",
+  coracao: "Coração em posição habitual, com atividade rítmica.",
+  parede_abdominal: "Parede abdominal íntegra, com inserção do cordão umbilical identificada.",
+  estomago_bexiga: "Estômago e bexiga identificados.",
+  membros: "Quatro membros identificados, com três segmentos.",
+};
+
+const ANATOMIA_PRECOCE_ROTULO: Record<EstruturaPrecoce, string> = {
+  cranio: "crânio e encéfalo",
+  face: "face",
+  coluna: "coluna",
+  coracao: "coração",
+  parede_abdominal: "parede abdominal e inserção do cordão",
+  estomago_bexiga: "estômago e bexiga",
+  membros: "membros",
+};
+
+function fraseComPonto(texto: string): string {
+  const limpo = texto.trim().replace(/\.+$/, "");
+  if (!limpo) return "";
+  return `${limpo.charAt(0).toUpperCase()}${limpo.slice(1)}.`;
+}
+
+function classificacaoTn(f: MorfologicoFindings): "normal" | "limitrofe" | "aumentada" | null {
+  if (f.tn_classificacao === "limitrofe") return "limitrofe";
+  if (f.tn_mm === null) return null;
+  return f.tn_mm >= 3.5 ? "aumentada" : "normal";
+}
+
+function conclusaoTn(f: MorfologicoFindings): string[] {
+  const classificacao = classificacaoTn(f);
+  if (classificacao === "aumentada" && f.tn_mm !== null) {
+    return [`Translucência nucal aumentada (TN de ${mm(f.tn_mm)} mm).`];
+  }
+  if (classificacao === "limitrofe") {
+    return [
+      "Translucência nucal acima dos valores usuais para a idade gestacional. Convém, a critério clínico, reavaliar ultrassonograficamente no prazo de 01 semana, com objetivo de acompanhar a evolução.",
+    ];
+  }
+  return [];
+}
+
+function biometriaPrecoce(f: MorfologicoFindings, objetivo = false): string[] {
+  const medidas = [
+    [objetivo ? "Diâmetro biparietal (DBP)" : "Diâmetro biparietal (DBP) de", f.dbp_mm],
+    [objetivo ? "Circunferência cefálica (CC)" : "Circunferência da cabeça (CC) de", f.cc_mm],
+    [objetivo ? "Circunferência abdominal (CA)" : "Circunferência abdominal (CA) de", f.ca_mm],
+    [objetivo ? "Comprimento do fêmur" : "Comprimento do fêmur de", f.femur_mm],
+  ] as const;
+  const presentes = medidas.filter(([, valor]) => valor !== null);
+  if (presentes.length === 0) return [];
+  return [
+    "",
+    "Biometria fetal precoce:",
+    ...presentes.map(([rotulo, valor]) => objetivo
+      ? `${rotulo}: ${mm1(valor)} mm.`
+      : `${rotulo} ${mm(valor)} mm.`),
+  ];
+}
+
+function anatomiaPrecoceMorfo(f: MorfologicoFindings): {
+  corpo: string[];
+  conclusao: string[];
+  completa: boolean;
+  temAlteracaoOuLimitacao: boolean;
+} {
+  const avaliacao = f.anatomia_precoce;
+  if (!avaliacao) return { corpo: [], conclusao: [], completa: false, temAlteracaoOuLimitacao: false };
+  const estruturas = Object.keys(ANATOMIA_PRECOCE_NORMAL) as EstruturaPrecoce[];
+  const normais = estruturas.filter((estrutura) => avaliacao.estruturas[estrutura] === "normal");
+  const alteradas = estruturas.filter((estrutura) => avaliacao.estruturas[estrutura] === "alterada");
+  const limitadas = estruturas.filter((estrutura) => avaliacao.estruturas[estrutura] === "limitada");
+  const naoAvaliadas = estruturas.filter((estrutura) => avaliacao.estruturas[estrutura] === "nao_avaliada");
+  const corpo = [
+    "",
+    "Avaliação anatômica precoce:",
+    ...normais.map((estrutura) => ANATOMIA_PRECOCE_NORMAL[estrutura]),
+    ...(alteradas.length > 0 && avaliacao.achado ? [fraseComPonto(avaliacao.achado)] : []),
+    ...(limitadas.length > 0
+      ? [`Avaliação limitada de ${limitadas.map((estrutura) => ANATOMIA_PRECOCE_ROTULO[estrutura]).join(", ")}${avaliacao.limitacao ? ` por ${avaliacao.limitacao.trim().replace(/\.+$/, "")}` : ""}.`]
+      : []),
+    ...(naoAvaliadas.length > 0
+      ? [`Estruturas não avaliadas nesta etapa: ${naoAvaliadas.map((estrutura) => ANATOMIA_PRECOCE_ROTULO[estrutura]).join(", ")}.`]
+      : []),
+  ];
+  const conclusao = [
+    ...(alteradas.length > 0 && avaliacao.conclusao ? [fraseComPonto(avaliacao.conclusao)] : []),
+    ...(limitadas.length > 0
+      ? [`Avaliação anatômica precoce limitada em ${limitadas.map((estrutura) => ANATOMIA_PRECOCE_ROTULO[estrutura]).join(", ")}${avaliacao.limitacao ? ` por ${avaliacao.limitacao.trim().replace(/\.+$/, "")}` : ""}.`]
+      : []),
+  ];
+  return {
+    corpo,
+    conclusao,
+    completa: normais.length === estruturas.length,
+    temAlteracaoOuLimitacao: alteradas.length > 0 || limitadas.length > 0,
+  };
+}
+
 const COMENTARIOS_1T =
   "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
@@ -666,6 +836,8 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
   const ig = igResultMorfo(f, igCorrection);
   const vitalidade = vitalidadeClassicaMorfo(f);
   const liquido = liquidoMorfo(f);
+  const anatomiaPrecoce = anatomiaPrecoceMorfo(f);
+  const tnConclusao = conclusaoTn(f);
   // MODELO COMPLETO: marcadores do 1º trimestre saem com a frase normal; o ditado
   // só troca a frase quando o achado é diferente.
   const aspectos: string[] = [
@@ -674,17 +846,26 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
     ...movimentosMorfo(f),
     `Comprimento crânio-nádegas (CCN) de ${mm(f.ccn_mm)} mm.`,
     `Medida da translucência nucal (TN) de ${mm(f.tn_mm)} mm.`,
-    f.osso_nasal === "ausente" ? "Ausência de osso nasal." : "Presença de osso nasal.",
+    f.osso_nasal === "ausente"
+      ? "Ausência de osso nasal."
+      : f.osso_nasal === "nao_avaliado" ? "Osso nasal não avaliado." : "Presença de osso nasal.",
     f.regurgitacao_tricuspide === "presente"
       ? "Presença de regurgitação tricúspide."
-      : "Ausência de regurgitação tricúspide.",
+      : f.regurgitacao_tricuspide === "nao_avaliado" ? "Regurgitação tricúspide não avaliada." : "Ausência de regurgitação tricúspide.",
     f.ducto_venoso === "alterado"
       ? "Ducto venoso com onda reversa na sístole atrial."
-      : "Ducto venoso com aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas).",
+      : f.ducto_venoso === "nao_avaliado"
+        ? "Ducto venoso não avaliado."
+        : "Ducto venoso com aspecto de onda trifásica (sístole ventricular, diástole ventricular e sístole atrial positivas).",
+    ...biometriaPrecoce(f),
+    ...anatomiaPrecoce.corpo,
   ];
   aspectos.push(...placentaMorfo(f, false));
   aspectos.push(...liquido.corpo);
-  if (f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null) {
+  // O bloco estruturado de Doppler já imprime os índices, o percentil e a
+  // conclusão coerente. Os campos legados abaixo só entram quando o bloco não
+  // existe, evitando duplicar as mesmas uterinas no laudo Web.
+  if (!f.doppler && (f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null)) {
     aspectos.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBrIndice(f.uterina_ip_direita) : "____"}.`);
     aspectos.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBrIndice(f.uterina_ip_esquerda) : "____"}.`);
     if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
@@ -704,19 +885,20 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
     ig.conclusaoClassico,
     ...vitalidade.conclusao,
     ...liquido.conclusao,
-    f.ducto_venoso === "alterado"
-      ? "Doppler do ducto venoso alterado (onda A reversa)."
-      : "Doppler do ducto venoso normal.",
+    ...tnConclusao,
+    ...(f.ducto_venoso === "alterado"
+      ? ["Doppler do ducto venoso alterado (onda A reversa)."]
+      : f.ducto_venoso === "nao_avaliado" ? [] : ["Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(f.anatomia_avaliada === false || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...anatomiaPrecoce.conclusao,
+    ...(f.anatomia_avaliada === false || (f.anatomia_precoce && !anatomiaPrecoce.completa) || tnConclusao.length > 0 || anatomiaPrecoce.temAlteracaoOuLimitacao || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal !== "presente" || f.regurgitacao_tricuspide !== "ausente" || f.ducto_venoso !== "normal"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
-  if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
-    conclusao.push("Dopplervelocimetria normal das artérias uterinas.");
-  }
+  // Sem percentil não é seguro classificar as uterinas como normais. Quando o
+  // bloco estruturado existe, ele próprio inclui o item normal ou alterado.
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
   const comUterinas = f.uterina_ip_direita !== null || f.uterina_ip_esquerda !== null;
@@ -969,6 +1151,8 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   const ig = igResultMorfo(f, igCorrection);
   const vitalidade = vitalidadeClassicaMorfo(f);
   const liquido = liquidoMorfo(f);
+  const anatomiaPrecoce = anatomiaPrecoceMorfo(f);
+  const tnConclusao = conclusaoTn(f);
   // Doppler das uterinas = presença de IP. Só então o título leva "COM DOPPLER
   // COLORIDO" e entram as frases de IP + a conclusão de dopplervelocimetria.
   const comDoppler =
@@ -981,17 +1165,23 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
     ...movimentosMorfo(f),
     `Comprimento cabeça-nádegas (CCN): ${mm1(f.ccn_mm)} mm.`,
     `Translucência nucal (TN): ${mm1(f.tn_mm)} mm.`,
-    f.osso_nasal === "ausente" ? "Osso nasal ausente." : "Osso nasal presente.",
+    f.osso_nasal === "ausente"
+      ? "Osso nasal ausente."
+      : f.osso_nasal === "nao_avaliado" ? "Osso nasal não avaliado." : "Osso nasal presente.",
     f.regurgitacao_tricuspide === "presente"
       ? "Regurgitação tricúspide presente."
-      : "Regurgitação tricúspide ausente.",
+      : f.regurgitacao_tricuspide === "nao_avaliado" ? "Regurgitação tricúspide não avaliada." : "Regurgitação tricúspide ausente.",
     f.ducto_venoso === "alterado"
       ? "Ducto venoso com onda A reversa."
-      : "Ducto venoso com onda trifásica (onda A positiva).",
+      : f.ducto_venoso === "nao_avaliado"
+        ? "Ducto venoso não avaliado."
+        : "Ducto venoso com onda trifásica (onda A positiva).",
+    ...biometriaPrecoce(f, true),
+    ...anatomiaPrecoce.corpo,
   ];
   achados.push(...placentaObjMorfo(f, false));
   achados.push(...liquido.corpo);
-  if (comDoppler) {
+  if (!f.doppler && comDoppler) {
     achados.push(`Artéria uterina direita: IP ${f.uterina_ip_direita !== null ? ptBrIndice(f.uterina_ip_direita) : "____"}.`);
     achados.push(`Artéria uterina esquerda: IP ${f.uterina_ip_esquerda !== null ? ptBrIndice(f.uterina_ip_esquerda) : "____"}.`);
     if (f.uterina_ip_direita !== null && f.uterina_ip_esquerda !== null) {
@@ -1013,19 +1203,19 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
     ...ig.conclusaoObjetivo,
     ...vitalidade.conclusao,
     ...liquido.conclusao,
-    f.ducto_venoso === "alterado"
-      ? "Doppler do ducto venoso alterado (onda A reversa)."
-      : "Doppler do ducto venoso normal.",
+    ...tnConclusao,
+    ...(f.ducto_venoso === "alterado"
+      ? ["Doppler do ducto venoso alterado (onda A reversa)."]
+      : f.ducto_venoso === "nao_avaliado" ? [] : ["Doppler do ducto venoso normal."]),
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
-    ...(f.anatomia_avaliada === false || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado"
+    ...anatomiaPrecoce.conclusao,
+    ...(f.anatomia_avaliada === false || (f.anatomia_precoce && !anatomiaPrecoce.completa) || tnConclusao.length > 0 || anatomiaPrecoce.temAlteracaoOuLimitacao || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal !== "presente" || f.regurgitacao_tricuspide !== "ausente" || f.ducto_venoso !== "normal"
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
-  if (comDoppler) {
-    impressao.push("Dopplervelocimetria normal das artérias uterinas.");
-  }
+  // A conclusão das uterinas vem do bloco estruturado, que conhece o percentil.
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
   return assembleObj(

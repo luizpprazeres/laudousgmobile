@@ -436,7 +436,7 @@ export function removeBlankVesselLines(laudo: string): string {
 /** Itens de conclusão do Doppler (sem numeração — o caller renumera). */
 export function buildDopplerConclusionItems(
   d: DopplerData,
-  options?: { strictEvidence?: boolean },
+  options?: { strictEvidence?: boolean; suppressUterineAbsenceStatements?: boolean },
 ): string[] {
   if (options?.strictEvidence && !hasDopplerData(d)) {
     return ["Dados Doppler insuficientes para conclusão hemodinâmica."];
@@ -530,7 +530,10 @@ export function buildDopplerConclusionItems(
   const vasos = vasoMedido(d);
   if (d.incisura) {
     items.push("Presença de incisura protodiastólica nas artérias uterinas.");
-  } else if (!options?.strictEvidence || d.incisura === false || vasos.uterinas) {
+  } else if (
+    !options?.suppressUterineAbsenceStatements &&
+    (!options?.strictEvidence || d.incisura === false || vasos.uterinas)
+  ) {
     items.push("Ausência de sinais de incisuras.");
   }
 
@@ -544,6 +547,7 @@ export function buildDopplerConclusionItems(
       "Achados compatíveis com sinais iniciais de centralização fetal (pré-centralização).",
     );
   } else if (
+    !options?.suppressUterineAbsenceStatements &&
     (!options?.strictEvidence ||
       d.centralizacao === false ||
       d.preCentralizacao === false ||

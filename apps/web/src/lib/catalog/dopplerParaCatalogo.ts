@@ -94,10 +94,10 @@ export function dopplerDaTela(
       !somenteIpUterinas && calculado.arteriaUmbilical?.pathological === true,
     acm_alterado:
       !somenteIpUterinas && (texto(d, key('acm')) === 'alterada' || calculado.arteriaCerebralMedia?.pathological === true),
-    incisura: !somenteIpUterinas && texto(d, key('incisura')) === 'presente',
+    incisura: somenteIpUterinas ? null : texto(d, key('incisura')) === 'presente',
     ectasia: null,
-    pre_centralizacao: !somenteIpUterinas && centralizacao === 'pre',
-    centralizacao: !somenteIpUterinas && centralizacao === 'presente',
+    pre_centralizacao: somenteIpUterinas ? null : centralizacao === 'pre',
+    centralizacao: somenteIpUterinas ? null : centralizacao === 'presente',
     uterinas_acima_p95: calculado.arteriasUterinas?.pathological ?? null,
   }
 }

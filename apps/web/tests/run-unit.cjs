@@ -53,6 +53,8 @@ const files = [
   'src/lib/calculators/trisomyFmf.test.mts',
   'src/lib/companionStructured.test.ts',
   'src/lib/catalog/dopplerCarotidasParaCatalogo.test.ts',
+  'src/lib/catalog/morfologicoPrimeiroTrimestre.test.mts',
+  'src/lib/catalog/morfologicoSegundoTerceiro.test.mts',
   'src/components/landing/v2/hero/heroDemo.test.mts',
 ]
 for (const file of files) {

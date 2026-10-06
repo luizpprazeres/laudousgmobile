@@ -208,6 +208,8 @@ export function renderDopplerModule(
      * o IR só entra quando é o único índice do vaso. Ausente/"todos": Doppler isolado, IR e IP.
      */
     indices?: "todos" | "ip";
+    /** 1º trimestre: não afirmar incisura/centralização, que não foram avaliadas. */
+    omitirAusenciasUterinas?: boolean;
   },
 ): { achados: string[]; conclusao: string[] } {
   let data = toDopplerData(module);
@@ -278,7 +280,10 @@ export function renderDopplerModule(
         irACM: data.ipACM !== undefined ? undefined : data.irACM,
       }
     : data;
-  let conclusao = buildDopplerConclusionItems(dataConclusao, { strictEvidence: true });
+  let conclusao = buildDopplerConclusionItems(dataConclusao, {
+    strictEvidence: true,
+    suppressUterineAbsenceStatements: options?.omitirAusenciasUterinas,
+  });
   if (fluxoUmbilicalAnormal) {
     conclusao = conclusao.filter((item) =>
       !/^Perfil hemodinâmico fetal é normal/i.test(item) &&

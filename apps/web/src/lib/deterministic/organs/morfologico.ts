@@ -5,9 +5,9 @@
  * fundação de IG (lib/ig/computeIG) + lógica ILA segura do boletim. Reusa o
  * igModule e helpers de [[organs/obstetrica]].
  *
- * Escopo: feto único, 2º/3º trimestre (controle), com anatomia por sistema (toggle
+ * Escopo: feto único, 1º/2º/3º trimestre, com anatomia por sistema (toggle
  * normal/alterado — quando alterado, a conclusão deixa de ser "sem evidência" e
- * passa ao diagnóstico). PENDENTE: 1º trimestre (CCN), gemelar, percentil de peso.
+ * passa ao diagnóstico). PENDENTE: gemelar, percentil de peso.
  */
 
 import type { ExamCategory, ExamSection } from './abdomeTotal'
@@ -167,15 +167,42 @@ const primeiroTrimestreModule: OrganModule = {
     name: 'Feto e marcadores',
     category: 'MORFOLOGICO',
     fields: [
+      {
+        key: 'vitalidade', label: 'Atividade cardíaca fetal', kind: 'segmented',
+        options: [
+          { value: 'na', label: 'Não avaliada', isDefault: true },
+          { value: 'normal', label: 'Presente' },
+          { value: 'ausente', label: 'Ausente' },
+          { value: 'bradicardia', label: 'Bradicardia' },
+          { value: 'taquicardia', label: 'Taquicardia' },
+        ],
+      },
       { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '150' },
+      {
+        key: 'movimentos', label: 'Movimentos fetais', kind: 'segmented',
+        options: [
+          { value: 'na', label: 'Não avaliados', isDefault: true },
+          { value: 'normais', label: 'Presentes' },
+          { value: 'reduzidos', label: 'Reduzidos' },
+          { value: 'ausentes', label: 'Ausentes' },
+        ],
+      },
       { key: 'ccn', label: 'CCN (mm)', kind: 'text', placeholder: '64' },
       { key: 'tn', label: 'Translucência nucal (mm)', kind: 'text', placeholder: '1,5' },
       {
+        key: 'tn_classificacao', label: 'Classificação da TN', kind: 'segmented',
+        hint: 'automática: aumentada a partir de 3,5 mm',
+        options: [
+          { value: 'automatica', label: 'Automática', isDefault: true },
+          { value: 'limitrofe', label: 'Limítrofe' },
+        ],
+      },
+      {
         key: 'osso_nasal', label: 'Osso nasal', kind: 'segmented',
         options: [
-          { value: 'presente', label: 'Presente', isDefault: true },
+          { value: 'na', label: 'Não avaliado', isDefault: true },
+          { value: 'presente', label: 'Presente' },
           { value: 'ausente', label: 'Ausente' },
-          { value: 'na', label: 'Não avaliado' },
         ],
       },
       {
@@ -189,30 +216,44 @@ const primeiroTrimestreModule: OrganModule = {
       {
         key: 'ducto_venoso', label: 'Ducto venoso', kind: 'segmented',
         options: [
-          { value: 'normal', label: 'Normal', isDefault: true },
+          { value: 'na', label: 'Não avaliado', isDefault: true },
+          { value: 'normal', label: 'Normal' },
           { value: 'alterado', label: 'Onda A reversa' },
-          { value: 'na', label: 'Não avaliado' },
+        ],
+      },
+      {
+        key: 'liquido', label: 'Líquido amniótico (avaliação subjetiva)', kind: 'segmented',
+        options: [
+          { value: 'na', label: 'Não avaliado', isDefault: true },
+          { value: 'normal', label: 'Normal' },
+          { value: 'oligoamnio', label: 'Reduzido' },
+          { value: 'polidramnio', label: 'Aumentado' },
         ],
       },
       { key: 'placenta_loc', label: 'Placenta — localização (opcional)', kind: 'text', placeholder: 'posterior' },
     ],
   },
   initialState: (): OrganState => ({
-    bcf: '', ccn: '', tn: '', osso_nasal: 'presente', tricuspide: 'na',
-    ducto_venoso: 'normal', placenta_loc: '',
+    vitalidade: 'na', bcf: '', movimentos: 'na', ccn: '', tn: '', tn_classificacao: 'automatica',
+    osso_nasal: 'na', tricuspide: 'na', ducto_venoso: 'na', liquido: 'na', placenta_loc: '',
   }),
   compose: (st): OrganComposition => {
     const bcf = numOrNull(st.bcf)
     const ccn = numOrNull(st.ccn)
     const tn = numOrNull(st.tn)
-    const osso = String(st.osso_nasal || 'presente')
+    const osso = String(st.osso_nasal || 'na')
     const tricuspide = String(st.tricuspide || 'na')
-    const ducto = String(st.ducto_venoso || 'normal')
+    const ducto = String(st.ducto_venoso || 'na')
+    const vitalidade = String(st.vitalidade || 'na')
+    const movimentos = String(st.movimentos || 'na')
+    const liquido = String(st.liquido || 'na')
     const placenta = String(st.placenta_loc || '').trim()
     const body = [
       'Feto único, em situação variável.',
-      `Batimentos cardíacos presentes (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`,
-      'Movimentos fetais presentes.',
+      vitalidade === 'ausente'
+        ? 'Batimentos cardíacos fetais não identificados.'
+        : vitalidade === 'na' && bcf === null ? null : `Batimentos cardíacos presentes${bcf === null ? '' : ` (BCF = ${ptBr(bcf)} bpm)`}.`,
+      movimentos === 'normais' ? 'Movimentos fetais presentes.' : movimentos === 'reduzidos' ? 'Movimentos fetais reduzidos.' : movimentos === 'ausentes' ? 'Movimentos fetais ausentes.' : null,
       `Comprimento cabeça-nádega (CCN) de ${mm(ccn)} mm.`,
       `Translucência nucal de ${mm(tn)} mm.`,
       osso === 'na' ? 'Osso nasal não avaliado.' : `Osso nasal ${osso}.`,
@@ -225,8 +266,8 @@ const primeiroTrimestreModule: OrganModule = {
           ? 'Ducto venoso com onda A reversa.'
           : 'Ducto venoso não avaliado.',
       ...(placenta ? [`Placenta de localização ${placenta}.`] : []),
-      'Líquido amniótico de quantidade normal.',
-    ]
+      liquido === 'normal' ? 'Líquido amniótico de quantidade normal.' : liquido === 'oligoamnio' ? 'Líquido amniótico de quantidade reduzida.' : liquido === 'polidramnio' ? 'Líquido amniótico de quantidade aumentada.' : null,
+    ].filter((linha): linha is string => Boolean(linha))
     const altered = osso === 'ausente' || tricuspide === 'presente' || ducto === 'alterado'
     const conclusion = [
       'Líquido amniótico de quantidade normal.',
@@ -240,6 +281,70 @@ const primeiroTrimestreModule: OrganModule = {
         : 'Morfologia fetal sem evidência de alteração detectável nesta fase da gestação.',
     ]
     return { body: body.join('\n'), conclusion, isNormal: !altered }
+  },
+}
+
+const ANATOMIA_PRECOCE_ESTRUTURAS = [
+  { id: 'cranio', label: 'Crânio e encéfalo' },
+  { id: 'face', label: 'Face' },
+  { id: 'coluna', label: 'Coluna' },
+  { id: 'coracao', label: 'Coração' },
+  { id: 'parede_abdominal', label: 'Parede abdominal e inserção do cordão' },
+  { id: 'estomago_bexiga', label: 'Estômago e bexiga' },
+  { id: 'membros', label: 'Membros' },
+] as const
+
+const avaliacaoPrecoceModule: OrganModule = {
+  schema: {
+    id: 'avaliacao_precoce',
+    name: 'Biometria e anatomia precoce',
+    category: 'MORFOLOGICO',
+    fields: [
+      {
+        key: 'realizada', label: 'Avaliação precoce opcional', kind: 'segmented',
+        options: [
+          { value: 'nao', label: 'Não incluir', isDefault: true },
+          {
+            value: 'sim', label: 'Incluir',
+            subFields: [
+              { key: 'dbp', label: 'DBP (mm)', kind: 'text', placeholder: '21' },
+              { key: 'cc', label: 'CC (mm)', kind: 'text', placeholder: '75' },
+              { key: 'ca', label: 'CA (mm)', kind: 'text', placeholder: '62' },
+              { key: 'femur', label: 'Fêmur (mm)', kind: 'text', placeholder: '9' },
+              ...ANATOMIA_PRECOCE_ESTRUTURAS.map((estrutura) => ({
+                key: estrutura.id,
+                label: estrutura.label,
+                kind: 'mini-segmented' as const,
+                options: [
+                  { value: 'nao_avaliada', label: 'Não avaliada', isDefault: true },
+                  { value: 'normal', label: 'Normal' },
+                  { value: 'alterada', label: 'Alterada' },
+                  { value: 'limitada', label: 'Limitada' },
+                ],
+              })),
+              { key: 'achado', label: 'Descrição da alteração', kind: 'text', placeholder: 'achado anatômico observado' },
+              { key: 'conclusao', label: 'Conclusão da alteração', kind: 'text', placeholder: 'síntese diagnóstica' },
+              { key: 'limitacao', label: 'Motivo da limitação', kind: 'text', placeholder: 'posição fetal, biotipo materno…' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  initialState: (): OrganState => ({
+    realizada: 'nao',
+    'realizada.sim.dbp': '',
+    'realizada.sim.cc': '',
+    'realizada.sim.ca': '',
+    'realizada.sim.femur': '',
+    ...Object.fromEntries(ANATOMIA_PRECOCE_ESTRUTURAS.map((estrutura) => [`realizada.sim.${estrutura.id}`, 'nao_avaliada'])),
+    'realizada.sim.achado': '',
+    'realizada.sim.conclusao': '',
+    'realizada.sim.limitacao': '',
+  }),
+  compose: (st): OrganComposition => {
+    if (String(st.realizada || 'nao') !== 'sim') return { body: '', conclusion: [], isNormal: true }
+    return { body: '', conclusion: [], isNormal: true }
   },
 }
 
@@ -435,12 +540,20 @@ const achadosModule: OrganModule = {
     id: 'achados',
     name: 'Achados adicionais',
     category: 'MORFOLOGICO',
-    fields: [{ key: 'texto', label: 'Achados adicionais (opcional)', kind: 'text', placeholder: 'observação livre — vai ao corpo' }],
+    fields: [
+      { key: 'texto', label: 'Achados adicionais (opcional)', kind: 'text', placeholder: 'descrição que vai ao corpo do laudo' },
+      { key: 'conclusao', label: 'Conclusão correspondente', kind: 'text', placeholder: 'síntese para a conclusão' },
+      {
+        key: 'dispensar_conclusao', label: 'Destino do achado', kind: 'checklist',
+        options: [{ value: 'sim', label: 'Manter somente no corpo, sem item na conclusão' }],
+      },
+    ],
   },
-  initialState: (): OrganState => ({ texto: '' }),
+  initialState: (): OrganState => ({ texto: '', conclusao: '', dispensar_conclusao: [] }),
   compose: (st): OrganComposition => {
     const t = String(st.texto || '').trim()
-    return { body: t || '', conclusion: [], isNormal: true }
+    const c = String(st.conclusao || '').trim()
+    return { body: t, conclusion: c ? [c] : [], isNormal: !t && !c }
   },
 }
 
@@ -464,13 +577,14 @@ const SECTIONS: ExamSection[] = [
 const FIRST_TRIMESTER_SECTIONS: ExamSection[] = [
   { id: 'ig', label: 'IG e datas', group: 'orgaos', module: igModule },
   { id: 'primeiro_trimestre', label: 'Feto e marcadores', group: 'orgaos', module: primeiroTrimestreModule },
+  { id: 'avaliacao_precoce', label: 'Biometria e anatomia precoce', group: 'orgaos', module: avaliacaoPrecoceModule },
   { id: 'cervicometria', label: 'Cervicometria', group: 'orgaos', module: cervicometriaModule },
   { id: 'doppler', label: 'Doppler uterino', group: 'orgaos', module: dopplerPrimeiroTrimestreModule },
   { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
 ]
 
 // União necessária para inicializar e preservar o estado ao trocar o trimestre.
-const ALL_SECTIONS = [...SECTIONS, FIRST_TRIMESTER_SECTIONS[1]!]
+const ALL_SECTIONS = [...SECTIONS, FIRST_TRIMESTER_SECTIONS[1]!, FIRST_TRIMESTER_SECTIONS[2]!]
 
 export const morfologico: ExamCategory = {
   id: 'MORFOLOGICO',
