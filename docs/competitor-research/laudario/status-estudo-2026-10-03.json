@@ -102,7 +102,8 @@
       "case": "cases/doppler-aortorrenal-2026-10-03.md",
       "crosswalk": "crosswalk-doppler-aortorrenal-2026-10-03.md",
       "supplemental_cases": [
-        "cases/variantes-renais-doppler-aortorrenal-2026-10-06.md"
+        "cases/variantes-renais-doppler-aortorrenal-2026-10-06.md",
+        "cases/lobulacoes-defeito-juncional-doppler-aortorrenal-2026-10-06.md"
       ]
     },
     {
@@ -202,8 +203,8 @@
   ],
   "competitor_observation": {
     "status": "ativa em 2026-10-06",
-    "motivo": "navegador autenticado disponível; rodadas principais concluídas e complemento de variantes renais do Doppler Aortorrenal restaurado",
-    "efeito": "totals.base_functionally_studied permanece em 27; o complemento definiu coluna de Bertin, duplicidade do sistema coletor e pelve extrarrenal sem contar um novo modelo"
+    "motivo": "navegador autenticado disponível; rodadas principais concluídas e dois complementos de variantes renais do Doppler Aortorrenal restaurados",
+    "efeito": "totals.base_functionally_studied permanece em 27; os complementos definiram cinco variantes renais sem contar um novo modelo"
   },
   "preflights": [
     {

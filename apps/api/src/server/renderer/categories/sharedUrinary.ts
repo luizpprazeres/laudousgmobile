@@ -100,9 +100,11 @@ export const SharedKidneySchema = z.object({
   drc: z.boolean(),
   variantes_anatomicas: z.array(z.enum([
     "coluna_bertin",
+    "lobulacoes_fetais",
+    "defeito_juncional",
     "pelve_extrarrenal",
     "duplicacao_sistema_coletor",
-  ])).max(3).optional().default([]),
+  ])).max(5).optional().default([]),
   alteracao_difusa: z.string().nullable(),
   hidronefrose: z.enum(["ausente", "leve", "moderada", "acentuada"]).nullable(),
   ureter: SharedUreterSchema.optional().default(URETER_DEFAULT),
@@ -421,6 +423,14 @@ export function renderSharedKidney(
       case "coluna_bertin":
         body.push(`Proeminência focal de tecido cortical estendendo-se ao seio do rim ${lado}, com ecogenicidade semelhante ao restante do parênquima.`);
         conclusion.push(`Coluna de Bertin proeminente no rim ${lado}.`);
+        break;
+      case "lobulacoes_fetais":
+        body.push(`Persistência de lobulações fetais no contorno do rim ${lado}.`);
+        conclusion.push(`Lobulações fetais persistentes no rim ${lado}.`);
+        break;
+      case "defeito_juncional":
+        body.push(`Imagem linear hiperecogênica no parênquima anterossuperior do rim ${lado}, com aspecto de defeito juncional parenquimatoso.`);
+        conclusion.push(`Defeito juncional parenquimatoso no rim ${lado}.`);
         break;
       case "pelve_extrarrenal":
         body.push(`Pelve do rim ${lado} com configuração extrarrenal.`);

@@ -590,6 +590,8 @@ function kidneySchema(category: UrinaryCategory, lado: Lado): OrganSchema {
       ] },
       { key: 'variantes_anatomicas', label: 'Variantes anatômicas', kind: 'checklist', hint: 'marque somente o observado', options: [
         { value: 'coluna_bertin', label: 'Coluna de Bertin proeminente' },
+        { value: 'lobulacoes_fetais', label: 'Lobulações fetais persistentes' },
+        { value: 'defeito_juncional', label: 'Defeito juncional parenquimatoso' },
         { value: 'pelve_extrarrenal', label: 'Pelve extrarrenal' },
         { value: 'duplicacao_sistema_coletor', label: 'Duplicidade do sistema coletor' },
       ] },
@@ -678,7 +680,7 @@ export type KidneyState = {
   situacao_baixa: boolean
   rotacao: boolean
   drc: boolean
-  variantes_anatomicas: Array<'coluna_bertin' | 'pelve_extrarrenal' | 'duplicacao_sistema_coletor'>
+  variantes_anatomicas: Array<'coluna_bertin' | 'lobulacoes_fetais' | 'defeito_juncional' | 'pelve_extrarrenal' | 'duplicacao_sistema_coletor'>
   alteracao_difusa: string | null
   hidronefrose: 'ausente' | 'leve' | 'moderada' | 'acentuada'
   ureter: {
@@ -717,7 +719,7 @@ export function normalizeKidneyState(state: Estado): KidneyState {
   const estrutura = lista(state, 'estrutura')
   const variantesAnatomicas = lista(state, 'variantes_anatomicas')
     .filter((value): value is KidneyState['variantes_anatomicas'][number] =>
-      ['coluna_bertin', 'pelve_extrarrenal', 'duplicacao_sistema_coletor'].includes(value))
+      ['coluna_bertin', 'lobulacoes_fetais', 'defeito_juncional', 'pelve_extrarrenal', 'duplicacao_sistema_coletor'].includes(value))
   const hydraRaw = temChave(state, 'dilatacao') ? texto(state, 'dilatacao') : texto(state, 'hidronefrose') || 'ausente'
   const hidronefrose = ['leve', 'moderada', 'acentuada'].includes(hydraRaw)
     ? hydraRaw as KidneyState['hidronefrose']
@@ -859,7 +861,7 @@ export function kidneyInputIssues(state: Estado): string[] {
   if (usaRarosCompartilhados) validarLista('raros', ['nefrocalcinose'], 'achados renais raros')
   if (usaVariantesAnatomicas) validarLista(
     'variantes_anatomicas',
-    ['coluna_bertin', 'pelve_extrarrenal', 'duplicacao_sistema_coletor'],
+    ['coluna_bertin', 'lobulacoes_fetais', 'defeito_juncional', 'pelve_extrarrenal', 'duplicacao_sistema_coletor'],
     'variantes anatômicas renais',
   )
   const todosGruposLegadosSubstituidos = usaLitiaseCompartilhada && usaCistosCompartilhados && usaLesoesCompartilhadas

@@ -18,6 +18,13 @@
       "case": "cases/variantes-renais-doppler-aortorrenal-2026-10-06.md",
       "scope": "coluna de Bertin, duplicidade do sistema coletor e pelve extrarrenal",
       "base_count_increment": 0
+    },
+    {
+      "exam": "Doppler Aortorrenal",
+      "observed_at": "2026-10-06T17:31:14-03:00",
+      "case": "cases/lobulacoes-defeito-juncional-doppler-aortorrenal-2026-10-06.md",
+      "scope": "lobulações fetais, defeito juncional parenquimatoso e coexistência",
+      "base_count_increment": 0
     }
   ],
   "sections": [

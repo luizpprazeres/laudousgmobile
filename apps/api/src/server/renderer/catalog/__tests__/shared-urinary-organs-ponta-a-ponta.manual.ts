@@ -360,7 +360,13 @@ check("ureter estruturado mantém o mesmo achado em Abdome, Vias e Doppler renal
 
 check("variantes anatômicas renais mantêm lado e redação nas três categorias", () => {
   const variants = {
-    variantes_anatomicas: ["coluna_bertin", "pelve_extrarrenal", "duplicacao_sistema_coletor"],
+    variantes_anatomicas: [
+      "coluna_bertin",
+      "lobulacoes_fetais",
+      "defeito_juncional",
+      "pelve_extrarrenal",
+      "duplicacao_sistema_coletor",
+    ],
     dilatacao: "moderada",
   };
   const abdomen = adaptarAbdome(patch(initial(abdomeTotal), "rim_esquerdo", variants));
@@ -384,10 +390,15 @@ check("variantes anatômicas renais mantêm lado e redação nas três categoria
   ];
   for (const report of reports) {
     assert.match(report, /Coluna de Bertin proeminente no rim esquerdo/i);
+    assert.match(report, /Lobulações fetais persistentes no rim esquerdo/i);
+    assert.match(report, /Defeito juncional parenquimatoso no rim esquerdo/i);
     assert.match(report, /Pelve extrarrenal no rim esquerdo/i);
     assert.match(report, /Duplicidade do sistema coletor no rim esquerdo/i);
     assert.match(report, /Hidronefrose moderada no rim esquerdo/i);
-    assert.doesNotMatch(report, /Coluna de Bertin proeminente no rim direito|Pelve extrarrenal no rim direito|Duplicidade do sistema coletor no rim direito/i);
+    assert.doesNotMatch(
+      report,
+      /Coluna de Bertin proeminente no rim direito|Lobulações fetais persistentes no rim direito|Defeito juncional parenquimatoso no rim direito|Pelve extrarrenal no rim direito|Duplicidade do sistema coletor no rim direito/i,
+    );
     assert.doesNotMatch(report, /Rim esquerdo ecograficamente normal/i);
     assert.doesNotMatch(report, /sem dilatação do sistema coletor|Não há sinais de dilatação pielocalicial/i);
   }

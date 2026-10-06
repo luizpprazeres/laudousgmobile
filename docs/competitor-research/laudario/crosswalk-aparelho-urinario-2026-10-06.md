@@ -8,7 +8,7 @@ O LaudoUSG já reutilizava `createSharedKidneyModule` em `ABDOMEN_TOTAL`, `VIAS_
 
 Esta rodada acrescentou ao módulo compartilhado dilatação ureteral, extensão, calibre máximo, cálculo, localização, medida e estado do artefato de cintilação. Os três adapters entregam o mesmo objeto e os três renderers produzem o mesmo achado clínico. Em Vias Urinárias, o antigo painel livre “Ureteres” foi removido da interface para não duplicar o preenchimento; payloads antigos continuam aceitos somente como compatibilidade.
 
-O complemento funcional no Doppler Aortorrenal definiu três variantes com comportamento claro. Coluna de Bertin proeminente, pelve extrarrenal e duplicidade do sistema coletor agora pertencem ao mesmo contrato renal compartilhado. As três preservam lateralidade, entram no corpo e retiram a conclusão de rim normal; a duplicidade recebe conclusão própria. A pelve extrarrenal não carrega uma negativa automática de dilatação, evitando contradição quando outro achado coexistir.
+Os complementos funcionais no Doppler Aortorrenal definiram cinco variantes com comportamento claro. Coluna de Bertin proeminente, lobulações fetais persistentes, defeito juncional parenquimatoso, pelve extrarrenal e duplicidade do sistema coletor agora pertencem ao mesmo contrato renal compartilhado. Todas preservam lateralidade, entram no corpo e retiram a conclusão de rim normal. A pelve extrarrenal não carrega uma negativa automática de dilatação, evitando contradição quando outro achado coexistir. Lobulações e defeito juncional podem coexistir e não exigem medida.
 
 ## Segurança de preenchimento
 
@@ -22,10 +22,10 @@ Cálculos renais e cistos simples agora usam coleções individualizadas no form
 
 ## O que permanece parcial
 
-As variantes continuam parciais. Situação baixa já existia; coluna de Bertin, pelve extrarrenal e duplicidade do sistema coletor foram estruturadas nesta rodada. Ectopia com topografia livre, rim em ferradura, lobulação fetal e defeito juncional permanecem candidatos porque ainda precisam de comportamento funcional observado e decisão sobre corpo, conclusão, medida ou confirmação.
+As variantes continuam parciais. Situação baixa já existia; cinco variantes foram estruturadas nas duas rodadas complementares. Ectopia com topografia livre e rim em ferradura permanecem candidatos porque ainda precisam de comportamento funcional observado e decisão sobre topografia, corpo, conclusão e possíveis medidas.
 
 ## Provas executadas
 
-O teste `shared-urinary-organs-ponta-a-ponta.manual.ts` cobre a mesma obstrução ureteral, as três variantes anatômicas e coleções com três cálculos e três cistos individualizados em Abdome Total, Vias Urinárias e Doppler Renal. Ele confirma lateralidade, ordem, medidas próprias, ausência de normalidade contraditória, remoção da aba ureteral redundante e bloqueio de itens incompletos ou identificadores inválidos. Os typechecks de Web e API passaram. A redação implementada foi criada para o LaudoUSG; nenhum modelo do concorrente foi copiado.
+O teste `shared-urinary-organs-ponta-a-ponta.manual.ts` cobre a mesma obstrução ureteral, as cinco variantes anatômicas e coleções com três cálculos e três cistos individualizados em Abdome Total, Vias Urinárias e Doppler Renal. Ele confirma lateralidade, coexistência, ordem, medidas próprias, ausência de normalidade contraditória, remoção da aba ureteral redundante e bloqueio de itens incompletos ou identificadores inválidos. Os typechecks de Web e API passaram. A redação implementada foi criada para o LaudoUSG; nenhum modelo do concorrente foi copiado.
 
-Os casos funcionais estão em [cases/aparelho-urinario-2026-10-06.md](cases/aparelho-urinario-2026-10-06.md) e [cases/variantes-renais-doppler-aortorrenal-2026-10-06.md](cases/variantes-renais-doppler-aortorrenal-2026-10-06.md).
+Os casos funcionais estão em [cases/aparelho-urinario-2026-10-06.md](cases/aparelho-urinario-2026-10-06.md), [cases/variantes-renais-doppler-aortorrenal-2026-10-06.md](cases/variantes-renais-doppler-aortorrenal-2026-10-06.md) e [cases/lobulacoes-defeito-juncional-doppler-aortorrenal-2026-10-06.md](cases/lobulacoes-defeito-juncional-doppler-aortorrenal-2026-10-06.md).
