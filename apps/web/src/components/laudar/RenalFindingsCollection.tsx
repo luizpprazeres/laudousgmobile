@@ -23,7 +23,7 @@ const POLES = [
 ] as const
 
 const values = (state: OrganState, key: string): string[] =>
-  Array.isArray(state[key]) ? state[key] as string[] : []
+  Array.isArray(state[key]) ? state[key].filter((value): value is string => typeof value === 'string') : []
 
 const text = (state: OrganState, key: string): string =>
   typeof state[key] === 'string' ? state[key] as string : ''
@@ -108,7 +108,7 @@ export function RenalFindingsCollection({ state, onChange }: Props) {
       ) : (
         <div className="mt-2 space-y-2">
           {items.map((item, index) => (
-            <div key={`${kind}-${item.id}`} className="rounded-lg border border-emerald-100 bg-white p-2 dark:border-emerald-900/50 dark:bg-gray-950">
+            <div key={`${kind}-${item.id}-${index}`} className="rounded-lg border border-emerald-100 bg-white p-2 dark:border-emerald-900/50 dark:bg-gray-950">
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <strong className="text-[12px] text-gray-800 dark:text-gray-200">{kind === 'calculo' ? 'Cálculo' : 'Cisto simples'} {index + 1}</strong>
                 <button type="button" aria-label={`Remover ${kind === 'calculo' ? 'cálculo' : 'cisto'} ${index + 1}`} onClick={() => remove(item, kind)} className="rounded-full p-1 text-gray-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30">
