@@ -69,6 +69,7 @@ const base3t = estadoInicial('3t')
 for (const [trimestre, base] of [['2t', base2t], ['3t', base3t]] as const) {
   const semCordaoInformado = adaptarMorfologico(base, { trimestre })
   assert.equal(semCordaoInformado.dados.cordao_vasos, 'nao_avaliado')
+  assert.equal(semCordaoInformado.dados.orificio_interno, trimestre === '2t' ? 'nao_avaliado' : null)
   const comTresVasos = adaptarMorfologico({
     ...base,
     feto: { ...base.feto, cordao_vasos: 'tres' },
@@ -81,6 +82,7 @@ for (const [trimestre, base] of [['2t', base2t], ['3t', base3t]] as const) {
       { objetivo },
     )
     assert.doesNotMatch(laudoSemCordao, /Cordão umbilical com duas artérias e uma veia/)
+    assert.doesNotMatch(laudoSemCordao, /Orifício interno do colo uterino fechado/)
 
     const laudoLegadoSemCordaoDitado = renderMorfologico(
       MorfologicoFindingsSchema.parse({ ...semCordaoInformado.dados, cordao_vasos: null }),
@@ -95,6 +97,27 @@ for (const [trimestre, base] of [['2t', base2t], ['3t', base3t]] as const) {
       { objetivo },
     )
     assert.match(laudoComTresVasos, /Cordão umbilical com duas artérias e uma veia\./)
+
+    if (trimestre === '2t') {
+      const orificioFechado = adaptarMorfologico({
+        ...base,
+        extrafetal: { ...base.extrafetal, orificio_interno: 'fechado' },
+      }, { trimestre })
+      assert.equal(orificioFechado.dados.orificio_interno, 'fechado')
+      const laudoComOrificioFechado = renderMorfologico(
+        MorfologicoFindingsSchema.parse(orificioFechado.dados),
+        null,
+        { objetivo },
+      )
+      assert.match(laudoComOrificioFechado, /Orifício interno do colo uterino fechado\./)
+
+      const laudoLegadoComOrificioPadrao = renderMorfologico(
+        MorfologicoFindingsSchema.parse({ ...semCordaoInformado.dados, orificio_interno: null }),
+        null,
+        { objetivo },
+      )
+      assert.match(laudoLegadoComOrificioPadrao, /Orifício interno do colo uterino fechado\./)
+    }
   }
 }
 

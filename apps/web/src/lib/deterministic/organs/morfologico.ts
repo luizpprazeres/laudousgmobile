@@ -495,6 +495,14 @@ const extraFetalModule: OrganModule = {
     fields: [
       { key: 'placenta_loc', label: 'Placenta — localização', kind: 'text', placeholder: 'posterior' },
       { key: 'placenta_grau', label: 'Placenta — grau (0/I/II/III)', kind: 'text', placeholder: 'I' },
+      {
+        key: 'orificio_interno', label: 'Orifício interno do colo', kind: 'segmented',
+        hint: 'use a cervicometria quando houver medida ou abertura',
+        options: [
+          { value: 'nao_avaliado', label: 'Não avaliado', isDefault: true },
+          { value: 'fechado', label: 'Fechado' },
+        ],
+      },
       { key: 'ila', label: 'ILA (cm)', kind: 'text', placeholder: '12' },
       {
         key: 'liquido_avaliacao', label: 'Líquido amniótico', kind: 'segmented',
@@ -507,7 +515,7 @@ const extraFetalModule: OrganModule = {
       },
     ],
   },
-  initialState: (): OrganState => ({ placenta_loc: '', placenta_grau: '', ila: '', liquido_avaliacao: 'normal' }),
+  initialState: (): OrganState => ({ placenta_loc: '', placenta_grau: '', orificio_interno: 'nao_avaliado', ila: '', liquido_avaliacao: 'normal' }),
   compose: (st, opts): OrganComposition => {
     const terceiro = is3t(opts)
     const loc = String(st.placenta_loc || '').trim() || '____'
@@ -517,6 +525,7 @@ const extraFetalModule: OrganModule = {
     const eco = terceiro ? 'heterogênea, de acordo com a fase da gestação' : 'homogênea'
     const ilaV = numOrNull(st.ila)
     const liquido = String(st.liquido_avaliacao || 'normal')
+    const orificioInterno = String(st.orificio_interno || 'nao_avaliado')
 
     const linhas = [
       'Análise extra-fetal:',
@@ -530,7 +539,7 @@ const extraFetalModule: OrganModule = {
             : liquido === 'polidramnio'
               ? ['Líquido amniótico de quantidade aumentada pela análise subjetiva.']
               : []),
-      ...(terceiro ? [] : ['Orifício interno do colo uterino encontra-se fechado.']),
+      ...(!terceiro && orificioInterno === 'fechado' ? ['Orifício interno do colo uterino encontra-se fechado.'] : []),
     ]
     // Conclusão: líquido (classificado quando há ILA) + morfologia normal.
     const liquidoConcl =
@@ -576,6 +585,14 @@ const dopplerModule = criarDopplerAddonModule('MORFOLOGICO')
 const dopplerPrimeiroTrimestreModule = criarDopplerAddonModule('MORFOLOGICO', { apenasIpUterinas: true })
 const fetalGrowthModule = criarFetalGrowthModule('MORFOLOGICO')
 
+const extraFetalTerceiroTrimestreModule: OrganModule = {
+  ...extraFetalModule,
+  schema: {
+    ...extraFetalModule.schema,
+    fields: extraFetalModule.schema.fields.filter((field) => field.key !== 'orificio_interno'),
+  },
+}
+
 const SECTIONS: ExamSection[] = [
   { id: 'ig', label: 'IG e datas', group: 'orgaos', module: igModule },
   { id: 'feto', label: 'Feto', group: 'orgaos', module: fetoModule },
@@ -596,6 +613,10 @@ const FIRST_TRIMESTER_SECTIONS: ExamSection[] = [
   { id: 'doppler', label: 'Doppler uterino', group: 'orgaos', module: dopplerPrimeiroTrimestreModule },
   { id: 'achados', label: 'Achados adicionais', group: 'orgaos', module: achadosModule },
 ]
+
+const THIRD_TRIMESTER_SECTIONS: ExamSection[] = SECTIONS.map((section) =>
+  section.id === 'extrafetal' ? { ...section, module: extraFetalTerceiroTrimestreModule } : section,
+)
 
 // União necessária para inicializar e preservar o estado ao trocar o trimestre.
 const ALL_SECTIONS = [...SECTIONS, FIRST_TRIMESTER_SECTIONS[1]!, FIRST_TRIMESTER_SECTIONS[2]!]
@@ -625,7 +646,7 @@ export const morfologico: ExamCategory = {
         ? 'ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE'
         : 'ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE',
   sections: ALL_SECTIONS,
-  resolveSections: (opts) => is1t(opts) ? FIRST_TRIMESTER_SECTIONS : SECTIONS,
+  resolveSections: (opts) => is1t(opts) ? FIRST_TRIMESTER_SECTIONS : is3t(opts) ? THIRD_TRIMESTER_SECTIONS : SECTIONS,
   resolveCalculators: (opts) => is1t(opts)
     ? [
         preEclampsiaFmfSpec,

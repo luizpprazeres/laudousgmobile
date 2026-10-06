@@ -135,4 +135,6 @@ O primeiro P0 da ordem acima foi concluído para os quatro sistemas já existent
 
 O P1 confirmado do cordão também foi corrigido: “Não avaliado” envia `cordao_vasos="nao_avaliado"` e omite a frase sobre o número de vasos. A frase normal de três vasos só aparece após a seleção explícita “2 artérias + 1 veia” na Web, tanto no 2º quanto no 3º trimestre. O valor legado `null` continua preservando o modelo oficial dos caminhos de ditado e mobile.
 
+A mesma salvaguarda foi aplicada ao orifício interno do colo no 2º trimestre. O formulário agora começa em “Não avaliado” e só inclui a frase de fechamento após a seleção explícita “Fechado”. Quando a cervicometria é acrescentada, o bloco próprio continua sendo a única fonte da informação; o 1º e o 3º trimestres não ganham o novo controle. O valor legado `null` preserva o modelo oficial fora da Web.
+
 Esta entrega corrige o cenário M4 dentro da granularidade atual. Ela não representa nova observação funcional do Laudário e não fecha M9 para limitação global ditada, nem a expansão de estruturas descrita em 5.1. A rodada funcional no concorrente continua pendente para confirmar controles e interações sem copiar redação.

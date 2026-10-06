@@ -353,6 +353,13 @@ export function adaptarMorfologico(
   // com a mesma IG que vai ao renderer.
   const cervico = cervicometriaComplemento(secao(estado, "cervicometria"), igEfetivaSemanas);
   pendencias.push(...cervico.pendencias);
+  const orificioInternoTela = texto(ex, "orificio_interno") || "nao_avaliado";
+  if (cervico.dados?.orificio_interno_fechado === false && orificioInternoTela === "fechado") pendencias.push({
+    onde: "orifício interno do colo",
+    valor: "fechado",
+    motivo: "a cervicometria registra o orifício interno como aberto",
+    bloqueia: true,
+  });
   const estadoParaDoppler = primeiroTrimestre && igBioSemanas === null && igEfetivaSemanas !== null
     ? {
         ...estado,
@@ -377,6 +384,10 @@ export function adaptarMorfologico(
     cordao_vasos: primeiroTrimestre
       ? null
       : cordao === "tres" || cordao === "dois" || cordao === "nao_avaliado" ? cordao : null,
+    orificio_interno:
+      primeiroTrimestre || terceiroTrimestre || cervico.dados
+        ? null
+        : orificioInternoTela === "fechado" ? "fechado" : "nao_avaliado",
     liquido_avaliacao:
       liquidoAvaliacao === "normal" || liquidoAvaliacao === "oligoamnio" || liquidoAvaliacao === "polidramnio" || liquidoAvaliacao === "nao_avaliado"
         ? liquidoAvaliacao

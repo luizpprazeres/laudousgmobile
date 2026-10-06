@@ -105,6 +105,7 @@ export const MorfologicoFindingsSchema = z.object({
   vitalidade: z.enum(["normal", "ausente", "bradicardia", "taquicardia", "nao_avaliada"]).nullable().optional(),
   movimentos_fetais: z.enum(["normais", "reduzidos", "ausentes", "nao_avaliados"]).nullable().optional(),
   cordao_vasos: z.enum(["tres", "dois", "nao_avaliado"]).nullable().optional(),
+  orificio_interno: z.enum(["fechado", "nao_avaliado"]).nullable().optional(),
   liquido_avaliacao: z.enum(["normal", "oligoamnio", "polidramnio", "nao_avaliado"]).nullable().optional(),
   /**
    * anatomia_avaliada: null/true = frases normais dos sistemas presentes;
@@ -204,7 +205,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
   additionalProperties: false,
   required: [
     "trimestre", "apresentacao", "dorso", "polo_cefalico", "bcf_bpm",
-    "vitalidade", "movimentos_fetais", "cordao_vasos", "liquido_avaliacao",
+    "vitalidade", "movimentos_fetais", "cordao_vasos", "orificio_interno", "liquido_avaliacao",
     "anatomia_avaliada", "anatomia_alterada", "anatomia_limitada",
     "ccn_mm", "tn_mm", "tn_classificacao", "anatomia_precoce", "osso_nasal", "regurgitacao_tricuspide", "ducto_venoso",
     "uterina_ip_direita", "uterina_ip_esquerda",
@@ -227,6 +228,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     vitalidade: { type: ["string", "null"], enum: ["normal", "ausente", "bradicardia", "taquicardia", "nao_avaliada", null] },
     movimentos_fetais: { type: ["string", "null"], enum: ["normais", "reduzidos", "ausentes", "nao_avaliados", null] },
     cordao_vasos: { type: ["string", "null"], enum: ["tres", "dois", "nao_avaliado", null] },
+    orificio_interno: { type: ["string", "null"], enum: ["fechado", "nao_avaliado", null] },
     liquido_avaliacao: { type: ["string", "null"], enum: ["normal", "oligoamnio", "polidramnio", "nao_avaliado", null] },
     anatomia_avaliada: bool,
     anatomia_alterada: {
@@ -344,7 +346,10 @@ REGRAS:
    "ausentes" e "dois" SOMENTE quando o médico ditar a alteração. BCF numérico
    sustenta vitalidade normal. Use cordao_vasos="nao_avaliado" somente quando o
    médico disser explicitamente que o número de vasos não foi avaliado.
-5c. anatomia_avaliada: null = não ditado (as frases normais dos sistemas ficam
+5c. orificio_interno: use "fechado" ou "nao_avaliado" somente quando o médico
+   disser explicitamente que avaliou ou não avaliou o orifício interno. null
+   mantém o modelo oficial nos caminhos legados.
+5d. anatomia_avaliada: null = não ditado (as frases normais dos sistemas ficam
    no modelo); true quando o médico disser que fez o survey ou que a anatomia é
    normal; false SOMENTE quando disser que a anatomia NÃO foi avaliada de forma
    global. Quando a limitação for de um sistema específico, mantenha
@@ -673,6 +678,11 @@ function cordaoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: stri
   return { corpo: ["Cordão umbilical com duas artérias e uma veia."], conclusao: [] };
 }
 
+function orificioInternoBasal(f: MorfologicoFindings, terceiro: boolean): string[] {
+  if (terceiro || f.cervicometria || f.orificio_interno === "nao_avaliado") return [];
+  return ["Orifício interno do colo uterino fechado."];
+}
+
 function liquidoMorfo(f: MorfologicoFindings): { corpo: string[]; conclusao: string[]; alterado: boolean } {
   /**
    * MAIOR BOLSÃO VERTICAL ≠ ILA. Até 16/09/2026 o morfológico não tinha campo de
@@ -971,9 +981,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     ...cordao.corpo,
     ...placentaMorfo(f, terceiro),
     ...liquido.corpo,
-    // Orifício interno: parte do modelo no 2º trimestre; no 3º e com cervicometria
-    // própria a frase não entra (decisão do médico).
-    ...(terceiro || f.cervicometria ? [] : ["Orifício interno do colo uterino fechado."]),
+    ...orificioInternoBasal(f, terceiro),
   ];
 
   const aspectos: string[] = [
@@ -1301,7 +1309,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
       : f.ila_cm !== null
         ? [`Índice de líquido amniótico (ILA): ${ptBr1(f.ila_cm)} cm.`]
         : liquido.corpo),
-    ...(terceiro || f.cervicometria ? [] : ["Orifício interno do colo uterino fechado."]),
+    ...orificioInternoBasal(f, terceiro),
   ];
 
   const achados: string[] = [
