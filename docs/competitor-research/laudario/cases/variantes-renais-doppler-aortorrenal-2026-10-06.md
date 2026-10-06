@@ -36,8 +36,8 @@ crosswalk:
     - apps/api/src/server/renderer/categories/sharedUrinary.ts
     - apps/api/src/server/renderer/catalog/__tests__/shared-urinary-organs-ponta-a-ponta.manual.ts
   status: partial
-  notes: coluna de Bertin, pelve extrarrenal e duplicidade do sistema coletor foram acrescentadas ao contrato Web/API compartilhado. Lobulação fetal e defeito juncional ainda exigem observação funcional própria; listas repetíveis continuam pendentes.
-next_probe: testar lobulação fetal e defeito juncional separadamente; depois projetar coleção repetível de cálculos e cistos
+  notes: coluna de Bertin, pelve extrarrenal e duplicidade do sistema coletor foram acrescentadas ao contrato Web/API compartilhado. Cálculos e cistos simples passaram a aceitar coleções individualizadas no Web, com compatibilidade de rascunhos antigos. Lobulação fetal e defeito juncional ainda exigem observação funcional própria.
+next_probe: testar lobulação fetal e defeito juncional separadamente
 ```
 
 O requisito aproveitado é estrutural: a variante deve ser escolhida no mesmo bloco renal e produzir o mesmo resultado em Abdome Total, Vias Urinárias e Doppler renal. A redação do LaudoUSG foi escrita do zero e evita afirmar ausência de dilatação como parte da pelve extrarrenal, pois esse estado pode coexistir com outro achado selecionado.

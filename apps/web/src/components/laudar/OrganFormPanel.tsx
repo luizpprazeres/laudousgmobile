@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Field, OrganSchema, OrganState } from '@/lib/deterministic'
 import { RenalMeasurementsFields } from './RenalMeasurementsFields'
+import { RenalFindingsCollection } from './RenalFindingsCollection'
 import { hasRenalMeasurementsGroup, RENAL_MEASUREMENT_KEYS } from './renalMeasurementsState'
 
 type Props = {
@@ -38,6 +39,8 @@ function visibleHint(hint?: string) {
 export function OrganFormPanel({ schema, state, onChange, compact = false, gestationalWeeks }: Props) {
   const [rareOpen, setRareOpen] = useState(false)
   const renalMeasurements = hasRenalMeasurementsGroup(schema)
+  const sharedKidney = (schema.id === 'rim_direito' || schema.id === 'rim_esquerdo') &&
+    ['ABDOMEN_TOTAL', 'VIAS_URINARIAS', 'DOPPLER_RENAL'].includes(schema.category)
 
   const compactFields = compact && (schema.id === 'bexiga' || schema.id.startsWith('rim_'))
   const fieldCardClass = (compactFields ? 'col-span-2 ' : '') + (compact
@@ -106,6 +109,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
 
   const renderField = (field: Field) => {
     if (renalMeasurements && RENAL_MEASUREMENT_KEYS.some(key => key === field.key)) return null
+    if (sharedKidney && (field.key === 'litiase' || field.key === 'cistos')) return null
     if (
       field.minGestationalWeeks !== undefined &&
       gestationalWeeks !== undefined &&
@@ -299,6 +303,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
           {schema.fields.slice(2).map(renderField)}
         </>
       ) : schema.fields.map(renderField)}
+      {sharedKidney ? <RenalFindingsCollection state={state} onChange={onChange} /> : null}
       {schema.rareFindings?.length ? (
         <section className={`${compactFields ? 'col-span-2' : ''} ${compact ? 'rounded-lg px-2 py-1.5' : 'rounded-xl px-3 py-2'} border border-dashed border-gray-300 bg-white/70 dark:border-gray-700 dark:bg-gray-900/70`}>
           <button

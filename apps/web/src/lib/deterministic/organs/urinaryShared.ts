@@ -650,7 +650,7 @@ function kidneySchema(category: UrinaryCategory, lado: Lado): OrganSchema {
 function kidneyInitialState(): OrganState {
   return {
     dimensoes: 'normal', diferenciacao: 'preservada', estrutura: [], dilatacao: 'ausente',
-    variantes_anatomicas: [], litiase: [], cistos: [], lesoes: [], ureter: [], raros: [], alteracao_difusa: '', medidas: '', espessura: '',
+    variantes_anatomicas: [], litiase: [], calculos_ids: [], cistos: [], cistos_simples_ids: [], lesoes: [], ureter: [], raros: [], alteracao_difusa: '', medidas: '', espessura: '',
     'litiase.calculo.dimensao': '', 'litiase.calculo.polo': 'nao_informada',
     'cistos.simples.dimensao': '', 'cistos.simples.polo': 'nao_informada',
     'lesoes.cisto_complexo.dimensao': '', 'lesoes.cisto_complexo.polo': 'nao_informada', 'lesoes.cisto_complexo.carac': '',
@@ -732,7 +732,21 @@ export function normalizeKidneyState(state: Estado): KidneyState {
     caracteristica: null,
     descricao_raw: null,
   })
+  for (const id of lista(state, 'calculos_ids')) add({
+    tipo: 'litiase',
+    medidas_cm: medidas(state[`calculos.${id}.dimensao`], 'mm'),
+    localizacao: polo(texto(state, `calculos.${id}.polo`)),
+    caracteristica: null,
+    descricao_raw: null,
+  })
   if (usaCistosCompartilhados && lista(state, 'cistos').includes('simples')) add({ tipo: 'cisto_simples', medidas_cm: medidas(state['cistos.simples.dimensao'], 'mm'), localizacao: polo(texto(state, 'cistos.simples.polo')), caracteristica: null, descricao_raw: null })
+  for (const id of lista(state, 'cistos_simples_ids')) add({
+    tipo: 'cisto_simples',
+    medidas_cm: medidas(state[`cistos_simples.${id}.dimensao`], 'mm'),
+    localizacao: polo(texto(state, `cistos_simples.${id}.polo`)),
+    caracteristica: null,
+    descricao_raw: null,
+  })
   if (usaCistosCompartilhados && lista(state, 'cistos').includes('multiplos')) add({ tipo: 'cistos_multiplos', medidas_cm: null, localizacao: null, caracteristica: null, descricao_raw: null })
   for (const tipo of usaLesoesCompartilhadas ? lista(state, 'lesoes') : []) {
     if (!['cisto_complexo', 'nodulo', 'angiomiolipoma', 'ectasia'].includes(tipo)) continue
@@ -873,6 +887,26 @@ export function kidneyInputIssues(state: Estado): string[] {
     if (!medidas(state['cistos.simples.dimensao'], 'mm')) issues.push('informe dimensões válidas para o cisto simples')
     if (!['sup', 'medio', 'inf'].includes(texto(state, 'cistos.simples.polo'))) issues.push('informe a localização do cisto simples')
   }
+  const validarColecaoRenal = (idsKey: string, prefix: string, collectionLabel: string, itemLabel: string, legacyCount: number) => {
+    if (!temChave(state, idsKey)) return
+    if (!Array.isArray(state[idsKey]) || lista(state, idsKey).length !== (state[idsKey] as unknown[]).length) {
+      issues.push(`${collectionLabel} têm formato inválido`)
+      return
+    }
+    const ids = lista(state, idsKey)
+    if (ids.length + legacyCount > 20) issues.push(`${collectionLabel} excedem o limite de 20 itens`)
+    if (new Set(ids).size !== ids.length || ids.some((id) => !/^[A-Za-z0-9-]{1,64}$/.test(id))) {
+      issues.push(`${collectionLabel} têm identificador inválido`)
+      return
+    }
+    for (const [index, id] of ids.entries()) {
+      const numeroAchado = ids.length > 1 ? ` ${index + 1}` : ''
+      if (!medidas(state[`${prefix}.${id}.dimensao`], 'mm')) issues.push(`${itemLabel}${numeroAchado}: informe dimensões válidas`)
+      if (!['sup', 'medio', 'inf'].includes(texto(state, `${prefix}.${id}.polo`))) issues.push(`${itemLabel}${numeroAchado}: informe a localização`)
+    }
+  }
+  validarColecaoRenal('calculos_ids', 'calculos', 'cálculos renais', 'cálculo renal', lista(state, 'litiase').includes('calculo') ? 1 : 0)
+  validarColecaoRenal('cistos_simples_ids', 'cistos_simples', 'cistos simples', 'cisto simples', lista(state, 'cistos').includes('simples') ? 1 : 0)
   for (const type of usaLesoesCompartilhadas ? lista(state, 'lesoes') : []) {
     if (['cisto_complexo', 'nodulo', 'angiomiolipoma'].includes(type)) {
       if (!medidas(state[`lesoes.${type}.dimensao`], 'mm')) issues.push(`${type}: informe dimensões válidas`)

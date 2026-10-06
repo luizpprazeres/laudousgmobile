@@ -393,6 +393,72 @@ check("variantes anatômicas renais mantêm lado e redação nas três categoria
   }
 });
 
+check("coleções repetíveis de cálculos e cistos mantêm medidas e localização nas três categorias", () => {
+  const repeated = {
+    calculos_ids: ["calc-a", "calc-b", "calc-c"],
+    "calculos.calc-a.dimensao": "4 mm",
+    "calculos.calc-a.polo": "sup",
+    "calculos.calc-b.dimensao": "6 mm",
+    "calculos.calc-b.polo": "medio",
+    "calculos.calc-c.dimensao": "8 mm",
+    "calculos.calc-c.polo": "inf",
+    cistos_simples_ids: ["cisto-a", "cisto-b", "cisto-c"],
+    "cistos_simples.cisto-a.dimensao": "10 mm",
+    "cistos_simples.cisto-a.polo": "inf",
+    "cistos_simples.cisto-b.dimensao": "12 mm",
+    "cistos_simples.cisto-b.polo": "medio",
+    "cistos_simples.cisto-c.dimensao": "14 mm",
+    "cistos_simples.cisto-c.polo": "sup",
+  };
+  const abdomen = adaptarAbdome(patch(initial(abdomeTotal), "rim_direito", repeated));
+  const vias = adaptarViasUrinarias(patch(initial(viasUrinarias), "rim_direito", repeated));
+  noBlockingPending(abdomen);
+  noBlockingPending(vias);
+  assert.equal(vias.dados.rim_direito.achados.filter((item: { tipo: string }) => item.tipo === "litiase").length, 3);
+  assert.equal(vias.dados.rim_direito.achados.filter((item: { tipo: string }) => item.tipo === "cisto_simples").length, 3);
+
+  let dopplerState = patch(initial(dopplerRenal), "rim_direito", repeated);
+  dopplerState = patch(dopplerState, "aorta", { assessment: "normal" });
+  dopplerState = patch(dopplerState, "arteria_renal_direita", { assessment: "normal" });
+  dopplerState = patch(dopplerState, "arteria_renal_esquerda", { assessment: "normal" });
+  const doppler = adaptarDopplerRenal(dopplerState);
+  noBlockingPending(doppler);
+  const dopplerRendered = renderDopplerRenalWeb(doppler.dados, "CLASSICO_COMPLETO");
+  assert.equal(dopplerRendered.ok, true, JSON.stringify(dopplerRendered));
+
+  const reports = [
+    render("ABDOMEN_TOTAL", abdomen.dados, ABDOMEN_TEMPLATE),
+    render("VIAS_URINARIAS", vias.dados),
+    (dopplerRendered as { ok: true; text: string }).text,
+  ];
+  for (const report of reports) {
+    for (const phrase of [
+      "0,4 cm, em polo superior",
+      "0,6 cm, em terço médio",
+      "0,8 cm, em polo inferior",
+      "1 cm, em polo inferior",
+      "1,2 cm, em terço médio",
+      "1,4 cm, em polo superior",
+    ]) assert.match(report, new RegExp(phrase, "i"));
+    assert.doesNotMatch(report, /Rim direito ecograficamente normal/i);
+  }
+});
+
+check("itens incompletos ou identificadores inválidos nas coleções renais bloqueiam o laudo", () => {
+  const cases: State[] = [
+    { calculos_ids: ["calc-a"], "calculos.calc-a.polo": "medio" },
+    { calculos_ids: ["calc-b"], "calculos.calc-b.dimensao": "7 mm" },
+    { cistos_simples_ids: ["cisto-a"], "cistos_simples.cisto-a.polo": "inf" },
+    { cistos_simples_ids: ["cisto-b"], "cistos_simples.cisto-b.dimensao": "13 mm" },
+    { calculos_ids: ["calc-a", "calc-a"], "calculos.calc-a.dimensao": "5 mm", "calculos.calc-a.polo": "sup" },
+    { cistos_simples_ids: ["id inválido"] },
+  ];
+  for (const kidney of cases) {
+    const adapted = adaptarViasUrinarias(patch(initial(viasUrinarias), "rim_direito", kidney));
+    assert.ok(adapted.pendencias.some((item) => item.bloqueia), JSON.stringify(adapted.pendencias));
+  }
+});
+
 check("lesão renal marcada sem medida ou localização bloqueia antes do laudo", () => {
   const cases: State[] = [
     { litiase: ["calculo"] },

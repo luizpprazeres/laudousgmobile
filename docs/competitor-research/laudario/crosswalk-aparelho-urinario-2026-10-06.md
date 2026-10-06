@@ -16,14 +16,16 @@ O concorrente publicou um cisto simples assim que o item foi adicionado, mesmo s
 
 A localização deixou de nascer silenciosamente como polo superior. O primeiro valor passa a ser “Selecione”, para que a topografia publicada seja uma escolha explícita do médico. A medida continua aceitando milímetros ou centímetros e é normalizada no adapter sem trocar o valor informado no texto.
 
-## O que permanece parcial
+## Coleções de achados repetíveis
 
-O motor declarativo atual trabalha com checklists de ocorrência única. Ele ainda não representa dois cálculos distintos, dois cistos simples com medidas próprias ou uma lista mista de lesões do mesmo tipo. “Cistos múltiplos” existe como achado agregado, mas não preserva a identidade de cada lesão. Isso é uma lacuna estrutural confirmada e deve ser resolvida com uma coleção de achados, não com novas caixas fixas.
+Cálculos renais e cistos simples agora usam coleções individualizadas no formulário Web. Cada item pode ser adicionado ou removido sem abrir caixas fixas vazias, preserva medida e localização próprias e chega como um elemento separado ao contrato já aceito pelo renderer. O limite defensivo é de 20 itens de cada tipo por rim. “Cistos simples múltiplos, sem individualização” permanece como opção agregada quando não há necessidade de medir cada lesão. Rascunhos antigos com o achado único continuam legíveis e editáveis no mesmo painel.
+
+## O que permanece parcial
 
 As variantes continuam parciais. Situação baixa já existia; coluna de Bertin, pelve extrarrenal e duplicidade do sistema coletor foram estruturadas nesta rodada. Ectopia com topografia livre, rim em ferradura, lobulação fetal e defeito juncional permanecem candidatos porque ainda precisam de comportamento funcional observado e decisão sobre corpo, conclusão, medida ou confirmação.
 
 ## Provas executadas
 
-O teste `shared-urinary-organs-ponta-a-ponta.manual.ts` cobre a mesma obstrução ureteral e as três variantes anatômicas em Abdome Total, Vias Urinárias e Doppler Renal. Ele confirma lateralidade, ausência de normalidade contraditória, remoção da aba ureteral redundante e bloqueio de lesões incompletas. Os typechecks de Web e API passaram. A redação implementada foi criada para o LaudoUSG; nenhum modelo do concorrente foi copiado.
+O teste `shared-urinary-organs-ponta-a-ponta.manual.ts` cobre a mesma obstrução ureteral, as três variantes anatômicas e coleções com três cálculos e três cistos individualizados em Abdome Total, Vias Urinárias e Doppler Renal. Ele confirma lateralidade, ordem, medidas próprias, ausência de normalidade contraditória, remoção da aba ureteral redundante e bloqueio de itens incompletos ou identificadores inválidos. Os typechecks de Web e API passaram. A redação implementada foi criada para o LaudoUSG; nenhum modelo do concorrente foi copiado.
 
 Os casos funcionais estão em [cases/aparelho-urinario-2026-10-06.md](cases/aparelho-urinario-2026-10-06.md) e [cases/variantes-renais-doppler-aortorrenal-2026-10-06.md](cases/variantes-renais-doppler-aortorrenal-2026-10-06.md).
