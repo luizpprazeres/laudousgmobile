@@ -97,6 +97,18 @@ function numeroPositivo(s: EstadoDaSecao, k: string): number | null {
   return Number.isFinite(valor) && valor > 0 ? valor : null;
 }
 
+function medidaEscalarPositiva(s: EstadoDaSecao, k: string): boolean {
+  const raw = texto(s, k);
+  if (!raw) return false;
+  const match = raw.match(/^\s*(\d+(?:[.,]\d+)?)\s*(cm|mm)?\s*$/i);
+  if (!match) return false;
+  const valor = Number.parseFloat(match[1].replace(",", "."));
+  if (!Number.isFinite(valor) || valor <= 0) return false;
+  // O campo é rotulado em cm. Um valor de dois dígitos sem unidade costuma ser
+  // uma medida em mm; exija a unidade para não transformar 45 mm em 45 cm.
+  return Boolean(match[2]) || valor < 10;
+}
+
 const numeroPtBr = (valor: number): string => String(valor).replace(".", ",");
 
 function descricaoDeMedidas(
@@ -437,6 +449,19 @@ export function adaptarAbdome(estado: EstadoDoAbdome): Adaptacao {
     for (const motivo of kidneyInputIssues(secao(estado, `rim_${lado}`))) {
       pendencias.push({ onde: `rim ${lado}`, valor: "medida inválida", motivo, bloqueia: true });
     }
+  }
+  const aorta = secao(estado, "aorta");
+  const calibreAorta = texto(aorta, "calibre");
+  if (
+    (calibreAorta === "ectasia" || calibreAorta === "aneurisma") &&
+    !medidaEscalarPositiva(aorta, `calibre.${calibreAorta}.diametro`)
+  ) {
+    pendencias.push({
+      onde: "aorta",
+      valor: calibreAorta,
+      motivo: "Informe o maior diâmetro da aorta com um valor positivo em cm ou mm.",
+      bloqueia: true,
+    });
   }
 
   const porOrgao: Record<string, Achado[]> = {

@@ -41,6 +41,7 @@ const files = [
   'tests/intergrowthBiometry.manual.ts',
   'tests/growthChartPersistence.manual.ts',
   'tests/renalMeasurements.manual.ts',
+  'tests/abdomeAortaValidation.manual.ts',
   'tests/composition.manual.ts',
   'src/lib/deterministic/organs/abdomeTotalGrid.manual.ts',
   'src/lib/visualSchemas/__tests__/breast-geometry.manual.ts',
@@ -56,6 +57,8 @@ const files = [
   'src/lib/catalog/dopplerCarotidasParaCatalogo.test.ts',
   'src/lib/catalog/morfologicoPrimeiroTrimestre.test.mts',
   'src/lib/catalog/morfologicoSegundoTerceiro.test.mts',
+  '../api/src/server/renderer/catalog/__tests__/shared-urinary-organs-ponta-a-ponta.manual.ts',
+  '../../packages/shared/src/calculators/__tests__/monochorionicTwins.manual.ts',
   'src/components/landing/v2/hero/heroDemo.test.mts',
 ]
 for (const file of files) {
