@@ -74,3 +74,7 @@ Nenhum item é `gap confirmado`: o exame existe nas três plataformas e não há
 | Pelve com Doppler | estado Doppler por estrutura (não realizado, normal, alterado); campos de fluxo de lesão e, se aprovado, de artérias uterinas/ovarianas | título e técnica só mudam quando realizado; sem dado, nenhuma afirmação de fluxo normal | índices e limiares exigem fonte própria; não ativar sem contrato dormente | Web: "Com Doppler" abre os campos. Mobile: extração só preenche o que foi ditado | P2 | falta observar a variante com Doppler no concorrente |
 
 Avisar o orquestrador: a regra "achado da conclusão precisa de par no corpo" e o estado `status_hormonal` também servem a histerossonografia, HyCoSy e endometriose.
+
+## 7. Rodada funcional concluída em 06/10/2026
+
+O navegador voltou a ficar disponível e os três cenários deste preflight foram executados com dados sintéticos. O modelo foi restaurado ao baseline. O registro funcional está em [../cases/pelvico-transvaginal-2026-10-06.md](../cases/pelvico-transvaginal-2026-10-06.md) e o cruzamento atualizado em [../crosswalk-pelvico-transvaginal-2026-10-06.md](../crosswalk-pelvico-transvaginal-2026-10-06.md).

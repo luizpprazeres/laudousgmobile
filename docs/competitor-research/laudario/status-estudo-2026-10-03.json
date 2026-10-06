@@ -1,12 +1,12 @@
 {
   "competitor": "Laudário",
-  "updated_at": "2026-10-05T18:30:00-03:00",
+  "updated_at": "2026-10-06T08:15:24-03:00",
   "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
   "totals": {
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 23,
+    "base_functionally_studied": 24,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1,
     "laudousg_synthetic_probe_entries": 19
@@ -151,6 +151,13 @@
       "proposed_code": "DOPPLER_AORTA_ILIACAS",
       "case": "cases/doppler-aorta-iliacas-2026-10-03.md",
       "crosswalk": "crosswalk-doppler-aorta-iliacas-2026-10-03.md"
+    },
+    {
+      "competitor_exam": "Pélvico Transvaginal",
+      "laudousg_code": "PELVE_FEMININA",
+      "web_card": "PELVICO_TRANSVAGINAL",
+      "case": "cases/pelvico-transvaginal-2026-10-06.md",
+      "crosswalk": "crosswalk-pelvico-transvaginal-2026-10-06.md"
     }
   ],
   "absence_checks": [
@@ -161,7 +168,7 @@
     }
   ],
   "queue": [
-    "Rodada funcional no Laudário (quando houver navegador): Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais, Morfológico 2º Trimestre, Doppler de Artérias Temporais, Doppler de Artérias Mesentéricas",
+    "Rodada funcional no Laudário: Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais, Morfológico 2º Trimestre, Doppler de Artérias Temporais, Doppler de Artérias Mesentéricas, Monitorização Folicular, Obstétrico Gemelar",
     "Aparelho Urinário com Doppler",
     "Abdome Superior com Doppler",
     "Pélvico Transvaginal com Doppler",
@@ -173,9 +180,9 @@
     "Primeiro exame combinado"
   ],
   "competitor_observation": {
-    "status": "bloqueada desde 2026-10-05",
-    "motivo": "navegador indisponível na sessão; nenhuma observação funcional nova do Laudário",
-    "efeito": "totals.base_functionally_studied permanece 23; rodadas de 05/10 são preflight e prova sintética do LaudoUSG"
+    "status": "ativa em 2026-10-06",
+    "motivo": "navegador autenticado disponível; rodada de Pélvico Transvaginal concluída e restaurada",
+    "efeito": "totals.base_functionally_studied atualizado para 24; rodadas de 05/10 permanecem classificadas como preflight e prova sintética do LaudoUSG"
   },
   "preflights": [
     {
@@ -205,8 +212,11 @@
       "laudousg_code": "PELVE_FEMININA / PELVICO_TRANSVAGINAL",
       "file": "audits/execucao-sintetica-pelve-obstetrico-2026-10-05.md",
       "lote": 1,
-      "competitor_observed": false,
-      "date": "2026-10-05"
+      "competitor_observed": true,
+      "date": "2026-10-05",
+      "observation_date": "2026-10-06",
+      "functional_case": "cases/pelvico-transvaginal-2026-10-06.md",
+      "functional_crosswalk": "crosswalk-pelvico-transvaginal-2026-10-06.md"
     },
     {
       "competitor_exam": "Obstétrico 2º/3º Trimestre",
