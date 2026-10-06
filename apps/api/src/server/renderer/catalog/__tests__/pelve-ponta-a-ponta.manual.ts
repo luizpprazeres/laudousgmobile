@@ -107,6 +107,7 @@ const CASOS: Caso[] = [
       "mioma.sim.classificacao": "intramural",
     }),
     exige: ["2,4"],
+    proibe: ["hipoecoica", "heterogênea", "margens regulares"],
     /**
      * A asserção é sobre o MIOMÉTRIO, não sobre a conclusão inteira.
      *
@@ -116,6 +117,17 @@ const CASOS: Caso[] = [
      * treina quem lê o gate a ignorá-lo.
      */
     exigeNaConclusao: ["Miométrio"],
+  },
+  {
+    nome: "mioma calcificado selecionado",
+    porque: "o aspecto só entra quando selecionado e precisa atravessar o adaptador até o corpo.",
+    estado: com(medida(), "utero", {
+      mioma: ["sim"],
+      "mioma.sim.medidas": "2,4 x 2,1 x 1,9",
+      "mioma.sim.ecotextura": "calcificada",
+    }),
+    exige: ["imagem calcificada", "2,4"],
+    proibe: ["margens regulares"],
   },
   {
     nome: "útero miomatoso (difuso)",
@@ -130,6 +142,20 @@ const CASOS: Caso[] = [
     estado: com(medida(), "utero", { adenomiose: ["sim"] }),
     exige: ["heterogênea"],
     exigeNaConclusao: ["denomiose"],
+  },
+  {
+    nome: "adenomiose e mioma coexistem",
+    porque:
+      "alteração difusa e lesão focal são achados independentes; nenhuma pode apagar a outra no corpo ou na conclusão.",
+    estado: com(medida(), "utero", {
+      adenomiose: ["sim"],
+      mioma: ["sim"],
+      "mioma.sim.medidas": "2,4 x 2,1 x 1,9",
+      "mioma.sim.classificacao": "intramural",
+      "mioma.sim.parede": "parede posterior",
+    }),
+    exige: ["heterogênea", "2,4", "parede posterior"],
+    exigeNaConclusao: ["denomiose", "Miométrio"],
   },
   {
     nome: "cisto simples no ovário direito",

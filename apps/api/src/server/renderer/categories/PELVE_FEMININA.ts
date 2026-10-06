@@ -46,6 +46,7 @@ const MiomaSchema = z.object({
   parede: z.string().nullable(), // "parede anterior" | "região fúndica"...
   relacao: z.string().nullable(), // texto livre (relação serosa/mucosa)
   figo: z.string().nullable(), // categoria FIGO (ex.: "4"); null se não dita
+  ecotextura: z.enum(["hipoecoica", "heterogenea", "calcificada", "degenerada"]).nullable().optional(),
 });
 
 /** Achado ovariano focal (cisto simples/complexo/endometrioma/SOP/funcional). */
@@ -580,21 +581,23 @@ function monitorizacaoConclusao(f: PelveFemininaFindings): string | null {
 // Helpers de miomas
 // ---------------------------------------------------------------------------
 
-/** Frase do miométrio no corpo (normal, alterado verbatim ou com miomas). */
-function miometrioCorpo(f: PelveFemininaFindings): string {
-  if (f.utero_miomatoso) {
-    return "Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas, coalescentes, ocasionando atenuação sonora, que impede a avaliação individualizada.";
-  }
-  if (f.miometrio_descricao && f.miometrio_descricao.trim() !== "") {
-    return f.miometrio_descricao.trim().replace(/\.+$/, "") + ".";
-  }
-  const miomas = f.miomas ?? [];
-  if (miomas.length === 0) {
-    return "Miométrio com ecogenicidade e ecotextura normais.";
-  }
+/** Descrição dos miomas individualizados no corpo. */
+function miomasCorpo(miomas: PelveMioma[]): string {
+  const imagem = (m: PelveMioma): string => {
+    const aspecto = m.ecotextura === "hipoecoica"
+      ? "hipoecoica"
+      : m.ecotextura === "heterogenea"
+        ? "heterogênea"
+        : m.ecotextura === "calcificada"
+          ? "calcificada"
+          : m.ecotextura === "degenerada"
+            ? "com sinais de degeneração"
+            : null;
+    return aspecto ? `imagem ${aspecto}` : "imagem nodular";
+  };
   if (miomas.length === 1) {
     const m = miomas[0] as PelveMioma;
-    const partes = ["Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares"];
+    const partes = [`Miométrio apresentando ${imagem(m)}`];
     partes.push(`medindo ${medidasFmt(m.medidas_cm)}`);
     if (m.parede) partes.push(`situada na ${m.parede}`);
     if (m.relacao) partes.push(m.relacao.trim());
@@ -602,19 +605,35 @@ function miometrioCorpo(f: PelveFemininaFindings): string {
   }
   if (miomas.length === 2) {
     const [m1, m2] = miomas as [PelveMioma, PelveMioma];
-    const d1 = `A primeira medindo ${medidasFmt(m1.medidas_cm)}${m1.parede ? `, situada na ${m1.parede}` : ""}${m1.relacao ? `, ${m1.relacao.trim()}` : ""}.`;
-    const d2 = `A segunda medindo ${medidasFmt(m2.medidas_cm)}${m2.parede ? `, situada na ${m2.parede}` : ""}${m2.relacao ? `, ${m2.relacao.trim()}` : ""}.`;
-    return `Miométrio apresentando duas imagens hipoecoicas e heterogêneas, com margens regulares. ${d1} ${d2}`;
+    const d1 = `A primeira ${imagem(m1)}, medindo ${medidasFmt(m1.medidas_cm)}${m1.parede ? `, situada na ${m1.parede}` : ""}${m1.relacao ? `, ${m1.relacao.trim()}` : ""}.`;
+    const d2 = `A segunda ${imagem(m2)}, medindo ${medidasFmt(m2.medidas_cm)}${m2.parede ? `, situada na ${m2.parede}` : ""}${m2.relacao ? `, ${m2.relacao.trim()}` : ""}.`;
+    return `Miométrio apresentando duas imagens nodulares. ${d1} ${d2}`;
   }
   // 3 ou mais
   const ordinais = ["a primeira", "a segunda", "a terceira", "a quarta", "a quinta"];
   const descr = miomas
     .map((m, i) => {
       const ord = ordinais[i] ?? `a ${i + 1}ª`;
-      return `${ord} medindo ${medidasFmt(m.medidas_cm)}${m.parede ? `, situada na ${m.parede}` : ""}`;
+      return `${ord} ${imagem(m)}, medindo ${medidasFmt(m.medidas_cm)}${m.parede ? `, situada na ${m.parede}` : ""}`;
     })
     .join("; ");
-  return `Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas. As maiores assim descritas: ${descr}.`;
+  return `Miométrio apresentando múltiplas imagens nodulares. As maiores assim descritas: ${descr}.`;
+}
+
+/** Frase do miométrio no corpo. Alteração difusa e lesões focais coexistem. */
+function miometrioCorpo(f: PelveFemininaFindings): string {
+  if (f.utero_miomatoso) {
+    return "Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas, coalescentes, ocasionando atenuação sonora, que impede a avaliação individualizada.";
+  }
+  const descricaoDifusa = f.miometrio_descricao?.trim()
+    ? f.miometrio_descricao.trim().replace(/\.+$/, "") + "."
+    : null;
+  const miomas = f.miomas ?? [];
+  if (miomas.length === 0) {
+    return descricaoDifusa ?? "Miométrio com ecogenicidade e ecotextura normais.";
+  }
+  const descricaoFocal = miomasCorpo(miomas);
+  return descricaoDifusa ? `${descricaoDifusa} ${descricaoFocal}` : descricaoFocal;
 }
 
 /** Item(ns) de conclusão dos miomas. Retorna [] se não houver. */

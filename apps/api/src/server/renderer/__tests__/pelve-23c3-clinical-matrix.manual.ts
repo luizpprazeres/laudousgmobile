@@ -58,9 +58,10 @@ const checks: Array<[string, () => void]> = [
       mioma3: ["sim"], "mioma3.sim.classificacao": "subseroso", "mioma3.sim.medidas": "1,7 x 1,5 x 1,2", "mioma3.sim.parede": "região fúndica", "mioma3.sim.figo": "6",
     });
     const texto = render(estado);
-    assert.match(texto, /a primeira medindo/);
-    assert.match(texto, /a segunda medindo/);
-    assert.match(texto, /a terceira medindo/);
+    assert.match(texto, /a primeira imagem nodular, medindo/);
+    assert.match(texto, /a segunda imagem nodular, medindo/);
+    assert.match(texto, /a terceira imagem nodular, medindo/);
+    assert.doesNotMatch(texto, /hipoecoica|heterogênea|margens regulares/);
     assert.match(texto, /FIGO: Federação Internacional/);
   }],
   ["endométrio estruturado e DIU deslocado", () => {

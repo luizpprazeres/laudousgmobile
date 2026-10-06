@@ -130,7 +130,7 @@ const render = (f: PelveFemininaFindings) => renderPelveFeminina(f, { objetivo: 
   const l = render(F({
     miomas: [{ classificacao: "intramural", medidas_cm: [2.0, 1.8, 1.5], parede: "parede anterior", relacao: null, figo: "4" }],
   }));
-  check("mioma: achados descreve imagem hipoecoica", /Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares, medindo 2 x 1,8 x 1,5 cm, situada na parede anterior\./.test(l), l);
+  check("mioma: achados não inventam aspecto", /Miométrio apresentando imagem nodular, medindo 2 x 1,8 x 1,5 cm, situada na parede anterior\./.test(l), l);
   check("mioma: impressão 'nódulo miomatoso intramural (FIGO 4)'", /que tem como diagnóstico mais provável nódulo miomatoso intramural \(categoria FIGO 4\)\./.test(l), l);
   check("mioma: rodapé FIGO presente uma vez", (l.match(/FIGO: Federação Internacional de Ginecologia e Obstetrícia\./g) || []).length === 1, l);
 }

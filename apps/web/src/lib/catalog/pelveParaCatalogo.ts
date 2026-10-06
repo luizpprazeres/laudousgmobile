@@ -232,6 +232,7 @@ export function adaptarPelve(
       parede: texto(u, `${chave}.sim.parede`) || null,
       relacao: null,
       figo: texto(u, `${chave}.sim.figo`) || null,
+      ecotextura: texto(u, `${chave}.sim.ecotextura`) || null,
     }));
 
   /**

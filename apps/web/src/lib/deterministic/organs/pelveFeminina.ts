@@ -84,7 +84,7 @@ const bexigaModule = createSharedBladderModule('PELVE_FEMININA')
 const miomaSubs: Field[] = [
   { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '3,0 x 2,5 x 2,0' },
   { key: 'classificacao', label: 'Classificação', kind: 'mini-segmented', options: [
-    { value: 'intramural', label: 'Intramural', isDefault: true }, { value: 'subseroso', label: 'Subseroso' }, { value: 'submucoso', label: 'Submucoso' }, { value: 'outro', label: 'Outra localização' },
+    { value: 'intramural', label: 'Intramural' }, { value: 'subseroso', label: 'Subseroso' }, { value: 'submucoso', label: 'Submucoso' }, { value: 'outro', label: 'Outra localização' },
   ] },
   { key: 'parede', label: 'Parede', kind: 'text', placeholder: 'parede anterior' },
   { key: 'figo', label: 'FIGO', kind: 'text', placeholder: 'ex.: 4' },
@@ -131,9 +131,9 @@ const uteroModule: OrganModule = {
   ] },
   initialState: () => ({ posicao: 'anteversão', medidas: '', volume_classe: 'normal', miomatoso: [], mioma: [], adenomiose: [],
     mioma2: [], mioma3: [], istmocele: [], cistos_naboth: [],
-    'mioma.sim.medidas': '', 'mioma.sim.classificacao': 'intramural', 'mioma.sim.parede': '', 'mioma.sim.figo': '', 'mioma.sim.ecotextura': '',
-    'mioma2.sim.medidas': '', 'mioma2.sim.classificacao': 'intramural', 'mioma2.sim.parede': '', 'mioma2.sim.figo': '', 'mioma2.sim.ecotextura': '',
-    'mioma3.sim.medidas': '', 'mioma3.sim.classificacao': 'intramural', 'mioma3.sim.parede': '', 'mioma3.sim.figo': '', 'mioma3.sim.ecotextura': '',
+    'mioma.sim.medidas': '', 'mioma.sim.classificacao': '', 'mioma.sim.parede': '', 'mioma.sim.figo': '', 'mioma.sim.ecotextura': '',
+    'mioma2.sim.medidas': '', 'mioma2.sim.classificacao': '', 'mioma2.sim.parede': '', 'mioma2.sim.figo': '', 'mioma2.sim.ecotextura': '',
+    'mioma3.sim.medidas': '', 'mioma3.sim.classificacao': '', 'mioma3.sim.parede': '', 'mioma3.sim.figo': '', 'mioma3.sim.ecotextura': '',
     'istmocele.sim.tipo': 'simples', 'istmocele.sim.descricao': '' }),
   compose: (st): OrganComposition => {
     const miomatoso = ((st.miomatoso as string[]) || []).includes('sim')
