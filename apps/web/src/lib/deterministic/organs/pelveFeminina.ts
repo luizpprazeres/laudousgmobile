@@ -291,7 +291,7 @@ function ovarioSchema(lado: 'direito' | 'esquerdo'): OrganSchema {
       { value: 'lesao_solida', label: 'Lesão sólida', subFields: achadoOvSubs },
       { value: 'outro', label: 'Outro', subFields: achadoOvSubs },
     ] },
-    { key: 'foliculos_mm', label: 'Folículos (mm)', kind: 'text', placeholder: '8, 10, 12, 18' },
+    { key: 'foliculos_mm', label: 'Folículos (mm)', kind: 'text', placeholder: '8; 10; 12,5; 18' },
     { key: 'atrofico', label: 'Atrófico (menopausa)', kind: 'checklist', options: [{ value: 'sim', label: 'Poucos folículos' }] },
   ] }
 }

@@ -89,11 +89,14 @@ function numero(bruto: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function numeros(bruto: string): number[] | null {
-  const valores = (bruto.match(/\d+(?:[.,]\d+)?/g) ?? [])
-    .map((v) => Number.parseFloat(v.replace(",", ".")))
-    .filter((v) => Number.isFinite(v) && v > 0);
-  return valores.length ? valores : null;
+/** Vírgula decimal é parte da medida; separe diâmetros com ;, espaço ou vírgula + espaço. */
+function foliculosEstritos(bruto: string): number[] | null | "invalida" {
+  if (!bruto.trim()) return null;
+  const lista = bruto.trim().replace(/\s*mm$/i, "").trim();
+  const partes = lista.split(/\s*;\s*|,\s+|\s+/);
+  if (!partes.every((p) => /^\d+(?:[.,]\d+)?$/.test(p))) return "invalida";
+  const nums = partes.map((p) => Number(p.replace(",", ".")));
+  return nums.every((n) => Number.isFinite(n) && n > 0) ? nums : "invalida";
 }
 
 type Ovario = {
@@ -120,6 +123,20 @@ function adaptarOvario(
   dopplerRealizado: boolean,
 ): Ovario {
   const visualizado = s.visualizado !== "nao";
+  const brutoFoliculos = texto(s, "foliculos_mm");
+  const foliculos = foliculosEstritos(brutoFoliculos);
+  if (foliculos === "invalida") {
+    pendencias.push({
+      onde: `ovário ${lado}`, valor: brutoFoliculos, bloqueia: true,
+      motivo: `folículos do ovário ${lado} ilegíveis: informe um diâmetro por folículo em mm, separado por ponto e vírgula (ex.: 8; 10; 12,5). Não use cm nem pares de eixos`,
+    });
+  } else if (foliculos && !visualizado) {
+    pendencias.push({
+      onde: `ovário ${lado}`, valor: brutoFoliculos, bloqueia: true,
+      motivo: `ovário ${lado} não visualizado não pode ter folículos medidos`,
+    });
+  }
+
   const m = medidas(texto(s, "medidas"));
   const tipo = texto(s, "achado");
   const temAchado = tipo !== "" && tipo !== "nenhum";
@@ -159,7 +176,7 @@ function adaptarOvario(
           },
         ]
       : [],
-    foliculos_mm: numeros(texto(s, "foliculos_mm")),
+    foliculos_mm: Array.isArray(foliculos) && visualizado ? foliculos : null,
   };
 }
 
@@ -188,6 +205,11 @@ export function adaptarPelve(
   const via = modo === "pos_abortamento" ? "pos_abortamento" : modo === "monitorizacao_folicular" ? "tv" : viaInformada;
   const dopplerRealizado = modo === "doppler";
   const menopausa = Array.isArray(opcoes.menopausa) && opcoes.menopausa.includes("sim");
+  if (modo === "monitorizacao_folicular" && ![od, oe].some((s) =>
+    s.visualizado !== "nao" && Array.isArray(foliculosEstritos(texto(s, "foliculos_mm"))),
+  )) {
+    pendencias.push({ onde: "folículos", valor: "", motivo: "informe os diâmetros dos folículos (mm) de ao menos um ovário", bloqueia: true });
+  }
 
   if (via !== "tv") {
     for (const motivo of [...bladderStateConflicts(bexiga), ...bladderInputIssues(secao(estado, "bexiga"))]) {
@@ -466,15 +488,6 @@ export function adaptarPelveTransabdominal(
 
 // ── ATALHOS DA PELVE (Doppler TV/TA e monitorização folicular) ───────────────
 
-/** Folículos: lista estrita de diâmetros em mm ("8, 10, 12,5"). */
-function foliculosEstritos(bruto: string): number[] | null | "invalida" {
-  if (!bruto.trim()) return null;
-  const partes = bruto.replace(/\s*mm\s*$/i, "").split(/\s*[;,]\s*(?=\d)|\s+/).filter(Boolean);
-  if (!partes.every((p) => /^\d+(?:[.,]\d+)?$/.test(p))) return "invalida";
-  const nums = partes.map((p) => Number.parseFloat(p.replace(",", ".")));
-  return nums.every((n) => n > 0) ? nums : "invalida";
-}
-
 /**
  * Adaptador dos atalhos: o adaptador do card-base (TV ou TA, com o portão de
  * completude da via) com o modo fixado, mais o dado que o modo exige.
@@ -506,18 +519,6 @@ export function adaptarPelvePreset(
         falta(`ovário ${lado}`, tipo, `informe a vascularização ao Doppler do achado no ovário ${lado}`);
       }
     }
-  } else {
-    let algum = false;
-    for (const lado of ["direito", "esquerdo"] as const) {
-      const s = secao(estado, `ovario_${lado}`);
-      const foliculos = foliculosEstritos(texto(s, "foliculos_mm"));
-      if (foliculos === "invalida") falta(`ovário ${lado}`, texto(s, "foliculos_mm"), `folículos do ovário ${lado} ilegíveis: use diâmetros em mm separados por vírgula (ex.: 8, 10, 12)`);
-      if (Array.isArray(foliculos)) {
-        algum = true;
-        if (s.visualizado === "nao") falta(`ovário ${lado}`, "não visualizado", `ovário ${lado} não visualizado não pode ter folículos medidos`);
-      }
-    }
-    if (!algum) falta("folículos", "", "informe os diâmetros dos folículos (mm) de ao menos um ovário");
   }
   return { ...base, pendencias };
 }

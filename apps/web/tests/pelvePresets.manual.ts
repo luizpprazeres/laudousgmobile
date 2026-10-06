@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 import { categoryDisplayLabel } from '@laudousg/shared'
 import { renderizarSelecao } from '../../api/src/server/renderer/catalog/alteracoes'
 import { alteracoesDe } from '../../api/src/server/renderer/catalog/alteracoes/index'
-import { adaptarPelvePreset, adaptarPelveTransabdominal, adaptarPelveTransvaginal } from '../src/lib/catalog/pelveParaCatalogo'
+import { adaptarPelve, adaptarPelvePreset, adaptarPelveTransabdominal, adaptarPelveTransvaginal } from '../src/lib/catalog/pelveParaCatalogo'
 import { categoriaDeRender, categoriaMigrada } from '../src/lib/catalog/migradas'
 import { CATEGORIES, GENERIC_CATEGORIES, composeReport, initialExamState, pelvicoTransabdominal, pelvicoTransvaginal, type ExamState } from '../src/lib/deterministic'
 import { MONITORIZACAO_FOLICULAR, PELVE_PRESET_IDS, PELVICO_TRANSABDOMINAL_DOPPLER, PELVICO_TRANSVAGINAL_DOPPLER } from '../src/lib/deterministic/organs/pelvePresets'
@@ -141,6 +141,42 @@ test('pendências da monitorização: folículos ilegíveis ou em ovário não v
   // Menopausa salva no estado não vaza para a monitorização.
   const comMenopausa = { ...medido(MONITORIZACAO_FOLICULAR), __opts: { menopausa: ['sim'] } }
   assert.doesNotMatch(render(MONITORIZACAO_FOLICULAR, comMenopausa), /menopausa/i)
+})
+
+test('folículos: leitura única preserva decimais e bloqueia unidades/eixos em todas as entradas', () => {
+  const entradas = [
+    (s: ExamState) => adaptar(MONITORIZACAO_FOLICULAR, s),
+    (s: ExamState) => adaptarPelve(s, { modo_pelve: 'monitorizacao_folicular' }),
+    (s: ExamState) => adaptarPelveTransvaginal(s, { modo_pelve: 'monitorizacao_folicular' }),
+  ]
+  for (const entrada of entradas) {
+    for (const [bruto, esperado] of [
+      ['8, 10, 12,5', [8, 10, 12.5]],
+      ['8; 10; 12,5 mm', [8, 10, 12.5]],
+      ['12,5', [12.5]],
+      ['12.5 18', [12.5, 18]],
+    ] as const) {
+      const estado = patch(medido(MONITORIZACAO_FOLICULAR), 'ovario_direito', { foliculos_mm: bruto })
+      const salvo = JSON.stringify(estado)
+      const a = entrada(estado)
+      assert.deepEqual(a.pendencias.filter((p) => p.bloqueia), [])
+      assert.deepEqual((a.dados.ovario_direito as { foliculos_mm: number[] }).foliculos_mm, esperado)
+      assert.match(conclusao(renderDados(a.dados, a.alteracoes)), /12,5 mm/)
+      assert.deepEqual(entrada(JSON.parse(salvo)), a, 'reabertura preserva os diâmetros')
+      assert.equal(JSON.stringify(estado), salvo, 'não modifica o dado digitado')
+    }
+    for (const bruto of ['1,8 cm', '18 x 16', '18 × 16, 10, 9', '8,10,12', '8, dez, 12', '-8; 12', '0; 12', 'mm', '8;', '8;;12']) {
+      const a = entrada(patch(medido(MONITORIZACAO_FOLICULAR), 'ovario_direito', { foliculos_mm: bruto }))
+      assert.ok(a.pendencias.some((p) => p.bloqueia && /folículos do ovário direito ilegíveis/.test(p.motivo)), bruto)
+      assert.equal((a.dados.ovario_direito as { foliculos_mm: unknown }).foliculos_mm, null, bruto)
+    }
+    const naoVisto = entrada(patch(medido(MONITORIZACAO_FOLICULAR), 'ovario_direito', { visualizado: 'nao', medidas: '', foliculos_mm: '15' }))
+    assert.ok(naoVisto.pendencias.some((p) => p.bloqueia && /não visualizado não pode ter folículos/.test(p.motivo)))
+    assert.equal((naoVisto.dados.ovario_direito as { foliculos_mm: unknown }).foliculos_mm, null)
+    const apagado = entrada(patch(medido(MONITORIZACAO_FOLICULAR), 'ovario_direito', { foliculos_mm: '' }))
+    assert.ok(apagado.pendencias.some((p) => p.bloqueia && p.onde === 'folículos'))
+    assert.equal((apagado.dados.ovario_direito as { foliculos_mm: unknown }).foliculos_mm, null)
+  }
 })
 
 test('reversão: remover o achado devolve o laudo normal sem resíduo', () => {
