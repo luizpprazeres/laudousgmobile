@@ -26,6 +26,10 @@ import { adaptarDopplerWeb, categoriaRenderDoppler, chaveDocumentoDoppler, estad
 import { adaptarDopplerCarotidas } from '@/lib/catalog/dopplerCarotidasParaCatalogo'
 import { adaptarDopplerVenosoMmii } from '@/lib/catalog/dopplerVenosoMmiiParaCatalogo'
 import { adaptarDopplerRenal } from '@/lib/catalog/dopplerRenalParaCatalogo'
+import {
+  avaliacaoDopplerRenalSemAlteracoesConfirmada,
+  definirAvaliacaoDopplerRenalSemAlteracoes,
+} from '@/lib/deterministic/organs/dopplerRenal'
 import { adaptarDopplerHepatico } from '@/lib/catalog/dopplerHepaticoParaCatalogo'
 import { adaptarDopplerArterialMmii } from '@/lib/catalog/dopplerArterialMmiiParaCatalogo'
 import { adaptarDopplerFistulaAv } from '@/lib/catalog/dopplerFistulaAvParaCatalogo'
@@ -465,6 +469,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   }, [])
 
   const isVenousMmii = categoria === 'DOPPLER_VENOSO_MMII' || categoria === 'DOPPLER_VENOSO_MMII_MEDIDAS'
+  const isDopplerRenal = categoria === 'DOPPLER_RENAL'
   const isTireoideDoppler = categoria === TIREOIDE_DOPPLER_ID
   const isTireoide = categoria === TIREOIDE_ID || isTireoideDoppler
   const isMamaria = MAMARIA_CARDS.has(categoria)
@@ -1489,6 +1494,23 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   /** Ferramentas que valem para as duas abas: esquema visual e digitadora. */
   const secondaryTools = (
     <>
+      {isDopplerRenal ? (
+        <ToolbarPill
+          tone={avaliacaoDopplerRenalSemAlteracoesConfirmada(examStates[categoria] ?? {}) ? 'toggleOn' : 'neutral'}
+          pressed={avaliacaoDopplerRenalSemAlteracoesConfirmada(examStates[categoria] ?? {})}
+          onClick={() => setExamStates((all) => {
+            const current = all[categoria] ?? {}
+            const confirmada = avaliacaoDopplerRenalSemAlteracoesConfirmada(current)
+            return {
+              ...all,
+              [categoria]: definirAvaliacaoDopplerRenalSemAlteracoes(current, !confirmada),
+            }
+          })}
+        >
+          Vasos sem alterações
+        </ToolbarPill>
+      ) : null}
+
       {supportsVisualSchema ? (
         <ToolbarPill tone={visualSchemaOpen ? 'toggleOn' : 'neutral'} onClick={() => {
           setVisualSchemaOpen(true)
@@ -1527,7 +1549,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       ) : null}
     </>
   )
-  const hasSecondaryTools = supportsVisualSchema || digitadoras.length > 0
+  const hasSecondaryTools = isDopplerRenal || supportsVisualSchema || digitadoras.length > 0
   const hasExamOptions = controls.length > 0 || isTireoide || categoria === 'DOPPLER_OBSTETRICO'
 
   if (!choosingCategory && !composition && isWriterCategory(categoria)) {
@@ -1847,6 +1869,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               <p className="text-[12.5px] text-gray-500 dark:text-gray-400">
                 {isTireoide
                   ? 'Preencha medidas, nódulos e classificações informadas pelo médico.'
+                  : isDopplerRenal
+                    ? 'A avaliação vascular começa pendente. Confirme cada território ou use o atalho de normalidade.'
                   : 'Tudo pré-marcado como normal. Mude só o que estiver alterado.'}
               </p>
               {!hasExamOptions && hasSecondaryTools ? <div className="flex flex-wrap items-center gap-2">{secondaryTools}</div> : null}

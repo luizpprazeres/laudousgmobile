@@ -12,7 +12,12 @@ import {
   prostataSuprapubica,
   viasUrinarias,
   type ExamCategory,
+  type OrganState,
 } from "../../../../../../web/src/lib/deterministic";
+import {
+  avaliacaoDopplerRenalSemAlteracoesConfirmada,
+  definirAvaliacaoDopplerRenalSemAlteracoes,
+} from "../../../../../../web/src/lib/deterministic/organs/dopplerRenal";
 import { renderDopplerRenalWeb } from "../../categories/dopplerRenalWeb";
 
 type State = Record<string, unknown>;
@@ -60,6 +65,25 @@ check("estado inicial não preenche medidas não obtidas nem cria placeholders n
   assert.equal(adapted.dados.bexiga_detalhada.volume_pre_miccional_ml, null);
   const report = render("VIAS_URINARIAS", adapted.dados);
   assert.doesNotMatch(report, /____/);
+});
+
+check("atalho do Doppler renal exige ação explícita e confirma os três territórios sem inventar medidas", () => {
+  const initialState = initial(dopplerRenal) as Record<string, OrganState>;
+  assert.equal(avaliacaoDopplerRenalSemAlteracoesConfirmada(initialState), false);
+  assert.equal(adaptarDopplerRenal(initialState).pendencias.filter((item) => item.bloqueia).length, 3);
+
+  const confirmed = definirAvaliacaoDopplerRenalSemAlteracoes(initialState, true);
+  assert.equal(avaliacaoDopplerRenalSemAlteracoesConfirmada(confirmed), true);
+  const adapted = adaptarDopplerRenal(confirmed);
+  noBlockingPending(adapted);
+  const report = renderDopplerRenalWeb(adapted.dados, "CLASSICO_COMPLETO");
+  assert.equal(report.ok, true);
+  assert.match(report.ok ? report.text : "", /fluxo preservado bilateralmente/i);
+  assert.doesNotMatch(report.ok ? report.text : "", /\bVPS\b|\bRAR\b|\bIR\b/);
+
+  const pendingAgain = definirAvaliacaoDopplerRenalSemAlteracoes(confirmed, false);
+  assert.equal(avaliacaoDopplerRenalSemAlteracoesConfirmada(pendingAgain), false);
+  assert.equal(adaptarDopplerRenal(pendingAgain).pendencias.filter((item) => item.bloqueia).length, 3);
 });
 
 check("mesma seleção vesical atravessa Abdome e Vias com precisão, lado e repleção preservados", () => {

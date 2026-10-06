@@ -2,6 +2,25 @@ import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganComposition, OrganModule, OrganState } from '../types'
 import { createSharedKidneyModule } from './urinaryShared'
 
+const VASCULAR_SECTIONS = ['aorta', 'arteria_renal_direita', 'arteria_renal_esquerda'] as const
+
+export function definirAvaliacaoDopplerRenalSemAlteracoes(
+  state: Record<string, OrganState>,
+  confirmada: boolean,
+): Record<string, OrganState> {
+  return VASCULAR_SECTIONS.reduce<Record<string, OrganState>>((next, sectionId) => ({
+    ...next,
+    [sectionId]: {
+      ...(next[sectionId] ?? {}),
+      assessment: confirmada ? 'normal' : 'not_assessed',
+    },
+  }), { ...state })
+}
+
+export function avaliacaoDopplerRenalSemAlteracoesConfirmada(state: Record<string, OrganState>): boolean {
+  return VASCULAR_SECTIONS.every((sectionId) => state[sectionId]?.assessment === 'normal')
+}
+
 const assessmentField: Field = {
   key: 'assessment',
   label: 'Avaliação',
