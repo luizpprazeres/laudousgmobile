@@ -352,11 +352,11 @@ const avaliacaoPrecoceModule: OrganModule = {
 // Padrão MSK: cada sistema normal emite a frase canônica; se alterado, o médico
 // descreve no corpo e o diagnóstico vai à conclusão (que deixa de ser "sem
 // evidência de alteração"). Genitália é campo à parte (não é normal/alterado).
-const ANATOMIA_SISTEMAS: { id: string; label: string; normal: string }[] = [
-  { id: 'snc', label: 'Crânio / SNC / coluna', normal: 'As estruturas cranianas e da coluna vertebral são normais.' },
-  { id: 'face', label: 'Face', normal: 'Nariz e narinas presentes. Lábio superior sem solução de continuidade.' },
-  { id: 'coracao', label: 'Coração', normal: 'Coração com quatro câmaras visíveis.' },
-  { id: 'visceras', label: 'Vísceras / aorta', normal: 'O estômago, a bexiga e os rins foram bem identificados e com ecotextura homogênea. A aorta abdominal fetal apresenta calibre normal.' },
+const ANATOMIA_SISTEMAS: { id: string; label: string; limitacao: string; normal: string }[] = [
+  { id: 'snc', label: 'Crânio / SNC / coluna', limitacao: 'do crânio, do sistema nervoso central e da coluna vertebral', normal: 'As estruturas cranianas e da coluna vertebral são normais.' },
+  { id: 'face', label: 'Face', limitacao: 'da face', normal: 'Nariz e narinas presentes. Lábio superior sem solução de continuidade.' },
+  { id: 'coracao', label: 'Coração', limitacao: 'do coração', normal: 'Coração com quatro câmaras visíveis.' },
+  { id: 'visceras', label: 'Vísceras / aorta', limitacao: 'das vísceras abdominais e da aorta', normal: 'O estômago, a bexiga e os rins foram bem identificados e com ecotextura homogênea. A aorta abdominal fetal apresenta calibre normal.' },
 ]
 
 const anatomiaModule: OrganModule = {
@@ -380,6 +380,13 @@ const anatomiaModule: OrganModule = {
               { key: 'diag', label: 'Diagnóstico (conclusão)', kind: 'text' as const, placeholder: 'diagnóstico' },
             ],
           },
+          {
+            value: 'limitada',
+            label: 'Limitada',
+            subFields: [
+              { key: 'motivo', label: 'Motivo da limitação', kind: 'text' as const, placeholder: 'posição fetal, biotipo, oligoâmnio…' },
+            ],
+          },
         ],
       })),
       {
@@ -401,12 +408,17 @@ const anatomiaModule: OrganModule = {
   compose: (st): OrganComposition => {
     const body: string[] = ['As considerações sobre a anatomia fetal são as seguintes:']
     const diagnosticos: string[] = []
+    const limitacoes: string[] = []
     for (const s of ANATOMIA_SISTEMAS) {
       if (String(st[s.id]) === 'alterado') {
         const corpo = String(st[`${s.id}.alterado.corpo`] ?? '').trim()
         const diag = String(st[`${s.id}.alterado.diag`] ?? '').trim()
         body.push(corpo ? `${corpo.charAt(0).toUpperCase()}${corpo.slice(1).replace(/\.+$/, '')}.` : s.normal)
         if (diag) diagnosticos.push(`${diag.charAt(0).toUpperCase()}${diag.slice(1).replace(/\.+$/, '')}.`)
+      } else if (String(st[s.id]) === 'limitada') {
+        const motivo = String(st[`${s.id}.limitada.motivo`] ?? '').trim().replace(/\.+$/, '')
+        body.push(`Avaliação ${s.limitacao} limitada${motivo ? ` por ${motivo}` : ''}.`)
+        limitacoes.push(`Avaliação morfológica ${s.limitacao} limitada${motivo ? ` por ${motivo}` : ''}.`)
       } else {
         body.push(s.normal)
       }
@@ -415,8 +427,10 @@ const anatomiaModule: OrganModule = {
     const alterado = diagnosticos.length > 0
     return {
       body: body.join('\n'),
-      conclusion: alterado ? diagnosticos : ['Morfologia fetal sem evidência de alteração detectável pelo método.'],
-      isNormal: !alterado,
+      conclusion: alterado || limitacoes.length > 0
+        ? [...diagnosticos, ...limitacoes]
+        : ['Morfologia fetal sem evidência de alteração detectável pelo método.'],
+      isNormal: !alterado && limitacoes.length === 0,
     }
   },
 }

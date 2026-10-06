@@ -140,8 +140,21 @@ export function adaptarMorfologico(
    */
   const descricoes: string[] = [];
   const diagnosticos: string[] = [];
+  const limitacoes: Array<{ sistema: (typeof SISTEMAS)[number]; motivo: string }> = [];
   for (const sis of SISTEMAS) {
-    if (texto(an, sis) !== "alterado") continue;
+    const estadoSistema = texto(an, sis);
+    if (estadoSistema === "limitada") {
+      const motivo = texto(an, `${sis}.limitada.motivo`);
+      if (motivo) limitacoes.push({ sistema: sis, motivo });
+      else pendencias.push({
+        onde: `anatomia · ${sis}`,
+        valor: "avaliação limitada",
+        motivo: "informe o motivo da limitação anatômica",
+        bloqueia: true,
+      });
+      continue;
+    }
+    if (estadoSistema !== "alterado") continue;
     const corpo = frase(texto(an, `${sis}.alterado.corpo`));
     const diag = frase(texto(an, `${sis}.alterado.diag`));
     if (corpo) descricoes.push(corpo);
@@ -370,6 +383,7 @@ export function adaptarMorfologico(
     // ativado e todas as estruturas precoces foram avaliadas como normais.
     anatomia_avaliada: primeiroTrimestre ? anatomiaPrecoceCompleta : true,
     anatomia_alterada: sistemasAlterados,
+    anatomia_limitada: primeiroTrimestre ? [] : limitacoes,
 
     ccn_mm: primeiroTrimestre ? ccnPrimeiroTrimestre : null,
     tn_mm: primeiroTrimestre ? tnPrimeiroTrimestre : null,

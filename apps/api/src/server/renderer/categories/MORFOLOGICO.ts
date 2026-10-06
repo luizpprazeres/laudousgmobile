@@ -38,6 +38,11 @@ const str = { type: ["string", "null"] } as const;
 const bool = { type: ["boolean", "null"] } as const;
 
 const AnatomiaPrecoceEstadoSchema = z.enum(["normal", "alterada", "limitada", "nao_avaliada"]);
+const SistemaAnatomicoSchema = z.enum(["snc", "face", "coracao", "visceras"]);
+const AnatomiaLimitadaSchema = z.object({
+  sistema: SistemaAnatomicoSchema,
+  motivo: z.string().trim().min(1),
+});
 const AnatomiaPrecoceSchema = z.object({
   estruturas: z.object({
     cranio: AnatomiaPrecoceEstadoSchema,
@@ -102,12 +107,14 @@ export const MorfologicoFindingsSchema = z.object({
   liquido_avaliacao: z.enum(["normal", "oligoamnio", "polidramnio", "nao_avaliado"]).nullable().optional(),
   /**
    * anatomia_avaliada: null/true = frases normais dos sistemas presentes;
-   * false SOMENTE quando o médico disser que a anatomia não foi avaliada
-   * (aí as frases normais e a conclusão de morfologia normal saem do laudo).
+   * false SOMENTE quando o médico disser que a anatomia não foi avaliada de
+   * forma global (aí as frases normais e a conclusão de morfologia normal saem).
    * anatomia_alterada: sistemas cuja frase normal é substituída pelo achado.
+   * anatomia_limitada: sistemas específicos não avaliados, sempre com motivo.
    */
   anatomia_avaliada: z.boolean().nullable().optional(),
-  anatomia_alterada: z.array(z.enum(["snc", "face", "coracao", "visceras"])).nullable().optional(),
+  anatomia_alterada: z.array(SistemaAnatomicoSchema).nullable().optional(),
+  anatomia_limitada: z.array(AnatomiaLimitadaSchema).max(4).optional(),
   // 1º trimestre
   ccn_mm: z.number().nullable(),
   tn_mm: z.number().nullable(),
@@ -197,7 +204,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
   required: [
     "trimestre", "apresentacao", "dorso", "polo_cefalico", "bcf_bpm",
     "vitalidade", "movimentos_fetais", "cordao_vasos", "liquido_avaliacao",
-    "anatomia_avaliada", "anatomia_alterada",
+    "anatomia_avaliada", "anatomia_alterada", "anatomia_limitada",
     "ccn_mm", "tn_mm", "tn_classificacao", "anatomia_precoce", "osso_nasal", "regurgitacao_tricuspide", "ducto_venoso",
     "uterina_ip_direita", "uterina_ip_esquerda",
     "dbp_mm", "cc_mm", "cerebelo_mm", "cisterna_magna_mm", "binocular_mm", "ca_mm",
@@ -224,6 +231,19 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     anatomia_alterada: {
       type: ["array", "null"],
       items: { type: "string", enum: ["snc", "face", "coracao", "visceras"] },
+    },
+    anatomia_limitada: {
+      type: "array",
+      maxItems: 4,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["sistema", "motivo"],
+        properties: {
+          sistema: { type: "string", enum: ["snc", "face", "coracao", "visceras"] },
+          motivo: { type: "string", minLength: 1 },
+        },
+      },
     },
     ccn_mm: num, tn_mm: num,
     tn_classificacao: { type: ["string", "null"], enum: ["normal", "limitrofe", "aumentada", null] },
@@ -324,8 +344,11 @@ REGRAS:
    sustenta vitalidade normal.
 5c. anatomia_avaliada: null = não ditado (as frases normais dos sistemas ficam
    no modelo); true quando o médico disser que fez o survey ou que a anatomia é
-   normal; false SOMENTE quando disser que a anatomia NÃO foi avaliada / foi
-   limitada. Em anatomia_alterada, marque os sistemas que possuem alteração:
+   normal; false SOMENTE quando disser que a anatomia NÃO foi avaliada de forma
+   global. Quando a limitação for de um sistema específico, mantenha
+   anatomia_avaliada=true e registre em anatomia_limitada o sistema e o motivo;
+   sem limitação específica, envie anatomia_limitada=[]. Em anatomia_alterada,
+   marque os sistemas que possuem alteração:
    snc (crânio/SNC/coluna), face, coracao ou visceras (tórax/abdome/rins/
    bexiga/aorta). A frase normal do mesmo sistema será substituída pelo achado
    adicional. Não marque um sistema normal.
@@ -527,13 +550,38 @@ function sistemasAlterados(f: MorfologicoFindings): Set<SistemaAnatomico> {
   return new Set(f.anatomia_alterada ?? []);
 }
 
+const ANATOMIA_LIMITADA_ROTULO: Record<SistemaAnatomico, string> = {
+  snc: "do crânio, do sistema nervoso central e da coluna vertebral",
+  face: "da face",
+  coracao: "do coração",
+  visceras: "das vísceras abdominais e da aorta",
+};
+
+function sistemasLimitados(f: MorfologicoFindings): Map<SistemaAnatomico, string> {
+  return new Map((f.anatomia_limitada ?? []).map(({ sistema, motivo }) => [
+    sistema,
+    motivo.trim().replace(/\.+$/, ""),
+  ]));
+}
+
+function anatomiaLimitadaCorpo(f: MorfologicoFindings): string[] {
+  return [...sistemasLimitados(f)].map(([sistema, motivo]) =>
+    `Avaliação ${ANATOMIA_LIMITADA_ROTULO[sistema]} limitada por ${motivo}.`);
+}
+
+function anatomiaLimitadaConclusao(f: MorfologicoFindings): string[] {
+  return [...sistemasLimitados(f)].map(([sistema, motivo]) =>
+    `Avaliação morfológica ${ANATOMIA_LIMITADA_ROTULO[sistema]} limitada por ${motivo}.`);
+}
+
 function anatomiaClassica(f: MorfologicoFindings): string[] {
   // MODELO COMPLETO: as frases normais fazem parte do modelo. Só saem quando o
   // médico disser que a anatomia NÃO foi avaliada (anatomia_avaliada === false).
   if (f.anatomia_avaliada === false) return [];
   const alterados = sistemasAlterados(f);
+  const limitados = sistemasLimitados(f);
   const linhas = (Object.keys(ANATOMIA_NORMAL_CLASSICA) as SistemaAnatomico[])
-    .filter((sistema) => !alterados.has(sistema))
+    .filter((sistema) => !alterados.has(sistema) && !limitados.has(sistema))
     .flatMap((sistema) => ANATOMIA_NORMAL_CLASSICA[sistema].split("\n"));
   return linhas.length > 0
     ? ["", "As considerações sobre a anatomia fetal são as seguintes:", ...linhas]
@@ -543,6 +591,7 @@ function anatomiaClassica(f: MorfologicoFindings): string[] {
 function anatomiaObjetiva(f: MorfologicoFindings): string[] {
   if (f.anatomia_avaliada === false) return [];
   const alterados = sistemasAlterados(f);
+  const limitados = sistemasLimitados(f);
   const preservados = [
     ["snc", "crânio, SNC e coluna"],
     ["face", "face"],
@@ -550,7 +599,7 @@ function anatomiaObjetiva(f: MorfologicoFindings): string[] {
     ["visceras", "tórax, abdome, rins, bexiga e aorta"],
   ] as const;
   const nomes = preservados
-    .filter(([id]) => !alterados.has(id))
+    .filter(([id]) => !alterados.has(id) && !limitados.has(id))
     .map(([, nome]) => nome);
   if (nomes.length === 0) return [];
   return [`Estruturas avaliadas sem alterações detectáveis pelo método: ${nomes.join(", ")}.`];
@@ -927,6 +976,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
     ...vitalidade.corpo,
     ...movimentosMorfo(f),
     ...anatomiaClassica(f),
+    ...anatomiaLimitadaCorpo(f),
     ...(f.genitalia ? [`Genitália externa ${genitaliaFmt(f.genitalia)}.`] : []),
     "",
     "A biometria fetal é a seguinte:",
@@ -971,15 +1021,17 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
    */
   const temAchado = (f.achados_adicionais ?? "").trim() !== "";
   const temSistemaAlterado = sistemasAlterados(f).size > 0;
+  const conclusoesLimitacao = anatomiaLimitadaConclusao(f);
 
   const conclusao = [
     ig.conclusaoClassico,
     ...vitalidade.conclusao,
     ...cordao.conclusao,
     ...liquido.conclusao,
-    ...(f.anatomia_avaliada === false || temAchado || temSistemaAlterado
+    ...(f.anatomia_avaliada === false || temAchado || temSistemaAlterado || conclusoesLimitacao.length > 0
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
+    ...conclusoesLimitacao,
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
@@ -1252,6 +1304,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
     ...vitalidade.corpo,
     ...movimentosMorfo(f),
     ...anatomiaObjetiva(f),
+    ...anatomiaLimitadaCorpo(f),
     "",
     "Biometria fetal:",
     `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`,
@@ -1281,15 +1334,17 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
   /** Mesma regra da ramificação clássica — ver a explicação longa lá. */
   const temAchadoObj = (f.achados_adicionais ?? "").trim() !== "";
   const temSistemaAlterado = sistemasAlterados(f).size > 0;
+  const conclusoesLimitacao = anatomiaLimitadaConclusao(f);
 
   const impressao = [
     ...ig.conclusaoObjetivo,
     ...vitalidade.conclusao,
     ...cordao.conclusao,
     ...liquido.conclusao,
-    ...(f.anatomia_avaliada === false || temAchadoObj || temSistemaAlterado
+    ...(f.anatomia_avaliada === false || temAchadoObj || temSistemaAlterado || conclusoesLimitacao.length > 0
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
+    ...conclusoesLimitacao,
     ...filterFreeConclusionItems(f.itens_conclusao_livres),
   ];
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);

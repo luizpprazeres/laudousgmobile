@@ -2,11 +2,14 @@ import assert from 'node:assert/strict'
 
 import * as importedAdapter from './morfologicoParaCatalogo.ts'
 import * as importedCategory from '../deterministic/organs/morfologico.ts'
+import * as importedRenderer from '../../../../api/src/server/renderer/categories/MORFOLOGICO.ts'
 
 const adapterModule = importedAdapter as typeof importedAdapter & { default?: typeof importedAdapter }
 const categoryModule = importedCategory as typeof importedCategory & { default?: typeof importedCategory }
+const rendererModule = importedRenderer as typeof importedRenderer & { default?: typeof importedRenderer }
 const { adaptarMorfologico } = adapterModule.default ?? adapterModule
 const { morfologico } = categoryModule.default ?? categoryModule
+const { MorfologicoFindingsSchema, renderMorfologico } = rendererModule.default ?? rendererModule
 
 function estadoInicial(trimestre: '2t' | '3t') {
   const secoes = morfologico.resolveSections?.({ trimestre }) ?? []
@@ -68,5 +71,36 @@ const binocularOculta = adaptarMorfologico({
 }, { trimestre: '3t' })
 assert.equal(binocularOculta.pendencias.some((p) => p.onde === 'biometria · distância binocular'), false)
 assert.equal(binocularOculta.dados.binocular_mm, null)
+
+const coracaoLimitadoSemMotivo = adaptarMorfologico({
+  ...base2t,
+  anatomia: { ...base2t.anatomia, coracao: 'limitada' },
+}, { trimestre: '2t' })
+assert.ok(coracaoLimitadoSemMotivo.pendencias.some((p) => p.bloqueia && p.onde === 'anatomia · coracao'))
+
+const coracaoLimitado = adaptarMorfologico({
+  ...base2t,
+  anatomia: {
+    ...base2t.anatomia,
+    coracao: 'limitada',
+    'coracao.limitada.motivo': 'posição fetal desfavorável',
+  },
+}, { trimestre: '2t' })
+assert.equal(coracaoLimitado.pendencias.some((p) => p.bloqueia), false)
+assert.deepEqual(coracaoLimitado.dados.anatomia_limitada, [
+  { sistema: 'coracao', motivo: 'posição fetal desfavorável' },
+])
+
+for (const objetivo of [false, true]) {
+  const laudo = renderMorfologico(
+    MorfologicoFindingsSchema.parse(coracaoLimitado.dados),
+    null,
+    { objetivo },
+  )
+  assert.match(laudo, /Avaliação do coração limitada por posição fetal desfavorável\./)
+  assert.match(laudo, /Avaliação morfológica do coração limitada por posição fetal desfavorável\./)
+  assert.doesNotMatch(laudo, /Coração com quatro câmaras visíveis|coração com quatro câmaras/)
+  assert.doesNotMatch(laudo, /Morfologia fetal sem evidência de alteração detectável pelo método/)
+}
 
 console.log('✓ Morfológico 2º/3º trimestre: números estritos e contradições aprovados')

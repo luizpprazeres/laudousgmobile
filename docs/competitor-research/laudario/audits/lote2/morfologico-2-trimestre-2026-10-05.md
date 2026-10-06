@@ -128,3 +128,9 @@ Observação: um valor de osso longo sem lado é repetido nos dois lados (regra 
 5. **P1** Marcadores menores estruturados, levando o golf ball para a Web sem flag de ditado.
 6. **P1** Ossos longos com D/E opcionais na Web.
 7. **P2** Avisos de contradição; gemelar pelo contrato obstétrico.
+
+## 8. Implementação parcial em 06/10/2026
+
+O primeiro P0 da ordem acima foi concluído para os quatro sistemas já existentes na Web: crânio/SNC/coluna, face, coração e vísceras/aorta. Cada sistema agora oferece o estado **Limitada**, exige o motivo e envia uma limitação estruturada ao renderer. A frase normal daquele sistema é retirada do corpo; a limitação aparece no corpo e na conclusão; a síntese global “sem evidência de alteração” também é retirada. O comportamento foi coberto nos estilos clássico e objetivo, e o modelo oficial normal permaneceu inalterado quando nenhuma limitação é selecionada.
+
+Esta entrega corrige o cenário M4 dentro da granularidade atual. Ela não representa nova observação funcional do Laudário e não fecha M9 para limitação global ditada, nem a expansão de estruturas descrita em 5.1. A rodada funcional no concorrente continua pendente para confirmar controles e interações sem copiar redação.
