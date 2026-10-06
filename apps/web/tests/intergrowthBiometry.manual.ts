@@ -16,8 +16,10 @@ import {
   formatarIgBiometria,
   formatarPercentilIntergrowth,
   intergrowthBiometryPreview,
+  intergrowthBiometryPreviewFromDating,
   intergrowthPreviewCurves,
   parseIgBiometria,
+  parseIgDatacaoCrescimento,
 } from '../src/lib/calculators/intergrowthBiometry'
 
 let cases = 0
@@ -26,10 +28,6 @@ const near = (actual: number | null | undefined, expected: number, tol: number, 
   assert.ok(actual !== null && actual !== undefined, `${msg}: null`)
   assert.ok(Math.abs(actual - expected) <= tol, `${msg}: ${actual} vs ${expected} (tol ${tol})`)
 }
-
-/** Célula AI6 da planilha oficial, escrita à parte e em cm. */
-const planilhaCm = (cc: number, ca: number, cf: number) =>
-  10 ** (1.326 + 0.0107 * cc + 0.0438 * ca + 0.158 * cf - 0.00326 * ca * cf)
 
 // Referência externa armazenada na planilha oficial (sheet1 linha 6).
 const REF = {
@@ -40,6 +38,47 @@ const REF = {
   z: 2.5499428963771749,
   percentile: 99.461297176800756,
 }
+
+// Crescimento usa datação cronológica, nunca a idade derivada da biometria atual.
+{
+  const dum = {
+    bio_sem: '28',
+    bio_dias: '0',
+    referencia: 'dum',
+    'referencia.dum.dum_data': '01/01/2026',
+    'referencia.dum.exame_data': '21/06/2026',
+  }
+  assert.deepEqual(parseIgDatacaoCrescimento(dum), {
+    semanas: 24, dias: 3, gaDays: 171, source: 'dum', examDate: '2026-06-21',
+  })
+  assert.equal(intergrowthBiometryPreviewFromDating(REF.biometria, 'cf', dum)?.ig.gaDays, 171)
+  near(intergrowthBiometryPreviewFromDating(REF.biometria, 'cf', dum)?.weightG, REF.weightG, 1e-9, 'peso com IG pela DUM')
+
+  const usg = {
+    bio_sem: '28',
+    bio_dias: '0',
+    referencia: 'usg',
+    'referencia.usg.us_data': '01/05/2026',
+    'referencia.usg.us_ig_sem': '23',
+    'referencia.usg.us_ig_dias': '3',
+    'referencia.usg.exame_data': '08/05/2026',
+  }
+  assert.deepEqual(parseIgDatacaoCrescimento(usg), {
+    semanas: 24, dias: 3, gaDays: 171, source: 'early-ultrasound', examDate: '2026-05-08',
+  })
+  assert.equal(intergrowthBiometryPreviewFromDating(REF.biometria, 'cf', usg)?.ig.gaDays, 171)
+
+  assert.equal(parseIgDatacaoCrescimento({ bio_sem: '24', bio_dias: '3', referencia: 'nenhuma' }), null)
+  assert.equal(intergrowthBiometryPreviewFromDating(REF.biometria, 'cf', REF.ig), null)
+  assert.equal(parseIgDatacaoCrescimento({ ...dum, 'referencia.dum.dum_data': '31/02/2026' }), null)
+  assert.equal(parseIgDatacaoCrescimento({ ...usg, 'referencia.usg.us_ig_dias': '7' }), null)
+  assert.equal(parseIgDatacaoCrescimento({ ...dum, 'referencia.dum.exame_data': '31/12/2025' }), null)
+  cases++
+}
+
+/** Célula AI6 da planilha oficial, escrita à parte e em cm. */
+const planilhaCm = (cc: number, ca: number, cf: number) =>
+  10 ** (1.326 + 0.0107 * cc + 0.0438 * ca + 0.158 * cf - 0.00326 * ca * cf)
 
 {
   const gramas = calcularPesoHadlock3({ ccMm: 230, caMm: 210, cfMm: 50 })

@@ -1,4 +1,5 @@
 import { categoryDisplayLabel } from '@laudousg/shared'
+import type { StoredGrowthChart } from '@/lib/calculators/growthChartPersistence'
 
 /**
  * O item do histórico e as duas traduções que toda tela dele precisa.
@@ -17,6 +18,8 @@ export type HistoryItem = {
   text: string
   /** Camada opcional de apresentação dos laudos editados na web. */
   html?: string | null
+  /** Figura obstétrica reproduzível, sem imagem persistida. */
+  growthChart?: StoredGrowthChart | null
   /**
    * Composição de exames associados com envelope que esta versão reabre para
    * edição. Laudos avulsos (legado) continuam só texto.

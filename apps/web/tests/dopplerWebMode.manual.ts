@@ -24,6 +24,7 @@ combined.doppler = {
   'umbilical.diastole_ausente.confirmada': 'sim',
 }
 combined.cervicometria = { realizada: 'sim', 'realizada.sim.colo_cm': '3,4' }
+combined.__growth_chart = { incluir: 'sim' }
 const snapshot = JSON.stringify(combined)
 const isolated = { ...combined, __opts: { somente_doppler: 'sim' } }
 
@@ -51,6 +52,7 @@ test('isolated payload and saved state exclude hidden data; draft keys differ', 
   assert.notEqual(chaveDocumentoDoppler('DOPPLER_OBSTETRICO', combined), chaveDocumentoDoppler('DOPPLER_OBSTETRICO', isolated))
   assert.equal(JSON.stringify(combined), snapshot)
   assert.equal(adaptarDopplerWeb(combined).dados.numero_fetos, 1)
+  assert.deepEqual(estadoDopplerVisivel(combined).__growth_chart, { incluir: 'sim' })
 })
 test('hidden qualitative confirmations and pre-16-week indices do not leave web', () => {
   assert.equal(estadoDopplerVisivel(combined).doppler['umbilical.diastole_ausente.confirmada'], undefined)

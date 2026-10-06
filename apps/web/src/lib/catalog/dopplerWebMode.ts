@@ -26,6 +26,7 @@ export function estadoDopplerVisivel(estado: ExamState): ExamState {
     __opts: { somente_doppler: isolado ? 'sim' : 'nao' },
   }
   for (const section of sections) visivel[section.id] = { ...(estado[section.id] ?? {}) }
+  if (!isolado && estado.__growth_chart) visivel.__growth_chart = { ...estado.__growth_chart }
   if (isolado) visivel.ig = { bio_sem: estado.ig?.bio_sem ?? '', bio_dias: estado.ig?.bio_dias ?? '' }
   const weeks = Number.parseFloat(String(visivel.ig.bio_sem ?? '').replace(',', '.'))
   const indices: OrganState = {}

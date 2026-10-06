@@ -8,7 +8,7 @@ import { biometryWeightMode, setBiometryWeightMode, updateBiometryMeasurements }
 import { OrganFormPanel } from './OrganFormPanel'
 import { IntergrowthPreview } from './IntergrowthPreview'
 import { IntergrowthPrintSheet } from './IntergrowthPrintSheet'
-import { intergrowthBiometryPreview } from '@/lib/calculators/intergrowthBiometry'
+import { intergrowthBiometryPreviewFromDating } from '@/lib/calculators/intergrowthBiometry'
 
 type Props = {
   biometry: OrganModule
@@ -42,7 +42,7 @@ export function BiometryGrowthPanel({
   const [printOpen, setPrintOpen] = useState(false)
   const closePrint = useCallback(() => setPrintOpen(false), [])
   const femurKey = chaveFemurDoSchema(biometry.schema.fields)
-  const printable = intergrowthBiometryPreview(biometryState, femurKey, igState) !== null
+  const printable = intergrowthBiometryPreviewFromDating(biometryState, femurKey, igState) !== null
   const chartIncluded = chartState.incluir === 'sim'
   useEffect(() => { if (!printable) setPrintOpen(false) }, [printable])
   useEffect(() => {

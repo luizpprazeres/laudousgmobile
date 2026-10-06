@@ -88,7 +88,8 @@ import { DopplerCarotidasFormPanel } from './DopplerCarotidasFormPanel'
 import { BiometryGrowthPanel } from './BiometryGrowthPanel'
 import { IntergrowthReportFigure } from './IntergrowthPreview'
 import { chaveFemurDoSchema } from '@/lib/calculators/fetalWeight'
-import { intergrowthBiometryPreview } from '@/lib/calculators/intergrowthBiometry'
+import { intergrowthBiometryPreviewFromDating } from '@/lib/calculators/intergrowthBiometry'
+import { attachStoredGrowthChart } from '@/lib/calculators/growthChartPersistence'
 import {
   BIOMETRY_GROWTH_SECTION_ID,
   BIOMETRY_SECTION_ID,
@@ -534,7 +535,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const reportGrowthRequested = !composition && examState?.__growth_chart?.incluir === 'sim'
   const reportGrowthPreview = useMemo(() => {
     if (!reportGrowthRequested || !biometryGrowth.biometry) return null
-    return intergrowthBiometryPreview(
+    return intergrowthBiometryPreviewFromDating(
       examState?.[BIOMETRY_SECTION_ID] ?? {},
       chaveFemurDoSchema(biometryGrowth.biometry.schema.fields),
       examState?.ig ?? {},
@@ -1039,10 +1040,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           : currentCategory.name,
         laudoText: preview,
         examState: attachReportPresentation(
-          isTireoide ? { ...tireoideState, __recommendations: examStates[categoria]?.__recommendations }
-            : categoria === 'DOPPLER_OBSTETRICO' ? estadoDopplerVisivel(examStates[categoria] ?? {})
-            : categoria === 'OBSTETRICA' ? { ...examStates[categoria], doppler: {} }
-            : examStates[categoria],
+          attachStoredGrowthChart(
+            isTireoide ? { ...tireoideState, __recommendations: examStates[categoria]?.__recommendations }
+              : categoria === 'DOPPLER_OBSTETRICO' ? estadoDopplerVisivel(examStates[categoria] ?? {})
+              : categoria === 'OBSTETRICA' ? { ...examStates[categoria], doppler: {} }
+              : examStates[categoria],
+            reportGrowthPreview,
+          ),
           previewHtml,
         ),
       })

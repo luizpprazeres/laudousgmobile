@@ -11,7 +11,7 @@ import {
 import {
   formatarIgBiometria,
   formatarPercentilIntergrowth,
-  intergrowthBiometryPreview,
+  intergrowthBiometryPreviewFromDating,
   intergrowthPreviewCurves,
   type IntergrowthBiometryPreviewResult,
   type IntergrowthCurve,
@@ -255,12 +255,19 @@ export function IntergrowthChart({
 export function IntergrowthReportFigure({ preview }: { preview: IntergrowthBiometryPreviewResult }) {
   const percentilTexto = formatarPercentilIntergrowth(preview.percentile)
   if (!percentilTexto) return null
+  const examDate = preview.dating?.examDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  const datingLabel = preview.dating && examDate
+    ? `datação pela ${preview.dating.source === 'dum' ? 'DUM' : 'US precoce'} em ${examDate[3]}/${examDate[2]}/${examDate[1]}`
+    : null
   return (
     <figure data-report-figure="fetal-growth-intergrowth" className="mt-7 break-inside-avoid border-t border-gray-200 pt-5 text-gray-900">
       <figcaption className="mb-3">
         <strong className="block text-[12px] uppercase tracking-wide">Crescimento fetal · {preview.version}</strong>
         <span className="text-[11px] text-gray-600">
-          {preview.weightRounded} g · percentil {percentilTexto} · {formatarIgBiometria(preview.ig)} · {preview.formula}
+          {preview.weightRounded} g · percentil {percentilTexto} · {formatarIgBiometria(preview.ig)}{datingLabel ? ` · ${datingLabel}` : ''}
+        </span>
+        <span className="mt-1 block text-[10.5px] text-gray-500">
+          Peso próprio da curva, calculado por {preview.formula}; independente do peso estimado exibido no texto do laudo.
         </span>
       </figcaption>
       <IntergrowthChart preview={preview} percentilTexto={percentilTexto} interactive={false} reportMode />
@@ -271,12 +278,12 @@ export function IntergrowthReportFigure({ preview }: { preview: IntergrowthBiome
 /**
  * Prévia somente leitura do padrão INTERGROWTH-21st 2020: calcula o peso
  * Hadlock de 3 parâmetros (CC/CA/CF) a partir da biometria e mostra seu
- * percentil na IG informada. Não altera peso, percentil nem laudo e não
+ * percentil na IG estabelecida pela datação. Não altera peso, percentil nem laudo e não
  * classifica o crescimento. Tudo é derivado das props a cada render, então um
  * estado inválido nunca exibe o resultado anterior.
  */
 export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props) {
-  const preview = intergrowthBiometryPreview(biometryState, chaveFemur, igState)
+  const preview = intergrowthBiometryPreviewFromDating(biometryState, chaveFemur, igState)
   const progressiveWeight = progressiveIntergrowthWeight(biometryState, chaveFemur)
   const percentilTexto = preview ? formatarPercentilIntergrowth(preview.percentile) : null
 
@@ -286,7 +293,7 @@ export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props
         <h3 className={HEADING_CLASS}>{INTERGROWTH2020_EFW_VERSION}</h3>
         <span className={LABEL_CLASS}>Prévia · somente leitura</span>
       </div>
-      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">A IG vem do campo de idade gestacional do exame; não é estimada por estas medidas. Peso e percentil desta curva são calculados automaticamente, sem alterar os valores manuais do laudo.</p>
+      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">A IG vem da datação por DUM ou ultrassonografia precoce; não é estimada pela biometria atual. Peso e percentil são calculados automaticamente, sem alterar os valores manuais do laudo.</p>
       {preview && percentilTexto ? (
         <div className="min-w-0 space-y-2">
           <dl className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-4">
@@ -295,7 +302,7 @@ export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props
               <dd className="text-[12px] text-gray-900 dark:text-gray-100">{preview.formula}</dd>
             </div>
             <div className="min-w-0">
-              <dt className={LABEL_CLASS}>IG informada</dt>
+              <dt className={LABEL_CLASS}>IG pela datação</dt>
               <dd className="text-[12px] tabular-nums text-gray-900 dark:text-gray-100">{formatarIgBiometria(preview.ig)}</dd>
             </div>
             <div className="min-w-0">
@@ -312,8 +319,8 @@ export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props
       ) : (
         <p role="status" className="text-[12px] text-gray-400 dark:text-gray-500">
           {progressiveWeight
-            ? `Peso Hadlock CC/CA/CF: ${progressiveWeight} g. Para percentil e gráfico, informe a IG entre 18+0 e 40+0 semanas, com dias de 0 a 6.`
-            : 'Para calcular o peso da curva, informe CC, CA e CF válidos em mm. Percentil e gráfico também precisam da IG entre 18+0 e 40+0 semanas.'}
+            ? `Peso Hadlock CC/CA/CF: ${progressiveWeight} g. Para percentil e gráfico, informe a datação por DUM ou ultrassonografia precoce, com data do exame.`
+            : 'Para calcular o peso da curva, informe CC, CA e CF válidos em mm. Percentil e gráfico também precisam da datação por DUM ou ultrassonografia precoce.'}
         </p>
       )}
     </section>

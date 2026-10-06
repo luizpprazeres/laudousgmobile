@@ -39,6 +39,7 @@ const files = [
   'tests/fetalWeight.manual.ts',
   'tests/intergrowth2020.manual.ts',
   'tests/intergrowthBiometry.manual.ts',
+  'tests/growthChartPersistence.manual.ts',
   'tests/renalMeasurements.manual.ts',
   'tests/composition.manual.ts',
   'src/lib/deterministic/organs/abdomeTotalGrid.manual.ts',

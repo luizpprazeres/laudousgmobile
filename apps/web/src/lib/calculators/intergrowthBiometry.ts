@@ -52,10 +52,28 @@ function parseInteiroEstrito(raw: unknown): number | null {
   return Number(texto)
 }
 
+function parseDataBrUtcDays(raw: unknown): number | null {
+  if (typeof raw !== 'string') return null
+  const match = raw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!match) return null
+  const dia = Number(match[1])
+  const mes = Number(match[2])
+  const ano = Number(match[3])
+  const value = new Date(Date.UTC(ano, mes - 1, dia))
+  if (value.getUTCFullYear() !== ano || value.getUTCMonth() !== mes - 1 || value.getUTCDate() !== dia) return null
+  return Math.trunc(value.getTime() / 86_400_000)
+}
+
 export type IgBiometria = {
   semanas: number
   dias: number
   gaDays: number
+}
+
+export type IgDatacaoCrescimento = IgBiometria & {
+  source: 'dum' | 'early-ultrasound'
+  /** Data do exame em ISO, usada para projetar a referência até o dia do exame. */
+  examDate: string
 }
 
 /** IG de `bio_sem`/`bio_dias`: inteiros estritos, dias 0..6, total 126..280. `null` caso contrário. */
@@ -65,6 +83,50 @@ export function parseIgBiometria(igState: Readonly<Record<string, unknown>>): Ig
   if (semanas === null || dias === null || dias > 6) return null
   const gaDays = semanas * 7 + dias
   return isIntergrowth2020EfwGaDays(gaDays) ? { semanas, dias, gaDays } : null
+}
+
+/**
+ * IG cronológica para avaliar crescimento. A idade estimada pela biometria
+ * atual não entra aqui, pois usá-la no percentil do próprio peso seria circular.
+ */
+export function parseIgDatacaoCrescimento(igState: Readonly<Record<string, unknown>>): IgDatacaoCrescimento | null {
+  const referencia = igState.referencia
+  const exameUtcDays = parseDataBrUtcDays(
+    referencia === 'usg'
+      ? igState['referencia.usg.exame_data']
+      : referencia === 'dum'
+        ? igState['referencia.dum.exame_data']
+        : null,
+  )
+  if (exameUtcDays === null) return null
+
+  let gaDays: number | null = null
+  if (referencia === 'dum') {
+    const dumUtcDays = parseDataBrUtcDays(igState['referencia.dum.dum_data'])
+    if (dumUtcDays !== null) gaDays = exameUtcDays - dumUtcDays
+  } else if (referencia === 'usg') {
+    const usUtcDays = parseDataBrUtcDays(igState['referencia.usg.us_data'])
+    const semanas = parseInteiroEstrito(igState['referencia.usg.us_ig_sem'])
+    const dias = parseInteiroEstrito(igState['referencia.usg.us_ig_dias'])
+    if (usUtcDays !== null && semanas !== null && dias !== null && dias <= 6) {
+      gaDays = semanas * 7 + dias + (exameUtcDays - usUtcDays)
+    }
+  }
+  if (gaDays === null || !isIntergrowth2020EfwGaDays(gaDays)) return null
+  const examDateRaw = referencia === 'usg'
+    ? igState['referencia.usg.exame_data']
+    : igState['referencia.dum.exame_data']
+  const examDateMatch = typeof examDateRaw === 'string'
+    ? examDateRaw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+    : null
+  if (!examDateMatch) return null
+  return {
+    semanas: Math.floor(gaDays / 7),
+    dias: gaDays % 7,
+    gaDays,
+    source: referencia === 'usg' ? 'early-ultrasound' : 'dum',
+    examDate: `${examDateMatch[3]}-${examDateMatch[2]!.padStart(2, '0')}-${examDateMatch[1]!.padStart(2, '0')}`,
+  }
 }
 
 export type IntergrowthBiometryPreviewResult = {
@@ -79,6 +141,11 @@ export type IntergrowthBiometryPreviewResult = {
   zScore: number
   /** 0..100 sem arredondamento. */
   percentile: number
+  dating?: Pick<IgDatacaoCrescimento, 'source' | 'examDate'>
+}
+
+export type DatedIntergrowthBiometryPreviewResult = IntergrowthBiometryPreviewResult & {
+  dating: Pick<IgDatacaoCrescimento, 'source' | 'examDate'>
 }
 
 /** Lê CC/CA/fêmur (mm) e IG, calcula Hadlock 3 e o percentil; `null` se algo faltar ou for inválido. */
@@ -111,6 +178,25 @@ export function intergrowthBiometryPreview(
     zScore,
     percentile,
   }
+}
+
+/** Prévia clínica da tela: mesmo cálculo, usando exclusivamente a datação cronológica. */
+export function intergrowthBiometryPreviewFromDating(
+  biometryState: Readonly<Record<string, unknown>>,
+  chaveFemur: ChaveFemur | null,
+  igState: Readonly<Record<string, unknown>>,
+): DatedIntergrowthBiometryPreviewResult | null {
+  const dating = parseIgDatacaoCrescimento(igState)
+  if (!dating) return null
+  const preview = intergrowthBiometryPreview(
+    biometryState,
+    chaveFemur,
+    { bio_sem: String(dating.semanas), bio_dias: String(dating.dias) },
+  )
+  return preview ? {
+    ...preview,
+    dating: { source: dating.source, examDate: dating.examDate },
+  } : null
 }
 
 /** z da normal padrão para cada centil (qnorm); conferíveis por `standardNormalCdf`. */

@@ -1,11 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { Check, Copy, Pencil, Trash2, X } from 'lucide-react'
 import { deleteWebReport } from '@/lib/webReports'
 import { categoriaLabel, dataFmt, type HistoryItem } from './HistoryItem'
 import { sanitizeReportHtml } from '@/components/laudar/reportRichText'
+import { IntergrowthReportFigure } from '@/components/laudar/IntergrowthPreview'
+import { reportFigureClipboardHtml } from '@/components/laudar/reportFigureClipboard'
+import { storedGrowthChartToPreview } from '@/lib/calculators/growthChartPersistence'
 
 /**
  * O laudo aberto — o MESMO conteúdo no painel do desktop e na folha do celular.
@@ -30,14 +33,18 @@ export function ReportDetail({
   const [copiado, setCopiado] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const reportFigureRef = useRef<HTMLDivElement>(null)
+  const growthPreview = item.growthChart ? storedGrowthChartToPreview(item.growthChart) : null
 
   const copiar = async () => {
     try {
       const safeHtml = item.html ? sanitizeReportHtml(item.html) : null
-      if (safeHtml && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+      const figureHtml = await reportFigureClipboardHtml(reportFigureRef.current)
+      if ((safeHtml || figureHtml) && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
         try {
+          const combinedHtml = `${safeHtml ?? ''}${figureHtml}`
           await navigator.clipboard.write([new ClipboardItem({
-            'text/html': new Blob([safeHtml], { type: 'text/html' }),
+            'text/html': new Blob([combinedHtml], { type: 'text/html' }),
             'text/plain': new Blob([item.text], { type: 'text/plain' }),
           })])
         } catch {
@@ -148,16 +155,18 @@ export function ReportDetail({
         o médico vai colar num documento, e vê-lo aqui como ele sairá lá evita a
         surpresa na hora de assinar.
       */}
-      {item.html ? (
-        <article
-          className="min-h-0 flex-1 overflow-y-auto px-6 py-5 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 [&_h1]:mb-7 [&_h1]:text-center [&_h1]:font-bold [&_h1]:uppercase [&_mark]:rounded-sm [&_mark]:bg-amber-200 [&_p]:mb-4 dark:text-gray-200 dark:[&_mark]:bg-amber-700/70"
-          dangerouslySetInnerHTML={{ __html: sanitizeReportHtml(item.html) }}
-        />
-      ) : (
-        <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap px-6 py-5 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 dark:text-gray-200">
-          {item.text}
-        </pre>
-      )}
+      <article className="min-h-0 flex-1 overflow-y-auto px-6 py-5 font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 [&_h1]:mb-7 [&_h1]:text-center [&_h1]:font-bold [&_h1]:uppercase [&_mark]:rounded-sm [&_mark]:bg-amber-200 [&_p]:mb-4 dark:text-gray-200 dark:[&_mark]:bg-amber-700/70">
+        {item.html ? (
+          <div dangerouslySetInnerHTML={{ __html: sanitizeReportHtml(item.html) }} />
+        ) : (
+          <pre className="whitespace-pre-wrap font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 dark:text-gray-200">{item.text}</pre>
+        )}
+        {growthPreview ? (
+          <div ref={reportFigureRef}>
+            <IntergrowthReportFigure preview={growthPreview} />
+          </div>
+        ) : null}
+      </article>
     </div>
   )
 }

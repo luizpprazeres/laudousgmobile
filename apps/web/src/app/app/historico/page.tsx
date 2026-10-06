@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { HistoryList, type HistoryItem } from '@/components/historico/HistoryList'
 import { extractReportPresentation } from '@/components/laudar/reportRichText'
 import { parseEnvelope } from '@/lib/composition/envelope'
+import { extractStoredGrowthChart } from '@/lib/calculators/growthChartPersistence'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,7 @@ export default async function HistoricoPage() {
       title: (r.title as string | null) ?? null,
       text: r.laudo_text as string,
       html: extractReportPresentation(r.exam_state),
+      growthChart: extractStoredGrowthChart(r.exam_state),
       reopenable: parseEnvelope(r.exam_state).kind === 'composition',
       date: r.created_at as string,
     })),

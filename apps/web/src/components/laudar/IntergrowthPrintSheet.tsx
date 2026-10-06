@@ -8,7 +8,7 @@ import { INTERGROWTH2020_EFW_VERSION } from '@/lib/calculators/intergrowth2020'
 import {
   formatarIgBiometria,
   formatarPercentilIntergrowth,
-  intergrowthBiometryPreview,
+  intergrowthBiometryPreviewFromDating,
 } from '@/lib/calculators/intergrowthBiometry'
 import { IntergrowthPreview } from './IntergrowthPreview'
 
@@ -220,7 +220,7 @@ export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState
   const [host, setHost] = useState<HTMLElement | null>(null)
   const shellRef = useRef<HTMLDivElement>(null)
   const tituloId = useId()
-  const preview = open ? intergrowthBiometryPreview(biometryState, chaveFemur, igState) : null
+  const preview = open ? intergrowthBiometryPreviewFromDating(biometryState, chaveFemur, igState) : null
   const percentilTexto = preview ? formatarPercentilIntergrowth(preview.percentile) : null
   const ativo = preview !== null && percentilTexto !== null
 
@@ -338,7 +338,7 @@ export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState
               <section className="ig-sheet-block">
                 <h3 className="ig-sheet-block-title">Biometria usada no cálculo</h3>
                 <dl className="ig-sheet-grid">
-                  <Dado rotulo="IG (origem: biometria)" valor={formatarIgBiometria(preview.ig)} />
+                  <Dado rotulo="IG pela datação" valor={formatarIgBiometria(preview.ig)} />
                   <Dado rotulo="Circunferência cefálica (CC)" valor={mm(preview.medidasMm.ccMm)} />
                   <Dado rotulo="Circunferência abdominal (CA)" valor={mm(preview.medidasMm.caMm)} />
                   <Dado rotulo="Comprimento do fêmur (CF)" valor={mm(preview.medidasMm.cfMm)} />
