@@ -114,3 +114,9 @@ Não existe estado "não avaliado" nem "limitado" por vaso, e não existe contro
 4. P1 — Estado por vaso e lado + técnica conforme o escopo; classe por lado e vaso.
 5. P1 — Contrato compartilhado em `packages/shared` e prompt mobile; só então avaliar ligar o renderer no ditado.
 6. P2 — Texto (acento, sigla VPS, frase "neste formulário") e mover para o grupo Vascular.
+
+## 8. Comparação com a rodada funcional de 06/10/2026
+
+O Laudário foi observado depois desta prova local. O registro funcional está em [../../cases/doppler-carotidas-vertebrais-2026-10-06.md](../../cases/doppler-carotidas-vertebrais-2026-10-06.md) e o cruzamento em [../../crosswalk-doppler-carotidas-vertebrais-2026-10-06.md](../../crosswalk-doppler-carotidas-vertebrais-2026-10-06.md).
+
+O concorrente também abre com normalidade bilateral presumida, mas oferece estados por vaso, limitação técnica, classe lateralizada, razões calculadas e graduação do roubo da subclávia. A estenose sintética foi classificada corretamente quando as velocidades foram informadas dentro da placa. Quando os mesmos valores foram lançados apenas como velocidades basais, a placa permaneceu em classe inferior a 50% sem alerta. A vertebral esquerda com roubo total chegou corretamente ao corpo e à conclusão.

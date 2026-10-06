@@ -102,3 +102,9 @@ Estas sugestões não são decisões de produto. Critérios de estenose, faixas 
 | M8 | Ajustes de texto: acento em "lipídica", sigla VPS e PSV, espaço antes do ponto final | Só redação | Revisão de estilo Domingos | — | P3 | §4.7, §4.9 |
 
 Mover a categoria para o grupo Vascular da Web (`categoryGroups.ts:29` → `:55`) é uma melhoria de navegação, separada das clínicas acima. Avisar o orquestrador: M1 e M2 também se aplicam a outros renderers Doppler com preset normal, e o preflight de artérias temporais já apontou o risco de `achados_adicionais` (`preflight-doppler-arterias-temporais-2026-10-03.md`).
+
+## 9. Rodada funcional concluída em 06/10/2026
+
+O concorrente foi observado em conta autorizada e restaurado ao final. O caso funcional está em [../cases/doppler-carotidas-vertebrais-2026-10-06.md](../cases/doppler-carotidas-vertebrais-2026-10-06.md) e o cruzamento final em [../crosswalk-doppler-carotidas-vertebrais-2026-10-06.md](../crosswalk-doppler-carotidas-vertebrais-2026-10-06.md).
+
+As principais correções ao preflight são: o Laudário possui estado de limitação por vaso; calcula razões a partir das velocidades da ACI e da ACC ipsilateral; oferece classificação multiparamétrica, Placa-RADS e graduação do roubo da subclávia; e mantém recomendação sugerida separada da publicação. O baseline continua publicando normalidade bilateral sem medidas. Também foi observada ambiguidade entre velocidades basais e velocidades dentro da placa: somente estas últimas recalcularam a classe.
