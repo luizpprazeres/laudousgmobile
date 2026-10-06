@@ -4,11 +4,11 @@ Atualizado em 06/10/2026. A fila considera impacto clínico, uso provável, dife
 
 ## Cobertura
 
-Foram concluídas rodadas funcionais de 24 dos 84 modelos-base do catálogo, aproximadamente 28,6%. Isso representa 24 das 99 entradas totais, aproximadamente 24,2%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
+Foram concluídas rodadas funcionais de 25 dos 84 modelos-base do catálogo, aproximadamente 29,8%. Isso representa 25 das 99 entradas totais, aproximadamente 25,3%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
 
 ## Próximas prioridades
 
-Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e a rodada de Pélvico Transvaginal foi concluída. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
+Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal e Obstétrico 2º/3º Trimestre foram concluídas. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
 
 ### A. Rodada funcional no Laudário
 
@@ -16,13 +16,12 @@ Os cenários já estão definidos nos relatórios de cada exame. Basta executá-
 
 | Ordem | Exame | Relatório com os cenários |
 | --- | --- | --- |
-| 1 | Obstétrico 2º/3º trimestre | `audits/preflight-obstetrico-2-3-trimestre-2026-10-05.md` |
-| 2 | Doppler de carótidas e vertebrais | `audits/lote2/doppler-carotidas-vertebrais-2026-10-05.md` |
-| 3 | Morfológico 2º trimestre | `audits/lote2/morfologico-2-trimestre-2026-10-05.md` |
-| 4 | Doppler de artérias temporais | `audits/lote2/doppler-arterias-temporais-2026-10-05.md` |
-| 5 | Doppler de artérias mesentéricas | `audits/lote2/doppler-arterias-mesentericas-2026-10-05.md` |
-| 6 | Monitorização folicular | `audits/lote3/monitorizacao-folicular-2026-10-05.md` |
-| 7 | Obstétrico gemelar 2º/3º trimestre | `audits/lote3/obstetrico-gemelar-2026-10-05.md` |
+| 1 | Doppler de carótidas e vertebrais | `audits/lote2/doppler-carotidas-vertebrais-2026-10-05.md` |
+| 2 | Morfológico 2º trimestre | `audits/lote2/morfologico-2-trimestre-2026-10-05.md` |
+| 3 | Doppler de artérias temporais | `audits/lote2/doppler-arterias-temporais-2026-10-05.md` |
+| 4 | Doppler de artérias mesentéricas | `audits/lote2/doppler-arterias-mesentericas-2026-10-05.md` |
+| 5 | Monitorização folicular | `audits/lote3/monitorizacao-folicular-2026-10-05.md` |
+| 6 | Obstétrico gemelar 2º/3º trimestre | `audits/lote3/obstetrico-gemelar-2026-10-05.md` |
 
 ### B. Próximo lote de prova sintética (ainda sem relatório)
 

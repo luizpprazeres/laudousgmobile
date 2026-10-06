@@ -85,3 +85,7 @@ Registrar só o que aparecer: abas e ordem; estado inicial de apresentação, BC
 | M7 | `achados_adicionais` com item de conclusão obrigatório ou aviso | Evitar achado no corpo com conclusão normal | Confirmação médica | Aviso na revisão | P2 | Ver `FLEXIBLE_CONCLUSION` |
 
 Os limiares de ILA/MBV, a curva e os cortes de placenta baixa devem vir de fonte própria e passar por revisão médica. Nada do concorrente deve ser adotado. Antes de ativar, confirmar `RENDERER_CATEGORIES` e as flags em produção e testar normal, alterado, incompleto, unidades e serialização ponta a ponta nas três plataformas e na Sala (`GUIA-CLAUDE-CODE.md:96`). Aviso ao orquestrador: M1, M3 e M4 valem também para `MORFOLOGICO` e `DOPPLER_OBSTETRICO`.
+
+## 7. Rodada funcional concluída em 06/10/2026
+
+Os três cenários foram executados com dados sintéticos. O modelo foi restaurado, reaberto e conferido no baseline. O registro funcional está em [../cases/obstetrico-2-3-trimestre-2026-10-06.md](../cases/obstetrico-2-3-trimestre-2026-10-06.md) e o cruzamento atualizado em [../crosswalk-obstetrico-2-3-trimestre-2026-10-06.md](../crosswalk-obstetrico-2-3-trimestre-2026-10-06.md).
