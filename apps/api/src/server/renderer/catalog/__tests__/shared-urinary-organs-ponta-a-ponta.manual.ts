@@ -358,6 +358,41 @@ check("ureter estruturado mantém o mesmo achado em Abdome, Vias e Doppler renal
   assert.equal(viasUrinarias.sections.some((section) => section.id === "ureteres"), false);
 });
 
+check("variantes anatômicas renais mantêm lado e redação nas três categorias", () => {
+  const variants = {
+    variantes_anatomicas: ["coluna_bertin", "pelve_extrarrenal", "duplicacao_sistema_coletor"],
+    dilatacao: "moderada",
+  };
+  const abdomen = adaptarAbdome(patch(initial(abdomeTotal), "rim_esquerdo", variants));
+  const vias = adaptarViasUrinarias(patch(initial(viasUrinarias), "rim_esquerdo", variants));
+  noBlockingPending(abdomen);
+  noBlockingPending(vias);
+
+  let dopplerState = patch(initial(dopplerRenal), "rim_esquerdo", variants);
+  dopplerState = patch(dopplerState, "aorta", { assessment: "normal" });
+  dopplerState = patch(dopplerState, "arteria_renal_direita", { assessment: "normal" });
+  dopplerState = patch(dopplerState, "arteria_renal_esquerda", { assessment: "normal" });
+  const doppler = adaptarDopplerRenal(dopplerState);
+  noBlockingPending(doppler);
+  const dopplerRendered = renderDopplerRenalWeb(doppler.dados, "CLASSICO_COMPLETO");
+  assert.equal(dopplerRendered.ok, true, JSON.stringify(dopplerRendered));
+
+  const reports = [
+    render("ABDOMEN_TOTAL", abdomen.dados, ABDOMEN_TEMPLATE),
+    render("VIAS_URINARIAS", vias.dados),
+    (dopplerRendered as { ok: true; text: string }).text,
+  ];
+  for (const report of reports) {
+    assert.match(report, /Coluna de Bertin proeminente no rim esquerdo/i);
+    assert.match(report, /Pelve extrarrenal no rim esquerdo/i);
+    assert.match(report, /Duplicidade do sistema coletor no rim esquerdo/i);
+    assert.match(report, /Hidronefrose moderada no rim esquerdo/i);
+    assert.doesNotMatch(report, /Coluna de Bertin proeminente no rim direito|Pelve extrarrenal no rim direito|Duplicidade do sistema coletor no rim direito/i);
+    assert.doesNotMatch(report, /Rim esquerdo ecograficamente normal/i);
+    assert.doesNotMatch(report, /sem dilatação do sistema coletor|Não há sinais de dilatação pielocalicial/i);
+  }
+});
+
 check("lesão renal marcada sem medida ou localização bloqueia antes do laudo", () => {
   const cases: State[] = [
     { litiase: ["calculo"] },
@@ -500,6 +535,7 @@ check("enums renais inválidos bloqueiam em vez de virar normalidade", () => {
     { dimensoes: "gigante" },
     { diferenciacao: "indefinida" },
     { estrutura: ["ectopia_desconhecida"] },
+    { variantes_anatomicas: ["variante_desconhecida"] },
     { dilatacao: "grau_inventado" },
     { litiase: ["outro"] },
     { cistos: ["complexo_desconhecido"] },

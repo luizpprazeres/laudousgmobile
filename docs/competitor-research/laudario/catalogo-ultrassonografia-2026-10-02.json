@@ -11,6 +11,15 @@
       "comparison_surfaces": ["Abdome Total", "Doppler Aortorrenal"]
     }
   ],
+  "supplemental_functional_audits": [
+    {
+      "exam": "Doppler Aortorrenal",
+      "observed_at": "2026-10-06T16:45:55-03:00",
+      "case": "cases/variantes-renais-doppler-aortorrenal-2026-10-06.md",
+      "scope": "coluna de Bertin, duplicidade do sistema coletor e pelve extrarrenal",
+      "base_count_increment": 0
+    }
+  ],
   "sections": [
     { "id": "abdome", "exams": ["Abdome Superior", "Abdome Superior com Doppler", "Abdome Total", "Avaliação Multiparamétrica Hepática", "Elastografia Hepática"] },
     { "id": "urologia", "exams": ["Aparelho Urinário", "Aparelho Urinário com Doppler", "Bolsa Testicular", "Bolsa Testicular com Doppler", "Próstata Abdominal", "Próstata Transretal"] },
