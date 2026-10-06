@@ -58,6 +58,28 @@ function nosDois(estado: Estado, validar: (laudo: string, estilo: Estilo) => voi
   }
 }
 
+{
+  const vazio = adaptarObstetrica(inicial());
+  const bloqueios = vazio.pendencias.filter((p) => p.bloqueia).map((p) => p.onde);
+  assert.deepEqual(bloqueios, ["Idade gestacional", "BCF", "DBP", "CC", "CA", "CF", "Peso fetal estimado"]);
+}
+
+{
+  const semCf = adaptarObstetrica(com(medido(), "biometria", { cf: "", peso: "" }));
+  assert.deepEqual(
+    semCf.pendencias.filter((p) => p.bloqueia).map((p) => p.onde),
+    ["CF", "Peso fetal estimado"],
+  );
+}
+
+{
+  const invalido = adaptarObstetrica(com(com(medido(), "ig", { bio_dias: "7" }), "biometria", { cf: "62abc" }));
+  assert.deepEqual(
+    invalido.pendencias.filter((p) => p.bloqueia).map((p) => p.onde),
+    ["Idade gestacional", "CF"],
+  );
+}
+
 nosDois(medido(), (laudo) => {
   assert.match(laudo, /Batimentos cardíacos (?:fetais \(BCF\): 142|presentes.*142)/i);
   assert.doesNotMatch(laudo, /cordão umbilical/i, "cordão não avaliado não pode ser inventado");

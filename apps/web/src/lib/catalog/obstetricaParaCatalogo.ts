@@ -55,6 +55,22 @@ function numero(s: EstadoDaSecao, chave: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function exigirNumero(
+  pendencias: Pendencia[],
+  s: EstadoDaSecao,
+  chave: string,
+  onde: string,
+  motivo: string,
+): number | null {
+  const valor = texto(s, chave);
+  const lido = /^\d+(?:[.,]\d+)?$/.test(valor) ? Number(valor.replace(",", ".")) : null;
+  if (lido === null || !Number.isFinite(lido) || lido <= 0) {
+    pendencias.push({ onde, valor, motivo, bloqueia: true });
+    return null;
+  }
+  return lido;
+}
+
 /**
  * O feto COMPLETO. Todo campo do `FetoSchema` aparece aqui, mesmo os que a tela
  * não coleta — ver o aviso do cabeçalho sobre array substituído por inteiro.
@@ -114,6 +130,59 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
   const a = secao(estado, "achados");
   const crescimento = fetalGrowthDaTela(estado, pendencias);
 
+  /**
+   * A Web começa com um modelo obstétrico completo, mas campos numéricos vazios
+   * não são achados normais. Sem este portão o renderer canônico recebe `null`
+   * e preserva as lacunas históricas ("____") do modelo de digitação. Na tela
+   * interativa isso é perigoso: o documento parece pronto antes de as medidas
+   * essenciais terem sido informadas.
+   *
+   * O portão vive no adaptador Web para não mudar o modelo oficial usado pelos
+   * outros clientes. Ao apagar uma medida, a requisição é interrompida e todos
+   * os derivados deixam de ser publicáveis junto com o laudo anterior.
+   */
+  const igSemanas = exigirNumero(
+    pendencias,
+    ig,
+    "bio_sem",
+    "Idade gestacional",
+    "Informe as semanas da biometria atual.",
+  );
+  const igDiasRaw = texto(ig, "bio_dias");
+  if (igDiasRaw && (!/^\d$/.test(igDiasRaw) || Number(igDiasRaw) > 6)) {
+    pendencias.push({
+      onde: "Idade gestacional",
+      valor: igDiasRaw,
+      motivo: "Informe os dias da idade gestacional entre 0 e 6.",
+      bloqueia: true,
+    });
+  }
+  const vitalidade = texto(f, "vitalidade") || "normal";
+  if (vitalidade === "normal") {
+    exigirNumero(
+      pendencias,
+      f,
+      "bcf",
+      "BCF",
+      "Informe a frequência cardíaca fetal em bpm ou selecione uma alteração da atividade cardíaca.",
+    );
+  }
+  for (const [chave, rotulo] of [
+    ["dbp", "DBP"],
+    ["cc", "CC"],
+    ["ca", "CA"],
+    ["cf", "CF"],
+    ["peso", "Peso fetal estimado"],
+  ] as const) {
+    exigirNumero(
+      pendencias,
+      b,
+      chave,
+      rotulo,
+      `Informe ${rotulo === "Peso fetal estimado" ? "o peso fetal estimado" : `a medida de ${rotulo}`} para completar a biometria.`,
+    );
+  }
+
   const fonte = texto(ig, "referencia") || "nenhuma";
 
   /**
@@ -158,7 +227,6 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
 
   // Complemento de cervicometria: leitura estrita e portões (cervicometriaLeitura.ts),
   // com a mesma IG que vai ao renderer.
-  const igSemanas = numero(ig, "bio_sem");
   const cervico = cervicometriaComplemento(secao(estado, "cervicometria"), igSemanas);
   pendencias.push(...cervico.pendencias);
 

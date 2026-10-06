@@ -7,6 +7,8 @@ let cases = 0
 const adapters = [adaptarObstetrica, adaptarMorfologico, adaptarDopplerWeb]
 const makeState = (value: string | undefined, active = 'sim') => ({
   ig: {bio_sem: '32', bio_dias: '0'},
+  feto: {vitalidade: 'normal', bcf: '142'},
+  biometria: {dbp: '82', cc: '295', ca: '285', cf: '62', peso: '1900'},
   crescimento_fetal: {
     avaliar: active,
     ...(value === undefined ? {} : {'avaliar.sim.percentil': value}),

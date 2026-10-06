@@ -80,9 +80,16 @@ const CASOS: Caso[] = [
   {
     nome: "sem NENHUMA medida",
     porque:
-      "a tela em branco não pode virar um laudo que afirma normalidade. O renderer deixa lacuna; o que não pode é sair número inventado nem conclusão de normalidade.",
+      "a tela em branco não pode virar um laudo que afirma normalidade ou publica lacunas; a Web deve bloquear antes do renderer.",
     estado: inicial(),
-    proibeNaConclusao: ["peso adequado", "crescimento adequado"],
+    pendente: "faltam IG, BCF e biometria essenciais",
+  },
+  {
+    nome: "biometria perde uma medida depois de preenchida",
+    porque:
+      "apagar o CF também invalida o peso derivado e não pode manter o laudo anterior nem publicar placeholders.",
+    estado: com(medida(), "biometria", { cf: "", peso: "" }),
+    pendente: "a biometria incompleta bloqueia o documento",
   },
   {
     /**
