@@ -30,6 +30,15 @@ const mixed = parseMyomaFindings("Mioma FIGO 4 medindo 2,0 cm. Outro mioma FIGO 
 assert.equal(mixed.length, 2, "achado sem medida não pode sumir quando outro tem medida");
 
 const explicit = parseMyomaFindings("Mioma FIGO 4 na parede posterior, hipoecoico, medindo 2,5 x 2,0 cm.");
+
+const explicitWithType = parseMyomaFindings("Mioma FIGO tipo 4, medindo 2,5 cm.");
+assert.equal(explicitWithType[0]?.figo, 4);
+assert.equal(explicitWithType[0]?.figoConfirmed, true);
+
+for (const hybridText of ["Mioma FIGO 2-5, medindo 4 cm.", "Mioma FIGO 2–5, medindo 4 cm."]) {
+  const hybrid = parseMyomaFindings(hybridText);
+  assert.equal(hybrid[0]?.figoConfirmed, false, `${hybridText} não pode virar FIGO 2 confirmada`);
+}
 const contract = createMyomaSchemeContract(explicit);
 assert.ok(contract);
 assert.equal(contract.contractVersion, MYOMA_SCHEME_CONTRACT_VERSION);

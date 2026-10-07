@@ -181,7 +181,11 @@ function match(pattern: RegExp, text: string) {
 }
 
 function explicitFigo(text: string): number | null {
-  const found = /FIGO\s*[:\-]?\s*([0-8])/i.exec(text);
+  // O contrato v1 só representa categorias simples. Tratar "FIGO 2-5" como
+  // "FIGO 2" confirmada apagaria a relação com a serosa; deixe pendente até o
+  // contrato híbrido conseguir preservar os dois números.
+  if (/FIGO\s*(?:(?:tipo|categoria)\s*)?[:\-]?\s*[0-8]\s*[-–]\s*[0-8]/i.test(text)) return null;
+  const found = /FIGO\s*(?:(?:tipo|categoria)\s*)?[:\-]?\s*([0-8])/i.exec(text);
   return found ? Number(found[1]) : null;
 }
 
