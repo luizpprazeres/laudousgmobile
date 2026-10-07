@@ -521,6 +521,9 @@ function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
                     {resultado ? (
                       <div className={`mt-3 rounded-xl border px-3 py-2.5 text-[12px] leading-relaxed ${TIRADS_STYLE[resultado.category]}`}>
                         <strong>ACR {resultado.category} — {resultado.riskDescription}.</strong> {resultado.management}.
+                        <span className="mt-1 block text-[11px] opacity-80">
+                          A recomendação entra no laudo quando essa opção estiver ativada em Preferências.
+                        </span>
                       </div>
                     ) : null}
                   </>
