@@ -1116,21 +1116,11 @@ function renderTireoideClassico(
 
   // Conduta (toggle) — exclusivamente ACR oficial + maior diâmetro.
   if (prefs.show_conduct_recommendation) {
-    const candidatos = lobosComAchado
-      .flatMap((l) => l.lobo.nodulos)
-      .map((nod) => ({ acr: calcAcrTirads(nod), diametro: maiorDiametroCm(nod) }))
-      .filter((item): item is { acr: { pontos: number; categoria: number }; diametro: number | null } => item.acr !== null);
-    if (candidatos.length > 0) {
-      const maxTirads = Math.max(...candidatos.map((item) => item.acr.categoria));
-      const maiorDiametro = candidatos
-        .filter((item) => item.acr.categoria === maxTirads)
-        .map((item) => item.diametro)
-        .filter((valor): valor is number => valor !== null)
-        .reduce<number | null>((acc, valor) => acc === null ? valor : Math.max(acc, valor), null);
-      const conduta = condutaAcr(maxTirads, maiorDiametro);
-      if (conduta) {
-        conclusao.push(`Conduta sugerida (ACR TI-RADS ${maxTirads}): ${conduta}.`);
-      }
+    const condutas = condutasAcrDosNodulos(lobosComAchado);
+    const identificar = lobosComAchado.reduce((total, item) => total + item.lobo.nodulos.length, 0) > 1;
+    for (const item of condutas) {
+      const alvo = identificar ? `${item.identificacao} — ` : "";
+      conclusao.push(`Conduta sugerida (${alvo}ACR TI-RADS ${item.categoria}): ${item.conduta}.`);
     }
   }
 
@@ -1232,7 +1222,10 @@ export function calcAcrTirads(
     return { pontos: NaN, categoria: Number(ditado) };
   }
   const acr = nod.acr_tirads;
-  if (!acr?.composicao || !acr.ecogenicidade || !acr.forma || !acr.margem) return null;
+  if (acr?.composicao === "cistico" || acr?.composicao === "espongiforme") {
+    return { pontos: 0, categoria: 1 };
+  }
+  if (!acr?.composicao || !acr.ecogenicidade || !acr.forma || !acr.margem || acr.focos_ecogenicos.length === 0) return null;
   const focos = Array.from(new Set(acr.focos_ecogenicos));
   const focosValidos = focos.filter((f) => f !== "nenhum_ou_cauda_cometa");
   const pontos =
@@ -1246,14 +1239,14 @@ export function calcAcrTirads(
 
 /** Maior diâmetro do nódulo em cm: diametro_transverso_cm ou max(medidas_cm). */
 function maiorDiametroCm(nod: TireoideNodulo): number | null {
+  const candidatos: number[] = [];
   if (nod.diametro_transverso_cm !== null && Number.isFinite(nod.diametro_transverso_cm)) {
-    return nod.diametro_transverso_cm;
+    candidatos.push(nod.diametro_transverso_cm);
   }
   if (nod.medidas_cm && nod.medidas_cm.length > 0) {
-    const finitas = nod.medidas_cm.filter((n) => Number.isFinite(n));
-    if (finitas.length > 0) return Math.max(...finitas);
+    candidatos.push(...nod.medidas_cm.filter((n) => Number.isFinite(n)));
   }
-  return null;
+  return candidatos.length > 0 ? Math.max(...candidatos) : null;
 }
 
 /**
@@ -1279,10 +1272,54 @@ function condutaAcr(categoria: number, diametroCm: number | null): string | null
   return null;
 }
 
+type LoboRotulado = { rotulo: string; lobo: TireoideLobo };
+type CondutaAcrPorNodulo = {
+  categoria: number;
+  conduta: string;
+  diametroCm: number;
+  identificacao: string;
+  ordem: number;
+  pontos: number;
+};
+
+/**
+ * Recomendações ligadas ao nódulo correspondente. Quando mais de dois nódulos
+ * atingem critério para PAAF, mantém os dois de maior categoria ACR; nos
+ * empates, usa pontos, diâmetro e ordem do laudo apenas para desempatar.
+ */
+function condutasAcrDosNodulos(lobos: LoboRotulado[]): CondutaAcrPorNodulo[] {
+  let ordem = 0;
+  const candidatos = lobos.flatMap(({ rotulo, lobo }) =>
+    lobo.nodulos.map((nod, indice) => {
+      const itemOrdem = ordem++;
+      const acr = calcAcrTirads(nod);
+      const diametroCm = maiorDiametroCm(nod);
+      const conduta = acr && diametroCm !== null ? condutaAcr(acr.categoria, diametroCm) : null;
+      return acr && diametroCm !== null && conduta
+        ? {
+            categoria: acr.categoria,
+            conduta,
+            diametroCm,
+            identificacao: `${rotulo}, nódulo ${indice + 1}${nod.localizacao ? ` ${nod.localizacao}` : ""}, ${ptBr(diametroCm)} cm`,
+            ordem: itemOrdem,
+            pontos: acr.pontos,
+          }
+        : null;
+    }),
+  ).filter((item): item is CondutaAcrPorNodulo => item !== null);
+
+  const paaf = candidatos
+    .filter((item) => item.conduta.includes("PAAF"))
+    .sort((a, b) => b.categoria - a.categoria || b.pontos - a.pontos || b.diametroCm - a.diametroCm || a.ordem - b.ordem)
+    .slice(0, 2);
+  const acompanhamento = candidatos.filter((item) => !item.conduta.includes("PAAF"));
+  return [...paaf, ...acompanhamento].sort((a, b) => a.ordem - b.ordem);
+}
+
 /** É cisto (ecogenicidade anecoica)? Cisto simples → ACR TI-RADS 1. */
 function isCisto(nod: TireoideNodulo): boolean {
-  if (nod.acr_tirads?.composicao === "cistico") return true;
-  return nod.ecogenicidade !== null && nod.ecogenicidade.startsWith("anecoica");
+  if (nod.acr_tirads?.composicao) return nod.acr_tirads.composicao === "cistico";
+  return nod.ecogenicidade === "anecoica_homogenea";
 }
 
 /** Frase enxuta (objetivo) de um nódulo no ACHADOS. */
@@ -1510,28 +1547,17 @@ function renderTireoideObjetivo(
       ? (impressao[0] as string)
       : impressao.map((it, i) => `${i + 1}. ${it}`).join("\n");
 
-  // ----- Conduta (toggle) — maior categoria entre os nódulos (não-cistos) -----
+  // ----- Conduta (toggle) — por nódulo, com no máximo duas indicações de PAAF -----
   let condutaSecao = "";
   if (prefs.show_conduct_recommendation) {
-    const candidatos = lobosComNodulo
-      .flatMap((l) => l.lobo.nodulos)
-      .filter((nod) => !isCisto(nod))
-      .map((nod) => ({ acr: calcAcrTirads(nod), diam: maiorDiametroCm(nod) }))
-      .filter((x): x is { acr: { pontos: number; categoria: number }; diam: number | null } =>
-        x.acr !== null,
-      );
-    if (candidatos.length > 0) {
-      const maxCat = Math.max(...candidatos.map((c) => c.acr.categoria));
-      // Maior diâmetro entre os nódulos da maior categoria.
-      const diamMax = candidatos
-        .filter((c) => c.acr.categoria === maxCat)
-        .map((c) => c.diam)
-        .filter((d): d is number => d !== null)
-        .reduce<number | null>((acc, d) => (acc === null ? d : Math.max(acc, d)), null);
-      const conduta = condutaAcr(maxCat, diamMax);
-      if (conduta) {
-        condutaSecao = `\nConduta sugerida:\nACR TI-RADS ${maxCat}. ${conduta}.`;
-      }
+    const condutas = condutasAcrDosNodulos(lobosComNodulo);
+    const identificar = lobosComNodulo.reduce((total, item) => total + item.lobo.nodulos.length, 0) > 1;
+    if (condutas.length > 0) {
+      const linhas = condutas.map((item) => {
+        const alvo = identificar ? `${item.identificacao} — ` : "";
+        return `${alvo}ACR TI-RADS ${item.categoria}: ${item.conduta}.`;
+      });
+      condutaSecao = `\nConduta sugerida:\n${linhas.join("\n")}`;
     }
   }
 

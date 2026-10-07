@@ -72,6 +72,11 @@ function acrNodulo(acr: ReturnType<typeof A>, medidas: number[] = [1.2, 1.0, 0.9
   const r2 = calcAcrTirads(comNenhum);
   check("ACR: 'nenhum' não anula foco real e duplicata não soma", r2?.pontos === 5 && r2.categoria === 4, JSON.stringify(r2));
   check("ACR: grupo essencial incompleto não inventa categoria", calcAcrTirads(N({ acr_tirads: { ...A("solido", "hipoecoico"), margem: null } })) === null);
+  check("ACR: focos ecogênicos não preenchidos mantêm a classificação incompleta", calcAcrTirads(N({ acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lisa", []) })) === null);
+  check("ACR: cístico e espongiforme são TR1 sem somar outras categorias", ["cistico", "espongiforme"].every((composicao) => {
+    const r = calcAcrTirads(N({ acr_tirads: { composicao: composicao as "cistico" | "espongiforme", ecogenicidade: null, forma: null, margem: null, focos_ecogenicos: [] } }));
+    return r?.pontos === 0 && r.categoria === 1;
+  }));
   check("ACR: categoria explicitamente ditada vence o cálculo", calcAcrTirads(N({ ti_rads_ditado: "5" }))?.categoria === 5);
 }
 
@@ -86,8 +91,24 @@ function acrNodulo(acr: ReturnType<typeof A>, medidas: number[] = [1.2, 1.0, 0.9
     tamanhoMm: 9,
   });
   check("calculador web: mesmos 17 pontos e TR5", r.score === 17 && r.category === "TR5", JSON.stringify(r));
-  check("calculador web: TR5 de 9 mm indica acompanhamento, não PAAF", /Seguimento/.test(r.management) && !/FNA indicada/.test(r.management), r.management);
+  check("calculador web: TR5 de 9 mm indica acompanhamento, não PAAF", /Acompanhamento/.test(r.management) && !/PAAF/.test(r.management), r.management);
   check("calculador web: calcificação periférica vale 2 pontos", calcularTiRads({ focosEcogenicos: "calcificacoes_perifericas" }).score === 2);
+  const umPontoWeb = calcularTiRads({
+    composicao: "cistico",
+    ecogenicidade: "hiperecoico_isoecoico",
+    forma: "mais_largo_que_alto",
+    margens: "lisas_mal_definidas",
+    focosEcogenicos: "nenhum_cauda_cometa",
+  });
+  const umPontoApi = calcAcrTirads(acrNodulo(A("cistico", "hiper_ou_isoecoico")));
+  check("paridade: soma atípica de 1 ponto não diverge entre Web e renderer", umPontoWeb.category === "TR1" && umPontoApi?.categoria === 1, JSON.stringify({ umPontoWeb, umPontoApi }));
+  check("calculador web: espongiforme ignora pontos das demais categorias", calcularTiRads({
+    composicao: "espongiforme",
+    ecogenicidade: "muito_hipoecóico",
+    forma: "mais_alto_que_largo",
+    margens: "extensao_extratireoidiana",
+    focosEcogenicos: "focos_ecogenicos_puntiformes",
+  }).category === "TR1");
 
   const mobile = calcularTIRADSMobile({
     composicao: "Sólido ou quase totalmente sólido",
@@ -99,6 +120,42 @@ function acrNodulo(acr: ReturnType<typeof A>, medidas: number[] = [1.2, 1.0, 0.9
   });
   check("calculador mobile: mesmos 17 pontos e TR5", mobile.pontos === 17 && mobile.categoria === "tr5", JSON.stringify(mobile));
   check("calculador mobile: TR5 de 0,9 cm indica seguimento anual", /anual/.test(mobile.recomendacao) && !/PAAF/.test(mobile.recomendacao), mobile.recomendacao);
+}
+
+// Múltiplos nódulos: cada conduta mantém o vínculo com o achado; um TR5 pequeno
+// não pode esconder a PAAF indicada para um TR4 maior.
+{
+  const tr5Pequeno = acrNodulo(A("solido", "hipoecoico", "mais_alta_que_larga"), [0.4]);
+  const tr4Paaf = acrNodulo(A("solido", "hipoecoico"), [2.0]);
+  const f = F({ lobo_direito: L({ nodulos: [tr5Pequeno] }), lobo_esquerdo: L({ nodulos: [tr4Paaf] }) });
+  for (const objetivo of [false, true]) {
+    const laudo = renderTireoide(f, { show_conduct_recommendation: true }, { objetivo });
+    check(`conduta multinodular ${objetivo ? "objetiva" : "clássica"}: TR4 grande não fica oculto pelo TR5 pequeno`, /Lobo esquerdo[^\n]*ACR TI-RADS 4[^\n]*PAAF/i.test(laudo), laudo);
+  }
+
+  const tresPaaf = F({ lobo_direito: L({ nodulos: [
+    acrNodulo(A("solido", "muito_hipoecoico", "mais_alta_que_larga"), [1.5]),
+    acrNodulo(A("solido", "hipoecoico", "mais_alta_que_larga"), [1.4]),
+    acrNodulo(A("solido", "hipoecoico"), [2.0]),
+  ] }) });
+  const laudo = renderTireoide(tresPaaf, { show_conduct_recommendation: true }, { objetivo: true });
+  check("conduta multinodular: limita PAAF aos dois nódulos de maior categoria", (laudo.match(/punção aspirativa por agulha fina \(PAAF\)/g) ?? []).length === 2, laudo);
+
+  const mistoSuspeito = N({
+    ecogenicidade: "anecoica_componentes_solidos",
+    acr_tirads: A("misto", "hipoecoico", "mais_alta_que_larga", "lobulada_ou_irregular", ["focos_puntiformes"]),
+    medidas_cm: [1.6, 1.2, 1.0],
+  });
+  const mistoLaudo = renderTireoide(F({ lobo_direito: L({ nodulos: [mistoSuspeito] }) }), undefined, { objetivo: true });
+  check("objetivo: componente anecoico com ACR misto não vira cisto simples", /Nódulo[^\n]*ACR TI-RADS 5/i.test(mistoLaudo) && !/Cisto simples/i.test(mistoLaudo), mistoLaudo);
+
+  const diametros = N({
+    acr_tirads: A("solido", "hipoecoico"),
+    diametro_transverso_cm: 0.8,
+    medidas_cm: [2.0, 1.2, 1.0],
+  });
+  const diametrosLaudo = renderTireoide(F({ lobo_direito: L({ nodulos: [diametros] }) }), { show_conduct_recommendation: true }, { objetivo: true });
+  check("conduta: usa a maior dimensão disponível, não um eixo transverso menor", /PAAF/.test(diametrosLaudo), diametrosLaudo);
 }
 
 // Limiares oficiais de conduta aparecem apenas quando a preferência está ativa.

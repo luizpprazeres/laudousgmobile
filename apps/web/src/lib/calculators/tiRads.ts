@@ -60,8 +60,8 @@ const FOCOS_PONTOS: Record<TiRadsFocos, number> = {
 }
 
 function categoriaFromScore(score: number): TiRadsCategory {
-  if (score === 0) return 'TR1'
-  if (score <= 2) return 'TR2'
+  if (score < 2) return 'TR1'
+  if (score === 2) return 'TR2'
   if (score === 3) return 'TR3'
   if (score <= 6) return 'TR4'
   return 'TR5'
@@ -89,6 +89,16 @@ const THRESHOLDS: Record<TiRadsCategory, TiRadsThresholds | null> = {
 }
 
 export function calcularTiRads(input: TiRadsInput): TiRadsResult {
+  // ACR: nódulos císticos/quase totalmente císticos ou espongiformes são TR1;
+  // não se somam pontos das demais categorias.
+  if (input.composicao === 'cistico' || input.composicao === 'espongiforme') {
+    return {
+      category: 'TR1',
+      score: 0,
+      riskDescription: RISK_LABELS.TR1,
+      management: 'Sem recomendação de PAAF ou acompanhamento pelo ACR TI-RADS',
+    }
+  }
   let score = 0
   if (input.composicao) score += COMPOSICAO_PONTOS[input.composicao]
   if (input.ecogenicidade) score += ECOGENICIDADE_PONTOS[input.ecogenicidade]
@@ -105,20 +115,20 @@ export function calcularTiRads(input: TiRadsInput): TiRadsResult {
 
   let management: string
   if (!thresholds) {
-    management = 'Nenhuma ação recomendada pelo TI-RADS'
+    management = 'Sem recomendação de PAAF ou acompanhamento pelo ACR TI-RADS'
   } else if (!tamanho) {
-    management = `Informe o tamanho para obter a conduta (FNA ≥ ${thresholds.fna}mm; seguimento ≥ ${thresholds.followup}mm)`
+    management = `Informe a maior dimensão para obter a recomendação (PAAF ≥ ${thresholds.fna} mm; acompanhamento ≥ ${thresholds.followup} mm)`
   } else if (tamanho >= thresholds.fna) {
-    management = `FNA indicada (tamanho ${tamanho}mm ≥ ${thresholds.fna}mm)`
+    management = `Critério dimensional para PAAF (maior dimensão ${tamanho} mm ≥ ${thresholds.fna} mm)`
   } else if (tamanho >= thresholds.followup) {
     const agenda = category === 'TR3'
       ? 'em 1, 3 e 5 anos'
       : category === 'TR4'
         ? 'em 1, 2, 3 e 5 anos'
         : 'anual por até 5 anos'
-    management = `Seguimento ultrassonográfico recomendado ${agenda} (tamanho ${tamanho}mm ≥ ${thresholds.followup}mm)`
+    management = `Acompanhamento ultrassonográfico ${agenda} (maior dimensão ${tamanho} mm ≥ ${thresholds.followup} mm)`
   } else {
-    management = `Nenhuma ação pelo TI-RADS (tamanho ${tamanho}mm < ${thresholds.followup}mm)`
+    management = `Sem recomendação de PAAF ou acompanhamento pelo ACR TI-RADS (maior dimensão ${tamanho} mm < ${thresholds.followup} mm)`
   }
 
   return {

@@ -145,7 +145,7 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
   check("difusa: IMPRESSÃO 'Sinais ecográficos de tireoidopatia'", /Sinais ecográficos de tireoidopatia/.test(l), l);
 }
 
-// ── 2 nódulos: maior categoria na conduta (toggle on) ──
+// ── 2 nódulos: conduta vinculada ao nódulo correspondente (toggle on) ──
 {
   const f = F({
     lobo_direito: L({ medidas_cm: [5.0, 1.8, 1.6], volume_ml: 7.0, nodulos: [N({ ecogenicidade: "solida_areas_anecoicas", margem: "regular", forma: "mais_larga_que_alta", acr_tirads: A("misto", "hiper_ou_isoecoico"), medidas_cm: [0.7, 0.5, 0.4] })] }),
@@ -153,7 +153,7 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
   });
   const l = render(f, { show_conduct_recommendation: true });
   check("2 nódulos: impressão tem TR2 e TR4", /\(ACR TI-RADS 2/.test(l) && /\(ACR TI-RADS 4/.test(l), l);
-  check("2 nódulos: conduta usa a maior categoria (TR4)", /Conduta sugerida:\nACR TI-RADS 4\./.test(l), l);
+  check("2 nódulos: conduta identifica o TR4 correspondente", /Conduta sugerida:\nLobo esquerdo da tireoide, nódulo 1, 1,7 cm — ACR TI-RADS 4:/.test(l), l);
   check("2 nódulos: conduta TR4 1,7 cm → PAAF", /Conduta sugerida:[\s\S]*PAAF/.test(l), l);
 }
 
@@ -168,7 +168,7 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
 {
   const f = nodulo({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"), medidas_cm: [1.6, 1.2, 1.0] });
   const l = render(f, { show_conduct_recommendation: true });
-  check("conduta ON: seção 'Conduta sugerida:' fora da impressão", /\nConduta sugerida:\nACR TI-RADS 4\. punção aspirativa por agulha fina \(PAAF\)\./.test(l), l);
+  check("conduta ON: seção 'Conduta sugerida:' fora da impressão", /\nConduta sugerida:\nACR TI-RADS 4: punção aspirativa por agulha fina \(PAAF\)\./.test(l), l);
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);

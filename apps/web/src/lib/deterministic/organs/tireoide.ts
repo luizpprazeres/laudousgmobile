@@ -54,6 +54,8 @@ export interface NoduloTireoide {
   c3: string
   /** Onde está, com a preposição: "no terço médio". Opcional. */
   localizacao: string
+  /** A escala de Domingos é complementar e só entra no laudo quando ativada. */
+  domingosAtivo?: boolean
   /**
    * ACR TI-RADS oficial. Estes cinco grupos são independentes da Nota de
    * Domingos; não se deriva uma escala da outra.

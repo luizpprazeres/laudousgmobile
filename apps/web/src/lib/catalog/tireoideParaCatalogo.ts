@@ -184,18 +184,42 @@ function medidasDoNodulo(dim: string): number[] | null {
  * tem ditado. Preenchê-los faria a tela vencer o renderer — as duas
  * autoridades sobre o mesmo laudo que a regra §1 do plano proíbe.
  */
-function adaptarNodulo(n: NoduloTireoide, _pendencias: Pendencia[]): NoduloCanonico {
+function adaptarNodulo(n: NoduloTireoide, pendencias: Pendencia[]): NoduloCanonico {
   const medidas = [n.c1, n.c2, n.c3]
     .map((v) => Number.parseFloat(v.trim().replace(",", ".")))
     .filter((x) => Number.isFinite(x) && x > 0);
+  const domingosAtivo = n.domingosAtivo ?? Boolean(
+    n.ecogenicidade || n.margem || n.halo || n.forma || n.calcificacoes || n.vascularizacao,
+  );
+  const estadoLegadoDomingos = n.domingosAtivo === undefined && domingosAtivo;
+  const composicaoTr1 = n.acrComposicao === "cistico" || n.acrComposicao === "espongiforme";
+  const acrCompleto = composicaoTr1 || Boolean(
+    n.acrComposicao && n.acrEcogenicidade && n.acrForma && n.acrMargem && n.acrFocos?.length,
+  );
+  if (medidas.length === 0) {
+    pendencias.push({
+      onde: `nódulo ${n.id}`,
+      valor: "sem medidas",
+      motivo: "informe ao menos uma dimensão para identificar o achado e aplicar a recomendação ACR",
+      bloqueia: true,
+    });
+  }
+  if (!acrCompleto && !estadoLegadoDomingos) {
+    pendencias.push({
+      onde: `nódulo ${n.id}`,
+      valor: "ACR TI-RADS incompleto",
+      motivo: "preencha os cinco grupos ACR; em císticos e espongiformes, basta informar a composição",
+      bloqueia: true,
+    });
+  }
 
   return {
-    ecogenicidade: n.ecogenicidade,
-    margem: n.margem,
-    halo: n.halo,
-    forma: n.forma,
-    calcificacoes: n.calcificacoes,
-    vascularizacao: n.vascularizacao,
+    ecogenicidade: domingosAtivo ? n.ecogenicidade : null,
+    margem: domingosAtivo ? n.margem : null,
+    halo: domingosAtivo ? n.halo : null,
+    forma: domingosAtivo ? n.forma : null,
+    calcificacoes: domingosAtivo ? n.calcificacoes : null,
+    vascularizacao: domingosAtivo ? n.vascularizacao : null,
     medidas_cm: medidas.length > 0 ? medidas : null,
     /**
      * Nulo de propósito: sem médico nomeando qual eixo é o transverso, o
@@ -203,7 +227,9 @@ function adaptarNodulo(n: NoduloTireoide, _pendencias: Pendencia[]): NoduloCanon
      * seguimento.
      */
     diametro_transverso_cm: null,
-    localizacao: n.localizacao.trim() || null,
+    localizacao: n.lobo === "istmo" && n.localizacao.trim().toLocaleLowerCase("pt-BR") === "no istmo"
+      ? null
+      : n.localizacao.trim() || null,
     descricao_raw: null,
     nota_domingos_ditada: null,
     ti_rads_ditado: null,

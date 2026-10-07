@@ -15,6 +15,7 @@ export async function PATCH(req: Request) {
   const clean = {
     category_code: body.category_code,
     default_variant_id: body.default_variant_id,
+    renderer_preferences: body.renderer_preferences,
   }
   const r = await chamarPreferencias({ method: 'PATCH', body: JSON.stringify(clean) })
   return NextResponse.json(r.body, { status: r.status })

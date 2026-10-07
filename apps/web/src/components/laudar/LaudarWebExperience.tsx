@@ -54,7 +54,6 @@ import { ClinicalModelWorkspace } from './ClinicalModelWorkspace'
 import { isHepaticWebModel } from '@/lib/hepaticModels'
 import { HepaticReportWorkspace } from './HepaticReportWorkspace'
 import { useLaudoCanonico } from '@/lib/catalog/useLaudoCanonico'
-import { tiRadsSpec } from '@/lib/calculators/specs'
 import { LiverQuantificationPanel } from './LiverQuantificationPanel'
 import { buildLiverQuantificationBlock } from '@/lib/deterministic/liverQuantification'
 import { RecommendationsPanel } from './RecommendationsPanel'
@@ -504,7 +503,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const baseSections: UiSection[] = biometryGrowth.sections
   // Calculadoras pertinentes → seção "Cálculos".
   const calculators = (isTireoide
-    ? [tiRadsSpec]
+    ? []
     : genericCategory?.resolveCalculators?.(opts) ?? genericCategory?.calculators ?? [])
     .filter(spec => !(axilasOnly && spec.id === 'bi-rads'))
   const trisomyInitialValues = useMemo(() => {

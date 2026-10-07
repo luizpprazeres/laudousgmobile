@@ -171,6 +171,7 @@ export function applyCompanionThyroid(
       vascularizacao: clean(nodule.vascularization) || null,
       c1: dimensions[0]!, c2: dimensions[1]!, c3: dimensions[2]!,
       localizacao: clean(nodule.location),
+      domingosAtivo: true,
     }]
   })
   const mergedNodules = current.nodulos.map((n) => ({ ...n }))
@@ -180,7 +181,10 @@ export function applyCompanionThyroid(
     const existing = known.get(key)
     if (existing) {
       for (const descriptor of ['ecogenicidade', 'margem', 'halo', 'forma', 'calcificacoes', 'vascularizacao'] as const) {
-        if (!existing[descriptor] && n[descriptor]) existing[descriptor] = n[descriptor]
+        if (!existing[descriptor] && n[descriptor]) {
+          existing[descriptor] = n[descriptor]
+          if (existing.domingosAtivo === undefined) existing.domingosAtivo = true
+        }
         else if (existing[descriptor] && n[descriptor] && existing[descriptor] !== n[descriptor]) conflicts.push(`Nódulo ${mergedNodules.indexOf(existing) + 1} · ${descriptor}: digitado ${existing[descriptor]} / imagem ${n[descriptor]}`)
       }
       return false

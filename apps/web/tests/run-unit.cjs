@@ -6,6 +6,7 @@ const files = [
   'tests/biometryAutomation.manual.ts',
   'tests/biometryGrowthSections.manual.ts',
   'tests/liverQuantification.manual.ts',
+  'tests/tireoideAcr.manual.ts',
   'tests/mamariaBirads.manual.ts',
   'tests/mamariaAdapter.manual.ts',
   'tests/dopplerWebMode.manual.ts',
