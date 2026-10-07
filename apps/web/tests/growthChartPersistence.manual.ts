@@ -5,6 +5,7 @@ import {
   attachStoredGrowthChart,
   extractStoredGrowthChart,
   parseStoredGrowthChart,
+  storedGrowthChartFromPreview,
   storedGrowthChartToPreview,
 } from '../src/lib/calculators/growthChartPersistence'
 import { intergrowthBiometryPreviewFromDating } from '../src/lib/calculators/intergrowthBiometry'
@@ -42,7 +43,36 @@ assert.deepEqual(restored, preview)
 
 assert.equal(extractStoredGrowthChart({ __growth_chart: { incluir: 'nao', figure: descriptor } }), null)
 assert.equal(extractStoredGrowthChart({ __growth_chart: { incluir: 'sim' } }), null)
-assert.equal(attachStoredGrowthChart({ __growth_chart: { incluir: 'sim' } }, null).__growth_chart != null, true)
+
+const staleSource = { __growth_chart: { incluir: 'sim', figure: descriptor }, marker: 'preserved' }
+const invalidated = attachStoredGrowthChart(staleSource, null)
+assert.notStrictEqual(invalidated, staleSource)
+assert.equal((invalidated.__growth_chart as { incluir?: unknown }).incluir, 'nao')
+assert.equal('figure' in (invalidated.__growth_chart as object), false)
+assert.equal(extractStoredGrowthChart(invalidated), null)
+assert.strictEqual(extractStoredGrowthChart(staleSource), descriptor, 'a invalidação não pode mutar o estado anterior')
+assert.equal(invalidated.marker, 'preserved')
+
+const updatedPreview = intergrowthBiometryPreviewFromDating(
+  { cc: '240', ca: '220', cf: '52' },
+  'cf',
+  {
+    referencia: 'dum',
+    'referencia.dum.dum_data': '01/01/2026',
+    'referencia.dum.exame_data': '21/06/2026',
+  },
+)
+assert.ok(updatedPreview)
+const refreshed = attachStoredGrowthChart(staleSource, updatedPreview)
+assert.deepEqual(extractStoredGrowthChart(refreshed), storedGrowthChartFromPreview(updatedPreview))
+assert.strictEqual(extractStoredGrowthChart(staleSource), descriptor, 'a atualização não pode mutar a figura anterior')
+
+const disabledSource = { __growth_chart: { incluir: 'nao', figure: descriptor }, marker: 'preserved' }
+const disabledCleaned = attachStoredGrowthChart(disabledSource, preview)
+assert.equal('figure' in (disabledCleaned.__growth_chart as object), false)
+assert.equal(extractStoredGrowthChart(disabledCleaned), null)
+assert.strictEqual(extractStoredGrowthChart({ ...disabledSource, __growth_chart: { ...disabledSource.__growth_chart, incluir: 'sim' } }), descriptor)
+assert.equal(disabledCleaned.marker, 'preserved')
 
 for (const invalid of [
   { ...descriptor, format: 'fetal-growth-intergrowth-v2' },

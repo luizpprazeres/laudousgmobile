@@ -89,7 +89,18 @@ export function attachStoredGrowthChart(
   const chart = base.__growth_chart && typeof base.__growth_chart === 'object' && !Array.isArray(base.__growth_chart)
     ? base.__growth_chart as GrowthChartState
     : {}
-  if (chart.incluir !== 'sim' || !preview) return base
+  if (!preview) {
+    if (!Object.prototype.hasOwnProperty.call(chart, 'figure') && chart.incluir !== 'sim') return base
+    const nextChart = { ...chart, incluir: 'nao' }
+    delete nextChart.figure
+    return { ...base, __growth_chart: nextChart }
+  }
+  if (chart.incluir !== 'sim') {
+    if (!Object.prototype.hasOwnProperty.call(chart, 'figure')) return base
+    const nextChart = { ...chart }
+    delete nextChart.figure
+    return { ...base, __growth_chart: nextChart }
+  }
   return {
     ...base,
     __growth_chart: {

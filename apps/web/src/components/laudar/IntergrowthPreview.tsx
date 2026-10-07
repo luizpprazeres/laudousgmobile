@@ -257,7 +257,7 @@ export function IntergrowthReportFigure({ preview }: { preview: IntergrowthBiome
   if (!percentilTexto) return null
   const examDate = preview.dating?.examDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   const datingLabel = preview.dating && examDate
-    ? `datação pela ${preview.dating.source === 'dum' ? 'DUM' : 'US precoce'} em ${examDate[3]}/${examDate[2]}/${examDate[1]}`
+    ? `datação por ${preview.dating.source === 'dum' ? 'DUM' : 'US precoce'} · exame em ${examDate[3]}/${examDate[2]}/${examDate[1]}`
     : null
   return (
     <figure data-report-figure="fetal-growth-intergrowth" className="mt-7 break-inside-avoid border-t border-gray-200 pt-5 text-gray-900">
