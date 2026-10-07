@@ -1826,7 +1826,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                         canReset={(section) => Boolean(section.module)}
                         onReset={(section) => resetCompositionSection(scope, section)}
                         renderBody={(section) => renderSectionBodyIn(scope, section)}
-                        layout={ref.categoryCode === 'ABDOMEN_TOTAL' ? 'abdomen-total' : 'default'}
+                        layout={ref.categoryCode === 'ABDOMEN_TOTAL' ? 'abdomen-total' : ref.categoryCode === 'PELVE_FEMININA' ? 'pelvis' : 'default'}
                       />
                     </section>
                   )
@@ -1904,7 +1904,9 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   ? 'mammary'
                   : categoria === 'ABDOMEN_TOTAL'
                     ? 'abdomen-total'
-                    : 'default'
+                    : isPelvis
+                      ? 'pelvis'
+                      : 'default'
               }
             />
             </> : null}

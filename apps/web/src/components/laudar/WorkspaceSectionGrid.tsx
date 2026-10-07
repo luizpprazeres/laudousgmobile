@@ -50,7 +50,7 @@ type GridProps = {
   /** Seção destacada (ex.: a que o celular acabou de preencher). */
   highlightedId?: string | null
   /** Layout clínico especializado sem alterar o estado ou os módulos. */
-  layout?: 'default' | 'mammary' | 'abdomen-total'
+  layout?: 'default' | 'mammary' | 'abdomen-total' | 'pelvis'
 }
 
 export function WorkspaceSectionGrid({
@@ -104,6 +104,13 @@ export function WorkspaceSectionGrid({
         : groupedCard(planned.id, planned.label, planned.sections, planned.size === 'wide'))
     }
     return items.map((section) => {
+      if (layout === 'pelvis') {
+        const ovaries = ['ovario_direito', 'ovario_esquerdo'].map(id => items.find(item => item.id === id))
+        const paired = ovaries.every(Boolean)
+        if (paired && section.id === 'ovario_esquerdo') return null
+        if (paired && section.id === 'ovario_direito') return groupedCard('ovarios', 'Ovários', ovaries as WorkspaceSection[], true)
+      }
+
       const renalPair = ['rim_direito', 'rim_esquerdo'].map(id => items.find(item => item.id === id))
       const kidneysPaired = renalPair.every(Boolean)
       if (kidneysPaired && section.id === 'rim_esquerdo') return null
