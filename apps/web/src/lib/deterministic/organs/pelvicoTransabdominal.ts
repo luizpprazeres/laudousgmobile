@@ -46,7 +46,7 @@ const bexigaSemPadrao: OrganModule = {
 
 export const pelvicoTransabdominal: ExamCategory = {
   id: PELVICO_TRANSABDOMINAL,
-  name: 'Pélvico abdominal',
+  name: 'Pelve transabdominal',
   title: pelveFeminina.resolveTitle!(comVia({})),
   tecnica: pelveFeminina.resolveTecnica!(comVia({})),
   achadosHeader: pelveFeminina.achadosHeader,

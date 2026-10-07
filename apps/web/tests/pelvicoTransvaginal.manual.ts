@@ -51,7 +51,7 @@ test('categoria própria em Saúde da mulher, derivada da pelve e fora do writer
   assert.ok(GENERIC_CATEGORIES.includes(cat))
   assert.equal(CATEGORIES[cat.id], cat)
   assert.ok(CATEGORY_GROUPS.find((g) => g.id === 'saude_mulher')!.categories.includes(cat.id))
-  assert.equal(CATEGORY_DISPLAY_NAMES[cat.id], 'Pélvico transvaginal')
+  assert.equal(CATEGORY_DISPLAY_NAMES[cat.id], 'Pelve transvaginal')
   assert.ok(CATEGORY_SYNONYMS[cat.id]!.includes('endovaginal'))
   assert.equal(categoriaMigrada(cat.id), true)
   assert.equal(categoriaDeRender(cat.id), 'PELVE_FEMININA')

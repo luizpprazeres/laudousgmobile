@@ -1,5 +1,5 @@
 /**
- * ATALHOS DA PELVE — Pélvico transvaginal com Doppler, Pélvico abdominal com
+ * ATALHOS DA PELVE — Pelve transvaginal com Doppler, Pelve transabdominal com
  * Doppler e Monitorização folicular, sobre a pelve canônica.
  *
  * O texto é o do renderer de produção (`renderizarSelecao` da API), alimentado
@@ -64,8 +64,8 @@ test('registro: três cards derivados da pelve, fora do writer, sem motor local'
 test('nomes humanos, Saúde da mulher, busca e histórico', () => {
   const grupo = CATEGORY_GROUPS.find((g) => g.id === 'saude_mulher')!
   const nomes: Record<string, string> = {
-    [PELVICO_TRANSVAGINAL_DOPPLER]: 'Pélvico transvaginal com Doppler',
-    [PELVICO_TRANSABDOMINAL_DOPPLER]: 'Pélvico abdominal com Doppler',
+    [PELVICO_TRANSVAGINAL_DOPPLER]: 'Pelve transvaginal com Doppler',
+    [PELVICO_TRANSABDOMINAL_DOPPLER]: 'Pelve transabdominal com Doppler',
     [MONITORIZACAO_FOLICULAR]: 'Monitorização folicular',
   }
   for (const [id, nome] of Object.entries(nomes)) {

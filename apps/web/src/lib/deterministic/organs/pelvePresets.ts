@@ -1,5 +1,5 @@
 /**
- * ATALHOS DA PELVE — Pélvico transvaginal com Doppler, Pélvico abdominal com
+ * ATALHOS DA PELVE — Pelve transvaginal com Doppler, Pelve transabdominal com
  * Doppler e Monitorização folicular.
  *
  * Nenhum motor novo: os três são DERIVADOS da PELVE_FEMININA (ver
@@ -54,8 +54,8 @@ function derivado(id: string, nome: string, base: ExamCategory, via: Via, modo: 
   }
 }
 
-export const pelvicoTransvaginalDoppler = derivado(PELVICO_TRANSVAGINAL_DOPPLER, 'Pélvico transvaginal com Doppler', pelvicoTransvaginal, 'tv', 'doppler')
-export const pelvicoTransabdominalDoppler = derivado(PELVICO_TRANSABDOMINAL_DOPPLER, 'Pélvico abdominal com Doppler', pelvicoTransabdominal, 'ta', 'doppler')
+export const pelvicoTransvaginalDoppler = derivado(PELVICO_TRANSVAGINAL_DOPPLER, 'Pelve transvaginal com Doppler', pelvicoTransvaginal, 'tv', 'doppler')
+export const pelvicoTransabdominalDoppler = derivado(PELVICO_TRANSABDOMINAL_DOPPLER, 'Pelve transabdominal com Doppler', pelvicoTransabdominal, 'ta', 'doppler')
 export const monitorizacaoFolicular = derivado(MONITORIZACAO_FOLICULAR, 'Monitorização folicular', pelvicoTransvaginal, 'tv', 'monitorizacao_folicular')
 
 export const PELVE_PRESET_CATEGORIES: ExamCategory[] = [pelvicoTransvaginalDoppler, pelvicoTransabdominalDoppler, monitorizacaoFolicular]

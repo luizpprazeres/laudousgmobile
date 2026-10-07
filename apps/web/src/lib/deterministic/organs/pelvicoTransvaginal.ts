@@ -22,7 +22,7 @@ const comVia = (opts: OrganState): OrganState => ({ ...opts, via: 'tv' })
 
 export const pelvicoTransvaginal: ExamCategory = {
   id: PELVICO_TRANSVAGINAL,
-  name: 'Pélvico transvaginal',
+  name: 'Pelve transvaginal',
   title: pelveFeminina.resolveTitle!(comVia({})),
   tecnica: pelveFeminina.resolveTecnica!(comVia({})),
   achadosHeader: pelveFeminina.achadosHeader,
