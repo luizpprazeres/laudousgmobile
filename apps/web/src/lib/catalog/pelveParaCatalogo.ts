@@ -32,6 +32,7 @@ import {
   normalizeBladderState,
 } from "../deterministic/organs/urinaryShared";
 import { pelvePresetDe } from "../deterministic/organs/pelvePresets";
+import { MyomaFindingSchema, type MyomaFinding } from "@laudousg/schemes";
 
 /** O que a tela guarda de uma seção. Nada aqui é tipado pelo compilador. */
 type EstadoDaSecao = Record<string, unknown>;
@@ -87,6 +88,44 @@ function volumeDe(m: number[] | null): number | null {
 function numero(bruto: string): number | null {
   const n = Number.parseFloat(bruto.replace(",", "."));
   return Number.isFinite(n) ? n : null;
+}
+
+const MYOMA_EXTRA_KEY = "__myoma.extraFindings";
+const MYOMA_LOCATION_TEXT: Record<MyomaFinding["location"], string | null> = {
+  not_informed: null,
+  anterior: "parede anterior",
+  posterior: "parede posterior",
+  lateral_direita: "parede lateral direita",
+  lateral_esquerda: "parede lateral esquerda",
+  fundo: "região fúndica",
+  cervical: "região cervical",
+};
+
+function miomasExtras(s: EstadoDaSecao): MyomaFinding[] {
+  try {
+    const bruto = JSON.parse(texto(s, MYOMA_EXTRA_KEY) || "[]") as unknown;
+    if (!Array.isArray(bruto)) return [];
+    return bruto.flatMap((item) => {
+      const validado = MyomaFindingSchema.safeParse(item);
+      return validado.success ? [validado.data] : [];
+    }).slice(0, 17);
+  } catch {
+    return [];
+  }
+}
+
+function descricaoLiquidoLivre(s: EstadoDaSecao): string | null {
+  const localizacao = texto(s, "liquido_livre.sim.localizacao");
+  const quantidade = texto(s, "liquido_livre.sim.quantidade");
+  const complemento = texto(s, "liquido_livre.sim.descricao");
+  const locais: Record<string, string> = {
+    fundo_saco_posterior: "no fundo de saco posterior",
+    fundo_saco_anterior: "no fundo de saco anterior",
+  };
+  const estruturada = [quantidade ? `${quantidade} quantidade` : "", locais[localizacao] ?? ""]
+    .filter(Boolean)
+    .join(" ");
+  return [estruturada, complemento].filter(Boolean).join(", ") || null;
 }
 
 /** Vírgula decimal é parte da medida; separe diâmetros com ;, espaço ou vírgula + espaço. */
@@ -224,7 +263,7 @@ export function adaptarPelve(
    * prefixo `mioma.sim.` — é a convenção do sistema genérico, não um detalhe
    * deste arquivo.
    */
-  const miomas = ["mioma", "mioma2", "mioma3"]
+  const miomasLegados = ["mioma", "mioma2", "mioma3"]
     .filter((chave) => marcado(u, chave))
     .map((chave) => ({
       classificacao: texto(u, `${chave}.sim.classificacao`) || null,
@@ -234,6 +273,23 @@ export function adaptarPelve(
       figo: texto(u, `${chave}.sim.figo`) || null,
       ecotextura: texto(u, `${chave}.sim.ecotextura`) || null,
     }));
+  const miomasDinamicos = miomasExtras(u).map((mioma) => ({
+    classificacao: mioma.figoConfirmed
+      ? mioma.figo <= 2
+        ? "submucoso"
+        : mioma.figo <= 4
+          ? "intramural"
+          : mioma.figo <= 7
+            ? "subseroso"
+            : "outro"
+      : null,
+    medidas_cm: mioma.sizeMaxMm == null ? null : [mioma.sizeMaxMm / 10],
+    parede: MYOMA_LOCATION_TEXT[mioma.location],
+    relacao: null,
+    figo: mioma.figoConfirmed ? String(mioma.figo) : null,
+    ecotextura: mioma.echo,
+  }));
+  const miomas = [...miomasLegados, ...miomasDinamicos];
 
   /**
    * ADENOMIOSE — a tela marca, o canônico precisa da FRASE.
@@ -253,6 +309,20 @@ export function adaptarPelve(
   const achadoEndometrio = texto(e, "achado");
   const tipoEndometrio = texto(e, "achado_tipo");
   const diu = texto(e, "diu");
+  const fraseEndometrio = menopausa ? "menopausa" : texto(e, "frase") || null;
+  const motivoEndometrio = fraseEndometrio === "nao_correlacionavel"
+    ? texto(e, "frase.nao_correlacionavel.motivo") || null
+    : fraseEndometrio === "outro"
+      ? texto(e, "frase.outro.descricao") || null
+      : null;
+  if (fraseEndometrio === "outro" && !motivoEndometrio) {
+    pendencias.push({
+      onde: "endométrio",
+      valor: "outro contexto",
+      motivo: "descreva o contexto clínico escolhido para a conclusão endometrial",
+      bloqueia: true,
+    });
+  }
 
   /**
    * O achado endometrial é TEXTO LIVRE na tela ("pólipo endometrial de 0,8 cm").
@@ -287,8 +357,8 @@ export function adaptarPelve(
      * precedência o médico marcaria menopausa no topo e a conclusão sairia com
      * a correlação de menacme.
      */
-    endometrio_frase: menopausa ? "menopausa" : texto(e, "frase") || null,
-    endometrio_motivo: null,
+    endometrio_frase: fraseEndometrio,
+    endometrio_motivo: motivoEndometrio,
     endometrio_achado: achadoEndometrio || null,
     endometrio_conclusao: null,
     endometrio_tipo: tipoEndometrio && tipoEndometrio !== "nenhum" ? tipoEndometrio : null,
@@ -308,7 +378,7 @@ export function adaptarPelve(
 
     /** Só marca líquido livre quando selecionado explicitamente no formulário. */
     liquido_livre: marcado(e, "liquido_livre"),
-    liquido_livre_descricao: texto(e, "liquido_livre.sim.descricao") || null,
+    liquido_livre_descricao: descricaoLiquidoLivre(e),
     produtos_retidos: modo === "pos_abortamento" && texto(e, "produtos_retidos") === "sim",
     produtos_retidos_quantidade: texto(e, "produtos_retidos_quantidade") || null,
     observacoes_corpo: null,

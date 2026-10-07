@@ -204,11 +204,19 @@ const endometrioModule: OrganModule = {
     { key: 'eco', label: 'Ecotextura', kind: 'segmented', hint: 'default: homogêneo', options: [
       { value: 'homogeneo', label: 'Homogêneo', isDefault: true }, { value: 'heterogeneo', label: 'Heterogêneo' },
     ] },
-    { key: 'frase', label: 'Correlação (conclusão)', kind: 'segmented', hint: 'fase do ciclo', options: [
-      { value: 'padrao', label: 'Fase do ciclo', isDefault: true }, { value: 'menopausa', label: 'Menopausa' }, { value: 'reposicao_hormonal', label: 'Reposição hormonal' },
+    { key: 'frase', label: 'Correlação clínica na conclusão', kind: 'segmented', hint: 'contexto endometrial', options: [
+      { value: 'padrao', label: 'Fase do ciclo', isDefault: true },
+      { value: 'menopausa', label: 'Pós-menopausa' },
+      { value: 'reposicao_hormonal', label: 'Reposição hormonal' },
+      { value: 'nao_correlacionavel', label: 'Não correlacionável', subFields: [
+        { key: 'motivo', label: 'Justificativa', kind: 'text', placeholder: 'ex.: paciente refere amenorreia' },
+      ] },
+      { value: 'outro', label: 'Outro contexto', subFields: [
+        { key: 'descricao', label: 'Contexto clínico', kind: 'text', placeholder: 'descreva o contexto clínico' },
+      ] },
     ] },
     { key: 'achado', label: 'Achado patológico (texto livre)', kind: 'text', placeholder: 'pólipo endometrial medindo…' },
-    { key: 'achado_tipo', label: 'Achado estruturado', kind: 'segmented', options: [
+    { key: 'achado_tipo', label: 'Alteração', kind: 'segmented', options: [
       { value: 'nenhum', label: 'Nenhum', isDefault: true },
       { value: 'polipo', label: 'Pólipo' },
       { value: 'espessamento', label: 'Espessamento' },
@@ -223,8 +231,16 @@ const endometrioModule: OrganModule = {
       { value: 'deslocado', label: 'Deslocado' },
     ] },
     { key: 'diu_descricao', label: 'Descrição do DIU (opcional)', kind: 'text', placeholder: 'extremidade inferior a ____ cm do fundo uterino' },
-    { key: 'liquido_livre', label: 'Fundo de saco', kind: 'checklist', options: [{ value: 'sim', label: 'Líquido livre', subFields: [
-      { key: 'descricao', label: 'Descrição', kind: 'text', placeholder: 'pequena quantidade no fundo de saco de Douglas' },
+    { key: 'liquido_livre', label: 'Líquido livre', kind: 'checklist', options: [{ value: 'sim', label: 'Presente', subFields: [
+      { key: 'localizacao', label: 'Localização', kind: 'mini-segmented', options: [
+        { value: 'fundo_saco_posterior', label: 'Fundo de saco posterior' },
+        { value: 'fundo_saco_anterior', label: 'Fundo de saco anterior' },
+        { value: 'outra', label: 'Outra' },
+      ] },
+      { key: 'quantidade', label: 'Quantidade', kind: 'mini-segmented', options: [
+        { value: 'pequena', label: 'Pequena' }, { value: 'moderada', label: 'Moderada' }, { value: 'volumosa', label: 'Volumosa' },
+      ] },
+      { key: 'descricao', label: 'Complemento (opcional)', kind: 'text', placeholder: 'outra localização ou aspecto relevante' },
     ] }] },
     { key: 'produtos_retidos', label: 'Pós-abortamento', kind: 'segmented', options: [
       { value: 'nao', label: 'Sem produtos retidos', isDefault: true },
@@ -234,7 +250,14 @@ const endometrioModule: OrganModule = {
       { value: 'pequena', label: 'Pequena' }, { value: 'moderada', label: 'Moderada' }, { value: 'grande', label: 'Grande' },
     ] },
   ] },
-  initialState: () => ({ espessura: '', eco: 'homogeneo', frase: 'padrao', achado: '', achado_tipo: 'nenhum', achado_medidas: '', vascularizacao: '', diu: 'nenhum', diu_descricao: '', liquido_livre: [], 'liquido_livre.sim.descricao': '', produtos_retidos: 'nao', produtos_retidos_quantidade: 'moderada' }),
+  initialState: () => ({
+    espessura: '', eco: 'homogeneo', frase: 'padrao',
+    'frase.nao_correlacionavel.motivo': '', 'frase.outro.descricao': '',
+    achado: '', achado_tipo: 'nenhum', achado_medidas: '', vascularizacao: '',
+    diu: 'nenhum', diu_descricao: '', liquido_livre: [],
+    'liquido_livre.sim.localizacao': '', 'liquido_livre.sim.quantidade': '', 'liquido_livre.sim.descricao': '',
+    produtos_retidos: 'nao', produtos_retidos_quantidade: 'moderada',
+  }),
   compose: (st, opts): OrganComposition => {
     const menopausa = isMenopausa(opts)
     const esp = parseNum(st.espessura)

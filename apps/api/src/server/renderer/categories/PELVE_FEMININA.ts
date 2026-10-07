@@ -107,10 +107,11 @@ export const PelveFemininaFindingsSchema = z.object({
       "menopausa",
       "reposicao_hormonal",
       "nao_correlacionavel",
+      "outro",
       "ta_limitado",
     ])
     .nullable(),
-  endometrio_motivo: z.string().nullable(), // só p/ "nao_correlacionavel"
+  endometrio_motivo: z.string().nullable(), // justificativa/contexto de "nao_correlacionavel" ou "outro"
   endometrio_achado: z.string().nullable(), // descrição patológica verbatim (pólipo/espessado)
   endometrio_conclusao: z.string().nullable(), // item de conclusão patológico verbatim
   endometrio_tipo: z.enum(["polipo", "espessamento", "sinequia", "conteudo_cavitario"]).nullable().optional(),
@@ -276,6 +277,7 @@ export const PELVE_FEMININA_JSON_SCHEMA = {
       "menopausa",
       "reposicao_hormonal",
       "nao_correlacionavel",
+      "outro",
       "ta_limitado",
     ]),
     endometrio_motivo: str,
@@ -346,9 +348,10 @@ REGRAS:
 3. ENDOMÉTRIO:
    - endometrio_espessura_cm: espessura em cm; null se não dita. PRESERVE decimal.
    - endometrio_eco: "homogêneo"/"heterogêneo"... quando dito; null caso contrário.
-   - endometrio_frase: escolha da frase de conclusão de NORMALIDADE —
+   - endometrio_frase: escolha da correlação clínica na conclusão —
      "padrao" (fase do ciclo), "menopausa", "reposicao_hormonal",
-     "nao_correlacionavel" (com endometrio_motivo), "ta_limitado" (técnica
+     "nao_correlacionavel" (com endometrio_motivo), "outro" (contexto em
+     endometrio_motivo), "ta_limitado" (técnica
      transabdominal não avaliou). null se houver achado patológico
      (use endometrio_achado/endometrio_conclusao).
    - endometrio_achado: descrição patológica verbatim p/ o CORPO (pólipo,
@@ -422,6 +425,12 @@ function medidas2Fmt(arr: number[] | null): string {
     Number.isFinite(arr[i] as number) ? ptBr(arr[i] as number) : "____",
   );
   return `${vals.join(" x ")} cm`;
+}
+
+/** O esquema visual pode informar apenas o maior eixo de um mioma. */
+function medidasMiomaFmt(arr: number[] | null): string {
+  if (arr?.length === 1 && Number.isFinite(arr[0])) return `maior medida de ${ptBr(arr[0] as number)} cm`;
+  return `medindo ${medidasFmt(arr)}`;
 }
 
 /** Espessura em cm (placeholder se null). */
@@ -598,15 +607,15 @@ function miomasCorpo(miomas: PelveMioma[]): string {
   if (miomas.length === 1) {
     const m = miomas[0] as PelveMioma;
     const partes = [`Miométrio apresentando ${imagem(m)}`];
-    partes.push(`medindo ${medidasFmt(m.medidas_cm)}`);
+    partes.push(medidasMiomaFmt(m.medidas_cm));
     if (m.parede) partes.push(`situada na ${m.parede}`);
     if (m.relacao) partes.push(m.relacao.trim());
     return `${partes.join(", ")}.`;
   }
   if (miomas.length === 2) {
     const [m1, m2] = miomas as [PelveMioma, PelveMioma];
-    const d1 = `A primeira ${imagem(m1)}, medindo ${medidasFmt(m1.medidas_cm)}${m1.parede ? `, situada na ${m1.parede}` : ""}${m1.relacao ? `, ${m1.relacao.trim()}` : ""}.`;
-    const d2 = `A segunda ${imagem(m2)}, medindo ${medidasFmt(m2.medidas_cm)}${m2.parede ? `, situada na ${m2.parede}` : ""}${m2.relacao ? `, ${m2.relacao.trim()}` : ""}.`;
+    const d1 = `A primeira ${imagem(m1)}, ${medidasMiomaFmt(m1.medidas_cm)}${m1.parede ? `, situada na ${m1.parede}` : ""}${m1.relacao ? `, ${m1.relacao.trim()}` : ""}.`;
+    const d2 = `A segunda ${imagem(m2)}, ${medidasMiomaFmt(m2.medidas_cm)}${m2.parede ? `, situada na ${m2.parede}` : ""}${m2.relacao ? `, ${m2.relacao.trim()}` : ""}.`;
     return `Miométrio apresentando duas imagens nodulares. ${d1} ${d2}`;
   }
   // 3 ou mais
@@ -614,7 +623,7 @@ function miomasCorpo(miomas: PelveMioma[]): string {
   const descr = miomas
     .map((m, i) => {
       const ord = ordinais[i] ?? `a ${i + 1}ª`;
-      return `${ord} ${imagem(m)}, medindo ${medidasFmt(m.medidas_cm)}${m.parede ? `, situada na ${m.parede}` : ""}`;
+      return `${ord} ${imagem(m)}, ${medidasMiomaFmt(m.medidas_cm)}${m.parede ? `, situada na ${m.parede}` : ""}`;
     })
     .join("; ");
   return `Miométrio apresentando múltiplas imagens nodulares. As maiores assim descritas: ${descr}.`;
@@ -785,6 +794,8 @@ function endometrioConclusao(f: PelveFemininaFindings, via: Via): string {
       return "O endométrio tem espessura normal para a paciente submetida a terapêutica de reposição hormonal.";
     case "nao_correlacionavel":
       return `Endométrio medindo ${espFmt(f.endometrio_espessura_cm)} cm de espessura. Não foi possível correlacionar a espessura do endométrio com a fase menstrual${f.endometrio_motivo ? `, pois ${f.endometrio_motivo.trim().replace(/\.+$/, "")}` : ""}.`;
+    case "outro":
+      return `Endométrio medindo ${espFmt(f.endometrio_espessura_cm)} cm de espessura${f.endometrio_motivo ? `. Correlação clínica: ${f.endometrio_motivo.trim().replace(/\.+$/, "")}` : ""}.`;
     case "ta_limitado":
       return "Não foi possível avaliar detalhadamente a espessura do endométrio pela técnica transabdominal.";
     case "padrao":

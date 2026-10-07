@@ -56,6 +56,7 @@ const files = [
   'src/lib/calculators/trisomyFmf.test.mts',
   'src/lib/companionStructured.test.ts',
   'src/lib/catalog/dopplerCarotidasParaCatalogo.test.ts',
+  'src/lib/catalog/pelveParaCatalogo.test.ts',
   'src/lib/catalog/morfologicoPrimeiroTrimestre.test.mts',
   'src/lib/catalog/morfologicoSegundoTerceiro.test.mts',
   '../api/src/server/renderer/catalog/__tests__/shared-urinary-organs-ponta-a-ponta.manual.ts',

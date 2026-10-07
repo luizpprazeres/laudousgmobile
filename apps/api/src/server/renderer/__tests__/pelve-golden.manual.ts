@@ -158,6 +158,18 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
   check("mioma: rodapé FIGO presente uma vez", (l.match(/FIGO: Federação Internacional de Ginecologia e Obstetrícia\./g) || []).length === 1, l);
 }
 
+// ── Miomas dinâmicos do esquema podem ter apenas o maior eixo ──
+{
+  const l = renderPelveFeminina(F({
+    miomas: [
+      { classificacao: "intramural", medidas_cm: [2.0, 1.8, 1.5], parede: "parede anterior", relacao: null, figo: "4" },
+      { classificacao: "subseroso", medidas_cm: [4.2], parede: "parede posterior", relacao: null, figo: "6", ecotextura: "heterogenea" },
+    ],
+  }));
+  check("mioma dinâmico: maior eixo sem medidas fictícias", /A segunda imagem heterogênea, maior medida de 4,2 cm, situada na parede posterior\./.test(l), l);
+  check("mioma dinâmico: sem placeholders para eixos não coletados", !/4,2 x ____ x ____ cm/.test(l), l);
+}
+
 // ── Cisto ovariano (alteração unilateral → itens separados) ──
 {
   const l = renderPelveFeminina(F({
@@ -175,6 +187,23 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
   check("cisto: conclusão separa OD alterado e OE normal", /Ovário direito de volume[\s\S]*Ovário esquerdo ecograficamente normal/.test(l), l);
   check("cisto: NÃO usa 'apresentando alteração' genérico", !/apresentando alteração/.test(l), l);
   check("cisto: SEM item único 'Ovários ecograficamente normais'", !/Ovários ecograficamente normais \(o direito/.test(l), l);
+}
+
+// ── Correlação endometrial sem afirmação automática de normalidade ──
+{
+  const naoCorrelacionavel = renderPelveFeminina(F({
+    endometrio_frase: "nao_correlacionavel",
+    endometrio_motivo: "paciente refere amenorreia",
+  }));
+  check("endométrio: não correlacionável preserva justificativa", /Não foi possível correlacionar[\s\S]*paciente refere amenorreia\./.test(naoCorrelacionavel), naoCorrelacionavel);
+  check("endométrio: não correlacionável não afirma normalidade", !/endométrio tem espessura normal/.test(naoCorrelacionavel), naoCorrelacionavel);
+
+  const outro = renderPelveFeminina(F({
+    endometrio_frase: "outro",
+    endometrio_motivo: "paciente em uso de tamoxifeno",
+  }));
+  check("endométrio: outro contexto entra na conclusão", /Correlação clínica: paciente em uso de tamoxifeno\./.test(outro), outro);
+  check("endométrio: outro contexto não afirma normalidade", !/endométrio tem espessura normal/.test(outro), outro);
 }
 
 // ── Numeração contínua (várias linhas → numeradas) ──
