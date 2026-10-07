@@ -41,6 +41,7 @@ function maiorDiametroMm(nodulo: NoduloTireoide): number | undefined {
 
 export function acrTiradsCompleto(nodulo: NoduloTireoide): boolean {
   if (nodulo.acrComposicao === 'cistico' || nodulo.acrComposicao === 'espongiforme') return true
+  if (nodulo.acrEcogenicidade === 'anecoico') return false
   return Boolean(
     nodulo.acrComposicao
     && nodulo.acrEcogenicidade

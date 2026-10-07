@@ -39,6 +39,7 @@ assert.match(tr5.management, /PAAF/)
 
 assert.equal(previewAcrDoNodulo(nodulo({ acrMargem: null })), null)
 assert.equal(previewAcrDoNodulo(nodulo({ acrFocos: [] })), null)
+assert.equal(previewAcrDoNodulo(nodulo({ acrEcogenicidade: 'anecoico' })), null)
 assert.equal(previewAcrDoNodulo(nodulo({
   acrComposicao: 'cistico',
   acrEcogenicidade: 'hiper_ou_isoecoico',
@@ -71,5 +72,9 @@ assert.equal(adaptacaoLegada.pendencias.length, 0, 'estado legado de Domingos co
 state.nodulos = [nodulo({ c1: '', c2: '', c3: '', acrMargem: null })]
 const incompleto = adaptarTireoide(state)
 assert.equal(incompleto.pendencias.filter((item) => item.bloqueia).length, 2)
+
+state.nodulos = [nodulo({ acrEcogenicidade: 'anecoico' })]
+const incompatível = adaptarTireoide(state)
+assert.ok(incompatível.pendencias.some((item) => item.bloqueia && /anecoica só se aplica/.test(item.motivo)))
 
 console.log('Tireoide ACR: prévia, localização e Domingos opcional aprovados')

@@ -73,6 +73,8 @@ function acrNodulo(acr: ReturnType<typeof A>, medidas: number[] = [1.2, 1.0, 0.9
   check("ACR: 'nenhum' não anula foco real e duplicata não soma", r2?.pontos === 5 && r2.categoria === 4, JSON.stringify(r2));
   check("ACR: grupo essencial incompleto não inventa categoria", calcAcrTirads(N({ acr_tirads: { ...A("solido", "hipoecoico"), margem: null } })) === null);
   check("ACR: focos ecogênicos não preenchidos mantêm a classificação incompleta", calcAcrTirads(N({ acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lisa", []) })) === null);
+  check("ACR: anecoico não é aceito em composição sólida ou mista", ["solido", "misto"].every((composicao) =>
+    calcAcrTirads(N({ acr_tirads: A(composicao as "solido" | "misto", "anecoico") })) === null));
   check("ACR: cístico e espongiforme são TR1 sem somar outras categorias", ["cistico", "espongiforme"].every((composicao) => {
     const r = calcAcrTirads(N({ acr_tirads: { composicao: composicao as "cistico" | "espongiforme", ecogenicidade: null, forma: null, margem: null, focos_ecogenicos: [] } }));
     return r?.pontos === 0 && r.categoria === 1;

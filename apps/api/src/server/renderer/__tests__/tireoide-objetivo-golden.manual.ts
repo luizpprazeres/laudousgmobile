@@ -87,21 +87,21 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
   const f = nodulo({ ecogenicidade: "isoecoica", margem: "regular", forma: "mais_larga_que_alta", calcificacoes: "sem", acr_tirads: A("solido", "hiper_ou_isoecoico"), medidas_cm: [1.8, 1.4, 1.2] });
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("TR3: pontos=3, categoria=3", acr?.pontos === 3 && acr?.categoria === 3, JSON.stringify(acr));
-  check("TR3: impressão '(ACR TI-RADS 3, características intermediárias)'", /\(ACR TI-RADS 3, características intermediárias\)/.test(render(f)), render(f));
+  check("TR3: impressão usa o rótulo oficial", /\(ACR TI-RADS 3, levemente suspeito\)/.test(render(f)), render(f));
 }
 {
   // TR4: hipo + irregular
   const f = nodulo({ ecogenicidade: "hipoecoica", margem: "irregular", forma: "mais_larga_que_alta", acr_tirads: A("solido", "hipoecoico", "mais_larga_que_alta", "lobulada_ou_irregular"), medidas_cm: [1.6, 1.2, 1.0] });
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("TR4: pontos=6, categoria=4", acr?.pontos === 6 && acr?.categoria === 4, JSON.stringify(acr));
-  check("TR4: impressão '(ACR TI-RADS 4, características suspeitas)'", /\(ACR TI-RADS 4, características suspeitas\)/.test(render(f)), render(f));
+  check("TR4: impressão usa o rótulo oficial", /\(ACR TI-RADS 4, moderadamente suspeito\)/.test(render(f)), render(f));
 }
 {
   // TR5: hipo + alta + espiculada + micro
   const f = nodulo({ ecogenicidade: "hipoecoica", margem: "espiculada", forma: "mais_alta_que_larga", calcificacoes: "micro", acr_tirads: A("solido", "hipoecoico", "mais_alta_que_larga", "lobulada_ou_irregular", ["focos_puntiformes"]), medidas_cm: [1.2, 1.0, 0.9] });
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("TR5: pontos=12, categoria=5", acr?.pontos === 12 && acr?.categoria === 5, JSON.stringify(acr));
-  check("TR5: impressão '(ACR TI-RADS 5, altamente suspeitas)'", /\(ACR TI-RADS 5, altamente suspeitas\)/.test(render(f)), render(f));
+  check("TR5: impressão usa o rótulo oficial", /\(ACR TI-RADS 5, altamente suspeito\)/.test(render(f)), render(f));
 }
 {
   // Cisto → TR1
@@ -110,7 +110,7 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
   check("Cisto: pontos=0, categoria=1", acr?.pontos === 0 && acr?.categoria === 1, JSON.stringify(acr));
   const l = render(f);
   check("Cisto: ACHADOS descreve composição cística e conteúdo anecoico", /cística ou quase totalmente cística, anecoica/i.test(l), l);
-  check("Cisto: impressão 'Cisto simples ... (ACR TI-RADS 1)'", /Cisto simples.*\(ACR TI-RADS 1\)/.test(l), l);
+  check("Cístico: impressão preserva a composição sem chamar de cisto simples", /Nódulo cístico ou quase totalmente cístico.*\(ACR TI-RADS 1\)/.test(l), l);
 }
 
 // ── calcAcrTirads: sem ecogenicidade → null ──

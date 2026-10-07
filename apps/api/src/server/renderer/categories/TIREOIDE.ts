@@ -1204,9 +1204,9 @@ function acrCategoriaDosPontos(pts: number): number {
 const ACR_TEXTO: Record<number, string> = {
   1: "benigno",
   2: "não suspeito",
-  3: "características intermediárias",
-  4: "características suspeitas",
-  5: "altamente suspeitas",
+  3: "levemente suspeito",
+  4: "moderadamente suspeito",
+  5: "altamente suspeito",
 };
 
 /**
@@ -1226,6 +1226,8 @@ export function calcAcrTirads(
     return { pontos: 0, categoria: 1 };
   }
   if (!acr?.composicao || !acr.ecogenicidade || !acr.forma || !acr.margem || acr.focos_ecogenicos.length === 0) return null;
+  // No ACR, "anecoico" se aplica apenas a nódulos císticos ou quase totalmente císticos.
+  if (acr.ecogenicidade === "anecoico") return null;
   const focos = Array.from(new Set(acr.focos_ecogenicos));
   const focosValidos = focos.filter((f) => f !== "nenhum_ou_cauda_cometa");
   const pontos =
@@ -1510,7 +1512,7 @@ function renderTireoideObjetivo(
               : "nodular";
       const loc = nod.localizacao ? ` ${nod.localizacao}` : "";
       if (isCisto(nod)) {
-        impressao.push(`Cisto simples${loc} (ACR TI-RADS 1).`);
+        impressao.push(`Nódulo cístico ou quase totalmente cístico${loc} (ACR TI-RADS 1).`);
         continue;
       }
       const acr = calcAcrTirads(nod);

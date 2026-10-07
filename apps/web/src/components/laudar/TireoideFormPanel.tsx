@@ -496,7 +496,13 @@ function NodulosPanel({ state, onChange }: Omit<Props, 'section'>) {
                             : {}),
                         })
                       }} />
-                      <AcrEixo disabled={composicaoTr1} rotulo="Ecogenicidade" opcoes={ACR_ECOGENICIDADE} valor={nodulo.acrEcogenicidade ?? null} onChange={(v) => updateNodulo(nodulo.id, { acrEcogenicidade: v as NoduloTireoide['acrEcogenicidade'] })} />
+                      <AcrEixo
+                        disabled={composicaoTr1}
+                        rotulo="Ecogenicidade"
+                        opcoes={composicaoTr1 ? ACR_ECOGENICIDADE : ACR_ECOGENICIDADE.filter((opcao) => opcao.value !== 'anecoico')}
+                        valor={nodulo.acrEcogenicidade ?? null}
+                        onChange={(v) => updateNodulo(nodulo.id, { acrEcogenicidade: v as NoduloTireoide['acrEcogenicidade'] })}
+                      />
                       <AcrEixo disabled={composicaoTr1} rotulo="Forma" opcoes={ACR_FORMA} valor={nodulo.acrForma ?? null} onChange={(v) => updateNodulo(nodulo.id, { acrForma: v as NoduloTireoide['acrForma'] })} />
                       <AcrEixo disabled={composicaoTr1} rotulo="Margens" opcoes={ACR_MARGEM} valor={nodulo.acrMargem ?? null} onChange={(v) => updateNodulo(nodulo.id, { acrMargem: v as NoduloTireoide['acrMargem'] })} />
                       <fieldset disabled={composicaoTr1} className={`min-w-0 rounded-xl border border-gray-200 bg-white p-2.5 dark:border-gray-800 dark:bg-gray-950/40 ${composicaoTr1 ? 'opacity-45' : ''}`}>

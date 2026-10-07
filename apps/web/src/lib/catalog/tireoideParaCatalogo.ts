@@ -196,6 +196,8 @@ function adaptarNodulo(n: NoduloTireoide, pendencias: Pendencia[]): NoduloCanoni
   const acrCompleto = composicaoTr1 || Boolean(
     n.acrComposicao && n.acrEcogenicidade && n.acrForma && n.acrMargem && n.acrFocos?.length,
   );
+  const acrIncompativel = (n.acrComposicao === "misto" || n.acrComposicao === "solido")
+    && n.acrEcogenicidade === "anecoico";
   if (medidas.length === 0) {
     pendencias.push({
       onde: `nódulo ${n.id}`,
@@ -209,6 +211,14 @@ function adaptarNodulo(n: NoduloTireoide, pendencias: Pendencia[]): NoduloCanoni
       onde: `nódulo ${n.id}`,
       valor: "ACR TI-RADS incompleto",
       motivo: "preencha os cinco grupos ACR; em císticos e espongiformes, basta informar a composição",
+      bloqueia: true,
+    });
+  }
+  if (acrIncompativel) {
+    pendencias.push({
+      onde: `nódulo ${n.id}`,
+      valor: "ACR TI-RADS incompatível",
+      motivo: "ecogenicidade anecoica só se aplica a nódulos císticos ou quase totalmente císticos",
       bloqueia: true,
     });
   }
