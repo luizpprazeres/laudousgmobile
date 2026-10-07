@@ -67,6 +67,8 @@ test('formulário: via fixa, finalidades compatíveis com TA, bexiga primeiro e 
   assert.deepEqual(cat.sections.map((s) => s.id).sort(), ['bexiga', 'endometrio', 'ovario_direito', 'ovario_esquerdo', 'utero'])
   const replecao = cat.sections[0]!.module!.schema.fields.find((f) => f.key === 'replecao')!
   assert.ok(replecao.options!.every((o) => !o.isDefault))
+  assert.equal(replecao.options![0]!.value, '')
+  assert.equal(replecao.options![0]!.label, 'Confirme a repleção')
   assert.equal(initialExamState(cat).bexiga!.replecao, '')
   assert.equal(cat.resolveTitle!({}), 'ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL')
   assert.match(cat.resolveTecnica!({}), /técnica transabdominal/)

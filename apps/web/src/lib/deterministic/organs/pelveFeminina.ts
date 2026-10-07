@@ -88,7 +88,10 @@ const bexigaModule: OrganModule = {
           ...field,
           label: 'Repleção (confirme)',
           hint: 'necessária nas vias com componente transabdominal',
-          options: (field.options ?? []).map((option) => ({ ...option, isDefault: false })),
+          options: [
+            { value: '', label: 'Confirme a repleção' },
+            ...(field.options ?? []).map((option) => ({ ...option, isDefault: false })),
+          ],
         }
       : field),
   },
@@ -129,8 +132,8 @@ const uteroModule: OrganModule = {
     { key: 'posicao', label: 'Posição', kind: 'segmented', hint: 'default: anteversão', options: [
       { value: 'anteversão', label: 'Anteversão', isDefault: true }, { value: 'retroversão', label: 'Retroversão' }, { value: 'médioversão', label: 'Médioversão' },
     ] },
-    { key: 'medidas', label: 'Medidas (L x AP x T cm)', kind: 'text', placeholder: '7,0 x 4,0 x 5,0' },
-    { key: 'volume_classe', label: 'Volume', kind: 'segmented', hint: 'default: normal', options: [
+    { key: 'medidas', label: 'Medidas (L x AP x T cm)', kind: 'text', placeholder: '7,0 x 4,0 x 5,0', halfWidth: true },
+    { key: 'volume_classe', label: 'Volume', kind: 'segmented', hint: 'default: normal', halfWidth: true, options: [
       { value: 'normal', label: 'Normal', isDefault: true }, { value: 'aumentado', label: 'Aumentado' }, { value: 'reduzido', label: 'Reduzido' },
     ] },
     { key: 'miomatoso', label: 'Útero miomatoso (difuso)', kind: 'checklist', options: [{ value: 'sim', label: 'Miomatoso (nódulos não individualizáveis)' }] },
@@ -215,8 +218,8 @@ const uteroModule: OrganModule = {
 // ── Endométrio ───────────────────────────────────────────────────────────────
 const endometrioModule: OrganModule = {
   schema: { id: 'endometrio', name: 'Endométrio', category: 'PELVE_FEMININA', fields: [
-    { key: 'espessura', label: 'Espessura (cm)', kind: 'text', placeholder: '0,8' },
-    { key: 'eco', label: 'Ecotextura', kind: 'segmented', hint: 'default: homogêneo', options: [
+    { key: 'espessura', label: 'Espessura (cm)', kind: 'text', placeholder: '0,8', halfWidth: true },
+    { key: 'eco', label: 'Ecotextura', kind: 'segmented', hint: 'default: homogêneo', halfWidth: true, options: [
       { value: 'homogeneo', label: 'Homogêneo', isDefault: true }, { value: 'heterogeneo', label: 'Heterogêneo' },
     ] },
     { key: 'frase', label: 'Correlação clínica na conclusão', kind: 'segmented', hint: 'contexto endometrial', options: [

@@ -42,10 +42,18 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
   const sharedKidney = (schema.id === 'rim_direito' || schema.id === 'rim_esquerdo') &&
     ['ABDOMEN_TOTAL', 'VIAS_URINARIAS', 'DOPPLER_RENAL'].includes(schema.category)
 
-  const compactFields = compact && (schema.id === 'bexiga' || schema.id.startsWith('rim_'))
+  const compactFields = compact && (
+    schema.id === 'bexiga' ||
+    schema.id === 'utero' ||
+    schema.id === 'endometrio' ||
+    schema.id.startsWith('rim_')
+  )
   const fieldCardClass = (compactFields ? 'col-span-2 ' : '') + (compact
     ? 'rounded-lg border border-gray-100 bg-gray-50/65 px-2 py-1.5 dark:border-gray-800 dark:bg-gray-900/55'
     : 'rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900')
+  const fieldCardClassFor = (field: Field) => compactFields && field.halfWidth
+    ? fieldCardClass.replace('col-span-2', 'col-span-1')
+    : fieldCardClass
 
   const setValue = (key: string, value: string | string[]) => onChange({ ...state, [key]: value })
 
@@ -140,7 +148,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
         />
       )
       return (
-        <section key={field.key} className={fieldCardClass}>
+        <section key={field.key} className={fieldCardClassFor(field)}>
           <div className="mb-1.5 flex items-center justify-between gap-3">
             <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">{field.label}</h3>
             {visibleHint(field.hint) ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
@@ -178,7 +186,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
       if (field.presentation === 'select') {
         const selected = String(state[field.key] ?? field.options?.find(option => option.isDefault)?.value ?? '')
         return (
-          <section key={field.key} className={fieldCardClass}>
+          <section key={field.key} className={fieldCardClassFor(field)}>
             <label className="flex min-w-0 flex-wrap items-center gap-2">
               <span className={field.hideLabel ? 'sr-only' : 'text-[11px] font-semibold text-gray-500'}>{field.label}</span>
               <select aria-label={field.label} value={selected} onChange={event => setValue(field.key, event.target.value)}
@@ -196,7 +204,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
         )
       }
       return (
-        <section key={field.key} className={fieldCardClass}>
+        <section key={field.key} className={fieldCardClassFor(field)}>
           <div className={compact ? 'flex flex-wrap items-start gap-x-2 gap-y-1' : undefined}>
             <div className={`${compact ? 'w-[92px] flex-shrink-0 pt-1' : 'mb-1.5'} flex items-start justify-between gap-2`}>
               <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</h3>
@@ -245,7 +253,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
     if (field.kind === 'checklist') {
       const selected = asArray(state[field.key])
       return (
-        <section key={field.key} className={fieldCardClass}>
+        <section key={field.key} className={fieldCardClassFor(field)}>
           <div className="mb-1 flex items-center justify-between gap-3">
             <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{field.label}</h3>
             {visibleHint(field.hint) ? <span className="text-[11px] text-gray-500 dark:text-gray-400">{field.hint}</span> : null}
@@ -284,7 +292,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
     }
 
     return (
-      <section key={field.key} className={compactFields && field.halfWidth ? fieldCardClass.replace('col-span-2', 'col-span-1') : fieldCardClass}>
+      <section key={field.key} className={fieldCardClassFor(field)}>
         {renderMiniField(field)}
       </section>
     )

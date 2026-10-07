@@ -68,6 +68,15 @@ test('categoria Pelve usa o mesmo portão seguro quando a via escolhida é TA', 
   assert.equal(result.dados.via, 'ta')
 })
 
+test('repleção pendente aparece como pendente no seletor, sem exibir adequada', () => {
+  const field = CATEGORIES.PELVE_FEMININA!.sections
+    .find((section) => section.id === 'bexiga')!
+    .module!.schema.fields.find((item) => item.key === 'replecao')!
+  assert.equal(field.options?.[0]?.value, '')
+  assert.equal(field.options?.[0]?.label, 'Confirme a repleção')
+  assert.equal(initialExamState(CATEGORIES.PELVE_FEMININA!).bexiga?.replecao, '')
+})
+
 test('TA + TV e pós-abortamento preservam o adaptador canônico já validado', () => {
   const combined = { ...measured('PELVE_FEMININA'), __opts: { via: 'ta_tv', modo_pelve: 'rotina' } }
   assert.deepEqual(adaptarPelveUnificada(combined, 'PELVE_FEMININA'), adaptarPelve(combined, options(combined)))
