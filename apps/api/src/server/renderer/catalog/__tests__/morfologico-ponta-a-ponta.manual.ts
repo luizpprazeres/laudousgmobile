@@ -175,9 +175,13 @@ const CASOS: Caso[] = [
   },
   {
     nome: "achado adicional em texto livre",
-    porque: "a observação solta do médico, que não é de nenhum sistema.",
-    estado: com(medido(), "achados", { texto: "Cisto de plexo coroide à esquerda." }),
+    porque: "a observação solta do médico precisa manter corpo e conclusão ligados.",
+    estado: com(medido(), "achados", {
+      texto: "Cisto de plexo coroide à esquerda.",
+      conclusao: "Cisto de plexo coroide à esquerda.",
+    }),
     exige: ["Cisto de plexo coroide"],
+    exigeNaConclusao: ["Cisto de plexo coroide"],
   },
   {
     nome: "cervicometria complementar sem trocar de categoria",

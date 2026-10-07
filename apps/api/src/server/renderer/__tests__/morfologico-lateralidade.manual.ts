@@ -26,14 +26,16 @@ function test(name: string, run: () => void): void {
 
 // SHA-256 da saida completa — guarda de byte-identidade da lateralidade dos ossos.
 //
-// BASE ATUALIZADA EM 18/09/2026 (linha do peso unificada) e em 15/09/2026: a decisao de MODELO COMPLETO trouxe de volta as
+// BASE ATUALIZADA EM 06/10/2026: sem percentil informado, o 1T não conclui
+// normalidade das uterinas. Em 18/09/2026 houve a unificação da linha do peso;
+// em 15/09/2026, a decisão de MODELO COMPLETO trouxe de volta as
 // frases padrao de normalidade (movimentos ativos, survey anatomico, cordao de
 // tres vasos, placenta com ecotextura, liquido normal, orificio interno fechado
 // no 2t). O texto dos ossos nao mudou; a diferenca e so o modelo ao redor, e foi
 // conferida linha a linha antes de regravar os hashes.
 const LEGACY_HASHES = [
-["1t", false, "eb93bb86df07d2563a5cd11a723a3a207630ba89e9a5a679e53b0d65f7a3269e"],
-  ["1t", true, "e42a876d122707fb84c853097b9f07309d2096c84ee69bcea0b46051c8ba74a0"],
+["1t", false, "59e79e9157b38affa68898f34e88b61e192c9e97d1df4bd98f71d4d83fad8b74"],
+  ["1t", true, "0a157cff761b64cffedc1dde5322f91435b116dc35b509694e8efeb212ce1b27"],
   ["2t", false, "1c62a353b4cdaae3bcf0f690c76ec5fe68c9b689f92bf8922d7df52cbbbaedfe"],
   ["2t", true, "c4832a61fcb3c79eab8640242d27eef2361711d8a78477b7d0417700fc844b43"],
   ["3t", false, "5f6fa03e80448e4f24b42132d0df7d079e058b0e4cd9f2b68c739c9e12db6669"],

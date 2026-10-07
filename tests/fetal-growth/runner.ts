@@ -212,7 +212,10 @@ assert.equal(payloadSemDoppler.umbilicalArteryEndDiastolicFlow, "present");
 assert.equal((payloadSemDoppler.ductusVenosus as Record<string, unknown>).diastolicFlow, "present");
 assert.equal(payloadSemDoppler.dopplerAssessmentCompleteAndNormal, false);
 
-const adapted = adaptarObstetrica(estadoWebStage2);
+// O estágio com Doppler pertence ao fluxo combinado. A Obstétrica simples
+// ignora deliberadamente índices ocultos; o card "Obstétrica com Doppler"
+// chama o mesmo adaptador com o complemento explicitamente habilitado.
+const adapted = adaptarObstetrica(estadoWebStage2, { incluirDoppler: true });
 const obstetricaParsed = ObstetricaFindingsSchema.parse(adapted.dados);
 assert.equal(
   ((adapted.dados.fetos as Array<Record<string, unknown>>)[0]?.percentil),
