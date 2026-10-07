@@ -102,7 +102,7 @@ function medidaEscalarCm(s: EstadoDaSecao, k: string): number | null {
   if (!raw) return null;
   const match = raw.match(/^\s*(\d+(?:[.,]\d+)?)\s*(cm|mm)?\s*$/i);
   if (!match) return null;
-  const valor = Number.parseFloat(match[1].replace(",", "."));
+  const valor = Number.parseFloat(match[1]!.replace(",", "."));
   if (!Number.isFinite(valor) || valor <= 0) return null;
   // O campo é rotulado em cm. Um valor de dois dígitos sem unidade costuma ser
   // uma medida em mm; exija a unidade para não transformar 45 mm em 45 cm.
