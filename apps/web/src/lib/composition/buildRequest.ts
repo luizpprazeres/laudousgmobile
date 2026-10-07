@@ -12,7 +12,7 @@
 import { adaptarAbdome } from '../catalog/abdomeParaCatalogo'
 import { adaptarProstataSuprapubica } from '../catalog/prostataParaCatalogo'
 import { adaptarMamaria } from '../catalog/mamariaParaCatalogo'
-import { adaptarPelve } from '../catalog/pelveParaCatalogo'
+import { adaptarPelveUnificada } from '../catalog/pelveParaCatalogo'
 import type { ExamState } from '../deterministic'
 import { adapterStateOf, associationByCode, componentOf, type CompositionSession } from './associations'
 import {
@@ -41,7 +41,7 @@ export function adaptComponent(category: CompositionCategoryCode, state: ExamSta
     case 'MAMARIA':
       return adaptarMamaria(estado)
     case 'PELVE_FEMININA':
-      return adaptarPelve(estado, (estado.__opts as Record<string, string | string[]>) ?? {})
+      return adaptarPelveUnificada(estado, category)
   }
 }
 

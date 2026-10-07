@@ -257,7 +257,7 @@ check("pelve preserva resíduo com valor e desprezível nos estilos clássico e 
     { patch: { residuo_estado: "desprezivel" }, phrase: "Resíduo pós-miccional desprezível" },
   ];
   for (const current of cases) {
-    const adapted = adaptarPelve(patch(initial(pelveFeminina), "bexiga", current.patch), { via: "ta" });
+    const adapted = adaptarPelve(patch(initial(pelveFeminina), "bexiga", { replecao: "adequada", ...current.patch }), { via: "ta" });
     noBlockingPending(adapted);
     const classic = render("PELVE_FEMININA", adapted.dados);
     const objective = render("PELVE_FEMININA", adapted.dados, undefined, "OBJETIVO");

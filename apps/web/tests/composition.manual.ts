@@ -45,6 +45,10 @@ async function test(name: string, run: () => void | Promise<void>) {
 }
 
 const initialOf = (category: CompositionCategoryCode) => initialExamState(CATEGORIES[category])
+const pelvisReady = (state: ExamState): ExamState => ({
+  ...state,
+  bexiga: { ...(state.bexiga ?? {}), replecao: 'adequada' },
+})
 const abdomeProstata = associationByCode('ABDOMEN_TOTAL__PROSTATA_SUPRAPUBICA')
 const mamaPelve = associationByCode('MAMARIA__PELVE_FEMININA')
 
@@ -107,7 +111,7 @@ async function main() {
   })
 
   await test('mamas + pelve: contextos distintos e nenhuma estrutura compartilhada', () => {
-    const session = startAssociation(mamaPelve, 'MAMARIA', initialOf('MAMARIA'), initialOf, randomUUID)
+    const session = startAssociation(mamaPelve, 'MAMARIA', initialOf('MAMARIA'), (category) => category === 'PELVE_FEMININA' ? pelvisReady(initialOf(category)) : initialOf(category), randomUUID)
     const [m, p] = session.components
     assert.notEqual(m.acquisitionContextId, p.acquisitionContextId)
     assert.equal(session.sharedBladderId, null)
@@ -170,7 +174,7 @@ async function main() {
   })
 
   await test('RENDERER REAL: mamas + pelve compõe sem estrutura compartilhada', async () => {
-    const session = startAssociation(mamaPelve, 'PELVE_FEMININA', initialOf('PELVE_FEMININA'), initialOf, randomUUID)
+    const session = startAssociation(mamaPelve, 'PELVE_FEMININA', pelvisReady(initialOf('PELVE_FEMININA')), initialOf, randomUUID)
     const request = fullRequest(session)
     const response = await renderClinicalComposition(request)
     assert.equal(response.status, 'complete', JSON.stringify(response).slice(0, 600))
@@ -211,7 +215,7 @@ async function main() {
   })
 
   await test('falha parcial é falha: componente com erro/bloqueado não vira laudo', () => {
-    const session = startAssociation(mamaPelve, 'MAMARIA', initialOf('MAMARIA'), initialOf, randomUUID)
+    const session = startAssociation(mamaPelve, 'MAMARIA', initialOf('MAMARIA'), (category) => category === 'PELVE_FEMININA' ? pelvisReady(initialOf(category)) : initialOf(category), randomUUID)
     const req = fullRequest(session)
     const [m, p] = req.components
     const error = {

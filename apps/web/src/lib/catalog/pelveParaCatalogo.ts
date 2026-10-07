@@ -237,7 +237,8 @@ export function adaptarPelve(
   const e = secao(estado, "endometrio");
   const od = secao(estado, "ovario_direito");
   const oe = secao(estado, "ovario_esquerdo");
-  const bexiga = normalizeBladderState(secao(estado, "bexiga"));
+  const bexigaBruta = secao(estado, "bexiga");
+  const bexiga = normalizeBladderState(bexigaBruta);
 
   const modo = typeof opcoes.modo_pelve === "string" ? opcoes.modo_pelve : "rotina";
   const viaInformada = typeof opcoes.via === "string" ? opcoes.via : "ta_tv";
@@ -251,8 +252,12 @@ export function adaptarPelve(
   }
 
   if (via !== "tv") {
-    for (const motivo of [...bladderStateConflicts(bexiga), ...bladderInputIssues(secao(estado, "bexiga"))]) {
-      pendencias.push({ onde: "bexiga", valor: bexiga.replecao, motivo, bloqueia: true });
+    if (!texto(bexigaBruta, "replecao")) {
+      pendencias.push({ onde: "bexiga", valor: "", motivo: "confirme a repleção vesical para a etapa transabdominal", bloqueia: true });
+    } else {
+      for (const motivo of [...bladderStateConflicts(bexiga), ...bladderInputIssues(bexigaBruta)]) {
+        pendencias.push({ onde: "bexiga", valor: bexiga.replecao, motivo, bloqueia: true });
+      }
     }
   }
 
@@ -535,7 +540,7 @@ export function adaptarPelveTransabdominal(
   const replecao = texto(secao(estado, "bexiga"), "replecao");
   // Repleção vazia é "não confirmada" (pendência própria abaixo), não "opção inválida".
   const pendencias: Pendencia[] = base.pendencias.filter(
-    (p) => !(replecao === "" && p.onde === "bexiga" && /repleção tem opção inválida/.test(p.motivo)),
+    (p) => !(replecao === "" && p.onde === "bexiga" && /(repleção tem opção inválida|confirme a repleção vesical)/.test(p.motivo)),
   );
   const falta = (onde: string, valor: string, motivo: string) =>
     pendencias.push({ onde, valor, motivo, bloqueia: true });
@@ -572,24 +577,74 @@ export function adaptarPelvePreset(
   estado: EstadoDaPelve,
   categoria: string,
 ): Adaptacao {
-  const preset = pelvePresetDe(categoria);
-  if (!preset) throw new Error(`${categoria} não é um atalho da pelve`);
-  const opcoes: Record<string, string | string[]> = { ...(secao(estado, "__opts") as Record<string, string | string[]>), modo_pelve: preset.modo };
-  if (preset.modo === "monitorizacao_folicular") delete opcoes.menopausa;
-  const base = preset.via === "ta" ? adaptarPelveTransabdominal(estado, opcoes) : adaptarPelveTransvaginal(estado, opcoes);
-  const pendencias: Pendencia[] = [...base.pendencias];
-  const falta = (onde: string, valor: string, motivo: string) =>
-    pendencias.push({ onde, valor, motivo, bloqueia: true });
+  if (!pelvePresetDe(categoria)) throw new Error(`${categoria} não é um atalho da pelve`);
+  return adaptarPelveUnificada(estado, categoria);
+}
 
-  if (preset.modo === "doppler") {
-    for (const lado of ["direito", "esquerdo"] as const) {
-      const s = secao(estado, `ovario_${lado}`);
-      const tipo = texto(s, "achado");
-      if (s.visualizado === "nao" || !ACHADOS_FOCAIS.includes(tipo)) continue;
-      if (!texto(s, `achado.${tipo}.vascularizacao`)) {
-        falta(`ovário ${lado}`, tipo, `informe a vascularização ao Doppler do achado no ovário ${lado}`);
-      }
+function pendenciasDopplerOvariano(estado: EstadoDaPelve): Pendencia[] {
+  const pendencias: Pendencia[] = [];
+  for (const lado of ["direito", "esquerdo"] as const) {
+    const s = secao(estado, `ovario_${lado}`);
+    const tipo = texto(s, "achado");
+    if (s.visualizado === "nao" || !ACHADOS_FOCAIS.includes(tipo)) continue;
+    if (!texto(s, `achado.${tipo}.vascularizacao`)) {
+      pendencias.push({
+        onde: `ovário ${lado}`,
+        valor: tipo,
+        motivo: `informe a vascularização ao Doppler do achado no ovário ${lado}`,
+        bloqueia: true,
+      });
     }
   }
-  return { ...base, pendencias };
+  return pendencias;
+}
+
+/**
+ * Entrada única da família Pelve. Mantém os ids históricos, mas resolve em um
+ * lugar só a via e a finalidade efetivas. A categoria unificada passa pelos
+ * mesmos portões dos atalhos quando o médico escolhe TV, TA, Doppler ou
+ * monitorização; TA+TV e pós-abortamento preservam o contrato já validado.
+ */
+export function adaptarPelveUnificada(
+  estado: EstadoDaPelve,
+  categoria: string,
+): Adaptacao {
+  const salvas = (secao(estado, "__opts") as Record<string, string | string[]>) ?? {};
+  const opcoes: Record<string, string | string[]> = { ...salvas };
+  const preset = pelvePresetDe(categoria);
+
+  if (preset) {
+    opcoes.via = preset.via;
+    opcoes.modo_pelve = preset.modo;
+  } else if (categoria === "PELVICO_TRANSVAGINAL") {
+    opcoes.via = "tv";
+  } else if (categoria === "PELVICO_TRANSABDOMINAL") {
+    opcoes.via = "ta";
+  } else if (categoria !== "PELVE_FEMININA") {
+    throw new Error(`${categoria} não pertence à família Pelve`);
+  }
+
+  const modo = typeof opcoes.modo_pelve === "string" ? opcoes.modo_pelve : "rotina";
+  if (modo === "monitorizacao_folicular") {
+    opcoes.via = "tv";
+    delete opcoes.menopausa;
+  }
+
+  let base: Adaptacao;
+  if (categoria === "PELVICO_TRANSABDOMINAL" || preset?.via === "ta") {
+    base = adaptarPelveTransabdominal(estado, opcoes);
+  } else if (categoria === "PELVICO_TRANSVAGINAL" || preset?.via === "tv") {
+    base = adaptarPelveTransvaginal(estado, opcoes);
+  } else if (modo === "pos_abortamento") {
+    base = adaptarPelve(estado, opcoes);
+  } else if (opcoes.via === "tv") {
+    base = adaptarPelveTransvaginal(estado, opcoes);
+  } else if (opcoes.via === "ta") {
+    base = adaptarPelveTransabdominal(estado, opcoes);
+  } else {
+    base = adaptarPelve(estado, opcoes);
+  }
+
+  if (modo !== "doppler") return base;
+  return { ...base, pendencias: [...base.pendencias, ...pendenciasDopplerOvariano(estado)] };
 }

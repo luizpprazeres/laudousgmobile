@@ -17,7 +17,7 @@ import {
   type TireoideState,
 } from '@/lib/deterministic'
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
-import { adaptarPelve, adaptarPelvePreset, adaptarPelveTransabdominal, adaptarPelveTransvaginal } from '@/lib/catalog/pelveParaCatalogo'
+import { adaptarPelveUnificada } from '@/lib/catalog/pelveParaCatalogo'
 import { pelvePresetDe } from '@/lib/deterministic/organs/pelvePresets'
 import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
 import { adaptarObstetrica } from '@/lib/catalog/obstetricaParaCatalogo'
@@ -597,23 +597,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       const a = adaptarTireoide(tireoideState)
       return { dados: a.dados as unknown as Record<string, unknown>, alteracoes: a.alteracoes, pendencias: a.pendencias }
     }
-    if (categoria === 'PELVE_FEMININA') {
-      const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
-      const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
-      return adaptarPelve(estado, opcoes)
-    }
-    if (categoria === 'PELVICO_TRANSVAGINAL') {
-      const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
-      const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
-      return adaptarPelveTransvaginal(estado, opcoes)
-    }
-    if (categoria === 'PELVICO_TRANSABDOMINAL') {
-      const estado = (examStates[categoria] ?? {}) as Record<string, unknown>
-      const opcoes = (estado['__opts'] as Record<string, string | string[]>) ?? {}
-      return adaptarPelveTransabdominal(estado, opcoes)
-    }
-    if (pelvePresetDe(categoria)) {
-      return adaptarPelvePreset((examStates[categoria] ?? {}) as Record<string, unknown>, categoria)
+    if (categoria === 'PELVE_FEMININA' || categoria === 'PELVICO_TRANSVAGINAL' || categoria === 'PELVICO_TRANSABDOMINAL' || pelvePresetDe(categoria)) {
+      return adaptarPelveUnificada((examStates[categoria] ?? {}) as Record<string, unknown>, categoria)
     }
     if (categoria === 'MAMARIA') {
       return adaptarMamaria((examStates[categoria] ?? {}) as Record<string, unknown>)

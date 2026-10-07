@@ -78,7 +78,22 @@ function limpa(s: string): string {
   return s.trim().replace(/\.+$/, '')
 }
 
-const bexigaModule = createSharedBladderModule('PELVE_FEMININA')
+const bexigaBaseModule = createSharedBladderModule('PELVE_FEMININA')
+const bexigaModule: OrganModule = {
+  ...bexigaBaseModule,
+  schema: {
+    ...bexigaBaseModule.schema,
+    fields: bexigaBaseModule.schema.fields.map((field) => field.key === 'replecao'
+      ? {
+          ...field,
+          label: 'Repleção (confirme)',
+          hint: 'necessária nas vias com componente transabdominal',
+          options: (field.options ?? []).map((option) => ({ ...option, isDefault: false })),
+        }
+      : field),
+  },
+  initialState: () => ({ ...bexigaBaseModule.initialState(), replecao: '' }),
+}
 
 // ── Útero ────────────────────────────────────────────────────────────────────
 const miomaSubs: Field[] = [
