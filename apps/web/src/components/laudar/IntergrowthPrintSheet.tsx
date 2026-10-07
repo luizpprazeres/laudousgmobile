@@ -11,6 +11,7 @@ import {
   intergrowthBiometryPreviewFromDating,
   type IntergrowthBiometryPreviewResult,
 } from '@/lib/calculators/intergrowthBiometry'
+import type { StoredPriorGrowthExam } from '@/lib/calculators/growthChartPersistence'
 import { IntergrowthChart } from './IntergrowthPreview'
 
 type LiveProps = {
@@ -18,12 +19,14 @@ type LiveProps = {
   biometryState: Readonly<Record<string, unknown>>
   chaveFemur: ChaveFemur | null
   igState: Readonly<Record<string, unknown>>
+  priorExams?: readonly StoredPriorGrowthExam[]
   onClose: () => void
 }
 
 type PreviewProps = {
   open: boolean
   preview: IntergrowthBiometryPreviewResult | null
+  priorExams?: readonly StoredPriorGrowthExam[]
   onClose: () => void
 }
 
@@ -140,7 +143,7 @@ const SHEET_CSS = `
 .ig-sheet-valor { margin: 0; font-size: 17pt; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .ig-sheet-valor small { display: block; font-size: 8.5pt; font-weight: 500; color: #4b5563; }
 [data-ig-print-root] .ig-sheet-chart section > div:first-child,
-[data-ig-print-root] .ig-sheet-chart dl { display: none !important; }
+[data-ig-print-root] .ig-sheet-chart section > dl { display: none !important; }
 [data-ig-print-root] .ig-sheet-chart section { margin: 0 !important; }
 [data-ig-print-root] .ig-sheet-chart svg text { fill: #4b5563 !important; font-family: inherit !important; }
 [data-ig-print-root] .ig-sheet-chart svg text[class*="fill-emerald"] { fill: #047857 !important; }
@@ -153,6 +156,8 @@ const SHEET_CSS = `
 [data-ig-print-root] .ig-sheet-chart svg path[stroke-dasharray],
 [data-ig-print-root] .ig-sheet-chart ul line[stroke-dasharray] { stroke: #d1d5db !important; }
 [data-ig-print-root] .ig-sheet-chart svg circle { fill: #059669 !important; stroke: #ffffff !important; }
+[data-ig-print-root] .ig-sheet-chart svg circle[data-growth-point="historical"] { fill: #64748b !important; }
+[data-ig-print-root] .ig-sheet-chart svg path[data-growth-trajectory] { stroke: #64748b !important; }
 [data-ig-print-root] .ig-sheet-chart ul { color: #4b5563 !important; font-size: 8.5pt !important; }
 .ig-sheet-foot {
   margin-top: 14px;
@@ -223,9 +228,9 @@ function Dado({ rotulo, valor }: { rotulo: string; valor: string }) {
  * derivado das props a cada render pelo mesmo helper da prévia; estado inválido
  * não monta o portal, então nunca imprime um resultado anterior.
  */
-export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState, onClose }: LiveProps) {
+export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState, priorExams = [], onClose }: LiveProps) {
   const preview = open ? intergrowthBiometryPreviewFromDating(biometryState, chaveFemur, igState) : null
-  return <IntergrowthPreviewPrintSheet open={open} preview={preview} onClose={onClose} />
+  return <IntergrowthPreviewPrintSheet open={open} preview={preview} priorExams={priorExams} onClose={onClose} />
 }
 
 /**
@@ -233,7 +238,7 @@ export function IntergrowthPrintSheet({ open, biometryState, chaveFemur, igState
  * somente o preview derivado do descritor versionado; se o descritor falhar na
  * validação, `preview` é nulo e nenhuma folha pode ser impressa.
  */
-export function IntergrowthPreviewPrintSheet({ open, preview, onClose }: PreviewProps) {
+export function IntergrowthPreviewPrintSheet({ open, preview, priorExams = [], onClose }: PreviewProps) {
   const [host, setHost] = useState<HTMLElement | null>(null)
   const shellRef = useRef<HTMLDivElement>(null)
   const tituloId = useId()
@@ -389,7 +394,7 @@ export function IntergrowthPreviewPrintSheet({ open, preview, onClose }: Preview
 
               <section className="ig-sheet-block ig-sheet-chart">
                 <h3 className="ig-sheet-block-title">Curvas P3, P10, P50, P90 e P97</h3>
-                <IntergrowthChart preview={activePreview} percentilTexto={percentilTexto} interactive={false} reportMode />
+                <IntergrowthChart preview={activePreview} percentilTexto={percentilTexto} priorExams={priorExams} interactive={false} reportMode />
               </section>
 
               <footer className="ig-sheet-foot">

@@ -92,6 +92,7 @@ async function main() {
       response.end(String(error))
     }
   })
+  const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
   await new Promise<void>((resolveListen, reject) => {
     server.once('error', reject)
     server.listen(0, '127.0.0.1', resolveListen)
@@ -99,7 +100,6 @@ async function main() {
   const address = server.address()
   if (!address || typeof address === 'string') throw new Error('Servidor local indisponível')
   const origin = `http://127.0.0.1:${address.port}`
-  const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
   const browser = await chromium.launch({ headless: true })
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
@@ -127,7 +127,16 @@ async function main() {
     await curve.waitFor()
     assert.match(await curve.getAttribute('aria-label'), /870 g.*24\+3.*99,5/)
     assert.doesNotMatch(await curve.getAttribute('aria-label'), /28\+0/)
-    assert.equal(await curve.locator('path').count(), 5)
+    assert.equal(await curve.locator('[data-growth-centile]').count(), 5)
+    assert.equal(await curve.locator('[data-growth-point="current"]').count(), 1)
+
+    await page.getByRole('button', { name: 'Adicionar exame anterior', exact: true }).click()
+    await page.getByLabel('Data do exame anterior', { exact: true }).fill('2026-05-21')
+    await page.getByLabel('PFE informado no exame anterior (g)', { exact: true }).fill('400')
+    await page.getByText(/Exame anterior: 20s0d · 400 g · percentil/).waitFor()
+    assert.equal(await curve.locator('[data-growth-point="historical"]').count(), 1)
+    assert.equal(await curve.locator('[data-growth-trajectory]').count(), 1)
+    assert.match(await curve.getAttribute('aria-label'), /Exame anterior em 21\/05\/2026.*20 semanas e 0 dias.*400 g.*Exame atual/s)
 
     await page.getByRole('button', { name: 'Incluir gráfico no laudo', exact: true }).click()
     const reportFigure = page.locator('[data-report-figure="fetal-growth-intergrowth"]').first()
@@ -144,7 +153,7 @@ async function main() {
     await page.getByRole('button', { name: 'Salvo', exact: true }).waitFor()
     assert.equal(saved.length, 1)
     const stored = saved[0].exam_state.__growth_chart.figure
-    assert.equal(stored.format, 'fetal-growth-intergrowth-v1')
+    assert.equal(stored.format, 'fetal-growth-intergrowth-v2')
     assert.equal(stored.calculationVersion, 'intergrowth2020-lms-hadlock3-v1')
     assert.equal(stored.standardVersion, 'INTERGROWTH-21st 2020')
     assert.equal(stored.formula, 'Hadlock CC/CA/CF (3 parâmetros)')
@@ -153,6 +162,10 @@ async function main() {
     assert.equal(stored.gestationalAgeDays, 171)
     assert.deepEqual(stored.measurementsMm, { cc: 230, ca: 210, cf: 50 })
     assert.ok(Math.abs(stored.weightGramsRaw - 870.16177215199957) < 1e-9)
+    assert.equal(stored.priorExams.length, 1)
+    assert.equal(stored.priorExams[0].examDate, '2026-05-21')
+    assert.equal(stored.priorExams[0].gestationalAgeDays, 140)
+    assert.equal(stored.priorExams[0].weightGrams, 400)
     assert.doesNotMatch(saved[0].exam_state.__presentation.html, /<svg|<img/i)
 
     await page.goto(`${origin}/history`)
@@ -160,6 +173,8 @@ async function main() {
     const historyFigure = page.locator('[data-report-figure="fetal-growth-intergrowth"]')
     await historyFigure.waitFor()
     assert.match(await historyFigure.getByRole('img').getAttribute('aria-label'), /870 g.*24\+3.*99,5/)
+    assert.equal(await historyFigure.locator('[data-growth-point="historical"]').count(), 1)
+    assert.equal(await historyFigure.locator('[data-growth-trajectory]').count(), 1)
     assert.match(await historyFigure.textContent(), /INTERGROWTH-21st 2020.*870 g.*24\+3.*datação por DUM · exame em 21\/06\/2026/s)
     await page.addScriptTag({ content: 'window.print = () => { window.__growthPrintCalls = (window.__growthPrintCalls || 0) + 1 }' })
     const historyPrintButton = page.getByRole('button', { name: 'Imprimir ou salvar gráfico em PDF', exact: true })
@@ -168,6 +183,7 @@ async function main() {
     await printDialog.waitFor()
     assert.match(await printDialog.textContent(), /24\+3 semanas.*DUM · exame em 21\/06\/2026.*230 mm.*210 mm.*50 mm/s)
     assert.match(await printDialog.getByRole('img').getAttribute('aria-label'), /870 g.*24\+3.*99,5/)
+    assert.equal(await printDialog.locator('[data-growth-point="historical"]').count(), 1)
     await printDialog.getByRole('button', { name: 'Imprimir ou salvar como PDF', exact: true }).click()
     assert.equal(await page.evaluate(() => (window as any).__growthPrintCalls), 1)
     await page.emulateMedia({ media: 'print' })

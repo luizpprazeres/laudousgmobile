@@ -16,11 +16,13 @@ import {
   type IntergrowthBiometryPreviewResult,
   type IntergrowthCurve,
 } from '@/lib/calculators/intergrowthBiometry'
+import type { StoredPriorGrowthExam } from '@/lib/calculators/growthChartPersistence'
 
 type Props = {
   biometryState: Readonly<Record<string, unknown>>
   chaveFemur: ChaveFemur | null
   igState: Readonly<Record<string, unknown>>
+  priorExams?: readonly StoredPriorGrowthExam[]
 }
 
 const HEADING_CLASS = 'font-mono text-[10px] font-bold uppercase tracking-normal text-gray-500 dark:text-gray-400'
@@ -40,6 +42,15 @@ const CURVE_STYLE: Record<IntergrowthCurve['label'], { className: string; color:
   P50: { className: 'stroke-gray-600 dark:stroke-gray-300', color: '#4b5563', width: 1.5 },
   P90: { className: 'stroke-gray-400 dark:stroke-gray-500', color: '#9ca3af', width: 1 },
   P97: { className: 'stroke-gray-300 dark:stroke-gray-600', color: '#d1d5db', width: 1, dash: '4 3' },
+}
+
+function formatarDataExame(value: string | undefined): string {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : 'data não informada'
+}
+
+function formatarIgDias(gaDays: number): string {
+  return `${Math.floor(gaDays / 7)} semanas e ${gaDays % 7} dias`
 }
 
 function useLarguraElemento<T extends HTMLElement>() {
@@ -67,11 +78,13 @@ function useLarguraElemento<T extends HTMLElement>() {
 export function IntergrowthChart({
   preview,
   percentilTexto,
+  priorExams = [],
   interactive = true,
   reportMode = false,
 }: {
   preview: IntergrowthBiometryPreviewResult
   percentilTexto: string
+  priorExams?: readonly StoredPriorGrowthExam[]
   interactive?: boolean
   reportMode?: boolean
 }) {
@@ -80,7 +93,7 @@ export function IntergrowthChart({
   const width = largura > 0 ? largura : CHART_FALLBACK_WIDTH
   const plotW = Math.max(1, width - MARGIN.left - MARGIN.right)
   const plotH = CHART_HEIGHT - MARGIN.top - MARGIN.bottom
-  const yMax = Math.ceil(Math.max(CURVES_MAX_G, preview.weightG) / 1000) * 1000
+  const yMax = Math.ceil(Math.max(CURVES_MAX_G, preview.weightG, ...priorExams.map((exam) => exam.weightGrams)) / 1000) * 1000
   const yStep = yMax <= 5000 ? 1000 : Math.ceil(yMax / 5000) * 1000
   const x = (gaDays: number) =>
     MARGIN.left + ((gaDays - INTERGROWTH2020_EFW_MIN_GA_DAYS) / (INTERGROWTH2020_EFW_MAX_GA_DAYS - INTERGROWTH2020_EFW_MIN_GA_DAYS)) * plotW
@@ -93,6 +106,13 @@ export function IntergrowthChart({
   for (let g = 0; g <= yMax; g += yStep) pesos.push(g)
   const px = x(preview.ig.gaDays)
   const py = y(preview.weightG)
+  const trajectoryPoints = [
+    ...priorExams.map((exam) => ({ gaDays: exam.gestationalAgeDays, weightG: exam.weightGrams })),
+    { gaDays: preview.ig.gaDays, weightG: preview.weightG },
+  ].sort((a, b) => a.gaDays - b.gaDays)
+  const trajectoryPath = trajectoryPoints
+    .map((point, index) => `${index === 0 ? 'M' : 'L'}${x(point.gaDays).toFixed(2)} ${y(point.weightG).toFixed(2)}`)
+    .join(' ')
   const activeGaDays = hoverGaDays ?? preview.ig.gaDays
   const activeX = x(activeGaDays)
   const activeCurves = CURVES.map((curve) => ({
@@ -105,10 +125,16 @@ export function IntergrowthChart({
   const tooltipX = tooltipOnRight ? activeX + 8 : activeX - tooltipWidth - 8
   const tooltipY = MARGIN.top + 4
   const rotuloADireita = px < MARGIN.left + plotW / 2
+  const currentPointAriaLabel =
+    `Exame atual em ${formatarDataExame(preview.dating?.examDate)}: idade gestacional ${formatarIgBiometria(preview.ig)}, ` +
+    `peso calculado ${preview.weightRounded} g, percentil ${percentilTexto}.`
+  const historicalPointAriaLabels = priorExams.map((exam) =>
+    `Exame anterior em ${formatarDataExame(exam.examDate)}: idade gestacional ${formatarIgDias(exam.gestationalAgeDays)}, ` +
+    `PFE informado ${exam.weightGrams} g, percentil ${formatarPercentilIntergrowth(exam.percentile) ?? 'não disponível'}.`
+  )
   const ariaLabel =
     `Gráfico ${INTERGROWTH2020_EFW_VERSION}: curvas de peso fetal estimado P3, P10, P50, P90 e P97 de 18 a 40 semanas. ` +
-    `Ponto: peso calculado por Hadlock CC/CA/CF de ${preview.weightRounded} g na IG ${formatarIgBiometria(preview.ig)}, ` +
-    `percentil ${percentilTexto}.`
+    [...historicalPointAriaLabels, currentPointAriaLabel].join(' ')
 
   return (
     <div ref={ref} className="min-w-0">
@@ -184,7 +210,7 @@ export function IntergrowthChart({
           const last = curve.points[curve.points.length - 1]
           return (
             <g key={curve.label}>
-              <path d={d} fill="none" strokeWidth={style.width} strokeDasharray={style.dash} className={style.className} style={reportMode ? { stroke: style.color } : undefined} />
+              <path data-growth-centile={curve.label} d={d} fill="none" strokeWidth={style.width} strokeDasharray={style.dash} className={style.className} style={reportMode ? { stroke: style.color } : undefined} />
               {last && (
                 <text x={x(last.gaDays) + 4} y={y(last.weightG)} dy="0.32em" className="fill-gray-500 font-mono text-[8.5px] dark:fill-gray-400">
                   <tspan style={reportMode ? { fill: '#6b7280', fontSize: 8.5 } : undefined}>{curve.label}</tspan>
@@ -193,7 +219,66 @@ export function IntergrowthChart({
             </g>
           )
         })}
-        <circle cx={px} cy={py} r={4} strokeWidth={1.5} className="fill-emerald-600 stroke-white dark:fill-emerald-400 dark:stroke-gray-950" style={reportMode ? { fill: '#059669', stroke: '#ffffff' } : undefined} />
+        {priorExams.length > 0 ? (
+          <path
+            data-growth-trajectory="true"
+            d={trajectoryPath}
+            fill="none"
+            strokeWidth={1.5}
+            strokeDasharray="3 3"
+            className="stroke-slate-500 dark:stroke-slate-400"
+            style={reportMode ? { stroke: '#64748b' } : undefined}
+          />
+        ) : null}
+        {priorExams.map((exam, index) => {
+          const historicalX = x(exam.gestationalAgeDays)
+          const historicalY = y(exam.weightGrams)
+          const labelOnRight = historicalX < MARGIN.left + plotW / 2
+          return (
+            <g key={`${exam.examDate}-${exam.weightGrams}`}>
+              <circle
+                data-growth-point="historical"
+                aria-label={historicalPointAriaLabels[index]}
+                tabIndex={interactive ? 0 : undefined}
+                onFocus={interactive ? () => setHoverGaDays(exam.gestationalAgeDays) : undefined}
+                onPointerEnter={interactive ? () => setHoverGaDays(exam.gestationalAgeDays) : undefined}
+                cx={historicalX}
+                cy={historicalY}
+                r={4}
+                strokeWidth={1.5}
+                className="fill-slate-500 stroke-white dark:fill-slate-400 dark:stroke-gray-950"
+                style={reportMode ? { fill: '#64748b', stroke: '#ffffff' } : undefined}
+              >
+                <title>{historicalPointAriaLabels[index]}</title>
+              </circle>
+              <text
+                x={historicalX + (labelOnRight ? 8 : -8)}
+                y={historicalY}
+                dy="0.32em"
+                textAnchor={labelOnRight ? 'start' : 'end'}
+                className="fill-slate-600 text-[9px] font-semibold tabular-nums dark:fill-slate-300"
+                style={reportMode ? { fill: '#475569', fontSize: 9, fontWeight: 600 } : undefined}
+              >
+                {exam.weightGrams} g (anterior)
+              </text>
+            </g>
+          )
+        })}
+        <circle
+          data-growth-point="current"
+          aria-label={currentPointAriaLabel}
+          tabIndex={interactive ? 0 : undefined}
+          onFocus={interactive ? () => setHoverGaDays(preview.ig.gaDays) : undefined}
+          onPointerEnter={interactive ? () => setHoverGaDays(preview.ig.gaDays) : undefined}
+          cx={px}
+          cy={py}
+          r={4}
+          strokeWidth={1.5}
+          className="fill-emerald-600 stroke-white dark:fill-emerald-400 dark:stroke-gray-950"
+          style={reportMode ? { fill: '#059669', stroke: '#ffffff' } : undefined}
+        >
+          <title>{currentPointAriaLabel}</title>
+        </circle>
         <text
           x={px + (rotuloADireita ? 8 : -8)}
           y={py}
@@ -219,6 +304,22 @@ export function IntergrowthChart({
           </g>
         ) : null}
       </svg>
+      {priorExams.length > 0 ? (
+        <dl data-growth-history-summary className="mt-1 grid grid-cols-1 gap-1 rounded-md bg-slate-50 px-2.5 py-2 text-[11px] text-slate-700 dark:bg-slate-900/60 dark:text-slate-300 sm:grid-cols-2">
+          {priorExams.map((exam) => (
+            <div key={`${exam.examDate}-${exam.weightGrams}`} className="min-w-0">
+              <dt className="font-semibold">Exame anterior · {formatarDataExame(exam.examDate)}</dt>
+              <dd className="tabular-nums">
+                {formatarIgDias(exam.gestationalAgeDays)} · {exam.weightGrams} g · percentil {formatarPercentilIntergrowth(exam.percentile) ?? 'indisponível'}
+              </dd>
+            </div>
+          ))}
+          <div className="min-w-0">
+            <dt className="font-semibold">Exame atual · {formatarDataExame(preview.dating?.examDate)}</dt>
+            <dd className="tabular-nums">{formatarIgBiometria(preview.ig)} · {preview.weightRounded} g · percentil {percentilTexto}</dd>
+          </div>
+        </dl>
+      ) : null}
       <ul className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
         <li className="flex items-center gap-1.5">
           <svg width="18" height="6" aria-hidden="true">
@@ -244,6 +345,14 @@ export function IntergrowthChart({
           </svg>
           Peso calculado por Hadlock CC/CA/CF (não é o peso informado)
         </li>
+        {priorExams.length > 0 ? (
+          <li className="flex items-center gap-1.5">
+            <svg width="10" height="10" aria-hidden="true">
+              <circle cx="5" cy="5" r="4" className="fill-slate-500 dark:fill-slate-400" />
+            </svg>
+            PFE informado no exame anterior
+          </li>
+        ) : null}
       </ul>
     </div>
   )
@@ -252,7 +361,13 @@ export function IntergrowthChart({
 /** Figura derivada do mesmo resultado da prévia. É renderizada no laudo apenas
  * após ação explícita do médico e usa cores fixas para copiar/imprimir sem
  * depender do tema do navegador. */
-export function IntergrowthReportFigure({ preview }: { preview: IntergrowthBiometryPreviewResult }) {
+export function IntergrowthReportFigure({
+  preview,
+  priorExams = [],
+}: {
+  preview: IntergrowthBiometryPreviewResult
+  priorExams?: readonly StoredPriorGrowthExam[]
+}) {
   const percentilTexto = formatarPercentilIntergrowth(preview.percentile)
   if (!percentilTexto) return null
   const examDate = preview.dating?.examDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
@@ -270,7 +385,7 @@ export function IntergrowthReportFigure({ preview }: { preview: IntergrowthBiome
           Peso próprio da curva, calculado por {preview.formula}; independente do peso estimado exibido no texto do laudo.
         </span>
       </figcaption>
-      <IntergrowthChart preview={preview} percentilTexto={percentilTexto} interactive={false} reportMode />
+      <IntergrowthChart preview={preview} percentilTexto={percentilTexto} priorExams={priorExams} interactive={false} reportMode />
     </figure>
   )
 }
@@ -282,7 +397,7 @@ export function IntergrowthReportFigure({ preview }: { preview: IntergrowthBiome
  * classifica o crescimento. Tudo é derivado das props a cada render, então um
  * estado inválido nunca exibe o resultado anterior.
  */
-export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props) {
+export function IntergrowthPreview({ biometryState, chaveFemur, igState, priorExams = [] }: Props) {
   const preview = intergrowthBiometryPreviewFromDating(biometryState, chaveFemur, igState)
   const progressiveWeight = progressiveIntergrowthWeight(biometryState, chaveFemur)
   const percentilTexto = preview ? formatarPercentilIntergrowth(preview.percentile) : null
@@ -314,7 +429,7 @@ export function IntergrowthPreview({ biometryState, chaveFemur, igState }: Props
               <dd className="text-[13px] font-semibold tabular-nums text-gray-900 dark:text-gray-100">{percentilTexto}</dd>
             </div>
           </dl>
-          <IntergrowthChart preview={preview} percentilTexto={percentilTexto} />
+          <IntergrowthChart preview={preview} percentilTexto={percentilTexto} priorExams={priorExams} />
         </div>
       ) : (
         <p role="status" className="text-[12px] text-gray-400 dark:text-gray-500">

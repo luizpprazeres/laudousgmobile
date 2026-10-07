@@ -88,7 +88,13 @@ import { BiometryGrowthPanel } from './BiometryGrowthPanel'
 import { IntergrowthReportFigure } from './IntergrowthPreview'
 import { chaveFemurDoSchema } from '@/lib/calculators/fetalWeight'
 import { intergrowthBiometryPreviewFromDating } from '@/lib/calculators/intergrowthBiometry'
-import { attachStoredGrowthChart } from '@/lib/calculators/growthChartPersistence'
+import {
+  attachStoredGrowthChartWithPrior,
+  derivePriorGrowthExams,
+  priorGrowthInputsFromChartState,
+  priorGrowthRejectionMessage,
+  storedGrowthChartFromPreview,
+} from '@/lib/calculators/growthChartPersistence'
 import {
   BIOMETRY_GROWTH_SECTION_ID,
   BIOMETRY_SECTION_ID,
@@ -540,6 +546,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       examState?.ig ?? {},
     )
   }, [biometryGrowth.biometry, examState, reportGrowthRequested])
+  const reportGrowthPriorExams = useMemo(() => {
+    if (!reportGrowthPreview) return []
+    const inputs = priorGrowthInputsFromChartState(examState?.__growth_chart)
+    if (inputs.length === 0) return []
+    const result = derivePriorGrowthExams(storedGrowthChartFromPreview(reportGrowthPreview), inputs)
+    return result.ok ? result.priorExams : []
+  }, [examState?.__growth_chart, reportGrowthPreview])
 
   useEffect(() => {
     if (!reportGrowthRequested || reportGrowthPreview) return
@@ -1032,6 +1045,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       return
     }
     try {
+      const baseExamState = isTireoide
+        ? { ...tireoideState, __recommendations: examStates[categoria]?.__recommendations }
+        : categoria === 'DOPPLER_OBSTETRICO' ? estadoDopplerVisivel(examStates[categoria] ?? {})
+        : categoria === 'OBSTETRICA' ? { ...examStates[categoria], doppler: {} }
+        : examStates[categoria]
+      const growthChartResult = attachStoredGrowthChartWithPrior(
+        baseExamState,
+        reportGrowthPreview,
+        priorGrowthInputsFromChartState(examState?.__growth_chart),
+      )
+      if (!growthChartResult.ok) throw new Error(priorGrowthRejectionMessage(growthChartResult.reason))
       await saveWebReport({
         categoryCode: categoria,
         title: categoria === 'DOPPLER_OBSTETRICO'
@@ -1039,13 +1063,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           : currentCategory.name,
         laudoText: preview,
         examState: attachReportPresentation(
-          attachStoredGrowthChart(
-            isTireoide ? { ...tireoideState, __recommendations: examStates[categoria]?.__recommendations }
-              : categoria === 'DOPPLER_OBSTETRICO' ? estadoDopplerVisivel(examStates[categoria] ?? {})
-              : categoria === 'OBSTETRICA' ? { ...examStates[categoria], doppler: {} }
-              : examStates[categoria],
-            reportGrowthPreview,
-          ),
+          growthChartResult.state,
           previewHtml,
         ),
       })
@@ -1998,7 +2016,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 canUndoSuggestion={canUndoSuggestion}
                 onUndoSuggestion={undoAcceptedSuggestion}
                 updating={remoto && (motor.carregando || motor.desatualizado)}
-                reportFigure={reportGrowthPreview ? <IntergrowthReportFigure preview={reportGrowthPreview} /> : null}
+                reportFigure={reportGrowthPreview ? <IntergrowthReportFigure preview={reportGrowthPreview} priorExams={reportGrowthPriorExams} /> : null}
               />
 
             </div>

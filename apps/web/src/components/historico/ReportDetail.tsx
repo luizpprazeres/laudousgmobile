@@ -9,7 +9,7 @@ import { sanitizeReportHtml } from '@/components/laudar/reportRichText'
 import { IntergrowthReportFigure } from '@/components/laudar/IntergrowthPreview'
 import { IntergrowthPreviewPrintSheet } from '@/components/laudar/IntergrowthPrintSheet'
 import { reportFigureClipboardHtml } from '@/components/laudar/reportFigureClipboard'
-import { storedGrowthChartToPreview } from '@/lib/calculators/growthChartPersistence'
+import { storedGrowthChartPriorExams, storedGrowthChartToPreview } from '@/lib/calculators/growthChartPersistence'
 
 /**
  * O laudo aberto — o MESMO conteúdo no painel do desktop e na folha do celular.
@@ -38,6 +38,7 @@ export function ReportDetail({
   const fecharImpressao = useCallback(() => setImpressaoAberta(false), [])
   const reportFigureRef = useRef<HTMLDivElement>(null)
   const growthPreview = item.growthChart ? storedGrowthChartToPreview(item.growthChart) : null
+  const priorGrowthExams = item.growthChart ? storedGrowthChartPriorExams(item.growthChart) : []
 
   const copiar = async () => {
     try {
@@ -179,13 +180,14 @@ export function ReportDetail({
         )}
         {growthPreview ? (
           <div ref={reportFigureRef}>
-            <IntergrowthReportFigure preview={growthPreview} />
+            <IntergrowthReportFigure preview={growthPreview} priorExams={priorGrowthExams} />
           </div>
         ) : null}
       </article>
       <IntergrowthPreviewPrintSheet
         open={impressaoAberta}
         preview={growthPreview}
+        priorExams={priorGrowthExams}
         onClose={fecharImpressao}
       />
     </div>
