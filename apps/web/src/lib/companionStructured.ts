@@ -215,7 +215,7 @@ type GestationalAge = { weeks: string; days: string }
  * precisa converter antes de preencher. Sem isto, valores como `49.8 mm`
  * chegavam ao formulário, mas o renderer os recusava como número inválido.
  */
-function measurement(value: unknown, target: 'mm' | 'cm' | 'g' | 'index'): string {
+export function normalizeCompanionMeasurement(value: unknown, target: 'mm' | 'cm' | 'g' | 'index'): string {
   const raw = clean(value).toLowerCase().replace(/\s+/g, '')
   const match = raw.match(/[-+]?\d+(?:[.,]\d+)?/)
   if (!match) return ''
@@ -232,7 +232,7 @@ function measurement(value: unknown, target: 'mm' | 'cm' | 'g' | 'index'): strin
   return (formatted.includes('.') ? formatted.replace(/0+$/, '').replace(/\.$/, '') : formatted).replace('.', ',')
 }
 
-function gestationalAge(value: unknown): GestationalAge | null {
+export function parseCompanionGestationalAge(value: unknown): GestationalAge | null {
   const raw = clean(value).toLowerCase()
   const match = raw.match(/(\d{1,2})\s*(?:s(?:emanas?)?|w(?:eeks?)?)?\s*(?:\+|e|,|\s)?\s*(\d)?\s*(?:d(?:ias?)?)?/)
   if (!match?.[1]) return null
@@ -254,14 +254,14 @@ function biometricPatch(data: CompanionBiometricData, morphologic: boolean): Org
     ['cisterna', 'cisternaMagna'], ['binocular', 'binocularDistance'],
   )
   for (const [target, source] of pairs) {
-    const value = measurement(data[source], source === 'weight' ? 'g' : 'mm')
+    const value = normalizeCompanionMeasurement(data[source], source === 'weight' ? 'g' : 'mm')
     if (value) patch[target] = value
   }
   return patch
 }
 
 function gestationalAgePatch(data: CompanionBiometricData, dopplerOnly = false): OrganState | null {
-  const parsed = gestationalAge(
+  const parsed = parseCompanionGestationalAge(
     dopplerOnly
       ? data.gestAge ?? data.gestAgeLMP ?? data.gestAgeBiometry
       : data.gestAgeBiometry ?? data.gestAge,
@@ -283,7 +283,7 @@ function dopplerPatch(data: CompanionBiometricData, addon: boolean): OrganState 
   ]
   const patch: OrganState = {}
   for (const [target, source] of pairs) {
-    const value = measurement(data[source], 'index')
+    const value = normalizeCompanionMeasurement(data[source], 'index')
     if (value) patch[`${prefix}${target}`] = value
   }
   const right = Number.parseFloat(clean(data.ipRightUterine).replace(',', '.'))
@@ -310,23 +310,23 @@ export function applyCompanionStructured(
   if (payload.category === 'OBSTETRICA') {
     mergeSection('biometria', biometricPatch(data, false))
     mergeSection('ig', gestationalAgePatch(data))
-    if (measurement(data.percentile, 'index')) mergeSection('crescimento_fetal', {
+    if (normalizeCompanionMeasurement(data.percentile, 'index')) mergeSection('crescimento_fetal', {
       avaliar: 'sim',
-      'avaliar.sim.percentil': measurement(data.percentile, 'index'),
+      'avaliar.sim.percentil': normalizeCompanionMeasurement(data.percentile, 'index'),
       'avaliar.sim.fonte': 'outra',
       'avaliar.sim.fonte_outra': 'informado pelo aparelho',
     })
   } else if (payload.category === 'MORFOLOGICO') {
     mergeSection('biometria', biometricPatch(data, true))
     mergeSection('ig', gestationalAgePatch(data))
-    const ila = measurement(data.ila, 'cm')
+    const ila = normalizeCompanionMeasurement(data.ila, 'cm')
     if (ila) mergeSection('extrafetal', { ila })
     const gender = clean(data.gender).toLowerCase()
     if (/masculin/.test(gender)) mergeSection('anatomia', { genitalia: 'masculina' })
     else if (/feminin/.test(gender)) mergeSection('anatomia', { genitalia: 'feminina' })
-    if (measurement(data.percentile, 'index')) mergeSection('crescimento_fetal', {
+    if (normalizeCompanionMeasurement(data.percentile, 'index')) mergeSection('crescimento_fetal', {
       avaliar: 'sim',
-      'avaliar.sim.percentil': measurement(data.percentile, 'index'),
+      'avaliar.sim.percentil': normalizeCompanionMeasurement(data.percentile, 'index'),
       'avaliar.sim.fonte': 'outra',
       'avaliar.sim.fonte_outra': 'informado pelo aparelho',
     })
@@ -337,7 +337,7 @@ export function applyCompanionStructured(
     if (ig) mergeSection('ig', { bio_sem: ig.ig_sem, bio_dias: ig.ig_dias })
     if (current.__opts?.somente_doppler !== 'sim') {
       mergeSection('biometria', biometricPatch(data, false))
-      const ila = measurement(data.ila, 'cm')
+      const ila = normalizeCompanionMeasurement(data.ila, 'cm')
       if (ila) mergeSection('liquido', { tipo: 'ila', 'tipo.ila.cm': ila })
     }
   }

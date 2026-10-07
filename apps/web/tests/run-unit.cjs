@@ -55,6 +55,7 @@ const files = [
   'src/lib/calculators/preEclampsia.test.mts',
   'src/lib/calculators/trisomyFmf.test.mts',
   'src/lib/companionStructured.test.ts',
+  'src/lib/companionReview.test.ts',
   'src/lib/catalog/dopplerCarotidasParaCatalogo.test.ts',
   'src/lib/catalog/pelveParaCatalogo.test.ts',
   'src/lib/catalog/morfologicoPrimeiroTrimestre.test.mts',

@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Check, Copy, Image, Loader2, Mic, RefreshCw, Smartphone, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Check, Copy, Image as ImageIcon, Loader2, Mic, RefreshCw, Smartphone, X } from 'lucide-react'
 import { categoryDisplayLabel } from '@laudousg/shared'
 import type { CompanionStructuredPayload } from '@/lib/companionStructured'
+import { companionReviewItems, parseCompanionStructuredPayload } from '@/lib/companionReview'
 import {
   createCompanionSession,
   latestCompanionSession,
@@ -28,6 +29,8 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [reviewingEventId, setReviewingEventId] = useState<string | null>(null)
+  const locallyAppliedEventIds = useRef(new Set<string>())
 
   const refresh = useCallback(async () => {
     const current = await latestCompanionSession()
@@ -63,25 +66,63 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
           <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Minimizar"><X className="h-4 w-4" /></button>
         </div>
 	        <div className="mt-3 max-h-[52vh] space-y-2 overflow-y-auto sm:max-h-64">
-          {events.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-3 text-center text-xs text-gray-400 dark:border-gray-700">Aguardando uma entrada do médico.</p> : events.map((event) => (
+          {events.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-3 text-center text-xs text-gray-400 dark:border-gray-700">Aguardando uma entrada do médico.</p> : events.map((event) => {
+            const structured = event.kind === 'structured_findings' ? parseCompanionStructuredPayload(event.payload) : null
+            const reviewing = reviewingEventId === event.id
+            const reviewItems = structured ? companionReviewItems(structured) : []
+            return (
             <div key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
               <p className={`mb-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${event.kind === 'structured_findings' ? 'text-sky-600 dark:text-sky-300' : 'text-violet-600 dark:text-violet-300'}`}>
-                {event.kind === 'structured_findings' ? <Image className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+                {event.kind === 'structured_findings' ? <ImageIcon className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
                 {event.kind === 'structured_findings' ? `Medidas extraídas · ${categoryDisplayLabel(event.payload.category)}` : 'Achados do médico'}
               </p>
               <p className="line-clamp-4 whitespace-pre-wrap text-xs leading-relaxed text-gray-700 dark:text-gray-200">{event.payload.text || event.payload.summary || 'Entrada sem texto'}</p>
+              {event.kind === 'structured_findings' && !structured ? (
+                <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-2 text-[11px] font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300">Nenhum campo estruturado válido foi reconhecido. A entrada não será aplicada.</p>
+              ) : null}
+              {reviewing && structured ? (
+                <div className="mt-2 rounded-xl bg-sky-50 p-2.5 dark:bg-sky-950/25" aria-label="Campos que serão preenchidos">
+                  <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300">Revise os dados reconhecidos</p>
+                  <dl className="space-y-1.5">
+                    {reviewItems.map((item) => (
+                      <div key={item.key} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-2 text-[11px] leading-snug">
+                        <dt className="font-semibold text-gray-600 dark:text-gray-300">{item.label}</dt>
+                        <dd className="break-words text-right text-gray-800 dark:text-gray-100">{item.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-2 text-[10px] leading-relaxed text-sky-800 dark:text-sky-200">Ao confirmar, os dados compatíveis com o modo atual serão aplicados ao formulário. Confira possíveis divergências com o que já foi preenchido.</p>
+                </div>
+              ) : null}
               <div className="mt-2 flex justify-end gap-2">
-                <button type="button" onClick={() => run(() => resolveCompanionEvent(event.id, 'dismissed'))} className="h-7 rounded-full px-2.5 text-[11px] font-semibold text-gray-500">Descartar</button>
-                <button type="button" onClick={() => run(async () => {
-                  if (event.kind === 'structured_findings' && event.payload.category && event.payload.data) onApplyStructured(event.payload as CompanionStructuredPayload)
-                  else { const text = event.payload.text?.trim(); if (text) onApplyText(text) }
-                  await resolveCompanionEvent(event.id, 'applied')
-                })} className="inline-flex h-7 items-center gap-1 rounded-full bg-amber-500 px-3 text-[11px] font-bold text-gray-950 hover:bg-amber-400">
-                  <Check className="h-3 w-3" /> {event.kind === 'structured_findings' ? 'Preencher campos' : 'Inserir achado'}
+                <button type="button" disabled={loading || locallyAppliedEventIds.current.has(event.id)} onClick={() => run(() => resolveCompanionEvent(event.id, 'dismissed'))} className="h-7 rounded-full px-2.5 text-[11px] font-semibold text-gray-500 disabled:opacity-40">Descartar</button>
+                <button type="button" disabled={loading || (event.kind === 'structured_findings' && !structured)} onClick={() => {
+                  if (structured && !reviewing) { setReviewingEventId(event.id); return }
+                  run(async () => {
+                    if (!locallyAppliedEventIds.current.has(event.id)) {
+                      if (structured) onApplyStructured(structured)
+                      else {
+                        const text = event.payload.text?.trim()
+                        if (!text) throw new Error('A entrada recebida está sem texto e não pode ser aplicada.')
+                        onApplyText(text)
+                      }
+                      locallyAppliedEventIds.current.add(event.id)
+                    }
+                    try {
+                      await resolveCompanionEvent(event.id, 'applied')
+                      setEvents((current) => current.filter((item) => item.id !== event.id))
+                      locallyAppliedEventIds.current.delete(event.id)
+                      setReviewingEventId(null)
+                    } catch (cause) {
+                      throw new Error(`Os dados foram aplicados, mas a sincronização não terminou. Tente novamente sem reinserir: ${cause instanceof Error ? cause.message : String(cause)}`)
+                    }
+                  })
+                }} className="inline-flex h-7 items-center gap-1 rounded-full bg-amber-500 px-3 text-[11px] font-bold text-gray-950 hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40">
+                  <Check className="h-3 w-3" /> {locallyAppliedEventIds.current.has(event.id) ? 'Finalizar sincronização' : structured ? (reviewing ? 'Confirmar preenchimento' : 'Revisar campos') : event.kind === 'structured_findings' ? 'Entrada inválida' : 'Inserir achado'}
                 </button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
         <button type="button" onClick={() => run(() => revokeCompanionSession(session.id))} className="mt-2 text-[11px] font-semibold text-red-500">Encerrar conexão</button>
         {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
