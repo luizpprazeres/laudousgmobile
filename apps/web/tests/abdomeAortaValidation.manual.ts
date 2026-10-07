@@ -23,15 +23,17 @@ for (const calibre of ['ectasia', 'aneurisma'] as const) {
   }
 }
 
-const valido = adaptarAbdome({
-  ...base,
-  aorta: { ...base.aorta, calibre: 'aneurisma', 'calibre.aneurisma.diametro': '45 mm' },
-})
-assert.equal(valido.pendencias.some((item) => item.onde === 'aorta' && item.bloqueia), false)
-assert.deepEqual(
-  ((valido.dados.orgaos as any).aorta.achados[0].medidas_cm),
-  [4.5],
-)
+for (const diametro of ['45 mm', '45mm']) {
+  const valido = adaptarAbdome({
+    ...base,
+    aorta: { ...base.aorta, calibre: 'aneurisma', 'calibre.aneurisma.diametro': diametro },
+  })
+  assert.equal(valido.pendencias.some((item) => item.onde === 'aorta' && item.bloqueia), false)
+  assert.deepEqual(
+    ((valido.dados.orgaos as any).aorta.achados[0].medidas_cm),
+    [4.5],
+  )
+}
 
 const centimetrosExplicitos = adaptarAbdome({
   ...base,

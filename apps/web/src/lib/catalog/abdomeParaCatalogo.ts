@@ -97,16 +97,17 @@ function numeroPositivo(s: EstadoDaSecao, k: string): number | null {
   return Number.isFinite(valor) && valor > 0 ? valor : null;
 }
 
-function medidaEscalarPositiva(s: EstadoDaSecao, k: string): boolean {
+function medidaEscalarCm(s: EstadoDaSecao, k: string): number | null {
   const raw = texto(s, k);
-  if (!raw) return false;
+  if (!raw) return null;
   const match = raw.match(/^\s*(\d+(?:[.,]\d+)?)\s*(cm|mm)?\s*$/i);
-  if (!match) return false;
+  if (!match) return null;
   const valor = Number.parseFloat(match[1].replace(",", "."));
-  if (!Number.isFinite(valor) || valor <= 0) return false;
+  if (!Number.isFinite(valor) || valor <= 0) return null;
   // O campo é rotulado em cm. Um valor de dois dígitos sem unidade costuma ser
   // uma medida em mm; exija a unidade para não transformar 45 mm em 45 cm.
-  return Boolean(match[2]) || valor < 10;
+  if (!match[2] && valor >= 10) return null;
+  return match[2]?.toLowerCase() === "mm" ? valor / 10 : valor;
 }
 
 const numeroPtBr = (valor: number): string => String(valor).replace(".", ",");
@@ -366,7 +367,10 @@ function achadosDaAorta(s: EstadoDaSecao): Achado[] {
   const calibre = texto(s, "calibre");
   if (calibre === "ectasia" || calibre === "aneurisma") {
     out.push(achado({
-      medidas_cm: medidasCm(s, `calibre.${calibre}.diametro`, "cm"),
+      medidas_cm: (() => {
+        const valor = medidaEscalarCm(s, `calibre.${calibre}.diametro`);
+        return valor === null ? null : [valor];
+      })(),
       descricao_livre: calibre === "aneurisma" ? "Dilatação aneurismática da aorta abdominal" : "Ectasia da aorta abdominal",
       termo_do_medico: calibre === "aneurisma" ? "aneurisma da aorta abdominal" : "aorta ectasiada",
     }));
@@ -454,7 +458,7 @@ export function adaptarAbdome(estado: EstadoDoAbdome): Adaptacao {
   const calibreAorta = texto(aorta, "calibre");
   if (
     (calibreAorta === "ectasia" || calibreAorta === "aneurisma") &&
-    !medidaEscalarPositiva(aorta, `calibre.${calibreAorta}.diametro`)
+    medidaEscalarCm(aorta, `calibre.${calibreAorta}.diametro`) === null
   ) {
     pendencias.push({
       onde: "aorta",
