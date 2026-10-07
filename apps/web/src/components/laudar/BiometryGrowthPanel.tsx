@@ -30,7 +30,7 @@ type Props = {
   igState: OrganState
   onGrowthChange: (next: OrganState) => void
   chartState?: OrganState
-  onChartStateChange?: (next: OrganState) => void
+  onChartStateChange?: (next: OrganState | ((current: OrganState) => OrganState)) => void
   compact?: boolean
 }
 
@@ -67,7 +67,7 @@ export function BiometryGrowthPanel({
   useEffect(() => { if (!printable) setPrintOpen(false) }, [printable])
   useEffect(() => {
     if (!printable && chartIncluded && onChartStateChange) {
-      onChartStateChange({ ...chartState, incluir: 'nao' })
+      onChartStateChange((current) => ({ ...current, incluir: 'nao' }))
     }
   }, [chartIncluded, chartState, onChartStateChange, printable])
   const headingClass = 'mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400'
@@ -110,7 +110,7 @@ export function BiometryGrowthPanel({
           {onChartStateChange ? (
             <button
               type="button"
-              onClick={() => onChartStateChange({ ...chartState, incluir: chartIncluded ? 'nao' : 'sim' })}
+              onClick={() => onChartStateChange((current) => ({ ...current, incluir: chartIncluded ? 'nao' : 'sim' }))}
               aria-pressed={chartIncluded}
               className={`min-h-8 rounded-md border px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${chartIncluded
                 ? 'border-emerald-600 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
@@ -156,7 +156,10 @@ export function BiometryGrowthPanel({
                     type="date"
                     value={String(chartState[PRIOR_GROWTH_EXAM_DATE_KEY] ?? '')}
                     max={preview?.dating?.examDate}
-                    onChange={(event) => onChartStateChange({ ...chartState, [PRIOR_GROWTH_EXAM_DATE_KEY]: event.target.value })}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      onChartStateChange((current) => ({ ...current, [PRIOR_GROWTH_EXAM_DATE_KEY]: value }))
+                    }}
                     className="mt-1 h-9 w-full rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                   />
                 </label>
@@ -168,7 +171,10 @@ export function BiometryGrowthPanel({
                     step="1"
                     inputMode="numeric"
                     value={String(chartState[PRIOR_GROWTH_EXAM_WEIGHT_KEY] ?? '')}
-                    onChange={(event) => onChartStateChange({ ...chartState, [PRIOR_GROWTH_EXAM_WEIGHT_KEY]: event.target.value })}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      onChartStateChange((current) => ({ ...current, [PRIOR_GROWTH_EXAM_WEIGHT_KEY]: value }))
+                    }}
                     className="mt-1 h-9 w-full rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                     placeholder="Ex.: 400"
                   />
@@ -176,10 +182,12 @@ export function BiometryGrowthPanel({
                 <button
                   type="button"
                   onClick={() => {
-                    const next = { ...chartState }
-                    delete next[PRIOR_GROWTH_EXAM_DATE_KEY]
-                    delete next[PRIOR_GROWTH_EXAM_WEIGHT_KEY]
-                    onChartStateChange(next)
+                    onChartStateChange((current) => {
+                      const next = { ...current }
+                      delete next[PRIOR_GROWTH_EXAM_DATE_KEY]
+                      delete next[PRIOR_GROWTH_EXAM_WEIGHT_KEY]
+                      return next
+                    })
                     setPriorEditorOpen(false)
                   }}
                   title="Remover exame anterior"

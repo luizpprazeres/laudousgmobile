@@ -1185,13 +1185,16 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     return fields >= 9 ? 'wide' : 'regular'
   }
 
-  const updateSectionState = (sectionId: string, nextState: OrganState, invalidatePercentile = true) =>
-    setExamStates((all) => ({
-      ...all,
-      [categoria]: invalidatePercentile
-        ? invalidarPercentilManual(all[categoria], { ...all[categoria], [sectionId]: nextState })
-        : { ...all[categoria], [sectionId]: nextState },
-    }))
+  const updateSectionState = (sectionId: string, nextState: OrganState | ((current: OrganState) => OrganState), invalidatePercentile = true) =>
+    setExamStates((all) => {
+      const resolved = typeof nextState === 'function' ? nextState(all[categoria]?.[sectionId] ?? {}) : nextState
+      return {
+        ...all,
+        [categoria]: invalidatePercentile
+          ? invalidarPercentilManual(all[categoria], { ...all[categoria], [sectionId]: resolved })
+          : { ...all[categoria], [sectionId]: resolved },
+      }
+    })
 
   const singleScope: SectionScope = {
     key: categoria,
@@ -1211,10 +1214,13 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     const examState = scope.state
     const opts = ((scope.state.__opts as Record<string, string | string[]> | undefined) ?? {}) as Record<string, string | string[]>
     const calculators = scope.calculators
-    const updateSectionState = (sectionId: string, nextState: OrganState, invalidatePercentile = true) =>
-      scope.update((current) => invalidatePercentile
-        ? invalidarPercentilManual(current, { ...current, [sectionId]: nextState })
-        : { ...current, [sectionId]: nextState })
+    const updateSectionState = (sectionId: string, nextState: OrganState | ((current: OrganState) => OrganState), invalidatePercentile = true) =>
+      scope.update((current) => {
+        const resolved = typeof nextState === 'function' ? nextState(current[sectionId] ?? {}) : nextState
+        return invalidatePercentile
+          ? invalidarPercentilManual(current, { ...current, [sectionId]: resolved })
+          : { ...current, [sectionId]: resolved }
+      })
 
     if (section.id === 'calc:bi-rads' && isMamaria) return <MamariaBiradsPanel state={examState?.mamas ?? {}} onChange={state => updateSectionState('mamas', state, false)} />
     if (section.id === 'liver-quantification') return <div className="space-y-3">
