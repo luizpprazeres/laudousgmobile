@@ -1,12 +1,12 @@
 {
   "competitor": "Laudário",
-  "updated_at": "2026-10-07T22:39:10-03:00",
+  "updated_at": "2026-10-07T22:49:00-03:00",
   "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
   "totals": {
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 30,
+    "base_functionally_studied": 32,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1,
     "laudousg_synthetic_probe_entries": 19
@@ -200,6 +200,20 @@
       "laudousg_code": "DOPPLER_MESENTERICO",
       "case": "cases/doppler-arterias-mesentericas-2026-10-07.md",
       "crosswalk": "crosswalk-doppler-arterias-mesentericas-2026-10-07.md"
+    },
+    {
+      "competitor_exam": "Morfológico 2º Trimestre",
+      "laudousg_code": "MORFOLOGICO",
+      "case": "cases/morfologico-2-trimestre-2026-10-07.md",
+      "crosswalk": "crosswalk-morfologico-2-trimestre-2026-10-07.md",
+      "graph_case": "cases/morfologico-2-trimestre-graficos-2026-10-07.md",
+      "graph_crosswalk": "crosswalk-morfologico-2-trimestre-graficos-2026-10-07.md"
+    },
+    {
+      "competitor_exam": "Obstétrico 2º/3º Trimestre - Gemelar",
+      "laudousg_code": "OBSTETRICA",
+      "case": "cases/obstetrico-gemelar-2026-10-07.md",
+      "crosswalk": "crosswalk-obstetrico-gemelar-2026-10-07.md"
     }
   ],
   "absence_checks": [
@@ -210,7 +224,6 @@
     }
   ],
   "queue": [
-    "Rodada funcional no Laudário: Morfológico 2º Trimestre e Obstétrico Gemelar",
     "Aparelho Urinário com Doppler",
     "Abdome Superior com Doppler",
     "Pélvico Transvaginal com Doppler",
@@ -223,8 +236,8 @@
   ],
   "competitor_observation": {
     "status": "ativa em 2026-10-07",
-    "motivo": "navegador autenticado disponível; Monitorização Folicular e os Dopplers de Artérias Temporais e Mesentéricas concluídos e restaurados; Obstétrico Gemelar ainda sem observação funcional",
-    "efeito": "totals.base_functionally_studied avançou para 30; Temporais e Mesentéricas ganharam caso e crosswalk; Gemelar permanece na fila"
+    "motivo": "navegador autenticado disponível; Morfológico 2º Trimestre e Obstétrico Gemelar concluídos e restaurados após Temporais e Mesentéricas",
+    "efeito": "totals.base_functionally_studied avançou para 32; os dois preflights clínicos prioritários ganharam caso e crosswalk; a fila segue para variantes com Doppler"
   },
   "preflights": [
     {

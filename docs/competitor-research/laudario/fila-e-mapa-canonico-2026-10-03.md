@@ -4,20 +4,15 @@ Atualizado em 07/10/2026. A fila considera impacto clínico, uso provável, dife
 
 ## Cobertura
 
-Foram concluídas rodadas funcionais de 30 dos 84 modelos-base do catálogo, aproximadamente 35,7%. Isso representa 30 das 99 entradas totais, aproximadamente 30,3%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
+Foram concluídas rodadas funcionais de 32 dos 84 modelos-base do catálogo, aproximadamente 38,1%. Isso representa 32 das 99 entradas totais, aproximadamente 32,3%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
 
 ## Próximas prioridades
 
-Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais e Aparelho Urinário foram concluídas. A última incluiu comparação do mesmo painel em Abdome Total e Doppler Aortorrenal. Em 07/10, o Morfológico 2º trimestre recebeu uma sondagem parcial dos gráficos, e Monitorização Folicular, Doppler de Artérias Temporais e Doppler de Artérias Mesentéricas foram concluídos. Obstétrico Gemelar recebeu preflight de código, mas segue pendente de observação. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
+Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais e Aparelho Urinário foram concluídas. A última incluiu comparação do mesmo painel em Abdome Total e Doppler Aortorrenal. Em 07/10, Monitorização Folicular, Doppler de Artérias Temporais, Doppler de Artérias Mesentéricas, Morfológico 2º Trimestre e Obstétrico Gemelar foram concluídos; o morfológico também tem complemento de gráficos. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
 
 ### A. Rodada funcional no Laudário
 
-Os cenários já estão definidos nos relatórios de cada exame. Basta executá-los e comparar.
-
-| Ordem | Exame | Relatório com os cenários |
-| --- | --- | --- |
-| 1 | Morfológico 2º trimestre — cenários clínicos; gráficos já observados | `audits/lote2/morfologico-2-trimestre-2026-10-05.md` |
-| 2 | Obstétrico gemelar 2º/3º trimestre | `audits/lote3/obstetrico-gemelar-2026-10-05.md` |
+Não há preflight clínico prioritário pendente deste lote. As próximas observações funcionais são as variantes com Doppler listadas abaixo.
 
 ### B. Próximo lote de prova sintética (ainda sem relatório)
 
