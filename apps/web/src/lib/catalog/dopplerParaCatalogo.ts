@@ -26,7 +26,7 @@ export function dopplerDaTela(
   const standalone = options?.standalone === true
   if (!standalone && texto(d, 'realizado') !== 'sim') return null
   const key = (name: string) => standalone ? name : `realizado.sim.${name}`
-  const centralizacao = texto(d, key('centralizacao')) || 'ausente'
+  const centralizacao = texto(d, key('centralizacao'))
   const ipUterinaDireita = numero(d, key('ip_ut_dir'))
   const ipUterinaEsquerda = numero(d, key('ip_ut_esq'))
   const ipMedioCalculado = ipUterinaDireita !== null && ipUterinaEsquerda !== null
@@ -37,8 +37,9 @@ export function dopplerDaTela(
   const weeks = standalone ? numero(d, 'ig_sem') : numero(ig, 'bio_sem')
   const days = (standalone ? numero(d, 'ig_dias') : numero(ig, 'bio_dias')) ?? 0
   const somenteIpUterinas = weeks !== null && weeks <= 15
-  const umbilicalQualitativo = texto(d, key('umbilical')) || 'normal'
-  const ductoQualitativo = texto(d, key('ducto_fluxo')) || 'normal'
+  const umbilicalQualitativo = texto(d, key('umbilical'))
+  const acmQualitativo = texto(d, key('acm'))
+  const ductoQualitativo = texto(d, key('ducto_fluxo'))
   const ipUmbilical = somenteIpUterinas ? null : numero(d, key('ip_umb'))
   const ipAcm = somenteIpUterinas ? null : numero(d, key('ip_acm'))
   const ipDuctoVenoso = somenteIpUterinas ? null : numero(d, key('ip_dv'))
@@ -65,20 +66,23 @@ export function dopplerDaTela(
     ir_umbilical: somenteIpUterinas ? null : numero(d, key('ir_umb')),
     ip_umbilical: ipUmbilical,
     perc_umbilical: calculado.arteriaUmbilical?.percentile ?? null,
-    fluxo_diastolico_umbilical: somenteIpUterinas
+    fluxo_diastolico_umbilical: somenteIpUterinas || umbilicalQualitativo === 'nao_avaliado' || !umbilicalQualitativo
       ? null
       : umbilicalQualitativo === 'diastole_ausente'
         ? 'ausente'
         : umbilicalQualitativo === 'diastole_reversa'
           ? 'reverso'
-          : 'presente',
+          : umbilicalQualitativo === 'normal'
+            ? 'presente'
+            : null,
     ir_acm: somenteIpUterinas ? null : numero(d, key('ir_acm')),
     ip_acm: ipAcm,
     perc_acm: calculado.arteriaCerebralMedia?.percentile ?? null,
     ir_ducto_venoso: somenteIpUterinas ? null : numero(d, key('ir_dv')),
     ip_ducto_venoso: ipDuctoVenoso,
     perc_ducto_venoso: calculado.ductoVenoso?.percentile ?? null,
-    ducto_venoso_qualitativo: somenteIpUterinas || ductoQualitativo === 'normal'
+    ducto_venoso_qualitativo: somenteIpUterinas || !ductoQualitativo ||
+      ductoQualitativo === 'nao_avaliado' || ductoQualitativo === 'normal'
       ? null
       : ductoQualitativo === 'ip_acima_p95'
         ? 'índice de pulsatilidade acima do percentil 95'
@@ -90,14 +94,38 @@ export function dopplerDaTela(
     rcp: somenteIpUterinas ? null : numero(d, key('rcp')) ?? rcpCalculada,
     perc_rcp: calculado.ratioCerebroplacentario?.percentile ?? null,
     perfil_hemodinamico: somenteIpUterinas ? null : numero(d, key('perfil')),
-    umbilical_alterado:
-      !somenteIpUterinas && calculado.arteriaUmbilical?.pathological === true,
-    acm_alterado:
-      !somenteIpUterinas && (texto(d, key('acm')) === 'alterada' || calculado.arteriaCerebralMedia?.pathological === true),
-    incisura: somenteIpUterinas ? null : texto(d, key('incisura')) === 'presente',
+    umbilical_alterado: somenteIpUterinas
+      ? null
+      : calculado.arteriaUmbilical?.pathological === true
+        ? true
+        : ['alterada', 'diastole_ausente', 'diastole_reversa'].includes(umbilicalQualitativo)
+          ? true
+          : umbilicalQualitativo === 'normal'
+            ? false
+            : calculado.arteriaUmbilical?.pathological ?? null,
+    acm_alterado: somenteIpUterinas
+      ? null
+      : calculado.arteriaCerebralMedia?.pathological === true
+        ? true
+        : acmQualitativo === 'alterada'
+          ? true
+          : acmQualitativo === 'normal'
+            ? false
+            : calculado.arteriaCerebralMedia?.pathological ?? null,
+    incisura: somenteIpUterinas
+      ? null
+      : texto(d, key('incisura')) === 'presente'
+        ? true
+        : texto(d, key('incisura')) === 'ausente'
+          ? false
+          : null,
     ectasia: null,
-    pre_centralizacao: somenteIpUterinas ? null : centralizacao === 'pre',
-    centralizacao: somenteIpUterinas ? null : centralizacao === 'presente',
+    pre_centralizacao: somenteIpUterinas || !centralizacao || centralizacao === 'nao_avaliado'
+      ? null
+      : centralizacao === 'pre',
+    centralizacao: somenteIpUterinas || !centralizacao || centralizacao === 'nao_avaliado'
+      ? null
+      : centralizacao === 'presente',
     uterinas_acima_p95: calculado.arteriasUterinas?.pathological ?? null,
   }
 }

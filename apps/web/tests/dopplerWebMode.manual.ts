@@ -54,15 +54,44 @@ test('isolated payload and saved state exclude hidden data; draft keys differ', 
   assert.equal(adaptarDopplerWeb(combined).dados.numero_fetos, 1)
   assert.deepEqual(estadoDopplerVisivel(combined).__growth_chart, { incluir: 'sim' })
 })
-test('hidden qualitative confirmations and pre-16-week indices do not leave web', () => {
+test('hidden qualitative confirmations do not leave web; pre-16-week indices block instead of disappearing', () => {
   assert.equal(estadoDopplerVisivel(combined).doppler['umbilical.diastole_ausente.confirmada'], undefined)
   const early = { ...combined, ig: { bio_sem: '12', bio_dias: '3' } }
   const saved = estadoDopplerVisivel(early)
   assert.equal(saved.doppler.ip_umb, undefined)
   assert.equal(saved.doppler.ip_acm, undefined)
   assert.equal(saved.doppler.ip_ut_dir, '0,7')
-  const doppler = adaptarDopplerWeb(early).dados.doppler as Record<string, unknown>
+  const adaptado = adaptarDopplerWeb(early)
+  const doppler = adaptado.dados.doppler as Record<string, unknown>
   assert.equal(doppler.ip_umbilical, null)
+  assert.ok(adaptado.pendencias.some((p) => p.onde.includes('artéria umbilical')))
+  assert.ok(adaptado.pendencias.some((p) => p.onde.includes('artéria cerebral média')))
+})
+test('pre-16-week abnormal qualitative finding also blocks; neutral legacy defaults do not', () => {
+  const abnormal = {
+    ...combined,
+    ig: { bio_sem: '12', bio_dias: '3' },
+    doppler: { ...combined.doppler, ip_umb: '', ip_acm: '', centralizacao: 'presente' },
+  }
+  assert.ok(adaptarDopplerWeb(abnormal).pendencias.some((p) => p.onde.includes('Centralização')))
+  const legacyNeutral = {
+    ...abnormal,
+    doppler: { ...abnormal.doppler, centralizacao: 'ausente', umbilical: 'normal', acm: 'normal' },
+  }
+  assert.equal(
+    adaptarDopplerWeb(legacyNeutral).pendencias.filter((p) => p.onde.startsWith('Doppler obstétrico')).length,
+    0,
+  )
+})
+test('qualitativo normal contraditório com percentil patológico bloqueia a geração', () => {
+  const conflict = {
+    ...combined,
+    ig: { bio_sem: '30', bio_dias: '0' },
+    doppler: { ...combined.doppler, ip_umb: '1,60', umbilical: 'normal', ip_acm: '0,90', acm: 'normal' },
+  }
+  const adaptado = adaptarDopplerWeb(conflict)
+  assert.ok(adaptado.pendencias.some((p) => p.onde.includes('Artéria umbilical')))
+  assert.ok(adaptado.pendencias.some((p) => p.onde.includes('Artéria cerebral média')))
 })
 test('OBSTETRICA ignores legacy hidden Doppler, including growth calculations', () => {
   const legacy = {

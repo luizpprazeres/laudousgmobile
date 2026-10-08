@@ -401,18 +401,28 @@ function acmComprometida(d: DopplerData): boolean {
 
 function fraseNormalIP(d: DopplerData, incluirUterinas: boolean): string | null {
   const v = vasoMedido(d);
-  // ACM só pode entrar como NORMAL se medida E não comprometida.
-  const acmOk = v.acm && !acmComprometida(d);
-  const ut = incluirUterinas && v.uterinas;
+  // Valor medido sem percentil/avaliação explícita é descritivo, não "normal".
+  // Isso evita falsa tranquilização fora da faixa da referência ou sem IG.
+  const acmOk =
+    v.acm &&
+    (d.percACM !== undefined || d.acmAlterado === false) &&
+    !acmComprometida(d);
+  const umbilicalOk =
+    v.umbilical &&
+    (d.percUmbilical !== undefined || d.umbilicalAlterado === false);
+  const uterinasOk =
+    v.uterinas &&
+    (d.percMedioUterinas !== undefined || d.uterinasAcimaP95 === false);
+  const ut = incluirUterinas && uterinasOk;
   // Frases CANÔNICAS exatas (byte-stability) para os casos completos:
-  if (ut && v.umbilical && acmOk)
+  if (ut && umbilicalOk && acmOk)
     return "Índice de pulsatilidade normal nas artérias uterinas, umbilical e artéria cerebral média.";
-  if (!ut && v.umbilical && acmOk)
+  if (!ut && umbilicalOk && acmOk)
     return "Índices de pulsatilidade normais nas artérias umbilical e cerebral média.";
   // Subconjuntos (vaso não medido / ACM comprometida): frase só com o normal.
   const partes: string[] = [];
   if (ut) partes.push("uterinas");
-  if (v.umbilical) partes.push("umbilical");
+  if (umbilicalOk) partes.push("umbilical");
   if (acmOk) partes.push("cerebral média");
   if (partes.length === 0) return null;
   const lista =

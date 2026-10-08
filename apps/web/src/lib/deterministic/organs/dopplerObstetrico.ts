@@ -16,7 +16,8 @@ const MEDIDAS: Field[] = [
   {
     key: 'ducto_fluxo', label: 'Ducto venoso — avaliação qualitativa', kind: 'segmented', minGestationalWeeks: 16,
     options: [
-      { value: 'normal', label: 'Normal', isDefault: true },
+      { value: 'nao_avaliado', label: 'Não avaliado', isDefault: true },
+      { value: 'normal', label: 'Normal' },
       {
         value: 'ip_acima_p95', label: 'IP > p95',
         subFields: [{ key: 'confirmada', label: 'Confirmado após 6–12 h?', kind: 'mini-segmented', options: [{ value: 'nao', label: 'Não', isDefault: true }, { value: 'sim', label: 'Sim' }] }],
@@ -39,12 +40,17 @@ const MEDIDAS: Field[] = [
   { key: 'perfil', label: 'Perfil hemodinâmico (opcional)', kind: 'text', placeholder: '0,80', minGestationalWeeks: 16 },
   {
     key: 'incisura', label: 'Incisuras uterinas', kind: 'segmented', minGestationalWeeks: 16,
-    options: [{ value: 'ausente', label: 'Ausentes', isDefault: true }, { value: 'presente', label: 'Presentes' }],
+    options: [
+      { value: 'nao_avaliado', label: 'Não avaliadas', isDefault: true },
+      { value: 'ausente', label: 'Ausentes' },
+      { value: 'presente', label: 'Presentes' },
+    ],
   },
   {
     key: 'centralizacao', label: 'Centralização', kind: 'segmented', minGestationalWeeks: 16,
     options: [
-      { value: 'ausente', label: 'Ausente', isDefault: true },
+      { value: 'nao_avaliado', label: 'Não avaliada', isDefault: true },
+      { value: 'ausente', label: 'Ausente' },
       { value: 'pre', label: 'Pré-centralização' },
       { value: 'presente', label: 'Centralização' },
     ],
@@ -52,7 +58,8 @@ const MEDIDAS: Field[] = [
   {
     key: 'umbilical', label: 'Artéria umbilical', kind: 'segmented', minGestationalWeeks: 16,
     options: [
-      { value: 'normal', label: 'Normal', isDefault: true },
+      { value: 'nao_avaliado', label: 'Não avaliada', isDefault: true },
+      { value: 'normal', label: 'Normal' },
       { value: 'alterada', label: 'Alterada' },
       {
         value: 'diastole_ausente', label: 'Diástole ausente',
@@ -72,7 +79,11 @@ const MEDIDAS: Field[] = [
   },
   {
     key: 'acm', label: 'Artéria cerebral média', kind: 'segmented', minGestationalWeeks: 16,
-    options: [{ value: 'normal', label: 'Normal', isDefault: true }, { value: 'alterada', label: 'Alterada' }],
+    options: [
+      { value: 'nao_avaliado', label: 'Não avaliada', isDefault: true },
+      { value: 'normal', label: 'Normal' },
+      { value: 'alterada', label: 'Alterada' },
+    ],
   },
 ]
 
@@ -90,8 +101,8 @@ const DEFAULTS: OrganState = {
   ig_sem: '', ig_dias: '',
   ir_ut_dir: '', ip_ut_dir: '', ir_ut_esq: '', ip_ut_esq: '', ip_ut_medio: '',
   ir_umb: '', ip_umb: '', ir_acm: '', ip_acm: '', ir_dv: '', ip_dv: '',
-  rcp: '', perfil: '', incisura: 'ausente', centralizacao: 'ausente',
-  umbilical: 'normal', acm: 'normal', ducto_fluxo: 'normal',
+  rcp: '', perfil: '', incisura: 'nao_avaliado', centralizacao: 'nao_avaliado',
+  umbilical: 'nao_avaliado', acm: 'nao_avaliado', ducto_fluxo: 'nao_avaliado',
 }
 
 export function criarDopplerAddonModule(

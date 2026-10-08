@@ -51,6 +51,7 @@ const DOPPLER_NORMAL: DopplerObstetricoModule = {
   perfil_hemodinamico: 0.8,
   umbilical_alterado: false, acm_alterado: false,
   incisura: false, pre_centralizacao: false, centralizacao: false,
+  uterinas_acima_p95: false,
 };
 
 const ISOLADO = (doppler: DopplerObstetricoModule) =>
@@ -193,6 +194,47 @@ const morfoBase = MorfologicoFindingsSchema.parse({
   });
   const parsed = DopplerObstetricoFindingsSchema.parse(isolado.dados);
   check("web isolado: usa o mesmo schema canônico", parsed.ir_umbilical === 0.58 && parsed.ip_acm === 1.48);
+}
+
+{
+  const vazio = adaptarDopplerObstetrico({ doppler: {} });
+  const dados = DopplerObstetricoFindingsSchema.parse(vazio.dados);
+  check(
+    "web vazio: silêncio não vira achado normal ou ausente",
+    dados.fluxo_diastolico_umbilical === null &&
+      dados.ducto_venoso_qualitativo === null &&
+      dados.umbilical_alterado === null &&
+      dados.acm_alterado === null &&
+      dados.incisura === null &&
+      dados.pre_centralizacao === null &&
+      dados.centralizacao === null,
+    JSON.stringify(dados),
+  );
+}
+
+{
+  const contraditorio = adaptarDopplerObstetrico({
+    doppler: { ig_sem: "30", ip_umb: "1,60", umbilical: "normal", ip_acm: "0,90", acm: "normal" },
+  });
+  const dados = DopplerObstetricoFindingsSchema.parse(contraditorio.dados);
+  check(
+    "percentil patológico prevalece sobre seleção qualitativa normal",
+    dados.umbilical_alterado === true && dados.acm_alterado === true,
+    JSON.stringify(dados),
+  );
+}
+
+{
+  const semReferencia = adaptarDopplerObstetrico({
+    doppler: { ig_sem: "18", ip_umb: "1,30", ip_acm: "1,50" },
+  });
+  const laudo = renderDopplerObstetrico(DopplerObstetricoFindingsSchema.parse(semReferencia.dados));
+  check("sem referência: preserva os índices no corpo", /artéria umbilical de 1,30/i.test(laudo), laudo);
+  check(
+    "sem referência: não classifica IP como normal",
+    !/Índices? de (?:resistividade e de )?pulsatilidade normais?/i.test(laudo),
+    laudo,
+  );
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);

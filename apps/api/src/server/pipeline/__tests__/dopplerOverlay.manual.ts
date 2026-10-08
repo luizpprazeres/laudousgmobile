@@ -84,6 +84,8 @@ const dUt = buildDopplerConclusionItems({
   ipUmbilical: 0.9,
   ipACM: 1.7,
   ipMedioUterinas: 1.3,
+  percUmbilical: 50,
+  percACM: 50,
   percMedioUterinas: 97,
 });
 check(

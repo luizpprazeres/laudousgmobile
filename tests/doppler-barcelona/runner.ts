@@ -80,9 +80,9 @@ assert.equal(typeof adaptado?.perc_ducto_venoso, "number");
 assert.equal(typeof adaptado?.perc_rcp, "number");
 const laudoEstruturado = renderDopplerModule(adaptado as DopplerObstetricoModule);
 const achadosEstruturados = laudoEstruturado.achados.join("\n");
-assert.match(achadosEstruturados, /Artéria umbilical.*percentil/);
-assert.match(achadosEstruturados, /Artéria cerebral média.*percentil/);
-assert.match(achadosEstruturados, /Ducto venoso.*percentil/);
+assert.match(achadosEstruturados, /Artéria umbilical.*percentil/i);
+assert.match(achadosEstruturados, /Artéria cerebral média.*percentil/i);
+assert.match(achadosEstruturados, /Ducto venoso.*percentil/i);
 assert.match(achadosEstruturados, /Relação cérebro-placentária.*percentil/);
 assert.match(achadosEstruturados, /Calculadora v2021/);
 
