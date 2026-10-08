@@ -19,10 +19,10 @@ const ipFrase = (d: DopplerData) => buildDopplerConclusionItems(d).find((i) => /
 // ── CASO REAL 89ffa1ef: IP umbilical 2,11 + diástole zero ditada ──
 const RAW = "Ultrassonografia obstétrica com doppler ... maior bolsao vertical mede 5.8 cm . Coloque também uma frase de diastole zero na artéria umbilical";
 {
-  // ANTES (sem guard): umbilical não verbalizada "alterada", sem percentil → falso-normal.
+  // Sem IG/percentil, mesmo sem o guard a conclusão fica descritiva.
   const bruto: DopplerData = { ipUmbilical: 2.11, ipACM: 1.02, ipUterinaDir: 1.17, ipUterinaEsq: 1.87, ipMedioUterinas: 1.52 };
-  ck(/normal/i.test(ipFrase(bruto)) && /umbilical/i.test(ipFrase(bruto)),
-    "reprodução do BUG: sem guard, afirma 'IP normal na umbilical'", ipFrase(bruto));
+  ck(!/normal/i.test(ipFrase(bruto)),
+    "sem IG/percentil: não afirma IP normal na umbilical", ipFrase(bruto));
 
   // DEPOIS (com guard): diástole zero + IP 2,11 → nunca normal.
   const seguro = deriveUmbilicalSafety(bruto, RAW);
@@ -54,7 +54,7 @@ const RAW = "Ultrassonografia obstétrica com doppler ... maior bolsao vertical 
 
 // ── NÃO regride o normal: IP umbilical baixo, sem diástole ──
 {
-  const normal: DopplerData = { ipUmbilical: 0.9, ipACM: 1.5, ipUterinaDir: 0.8, ipUterinaEsq: 0.8, ipMedioUterinas: 0.8 };
+  const normal: DopplerData = { ipUmbilical: 0.9, ipACM: 1.5, ipUterinaDir: 0.8, ipUterinaEsq: 0.8, ipMedioUterinas: 0.8, gestationalWeeks: 30 };
   const d = deriveUmbilicalSafety(normal, "exame sem alterações");
   ck(d.umbilicalAlterado !== true, "umbilical 0,9 normal → intocado");
   ck(/pulsatilidade\s+normal/i.test(ipFrase(d)) && /umbilical/i.test(ipFrase(d)),
@@ -85,9 +85,9 @@ CONCLUSÃO:
 2) Índice de pulsatilidade normal nas artérias uterinas e umbilical.
 3) Diástole zero na artéria umbilical.`;
   const dBruto: DopplerData = { ipUmbilical: 2.11, ipUterinaDir: 1.17, ipUterinaEsq: 1.87, ipMedioUterinas: 1.52 };
-  // SEM guard: correctDopplerConclusion mantém/reescreve a frase normal.
+  // Mesmo sem o guard, dados sem referência não sustentam a frase normal.
   const semGuard = correctDopplerConclusion(laudoFalsoNormal, dBruto);
-  ck(/pulsatilidade\s+normal[^.]*umbilical/i.test(semGuard), "correctDopplerConclusion SEM guard: ainda pode afirmar normal");
+  ck(!/pulsatilidade\s+normal[^.]*umbilical/i.test(semGuard), "correctDopplerConclusion SEM guard: remove normalidade sem referência");
   // COM guard (d derivado): nunca normal na umbilical.
   const comGuard = correctDopplerConclusion(laudoFalsoNormal, deriveUmbilicalSafety(dBruto, RAW));
   ck(!/pulsatilidade\s+normal[^.]*umbilical/i.test(comGuard), "correctDopplerConclusion COM guard: NÃO afirma normal na umbilical");

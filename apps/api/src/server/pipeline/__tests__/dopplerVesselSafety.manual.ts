@@ -15,7 +15,7 @@ const ck = (n: boolean, t: string, d?: string) => { n ? pass++ : fail++; console
 
 // ── cenário 8c39aca6: SÓ uterinas medidas (umbilical/ACM não medidas a 16s) ──
 {
-  const d: DopplerData = { ipUterinaDir: 1.64, ipUterinaEsq: 1.34, ipMedioUterinas: 1.49 };
+  const d: DopplerData = { ipUterinaDir: 1.64, ipUterinaEsq: 1.34, ipMedioUterinas: 1.49, uterinasAcimaP95: false };
   const items = buildDopplerConclusionItems(d);
   const ipFrase = items.find((i) => /pulsatilidade/i.test(i)) ?? "";
   ck(/uterinas/i.test(ipFrase) && !/umbilical|cerebral/i.test(ipFrase),
@@ -24,7 +24,11 @@ const ck = (n: boolean, t: string, d?: string) => { n ? pass++ : fail++; console
 
 // ── todos medidos e normais → afirma os 3 ──
 {
-  const d: DopplerData = { ipUterinaDir: 0.8, ipUterinaEsq: 0.8, ipMedioUterinas: 0.8, ipUmbilical: 0.9, ipACM: 1.5 };
+  const d: DopplerData = {
+    ipUterinaDir: 0.8, ipUterinaEsq: 0.8, ipMedioUterinas: 0.8,
+    ipUmbilical: 0.9, ipACM: 1.5,
+    uterinasAcimaP95: false, umbilicalAlterado: false, acmAlterado: false,
+  };
   const ipFrase = buildDopplerConclusionItems(d).find((i) => /pulsatilidade/i.test(i)) ?? "";
   ck(/uterinas/i.test(ipFrase) && /umbilical/i.test(ipFrase) && /cerebral/i.test(ipFrase),
     "todos medidos normais → afirma uterinas + umbilical + cerebral", ipFrase);
@@ -32,7 +36,7 @@ const ck = (n: boolean, t: string, d?: string) => { n ? pass++ : fail++; console
 
 // ── só umbilical medida (singular correto) ──
 {
-  const d: DopplerData = { ipUmbilical: 0.9 };
+  const d: DopplerData = { ipUmbilical: 0.9, umbilicalAlterado: false };
   const ipFrase = buildDopplerConclusionItems(d).find((i) => /pulsatilidade/i.test(i)) ?? "";
   ck(ipFrase === "Índice de pulsatilidade normal na artéria umbilical.", "só umbilical → singular correto", ipFrase);
 }

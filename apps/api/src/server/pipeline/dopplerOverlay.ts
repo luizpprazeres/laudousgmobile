@@ -76,13 +76,23 @@ export function deriveUmbilicalSafety(d: DopplerData, rawInput?: string): Dopple
         ipUmbilical: d.ipUmbilical,
       }).arteriaUmbilical
     : undefined;
+  const classificado = calculado
+    ? {
+        ...d,
+        percUmbilical: d.percUmbilical ?? calculado.percentile,
+        umbilicalAlterado:
+          d.umbilicalAlterado === true || calculado.pathological === true
+            ? true
+            : false,
+      }
+    : d;
   const ipAlto =
-    d.umbilicalAlterado === true ||
-    (d.percUmbilical !== undefined && d.percUmbilical > 95) ||
+    classificado.umbilicalAlterado === true ||
+    (classificado.percUmbilical !== undefined && classificado.percUmbilical > 95) ||
     calculado?.pathological === true;
-  if (!diastoleZero && !ipAlto) return d;
+  if (!diastoleZero && !ipAlto) return classificado;
   return {
-    ...d,
+    ...classificado,
     umbilicalAlterado: true,
     diastoleZeroUmbilical: diastoleZero || d.diastoleZeroUmbilical,
   };
