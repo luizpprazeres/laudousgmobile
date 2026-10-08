@@ -30,6 +30,7 @@ type Props = {
   igState: OrganState
   onGrowthChange: (next: OrganState) => void
   chartState?: OrganState
+  onOpenUnifiedPrint?: () => void
   onChartStateChange?: (next: OrganState | ((current: OrganState) => OrganState)) => void
   compact?: boolean
 }
@@ -48,6 +49,7 @@ export function BiometryGrowthPanel({
   onGrowthChange,
   chartState = {},
   onChartStateChange,
+  onOpenUnifiedPrint,
   compact = false,
 }: Props) {
   const [printOpen, setPrintOpen] = useState(false)
@@ -119,7 +121,7 @@ export function BiometryGrowthPanel({
               {chartIncluded ? 'Remover gráfico do laudo' : 'Incluir gráfico no laudo'}
             </button>
           ) : null}
-          <button type="button" onClick={() => setPrintOpen(true)} aria-label="Abrir folha de crescimento fetal" title="Abrir folha de crescimento fetal"
+          <button type="button" onClick={onOpenUnifiedPrint ?? (() => setPrintOpen(true))} aria-label="Abrir folha de crescimento fetal" title="Abrir folha de crescimento fetal"
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
             <Printer className="h-4 w-4" aria-hidden="true" />
           </button>

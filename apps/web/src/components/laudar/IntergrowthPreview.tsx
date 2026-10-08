@@ -81,18 +81,23 @@ export function IntergrowthChart({
   priorExams = [],
   interactive = true,
   reportMode = false,
+  compact = false,
+  chartHeight = CHART_HEIGHT,
 }: {
   preview: IntergrowthBiometryPreviewResult
   percentilTexto: string
   priorExams?: readonly StoredPriorGrowthExam[]
   interactive?: boolean
   reportMode?: boolean
+  /** Página clínica: remove resumo/legenda duplicados; geometria continua a mesma. */
+  compact?: boolean
+  chartHeight?: number
 }) {
   const [ref, largura] = useLarguraElemento<HTMLDivElement>()
   const [hoverGaDays, setHoverGaDays] = useState<number | null>(null)
   const width = largura > 0 ? largura : CHART_FALLBACK_WIDTH
   const plotW = Math.max(1, width - MARGIN.left - MARGIN.right)
-  const plotH = CHART_HEIGHT - MARGIN.top - MARGIN.bottom
+  const plotH = chartHeight - MARGIN.top - MARGIN.bottom
   const yMax = Math.ceil(Math.max(CURVES_MAX_G, preview.weightG, ...priorExams.map((exam) => exam.weightGrams)) / 1000) * 1000
   const yStep = yMax <= 5000 ? 1000 : Math.ceil(yMax / 5000) * 1000
   const x = (gaDays: number) =>
@@ -142,8 +147,8 @@ export function IntergrowthChart({
         role="img"
         aria-label={ariaLabel}
         width="100%"
-        height={CHART_HEIGHT}
-        viewBox={`0 0 ${width} ${CHART_HEIGHT}`}
+        height={chartHeight}
+        viewBox={`0 0 ${width} ${chartHeight}`}
         className="block overflow-visible"
         tabIndex={interactive ? 0 : undefined}
         onFocus={interactive ? () => setHoverGaDays(preview.ig.gaDays) : undefined}
@@ -193,7 +198,7 @@ export function IntergrowthChart({
             {s}
           </text>
         ))}
-        <text x={MARGIN.left + plotW / 2} y={CHART_HEIGHT - 4} textAnchor="middle" className="fill-gray-500 text-[9.5px] dark:fill-gray-400">
+        <text x={MARGIN.left + plotW / 2} y={chartHeight - 4} textAnchor="middle" className="fill-gray-500 text-[9.5px] dark:fill-gray-400">
           <tspan style={reportMode ? { fill: '#6b7280', fontSize: 9.5 } : undefined}>Idade gestacional (semanas)</tspan>
         </text>
         <text
@@ -304,7 +309,7 @@ export function IntergrowthChart({
           </g>
         ) : null}
       </svg>
-      {priorExams.length > 0 ? (
+      {!compact && priorExams.length > 0 ? (
         <dl data-growth-history-summary className="mt-1 grid grid-cols-1 gap-1 rounded-md bg-slate-50 px-2.5 py-2 text-[11px] text-slate-700 dark:bg-slate-900/60 dark:text-slate-300 sm:grid-cols-2">
           {priorExams.map((exam) => (
             <div key={`${exam.examDate}-${exam.weightGrams}`} className="min-w-0">
@@ -320,7 +325,7 @@ export function IntergrowthChart({
           </div>
         </dl>
       ) : null}
-      <ul className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+      {!compact ? <ul className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
         <li className="flex items-center gap-1.5">
           <svg width="18" height="6" aria-hidden="true">
             <line x1="0" x2="18" y1="3" y2="3" strokeWidth={1.5} className="stroke-gray-600 dark:stroke-gray-300" />
@@ -345,7 +350,7 @@ export function IntergrowthChart({
           </svg>
           Peso calculado por Hadlock CC/CA/CF (não é o peso informado)
         </li>
-        {priorExams.length > 0 ? (
+        {!compact && priorExams.length > 0 ? (
           <li className="flex items-center gap-1.5">
             <svg width="10" height="10" aria-hidden="true">
               <circle cx="5" cy="5" r="4" className="fill-slate-500 dark:fill-slate-400" />
@@ -353,7 +358,7 @@ export function IntergrowthChart({
             PFE informado no exame anterior
           </li>
         ) : null}
-      </ul>
+      </ul> : null}
     </div>
   )
 }

@@ -60,6 +60,10 @@ import { RecommendationsPanel } from './RecommendationsPanel'
 import { CalcPanel } from './CalcPanel'
 import { PreEclampsiaFmfPanel } from './PreEclampsiaFmfPanel'
 import { TrisomyFmfPanel } from './TrisomyFmfPanel'
+import { ClinicalChartsPanel, ClinicalChartsPrintSheet } from './ClinicalChartsPage'
+import { attachClinicalCharts, clearClinicalChartFigure, dopplerChartInput, hasClinicalCharts, invalidateClinicalCharts, type ClinicalCharts } from '@/lib/calculators/clinicalCharts'
+import type { PeWebCalculo } from '@/lib/calculators/preEclampsia'
+import type { TrisomyWebCalculation } from '@/lib/calculators/trisomyFmf'
 import { ExamOptionsBar, WorkspaceSectionGrid, type SectionCardSize, type WorkspaceSection } from './WorkspaceSectionGrid'
 import { LaudarRail } from './LaudarRail'
 import { lerAtual, lerDigitadoras, gravarAtual, type Digitadora } from '@/lib/digitadoras'
@@ -86,7 +90,6 @@ import { MamariaBiradsPanel } from './MamariaBiradsPanel'
 import { MamariaFormPanel } from './MamariaFormPanel'
 import { DopplerCarotidasFormPanel } from './DopplerCarotidasFormPanel'
 import { BiometryGrowthPanel } from './BiometryGrowthPanel'
-import { IntergrowthReportFigure } from './IntergrowthPreview'
 import { chaveFemurDoSchema } from '@/lib/calculators/fetalWeight'
 import { intergrowthBiometryPreviewFromDating } from '@/lib/calculators/intergrowthBiometry'
 import {
@@ -515,7 +518,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     : genericCategory?.resolveCalculators?.(opts) ?? genericCategory?.calculators ?? [])
     .filter(spec => !(axilasOnly && spec.id === 'bi-rads'))
   const trisomyInitialValues = useMemo(() => {
-    if (categoria !== 'MORFOLOGICO' || opts.trimestre !== '1t') return undefined
+    if (categoria !== 'MORFOLOGICO_1T' && (categoria !== 'MORFOLOGICO' || opts.trimestre !== '1t')) return undefined
     const first = examStates[categoria]?.primeiro_trimestre ?? {}
     const doppler = examStates[categoria]?.doppler ?? {}
     const nasal = String(first.osso_nasal ?? '')
@@ -539,22 +542,62 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   ]
   const currentCategory = isTireoideDoppler ? { id: TIREOIDE_DOPPLER_ID, name: 'Tireoide com Doppler' } : isTireoide ? TIREOIDE_CATEGORY : genericCategory!
   const examState = isTireoide ? undefined : examStates[categoria]
+  const clinicalSourceStates = useRef(examStates)
+  useLayoutEffect(() => {
+    const previous = clinicalSourceStates.current
+    clinicalSourceStates.current = examStates
+    const changed = Object.entries(examStates).filter(([key, state]) => invalidateClinicalCharts(previous[key], state) !== state)
+    if (changed.length) setExamStates(all => {
+      const next = { ...all }
+      for (const [key] of changed) next[key] = invalidateClinicalCharts(previous[key], all[key])
+      return next
+    })
+  }, [examStates])
+  const [riskChartsByDocument, setRiskChartsByDocument] = useState<Record<string, ClinicalCharts>>({})
+  const updatePeCharts = useCallback((value: PeWebCalculo | null) => {
+    setRiskChartsByDocument(all => ({ ...all, [documentKey]: { ...all[documentKey], pe: value ?? undefined } }))
+    setExamStates(all => {
+      const state = all[categoria] ?? {}
+      const next = clearClinicalChartFigure(state)
+      return next === state ? all : { ...all, [categoria]: next }
+    })
+  }, [categoria, documentKey])
+  const updateTrisomyCharts = useCallback((value: TrisomyWebCalculation | null) => {
+    setRiskChartsByDocument(all => ({ ...all, [documentKey]: { ...all[documentKey], trisomy: value ?? undefined } }))
+    setExamStates(all => {
+      const state = all[categoria] ?? {}
+      const next = clearClinicalChartFigure(state)
+      return next === state ? all : { ...all, [categoria]: next }
+    })
+  }, [categoria, documentKey])
+  const [clinicalPrintOpen, setClinicalPrintOpen] = useState(false)
+  const closeClinicalPrint = useCallback(() => setClinicalPrintOpen(false), [])
+  const openClinicalPrint = useCallback(() => setClinicalPrintOpen(true), [])
+  useEffect(() => { setClinicalPrintOpen(false) }, [documentKey])
+  const clinicalCharts: ClinicalCharts = composition ? {} : {
+    doppler: dopplerChartInput(categoria, examState),
+    pe: calculators.some(c => c.kind === 'pre-eclampsia-fmf') ? riskChartsByDocument[documentKey]?.pe : undefined,
+    trisomy: calculators.some(c => c.kind === 'trisomy-fmf') ? riskChartsByDocument[documentKey]?.trisomy : undefined,
+  }
   const reportGrowthRequested = !composition && examState?.__growth_chart?.incluir === 'sim'
-  const reportGrowthPreview = useMemo(() => {
-    if (!reportGrowthRequested || !biometryGrowth.biometry) return null
+  const liveGrowthPreview = useMemo(() => {
+    if (composition || !biometryGrowth.biometry) return null
     return intergrowthBiometryPreviewFromDating(
       examState?.[BIOMETRY_SECTION_ID] ?? {},
       chaveFemurDoSchema(biometryGrowth.biometry.schema.fields),
       examState?.ig ?? {},
     )
-  }, [biometryGrowth.biometry, examState, reportGrowthRequested])
+  }, [biometryGrowth.biometry, examState, composition])
+  const reportGrowthPreview = reportGrowthRequested ? liveGrowthPreview : null
+  const clinicalPrintAvailable = hasClinicalCharts(clinicalCharts) || Boolean(liveGrowthPreview)
+  useEffect(() => { if (!clinicalPrintAvailable) setClinicalPrintOpen(false) }, [clinicalPrintAvailable])
   const reportGrowthPriorExams = useMemo(() => {
-    if (!reportGrowthPreview) return []
+    if (!liveGrowthPreview) return []
     const inputs = priorGrowthInputsFromChartState(examState?.__growth_chart)
     if (inputs.length === 0) return []
-    const result = derivePriorGrowthExams(storedGrowthChartFromPreview(reportGrowthPreview), inputs)
+    const result = derivePriorGrowthExams(storedGrowthChartFromPreview(liveGrowthPreview), inputs)
     return result.ok ? result.priorExams : []
-  }, [examState?.__growth_chart, reportGrowthPreview])
+  }, [examState?.__growth_chart, liveGrowthPreview])
 
   useEffect(() => {
     if (!reportGrowthRequested || reportGrowthPreview) return
@@ -925,6 +968,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
 
   // Persistência real (S9) — substitui o status falso. Volta a "idle" quando o
   // laudo muda (o salvo anterior fica desatualizado).
+  const clinicalPageSaveSignature = JSON.stringify([examState?.__clinical_charts?.incluir, examState?.__growth_chart, clinicalCharts, reportGrowthPreview])
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [companionOpen, setCompanionOpen] = useState(false)
   const [companionState, setCompanionState] = useState({ connected: false, pending: 0 })
@@ -934,7 +978,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   useEffect(() => {
     setSaveState('idle')
     setSaveError(null)
-  }, [preview, previewHtml, composicao.requestId, composicao.erro])
+  }, [preview, previewHtml, composicao.requestId, composicao.erro, clinicalPageSaveSignature])
   /**
    * SALVAR um laudo que já não corresponde ao formulário — o buraco fechado.
    *
@@ -1050,7 +1094,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           : currentCategory.name,
         laudoText: preview,
         examState: attachReportPresentation(
-          growthChartResult.state,
+          attachClinicalCharts(growthChartResult.state, clinicalCharts),
           previewHtml,
         ),
       })
@@ -1187,7 +1231,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     key: categoria,
     categoria,
     state: examState ?? {},
-    update: (fn) => setExamStates((all) => ({ ...all, [categoria]: fn(all[categoria] ?? {}) })),
+    update: (fn) => setExamStates((all) => ({ ...all, [categoria]: invalidateClinicalCharts(all[categoria], fn(all[categoria] ?? {})) })),
     calculators,
   }
 
@@ -1248,6 +1292,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       if (spec.kind === 'pre-eclampsia-fmf') {
         return (
           <PreEclampsiaFmfPanel
+            onCalculation={composition ? undefined : updatePeCharts}
+            onOpenUnifiedPrint={composition ? undefined : openClinicalPrint}
             insertedBlock={calculatorBlocks[spec.id]}
             onInsert={(block) => insertCalculatorBlock(spec.id, block)}
             onRemove={() => removeCalculatorBlock(spec.id)}
@@ -1257,6 +1303,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       if (spec.kind === 'trisomy-fmf') {
         return (
           <TrisomyFmfPanel
+            onCalculation={composition ? undefined : updateTrisomyCharts}
             initialValues={trisomyInitialValues}
             insertedBlock={calculatorBlocks[spec.id]}
             onInsert={(block) => insertCalculatorBlock(spec.id, block)}
@@ -1294,6 +1341,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
         <BiometryGrowthPanel
           biometry={biometryGrowth.biometry}
           biometryState={examState?.[BIOMETRY_SECTION_ID] ?? biometryGrowth.biometry.initialState()}
+          onOpenUnifiedPrint={composition ? undefined : openClinicalPrint}
           onBiometryChange={(nextState) => updateSectionState(BIOMETRY_SECTION_ID, nextState)}
           growth={biometryGrowth.growth}
           growthState={examState?.[GROWTH_SECTION_ID] ?? biometryGrowth.growth.initialState()}
@@ -2013,13 +2061,16 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 canUndoSuggestion={canUndoSuggestion}
                 onUndoSuggestion={undoAcceptedSuggestion}
                 updating={remoto && (motor.carregando || motor.desatualizado)}
-                reportFigure={reportGrowthPreview ? <IntergrowthReportFigure preview={reportGrowthPreview} priorExams={reportGrowthPriorExams} /> : null}
+                reportFigure={<>
+                  <ClinicalChartsPanel key={documentKey} charts={clinicalCharts} growth={reportGrowthPreview ? { preview: reportGrowthPreview, priorExams: reportGrowthPriorExams } : undefined} onOpen={openClinicalPrint} included={examState?.__clinical_charts?.incluir === 'sim'} onInclude={include => updateSectionState('__clinical_charts', { incluir: include ? 'sim' : 'nao' }, false)} />
+                </>}
               />
 
             </div>
           </div>
         </div>
       </main>
+      <ClinicalChartsPrintSheet key={documentKey} open={clinicalPrintOpen} charts={clinicalCharts} growth={liveGrowthPreview ? { preview: liveGrowthPreview, priorExams: reportGrowthPriorExams } : undefined} onClose={closeClinicalPrint} />
       <CompanionPanel
         open={companionOpen}
         activeCategory={categoria}

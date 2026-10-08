@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useState } from 'react'
 import { FilePlus2, FileText, Plus, Trash2, X } from 'lucide-react'
 import {
   calcularPreEclampsiaWeb,
@@ -9,10 +9,13 @@ import {
   trocarFonteIp,
   type PeAfericaoForm,
   type PeWebForm,
+  type PeWebCalculo,
 } from '@/lib/calculators/preEclampsia'
 import { PreEclampsiaPrintSheet } from './PreEclampsiaPrintSheet'
 
 type Props = {
+  onOpenUnifiedPrint?: () => void
+  onCalculation?: (value: PeWebCalculo | null) => void
   insertedBlock?: string
   onInsert: (block: string) => void
   onRemove: () => void
@@ -151,7 +154,7 @@ function Toggle({
   )
 }
 
-export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove }: Props) {
+export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove, onCalculation, onOpenUnifiedPrint }: Props) {
   const [form, setForm] = useState<PeWebForm>(INITIAL_FORM)
   const [paridade, setParidade] = useState<'' | 'nulipara' | 'multipara'>('')
   const [pePrevia, setPePrevia] = useState<boolean | null>(null)
@@ -218,6 +221,7 @@ export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove }: Prop
   }
 
   const calculoValido = calculo.estado === 'calculado' ? calculo.valor : null
+  useLayoutEffect(() => { onCalculation?.(calculoValido) }, [calculoValido, onCalculation])
   const resultado = calculoValido?.resultado ?? null
   const temResultado = Boolean(resultado)
 
@@ -464,10 +468,10 @@ export function PreEclampsiaFmfPanel({ insertedBlock, onInsert, onRemove }: Prop
           {resultado ? (
             <button
               type="button"
-              onClick={() => setPreviaAberta(true)}
+              onClick={onOpenUnifiedPrint ?? (() => setPreviaAberta(true))}
               className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-emerald-200 hover:text-emerald-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
             >
-              <FileText className="h-3.5 w-3.5" /> Folha para impressão
+              <FileText className="h-3.5 w-3.5" /> Página clínica / PDF
             </button>
           ) : null}
           {insertedBlock ? (

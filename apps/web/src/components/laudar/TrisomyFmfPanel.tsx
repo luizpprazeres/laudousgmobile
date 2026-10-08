@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { FilePlus2, X } from 'lucide-react'
 import {
   basalRatioT18T13,
@@ -8,9 +8,11 @@ import {
   formatarRiscoExibicao,
   idadeNaDataExamePreview,
   type TrisomyWebForm,
+  type TrisomyWebCalculation,
 } from '@/lib/calculators/trisomyFmf'
 
 type Props = {
+  onCalculation?: (value: TrisomyWebCalculation | null) => void
   initialValues?: Partial<TrisomyWebForm>
   insertedBlock?: string
   onInsert: (block: string) => void
@@ -34,7 +36,7 @@ function Toggle({ label, active, onChange }: { label: string; active: boolean; o
   return <button type="button" aria-pressed={active} onClick={() => onChange(!active)} className={`rounded-lg border px-2.5 py-2 text-left text-[12px] font-semibold ${active ? 'border-violet-600 bg-violet-600 text-white' : 'border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'}`}>{label}</button>
 }
 
-export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemove }: Props) {
+export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemove, onCalculation }: Props) {
   // O card permanece montado enquanto os achados são preenchidos. Medidas
   // ainda não editadas aqui acompanham a origem; uma edição manual, inclusive
   // apagar um campo, sempre prevalece sobre atualizações vindas dos achados.
@@ -49,6 +51,7 @@ export function TrisomyFmfPanel({ initialValues, insertedBlock, onInsert, onRemo
     catch (error) { return { status: 'error' as const, message: error instanceof Error ? error.message : 'Não foi possível calcular.' } }
   }, [form, ready])
   const value = calculation.status === 'done' ? calculation.value : null
+  useLayoutEffect(() => { onCalculation?.(value) }, [value, onCalculation])
   const currentInserted = Boolean(value && insertedBlock === value.block)
 
   return <section className="rounded-xl border border-violet-200 bg-white p-4 shadow-sm dark:border-violet-900/60 dark:bg-gray-900">

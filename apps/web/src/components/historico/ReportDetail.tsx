@@ -6,8 +6,8 @@ import { Check, Copy, Pencil, Printer, Trash2, X } from 'lucide-react'
 import { deleteWebReport } from '@/lib/webReports'
 import { categoriaLabel, dataFmt, type HistoryItem } from './HistoryItem'
 import { sanitizeReportHtml } from '@/components/laudar/reportRichText'
-import { IntergrowthReportFigure } from '@/components/laudar/IntergrowthPreview'
-import { IntergrowthPreviewPrintSheet } from '@/components/laudar/IntergrowthPrintSheet'
+import { ClinicalChartsFigure, ClinicalChartsPrintSheet } from '@/components/laudar/ClinicalChartsPage'
+import { hasClinicalCharts, restoreClinicalCharts } from '@/lib/calculators/clinicalCharts'
 import { reportFigureClipboardHtml } from '@/components/laudar/reportFigureClipboard'
 import { storedGrowthChartPriorExams, storedGrowthChartToPreview } from '@/lib/calculators/growthChartPersistence'
 
@@ -37,6 +37,8 @@ export function ReportDetail({
   const [erro, setErro] = useState<string | null>(null)
   const fecharImpressao = useCallback(() => setImpressaoAberta(false), [])
   const reportFigureRef = useRef<HTMLDivElement>(null)
+  const clinicalCharts = restoreClinicalCharts(item.clinicalCharts)
+  const hasClinical = hasClinicalCharts(clinicalCharts)
   const growthPreview = item.growthChart ? storedGrowthChartToPreview(item.growthChart) : null
   const priorGrowthExams = item.growthChart ? storedGrowthChartPriorExams(item.growthChart) : []
 
@@ -117,7 +119,7 @@ export function ReportDetail({
             {copiado ? 'Copiado' : 'Copiar'}
           </button>
 
-          {growthPreview ? (
+          {growthPreview || hasClinical ? (
             <button
               type="button"
               onClick={() => setImpressaoAberta(true)}
@@ -178,18 +180,12 @@ export function ReportDetail({
         ) : (
           <pre className="whitespace-pre-wrap font-['Times_New_Roman',Georgia,serif] text-[13.5px] leading-relaxed text-gray-800 dark:text-gray-200">{item.text}</pre>
         )}
-        {growthPreview ? (
-          <div ref={reportFigureRef}>
-            <IntergrowthReportFigure preview={growthPreview} priorExams={priorGrowthExams} />
-          </div>
-        ) : null}
+        {growthPreview || hasClinical ? <details className="mt-3 rounded-lg border border-gray-200 p-3 font-sans">
+          <summary className="cursor-pointer text-xs font-semibold">Página clínica incluída · ver gráficos e riscos</summary>
+          <div ref={reportFigureRef}><ClinicalChartsFigure charts={clinicalCharts} growth={growthPreview ? { preview: growthPreview, priorExams: priorGrowthExams } : undefined} /></div>
+        </details> : null}
       </article>
-      <IntergrowthPreviewPrintSheet
-        open={impressaoAberta}
-        preview={growthPreview}
-        priorExams={priorGrowthExams}
-        onClose={fecharImpressao}
-      />
+      <ClinicalChartsPrintSheet open={impressaoAberta} charts={clinicalCharts} growth={growthPreview ? { preview: growthPreview, priorExams: priorGrowthExams } : undefined} onClose={fecharImpressao} />
     </div>
   )
 }

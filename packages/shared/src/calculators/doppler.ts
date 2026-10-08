@@ -203,6 +203,35 @@ export function calcularDopplerParcial(input: DopplerPartialInput): DopplerParti
   return result;
 }
 
+/** Referências gráficas da mesma equação do motor, sem uma segunda fórmula.
+ * Os z-scores são afins no IP (ou no log do IP para uterinas). Dois pontos
+ * recuperam a transformação inversa exata. ±1,645 são os limites já usados
+ * pelo motor; o rótulo discreto Barcelona não é usado para inverter a curva.
+ */
+export type DopplerChartVessel = 'arteriasUterinas' | 'arteriaUmbilical' | 'arteriaCerebralMedia' | 'ratioCerebroplacentario';
+export function referenciaDopplerBarcelona(
+  vessel: DopplerChartVessel, weeks: number, days: number,
+): { p5: number; p50: number; p95: number } | null {
+  if (!Number.isInteger(weeks) || !Number.isInteger(days) || days < 0 || days > 6 ||
+      weeks < (vessel === 'arteriasUterinas' ? 11 : 20) || weeks > 44) return null;
+  const ga = weeks + days / 7;
+  const at = (ip: number): number => {
+    switch (vessel) {
+      case 'arteriasUterinas': return calcArteriasUterinas(weeks, days, ip).zscore;
+      case 'arteriaUmbilical': return calcArteriaUmbilical(ga, ip).zscore;
+      case 'arteriaCerebralMedia': return calcArteriaCerebralMedia(ga, ip).zscore;
+      case 'ratioCerebroplacentario': return calcRatioCerebroplacentario(ga, ip, 1).zscore;
+    }
+  };
+  const logarithmic = vessel === 'arteriasUterinas';
+  const first = at(1);
+  const slope = at(logarithmic ? Math.E : 2) - first;
+  if (!Number.isFinite(slope) || slope <= 0) return null;
+  const inverse = (z: number) => logarithmic ? Math.exp((z - first) / slope) : 1 + (z - first) / slope;
+  const reference = { p5: inverse(-1.645), p50: inverse(0), p95: inverse(1.645) };
+  return Object.values(reference).every(Number.isFinite) ? reference : null;
+}
+
 export function calcularDoppler(input: DopplerInput): DopplerResult {
   const result = calcularDopplerParcial(input);
   if (!result.arteriaUmbilical || !result.arteriaCerebralMedia ||

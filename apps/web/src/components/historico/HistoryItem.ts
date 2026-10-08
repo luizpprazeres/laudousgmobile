@@ -1,3 +1,4 @@
+import type { StoredClinicalCharts } from '@/lib/calculators/clinicalCharts'
 import { categoryDisplayLabel } from '@laudousg/shared'
 import type { StoredGrowthChart } from '@/lib/calculators/growthChartPersistence'
 
@@ -19,6 +20,7 @@ export type HistoryItem = {
   /** Camada opcional de apresentação dos laudos editados na web. */
   html?: string | null
   /** Figura obstétrica reproduzível, sem imagem persistida. */
+  clinicalCharts?: StoredClinicalCharts | null
   growthChart?: StoredGrowthChart | null
   /**
    * Composição de exames associados com envelope que esta versão reabre para

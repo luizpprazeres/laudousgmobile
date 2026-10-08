@@ -4,6 +4,7 @@ import { HistoryList, type HistoryItem } from '@/components/historico/HistoryLis
 import { extractReportPresentation } from '@/components/laudar/reportRichText'
 import { parseEnvelope } from '@/lib/composition/envelope'
 import { extractStoredGrowthChart } from '@/lib/calculators/growthChartPersistence'
+import { extractClinicalCharts, storeClinicalCharts } from '@/lib/calculators/clinicalCharts'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,7 @@ export default async function HistoricoPage() {
       text: r.laudo_text as string,
       html: extractReportPresentation(r.exam_state),
       growthChart: extractStoredGrowthChart(r.exam_state),
+      clinicalCharts: storeClinicalCharts(extractClinicalCharts(r.exam_state)),
       reopenable: parseEnvelope(r.exam_state).kind === 'composition',
       date: r.created_at as string,
     })),

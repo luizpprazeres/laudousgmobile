@@ -42,6 +42,8 @@ const files = [
   'tests/intergrowth2020.manual.ts',
   'tests/intergrowthBiometry.manual.ts',
   'tests/growthChartPersistence.manual.ts',
+  'tests/clinicalCharts.manual.ts',
+  '../../packages/shared/src/calculators/__tests__/dopplerChartReference.manual.ts',
   'tests/renalMeasurements.manual.ts',
   'tests/abdomeAortaValidation.manual.ts',
   'tests/composition.manual.ts',
