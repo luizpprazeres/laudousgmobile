@@ -8,7 +8,7 @@ Foram concluídas rodadas funcionais de 27 dos 84 modelos-base do catálogo, apr
 
 ## Próximas prioridades
 
-Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais e Aparelho Urinário foram concluídas. A última incluiu comparação do mesmo painel em Abdome Total e Doppler Aortorrenal. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
+Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais e Aparelho Urinário foram concluídas. A última incluiu comparação do mesmo painel em Abdome Total e Doppler Aortorrenal. Em 07/10, o Morfológico 2º trimestre recebeu uma sondagem parcial dos gráficos; os cenários clínicos do relatório continuam pendentes. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
 
 ### A. Rodada funcional no Laudário
 
@@ -16,7 +16,7 @@ Os cenários já estão definidos nos relatórios de cada exame. Basta executá-
 
 | Ordem | Exame | Relatório com os cenários |
 | --- | --- | --- |
-| 1 | Morfológico 2º trimestre | `audits/lote2/morfologico-2-trimestre-2026-10-05.md` |
+| 1 | Morfológico 2º trimestre — cenários clínicos; gráficos já observados | `audits/lote2/morfologico-2-trimestre-2026-10-05.md` |
 | 2 | Doppler de artérias temporais | `audits/lote2/doppler-arterias-temporais-2026-10-05.md` |
 | 3 | Doppler de artérias mesentéricas | `audits/lote2/doppler-arterias-mesentericas-2026-10-05.md` |
 | 4 | Monitorização folicular | `audits/lote3/monitorizacao-folicular-2026-10-05.md` |

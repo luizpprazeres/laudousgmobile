@@ -13,6 +13,13 @@
   ],
   "supplemental_functional_audits": [
     {
+      "exam": "Morfológico 2º Trimestre",
+      "observed_at": "2026-10-07T21:15:00-03:00",
+      "case": "cases/morfologico-2-trimestre-graficos-2026-10-07.md",
+      "scope": "gráficos biométricos, publicação e exame anterior no PFE",
+      "base_count_increment": 0
+    },
+    {
       "exam": "Doppler Aortorrenal",
       "observed_at": "2026-10-06T16:45:55-03:00",
       "case": "cases/variantes-renais-doppler-aortorrenal-2026-10-06.md",
