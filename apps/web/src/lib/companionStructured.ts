@@ -207,6 +207,47 @@ export function applyCompanionThyroid(
 
 const clean = (value: unknown) => typeof value === 'string' ? value.trim() : ''
 
+function companionValuesEqual(left: string, right: string): boolean {
+  if (left === right) return true
+  const numeric = (value: string) => /^[-+]?\d+(?:[.,]\d+)?$/.test(value)
+    ? Number(value.replace(',', '.'))
+    : null
+  const leftNumber = numeric(left)
+  const rightNumber = numeric(right)
+  return leftNumber !== null && rightNumber !== null && leftNumber === rightNumber
+}
+
+const COMPANION_TOUCHED = '__companion_touched'
+
+/** Registra que o valor atual foi escolhido/editado na Web e limpa apenas o
+ * conflito daquele campo. Assim um valor igual ao default continua tendo
+ * precedência quando foi uma decisão explícita do médico. */
+export function markCompanionFieldTouched(
+  state: OrganState,
+  key: string,
+  value: string | string[],
+): OrganState {
+  const touched = Array.isArray(state[COMPANION_TOUCHED])
+    ? state[COMPANION_TOUCHED] as string[]
+    : []
+  const conflicts = Array.isArray(state.companion_conflitos)
+    ? (state.companion_conflitos as string[]).filter((item) => !item.startsWith(`${key}::`))
+    : []
+  const next: OrganState = {
+    ...state,
+    [key]: value,
+    [COMPANION_TOUCHED]: [...new Set([...touched, key])],
+  }
+  if (conflicts.length) next.companion_conflitos = conflicts
+  else delete next.companion_conflitos
+  return next
+}
+
+export function companionConflictDisplay(conflict: string): string {
+  const separator = conflict.indexOf('::')
+  return separator >= 0 ? conflict.slice(separator + 2) : conflict
+}
+
 type GestationalAge = { weeks: string; days: string }
 
 /**
@@ -286,11 +327,6 @@ function dopplerPatch(data: CompanionBiometricData, addon: boolean): OrganState 
     const value = normalizeCompanionMeasurement(data[source], 'index')
     if (value) patch[`${prefix}${target}`] = value
   }
-  const right = Number.parseFloat(clean(data.ipRightUterine).replace(',', '.'))
-  const left = Number.parseFloat(clean(data.ipLeftUterine).replace(',', '.'))
-  if (Number.isFinite(right) && Number.isFinite(left)) {
-    patch[`${prefix}ip_ut_medio`] = ((right + left) / 2).toFixed(2).replace('.', ',')
-  }
   if (Object.keys(patch).length === 0) return null
   if (addon) patch.realizado = 'sim'
   return patch
@@ -302,43 +338,163 @@ export function applyCompanionStructured(
 ): ExamState {
   const data = payload.data ?? {}
   const next: ExamState = { ...current }
-  const mergeSection = (id: string, patch: OrganState | null) => {
+  const mergeSection = (
+    id: string,
+    patch: OrganState | null,
+    options: {
+      controls?: Record<string, {
+        value: string
+        replaceDefaults: string[]
+        gate?: boolean
+        requires?: { key: string; value: string }
+      }>
+      replaceableDefaults?: Record<string, string[]>
+      atomicGroups?: string[][]
+    } = {},
+  ) => {
     if (!patch) return
-    next[id] = { ...(next[id] ?? {}), ...patch }
+    const section: OrganState = { ...(next[id] ?? {}) }
+    const conflicts = Array.isArray(section.companion_conflitos)
+      ? [...section.companion_conflitos as string[]]
+      : []
+    const controls = options.controls ?? {}
+    const touched = Array.isArray(section[COMPANION_TOUCHED])
+      ? section[COMPANION_TOUCHED] as string[]
+      : []
+    const status = new Map<string, 'empty' | 'same' | 'conflict' | 'blocked'>()
+    const labels: Record<string, string> = {
+      dbp: 'DBP', cc: 'CC', ca: 'CA', cf: 'CF', femur: 'Fêmur', peso: 'Peso fetal',
+      bio_sem: 'IG biométrica (semanas)', bio_dias: 'IG biométrica (dias)',
+      ila: 'ILA', genitalia: 'Genitália',
+      'avaliar.sim.percentil': 'Percentil do peso fetal',
+      'realizado.sim.ir_ut_dir': 'IR uterina direita',
+      'realizado.sim.ip_ut_dir': 'IP uterina direita',
+      'realizado.sim.ir_ut_esq': 'IR uterina esquerda',
+      'realizado.sim.ip_ut_esq': 'IP uterina esquerda',
+      'realizado.sim.ir_umb': 'IR umbilical', 'realizado.sim.ip_umb': 'IP umbilical',
+      'realizado.sim.ir_acm': 'IR cerebral média', 'realizado.sim.ip_acm': 'IP cerebral média',
+      'realizado.sim.ir_dv': 'IR ducto venoso', 'realizado.sim.ip_dv': 'IP ducto venoso',
+      ir_ut_dir: 'IR uterina direita', ip_ut_dir: 'IP uterina direita',
+      ir_ut_esq: 'IR uterina esquerda', ip_ut_esq: 'IP uterina esquerda',
+      ir_umb: 'IR umbilical', ip_umb: 'IP umbilical',
+      ir_acm: 'IR cerebral média', ip_acm: 'IP cerebral média',
+      ir_dv: 'IR ducto venoso', ip_dv: 'IP ducto venoso',
+      avaliar: 'Classificação do crescimento fetal', realizado: 'Doppler obstétrico',
+      tipo: 'Método de avaliação do líquido amniótico',
+    }
+
+    let gateBlocked = false
+    for (const [key, control] of Object.entries(controls)) {
+      if (!control.gate) continue
+      const existing = clean(section[key])
+      const replaceableDefault = control.replaceDefaults.includes(existing) && !touched.includes(key)
+      const conflictPrefix = `${key}::`
+      for (let index = conflicts.length - 1; index >= 0; index--) {
+        if (conflicts[index]?.startsWith(conflictPrefix)) conflicts.splice(index, 1)
+      }
+      if (existing && existing !== control.value && !replaceableDefault) {
+        conflicts.push(`${conflictPrefix}${labels[key] ?? key}: digitado ${existing} / recebido ${control.value}`)
+        gateBlocked = true
+      }
+    }
+
+    for (const [key, incomingValue] of Object.entries(patch)) {
+      if (controls[key]) continue
+      const incoming = clean(incomingValue)
+      if (!incoming) continue
+      const existing = clean(section[key])
+      const conflictPrefix = `${key}::`
+      for (let index = conflicts.length - 1; index >= 0; index--) {
+        if (conflicts[index]?.startsWith(conflictPrefix)) conflicts.splice(index, 1)
+      }
+      const replaceableDefault = options.replaceableDefaults?.[key]?.includes(existing) && !touched.includes(key)
+      if (gateBlocked) status.set(key, 'blocked')
+      else if (!existing || replaceableDefault) status.set(key, 'empty')
+      else if (companionValuesEqual(existing, incoming)) status.set(key, 'same')
+      else {
+        status.set(key, 'conflict')
+        conflicts.push(`${conflictPrefix}${labels[key] ?? key}: digitado ${existing} / recebido ${incoming}`)
+      }
+    }
+
+    for (const group of options.atomicGroups ?? []) {
+      if (group.some((key) => status.get(key) === 'conflict')) {
+        for (const key of group) if (status.get(key) === 'empty') status.set(key, 'blocked')
+      }
+    }
+    let accepted = false
+    let applied = false
+    for (const [key, fieldStatus] of status) {
+      if (fieldStatus === 'same') accepted = true
+      if (fieldStatus !== 'empty') continue
+      section[key] = patch[key]!
+      accepted = true
+      applied = true
+    }
+
+    if (accepted) {
+      for (const [key, control] of Object.entries(controls)) {
+        const existing = clean(section[key])
+        const mayReplace = !existing || (control.replaceDefaults.includes(existing) && !touched.includes(key))
+        const requirementMet = !control.requires || clean(section[control.requires.key]) === control.requires.value
+        if (mayReplace && requirementMet && (applied || key === 'realizado' || key === 'avaliar')) section[key] = control.value
+      }
+    }
+    if (conflicts.length) section.companion_conflitos = [...new Set(conflicts)]
+    else delete section.companion_conflitos
+    next[id] = section
+  }
+
+  const gestationalOptions = { atomicGroups: [['bio_sem', 'bio_dias']] }
+  const growthOptions = {
+    controls: {
+      avaliar: { value: 'sim', replaceDefaults: ['nao'], gate: true },
+      'avaliar.sim.fonte': { value: 'outra', replaceDefaults: ['nao_informada'] },
+      'avaliar.sim.fonte_outra': {
+        value: 'informado pelo aparelho',
+        replaceDefaults: [],
+        requires: { key: 'avaliar.sim.fonte', value: 'outra' },
+      },
+    },
   }
 
   if (payload.category === 'OBSTETRICA') {
     mergeSection('biometria', biometricPatch(data, false))
-    mergeSection('ig', gestationalAgePatch(data))
+    mergeSection('ig', gestationalAgePatch(data), gestationalOptions)
     if (normalizeCompanionMeasurement(data.percentile, 'index')) mergeSection('crescimento_fetal', {
       avaliar: 'sim',
       'avaliar.sim.percentil': normalizeCompanionMeasurement(data.percentile, 'index'),
       'avaliar.sim.fonte': 'outra',
       'avaliar.sim.fonte_outra': 'informado pelo aparelho',
-    })
+    }, growthOptions)
   } else if (payload.category === 'MORFOLOGICO') {
     mergeSection('biometria', biometricPatch(data, true))
-    mergeSection('ig', gestationalAgePatch(data))
+    mergeSection('ig', gestationalAgePatch(data), gestationalOptions)
     const ila = normalizeCompanionMeasurement(data.ila, 'cm')
     if (ila) mergeSection('extrafetal', { ila })
     const gender = clean(data.gender).toLowerCase()
-    if (/masculin/.test(gender)) mergeSection('anatomia', { genitalia: 'masculina' })
-    else if (/feminin/.test(gender)) mergeSection('anatomia', { genitalia: 'feminina' })
+    if (/masculin/.test(gender)) mergeSection('anatomia', { genitalia: 'masculina' }, { replaceableDefaults: { genitalia: ['na'] } })
+    else if (/feminin/.test(gender)) mergeSection('anatomia', { genitalia: 'feminina' }, { replaceableDefaults: { genitalia: ['na'] } })
     if (normalizeCompanionMeasurement(data.percentile, 'index')) mergeSection('crescimento_fetal', {
       avaliar: 'sim',
       'avaliar.sim.percentil': normalizeCompanionMeasurement(data.percentile, 'index'),
       'avaliar.sim.fonte': 'outra',
       'avaliar.sim.fonte_outra': 'informado pelo aparelho',
+    }, growthOptions)
+    mergeSection('doppler', dopplerPatch(data, true), {
+      controls: { realizado: { value: 'sim', replaceDefaults: ['nao'], gate: true } },
     })
-    mergeSection('doppler', dopplerPatch(data, true))
   } else if (payload.category === 'DOPPLER_OBSTETRICO') {
     mergeSection('doppler', dopplerPatch(data, false))
     const ig = gestationalAgePatch(data, true)
-    if (ig) mergeSection('ig', { bio_sem: ig.ig_sem, bio_dias: ig.ig_dias })
+    if (ig) mergeSection('ig', { bio_sem: ig.ig_sem, bio_dias: ig.ig_dias }, gestationalOptions)
     if (current.__opts?.somente_doppler !== 'sim') {
       mergeSection('biometria', biometricPatch(data, false))
       const ila = normalizeCompanionMeasurement(data.ila, 'cm')
-      if (ila) mergeSection('liquido', { tipo: 'ila', 'tipo.ila.cm': ila })
+      if (ila) mergeSection('liquido', { tipo: 'ila', 'tipo.ila.cm': ila }, {
+        replaceableDefaults: { tipo: ['subjetivo'] },
+        atomicGroups: [['tipo', 'tipo.ila.cm']],
+      })
     }
   }
   return next

@@ -2050,14 +2050,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             return
           }
           // Peso/IG vindos do celular também invalidam percentil que não veio junto.
-          setExamStates((all) => ({
-            ...all,
-            [payload.category]: invalidarPercentilManual(
-              all[payload.category],
-              applyCompanionStructured(all[payload.category] ?? {}, payload),
-              companionReenviaPercentil(payload),
-            ),
-          }))
+          setExamStates((all) => {
+            const applied = applyCompanionStructured(all[payload.category] ?? {}, payload)
+            return {
+              ...all,
+              [payload.category]: invalidarPercentilManual(
+                all[payload.category],
+                applied,
+                companionReenviaPercentil(payload, applied),
+              ),
+            }
+          })
           selectCategory(payload.category)
           revealSection(payload.category, payload.category === 'DOPPLER_OBSTETRICO' ? 'doppler' : 'biometria')
         }}

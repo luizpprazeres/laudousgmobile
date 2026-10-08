@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Field, OrganSchema, OrganState } from '@/lib/deterministic'
+import { companionConflictDisplay, markCompanionFieldTouched } from '@/lib/companionStructured'
 import { RenalMeasurementsFields } from './RenalMeasurementsFields'
 import { RenalFindingsCollection } from './RenalFindingsCollection'
 import { hasRenalMeasurementsGroup, RENAL_MEASUREMENT_KEYS } from './renalMeasurementsState'
@@ -38,6 +39,9 @@ function visibleHint(hint?: string) {
 
 export function OrganFormPanel({ schema, state, onChange, compact = false, gestationalWeeks }: Props) {
   const [rareOpen, setRareOpen] = useState(false)
+  const companionConflicts = Array.isArray(state.companion_conflitos)
+    ? state.companion_conflitos as string[]
+    : []
   const renalMeasurements = hasRenalMeasurementsGroup(schema)
   const sharedKidney = (schema.id === 'rim_direito' || schema.id === 'rim_esquerdo') &&
     ['ABDOMEN_TOTAL', 'VIAS_URINARIAS', 'DOPPLER_RENAL'].includes(schema.category)
@@ -55,7 +59,10 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
     ? fieldCardClass.replace('col-span-2', 'col-span-1')
     : fieldCardClass
 
-  const setValue = (key: string, value: string | string[]) => onChange({ ...state, [key]: value })
+  const tracksCompanionChoices = ['OBSTETRICA', 'MORFOLOGICO', 'DOPPLER_OBSTETRICO'].includes(schema.category)
+  const setValue = (key: string, value: string | string[]) => onChange(
+    tracksCompanionChoices ? markCompanionFieldTouched(state, key, value) : { ...state, [key]: value },
+  )
 
   const toggleChecklist = (field: Field, value: string) => {
     const current = asArray(state[field.key])
@@ -303,6 +310,12 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
 
   return (
     <div data-organ-schema={schema.id} className={schema.id === 'biometria' || compactFields ? 'grid grid-cols-2 gap-2' : compact ? 'space-y-1' : 'space-y-2'}>
+      {companionConflicts.length ? (
+        <div role="alert" className="col-span-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+          <strong>O celular trouxe valores diferentes.</strong>
+          <div className="mt-1">Mantivemos o que já estava preenchido. Revise: {companionConflicts.map(companionConflictDisplay).join(' · ')}</div>
+        </div>
+      ) : null}
       {schema.id === 'ig' ? (
         <>
           <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-1.5">

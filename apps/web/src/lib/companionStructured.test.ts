@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
-import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid } from './companionStructured'
+import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, companionConflictDisplay, markCompanionFieldTouched } from './companionStructured'
+import { initialExamState } from './deterministic/compose'
+import { dopplerObstetrico } from './deterministic/organs/dopplerObstetrico'
+import { morfologico as morfologicoCategory } from './deterministic/organs/morfologico'
 import { initialTireoideState } from './deterministic/organs/tireoide'
 
 const obstetrica = applyCompanionStructured({}, {
@@ -132,5 +135,199 @@ const carotidasPreservadas = applyCompanionCarotids({ direita: { interna_vps: '8
 assert.equal(carotidasPreservadas.direita?.interna_vps, '80')
 assert.equal(carotidasPreservadas.direita?.interna_vdf, '24')
 assert.equal(carotidasPreservadas.direita?.companion_conflitos.length, 1)
+
+const obstetricaPreservada = applyCompanionStructured({
+  biometria: { dbp: '80', cc: '' },
+  ig: { bio_sem: '31', bio_dias: '2' },
+  crescimento_fetal: {
+    avaliar: 'sim',
+    'avaliar.sim.percentil': '40',
+    'avaliar.sim.fonte': 'Hadlock 1991',
+    'avaliar.sim.fonte_outra': '',
+  },
+  doppler: {
+    realizado: 'nao',
+    'realizado.sim.ip_ut_dir': '0,80',
+    'realizado.sim.ip_ut_esq': '',
+    'realizado.sim.ip_ut_medio': '',
+  },
+}, {
+  category: 'MORFOLOGICO',
+  data: {
+    dbp: '82', cc: '295', gestAgeBiometry: '32s4d', percentile: '48',
+    ipRightUterine: '0,72', ipLeftUterine: '0,68',
+  },
+})
+assert.equal(obstetricaPreservada.biometria?.dbp, '80')
+assert.equal(obstetricaPreservada.biometria?.cc, '295')
+assert.equal(obstetricaPreservada.biometria?.companion_conflitos.length, 1)
+assert.deepEqual(
+  { sem: obstetricaPreservada.ig?.bio_sem, dias: obstetricaPreservada.ig?.bio_dias },
+  { sem: '31', dias: '2' },
+)
+assert.equal(obstetricaPreservada.ig?.companion_conflitos.length, 2)
+assert.equal(obstetricaPreservada.crescimento_fetal?.['avaliar.sim.percentil'], '40')
+assert.equal(obstetricaPreservada.crescimento_fetal?.['avaliar.sim.fonte'], 'Hadlock 1991')
+assert.equal(obstetricaPreservada.crescimento_fetal?.companion_conflitos.length, 1)
+assert.equal(obstetricaPreservada.doppler?.realizado, 'sim')
+assert.equal(obstetricaPreservada.doppler?.['realizado.sim.ip_ut_dir'], '0,80')
+assert.equal(obstetricaPreservada.doppler?.['realizado.sim.ip_ut_esq'], '0,68')
+assert.equal(obstetricaPreservada.doppler?.['realizado.sim.ip_ut_medio'], '')
+assert.equal(obstetricaPreservada.doppler?.companion_conflitos.length, 1)
+
+const obstetricaReaplicada = applyCompanionStructured(obstetricaPreservada, {
+  category: 'MORFOLOGICO',
+  data: {
+    dbp: '82', cc: '295', gestAgeBiometry: '32s4d', percentile: '48',
+    ipRightUterine: '0,72', ipLeftUterine: '0,68',
+  },
+})
+assert.deepEqual(obstetricaReaplicada, obstetricaPreservada)
+
+const biometriaEditada = markCompanionFieldTouched(obstetricaPreservada.biometria!, 'dbp', '82')
+assert.equal(biometriaEditada.companion_conflitos, undefined)
+assert.equal(biometriaEditada.__companion_touched?.includes('dbp'), true)
+const biometriaConflitoResolvido = applyCompanionStructured({ ...obstetricaPreservada, biometria: biometriaEditada }, {
+  category: 'MORFOLOGICO',
+  data: { dbp: '82' },
+})
+assert.equal(biometriaConflitoResolvido.biometria?.companion_conflitos, undefined)
+
+const percentilIgualAtivaSemTrocarFonte = applyCompanionStructured({
+  crescimento_fetal: {
+    avaliar: 'nao',
+    'avaliar.sim.percentil': '48',
+    'avaliar.sim.fonte': 'Hadlock 1991',
+    'avaliar.sim.fonte_outra': '',
+  },
+}, {
+  category: 'OBSTETRICA',
+  data: { percentile: '48' },
+})
+assert.equal(percentilIgualAtivaSemTrocarFonte.crescimento_fetal?.avaliar, 'sim')
+assert.equal(percentilIgualAtivaSemTrocarFonte.crescimento_fetal?.['avaliar.sim.fonte'], 'Hadlock 1991')
+assert.equal(percentilIgualAtivaSemTrocarFonte.crescimento_fetal?.['avaliar.sim.fonte_outra'], '')
+
+const percentilNovoPreservaFonteManual = applyCompanionStructured({
+  crescimento_fetal: {
+    avaliar: 'sim',
+    'avaliar.sim.percentil': '',
+    'avaliar.sim.fonte': 'Intergrowth-21st',
+    'avaliar.sim.fonte_outra': '',
+  },
+}, {
+  category: 'OBSTETRICA',
+  data: { percentile: '48' },
+})
+assert.equal(percentilNovoPreservaFonteManual.crescimento_fetal?.['avaliar.sim.percentil'], '48')
+assert.equal(percentilNovoPreservaFonteManual.crescimento_fetal?.['avaliar.sim.fonte'], 'Intergrowth-21st')
+assert.equal(percentilNovoPreservaFonteManual.crescimento_fetal?.['avaliar.sim.fonte_outra'], '')
+
+const biometriaNumericamenteIgual = applyCompanionStructured({ biometria: { dbp: '82,0' } }, {
+  category: 'OBSTETRICA',
+  data: { dbp: '8.2 cm' },
+})
+assert.equal(biometriaNumericamenteIgual.biometria?.dbp, '82,0')
+assert.equal(biometriaNumericamenteIgual.biometria?.companion_conflitos, undefined)
+
+const igAtomicaComConflito = applyCompanionStructured({ ig: { bio_sem: '31', bio_dias: '' } }, {
+  category: 'OBSTETRICA',
+  data: { gestAgeBiometry: '32s4d' },
+})
+assert.equal(igAtomicaComConflito.ig?.bio_sem, '31')
+assert.equal(igAtomicaComConflito.ig?.bio_dias, '')
+assert.equal(igAtomicaComConflito.ig?.companion_conflitos.length, 1)
+
+const igCompletaDiaVazio = applyCompanionStructured({ ig: { bio_sem: '31', bio_dias: '' } }, {
+  category: 'OBSTETRICA',
+  data: { gestAgeBiometry: '31s4d' },
+})
+assert.equal(igCompletaDiaVazio.ig?.bio_sem, '31')
+assert.equal(igCompletaDiaVazio.ig?.bio_dias, '4')
+
+const morfologicoInicial = initialExamState(morfologicoCategory)
+const sexoAplicado = applyCompanionStructured(morfologicoInicial, {
+  category: 'MORFOLOGICO',
+  data: { gender: 'feminino' },
+})
+assert.equal(sexoAplicado.anatomia?.genitalia, 'feminina')
+assert.equal(sexoAplicado.anatomia?.companion_conflitos, undefined)
+const sexoPreservado = applyCompanionStructured({ ...morfologicoInicial, anatomia: { ...morfologicoInicial.anatomia, genitalia: 'masculina' } }, {
+  category: 'MORFOLOGICO',
+  data: { gender: 'feminino' },
+})
+assert.equal(sexoPreservado.anatomia?.genitalia, 'masculina')
+assert.equal(sexoPreservado.anatomia?.companion_conflitos.length, 1)
+assert.match(companionConflictDisplay(String(sexoPreservado.anatomia?.companion_conflitos[0])), /^Genitália:/)
+const sexoNaoAvaliadoEscolhido = applyCompanionStructured({
+  ...morfologicoInicial,
+  anatomia: markCompanionFieldTouched(morfologicoInicial.anatomia!, 'genitalia', 'na'),
+}, {
+  category: 'MORFOLOGICO',
+  data: { gender: 'feminino' },
+})
+assert.equal(sexoNaoAvaliadoEscolhido.anatomia?.genitalia, 'na')
+assert.equal(sexoNaoAvaliadoEscolhido.anatomia?.companion_conflitos.length, 1)
+
+const dopplerInicial = initialExamState(dopplerObstetrico)
+const ilaAplicado = applyCompanionStructured(dopplerInicial, {
+  category: 'DOPPLER_OBSTETRICO',
+  data: { ila: '120 mm' },
+})
+assert.equal(ilaAplicado.liquido?.tipo, 'ila')
+assert.equal(ilaAplicado.liquido?.['tipo.ila.cm'], '12')
+assert.equal(ilaAplicado.liquido?.companion_conflitos, undefined)
+const mbvPreservado = applyCompanionStructured({
+  ...dopplerInicial,
+  liquido: { tipo: 'mbv', 'tipo.mbv.cm': '5,6' },
+}, {
+  category: 'DOPPLER_OBSTETRICO',
+  data: { ila: '120 mm' },
+})
+assert.equal(mbvPreservado.liquido?.tipo, 'mbv')
+assert.equal(mbvPreservado.liquido?.['tipo.mbv.cm'], '5,6')
+assert.equal(mbvPreservado.liquido?.['tipo.ila.cm'], undefined)
+assert.equal(mbvPreservado.liquido?.companion_conflitos.length, 1)
+const subjetivoEscolhido = applyCompanionStructured({
+  ...dopplerInicial,
+  liquido: markCompanionFieldTouched(dopplerInicial.liquido!, 'tipo', 'subjetivo'),
+}, {
+  category: 'DOPPLER_OBSTETRICO',
+  data: { ila: '120 mm' },
+})
+assert.equal(subjetivoEscolhido.liquido?.tipo, 'subjetivo')
+assert.equal(subjetivoEscolhido.liquido?.['tipo.ila.cm'], undefined)
+assert.equal(subjetivoEscolhido.liquido?.companion_conflitos.length, 1)
+
+const dopplerTodoConflitante = applyCompanionStructured({
+  doppler: { realizado: 'nao', 'realizado.sim.ip_ut_dir': '0,80' },
+}, {
+  category: 'MORFOLOGICO',
+  data: { ipRightUterine: '0,72' },
+})
+assert.equal(dopplerTodoConflitante.doppler?.realizado, 'nao')
+assert.equal(dopplerTodoConflitante.doppler?.['realizado.sim.ip_ut_dir'], '0,80')
+assert.equal(dopplerTodoConflitante.doppler?.companion_conflitos.length, 1)
+const dopplerRecusadoExplicitamente = applyCompanionStructured({
+  doppler: markCompanionFieldTouched({ realizado: 'nao', 'realizado.sim.ip_ut_dir': '' }, 'realizado', 'nao'),
+}, {
+  category: 'MORFOLOGICO',
+  data: { ipRightUterine: '0,72' },
+})
+assert.equal(dopplerRecusadoExplicitamente.doppler?.realizado, 'nao')
+assert.equal(dopplerRecusadoExplicitamente.doppler?.['realizado.sim.ip_ut_dir'], '')
+assert.equal(dopplerRecusadoExplicitamente.doppler?.companion_conflitos.length, 1)
+
+const crescimentoRecusadoExplicitamente = applyCompanionStructured({
+  crescimento_fetal: markCompanionFieldTouched({
+    avaliar: 'nao', 'avaliar.sim.percentil': '', 'avaliar.sim.fonte': 'nao_informada',
+  }, 'avaliar', 'nao'),
+}, {
+  category: 'OBSTETRICA',
+  data: { percentile: '48' },
+})
+assert.equal(crescimentoRecusadoExplicitamente.crescimento_fetal?.avaliar, 'nao')
+assert.equal(crescimentoRecusadoExplicitamente.crescimento_fetal?.['avaliar.sim.percentil'], '')
+assert.equal(crescimentoRecusadoExplicitamente.crescimento_fetal?.companion_conflitos.length, 1)
 
 console.log('companionStructured: ok')

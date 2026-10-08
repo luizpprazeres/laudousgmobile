@@ -134,32 +134,57 @@ for (const { name, category, dopplerKey, adapt } of scenarios) {
 for (const { name, category, adapt } of scenarios.filter((s) => s.name !== 'combined')) {
   const before = base(category)
   const cat = category.id as 'OBSTETRICA' | 'MORFOLOGICO'
-  const apply = (data: CompanionStructuredPayload['data']) => {
+  const applyTo = (state: ExamState, data: CompanionStructuredPayload['data']) => {
     const payload: CompanionStructuredPayload = { category: cat, data }
-    return invalidarPercentilManual(before, applyCompanionStructured(before, payload), companionReenviaPercentil(payload))
+    const applied = applyCompanionStructured(state, payload)
+    return invalidarPercentilManual(state, applied, companionReenviaPercentil(payload, applied))
   }
+  const apply = (data: CompanionStructuredPayload['data']) => applyTo(before, data)
 
+  // O formulário já preenchido vence o Companion; divergências ficam para revisão.
   const changed = apply({ weight: '1,95 kg', gestAgeBiometry: '33s 2d' })
-  assert.equal(changed.biometria?.peso, '1950')
-  assert.equal(changed.ig?.bio_sem, '33')
-  assert.equal(changed.crescimento_fetal?.[PERCENTIL], '')
+  assert.equal(changed.biometria?.peso, '1850')
+  assert.equal(changed.ig?.bio_sem, '32')
+  assert.equal(changed.crescimento_fetal?.[PERCENTIL], '8,5')
   assert.equal(changed.crescimento_fetal?.['avaliar.sim.fonte'], 'Hadlock 1991')
-  assert.equal(growthPendencies(adapt(changed)).length, 1, `${name}: companion bloqueia`)
+  assert.equal(changed.biometria?.companion_conflitos.length, 1)
+  assert.equal(changed.ig?.companion_conflitos.length, 2)
+  assert.equal(growthPendencies(adapt(changed)).length, 0, `${name}: dados digitados seguem válidos`)
 
   assert.equal(apply({ weight: '1850 g', gestAgeBiometry: '32s 1d' }).crescimento_fetal?.[PERCENTIL], '8,5')
   assert.equal(apply({ dbp: '8,1 cm' }).crescimento_fetal?.[PERCENTIL], '8,5')
-  assert.equal(apply({ weight: '1950 g', percentile: '12' }).crescimento_fetal?.[PERCENTIL], '12')
+  assert.equal(apply({ weight: '1950 g', percentile: '12' }).crescimento_fetal?.[PERCENTIL], '8,5')
   assert.equal(apply({ weight: '1950 g', percentile: '8,5' }).crescimento_fetal?.[PERCENTIL], '8,5')
-  assert.equal(apply({ weight: '1950 g', percentile: 'n/d' }).crescimento_fetal?.[PERCENTIL], '')
-  cases += 6
+  assert.equal(apply({ weight: '1950 g', percentile: 'n/d' }).crescimento_fetal?.[PERCENTIL], '8,5')
+
+  // Se peso/IG estavam vazios, eles podem ser preenchidos. Um percentil antigo
+  // conflitante não ganha passe livre só porque também veio no payload.
+  const emptyContext = deepFreeze({
+    ...before,
+    biometria: { ...before.biometria, peso: '' },
+    ig: { ...before.ig, bio_sem: '', bio_dias: '' },
+  })
+  const contextOnly = applyTo(emptyContext, { weight: '1950 g', gestAgeBiometry: '33s2d' })
+  assert.equal(contextOnly.biometria?.peso, '1950')
+  assert.equal(contextOnly.ig?.bio_sem, '33')
+  assert.equal(contextOnly.crescimento_fetal?.[PERCENTIL], '')
+  const conflictingPercentile = applyTo(emptyContext, { weight: '1950 g', gestAgeBiometry: '33s2d', percentile: '12' })
+  assert.equal(companionReenviaPercentil(
+    { category: cat, data: { percentile: '12' } },
+    conflictingPercentile,
+  ), false)
+  assert.equal(conflictingPercentile.crescimento_fetal?.[PERCENTIL], '')
+  cases += 8
 }
 
 // Companion Doppler combinado não grava percentil: IG nova invalida mesmo com percentile no payload.
 {
-  const before = base(dopplerObstetrico)
+  const filled = base(dopplerObstetrico)
+  const before = deepFreeze({ ...filled, ig: { ...filled.ig, bio_sem: '', bio_dias: '' } })
   const payload: CompanionStructuredPayload = { category: 'DOPPLER_OBSTETRICO', data: { gestAge: '33 semanas', percentile: '50' } }
   assert.equal(companionReenviaPercentil(payload), false)
-  const out = invalidarPercentilManual(before, applyCompanionStructured(before, payload), companionReenviaPercentil(payload))
+  const applied = applyCompanionStructured(before, payload)
+  const out = invalidarPercentilManual(before, applied, companionReenviaPercentil(payload, applied))
   assert.equal(out.ig?.bio_sem, '33')
   assert.equal(out.crescimento_fetal?.[PERCENTIL], '')
   assert.equal(growthPendencies(adaptarDopplerWeb(out)).length, 1)

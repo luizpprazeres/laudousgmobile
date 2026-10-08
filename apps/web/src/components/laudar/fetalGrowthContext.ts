@@ -10,7 +10,9 @@
  */
 
 import type { ExamState } from '@/lib/deterministic'
-import type { CompanionStructuredPayload } from '@/lib/companionStructured'
+// Caminho relativo: este helper também roda nos gates manuais carregados com o
+// tsconfig da API, onde o alias `@/` aponta para outra árvore.
+import { normalizeCompanionMeasurement, type CompanionStructuredPayload } from '../../lib/companionStructured'
 
 const GROWTH = 'crescimento_fetal'
 const PERCENTIL = 'avaliar.sim.percentil'
@@ -34,9 +36,12 @@ export function contextoPercentilMudou(anterior: ExamState | undefined, proximo:
 }
 
 /** Espelha `applyCompanionStructured`: só OBST/MORFO gravam percentil, e só com dígito. */
-export function companionReenviaPercentil(payload: CompanionStructuredPayload): boolean {
-  return (payload.category === 'OBSTETRICA' || payload.category === 'MORFOLOGICO') &&
-    /\d/.test(String(payload.data?.percentile ?? ''))
+export function companionReenviaPercentil(payload: CompanionStructuredPayload, applied?: ExamState): boolean {
+  if (payload.category !== 'OBSTETRICA' && payload.category !== 'MORFOLOGICO') return false
+  const recebido = normalizeCompanionMeasurement(payload.data?.percentile, 'index')
+  if (!recebido) return false
+  if (!applied) return true
+  return valorSemantico(applied[GROWTH]?.[PERCENTIL]) === valorSemantico(recebido)
 }
 
 export function invalidarPercentilManual(
