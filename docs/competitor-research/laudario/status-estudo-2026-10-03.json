@@ -1,12 +1,12 @@
 {
   "competitor": "Laudário",
-  "updated_at": "2026-10-07T22:49:00-03:00",
+  "updated_at": "2026-10-07T23:15:00-03:00",
   "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
   "totals": {
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 32,
+    "base_functionally_studied": 34,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1,
     "laudousg_synthetic_probe_entries": 19
@@ -214,6 +214,18 @@
       "laudousg_code": "OBSTETRICA",
       "case": "cases/obstetrico-gemelar-2026-10-07.md",
       "crosswalk": "crosswalk-obstetrico-gemelar-2026-10-07.md"
+    },
+    {
+      "competitor_exam": "Aparelho Urinário com Doppler",
+      "laudousg_code": null,
+      "case": "cases/aparelho-urinario-com-doppler-2026-10-07.md",
+      "crosswalk": "crosswalk-aparelho-urinario-com-doppler-2026-10-07.md"
+    },
+    {
+      "competitor_exam": "Abdome Superior com Doppler",
+      "laudousg_code": null,
+      "case": "cases/abdome-superior-com-doppler-2026-10-07.md",
+      "crosswalk": "crosswalk-abdome-superior-com-doppler-2026-10-07.md"
     }
   ],
   "absence_checks": [
@@ -224,8 +236,6 @@
     }
   ],
   "queue": [
-    "Aparelho Urinário com Doppler",
-    "Abdome Superior com Doppler",
     "Pélvico Transvaginal com Doppler",
     "Obstétrico 1º Trimestre com Doppler / 2º-3º com Doppler (fronteira com DOPPLER_OBSTETRICO)",
     "Doppler Venoso de Membro Inferior (TVP) e bilaterais (variantes)",
