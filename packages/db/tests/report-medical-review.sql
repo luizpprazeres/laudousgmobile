@@ -41,17 +41,17 @@ BEGIN
  UPDATE public.reports SET status = 'generated', sanity_result = '{"verdict":"critical","issues":[]}'::jsonb WHERE id = '10000000-0000-4000-8000-000000000001';
  SELECT content_revision INTO v FROM public.reports WHERE id = '10000000-0000-4000-8000-000000000001';
  result := public.review_report_content('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', v, 'Laudo corrigido');
- IF result->>'error' <> 'report_not_ready' THEN RAISE EXCEPTION 'generated plus critical approved'; END IF;
+ IF result->>'reviewStatus' <> 'reviewed' THEN RAISE EXCEPTION 'critical alert blocked medical review'; END IF;
  UPDATE public.reports SET sanity_result = '{"verdict":"ok","issues":[]}'::jsonb WHERE id = '10000000-0000-4000-8000-000000000001';
  SELECT content_revision INTO v FROM public.reports WHERE id = '10000000-0000-4000-8000-000000000001';
  result := public.review_report_content('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', v, 'Laudo corrigido');
  IF result->>'reviewStatus' <> 'reviewed' THEN RAISE EXCEPTION 'sanity ok approval failed'; END IF;
  UPDATE public.reports SET sanity_result = '{"verdict":"critical","issues":[]}'::jsonb WHERE id = '10000000-0000-4000-8000-000000000001';
- IF EXISTS(SELECT 1 FROM public.reports r JOIN public.report_medical_reviews m ON m.report_id = r.id AND m.reviewed_revision = r.content_revision WHERE r.id = '10000000-0000-4000-8000-000000000001') THEN RAISE EXCEPTION 'late critical retained review'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.reports r JOIN public.report_medical_reviews m ON m.report_id = r.id AND m.reviewed_revision = r.content_revision WHERE r.id = '10000000-0000-4000-8000-000000000001') THEN RAISE EXCEPTION 'derived sanity invalidated medical review'; END IF;
  UPDATE public.reports SET sanity_result = '{"verdict":"warning","issues":[{"severity":"critical"}]}'::jsonb WHERE id = '10000000-0000-4000-8000-000000000001';
  SELECT content_revision INTO v FROM public.reports WHERE id = '10000000-0000-4000-8000-000000000001';
  result := public.review_report_content('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', v, 'Laudo corrigido');
- IF result->>'error' <> 'report_not_ready' THEN RAISE EXCEPTION 'critical issue with warning verdict approved'; END IF;
+ IF result->>'reviewStatus' <> 'reviewed' THEN RAISE EXCEPTION 'critical issue blocked medical review'; END IF;
 END $$;
 
 -- Uma alteração estruturada pode manter o texto final idêntico. Ainda assim,

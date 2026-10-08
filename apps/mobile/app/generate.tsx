@@ -106,7 +106,7 @@ import { dopplerRequestFields, type DopplerMode } from "@/features/generate/dopp
 import { ClinicalModelWorkspace } from "@/features/generate/ClinicalModelWorkspace";
 import { HepaticReportWorkspace } from "@/features/generate/HepaticReportWorkspace";
 import { isEnabledHepaticAndroidModel } from "@/features/generate/hepaticModels";
-import { categoryDisplayLabel, isClinicalModelCode } from "@laudousg/shared";
+import { buildReviewSignals, categoryDisplayLabel, isClinicalModelCode } from "@laudousg/shared";
 
 const DEFAULT_WRITING_STYLE_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -1353,7 +1353,6 @@ function humanizeGenerateError(raw: string): string {
 
 // ─── Laudo (output / streaming) ───────────────────────────────────
 import type { GenerateState } from "@/features/generate/state";
-import type { SanityIssue } from "@/shared";
 
 type LaudoProps = {
   state: GenerateState;
@@ -1408,6 +1407,8 @@ function LaudoBody({
     const isStreaming = state.kind === "generating";
     const text =
       state.kind === "generating" ? state.streamedText : state.finalText;
+    const reviewSignals = buildReviewSignals(text, state.sanity?.issues ?? []);
+    const showReviewReason = (title: string, message: string) => Alert.alert(title, message);
     return (
       <View>
         {/* Sem cabeçalho "Ultrassonografia X" nem data/hora: a categoria já
@@ -1469,6 +1470,19 @@ function LaudoBody({
             >
               {SAVE_LABEL[saveStatus]}
             </Text>
+            {reviewSignals.notices.length > 0 ? (
+              <Pressable
+                onPress={() => Alert.alert(
+                  "Avisos gerais",
+                  reviewSignals.notices.map((notice) => `• ${notice.message}`).join("\n\n"),
+                )}
+                style={styles.textBtn}
+                accessibilityRole="button"
+                accessibilityLabel={`${reviewSignals.notices.length} avisos gerais de revisão`}
+              >
+                <Text style={styles.textBtnLabel}>⚠ {reviewSignals.notices.length}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
@@ -1491,21 +1505,18 @@ function LaudoBody({
         ) : (
           <Text style={styles.laudoText}>
             {text
-              ? renderReviewHighlighted(text, styles.reviewMarker)
+              ? renderReviewHighlighted(
+                  text,
+                  styles.reviewMarker,
+                  state.sanity?.issues ?? [],
+                  showReviewReason,
+                )
               : isStreaming
                 ? "Estruturando achados…"
                 : ""}
             {isStreaming ? <Text style={styles.cursor}> ▎</Text> : null}
           </Text>
         )}
-
-        {state.kind === "done" &&
-        text &&
-        state.sanity &&
-        state.sanity.issues.length > 0 &&
-        state.sanity.verdict !== "ok" ? (
-          <SanityCard sanity={state.sanity} styles={styles} />
-        ) : null}
 
         {state.kind === "done" && state.venousMap ? (
           <VenousSchemeView
@@ -1607,53 +1618,6 @@ function LaudoBody({
       <Text style={{ color: t.brand, fontFamily: FONT.semibold }}>Gerar</Text>{" "}
       com achados preenchidos para ver o laudo aqui.
     </Text>
-  );
-}
-
-// ─── Styles ───────────────────────────────────────────────────────
-/**
- * Card "N ponto(s) a revisar" — port do sanity card do iOS: transforma o
- * verificador determinístico em mecanismo de confiança (critique 04/07:
- * mostrar ONDE conferir, em vez de só assustar com disclaimer).
- */
-function SanityCard({
-  sanity,
-  styles,
-}: {
-  sanity: NonNullable<Extract<GenerateState, { kind: "done" }>["sanity"]>;
-  styles: ReturnType<typeof makeStyles>;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const count = sanity.issues.length;
-  const critical = sanity.verdict === "critical";
-  return (
-    <View style={[styles.sanityCard, critical && styles.sanityCardCritical]}>
-      <Pressable
-        onPress={() => setExpanded((e) => !e)}
-        style={styles.sanityHeader}
-        accessibilityRole="button"
-      >
-        <Text style={[styles.sanityTitle, critical && styles.sanityTitleCritical]}>
-          {count} ponto{count > 1 ? "s" : ""} a revisar
-        </Text>
-        <Text style={styles.sanityChevron}>{expanded ? "▲" : "▼"}</Text>
-      </Pressable>
-      {expanded ? (
-        <View style={{ gap: 8, marginTop: 8 }}>
-          {sanity.issues.map((issue, i) => (
-            <View key={i} style={styles.sanityIssue}>
-              <Text style={styles.sanityIssueDetail}>
-                {issue.severity === "critical" ? "⚠ " : "• "}
-                {issue.detail}
-              </Text>
-              {issue.trecho_laudo ? (
-                <Text style={styles.sanityIssueTrecho}>“{issue.trecho_laudo}”</Text>
-              ) : null}
-            </View>
-          ))}
-        </View>
-      ) : null}
-    </View>
   );
 }
 
@@ -1943,48 +1907,6 @@ function makeStyles(t: ColorTokens) {
     padding: 12,
     borderRadius: 12,
     backgroundColor: t.warningBg,
-  },
-  sanityCard: {
-    marginTop: 14,
-    backgroundColor: t.warningBg,
-    borderRadius: 12,
-    padding: 12,
-  },
-  sanityCardCritical: {
-    backgroundColor: t.mode === "dark" ? "rgba(255,69,58,0.14)" : "#FEF2F2",
-  },
-  sanityHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sanityTitle: {
-    color: t.warningText,
-    fontFamily: FONT.semibold,
-    fontSize: 13.5,
-  },
-  sanityTitleCritical: {
-    color: t.danger,
-  },
-  sanityChevron: {
-    color: t.textMute,
-    fontSize: 10,
-  },
-  sanityIssue: {
-    gap: 2,
-  },
-  sanityIssueDetail: {
-    color: t.text,
-    fontFamily: FONT.medium,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  sanityIssueTrecho: {
-    color: t.textSec,
-    fontFamily: FONT.body,
-    fontSize: 12.5,
-    fontStyle: "italic",
-    lineHeight: 18,
   },
   catMismatch: {
     backgroundColor: t.warningBg,

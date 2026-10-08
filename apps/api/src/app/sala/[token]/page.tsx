@@ -4,6 +4,7 @@ import "./room.css";
 
 import { Fragment, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import type { ReviewHighlight, ReviewSignals } from "@laudousg/shared";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMotivationalQuote } from "@/lib/useMotivationalQuote";
@@ -50,6 +51,7 @@ type SalaReport = RevisionFields & {
   outputText: string;
   category: string | null;
   createdAt: string;
+  reviewSignals?: ReviewSignals;
 };
 
 type TimelineEntry = RevisionFields & {
@@ -1520,6 +1522,19 @@ function ReportView({
         {nav()}
       </div>
 
+      {highlightOn && (report.reviewSignals?.notices.length ?? 0) > 0 && (
+        <details className="review-notices">
+          <summary>
+            ⚠ {report.reviewSignals!.notices.length} aviso{report.reviewSignals!.notices.length === 1 ? "" : "s"} sem trecho específico
+          </summary>
+          <ul>
+            {report.reviewSignals!.notices.map((notice) => (
+              <li key={notice.id}>{notice.message}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       <div ref={spreadRef} className="paper-spread" aria-label={`Laudo em ${contentPageCount} página${contentPageCount === 1 ? "" : "s"}`}>
         {pages.map((page, index) => {
           const contentIndex = pages.slice(0, index + 1).filter((item) => !item.empty).length;
@@ -1541,7 +1556,7 @@ function ReportView({
                 </h1>
               )}
               <div className="report-body">
-                {renderBody(page.text, highlightOn, page.added)}
+                {renderBody(page.text, highlightOn, page.added, report.reviewSignals?.highlights ?? [])}
               </div>
             </div>
           </article>
@@ -1601,6 +1616,7 @@ function renderBody(
   text: string,
   highlightOn: boolean,
   added: boolean[] = [],
+  highlights: ReviewHighlight[] = [],
 ): React.ReactNode[] {
   const lines = text.split(/\r?\n/);
   return lines.map((line, i) => {
@@ -1612,12 +1628,60 @@ function renderBody(
     return (
       <Fragment key={i}>
         <span className={cls} data-added={added[i] && line.trim() ? "sala" : undefined}>
-          {line}
+          {highlightOn ? renderHighlightedLine(line, highlights, i) : line}
         </span>
         {i < lines.length - 1 ? "\n" : ""}
       </Fragment>
     );
   });
+}
+
+function renderHighlightedLine(
+  line: string,
+  highlights: ReviewHighlight[],
+  lineIndex: number,
+): React.ReactNode[] {
+  const candidates: Array<{ start: number; end: number; signal: ReviewHighlight }> = [];
+  for (const signal of highlights) {
+    if (!signal.anchor) continue;
+    let from = 0;
+    while (from < line.length) {
+      const start = line.indexOf(signal.anchor, from);
+      if (start < 0) break;
+      candidates.push({ start, end: start + signal.anchor.length, signal });
+      from = start + Math.max(signal.anchor.length, 1);
+    }
+  }
+  candidates.sort((a, b) => a.start - b.start || (a.signal.kind === "missing" ? -1 : 1) || (a.end - a.start) - (b.end - b.start));
+
+  const selected: typeof candidates = [];
+  for (const candidate of candidates) {
+    if (selected.some((current) => candidate.start < current.end && candidate.end > current.start)) continue;
+    selected.push(candidate);
+  }
+
+  if (!selected.length) return [line];
+  const output: React.ReactNode[] = [];
+  let cursor = 0;
+  for (const { start, end, signal } of selected) {
+    if (start > cursor) output.push(line.slice(cursor, start));
+    output.push(
+      <span
+        key={`${lineIndex}-${start}-${signal.id}`}
+        className={`review-mark review-mark--${signal.kind}`}
+        tabIndex={0}
+        role="note"
+        aria-label={`${signal.anchor}. ${signal.message}`}
+        data-review-reason={signal.message}
+        title={signal.message}
+      >
+        {line.slice(start, end)}
+      </span>,
+    );
+    cursor = end;
+  }
+  if (cursor < line.length) output.push(line.slice(cursor));
+  return output;
 }
 
 function isAllCapsHeading(trimmed: string): boolean {

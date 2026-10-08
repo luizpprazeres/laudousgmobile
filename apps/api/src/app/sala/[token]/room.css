@@ -15,6 +15,8 @@
         --amber-soft: #f1f5f9;
         --highlight: #fff5cc;
         --highlight-ink: #6b4f00;
+        --missing-highlight: #ede9fe;
+        --missing-highlight-ink: #6d28d9;
         --ok-bg: #ecfdf5;
         --ok-line: #059669;
         --ok-ink: #065f46;
@@ -41,6 +43,8 @@
         --amber-soft: rgba(251, 191, 36, 0.18);
         --highlight: rgba(251, 191, 36, 0.18);
         --highlight-ink: #fbd97a;
+        --missing-highlight: rgba(139, 92, 246, 0.24);
+        --missing-highlight-ink: #ddd6fe;
         --ok-bg: rgba(16, 185, 129, 0.14);
         --ok-line: #34d399;
         --ok-ink: #a7f3d0;
@@ -1250,6 +1254,82 @@
         font-weight: 800;
       }
 
+      .review-mark {
+        position: relative;
+        border-radius: 3px;
+        padding: 0 1px;
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+        cursor: help;
+        outline: none;
+      }
+
+      .review-mark--missing {
+        background: var(--missing-highlight);
+        color: var(--missing-highlight-ink);
+      }
+
+      .review-mark--warning {
+        background: var(--highlight);
+        color: var(--highlight-ink);
+      }
+
+      .review-mark:focus-visible {
+        box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px currentColor;
+      }
+
+      .review-mark::after {
+        content: attr(data-review-reason);
+        position: absolute;
+        z-index: 20;
+        left: 0;
+        bottom: calc(100% + 8px);
+        width: max-content;
+        max-width: min(320px, 80vw);
+        padding: 8px 10px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--ink);
+        box-shadow: 0 16px 32px -20px rgba(15, 23, 42, 0.55);
+        font-family: "Inter Tight", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.35;
+        white-space: normal;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(3px);
+        transition: opacity 120ms ease, transform 120ms ease;
+      }
+
+      .review-mark:hover::after,
+      .review-mark:focus::after,
+      .review-mark:focus-visible::after {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .review-notices {
+        margin: 0 0 12px;
+        border: 1px solid var(--wait-line);
+        border-radius: 8px;
+        background: var(--wait-bg);
+        color: var(--wait-ink);
+        font-size: 12px;
+      }
+
+      .review-notices summary {
+        cursor: pointer;
+        padding: 8px 10px;
+        font-weight: 700;
+      }
+
+      .review-notices ul {
+        margin: 0;
+        padding: 0 28px 10px;
+      }
+
 
 
       .shortcut-footer {
@@ -1427,7 +1507,7 @@
          controles nunca vão para o papel. */
       @media print {
         .topbar, .sidebar, .activity-panel, .offline-banner, .review-banner,
-        .inline-alert, .inline-note, .reader-head, .patient-field, .mobile-bar,
+        .inline-alert, .inline-note, .review-notices, .reader-head, .patient-field, .mobile-bar,
         .arrival-toast, .shortcut-footer, .shortcut-backdrop { display: none !important; }
         .layout { display: block !important; }
         .main { padding: 0 !important; background: #fff !important; }

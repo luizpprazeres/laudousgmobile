@@ -25,6 +25,8 @@ import { Segment } from "@/ui/Segment";
 import { CATS, FONT, type ColorTokens } from "@/ui/tokens";
 import { useColorTokens } from "@/ui/useColorTokens";
 import { categoryDisplayLabel } from "@laudousg/shared";
+import { buildReviewSignals } from "@laudousg/shared";
+import type { SanityIssue } from "@/shared";
 
 // RAG saiu (pipeline atual usa writers/renderers, igual ao iOS); a aba
 // "Achados" mostra o que o médico ditou/digitou (raw_input) — antes era um
@@ -186,6 +188,7 @@ export default function ReportDetailScreen() {
   const catLabel =
     CATS.find((c) => c.id === report.category_code)?.label ??
     categoryDisplayLabel(report.category_code);
+  const reviewSignals = buildReviewSignals(finalText, report.sanity_result?.issues ?? []);
 
   return (
     <View style={styles.screen}>
@@ -250,6 +253,19 @@ export default function ReportDetailScreen() {
           <Text style={styles.actionText}>{reviewing ? "Liberando…" : "Revisado — liberar para a Sala"}</Text>
         </Pressable>
 
+        {reviewSignals.notices.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            style={styles.actionButton}
+            onPress={() => Alert.alert(
+              "Avisos gerais",
+              reviewSignals.notices.map((notice) => `• ${notice.message}`).join("\n\n"),
+            )}
+          >
+            <Text style={styles.actionText}>⚠ {reviewSignals.notices.length} aviso{reviewSignals.notices.length === 1 ? "" : "s"} geral{reviewSignals.notices.length === 1 ? "" : "is"}</Text>
+          </Pressable>
+        ) : null}
+
         <Segment value={tab} onChange={setTab} options={TABS} />
 
         {tab === "report" && saveStatus !== "idle" ? (
@@ -281,7 +297,7 @@ export default function ReportDetailScreen() {
               />
             </View>
           ) : (
-            <ReportTab text={finalText} />
+            <ReportTab text={finalText} issues={report.sanity_result?.issues ?? []} />
           )
         ) : null}
         {tab === "report" ? <SavedSchemes reportId={report.id} /> : null}
@@ -294,14 +310,19 @@ export default function ReportDetailScreen() {
   );
 }
 
-function ReportTab({ text }: { text: string }) {
+function ReportTab({ text, issues }: { text: string; issues: SanityIssue[] }) {
   const t = useColorTokens();
   const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <View style={styles.card}>
       <Text selectable style={styles.reportText}>
         {text
-          ? renderReviewHighlighted(text, styles.reviewMarker)
+          ? renderReviewHighlighted(
+              text,
+              styles.reviewMarker,
+              issues,
+              (title, message) => Alert.alert(title, message),
+            )
           : "Laudo ainda não gerado."}
       </Text>
       {text ? (
