@@ -32,7 +32,7 @@ import {
   normalizeBladderState,
 } from "../deterministic/organs/urinaryShared";
 import { pelvePresetDe } from "../deterministic/organs/pelvePresets";
-import { MyomaFindingSchema, type MyomaFinding } from "@laudousg/schemes";
+import { readMyomaItems } from "../pelve/myomaCollection";
 
 /** O que a tela guarda de uma seção. Nada aqui é tipado pelo compilador. */
 type EstadoDaSecao = Record<string, unknown>;
@@ -88,30 +88,6 @@ function volumeDe(m: number[] | null): number | null {
 function numero(bruto: string): number | null {
   const n = Number.parseFloat(bruto.replace(",", "."));
   return Number.isFinite(n) ? n : null;
-}
-
-const MYOMA_EXTRA_KEY = "__myoma.extraFindings";
-const MYOMA_LOCATION_TEXT: Record<MyomaFinding["location"], string | null> = {
-  not_informed: null,
-  anterior: "parede anterior",
-  posterior: "parede posterior",
-  lateral_direita: "parede lateral direita",
-  lateral_esquerda: "parede lateral esquerda",
-  fundo: "região fúndica",
-  cervical: "região cervical",
-};
-
-function miomasExtras(s: EstadoDaSecao): MyomaFinding[] {
-  try {
-    const bruto = JSON.parse(texto(s, MYOMA_EXTRA_KEY) || "[]") as unknown;
-    if (!Array.isArray(bruto)) return [];
-    return bruto.flatMap((item) => {
-      const validado = MyomaFindingSchema.safeParse(item);
-      return validado.success ? [validado.data] : [];
-    }).slice(0, 17);
-  } catch {
-    return [];
-  }
 }
 
 function descricaoLiquidoLivre(s: EstadoDaSecao): string | null {
@@ -268,33 +244,25 @@ export function adaptarPelve(
    * prefixo `mioma.sim.` — é a convenção do sistema genérico, não um detalhe
    * deste arquivo.
    */
-  const miomasLegados = ["mioma", "mioma2", "mioma3"]
-    .filter((chave) => marcado(u, chave))
-    .map((chave) => ({
-      classificacao: texto(u, `${chave}.sim.classificacao`) || null,
-      medidas_cm: medidas(texto(u, `${chave}.sim.medidas`)),
-      parede: texto(u, `${chave}.sim.parede`) || null,
-      relacao: null,
-      figo: texto(u, `${chave}.sim.figo`) || null,
-      ecotextura: texto(u, `${chave}.sim.ecotextura`) || null,
-    }));
-  const miomasDinamicos = miomasExtras(u).map((mioma) => ({
-    classificacao: mioma.figoConfirmed
-      ? mioma.figo <= 2
-        ? "submucoso"
-        : mioma.figo <= 4
-          ? "intramural"
-          : mioma.figo <= 7
-            ? "subseroso"
-            : "outro"
-      : null,
-    medidas_cm: mioma.sizeMaxMm == null ? null : [mioma.sizeMaxMm / 10],
-    parede: MYOMA_LOCATION_TEXT[mioma.location],
+  const myomaCollection = readMyomaItems(u);
+  if (myomaCollection.error) {
+    pendencias.push({
+      onde: "miomas",
+      valor: "",
+      motivo: myomaCollection.error === "excede_limite"
+        ? "há mais de 20 miomas individualizados; revise a lista antes de gerar o laudo"
+        : "a lista de miomas não pôde ser lida integralmente; revise os achados antes de gerar o laudo",
+      bloqueia: true,
+    });
+  }
+  const miomas = myomaCollection.items.map((mioma) => ({
+    classificacao: mioma.classificacao || null,
+    medidas_cm: medidas(mioma.medidas),
+    parede: mioma.parede || null,
     relacao: null,
-    figo: mioma.figoConfirmed ? String(mioma.figo) : null,
-    ecotextura: mioma.echo,
+    figo: mioma.figo || null,
+    ecotextura: mioma.ecotextura || null,
   }));
-  const miomas = [...miomasLegados, ...miomasDinamicos];
 
   /**
    * ADENOMIOSE — a tela marca, o canônico precisa da FRASE.

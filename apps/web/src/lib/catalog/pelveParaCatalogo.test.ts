@@ -63,4 +63,12 @@ assert.equal(estruturado.dados.liquido_livre_descricao, 'moderada quantidade no 
 const outroIncompleto = adaptarPelve({ endometrio: { frase: 'outro' } }, { via: 'tv' })
 assert.equal(outroIncompleto.pendencias.some((item) => item.onde === 'endométrio' && item.bloqueia), true)
 
+const extrasIlegiveis = adaptarPelve({ utero: { '__myoma.extraFindings': '{' } }, { via: 'tv' })
+assert.equal(extrasIlegiveis.pendencias.some((item) => item.onde === 'miomas' && item.bloqueia), true)
+
+const muitosExtras = Array.from({ length: 21 }, (_, index) => newMyomaFinding({ id: `mioma-${index}` }))
+const limiteExcedido = adaptarPelve({ utero: { '__myoma.extraFindings': JSON.stringify(muitosExtras) } }, { via: 'tv' })
+assert.equal(limiteExcedido.pendencias.some((item) => item.onde === 'miomas' && item.bloqueia && /mais de 20/.test(item.motivo)), true)
+assert.equal((limiteExcedido.dados.miomas as unknown[]).length, 21, 'o adaptador não pode cortar o 21º mioma silenciosamente')
+
 console.log('pelveParaCatalogo: ok')

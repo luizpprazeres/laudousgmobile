@@ -65,6 +65,7 @@ const files = [
   '../../packages/shared/src/__tests__/companionFormPatch.manual.ts',
   'src/lib/catalog/dopplerCarotidasParaCatalogo.test.ts',
   'src/lib/catalog/pelveParaCatalogo.test.ts',
+  'src/lib/pelve/__tests__/myomaCollection.manual.ts',
   'src/lib/catalog/morfologicoPrimeiroTrimestre.test.mts',
   'src/lib/catalog/morfologicoSegundoTerceiro.test.mts',
   '../api/src/server/renderer/catalog/__tests__/shared-urinary-organs-ponta-a-ponta.manual.ts',
