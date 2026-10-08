@@ -16,11 +16,13 @@ Tireoide possui renderer canônico para ACR e Domingos, adaptador Web e esquema 
 
 ## Entrega 1 — tireoide Web
 
-Status: implementada, aguardando somente os gates finais e publicação.
+Status: implementada e validada localmente. A preferência salva de incluir a recomendação ACR agora atravessa o proxy Web e chega ao renderer canônico; falta apenas confirmar o deploy após o push.
 
 O ACR TI-RADS passa a ser o fluxo principal do nódulo. Os cinco grupos ficam lado a lado em telas amplas e se reorganizam no celular, com pontos visíveis, categoria por cor e recomendação dimensional imediata. Localização é selecionável. Domingos fica recolhido e opcional, sem conversão para ACR.
 
 Císticos e espongiformes encerram a pontuação como TR1. Demais nódulos só recebem categoria quando os cinco grupos foram respondidos. Em múltiplos nódulos, cada recomendação é vinculada ao achado e as indicações de PAAF ficam limitadas aos dois nódulos de maior categoria. A recomendação no laudo continua desligada por padrão e pode ser habilitada nas preferências.
+
+A auditoria detalhada de resíduos e próximos ajustes está em [2026-10-07-tireoide-tirads-web-gap-map.md](../reviews/2026-10-07-tireoide-tirads-web-gap-map.md). Ela separa o que já está entregue das divergências ainda abertas entre Web, mobile, prompts e renderer.
 
 ## Entrega 2 — integração celular–Web
 

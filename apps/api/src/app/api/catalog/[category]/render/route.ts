@@ -23,6 +23,13 @@ const Corpo = z.object({
    * vira 409, não laudo torto.
    */
   dados: z.record(z.string(), z.unknown()).optional(),
+  /** Preferências já autenticadas pela Web; o navegador nunca chama esta rota. */
+  renderer_preferences: z
+    .object({
+      show_domingos_score: z.boolean().optional(),
+      show_conduct_recommendation: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 /**
@@ -114,7 +121,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
    * — o núcleo do catálogo não faz E/S. Sem máscara o renderer devolve `null`,
    * e a rota responde 404: melhor nenhum laudo que um sem título nem seções.
    */
-  const contexto = await contextoDeRender(category, corpo.estilo);
+  const contexto = {
+    ...(await contextoDeRender(category, corpo.estilo)),
+    ...(category === "TIREOIDE" && corpo.renderer_preferences
+      ? { tireoidePreferences: corpo.renderer_preferences }
+      : {}),
+  };
 
   const r = renderizarSelecao(
     category,

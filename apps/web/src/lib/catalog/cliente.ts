@@ -103,7 +103,15 @@ export function buscarCatalogo(categoria: string, estilo = ESTILO_PADRAO) {
 /** O LAUDO das alterações escolhidas e do que o médico digitou. */
 export function renderizar(
   categoria: string,
-  corpo: { estilo: string; alteracoes?: string[]; dados?: Record<string, unknown> },
+  corpo: {
+    estilo: string;
+    alteracoes?: string[];
+    dados?: Record<string, unknown>;
+    renderer_preferences?: {
+      show_domingos_score?: boolean;
+      show_conduct_recommendation?: boolean;
+    };
+  },
 ) {
   return chamar(`/api/catalog/${encodeURIComponent(categoria)}/render`, {
     method: "POST",

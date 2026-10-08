@@ -39,7 +39,7 @@
  *    alteração pedida num estilo em que ela não existe (`selecaoInvalida`).
  */
 
-import { laudoPadraoDe } from "./modeloNormalRegistry";
+import { laudoPadraoDe, type ContextoDeRender } from "./modeloNormalRegistry";
 import { variarSeed, mascararPorComparacao, ehObjeto, mesclarFundo } from "./modeloNormal";
 
 export type AlteracaoSpec = {
@@ -429,8 +429,8 @@ export function renderizarSelecao(
    * então um cliente não consegue injetar campo que a categoria não tem.
    */
   dados?: Record<string, unknown>,
-  /** Repassado ao renderer — hoje só a máscara do abdome. Ver `ContextoDeRender`. */
-  ctx?: { templateBody?: string | null },
+  /** Repassado ao renderer: máscara do abdome e preferências da tireoide. */
+  ctx?: ContextoDeRender,
 ): SelecaoRenderizada {
   const invalidas = selecaoInvalida(estilo, specs);
   if (invalidas.length > 0) return { ok: false, conflitos: invalidas };

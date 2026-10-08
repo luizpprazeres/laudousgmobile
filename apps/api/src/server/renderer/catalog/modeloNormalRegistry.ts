@@ -40,6 +40,11 @@ import { DopplerCarotidasFindingsSchema, renderDopplerCarotidas } from "../categ
 export type ContextoDeRender = {
   /** Máscara do laudo, de `report_template_variants`. Só o abdome usa. */
   templateBody?: string | null;
+  /** Preferências da conta para o laudo de tireoide, lidas pela Web autenticada. */
+  tireoidePreferences?: {
+    show_domingos_score?: boolean;
+    show_conduct_recommendation?: boolean;
+  };
 };
 
 export type EstiloModeloNormal = "CLASSICO_COMPLETO" | "OBJETIVO";
@@ -303,8 +308,8 @@ render: (f, o) =>
      * pico só não estampa "____ cm/s" no lado que ninguém mediu. Exigir os dois
      * criaria dado obrigatório que a web nunca exigiu.
      */
-    render: (f, o) =>
-      renderTireoide(f, undefined as any, {
+    render: (f, o, ctx) =>
+      renderTireoide(f, ctx?.tireoidePreferences, {
         objetivo: o.objetivo,
         /**
          * Lido de `process.env` direto, e NÃO do `env()` validado — de
