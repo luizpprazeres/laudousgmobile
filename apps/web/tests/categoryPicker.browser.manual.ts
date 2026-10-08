@@ -66,7 +66,7 @@ async function main() {
     }
     if (url !== '/') { res.statusCode = 404; res.end(); return }
     res.setHeader('Content-Type', 'text/html')
-    res.end('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/style.css"></head><body><div id="root"></div><script src="/bundle.js"></script></body></html>')
+    res.end('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preload" href="/fonts/BarlowCondensed-Light.ttf" as="font" type="font/ttf" crossorigin="anonymous"><link rel="stylesheet" href="/style.css"></head><body><div id="root"></div><script src="/bundle.js"></script></body></html>')
   })
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
   const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`

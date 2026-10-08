@@ -12,6 +12,6 @@ export const config = {
      * - _next/static, _next/image, favicon
      * - arquivos estáticos comuns (svg, png, jpg, webp, mp4, etc.)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|ttf|woff2?)$).*)",
   ],
 };

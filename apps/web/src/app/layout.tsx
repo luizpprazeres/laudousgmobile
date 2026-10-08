@@ -100,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <link rel="preload" href="/fonts/BarlowCondensed-Light.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body
