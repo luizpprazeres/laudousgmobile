@@ -1,6 +1,7 @@
 import type {
   CompanionBiometricData,
   CompanionBreastFinding,
+  CompanionCarotidClassification,
   CompanionCarotidMeasurement,
   CompanionCarotidPlaque,
   CompanionStructuredPayload,
@@ -174,9 +175,33 @@ function carotidPlaques(value: unknown): CompanionCarotidPlaque[] {
     const source = record(candidate)
     const side = string(source?.side)
     if (!source || !side || !['direita', 'esquerda'].includes(side)) return []
-    const clean = strings(source, ['location', 'thickness', 'stenosisPercent'])
-    if (!Object.keys(clean).length) return []
-    return [{ side, ...clean } as CompanionCarotidPlaque]
+    const clean = strings(source, ['location', 'thickness', 'stenosisPercent', 'description'])
+    const composition = string(source.composition)
+    const surface = string(source.surface)
+    const validComposition = ['calcificada', 'lipidica', 'mista'].includes(composition ?? '') ? composition : undefined
+    const validSurface = ['regular', 'irregular', 'ulcerada'].includes(surface ?? '') ? surface : undefined
+    if (!Object.keys(clean).length && !validComposition && !validSurface) return []
+    return [{
+      side,
+      ...clean,
+      ...(validComposition ? { composition: validComposition } : {}),
+      ...(validSurface ? { surface: validSurface } : {}),
+    } as CompanionCarotidPlaque]
+  })
+}
+
+function carotidClassifications(value: unknown): CompanionCarotidClassification[] {
+  if (!Array.isArray(value)) return []
+  const valid = new Set<CompanionCarotidClassification['classification']>([
+    'normal', 'ateromatose_sem_estenose_significativa', 'estenose_menor_50',
+    'estenose_50_69', 'estenose_70_99', 'oclusao',
+  ])
+  return value.flatMap((candidate) => {
+    const source = record(candidate)
+    const side = string(source?.side)
+    const classification = string(source?.classification)
+    if (!source || (side !== 'direita' && side !== 'esquerda') || !classification || !valid.has(classification as CompanionCarotidClassification['classification'])) return []
+    return [{ side, classification } as CompanionCarotidClassification]
   })
 }
 
@@ -206,8 +231,14 @@ export function parseCompanionStructuredPayload(value: unknown): CompanionStruct
   } else if (category === 'DOPPLER_CAROTIDAS') {
     const vessels = carotidMeasurements(rawData.carotidMeasurements)
     const plaques = carotidPlaques(rawData.carotidPlaques)
+    const classifications = carotidClassifications(rawData.carotidClassifications)
+    const conclusion = string(rawData.carotidConclusion)
+    const additionalFindings = string(rawData.carotidAdditionalFindings)
     if (vessels.length) data.carotidMeasurements = vessels
     if (plaques.length) data.carotidPlaques = plaques
+    if (classifications.length) data.carotidClassifications = classifications
+    if (conclusion) data.carotidConclusion = conclusion
+    if (additionalFindings) data.carotidAdditionalFindings = additionalFindings
   }
   if (!Object.keys(data).length) return null
 
@@ -260,12 +291,30 @@ export function companionReviewItems(payload: CompanionStructuredPayload): Compa
     items.push({ key: `breastFindings.${index}`, label: `Achado mamário ${index + 1}`, value: `${finding.side} · ${finding.type.replaceAll('_', ' ')}${size ? ` · ${size}` : ''}` })
   }
   for (const [index, measurement] of (payload.data.carotidMeasurements ?? []).entries()) {
-    const values = [measurement.psv && `VPS ${measurement.psv}`, measurement.vdf && `VDF ${measurement.vdf}`, measurement.ir && `IR ${measurement.ir}`, measurement.emi && `EMI ${measurement.emi}`, measurement.flowDirection].filter(Boolean).join(' · ')
-    items.push({ key: `carotidMeasurements.${index}`, label: `${measurement.vessel} ${measurement.side}`, value: values })
+    const vesselLabels = { comum: 'Carótida comum', interna: 'Carótida interna', externa: 'Carótida externa', vertebral: 'Artéria vertebral' }
+    const values = [measurement.psv && `PSV ${measurement.psv} cm/s`, measurement.vdf && `VDF ${measurement.vdf} cm/s`, measurement.ir && `IR ${measurement.ir}`, measurement.emi && `EMI ${measurement.emi} mm`, measurement.flowDirection].filter(Boolean).join(' · ')
+    items.push({ key: `carotidMeasurements.${index}`, label: `${vesselLabels[measurement.vessel]} ${measurement.side}`, value: values })
   }
   for (const [index, plaque] of (payload.data.carotidPlaques ?? []).entries()) {
-    const values = [plaque.location, plaque.thickness && `${plaque.thickness} mm`, plaque.stenosisPercent && `${plaque.stenosisPercent}%`].filter(Boolean).join(' · ')
+    const values = [plaque.location, plaque.composition, plaque.surface, plaque.thickness && `${plaque.thickness} mm`, plaque.stenosisPercent && `${plaque.stenosisPercent}%`, plaque.description].filter(Boolean).join(' · ')
     items.push({ key: `carotidPlaques.${index}`, label: `Placa ${plaque.side}`, value: values })
   }
+  for (const [index, classification] of (payload.data.carotidClassifications ?? []).entries()) {
+    const labels: Record<CompanionCarotidClassification['classification'], string> = {
+      normal: 'Normal',
+      ateromatose_sem_estenose_significativa: 'Ateromatose sem estenose significativa',
+      estenose_menor_50: 'Estenose menor que 50%',
+      estenose_50_69: 'Estenose de 50 a 69%',
+      estenose_70_99: 'Estenose de 70 a 99%',
+      oclusao: 'Oclusão',
+    }
+    items.push({
+      key: `carotidClassifications.${index}`,
+      label: `Classificação ${classification.side}`,
+      value: labels[classification.classification],
+    })
+  }
+  if (payload.data.carotidConclusion) items.push({ key: 'carotidConclusion', label: 'Conclusão ditada', value: payload.data.carotidConclusion })
+  if (payload.data.carotidAdditionalFindings) items.push({ key: 'carotidAdditionalFindings', label: 'Achados adicionais', value: payload.data.carotidAdditionalFindings })
   return items.filter((item) => item.value)
 }

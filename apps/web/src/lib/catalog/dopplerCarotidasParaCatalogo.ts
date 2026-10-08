@@ -74,6 +74,17 @@ function sideData(s: Section, side: 'direita' | 'esquerda', classificacao: strin
 export function adaptarDopplerCarotidas(exam: Exam) {
   const conclusion = section(exam, 'conclusao')
   const pendencias: Pendencia[] = []
+  for (const [key, label] of [['direita', 'Lado direito'], ['esquerda', 'Lado esquerdo'], ['conclusao', 'Conclusão']] as const) {
+    const conflicts = section(exam, key).companion_conflitos
+    if (Array.isArray(conflicts) && conflicts.some((item) => typeof item === 'string' && item.trim())) {
+      pendencias.push({
+        onde: label,
+        valor: 'conflito_companion',
+        motivo: 'há divergências do Companion que precisam ser revisadas nos campos destacados',
+        bloqueia: true,
+      })
+    }
+  }
   const dados: DopplerCarotidasWebInput = {
     direita: sideData(section(exam, 'direita'), 'direita', text(conclusion, 'classificacao_direita'), pendencias),
     esquerda: sideData(section(exam, 'esquerda'), 'esquerda', text(conclusion, 'classificacao_esquerda'), pendencias),

@@ -110,13 +110,31 @@ const carotidas = applyCompanionCarotids({}, {
       { side: 'direita', vessel: 'externa', psv: '90', vdf: '18' },
       { side: 'esquerda', vessel: 'vertebral', psv: '41', flowDirection: 'anterogrado' },
     ],
-    carotidPlaques: [{ side: 'direita', location: 'bulbo carotídeo', thickness: '2.1' }],
+    carotidPlaques: [{
+      side: 'direita', location: 'bulbo carotídeo', composition: 'mista', surface: 'irregular',
+      thickness: '2.1', stenosisPercent: '35', description: 'Placa no bulbo direito',
+    }],
+    carotidClassifications: [
+      { side: 'direita', classification: 'estenose_menor_50' },
+      { side: 'esquerda', classification: 'normal' },
+    ],
+    carotidConclusion: 'Estenose inferior a 50% à direita',
+    carotidAdditionalFindings: 'Sem outros achados relevantes',
   },
 })
 assert.equal(carotidas.direita?.interna_vps, '82')
 assert.equal(carotidas.direita?.externa_vdf, '18')
 assert.equal(carotidas.esquerda?.vertebral_direcao, 'anterogrado')
 assert.equal(carotidas.direita?.placas_ids.length, 1)
+assert.equal(carotidas.direita?.placas_status, 'presentes')
+const firstCarotidPlaqueId = carotidas.direita?.placas_ids[0]
+assert.equal(carotidas.direita?.[`placas.${firstCarotidPlaqueId}.composicao`], 'mista')
+assert.equal(carotidas.direita?.[`placas.${firstCarotidPlaqueId}.superficie`], 'irregular')
+assert.equal(carotidas.direita?.[`placas.${firstCarotidPlaqueId}.descricao`], 'Placa no bulbo direito')
+assert.equal(carotidas.conclusao?.classificacao_direita, 'estenose_menor_50')
+assert.equal(carotidas.conclusao?.classificacao_esquerda, 'normal')
+assert.equal(carotidas.conclusao?.conclusao_livre, 'Estenose inferior a 50% à direita')
+assert.equal(carotidas.conclusao?.achados_adicionais, 'Sem outros achados relevantes')
 
 const carotidasComConflito = applyCompanionCarotids({}, {
   category: 'DOPPLER_CAROTIDAS',
@@ -133,8 +151,66 @@ const carotidasPreservadas = applyCompanionCarotids({ direita: { interna_vps: '8
   data: { carotidMeasurements: [{ side: 'direita', vessel: 'interna', psv: '82', vdf: '24' }] },
 })
 assert.equal(carotidasPreservadas.direita?.interna_vps, '80')
-assert.equal(carotidasPreservadas.direita?.interna_vdf, '24')
-assert.equal(carotidasPreservadas.direita?.companion_conflitos.length, 1)
+assert.equal(carotidasPreservadas.direita?.interna_vdf, undefined, 'PSV/VDF do mesmo ditado são aplicadas como par atômico')
+assert.equal(carotidasPreservadas.direita?.companion_conflitos.length, 2)
+assert.match(String(carotidasPreservadas.direita?.companion_conflitos[1]), /VDF.*não aplicado/)
+
+const carotidasSemSobrescrever = applyCompanionCarotids({
+  direita: { placas_status: 'ausentes', placas_ids: [] },
+  conclusao: { classificacao_direita: 'normal', conclusao_livre: 'Conclusão revisada pelo médico' },
+}, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: {
+    carotidPlaques: [{ side: 'direita', location: 'bulbo', thickness: '2,4' }],
+    carotidClassifications: [{ side: 'direita', classification: 'estenose_50_69' }],
+    carotidConclusion: 'Estenose de 50 a 69% à direita',
+  },
+})
+assert.equal(carotidasSemSobrescrever.direita?.placas_status, 'ausentes')
+assert.equal(carotidasSemSobrescrever.direita?.placas_ids.length, 1, 'a placa recebida fica preservada para revisão sem trocar o status manual')
+assert.equal(carotidasSemSobrescrever.direita?.companion_conflitos.length, 1)
+assert.equal(carotidasSemSobrescrever.conclusao?.classificacao_direita, 'normal')
+assert.equal(carotidasSemSobrescrever.conclusao?.conclusao_livre, 'Conclusão revisada pelo médico')
+assert.equal(carotidasSemSobrescrever.conclusao?.companion_conflitos.length, 2)
+
+const carotidasEnriquecidas = applyCompanionCarotids({
+  direita: {
+    placas_status: 'presentes', placas_ids: ['placa-1'],
+    'placas.placa-1.localizacao': 'bulbo', 'placas.placa-1.espessura': '2,4',
+    'placas.placa-1.estenose': '35', 'placas.placa-1.superficie': 'regular',
+  },
+}, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: { carotidPlaques: [{
+    side: 'direita', location: 'bulbo', composition: 'mista', surface: 'irregular',
+    thickness: '2.4', stenosisPercent: '35',
+  }] },
+})
+assert.deepEqual(carotidasEnriquecidas.direita?.placas_ids, ['placa-1'])
+assert.equal(carotidasEnriquecidas.direita?.['placas.placa-1.composicao'], 'mista')
+assert.equal(carotidasEnriquecidas.direita?.['placas.placa-1.superficie'], 'regular')
+assert.equal(carotidasEnriquecidas.direita?.companion_conflitos.length, 1)
+
+const duasPlacasIguais = applyCompanionCarotids({}, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: { carotidPlaques: [
+    { side: 'direita', location: 'bulbo', composition: 'calcificada' },
+    { side: 'direita', location: 'bulbo', composition: 'calcificada' },
+  ] },
+})
+assert.equal(duasPlacasIguais.direita?.placas_ids.length, 2, 'itens repetidos no mesmo ditado preservam a quantidade')
+
+const placaParcialEnriquecida = applyCompanionCarotids({
+  direita: {
+    placas_status: 'presentes', placas_ids: ['placa-parcial'],
+    'placas.placa-parcial.localizacao': 'bulbo', 'placas.placa-parcial.espessura': '2,4',
+    'placas.placa-parcial.estenose': '35',
+  },
+}, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: { carotidPlaques: [{ side: 'direita', location: 'bulbo', thickness: '2.4' }] },
+})
+assert.deepEqual(placaParcialEnriquecida.direita?.placas_ids, ['placa-parcial'], 'ditado parcial casa com a placa existente sem duplicar')
 
 const obstetricaPreservada = applyCompanionStructured({
   biometria: { dbp: '80', cc: '' },

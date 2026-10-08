@@ -96,6 +96,19 @@ test('incompleto e conflitos bloqueiam: classificação, placas, VDF > PSV, núm
   assert.deepEqual(motivos({ direita: { ...ladoNormal }, esquerda: { ...ladoNormal }, conclusao: { conclusao_livre: 'Texto do médico' } }), [])
 })
 
+test('divergência do Companion bloqueia a geração até a revisão manual', () => {
+  const exam: Exam = {
+    direita: { ...ladoNormal }, esquerda: { ...ladoNormal },
+    conclusao: {
+      classificacao_direita: 'normal', classificacao_esquerda: 'normal',
+      companion_conflitos: ['classificacao_direita::Classificação: digitado normal / recebido estenose_70_99'],
+    },
+  }
+  assert.ok(motivos(exam).includes('Conclusão: há divergências do Companion que precisam ser revisadas nos campos destacados'))
+  delete exam.conclusao!.companion_conflitos
+  assert.doesNotThrow(() => laudo(exam))
+})
+
 // ── Correções do QA de 9edf0ac ───────────────────────────────────────────────
 const placa = (pct: string) => ({ avaliacao: 'avaliado', placas_status: 'presentes', placas_ids: ['p1'], 'placas.p1.localizacao': 'bulbo', 'placas.p1.estenose': pct })
 

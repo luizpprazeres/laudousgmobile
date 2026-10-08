@@ -31,7 +31,14 @@ export type CompanionCarotidMeasurement = {
   flowDirection?: 'anterogrado' | 'retrogrado' | 'ausente'
 }
 export type CompanionCarotidPlaque = {
-  side: 'direita' | 'esquerda'; location?: string; thickness?: string; stenosisPercent?: string
+  side: 'direita' | 'esquerda'; location?: string
+  composition?: 'calcificada' | 'lipidica' | 'mista'
+  surface?: 'regular' | 'irregular' | 'ulcerada'
+  thickness?: string; stenosisPercent?: string; description?: string
+}
+export type CompanionCarotidClassification = {
+  side: 'direita' | 'esquerda'
+  classification: 'normal' | 'ateromatose_sem_estenose_significativa' | 'estenose_menor_50' | 'estenose_50_69' | 'estenose_70_99' | 'oclusao'
 }
 export type CompanionBiometricData = Partial<Record<ObstetricField, string>> & {
   thyroidRightLobe?: CompanionThyroidMeasurements
@@ -41,12 +48,17 @@ export type CompanionBiometricData = Partial<Record<ObstetricField, string>> & {
   breastFindings?: CompanionBreastFinding[]
   carotidMeasurements?: CompanionCarotidMeasurement[]
   carotidPlaques?: CompanionCarotidPlaque[]
+  carotidClassifications?: CompanionCarotidClassification[]
+  carotidConclusion?: string
+  carotidAdditionalFindings?: string
 }
 
 export type CompanionStructuredPayload = {
+  contractVersion?: 'companion-form-patch/v1'
   category: 'OBSTETRICA' | 'DOPPLER_OBSTETRICO' | 'MORFOLOGICO' | 'TIREOIDE' | 'MAMARIA' | 'DOPPLER_CAROTIDAS'
   data: CompanionBiometricData
   summary?: string
+  warnings?: string[]
 }
 
 export function applyCompanionCarotids(current: ExamState, payload: CompanionStructuredPayload): ExamState {
@@ -54,41 +66,141 @@ export function applyCompanionCarotids(current: ExamState, payload: CompanionStr
   const next: ExamState = { ...current }
   for (const side of ['direita', 'esquerda'] as const) {
     const section: OrganState = { ...(current[side] ?? {}) }
-    const conflicts: string[] = []
+    const conflicts: string[] = Array.isArray(section.companion_conflitos)
+      ? [...section.companion_conflitos as string[]]
+      : []
     const measurements = (payload.data.carotidMeasurements ?? []).filter((item) => item.side === side)
+    const labels: Record<string, string> = {
+      comum_vps: 'Carótida comum · PSV', comum_vdf: 'Carótida comum · VDF',
+      interna_vps: 'Carótida interna · PSV', interna_vdf: 'Carótida interna · VDF',
+      externa_vps: 'Carótida externa · PSV', externa_vdf: 'Carótida externa · VDF',
+      vertebral_vps: 'Artéria vertebral · PSV', vertebral_direcao: 'Artéria vertebral · direção',
+      emi: 'Espessura médio-intimal',
+    }
     const applyUnique = (target: string, values: unknown[]) => {
       const distinct = [...new Set(values.map(clean).filter(Boolean))]
       const existing = clean(section[target])
       if (distinct.length === 1 && !existing) section[target] = distinct[0]!
-      else if (distinct.length === 1 && existing !== distinct[0]) conflicts.push(`${target}: digitado ${existing} / imagem ${distinct[0]}`)
-      else if (distinct.length > 1) conflicts.push(`${target}: ${distinct.join(' / ')}`)
+      else if (distinct.length === 1 && !companionValuesEqual(existing, distinct[0]!)) conflicts.push(`${target}::${labels[target] ?? target}: digitado ${existing} / recebido ${distinct[0]}`)
+      else if (distinct.length > 1) conflicts.push(`${target}::${labels[target] ?? target}: recebidos valores divergentes (${distinct.join(' / ')})`)
     }
     for (const vessel of ['comum', 'interna', 'externa', 'vertebral'] as const) {
       const rows = measurements.filter((item) => item.vessel === vessel)
-      if (vessel === 'vertebral') {
-        applyUnique('vertebral_vps', rows.map((item) => item.psv))
-        applyUnique('vertebral_direcao', rows.map((item) => item.flowDirection))
+      const targets: Array<[string, unknown[]]> = vessel === 'vertebral'
+        ? [['vertebral_vps', rows.map((item) => item.psv)], ['vertebral_direcao', rows.map((item) => item.flowDirection)]]
+        : [[`${vessel}_vps`, rows.map((item) => item.psv)], [`${vessel}_vdf`, rows.map((item) => item.vdf)]]
+      const incoming = targets.map(([target, values]) => ({
+        target,
+        values: [...new Set(values.map(clean).filter(Boolean))],
+      }))
+      let groupConflict = false
+      for (const item of incoming) {
+        const existing = clean(section[item.target])
+        if (item.values.length > 1 || (item.values.length === 1 && existing && !companionValuesEqual(existing, item.values[0]!))) {
+          groupConflict = true
+        }
+      }
+      if (groupConflict) {
+        for (const item of incoming) {
+          const existing = clean(section[item.target])
+          if (item.values.length > 1) conflicts.push(`${item.target}::${labels[item.target] ?? item.target}: recebidos valores divergentes (${item.values.join(' / ')})`)
+          else if (item.values.length === 1 && existing && !companionValuesEqual(existing, item.values[0]!)) {
+            conflicts.push(`${item.target}::${labels[item.target] ?? item.target}: digitado ${existing} / recebido ${item.values[0]}`)
+          } else if (item.values.length === 1 && !existing) {
+            conflicts.push(`${item.target}::${labels[item.target] ?? item.target}: valor recebido ${item.values[0]} não aplicado porque outra medida do mesmo vaso diverge`)
+          }
+        }
       } else {
-        applyUnique(`${vessel}_vps`, rows.map((item) => item.psv))
-        applyUnique(`${vessel}_vdf`, rows.map((item) => item.vdf))
+        for (const item of incoming) if (item.values.length === 1 && !clean(section[item.target])) section[item.target] = item.values[0]!
       }
     }
     applyUnique('emi', measurements.map((item) => item.emi))
     const ids = Array.isArray(section.placas_ids) ? [...section.placas_ids] : []
-    const known = new Set(ids.map((id) => `${section[`placas.${id}.localizacao`]}|${section[`placas.${id}.espessura`]}|${section[`placas.${id}.estenose`]}`))
-    for (const plaque of (payload.data.carotidPlaques ?? []).filter((item) => item.side === side)) {
-      const signature = `${clean(plaque.location)}|${clean(plaque.thickness)}|${clean(plaque.stenosisPercent)}`
-      if (known.has(signature) || signature === '||') continue
-      known.add(signature)
-      const id = crypto.randomUUID(); ids.push(id)
-      if (clean(plaque.location)) section[`placas.${id}.localizacao`] = clean(plaque.location)
-      if (clean(plaque.thickness)) section[`placas.${id}.espessura`] = clean(plaque.thickness)
-      if (clean(plaque.stenosisPercent)) section[`placas.${id}.estenose`] = clean(plaque.stenosisPercent)
+    const plaques = (payload.data.carotidPlaques ?? []).filter((item) => item.side === side)
+    const signaturePart = (value: unknown) => {
+      const normalized = clean(value).toLocaleLowerCase('pt-BR')
+      return /^[-+]?\d+(?:[.,]\d+)?$/.test(normalized)
+        ? String(Number(normalized.replace(',', '.')))
+        : normalized
+    }
+    const coreSignature = (location: unknown, thickness: unknown, stenosis: unknown) =>
+      [location, thickness, stenosis].map(signaturePart).join('|')
+    const fullSignature = (id: string) => [
+      section[`placas.${id}.localizacao`], section[`placas.${id}.composicao`],
+      section[`placas.${id}.superficie`], section[`placas.${id}.espessura`],
+      section[`placas.${id}.estenose`], section[`placas.${id}.descricao`],
+    ].map(signaturePart).join('|')
+    const existingPlaques = ids.map((id) => ({
+      id,
+      core: [section[`placas.${id}.localizacao`], section[`placas.${id}.espessura`], section[`placas.${id}.estenose`]].map(signaturePart),
+      full: fullSignature(id),
+    }))
+    const consumedExisting = new Set<string>()
+    const plaqueStatus = clean(section.placas_status)
+    if (plaques.length && plaqueStatus === 'ausentes') {
+      conflicts.push('placas_status::Placas ateromatosas: digitado ausentes / recebido placa presente')
+    } else if (plaques.length && !plaqueStatus) {
+      section.placas_status = 'presentes'
+    }
+    for (const plaque of plaques) {
+      const core = coreSignature(plaque.location, plaque.thickness, plaque.stenosisPercent)
+      const incomingCore = core.split('|')
+      const full = [plaque.location, plaque.composition, plaque.surface, plaque.thickness, plaque.stenosisPercent, plaque.description].map(signaturePart).join('|')
+      if (!full.replaceAll('|', '')) continue
+      const exact = existingPlaques.find((item) => !consumedExisting.has(item.id) && item.full === full)
+      const compatible = existingPlaques.find((item) => {
+        if (consumedExisting.has(item.id)) return false
+        let matching = 0
+        for (let index = 0; index < incomingCore.length; index += 1) {
+          const incoming = incomingCore[index]
+          const existing = item.core[index]
+          if (incoming && existing && incoming !== existing) return false
+          if (incoming && existing && incoming === existing) matching += 1
+        }
+        return matching >= 2
+      })
+      const existingId = exact?.id ?? compatible?.id
+      const id = existingId ?? crypto.randomUUID()
+      if (!existingId) ids.push(id)
+      else consumedExisting.add(existingId)
+      const fields: Array<[string, unknown, string]> = [
+        ['localizacao', plaque.location, 'localização'], ['composicao', plaque.composition, 'composição'],
+        ['superficie', plaque.surface, 'superfície'], ['espessura', plaque.thickness, 'espessura'],
+        ['estenose', plaque.stenosisPercent, 'estenose'], ['descricao', plaque.description, 'descrição'],
+      ]
+      for (const [field, incoming, label] of fields) {
+        const value = clean(incoming)
+        if (!value) continue
+        const target = `placas.${id}.${field}`
+        const existing = clean(section[target])
+        if (!existing) section[target] = value
+        else if (!companionValuesEqual(existing, value)) conflicts.push(`${target}::Placa ${ids.indexOf(id) + 1} · ${label}: digitado ${existing} / recebido ${value}`)
+      }
     }
     section.placas_ids = ids
-    section.companion_conflitos = conflicts
+    if (conflicts.length) section.companion_conflitos = [...new Set(conflicts)]
+    else delete section.companion_conflitos
     next[side] = section
   }
+  const conclusion: OrganState = { ...(current.conclusao ?? {}) }
+  const conclusionConflicts = Array.isArray(conclusion.companion_conflitos)
+    ? [...conclusion.companion_conflitos as string[]]
+    : []
+  const applyConclusion = (target: string, incoming: unknown, label: string) => {
+    const value = clean(incoming)
+    if (!value) return
+    const existing = clean(conclusion[target])
+    if (!existing) conclusion[target] = value
+    else if (!companionValuesEqual(existing, value)) conclusionConflicts.push(`${target}::${label}: digitado ${existing} / recebido ${value}`)
+  }
+  for (const item of payload.data.carotidClassifications ?? []) {
+    applyConclusion(`classificacao_${item.side}`, item.classification, `Classificação do lado ${item.side}`)
+  }
+  applyConclusion('conclusao_livre', payload.data.carotidConclusion, 'Conclusão livre')
+  applyConclusion('achados_adicionais', payload.data.carotidAdditionalFindings, 'Achados adicionais')
+  if (conclusionConflicts.length) conclusion.companion_conflitos = [...new Set(conclusionConflicts)]
+  else delete conclusion.companion_conflitos
+  if (Object.keys(conclusion).length) next.conclusao = conclusion
   return next
 }
 
@@ -231,7 +343,7 @@ export function markCompanionFieldTouched(
     ? state[COMPANION_TOUCHED] as string[]
     : []
   const conflicts = Array.isArray(state.companion_conflitos)
-    ? (state.companion_conflitos as string[]).filter((item) => !item.startsWith(`${key}::`))
+    ? (state.companion_conflitos as string[]).filter((item) => !item.startsWith(`${key}::`) && !item.startsWith(`${key}:`))
     : []
   const next: OrganState = {
     ...state,

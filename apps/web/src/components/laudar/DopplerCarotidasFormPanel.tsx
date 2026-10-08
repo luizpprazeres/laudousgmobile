@@ -2,6 +2,7 @@
 
 import { Plus, X } from 'lucide-react'
 import type { OrganState } from '@/lib/deterministic'
+import { companionConflictDisplay, markCompanionFieldTouched } from '@/lib/companionStructured'
 
 type Props = { section: string; state: OrganState; onChange: (next: OrganState) => void }
 
@@ -17,8 +18,23 @@ const value = (s: OrganState, k: string) => typeof s[k] === 'string' ? s[k] as s
 const CLASSIFICACOES: Array<[string, string]> = [["", "Selecione"], ["normal", "Normal"], ["ateromatose_sem_estenose_significativa", "Ateromatose sem estenose significativa"], ["estenose_menor_50", "Estenose menor que 50%"], ["estenose_50_69", "Estenose de 50 a 69%"], ["estenose_70_99", "Estenose de 70 a 99%"], ["oclusao", "Oclusão"]]
 
 export function DopplerCarotidasFormPanel({ section, state, onChange }: Props) {
-  const set = (key: string, v: string | string[]) => onChange({ ...state, [key]: v })
+  const set = (key: string, v: string | string[]) => onChange(markCompanionFieldTouched(state, key, v))
+  const conflicts = Array.isArray(state.companion_conflitos) ? state.companion_conflitos as string[] : []
+  const keepCurrentValues = () => {
+    let next: OrganState = { ...state }
+    for (const conflict of conflicts) {
+      const separator = conflict.includes('::') ? conflict.indexOf('::') : conflict.indexOf(':')
+      if (separator <= 0) continue
+      const key = conflict.slice(0, separator)
+      const current = next[key]
+      if (typeof current === 'string' || Array.isArray(current)) next = markCompanionFieldTouched(next, key, current as string | string[])
+    }
+    delete next.companion_conflitos
+    onChange(next)
+  }
+  const conflictAlert = conflicts.length ? <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"><strong>O Companion encontrou valores diferentes.</strong><div className="mt-1">Revise os campos: {conflicts.map(companionConflictDisplay).join(' · ')}</div><button type="button" onClick={keepCurrentValues} className="mt-2 rounded-full border border-amber-400 px-3 py-1 text-xs font-bold hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900/40">Manter meus valores</button></div> : null
   if (section === 'conclusao') return <div className="space-y-3">
+    {conflictAlert}
     <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <div className="grid gap-3 sm:grid-cols-2">
         {([['classificacao_direita', 'Classificação — lado direito'], ['classificacao_esquerda', 'Classificação — lado esquerdo']] as const).map(([key, label]) => <Select key={key} label={label} value={value(state, key)} onChange={(v) => set(key, v)} options={CLASSIFICACOES} />)}
@@ -29,15 +45,20 @@ export function DopplerCarotidasFormPanel({ section, state, onChange }: Props) {
   </div>
 
   const ids = Array.isArray(state.placas_ids) ? state.placas_ids as string[] : []
-  const conflicts = Array.isArray(state.companion_conflitos) ? state.companion_conflitos as string[] : []
   const addPlate = () => set('placas_ids', [...ids, crypto.randomUUID()])
   const removePlate = (id: string) => {
-    const next: OrganState = { ...state, placas_ids: ids.filter((item) => item !== id) }
+    const nextIds = ids.filter((item) => item !== id)
+    const next: OrganState = markCompanionFieldTouched(state, 'placas_ids', nextIds)
     for (const key of Object.keys(next)) if (key.startsWith(`placas.${id}.`)) delete next[key]
+    if (Array.isArray(next.companion_conflitos)) {
+      const remaining = (next.companion_conflitos as string[]).filter((item) => !item.startsWith(`placas.${id}.`))
+      if (remaining.length) next.companion_conflitos = remaining
+      else delete next.companion_conflitos
+    }
     onChange(next)
   }
   return <div className="space-y-3">
-    {conflicts.length ? <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"><strong>As imagens trouxeram valores diferentes.</strong><div className="mt-1">Revise e preencha manualmente: {conflicts.join(' · ')}</div></div> : null}
+    {conflictAlert}
     <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <h3 className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500">Avaliação do lado</h3>
       <div className="grid gap-3 sm:grid-cols-2">

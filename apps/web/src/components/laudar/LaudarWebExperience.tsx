@@ -76,6 +76,7 @@ import {
   textToReportHtml,
 } from './reportRichText'
 import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
+import { applyCompanionCarotidFormPatch, type CompanionFormPatchResponse } from '@/lib/companionFormPatch'
 import { companionReenviaPercentil, invalidarPercentilManual } from './fetalGrowthContext'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -2018,6 +2019,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       </main>
       <CompanionPanel
         open={companionOpen}
+        activeCategory={categoria}
+        allowFormPatch={!composition}
         onClose={() => setCompanionOpen((open) => !open)}
         onStateChange={setCompanionState}
         onApplyText={(text) => setCompanionNotesByCategory((all) => ({
@@ -2029,25 +2032,29 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           // associação isso cairia fora dos componentes — e sumiria em silêncio.
           if (composition) {
             window.alert('O envio estruturado do celular não é aplicado a exames associados. Remova a associação para usá-lo.')
-            return
+            return false
           }
           if (payload.category === 'TIREOIDE') {
             setTireoideState((state) => applyCompanionThyroid(state, payload))
             selectCategory(TIREOIDE_ID)
             revealSection(TIREOIDE_ID, payload.data.thyroidNodules?.length ? 'nodulos' : 'lobo_direito')
-            return
+            return true
           }
           if (payload.category === 'MAMARIA') {
             setExamStates((all) => ({ ...all, MAMARIA: applyCompanionBreast(all.MAMARIA ?? {}, payload) }))
             selectCategory('MAMARIA')
             revealSection('MAMARIA', 'mamas')
-            return
+            return true
           }
           if (payload.category === 'DOPPLER_CAROTIDAS') {
-            setExamStates((all) => ({ ...all, DOPPLER_CAROTIDAS: applyCompanionCarotids(all.DOPPLER_CAROTIDAS ?? {}, payload) }))
+            const applied = applyCompanionCarotids(examStates.DOPPLER_CAROTIDAS ?? {}, payload)
+            setExamStates((all) => ({ ...all, DOPPLER_CAROTIDAS: applied }))
             selectCategory('DOPPLER_CAROTIDAS')
-            revealSection('DOPPLER_CAROTIDAS', 'direita')
-            return
+            const conflictSection = ['conclusao', 'direita', 'esquerda'].find((section) =>
+              Array.isArray(applied[section]?.companion_conflitos) && (applied[section]!.companion_conflitos as string[]).length > 0,
+            )
+            revealSection('DOPPLER_CAROTIDAS', conflictSection ?? 'direita')
+            return true
           }
           // Peso/IG vindos do celular também invalidam percentil que não veio junto.
           setExamStates((all) => {
@@ -2063,6 +2070,21 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
           })
           selectCategory(payload.category)
           revealSection(payload.category, payload.category === 'DOPPLER_OBSTETRICO' ? 'doppler' : 'biometria')
+          return true
+        }}
+        onApplyFormPatch={(payload: CompanionFormPatchResponse) => {
+          if (composition) {
+            window.alert('O preenchimento interpretado do celular não é aplicado a exames associados. Remova a associação para usá-lo.')
+            return false
+          }
+          if (categoria !== 'DOPPLER_CAROTIDAS' || payload.category !== 'DOPPLER_CAROTIDAS') return false
+          const applied = applyCompanionCarotidFormPatch(examStates.DOPPLER_CAROTIDAS ?? {}, payload)
+          setExamStates((all) => ({ ...all, DOPPLER_CAROTIDAS: applied }))
+          const conflictSection = ['conclusao', 'direita', 'esquerda'].find((section) =>
+            Array.isArray(applied[section]?.companion_conflitos) && (applied[section]!.companion_conflitos as string[]).length > 0,
+          )
+          revealSection('DOPPLER_CAROTIDAS', conflictSection ?? 'direita')
+          return true
         }}
       />
     </div>

@@ -6,6 +6,11 @@ import { categoryDisplayLabel } from '@laudousg/shared'
 import type { CompanionStructuredPayload } from '@/lib/companionStructured'
 import { companionReviewItems, parseCompanionStructuredPayload } from '@/lib/companionReview'
 import {
+  companionFormPatchReviewItems,
+  extractCompanionFormPatch,
+  type CompanionFormPatchResponse,
+} from '@/lib/companionFormPatch'
+import {
   createCompanionSession,
   latestCompanionSession,
   listPendingCompanionEvents,
@@ -19,17 +24,28 @@ type Props = {
   open: boolean
   onClose: () => void
   onApplyText: (text: string) => void
-  onApplyStructured: (payload: CompanionStructuredPayload) => void
+  activeCategory: string
+  allowFormPatch: boolean
+  onApplyStructured: (payload: CompanionStructuredPayload) => boolean
+  onApplyFormPatch: (payload: CompanionFormPatchResponse) => boolean
   onStateChange?: (state: { connected: boolean; pending: number }) => void
 }
 
-export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, onStateChange }: Props) {
+const formPatchCategories = new Set(
+  (process.env.NEXT_PUBLIC_COMPANION_FORM_PATCH_CATEGORIES ?? '')
+    .split(',')
+    .map((category) => category.trim().toUpperCase())
+    .filter(Boolean),
+)
+
+export function CompanionPanel({ open, onClose, onApplyText, activeCategory, allowFormPatch, onApplyStructured, onApplyFormPatch, onStateChange }: Props) {
   const [session, setSession] = useState<CompanionSession | null>(null)
   const [events, setEvents] = useState<CompanionEvent[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [reviewingEventId, setReviewingEventId] = useState<string | null>(null)
+  const [formPatches, setFormPatches] = useState<Record<string, CompanionFormPatchResponse>>({})
   const locallyAppliedEventIds = useRef(new Set<string>())
 
   const refresh = useCallback(async () => {
@@ -47,6 +63,22 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
   const run = async (action: () => Promise<void>) => {
     setLoading(true); setError(null)
     try { await action(); await refresh() } catch (e) { setError(e instanceof Error ? e.message : String(e)) } finally { setLoading(false) }
+  }
+
+  const finishAppliedEvent = async (eventId: string) => {
+    try {
+      await resolveCompanionEvent(eventId, 'applied')
+      setEvents((current) => current.filter((item) => item.id !== eventId))
+      locallyAppliedEventIds.current.delete(eventId)
+      setReviewingEventId(null)
+      setFormPatches((current) => {
+        const next = { ...current }
+        delete next[eventId]
+        return next
+      })
+    } catch (cause) {
+      throw new Error(`Os dados foram aplicados, mas a sincronização não terminou. Tente novamente sem reinserir: ${cause instanceof Error ? cause.message : String(cause)}`)
+    }
   }
 
   const connected = Boolean(session?.connected_at)
@@ -68,8 +100,16 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
 	        <div className="mt-3 max-h-[52vh] space-y-2 overflow-y-auto sm:max-h-64">
           {events.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-3 text-center text-xs text-gray-400 dark:border-gray-700">Aguardando uma entrada do médico.</p> : events.map((event) => {
             const structured = event.kind === 'structured_findings' ? parseCompanionStructuredPayload(event.payload) : null
+            const isTextEntry = event.kind === 'text' || event.kind === 'transcript'
+            const canExtractFormPatch = allowFormPatch && isTextEntry && activeCategory === 'DOPPLER_CAROTIDAS' && formPatchCategories.has('DOPPLER_CAROTIDAS')
+            const formPatch = canExtractFormPatch ? formPatches[event.id] ?? null : null
+            const hasBlockingWarning = formPatch?.warnings.some((warning) => warning.blocking) === true
             const reviewing = reviewingEventId === event.id
-            const reviewItems = structured ? companionReviewItems(structured) : []
+            const reviewItems = structured
+              ? companionReviewItems(structured)
+              : formPatch
+                ? companionFormPatchReviewItems(formPatch)
+                : []
             return (
             <div key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
               <p className={`mb-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${event.kind === 'structured_findings' ? 'text-sky-600 dark:text-sky-300' : 'text-violet-600 dark:text-violet-300'}`}>
@@ -80,7 +120,7 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
               {event.kind === 'structured_findings' && !structured ? (
                 <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-2 text-[11px] font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300">Nenhum campo estruturado válido foi reconhecido. A entrada não será aplicada.</p>
               ) : null}
-              {reviewing && structured ? (
+              {reviewing && (structured || formPatch) ? (
                 <div className="mt-2 rounded-xl bg-sky-50 p-2.5 dark:bg-sky-950/25" aria-label="Campos que serão preenchidos">
                   <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300">Revise os dados reconhecidos</p>
                   <dl className="space-y-1.5">
@@ -91,16 +131,50 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
                       </div>
                     ))}
                   </dl>
-                  <p className="mt-2 text-[10px] leading-relaxed text-sky-800 dark:text-sky-200">Ao confirmar, os dados compatíveis com o modo atual serão aplicados ao formulário. Confira possíveis divergências com o que já foi preenchido.</p>
+                  {formPatch?.warnings.length ? (
+                    <ul className="mt-2 space-y-1 rounded-lg bg-amber-50 px-2.5 py-2 text-[10px] leading-relaxed text-amber-800 dark:bg-amber-950/30 dark:text-amber-200" aria-label="Pontos para revisar">
+                      {formPatch.warnings.map((warning) => <li key={`${warning.code}:${warning.message}`}>{warning.blocking ? 'Revisão manual necessária: ' : ''}{warning.message}</li>)}
+                    </ul>
+                  ) : null}
+                  <p className="mt-2 text-[10px] leading-relaxed text-sky-800 dark:text-sky-200">{hasBlockingWarning ? 'Há informação que não pode ser convertida com segurança. Preencha manualmente e descarte esta entrada quando terminar.' : 'Ao confirmar, os dados compatíveis com o modo atual serão aplicados ao formulário. Confira possíveis divergências com o que já foi preenchido.'}</p>
                 </div>
               ) : null}
               <div className="mt-2 flex justify-end gap-2">
                 <button type="button" disabled={loading || locallyAppliedEventIds.current.has(event.id)} onClick={() => run(() => resolveCompanionEvent(event.id, 'dismissed'))} className="h-7 rounded-full px-2.5 text-[11px] font-semibold text-gray-500 disabled:opacity-40">Descartar</button>
-                <button type="button" disabled={loading || (event.kind === 'structured_findings' && !structured)} onClick={() => {
-                  if (structured && !reviewing) { setReviewingEventId(event.id); return }
+                {canExtractFormPatch ? <button type="button" disabled={loading || locallyAppliedEventIds.current.has(event.id)} onClick={() => {
+                  const text = event.payload.text?.trim()
+                  if (!text) { setError('A entrada recebida está sem texto e não pode ser inserida.'); return }
                   run(async () => {
                     if (!locallyAppliedEventIds.current.has(event.id)) {
-                      if (structured) onApplyStructured(structured)
+                      onApplyText(text)
+                      locallyAppliedEventIds.current.add(event.id)
+                    }
+                    await finishAppliedEvent(event.id)
+                  })
+                }} className="h-7 rounded-full px-2.5 text-[11px] font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-800">Inserir como texto</button> : null}
+                <button type="button" disabled={loading || (hasBlockingWarning && reviewing && !locallyAppliedEventIds.current.has(event.id)) || (event.kind === 'structured_findings' && !structured)} onClick={() => {
+                  if ((structured || formPatch) && !reviewing) { setReviewingEventId(event.id); return }
+                  if (canExtractFormPatch && !formPatch) {
+                    const text = event.payload.text?.trim()
+                    if (!text) { setError('A entrada recebida está sem texto e não pode ser interpretada.'); return }
+                    run(async () => {
+                      const extracted = await extractCompanionFormPatch({
+                        text,
+                        sourceKind: event.kind === 'transcript' ? 'transcript' : 'text',
+                      })
+                      setFormPatches((current) => ({ ...current, [event.id]: extracted }))
+                      setReviewingEventId(event.id)
+                    })
+                    return
+                  }
+                  run(async () => {
+                    if (!locallyAppliedEventIds.current.has(event.id)) {
+                      if (structured) {
+                        if (!onApplyStructured(structured)) throw new Error('Os campos não foram aplicados. A entrada continua pendente para nova tentativa.')
+                      }
+                      else if (formPatch) {
+                        if (!onApplyFormPatch(formPatch)) throw new Error('Os campos não foram aplicados. A entrada continua pendente para nova tentativa.')
+                      }
                       else {
                         const text = event.payload.text?.trim()
                         if (!text) throw new Error('A entrada recebida está sem texto e não pode ser aplicada.')
@@ -108,17 +182,18 @@ export function CompanionPanel({ open, onClose, onApplyText, onApplyStructured, 
                       }
                       locallyAppliedEventIds.current.add(event.id)
                     }
-                    try {
-                      await resolveCompanionEvent(event.id, 'applied')
-                      setEvents((current) => current.filter((item) => item.id !== event.id))
-                      locallyAppliedEventIds.current.delete(event.id)
-                      setReviewingEventId(null)
-                    } catch (cause) {
-                      throw new Error(`Os dados foram aplicados, mas a sincronização não terminou. Tente novamente sem reinserir: ${cause instanceof Error ? cause.message : String(cause)}`)
-                    }
+                    await finishAppliedEvent(event.id)
                   })
                 }} className="inline-flex h-7 items-center gap-1 rounded-full bg-amber-500 px-3 text-[11px] font-bold text-gray-950 hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40">
-                  <Check className="h-3 w-3" /> {locallyAppliedEventIds.current.has(event.id) ? 'Finalizar sincronização' : structured ? (reviewing ? 'Confirmar preenchimento' : 'Revisar campos') : event.kind === 'structured_findings' ? 'Entrada inválida' : 'Inserir achado'}
+                  <Check className="h-3 w-3" /> {locallyAppliedEventIds.current.has(event.id)
+                    ? 'Finalizar sincronização'
+                    : structured || formPatch
+                      ? (reviewing ? (hasBlockingWarning ? 'Revisão manual necessária' : 'Confirmar preenchimento') : 'Revisar campos')
+                      : event.kind === 'structured_findings'
+                        ? 'Entrada inválida'
+                        : canExtractFormPatch
+                          ? 'Interpretar campos'
+                          : 'Inserir achado'}
                 </button>
               </div>
             </div>

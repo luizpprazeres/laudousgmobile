@@ -10,3 +10,4 @@ export * from "./generate";
 export * from "./report";
 export * from "./edit";
 export * from "./clinicalComposition";
+export * from "./companionFormPatch";

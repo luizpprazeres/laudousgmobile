@@ -43,13 +43,19 @@ const carotids = parseCompanionStructuredPayload({
       { side: 'direita', vessel: 'interna', psv: '82', vdf: '24', flowDirection: 'valor_invalido' },
       { side: 'direita', vessel: 'vaso_invalido', psv: '900' },
     ],
-    carotidPlaques: [{ side: 'esquerda', location: 'bulbo', thickness: '2,1' }],
+    carotidPlaques: [{ side: 'esquerda', location: 'bulbo', composition: 'mista', surface: 'irregular', thickness: '2,1', description: 'Placa no bulbo' }],
+    carotidClassifications: [{ side: 'esquerda', classification: 'estenose_menor_50' }],
+    carotidConclusion: 'Estenose inferior a 50% à esquerda',
+    carotidAdditionalFindings: 'Sem outros achados',
   },
 })
 assert.ok(carotids)
 assert.equal(carotids.data.carotidMeasurements?.length, 1)
 assert.equal(carotids.data.carotidMeasurements?.[0]?.flowDirection, undefined)
-assert.equal(companionReviewItems(carotids).length, 2)
+assert.equal(carotids.data.carotidPlaques?.[0]?.composition, 'mista')
+assert.equal(carotids.data.carotidPlaques?.[0]?.surface, 'irregular')
+assert.equal(carotids.data.carotidClassifications?.[0]?.classification, 'estenose_menor_50')
+assert.equal(companionReviewItems(carotids).length, 5)
 
 const doppler = parseCompanionStructuredPayload({
   category: 'DOPPLER_OBSTETRICO',
