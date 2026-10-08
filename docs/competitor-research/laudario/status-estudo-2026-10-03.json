@@ -1,12 +1,12 @@
 {
   "competitor": "Laudário",
-  "updated_at": "2026-10-07T23:15:00-03:00",
+  "updated_at": "2026-10-07T23:20:00-03:00",
   "catalog_source": "catalogo-ultrassonografia-2026-10-02.json",
   "totals": {
     "catalog_all": 99,
     "catalog_base": 84,
     "catalog_combined": 15,
-    "base_functionally_studied": 34,
+    "base_functionally_studied": 35,
     "combined_functionally_studied": 0,
     "absence_checks_outside_catalog": 1,
     "laudousg_synthetic_probe_entries": 19
@@ -226,6 +226,13 @@
       "laudousg_code": null,
       "case": "cases/abdome-superior-com-doppler-2026-10-07.md",
       "crosswalk": "crosswalk-abdome-superior-com-doppler-2026-10-07.md"
+    },
+    {
+      "competitor_exam": "Pélvico Transvaginal com Doppler",
+      "laudousg_code": "PELVE_FEMININA",
+      "web_card": "PELVICO_TRANSVAGINAL_DOPPLER",
+      "case": "cases/pelvico-transvaginal-com-doppler-2026-10-07.md",
+      "crosswalk": "crosswalk-pelvico-transvaginal-com-doppler-2026-10-07.md"
     }
   ],
   "absence_checks": [
@@ -236,7 +243,6 @@
     }
   ],
   "queue": [
-    "Pélvico Transvaginal com Doppler",
     "Obstétrico 1º Trimestre com Doppler / 2º-3º com Doppler (fronteira com DOPPLER_OBSTETRICO)",
     "Doppler Venoso de Membro Inferior (TVP) e bilaterais (variantes)",
     "Ecocardiografia fetal gemelar e morfológicos gemelares (após contrato gemelar)",

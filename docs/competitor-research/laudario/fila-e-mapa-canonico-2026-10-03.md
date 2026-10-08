@@ -4,11 +4,11 @@ Atualizado em 07/10/2026. A fila considera impacto clínico, uso provável, dife
 
 ## Cobertura
 
-Foram concluídas rodadas funcionais de 34 dos 84 modelos-base do catálogo, aproximadamente 40,5%. Isso representa 34 das 99 entradas totais, aproximadamente 34,3%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
+Foram concluídas rodadas funcionais de 35 dos 84 modelos-base do catálogo, aproximadamente 41,7%. Isso representa 35 das 99 entradas totais, aproximadamente 35,4%. Nenhuma das 15 combinações foi estudada. Ultrassonografia de tórax foi apenas procurada e confirmada como ausente no catálogo observado; por isso não entra na contagem dos 84 modelos-base.
 
 ## Próximas prioridades
 
-Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais e Aparelho Urinário foram concluídas. A última incluiu comparação do mesmo painel em Abdome Total e Doppler Aortorrenal. Em 07/10, Monitorização Folicular, Doppler de Artérias Temporais, Doppler de Artérias Mesentéricas, Morfológico 2º Trimestre, Obstétrico Gemelar, Aparelho Urinário com Doppler e Abdome Superior com Doppler foram concluídos; o morfológico também tem complemento de gráficos. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
+Em 05/10, a falta de navegador limitou o trabalho a preflights e provas sintéticas do LaudoUSG. A observação foi retomada em 06/10 e as rodadas de Pélvico Transvaginal, Obstétrico 2º/3º Trimestre, Doppler de Carótidas e Vertebrais e Aparelho Urinário foram concluídas. A última incluiu comparação do mesmo painel em Abdome Total e Doppler Aortorrenal. Em 07/10, Monitorização Folicular, Doppler de Artérias Temporais, Doppler de Artérias Mesentéricas, Morfológico 2º Trimestre, Obstétrico Gemelar, Aparelho Urinário com Doppler, Abdome Superior com Doppler e Pélvico Transvaginal com Doppler foram concluídos; o morfológico também tem complemento de gráficos. As 19 provas sintéticas continuam indexadas separadamente em `status-estudo-2026-10-03.json` (`laudousg_synthetic_probes`) e nas sínteses em `synthesis/`.
 
 ### A. Rodada funcional no Laudário
 
@@ -18,12 +18,11 @@ Não há preflight clínico prioritário pendente deste lote. As próximas obser
 
 | Ordem | Exame | Motivo | Prova mínima |
 | --- | --- | --- | --- |
-| 1 | Pélvico transvaginal com Doppler | o modo Doppler só altera a técnica | normal; lesão vascularizada; Doppler não realizado |
-| 2 | Obstétrico com Doppler (1º e 2º/3º trimestre) | fronteira com `DOPPLER_OBSTETRICO` | normal; umbilical alterada; incisura uterina |
-| 3 | Musculoesquelético por articulação | o formulário Web existe, sem prova | normal; rotura lateralizada; lado não avaliado |
-| 4 | Doppler venoso de membro inferior (TVP) e bilaterais | variantes do contrato venoso | TVP unilateral; bilateral assimétrico |
-| 5 | Gemelares (eco fetal, morfológico) | dependem do contrato gemelar | dois fetos normais; alteração em um feto |
-| 6 | Obstétrico 3D/4D e primeiro exame combinado | menor prioridade | — |
+| 1 | Obstétrico com Doppler (1º e 2º/3º trimestre) | fronteira com `DOPPLER_OBSTETRICO` | normal; umbilical alterada; incisura uterina |
+| 2 | Musculoesquelético por articulação | o formulário Web existe, sem prova | normal; rotura lateralizada; lado não avaliado |
+| 3 | Doppler venoso de membro inferior (TVP) e bilaterais | variantes do contrato venoso | TVP unilateral; bilateral assimétrico |
+| 4 | Gemelares (eco fetal, morfológico) | dependem do contrato gemelar | dois fetos normais; alteração em um feto |
+| 5 | Obstétrico 3D/4D e primeiro exame combinado | menor prioridade | — |
 
 ### C. Implementação a partir de estudo já concluído, sem reestudo
 
