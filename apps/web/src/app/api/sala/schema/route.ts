@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const examLabel = typeof body.examLabel === 'string' ? body.examLabel : ''
   const png = typeof body.png === 'string' ? body.png : ''
   const pdf = typeof body.pdf === 'string' ? body.pdf : undefined
-  if (!['MAMA', 'TIREOIDE', 'FETAL_POSITION', 'VENOSO_MMII', 'MIOMAS'].includes(examType) || !examLabel || !png) return Response.json({ error: 'Esquema incompleto.' }, { status: 400 })
+  if (!['MAMA', 'TIREOIDE', 'FETAL_POSITION', 'VENOSO_MMII', 'MIOMAS', 'CAROTIDAS'].includes(examType) || !examLabel || !png) return Response.json({ error: 'Esquema incompleto.' }, { status: 400 })
   const myomaContract = examType === 'MIOMAS' ? MyomaSchemeContractSchema.safeParse({ contractVersion: body.contractVersion, examType, findings: body.findings }) : null
   if (myomaContract && !myomaContract.success) return Response.json({ error: 'Contrato de miomas incompleto ou não confirmado.' }, { status: 400 })
   if (png.length > MAX_BASE64 || (pdf?.length ?? 0) > MAX_BASE64) return Response.json({ error: 'O esquema ficou grande demais para envio.' }, { status: 413 })

@@ -169,6 +169,72 @@ async function main() {
   assert.equal(irComParCompleto.warnings.at(-1)?.blocking, false);
   assert.match(irComParCompleto.warnings.at(-1)?.message ?? "", /calculado/);
 
+  const irComParDeOutroVaso = await extractCompanionCarotidFormPatch({
+    request: {
+      contractVersion: COMPANION_FORM_PATCH_CONTRACT_VERSION,
+      category: "DOPPLER_CAROTIDAS",
+      sourceKind: "text",
+      text: "ACI direita com IR 0,71; ACC direita com PSV 70 e VDF 18",
+    },
+    extract: async () => ({ findings: {
+      ...findings,
+      direita: {
+        ...findings.direita,
+        comum: { vps_cms: 70, vdf_cms: 18 },
+        interna: { vps_cms: null, vdf_cms: null },
+      },
+    } }),
+  });
+  assert.equal(irComParDeOutroVaso.warnings.at(-1)?.blocking, true, "o par de outro vaso não pode liberar o IR da ACI");
+
+  const irAccComParAci = await extractCompanionCarotidFormPatch({
+    request: {
+      contractVersion: COMPANION_FORM_PATCH_CONTRACT_VERSION,
+      category: "DOPPLER_CAROTIDAS",
+      sourceKind: "text",
+      text: "ACC direita IR 0,70; ACI direita PSV 82 e VDF 20",
+    },
+    extract: async () => ({ findings: {
+      ...findings,
+      direita: {
+        ...findings.direita,
+        comum: { vps_cms: null, vdf_cms: null },
+        interna: { vps_cms: 82, vdf_cms: 20 },
+      },
+    } }),
+  });
+  assert.equal(irAccComParAci.warnings.at(-1)?.blocking, true, "o par da ACI não pode liberar o IR da ACC");
+
+  const irEsquerdoComParDireito = await extractCompanionCarotidFormPatch({
+    request: {
+      contractVersion: COMPANION_FORM_PATCH_CONTRACT_VERSION,
+      category: "DOPPLER_CAROTIDAS",
+      sourceKind: "text",
+      text: "ACI esquerda IR 0,80; ACI direita PSV 82 e VDF 20",
+    },
+    extract: async () => ({ findings: {
+      ...findings,
+      direita: { ...findings.direita, interna: { vps_cms: 82, vdf_cms: 20 } },
+      esquerda: { ...findings.esquerda, interna: { vps_cms: null, vdf_cms: null } },
+    } }),
+  });
+  assert.equal(irEsquerdoComParDireito.warnings.at(-1)?.blocking, true, "o par direito não pode liberar o IR esquerdo");
+
+  const segundoIrSemPar = await extractCompanionCarotidFormPatch({
+    request: {
+      contractVersion: COMPANION_FORM_PATCH_CONTRACT_VERSION,
+      category: "DOPPLER_CAROTIDAS",
+      sourceKind: "text",
+      text: "ACI direita PSV 82, VDF 20 e IR 0,75; ACI esquerda IR 0,80",
+    },
+    extract: async () => ({ findings: {
+      ...findings,
+      direita: { ...findings.direita, interna: { vps_cms: 82, vdf_cms: 20 } },
+      esquerda: { ...findings.esquerda, interna: { vps_cms: null, vdf_cms: null } },
+    } }),
+  });
+  assert.equal(segundoIrSemPar.warnings.at(-1)?.blocking, true, "qualquer IR adicional sem par precisa bloquear");
+
   const verboIr = await extractCompanionCarotidFormPatch({
     request: {
       contractVersion: COMPANION_FORM_PATCH_CONTRACT_VERSION,
@@ -180,7 +246,7 @@ async function main() {
   });
   assert.equal(verboIr.warnings.some((warning) => warning.code === "ISOLATED_IR_NOT_APPLICABLE"), false);
 
-  console.log("companion carotid form patch: 21 verificações aprovadas");
+  console.log("companion carotid form patch: 24 verificações aprovadas");
 }
 
 main().catch((error) => {

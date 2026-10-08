@@ -88,7 +88,7 @@ const THRESHOLDS: Record<TiRadsCategory, TiRadsThresholds | null> = {
   TR5: { fna: 10, followup: 5 },
 }
 
-export function calcularTiRads(input: TiRadsInput): TiRadsResult {
+export function calcularTiRads(input: TiRadsInput): TiRadsResult | null {
   // ACR: nódulos císticos/quase totalmente císticos ou espongiformes são TR1;
   // não se somam pontos das demais categorias.
   if (input.composicao === 'cistico' || input.composicao === 'espongiforme') {
@@ -99,6 +99,10 @@ export function calcularTiRads(input: TiRadsInput): TiRadsResult {
       management: 'Sem recomendação de PAAF ou acompanhamento pelo ACR TI-RADS',
     }
   }
+  // No léxico ACR, "anecoico" só se aplica à composição cística/quase
+  // totalmente cística. Misturar este descritor com sólido/misto não pode
+  // produzir uma categoria plausível.
+  if (input.ecogenicidade === 'anecoico') return null
   let score = 0
   if (input.composicao) score += COMPOSICAO_PONTOS[input.composicao]
   if (input.ecogenicidade) score += ECOGENICIDADE_PONTOS[input.ecogenicidade]
@@ -112,6 +116,7 @@ export function calcularTiRads(input: TiRadsInput): TiRadsResult {
   const category = categoriaFromScore(score)
   const thresholds = THRESHOLDS[category]
   const tamanho = input.tamanhoMm
+  const mm = (value: number) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value)
 
   let management: string
   if (!thresholds) {
@@ -119,16 +124,16 @@ export function calcularTiRads(input: TiRadsInput): TiRadsResult {
   } else if (!tamanho) {
     management = `Informe a maior dimensão para obter a recomendação (PAAF ≥ ${thresholds.fna} mm; acompanhamento ≥ ${thresholds.followup} mm)`
   } else if (tamanho >= thresholds.fna) {
-    management = `Critério dimensional para PAAF (maior dimensão ${tamanho} mm ≥ ${thresholds.fna} mm)`
+    management = `Critério dimensional para PAAF (maior dimensão ${mm(tamanho)} mm ≥ ${mm(thresholds.fna)} mm)`
   } else if (tamanho >= thresholds.followup) {
     const agenda = category === 'TR3'
       ? 'em 1, 3 e 5 anos'
       : category === 'TR4'
         ? 'em 1, 2, 3 e 5 anos'
         : 'anual por até 5 anos'
-    management = `Acompanhamento ultrassonográfico ${agenda} (maior dimensão ${tamanho} mm ≥ ${thresholds.followup} mm)`
+    management = `Acompanhamento ultrassonográfico ${agenda} (maior dimensão ${mm(tamanho)} mm ≥ ${mm(thresholds.followup)} mm)`
   } else {
-    management = `Sem recomendação de PAAF ou acompanhamento pelo ACR TI-RADS (maior dimensão ${tamanho} mm < ${thresholds.followup} mm)`
+    management = `Sem recomendação de PAAF ou acompanhamento pelo ACR TI-RADS (maior dimensão ${mm(tamanho)} mm < ${mm(thresholds.followup)} mm)`
   }
 
   return {
@@ -188,7 +193,7 @@ export function formatarBlocoTiRads(input: TiRadsInput, result: TiRadsResult): s
     partes.push(`Focos ecogênicos: ${usados.map((item) => FOCOS_LABELS[item]).join(' + ')} (${usados.reduce((sum, item) => sum + FOCOS_PONTOS[item], 0)}pts)`)
   }
 
-  const tamanhoStr = input.tamanhoMm ? `Tamanho: ${input.tamanhoMm}mm — ` : ''
+  const tamanhoStr = input.tamanhoMm ? `Tamanho: ${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(input.tamanhoMm)}mm — ` : ''
 
   return [
     'TI-RADS:',

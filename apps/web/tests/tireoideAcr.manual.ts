@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { adaptarTireoide } from '../src/lib/catalog/tireoideParaCatalogo'
 import { previewAcrDoNodulo } from '../src/lib/calculators/tireoideAcr'
+import { calcularTiRads } from '../src/lib/calculators/tiRads'
+import { tiRadsSpec } from '../src/lib/calculators/specs'
 import { initialTireoideState, type NoduloTireoide } from '../src/lib/deterministic/organs/tireoide'
 
 function nodulo(patch: Partial<NoduloTireoide> = {}): NoduloTireoide {
@@ -40,10 +42,18 @@ assert.match(tr5.management, /PAAF/)
 assert.equal(previewAcrDoNodulo(nodulo({ acrMargem: null })), null)
 assert.equal(previewAcrDoNodulo(nodulo({ acrFocos: [] })), null)
 assert.equal(previewAcrDoNodulo(nodulo({ acrEcogenicidade: 'anecoico' })), null)
+assert.equal(calcularTiRads({ composicao: 'solido', ecogenicidade: 'anecoico', forma: 'mais_largo_que_alto', margens: 'lisas_mal_definidas', focosEcogenicos: ['nenhum_cauda_cometa'] }), null)
+assert.equal(tiRadsSpec.compute({ composicao: 'misto', ecogenicidade: 'anecoico', forma: 'mais_largo_que_alto', margens: 'lisas_mal_definidas', focosEcogenicos: 'nenhum_cauda_cometa', tamanhoMm: '12' }), null)
 assert.equal(previewAcrDoNodulo(nodulo({
   acrComposicao: 'cistico',
   acrEcogenicidade: 'hiper_ou_isoecoico',
 }))?.category, 'TR1')
+assert.match(previewAcrDoNodulo(nodulo({ c1: '0,56', c2: '', c3: '' }))?.management ?? '', /5,6 mm/)
+assert.doesNotMatch(
+  previewAcrDoNodulo(nodulo({ c1: '1,4996', c2: '', c3: '', acrEcogenicidade: 'hipoecoico' }))?.management ?? '',
+  /PAAF/,
+  'a prévia não pode arredondar a medida antes de comparar o limiar ACR',
+)
 assert.equal(previewAcrDoNodulo(nodulo({
   acrComposicao: 'espongiforme', acrEcogenicidade: null, acrForma: null, acrMargem: null, acrFocos: [],
 }))?.category, 'TR1')

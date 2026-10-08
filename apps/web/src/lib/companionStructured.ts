@@ -61,6 +61,16 @@ export type CompanionStructuredPayload = {
   warnings?: string[]
 }
 
+const COMPANION_TOUCHED = '__companion_touched'
+
+function companionFieldTouched(state: OrganState, key: string): boolean {
+  return Array.isArray(state[COMPANION_TOUCHED]) && (state[COMPANION_TOUCHED] as string[]).includes(key)
+}
+
+function currentValueLabel(value: string, touched: boolean): string {
+  return value || (touched ? 'campo revisado em branco' : 'vazio')
+}
+
 export function applyCompanionCarotids(current: ExamState, payload: CompanionStructuredPayload): ExamState {
   if (payload.category !== 'DOPPLER_CAROTIDAS') return current
   const next: ExamState = { ...current }
@@ -80,8 +90,9 @@ export function applyCompanionCarotids(current: ExamState, payload: CompanionStr
     const applyUnique = (target: string, values: unknown[]) => {
       const distinct = [...new Set(values.map(clean).filter(Boolean))]
       const existing = clean(section[target])
-      if (distinct.length === 1 && !existing) section[target] = distinct[0]!
-      else if (distinct.length === 1 && !companionValuesEqual(existing, distinct[0]!)) conflicts.push(`${target}::${labels[target] ?? target}: digitado ${existing} / recebido ${distinct[0]}`)
+      const touched = companionFieldTouched(section, target)
+      if (distinct.length === 1 && !existing && !touched) section[target] = distinct[0]!
+      else if (distinct.length === 1 && ((touched && !existing) || !companionValuesEqual(existing, distinct[0]!))) conflicts.push(`${target}::${labels[target] ?? target}: ${currentValueLabel(existing, touched)} / recebido ${distinct[0]}`)
       else if (distinct.length > 1) conflicts.push(`${target}::${labels[target] ?? target}: recebidos valores divergentes (${distinct.join(' / ')})`)
     }
     for (const vessel of ['comum', 'interna', 'externa', 'vertebral'] as const) {
@@ -96,22 +107,24 @@ export function applyCompanionCarotids(current: ExamState, payload: CompanionStr
       let groupConflict = false
       for (const item of incoming) {
         const existing = clean(section[item.target])
-        if (item.values.length > 1 || (item.values.length === 1 && existing && !companionValuesEqual(existing, item.values[0]!))) {
+        const touched = companionFieldTouched(section, item.target)
+        if (item.values.length > 1 || (item.values.length === 1 && ((touched && !existing) || (existing && !companionValuesEqual(existing, item.values[0]!))))) {
           groupConflict = true
         }
       }
       if (groupConflict) {
         for (const item of incoming) {
           const existing = clean(section[item.target])
+          const touched = companionFieldTouched(section, item.target)
           if (item.values.length > 1) conflicts.push(`${item.target}::${labels[item.target] ?? item.target}: recebidos valores divergentes (${item.values.join(' / ')})`)
-          else if (item.values.length === 1 && existing && !companionValuesEqual(existing, item.values[0]!)) {
-            conflicts.push(`${item.target}::${labels[item.target] ?? item.target}: digitado ${existing} / recebido ${item.values[0]}`)
+          else if (item.values.length === 1 && ((touched && !existing) || (existing && !companionValuesEqual(existing, item.values[0]!)))) {
+            conflicts.push(`${item.target}::${labels[item.target] ?? item.target}: ${currentValueLabel(existing, touched)} / recebido ${item.values[0]}`)
           } else if (item.values.length === 1 && !existing) {
             conflicts.push(`${item.target}::${labels[item.target] ?? item.target}: valor recebido ${item.values[0]} não aplicado porque outra medida do mesmo vaso diverge`)
           }
         }
       } else {
-        for (const item of incoming) if (item.values.length === 1 && !clean(section[item.target])) section[item.target] = item.values[0]!
+        for (const item of incoming) if (item.values.length === 1 && !clean(section[item.target]) && !companionFieldTouched(section, item.target)) section[item.target] = item.values[0]!
       }
     }
     applyUnique('emi', measurements.map((item) => item.emi))
@@ -139,6 +152,8 @@ export function applyCompanionCarotids(current: ExamState, payload: CompanionStr
     const plaqueStatus = clean(section.placas_status)
     if (plaques.length && plaqueStatus === 'ausentes') {
       conflicts.push('placas_status::Placas ateromatosas: digitado ausentes / recebido placa presente')
+    } else if (plaques.length && !plaqueStatus && companionFieldTouched(section, 'placas_status')) {
+      conflicts.push('placas_status::Placas ateromatosas: campo revisado em branco / recebida placa presente')
     } else if (plaques.length && !plaqueStatus) {
       section.placas_status = 'presentes'
     }
@@ -173,8 +188,9 @@ export function applyCompanionCarotids(current: ExamState, payload: CompanionStr
         if (!value) continue
         const target = `placas.${id}.${field}`
         const existing = clean(section[target])
-        if (!existing) section[target] = value
-        else if (!companionValuesEqual(existing, value)) conflicts.push(`${target}::Placa ${ids.indexOf(id) + 1} · ${label}: digitado ${existing} / recebido ${value}`)
+        const touched = companionFieldTouched(section, target)
+        if (!existing && !touched) section[target] = value
+        else if ((touched && !existing) || !companionValuesEqual(existing, value)) conflicts.push(`${target}::Placa ${ids.indexOf(id) + 1} · ${label}: ${currentValueLabel(existing, touched)} / recebido ${value}`)
       }
     }
     section.placas_ids = ids
@@ -190,8 +206,9 @@ export function applyCompanionCarotids(current: ExamState, payload: CompanionStr
     const value = clean(incoming)
     if (!value) return
     const existing = clean(conclusion[target])
-    if (!existing) conclusion[target] = value
-    else if (!companionValuesEqual(existing, value)) conclusionConflicts.push(`${target}::${label}: digitado ${existing} / recebido ${value}`)
+    const touched = companionFieldTouched(conclusion, target)
+    if (!existing && !touched) conclusion[target] = value
+    else if ((touched && !existing) || !companionValuesEqual(existing, value)) conclusionConflicts.push(`${target}::${label}: ${currentValueLabel(existing, touched)} / recebido ${value}`)
   }
   for (const item of payload.data.carotidClassifications ?? []) {
     applyConclusion(`classificacao_${item.side}`, item.classification, `Classificação do lado ${item.side}`)
@@ -202,6 +219,13 @@ export function applyCompanionCarotids(current: ExamState, payload: CompanionStr
   else delete conclusion.companion_conflitos
   if (Object.keys(conclusion).length) next.conclusao = conclusion
   return next
+}
+
+export function carotidCompanionConflictSection(state: ExamState): 'direita' | 'esquerda' | 'conclusao' | null {
+  for (const section of ['conclusao', 'direita', 'esquerda'] as const) {
+    if (Array.isArray(state[section]?.companion_conflitos) && state[section]!.companion_conflitos.length > 0) return section
+  }
+  return null
 }
 
 export function applyCompanionBreast(current: ExamState, payload: CompanionStructuredPayload): ExamState {
@@ -328,8 +352,6 @@ function companionValuesEqual(left: string, right: string): boolean {
   const rightNumber = numeric(right)
   return leftNumber !== null && rightNumber !== null && leftNumber === rightNumber
 }
-
-const COMPANION_TOUCHED = '__companion_touched'
 
 /** Registra que o valor atual foi escolhido/editado na Web e limpa apenas o
  * conflito daquele campo. Assim um valor igual ao default continua tendo

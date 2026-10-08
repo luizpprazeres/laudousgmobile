@@ -87,6 +87,7 @@ export const tiRadsSpec: CalcSpec = {
       tamanhoMm: v.tamanhoMm ? Number(String(v.tamanhoMm).replace(',', '.')) : undefined,
     }
     const r = calcularTiRads(input)
+    if (!r) return null
     return { headline: `ACR ${r.category} — ${r.riskDescription} (${r.score} pts)`, block: formatarBlocoTiRads(input, r) }
   },
 }

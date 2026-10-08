@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, companionConflictDisplay, markCompanionFieldTouched } from './companionStructured'
+import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, carotidCompanionConflictSection, companionConflictDisplay, markCompanionFieldTouched } from './companionStructured'
 import { initialExamState } from './deterministic/compose'
 import { dopplerObstetrico } from './deterministic/organs/dopplerObstetrico'
 import { morfologico as morfologicoCategory } from './deterministic/organs/morfologico'
@@ -154,6 +154,29 @@ assert.equal(carotidasPreservadas.direita?.interna_vps, '80')
 assert.equal(carotidasPreservadas.direita?.interna_vdf, undefined, 'PSV/VDF do mesmo ditado são aplicadas como par atômico')
 assert.equal(carotidasPreservadas.direita?.companion_conflitos.length, 2)
 assert.match(String(carotidasPreservadas.direita?.companion_conflitos[1]), /VDF.*não aplicado/)
+assert.equal(carotidCompanionConflictSection({
+  direita: {},
+  esquerda: { companion_conflitos: ['interna_vps::conflito à esquerda'] },
+}), 'esquerda', 'a interface precisa abrir o lado que contém o conflito')
+
+const carotidasApagadasPeloMedico = applyCompanionCarotids({
+  direita: markCompanionFieldTouched({}, 'interna_vps', ''),
+}, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: { carotidMeasurements: [{ side: 'direita', vessel: 'interna', psv: '82', vdf: '24' }] },
+})
+assert.equal(carotidasApagadasPeloMedico.direita?.interna_vps, '', 'campo apagado pelo médico não pode ser reposto')
+assert.equal(carotidasApagadasPeloMedico.direita?.interna_vdf, undefined, 'o par PSV/VDF continua atômico quando um campo foi apagado')
+assert.match(String(carotidasApagadasPeloMedico.direita?.companion_conflitos[0]), /campo revisado em branco/)
+
+const conclusaoApagadaPeloMedico = applyCompanionCarotids({
+  conclusao: markCompanionFieldTouched({}, 'conclusao_livre', ''),
+}, {
+  category: 'DOPPLER_CAROTIDAS',
+  data: { carotidConclusion: 'Conclusão recebida do celular' },
+})
+assert.equal(conclusaoApagadaPeloMedico.conclusao?.conclusao_livre, '')
+assert.match(String(conclusaoApagadaPeloMedico.conclusao?.companion_conflitos[0]), /campo revisado em branco/)
 
 const carotidasSemSobrescrever = applyCompanionCarotids({
   direita: { placas_status: 'ausentes', placas_ids: [] },

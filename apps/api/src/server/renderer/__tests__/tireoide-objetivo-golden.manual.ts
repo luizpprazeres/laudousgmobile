@@ -112,6 +112,11 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
   check("Cisto: ACHADOS descreve composição cística e conteúdo anecoico", /cística ou quase totalmente cística, anecoica/i.test(l), l);
   check("Cístico: impressão preserva a composição sem chamar de cisto simples", /Nódulo cístico ou quase totalmente cístico.*\(ACR TI-RADS 1\)/.test(l), l);
 }
+{
+  const f = nodulo({ ecogenicidade: "anecoica_homogenea", acr_tirads: null, medidas_cm: [0.9, 0.7, 0.6] });
+  const l = render(f);
+  check("Domingos anecoico sem grupos ACR não infere TI-RADS 1", !/ACR TI-RADS/.test(l), l);
+}
 
 // ── calcAcrTirads: sem ecogenicidade → null ──
 {
@@ -125,6 +130,17 @@ function nodulo(p: Parameters<typeof N>[0]): TireoideFindings {
   const acr = calcAcrTirads(f.lobo_direito.nodulos[0]!);
   check("override: categoria ditada=5 vence (calcularia 3)", acr?.categoria === 5, JSON.stringify(acr));
   check("override: impressão '(ACR TI-RADS 5'", /\(ACR TI-RADS 5/.test(render(f)), render(f));
+}
+{
+  const f = nodulo({
+    ecogenicidade: "anecoica_homogenea",
+    acr_tirads: A("cistico", "anecoico"),
+    ti_rads_ditado: "4",
+    medidas_cm: [2.0, 1.4, 1.1],
+  });
+  const l = render(f);
+  check("override: categoria ditada vence também no nódulo cístico", /\(ACR TI-RADS 4, moderadamente suspeito\)/.test(l), l);
+  check("override cístico: impressão não contradiz a conduta com TI-RADS 1", !/\(ACR TI-RADS 1\)/.test(l), l);
 }
 
 // ── Bócio ──

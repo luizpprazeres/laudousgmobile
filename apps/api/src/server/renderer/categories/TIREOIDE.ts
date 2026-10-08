@@ -1216,10 +1216,10 @@ const ACR_TEXTO: Record<number, string> = {
  */
 export function calcAcrTirads(
   nod: TireoideNodulo,
-): { pontos: number; categoria: number } | null {
+): { pontos: number | null; categoria: number } | null {
   const ditado = nod.ti_rads_ditado?.trim();
   if (ditado && /^[1-5]$/.test(ditado)) {
-    return { pontos: NaN, categoria: Number(ditado) };
+    return { pontos: null, categoria: Number(ditado) };
   }
   const acr = nod.acr_tirads;
   if (acr?.composicao === "cistico" || acr?.composicao === "espongiforme") {
@@ -1281,7 +1281,7 @@ type CondutaAcrPorNodulo = {
   diametroCm: number;
   identificacao: string;
   ordem: number;
-  pontos: number;
+  pontos: number | null;
 };
 
 /**
@@ -1312,7 +1312,7 @@ function condutasAcrDosNodulos(lobos: LoboRotulado[]): CondutaAcrPorNodulo[] {
 
   const paaf = candidatos
     .filter((item) => item.conduta.includes("PAAF"))
-    .sort((a, b) => b.categoria - a.categoria || b.pontos - a.pontos || b.diametroCm - a.diametroCm || a.ordem - b.ordem)
+    .sort((a, b) => b.categoria - a.categoria || (b.pontos ?? -1) - (a.pontos ?? -1) || b.diametroCm - a.diametroCm || a.ordem - b.ordem)
     .slice(0, 2);
   const acompanhamento = candidatos.filter((item) => !item.conduta.includes("PAAF"));
   return [...paaf, ...acompanhamento].sort((a, b) => a.ordem - b.ordem);
@@ -1511,7 +1511,7 @@ function renderTireoideObjetivo(
               ? "sólido"
               : "nodular";
       const loc = nod.localizacao ? ` ${nod.localizacao}` : "";
-      if (isCisto(nod)) {
+      if (nod.acr_tirads?.composicao === "cistico" && !/^[1-5]$/.test(nod.ti_rads_ditado?.trim() ?? "")) {
         impressao.push(`Nódulo cístico ou quase totalmente cístico${loc} (ACR TI-RADS 1).`);
         continue;
       }

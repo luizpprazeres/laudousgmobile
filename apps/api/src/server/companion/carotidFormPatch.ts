@@ -157,18 +157,48 @@ export async function extractCompanionCarotidFormPatch(args: {
     signal: args.signal,
   });
   const parsedFindings = DopplerCarotidasFindingsSchema.parse(extracted.findings);
-  const hasCompleteVelocityPair = (["direita", "esquerda"] as const).some((side) =>
-    (["comum", "interna", "externa"] as const).some((vessel) =>
-      parsedFindings[side][vessel].vps_cms !== null && parsedFindings[side][vessel].vdf_cms !== null,
-    ),
+  const irPattern = /(?<![\p{L}\d])(?:ir(?=\s*(?:de\s*)?(?:[:=]\s*)?\d)|í?ndice\s+de\s+(?:resistividade|resist[êe]ncia))(?![\p{L}\d])/giu;
+  const irMatches = [...args.request.text.matchAll(irPattern)];
+  const completePairs = (["direita", "esquerda"] as const).flatMap((side) =>
+    (["comum", "interna", "externa"] as const).flatMap((vessel) => {
+      const measurement = parsedFindings[side][vessel];
+      return measurement.vps_cms !== null && measurement.vdf_cms !== null ? [{ side, vessel }] : [];
+    }),
   );
-  const isolatedIrWarning: CompanionFormPatchWarning | null = /(?<![\p{L}\d])(?:ir(?=\s*(?:de\s*)?(?:[:=]\s*)?\d)|í?ndice\s+de\s+(?:resistividade|resist[êe]ncia))(?![\p{L}\d])/iu.test(args.request.text)
+  const irHasMatchingPair = (match: RegExpMatchArray): boolean => {
+    const index = match.index ?? 0;
+    const before = args.request.text.slice(0, index);
+    const after = args.request.text.slice(index + match[0].length);
+    const clauseStart = Math.max(before.lastIndexOf(";"), before.lastIndexOf("."), before.lastIndexOf("\n")) + 1;
+    const nextSeparators = [after.indexOf(";"), after.indexOf("."), after.indexOf("\n")].filter((value) => value >= 0);
+    const clauseEnd = nextSeparators.length ? index + match[0].length + Math.min(...nextSeparators) : args.request.text.length;
+    const clause = args.request.text.slice(clauseStart, clauseEnd)
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const sides = ([
+      ["direita", /\b(?:direita|direito|dir)\b/],
+      ["esquerda", /\b(?:esquerda|esquerdo|esq)\b/],
+    ] as const).filter(([, pattern]) => pattern.test(clause)).map(([side]) => side);
+    const vessels = ([
+      ["interna", /\baci\b|carotida\s+interna/],
+      ["externa", /\bace\b|carotida\s+externa/],
+      ["comum", /\bacc\b|carotida\s+comum/],
+    ] as const).filter(([, pattern]) => pattern.test(clause)).map(([vessel]) => vessel);
+    if (sides.length > 1 || vessels.length > 1) return false;
+    const explicitSide = sides[0] ?? null;
+    const explicitVessel = vessels[0] ?? null;
+    const matchingPairs = completePairs.filter((pair) =>
+      (!explicitSide || pair.side === explicitSide) && (!explicitVessel || pair.vessel === explicitVessel),
+    );
+    return explicitSide || explicitVessel ? matchingPairs.length === 1 : completePairs.length === 1;
+  };
+  const allIrHaveMatchingVelocityPair = irMatches.length > 0 && irMatches.every(irHasMatchingPair);
+  const isolatedIrWarning: CompanionFormPatchWarning | null = irMatches.length
     ? {
         code: "ISOLATED_IR_NOT_APPLICABLE",
-        message: hasCompleteVelocityPair
-          ? "O IR ditado não é copiado diretamente; ele será calculado a partir da PSV e da VDF reconhecidas."
+        message: allIrHaveMatchingVelocityPair
+          ? "O IR ditado não é copiado diretamente; ele será calculado a partir da PSV e da VDF reconhecidas no mesmo vaso."
           : "O IR ditado não pode ser aplicado isoladamente; informe PSV e VDF ou preencha o campo manualmente.",
-        blocking: !hasCompleteVelocityPair,
+        blocking: !allIrHaveMatchingVelocityPair,
       }
     : null;
   try {

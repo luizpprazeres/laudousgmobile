@@ -48,6 +48,7 @@ const files = [
   'src/lib/deterministic/organs/abdomeTotalGrid.manual.ts',
   'src/lib/visualSchemas/__tests__/breast-geometry.manual.ts',
   'src/lib/visualSchemas/__tests__/myoma-adapter.manual.ts',
+  'src/lib/visualSchemas/__tests__/carotid-schema.manual.ts',
   'src/lib/__tests__/clinical-report-flow.manual.ts',
   'tests/mskPresets.manual.ts',
   'tests/cervicometriaStructured.manual.ts',

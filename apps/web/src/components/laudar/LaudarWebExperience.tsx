@@ -75,7 +75,7 @@ import {
   mergeReportHtml,
   textToReportHtml,
 } from './reportRichText'
-import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, type CompanionStructuredPayload } from '@/lib/companionStructured'
+import { applyCompanionBreast, applyCompanionCarotids, applyCompanionStructured, applyCompanionThyroid, carotidCompanionConflictSection, type CompanionStructuredPayload } from '@/lib/companionStructured'
 import { applyCompanionCarotidFormPatch, type CompanionFormPatchResponse } from '@/lib/companionFormPatch'
 import { companionReenviaPercentil, invalidarPercentilManual } from './fetalGrowthContext'
 
@@ -476,6 +476,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   }, [])
 
   const isVenousMmii = categoria === 'DOPPLER_VENOSO_MMII' || categoria === 'DOPPLER_VENOSO_MMII_MEDIDAS'
+  const isCarotid = categoria === 'DOPPLER_CAROTIDAS'
   const isDopplerRenal = categoria === 'DOPPLER_RENAL'
   const isTireoideDoppler = categoria === TIREOIDE_DOPPLER_ID
   const isTireoide = categoria === TIREOIDE_ID || isTireoideDoppler
@@ -497,7 +498,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   // escreveria fora do componente, então fica fora até ter escopo próprio.
   // O antigo esquema de posição fetal foi retirado da Web: ele ocupava espaço
   // sem ajudar a decisão clínica. Mama e tireoide mantêm os mapas interativos.
-  const supportsVisualSchema = !composition && (isVenousMmii || isTireoide || isPelvis || (isMamaria && !axilasOnly))
+  const supportsVisualSchema = !composition && (isVenousMmii || isCarotid || isTireoide || isPelvis || (isMamaria && !axilasOnly))
   const categorySections: UiSection[] = isTireoide
     ? tireoideSections
     : genericCategory?.resolveSections?.(opts) ?? genericCategory?.sections ?? []
@@ -1223,11 +1224,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (section.id === 'recommendations') return <RecommendationsPanel state={examState?.__recommendations ?? {}} onChange={state => updateSectionState('__recommendations', state, false)} />
     if (section.id === 'visual-schema') return (
                     <VisualSchemaPanel
-                      category={isVenousMmii ? 'VENOUS' : isTireoide ? 'TIREOIDE' : isMamaria ? 'MAMARIA' : isPelvis ? 'MYOMA' : 'FETAL_POSITION'}
+                      category={isVenousMmii ? 'VENOUS' : isCarotid ? 'CAROTID' : isTireoide ? 'TIREOIDE' : isMamaria ? 'MAMARIA' : isPelvis ? 'MYOMA' : 'FETAL_POSITION'}
                       breastState={(examStates.MAMARIA?.mamas ?? { fundo: 'heterogeneo', achados_ids: [] }) as OrganState}
                       fetalState={(examStates[categoria]?.feto ?? {}) as OrganState}
                       thyroidState={tireoideState}
                       myomaState={(examState?.utero ?? {}) as OrganState}
+                      carotidState={isCarotid ? examState : undefined}
                       venousMap={laudoCanonico.venousMap}
                       onBreastChange={(nextState) => setExamStates((all) => ({
                         ...all,
@@ -1235,6 +1237,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                       }))}
                       onThyroidChange={setTireoideState}
                       onMyomaChange={(nextState) => updateSectionState('utero', nextState, false)}
+                      onCarotidSelectSide={(side) => revealSection(categoria, side)}
                       embedded
                       onClose={() => setVisualSchemaOpen(false)}
                     />
@@ -2047,13 +2050,16 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             return true
           }
           if (payload.category === 'DOPPLER_CAROTIDAS') {
-            const applied = applyCompanionCarotids(examStates.DOPPLER_CAROTIDAS ?? {}, payload)
-            setExamStates((all) => ({ ...all, DOPPLER_CAROTIDAS: applied }))
+            const preview = applyCompanionCarotids(examStates.DOPPLER_CAROTIDAS ?? {}, payload)
+            setExamStates((all) => ({
+              ...all,
+              DOPPLER_CAROTIDAS: applyCompanionCarotids(all.DOPPLER_CAROTIDAS ?? {}, payload),
+            }))
             selectCategory('DOPPLER_CAROTIDAS')
-            const conflictSection = ['conclusao', 'direita', 'esquerda'].find((section) =>
-              Array.isArray(applied[section]?.companion_conflitos) && (applied[section]!.companion_conflitos as string[]).length > 0,
-            )
-            revealSection('DOPPLER_CAROTIDAS', conflictSection ?? 'direita')
+            const targetSection = carotidCompanionConflictSection(preview) ?? (payload.data.carotidClassifications?.[0] || payload.data.carotidConclusion || payload.data.carotidAdditionalFindings
+              ? 'conclusao'
+              : payload.data.carotidMeasurements?.[0]?.side ?? payload.data.carotidPlaques?.[0]?.side ?? 'direita')
+            revealSection('DOPPLER_CAROTIDAS', targetSection)
             return true
           }
           // Peso/IG vindos do celular também invalidam percentil que não veio junto.
@@ -2078,12 +2084,15 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
             return false
           }
           if (categoria !== 'DOPPLER_CAROTIDAS' || payload.category !== 'DOPPLER_CAROTIDAS') return false
-          const applied = applyCompanionCarotidFormPatch(examStates.DOPPLER_CAROTIDAS ?? {}, payload)
-          setExamStates((all) => ({ ...all, DOPPLER_CAROTIDAS: applied }))
-          const conflictSection = ['conclusao', 'direita', 'esquerda'].find((section) =>
-            Array.isArray(applied[section]?.companion_conflitos) && (applied[section]!.companion_conflitos as string[]).length > 0,
-          )
-          revealSection('DOPPLER_CAROTIDAS', conflictSection ?? 'direita')
+          const preview = applyCompanionCarotidFormPatch(examStates.DOPPLER_CAROTIDAS ?? {}, payload)
+          setExamStates((all) => ({
+            ...all,
+            DOPPLER_CAROTIDAS: applyCompanionCarotidFormPatch(all.DOPPLER_CAROTIDAS ?? {}, payload),
+          }))
+          const targetSection = carotidCompanionConflictSection(preview) ?? (payload.data.carotidClassifications[0] || payload.data.carotidConclusion || payload.data.carotidAdditionalFindings
+            ? 'conclusao'
+            : payload.data.carotidMeasurements[0]?.side ?? payload.data.carotidPlaques[0]?.side ?? 'direita')
+          revealSection('DOPPLER_CAROTIDAS', targetSection)
           return true
         }}
       />

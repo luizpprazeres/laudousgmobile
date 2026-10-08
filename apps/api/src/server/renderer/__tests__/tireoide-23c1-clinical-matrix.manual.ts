@@ -79,7 +79,8 @@ function acrNodulo(acr: ReturnType<typeof A>, medidas: number[] = [1.2, 1.0, 0.9
     const r = calcAcrTirads(N({ acr_tirads: { composicao: composicao as "cistico" | "espongiforme", ecogenicidade: null, forma: null, margem: null, focos_ecogenicos: [] } }));
     return r?.pontos === 0 && r.categoria === 1;
   }));
-  check("ACR: categoria explicitamente ditada vence o cálculo", calcAcrTirads(N({ ti_rads_ditado: "5" }))?.categoria === 5);
+  const ditado = calcAcrTirads(N({ ti_rads_ditado: "5" }));
+  check("ACR: categoria explicitamente ditada vence o cálculo sem pontuação falsa", ditado?.categoria === 5 && ditado.pontos === null, JSON.stringify(ditado));
 }
 
 // Mesma matemática no calculador avulso da web.
@@ -92,9 +93,16 @@ function acrNodulo(acr: ReturnType<typeof A>, medidas: number[] = [1.2, 1.0, 0.9
     focosEcogenicos: ["macrocalcificacoes", "calcificacoes_perifericas", "focos_ecogenicos_puntiformes"],
     tamanhoMm: 9,
   });
-  check("calculador web: mesmos 17 pontos e TR5", r.score === 17 && r.category === "TR5", JSON.stringify(r));
-  check("calculador web: TR5 de 9 mm indica acompanhamento, não PAAF", /Acompanhamento/.test(r.management) && !/PAAF/.test(r.management), r.management);
-  check("calculador web: calcificação periférica vale 2 pontos", calcularTiRads({ focosEcogenicos: "calcificacoes_perifericas" }).score === 2);
+  check("calculador web: mesmos 17 pontos e TR5", r?.score === 17 && r.category === "TR5", JSON.stringify(r));
+  check("calculador web: anecoico não é aceito em composição sólida", calcularTiRads({
+    composicao: "solido",
+    ecogenicidade: "anecoico",
+    forma: "mais_largo_que_alto",
+    margens: "lisas_mal_definidas",
+    focosEcogenicos: ["nenhum_cauda_cometa"],
+  }) === null);
+  check("calculador web: TR5 de 9 mm indica acompanhamento, não PAAF", /Acompanhamento/.test(r?.management ?? "") && !/PAAF/.test(r?.management ?? ""), r?.management);
+  check("calculador web: calcificação periférica vale 2 pontos", calcularTiRads({ focosEcogenicos: "calcificacoes_perifericas" })?.score === 2);
   const umPontoWeb = calcularTiRads({
     composicao: "cistico",
     ecogenicidade: "hiperecoico_isoecoico",
@@ -103,14 +111,14 @@ function acrNodulo(acr: ReturnType<typeof A>, medidas: number[] = [1.2, 1.0, 0.9
     focosEcogenicos: "nenhum_cauda_cometa",
   });
   const umPontoApi = calcAcrTirads(acrNodulo(A("cistico", "hiper_ou_isoecoico")));
-  check("paridade: soma atípica de 1 ponto não diverge entre Web e renderer", umPontoWeb.category === "TR1" && umPontoApi?.categoria === 1, JSON.stringify({ umPontoWeb, umPontoApi }));
+  check("paridade: soma atípica de 1 ponto não diverge entre Web e renderer", umPontoWeb?.category === "TR1" && umPontoApi?.categoria === 1, JSON.stringify({ umPontoWeb, umPontoApi }));
   check("calculador web: espongiforme ignora pontos das demais categorias", calcularTiRads({
     composicao: "espongiforme",
     ecogenicidade: "muito_hipoecóico",
     forma: "mais_alto_que_largo",
     margens: "extensao_extratireoidiana",
     focosEcogenicos: "focos_ecogenicos_puntiformes",
-  }).category === "TR1");
+  })?.category === "TR1");
 
   const mobile = calcularTIRADSMobile({
     composicao: "Sólido ou quase totalmente sólido",
