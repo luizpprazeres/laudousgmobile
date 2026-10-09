@@ -93,12 +93,12 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [x] Bancada via assinatura (`fcab2dd3`)
 - [x] Percentis Barcelona completados no renderer Doppler (`7809c3bf`)
 - [x] W1 motor Haiku + roteamento + remoção do gpt-4.1-mini (integrado; gates verdes após merge com W3)
-- [ ] W2 extração obstétrica (datação/vitalidade) + bancada obstétrica refeita — 1ª entrega revisada; regra de IG do briefing estava errada (ig_semanas é a IG da biometria), correção pedida
+- [x] W2 extração obstétrica — variante mínima integrada (1a231310)
 - [x] W3 prompt corpo descritivo + 4 defeitos do renderer do abdome (integrado em `eabc290f`)
 - [ ] W4 revisão por bancada + propostas priorizadas
 - [ ] W5 datação escolhida + gestação inicial sem embrião (backend)
-- [ ] W6 web: caixas de seleção da datação
-- [ ] W7 regras da casa (prompt "diagnóstico mais provável", mama, Domingos, parede, rim ausente nas vias)
+- [x] W6 web: caixas de seleção da datação (branch feat/web-datacao-escolhida, integra junto com W5)
+- [x] W7 regras da casa (integrado c79967bf) (prompt "diagnóstico mais provável", mama, Domingos, parede, rim ausente nas vias)
 - [ ] W8 MSK Haiku × Sonnet (assinatura) para o Luiz escolher
 - [ ] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo)
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
