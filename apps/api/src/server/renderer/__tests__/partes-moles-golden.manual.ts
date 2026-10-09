@@ -120,7 +120,7 @@ const Les = (p: Partial<PartesMolesLesao> & { tipo: PartesMolesLesao["tipo"] }):
   );
   check("lipoma: descrição 'Imagem nodular hiperecoica, homogênea'", /Imagem nodular hiperecoica, homogênea/.test(l), l);
   check("lipoma: subcutâneo", /no tecido celular subcutâneo/.test(l), l);
-  check("lipoma: conclusão 'compatíveis com lipoma'", /Achados compatíveis com lipoma no dorso\./.test(l), l);
+  check("lipoma: conclusão 'diagnóstico mais provável lipoma'", /Imagem no dorso que tem como diagnóstico mais provável lipoma\./.test(l), l);
 }
 
 // ── Cisto ──
@@ -141,7 +141,7 @@ const Les = (p: Partial<PartesMolesLesao> & { tipo: PartesMolesLesao["tipo"] }):
   );
   check("cisto: descrição 'Imagem cística anecoica'", /Imagem cística anecoica/.test(l), l);
   check("cisto: conteúdo e paredes", /com finos ecos internos, de paredes finas/.test(l), l);
-  check("cisto: conclusão cisto de inclusão epidérmica", /podendo corresponder a cisto de inclusão epidérmica/.test(l), l);
+  check("cisto: conclusão cisto de inclusão epidérmica", /que tem como diagnóstico mais provável cisto de inclusão epidérmica/.test(l), l);
 }
 
 // ── Coleção (com natureza ditada) ──
@@ -161,7 +161,7 @@ const Les = (p: Partial<PartesMolesLesao> & { tipo: PartesMolesLesao["tipo"] }):
     }),
   );
   check("coleção: descrição 'Coleção com ecos internos'", /Coleção com ecos internos, de paredes espessas/.test(l), l);
-  check("coleção: conclusão natureza ditada", /Coleção na região glútea direita, podendo corresponder a abscesso\./.test(l), l);
+  check("coleção: conclusão natureza ditada", /Coleção na região glútea direita, que tem como diagnóstico mais provável abscesso\./.test(l), l);
 }
 
 // ── Coleção sem natureza → 'a esclarecer' ──
@@ -188,7 +188,7 @@ const Les = (p: Partial<PartesMolesLesao> & { tipo: PartesMolesLesao["tipo"] }):
   );
   check("corpo estranho: descrição 'linear hiperecoica com reverberação'", /Imagem linear hiperecoica com reverberação posterior/.test(l), l);
   check("corpo estranho: medida única 1,5 cm", /medindo aproximadamente 1,5 cm/.test(l), l);
-  check("corpo estranho: conclusão 'compatível com corpo estranho'", /Imagem compatível com corpo estranho na região plantar do pé direito\./.test(l), l);
+  check("corpo estranho: conclusão 'diagnóstico mais provável corpo estranho'", /Imagem na região plantar do pé direito que tem como diagnóstico mais provável corpo estranho\./.test(l), l);
 }
 
 // ── Hérnia ──

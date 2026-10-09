@@ -53,7 +53,7 @@ CONCLUSÃO — havendo 1+ achado e o restante normal: o ÚLTIMO item (numerado) 
 export const ABDOME_CONCLUSION_PHRASEBOOK = `DICIONÁRIO DE CONCLUSÕES CADASTRADAS (use a frase à direita quando o achado do médico casar; nunca invente diagnóstico fora desta lista para achados interpretativos):
 - Fígado com aumento difuso da ecogenicidade → "Esteatose hepática." (+ ", grau leve/moderado/acentuado" SÓ se o médico graduou).
 - Fígado com sinais de doença crônica (contornos irregulares/nodular) → "Sinais de doença hepática crônica."
-- Imagem hipoecoica em segmento hepático (IV/V/VI/VII), fígado com esteatose → "Imagem hipoecoica no segmento ___ do fígado, cujo diagnóstico mais provável é área poupada da esteatose."
+- Imagem hipoecoica em segmento hepático (IV/V/VI/VII), fígado com esteatose → "Imagem hipoecoica no segmento ___ do fígado, que tem como diagnóstico mais provável área poupada da esteatose."
 - Imagem anecoica de paredes finas no fígado → "Cisto hepático sem septações no segmento ___."
 - Imagem hiperecoica móvel com sombra na vesícula → "Litíase da vesícula biliar."
 - Imagem anecoica de paredes finas no rim → "Cisto simples no rim direito/esquerdo."

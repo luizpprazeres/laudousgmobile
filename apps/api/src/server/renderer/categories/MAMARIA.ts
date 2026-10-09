@@ -83,6 +83,8 @@ type Lado = (typeof LADO)[number];
 
 const AchadoSchema = z.object({
   tipo: z.enum(TIPOS),
+  quantidade: z.enum(["unica", "multiplas"]).nullable().optional(),
+  referencia_medida: z.enum(["individual", "maior", "conjunto"]).nullable().optional(),
   lado: z.enum(LADO).nullable(),
   ecogenicidade: z.enum(ECOGENICIDADE).nullable(),
   forma: z.enum(FORMA).nullable(),
@@ -145,12 +147,15 @@ const ACHADO_JSON = {
   type: "object",
   additionalProperties: false,
   required: [
+    "quantidade", "referencia_medida",
     "tipo", "lado", "ecogenicidade", "forma", "orientacao", "margem", "posterior",
     "calcificacoes", "elasticidade", "vascularizacao", "vascularizacao_descricao", "descritores", "medidas_cm", "medida_invalida",
     "localizacao", "horario", "dist_pele_cm", "dist_mamilo_cm", "descricao_nao_nodular",
     "birads_ditado", "permitir_birads_calculado",
   ],
   properties: {
+    quantidade: enumN(["unica", "multiplas"]),
+    referencia_medida: enumN(["individual", "maior", "conjunto"]),
     tipo: { type: "string", enum: [...TIPOS] },
     lado: enumN(LADO),
     ecogenicidade: enumN(ECOGENICIDADE),
@@ -212,7 +217,9 @@ Classifique o ditado no JSON tipado (léxico BI-RADS US). NÃO redija laudo. NÃ
 
 REGRAS:
 1. escopo_exame: mamas | axilas | mamas_axilas conforme as regiões efetivamente
-   avaliadas. titulo_com_axilas: true nos escopos axilas e mamas_axilas; false
+   avaliadas. Sem menção ou solicitação de axilas: escopo_exame=mamas,
+   titulo_com_axilas=false, axilas_alteradas=false e axilas_descricao=null.
+   Axilas só entram quando ditadas/solicitadas. titulo_com_axilas: true nos escopos axilas e mamas_axilas; false
    em mamas. Em cada achado, permitir_birads_calculado deve ser false. O BI-RADS
    só entra no laudo quando o médico o ditar ou confirmar explicitamente; nesse
    caso, preencha birads_ditado.
@@ -220,7 +227,11 @@ REGRAS:
    com próteses mamárias.
 3. texto_fundo: só se o médico ditar um padrão de fundo diferente; senão null
    (o renderer usa "ecotextura de fundo com aspecto heterogêneo").
-4. achados[]: um objeto por imagem/achado. tipo:
+4. achados[]: um objeto por imagem/achado ou grupo ditado. quantidade=multiplas
+   quando o médico disser imagens/nódulos/cistos múltiplos; unica quando único;
+   null se não definido. referencia_medida=maior quando "a maior medindo",
+   conjunto quando medidos em conjunto, individual quando medida individual;
+   null se não definido. Não divida um grupo em imagens fictícias. tipo:
    cisto_simples | multiplos_cistos | microcistos_agrupados | cisto_complicado |
    nodulo_solido | linfonodo_intramamario | calcificacoes | ginecomastia |
    proteses | achado_nao_nodular (lesão NÃO nodular / "área sem configuração nodular").
@@ -546,7 +557,7 @@ function calcificacoesCorpo(a: MamariaAchado): string {
 }
 
 /** Frase do achado no CORPO (sequência do Luiz: eco→de mama→margem→paralelo→medida→calc→loc→dist). */
-function achadoCorpo(a: MamariaAchado): string {
+function achadoCorpoSingular(a: MamariaAchado): string {
   const mama = mamaTxt(a.lado);
   switch (a.tipo) {
     case "ginecomastia":
@@ -615,6 +626,26 @@ function achadoCorpo(a: MamariaAchado): string {
   }
 }
 
+function achadoCorpo(a: MamariaAchado): string {
+  let texto = achadoCorpoSingular(a);
+  const plural = a.quantidade === "multiplas";
+  if (plural && !["multiplos_cistos", "microcistos_agrupados", "calcificacoes", "proteses", "ginecomastia"].includes(a.tipo)) {
+    texto = texto.replace(/^Imagem /, "Imagens ")
+      .replace(/\b(anecoica|hipoecoica|hiperecoica|isoecoica|heterogênea|oval)\b/g, "$1s")
+      .replace("com margem ", "com margens ")
+      .replace(/\b(circunscrita|microlobulada|indistinta|angulada|espiculada)\b/g, "$1s")
+      .replace("com margens angular", "com margens angulares")
+      .replace("situada no", "situadas no");
+  }
+  const grupo = plural || ["multiplos_cistos", "microcistos_agrupados"].includes(a.tipo);
+  if (grupo && a.referencia_medida === "maior" && !texto.includes("a maior medindo")) {
+    texto = texto.replace("medindo ", "a maior medindo ");
+  } else if (grupo && a.referencia_medida === "conjunto" && !texto.includes("medindo em conjunto")) {
+    texto = texto.replace("a maior medindo ", "medindo ").replace("medindo ", "medindo em conjunto ");
+  }
+  return texto;
+}
+
 function vascularizacaoCorpo(a: MamariaAchado): string | null {
   const livre = a.vascularizacao_descricao?.trim();
   if (livre) return `Ao Doppler colorido, ${livre.replace(/\.+$/, "")}.`;
@@ -654,17 +685,17 @@ function achadoConclusaoBase(a: MamariaAchado): string {
   const loc = a.localizacao ? ` no ${a.localizacao.replace(/^no\s+/i, "")}` : "";
   switch (a.tipo) {
     case "cisto_simples":
-      return `Cisto simples em ${mama}${loc}`;
+      return `${a.quantidade === "multiplas" ? "Cistos simples" : "Cisto simples"} em ${mama}${loc}`;
     case "multiplos_cistos":
       return `Cistos mamários simples em ${mama}${loc}`;
     case "microcistos_agrupados":
       return `Microcistos agrupados em ${mama}${loc}`;
     case "cisto_complicado":
-      return `Cisto de conteúdo espesso em ${mama}${loc}`;
+      return `${a.quantidade === "multiplas" ? "Cistos de conteúdo espesso" : "Cisto de conteúdo espesso"} em ${mama}${loc}`;
     case "nodulo_solido":
-      return `Imagem sólida em ${mama}${loc}`;
+      return `${a.quantidade === "multiplas" ? "Imagens sólidas" : "Imagem sólida"} em ${mama}${loc}`;
     case "linfonodo_intramamario":
-      return `Linfonodo intramamário em ${mama}${loc}`;
+      return `${a.quantidade === "multiplas" ? "Linfonodos intramamários" : "Linfonodo intramamário"} em ${mama}${loc}`;
     case "calcificacoes":
       return calcificacoesConclusao(mama, loc, a.calcificacoes);
     case "ginecomastia":

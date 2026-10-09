@@ -779,11 +779,11 @@ function endometrioConclusao(f: PelveFemininaFindings, via: Via): string {
   }
   switch (f.endometrio_tipo) {
     case "polipo":
-      return "Imagem sugestiva de pólipo endometrial.";
+      return "Imagem que tem como diagnóstico mais provável pólipo endometrial.";
     case "espessamento":
       return "Espessamento endometrial.";
     case "sinequia":
-      return "Imagem sugestiva de sinéquia uterina.";
+      return "Imagem que tem como diagnóstico mais provável sinéquia uterina.";
     case "conteudo_cavitario":
       return "Conteúdo heterogêneo na cavidade endometrial.";
   }
@@ -1142,7 +1142,7 @@ function renderPelveFemininaClassico(f: PelveFemininaFindings, dedup = false): s
     conclusao.push(
       f.adenomiose_conclusao && f.adenomiose_conclusao.trim() !== ""
         ? f.adenomiose_conclusao.trim().replace(/\.+$/, "") + "."
-        : "Achados compatíveis com adenomiose.",
+        : "Alterações miometriais que têm como diagnóstico mais provável adenomiose.",
     );
   }
 
@@ -1401,7 +1401,7 @@ function renderPelveFemininaObjetivo(f: PelveFemininaFindings, dedup = false): s
     impressao.push(
       f.adenomiose_conclusao && f.adenomiose_conclusao.trim() !== ""
         ? f.adenomiose_conclusao.trim().replace(/\.+$/, "") + "."
-        : "Achados compatíveis com adenomiose.",
+        : "Alterações miometriais que têm como diagnóstico mais provável adenomiose.",
     );
   }
 

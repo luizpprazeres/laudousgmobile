@@ -165,7 +165,7 @@ function renderFigado(state: AbdomenOrganState): OrganRender {
     } else if (f.tipo === "hepatopatia_cronica") {
       parenquima = "contornos bocelados e ecotextura difusamente heterogênea";
       vasosLine = "Os vasos intra-hepáticos apresentam calibre preservado.";
-      out.conclusao.push("Sinais ecográficos sugestivos de hepatopatia crônica difusa.");
+      out.conclusao.push("Alterações ecográficas que têm como diagnóstico mais provável hepatopatia crônica difusa.");
     } else if (f.tipo === "cisto_simples") {
       const loc = f.localizacao?.trim() || "parênquima hepático";
       lines.push(
@@ -179,7 +179,7 @@ function renderFigado(state: AbdomenOrganState): OrganRender {
     } else if (f.tipo === "hemangioma_hepatico") {
       const loc = f.localizacao?.trim() || "parênquima hepático";
       lines.push(`Imagem nodular hiperecogênica, homogênea e de contornos bem definidos${medidasOpcionais(f.medidas_cm)}, situada no ${loc}.`);
-      out.conclusao.push("Imagem hepática sugestiva de hemangioma.");
+      out.conclusao.push("Imagem hepática que tem como diagnóstico mais provável hemangioma.");
     } else if (f.tipo === "nodulo_hepatico") {
       const loc = f.localizacao?.trim() || "parênquima hepático";
       lines.push(`Imagem nodular sólida${medidasOpcionais(f.medidas_cm)}, situada no ${loc}, de natureza indeterminada ao método.`);
@@ -496,7 +496,7 @@ function renderRim(organ: AbdomenOrganKey) {
       } else if (f.tipo === "angiomiolipoma_renal") {
         const loc = f.localizacao?.trim();
         linhas.push(`Imagem nodular hiperecogênica e homogênea${medidasOpcionais(f.medidas_cm)}${loc ? `, situada no ${loc}` : ""}.`);
-        out.conclusao.push(`Imagem no rim ${lado} sugestiva de angiomiolipoma.`);
+        out.conclusao.push(`Imagem no rim ${lado} que tem como diagnóstico mais provável angiomiolipoma.`);
       } else if (f.tipo === "nefrocalcinose") {
         linhas.push("Focos hiperecogênicos nas pirâmides medulares.");
         out.conclusao.push(`Nefrocalcinose no rim ${lado}.`);

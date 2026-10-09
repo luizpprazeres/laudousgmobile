@@ -51,7 +51,7 @@ Tipos de descritores: ecogenicidade (anecoica, hipoecoica, isoecoica, heterogên
 - A expressão "outra imagem" mantém o lobo citado mais recentemente; não mova a imagem para o istmo ou para o outro lobo sem comando explícito.
 
 3.3. LINFONODOS CERVICAIS
-"Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada."
+"Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, de aspecto habitual."
 
 3.4. DOPPLER (APENAS QUANDO O USUÁRIO INFORMAR)
 "Pico sistólico da artéria tireoidiana inferior direita de X cm/s."
@@ -92,7 +92,7 @@ Quando o usuário disser "coloque as frases de Hashimoto", "frases de tireoidite
 "Lobo esquerdo medindo D x E x F cm (volume de Ve ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
 "Istmo medindo G x H x I cm (volume de Vi ml), apresentando modificação difusa do padrão ecotextural, notadamente por áreas hipoecoicas e traves hiperecoicas."
 Na conclusão, preservar o item de volume e acrescentar exatamente:
-"Sinais de doença parenquimatosa difusa. O diagnóstico mais provável é tireoidite de Hashimoto."
+"Padrão de doença parenquimatosa difusa que tem como diagnóstico mais provável tireoidite de Hashimoto."
 Copiar VERBATIM a morfologia acima nos três segmentos. As grafias "hipoecoicas" e "hiperecoicas" são imutáveis.`;
 
 /**

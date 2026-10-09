@@ -123,7 +123,7 @@ type Caso = {
 const casos: Caso[] = [
   { nome: "hepatomegalia", patch: { figado: { dimensoes: "aumentado", "dimensoes.aumentado.lobo_d": "15", "dimensoes.aumentado.lobo_e": "10 cm" } }, inclui: ["lobo direito com diâmetro longitudinal de 15 cm", "lobo esquerdo com diâmetro longitudinal de 10 cm", "Hepatomegalia."] },
   { nome: "hepatomegalia só com medida do lobo esquerdo", patch: { figado: { dimensoes: "aumentado", "dimensoes.aumentado.lobo_e": "11" } }, inclui: ["lobo esquerdo com diâmetro longitudinal de 11 cm", "Hepatomegalia."] },
-  { nome: "hemangioma em mm", patch: { figado: { lesoes: ["hemangioma"], "lesoes.hemangioma.dimensao": "20", "lesoes.hemangioma.local": "lobo_e" } }, inclui: ["medindo 2,0 cm", "lobo esquerdo", "sugestiva de hemangioma"] },
+  { nome: "hemangioma em mm", patch: { figado: { lesoes: ["hemangioma"], "lesoes.hemangioma.dimensao": "20", "lesoes.hemangioma.local": "lobo_e" } }, inclui: ["medindo 2,0 cm", "lobo esquerdo", "que tem como diagnóstico mais provável hemangioma"] },
   { nome: "nódulo hepático", patch: { figado: { lesoes: ["nodulo"], "lesoes.nodulo.dimensao": "18 mm" } }, inclui: ["Imagem nodular sólida, medindo 1,8 cm", "Nódulo hepático a esclarecer"] },
   { nome: "calcificação hepática", patch: { figado: { raros: ["calcificacao"] } }, inclui: ["Foco hiperecogênico com sombra acústica posterior.", "Calcificação hepática residual."] },
   { nome: "cistos hepáticos múltiplos", patch: { figado: { raros: ["cistos_multiplos"] } }, inclui: ["Cistos hepáticos simples."] },

@@ -36,7 +36,7 @@ REGRAS ESPECÍFICAS DA PELVE
 13. Posição uterina: aceitar apenas — anteversão, retroversão, médioversão, anteversoflexão, anteflexão, retroflexão, mediana, axial. Se a transcrição produzir variante inválida por distorção fonética (ex: "intervenção"), corrigir para a mais próxima ("anteversão"). Se ambígua, usar "anteversão" (padrão).
 14. Medidas incompletas ou ilegíveis: manter exatamente como fornecida seguida de [?]. Inserir ao final do laudo, após a CONCLUSÃO:
 ⚠️ Atenção: medida(s) incompleta(s) detectada(s) — revise antes de assinar.
-15. Padrão de DIAGNÓSTICO em conclusão: usar SEMPRE "que tem como diagnóstico mais provável [X]" para hipóteses (mioma, endometrioma, pólipo). NÃO usar "às custas de", "compatível com" ou "sugestivo de", exceto onde especificado (O-RADS funcional, adenomiose).
+15. Padrão de DIAGNÓSTICO em conclusão: usar SEMPRE "que tem como diagnóstico mais provável [X]" para hipóteses (mioma, endometrioma, pólipo). NÃO usar "às custas de", "compatível com" ou "sugestivo de". Classificações permanecem próprias; diagnósticos afirmados pelo médico permanecem diretos.
 16. Padrão de RECOMENDAÇÃO: usar SEMPRE "Convém, a critério clínico, [exame] com objetivo de [objetivo]."
 
 SELEÇÃO AUTOMÁTICA DO MODELO

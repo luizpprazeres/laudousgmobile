@@ -139,7 +139,7 @@ function acrNodulo(acr: ReturnType<typeof A>, medidas: number[] = [1.2, 1.0, 0.9
   const tr4Paaf = acrNodulo(A("solido", "hipoecoico"), [2.0]);
   const f = F({ lobo_direito: L({ nodulos: [tr5Pequeno] }), lobo_esquerdo: L({ nodulos: [tr4Paaf] }) });
   for (const objetivo of [false, true]) {
-    const laudo = renderTireoide(f, { show_conduct_recommendation: true }, { objetivo });
+    const laudo = renderTireoide(f, { show_conduct_recommendation: true, show_domingos_score: false }, { objetivo });
     check(`conduta multinodular ${objetivo ? "objetiva" : "clássica"}: TR4 grande não fica oculto pelo TR5 pequeno`, /Lobo esquerdo[^\n]*ACR TI-RADS 4[^\n]*PAAF/i.test(laudo), laudo);
   }
 

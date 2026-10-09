@@ -190,7 +190,7 @@ export const ABDOMEN_TOTAL_AJUSTES = [
     priority: 75,
     content:
       'No corpo: "Imagem hipoecoica, de contornos mal delimitados, medindo aproximadamente X x Y x Z cm, situada no segmento IV/V/VI/VII etc."\n' +
-      'Na conclusão: "Imagem hipoecoica no segmento IV/V/VI/VII do fígado, cujo diagnóstico mais provável é área poupada da esteatose."',
+      'Na conclusão: "Imagem hipoecoica no segmento IV/V/VI/VII do fígado, que tem como diagnóstico mais provável área poupada da esteatose."',
     tags: ["area-poupada", "esteatose", "figado", "hipoecoica"],
   },
   {
