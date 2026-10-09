@@ -1,7 +1,10 @@
 import OpenAI from "openai";
+import type Anthropic from "@anthropic-ai/sdk";
 import { env } from "../env";
 import { openai } from "./openai";
 import {
+  anthropic,
+  effortParam,
   LivreRoutingError,
   toLivreFailure,
 } from "./livreProvider";
@@ -10,6 +13,9 @@ import type { WriterModelConfig } from "../pipeline/modelResolver";
 let testeClient: OpenAI | null = null;
 
 export function writerClient(config: WriterModelConfig): OpenAI {
+  if (config.provider === "anthropic") {
+    throw new Error("writerClient: provider anthropic usa streamAnthropicLivreWriter.");
+  }
   if (config.provider === "openai") return openai();
   if (testeClient) return testeClient;
   const e = env();
@@ -52,75 +58,64 @@ export function writerRequestParams(args: {
 }
 
 /**
- * Writer GPT-6 Luna do LAUDO LIVRE ROTEADO. Usa reasoning `none`, não envia
- * temperature e valida o desfecho do stream antes de finalizar o report.
+ * Writer Claude Opus 5.5 do LAUDO LIVRE ROTEADO. Usa thinking adaptativo em
+ * esforço baixo, não envia temperature e valida o desfecho do stream antes de
+ * finalizar o report.
  */
-export async function* streamOpenAILivreWriter(args: {
+export async function* streamAnthropicLivreWriter(args: {
   config: WriterModelConfig;
   systemMessage: string;
   userMessage: string;
   signal?: AbortSignal;
-  /** Só para testes: substitui o cliente OpenAI. */
-  client?: Pick<OpenAI, "chat">;
+  /** Só para testes: substitui o cliente Anthropic. */
+  client?: Pick<Anthropic, "messages">;
 }): AsyncGenerator<string, { inputTokens?: number; outputTokens?: number; cachedInputTokens?: number }, void> {
   let full = "";
-  let finishReason: string | null = null;
-  let refused = false;
-  let inputTokens: number | undefined;
-  let outputTokens: number | undefined;
-  let cachedInputTokens: number | undefined;
+  let finalMessage;
   try {
-    const stream = await (args.client ?? openai()).chat.completions.create(
+    const stream = (args.client ?? anthropic()).messages.stream(
       {
         model: args.config.model,
-        stream: true,
-        stream_options: { include_usage: true },
-        max_completion_tokens: 16000,
-        reasoning_effort: "none",
-        messages: [
-          { role: "system", content: args.systemMessage },
-          { role: "user", content: args.userMessage },
-        ],
+        max_tokens: 16000,
+        thinking: { type: "adaptive" },
+        output_config: { ...effortParam(args.config.reasoningEffort) },
+        system: [{ type: "text", text: args.systemMessage, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: args.userMessage }],
       },
       { signal: args.signal, timeout: 180_000 },
     );
-    for await (const chunk of stream) {
-      if (chunk.usage) {
-        inputTokens = chunk.usage.prompt_tokens;
-        outputTokens = chunk.usage.completion_tokens;
-        cachedInputTokens = chunk.usage.prompt_tokens_details?.cached_tokens;
-      }
-      const choice = chunk.choices[0];
-      if (choice?.finish_reason) finishReason = choice.finish_reason;
-      if (choice?.delta?.refusal) refused = true;
-      const text = choice?.delta?.content ?? "";
-      if (text) {
-        full += text;
-        yield text;
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        full += event.delta.text;
+        yield event.delta.text;
       }
     }
+    finalMessage = await stream.finalMessage();
   } catch (err) {
     throw toLivreFailure(err, "LIVRE_WRITER_FAILED");
   }
 
-  if (refused) {
+  if (finalMessage.stop_reason === "refusal") {
     throw new LivreRoutingError("LIVRE_WRITER_REFUSED", "O redator do Laudo Livre recusou gerar o laudo.");
   }
-  if (finishReason === "length") {
+  if (
+    finalMessage.stop_reason === "max_tokens" ||
+    finalMessage.stop_reason === "model_context_window_exceeded"
+  ) {
     throw new LivreRoutingError("LIVRE_WRITER_TRUNCATED", "O laudo do Laudo Livre foi truncado; geração interrompida.");
   }
-  if (finishReason !== "stop") {
+  if (finalMessage.stop_reason !== "end_turn") {
     throw new LivreRoutingError(
       "LIVRE_WRITER_FAILED",
-      `O redator do Laudo Livre terminou de forma inesperada (${finishReason ?? "sem motivo"}).`,
+      `O redator do Laudo Livre terminou de forma inesperada (${finalMessage.stop_reason ?? "sem motivo"}).`,
     );
   }
   if (!full.trim()) {
     throw new LivreRoutingError("LIVRE_WRITER_EMPTY", "O redator do Laudo Livre devolveu um laudo vazio.");
   }
   return {
-    inputTokens,
-    outputTokens,
-    cachedInputTokens,
+    inputTokens: finalMessage.usage.input_tokens,
+    outputTokens: finalMessage.usage.output_tokens,
+    cachedInputTokens: finalMessage.usage.cache_read_input_tokens ?? undefined,
   };
 }

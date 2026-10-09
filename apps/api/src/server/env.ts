@@ -28,17 +28,21 @@ const ServerEnvSchema = z.object({
   /**
    * LAUDO LIVRE ROTEADO (default OFF). Com "true", um request cuja categoria
    * ORIGINAL é LIVRE e que traz `route_free_category: true` passa por um
-   * roteador OpenAI que identifica o exame; o laudo sai com o contrato/
-   * bundle da categoria detectada, escrito pelo GPT-6 Luna com reasoning
-   * desativado. Qualquer falha do
-   * roteador ou do writer é explícita — nunca cai no OpenAI nem no prompt
+   * roteador Anthropic que identifica o exame; o laudo sai com o contrato/
+   * bundle da categoria detectada, escrito pelo Claude Opus 5.5 com thinking
+   * adaptativo em esforço baixo. Qualquer falha do
+   * roteador ou do writer é explícita — nunca cai no writer padrão nem no prompt
    * livre. Desligado = comportamento antigo intacto.
    */
   LIVRE_ROUTER_ENABLED: z.string().default("false"),
+  // Vazio = jornada indisponível (erro explícito LIVRE_PROVIDER_NOT_CONFIGURED).
+  ANTHROPIC_API_KEY: z.string().default(""),
+  // Só para chaves não vinculadas a workspace.
+  ANTHROPIC_WORKSPACE_ID: z.string().default(""),
   // Modelo único da jornada (roteador + writer). Sem fallback para outro modelo.
-  LIVRE_OPENAI_MODEL: z.string().default("gpt-6-luna"),
-  // Mantido em `none`: o Laudo Livre não usa raciocínio estendido.
-  LIVRE_OPENAI_REASONING_EFFORT: z.literal("none").default("none"),
+  LIVRE_ANTHROPIC_MODEL: z.string().default("claude-opus-5-5"),
+  // Opus 5.5 exige thinking adaptativo; low minimiza custo e latência.
+  LIVRE_ANTHROPIC_EFFORT: z.enum(["low", "medium", "high", "xhigh", "max"]).default("low"),
   // Confiança mínima para aceitar `routed`; abaixo disso vira `ambiguous`.
   LIVRE_ROUTER_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).default(0.8),
   // CSV de categorias que o roteador nunca pode escolher, além das fixas em

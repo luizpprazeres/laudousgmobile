@@ -1,16 +1,17 @@
 /**
- * LAUDO LIVRE ROTEADO — contrato do roteador, do writer OpenAI e do
- * metadata auditável. Sem rede: o cliente OpenAI é substituído por fakes.
+ * LAUDO LIVRE ROTEADO — contrato do roteador, do writer Anthropic e do
+ * metadata auditável. Sem rede: o cliente Anthropic é substituído por fakes.
  *
  *   tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/pipeline/__tests__/livreRouter.manual.ts
  */
 import assert from "node:assert/strict";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import {
   assertLivreProviderConfigured,
+  effortParam,
   LivreRoutingError,
 } from "../../ai/livreProvider";
-import { streamOpenAILivreWriter } from "../../ai/writerClient";
+import { streamAnthropicLivreWriter, writerClient } from "../../ai/writerClient";
 import { resolveGenerationPath } from "../generationPathResolver";
 import { resolveLivreWriterModel, resolveWriterModel } from "../modelResolver";
 import {
@@ -38,9 +39,9 @@ async function rejectsWith(promise: Promise<unknown>, code: string) {
 }
 
 const routerConfig = {
-  OPENAI_API_KEY: "sk-test",
-  LIVRE_OPENAI_MODEL: "gpt-6-luna",
-  LIVRE_OPENAI_REASONING_EFFORT: "none" as const,
+  ANTHROPIC_API_KEY: "sk-ant-test",
+  LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5",
+  LIVRE_ANTHROPIC_EFFORT: "low" as const,
   LIVRE_ROUTER_MIN_CONFIDENCE: 0.8,
 };
 const labels = new Map([
@@ -55,81 +56,45 @@ const labels = new Map([
 const categories = eligibleRouterCategories(labels.keys(), labels);
 const eligible = new Set(categories.map((c) => c.code));
 
-type ChatCompletion = OpenAI.Chat.Completions.ChatCompletion;
-
-function fakeCreate(response: Partial<ChatCompletion>, seen?: { params?: unknown }) {
+function fakeCreate(response: Partial<Anthropic.Message>, seen?: { params?: unknown }) {
   return {
-    chat: {
-      completions: {
-        create: async (params: unknown) => {
-          if (seen) seen.params = params;
-          return {
-            id: "chatcmpl-test",
-            object: "chat.completion",
-            created: 0,
-            model: "gpt-6-luna",
-            choices: [{
-              index: 0,
-              finish_reason: "stop",
-              logprobs: null,
-              message: { role: "assistant", content: "", refusal: null, annotations: [] },
-            }],
-            usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
-            ...response,
-          };
-        },
+    messages: {
+      create: async (params: unknown) => {
+        if (seen) seen.params = params;
+        return {
+          stop_reason: "end_turn",
+          content: [],
+          usage: { input_tokens: 10, output_tokens: 5 },
+          ...response,
+        };
       },
     },
-  } as unknown as Pick<OpenAI, "chat">;
+  } as unknown as Pick<Anthropic, "messages">;
 }
-function jsonText(value: unknown): Partial<ChatCompletion> {
-  return {
-    choices: [{
-      index: 0,
-      finish_reason: "stop",
-      logprobs: null,
-      message: { role: "assistant", content: JSON.stringify(value), refusal: null, annotations: [] },
-    }],
-  };
+function jsonText(value: unknown): Partial<Anthropic.Message> {
+  return { content: [{ type: "text", text: JSON.stringify(value) } as Anthropic.TextBlock] };
 }
 
-function fakeStream(
-  chunks: string[],
-  final: { finishReason?: string; refusal?: boolean } = {},
-  seen?: { params?: unknown },
-) {
+function fakeStream(chunks: string[], final: Partial<Anthropic.Message>, seen?: { params?: unknown }) {
   return {
-    chat: {
-      completions: {
-        create: async (params: unknown) => {
-          if (seen) seen.params = params;
-          return {
-            async *[Symbol.asyncIterator]() {
-              for (const text of chunks) {
-                yield {
-                  choices: [{ index: 0, finish_reason: null, delta: { content: text } }],
-                  usage: null,
-                };
-              }
-              yield {
-                choices: [{
-                  index: 0,
-                  finish_reason: final.finishReason ?? "stop",
-                  delta: final.refusal ? { refusal: "refused" } : {},
-                }],
-                usage: {
-                  prompt_tokens: 100,
-                  completion_tokens: 20,
-                  total_tokens: 120,
-                  prompt_tokens_details: { cached_tokens: 0 },
-                },
-              };
-            },
-          };
-        },
+    messages: {
+      stream: (params: unknown) => {
+        if (seen) seen.params = params;
+        return {
+          async *[Symbol.asyncIterator]() {
+            for (const text of chunks) {
+              yield { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } };
+            }
+          },
+          finalMessage: async () => ({
+            stop_reason: "end_turn",
+            usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 0 },
+            ...final,
+          }),
+        };
       },
     },
-  } as unknown as Pick<OpenAI, "chat">;
+  } as unknown as Pick<Anthropic, "messages">;
 }
 async function drain(gen: AsyncGenerator<string, unknown, void>) {
   let text = "";
@@ -139,10 +104,10 @@ async function drain(gen: AsyncGenerator<string, unknown, void>) {
     text += next.value;
   }
 }
-const lunaConfig = {
-  provider: "openai" as const,
-  model: "gpt-6-luna",
-  reasoningEffort: "none",
+const opusConfig = {
+  provider: "anthropic" as const,
+  model: "claude-opus-5-5",
+  reasoningEffort: "low",
   credentialRef: "livre" as const,
 };
 
@@ -266,27 +231,28 @@ async function main() {
   });
 
   // ---------- Provedor / modelo ----------
-  await check("provedor: chave ausente ou modelo diferente de GPT-6 Luna falham explicitamente", () => {
+  await check("provedor: chave ausente ou modelo diferente de Opus 5.5 falham explicitamente", () => {
     const code = (fn: () => unknown) =>
       assert.throws(fn, (err: unknown) => err instanceof LivreRoutingError && err.code === "LIVRE_PROVIDER_NOT_CONFIGURED");
-    code(() => assertLivreProviderConfigured({ OPENAI_API_KEY: "", LIVRE_OPENAI_MODEL: "gpt-6-luna" }));
-    code(() => assertLivreProviderConfigured({ OPENAI_API_KEY: "k", LIVRE_OPENAI_MODEL: "gpt-4.1-mini" }));
-    code(() => assertLivreProviderConfigured({ OPENAI_API_KEY: "k", LIVRE_OPENAI_MODEL: "" }));
-    assert.equal(assertLivreProviderConfigured({ OPENAI_API_KEY: "k", LIVRE_OPENAI_MODEL: "gpt-6-luna" }), "gpt-6-luna");
+    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "", LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5" }));
+    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_ANTHROPIC_MODEL: "gpt-4.1-mini" }));
+    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_ANTHROPIC_MODEL: "" }));
+    assert.equal(assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5" }), "claude-opus-5-5");
   });
-  await check("writer Livre = OpenAI GPT-6 Luna, sem fallback para o writer padrão", () => {
-    const cfg = resolveLivreWriterModel({ OPENAI_API_KEY: "k", LIVRE_OPENAI_MODEL: "gpt-6-luna", LIVRE_OPENAI_REASONING_EFFORT: "none" });
-    assert.deepEqual(cfg, lunaConfig);
+  await check("writer Livre = Anthropic Opus 5.5, sem cliente OpenAI", () => {
+    const cfg = resolveLivreWriterModel({ ANTHROPIC_API_KEY: "k", LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5", LIVRE_ANTHROPIC_EFFORT: "low" });
+    assert.deepEqual(cfg, opusConfig);
+    assert.throws(() => writerClient(cfg));
+    assert.deepEqual(effortParam("low"), { effort: "low" });
+    assert.equal(effortParam(""), undefined);
   });
 
   // ---------- Roteador (cliente fake) ----------
   await check("roteador: chave ausente falha antes de chamar a API", async () => {
     let called = false;
-    const client = {
-      chat: { completions: { create: async () => { called = true; } } },
-    } as unknown as Pick<OpenAI, "chat">;
+    const client = { messages: { create: async () => { called = true; } } } as unknown as Pick<Anthropic, "messages">;
     await rejectsWith(
-      runLivreRouter({ transcript: "x", categories, config: { ...routerConfig, OPENAI_API_KEY: "" }, client }),
+      runLivreRouter({ transcript: "x", categories, config: { ...routerConfig, ANTHROPIC_API_KEY: "" }, client }),
       "LIVRE_PROVIDER_NOT_CONFIGURED",
     );
     assert.equal(called, false);
@@ -300,78 +266,64 @@ async function main() {
       client: fakeCreate(jsonText(ok), seen as { params?: unknown }),
     });
     assert.equal(out.decision.category, "TIREOIDE");
-    assert.equal(out.model, "gpt-6-luna");
-    const p = seen.params as Record<string, unknown> & {
-      reasoning_effort: string;
-      response_format: { type: string; json_schema: { name: string; strict: boolean } };
-    };
-    assert.equal(p.model, "gpt-6-luna");
-    assert.equal(p.reasoning_effort, "none");
-    assert.equal(p.response_format.type, "json_schema");
-    assert.equal(p.response_format.json_schema.name, "livre_exam_route");
-    assert.equal(p.response_format.json_schema.strict, true);
+    assert.equal(out.model, "claude-opus-5-5");
+    const p = seen.params as Record<string, unknown> & { thinking: { type: string }; output_config: { effort: string; format: { type: string } } };
+    assert.equal(p.model, "claude-opus-5-5");
+    assert.equal(p.output_config.effort, "low");
+    assert.equal(p.output_config.format.type, "json_schema");
+    assert.equal(p.thinking.type, "adaptive");
     assert.equal("temperature" in p, false);
   });
   await check("roteador: recusa, truncamento, stop inesperado e JSON inválido", async () => {
-    const choice = (finishReason: string, content: string | null, refusal: string | null = null) => ({
-      choices: [{
-        index: 0,
-        finish_reason: finishReason,
-        logprobs: null,
-        message: { role: "assistant", content, refusal, annotations: [] },
-      }],
-    }) as Partial<ChatCompletion>;
-    await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate(choice("stop", null, "refused")) }), "LIVRE_ROUTER_REFUSED");
-    await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate(choice("length", "{}")) }), "LIVRE_ROUTER_TRUNCATED");
-    await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate(choice("tool_calls", "{}")) }), "LIVRE_ROUTER_INVALID_RESPONSE");
+    await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate({ stop_reason: "refusal" }) }), "LIVRE_ROUTER_REFUSED");
+    await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate({ stop_reason: "max_tokens" }) }), "LIVRE_ROUTER_TRUNCATED");
+    await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate({ stop_reason: "pause_turn" }) }), "LIVRE_ROUTER_INVALID_RESPONSE");
     await rejectsWith(
-      runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate(choice("stop", "{")) }),
+      runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate({ content: [{ type: "text", text: "{" } as Anthropic.TextBlock] }) }),
       "LIVRE_ROUTER_INVALID_RESPONSE",
     );
     await rejectsWith(runLivreRouter({ transcript: "x", categories: [], config: routerConfig, client: fakeCreate(jsonText(ok)) }), "LIVRE_ROUTE_UNSUPPORTED");
   });
   await check("roteador: erro HTTP vira falha explícita (sem fallback)", async () => {
     const client = {
-      chat: {
-        completions: {
-          create: async () => {
-            throw new OpenAI.NotFoundError(404, { error: { message: "model", type: "not_found_error" } }, "model not found", new Headers());
-          },
+      messages: {
+        create: async () => {
+          throw new Anthropic.NotFoundError(404, { type: "error", error: { type: "not_found_error", message: "model" } }, "model not found", new Headers());
         },
       },
-    } as unknown as Pick<OpenAI, "chat">;
+    } as unknown as Pick<Anthropic, "messages">;
     await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client }), "LIVRE_ROUTER_FAILED");
   });
 
-  // ---------- Writer OpenAI (stream fake) ----------
+  // ---------- Writer Anthropic (stream fake) ----------
   await check("writer: stream concluído devolve texto + usage", async () => {
     const seen: { params?: unknown } = {};
     const { text, result } = await drain(
-      streamOpenAILivreWriter({ config: lunaConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["ULTRASSONOGRAFIA ", "DA TIREOIDE"], {}, seen) }),
+      streamAnthropicLivreWriter({ config: opusConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["ULTRASSONOGRAFIA ", "DA TIREOIDE"], {}, seen) }),
     );
     assert.equal(text, "ULTRASSONOGRAFIA DA TIREOIDE");
     assert.deepEqual(result, { inputTokens: 100, outputTokens: 20, cachedInputTokens: 0 });
-    const p = seen.params as Record<string, unknown> & { reasoning_effort: string };
-    assert.equal(p.reasoning_effort, "none");
+    const p = seen.params as Record<string, unknown> & { thinking: { type: string }; output_config: { effort: string } };
+    assert.equal(p.thinking.type, "adaptive");
+    assert.equal(p.output_config.effort, "low");
     assert.equal("temperature" in p, false);
   });
   await check("writer: recusa, truncamento e vazio falham explicitamente", async () => {
-    await rejectsWith(drain(streamOpenAILivreWriter({ config: lunaConfig, systemMessage: "s", userMessage: "u", client: fakeStream([], { refusal: true }) })), "LIVRE_WRITER_REFUSED");
-    await rejectsWith(drain(streamOpenAILivreWriter({ config: lunaConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["parcial"], { finishReason: "length" }) })), "LIVRE_WRITER_TRUNCATED");
-    await rejectsWith(drain(streamOpenAILivreWriter({ config: lunaConfig, systemMessage: "s", userMessage: "u", client: fakeStream([]) })), "LIVRE_WRITER_EMPTY");
+    await rejectsWith(drain(streamAnthropicLivreWriter({ config: opusConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["parcial"], { stop_reason: "refusal" }) })), "LIVRE_WRITER_REFUSED");
+    await rejectsWith(drain(streamAnthropicLivreWriter({ config: opusConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["parcial"], { stop_reason: "max_tokens" }) })), "LIVRE_WRITER_TRUNCATED");
+    await rejectsWith(drain(streamAnthropicLivreWriter({ config: opusConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["  "], {}) })), "LIVRE_WRITER_EMPTY");
   });
 
   // ---------- Metadata ----------
   await check("metadata: campos auditáveis, sem PHI, ida e volta na retomada", () => {
     const decision = interpretRouterOutput(ok, eligible, 0.8);
-    const meta = buildLivreRoutingMetadata({ decision, model: "gpt-6-luna" });
+    const meta = buildLivreRoutingMetadata({ decision, model: "claude-opus-5-5" });
     assert.equal(meta.requested_category, "LIVRE");
     assert.equal(meta.routed_category, "TIREOIDE");
     assert.equal(meta.routing_status, "routed");
     assert.equal(meta.routing_confidence, 0.95);
-    assert.equal(meta.routing_model, "gpt-6-luna");
-    assert.equal(meta.writer_provider, "openai");
-    assert.equal(meta.writer_model, "gpt-6-luna");
+    assert.equal(meta.routing_model, "claude-opus-5-5");
+    assert.equal(meta.writer_model, "claude-opus-5-5");
     // Só código/enum/número: nenhuma string livre do ditado.
     for (const value of Object.values(meta)) {
       if (typeof value === "string") assert.match(value, /^[A-Za-z0-9_.-]+$/);
@@ -382,7 +334,7 @@ async function main() {
     assert.equal(readPersistedLivreRouting({ ...meta, routed_category: "tireoide; drop" }), null);
     assert.equal(readPersistedLivreRouting({ pipeline_warnings: [] }), null);
     assert.equal(readPersistedLivreRouting(null), null);
-    const failed = buildLivreRoutingMetadata({ decision: null, model: "gpt-6-luna", errorCode: "LIVRE_ROUTER_REFUSED" });
+    const failed = buildLivreRoutingMetadata({ decision: null, model: "claude-opus-5-5", errorCode: "LIVRE_ROUTER_REFUSED" });
     assert.equal(failed.routing_status, "error");
     assert.equal(failed.routing_error_code, "LIVRE_ROUTER_REFUSED");
   });

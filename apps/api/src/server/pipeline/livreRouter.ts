@@ -2,8 +2,8 @@
  * LAUDO LIVRE ROTEADO — roteador de exame + contrato de auditoria.
  *
  * O médico escolhe "Livre" e dita. Com `route_free_category: true` e a flag
- * LIVRE_ROUTER_ENABLED, este roteador (GPT-6 Luna, saída estruturada e
- * reasoning desativado)
+ * LIVRE_ROUTER_ENABLED, este roteador (Claude Opus 5.5, saída estruturada e
+ * thinking adaptativo em esforço baixo)
  * identifica o exame entre as categorias elegíveis; a rota então gera com o
  * contrato/bundle dessa categoria, como se ela tivesse sido escolhida.
  *
@@ -17,13 +17,14 @@
  *  - Metadata persistida é só código/enum/número — nenhum trecho do ditado.
  */
 import { z } from "zod";
-import type OpenAI from "openai";
+import type Anthropic from "@anthropic-ai/sdk";
 import {
+  anthropic,
   assertLivreProviderConfigured,
+  effortParam,
   LivreRoutingError,
   toLivreFailure,
 } from "../ai/livreProvider";
-import { openai } from "../ai/openai";
 import { env } from "../env";
 import { clinicalRendererFallbackBlocked } from "../clinicalReports/fallbackPolicy";
 import type { GenerationPath } from "./generationPathResolver";
@@ -253,7 +254,7 @@ export type LivreRoutingMetadata = {
   routing_reason_code: RoutingReasonCode | null;
   routing_candidates: string[];
   routing_model: string;
-  writer_provider: "openai";
+  writer_provider: "anthropic";
   writer_model: string;
   routing_error_code?: string;
 };
@@ -273,7 +274,7 @@ export function buildLivreRoutingMetadata(args: {
     routing_reason_code: d?.reasonCode ?? null,
     routing_candidates: d?.candidates ?? [],
     routing_model: args.model,
-    writer_provider: "openai",
+    writer_provider: "anthropic",
     writer_model: args.model,
     ...(args.errorCode ? { routing_error_code: args.errorCode } : {}),
   };
@@ -308,7 +309,7 @@ export function readPersistedLivreRouting(metadata: unknown): LivreRoutingMetada
       : null,
     routing_candidates: [],
     routing_model: m.routing_model,
-    writer_provider: "openai",
+    writer_provider: "anthropic",
     writer_model: m.writer_model,
   };
 }
@@ -324,9 +325,9 @@ export function hasLivreRoutingMetadata(metadata: unknown): boolean {
 
 type RouterEnv = Pick<
   ReturnType<typeof env>,
-  | "OPENAI_API_KEY"
-  | "LIVRE_OPENAI_MODEL"
-  | "LIVRE_OPENAI_REASONING_EFFORT"
+  | "ANTHROPIC_API_KEY"
+  | "LIVRE_ANTHROPIC_MODEL"
+  | "LIVRE_ANTHROPIC_EFFORT"
   | "LIVRE_ROUTER_MIN_CONFIDENCE"
 >;
 
@@ -339,8 +340,8 @@ export async function runLivreRouter(args: {
   categories: RouterCategory[];
   signal?: AbortSignal;
   config?: RouterEnv;
-  /** Só para testes: substitui o cliente OpenAI. */
-  client?: Pick<OpenAI, "chat">;
+  /** Só para testes: substitui o cliente Anthropic. */
+  client?: Pick<Anthropic, "messages">;
 }): Promise<{ decision: LivreRoutingDecision; model: string; latencyMs: number; inputTokens?: number; outputTokens?: number }> {
   const config = args.config ?? env();
   const model = assertLivreProviderConfigured(config);
@@ -353,25 +354,21 @@ export async function runLivreRouter(args: {
   const t0 = Date.now();
   let response;
   try {
-    response = await (args.client ?? openai()).chat.completions.create(
+    response = await (args.client ?? anthropic()).messages.create(
       {
         model,
-        max_completion_tokens: 4096,
-        reasoning_effort: config.LIVRE_OPENAI_REASONING_EFFORT,
+        max_tokens: 4096,
+        thinking: { type: "adaptive" },
+        system: buildRouterSystemPrompt(args.categories),
         messages: [
-          { role: "system", content: buildRouterSystemPrompt(args.categories) },
           {
             role: "user",
             content: `<ditado>\n${args.transcript.trim()}\n</ditado>\n\nClassifique o exame deste ditado.`,
           },
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "livre_exam_route",
-            strict: true,
-            schema: routerJsonSchema(args.categories),
-          },
+        output_config: {
+          ...effortParam(config.LIVRE_ANTHROPIC_EFFORT),
+          format: { type: "json_schema", schema: routerJsonSchema(args.categories) },
         },
       },
       { signal: args.signal, timeout: 60_000 },
@@ -380,20 +377,22 @@ export async function runLivreRouter(args: {
     throw toLivreFailure(err, "LIVRE_ROUTER_FAILED");
   }
 
-  const choice = response.choices[0];
-  if (choice?.message?.refusal) {
+  if (response.stop_reason === "refusal") {
     throw new LivreRoutingError("LIVRE_ROUTER_REFUSED", "O roteador do Laudo Livre recusou o ditado.");
   }
-  if (choice?.finish_reason === "length") {
+  if (response.stop_reason === "max_tokens" || response.stop_reason === "model_context_window_exceeded") {
     throw new LivreRoutingError("LIVRE_ROUTER_TRUNCATED", "A resposta do roteador do Laudo Livre foi truncada.");
   }
-  if (choice?.finish_reason !== "stop") {
+  if (response.stop_reason !== "end_turn") {
     throw new LivreRoutingError(
       "LIVRE_ROUTER_INVALID_RESPONSE",
-      `O roteador do Laudo Livre terminou de forma inesperada (${choice?.finish_reason ?? "sem motivo"}).`,
+      `O roteador do Laudo Livre terminou de forma inesperada (${response.stop_reason ?? "sem motivo"}).`,
     );
   }
-  const text = choice.message.content ?? "";
+  const text = response.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("");
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -412,7 +411,7 @@ export async function runLivreRouter(args: {
     decision,
     model,
     latencyMs: Date.now() - t0,
-    inputTokens: response.usage?.prompt_tokens,
-    outputTokens: response.usage?.completion_tokens,
+    inputTokens: response.usage.input_tokens,
+    outputTokens: response.usage.output_tokens,
   };
 }

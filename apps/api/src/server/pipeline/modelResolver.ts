@@ -4,7 +4,7 @@ import { assertLivreProviderConfigured } from "../ai/livreProvider";
 export type GenerationMode = "standard" | "hard";
 
 export type WriterModelConfig = {
-  provider: "openai" | "openai-compat";
+  provider: "openai" | "openai-compat" | "anthropic";
   model: string;
   reasoningEffort: string;
   credentialRef: "default" | "teste" | "livre";
@@ -31,7 +31,7 @@ type ModelResolverEnv = Pick<
 
 type LivreWriterEnv = Pick<
   ReturnType<typeof env>,
-  "OPENAI_API_KEY" | "LIVRE_OPENAI_MODEL" | "LIVRE_OPENAI_REASONING_EFFORT"
+  "ANTHROPIC_API_KEY" | "LIVRE_ANTHROPIC_MODEL" | "LIVRE_ANTHROPIC_EFFORT"
 >;
 
 export class WriterModelResolutionError extends Error {
@@ -100,14 +100,14 @@ export function resolveWriterModel(
 /**
  * Writer da jornada LAUDO LIVRE ROTEADO: decidido pela ORIGEM (Livre), não
  * pela categoria detectada — a mesma categoria escolhida diretamente segue
- * em `resolveWriterModel`. Configuração ausente ou diferente de GPT-6 Luna
+ * em `resolveWriterModel`. Configuração ausente ou diferente de Claude Opus 5.5
  * lança erro explícito e nunca cai no writer padrão.
  */
 export function resolveLivreWriterModel(config: LivreWriterEnv = env()): WriterModelConfig {
   return {
-    provider: "openai",
+    provider: "anthropic",
     model: assertLivreProviderConfigured(config),
-    reasoningEffort: config.LIVRE_OPENAI_REASONING_EFFORT,
+    reasoningEffort: config.LIVRE_ANTHROPIC_EFFORT,
     credentialRef: "livre",
   };
 }

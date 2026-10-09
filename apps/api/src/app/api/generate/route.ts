@@ -310,7 +310,7 @@ export async function POST(req: Request) {
     const blockLivreRouting = async (routingErr: LivreRoutingError) => {
       livreRouting = {
         ...(livreRouting ??
-          buildLivreRoutingMetadata({ decision: null, model: env().LIVRE_OPENAI_MODEL })),
+          buildLivreRoutingMetadata({ decision: null, model: env().LIVRE_ANTHROPIC_MODEL })),
         routing_error_code: routingErr.code,
       };
       outcome = "blocked";
@@ -631,9 +631,9 @@ export async function POST(req: Request) {
 
         // ----- 1. Structurer (ou FAST-PATH determinístico) -----
         currentStage = "structurer";
-        // ----- 0b. LAUDO LIVRE ROTEADO: identifica o exame (GPT-6 Luna) -----
+        // ----- 0b. LAUDO LIVRE ROTEADO: identifica o exame (Claude Opus 5.5) -----
         // Todo resultado que não seja `routed` com categoria compatível BLOQUEIA
-        // com erro explícito — sem fallback para o prompt livre nem OpenAI.
+        // com erro explícito — sem fallback para o prompt livre nem writer padrão.
         if (livreRoutingRequested) {
           const transcript = reqInput.consolidated_transcript ?? reqInput.raw_input;
           try {
@@ -662,7 +662,7 @@ export async function POST(req: Request) {
             // Persiste a decisão ANTES do writer. Se o cliente desconectar no
             // meio do stream, o rascunho continua sabendo que nasceu em LIVRE
             // e deve retomar com a mesma categoria e o mesmo provedor, sem cair
-            // no writer direto/OpenAI por falta de metadata.
+            // no writer padrão por falta de metadata.
             await markReportStatus({
               reportId,
               status: "draft",
@@ -865,7 +865,7 @@ export async function POST(req: Request) {
       }
 
       // Livre roteado: writer puro do ditado cru com guards COMPLETOS e
-      // GPT-6 Luna pela origem Livre (modo hard não se aplica a esta jornada).
+      // Claude Opus 5.5 pela origem Livre (modo hard não se aplica a esta jornada).
       // A categoria escolhida diretamente mantém caminho e modelo atuais.
       const generationPath = livreRouting
         ? LIVRE_ROUTED_GENERATION_PATH
@@ -1683,7 +1683,7 @@ export async function POST(req: Request) {
       // A coluna e o estimador atuais são específicos da tabela de preços da
       // writer padrão. Na jornada Livre roteada, gravar esse número com a
       // tabela antiga produziria uma auditoria falsa; fica nulo até a
-      // auditoria ganhar os preços próprios do GPT-6 Luna.
+      // auditoria ganhar os preços próprios do Claude Opus 5.5.
       auditState.openaiCostUsd = livreRouting
         ? null
         : estimateCost(

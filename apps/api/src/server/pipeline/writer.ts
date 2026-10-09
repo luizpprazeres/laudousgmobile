@@ -7,7 +7,7 @@ import type {
 import { env } from "../env";
 import { resolveWriterExam } from "./requestedExam";
 import { prepareMorfologicoBlocks } from "../prompts/morfologicoTemplate";
-import { streamOpenAILivreWriter, writerClient, writerRequestParams } from "../ai/writerClient";
+import { streamAnthropicLivreWriter, writerClient, writerRequestParams } from "../ai/writerClient";
 import type { WriterModelConfig } from "./modelResolver";
 import { temperatureForCategory } from "./temperatureByCategory";
 import { buildSystemMessage } from "../prompts/buildSystemMessage";
@@ -148,10 +148,10 @@ export async function* runWriterStream(args: {
   };
   if (modelConfig.credentialRef === "livre") {
     // LAUDO LIVRE ROTEADO: mesmo prompt (contrato + bundle da categoria
-    // detectada), GPT-6 Luna sem reasoning. Falhas propagam sem cair no
+    // detectada), Claude Opus 5.5. Falhas propagam sem cair no
     // writer padrão.
     let full = "";
-    const gen = streamOpenAILivreWriter({
+    const gen = streamAnthropicLivreWriter({
       config: modelConfig,
       systemMessage,
       userMessage,

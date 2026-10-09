@@ -1,5 +1,7 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { env } from "../env";
+
+let _client: Anthropic | null = null;
 
 export type LivreFailureCode =
   | "LIVRE_PROVIDER_NOT_CONFIGURED"
@@ -33,7 +35,7 @@ export function isLivreRoutingError(err: unknown): err is LivreRoutingError {
 
 type LivreProviderEnv = Pick<
   ReturnType<typeof env>,
-  "OPENAI_API_KEY" | "LIVRE_OPENAI_MODEL"
+  "ANTHROPIC_API_KEY" | "LIVRE_ANTHROPIC_MODEL"
 >;
 
 /**
@@ -41,20 +43,47 @@ type LivreProviderEnv = Pick<
  * ativa fallback para o writer padrão nem para um modelo diferente.
  */
 export function assertLivreProviderConfigured(config: LivreProviderEnv = env()): string {
-  if (!config.OPENAI_API_KEY.trim()) {
+  if (!config.ANTHROPIC_API_KEY.trim()) {
     throw new LivreRoutingError(
       "LIVRE_PROVIDER_NOT_CONFIGURED",
-      "Laudo Livre roteado indisponível: provedor OpenAI não configurado.",
+      "Laudo Livre roteado indisponível: provedor Anthropic não configurado.",
     );
   }
-  const model = config.LIVRE_OPENAI_MODEL.trim();
-  if (model !== "gpt-6-luna") {
+  const model = config.LIVRE_ANTHROPIC_MODEL.trim();
+  if (model !== "claude-opus-5-5") {
     throw new LivreRoutingError(
       "LIVRE_PROVIDER_NOT_CONFIGURED",
-      `Laudo Livre roteado indisponível: modelo configurado (${model || "vazio"}) não é GPT-6 Luna.`,
+      `Laudo Livre roteado indisponível: modelo configurado (${model || "vazio"}) não é Claude Opus 5.5.`,
     );
   }
   return model;
+}
+
+export function anthropic(): Anthropic {
+  if (_client) return _client;
+  const e = env();
+  const workspaceId = e.ANTHROPIC_WORKSPACE_ID.trim();
+  _client = new Anthropic({
+    apiKey: e.ANTHROPIC_API_KEY,
+    maxRetries: 2,
+    ...(workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : {}),
+  });
+  return _client;
+}
+
+export function effortParam(
+  effort: string,
+): { effort: "low" | "medium" | "high" | "xhigh" | "max" } | undefined {
+  if (
+    effort === "low" ||
+    effort === "medium" ||
+    effort === "high" ||
+    effort === "xhigh" ||
+    effort === "max"
+  ) {
+    return { effort };
+  }
+  return undefined;
 }
 
 /** Converte falhas do SDK sem esconder cancelamentos do cliente. */
@@ -63,12 +92,12 @@ export function toLivreFailure(
   code: "LIVRE_ROUTER_FAILED" | "LIVRE_WRITER_FAILED",
 ): unknown {
   if (err instanceof LivreRoutingError) return err;
-  if (err instanceof OpenAI.APIUserAbortError) return err;
-  if (err instanceof OpenAI.APIError) {
+  if (err instanceof Anthropic.APIUserAbortError) return err;
+  if (err instanceof Anthropic.APIError) {
     const stage = code === "LIVRE_ROUTER_FAILED" ? "roteador" : "redator";
     return new LivreRoutingError(
       code,
-      `Falha do ${stage} OpenAI do Laudo Livre (HTTP ${err.status ?? "sem status"}).`,
+      `Falha do ${stage} Anthropic do Laudo Livre (HTTP ${err.status ?? "sem status"}).`,
     );
   }
   return err;
