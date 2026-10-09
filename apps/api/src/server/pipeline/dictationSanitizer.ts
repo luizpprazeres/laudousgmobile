@@ -66,8 +66,17 @@ function cleanup(s: string): string {
  * pontuação ditada, despedidas). Preserva 100% do conteúdo clínico e os
  * placeholders ____. Idempotente.
  */
+/**
+ * Negrito markdown (`**TÍTULO**`) que o writer Haiku 5.5 às vezes devolve. Laudo
+ * clínico nunca tem `**`; o asterisco simples das notas de rodapé do modelo fica.
+ */
+export function stripMarkdownBold(laudo: string): string {
+  return laudo.replace(/\*\*([^*\n]+?)\*\*/g, "$1").replace(/^\*\*\s*$/gm, "");
+}
+
 export function sanitizeDictationArtifacts(laudo: string): string {
   let s = laudo;
+  s = stripMarkdownBold(s);
   s = fixSpokenPunctuation(s);
   s = stripLeadingCommands(s);
   s = stripItemLabels(s);
