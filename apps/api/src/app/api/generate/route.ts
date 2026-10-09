@@ -310,7 +310,7 @@ export async function POST(req: Request) {
     const blockLivreRouting = async (routingErr: LivreRoutingError) => {
       livreRouting = {
         ...(livreRouting ??
-          buildLivreRoutingMetadata({ decision: null, model: env().LIVRE_HAIKU_MODEL })),
+          buildLivreRoutingMetadata({ decision: null, model: env().LIVRE_ANTHROPIC_MODEL })),
         routing_error_code: routingErr.code,
       };
       outcome = "blocked";
@@ -865,7 +865,7 @@ export async function POST(req: Request) {
       }
 
       // Livre roteado: writer puro do ditado cru com guards COMPLETOS e
-      // Haiku pela origem Livre (modo hard não se aplica a esta jornada).
+      // Sonnet 5.5 pela origem Livre (modo hard não se aplica a esta jornada).
       // A categoria escolhida diretamente mantém caminho e modelo atuais.
       const generationPath = livreRouting
         ? LIVRE_ROUTED_GENERATION_PATH
@@ -1683,7 +1683,7 @@ export async function POST(req: Request) {
       // A coluna e o estimador atuais são específicos da tabela de preços da
       // OpenAI. Na jornada Livre roteada, gravar esse número como se fosse
       // custo Anthropic produziria uma auditoria falsa; fica nulo até a
-      // auditoria ganhar provider + preços próprios do Haiku.
+      // auditoria ganhar provider + preços próprios do Sonnet.
       auditState.openaiCostUsd = livreRouting
         ? null
         : estimateCost(

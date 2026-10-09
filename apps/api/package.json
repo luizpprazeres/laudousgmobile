@@ -12,7 +12,7 @@
     "check:deepgram": "tsx --env-file=../../.env src/server/asr/__tests__/deepgram-saude.manual.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.128.0",
+    "@anthropic-ai/sdk": "0.132.1",
     "@apple/app-store-server-library": "3.1.0",
     "@laudousg/db": "workspace:*",
     "@laudousg/schemes": "workspace:*",

@@ -41,10 +41,10 @@ export function isLivreRoutingError(err: unknown): err is LivreRoutingError {
   return err instanceof LivreRoutingError;
 }
 
-type AnthropicEnv = Pick<ReturnType<typeof env>, "ANTHROPIC_API_KEY" | "LIVRE_HAIKU_MODEL">;
+type AnthropicEnv = Pick<ReturnType<typeof env>, "ANTHROPIC_API_KEY" | "LIVRE_ANTHROPIC_MODEL">;
 
 /**
- * Valida a configuração ANTES de qualquer chamada. A jornada é Haiku por
+ * Valida a configuração ANTES de qualquer chamada. A jornada é Sonnet 5.5 por
  * definição: outro modelo configurado é erro de configuração, não troca
  * silenciosa de família.
  */
@@ -55,11 +55,11 @@ export function assertLivreProviderConfigured(config: AnthropicEnv = env()): str
       "Laudo Livre roteado indisponível: provedor Anthropic não configurado.",
     );
   }
-  const model = config.LIVRE_HAIKU_MODEL.trim();
-  if (!/^claude-haiku-/.test(model)) {
+  const model = config.LIVRE_ANTHROPIC_MODEL.trim();
+  if (model !== "claude-sonnet-5-5") {
     throw new LivreRoutingError(
       "LIVRE_PROVIDER_NOT_CONFIGURED",
-      `Laudo Livre roteado indisponível: modelo configurado (${model || "vazio"}) não é Haiku.`,
+      `Laudo Livre roteado indisponível: modelo configurado (${model || "vazio"}) não é Sonnet 5.5.`,
     );
   }
   return model;

@@ -31,7 +31,7 @@ type ModelResolverEnv = Pick<
 
 type LivreWriterEnv = Pick<
   ReturnType<typeof env>,
-  "ANTHROPIC_API_KEY" | "LIVRE_HAIKU_MODEL" | "LIVRE_WRITER_EFFORT"
+  "ANTHROPIC_API_KEY" | "LIVRE_ANTHROPIC_MODEL" | "LIVRE_WRITER_EFFORT"
 >;
 
 export class WriterModelResolutionError extends Error {
@@ -100,7 +100,7 @@ export function resolveWriterModel(
 /**
  * Writer da jornada LAUDO LIVRE ROTEADO: decidido pela ORIGEM (Livre), não
  * pela categoria detectada — a mesma categoria escolhida diretamente segue
- * em `resolveWriterModel`. Configuração ausente/não-Haiku lança erro explícito
+ * em `resolveWriterModel`. Configuração ausente ou diferente de Sonnet 5.5 lança erro explícito
  * (nunca devolve o writer OpenAI).
  */
 export function resolveLivreWriterModel(config: LivreWriterEnv = env()): WriterModelConfig {

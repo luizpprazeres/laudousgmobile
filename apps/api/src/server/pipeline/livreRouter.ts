@@ -2,7 +2,8 @@
  * LAUDO LIVRE ROTEADO — roteador de exame + contrato de auditoria.
  *
  * O médico escolhe "Livre" e dita. Com `route_free_category: true` e a flag
- * LIVRE_ROUTER_ENABLED, este roteador (Anthropic Haiku, saída estruturada)
+ * LIVRE_ROUTER_ENABLED, este roteador (Anthropic Sonnet 5.5, saída estruturada
+ * e sem raciocínio antecipado)
  * identifica o exame entre as categorias elegíveis; a rota então gera com o
  * contrato/bundle dessa categoria, como se ela tivesse sido escolhida.
  *
@@ -325,7 +326,7 @@ export function hasLivreRoutingMetadata(metadata: unknown): boolean {
 type RouterEnv = Pick<
   ReturnType<typeof env>,
   | "ANTHROPIC_API_KEY"
-  | "LIVRE_HAIKU_MODEL"
+  | "LIVRE_ANTHROPIC_MODEL"
   | "LIVRE_ROUTER_EFFORT"
   | "LIVRE_ROUTER_MIN_CONFIDENCE"
 >;
@@ -358,6 +359,7 @@ export async function runLivreRouter(args: {
       {
         model,
         max_tokens: 4096,
+        thinking: { type: "between_tools" },
         system: buildRouterSystemPrompt(args.categories),
         messages: [
           {

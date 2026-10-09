@@ -61,8 +61,9 @@ export function writerRequestParams(args: {
 
 /**
  * Writer Anthropic (LAUDO LIVRE ROTEADO). Mesmo system/user message do writer
- * OpenAI; só muda o provedor. Sem `temperature` (Haiku 5.5 recusa sampling
- * fora do default). O texto é emitido conforme chega; o desfecho é validado
+ * OpenAI; só muda o provedor. Sonnet 5.5 recebe `between_tools`, que desliga o
+ * raciocínio antes da resposta. Como esta chamada não usa tools, ela retorna
+ * apenas texto. Sem `temperature`. O texto é emitido conforme chega; o desfecho é validado
  * no fim — recusa, truncamento ou laudo vazio lançam `LivreRoutingError`, e a
  * rota NÃO finaliza o report nesses casos.
  */
@@ -82,6 +83,7 @@ export async function* streamAnthropicWriter(args: {
       {
         model: args.config.model,
         max_tokens: 16000,
+        thinking: { type: "between_tools" },
         // System = contrato + bundle da categoria: prefixo estável por
         // (categoria × estilo), cacheável como no writer OpenAI (DET-1).
         system: [{ type: "text", text: args.systemMessage, cache_control: { type: "ephemeral" } }],
