@@ -22,6 +22,34 @@ Status: **InProgress** · Branch base: `feat/haiku-migration` · Orquestrador: C
 6. Revisão de alta prioridade, pela bancada via assinatura, para propor melhorias nos renderers
    determinísticos e nos prompts de base.
 
+## Decisões do Dr. Luiz (09/10, noite) — datação e gestação inicial
+
+7. Só IG de referência (sem biometria) → a conclusão usa a de referência.
+8. A frase da datação passa a ser ESCOLHA do médico, não limiar: `biometria` ("Gestação em torno de X."),
+   `us_precoce` ("Gestação em torno de X, corrigida pela ultrassonografia precoce.") ou `biometria_e_us_precoce`
+   ("… pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com Y."). Web: caixas de
+   seleção (padrão: só biometria). Ditado (mobile): 1ª US disponível → corrigida; senão biometria; "relacionar" no
+   ditado → as duas. Detalhes: `haiku-migration/W5-…` (backend) e `W6-…` (web).
+9. Gestação inicial sem embrião: "Embrião ainda não visualizado." / "Embrião e vesícula vitelínica ainda não
+   visualizados."; conclusão "Gestação inicial." + "Convém realizar nova ultrassonografia no prazo de duas semanas, com
+   o objetivo de acompanhar a evolução."
+
+Correção de premissa (09/10): 14/10/2026 é a aposentadoria do gpt-4.1/4.1-mini no **Azure**; na API direta da OpenAI
+não há data publicada. A migração não tem prazo duro.
+
+## Decisões do Dr. Luiz (09/10, noite — 2)
+
+10. gpt-4.1 removido de vez. MSK, carótidas e pelve → **Claude Sonnet 5.5** (writer dedicado no MSK/pelve; genérico nas
+    carótidas), por configuração; teste Haiku × Sonnet no MSK para o Luiz escolher (W8).
+11. Hipótese diagnóstica: padrão da casa **"que tem como diagnóstico mais provável …"**.
+12. Mama: normal = BI-RADS 1; sem menção às axilas = exame só das mamas (título, corpo e conclusão sem axilas).
+13. Tireoide: tabela de Domingos do Luiz (W7); "com áreas anecoicas" = 1 ponto. (Divergência a confirmar: mensagem diz
+    "isoecoica sem áreas = 3", tabela diz isoecoica = 2.)
+14. Parede: diástase só > 2 cm.
+
+Frentes novas: W7 regras da casa (terminal W3), W8 MSK Haiku × Sonnet (terminal W4, antes da W6), W1 rodada 3 (Sonnet +
+guard de comandos por laudo).
+
 ## Tabela de roteamento alvo
 
 | Grupo | Categorias | Caminho | Modelo |
@@ -68,6 +96,11 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [ ] W2 extração obstétrica (datação/vitalidade) + bancada obstétrica refeita — 1ª entrega revisada; regra de IG do briefing estava errada (ig_semanas é a IG da biometria), correção pedida
 - [x] W3 prompt corpo descritivo + 4 defeitos do renderer do abdome (integrado em `eabc290f`)
 - [ ] W4 revisão por bancada + propostas priorizadas
+- [ ] W5 datação escolhida + gestação inicial sem embrião (backend)
+- [ ] W6 web: caixas de seleção da datação
+- [ ] W7 regras da casa (prompt "diagnóstico mais provável", mama, Domingos, parede, rim ausente nas vias)
+- [ ] W8 MSK Haiku × Sonnet (assinatura) para o Luiz escolher
+- [ ] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo)
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
 
