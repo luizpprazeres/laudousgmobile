@@ -81,7 +81,7 @@ async function main() {
   const variantes: Record<string, number> = {};
   for (const r of rows.filter((x) => x.cat === "PELVE_FEMININA")) {
     const b = await loadDeterministicBundle({ categoryCode: "PELVE_FEMININA", writingStyleId: r.writing_style_id, rawInput: r.d ?? "" });
-    const k = b.error ? `${b.error.code} ${(b.error as { variantTag?: string }).variantTag ?? ""}` : `ok ${b.variantKey}`;
+    const k = b.error ? `${b.error.code} ${(b.error as { variantTag?: string }).variantTag ?? ""}` : `ok ${"variantKey" in b ? b.variantKey : "?"}`;
     variantes[k] = (variantes[k] ?? 0) + 1;
   }
   console.log("\n5. PELVE_FEMININA no writer genérico — variante do bundle:");
