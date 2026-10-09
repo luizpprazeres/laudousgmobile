@@ -2,6 +2,7 @@ import { env } from "../env";
 import { DOPPLER_HEPATICO_JSON_SCHEMA, DOPPLER_HEPATICO_EXTRACTION_PROMPT, HepaticDopplerExtractionSchema } from "./categories/DOPPLER_HEPATICO";
 import { normalizeAsrClinical } from "../pipeline/asrClinical";
 import { extractionTarget, llmJson } from "../ai/llm";
+import { cleanExtractionMetatext } from "./extractionMetatext";
 import { DOPPLER_MODULE_EXTRACTION_RULES } from "./categories/dopplerObstetricoModule";
 // Esquema visual venoso (DESENHO): schema per-segmento vindo do pacote
 // @laudousg/schemes. É SEPARADO do writer DOPPLER_VENOSO_MMII (texto do laudo) —
@@ -492,7 +493,13 @@ export async function runRendererExtraction(args: {
   const outputTokens = usage.outputTokens;
 
   if (!raw) throw new Error("renderer extraction: resposta vazia");
-  const findings = extractor.parse(withPlainChoice(JSON.parse(raw)));
+  // Metatexto do extrator nos campos livres (o renderer os cola no laudo) sai
+  // antes do render — ver renderer/extractionMetatext.ts.
+  const { value: cleaned, changed } = cleanExtractionMetatext(JSON.parse(raw), jsonSchema);
+  if (changed.length > 0) {
+    console.warn(`[extraction ${args.categoryCode}] metatexto removido de ${changed.length} campo(s): ${changed.map((c) => c.split(":")[0]).join(", ")}`);
+  }
+  const findings = extractor.parse(withPlainChoice(cleaned));
 
   return { findings, latencyMs: Date.now() - t0, inputTokens, outputTokens };
 }

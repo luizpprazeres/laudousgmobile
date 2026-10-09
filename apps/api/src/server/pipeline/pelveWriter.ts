@@ -8,6 +8,7 @@
  * Flag `PELVE_WRITER` (default OFF). Guard de formato reusa o do MSK (cabeçalhos iguais).
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
+import { cleanWriterOutput, WRITER_OUTPUT_RULE } from "./writerOutputGuard";
 import { env } from "../env";
 import { buildPelveWriterSystemMessage } from "../renderer/categories/PELVE_FEMININA";
 import { PELVE_FEWSHOTS } from "../renderer/categories/pelveFewshots";
@@ -43,7 +44,7 @@ export async function* runPelveWriterStream(args: {
   // Haiku (a 0.2 só vale no rollback OpenAI).
   const gen = llmTextStream({
     target,
-    system: buildPelveWriterSystemMessage(),
+    system: `${buildPelveWriterSystemMessage()}\n\n${WRITER_OUTPUT_RULE}`,
     messages: [
       ...fewshotMsgs,
       { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
@@ -70,7 +71,7 @@ export async function* runPelveWriterStream(args: {
   }
 
   // Guard de formato determinístico (cabeçalhos canônicos, bullets, espaços).
-  let fullText = normalizeMskWriterFormat(full);
+  let fullText = normalizeMskWriterFormat(cleanWriterOutput(full).text);
 
   // Fact-audit determinístico: streama otimista, audita DEPOIS; falha → anexa [REVISAR].
   const audit = auditPelveFacts(args.rawInput, fullText);

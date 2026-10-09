@@ -5,6 +5,7 @@ import { openai } from "./openai";
 import { LivreRoutingError, toLivreFailure, type LivreFailureCode } from "./livreProvider";
 import { llmTextStream, LlmOutputError, type LlmFailureCode, type LlmUsage } from "./llm";
 import type { WriterModelConfig } from "../pipeline/modelResolver";
+import { WRITER_OUTPUT_RULE } from "../pipeline/writerOutputGuard";
 
 let testeClient: OpenAI | null = null;
 
@@ -70,7 +71,7 @@ export async function* streamAnthropicWriter(args: {
   try {
     return yield* llmTextStream({
       target: { provider: "anthropic", model: args.config.model, effort: args.config.reasoningEffort },
-      system: args.systemMessage,
+      system: `${args.systemMessage}\n\n${WRITER_OUTPUT_RULE}`,
       messages: [{ role: "user", content: args.userMessage }],
       maxTokens: args.maxTokens,
       signal: args.signal,

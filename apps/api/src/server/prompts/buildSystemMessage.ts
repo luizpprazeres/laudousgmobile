@@ -73,6 +73,13 @@ export function buildSystemMessage(args: {
    * Acrescenta um bloco ao fim do prompt; não substitui nem desliga nada.
    */
   hardening?: boolean;
+  /**
+   * De onde vêm os dados clínicos no user message: "structured" (achados JSON,
+   * default — texto de sempre) ou "raw" (fast-path: o DITADO DO MÉDICO cru). Com o
+   * texto estruturado num caso de ditado cru o Haiku via contradição e recusava
+   * ditado curto de normalidade (achado do W4).
+   */
+  inputMode?: "structured" | "raw";
   hasAnexial?: boolean;
   hasPlacenta?: boolean;
   hasHashimoto?: boolean;
@@ -163,9 +170,9 @@ export function buildSystemMessage(args: {
       "EXEMPLOS DE LAUDOS (few-shots — APENAS referência de ESTILO, FORMATO e ESTRUTURA).\n" +
         "REGRAS ABSOLUTAS sobre estes exemplos:\n" +
         "- NUNCA copie diagnóstico, medidas, lateralidade, conclusão, datas, percentis ou QUALQUER dado clínico dos exemplos.\n" +
-        "- NUNCA mencione achados que estejam APENAS nos exemplos e não estejam nos ACHADOS ESTRUTURADOS do médico.\n" +
+        `- NUNCA mencione achados que estejam APENAS nos exemplos e não estejam ${clinicalSourceRef(args.inputMode, "nos")}.\n` +
         "- Use só para calibrar tom, ordem de seções, vocabulário e nível de detalhe.\n" +
-        "- Os dados clínicos vêm EXCLUSIVAMENTE da seção ACHADOS ESTRUTURADOS no user message.\n\n" +
+        `- Os dados clínicos vêm EXCLUSIVAMENTE ${clinicalSourceRef(args.inputMode, "da")} no user message.\n\n` +
         fewShots
           .map((b) => `--- ${b.title} ---\n${b.content}`)
           .join("\n\n"),
@@ -186,6 +193,12 @@ export function buildSystemMessage(args: {
   if (plainObstetrica) sections.push(OBSTETRICA_PLAIN_WRITER_POLICY);
 
   return sections.join("\n\n") + (isolated ? "" : requestedExamInstruction(writerExam.categoryCode, writerExam.dopplerMode));
+}
+
+/** Nome da seção que traz os dados clínicos no user message, por modo de entrada. */
+function clinicalSourceRef(inputMode: "structured" | "raw" | undefined, prep: "nos" | "da"): string {
+  if (inputMode === "raw") return prep === "nos" ? "no DITADO DO MÉDICO" : "do DITADO DO MÉDICO (achados + instruções)";
+  return prep === "nos" ? "nos ACHADOS ESTRUTURADOS do médico" : "da seção ACHADOS ESTRUTURADOS";
 }
 
 function formatRagSection(blocks: RagBlockForPrompt[]): string {

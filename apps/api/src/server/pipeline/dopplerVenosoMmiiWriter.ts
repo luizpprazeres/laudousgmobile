@@ -4,6 +4,7 @@
  * membership em RENDERER_CATEGORIES. Guard de formato reusa o do MSK.
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
+import { cleanWriterOutput, WRITER_OUTPUT_RULE } from "./writerOutputGuard";
 import { env } from "../env";
 import { buildDopplerVenosoMmiiWriterSystemMessage } from "../renderer/categories/DOPPLER_VENOSO_MMII";
 import { DOPPLER_VENOSO_MMII_FEWSHOTS } from "../renderer/categories/dopplerVenosoMmiiFewshots";
@@ -42,7 +43,7 @@ export async function* runDopplerVenosoMmiiWriterStream(args: {
   // Haiku (a 0.2 só vale no rollback OpenAI).
   const gen = llmTextStream({
     target,
-    system: buildDopplerVenosoMmiiWriterSystemMessage(),
+    system: `${buildDopplerVenosoMmiiWriterSystemMessage()}\n\n${WRITER_OUTPUT_RULE}`,
     messages: [
       ...fewshotMsgs,
       { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
@@ -68,7 +69,7 @@ export async function* runDopplerVenosoMmiiWriterStream(args: {
     }
   }
 
-  let fullText = normalizeMskWriterFormat(full);
+  let fullText = normalizeMskWriterFormat(cleanWriterOutput(full).text);
 
   const audit = auditDopplerVenosoFacts(args.rawInput, fullText);
   const nota = dopplerVenosoRevisarNote(audit);

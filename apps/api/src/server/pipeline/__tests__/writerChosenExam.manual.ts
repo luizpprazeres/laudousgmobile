@@ -9,6 +9,8 @@
 import assert from "node:assert/strict";
 import { LlmOutputError } from "../../ai/llm";
 import { buildRawUserMessage, runWriterStream } from "../writer";
+import { buildSystemMessage } from "../../prompts/buildSystemMessage";
+import { WRITER_OUTPUT_RULE } from "../writerOutputGuard";
 import type { WriterModelConfig } from "../modelResolver";
 
 let passed = 0;
@@ -103,6 +105,42 @@ async function main() {
         /recusou escrever este laudo/.test(err.message) &&
         /general_harms/.test(err.message),
     );
+  });
+
+  const EXEMPLO = [{ id: "ex1", kind: "exemplo", title: "Exemplo", content: "Laudo de exemplo.", priority: 1, tags: [] }] as any;
+  const STRUCTURED_LINES = [
+    "- NUNCA mencione achados que estejam APENAS nos exemplos e não estejam nos ACHADOS ESTRUTURADOS do médico.",
+    "- Os dados clínicos vêm EXCLUSIVAMENTE da seção ACHADOS ESTRUTURADOS no user message.",
+  ];
+  await check("system: caso estruturado mantém o texto de sempre", () => {
+    const sys = buildSystemMessage({ categoryCode: "TIREOIDE", categoryLabel: "Tireoide", writingStyleCode: "CLASSICO_COMPLETO", ragBlocks: EXEMPLO });
+    for (const line of STRUCTURED_LINES) assert.ok(sys.includes(line), line);
+    assert.equal(sys.includes("DITADO DO MÉDICO"), false);
+  });
+  await check("system + writer: no fast-path a fonte dos dados é o DITADO DO MÉDICO; saída limpa e regra de saída no Haiku", async () => {
+    const seen: any[] = [];
+    const gen = runWriterStream({
+      findings: { categoria_detectada: "CERVICAL" } as any,
+      ragBlocks: EXEMPLO,
+      writingStyleCode: "CLASSICO_COMPLETO",
+      categoryCode: "CERVICAL",
+      categoryLabel: "Cervical",
+      rawUserMessage: NORMAL,
+      sourceTranscript: NORMAL,
+      modelConfig: HAIKU_DEFAULT,
+      anthropicClient: fakeClient("**ULTRASSONOGRAFIA CERVICAL**\n\nCONCLUSÃO:\nNormal.\n\nObs. para revisão: o ditado foi curto.", "end_turn", seen),
+    });
+    let result: any;
+    for (;;) {
+      const n = await gen.next();
+      if (n.done) { result = n.value; break; }
+    }
+    const system: string = seen[0].system[0].text;
+    assert.ok(system.includes("- Os dados clínicos vêm EXCLUSIVAMENTE do DITADO DO MÉDICO (achados + instruções) no user message."));
+    assert.ok(system.includes("- NUNCA mencione achados que estejam APENAS nos exemplos e não estejam no DITADO DO MÉDICO."));
+    for (const line of STRUCTURED_LINES) assert.equal(system.includes(line), false, line);
+    assert.ok(system.endsWith(WRITER_OUTPUT_RULE));
+    assert.equal(result.fullText, "ULTRASSONOGRAFIA CERVICAL\n\nCONCLUSÃO:\nNormal.");
   });
 
   console.log(`\nwriterChosenExam: ${passed}/${passed + failed} passed`);

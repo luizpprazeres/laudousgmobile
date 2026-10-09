@@ -2,7 +2,8 @@
 
 Branch `feat/haiku-motor` · 09/10/2026 · Claude Code (Opus 5.5)
 Commits: `109dd941` motor · `a073004a` visão/consultor/testes · `6bc4697e` bancada · `cc075d51` exame no writer +
-recusa clara (achado do W4) · (este relatório + negrito markdown)
+recusa clara (achado do W4) · `06ff113f` relatório + negrito markdown · **rodada 2:** `b163387c` metatexto do
+extrator, saída dos writers, system do ditado cru (+ este relatório)
 
 ## Resumo para o Luiz
 
@@ -21,6 +22,69 @@ recusa clara (achado do W4) · (este relatório + negrito markdown)
   estrita + validação do nosso schema + uma tentativa de correção). Funciona nos testes e na bancada, mas
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
+
+## Rodada 2 (após integração do W3) — achados do W4 nos textos do Haiku
+
+Commit `b163387c` (sobre o merge de `feat/haiku-migration`, `07d29655`).
+
+**1. Metatexto do extrator nos campos livres** (W4: 11/67 saídas; gpt-4.1-mini 0). O renderer cola esses campos no
+laudo; o Haiku escrevia ali "Conclusão do médico: …", "conforme conclusão do médico", "não cabem no esquema",
+"ditado ilegível… conferir com o médico", "(ditado com repetição; confirmar)".
+- Prevenção: `EXTRACTION_TEXT_RULE` anexada pelo motor (`ai/llm.ts`) ao system de **toda** extração — prompts por
+  categoria intactos. A sanity desliga (`reportText: false`), porque os campos dela são comentário por natureza.
+- Guard determinístico `renderer/extractionMetatext.ts`, antes do render (extração do renderer, free-slots e
+  extrator hepático), guiado pelo schema: rótulo e cláusula de metatexto saem e o conteúdo clínico fica
+  ("Litíase vesical, conforme conclusão do médico." → "Litíase vesical."; "Índices de resistividade (IR) ditados,
+  não cabem no esquema: CCA D 0,74…" → "Índices de resistividade (IR): CCA D 0,74…"); a frase inteira só sai quando é
+  comentário sobre o ditado ("Ditado com trechos incompreensíveis…"); enum nunca é tocado; campo que esvazia vira
+  `null` onde o schema permite; `medida_invalida` (texto cru por contrato, o renderer marca `[?]`) fica com o trecho
+  citado do ditado. Remoções vão ao log (`[extraction X] metatexto removido…`).
+- Efeito colateral medido: um aviso útil do modelo ("medidas ilegíveis — conferir") também sai do texto. O lugar
+  dele seria o card de pendências (sanity), não o laudo — fica como proposta.
+- Teste `renderer/__tests__/extraction-metatext.manual.ts` 10/10 (casos reais do W4 + negativos clínicos).
+
+**2. Saída dos writers dedicados** (W4, PELVE/MSK cenário A: markdown em 11/22 e bloco do modelo depois da conclusão
+em 11/22 — "**Pontos para conferir antes de assinar:**", "Obs. para revisão: o ditado…", "Observações:
+Interpretei…", e também "**Observação antes do laudo:**" antes do título).
+- `pipeline/writerOutputGuard.ts` → `cleanWriterOutput`, comum a **todos** os writers (MSK, pelve, partes moles,
+  Doppler renal e venoso, antes do `normalizeMskWriterFormat` e das auditorias; writer completo e Livre no texto
+  final). Tira negrito `**`, títulos `#`, crases, separadores `---` e o bloco de comentário (cabeçalho de comentário
+  **e** marca de metatexto: "o ditado", "interpretei", "usei", "confirme"…).
+- Fica: observação clínica do modelo curado ("Observação: a avaliação por via transabdominal possui limitações…"),
+  rodapés BI-RADS e Domingos/ACR (asterisco simples), `[REVISAR: …]` das auditorias e `____`. Pego no teste: tratar
+  `__negrito__` destruía o placeholder `____` — descartado.
+- Linha de prompt `WRITER_OUTPUT_RULE` no system de todo writer Haiku (sem markdown; nada depois da conclusão; dúvida
+  real vira `[REVISAR: …]` no ponto do laudo).
+- O stream ao vivo ainda mostra o texto cru; o `done.final_text` (o que é salvo) vem limpo.
+- Teste `pipeline/__tests__/writerOutputGuard.manual.ts` 8/8.
+
+**3. System do writer completo × ditado cru.** `prompts/buildSystemMessage.ts:166-168` dizia que os dados vêm
+"EXCLUSIVAMENTE da seção ACHADOS ESTRUTURADOS", mas o fast-path manda "=== DITADO DO MÉDICO ===". O builder ganhou
+`inputMode`; com ditado cru, o texto passa a "do DITADO DO MÉDICO (achados + instruções)". O caso estruturado é
+byte-idêntico (teste). Observação: essas linhas só existem quando o bundle tem few-shots (`exemplo`) — hoje só
+DOPPLER_CAROTIDAS; a recusa da CERVICAL vista pelo W4 vinha principalmente da falta do exame na mensagem, já
+corrigida em `cc075d51`.
+
+Bancada pedida — cenário B (writer completo Haiku, pela assinatura, bundle real, estilo clássico), ditado
+"Exame sem alterações dignas de nota." (`scripts/bench-haiku/normal-curto.ts CERVICAL,TIREOIDE`; saída
+`tmp-review/bench-haiku/normal-curto-2026-10-09T22-31-45.json`). "Antes" = mensagem antiga (sem o exame) com o
+system novo; "depois" = `runWriterStream` de produção (exame + system alinhado + regra e guard de saída):
+
+| Categoria | Antes | Depois (texto final) | Markdown no final |
+|---|---|---|---|
+| CERVICAL | laudo normal | laudo normal completo (níveis IA–VI sem alterações; conclusão "Ausência de alterações detectáveis pelo método") | não |
+| TIREOIDE | laudo normal (na rodada 1 o braço sem exame **não** escrevia) | laudo normal com `____` nas medidas e a nota Domingos/ACR do modelo | não |
+
+Uma amostra por braço — prova do mecanismo, não estatística. **Achado novo**: no TIREOIDE "depois" o próprio
+modelo omitiu a linha "COMENTÁRIOS:" (o texto cru já veio sem ela; o guard não remove cabeçalho do laudo). Proposta
+para W3/W4: guard determinístico dos cabeçalhos obrigatórios do modelo da categoria (o MSK já tem o equivalente em
+`normalizeMskWriterFormat`) e conferir a taxa na bancada maior.
+
+Regressão: llm 23/23, writerChosenExam 5/5, writers dedicados (renal 37, venoso 16, MSK 10+6+16, partes moles 14+24,
+pelve 18+27), fail-closed 41/41, modelResolver 42/42, livreRouter 18/18, hepático 34, clinical-models, abdomen
+corpo descritivo (W3), sanitizador 19/19. Replay R: abdome 8/11 idênticos à produção — as 3 diferenças são o corpo
+descritivo do W3 ("compatível com cisto simples/cálculo" saiu do corpo), não o guard; obstétrica 16/46, igual à
+rodada 1.
 
 ## Achado do W4 — writer recusava ditado curto de normalidade (corrigido)
 
@@ -231,6 +295,9 @@ de produção atual (writer dedicado da pelve) agora também é Haiku. A bancada
 - `apps/api/src/server/pipeline/{writer,structurer,sanityCheck,commandInterpreter,editReport,renderer,modelResolver,generationPathResolver,caminhoDeGeracao,dictationSanitizer}.ts`
 - `apps/api/src/server/pipeline/{mskWriter,pelveWriter,partesMolesWriter,dopplerRenalWriter,dopplerVenosoMmiiWriter,dopplerHepaticoWriter}.ts`
 - `apps/api/src/server/renderer/extraction.ts`, `vision/client.ts`
+- Rodada 2: `renderer/extractionMetatext.ts` (novo), `pipeline/writerOutputGuard.ts` (novo),
+  `prompts/buildSystemMessage.ts`, `renderer/__tests__/extraction-metatext.manual.ts` (novo),
+  `pipeline/__tests__/writerOutputGuard.manual.ts` (novo)
 - `apps/api/src/app/api/generate/route.ts`, `app/api/consultant/route.ts`, `app/api/admin/prompt-preview/route.ts`
 - `apps/api/src/server/pipeline/__tests__/{modelResolver,livreRouter}.manual.ts`,
   `pipeline/__tests__/{writerChosenExam (novo),dictationSanitizer}.manual.ts`,
