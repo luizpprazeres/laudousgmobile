@@ -206,9 +206,25 @@ globalThis.fetch = (async (input: any, init?: any) => {
       body.tools?.[0]?.name ?? (schema ? ((schema as any).properties?.itens ? "FreeSlots" : "strict") : null);
     const systemRaw = (Array.isArray(body.system) ? body.system.map((b: any) => b.text).join("\n\n") : String(body.system ?? "")).replace(TOOL_DELIVERY_RE, "");
     const system = c.promptPatch && !schema ? patchCorpoDescritivo(systemRaw) : systemRaw;
-    // Só o texto dos turnos do usuário (few-shots em turnos de assistente ficam de fora, como antes).
-    const user = (body.messages ?? []).filter((m: any) => m.role === "user").map((m: any) => textOfContent(m.content)).filter(Boolean).join("\n\n");
-    return anthropicResponse(body, await answer(c, { system, user, schema, schemaName, model: body.model }));
+    // `claude -p` recebe um system e UM turno: os pares de few-shot (user/assistant,
+    // writers dedicados) viram exemplos no system e só o último turno do usuário é
+    // o ditado. Juntar todos os turnos do usuário misturava os ditados dos
+    // exemplos com o real (o modelo escrevia o laudo do 1º exemplo).
+    const msgs: any[] = body.messages ?? [];
+    const lastUser = [...msgs].reverse().find((m) => m.role === "user");
+    const shots: string[] = [];
+    for (let i = 0; i + 1 < msgs.length; i += 1) {
+      if (msgs[i] === lastUser) break;
+      if (msgs[i].role === "user" && msgs[i + 1]?.role === "assistant") {
+        shots.push(`### Exemplo ${shots.length + 1}\nENTRADA:\n${textOfContent(msgs[i].content)}\n\nSAÍDA ESPERADA:\n${textOfContent(msgs[i + 1].content)}`);
+        i += 1;
+      }
+    }
+    const systemWithShots = shots.length
+      ? `${system}\n\nEXEMPLOS (entrada → saída esperada; só referência de estilo):\n\n${shots.join("\n\n")}`
+      : system;
+    const user = textOfContent(lastUser?.content ?? "");
+    return anthropicResponse(body, await answer(c, { system: systemWithShots, user, schema, schemaName, model: body.model }));
   }
 
   const systemRaw = body.messages?.find((m: any) => m.role === "system")?.content ?? "";

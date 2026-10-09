@@ -6,8 +6,8 @@
  * Anthropic; qualquer outro → OpenAI. Esse é o caminho de rollback por env
  * (ex.: `LLM_WRITER_MODEL=gpt-5.4-mini`), sem deploy de código.
  *
- * A família gpt-4.1 sai da API da OpenAI em 14/10/2026. Nenhuma configuração
- * pode cair nela: um valor antigo esquecido numa env vira Haiku com aviso no log
+ * A família gpt-4.1 foi removida por decisão do Luiz (09/10/2026). Nenhuma
+ * configuração pode cair nela: um valor antigo esquecido numa env vira Haiku com aviso no log
  * (preferimos laudo saindo a laudo quebrando por uma env velha).
  *
  * Haiku 5.5 (ver skill claude-api): sem `temperature` (400), thinking adaptativo
@@ -87,7 +87,7 @@ export function providerForModel(model: string): LlmProvider {
 export function llmTarget(model: string | undefined, effort: string, label = "llm"): LlmTarget {
   let m = (model ?? "").trim() || HAIKU_MODEL;
   if (isRetiredModel(m)) {
-    console.warn(`[${label}] modelo ${m} aposentado (sai da API em 14/10/2026); usando ${HAIKU_MODEL}.`);
+    console.warn(`[${label}] modelo ${m} removido por decisão de 09/10/2026; usando ${HAIKU_MODEL}.`);
     m = HAIKU_MODEL;
   }
   return { provider: providerForModel(m), model: m, effort: effort.trim() || "medium" };
