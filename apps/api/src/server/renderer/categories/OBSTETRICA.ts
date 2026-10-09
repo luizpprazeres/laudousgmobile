@@ -464,7 +464,9 @@ REGRAS:
    campo estruturado tipo "IG pela biometria: 26s" (que perde os dias).
 7. dum: data da última menstruação como DD/MM/AAAA (converta extenso → numérico).
 7b. ÉPICO IG — referência precoce (só quando DITADO; senão null):
-   - data_exame: data do exame / "hoje" (DD/MM/AAAA), se o médico disser.
+   - data_exame: SOMENTE quando uma DATA do exame for explicitamente ditada
+     (DD/MM/AAAA ou "dia X de mês", sem inventar componentes ausentes).
+     "Hoje com N semanas" não é data; nunca usar a data atual do sistema/CLI.
    - primeira_us_data + primeira_us_ig_semanas/dias: "primeira ultrassonografia/US
      realizada em DD/MM com X semanas e Y dias" (a IG NAQUELA data, não a de hoje).
    - ig_referencia_hoje_semanas/dias: quando o médico já dá a IG da referência
@@ -476,6 +478,9 @@ REGRAS:
    - corrigir_ig: true se o médico mandar corrigir/correlacionar ("corrija pela
      primeira US", "correlacione com a DUM"); false se disser para NÃO corrigir
      ("manter a biometria", "não corrigir"); null se não mencionar.
+   - "N semanas" sem dias: dias = 0 em ig_dias, primeira_us_ig_dias e
+     ig_referencia_hoje_dias, quando houver semanas ditadas para o respectivo
+     campo. Sem IG ditada, não preencher semanas/dias.
    - NUNCA invente datas/IG de referência. Tudo null no exame obstétrico comum.
 8. corionicidade (gemelar): texto ditado ("dicoriônica e diamniótica",
    "monocoriônica e diamniótica"...). null se único.
@@ -529,6 +534,9 @@ para o valor mais parecido.
 15. fetos[].bcf_alteracao — alteração da vitalidade DAQUELE feto:
     - "ausente": batimentos não visualizados, óbito fetal, feto sem vitalidade,
       sem atividade cardíaca, feto morto. Nesse caso bcf_bpm é null.
+      "Sem vitalidade"/"BCF ausente" NÃO significa embrião não visualizado:
+      CCN ou embrião descrito significa embrião visualizado; preserve o CCN
+      e registre a ausência de vitalidade em bcf_alteracao="ausente".
     - "bradicardia" / "taquicardia": o médico NOMEOU a alteração. Um BCF baixo
       ou alto SEM o médico nomear NÃO vira alteração — deixe null e registre só
       bcf_bpm. Classificar é ato clínico, não seu.
@@ -595,8 +603,9 @@ para o valor mais parecido.
     - hematoma_perigestacional_medidas (verbatim, "1,2 x 0,8 x 0,5 cm") +
       hematoma_perigestacional_lado ("direita"/"esquerda").
     - gestacao_inviavel: true quando "gestação anembrionada", "saco gestacional
-      sem embrião", "gestação inviável". NÃO deduza de um DSM grande — o
-      critério é do médico.
+      sem embrião". Restrito a saco SEM EMBRIÃO explicitamente ditado;
+      embrião descrito/CCN com vitalidade ausente → gestacao_inviavel null.
+      NÃO deduza de um DSM grande — o critério é do médico.
 
 20. placenta_relacao_orificio — relação com o orifício interno do colo, eixo
     SEPARADO da topografia (anterior/posterior vai em placenta_localizacao):

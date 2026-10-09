@@ -352,7 +352,9 @@ REGRAS:
    assume BCF presente quando há valor, movimentos ativos e cordão de três
    vasos). Preencha "ausente"/"bradicardia"/"taquicardia", "reduzidos"/
    "ausentes" e "dois" SOMENTE quando o médico ditar a alteração. BCF numérico
-   sustenta vitalidade normal. Use cordao_vasos="nao_avaliado" somente quando o
+   sustenta vitalidade normal. "Sem vitalidade"/"BCF ausente" → vitalidade="ausente";
+   NÃO significa embrião não visualizado. CCN ou embrião descrito significa
+   embrião visualizado; preserve o CCN. Use cordao_vasos="nao_avaliado" somente quando o
    médico disser explicitamente que o número de vasos não foi avaliado.
 5c. orificio_interno: use "fechado" ou "nao_avaliado" somente quando o médico
    disser explicitamente que avaliou ou não avaliou o orifício interno. null
@@ -383,12 +385,17 @@ REGRAS:
    deterministicamente.
 7. ig_semanas/ig_dias (IG ATUAL da biometria); dum como DD/MM/AAAA (extenso → numérico).
 7b. ÉPICO IG — referência precoce (só quando DITADO; senão null): data_exame
-   (data/"hoje"); primeira_us_data + primeira_us_ig_semanas/dias (1ª US: data + IG
+   (SOMENTE quando uma DATA do exame for explicitamente ditada: DD/MM/AAAA
+   ou "dia X de mês", sem inventar componentes ausentes; "hoje com N semanas"
+   não é data, nunca usar a data atual do sistema/CLI); primeira_us_data + primeira_us_ig_semanas/dias (1ª US: data + IG
    NAQUELA data); ig_referencia_hoje_semanas/dias (IG da referência já corrigida
    p/ hoje, se ditada); referencia_fonte ("usg_precoce"|"dum" — a fonte que o médico
    mandou USAR p/ corrigir; ESSENCIAL quando cita DUM e 1ª US juntas; senão null);
    corrigir_ig (true="corrija/correlacione", false="não
    corrigir/manter biometria", null se não mencionar). NUNCA inventar.
+   "N semanas" sem dias: dias = 0 em ig_dias, primeira_us_ig_dias e
+   ig_referencia_hoje_dias, quando houver semanas ditadas para o respectivo
+   campo. Sem IG ditada, não preencher semanas/dias.
 8. achados_adicionais: SOMENTE malformações ou ALTERAÇÕES patológicas reais, nas
    palavras do médico. NUNCA coloque aqui frases de NORMALIDADE redundantes
    ("sem descolamentos", "movimentos e tônus presentes", "líquido normal",
