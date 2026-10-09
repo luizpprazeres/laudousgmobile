@@ -78,6 +78,7 @@ async function execute(scenario: Scenario) {
       extractionTarget: () => ({ model: "synthetic", provider: "test", effort: "medium" }),
       llmTarget: (model: string) => ({ model, provider: "openai", effort: "none" }),
       providerForModel: () => "openai",
+      LlmOutputError: class LlmOutputError extends Error {},
     },
     "@/server/pipeline/livreRouter": {
       ...livreRouter,

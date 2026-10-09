@@ -67,15 +67,26 @@ export async function* streamAnthropicWriter(args: {
   /** Só para testes: substitui o cliente Anthropic. */
   client?: Pick<Anthropic, "messages">;
 }): AsyncGenerator<string, LlmUsage, void> {
-  return yield* llmTextStream({
-    target: { provider: "anthropic", model: args.config.model, effort: args.config.reasoningEffort },
-    system: args.systemMessage,
-    messages: [{ role: "user", content: args.userMessage }],
-    maxTokens: args.maxTokens,
-    signal: args.signal,
-    label: "writer",
-    anthropicClient: args.client,
-  });
+  try {
+    return yield* llmTextStream({
+      target: { provider: "anthropic", model: args.config.model, effort: args.config.reasoningEffort },
+      system: args.systemMessage,
+      messages: [{ role: "user", content: args.userMessage }],
+      maxTokens: args.maxTokens,
+      signal: args.signal,
+      label: "writer",
+      anthropicClient: args.client,
+    });
+  } catch (err) {
+    // Recusa do modelo: mensagem que o médico entende, código próprio na rota.
+    if (err instanceof LlmOutputError && err.code === "LLM_REFUSED") {
+      throw new LlmOutputError(
+        "LLM_REFUSED",
+        `O redator (${args.config.model}) recusou escrever este laudo. Revise o ditado e gere de novo. [${err.message}]`,
+      );
+    }
+    throw err;
+  }
 }
 
 const LIVRE_WRITER_CODES: Record<LlmFailureCode, LivreFailureCode> = {

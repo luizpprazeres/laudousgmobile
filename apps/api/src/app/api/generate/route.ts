@@ -115,7 +115,7 @@ import {
 import { clinicalRendererFallbackBlocked, canonicalClinicalCategory, structuredClinicalIntent, earlyWriterV2Allowed } from "@/server/clinicalReports/fallbackPolicy";
 import { isDopplerRenalAuditError } from "@/server/pipeline/dopplerRenalWriterAudit";
 import { isLivreRoutingError, LivreRoutingError } from "@/server/ai/livreProvider";
-import { extractionTarget, llmTarget, providerForModel, writerTarget } from "@/server/ai/llm";
+import { extractionTarget, llmTarget, LlmOutputError, providerForModel, writerTarget } from "@/server/ai/llm";
 import { resolveLivreWriterModel } from "@/server/pipeline/modelResolver";
 import {
   buildLivreRoutingMetadata,
@@ -1642,7 +1642,13 @@ export async function POST(req: Request) {
         errorMessage = err instanceof Error ? err.message : String(err);
         // Falhas da jornada Livre roteada (provedor, recusa, truncamento...)
         // carregam código próprio; o resto segue PIPELINE_FAILURE.
-        const errorCode = isLivreRoutingError(err) ? err.code : "PIPELINE_FAILURE";
+        // Falhas explícitas do motor (recusa, truncamento…) também: LLM_REFUSED
+        // diz ao médico que o modelo recusou, em vez de uma falha genérica.
+        const errorCode = isLivreRoutingError(err)
+          ? err.code
+          : err instanceof LlmOutputError
+            ? err.code
+            : "PIPELINE_FAILURE";
         if (livreRouting) livreRouting = { ...livreRouting, routing_error_code: errorCode };
         auditState.errorCode = errorCode;
         auditState.errorMessage = errorMessage;

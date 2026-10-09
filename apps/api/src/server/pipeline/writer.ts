@@ -83,6 +83,8 @@ export async function* runWriterStream(args: {
   modelConfig?: WriterModelConfig;
   signal?: AbortSignal;
   onSystemMessage?: (message: string) => void;
+  /** Só testes/bancada: substitui o cliente Anthropic do writer padrão. */
+  anthropicClient?: Pick<import("@anthropic-ai/sdk").default, "messages">;
 }): AsyncGenerator<
   string,
   {
@@ -142,12 +144,21 @@ export async function* runWriterStream(args: {
   });
   args.onSystemMessage?.(systemMessage);
 
-  const userMessage = plainRawUserMessage
-    ? buildRawUserMessage(plainRawUserMessage, writerExam.dopplerMode === "isolated")
-    : buildUserMessage(plainFindings);
-
   const modelConfig =
     args.modelConfig ?? resolveWriterModel({ mode: "standard", categoryCode: effectiveCategoryCode });
+
+  // Writer padrão Haiku (categorias de FULL_WRITER_CATEGORIES): o exame que o
+  // médico escolheu vai explícito no ditado. Sem isso, um ditado curto de
+  // normalidade ("exame sem alterações dignas de nota") não diz QUAL exame é, e o
+  // Haiku recusava escrever (achado do W4, 09/10). Livre, modo difícil e TESTE
+  // mantêm a mensagem de antes.
+  const chosenExam =
+    modelConfig.provider === "anthropic" && modelConfig.credentialRef === "default"
+      ? { label: args.categoryLabel, code: effectiveCategoryCode }
+      : undefined;
+  const userMessage = plainRawUserMessage
+    ? buildRawUserMessage(plainRawUserMessage, writerExam.dopplerMode === "isolated", chosenExam)
+    : buildUserMessage(plainFindings);
   if (modelConfig.provider === "anthropic") {
     // Writer padrão e LAUDO LIVRE ROTEADO: mesmo prompt (contrato + bundle da
     // categoria), Claude Haiku 5.5. No Livre as falhas ganham os códigos da
@@ -165,6 +176,7 @@ export async function* runWriterStream(args: {
           systemMessage,
           userMessage,
           signal: args.signal,
+          client: args.anthropicClient,
         });
     for (;;) {
       const next = await gen.next();
@@ -262,8 +274,21 @@ function buildUserMessage(f: StructuredFindings): string {
  * sem a etapa estruturadora. Instrui o modelo a tratar o texto como o ditado
  * (achados + comandos juntos) e seguir as regras/modelo do system message.
  */
-function buildRawUserMessage(rawInput: string, isolated = false): string {
+export function buildRawUserMessage(
+  rawInput: string,
+  isolated = false,
+  chosenExam?: { label: string; code: string },
+): string {
   return [
+    ...(chosenExam
+      ? [
+          "=== EXAME ESCOLHIDO PELO MÉDICO ===",
+          `${chosenExam.label} (${chosenExam.code}). O médico selecionou este exame antes de ditar; o laudo é deste exame.`,
+          "Ditado curto de normalidade (ex.: \"exame sem alterações dignas de nota\", \"tudo normal\") significa: laudo",
+          "NORMAL completo deste exame, usando as frases normais do MODELO da categoria (no system), sem acrescentar achados.",
+          "",
+        ]
+      : []),
     "=== DITADO DO MÉDICO (achados + instruções) ===",
     rawInput.trim(),
     "",
