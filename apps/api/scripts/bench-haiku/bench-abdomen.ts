@@ -139,9 +139,22 @@ globalThis.fetch = (async (input: any, init?: any) => {
   const c = ctx.getStore();
   if (!c) throw new Error("bench: chamada OpenAI fora de um caso");
   const body = JSON.parse(init?.body ?? "{}");
-  const systemRaw = body.messages?.find((m: any) => m.role === "system")?.content ?? "";
+  const msgs: any[] = body.messages ?? [];
+  const systemBase = msgs.find((m: any) => m.role === "system")?.content ?? "";
+  // Writers dedicados (MSK, PELVE, PARTES_MOLES) mandam few-shots como turnos user/assistant.
+  // O `claude -p` recebe um só prompt: os pares viram exemplos no system e o user é só o
+  // último turno (o ditado real). Juntar todos os `user` misturaria os ditados dos exemplos.
+  const turns = msgs.filter((m: any) => m.role !== "system");
+  const hasFewshots = turns.some((m: any) => m.role === "assistant");
+  const fewshotBlock = hasFewshots
+    ? "\n\nEXEMPLOS (pares ditado → laudo assinado; siga o mesmo padrão):\n" +
+      turns.slice(0, -1).map((m: any) => (m.role === "user" ? `\n<ditado>\n${m.content}\n</ditado>` : `<laudo>\n${m.content}\n</laudo>`)).join("\n")
+    : "";
+  const systemRaw = systemBase + fewshotBlock;
   const system = c.promptPatch && !schemaNameOf(body) ? patchCorpoDescritivo(systemRaw) : systemRaw;
-  const user = body.messages?.filter((m: any) => m.role === "user").map((m: any) => m.content).join("\n\n") ?? "";
+  const user = hasFewshots
+    ? String(turns[turns.length - 1]?.content ?? "")
+    : turns.filter((m: any) => m.role === "user").map((m: any) => m.content).join("\n\n");
   const schema = body.response_format?.json_schema?.schema;
   const schemaName = body.response_format?.json_schema?.name ?? null;
 
@@ -210,6 +223,8 @@ function wordSimilarity(a: string, b: string): number {
 }
 const numbers = (s: string) =>
   new Set((s.match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) => n.replace(".", ",")).filter((n) => n !== "1" && n !== "2" && n !== "3"));
+/** Texto que não é laudo (o modelo pediu dados / recusou): sem seção de conclusão/impressão. */
+const isRecusa = (t: string) => !/^\s*(CONCLUS[ÃA]O|IMPRESS[ÃA]O|OPINI[ÃA]O)\b/m.test(t ?? "");
 function numberFidelity(candidate: string, final: string) {
   const f = numbers(final);
   const c = numbers(candidate);
@@ -562,6 +577,9 @@ async function main() {
     if ((k === "A" || k === "AR") && x?.error && (res.B2?.[0]?.text || res.B?.[0]?.text)) return res.B2?.[0]?.text || res.B[0].text;
     return x?.text || `(falhou: ${x?.error})`;
   };
+  /** R só existe quando a produção passou pelo renderer E a auditoria gravou os achados
+   *  (desde 11/08); antes disso o replay é impossível e o candidato não vai ao juiz. */
+  const hasCand = (res: Row, k: string) => (k === "R" ? Boolean(res.replay?.text) : true);
   let idx = 0;
   async function worker() {
     while (idx < cases.length) {
@@ -616,13 +634,14 @@ async function main() {
       }
       for (const key of KEYS) {
         const text = candText(res, key);
-        res[`m_${key}`] = { simFinal: Number(wordSimilarity(text ?? "", res.final).toFixed(3)), ...numberFidelity(text ?? "", res.final) };
+        if (!hasCand(res, key)) { delete res[`m_${key}`]; continue; }
+        res[`m_${key}`] = { simFinal: Number(wordSimilarity(text ?? "", res.final).toFixed(3)), recusa: isRecusa(text), ...numberFidelity(text ?? "", res.final) };
       }
       console.log(
         `${id8} ${res.data} prod=${prodPath} editado=${res.editadoPeloMedico ? "s" : "n"}` +
           (res.replay ? ` replay=${res.replayIgualProducao ? "IGUAL" : "DIFERENTE"}` : "") +
           " | sim(final): " +
-          KEYS.map((k) => `${k} ${res[`m_${k}`].simFinal}${k !== "gpt" && k !== "R" && res[k]?.[0]?.error ? "!" : ""}`).join(" · "),
+          KEYS.filter((k) => hasCand(res, k)).map((k) => `${k} ${res[`m_${k}`].simFinal}${k !== "gpt" && k !== "R" && res[k]?.[0]?.error ? "!" : ""}`).join(" · "),
       );
       results.push(res);
       writeFileSync(join(outDir, "results.json"), JSON.stringify(results, null, 2));
@@ -639,7 +658,8 @@ async function main() {
     for (const res of results) {
       for (const key of KEYS) {
         const text = candText(res, key);
-        res[`m_${key}`] = { simFinal: Number(wordSimilarity(text ?? "", res.final).toFixed(3)), ...numberFidelity(text ?? "", res.final) };
+        if (!hasCand(res, key)) { delete res[`m_${key}`]; continue; }
+        res[`m_${key}`] = { simFinal: Number(wordSimilarity(text ?? "", res.final).toFixed(3)), recusa: isRecusa(text), ...numberFidelity(text ?? "", res.final) };
       }
     }
     console.log(`rejudge: ${results.length} casos de ${REJUDGE} · candidatos ${KEYS.join(", ")}`);
@@ -653,7 +673,7 @@ async function main() {
     async function judgeWorker() {
       while (j < results.length) {
         const res = results[j++];
-        const cands = KEYS.map((k) => ({ origem: k, text: candText(res, k) })).sort(() => Math.random() - 0.5);
+        const cands = KEYS.filter((k) => hasCand(res, k)).map((k) => ({ origem: k, text: candText(res, k) })).sort(() => Math.random() - 0.5);
         const rotulos = ["X", "Y", "Z", "W", "V", "U", "T"].slice(0, cands.length);
         const user =
           `DITADO DO MÉDICO:\n${res.ditado}\n\nLAUDO FINAL ASSINADO PELO MÉDICO:\n${res.final}\n\n` +
@@ -683,7 +703,9 @@ async function main() {
   for (const k of KEYS) {
     const nj = results.map((r) => r.juiz?.[k]).filter(Boolean);
     resumo[k] = {
-      simFinal: avg(results.map((r) => r[`m_${k}`].simFinal)),
+      n: results.filter((r) => r[`m_${k}`]).length,
+      simFinal: avg(results.filter((r) => r[`m_${k}`]).map((r) => r[`m_${k}`].simFinal)),
+      recusas: results.filter((r) => r[`m_${k}`]?.recusa).length,
       falhas: k === "gpt" || k === "R" ? 0 : results.filter((r) => r[k]?.[0]?.error).length,
       notaJuiz: avg(nj.map((x: Row) => x.nota)),
       estilo: avg(nj.map((x: Row) => x.estilo)),
