@@ -143,8 +143,12 @@ document.getElementById("nSemEd").textContent = D.cases.filter(r=>!r.editadoPelo
 if (D.cases.some(r => r.juiz && r.juiz.R)) document.getElementById("stepR").style.display="";
 (function(){ const rp = D.cases.filter(r => r.replay); const eq = rp.filter(r => r.replayIgualProducao).length;
   document.getElementById('replayInfo').textContent = `o mesmo texto da produção em ${eq} de ${rp.length} casos` + (D.replayNota ? ` (${D.replayNota})` : ''); })();
+if (D.titulo) document.title = D.titulo;
 if (ehObst) document.getElementById("titulo").textContent = "Haiku 5.5 na obstetrícia — o que foi testado";
 if (D.cases.some(r => r.L)) { document.getElementById("stepL").style.display=""; document.getElementById("titulo").textContent="Haiku 5.5 e GPT-6 Luna no abdome total — o que foi testado"; }
+if (D.titulo) document.getElementById("titulo").textContent = D.titulo;
+if (D.passos) document.querySelector(".steps").innerHTML = D.passos
+  .map((p) => `<div class="step"><b>${p.t}</b>${p.flow ? `<div class="flow">${p.flow}</div>` : ""}${p.s ?? ""}</div>`).join("");
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const KEYS = [
   {k:'gpt', t:'Produção', s:'o que o app gerou (gpt)'},
@@ -154,7 +158,10 @@ const KEYS = [
   {k:'B', t:'Cenário B', s:'Haiku escreve o laudo inteiro'},
   {k:'L', t:'Cenário L', s:'GPT-6 Luna extrai + renderer atual'},
   {k:'B2', t:'Cenário B2', s:'Haiku escreve tudo + prompt “corpo descritivo”'},
-].filter(x => x.k==='gpt' || (x.k==='R' ? D.cases.some(r => r.juiz && r.juiz.R) : D.cases.some(r => r[x.k])));
+  {k:'AS', t:'Cenário AS', s:'Sonnet 5.5 no caminho atual'},
+  {k:'BS', t:'Cenário BS', s:'Sonnet 5.5 escreve o laudo inteiro (writer genérico)'},
+  {k:'B2S', t:'Cenário B2S', s:'Sonnet 5.5 escreve tudo + prompt “corpo descritivo”'},
+].map(x => ({...x, ...((D.rotulos || {})[x.k] || {})})).filter(x => x.k==='gpt' || (x.k==='R' ? D.cases.some(r => r.juiz && r.juiz.R) : D.cases.some(r => r[x.k])));
 const textOf = (r,k) => {
   if (k==='gpt') return r.gpt||'';
   if (k==='R') return r.replay?.text || '(sem replay)';

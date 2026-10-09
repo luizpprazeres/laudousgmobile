@@ -110,8 +110,14 @@ const REJUDGE = arg("rejudge");
 const B2 = argv.includes("--b2");
 // --a-key AR: grava o cenário A com outro nome (ex.: PELVE com BENCH_PELVE_WRITER=false =
 // "Haiku extrai + renderer"), para comparar com o A de outra rodada via --reuse.
-const A_KEY = arg("a-key", "A")!;
-const SCEN_KEYS = ["R", "A", "AR", "B", "L", "B2"];
+// --rename A=AS,B=BS: grava cada cenário com outro nome (ex.: o mesmo cenário com outro modelo,
+// BENCH_MODEL=claude-sonnet-5-5) para julgar vários modelos juntos via --reuse.
+const RENAME = new Map(
+  (arg("rename", "") ?? "").split(",").map((x) => x.split("=").map((y) => y.trim())).filter((x) => x.length === 2 && x[0] && x[1]) as [string, string][],
+);
+const keyOf = (scen: string) => RENAME.get(scen) ?? (scen === "A" ? arg("a-key", "A")! : scen);
+const A_KEY = keyOf("A");
+const SCEN_KEYS = ["R", "A", "AR", "AS", "B", "BS", "L", "B2", "B2S"];
 const OUT_ROOT = process.env.BENCH_OUT_ROOT ?? join(REPO, "tmp-review/bench-haiku");
 
 const REGRA_ANTIGA_GLOBAL =
@@ -188,7 +194,7 @@ async function answer(c: Ctx, req: { system: string; user: string; schema?: Reco
   }
   appendFileSync(
     c.log,
-    JSON.stringify({ case: c.caseId, mode: c.mode, schemaName: req.schemaName, ms, usage, system_len: req.system.length, user: req.user, content }) + "\n",
+    JSON.stringify({ case: c.caseId, mode: c.mode, model: c.mode === "haiku" ? HAIKU : c.mode, schemaName: req.schemaName, ms, usage, system_len: req.system.length, user: req.user, content }) + "\n",
   );
   return { content, usage };
 }
@@ -647,7 +653,7 @@ async function main() {
   const prevHas = (k: string) => [...prev.values()].some((x) => x[k]);
   const WANT = new Set([...SCEN, ...(LUNA ? ["L"] : []), ...(B2 ? ["B2"] : [])]);
   // O cenário A pode ser gravado com outro nome (--a-key); a lista de candidatos usa os nomes gravados.
-  const WANT_KEYS = new Set([...WANT].map((k) => (k === "A" ? A_KEY : k)));
+  const WANT_KEYS = new Set([...WANT].map(keyOf));
   const KEYS = ["gpt", ...SCEN_KEYS.filter((k) => WANT_KEYS.has(k) || (k !== "R" && prevHas(k)) || (k === "R" && prevHas("replay") && WANT.has("R")))];
   /** Texto de cada candidato. R = achados que a produção extraiu (gpt-4.1-mini até 09/10) + renderer de HOJE.
    *  A que falhou no renderer cai no writer, como na rota: usa o texto do B2 (ou B). */
@@ -655,7 +661,11 @@ async function main() {
     if (k === "gpt") return res.gpt ?? "";
     if (k === "R") return res.replay?.text || `(sem replay: ${res.replay?.error ?? "produção não passou pelo renderer"})`;
     const x = res[k]?.[0];
-    if ((k === "A" || k === "AR") && x?.error && (res.B2?.[0]?.text || res.B?.[0]?.text)) return res.B2?.[0]?.text || res.B[0].text;
+    // A que falhou no renderer cai no writer (como na rota): usa o writer do MESMO modelo.
+    if ((k === "A" || k === "AR" || k === "AS") && x?.error) {
+      const fb = k === "AS" ? res.B2S?.[0]?.text || res.BS?.[0]?.text : res.B2?.[0]?.text || res.B?.[0]?.text;
+      if (fb) return fb;
+    }
     return x?.text || `(falhou: ${x?.error})`;
   };
   /** R só existe quando a produção passou pelo renderer E a auditoria gravou os achados
@@ -697,17 +707,21 @@ async function main() {
         res.replay = rp;
         res.replayIgualProducao = rp.text.trim() === String(r.generated_output ?? "").trim();
       }
+      res.modelos = { ...(res.modelos ?? old?.modelos ?? {}) };
       if (WANT.has("A") && !res[A_KEY]) {
         res[A_KEY] = [];
         for (let k = 0; k < REPS; k++) res[A_KEY].push(await runA(r, rawInput, "haiku"));
+        res.modelos[A_KEY] = HAIKU;
       }
-      if (WANT.has("B") && !res.B) {
-        res.B = [];
-        for (let k = 0; k < REPS; k++) res.B.push(await runB(r, rawInput));
+      if (WANT.has("B") && !res[keyOf("B")]) {
+        res[keyOf("B")] = [];
+        for (let k = 0; k < REPS; k++) res[keyOf("B")].push(await runB(r, rawInput));
+        res.modelos[keyOf("B")] = HAIKU;
       }
-      if (WANT.has("B2") && !(old && old.B2)) {
-        res.B2 = [];
-        for (let k = 0; k < REPS; k++) res.B2.push(await runB(r, rawInput, true));
+      if (WANT.has("B2") && !res[keyOf("B2")]) {
+        res[keyOf("B2")] = [];
+        for (let k = 0; k < REPS; k++) res[keyOf("B2")].push(await runB(r, rawInput, true));
+        res.modelos[keyOf("B2")] = HAIKU;
       }
       if (WANT.has("L") && !(old && old.L)) {
         res.L = [];
