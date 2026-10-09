@@ -55,6 +55,8 @@ const files = [
   'tests/mskPresets.manual.ts',
   'tests/cervicometriaStructured.manual.ts',
   'tests/cervicometriaComplemento.manual.ts',
+  'tests/obstetricaFormulario.manual.ts',
+  'tests/reportTemplatePreview.manual.ts',
   'src/lib/writerGeneration.test.mts',
   'src/lib/calculators/preEclampsia.test.mts',
   'src/lib/calculators/trisomyFmf.test.mts',

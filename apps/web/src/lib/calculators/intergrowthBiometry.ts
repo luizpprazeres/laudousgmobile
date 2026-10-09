@@ -14,6 +14,7 @@
  */
 
 import { arredondarPesoGramas, parseMedidaMm, type ChaveFemur } from './fetalWeight'
+import { lerDatacaoDaTela } from '../ig/computeIG'
 import {
   INTERGROWTH2020_EFW_MAX_GA_DAYS,
   INTERGROWTH2020_EFW_MIN_GA_DAYS,
@@ -90,41 +91,31 @@ export function parseIgBiometria(igState: Readonly<Record<string, unknown>>): Ig
  * atual não entra aqui, pois usá-la no percentil do próprio peso seria circular.
  */
 export function parseIgDatacaoCrescimento(igState: Readonly<Record<string, unknown>>): IgDatacaoCrescimento | null {
-  const referencia = igState.referencia
-  const exameUtcDays = parseDataBrUtcDays(
-    referencia === 'usg'
-      ? igState['referencia.usg.exame_data']
-      : referencia === 'dum'
-        ? igState['referencia.dum.exame_data']
-        : null,
-  )
-  if (exameUtcDays === null) return null
+  // Formato novo (DUM e 1ª US juntas, 1ª US vence) e legado (`referencia.*`) num leitor só.
+  const datacao = lerDatacaoDaTela(igState)
+  const examDateRaw = datacao.exame_data
+  const exameUtcDays = parseDataBrUtcDays(examDateRaw)
+  if (exameUtcDays === null || !examDateRaw) return null
 
   let gaDays: number | null = null
-  if (referencia === 'dum') {
-    const dumUtcDays = parseDataBrUtcDays(igState['referencia.dum.dum_data'])
-    if (dumUtcDays !== null) gaDays = exameUtcDays - dumUtcDays
-  } else if (referencia === 'usg') {
-    const usUtcDays = parseDataBrUtcDays(igState['referencia.usg.us_data'])
-    const semanas = parseInteiroEstrito(igState['referencia.usg.us_ig_sem'])
-    const dias = parseInteiroEstrito(igState['referencia.usg.us_ig_dias'])
-    if (usUtcDays !== null && semanas !== null && dias !== null && dias <= 6) {
-      gaDays = semanas * 7 + dias + (exameUtcDays - usUtcDays)
+  const usg = datacao.us_data !== null
+  if (usg) {
+    const usUtcDays = parseDataBrUtcDays(datacao.us_data)
+    if (usUtcDays !== null && datacao.us_ig_sem !== null && datacao.us_ig_dias !== null) {
+      gaDays = datacao.us_ig_sem * 7 + datacao.us_ig_dias + (exameUtcDays - usUtcDays)
     }
+  } else if (datacao.dum_data !== null) {
+    const dumUtcDays = parseDataBrUtcDays(datacao.dum_data)
+    if (dumUtcDays !== null) gaDays = exameUtcDays - dumUtcDays
   }
   if (gaDays === null || !isIntergrowth2020EfwGaDays(gaDays)) return null
-  const examDateRaw = referencia === 'usg'
-    ? igState['referencia.usg.exame_data']
-    : igState['referencia.dum.exame_data']
-  const examDateMatch = typeof examDateRaw === 'string'
-    ? examDateRaw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-    : null
+  const examDateMatch = examDateRaw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!examDateMatch) return null
   return {
     semanas: Math.floor(gaDays / 7),
     dias: gaDays % 7,
     gaDays,
-    source: referencia === 'usg' ? 'early-ultrasound' : 'dum',
+    source: usg ? 'early-ultrasound' : 'dum',
     examDate: `${examDateMatch[3]}-${examDateMatch[2]!.padStart(2, '0')}-${examDateMatch[1]!.padStart(2, '0')}`,
   }
 }

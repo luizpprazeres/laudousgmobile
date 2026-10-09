@@ -124,6 +124,7 @@ import { useComposicaoCanonica } from '@/lib/composition/useComposicaoCanonica'
 import { buildEnvelope, parseEnvelope, savedTextOf } from '@/lib/composition/envelope'
 import { loadCompositionReport, saveCompositionReport, updateCompositionReport } from '@/lib/webReports'
 import type { CalcSpec } from '@/lib/calculators/specs'
+import { buildReportTemplatePreview, templateFromExamCategory, type ReportTemplateDefinition } from '@/lib/reportTemplatePreview'
 
 const TIREOIDE_ID = 'TIREOIDE'
 const TIREOIDE_DOPPLER_ID = 'TIREOIDE_DOPPLER'
@@ -134,6 +135,13 @@ type UiSection = Pick<ExamSection, 'id' | 'label' | 'group' | 'module' | 'normal
 const TIREOIDE_CATEGORY = {
   id: TIREOIDE_ID,
   name: 'Tireoide',
+}
+
+const TIREOIDE_TEMPLATE: ReportTemplateDefinition = {
+  title: 'ULTRASSONOGRAFIA DA TIREOIDE',
+  technique: 'Exame realizado com transdutor linear de alta frequência.',
+  findingsHeader: 'ACHADOS:',
+  sections: tireoideSections,
 }
 
 const TIREOIDE_RESETAVEIS = new Set(['lobo_direito', 'lobo_esquerdo', 'istmo', 'nodulos', 'linfonodos'])
@@ -541,6 +549,32 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     ...calcSections,
   ]
   const currentCategory = isTireoideDoppler ? { id: TIREOIDE_DOPPLER_ID, name: 'Tireoide com Doppler' } : isTireoide ? TIREOIDE_CATEGORY : genericCategory!
+  const reportTemplateDefinition = useMemo<ReportTemplateDefinition | null>(() => {
+    if (composition) {
+      const definitions = composition.components.map((component) => {
+        const category = CATEGORIES[component.categoryCode]
+        return templateFromExamCategory(category, composition.states[component.componentId] ?? {})
+      })
+      return {
+        title: definitions.map((definition) => definition.title).join(' + '),
+        technique: definitions.map((definition) => definition.technique).join(' '),
+        findingsHeader: 'ACHADOS:',
+        sections: definitions.flatMap((definition, index) => definition.sections.map((section) => ({
+          ...section,
+          label: `${composition.components[index]?.categoryCode ? nameOf(composition.components[index].categoryCode) : 'Exame'} — ${section.label}`,
+        }))),
+      }
+    }
+    if (isTireoide) {
+      return {
+        ...TIREOIDE_TEMPLATE,
+        title: isTireoideDoppler
+          ? 'ULTRASSONOGRAFIA DA TIREOIDE COM DOPPLER COLORIDO'
+          : TIREOIDE_TEMPLATE.title,
+      }
+    }
+    return genericCategory ? templateFromExamCategory(genericCategory, examStates[categoria] ?? {}) : null
+  }, [categoria, composition, examStates, genericCategory, isTireoide, isTireoideDoppler])
   const examState = isTireoide ? undefined : examStates[categoria]
   const clinicalSourceStates = useRef(examStates)
   useLayoutEffect(() => {
@@ -744,6 +778,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     return Array.from(new Set([...estruturadas, ...pendenciasLocais(categoria, examStates[categoria])]))
   }, [categoria, composition, examStates, isTireoide, laudoLocal, migrada])
   const erroLocal = pendenciasLocaisAtuais.length ? pendenciasLocaisAtuais.join(' · ') : null
+  const pendenciasCanonicasAtuais = useMemo(
+    () => (achadosCanonicos?.pendencias ?? [])
+      .filter((pendencia) => pendencia.bloqueia)
+      .map((pendencia) => `${pendencia.onde}: ${pendencia.motivo}`),
+    [achadosCanonicos],
+  )
+  const temPendenciasEstruturadas = composition
+    ? composicao.pendencias.length > 0
+    : migrada
+      ? pendenciasCanonicasAtuais.length > 0
+      : pendenciasLocaisAtuais.length > 0
   /** O laudo em tela depende de rede (exame migrado ou composição) ou está travado por pendência local. */
   const remoto = migrada || Boolean(composition)
   const motor = composition
@@ -752,11 +797,17 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       ? { carregando: laudoCanonico.carregando, desatualizado: laudoCanonico.desatualizado, erro: laudoCanonico.erro }
       : { carregando: false, desatualizado: false, erro: erroLocal }
 
-  const generatedText = useMemo(() => {
+  const renderedText = useMemo(() => {
     if (composition) return composicao.texto
     if (migrada) return laudoCanonico.texto
     return laudoLocal?.text ?? ''
   }, [composition, composicao.texto, migrada, laudoCanonico.texto, laudoLocal])
+  const templateText = useMemo(
+    () => reportTemplateDefinition ? buildReportTemplatePreview(reportTemplateDefinition) : '',
+    [reportTemplateDefinition],
+  )
+  const templatePreviewActive = renderedText === '' && templateText !== ''
+  const generatedText = renderedText || templateText
 
   /**
    * OS BLOCOS DE CALCULADORA — e por que isto NÃO fura a regra do §3.2.
@@ -818,14 +869,16 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const liverResult = buildLiverQuantificationBlock(liverMeasurements)
   const liverInserted = !liverResult.errors.length && liverMeasurements.inserted === liverResult.text ? liverResult.text : ''
   const composedText = useMemo(
-    () => generatedText ? [
+    () => templatePreviewActive
+      ? generatedText
+      : generatedText ? [
       generatedText,
       ...Object.values(calculatorBlocks),
       recommendation ? `RECOMENDAÇÕES:\n${recommendation}` : '',
       liverInserted,
       ...companionNotes.map((note) => `OBSERVAÇÃO DO MÉDICO:\n${note}`),
     ].filter(Boolean).join('\n\n') : '',
-    [calculatorBlocks, companionNotes, generatedText, recommendation, liverInserted]
+    [calculatorBlocks, companionNotes, generatedText, recommendation, liverInserted, templatePreviewActive]
   )
   const insertCalculatorBlock = (calculatorId: string, block: string) => {
     setCalculatorBlocksByCategory((all) => ({
@@ -1002,12 +1055,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
   const composicaoNaoConfere = Boolean(composition) && (
     composicao.carregando || composicao.desatualizado || composicao.erro !== null || !composicao.requestId
   )
-  const laudoNaoConfere = composition
+  const laudoNaoConfere = templatePreviewActive || (composition
     ? composicaoNaoConfere
     : migrada
       ? !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
       // Pendência local bloqueia mesmo com texto editado: o estado salvo descreve um achado incompleto.
-      : erroLocal !== null
+      : erroLocal !== null)
   const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = motor.erro || saveState === 'error'
     ? 'error'
     : remoto && (motor.carregando || motor.desatualizado)
@@ -1027,10 +1080,12 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
     if (laudoNaoConfere) {
       setSaveState('error')
       setSaveError(
-        motor.erro
+        templatePreviewActive
+          ? 'Complete os campos obrigatórios antes de salvar: a prévia ainda contém placeholders.'
+          : motor.erro
           ? composition
-            ? 'O laudo associado não foi montado por inteiro — nada é salvo enquanto um dos exames estiver com falha, nem com texto editado.'
-            : 'O laudo não foi montado — não dá para salvar o texto anterior como se fosse este exame.'
+            ? 'Não foi possível atualizar todo o laudo associado — nada é salvo enquanto um dos exames estiver com falha, nem com texto editado.'
+            : 'Não foi possível atualizar o laudo — o texto anterior não pode ser salvo como se correspondesse a este exame.'
           : 'Espere o laudo terminar de montar: o texto na tela ainda é o anterior.',
       )
       return
@@ -2002,10 +2057,18 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
               <div className="flex flex-wrap items-center justify-end gap-2">{secondaryTools}</div>
             ) : null}
 
-            {(remoto || erroLocal) && motor.erro ? (
-              <p data-laudo-error className="rounded-2xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
-                <strong className="font-semibold">{composition ? 'O laudo associado não foi montado por inteiro.' : 'O laudo não foi montado.'}</strong>{' '}
+            {remoto && motor.erro ? (
+              <p
+                data-laudo-error
+                className={temPendenciasEstruturadas
+                  ? 'rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200'
+                  : 'rounded-2xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300'}
+              >
+                <strong className="font-semibold">
+                  {temPendenciasEstruturadas ? 'Prévia com campos pendentes.' : 'Não foi possível atualizar o laudo.'}
+                </strong>{' '}
                 {motor.erro}
+                {temPendenciasEstruturadas ? ' O modelo abaixo será atualizado automaticamente enquanto você preenche.' : ''}
                 {composition && composicao.componentesComFalha.length
                   ? ` Com falha: ${composition.components.filter((c) => composicao.componentesComFalha.includes(c.componentId)).map((c) => nameOf(c.categoryCode)).join(', ')}.`
                   : ''}
@@ -2048,7 +2111,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                 saveError={saveError}
                 onSave={onSave}
                 workspaceV2={workspaceV2}
-                editable={richEditor}
+                editable={richEditor && !templatePreviewActive}
                 editableHtml={documentHtml}
                 formattedHtml={previewHtml}
                 draftDirty={activeDraft.dirty}

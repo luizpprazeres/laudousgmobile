@@ -40,6 +40,7 @@ function medido(): Estado {
     cf: "62",
     peso: "1900",
   });
+  estado = com(estado, "placenta", { localizacao: "posterior" });
   return estado;
 }
 
@@ -61,7 +62,7 @@ function nosDois(estado: Estado, validar: (laudo: string, estilo: Estilo) => voi
 {
   const vazio = adaptarObstetrica(inicial());
   const bloqueios = vazio.pendencias.filter((p) => p.bloqueia).map((p) => p.onde);
-  assert.deepEqual(bloqueios, ["Idade gestacional", "BCF", "DBP", "CC", "CA", "CF", "Peso fetal estimado"]);
+  assert.deepEqual(bloqueios, ["Idade gestacional", "BCF", "DBP", "CC", "CA", "CF", "Peso fetal estimado", "Placenta"]);
 }
 
 {
@@ -185,8 +186,7 @@ nosDois(com(medido(), "placenta", { achado: "lagos_venosos" }), (laudo) => {
 });
 
 nosDois(com(medido(), "placenta", {
-  estado: "detalhar",
-  "estado.detalhar.localizacao": "anterior",
+  localizacao: "anterior",
   relacao_orificio: "previa",
   achado: "acretismo",
 }), (laudo) => {

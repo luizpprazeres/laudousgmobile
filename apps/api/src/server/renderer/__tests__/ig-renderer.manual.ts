@@ -59,7 +59,7 @@ const COM_REF: Partial<ObstetricaFindings> = {
   );
   check(
     "OBST ON: prosa da 1ª US no corpo",
-    on.includes("Primeira ultrassonografia realizada 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dia."),
+    on.includes("Primeira ultrassonografia realizada em 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dia."),
   );
 }
 

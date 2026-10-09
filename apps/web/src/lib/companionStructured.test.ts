@@ -33,7 +33,7 @@ const combinado = applyCompanionStructured({}, {
 })
 assert.deepEqual(combinado.biometria, { dbp: '90', peso: '2000' })
 assert.deepEqual(combinado.ig, { bio_sem: '32', bio_dias: '2' })
-assert.deepEqual(combinado.liquido, { tipo: 'ila', 'tipo.ila.cm': '12' })
+assert.deepEqual(combinado.liquido, { tipo: 'ila', valor_cm: '12' })
 assert.equal(combinado.doppler.ip_umb, '1')
 
 const morfologico = applyCompanionStructured({ extrafetal: { placenta_loc: 'posterior' } }, {
@@ -374,7 +374,7 @@ const ilaAplicado = applyCompanionStructured(dopplerInicial, {
   data: { ila: '120 mm' },
 })
 assert.equal(ilaAplicado.liquido?.tipo, 'ila')
-assert.equal(ilaAplicado.liquido?.['tipo.ila.cm'], '12')
+assert.equal(ilaAplicado.liquido?.valor_cm, '12')
 assert.equal(ilaAplicado.liquido?.companion_conflitos, undefined)
 const mbvPreservado = applyCompanionStructured({
   ...dopplerInicial,
@@ -385,7 +385,7 @@ const mbvPreservado = applyCompanionStructured({
 })
 assert.equal(mbvPreservado.liquido?.tipo, 'mbv')
 assert.equal(mbvPreservado.liquido?.['tipo.mbv.cm'], '5,6')
-assert.equal(mbvPreservado.liquido?.['tipo.ila.cm'], undefined)
+assert.equal(mbvPreservado.liquido?.valor_cm, undefined)
 assert.equal(mbvPreservado.liquido?.companion_conflitos.length, 1)
 const subjetivoEscolhido = applyCompanionStructured({
   ...dopplerInicial,
@@ -395,7 +395,7 @@ const subjetivoEscolhido = applyCompanionStructured({
   data: { ila: '120 mm' },
 })
 assert.equal(subjetivoEscolhido.liquido?.tipo, 'subjetivo')
-assert.equal(subjetivoEscolhido.liquido?.['tipo.ila.cm'], undefined)
+assert.equal(subjetivoEscolhido.liquido?.valor_cm, '')
 assert.equal(subjetivoEscolhido.liquido?.companion_conflitos.length, 1)
 
 const dopplerTodoConflitante = applyCompanionStructured({

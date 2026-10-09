@@ -195,8 +195,7 @@ check("parseDataStrict null em lixo", parseDataStrict("abc") === null);
   }));
   check(
     "frase-prosa USG",
-    // Plural sempre ("1 dias"): espelha o formatIg dos renderers (byte-stability).
-    r.fraseReferencia === "Primeira ultrassonografia realizada 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dias.",
+    r.fraseReferencia === "Primeira ultrassonografia realizada em 12/01/2026 com 8 semanas e 2 dias. Hoje com 17 semanas e 1 dia.",
     r.fraseReferencia ?? "null",
   );
 }

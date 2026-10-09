@@ -316,7 +316,7 @@ async function main() {
     await page.getByRole('button', { name: 'Salvar laudo' }).click()
     await page.waitForTimeout(300)
     assert.equal(store.get(row.id)!.updated_at, beforeFail, 'nada gravado com componente em falha')
-    assert.match(await page.locator('#workspace-panel-laudo').innerText(), /não foi montado por inteiro/)
+    assert.match(await page.locator('#workspace-panel-laudo').innerText(), /não foi possível atualizar todo o laudo associado/i)
     step('falha parcial: erro visível, salvar recusado mesmo com texto manual')
 
     // Recupera e regrava a MESMA linha (PATCH com updated_at esperado).

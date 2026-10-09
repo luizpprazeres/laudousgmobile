@@ -13,7 +13,7 @@ import type { ExamCategory } from './abdomeTotal'
 import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { criarCervicometriaAddonModule } from './cervicometriaAddon'
 import { criarFetalGrowthModule } from './fetalGrowth'
-import { computeIG, type Referencia } from '../../ig/computeIG'
+import { computeIG, dataBRParaISO, formatBR, hojeBR, lerDatacaoDaTela, type Referencia } from '../../ig/computeIG'
 import { preEclampsiaFmfSpec, trisomyFmfSpec } from '../../calculators/specs'
 
 const TECNICA =
@@ -34,16 +34,15 @@ export function mm(v: number | null): string {
 }
 /** "DD/MM/AAAA" → "AAAA-MM-DD" (ISO). Parse ESTRITO: rejeita data inexistente
  *  (31/02) — review dex2; espelha o parse estrito da engine (renderer/ig.ts). */
-function brToISO(v: unknown): string | null {
-  const m = String(v ?? '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-  if (!m) return null
-  const d = Number(m[1]), mo = Number(m[2]), y = Number(m[3])
-  const dt = new Date(y, mo - 1, d)
-  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null
-  return `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`
-}
+const brToISO = dataBRParaISO
 
 // ── IG e datas (âncora = biometria atual; referência só corrige se >5 dias) ───
+/**
+ * Datação com SELETOR de referência — formato antigo, mantido para o MORFOLÓGICO
+ * (que importa este módulo) e para documentar as chaves `referencia.*` que os
+ * estados antigos da obstétrica ainda carregam. A obstétrica usa
+ * `datacaoObstetricaModule`, logo abaixo.
+ */
 export const igModule: OrganModule = {
   schema: {
     id: 'ig',
@@ -121,13 +120,131 @@ export const igModule: OrganModule = {
   },
 }
 
-// ── Feto: situação/apresentação + BCF + anatomia padrão ───────────────────────
+/**
+ * Datação OBSTÉTRICA: DUM e primeira US visíveis ao mesmo tempo, ambas
+ * opcionais. Sem seletor: qualquer referência completa entra no laudo, e a
+ * primeira US completa vence a DUM (docs/epico-ig-deterministica-design.md, §6).
+ * A data do exame é hoje, gravada no estado inicial e fora da tela; a composição
+ * nunca consulta o relógio. Estados antigos (`referencia.usg.*`/`referencia.dum.*`)
+ * são lidos por `lerDatacaoDaTela`.
+ */
+export const datacaoObstetricaModule: OrganModule = {
+  schema: {
+    id: 'ig',
+    name: 'Idade gestacional',
+    category: 'OBSTETRICA',
+    fields: [
+      { key: 'bio_sem', label: 'Biometria atual · semanas', kind: 'text', placeholder: '20' },
+      { key: 'bio_dias', label: 'Dias', kind: 'text', placeholder: '3' },
+      { key: 'dum_data', label: 'DUM (opcional)', kind: 'text', placeholder: 'DD/MM/AAAA' },
+      { key: 'us_data', label: '1ª US · data (opcional)', kind: 'text', placeholder: 'DD/MM/AAAA' },
+      { key: 'us_ig_sem', label: 'IG na 1ª US · semanas', kind: 'text', placeholder: '8', halfWidth: true },
+      { key: 'us_ig_dias', label: 'Dias', kind: 'text', placeholder: '2', halfWidth: true },
+    ],
+  },
+  initialState: (): OrganState => ({
+    bio_sem: '',
+    bio_dias: '',
+    dum_data: '',
+    us_data: '',
+    us_ig_sem: '',
+    us_ig_dias: '',
+    exame_data: hojeBR(),
+  }),
+  compose: (st): OrganComposition => {
+    const datacao = lerDatacaoDaTela(st)
+    const pendencias = datacao.pendencias.map((p) => ({
+      onde: p.campo === 'dum' ? 'DUM' : 'Primeira ultrassonografia',
+      motivo: p.motivo,
+    }))
+    const sem = numOrNull(st.bio_sem)
+    if (sem === null) {
+      return { body: '', conclusion: ['Gestação em torno de ____ semanas.'], isNormal: true, pendencias }
+    }
+    const dias = numOrNull(st.bio_dias) ?? 0
+    const usavel = datacao.referencia !== null && datacao.hojeISO !== null
+    const r = computeIG({
+      biometria: { semanas: sem, dias },
+      hojeISO: datacao.hojeISO ?? '',
+      referencia: usavel ? datacao.referencia ?? undefined : undefined,
+      corrigir: datacao.corrigir,
+    })
+    // A DUM continua impressa quando a primeira US vence (mesmo cabeçalho do renderer canônico).
+    const dumLinha = usavel && datacao.referencia?.tipo === 'us' && datacao.dum_data
+      ? `DUM: ${formatBR(dataBRParaISO(datacao.dum_data) ?? datacao.dum_data)}.`
+      : null
+    const body = [dumLinha, r.frase1aUS ?? null].filter(Boolean).join('\n')
+    return { body, conclusion: [r.igConclusao], isNormal: true, pendencias }
+  },
+}
+
+// ── Feto: BCF + vitalidade + situação/apresentação + anatomia padrão ─────────
+/**
+ * Limites da frequência cardíaca fetal (ISUOG Practice Guidelines 2023):
+ * bradicardia persistente ≤ 110 bpm, taquicardia persistente ≥ 180 bpm.
+ * No modo Automático a BCF numérica decide; o médico pode sobrescrever.
+ */
+export const FCF_BRADICARDIA_MAX_BPM = 110
+export const FCF_TAQUICARDIA_MIN_BPM = 180
+/** Trava de digitação, não limite diagnóstico. Acima disso a automação não classifica. */
+export const FCF_INPUT_MAX_BPM = 300
+
+export type ClasseFcf = 'normal' | 'bradicardia' | 'taquicardia'
+
+export function classificarFcf(bpm: number): ClasseFcf {
+  if (bpm <= FCF_BRADICARDIA_MAX_BPM) return 'bradicardia'
+  if (bpm >= FCF_TAQUICARDIA_MIN_BPM) return 'taquicardia'
+  return 'normal'
+}
+
+export type VitalidadeFetal = {
+  /** 'auto' segue a BCF; os demais são escolha explícita do médico. */
+  modo: 'auto' | 'ausente' | 'bradicardia' | 'taquicardia'
+  /** Alteração que vai ao laudo; null = atividade cardíaca presente e normal. */
+  alteracao: 'ausente' | 'bradicardia' | 'taquicardia' | null
+  /** BCF válida (nunca com atividade ausente). */
+  bcf: number | null
+  /** Classe sugerida pela BCF, para a tela mostrar no modo Automático. */
+  sugestao: ClasseFcf | null
+  /** Número impossível para classificação automática; exige correção do campo. */
+  entradaInvalida: boolean
+}
+
+/**
+ * A vitalidade efetiva do feto. `vitalidade: 'normal'` é o "Presente" dos estados
+ * antigos e equivale ao Automático. BCF vazia nunca vira ausência: no Automático
+ * ela fica pendente.
+ */
+export function resolverVitalidadeFetal(st: Readonly<Record<string, unknown>>): VitalidadeFetal {
+  const bruto = String(st.vitalidade ?? '').trim()
+  const modo = bruto === 'ausente' || bruto === 'bradicardia' || bruto === 'taquicardia' ? bruto : 'auto'
+  const lida = numOrNull(st.bcf)
+  const bcf = modo === 'ausente' ? null : lida
+  const entradaInvalida = bcf !== null && (bcf <= 0 || bcf > FCF_INPUT_MAX_BPM)
+  const sugestao = bcf === null || entradaInvalida ? null : classificarFcf(bcf)
+  const alteracao = modo !== 'auto' ? modo : sugestao === 'bradicardia' || sugestao === 'taquicardia' ? sugestao : null
+  return { modo, alteracao, bcf, sugestao, entradaInvalida }
+}
+
+export const DORSO_FETAL_OPCOES = ['à esquerda', 'à direita', 'anterior', 'posterior'] as const
+
 const fetoModule: OrganModule = {
   schema: {
     id: 'feto',
     name: 'Feto',
     category: 'OBSTETRICA',
     fields: [
+      { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '145' },
+      {
+        key: 'vitalidade', label: 'Atividade cardíaca fetal', kind: 'segmented',
+        hint: `Automático: ≤ ${FCF_BRADICARDIA_MAX_BPM} bradicardia · ≥ ${FCF_TAQUICARDIA_MIN_BPM} taquicardia`,
+        options: [
+          { value: 'auto', label: 'Automático', isDefault: true },
+          { value: 'ausente', label: 'Ausente' },
+          { value: 'bradicardia', label: 'Bradicardia' },
+          { value: 'taquicardia', label: 'Taquicardia' },
+        ],
+      },
       {
         key: 'situacao',
         label: 'Situação fetal',
@@ -163,25 +280,15 @@ const fetoModule: OrganModule = {
         ],
       },
       {
-        key: 'dorso', label: 'Dorso (opcional)', kind: 'segmented',
+        key: 'dorso', label: 'Dorso (opcional)', kind: 'segmented', presentation: 'select',
         options: [
-          { value: '', label: 'Não informar', isDefault: true },
+          { value: '', label: 'Selecionar', isDefault: true },
           { value: 'à esquerda', label: 'À esquerda' },
           { value: 'à direita', label: 'À direita' },
           { value: 'anterior', label: 'Anterior' },
           { value: 'posterior', label: 'Posterior' },
         ],
       },
-      {
-        key: 'vitalidade', label: 'Atividade cardíaca fetal', kind: 'segmented',
-        options: [
-          { value: 'normal', label: 'Presente', isDefault: true },
-          { value: 'ausente', label: 'Ausente' },
-          { value: 'bradicardia', label: 'Bradicardia' },
-          { value: 'taquicardia', label: 'Taquicardia' },
-        ],
-      },
-      { key: 'bcf', label: 'BCF (bpm)', kind: 'text', placeholder: '145' },
       {
         key: 'movimentos', label: 'Movimentos fetais', kind: 'segmented',
         options: [
@@ -192,46 +299,45 @@ const fetoModule: OrganModule = {
       },
       {
         key: 'cordao_vasos', label: 'Vasos do cordão umbilical', kind: 'segmented',
-        hint: 'só informe quando avaliado',
         options: [
-          { value: 'nao_avaliado', label: 'Não informar', isDefault: true },
-          { value: 'tres', label: '2 artérias + 1 veia' },
+          { value: 'tres', label: '2 artérias + 1 veia', isDefault: true },
           { value: 'dois', label: 'Artéria umbilical única' },
+          // Estados antigos começavam aqui; segue escolhível para não afirmar o que não foi visto.
+          { value: 'nao_avaliado', label: 'Não avaliado' },
         ],
       },
     ],
   },
   initialState: (): OrganState => ({
+    bcf: '',
+    vitalidade: 'auto',
     situacao: 'longitudinal',
     'situacao.longitudinal.apresentacao': 'cefálica',
     'situacao.transversa.polo_cefalico': 'à direita',
     dorso: '',
-    vitalidade: 'normal',
-    bcf: '',
     movimentos: 'normais',
-    cordao_vasos: 'nao_avaliado',
+    cordao_vasos: 'tres',
   }),
   compose: (st): OrganComposition => {
     const situacao = String(st.situacao || 'longitudinal')
     const apres = String(st['situacao.longitudinal.apresentacao'] || 'cefálica')
     const polo = String(st['situacao.transversa.polo_cefalico'] || 'à direita')
     const dorso = String(st.dorso || '').trim()
-    const vitalidade = String(st.vitalidade || 'normal')
+    const { alteracao, bcf } = resolverVitalidadeFetal(st)
     const movimentos = String(st.movimentos || 'normais')
     const cordao = String(st.cordao_vasos || 'nao_avaliado')
-    const bcf = numOrNull(st.bcf)
-    const bcfLinha = vitalidade === 'ausente'
+    const bcfLinha = alteracao === 'ausente'
       ? 'Ausência de batimentos cardíacos fetais.'
-      : vitalidade === 'bradicardia'
+      : alteracao === 'bradicardia'
         ? bcf === null
           ? 'Batimentos cardíacos presentes, com frequência reduzida.'
           : `Batimentos cardíacos presentes, com frequência de ${ptBr(bcf)} bpm.`
-      : vitalidade === 'taquicardia'
+      : alteracao === 'taquicardia'
         ? bcf === null
           ? 'Batimentos cardíacos presentes, com frequência aumentada.'
           : `Batimentos cardíacos presentes, com frequência de ${ptBr(bcf)} bpm.`
         : `Batimentos cardíacos presentes, bem caracterizados pelo modo M e modo Doppler (BCF = ${bcf === null ? '____' : ptBr(bcf)} bpm).`
-    const movimentosLinha = vitalidade === 'ausente'
+    const movimentosLinha = alteracao === 'ausente'
       ? null
       : movimentos === 'ausentes'
         ? 'Não foram observados movimentos fetais durante o exame.'
@@ -249,11 +355,11 @@ const fetoModule: OrganModule = {
       cordao === 'dois' ? 'O cordão umbilical tem dois vasos, sendo uma artéria e uma veia.' : null,
     ].filter((linha): linha is string => Boolean(linha))
     const conclusion = [
-      vitalidade === 'ausente' ? 'Óbito fetal.' : null,
-      vitalidade === 'bradicardia' ? 'Bradicardia fetal.' : null,
-      vitalidade === 'taquicardia' ? 'Taquicardia fetal.' : null,
-      movimentos === 'ausentes' && vitalidade !== 'ausente' ? 'Ausência de movimentos fetais durante o exame.' : null,
-      movimentos === 'reduzidos' && vitalidade !== 'ausente' ? 'Movimentos fetais reduzidos.' : null,
+      alteracao === 'ausente' ? 'Óbito fetal.' : null,
+      alteracao === 'bradicardia' ? 'Bradicardia fetal.' : null,
+      alteracao === 'taquicardia' ? 'Taquicardia fetal.' : null,
+      movimentos === 'ausentes' && alteracao !== 'ausente' ? 'Ausência de movimentos fetais durante o exame.' : null,
+      movimentos === 'reduzidos' && alteracao !== 'ausente' ? 'Movimentos fetais reduzidos.' : null,
       cordao === 'dois' ? 'Artéria umbilical única.' : null,
     ].filter((item): item is string => Boolean(item))
     return { body: linhas.join('\n'), conclusion, isNormal: conclusion.length === 0 }
@@ -271,7 +377,7 @@ const biometriaModule: OrganModule = {
       { key: 'cc', label: 'CC (mm)', kind: 'text', placeholder: '175' },
       { key: 'ca', label: 'CA (mm)', kind: 'text', placeholder: '152' },
       { key: 'cf', label: 'CF (mm)', kind: 'text', placeholder: '33' },
-      { key: 'peso', label: 'Peso estimado (g)', kind: 'text', placeholder: '320' },
+      { key: 'peso', label: 'Peso (g)', kind: 'text', placeholder: '320' },
     ],
   },
   initialState: (): OrganState => ({ dbp: '', cc: '', ca: '', cf: '', peso: '' }),
@@ -289,6 +395,77 @@ const biometriaModule: OrganModule = {
 }
 
 // ── Placenta ──────────────────────────────────────────────────────────────────
+/**
+ * Localizações oferecidas: uma parede ou a combinação de duas. Lateral só
+ * aparece associada a anterior, posterior ou fúndica; combinação tripla não existe.
+ */
+export const PLACENTA_LOCALIZACOES = [
+  { value: 'anterior', label: 'Anterior' },
+  { value: 'posterior', label: 'Posterior' },
+  { value: 'fúndica', label: 'Fúndica' },
+  { value: 'anterior e fúndica', label: 'Anterior/fúndica' },
+  { value: 'posterior e fúndica', label: 'Posterior/fúndica' },
+  { value: 'anterior e lateral direita', label: 'Anterior/lateral direita' },
+  { value: 'anterior e lateral esquerda', label: 'Anterior/lateral esquerda' },
+  { value: 'posterior e lateral direita', label: 'Posterior/lateral direita' },
+  { value: 'posterior e lateral esquerda', label: 'Posterior/lateral esquerda' },
+  { value: 'fúndica e lateral direita', label: 'Fúndica/lateral direita' },
+  { value: 'fúndica e lateral esquerda', label: 'Fúndica/lateral esquerda' },
+] as const
+
+export type PlacentaDaTela = {
+  /** Estado antigo com Normal/Detalhar (`estado`, `estado.detalhar.*`). */
+  legado: boolean
+  /** Só no legado: "Normal" sem relação com o OI. */
+  aspectoNormalLegado: boolean
+  localizacao: string
+  ecotextura: string
+  grau: string
+}
+
+/**
+ * A placenta da tela, nos dois formatos. Localização escolhida é sempre o
+ * formato novo; sem ela, um `estado` (Normal/Detalhar) indica estado antigo.
+ */
+export function lerPlacentaDaTela(st: Readonly<Record<string, unknown>>): PlacentaDaTela {
+  const t = (k: string) => (typeof st[k] === 'string' ? (st[k] as string).trim() : '')
+  const semGrau = (g: string) => g.replace(/^grau\s*/i, '')
+  if (!t('localizacao') && t('estado')) {
+    const detalhar = t('estado') === 'detalhar'
+    return {
+      legado: true,
+      aspectoNormalLegado: !detalhar,
+      localizacao: detalhar ? t('estado.detalhar.localizacao') : '',
+      ecotextura: detalhar ? t('estado.detalhar.ecotextura') : '',
+      grau: detalhar ? semGrau(t('estado.detalhar.grau')) : '',
+    }
+  }
+  return {
+    legado: false,
+    aspectoNormalLegado: false,
+    localizacao: t('localizacao'),
+    ecotextura: t('ecotextura'),
+    grau: semGrau(t('grau')),
+  }
+}
+
+/**
+ * Leva a placenta antiga às chaves novas na primeira edição. "Normal" do
+ * formato antigo não tinha localização: ela fica por escolher, sem default.
+ */
+export function migrarPlacentaLegada(st: OrganState): OrganState {
+  const placenta = lerPlacentaDaTela(st)
+  if (!placenta.legado) return st
+  const semEstado = { ...st }
+  delete semEstado.estado
+  return {
+    ...semEstado,
+    localizacao: placenta.localizacao,
+    ecotextura: placenta.aspectoNormalLegado ? 'homogênea' : placenta.ecotextura,
+    grau: placenta.grau,
+  }
+}
+
 const placentaModule: OrganModule = {
   schema: {
     id: 'placenta',
@@ -296,20 +473,24 @@ const placentaModule: OrganModule = {
     category: 'OBSTETRICA',
     fields: [
       {
-        key: 'estado',
-        label: 'Placenta',
-        kind: 'segmented',
+        key: 'localizacao', label: 'Localização', kind: 'segmented', presentation: 'select',
+        options: [{ value: '', label: 'Selecionar', isDefault: true }, ...PLACENTA_LOCALIZACOES],
+      },
+      {
+        key: 'ecotextura', label: 'Ecotextura', kind: 'segmented',
         options: [
-          { value: 'normal', label: 'Normal', isDefault: true },
-          {
-            value: 'detalhar',
-            label: 'Detalhar',
-            subFields: [
-              { key: 'localizacao', label: 'Localização', kind: 'text', placeholder: 'posterior' },
-              { key: 'grau', label: 'Grau (0/I/II/III)', kind: 'text', placeholder: 'I' },
-              { key: 'ecotextura', label: 'Ecotextura (opcional)', kind: 'text', placeholder: 'homogênea' },
-            ],
-          },
+          { value: 'homogênea', label: 'Homogênea', isDefault: true },
+          { value: 'heterogênea', label: 'Heterogênea' },
+        ],
+      },
+      {
+        key: 'grau', label: 'Grannum (opcional)', kind: 'segmented', presentation: 'select',
+        options: [
+          { value: '', label: 'Não informar', isDefault: true },
+          { value: '0', label: 'Grau 0' },
+          { value: 'I', label: 'Grau I' },
+          { value: 'II', label: 'Grau II' },
+          { value: 'III', label: 'Grau III' },
         ],
       },
       {
@@ -345,16 +526,24 @@ const placentaModule: OrganModule = {
       },
     ],
   },
-  initialState: (): OrganState => ({ estado: 'normal', relacao_orificio: 'nao_informada', achado: 'nenhum' }),
+  initialState: (): OrganState => ({
+    localizacao: '',
+    ecotextura: 'homogênea',
+    grau: '',
+    relacao_orificio: 'nao_informada',
+    achado: 'nenhum',
+  }),
   compose: (st): OrganComposition => {
     const relacao = String(st.relacao_orificio || 'nao_informada')
     const achado = String(st.achado || 'nenhum')
-    const loc = String(st['estado.detalhar.localizacao'] || '').trim()
-    const grau = String(st['estado.detalhar.grau'] || '').trim().replace(/^grau\s*/i, '')
-    const eco = String(st['estado.detalhar.ecotextura'] || '').trim()
+    const placenta = lerPlacentaDaTela(st)
+    const { localizacao: loc, grau, ecotextura: eco } = placenta
     const corpo: string[] = []
     const conclusion: string[] = []
-    if (String(st.estado) === 'detalhar' || relacao !== 'nao_informada') {
+    const pendencias = placenta.legado || loc
+      ? []
+      : [{ onde: 'Placenta', motivo: 'Selecione a localização da placenta.' }]
+    if (!placenta.aspectoNormalLegado || relacao !== 'nao_informada') {
       let frase = 'Placenta'
       if (loc) frase += ` de localização ${loc}`
       if (grau) frase += `, grau ${grau}`
@@ -387,7 +576,7 @@ const placentaModule: OrganModule = {
       corpo.push('Placenta apresentando imagens anecoicas intraparenquimatosas, bem delimitadas, de contornos regulares, algumas demonstrando fluxo de baixa velocidade ao estudo Doppler.')
       conclusion.push('Lagos venosos placentários.')
     }
-    return { body: corpo.join('\n'), conclusion, isNormal: conclusion.length === 0 }
+    return { body: corpo.join('\n'), conclusion, isNormal: conclusion.length === 0, pendencias }
   },
 }
 
@@ -402,6 +591,58 @@ export function classeILA(v: number): { classe: string; conclusao: string } {
   if (v > 25) return { classe: 'aumentada', conclusao: 'Polidrâmnio' }
   return { classe: 'normal', conclusao: 'Líquido amniótico em quantidade normal' }
 }
+
+export type LiquidoDaTela = {
+  metodo: 'subjetivo' | 'mbv' | 'ila'
+  /** Texto do valor em cm como a tela mostra (formato novo ou legado). */
+  valorTexto: string
+  /** Valor numérico válido, ou null. */
+  valor: number | null
+  /** Motivo de bloqueio: valor que não pode ser usado sem inferir. */
+  pendencia: string | null
+}
+
+/**
+ * O líquido da tela. O valor vive num campo único (`valor_cm`) e só vale com
+ * MBV ou ILA; estados antigos guardavam a medida em `tipo.mbv.cm`/`tipo.ila.cm`,
+ * lida só para o método escolhido, como antes.
+ */
+export function lerLiquidoDaTela(st: Readonly<Record<string, unknown>>): LiquidoDaTela {
+  const bruto = String(st.tipo ?? '').trim()
+  const metodo = bruto === 'mbv' || bruto === 'ila' ? bruto : 'subjetivo'
+  const t = (k: string) => (typeof st[k] === 'string' ? (st[k] as string).trim() : '')
+  const valorTexto = t('valor_cm') || (metodo === 'subjetivo' ? '' : t(`tipo.${metodo}.cm`))
+  const valor = numOrNull(valorTexto)
+  let pendencia: string | null = null
+  if (valorTexto && metodo === 'subjetivo') {
+    pendencia = `Há ${valorTexto} cm informado sem método quantitativo: escolha MBV ou ILA, ou apague o valor.`
+  } else if (valorTexto && valor === null) {
+    pendencia = `Informe o ${metodo === 'mbv' ? 'maior bolsão vertical' : 'ILA'} em cm (ex.: 5,6) ou apague o valor.`
+  }
+  return { metodo, valorTexto, valor, pendencia }
+}
+
+/** Move a medida antiga (`tipo.mbv.cm`/`tipo.ila.cm`) para o campo único na primeira edição. */
+export function migrarLiquidoLegado<T extends Record<string, unknown>>(st: T): T {
+  const legado = ['tipo.mbv.cm', 'tipo.ila.cm'].some((k) => typeof st[k] === 'string' && (st[k] as string).trim())
+  if (!legado) return st
+  return { ...st, valor_cm: lerLiquidoDaTela(st).valorTexto, 'tipo.mbv.cm': '', 'tipo.ila.cm': '' }
+}
+
+/** Trocar entre ILA e MBV nunca reaproveita a mesma medida com outro significado. */
+export function trocarMetodoLiquido<T extends Record<string, unknown>>(
+  st: T,
+  proximo: 'subjetivo' | 'mbv' | 'ila',
+): T {
+  const atual = lerLiquidoDaTela(st)
+  const deveLimpar = atual.metodo !== 'subjetivo' && atual.metodo !== proximo
+  return {
+    ...st,
+    tipo: proximo,
+    ...(deveLimpar ? { valor_cm: '' } : {}),
+  }
+}
+
 const liquidoModule: OrganModule = {
   schema: {
     id: 'liquido',
@@ -410,37 +651,37 @@ const liquidoModule: OrganModule = {
     fields: [
       {
         key: 'tipo',
-        label: 'Líquido amniótico',
+        label: 'Método',
         kind: 'segmented',
         options: [
-          { value: 'subjetivo', label: 'Normal (subjetivo)', isDefault: true },
-          { value: 'mbv', label: 'MBV', subFields: [{ key: 'cm', label: 'Maior bolsão vertical (cm)', kind: 'text', placeholder: '5,6' }] },
-          { value: 'ila', label: 'ILA', subFields: [{ key: 'cm', label: 'ILA (cm)', kind: 'text', placeholder: '12' }] },
+          { value: 'subjetivo', label: 'Subjetivo', isDefault: true },
+          { value: 'mbv', label: 'MBV' },
+          { value: 'ila', label: 'ILA' },
         ],
       },
+      { key: 'valor_cm', label: 'Valor (cm)', kind: 'text', placeholder: '5,6' },
     ],
   },
-  initialState: (): OrganState => ({ tipo: 'subjetivo' }),
+  initialState: (): OrganState => ({ tipo: 'subjetivo', valor_cm: '' }),
   compose: (st): OrganComposition => {
-    const tipo = String(st.tipo || 'subjetivo')
+    const liquido = lerLiquidoDaTela(st)
+    const pendencias = liquido.pendencia ? [{ onde: 'Líquido amniótico', motivo: liquido.pendencia }] : []
     // Subjetivo normal (também é o fallback quando a medida está em branco — NUNCA
     // afirmar normalidade atrelada a um "____" cm; review dex2).
     const subjetivo: OrganComposition = {
       body: 'Líquido amniótico de quantidade normal pela análise subjetiva.',
       conclusion: ['Líquido amniótico em quantidade normal.'],
       isNormal: true,
+      pendencias,
     }
-    if (tipo === 'mbv') {
-      const v = numOrNull(st['tipo.mbv.cm'])
-      if (v === null) return subjetivo
+    const v = liquido.valor
+    if (liquido.metodo === 'mbv' && v !== null) {
       const c = classeMBV(v)
-      return { body: `Maior bolsão vertical de ${ptBr(v)} cm.`, conclusion: [`${c.conclusao} (maior bolsão vertical de ${ptBr(v)} cm).`], isNormal: c.classe === 'normal' }
+      return { body: `Maior bolsão vertical de ${ptBr(v)} cm.`, conclusion: [`${c.conclusao} (maior bolsão vertical de ${ptBr(v)} cm).`], isNormal: c.classe === 'normal', pendencias }
     }
-    if (tipo === 'ila') {
-      const v = numOrNull(st['tipo.ila.cm'])
-      if (v === null) return subjetivo
+    if (liquido.metodo === 'ila' && v !== null) {
       const c = classeILA(v)
-      return { body: `Índice de líquido amniótico (ILA) de ${ptBr(v)} cm.`, conclusion: [`${c.conclusao} (ILA de ${ptBr(v)} cm).`], isNormal: c.classe === 'normal' }
+      return { body: `Índice de líquido amniótico (ILA) de ${ptBr(v)} cm.`, conclusion: [`${c.conclusao} (ILA de ${ptBr(v)} cm).`], isNormal: c.classe === 'normal', pendencias }
     }
     return subjetivo
   },
@@ -471,7 +712,7 @@ export const obstetrica: ExamCategory = {
   tecnica: TECNICA,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [
-    { id: 'ig', label: 'Datação', group: 'orgaos', module: igModule },
+    { id: 'ig', label: 'Datação', group: 'orgaos', module: datacaoObstetricaModule },
     { id: 'feto', label: 'Feto', group: 'orgaos', module: fetoModule },
     { id: 'biometria', label: 'Biometria', group: 'orgaos', module: biometriaModule },
     { id: 'placenta', label: 'Placenta', group: 'orgaos', module: placentaModule },

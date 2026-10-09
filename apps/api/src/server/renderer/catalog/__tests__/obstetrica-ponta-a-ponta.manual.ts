@@ -13,8 +13,8 @@
  * ## O que mais importa aqui
  *
  * Esta é a categoria com o histórico mais pesado de falso-normal em produção:
- * oligoâmnio inventado a partir de MBV vazio, feto perdido em gemelar, cordão
- * normal enxertado em 100% dos laudos. Por isso quase todo caso tem asserção
+ * oligoâmnio inventado a partir de MBV vazio, feto perdido em gemelar e cordão
+ * não avaliado reaparecendo como normal em rascunhos antigos. Por isso quase todo caso tem asserção
  * NEGATIVA, e há um bloco inteiro sobre o que NÃO pode ser afirmado.
  *
  * ## ⚠️ Rode com as flags de PRODUÇÃO
@@ -66,6 +66,7 @@ function medida(): Record<string, unknown> {
   st = com(st, "ig", { bio_sem: "32", bio_dias: "2" });
   st = com(st, "feto", { apresentacao: "cefálica", bcf: "142", dorso: "à esquerda" });
   st = com(st, "biometria", { dbp: "82", cc: "295", ca: "285", cf: "62", peso: "1900" });
+  st = com(st, "placenta", { localizacao: "posterior" });
   return st;
 }
 
@@ -74,7 +75,7 @@ const CASOS: Caso[] = [
     nome: "gestação de 32 semanas, tudo medido",
     porque: "o caso mais comum. Se este divergir em capacidade, não há piloto.",
     estado: medida(),
-    exige: ["82", "295", "285", "62", "142"],
+    exige: ["82", "295", "285", "62", "142", "duas artérias e uma veia"],
     exigeNaConclusao: ["32 semanas"],
   },
   {
@@ -133,10 +134,9 @@ const CASOS: Caso[] = [
     porque:
       "localização, grau e ecotextura são três campos livres na tela. O grau vem como 'II' ou 'grau II' e o canônico quer só o algarismo.",
     estado: com(medida(), "placenta", {
-      estado: "detalhar",
-      "estado.detalhar.localizacao": "anterior",
-      "estado.detalhar.grau": "grau II",
-      "estado.detalhar.ecotextura": "homogênea",
+      localizacao: "anterior",
+      grau: "II",
+      ecotextura: "homogênea",
     }),
     exige: ["anterior"],
   },
@@ -196,15 +196,14 @@ const CASOS: Caso[] = [
   },
   {
     /**
-     * A tela agora tem cordão, mas começa explicitamente em "Não informar".
-     * Este caso trava o defeito histórico: cordão de três vasos afirmado em
-     * 100% dos laudos sem ninguém ter olhado.
+     * Exames novos começam em três vasos por decisão clínica atual. Este caso
+     * protege rascunhos antigos que registraram explicitamente "Não avaliado".
      */
     nome: "cordão não avaliado NÃO pode ser afirmado",
     porque:
-      "o campo começa em 'Não informar'. Afirmar três vasos sem o médico selecionar a avaliação foi defeito real, e este caso impede que volte pela porta da web.",
-    estado: medida(),
-    proibe: ["três vasos", "3 vasos"],
+      "um rascunho antigo com 'Não avaliado' deve continuar sem afirmar três vasos, mesmo com o novo padrão para exames novos.",
+    estado: com(medida(), "feto", { cordao_vasos: "nao_avaliado" }),
+    proibe: ["três vasos", "3 vasos", "duas artérias e uma veia"],
   },
 ];
 

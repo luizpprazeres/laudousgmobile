@@ -625,9 +625,9 @@ export function applyCompanionStructured(
     if (current.__opts?.somente_doppler !== 'sim') {
       mergeSection('biometria', biometricPatch(data, false))
       const ila = normalizeCompanionMeasurement(data.ila, 'cm')
-      if (ila) mergeSection('liquido', { tipo: 'ila', 'tipo.ila.cm': ila }, {
+      if (ila) mergeSection('liquido', { tipo: 'ila', valor_cm: ila }, {
         replaceableDefaults: { tipo: ['subjetivo'] },
-        atomicGroups: [['tipo', 'tipo.ila.cm']],
+        atomicGroups: [['tipo', 'valor_cm']],
       })
     }
   }

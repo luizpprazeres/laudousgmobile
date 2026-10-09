@@ -466,7 +466,7 @@ function buildFraseReferencia(
   if (ref.fonte === "usg_precoce") {
     if (ref.data && ref.igNaDataSemanas !== null) {
       const fmtNaData = formatIgSemanasDias(ref.igNaDataSemanas, ref.igNaDataDias);
-      return `Primeira ultrassonografia realizada ${fmtData(ref.data)} com ${fmtNaData}. Hoje com ${fmtR}.`;
+      return `Primeira ultrassonografia realizada em ${fmtData(ref.data)} com ${fmtNaData}. Hoje com ${fmtR}.`;
     }
     // R_hoje ditado direto sem data/IG-na-data → prosa degradada.
     return `Primeira ultrassonografia compatível com ${fmtR} na data do exame.`;

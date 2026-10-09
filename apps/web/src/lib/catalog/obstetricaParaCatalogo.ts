@@ -34,6 +34,12 @@
 import { dopplerDaTela } from "./dopplerParaCatalogo";
 import { fetalGrowthDaTela } from "./fetalGrowthParaCatalogo";
 import { cervicometriaComplemento } from "./cervicometriaLeitura";
+import { lerDatacaoDaTela } from "../ig/computeIG";
+import {
+  lerLiquidoDaTela,
+  lerPlacentaDaTela,
+  resolverVitalidadeFetal,
+} from "../deterministic/organs/obstetrica";
 
 type EstadoDaSecao = Record<string, unknown>;
 export type EstadoObstetrico = Record<string, EstadoDaSecao | unknown>;
@@ -78,7 +84,8 @@ function exigirNumero(
 function fetoDaTela(f: EstadoDaSecao, b: EstadoDaSecao) {
   const dorso = texto(f, "dorso");
   const transversa = texto(f, "situacao") === "transversa";
-  const vitalidade = texto(f, "vitalidade") || "normal";
+  /** Automático classifica pela BCF (≤110/≥180); a escolha explícita do médico vence. */
+  const vitalidade = resolverVitalidadeFetal(f);
   const movimentos = texto(f, "movimentos") || "normais";
   const cordao = texto(f, "cordao_vasos") || "nao_avaliado";
   return {
@@ -93,7 +100,7 @@ function fetoDaTela(f: EstadoDaSecao, b: EstadoDaSecao) {
       : null,
     // Ao trocar para "atividade ausente", o valor anteriormente digitado pode
     // continuar no estado visual. Ele não pode atravessar junto com o óbito.
-    bcf_bpm: vitalidade === "ausente" ? null : numero(f, "bcf"),
+    bcf_bpm: vitalidade.modo === "ausente" ? null : numero(f, "bcf"),
     dbp_mm: numero(b, "dbp"),
     cc_mm: numero(b, "cc"),
     ca_mm: numero(b, "ca"),
@@ -102,7 +109,7 @@ function fetoDaTela(f: EstadoDaSecao, b: EstadoDaSecao) {
     peso_g: numero(b, "peso"),
     peso_variacao_g: null,
     percentil: null,
-    bcf_alteracao: ["ausente", "bradicardia", "taquicardia"].includes(vitalidade) ? vitalidade : null,
+    bcf_alteracao: vitalidade.alteracao,
     movimentos_fetais: ["ausentes", "reduzidos"].includes(movimentos) ? movimentos : null,
     cranio_achado: null,
     cranio_medida_mm: null,
@@ -157,15 +164,37 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
       bloqueia: true,
     });
   }
-  const vitalidade = texto(f, "vitalidade") || "normal";
-  if (vitalidade === "normal") {
-    exigirNumero(
-      pendencias,
-      f,
-      "bcf",
-      "BCF",
-      "Informe a frequência cardíaca fetal em bpm ou selecione uma alteração da atividade cardíaca.",
-    );
+  // No Automático (e no "Presente" dos estados antigos) a BCF é o próprio dado: vazia fica pendente, nunca vira ausência.
+  const vitalidadeFetal = resolverVitalidadeFetal(f);
+  if (vitalidadeFetal.modo === "auto") {
+    if (vitalidadeFetal.entradaInvalida) {
+      pendencias.push({
+        onde: "BCF",
+        valor: texto(f, "bcf"),
+        motivo: "Revise a frequência cardíaca fetal informada.",
+        bloqueia: true,
+      });
+    } else {
+      exigirNumero(
+        pendencias,
+        f,
+        "bcf",
+        "BCF",
+        "Informe a frequência cardíaca fetal em bpm ou selecione uma alteração da atividade cardíaca.",
+      );
+    }
+  } else if (
+    vitalidadeFetal.modo !== "ausente" &&
+    vitalidadeFetal.bcf !== null &&
+    vitalidadeFetal.sugestao !== null &&
+    vitalidadeFetal.sugestao !== vitalidadeFetal.modo
+  ) {
+    pendencias.push({
+      onde: "BCF",
+      valor: texto(f, "bcf"),
+      motivo: `A classificação escolhida pelo médico (${vitalidadeFetal.modo}) diverge da sugestão automática (${vitalidadeFetal.sugestao}).`,
+      bloqueia: false,
+    });
   }
   for (const [chave, rotulo] of [
     ["dbp", "DBP"],
@@ -183,24 +212,41 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
     );
   }
 
-  const fonte = texto(ig, "referencia") || "nenhuma";
-
   /**
    * A REFERÊNCIA PRECOCE — de onde vem a idade gestacional de comparação.
    *
-   * A tela oferece US precoce ou DUM, cada uma com os próprios subcampos. O
-   * canônico separa a FONTE (`referencia_fonte`) dos DADOS, e é ele quem aplica
-   * a regra do Dr. Domingos: a biometria de hoje é a âncora, e a correção só
-   * aparece se divergir mais de cinco dias.
+   * A tela mostra DUM e primeira US juntas, sem seletor; `lerDatacaoDaTela`
+   * também lê os estados antigos (`referencia.usg.*`/`referencia.dum.*`). Qualquer
+   * referência completa atravessa; com as duas completas, a primeira US é a
+   * fonte e a DUM segue impressa como cabeçalho. O canônico aplica a regra do
+   * Dr. Domingos: a biometria de hoje é a âncora, e a correção só aparece se
+   * divergir mais de cinco dias. Referência começada e inválida bloqueia em vez
+   * de sumir do laudo.
    */
-  const usg = fonte === "usg";
-  const dum = fonte === "dum";
-  const sub = (k: string) => texto(ig, `referencia.${fonte}.${k}`);
+  const datacao = lerDatacaoDaTela(ig);
+  for (const p of datacao.pendencias) {
+    pendencias.push({
+      onde: p.campo === "dum" ? "DUM" : "Primeira ultrassonografia",
+      valor: p.valor,
+      motivo: p.motivo,
+      bloqueia: true,
+    });
+  }
+  const usg = datacao.us_data !== null;
+  const dum = datacao.dum_data !== null;
+  /** Os estados novos sempre corrigem (default do épico); os antigos podiam ter desligado. */
+  const corrigir = usg || dum ? datacao.corrigir : null;
 
-  /** "Sinalizar correção" é `sim` por padrão na tela; nulo quando não há fonte. */
-  const corrigir = usg || dum ? sub("corrigir") !== "nao" : null;
-
-  const placentaDetalhada = texto(p, "estado") === "detalhar";
+  /** Formato novo (`localizacao`/`ecotextura`/`grau`) ou antigo (`estado.detalhar.*`). */
+  const placenta = lerPlacentaDaTela(p);
+  if (!placenta.legado && !placenta.localizacao) {
+    pendencias.push({
+      onde: "Placenta",
+      valor: "",
+      motivo: "Selecione a localização da placenta.",
+      bloqueia: true,
+    });
+  }
   const placentaRelacao = texto(p, "relacao_orificio");
   const placentaAchado = texto(p, "achado");
 
@@ -217,13 +263,13 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
    * mutando esta salvaguarda e vendo o gate continuar verde (22/08) — o que
    * não invalida tê-la aqui, mas invalida dizer que o gate a prova.
    */
-  const tipoLiquido = texto(l, "tipo") || "subjetivo";
-  const mbv = numero(l, "tipo.mbv.cm");
-  const ila = numero(l, "tipo.ila.cm");
+  const liquido = lerLiquidoDaTela(l);
+  if (liquido.pendencia) {
+    pendencias.push({ onde: "Líquido amniótico", valor: liquido.valorTexto, motivo: liquido.pendencia, bloqueia: true });
+  }
+  /** Um único `valor_cm` na tela; o legado `tipo.mbv.cm`/`tipo.ila.cm` vale para o método escolhido. */
   const liquidoTipo =
-    tipoLiquido === "mbv" && mbv !== null ? "mbv"
-    : tipoLiquido === "ila" && ila !== null ? "ila"
-    : "normal";
+    liquido.metodo !== "subjetivo" && liquido.valor !== null ? liquido.metodo : "normal";
 
   // Complemento de cervicometria: leitura estrita e portões (cervicometriaLeitura.ts),
   // com a mesma IG que vai ao renderer.
@@ -245,11 +291,11 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
 
     ig_semanas: igSemanas,
     ig_dias: numero(ig, "bio_dias"),
-    dum: dum ? sub("dum_data") || null : null,
-    data_exame: (usg || dum ? sub("exame_data") : "") || null,
-    primeira_us_data: usg ? sub("us_data") || null : null,
-    primeira_us_ig_semanas: usg ? numero(ig, "referencia.usg.us_ig_sem") : null,
-    primeira_us_ig_dias: usg ? numero(ig, "referencia.usg.us_ig_dias") : null,
+    dum: datacao.dum_data,
+    data_exame: usg || dum ? datacao.exame_data : null,
+    primeira_us_data: datacao.us_data,
+    primeira_us_ig_semanas: datacao.us_ig_sem,
+    primeira_us_ig_dias: datacao.us_ig_dias,
     ig_referencia_hoje_semanas: null,
     ig_referencia_hoje_dias: null,
     referencia_fonte: usg ? "usg_precoce" : dum ? "dum" : null,
@@ -258,12 +304,10 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
     saco_gestacional_medidas_mm: null,
 
     placenta_quantidade: null,
-    placenta_localizacao: placentaDetalhada ? texto(p, "estado.detalhar.localizacao") || null : null,
-    placenta_ecotextura: placentaDetalhada ? texto(p, "estado.detalhar.ecotextura") || null : null,
-    /** O médico digita "II" ou "grau II"; o canônico quer só o algarismo. */
-    placenta_grau: placentaDetalhada
-      ? texto(p, "estado.detalhar.grau").replace(/^grau\s*/i, "") || null
-      : null,
+    placenta_localizacao: placenta.localizacao || null,
+    placenta_ecotextura: placenta.ecotextura || null,
+    /** Grannum é opcional; o legado digitava "II" ou "grau II" e o canônico quer só o algarismo. */
+    placenta_grau: placenta.grau || null,
     placenta_relacao_orificio: ["insercao_baixa", "marginal", "previa"].includes(placentaRelacao)
       ? placentaRelacao
       : null,
@@ -278,8 +322,8 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
       : null,
 
     liquido_tipo: liquidoTipo,
-    liquido_ila_cm: liquidoTipo === "ila" ? ila : null,
-    liquido_mbv_por_feto_cm: liquidoTipo === "mbv" && mbv !== null ? [mbv] : null,
+    liquido_ila_cm: liquidoTipo === "ila" ? liquido.valor : null,
+    liquido_mbv_por_feto_cm: liquidoTipo === "mbv" && liquido.valor !== null ? [liquido.valor] : null,
     /**
      * A CLASSE — oligoâmnio, polidrâmnio — sai do RENDERER, dos limiares dele.
      * A tela tem os próprios (`classeILA`, `classeMBV`) e eles ficam de fora:
