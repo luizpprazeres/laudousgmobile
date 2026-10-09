@@ -6,8 +6,8 @@ import { rendererCategoryEnabled, resolveGenerationPath } from "../generationPat
 import { writerRequestParams } from "../../ai/writerClient";
 
 const baseEnv = {
-  OPENAI_MODEL_WRITER: "gpt-4.1-mini",
-  OPENAI_WRITER_REASONING_EFFORT: "none",
+  LLM_WRITER_MODEL: "claude-haiku-5-5",
+  LLM_WRITER_EFFORT: "medium",
   HARD_MODE_ENABLED: "false",
   HARD_MODE_MODEL: "gpt-5.4",
   TESTE_CATEGORY_MODEL: "deepseek-v4-pro",
@@ -15,7 +15,7 @@ const baseEnv = {
   TESTE_CATEGORY_API_KEY: "test-key",
   TESTE_REASONING_EFFORT: "low",
   TESTE_ALLOWED_USER_ID: "luiz",
-  RENDERER_CATEGORIES: "ABDOMEN_TOTAL,TIREOIDE",
+  RENDERER_CATEGORIES: "ABDOMEN_TOTAL,TIREOIDE,CERVICAL,OBSTETRICA,PELVE_FEMININA",
   DOPPLER_STANDALONE_V2: "true",
   DOPPLER_RENAL_WRITER_ENABLED: "true",
   DOPPLER_VENOSO_MMII_WRITER_ENABLED: "true",
@@ -33,11 +33,30 @@ const standard = resolveWriterModel(
   baseEnv,
 );
 check(
-  "standard preserva modelo e effort atuais",
-  standard.provider === "openai" &&
-    standard.model === "gpt-4.1-mini" &&
-    standard.reasoningEffort === "none" &&
+  "standard = Claude Haiku 5.5 (Anthropic), esforço médio",
+  standard.provider === "anthropic" &&
+    standard.model === "claude-haiku-5-5" &&
+    standard.reasoningEffort === "medium" &&
     standard.credentialRef === "default",
+);
+const rollback = resolveWriterModel(
+  { mode: "standard", categoryCode: "ABDOMEN_TOTAL", userId: "outro" },
+  { ...baseEnv, LLM_WRITER_MODEL: "gpt-5.4-mini", LLM_WRITER_EFFORT: "low" },
+);
+check(
+  "rollback por env: modelo não-Claude vai para a OpenAI",
+  rollback.provider === "openai" && rollback.model === "gpt-5.4-mini" && rollback.reasoningEffort === "low",
+);
+for (const retired of ["gpt-4.1-mini", "gpt-4.1", " gpt-4.1-nano "]) {
+  const r = resolveWriterModel(
+    { mode: "standard", categoryCode: "ABDOMEN_TOTAL", userId: "outro" },
+    { ...baseEnv, LLM_WRITER_MODEL: retired },
+  );
+  check(`gpt-4.1 aposentado (${retired.trim()}) nunca é usado: vira Haiku`, r.provider === "anthropic" && r.model === "claude-haiku-5-5");
+}
+check(
+  "env vazia cai no Haiku",
+  resolveWriterModel({ mode: "standard", categoryCode: "X" }, { ...baseEnv, LLM_WRITER_MODEL: "" }).model === "claude-haiku-5-5",
 );
 
 const hardDisabled = resolveWriterModel(
@@ -85,7 +104,7 @@ check(
 );
 
 const standardParams = writerRequestParams({
-  config: standard,
+  config: { ...rollback, model: "gpt-4o-mini" },
   systemMessage: "system",
   userMessage: "user",
   temperature: 0.2,
@@ -127,7 +146,7 @@ for (const [name, userId, config, expectedCode] of [
 }
 
 const standardRenderer = resolveGenerationPath(
-  { mode: "standard", categoryCode: "ABDOMEN_TOTAL" },
+  { mode: "standard", categoryCode: "CERVICAL" },
   baseEnv,
 );
 check(
@@ -209,15 +228,60 @@ for (const categoryCode of ["DOPPLER_VENOSO_MMII", "DOPPLER_VENOSO_MMII_MEDIDAS"
 }
 
 const hardPathOff = resolveGenerationPath(
-  { mode: "hard", categoryCode: "ABDOMEN_TOTAL" },
+  { mode: "hard", categoryCode: "CERVICAL" },
   baseEnv,
 );
 check("hard OFF preserva renderer", hardPathOff.path === "renderer");
 
-for (const categoryCode of ["ABDOMEN_TOTAL", "LIVRE", "TESTE"]) {
+// ---- Migração Haiku 5.5: roteamento por FULL_WRITER_CATEGORIES ----
+const abdomeDefault = resolveGenerationPath({ mode: "standard", categoryCode: "ABDOMEN_TOTAL" }, baseEnv);
+check(
+  "default: ABDOMEN_TOTAL clássico vai ao writer completo (bundle + guards full)",
+  abdomeDefault.path === "writer-pure" && abdomeDefault.ragFewShots && abdomeDefault.guardsMode === "full",
+);
+check(
+  "default: TIREOIDE clássico vai ao writer completo",
+  resolveGenerationPath({ mode: "standard", categoryCode: "TIREOIDE" }, baseEnv).path === "writer-pure",
+);
+check(
+  "estilo objetivo fica no renderer",
+  resolveGenerationPath({ mode: "standard", categoryCode: "ABDOMEN_TOTAL", objetivo: true }, baseEnv).path === "renderer",
+);
+check(
+  "default: família obstétrica e CERVICAL seguem no renderer",
+  resolveGenerationPath({ mode: "standard", categoryCode: "OBSTETRICA" }, baseEnv).path === "renderer" &&
+    resolveGenerationPath({ mode: "standard", categoryCode: "CERVICAL" }, baseEnv).path === "renderer",
+);
+check(
+  "default: PELVE_FEMININA mantém o caminho atual",
+  resolveGenerationPath({ mode: "standard", categoryCode: "PELVE_FEMININA" }, baseEnv).path === "renderer",
+);
+check(
+  "PELVE_FEMININA alternável por env para o writer completo",
+  resolveGenerationPath(
+    { mode: "standard", categoryCode: "PELVE_FEMININA" },
+    { ...baseEnv, FULL_WRITER_CATEGORIES: "PELVE_FEMININA" },
+  ).path === "writer-pure",
+);
+check(
+  "FULL_WRITER_CATEGORIES vazia devolve tudo ao renderer (rollback)",
+  resolveGenerationPath({ mode: "standard", categoryCode: "ABDOMEN_TOTAL" }, { ...baseEnv, FULL_WRITER_CATEGORIES: "" }).path === "renderer",
+);
+check(
+  "renderers clínicos e writers Doppler dedicados ignoram FULL_WRITER_CATEGORIES",
+  ["TORAX", "QUADRIL_INFANTIL", "DOPPLER_RENAL", "DOPPLER_VENOSO_MMII"].every(
+    (categoryCode) =>
+      resolveGenerationPath(
+        { mode: "standard", categoryCode },
+        { ...baseEnv, FULL_WRITER_CATEGORIES: "TORAX,QUADRIL_INFANTIL,DOPPLER_RENAL,DOPPLER_VENOSO_MMII" },
+      ).path === "renderer",
+  ),
+);
+
+for (const categoryCode of ["CERVICAL", "LIVRE", "TESTE"]) {
   const path = resolveGenerationPath(
     {
-      mode: categoryCode === "ABDOMEN_TOTAL" ? "hard" : "standard",
+      mode: categoryCode === "CERVICAL" ? "hard" : "standard",
       categoryCode,
     },
     hardEnabledEnv,

@@ -121,6 +121,17 @@ export async function persistAudit(state: GenerationAuditState): Promise<void> {
   }
 }
 
-export function estimateCost(inputTokens = 0, outputTokens = 0): number {
-  return (inputTokens * 0.4 + outputTokens * 1.6) / 1_000_000;
+/**
+ * US$ por milhão de tokens (entrada, saída). Haiku 5.5: tabela de prompt até
+ * 100 mil tokens (todo laudo cabe); o thinking entra em `output_tokens`.
+ * Modelo fora da tabela usa a tarifa histórica do gpt-4.1-mini, que era a única.
+ */
+const PRICE_PER_MTOK: Record<string, { input: number; output: number }> = {
+  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
+};
+const LEGACY_PRICE = { input: 0.4, output: 1.6 };
+
+export function estimateCost(inputTokens = 0, outputTokens = 0, model?: string | null): number {
+  const price = (model && PRICE_PER_MTOK[model]) || LEGACY_PRICE;
+  return (inputTokens * price.input + outputTokens * price.output) / 1_000_000;
 }

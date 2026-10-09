@@ -1,7 +1,6 @@
 import type { SanityResult, StructuredFindings } from "@laudousg/shared";
 import { SanityResultSchema } from "@laudousg/shared";
-import { structuredCompletion } from "../ai/openai";
-import { env } from "../env";
+import { llmParsed, sanityTarget } from "../ai/llm";
 import { SANITY_JSON_SCHEMA } from "../ai/jsonSchema";
 
 /**
@@ -80,10 +79,10 @@ export async function runSanityCheck(args: {
     args.finalText,
   ].join("\n");
 
-  const result = await structuredCompletion({
-    model: env().OPENAI_MODEL_SANITY,
+  const { value: result } = await llmParsed({
+    target: sanityTarget(),
     system: SANITY_SYSTEM_PROMPT,
-    user: userPrompt,
+    messages: [{ role: "user", content: userPrompt }],
     schemaName: "SanityResult",
     schema: SANITY_JSON_SCHEMA as unknown as Record<string, unknown>,
     parser: SanityResultSchema,

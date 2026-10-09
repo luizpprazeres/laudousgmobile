@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "../env";
 
-let _client: Anthropic | null = null;
+export { anthropic } from "./anthropic";
 
 export type LivreFailureCode =
   | "LIVRE_PROVIDER_NOT_CONFIGURED"
@@ -57,18 +57,6 @@ export function assertLivreProviderConfigured(config: LivreProviderEnv = env()):
     );
   }
   return model;
-}
-
-export function anthropic(): Anthropic {
-  if (_client) return _client;
-  const e = env();
-  const workspaceId = e.ANTHROPIC_WORKSPACE_ID.trim();
-  _client = new Anthropic({
-    apiKey: e.ANTHROPIC_API_KEY,
-    maxRetries: 2,
-    ...(workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : {}),
-  });
-  return _client;
 }
 
 export function effortParam(

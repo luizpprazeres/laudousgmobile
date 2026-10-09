@@ -12,6 +12,7 @@
  */
 
 import { env } from "@/server/env";
+import { fullWriterCategories } from "./generationPathResolver";
 
 export type CaminhoDeGeracao = "renderer" | "writer";
 
@@ -29,6 +30,10 @@ export function caminhoDeGeracao(
   opts: { objetivo: boolean },
 ): CaminhoDeGeracao {
   const e = env();
+
+  // Migração Haiku 5.5: categoria no writer completo por configuração (só no
+  // clássico — o objetivo fica no renderer, ver rendererCategoryEnabled).
+  if (!opts.objetivo && fullWriterCategories(e).has(categoria)) return "writer";
 
   // Eixo vascular: writer sempre, sem flag e sem variante objetiva.
   if (

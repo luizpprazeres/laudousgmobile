@@ -24,6 +24,7 @@ import { loadDeterministicBundle } from "@/server/pipeline/bundleLoader";
 import { getWritingStyleById } from "@/server/db/lookups";
 import { RENDERER_PROGRAMMATIC_CATEGORIES, EXTRACTORS } from "@/server/renderer/extraction";
 import { catalogEnabledFor } from "@/server/renderer/catalog/engine";
+import { fullWriterCategories } from "@/server/pipeline/generationPathResolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,7 +73,9 @@ function descreverCaminho(categoryCode: string): {
 } {
   const rendererCsv = env().RENDERER_CATEGORIES;
   const lista = rendererCsv.split(",").map((x) => x.trim()).filter(Boolean);
-  const ligado = catalogEnabledFor(rendererCsv, categoryCode);
+  // FULL_WRITER_CATEGORIES (migração Haiku) tira a categoria do renderer no
+  // estilo clássico, mesmo que conste em RENDERER_CATEGORIES.
+  const ligado = catalogEnabledFor(rendererCsv, categoryCode) && !fullWriterCategories().has(categoryCode);
   const programatica = RENDERER_PROGRAMMATIC_CATEGORIES.has(categoryCode);
   const temExtrator = Object.prototype.hasOwnProperty.call(EXTRACTORS, categoryCode);
 

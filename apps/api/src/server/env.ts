@@ -8,12 +8,43 @@ const ServerEnvSchema = z.object({
   DATABASE_URL: z.string().url(),
 
   OPENAI_API_KEY: z.string().min(20),
-  // gpt-4.1-mini: modelo do LaudoUSG original, A/B-validado vs Llama 3.3 70B
-  OPENAI_MODEL_STRUCTURER: z.string().default("gpt-4.1-mini"),
-  OPENAI_MODEL_WRITER: z.string().default("gpt-4.1-mini"),
-  // Esforço de raciocínio quando OPENAI_MODEL_WRITER é um reasoning model (GPT-5):
-  // none/low/medium/high/xhigh. Ignorado por modelos não-reasoning (gpt-4.1-mini).
-  OPENAI_WRITER_REASONING_EFFORT: z.string().default("none"),
+  /**
+   * MOTOR DE IA (server/ai/llm.ts) — migração Haiku 5.5, 09/10/2026.
+   *
+   * Um modelo por papel. O provedor sai do nome: `claude-*` → Anthropic
+   * (ANTHROPIC_API_KEY); outro → OpenAI. Rollback sem deploy: trocar o modelo
+   * do papel (ex.: LLM_WRITER_MODEL=gpt-5.4-mini + LLM_WRITER_EFFORT=low).
+   * A família gpt-4.1 sai da API em 14/10/2026 e é recusada em código: um valor
+   * antigo vira Haiku 5.5 com aviso no log.
+   *
+   * Substituem OPENAI_MODEL_STRUCTURER, OPENAI_MODEL_WRITER, OPENAI_MODEL_SANITY
+   * e OPENAI_WRITER_REASONING_EFFORT, que não são mais lidas.
+   * Esforço: low/medium/high/xhigh/max no Haiku (default medium, o da bancada);
+   * no rollback OpenAI vira `reasoning_effort` (none/low/… nos modelos GPT-5).
+   */
+  // Extração estruturada: renderer, structurer, interpretador de comandos,
+  // esquema venoso.
+  LLM_EXTRACTION_MODEL: z.string().default("claude-haiku-5-5"),
+  LLM_EXTRACTION_EFFORT: z.string().default("medium"),
+  // Escritor: writer completo, free-slots do renderer, edição incremental.
+  LLM_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
+  LLM_WRITER_EFFORT: z.string().default("medium"),
+  // Sanity por IA (observacional, depois do `done`).
+  LLM_SANITY_MODEL: z.string().default("claude-haiku-5-5"),
+  LLM_SANITY_EFFORT: z.string().default("medium"),
+  /**
+   * ROTEAMENTO — categorias que saem do renderer para o WRITER COMPLETO (bundle
+   * com few-shots + guards full), decisão do Luiz de 09/10. CSV.
+   *
+   * Subtrativo de propósito: só tira do renderer o que está listado; o resto
+   * segue RENDERER_CATEGORIES e as flags dedicadas como hoje. Voltar uma
+   * categoria ao renderer (+ Haiku extrator) = tirá-la daqui. Mandar outra ao
+   * writer completo (ex.: PELVE_FEMININA, para a comparação do Luiz) = pô-la aqui.
+   * Ignoradas, com aviso: os cinco renderers clínicos fail-closed e os writers
+   * Doppler dedicados (renal, hepático, venoso de MMII), que nunca caem no
+   * writer geral. Default em pipeline/generationPathResolver.ts.
+   */
+  FULL_WRITER_CATEGORIES: z.string().optional(),
   // Pós-validador clínico determinístico. "observe" apenas registra issues no
   // sanity (roda após a entrega do laudo — não altera o texto); "block_critical"
   // interromperia a entrega quando houver issue critical (não usado ainda).
@@ -48,9 +79,9 @@ const ServerEnvSchema = z.object({
   // CSV de categorias que o roteador nunca pode escolher, além das fixas em
   // código (LIVRE, TESTE e experimentais).
   LIVRE_ROUTER_EXCLUDED_CATEGORIES: z.string().default(""),
-  OPENAI_MODEL_SANITY: z.string().default("gpt-4.1-mini"),
   OPENAI_MODEL_CONSULTANT: z.string().default("gpt-5"),
-  OPENAI_MODEL_CONSULTANT_FALLBACK: z.string().default("gpt-4.1"),
+  // Era gpt-4.1 (aposentado em 14/10/2026).
+  OPENAI_MODEL_CONSULTANT_FALLBACK: z.string().default("gpt-5.4-mini"),
   OPENAI_EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
 
   DEEPGRAM_API_KEY: z.string().min(20),
@@ -178,6 +209,9 @@ const ServerEnvSchema = z.object({
   // writerV2/specs/). Ex.: "ABDOMEN_TOTAL,PELVE_FEMININA,OBSTETRICA". Só ativa
   // se a conta for a autorizada (WRITER_V2_USER_ID) OU o request pedir writer_variant=v2.
   WRITER_V2_CATEGORIES: z.string().default("ABDOMEN_TOTAL"),
+  // Modelo do Writer V2 (experimental, cliente OpenAI). Antes herdava
+  // OPENAI_MODEL_WRITER, que deixou de existir com o motor Haiku.
+  WRITER_V2_MODEL: z.string().default("gpt-5.4-mini"),
   // DET-6 FASE 2: quando "true", roda o INTERPRETADOR DE COMANDOS por LLM
   // (pipeline/commandInterpreter.ts) DEPOIS da fase 1 determinística — resolve
   // âncora semântica ("a frase do resíduo") e achado-no-corpo ("pode colocar X").
@@ -204,9 +238,9 @@ const ServerEnvSchema = z.object({
   // natural (multi-segmento, garble, comandos), guiado pelo roteiro da casa no prompt.
   // Piloto: pipeline/mskWriter.ts. OFF = renderer atual. Default OFF.
   MSK_WRITER: z.string().default("false"),
-  // Modelo do MSK writer_guarded. gpt-4.1 (full) acerta as convenções da casa com
-  // os few-shots (e não é mais lento que o mini: ~3s). Configurável.
-  MSK_WRITER_MODEL: z.string().default("gpt-4.1"),
+  // Modelo do MSK writer_guarded (era gpt-4.1, aposentado em 14/10/2026).
+  // `claude-*` → Anthropic; outro → OpenAI (rollback). Esforço: LLM_WRITER_EFFORT.
+  MSK_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   // Auditoria 2026-07-01 gap #4 (🟡): quando "true", a TIREOIDE COM DOPPLER OMITE a
   // linha de pico sistólico quando o valor não foi ditado (null), em vez de imprimir
   // "____ cm/s" (placeholder feio — corpus §2 "remover linhas de pico não ditadas").
@@ -237,8 +271,8 @@ const ServerEnvSchema = z.object({
   // receita do MSK (prompt base + roteiro da casa + few-shots dos laudos assinados +
   // fact-audit). Piloto: pipeline/partesMolesWriter.ts. OFF = renderer atual. Default OFF.
   PARTES_MOLES_WRITER: z.string().default("false"),
-  // Modelo do PARTES_MOLES writer_guarded (mesma justificativa do MSK_WRITER_MODEL).
-  PARTES_MOLES_WRITER_MODEL: z.string().default("gpt-4.1"),
+  // Modelo do PARTES_MOLES writer_guarded (mesma regra do MSK_WRITER_MODEL).
+  PARTES_MOLES_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   // Auditoria 2026-07-01 gap #1 (🔴 falha de seguimento): quando "true", detecta
   // golf ball / foco ecogênico intracardíaco no ditado (OBSTETRICA/MORFOLOGICO/
   // DOPPLER_OBSTETRICO) e injeta as frases canônicas da casa (corpo + item de
@@ -255,17 +289,17 @@ const ServerEnvSchema = z.object({
   // alucinada) é escrita pelo LLM (writer_guarded). Mesma receita do MSK/PARTES_MOLES.
   // Piloto: pipeline/pelveWriter.ts. OFF = renderer determinístico atual. Default OFF.
   PELVE_WRITER: z.string().default("false"),
-  // Modelo do PELVE writer_guarded (mesma justificativa do MSK_WRITER_MODEL).
-  PELVE_WRITER_MODEL: z.string().default("gpt-4.1"),
+  // Modelo do PELVE writer_guarded (mesma regra do MSK_WRITER_MODEL).
+  PELVE_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   // Eixo vascular Doppler: DOPPLER_RENAL escrita
   // pelo LLM (writer_guarded) — o médico dita compacto e o template rígido enche de
   // ____. Gate próprio acima fica ON por padrão. pipeline/dopplerRenalWriter.ts.
-  DOPPLER_RENAL_WRITER_MODEL: z.string().default("gpt-4.1"),
+  DOPPLER_RENAL_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   DOPPLER_HEPATICO_WRITER_ENABLED: z.string().default("true"),
-  DOPPLER_HEPATICO_WRITER_MODEL: z.string().default("gpt-4.1"),
+  DOPPLER_HEPATICO_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   // Eixo vascular — DOPPLER_VENOSO_MMII writer_guarded (2ª modalidade). Gate =
   // membership em RENDERER_CATEGORIES. Segurança: TVP-only não afirma superficial.
-  DOPPLER_VENOSO_WRITER_MODEL: z.string().default("gpt-4.1"),
+  DOPPLER_VENOSO_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   // Auditoria 2026-07-01 gap #6 (🟡): quando "true", a PELVE_FEMININA deduplica itens
   // de conclusão IDÊNTICOS (a extração às vezes emite o mesmo achado 2x — ex.: também
   // em achados_adicionais). Conservador: só duplicata literal (preserva lateralidade/

@@ -6,7 +6,7 @@
  * Gate dedicado ativo por padrão. Falha de auditoria é fail-closed e nunca cai no
  * writer geral. Rollback explícito suspende a categoria. Guard de formato reusa o MSK.
  */
-import { openai } from "../ai/openai";
+import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
 import { env } from "../env";
 import { buildDopplerRenalWriterSystemMessage } from "../renderer/categories/DOPPLER_RENAL";
 import { DOPPLER_RENAL_FEWSHOTS } from "../renderer/categories/dopplerRenalFewshots";
@@ -30,7 +30,8 @@ export async function* runDopplerRenalWriterStream(args: {
   rawInput: string;
   signal?: AbortSignal;
 }): AsyncGenerator<string, DopplerRenalWriterResult, void> {
-  const model = env().DOPPLER_RENAL_WRITER_MODEL;
+  const target = dedicatedWriterTarget(env().DOPPLER_RENAL_WRITER_MODEL, "doppler-renal-writer");
+  const model = target.model;
   const t0 = Date.now();
   let ttftMs = 0;
   let full = "";
@@ -40,29 +41,33 @@ export async function* runDopplerRenalWriterStream(args: {
     { role: "assistant" as const, content: f.laudo },
   ]);
 
-  const stream = await openai().chat.completions.create(
-    {
-      model,
-      temperature: 0.2,
-      stream: true,
-      stream_options: { include_usage: true },
-      messages: [
-        { role: "system", content: buildDopplerRenalWriterSystemMessage() },
-        ...fewshotMsgs,
-        { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
-      ],
-    },
-    { signal: args.signal },
-  );
+  // Motor único (ai/llm.ts): Claude Haiku 5.5 por padrão; sem temperature no
+  // Haiku (a 0.2 só vale no rollback OpenAI).
+  const gen = llmTextStream({
+    target,
+    system: buildDopplerRenalWriterSystemMessage(),
+    messages: [
+      ...fewshotMsgs,
+      { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
+    ],
+    openaiTemperature: 0.2,
+    openaiMaxTokens: 4000,
+    signal: args.signal,
+    label: "doppler-renal-writer",
+  });
 
   let outputTokens: number | undefined;
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content ?? "";
+  for (;;) {
+    const next = await gen.next();
+    if (next.done) {
+      outputTokens = next.value.outputTokens;
+      break;
+    }
+    const delta = next.value;
     if (delta) {
       if (!ttftMs) ttftMs = Date.now() - t0;
       full += delta;
     }
-    if (chunk.usage?.completion_tokens) outputTokens = chunk.usage.completion_tokens;
   }
 
   const fullText = normalizeMskWriterFormat(full);

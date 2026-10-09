@@ -7,8 +7,13 @@ import type {
 import { env } from "../env";
 import { resolveWriterExam } from "./requestedExam";
 import { prepareMorfologicoBlocks } from "../prompts/morfologicoTemplate";
-import { streamAnthropicLivreWriter, writerClient, writerRequestParams } from "../ai/writerClient";
-import type { WriterModelConfig } from "./modelResolver";
+import {
+  streamAnthropicLivreWriter,
+  streamAnthropicWriter,
+  writerClient,
+  writerRequestParams,
+} from "../ai/writerClient";
+import { resolveWriterModel, type WriterModelConfig } from "./modelResolver";
 import { temperatureForCategory } from "./temperatureByCategory";
 import { buildSystemMessage } from "../prompts/buildSystemMessage";
 
@@ -38,7 +43,8 @@ export function hasPolipoMention(rawInput: string): boolean {
 }
 
 /**
- * Etapa 4 — Writer (gpt-4.1-mini, streaming, temperatura por categoria).
+ * Etapa 4 — Writer (Claude Haiku 5.5 pelo motor `ai/llm.ts`, streaming; no
+ * rollback OpenAI, temperatura por categoria).
  *
  * Recebe TUDO consolidado e devolve apenas o LAUDO FINAL via stream de tokens.
  *
@@ -85,7 +91,7 @@ export async function* runWriterStream(args: {
     systemMessage: string;
     inputTokens?: number;
     outputTokens?: number;
-    /** DET-1: tokens do prefixo servidos pelo prompt caching da OpenAI. */
+    /** DET-1: tokens do prefixo servidos pelo prompt caching do provedor. */
     cachedInputTokens?: number;
   },
   void
@@ -140,23 +146,26 @@ export async function* runWriterStream(args: {
     ? buildRawUserMessage(plainRawUserMessage, writerExam.dopplerMode === "isolated")
     : buildUserMessage(plainFindings);
 
-  const modelConfig = args.modelConfig ?? {
-    provider: "openai" as const,
-    model: env().OPENAI_MODEL_WRITER,
-    reasoningEffort: env().OPENAI_WRITER_REASONING_EFFORT,
-    credentialRef: "default" as const,
-  };
-  if (modelConfig.credentialRef === "livre") {
-    // LAUDO LIVRE ROTEADO: mesmo prompt (contrato + bundle da categoria
-    // detectada), Claude Haiku 5.5. Falhas propagam sem cair no
-    // writer padrão.
+  const modelConfig =
+    args.modelConfig ?? resolveWriterModel({ mode: "standard", categoryCode: effectiveCategoryCode });
+  if (modelConfig.provider === "anthropic") {
+    // Writer padrão e LAUDO LIVRE ROTEADO: mesmo prompt (contrato + bundle da
+    // categoria), Claude Haiku 5.5. No Livre as falhas ganham os códigos da
+    // jornada e nunca caem no writer padrão.
     let full = "";
-    const gen = streamAnthropicLivreWriter({
-      config: modelConfig,
-      systemMessage,
-      userMessage,
-      signal: args.signal,
-    });
+    const gen = modelConfig.credentialRef === "livre"
+      ? streamAnthropicLivreWriter({
+          config: modelConfig,
+          systemMessage,
+          userMessage,
+          signal: args.signal,
+        })
+      : streamAnthropicWriter({
+          config: modelConfig,
+          systemMessage,
+          userMessage,
+          signal: args.signal,
+        });
     for (;;) {
       const next = await gen.next();
       if (next.done) {
