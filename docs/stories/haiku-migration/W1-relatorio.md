@@ -3,7 +3,8 @@
 Branch `feat/haiku-motor` · 09/10/2026 · Claude Code (Opus 5.5)
 Commits: `109dd941` motor · `a073004a` visão/consultor/testes · `6bc4697e` bancada · `cc075d51` exame no writer +
 recusa clara (achado do W4) · `06ff113f` relatório + negrito markdown · **rodada 2:** `b163387c` metatexto do
-extrator, saída dos writers, system do ditado cru (+ este relatório)
+extrator, saída dos writers, system do ditado cru · `f5101dcb` relatório · **rodada 3:** `d1415aa0` Sonnet 5.5 por
+categoria + guard de comandos por laudo (+ bancada e relatório)
 
 ## Resumo para o Luiz
 
@@ -22,6 +23,97 @@ extrator, saída dos writers, system do ditado cru (+ este relatório)
   estrita + validação do nosso schema + uma tentativa de correção). Funciona nos testes e na bancada, mas
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
+
+## Rodada 3 — Sonnet 5.5 nos writers pesados + guard de comandos por laudo
+
+Commit `d1415aa0` (+ bancada e relatório), sobre `feat/haiku-migration` `252e0179`.
+
+**1. gpt-4.1 fora de vez.** Inventário depois do merge: nenhum caminho de produção usa gpt-4.1 (extração, writer,
+writers dedicados, sanity, visão, consultor e fallbacks recusam a família em código; só restam comentários). Modo
+difícil (`HARD_MODE_MODEL`, gpt-5.4) e TESTE seguem fora do escopo. Os comentários e o log passaram a dizer "removido
+por decisão de 09/10" — a memória do projeto foi corrigida hoje: 14/10 é a data da Azure, não da API da OpenAI.
+
+**2. Claude Sonnet 5.5 por categoria, por configuração.**
+- `LLM_WRITER_MODEL_BY_CATEGORY` (CSV `CATEGORIA=modelo[:esforço]`). **Ausente** = default do código:
+  `MUSCULOESQUELETICO_V2`, `PELVE_FEMININA` e `DOPPLER_CAROTIDAS` → `claude-sonnet-5-5`; demais → Haiku 5.5.
+  **Vazia** = nenhuma exceção (tudo no modelo base). Ex.: voltar o MSK ao Haiku sem deploy:
+  `LLM_WRITER_MODEL_BY_CATEGORY=PELVE_FEMININA=claude-sonnet-5-5,DOPPLER_CAROTIDAS=claude-sonnet-5-5`.
+- Vale no **writer dedicado** do MSK e da pelve (`mskWriter.ts`, `pelveWriter.ts` — não no genérico) e no **writer
+  completo** das carótidas. A exceção por categoria **vence** o `*_WRITER_MODEL` do dedicado.
+- Esforço: o de `LLM_WRITER_EFFORT` (medium), salvo `:esforço` na entrada. No Sonnet 5.5 o default da API seria
+  `high` (recalibrado); `medium` é o ponto de partida que a skill recomenda — o W8 (Haiku × Sonnet no MSK) é quem deve
+  calibrar.
+- API (skill `claude-api`): thinking adaptativo (o Sonnet 5.5 recusa `disabled`), sem sampling, sem prefill, `stop_reason`
+  validado como no Haiku.
+- **Fallback de recusa** (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`, só Claude API): **ligado por
+  padrão** nas chamadas de texto do Sonnet 5.5 (recomendação da skill); `LLM_SONNET_SERVER_FALLBACK=false` desliga.
+  **Avaliação:** no Sonnet 5.5 ele só refaz recusas `cyber` e `frontier_llm` (no Sonnet 5); `bio`,
+  `reasoning_extraction` e `general_harms` — as que um laudo médico poderia disparar — **não** são refeitas. Ou seja,
+  quase nunca vai atuar aqui; custa nada quando não atua. Quando atua, o modelo que serviu vai para a auditoria.
+- **Auditoria e custo:** o `model_writer` passa a ser o modelo que **efetivamente escreveu** (writer dedicado ou o que
+  serviu após um fallback; no renderer não dedicado, o extrator). Writers dedicados agora devolvem também os tokens de
+  entrada. Tabela de custo: Sonnet 5.5 e Sonnet 5 a US$ 2 / 10 por milhão.
+- Livre roteado para carótidas continua no Haiku (o Livre exige `claude-haiku-5-5` por contrato).
+
+**3. Guard de comandos por laudo (T1 + MK-1).**
+- `parseConclusion` para no **rodapé** (`*…`, "Breast Imaging Reporting", "ACR -", "[REVISAR", "FIGO:") e no **título do
+  próximo laudo** ("ULTRASSONOGRAFIA…" em caixa alta), devolvendo o resto intacto (`after`) — vale para todos os guards
+  que reescrevem a conclusão. `splitReports`/`mapReports`; o guard de itens vazios age em cada laudo.
+- **Vários laudos no texto:** só a substituição literal roda; nada é acrescentado (não há como saber a qual conclusão
+  o comando pertence) — fim do colapso dos laudos 2..N na conclusão do 1º.
+- **Caminho writer** (completo e dedicados, detectados pelo `passthrough`): nada acrescentado; só `replace_phrase` e
+  `add_comment`. O legado (`COMMAND_OPERATIONS=false`) idem.
+- **Gatilho:** só imperativo/infinitivo (`acrescente|acrescentar|acrescenta`, `adicione…`, `inclua|incluir`, `coloque`,
+  `colocar|coloca`) — "incluindo", "adicionalmente", "colocado" não disparam; fim da captura não corta decimal ("0.5");
+  captura sem conteúdo clínico recusada (mínimo 2 palavras de conteúdo, ou 1 palavra longa sem número, ex.
+  "Colelitíase." — o W4 propôs 3, que derrubaria "Cisto simples."); fala sobre a edição recusada ("tracinho",
+  "a seguinte frase", "descreve"); "escreva X" vira X.
+- **Medição só de leitura em 90 dias de produção** (501 laudos; guard antigo × novo sobre os mesmos ditados):
+
+  | Caminho | Itens literais do guard antigo | Apagados pelo médico | Mantidos | Guard novo acrescentaria |
+  |---|---|---|---|---|
+  | renderer | 32 | 22 | 10 | 22 (13 apagados, 9 mantidos) |
+  | writer dedicado | 23 | 18 | 5 | 0 |
+  | writer completo | 14 | 7 | 7 | 0 |
+
+  Lixo apagado cai de 47 para 13. O único "mantido" do renderer que o guard novo não poria (`32ae8748`) é falso
+  positivo da métrica: o texto estava no **corpo** do laudo final ("volume total da tireoide, incluindo o istmo: 6,1 ml"),
+  não na conclusão — era exatamente o lixo do T1. Nos caminhos writer, "mantido" significa que o texto estava no laudo
+  final; o writer recebeu o comando no ditado e o escreveu.
+- Teste `pipeline/__tests__/command-guard-por-laudo.manual.ts` 13/13 (multi-laudo, rodapé, writer sem acréscimo,
+  decimal, gerúndio, casos legítimos).
+
+**4. Avisos do guard de metatexto → card de pendências.** O que o extrator escrevia sobre o ditado ("medidas uterinas
+ditadas de forma ilegível… conferir") sai do laudo (rodada 2) e agora entra no card de pendências (sanity, código
+`ditado_a_conferir`), fora do texto copiável. Rótulo/cláusula sem aviso ("conforme conclusão do médico") não vira
+pendência.
+
+**Bancada pela assinatura**
+- **Correção da bancada:** a interceptação Anthropic juntava todos os turnos de usuário; nos writers dedicados isso
+  misturava os ditados dos few-shots com o real (o modelo escrevia o laudo do 1º exemplo). Agora os pares de few-shot vão
+  ao system como exemplos e só o último turno é o ditado. As medições do W4 nos dedicados não foram afetadas (no máximo um
+  ditado por chamada nas saídas dele). A bancada passa a respeitar o modelo pedido em cada chamada e liga
+  `MSK_WRITER`/`PELVE_WRITER`/`PARTES_MOLES_WRITER` como em produção (`BENCH_*_WRITER=false` volta ao renderer).
+- **MSK multi-laudo, Sonnet 5.5, writer dedicado + guard novo** (os 4 casos de produção da revisão: 19599614, e8f02f03,
+  bbd7e07b, 52e66a0a): todos mantêm os laudos — **2, 2, 2 e 4 conclusões, iguais ao laudo final do médico**; em produção
+  os quatro tinham saído com **1** conclusão. Similaridade com o final 0,85 (produção 0,91, que o médico remontou). Todas
+  as chamadas foram ao `claude-sonnet-5-5`.
+- **Carótidas, writer completo (cenário B), modelo base Haiku** — de propósito, para provar o roteamento: os 4 casos de
+  90 dias saíram com **todas as chamadas do writer em `claude-sonnet-5-5`**, sem markdown e sem bloco depois da
+  conclusão. Similaridade com o final 0,67 (produção gpt-5.4-mini 0,98, quase sem edição do médico); sem juiz nesta
+  rodada — qualidade é com o W8/W4. Um caso pôs a medida do complexo médio-intimal na conclusão; vale olhar no juiz.
+- Replay R de ABDOMEN_TOTAL: **14/14 idêntico à rodada 2** (o caminho do renderer não mudou nesta rodada); contra o
+  texto salvo da época continua 8/11 — as 3 diferenças são o corpo descritivo do W3.
+
+**Testes:** typecheck OK; `command-guard-por-laudo` 13/13; `llm` 26/26 (modelo por categoria, fallback de recusa com o
+beta e o modelo servido, Haiku sem fallback); `extraction-metatext` 11/11 (avisos para o card); `modelResolver` 43/43;
+fail-closed 41/41; `livreRouter` 18/18; guards de conclusão (líquido, peso, DUM, Doppler, itens vazios, dedupe,
+operações, commandGuard 21/21, commandOperations, command-operations-v2) e writers dedicados — todos verdes.
+
+**Incidente (registrado):** ao rodar a regressão em lote, executei `customization/store.manual.ts`, que exercita
+escrita no banco de **produção** dentro de uma transação que termina em ROLLBACK (desenho do próprio teste). Conferi
+depois só com leitura: nenhuma linha ficou (5 personalizações e 1 escopo, todos de agosto; 0 tocados nas últimas 24 h).
+Não volto a rodar testes que tocam o banco.
 
 ## Rodada 2 (após integração do W3) — achados do W4 nos textos do Haiku
 
@@ -149,6 +241,8 @@ texto do modelo curado; o renderer decidia essa nota pela preferência `show_dom
 | `LLM_VISION_MODEL` | `claude-haiku-5-5` | leitura de imagem (esforço = `LLM_EXTRACTION_EFFORT`) |
 | `FULL_WRITER_CATEGORIES` | `ABDOMEN_TOTAL,ABDOMEN_SUPERIOR,TIREOIDE,MAMARIA,PROSTATA_SUPRAPUBICA,VIAS_URINARIAS,DOPPLER_CAROTIDAS` | env **ausente** = default; **vazia** = ninguém sai do renderer |
 | `WRITER_V2_MODEL` | `gpt-5.4-mini` | Writer V2 experimental (OpenAI) |
+| `LLM_WRITER_MODEL_BY_CATEGORY` | ausente = `MUSCULOESQUELETICO_V2`, `PELVE_FEMININA`, `DOPPLER_CAROTIDAS` → `claude-sonnet-5-5` | rodada 3: modelo do writer por categoria (`CAT=modelo[:esforço]`); vazia = sem exceções; vence `*_WRITER_MODEL` |
+| `LLM_SONNET_SERVER_FALLBACK` | `true` | rodada 3: fallback de recusa do servidor no Sonnet 5.5; `false` desliga |
 
 ### Remover (não são mais lidas, ou apontam para modelo aposentado)
 
@@ -172,9 +266,9 @@ Do mais fino ao mais grosso — todos sem deploy de código, exceto o último:
 2. **Todo o roteamento volta ao de hoje**: `FULL_WRITER_CATEGORIES=` (vazia).
 3. **Um papel volta à OpenAI**: `LLM_WRITER_MODEL=gpt-5.4-mini` + `LLM_WRITER_EFFORT=low` (o writer de hoje);
    `LLM_EXTRACTION_MODEL=gpt-5.4-mini` + `LLM_EXTRACTION_EFFORT=low` para a extração. **Não existe rollback
-   para o gpt-4.1-mini** — ele sai da API em 14/10 e o código o recusa.
+   para o gpt-4.1-mini** — removido por decisão do Luiz (09/10) e recusado em código.
 4. **Writer dedicado específico**: `MSK_WRITER_MODEL=gpt-5.4` (por exemplo) — esforço = `LLM_WRITER_EFFORT`.
-5. **Tudo**: redeploy do commit anterior (com o gpt-4.1-mini só até 14/10).
+5. **Tudo**: redeploy do commit anterior (volta o gpt-4.1-mini, que o Luiz decidiu remover).
 
 ## 4. Inventário de consumidores dos achados estruturados do renderer
 
@@ -283,7 +377,7 @@ de produção atual (writer dedicado da pelve) agora também é Haiku. A bancada
    `FULL_WRITER_CATEGORIES=ABDOMEN_TOTAL,DOPPLER_CAROTIDAS`).
 3. **Estilo OBJETIVO** fica no renderer nessas categorias (regra da casa de PELVE/PARTES_MOLES; tireoide e vias
    urinárias nem têm bundle objetivo). Manter?
-4. **Leitura de imagem** (`/api/analyze-image`) passou a Haiku sem bancada — o gpt-4.1 dela morria em 14/10 de
+4. **Leitura de imagem** (`/api/analyze-image`) passou a Haiku sem bancada — o gpt-4.1 dela foi removido de
    qualquer forma. Validar com algumas telas reais no preview (ou `LLM_VISION_MODEL=gpt-5.4-mini` como rollback).
 5. Checar na Vercel os valores das envs da seção 2 ("Remover").
 

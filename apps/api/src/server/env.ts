@@ -14,7 +14,7 @@ const ServerEnvSchema = z.object({
    * Um modelo por papel. O provedor sai do nome: `claude-*` → Anthropic
    * (ANTHROPIC_API_KEY); outro → OpenAI. Rollback sem deploy: trocar o modelo
    * do papel (ex.: LLM_WRITER_MODEL=gpt-5.4-mini + LLM_WRITER_EFFORT=low).
-   * A família gpt-4.1 sai da API em 14/10/2026 e é recusada em código: um valor
+   * A família gpt-4.1 foi removida (decisão do Luiz, 09/10/2026) e é recusada em código: um valor
    * antigo vira Haiku 5.5 com aviso no log.
    *
    * Substituem OPENAI_MODEL_STRUCTURER, OPENAI_MODEL_WRITER, OPENAI_MODEL_SANITY
@@ -30,8 +30,16 @@ const ServerEnvSchema = z.object({
   LLM_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   LLM_WRITER_EFFORT: z.string().default("medium"),
   // Leitura de imagem (OCR das telas do aparelho em /api/analyze-image). Era
-  // gpt-4.1 / gpt-4.1-mini fixos no código. Esforço: LLM_EXTRACTION_EFFORT.
+  // gpt-4.1 / gpt-4.1-mini fixos no código (removidos). Esforço: LLM_EXTRACTION_EFFORT.
   LLM_VISION_MODEL: z.string().default("claude-haiku-5-5"),
+  // Modelo do writer por categoria: CSV `CATEGORIA=modelo[:esforço]`. AUSENTE =
+  // default do código (MUSCULOESQUELETICO_V2, PELVE_FEMININA, DOPPLER_CAROTIDAS →
+  // claude-sonnet-5-5); VAZIA = sem exceções. Vence o `*_WRITER_MODEL` dos
+  // writers dedicados. Ver ai/llm.ts (writerModelOverrides).
+  LLM_WRITER_MODEL_BY_CATEGORY: z.string().optional(),
+  // Fallback de recusa do servidor nas chamadas de texto do Sonnet 5.5 (beta
+  // server-side-fallback-2026-07-01). "false" desliga.
+  LLM_SONNET_SERVER_FALLBACK: z.string().default("true"),
   // Sanity por IA (observacional, depois do `done`).
   LLM_SANITY_MODEL: z.string().default("claude-haiku-5-5"),
   LLM_SANITY_EFFORT: z.string().default("medium"),
@@ -83,7 +91,7 @@ const ServerEnvSchema = z.object({
   // código (LIVRE, TESTE e experimentais).
   LIVRE_ROUTER_EXCLUDED_CATEGORIES: z.string().default(""),
   OPENAI_MODEL_CONSULTANT: z.string().default("gpt-5"),
-  // Era gpt-4.1 (aposentado em 14/10/2026).
+  // Era gpt-4.1 (removido em 09/10/2026).
   OPENAI_MODEL_CONSULTANT_FALLBACK: z.string().default("gpt-5.4-mini"),
   OPENAI_EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
 
@@ -241,7 +249,7 @@ const ServerEnvSchema = z.object({
   // natural (multi-segmento, garble, comandos), guiado pelo roteiro da casa no prompt.
   // Piloto: pipeline/mskWriter.ts. OFF = renderer atual. Default OFF.
   MSK_WRITER: z.string().default("false"),
-  // Modelo do MSK writer_guarded (era gpt-4.1, aposentado em 14/10/2026).
+  // Modelo do MSK writer_guarded (era gpt-4.1, removido em 09/10/2026).
   // `claude-*` → Anthropic; outro → OpenAI (rollback). Esforço: LLM_WRITER_EFFORT.
   MSK_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   // Auditoria 2026-07-01 gap #4 (🟡): quando "true", a TIREOIDE COM DOPPLER OMITE a

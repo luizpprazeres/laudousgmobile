@@ -24,6 +24,7 @@ export type PartesMolesWriterResult = {
   latencyMs: number;
   ttftMs: number;
   model: string;
+  inputTokens?: number;
   outputTokens?: number;
   /** Fact-audit determinístico (medida/lado/deriva/placeholder) — observabilidade. */
   audit: PartesMolesAudit;
@@ -34,8 +35,9 @@ export async function* runPartesMolesWriterStream(args: {
   rawInput: string;
   signal?: AbortSignal;
 }): AsyncGenerator<string, PartesMolesWriterResult, void> {
-  const target = dedicatedWriterTarget(env().PARTES_MOLES_WRITER_MODEL, "partes-moles-writer");
-  const model = target.model;
+  const target = dedicatedWriterTarget(env().PARTES_MOLES_WRITER_MODEL, "partes-moles-writer", env(), "PARTES_MOLES");
+  let model = target.model;
+  let inputTokens: number | undefined;
   const t0 = Date.now();
   let ttftMs = 0;
   let full = "";
@@ -67,6 +69,9 @@ export async function* runPartesMolesWriterStream(args: {
     const next = await gen.next();
     if (next.done) {
       outputTokens = next.value.outputTokens;
+      inputTokens = next.value.inputTokens;
+      // Modelo que efetivamente escreveu (o fallback de recusa pode trocá-lo).
+      model = next.value.model ?? model;
       break;
     }
     const delta = next.value;
@@ -95,6 +100,7 @@ export async function* runPartesMolesWriterStream(args: {
     latencyMs: Date.now() - t0,
     ttftMs,
     model,
+    inputTokens,
     outputTokens,
     audit,
   };

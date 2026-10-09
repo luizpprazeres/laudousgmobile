@@ -20,6 +20,7 @@ export type PelveWriterResult = {
   latencyMs: number;
   ttftMs: number;
   model: string;
+  inputTokens?: number;
   outputTokens?: number;
   audit: PelveAudit;
 };
@@ -29,8 +30,9 @@ export async function* runPelveWriterStream(args: {
   rawInput: string;
   signal?: AbortSignal;
 }): AsyncGenerator<string, PelveWriterResult, void> {
-  const target = dedicatedWriterTarget(env().PELVE_WRITER_MODEL, "pelve-writer");
-  const model = target.model;
+  const target = dedicatedWriterTarget(env().PELVE_WRITER_MODEL, "pelve-writer", env(), "PELVE_FEMININA");
+  let model = target.model;
+  let inputTokens: number | undefined;
   const t0 = Date.now();
   let ttftMs = 0;
   let full = "";
@@ -60,6 +62,9 @@ export async function* runPelveWriterStream(args: {
     const next = await gen.next();
     if (next.done) {
       outputTokens = next.value.outputTokens;
+      inputTokens = next.value.inputTokens;
+      // Modelo que efetivamente escreveu (o fallback de recusa pode trocá-lo).
+      model = next.value.model ?? model;
       break;
     }
     const delta = next.value;
@@ -86,6 +91,7 @@ export async function* runPelveWriterStream(args: {
     latencyMs: Date.now() - t0,
     ttftMs,
     model,
+    inputTokens,
     outputTokens,
     audit,
   };

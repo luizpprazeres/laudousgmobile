@@ -4,7 +4,7 @@
  * (singleton openai() em vez de new OpenAI(), sem Gemini).
  *
  * Modelo: LLM_VISION_MODEL (Claude Haiku 5.5 pelo motor ai/llm.ts; era
- * gpt-4.1 / gpt-4.1-mini fixos no código, aposentados em 14/10/2026).
+ * gpt-4.1 / gpt-4.1-mini fixos no código, removidos em 09/10/2026).
  *
  * Routing por categoria:
  *   DOPPLER_OBSTETRICO  → leitura especializada, somente Doppler

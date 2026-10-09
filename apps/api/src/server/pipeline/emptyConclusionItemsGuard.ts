@@ -1,4 +1,4 @@
-import { parseConclusion, renderWithConclusion } from "./conclusionUtils";
+import { mapReports, parseConclusion, renderWithConclusion } from "./conclusionUtils";
 
 function isPlaceholderOnly(item: string): boolean {
   const stripped = item.replace(/[\s_.()[\]-]/g, "");
@@ -29,6 +29,11 @@ function isVoidAssertion(item: string): boolean {
  * semanas") — esses ficam como lembrete pro médico completar.
  */
 export function removeEmptyConclusionItems(laudo: string): string {
+  // Um laudo por vez: num ditado com vários exames cada um tem a sua conclusão.
+  return mapReports(laudo, removeFromOneReport);
+}
+
+function removeFromOneReport(laudo: string): string {
   const parsed = parseConclusion(laudo);
   if (!parsed.found) return laudo;
 

@@ -103,6 +103,18 @@ check("guiado pelo schema: limpa string livre, não toca enum, vazio vira null",
   });
   assert.equal(changed.length, 4);
 });
+check("avisos úteis removidos do laudo vão para o card de pendências", () => {
+  const schema = { type: "object", properties: { observacoes_corpo: { type: ["string", "null"] } } };
+  const { value, warnings } = cleanExtractionMetatext(
+    { observacoes_corpo: 'Miomas com imagem hipoecoica. Medidas uterinas ditadas de forma ilegível ("10.76 0.8"); não extraídas — conferir.' },
+    schema,
+  );
+  assert.deepEqual(value, { observacoes_corpo: "Miomas com imagem hipoecoica." });
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0]!, /ileg[ií]vel/);
+  const plain = cleanExtractionMetatext({ observacoes_corpo: "Litíase vesical, conforme conclusão do médico." }, schema);
+  assert.deepEqual(plain.warnings, [], "rótulo/cláusula sem aviso não vira pendência");
+});
 check("schemas reais: extração sem metatexto passa idêntica", () => {
   const schema = EXTRACTORS.TIREOIDE!.jsonSchema;
   const sample = { achados_adicionais: "Linfonodo reacional no nível III direito, medindo 0,9 x 0,4 cm." };

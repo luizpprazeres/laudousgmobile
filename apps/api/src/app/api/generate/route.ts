@@ -1126,6 +1126,13 @@ export async function POST(req: Request) {
             onFindings: (f) => {
               auditState.structuredOutput = f as typeof auditState.structuredOutput;
             },
+            // Avisos do extrator sobre o ditado, tirados do laudo pelo guard de
+            // metatexto: vão ao card de pendências, fora do texto copiável.
+            onReviewNotes: (notes) => {
+              for (const note of notes) {
+                pipelineWarnings.push({ code: "ditado_a_conferir", message: `Trecho do ditado a conferir: ${note}` });
+              }
+            },
             personalizacao,
             frases,
             // Registra o que foi (ou não foi) aplicado. Sem isto, um laudo
@@ -1226,6 +1233,10 @@ export async function POST(req: Request) {
             inputTokens?: number;
             outputTokens?: number;
             cachedInputTokens?: number;
+            /** Writer dedicado (texto escrito por LLM dentro do caminho renderer). */
+            passthrough?: boolean;
+            /** Modelo que efetivamente escreveu (writer dedicado ou fallback de recusa). */
+            model?: string;
           }
         | undefined;
       try {
@@ -1332,9 +1343,12 @@ export async function POST(req: Request) {
       // conclusão recomendar X", "recomende Y") entrem no laudo se o LLM ignorou.
       // Roda por último — comandos entram ao final da conclusão. Ver commandGuard.
       // DET-6: a flag COMMAND_OPERATIONS roteia pelo aplicador de operações.
+      // Caminho writer: o LLM já recebeu o comando no ditado — nada é
+      // acrescentado (só substituição literal/comentário).
       finalText = applyConfiguredCommands(
         finalText,
         reqInput.consolidated_transcript ?? reqInput.raw_input,
+        { writer: true },
       );
       // CERVICAL: (3) remove narração de observação vazada ("estou vendo...") que
       // o LLM transcreveu literal em vez de interpretar; (2) sugere o nível Robbins
@@ -1404,9 +1418,12 @@ export async function POST(req: Request) {
         // até o DET-6 tratar comandos como operações (review dex1). É
         // determinístico: não quebra a byte-stability (mesmo input → mesmo
         // comando → mesmo texto). DET-6: COMMAND_OPERATIONS roteia pelas ops.
+        // Writers dedicados (MSK, pelve, partes moles, Doppler) devolvem
+        // `passthrough`: texto escrito por LLM, que já recebeu o comando.
         finalText = applyConfiguredCommands(
           finalText,
           reqInput.consolidated_transcript ?? reqInput.raw_input,
+          { writer: writerResult?.passthrough === true },
         );
       }
       // Guard de sanitização (universal): remove artefatos de ditado/ASR que
@@ -1429,6 +1446,11 @@ export async function POST(req: Request) {
       finalText = flagImplausibleMeasures(finalText);
       }
       auditState.outputText = finalText;
+      // Modelo que efetivamente escreveu: writer dedicado (ex.: Sonnet 5.5 no MSK)
+      // ou o que serviu depois de um fallback de recusa. Custo sai deste modelo.
+      // No renderer não dedicado quem trabalhou foi o extrator.
+      if (writerResult?.model) auditState.modelWriter = writerResult.model;
+      else if (useRenderer) auditState.modelWriter = auditState.modelStructurer;
       auditState.writerDurationMs = writerResult?.latencyMs ?? 0;
       auditState.systemMessageFull =
         writerResult?.systemMessage ?? auditState.systemMessageFull;
@@ -1450,7 +1472,7 @@ export async function POST(req: Request) {
         tokensOutput: writerResult?.outputTokens,
         // DET-5: prova de rollout/auditoria — qual caminho montou o laudo
         // (review dex2). O modelo da extração continua em model_structurer.
-        modelWriter: useRenderer ? "renderer/v1" : modelConfig.model,
+        modelWriter: useRenderer ? "renderer/v1" : writerResult?.model ?? modelConfig.model,
       });
 
       // ----- 5. Sanity check (observabilidade, NÃO bloqueia) -----
@@ -1809,8 +1831,8 @@ function scheduleAuditPersist(state: GenerationAuditState) {
  * OPERAÇÕES tipadas quando a flag COMMAND_OPERATIONS está ligada; senão usa o
  * commandGuard legado. Drop-in determinístico (mesma assinatura).
  */
-function applyConfiguredCommands(laudo: string, rawInput: string): string {
+function applyConfiguredCommands(laudo: string, rawInput: string, policy: { writer: boolean }): string {
   return env().COMMAND_OPERATIONS === "true"
-    ? applyCommandOperations(laudo, rawInput)
-    : applyCommandGuard(laudo, rawInput);
+    ? applyCommandOperations(laudo, rawInput, policy)
+    : applyCommandGuard(laudo, rawInput, policy);
 }

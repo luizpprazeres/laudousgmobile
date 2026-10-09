@@ -93,7 +93,7 @@ export async function POST(req: Request) {
 
   const e = env();
   const primaryModel = e.OPENAI_MODEL_CONSULTANT;
-  // gpt-4.1 sai da API em 14/10/2026: valor antigo esquecido na env não vale.
+  // gpt-4.1 removido (decisão de 09/10/2026): valor antigo esquecido na env não vale.
   const fallbackModel = isRetiredModel(e.OPENAI_MODEL_CONSULTANT_FALLBACK)
     ? "gpt-5.4-mini"
     : e.OPENAI_MODEL_CONSULTANT_FALLBACK;
