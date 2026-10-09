@@ -96,8 +96,8 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [x] W2 extração obstétrica — variante mínima integrada (1a231310)
 - [x] W3 prompt corpo descritivo + 4 defeitos do renderer do abdome (integrado em `eabc290f`)
 - [ ] W4 revisão por bancada + propostas priorizadas
-- [ ] W5 datação escolhida + gestação inicial sem embrião (backend)
-- [x] W6 web: caixas de seleção da datação (branch feat/web-datacao-escolhida, integra junto com W5)
+- [x] W5 datação escolhida + gestação inicial sem embrião (backend) — integrado b6bf9a91
+- [x] W6 web: caixas de seleção da datação — integrado 9f756d08
 - [x] W7 regras da casa (integrado c79967bf) (prompt "diagnóstico mais provável", mama, Domingos, parede, rim ausente nas vias)
 - [ ] W8 MSK Haiku × Sonnet (assinatura) para o Luiz escolher
 - [x] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo) — integrado ce33d744
