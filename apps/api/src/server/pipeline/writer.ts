@@ -7,7 +7,7 @@ import type {
 import { env } from "../env";
 import { resolveWriterExam } from "./requestedExam";
 import { prepareMorfologicoBlocks } from "../prompts/morfologicoTemplate";
-import { streamAnthropicWriter, writerClient, writerRequestParams } from "../ai/writerClient";
+import { streamOpenAILivreWriter, writerClient, writerRequestParams } from "../ai/writerClient";
 import type { WriterModelConfig } from "./modelResolver";
 import { temperatureForCategory } from "./temperatureByCategory";
 import { buildSystemMessage } from "../prompts/buildSystemMessage";
@@ -146,11 +146,12 @@ export async function* runWriterStream(args: {
     reasoningEffort: env().OPENAI_WRITER_REASONING_EFFORT,
     credentialRef: "default" as const,
   };
-  if (modelConfig.provider === "anthropic") {
+  if (modelConfig.credentialRef === "livre") {
     // LAUDO LIVRE ROTEADO: mesmo prompt (contrato + bundle da categoria
-    // detectada), provedor Anthropic. Falhas propagam — sem fallback OpenAI.
+    // detectada), GPT-6 Luna sem reasoning. Falhas propagam sem cair no
+    // writer padrão.
     let full = "";
-    const gen = streamAnthropicWriter({
+    const gen = streamOpenAILivreWriter({
       config: modelConfig,
       systemMessage,
       userMessage,

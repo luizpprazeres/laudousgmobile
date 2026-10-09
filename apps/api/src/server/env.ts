@@ -28,25 +28,17 @@ const ServerEnvSchema = z.object({
   /**
    * LAUDO LIVRE ROTEADO (default OFF). Com "true", um request cuja categoria
    * ORIGINAL é LIVRE e que traz `route_free_category: true` passa por um
-   * roteador Anthropic que identifica o exame; o laudo sai com o contrato/
-   * bundle da categoria detectada, escrito pelo Sonnet 5.5 sem raciocínio
-   * antecipado. Qualquer falha do
+   * roteador OpenAI que identifica o exame; o laudo sai com o contrato/
+   * bundle da categoria detectada, escrito pelo GPT-6 Luna com reasoning
+   * desativado. Qualquer falha do
    * roteador ou do writer é explícita — nunca cai no OpenAI nem no prompt
    * livre. Desligado = comportamento antigo intacto.
    */
   LIVRE_ROUTER_ENABLED: z.string().default("false"),
-  // Vazio = jornada indisponível (erro explícito LIVRE_PROVIDER_NOT_CONFIGURED).
-  ANTHROPIC_API_KEY: z.string().default(""),
-  // Só para chaves NÃO vinculadas a um workspace: a API exige o header
-  // `anthropic-workspace-id`. Vazio = header não enviado.
-  ANTHROPIC_WORKSPACE_ID: z.string().default(""),
-  // Modelo Anthropic da jornada (roteador + writer). Sem fallback para outro modelo:
-  // um ID inválido falha explicitamente.
-  LIVRE_ANTHROPIC_MODEL: z.string().default("claude-sonnet-5-5"),
-  // `output_config.effort` de cada chamada. Vazio = não envia o parâmetro
-  // (necessário para modelos que não aceitam effort).
-  LIVRE_ROUTER_EFFORT: z.enum(["", "low", "medium", "high"]).default("low"),
-  LIVRE_WRITER_EFFORT: z.enum(["", "low", "medium", "high"]).default("low"),
+  // Modelo único da jornada (roteador + writer). Sem fallback para outro modelo.
+  LIVRE_OPENAI_MODEL: z.string().default("gpt-6-luna"),
+  // Mantido em `none`: o Laudo Livre não usa raciocínio estendido.
+  LIVRE_OPENAI_REASONING_EFFORT: z.literal("none").default("none"),
   // Confiança mínima para aceitar `routed`; abaixo disso vira `ambiguous`.
   LIVRE_ROUTER_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).default(0.8),
   // CSV de categorias que o roteador nunca pode escolher, além das fixas em

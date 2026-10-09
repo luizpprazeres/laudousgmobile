@@ -1,13 +1,13 @@
 import { env } from "../env";
-import { assertLivreProviderConfigured } from "../ai/anthropic";
+import { assertLivreProviderConfigured } from "../ai/livreProvider";
 
 export type GenerationMode = "standard" | "hard";
 
 export type WriterModelConfig = {
-  provider: "openai" | "openai-compat" | "anthropic";
+  provider: "openai" | "openai-compat";
   model: string;
   reasoningEffort: string;
-  credentialRef: "default" | "teste" | "anthropic";
+  credentialRef: "default" | "teste" | "livre";
 };
 
 export type WriterModelContext = {
@@ -31,7 +31,7 @@ type ModelResolverEnv = Pick<
 
 type LivreWriterEnv = Pick<
   ReturnType<typeof env>,
-  "ANTHROPIC_API_KEY" | "LIVRE_ANTHROPIC_MODEL" | "LIVRE_WRITER_EFFORT"
+  "OPENAI_API_KEY" | "LIVRE_OPENAI_MODEL" | "LIVRE_OPENAI_REASONING_EFFORT"
 >;
 
 export class WriterModelResolutionError extends Error {
@@ -100,14 +100,14 @@ export function resolveWriterModel(
 /**
  * Writer da jornada LAUDO LIVRE ROTEADO: decidido pela ORIGEM (Livre), não
  * pela categoria detectada — a mesma categoria escolhida diretamente segue
- * em `resolveWriterModel`. Configuração ausente ou diferente de Sonnet 5.5 lança erro explícito
- * (nunca devolve o writer OpenAI).
+ * em `resolveWriterModel`. Configuração ausente ou diferente de GPT-6 Luna
+ * lança erro explícito e nunca cai no writer padrão.
  */
 export function resolveLivreWriterModel(config: LivreWriterEnv = env()): WriterModelConfig {
   return {
-    provider: "anthropic",
+    provider: "openai",
     model: assertLivreProviderConfigured(config),
-    reasoningEffort: config.LIVRE_WRITER_EFFORT,
-    credentialRef: "anthropic",
+    reasoningEffort: config.LIVRE_OPENAI_REASONING_EFFORT,
+    credentialRef: "livre",
   };
 }

@@ -14,7 +14,7 @@ import { CLINICAL_MODEL_EXTRACTORS } from "../../renderer/categories/CLINICAL_MO
 import { RENDERER_SUPPORTED_CATEGORIES, RENDERER_PROGRAMMATIC_CATEGORIES } from "../../renderer/extraction";
 import * as fallbackPolicy from "../fallbackPolicy";
 import { isDopplerRenalAuditError } from "../../pipeline/dopplerRenalWriterAudit";
-import { isLivreRoutingError, LivreRoutingError } from "../../ai/anthropic";
+import { isLivreRoutingError, LivreRoutingError } from "../../ai/livreProvider";
 import * as livreRouter from "../../pipeline/livreRouter";
 
 const routePath = resolve(process.cwd(), "apps/api/src/app/api/generate/route.ts");
@@ -37,7 +37,7 @@ async function execute(scenario: Scenario) {
     HARD_MODE_ENABLED: "true", FAST_PATH_DEFAULT: "false",
     GENERATION_AUDIT_ENABLED: "false", WRITER_V2_CATEGORIES: scenario.writerV2 ? "ABDOMEN_TOTAL" : "", WRITER_V2_USER_ID: scenario.writerV2 ? "synthetic-user" : "",
     WRITER_V2_ABDOME_USER_ID: "", COMMAND_OPERATIONS: "false", OPENAI_MODEL_WRITER: "test",
-    LIVRE_ROUTER_ENABLED: scenario.routeFree ? "true" : "false", LIVRE_ROUTER_EXCLUDED_CATEGORIES: "", LIVRE_ANTHROPIC_MODEL: "claude-sonnet-5-5" };
+    LIVRE_ROUTER_ENABLED: scenario.routeFree ? "true" : "false", LIVRE_ROUTER_EXCLUDED_CATEGORIES: "", LIVRE_OPENAI_MODEL: "gpt-6-luna" };
   const events: Event[] = [];
   const statuses: string[] = [];
   const statusCalls: Array<{ status: string; metadata?: Record<string, unknown> }> = [];
@@ -70,7 +70,7 @@ async function execute(scenario: Scenario) {
       comandos_do_medico: [], trechos_confusos: [], nivel_de_confianca: "alta",
     }, latencyMs: 0 }) },
     "@/server/pipeline/validator": { runValidator: () => ({ ok: true, questions: [], issues: [] }) },
-    "@/server/ai/anthropic": { isLivreRoutingError, LivreRoutingError },
+    "@/server/ai/livreProvider": { isLivreRoutingError, LivreRoutingError },
     "@/server/pipeline/livreRouter": {
       ...livreRouter,
       runLivreRouter: async () => ({
@@ -82,17 +82,17 @@ async function execute(scenario: Scenario) {
           candidates: [],
           belowConfidence: false,
         },
-        model: "claude-sonnet-5-5",
+        model: "gpt-6-luna",
         latencyMs: 1,
       }),
     },
     "@/server/pipeline/modelResolver": {
       resolveWriterModel: () => ({ model: "synthetic", provider: "test" }),
       resolveLivreWriterModel: () => ({
-        model: "claude-sonnet-5-5",
-        provider: "anthropic",
-        reasoningEffort: "medium",
-        credentialRef: "anthropic",
+        model: "gpt-6-luna",
+        provider: "openai",
+        reasoningEffort: "none",
+        credentialRef: "livre",
       }),
     },
     "@/server/pipeline/writerV2/loadSpec": { loadSpecV2 },
@@ -236,7 +236,7 @@ async function main() {
   );
   assert.equal(persistedRoute?.metadata?.requested_category, "LIVRE");
   assert.equal(persistedRoute?.metadata?.routed_category, "TIREOIDE");
-  assert.equal(persistedRoute?.metadata?.writer_model, "claude-sonnet-5-5");
+  assert.equal(persistedRoute?.metadata?.writer_model, "gpt-6-luna");
   checks++;
   const fallback = await execute({ category: "ABDOMEN_TOTAL", rendererCategories: "ABDOMEN_TOTAL" });
   assert.equal(fallback.rendererCalls, 1);

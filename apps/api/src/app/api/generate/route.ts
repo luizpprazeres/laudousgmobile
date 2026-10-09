@@ -114,7 +114,7 @@ import {
 } from "@/server/prompts/version";
 import { clinicalRendererFallbackBlocked, canonicalClinicalCategory, structuredClinicalIntent, earlyWriterV2Allowed } from "@/server/clinicalReports/fallbackPolicy";
 import { isDopplerRenalAuditError } from "@/server/pipeline/dopplerRenalWriterAudit";
-import { isLivreRoutingError, LivreRoutingError } from "@/server/ai/anthropic";
+import { isLivreRoutingError, LivreRoutingError } from "@/server/ai/livreProvider";
 import { resolveLivreWriterModel } from "@/server/pipeline/modelResolver";
 import {
   buildLivreRoutingMetadata,
@@ -310,7 +310,7 @@ export async function POST(req: Request) {
     const blockLivreRouting = async (routingErr: LivreRoutingError) => {
       livreRouting = {
         ...(livreRouting ??
-          buildLivreRoutingMetadata({ decision: null, model: env().LIVRE_ANTHROPIC_MODEL })),
+          buildLivreRoutingMetadata({ decision: null, model: env().LIVRE_OPENAI_MODEL })),
         routing_error_code: routingErr.code,
       };
       outcome = "blocked";
@@ -631,7 +631,7 @@ export async function POST(req: Request) {
 
         // ----- 1. Structurer (ou FAST-PATH determinístico) -----
         currentStage = "structurer";
-        // ----- 0b. LAUDO LIVRE ROTEADO: identifica o exame (Anthropic) -----
+        // ----- 0b. LAUDO LIVRE ROTEADO: identifica o exame (GPT-6 Luna) -----
         // Todo resultado que não seja `routed` com categoria compatível BLOQUEIA
         // com erro explícito — sem fallback para o prompt livre nem OpenAI.
         if (livreRoutingRequested) {
@@ -865,7 +865,7 @@ export async function POST(req: Request) {
       }
 
       // Livre roteado: writer puro do ditado cru com guards COMPLETOS e
-      // Sonnet 5.5 pela origem Livre (modo hard não se aplica a esta jornada).
+      // GPT-6 Luna pela origem Livre (modo hard não se aplica a esta jornada).
       // A categoria escolhida diretamente mantém caminho e modelo atuais.
       const generationPath = livreRouting
         ? LIVRE_ROUTED_GENERATION_PATH
@@ -1681,9 +1681,9 @@ export async function POST(req: Request) {
     } finally {
       auditState.totalDurationMs = Date.now() - t0;
       // A coluna e o estimador atuais são específicos da tabela de preços da
-      // OpenAI. Na jornada Livre roteada, gravar esse número como se fosse
-      // custo Anthropic produziria uma auditoria falsa; fica nulo até a
-      // auditoria ganhar provider + preços próprios do Sonnet.
+      // writer padrão. Na jornada Livre roteada, gravar esse número com a
+      // tabela antiga produziria uma auditoria falsa; fica nulo até a
+      // auditoria ganhar os preços próprios do GPT-6 Luna.
       auditState.openaiCostUsd = livreRouting
         ? null
         : estimateCost(

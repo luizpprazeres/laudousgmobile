@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.33.3",
   "description": "LaudoUSG Mobile — plataforma mobile-first para geração de laudos de ultrassonografia por IA",
   "engines": {
-    "node": ">=20.11.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "validate:hepatic-contract": "tsx --test tests/hepatic/contract.test.ts",
