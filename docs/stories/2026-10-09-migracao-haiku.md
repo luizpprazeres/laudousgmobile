@@ -45,6 +45,7 @@ não há data publicada. A migração não tem prazo duro.
 12. Mama: normal = BI-RADS 1; sem menção às axilas = exame só das mamas (título, corpo e conclusão sem axilas).
 13. Tireoide: tabela de Domingos do Luiz (W7); "com áreas anecoicas" = 1 ponto. Confirmado pelo Luiz: **a tabela está correta** (isoecoica = 2).
 14. Parede: diástase só > 2 cm.
+15. Só DUM (sem 1ª US): a conclusão mantém a IG pela biometria informada — a DUM não corrige (web e ditado).
 
 Frentes novas: W7 regras da casa (terminal W3), W8 MSK Haiku × Sonnet (terminal W4, antes da W6), W1 rodada 3 (Sonnet +
 guard de comandos por laudo).
