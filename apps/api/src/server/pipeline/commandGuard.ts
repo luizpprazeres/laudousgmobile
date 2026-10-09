@@ -11,7 +11,7 @@
  * "na conclusão[,] X", "recomendar/recomende X", "acrescente/adicione X". Não
  * tenta interpretar comandos vagos; foca no que o médico pede de forma clara.
  */
-import { parseConclusion, renderWithConclusion } from "./conclusionUtils";
+import { parseConclusion, renderWithConclusion, splitReports } from "./conclusionUtils";
 
 const STOPWORDS = new Set([
   "para","pela","pelo","com","sem","que","uma","umas","uns","dos","das","nas",
@@ -38,6 +38,8 @@ function normalizeCommand(content: string): string {
       "",
     )
     .replace(/^que\s+/i, "")
+    // "escreva/coloque/ponha [que] X" dentro do comando → X.
+    .replace(/^(?:escrev(?:a|er)|coloqu(?:e)|coloc(?:ar|a)|ponh(?:a)|p[ôo]r)\s+(?:que\s+)?/i, "")
     .trim();
   // "recomendar/recomende/recomendo X" → "Recomenda-se X."
   const rec = c.match(/^recomend(?:ar|e|o|a-se|amos)?\s+(.+)$/i);
@@ -80,6 +82,24 @@ function looksLikeTranscription(text: string): boolean {
   return false;
 }
 
+/** Fala sobre o próprio ditado/edição, não conteúdo de conclusão. */
+const META_COMMAND_RE =
+  /\b(?:seguintes?\s+frases?|a\s+frase|o\s+texto|tracinho|travess[ãa]o|v[íi]rgula|ponto\s+final|par[áa]grafo|descrev\w*|escrev\w*)\b/i;
+
+/**
+ * Pelo menos duas palavras de conteúdo (3+ letras, fora das stopwords), ou uma
+ * palavra longa sem número ("Colelitíase."). Uma palavra curta com número é
+ * pedaço de frase cortada ("O istmo: 6,1 ml."). O W4 propôs três palavras —
+ * ficaria de fora "Cisto simples.", comando real e comum.
+ */
+function hasClinicalContent(text: string): boolean {
+  if (META_COMMAND_RE.test(text)) return false;
+  const words = (text.toLowerCase().match(/\p{L}{3,}/gu) ?? []).filter((w) => !STOPWORDS.has(w));
+  if (words.length >= 2) return true;
+  // Diagnóstico de uma palavra ("Colelitíase.", "Esteatose."): palavra longa, sem número.
+  return words.length === 1 && words[0]!.length >= 7 && !/\d/.test(text);
+}
+
 export interface ConclusionCommand {
   /** Frase já normalizada pra item de conclusão. */
   text: string;
@@ -112,22 +132,26 @@ export function extractConclusionCommands(rawInput: string): ConclusionCommand[]
     if (!raw) return;
     const { insertAt, rest } = parsePosition(raw.trim());
     const text = normalizeCommand(rest);
-    // Rejeita transcrição crua engolida (boletim P0 #1) — só diretivas reais entram.
-    if (text.length > 4 && !looksLikeTranscription(text) && !seen.has(text)) {
+    // Rejeita transcrição crua engolida (boletim P0 #1) e captura sem conteúdo
+    // clínico ("O istmo: 6,1 ml.", "A as seguintes frase.") — só diretivas reais.
+    if (text.length > 4 && !looksLikeTranscription(text) && hasClinicalContent(text) && !seen.has(text)) {
       seen.add(text);
       out.push({ text, insertAt });
     }
   };
 
   // "na conclusão[,:] X" (até fim de frase) — captura a diretiva inteira.
+  // Fim de frase: ";", quebra ou ponto que NÃO é decimal do ASR ("0.5 cm").
   for (const m of rawInput.matchAll(
-    /\bna\s+conclus[ãa]o[,:\s]+(.+?)(?:[.;\n]|$)/gi,
+    /\bna\s+conclus[ãa]o[,:\s]+(.+?)(?:[;\n]|\.(?!\d)|$)/gi,
   )) {
     push(m[1]);
   }
-  // "acrescente/adicione/inclua/coloque [na conclusão] X"
+  // "acrescente/adicione/inclua/coloque [na conclusão] X" — só imperativo ou
+  // infinitivo. Gerúndio, particípio e advérbio ("incluindo o istmo",
+  // "adicionalmente", "colocado") não são comando (T1 da revisão do W4).
   for (const m of rawInput.matchAll(
-    /\b(?:acrescent\w+|adicion\w+|inclu\w+|coloc\w+)\s+(?:na\s+conclus[ãa]o[,:\s]+)?(.+?)(?:[.;\n]|$)/gi,
+    /\b(?:acrescent(?:e|ar|a)|adicion(?:e|ar|a)|inclu(?:a|ir)|coloqu(?:e)|coloc(?:ar|a))\b\s+(?:na\s+conclus[ãa]o[,:\s]+)?(.+?)(?:[;\n]|\.(?!\d)|$)/gi,
   )) {
     // Só conta como comando de CONCLUSÃO. Pula quando o alvo é outra seção:
     // "após o título acrescente X", "no cabeçalho", "nos achados", "no corpo"
@@ -153,7 +177,7 @@ export function extractConclusionCommands(rawInput: string): ConclusionCommand[]
     push(m[1]);
   }
   // "recomendar/recomende X" (recomendação → conclusão), se não já capturado.
-  for (const m of rawInput.matchAll(/\brecomend(?:ar|e|o)\s+(.+?)(?:[.;\n]|$)/gi)) {
+  for (const m of rawInput.matchAll(/\brecomend(?:ar|e|o)\s+(.+?)(?:[;\n]|\.(?!\d)|$)/gi)) {
     push(`recomendar ${m[1]}`);
   }
 
@@ -175,7 +199,14 @@ function alreadyPresent(item: string, conclusion: string): boolean {
  * Garante que as diretivas de conclusão do médico entrem no laudo. Acrescenta
  * como itens numerados ao final da conclusão os comandos ainda ausentes.
  */
-export function applyCommandGuard(laudo: string, rawInput: string): string {
+export function applyCommandGuard(
+  laudo: string,
+  rawInput: string,
+  policy: { writer?: boolean } = {},
+): string {
+  // Laudo escrito por LLM já recebeu o comando; vários laudos no mesmo texto não
+  // dizem a qual conclusão o comando pertence (ver commandOperations.ts).
+  if (policy.writer || splitReports(laudo).length > 1) return laudo;
   const commands = extractConclusionCommands(rawInput);
   if (commands.length === 0) return laudo;
 

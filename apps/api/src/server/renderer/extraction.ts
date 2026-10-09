@@ -423,6 +423,8 @@ export async function runRendererExtraction(args: {
   /** UX: streama a extração e emite "achado" por campo que aparece (flag). */
   stream?: boolean;
   onProgress?: (e: { stage: "achado"; label: string }) => void;
+  /** Avisos do modelo sobre o ditado, tirados dos campos livres (card de pendências). */
+  onReviewNotes?: (notes: string[]) => void;
 }): Promise<RendererExtractionResult> {
   const extractor = EXTRACTORS[args.categoryCode];
   if (!extractor) {
@@ -495,9 +497,16 @@ export async function runRendererExtraction(args: {
   if (!raw) throw new Error("renderer extraction: resposta vazia");
   // Metatexto do extrator nos campos livres (o renderer os cola no laudo) sai
   // antes do render — ver renderer/extractionMetatext.ts.
-  const { value: cleaned, changed } = cleanExtractionMetatext(JSON.parse(raw), jsonSchema);
+  const { value: cleaned, changed, warnings } = cleanExtractionMetatext(JSON.parse(raw), jsonSchema);
   if (changed.length > 0) {
     console.warn(`[extraction ${args.categoryCode}] metatexto removido de ${changed.length} campo(s): ${changed.map((c) => c.split(":")[0]).join(", ")}`);
+  }
+  if (warnings.length > 0) {
+    try {
+      args.onReviewNotes?.(warnings);
+    } catch {
+      /* observacional */
+    }
   }
   const findings = extractor.parse(withPlainChoice(cleaned));
 

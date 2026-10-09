@@ -64,6 +64,10 @@ const META_SENTENCE_RE = new RegExp(
   "i",
 );
 
+/** Trecho removido que é aviso útil ao médico (vai ao card de pendências). */
+const REVIEW_RE =
+  /ileg[ií]ve|incompreens|confer|confirm|n[ãa]o\s+identificad|n[ãa]o\s+(?:foi\s+|foram\s+)?(?:extra[íi]d|estruturad|convertid)|amb[ií]gu|repeti[çc][ãa]o|inconsist/i;
+
 function cleanSentences(text: string): string {
   // Frases: termina em . ! ? ; seguido de espaço e início de frase.
   const sentences = text.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ"“(\d])/);
@@ -124,8 +128,12 @@ function allowsNull(node: Json): boolean {
  * Percorre a extração guiado pelo schema e limpa toda string livre. Devolve o
  * valor limpo e os trechos alterados (para log/auditoria).
  */
-export function cleanExtractionMetatext(value: unknown, schema: unknown): { value: unknown; changed: string[] } {
+export function cleanExtractionMetatext(
+  value: unknown,
+  schema: unknown,
+): { value: unknown; changed: string[]; warnings: string[] } {
   const changed: string[] = [];
+  const warnings: string[] = [];
   const walk = (v: unknown, node: unknown, field: string): unknown => {
     if (!isObject(node)) return v;
     if (typeof v === "string") {
@@ -133,6 +141,11 @@ export function cleanExtractionMetatext(value: unknown, schema: unknown): { valu
       const cleaned = stripExtractionMetatext(v, { raw: RAW_TEXT_FIELDS.has(field) });
       if (cleaned === v) return v;
       changed.push(`${field}: ${v.slice(0, 160)}`);
+      // O que o modelo avisava sobre o ditado ("ilegível… conferir") sai do laudo,
+      // mas não se perde: vai ao card de pendências (sanity) do médico.
+      for (const sentence of v.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ"“(])/)) {
+        if (REVIEW_RE.test(sentence) && !cleaned.includes(sentence.trim())) warnings.push(sentence.trim().slice(0, 240));
+      }
       return cleaned === "" && allowsNull(node) ? null : cleaned;
     }
     if (Array.isArray(v)) {
@@ -150,5 +163,5 @@ export function cleanExtractionMetatext(value: unknown, schema: unknown): { valu
     }
     return v;
   };
-  return { value: walk(value, schema, ""), changed };
+  return { value: walk(value, schema, ""), changed, warnings };
 }

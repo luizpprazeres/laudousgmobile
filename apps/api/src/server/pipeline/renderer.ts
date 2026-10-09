@@ -214,6 +214,8 @@ export type RendererStreamResult = {
   /** MSK passthrough: o texto é o laudo do médico preservado — o route deve PULAR
    *  guards que alteram conteúdo (applyDoctorCommands, COMMAND_INTERPRETER). */
   passthrough?: boolean;
+  /** Writer dedicado: modelo que efetivamente escreveu (auditoria e custo). */
+  model?: string;
 };
 
 export async function* runRendererStream(args: {
@@ -251,6 +253,12 @@ export async function* runRendererStream(args: {
    * Puramente observacional: não altera o texto gerado.
    */
   onFindings?: (findings: unknown) => void;
+  /**
+   * Avisos que o extrator escreveu sobre o ditado ("medidas ilegíveis — conferir")
+   * e que o guard de metatexto tirou do laudo. A rota os leva ao card de
+   * pendências (sanity), fora do texto copiável.
+   */
+  onReviewNotes?: (notes: string[]) => void;
   /**
    * Personalização do médico, JÁ RESOLVIDA e validada (item 7 do projeto
    * modelos). Vem como promessa para que a consulta ao banco corra em paralelo
@@ -350,8 +358,9 @@ export async function* runRendererStream(args: {
       fullText: res.fullText,
       latencyMs: res.latencyMs,
       systemMessage,
-      inputTokens: undefined,
+      inputTokens: res.inputTokens,
       outputTokens: res.outputTokens,
+      model: res.model,
       cachedInputTokens: undefined,
       extraction: { findings: null, latencyMs: 0 },
       freeSlotCount: 0,
@@ -386,8 +395,9 @@ export async function* runRendererStream(args: {
       fullText: res.fullText,
       latencyMs: res.latencyMs,
       systemMessage,
-      inputTokens: undefined,
+      inputTokens: res.inputTokens,
       outputTokens: res.outputTokens,
+      model: res.model,
       cachedInputTokens: undefined,
       extraction: { findings: null, latencyMs: 0 },
       freeSlotCount: 0,
@@ -419,8 +429,9 @@ export async function* runRendererStream(args: {
       fullText: res.fullText,
       latencyMs: res.latencyMs,
       systemMessage,
-      inputTokens: undefined,
+      inputTokens: res.inputTokens,
       outputTokens: res.outputTokens,
+      model: res.model,
       cachedInputTokens: undefined,
       extraction: { findings: null, latencyMs: 0 },
       freeSlotCount: 0,
@@ -435,7 +446,7 @@ export async function* runRendererStream(args: {
     args.onSystemMessage?.(systemMessage);
     return {
       fullText: result.fullText, latencyMs: result.latencyMs, systemMessage,
-      inputTokens: result.inputTokens, outputTokens: result.outputTokens, cachedInputTokens: undefined,
+      inputTokens: result.inputTokens, outputTokens: result.outputTokens, cachedInputTokens: undefined, model: result.model,
       extraction: { findings: null, latencyMs: result.latencyMs }, freeSlotCount: 0, passthrough: true,
     };
   }
@@ -464,8 +475,9 @@ export async function* runRendererStream(args: {
       fullText: res.fullText,
       latencyMs: res.latencyMs,
       systemMessage,
-      inputTokens: undefined,
+      inputTokens: res.inputTokens,
       outputTokens: res.outputTokens,
+      model: res.model,
       cachedInputTokens: undefined,
       extraction: { findings: null, latencyMs: 0 },
       freeSlotCount: 0,
@@ -489,8 +501,9 @@ export async function* runRendererStream(args: {
       fullText: res.fullText,
       latencyMs: res.latencyMs,
       systemMessage,
-      inputTokens: undefined,
+      inputTokens: res.inputTokens,
       outputTokens: res.outputTokens,
+      model: res.model,
       cachedInputTokens: undefined,
       extraction: { findings: null, latencyMs: 0 },
       freeSlotCount: 0,
@@ -508,6 +521,7 @@ export async function* runRendererStream(args: {
     signal: args.signal,
     stream: !!args.onProgress,
     onProgress: args.onProgress,
+    onReviewNotes: args.onReviewNotes,
   });
   // Nunca deixar a auditoria derrubar a geração de um laudo.
   try {

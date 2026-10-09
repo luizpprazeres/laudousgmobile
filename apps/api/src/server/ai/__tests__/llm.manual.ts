@@ -9,8 +9,11 @@ import assert from "node:assert/strict";
 import Anthropic from "@anthropic-ai/sdk";
 import type OpenAI from "openai";
 import {
+  dedicatedWriterTarget,
   EXTRACTION_TEXT_RULE,
   HAIKU_MODEL,
+  writerModelOverrides,
+  writerTargetForCategory,
   llmJson,
   llmParsed,
   llmTarget,
@@ -402,6 +405,60 @@ async function main() {
     await rejectsWith(llmText({ ...base, anthropicClient: scripted([{ ...textTurn("x"), stop_reason: "refusal" }]).client }), "LLM_REFUSED");
     await rejectsWith(llmText({ ...base, anthropicClient: scripted([textTurn("x", "max_tokens")]).client }), "LLM_TRUNCATED");
     await rejectsWith(llmText({ ...base, anthropicClient: scripted([textTurn(" ")]).client }), "LLM_EMPTY");
+  });
+
+  // ---------------- Sonnet 5.5 por categoria ----------------
+  const BASE = { LLM_WRITER_MODEL: "claude-haiku-5-5", LLM_WRITER_EFFORT: "medium" };
+  await check("modelo por categoria: MSK, pelve e carótidas no Sonnet 5.5 por default; demais no Haiku", () => {
+    assert.equal(writerTargetForCategory("DOPPLER_CAROTIDAS", BASE).model, "claude-sonnet-5-5");
+    assert.equal(writerTargetForCategory("ABDOMEN_TOTAL", BASE).model, "claude-haiku-5-5");
+    assert.equal(dedicatedWriterTarget("claude-haiku-5-5", "msk", BASE, "MUSCULOESQUELETICO_V2").model, "claude-sonnet-5-5");
+    assert.equal(dedicatedWriterTarget("claude-haiku-5-5", "pelve", BASE, "PELVE_FEMININA").model, "claude-sonnet-5-5");
+    assert.equal(dedicatedWriterTarget("claude-haiku-5-5", "renal", BASE, "DOPPLER_RENAL").model, "claude-haiku-5-5");
+  });
+  await check("modelo por categoria: env troca sem deploy (modelo e esforço); vazia = sem exceções", () => {
+    const env1 = { ...BASE, LLM_WRITER_MODEL_BY_CATEGORY: "MUSCULOESQUELETICO_V2=claude-haiku-5-5, PELVE_FEMININA=claude-sonnet-5-5:high" };
+    assert.equal(dedicatedWriterTarget("x", "msk", env1, "MUSCULOESQUELETICO_V2").model, "claude-haiku-5-5");
+    const pelve = dedicatedWriterTarget("x", "pelve", env1, "PELVE_FEMININA");
+    assert.equal(pelve.model, "claude-sonnet-5-5");
+    assert.equal(pelve.effort, "high");
+    assert.equal(writerTargetForCategory("DOPPLER_CAROTIDAS", env1).model, "claude-haiku-5-5");
+    assert.equal(writerModelOverrides({ LLM_WRITER_MODEL_BY_CATEGORY: "" }).size, 0);
+    assert.equal(writerTargetForCategory("DOPPLER_CAROTIDAS", { ...BASE, LLM_WRITER_MODEL_BY_CATEGORY: "" }).model, "claude-haiku-5-5");
+  });
+  await check("Sonnet 5.5: fallback de recusa do servidor (beta) e modelo efetivo devolvido", async () => {
+    const calls: any[] = [];
+    const betaCalls: any[] = [];
+    const final = (model: string, iterations: unknown[]) => ({
+      content: [{ type: "text", text: "LAUDO" }],
+      stop_reason: "end_turn",
+      stop_details: null,
+      model,
+      usage: { input_tokens: 50, output_tokens: 10, cache_read_input_tokens: 0, iterations },
+    });
+    const streamOf = (msg: unknown) => ({
+      async *[Symbol.asyncIterator]() {
+        yield { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "LAUDO" } };
+      },
+      finalMessage: async () => msg,
+    });
+    const client = {
+      messages: { stream: (p: any) => (calls.push(p), streamOf(final(p.model, []))) },
+      beta: { messages: { stream: (p: any) => (betaCalls.push(p), streamOf(final("claude-sonnet-5", [{ type: "message" }, { type: "fallback_message" }]))) } },
+    } as any;
+    const sonnet = await llmText({ target: { provider: "anthropic", model: "claude-sonnet-5-5", effort: "medium" }, system: "s", messages: [{ role: "user", content: "u" }], anthropicClient: client });
+    assert.equal(betaCalls.length, 1);
+    assert.deepEqual(betaCalls[0].betas, ["server-side-fallback-2026-07-01"]);
+    assert.equal(betaCalls[0].fallbacks, "default");
+    assert.equal("temperature" in betaCalls[0], false);
+    assert.deepEqual(betaCalls[0].thinking, { type: "adaptive" });
+    assert.equal(sonnet.usage.model, "claude-sonnet-5");
+    assert.equal(sonnet.usage.fallback, true);
+    const haiku = await llmText({ target: HAIKU, system: "s", messages: [{ role: "user", content: "u" }], anthropicClient: client });
+    assert.equal(calls.length, 1, "Haiku não tem fallback de servidor: chamada normal");
+    assert.equal("fallbacks" in calls[0], false);
+    assert.equal(haiku.usage.model, "claude-haiku-5-5");
+    assert.equal(haiku.usage.fallback, undefined);
   });
 
   // ---------------- Rollback OpenAI ----------------

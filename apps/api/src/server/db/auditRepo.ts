@@ -123,11 +123,15 @@ export async function persistAudit(state: GenerationAuditState): Promise<void> {
 
 /**
  * US$ por milhão de tokens (entrada, saída). Haiku 5.5: tabela de prompt até
- * 100 mil tokens (todo laudo cabe); o thinking entra em `output_tokens`.
+ * 100 mil tokens (todo laudo cabe); o thinking entra em `output_tokens`. Sonnet
+ * 5.5 (MSK, pelve, carótidas): 2 / 10.
  * Modelo fora da tabela usa a tarifa histórica do gpt-4.1-mini, que era a única.
  */
 const PRICE_PER_MTOK: Record<string, { input: number; output: number }> = {
   "claude-haiku-5-5": { input: 0.1, output: 0.5 },
+  "claude-sonnet-5-5": { input: 2, output: 10 },
+  // Alvo do fallback de recusa do Sonnet 5.5.
+  "claude-sonnet-5": { input: 2, output: 10 },
 };
 const LEGACY_PRICE = { input: 0.4, output: 1.6 };
 

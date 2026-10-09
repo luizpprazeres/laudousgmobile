@@ -96,6 +96,8 @@ export async function* runWriterStream(args: {
     outputTokens?: number;
     /** DET-1: tokens do prefixo servidos pelo prompt caching do provedor. */
     cachedInputTokens?: number;
+    /** Modelo que efetivamente escreveu (o fallback de recusa pode trocá-lo). */
+    model?: string;
   },
   void
 > {
@@ -186,6 +188,7 @@ export async function* runWriterStream(args: {
       if (next.done) {
         return {
           fullText: cleanWriterOutput(full).text,
+          model: next.value.model ?? modelConfig.model,
           latencyMs: Date.now() - t0,
           systemMessage,
           ...next.value,
@@ -233,6 +236,7 @@ export async function* runWriterStream(args: {
     // Markdown e comentário do modelo saem do texto final (o stream já foi; o
     // `done` leva este texto).
     fullText: cleanWriterOutput(full).text,
+    model: modelConfig.model,
     latencyMs: Date.now() - t0,
     systemMessage,
     inputTokens,

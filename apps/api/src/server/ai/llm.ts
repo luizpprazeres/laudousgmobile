@@ -32,14 +32,22 @@ export const HAIKU_MODEL = "claude-haiku-5-5";
 
 export type LlmProvider = "anthropic" | "openai";
 export type LlmTarget = { provider: LlmProvider; model: string; effort: string };
-export type LlmUsage = { inputTokens?: number; outputTokens?: number; cachedInputTokens?: number };
+export type LlmUsage = {
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedInputTokens?: number;
+  /** Modelo que efetivamente respondeu (difere do pedido quando o fallback de recusa atuou). */
+  model?: string;
+  /** O fallback de recusa do servidor atuou nesta resposta. */
+  fallback?: boolean;
+};
 export type LlmMessage = {
   role: "user" | "assistant";
   content: string;
   /** Só visão (leitura de telas do aparelho). */
   image?: { base64: string; mediaType: "image/jpeg" | "image/png" };
 };
-type AnthropicClient = Pick<Anthropic, "messages">;
+type AnthropicClient = Pick<Anthropic, "messages"> & Partial<Pick<Anthropic, "beta">>;
 type OpenAIClient = Pick<OpenAI, "chat">;
 
 export type LlmFailureCode =
@@ -105,9 +113,72 @@ export function writerTarget(config: Pick<TargetEnv, "LLM_WRITER_MODEL" | "LLM_W
   return llmTarget(config.LLM_WRITER_MODEL, config.LLM_WRITER_EFFORT, "writer");
 }
 
-/** Writer dedicado (MSK, pelve, partes moles, Doppler…): modelo próprio, esforço do writer. */
-export function dedicatedWriterTarget(model: string, label: string, config: Pick<TargetEnv, "LLM_WRITER_EFFORT"> = env()): LlmTarget {
-  return llmTarget(model, config.LLM_WRITER_EFFORT, label);
+/**
+ * MODELO DO WRITER POR CATEGORIA (decisão do Luiz, 09/10 noite): MSK, pelve e
+ * carótidas exigem mais (vários laudos no mesmo ditado) e vão ao Claude Sonnet
+ * 5.5; as demais ficam no Haiku 5.5. Default no código; a env
+ * `LLM_WRITER_MODEL_BY_CATEGORY` (CSV `CATEGORIA=modelo[:esforço]`) troca sem
+ * deploy — env vazia = nenhuma exceção (todo writer no modelo base). Vale para o
+ * writer completo e para os dedicados, e VENCE o `*_WRITER_MODEL` do dedicado.
+ */
+export const DEFAULT_WRITER_MODEL_BY_CATEGORY = {
+  MUSCULOESQUELETICO_V2: "claude-sonnet-5-5",
+  PELVE_FEMININA: "claude-sonnet-5-5",
+  DOPPLER_CAROTIDAS: "claude-sonnet-5-5",
+} as const;
+
+type CategoryEnv = Partial<Pick<ReturnType<typeof env>, "LLM_WRITER_MODEL_BY_CATEGORY">>;
+
+export function writerModelOverrides(config: CategoryEnv = env()): Map<string, { model: string; effort?: string }> {
+  const out = new Map<string, { model: string; effort?: string }>();
+  if (config.LLM_WRITER_MODEL_BY_CATEGORY === undefined) {
+    for (const [cat, model] of Object.entries(DEFAULT_WRITER_MODEL_BY_CATEGORY)) out.set(cat, { model });
+    return out;
+  }
+  for (const entry of config.LLM_WRITER_MODEL_BY_CATEGORY.split(",")) {
+    const [cat, spec] = entry.split("=").map((x) => x?.trim() ?? "");
+    if (!cat || !spec) continue;
+    const [model, effort] = spec.split(":").map((x) => x.trim());
+    if (model) out.set(cat, { model, effort: effort || undefined });
+  }
+  return out;
+}
+
+/** Writer completo da categoria: exceção por categoria, senão LLM_WRITER_MODEL. */
+export function writerTargetForCategory(
+  category: string,
+  config: Pick<TargetEnv, "LLM_WRITER_MODEL" | "LLM_WRITER_EFFORT"> & CategoryEnv = env(),
+): LlmTarget {
+  const o = writerModelOverrides(config).get(category);
+  return o ? llmTarget(o.model, o.effort ?? config.LLM_WRITER_EFFORT, `writer ${category}`) : writerTarget(config);
+}
+
+/**
+ * Writer dedicado (MSK, pelve, partes moles, Doppler…): exceção por categoria,
+ * senão o modelo próprio do writer (`*_WRITER_MODEL`); esforço do writer.
+ */
+export function dedicatedWriterTarget(
+  model: string,
+  label: string,
+  config: Pick<TargetEnv, "LLM_WRITER_EFFORT"> & CategoryEnv = env(),
+  category?: string,
+): LlmTarget {
+  const o = category ? writerModelOverrides(config).get(category) : undefined;
+  return o
+    ? llmTarget(o.model, o.effort ?? config.LLM_WRITER_EFFORT, label)
+    : llmTarget(model, config.LLM_WRITER_EFFORT, label);
+}
+
+/**
+ * Fallback de recusa do servidor (beta `server-side-fallback-2026-07-01`,
+ * `fallbacks: "default"`, só Claude API): no Sonnet 5.5 refaz no Sonnet 5 as
+ * recusas `cyber` e `frontier_llm`; NÃO refaz `bio`, `reasoning_extraction` nem
+ * `general_harms` (as que um laudo médico poderia disparar). O Haiku 5.5 não tem
+ * fallback de servidor. Ligado por padrão no Sonnet 5.5 (recomendação da skill);
+ * `LLM_SONNET_SERVER_FALLBACK=false` desliga.
+ */
+function wantsServerFallback(model: string): boolean {
+  return /^claude-sonnet-5-5$/i.test(model) && env().LLM_SONNET_SERVER_FALLBACK !== "false";
 }
 
 /** Sanity por IA (observacional, roda depois do `done`). */
@@ -153,7 +224,10 @@ function anthropicMessages(messages: LlmMessage[]): Anthropic.MessageParam[] {
 }
 
 function anthropicUsage(message: Anthropic.Message): LlmUsage {
+  const iterations = (message.usage as { iterations?: Array<{ type?: string }> | null }).iterations ?? [];
   return {
+    ...(message.model ? { model: message.model } : {}),
+    ...(iterations.some((it) => it.type === "fallback_message") ? { fallback: true } : {}),
     inputTokens:
       message.usage.input_tokens +
       (message.usage.cache_creation_input_tokens ?? 0) +
@@ -362,21 +436,33 @@ function addUsage(a: LlmUsage, b: LlmUsage): LlmUsage {
   };
 }
 
+type TextEventStream = AsyncIterable<{ type: string; delta?: { type?: string; text?: string } }> & {
+  finalMessage(): Promise<Anthropic.Message>;
+};
+
 async function* anthropicTextStream(opts: LlmTextOptions, client: AnthropicClient): AsyncGenerator<string, LlmUsage, void> {
-  const stream = client.messages.stream(
-    {
-      model: opts.target.model,
-      max_tokens: opts.maxTokens ?? 32000,
-      thinking: { type: "adaptive" },
-      output_config: { effort: anthropicEffort(opts.target.effort) },
-      system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
-      messages: anthropicMessages(opts.messages),
-    },
-    { signal: opts.signal, timeout: 180_000 },
-  );
+  const params = {
+    model: opts.target.model,
+    max_tokens: opts.maxTokens ?? 32000,
+    thinking: { type: "adaptive" as const },
+    output_config: { effort: anthropicEffort(opts.target.effort) },
+    system: [{ type: "text" as const, text: opts.system, cache_control: { type: "ephemeral" as const } }],
+    messages: anthropicMessages(opts.messages),
+  };
+  const requestOptions = { signal: opts.signal, timeout: 180_000 };
+  // Sonnet 5.5: fallback de recusa do servidor (ver wantsServerFallback). A
+  // resposta servida pelo fallback traz o modelo efetivo em `message.model`.
+  const stream = (
+    wantsServerFallback(opts.target.model) && client.beta
+      ? client.beta.messages.stream(
+          { ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" },
+          requestOptions,
+        )
+      : client.messages.stream(params, requestOptions)
+  ) as unknown as TextEventStream;
   let full = "";
   for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+    if (event.type === "content_block_delta" && event.delta?.type === "text_delta" && event.delta.text) {
       full += event.delta.text;
       yield event.delta.text;
     }

@@ -25,6 +25,7 @@ export type MskWriterResult = {
   latencyMs: number;
   ttftMs: number;
   model: string;
+  inputTokens?: number;
   outputTokens?: number;
   /** Fact-audit determinístico (medida/lado/estrutura) — observabilidade. */
   audit: MskAudit;
@@ -37,8 +38,9 @@ export async function* runMskWriterStream(args: {
   ragBlocks?: RagBlockForPrompt[];
   signal?: AbortSignal;
 }): AsyncGenerator<string, MskWriterResult, void> {
-  const target = dedicatedWriterTarget(env().MSK_WRITER_MODEL, "msk-writer");
-  const model = target.model;
+  const target = dedicatedWriterTarget(env().MSK_WRITER_MODEL, "msk-writer", env(), "MUSCULOESQUELETICO_V2");
+  let model = target.model;
+  let inputTokens: number | undefined;
   const t0 = Date.now();
   let ttftMs = 0;
   let full = "";
@@ -78,6 +80,9 @@ export async function* runMskWriterStream(args: {
     const next = await gen.next();
     if (next.done) {
       outputTokens = next.value.outputTokens;
+      inputTokens = next.value.inputTokens;
+      // Modelo que efetivamente escreveu (o fallback de recusa pode trocá-lo).
+      model = next.value.model ?? model;
       break;
     }
     const delta = next.value;
@@ -107,6 +112,7 @@ export async function* runMskWriterStream(args: {
     latencyMs: Date.now() - t0,
     ttftMs,
     model,
+    inputTokens,
     outputTokens,
     audit,
   };

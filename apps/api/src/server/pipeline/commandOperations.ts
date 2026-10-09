@@ -19,6 +19,7 @@
 import { extractConclusionCommands } from "./commandGuard";
 import { applyOperations, type ApplyOperationsResult } from "./operations";
 import { normalizeAsrCommands } from "./asrNormalize";
+import { splitReports } from "./conclusionUtils";
 import type { ReportOperation } from "@laudousg/shared";
 
 /**
@@ -101,17 +102,50 @@ export function extractCommandOperations(rawInput: string): ReportOperation[] {
   return ops;
 }
 
-/** Versão auditável: devolve laudo + relatório de operações aplicadas. */
+export type CommandPolicy = {
+  /**
+   * O laudo foi ESCRITO por LLM (writer completo ou dedicado), que já recebeu o
+   * comando no ditado: nada é acrescentado (item de conclusão, achado no corpo,
+   * linha). Só substituição literal e comentário. Na revisão do W4, o que o guard
+   * acrescentava no caminho writer foi apagado pelo médico em 24 de 26 casos.
+   */
+  writer?: boolean;
+};
+
+const WRITER_SAFE_OPS = new Set<ReportOperation["op"]>(["replace_phrase", "add_comment"]);
+
+/**
+ * Versão auditável: devolve laudo + relatório de operações aplicadas.
+ *
+ * Com vários laudos no mesmo texto (um por título "ULTRASSONOGRAFIA…"), só a
+ * substituição literal roda: não há como saber a qual laudo um "na conclusão X"
+ * se refere, e acrescentar ao 1º era o que colapsava os demais (MK-1).
+ */
 export function applyCommandOperationsWithAudit(
   laudo: string,
   rawInput: string,
+  policy: CommandPolicy = {},
 ): ApplyOperationsResult {
   const ops = extractCommandOperations(rawInput);
   if (ops.length === 0) return { laudo, results: [] };
-  return applyOperations(laudo, ops);
+  const multiReport = splitReports(laudo).length > 1;
+  const skipped: ApplyOperationsResult["results"] = [];
+  const allowed = ops.filter((op) => {
+    if (multiReport && op.op !== "replace_phrase") {
+      skipped.push({ op, applied: false, reason: "multi_laudo" });
+      return false;
+    }
+    if (policy.writer && !WRITER_SAFE_OPS.has(op.op)) {
+      skipped.push({ op, applied: false, reason: "caminho_writer" });
+      return false;
+    }
+    return true;
+  });
+  const applied = applyOperations(laudo, allowed);
+  return { laudo: applied.laudo, results: [...applied.results, ...skipped] };
 }
 
 /** Drop-in de `applyCommandGuard`: aplica as operações e devolve só o laudo. */
-export function applyCommandOperations(laudo: string, rawInput: string): string {
-  return applyCommandOperationsWithAudit(laudo, rawInput).laudo;
+export function applyCommandOperations(laudo: string, rawInput: string, policy: CommandPolicy = {}): string {
+  return applyCommandOperationsWithAudit(laudo, rawInput, policy).laudo;
 }

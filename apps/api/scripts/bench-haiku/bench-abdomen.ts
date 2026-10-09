@@ -47,6 +47,11 @@ Object.assign(process.env, {
   GOLF_BALL_SNIPPET: process.env.BENCH_GOLF_BALL_SNIPPET ?? "true",
   ASR_CLINICAL: process.env.BENCH_ASR_CLINICAL ?? "true",
   WRITER_V2_CATEGORIES: "",
+  // Writers dedicados ligados como em produção (auditoria: MSK, pelve e partes
+  // moles saem por writer_guarded). BENCH_*_WRITER=false volta ao renderer.
+  MSK_WRITER: process.env.BENCH_MSK_WRITER ?? "true",
+  PELVE_WRITER: process.env.BENCH_PELVE_WRITER ?? "true",
+  PARTES_MOLES_WRITER: process.env.BENCH_PARTES_MOLES_WRITER ?? "true",
   // Motor Haiku 5.5 (ai/llm.ts): todos os papéis no Haiku, interceptado abaixo.
   LLM_EXTRACTION_MODEL: process.env.BENCH_MODEL ?? "claude-haiku-5-5",
   LLM_WRITER_MODEL: process.env.BENCH_MODEL ?? "claude-haiku-5-5",
@@ -115,7 +120,7 @@ const realFetch = globalThis.fetch;
 type Answer = { content: string; usage: { prompt_tokens: number; completion_tokens: number } };
 
 /** Responde uma chamada de modelo pela assinatura (ou replay), igual para os dois provedores. */
-async function answer(c: Ctx, req: { system: string; user: string; schema?: Record<string, unknown>; schemaName: string | null }): Promise<Answer> {
+async function answer(c: Ctx, req: { system: string; user: string; schema?: Record<string, unknown>; schemaName: string | null; model?: string }): Promise<Answer> {
   let content: string;
   let usage = { prompt_tokens: 0, completion_tokens: 0 };
   let ms = 0;
@@ -133,14 +138,17 @@ async function answer(c: Ctx, req: { system: string; user: string; schema?: Reco
     usage = { prompt_tokens: r.inputTokens, completion_tokens: r.outputTokens };
     ms = r.ms;
   } else {
-    const r = await callClaude({ model: HAIKU, system: req.system, user: req.user, schema: req.schema, effort: EFFORT });
+    // O modelo pedido pelo motor (roteamento por categoria: Sonnet 5.5 no MSK,
+    // pelve e carótidas); o OpenAI interceptado não traz modelo Claude → HAIKU.
+    const model = req.model && /^claude-/.test(req.model) ? req.model : HAIKU;
+    const r = await callClaude({ model, system: req.system, user: req.user, schema: req.schema, effort: EFFORT });
     content = r.text;
     usage = { prompt_tokens: r.inputTokens, completion_tokens: r.outputTokens };
     ms = r.ms;
   }
   appendFileSync(
     c.log,
-    JSON.stringify({ case: c.caseId, mode: c.mode, schemaName: req.schemaName, ms, usage, system_len: req.system.length, user: req.user, content }) + "\n",
+    JSON.stringify({ case: c.caseId, mode: c.mode, model: req.model ?? HAIKU, schemaName: req.schemaName, ms, usage, system_len: req.system.length, user: req.user, content }) + "\n",
   );
   return { content, usage };
 }
@@ -155,7 +163,7 @@ function anthropicResponse(body: any, a: Answer): Response {
     : [{ type: "text", text: a.content }];
   const stop_reason = toolName ? "tool_use" : "end_turn";
   const usage = { input_tokens: a.usage.prompt_tokens, output_tokens: a.usage.completion_tokens, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
-  const message = { id: "msg_bench", type: "message", role: "assistant", model: HAIKU, content: blocks, stop_reason, stop_sequence: null, stop_details: null, usage };
+  const message = { id: "msg_bench", type: "message", role: "assistant", model: body.model ?? HAIKU, content: blocks, stop_reason, stop_sequence: null, stop_details: null, usage };
   if (!body.stream) {
     return new Response(JSON.stringify(message), { status: 200, headers: { "content-type": "application/json" } });
   }
@@ -200,7 +208,7 @@ globalThis.fetch = (async (input: any, init?: any) => {
     const system = c.promptPatch && !schema ? patchCorpoDescritivo(systemRaw) : systemRaw;
     // Só o texto dos turnos do usuário (few-shots em turnos de assistente ficam de fora, como antes).
     const user = (body.messages ?? []).filter((m: any) => m.role === "user").map((m: any) => textOfContent(m.content)).filter(Boolean).join("\n\n");
-    return anthropicResponse(body, await answer(c, { system, user, schema, schemaName }));
+    return anthropicResponse(body, await answer(c, { system, user, schema, schemaName, model: body.model }));
   }
 
   const systemRaw = body.messages?.find((m: any) => m.role === "system")?.content ?? "";
@@ -322,6 +330,7 @@ async function main() {
   const { getKnownCategories, getWritingStyleById, getVariantTemplateBody, resolveAccountReportPreference } = await import("../../src/server/db/lookups");
   const { runRendererStream } = await import("../../src/server/pipeline/renderer");
   const { runWriterStream } = await import("../../src/server/pipeline/writer");
+  const { resolveWriterModel } = await import("../../src/server/pipeline/modelResolver");
   const { resolveDopplerMode, resolveWriterExam, requestedExamCategory } = await import("../../src/server/pipeline/requestedExam");
   const { ehDerivado } = await import("../../src/server/renderer/catalog/registry");
   const { resolverPersonalizacao } = await import("../../src/server/customization/resolve");
@@ -444,11 +453,13 @@ async function main() {
         frases,
       } as any);
       let text = "";
+      let passthrough = false;
       try {
         for (;;) {
           const n = await gen.next();
           if (n.done) {
             text = (n.value as any)?.fullText ?? text;
+            passthrough = (n.value as any)?.passthrough === true;
             break;
           }
           text += n.value;
@@ -456,7 +467,8 @@ async function main() {
       } catch (e) {
         return { text: "", error: `renderer falhou: ${(e as Error).message.slice(0, 300)}` };
       }
-      text = applyCommandOperations(text, rawInput);
+      // Como a rota: writer dedicado (passthrough) não recebe acréscimo do guard.
+      text = applyCommandOperations(text, rawInput, { writer: passthrough });
       return { text: universalGuards(text) };
     });
   }
@@ -480,7 +492,8 @@ async function main() {
         sourceTranscript: rawInput,
         // Writer padrão de produção (motor Haiku 5.5, provider anthropic); a chamada
         // é interceptada no fetch e respondida pela assinatura.
-        modelConfig: { provider: "anthropic", model: HAIKU, reasoningEffort: EFFORT, credentialRef: "default" },
+        // Modelo do writer pelo roteamento de produção (Sonnet 5.5 nas carótidas).
+        modelConfig: { ...resolveWriterModel({ mode: "standard", categoryCode: cat }), reasoningEffort: EFFORT },
       });
       let text = "";
       try {
@@ -502,7 +515,7 @@ async function main() {
       text = stripSpuriousMagnitudeFlags(text);
       text = applyVolumePolicy(text, rawInput);
       text = applyDsmPolicy(text, rawInput);
-      text = applyCommandOperations(text, rawInput);
+      text = applyCommandOperations(text, rawInput, { writer: true });
       if ((cat === "DOPPLER_OBSTETRICO" && dopplerMode !== "isolated") || cat === "OBSTETRICA" || cat === "MORFOLOGICO") {
         text = ensurePesoFetalConclusion(text, rawInput);
       }

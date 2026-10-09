@@ -1,6 +1,6 @@
 import { env } from "../env";
 import { assertLivreProviderConfigured } from "../ai/livreProvider";
-import { writerTarget } from "../ai/llm";
+import { writerTargetForCategory } from "../ai/llm";
 
 export type GenerationMode = "standard" | "hard";
 
@@ -28,7 +28,7 @@ type ModelResolverEnv = Pick<
   | "TESTE_CATEGORY_API_KEY"
   | "TESTE_REASONING_EFFORT"
   | "TESTE_ALLOWED_USER_ID"
->;
+> & Partial<Pick<ReturnType<typeof env>, "LLM_WRITER_MODEL_BY_CATEGORY">>;
 
 type LivreWriterEnv = Pick<
   ReturnType<typeof env>,
@@ -90,9 +90,10 @@ export function resolveWriterModel(
     };
   }
 
-  // Writer padrão: Claude Haiku 5.5 (LLM_WRITER_MODEL); um modelo não-Claude
-  // configurado ali é o rollback OpenAI.
-  const target = writerTarget(config);
+  // Writer padrão: Claude Haiku 5.5 (LLM_WRITER_MODEL), com exceção por categoria
+  // (LLM_WRITER_MODEL_BY_CATEGORY — carótidas no Sonnet 5.5). Um modelo
+  // não-Claude configurado é o rollback OpenAI.
+  const target = writerTargetForCategory(ctx.categoryCode, config);
   return {
     provider: target.provider,
     model: target.model,

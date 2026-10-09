@@ -15,7 +15,7 @@ const extract: HepaticExtractor = async ({ rawInput, signal, model }) => {
   // término inesperado viram erro — a geração hepática é fail-closed.
   try {
     const { raw, usage } = await llmJson({
-      target: dedicatedWriterTarget(model, "doppler-hepatico-writer"),
+      target: dedicatedWriterTarget(model, "doppler-hepatico-writer", env(), "DOPPLER_HEPATICO"),
       system: DOPPLER_HEPATICO_EXTRACTION_PROMPT,
       messages: [
         ...DOPPLER_HEPATICO_FEWSHOTS.flatMap(({ raw: shot, extraction }) => [
@@ -40,7 +40,7 @@ const extract: HepaticExtractor = async ({ rawInput, signal, model }) => {
 /** Só o dado auditado chega ao renderer aprovado. Nada é emitido antes do gate. */
 export async function* runDopplerHepaticoWriterStream(args: { rawInput: string; objective?: boolean; signal?: AbortSignal }, dependencies: { extract?: HepaticExtractor; model?: string; enabled?: boolean } = {}): AsyncGenerator<string, HepaticWriterResult, void> {
   if (!(dependencies.enabled ?? env().DOPPLER_HEPATICO_WRITER_ENABLED !== "false")) throw new Error("DOPPLER_HEPATICO_WRITER_DISABLED");
-  const model = dependencies.model ?? dedicatedWriterTarget(env().DOPPLER_HEPATICO_WRITER_MODEL, "doppler-hepatico-writer").model;
+  const model = dependencies.model ?? dedicatedWriterTarget(env().DOPPLER_HEPATICO_WRITER_MODEL, "doppler-hepatico-writer", env(), "DOPPLER_HEPATICO").model;
   const started = Date.now();
   const extracted = await (dependencies.extract ?? extract)({ rawInput: args.rawInput, model, signal: args.signal });
   const audit = auditHepaticDopplerExtraction(args.rawInput, extracted.value);
