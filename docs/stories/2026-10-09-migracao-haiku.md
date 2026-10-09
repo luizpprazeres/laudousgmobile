@@ -37,6 +37,19 @@ Status: **InProgress** · Branch base: `feat/haiku-migration` · Orquestrador: C
 Correção de premissa (09/10): 14/10/2026 é a aposentadoria do gpt-4.1/4.1-mini no **Azure**; na API direta da OpenAI
 não há data publicada. A migração não tem prazo duro.
 
+## Decisões do Dr. Luiz (09/10, noite — 2)
+
+10. gpt-4.1 removido de vez. MSK, carótidas e pelve → **Claude Sonnet 5.5** (writer dedicado no MSK/pelve; genérico nas
+    carótidas), por configuração; teste Haiku × Sonnet no MSK para o Luiz escolher (W8).
+11. Hipótese diagnóstica: padrão da casa **"que tem como diagnóstico mais provável …"**.
+12. Mama: normal = BI-RADS 1; sem menção às axilas = exame só das mamas (título, corpo e conclusão sem axilas).
+13. Tireoide: tabela de Domingos do Luiz (W7); "com áreas anecoicas" = 1 ponto. (Divergência a confirmar: mensagem diz
+    "isoecoica sem áreas = 3", tabela diz isoecoica = 2.)
+14. Parede: diástase só > 2 cm.
+
+Frentes novas: W7 regras da casa (terminal W3), W8 MSK Haiku × Sonnet (terminal W4, antes da W6), W1 rodada 3 (Sonnet +
+guard de comandos por laudo).
+
 ## Tabela de roteamento alvo
 
 | Grupo | Categorias | Caminho | Modelo |
@@ -85,6 +98,9 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [ ] W4 revisão por bancada + propostas priorizadas
 - [ ] W5 datação escolhida + gestação inicial sem embrião (backend)
 - [ ] W6 web: caixas de seleção da datação
+- [ ] W7 regras da casa (prompt "diagnóstico mais provável", mama, Domingos, parede, rim ausente nas vias)
+- [ ] W8 MSK Haiku × Sonnet (assinatura) para o Luiz escolher
+- [ ] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo)
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
 
