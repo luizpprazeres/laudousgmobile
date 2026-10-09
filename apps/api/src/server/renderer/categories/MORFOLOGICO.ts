@@ -527,6 +527,7 @@ function acrescentarDoppler(
   const doppler = renderDopplerModule(f.doppler, {
     ...options,
     indices: "ip",
+    ig: { semanas: f.ig_semanas, dias: f.ig_dias },
     omitirAusenciasUterinas: options?.uterinas === true,
   });
   corpo.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);

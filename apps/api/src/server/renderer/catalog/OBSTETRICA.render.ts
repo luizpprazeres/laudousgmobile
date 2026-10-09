@@ -76,6 +76,7 @@ function complementosDoExame(
       rawInput: args.rawInput,
       umbilicalSafety: args.umbilicalSafety,
       indices: "ip",
+      ig: { semanas: f.ig_semanas, dias: f.ig_dias },
     });
     corpo.push("\nDOPPLERVELOCIMETRIA:", ...doppler.achados);
     conclusao.push(...doppler.conclusao);

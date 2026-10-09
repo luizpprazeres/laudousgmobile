@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calcularDopplerParcial } from "@laudousg/shared";
 import {
   buildDopplerConclusionItems,
   computePerfilHemodinamico,
@@ -97,6 +98,42 @@ const fmt = (n: number) =>
 /** Índices de vaso saem sempre com duas casas: 0,60 e não 0,6 (decisão de 18/09/2026). */
 const fmtIndice = (n: number) =>
   n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/**
+ * Percentis Barcelona que FALTAM no ditado, calculados pelo mesmo motor dos apps
+ * (`calcularDopplerParcial`, Calculadora v2021) a partir dos IP ditados e da IG do exame.
+ *
+ * Sem percentil o vaso é só descritivo e a conclusão não afirma normalidade
+ * (`fraseNormalIP`). Até aqui o percentil só existia quando o app colava a linha
+ * "→ Percentis" no ditado e o extrator a copiava — e essa linha já veio calculada
+ * com o IR no lugar do IP (laudo 1304da57). Percentil ditado NUNCA é sobrescrito;
+ * sem IG ou fora da faixa do motor (uterinas 11–44 s, demais 20–44 s), nada muda.
+ */
+export function completarPercentisBarcelona(
+  d: DopplerObstetricoModule,
+  ig?: { semanas: number | null; dias: number | null },
+): DopplerObstetricoModule {
+  if (!ig || ig.semanas === null || !Number.isInteger(ig.semanas)) return d;
+  const r = calcularDopplerParcial({
+    weeks: ig.semanas,
+    days: ig.dias ?? 0,
+    ipUmbilical: d.ip_umbilical ?? undefined,
+    ipMCA: d.ip_acm ?? undefined,
+    ipUterinaDireita: d.ip_uterina_dir ?? undefined,
+    ipUterinaEsquerda: d.ip_uterina_esq ?? undefined,
+    ipMedioUterinas: d.ip_medio_uterinas ?? undefined,
+    ipDuctoVenoso: d.ip_ducto_venoso ?? undefined,
+  });
+  const out = { ...d };
+  if (out.perc_umbilical === null && r.arteriaUmbilical) out.perc_umbilical = r.arteriaUmbilical.percentile;
+  if (out.perc_acm === null && r.arteriaCerebralMedia) out.perc_acm = r.arteriaCerebralMedia.percentile;
+  if (out.perc_ducto_venoso === null && r.ductoVenoso) out.perc_ducto_venoso = r.ductoVenoso.percentile;
+  if (r.arteriasUterinas && out.perc_medio_uterinas === null) {
+    out.ip_medio_uterinas ??= r.arteriasUterinas.ipMedio;
+    out.perc_medio_uterinas = r.arteriasUterinas.percentile;
+  }
+  return out;
+}
 
 export function toDopplerData(d: DopplerObstetricoModule): DopplerData {
   const ductoVenoso =
@@ -210,8 +247,11 @@ export function renderDopplerModule(
     indices?: "todos" | "ip";
     /** 1º trimestre: não afirmar incisura/centralização, que não foram avaliadas. */
     omitirAusenciasUterinas?: boolean;
+    /** IG do exame: completa os percentis Barcelona não ditados (ver completarPercentisBarcelona). */
+    ig?: { semanas: number | null; dias: number | null };
   },
 ): { achados: string[]; conclusao: string[] } {
+  module = completarPercentisBarcelona(module, options?.ig);
   let data = toDopplerData(module);
   // No módulo v2 a barreira é parte do contrato clínico. `false` existe apenas
   // para comparação/rollback explícito em diagnóstico; ausência significa ON.
