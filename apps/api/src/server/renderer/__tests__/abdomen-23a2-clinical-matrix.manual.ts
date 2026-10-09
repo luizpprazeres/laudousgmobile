@@ -16,13 +16,13 @@ const base: EstadoDoAbdome = {
   rim_direito: {
     dimensoes: "normal", diferenciacao: "preservada", litiase: [], dilatacao: "ausente", cistos: [], lesoes: [], raros: [],
     medidas: "", espessura: "", "litiase.calculo.dimensao": "", "litiase.calculo.polo": "sup",
-    "cistos.simples.dimensao": "", "lesoes.angiomiolipoma.dimensao": "", "lesoes.angiomiolipoma.polo": "sup",
+    "cistos.simples.dimensao": "", "cistos.simples.polo": "sup", "lesoes.angiomiolipoma.dimensao": "", "lesoes.angiomiolipoma.polo": "sup",
     "lesoes.cisto_complexo.dimensao": "", "lesoes.cisto_complexo.polo": "sup",
   },
   rim_esquerdo: {
     dimensoes: "normal", diferenciacao: "preservada", litiase: [], dilatacao: "ausente", cistos: [], lesoes: [], raros: [],
     medidas: "", espessura: "", "litiase.calculo.dimensao": "", "litiase.calculo.polo": "sup",
-    "cistos.simples.dimensao": "", "lesoes.angiomiolipoma.dimensao": "", "lesoes.angiomiolipoma.polo": "sup",
+    "cistos.simples.dimensao": "", "cistos.simples.polo": "sup", "lesoes.angiomiolipoma.dimensao": "", "lesoes.angiomiolipoma.polo": "sup",
     "lesoes.cisto_complexo.dimensao": "", "lesoes.cisto_complexo.polo": "sup",
   },
   veia_cava: { calibre: "normal", conteudo: [], "calibre.dilatada.diametro": "", "conteudo.trombo.local": "" },
@@ -62,12 +62,17 @@ function laudos(patch: Patch): string[] {
   const adaptado = adaptarAbdome(estado);
   assert.deepEqual(adaptado.pendencias, []);
   const dados = AbdomenTotalFindingsSchema.parse(adaptado.dados);
+  // Esta matriz valida as frases do catálogo de abdome. O adapter também
+  // fornece contratos urinários compartilhados, que têm testes próprios e
+  // desviariam os rins/bexiga para outro renderer, mascarando esta cobertura.
+  delete dados.rins_detalhados;
+  delete dados.bexiga_detalhada;
   return [renderAbdomenTotalObjetivo(dados), renderAbdomenTotalClassico(dados, mascaraClassica)];
 }
 
 for (const laudo of laudos({})) {
   assert.ok(!laudo.includes("____"));
-  assert.ok(laudo.includes("sem alterações"));
+  assert.match(laudo.split(/CONCLUSÃO:|IMPRESSÃO:/)[1] ?? "", /sem evidência de alterações ecográficas|sem alterações significativas/);
 }
 
 type Caso = { nome: string; patch: Patch; inclui: string[]; conclusaoAlterada?: boolean };
@@ -95,11 +100,14 @@ const casos: Caso[] = [
   { nome: "volume pré-miccional", patch: { bexiga: { volume_pre: "250" } }, inclui: ["Volume pré-miccional de 250 mL."], conclusaoAlterada: false },
   { nome: "resíduo pós-miccional", patch: { bexiga: { residuo: "35" } }, inclui: ["Resíduo pós-miccional de 35 mL."] },
   { nome: "ectasia da aorta", patch: { aorta: { calibre: "ectasia", "calibre.ectasia.diametro": "2,6" } }, inclui: ["Aorta abdominal ectasiada, medindo até 2,6 cm.", "Ectasia da aorta abdominal, medindo até 2,6 cm."] },
-  { nome: "aneurisma da aorta sem medida", patch: { aorta: { calibre: "aneurisma" } }, inclui: ["Aorta abdominal com dilatação aneurismática.", "Dilatação aneurismática da aorta abdominal."] },
   { nome: "ateromatose da aorta", patch: { aorta: { paredes: "ateromatose" } }, inclui: ["imagens hiperecoicas aderidas às suas paredes", "Placas de ateromas na aorta abdominal."] },
   { nome: "veia cava dilatada", patch: { veia_cava: { calibre: "dilatada", "calibre.dilatada.diametro": "2,5" } }, inclui: ["Veia cava inferior de calibre aumentado, medindo 2,5 cm.", "Veia cava inferior de calibre aumentado."] },
-  { nome: "trombo na veia cava", patch: { veia_cava: { conteudo: ["trombo"], "conteudo.trombo.local": "segmento infra-hepático" } }, inclui: ["compatível com trombo", "Material trombótico na veia cava inferior, no segmento infra-hepático."] },
+  { nome: "trombo na veia cava", patch: { veia_cava: { conteudo: ["trombo"], "conteudo.trombo.local": "segmento infra-hepático" } }, inclui: ["Material ecogênico no interior da veia cava inferior", "Material trombótico na veia cava inferior, no segmento infra-hepático."] },
 ];
+
+// O adapter atual bloqueia aneurisma sem medida; não é mais uma entrada
+// válida da matriz Web. Verificar o bloqueio em vez de esperar um laudo.
+assert.ok(adaptarAbdome({ ...base, aorta: { ...(base.aorta as Record<string, unknown>), calibre: "aneurisma" } }).pendencias.some(p => p.bloqueia && p.onde === "aorta"));
 
 for (const caso of casos) {
   for (const laudo of laudos(caso.patch)) {
@@ -124,11 +132,8 @@ for (const laudo of laudos({
   assert.ok(!laudo.includes("____"));
 }
 
-for (const laudo of laudos({ bexiga: { replecao: "insuficiente", parede: "espessada", volume_pre: "250", residuo: "35" } })) {
-  assert.ok(laudo.includes("repleção insuficiente"));
-  assert.ok(!laudo.includes("Volume pré-miccional"));
-  assert.ok(!laudo.includes("Resíduo pós-miccional"));
-  assert.ok(!laudo.includes("paredes espessadas"));
-}
+// O adapter passou a rejeitar a entrada conflitante em vez de descartar
+// silenciosamente as medidas/alterações numa bexiga com repleção insuficiente.
+assert.ok(adaptarAbdome({ ...base, bexiga: { ...(base.bexiga as Record<string, unknown>), replecao: "insuficiente", parede: "espessada", volume_pre: "250", residuo: "35" } }).pendencias.some(p => p.bloqueia && p.onde === "bexiga"));
 
 console.log(`Sprint 23A2 — matriz clínica: ${casos.length} opções + combinações OK`);

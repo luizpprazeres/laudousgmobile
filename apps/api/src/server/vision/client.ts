@@ -3,14 +3,18 @@
  * Port do laudousg/lib/vision/client.ts — adaptado pro padrão mobile
  * (singleton openai() em vez de new OpenAI(), sem Gemini).
  *
+ * Modelo: LLM_VISION_MODEL (Claude Haiku 5.5 pelo motor ai/llm.ts; era
+ * gpt-4.1 / gpt-4.1-mini fixos no código, aposentados em 14/10/2026).
+ *
  * Routing por categoria:
- *   DOPPLER_OBSTETRICO  → gpt-4.1 especializado, somente Doppler
- *   OBSTETRICA          → gpt-4.1-mini (8 campos)
- *   MORFOLOGICO         → gpt-4.1-mini (18+ campos)
+ *   DOPPLER_OBSTETRICO  → leitura especializada, somente Doppler
+ *   OBSTETRICA          → 8 campos
+ *   MORFOLOGICO         → 18+ campos
  *   OBSTETRICA/MORFOLOGICO + módulo Doppler → duas leituras paralelas e merge namespaced
  */
 
-import { openai } from "../ai/openai";
+import { env } from "../env";
+import { llmTarget, llmText } from "../ai/llm";
 import { mergeBiometricData, parseVisionResponse } from "./extractor";
 import type { BiometricData, Category, ImagingModule } from "./types";
 
@@ -24,6 +28,16 @@ interface AnalyzeImageParams {
 export interface AnalyzeImageResult {
   data: BiometricData;
   model: string;
+}
+
+function visionTarget() {
+  const e = env();
+  return llmTarget(e.LLM_VISION_MODEL, e.LLM_EXTRACTION_EFFORT, "vision");
+}
+
+/** PNG ou JPEG pela assinatura do base64 (a Anthropic confere o media type). */
+function imageMediaType(base64: string): "image/png" | "image/jpeg" {
+  return base64.startsWith("iVBORw0KGgo") ? "image/png" : "image/jpeg";
 }
 
 // ---------------------------------------------------------------------------
@@ -443,31 +457,21 @@ async function analyzeDopplerObstetrico(
     ? '\n\nATENÇÃO — GESTAÇÃO GEMELAR: Esta é uma gestação gemelar. As imagens podem conter dados de FETO A (ou Feto 1) e FETO B (ou Feto 2). Extraia e identifique os dados de cada feto separadamente quando possível.'
     : "";
 
-  const makeContent = (promptText: string) => [
-    { type: "text" as const, text: promptText + gemelarNote },
-    {
-      type: "image_url" as const,
-      image_url: {
-        url: `data:image/jpeg;base64,${imageBase64}`,
-        detail: "high" as const,
-      },
-    },
-  ];
-
-  const response = await openai().chat.completions.create({
-    model: "gpt-4.1",
+  const target = visionTarget();
+  const { text: content } = await llmText({
+    target,
+    system: "Responda APENAS com JSON válido, sem markdown.",
     messages: [
-      { role: "system", content: "Responda APENAS com JSON válido, sem markdown." },
-      { role: "user", content: makeContent(buildDopplerOnlyPrompt()) },
+      { role: "user", content: buildDopplerOnlyPrompt() + gemelarNote, image: { base64: imageBase64, mediaType: imageMediaType(imageBase64) } },
     ],
-    response_format: { type: "json_object" },
-    temperature: 0,
-    max_tokens: 500,
+    maxTokens: 16000,
+    openaiMaxTokens: 500,
+    openaiTemperature: 0,
+    label: "vision-doppler",
   });
-  const content = response.choices[0]?.message?.content;
   return {
     data: content ? parseVisionResponse(content, "DOPPLER_OBSTETRICO") : {},
-    model: "gpt-4.1 (Doppler)",
+    model: `${target.model} (Doppler)`,
   };
 }
 
@@ -511,37 +515,23 @@ export async function analyzeImage({
   if (gemelar) {
     prompt += `\n\nATENÇÃO — GESTAÇÃO GEMELAR: Esta é uma gestação gemelar. As imagens podem conter dados de FETO A (ou Feto 1) e FETO B (ou Feto 2). Extraia e identifique os dados de cada feto separadamente quando possível. Prefixe os valores com "Feto A:" e "Feto B:" nos campos correspondentes.`;
   }
-  const model = "gpt-4.1-mini";
+  const target = visionTarget();
+  const model = target.model;
 
   try {
-    const response = await openai().chat.completions.create({
-      model,
+    const { text: content } = await llmText({
+      target,
+      system:
+        "Você é um especialista em extração de dados de imagens de ultrassom. Responda APENAS com JSON válido, sem markdown, sem texto adicional.",
       messages: [
-        {
-          role: "system",
-          content:
-            "Você é um especialista em extração de dados de imagens de ultrassom. Responda APENAS com JSON válido, sem markdown, sem texto adicional.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${imageBase64}`,
-                detail: "high",
-              },
-            },
-          ],
-        },
+        { role: "user", content: prompt, image: { base64: imageBase64, mediaType: imageMediaType(imageBase64) } },
       ],
-      response_format: { type: "json_object" },
-      temperature: 0,
-      max_tokens: 1200,
+      maxTokens: 16000,
+      openaiMaxTokens: 1200,
+      openaiTemperature: 0,
+      label: "vision",
     });
 
-    const content = response.choices[0]?.message?.content;
     if (!content) {
       throw new Error("Vision API returned empty response");
     }

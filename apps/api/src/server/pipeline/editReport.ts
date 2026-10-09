@@ -1,5 +1,4 @@
-import { openai } from "../ai/openai";
-import { env } from "../env";
+import { llmText, writerTarget } from "../ai/llm";
 
 const MAX_CHANGED_LINES = 3;
 
@@ -72,32 +71,22 @@ export async function editReport(args: EditReportArgs): Promise<EditReportResult
 }
 
 async function requestEditedReport(args: EditReportArgs, baseText: string) {
-  const writerModel = env().OPENAI_MODEL_WRITER;
-  const isReasoningModel =
-    /gpt-5/.test(writerModel) && !/chat-latest/.test(writerModel);
-  const reqParams: Record<string, unknown> = {
-    model: writerModel,
+  // Modelo do writer (Claude Haiku 5.5 pelo motor ai/llm.ts).
+  const { text } = await llmText({
+    target: writerTarget(),
+    system: EDIT_SYSTEM_PROMPT,
     messages: [
-      { role: "system", content: EDIT_SYSTEM_PROMPT },
-      { role: "user", content: buildEditUserMessage(baseText, args.instruction, args.category, args.target ?? "body") },
+      {
+        role: "user",
+        content: buildEditUserMessage(baseText, args.instruction, args.category, args.target ?? "body"),
+      },
     ],
-  };
-
-  if (isReasoningModel) {
-    reqParams.max_completion_tokens = 3500;
-    reqParams.reasoning_effort = env().OPENAI_WRITER_REASONING_EFFORT;
-  } else {
-    reqParams.temperature = 0;
-    reqParams.max_tokens = 3500;
-  }
-
-  const res = (await openai().chat.completions.create(
-    reqParams as unknown as Parameters<
-      ReturnType<typeof openai>["chat"]["completions"]["create"]
-    >[0],
-    { signal: args.signal },
-  )) as { choices: Array<{ message?: { content?: string | null } }> };
-  const text = res.choices[0]?.message?.content;
+    maxTokens: 16000,
+    openaiMaxTokens: 3500,
+    openaiTemperature: 0,
+    signal: args.signal,
+    label: "editReport",
+  });
   if (!text) throw new Error("editReport: resposta vazia do modelo");
   return text;
 }

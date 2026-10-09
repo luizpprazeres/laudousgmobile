@@ -1,5 +1,6 @@
 import { env } from "../env";
 import { assertLivreProviderConfigured } from "../ai/livreProvider";
+import { writerTarget } from "../ai/llm";
 
 export type GenerationMode = "standard" | "hard";
 
@@ -18,8 +19,8 @@ export type WriterModelContext = {
 
 type ModelResolverEnv = Pick<
   ReturnType<typeof env>,
-  | "OPENAI_MODEL_WRITER"
-  | "OPENAI_WRITER_REASONING_EFFORT"
+  | "LLM_WRITER_MODEL"
+  | "LLM_WRITER_EFFORT"
   | "HARD_MODE_ENABLED"
   | "HARD_MODE_MODEL"
   | "TESTE_CATEGORY_MODEL"
@@ -89,10 +90,13 @@ export function resolveWriterModel(
     };
   }
 
+  // Writer padrão: Claude Haiku 5.5 (LLM_WRITER_MODEL); um modelo não-Claude
+  // configurado ali é o rollback OpenAI.
+  const target = writerTarget(config);
   return {
-    provider: "openai",
-    model: config.OPENAI_MODEL_WRITER,
-    reasoningEffort: config.OPENAI_WRITER_REASONING_EFFORT,
+    provider: target.provider,
+    model: target.model,
+    reasoningEffort: target.effort,
     credentialRef: "default",
   };
 }

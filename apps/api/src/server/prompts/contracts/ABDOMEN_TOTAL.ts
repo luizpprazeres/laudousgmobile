@@ -51,7 +51,7 @@ REGRAS GERAIS:
 
 8. Se houver conflito entre um termo padronizado do modelo e um achado patológico informado pelo usuário, priorizar o dado patológico ditado.
 
-9. NÃO usar linguagem alarmista. A hipótese diagnóstica entra preferencialmente na CONCLUSÃO.
+9. NÃO usar linguagem alarmista. A hipótese diagnóstica entra SOMENTE na CONCLUSÃO; o corpo é descritivo (ver regra da casa "CORPO DESCRITIVO").
 
 10. Se o usuário mandar "use o modelo anterior" ou "ajuste a partir do modelo abaixo", respeite o modelo mais recente fornecido por ele.
 

@@ -14,8 +14,7 @@
  * Flag: `COMMAND_INTERPRETER` (default OFF). Roda DEPOIS da fase 1 determinística.
  */
 import { z } from "zod";
-import { env } from "../env";
-import { structuredCompletion } from "../ai/openai";
+import { extractionTarget, llmParsed } from "../ai/llm";
 import { applyOperations } from "./operations";
 import { normalizeAsrCommands } from "./asrNormalize";
 import type { ReportOperation } from "@laudousg/shared";
@@ -119,10 +118,12 @@ export async function interpretCommandsLLM(
   draft: string,
   signal?: AbortSignal,
 ): Promise<ReportOperation[]> {
-  const out = await structuredCompletion({
-    model: env().OPENAI_MODEL_STRUCTURER,
+  const { value: out } = await llmParsed({
+    target: extractionTarget(),
     system: INTERPRETER_SYSTEM,
-    user: `DITADO:\n${normalizeAsrCommands(rawInput)}\n\n--- LAUDO ATUAL (draft) ---\n${draft}`,
+    messages: [
+      { role: "user", content: `DITADO:\n${normalizeAsrCommands(rawInput)}\n\n--- LAUDO ATUAL (draft) ---\n${draft}` },
+    ],
     schemaName: "CommandOperations",
     schema: COMMAND_INTERPRETER_JSON_SCHEMA as unknown as Record<string, unknown>,
     parser: InterpreterOutputSchema,

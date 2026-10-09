@@ -46,6 +46,11 @@ for (const l of legit) eq(S(l), l, `NEGATIVO intacto: ${l.slice(0, 45)}…`);
 // placeholder explicitamente preservado
 ck(S("Peso aproximado de ____ gramas.").includes("____"), "placeholder ____ PRESERVADO");
 
+// negrito markdown do writer Haiku sai; nota de rodapé com asterisco simples fica
+eq(S("**ULTRASSONOGRAFIA DO ABDOME TOTAL**\n\nCOMENTÁRIOS:"), "ULTRASSONOGRAFIA DO ABDOME TOTAL\n\nCOMENTÁRIOS:", "remove **negrito** do título");
+eq(S("CONCLUSÃO:\n1) **Colelitíase.**"), "CONCLUSÃO:\n1) Colelitíase.", "remove **negrito** na conclusão");
+ck(S("*ESCORE DE NÓDULO TIREOIDEANO - Domingos\nACR - American College of Radiology*").startsWith("*ESCORE"), "asterisco simples da nota PRESERVADO");
+
 // idempotência
 {
   const once = S("Você vai escrever nódulo, vírgula, sólido. tchau");
