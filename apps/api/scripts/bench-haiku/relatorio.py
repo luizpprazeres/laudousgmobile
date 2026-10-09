@@ -149,7 +149,8 @@ const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;'
 const KEYS = [
   {k:'gpt', t:'Produção', s:'o que o app gerou (gpt)'},
   {k:'R', t:'Produção hoje', s:'mesmos achados do gpt-4.1-mini, renderer de hoje'},
-  {k:'A', t:'Cenário A', s:'Haiku extrai + renderer atual'},
+  {k:'A', t:'Cenário A', s:'Haiku no caminho atual (extrai + renderer; ou escreve, no writer dedicado/genérico)'},
+  {k:'AR', t:'Cenário AR', s:'Haiku extrai + renderer (categoria que hoje sai por outro caminho)'},
   {k:'B', t:'Cenário B', s:'Haiku escreve o laudo inteiro'},
   {k:'L', t:'Cenário L', s:'GPT-6 Luna extrai + renderer atual'},
   {k:'B2', t:'Cenário B2', s:'Haiku escreve tudo + prompt “corpo descritivo”'},

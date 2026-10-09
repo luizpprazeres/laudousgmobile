@@ -227,7 +227,7 @@ function wordSimilarity(a: string, b: string): number {
 const numbers = (s: string) =>
   new Set((s.match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) => n.replace(".", ",")).filter((n) => n !== "1" && n !== "2" && n !== "3"));
 /** Texto que não é laudo (o modelo pediu dados / recusou): sem seção de conclusão/impressão. */
-const isRecusa = (t: string) => !/^\s*(CONCLUS[ÃA]O|IMPRESS[ÃA]O|OPINI[ÃA]O)\b/m.test(t ?? "");
+const isRecusa = (t: string) => !/^[\s*#_]*(CONCLUS[ÃA]O|IMPRESS[ÃA]O|OPINI[ÃA]O)\b/m.test(t ?? "");
 function numberFidelity(candidate: string, final: string) {
   const f = numbers(final);
   const c = numbers(candidate);
