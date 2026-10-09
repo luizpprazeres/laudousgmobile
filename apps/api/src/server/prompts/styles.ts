@@ -67,7 +67,7 @@ REGRAS DE ENUMERAÇÃO:
 
 EXEMPLO CANÔNICO (Abdome total — esteatose):
 TÉCNICA: Exame realizado com transdutor convexo multifrequencial.
-ACHADOS: Fígado de dimensões normais. Hiperecogenicidade difusa do parênquima, compatível com esteatose hepática leve. Vesícula biliar sem cálculos. Rins sem dilatação pielocalicial.
+ACHADOS: Fígado de dimensões normais. Hiperecogenicidade difusa do parênquima. Vesícula biliar sem cálculos. Rins sem dilatação pielocalicial.
 IMPRESSÃO: Esteatose hepática leve.`;
 
 export function getStyleOverlay(code: WritingStyleCode): string | null {

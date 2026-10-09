@@ -96,6 +96,11 @@ function laudos(patch: Patch): string[] {
   const adaptado = adaptarAbdome(estadoCom(patch));
   assert.deepEqual(adaptado.pendencias, []);
   const dados = AbdomenTotalFindingsSchema.parse(adaptado.dados);
+  // Esta matriz valida as frases do catálogo de abdome. O adapter também
+  // fornece contratos urinários compartilhados, que têm testes próprios e
+  // desviariam os rins/bexiga para outro renderer, mascarando esta cobertura.
+  delete dados.rins_detalhados;
+  delete dados.bexiga_detalhada;
   return [
     renderAbdomenTotalObjetivo(dados),
     renderAbdomenTotalClassico(dados, mascaraClassica),
@@ -104,7 +109,7 @@ function laudos(patch: Patch): string[] {
 
 const normal = laudos({});
 for (const laudo of normal) {
-  assert.ok(laudo.includes("sem alterações"));
+  assert.match(laudo.split(/CONCLUSÃO:|IMPRESSÃO:/)[1] ?? "", /sem evidência de alterações ecográficas|sem alterações significativas/);
   assert.ok(!laudo.includes("____"));
 }
 
@@ -120,7 +125,7 @@ const casos: Caso[] = [
   { nome: "hepatomegalia só com medida do lobo esquerdo", patch: { figado: { dimensoes: "aumentado", "dimensoes.aumentado.lobo_e": "11" } }, inclui: ["lobo esquerdo com diâmetro longitudinal de 11 cm", "Hepatomegalia."] },
   { nome: "hemangioma em mm", patch: { figado: { lesoes: ["hemangioma"], "lesoes.hemangioma.dimensao": "20", "lesoes.hemangioma.local": "lobo_e" } }, inclui: ["medindo 2,0 cm", "lobo esquerdo", "sugestiva de hemangioma"] },
   { nome: "nódulo hepático", patch: { figado: { lesoes: ["nodulo"], "lesoes.nodulo.dimensao": "18 mm" } }, inclui: ["Imagem nodular sólida, medindo 1,8 cm", "Nódulo hepático a esclarecer"] },
-  { nome: "calcificação hepática", patch: { figado: { raros: ["calcificacao"] } }, inclui: ["calcificação residual", "Calcificação hepática residual."] },
+  { nome: "calcificação hepática", patch: { figado: { raros: ["calcificacao"] } }, inclui: ["Foco hiperecogênico com sombra acústica posterior.", "Calcificação hepática residual."] },
   { nome: "cistos hepáticos múltiplos", patch: { figado: { raros: ["cistos_multiplos"] } }, inclui: ["Cistos hepáticos simples."] },
   { nome: "líquido peri-hepático", patch: { figado: { raros: ["derrame"] } }, inclui: ["lâmina líquida peri-hepática", "Líquido livre peri-hepático."] },
   { nome: "veia porta dilatada", patch: { figado: { porta: "dilatada", "porta.dilatada.calibre": "14 mm" } }, inclui: ["Veia porta pérvia, de calibre aumentado, medindo 1,4 cm", "Veia porta de calibre aumentado."] },
@@ -128,11 +133,11 @@ const casos: Caso[] = [
   { nome: "vesícula distendida", patch: { vesicula: { estado: "distendida" } }, inclui: ["Vesícula biliar distendida", "Distensão da vesícula biliar."] },
   { nome: "colecistectomia", patch: { vesicula: { estado: "ausente" } }, inclui: ["Ausência da imagem da vesícula biliar"], conclusaoAlterada: false },
   { nome: "colelitíase em mm", patch: { vesicula: { conteudo: ["colelitiase"], "conteudo.colelitiase.dimensao": "12", "conteudo.colelitiase.quantidade": "unico" } }, inclui: ["1,2 centímetros", "Litíase da vesícula biliar."] },
-  { nome: "lama biliar", patch: { vesicula: { conteudo: ["lama"] } }, inclui: ["compatível com lama biliar", "Lama biliar."] },
+  { nome: "lama biliar", patch: { vesicula: { conteudo: ["lama"] } }, inclui: ["Conteúdo ecogênico móvel, sem sombra acústica.", "Lama biliar."] },
   { nome: "pólipo vesicular", patch: { vesicula: { conteudo: ["polipos"] } }, inclui: ["Imagem polipoide aderida", "Pólipo da vesícula biliar."] },
   { nome: "parede espessada aguda", patch: { vesicula: { paredes: "espessada_aguda" } }, inclui: ["parede espessada", "demais critérios clínicos e laboratoriais"] },
   { nome: "adenomiomatose", patch: { vesicula: { raros: ["adenomiomatose"] } }, inclui: ["artefatos em cauda de cometa", "Adenomiomatose da vesícula biliar."] },
-  { nome: "colesterolose", patch: { vesicula: { raros: ["colesterolose"] } }, inclui: ["colesterolose", "Colesterolose da vesícula biliar."] },
+  { nome: "colesterolose", patch: { vesicula: { raros: ["colesterolose"] } }, inclui: ["Pequenos focos ecogênicos parietais aderidos, sem sombra acústica.", "Colesterolose da vesícula biliar."] },
   { nome: "vesícula em porcelana", patch: { vesicula: { raros: ["porcelana"] } }, inclui: ["Parede difusamente calcificada", "Vesícula em porcelana."] },
   { nome: "pólipo maior que 10 mm", patch: { vesicula: { raros: ["polipo_adenomatoso"] } }, inclui: ["maior que 10 mm", "Convém avaliação especializada"] },
   { nome: "colecistite alitiásica", patch: { vesicula: { raros: ["colecistite_alitiasica"] } }, inclui: ["sem cálculos identificáveis", "contexto clínico apropriado"] },
@@ -150,7 +155,7 @@ const casos: Caso[] = [
   { nome: "esplenomegalia só com menor eixo", patch: { baco: { dimensoes: "aumentado", "dimensoes.aumentado.eixo_menor": "6,5" } }, inclui: ["menor eixo medindo 6,5 cm", "Esplenomegalia."] },
   { nome: "baço heterogêneo", patch: { baco: { ecotextura: "heterogenea" } }, inclui: ["ecotextura heterogênea", "achado inespecífico"] },
   { nome: "cisto esplênico em mm", patch: { baco: { lesoes: ["cisto"], "lesoes.cisto.dimensao": "20" } }, inclui: ["medindo 2,0 cm", "Cisto esplênico simples."] },
-  { nome: "calcificação esplênica", patch: { baco: { lesoes: ["calcificacao"] } }, inclui: ["calcificação residual", "Calcificação esplênica residual."] },
+  { nome: "calcificação esplênica", patch: { baco: { lesoes: ["calcificacao"] } }, inclui: ["Foco hiperecogênico com sombra acústica posterior.", "Calcificação esplênica residual."] },
   { nome: "baço acessório", patch: { baco: { lesoes: ["acessorio"] } }, inclui: ["junto ao hilo esplênico", "Baço acessório."] },
 ];
 

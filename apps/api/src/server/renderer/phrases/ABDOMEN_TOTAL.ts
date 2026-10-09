@@ -13,7 +13,7 @@ import { renderSharedBladder, renderSharedKidney } from "../categories/sharedUri
  * knowledge_blocks). Determinística: mesmo achado → mesma frase, byte a byte.
  *
  * Cada builder recebe o estado do órgão e devolve:
- * - body: linha(s) do corpo (null = usar default do template)
+ * - body: linha(s) do corpo (null = usar default do template; "" = suprimir default)
  * - conclusao: itens de conclusão que o achado gera (ordem preservada)
  * - needsFreeSlot: achados tipo "outro" que precisam do LLM secundário
  */
@@ -178,14 +178,14 @@ function renderFigado(state: AbdomenOrganState): OrganRender {
       );
     } else if (f.tipo === "hemangioma_hepatico") {
       const loc = f.localizacao?.trim() || "parênquima hepático";
-      lines.push(`Imagem nodular hiperecogênica, homogênea e de contornos bem definidos${medidasOpcionais(f.medidas_cm)}, situada no ${loc}, sugestiva de hemangioma.`);
+      lines.push(`Imagem nodular hiperecogênica, homogênea e de contornos bem definidos${medidasOpcionais(f.medidas_cm)}, situada no ${loc}.`);
       out.conclusao.push("Imagem hepática sugestiva de hemangioma.");
     } else if (f.tipo === "nodulo_hepatico") {
       const loc = f.localizacao?.trim() || "parênquima hepático";
       lines.push(`Imagem nodular sólida${medidasOpcionais(f.medidas_cm)}, situada no ${loc}, de natureza indeterminada ao método.`);
       out.conclusao.push("Nódulo hepático a esclarecer. Convém, a critério clínico, complementar a investigação com método contrastado.");
     } else if (f.tipo === "calcificacao_hepatica") {
-      lines.push("Foco hiperecogênico com sombra acústica posterior, compatível com calcificação residual.");
+      lines.push("Foco hiperecogênico com sombra acústica posterior.");
       out.conclusao.push("Calcificação hepática residual.");
     } else if (f.tipo === "liquido_perihepatico") {
       lines.push("Observa-se lâmina líquida peri-hepática.");
@@ -195,8 +195,17 @@ function renderFigado(state: AbdomenOrganState): OrganRender {
     }
   }
 
-  const figadoLine = `Fígado de ${dimensoes}, com ${parenquima}.`;
-  out.body = [figadoLine, vasosLine, ...lines].join("\n");
+  const livre = out.freeSlotFindings.length > 0;
+  const atributos = [
+    !livre || dimensoes !== "dimensões normais" ? `de ${dimensoes}` : "",
+    !livre || parenquima !== "contornos regulares e ecotextura homogênea" ? `com ${parenquima}` : "",
+  ].filter(Boolean);
+  const figadoLine = atributos.length ? `Fígado ${atributos.join(", ")}.` : "";
+  out.body = [
+    figadoLine,
+    !livre || vasosLine !== "Os vasos intra-hepáticos são bem visíveis e de calibre anatômico." ? vasosLine : "",
+    ...lines,
+  ].filter(Boolean).join("\n");
   return out;
 }
 
@@ -265,19 +274,19 @@ function renderVesicula(state: AbdomenOrganState): OrganRender {
   const adicionais: string[] = [];
   for (const f of achados) {
     if (f.tipo === "lama_biliar") {
-      adicionais.push("Conteúdo ecogênico móvel, sem sombra acústica, compatível com lama biliar.");
+      adicionais.push("Conteúdo ecogênico móvel, sem sombra acústica.");
       out.conclusao.push("Lama biliar.");
     } else if (f.tipo === "polipo_vesicular") {
       adicionais.push(`Imagem polipoide aderida à parede, sem mobilidade ou sombra acústica${medidasOpcionais(f.medidas_cm)}.`);
       out.conclusao.push("Pólipo da vesícula biliar.");
     } else if (f.tipo === "adenomiomatose") {
-      adicionais.push("Espessamento parietal focal com pequenas imagens císticas intramurais e artefatos em cauda de cometa, compatível com adenomiomatose.");
+      adicionais.push("Espessamento parietal focal com pequenas imagens císticas intramurais e artefatos em cauda de cometa.");
       out.conclusao.push("Adenomiomatose da vesícula biliar.");
     } else if (f.tipo === "colesterolose") {
-      adicionais.push("Pequenos focos ecogênicos parietais aderidos, sem sombra acústica, compatíveis com colesterolose.");
+      adicionais.push("Pequenos focos ecogênicos parietais aderidos, sem sombra acústica.");
       out.conclusao.push("Colesterolose da vesícula biliar.");
     } else if (f.tipo === "vesicula_porcelana") {
-      adicionais.push("Parede difusamente calcificada, com sombra acústica posterior, compatível com vesícula em porcelana.");
+      adicionais.push("Parede difusamente calcificada, com sombra acústica posterior.");
       out.conclusao.push("Vesícula em porcelana.");
     } else if (f.tipo === "polipo_vesicular_maior_10mm") {
       adicionais.push("Imagem polipoide séssil maior que 10 mm, aderida à parede e sem sombra acústica.");
@@ -394,7 +403,8 @@ function renderPancreas(state: AbdomenOrganState): OrganRender {
       ? "Pâncreas com avaliação parcialmente prejudicada pela interposição gasosa, sem alterações evidentes nas porções visibilizadas"
       : `${parenquima}, com avaliação parcialmente prejudicada pela interposição gasosa`;
   }
-  out.body = [`${parenquima}.`, ...lesoes, wirsung].join("\n");
+  const livre = out.freeSlotFindings.length > 0;
+  out.body = [!livre || parenquima !== "Pâncreas de dimensões e ecotextura normais" ? `${parenquima}.` : "", ...lesoes, !livre || wirsung !== "Ducto pancreático principal de calibre normal." ? wirsung : ""].filter(Boolean).join("\n");
   return out;
 }
 
@@ -421,20 +431,22 @@ function renderBaco(state: AbdomenOrganState): OrganRender {
       ecotextura = "ecotextura heterogênea";
       out.conclusao.push("Ecotextura esplênica heterogênea, achado inespecífico.");
     } else if (f.tipo === "cisto_esplenico") {
-      lesoes.push(`Imagem anecoica, de paredes finas e com reforço acústico posterior${medidasOpcionais(f.medidas_cm)}, compatível com cisto simples.`);
+      lesoes.push(`Imagem anecoica, de paredes finas e com reforço acústico posterior${medidasOpcionais(f.medidas_cm)}.`);
       out.conclusao.push("Cisto esplênico simples.");
     } else if (f.tipo === "calcificacao_esplenica") {
-      lesoes.push("Foco hiperecogênico com sombra acústica posterior, compatível com calcificação residual.");
+      lesoes.push("Foco hiperecogênico com sombra acústica posterior.");
       out.conclusao.push("Calcificação esplênica residual.");
     } else if (f.tipo === "baco_acessorio") {
-      lesoes.push("Imagem nodular homogênea junto ao hilo esplênico, com ecotextura semelhante à do baço, compatível com baço acessório.");
+      lesoes.push("Imagem nodular homogênea junto ao hilo esplênico, com ecotextura semelhante à do baço.");
       out.conclusao.push("Baço acessório.");
     } else {
       out.freeSlotFindings.push(raw);
     }
   }
 
-  out.body = [`Baço de ${dimensoes} e ${ecotextura}.`, ...lesoes].join("\n");
+  const livre = out.freeSlotFindings.length > 0;
+  const atributos = [!livre || dimensoes !== "dimensões normais" ? dimensoes : "", !livre || ecotextura !== "ecotextura homogênea" ? ecotextura : ""].filter(Boolean);
+  out.body = [atributos.length ? `Baço de ${atributos.join(" e ")}.` : "", ...lesoes].filter(Boolean).join("\n");
   return out;
 }
 
@@ -463,10 +475,10 @@ function renderRim(organ: AbdomenOrganKey) {
       } else if (f.tipo === "cisto_simples") {
         const loc = f.localizacao?.trim();
         if (f.quantidade === "multiplas") {
-          linhas.push("Múltiplas imagens anecoicas homogêneas, de paredes finas e com reforço acústico posterior, compatíveis com cistos simples.");
+          linhas.push("Múltiplas imagens anecoicas homogêneas, de paredes finas e com reforço acústico posterior.");
           out.conclusao.push(`Cistos simples no rim ${lado}.`);
         } else {
-          linhas.push(`Imagem anecoica homogênea, com margem regular, paredes finas e reforço acústico posterior${medidasOpcionais(f.medidas_cm)}${loc ? `, situada no ${loc}` : ""}, compatível com cisto simples.`);
+          linhas.push(`Imagem anecoica homogênea, com margem regular, paredes finas e reforço acústico posterior${medidasOpcionais(f.medidas_cm)}${loc ? `, situada no ${loc}` : ""}.`);
           out.conclusao.push(`Cisto simples no rim ${lado}.`);
         }
       } else if (f.tipo === "imagem_cistica_complexa") {
@@ -475,32 +487,36 @@ function renderRim(organ: AbdomenOrganKey) {
         out.conclusao.push(`Imagem cística complexa no rim ${lado}, de natureza indeterminada ao método. Convém, a critério clínico, complementar a investigação com método contrastado.`);
       } else if (f.tipo === "litiase") {
         const loc = f.localizacao?.trim();
-        linhas.push(`Imagem hiperecogênica com sombra acústica posterior${medidasOpcionais(f.medidas_cm)}${loc ? `, situada no ${loc}` : ""}, compatível com cálculo.`);
+        linhas.push(`Imagem hiperecogênica com sombra acústica posterior${medidasOpcionais(f.medidas_cm)}${loc ? `, situada no ${loc}` : ""}.`);
         out.conclusao.push(`Litíase renal ${lado === "direito" ? "direita" : "esquerda"}.`);
       } else if (f.tipo === "hidronefrose") {
         const grau = f.grau === "acentuado" ? "acentuado" : f.grau === "moderado" ? "moderado" : "leve";
-        linhas.push(`Dilatação do sistema pielocalicinal de grau ${grau}, compatível com hidronefrose.`);
+        linhas.push(`Dilatação do sistema pielocalicinal de grau ${grau}.`);
         out.conclusao.push(`Hidronefrose de grau ${grau} à ${lado === "direito" ? "direita" : "esquerda"}.`);
       } else if (f.tipo === "angiomiolipoma_renal") {
         const loc = f.localizacao?.trim();
-        linhas.push(`Imagem nodular hiperecogênica e homogênea${medidasOpcionais(f.medidas_cm)}${loc ? `, situada no ${loc}` : ""}, sugestiva de angiomiolipoma.`);
+        linhas.push(`Imagem nodular hiperecogênica e homogênea${medidasOpcionais(f.medidas_cm)}${loc ? `, situada no ${loc}` : ""}.`);
         out.conclusao.push(`Imagem no rim ${lado} sugestiva de angiomiolipoma.`);
       } else if (f.tipo === "nefrocalcinose") {
-        linhas.push("Focos hiperecogênicos nas pirâmides medulares, compatíveis com nefrocalcinose.");
+        linhas.push("Focos hiperecogênicos nas pirâmides medulares.");
         out.conclusao.push(`Nefrocalcinose no rim ${lado}.`);
       } else {
         out.freeSlotFindings.push(raw);
       }
     }
-    const abertura = `Rim ${lado} tópico, de ${dimensoes}, contornos regulares e ${diferenciacao}`;
+    const livre = out.freeSlotFindings.length > 0;
+    const atributos = [dimensoes !== "dimensões dentro dos limites normais" ? `de ${dimensoes}` : "", diferenciacao !== "diferenciação corticomedular preservada" ? diferenciacao : ""].filter(Boolean);
+    const abertura = livre
+      ? (atributos.length || linhas.length ? `Rim ${lado}${atributos.length ? ` ${atributos.join(" e ")}` : ""}` : "")
+      : `Rim ${lado} tópico, de ${dimensoes}, contornos regulares e ${diferenciacao}`;
     const documentacao = [
       medidasRim?.length ? `Medidas do rim ${lado}: ${formatMedidasCm(medidasRim)}.` : "",
       espessuraParenquima ? `Espessura do parênquima renal: ${espessuraParenquima} cm.` : "",
     ].filter(Boolean);
     const primeiraLesao = linhas[0]
       ? `${abertura}, apresentando ${linhas[0].charAt(0).toLowerCase()}${linhas[0].slice(1)}`
-      : `${abertura}.`;
-    out.body = [primeiraLesao, ...documentacao, ...linhas.slice(1)].join("\n");
+      : abertura ? `${abertura}.` : "";
+    out.body = [primeiraLesao, ...documentacao, ...linhas.slice(1)].filter(Boolean).join("\n");
     return out;
   };
 }
@@ -521,7 +537,7 @@ function canonicalTipo(organ: AbdomenOrganKey, f: AbdomenFinding): CanonicalAbdo
   if (organ === "figado" && /l[íi]quido\s+peri[- ]?hep[áa]tic|l[âa]mina\s+l[íi]quida\s+peri[- ]?hep/.test(d)) return "liquido_perihepatico";
   if (organ === "veia_porta" && /(porta|veia\s+porta).*(dilatad|calibre\s+aumentad)/.test(d)) return "veia_porta_dilatada";
   if (organ === "vesicula" && /contra[íi]da/.test(d)) return "vesicula_contraida";
-  if (organ === "vesicula" && /distendid/.test(d) && !/colecistite\s+alit/.test(d)) return "vesicula_distendida";
+  if (organ === "vesicula" && /\bdistendid[ao]s?\b/.test(d) && !/colecistite\s+alit/.test(d)) return "vesicula_distendida";
   if (organ === "vesicula" && /lama\s+biliar|barro\s+biliar/.test(d)) return "lama_biliar";
   if (organ === "vesicula" && /adenomiomatose/.test(d)) return "adenomiomatose";
   if (organ === "vesicula" && /colesterolose/.test(d)) return "colesterolose";
@@ -587,7 +603,7 @@ function canonicalTipo(organ: AbdomenOrganKey, f: AbdomenFinding): CanonicalAbdo
   if (
     organ === "vesicula" &&
     /hiperecoic/.test(d) &&
-    /(sombra|m[óo]ve|c[áa]lcul|lit[íi]ase)/.test(d)
+    /(sombra|\bm[óo]ve(?:l|is)\b|c[áa]lcul|lit[íi]ase)/.test(d)
   ) {
     return "litiase";
   }
@@ -623,9 +639,9 @@ function renderAorta(state: AbdomenOrganState): OrganRender {
   }
   out.body = ateromatose
     ? calibre === "Aorta abdominal de calibre normal."
-      ? "Aorta abdominal de calibre normal, apresentando imagens hiperecoicas aderidas às suas paredes."
-      : `${calibre}\nImagens hiperecogênicas aderidas às suas paredes, compatíveis com placas ateromatosas.`
-    : calibre;
+      ? `${out.freeSlotFindings.length ? "Aorta abdominal" : "Aorta abdominal de calibre normal"}, apresentando imagens hiperecoicas aderidas às suas paredes.`
+      : `${calibre}\nImagens hiperecogênicas aderidas às suas paredes.`
+    : out.freeSlotFindings.length && calibre === "Aorta abdominal de calibre normal." ? "" : calibre;
   return out;
 }
 
@@ -640,13 +656,13 @@ function renderVeiaCava(state: AbdomenOrganState): OrganRender {
       calibre = `Veia cava inferior de calibre aumentado${medidasOpcionais(f.medidas_cm)}.`;
       out.conclusao.push("Veia cava inferior de calibre aumentado.");
     } else if (f.tipo === "trombo_veia_cava") {
-      linhas.push(`Material ecogênico no interior da veia cava inferior${f.localizacao?.trim() ? `, no ${f.localizacao.trim()}` : ""}, compatível com trombo.`);
+      linhas.push(`Material ecogênico no interior da veia cava inferior${f.localizacao?.trim() ? `, no ${f.localizacao.trim()}` : ""}.`);
       out.conclusao.push(`Material trombótico na veia cava inferior${f.localizacao?.trim() ? `, no ${f.localizacao.trim()}` : ""}.`);
     } else {
       out.freeSlotFindings.push(raw);
     }
   }
-  out.body = [calibre, ...linhas].join("\n");
+  out.body = [!out.freeSlotFindings.length || calibre !== "Veia cava inferior de calibre normal." ? calibre : "", ...linhas].filter(Boolean).join("\n");
   return out;
 }
 
@@ -675,12 +691,12 @@ function renderBexiga(state: AbdomenOrganState): OrganRender {
       linhas.push("Observam-se ecos em suspensão no conteúdo vesical (debris).");
       out.conclusao.push("Debris no interior da bexiga.");
     } else if (f.tipo === "calculo_vesical") {
-      linhas.push("Imagem hiperecogênica móvel com sombra acústica posterior no interior da bexiga, compatível com cálculo.");
+      linhas.push("Imagem hiperecogênica móvel com sombra acústica posterior no interior da bexiga.");
       out.conclusao.push("Cálculo vesical.");
     } else if (f.tipo === "sonda_vesical") {
       linhas.push("Balão de sonda vesical em seu interior.");
     } else if (f.tipo === "diverticulo_vesical") {
-      linhas.push("Imagem sacular comunicante com a luz vesical, compatível com divertículo.");
+      linhas.push("Imagem sacular comunicante com a luz vesical.");
       out.conclusao.push("Divertículo vesical.");
     } else if (f.tipo === "residuo_pos_miccional") {
       if (f.valor_ml !== null) {
@@ -691,7 +707,7 @@ function renderBexiga(state: AbdomenOrganState): OrganRender {
       out.freeSlotFindings.push(raw);
     }
   }
-  out.body = [base, ...linhas].join("\n");
+  out.body = [!out.freeSlotFindings.length || base !== "Bexiga com adequada repleção, paredes regulares e finas. O conteúdo vesical é anecoico e homogêneo." ? base : "", ...linhas].filter(Boolean).join("\n");
   return out;
 }
 
@@ -716,7 +732,7 @@ const GASES_LABEL: Record<AbdomenOrganKey, string> = {
   bexiga: "Bexiga",
 };
 
-export function renderOrgan(
+function renderOrganCatalogado(
   organ: AbdomenOrganKey,
   state: AbdomenOrganState,
 ): OrganRender {
@@ -753,6 +769,17 @@ export function renderOrgan(
     default:
       return renderGenerico(state);
   }
+}
+
+/** null permite o template normal; string vazia suprime esse fallback. */
+export function renderOrgan(organ: AbdomenOrganKey, state: AbdomenOrganState): OrganRender {
+  if ((organ === "rim_direito" || organ === "rim_esquerdo") && state.status === "ausente_cirurgico") {
+    const lado = rimLado(organ);
+    return { body: `Rim ${lado} ausente cirurgicamente.`, conclusao: [`Ausência cirúrgica do rim ${lado}.`], freeSlotFindings: [] };
+  }
+  const rendered = renderOrganCatalogado(organ, state);
+  if (rendered.freeSlotFindings.length && rendered.body === null) rendered.body = "";
+  return rendered;
 }
 
 export function renderExtraAbdominal(f: AbdomenFinding): OrganRender {
@@ -952,7 +979,11 @@ export function renderAbdomenTotalObjetivo(f: AbdomenTotalFindings): string {
 
   return assembleAbdomenObjetivo({
     organRenders,
-    freeByOrgan: new Map(),
+    // A entrada síncrona não chama LLM: conserva as palavras do médico,
+    // assim como o clássico, sem reintroduzir normalidade no órgão alterado.
+    freeByOrgan: new Map([...organRenders].map(([organ, r]) => [organ,
+      r.freeSlotFindings.map(x => ({ corpo: (x.descricao_livre ?? x.termo_do_medico ?? "").trim(), conclusao: null })),
+    ])),
     extraRenders: f.achados_extra_abdominais.map(renderExtraAbdominal),
     allOrganKeys: ABDOMEN_ORGAN_KEYS,
   });
@@ -1047,7 +1078,7 @@ export function renderAbdomenTotalClassico(
     if (!r) continue;
     conclusaoItens.push(...r.conclusao);
     const linhas = [r.body, ...verbatimDoOutro(r)].filter((x): x is string => !!x);
-    if (linhas.length > 0) organFinalText.set(organKey, linhas.join("\n"));
+    if (linhas.length > 0 || r.body !== null) organFinalText.set(organKey, linhas.join("\n"));
   }
 
   /**
