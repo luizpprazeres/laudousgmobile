@@ -107,7 +107,7 @@ del{color:var(--del-ink);text-decoration:line-through;opacity:.85}
       <div class="step" id="stepB2" style="display:none"><b>Cenário B2 — B com o prompt corrigido</b><div class="flow">igual ao B, com a regra global reescrita: “compatível com” só na conclusão; corpo descritivo</div>Testa a correção sem alterar o prompt de produção.</div>
       <div class="step"><b>Comparação</b>Cada saída é comparada com o <b>laudo final que o médico salvou</b>. O Opus 5.5 avaliou todas as saídas juntas, sem saber de onde veio cada uma.</div>
     </div>
-    <p style="margin:14px 0 0;font-size:14px;color:var(--muted)">Prova de fidelidade: reprocessando os achados que a produção extraiu, a bancada gerou <span id="replayInfo">o mesmo texto da produção</span>. O Haiku rodou pela assinatura (<code>claude -p</code>), sem API.</p>
+    <p id="provaFidelidade" style="margin:14px 0 0;font-size:14px;color:var(--muted)">Prova de fidelidade: reprocessando os achados que a produção extraiu, a bancada gerou <span id="replayInfo">o mesmo texto da produção</span>. O Haiku rodou pela assinatura (<code>claude -p</code>), sem API.</p>
   </div>
 
   <div class="panel">
@@ -131,9 +131,12 @@ del{color:var(--del-ink);text-decoration:line-through;opacity:.85}
 <script>
 const D = JSON.parse(document.getElementById('data').textContent);
 document.getElementById('rodada').textContent = D.rodada;
-const CATNOME = {ABDOMEN_TOTAL:'abdome total', OBSTETRICA:'obstetrícia', DOPPLER_OBSTETRICO:'Doppler obstétrico'};
+const CATNOME = {ABDOMEN_TOTAL:'abdome total', OBSTETRICA:'obstetrícia', DOPPLER_OBSTETRICO:'Doppler obstétrico',
+  MORFOLOGICO:'morfológico', MUSCULOESQUELETICO_V2:'musculoesquelético', PELVE_FEMININA:'pelve feminina', DOPPLER_CAROTIDAS:'Doppler de carótidas',
+  MAMARIA:'mamas', TIREOIDE:'tireoide', CERVICAL:'cervical', VIAS_URINARIAS:'vias urinárias', PROSTATA_SUPRAPUBICA:'próstata',
+  PAREDE_ABDOMINAL:'parede abdominal', ESCROTAL:'bolsa escrotal', PARTES_MOLES:'partes moles', ABDOMEN_SUPERIOR:'abdome superior'};
 const cats = [...new Set(D.cases.map(r => r.categoria || 'ABDOMEN_TOTAL'))];
-const ehObst = cats.some(c => c !== 'ABDOMEN_TOTAL');
+const ehObst = cats.every(c => ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO'].includes(c));
 document.getElementById('nCasos').textContent = D.cases.length;
 document.getElementById('exameNome').textContent = ehObst ? 'obstetrícia e Doppler obstétrico' : cats.map(c => CATNOME[c] || c).join(', ');
 const examTag = r => r.categoria === 'DOPPLER_OBSTETRICO' ? 'Doppler isolado' : r.hint === 'DOPPLER_OBSTETRICO' ? 'obstétrico + Doppler' : r.categoria === 'OBSTETRICA' ? 'obstétrico' : '';
@@ -142,6 +145,7 @@ if (!D.cases.some(r => r.B)) document.getElementById("stepB").style.display="non
 document.getElementById("nSemEd").textContent = D.cases.filter(r=>!r.editadoPeloMedico).length;
 if (D.cases.some(r => r.juiz && r.juiz.R)) document.getElementById("stepR").style.display="";
 (function(){ const rp = D.cases.filter(r => r.replay); const eq = rp.filter(r => r.replayIgualProducao).length;
+  if (!rp.length) { document.getElementById('provaFidelidade').style.display = 'none'; return; }
   document.getElementById('replayInfo').textContent = `o mesmo texto da produção em ${eq} de ${rp.length} casos` + (D.replayNota ? ` (${D.replayNota})` : ''); })();
 if (D.titulo) document.title = D.titulo;
 if (ehObst) document.getElementById("titulo").textContent = "Haiku 5.5 na obstetrícia — o que foi testado";
