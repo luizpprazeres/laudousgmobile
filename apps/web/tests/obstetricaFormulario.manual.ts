@@ -24,7 +24,7 @@ import {
 import { morfologico } from '../src/lib/deterministic/organs/morfologico'
 import { dopplerObstetrico } from '../src/lib/deterministic/organs/dopplerObstetrico'
 import { adaptarObstetrica } from '../src/lib/catalog/obstetricaParaCatalogo'
-import { calcularIgDaReferencia, datacaoBrutaDaTela, hojeBR, lerDatacaoDaTela, migrarDatacaoLegada } from '../src/lib/ig/computeIG'
+import { calcularIgDaReferencia, datacaoBrutaDaTela, escolhaDoModo, hojeBR, lerDatacaoDaTela, migrarDatacaoLegada, modoDaEscolha, type ModoDatacao } from '../src/lib/ig/computeIG'
 import { parseIgDatacaoCrescimento } from '../src/lib/calculators/intergrowthBiometry'
 
 let cases = 0
@@ -156,12 +156,14 @@ test('sem referência: nada de DUM ou 1ª US no laudo', () => {
   assert.equal(d.data_exame, null)
 })
 
-test('DUM sozinha completa entra automaticamente', () => {
+test('DUM sozinha completa entra automaticamente (datação pela biometria)', () => {
   const d = adaptar(com(completo(), 'ig', { dum_data: '01/11/2025' })).dados
   assert.equal(d.referencia_fonte, 'dum')
   assert.equal(d.dum, '01/11/2025')
   assert.equal(d.data_exame, '20/06/2026')
-  assert.equal(d.corrigir_ig, true)
+  // 09/10/2026: a conclusão é escolha do médico e só a 1ª US oferece correção.
+  assert.equal(d.datacao_conclusao, 'biometria')
+  assert.equal(d.corrigir_ig, false)
 })
 
 test('1ª US completa vence a DUM quando as duas estão completas', () => {
@@ -274,6 +276,87 @@ test('migração legada: a tela mostra o que o laudo usa e a edição passa às 
   const migradoSemCorrecao = migrarDatacaoLegada(semCorrecao)
   assert.equal(migradoSemCorrecao.corrigir_referencia, 'nao')
   assert.equal(lerDatacaoDaTela(migradoSemCorrecao).corrigir, false, 'editar não liga a correção de um rascunho antigo')
+})
+
+// ── Conclusão da datação escolhida pelo médico (W6) ───────────────────────────
+// 1ª US em 12/01/2026 com 8s2d; exame 20/06/2026 (+159 dias) → referência hoje 31s0d. Biometria 32s2d (9 dias de diferença).
+const comUs = (modo?: ModoDatacao) => com(completo(), 'ig', {
+  us_data: '12/01/2026', us_ig_sem: '8', us_ig_dias: '2', ...(modo ? { datacao_conclusao: modo } : {}),
+})
+/** Dublê do contrato da W5: a tabela de frases que o renderer canônico vai obedecer. */
+const FRASE_CONTRATO: Record<ModoDatacao, string> = {
+  biometria: 'Gestação em torno de 32 semanas e 2 dias.',
+  us_precoce: 'Gestação em torno de 31 semanas, corrigida pela ultrassonografia precoce.',
+  biometria_e_us_precoce: 'Gestação em torno de 32 semanas e 2 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 31 semanas.',
+}
+
+test('caixas ↔ modo: as três combinações válidas e nenhuma marcada volta à biometria', () => {
+  assert.equal(modoDaEscolha({ biometria: true, usPrecoce: false }), 'biometria')
+  assert.equal(modoDaEscolha({ biometria: false, usPrecoce: true }), 'us_precoce')
+  assert.equal(modoDaEscolha({ biometria: true, usPrecoce: true }), 'biometria_e_us_precoce')
+  assert.equal(modoDaEscolha({ biometria: false, usPrecoce: false }), 'biometria')
+  for (const modo of ['biometria', 'us_precoce', 'biometria_e_us_precoce'] as const) {
+    assert.equal(modoDaEscolha(escolhaDoModo(modo)), modo)
+  }
+})
+
+test('com 1ª US e sem escolha, o padrão da Web é só a biometria', () => {
+  const r = lerDatacaoDaTela(comUs().ig!)
+  assert.equal(r.usPrecoceDisponivel, true)
+  assert.equal(r.modo, 'biometria')
+  const d = adaptar(comUs()).dados
+  assert.equal(d.datacao_conclusao, 'biometria')
+  assert.equal(d.corrigir_ig, false)
+})
+
+test('os três modos atravessam para o renderer (datacao_conclusao + corrigir_ig coerente)', () => {
+  for (const modo of ['biometria', 'us_precoce', 'biometria_e_us_precoce'] as const) {
+    const d = adaptar(comUs(modo)).dados
+    assert.equal(d.datacao_conclusao, modo)
+    assert.equal(d.corrigir_ig, modo !== 'biometria')
+    assert.equal(d.referencia_fonte, 'usg_precoce')
+  }
+})
+
+test('prévia local: a frase do item 1 muda com a escolha (tabela do contrato)', () => {
+  for (const modo of ['biometria', 'us_precoce', 'biometria_e_us_precoce'] as const) {
+    assert.deepEqual(datacaoObstetricaModule.compose(comUs(modo).ig!).conclusion, [FRASE_CONTRATO[modo]], modo)
+  }
+})
+
+test('sem 1ª US completa a correção não está disponível, mesmo com escolha guardada', () => {
+  // Apagar a 1ª US depois de escolher: o modo efetivo volta à biometria.
+  const semUs = com(completo(), 'ig', { datacao_conclusao: 'us_precoce' })
+  const r = lerDatacaoDaTela(semUs.ig!)
+  assert.equal(r.usPrecoceDisponivel, false)
+  assert.equal(r.modo, 'biometria')
+  assert.equal(adaptar(semUs).dados.datacao_conclusao, 'biometria')
+  assert.deepEqual(datacaoObstetricaModule.compose(semUs.ig!).conclusion, ['Gestação em torno de 32 semanas e 2 dias.'])
+  // Só DUM também não oferece correção.
+  const soDum = com(completo(), 'ig', { dum_data: '01/11/2025', datacao_conclusao: 'biometria_e_us_precoce' })
+  assert.equal(lerDatacaoDaTela(soDum.ig!).usPrecoceDisponivel, false)
+  assert.equal(adaptar(soDum).dados.datacao_conclusao, 'biometria')
+  // 1ª US incompleta (sem dias) idem — e bloqueia, como antes.
+  const incompleta = com(completo(), 'ig', { us_data: '12/01/2026', us_ig_sem: '8', datacao_conclusao: 'us_precoce' })
+  assert.equal(lerDatacaoDaTela(incompleta.ig!).modo, 'biometria')
+  // Valor estranho guardado não vira modo.
+  assert.equal(lerDatacaoDaTela(com(comUs(), 'ig', { datacao_conclusao: 'qualquer' }).ig!).modo, 'biometria')
+})
+
+test('renderer canônico de hoje: modo biometria já sai certo; os modos com US aguardam a W5', () => {
+  // O renderer anterior à W5 ignora `datacao_conclusao` (Zod descarta) e lê `corrigir_ig=false`.
+  assert.match(render(comUs('biometria')), /Gestação em torno de 32 semanas e 2 dias\./)
+  // `us_precoce`/`biometria_e_us_precoce` dependem da W5 (dublê FRASE_CONTRATO acima). Até lá o
+  // renderer recebe `corrigir_ig=true` e aplica a regra antiga dele; o importante aqui é que o campo
+  // novo não quebra o render (Zod descarta chave desconhecida).
+  for (const modo of ['us_precoce', 'biometria_e_us_precoce'] as const) {
+    assert.match(render(comUs(modo)), /^1\) Gestação em torno de /m, modo)
+  }
+})
+
+test('Doppler obstétrico combinado usa o mesmo bloco de datação', () => {
+  const ig = dopplerObstetrico.sections.find((x) => x.id === 'ig')
+  assert.equal(ig?.module, datacaoObstetricaModule)
 })
 
 test('referência sem data do exame bloqueia em vez de desaparecer', () => {

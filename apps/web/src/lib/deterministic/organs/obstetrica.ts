@@ -168,6 +168,8 @@ export const datacaoObstetricaModule: OrganModule = {
       hojeISO: datacao.hojeISO ?? '',
       referencia: usavel ? datacao.referencia ?? undefined : undefined,
       corrigir: datacao.corrigir,
+      // A escolha do médico (caixas da datação) decide a frase; sem 1ª US é sempre a biometria.
+      modo: datacao.modo,
     })
     // A DUM continua impressa quando a primeira US vence (mesmo cabeçalho do renderer canônico).
     const dumLinha = usavel && datacao.referencia?.tipo === 'us' && datacao.dum_data

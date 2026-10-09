@@ -65,5 +65,22 @@ const visualUs = calcularIgDaReferencia(
 )
 check('projeção visual pela 1ª US', visualUs?.semanas === 28 && visualUs?.dias === 0, JSON.stringify(visualUs))
 
+// 8) Modo escolhido pelo médico (Web, 09/10/2026) vence o limiar e o `corrigir`.
+//    US 12/01/2026 com 8s2d; hoje 30/05/2026 → ref 28s0d. Biometria 26s0d (14 dias de divergência).
+const usRef = { tipo: 'us' as const, dataISO: '2026-01-12', ig: { semanas: 8, dias: 2 } }
+const bio26 = { semanas: 26, dias: 0 }
+const m1 = computeIG({ biometria: bio26, hojeISO: '2026-05-30', referencia: usRef, corrigir: true, modo: 'biometria' })
+check('modo biometria ignora a divergência', m1.igConclusao === 'Gestação em torno de 26 semanas.', m1.igConclusao)
+const m2 = computeIG({ biometria: bio26, hojeISO: '2026-05-30', referencia: usRef, corrigir: false, modo: 'us_precoce' })
+check('modo us_precoce usa a referência', m2.igConclusao === 'Gestação em torno de 28 semanas, corrigida pela ultrassonografia precoce.', m2.igConclusao)
+const m3 = computeIG({ biometria: { semanas: 28, dias: 1 }, hojeISO: '2026-05-30', referencia: usRef, modo: 'biometria_e_us_precoce' })
+check(
+  'modo biometria_e_us_precoce mesmo com 1 dia de diferença',
+  m3.igConclusao === 'Gestação em torno de 28 semanas e 1 dia pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 28 semanas.',
+  m3.igConclusao,
+)
+const m4 = computeIG({ biometria: bio26, hojeISO: '2026-05-30', referencia: { tipo: 'dum', dataISO: '2026-01-01' }, modo: 'us_precoce' })
+check('modo com US sem 1ª US cai na biometria', m4.igConclusao === 'Gestação em torno de 26 semanas.', m4.igConclusao)
+
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ''))
 if (fail) process.exit(1)

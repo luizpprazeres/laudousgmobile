@@ -6,7 +6,7 @@ import { companionConflictDisplay, markCompanionFieldTouched } from '@/lib/compa
 import { RenalMeasurementsFields } from './RenalMeasurementsFields'
 import { RenalFindingsCollection } from './RenalFindingsCollection'
 import { hasRenalMeasurementsGroup, RENAL_MEASUREMENT_KEYS } from './renalMeasurementsState'
-import { calcularIgDaReferencia, datacaoBrutaDaTela, fmtSD, hojeBR, lerDatacaoDaTela, migrarDatacaoLegada } from '@/lib/ig/computeIG'
+import { calcularIgDaReferencia, datacaoBrutaDaTela, escolhaDoModo, fmtSD, hojeBR, lerDatacaoDaTela, migrarDatacaoLegada, modoDaEscolha } from '@/lib/ig/computeIG'
 import {
   FCF_BRADICARDIA_MAX_BPM,
   FCF_INPUT_MAX_BPM,
@@ -230,6 +230,32 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
       ? calcularIgDaReferencia(reading.referencia, reading.hojeISO)
       : null
     const calculatedSource = reading.referencia?.tipo === 'us' ? 'pela 1ª US' : 'pela DUM'
+    /**
+     * CONCLUSÃO DA DATAÇÃO — escolha do médico (decisão do Dr. Luiz, 09/10/2026).
+     * Duas caixas, nunca as duas desmarcadas; a da US precoce só com a 1ª US completa.
+     * O texto do laudo vem do renderer canônico; aqui só se guarda o modo.
+     */
+    const escolha = escolhaDoModo(reading.modo)
+    const choices = [
+      {
+        key: 'biometria' as const,
+        label: 'IG pela biometria atual',
+        checked: escolha.biometria,
+        // Única marcada não desmarca; sem 1ª US é a única possível.
+        disabled: !reading.usPrecoceDisponivel || (escolha.biometria && !escolha.usPrecoce),
+      },
+      {
+        key: 'usPrecoce' as const,
+        label: 'Correção pela ultrassonografia precoce',
+        checked: escolha.usPrecoce,
+        disabled: !reading.usPrecoceDisponivel || (escolha.usPrecoce && !escolha.biometria),
+      },
+    ]
+    const toggleChoice = (key: 'biometria' | 'usPrecoce') => {
+      const next = { ...escolha, [key]: !escolha[key] }
+      if (!next.biometria && !next.usPrecoce) return
+      setValue('datacao_conclusao', modoDaEscolha(next))
+    }
     return (
       <section key="datacao-referencia" className={fieldCardClass}>
         <div className="flex flex-wrap items-end gap-1.5">
@@ -246,6 +272,35 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
             {both ? <span className="ml-1 font-normal">A 1ª US prevalece sobre a DUM.</span> : null}
           </p>
         ) : null}
+        <fieldset data-datacao-conclusao={reading.modo} className="mt-2 min-w-0">
+          <legend className={MINI_LABEL_CLASS}>Conclusão da datação</legend>
+          <div className="flex flex-wrap gap-1.5">
+            {choices.map((choice) => (
+              <label
+                key={choice.key}
+                className={`${CONTROL_MIN_H} flex min-w-0 items-center gap-2 rounded-md border px-2.5 py-1 text-[12px] font-semibold leading-tight transition ${
+                  choice.checked
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
+                    : 'border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
+                } ${choice.disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:border-emerald-300'}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={choice.checked}
+                  disabled={choice.disabled}
+                  onChange={() => toggleChoice(choice.key)}
+                  className="h-4 w-4 shrink-0 accent-emerald-600"
+                />
+                <span className="[overflow-wrap:anywhere]">{choice.label}</span>
+              </label>
+            ))}
+          </div>
+          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+            {reading.usPrecoceDisponivel
+              ? 'Marque uma ou as duas. Pelo menos uma fica marcada.'
+              : 'Preencha a data e a IG da 1ª US para escolher a correção pela ultrassonografia precoce.'}
+          </p>
+        </fieldset>
         {reading.pendencias.length ? (
           <p role="alert" className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-300">
             {reading.pendencias.map((pendencia) => pendencia.motivo).join(' ')}
