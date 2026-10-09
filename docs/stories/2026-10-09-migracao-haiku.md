@@ -100,7 +100,7 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [x] W6 web: caixas de seleção da datação (branch feat/web-datacao-escolhida, integra junto com W5)
 - [x] W7 regras da casa (integrado c79967bf) (prompt "diagnóstico mais provável", mama, Domingos, parede, rim ausente nas vias)
 - [ ] W8 MSK Haiku × Sonnet (assinatura) para o Luiz escolher
-- [ ] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo)
+- [x] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo) — integrado ce33d744
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
 
