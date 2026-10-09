@@ -1,5 +1,6 @@
 /**
- * BANCADA — ABDOMEN_TOTAL com Claude Haiku 5.5 (via ASSINATURA, sem API).
+ * BANCADA — laudos reais com Claude Haiku 5.5 (via ASSINATURA, sem API). Nasceu no ABDOMEN_TOTAL;
+ * desde o W4 (09/10) cobre as categorias do renderer, dos writers dedicados e do writer genérico.
  *
  * Para cada laudo real de abdome total com laudo final salvo, roda:
  *   replay — achados extraídos em produção (generation_audit) → renderer atual.
@@ -34,7 +35,19 @@ Object.assign(process.env, {
   COMMAND_OPERATIONS: "true",
   COMMAND_PREGEN: "true",
   IG_REFERENCE_CORRECTION: "true",
-  RENDERER_CATEGORIES: process.env.BENCH_RENDERER_CATEGORIES ?? "ABDOMEN_TOTAL,OBSTETRICA,DOPPLER_OBSTETRICO,MORFOLOGICO",
+  // Lista de produção (W4, 09/10): o .env local está defasado (10 categorias); a auditoria
+  // (generation_audit 90d) mostra renderer também em DOPPLER_OBSTETRICO, MUSCULOESQUELETICO_V2,
+  // PROSTATA_SUPRAPUBICA e CERVICOMETRIA. DOPPLER_CAROTIDAS, PAREDE_ABDOMINAL e ESCROTAL saem pelo writer.
+  RENDERER_CATEGORIES:
+    process.env.BENCH_RENDERER_CATEGORIES ??
+    "ABDOMEN_TOTAL,OBSTETRICA,DOPPLER_OBSTETRICO,MORFOLOGICO,CERVICOMETRIA,TIREOIDE,MAMARIA,PARTES_MOLES,CERVICAL,ABDOMEN_SUPERIOR,PELVE_FEMININA,VIAS_URINARIAS,MUSCULOESQUELETICO_V2,PROSTATA_SUPRAPUBICA",
+  // Writers dedicados dentro do caminho renderer (Sensitive no Vercel). Valores provados pela
+  // auditoria: 59/59 MSK, 68/68 PELVE e 1/1 PARTES_MOLES dos últimos 90 dias saíram com
+  // "[renderer/v1] <CAT> writer_guarded (gpt-4.1, …)"; 2 MSK com "MSK passthrough".
+  MSK_WRITER: process.env.BENCH_MSK_WRITER ?? "true",
+  MSK_PASSTHROUGH: process.env.BENCH_MSK_PASSTHROUGH ?? "true",
+  PELVE_WRITER: process.env.BENCH_PELVE_WRITER ?? "true",
+  PARTES_MOLES_WRITER: process.env.BENCH_PARTES_MOLES_WRITER ?? "true",
   // Flags obstétricas de produção (Sensitive no Vercel; valores da memória/README — o replay confere).
   MODEL_CATALOG_CATEGORIES: process.env.BENCH_MODEL_CATALOG_CATEGORIES ?? "OBSTETRICA",
   OBST_BIOMETRIA_DET: process.env.BENCH_OBST_BIOMETRIA_DET ?? "true",
@@ -44,6 +57,12 @@ Object.assign(process.env, {
   DOPPLER_UMBILICAL_SAFETY: process.env.BENCH_DOPPLER_UMBILICAL_SAFETY ?? "true",
   GOLF_BALL_SNIPPET: process.env.BENCH_GOLF_BALL_SNIPPET ?? "true",
   ASR_CLINICAL: process.env.BENCH_ASR_CLINICAL ?? "true",
+  // Guards de categoria ligados em produção (memória gaps-auditoria/tireoide-pico; o replay da
+  // mama só bate com o "[REVISAR: … BI-RADS …]" de produção com MAMARIA_BIRADS_GUARD ligado).
+  MAMARIA_BIRADS_GUARD: process.env.BENCH_MAMARIA_BIRADS_GUARD ?? "true",
+  TIREOIDE_PICO_OMIT: process.env.BENCH_TIREOIDE_PICO_OMIT ?? "true",
+  PELVE_CONCL_DEDUP: process.env.BENCH_PELVE_CONCL_DEDUP ?? "true",
+  OBST_REF_DEDUP: process.env.BENCH_OBST_REF_DEDUP ?? "true",
   WRITER_V2_CATEGORIES: "",
   OPENAI_MODEL_STRUCTURER: "bench-structurer",
   OPENAI_MODEL_WRITER: "bench-writer",
@@ -83,6 +102,11 @@ const REJUDGE = arg("rejudge");
 // --b2: cenário B2 = Haiku escritor com o PATCH "corpo descritivo" aplicado ao system prompt
 // (só no teste; o prompt de produção não muda).
 const B2 = argv.includes("--b2");
+// --a-key AR: grava o cenário A com outro nome (ex.: PELVE com BENCH_PELVE_WRITER=false =
+// "Haiku extrai + renderer"), para comparar com o A de outra rodada via --reuse.
+const A_KEY = arg("a-key", "A")!;
+const SCEN_KEYS = ["R", "A", "AR", "B", "L", "B2"];
+const OUT_ROOT = process.env.BENCH_OUT_ROOT ?? join(REPO, "tmp-review/bench-haiku");
 
 const REGRA_ANTIGA_GLOBAL =
   '- NUNCA fazer diagnóstico definitivo. Use sempre "compatível com X" / "sugestivo de X" / "achados em concordância com X" — nunca "diagnóstico de X" / "trata-se de X".';
@@ -221,17 +245,65 @@ const JUDGE_SCHEMA = {
   },
 } as const;
 
-const EXAME_JUIZ = CATEGORIES.map((c) => ({ ABDOMEN_TOTAL: "ABDOME TOTAL", OBSTETRICA: "OBSTÉTRICA (com ou sem Doppler)", DOPPLER_OBSTETRICO: "DOPPLER OBSTÉTRICO" }[c] ?? c)).join(" / ");
-const JUDGE_SYSTEM = `Você é radiologista sênior auditando laudos de ultrassonografia ${EXAME_JUIZ} gerados por IA.
+const EXAME_LABEL: Record<string, string> = {
+  ABDOMEN_TOTAL: "ABDOME TOTAL", ABDOMEN_SUPERIOR: "ABDOME SUPERIOR", OBSTETRICA: "OBSTÉTRICA (com ou sem Doppler)",
+  DOPPLER_OBSTETRICO: "DOPPLER OBSTÉTRICO", MORFOLOGICO: "MORFOLÓGICA", MUSCULOESQUELETICO_V2: "MUSCULOESQUELÉTICA",
+  MAMARIA: "MAMÁRIA", PELVE_FEMININA: "PÉLVICA FEMININA (via abdominal e/ou transvaginal)", TIREOIDE: "DA TIREOIDE",
+  PAREDE_ABDOMINAL: "DA PAREDE ABDOMINAL", ESCROTAL: "ESCROTAL / BOLSA TESTICULAR", VIAS_URINARIAS: "DAS VIAS URINÁRIAS",
+  CERVICAL: "CERVICAL", PROSTATA_SUPRAPUBICA: "DA PRÓSTATA (via suprapúbica)", DOPPLER_CAROTIDAS: "DOPPLER DE CARÓTIDAS E VERTEBRAIS",
+  PARTES_MOLES: "DE PARTES MOLES",
+};
+/**
+ * Regras do juiz específicas da categoria (contratos em src/server/prompts/contracts/ e
+ * docs/estilo-casa-regras-gerais.md). Entram ao lado das regras gerais da casa.
+ */
+const REGRAS_CATEGORIA: Record<string, string> = {
+  OBSTETRICA: `- OBSTÉTRICO: biometria (DBP, CC, CA, CF), peso fetal e percentil, idade gestacional e datação (DUM / 1ª US), BCF, apresentação, placenta (localização, grau),
+  líquido amniótico (ILA/MBV e sua classe), número de fetos e índices Doppler (IP da umbilical, ACM, uterinas, RCP e percentis) — número trocado, percentil ou
+  classe divergente do ditado/final, ou omissão de qualquer um deles, é grave;`,
+  MUSCULOESQUELETICO_V2: `- MSK: lateralidade (direito/esquerdo) SEMPRE individualizada; lado trocado ou ausente é grave. Exame bilateral = os dois lados descritos, um após o outro.
+- Cobertura: toda estrutura do exame (tendões, ligamentos, bursas, articulação, polias/túneis quando for o caso) descrita no corpo; estrutura ditada como alterada que sai
+  "normal", ou estrutura de outra articulação acrescentada, é grave. Medidas de rotura/espessura/coleção com unidade correta.
+- Corpo descreve (espessamento, hipoecogenicidade, descontinuidade de fibras, líquido); diagnóstico (tendinopatia, rotura parcial, bursite) só na conclusão.`,
+  MAMARIA: `- MAMA: a categoria BI-RADS® é a do médico — BI-RADS diferente do ditado/final, BI-RADS inventado sem o médico informar, ou BI-RADS omitido quando ditado é grave.
+  BI-RADS só no item de maior categoria. Lateralidade, quadrante/hora, distância do mamilo e medidas de cada imagem são graves.
+- Léxico ACR: margens "circunscritas" (nunca "regulares"), orientação paralela/não paralela; "imagem" na descrição. Recomendação coerente com a categoria do médico.
+- Rodapé BI-RADS (Breast Imaging Reporting and Data System…) é obrigatório quando o final o tem.`,
+  TIREOIDE: `- TIREOIDE: medidas dos lobos e do istmo, volume (quando informado) e medidas de cada nódulo; lobo trocado é grave.
+- TI-RADS (ACR) e Nota Final (Domingos) são do médico: NUNCA calculados pela IA. Pontuação/categoria diferente do ditado/final, inventada ou omitida é grave.
+  Cada nódulo tem item de conclusão com a sua classificação. Rodapé com créditos Domingos/ACR quando houver nódulo classificado.
+- Sem Doppler ditado, não descrever vascularização dos lobos. Linfonodos normais ficam só no corpo. "istmo" sem acento.`,
+  PELVE_FEMININA: `- PELVE: via (transabdominal/transvaginal) correta; medidas do útero (3 eixos) e volume, espessura endometrial, medidas/volume de cada ovário; ovário trocado é grave.
+- Menopausa/pós-menopausa ditada muda o texto (endométrio atrófico, ovários de dimensões reduzidas) — ignorá-la é grave. Miomas: número, localização (FIGO quando ditada) e medidas.
+- DIU: posição em relação ao fundo/cavidade. Líquido livre não ditado = invenção grave. O-RADS só quando coerente com o ditado.
+- Conclusão da casa: "que tem como diagnóstico mais provável X"; recomendação "Convém, a critério clínico, … com objetivo de …".`,
+  CERVICAL: `- CERVICAL: nível de Robbins de cada linfonodo/imagem (ditado ou inequívoco), lateralidade, medidas, hilo (preservado/ausente) e vascularização.
+  Ordem da casa: descrição primeiro, localização + Doppler no fim. Narração do médico ("estou vendo…") não pode vazar para o laudo.`,
+  PROSTATA_SUPRAPUBICA: `- PRÓSTATA: três medidas, volume e peso estimado como ditados (não recalcular), bexiga (paredes, conteúdo) e resíduo pós-miccional (quando ditado).
+  Volume/peso divergente é grave. Protrusão intravesical/lobo mediano, quando ditado, não pode sumir.`,
+  VIAS_URINARIAS: `- VIAS URINÁRIAS: medidas de cada rim e espessura do parênquima quando ditadas; lado trocado é grave. Cálculos (número, tamanho, localização, sombra),
+  hidronefrose/ectasia (grau) e bexiga (paredes, volume pré/pós-miccional, resíduo) como ditados.`,
+  PAREDE_ABDOMINAL: `- PAREDE ABDOMINAL: hérnia — localização (umbilical, epigástrica, incisional, inguinal…), medida do anel/colo e do saco, conteúdo (gordura/alça),
+  redutibilidade e comportamento à manobra de Valsalva como ditados. Diástase dos retos com a distância. Lado trocado ou medida divergente é grave.`,
+  ESCROTAL: `- ESCROTAL: medidas/volume de cada testículo, epidídimos, plexo pampiniforme; lado trocado é grave. Varicocele: calibre máximo, refluxo/duração à Valsalva.
+  Microlitíase/massa: conduta da casa (§4 das regras). COMENTÁRIOS numa linha. Título sem Doppler → "Complementamos o estudo com Doppler colorido…" no corpo.`,
+  DOPPLER_CAROTIDAS: `- CARÓTIDAS: título "ULTRASSONOGRAFIA DOPPLER DE CARÓTIDAS E VERTEBRAIS"; laudo único bilateral. Espessura médio-intimal, placas (localização, superfície,
+  ecogenicidade, extensão), grau de estenose, PSV/VDF/IR da comum, interna E externa, e vertebrais (fluxo e sentido). Valor trocado entre lados é grave.
+  Linha em branco entre o lado direito e o esquerdo. Estenose crítica/oclusão → conduta de urgência vascular da casa.`,
+  PARTES_MOLES: `- PARTES MOLES: localização (região, plano/profundidade), lateralidade, três medidas, ecogenicidade, contornos, conteúdo e vascularização como ditados.
+  Título sem Doppler → "Complementamos o estudo com Doppler colorido…" no corpo. Diagnóstico (lipoma, cisto epidermoide…) só na conclusão.`,
+  ABDOMEN_SUPERIOR: `- ABDOME SUPERIOR: fígado, vias biliares, vesícula, pâncreas, baço (e rins se ditados) com as medidas ditadas; esteatose/grau só se ditado.`,
+};
+REGRAS_CATEGORIA.DOPPLER_OBSTETRICO = REGRAS_CATEGORIA.OBSTETRICA;
+REGRAS_CATEGORIA.MORFOLOGICO = REGRAS_CATEGORIA.OBSTETRICA;
+const judgeSystemFor = (cat: string) => `Você é radiologista sênior auditando laudos de ultrassonografia ${EXAME_LABEL[cat] ?? cat} gerados por IA.
 Você recebe o DITADO do médico, o LAUDO FINAL que o médico assinou (padrão-ouro de conteúdo e estilo) e candidatos rotulados.
 Avalie cada candidato contra o laudo final e o ditado. Priorize segurança clínica:
 - omissão de achado ditado ou presente no final = grave;
 - invenção (achado, medida, grau, normalidade presumida de órgão alterado) = grave;
 - medida, unidade ou lateralidade errada = grave;
 - impressão/conclusão que diz algo diferente do final = grave;
-- OBSTÉTRICO: biometria (DBP, CC, CA, CF), peso fetal e percentil, idade gestacional e datação (DUM / 1ª US), BCF, apresentação, placenta (localização, grau),
-  líquido amniótico (ILA/MBV e sua classe), número de fetos e índices Doppler (IP da umbilical, ACM, uterinas, RCP e percentis) — número trocado, percentil ou
-  classe divergente do ditado/final, ou omissão de qualquer um deles, é grave;
+${REGRAS_CATEGORIA[cat] ?? ""}
 - diferenças só de redação/ordem/formatação pesam pouco (vão para "estilo").
 Se o médico corrigiu algo no final que NÃO estava no ditado, não penalize o candidato por isso — mencione no comentário.
 
@@ -275,6 +347,10 @@ async function main() {
   const { normalizeMeasures } = await import("../../src/server/pipeline/measureNormalizer");
   const { stripInvalidDumLines } = await import("../../src/server/pipeline/dumValidation");
   const { flagImplausibleMeasures } = await import("../../src/server/pipeline/measureSanity");
+  const { rendererCategoryEnabled } = await import("../../src/server/pipeline/generationPathResolver");
+  const { normalizeSectionSpacing } = await import("../../src/server/pipeline/sectionSpacingGuard");
+  const { stripObservationNarration } = await import("../../src/server/pipeline/cervicalNarrationGuard");
+  const { applyCervicalLevelSuggestions } = await import("../../src/server/pipeline/cervicalLevelGuard");
 
   // Cópia de route.ts:formatObjectiveEnumerations (função privada da rota).
   const formatObjectiveEnumerations = (text: string) =>
@@ -301,7 +377,7 @@ async function main() {
   await sql.end();
   const cases = rows.filter((r) => !ONLY.length || ONLY.some((p) => r.id.startsWith(p)));
 
-  const outDir = join(REPO, "tmp-review/bench-haiku", new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19) + (CATEGORIES.join(",") === "ABDOMEN_TOTAL" ? "" : "-" + CATEGORIES.join("+").toLowerCase()));
+  const outDir = join(OUT_ROOT, new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19) + (CATEGORIES.join(",") === "ABDOMEN_TOTAL" ? "" : "-" + CATEGORIES.join("+").toLowerCase()));
   mkdirSync(outDir, { recursive: true });
   const log = join(outDir, "calls.jsonl");
   console.log(`bench: ${cases.length} casos · modelo ${HAIKU} (effort ${EFFORT}) · reps ${REPS} · juiz ${JUDGE_ON ? JUDGE : "off"}`);
@@ -343,6 +419,12 @@ async function main() {
   }
 
   async function runA(r: Row, rawInput: string, mode: "replay" | "haiku" | "luna"): Promise<{ text: string; error?: string }> {
+    // Categoria cujo caminho de produção é o writer (fora de RENDERER_CATEGORIES): "A" = Haiku no
+    // caminho atual, isto é, o writer com o prompt de hoje (sem o patch do B2).
+    if (mode !== "replay" && !rendererCategoryEnabled(examOf(r).cat)) {
+      const w = await runB(r, rawInput, false, mode);
+      return { ...w, via: "writer" } as { text: string; error?: string };
+    }
     return ctx.run({ mode, caseId: r.id, storedFindings: r.structured_output, log }, async () => {
       const { cat, dopplerMode, includeDoppler } = examOf(r);
       const styleRow = (await getWritingStyleById(r.writing_style_id))!;
@@ -396,8 +478,8 @@ async function main() {
     });
   }
 
-  async function runB(r: Row, rawInput: string, promptPatch = false): Promise<{ text: string; error?: string }> {
-    return ctx.run({ mode: "haiku", promptPatch, caseId: r.id, log }, async () => {
+  async function runB(r: Row, rawInput: string, promptPatch = false, mode: "haiku" | "luna" = "haiku"): Promise<{ text: string; error?: string }> {
+    return ctx.run({ mode, promptPatch, caseId: r.id, log }, async () => {
       const { cat, dopplerMode, includeDoppler } = examOf(r);
       const styleRow = (await getWritingStyleById(r.writing_style_id))!;
       const { bundle } = await loadBundle(r, rawInput, cat, dopplerMode);
@@ -438,6 +520,10 @@ async function main() {
       text = applyVolumePolicy(text, rawInput);
       text = applyDsmPolicy(text, rawInput);
       text = applyCommandOperations(text, rawInput);
+      if (cat === "CERVICAL") {
+        text = stripObservationNarration(text);
+        text = applyCervicalLevelSuggestions(text);
+      }
       if ((cat === "DOPPLER_OBSTETRICO" && dopplerMode !== "isolated") || cat === "OBSTETRICA" || cat === "MORFOLOGICO") {
         text = ensurePesoFetalConclusion(text, rawInput);
       }
@@ -451,6 +537,7 @@ async function main() {
         text = normalizeDumFormat(text);
         text = dedupeConclusionItems(text);
       }
+      if (cat === "MUSCULOESQUELETICO_V2") text = normalizeSectionSpacing(text);
       return { text: universalGuards(text) };
     });
   }
@@ -463,14 +550,16 @@ async function main() {
   );
   const prevHas = (k: string) => [...prev.values()].some((x) => x[k]);
   const WANT = new Set([...SCEN, ...(LUNA ? ["L"] : []), ...(B2 ? ["B2"] : [])]);
-  const KEYS = ["gpt", ...["R", "A", "B", "L", "B2"].filter((k) => WANT.has(k) || (k !== "R" && prevHas(k)))];
+  // O cenário A pode ser gravado com outro nome (--a-key); a lista de candidatos usa os nomes gravados.
+  const WANT_KEYS = new Set([...WANT].map((k) => (k === "A" ? A_KEY : k)));
+  const KEYS = ["gpt", ...SCEN_KEYS.filter((k) => WANT_KEYS.has(k) || (k !== "R" && prevHas(k)) || (k === "R" && prevHas("replay") && WANT.has("R")))];
   /** Texto de cada candidato. R = achados do gpt-4.1-mini (produção) + renderer de HOJE.
    *  A que falhou no renderer cai no writer, como na rota: usa o texto do B2 (ou B). */
   const candText = (res: Row, k: string): string => {
     if (k === "gpt") return res.gpt ?? "";
     if (k === "R") return res.replay?.text || `(sem replay: ${res.replay?.error ?? "produção não passou pelo renderer"})`;
     const x = res[k]?.[0];
-    if (k === "A" && x?.error && (res.B2?.[0]?.text || res.B?.[0]?.text)) return res.B2?.[0]?.text || res.B[0].text;
+    if ((k === "A" || k === "AR") && x?.error && (res.B2?.[0]?.text || res.B?.[0]?.text)) return res.B2?.[0]?.text || res.B[0].text;
     return x?.text || `(falhou: ${x?.error})`;
   };
   let idx = 0;
@@ -479,7 +568,19 @@ async function main() {
       const r = cases[idx++];
       const id8 = r.id.slice(0, 8);
       const rawInput = r.consolidated_transcript ?? r.raw_input ?? "";
-      const prodPath = String(r.sys_head ?? "").startsWith("[renderer") ? "renderer" : "writer";
+      // Caminho da produção pela auditoria: renderer (extração + renderer), writer_guarded
+      // (writer dedicado MSK/PELVE/PARTES_MOLES dentro do renderer), passthrough (MSK colado
+      // pronto), hard (gpt-5.4, writer puro) ou writer (writer genérico com bundle).
+      const head = String(r.sys_head ?? "");
+      const prodPath = /writer_guarded/.test(head)
+        ? "writer_guarded"
+        : /passthrough/.test(head)
+          ? "passthrough"
+          : head.startsWith("[renderer")
+            ? "renderer"
+            : r.model_writer === "gpt-5.4"
+              ? "hard"
+              : "writer";
       const old = prev.get(r.id);
       const res: Row = {
         id: r.id, id8, data: r.created_at.toISOString().slice(0, 10), prodPath,
@@ -489,22 +590,21 @@ async function main() {
         editadoPeloMedico: r.final_output !== r.generated_output,
       };
       if (old) {
-        // Reaproveita replay/A/B da rodada anterior (não roda Haiku de novo).
-        Object.assign(res, { replay: old.replay, replayIgualProducao: old.replayIgualProducao, A: old.A, B: old.B, L: old.L, B2: old.B2 });
-      } else {
-        if (prodPath === "renderer" && r.structured_output) {
-          const rp = await runA(r, rawInput, "replay");
-          res.replay = rp;
-          res.replayIgualProducao = rp.text.trim() === String(r.generated_output ?? "").trim();
-        }
-        if (WANT.has("A")) {
-          res.A = [];
-          for (let k = 0; k < REPS; k++) res.A.push(await runA(r, rawInput, "haiku"));
-        }
-        if (WANT.has("B")) {
-          res.B = [];
-          for (let k = 0; k < REPS; k++) res.B.push(await runB(r, rawInput));
-        }
+        // Reaproveita o que a rodada anterior já gerou (não roda Haiku de novo).
+        for (const k of ["replay", "replayIgualProducao", ...SCEN_KEYS]) if (old[k] !== undefined) res[k] = old[k];
+      }
+      if (!res.replay && prodPath === "renderer" && r.structured_output) {
+        const rp = await runA(r, rawInput, "replay");
+        res.replay = rp;
+        res.replayIgualProducao = rp.text.trim() === String(r.generated_output ?? "").trim();
+      }
+      if (WANT.has("A") && !res[A_KEY]) {
+        res[A_KEY] = [];
+        for (let k = 0; k < REPS; k++) res[A_KEY].push(await runA(r, rawInput, "haiku"));
+      }
+      if (WANT.has("B") && !res.B) {
+        res.B = [];
+        for (let k = 0; k < REPS; k++) res.B.push(await runB(r, rawInput));
       }
       if (WANT.has("B2") && !(old && old.B2)) {
         res.B2 = [];
@@ -522,7 +622,7 @@ async function main() {
         `${id8} ${res.data} prod=${prodPath} editado=${res.editadoPeloMedico ? "s" : "n"}` +
           (res.replay ? ` replay=${res.replayIgualProducao ? "IGUAL" : "DIFERENTE"}` : "") +
           " | sim(final): " +
-          KEYS.map((k) => `${k} ${res[`m_${k}`].simFinal}${k !== "gpt" && k !== "R" && res[k][0]?.error ? "!" : ""}`).join(" · "),
+          KEYS.map((k) => `${k} ${res[`m_${k}`].simFinal}${k !== "gpt" && k !== "R" && res[k]?.[0]?.error ? "!" : ""}`).join(" · "),
       );
       results.push(res);
       writeFileSync(join(outDir, "results.json"), JSON.stringify(results, null, 2));
@@ -554,12 +654,12 @@ async function main() {
       while (j < results.length) {
         const res = results[j++];
         const cands = KEYS.map((k) => ({ origem: k, text: candText(res, k) })).sort(() => Math.random() - 0.5);
-        const rotulos = ["X", "Y", "Z", "W", "V", "U"].slice(0, cands.length);
+        const rotulos = ["X", "Y", "Z", "W", "V", "U", "T"].slice(0, cands.length);
         const user =
           `DITADO DO MÉDICO:\n${res.ditado}\n\nLAUDO FINAL ASSINADO PELO MÉDICO:\n${res.final}\n\n` +
           cands.map((c, i) => `CANDIDATO ${rotulos[i]}:\n${c.text}`).join("\n\n");
         try {
-          const r = await callClaude({ model: JUDGE, system: JUDGE_SYSTEM, user, schema: JUDGE_SCHEMA as any, effort: "medium" });
+          const r = await callClaude({ model: JUDGE, system: judgeSystemFor(res.categoria), user, schema: JUDGE_SCHEMA as any, effort: "medium" });
           const parsed = JSON.parse(r.text) as { avaliacoes: Row[] };
           res.juiz = {};
           for (const av of parsed.avaliacoes) {
