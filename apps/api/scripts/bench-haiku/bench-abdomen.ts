@@ -165,6 +165,9 @@ globalThis.fetch = (async (input: any, init?: any) => {
     if (schemaName === "FreeSlots") {
       const n = (user.match(/^\d+\./gm) ?? []).length;
       content = JSON.stringify({ itens: Array.from({ length: n }, () => ({ corpo: "[[FREE-SLOT NÃO REPRODUZÍVEL]]", conclusao: null })) });
+    } else if (!schemaName) {
+      // Writer (dedicado ou genérico) não tem replay: só a extração é reproduzível.
+      throw new Error("bench: replay não reproduz chamada de writer");
     } else {
       content = JSON.stringify(c.storedFindings);
     }
@@ -383,7 +386,7 @@ async function main() {
     select r.id, r.user_id, r.category_code, r.writing_style_id, r.raw_input, r.consolidated_transcript, a.category_hint,
            r.generated_output, r.final_output, r.created_at,
            a.model_writer, a.model_structurer, a.structured_output,
-           left(a.system_message_full, 40) as sys_head
+           left(a.system_message_full, 80) as sys_head
     from reports r
     left join lateral (select * from generation_audit g where g.report_id = r.id order by created_at desc limit 1) a on true
     where r.category_code = any(${CATEGORIES}) and r.final_output is not null
