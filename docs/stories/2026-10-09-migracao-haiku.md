@@ -22,6 +22,21 @@ Status: **InProgress** · Branch base: `feat/haiku-migration` · Orquestrador: C
 6. Revisão de alta prioridade, pela bancada via assinatura, para propor melhorias nos renderers
    determinísticos e nos prompts de base.
 
+## Decisões do Dr. Luiz (09/10, noite) — datação e gestação inicial
+
+7. Só IG de referência (sem biometria) → a conclusão usa a de referência.
+8. A frase da datação passa a ser ESCOLHA do médico, não limiar: `biometria` ("Gestação em torno de X."),
+   `us_precoce` ("Gestação em torno de X, corrigida pela ultrassonografia precoce.") ou `biometria_e_us_precoce`
+   ("… pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com Y."). Web: caixas de
+   seleção (padrão: só biometria). Ditado (mobile): 1ª US disponível → corrigida; senão biometria; "relacionar" no
+   ditado → as duas. Detalhes: `haiku-migration/W5-…` (backend) e `W6-…` (web).
+9. Gestação inicial sem embrião: "Embrião ainda não visualizado." / "Embrião e vesícula vitelínica ainda não
+   visualizados."; conclusão "Gestação inicial." + "Convém realizar nova ultrassonografia no prazo de duas semanas, com
+   o objetivo de acompanhar a evolução."
+
+Correção de premissa (09/10): 14/10/2026 é a aposentadoria do gpt-4.1/4.1-mini no **Azure**; na API direta da OpenAI
+não há data publicada. A migração não tem prazo duro.
+
 ## Tabela de roteamento alvo
 
 | Grupo | Categorias | Caminho | Modelo |
@@ -68,6 +83,8 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [ ] W2 extração obstétrica (datação/vitalidade) + bancada obstétrica refeita — 1ª entrega revisada; regra de IG do briefing estava errada (ig_semanas é a IG da biometria), correção pedida
 - [x] W3 prompt corpo descritivo + 4 defeitos do renderer do abdome (integrado em `eabc290f`)
 - [ ] W4 revisão por bancada + propostas priorizadas
+- [ ] W5 datação escolhida + gestação inicial sem embrião (backend)
+- [ ] W6 web: caixas de seleção da datação
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
 
