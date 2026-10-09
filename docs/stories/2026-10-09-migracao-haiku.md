@@ -43,8 +43,7 @@ não há data publicada. A migração não tem prazo duro.
     carótidas), por configuração; teste Haiku × Sonnet no MSK para o Luiz escolher (W8).
 11. Hipótese diagnóstica: padrão da casa **"que tem como diagnóstico mais provável …"**.
 12. Mama: normal = BI-RADS 1; sem menção às axilas = exame só das mamas (título, corpo e conclusão sem axilas).
-13. Tireoide: tabela de Domingos do Luiz (W7); "com áreas anecoicas" = 1 ponto. (Divergência a confirmar: mensagem diz
-    "isoecoica sem áreas = 3", tabela diz isoecoica = 2.)
+13. Tireoide: tabela de Domingos do Luiz (W7); "com áreas anecoicas" = 1 ponto. Confirmado pelo Luiz: **a tabela está correta** (isoecoica = 2).
 14. Parede: diástase só > 2 cm.
 
 Frentes novas: W7 regras da casa (terminal W3), W8 MSK Haiku × Sonnet (terminal W4, antes da W6), W1 rodada 3 (Sonnet +
