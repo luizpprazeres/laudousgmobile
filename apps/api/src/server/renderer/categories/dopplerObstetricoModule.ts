@@ -89,6 +89,7 @@ DOPPLER OBSTÉTRICO OPCIONAL:
 - Preserve separadamente IR (índice de resistividade) e IP (índice de pulsatilidade) de: uterina direita, uterina esquerda, umbilical, cerebral média e ducto venoso.
 - fluxo_diastolico_umbilical: "ausente" ou "reverso" somente quando o médico disser esse achado; "presente" quando explicitamente normal; null no silêncio. Não esconda esse achado dentro de um simples flag de IP alterado.
 - ip_medio_uterinas/percentis, RCP e perfil_hemodinamico: somente quando ditados ou fornecidos por bloco estruturado; o código calcula o perfil a partir da RCP quando possível.
+- Linha "→ Percentis" do app: copie o percentil de um vaso SOMENTE se o IP associado nessa linha for numericamente IGUAL ao IP ditado para o mesmo vaso (vírgula/ponto e zeros finais equivalem). IP diferente ou ausente na linha, ou vaso sem IP ditado → percentil null; o renderer calcula. Nunca use o percentil de outro vaso. Para perc_medio_uterinas compare o IP médio, não o IP unilateral; para perc_rcp compare a RCP da linha com a RCP ditada.
 - Flags de alteração só refletem o que foi verbalizado. Para ausência explicitamente avaliada, use false; silêncio é null.
 - Nunca invente um índice ausente e nunca transforme IR em IP.`;
 
