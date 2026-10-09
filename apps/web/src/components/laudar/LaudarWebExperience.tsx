@@ -1061,7 +1061,7 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       ? !textoFoiEditado && (laudoCanonico.carregando || laudoCanonico.desatualizado || laudoCanonico.erro !== null)
       // Pendência local bloqueia mesmo com texto editado: o estado salvo descreve um achado incompleto.
       : erroLocal !== null)
-  const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = motor.erro || saveState === 'error'
+  const laudoTabState: 'idle' | 'updating' | 'suggestion' | 'dirty' | 'error' = saveState === 'error' || (motor.erro && !temPendenciasEstruturadas)
     ? 'error'
     : remoto && (motor.carregando || motor.desatualizado)
       ? 'updating'
