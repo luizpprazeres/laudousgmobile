@@ -89,7 +89,7 @@ import {
   getVariantTemplateBody,
   resolveAccountReportPreference,
 } from "@/server/db/lookups";
-import { runRendererStream } from "@/server/pipeline/renderer";
+import { isEstiloObjetivo, runRendererStream } from "@/server/pipeline/renderer";
 import { decidirDescarte } from "@/server/pipeline/descarteDecision";
 import { pendingClarifyMetadata } from "@/server/pipeline/pendingClarify";
 import { ehDerivado } from "@/server/renderer/catalog/registry";
@@ -115,6 +115,7 @@ import {
 import { clinicalRendererFallbackBlocked, canonicalClinicalCategory, structuredClinicalIntent, earlyWriterV2Allowed } from "@/server/clinicalReports/fallbackPolicy";
 import { isDopplerRenalAuditError } from "@/server/pipeline/dopplerRenalWriterAudit";
 import { isLivreRoutingError, LivreRoutingError } from "@/server/ai/livreProvider";
+import { extractionTarget, llmTarget, LlmOutputError, providerForModel, writerTarget } from "@/server/ai/llm";
 import { resolveLivreWriterModel } from "@/server/pipeline/modelResolver";
 import {
   buildLivreRoutingMetadata,
@@ -269,8 +270,8 @@ export async function POST(req: Request) {
     openaiInputTokens: null,
     openaiOutputTokens: null,
     openaiCostUsd: null,
-    modelWriter: e.OPENAI_MODEL_WRITER,
-    modelStructurer: e.OPENAI_MODEL_STRUCTURER,
+    modelWriter: writerTarget(e).model,
+    modelStructurer: extractionTarget(e).model,
     errorCode: null,
     errorMessage: null,
     errorStage: null,
@@ -580,10 +581,13 @@ export async function POST(req: Request) {
         // em prod, Sensitive) — mantém o abdome ativo sem migrar o id secreto.
         const writerV2UserId =
           env().WRITER_V2_USER_ID || env().WRITER_V2_ABDOME_USER_ID;
+        const writerV2Model = llmTarget(env().WRITER_V2_MODEL, "none", "writer-v2").model;
         const useWriterV2 =
           earlyWriterV2Allowed(parsed.data.category_hint, categoriesInfo.codes) &&
           !clinicalRendererFallbackBlocked(reqInput.category_hint ?? draftCategory) &&
           writerV2Categories.includes(draftCategory) &&
+          // Writer V2 fala só com a OpenAI (cliente próprio).
+          providerForModel(writerV2Model) === "openai" &&
           writerV2UserId !== "" &&
           (user.id === writerV2UserId ||
             reqInput.writer_variant === "v2");
@@ -594,7 +598,7 @@ export async function POST(req: Request) {
             if (specV2) {
               const v2 = await runWriterV2({
                 openai: new OpenAI({ apiKey: env().OPENAI_API_KEY }),
-                model: env().OPENAI_MODEL_WRITER,
+                model: writerV2Model,
                 ditadoCru: reqInput.consolidated_transcript ?? reqInput.raw_input,
                 spec: specV2,
               });
@@ -872,6 +876,7 @@ export async function POST(req: Request) {
         : resolveGenerationPath({
             mode: generationMode,
             categoryCode: effectiveCategory,
+            objetivo: isEstiloObjetivo(effectiveWritingStyleId),
           });
       const modelConfig = livreRouting
         ? resolveLivreWriterModel()
@@ -926,7 +931,7 @@ export async function POST(req: Request) {
       // PELVE bloqueava 10×/dia exatamente por isso, antes de chegar ao renderer.)
       const isProgrammaticRenderer =
         generationPath.path === "renderer" &&
-        rendererCategoryEnabled(effectiveCategory) &&
+        rendererCategoryEnabled(effectiveCategory, undefined, { objetivo: isEstiloObjetivo(effectiveWritingStyleId) }) &&
         RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory) &&
         RENDERER_PROGRAMMATIC_CATEGORIES.has(effectiveCategory);
       if (bundle.error && isProgrammaticRenderer) {
@@ -1021,7 +1026,7 @@ export async function POST(req: Request) {
       // máscara ainda exigem template_body; programáticas não.
       const rendererEligible =
         generationPath.path === "renderer" &&
-        rendererCategoryEnabled(effectiveCategory) &&
+        rendererCategoryEnabled(effectiveCategory, undefined, { objetivo: isEstiloObjetivo(effectiveWritingStyleId) }) &&
         RENDERER_SUPPORTED_CATEGORIES.has(effectiveCategory);
       // Categorias programáticas (ex: OBSTETRICA) montam o laudo em código e não
       // precisam de template_body; as demais (ABDOMEN_TOTAL) exigem o template.
@@ -1564,7 +1569,9 @@ export async function POST(req: Request) {
         }
       }
 
-      if (modelConfig.provider === "openai") {
+      // Sanity por IA no writer padrão e no modo difícil (motor: LLM_SANITY_MODEL).
+      // Livre roteado e TESTE seguem sem ela, como antes.
+      if (modelConfig.credentialRef === "default") {
         try {
         const { result: aiSanity, latencyMs: sanityMs } = await runSanityCheck({
           findings,
@@ -1635,7 +1642,13 @@ export async function POST(req: Request) {
         errorMessage = err instanceof Error ? err.message : String(err);
         // Falhas da jornada Livre roteada (provedor, recusa, truncamento...)
         // carregam código próprio; o resto segue PIPELINE_FAILURE.
-        const errorCode = isLivreRoutingError(err) ? err.code : "PIPELINE_FAILURE";
+        // Falhas explícitas do motor (recusa, truncamento…) também: LLM_REFUSED
+        // diz ao médico que o modelo recusou, em vez de uma falha genérica.
+        const errorCode = isLivreRoutingError(err)
+          ? err.code
+          : err instanceof LlmOutputError
+            ? err.code
+            : "PIPELINE_FAILURE";
         if (livreRouting) livreRouting = { ...livreRouting, routing_error_code: errorCode };
         auditState.errorCode = errorCode;
         auditState.errorMessage = errorMessage;
@@ -1680,16 +1693,13 @@ export async function POST(req: Request) {
       }
     } finally {
       auditState.totalDurationMs = Date.now() - t0;
-      // A coluna e o estimador atuais são específicos da tabela de preços da
-      // writer padrão. Na jornada Livre roteada, gravar esse número com a
-      // tabela antiga produziria uma auditoria falsa; fica nulo até a
-      // auditoria ganhar os preços próprios do Claude Haiku 5.5.
-      auditState.openaiCostUsd = livreRouting
-        ? null
-        : estimateCost(
-            auditState.openaiInputTokens ?? 0,
-            auditState.openaiOutputTokens ?? 0,
-          );
+      // Custo estimado pela tabela do modelo que escreveu (Haiku 5.5 por padrão;
+      // a extração usa o mesmo modelo). A coluna mantém o nome histórico.
+      auditState.openaiCostUsd = estimateCost(
+        auditState.openaiInputTokens ?? 0,
+        auditState.openaiOutputTokens ?? 0,
+        auditState.modelWriter,
+      );
       // Sempre fechar a generation_run pra ter auditoria
       if (runId) {
         try {

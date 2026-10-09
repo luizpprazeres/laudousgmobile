@@ -4,11 +4,11 @@ import {
 } from "@laudousg/shared";
 import { z } from "zod";
 import { env } from "../env";
-import { openai } from "../ai/openai";
+import { extractionTarget, llmJson } from "../ai/llm";
 import { STRUCTURED_FINDINGS_JSON_SCHEMA } from "../ai/jsonSchema";
 
 /**
- * Etapa 1 — Structurer (gpt-4.1-mini com Structured Outputs strict).
+ * Etapa 1 — Structurer (Claude Haiku 5.5 com saída estruturada, motor ai/llm.ts).
  *
  * Recebe input bruto + hint de categoria e produz StructuredFindings:
  * categoria detectada, tipo_exame, achados (registro), comandos do médico,
@@ -117,36 +117,19 @@ export async function runStructurer(args: {
     .filter((l) => l !== undefined)
     .join("\n");
 
-  // gpt-4.1-mini suporta até 16k output tokens. Sem max_tokens explícito,
-  // a API às vezes trunca outputs de json_schema strict no meio (especialmente
-  // com `achados` aninhado como string JSON-encoded). Setamos 16k pra evitar.
-  const callOpenAI = async (extraSystemNote?: string) => {
-    return openai().chat.completions.create(
-      {
-        model: e.OPENAI_MODEL_STRUCTURER,
-        temperature: 0.0,
-        max_tokens: 16000,
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "StructuredFindings",
-            strict: true,
-            schema: STRUCTURED_FINDINGS_JSON_SCHEMA as Record<string, unknown>,
-          },
-        },
-        messages: [
-          {
-            role: "system",
-            content: extraSystemNote
-              ? `${systemPrompt}\n\n${extraSystemNote}`
-              : systemPrompt,
-          },
-          { role: "user", content: userMessage },
-        ],
-      },
-      { signal: args.signal },
-    );
-  };
+  // Saída estruturada com teto folgado (16k): JSON truncado no meio era o modo
+  // de falha clássico com `achados` aninhado como string JSON-encoded.
+  const callModel = async (extraSystemNote?: string) =>
+    llmJson({
+      target: extractionTarget(),
+      system: extraSystemNote ? `${systemPrompt}\n\n${extraSystemNote}` : systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
+      schemaName: "StructuredFindings",
+      schema: STRUCTURED_FINDINGS_JSON_SCHEMA as unknown as Record<string, unknown>,
+      maxTokens: 16000,
+      openaiMaxTokens: 16000,
+      signal: args.signal,
+    });
 
   const parseStructurerResponse = (raw: string | null | undefined) => {
     if (!raw) throw new Error("structurer: resposta vazia");
@@ -172,10 +155,10 @@ export async function runStructurer(args: {
   };
 
   // 1ª tentativa
-  let res = await callOpenAI();
+  let res = await callModel();
   let parsedOutput: ReturnType<typeof parseStructurerResponse>;
   try {
-    parsedOutput = parseStructurerResponse(res.choices[0]?.message?.content);
+    parsedOutput = parseStructurerResponse(res.raw);
   } catch (firstErr) {
     // Retry 1x com instrução enfática. Cobre 2 modos de falha conhecidos:
     // (a) JSON truncado em inputs grandes (obstetrica com biometria completa)
@@ -191,8 +174,8 @@ export async function runStructurer(args: {
       "3. Seja CONCISO (use só chaves estritamente necessárias).\n" +
       "4. GARANTA fechar todas as chaves e colchetes.\n" +
       "O JSON DEVE estar 100% completo, válido e parseável.";
-    res = await callOpenAI(note);
-    parsedOutput = parseStructurerResponse(res.choices[0]?.message?.content);
+    res = await callModel(note);
+    parsedOutput = parseStructurerResponse(res.raw);
   }
   const { validated, achados } = parsedOutput;
 
@@ -215,7 +198,7 @@ export async function runStructurer(args: {
   return {
     findings,
     latencyMs: Date.now() - t0,
-    inputTokens: res.usage?.prompt_tokens,
-    outputTokens: res.usage?.completion_tokens,
+    inputTokens: res.usage.inputTokens,
+    outputTokens: res.usage.outputTokens,
   };
 }

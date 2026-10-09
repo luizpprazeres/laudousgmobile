@@ -1,7 +1,7 @@
 import { env } from "../env";
 import { DOPPLER_HEPATICO_JSON_SCHEMA, DOPPLER_HEPATICO_EXTRACTION_PROMPT, HepaticDopplerExtractionSchema } from "./categories/DOPPLER_HEPATICO";
 import { normalizeAsrClinical } from "../pipeline/asrClinical";
-import { openai } from "../ai/openai";
+import { extractionTarget, llmJson } from "../ai/llm";
 import { DOPPLER_MODULE_EXTRACTION_RULES } from "./categories/dopplerObstetricoModule";
 // Esquema visual venoso (DESENHO): schema per-segmento vindo do pacote
 // @laudousg/schemes. É SEPARADO do writer DOPPLER_VENOSO_MMII (texto do laudo) —
@@ -453,71 +453,46 @@ export async function runRendererExtraction(args: {
     e.ASR_CLINICAL === "true"
       ? normalizeAsrClinical(args.rawInput, args.categoryCode)
       : args.rawInput;
-  const base = {
-    model: e.OPENAI_MODEL_STRUCTURER,
-    temperature: 0.0,
-    max_tokens: 8000,
-    response_format: {
-      type: "json_schema" as const,
-      json_schema: {
-        name: extractor.schemaName,
-        strict: true,
-        schema: jsonSchema,
-      },
-    },
-    messages: [
-      { role: "system" as const, content: extractionPrompt + (!plainObstetrica && args.categoryCode === "OBSTETRICA" && args.dopplerMode === "combined"
-        ? "\nEXAME SELECIONADO: obstétrico com Doppler. Preserve toda a biometria e os achados obstétricos ditados. Preencha o módulo doppler, com null para índices e características não informados; não invente medidas ou normalidade vascular."
-        : "") },
-      { role: "user" as const, content: `Ditado do médico:\n${rawInput}` },
-    ],
-  };
+  const system =
+    extractionPrompt +
+    (!plainObstetrica && args.categoryCode === "OBSTETRICA" && args.dopplerMode === "combined"
+      ? "\nEXAME SELECIONADO: obstétrico com Doppler. Preserve toda a biometria e os achados obstétricos ditados. Preencha o módulo doppler, com null para índices e características não informados; não invente medidas ou normalidade vascular."
+      : "");
 
-  let raw: string | undefined;
-  let inputTokens: number | undefined;
-  let outputTokens: number | undefined;
-
-  if (args.stream) {
-    // STREAMING: acumula deltas, dispara milestones, parseia o JSON completo no
-    // fim (resultado idêntico ao não-streaming, temp 0).
-    const s = await openai().chat.completions.create(
-      { ...base, stream: true, stream_options: { include_usage: true } },
-      { signal: args.signal },
-    );
-    let acc = "";
-    const seen = new Set<string>();
-    for await (const chunk of s) {
-      const delta = chunk.choices[0]?.delta?.content ?? "";
-      if (delta) {
-        acc += delta;
-        for (const m of PROGRESS_MILESTONES) {
-          if (!seen.has(m.label) && acc.includes(m.field)) {
-            seen.add(m.label);
-            args.onProgress?.({ stage: "achado", label: m.label });
-          }
-        }
-      }
-      if (chunk.usage) {
-        inputTokens = chunk.usage.prompt_tokens;
-        outputTokens = chunk.usage.completion_tokens;
-      }
-    }
-    raw = acc;
-  } else {
-    const res = await openai().chat.completions.create(base, { signal: args.signal });
-    raw = res.choices[0]?.message?.content ?? undefined;
-    inputTokens = res.usage?.prompt_tokens;
-    outputTokens = res.usage?.completion_tokens;
-  }
-
-  if (!raw) throw new Error("renderer extraction: resposta vazia");
-  const parsed = JSON.parse(raw);
+  // Motor único (ai/llm.ts): Claude Haiku 5.5 por padrão. Sempre streamado; os
+  // milestones de progresso (flag RENDERER_PROGRESS) leem o JSON parcial e o
+  // parse é sempre do JSON completo, igual ao modo sem progresso.
+  const seen = new Set<string>();
   // Enforce the explicit choice even if the provider ignores the null-only schema.
-  const findings = extractor.parse(
+  const withPlainChoice = (parsed: unknown) =>
     plainObstetrica && parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? { ...parsed, doppler: null }
-      : parsed,
-  );
+      : parsed;
+  const { raw, usage } = await llmJson({
+    target: extractionTarget(),
+    system,
+    messages: [{ role: "user", content: `Ditado do médico:\n${rawInput}` }],
+    schemaName: extractor.schemaName,
+    schema: jsonSchema as Record<string, unknown>,
+    openaiMaxTokens: 8000,
+    signal: args.signal,
+    validate: (value) => void extractor.parse(withPlainChoice(value)),
+    onPartialJson: args.stream
+      ? (acc) => {
+          for (const m of PROGRESS_MILESTONES) {
+            if (!seen.has(m.label) && acc.includes(m.field)) {
+              seen.add(m.label);
+              args.onProgress?.({ stage: "achado", label: m.label });
+            }
+          }
+        }
+      : undefined,
+  });
+  const inputTokens = usage.inputTokens;
+  const outputTokens = usage.outputTokens;
+
+  if (!raw) throw new Error("renderer extraction: resposta vazia");
+  const findings = extractor.parse(withPlainChoice(JSON.parse(raw)));
 
   return { findings, latencyMs: Date.now() - t0, inputTokens, outputTokens };
 }

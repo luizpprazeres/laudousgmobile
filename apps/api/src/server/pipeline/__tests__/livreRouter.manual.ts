@@ -140,12 +140,12 @@ async function main() {
       ragFewShots: false,
       guardsMode: "advisory-only",
     });
-    assert.equal(resolveGenerationPath({ mode: "standard", categoryCode: "TIREOIDE" }, pathEnv).path, "renderer");
-    const openaiWriter = resolveWriterModel(
+    assert.equal(resolveGenerationPath({ mode: "standard", categoryCode: "TIREOIDE", objetivo: true }, pathEnv).path, "renderer");
+    const directWriter = resolveWriterModel(
       { mode: "standard", categoryCode: "TIREOIDE" },
       {
-        OPENAI_MODEL_WRITER: "gpt-4.1-mini",
-        OPENAI_WRITER_REASONING_EFFORT: "none",
+        LLM_WRITER_MODEL: "claude-haiku-5-5",
+        LLM_WRITER_EFFORT: "medium",
         HARD_MODE_ENABLED: "false",
         HARD_MODE_MODEL: "gpt-5.4",
         TESTE_CATEGORY_MODEL: "",
@@ -155,7 +155,9 @@ async function main() {
         TESTE_ALLOWED_USER_ID: "",
       },
     );
-    assert.equal(openaiWriter.provider, "openai");
+    // Categoria direta: writer padrão (Haiku 5.5), credencial default — não a do Livre.
+    assert.equal(directWriter.provider, "anthropic");
+    assert.equal(directWriter.credentialRef, "default");
   });
 
   // ---------- Elegibilidade ----------

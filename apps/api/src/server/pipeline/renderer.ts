@@ -6,7 +6,7 @@ import {
 import type { DopplerMode } from "./requestedExam";
 import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
-import { openai } from "../ai/openai";
+import { llmParsed, writerTarget } from "../ai/llm";
 import {
   runRendererExtraction,
   type RendererExtractionResult,
@@ -145,9 +145,9 @@ const FREE_SLOT_JSON_SCHEMA = {
 } as const;
 
 /**
- * LLM secundário: redige UMA frase de corpo (e opcionalmente um item de
- * conclusão) por achado fora do catálogo. Temp 0; entrada mínima; proibido
- * inventar medidas/diagnósticos.
+ * LLM secundário (modelo do writer — Haiku 5.5): redige UMA frase de corpo (e
+ * opcionalmente um item de conclusão) por achado fora do catálogo. Entrada
+ * mínima; proibido inventar medidas/diagnósticos.
  */
 async function renderFreeSlots(
   items: FreeSlotItem[],
@@ -155,54 +155,42 @@ async function renderFreeSlots(
 ): Promise<{ rendered: FreeSlotRendered[]; inputTokens: number; outputTokens: number }> {
   if (items.length === 0)
     return { rendered: [], inputTokens: 0, outputTokens: 0 };
-  const e = env();
   const lista = items
     .map(
       (it, i) =>
         `${i + 1}. estrutura: ${it.organ}; dados: ${JSON.stringify(it.finding)}`,
     )
     .join("\n");
-  const res = await openai().chat.completions.create(
-    {
-      model: e.OPENAI_MODEL_WRITER,
-      temperature: 0.0,
-      max_tokens: 2000,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "FreeSlots",
-          strict: true,
-          schema: FREE_SLOT_JSON_SCHEMA as unknown as Record<string, unknown>,
-        },
+  const { value, usage } = await llmParsed({
+    target: writerTarget(),
+    system:
+      "Você redige FRASES ISOLADAS de laudo de ultrassonografia abdominal, em português médico formal.\n" +
+      "Para cada achado da lista, devolva: corpo = UMA frase descritiva para o corpo do laudo; " +
+      "conclusao = item curto de conclusão diagnóstica, ou null se o achado não merece conclusão própria.\n" +
+      "REGRAS: use SOMENTE os dados fornecidos (descricao_livre são as palavras do médico). " +
+      "NUNCA invente medidas, graus ou diagnósticos. Medida ausente → use ____. " +
+      "Sem cabeçalhos, sem numeração, sem markdown. Uma entrada de saída por achado, na MESMA ordem.",
+    messages: [{ role: "user", content: lista }],
+    schemaName: "FreeSlots",
+    schema: FREE_SLOT_JSON_SCHEMA as unknown as Record<string, unknown>,
+    openaiMaxTokens: 2000,
+    signal,
+    parser: {
+      parse: (input: unknown) => {
+        const parsed = input as { itens?: FreeSlotRendered[] };
+        if (!Array.isArray(parsed?.itens) || parsed.itens.length !== items.length) {
+          throw new Error(
+            `renderer free-slot: esperado ${items.length} itens, veio ${parsed?.itens?.length ?? 0}`,
+          );
+        }
+        return parsed.itens;
       },
-      messages: [
-        {
-          role: "system",
-          content:
-            "Você redige FRASES ISOLADAS de laudo de ultrassonografia abdominal, em português médico formal.\n" +
-            "Para cada achado da lista, devolva: corpo = UMA frase descritiva para o corpo do laudo; " +
-            "conclusao = item curto de conclusão diagnóstica, ou null se o achado não merece conclusão própria.\n" +
-            "REGRAS: use SOMENTE os dados fornecidos (descricao_livre são as palavras do médico). " +
-            "NUNCA invente medidas, graus ou diagnósticos. Medida ausente → use ____. " +
-            "Sem cabeçalhos, sem numeração, sem markdown. Uma entrada de saída por achado, na MESMA ordem.",
-        },
-        { role: "user", content: lista },
-      ],
     },
-    { signal },
-  );
-  const raw = res.choices[0]?.message?.content;
-  if (!raw) throw new Error("renderer free-slot: resposta vazia");
-  const parsed = JSON.parse(raw) as { itens: FreeSlotRendered[] };
-  if (!Array.isArray(parsed.itens) || parsed.itens.length !== items.length) {
-    throw new Error(
-      `renderer free-slot: esperado ${items.length} itens, veio ${parsed.itens?.length ?? 0}`,
-    );
-  }
+  });
   return {
-    rendered: parsed.itens,
-    inputTokens: res.usage?.prompt_tokens ?? 0,
-    outputTokens: res.usage?.completion_tokens ?? 0,
+    rendered: value,
+    inputTokens: usage.inputTokens ?? 0,
+    outputTokens: usage.outputTokens ?? 0,
   };
 }
 

@@ -10,8 +10,10 @@
  *            roteado (contrato + bundle completo da categoria) → guards do writer.
  * e compara com o laudo final do médico (e com o que o gpt saiu em produção).
  *
- * Toda chamada `api.openai.com/chat/completions` é interceptada no `fetch` e
- * respondida pelo `claude -p`. Qualquer outra chamada OpenAI é bloqueada.
+ * Toda chamada de modelo é interceptada no `fetch` e respondida pela ASSINATURA
+ * (`claude -p` / `codex exec`): `api.anthropic.com/v1/messages` (motor Haiku 5.5,
+ * ai/llm.ts — extração, free-slots, writer) e `api.openai.com/chat/completions`
+ * (rollback OpenAI). Qualquer outra chamada a esses provedores é bloqueada.
  *
  * Rodar (de apps/api):
  *   pnpm exec tsx scripts/bench-haiku/bench-abdomen.ts [--days 45] [--only id8,id8] [--reps 1] [--no-judge]
@@ -45,12 +47,16 @@ Object.assign(process.env, {
   GOLF_BALL_SNIPPET: process.env.BENCH_GOLF_BALL_SNIPPET ?? "true",
   ASR_CLINICAL: process.env.BENCH_ASR_CLINICAL ?? "true",
   WRITER_V2_CATEGORIES: "",
-  OPENAI_MODEL_STRUCTURER: "bench-structurer",
-  OPENAI_MODEL_WRITER: "bench-writer",
-  // Garante que NENHUMA chamada vá à OpenAI de verdade.
+  // Motor Haiku 5.5 (ai/llm.ts): todos os papéis no Haiku, interceptado abaixo.
+  LLM_EXTRACTION_MODEL: process.env.BENCH_MODEL ?? "claude-haiku-5-5",
+  LLM_WRITER_MODEL: process.env.BENCH_MODEL ?? "claude-haiku-5-5",
+  LLM_SANITY_MODEL: process.env.BENCH_MODEL ?? "claude-haiku-5-5",
+  // A bancada chama renderer e writer direto; o roteamento da rota não se aplica.
+  FULL_WRITER_CATEGORIES: process.env.BENCH_FULL_WRITER_CATEGORIES ?? "",
+  // Garante que NENHUMA chamada vá às APIs de verdade (o fetch abaixo responde).
   OPENAI_API_KEY: "sk-bench-blocked-no-real-openai-calls",
+  ANTHROPIC_API_KEY: "sk-ant-bench-blocked-no-real-anthropic-calls",
 });
-delete process.env.ANTHROPIC_API_KEY;
 
 const HAIKU = process.env.BENCH_MODEL ?? "claude-haiku-5-5";
 const JUDGE = process.env.BENCH_JUDGE_MODEL ?? "claude-opus-5-5";
@@ -106,47 +112,106 @@ type Ctx = { mode: "replay" | "haiku" | "luna"; promptPatch?: boolean; caseId: s
 const ctx = new AsyncLocalStorage<Ctx>();
 const realFetch = globalThis.fetch;
 
-globalThis.fetch = (async (input: any, init?: any) => {
-  const url = typeof input === "string" ? input : input?.url ?? String(input);
-  if (!/api\.openai\.com/.test(url)) return realFetch(input, init);
-  if (!/\/chat\/completions/.test(url)) {
-    throw new Error(`bench: chamada OpenAI bloqueada (${url})`);
-  }
-  const c = ctx.getStore();
-  if (!c) throw new Error("bench: chamada OpenAI fora de um caso");
-  const body = JSON.parse(init?.body ?? "{}");
-  const systemRaw = body.messages?.find((m: any) => m.role === "system")?.content ?? "";
-  const system = c.promptPatch && !schemaNameOf(body) ? patchCorpoDescritivo(systemRaw) : systemRaw;
-  const user = body.messages?.filter((m: any) => m.role === "user").map((m: any) => m.content).join("\n\n") ?? "";
-  const schema = body.response_format?.json_schema?.schema;
-  const schemaName = body.response_format?.json_schema?.name ?? null;
+type Answer = { content: string; usage: { prompt_tokens: number; completion_tokens: number } };
 
+/** Responde uma chamada de modelo pela assinatura (ou replay), igual para os dois provedores. */
+async function answer(c: Ctx, req: { system: string; user: string; schema?: Record<string, unknown>; schemaName: string | null }): Promise<Answer> {
   let content: string;
   let usage = { prompt_tokens: 0, completion_tokens: 0 };
   let ms = 0;
   if (c.mode === "replay") {
-    if (schemaName === "FreeSlots") {
-      const n = (user.match(/^\d+\./gm) ?? []).length;
+    if (req.schemaName === "FreeSlots") {
+      const n = (req.user.match(/^\d+\./gm) ?? []).length;
       content = JSON.stringify({ itens: Array.from({ length: n }, () => ({ corpo: "[[FREE-SLOT NÃO REPRODUZÍVEL]]", conclusao: null })) });
     } else {
       content = JSON.stringify(c.storedFindings);
     }
   } else if (c.mode === "luna") {
-    const model = schemaName === "FreeSlots" ? LUNA_FREESLOT_MODEL : LUNA_MODEL;
-    const r = await callCodex({ model, system, user, schema, reasoning: "none" });
+    const model = req.schemaName === "FreeSlots" ? LUNA_FREESLOT_MODEL : LUNA_MODEL;
+    const r = await callCodex({ model, system: req.system, user: req.user, schema: req.schema, reasoning: "none" });
     content = r.text;
     usage = { prompt_tokens: r.inputTokens, completion_tokens: r.outputTokens };
     ms = r.ms;
   } else {
-    const r = await callClaude({ model: HAIKU, system, user, schema, effort: EFFORT });
+    const r = await callClaude({ model: HAIKU, system: req.system, user: req.user, schema: req.schema, effort: EFFORT });
     content = r.text;
     usage = { prompt_tokens: r.inputTokens, completion_tokens: r.outputTokens };
     ms = r.ms;
   }
   appendFileSync(
     c.log,
-    JSON.stringify({ case: c.caseId, mode: c.mode, schemaName, ms, usage, system_len: system.length, user, content }) + "\n",
+    JSON.stringify({ case: c.caseId, mode: c.mode, schemaName: req.schemaName, ms, usage, system_len: req.system.length, user: req.user, content }) + "\n",
   );
+  return { content, usage };
+}
+
+/** O motor acrescenta esta instrução no caminho por ferramenta; o `claude -p --json-schema` tem a própria. */
+const TOOL_DELIVERY_RE = /\n\nENTREGA: responda chamando a ferramenta [\s\S]*$/;
+
+function anthropicResponse(body: any, a: Answer): Response {
+  const toolName: string | undefined = body.tools?.[0]?.name;
+  const blocks: any[] = toolName
+    ? [{ type: "tool_use", id: "toolu_bench", name: toolName, input: JSON.parse(a.content) }]
+    : [{ type: "text", text: a.content }];
+  const stop_reason = toolName ? "tool_use" : "end_turn";
+  const usage = { input_tokens: a.usage.prompt_tokens, output_tokens: a.usage.completion_tokens, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+  const message = { id: "msg_bench", type: "message", role: "assistant", model: HAIKU, content: blocks, stop_reason, stop_sequence: null, stop_details: null, usage };
+  if (!body.stream) {
+    return new Response(JSON.stringify(message), { status: 200, headers: { "content-type": "application/json" } });
+  }
+  const ev = (type: string, data: unknown) => `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
+  let sse = ev("message_start", { type: "message_start", message: { ...message, content: [], stop_reason: null, usage: { ...usage, output_tokens: 1 } } });
+  blocks.forEach((b, index) => {
+    if (b.type === "tool_use") {
+      sse += ev("content_block_start", { type: "content_block_start", index, content_block: { ...b, input: {} } });
+      sse += ev("content_block_delta", { type: "content_block_delta", index, delta: { type: "input_json_delta", partial_json: JSON.stringify(b.input) } });
+    } else {
+      sse += ev("content_block_start", { type: "content_block_start", index, content_block: { type: "text", text: "" } });
+      sse += ev("content_block_delta", { type: "content_block_delta", index, delta: { type: "text_delta", text: b.text } });
+    }
+    sse += ev("content_block_stop", { type: "content_block_stop", index });
+  });
+  sse += ev("message_delta", { type: "message_delta", delta: { stop_reason, stop_sequence: null }, usage: { output_tokens: usage.output_tokens } });
+  sse += ev("message_stop", { type: "message_stop" });
+  return new Response(sse, { status: 200, headers: { "content-type": "text/event-stream" } });
+}
+
+const textOfContent = (content: any): string =>
+  typeof content === "string"
+    ? content
+    : (content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n");
+
+globalThis.fetch = (async (input: any, init?: any) => {
+  const url = typeof input === "string" ? input : input?.url ?? String(input);
+  const isOpenAI = /api\.openai\.com/.test(url);
+  const isAnthropic = /api\.anthropic\.com/.test(url);
+  if (!isOpenAI && !isAnthropic) return realFetch(input, init);
+  if (isOpenAI && !/\/chat\/completions/.test(url)) throw new Error(`bench: chamada OpenAI bloqueada (${url})`);
+  if (isAnthropic && !/\/v1\/messages(?:\?|$)/.test(url)) throw new Error(`bench: chamada Anthropic bloqueada (${url})`);
+  const c = ctx.getStore();
+  if (!c) throw new Error("bench: chamada de modelo fora de um caso");
+  const body = JSON.parse(init?.body ?? "{}");
+
+  if (isAnthropic) {
+    const schema: Record<string, unknown> | undefined = body.output_config?.format?.schema ?? body.tools?.[0]?.input_schema;
+    const schemaName: string | null =
+      body.tools?.[0]?.name ?? (schema ? ((schema as any).properties?.itens ? "FreeSlots" : "strict") : null);
+    const systemRaw = (Array.isArray(body.system) ? body.system.map((b: any) => b.text).join("\n\n") : String(body.system ?? "")).replace(TOOL_DELIVERY_RE, "");
+    const system = c.promptPatch && !schema ? patchCorpoDescritivo(systemRaw) : systemRaw;
+    // Só o texto dos turnos do usuário (few-shots em turnos de assistente ficam de fora, como antes).
+    const user = (body.messages ?? []).filter((m: any) => m.role === "user").map((m: any) => textOfContent(m.content)).filter(Boolean).join("\n\n");
+    return anthropicResponse(body, await answer(c, { system, user, schema, schemaName }));
+  }
+
+  const systemRaw = body.messages?.find((m: any) => m.role === "system")?.content ?? "";
+  const system = c.promptPatch && !schemaNameOf(body) ? patchCorpoDescritivo(systemRaw) : systemRaw;
+  const user = body.messages?.filter((m: any) => m.role === "user").map((m: any) => m.content).join("\n\n") ?? "";
+  const { content, usage } = await answer(c, {
+    system,
+    user,
+    schema: body.response_format?.json_schema?.schema,
+    schemaName: body.response_format?.json_schema?.name ?? null,
+  });
 
   if (body.stream) {
     const chunk = (o: unknown) => `data: ${JSON.stringify(o)}\n\n`;
@@ -413,9 +478,9 @@ async function main() {
         categoryLabel: categories.labels.get(cat) ?? cat,
         rawUserMessage: rawInput,
         sourceTranscript: rawInput,
-        // provider "openai" só para passar pelo fetch interceptado; o prompt é o
-        // mesmo que o Livre roteado manda ao Haiku (writer.ts, credentialRef livre).
-        modelConfig: { provider: "openai", model: HAIKU, reasoningEffort: EFFORT, credentialRef: "default" },
+        // Writer padrão de produção (motor Haiku 5.5, provider anthropic); a chamada
+        // é interceptada no fetch e respondida pela assinatura.
+        modelConfig: { provider: "anthropic", model: HAIKU, reasoningEffort: EFFORT, credentialRef: "default" },
       });
       let text = "";
       try {
@@ -464,7 +529,7 @@ async function main() {
   const prevHas = (k: string) => [...prev.values()].some((x) => x[k]);
   const WANT = new Set([...SCEN, ...(LUNA ? ["L"] : []), ...(B2 ? ["B2"] : [])]);
   const KEYS = ["gpt", ...["R", "A", "B", "L", "B2"].filter((k) => WANT.has(k) || (k !== "R" && prevHas(k)))];
-  /** Texto de cada candidato. R = achados do gpt-4.1-mini (produção) + renderer de HOJE.
+  /** Texto de cada candidato. R = achados que a produção extraiu (gpt-4.1-mini até 09/10) + renderer de HOJE.
    *  A que falhou no renderer cai no writer, como na rota: usa o texto do B2 (ou B). */
   const candText = (res: Row, k: string): string => {
     if (k === "gpt") return res.gpt ?? "";

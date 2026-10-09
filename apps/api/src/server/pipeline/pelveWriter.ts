@@ -7,7 +7,7 @@
  *
  * Flag `PELVE_WRITER` (default OFF). Guard de formato reusa o do MSK (cabeçalhos iguais).
  */
-import { openai } from "../ai/openai";
+import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
 import { env } from "../env";
 import { buildPelveWriterSystemMessage } from "../renderer/categories/PELVE_FEMININA";
 import { PELVE_FEWSHOTS } from "../renderer/categories/pelveFewshots";
@@ -28,7 +28,8 @@ export async function* runPelveWriterStream(args: {
   rawInput: string;
   signal?: AbortSignal;
 }): AsyncGenerator<string, PelveWriterResult, void> {
-  const model = env().PELVE_WRITER_MODEL;
+  const target = dedicatedWriterTarget(env().PELVE_WRITER_MODEL, "pelve-writer");
+  const model = target.model;
   const t0 = Date.now();
   let ttftMs = 0;
   let full = "";
@@ -38,30 +39,34 @@ export async function* runPelveWriterStream(args: {
     { role: "assistant" as const, content: f.laudo },
   ]);
 
-  const stream = await openai().chat.completions.create(
-    {
-      model,
-      temperature: 0.2,
-      stream: true,
-      stream_options: { include_usage: true },
-      messages: [
-        { role: "system", content: buildPelveWriterSystemMessage() },
-        ...fewshotMsgs,
-        { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
-      ],
-    },
-    { signal: args.signal },
-  );
+  // Motor único (ai/llm.ts): Claude Haiku 5.5 por padrão; sem temperature no
+  // Haiku (a 0.2 só vale no rollback OpenAI).
+  const gen = llmTextStream({
+    target,
+    system: buildPelveWriterSystemMessage(),
+    messages: [
+      ...fewshotMsgs,
+      { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
+    ],
+    openaiTemperature: 0.2,
+    openaiMaxTokens: 4000,
+    signal: args.signal,
+    label: "pelve-writer",
+  });
 
   let outputTokens: number | undefined;
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content ?? "";
+  for (;;) {
+    const next = await gen.next();
+    if (next.done) {
+      outputTokens = next.value.outputTokens;
+      break;
+    }
+    const delta = next.value;
     if (delta) {
       if (!ttftMs) ttftMs = Date.now() - t0;
       full += delta;
       yield delta;
     }
-    if (chunk.usage?.completion_tokens) outputTokens = chunk.usage.completion_tokens;
   }
 
   // Guard de formato determinístico (cabeçalhos canônicos, bullets, espaços).

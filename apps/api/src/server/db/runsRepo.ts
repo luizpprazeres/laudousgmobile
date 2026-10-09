@@ -5,6 +5,7 @@ import type {
   SanityResult,
 } from "@laudousg/shared";
 import { env } from "../env";
+import { extractionTarget, sanityTarget, writerTarget } from "../ai/llm";
 
 /**
  * generation_runs — auditoria completa por chamada do pipeline.
@@ -29,9 +30,9 @@ export async function insertOpenRun(args: {
       promptVersion: e.PROMPT_VERSION,
       contractVersion: e.CONTRACT_VERSION,
       findingsSchemaVersion: e.FINDINGS_SCHEMA_VERSION,
-      modelStructurer: e.OPENAI_MODEL_STRUCTURER,
-      modelWriter: e.OPENAI_MODEL_WRITER,
-      modelSanity: e.OPENAI_MODEL_SANITY,
+      modelStructurer: extractionTarget(e).model,
+      modelWriter: writerTarget(e).model,
+      modelSanity: sanityTarget(e).model,
       embeddingModel: e.OPENAI_EMBEDDING_MODEL,
       ragQueryText: args.rawInputForRagQuery,
       ragBlocksUsed: [],

@@ -1,9 +1,9 @@
 /**
  * DOPPLER_VENOSO_MMII `writer_guarded` — 2ª modalidade do eixo vascular. Mesma receita
- * (prompt + few-shots hand-crafted + fact-audit + gpt-4.1 + streaming). Gate =
+ * (prompt + few-shots hand-crafted + fact-audit + Haiku 5.5 + streaming). Gate =
  * membership em RENDERER_CATEGORIES. Guard de formato reusa o do MSK.
  */
-import { openai } from "../ai/openai";
+import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
 import { env } from "../env";
 import { buildDopplerVenosoMmiiWriterSystemMessage } from "../renderer/categories/DOPPLER_VENOSO_MMII";
 import { DOPPLER_VENOSO_MMII_FEWSHOTS } from "../renderer/categories/dopplerVenosoMmiiFewshots";
@@ -27,7 +27,8 @@ export async function* runDopplerVenosoMmiiWriterStream(args: {
   rawInput: string;
   signal?: AbortSignal;
 }): AsyncGenerator<string, DopplerVenosoWriterResult, void> {
-  const model = env().DOPPLER_VENOSO_WRITER_MODEL;
+  const target = dedicatedWriterTarget(env().DOPPLER_VENOSO_WRITER_MODEL, "doppler-venoso-writer");
+  const model = target.model;
   const t0 = Date.now();
   let ttftMs = 0;
   let full = "";
@@ -37,30 +38,34 @@ export async function* runDopplerVenosoMmiiWriterStream(args: {
     { role: "assistant" as const, content: f.laudo },
   ]);
 
-  const stream = await openai().chat.completions.create(
-    {
-      model,
-      temperature: 0.2,
-      stream: true,
-      stream_options: { include_usage: true },
-      messages: [
-        { role: "system", content: buildDopplerVenosoMmiiWriterSystemMessage() },
-        ...fewshotMsgs,
-        { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
-      ],
-    },
-    { signal: args.signal },
-  );
+  // Motor único (ai/llm.ts): Claude Haiku 5.5 por padrão; sem temperature no
+  // Haiku (a 0.2 só vale no rollback OpenAI).
+  const gen = llmTextStream({
+    target,
+    system: buildDopplerVenosoMmiiWriterSystemMessage(),
+    messages: [
+      ...fewshotMsgs,
+      { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
+    ],
+    openaiTemperature: 0.2,
+    openaiMaxTokens: 4000,
+    signal: args.signal,
+    label: "doppler-venoso-writer",
+  });
 
   let outputTokens: number | undefined;
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content ?? "";
+  for (;;) {
+    const next = await gen.next();
+    if (next.done) {
+      outputTokens = next.value.outputTokens;
+      break;
+    }
+    const delta = next.value;
     if (delta) {
       if (!ttftMs) ttftMs = Date.now() - t0;
       full += delta;
       yield delta;
     }
-    if (chunk.usage?.completion_tokens) outputTokens = chunk.usage.completion_tokens;
   }
 
   let fullText = normalizeMskWriterFormat(full);
