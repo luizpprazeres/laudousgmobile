@@ -547,7 +547,7 @@ console.log("\n14 · as TIREOIDITES NOMEADAS — recurso pedido pelo Luiz\n");
       const t = laudoPadraoDe(CAT, estilo, { ...base, tireoidite_tipo: tipo })!;
       const concl = t.split(/CONCLUS[ÃA]O:\n|IMPRESS[ÃA]O:\n/)[1] ?? "";
       t_(`${estilo}/${tipo}: nomeia o diagnóstico`,
-        concl.includes(`O diagnóstico mais provável é ${diagnostico}.`), diagnostico);
+        concl.includes(`que tem como diagnóstico mais provável ${diagnostico}.`), diagnostico);
       /** A recomendação laboratorial fecha a conclusão, e é específica do tipo. */
       t_(`${estilo}/${tipo}: recomenda o exame certo`,
         concl.includes("Convém, a critério clínico") && concl.includes(exame), exame);
@@ -574,7 +574,7 @@ console.log("\n14 · as TIREOIDITES NOMEADAS — recurso pedido pelo Luiz\n");
     })!;
     t_(`${estilo}: a descrição do médico vence a do tipo`, comDescricao.includes("traves ecogênicas"));
     t_(`${estilo}: …e o diagnóstico nomeado continua`,
-      comDescricao.includes("O diagnóstico mais provável é Tireoidite de Hashimoto."));
+      comDescricao.includes("que tem como diagnóstico mais provável Tireoidite de Hashimoto."));
   }
 }
 

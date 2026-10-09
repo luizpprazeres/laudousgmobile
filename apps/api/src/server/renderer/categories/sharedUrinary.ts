@@ -90,7 +90,19 @@ const URETER_DEFAULT = {
   calculo: null,
 } as const;
 
+/** Ausência explicitamente estruturada; nunca deduzir a causa da não visualização. */
+export const RENAL_PRESENCE = ["presente", "ausente_cirurgico", "agenesia", "nao_visualizado"] as const;
+export type RenalPresence = typeof RENAL_PRESENCE[number];
+
+export function renalAbsence(lado: string, presenca?: RenalPresence): { body: string; conclusion: string } | null {
+  if (!presenca || presenca === "presente") return null;
+  if (presenca === "ausente_cirurgico") return { body: `Rim ${lado} ausente cirurgicamente.`, conclusion: `Ausência cirúrgica do rim ${lado}.` };
+  if (presenca === "agenesia") return { body: `Rim ${lado} não visualizado.`, conclusion: `Agenesia do rim ${lado}.` };
+  return { body: `Rim ${lado} não visualizado.`, conclusion: `Rim ${lado} não visualizado ao exame.` };
+}
+
 export const SharedKidneySchema = z.object({
+  presenca: z.enum(RENAL_PRESENCE).optional(),
   medidas_cm: z.array(z.number().positive()).min(1).max(3).nullable(),
   espessura_parenquima_cm: z.number().positive().nullable(),
   dimensao: z.enum(["normal", "reduzida_discreta", "reduzida"]).nullable(),
@@ -392,6 +404,8 @@ export function renderSharedKidney(
   lado: "direito" | "esquerdo",
 ): SharedKidneyRender {
   kidney = textoEmLinhaUnica(kidney);
+  const absence = renalAbsence(lado, kidney.presenca);
+  if (absence) return { body: [absence.body], conclusion: [absence.conclusion], isNormal: false };
   const body: string[] = [];
   const conclusion: string[] = [];
   const altered = kidney.dimensao === "reduzida_discreta" || kidney.dimensao === "reduzida" ||
@@ -495,7 +509,7 @@ export function renderSharedKidney(
         break;
       case "angiomiolipoma":
         body.push(`Imagem nodular hiperecogênica e homogênea no rim ${lado}${measured}${located}.`);
-        conclusion.push(`Imagem sugestiva de angiomiolipoma no rim ${lado}.`);
+        conclusion.push(`Imagem no rim ${lado} que tem como diagnóstico mais provável angiomiolipoma.`);
         break;
       case "ectasia":
         body.push(`Ectasia pielocalicial no rim ${lado}${located}.`);

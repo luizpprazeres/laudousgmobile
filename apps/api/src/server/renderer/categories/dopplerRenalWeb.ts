@@ -246,7 +246,7 @@ export function renderDopplerRenalWeb(input: unknown, style: string): DopplerRen
     const current = data.sides[side];
     const maximum = Math.max(0, ...current.artery.psv_cms.map((p) => p.value));
     if (current.extensions.indirect_conclusion_confirmed && maximum <= 250 && !current.extensions.stent_present) {
-      conclusion.push(`Achados indiretos sugestivos de alteração hemodinâmica proximal na artéria renal ${labels[side].artery}, sem critério direto documentado de estenose significativa.`);
+      conclusion.push(`Achados indiretos que têm como diagnóstico mais provável alteração hemodinâmica proximal na artéria renal ${labels[side].artery}, sem critério direto documentado de estenose significativa.`);
     }
   }
   const elevated = (["right", "left"] as const).filter((side) => data.sides[side].extensions.elevated_ri_confirmed);

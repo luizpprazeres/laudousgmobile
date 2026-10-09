@@ -20,7 +20,7 @@ Adapte o laudo para esse estilo, mantendo a TÉCNICA e os ACHADOS intactos:
 - Frases curtas, uma ideia por frase.
 - Sem redundância. Não repita aspectos normais já implícitos no modelo.
 - Foco em achados anormais; aspectos normais ficam compactados.
-- Conclusão direta, sem floreio. Itens numerados se múltiplos.
+- Conclusão direta, sem floreio. Hipóteses: "que tem como diagnóstico mais provável [X]". Diagnóstico afirmado pelo médico permanece direto. Itens numerados se múltiplos.
 - Mantenha a terminologia técnica padrão (não traduza para leigo).`;
 
 const DETALHADO_PROTOCOLAR_OVERLAY = `ESTILO ATIVO: DETALHADO PROTOCOLAR
@@ -50,7 +50,7 @@ CONTEÚDO — NUNCA OMITIR (a omissão é falha grave, ainda que estilo seja con
 - Negações relevantes do input ("sem cálculos", "sem dilatação", "BCF presente").
 
 TOM:
-- Frases diretas, até 15 palavras.
+- Frases diretas. Preserve o padrão integral das hipóteses: "que tem como diagnóstico mais provável [X]", mesmo se ultrapassar 15 palavras.
 - Sem floreios verbais ("nota-se", "observa-se", "constata-se", "evidente", "presença de").
 - Sem redundância entre seções.
 - Omitir estruturas não mencionadas no input. Não completar o laudo com normalidades presumidas.

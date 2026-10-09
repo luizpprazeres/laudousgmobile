@@ -1,5 +1,5 @@
 /**
- * Contrato da categoria MAMARIA — VERBATIM do LaudoUSG original
+ * Contrato da categoria MAMARIA — derivado do LaudoUSG original, com regras W7
  * (lib/categoryDefaults.ts:3183-3411).
  *
  * Fonte: _extraction/from-laudousg-original/03-models-by-category/MAMARIA.md
@@ -9,11 +9,16 @@
  *  - Margens de nódulos: SEMPRE "circunscritas" (NUNCA "regulares")
  *  - BI-RADS: apenas no item com classificação mais alta (5 > 4 > 3 > 0 > 2 > 1)
  *  - Axilas não mencionadas → omitir título/corpo/conclusão (título dinâmico)
- *  - NUNCA inferir BI-RADS sem médico informar
+ *  - BI-RADS de lesões só se informado; exame normal recebe Categoria BI-RADS® 1
  *  - Medidas inválidas → preservar com [?], NÃO inventar
  */
 
 export const MAMARIA_CONTRACT = `PROTOCOLO OBRIGATÓRIO DE GERAÇÃO DE LAUDO
+
+REGRA PRIORITÁRIA DE ESCOPO — PREVALECE SOBRE MODELOS E EXEMPLOS:
+Apenas o DITADO ou a SOLICITAÇÃO do médico pode incluir axilas. Menções às axilas em modelos, exemplos ou frases da biblioteca NÃO contam como solicitação.
+Se o ditado for apenas "Normal", ou não mencionar/solicitar axilas, o título é ULTRASSONOGRAFIA DAS MAMAS. Remova do modelo toda descrição e conclusão axilar, inclusive frases de axilas não avaliadas.
+Nesse exame normal somente das mamas, concluir: Mamas ecograficamente normais (Categoria BI-RADS® 1).
 
 Sua tarefa é apenas PREENCHER um modelo fixo de laudo.
 Não reescreva o modelo.
@@ -36,7 +41,7 @@ trocar 06 fotos por outro número
 transformar o laudo em texto corrido
 usar traços, bullets ou listas fora da conclusão
 trocar frases-base por paráfrases
-inferir BI-RADS sem que o usuário informe
+inferir BI-RADS de lesões sem que o usuário informe; a exceção é o exame normal, que recebe (Categoria BI-RADS® 1)
 inventar medidas, horários, quadrantes, distâncias, datas ou correlações
 escrever "compatível com cisto simples" no corpo do laudo sem solicitação explícita
 trocar "linfonodos axilares normais" por outra frase
@@ -46,9 +51,9 @@ omitir ou silenciar descritores fornecidos pelo médico (ex: "coalescentes", "he
 publicar medida que contenha caractere inválido sem sinalizá-la com [?]
 
 TÍTULO DINÂMICO
-Se as axilas foram avaliadas (ou o médico não menciona excluí-las): ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
+Somente se as axilas foram ditadas ou solicitadas junto das mamas: ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
 Se o médico omite axilas, diz "sem axilas", "só mamas", "remover axilas" ou pede título sem regiões axilares: ULTRASSONOGRAFIA DAS MAMAS
-O título deve refletir exatamente o escopo do exame. Em caso de dúvida, usar o título com REGIÕES AXILARES.
+O título deve refletir exatamente o escopo do exame. Sem menção ou solicitação de axilas, usar somente MAMAS; omitir toda descrição e conclusão axilar.
 
 ESTRUTURA FIXA E IMUTÁVEL
 
@@ -81,17 +86,17 @@ TEXTO AXILAR PADRÃO
 Se as axilas foram avaliadas e estão normais, usar exatamente:
 Imagens ovais, com a periferia hipoecoica e o centro hiperecoico nas axilas.
 
-Se as axilas não foram avaliadas, usar exatamente:
-Regiões axilares não foram adequadamente avaliadas neste exame.
+Se as axilas não foram mencionadas ou solicitadas, omitir completamente este trecho. Só registrar limitação da avaliação axilar se explicitamente ditada.
 
 CONCLUSÃO AXILAR PADRÃO
 Se as axilas foram avaliadas e estão normais, usar exatamente:
 Linfonodos axilares normais.
 
-Se as axilas não foram avaliadas, usar exatamente:
-Avaliação linfonodal axilar não realizada neste exame.
+Se as axilas não foram mencionadas ou solicitadas, omitir completamente o item axilar.
 
 REGRAS DE CONCLUSÃO
+Exame mamário normal: Mamas ecograficamente normais (Categoria BI-RADS® 1).
+Preserve multiplicidade e referência da medida: "imagens ... a maior medindo" não vira imagem única nem medida de cada imagem.
 Cada grupo de achados deve virar um item próprio.
 Não juntar achados diferentes na mesma frase, exceto quando o usuário pedir explicitamente.
 
@@ -129,16 +134,16 @@ Não produza explicações.
 Entregue somente o laudo final.`;
 
 /**
- * Modelo-base MAMARIA (caso normal, com axilas avaliadas) — sintetizado das
+ * Modelo-base MAMARIA (caso normal, somente mamas) — sintetizado das
  * frases canônicas de lib/categoryDefaults.ts:3183-3411. Estrutura fixa do
  * protocolo: TÍTULO + COMENTÁRIOS + OS SEGUINTES ASPECTOS + CONCLUSÃO +
  * RODAPÉ BI-RADS.
  *
  * Título dinâmico: usar "ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES" quando
  * axilas avaliadas; substituir por "ULTRASSONOGRAFIA DAS MAMAS" quando médico
- * pedir título sem axilas.
+ * mencionar somente mamas ou não mencionar axilas.
  */
-export const MAMARIA_MODELO_BASE = `ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
+export const MAMARIA_MODELO_BASE = `ULTRASSONOGRAFIA DAS MAMAS
 
 COMENTÁRIOS:
 Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.
@@ -147,15 +152,13 @@ A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internac
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Mamas com ecotextura de fundo com aspecto heterogêneo.
 Não há sinais evidentes de imagem nodular sólida, cística ou complexa.
-Imagens ovais, com a periferia hipoecoica e o centro hiperecoico nas axilas.
 
 CONCLUSÃO:
 Mamas ecograficamente normais (Categoria BI-RADS® 1).
-Linfonodos axilares normais.
 
 Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).`;
 
-export const MAMARIA_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
+export const MAMARIA_MODELO_OBJETIVO = `ULTRASSONOGRAFIA DAS MAMAS
 
 TÉCNICA:
 Exame realizado com transdutor de 12 MHz.
@@ -171,7 +174,6 @@ Mama esquerda apresentando os seguintes achados:
 1- [natureza, localização, medida]. [BI-RADS se informado].
 2- [se houver outro achado no mesmo lado].
 
-Regiões axilares: [descrever somente se avaliadas ou informadas].
 
 IMPRESSÃO:
 1- [conclusão principal].

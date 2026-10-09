@@ -7,6 +7,8 @@ import {
   LESAO_FOCAL_VESICAL_CONCLUSAO,
   renderSharedBladder,
   renderSharedKidney,
+  RENAL_PRESENCE,
+  renalAbsence,
   SharedBladderSchema,
   SharedKidneySchema,
   textoEmLinhaUnica,
@@ -104,6 +106,7 @@ const AchadoRenalSchema = z.object({
 });
 
 const RimSchema = z.object({
+  presenca: z.enum(RENAL_PRESENCE).optional(),
   medidas_cm: z.array(z.number()).nullable(), // [longitudinal, AP, transverso]
   espessura_parenquima_cm: z.number().nullable(),
   dimensao: z.enum(dimensaoKeys as [DimensaoKey, ...DimensaoKey[]]).nullable(), // estado dimensional (default normal)
@@ -174,6 +177,7 @@ const RIM_JSON = {
   type: "object",
   additionalProperties: false,
   required: [
+    "presenca",
     "medidas_cm",
     "espessura_parenquima_cm",
     "dimensao",
@@ -185,6 +189,7 @@ const RIM_JSON = {
     "achados",
   ],
   properties: {
+    presenca: { type: "string", enum: RENAL_PRESENCE },
     medidas_cm: numArr,
     espessura_parenquima_cm: num,
     dimensao: enumNull(dimensaoKeys),
@@ -251,6 +256,13 @@ Organize o ditado no JSON tipado. NÃO redija laudo. NÃO invente nada. Sua fun�
 
 REGRAS:
 1. Cada rim (rim_direito, rim_esquerdo):
+   - presenca: presente se não houver ausência ditada; ausente_cirurgico quando
+     nefrectomia/ausência cirúrgica; agenesia SOMENTE se agenesia explicitamente
+     afirmada; nao_visualizado quando não visualizado sem causa afirmada.
+     Preserve o lado. Não visualizado NÃO autoriza inferir nefrectomia ou agenesia.
+     Em rim ausente/não visualizado: medidas e parênquima null, achados=[],
+     dimensao=null, situacao_baixa/rotacao/drc=false, hidronefrose=null.
+     Nunca envie a ausência só para achados_adicionais nem marque esse rim normal.
    - medidas_cm: as medidas do rim em cm [longitudinal, anteroposterior, transverso];
      null se não ditas.
    - espessura_parenquima_cm: espessura do parênquima em cm quando ditada; senão null.
@@ -461,6 +473,8 @@ function descreveAchado(ach: ViasUrinariasAchado): string {
  * da diferenciação corticomedular.
  */
 function rimCorpo(lado: string, rim: ViasUrinariasRim): string {
+  const absence = renalAbsence(lado, rim.presenca);
+  if (absence) return absence.body;
   const partes: string[] = [];
   const abertura = rimAbertura(lado, rim);
 
@@ -546,8 +560,8 @@ function bexigaCompartilhada(f: ViasUrinariasFindings) {
 function rinsCompartilhados(f: ViasUrinariasFindings) {
   return f.rins_detalhados
     ? {
-        direito: renderSharedKidney(f.rins_detalhados.direito, "direito"),
-        esquerdo: renderSharedKidney(f.rins_detalhados.esquerdo, "esquerdo"),
+        direito: renderSharedKidney({ ...f.rins_detalhados.direito, presenca: f.rins_detalhados.direito.presenca ?? f.rim_direito.presenca }, "direito"),
+        esquerdo: renderSharedKidney({ ...f.rins_detalhados.esquerdo, presenca: f.rins_detalhados.esquerdo.presenca ?? f.rim_esquerdo.presenca }, "esquerdo"),
       }
     : null;
 }
@@ -597,7 +611,7 @@ function concluiAchado(ach: ViasUrinariasAchado, lado: string): string {
     case "cistos_multiplos":
       return `Cistos simples no rim ${ladoConcl}.`;
     case "angiomiolipoma":
-      return `Imagem sugestiva de angiomiolipoma no rim ${ladoConcl}${loc}.`;
+      return `Imagem no rim ${ladoConcl}${loc} que tem como diagnóstico mais provável angiomiolipoma.`;
     case "nefrocalcinose":
       return `Nefrocalcinose no rim ${ladoConcl}.`;
     default:
@@ -663,6 +677,7 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
     { lado: "esquerdo", rim: f.rim_esquerdo },
   ];
   const rimAlterado = (r: ViasUrinariasRim): boolean =>
+    !!renalAbsence("", r.presenca) ||
     r.achados.length > 0 ||
     !!r.alteracao_difusa ||
     r.drc ||
@@ -676,16 +691,18 @@ function renderViasUrinariasClassico(f: ViasUrinariasFindings): string {
     conclusao.push("Rins ecograficamente normais.");
   } else {
     // DRC nos DOIS rins → item único na conclusão (decisão Luiz).
-    const drcBilateral = f.rim_direito.drc && f.rim_esquerdo.drc;
+    const drcBilateral = f.rim_direito.drc && f.rim_esquerdo.drc && !renalAbsence("direito", f.rim_direito.presenca) && !renalAbsence("esquerdo", f.rim_esquerdo.presenca);
     if (drcBilateral) conclusao.push("Sinais de doença renal crônica.");
     for (const { lado, rim } of ladosRim) {
+      const absence = renalAbsence(lado, rim.presenca);
+      if (absence) { conclusao.push(absence.conclusion); continue; }
       const ladoConcl = lado === "direito" ? "direito" : "esquerdo";
       const ladoFem = ladoConcl === "direito" ? "direita" : "esquerda";
 
       // Doença renal crônica (item por rim só quando NÃO é bilateral).
       if (rim.drc && !drcBilateral) {
         conclusao.push(
-          `Rim ${ladoConcl} de dimensões reduzidas, com redução da diferenciação corticomedular, podendo corresponder a doença renal crônica.`,
+          `Rim ${ladoConcl} de dimensões reduzidas, com redução da diferenciação corticomedular, que tem como diagnóstico mais provável doença renal crônica.`,
         );
       }
 
@@ -803,6 +820,8 @@ const TECNICA_OBJETIVO =
  * e da espessura do parênquima — cada uma em sua linha.
  */
 function rimCorpoObjetivo(lado: string, rim: ViasUrinariasRim): string {
+  const absence = renalAbsence(lado, rim.presenca);
+  if (absence) return absence.body;
   const cap = (s: string) => (s ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s);
   const partes: string[] = [];
   const sit: string[] = [];
@@ -884,6 +903,7 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
     { lado: "esquerdo", rim: f.rim_esquerdo },
   ];
   const rimAlterado = (r: ViasUrinariasRim): boolean =>
+    !!renalAbsence("", r.presenca) ||
     r.achados.length > 0 ||
     !!r.alteracao_difusa ||
     r.drc ||
@@ -897,15 +917,17 @@ function renderViasUrinariasObjetivo(f: ViasUrinariasFindings): string {
     impressao.push("Rins ecograficamente normais.");
   } else {
     // DRC nos DOIS rins → item único (decisão Luiz; preservada).
-    const drcBilateral = f.rim_direito.drc && f.rim_esquerdo.drc;
+    const drcBilateral = f.rim_direito.drc && f.rim_esquerdo.drc && !renalAbsence("direito", f.rim_direito.presenca) && !renalAbsence("esquerdo", f.rim_esquerdo.presenca);
     if (drcBilateral) impressao.push("Sinais de doença renal crônica.");
     for (const { lado, rim } of ladosRim) {
+      const absence = renalAbsence(lado, rim.presenca);
+      if (absence) { impressao.push(absence.conclusion); continue; }
       const ladoConcl = lado === "direito" ? "direito" : "esquerdo";
       const ladoFem = ladoConcl === "direito" ? "direita" : "esquerda";
 
       if (rim.drc && !drcBilateral) {
         impressao.push(
-          `Rim ${ladoConcl} de dimensões reduzidas, com redução da diferenciação corticomedular, podendo corresponder a doença renal crônica.`,
+          `Rim ${ladoConcl} de dimensões reduzidas, com redução da diferenciação corticomedular, que tem como diagnóstico mais provável doença renal crônica.`,
         );
       }
 

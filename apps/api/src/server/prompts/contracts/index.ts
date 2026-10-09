@@ -8,6 +8,7 @@
  * À medida que processarmos mais arquivos do _extraction/03-models-by-category/,
  * adicionar novos imports aqui.
  */
+import { PAREDE_ABDOMINAL_CONTRACT } from "./PAREDE_ABDOMINAL";
 import type { WritingStyleCode } from "@laudousg/shared";
 import { MORFOLOGICO_CONTRACT } from "./MORFOLOGICO";
 import {
@@ -37,6 +38,7 @@ export const CATEGORY_CONTRACTS: Record<string, string> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT,
   TIREOIDE: TIREOIDE_CONTRACT,
   MAMARIA: MAMARIA_CONTRACT,
+  PAREDE_ABDOMINAL: PAREDE_ABDOMINAL_CONTRACT,
   PELVE_FEMININA: PELVE_FEMININA_CONTRACT,
   OBSTETRICA: OBSTETRICA_CONTRACT,
   MORFOLOGICO: MORFOLOGICO_CONTRACT,

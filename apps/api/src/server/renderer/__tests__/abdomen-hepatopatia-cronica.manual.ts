@@ -26,7 +26,7 @@ const estado = {
 const fraseCorpo =
   "Fígado de dimensões normais, com contornos bocelados e ecotextura difusamente heterogênea.";
 const fraseConclusao =
-  "Sinais ecográficos sugestivos de hepatopatia crônica difusa.";
+  "Alterações ecográficas que têm como diagnóstico mais provável hepatopatia crônica difusa.";
 const antigaGenerica =
   "Fígado com alterações ecográficas sugestivas de hepatopatia crônica";
 const figadoNormal =

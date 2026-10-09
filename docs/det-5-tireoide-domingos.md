@@ -24,7 +24,7 @@ A NOTA FINAL é a SOMA dos pontos. Cada eixo contribui:
 | Hipoecoica | 3 |
 | Isoecoica | 2 |
 | Hiperecoica | 1 |
-| Com áreas anecoicas | 1 |
+| Com áreas anecoicas (inclui isoecoica com áreas anecoicas) | 1 |
 | Sólida com calcificação de parede (casca de ovo) | 0 |
 
 ### Margem
@@ -90,8 +90,9 @@ Exemplo (Luiz): imagem isoecoica (2) + margem regular (0) + 1,2×1,0×1,0 cm
 
 ## 3. Override verbatim (segurança)
 
-Se o médico DITAR a nota e/ou o TI-RADS explicitamente, o ditado VENCE o cálculo
-(reproduzir verbatim). Cálculo automático só quando o médico descreve as
+Se o médico DITAR a nota, ela VENCE o cálculo de Domingos (reproduzir verbatim).
+O campo `ti_rads_ditado` preserva a categoria ACR ditada, separada da faixa de
+Domingos derivada da nota. Cálculo automático só quando o médico descreve as
 características e NÃO fornece a nota pronta. (Mantém a regra antiga de "nunca
 alterar valor ditado" como caso particular.)
 
@@ -111,32 +112,46 @@ alterar valor ditado" como caso particular.)
   `...situada no terço inferior; imagem hipoecoica, com margem espiculada, ...
   situada no terço médio.`
 
-## 5. Formatação da conclusão (estilo clássico)
+## 5. Conclusão e separação das escalas (W7, 09/10/2026)
 
-- Item 1: volume da tireoide (normal/aumentado/reduzido + VT).
-- Um item POR LOBO com achado; múltiplos nódulos do mesmo lobo no MESMO item,
-  separados por ";":
-  `Lobo direito apresentando imagem isoecoica no terço inferior com NOTA FINAL 4
-  (características provavelmente benignas), equivalente ao TI-RADS 2 ACR; imagem
-  hipoecoica no terço médio com NOTA FINAL 10 (características suspeitas),
-  equivalente ao TI-RADS 4 ACR.`
+A Nota de Domingos é uma escala própria. Não equivale ao ACR TI-RADS.
+No clássico, com `show_domingos_score=true`, cada imagem apresenta `NOTA FINAL N
+(características … pela escala de Domingos)`. Quando houver os cinco grupos
+ACR suficientes, a categoria ACR aparece separadamente, calculada por esses grupos.
+Com o toggle de Domingos desligado, só a classificação ACR independente é exibida,
+se disponível; sem dados suficientes, não se inventa categoria.
 
-## 6. Toggle "classificação Domingos" (preferência da conta)
+## 6. Conferência com a tabela do Luiz, eixo a eixo
 
-- **Domingos ON (default):** conclusão com `NOTA FINAL N (características …),
-  equivalente ao TI-RADS Z ACR`.
-- **Domingos OFF:** só o TI-RADS, formato direto:
-  `Lobo direito apresentando imagem isoecoica no terço inferior - TI-RADS 4;
-  imagem hipoecoica no terço médio - TI-RADS 5.`
-  (TI-RADS ainda é calculado pela nota internamente; só não exibe a nota.)
+As tabelas das seções 1 e 2 foram conferidas com W7: anecoicas 0/0/1/1;
+sólidas 3/2/1/1/0; margens 0/1/2; halo sólido 0/2/1; mais alto que largo 3;
+diâmetro transverso 0/1/2; calcificações 0/0/1/3; Chammas I–V 0/1/2/3/4.
+Faixas da Nota de Domingos: ≤3 categoria 1, 4–5 categoria 2, 6–9 categoria 3,
+≥10 categoria 4. Não há categoria Domingos 5.
 
-## 7. Toggle "recomendações de conduta" (preferência da conta) — DISCUTIR VIABILIDADE
+Foram acrescentados `isoecoica_areas_anecoicas`, `hipoecoica_areas_anecoicas` e
+`hiperecoica_areas_anecoicas`, todos com 1 ponto e descrição que preserva a
+ecogenicidade de base com áreas anecoicas. `isoecoica` sem esse componente mantém 2 pontos,
+conforme a tabela. O Luiz confirmou nesta sessão W7: isoecoica = 2, hipoecoica = 3
+e com áreas anecoicas = 1. A mensagem anterior com isoecoica = 3 está esclarecida;
+não há divergência pendente de pontuação.
 
-Quando ligado, inserir no FINAL do laudo a conduta conforme o maior TI-RADS
-(Controle Anual / Controle ou Citopunção / Citopunção). Luiz quer o MÍNIMO de
-"acionamentos" para não deixar lento nem aumentar erro — preferência por instrução
-no prompt + um gatilho simples, em vez de muitas barreiras. **Item de discussão
-com o dex (viabilidade/arquitetura).**
+A medida explicitamente nomeada transversa prevalece. Sem ela, permanece a decisão
+anterior de usar a maior das medidas. Os eixos omitidos continuam com zero e a
+ecogenicidade continua ancorando o cálculo (TI-2 pendente, sem mudança nesta frente).
+A tabela assume valores de diâmetro em décimos; o código compara `<1` e `<3`, sem
+arredondar silenciosamente medidas mais precisas.
+
+## 7. Recomendações de conduta
+
+O toggle `show_conduct_recommendation` permanece desligado por padrão.
+No clássico com Domingos visível e o toggle ligado, cada imagem com nota disponível
+recebe conduta identificada como **TI-RADS de Domingos**: categoria 1 controle anual;
+2 controle ou citopunção; 3 e 4 citopunção. A nota ditada vence o cálculo.
+Sem nota disponível, não se emite recomendação de Domingos.
+No clássico sem Domingos visível e no objetivo, permanece a conduta ACR independente,
+com seus próprios critérios de categoria e diâmetro. Não se converte Nota de Domingos
+em ACR, nem se usa a conduta de uma escala rotulada como a outra.
 
 ## 8. Estilo DIRETO/ENXUTO (web, sem IA) — NÃO confundir com o clássico
 
@@ -208,7 +223,7 @@ Bugs corrigidos:
 - **Override (dex1 #4 / dex2 #1, bloqueante):** o valor numérico que deriva o
   TI-RADS passou a respeitar a nota DITADA (antes usava a calculada) — "NOTA
   FINAL 10" não sai mais com "TI-RADS 1".
-- **ACR TI-RADS 5 ditado (dex2 #2):** mapas de características/conduta aceitam 5
+- **Registro histórico — ACR TI-RADS 5 ditado (dex2 #2):** mapas de características/conduta aceitam 5
   ("altamente suspeitas"); fora de 1-5 → omite (nunca "indeterminadas"/
   "correlação clínica" inventadas).
 - **Halo em anecoica (dex2 #5):** halo só pontua/aparece em imagem SÓLIDA (guarda
@@ -224,3 +239,10 @@ Decisões mantidas (não bugs):
   ou usar a MENOR medida como proxy do transverso).
 - **Bócio por VT alto sem a palavra (dex2 #7):** não inferimos volume por limiar
   (No-Invention); só quando o médico dita bócio/aumentado.
+
+### Atualização W7 — limites da confirmação
+
+As seções 10–12 preservam o histórico de decisões e implementação de junho. As
+seções 5–7 descrevem o comportamento conferido em outubro; histórico não comprova
+estado de produção ou aplicação de migrações. TI-2 segue pendente. Nenhuma mudança
+no banco, nos toggles da interface ou no motor foi realizada por W7.

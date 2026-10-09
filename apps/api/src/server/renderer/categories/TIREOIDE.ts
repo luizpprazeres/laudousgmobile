@@ -30,6 +30,9 @@ const ECOGENICIDADE = {
   hipoecoica: { pts: 3, txt: "hipoecoica", txtM: "hipoecoico" },
   isoecoica: { pts: 2, txt: "isoecoica", txtM: "isoecoico" },
   hiperecoica: { pts: 1, txt: "hiperecoica", txtM: "hiperecoico" },
+  hipoecoica_areas_anecoicas: { pts: 1, txt: "hipoecoica com áreas anecoicas", txtM: "hipoecoico com áreas anecoicas" },
+  hiperecoica_areas_anecoicas: { pts: 1, txt: "hiperecoica com áreas anecoicas", txtM: "hiperecoico com áreas anecoicas" },
+  isoecoica_areas_anecoicas: { pts: 1, txt: "isoecoica com áreas anecoicas", txtM: "isoecoico com áreas anecoicas" },
   solida_areas_anecoicas: { pts: 1, txt: "sólida com áreas anecoicas", txtM: "sólido com áreas anecoicas" },
   solida_calcificacao_parede: { pts: 0, txt: "sólida com calcificação parietal (casca de ovo)", txtM: "sólido com calcificação parietal (casca de ovo)" },
 } as const;
@@ -308,7 +311,13 @@ REGRAS:
    descrito; null quando o médico não disser o eixo):
    - ecogenicidade: anecoica_homogenea | anecoica_finos_ecos | anecoica_septos |
      anecoica_componentes_solidos | hipoecoica | isoecoica | hiperecoica |
+     isoecoica_areas_anecoicas | hipoecoica_areas_anecoicas | hiperecoica_areas_anecoicas |
      solida_areas_anecoicas | solida_calcificacao_parede.
+     "Isoecoica com áreas anecoicas" → isoecoica_areas_anecoicas (1 ponto), NUNCA isoecoica (2 pontos).
+     "Hipoecoica com áreas anecoicas" → hipoecoica_areas_anecoicas;
+     "hiperecoica com áreas anecoicas" → hiperecoica_areas_anecoicas. Ambas valem
+     1 ponto pelo componente anecoico; não classifique como hipoecoica/hiperecoica pura.
+     Anecoica com área ecogênica com reverberação → anecoica_finos_ecos (0 pontos).
    - margem: regular | irregular | espiculada. ("contornos" = margem.)
    - halo: fino_regular | espesso_irregular | sem_halo (só imagem sólida).
    - forma: mais_alta_que_larga | mais_larga_que_alta.
@@ -419,8 +428,8 @@ function tiradsDaNota(nota: number): number {
 }
 
 /**
- * TI-RADS → características (plural). Aceita ACR 5 (quando o médico dita a escala
- * ACR 1-5); fora de 1-5 → null (omite o parêntese, NUNCA "indeterminadas").
+ * TI-RADS de Domingos → características (plural), categorias 1–4.
+ * Fora de 1–4 → null (omite o parêntese, NUNCA "indeterminadas").
  */
 function caracteristicasDoTirads(tirads: number): string | null {
   return (
@@ -429,7 +438,6 @@ function caracteristicasDoTirads(tirads: number): string | null {
       2: "provavelmente benignas",
       3: "intermediárias",
       4: "suspeitas",
-      5: "altamente suspeitas",
     }[tirads] ?? null
   );
 }
@@ -452,17 +460,11 @@ function classificarNodulo(nod: TireoideNodulo): {
   const notaTxt = notaDitada ?? (notaCalc !== null ? String(notaCalc) : null);
   // Valor numérico p/ derivar TI-RADS: MESMA precedência da exibida (a ditada
   // vence) — senão "NOTA FINAL 10" poderia sair com TI-RADS da nota calculada
-  // (review dex1). ti_rads_ditado ainda vence tudo abaixo.
+  // (review dex1). TI-RADS ditado pertence ao ACR, calculado separadamente.
   const notaNum =
     notaDitada && /^\d+$/.test(notaDitada) ? Number(notaDitada) : notaCalc;
-  const tiradsDitado = nod.ti_rads_ditado?.trim() || null;
-  const tirads =
-    tiradsDitado && /^\d+$/.test(tiradsDitado)
-      ? Number(tiradsDitado)
-      : notaNum !== null
-        ? tiradsDaNota(notaNum)
-        : null;
-  const tiradsTxt = tiradsDitado ?? (tirads !== null ? String(tirads) : null);
+  const tirads = notaNum !== null ? tiradsDaNota(notaNum) : null;
+  const tiradsTxt = tirads !== null ? String(tirads) : null;
   return { nota: notaNum, notaTxt, tirads, tiradsTxt };
 }
 
@@ -626,12 +628,12 @@ const TIREOIDITE: Record<TireoiditeTipo, FraseTireoidite> = {
 function fecharFraseDoVolume(tipo: TireoiditeTipo | null): string {
   if (!tipo) return ".";
   const f = TIREOIDITE[tipo];
-  return `, apresentando ${f.ecotextura}. O diagnóstico mais provável é ${f.diagnostico}.`;
+  return `, apresentando ${f.ecotextura}, que tem como diagnóstico mais provável ${f.diagnostico}.`;
 }
 
 
 const LINFONODOS_NORMAIS =
-  "Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, compatíveis com linfonodos de morfologia preservada.";
+  "Adicionalmente, evidenciam-se imagens ovais com a periferia hipoecoica e o centro hiperecoico, de margens regulares, situadas em região cervical, de aspecto habitual.";
 
 /**
  * O que se escreve quando o médico diz que os linfonodos estão alterados e não
@@ -1114,8 +1116,18 @@ function renderTireoideClassico(
    */
   if (f.tireoidite_tipo) conclusao.push(TIREOIDITE[f.tireoidite_tipo].recomendacao);
 
-  // Conduta (toggle) — exclusivamente ACR oficial + maior diâmetro.
-  if (prefs.show_conduct_recommendation) {
+  // Conduta de Domingos e ACR são escalas independentes, identificadas na saída.
+  if (prefs.show_conduct_recommendation && prefs.show_domingos_score) {
+    for (const lobo of lobosComAchado) {
+      lobo.lobo.nodulos.forEach((nodulo, indice) => {
+        const { nota: notaNum } = classificarNodulo(nodulo);
+        if (notaNum === null) return;
+        const categoria = tiradsDaNota(notaNum);
+        const conduta = categoria === 1 ? "controle anual" : categoria === 2 ? "controle ou citopunção" : "citopunção";
+        conclusao.push(`Conduta sugerida (${lobo.rotulo}, imagem ${indice + 1}, TI-RADS de Domingos ${categoria}): ${conduta}.`);
+      });
+    }
+  } else if (prefs.show_conduct_recommendation) {
     const condutas = condutasAcrDosNodulos(lobosComAchado);
     const identificar = lobosComAchado.reduce((total, item) => total + item.lobo.nodulos.length, 0) > 1;
     for (const item of condutas) {
@@ -1491,7 +1503,7 @@ function renderTireoideObjetivo(
      */
     impressao.push(
       f.tireoidite_tipo
-        ? `Tireoide de ${TIREOIDITE[f.tireoidite_tipo].ecotextura}. O diagnóstico mais provável é ${TIREOIDITE[f.tireoidite_tipo].diagnostico}.`
+        ? `Tireoide de ${TIREOIDITE[f.tireoidite_tipo].ecotextura}, que tem como diagnóstico mais provável ${TIREOIDITE[f.tireoidite_tipo].diagnostico}.`
         : volStatus === "aumentado"
           ? TIREOIDOPATIA_BOCIO
           : TIREOIDOPATIA,
