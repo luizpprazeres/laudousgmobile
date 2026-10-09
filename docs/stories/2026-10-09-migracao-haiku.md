@@ -65,8 +65,8 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [x] Bancada via assinatura (`fcab2dd3`)
 - [x] Percentis Barcelona completados no renderer Doppler (`7809c3bf`)
 - [ ] W1 motor Haiku + roteamento + remoção do gpt-4.1-mini
-- [ ] W2 extração obstétrica (datação/vitalidade) + bancada obstétrica refeita
-- [ ] W3 prompt corpo descritivo + 4 defeitos do renderer do abdome
+- [ ] W2 extração obstétrica (datação/vitalidade) + bancada obstétrica refeita — 1ª entrega revisada; regra de IG do briefing estava errada (ig_semanas é a IG da biometria), correção pedida
+- [x] W3 prompt corpo descritivo + 4 defeitos do renderer do abdome (integrado em `eabc290f`)
 - [ ] W4 revisão por bancada + propostas priorizadas
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
