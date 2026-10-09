@@ -1,5 +1,5 @@
 /**
- * Teste manual do módulo determinístico de IG (regra Dr. Domingos).
+ * Teste manual do módulo determinístico de IG (política W5).
  * Rodar: npx tsx src/server/renderer/__tests__/ig.manual.ts
  *
  * Cobre os 3 casos clínicos + as bordas levantadas no review adversarial dex2:
@@ -120,20 +120,20 @@ check("parseDataStrict null em lixo", parseDataStrict("abc") === null);
     referencia: usg({ rHojeSemanas: 20, rHojeDias: 3 }),
   }));
   check("concordante: caso", r.caso === "concordante", JSON.stringify(r));
-  check("concordante: só biometria", r.conclusaoClassico === "Gestação em torno de 20 semanas e 3 dias.");
+  check("concordante: padrão usa primeira US", r.conclusaoClassico === "Gestação em torno de 20 semanas e 3 dias, corrigida pela ultrassonografia precoce.");
   check("concordante: divergenciaDias 0", r.divergenciaDias === 0);
   check("concordante: percentil usa referencia", r.igParaPercentil?.source === "referencia");
 }
 
 // ── 3. divergência leve (diff = threshold = 5) — OFF-BY-ONE (dex2) ──
 {
-  // biometria 20s3d (143d) vs R_hoje 19s5d (138d) → diff 5 → leve, NÃO corrige
+  // biometria 20s3d (143d) vs R_hoje 19s5d (138d) → diff 5 → classificação leve, escolha sem limiar
   const r = computeIg(base({
     biometriaSemanas: 20, biometriaDias: 3, corrigir: true,
     referencia: usg({ rHojeSemanas: 19, rHojeDias: 5 }),
   }));
   check("diff===5: é divergente_leve (≤threshold)", r.caso === "divergente_leve", `caso=${r.caso} diff=${r.divergenciaDias} thr=${IG_DIVERGENCE_THRESHOLD_DAYS}`);
-  check("diff===5: NÃO corrige (só biometria)", r.conclusaoClassico === "Gestação em torno de 20 semanas e 3 dias.");
+  check("diff===5: padrão corrige sem limiar", r.conclusaoClassico === "Gestação em torno de 19 semanas e 5 dias, corrigida pela ultrassonografia precoce.");
 }
 
 // ── 4. divergência relevante (diff 6) + corrigir=true ──
@@ -146,26 +146,17 @@ check("parseDataStrict null em lixo", parseDataStrict("abc") === null);
   check("diff>thr: caso divergente", r.caso === "divergente", `caso=${r.caso} diff=${r.divergenciaDias}`);
   check(
     "diff>thr: clássico = frase Domingos",
-    r.conclusaoClassico === "Gestação em torno de 19 semanas e 4 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 20 semanas e 3 dias.",
+    r.conclusaoClassico === "Gestação em torno de 20 semanas e 3 dias, corrigida pela ultrassonografia precoce.",
     r.conclusaoClassico,
   );
-  check("diff>thr: objetivo 2 itens", r.conclusaoObjetivo.length === 2);
-  check(
-    "diff>thr: objetivo item 1",
-    r.conclusaoObjetivo[0] === "Gestação em torno de 19 semanas e 4 dias pela biometria atual.",
-    r.conclusaoObjetivo[0],
-  );
-  check(
-    "diff>thr: objetivo item 2",
-    r.conclusaoObjetivo[1] === "Gestação em torno de 20 semanas e 3 dias corrigido pela ultrassonografia precoce.",
-    r.conclusaoObjetivo[1],
-  );
+  check("diff>thr: objetivo 1 item", r.conclusaoObjetivo.length === 1);
+  check("diff>thr: objetivo igual ao clássico", r.conclusaoObjetivo[0] === r.conclusaoClassico);
 }
 
 // ── 5. divergência relevante + corrigir=false → âncora pura ──
 {
   const r = computeIg(base({
-    biometriaSemanas: 19, biometriaDias: 4, corrigir: false,
+    biometriaSemanas: 19, biometriaDias: 4, corrigir: false, pedidoLegado: false,
     referencia: usg({ rHojeSemanas: 20, rHojeDias: 3 }),
   }));
   check("corrigir=false: caso divergente_sem_correcao", r.caso === "divergente_sem_correcao");
@@ -180,8 +171,8 @@ check("parseDataStrict null em lixo", parseDataStrict("abc") === null);
   }));
   check("DUM: fonteLabel", r.fonteLabel === "data da última menstruação");
   check(
-    "DUM: clássico cita DUM",
-    r.conclusaoClassico.includes("devendo ser corrigida pela data da última menstruação"),
+    "DUM: mantém biometria",
+    r.conclusaoClassico === "Gestação em torno de 19 semanas e 4 dias.",
     r.conclusaoClassico,
   );
 }
@@ -200,15 +191,15 @@ check("parseDataStrict null em lixo", parseDataStrict("abc") === null);
   );
 }
 
-// ── 8. biometria ausente + referência → placeholder (dex1+dex2 CRÍTICO) ──
+// ── 8. biometria ausente + referência → referência (decisão W5) ──
 {
   const r = computeIg(base({
     biometriaSemanas: null, biometriaDias: null,
     referencia: usg({ rHojeSemanas: 20, rHojeDias: 3 }),
   }));
   check("sem_biometria: caso", r.caso === "sem_biometria");
-  check("sem_biometria: placeholder na conclusão", r.conclusaoClassico === "Gestação em torno de ____ semanas.");
-  check("sem_biometria: NUNCA referência como âncora", !r.conclusaoClassico.includes("20 semanas"));
+  check("sem_biometria: referência na conclusão", r.conclusaoClassico === "Gestação em torno de 20 semanas e 3 dias, corrigida pela ultrassonografia precoce.");
+  check("sem_biometria: sem placeholder", !r.conclusaoClassico.includes("____"));
   check("sem_biometria: percentil = referencia (informativo)", r.igParaPercentil?.source === "referencia");
 }
 
@@ -264,7 +255,7 @@ const LEADS = { leadAncora: "Gestação em torno de ", leadBase: "Gestação em 
 {
   // Sem fonte explícita, só DUM → DUM (heurística)
   const r = computeIg(buildIgInput(rawBase({ dum: "01/01/2026", igRefHojeSemanas: 20, igRefHojeDias: 3 }), LEADS));
-  check("heurística: só DUM → fonte DUM", r.conclusaoClassico.includes("última menstruação"), r.conclusaoClassico);
+  check("heurística: só DUM → fonte DUM", r.fonteLabel === "data da última menstruação" && r.conclusaoClassico === "Gestação em torno de 19 semanas e 4 dias.", r.conclusaoClassico);
 }
 {
   // US data presente vence DUM (heurística US > DUM)

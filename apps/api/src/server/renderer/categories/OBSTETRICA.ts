@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { temEmbriaoNaoVisualizado, renderGestacaoInicial } from "./gestacaoInicial";
 import { applyGolfBall, stripGolfBallEcho, type GolfBall } from "./golfBall";
-import { buildIgInput, computeIg, computeRHoje, type IgRawFields } from "../ig";
+import { buildIgInput, computeIg, computeRHoje, type IgRawFields, type IgRenderOptions, dataGeracaoSaoPaulo } from "../ig";
 import {
   CervicometriaAddonSchema,
   CERVICOMETRIA_ADDON_JSON_SCHEMA,
@@ -114,11 +115,20 @@ const FetoSchema = z.object({
   estomago_nao_visualizado: z.boolean().nullish(),
 });
 
-export const ObstetricaFindingsSchema = z.object({
-  numero_fetos: z.number().int().min(1),
+const SacoGestacionalSchema = z.object({
+  rotulo: z.string().nullable(),
+  embriao_visualizado: z.boolean().nullable(),
+  vesicula_vitelina_visualizada: z.boolean().nullable(),
+  feto_indice: z.number().int().min(0).nullable(),
+  diametro_medio_mm: z.number().nullable(),
+  medidas_mm: z.array(z.number()).length(3).nullable(),
+  localizacao: z.string().nullable(),
+});
+export const ObstetricaFindingsObjectSchema = z.object({
+  numero_fetos: z.number().int().min(0),
   corionicidade: z.string().nullable(), // "dicoriônica e diamniótica" etc (gemelar)
   gestacao_inicial: z.boolean(), // true = ≤13s6d (saco gestacional/CCN)
-  fetos: z.array(FetoSchema).min(1),
+  fetos: z.array(FetoSchema),
   ig_semanas: z.number().nullable(),
   ig_dias: z.number().nullable(),
   dum: z.string().nullable(), // DD/MM/AAAA
@@ -131,6 +141,17 @@ export const ObstetricaFindingsSchema = z.object({
   ig_referencia_hoje_dias: z.number().nullable(),
   referencia_fonte: z.enum(["usg_precoce", "dum"]).nullable(), // fonte atribuída pelo médico
   corrigir_ig: z.boolean().nullable(), // comando de voz explícito (true/false) ou null
+  datacao_pedido: z.enum(["corrigir", "relacionar", "manter_biometria"]).nullable().optional(),
+  datacao_conclusao: z.enum(["biometria", "us_precoce", "biometria_e_us_precoce"]).nullable().optional(),
+  embriao_visualizado: z.boolean().nullable().optional(),
+  vesicula_vitelina_visualizada: z.boolean().nullable().optional(),
+  sacos_gestacionais: z.array(SacoGestacionalSchema).nullable().optional(),
+  utero_posicao: z.string().nullable().optional(),
+  utero_medidas_cm: z.array(z.number()).length(3).nullable().optional(),
+  saco_gestacional_localizacao: z.string().nullable().optional(),
+  saco_gestacional_aspecto: z.string().nullable().optional(),
+  ovarios_normais: z.boolean().nullable().optional(),
+  via_exame: z.enum(["transvaginal", "abdominal"]).nullable().optional(),
   saco_gestacional_mm: z.number().nullable(), // DSM ditado direto ("DSM de 15,3")
   // As 3 medidas do saco gestacional, quando ditadas ("saco medindo A x B x C"
   // ou "calcule o DSM pelas medidas A x B x C") — o código calcula a média.
@@ -211,6 +232,30 @@ export const ObstetricaFindingsSchema = z.object({
   crescimento_fetal: FetalGrowthModuleSchema.nullable().optional(),
 });
 
+export const ObstetricaFindingsSchema = ObstetricaFindingsObjectSchema.superRefine((f, ctx) => {
+  const sacos = f.sacos_gestacionais;
+  const ausencia = f.embriao_visualizado === false || Boolean(sacos?.length && sacos.every(s => s.embriao_visualizado === false));
+  if ((f.fetos.length === 0 || f.numero_fetos === 0) && (!f.gestacao_inicial || !ausencia)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fetos"], message: "Fetos vazios exigem gestação inicial e ausência explícita de embrião." });
+  }
+  if (f.embriao_visualizado === false && f.fetos.length > 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fetos"], message: "Embrião não visualizado não pode carregar um objeto fetal." });
+  }
+  if (sacos?.length) {
+    if (!f.gestacao_inicial) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["sacos_gestacionais"], message: "Estado por saco é exclusivo da gestação inicial." });
+    const indices = new Set<number>();
+    sacos.forEach((s, i) => {
+      if (s.embriao_visualizado !== true && s.feto_indice !== null || s.embriao_visualizado === true && (s.feto_indice === null || !f.fetos[s.feto_indice])) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["sacos_gestacionais", i, "feto_indice"], message: "Vínculo fetal incompatível com a visualização do saco." });
+      }
+      if (s.feto_indice !== null) {
+        if (indices.has(s.feto_indice)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["sacos_gestacionais", i], message: "Um feto não pode pertencer a dois sacos." });
+        indices.add(s.feto_indice);
+      }
+    });
+    if (indices.size !== f.fetos.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["sacos_gestacionais"], message: "Cada embrião deve estar vinculado ao seu saco, sem descartar fetos." });
+  }
+});
 export type ObstetricaFindings = z.infer<typeof ObstetricaFindingsSchema>;
 
 // JSON Schema strict para OpenAI (todos required, nullable via union).
@@ -342,6 +387,17 @@ export const OBSTETRICA_JSON_SCHEMA = {
     "ig_referencia_hoje_dias",
     "referencia_fonte",
     "corrigir_ig",
+    "datacao_pedido",
+    "datacao_conclusao",
+    "embriao_visualizado",
+    "vesicula_vitelina_visualizada",
+    "sacos_gestacionais",
+    "utero_posicao",
+    "utero_medidas_cm",
+    "saco_gestacional_localizacao",
+    "saco_gestacional_aspecto",
+    "ovarios_normais",
+    "via_exame",
     "saco_gestacional_mm",
     "saco_gestacional_medidas_mm",
     "placenta_quantidade",
@@ -388,6 +444,19 @@ export const OBSTETRICA_JSON_SCHEMA = {
     ig_referencia_hoje_dias: num,
     referencia_fonte: { type: ["string", "null"], enum: ["usg_precoce", "dum", null] },
     corrigir_ig: { type: ["boolean", "null"] },
+    datacao_pedido: { type: ["string", "null"], enum: ["corrigir", "relacionar", "manter_biometria", null] },
+    datacao_conclusao: { type: ["string", "null"], enum: ["biometria", "us_precoce", "biometria_e_us_precoce", null] },
+    embriao_visualizado: bool, vesicula_vitelina_visualizada: bool,
+    sacos_gestacionais: { type: ["array", "null"], items: {
+      type: "object", additionalProperties: false,
+      required: ["rotulo", "embriao_visualizado", "vesicula_vitelina_visualizada", "feto_indice", "diametro_medio_mm", "medidas_mm", "localizacao"],
+      properties: { rotulo: str, embriao_visualizado: bool, vesicula_vitelina_visualizada: bool,
+        feto_indice: { type: ["integer", "null"], minimum: 0 }, diametro_medio_mm: num,
+        medidas_mm: { type: ["array", "null"], items: { type: "number" }, minItems: 3, maxItems: 3 }, localizacao: str },
+    } },
+    utero_posicao: str, utero_medidas_cm: { type: ["array", "null"], items: { type: "number" }, minItems: 3, maxItems: 3 },
+    saco_gestacional_localizacao: str, saco_gestacional_aspecto: str, ovarios_normais: bool,
+    via_exame: { type: ["string", "null"], enum: ["transvaginal", "abdominal", null] },
     saco_gestacional_mm: num,
     saco_gestacional_medidas_mm: { type: ["array", "null"], items: { type: "number" } },
     placenta_quantidade: num,
@@ -435,7 +504,9 @@ export const OBSTETRICA_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO do L
 Organize o ditado no JSON tipado. NÃO redija laudo. NÃO invente nada.
 
 REGRAS:
-1. numero_fetos: 1 = único; 2+ = gemelar/múltipla.
+1. numero_fetos: quantidade de embriões/fetos visualizados: 1 = único; 2+ = múltipla.
+   Gestação inicial com ausência explícita de embrião → 0, preservando cada saco
+   em sacos_gestacionais se houver mais de um.
 2. gestacao_inicial: true SOMENTE se for gestação inicial (≤ 13 semanas e 6 dias,
    ou houver saco gestacional/CCN/vesícula vitelina sem biometria DBP/CC/CA/CF).
 3. fetos[]: um objeto por feto. Para gemelar, rotulo "A","B"... e posicao_relativa
@@ -482,6 +553,30 @@ REGRAS:
      ig_referencia_hoje_dias, quando houver semanas ditadas para o respectivo
      campo. Sem IG ditada, não preencher semanas/dias.
    - NUNCA invente datas/IG de referência. Tudo null no exame obstétrico comum.
+7c. DATAÇÃO ESCOLHIDA: datacao_pedido = "corrigir" se pedir corrigir pela primeira US;
+    "relacionar" se pedir relacionar/correlacionar/comparar com a primeira US ou
+    ditar "pela biometria atual, devendo ser corrigida…"; "manter_biometria" se
+    pedir manter a biometria; sem pedido explícito → null. datacao_conclusao é
+    opção da Web: envie null no ditado, não escolha um modo por conta própria.
+    ig_semanas/ig_dias continua IG biométrica; "hoje com…" junto da primeira US
+    vai em ig_referencia_hoje_semanas/dias. IG pela DUM/ultrassonografia precoce
+    estruturada é referência atualizada, com referencia_fonte correspondente.
+    Não invente data_exame: o código recebe a data de geração separadamente.
+7d. VISUALIZAÇÃO NA GESTAÇÃO INICIAL: embriao_visualizado false SOMENTE quando
+    explicitamente ainda não visualizado; true com embrião descrito ou CCN;
+    sem informação → null. Vitalidade ausente NÃO muda visualização para false.
+    vesicula_vitelina_visualizada false quando explicitamente não visualizada,
+    true quando descrita/presente; silêncio → null. Embrião não visualizado:
+    gestacao_inicial true, fetos [], numero_fetos 0; não invente um objeto fetal
+    para satisfazer o schema e não ative gestacao_inviavel só pela ausência.
+    Gemelar: sacos_gestacionais tem UM objeto por SACO ditado, inclusive sem
+    embrião, com rotulo, estado de embrião/vesícula, diametro_medio_mm ou as três
+    medidas_mm, localizacao e feto_indice (índice zero-based em fetos para embrião
+    visualizado; null se ausente). Não reduza sacos ao número de embriões. No
+    único, sacos_gestacionais pode ser null e os campos globais representam o saco.
+    utero_posicao, utero_medidas_cm (3 eixos em cm), saco_gestacional_localizacao,
+    saco_gestacional_aspecto (descrição da imagem), ovarios_normais e via_exame
+    (transvaginal/abdominal): somente quando ditados; silêncio → null.
 8. corionicidade (gemelar): texto ditado ("dicoriônica e diamniótica",
    "monocoriônica e diamniótica"...). null se único.
 9. placenta: quantidade (gemelar pode ter 2+), localização, ecotextura, grau.
@@ -603,7 +698,8 @@ para o valor mais parecido.
     - hematoma_perigestacional_medidas (verbatim, "1,2 x 0,8 x 0,5 cm") +
       hematoma_perigestacional_lado ("direita"/"esquerda").
     - gestacao_inviavel: true quando "gestação anembrionada", "saco gestacional
-      sem embrião". Restrito a saco SEM EMBRIÃO explicitamente ditado;
+      sem embrião" COM diagnóstico explícito de inviabilidade pelo médico;
+      "ainda não visualizado" isolado → gestacao_inviavel null;
       embrião descrito/CCN com vitalidade ausente → gestacao_inviavel null.
       NÃO deduza de um DSM grande — o critério é do médico.
 
@@ -1107,16 +1203,19 @@ function igRawFromFindings(f: ObstetricaFindings, enabled: boolean): IgRawFields
     igRefHojeDias: enabled ? f.ig_referencia_hoje_dias : null,
     referenciaFonte: enabled ? f.referencia_fonte : null,
     corrigirComando: enabled ? f.corrigir_ig : null,
+    datacaoPedido: enabled ? f.datacao_pedido : null,
   };
 }
 
 /** computeIg com o lead da conclusão (gemelar passa o lead com corionicidade). */
-function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string, sanityCheck = false) {
+function igResultFor(f: ObstetricaFindings, enabled: boolean, leadAncora: string, sanityCheck = false, options?: IgRenderOptions) {
   return computeIg(
-    buildIgInput(igRawFromFindings(f, enabled), {
+    buildIgInput(igRawFromFindings(f, enabled || Boolean(options?.datacaoConclusao || f.datacao_conclusao)), {
       leadAncora,
       leadBase: "Gestação em torno de ",
       sanityCheck,
+      datacaoConclusao: options?.datacaoConclusao ?? f.datacao_conclusao ?? undefined,
+      dataGeracao: options?.dataGeracao ?? dataGeracaoSaoPaulo(),
     }),
   );
 }
@@ -1150,7 +1249,7 @@ export function igSanityAltera(f: ObstetricaFindings, igCorrection: boolean): bo
 export function renderObstetrica(
   f: ObstetricaFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null; igSanity?: boolean; grannum?: boolean; umbilicalSafety?: boolean; rawInput?: string },
+  opts?: IgRenderOptions & { objetivo?: boolean; igCorrection?: boolean; flexivel?: boolean; golfBall?: GolfBall | null; igSanity?: boolean; grannum?: boolean; umbilicalSafety?: boolean; rawInput?: string },
 ): string {
   const igc = opts?.igCorrection ?? false;
   const flx = opts?.flexivel ?? false;
@@ -1170,8 +1269,8 @@ export function renderObstetrica(
       ),
     };
   }
-  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx, g, igSan, grn, opts?.umbilicalSafety, opts?.rawInput);
-  return renderObstetricaClassico(f, igc, flx, g, igSan, grn, opts?.umbilicalSafety, opts?.rawInput);
+  if (opts?.objetivo) return renderObstetricaObjetivo(f, igc, flx, g, igSan, grn, opts?.umbilicalSafety, opts?.rawInput, opts);
+  return renderObstetricaClassico(f, igc, flx, g, igSan, grn, opts?.umbilicalSafety, opts?.rawInput, opts);
 }
 
 /** Monta o laudo obstétrico (estrutura por construção). */
@@ -1184,7 +1283,9 @@ export function renderObstetricaClassico(
   grannum = false,
   umbilicalSafety = false,
   rawInput?: string,
+  igOptions?: IgRenderOptions,
 ): string {
+  if (temEmbriaoNaoVisualizado(f)) return renderGestacaoInicial(f, false);
   const gemelar = f.numero_fetos >= 2;
   const tituloBase = gemelar ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR" : "ULTRASSONOGRAFIA OBSTÉTRICA";
   const titulo = f.doppler ? `${tituloBase} COM DOPPLER COLORIDO` : tituloBase;
@@ -1194,7 +1295,7 @@ export function renderObstetricaClassico(
   const leadAncora = gemelar
     ? `Gestação gemelar ${corionLead}em torno de `
     : "Gestação em torno de ";
-  const ig = igResultFor(f, igCorrection, leadAncora, igSanity);
+  const ig = igResultFor(f, igCorrection, leadAncora, igSanity, igOptions);
 
   const aspectos: string[] = [];
   const conclusao: string[] = [];
@@ -1605,7 +1706,9 @@ export function renderObstetricaObjetivo(
   grannum = false,
   umbilicalSafety = false,
   rawInput?: string,
+  igOptions?: IgRenderOptions,
 ): string {
+  if (temEmbriaoNaoVisualizado(f)) return renderGestacaoInicial(f, true);
   const gemelar = f.numero_fetos >= 2;
   const tituloBase = gemelar
     ? "ULTRASSONOGRAFIA OBSTÉTRICA GEMELAR"
@@ -1617,7 +1720,7 @@ export function renderObstetricaObjetivo(
   const leadAncora = gemelar
     ? `Gestação gemelar ${corionLead}em torno de `
     : "Gestação em torno de ";
-  const ig = igResultFor(f, igCorrection, leadAncora, igSanity);
+  const ig = igResultFor(f, igCorrection, leadAncora, igSanity, igOptions);
 
   const achados: string[] = [];
   const impressao: string[] = [];

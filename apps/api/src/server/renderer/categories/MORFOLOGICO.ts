@@ -1,6 +1,6 @@
 import { filterFreeConclusionItems } from "./OBSTETRICA";
 import { z } from "zod";
-import { buildIgInput, computeIg, type IgRawFields, type IgComputed } from "../ig";
+import { buildIgInput, computeIg, type IgRenderOptions, dataGeracaoSaoPaulo, type IgRawFields, type IgComputed } from "../ig";
 import {
   applyGolfBallMorfologico,
   stripGolfBallEcho,
@@ -179,6 +179,8 @@ export const MorfologicoFindingsSchema = z.object({
   ig_referencia_hoje_dias: z.number().nullable(),
   referencia_fonte: z.enum(["usg_precoce", "dum"]).nullable(),
   corrigir_ig: z.boolean().nullable(),
+  datacao_pedido: z.enum(["corrigir", "relacionar", "manter_biometria"]).nullable().optional(),
+  datacao_conclusao: z.enum(["biometria", "us_precoce", "biometria_e_us_precoce"]).nullable().optional(),
   achados_adicionais: z.string().nullable(),
   /**
    * OS ITENS DE CONCLUSÃO DO MÉDICO — o canal que faltava.
@@ -221,7 +223,7 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     "placenta_localizacao", "placenta_grau", "placenta_ecotextura", "ila_cm", "mbv_cm",
     "ig_semanas", "ig_dias", "dum",
     "data_exame", "primeira_us_data", "primeira_us_ig_semanas", "primeira_us_ig_dias",
-    "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig",
+    "ig_referencia_hoje_semanas", "ig_referencia_hoje_dias", "referencia_fonte", "corrigir_ig", "datacao_pedido", "datacao_conclusao",
     "achados_adicionais", "itens_conclusao_livres", "cervicometria", "doppler",
     "crescimento_fetal",
   ],
@@ -276,6 +278,8 @@ export const MORFOLOGICO_JSON_SCHEMA = {
     ig_referencia_hoje_semanas: num, ig_referencia_hoje_dias: num,
     referencia_fonte: { type: ["string", "null"], enum: ["usg_precoce", "dum", null] },
     corrigir_ig: { type: ["boolean", "null"] },
+    datacao_pedido: { type: ["string", "null"], enum: ["corrigir", "relacionar", "manter_biometria", null] },
+    datacao_conclusao: { type: ["string", "null"], enum: ["biometria", "us_precoce", "biometria_e_us_precoce", null] },
     achados_adicionais: str,
     itens_conclusao_livres: { type: ["array", "null"], items: { type: "string" } },
     cervicometria: CERVICOMETRIA_ADDON_JSON_SCHEMA,
@@ -396,6 +400,15 @@ REGRAS:
    "N semanas" sem dias: dias = 0 em ig_dias, primeira_us_ig_dias e
    ig_referencia_hoje_dias, quando houver semanas ditadas para o respectivo
    campo. Sem IG ditada, não preencher semanas/dias.
+7c. DATAÇÃO ESCOLHIDA: datacao_pedido = "corrigir" se pedir corrigir pela primeira US;
+    "relacionar" se pedir relacionar/correlacionar/comparar com a primeira US ou
+    ditar "pela biometria atual, devendo ser corrigida…"; "manter_biometria" se
+    pedir manter a biometria; sem pedido explícito → null. datacao_conclusao é
+    opção da Web: envie null no ditado, não escolha um modo por conta própria.
+    ig_semanas/ig_dias continua IG biométrica; "hoje com…" junto da primeira US
+    vai em ig_referencia_hoje_semanas/dias. IG pela DUM/ultrassonografia precoce
+    estruturada é referência atualizada, com referencia_fonte correspondente.
+    Não invente data_exame: o código recebe a data de geração separadamente.
 8. achados_adicionais: SOMENTE malformações ou ALTERAÇÕES patológicas reais, nas
    palavras do médico. NUNCA coloque aqui frases de NORMALIDADE redundantes
    ("sem descolamentos", "movimentos e tônus presentes", "líquido normal",
@@ -449,7 +462,8 @@ function formatIg(semanas: number | null, dias: number | null): string {
  * → computeIg devolve só a biometria (byte-idêntico ao formatIg legado). Morfo
  * é sempre feto único → lead simples "Gestação em torno de ".
  */
-function igResultMorfo(f: MorfologicoFindings, enabled: boolean): IgComputed {
+function igResultMorfo(f: MorfologicoFindings, enabled: boolean, options?: IgRenderOptions): IgComputed {
+  enabled = enabled || Boolean(options?.datacaoConclusao || f.datacao_conclusao);
   const raw: IgRawFields = {
     biometriaSemanas: f.ig_semanas,
     biometriaDias: f.ig_dias,
@@ -462,11 +476,14 @@ function igResultMorfo(f: MorfologicoFindings, enabled: boolean): IgComputed {
     igRefHojeDias: enabled ? f.ig_referencia_hoje_dias : null,
     referenciaFonte: enabled ? f.referencia_fonte : null,
     corrigirComando: enabled ? f.corrigir_ig : null,
+    datacaoPedido: enabled ? f.datacao_pedido : null,
   };
   return computeIg(
     buildIgInput(raw, {
       leadAncora: "Gestação em torno de ",
       leadBase: "Gestação em torno de ",
+      datacaoConclusao: options?.datacaoConclusao ?? f.datacao_conclusao ?? undefined,
+      dataGeracao: options?.dataGeracao ?? dataGeracaoSaoPaulo(),
     }),
   );
 }
@@ -943,8 +960,8 @@ function comentariosMorfoCom(extras: Array<string | null>): string {
   );
 }
 
-function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
-  const ig = igResultMorfo(f, igCorrection);
+function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: IgRenderOptions & { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
+  const ig = igResultMorfo(f, igCorrection, dopplerOptions);
   const vitalidade = vitalidadeClassicaMorfo(f);
   const liquido = liquidoMorfo(f);
   const anatomiaPrecoce = anatomiaPrecoceMorfo(f);
@@ -1016,8 +1033,8 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
   return assemble("ULTRASSONOGRAFIA MORFOLÓGICA DO PRIMEIRO TRIMESTRE", f, aspectos, conclusao, ig.fraseReferencia, { ...dopplerOptions, uterinas: comUterinas });
 }
 
-function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
-  const ig = igResultMorfo(f, igCorrection);
+function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: IgRenderOptions & { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
+  const ig = igResultMorfo(f, igCorrection, dopplerOptions);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
@@ -1097,7 +1114,7 @@ function assemble(
   aspectos: string[],
   conclusao: string[],
   fraseReferencia: string | null = null,
-  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
+  dopplerOptions?: IgRenderOptions & { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): string {
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     aspectos.push(`\n${f.achados_adicionais.trim()}`);
@@ -1140,7 +1157,7 @@ function assemble(
 export function renderMorfologico(
   f: MorfologicoFindings,
   _prefs?: unknown,
-  opts?: { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null; umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
+  opts?: IgRenderOptions & { objetivo?: boolean; igCorrection?: boolean; golfBall?: GolfBall | null; umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): string {
   const igc = opts?.igCorrection ?? false;
   const g = opts?.golfBall ?? null;
@@ -1149,7 +1166,7 @@ export function renderMorfologico(
   if (g && f.achados_adicionais) {
     f = { ...f, achados_adicionais: stripGolfBallEcho(f.achados_adicionais) || null };
   }
-  const dopplerOptions = { umbilicalSafety: opts?.umbilicalSafety, rawInput: opts?.rawInput };
+  const dopplerOptions = { datacaoConclusao: opts?.datacaoConclusao, dataGeracao: opts?.dataGeracao, umbilicalSafety: opts?.umbilicalSafety, rawInput: opts?.rawInput };
   if (opts?.objetivo) return renderMorfologicoObjetivo(f, igc, g, dopplerOptions);
   if (f.trimestre === "1t") return render1t(f, igc, g, dopplerOptions);
   return render2t3t(f, f.trimestre === "3t", igc, g, dopplerOptions);
@@ -1221,7 +1238,7 @@ function assembleObj(
   achados: string[],
   impressao: string[],
   fraseReferencia: string | null = null,
-  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
+  dopplerOptions?: IgRenderOptions & { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): string {
   if (f.achados_adicionais && f.achados_adicionais.trim() !== "") {
     achados.push(`\n${f.achados_adicionais.trim()}`);
@@ -1269,8 +1286,8 @@ function genitaliaFmt(g: string | null): string {
   return g.trim();
 }
 
-function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
-  const ig = igResultMorfo(f, igCorrection);
+function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: IgRenderOptions & { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
+  const ig = igResultMorfo(f, igCorrection, dopplerOptions);
   const vitalidade = vitalidadeClassicaMorfo(f);
   const liquido = liquidoMorfo(f);
   const anatomiaPrecoce = anatomiaPrecoceMorfo(f);
@@ -1350,8 +1367,8 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
   );
 }
 
-function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
-  const ig = igResultMorfo(f, igCorrection);
+function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection = false, golfBall: GolfBall | null = null, dopplerOptions?: IgRenderOptions & { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean }): string {
+  const ig = igResultMorfo(f, igCorrection, dopplerOptions);
   const titulo = terceiro
     ? "ULTRASSONOGRAFIA MORFOLÓGICA DO TERCEIRO TRIMESTRE"
     : "ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE";
@@ -1405,7 +1422,7 @@ export function renderMorfologicoObjetivo(
   f: MorfologicoFindings,
   igCorrection = false,
   golfBall: GolfBall | null = null,
-  dopplerOptions?: { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
+  dopplerOptions?: IgRenderOptions & { umbilicalSafety?: boolean; rawInput?: string; /** 1º trimestre: IP das uterinas ditado, sem módulo Doppler. */ uterinas?: boolean },
 ): string {
   if (f.trimestre === "1t") return render1tObj(f, igCorrection, golfBall, dopplerOptions);
   return render2t3tObj(f, f.trimestre === "3t", igCorrection, golfBall, dopplerOptions);

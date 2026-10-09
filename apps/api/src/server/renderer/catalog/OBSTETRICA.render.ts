@@ -8,7 +8,8 @@
  *
  * Ainda NÃO é chamado pelo pipeline.
  */
-import { buildIgInput, computeIg } from "../ig";
+import { temEmbriaoNaoVisualizado, blocoGestacaoInicial, preambuloGestacaoInicial } from "../categories/gestacaoInicial";
+import { buildIgInput, computeIg, dataGeracaoSaoPaulo, type IgRenderOptions } from "../ig";
 import {
   COMENTARIOS_CERVICO,
   COMENTARIOS_DOPPLER,
@@ -30,7 +31,7 @@ export const FLAGS_OFF: ObstetricaFlags = {
   igCorrection: false, flexivel: false, grannum: false, objetivo: false,
 };
 
-export type RenderArgs = {
+export type RenderArgs = IgRenderOptions & {
   findings: ObstetricaFindings;
   flags?: Partial<ObstetricaFlags>;
   /** Catálogo já com a personalização aplicada (applyCustomization). */
@@ -99,7 +100,16 @@ function complementosDoExame(
 export function buildObstetricaDoc(args: RenderArgs): { doc: ReportDoc; catalog: Catalog<ObstetricaFindings> } {
   const f = args.findings;
   const flags = { ...FLAGS_OFF, ...args.flags };
+  if (args.datacaoConclusao || f.datacao_conclusao) flags.igCorrection = true;
   const catalog = args.catalog ?? OBSTETRICA_CLASSICO;
+  if (temEmbriaoNaoVisualizado(f)) {
+    const bloco = blocoGestacaoInicial(f);
+    const segments: Segment[] = [
+      ...bloco.corpo.map((text, i): Segment => ({ slotId: `inicial_corpo_${i}`, variantId: "visualizacao_explicita", kind: "corpo", text, origin: "computed" })),
+      ...bloco.conclusao.map((text, i): Segment => ({ slotId: `inicial_conclusao_${i}`, variantId: "visualizacao_explicita", kind: "conclusao", text, origin: "computed" })),
+    ];
+    return { catalog, doc: { catalogId: catalog.id, catalogVersao: catalog.versao, titulo: "ULTRASSONOGRAFIA OBSTÉTRICA", preLinhas: [], preambulo: preambuloGestacaoInicial(f), segments } };
+  }
   const gemelar = f.numero_fetos >= 2;
   const instancias = gemelar ? f.fetos.map((_, i) => rotuloFeto(f, i)) : ["A"];
 
@@ -118,10 +128,13 @@ export function buildObstetricaDoc(args: RenderArgs): { doc: ReportDoc; catalog:
         igRefHojeDias: flags.igCorrection ? f.ig_referencia_hoje_dias : null,
         referenciaFonte: flags.igCorrection ? f.referencia_fonte : null,
         corrigirComando: flags.igCorrection ? f.corrigir_ig : null,
+        datacaoPedido: flags.igCorrection ? f.datacao_pedido : null,
       },
       {
         leadAncora: gemelar ? `Gestação gemelar ${corionLead}em torno de ` : "Gestação em torno de ",
         leadBase: "Gestação em torno de ",
+        datacaoConclusao: args.datacaoConclusao ?? f.datacao_conclusao ?? undefined,
+        dataGeracao: args.dataGeracao ?? dataGeracaoSaoPaulo(),
       },
     ),
   );

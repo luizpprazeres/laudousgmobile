@@ -16,6 +16,7 @@ import {
 import {
   renderObstetrica,
   ObstetricaFindingsSchema,
+  ObstetricaFindingsObjectSchema,
   type ObstetricaFindings,
 } from "../../renderer/categories/OBSTETRICA";
 
@@ -133,7 +134,7 @@ check("MORFO: eco em achados_adicionais deduplicado (snippet substitui)", (() =>
 // ───────────── Integração: OBSTETRICA clássico (não-inicial) ─────────────
 
 const obsBase = {
-  ...nulled(ObstetricaFindingsSchema),
+  ...nulled(ObstetricaFindingsObjectSchema),
   numero_fetos: 1,
   gestacao_inicial: false,
   fetos: [],

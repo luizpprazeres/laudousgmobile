@@ -7,10 +7,8 @@
  * MORFOLOGICO e o overlay Doppler consomem este módulo — a regra fica num lugar
  * só, auditável e testável (é o 1º candidato à "tabela de decisão" declarativa).
  *
- * PRINCÍPIO (Dr. Domingos): a ÂNCORA é SEMPRE a biometria atual. A referência
- * precoce (1ª US ou DUM, escolha do médico) só entra na conclusão quando há
- * divergência > threshold. NÃO terceirizamos o dado mais importante a um exame
- * que não fizemos.
+ * W5 (Luiz, 09/10/2026): primeira US segue escolha explícita ou pedido do ditado.
+ * O limiar legado permanece somente para classificação/sanity históricos.
  *
  * Design: docs/epico-ig-deterministica-design.md.
  *
@@ -43,6 +41,16 @@ export function igThresholdDays(_biometriaSemanas: number | null): number {
 // Tipos
 // ---------------------------------------------------------------------------
 
+export const DATACAO_CONCLUSAO_MODOS = ["biometria", "us_precoce", "biometria_e_us_precoce"] as const;
+export type DatacaoConclusao = typeof DATACAO_CONCLUSAO_MODOS[number];
+export type DatacaoPedido = "corrigir" | "relacionar" | "manter_biometria";
+export type IgRenderOptions = { datacaoConclusao?: DatacaoConclusao; dataGeracao?: string };
+
+/** Data do contexto de geração, explicitamente entregue ao cálculo puro. */
+export function dataGeracaoSaoPaulo(instante = new Date()): string {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" }).format(instante);
+}
+
 export type IgFonte = "usg_precoce" | "dum";
 
 export interface IgReferencia {
@@ -58,6 +66,10 @@ export interface IgReferencia {
 }
 
 export interface IgComputeInput {
+  datacaoConclusao?: DatacaoConclusao;
+  datacaoPedido?: DatacaoPedido | null;
+  /** true apenas para corrigir_ig antigo explicitamente gravado como true. */
+  pedidoLegado?: boolean | null;
   /** Âncora: IG da biometria atual (ditada). */
   biometriaSemanas: number | null;
   biometriaDias: number | null;
@@ -251,7 +263,7 @@ export function computeRHoje(
 // Decisão Domingos + construção das frases
 // ---------------------------------------------------------------------------
 
-export function computeIg(input: IgComputeInput): IgComputed {
+function computeIgLegado(input: IgComputeInput): IgComputed {
   const {
     biometriaSemanas,
     biometriaDias: bDia,
@@ -367,6 +379,41 @@ export function computeIg(input: IgComputeInput): IgComputed {
   };
 }
 
+/** W5: frase escolhida; DUM sozinha não corrige a IG biométrica (decisão Luiz). */
+export function computeIg(input: IgComputeInput): IgComputed {
+  const legado = computeIgLegado(input);
+  if (!input.referencia) {
+    if (input.datacaoConclusao && input.datacaoConclusao !== "biometria") throw new Error("Modo de datação exige primeira US com referência válida.");
+    return legado;
+  }
+  if (input.referencia.fonte === "dum") {
+    const frase = `${input.leadAncora}${formatIgSemanasDias(input.biometriaSemanas, input.biometriaDias)}.`;
+    return { ...legado, conclusaoClassico: frase, conclusaoObjetivo: [frase] };
+  }
+  const r = legado.rHoje;
+  if (!r) {
+    if (input.datacaoConclusao && input.datacaoConclusao !== "biometria") throw new Error("Primeira US insuficiente para a datação escolhida.");
+    return legado;
+  }
+  // O sanity check continua bloqueando referência implausível no ditado automático.
+  // Uma escolha explícita mantém a fonte selecionada e o aviso de revisão no corpo.
+  if (legado.caso === "divergente_implausivel" && !input.datacaoConclusao) return legado;
+  const pedido = input.datacaoPedido;
+  const modo = input.datacaoConclusao ??
+    (input.biometriaSemanas === null ? "us_precoce" :
+      pedido === "manter_biometria" || (!pedido && input.pedidoLegado === false) ? "biometria" :
+      pedido === "relacionar" || (!pedido && input.pedidoLegado === true) ? "biometria_e_us_precoce" : "us_precoce");
+  const a = formatIgSemanasDias(input.biometriaSemanas, input.biometriaDias);
+  const ref = formatIgSemanasDias(r.semanas, r.dias);
+  // Só referência sempre a usa, inclusive quando a escolha antiga era biometria.
+  const frase = input.biometriaSemanas === null || modo === "us_precoce"
+    ? `${input.leadAncora}${ref}, corrigida pela ultrassonografia precoce.`
+    : modo === "biometria_e_us_precoce"
+      ? `${input.leadAncora}${a} pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com ${ref}.`
+      : `${input.leadAncora}${a}.`;
+  return { ...legado, conclusaoClassico: frase, conclusaoObjetivo: [frase] };
+}
+
 // ---------------------------------------------------------------------------
 // Adaptador: campos extraídos (renderer findings) → IgComputeInput
 // ---------------------------------------------------------------------------
@@ -375,6 +422,7 @@ export function computeIg(input: IgComputeInput): IgComputed {
 export const DEFAULT_CORRIGIR_IG = true;
 
 export interface IgRawFields {
+  datacaoPedido?: DatacaoPedido | null;
   biometriaSemanas: number | null;
   biometriaDias: number | null;
   dataExame: string | null;
@@ -399,13 +447,13 @@ export interface IgRawFields {
  * Monta o IgComputeInput a partir dos campos extraídos. Precedência da fonte de
  * referência: **1ª US precoce vence DUM** (US é clinicamente mais confiável —
  * review dex2 #6). `dum` segue sendo impresso como linha de cabeçalho pelo
- * renderer; aqui ele só vira FONTE de correção quando não há 1ª US.
+ * renderer; aqui ele permanece referência informativa quando não há 1ª US; não corrige a conclusão.
  *
  * Precedência do `corrigir`: comando de voz > toggle da conta > default (true).
  */
 export function buildIgInput(
   raw: IgRawFields,
-  opts: { leadAncora: string; leadBase: string; corrigirToggle?: boolean | null; sanityCheck?: boolean },
+  opts: { leadAncora: string; leadBase: string; corrigirToggle?: boolean | null; sanityCheck?: boolean; datacaoConclusao?: DatacaoConclusao; dataGeracao?: string },
 ): IgComputeInput {
   const temUsgData =
     raw.primeiraUsData !== null || raw.primeiraUsIgSemanas !== null;
@@ -448,7 +496,10 @@ export function buildIgInput(
     biometriaSemanas: raw.biometriaSemanas,
     biometriaDias: raw.biometriaDias,
     referencia,
-    dataExame: raw.dataExame,
+    dataExame: raw.dataExame ?? (fonte === "usg_precoce" ? opts.dataGeracao ?? null : null),
+    datacaoConclusao: opts.datacaoConclusao,
+    datacaoPedido: raw.datacaoPedido,
+    pedidoLegado: raw.corrigirComando,
     corrigir,
     leadAncora: opts.leadAncora,
     leadBase: opts.leadBase,

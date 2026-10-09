@@ -22,6 +22,7 @@
  */
 import {
   ObstetricaFindingsSchema,
+  ObstetricaFindingsObjectSchema,
   OBSTETRICA_JSON_SCHEMA,
   OBSTETRICA_EXTRACTION_PROMPT,
 } from "../categories/OBSTETRICA";
@@ -43,8 +44,8 @@ const schema = OBSTETRICA_JSON_SCHEMA as any;
 const fetoJson = schema.properties.fetos.items;
 
 /** Campos do Zod, que é a definição de "o que o renderer pode consumir". */
-const camposExame = Object.keys(ObstetricaFindingsSchema.shape);
-const fetoShape = (ObstetricaFindingsSchema.shape.fetos as any).element.shape;
+const camposExame = Object.keys(ObstetricaFindingsObjectSchema.shape);
+const fetoShape = (ObstetricaFindingsObjectSchema.shape.fetos as any).element.shape;
 const camposFeto = Object.keys(fetoShape);
 
 console.log("\nContrato de extração OBSTETRICA — Zod × JSON Schema × prompt\n");
@@ -113,7 +114,7 @@ function valoresZod(shape: any, campo: string): string[] | null {
 }
 for (const [origem, shape, json] of [
   ["feto", fetoShape, fetoJson.properties],
-  ["exame", ObstetricaFindingsSchema.shape, schema.properties],
+  ["exame", ObstetricaFindingsObjectSchema.shape, schema.properties],
 ] as const) {
   for (const c of Object.keys(shape)) {
     const zod = valoresZod(shape, c);
