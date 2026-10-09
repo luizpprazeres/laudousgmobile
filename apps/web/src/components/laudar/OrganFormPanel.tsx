@@ -6,7 +6,7 @@ import { companionConflictDisplay, markCompanionFieldTouched } from '@/lib/compa
 import { RenalMeasurementsFields } from './RenalMeasurementsFields'
 import { RenalFindingsCollection } from './RenalFindingsCollection'
 import { hasRenalMeasurementsGroup, RENAL_MEASUREMENT_KEYS } from './renalMeasurementsState'
-import { datacaoBrutaDaTela, hojeBR, lerDatacaoDaTela, migrarDatacaoLegada } from '@/lib/ig/computeIG'
+import { calcularIgDaReferencia, datacaoBrutaDaTela, fmtSD, hojeBR, lerDatacaoDaTela, migrarDatacaoLegada } from '@/lib/ig/computeIG'
 import {
   FCF_BRADICARDIA_MAX_BPM,
   FCF_INPUT_MAX_BPM,
@@ -204,37 +204,52 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
     const raw = datacaoBrutaDaTela(state)
     const reading = lerDatacaoDaTela(state)
     const byKey = new Map(schema.fields.map((field) => [field.key, field]))
-    const input = (key: 'dum_data' | 'us_data' | 'us_ig_sem' | 'us_ig_dias', half = false) => {
+    const input = (
+      key: 'dum_data' | 'us_data' | 'us_ig_sem' | 'us_ig_dias',
+      width: 'date' | 'weeks' | 'days',
+    ) => {
       const field = byKey.get(key)
       if (!field) return null
+      const widthClass = width === 'date' ? 'w-[9.25rem]' : width === 'weeks' ? 'w-[5.25rem]' : 'w-16'
       return (
-        <label key={key} className={`block min-w-0 ${half ? '' : 'col-span-2'}`}>
+        <label key={key} className={`block min-w-0 max-w-full ${widthClass}`}>
           <span className={MINI_LABEL_CLASS}>{field.label}</span>
           <input
             value={raw[key]}
-            inputMode={half ? 'numeric' : undefined}
+            inputMode="numeric"
+            maxLength={width === 'date' ? 10 : width === 'weeks' ? 2 : 1}
             onChange={(event) => setValue(key, event.target.value)}
             placeholder={field.placeholder}
-            className={TEXT_INPUT_CLASS}
+            className={`${TEXT_INPUT_CLASS} ${width === 'date' ? '' : 'text-center'}`}
           />
         </label>
       )
     }
     const both = reading.us_data !== null && reading.dum_data !== null
+    const calculated = reading.referencia && reading.hojeISO
+      ? calcularIgDaReferencia(reading.referencia, reading.hojeISO)
+      : null
+    const calculatedSource = reading.referencia?.tipo === 'us' ? 'pela 1ª US' : 'pela DUM'
     return (
       <section key="datacao-referencia" className={fieldCardClass}>
-        <div className="grid grid-cols-2 gap-1.5">
-          {input('dum_data')}
-          {input('us_data')}
-          {input('us_ig_sem', true)}
-          {input('us_ig_dias', true)}
+        <div className="flex flex-wrap items-end gap-1.5">
+          {input('dum_data', 'date')}
         </div>
+        <div className="mt-2 flex flex-wrap items-end gap-1.5">
+          {input('us_data', 'date')}
+          {input('us_ig_sem', 'weeks')}
+          {input('us_ig_dias', 'days')}
+        </div>
+        {calculated ? (
+          <p data-calculated-gestational-age role="status" className="mt-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[12px] font-semibold text-emerald-800 dark:bg-emerald-950/35 dark:text-emerald-200">
+            IG calculada {calculatedSource}: {fmtSD(calculated)}.
+            {both ? <span className="ml-1 font-normal">A 1ª US prevalece sobre a DUM.</span> : null}
+          </p>
+        ) : null}
         {reading.pendencias.length ? (
           <p role="alert" className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-300">
             {reading.pendencias.map((pendencia) => pendencia.motivo).join(' ')}
           </p>
-        ) : both ? (
-          <p role="status" className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">A 1ª US completa prevalece sobre a DUM na datação.</p>
         ) : null}
       </section>
     )
@@ -490,9 +505,27 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
       ) : null}
       {schema.id === 'ig' ? (
         <>
-          <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-1.5">
-            {schema.fields.slice(0, 2).map(renderField)}
-          </div>
+          <section className={`${fieldCardClass} w-fit max-w-full`}>
+            <span className={MINI_LABEL_CLASS}>IG pela biometria atual</span>
+            <div className="grid grid-cols-[5.25rem_4rem] gap-1.5">
+              {schema.fields.slice(0, 2).map((field, index) => {
+                const value = displayValue(field)
+                return (
+                  <label key={field.key} className="block min-w-0">
+                    <span className={MINI_LABEL_CLASS}>{index === 0 ? 'Semanas' : 'Dias'}</span>
+                    <input
+                      value={typeof value === 'string' ? value : ''}
+                      inputMode="numeric"
+                      maxLength={index === 0 ? 2 : 1}
+                      onChange={(event) => setValue(field.key, event.target.value)}
+                      placeholder={field.placeholder}
+                      className={`${TEXT_INPUT_CLASS} text-center`}
+                    />
+                  </label>
+                )
+              })}
+            </div>
+          </section>
           {obstetricDating ? renderDating() : schema.fields.slice(2).map(renderField)}
         </>
       ) : obstetricFluid ? renderFluid() : schema.fields.map(renderField)}

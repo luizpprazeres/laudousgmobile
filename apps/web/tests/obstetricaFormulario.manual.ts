@@ -24,7 +24,7 @@ import {
 import { morfologico } from '../src/lib/deterministic/organs/morfologico'
 import { dopplerObstetrico } from '../src/lib/deterministic/organs/dopplerObstetrico'
 import { adaptarObstetrica } from '../src/lib/catalog/obstetricaParaCatalogo'
-import { datacaoBrutaDaTela, hojeBR, lerDatacaoDaTela, migrarDatacaoLegada } from '../src/lib/ig/computeIG'
+import { calcularIgDaReferencia, datacaoBrutaDaTela, hojeBR, lerDatacaoDaTela, migrarDatacaoLegada } from '../src/lib/ig/computeIG'
 import { parseIgDatacaoCrescimento } from '../src/lib/calculators/intergrowthBiometry'
 
 let cases = 0
@@ -175,6 +175,20 @@ test('1ª US completa vence a DUM quando as duas estão completas', () => {
   const growth = parseIgDatacaoCrescimento(s.ig!)
   assert.equal(growth?.source, 'early-ultrasound')
   assert.equal(growth?.examDate, '2026-06-20')
+})
+
+test('IG exibida na tela é projetada pela DUM ou pela primeira US', () => {
+  assert.deepEqual(
+    calcularIgDaReferencia({ tipo: 'dum', dataISO: '2026-01-01' }, '2026-05-30'),
+    { semanas: 21, dias: 2 },
+  )
+  assert.deepEqual(
+    calcularIgDaReferencia(
+      { tipo: 'us', dataISO: '2026-01-12', ig: { semanas: 8, dias: 2 } },
+      '2026-05-30',
+    ),
+    { semanas: 28, dias: 0 },
+  )
 })
 
 test('frase local: "Primeira ultrassonografia realizada em ..."', () => {

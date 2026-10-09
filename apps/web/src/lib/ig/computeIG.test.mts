@@ -1,5 +1,10 @@
 /** Golden da fundação de IG. Rodar: npx tsx src/lib/ig/computeIG.test.mts */
-import { computeIG } from './computeIG'
+import * as importedIgModule from './computeIG'
+
+// Node 22 expõe módulos .ts CommonJS como `default` quando o chamador é .mts;
+// o runner da suíte os expõe como namespace. Aceita os dois formatos.
+const igModule = (importedIgModule as typeof importedIgModule & { default?: typeof importedIgModule }).default ?? importedIgModule
+const { calcularIgDaReferencia, computeIG } = igModule
 
 let pass = 0, fail = 0
 const check = (name: string, cond: boolean, detail?: string) => {
@@ -51,6 +56,14 @@ const e = computeIG({
 check('DUM → ref hoje 21s2d', e.referenciaHojeSD?.semanas === 21 && e.referenciaHojeSD?.dias === 2, JSON.stringify(e.referenciaHojeSD))
 check('DUM div ≤5 → só biometria', e.igConclusao === 'Gestação em torno de 21 semanas e 3 dias.', `${e.igConclusao} (div=${e.divergenciaDias})`)
 check('DUM → frase DUM', /Data da última menstruação em 01\/01\/2026/.test(e.frase1aUS ?? ''), e.frase1aUS)
+
+const visualDum = calcularIgDaReferencia({ tipo: 'dum', dataISO: '2026-01-01' }, '2026-05-30')
+check('projeção visual pela DUM', visualDum?.semanas === 21 && visualDum?.dias === 2, JSON.stringify(visualDum))
+const visualUs = calcularIgDaReferencia(
+  { tipo: 'us', dataISO: '2026-01-12', ig: { semanas: 8, dias: 2 } },
+  '2026-05-30',
+)
+check('projeção visual pela 1ª US', visualUs?.semanas === 28 && visualUs?.dias === 0, JSON.stringify(visualUs))
 
 console.log(`\n${pass}/${pass + fail} PASS` + (fail ? ` — ${fail} FAIL` : ''))
 if (fail) process.exit(1)

@@ -50,7 +50,7 @@ type GridProps = {
   /** Seção destacada (ex.: a que o celular acabou de preencher). */
   highlightedId?: string | null
   /** Layout clínico especializado sem alterar o estado ou os módulos. */
-  layout?: 'default' | 'mammary' | 'abdomen-total' | 'pelvis'
+  layout?: 'default' | 'mammary' | 'abdomen-total' | 'pelvis' | 'obstetric'
 }
 
 export function WorkspaceSectionGrid({
@@ -104,6 +104,31 @@ export function WorkspaceSectionGrid({
         : groupedCard(planned.id, planned.label, planned.sections, planned.size === 'wide'))
     }
     return items.map((section) => {
+      if (layout === 'obstetric') {
+        const dating = items.find((item) => item.id === 'ig')
+        const fluid = items.find((item) => item.id === 'liquido')
+        const placenta = items.find((item) => item.id === 'placenta')
+        const hasOverview = Boolean(dating && fluid && placenta)
+        if (hasOverview && (section.id === 'liquido' || section.id === 'placenta')) return null
+        if (hasOverview && section.id === 'ig') {
+          return (
+            <div
+              key={`${scopeKey}:obstetric-overview`}
+              data-obstetric-overview
+              data-card-size="full"
+              className="grid min-w-0 items-stretch gap-3 min-[900px]:grid-cols-[minmax(19rem,0.9fr)_minmax(22rem,1.1fr)]"
+            >
+              <div data-obstetric-overview-left className="grid min-w-0 content-start gap-3">
+                {card(dating!)}
+                {card(fluid!)}
+              </div>
+              <div className="min-w-0 [&>[data-organ-card]]:h-full">
+                {card(placenta!)}
+              </div>
+            </div>
+          )
+        }
+      }
       if (layout === 'pelvis') {
         const ovaries = ['ovario_direito', 'ovario_esquerdo'].map(id => items.find(item => item.id === id))
         const paired = ovaries.every(Boolean)

@@ -55,6 +55,17 @@ export function fmtSD(sd: SemanasDias): string {
 function daysBetween(aISO: string, bISO: string): number {
   return Math.round((Date.parse(bISO) - Date.parse(aISO)) / DIA_MS)
 }
+
+/** Projeta uma DUM ou primeira US até a data do exame. */
+export function calcularIgDaReferencia(
+  referencia: Referencia,
+  dataExameISO: string,
+): SemanasDias | null {
+  const elapsed = daysBetween(referencia.dataISO, dataExameISO)
+  if (!Number.isFinite(elapsed) || elapsed < 0) return null
+  const total = referencia.tipo === 'us' ? sdToDays(referencia.ig) + elapsed : elapsed
+  return daysToSD(total)
+}
 /** yyyy-mm-dd → dd/mm/aaaa. */
 export function formatBR(iso: string): string {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/)
@@ -66,13 +77,8 @@ export function computeIG(input: IGInput): IGResult {
   const bioDays = sdToDays(biometria)
   const bioSD = daysToSD(bioDays)
 
-  let refTodayDays: number | undefined
-  if (referencia) {
-    const elapsed = daysBetween(referencia.dataISO, hojeISO)
-    refTodayDays =
-      referencia.tipo === 'us' ? sdToDays(referencia.ig) + elapsed : elapsed
-  }
-  const refSD = refTodayDays !== undefined ? daysToSD(refTodayDays) : undefined
+  const refSD = referencia ? calcularIgDaReferencia(referencia, hojeISO) ?? undefined : undefined
+  const refTodayDays = refSD ? sdToDays(refSD) : undefined
   const divergencia =
     refTodayDays !== undefined ? Math.abs(bioDays - refTodayDays) : 0
   const fonte =

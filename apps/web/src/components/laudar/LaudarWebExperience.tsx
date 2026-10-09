@@ -2011,6 +2011,8 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
                   ? 'mammary'
                   : categoria === 'ABDOMEN_TOTAL'
                     ? 'abdomen-total'
+                    : categoria === 'OBSTETRICA'
+                      ? 'obstetric'
                     : isPelvis
                       ? 'pelvis'
                       : 'default'
