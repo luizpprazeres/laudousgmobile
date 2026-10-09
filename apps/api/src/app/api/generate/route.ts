@@ -114,6 +114,19 @@ import {
 } from "@/server/prompts/version";
 import { clinicalRendererFallbackBlocked, canonicalClinicalCategory, structuredClinicalIntent, earlyWriterV2Allowed } from "@/server/clinicalReports/fallbackPolicy";
 import { isDopplerRenalAuditError } from "@/server/pipeline/dopplerRenalWriterAudit";
+import { isLivreRoutingError, LivreRoutingError } from "@/server/ai/anthropic";
+import { resolveLivreWriterModel } from "@/server/pipeline/modelResolver";
+import {
+  buildLivreRoutingMetadata,
+  eligibleRouterCategories,
+  LIVRE_ROUTED_GENERATION_PATH,
+  readPersistedLivreRouting,
+  routedCategoryIncompatible,
+  routingFailure,
+  runLivreRouter,
+  shouldRouteFreeCategory,
+  type LivreRoutingMetadata,
+} from "@/server/pipeline/livreRouter";
 
 // Recomendações do codex já incorporadas:
 //  - runtime "nodejs" (NÃO edge — gpt streaming + postgres + ws Deepgram)
@@ -197,6 +210,15 @@ export async function POST(req: Request) {
         : normalizeAsrTranscript(parsed.data.consolidated_transcript),
   };
   const generationMode = reqInput.mode;
+  // LAUDO LIVRE ROTEADO: só com categoria ORIGINAL = LIVRE, opt-in do request
+  // e flag do servidor. Fora disso, nada abaixo muda (selectedHint ===
+  // category_hint e livreRouting fica null).
+  const livreRoutingRequested = shouldRouteFreeCategory({
+    originalCategoryHint: parsed.data.category_hint,
+    normalizedCategoryHint: reqInput.category_hint,
+    routeFreeCategory: parsed.data.route_free_category,
+    enabledFlag: env().LIVRE_ROUTER_ENABLED,
+  });
   const initialGenerationPath = resolveGenerationPath({
     mode: generationMode,
     categoryCode: reqInput.category_hint ?? "ABDOMEN_TOTAL",
@@ -273,6 +295,40 @@ export async function POST(req: Request) {
      */
     let laudoEntregue = false;
     let currentStage: GenerationAuditStage = "request";
+    /**
+     * Categoria tratada "como se tivesse sido escolhida diretamente". Igual ao
+     * category_hint, exceto no Laudo Livre roteado, onde passa a ser a
+     * categoria identificada pelo roteador. `livreRouting` é o metadata
+     * auditável (sem PHI) que acompanha TODA gravação de metadata do report.
+     */
+    let selectedHint = reqInput.category_hint;
+    let livreRouting: LivreRoutingMetadata | null = null;
+    const withLivreRouting = (
+      metadata?: Record<string, unknown>,
+    ): Record<string, unknown> | undefined =>
+      livreRouting ? { ...(metadata ?? {}), ...livreRouting } : metadata;
+    const blockLivreRouting = async (routingErr: LivreRoutingError) => {
+      livreRouting = {
+        ...(livreRouting ??
+          buildLivreRoutingMetadata({ decision: null, model: env().LIVRE_HAIKU_MODEL })),
+        routing_error_code: routingErr.code,
+      };
+      outcome = "blocked";
+      auditState.errorCode = routingErr.code;
+      auditState.errorMessage = routingErr.message;
+      auditState.errorStage = currentStage;
+      console.warn(
+        `[generate ${reportId}] livre_routing blocked: ${routingErr.code} status=${livreRouting.routing_status} routed=${livreRouting.routed_category ?? "-"}`,
+      );
+      await finalizeReport({
+        reportId,
+        status: "blocked",
+        generatedOutput: "",
+        sanityResult: null,
+        metadata: withLivreRouting(),
+      });
+      emit({ type: "error", ts: nowIso(), code: routingErr.code, message: routingErr.message });
+    };
 
     try {
       emit({ type: "open", ts: nowIso(), report_id: reportId });
@@ -364,6 +420,26 @@ export async function POST(req: Request) {
           return;
         }
         auditState.reportId = reportId;
+        // Retomada de um Laudo Livre ROTEADO: a categoria roteada persistida é
+        // a escolha; não reroteia e não volta ao prompt livre. Com a flag
+        // desligada a retomada falha explicitamente (não há como honrá-la).
+        const persistedLivreRouting = readPersistedLivreRouting(existing.generationMetadata);
+        if (persistedLivreRouting) {
+          if (env().LIVRE_ROUTER_ENABLED !== "true") {
+            // Sem `throw`: o catch genérico marcaria o report como descartado,
+            // e ele continua retomável quando a flag voltar.
+            outcome = "error";
+            errorMessage =
+              "Este laudo foi gerado pelo Laudo Livre roteado, que está desligado. Gere novamente escolhendo a categoria.";
+            auditState.errorCode = "LIVRE_ROUTER_DISABLED";
+            auditState.errorMessage = errorMessage;
+            auditState.errorStage = currentStage;
+            emit({ type: "error", ts: nowIso(), code: "LIVRE_ROUTER_DISABLED", message: errorMessage });
+            return;
+          }
+          livreRouting = persistedLivreRouting;
+          selectedHint = persistedLivreRouting.routed_category ?? undefined;
+        }
         if (!existing.structuredFindings) {
           outcome = "error";
           errorMessage = `Report ${reportId} não tem structured_findings — não pode resumir.`;
@@ -432,7 +508,7 @@ export async function POST(req: Request) {
           reqInput.consolidated_transcript ?? reqInput.raw_input,
           reportId,
           categoriesInfo.codes,
-          reqInput.category_hint,
+          selectedHint,
           reqInput.doppler_mode,
         );
         auditState.category = effectiveCategory;
@@ -555,6 +631,49 @@ export async function POST(req: Request) {
 
         // ----- 1. Structurer (ou FAST-PATH determinístico) -----
         currentStage = "structurer";
+        // ----- 0b. LAUDO LIVRE ROTEADO: identifica o exame (Anthropic) -----
+        // Todo resultado que não seja `routed` com categoria compatível BLOQUEIA
+        // com erro explícito — sem fallback para o prompt livre nem OpenAI.
+        if (livreRoutingRequested) {
+          const transcript = reqInput.consolidated_transcript ?? reqInput.raw_input;
+          try {
+            const routed = await runLivreRouter({
+              transcript,
+              categories: eligibleRouterCategories(
+                categoriesInfo.codes,
+                categoriesInfo.labels,
+                env().LIVRE_ROUTER_EXCLUDED_CATEGORIES,
+              ),
+              signal,
+            });
+            livreRouting = buildLivreRoutingMetadata({ decision: routed.decision, model: routed.model });
+            console.log(
+              `[generate ${reportId}] livre_routing: status=${routed.decision.status} routed=${routed.decision.category ?? "-"} confidence=${routed.decision.confidence} model=${routed.model} latency=${routed.latencyMs}ms`,
+            );
+            if (routed.decision.status !== "routed" || !routed.decision.category) {
+              throw routingFailure(routed.decision, categoriesInfo.labels);
+            }
+            selectedHint = routed.decision.category;
+            // Mesma trava que a escolha direta da obstétrica simples aplica.
+            const routedConflict = obstetricaPlainConflictWarning(selectedHint, transcript);
+            if (routedConflict) {
+              throw new LivreRoutingError("LIVRE_ROUTE_INCOMPATIBLE", routedConflict.message);
+            }
+            // Persiste a decisão ANTES do writer. Se o cliente desconectar no
+            // meio do stream, o rascunho continua sabendo que nasceu em LIVRE
+            // e deve retomar com a mesma categoria e o mesmo provedor, sem cair
+            // no writer direto/OpenAI por falta de metadata.
+            await markReportStatus({
+              reportId,
+              status: "draft",
+              metadata: withLivreRouting(),
+            });
+          } catch (routingErr) {
+            if (!isLivreRoutingError(routingErr)) throw routingErr;
+            await blockLivreRouting(routingErr);
+            return;
+          }
+        }
         if (fastPath) {
           // FAST-PATH: a categoria vem do hint (98,5% dos requests trazem; em
           // 99,5% bate com a detecção do structurer). Pula a chamada do
@@ -562,13 +681,31 @@ export async function POST(req: Request) {
           // guards pós-writer protegem as regras. effectiveCategory já é válido
           // (draftCategory foi clampado a um código conhecido).
           effectiveCategory = resolveEffectiveCategory(
-            draftCategory,
+            livreRouting && selectedHint ? selectedHint : draftCategory,
             reqInput.consolidated_transcript ?? reqInput.raw_input,
             reportId,
             categoriesInfo.codes,
-            reqInput.category_hint,
+            selectedHint,
             reqInput.doppler_mode,
           );
+          // O roteado pode IDENTIFICAR uma categoria de contrato fechado
+          // (renderer/writer dedicado) ou ser remapeado pelos guards; o writer
+          // genérico nunca a escreve. Erro explícito: escolher a categoria.
+          if (
+            livreRouting &&
+            (!categoriesInfo.codes.has(effectiveCategory) ||
+              effectiveCategory === "LIVRE" ||
+              effectiveCategory === "TESTE" ||
+              routedCategoryIncompatible(selectedHint ?? "", effectiveCategory))
+          ) {
+            await blockLivreRouting(
+              new LivreRoutingError(
+                "LIVRE_ROUTE_INCOMPATIBLE",
+                `O exame identificado (${categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory}) exige o modelo dedicado da categoria. Escolha a categoria diretamente.`,
+              ),
+            );
+            return;
+          }
           findings = {
             schema_version: "v1",
             categoria_detectada: effectiveCategory,
@@ -607,7 +744,7 @@ export async function POST(req: Request) {
           reqInput.consolidated_transcript ?? reqInput.raw_input,
           reportId,
           categoriesInfo.codes,
-          reqInput.category_hint,
+          selectedHint,
           reqInput.doppler_mode,
         );
         auditState.category = effectiveCategory;
@@ -644,7 +781,7 @@ export async function POST(req: Request) {
             status: "blocked",
             generatedOutput: "",
             sanityResult: null,
-            metadata: { detected_category: findings.categoria_detectada },
+            metadata: withLivreRouting({ detected_category: findings.categoria_detectada }),
           });
           emit({
             type: "error",
@@ -692,7 +829,7 @@ export async function POST(req: Request) {
         outcome = "clarify";
         await setReportAwaitingClarify({
           reportId,
-          metadata: pendingClarifyMetadata(validator.questions),
+          metadata: withLivreRouting(pendingClarifyMetadata(validator.questions)) ?? {},
         });
         emit({
           type: "clarify",
@@ -716,7 +853,7 @@ export async function POST(req: Request) {
           status: "blocked",
           generatedOutput: "",
           sanityResult: null,
-          metadata: { validator_issues: validator.issues },
+          metadata: withLivreRouting({ validator_issues: validator.issues }),
         });
         emit({
           type: "error",
@@ -727,15 +864,25 @@ export async function POST(req: Request) {
         return;
       }
 
-      const generationPath = resolveGenerationPath({
-        mode: generationMode,
-        categoryCode: effectiveCategory,
-      });
-      const modelConfig = resolveWriterModel({
-        mode: generationMode,
-        categoryCode: effectiveCategory,
-        userId: user.id,
-      });
+      // Livre roteado: writer puro do ditado cru com guards COMPLETOS e
+      // Haiku pela origem Livre (modo hard não se aplica a esta jornada).
+      // A categoria escolhida diretamente mantém caminho e modelo atuais.
+      const generationPath = livreRouting
+        ? LIVRE_ROUTED_GENERATION_PATH
+        : resolveGenerationPath({
+            mode: generationMode,
+            categoryCode: effectiveCategory,
+          });
+      const modelConfig = livreRouting
+        ? resolveLivreWriterModel()
+        : resolveWriterModel({
+            mode: generationMode,
+            categoryCode: effectiveCategory,
+            userId: user.id,
+          });
+      if (livreRouting) {
+        livreRouting = { ...livreRouting, writer_model: modelConfig.model };
+      }
       auditState.modelWriter = modelConfig.model;
       console.log(
         `[generate ${reportId}] model resolved: provider=${modelConfig.provider} model=${modelConfig.model} credential=${modelConfig.credentialRef}`,
@@ -757,7 +904,7 @@ export async function POST(req: Request) {
       const ragT0 = Date.now();
       const skipped: RagBlockForPrompt[] = [];
       const queryText = "[deterministic_bundle]";
-      const dopplerMode = resolveDopplerMode(reqInput.category_hint ?? effectiveCategory, reqInput.doppler_mode);
+      const dopplerMode = resolveDopplerMode(selectedHint ?? effectiveCategory, reqInput.doppler_mode);
       const writerExam = resolveWriterExam(effectiveCategory, dopplerMode);
       // DET-3 + DET-5 ONDA 2: numa única query, a variante preferida pela conta
       // (usada só quando o ditado não decide por contexto) E os toggles do
@@ -813,13 +960,13 @@ export async function POST(req: Request) {
           status: "blocked",
           generatedOutput: "",
           sanityResult: null,
-          metadata: {
+          metadata: withLivreRouting({
             bundle_error: {
               code: bundle.error.code,
               category_code: effectiveCategory,
               writing_style_id: effectiveWritingStyleId,
             },
-          },
+          }),
         });
         emit({
           type: "error",
@@ -895,8 +1042,8 @@ export async function POST(req: Request) {
       // OFF/hard mode, nem perder seu contrato pelo palpite do structurer.
       if (
         (clinicalRendererFallbackBlocked(effectiveCategory) && (!useRenderer || !categoriesInfo.codes.has(effectiveCategory))) ||
-        (clinicalRendererFallbackBlocked(reqInput.category_hint ?? "") &&
-          (!useRenderer || effectiveCategory !== reqInput.category_hint))
+        (clinicalRendererFallbackBlocked(selectedHint ?? "") &&
+          (!useRenderer || effectiveCategory !== selectedHint))
       ) {
         throw new Error("Structured clinical renderer unavailable or category changed; free writer blocked.");
       }
@@ -952,7 +1099,7 @@ export async function POST(req: Request) {
         ? runRendererStream({
             categoryCode: requestedExamCategory(effectiveCategory, dopplerMode) ?? effectiveCategory,
             dopplerMode,
-            includeDoppler: reqInput.category_hint === "OBSTETRICA" ? false : undefined,
+            includeDoppler: selectedHint === "OBSTETRICA" ? false : undefined,
             rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
             templateBody: rendererTemplateBody ?? "",
             ragBlocks: blocks,
@@ -1044,7 +1191,7 @@ export async function POST(req: Request) {
           })
         : runWriterStream({
             dopplerMode,
-            includeDoppler: reqInput.category_hint === "OBSTETRICA" ? false : undefined,
+            includeDoppler: selectedHint === "OBSTETRICA" ? false : undefined,
             findings,
             ragBlocks: blocks,
             writingStyleCode: styleRow.code,
@@ -1053,7 +1200,7 @@ export async function POST(req: Request) {
               categoriesInfo.labels.get(effectiveCategory) ?? effectiveCategory,
             // FAST-PATH: writer escreve direto do ditado cru (sem achados estruturados).
             // LIVRE/TESTE são SEMPRE writer puro do ditado (não dependem do fastPath).
-            rawUserMessage: (fastPath || isFreeWriterCategory)
+            rawUserMessage: (fastPath || isFreeWriterCategory || livreRouting)
               ? reqInput.consolidated_transcript ?? reqInput.raw_input
               : undefined,
             sourceTranscript:
@@ -1084,7 +1231,7 @@ export async function POST(req: Request) {
             break;
           }
           finalText += next.value;
-          if (reqInput.category_hint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
+          if (selectedHint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
         }
       } catch (rendererErr) {
         // A auditoria renal roda antes do primeiro token. Cair no writer genérico
@@ -1114,7 +1261,7 @@ export async function POST(req: Request) {
         });
         const fallbackGen = runWriterStream({
           dopplerMode,
-          includeDoppler: reqInput.category_hint === "OBSTETRICA" ? false : undefined,
+          includeDoppler: selectedHint === "OBSTETRICA" ? false : undefined,
           findings,
           ragBlocks: blocks,
           writingStyleCode: styleRow.code,
@@ -1136,7 +1283,7 @@ export async function POST(req: Request) {
             break;
           }
           finalText += next.value;
-          if (reqInput.category_hint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
+          if (selectedHint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
         }
       }
       finalText = writerResult?.fullText ?? finalText;
@@ -1307,7 +1454,7 @@ export async function POST(req: Request) {
       // preventiva via prompts. Bloqueio = UX confusa.
       // S21: roda APÓS emit done — usuário não espera os ~2-5s da sanity IA.
       currentStage = "sanity";
-      const plainOutputWarning = obstetricaPlainOutputWarning(reqInput.category_hint, finalText);
+      const plainOutputWarning = obstetricaPlainOutputWarning(selectedHint, finalText);
       if (plainOutputWarning) throw new Error(plainOutputWarning.message);
       const deterministicSanity = runDeterministicSanity({
         findings,
@@ -1338,12 +1485,12 @@ export async function POST(req: Request) {
         status: "generated",
         generatedOutput: finalText,
         sanityResult: deterministicOnlySanity,
-        metadata: {
+        metadata: withLivreRouting({
           ...(pipelineWarnings.length > 0 ? { pipeline_warnings: pipelineWarnings } : {}),
           ...(dopplerMode
             ? { selected_category: "DOPPLER_OBSTETRICO", doppler_mode: dopplerMode }
             : {}),
-        },
+        }),
       });
       // Apple Watch / clientes "publicação direta" — toca updated_at do report
       // para empurrar pro topo do feed da Sala do Auxiliar antes do "done" e da
@@ -1365,7 +1512,7 @@ export async function POST(req: Request) {
         }
       }
 
-      if (reqInput.category_hint === "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: finalText });
+      if (selectedHint === "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: finalText });
       emit({
         type: "done",
         ts: nowIso(),
@@ -1449,10 +1596,11 @@ export async function POST(req: Request) {
           status: "generated",
           generatedOutput: finalText,
           sanityResult: sanity,
-          metadata:
+          metadata: withLivreRouting(
             pipelineWarnings.length > 0
               ? { pipeline_warnings: pipelineWarnings }
               : undefined,
+          ),
         });
         emit({ type: "sanity", ts: nowIso(), result: sanity });
         if (sanity.verdict !== "ok") {
@@ -1485,13 +1633,17 @@ export async function POST(req: Request) {
       } else {
         outcome = "error";
         errorMessage = err instanceof Error ? err.message : String(err);
-        auditState.errorCode = "PIPELINE_FAILURE";
+        // Falhas da jornada Livre roteada (provedor, recusa, truncamento...)
+        // carregam código próprio; o resto segue PIPELINE_FAILURE.
+        const errorCode = isLivreRoutingError(err) ? err.code : "PIPELINE_FAILURE";
+        if (livreRouting) livreRouting = { ...livreRouting, routing_error_code: errorCode };
+        auditState.errorCode = errorCode;
         auditState.errorMessage = errorMessage;
         auditState.errorStage = currentStage;
         emit({
           type: "error",
           ts: nowIso(),
-          code: "PIPELINE_FAILURE",
+          code: errorCode,
           message: errorMessage,
         });
 
@@ -1513,7 +1665,11 @@ export async function POST(req: Request) {
         // o médico já recebeu.
         try {
           if (decisao.marcaDescartado) {
-            await markReportStatus({ reportId, status: "discarded" });
+            await markReportStatus({
+              reportId,
+              status: "discarded",
+              metadata: withLivreRouting(),
+            });
           }
         } catch (e) {
           // Best-effort: se o banco caiu, o erro original é o que importa
@@ -1524,10 +1680,16 @@ export async function POST(req: Request) {
       }
     } finally {
       auditState.totalDurationMs = Date.now() - t0;
-      auditState.openaiCostUsd = estimateCost(
-        auditState.openaiInputTokens ?? 0,
-        auditState.openaiOutputTokens ?? 0,
-      );
+      // A coluna e o estimador atuais são específicos da tabela de preços da
+      // OpenAI. Na jornada Livre roteada, gravar esse número como se fosse
+      // custo Anthropic produziria uma auditoria falsa; fica nulo até a
+      // auditoria ganhar provider + preços próprios do Haiku.
+      auditState.openaiCostUsd = livreRouting
+        ? null
+        : estimateCost(
+            auditState.openaiInputTokens ?? 0,
+            auditState.openaiOutputTokens ?? 0,
+          );
       // Sempre fechar a generation_run pra ter auditoria
       if (runId) {
         try {

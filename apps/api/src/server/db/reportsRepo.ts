@@ -85,11 +85,17 @@ export async function finalizeReport(args: {
 export async function markReportStatus(args: {
   reportId: string;
   status: ReportStatus;
+  /** Opcional: grava o metadata de auditoria junto (ex.: roteamento do Livre). */
+  metadata?: Record<string, unknown>;
 }): Promise<void> {
   const db = getDbClient();
   await db
     .update(schema.reports)
-    .set({ status: args.status, updatedAt: new Date() })
+    .set({
+      status: args.status,
+      ...(args.metadata ? { generationMetadata: args.metadata as never } : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(schema.reports.id, args.reportId));
 }
 
@@ -128,6 +134,7 @@ export async function loadReportForResume(args: {
   consolidatedTranscript: string | null;
   structuredFindings: StructuredFindings | null;
   status: ReportStatus;
+  generationMetadata: Record<string, unknown> | null;
 } | null> {
   const db = getDbClient();
   const [row] = await db
@@ -158,6 +165,9 @@ export async function loadReportForResume(args: {
     consolidatedTranscript: row.consolidatedTranscript,
     structuredFindings: findings,
     status: row.status,
+    generationMetadata: isPlainRecord(row.generationMetadata)
+      ? row.generationMetadata
+      : null,
   };
 }
 

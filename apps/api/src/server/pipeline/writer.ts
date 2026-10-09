@@ -7,7 +7,7 @@ import type {
 import { env } from "../env";
 import { resolveWriterExam } from "./requestedExam";
 import { prepareMorfologicoBlocks } from "../prompts/morfologicoTemplate";
-import { writerClient, writerRequestParams } from "../ai/writerClient";
+import { streamAnthropicWriter, writerClient, writerRequestParams } from "../ai/writerClient";
 import type { WriterModelConfig } from "./modelResolver";
 import { temperatureForCategory } from "./temperatureByCategory";
 import { buildSystemMessage } from "../prompts/buildSystemMessage";
@@ -146,6 +146,31 @@ export async function* runWriterStream(args: {
     reasoningEffort: env().OPENAI_WRITER_REASONING_EFFORT,
     credentialRef: "default" as const,
   };
+  if (modelConfig.provider === "anthropic") {
+    // LAUDO LIVRE ROTEADO: mesmo prompt (contrato + bundle da categoria
+    // detectada), provedor Anthropic. Falhas propagam — sem fallback OpenAI.
+    let full = "";
+    const gen = streamAnthropicWriter({
+      config: modelConfig,
+      systemMessage,
+      userMessage,
+      signal: args.signal,
+    });
+    for (;;) {
+      const next = await gen.next();
+      if (next.done) {
+        return {
+          fullText: full,
+          latencyMs: Date.now() - t0,
+          systemMessage,
+          ...next.value,
+        };
+      }
+      full += next.value;
+      yield next.value;
+    }
+  }
+
   const reqParams = writerRequestParams({
     config: modelConfig,
     systemMessage,

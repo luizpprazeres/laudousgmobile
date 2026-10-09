@@ -1,12 +1,13 @@
 import { env } from "../env";
+import { assertLivreProviderConfigured } from "../ai/anthropic";
 
 export type GenerationMode = "standard" | "hard";
 
 export type WriterModelConfig = {
-  provider: "openai" | "openai-compat";
+  provider: "openai" | "openai-compat" | "anthropic";
   model: string;
   reasoningEffort: string;
-  credentialRef: "default" | "teste";
+  credentialRef: "default" | "teste" | "anthropic";
 };
 
 export type WriterModelContext = {
@@ -26,6 +27,11 @@ type ModelResolverEnv = Pick<
   | "TESTE_CATEGORY_API_KEY"
   | "TESTE_REASONING_EFFORT"
   | "TESTE_ALLOWED_USER_ID"
+>;
+
+type LivreWriterEnv = Pick<
+  ReturnType<typeof env>,
+  "ANTHROPIC_API_KEY" | "LIVRE_HAIKU_MODEL" | "LIVRE_WRITER_EFFORT"
 >;
 
 export class WriterModelResolutionError extends Error {
@@ -88,5 +94,20 @@ export function resolveWriterModel(
     model: config.OPENAI_MODEL_WRITER,
     reasoningEffort: config.OPENAI_WRITER_REASONING_EFFORT,
     credentialRef: "default",
+  };
+}
+
+/**
+ * Writer da jornada LAUDO LIVRE ROTEADO: decidido pela ORIGEM (Livre), não
+ * pela categoria detectada — a mesma categoria escolhida diretamente segue
+ * em `resolveWriterModel`. Configuração ausente/não-Haiku lança erro explícito
+ * (nunca devolve o writer OpenAI).
+ */
+export function resolveLivreWriterModel(config: LivreWriterEnv = env()): WriterModelConfig {
+  return {
+    provider: "anthropic",
+    model: assertLivreProviderConfigured(config),
+    reasoningEffort: config.LIVRE_WRITER_EFFORT,
+    credentialRef: "anthropic",
   };
 }

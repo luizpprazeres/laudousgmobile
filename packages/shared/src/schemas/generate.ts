@@ -43,6 +43,11 @@ export const GenerateRequestSchema = z.object({
   // WRITER_V2_ABDOME=true E categoria ABDOMEN_TOTAL, usa o motor plano+montagem+
   // auditoria (writerV2). Ausente/qualquer outro valor = caminho atual intacto.
   writer_variant: z.enum(["v2"]).optional(),
+  // LAUDO LIVRE ROTEADO (opt-in): só vale quando a categoria solicitada é LIVRE
+  // e o backend tem LIVRE_ROUTER_ENABLED=true. O backend identifica o exame e
+  // gera com o modelo da categoria detectada; ambiguidade ou exame não suportado
+  // falham explicitamente. Ausente/false = Laudo Livre atual.
+  route_free_category: z.boolean().optional(),
 });
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;

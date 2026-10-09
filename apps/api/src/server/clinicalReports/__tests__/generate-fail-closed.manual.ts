@@ -14,6 +14,8 @@ import { CLINICAL_MODEL_EXTRACTORS } from "../../renderer/categories/CLINICAL_MO
 import { RENDERER_SUPPORTED_CATEGORIES, RENDERER_PROGRAMMATIC_CATEGORIES } from "../../renderer/extraction";
 import * as fallbackPolicy from "../fallbackPolicy";
 import { isDopplerRenalAuditError } from "../../pipeline/dopplerRenalWriterAudit";
+import { isLivreRoutingError, LivreRoutingError } from "../../ai/anthropic";
+import * as livreRouter from "../../pipeline/livreRouter";
 
 const routePath = resolve(process.cwd(), "apps/api/src/app/api/generate/route.ts");
 const compiled = ts.transpileModule(readFileSync(routePath, "utf8"), {
@@ -24,7 +26,7 @@ const incompleteAbdomen = { ...shared.createInitialClinicalModelInput(category),
 const incompletePortal = shared.createInitialClinicalModelInput(category);
 const completeAbdomen = { ...incompletePortal, portalVein: { caliberCm: 1.2, velocityCms: 20, flow: "hepatopetal" } };
 type Event = { type: string; code?: string; message?: string; final_text?: string };
-type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hepaticEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean };
+type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hepaticEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean; routeFree?: boolean; abortWriter?: boolean };
 
 async function execute(scenario: Scenario) {
   const selected = scenario.category === null ? undefined : scenario.category ?? category;
@@ -34,9 +36,11 @@ async function execute(scenario: Scenario) {
     DOPPLER_HEPATICO_WRITER_ENABLED: scenario.hepaticEnabled === false ? "false" : "true",
     HARD_MODE_ENABLED: "true", FAST_PATH_DEFAULT: "false",
     GENERATION_AUDIT_ENABLED: "false", WRITER_V2_CATEGORIES: scenario.writerV2 ? "ABDOMEN_TOTAL" : "", WRITER_V2_USER_ID: scenario.writerV2 ? "synthetic-user" : "",
-    WRITER_V2_ABDOME_USER_ID: "", COMMAND_OPERATIONS: "false", OPENAI_MODEL_WRITER: "test" };
+    WRITER_V2_ABDOME_USER_ID: "", COMMAND_OPERATIONS: "false", OPENAI_MODEL_WRITER: "test",
+    LIVRE_ROUTER_ENABLED: scenario.routeFree ? "true" : "false", LIVRE_ROUTER_EXCLUDED_CATEGORIES: "", LIVRE_HAIKU_MODEL: "claude-haiku-5-5" };
   const events: Event[] = [];
   const statuses: string[] = [];
+  const statusCalls: Array<{ status: string; metadata?: Record<string, unknown> }> = [];
   const errors: string[] = [];
   let writerCalls = 0;
   let writerV2Calls = 0;
@@ -66,7 +70,31 @@ async function execute(scenario: Scenario) {
       comandos_do_medico: [], trechos_confusos: [], nivel_de_confianca: "alta",
     }, latencyMs: 0 }) },
     "@/server/pipeline/validator": { runValidator: () => ({ ok: true, questions: [], issues: [] }) },
-    "@/server/pipeline/modelResolver": { resolveWriterModel: () => ({ model: "synthetic", provider: "test" }) },
+    "@/server/ai/anthropic": { isLivreRoutingError, LivreRoutingError },
+    "@/server/pipeline/livreRouter": {
+      ...livreRouter,
+      runLivreRouter: async () => ({
+        decision: {
+          status: "routed" as const,
+          category: "TIREOIDE",
+          confidence: 0.99,
+          reasonCode: "exam_named" as const,
+          candidates: [],
+          belowConfidence: false,
+        },
+        model: "claude-haiku-5-5",
+        latencyMs: 1,
+      }),
+    },
+    "@/server/pipeline/modelResolver": {
+      resolveWriterModel: () => ({ model: "synthetic", provider: "test" }),
+      resolveLivreWriterModel: () => ({
+        model: "claude-haiku-5-5",
+        provider: "anthropic",
+        reasoningEffort: "medium",
+        credentialRef: "anthropic",
+      }),
+    },
     "@/server/pipeline/writerV2/loadSpec": { loadSpecV2 },
     "@/server/pipeline/writerV2/runWriterV2": { runWriterV2: async () => {
       writerV2Calls++;
@@ -75,13 +103,16 @@ async function execute(scenario: Scenario) {
     "@/server/pipeline/bundleLoader": { loadDeterministicBundle: async () => ({ blocks: [], error: null }) },
     "@/server/db/lookups": {
       getWritingStyleById: async () => ({ active: true, code: "CLASSICO_COMPLETO" }),
-      getKnownCategories: async () => ({ codes: new Set([...(scenario.knownStructured === false ? [] : [category, ...(selected ? [selected] : [])]), "ABDOMEN_TOTAL", "LIVRE", "TESTE"]), labels: new Map() }),
+      getKnownCategories: async () => ({ codes: new Set([...(scenario.knownStructured === false ? [] : [category, ...(selected ? [selected] : []), "TIREOIDE"]), "ABDOMEN_TOTAL", "LIVRE", "TESTE"]), labels: new Map([["TIREOIDE", "Tireoide"]]) }),
       resolveAccountReportPreference: async () => ({ rendererPreferences: {} }),
       getVariantTemplateBody: async () => "synthetic-template",
     },
     "@/server/db/reportsRepo": { insertDraftReport: noOp, updateReportStructured: noOp, updateReportRagBlocks: noOp,
       finalizeReport: async (args: { status: string }) => { statuses.push(args.status); },
-      markReportStatus: async (args: { status: string }) => { statuses.push(args.status); } },
+      markReportStatus: async (args: { status: string; metadata?: Record<string, unknown> }) => {
+        statuses.push(args.status);
+        statusCalls.push(args);
+      } },
     "@/server/db/runsRepo": { insertOpenRun: async () => "synthetic-run", updateRunAfterStructurer: noOp,
       updateRunAfterRetriever: noOp, updateRunAfterWriter: noOp, finalizeRun: noOp },
     "@/server/db/productEventsRepo": { recordProductEvent: noOp, surfaceFromRequest: () => "web" },
@@ -105,6 +136,9 @@ async function execute(scenario: Scenario) {
     } },
     "@/server/pipeline/writer": { runWriterStream: async function* () {
       writerCalls++;
+      if (scenario.abortWriter) {
+        throw Object.assign(new Error("synthetic disconnect"), { name: "AbortError" });
+      }
       yield "Synthetic free writer output";
       return { fullText: "Synthetic free writer output", latencyMs: 0, systemMessage: "synthetic-writer" };
     } },
@@ -120,11 +154,12 @@ async function execute(scenario: Scenario) {
     } }),
   }, { filename: routePath });
   const body = JSON.stringify({ category_hint: selected, raw_input: scenario.rawInput ?? "Synthetic dictated examination", mode: scenario.hard ? "hard" : "standard",
-    fast_path: scenario.fast ?? false, writing_style_id: "11111111-1111-4111-8111-111111111111" });
+    fast_path: scenario.fast ?? false, writing_style_id: "11111111-1111-4111-8111-111111111111",
+    ...(scenario.routeFree ? { route_free_category: true } : {}) });
   await commonJsModule.exports.POST(new Request("http://localhost/api/generate", { method: "POST", headers: { "content-type": "application/json" },
     body,
   }));
-  return { events, statuses, writerCalls, writerV2Calls, rendererCalls, errors, requestHadHint: Object.hasOwn(JSON.parse(body), "category_hint") };
+  return { events, statuses, statusCalls, writerCalls, writerV2Calls, rendererCalls, errors, requestHadHint: Object.hasOwn(JSON.parse(body), "category_hint") };
 }
 
 async function main() {
@@ -183,6 +218,26 @@ async function main() {
     assert(result.events.some(e => e.type === "done"));
     checks++;
   }
+  // O roteamento precisa sobreviver a uma queda durante o stream. Sem esta
+  // gravação antes do writer, a retomada perde a origem LIVRE e pode cair no
+  // writer direto/OpenAI para a categoria detectada.
+  const routedAbort = await execute({
+    category: "LIVRE",
+    rawInput: "Ultrassonografia da tireoide. Tireoide de dimensões normais.",
+    rendererCategories: "",
+    routeFree: true,
+    abortWriter: true,
+  });
+  assert.equal(routedAbort.writerCalls, 1);
+  assert(!routedAbort.statuses.includes("discarded"));
+  assert(!routedAbort.statuses.includes("generated"));
+  const persistedRoute = routedAbort.statusCalls.find(
+    call => call.status === "draft" && call.metadata?.routing_status === "routed",
+  );
+  assert.equal(persistedRoute?.metadata?.requested_category, "LIVRE");
+  assert.equal(persistedRoute?.metadata?.routed_category, "TIREOIDE");
+  assert.equal(persistedRoute?.metadata?.writer_model, "claude-haiku-5-5");
+  checks++;
   const fallback = await execute({ category: "ABDOMEN_TOTAL", rendererCategories: "ABDOMEN_TOTAL" });
   assert.equal(fallback.rendererCalls, 1);
   assert.equal(fallback.writerCalls, 1, "ordinary abdomen keeps its legitimate fallback");
