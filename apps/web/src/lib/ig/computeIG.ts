@@ -10,6 +10,32 @@
 
 export type SemanasDias = { semanas: number; dias: number }
 
+/**
+ * Como o item 1 da conclusão data a gestação — escolha do médico na Web (decisão
+ * do Dr. Luiz, 09/10/2026; contrato da W5 `datacaoConclusao`). A Web só ESCOLHE:
+ * a frase final é do renderer canônico; a prévia local repete a tabela do contrato.
+ *
+ * | modo                       | item 1 da conclusão |
+ * |----------------------------|---------------------|
+ * | `biometria`                | Gestação em torno de {IG biometria}. |
+ * | `us_precoce`               | Gestação em torno de {IG referência}, corrigida pela ultrassonografia precoce. |
+ * | `biometria_e_us_precoce`   | Gestação em torno de {IG biometria} pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com {IG referência}. |
+ */
+export type ModoDatacao = 'biometria' | 'us_precoce' | 'biometria_e_us_precoce'
+export const MODOS_DATACAO: readonly ModoDatacao[] = ['biometria', 'us_precoce', 'biometria_e_us_precoce']
+
+/** As duas caixas da tela → modo. Nenhuma marcada não é estado válido: volta à biometria. */
+export function modoDaEscolha(escolha: { biometria: boolean; usPrecoce: boolean }): ModoDatacao {
+  if (escolha.biometria && escolha.usPrecoce) return 'biometria_e_us_precoce'
+  if (escolha.usPrecoce) return 'us_precoce'
+  return 'biometria'
+}
+
+/** Modo → as duas caixas. */
+export function escolhaDoModo(modo: ModoDatacao): { biometria: boolean; usPrecoce: boolean } {
+  return { biometria: modo !== 'us_precoce', usPrecoce: modo !== 'biometria' }
+}
+
 export type Referencia =
   | { tipo: 'us'; dataISO: string; ig: SemanasDias } // US precoce: IG naquela data
   | { tipo: 'dum'; dataISO: string } // data da última menstruação
@@ -23,6 +49,11 @@ export interface IGInput {
   referencia?: Referencia
   /** Sinaliza a correção na conclusão quando diverge > 5 dias (toggle/voz). */
   corrigir?: boolean
+  /**
+   * Escolha explícita do médico (Web). Quando presente, substitui o limiar de
+   * divergência e o `corrigir`; os modos com US precoce exigem referência pela 1ª US.
+   */
+  modo?: ModoDatacao
 }
 
 export interface IGResult {
@@ -90,7 +121,15 @@ export function computeIG(input: IGInput): IGResult {
   //  - sem referência, OU divergência ≤ limiar, OU correção desligada → só biometria;
   //  - divergência > limiar E corrigir → frase com correção pela referência.
   let igConclusao: string
-  if (
+  if (input.modo) {
+    const comUs = referencia?.tipo === 'us' && refSD ? refSD : null
+    igConclusao =
+      input.modo === 'us_precoce' && comUs
+        ? `Gestação em torno de ${fmtSD(comUs)}, corrigida pela ultrassonografia precoce.`
+        : input.modo === 'biometria_e_us_precoce' && comUs
+          ? `Gestação em torno de ${fmtSD(bioSD)} pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com ${fmtSD(comUs)}.`
+          : `Gestação em torno de ${fmtSD(bioSD)}.`
+  } else if (
     referencia &&
     divergencia > DIVERGENCIA_LIMIAR_DIAS &&
     corrigir &&
@@ -162,6 +201,14 @@ export interface DatacaoDaTela {
   hojeISO: string | null
   /** Estados antigos podiam desligar a correção; os novos sempre corrigem (default do épico). */
   corrigir: boolean
+  /** A correção pela US precoce só pode ser escolhida com a 1ª US completa (data + IG) e a data do exame. */
+  usPrecoceDisponivel: boolean
+  /**
+   * Modo EFETIVO da conclusão da datação. Padrão `biometria` (com ou sem 1ª US — "se ele
+   * quiser deixar a da biometria, não precisa fazer nada"); sem 1ª US utilizável, é sempre
+   * `biometria`, mesmo que o estado guarde outra escolha de antes.
+   */
+  modo: ModoDatacao
   /** Referência começada e não utilizável — nunca descartada em silêncio. */
   pendencias: PendenciaDatacao[]
 }
@@ -307,6 +354,11 @@ export function lerDatacaoDaTela(st: Readonly<Record<string, unknown>>): Datacao
       ? { tipo: 'dum', dataISO: dumISO }
       : null
 
+  const usPrecoceDisponivel = us !== null && hojeISO !== null
+  const modoGuardado = textoDe(st, 'datacao_conclusao') as ModoDatacao
+  const modo: ModoDatacao =
+    usPrecoceDisponivel && MODOS_DATACAO.includes(modoGuardado) ? modoGuardado : 'biometria'
+
   return {
     exame_data: hojeISO ? exameRaw : null,
     dum_data: dum,
@@ -316,6 +368,8 @@ export function lerDatacaoDaTela(st: Readonly<Record<string, unknown>>): Datacao
     referencia,
     hojeISO,
     corrigir,
+    usPrecoceDisponivel,
+    modo,
     pendencias,
   }
 }

@@ -218,10 +218,9 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
    * A tela mostra DUM e primeira US juntas, sem seletor; `lerDatacaoDaTela`
    * também lê os estados antigos (`referencia.usg.*`/`referencia.dum.*`). Qualquer
    * referência completa atravessa; com as duas completas, a primeira US é a
-   * fonte e a DUM segue impressa como cabeçalho. O canônico aplica a regra do
-   * Dr. Domingos: a biometria de hoje é a âncora, e a correção só aparece se
-   * divergir mais de cinco dias. Referência começada e inválida bloqueia em vez
-   * de sumir do laudo.
+   * fonte e a DUM segue impressa como cabeçalho. A frase da conclusão segue a
+   * escolha do médico (`datacao_conclusao`, abaixo), não mais um limiar de dias.
+   * Referência começada e inválida bloqueia em vez de sumir do laudo.
    */
   const datacao = lerDatacaoDaTela(ig);
   for (const p of datacao.pendencias) {
@@ -234,8 +233,15 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
   }
   const usg = datacao.us_data !== null;
   const dum = datacao.dum_data !== null;
-  /** Os estados novos sempre corrigem (default do épico); os antigos podiam ter desligado. */
-  const corrigir = usg || dum ? datacao.corrigir : null;
+  /**
+   * A DATAÇÃO DA CONCLUSÃO É ESCOLHA DO MÉDICO (decisão do Dr. Luiz, 09/10/2026;
+   * contrato da W5 `datacao_conclusao`). A Web sempre envia o modo — ausente, o
+   * backend aplicaria a regra do DITADO, que com 1ª US é outra (`us_precoce`).
+   * `corrigir_ig` segue coerente para o renderer anterior à W5, que ainda não lê o
+   * modo: biometria = não corrigir; os modos com US precoce = corrigir.
+   */
+  const datacaoConclusao = datacao.modo;
+  const corrigir = usg || dum ? datacaoConclusao !== "biometria" : null;
 
   /** Formato novo (`localizacao`/`ecotextura`/`grau`) ou antigo (`estado.detalhar.*`). */
   const placenta = lerPlacentaDaTela(p);
@@ -300,6 +306,7 @@ export function adaptarObstetrica(estado: EstadoObstetrico, options?: { incluirD
     ig_referencia_hoje_dias: null,
     referencia_fonte: usg ? "usg_precoce" : dum ? "dum" : null,
     corrigir_ig: corrigir,
+    datacao_conclusao: datacaoConclusao,
     saco_gestacional_mm: null,
     saco_gestacional_medidas_mm: null,
 
