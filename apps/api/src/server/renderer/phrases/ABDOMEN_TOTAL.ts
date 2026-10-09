@@ -603,7 +603,7 @@ function canonicalTipo(organ: AbdomenOrganKey, f: AbdomenFinding): CanonicalAbdo
   if (
     organ === "vesicula" &&
     /hiperecoic/.test(d) &&
-    /(sombra|m[óo]ve|c[áa]lcul|lit[íi]ase)/.test(d)
+    /(sombra|\bm[óo]ve(?:l|is)\b|c[áa]lcul|lit[íi]ase)/.test(d)
   ) {
     return "litiase";
   }

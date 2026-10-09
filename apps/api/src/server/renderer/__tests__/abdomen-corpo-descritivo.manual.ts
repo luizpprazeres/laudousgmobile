@@ -22,6 +22,17 @@ for (const descricao of ["Vesícula hipodistendida", "Vesícula hipodistendido"]
 }
 assert.match(renderOrgan("vesicula", { status: "alterado", achados: [finding({ descricao_livre: "Vesícula distendida" })] }).body!, /Vesícula biliar distendida/);
 
+// “Móvel” não pode casar dentro de “imóvel” e transformar uma imagem
+// parietal em cálculo, com sombra acústica que ninguém ditou.
+for (const descricao of ["Imagem hiperecoica imóvel aderida à parede", "Imagens hiperecoicas imóveis"]) {
+  const achado = finding({ descricao_livre: descricao, mobilidade: "imovel" });
+  const rendered = renderOrgan("vesicula", { status: "alterado", achados: [achado] });
+  assert.equal(rendered.body, "");
+  assert.deepEqual(rendered.conclusao, []);
+  assert.deepEqual(rendered.freeSlotFindings, [achado]);
+}
+assert.match(renderOrgan("vesicula", { status: "alterado", achados: [finding({ descricao_livre: "Imagem hiperecoica móvel" })] }).body!, /imagem hiperecoica/);
+
 for (const organ of ABDOMEN_ORGAN_KEYS) {
   const f = base();
   const texto = `${organ} com alteração fora do catálogo`;
@@ -55,6 +66,14 @@ for (const organ of ["rim_direito", "rim_esquerdo"] as const) {
   assert.equal(rendered.conclusao.length, 1);
   assert.equal(rendered.freeSlotFindings.length, 1);
 }
+const figadoMisto = renderOrgan("figado", { status: "alterado", achados: [
+  finding({ tipo: "esteatose", grau: "moderado" }),
+  finding({ descricao_livre: "Imagem hepática fora do catálogo" }),
+] });
+assert.match(figadoMisto.body!, /^Fígado com aumento difuso/);
+assert.ok(!figadoMisto.body!.includes("dimensões normais"));
+assert.equal(figadoMisto.freeSlotFindings.length, 1);
+
 for (const [organ, achado] of [
   ["rim_direito", finding({ tipo: "cisto_simples" })],
   ["rim_esquerdo", finding({ tipo: "litiase" })],
