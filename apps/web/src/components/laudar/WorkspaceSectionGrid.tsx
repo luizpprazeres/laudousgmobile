@@ -108,15 +108,16 @@ export function WorkspaceSectionGrid({
         const dating = items.find((item) => item.id === 'ig')
         const fluid = items.find((item) => item.id === 'liquido')
         const placenta = items.find((item) => item.id === 'placenta')
-        const hasOverview = Boolean(dating && fluid && placenta)
-        if (hasOverview && (section.id === 'liquido' || section.id === 'placenta')) return null
+        const fetus = items.find((item) => item.id === 'feto')
+        const hasOverview = Boolean(dating && fluid && placenta && fetus)
+        if (hasOverview && (section.id === 'liquido' || section.id === 'placenta' || section.id === 'feto')) return null
         if (hasOverview && section.id === 'ig') {
           return (
             <div
               key={`${scopeKey}:obstetric-overview`}
               data-obstetric-overview
               data-card-size="full"
-              className="grid min-w-0 items-stretch gap-3 min-[900px]:grid-cols-[minmax(19rem,0.9fr)_minmax(22rem,1.1fr)]"
+              className="grid min-w-0 items-stretch gap-3 min-[900px]:grid-cols-2 min-[1280px]:grid-cols-[minmax(18rem,0.85fr)_minmax(20rem,1fr)_minmax(27rem,1.3fr)]"
             >
               <div data-obstetric-overview-left className="grid min-w-0 content-start gap-3">
                 {card(dating!)}
@@ -124,6 +125,9 @@ export function WorkspaceSectionGrid({
               </div>
               <div className="min-w-0 [&>[data-organ-card]]:h-full">
                 {card(placenta!)}
+              </div>
+              <div className="min-w-0 min-[900px]:col-span-2 min-[1280px]:col-span-1 [&>[data-organ-card]]:h-full">
+                {card(fetus!)}
               </div>
             </div>
           )
