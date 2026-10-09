@@ -22,7 +22,7 @@ const run = (over: Partial<IgRawFields>, sanityCheck: boolean) =>
 // ── CASO REAL 10813392: biometria 24s6d, "hoje com 4s6d" (divergência ~20 semanas) ──
 {
   const semSanity = run({}, false);
-  ck(/devendo ser corrigida/.test(semSanity.conclusaoClassico) && /4 semanas/.test(semSanity.conclusaoClassico),
+  ck(/corrigida pela ultrassonografia precoce/.test(semSanity.conclusaoClassico) && /4 semanas/.test(semSanity.conclusaoClassico),
     "SEM sanity: reproduz o bug (corrige p/ 4 semanas)", semSanity.conclusaoClassico);
 
   const comSanity = run({}, true);
@@ -37,7 +37,7 @@ const run = (over: Partial<IgRawFields>, sanityCheck: boolean) =>
 {
   // biometria 24s6d, referência hoje 25s4d → divergência 5 dias (correção legítima).
   const plausivel = run({ igRefHojeSemanas: 22, igRefHojeDias: 6 }, true);
-  ck(plausivel.caso === "divergente" && /devendo ser corrigida/.test(plausivel.conclusaoClassico),
+  ck(plausivel.caso === "divergente" && /corrigida pela ultrassonografia precoce/.test(plausivel.conclusaoClassico),
     "sanity ON + divergência plausível (14d) → correção Domingos normal", plausivel.conclusaoClassico);
 }
 

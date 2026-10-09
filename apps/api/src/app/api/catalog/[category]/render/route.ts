@@ -1,5 +1,6 @@
 export { OPTIONS } from "@/server/cors";
 import { z } from "zod";
+import { DATACAO_CONCLUSAO_MODOS } from "@/server/renderer/ig";
 import { autorizarServico } from "@/server/catalog-api/auth";
 import { ehEstiloVivo } from "@/server/renderer/catalog/registry";
 import { renderizarSelecao } from "@/server/renderer/catalog/alteracoes";
@@ -11,6 +12,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const Corpo = z.object({
+  datacaoConclusao: z.enum(DATACAO_CONCLUSAO_MODOS).optional(),
   estilo: z.string().default("CLASSICO_COMPLETO"),
   /** Os ids que o médico clicou. Vazio = o modelo normal. */
   alteracoes: z.array(z.string()).max(20).default([]),
@@ -123,6 +125,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ category: stri
    */
   const contexto = {
     ...(await contextoDeRender(category, corpo.estilo)),
+    ...(corpo.datacaoConclusao ? { datacaoConclusao: corpo.datacaoConclusao } : {}),
     ...(category === "TIREOIDE" && corpo.renderer_preferences
       ? { tireoidePreferences: corpo.renderer_preferences }
       : {}),

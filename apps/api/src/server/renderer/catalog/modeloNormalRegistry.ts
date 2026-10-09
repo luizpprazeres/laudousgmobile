@@ -10,6 +10,7 @@
  * divergir, o médico personaliza uma frase que nunca sai no laudo dele.
  */
 import type { z } from "zod";
+import type { DatacaoConclusao } from "../ig";
 import { env } from "@/server/env";
 import { achadoNormalDe, mascararPorComparacao, mesclarFundo, variarSeed } from "./modeloNormal";
 
@@ -38,6 +39,8 @@ import { DopplerCarotidasFindingsSchema, renderDopplerCarotidas } from "../categ
 
 /** O que o renderer precisa e não está no código nem no que o médico digitou. */
 export type ContextoDeRender = {
+  datacaoConclusao?: DatacaoConclusao;
+  dataGeracao?: string;
   /** Máscara do laudo, de `report_template_variants`. Só o abdome usa. */
   templateBody?: string | null;
   /** Preferências da conta para o laudo de tireoide, lidas pela Web autenticada. */
@@ -194,8 +197,10 @@ export const MODELOS_NORMAIS: EntradaModeloNormal[] = [
      * categoria quebrada não derrube a Biblioteca — a combinação faz a
      * categoria SUMIR em silêncio. Já custou isso uma vez.
      */
-    render: (f, o) =>
+    render: (f, o, ctx) =>
       renderObstetrica(f, null, {
+        datacaoConclusao: ctx?.datacaoConclusao ?? f.datacao_conclusao ?? "biometria",
+        dataGeracao: ctx?.dataGeracao,
         objetivo: o.objetivo,
         igCorrection: process.env.IG_REFERENCE_CORRECTION === "true",
         flexivel: process.env.FLEXIBLE_CONCLUSION === "true",
@@ -288,8 +293,10 @@ render: (f, o) =>
         seed: { trimestre: "3t", doppler: DOPPLER_DO_EXAME_COMBINADO },
       },
     ],
-    render: (f, o) =>
+    render: (f, o, ctx) =>
       renderMorfologico(f, null as never, {
+        datacaoConclusao: ctx?.datacaoConclusao ?? f.datacao_conclusao ?? "biometria",
+        dataGeracao: ctx?.dataGeracao,
         objetivo: o.objetivo,
         igCorrection: process.env.IG_REFERENCE_CORRECTION === "true",
       }),
