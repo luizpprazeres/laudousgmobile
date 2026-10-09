@@ -58,8 +58,8 @@ export function writerRequestParams(args: {
 }
 
 /**
- * Writer Claude Opus 5.5 do LAUDO LIVRE ROTEADO. Usa thinking adaptativo em
- * esforço baixo, não envia temperature e valida o desfecho do stream antes de
+ * Writer Claude Haiku 5.5 do LAUDO LIVRE ROTEADO. Usa thinking adaptativo em
+ * esforço médio, não envia temperature e valida o desfecho do stream antes de
  * finalizar o report.
  */
 export async function* streamAnthropicLivreWriter(args: {

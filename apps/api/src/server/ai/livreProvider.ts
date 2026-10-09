@@ -35,7 +35,7 @@ export function isLivreRoutingError(err: unknown): err is LivreRoutingError {
 
 type LivreProviderEnv = Pick<
   ReturnType<typeof env>,
-  "ANTHROPIC_API_KEY" | "LIVRE_ANTHROPIC_MODEL"
+  "ANTHROPIC_API_KEY" | "LIVRE_HAIKU_MODEL"
 >;
 
 /**
@@ -49,11 +49,11 @@ export function assertLivreProviderConfigured(config: LivreProviderEnv = env()):
       "Laudo Livre roteado indisponível: provedor Anthropic não configurado.",
     );
   }
-  const model = config.LIVRE_ANTHROPIC_MODEL.trim();
-  if (model !== "claude-opus-5-5") {
+  const model = config.LIVRE_HAIKU_MODEL.trim();
+  if (model !== "claude-haiku-5-5") {
     throw new LivreRoutingError(
       "LIVRE_PROVIDER_NOT_CONFIGURED",
-      `Laudo Livre roteado indisponível: modelo configurado (${model || "vazio"}) não é Claude Opus 5.5.`,
+      `Laudo Livre roteado indisponível: modelo configurado (${model || "vazio"}) não é Claude Haiku 5.5.`,
     );
   }
   return model;

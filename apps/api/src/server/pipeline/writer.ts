@@ -148,7 +148,7 @@ export async function* runWriterStream(args: {
   };
   if (modelConfig.credentialRef === "livre") {
     // LAUDO LIVRE ROTEADO: mesmo prompt (contrato + bundle da categoria
-    // detectada), Claude Opus 5.5. Falhas propagam sem cair no
+    // detectada), Claude Haiku 5.5. Falhas propagam sem cair no
     // writer padrão.
     let full = "";
     const gen = streamAnthropicLivreWriter({

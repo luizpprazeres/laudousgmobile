@@ -31,7 +31,7 @@ type ModelResolverEnv = Pick<
 
 type LivreWriterEnv = Pick<
   ReturnType<typeof env>,
-  "ANTHROPIC_API_KEY" | "LIVRE_ANTHROPIC_MODEL" | "LIVRE_ANTHROPIC_EFFORT"
+  "ANTHROPIC_API_KEY" | "LIVRE_HAIKU_MODEL" | "LIVRE_WRITER_EFFORT"
 >;
 
 export class WriterModelResolutionError extends Error {
@@ -100,14 +100,14 @@ export function resolveWriterModel(
 /**
  * Writer da jornada LAUDO LIVRE ROTEADO: decidido pela ORIGEM (Livre), não
  * pela categoria detectada — a mesma categoria escolhida diretamente segue
- * em `resolveWriterModel`. Configuração ausente ou diferente de Claude Opus 5.5
+ * em `resolveWriterModel`. Configuração ausente ou diferente de Claude Haiku 5.5
  * lança erro explícito e nunca cai no writer padrão.
  */
 export function resolveLivreWriterModel(config: LivreWriterEnv = env()): WriterModelConfig {
   return {
     provider: "anthropic",
     model: assertLivreProviderConfigured(config),
-    reasoningEffort: config.LIVRE_ANTHROPIC_EFFORT,
+    reasoningEffort: config.LIVRE_WRITER_EFFORT,
     credentialRef: "livre",
   };
 }

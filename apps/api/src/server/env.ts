@@ -29,8 +29,8 @@ const ServerEnvSchema = z.object({
    * LAUDO LIVRE ROTEADO (default OFF). Com "true", um request cuja categoria
    * ORIGINAL é LIVRE e que traz `route_free_category: true` passa por um
    * roteador Anthropic que identifica o exame; o laudo sai com o contrato/
-   * bundle da categoria detectada, escrito pelo Claude Opus 5.5 com thinking
-   * adaptativo em esforço baixo. Qualquer falha do
+   * bundle da categoria detectada, escrito pelo Claude Haiku 5.5. O roteador
+   * usa esforço baixo e o writer, médio. Qualquer falha do
    * roteador ou do writer é explícita — nunca cai no writer padrão nem no prompt
    * livre. Desligado = comportamento antigo intacto.
    */
@@ -40,9 +40,9 @@ const ServerEnvSchema = z.object({
   // Só para chaves não vinculadas a workspace.
   ANTHROPIC_WORKSPACE_ID: z.string().default(""),
   // Modelo único da jornada (roteador + writer). Sem fallback para outro modelo.
-  LIVRE_ANTHROPIC_MODEL: z.string().default("claude-opus-5-5"),
-  // Opus 5.5 exige thinking adaptativo; low minimiza custo e latência.
-  LIVRE_ANTHROPIC_EFFORT: z.enum(["low", "medium", "high", "xhigh", "max"]).default("low"),
+  LIVRE_HAIKU_MODEL: z.string().default("claude-haiku-5-5"),
+  LIVRE_ROUTER_EFFORT: z.enum(["low", "medium", "high", "xhigh", "max"]).default("low"),
+  LIVRE_WRITER_EFFORT: z.enum(["low", "medium", "high", "xhigh", "max"]).default("medium"),
   // Confiança mínima para aceitar `routed`; abaixo disso vira `ambiguous`.
   LIVRE_ROUTER_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).default(0.8),
   // CSV de categorias que o roteador nunca pode escolher, além das fixas em

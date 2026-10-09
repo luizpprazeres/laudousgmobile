@@ -37,7 +37,7 @@ async function execute(scenario: Scenario) {
     HARD_MODE_ENABLED: "true", FAST_PATH_DEFAULT: "false",
     GENERATION_AUDIT_ENABLED: "false", WRITER_V2_CATEGORIES: scenario.writerV2 ? "ABDOMEN_TOTAL" : "", WRITER_V2_USER_ID: scenario.writerV2 ? "synthetic-user" : "",
     WRITER_V2_ABDOME_USER_ID: "", COMMAND_OPERATIONS: "false", OPENAI_MODEL_WRITER: "test",
-    LIVRE_ROUTER_ENABLED: scenario.routeFree ? "true" : "false", LIVRE_ROUTER_EXCLUDED_CATEGORIES: "", LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5" };
+    LIVRE_ROUTER_ENABLED: scenario.routeFree ? "true" : "false", LIVRE_ROUTER_EXCLUDED_CATEGORIES: "", LIVRE_HAIKU_MODEL: "claude-haiku-5-5" };
   const events: Event[] = [];
   const statuses: string[] = [];
   const statusCalls: Array<{ status: string; metadata?: Record<string, unknown> }> = [];
@@ -82,16 +82,16 @@ async function execute(scenario: Scenario) {
           candidates: [],
           belowConfidence: false,
         },
-        model: "claude-opus-5-5",
+        model: "claude-haiku-5-5",
         latencyMs: 1,
       }),
     },
     "@/server/pipeline/modelResolver": {
       resolveWriterModel: () => ({ model: "synthetic", provider: "test" }),
       resolveLivreWriterModel: () => ({
-        model: "claude-opus-5-5",
+        model: "claude-haiku-5-5",
         provider: "anthropic",
-        reasoningEffort: "low",
+        reasoningEffort: "medium",
         credentialRef: "livre",
       }),
     },
@@ -236,7 +236,7 @@ async function main() {
   );
   assert.equal(persistedRoute?.metadata?.requested_category, "LIVRE");
   assert.equal(persistedRoute?.metadata?.routed_category, "TIREOIDE");
-  assert.equal(persistedRoute?.metadata?.writer_model, "claude-opus-5-5");
+  assert.equal(persistedRoute?.metadata?.writer_model, "claude-haiku-5-5");
   checks++;
   const fallback = await execute({ category: "ABDOMEN_TOTAL", rendererCategories: "ABDOMEN_TOTAL" });
   assert.equal(fallback.rendererCalls, 1);

@@ -2,7 +2,7 @@
  * LAUDO LIVRE ROTEADO — roteador de exame + contrato de auditoria.
  *
  * O médico escolhe "Livre" e dita. Com `route_free_category: true` e a flag
- * LIVRE_ROUTER_ENABLED, este roteador (Claude Opus 5.5, saída estruturada e
+ * LIVRE_ROUTER_ENABLED, este roteador (Claude Haiku 5.5, saída estruturada e
  * thinking adaptativo em esforço baixo)
  * identifica o exame entre as categorias elegíveis; a rota então gera com o
  * contrato/bundle dessa categoria, como se ela tivesse sido escolhida.
@@ -326,8 +326,8 @@ export function hasLivreRoutingMetadata(metadata: unknown): boolean {
 type RouterEnv = Pick<
   ReturnType<typeof env>,
   | "ANTHROPIC_API_KEY"
-  | "LIVRE_ANTHROPIC_MODEL"
-  | "LIVRE_ANTHROPIC_EFFORT"
+  | "LIVRE_HAIKU_MODEL"
+  | "LIVRE_ROUTER_EFFORT"
   | "LIVRE_ROUTER_MIN_CONFIDENCE"
 >;
 
@@ -367,7 +367,7 @@ export async function runLivreRouter(args: {
           },
         ],
         output_config: {
-          ...effortParam(config.LIVRE_ANTHROPIC_EFFORT),
+          ...effortParam(config.LIVRE_ROUTER_EFFORT),
           format: { type: "json_schema", schema: routerJsonSchema(args.categories) },
         },
       },

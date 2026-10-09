@@ -40,8 +40,8 @@ async function rejectsWith(promise: Promise<unknown>, code: string) {
 
 const routerConfig = {
   ANTHROPIC_API_KEY: "sk-ant-test",
-  LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5",
-  LIVRE_ANTHROPIC_EFFORT: "low" as const,
+  LIVRE_HAIKU_MODEL: "claude-haiku-5-5",
+  LIVRE_ROUTER_EFFORT: "low" as const,
   LIVRE_ROUTER_MIN_CONFIDENCE: 0.8,
 };
 const labels = new Map([
@@ -104,10 +104,10 @@ async function drain(gen: AsyncGenerator<string, unknown, void>) {
     text += next.value;
   }
 }
-const opusConfig = {
+const haikuConfig = {
   provider: "anthropic" as const,
-  model: "claude-opus-5-5",
-  reasoningEffort: "low",
+  model: "claude-haiku-5-5",
+  reasoningEffort: "medium",
   credentialRef: "livre" as const,
 };
 
@@ -231,17 +231,17 @@ async function main() {
   });
 
   // ---------- Provedor / modelo ----------
-  await check("provedor: chave ausente ou modelo diferente de Opus 5.5 falham explicitamente", () => {
+  await check("provedor: chave ausente ou modelo diferente de Haiku 5.5 falham explicitamente", () => {
     const code = (fn: () => unknown) =>
       assert.throws(fn, (err: unknown) => err instanceof LivreRoutingError && err.code === "LIVRE_PROVIDER_NOT_CONFIGURED");
-    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "", LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5" }));
-    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_ANTHROPIC_MODEL: "gpt-4.1-mini" }));
-    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_ANTHROPIC_MODEL: "" }));
-    assert.equal(assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5" }), "claude-opus-5-5");
+    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "", LIVRE_HAIKU_MODEL: "claude-haiku-5-5" }));
+    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_HAIKU_MODEL: "gpt-4.1-mini" }));
+    code(() => assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_HAIKU_MODEL: "" }));
+    assert.equal(assertLivreProviderConfigured({ ANTHROPIC_API_KEY: "k", LIVRE_HAIKU_MODEL: "claude-haiku-5-5" }), "claude-haiku-5-5");
   });
-  await check("writer Livre = Anthropic Opus 5.5, sem cliente OpenAI", () => {
-    const cfg = resolveLivreWriterModel({ ANTHROPIC_API_KEY: "k", LIVRE_ANTHROPIC_MODEL: "claude-opus-5-5", LIVRE_ANTHROPIC_EFFORT: "low" });
-    assert.deepEqual(cfg, opusConfig);
+  await check("writer Livre = Anthropic Haiku 5.5, sem cliente OpenAI", () => {
+    const cfg = resolveLivreWriterModel({ ANTHROPIC_API_KEY: "k", LIVRE_HAIKU_MODEL: "claude-haiku-5-5", LIVRE_WRITER_EFFORT: "medium" });
+    assert.deepEqual(cfg, haikuConfig);
     assert.throws(() => writerClient(cfg));
     assert.deepEqual(effortParam("low"), { effort: "low" });
     assert.equal(effortParam(""), undefined);
@@ -266,9 +266,9 @@ async function main() {
       client: fakeCreate(jsonText(ok), seen as { params?: unknown }),
     });
     assert.equal(out.decision.category, "TIREOIDE");
-    assert.equal(out.model, "claude-opus-5-5");
+    assert.equal(out.model, "claude-haiku-5-5");
     const p = seen.params as Record<string, unknown> & { thinking: { type: string }; output_config: { effort: string; format: { type: string } } };
-    assert.equal(p.model, "claude-opus-5-5");
+    assert.equal(p.model, "claude-haiku-5-5");
     assert.equal(p.output_config.effort, "low");
     assert.equal(p.output_config.format.type, "json_schema");
     assert.equal(p.thinking.type, "adaptive");
@@ -299,31 +299,31 @@ async function main() {
   await check("writer: stream concluído devolve texto + usage", async () => {
     const seen: { params?: unknown } = {};
     const { text, result } = await drain(
-      streamAnthropicLivreWriter({ config: opusConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["ULTRASSONOGRAFIA ", "DA TIREOIDE"], {}, seen) }),
+      streamAnthropicLivreWriter({ config: haikuConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["ULTRASSONOGRAFIA ", "DA TIREOIDE"], {}, seen) }),
     );
     assert.equal(text, "ULTRASSONOGRAFIA DA TIREOIDE");
     assert.deepEqual(result, { inputTokens: 100, outputTokens: 20, cachedInputTokens: 0 });
     const p = seen.params as Record<string, unknown> & { thinking: { type: string }; output_config: { effort: string } };
     assert.equal(p.thinking.type, "adaptive");
-    assert.equal(p.output_config.effort, "low");
+    assert.equal(p.output_config.effort, "medium");
     assert.equal("temperature" in p, false);
   });
   await check("writer: recusa, truncamento e vazio falham explicitamente", async () => {
-    await rejectsWith(drain(streamAnthropicLivreWriter({ config: opusConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["parcial"], { stop_reason: "refusal" }) })), "LIVRE_WRITER_REFUSED");
-    await rejectsWith(drain(streamAnthropicLivreWriter({ config: opusConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["parcial"], { stop_reason: "max_tokens" }) })), "LIVRE_WRITER_TRUNCATED");
-    await rejectsWith(drain(streamAnthropicLivreWriter({ config: opusConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["  "], {}) })), "LIVRE_WRITER_EMPTY");
+    await rejectsWith(drain(streamAnthropicLivreWriter({ config: haikuConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["parcial"], { stop_reason: "refusal" }) })), "LIVRE_WRITER_REFUSED");
+    await rejectsWith(drain(streamAnthropicLivreWriter({ config: haikuConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["parcial"], { stop_reason: "max_tokens" }) })), "LIVRE_WRITER_TRUNCATED");
+    await rejectsWith(drain(streamAnthropicLivreWriter({ config: haikuConfig, systemMessage: "s", userMessage: "u", client: fakeStream(["  "], {}) })), "LIVRE_WRITER_EMPTY");
   });
 
   // ---------- Metadata ----------
   await check("metadata: campos auditáveis, sem PHI, ida e volta na retomada", () => {
     const decision = interpretRouterOutput(ok, eligible, 0.8);
-    const meta = buildLivreRoutingMetadata({ decision, model: "claude-opus-5-5" });
+    const meta = buildLivreRoutingMetadata({ decision, model: "claude-haiku-5-5" });
     assert.equal(meta.requested_category, "LIVRE");
     assert.equal(meta.routed_category, "TIREOIDE");
     assert.equal(meta.routing_status, "routed");
     assert.equal(meta.routing_confidence, 0.95);
-    assert.equal(meta.routing_model, "claude-opus-5-5");
-    assert.equal(meta.writer_model, "claude-opus-5-5");
+    assert.equal(meta.routing_model, "claude-haiku-5-5");
+    assert.equal(meta.writer_model, "claude-haiku-5-5");
     // Só código/enum/número: nenhuma string livre do ditado.
     for (const value of Object.values(meta)) {
       if (typeof value === "string") assert.match(value, /^[A-Za-z0-9_.-]+$/);
@@ -334,7 +334,7 @@ async function main() {
     assert.equal(readPersistedLivreRouting({ ...meta, routed_category: "tireoide; drop" }), null);
     assert.equal(readPersistedLivreRouting({ pipeline_warnings: [] }), null);
     assert.equal(readPersistedLivreRouting(null), null);
-    const failed = buildLivreRoutingMetadata({ decision: null, model: "claude-opus-5-5", errorCode: "LIVRE_ROUTER_REFUSED" });
+    const failed = buildLivreRoutingMetadata({ decision: null, model: "claude-haiku-5-5", errorCode: "LIVRE_ROUTER_REFUSED" });
     assert.equal(failed.routing_status, "error");
     assert.equal(failed.routing_error_code, "LIVRE_ROUTER_REFUSED");
   });
