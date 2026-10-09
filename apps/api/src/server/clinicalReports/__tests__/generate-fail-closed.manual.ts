@@ -26,7 +26,7 @@ const incompleteAbdomen = { ...shared.createInitialClinicalModelInput(category),
 const incompletePortal = shared.createInitialClinicalModelInput(category);
 const completeAbdomen = { ...incompletePortal, portalVein: { caliberCm: 1.2, velocityCms: 20, flow: "hepatopetal" } };
 type Event = { type: string; code?: string; message?: string; final_text?: string };
-type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hepaticEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean; routeFree?: boolean; abortWriter?: boolean };
+type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hepaticEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean; routeFree?: boolean; abortWriter?: boolean; fullWriter?: string };
 
 async function execute(scenario: Scenario) {
   const selected = scenario.category === null ? undefined : scenario.category ?? category;
@@ -36,7 +36,9 @@ async function execute(scenario: Scenario) {
     DOPPLER_HEPATICO_WRITER_ENABLED: scenario.hepaticEnabled === false ? "false" : "true",
     HARD_MODE_ENABLED: "true", FAST_PATH_DEFAULT: "false",
     GENERATION_AUDIT_ENABLED: "false", WRITER_V2_CATEGORIES: scenario.writerV2 ? "ABDOMEN_TOTAL" : "", WRITER_V2_USER_ID: scenario.writerV2 ? "synthetic-user" : "",
-    WRITER_V2_ABDOME_USER_ID: "", COMMAND_OPERATIONS: "false", OPENAI_MODEL_WRITER: "test",
+    WRITER_V2_ABDOME_USER_ID: "", COMMAND_OPERATIONS: "false", WRITER_V2_MODEL: "test",
+    // Cenários históricos: sem a migração de roteamento, salvo quando o cenário pede.
+    FULL_WRITER_CATEGORIES: scenario.fullWriter ?? "",
     LIVRE_ROUTER_ENABLED: scenario.routeFree ? "true" : "false", LIVRE_ROUTER_EXCLUDED_CATEGORIES: "", LIVRE_HAIKU_MODEL: "claude-haiku-5-5" };
   const events: Event[] = [];
   const statuses: string[] = [];
@@ -63,7 +65,7 @@ async function execute(scenario: Scenario) {
     "@/server/pipeline/effectiveCategory": { resolveEffectiveCategory },
     "@/server/pipeline/generationPathResolver": {
       resolveGenerationPath: (ctx: Parameters<typeof resolveGenerationPath>[0]) => resolveGenerationPath(ctx, config),
-      rendererCategoryEnabled: (code: string) => rendererCategoryEnabled(code, config),
+      rendererCategoryEnabled: (code: string, _config?: unknown, opts?: { objetivo?: boolean }) => rendererCategoryEnabled(code, config, opts),
     },
     "@/server/pipeline/structurer": { runStructurer: async () => ({ findings: {
       schema_version: "v1", categoria_detectada: detected, tipo_exame: detected, achados: scenario.extracted ?? incompleteAbdomen,
@@ -71,6 +73,12 @@ async function execute(scenario: Scenario) {
     }, latencyMs: 0 }) },
     "@/server/pipeline/validator": { runValidator: () => ({ ok: true, questions: [], issues: [] }) },
     "@/server/ai/livreProvider": { isLivreRoutingError, LivreRoutingError },
+    "@/server/ai/llm": {
+      writerTarget: () => ({ model: "synthetic", provider: "test", effort: "medium" }),
+      extractionTarget: () => ({ model: "synthetic", provider: "test", effort: "medium" }),
+      llmTarget: (model: string) => ({ model, provider: "openai", effort: "none" }),
+      providerForModel: () => "openai",
+    },
     "@/server/pipeline/livreRouter": {
       ...livreRouter,
       runLivreRouter: async () => ({
@@ -125,7 +133,7 @@ async function execute(scenario: Scenario) {
     "@/server/clinicalReports/fallbackPolicy": fallbackPolicy,
     "@/server/pipeline/dopplerRenalWriterAudit": { isDopplerRenalAuditError },
     "@/server/pipeline/descarteDecision": { decidirDescarte },
-    "@/server/pipeline/renderer": { runRendererStream: async function* (args: { categoryCode: string }) {
+    "@/server/pipeline/renderer": { isEstiloObjetivo: () => false, runRendererStream: async function* (args: { categoryCode: string }) {
       rendererCalls++;
       if (args.categoryCode !== category) throw new Error("Synthetic ordinary renderer failure");
       // Real extraction parser + clinical validator/renderer; no copied validation rule.
@@ -237,6 +245,19 @@ async function main() {
   assert.equal(persistedRoute?.metadata?.requested_category, "LIVRE");
   assert.equal(persistedRoute?.metadata?.routed_category, "TIREOIDE");
   assert.equal(persistedRoute?.metadata?.writer_model, "claude-haiku-5-5");
+  checks++;
+  // Migração Haiku 5.5: abdome clássico listado em FULL_WRITER_CATEGORIES vai
+  // direto ao writer completo, sem passar pelo renderer nem emitir fallback.
+  const fullWriter = await execute({ category: "ABDOMEN_TOTAL", rendererCategories: "ABDOMEN_TOTAL", fullWriter: "ABDOMEN_TOTAL" });
+  assert.equal(fullWriter.rendererCalls, 0);
+  assert.equal(fullWriter.writerCalls, 1);
+  assert(!fullWriter.events.some(e => e.code === "RENDERER_FALLBACK"));
+  assert(fullWriter.events.some(e => e.type === "done"));
+  checks++;
+  // …e um clínico fail-closed listado ali continua no renderer estruturado.
+  const lockedClinical = await execute({ extracted: completeAbdomen, fullWriter: category });
+  assert.equal(lockedClinical.rendererCalls, 1);
+  assert.equal(lockedClinical.writerCalls, 0);
   checks++;
   const fallback = await execute({ category: "ABDOMEN_TOTAL", rendererCategories: "ABDOMEN_TOTAL" });
   assert.equal(fallback.rendererCalls, 1);

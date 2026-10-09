@@ -29,6 +29,9 @@ const ServerEnvSchema = z.object({
   // Escritor: writer completo, free-slots do renderer, edição incremental.
   LLM_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   LLM_WRITER_EFFORT: z.string().default("medium"),
+  // Leitura de imagem (OCR das telas do aparelho em /api/analyze-image). Era
+  // gpt-4.1 / gpt-4.1-mini fixos no código. Esforço: LLM_EXTRACTION_EFFORT.
+  LLM_VISION_MODEL: z.string().default("claude-haiku-5-5"),
   // Sanity por IA (observacional, depois do `done`).
   LLM_SANITY_MODEL: z.string().default("claude-haiku-5-5"),
   LLM_SANITY_EFFORT: z.string().default("medium"),

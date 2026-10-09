@@ -1,6 +1,6 @@
 /**
  * DOPPLER_VENOSO_MMII `writer_guarded` — 2ª modalidade do eixo vascular. Mesma receita
- * (prompt + few-shots hand-crafted + fact-audit + gpt-4.1 + streaming). Gate =
+ * (prompt + few-shots hand-crafted + fact-audit + Haiku 5.5 + streaming). Gate =
  * membership em RENDERER_CATEGORIES. Guard de formato reusa o do MSK.
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";

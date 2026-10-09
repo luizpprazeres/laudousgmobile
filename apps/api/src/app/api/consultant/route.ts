@@ -10,6 +10,7 @@ import { openai } from "@/server/ai/openai";
 import { env } from "@/server/env";
 import { nowIso, sseResponse } from "@/server/sse/stream";
 import type { GenerateSSEEvent } from "@laudousg/shared";
+import { isRetiredModel } from "@/server/ai/llm";
 
 export { OPTIONS };
 
@@ -92,7 +93,10 @@ export async function POST(req: Request) {
 
   const e = env();
   const primaryModel = e.OPENAI_MODEL_CONSULTANT;
-  const fallbackModel = e.OPENAI_MODEL_CONSULTANT_FALLBACK;
+  // gpt-4.1 sai da API em 14/10/2026: valor antigo esquecido na env não vale.
+  const fallbackModel = isRetiredModel(e.OPENAI_MODEL_CONSULTANT_FALLBACK)
+    ? "gpt-5.4-mini"
+    : e.OPENAI_MODEL_CONSULTANT_FALLBACK;
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: "system", content: CONSULTANT_SYSTEM_PROMPT },
     ...parsed.data.messages.map((message) => ({
