@@ -476,6 +476,15 @@ async function* openaiTextStream(opts: LlmTextOptions, client: OpenAIClient): As
   return usage;
 }
 
+/**
+ * Regra comum a TODA extração do motor (anexada ao system; os prompts por
+ * categoria não mudam). O renderer cola os campos de texto livre no laudo
+ * assinado; como extrator, o Haiku 5.5 escrevia ali comentários sobre o ditado ou
+ * o schema (W4: 11/67 saídas; gpt-4.1-mini: 0). O guard determinístico
+ * `renderer/extractionMetatext.ts` limpa o que escapar.
+ */
+export const EXTRACTION_TEXT_RULE = `CAMPOS DE TEXTO LIVRE (regra comum a toda extração): todo texto que você puser em campo de texto (achados adicionais, descrições, observações, conclusões) é colado LITERALMENTE no laudo que o médico assina. Escreva só conteúdo clínico, na redação de laudo. NUNCA escreva comentários sobre o ditado, o schema ou a sua extração — por exemplo "Conclusão do médico:", "conforme ditado", "conforme conclusão do médico", "ditado ilegível/incompreensível", "conferir/confirmar com o médico", "termo fora do léxico do enum", "não cabe no esquema", "sem campo próprio", "campo mantido null". Trecho incompreensível: deixe de fora, sem comentar. Dado clínico sem campo próprio: escreva-o como frase de laudo (ex.: "Índices de resistividade: …"), sem explicar por que está ali.`;
+
 // ---------------------------------------------------------------------------
 // API pública
 // ---------------------------------------------------------------------------
@@ -491,6 +500,11 @@ export type LlmJsonOptions = {
   maxTokens?: number;
   /** OpenAI (rollback): teto da saída visível. Default 16000. */
   openaiMaxTokens?: number;
+  /**
+   * Anexa EXTRACTION_TEXT_RULE ao system (default true). Só quem produz texto
+   * que NÃO vai ao laudo desliga (ex.: sanity, cujos campos são comentário).
+   */
+  reportText?: boolean;
   signal?: AbortSignal;
   /** JSON parcial acumulado — só para progresso de UX, nunca para parse. */
   onPartialJson?: (accumulated: string) => void;
@@ -507,7 +521,9 @@ export type LlmJsonOptions = {
 export type LlmJsonResult = { raw: string; usage: LlmUsage; mode: "strict" | "tool" | "openai" };
 
 /** Chamada estruturada: devolve o JSON CRU; quem chama faz o parse com o próprio Zod. */
-export async function llmJson(opts: LlmJsonOptions): Promise<LlmJsonResult> {
+export async function llmJson(input: LlmJsonOptions): Promise<LlmJsonResult> {
+  const opts =
+    input.reportText === false ? input : { ...input, system: `${input.system}\n\n${EXTRACTION_TEXT_RULE}` };
   return opts.target.provider === "anthropic"
     ? anthropicJson(opts, ensureAnthropicConfigured(opts.anthropicClient))
     : openaiJson(opts, opts.openaiClient ?? openai());

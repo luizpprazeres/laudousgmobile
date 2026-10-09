@@ -86,6 +86,8 @@ export async function runSanityCheck(args: {
     schemaName: "SanityResult",
     schema: SANITY_JSON_SCHEMA as unknown as Record<string, unknown>,
     parser: SanityResultSchema,
+    // Os campos da sanity são comentário sobre o laudo, não texto de laudo.
+    reportText: false,
     signal: args.signal,
   });
 

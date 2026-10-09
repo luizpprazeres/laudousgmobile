@@ -14,6 +14,7 @@ import {
   writerRequestParams,
 } from "../ai/writerClient";
 import { resolveWriterModel, type WriterModelConfig } from "./modelResolver";
+import { cleanWriterOutput } from "./writerOutputGuard";
 import { temperatureForCategory } from "./temperatureByCategory";
 import { buildSystemMessage } from "../prompts/buildSystemMessage";
 
@@ -120,6 +121,8 @@ export async function* runWriterStream(args: {
     // Reforço de intenção e completude — flag WRITER_HARDENING, default OFF.
     // Bloco adicional; não altera nem desliga os condicionais existentes.
     hardening: env().WRITER_HARDENING === "true",
+    // Fast-path: o user message é o ditado cru, não os achados estruturados.
+    inputMode: plainRawUserMessage ? "raw" : "structured",
     categoryCode: effectiveCategoryCode,
     dopplerMode: writerExam.dopplerMode,
     includeDoppler: args.includeDoppler,
@@ -182,7 +185,7 @@ export async function* runWriterStream(args: {
       const next = await gen.next();
       if (next.done) {
         return {
-          fullText: full,
+          fullText: cleanWriterOutput(full).text,
           latencyMs: Date.now() - t0,
           systemMessage,
           ...next.value,
@@ -227,7 +230,9 @@ export async function* runWriterStream(args: {
   }
 
   return {
-    fullText: full,
+    // Markdown e comentário do modelo saem do texto final (o stream já foi; o
+    // `done` leva este texto).
+    fullText: cleanWriterOutput(full).text,
     latencyMs: Date.now() - t0,
     systemMessage,
     inputTokens,

@@ -7,6 +7,7 @@ import type { DopplerMode } from "./requestedExam";
 import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
 import { llmParsed, writerTarget } from "../ai/llm";
+import { stripExtractionMetatext } from "../renderer/extractionMetatext";
 import {
   runRendererExtraction,
   type RendererExtractionResult,
@@ -188,7 +189,11 @@ async function renderFreeSlots(
     },
   });
   return {
-    rendered: value,
+    // Frases que vão direto ao laudo: sem metatexto do modelo.
+    rendered: value.map((it) => ({
+      corpo: stripExtractionMetatext(it.corpo),
+      conclusao: it.conclusao === null ? null : stripExtractionMetatext(it.conclusao) || null,
+    })),
     inputTokens: usage.inputTokens ?? 0,
     outputTokens: usage.outputTokens ?? 0,
   };

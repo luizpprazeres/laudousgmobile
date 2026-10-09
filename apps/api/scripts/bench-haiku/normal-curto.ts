@@ -4,8 +4,9 @@
  * Achado do W4 (09/10): sem o exame na mensagem do fast-path, o Haiku recusava
  * escrever "Exame sem alterações dignas de nota". Compara, com o MESMO system
  * (bundle real da categoria, estilo clássico):
- *   antes  — mensagem antiga (só o ditado)
- *   depois — runWriterStream de produção (exame escolhido no ditado)
+ *   antes  — mensagem antiga (só o ditado), mesmo system
+ *   depois — runWriterStream de produção: exame escolhido no ditado, system
+ *            alinhado ao ditado cru, regra de saída e guard de saída (W1 r2)
  * Ditado sintético. 2 chamadas `claude -p` por categoria.
  *
  * Rodar (de apps/api): pnpm exec tsx scripts/bench-haiku/normal-curto.ts [ABDOMEN_TOTAL,TIREOIDE]
@@ -20,8 +21,8 @@ loadDotenv({ path: join(REPO, ".env") });
 process.env.ANTHROPIC_API_KEY = "sk-ant-bench-blocked-no-real-anthropic-calls";
 
 const NORMAL = "Exame sem alterações dignas de nota.";
-const LABELS: Record<string, string> = { ABDOMEN_TOTAL: "Abdome total", TIREOIDE: "Tireoide" };
 const looksLikeReport = (t: string) => /CONCLUS|IMPRESS/i.test(t) && /ULTRASSONOGRAFIA|ULTRA-SONOGRAFIA/i.test(t);
+const hasMarkdown = (t: string) => /\*\*|^#{1,6} |`/m.test(t);
 
 async function main() {
   const categories = (process.argv[2] ?? "ABDOMEN_TOTAL,TIREOIDE").split(",");
@@ -31,6 +32,8 @@ async function main() {
   const { streamAnthropicWriter } = await import("../../src/server/ai/writerClient");
   const sql = postgres(process.env.DATABASE_URL!, { ssl: "require", max: 1 });
   const [style] = await sql`select id from writing_styles where code = 'CLASSICO_COMPLETO'`;
+  const labelRows = await sql`select code, label from categories where code = any(${categories})`;
+  const LABELS: Record<string, string> = Object.fromEntries(labelRows.map((r) => [r.code as string, r.label as string]));
   await sql.end();
   const config = { provider: "anthropic" as const, model: "claude-haiku-5-5", reasoningEffort: "medium", credentialRef: "default" as const };
   const client = cliAnthropicClient("medium");
@@ -65,7 +68,9 @@ async function main() {
       if (n.done) break;
       antes += n.value;
     }
-    out[code] = { antes, depois, antesEhLaudo: looksLikeReport(antes), depoisEhLaudo: looksLikeReport(depois) };
+    // `depois` = texto final do writer (já com o guard de saída); `antes` = stream cru.
+    const final = (await import("../../src/server/pipeline/writerOutputGuard")).cleanWriterOutput(depois).text;
+    out[code] = { antes, depois, final, antesEhLaudo: looksLikeReport(antes), depoisEhLaudo: looksLikeReport(depois), markdownNoFinal: hasMarkdown(final) };
     console.log(`\n=== ${code}`);
     console.log(`antes  (sem exame): ${looksLikeReport(antes) ? "LAUDO" : "NÃO É LAUDO"} → ${antes.slice(0, 220).replace(/\n/g, " ⏎ ")}`);
     console.log(`depois (com exame): ${looksLikeReport(depois) ? "LAUDO" : "NÃO É LAUDO"} → ${depois.slice(0, 220).replace(/\n/g, " ⏎ ")}`);

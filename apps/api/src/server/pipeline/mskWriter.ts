@@ -12,6 +12,7 @@
  * Flag `MSK_WRITER` (default OFF). Fact-audit + rerun entram numa fatia seguinte.
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
+import { cleanWriterOutput, WRITER_OUTPUT_RULE } from "./writerOutputGuard";
 import { env } from "../env";
 import { buildMskWriterSystemMessage } from "../renderer/categories/MUSCULOESQUELETICO";
 import { MSK_FEWSHOTS } from "../renderer/categories/mskFewshots";
@@ -61,7 +62,7 @@ export async function* runMskWriterStream(args: {
   // Haiku (a 0.2 só vale no rollback OpenAI).
   const gen = llmTextStream({
     target,
-    system: buildMskWriterSystemMessage({ validatedLibrary }),
+    system: `${buildMskWriterSystemMessage({ validatedLibrary })}\n\n${WRITER_OUTPUT_RULE}`,
     messages: [
       ...fewshotMsgs,
       { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
@@ -89,7 +90,7 @@ export async function* runMskWriterStream(args: {
 
   // Guard de formato determinístico (cabeçalhos canônicos, bullets, espaços) — só
   // formato, nunca conteúdo. Corrige typos raros do modelo (ex.: "OS SEGUINTOS").
-  let fullText = normalizeMskWriterFormat(full);
+  let fullText = normalizeMskWriterFormat(cleanWriterOutput(full).text);
 
   // Fact-audit determinístico (opção 2 do Luiz): streama otimista, audita DEPOIS.
   // Se um fato objetivo falha (medida/lado ausente, estrutura fora do protocolo),

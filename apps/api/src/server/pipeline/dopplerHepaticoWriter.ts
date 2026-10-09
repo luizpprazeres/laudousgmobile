@@ -1,6 +1,7 @@
 import { renderClinicalModelReport } from "@laudousg/shared";
 import { dedicatedWriterTarget, llmJson, LlmOutputError } from "../ai/llm";
 import { env } from "../env";
+import { cleanExtractionMetatext } from "../renderer/extractionMetatext";
 import { DOPPLER_HEPATICO_JSON_SCHEMA, DOPPLER_HEPATICO_EXTRACTION_PROMPT, HepaticDopplerExtractionSchema, hepaticExtractionToContract } from "../renderer/categories/DOPPLER_HEPATICO";
 import { DOPPLER_HEPATICO_FEWSHOTS } from "../renderer/categories/dopplerHepaticoFewshots";
 import { auditHepaticDopplerExtraction, assertHepaticDopplerAuditPassed, type HepaticDopplerAudit } from "./dopplerHepaticoWriterAudit";
@@ -28,7 +29,8 @@ const extract: HepaticExtractor = async ({ rawInput, signal, model }) => {
       signal,
       validate: (value) => void HepaticDopplerExtractionSchema.parse(value),
     });
-    return { value: JSON.parse(raw), inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
+    const { value } = cleanExtractionMetatext(JSON.parse(raw), DOPPLER_HEPATICO_JSON_SCHEMA);
+    return { value, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
   } catch (err) {
     if (err instanceof LlmOutputError) throw new Error("DOPPLER_HEPATICO_EXTRACTION_INCOMPLETE");
     throw err;

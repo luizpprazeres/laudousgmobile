@@ -7,6 +7,7 @@
  * writer geral. Rollback explícito suspende a categoria. Guard de formato reusa o MSK.
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
+import { cleanWriterOutput, WRITER_OUTPUT_RULE } from "./writerOutputGuard";
 import { env } from "../env";
 import { buildDopplerRenalWriterSystemMessage } from "../renderer/categories/DOPPLER_RENAL";
 import { DOPPLER_RENAL_FEWSHOTS } from "../renderer/categories/dopplerRenalFewshots";
@@ -45,7 +46,7 @@ export async function* runDopplerRenalWriterStream(args: {
   // Haiku (a 0.2 só vale no rollback OpenAI).
   const gen = llmTextStream({
     target,
-    system: buildDopplerRenalWriterSystemMessage(),
+    system: `${buildDopplerRenalWriterSystemMessage()}\n\n${WRITER_OUTPUT_RULE}`,
     messages: [
       ...fewshotMsgs,
       { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
@@ -70,7 +71,7 @@ export async function* runDopplerRenalWriterStream(args: {
     }
   }
 
-  const fullText = normalizeMskWriterFormat(full);
+  const fullText = normalizeMskWriterFormat(cleanWriterOutput(full).text);
 
   const audit = auditDopplerRenalFacts(args.rawInput, fullText);
   // O stream do provedor é deliberadamente retido até a auditoria terminar. Um texto

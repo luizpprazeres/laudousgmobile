@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import Anthropic from "@anthropic-ai/sdk";
 import type OpenAI from "openai";
 import {
+  EXTRACTION_TEXT_RULE,
   HAIKU_MODEL,
   llmJson,
   llmParsed,
@@ -347,6 +348,20 @@ async function main() {
       llmJson({ target: HAIKU, system: "s", messages: [{ role: "user", content: "u" }], schemaName: "Grande", schema: BIG_SCHEMA, anthropicClient: client }),
       "LLM_TRUNCATED",
     );
+  });
+
+  await check("regra comum de extração anexada a toda chamada JSON (estrito e ferramenta); sanity desliga", async () => {
+    const strict = scripted([textTurn('{"nome":"x","idade":1}')]);
+    await llmJson({ target: HAIKU, system: "PROMPT DA CATEGORIA", messages: [{ role: "user", content: "u" }], schemaName: "Regra1", schema: SMALL_SCHEMA, anthropicClient: strict.client });
+    assert.ok(strict.calls[0].system[0].text.startsWith("PROMPT DA CATEGORIA\n\nCAMPOS DE TEXTO LIVRE"));
+    assert.ok(strict.calls[0].system[0].text.endsWith(EXTRACTION_TEXT_RULE));
+    const tool = scripted([toolTurn("Regra2", { campo_0: "x" })]);
+    await llmJson({ target: HAIKU, system: "PROMPT", messages: [{ role: "user", content: "u" }], schemaName: "Regra2", schema: BIG_SCHEMA, anthropicClient: tool.client });
+    assert.ok(tool.calls[0].system[0].text.includes(EXTRACTION_TEXT_RULE));
+    const off = scripted([textTurn('{"nome":"x","idade":1}')]);
+    await llmJson({ target: HAIKU, system: "SANITY", messages: [{ role: "user", content: "u" }], schemaName: "Regra3", schema: SMALL_SCHEMA, reportText: false, anthropicClient: off.client });
+    assert.equal(off.calls[0].system[0].text, "SANITY");
+    assert.match(EXTRACTION_TEXT_RULE, /Conclusão do médico:/);
   });
 
   // ---------------- Texto ----------------
