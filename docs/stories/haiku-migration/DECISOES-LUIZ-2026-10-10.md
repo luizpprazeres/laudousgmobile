@@ -37,3 +37,16 @@ Fonte: resposta do Luiz ao consolidado de pendências. Cada item tem dono (frent
 
 ## Fila nova
 - **W15 — Comentários/técnica padrão por via e transdutor** (briefing `W15-comentarios-tecnica.md`).
+
+## Rodada 2 (10/10, noite)
+- **Próstata**: a técnica da Biblioteca passa para a frase **longa** dos finais ("Exame realizado com transdutor de 4.0 MHz, pela
+  técnica transabdominal com a bexiga repleta com o paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais,
+  longitudinais, oblíquos e coronais abrangendo toda a pelve.") — W4 gera o SQL com guardas na W15; orquestrador aplica.
+- **FIGO**: tabela aprovada, exceto **2-5 = "subseroso, estendendo-se desde a mucosa"** (W4).
+- **Golf ball**: mantém **"foco ecogênico intracardíaco"** (exceção do léxico, como está).
+- **"Calcule o volume" ditado** (W10c tireoide; W10b writer completo): quando o médico pede, calcular o volume da estrutura
+  com 3 eixos ditados (C × L × AP × 0,52, elipsoide, em cm³, uma casa decimal como nos lobos) e, na tireoide, somar ao volume dos
+  lobos para o volume total. Exemplo: "lobo direito medindo X x Y x Z com volume de V1, lobo esquerdo … com volume de V2, istmo
+  medindo A x B x C, calcule o volume" → volume do istmo calculado + VT = V1 + V2 + istmo. Sem o pedido e sem volume ditado, nada
+  é inventado (fica como hoje). O caso 42fbb3eb foi esquecimento do volume do istmo, não defeito.
+- **"Correlacionar com dados clínicos" (partes moles)**: ainda sem resposta — fica como está (automático).
