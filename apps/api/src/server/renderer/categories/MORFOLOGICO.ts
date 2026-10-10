@@ -204,6 +204,97 @@ export const MorfologicoFindingsSchema = z.object({
 
 export type MorfologicoFindings = z.infer<typeof MorfologicoFindingsSchema>;
 
+/**
+ * NORMALIZAÇÃO DA EXTRAÇÃO POR DITADO (bancada final de 10/10, morfológico).
+ *
+ * (a) Ossos longos e medidas do bloco "Medidas morfológicas:" da calculadora do app
+ *     ("Tíbia: 36,2 mm" …) às vezes voltavam `null` da extração (1 em 4 execuções do
+ *     Haiku no mesmo ditado), e o laudo saía com "____". O bloco é gerado por máquina
+ *     (rótulo fixo, unidade explícita): o valor dele preenche o campo que a extração
+ *     deixou vazio. Nunca sobrescreve valor extraído nem um lado específico ditado.
+ * (b) No 1º trimestre o ducto venoso é MARCADOR do protocolo (campo `ducto_venoso`, linha
+ *     própria do laudo), não Doppler obstétrico. Um módulo `doppler` que só tem o DV
+ *     qualitativo — ou nada — não é exame Doppler: acionava "COM DOPPLER COLORIDO",
+ *     seção DOPPLERVELOCIMETRIA e "Dados Doppler insuficientes", e a conclusão ditada das
+ *     uterinas se perdia (2 em 4 execuções). No 1º trimestre esse módulo é descartado; no
+ *     2º/3º nada muda (módulo vazio ali ainda sinaliza Doppler pedido sem índices).
+ */
+const MEDIDAS_BLOCO: Array<[RegExp, "tibia_mm" | "fibula_mm" | "umero_mm" | "radio_mm" | "ulna_mm" | "cerebelo_mm" | "cisterna_magna_mm"]> = [
+  [/t[íi]bia/, "tibia_mm"],
+  [/f[íi]bula/, "fibula_mm"],
+  [/[úu]mero/, "umero_mm"],
+  [/r[áa]dio/, "radio_mm"],
+  [/ulna/, "ulna_mm"],
+  [/cerebelo/, "cerebelo_mm"],
+  [/cisterna\s+magna/, "cisterna_magna_mm"],
+];
+
+/** Lê o bloco "Medidas morfológicas:" (formato de máquina). Sem o cabeçalho, nada. */
+export function parseMedidasMorfologicas(rawInput: string): Partial<Record<(typeof MEDIDAS_BLOCO)[number][1], number>> {
+  const i = rawInput.search(/Medidas\s+morfol[óo]gicas\s*:/i);
+  if (i < 0) return {};
+  const bloco = rawInput.slice(i);
+  const out: Partial<Record<(typeof MEDIDAS_BLOCO)[number][1], number>> = {};
+  for (const [rotulo, campo] of MEDIDAS_BLOCO) {
+    const m = bloco.match(new RegExp(`(?:^|\\s)${rotulo.source}\\s*:\\s*(\\d+(?:[.,]\\d+)?)\\s*(mm|cm)\\b`, "i"));
+    if (!m) continue;
+    const valor = parseFloat(m[1]!.replace(",", "."));
+    out[campo] = /^cm$/i.test(m[2]!) ? Math.round(valor * 100) / 10 : valor;
+  }
+  return out;
+}
+
+const LADOS: Partial<Record<string, [string, string]>> = {
+  tibia_mm: ["tibia_dir_mm", "tibia_esq_mm"],
+  fibula_mm: ["fibula_dir_mm", "fibula_esq_mm"],
+  umero_mm: ["umero_dir_mm", "umero_esq_mm"],
+  radio_mm: ["radio_dir_mm", "radio_esq_mm"],
+  ulna_mm: ["ulna_dir_mm", "ulna_esq_mm"],
+};
+
+/** Módulo Doppler sem dado vascular — o DV qualitativo (marcador do 1º trimestre) não conta. */
+export function dopplerSemDadoVascular(d: MorfologicoFindings["doppler"]): boolean {
+  if (!d) return true;
+  return Object.entries(d).every(([k, v]) => v === null || v === undefined || k === "ducto_venoso_qualitativo");
+}
+
+export function normalizarExtracaoMorfologico(f: MorfologicoFindings, rawInput: string): MorfologicoFindings {
+  const out: MorfologicoFindings = { ...f };
+  const bloco = parseMedidasMorfologicas(rawInput);
+  for (const [campo, valor] of Object.entries(bloco) as Array<[keyof typeof bloco, number]>) {
+    const lados = LADOS[campo];
+    const ladoDitado = lados?.some((l) => (out as Record<string, unknown>)[l] != null);
+    if (out[campo] == null && !ladoDitado) (out as Record<string, unknown>)[campo] = valor;
+  }
+  if (out.trimestre === "1t" && out.doppler && dopplerSemDadoVascular(out.doppler)) {
+    const qualitativo = out.doppler.ducto_venoso_qualitativo ?? "";
+    if (out.ducto_venoso == null && /revers|negativ|alterad/i.test(qualitativo)) {
+      out.ducto_venoso = "alterado";
+    }
+    out.doppler = null;
+  }
+  // (b) A conclusão qualitativa das uterinas ditada no 1º trimestre ("Dopplervelocimetria
+  // normal das artérias uterinas.") só tem um canal: itens_conclusao_livres. Sem IP nem
+  // módulo, o renderer não a escreve sozinho — se a extração a deixou de fora, volta do ditado.
+  if (out.trimestre === "1t" && !out.doppler && out.uterina_ip_direita == null && out.uterina_ip_esquerda == null
+    && !(out.itens_conclusao_livres ?? []).some((i) => /uterin/i.test(i))) {
+    const frase = conclusaoUterinasDitada(rawInput);
+    if (frase) out.itens_conclusao_livres = [...(out.itens_conclusao_livres ?? []), frase];
+  }
+  return out;
+}
+
+/** Frase qualitativa das uterinas no ditado (sem número), sem a numeração da conclusão. */
+export function conclusaoUterinasDitada(rawInput: string): string | null {
+  for (const bruta of rawInput.split(/(?<=[.!?])\s+|\n+/)) {
+    const frase = bruta.replace(/^\s*\d+\s*[.)-]\s*/, "").trim();
+    if (!/art[ée]rias?\s+uterinas?/i.test(frase) || /\d/.test(frase)) continue;
+    if (!/doppler|fluxo|[íi]ndice/i.test(frase) || !/normal|alterad|aumentad|incisura/i.test(frase)) continue;
+    return /[.!?]$/.test(frase) ? frase : `${frase}.`;
+  }
+  return null;
+}
+
 export const MORFOLOGICO_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -341,6 +432,10 @@ REGRAS:
    alterado; onda A positiva/trifásica = normal). Nos três, null = não ditado
    (o modelo assume presente / ausente / normal). "ausente" (osso nasal),
    "presente" (tricúspide) e "alterado" (ducto) SOMENTE quando ditados.
+   No 1º trimestre o ducto venoso é MARCADOR do protocolo: vai SÓ em ducto_venoso,
+   nunca no objeto doppler (onda trifásica/positiva não é exame Doppler). Conclusão
+   qualitativa das uterinas sem IP ("Dopplervelocimetria normal das artérias
+   uterinas") → copie em itens_conclusao_livres.
 3b. tn_classificacao: "limitrofe" SOMENTE quando o médico disser que a TN é
    limítrofe. Nos demais casos, classifique deterministicamente pelo valor:
    "aumentada" quando TN >= 3.5 mm e "normal" quando TN < 3.5 mm. Sem TN, null.
