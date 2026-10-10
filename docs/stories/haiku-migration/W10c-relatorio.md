@@ -228,3 +228,24 @@ HTML local: `tmp-review/bench-haiku/w10c/2026-10-10T11-53-39-tireoide/relatorio.
 ## Commits
 
 `dfe6ad31` bancada (placares, tamanho, patch de biblioteca) · `7ca763ed` tireoide · `3eb744dd` mama · `ec486423`/`4b75ca18` relatório e revisão · `102bc541` merge do global final da W10b · último commit: contrato da mama ajustado ao global novo.
+
+## W14 — correções da revisão independente (W13, Codex)
+
+Branch `fix/w14-mama-tireoide` a partir de `feat/haiku-migration` (cf903353). Achados desta frente: A05, A06, A07, A12.
+
+| Achado | Correção | Onde |
+|---|---|---|
+| A05 — menção a axilas ativava escopo e normalidade mesmo sob exclusão ou alteração | escopo continua como pergunta ao ditado (o formato que zerou axilas inventadas na W10c), agora com exclusão explícita ("sem axilas", "só mamas", "axilas não avaliadas") vencendo a menção, e axila alterada com a descrição dela no lugar da frase normal e item próprio na conclusão — nunca "Linfonodos axilares normais." para a axila alterada | `prompts/contracts/MAMARIA.ts` |
+| A06 — global mandava "margens sempre circunscritas" | entrada `CATEGORY_GLOBAL_RULES.MAMARIA` removida: escopo, margem (preserva lobulada/microlobulada/irregular/espiculada; só "regular" vira circunscrita) e hierarquia do BI-RADS ficam só no contrato. A linha 45 do bloco obstétrico é do A01 (W10b) | `prompts/global.ts` |
+| A07 — "2 9 cm" → 2,9 sem marca; unidade ausente → cm | número truncado ou eixos ambíguos e medida sem nenhuma unidade no achado: reproduzidos e marcados "[REVISAR — medida ambígua]"; unidade ausente usa só a unidade dita para as outras medidas do mesmo achado | `prompts/contracts/MAMARIA.ts` |
+| A12 — "com áreas" incompleto virava áreas anecoicas (1 ponto) | só "áreas anecoicas" ditado escolhe o enum; "com áreas" sem qualificador = ecogenicidade null com o trecho em `descricao_raw`; sem ecogenicidade o renderer não calcula nota (já era assim) e agora escreve "[REVISAR — ecogenicidade não ditada]" na conclusão, em vez de calar (nota ditada continua valendo, sem marca) | `renderer/categories/TIREOIDE.ts` |
+
+Verificação:
+
+- Determinística: `w10c-mama-tireoide.manual.ts` 18/18 (8 novas, com os cenários sintéticos do achado: system efetivo da mama sem "sempre circunscritas" e com BI-RADS 1 do normal; imagem sem ecogenicidade sem nota e com a pendência visível). Typecheck e os manuais de tireoide/mama/W7 passam.
+- Haiku pela assinatura, ditados sintéticos dos cenários do Codex (`scripts/bench-haiku/sinteticos-mama-tireoide.ts`): 13/13 critérios com a biblioteca do banco e 13/13 com a proposta — "só mamas, sem axilas" sem axilas e com BI-RADS 1; linfonodo axilar com córtex espessado descrito, sem "Linfonodos axilares normais."; margem espiculada preservada; "medindo 2 9" marcado; unidade do mesmo achado usada sem marca. Observação: no caso da axila alterada o Haiku omitiu a frase normal da axila direita (omissão leve de normalidade).
+- Placar nos 29 laudos reais de mama (`w10c/2026-10-10T13-08-17-mamaria`, contrato W14 + biblioteca proposta): soma de graves 19 × 13 da W10c. A diferença vem do A07: "2 9 cm", "1 3 cm" e "0 9 cm" saem marcados em vez de resolvidos (o médico os resolveu como 2,9/1,3/0,9 nos finais), mais duas marcas de revisão em texto livre fora da lista fechada (variação do Haiku). Frases fixas, "em mama", axilas, rodapé e numeração seguem no nível da W10c. Sem juiz: mudança pequena.
+- Placar nos 20 laudos reais de tireoide (`w10c/2026-10-10T13-08-17-tireoide`): 48 × 47 (estável); 3 imagens sem ecogenicidade agora sinalizadas.
+
+Para o Luiz: o A07 troca conveniência por segurança — o médico resolve "2 9 cm" como 2,9 nos finais; com a correção ele passa a confirmar essas medidas.
+Para a W10b (A01): a linha 45 de `GLOBAL_RULES_BLOCK` (regra da mama no bloco obstétrico) continua lá; o contrato da mama já tem todo o conteúdo dela, então basta apagá-la.
