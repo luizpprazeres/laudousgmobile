@@ -8,6 +8,7 @@
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
 import { cleanWriterOutput, WRITER_OUTPUT_RULE } from "./writerOutputGuard";
+import { VOLUME_CALCULO_RULE } from "../prompts/global";
 import { env } from "../env";
 import { buildDopplerRenalWriterSystemMessage } from "../renderer/categories/DOPPLER_RENAL";
 import { DOPPLER_RENAL_FEWSHOTS } from "../renderer/categories/dopplerRenalFewshots";
@@ -48,7 +49,7 @@ export async function* runDopplerRenalWriterStream(args: {
   // Haiku (a 0.2 só vale no rollback OpenAI).
   const gen = llmTextStream({
     target,
-    system: `${buildDopplerRenalWriterSystemMessage()}\n\n${WRITER_OUTPUT_RULE}`,
+    system: `${buildDopplerRenalWriterSystemMessage()}\n\n${VOLUME_CALCULO_RULE}\n\n${WRITER_OUTPUT_RULE}`,
     messages: [
       ...fewshotMsgs,
       { role: "user", content: `Ditado do médico:\n${args.rawInput}` },

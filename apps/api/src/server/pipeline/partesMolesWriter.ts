@@ -9,6 +9,7 @@
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
 import { cleanWriterOutput, WRITER_OUTPUT_RULE } from "./writerOutputGuard";
+import { VOLUME_CALCULO_RULE } from "../prompts/global";
 import { env } from "../env";
 import { buildPartesMolesWriterSystemMessage } from "../renderer/categories/PARTES_MOLES";
 import { PARTES_MOLES_FEWSHOTS } from "../renderer/categories/partesMolesFewshots";
@@ -53,7 +54,7 @@ export async function* runPartesMolesWriterStream(args: {
   // Haiku (a 0.2 só vale no rollback OpenAI).
   const gen = llmTextStream({
     target,
-    system: `${buildPartesMolesWriterSystemMessage()}\n\n${WRITER_OUTPUT_RULE}`,
+    system: `${buildPartesMolesWriterSystemMessage()}\n\n${VOLUME_CALCULO_RULE}\n\n${WRITER_OUTPUT_RULE}`,
     messages: [
       ...fewshotMsgs,
       { role: "user", content: `Ditado do médico:\n${args.rawInput}` },

@@ -648,6 +648,8 @@ async function main() {
       }
       // Como a rota: writer dedicado (passthrough) não recebe acréscimo do guard.
       text = applyCommandOperations(text, rawInput, { writer: passthrough });
+      // Como a rota: "calcule o volume" no writer dedicado (decisão de 10/10).
+      if (passthrough) text = applyVolumePolicy(text, rawInput, { soPedido: true });
       return mode === "replay" ? { text: universalGuards(text) } : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text) });
     });
   }

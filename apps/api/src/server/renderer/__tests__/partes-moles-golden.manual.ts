@@ -99,7 +99,7 @@ const Les = (p: Partial<PartesMolesLesao> & { tipo: PartesMolesLesao["tipo"] }):
   check("nódulo: medidas 1 casa decimal", /2,1 x 1,4 x 1,0 cm/.test(l), l);
   check("nódulo: plano muscular", /no plano muscular/.test(l), l);
   check("nódulo: fluxo ao Doppler", /com fluxo ao Doppler colorido/.test(l), l);
-  check("nódulo: conclusão 'a esclarecer'", /Imagem nodular sólida na região da coxa esquerda, a esclarecer\. Correlacionar com dados clínicos\./.test(l), l);
+  check("nódulo: conclusão 'a esclarecer'", /Imagem nodular sólida na região da coxa esquerda, a esclarecer\.(?! Correlacionar)/.test(l), l);
 }
 
 // ── Lipoma ──
@@ -169,7 +169,7 @@ const Les = (p: Partial<PartesMolesLesao> & { tipo: PartesMolesLesao["tipo"] }):
   const l = renderPartesMoles(
     F({ lesoes: [Les({ tipo: "colecao", medidas_cm: [2.0, 1.0, 1.0], localizacao: "no antebraço" })] }),
   );
-  check("coleção sem natureza: conclusão 'a esclarecer'", /Coleção no antebraço, a esclarecer\. Correlacionar com dados clínicos\./.test(l), l);
+  check("coleção sem natureza: conclusão 'a esclarecer'", /Coleção no antebraço, a esclarecer\.(?! Correlacionar)/.test(l), l);
 }
 
 // ── Corpo estranho (medida única) ──
@@ -255,6 +255,37 @@ const Les = (p: Partial<PartesMolesLesao> & { tipo: PartesMolesLesao["tipo"] }):
 {
   const l = renderPartesMoles(F({ lesoes: [Les({ tipo: "nodulo_solido", ecogenicidade: "hipoecoica" })] }));
   check("placeholder: '____ x ____ x ____ cm' quando sem medida", /____ x ____ x ____ cm/.test(l), l);
+}
+
+// ── A10 (decisão do Luiz, 10/10): "Correlacionar com dados clínicos" só quando ditado ──
+{
+  const tipos: PartesMolesLesao["tipo"][] = ["nodulo_solido", "cisto", "colecao", "linfonodo"];
+  for (const tipo of tipos) {
+    const l = renderPartesMoles(F({ lesoes: [Les({ tipo, medidas_cm: [1.0, 1.0, 1.0], localizacao: "no braço" })] }));
+    check(`A10 negativo (${tipo}): sem 'Correlacionar' quando não ditado`, !/correlac/i.test(l), l);
+  }
+  const natureza = renderPartesMoles(
+    F({ lesoes: [Les({ tipo: "colecao", natureza_colecao: "hematoma", medidas_cm: [2.0, 1.0, 1.0], localizacao: "na coxa" })] }),
+  );
+  check("A10 negativo (coleção com natureza): sem 'Correlacionar'", !/correlac/i.test(natureza), natureza);
+  const ditado = renderPartesMoles(
+    F({
+      lesoes: [Les({ tipo: "linfonodo", medidas_cm: [1.2, 0.6, 0.5], localizacao: "na região inguinal direita" })],
+      conduta: "correlacionar com dados clínicos",
+    }),
+  );
+  check(
+    "A10 positivo: conduta ditada entra no fim da conclusão, em parágrafo próprio",
+    /CONCLUSÃO:\nLinfonodo na região inguinal direita\.\n\nCorrelacionar com dados clínicos\.$/.test(ditado),
+    ditado,
+  );
+  const redacao = renderPartesMoles(
+    F({ lesoes: [Les({ tipo: "nodulo_solido", medidas_cm: [1.0, 1.0, 1.0] })], conduta: "Convém correlação com os achados clínicos e laboratoriais." }),
+  );
+  check("A10 positivo: redação do médico preservada", /\n\nConvém correlação com os achados clínicos e laboratoriais\.$/.test(redacao), redacao);
+  check("A10: conduta não duplica", (redacao.match(/Convém/g) ?? []).length === 1, redacao);
+  const normal = renderPartesMoles(F({ conduta: null }));
+  check("A10: exame normal sem conduta segue igual", !/correlac|Convém/i.test(normal), normal);
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);

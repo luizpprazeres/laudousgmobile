@@ -13,6 +13,7 @@
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
 import { cleanWriterOutput, WRITER_OUTPUT_RULE } from "./writerOutputGuard";
+import { VOLUME_CALCULO_RULE } from "../prompts/global";
 import { env } from "../env";
 import { buildMskWriterSystemMessage } from "../renderer/categories/MUSCULOESQUELETICO";
 import { MSK_FEWSHOTS } from "../renderer/categories/mskFewshots";
@@ -64,7 +65,7 @@ export async function* runMskWriterStream(args: {
   // Haiku (a 0.2 só vale no rollback OpenAI).
   const gen = llmTextStream({
     target,
-    system: `${buildMskWriterSystemMessage({ validatedLibrary })}\n\n${WRITER_OUTPUT_RULE}`,
+    system: `${buildMskWriterSystemMessage({ validatedLibrary })}\n\n${VOLUME_CALCULO_RULE}\n\n${WRITER_OUTPUT_RULE}`,
     messages: [
       ...fewshotMsgs,
       { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
