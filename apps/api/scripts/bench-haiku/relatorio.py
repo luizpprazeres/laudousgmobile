@@ -169,6 +169,8 @@ const KEYS = [
   {k:'AS3', t:'Cenário AS3', s:'Sonnet 5.5 no caminho atual, prompt revisado (2ª iteração)'},
   {k:'BS', t:'Cenário BS', s:'Sonnet 5.5 escreve o laudo inteiro (writer genérico)'},
   {k:'B2S', t:'Cenário B2S', s:'Sonnet 5.5 escreve tudo + prompt “corpo descritivo”'},
+  {k:'A4', t:'Cenário A4', s:'caminho atual, prompt revisado (3ª iteração)'},
+  ...['B3','B4','B5','B6','B7','B8','B9'].map((k, i) => ({k, t:`Cenário ${k}`, s:`writer, prompt revisado (${i + 1}ª iteração)`})),
 ].map(x => ({...x, ...((D.rotulos || {})[x.k] || {})})).filter(x => x.k==='gpt' || (x.k==='R' ? D.cases.some(r => r.juiz && r.juiz.R) : D.cases.some(r => r[x.k])));
 const textOf = (r,k) => {
   if (k==='gpt') return r.gpt||'';
