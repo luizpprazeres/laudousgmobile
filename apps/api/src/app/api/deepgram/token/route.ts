@@ -1,5 +1,5 @@
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
-import { medicalAsrKeytermsForCategory } from "@/server/asr/medicalGlossary";
+import { medicalAsrKeytermsForCategory, medicalAsrKeytermsW11, keytermsW11Ativo } from "@/server/asr/medicalGlossary";
 import { env } from "@/server/env";
 export { OPTIONS } from "@/server/cors";
 
@@ -21,9 +21,12 @@ export const dynamic = "force-dynamic";
  *   Resp    { "access_token": "<jwt>", "expires_in": 60 }
  */
 function activeKeyterms(category: string | null): string[] {
-  return env().DEEPGRAM_KEYTERMS_ENABLED === "true"
-    ? medicalAsrKeytermsForCategory(category)
-    : [];
+  if (env().DEEPGRAM_KEYTERMS_ENABLED !== "true") return [];
+  // W11: ajuste pela grafia assinada, só nas categorias ligadas (default: nenhuma).
+  if (category && keytermsW11Ativo(category, env().DEEPGRAM_KEYTERMS_W11_CATEGORIES)) {
+    return medicalAsrKeytermsW11(category);
+  }
+  return medicalAsrKeytermsForCategory(category);
 }
 
 type DirectKeyReason = "configured_skip_grant" | "grant_insufficient_permissions";

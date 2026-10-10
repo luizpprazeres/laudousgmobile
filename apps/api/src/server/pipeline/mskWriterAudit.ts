@@ -19,6 +19,10 @@ const FORA_DO_ROTEIRO = [
   "sinóvia articular",
 ];
 
+function semAcento(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 export type MskAudit = {
   ok: boolean;
   /** Medidas ditadas (número) não encontradas no laudo. */
@@ -135,8 +139,16 @@ export function auditMskFacts(rawInput: string, laudo: string): MskAudit {
   if (/\bdireit[oa]s?\b/.test(rawLc) && !/direit[oa]/.test(laudoLc)) missingSides.push("direito");
   if (/\besquerd[oa]s?\b/.test(rawLc) && !/esquerd[oa]/.test(laudoLc)) missingSides.push("esquerdo");
 
-  // Estruturas fora do protocolo (over-coverage).
-  const extraStructures = FORA_DO_ROTEIRO.filter((s) => laudoLc.includes(s));
+  // Estruturas fora do protocolo (over-coverage) que o MODELO acrescentou por
+  // conta própria. Achado DITADO de estrutura fora do roteiro é permitido pelo
+  // prompt (A09: "entra em linha própria, junto da estrutura vizinha") — só
+  // reprova o que aparece no laudo sem ter sido citado no ditado (R2-03).
+  const rawNorm = semAcento(rawLc);
+  const laudoNorm = semAcento(laudoLc);
+  const extraStructures = FORA_DO_ROTEIRO.filter((s) => {
+    const termo = semAcento(s);
+    return laudoNorm.includes(termo) && !rawNorm.includes(termo);
+  });
 
   const renderedExams = new Set(extractRenderedMskExams(laudo));
   const missingExams = extractExpectedMskExams(rawInput).filter(

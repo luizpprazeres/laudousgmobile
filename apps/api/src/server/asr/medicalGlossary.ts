@@ -278,3 +278,49 @@ export function medicalAsrKeytermsForCategory(category: string | null): string[]
     ...(CATEGORY_KEYTERMS[normalized] ?? []),
   ]);
 }
+
+/**
+ * W11 (10/10/2026) — AJUSTE DE KEYTERMS PELA GRAFIA QUE O MÉDICO ASSINA. Desligado por padrão;
+ * liga por categoria com `DEEPGRAM_KEYTERMS_W11_CATEGORIES` (rollback: tirar a categoria da env).
+ *
+ * Base (doc oficial do Deepgram, lida em 10/10/2026 — URLs no relatório W11):
+ *  - developers.deepgram.com/docs/keyterm: nova-3 aceita keyterm em transcrição monolíngue; limite de
+ *    500 tokens por requisição (estourar = erro, sem truncar); foco em 20–50 termos; a transcrição
+ *    "may not always exactly match the keyterm's formatting" → grafia final é do normalizador
+ *    (pipeline/lexicoDaCasa.ts), não do keyterm;
+ *  - changelog 2025/9/2 (nova-3 em pt/pt-BR) e 2026/9/24 (modelos novos de português, sem mudar a
+ *    requisição): as medições de 03/08 e 06/08 deste arquivo são anteriores ao modelo atual.
+ *
+ * Mineração de 869 laudos (180 dias): o médico assina "supraespinhal" (108) e "infraespinhal" (72) —
+ * a lista pedia "supraespinal/supraespinhoso/infraespinal"; "subdeltoidea" (87), não "subdeltóidea";
+ * "córtico medular"/"corticomedular", não "córtico-medular"; na mama o ASR entrega
+ * "superlateral/super lateral" mais que "superolateral".
+ *
+ * Só a lista POR CATEGORIA muda; o fallback `ALL_MEDICAL_ASR_KEYTERMS` (no teto) não é tocado.
+ */
+const W11_TROCAS: Readonly<Record<string, string | null>> = {
+  supraespinal: "supraespinhal",
+  supraespinhoso: null,
+  infraespinal: "infraespinhal",
+  "subdeltóidea": "subdeltoidea",
+  "córtico-medular": null,
+};
+const W11_ACRESCIMOS: Readonly<Record<string, readonly string[]>> = {
+  MAMARIA: ["superolateral", "inferolateral", "superomedial", "inferomedial"],
+  MUSCULOESQUELETICO: ["metacarpofalangiana"],
+  MUSCULOESQUELETICO_V2: ["metacarpofalangiana"],
+};
+
+/** Categorias com o ajuste W11 ligado (`undefined`/"" = nenhuma; "*" = todas). */
+export function keytermsW11Ativo(category: string | null, valorEnv: string | undefined): boolean {
+  const lista = (valorEnv ?? "").split(",").map((c) => c.trim().toUpperCase()).filter(Boolean);
+  if (!lista.length || !category) return false;
+  return lista.includes("*") || lista.includes(category.trim().toUpperCase());
+}
+
+/** Lista da categoria com o ajuste W11 (trocas de grafia + acréscimos), sem duplicar. */
+export function medicalAsrKeytermsW11(category: string): string[] {
+  const base = medicalAsrKeytermsForCategory(category);
+  const trocada = base.flatMap((t) => (t in W11_TROCAS ? (W11_TROCAS[t] === null ? [] : [W11_TROCAS[t] as string]) : [t]));
+  return unique([...trocada, ...(W11_ACRESCIMOS[category.trim().toUpperCase()] ?? [])]);
+}

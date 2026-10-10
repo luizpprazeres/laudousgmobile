@@ -114,6 +114,8 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [ ] W11 revisão de termos (fila)
 - [ ] W12 miomas: FIGO ↔ localização, listas na web, 1/múltiplos/miomatoso no prompt (fila)
 - [x] W13 revisão independente dos prompts (Codex gpt-6.1-sol medium)
+- [x] W11 léxico da casa (ditado + saída, flag por categoria) e keyterms Deepgram (desligados por padrão) — integrada; decisões do Luiz em docs/stories/haiku-migration/W11-relatorio.md §5
+- [x] W14b correções da rodada 2 do Codex (tireoide, motor) — integradas; pelve com a W12
 - [x] W14 correções da revisão (W1, W4, W10b, W10c) — integradas; pendentes do Luiz: A04, A08, A10, A11, "2 9 cm", soma do volume da tireoide
 - [x] Smoke real na API (Haiku: 4/4; Sonnet pelve ok) e deploy de produção SEM domínio da branch (`laudousgmobile-4mdtxfkdx`, saúde ok; produção intacta)
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
