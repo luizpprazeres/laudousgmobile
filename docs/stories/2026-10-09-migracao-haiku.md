@@ -53,6 +53,7 @@ guard de comandos por laudo).
 ## Decisões do Dr. Luiz (10/10)
 
 16. MSK: **Haiku 5.5** no writer dedicado com o prompt novo da W9; "sem evidência de rotura" em todo tendão alterado.
+18. Pelve: **Sonnet 5.5** no writer dedicado (W10a). Biblioteca do abdome, vias e mama aplicada no banco (10/10, via MCP, com backup em tmp-review/haiku-migration/). "obtida em 06 fotos, segundo" → "obtida segundo" em prompts, few-shots, banco e sanitizador.
 17. Rodada de prompts enxutos (método W9), prioridade: pelve (TA/TV/TA+TV) → abdome → vias urinárias → mamas/axilas →
     tireoide (W10a/b/c). Depois: revisão de termos (W11, na fila), com cautela no Deepgram.
 
