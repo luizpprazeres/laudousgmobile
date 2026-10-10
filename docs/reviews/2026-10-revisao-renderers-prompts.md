@@ -370,3 +370,107 @@ Ordem por impacto clínico × frequência × esforço. "Antes do GO" = precisa e
    diagnóstico mais provável" (seus finais, contrato da pelve)? E a conduta "Convém, a critério clínico…" pode entrar quando
    ditada ou quando o modelo da categoria a traz?
 6. **Mama:** confirmar que exame normal leva "(Categoria BI-RADS® 1)" e que "não falou de axilas" = axilas normais.
+
+## W8 — Haiku 5.5 × Sonnet 5.5 como escritor (09/10/2026, noite)
+
+Decisão do Luiz: o gpt-4.1 sai de vez; para MSK, carótidas e pelve (vários laudos no mesmo ditado) a proposta é um modelo
+mais forte, Claude Sonnet 5.5. Rodada pela assinatura, com o **código de hoje** (motor Anthropic do W1, regra "corpo
+descritivo" do W3 já no prompt — por isso o writer genérico é o cenário `B`, sem patch) e o mesmo esforço (`medium`).
+Os cinco candidatos foram julgados **juntos** pelo mesmo juiz (Opus 5.5, cego, regras da casa + MSK).
+HTML para o Luiz escolher: `tmp-review/bench-haiku/w8/<rodada>/relatorio.html` (local, contém ditados reais).
+
+### MUSCULOESQUELETICO_V2 (71) — rodada `w8/2026-10-09T23-36-04-musculoesqueletico_v2`
+
+Todos os 71 laudos com laudo final de 90 dias; nenhuma falha de geração.
+
+| Candidato | Nota média | ≤ 4 | Omissões | Invenções | Medida/lado | Impressão ok | Multi-laudo preservado* |
+|---|---|---|---|---|---|---|---|
+| Produção (gpt-4.1, writer dedicado) | **8,31** | 2 | 13 | 58 | 3 | 64/71 | 37/47 |
+| Haiku 5.5 — writer dedicado | 5,90 | 14 | 91 | 119 | 6 | 51/71 | 32/47 |
+| **Sonnet 5.5 — writer dedicado** | **6,61** | 10 | 57 | 133 | 7 | 56/71 | 33/47 |
+| Haiku 5.5 — writer genérico | 4,38 | 36 | 167 | 164 | 11 | 37/71 | 19/47 |
+| Sonnet 5.5 — writer genérico | 5,49 | 16 | 139 | 137 | 8 | 45/71 | 36/47 |
+
+Sem os 10 casos expostos ao defeito do guard de comandos (MK-1: ditado com comando de conclusão e vários laudos no
+final — o defeito é do guard e atinge todos os candidatos), n = 61:
+
+| Candidato | Nota média | ≤ 4 | Omissões | Invenções | Medida/lado | Impressão ok | Multi-laudo preservado* |
+|---|---|---|---|---|---|---|---|
+| Produção (gpt-4.1) | **8,49** | 1 | 12 | 51 | 2 | 56/61 | 31/37 |
+| Haiku — dedicado | 6,20 | 8 | 67 | 96 | 2 | 46/61 | 30/37 |
+| **Sonnet — dedicado** | **6,93** | 5 | 44 | 109 | 4 | 50/61 | 31/37 |
+| Haiku — genérico | 4,43 | 30 | 137 | 146 | 9 | 31/61 | 17/37 |
+| Sonnet — genérico | 5,63 | 12 | 117 | 114 | 7 | 39/61 | 32/37 |
+
+\* laudos cujo final tem mais de um exame: o candidato saiu com o mesmo número de "CONCLUSÃO:".
+
+Latência mediana por chamada, pela assinatura (`claude -p`; inclui o próprio CLI — só vale a comparação relativa):
+Sonnet dedicado 7,7 s · Haiku dedicado 12,0 s · Sonnet genérico 10,5 s · Haiku genérico 15,7 s.
+
+Leitura:
+- **O Sonnet é melhor que o Haiku nos dois writers** (+0,7 no dedicado; +1,2 no genérico): omissões caem de 67 para 44
+  no dedicado, menos laudos graves (8 → 5) e menos notas ao médico dentro do laudo (11 → 4 de 71). Markdown: 0 nos dois
+  (o guard do W1 resolve).
+- **O writer dedicado continua necessário**: no genérico os dois perdem 1,3–1,8 ponto; o Haiku genérico desmonta
+  laudos com vários exames (17/37 preservados).
+- **Nenhum dos dois alcança a produção** (8,5): o Sonnet fica 1,5 ponto abaixo. O que mais pesa nele é acrescentar
+  normalidade/qualificadores não ditados (34 dos apontamentos), algumas leituras erradas do ditado (polia A1 "negada"
+  vira sinovite em 2d4ff586; tibiais × fibulares em ed34070e) e a nota ao médico em 4 laudos. Parte da distância é viés
+  de ancoragem (o final do médico nasce do texto da produção: similaridade 0,92).
+- **Recomendação:** Sonnet 5.5 no **writer dedicado** do MSK — melhor e mais rápido que o Haiku. Antes do GO: corrigir o
+  MK-1 (guard por laudo) e o guard de saída para notas; e uma iteração do prompt dedicado contra "normalidade não ditada"
+  (o prompt foi escrito para o gpt-4.1), medida de novo nesta bancada.
+
+### PELVE_FEMININA (68) — rodada `w8/2026-10-10T00-02-01-pelve_feminina`
+
+| Candidato | Nota média | ≤ 4 | Omissões | Invenções | Medida/lado | Impressão ok |
+|---|---|---|---|---|---|---|
+| Produção (gpt-4.1, writer dedicado) | **7,44** | 7 | 23 | 67 | 11 | 49/68 |
+| Haiku 5.5 — writer dedicado | 6,10 | 14 | 61 | 79 | 12 | 32/68 |
+| **Sonnet 5.5 — writer dedicado** | **7,06** | 8 | 38 | 65 | 16 | 41/68 |
+| Haiku 5.5 — writer genérico | 2,00 (4,70 nos 29 válidos) | 53 | 87 | 68 | 13 | 10/68 |
+| Sonnet 5.5 — writer genérico | 2,20 (5,15 nos 29 válidos) | 50 | 79 | 61 | 9 | 13/68 |
+
+O writer genérico é **bloqueado em 39/68** (variante "ta-tv" sem modelo na biblioteca — ver PV/proposta 7), então não é
+alternativa hoje. Latência mediana: Sonnet dedicado 7,6 s · Haiku dedicado 9,9 s.
+
+Leitura: na pelve o **Sonnet no writer dedicado fica a 0,4 ponto da produção** (7,06 × 7,44), com quase o mesmo número de
+laudos graves (8 × 7) e de invenções (65 × 67); o Haiku perde 1,3. O que sobra no Sonnet:
+- **PV-5 (prompt dedicado, novo):** sem espessura endometrial ditada, o Sonnet escreve "Endométrio medindo **0,0 cm** de
+  espessura" — e diz no laudo que é "marcador" (6d95b36a, 3d1f159e). Causa: a regra 1 do prompt
+  (`PELVE_FEMININA.ts:1530`) proíbe "____" sem dizer o que fazer quando a medida falta. Proposta: "medida não ditada →
+  omita a medida (ex.: 'Endométrio de aspecto habitual') ou use [REVISAR]; nunca 0,0". O `flagImplausibleMeasures`
+  também não marcou o 0,0 — vale estender a ele.
+- Lado escolhido em ditado ambíguo ("esquerda direita", 5113302e) e medidas de ditado ambíguo lidas de outro jeito que o
+  médico (00f3e8e4, 3ee3065f) — o Sonnet sinaliza a dúvida, mas a escolha fica no laudo.
+- "Ausência de produtos retidos" omitida em 2 casos pós-abortamento (7f205bfc, 4df0b110).
+- Itens com medida truncada ("medindo 7.", "medindo 2") vêm do guard de comandos (T1), em todos os candidatos.
+
+**Recomendação:** Sonnet 5.5 no writer dedicado da pelve, com PV-5 corrigido e o guard de saída (notas) — é a primeira
+categoria em que um modelo Claude chega perto da produção.
+
+### DOPPLER_CAROTIDAS (4) — rodada `w8/2026-10-10T00-15-42-doppler_carotidas`
+
+Não há writer dedicado: o caminho de hoje é o writer genérico, então cada modelo tem duas gerações da mesma configuração.
+
+| Candidato | Notas (2 gerações) | ≤ 4 |
+|---|---|---|
+| Produção (gpt-5.4-mini) | **9,38** | 0 |
+| Haiku 5.5 | 6,12 / 6,62 | 1 / 0 |
+| Sonnet 5.5 | 6,75 / 6,88 | 0 / 0 |
+
+Mesmo diagnóstico da revisão: números e lados certos nos dois modelos; a perda é a estrutura da casa (conclusão padrão
+"Espessura médio-intimal preservada…", linha em branco entre os lados), sem contrato da categoria; e o final é quase o
+texto da produção (similaridade 0,98). n = 4: o Sonnet é ligeiramente melhor e mais estável, mas a amostra não decide.
+**Recomendação:** criar o contrato de carótidas (proposta 16) e reavaliar; o modelo vem depois.
+
+### Resumo W8 — o que escolher
+
+| Categoria | Produção | Haiku dedicado | Sonnet dedicado | Recomendação |
+|---|---|---|---|---|
+| MSK (71) | 8,31 | 5,90 | **6,61** | Sonnet no dedicado, após MK-1 + guard de saída + iteração do prompt contra normalidade não ditada; nova rodada antes do GO |
+| Pelve (68) | 7,44 | 6,10 | **7,06** | Sonnet no dedicado, após PV-5 + guard de saída |
+| Carótidas (4) | 9,38 | 6,1–6,6 | 6,8–6,9 | contrato da categoria primeiro; amostra pequena |
+
+Em todas, o Sonnet é melhor que o Haiku no mesmo writer e, pela assinatura, mais rápido (7,6–7,7 s × 9,9–12 s na
+mediana por chamada; só comparação relativa). O writer genérico não substitui os dedicados (MSK −1,3; pelve bloqueada).
