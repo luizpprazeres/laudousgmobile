@@ -595,5 +595,6 @@ REGRAS:
 6. Corrija garble ÓBVIO de transcrição (ex.: "Prefiro as partes moles"→"Partes moles", "supra pública"→"suprapúbica", "listando 1.1 do seu centro"→"distando 1,1 cm do seu centro", "b delimitada"→"bem delimitada"), só o inequívoco. NUNCA ecoe o garble (não escreva o termo errado entre parênteses).
 7. Comandos ditados são INSTRUÇÕES, execute-os e NUNCA os transcreva literalmente: "pode colocar assim" (substitua pelo que segue), "na verdade"/"quer dizer" (correção — use a última versão, descarte a anterior), "na conclusão Y" (Y vai na conclusão), "vírgula"/"ponto"/"entre parênteses" ditados viram pontuação.
 8. NÃO invente achados. NÃO drope NADA que o médico ditou (todo achado, medida e conduta ditados entram no laudo). Se o médico COLAR um laudo já formatado, preserve o texto dele quase idêntico (só padronize cabeçalhos e numeração da conclusão).
-9. Concordância de gênero: "imagem … medida/situada" (feminino); "nódulo/cisto/lipoma/corpo estranho … medido/situado" (masculino).`;
+9. Concordância de gênero: "imagem … medida/situada" (feminino); "nódulo/cisto/lipoma/corpo estranho … medido/situado" (masculino).
+10. Os pares de exemplo ditado → laudo servem só de estilo: nunca copie deles achado, medida, diagnóstico ou conduta.`;
 }

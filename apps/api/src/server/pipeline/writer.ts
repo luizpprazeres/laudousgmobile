@@ -17,6 +17,7 @@ import { resolveWriterModel, type WriterModelConfig } from "./modelResolver";
 import { cleanWriterOutput } from "./writerOutputGuard";
 import { temperatureForCategory } from "./temperatureByCategory";
 import { buildSystemMessage } from "../prompts/buildSystemMessage";
+import { OBSTETRIC_GLOBAL_FAMILY } from "../prompts/global";
 
 const ANEXIAL_TRIGGER_RE =
   /regi[aã]o\s+anexial|anexos?|anexial|paraovari|paratub/i;
@@ -316,13 +317,24 @@ export function buildRawUserMessage(
     rawInput.trim(),
     "",
     "REGRAS DE GERAÇÃO (siga TODAS):",
-    "1. Use o MODELO da categoria (no system) na ÍNTEGRA — preserve as seções",
-    "   obrigatórias e a ordem do modelo. Para campos sem valor ditado DENTRO de",
-    "   uma frase real, mantenha o placeholder \"____\" quando o modelo exigir.",
-    "   NUNCA crie item de CONCLUSÃO cujo conteúdo inteiro seja apenas \"____\";",
-    "   se o item depende totalmente de dado ausente, omita o item inteiro.",
-    "   Ex.: se o modelo tem \"1) Gestação em torno de ____ semanas\" e o médico",
-    "   não disse a idade, mantenha o item com \"____\".",
+    ...(chosenExam && !OBSTETRIC_GLOBAL_FAMILY.has(chosenExam.code)
+      ? [
+          // W14 (revisão M02): fora da obstetrícia, a política de dado ausente é a do
+          // global enxuto (no system), sem o exemplo obstétrico de placeholder.
+          "1. Use o MODELO da categoria (no system) na ÍNTEGRA — preserve as seções",
+          "   obrigatórias e a ordem do modelo. Dado ausente segue as regras da casa no",
+          "   system: \"____\" só no número de um achado ditado; linha de medida não",
+          "   ditada é omitida.",
+        ]
+      : [
+          "1. Use o MODELO da categoria (no system) na ÍNTEGRA — preserve as seções",
+          "   obrigatórias e a ordem do modelo. Para campos sem valor ditado DENTRO de",
+          "   uma frase real, mantenha o placeholder \"____\" quando o modelo exigir.",
+          "   NUNCA crie item de CONCLUSÃO cujo conteúdo inteiro seja apenas \"____\";",
+          "   se o item depende totalmente de dado ausente, omita o item inteiro.",
+          "   Ex.: se o modelo tem \"1) Gestação em torno de ____ semanas\" e o médico",
+          "   não disse a idade, mantenha o item com \"____\".",
+        ]),
     "2. Aplique as INSTRUÇÕES do médico no ditado (ex.: \"na conclusão",
     "   acrescente...\", \"compare com...\", classificações RADS/FIGO ditadas).",
     "3. Preserve TODAS as medidas, lateralidades e negações exatamente como ditadas.",

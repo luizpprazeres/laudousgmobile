@@ -19,11 +19,18 @@
  *    (BI-RADS, Domingos/ACR) ficam.
  */
 
-/** Linha anexada ao system de todo writer (o guard abaixo limpa o que escapar). */
+/**
+ * Linha anexada ao system de todo writer (o guard abaixo limpa o que escapar). É o único
+ * trecho presente em TODO prompt de writer (completo, Livre e dedicados), por isso carrega
+ * também o vocabulário da casa (W14, revisão M03). A marca de dúvida segue as regras da
+ * categoria (o global enxuto tem lista fechada) — sem autorização genérica (W14, M02).
+ */
 export const WRITER_OUTPUT_RULE =
   "SAÍDA: só o texto do laudo, sem markdown (sem **, #, crases ou listas com hífen) e sem nada seu depois da " +
   "CONCLUSÃO/IMPRESSÃO — nenhuma observação, nota, pendência ou explicação sobre como você interpretou o ditado; " +
-  "dúvida real vai como [REVISAR: …] no ponto do laudo a que se refere.";
+  "dúvida clínica real vai no ponto do laudo, só com a marca [REVISAR …] e nos casos que as regras acima permitem. " +
+  "Vocabulário da casa: hipoecoico, hiperecoico, anecoico e isoecoico (nunca \"hipoecogênico\", \"hiperecogênico\" " +
+  "ou \"anecogênico\"), com a concordância de gênero; \"ecogenicidade\" como propriedade continua.";
 
 const COMMENT_HEADER_RE =
   /^\s*(?:\*\*)?\s*(?:observa[çc](?:[ãa]o|[õo]es)|obs\.?|notas?|pend[êe]ncias?|pontos?\s+(?:para|a|de)\s+(?:conferir|confer[êe]ncia|revis[ãa]o|aten[çc][ãa]o)|esclarecimentos?|coment[áa]rios?\s+(?:do|da)\s+(?:modelo|redator|reda[çc][ãa]o)|interpreta[çc][õo]es?)\b[^\n:]{0,80}:/i;

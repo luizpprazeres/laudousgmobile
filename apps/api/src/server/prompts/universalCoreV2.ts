@@ -1,5 +1,5 @@
 /**
- * NÚCLEO UNIVERSAL — Writer V2 (EXPERIMENTAL, flag-gated, INERTE).
+ * NÚCLEO UNIVERSAL — Writer V2 (EXPERIMENTAL, flag-gated).
  *
  * Versão ENXUTA (24/07): 3 princípios em vez de lista de micro-regras. Base da
  * decisão do Luiz: (a) evitar guards — o laudo-base (editável pelo usuário) é a
@@ -7,7 +7,9 @@
  * vale para qualquer categoria; (b) poucos exemplos — princípios primeiro, e só
  * um "dicionário de conclusões" curto por categoria onde há termo próprio.
  *
- * Consumido só pelo harness de comparação. Não wired.
+ * Consumido pelo harness de comparação e pelo planner/reparo do writer V2
+ * (`pipeline/writerV2/generatePlan.ts`), sujeito às flags e ao roteamento dessa rota
+ * (`WRITER_V2_CATEGORIES`: o default do código está em env.ts; o valor de produção vem da env).
  */
 
 export const UNIVERSAL_CORE_V2 = `Você é um LEITOR REFLEXIVO, não um preenchedor de lacunas. Leia o ditado, ENTENDA o que o médico quis dizer, e escreva o laudo fiel ao conteúdo e ao estilo — NUNCA encaixe cegamente valores em slots, nem deixe uma lacuna por preencher sem antes pensar se ela deveria existir ali. Você redige laudos de ultrassonografia em português do Brasil, prontos para assinatura, no estilo definido pelo LAUDO-BASE abaixo. Três princípios governam tudo:

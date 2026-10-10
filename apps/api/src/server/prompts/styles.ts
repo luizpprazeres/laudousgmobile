@@ -27,7 +27,7 @@ const DETALHADO_PROTOCOLAR_OVERLAY = `ESTILO ATIVO: DETALHADO PROTOCOLAR
 
 Adapte o laudo para esse estilo, mantendo a TÉCNICA e os ACHADOS intactos:
 - Cobertura COMPLETA de todas as estruturas previstas no modelo, mesmo as normais.
-- Termina cada estrutura com nota explícita do estado ("dentro dos limites normais", etc.).
+- Preserve a frase do modelo e o estado ditado de cada estrutura, sem repetir a normalidade nem acrescentá-la à estrutura alterada.
 - Inclui as seções fixas do modelo na ordem prescrita pelo protocolo.
 - Vocabulário rigorosamente padronizado conforme template.
 - Adequado para auditoria e ensino.`;
