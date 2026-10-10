@@ -2,6 +2,7 @@ import { EditReportRequestSchema } from "@laudousg/shared";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { env } from "@/server/env";
 import { editReport } from "@/server/pipeline/editReport";
+import { aplicarLexico, entradasDesligadas, lexicoAtivo } from "@/server/pipeline/lexicoDaCasa";
 import {
   loadReportForEdit,
   updateReportAfterEdit,
@@ -54,9 +55,19 @@ export async function POST(req: Request) {
   const baseText = report.finalOutput ?? report.generatedOutput;
   if (!baseText?.trim()) return json({ error: "report_without_output" }, 409);
 
+  // W11: a instrução é ditada — mesma camada "ditado" do léxico da casa. O texto-base já foi
+  // assinado: não passa pelo léxico (mudaria linhas que o médico não pediu para editar).
+  const instruction = lexicoAtivo(report.categoryCode, env().LEXICO_DITADO_CATEGORIES)
+    ? aplicarLexico(input.instruction, {
+        categoria: report.categoryCode,
+        camada: "ditado",
+        desligadas: entradasDesligadas(env().LEXICO_DESLIGADAS),
+      }).texto
+    : input.instruction;
+
   const result = await editReport({
     baseText,
-    instruction: input.instruction,
+    instruction,
     category: report.categoryCode,
     target: input.target,
     signal: req.signal,

@@ -31,6 +31,7 @@ import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
 import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
+import { aplicarLexico, entradasDesligadas, lexicoAtivo } from "@/server/pipeline/lexicoDaCasa";
 import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
 import {
   normalizeDumFormat,
@@ -200,15 +201,22 @@ export async function POST(req: Request) {
   // faladas → dd/mm/aaaa) no transcript ANTES de persistir e de qualquer LLM.
   // Garble irrecuperável vira [REVISAR], nunca adivinha. Cobre Deepgram direto
   // do iOS e clientes antigos (o Whisper já chega normalizado).
+  const normalizedHint = structuredClinicalIntent(parsed.data.category_hint, parsed.data.consolidated_transcript ?? parsed.data.raw_input)
+    ?? (parsed.data.category_hint ? canonicalClinicalCategory(parsed.data.category_hint) : undefined);
+  // W11: léxico da casa na camada do ditado (grafia do ASR: "anecóica", "super lateral",
+  // "quarto compartimento"…), antes de qualquer LLM. Flag LEXICO_DITADO_CATEGORIES.
+  const lexicoDitado = (text: string): string =>
+    lexicoAtivo(normalizedHint, env().LEXICO_DITADO_CATEGORIES)
+      ? aplicarLexico(text, { categoria: normalizedHint, camada: "ditado", desligadas: entradasDesligadas(env().LEXICO_DESLIGADAS) }).texto
+      : text;
   const reqInput = {
     ...parsed.data,
-    category_hint: structuredClinicalIntent(parsed.data.category_hint, parsed.data.consolidated_transcript ?? parsed.data.raw_input)
-      ?? (parsed.data.category_hint ? canonicalClinicalCategory(parsed.data.category_hint) : undefined),
-    raw_input: normalizeAsrTranscript(parsed.data.raw_input),
+    category_hint: normalizedHint,
+    raw_input: lexicoDitado(normalizeAsrTranscript(parsed.data.raw_input)),
     consolidated_transcript:
       parsed.data.consolidated_transcript === undefined
         ? undefined
-        : normalizeAsrTranscript(parsed.data.consolidated_transcript),
+        : lexicoDitado(normalizeAsrTranscript(parsed.data.consolidated_transcript)),
   };
   const generationMode = reqInput.mode;
   // LAUDO LIVRE ROTEADO: só com categoria ORIGINAL = LIVRE, opt-in do request
@@ -1444,6 +1452,19 @@ export async function POST(req: Request) {
       // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
       // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
       finalText = flagImplausibleMeasures(finalText);
+      }
+      // W11: léxico da casa na camada da saída — o que a IA escreve fora da grafia da casa
+      // ("hiperecogênico", "4º compartimento"…). Flag LEXICO_SAIDA_CATEGORIES.
+      if (lexicoAtivo(effectiveCategory || reqInput.category_hint, env().LEXICO_SAIDA_CATEGORIES)) {
+        const lexico = aplicarLexico(finalText, {
+          categoria: effectiveCategory || reqInput.category_hint,
+          camada: "saida",
+          desligadas: entradasDesligadas(env().LEXICO_DESLIGADAS),
+        });
+        if (lexico.trocas.length) {
+          console.log(`[generate ${reportId}] léxico da casa: ${lexico.trocas.map((t) => `${t.id}:${t.de}→${t.para}`).join(" | ")}`);
+        }
+        finalText = lexico.texto;
       }
       auditState.outputText = finalText;
       // Modelo que efetivamente escreveu: writer dedicado (ex.: Sonnet 5.5 no MSK)

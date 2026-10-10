@@ -56,6 +56,11 @@ const ServerEnvSchema = z.object({
    * writer geral. Default em pipeline/generationPathResolver.ts.
    */
   FULL_WRITER_CATEGORIES: z.string().optional(),
+  // W11 — léxico da casa (pipeline/lexicoDaCasa.ts), por camada. Ausente = todas as categorias;
+  // "" = desligado (rollback); "A,B" = só essas. LEXICO_DESLIGADAS=id1,id2 desliga entradas.
+  LEXICO_DITADO_CATEGORIES: z.string().optional(),
+  LEXICO_SAIDA_CATEGORIES: z.string().optional(),
+  LEXICO_DESLIGADAS: z.string().optional(),
   // Pós-validador clínico determinístico. "observe" apenas registra issues no
   // sanity (roda após a entrega do laudo — não altera o texto); "block_critical"
   // interromperia a entrega quando houver issue critical (não usado ainda).
@@ -122,6 +127,9 @@ const ServerEnvSchema = z.object({
   // Keyterm Prompting (boost de vocabulário médico no STT). Controlado pelo
   // servidor pra ligar/desligar/tunar SEM rebuild do app. Setar "false" desliga.
   DEEPGRAM_KEYTERMS_ENABLED: z.string().default("true"),
+  // W11: ajuste dos keyterms pela grafia que o médico assina (asr/medicalGlossary.ts), por
+  // categoria. Ausente/"" = nenhuma (default); "MAMARIA,MUSCULOESQUELETICO_V2" ou "*".
+  DEEPGRAM_KEYTERMS_W11_CATEGORIES: z.string().optional(),
 
   PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
