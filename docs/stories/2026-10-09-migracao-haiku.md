@@ -95,11 +95,11 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [x] W1 motor Haiku + roteamento + remoção do gpt-4.1-mini (integrado; gates verdes após merge com W3)
 - [x] W2 extração obstétrica — variante mínima integrada (1a231310)
 - [x] W3 prompt corpo descritivo + 4 defeitos do renderer do abdome (integrado em `eabc290f`)
-- [ ] W4 revisão por bancada + propostas priorizadas
+- [x] W4 revisão por bancada + propostas priorizadas — integrado
 - [x] W5 datação escolhida + gestação inicial sem embrião (backend) — integrado b6bf9a91
 - [x] W6 web: caixas de seleção da datação — integrado 9f756d08
 - [x] W7 regras da casa (integrado c79967bf) (prompt "diagnóstico mais provável", mama, Domingos, parede, rim ausente nas vias)
-- [ ] W8 MSK Haiku × Sonnet (assinatura) para o Luiz escolher
+- [x] W8 MSK, pelve e carótidas Haiku × Sonnet — integrado
 - [x] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo) — integrado ce33d744
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
