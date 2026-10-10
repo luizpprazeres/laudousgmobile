@@ -33,8 +33,8 @@ const ServerEnvSchema = z.object({
   // gpt-4.1 / gpt-4.1-mini fixos no código (removidos). Esforço: LLM_EXTRACTION_EFFORT.
   LLM_VISION_MODEL: z.string().default("claude-haiku-5-5"),
   // Modelo do writer por categoria: CSV `CATEGORIA=modelo[:esforço]`. AUSENTE =
-  // default do código (MUSCULOESQUELETICO_V2, PELVE_FEMININA, DOPPLER_CAROTIDAS →
-  // claude-sonnet-5-5); VAZIA = sem exceções. Vence o `*_WRITER_MODEL` dos
+  // default do código (PELVE_FEMININA, DOPPLER_CAROTIDAS → claude-sonnet-5-5; o
+  // MSK usa o Haiku desde 10/10); VAZIA = sem exceções. Vence o `*_WRITER_MODEL` dos
   // writers dedicados. Ver ai/llm.ts (writerModelOverrides).
   LLM_WRITER_MODEL_BY_CATEGORY: z.string().optional(),
   // Fallback de recusa do servidor nas chamadas de texto do Sonnet 5.5 (beta

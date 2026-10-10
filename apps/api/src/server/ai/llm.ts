@@ -114,15 +114,15 @@ export function writerTarget(config: Pick<TargetEnv, "LLM_WRITER_MODEL" | "LLM_W
 }
 
 /**
- * MODELO DO WRITER POR CATEGORIA (decisão do Luiz, 09/10 noite): MSK, pelve e
- * carótidas exigem mais (vários laudos no mesmo ditado) e vão ao Claude Sonnet
- * 5.5; as demais ficam no Haiku 5.5. Default no código; a env
+ * MODELO DO WRITER POR CATEGORIA: pelve e carótidas vão ao Claude Sonnet 5.5
+ * (decisão do Luiz, 09/10 noite; a W10a decide se ficam); as demais ficam no
+ * Haiku 5.5. O MSK voltou ao Haiku 5.5 no writer dedicado, com o prompt novo da
+ * W9 (decisão de 10/10). Default no código; a env
  * `LLM_WRITER_MODEL_BY_CATEGORY` (CSV `CATEGORIA=modelo[:esforço]`) troca sem
  * deploy — env vazia = nenhuma exceção (todo writer no modelo base). Vale para o
  * writer completo e para os dedicados, e VENCE o `*_WRITER_MODEL` do dedicado.
  */
 export const DEFAULT_WRITER_MODEL_BY_CATEGORY = {
-  MUSCULOESQUELETICO_V2: "claude-sonnet-5-5",
   PELVE_FEMININA: "claude-sonnet-5-5",
   DOPPLER_CAROTIDAS: "claude-sonnet-5-5",
 } as const;

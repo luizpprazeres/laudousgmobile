@@ -55,9 +55,10 @@ for (const retired of ["gpt-4.1-mini", "gpt-4.1", " gpt-4.1-nano "]) {
   check(`gpt-4.1 aposentado (${retired.trim()}) nunca é usado: vira Haiku`, r.provider === "anthropic" && r.model === "claude-haiku-5-5");
 }
 check(
-  "carótidas no Sonnet 5.5 (modelo por categoria); abdome no Haiku",
+  "carótidas no Sonnet 5.5 (modelo por categoria); abdome e MSK no Haiku",
   resolveWriterModel({ mode: "standard", categoryCode: "DOPPLER_CAROTIDAS" }, baseEnv).model === "claude-sonnet-5-5" &&
-    resolveWriterModel({ mode: "standard", categoryCode: "ABDOMEN_TOTAL" }, baseEnv).model === "claude-haiku-5-5",
+    resolveWriterModel({ mode: "standard", categoryCode: "ABDOMEN_TOTAL" }, baseEnv).model === "claude-haiku-5-5" &&
+    resolveWriterModel({ mode: "standard", categoryCode: "MUSCULOESQUELETICO_V2" }, baseEnv).model === "claude-haiku-5-5",
 );
 check(
   "env vazia cai no Haiku",
