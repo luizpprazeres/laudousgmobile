@@ -787,11 +787,11 @@ function noduloConclusao(nod: TireoideNodulo, showDomingos: boolean): string {
     const carac = caracTxt ? ` (características ${caracTxt} pela escala de Domingos)` : "";
     return `${base} com NOTA FINAL ${notaTxt}${carac}${acrTxt}`;
   }
-  if (acr) return `${base} - ACR TI-RADS ${acr.categoria}`;
-  // A12 (revisão W13): sem ecogenicidade não há Nota de Domingos — a pendência fica visível
-  // em vez de a imagem sair sem nota e sem aviso (ex.: "isoecoica com áreas", sem dizer de quê).
-  if (showDomingos && !nod.ecogenicidade && notaTxt === null) return `${base} [REVISAR — ecogenicidade não ditada]`;
-  return base;
+  // A12 (revisão W13, rodada 2): sem ecogenicidade não há Nota de Domingos — a pendência fica
+  // visível com ou sem ACR (ex.: "isoecoica com áreas", sem dizer de quê, e ACR TI-RADS ditado).
+  const pendencia = showDomingos && !nod.ecogenicidade ? " [REVISAR — ecogenicidade não ditada]" : "";
+  if (acr) return `${base} - ACR TI-RADS ${acr.categoria}${pendencia}`;
+  return `${base}${pendencia}`;
 }
 
 // ---------------------------------------------------------------------------

@@ -249,3 +249,16 @@ Verificação:
 
 Para o Luiz: o A07 troca conveniência por segurança — o médico resolve "2 9 cm" como 2,9 nos finais; com a correção ele passa a confirmar essas medidas.
 Para a W10b (A01): a linha 45 de `GLOBAL_RULES_BLOCK` (regra da mama no bloco obstétrico) continua lá; o contrato da mama já tem todo o conteúdo dela, então basta apagá-la.
+
+## W14b — rodada 2 da revisão (A12 parcial)
+
+Branch `fix/w14b-tireoide` a partir de `feat/haiku-migration` (1d76a830). A sonda do Codex mostrou que, com
+`ecogenicidade=null` ("isoecoica com áreas") e ACR TI-RADS ditado ou calculado, `noduloConclusao` retornava o ACR antes de
+emitir a pendência. Agora a marca "[REVISAR — ecogenicidade não ditada]" sai sempre que a Nota de Domingos está visível e a
+ecogenicidade falta, com ou sem ACR ("… - ACR TI-RADS 3 [REVISAR — ecogenicidade não ditada]"); com ecogenicidade, nada muda.
+Efeito colateral aceito: imagem descrita só no vocabulário ACR (ex.: espongiforme, sem enum Domingos) também recebe a marca —
+correto quanto à Nota de Domingos, que de fato não pode ser calculada.
+
+Testes: `w10c-mama-tireoide.manual.ts` 21/21 (3 novos: ACR ditado sem ecogenicidade, composição ACR extraída sem ecogenicidade,
+controle com ecogenicidade); tireoide 23c1 (40), objetivo golden (39), pico-null (12), W7 (71), alterações e typecheck verdes.
+M02 (soma automática do volume no contrato da tireoide) ficou para decisão do Luiz, sem alteração.
