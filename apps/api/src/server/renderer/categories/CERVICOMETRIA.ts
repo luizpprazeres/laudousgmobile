@@ -1,3 +1,4 @@
+import { comentariosPadrao } from "@laudousg/schemes";
 import { z } from "zod";
 
 /**
@@ -154,8 +155,8 @@ function normalizeMedidasMm(f: CervicometriaFindings): CervicometriaFindings {
 }
 
 const TITULO = "ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL";
-const COMENTARIOS =
-  "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+/** W15: tabela única da técnica (`@laudousg/schemes`). */
+const COMENTARIOS = `COMENTÁRIOS:\n${comentariosPadrao("CERVICOMETRIA")}`;
 const TECNICA_OBJETIVA =
   "Exame realizado pela via transvaginal, com transdutor endocavitário, para avaliação do colo uterino.";
 

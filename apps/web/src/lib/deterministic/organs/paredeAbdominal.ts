@@ -7,6 +7,7 @@
  * Sem dado essencial, o achado vira pendência bloqueante e o laudo não é montado.
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory } from './abdomeTotal'
 import type { OrganComposition, OrganModule, OrganState } from '../types'
 import {
@@ -177,7 +178,7 @@ export const paredeAbdominal: ExamCategory = {
   name: 'Parede abdominal',
   title: 'ULTRASSONOGRAFIA DA PAREDE ABDOMINAL',
   tecnica:
-    'Exame realizado com transdutor linear multifrequencial de alta resolução, com avaliação dinâmica da parede abdominal em repouso e à manobra de Valsalva.',
+    comentariosPadrao('PAREDE_ABDOMINAL')!,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [{ id: 'parede_abdominal', label: 'Parede abdominal', group: 'orgaos', module: paredeModule }],
   conclusionNormal: CONCLUSAO_NORMAL,

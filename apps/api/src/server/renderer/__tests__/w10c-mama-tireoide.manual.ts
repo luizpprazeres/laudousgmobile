@@ -50,7 +50,7 @@ test("tireoide: com imagem nodular, rodapé mantido", () => {
 test("mama: contrato sem '06 fotos' e com a frase de documentação dos finais", () => {
   for (const txt of [MAMARIA_CONTRACT, MAMARIA_MODELO_BASE]) {
     assert.doesNotMatch(txt, /\d+ fotos/);
-    assert.match(txt, /A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias\./);
+    assert.match(txt, /A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias\./);
   }
 });
 test("mama: contrato ensina 'de mama' no corpo, conclusão da casa e BI-RADS 1 do normal", () => {

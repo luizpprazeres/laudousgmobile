@@ -29,6 +29,7 @@ import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionIte
 import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
 import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
 import { ajustarComentarios } from "@/server/pipeline/tecnicaGuard";
+import { aplicarTecnicaPreferida } from "@laudousg/schemes";
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
 import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
@@ -1451,6 +1452,11 @@ export async function POST(req: Request) {
         if (tecnica.trocas.length) {
           console.log(`[generate ${reportId}] técnica: ${tecnica.trocas.join(" | ")}`);
           finalText = tecnica.texto;
+        }
+        // Frase de técnica preferida da conta (por categoria; a mesma da web).
+        const preferida = rendererPreferences?.tecnica_padrao;
+        if (typeof preferida === "string" && preferida.trim()) {
+          finalText = aplicarTecnicaPreferida(finalText, effectiveCategory || reqInput.category_hint || "", preferida);
         }
       }
       // Normalização determinística de medidas (universal): abrevia

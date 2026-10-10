@@ -10,6 +10,7 @@
  * IPP só aparece quando a próstata está aumentada; graduado em cm (1/2/3).
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory } from './abdomeTotal'
 import type { OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
 import { createSharedBladderModule } from './urinaryShared'
@@ -315,7 +316,7 @@ export const prostataSuprapubica: ExamCategory = {
   name: 'Próstata',
   title: 'ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL)',
   tecnica:
-    'Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta com o paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais abrangendo toda a pelve.',
+    comentariosPadrao('PROSTATA_SUPRAPUBICA')!,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [
     { id: 'bexiga', label: 'Bexiga', group: 'orgaos', module: bexigaModule },

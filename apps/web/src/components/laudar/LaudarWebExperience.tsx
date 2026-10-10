@@ -17,6 +17,8 @@ import {
   type TireoideState,
 } from '@/lib/deterministic'
 import { adaptarTireoide } from '@/lib/catalog/tireoideParaCatalogo'
+import { codigoDaPreferencia, useTecnicasPreferidas } from '@/lib/preferencias/tecnicaPreferida'
+import { aplicarTecnicaPreferida } from '@laudousg/schemes'
 import { adaptarPelveUnificada } from '@/lib/catalog/pelveParaCatalogo'
 import { pelvePresetDe } from '@/lib/deterministic/organs/pelvePresets'
 import { adaptarMamaria } from '@/lib/catalog/mamariaParaCatalogo'
@@ -797,11 +799,19 @@ export function LaudarWebExperience({ workspaceV2 = false, richEditor = false, a
       ? { carregando: laudoCanonico.carregando, desatualizado: laudoCanonico.desatualizado, erro: laudoCanonico.erro }
       : { carregando: false, desatualizado: false, erro: erroLocal }
 
+  /**
+   * W15: frase de técnica preferida do médico (Preferências, por categoria). Não é motor paralelo:
+   * troca só a frase padrão da casa nos COMENTÁRIOS pela que ELE escreveu — via escolhida,
+   * complementos e documentação ficam como o renderer mandou.
+   */
+  const tecnicasPreferidas = useTecnicasPreferidas()
   const renderedText = useMemo(() => {
+    const preferida = tecnicasPreferidas[codigoDaPreferencia(categoria)]
+    const comTecnica = (texto: string) => aplicarTecnicaPreferida(texto, categoria, preferida)
     if (composition) return composicao.texto
-    if (migrada) return laudoCanonico.texto
-    return laudoLocal?.text ?? ''
-  }, [composition, composicao.texto, migrada, laudoCanonico.texto, laudoLocal])
+    if (migrada) return comTecnica(laudoCanonico.texto)
+    return comTecnica(laudoLocal?.text ?? '')
+  }, [categoria, composition, composicao.texto, migrada, laudoCanonico.texto, laudoLocal, tecnicasPreferidas])
   const templateText = useMemo(
     () => reportTemplateDefinition ? buildReportTemplatePreview(reportTemplateDefinition) : '',
     [reportTemplateDefinition],

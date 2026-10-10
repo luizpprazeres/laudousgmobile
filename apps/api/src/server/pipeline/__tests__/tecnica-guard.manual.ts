@@ -3,7 +3,7 @@
  * Ditados sintéticos; os três primeiros reproduzem o padrão dos 3 laudos reais com TV ditada que saíam TA.
  * Rodar (de apps/api): pnpm exec tsx src/server/pipeline/__tests__/tecnica-guard.manual.ts
  */
-import { comentariosPadrao, contextoDoDitado, mhzDoDitado, viaDoDitado } from "@laudousg/schemes";
+import { aplicarTecnicaPreferida, comentariosPadrao, contextoDoDitado, fraseTecnica, mhzDoDitado, viaDoDitado } from "@laudousg/schemes";
 import { ajustarComentarios } from "../tecnicaGuard";
 
 let pass = 0, fail = 0;
@@ -63,6 +63,8 @@ check("via: 'sem transvaginal' não é TV", viaDoDitado("pelve transabdominal, s
   check("MSK: variante antiga → padrão", sec(msk.texto) === comentariosPadrao("MUSCULOESQUELETICO_V2"), sec(msk.texto));
   const par = aj("PAREDE_ABDOMINAL", "parede", "Exame realizado com transdutor de 12 MHz, abrangendo a avaliação da parede abdominal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.", "ULTRASSONOGRAFIA DA PAREDE ABDOMINAL");
   check("parede: sempre linear com Valsalva", sec(par.texto) === comentariosPadrao("PAREDE_ABDOMINAL"), sec(par.texto));
+  const pro = aj("PROSTATA_SUPRAPUBICA", "próstata", "Exame realizado com transdutor convexo de 4,0 MHz, por via transabdominal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.", "ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL)");
+  check("próstata: frase curta → longa (rodada 2)", sec(pro.texto) === comentariosPadrao("PROSTATA_SUPRAPUBICA"), sec(pro.texto));
   const ing = aj("PAREDE_ABDOMINAL", "região inguinal direita", "Exame realizado com transdutor de 12 MHz, abrangendo a avaliação da região inguinal direita. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.", "ULTRASSONOGRAFIA DA REGIÃO INGUINAL DIREITA");
   check("parede: região inguinal não é trocada", ing.trocas.length === 0);
 }
@@ -94,6 +96,20 @@ check("via: 'sem transvaginal' não é TV", viaDoDitado("pelve transabdominal, s
   check("obstétrica: idade/gestante não viram contexto", contextoDoDitado("gestante de 28 semanas, criança de 5 anos em casa", "OBSTETRICA").length === 0);
   check("contexto negado não entra", contextoDoDitado("não é urgência, exame realizado na urgência? não", "ABDOMEN_TOTAL").length <= 1);
   check("idade só se ditada: nada ditado → nada", contextoDoDitado("abdome total normal", "ABDOMEN_TOTAL").length === 0);
+}
+
+// ── Frase preferida do usuário (por categoria) ──
+{
+  const pref = "Exame realizado com transdutor convexo multifrequencial de 5 MHz";
+  const base = laudo("ABDOMEN_TOTAL", comentariosPadrao("ABDOMEN_TOTAL")!, "ULTRASSONOGRAFIA DO ABDOME TOTAL");
+  const t = aplicarTecnicaPreferida(base, "ABDOMEN_TOTAL", pref);
+  check("preferida: troca a frase padrão e mantém a documentação", sec(t) === `${pref}. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.`, sec(t));
+  check("preferida vazia: intocado", aplicarTecnicaPreferida(base, "ABDOMEN_TOTAL", "  ") === base);
+  const tv = laudo("OBSTETRICA", comentariosPadrao("OBSTETRICA", { via: "tv" })!);
+  check("preferida não troca outra via (TV escolhida/ditada)", aplicarTecnicaPreferida(tv, "OBSTETRICA", "Minha frase TA.") === tv);
+  const dop = laudo("DOPPLER_OBSTETRICO", comentariosPadrao("DOPPLER_OBSTETRICO", { complementos: ["Foi utilizado Doppler colorido para avaliação hemodinâmica fetal."] })!);
+  check("preferida mantém o complemento Doppler", /^Minha frase TA\. Foi utilizado Doppler colorido/.test(sec(aplicarTecnicaPreferida(dop, "DOPPLER_OBSTETRICO", "Minha frase TA."))));
+  check("preferida: categoria fora da tabela, intocado", aplicarTecnicaPreferida(base, "LIVRE", pref) === base && fraseTecnica("LIVRE") === null);
 }
 
 // ── Estilo objetivo e silêncio ──

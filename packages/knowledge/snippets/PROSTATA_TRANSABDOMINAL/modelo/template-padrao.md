@@ -17,7 +17,7 @@ ULTRASSONOGRAFIA DA PRÓSTATA (TRANSABDOMINAL)
 
 COMENTÁRIOS:
 
-Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta com a paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais abrangendo toda a pelve. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta com o paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais abrangendo toda a pelve. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 

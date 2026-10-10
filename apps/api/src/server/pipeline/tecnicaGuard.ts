@@ -3,7 +3,8 @@
  * A frase padrão vem da tabela única (`@laudousg/schemes` tecnica); aqui só entra o que o médico DITOU:
  *
  * 1. documentação unificada ("que possuem várias metodologias"; sem "obtida em segundo");
- * 2. variantes antigas trocadas pela frase da casa (MSK "abrangendo a avaliação do {segmento}"; parede);
+ * 2. variantes antigas trocadas pela frase da casa (MSK "abrangendo a avaliação do {segmento}"; parede;
+ *    a frase curta da próstata);
  * 3. via ditada na família obstétrica (TV, TA+TV) troca a frase da técnica — o título não muda
  *    (decisão do Luiz). Corrige os laudos com "transvaginal" ditado que saíam transabdominais;
  * 4. frequência do transdutor ditada ("transdutor de 9 MHz") troca só o número;
@@ -53,6 +54,10 @@ function variantesAntigas(p: string, categoria: string): string {
       /Exame realizado com transdutor linear de alta frequência(?: \(?12 MHz\)?)?, abrangendo a avaliação d[oa]s? [^.]+\.(?:\s*Foram realizados múltiplos cortes[^.]*\.)?(?:\s*Avaliação dinâmica quando aplicável\.)?/,
       MSK_TECNICA,
     );
+  }
+  if (categoria === "PROSTATA_SUPRAPUBICA") {
+    // Frase curta da Biblioteca (rodada 2 do Luiz: a longa dos finais), enquanto o SQL não é aplicado.
+    return p.replace(/Exame realizado com transdutor convexo de 4[.,]0 MHz, por via transabdominal\./, fraseTecnica("PROSTATA_SUPRAPUBICA")!);
   }
   if (categoria === "PAREDE_ABDOMINAL") {
     return p.replace(/Exame realizado com transdutor[^.]*parede abdominal[^.]*\./, PAREDE_TECNICA);

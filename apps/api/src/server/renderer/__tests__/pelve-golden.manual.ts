@@ -7,6 +7,7 @@
  * Rodar (tsx direto, caminho absoluto):
  *   tsx /Users/luizprazeres/laudousgmobile-def/apps/api/src/server/renderer/__tests__/pelve-golden.manual.ts
  */
+import { comentariosPadrao } from "@laudousg/schemes";
 import {
   renderPelveFeminina,
   mergeMenopausaPelve,
@@ -168,6 +169,15 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
   }));
   check("mioma dinâmico: maior eixo sem medidas fictícias", /; a segunda, heterogênea, com maior medida de 4,2 cm, situada na parede posterior\./.test(l), l);
   check("mioma dinâmico: sem placeholders para eixos não coletados", !/4,2 x ____ x ____ cm/.test(l), l);
+}
+
+// ── W15: COMENTÁRIOS pela tabela única, por via ──
+{
+  for (const via of ["ta_tv", "tv", "ta"] as const) {
+    const l = renderPelveFeminina(F({ via }));
+    check(`W15: via ${via} = frase da tabela`, l.includes(`COMENTÁRIOS:\n${comentariosPadrao("PELVE_FEMININA", { via })}`), l.slice(0, 400));
+  }
+  check("W15: via não ditada = TA+TV", renderPelveFeminina(F({ via: null })).includes(`COMENTÁRIOS:\n${comentariosPadrao("PELVE_FEMININA")}`));
 }
 
 // ── W12: miomas no padrão dos laudos finais; localização ↔ FIGO pela tabela única ──

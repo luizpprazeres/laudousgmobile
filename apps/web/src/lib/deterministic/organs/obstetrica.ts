@@ -9,6 +9,7 @@
  * (saco/CCN), percentil de peso (curvas).
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory } from './abdomeTotal'
 import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { criarCervicometriaAddonModule } from './cervicometriaAddon'
@@ -17,7 +18,7 @@ import { computeIG, dataBRParaISO, formatBR, hojeBR, lerDatacaoDaTela, type Refe
 import { preEclampsiaFmfSpec, trisomyFmfSpec } from '../../calculators/specs'
 
 const TECNICA =
-  'Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
+  comentariosPadrao('OBSTETRICA')!
 
 // ── helpers (compartilhados com morfológico) ─────────────────────────────────
 /** Parse ESTRITO (review dex2): rejeita lixo após número ("5abc" → null). */

@@ -10,7 +10,8 @@
  * - documentação "que possuem várias metodologias" em todas, sem "em NN fotos";
  * - MSK com 12 MHz + "Avaliação dinâmica quando aplicável." ("abrangendo a avaliação do {segmento}" é antiga);
  * - parede abdominal sempre linear com avaliação dinâmica e manobra de Valsalva;
- * - pelve: "transvaginal" sem "transabdominal" = só TV; sem via = TA+TV.
+ * - pelve: "transvaginal" sem "transabdominal" = só TV; sem via = TA+TV;
+ * - próstata: a frase longa dos finais (rodada 2).
  */
 
 export type ViaTecnica = "ta" | "tv" | "ta_tv";
@@ -79,9 +80,19 @@ export const TECNICA_POR_CATEGORIA: Readonly<Record<string, TecnicaCategoria>> =
     vias: { unica: "Exame realizado com transdutor de 12 MHz, abrangendo todo conteúdo escrotal. Foram realizados múltiplos cortes dos epidídimos, dos testículos e dos plexos pampiniformes." },
     depois: "Exame realizado com o paciente em ortostase e com manobra de Valsalva.",
   },
+  // Rodada 2 do Luiz (10/10): a frase longa dos finais (13/14); a Biblioteca no banco muda por SQL.
+  PROSTATA_SUPRAPUBICA: {
+    padrao: null,
+    vias: {
+      unica:
+        "Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta com o paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais abrangendo toda a pelve.",
+    },
+  },
   CERVICAL: { padrao: null, vias: { unica: "Exame realizado com transdutor de 12 MHz, abrangendo a avaliação das cadeias ganglionares cervicais." } },
   PAREDE_ABDOMINAL: { padrao: null, vias: { unica: PAREDE_TECNICA } },
   MUSCULOESQUELETICO_V2: { padrao: null, vias: { unica: MSK_TECNICA } },
+  /** Id da categoria na web (o código no banco é MUSCULOESQUELETICO_V2). */
+  MUSCULOESQUELETICO: { padrao: null, vias: { unica: MSK_TECNICA } },
 };
 
 /** Categorias em que a via ditada troca a frase sem mudar o título (família obstétrica). */
@@ -202,4 +213,28 @@ export function mhzDoDitado(ditado: string | null | undefined): string | null {
       .map((m) => m[1]!.replace(",", ".")),
   );
   return vals.size === 1 ? [...vals][0]! : null;
+}
+
+/** Limite da frase de técnica preferida (preferência por usuário e categoria). */
+export const TECNICA_PREFERIDA_MAX = 600;
+
+/**
+ * Frase de técnica preferida do usuário para a categoria (decisão do Luiz, 10/10: editável por usuário e por
+ * categoria). Substitui só a frase padrão da via padrão, quando ela está no laudo: via escolhida/ditada,
+ * complementos (Doppler, cervicometria), documentação e contexto ficam como estão. Vazia → laudo intocado.
+ */
+export function aplicarTecnicaPreferida(laudo: string, categoria: string, preferida: string | null | undefined): string {
+  const nova = (preferida ?? "").replace(/\s+/g, " ").trim().slice(0, TECNICA_PREFERIDA_MAX);
+  const padrao = fraseTecnica(categoria);
+  if (!nova || !padrao || nova === padrao) return laudo;
+  const cab = /COMENT[ÁA]RIOS\s*:\s*/.exec(laudo);
+  if (!cab) return laudo;
+  const ini = cab.index + cab[0].length;
+  // Só dentro da seção (até a primeira linha em branco depois do texto dela).
+  const fim = laudo.slice(ini).search(/\n[ \t]*\n/);
+  const secao = fim < 0 ? laudo.slice(ini) : laudo.slice(ini, ini + fim);
+  const k = secao.indexOf(padrao);
+  if (k < 0) return laudo;
+  const j = ini + k;
+  return laudo.slice(0, j) + (/[.!?]$/.test(nova) ? nova : `${nova}.`) + laudo.slice(j + padrao.length);
 }

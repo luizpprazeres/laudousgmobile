@@ -422,15 +422,15 @@ function ladoSimples(l: Lado | null): string {
 }
 
 const COMENTARIOS_PADRAO =
-  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 const COMENTARIOS_MAMAS_AXILAS =
-  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas e as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas e as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 const COMENTARIOS_AXILAS =
-  "Exame realizado com transdutor linear de alta frequência, abrangendo as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+  "Exame realizado com transdutor linear de alta frequência, abrangendo as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 const COMENTARIOS_MASCULINA =
-  "Exame realizado com transdutor de 12 MHz, abrangendo a região retroareolar e todos os quadrantes de ambas as mamas, bem como as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+  "Exame realizado com transdutor de 12 MHz, abrangendo a região retroareolar e todos os quadrantes de ambas as mamas, bem como as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 const COMENTARIOS_PROTESE =
-  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas, bem como as regiões axilares. Paciente com próteses mamárias.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
+  "Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas, bem como as regiões axilares. Paciente com próteses mamárias.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
 
 const TEXTO_FUNDO_PADRAO = "Mamas com ecotextura de fundo heterogênea.";
 const AUSENCIA_LESAO = "Não há sinais evidentes de imagem nodular sólida, cística ou complexa.";

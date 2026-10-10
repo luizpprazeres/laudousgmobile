@@ -3,6 +3,7 @@
  * carrega o roteiro da casa + as regras críticas — a "rédea" que evita over-coverage.
  * Rodar: tsx src/server/pipeline/__tests__/msk-writer-prompt.manual.ts
  */
+import { comentariosPadrao } from "@laudousg/schemes";
 import { buildMskWriterSystemMessage } from "../../renderer/categories/MUSCULOESQUELETICO";
 import { WRITER_OUTPUT_RULE } from "../writerOutputGuard";
 
@@ -55,6 +56,9 @@ check("exemplos ensinam só o estilo", /exemplos da conversa ensinam só o estil
   check("few-shots: sem 'compatível com' no corpo", gerados.every((f) => !/compatível com/.test(f.laudo.split("CONCLUSÃO:")[0] ?? "")));
   check("few-shots: hipótese na fórmula da casa", gerados.every((f) => !/O diagnóstico mais provável é/.test(f.laudo)));
   check("few-shots: 'sem evidência de rotura' (singular)", gerados.every((f) => !/sem evidência de roturas/.test(f.laudo)));
+  // W15 (decisão do Luiz, 10/10): técnica padrão com 12 MHz; "abrangendo a avaliação do {segmento}" é variante antiga.
+  const todos = MSK_FEWSHOTS as { raw: string; laudo: string }[];
+  check("few-shots: técnica da casa (W15), sem a variante antiga", todos.every((f) => f.laudo.includes(`COMENTÁRIOS:\n${comentariosPadrao("MUSCULOESQUELETICO_V2")}\n`) && !/abrangendo a avaliação d/.test(f.laudo)));
 }
 
 // O léxico vem da regra comum de saída que o writer anexa ao system (W14/W10b): uma vez no system final.

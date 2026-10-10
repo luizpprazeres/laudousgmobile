@@ -20,7 +20,7 @@ GATILHOS DE APLICAÇÃO:
 
 Se for mama masculina, usar exatamente:
 Exame realizado com transdutor de 12 MHz, abrangendo a região retroareolar e todos os quadrantes de ambas as mamas, bem como as regiões axilares.
-A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 6. GINECOMASTIA
 Usar exatamente:

@@ -143,7 +143,7 @@ export const axilas: ExamCategory = {
   name: 'Axilas',
   // Mesmo título e técnica do escopo "somente axilas" do renderer da mama.
   title: 'ULTRASSONOGRAFIA DAS REGIÕES AXILARES',
-  tecnica: 'Exame realizado com transdutor linear de alta frequência, abrangendo as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.',
+  tecnica: 'Exame realizado com transdutor linear de alta frequência, abrangendo as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections,
   controls: [select('modelo', 'Modelo de partida', [['em_branco', 'Em branco'], ['normal', 'Normal — as duas axilas avaliadas sem alterações']])],

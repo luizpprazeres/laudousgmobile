@@ -14,6 +14,7 @@
  * → curadoria futura / achados_adicionais.
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory } from './abdomeTotal'
 import type { Field, FieldOption, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
 import { biRadsSpec } from '../../calculators/specs'
@@ -393,7 +394,7 @@ export const mamaria: ExamCategory = {
   name: 'Mamas e axilas',
   title: 'ULTRASSONOGRAFIA DAS MAMAS',
   tecnica:
-    'Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.',
+    comentariosPadrao('MAMARIA')!,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   controls: [
     {
