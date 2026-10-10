@@ -4,7 +4,8 @@ Branch `feat/haiku-motor` · 09/10/2026 · Claude Code (Opus 5.5)
 Commits: `109dd941` motor · `a073004a` visão/consultor/testes · `6bc4697e` bancada · `cc075d51` exame no writer +
 recusa clara (achado do W4) · `06ff113f` relatório + negrito markdown · **rodada 2:** `b163387c` metatexto do
 extrator, saída dos writers, system do ditado cru · `f5101dcb` relatório · **rodada 3:** `d1415aa0` Sonnet 5.5 por
-categoria + guard de comandos por laudo (+ bancada e relatório)
+categoria + guard de comandos por laudo (+ bancada e relatório) · **10/10:** MSK de volta ao Haiku 5.5 (sai do
+default de `LLM_WRITER_MODEL_BY_CATEGORY`)
 
 ## Resumo para o Luiz
 
@@ -35,9 +36,11 @@ por decisão de 09/10" — a memória do projeto foi corrigida hoje: 14/10 é a 
 
 **2. Claude Sonnet 5.5 por categoria, por configuração.**
 - `LLM_WRITER_MODEL_BY_CATEGORY` (CSV `CATEGORIA=modelo[:esforço]`). **Ausente** = default do código:
-  `MUSCULOESQUELETICO_V2`, `PELVE_FEMININA` e `DOPPLER_CAROTIDAS` → `claude-sonnet-5-5`; demais → Haiku 5.5.
-  **Vazia** = nenhuma exceção (tudo no modelo base). Ex.: voltar o MSK ao Haiku sem deploy:
-  `LLM_WRITER_MODEL_BY_CATEGORY=PELVE_FEMININA=claude-sonnet-5-5,DOPPLER_CAROTIDAS=claude-sonnet-5-5`.
+  `PELVE_FEMININA` e `DOPPLER_CAROTIDAS` → `claude-sonnet-5-5`; demais → Haiku 5.5. **Atualização 10/10:** o
+  `MUSCULOESQUELETICO_V2` saiu do default por decisão do Luiz — Haiku 5.5 no writer dedicado, com o prompt novo da W9;
+  pelve e carótidas seguem no Sonnet até a W10a decidir.
+  **Vazia** = nenhuma exceção (tudo no modelo base). Ex.: voltar o MSK ao Sonnet sem deploy:
+  `LLM_WRITER_MODEL_BY_CATEGORY=MUSCULOESQUELETICO_V2=claude-sonnet-5-5,PELVE_FEMININA=claude-sonnet-5-5,DOPPLER_CAROTIDAS=claude-sonnet-5-5`.
 - Vale no **writer dedicado** do MSK e da pelve (`mskWriter.ts`, `pelveWriter.ts` — não no genérico) e no **writer
   completo** das carótidas. A exceção por categoria **vence** o `*_WRITER_MODEL` do dedicado.
 - Esforço: o de `LLM_WRITER_EFFORT` (medium), salvo `:esforço` na entrada. No Sonnet 5.5 o default da API seria
@@ -241,7 +244,7 @@ texto do modelo curado; o renderer decidia essa nota pela preferência `show_dom
 | `LLM_VISION_MODEL` | `claude-haiku-5-5` | leitura de imagem (esforço = `LLM_EXTRACTION_EFFORT`) |
 | `FULL_WRITER_CATEGORIES` | `ABDOMEN_TOTAL,ABDOMEN_SUPERIOR,TIREOIDE,MAMARIA,PROSTATA_SUPRAPUBICA,VIAS_URINARIAS,DOPPLER_CAROTIDAS` | env **ausente** = default; **vazia** = ninguém sai do renderer |
 | `WRITER_V2_MODEL` | `gpt-5.4-mini` | Writer V2 experimental (OpenAI) |
-| `LLM_WRITER_MODEL_BY_CATEGORY` | ausente = `MUSCULOESQUELETICO_V2`, `PELVE_FEMININA`, `DOPPLER_CAROTIDAS` → `claude-sonnet-5-5` | rodada 3: modelo do writer por categoria (`CAT=modelo[:esforço]`); vazia = sem exceções; vence `*_WRITER_MODEL` |
+| `LLM_WRITER_MODEL_BY_CATEGORY` | ausente = `PELVE_FEMININA`, `DOPPLER_CAROTIDAS` → `claude-sonnet-5-5` (o MSK saiu em 10/10: Haiku 5.5 no writer dedicado, prompt da W9) | modelo do writer por categoria (`CAT=modelo[:esforço]`); vazia = sem exceções; vence `*_WRITER_MODEL`. Voltar o MSK ao Sonnet sem deploy: `MUSCULOESQUELETICO_V2=claude-sonnet-5-5,PELVE_FEMININA=claude-sonnet-5-5,DOPPLER_CAROTIDAS=claude-sonnet-5-5` |
 | `LLM_SONNET_SERVER_FALLBACK` | `true` | rodada 3: fallback de recusa do servidor no Sonnet 5.5; `false` desliga |
 
 ### Remover (não são mais lidas, ou apontam para modelo aposentado)

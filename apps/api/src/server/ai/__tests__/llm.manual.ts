@@ -409,16 +409,17 @@ async function main() {
 
   // ---------------- Sonnet 5.5 por categoria ----------------
   const BASE = { LLM_WRITER_MODEL: "claude-haiku-5-5", LLM_WRITER_EFFORT: "medium" };
-  await check("modelo por categoria: MSK, pelve e carótidas no Sonnet 5.5 por default; demais no Haiku", () => {
+  await check("modelo por categoria: pelve e carótidas no Sonnet 5.5 por default; MSK e demais no Haiku", () => {
     assert.equal(writerTargetForCategory("DOPPLER_CAROTIDAS", BASE).model, "claude-sonnet-5-5");
     assert.equal(writerTargetForCategory("ABDOMEN_TOTAL", BASE).model, "claude-haiku-5-5");
-    assert.equal(dedicatedWriterTarget("claude-haiku-5-5", "msk", BASE, "MUSCULOESQUELETICO_V2").model, "claude-sonnet-5-5");
+    assert.equal(dedicatedWriterTarget("claude-haiku-5-5", "msk", BASE, "MUSCULOESQUELETICO_V2").model, "claude-haiku-5-5", "MSK no Haiku desde 10/10");
+    assert.equal(writerModelOverrides({ LLM_WRITER_MODEL_BY_CATEGORY: undefined }).has("MUSCULOESQUELETICO_V2"), false);
     assert.equal(dedicatedWriterTarget("claude-haiku-5-5", "pelve", BASE, "PELVE_FEMININA").model, "claude-sonnet-5-5");
     assert.equal(dedicatedWriterTarget("claude-haiku-5-5", "renal", BASE, "DOPPLER_RENAL").model, "claude-haiku-5-5");
   });
   await check("modelo por categoria: env troca sem deploy (modelo e esforço); vazia = sem exceções", () => {
-    const env1 = { ...BASE, LLM_WRITER_MODEL_BY_CATEGORY: "MUSCULOESQUELETICO_V2=claude-haiku-5-5, PELVE_FEMININA=claude-sonnet-5-5:high" };
-    assert.equal(dedicatedWriterTarget("x", "msk", env1, "MUSCULOESQUELETICO_V2").model, "claude-haiku-5-5");
+    const env1 = { ...BASE, LLM_WRITER_MODEL_BY_CATEGORY: "MUSCULOESQUELETICO_V2=claude-sonnet-5-5, PELVE_FEMININA=claude-sonnet-5-5:high" };
+    assert.equal(dedicatedWriterTarget("x", "msk", env1, "MUSCULOESQUELETICO_V2").model, "claude-sonnet-5-5", "MSK volta ao Sonnet só por env");
     const pelve = dedicatedWriterTarget("x", "pelve", env1, "PELVE_FEMININA");
     assert.equal(pelve.model, "claude-sonnet-5-5");
     assert.equal(pelve.effort, "high");
