@@ -39,6 +39,7 @@ check("frase normal copiada literalmente", /copie a frase do roteiro LITERALMENT
 check("padrão 'frase normal + , com' com exemplo real", /sem o ponto \+ ", com/.test(p) && /preservadas, com irregularidade cortical e osteófitos marginais na origem do tendão patelar/.test(p));
 check("estrutura alterada mantém o sujeito do roteiro", /o mesmo sujeito da frase do roteiro/.test(p));
 check("proíbe paráfrase e ressalva inventada", /NÃO parafraseie nem inverta/.test(p) && /sem alteração identificável/.test(p));
+check("'sem evidência de rotura' é padrão da casa, não ressalva proibida", /termina com ", sem evidência de rotura" \(padrão da casa\)/.test(p) && !/ressalvas[^\n]*"sem evidência de rotura"/.test(p));
 check("numeração só na conclusão e recomeça por laudo", /existe SÓ dentro da CONCLUSÃO e recomeça em "1\)"/.test(p));
 check("conferência final por laudo", /CONFERÊNCIA FINAL, laudo por laudo/.test(p));
 
