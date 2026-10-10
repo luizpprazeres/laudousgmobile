@@ -37,3 +37,9 @@ no caminho do renderer e quando (route.ts), e como o app Swift (`~/laudousg-swif
 Proponha (e implemente o lado da API, atrás de flag) melhorias: etapas reais com tempo (recebido → lendo o ditado → montando o
 laudo → pronto), primeiro evento imediato, e — se seguro — começar a mostrar o laudo por seções assim que o renderer montar
 (sem esperar a pós-geração). Mudança no app Swift: só proposta + diff, sem build/push (o Luiz decide). Status: `status/W16B.md`.
+
+## Pedido extra do Luiz (W16A)
+Junto com os números, um **HTML local** (em `tmp-review/bench-haiku/w16/`) para comparar na prática laudos gerados **com raciocínio
+× sem raciocínio**, lado a lado, com as diferenças destacadas e o laudo final do médico como referência: alguns casos de
+**obstétrica, Doppler obstétrico e morfológico** (pode incluir ditados sintéticos simulando o mobile). Mostre por caso os tokens
+de saída e o tempo medido. Reaproveite o `relatorio.py` da bancada.
