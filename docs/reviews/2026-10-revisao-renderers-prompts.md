@@ -492,7 +492,7 @@ a área de secção; tendão patelar com osteófitos na origem); as estruturas a
 roteiro + a alteração; e **"sem evidência de rotura" está em 30 de 78 laudos finais (74 linhas) e nunca foi ditada** — é a
 frase do médico para tendão com alteração ecotextural.
 
-**Prompt reescrito** (`MUSCULOESQUELETICO.ts`, `buildMskWriterSystemMessage`; +~1,3 mil caracteres): estruturas na ordem
+**Prompt reescrito** (`MUSCULOESQUELETICO.ts`, `buildMskWriterSystemMessage`; 6,2 → 8,1 mil caracteres, ~+30%): estruturas na ordem
 do roteiro, uma linha cada; estrutura normal ou não citada = frase do roteiro literal; as duas formas de estrutura alterada
 com exemplos reais (anonimizados, só a frase); sem paráfrase nem ressalva fora do padrão da casa; numeração só na CONCLUSÃO,
 recomeçando em "1)" em cada laudo; conferência final por laudo. Uma 1ª versão proibia "sem evidência de rotura" como
@@ -532,7 +532,7 @@ Sem os 10 casos expostos ao MK-1 (n = 61): produção 8,36 · Haiku 5,89 → 6,1
   "Tendão patelar de espessura, continuidade e ecotextura preservadas, com osteófitos marginais na origem do tendão
   patelar." ("irregularidade cortical" não estava no ditado — foi acréscimo do médico no final).
 - **Nos 8 casos de multi-laudo que a numeração destruía**, os candidatos novos saem com o número certo de laudos em 15 de
-  16 saídas (notas do Sonnet: 5–8, contra 2,5–4,5 antes).
+  16 saídas (notas do Sonnet: 4–8, contra 2,5–4,5 antes).
 - **Sonnet + prompt novo é o melhor candidato Claude** (6,67; 6 graves; invenções −29%). Fora dos casos de multi-laudo, a
   nota fica estável (6,66 → 6,70): o ganho do prompt está em estrutura, cobertura e forma, que o placar mede melhor que a
   nota. A distância para a produção (~1,5) segue concentrada em conclusão incompleta, normalidade/qualificador não ditado,
