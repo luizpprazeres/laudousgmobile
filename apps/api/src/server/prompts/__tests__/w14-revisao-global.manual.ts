@@ -71,7 +71,7 @@ check("M01: few-shots de partes moles na fórmula da casa, sem conduta não dita
 check("M02: fora da obstetrícia, a mensagem do usuário segue a política do global (sem exemplo obstétrico)", () => {
   const abd = buildRawUserMessage("Abdome normal.", false, { label: "Abdome Total", code: "ABDOMEN_TOTAL" });
   assert.doesNotMatch(abd, /Gestação em torno de|mantenha o placeholder/);
-  assert.match(abd, /linha de medida não ditada é omitida/);
+  assert.match(abd.replace(/\s+/g, " "), /linha de medida não ditada é omitida/);
   assert.match(GLOBAL_RULES_LEAN, /Linha de medida do modelo sem valor ditado: omita a linha/);
   const obst = buildRawUserMessage("IG não informada.", false, { label: "Obstétrica", code: "OBSTETRICA" });
   assert.match(obst, /Gestação em torno de ____ semanas/);

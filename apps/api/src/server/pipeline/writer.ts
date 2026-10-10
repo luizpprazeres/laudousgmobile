@@ -321,9 +321,10 @@ export function buildRawUserMessage(
       ? [
           // W14 (revisão M02): fora da obstetrícia, a política de dado ausente é a do
           // global enxuto (no system), sem o exemplo obstétrico de placeholder.
-          "1. Use o MODELO da categoria (no system), com as seções obrigatórias e a ordem",
-          "   do modelo. Dado ausente segue as regras da casa no system: \"____\" só no",
-          "   número de um achado ditado; linha de medida não ditada é omitida.",
+          "1. Use o MODELO da categoria (no system) na ÍNTEGRA — preserve as seções",
+          "   obrigatórias e a ordem do modelo. Dado ausente segue as regras da casa no",
+          "   system: \"____\" só no número de um achado ditado; linha de medida não",
+          "   ditada é omitida.",
         ]
       : [
           "1. Use o MODELO da categoria (no system) na ÍNTEGRA — preserve as seções",
