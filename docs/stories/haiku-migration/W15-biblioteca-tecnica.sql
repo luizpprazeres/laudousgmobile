@@ -74,3 +74,9 @@ commit;
 --
 -- Sem o SQL da parede, a saída já sai certa: o ajuste pós-geração (tecnicaGuard) troca qualquer frase de técnica
 -- da parede abdominal pela da casa.
+
+-- ── APLICADO em 10/10/2026 pelo orquestrador (projeto yldtkqrsbgcnwlydrrot), partes 1 E 2 numa transação (decisão 8 do Luiz
+-- já aprovava a frase da parede): próstata 8/8 e parede 8/8 alterados, versão +1. Cópia antes:
+-- public.knowledge_blocks_bkp_tecnica_20261010 (RLS ligada, sem anon/authenticated). Rollback:
+-- update knowledge_blocks k set content = b.content, version = b.version, updated_at = now()
+--   from knowledge_blocks_bkp_tecnica_20261010 b where k.id = b.id;
