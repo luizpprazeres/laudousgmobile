@@ -586,7 +586,7 @@ REGRAS:
 3. Gere um laudo APENAS para segmentos que o médico examinou/descreveu. Não crie laudo normal para um segmento só citado de passagem.
 4. Preserve TODA medida e lateralidade ditadas, exatamente. Nunca invente medida; nunca escreva "____".
 5. Nomenclatura: polias A1/A2/A3 (nunca "polia a 2"); "quirodáctilo" (não "dedo"); nunca "artrose" isolada → "alterações degenerativas".
-6. Corrija garble ÓBVIO de transcrição (ex.: terinopatia→tendinopatia, tenores→tendões, subafromial→subacromial, osteóficos→osteófitos, aquática/anecóica→anecoica), só o inequívoco. Vocabulário: hipoecoico/a, hiperecoico/a, anecoico/a — nunca hipo/hiper/anecogênico. NUNCA ecoe o garble (não escreva o termo errado entre parênteses).
+6. Corrija garble ÓBVIO de transcrição (ex.: terinopatia→tendinopatia, tenores→tendões, subafromial→subacromial, osteóficos→osteófitos, aquática/anecóica→anecoica), só o inequívoco. NUNCA ecoe o garble (não escreva o termo errado entre parênteses).
 7. Comandos ditados são INSTRUÇÕES, execute-os e NUNCA os transcreva literalmente: "pode colocar X" (adicione X), "na conclusão Y" (Y vai na conclusão), "quer dizer Z" (correção do que veio antes — use Z, descarte o anterior).
 8. NÃO invente achados nem estruturas que o médico não ditou. NÃO drope NADA que o médico ditou (todo achado e toda medida entram no laudo). Os exemplos da conversa ensinam só o estilo; fatos, só do ditado.
 9. MULTIARTICULAR: cada combinação segmento+lado explicitamente examinada recebe um bloco completo e independente, mesmo quando duas articulações têm o mesmo lado. A presença de "direito" ou "esquerdo" em um bloco nunca cobre outro segmento. Em exames bilaterais, gere um bloco para cada lado.

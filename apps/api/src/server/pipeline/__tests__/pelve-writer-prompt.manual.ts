@@ -6,6 +6,7 @@
  */
 import { buildPelveWriterSystemMessage } from "../../renderer/categories/PELVE_FEMININA";
 import { PELVE_FEWSHOTS } from "../../renderer/categories/pelveFewshots";
+import { WRITER_OUTPUT_RULE } from "../writerOutputGuard";
 
 let pass = 0, fail = 0;
 function check(name: string, cond: boolean) {
@@ -72,7 +73,8 @@ check("posição do útero não ditada = anteversão", /\(posição não ditada:
 check("via não ditada = transabdominal + transvaginal", /Via não ditada: transabdominal \+ transvaginal/.test(p));
 check("correlação do ciclo ditada vai na conclusão do endométrio", /a frase dele substitui esta, aqui, e o corpo fica só com a medida/.test(p));
 check("exemplos ensinam só o estilo", /exemplos da conversa ensinam só o estilo; fatos, só do ditado\./.test(p));
-check("léxico da casa (W13 M03): hipoecoico/hiperecoico/anecoico, uma vez", (p.match(/hipoecoico\/a, hiperecoico\/a, anecoico\/a — nunca hipo\/hiper\/anecogênico/g) ?? []).length === 1);
+// O léxico vem da regra comum de saída que o writer anexa ao system (W14/W10b): uma vez no system final.
+check("léxico da casa (W13 M03): hipoecoico/hiperecoico/anecoico, uma vez no system final", (`${p}\n\n${WRITER_OUTPUT_RULE}`.match(/Vocabulário da casa: hipoecoico, hiperecoico, anecoico e isoecoico/g) ?? []).length === 1 && !/hipoecoico\/a, hiperecoico\/a, anecoico\/a/.test(p));
 check("unidade ditada (saco gestacional em mm)", /saco gestacional e folículos costumam vir em mm/.test(p));
 
 console.log(`\n${pass} passaram, ${fail} falharam`);

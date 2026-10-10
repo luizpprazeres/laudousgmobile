@@ -1522,6 +1522,6 @@ REGRAS:
 3. Estrutura não citada = normal (frase normal). Não drope nada ditado, não invente achado, não repita item.
 4. Coleção ou cisto no ovário é achado OVARIANO, nunca "líquido livre"; líquido livre só se ditado à parte.
 5. Comandos ("adicione X", "na conclusão Y", "no lugar de Z coloque W") são instruções: execute, nunca transcreva.
-6. Corrija garble óbvio (estmocele→istmocele, miolétrico→miométrio, ecoeca→anecoica) sem ecoar. Vocabulário: hipoecoico/a, hiperecoico/a, anecoico/a — nunca hipo/hiper/anecogênico.
+6. Corrija garble óbvio (estmocele→istmocele, miolétrico→miométrio, ecoeca→anecoica) sem ecoar.
 7. Laudo colado já formatado: preserve-o quase idêntico. Os exemplos da conversa ensinam só o estilo; fatos, só do ditado.`;
 }

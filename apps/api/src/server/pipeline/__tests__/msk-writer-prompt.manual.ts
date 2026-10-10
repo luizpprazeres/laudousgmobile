@@ -4,6 +4,7 @@
  * Rodar: tsx src/server/pipeline/__tests__/msk-writer-prompt.manual.ts
  */
 import { buildMskWriterSystemMessage } from "../../renderer/categories/MUSCULOESQUELETICO";
+import { WRITER_OUTPUT_RULE } from "../writerOutputGuard";
 
 let pass = 0, fail = 0;
 function check(name: string, cond: boolean) {
@@ -56,7 +57,8 @@ check("exemplos ensinam só o estilo", /exemplos da conversa ensinam só o estil
   check("few-shots: 'sem evidência de rotura' (singular)", gerados.every((f) => !/sem evidência de roturas/.test(f.laudo)));
 }
 
-check("léxico da casa (W13 M03): hipoecoico/hiperecoico/anecoico, uma vez", (p.match(/hipoecoico\/a, hiperecoico\/a, anecoico\/a — nunca hipo\/hiper\/anecogênico/g) ?? []).length === 1);
+// O léxico vem da regra comum de saída que o writer anexa ao system (W14/W10b): uma vez no system final.
+check("léxico da casa (W13 M03): hipoecoico/hiperecoico/anecoico, uma vez no system final", (`${p}\n\n${WRITER_OUTPUT_RULE}`.match(/Vocabulário da casa: hipoecoico, hiperecoico, anecoico e isoecoico/g) ?? []).length === 1 && !/hipoecoico\/a, hiperecoico\/a, anecoico\/a/.test(p));
 const pComBiblioteca = buildMskWriterSystemMessage({
   validatedLibrary: "FRASE VALIDADA: Tendão infraespinhal com espessamento.",
 });
