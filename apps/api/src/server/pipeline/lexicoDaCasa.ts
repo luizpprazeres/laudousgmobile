@@ -9,9 +9,12 @@
  *  - tipo: "grafia" (a forma errada não é palavra do português médico: troca segura em qualquer
  *    contexto) ou "contextual" (só com o contexto do regex, ex.: ordinal antes de "compartimento").
  *
- * Fora daqui de propósito (decisão do Luiz, ver W11-relatorio.md): "ecogênico" sozinho ("foco
- * ecogênico"), "bolsa" × "bursa", "alteração" × "modificação do padrão ecotextural", "tendinose",
- * "córtico medular" (grafia do modelo do abdome, mantida pelo médico) e "x" × "×".
+ * Decisões do Luiz de 10/10 (tarde, `docs/stories/haiku-migration/DECISOES-LUIZ-2026-10-10.md`, Termos):
+ * "ecogênico" sozinho → "hiperecoico" (fora a obstetrícia: o "foco ecogênico intracardíaco" do golf ball
+ * espera confirmação), "bolsa" → "bursa" no MSK e "modificação do padrão ecotextural" no MSK.
+ *
+ * Fora daqui de propósito: "tendinose", "córtico medular" (grafia do modelo do abdome, mantida pelo
+ * médico) e "x" × "×".
  *
  * Algarismo romano não é tarefa do ASR (keyterm não garante grafia — doc oficial do Deepgram, ver
  * relatório): fica aqui, no contextual.
@@ -29,6 +32,8 @@ export interface EntradaLexico {
   readonly camadas: readonly CamadaLexico[];
   /** Categorias em que a troca vale; ausente = todas. */
   readonly categorias?: readonly string[];
+  /** Categorias em que a troca NÃO vale (exige categoria conhecida: sem categoria, não aplica). */
+  readonly categoriasFora?: readonly string[];
   readonly regex: RegExp;
   readonly trocar: (match: string, ...grupos: string[]) => string;
 }
@@ -46,6 +51,8 @@ function valorOrdinal(t: string): number | undefined {
 }
 
 const MSK = ["MUSCULOESQUELETICO", "MUSCULOESQUELETICO_V2", "MUSCULOESQUELETICO_RARAS"];
+// Mesma família do global obstétrico (`prompts/global.ts`, OBSTETRIC_GLOBAL_FAMILY).
+const OBSTETRICIA = ["OBSTETRICA", "DOPPLER_OBSTETRICO", "MORFOLOGICO", "CERVICOMETRIA"];
 const FIGADO = ["ABDOMEN_TOTAL", "ABDOMEN_SUPERIOR", "ABDOMEN_TOTAL_DOPPLER", "DOPPLER_HEPATICO"];
 
 // Ordinal do punho: "4º", "4o", "quarto"… (1–6), opcionalmente numa lista que termina em "compartimento(s)".
@@ -118,14 +125,53 @@ export const LEXICO_DA_CASA: readonly EntradaLexico[] = [
     trocar: (m) => ROMANO[valorOrdinal(m) ?? 0] || m,
   },
   {
+    // Luiz 10/10: "ecogênico(a)" sozinho → "hiperecoico(a)" ("foco ecogênico", "material ecogênico", "hilo
+    // ecogênico"). "ecogenicidade" não casa. Fora: obstetrícia inteira ("Foco ecogênico no ventrículo
+    // esquerdo" é o golf ball sem a palavra "intracardíaco" — exceção pendente do Luiz), "… intracardíaco" em
+    // qualquer categoria e o comparativo ("mais/menos/pouco ecogênico que…"), que não é o adjetivo da casa.
+    id: "ecogenico-sozinho",
+    canonico: "hiperecoico",
+    tipo: "grafia",
+    camadas: ["ditado", "saida"],
+    categoriasFora: OBSTETRICIA,
+    regex: /(?<!\p{L})(?<!(?:mais|menos|pouco|t[ãa]o)\s+)ecog[êe]nic(o|a|os|as)(?!\p{L})(?!\s+intracard)/giu,
+    trocar: (_m, s) => `hiperecoic${s.toLowerCase()}`,
+  },
+  {
     // "bursa subacromial subdeltoidea" (ditado, 10), "… e subdeltoidea" (IA, 4), "subdeltóidea" →
-    // "subacromial-subdeltoidea" (49 finais). "bolsa" × "bursa" fica como o médico disse (decisão do Luiz).
+    // "subacromial-subdeltoidea" (49 finais). Mantém "bolsa"/"bursa" — a troca do nome é a entrada seguinte (MSK).
     id: "bursa-subacromial-subdeltoidea",
     canonico: "subacromial-subdeltoidea",
     tipo: "grafia",
     camadas: ["ditado", "saida"],
     regex: /\b(bursa|bolsa)\s+sub[\s-]?acromial(?:\s+e\s+|[\s-]+)sub[\s-]?delt[óo]idea\b/gi,
     trocar: (_m, b) => `${b} subacromial-subdeltoidea`,
+  },
+  {
+    // Luiz 10/10: "bolsa" → "bursa" no MSK ("bolsa subacromial-subdeltoidea", "bolsa suprapatelar", "bolsas
+    // sinoviais radial e ulnar" — 16 finais em 180 dias). Fora do MSK "bolsa" é outra coisa (escrotal,
+    // vertical do líquido amniótico, de Blake) e fica.
+    id: "bolsa-para-bursa",
+    canonico: "bursa",
+    tipo: "contextual",
+    camadas: ["ditado", "saida"],
+    categorias: MSK,
+    regex: /(?<!\p{L})bolsa(s?)(?!\p{L})/giu,
+    trocar: (_m, s) => `bursa${s.toLowerCase()}`,
+  },
+  {
+    // Luiz 10/10: MSK escreve "modificação do padrão ecotextural", nunca "alteração" (o ditado chega a pedir
+    // "da ecotextura escreva modificação do padrão ecotextural"). Nos finais de 180 dias: 58 com a forma da
+    // casa × 17 "alteração do padrão ecotextural" e 17 "alteração ecotextural" vindos da IA. Variantes:
+    // "alteração ecotextural", "… da/na ecotextura", "… do/no padrão ecotextural", com adjetivo no meio
+    // ("alteração difusa do padrão…") e no plural. Fora do MSK (tireoide, abdome) fica como está.
+    id: "modificacao-padrao-ecotextural",
+    canonico: "modificação do padrão ecotextural",
+    tipo: "contextual",
+    camadas: ["ditado", "saida"],
+    categorias: MSK,
+    regex: /(?<!\p{L})altera[çc](ão|ao|ões|oes)((?:\s+(?:difusas?|focal|focais|discretas?|leves?|acentuadas?|importantes?))?)\s+(?:(?:do|no)\s+padr[ãa]o\s+ecotextural|ecotexturais|ecotextural|(?:da|na)\s+ecotextura)(?!\p{L})/giu,
+    trocar: (_m, n, adj) => `${/^[õo]es$/i.test(n) ? "modificações" : "modificação"}${adj.toLowerCase()} do padrão ecotextural`,
   },
   {
     // Pedido do Luiz (10/10): "metacarpofalangiana". "falangeana", "metacarpo falangiana" não são a forma da casa.
@@ -143,9 +189,11 @@ function normPos(p: string): string {
   return p.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-/** Mantém a maiúscula inicial do trecho original ("Anecóica" → "Anecoica"). */
+/** Mantém a caixa do trecho original: "Anecóica" → "Anecoica"; "HIPOECOGÊNICO" (título) → "HIPOECOICO". */
 function comCaixa(original: string, novo: string): string {
-  return /^[A-ZÀ-Ý]/.test(original) && !/^[IVX]+$/.test(novo) ? novo.charAt(0).toUpperCase() + novo.slice(1) : novo;
+  if (/^[IVX]+$/.test(novo)) return novo;
+  if (/\p{Lu}\p{Lu}/u.test(original) && original === original.toUpperCase()) return novo.toUpperCase();
+  return /^[A-ZÀ-Ý]/.test(original) ? novo.charAt(0).toUpperCase() + novo.slice(1) : novo;
 }
 
 /** Categorias ligadas para a camada; `undefined` = env ausente → todas. */
@@ -172,7 +220,7 @@ export function entradasDesligadas(valorEnv: string | undefined): Set<string> {
 
 /**
  * Aplica o léxico a um texto, para a camada e a categoria dadas. Puro e determinístico.
- * Sem categoria, só as entradas sem escopo (globais).
+ * Sem categoria, só as entradas sem escopo (globais) — nem as com `categoriasFora`.
  */
 export function aplicarLexico(
   texto: string,
@@ -183,6 +231,7 @@ export function aplicarLexico(
   for (const e of LEXICO_DA_CASA) {
     if (!e.camadas.includes(opts.camada) || opts.desligadas?.has(e.id)) continue;
     if (e.categorias && !(opts.categoria && e.categorias.includes(opts.categoria))) continue;
+    if (e.categoriasFora && (!opts.categoria || e.categoriasFora.includes(opts.categoria))) continue;
     out = out.replace(e.regex, (...args) => {
       // args = [match, grupo1…grupoN, offset, texto] (sem grupos nomeados)
       const match = args[0] as string;

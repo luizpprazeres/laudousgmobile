@@ -24,6 +24,6 @@ Ovário {direito/esquerdo} medindo {a} x {b} x {c} cm, apresentando imagem de ba
 Conclusão:
 Ovário {direito/esquerdo} apresentando imagem hipoecoica que tem como diagnóstico mais provável endometrioma (O-RADS 2).
 Regras:
-- Sempre usar a descrição "imagem de baixa ecogenicidade com aspecto em vidro fosco" (não "imagem cística homogênea com conteúdo finamente ecogênico").
+- Sempre usar a descrição "imagem de baixa ecogenicidade com aspecto em vidro fosco" (não "imagem cística homogênea com conteúdo finamente hiperecoico").
 - Sempre incluir a frase do Doppler ("Complementamos o estudo com Doppler colorido, que não mostrou vascularização"), mesmo que o Doppler não tenha sido explicitamente solicitado pelo médico — exceto se o médico explicitamente vetar.
 - Na conclusão usar o padrão "que tem como diagnóstico mais provável endometrioma" (não "às custas de coleção líquida com aspecto sugestivo").

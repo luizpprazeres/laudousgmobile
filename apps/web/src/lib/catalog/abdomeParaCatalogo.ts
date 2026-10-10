@@ -165,7 +165,7 @@ function achadosDoFigado(s: EstadoDaSecao): Achado[] {
     out.push(achado({
       medidas_cm: medidasCm(s, "lesoes.hemangioma.dimensao"),
       localizacao: texto(s, "lesoes.hemangioma.local") === "lobo_e" ? "lobo esquerdo" : "lobo direito",
-      descricao_livre: "Imagem nodular hiperecogênica, homogênea e de contornos bem definidos, sugestiva de hemangioma",
+      descricao_livre: "Imagem nodular hiperecoica, homogênea e de contornos bem definidos, sugestiva de hemangioma",
       termo_do_medico: "hemangioma hepático",
     }));
   }
@@ -205,7 +205,7 @@ function achadosDaVesicula(s: EstadoDaSecao): Achado[] {
     }));
   }
   if (marcado(s, "conteudo", "lama")) {
-    out.push(achado({ descricao_livre: "Conteúdo ecogênico móvel, sem sombra acústica, compatível com lama biliar", termo_do_medico: "lama biliar" }));
+    out.push(achado({ descricao_livre: "Conteúdo hiperecoico móvel, sem sombra acústica, compatível com lama biliar", termo_do_medico: "lama biliar" }));
   }
   if (marcado(s, "conteudo", "polipos")) {
     out.push(achado({ descricao_livre: "Imagem polipoide aderida à parede, sem mobilidade ou sombra acústica", termo_do_medico: "pólipo vesicular" }));
@@ -220,7 +220,7 @@ function achadosDaVesicula(s: EstadoDaSecao): Achado[] {
   const raros = Array.isArray(s.raros) ? s.raros as string[] : [];
   const rarosMap: Record<string, [string, string]> = {
     adenomiomatose: ["Espessamento parietal focal com imagens císticas intramurais e artefatos em cauda de cometa", "adenomiomatose"],
-    colesterolose: ["Focos ecogênicos parietais aderidos, sem sombra acústica", "colesterolose"],
+    colesterolose: ["Focos hiperecoicos parietais aderidos, sem sombra acústica", "colesterolose"],
     porcelana: ["Parede vesicular difusamente calcificada com sombra acústica posterior", "vesícula em porcelana"],
     polipo_adenomatoso: ["Imagem polipoide séssil maior que 10 mm aderida à parede", "pólipo vesicular maior que 10 mm"],
     colecistite_alitiasica: ["Distensão e espessamento parietal sem cálculos identificáveis", "suspeita de colecistite alitiásica"],
@@ -248,7 +248,7 @@ function achadosDasViasBiliares(s: EstadoDaSecao): Achado[] {
   if (marcado(s, "conteudo", "coledocolitiase")) {
     out.push(achado({
       medidas_cm: medidasCm(s, "conteudo.coledocolitiase.dimensao"),
-      descricao_livre: "Imagem hiperecogênica com sombra acústica no interior do colédoco",
+      descricao_livre: "Imagem hiperecoica com sombra acústica no interior do colédoco",
       termo_do_medico: "coledocolitíase",
     }));
   }
@@ -343,7 +343,7 @@ function achadosDoRim(s: EstadoDaSecao): Achado[] {
     out.push(achado({
       medidas_cm: medidasCm(s, "lesoes.angiomiolipoma.dimensao"),
       localizacao: local[texto(s, "lesoes.angiomiolipoma.polo")] || null,
-      descricao_livre: "Imagem nodular hiperecogênica e homogênea, sugestiva de angiomiolipoma",
+      descricao_livre: "Imagem nodular hiperecoica e homogênea, sugestiva de angiomiolipoma",
       termo_do_medico: "angiomiolipoma renal",
     }));
   }
@@ -393,7 +393,7 @@ function achadosDaVeiaCava(s: EstadoDaSecao): Achado[] {
   if (marcado(s, "conteudo", "trombo")) {
     out.push(achado({
       localizacao: texto(s, "conteudo.trombo.local") || null,
-      descricao_livre: "Material ecogênico no interior da veia cava inferior, compatível com trombo",
+      descricao_livre: "Material hiperecoico no interior da veia cava inferior, compatível com trombo",
       termo_do_medico: "trombo na veia cava inferior",
     }));
   }
@@ -423,7 +423,7 @@ function achadosDaBexiga(s: EstadoDaSecao): Achado[] {
   for (const item of Array.isArray(s.conteudo) ? s.conteudo as string[] : []) {
     const termos: Record<string, [string, string]> = {
       debris: ["Ecos em suspensão no conteúdo vesical", "debris vesicais"],
-      calculo: ["Imagem hiperecogênica móvel com sombra acústica no interior da bexiga", "cálculo vesical"],
+      calculo: ["Imagem hiperecoica móvel com sombra acústica no interior da bexiga", "cálculo vesical"],
       sonda: ["Balão de sonda vesical em seu interior", "sonda vesical"],
       diverticulo: ["Imagem sacular comunicante com a luz vesical", "divertículo vesical"],
     };

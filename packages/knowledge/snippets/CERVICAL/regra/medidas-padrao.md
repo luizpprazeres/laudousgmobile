@@ -34,7 +34,7 @@ Para linfonodos individualmente caracterizáveis:
 "Linfonodo no nível [Robbins], à direita/à esquerda, medindo ___ x ___ mm (eixo curto x eixo longo), [DESCRIÇÃO DE CARACTERÍSTICAS]."
 
 Exemplos verbatim:
-- Linfonodo reacional: "Linfonodo no nível IIA à direita, medindo 8 x 18 mm, com hilo ecogênico preservado, padrão vascular hilar — sem critérios ecográficos de suspeição."
+- Linfonodo reacional: "Linfonodo no nível IIA à direita, medindo 8 x 18 mm, com hilo hiperecoico preservado, padrão vascular hilar — sem critérios ecográficos de suspeição."
 - Linfonodo suspeito: "Linfonodo no nível IV à esquerda, medindo 14 x 19 mm, com perda do hilo, cortical hipoecoica difusa, padrão vascular periférico — características ecográficas suspeitas."
 
 ═══════════════════════════════════════════════════

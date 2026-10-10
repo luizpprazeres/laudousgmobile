@@ -13,10 +13,10 @@ source_extracted_at: 2026-05-25
 
 EXCEÇÃO — ABSCESSO HEPÁTICO
 
-Coleção líquida heterogênea (com debris ecogênicos, gás ou paredes espessadas) no parênquima hepático, em paciente com quadro clínico de febre / dor / leucocitose.
+Coleção líquida heterogênea (com debris hiperecoicos, gás ou paredes espessadas) no parênquima hepático, em paciente com quadro clínico de febre / dor / leucocitose.
 
 Descrição obrigatória no corpo:
-"Fígado de dimensões normais e contornos regulares, apresentando coleção líquida heterogênea, com debris ecogênicos no interior, medindo 4,5 x 3,8 cm, situada no segmento VIII. Ao Doppler colorido, observa-se hiperemia periférica acentuada."
+"Fígado de dimensões normais e contornos regulares, apresentando coleção líquida heterogênea, com debris hiperecoicos no interior, medindo 4,5 x 3,8 cm, situada no segmento VIII. Ao Doppler colorido, observa-se hiperemia periférica acentuada."
 
 Na conclusão (urgência explícita):
 "x)    Achados sugestivos de abscesso hepático no segmento VIII (vide texto). Encaminhamento clínico/cirúrgico em caráter de urgência."

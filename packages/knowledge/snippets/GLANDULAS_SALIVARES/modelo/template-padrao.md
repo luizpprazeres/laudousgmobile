@@ -67,7 +67,7 @@ ATENÇÃO: as faixas abaixo são REFERÊNCIAS APROXIMADAS para apoiar a interpre
 PARÓTIDA NORMAL (adulto) — faixas típicas:
 - AP (ântero-posterior): ~25-40 mm.
 - Longitudinal: ~50-70 mm.
-- Ecotextura: homogênea, hiperecogênica em relação ao músculo esternocleidomastóideo adjacente (infiltração gordurosa aumenta a ecogenicidade com a idade).
+- Ecotextura: homogênea, hiperecoica em relação ao músculo esternocleidomastóideo adjacente (infiltração gordurosa aumenta a ecogenicidade com a idade).
 
 SUBMANDIBULAR NORMAL (adulto) — faixas típicas:
 - AP: ~15-25 mm.

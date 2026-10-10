@@ -123,13 +123,13 @@ function colelitiaseFrase(state: OrganState): { body: string; conclusion: string
   let imagem: string
   let conclLabel: string
   if (qtd === 'repleta') {
-    imagem = 'apresentando-se repleta de imagens hiperecogênicas com sombra acústica posterior'
+    imagem = 'apresentando-se repleta de imagens hiperecoicas com sombra acústica posterior'
     conclLabel = 'Colelitíase — vesícula repleta de cálculos'
   } else if (qtd === 'multiplos') {
-    imagem = `apresentando em seu interior imagens hiperecogênicas com sombra acústica posterior${medindo}, ${movel}`
+    imagem = `apresentando em seu interior imagens hiperecoicas com sombra acústica posterior${medindo}, ${movel}`
     conclLabel = `Colelitíase${dim ? ` — cálculos, o maior de ${dim}` : ' — múltiplos cálculos'}`
   } else {
-    imagem = `apresentando em seu interior imagem hiperecogênica com sombra acústica posterior${medindo}, ${movel}`
+    imagem = `apresentando em seu interior imagem hiperecoica com sombra acústica posterior${medindo}, ${movel}`
     conclLabel = `Colelitíase${dim ? ` — cálculo único de ${dim}, ${mob === 'impactado' ? 'impactado' : 'móvel'}` : ' — cálculo único'}`
   }
   return { body: `${imagem}, compatível com colelitíase`, conclusion: conclLabel }
@@ -137,7 +137,7 @@ function colelitiaseFrase(state: OrganState): { body: string; conclusion: string
 
 const RARE_BODY: Record<string, string> = {
   adenomiomatose: 'apresentando espessamento parietal focal com pequenas imagens císticas intramurais e artefatos em cauda de cometa, compatível com adenomiomatose',
-  colesterolose: 'apresentando pequenos focos ecogênicos parietais aderidos, sem sombra acústica, compatíveis com colesterolose',
+  colesterolose: 'apresentando pequenos focos hiperecoicos parietais aderidos, sem sombra acústica, compatíveis com colesterolose',
   porcelana: 'com parede difusamente calcificada e sombra acústica posterior, compatível com vesícula em porcelana',
   polipo_adenomatoso: 'apresentando imagem polipoide séssil maior que 10 mm aderida à parede, sem mobilidade ou sombra acústica, a esclarecer',
   colecistite_alitiasica: 'com espessamento parietal e distensão, sem cálculos identificáveis, podendo corresponder a colecistite alitiásica no contexto clínico apropriado',
@@ -197,11 +197,11 @@ function compose(state: OrganState): OrganComposition {
     conclusion.push(c.conclusion)
   }
   if (conteudo.includes('lama')) {
-    achados.push('com conteúdo de aspecto ecogênico e móvel, sem sombra acústica, em provável relação com lama biliar (barro biliar)')
+    achados.push('com conteúdo de aspecto hiperecoico e móvel, sem sombra acústica, em provável relação com lama biliar (barro biliar)')
     conclusion.push('Lama biliar (barro biliar)')
   }
   if (conteudo.includes('polipos')) {
-    achados.push('apresentando imagem ecogênica aderida à parede, sem sombra acústica e sem mobilidade, compatível com pólipo')
+    achados.push('apresentando imagem hiperecoica aderida à parede, sem sombra acústica e sem mobilidade, compatível com pólipo')
     conclusion.push('Pólipo de vesícula biliar')
   }
 

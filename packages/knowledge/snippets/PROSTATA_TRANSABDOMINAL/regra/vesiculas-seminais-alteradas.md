@@ -20,7 +20,7 @@ GATILHOS DE APLICAÇÃO:
 
 REGRA — VESÍCULAS SEMINAIS ALTERADAS
 
-Vesículas seminais normalmente são simétricas, com calibre habitual e ecotextura preservada. Achados a descrever: dilatação, cistos, assimetria, conteúdo ecogênico.
+Vesículas seminais normalmente são simétricas, com calibre habitual e ecotextura preservada. Achados a descrever: dilatação, cistos, assimetria, conteúdo hiperecoico.
 
 Descrição obrigatória no corpo (pattern — descrição da próstata → vesículas):
 "Próstata de contornos regulares e ecotextura habitual.

@@ -31,7 +31,7 @@ function medidas3(raw: unknown): string {
 }
 
 const FORMA: Record<string, string> = { oval: 'de forma oval', arredondada: 'de forma arredondada' }
-const HILO: Record<string, string> = { presente: 'com periferia hipoecoica e centro hiperecoico', ausente: 'sem hilo ecogênico identificável' }
+const HILO: Record<string, string> = { presente: 'com periferia hipoecoica e centro hiperecoico', ausente: 'sem hilo hiperecoico identificável' }
 const VASC: Record<string, string> = {
   ausente: 'sem vascularização significativa',
   hilar: 'com vascularização hilar',

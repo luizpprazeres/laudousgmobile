@@ -121,7 +121,7 @@ caso('todo descritor selecionado aparece no corpo, na ordem, e o diagnóstico s�
     const ordem = [
       'com acometimento da porção insercional',
       'com focos anecoicos intrasubstanciais',
-      'com focos ecogênicos de calcificação',
+      'com focos hiperecoicos de calcificação',
       'medindo 1,2 x 0,8 cm',
     ].map((frag) => corpo.indexOf(frag))
     assert.ok(ordem.every((i) => i >= 0), `descritor ausente: ${ordem}`)
@@ -246,7 +246,7 @@ caso('bilateral assimétrico: cada lado só com o que foi marcado nele', () => {
     assert.match(dir!, /ULTRASSONOGRAFIA DO COTOVELO DIREITO/)
     assert.match(esq!, /ULTRASSONOGRAFIA DO COTOVELO ESQUERDO/)
     // direito: extensores alterado, flexores normal
-    assert.match(corpoDe(dir!), /Tendão extensor comum \(epicôndilo lateral\) com espessamento e alteração da ecotextura, com acometimento da porção insercional\./)
+    assert.match(corpoDe(dir!), /Tendão extensor comum \(epicôndilo lateral\) com espessamento e modificação do padrão ecotextural, com acometimento da porção insercional\./)
     assert.ok(corpoDe(dir!).includes(NORMAL_FLEXORES))
     assert.match(conclusaoDe(dir!), /Tendinopatia dos tendões extensores comuns \(epicôndilo lateral\) à direita\./)
     assert.doesNotMatch(dir!, /Rotura completa|solução de continuidade/)
@@ -497,7 +497,7 @@ caso('toda estrutura tendínea × padrão × lado: descritores completos chegam 
           if (d === 'medidas') { patch[`estado.${padrao.value}.medidas`] = '1,5 x 0,5'; esperados.push('medindo 1,5 x 0,5 cm') }
           if (d === 'localizacao') { patch[`estado.${padrao.value}.localizacao`] = 'insercional'; esperados.push('com acometimento da porção insercional') }
           if (d === 'focos_anecoicos') { patch[`estado.${padrao.value}.focos_anecoicos`] = 'sim'; esperados.push('com focos anecoicos intrasubstanciais') }
-          if (d === 'calcificacao') { patch[`estado.${padrao.value}.calcificacao`] = 'sim'; esperados.push('com focos ecogênicos de calcificação') }
+          if (d === 'calcificacao') { patch[`estado.${padrao.value}.calcificacao`] = 'sim'; esperados.push('com focos hiperecoicos de calcificação') }
         }
         const { adaptado, textos } = renderizar(com(inicial({ segmento: seg, lado: l }), {
           [idSecaoMsk(seg, l, est)]: patch,

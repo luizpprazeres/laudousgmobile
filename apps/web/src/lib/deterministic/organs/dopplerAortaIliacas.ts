@@ -193,7 +193,7 @@ function segmentoModule(seg: Segmento): OrganModule {
       if (alteracao === 'disseccao') {
         if (sub(st, 'alteracao', 'disseccao', 'confirmacao') !== 'confirmado') falta('confirme o flap intimal antes de concluir dissecção')
         const extensao = sub(st, 'alteracao', 'disseccao', 'extensao')
-        lines.push(`Imagem linear ecogênica na luz, compatível com flap intimal${extensao ? `, estendendo-se ${extensao}` : ''}.`)
+        lines.push(`Imagem linear hiperecoica na luz, compatível com flap intimal${extensao ? `, estendendo-se ${extensao}` : ''}.`)
         conclusion.push(`Achados compatíveis com dissecção da ${alvo}${extensao ? `, estendendo-se ${extensao}` : ''}.`)
       }
 

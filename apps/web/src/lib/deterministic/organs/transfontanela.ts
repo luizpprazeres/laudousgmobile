@@ -159,7 +159,7 @@ const ventriculosFields = [
       ],
     }),
   ]),
-  segmented('calcificacoes', 'Focos hiperecogênicos (calcificações)', [
+  segmented('calcificacoes', 'Focos hiperecoicos (calcificações)', [
     opt('ausente', 'Ausentes', { isDefault: true }),
     opt('presente', 'Presentes', {
       subFields: [
@@ -211,7 +211,7 @@ const ventriculosModule: OrganModule = {
       if (!sub(st, 'cistos', 'presente', 'lado')) pendencias.push({ onde: 'Cistos subependimários', motivo: 'informe o lado' })
       if (mmText(sub(st, 'cistos', 'presente', 'medida')) === LACUNA) pendencias.push({ onde: 'Cistos subependimários', motivo: 'medida inválida; use mm ou cm' })
     }
-    if (st.calcificacoes === 'presente' && !sub(st, 'calcificacoes', 'presente', 'local')) pendencias.push({ onde: 'Focos hiperecogênicos', motivo: 'informe a localização' })
+    if (st.calcificacoes === 'presente' && !sub(st, 'calcificacoes', 'presente', 'local')) pendencias.push({ onde: 'Focos hiperecoicos', motivo: 'informe a localização' })
 
     const hemorragia = st.hemorragia === 'presente'
     const hLado = hemorragia ? sub(st, 'hemorragia', 'presente', 'lado') : ''
@@ -290,12 +290,12 @@ const ventriculosModule: OrganModule = {
       const medidas = sub(st, 'hemorragia', 'presente', 'medidas')
       const medidaTxt = medidas ? `, medindo ${medidas.replace(/\s*cm$/i, '')} cm` : ''
       const corpo: Record<string, string> = {
-        matriz: `Imagem hiperecogênica no sulco caudotalâmico ${onde}${medidaTxt}.`,
-        iv_sem_dilatacao: `Imagem hiperecogênica no sulco caudotalâmico ${onde}, com conteúdo ecogênico no interior ${ventriculo}, sem dilatação ventricular associada${medidaTxt}.`,
-        iv_com_dilatacao: `Imagem hiperecogênica no sulco caudotalâmico ${onde}, com conteúdo ecogênico no interior ${ventriculo}, que se apresenta dilatado${medidaTxt}.`,
-        parenquimatosa: `Conteúdo ecogênico no interior ${ventriculo}, associado a área hiperecogênica no parênquima periventricular ${regiaoTxt(sub(st, 'hemorragia', 'presente', 'regiao'))} ${onde}${medidaTxt}.`,
+        matriz: `Imagem hiperecoica no sulco caudotalâmico ${onde}${medidaTxt}.`,
+        iv_sem_dilatacao: `Imagem hiperecoica no sulco caudotalâmico ${onde}, com conteúdo hiperecoico no interior ${ventriculo}, sem dilatação ventricular associada${medidaTxt}.`,
+        iv_com_dilatacao: `Imagem hiperecoica no sulco caudotalâmico ${onde}, com conteúdo hiperecoico no interior ${ventriculo}, que se apresenta dilatado${medidaTxt}.`,
+        parenquimatosa: `Conteúdo hiperecoico no interior ${ventriculo}, associado a área hiperecoica no parênquima periventricular ${regiaoTxt(sub(st, 'hemorragia', 'presente', 'regiao'))} ${onde}${medidaTxt}.`,
       }
-      lines.push(corpo[hExt] ?? `Imagem hiperecogênica periventricular ${onde}, com extensão ${LACUNA}.`)
+      lines.push(corpo[hExt] ?? `Imagem hiperecoica periventricular ${onde}, com extensão ${LACUNA}.`)
       const grau = sub(st, 'hemorragia', 'presente', 'grau') === 'incluir' ? PAPILE[hExt] : undefined
       if (hExt === 'parenquimatosa') {
         conclusion.push(grau
@@ -346,7 +346,7 @@ const ventriculosModule: OrganModule = {
       conclusion.push(`${multiplos ? 'Cistos subependimários' : 'Cisto subependimário'} ${ladoFrase(lado)}.`)
     }
 
-    // Focos hiperecogênicos.
+    // Focos hiperecoicos.
     if (calc) {
       altered = true
       const local: Record<string, string> = {
@@ -355,11 +355,11 @@ const ventriculosModule: OrganModule = {
         difusos: 'difusos pelo parênquima',
       }
       const onde = local[calcLocal] ?? LACUNA
-      lines.push(`Focos hiperecogênicos puntiformes ${onde}.`)
+      lines.push(`Focos hiperecoicos puntiformes ${onde}.`)
       const sorologias = sub(st, 'calcificacoes', 'presente', 'sorologias') === 'sim'
         ? ' Correlacionar com sorologias maternas e neonatais para infecções congênitas.'
         : ''
-      conclusion.push(`Focos hiperecogênicos ${onde}, que podem corresponder a calcificações.${sorologias}`)
+      conclusion.push(`Focos hiperecoicos ${onde}, que podem corresponder a calcificações.${sorologias}`)
     }
 
     pendencias.push(...(hemorragia

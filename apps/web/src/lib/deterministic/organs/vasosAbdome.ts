@@ -31,7 +31,7 @@ const aortaModule: OrganModule = {
       body.push('Aorta abdominal de calibre normal.')
     }
     if (ateroma) {
-      body.push('Observam-se imagens hiperecogênicas aderidas às suas paredes, compatíveis com placas ateromatosas.')
+      body.push('Observam-se imagens hiperecoicas aderidas às suas paredes, compatíveis com placas ateromatosas.')
       conclusion.push('Placas de ateromas na aorta abdominal.')
     }
     return { body: body.join('\n'), conclusion, isNormal: calibre === 'normal' && !ateroma }
@@ -60,7 +60,7 @@ const veiaCavaModule: OrganModule = {
     const conclusion: string[] = []
     if (dilatada) conclusion.push('Veia cava inferior de calibre aumentado.')
     if (trombo) {
-      body.push(`Material ecogênico no interior da veia cava inferior${local ? `, no ${local}` : ''}, compatível com trombo.`)
+      body.push(`Material hiperecoico no interior da veia cava inferior${local ? `, no ${local}` : ''}, compatível com trombo.`)
       conclusion.push(`Material trombótico na veia cava inferior${local ? `, no ${local}` : ''}.`)
     }
     return { body: body.join('\n'), conclusion, isNormal: !dilatada && !trombo }

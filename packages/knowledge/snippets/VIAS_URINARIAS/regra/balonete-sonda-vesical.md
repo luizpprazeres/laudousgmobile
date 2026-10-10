@@ -40,7 +40,7 @@ Na conclusão (numerada):
 NÃO confundir com:
 - Cisto vesical (raro — geralmente em parede vesical, não livre).
 - Cálculo vesical (imagem hiperecoica com sombra, não anecoica).
-- Coágulo (conteúdo ecogênico móvel).
+- Coágulo (conteúdo hiperecoico móvel).
 
 Quando a sonda for retirada antes ou durante o exame, mencionar o status:
 - "Paciente refere uso recente de sonda vesical."

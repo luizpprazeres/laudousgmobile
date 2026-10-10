@@ -153,7 +153,7 @@ export function idSecaoMsk(segmento: string, lado: LadoMsk, estruturaId: string)
  * Fontes (nenhuma frase copiada):
  *  - Lins, Ultrassonografia Musculoesquelética (2020), cap. cotovelo: epicondilite
  *    como espessamento e hipoecogenicidade da origem tendínea, com focos anecoicos
- *    intrasubstanciais e, em estágio avançado, focos ecogênicos/calcificações;
+ *    intrasubstanciais e, em estágio avançado, focos hiperecoicos/calcificações;
  *  - mesmo livro, cap. ombro: rotura parcial descrita pela sua extensão medida nos
  *    cortes longitudinal e transversal;
  *  - inventário das referências de interface (docs/reviews/2026-09-24-screenshot-inventory.md, §6):
@@ -188,7 +188,7 @@ const DESCRITORES: Record<ChaveDescritor, DescritorDef> = {
   },
   calcificacao: {
     key: 'calcificacao', label: 'Calcificações', tipo: 'select',
-    opcoes: [NC, { value: 'sim', label: 'Presentes', corpo: 'com focos ecogênicos de calcificação' }],
+    opcoes: [NC, { value: 'sim', label: 'Presentes', corpo: 'com focos hiperecoicos de calcificação' }],
   },
   medidas: { key: 'medidas', label: 'Medidas (cm)', tipo: 'medida', placeholder: '1,2 x 0,8', dimensoes: 3 },
 }
@@ -209,7 +209,7 @@ type PadraoDef = {
 const PADROES_TENDAO: PadraoDef[] = [
   {
     value: 'tendinopatia', label: 'Tendinopatia',
-    corpo: 'com espessamento e alteração da ecotextura', diag: 'Tendinopatia',
+    corpo: 'com espessamento e modificação do padrão ecotextural', diag: 'Tendinopatia',
     descritores: ['localizacao', 'focos_anecoicos', 'calcificacao', 'medidas'],
   },
   {

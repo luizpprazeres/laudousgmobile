@@ -33,7 +33,7 @@ SIALOADENITE CRÔNICA (recorrente):
 - Heterogeneidade parenquimatosa difusa.
 - Múltiplas áreas hipoecoicas (pseudocísticas) — característica de Sjögren em estágios avançados.
 - Dilatação ductal segmentar.
-- Pode haver fibrose (áreas hiperecogênicas).
+- Pode haver fibrose (áreas hiperecoicas).
 - Calcificações intraductais ou parenquimatosas em casos crônicos.
 
 ═══════════════════════════════════════════════════

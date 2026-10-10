@@ -19,7 +19,7 @@ GATILHOS DE APLICAÇÃO:
 
 - Calcificação das artérias arqueadas
 Corpo (substitui a frase do útero):
-Útero em {posição}, medindo {L} x {AP} x {T} cm, com ecotextura sólida heterogênea devido a imagens hiperecóicas visualizadas na projeção das artérias arqueadas.
+Útero em {posição}, medindo {L} x {AP} x {T} cm, com ecotextura sólida heterogênea devido a imagens hiperecoicas visualizadas na projeção das artérias arqueadas.
 Conclusão:
 Útero de dimensões normais (volume de {vol_uterino} cm³), apresentando calcificação das artérias arqueadas sem significado patológico.
 

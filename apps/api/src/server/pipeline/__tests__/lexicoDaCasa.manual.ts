@@ -25,8 +25,29 @@ eq("hiperecogênicos", "focos hiperecogênicos", "focos hiperecoicos");
 eq("hipoecogênica", "área hipoecogênica", "área hipoecoica");
 eq("isoecogênico", "nódulo isoecogênico", "nódulo isoecoico");
 igual("ecogenicidade", "aumento difuso da ecogenicidade parenquimatosa");
-igual("ecogênico sozinho (decisão do Luiz)", "foco ecogênico intracardíaco");
+igual("ecogênico sozinho sem categoria", "material ecogênico endoluminal");
 igual("isoecoico", "nódulo isoecoico ao parênquima");
+
+// "ecogênico" sozinho → "hiperecoico" (Luiz 10/10), fora a obstetrícia e o golf ball
+eq("foco ecogênico", "foco ecogênico na parede", "foco hiperecoico na parede", "VIAS_URINARIAS");
+eq("material ecogênico", "com material ecogênico heterogêneo", "com material hiperecoico heterogêneo", "MUSCULOESQUELETICO_V2");
+eq("hilo ecogênico", "com hilo ecogênico preservado", "com hilo hiperecoico preservado", "CERVICAL");
+eq("centro ecogênico", "centro ecogênico definido", "centro hiperecoico definido", "CERVICAL");
+eq("debris ecogênicos", "com debris ecogênicos no interior", "com debris hiperecoicos no interior", "ABDOMEN_TOTAL");
+eq("parede ecogênica", "Parede espessada/ecogênica.", "Parede espessada/hiperecoica.", "DOPPLER_VENOSO_MMII");
+eq("Ecogênicas maiúscula", "Ecogênicas e móveis.", "Hiperecoicas e móveis.", "ABDOMEN_TOTAL");
+eq("ECOGÊNICO título", "MATERIAL ECOGÊNICO", "MATERIAL HIPERECOICO", "ABDOMEN_TOTAL");
+eq("sem acento", "foco ecogenico", "foco hiperecoico", "PELVE_FEMININA");
+igual("golf ball fora da obstetrícia", "foco ecogênico intracardíaco", "ABDOMEN_TOTAL");
+igual("golf ball plural", "focos ecogênicos intracardíacos", "PELVE_FEMININA");
+igual("obstetrícia: golf ball sem 'intracardíaco'", "Foco ecogênico no ventrículo esquerdo, medindo 0,2 cm.", "OBSTETRICA");
+igual("morfológico", "Foco ecogênico intracardíaco no ventrículo esquerdo.", "MORFOLOGICO");
+igual("doppler obstétrico", "foco ecogênico", "DOPPLER_OBSTETRICO");
+igual("comparativo mais", "fígado mais ecogênico que o baço", "ABDOMEN_TOTAL");
+igual("comparativo pouco", "conteúdo pouco ecogênico", "ABDOMEN_TOTAL");
+igual("ecogenicidade", "ecogenicidade aumentada", "ABDOMEN_TOTAL");
+eq("prefixado continua", "focos hiperecogênicos", "focos hiperecoicos", "OBSTETRICA");
+eq("caixa alta prefixado", "MATERIAL HIPOECOGÊNICO", "MATERIAL HIPOECOICO", "DOPPLER_VENOSO_MMII");
 
 // quadrantes da mama
 eq("super lateral", "situada no quadrante super lateral, às 10 horas", "situada no quadrante superolateral, às 10 horas", "MAMARIA");
@@ -66,6 +87,29 @@ eq("acento", "bursa subacromial-subdeltóidea", "bursa subacromial-subdeltoidea"
 eq("bolsa preservada", "Bolsa subacromial subdeltoidea", "Bolsa subacromial-subdeltoidea");
 igual("já certa", "bursa subacromial-subdeltoidea");
 
+// "bolsa" → "bursa" no MSK (Luiz 10/10)
+eq("bolsa MSK", "Bolsa subacromial subdeltoidea com líquido", "Bursa subacromial-subdeltoidea com líquido", "MUSCULOESQUELETICO_V2");
+eq("bolsa suprapatelar", "Pequeno derrame na bolsa suprapatelar.", "Pequeno derrame na bursa suprapatelar.", "MUSCULOESQUELETICO_V2");
+eq("bolsas sinoviais", "as bolsas sinoviais radial e ulnar não", "as bursas sinoviais radial e ulnar não", "MUSCULOESQUELETICO");
+eq("BOLSA caixa alta", "BOLSA RETROCALCÂNEA", "BURSA RETROCALCÂNEA", "MUSCULOESQUELETICO_V2");
+igual("bolsa escrotal", "Ultrassonografia da bolsa escrotal", "ESCROTAL");
+igual("bolsa vertical", "maior bolsa vertical mede 4,4 cm", "OBSTETRICA");
+igual("bolsa de Blake", "cisto da bolsa de Blake", "MORFOLOGICO");
+igual("bolsa escrotal no abdome", "estendendo-se para a bolsa escrotal", "ABDOMEN_TOTAL");
+igual("bolsonaro não é bolsa", "embolsado e bolsão", "MUSCULOESQUELETICO_V2");
+
+// "modificação do padrão ecotextural" no MSK (Luiz 10/10)
+eq("alteração do padrão", "Tendão com alteração do padrão ecotextural.", "Tendão com modificação do padrão ecotextural.", "MUSCULOESQUELETICO_V2");
+eq("alteração ecotextural", "discreto espessamento e alteração ecotextural, sem sinais de rotura", "discreto espessamento e modificação do padrão ecotextural, sem sinais de rotura", "MUSCULOESQUELETICO_V2");
+eq("da ecotextura", "com espessamento e alteração da ecotextura", "com espessamento e modificação do padrão ecotextural", "MUSCULOESQUELETICO");
+eq("no padrão", "alteração no padrão ecotextural", "modificação do padrão ecotextural", "MUSCULOESQUELETICO_V2");
+eq("adjetivo no meio", "Alteração difusa do padrão ecotextural", "Modificação difusa do padrão ecotextural", "MUSCULOESQUELETICO_V2");
+eq("plural", "alterações ecotexturais nos tendões", "modificações do padrão ecotextural nos tendões", "MUSCULOESQUELETICO_V2");
+eq("sem alteração", "sem alteração ecotextural ou de espessura", "sem modificação do padrão ecotextural ou de espessura", "MUSCULOESQUELETICO_V2");
+igual("já certa", "modificação do padrão ecotextural", "MUSCULOESQUELETICO_V2");
+igual("tireoide fica", "sem evidência de alteração ecotextural ou de imagem nodular", "TIREOIDE");
+igual("alteração de outra coisa", "alteração do padrão fibrilar", "MUSCULOESQUELETICO_V2");
+
 // metacarpofalangiana
 eq("falangeana", "articulação metacarpofalangeana", "articulação metacarpofalangiana");
 eq("metacarpo falangiana", "metacarpo falangianas", "metacarpofalangianas");
@@ -83,13 +127,17 @@ assert.equal(lexicoAtivo("MAMARIA", ""), false); ok++;
 assert.equal(lexicoAtivo("MAMARIA", "TIREOIDE,MAMARIA"), true); ok++;
 assert.equal(lexicoAtivo("ABDOMEN_TOTAL", "TIREOIDE,MAMARIA"), false); ok++;
 assert.equal(lexicoAtivo(undefined, "*"), true); ok++;
+// rollback por entrada
+assert.equal(aplicarLexico("bolsa suprapatelar", { categoria: "MUSCULOESQUELETICO_V2", camada: "saida", desligadas: new Set(["bolsa-para-bursa"]) }).texto, "bolsa suprapatelar"); ok++;
+assert.equal(aplicarLexico("foco ecogênico", { categoria: "ABDOMEN_TOTAL", camada: "ditado", desligadas: new Set(["ecogenico-sozinho"]) }).texto, "foco ecogênico"); ok++;
 // trocas auditáveis
 const r = aplicarLexico("imagem anecóica no quadrante super lateral", { categoria: "MAMARIA", camada: "saida" });
 assert.deepEqual(r.trocas.map((x) => x.id), ["ecoico-sem-acento", "quadrante-mama-grafia"]); ok++;
 // idempotência: aplicar duas vezes = uma
 for (const e of LEXICO_DA_CASA) void e;
-const amostra = "Imagem anecóica, quadrante super lateral, 4º compartimento, segmento 4, bursa subacromial subdeltoidea.";
-for (const c of ["MAMARIA", "MUSCULOESQUELETICO_V2", "ABDOMEN_TOTAL"]) {
+const amostra = "Imagem anecóica, quadrante super lateral, 4º compartimento, segmento 4, bolsa subacromial subdeltoidea, " +
+  "foco ecogênico, alteração ecotextural.";
+for (const c of ["MAMARIA", "MUSCULOESQUELETICO_V2", "ABDOMEN_TOTAL", "OBSTETRICA"]) {
   const uma = t(amostra, c);
   assert.equal(t(uma, c), uma, `idempotente ${c}`); ok++;
 }

@@ -87,7 +87,7 @@ function compose(state: OrganState): OrganComposition {
   }
 
   if (conteudo.includes('coledocolitiase')) {
-    body += `${body.endsWith('.') ? '' : ', '}com imagem hiperecogênica e sombra acústica no interior do colédoco${dimensao ? `, medindo ${dimensao}` : ''}, compatível com coledocolitíase`
+    body += `${body.endsWith('.') ? '' : ', '}com imagem hiperecoica e sombra acústica no interior do colédoco${dimensao ? `, medindo ${dimensao}` : ''}, compatível com coledocolitíase`
     conclusion.push('Coledocolitíase')
   }
 

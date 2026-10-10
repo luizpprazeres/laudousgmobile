@@ -115,13 +115,13 @@ function ecotexturaFrase(ecotextura: string, conclusion: string[]): string {
   switch (ecotextura) {
     case 'esteatose_leve':
       conclusion.push('Esteatose hepática de grau leve')
-      return 'ecotextura difusamente hiperecogênica com discreta atenuação posterior, compatível com esteatose hepática de grau leve'
+      return 'ecotextura difusamente hiperecoica com discreta atenuação posterior, compatível com esteatose hepática de grau leve'
     case 'esteatose_moderada':
       conclusion.push('Esteatose hepática de grau moderado')
-      return 'ecotextura difusamente hiperecogênica com atenuação posterior e discreta perda da definição das paredes dos vasos intra-hepáticos, compatível com esteatose hepática de grau moderado'
+      return 'ecotextura difusamente hiperecoica com atenuação posterior e discreta perda da definição das paredes dos vasos intra-hepáticos, compatível com esteatose hepática de grau moderado'
     case 'esteatose_acentuada':
       conclusion.push('Esteatose hepática de grau acentuado')
-      return 'ecotextura difusamente hiperecogênica com acentuada atenuação posterior, prejudicando a avaliação dos vasos intra-hepáticos e do diafragma, compatível com esteatose hepática de grau acentuado'
+      return 'ecotextura difusamente hiperecoica com acentuada atenuação posterior, prejudicando a avaliação dos vasos intra-hepáticos e do diafragma, compatível com esteatose hepática de grau acentuado'
     case 'dhc':
       conclusion.push('Sinais ecográficos sugestivos de hepatopatia crônica difusa')
       return 'contornos bocelados e ecotextura difusamente heterogênea'
@@ -142,7 +142,7 @@ function lesaoFrase(state: OrganState, tipo: string): { body: string; conclusion
   }
   if (tipo === 'hemangioma') {
     return {
-      body: `apresentando imagem nodular hiperecogênica, homogênea e de contornos bem definidos, no ${local}${dim}, com aspecto sugestivo de hemangioma`,
+      body: `apresentando imagem nodular hiperecoica, homogênea e de contornos bem definidos, no ${local}${dim}, com aspecto sugestivo de hemangioma`,
       conclusion: 'Imagem sugestiva de hemangioma hepático',
     }
   }
@@ -153,7 +153,7 @@ function lesaoFrase(state: OrganState, tipo: string): { body: string; conclusion
 }
 
 const RARE_BODY: Record<string, string> = {
-  calcificacao: 'apresentando foco hiperecogênico com sombra acústica, compatível com calcificação residual',
+  calcificacao: 'apresentando foco hiperecoico com sombra acústica, compatível com calcificação residual',
   cistos_multiplos: 'apresentando múltiplas imagens anecoicas de permeio ao parênquima, compatíveis com cistos simples',
   derrame: 'Observa-se lâmina líquida peri-hepática.',
 }

@@ -25,7 +25,7 @@ function medidaCm(s: Secao, chave: string): number | null {
 const BEXIGA: Record<string, string> = {
   espessamento: 'espessamento parietal',
   trabeculacao: 'trabeculação parietal',
-  calculo: 'imagem hiperecogênica com sombra acústica de permeio (cálculo)',
+  calculo: 'imagem hiperecoica com sombra acústica de permeio (cálculo)',
   diverticulo: 'imagem sacular comunicante (divertículo)',
 }
 

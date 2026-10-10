@@ -140,7 +140,7 @@ export function renderDopplerFistulaAv(value: unknown, style: "CLASSICO_COMPLETO
     if (s.psvCms !== undefined) parts.push(`VPS de ${pt(s.psvCms)} cm/s`);
     if (s.diameterMm !== undefined) parts.push(`calibre de ${pt(s.diameterMm, 1)} mm`);
     if (s.depthMm !== undefined) parts.push(`profundidade de ${pt(s.depthMm, 1)} mm em relação à pele`);
-    if (s.thrombus) parts.push(`material ecogênico intraluminal ${s.thrombus.extent === "occlusive" ? "ocupando toda a luz" : "ocupando parcialmente a luz"}`);
+    if (s.thrombus) parts.push(`material hiperecoico intraluminal ${s.thrombus.extent === "occlusive" ? "ocupando toda a luz" : "ocupando parcialmente a luz"}`);
     if (s.aneurysm) parts.push(`calibre máximo de ${pt(s.aneurysm.maxDiameterMm, 1)} mm`);
     if (s.stenosis) {
       const st = s.stenosis;
@@ -153,7 +153,7 @@ export function renderDopplerFistulaAv(value: unknown, style: "CLASSICO_COMPLETO
     }
     if (s.thrombus) findings.push(s.thrombus.physicianConfirmed
       ? `Trombose ${s.thrombus.extent === "occlusive" ? "oclusiva" : "parcial"} na ${where}.`
-      : `Material ecogênico intraluminal na ${where}${s.noFlow ? ", sem fluxo detectável" : ""}.`);
+      : `Material hiperecoico intraluminal na ${where}${s.noFlow ? ", sem fluxo detectável" : ""}.`);
     else if (s.noFlow) findings.push(`Fluxo não detectado ao Doppler na ${where}.`);
     if (s.aneurysm) findings.push(s.aneurysm.physicianConfirmed
       ? `Dilatação aneurismática na ${where} (calibre máximo de ${pt(s.aneurysm.maxDiameterMm, 1)} mm).`

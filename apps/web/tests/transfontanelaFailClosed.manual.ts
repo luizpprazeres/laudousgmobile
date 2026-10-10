@@ -49,7 +49,7 @@ test('lado nunca é presumido: dilatação e alteração periventricular exigem 
 })
 
 test('achado sem localização ou lado bloqueia em vez de imprimir lacuna', () => {
-  bloqueado(patch(normal(), 'parenquima_ventriculos', { calcificacoes: 'presente' }), 'Focos hiperecogênicos', /localização/)
+  bloqueado(patch(normal(), 'parenquima_ventriculos', { calcificacoes: 'presente' }), 'Focos hiperecoicos', /localização/)
   bloqueado(patch(normal(), 'parenquima_ventriculos', { cistos: 'presente' }), 'Cistos subependimários', /lado/)
   bloqueado(patch(normal(), 'parenquima_ventriculos', { cistos: 'presente', 'cistos.presente.lado': 'direito', 'cistos.presente.medida': 'grande' }), 'Cistos subependimários', /medida inválida/)
 })

@@ -99,6 +99,9 @@ piorar. Confirmar nos logs que a conexão com keyterms abre sem "Keyterm limit e
 
 ## 5. Decisões para o Luiz
 
+> Respondidas em 10/10 (tarde): `DECISOES-LUIZ-2026-10-10.md`. Itens 1, 2, 4 e 5 implementados em `TERMOS-relatorio.md`
+> (golf ball pendente); item 3 mantido; item 6 no pacote de deploy do W1.
+
 1. **"ecogênico" sozinho** ("foco ecogênico", "conteúdo ecogênico", 12 no período) também vira "ecoico"? Hoje fica.
 2. **Bursa**: grafia "bursa subacromial-subdeltoidea" (49 finais) — e "bolsa" (9 finais) vira "bursa"? Hoje fica como ditado.
 3. **Romanos**: compartimentos do punho I–VI e segmentos hepáticos I–VIII (implementado). O médico assinou "4º compartimento"

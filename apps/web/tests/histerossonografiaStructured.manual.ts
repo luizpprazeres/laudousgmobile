@@ -100,7 +100,7 @@ test('alterado: pólipo sem topografia/medidas bloqueia; sem confirmação fica 
   bloqueado(state, 'Achado 1', /topografia e ao menos duas medidas/)
   polipo(state)
   const indeterminado = laudo(state)
-  assert.match(achados(indeterminado), /Cavidade endometrial adequadamente distendida\.\n\nImagem focal ecogênica intracavitária, pediculada, na parede anterior, medindo 1,2 x 0,7 x 0,5 cm, com pedículo vascular ao Doppler colorido\./)
+  assert.match(achados(indeterminado), /Cavidade endometrial adequadamente distendida\.\n\nImagem focal hiperecoica intracavitária, pediculada, na parede anterior, medindo 1,2 x 0,7 x 0,5 cm, com pedículo vascular ao Doppler colorido\./)
   assert.match(conclusao(indeterminado), /^1\. Imagem focal intracavitária na parede anterior, medindo 1,2 x 0,7 x 0,5 cm, de natureza não definida ao método\.$/)
   assert.doesNotMatch(indeterminado, /Pólipo|sem alterações identificáveis|histeroscopia/i)
   state.lesao_1['tipo.polipo.confirmado'] = 'sim'
@@ -113,7 +113,7 @@ test('alterado: mioma com FIGO só com relação informada e confirmação; múl
   state.lesao_2 = { ...state.lesao_2, tipo: 'sinequia', 'tipo.sinequia.regiao': 'fundica', 'tipo.sinequia.medida': '3' }
   const pendente = conclusao(laudo(state))
   assert.match(pendente, /1\. Imagem nodular sólida com projeção na cavidade endometrial a partir da parede posterior, medindo 2,0 x 1,8 x 1,6 cm\./)
-  assert.match(pendente, /2\. Trave ecogênica intracavitária na região fúndica\./)
+  assert.match(pendente, /2\. Trave hiperecoica intracavitária na região fúndica\./)
   state.lesao_1 = { ...state.lesao_1, 'tipo.mioma.confirmado': 'sim' }
   assert.match(conclusao(laudo(state)), /Nódulo miomatoso submucoso na parede posterior, medindo 2,0 x 1,8 x 1,6 cm\.\n/)
   state.lesao_1['tipo.mioma.componente'] = 'menor_50'

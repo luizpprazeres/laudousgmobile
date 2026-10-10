@@ -26,7 +26,7 @@ const texto = (state: Secao, key: string): string =>
 
 const BASIC_CONTENT: Record<string, string> = {
   debris: 'com debris de permeio',
-  calculo: 'com imagem hiperecogênica com sombra acústica (cálculo)',
+  calculo: 'com imagem hiperecoica com sombra acústica (cálculo)',
   sonda: 'com balão de sonda vesical em seu interior',
   diverticulo: 'com imagem sacular comunicante com a luz vesical (divertículo)',
 }

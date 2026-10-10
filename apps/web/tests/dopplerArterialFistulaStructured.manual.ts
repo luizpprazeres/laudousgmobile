@@ -148,7 +148,7 @@ test('fístula: estenose e trombose só concluem com confirmação', () => {
   state.draining_vein_proximal = { ...state.draining_vein_proximal, alteration: 'thrombus', 'alteration.thrombus.extent': 'occlusive' }
   const pending = conclusion(fistulaText(state))
   assert.match(pending, /Aumento focal da velocidade de pico sistólico na veia de drenagem — segmento justa-anastomótico \(VPS de 480 cm\/s; razão de velocidades de 3; diâmetro luminal mínimo de 2 mm\), sem confirmação de estenose/)
-  assert.match(pending, /Material ecogênico intraluminal na veia de drenagem — segmento proximal, sem fluxo detectável/)
+  assert.match(pending, /Material hiperecoico intraluminal na veia de drenagem — segmento proximal, sem fluxo detectável/)
   assert.doesNotMatch(pending, /Trombose|^Estenose|pérvia/m)
   state.juxta_anastomotic_vein['alteration.stenosis.confirmed'] = 'yes'
   state.draining_vein_proximal['alteration.thrombus.confirmed'] = 'yes'
