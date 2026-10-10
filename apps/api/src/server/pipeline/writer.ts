@@ -159,7 +159,7 @@ export async function* runWriterStream(args: {
   // mantêm a mensagem de antes.
   const chosenExam =
     modelConfig.provider === "anthropic" && modelConfig.credentialRef === "default"
-      ? { label: args.categoryLabel, code: effectiveCategoryCode }
+      ? { label: chosenExamLabel(effectiveCategoryCode, args.categoryLabel), code: effectiveCategoryCode }
       : undefined;
   const userMessage = plainRawUserMessage
     ? buildRawUserMessage(plainRawUserMessage, writerExam.dopplerMode === "isolated", chosenExam)
@@ -283,6 +283,20 @@ function buildUserMessage(f: StructuredFindings): string {
  * sem a etapa estruturadora. Instrui o modelo a tratar o texto como o ditado
  * (achados + comandos juntos) e seguir as regras/modelo do system message.
  */
+/**
+ * Rótulo do exame no bloco "EXAME ESCOLHIDO". O rótulo da categoria MAMARIA no
+ * banco é "Mamas e axilas", e isso induziu o writer a descrever axilas não
+ * ditadas (4 casos na bancada W10c/W4). Decisão do Luiz (10/10): axilas só quando
+ * ditadas. As demais categorias usam o rótulo do banco.
+ */
+const CHOSEN_EXAM_LABEL: Record<string, string> = {
+  MAMARIA: "Mamas (axilas somente se citadas no ditado)",
+};
+
+export function chosenExamLabel(categoryCode: string, categoryLabel: string): string {
+  return CHOSEN_EXAM_LABEL[categoryCode] ?? categoryLabel;
+}
+
 export function buildRawUserMessage(
   rawInput: string,
   isolated = false,
