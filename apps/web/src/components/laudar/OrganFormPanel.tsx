@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Field, OrganSchema, OrganState } from '@/lib/deterministic'
 import { companionConflictDisplay, markCompanionFieldTouched } from '@/lib/companionStructured'
+import { allowedValues, syncPatch } from '@/lib/deterministic/fieldSync'
 import { RenalMeasurementsFields } from './RenalMeasurementsFields'
 import { RenalFindingsCollection } from './RenalFindingsCollection'
 import { hasRenalMeasurementsGroup, RENAL_MEASUREMENT_KEYS } from './renalMeasurementsState'
@@ -123,7 +124,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
     setValue(field.key, next)
   }
 
-  const renderMiniField = (field: Field, keyPrefix?: string) => {
+  const renderMiniField = (field: Field, keyPrefix?: string, siblings: readonly Field[] = []) => {
     if (
       field.minGestationalWeeks !== undefined &&
       gestationalWeeks !== undefined &&
@@ -143,6 +144,24 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
             placeholder={field.placeholder}
             className={TEXT_INPUT_CLASS}
           />
+        </label>
+      )
+    }
+
+    if (field.presentation === 'select') {
+      // Lista suspensa (ex.: localização/FIGO do mioma). Valor antigo fora da lista continua visível.
+      const current = typeof state[key] === 'string' ? String(state[key]) : ''
+      const allowed = allowedValues(field, key, siblings, state)
+      const options = (field.options ?? []).filter((option) => !allowed || allowed.has(option.value))
+      if (current && !options.some((option) => option.value === current)) options.push({ value: current, label: current })
+      return (
+        <label key={key} className={`block ${widthClass}`}>
+          <span className={MINI_LABEL_CLASS}>{field.label}</span>
+          <select aria-label={field.label} value={current} onChange={(event) => setValues(syncPatch(field, key, event.target.value, state))}
+            className={TEXT_INPUT_CLASS}>
+            <option value="">—</option>
+            {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
         </label>
       )
     }
@@ -445,7 +464,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
             {renalMeasurements && field.key === 'dimensoes' ? <RenalMeasurementsFields schema={schema} state={state} onChange={onChange} /> : null}
             {(field.options ?? []).filter(option => option.value === selected && option.subFields?.length).map(option => (
               <div key={option.value} className="mt-2 grid grid-cols-2 gap-2">
-                {option.subFields?.map(subField => renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`))}
+                {option.subFields?.map(subField => renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`, option.subFields))}
               </div>
             ))}
           </section>
@@ -490,7 +509,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
                 className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2 dark:border-emerald-900/50 dark:bg-emerald-950/20"
               >
                 {option.subFields.map((subField) =>
-                  renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`)
+                  renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`, option.subFields)
                 )}
               </div>
             ) : null
@@ -528,7 +547,7 @@ export function OrganFormPanel({ schema, state, onChange, compact = false, gesta
                   {active && option.subFields?.length ? (
                     <div className="mx-2 mb-2 grid grid-cols-2 gap-2 rounded-lg border border-emerald-100 bg-emerald-50/35 p-2 dark:border-emerald-900/50 dark:bg-emerald-950/20">
                       {option.subFields.map((subField) =>
-                        renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`)
+                        renderMiniField(subField, `${field.key}.${option.value}.${subField.key}`, option.subFields)
                       )}
                     </div>
                   ) : null}

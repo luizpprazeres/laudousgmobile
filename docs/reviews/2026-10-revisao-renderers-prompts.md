@@ -725,3 +725,66 @@ evidência de rotura". Dado útil para a decisão do A08.
 
 Gates: golden da pelve 44/44, auditoria da pelve 34/34, golden do MSK 31/31, auditoria do MSK 10/10, formato 6/6,
 typecheck sem erro.
+
+## W12 (W4) — Miomas: FIGO ↔ localização na web e no mobile (10/10/2026)
+
+Pedido do Luiz: vincular a categoria FIGO à localização nos dois sentidos, com corpo e conclusão coerentes, na web
+(formulário) e no mobile (ditado → writer dedicado da pelve). Inclui as correções da rodada 2 do Codex na auditoria da
+pelve (A02/A03 parciais, R2-01, R2-02); o R2-03 foi feito pelo W1.
+
+**Padrões reais** (24 finais com mioma, 180 dias): a FIGO está só na conclusão (0 no corpo); dois ou três miomas vão
+numa frase ("…duas imagens…, a primeira medindo…; a segunda…") e num item da conclusão ("…nódulos miomatosos, o maior
+… (FIGO 6) e o menor … (FIGO 5)"); a FIGO ditada é sempre mantida; o médico acrescenta FIGO/localização que não ditou
+em 8–9 laudos (vem das imagens — não derivável do ditado); num caso ("submucoso … FIGO 3") ele reescreveu a localização
+pela FIGO.
+
+**Fonte única** — `@laudousg/schemes` `figoLocalizacao`: tabela 0–8 + 2-5 com o texto que vai ao laudo (3, 4, 5 e 6 como
+nos finais; os demais da tabela do pedido — **provisórios até o Luiz confirmar**). Regras: só a FIGO → a localização dela;
+localização da tabela → a FIGO dela ("intramural" = 4); "subseroso"/"submucoso" sem detalhe → só restringe; incompatíveis
+→ preservadas e sinalizadas; nada informado → nada inferido. Usada por:
+- renderer canônico (web): corpo e conclusão no padrão dos finais, "em região fúndica", legenda também com FIGO derivada;
+- formulário da web: localização, FIGO e topografia em listas suspensas vinculadas (`Field.sync`, genérico); "outro"
+  antigo = localização atípica; incompatível bloqueia com pendência (sem correção silenciosa);
+- prompt do writer da pelve: a tabela gerada da mesma fonte, a derivação, vários miomas num item, inúmeros e útero
+  miomatoso; FIGO fora do corpo;
+- auditoria da pelve: FIGO comparada por lesão (3→4 acusa), localização × FIGO pela frase inteira (intramural + FIGO 5
+  acusa), lista ditada ("FIGO 4 e 5"), número de classificação não é medida, número por extenso, remoção/negação não
+  cobra tipo. 0 acusação nos 6 few-shots.
+
+**Tamanho:** prompt dedicado ~5.820 → 7.435 caracteres; entrada total do modelo 17.677 → 19.290 (+9%). É função nova
+(tabela e vários miomas), não regra duplicada.
+
+### Cenários sintéticos (pela assinatura, `cenarios-w14.ts`: P1–P5 + F1–F5)
+
+| | Haiku 5.5 | Sonnet 5.5 |
+|---|---|---|
+| Prompt W14 | 6/10 (23/30) | 6/10 (24/30) |
+| W12 | **10/10 (30/30)** | **10/10 (30/30)** |
+
+### Bancada — 24 laudos reais com mioma (juiz Opus 5.5 cego, concorrência 2)
+
+| Candidato | Nota | ≤ 4 | Omissões | Invenções | Medida/lado | Conclusão ok |
+|---|---|---|---|---|---|---|
+| Produção (gpt-4.1) | 5,21 | 13 | 16 | 46 | 6 | 9/24 |
+| Haiku — W14 | 7,02 | 2 | 22 | 10 | 7 | 16/24 |
+| Sonnet — W14 | 6,54 | 3 | 22 | 17 | 3 | 16/24 |
+| **Haiku — W12** | **7,48** | 1 | 15 | 14 | 4 | 19/24 |
+| **Sonnet — W12** | **7,67** | 1 | 12 | 14 | 5 | 20/24 |
+
+Pareado (bootstrap, IC95%): Haiku W12 − W14 **+0,46** [+0,12; +0,79]; Sonnet W12 − W14 **+1,12** [+0,54; +1,73];
+Sonnet W12 − Haiku W12 +0,19 [−0,29; +0,73] (empate); W12 − produção +2,3 a +2,5.
+
+Específico de mioma (régua nova aplicada igual a todos): FIGO ditada mantida 15/15 nos quatro; FIGO não ditada — produção
+6, W14 0, W12 0 (Sonnet) e 0 (Haiku, após corrigir a leitura de "FIGO 4 e 5"); localização × FIGO incompatível — produção
+5, W14 0–1, W12 0; itens de mioma na conclusão iguais ao final 19–21 → 23/24. "FIGO igual à do final" fica em 14–15/24: o
+teto é a FIGO que o médico acrescenta pelas imagens.
+
+Placar geral nos 24 casos: frases-padrão faltando Haiku 15,6% → 13,4%, Sonnet 14,1% → 12,2%.
+
+Gates: tabela (schemes) ok; golden do renderer 80/80; prompt 51/51; auditoria 47/47; teste W12 da web 9/9 e suíte da
+web verde; typecheck API e web sem erro.
+
+**Para o Luiz:** confirmar o texto de cada opção da tabela (é o que vai ao laudo nas três superfícies); "intramural"
+sozinho = FIGO 4?; incompatível — manter as duas com `[REVISAR]` ou reescrever a localização pela FIGO, como num final
+dele?; FIGO só na conclusão (como em 24/24 finais)?; três finais dele têm "intramural (FIGO 5)" ou "subseroso com menos de
+50% intramural (FIGO 5)", que a tabela acusa.

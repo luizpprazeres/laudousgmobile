@@ -47,9 +47,10 @@ const CENARIOS: Cenario[] = [
   {
     id: "P4", achado: "A03", categoria: "pelve",
     ditado: "Pelve transabdominal e transvaginal. Útero em anteversão medindo 9,2 por 5,1 por 6,3, volume de 154,0. Endométrio 1,0. Mioma intramural medindo 2,0 por 1,9 por 2,1 na parede anterior. Ovários normais, direito 5,5 e esquerdo 4,9.",
+    // W12: "intramural" é localização unívoca da tabela → FIGO 4 (vínculo pedido pelo Luiz).
     checks: [
       ["tipo ditado preservado", (t) => /intramural/.test(conclusao(t))],
-      ["sem FIGO inventado", (t) => !/FIGO/.test(t)],
+      ["W12: FIGO 4 derivada da localização", (t) => /intramural \(categoria FIGO 4\)/.test(conclusao(t))],
     ],
   },
   {
@@ -59,6 +60,52 @@ const CENARIOS: Cenario[] = [
       ["tipo e FIGO ditados preservados", (t) => /subseroso/.test(t) && /FIGO 2/.test(t)],
       ["incompatibilidade sinalizada", (t) => /\[REVISAR/.test(t)],
       ["legenda FIGO uma vez, sem número", (t) => (t.match(/FIGO: Federa/g) ?? []).length === 1 && !/^\s*\d+\)\s*FIGO:/m.test(t)],
+    ],
+  },
+  // ── W12: localização ↔ FIGO pela tabela, vários miomas, inúmeros ──
+  {
+    id: "F1", achado: "W12", categoria: "pelve",
+    ditado: "Pelve transabdominal e transvaginal. Útero em anteversão medindo 9,4 por 5,2 por 6,1, volume de 156,0. Endométrio 0,9. Mioma medindo 2,6 por 2,3 por 2,4 na parede anterior e lateral direita, abaulando a serosa, categoria FIGO 5. Ovários normais, direito 5,0 e esquerdo 4,6.",
+    checks: [
+      ["só a FIGO → localização da tabela", (t) => /nódulo miomatoso subseroso com mais de 50% intramural \(categoria FIGO 5\)/.test(conclusao(t))],
+      ["FIGO fora do corpo", (t) => !/FIGO/.test(corpo(t))],
+      ["legenda uma vez, sem número", (t) => (t.match(/FIGO: Federa/g) ?? []).length === 1 && !/^\s*\d+\)\s*FIGO:/m.test(t)],
+      ["sem [REVISAR]", (t) => !/\[REVISAR/.test(t)],
+    ],
+  },
+  {
+    id: "F2", achado: "W12", categoria: "pelve",
+    ditado: "Pelve transvaginal. Útero em anteversão medindo 8,6 por 4,7 por 5,5, volume de 116,0. Endométrio 0,7. Mioma subseroso medindo 1,9 por 1,7 por 1,8 na parede posterior. Ovários normais, direito 4,4 e esquerdo 5,2.",
+    checks: [
+      ["família genérica preservada", (t) => /nódulo miomatoso subseroso/.test(conclusao(t))],
+      ["sem FIGO", (t) => !/FIGO/.test(t)],
+    ],
+  },
+  {
+    id: "F3", achado: "W12", categoria: "pelve",
+    ditado: "Pelve transabdominal e transvaginal. Útero em retroversão medindo 10,2 por 5,6 por 6,8, volume de 203,0. Endométrio 1,1. Dois miomas: o primeiro intramural, FIGO 4, medindo 3,0 por 2,7 por 2,9 na parede posterior; o segundo FIGO 6, medindo 1,8 por 1,6 por 1,7 em região fúndica. Ovários normais, direito 6,0 e esquerdo 5,4.",
+    checks: [
+      ["corpo: duas imagens numa linha", (t) => /duas imagens[^\n]*a primeira[^\n]*; a segunda/.test(corpo(t))],
+      ["'em região fúndica'", (t) => /em região fúndica/.test(corpo(t))],
+      ["conclusão num item, por lesão", (t) => /o primeiro intramural \(categoria FIGO 4\) e o segundo subseroso com menos de 50% intramural \(categoria FIGO 6\)/.test(conclusao(t))],
+      ["legenda uma vez", (t) => (t.match(/FIGO: Federa/g) ?? []).length === 1],
+    ],
+  },
+  {
+    id: "F4", achado: "W12", categoria: "pelve",
+    ditado: "Pelve transabdominal e transvaginal. Útero em anteversão medindo 12,1 por 7,0 por 8,2, volume de 363,0. Endométrio não individualizado. Útero com inúmeros miomas, os maiores medindo 3,4 por 3,1 por 3,2 na parede anterior, 2,9 por 2,6 por 2,8 na parede posterior e 2,2 por 2,0 por 2,1 em região fúndica. Ovários não visualizados.",
+    checks: [
+      ["corpo: múltiplas, as maiores assim descritas", (t) => /múltiplas imagens[^\n]*as maiores assim descritas[^\n]*a terceira/.test(corpo(t))],
+      ["conclusão: múltiplas imagens sólidas", (t) => /múltiplas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos/.test(conclusao(t))],
+      ["sem FIGO", (t) => !/FIGO/.test(t)],
+    ],
+  },
+  {
+    id: "F5", achado: "W12", categoria: "pelve",
+    ditado: "Pelve transvaginal. Útero em anteversão medindo 8,9 por 4,8 por 5,9, volume de 131,0. Endométrio 0,8. Mioma submucoso FIGO 4 medindo 1,4 por 1,2 por 1,3 na parede anterior. Ovários normais, direito 4,9 e esquerdo 5,0.",
+    checks: [
+      ["incompatível preservado", (t) => /submucoso/.test(conclusao(t)) && /FIGO 4/.test(conclusao(t))],
+      ["incompatível sinalizado", (t) => /\[REVISAR/.test(t)],
     ],
   },
   {
@@ -114,7 +161,8 @@ async function main() {
     msk: fold(buildMskWriterSystemMessage(), MSK_FEWSHOTS),
   };
 
-  const tarefas = models.flatMap((m) => CENARIOS.map((c) => ({ m, c })));
+  const so = arg("only")?.split(",");
+  const tarefas = models.flatMap((m) => CENARIOS.filter((c) => !so || so.some((p) => c.id.startsWith(p))).map((c) => ({ m, c })));
   const res: { modelo: string; id: string; achado: string; laudo: string; falhas: string[] }[] = [];
   let i = 0;
   const worker = async () => {

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MyomaFindingSchema, type MyomaFinding } from '@laudousg/schemes'
+import { MyomaFindingSchema, localizacaoDaFigo, type MyomaFinding } from '@laudousg/schemes'
 
 type MyomaState = Record<string, unknown>
 
@@ -54,12 +54,10 @@ function point(state: MyomaState, slot: string, plane: 'sagittal' | 'axial') {
   }
 }
 
+/** Localização do laudo pela tabela FIGO única (W12) — a mesma do formulário e do renderer. */
 function classificationFromFigo(finding: MyomaFinding): string {
   if (!finding.figoConfirmed) return ''
-  if (finding.figo <= 2) return 'submucoso'
-  if (finding.figo <= 4) return 'intramural'
-  if (finding.figo <= 7) return 'subseroso'
-  return 'outro'
+  return localizacaoDaFigo(String(finding.figo))?.texto ?? ''
 }
 
 function itemFromFinding(finding: MyomaFinding): PelveMyomaItem {

@@ -166,8 +166,34 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
       { classificacao: "subseroso", medidas_cm: [4.2], parede: "parede posterior", relacao: null, figo: "6", ecotextura: "heterogenea" },
     ],
   }));
-  check("mioma dinâmico: maior eixo sem medidas fictícias", /A segunda imagem heterogênea, maior medida de 4,2 cm, situada na parede posterior\./.test(l), l);
+  check("mioma dinâmico: maior eixo sem medidas fictícias", /; a segunda, heterogênea, com maior medida de 4,2 cm, situada na parede posterior\./.test(l), l);
   check("mioma dinâmico: sem placeholders para eixos não coletados", !/4,2 x ____ x ____ cm/.test(l), l);
+}
+
+// ── W12: miomas no padrão dos laudos finais; localização ↔ FIGO pela tabela única ──
+{
+  const M = (classificacao: string | null, figo: string | null, parede: string | null = "parede anterior", medidas_cm: number[] = [2.0, 1.8, 1.5]) =>
+    ({ classificacao, medidas_cm, parede, relacao: null, figo });
+  const um = (m: ReturnType<typeof M>) => renderPelveFeminina(F({ miomas: [m] }));
+  check("W12: só a FIGO → localização da tabela", /nódulo miomatoso subseroso com mais de 50% intramural \(categoria FIGO 5\)\./.test(um(M(null, "5"))));
+  check("W12: só a localização unívoca → FIGO", /nódulo miomatoso intramural \(categoria FIGO 4\)\./.test(um(M("intramural", null))));
+  check("W12: FIGO derivada leva a legenda", /FIGO: Federação Internacional de Ginecologia e Obstetrícia\./.test(um(M("intramural", null))));
+  const generico = um(M("subseroso", null));
+  check("W12: família genérica não vira categoria", /nódulo miomatoso subseroso\./.test(generico) && !/FIGO/.test(generico), generico);
+  const nada = um(M(null, null));
+  check("W12: nada informado → nada inferido", /nódulo miomatoso\./.test(nada) && !/FIGO|intramural|subseroso|submucoso/.test(nada), nada);
+  check("W12: incompatíveis preservadas, sem correção", /nódulo miomatoso submucoso \(categoria FIGO 3\)/.test(um(M("submucoso", "3"))));
+  check("W12: híbrida 2-5", /submucoso e subseroso, estendendo-se da mucosa à serosa \(categoria FIGO 2-5\)/.test(um(M(null, "2-5"))));
+  check("W12: 'em região fúndica'", /situada em região fúndica/.test(um(M("intramural", "4", "região fúndica"))));
+  const dois = renderPelveFeminina(F({ miomas: [M(null, "5"), M("subseroso", "5", "parede posterior e lateral direita", [3.1, 2.9, 3.0])] }));
+  check("W12: dois iguais → corpo numa frase só", /Miométrio apresentando duas imagens nodulares, a primeira medindo 2 x 1,8 x 1,5 cm, situada na parede anterior; a segunda medindo 3,1 x 2,9 x 3 cm, situada na parede posterior e lateral direita\./.test(dois), dois);
+  check("W12: dois iguais → conclusão no plural", /duas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos subserosos com mais de 50% intramural \(categoria FIGO 5\)\./.test(dois), dois);
+  check("W12: legenda uma vez", (dois.match(/FIGO: Federação/g) ?? []).length === 1, dois);
+  const tres = renderPelveFeminina(F({ miomas: [M("intramural", "4"), M(null, "6"), M(null, null)] }));
+  check("W12: três → 'três imagens', o primeiro … e o segundo …", /três imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos, o primeiro intramural \(categoria FIGO 4\) e o segundo subseroso com menos de 50% intramural \(categoria FIGO 6\)\./.test(tres), tres);
+  check("W12: três no corpo numa frase", /três imagens nodulares, a primeira[^\n]*; a segunda[^\n]*; a terceira/.test(tres), tres);
+  const miomatoso = renderPelveFeminina(F({ utero_miomatoso: true, miomas: [M("intramural", "4")] }));
+  check("W12: útero miomatoso não lista mioma nem legenda", !/nódulo miomatoso|FIGO: Federa/.test(miomatoso), miomatoso);
 }
 
 // ── Cisto ovariano (alteração unilateral → itens separados) ──

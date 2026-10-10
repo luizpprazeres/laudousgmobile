@@ -14,7 +14,7 @@ import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
 import { oRadsSpec, figoMiomaSpec } from '../../calculators/specs'
 import { createSharedBladderModule } from './urinaryShared'
-import { MyomaFindingSchema, type MyomaFinding } from '@laudousg/schemes'
+import { FIGO_FAMILIAS_GENERICAS, FIGO_LOCALIZACOES, MyomaFindingSchema, classificarMioma, type MyomaFinding } from '@laudousg/schemes'
 
 // ── Via do exame (controle de categoria) ─────────────────────────────────────
 const VIA_TITULO: Record<string, string> = {
@@ -99,13 +99,33 @@ const bexigaModule: OrganModule = {
 }
 
 // ── Útero ────────────────────────────────────────────────────────────────────
+/**
+ * Mioma — localização ↔ categoria FIGO pela tabela única (`@laudousg/schemes`, W12): escolher a FIGO
+ * preenche a localização; escolher a localização preenche a FIGO (ou, se for só a família, restringe
+ * a lista). O valor da localização é o próprio texto do laudo.
+ */
+const maiuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+const MIOMA_LOCALIZACAO_OPCOES = [
+  ...FIGO_LOCALIZACOES.map((l) => ({ value: l.texto, label: maiuscula(l.texto) })),
+  { value: 'submucoso', label: 'Submucoso (sem especificar)' },
+  { value: 'subseroso', label: 'Subseroso (sem especificar)' },
+]
+const MIOMA_FIGO_OPCOES = FIGO_LOCALIZACOES.map((l) => ({ value: l.figo, label: `FIGO ${l.figo}` }))
+/** Topografias dos laudos finais do médico (90–180 dias). */
+const MIOMA_TOPOGRAFIAS = [
+  'parede anterior', 'parede posterior', 'parede anterior e lateral direita', 'parede anterior e lateral esquerda',
+  'parede posterior e lateral direita', 'parede posterior e lateral esquerda', 'parede lateral direita',
+  'parede lateral esquerda', 'região fúndica', 'parede anterior e fúndica', 'parede posterior e fúndica',
+  'região ístmica', 'colo uterino',
+]
 const miomaSubs: Field[] = [
   { key: 'medidas', label: 'Medidas (cm)', kind: 'text', placeholder: '3,0 x 2,5 x 2,0' },
-  { key: 'classificacao', label: 'Classificação', kind: 'mini-segmented', options: [
-    { value: 'intramural', label: 'Intramural' }, { value: 'subseroso', label: 'Subseroso' }, { value: 'submucoso', label: 'Submucoso' }, { value: 'outro', label: 'Outra localização' },
-  ] },
-  { key: 'parede', label: 'Parede', kind: 'text', placeholder: 'parede anterior' },
-  { key: 'figo', label: 'FIGO', kind: 'text', placeholder: 'ex.: 4' },
+  { key: 'classificacao', label: 'Localização (FIGO)', kind: 'mini-segmented', presentation: 'select', options: MIOMA_LOCALIZACAO_OPCOES,
+    sync: { key: 'figo', map: { ...Object.fromEntries(FIGO_LOCALIZACOES.map((l) => [l.texto, l.figo])), ...FIGO_FAMILIAS_GENERICAS } } },
+  { key: 'figo', label: 'Categoria FIGO', kind: 'mini-segmented', presentation: 'select', options: MIOMA_FIGO_OPCOES, halfWidth: true,
+    sync: { key: 'classificacao', map: Object.fromEntries(FIGO_LOCALIZACOES.map((l) => [l.figo, l.texto])) } },
+  { key: 'parede', label: 'Topografia', kind: 'mini-segmented', presentation: 'select', halfWidth: true,
+    options: MIOMA_TOPOGRAFIAS.map((t) => ({ value: t, label: maiuscula(t) })) },
   { key: 'ecotextura', label: 'Ecotextura', kind: 'mini-segmented', options: [
     { value: 'hipoecoica', label: 'Hipoecoica' }, { value: 'heterogenea', label: 'Heterogênea' },
     { value: 'calcificada', label: 'Calcificada' }, { value: 'degenerada', label: 'Degenerada' },
@@ -196,8 +216,9 @@ const uteroModule: OrganModule = {
     // Útero miomatoso difuso já tem item próprio; não lista mioma individualizado junto.
     if (temMioma && !miomatoso) {
       miomaKeys.forEach((key) => {
-        const cls = st[`${key}.sim.classificacao`] ? `nódulo miomatoso ${st[`${key}.sim.classificacao`]}` : 'nódulo miomatoso'
-        const figo = st[`${key}.sim.figo`] ? ` (categoria FIGO ${limpa(String(st[`${key}.sim.figo`]))})` : ''
+        const c = classificarMioma(String(st[`${key}.sim.classificacao`] ?? ''), String(st[`${key}.sim.figo`] ?? ''))
+        const cls = c.texto ? `nódulo miomatoso ${c.texto}` : 'nódulo miomatoso'
+        const figo = c.figo ? ` (categoria FIGO ${c.figo})` : ''
         conclusion.push(`Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável ${cls}${figo}.`)
       })
       miomasExtras.forEach((finding) => {

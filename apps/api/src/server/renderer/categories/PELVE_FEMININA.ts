@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { classificarMioma, tabelaFigoParaPrompt } from "@laudousg/schemes";
 import { renderSharedBladder, SharedBladderSchema } from "./sharedUrinary";
 
 /**
@@ -590,43 +591,64 @@ function monitorizacaoConclusao(f: PelveFemininaFindings): string | null {
 // Helpers de miomas
 // ---------------------------------------------------------------------------
 
-/** Descrição dos miomas individualizados no corpo. */
-function miomasCorpo(miomas: PelveMioma[]): string {
-  const imagem = (m: PelveMioma): string => {
-    const aspecto = m.ecotextura === "hipoecoica"
-      ? "hipoecoica"
-      : m.ecotextura === "heterogenea"
-        ? "heterogênea"
-        : m.ecotextura === "calcificada"
-          ? "calcificada"
-          : m.ecotextura === "degenerada"
-            ? "com sinais de degeneração"
-            : null;
-    return aspecto ? `imagem ${aspecto}` : "imagem nodular";
+/** Aspecto do mioma no corpo (singular/plural). Sem ecotextura informada: "nodular". */
+function aspectoMioma(m: PelveMioma, plural = false): string {
+  const a: Record<string, [string, string]> = {
+    hipoecoica: ["hipoecoica", "hipoecoicas"],
+    heterogenea: ["heterogênea", "heterogêneas"],
+    calcificada: ["calcificada", "calcificadas"],
+    degenerada: ["com sinais de degeneração", "com sinais de degeneração"],
   };
+  const par = m.ecotextura ? a[m.ecotextura] : undefined;
+  return par ? par[plural ? 1 : 0] : plural ? "nodulares" : "nodular";
+}
+
+/** "situada na parede anterior" / "em região fúndica" / "no colo uterino" (como nos laudos finais). */
+function topografiaMioma(parede: string | null): string | null {
+  const t = parede?.trim();
+  if (!t) return null;
+  if (/^(na|no|em|nas|nos)\s/i.test(t)) return `situada ${t}`;
+  const prep = /^regi[ãa]o\b/i.test(t) ? "em" : /^colo\b/i.test(t) ? "no" : "na";
+  return `situada ${prep} ${t}`;
+}
+
+/** Medida + topografia + relação de um mioma (sem o sujeito). */
+function detalhesMioma(m: PelveMioma, comMaiorMedida: boolean): string[] {
+  const medida = m.medidas_cm?.length === 1 && comMaiorMedida
+    ? `com maior medida de ${ptBr(m.medidas_cm[0] as number)} cm`
+    : medidasMiomaFmt(m.medidas_cm);
+  return [medida, topografiaMioma(m.parede), m.relacao?.trim() || null].filter((x): x is string => !!x);
+}
+
+const ORDINAIS_F = ["a primeira", "a segunda", "a terceira", "a quarta", "a quinta"];
+const ORDINAIS_M = ["o primeiro", "o segundo", "o terceiro", "o quarto", "o quinto"];
+const QUANTIDADE = ["", "uma", "duas", "três"];
+
+/**
+ * Descrição dos miomas individualizados no corpo — padrão dos laudos finais: um mioma por frase;
+ * dois ou três numa frase só ("…duas imagens hipoecoicas, a primeira medindo…; a segunda…");
+ * mais de três: "múltiplas imagens…, as maiores assim descritas: …".
+ */
+function miomasCorpo(miomas: PelveMioma[]): string {
   if (miomas.length === 1) {
     const m = miomas[0] as PelveMioma;
-    const partes = [`Miométrio apresentando ${imagem(m)}`];
-    partes.push(medidasMiomaFmt(m.medidas_cm));
-    if (m.parede) partes.push(`situada na ${m.parede}`);
-    if (m.relacao) partes.push(m.relacao.trim());
-    return `${partes.join(", ")}.`;
+    return `${[`Miométrio apresentando imagem ${aspectoMioma(m)}`, ...detalhesMioma(m, false)].join(", ")}.`;
   }
-  if (miomas.length === 2) {
-    const [m1, m2] = miomas as [PelveMioma, PelveMioma];
-    const d1 = `A primeira ${imagem(m1)}, ${medidasMiomaFmt(m1.medidas_cm)}${m1.parede ? `, situada na ${m1.parede}` : ""}${m1.relacao ? `, ${m1.relacao.trim()}` : ""}.`;
-    const d2 = `A segunda ${imagem(m2)}, ${medidasMiomaFmt(m2.medidas_cm)}${m2.parede ? `, situada na ${m2.parede}` : ""}${m2.relacao ? `, ${m2.relacao.trim()}` : ""}.`;
-    return `Miométrio apresentando duas imagens nodulares. ${d1} ${d2}`;
-  }
-  // 3 ou mais
-  const ordinais = ["a primeira", "a segunda", "a terceira", "a quarta", "a quinta"];
-  const descr = miomas
-    .map((m, i) => {
-      const ord = ordinais[i] ?? `a ${i + 1}ª`;
-      return `${ord} ${imagem(m)}, ${medidasMiomaFmt(m.medidas_cm)}${m.parede ? `, situada na ${m.parede}` : ""}`;
-    })
-    .join("; ");
-  return `Miométrio apresentando múltiplas imagens nodulares. As maiores assim descritas: ${descr}.`;
+  const mesmoAspecto = miomas.every((m) => (m.ecotextura ?? null) === (miomas[0]!.ecotextura ?? null));
+  const cabeca = miomas.length <= 3
+    ? `Miométrio apresentando ${QUANTIDADE[miomas.length]} imagens ${mesmoAspecto ? aspectoMioma(miomas[0]!, true) : "nodulares"}, `
+    : `Miométrio apresentando múltiplas imagens ${mesmoAspecto ? aspectoMioma(miomas[0]!, true) : "nodulares"}, as maiores assim descritas: `;
+  const itens = miomas.map((m, i) => {
+    const ord = ORDINAIS_F[i] ?? `a ${i + 1}ª`;
+    const aspecto = mesmoAspecto || !m.ecotextura ? [] : [aspectoMioma(m)];
+    return [ord + (aspecto.length ? `, ${aspecto[0]},` : ""), detalhesMioma(m, true).join(", ")].join(" ");
+  });
+  return `${cabeca}${itens.join("; ")}.`;
+}
+
+/** Classificação de cada mioma: localização ↔ FIGO pela tabela única (`@laudousg/schemes`). */
+function classeMioma(m: PelveMioma) {
+  return classificarMioma(m.classificacao, m.figo);
 }
 
 /** Frase do miométrio no corpo. Alteração difusa e lesões focais coexistem. */
@@ -645,30 +667,33 @@ function miometrioCorpo(f: PelveFemininaFindings): string {
   return descricaoDifusa ? `${descricaoDifusa} ${descricaoFocal}` : descricaoFocal;
 }
 
-/** Item(ns) de conclusão dos miomas. Retorna [] se não houver. */
+/**
+ * Item de conclusão dos miomas (um só, como nos laudos finais). Localização e FIGO informadas em
+ * qualquer sentido são completadas pela tabela; nada informado → só "nódulo(s) miomatoso(s)".
+ * Localização e FIGO incompatíveis: as duas como vieram (o formulário/auditoria sinalizam).
+ */
 function miomasConclusao(f: PelveFemininaFindings): string[] {
   const miomas = f.miomas ?? [];
   if (f.utero_miomatoso || miomas.length === 0) return [];
-  const cls = (m: PelveMioma): string => {
-    const base = m.classificacao ? `nódulo miomatoso ${m.classificacao}` : "nódulo miomatoso";
-    const figo = m.figo ? ` (categoria FIGO ${m.figo})` : "";
-    return `${base}${figo}`;
-  };
+  const sufixo = (c: ReturnType<typeof classeMioma>, plural: boolean) =>
+    `${(plural ? c.plural : c.texto) ? ` ${plural ? c.plural : c.texto}` : ""}${c.figo ? ` (categoria FIGO ${c.figo})` : ""}`;
+  const classes = miomas.map(classeMioma);
   if (miomas.length === 1) {
-    return [`Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável ${cls(miomas[0] as PelveMioma)}.`];
+    return [`Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso${sufixo(classes[0]!, false)}.`];
   }
-  if (miomas.length === 2) {
-    const [m1, m2] = miomas as [PelveMioma, PelveMioma];
-    return [
-      `Miométrio apresentando duas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos: o primeiro ${cls(m1).replace(/^nódulo miomatoso ?/, "")}, e o segundo ${cls(m2).replace(/^nódulo miomatoso ?/, "")}.`.replace(/  +/g, " "),
-    ];
-  }
-  const lista = miomas.map((m) => cls(m).replace(/^nódulo miomatoso ?/, "")).join(", ");
-  return [`Miométrio apresentando múltiplas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos. Os maiores: ${lista}.`];
+  const cabeca = `Miométrio apresentando ${miomas.length <= 3 ? `${QUANTIDADE[miomas.length]} imagens sólidas` : "múltiplas imagens sólidas"}, que têm como diagnóstico mais provável nódulos miomatosos`;
+  const iguais = classes.every((c) => c.texto === classes[0]!.texto && c.figo === classes[0]!.figo);
+  if (iguais) return [`${cabeca}${sufixo(classes[0]!, true)}.`];
+  const itens = classes
+    .map((c, i) => ({ c, ord: ORDINAIS_M[i] ?? `o ${i + 1}º` }))
+    .filter(({ c }) => c.texto || c.figo)
+    .map(({ c, ord }) => `${ord}${sufixo(c, false)}`);
+  const lista = itens.length > 1 ? `${itens.slice(0, -1).join(", ")} e ${itens[itens.length - 1]}` : itens[0];
+  return [`${cabeca}, ${lista}.`];
 }
 
 function temMiomasComFigo(f: PelveFemininaFindings): boolean {
-  return !f.utero_miomatoso && (f.miomas ?? []).some((m) => !!m.figo);
+  return !f.utero_miomatoso && (f.miomas ?? []).some((m) => !!classeMioma(m).figo);
 }
 
 // ---------------------------------------------------------------------------
@@ -1504,7 +1529,7 @@ CORPO (OS SEGUINTES ASPECTOS FORAM OBSERVADOS) — uma linha por item, nesta ord
 3. Istmocele ditada: "Imagem anecoica no istmo, de forma triangular, medindo {…} cm, com miométrio residual de {…} cm e miométrio adjacente de {…} cm."
 4. "Endométrio medindo {N} cm de espessura." (ou a descrição ditada).
 5. Cavidade, se ditado: DIU "Imagem hiperecoica linear na cavidade endometrial, …"; produtos "Imagens hiperecoicas amorfas na cavidade endometrial."; sem gestação "Ausência de saco gestacional intrauterino."
-6. "Miométrio com ecogenicidade e ecotextura normais." Mioma (uma linha cada): "Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares, medindo {…} cm, situada na {parede}[, abaulando a serosa][, com manto interno de {…} cm]."
+6. "Miométrio com ecogenicidade e ecotextura normais." Mioma: "Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares, medindo {…} cm, situada {na parede…|em região fúndica}[, abaulando a serosa][, com manto interno de {…} cm]." Dois ou três, numa linha: "Miométrio apresentando duas imagens hipoecoicas e heterogêneas, com margens regulares, a primeira medindo {…} cm, situada …; a segunda medindo {…} cm, situada …." Inúmeros: "…múltiplas imagens hipoecoicas e heterogêneas, com margens regulares, as maiores assim descritas: a primeira …; a segunda …; a terceira …."; nenhum individualizável: "Miométrio apresentando múltiplas imagens hipoecoicas e heterogêneas, coalescentes, ocasionando atenuação sonora, que impede a avaliação individualizada." FIGO não vai no corpo.
 7. "Ovário {direito|esquerdo}[ medindo {L} x {AP} x {T} cm,] apresentando imagens anecoicas." Menopausa: "…apresentando poucas imagens anecoicas." Não visto: "Ovário {lado} não visualizado." Achado ovariano: descreva-o após "apresentando".
 8. Outros achados ditados (ex.: Naboth "Imagens anecoicas na topografia do colo uterino.").
 
@@ -1512,13 +1537,15 @@ CONCLUSÃO — "1)", "2)"…; item único sem número:
 - Com via transabdominal: "Bexiga ecograficamente normal."
 - "Útero de volume normal[ ({V} cm³)]." (ou aumentado/reduzido; volume ditado, sem recalcular). Artérias arqueadas: "Útero de dimensões normais (volume de {V} cm³), apresentando calcificação das artérias arqueadas sem significado patológico."
 - Com espessura ditada: "O endométrio tem espessura normal para a fase do ciclo menstrual." (menopausa: "…para a faixa etária da menopausa."). Se o médico ditar que não dá para correlacionar com o ciclo, a frase dele substitui esta, aqui, e o corpo fica só com a medida — ex.: "O endométrio tem espessura normal para a faixa etária. Não foi possível correlacionar com a fase do ciclo menstrual devido à amenorreia." Pós-abortamento: "Ausência de produtos retidos da concepção." ou "Pequena quantidade de produtos retidos da concepção."
-- Mioma: "Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso[ {tipo}][ (categoria FIGO {N})]." Tipo e FIGO ditados entram como ditados; não ditados, nunca inferidos. Um item por mioma (ou um no plural, se iguais). Com FIGO no laudo, após a conclusão, uma vez e sem número: "FIGO: Federação Internacional de Ginecologia e Obstetrícia."
+- Mioma: "Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso[ {localização}][ (categoria FIGO {N})]." Localização ↔ FIGO pela tabela: ${tabelaFigoParaPrompt()}. Só a FIGO ditada → a localização dela; só a localização, se for uma da tabela → a FIGO dela ("intramural" = 4); "subseroso" ou "submucoso" sem detalhe → sem FIGO; as duas incompatíveis → como ditadas + [REVISAR: localização e FIGO não conferem]; nada ditado → nenhuma das duas.
+- Vários miomas, um item só: "Miométrio apresentando duas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos" + iguais: a localização no plural e a FIGO ("…subserosos com mais de 50% intramural (categoria FIGO 5)."); diferentes: ", o primeiro {localização} (categoria FIGO {N}) e o segundo {…} (…)." Três: "três imagens"; inúmeros: "múltiplas imagens". Nenhum individualizável: só "Útero globoso (miomatoso), de volume {…} ({V} cm³)."
+- Com FIGO no laudo, após a conclusão, uma vez e sem número: "FIGO: Federação Internacional de Ginecologia e Obstetrícia."
 - Istmocele: "Nicho de cicatriz cesárea, tipo simples." Naboth: "Cistos de Naboth (provável sequela de cervicite)." DIU: "Dispositivo intrauterino (D.I.U.) normoposicionado."
 - "Ovários ecograficamente normais[ (o direito com {X} cm³ e o esquerdo {Y} cm³)], ambos contendo folículos." (menopausa: "…ambos praticamente sem folículos."; um só visto: "Ovário {lado} ecograficamente normal ({V} cm³), contendo folículos."). Alterado: "Ovário {lado} de volume aumentado ({V} cm³), às custas de {achado}." O-RADS só se o médico disser.
 
 REGRAS:
 1. Medidas, volumes e lados exatamente como ditados, com vírgula decimal e a unidade ditada (saco gestacional e folículos costumam vir em mm). [ ] = só se ditado.
-2. Dado não ditado (eixos, volume, tipo, FIGO): omita a oração — nunca invente, nem "0,0", "____" ou [REVISAR] por falta. [REVISAR: …] só para ditado ilegível ou ambíguo.
+2. Dado não ditado (eixos, volume; localização e FIGO fora da tabela): omita a oração — nunca invente, nem "0,0", "____" ou [REVISAR] por falta. [REVISAR: …] só para ditado ilegível ou ambíguo.
 3. Estrutura não citada = normal (frase normal). Não drope nada ditado, não invente achado, não repita item.
 4. Coleção ou cisto no ovário é achado OVARIANO, nunca "líquido livre"; líquido livre só se ditado à parte.
 5. Comandos ("adicione X", "na conclusão Y", "no lugar de Z coloque W") são instruções: execute, nunca transcreva.
