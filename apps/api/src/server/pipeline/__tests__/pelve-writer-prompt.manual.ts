@@ -61,6 +61,7 @@ check("medida não ditada: nunca 0,0 nem ____, usa [REVISAR]", /nunca "0,0" nem 
 check("endométrio normal só com espessura ditada", /Com espessura ditada: "O endométrio tem espessura normal/.test(p));
 check("legenda FIGO uma vez e sem número", /uma vez e sem número: "FIGO: Federação/.test(p));
 check("título de contagem de folículos", /PARA CONTAGEM DE FOLÍCULOS/.test(p));
+check("posição do útero não ditada = anteversão", /\(posição não ditada: anteversão\)/.test(p));
 check("via não ditada = transabdominal + transvaginal", /Via não ditada: transabdominal \+ transvaginal/.test(p));
 check("correlação do ciclo ditada vai na conclusão do endométrio", /a frase dele substitui esta, aqui, e o corpo fica só com a medida/.test(p));
 check("unidade ditada (saco gestacional em mm)", /saco gestacional e folículos costumam vir em mm/.test(p));

@@ -1500,7 +1500,7 @@ TÍTULO E COMENTÁRIOS pela via ditada (copie literalmente):
 
 CORPO (OS SEGUINTES ASPECTOS FORAM OBSERVADOS) — uma linha por item, nesta ordem; sem alteração, a frase normal literal:
 1. Bexiga (só com via transabdominal): "Bexiga de forma, contorno e ecotextura normais."
-2. "Útero em {anteversão|retroversão|medioversão}, medindo {L} x {AP} x {T} cm."
+2. "Útero em {anteversão|retroversão|medioversão}, medindo {L} x {AP} x {T} cm." (posição não ditada: anteversão)
 3. Istmocele ditada: "Imagem anecoica no istmo, de forma triangular, medindo {…} cm, com miométrio residual de {…} cm e miométrio adjacente de {…} cm."
 4. "Endométrio medindo {N} cm de espessura." (ou a descrição ditada).
 5. Cavidade, se ditado: DIU "Imagem hiperecoica linear na cavidade endometrial, …"; produtos "Imagens hiperecoicas amorfas na cavidade endometrial."; sem gestação "Ausência de saco gestacional intrauterino."
