@@ -24,9 +24,9 @@ Descrição obrigatória no corpo:
 "Baço de dimensões aumentadas, com ecotextura sólida e homogênea, medindo 14,5 x 6,8 cm em seus maiores eixos. Sem lesões focais identificadas no presente estudo."
 
 Na conclusão (numerada):
-- "x)    Esplenomegalia (vide medidas). Convém, a critério clínico, correlacionar com quadro clínico-laboratorial."
+- "x)    Esplenomegalia (vide medidas)."
 
-Possíveis causas para correlação clínica:
+Possíveis causas (contexto para o redator, não vão para o laudo sem ditado):
 - Hipertensão portal (cirrose hepática).
 - Doenças hematológicas (linfoma, leucemia, talassemia).
 - Doenças infecciosas (mononucleose, malária).

@@ -48,7 +48,7 @@ Os valores numéricos abaixo são REFERÊNCIA CONTEXTUAL para a interpretação 
 COMO INTEGRAR OS SINAIS
 ═══════════════════════════════════════════════════
 
-SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa e correlação clínica):
+SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa):
 - Microcalcificações intra-linfonodais.
 - Necrose central.
 - Vascularização periférica/aberrante ao Doppler.
@@ -81,4 +81,4 @@ NÃO INVENTAR
 - Não usar limiares numéricos (10 mm, 11 mm, S/L 0,5) como gates de normalidade ou malignidade — são referências contextuais que apoiam o juízo do médico.
 - Não inventar regras de score (ex: "X sinais altamente sugestivos + Y sinais sugestivos = suspeição") — a integração é juízo clínico, não algoritmo fixo.
 - Não citar limiares pediátricos, taxas de crescimento percentual ou espessura cortical específica sem fonte explícita citada pelo médico nos achados.
-- Seguir as recomendações das conclusões (correlação clínica; exames laboratoriais; TC cervical ou biópsia por agulha fina quando aplicável). NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).
+- Recomendação (exames laboratoriais; TC cervical ou biópsia por agulha fina; correlação clínica) só quando o médico ditar, na redação dele. NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).

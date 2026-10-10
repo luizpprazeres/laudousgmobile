@@ -39,9 +39,10 @@ const nomeGlandula = (g: Glandula, l: Lado) => `glândula ${NOME[g]} ${l}`
 const PLURAL: Record<Glandula, string> = { parotida: 'parótidas', submandibular: 'submandibulares' }
 
 type Sialoadenite = 'aguda' | 'cronica'
-const RECOMENDACAO: Record<Sialoadenite, string> = {
+// "Correlacionar com dados clínicos" só quando ditado (decisão do Luiz, 10/10): a crônica não leva
+// mais a correlação clínica automática; o médico a escreve em Recomendações.
+const RECOMENDACAO: Record<'aguda', string> = {
   aguda: 'Convém, a critério clínico, complementar com avaliação clínica dirigida para definição da etiologia.',
-  cronica: 'Convém, a critério clínico, complementar com correlação clínica para definição etiológica.',
 }
 
 /** "nas glândulas parótidas bilateralmente e submandibular direita". */
@@ -61,11 +62,11 @@ export function conclusaoSialoadenite(tipo: Sialoadenite, lista: [Glandula, Lado
     const [g, l] = lista[0]!
     return tipo === 'aguda'
       ? `Sinais ecográficos de sialoadenite aguda em ${nomeGlandula(g, l)}, caracterizada por aumento volumétrico, ecotextura difusamente hipoecoica e hipervascularização ao Doppler. ${RECOMENDACAO.aguda}`
-      : `Glândula ${NOME[g]} ${l} com ecotextura heterogênea e múltiplas áreas hipoecoicas difusas. Achados ecográficos compatíveis com sialoadenite crônica. ${RECOMENDACAO.cronica}`
+      : `Glândula ${NOME[g]} ${l} com ecotextura heterogênea e múltiplas áreas hipoecoicas difusas. Achados ecográficos compatíveis com sialoadenite crônica.`
   }
   return tipo === 'aguda'
     ? `Sinais ecográficos de sialoadenite aguda ${glandulasAcometidas(lista)}, caracterizada por aumento volumétrico, ecotextura difusamente hipoecoica e hipervascularização ao Doppler. ${RECOMENDACAO.aguda}`
-    : `Ecotextura heterogênea com múltiplas áreas hipoecoicas difusas ${glandulasAcometidas(lista)}. Achados ecográficos compatíveis com sialoadenite crônica. ${RECOMENDACAO.cronica}`
+    : `Ecotextura heterogênea com múltiplas áreas hipoecoicas difusas ${glandulasAcometidas(lista)}. Achados ecográficos compatíveis com sialoadenite crônica.`
 }
 
 function fields(glandula: Glandula): Field[] {
@@ -213,7 +214,7 @@ function compose(glandula: Glandula, lado: Lado, state: OrganState): OrganCompos
         : `Cálculo ${sede}, medida pendente.`)
     }
   } else if (typeof calibre === 'number') {
-    conclusion.push(`Ducto de ${ducto} da ${nome} visível, com calibre de ${ptBr1(calibre)} mm. Convém, a critério clínico, correlação clínica.`)
+    conclusion.push(`Ducto de ${ducto} da ${nome} visível, com calibre de ${ptBr1(calibre)} mm.`)
   } else if (str(state.ducto) === 'visivel') {
     conclusion.push(`Ducto de ${ducto} da ${nome} visível, calibre pendente.`)
   }

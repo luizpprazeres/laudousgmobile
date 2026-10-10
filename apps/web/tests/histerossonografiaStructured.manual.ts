@@ -172,4 +172,14 @@ test('persistência: o estado salvo em exam_state reabre e recompõe o mesmo lau
   assert.equal(laudo(JSON.parse(JSON.stringify(state)) as ExamState), laudo(state))
 })
 
+test('correlação clínica só quando o médico escolhe (decisão do Luiz, 10/10)', () => {
+  const sem = exame()
+  assert.doesNotMatch(laudo(sem), /correlac/i)
+  const com = exame()
+  com.recomendacao = { ...com.recomendacao, opcao: 'correlacao', confirmada: 'sim' }
+  const t = laudo(com)
+  assert.match(conclusao(t), /Correlacionar com dados clínicos\./)
+  assert.equal(t.match(/correlac/gi)?.length, 1)
+})
+
 console.log(`${cases} Histerossonografia structured web cases passed`)

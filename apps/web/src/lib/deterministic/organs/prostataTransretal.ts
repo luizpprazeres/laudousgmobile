@@ -219,7 +219,7 @@ const prostataModule: OrganModule = {
     }
     if (typeof ipp === 'number') conclusion.push(`Índice de protrusão prostática (IPP) de ${ptBr1(ipp)} cm, ${ippGrau(ipp).toLowerCase()}.`)
     if (calcificacoes) conclusion.push('Calcificações prostáticas.')
-    if (prostatite) conclusion.push('Alterações ecográficas que podem corresponder a prostatite, a correlacionar clinicamente.')
+    if (prostatite) conclusion.push('Alterações ecográficas que podem corresponder a prostatite.')
 
     return { body: body.join('\n'), conclusion, isNormal: Boolean(medidas) && padrao === 'normal' && achados.length === 0 }
   },

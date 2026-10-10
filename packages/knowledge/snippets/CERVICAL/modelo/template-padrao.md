@@ -76,5 +76,5 @@ NÃO INVENTAR
 
 - Não classificar linfonodo como "metastático" ou "linfomatoso" sem dado clínico/histopatológico — usar "suspeito de malignidade" com base em critérios ecográficos.
 - Não atribuir nível Robbins sem localização anatômica clara.
-- Seguir as recomendações das conclusões (correlação clínica; exames laboratoriais; TC cervical ou biópsia por agulha fina quando aplicável). NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).
+- Recomendação (exames laboratoriais; TC cervical ou biópsia por agulha fina; correlação clínica) só quando o médico ditar, na redação dele. NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).
 - Não estender achados a glândulas salivares ou tireoide se essas estruturas não foram detalhadamente avaliadas — apontar limitação técnica quando aplicável.

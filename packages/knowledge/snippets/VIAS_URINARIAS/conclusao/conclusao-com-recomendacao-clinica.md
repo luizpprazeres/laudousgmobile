@@ -37,6 +37,6 @@ Achados que devem vir acompanhados de recomendação clínica explícita:
    "Convém, a critério clínico, correlacionar com queixas urinárias."
 
 8. **Achado incidental em paciente assintomático** (ex: cisto simples pequeno):
-   "Achado de provável relevância clínica reduzida — correlacionar com queixa clínica."
+   "Achado de provável relevância clínica reduzida — correlacionar com queixa clínica." — só quando o médico ditar, na redação dele.
 
 Boa prática: anexar a recomendação ao MESMO item numerado do achado.

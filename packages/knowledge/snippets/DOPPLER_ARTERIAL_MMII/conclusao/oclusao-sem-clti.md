@@ -24,7 +24,7 @@ FRASE VERBATIM — conclusão em PROSA CORRIDA (sem bullets/itens no laudo):
 
 "X) Oclusão/estenose hemodinamicamente significativa em ___, com padrão espectral monofásico nos segmentos distais à obstrução e índice tornozelo-braquial reduzido (___ à direita, ___ à esquerda). O diagnóstico mais provável é doença arterial obstrutiva periférica grave."
 
-"X) Convém, a critério clínico, prosseguir a avaliação com cirurgião vascular para correlação clínica e definição de conduta."
+"X) Convém, a critério clínico, prosseguir a avaliação com cirurgião vascular para definição de conduta."
 
 ═══════════════════════════════════════════════════
 JUSTIFICATIVA PARA SEPARAÇÃO
@@ -39,7 +39,7 @@ QUANDO ESCALAR PARA CIRURGIÃO VASCULAR (SEM USAR "URGENTE")
 ═══════════════════════════════════════════════════
 
 - Achado hemodinâmico grave + ausência de queixa clínica documentada: sugerir avaliação por cirurgião vascular (sem rotular como urgência).
-- Se médico mencionar piora recente, claudicação severa ou outro sinal de alarme: ajustar tom (correlação clínica para definição de urgência).
+- Se médico mencionar piora recente, claudicação severa ou outro sinal de alarme: ajustar tom (definição de urgência).
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

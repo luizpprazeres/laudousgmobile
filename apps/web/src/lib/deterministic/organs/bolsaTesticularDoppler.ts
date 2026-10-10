@@ -139,11 +139,11 @@ function dopplerModule(lado: Lado): OrganModule {
       }
       if (r.perfusao === 'reduzida') {
         linhas.push(`Testículo ${lado} com redução da vascularização ao Doppler colorido.`)
-        conclusion.push(`Redução da vascularização do testículo ${lado} ao Doppler colorido. Correlacionar com dados clínicos.`)
+        conclusion.push(`Redução da vascularização do testículo ${lado} ao Doppler colorido.`)
       }
       if (r.perfusao === 'ausente') {
         linhas.push(`Fluxo não detectado ao Doppler colorido no parênquima do testículo ${lado}.`)
-        conclusion.push(`Fluxo não detectado ao Doppler colorido no testículo ${lado}. Correlacionar com dados clínicos.`)
+        conclusion.push(`Fluxo não detectado ao Doppler colorido no testículo ${lado}.`)
       }
       if (r.epididimo === 'preservado') linhas.push(`Epidídimo ${lado} com vascularização habitual ao Doppler colorido.`)
       if (r.epididimo === 'aumentado') {
@@ -177,10 +177,10 @@ function dopplerModule(lado: Lado): OrganModule {
 }
 
 const HIPOTESE_TEXTO: Record<string, (lado: Lado) => string> = {
-  torcao: lado => `Achados compatíveis com torção testicular à ${FEM[lado]}, conforme avaliação médica. Correlacionar com dados clínicos e avaliação urológica.`,
-  orquite: lado => `Achados compatíveis com orquite à ${FEM[lado]}, conforme avaliação médica. Correlacionar com dados clínicos.`,
-  epididimite: lado => `Achados compatíveis com epididimite à ${FEM[lado]}, conforme avaliação médica. Correlacionar com dados clínicos.`,
-  orquiepididimite: lado => `Achados compatíveis com orquiepididimite à ${FEM[lado]}, conforme avaliação médica. Correlacionar com dados clínicos.`,
+  torcao: lado => `Achados compatíveis com torção testicular à ${FEM[lado]}, conforme avaliação médica.`,
+  orquite: lado => `Achados compatíveis com orquite à ${FEM[lado]}, conforme avaliação médica.`,
+  epididimite: lado => `Achados compatíveis com epididimite à ${FEM[lado]}, conforme avaliação médica.`,
+  orquiepididimite: lado => `Achados compatíveis com orquiepididimite à ${FEM[lado]}, conforme avaliação médica.`,
 }
 
 /** Pendências que dependem de mais de uma seção (lista e bloqueio de salvamento). */

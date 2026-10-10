@@ -33,4 +33,4 @@ Na conclusão:
 - "Litíase vesical." (cálculo único)
 - "Múltiplos cálculos vesicais (vide texto)."
 
-A litíase vesical em adultos pode estar associada a obstrução infravesical crônica (hiperplasia prostática, bexiga neurogênica) — recomendar correlação clínica quando relevante.
+A litíase vesical em adultos pode estar associada a obstrução infravesical crônica (hiperplasia prostática, bexiga neurogênica) — correlação clínica só quando o médico ditar, na redação dele.

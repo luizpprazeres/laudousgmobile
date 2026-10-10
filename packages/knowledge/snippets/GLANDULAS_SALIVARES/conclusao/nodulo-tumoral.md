@@ -52,7 +52,7 @@ CENÁRIO 1 — Nódulo único de aspecto benigno (sem rotular tipo específico):
 "X) Convém, a critério clínico, prosseguir a avaliação com especialista em cabeça/pescoço para definição diagnóstica e etiológica."
 
 CENÁRIO 2 — Nódulo com características sugestivas de Warthin (parotídeo, com áreas císticas):
-"X) Nódulo em [lobo superficial] de glândula parótida [lado], medindo ___ x ___ x ___ mm, com contornos regulares, ecotextura heterogênea com áreas císticas/anecoicas internas, vascularização ao Doppler. Características ecográficas compatíveis com lesão de comportamento benigno, podendo corresponder a tumor de Warthin (especialmente em correlação clínica com tabagismo, sexo masculino, idade > 50 anos)."
+"X) Nódulo em [lobo superficial] de glândula parótida [lado], medindo ___ x ___ x ___ mm, com contornos regulares, ecotextura heterogênea com áreas císticas/anecoicas internas, vascularização ao Doppler. Características ecográficas compatíveis com lesão de comportamento benigno, podendo corresponder a tumor de Warthin."
 
 CENÁRIO 3 — Múltiplos nódulos (suspeita Warthin bilateral ou outras):
 "X) Múltiplos nódulos em glândulas parótidas [unilateral/bilateral], com características predominantemente sólido-císticas, o maior medindo ___ x ___ x ___ mm em [lado]. Achados sugestivos de natureza benigna, podendo corresponder a tumores de Warthin múltiplos (frequência aumentada em tabagistas)."

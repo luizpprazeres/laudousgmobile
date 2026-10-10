@@ -1,0 +1,1060 @@
+[
+  {
+    "id": "fde32c7d-a097-4103-aa41-83d970ba2543",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "abdomen-superior-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "ccbd7a45-f03b-4cc6-b27d-640061f8f8f9",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "abdomen-superior-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "0cb63f76-7a60-4dfb-9f52-e21a380a1e6b",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "abdomen-superior-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "c2270dc8-8582-4812-af22-364d0f407e49",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "abdomen-superior-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "4a3f5e09-a9ac-42d4-999b-21a959ee6d22",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "abdomen-superior-regra-esplenomegalia",
+    "trocas": [
+      [
+        "Esplenomegalia (vide medidas). Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "Esplenomegalia (vide medidas).\""
+      ],
+      [
+        "Possíveis causas para correlação clínica:",
+        "Possíveis causas (contexto para o redator, não vão para o laudo sem ditado):"
+      ]
+    ]
+  },
+  {
+    "id": "d2880e3d-cf8f-4a54-8667-8a2babb675a2",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "abdomen-superior-regra-esplenomegalia",
+    "trocas": [
+      [
+        "Esplenomegalia (vide medidas). Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "Esplenomegalia (vide medidas).\""
+      ],
+      [
+        "Possíveis causas para correlação clínica:",
+        "Possíveis causas (contexto para o redator, não vão para o laudo sem ditado):"
+      ]
+    ]
+  },
+  {
+    "id": "505da952-7685-430b-b2aa-b3aafc25a390",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "abdomen-superior-regra-esplenomegalia",
+    "trocas": [
+      [
+        "Esplenomegalia (vide medidas). Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "Esplenomegalia (vide medidas).\""
+      ],
+      [
+        "Possíveis causas para correlação clínica:",
+        "Possíveis causas (contexto para o redator, não vão para o laudo sem ditado):"
+      ]
+    ]
+  },
+  {
+    "id": "827ddfb0-45bc-46f0-9a26-ca38b1973b55",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "abdomen-superior-regra-esplenomegalia",
+    "trocas": [
+      [
+        "Esplenomegalia (vide medidas). Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "Esplenomegalia (vide medidas).\""
+      ],
+      [
+        "Possíveis causas para correlação clínica:",
+        "Possíveis causas (contexto para o redator, não vão para o laudo sem ditado):"
+      ]
+    ]
+  },
+  {
+    "id": "197b8dc2-0175-4148-beea-8a0ba9289b8c",
+    "cat": "CERVICAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "modelo",
+    "title": "cervical-modelo-template-padrao",
+    "trocas": [
+      [
+        "Conclusão: \"Linfonodo de aspecto suspeito no nível ___. Correlacionar com achados clínicos.\"",
+        "Conclusão: \"Linfonodo de aspecto suspeito no nível ___.\""
+      ]
+    ]
+  },
+  {
+    "id": "b78e7737-4a2e-42b8-bf59-59c54862a9d2",
+    "cat": "CERVICAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "modelo",
+    "title": "cervical-modelo-template-padrao",
+    "trocas": [
+      [
+        "Conclusão: \"Linfonodo de aspecto suspeito no nível ___. Correlacionar com achados clínicos.\"",
+        "Conclusão: \"Linfonodo de aspecto suspeito no nível ___.\""
+      ]
+    ]
+  },
+  {
+    "id": "15b34dfd-21e7-4ab3-bda4-37ba86962eb9",
+    "cat": "CERVICAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "modelo",
+    "title": "cervical-modelo-template-padrao",
+    "trocas": [
+      [
+        "Conclusão: \"Linfonodo de aspecto suspeito no nível ___. Correlacionar com achados clínicos.\"",
+        "Conclusão: \"Linfonodo de aspecto suspeito no nível ___.\""
+      ]
+    ]
+  },
+  {
+    "id": "94a5d58d-ec4e-4025-bce3-1dc0dba16ee0",
+    "cat": "CERVICAL",
+    "estilo": "OBJETIVO",
+    "kind": "modelo",
+    "title": "cervical-modelo-template-padrao",
+    "trocas": [
+      [
+        "Conclusão: \"Linfonodo de aspecto suspeito no nível ___. Correlacionar com achados clínicos.\"",
+        "Conclusão: \"Linfonodo de aspecto suspeito no nível ___.\""
+      ]
+    ]
+  },
+  {
+    "id": "c3845acc-0ec7-45ea-b5f1-637f047851ff",
+    "cat": "CERVICAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "trocas": [
+      [
+        "SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa e correlação clínica):",
+        "SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa):"
+      ],
+      [
+        "- Seguir as recomendações das conclusões (correlação clínica; exames laboratoriais; TC cervical ou biópsia por agulha fina quando aplicável).",
+        "- Recomendação (exames laboratoriais; TC cervical ou biópsia por agulha fina; correlação clínica) só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "63fff88e-ef5b-4362-908e-5b7ef10dda8e",
+    "cat": "CERVICAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "trocas": [
+      [
+        "SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa e correlação clínica):",
+        "SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa):"
+      ],
+      [
+        "- Seguir as recomendações das conclusões (correlação clínica; exames laboratoriais; TC cervical ou biópsia por agulha fina quando aplicável).",
+        "- Recomendação (exames laboratoriais; TC cervical ou biópsia por agulha fina; correlação clínica) só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "7cd9440a-74e8-497f-b30d-83618e998a90",
+    "cat": "CERVICAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "trocas": [
+      [
+        "SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa e correlação clínica):",
+        "SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa):"
+      ],
+      [
+        "- Seguir as recomendações das conclusões (correlação clínica; exames laboratoriais; TC cervical ou biópsia por agulha fina quando aplicável).",
+        "- Recomendação (exames laboratoriais; TC cervical ou biópsia por agulha fina; correlação clínica) só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "c90e6293-22d3-49a9-9405-1a6d8be66c16",
+    "cat": "CERVICAL",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "trocas": [
+      [
+        "SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa e correlação clínica):",
+        "SINAIS DE ALTA RELEVÂNCIA (presença merece descrição cuidadosa):"
+      ],
+      [
+        "- Seguir as recomendações das conclusões (correlação clínica; exames laboratoriais; TC cervical ou biópsia por agulha fina quando aplicável).",
+        "- Recomendação (exames laboratoriais; TC cervical ou biópsia por agulha fina; correlação clínica) só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "ad5be79b-03d1-49cd-bb3f-7fad086112e2",
+    "cat": "DOPPLER_ARTERIAL_MMII",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "doppler-arterial-mmii-conclusao-oclusao-sem-clti",
+    "trocas": [
+      [
+        "prosseguir a avaliação com cirurgião vascular para correlação clínica e definição de conduta.",
+        "prosseguir a avaliação com cirurgião vascular para definição de conduta."
+      ],
+      [
+        "ajustar tom (correlação clínica para definição de urgência).",
+        "ajustar tom (definição de urgência)."
+      ]
+    ]
+  },
+  {
+    "id": "4ca9fa0d-d83b-4251-bf20-20019ccf432a",
+    "cat": "DOPPLER_ARTERIAL_MMII",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "doppler-arterial-mmii-conclusao-oclusao-sem-clti",
+    "trocas": [
+      [
+        "prosseguir a avaliação com cirurgião vascular para correlação clínica e definição de conduta.",
+        "prosseguir a avaliação com cirurgião vascular para definição de conduta."
+      ],
+      [
+        "ajustar tom (correlação clínica para definição de urgência).",
+        "ajustar tom (definição de urgência)."
+      ]
+    ]
+  },
+  {
+    "id": "32159a6c-c96a-4c82-a236-0699397ad03e",
+    "cat": "DOPPLER_ARTERIAL_MMII",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "doppler-arterial-mmii-conclusao-oclusao-sem-clti",
+    "trocas": [
+      [
+        "prosseguir a avaliação com cirurgião vascular para correlação clínica e definição de conduta.",
+        "prosseguir a avaliação com cirurgião vascular para definição de conduta."
+      ],
+      [
+        "ajustar tom (correlação clínica para definição de urgência).",
+        "ajustar tom (definição de urgência)."
+      ]
+    ]
+  },
+  {
+    "id": "2a3ac1b1-355b-4d75-a3a8-9a4adac6a6f7",
+    "cat": "DOPPLER_ARTERIAL_MMII",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "doppler-arterial-mmii-conclusao-oclusao-sem-clti",
+    "trocas": [
+      [
+        "prosseguir a avaliação com cirurgião vascular para correlação clínica e definição de conduta.",
+        "prosseguir a avaliação com cirurgião vascular para definição de conduta."
+      ],
+      [
+        "ajustar tom (correlação clínica para definição de urgência).",
+        "ajustar tom (definição de urgência)."
+      ]
+    ]
+  },
+  {
+    "id": "e4f92ba3-8aa6-42b5-9563-50f06dea44e0",
+    "cat": "DOPPLER_FISTULA_AV",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "doppler-fistula-av-regra-fluxo-inadequado",
+    "trocas": [
+      [
+        "\"Fluxo volumétrico ___ da fístula, a correlacionar clinicamente.\"",
+        "\"Fluxo volumétrico ___ da fístula.\""
+      ]
+    ]
+  },
+  {
+    "id": "61b4f03a-dfce-400e-8997-7b4996eb5f75",
+    "cat": "DOPPLER_FISTULA_AV",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "doppler-fistula-av-regra-fluxo-inadequado",
+    "trocas": [
+      [
+        "\"Fluxo volumétrico ___ da fístula, a correlacionar clinicamente.\"",
+        "\"Fluxo volumétrico ___ da fístula.\""
+      ]
+    ]
+  },
+  {
+    "id": "1a176de8-5e5b-4fe6-9975-75646028bc92",
+    "cat": "DOPPLER_FISTULA_AV",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "doppler-fistula-av-regra-fluxo-inadequado",
+    "trocas": [
+      [
+        "\"Fluxo volumétrico ___ da fístula, a correlacionar clinicamente.\"",
+        "\"Fluxo volumétrico ___ da fístula.\""
+      ]
+    ]
+  },
+  {
+    "id": "58f9e53f-869a-402f-aafd-68d012ec0ff8",
+    "cat": "DOPPLER_FISTULA_AV",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "doppler-fistula-av-regra-fluxo-inadequado",
+    "trocas": [
+      [
+        "\"Fluxo volumétrico ___ da fístula, a correlacionar clinicamente.\"",
+        "\"Fluxo volumétrico ___ da fístula.\""
+      ]
+    ]
+  },
+  {
+    "id": "88fee5b3-de26-444e-9995-e5f8843d94b2",
+    "cat": "DOPPLER_RENAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "doppler-renal-conclusao-estenose-significativa",
+    "trocas": [
+      [
+        "- Não recomendar conduta cirúrgica/intervencionista — apenas sugerir correlação clínica quando aplicável.",
+        "- Não recomendar conduta cirúrgica/intervencionista; correlação clínica só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "92edb567-b3e7-4583-8b69-22eae07e4579",
+    "cat": "DOPPLER_RENAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "doppler-renal-conclusao-estenose-significativa",
+    "trocas": [
+      [
+        "- Não recomendar conduta cirúrgica/intervencionista — apenas sugerir correlação clínica quando aplicável.",
+        "- Não recomendar conduta cirúrgica/intervencionista; correlação clínica só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "7294761d-9cc8-435f-9c4b-2b494b0868f8",
+    "cat": "DOPPLER_RENAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "doppler-renal-conclusao-estenose-significativa",
+    "trocas": [
+      [
+        "- Não recomendar conduta cirúrgica/intervencionista — apenas sugerir correlação clínica quando aplicável.",
+        "- Não recomendar conduta cirúrgica/intervencionista; correlação clínica só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "a92c17a0-7aae-4ee0-8dbf-8f745c1078be",
+    "cat": "DOPPLER_RENAL",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "doppler-renal-conclusao-estenose-significativa",
+    "trocas": [
+      [
+        "- Não recomendar conduta cirúrgica/intervencionista — apenas sugerir correlação clínica quando aplicável.",
+        "- Não recomendar conduta cirúrgica/intervencionista; correlação clínica só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "61e6a9f8-c184-4a35-adf3-fb9089420934",
+    "cat": "DOPPLER_RENAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "doppler-renal-regra-nefroesclerose",
+    "trocas": [
+      [
+        " Convém, a critério clínico, complementar com correlação clínico-laboratorial para esclarecimento etiológico.",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "80857101-f772-4b62-b925-4e887f6dd698",
+    "cat": "DOPPLER_RENAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "doppler-renal-regra-nefroesclerose",
+    "trocas": [
+      [
+        " Convém, a critério clínico, complementar com correlação clínico-laboratorial para esclarecimento etiológico.",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "9d738bae-2a29-437e-aa0c-dcf4ace67ca3",
+    "cat": "DOPPLER_RENAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "doppler-renal-regra-nefroesclerose",
+    "trocas": [
+      [
+        " Convém, a critério clínico, complementar com correlação clínico-laboratorial para esclarecimento etiológico.",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "c69f88b5-9ace-4621-a5ba-0a69d9f1619b",
+    "cat": "DOPPLER_RENAL",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "doppler-renal-regra-nefroesclerose",
+    "trocas": [
+      [
+        " Convém, a critério clínico, complementar com correlação clínico-laboratorial para esclarecimento etiológico.",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "dcae3abd-59e7-4b29-bbde-f8379a4cf55d",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "trocas": [
+      [
+        "- Não prescrever conduta — apenas correlação clínica.",
+        "- Não prescrever conduta; correlação clínica só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "2fe28a1c-4ffa-435f-9516-5f8055caba0d",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "trocas": [
+      [
+        "- Não prescrever conduta — apenas correlação clínica.",
+        "- Não prescrever conduta; correlação clínica só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "d50b5afd-f8ab-4aa5-a7f8-7f44218e5b3d",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "trocas": [
+      [
+        "- Não prescrever conduta — apenas correlação clínica.",
+        "- Não prescrever conduta; correlação clínica só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "8ff638e3-a1e4-4c17-9d5f-963a5f221c2d",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "OBJETIVO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "trocas": [
+      [
+        "- Não prescrever conduta — apenas correlação clínica.",
+        "- Não prescrever conduta; correlação clínica só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "1c112961-844c-424c-be78-4f10277d910f",
+    "cat": "ESCROTAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "escrotal-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\" — só quando o médico ditar, na redação dele."
+      ],
+      [
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\"",
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "a4ca8f8c-9cc2-4ddd-a406-8d52a195d9da",
+    "cat": "ESCROTAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "escrotal-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\" — só quando o médico ditar, na redação dele."
+      ],
+      [
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\"",
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "eba05b95-3109-4be9-b89a-44f3bd59b1e0",
+    "cat": "ESCROTAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "escrotal-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\" — só quando o médico ditar, na redação dele."
+      ],
+      [
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\"",
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "61177b73-78aa-4d7f-866d-27bb4b18500f",
+    "cat": "ESCROTAL",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "escrotal-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "\"Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\" — só quando o médico ditar, na redação dele."
+      ],
+      [
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\"",
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "a6bf0cf8-ced5-4265-b769-e0afd3699371",
+    "cat": "ESCROTAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "escrotal-regra-hidrocele",
+    "trocas": [
+      [
+        "\"Hidrocele complexa à direita, sugerindo correlação clínica.\"",
+        "\"Hidrocele complexa à direita.\""
+      ]
+    ]
+  },
+  {
+    "id": "6546bd02-25ad-4913-aaf9-11da4d90cf19",
+    "cat": "ESCROTAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "escrotal-regra-hidrocele",
+    "trocas": [
+      [
+        "\"Hidrocele complexa à direita, sugerindo correlação clínica.\"",
+        "\"Hidrocele complexa à direita.\""
+      ]
+    ]
+  },
+  {
+    "id": "9b4544d0-4881-4524-904a-622cb7d287ad",
+    "cat": "ESCROTAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "escrotal-regra-hidrocele",
+    "trocas": [
+      [
+        "\"Hidrocele complexa à direita, sugerindo correlação clínica.\"",
+        "\"Hidrocele complexa à direita.\""
+      ]
+    ]
+  },
+  {
+    "id": "8867d54c-a5b1-478c-b0e1-316151e30211",
+    "cat": "ESCROTAL",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "escrotal-regra-hidrocele",
+    "trocas": [
+      [
+        "\"Hidrocele complexa à direita, sugerindo correlação clínica.\"",
+        "\"Hidrocele complexa à direita.\""
+      ]
+    ]
+  },
+  {
+    "id": "10f02bdd-88e9-45ea-b7ab-cf72f90f5b75",
+    "cat": "ESCROTAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "escrotal-regra-orquite-epididimite",
+    "trocas": [
+      [
+        "Sinais de orqui-epididimite à direita. Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "Sinais de orqui-epididimite à direita.\""
+      ]
+    ]
+  },
+  {
+    "id": "9da1efe8-e318-40af-b64b-008ef8d0bad1",
+    "cat": "ESCROTAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "escrotal-regra-orquite-epididimite",
+    "trocas": [
+      [
+        "Sinais de orqui-epididimite à direita. Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "Sinais de orqui-epididimite à direita.\""
+      ]
+    ]
+  },
+  {
+    "id": "bbf4eaee-ec21-4030-aab3-881793aacfdb",
+    "cat": "ESCROTAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "escrotal-regra-orquite-epididimite",
+    "trocas": [
+      [
+        "Sinais de orqui-epididimite à direita. Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "Sinais de orqui-epididimite à direita.\""
+      ]
+    ]
+  },
+  {
+    "id": "64ad0f13-2886-42da-a1b0-2d7ec9365a23",
+    "cat": "ESCROTAL",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "escrotal-regra-orquite-epididimite",
+    "trocas": [
+      [
+        "Sinais de orqui-epididimite à direita. Convém, a critério clínico, correlacionar com quadro clínico-laboratorial.\"",
+        "Sinais de orqui-epididimite à direita.\""
+      ]
+    ]
+  },
+  {
+    "id": "9016dd79-d2f8-44bf-bb8f-b721e80287ba",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-nodulo-tumoral",
+    "trocas": [
+      [
+        " (especialmente em correlação clínica com tabagismo, sexo masculino, idade > 50 anos)",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "6f14d81e-df64-4a9c-b9a8-0bef5a02387e",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-nodulo-tumoral",
+    "trocas": [
+      [
+        " (especialmente em correlação clínica com tabagismo, sexo masculino, idade > 50 anos)",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "6dcd0324-2c4b-4b29-8393-8fd1eb731af2",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-nodulo-tumoral",
+    "trocas": [
+      [
+        " (especialmente em correlação clínica com tabagismo, sexo masculino, idade > 50 anos)",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "c54dccb2-3cdd-4a29-8828-a55fced8caa8",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-nodulo-tumoral",
+    "trocas": [
+      [
+        " (especialmente em correlação clínica com tabagismo, sexo masculino, idade > 50 anos)",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "154b5289-57a5-4a5a-9bd8-43eca0ce233e",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-sialoadenite",
+    "trocas": [
+      [
+        "\"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica.\"",
+        "\"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "ca410a09-3942-4771-8229-ed8c7c9e45d3",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-sialoadenite",
+    "trocas": [
+      [
+        "\"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica.\"",
+        "\"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "1576f72a-c6e7-4497-84e0-899d0e3598a4",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-sialoadenite",
+    "trocas": [
+      [
+        "\"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica.\"",
+        "\"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "c893fc4b-1c20-48e6-a82d-ee7fb26a8774",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-sialoadenite",
+    "trocas": [
+      [
+        "\"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica.\"",
+        "\"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "20026fd8-486c-47fe-947b-9a213330ed94",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "glandulas-salivares-regra-medidas-padrao",
+    "trocas": [
+      [
+        "inicial de processo obstrutivo, correlacionar com clínica.",
+        "inicial de processo obstrutivo."
+      ],
+      [
+        "com calibre de ___ mm. Convém, a critério clínico, complementar com correlação clínica.\"",
+        "com calibre de ___ mm.\""
+      ]
+    ]
+  },
+  {
+    "id": "965edf26-715e-4d5c-b0af-e80f579c8684",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "glandulas-salivares-regra-medidas-padrao",
+    "trocas": [
+      [
+        "inicial de processo obstrutivo, correlacionar com clínica.",
+        "inicial de processo obstrutivo."
+      ],
+      [
+        "com calibre de ___ mm. Convém, a critério clínico, complementar com correlação clínica.\"",
+        "com calibre de ___ mm.\""
+      ]
+    ]
+  },
+  {
+    "id": "d353af7d-1c65-400c-8852-0e90787f04d3",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "glandulas-salivares-regra-medidas-padrao",
+    "trocas": [
+      [
+        "inicial de processo obstrutivo, correlacionar com clínica.",
+        "inicial de processo obstrutivo."
+      ],
+      [
+        "com calibre de ___ mm. Convém, a critério clínico, complementar com correlação clínica.\"",
+        "com calibre de ___ mm.\""
+      ]
+    ]
+  },
+  {
+    "id": "6a18785f-58e8-4a48-b575-a935a7c3f5ef",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "glandulas-salivares-regra-medidas-padrao",
+    "trocas": [
+      [
+        "inicial de processo obstrutivo, correlacionar com clínica.",
+        "inicial de processo obstrutivo."
+      ],
+      [
+        "com calibre de ___ mm. Convém, a critério clínico, complementar com correlação clínica.\"",
+        "com calibre de ___ mm.\""
+      ]
+    ]
+  },
+  {
+    "id": "00f4ebc2-2157-4f59-b583-431e6609a588",
+    "cat": "PARTES_MOLES",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "partes-moles-regra-como-descrever-alteracoes",
+    "trocas": [
+      [
+        "a esclarecer. Correlacionar com dados clínicos.\"",
+        "a esclarecer.\""
+      ],
+      [
+        "[abscesso/hematoma/cisto de inclusão epidérmica/higroma]. Correlacionar com dados clínicos.\"",
+        "[abscesso/hematoma/cisto de inclusão epidérmica/higroma].\""
+      ]
+    ]
+  },
+  {
+    "id": "10a9ba65-5de6-4c79-84da-416c26c0668f",
+    "cat": "PARTES_MOLES",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "partes-moles-regra-como-descrever-alteracoes",
+    "trocas": [
+      [
+        "a esclarecer. Correlacionar com dados clínicos.\"",
+        "a esclarecer.\""
+      ],
+      [
+        "[abscesso/hematoma/cisto de inclusão epidérmica/higroma]. Correlacionar com dados clínicos.\"",
+        "[abscesso/hematoma/cisto de inclusão epidérmica/higroma].\""
+      ]
+    ]
+  },
+  {
+    "id": "25c08b10-07d6-4306-be4f-7e65fee21cd1",
+    "cat": "PARTES_MOLES",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "partes-moles-regra-como-descrever-alteracoes",
+    "trocas": [
+      [
+        "a esclarecer. Correlacionar com dados clínicos.\"",
+        "a esclarecer.\""
+      ],
+      [
+        "[abscesso/hematoma/cisto de inclusão epidérmica/higroma]. Correlacionar com dados clínicos.\"",
+        "[abscesso/hematoma/cisto de inclusão epidérmica/higroma].\""
+      ]
+    ]
+  },
+  {
+    "id": "04baa87b-bae3-4b94-8e04-334148cd8b68",
+    "cat": "PARTES_MOLES",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "partes-moles-regra-como-descrever-alteracoes",
+    "trocas": [
+      [
+        "a esclarecer. Correlacionar com dados clínicos.\"",
+        "a esclarecer.\""
+      ],
+      [
+        "[abscesso/hematoma/cisto de inclusão epidérmica/higroma]. Correlacionar com dados clínicos.\"",
+        "[abscesso/hematoma/cisto de inclusão epidérmica/higroma].\""
+      ]
+    ]
+  },
+  {
+    "id": "1017fabe-25c2-426b-ba9a-4db907304b4f",
+    "cat": "PROSTATA_TRANSRETAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "prostata-transretal-regra-prostatite",
+    "trocas": [
+      [
+        "podem corresponder a prostatite, a correlacionar clinicamente.",
+        "podem corresponder a prostatite."
+      ]
+    ]
+  },
+  {
+    "id": "7dda8415-f301-4073-b712-02826e0d5675",
+    "cat": "PROSTATA_TRANSRETAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "prostata-transretal-regra-prostatite",
+    "trocas": [
+      [
+        "podem corresponder a prostatite, a correlacionar clinicamente.",
+        "podem corresponder a prostatite."
+      ]
+    ]
+  },
+  {
+    "id": "698ab5b6-166a-4393-b94e-39b2daef050d",
+    "cat": "PROSTATA_TRANSRETAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "prostata-transretal-regra-prostatite",
+    "trocas": [
+      [
+        "podem corresponder a prostatite, a correlacionar clinicamente.",
+        "podem corresponder a prostatite."
+      ]
+    ]
+  },
+  {
+    "id": "2d0fbd78-5fb7-48d2-9090-da1bf178dbaf",
+    "cat": "PROSTATA_TRANSRETAL",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "prostata-transretal-regra-prostatite",
+    "trocas": [
+      [
+        "podem corresponder a prostatite, a correlacionar clinicamente.",
+        "podem corresponder a prostatite."
+      ]
+    ]
+  },
+  {
+    "id": "f891aa3b-161a-4a7d-973b-c4b5964d8c7e",
+    "cat": "TRANSFONTANELA",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "transfontanela-regra-ventriculomegalia",
+    "trocas": [
+      [
+        "\"Ventriculomegalia ___, a correlacionar clinicamente.\"",
+        "\"Ventriculomegalia ___.\""
+      ]
+    ]
+  },
+  {
+    "id": "4be86a81-b06d-4a3e-92ce-ab5449ecafc1",
+    "cat": "TRANSFONTANELA",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "transfontanela-regra-ventriculomegalia",
+    "trocas": [
+      [
+        "\"Ventriculomegalia ___, a correlacionar clinicamente.\"",
+        "\"Ventriculomegalia ___.\""
+      ]
+    ]
+  },
+  {
+    "id": "ef0a370e-bef8-4195-9476-1201b5ef9f0f",
+    "cat": "TRANSFONTANELA",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "transfontanela-regra-ventriculomegalia",
+    "trocas": [
+      [
+        "\"Ventriculomegalia ___, a correlacionar clinicamente.\"",
+        "\"Ventriculomegalia ___.\""
+      ]
+    ]
+  },
+  {
+    "id": "b9e13a43-fffc-4953-81e4-d63811502828",
+    "cat": "TRANSFONTANELA",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "transfontanela-regra-ventriculomegalia",
+    "trocas": [
+      [
+        "\"Ventriculomegalia ___, a correlacionar clinicamente.\"",
+        "\"Ventriculomegalia ___.\""
+      ]
+    ]
+  },
+  {
+    "id": "fb7603be-ea5d-4ec2-bbe2-5bae5c7813da",
+    "cat": "VIAS_URINARIAS",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "vias-urinarias-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\"",
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  },
+  {
+    "id": "545ac93b-c02d-4747-bf25-ea068b37b4c2",
+    "cat": "VIAS_URINARIAS",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "vias-urinarias-conclusao-com-recomendacao-clinica",
+    "trocas": [
+      [
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\"",
+        "\"Achado de provável relevância clínica reduzida — correlacionar com queixa clínica.\" — só quando o médico ditar, na redação dele."
+      ]
+    ]
+  }
+]

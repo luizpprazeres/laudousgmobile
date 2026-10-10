@@ -101,7 +101,7 @@ const render = (f: CervicalFindings) => renderCervical(f, { objetivo: true });
   check("suspeito: 1 casa decimal '1,8 x 1,2 x 1,0 cm'", /1,8 x 1,2 x 1,0 cm/.test(l), l);
   check("suspeito: 'de forma arredondada'", /de forma arredondada/.test(l), l);
   check("suspeito: 'sem hilo ecogênico identificável'", /sem hilo ecogênico identificável/.test(l), l);
-  check("suspeito: impressão 'aspecto suspeito no nível IIA'", /Linfonodo de aspecto suspeito no nível IIA\. Correlacionar com achados clínicos\./.test(l), l);
+  check("suspeito: impressão 'aspecto suspeito no nível IIA'", /Linfonodo de aspecto suspeito no nível IIA\.(?! Correlacionar)/.test(l) && !/correlac/i.test(l), l); // correlação só se ditada (10/10)
 }
 
 // ── Linfonodo com Doppler (vascularização) ──

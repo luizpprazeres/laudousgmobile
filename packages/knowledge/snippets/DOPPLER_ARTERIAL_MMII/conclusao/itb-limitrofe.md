@@ -21,7 +21,7 @@ Use verbatim quando ITB cai nesta faixa SEM oclusões/estenoses hemodinamicament
 
 "X) Índice tornozelo-braquial em faixa limítrofe (___ à direita e ___ à esquerda), considerado fator de risco cardiovascular independente, ainda que aquém do critério diagnóstico de doença arterial obstrutiva periférica estabelecida (ITB ≤ 0,89).
 
-X) Convém, a critério clínico, complementar com correlação clínica para estratificação de risco cardiovascular global e, quando indicado, com ITB pós-exercício para investigação de doença arterial obstrutiva periférica precoce."
+X) Convém, a critério clínico, complementar com ITB pós-exercício para investigação de doença arterial obstrutiva periférica precoce."
 
 ═══════════════════════════════════════════════════
 DIFERENCIAÇÃO IMPORTANTE

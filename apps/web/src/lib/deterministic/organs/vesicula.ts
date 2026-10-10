@@ -149,7 +149,7 @@ const RARE_CONCLUSION: Record<string, string> = {
   colesterolose: 'Colesterolose da vesícula biliar',
   porcelana: 'Vesícula em porcelana — recomenda-se avaliação complementar',
   polipo_adenomatoso: 'Pólipo de vesícula biliar maior que 10 mm — convém, a critério clínico, complementar a investigação',
-  colecistite_alitiasica: 'Achados que podem corresponder a colecistite alitiásica, a correlacionar clinicamente',
+  colecistite_alitiasica: 'Achados que podem corresponder a colecistite alitiásica',
   colecistostomia: 'Vesícula biliar com colecistostomia',
 }
 

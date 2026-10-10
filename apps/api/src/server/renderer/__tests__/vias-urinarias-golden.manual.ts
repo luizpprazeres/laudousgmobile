@@ -244,7 +244,7 @@ const F = (p: Partial<ViasUrinariasFindings> = {}): ViasUrinariasFindings => ({
     F({ rim_direito: Rim({ achados: [Ach({ tipo: "nodulo", medidas_cm: [2.2, 2.0, 1.9], localizacao: "no polo inferior" })] }) }),
   );
   check("nódulo: corpo incorpora imagem nodular sólida", /apresentando imagem nodular sólida, medindo 2,2 x 2,0 x 1,9 cm, situada no polo inferior\./.test(l), l);
-  check("nódulo: conclusão 'a esclarecer'", /Imagem nodular sólida no rim direito, no polo inferior, a esclarecer\. Correlacionar com dados clínicos\./.test(l), l);
+  check("nódulo: conclusão 'a esclarecer'", /Imagem nodular sólida no rim direito, no polo inferior, a esclarecer\.(?! Correlacionar)/.test(l) && !/correlac/i.test(l), l); // correlação só se ditada (10/10)
 }
 
 // ── Dilatação ureteral ──

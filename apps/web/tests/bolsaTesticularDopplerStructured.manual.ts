@@ -101,7 +101,9 @@ test('alterado: fluxo ausente é descritivo; torção exige contralateral preser
   const state = exame()
   state.doppler_direito = { ...state.doppler_direito, perfusao: 'ausente' }
   const descritivo = conclusao(laudo(state))
-  assert.match(descritivo, /Fluxo não detectado ao Doppler colorido no testículo direito\. Correlacionar com dados clínicos\./)
+  // "Correlacionar com dados clínicos" só quando ditado (decisão do Luiz, 10/10): vem do painel de Recomendações.
+  assert.match(descritivo, /Fluxo não detectado ao Doppler colorido no testículo direito\./)
+  assert.doesNotMatch(descritivo, /correlac/i)
   assert.doesNotMatch(descritivo, /torção/i)
   state.doppler_direito.hipotese = 'torcao'
   assert.deepEqual(pendenciasLocais(ID, state), ['Doppler direito: confirme a hipótese diagnóstica'])
@@ -120,7 +122,8 @@ test('alterado: orquite e epididimite exigem o achado de fluxo correspondente e 
   assert.doesNotMatch(compor(state).text, /epididimite/i)
   state.escroto_esquerdo = { ...state.escroto_esquerdo, epididimo: 'aumentado' }
   const text = conclusao(laudo(state))
-  assert.match(text, /Epidídimo esquerdo aumentado\. Correlacionar com dados clínicos\./)
+  assert.match(text, /Epidídimo esquerdo aumentado\./)
+  assert.doesNotMatch(text, /correlac/i)
   assert.match(text, /Aumento da vascularização do epidídimo esquerdo ao Doppler colorido\./)
   assert.match(text, /Achados compatíveis com epididimite à esquerda, conforme avaliação médica\./)
   const orquite = exame()

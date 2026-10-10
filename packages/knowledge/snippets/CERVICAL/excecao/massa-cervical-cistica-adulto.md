@@ -53,7 +53,7 @@ CENÁRIO 2 — Massa cística com sinais suspeitos associados (parede espessa, c
 CENÁRIO 3 — Cisto branquial / tireoglosso típico em jovem (< 35 anos, contexto clínico congruente):
 "X) Lesão cística cervical [LATERAL/MEDIAL] no nível [Robbins], medindo ___ x ___ x ___ mm, com características compatíveis com cisto [branquial / tireoglosso]. Em paciente jovem com apresentação clínica típica, achado de comportamento benigno."
 
-"X) Sugere-se correlação clínica e seguimento conforme conduta da equipe assistente."
+"X) Sugere-se correlação clínica e seguimento conforme conduta da equipe assistente." — só quando o médico ditar, na redação dele.
 
 ═══════════════════════════════════════════════════
 ATENÇÃO TÉCNICA — TIPOS COMUNS

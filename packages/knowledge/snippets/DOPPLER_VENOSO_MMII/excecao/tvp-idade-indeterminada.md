@@ -56,5 +56,5 @@ NÃO INVENTAR
 
 - Não rotular como aguda nem como crônica sem critérios positivos.
 - Não estimar dias/semanas de evolução.
-- Não prescrever conduta — apenas correlação clínica.
+- Não prescrever conduta; correlação clínica só quando o médico ditar, na redação dele.
 - Honestidade descritiva é parte do Article IV (No Invention): "indeterminada" é uma classificação legítima quando os critérios faltam.
