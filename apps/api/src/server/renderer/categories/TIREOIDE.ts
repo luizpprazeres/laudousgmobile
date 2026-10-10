@@ -286,7 +286,7 @@ GLÂNDULA
 - volume_glandular: "aumentado" (bócio/aumentada), "reduzido" (atrófica/reduzida); senão null. Nunca pelas medidas.
 - tireoidite_tipo: só se o médico NOMEAR — Hashimoto/autoimune → hashimoto; linfocítica → linfocitica;
   granulomatosa/De Quervain/subaguda → granulomatosa; Riedel/fibrosante → riedel. Padrão descrito sem nome = null.
-- lobo_direito, lobo_esquerdo, istmo: medidas_cm (3 medidas em cm) e volume_ml como ditados (nunca calcule; o código soma lobos + istmo no volume total);
+- lobo_direito, lobo_esquerdo, istmo: medidas_cm (3 medidas em cm) e volume_ml como ditados, null se não ditado (nunca calcule, nem com "calcule o volume" — o código calcula e soma o VT);
   ecotextura_alterada = cláusula verbatim de alteração DIFUSA ("difusamente heterogênea…"), null se normal;
   nodulos = [] se não houver imagem.
 - Estrutura medida sem nome depois dos dois lobos ("e medindo 2,4 x 0,2 x 2,4") = istmo.
@@ -896,10 +896,10 @@ export function eixosDoNodulo(): EixoDoNodulo[] {
 export function renderTireoide(
   f: TireoideFindings,
   prefsInput?: Partial<TireoidePreferences> | null,
-  opts?: { objetivo?: boolean; omitPicoNull?: boolean },
+  opts?: { objetivo?: boolean; omitPicoNull?: boolean; rawInput?: string },
 ): string {
   const omitPicoNull = opts?.omitPicoNull ?? false;
-  const g = comLocalizacaoPreposicionada(f);
+  const g = comVolumeCalculadoSePedido(comLocalizacaoPreposicionada(f), opts?.rawInput);
   if (opts?.objetivo) return renderTireoideObjetivo(g, prefsInput, omitPicoNull);
   return renderTireoideClassico(g, prefsInput, omitPicoNull);
 }
@@ -918,6 +918,42 @@ function comLocalizacaoPreposicionada(f: TireoideFindings): TireoideFindings {
         : n,
     ),
   });
+  return { ...f, lobo_direito: fix(f.lobo_direito), lobo_esquerdo: fix(f.lobo_esquerdo), istmo: fix(f.istmo) };
+}
+
+/**
+ * "Calcule o volume" ditado (decisão do Luiz, 10/10/2026, rodada 2). O pedido é lido do DITADO,
+ * não do extrator: sem ele, nada é calculado — um falso positivo do modelo não pode inventar volume.
+ * "Não calcule" / "sem calcular" não contam.
+ */
+const PEDIDO_CALCULO_VOLUME =
+  /(?<!\bn[ãa]o\s)(?<!\bsem\s)\bcalcul(?:e|em|a|ar|ando)\s+(?:(?:o|os|a)\s+)?volumes?\b|\bvolumes?\s+calculados?\b|\bc[áa]lculo\s+d[oe]s?\s+volumes?\b/i;
+
+export function pedeCalculoDeVolume(rawInput: string | undefined | null): boolean {
+  return !!rawInput && PEDIDO_CALCULO_VOLUME.test(rawInput);
+}
+
+/** O volume aparece escrito no ditado ("3,6", "3.6", "3")? Senão, não foi ditado. */
+function volumeEstaNoDitado(v: number, rawInput: string): boolean {
+  const formas = new Set([String(v), String(v).replace(".", ","), v.toFixed(1), v.toFixed(1).replace(".", ",")]);
+  return [...formas].some((x) => new RegExp(`(?<![\\d.,])${x.replace(".", "\\.")}(?![\\d])`).test(rawInput));
+}
+
+/**
+ * Com o pedido, lobo ou istmo com os 3 eixos e sem volume ditado recebe o volume do elipsoide
+ * (C x L x AP x 0,52, cm³ = ml, uma casa decimal), que então entra no VT. Volume ditado nunca é
+ * trocado; o que não aparece no ditado (o modelo calculou por conta própria) é recalculado aqui,
+ * para a conta ser sempre a mesma.
+ */
+function comVolumeCalculadoSePedido(f: TireoideFindings, rawInput: string | undefined): TireoideFindings {
+  if (!rawInput || !pedeCalculoDeVolume(rawInput)) return f;
+  const fix = (l: TireoideLobo): TireoideLobo => {
+    if (l.volume_ml !== null && volumeEstaNoDitado(l.volume_ml, rawInput)) return l;
+    const m = l.medidas_cm;
+    if (!m || m.length !== 3 || !m.every((x) => Number.isFinite(x) && x > 0)) return { ...l, volume_ml: null };
+    const [c, w, ap] = m as [number, number, number];
+    return { ...l, volume_ml: Math.round(c * w * ap * 0.52 * 10) / 10 };
+  };
   return { ...f, lobo_direito: fix(f.lobo_direito), lobo_esquerdo: fix(f.lobo_esquerdo), istmo: fix(f.istmo) };
 }
 
@@ -1149,7 +1185,8 @@ function renderTireoideClassico(
 /**
  * VT = soma dos volumes (lobos + istmo) — determinístico. null se faltar.
  * Exceção aprovada pelo Luiz (10/10/2026) à regra "só calcule volume se o médico pedir": o VT da
- * tireoide é sempre somado, com o istmo. Volume não ditado continua null (____), nunca estimado.
+ * tireoide é sempre somado, com o istmo. Volume não ditado continua null (____), salvo "calcule o
+ * volume" ditado (`comVolumeCalculadoSePedido`).
  */
 function volumeTotal(f: TireoideFindings): number | null {
   const vols = [f.lobo_direito.volume_ml, f.lobo_esquerdo.volume_ml, f.istmo.volume_ml];

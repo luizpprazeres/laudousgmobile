@@ -751,7 +751,9 @@ async function main() {
     while (idx < cases.length) {
       const r = cases[idx++];
       const id8 = r.id.slice(0, 8);
-      const rawInput = r.consolidated_transcript ?? r.raw_input ?? "";
+      // BENCH_DITADO_SUFIXO: texto acrescentado ao fim de todo ditado (ex.: ", calcule o volume.") para
+      // medir um comando do médico em laudos reais. Só bancada; nunca altera o banco.
+      const rawInput = (r.consolidated_transcript ?? r.raw_input ?? "") + (process.env.BENCH_DITADO_SUFIXO ?? "");
       // Caminho da produção pela auditoria: renderer (extração + renderer), writer_guarded
       // (writer dedicado MSK/PELVE/PARTES_MOLES dentro do renderer), passthrough (MSK colado
       // pronto), hard (gpt-5.4, writer puro) ou writer (writer genérico com bundle).
