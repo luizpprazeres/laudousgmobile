@@ -73,25 +73,26 @@ const REVIEW_RE =
 
 /**
  * Frase com metatexto: se COMEÇA falando do ditado/extração, sai inteira; se
- * começa com conteúdo clínico, fica a parte clínica até o primeiro trecho de
- * metatexto ("Mioma subseroso de 2,3 cm, segunda medida ilegível." → "Mioma
- * subseroso de 2,3 cm."). Dado clínico nunca some em silêncio (A13): a frase
+ * começa com conteúdo clínico, sai SÓ o trecho de metatexto e fica todo o resto
+ * compreensível, antes e depois dele ("Imagem de 2 cm, segunda medida ilegível,
+ * com margens irregulares e sem fluxo." → "Imagem de 2 cm, com margens
+ * irregulares e sem fluxo."). Dado clínico nunca some em silêncio (A13): a frase
  * original vai ao card de pendências.
  */
 function cleanSentence(sentence: string): string {
   if (!META_SENTENCE_RE.test(sentence)) return sentence;
   const end = /[.!?]\s*$/.test(sentence) ? "." : "";
   const body = sentence.replace(/[.!?]\s*$/, "");
-  const segments = body.split(/;\s+|\s+[—–]\s+|,\s+/);
-  const kept: string[] = [];
-  for (const seg of segments) {
-    if (META_SENTENCE_RE.test(seg)) break;
-    kept.push(seg);
+  // Segmentos e separadores alternados: [seg, sep, seg, sep, seg…].
+  const parts = body.split(/(;\s+|\s+[—–]\s+|,\s+)/);
+  if (META_SENTENCE_RE.test(parts[0] ?? "")) return "";
+  let out = parts[0]!;
+  for (let i = 2; i < parts.length; i += 2) {
+    const seg = parts[i]!;
+    if (!seg.trim() || META_SENTENCE_RE.test(seg)) continue;
+    out += `${parts[i - 1]}${seg}`;
   }
-  if (kept.length === 0) return "";
-  // Recompõe com o separador original entre os segmentos mantidos.
-  const prefix = body.slice(0, body.indexOf(kept[kept.length - 1]!) + kept[kept.length - 1]!.length);
-  return `${prefix.trim()}${end}`;
+  return `${out.trim()}${end}`;
 }
 
 function cleanSentences(text: string): string {

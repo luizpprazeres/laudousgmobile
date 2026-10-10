@@ -131,6 +131,24 @@ check("A13: dado clínico parcialmente ilegível fica no laudo; a incerteza vai 
   assert.deepEqual(soMarca.value, { achados_adicionais: null });
   assert.equal(soMarca.warnings.length, 1);
 });
+check("A13 (rodada 2): só o trecho ilegível sai; o que vem depois e é compreensível fica", () => {
+  const schema = { type: "object", properties: { achados_adicionais: { type: ["string", "null"] } } };
+  const r = cleanExtractionMetatext(
+    { achados_adicionais: "Imagem de 2 cm, segunda medida ilegível, com margens irregulares e sem fluxo." },
+    schema,
+  );
+  assert.deepEqual(r.value, { achados_adicionais: "Imagem de 2 cm, com margens irregulares e sem fluxo." });
+  assert.equal(r.warnings.length, 1, "a incerteza vai ao card");
+  assert.equal(
+    strip("Nódulo sólido de 1,1 cm; margens ilegíveis no ditado; sem calcificações — confirmar com o médico."),
+    "Nódulo sólido de 1,1 cm; sem calcificações.",
+  );
+  assert.equal(
+    strip("Cisto simples no rim direito, de 3,2 cm, terço médio, com reforço acústico posterior."),
+    "Cisto simples no rim direito, de 3,2 cm, terço médio, com reforço acústico posterior.",
+    "frase sem metatexto é intocada",
+  );
+});
 check("A13: frase que começa falando do ditado continua saindo inteira (mas vai ao card)", () => {
   assert.equal(strip("Ditado com trechos incompreensíveis na descrição do endométrio."), "");
   const schema = { type: "object", properties: { obs: { type: ["string", "null"] } } };
