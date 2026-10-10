@@ -543,3 +543,27 @@ Sem os 10 casos expostos ao MK-1 (n = 61): produção 8,36 · Haiku 5,89 → 6,1
 - **Recomendação:** manter o prompt novo com o Sonnet no writer dedicado do MSK. Próximo passo: a conclusão (completar
   os itens e o lado de cada achado) e decidir com o Luiz se "sem evidência de rotura" deve ser sempre usada no tendão
   alterado ou só quando ele ditar.
+
+## W10b — Prompt enxuto do writer: abdome total, vias urinárias e regras globais (10/10/2026)
+
+Relatório completo: `docs/stories/haiku-migration/W10b-relatorio.md`. Branch `fix/abdome-vias-prompt`; GLOBAL-FINAL `356e0224`.
+
+**Medido antes** (`placar-writer.ts`, Haiku, laudos finais de 90 dias): o system do writer do abdome tinha 39,6 mil caracteres,
+dos quais 23,9 mil eram global + proibições + CoT, a maior parte obstétrica (protocolo de líquido amniótico, biometria,
+placenta, DUM, MCDA) — o mesmo bloco ia para vias, mama, parede… O abdome do Haiku já cobria bem as frases do modelo
+(0,6% omitidas), mas numerava a conclusão normal ("1." do modelo da biblioteca) e transformava "antes da conclusão
+acrescente" em item. Nas vias, 38,6% das frases do final faltavam: a biblioteca manda fechar com "Demais estruturas…" (0/13
+nos finais) e o médico faz a conclusão por estrutura (rins / ureteres / bexiga / resíduo).
+
+**O que mudou:** fora da família obstétrica (que segue byte a byte), `GLOBAL_RULES_LEAN` + reforço só da categoria (FIGO na
+pelve, tendões no MSK, mamas na mama, tireoide na tireoide) + conferência curta; contrato do abdome reescrito a partir dos
+finais; contrato novo das vias. System: abdome 39,6 → 20,4 mil car. (−49%), vias 35,7 → 19,7 mil, parede 32,7 → 14,5 mil,
+mama 36,1 → 18,4 mil. Duas regressões do prompt enxuto foram pegas pelo placar e corrigidas antes do juiz: laudo colado de
+outro exame forçado para o modelo da categoria, e paráfrase do laudo colado (regra nova: laudo pronto sai literal).
+
+**Resultado (juiz Opus cego, 66 laudos):** produção 5,67 (31 graves) · Haiku prompt de hoje 7,14 (5) · **Haiku prompt novo
+7,83 (2)** — abdome 7,19 → 7,93, vias 6,27 → 6,81, parede 7,77 → 8,43. Com a limpeza proposta da biblioteca (só bancada),
+abdome 8,04 e vias 7,19.
+
+**Pendente com o Luiz:** SQL da biblioteca (`W10b-biblioteca-proposta.sql`, não aplicado: arquiva 7 blocos, reescreve 5 —
+inclui tirar a recomendação clínica automática das vias); "em 06 fotos" nos laudos colados de parede/inguinal.
