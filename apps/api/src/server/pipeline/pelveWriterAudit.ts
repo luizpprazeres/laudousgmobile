@@ -3,7 +3,7 @@
  * Compara o DITADO com o LAUDO e sinaliza FATOS objetivos que faltam/sobram. Não julga
  * prosa. Falha → anexa "[REVISAR: …]" ao fim (não re-roda — mantém o TTFT).
  */
-import { figoNormalizada, figosDaLocalizacao, localizacaoDaFigo, type FigoFamilia } from "@laudousg/schemes";
+import { figoNormalizada, figosDaLocalizacao, figoVizinha, localizacaoDaFigo, type FigoFamilia } from "@laudousg/schemes";
 import { extractMeasureNumbers, numberInLaudo } from "./mskWriterAudit";
 
 export type PelveAudit = {
@@ -94,7 +94,8 @@ function figoTipoConflitos(laudo: string): string[] {
       const loc = locs[locs.length - 1]?.[0];
       if (!figo || !loc) continue;
       const possiveis = figosDaFrase(loc);
-      if (!possiveis.length || possiveis.includes(figo)) continue;
+      // Vizinha (4↔5, 5↔6, 1↔2…) não é conflito (decisão do Luiz, 10/10).
+      if (!possiveis.length || figoVizinha(possiveis, figo)) continue;
       // Híbrida 2-5 descrita pela parte submucosa ou subserosa não é conflito.
       if (figo === "2-5" && possiveis.some((p) => FAMILIAS_DA_FIGO(p).some((f) => f === "submucoso" || f === "subseroso"))) continue;
       out.push(`${loc.trim()} × FIGO ${figo}`);

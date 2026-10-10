@@ -11,7 +11,9 @@
  * - só a categoria → a localização sai da tabela;
  * - só a localização → a categoria sai da tabela quando a localização é unívoca ("intramural" = 4);
  *   família genérica ("subseroso", "submucoso") só restringe as categorias possíveis;
- * - as duas → conferidas; incompatíveis não são corrigidas em silêncio (quem decide é o médico);
+ * - as duas → conferidas; vizinhas (categoria adjacente à da localização: 4↔5, 5↔6, 1↔2, "submucoso" + 3…)
+ *   ficam como informadas, sem aviso (decisão do Luiz, 10/10: são combinações dos laudos finais dele);
+ *   incompatíveis de verdade (ex.: submucoso + 6) não são corrigidas em silêncio (quem decide é o médico);
  * - nenhuma → nada é inferido.
  */
 
@@ -86,6 +88,18 @@ export function figosDaLocalizacao(localizacao: string | null | undefined): stri
   return [];
 }
 
+/**
+ * A categoria informada é vizinha das que a localização admite? Vizinha = mesma categoria ou adjacente
+ * na escala 0–7 (fronteira entre famílias: 2↔3, 4↔5…). A 8 e a híbrida 2-5 não têm vizinhas além de si
+ * (a 2-5 descrita pela parte submucosa ou subserosa é tratada à parte por quem chama).
+ */
+export function figoVizinha(possiveis: readonly string[], figo: string): boolean {
+  if (possiveis.includes(figo)) return true;
+  const n = /^[0-7]$/.test(figo) ? Number(figo) : null;
+  if (n === null) return false;
+  return possiveis.some((p) => /^[0-7]$/.test(p) && Math.abs(Number(p) - n) === 1);
+}
+
 export type MiomaClassificado = {
   /** Texto após "nódulo miomatoso" (vazio se nada informado). */
   texto: string;
@@ -104,7 +118,8 @@ export function classificarMioma(localizacao: string | null | undefined, figo: s
   if (daFigo) {
     if (!loc) return { texto: daFigo.texto, plural: daFigo.plural, figo: daFigo.figo, conflito: false };
     if (possiveis.length && !possiveis.includes(daFigo.figo)) {
-      return { texto: loc, plural: loc, figo: daFigo.figo, conflito: true };
+      // Vizinha: as duas como informadas, sem aviso; incompatível: como informadas, com aviso.
+      return { texto: loc, plural: pluralLivre(loc), figo: daFigo.figo, conflito: !figoVizinha(possiveis, daFigo.figo) };
     }
     // Compatível: a localização da tabela é a mais completa (ex.: "subseroso" + 6 → "…com menos de 50% intramural").
     return { texto: daFigo.texto, plural: daFigo.plural, figo: daFigo.figo, conflito: false };
@@ -118,6 +133,8 @@ export function classificarMioma(localizacao: string | null | undefined, figo: s
 
 function pluralLivre(loc: string): string {
   const s = sem(loc);
+  const exata = FIGO_LOCALIZACOES.find((l) => sem(l.texto) === s);
+  if (exata) return exata.plural;
   if (s === "submucoso") return "submucosos";
   if (s === "subseroso") return "subserosos";
   return loc;

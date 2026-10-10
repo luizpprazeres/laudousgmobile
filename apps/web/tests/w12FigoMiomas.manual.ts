@@ -82,4 +82,9 @@ test('localização e FIGO incompatíveis bloqueiam o laudo, sem correção', ()
   assert.equal(miomaDe(r).classificacao, 'submucoso')
 })
 
+test('localização e FIGO vizinhas (decisão do Luiz, 10/10) não bloqueiam', () => {
+  const r = adaptarPelve(estadoCom({ classificacao: 'intramural', figo: '5' }), {})
+  assert.equal(r.pendencias.filter((x) => x.onde === 'miomas').length, 0)
+})
+
 console.log(`w12FigoMiomas: ${cases} casos ok`)
