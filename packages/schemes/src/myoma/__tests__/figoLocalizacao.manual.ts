@@ -4,6 +4,7 @@ import {
   FIGO_LOCALIZACOES,
   classificarMioma,
   figoNormalizada,
+  figoVizinha,
   figosDaLocalizacao,
   localizacaoDaFigo,
 } from "../index";
@@ -45,7 +46,15 @@ assert.deepEqual(classificarMioma("intramural", ""), { texto: "intramural", plur
 assert.equal(classificarMioma("subseroso", "").figo, null, "família genérica sem categoria: nada inferido");
 assert.equal(classificarMioma("subseroso", "").texto, "subseroso");
 assert.deepEqual(classificarMioma("subseroso", "6"), { texto: "subseroso com menos de 50% intramural", plural: "subserosos com menos de 50% intramural", figo: "6", conflito: false }, "as duas compatíveis: a tabela completa");
-assert.deepEqual(classificarMioma("submucoso", "3"), { texto: "submucoso", plural: "submucoso", figo: "3", conflito: true }, "incompatíveis: preservadas e marcadas");
+assert.deepEqual(classificarMioma("submucoso", "6"), { texto: "submucoso", plural: "submucosos", figo: "6", conflito: true }, "incompatíveis: preservadas e marcadas");
+// Decisão do Luiz (10/10): vizinhas (4↔5, 5↔6, 2↔3…) ficam como informadas, sem marca.
+assert.deepEqual(classificarMioma("submucoso", "3"), { texto: "submucoso", plural: "submucosos", figo: "3", conflito: false }, "vizinha 2↔3");
+assert.deepEqual(classificarMioma("intramural", "5"), { texto: "intramural", plural: "intramurais", figo: "5", conflito: false }, "vizinha 4↔5");
+assert.deepEqual(classificarMioma("subseroso com menos de 50% intramural", "5"), { texto: "subseroso com menos de 50% intramural", plural: "subserosos com menos de 50% intramural", figo: "5", conflito: false }, "vizinha 5↔6");
+assert.deepEqual(classificarMioma("intramural", "7"), { texto: "intramural", plural: "intramurais", figo: "7", conflito: true }, "4 × 7 não é vizinha");
+assert.equal(figoVizinha(["4"], "8"), false);
+assert.equal(figoVizinha(["8"], "7"), false);
+assert.equal(figoVizinha(["0", "1", "2"], "3"), true);
 assert.deepEqual(classificarMioma("", ""), { texto: "", plural: "", figo: null, conflito: false }, "nenhuma: nada");
 assert.equal(localizacaoDaFigo("2-5")!.familia, "hibrido");
 

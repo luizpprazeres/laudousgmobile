@@ -109,6 +109,14 @@ const CENARIOS: Cenario[] = [
     ],
   },
   {
+    id: "F6", achado: "FIGO2", categoria: "pelve",
+    ditado: "Pelve transvaginal. Útero em anteversão medindo 9,0 por 5,0 por 6,0, volume de 141,0. Endométrio 0,8. Mioma intramural, categoria FIGO 5, medindo 2,1 por 1,9 por 2,0 na parede posterior. Ovários normais, direito 4,7 e esquerdo 5,3.",
+    checks: [
+      ["vizinha preservada como ditada", (t) => /nódulo miomatoso intramural \(categoria FIGO 5\)/.test(conclusao(t))],
+      ["vizinha sem [REVISAR]", (t) => !/\[REVISAR/.test(t)],
+    ],
+  },
+  {
     id: "M1", achado: "A09", categoria: "msk",
     ditado: "Ultrassonografia do joelho direito. Ligamento colateral medial espessado, com redução da ecogenicidade. Restante normal.",
     checks: [

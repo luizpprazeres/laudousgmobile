@@ -68,7 +68,9 @@ check("eixos e volumes opcionais ([ ] = só se ditado)", /\[ \] = só se ditado/
 // W12: localização ↔ FIGO pela tabela única (@laudousg/schemes), nos dois sentidos; nada ditado → nada.
 check("W12: tabela FIGO no prompt, da fonte única", p.includes(tabelaFigoParaPrompt()) && /5 = subseroso com mais de 50% intramural/.test(p));
 check("W12: só a FIGO → localização; localização unívoca → FIGO; genérica → sem FIGO", /Só a FIGO ditada → a localização dela; só a localização, se for uma da tabela → a FIGO dela/.test(p) && /"subseroso" ou "submucoso" sem detalhe → sem FIGO/.test(p));
-check("W12: incompatíveis → como ditadas + [REVISAR]", /as duas incompatíveis → como ditadas \+ \[REVISAR: localização e FIGO não conferem\]/.test(p));
+check("W12: incompatíveis → como ditadas + [REVISAR]", /incompatíveis \(ex\.: submucoso \+ FIGO 6\) \+ \[REVISAR: localização e FIGO não conferem\]/.test(p));
+// Decisão do Luiz (10/10): vizinhas (4↔5, 5↔6…) ficam como ditadas, sem aviso.
+check("FIGO2: vizinhas como ditadas, sem aviso", /as duas ditadas → como ditadas: vizinhas \(FIGO adjacente à da localização, ex\.: "intramural \(categoria FIGO 5\)"\) sem aviso/.test(p));
 check("W12: nada ditado → nenhuma das duas", /nada ditado → nenhuma das duas/.test(p));
 check("W12: vários miomas num item só (plural/ordinais)", /Vários miomas, um item só/.test(p) && /o primeiro \{localização\} \(categoria FIGO \{N\}\) e o segundo/.test(p));
 check("W12: corpo de 2–3 numa linha e inúmeros", /Dois ou três, numa linha/.test(p) && /as maiores assim descritas/.test(p) && /impede a avaliação individualizada/.test(p));

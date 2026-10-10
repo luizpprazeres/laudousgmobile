@@ -181,9 +181,17 @@ function check(name: string, cond: boolean, detail?: string) {
   const b = auditPelveFacts("Mioma FIGO 4 na parede anterior.", "nódulo miomatoso intramural (categoria FIGO 4).");
   check("R2/A03: tipo derivado da FIGO pela tabela (W12) não acusa", b.ok, JSON.stringify(b));
   const b2 = auditPelveFacts("Mioma FIGO 4 na parede anterior.", "nódulo miomatoso subseroso (categoria FIGO 4).");
-  check("R2/A03: tipo que não é o da FIGO ditada acusa", b2.tipoMiomaInventado.includes("subseroso") && b2.figoTipoIncompativel.length === 1, JSON.stringify(b2));
+  // Subseroso × FIGO 4 é vizinha (não conflita), mas o tipo não ditado continua acusado.
+  check("R2/A03: tipo que não é o da FIGO ditada acusa", b2.tipoMiomaInventado.includes("subseroso") && b2.figoTipoIncompativel.length === 0, JSON.stringify(b2));
+  // Decisão do Luiz (10/10): vizinhas dos finais dele não são sinalizadas; incompatível de verdade, sim.
   const c = auditPelveFacts("Mioma intramural FIGO 5.", "nódulo miomatoso intramural (categoria FIGO 5).");
-  check("R2/A03: intramural + FIGO 5 sem revisão acusa", c.figoTipoIncompativel.length === 1, JSON.stringify(c));
+  check("FIGO2: intramural + FIGO 5 (vizinha) não acusa", c.ok, JSON.stringify(c));
+  const c2 = auditPelveFacts("Mioma subseroso com menos de 50% intramural, FIGO 5.", "nódulo miomatoso subseroso com menos de 50% intramural (categoria FIGO 5).");
+  check("FIGO2: subseroso <50% + FIGO 5 (vizinha) não acusa", c2.ok, JSON.stringify(c2));
+  const c3 = auditPelveFacts("Mioma submucoso FIGO 6.", "nódulo miomatoso submucoso (categoria FIGO 6).");
+  check("FIGO2: submucoso + FIGO 6 (incompatível) acusa", c3.figoTipoIncompativel.length === 1, JSON.stringify(c3));
+  const c4 = auditPelveFacts("Mioma intramural FIGO 7.", "nódulo miomatoso intramural (categoria FIGO 7).");
+  check("FIGO2: intramural + FIGO 7 (não vizinha) acusa", c4.figoTipoIncompativel.length === 1, JSON.stringify(c4));
   const d = auditPelveFacts("Mioma FIGO 4 na parede anterior.", "Miométrio apresentando imagem nodular, medindo 4 cm.\nnódulo miomatoso intramural (categoria FIGO 4).");
   check("R2/A02: número da FIGO não vale como medida", d.medidasNaoDitadas.includes("4"), JSON.stringify(d));
   const e = auditPelveFacts("Mioma intramural medindo dois centímetros.", "Imagem sólida medindo 2 cm. Nódulo miomatoso intramural (categoria FIGO 4).");
