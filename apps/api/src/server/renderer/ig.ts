@@ -576,26 +576,56 @@ export function reconciliarIgUsPrecoce<T extends IgUsPrecoceCampos>(f: T, rawInp
   return out;
 }
 
-/** Tolerância entre a IG de hoje ditada e a linha da calculadora (arredondamento de fala). */
+/** Tolerância entre IGs de hoje (arredondamento de fala; 1 dia de geração após o exame). */
 const TOLERANCIA_IG_CALCULADORA_DIAS = 3;
 
 /**
- * PACOTE3 (10/10): "hoje com X" ditado VENCE a projeção (regra `computeRHoje` 1 — o
- * médico já corrigiu). Em e1f15cab/e5dfd891 o "hoje com" ditado (30s6d, 20s2d) contradiz
- * a calculadora do app E a projeção da própria 1ª US ditada (32s6d, 26s2d — as duas
- * concordam): lapso de voz que entrava calado no laudo. A precedência é do Luiz e NÃO
- * muda aqui; o código só avisa no card de pendências quando as duas fontes divergem.
+ * IG de hoje ditada ("hoje com X") × linha da calculadora do app.
+ *
+ * PACOTE3 achou e1f15cab/e5dfd891: o "hoje com" ditado (30s6d, 20s2d) contradiz a calculadora
+ * E a projeção da própria 1ª US ditada (32s6d, 26s2d), que concordam entre si; pela regra
+ * "ditado direto vence" (computeRHoje) o lapso entrava no laudo.
+ *
+ * Decisão do Luiz (10/10/2026, DECISOES-LUIZ-2026-10-10.md): nesse caso **segue a
+ * calculadora** — normalmente é erro de fala/digitação — e o aviso no card fica.
+ * Conservador: só segue a calculadora quando a 1ª US ditada COM data, projetada até o exame
+ * (`data_exame` ditada ou a data de geração), confirma a calculadora. Sem essa confirmação o
+ * ditado continua valendo, com o aviso. Divergência ≤ 3 dias: nada muda, nenhum aviso.
  */
-export function avisoIgDitadaXCalculadora(
-  f: Pick<IgUsPrecoceCampos, "ig_referencia_hoje_semanas" | "ig_referencia_hoje_dias">,
+export function reconciliarIgDitadaXCalculadora<T extends IgUsPrecoceCampos & { data_exame: string | null }>(
+  f: T,
   rawInput: string,
-): string | null {
-  if (f.ig_referencia_hoje_semanas === null) return null;
+  dataGeracao: string = dataGeracaoSaoPaulo(),
+): { findings: T; aviso: string | null } {
+  if (f.ig_referencia_hoje_semanas === null) return { findings: f, aviso: null };
   const calc = parseIgUsPrecoceCalculadora(rawInput);
-  if (!calc) return null;
-  const ditada = igDias(f.ig_referencia_hoje_semanas, f.ig_referencia_hoje_dias ?? 0);
-  if (Math.abs(ditada - igDias(calc.semanas, calc.dias)) <= TOLERANCIA_IG_CALCULADORA_DIAS) return null;
-  return `IG de hoje ditada (${formatIgSemanasDias(f.ig_referencia_hoje_semanas, f.ig_referencia_hoje_dias ?? 0)}) ` +
-    `diverge da calculadora do app (IG pela ultrassonografia precoce: ${formatIgSemanasDias(calc.semanas, calc.dias)}); ` +
-    "o laudo usa a ditada — confira.";
+  if (!calc) return { findings: f, aviso: null };
+  const ditadaDias = igDias(f.ig_referencia_hoje_semanas, f.ig_referencia_hoje_dias ?? 0);
+  const calcDias = igDias(calc.semanas, calc.dias);
+  if (Math.abs(ditadaDias - calcDias) <= TOLERANCIA_IG_CALCULADORA_DIAS) return { findings: f, aviso: null };
+
+  const ditada = formatIgSemanasDias(f.ig_referencia_hoje_semanas, f.ig_referencia_hoje_dias ?? 0);
+  const calcTxt = formatIgSemanasDias(calc.semanas, calc.dias);
+  const projecao = f.primeira_us_data !== null && f.primeira_us_ig_semanas !== null
+    ? computeRHoje({
+        fonte: "usg_precoce",
+        data: f.primeira_us_data,
+        igNaDataSemanas: f.primeira_us_ig_semanas,
+        igNaDataDias: f.primeira_us_ig_dias ?? 0,
+        rHojeSemanas: null,
+        rHojeDias: null,
+      }, f.data_exame ?? dataGeracao)
+    : null;
+  if (projecao && Math.abs(igDias(projecao.semanas, projecao.dias) - calcDias) <= TOLERANCIA_IG_CALCULADORA_DIAS) {
+    return {
+      findings: { ...f, ig_referencia_hoje_semanas: calc.semanas, ig_referencia_hoje_dias: calc.dias },
+      aviso: `IG de hoje ditada (${ditada}) diverge da 1ª ultrassonografia ditada e da calculadora do app ` +
+        `(IG pela ultrassonografia precoce: ${calcTxt}), que concordam; o laudo segue a calculadora — confira.`,
+    };
+  }
+  return {
+    findings: f,
+    aviso: `IG de hoje ditada (${ditada}) diverge da calculadora do app (IG pela ultrassonografia precoce: ${calcTxt}); ` +
+      "o laudo usa a ditada — confira.",
+  };
 }

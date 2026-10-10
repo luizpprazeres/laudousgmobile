@@ -8,7 +8,7 @@ import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
 import { llmParsed, writerTarget } from "../ai/llm";
 import { stripExtractionMetatext } from "../renderer/extractionMetatext";
-import { avisoIgDitadaXCalculadora, reconciliarIgUsPrecoce } from "../renderer/ig";
+import { reconciliarIgDitadaXCalculadora, reconciliarIgUsPrecoce } from "../renderer/ig";
 import {
   runRendererExtraction,
   type RendererExtractionResult,
@@ -586,8 +586,11 @@ export async function* runRendererStream(args: {
         // VENCEM a extração LLM (mesmo padrão do mergeStructuredIg do Doppler).
         // IG de hoje da calculadora ("IG pela ultrassonografia precoce: 23s3d") que a
         // extração pôs em primeira_us_ig sem data volta a ser a referência (PACOTE2).
-        const obstIg = reconciliarIgUsPrecoce(fnd as ObstetricaFindings, args.rawInput);
-        avisarIgDitadaXCalculadora(obstIg, args.rawInput, args.onReviewNotes);
+        const obstIg = igDitadaXCalculadora(
+          reconciliarIgUsPrecoce(fnd as ObstetricaFindings, args.rawInput),
+          args.rawInput,
+          args.onReviewNotes,
+        );
         const ofnd =
           env().OBST_BIOMETRIA_DET === "true"
             ? reconcileBiometriaUnidade(
@@ -790,8 +793,11 @@ export async function* runRendererStream(args: {
         break;
       }
       case "MORFOLOGICO": {
-        const mfnd = normalizarExtracaoMorfologico(fnd as MorfologicoFindings, args.rawInput);
-        avisarIgDitadaXCalculadora(mfnd, args.rawInput, args.onReviewNotes);
+        const mfnd = igDitadaXCalculadora(
+          normalizarExtracaoMorfologico(fnd as MorfologicoFindings, args.rawInput),
+          args.rawInput,
+          args.onReviewNotes,
+        );
         fullText = renderMorfologico(mfnd, null, {
           objetivo,
           igCorrection,
@@ -1125,12 +1131,16 @@ export async function* runRendererStream(args: {
   };
 }
 
-/** PACOTE3: IG de hoje ditada × calculadora → card de pendências (o texto do laudo não muda). */
-function avisarIgDitadaXCalculadora(
-  f: { ig_referencia_hoje_semanas: number | null; ig_referencia_hoje_dias: number | null },
+/**
+ * IG de hoje ditada × calculadora (decisão do Luiz, 10/10): com a 1ª US ditada confirmando a
+ * calculadora, o laudo segue a calculadora; em qualquer divergência o aviso vai ao card.
+ */
+function igDitadaXCalculadora<T extends Parameters<typeof reconciliarIgDitadaXCalculadora>[0]>(
+  f: T,
   rawInput: string,
   onReviewNotes?: (notes: string[]) => void,
-): void {
-  const aviso = avisoIgDitadaXCalculadora(f, rawInput);
+): T {
+  const { findings, aviso } = reconciliarIgDitadaXCalculadora(f, rawInput);
   if (aviso) onReviewNotes?.([aviso]);
+  return findings;
 }

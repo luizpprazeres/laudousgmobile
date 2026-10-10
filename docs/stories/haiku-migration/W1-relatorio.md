@@ -25,6 +25,46 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## IGCALC — decisão do Luiz: "hoje com" ditado × 1ª US + calculadora → segue a calculadora (`fix/ig-calculadora-vence`)
+
+Decisão (`DECISOES-LUIZ-2026-10-10.md`, seção IG): quando o "hoje com" ditado diverge da 1ª US ditada **e** da linha da
+calculadora, que concordam, **segue a calculadora** (normalmente é erro de fala/digitação), e o aviso no card fica. Os
+casos `e1f15cab`/`e5dfd891` eram fictícios (teste do Luiz).
+
+**Implementação:** `reconciliarIgDitadaXCalculadora` (`renderer/ig.ts`) substitui o aviso do PACOTE3 e é aplicada nos
+cases OBSTETRICA (`ofnd`, renderer e catálogo) e MORFOLOGICO do pipeline. Divergência entre a IG de hoje ditada e a
+calculadora maior que 3 dias:
+- a 1ª US ditada **com data**, projetada até o exame (`data_exame` ditada ou a data de geração), confirma a calculadora
+  (≤ 3 dias) → a referência de hoje passa a ser a da calculadora. Corpo e conclusão saem com ela, e o card avisa: "IG de
+  hoje ditada (30 semanas e 6 dias) diverge da 1ª ultrassonografia ditada e da calculadora do app (… 32 semanas e 6
+  dias), que concordam; o laudo segue a calculadora — confira.";
+- sem 1ª US datada, ou com a projeção discordando da calculadora → nada muda no laudo (vale o ditado) e o card avisa
+  como no PACOTE3. Conservador por desenho: só segue a calculadora quando as duas fontes de máquina concordam;
+- divergência ≤ 3 dias → nada muda, nenhum aviso.
+
+A regra "ditado direto vence" do `computeRHoje` não mudou; a decisão age antes, nos achados.
+
+**Testes:** `renderer/__tests__/pacote3-ig-calculadora.manual.ts` (5 blocos):
+- os dois cenários do Luiz;
+- `data_exame` ditada × data de geração, e geração 1 dia depois do exame;
+- o laudo inteiro, corpo e conclusão, com 32s6d;
+- três situações sem confirmação, em que o ditado vale com aviso;
+- seis negativos sem mudança e sem aviso.
+
+Ficam verdes: obstétrica W5 116, catálogo 21600/21600, garantias 76, golden/matriz, morfológico matriz/golden, PACOTE2,
+guard 17/17, `ig` 42, `ig-renderer` 12/12, `llm` 26/26, `tsc` limpo.
+
+**Replay determinístico com dado real:** aplicando a função às 172 extrações gravadas hoje (32 casos obstétricos e
+morfológicos com a linha da calculadora), com a data real de cada caso como data de geração, como na produção:
+- `e1f15cab` → 32s6d e `e5dfd891` → 26s2d, em todas as execuções;
+- os outros **30 casos ficam sem mudança e sem aviso**.
+
+**Bancada Haiku (`BENCH_MODEL=claude-haiku-5-5`, sem juiz):** obstétrica 46 **194/849** (W5 194; PACOTE3 192); morfológico
+23 **273/627** (W5 272; PACOTE3 275); sem saída vazia; IG da calculadora obst 22/24, morfo 8/8. A bancada gera com a data
+de hoje (10/10), então a projeção da 1ª US dos casos de setembro não confirma a calculadora e a regra não dispara ali. O
+replay acima, com a data do caso, é a prova. Rodadas: `tmp-review/bench-haiku/2026-10-10T17-37-34-obstetrica+doppler_obstetrico`,
+`…T17-43-34-morfologico`.
+
 ## PACOTE3 — IG ditada × calculadora (1ª US com data) e `ig-renderer` na política W5 (`fix/ig-calculadora`)
 
 **1. `e1f15cab` / `e5dfd891`: investigação.** Não é defeito de parse. A 1ª US ditada com data, projetada até a data do
