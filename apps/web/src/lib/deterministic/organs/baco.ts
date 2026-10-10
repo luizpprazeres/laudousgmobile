@@ -84,7 +84,7 @@ function compose(state: OrganState): OrganComposition {
     conclusion.push('Cisto esplênico')
   }
   if (lesoes.includes('calcificacao')) {
-    achados.push('apresentando foco hiperecogênico com sombra acústica, compatível com calcificação (provável granuloma residual)')
+    achados.push('apresentando foco hiperecoico com sombra acústica, compatível com calcificação (provável granuloma residual)')
     conclusion.push('Calcificação esplênica (provável granuloma residual)')
   }
   if (lesoes.includes('acessorio')) {

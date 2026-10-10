@@ -101,7 +101,7 @@ function compose(state: OrganState): OrganComposition {
     if (ecotextura === 'heterogenea') {
       abertura += ', com ecotextura heterogênea nas porções visibilizadas'
     } else if (ecotextura === 'lipomatose') {
-      abertura += ', com parênquima difusamente hiperecogênico, compatível com lipomatose pancreática'
+      abertura += ', com parênquima difusamente hiperecoico, compatível com lipomatose pancreática'
       conclusion.push('Lipomatose pancreática (esteatose pancreática)')
     } else {
       abertura += ', sem alterações evidentes nas porções visibilizadas'
@@ -110,7 +110,7 @@ function compose(state: OrganState): OrganComposition {
     if (ecotextura === 'heterogenea') {
       abertura = 'Pâncreas de dimensões normais e ecotextura heterogênea'
     } else if (ecotextura === 'lipomatose') {
-      abertura = 'Pâncreas de dimensões normais, com parênquima difusamente hiperecogênico, compatível com lipomatose pancreática'
+      abertura = 'Pâncreas de dimensões normais, com parênquima difusamente hiperecoico, compatível com lipomatose pancreática'
       conclusion.push('Lipomatose pancreática (esteatose pancreática)')
     } else {
       abertura = 'Pâncreas de dimensões e ecotextura normais'

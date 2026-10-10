@@ -153,7 +153,7 @@ const bladderFields: Field[] = [
         label: 'Coágulo/hematoma',
         subFields: [
           { key: 'dimensoes', label: 'Dimensões (cm)', kind: 'text', placeholder: '2,0 x 1,0', halfWidth: true },
-          { key: 'descricao', label: 'Descrição observada', kind: 'text', placeholder: 'material ecogênico móvel' },
+          { key: 'descricao', label: 'Descrição observada', kind: 'text', placeholder: 'material hiperecoico móvel' },
           doppler,
         ],
       },

@@ -251,13 +251,13 @@ function lesaoModule(n: number): OrganModule {
       if (tipo === 'polipo') {
         const base = texto(st, p(tipo, 'base'))
         const doppler = texto(st, p(tipo, 'doppler'))
-        linhas.push(`Imagem focal ecogênica intracavitária${base === 'pediculada' ? ', pediculada' : base === 'sessil' ? ', de base séssil' : ''}, na ${parede}, medindo ${m}${doppler === 'pediculo' ? ', com pedículo vascular ao Doppler colorido' : doppler === 'sem_fluxo' ? ', sem fluxo detectável ao Doppler colorido' : ''}.`)
+        linhas.push(`Imagem focal hiperecoica intracavitária${base === 'pediculada' ? ', pediculada' : base === 'sessil' ? ', de base séssil' : ''}, na ${parede}, medindo ${m}${doppler === 'pediculo' ? ', com pedículo vascular ao Doppler colorido' : doppler === 'sem_fluxo' ? ', sem fluxo detectável ao Doppler colorido' : ''}.`)
         conclusion.push(confirmado('polipo') ? `Pólipo endometrial na ${parede}, medindo ${m}.` : `Imagem focal intracavitária na ${parede}, medindo ${m}, de natureza não definida ao método.`)
       } else {
         const componente = texto(st, p(tipo, 'componente'))
         const FIGO: Record<string, string> = { pediculado: '0', menor_50: '1', maior_50: '2' }
         const RELACAO: Record<string, string> = { pediculado: ', intracavitária e pediculada', menor_50: ', com componente intramural inferior a 50%', maior_50: ', com componente intramural igual ou superior a 50%' }
-        linhas.push(`Imagem nodular sólida hipoecogênica deformando a cavidade endometrial a partir da ${parede}${RELACAO[componente] ?? ''}, medindo ${m}.`)
+        linhas.push(`Imagem nodular sólida hipoecoica deformando a cavidade endometrial a partir da ${parede}${RELACAO[componente] ?? ''}, medindo ${m}.`)
         conclusion.push(confirmado('mioma')
           ? `Nódulo miomatoso submucoso na ${parede}, medindo ${m}${FIGO[componente] ? ` (FIGO ${FIGO[componente]})` : ''}.`
           : `Imagem nodular sólida com projeção na cavidade endometrial a partir da ${parede}, medindo ${m}.`)
@@ -270,8 +270,8 @@ function lesaoModule(n: number): OrganModule {
       const faltando = [!regiao && 'região', medida === null && 'espessura ou extensão'].filter(Boolean)
       if (faltando.length) return resultado(linhas, conclusion, [{ onde, motivo: `informe ${faltando.join(' e ')}` }])
       const mm = String(st[p(tipo, 'medida')]).trim().replace('.', ',').replace(/\s*mm$/i, '')
-      linhas.push(`Trave ecogênica atravessando a cavidade endometrial na região ${regiao}, medindo ${mm} mm.`)
-      conclusion.push(confirmado('sinequia') ? `Sinéquia uterina na região ${regiao}.` : `Trave ecogênica intracavitária na região ${regiao}.`)
+      linhas.push(`Trave hiperecoica atravessando a cavidade endometrial na região ${regiao}, medindo ${mm} mm.`)
+      conclusion.push(confirmado('sinequia') ? `Sinéquia uterina na região ${regiao}.` : `Trave hiperecoica intracavitária na região ${regiao}.`)
     }
     if (tipo === 'istmocele') {
       const prof = valorNumerico(st[p(tipo, 'profundidade_mm')])

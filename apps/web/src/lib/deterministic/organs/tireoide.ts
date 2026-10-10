@@ -123,13 +123,13 @@ export const TIREOIDITES: { value: TireoiditeTipo; label: string }[] = [
 // Frases clínicas padrão (radiologia) — ponto de partida p/ curadoria do Luiz.
 const TIREOIDITE_CORPO: Record<Exclude<TireoiditeTipo, 'nenhuma'>, string> = {
   hashimoto:
-    'O parênquima tireoidiano apresenta-se difusamente heterogêneo e hipoecogênico, com micronodulações e traves ecogênicas (septos fibrosos).',
+    'O parênquima tireoidiano apresenta-se difusamente heterogêneo e hipoecoico, com micronodulações e traves hiperecoicas (septos fibrosos).',
   linfocitica:
     'O parênquima tireoidiano apresenta heterogeneidade difusa, de grau leve a moderado.',
   granulomatosa:
-    'Observam-se áreas hipoecogênicas mal definidas e confluentes no parênquima tireoidiano, com redução da vascularização ao estudo Doppler.',
+    'Observam-se áreas hipoecoicas mal definidas e confluentes no parênquima tireoidiano, com redução da vascularização ao estudo Doppler.',
   riedel:
-    'A glândula tireoide apresenta-se difusamente hipoecogênica e de aspecto endurecido, com possível extensão fibrosa aos tecidos adjacentes.',
+    'A glândula tireoide apresenta-se difusamente hipoecoica e de aspecto endurecido, com possível extensão fibrosa aos tecidos adjacentes.',
 }
 const TIREOIDITE_CONCLUSAO: Record<Exclude<TireoiditeTipo, 'nenhuma'>, string> = {
   hashimoto:

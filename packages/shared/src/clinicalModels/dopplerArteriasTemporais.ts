@@ -135,7 +135,7 @@ export function renderDopplerArteriasTemporais(value: unknown, style: "CLASSICO_
       if (!isNormal) {
         if (b.flow === "detected") parts.push("fluxo detectável ao Doppler");
         if (b.flow === "not_detected") parts.push("fluxo não detectado ao Doppler colorido e espectral");
-        if (b.halo === "present") parts.push("halo hipoecogênico parietal");
+        if (b.halo === "present") parts.push("halo hipoecoico parietal");
         if (b.halo === "indeterminate") parts.push("pesquisa de halo parietal indeterminada");
         if (b.halo === "absent") parts.push("sem halo parietal");
       }
@@ -148,7 +148,7 @@ export function renderDopplerArteriasTemporais(value: unknown, style: "CLASSICO_
         if (parts.length) lines.push(`${capitalize(label)}: ${parts.join(", ")}.`);
       } else if (parts.length) lines.push(`${capitalize(label)}: ${parts.join(", ")}.`);
       const where = `no ${label} da ${name}`;
-      if (b.halo === "present") findings.push(`Halo hipoecogênico parietal ${where}${b.compression === "positive" ? ", com sinal de compressão positivo" : ""}.`);
+      if (b.halo === "present") findings.push(`Halo hipoecoico parietal ${where}${b.compression === "positive" ? ", com sinal de compressão positivo" : ""}.`);
       else if (b.compression === "positive") findings.push(`Sinal de compressão positivo ${where}.`);
       if (b.halo === "indeterminate") findings.push(`Pesquisa de halo parietal indeterminada ${where}.`);
       if (b.flow === "not_detected") findings.push(`Fluxo não detectado ao Doppler ${where}.`);

@@ -66,8 +66,8 @@ test('alterado: halo unilateral fica descritivo, no lado e ramo corretos, sem hi
   const state = exam()
   state.right_frontal = { ...state.right_frontal, halo: 'present', wall_mm: '0,8' }
   const out = text(state)
-  assert.match(out, /Ramo frontal: fluxo detectável ao Doppler, halo hipoecogênico parietal, espessura parietal de 0,8 mm\./)
-  assert.match(conclusion(out), /Halo hipoecogênico parietal no ramo frontal da artéria temporal superficial direita\./)
+  assert.match(out, /Ramo frontal: fluxo detectável ao Doppler, halo hipoecoico parietal, espessura parietal de 0,8 mm\./)
+  assert.match(conclusion(out), /Halo hipoecoico parietal no ramo frontal da artéria temporal superficial direita\./)
   assert.match(conclusion(out), /Sem alterações ecográficas nos segmentos avaliados da artéria temporal superficial direita \(tronco comum e ramo parietal\)/)
   assert.match(conclusion(out), /Sem alterações ecográficas nos segmentos avaliados da artéria temporal superficial esquerda\./)
   assert.doesNotMatch(out, /arterite|células gigantes|recomenda/i)
@@ -93,7 +93,7 @@ test('hipótese de arterite exige halo + segundo marcador no mesmo ramo e confir
   assert.deepEqual(codes(state), ['HYPOTHESIS_CONFIRMATION_REQUIRED'])
   state.context.hypothesis_confirmed = 'yes'
   const out = conclusion(text(state))
-  assert.match(out, /Halo hipoecogênico parietal no ramo frontal da artéria temporal superficial direita, com sinal de compressão positivo\./)
+  assert.match(out, /Halo hipoecoico parietal no ramo frontal da artéria temporal superficial direita, com sinal de compressão positivo\./)
   assert.match(out, /Achados ecográficos compatíveis com arterite de células gigantes \(ramo frontal direito\), conforme avaliação médica/)
 })
 

@@ -98,7 +98,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
     seed: {
       adenomiose: true,
       miometrio_descricao:
-        "Miométrio de ecotextura heterogênea, com estrias hiperecogênicas e cistos miometriais.",
+        "Miométrio de ecotextura heterogênea, com estrias hiperecoicas e cistos miometriais.",
     },
   },
 
@@ -107,7 +107,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
     id: "polipo_endometrial",
     nome: "Pólipo endometrial",
     kind: "alteracao",
-    descricao: "Imagem ecogênica na cavidade.",
+    descricao: "Imagem hiperecoica na cavidade.",
     grupo: "endometrio",
     /**
      * `endometrio_achado` e `endometrio_conclusao` são VERBATIM do médico — o
@@ -117,7 +117,7 @@ export const ALTERACOES_PELVE: AlteracaoSpec[] = [
      */
     seed: {
       endometrio_achado:
-        "Imagem ecogênica no interior da cavidade endometrial, de contornos regulares.",
+        "Imagem hiperecoica no interior da cavidade endometrial, de contornos regulares.",
       endometrio_conclusao: "Imagem endometrial a esclarecer, sugestiva de pólipo.",
     },
   },

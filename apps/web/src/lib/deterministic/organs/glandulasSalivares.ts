@@ -12,7 +12,7 @@
  *  - nódulo: nunca nomeia tipo histológico; caracterização (predominantemente
  *    benigno × suspeito) só com as três medidas; sem elas, pendência;
  *  - cálculo e coleção exigem medida; cálculo sem sombra acústica sai como
- *    "imagem hiperecogênica sugestiva de cálculo";
+ *    "imagem hiperecoica sugestiva de cálculo";
  *  - recomendações só as sustentadas pela base, sem conduta específica.
  *
  * Ainda não migrada para o renderer canônico: compõe localmente.
@@ -202,10 +202,10 @@ function compose(glandula: Glandula, lado: Lado, state: OrganState): OrganCompos
     const sede = str(state['achados.calculo.local']) === 'parenquima' ? `no parênquima da ${nome}` : `no ducto de ${ducto} da ${nome}`
     const dilatacao = typeof calibre === 'number' ? `, com ducto a montante de calibre máximo de ${ptBr1(calibre)} mm` : ''
     if (str(state['achados.calculo.sombra']) === 'nao') {
-      body.push(`Imagem hiperecogênica ${sede}, medindo ${t}, sem sombra acústica posterior definida.`)
+      body.push(`Imagem hiperecoica ${sede}, medindo ${t}, sem sombra acústica posterior definida.`)
       conclusion.push(typeof tamanho === 'number'
-        ? `Imagem hiperecogênica ${sede}, medindo ${t}, sem sombra acústica posterior definida, sugestiva de cálculo de pequenas dimensões. Convém, a critério clínico, complementar com sialotomografia ou sialorressonância para confirmação e melhor caracterização.`
-        : `Imagem hiperecogênica ${sede}, medida pendente.`)
+        ? `Imagem hiperecoica ${sede}, medindo ${t}, sem sombra acústica posterior definida, sugestiva de cálculo de pequenas dimensões. Convém, a critério clínico, complementar com sialotomografia ou sialorressonância para confirmação e melhor caracterização.`
+        : `Imagem hiperecoica ${sede}, medida pendente.`)
     } else {
       body.push(`Cálculo ${sede}, medindo ${t}, com sombra acústica posterior${dilatacao}.`)
       conclusion.push(typeof tamanho === 'number'

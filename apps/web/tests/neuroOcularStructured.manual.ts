@@ -70,7 +70,7 @@ test('hemorragia unilateral suprime a normalidade do lado acometido e só gradua
   let report = composeReport(transfontanela, state)
   assert.match(report.text, /Núcleo caudado direito de contornos e ecogenicidade normais\./)
   assert.doesNotMatch(report.text, /Núcleos caudados/)
-  assert.match(report.text, /conteúdo ecogênico no interior do ventrículo lateral esquerdo, sem dilatação/)
+  assert.match(report.text, /conteúdo hiperecoico no interior do ventrículo lateral esquerdo, sem dilatação/)
   assert.match(report.text, /1\. Hemorragia peri-intraventricular com extensão intraventricular, sem dilatação ventricular à esquerda\./)
   assert.doesNotMatch(report.text, /Papile/)
   assert.match(report.text, /2\. Demais estruturas avaliadas sem alterações ecográficas\./)
@@ -96,7 +96,7 @@ test('hemorragia com dilatação sem Levene fica descritiva e desativar o achado
 
   state = patch(state, 'parenquima_ventriculos', { hemorragia: 'ausente' })
   text = composeReport(transfontanela, state).text
-  assert.doesNotMatch(text, /Papile|hiperecogênica|calibre aumentado/)
+  assert.doesNotMatch(text, /Papile|hiperecoica|hiperecogênica|calibre aumentado/)
   assert.match(text, /dentro dos limites da normalidade/)
 })
 
@@ -164,7 +164,7 @@ test('hemorragia presente sem lado ou extensão bloqueia o laudo, sem texto com 
     'hemorragia.presente.lado': 'esquerdo', 'hemorragia.presente.extensao': 'matriz',
   }))
   assert.deepEqual(report.pendencias, [])
-  assert.match(report.text, /Imagem hiperecogênica no sulco caudotalâmico à esquerda\./)
+  assert.match(report.text, /Imagem hiperecoica no sulco caudotalâmico à esquerda\./)
   assert.doesNotMatch(report.text, /____/)
 })
 

@@ -87,7 +87,7 @@ function olhoModule(olho: Olho): OrganModule {
           conclusion.push(`Aspecto ecográfico sugestivo de hemorragia vítrea no ${nome}.`)
           break
         case 'dvp':
-          lines.push('Membrana ecogênica fina na câmara vítrea, livremente móvel, sem inserção no disco óptico.')
+          lines.push('Membrana hiperecoica fina na câmara vítrea, livremente móvel, sem inserção no disco óptico.')
           conclusion.push(`Descolamento vítreo posterior no ${nome}.`)
           break
         case 'nao_avaliado':
@@ -102,17 +102,17 @@ function olhoModule(olho: Olho): OrganModule {
         const insercao = sub(st, 'retina', 'descolamento', 'insercao')
         const extensaoTxt = extensao === 'parcial' ? 'parcialmente' : extensao === 'total' ? 'totalmente' : LACUNA
         if (insercao === 'confirmada') {
-          lines.push(`Membrana ecogênica na câmara vítrea, com inserção no disco óptico, ${extensaoTxt} destacada da parede posterior.`)
+          lines.push(`Membrana hiperecoica na câmara vítrea, com inserção no disco óptico, ${extensaoTxt} destacada da parede posterior.`)
           const avaliacao = sub(st, 'retina', 'descolamento', 'avaliacao')
           const reco = avaliacao === 'urgente' ? ' Avaliação oftalmológica urgente recomendada.'
             : avaliacao === 'sim' ? ' Avaliação oftalmológica recomendada.' : ''
           conclusion.push(`Aspecto ecográfico sugestivo de descolamento de retina no ${nome}.${reco}`)
         } else if (insercao === 'nao_caracterizada') {
-          lines.push(`Membrana ecogênica na câmara vítrea, ${extensaoTxt} destacada da parede posterior, sem inserção caracterizada no disco óptico.`)
-          conclusion.push(`Membrana ecogênica na câmara vítrea do ${nome}; inserção no disco óptico não caracterizada, sem confirmação ecográfica de descolamento de retina.`)
+          lines.push(`Membrana hiperecoica na câmara vítrea, ${extensaoTxt} destacada da parede posterior, sem inserção caracterizada no disco óptico.`)
+          conclusion.push(`Membrana hiperecoica na câmara vítrea do ${nome}; inserção no disco óptico não caracterizada, sem confirmação ecográfica de descolamento de retina.`)
         } else {
-          lines.push(`Membrana ecogênica na câmara vítrea, ${extensaoTxt} destacada da parede posterior (inserção no disco óptico: ${LACUNA}).`)
-          conclusion.push(`Membrana ecogênica na câmara vítrea do ${nome} (inserção no disco óptico: ${LACUNA}).`)
+          lines.push(`Membrana hiperecoica na câmara vítrea, ${extensaoTxt} destacada da parede posterior (inserção no disco óptico: ${LACUNA}).`)
+          conclusion.push(`Membrana hiperecoica na câmara vítrea do ${nome} (inserção no disco óptico: ${LACUNA}).`)
         }
       } else if (st.retina === 'nao_avaliada') {
         naoAvaliados.push('retina')

@@ -172,7 +172,7 @@ export const ALTERACOES_MAMARIA: AlteracaoSpec[] = [
     id: "linfonodo_intramamario",
     nome: "Linfonodo intramamário",
     kind: "alteracao",
-    descricao: "Achado habitual, com hilo ecogênico preservado.",
+    descricao: "Achado habitual, com hilo hiperecoico preservado.",
     grupo: "achado_direita",
     seed: {
       achados: [
