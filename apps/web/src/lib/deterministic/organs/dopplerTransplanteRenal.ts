@@ -409,8 +409,8 @@ const intrarrenalModule: OrganModule = {
     const valorIr = media !== null ? ` (IR médio de ${ir2(media)})` : ''
     const interpretacao = str(state.interpretacao)
     if (media === null) conclusion.push('Índices de resistência intrarrenais pendentes.')
-    else if (interpretacao === 'elevados') conclusion.push(`Índices de resistência intrarrenais elevados${valorIr}, achado inespecífico, a correlacionar com dados clínicos e laboratoriais do enxerto.`)
-    else if (interpretacao === 'reduzidos') conclusion.push(`Índices de resistência intrarrenais reduzidos${valorIr}, a correlacionar com dados clínicos.`)
+    else if (interpretacao === 'elevados') conclusion.push(`Índices de resistência intrarrenais elevados${valorIr}, achado inespecífico.`)
+    else if (interpretacao === 'reduzidos') conclusion.push(`Índices de resistência intrarrenais reduzidos${valorIr}.`)
     else if (interpretacao === 'esperado') conclusion.push(`${reduzida ? 'Índices de resistência' : 'Vasos intrarrenais com perfusão homogênea e índices de resistência'} dentro do esperado${valorIr}${aval === 'limitada' ? ' (avaliação limitada)' : ''}.`)
     else conclusion.push('Índices de resistência intrarrenais: interpretação pendente.')
     return { body, conclusion, isNormal: aval === 'avaliada' && !reduzida && interpretacao === 'esperado' && media !== null }

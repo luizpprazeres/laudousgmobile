@@ -162,7 +162,7 @@ export function renderDopplerArteriasTemporais(value: unknown, style: "CLASSICO_
     bodies.push(lines.join("\n"));
   }
   if (data.arteritisHypothesis.include && data.arteritisHypothesis.physicianConfirmed) {
-    conclusions.push(`Achados ecográficos compatíveis com arterite de células gigantes (${list(hypothesisBranches)}), conforme avaliação médica; correlacionar com dados clínicos e laboratoriais.`);
+    conclusions.push(`Achados ecográficos compatíveis com arterite de células gigantes (${list(hypothesisBranches)}), conforme avaliação médica.`); // correlação clínica só se ditada (10/10)
   }
   if (data.corticosteroid.status === "yes") {
     conclusions.push(`Uso prévio de corticosteroide informado${data.corticosteroid.durationDays ? ` (${data.corticosteroid.durationDays} dias)` : ""}, o que pode reduzir a sensibilidade do método.`);

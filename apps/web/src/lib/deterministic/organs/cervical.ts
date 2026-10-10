@@ -105,7 +105,7 @@ const cervicalModule: OrganModule = {
     const body = `${partes.join(', ')}.\n${FRASE_DEMAIS_NIVEIS}`
 
     const conclusion = suspeito
-      ? [`Linfonodo de aspecto suspeito no nível ${nivel}. Correlacionar com achados clínicos.`]
+      ? [`Linfonodo de aspecto suspeito no nível ${nivel}.`]
       : [`Linfonodo proeminente de aspecto reacional no nível ${nivel}.`]
 
     return { body, conclusion, isNormal: false }
