@@ -49,7 +49,9 @@ check("few-shots: caso menopausa (praticamente sem folículos)", PELVE_FEWSHOTS.
   /menopausa/i.test(f.raw) && /praticamente sem folículos/.test(f.laudo)));
 check("few-shots: caso O-RADS/anti-líquido-livre (sem 'líquido livre' no laudo)", PELVE_FEWSHOTS.some((f) =>
   /O-RADS 2/.test(f.laudo) && !/líquido livre/i.test(f.laudo)));
-check("few-shots: caso FIGO (mioma)", PELVE_FEWSHOTS.some((f) => /categoria FIGO/.test(f.laudo)));
+// W14 (revisão W13, A03): exemplo com mioma sem FIGO no ditado não pode trazer FIGO na saída.
+check("few-shots: mioma presente", PELVE_FEWSHOTS.some((f) => /miomatos/.test(f.laudo)));
+check("few-shots: FIGO só onde o ditado traz FIGO", PELVE_FEWSHOTS.every((f) => !/FIGO/.test(f.laudo) || /figo/i.test(f.raw)));
 check("few-shots: caso pós-abortamento", PELVE_FEWSHOTS.some((f) => /produtos retidos/.test(f.laudo)));
 check("few-shots: TV puro (sem bexiga)", PELVE_FEWSHOTS.some((f) =>
   /^ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL/.test(f.laudo) && !/Bexiga/.test(f.laudo)));
@@ -57,7 +59,12 @@ check("few-shots: TV puro (sem bexiga)", PELVE_FEWSHOTS.some((f) =>
 // W10a (10/10/2026): padrão real dos laudos finais e defeitos da revisão.
 check("técnica TV sem '06 fotos'", /pela técnica transvaginal\. A documentação fotográfica foi obtida segundo protocolo/.test(p) && !/06 fotos/.test(p));
 check("ovários 'e o esquerdo {Y} cm³' (sem 'com')", /e o esquerdo \{Y\} cm³/.test(p) && !/e o esquerdo com/.test(p));
-check("medida não ditada: nunca 0,0 nem ____, usa [REVISAR]", /nunca "0,0" nem "____"/.test(p) && /\[REVISAR:/.test(p));
+// W14 (A02): dado não ditado omite a oração; [REVISAR] só para ditado ilegível/ambíguo.
+check("dado não ditado: omite a oração, sem 0,0/____/[REVISAR] por falta", /omita a oração correspondente — nunca invente, nunca "0,0", "____" ou \[REVISAR\] por falta/.test(p));
+check("[REVISAR] só para ditado ilegível ou ambíguo", /Ditado ilegível ou ambíguo: \[REVISAR: …\] no ponto/.test(p));
+check("eixos e volumes opcionais ([ ] = só se ditado)", /\[ \] = só se ditado/.test(p) && /Ovário \{direito\|esquerdo\}\[ medindo/.test(p) && /Útero de volume normal\[ \(\{V\} cm³\)\]/.test(p));
+check("tipo e FIGO só se ditados, sem inferir; incompatíveis sinalizados", /tipo e FIGO só se ditados, nunca inferidos/.test(p) && /incompatíveis: preserve os dois e sinalize/.test(p));
+check("legenda FIGO só com FIGO no laudo", /Com FIGO no laudo, após a conclusão, uma vez e sem número/.test(p));
 check("endométrio normal só com espessura ditada", /Com espessura ditada: "O endométrio tem espessura normal/.test(p));
 check("legenda FIGO uma vez e sem número", /uma vez e sem número: "FIGO: Federação/.test(p));
 check("título de contagem de folículos", /PARA CONTAGEM DE FOLÍCULOS/.test(p));

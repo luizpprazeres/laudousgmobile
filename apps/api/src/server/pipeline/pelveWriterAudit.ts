@@ -15,7 +15,33 @@ export type PelveAudit = {
   liquidoLivreInventado: boolean;
   /** Placeholder "____" no laudo (proibido). */
   placeholder: boolean;
+  /** Categoria FIGO no laudo sem o médico ter ditado FIGO (revisão W13, A03). */
+  figoInventado: boolean;
+  /** Tipo de mioma (intramural/subseroso/submucoso) no laudo sem ter sido ditado (A03). */
+  tipoMiomaInventado: string[];
+  /** Medida no laudo que não aparece no ditado (eixo ou volume preenchido pelo modelo, A02). */
+  medidasNaoDitadas: string[];
+  /** [REVISAR] por dado não ditado — a regra manda omitir a oração (A02). */
+  revisaoPorFalta: boolean;
 };
+
+const RE_TIPO_MIOMA = /\b(intramural|subseros[oa]|submucos[oa]|pediculad[oa])\b/gi;
+const RE_REVISAO_POR_FALTA = /\[REVISAR[^\]]*(?:n[ãa]o\s+(?:foi\s+)?(?:ditad|informad|mencionad)|ausente|faltando|n[ãa]o\s+consta)/i;
+
+/** Valores numéricos do ditado (qualquer número, com ou sem unidade), em cm e na escala ×10/÷10 (mm↔cm). */
+function numerosDoDitado(raw: string): Set<number> {
+  const out = new Set<number>();
+  // O ASR às vezes separa o decimal por espaço ("volume de 8 4" = 8,4): conta as duas leituras.
+  const numeros = [
+    ...[...raw.matchAll(/\d+(?:[.,]\d+)?/g)].map((m) => m[0]),
+    ...[...raw.matchAll(/\b(\d{1,3})\s+(\d)\b/g)].map((m) => `${m[1]}.${m[2]}`),
+  ];
+  for (const n of numeros) {
+    const v = parseFloat(n.replace(",", "."));
+    for (const x of [v, v / 10, v * 10]) out.add(Math.round(x * 1000) / 1000);
+  }
+  return out;
+}
 
 /** Números de VOLUME ditados sem unidade adjacente ("volume de 69,8", "volume
  *  aumentado de 189,1", "volume 54,0") — o extractMeasureNumbers (com unidade) não
@@ -76,16 +102,38 @@ export function auditPelveFacts(rawInput: string, laudo: string): PelveAudit {
 
   const placeholder = laudo.includes("____");
 
+  const figoInventado = /\bFIGO\s*\d|categoria\s+FIGO/i.test(laudo) && !/\bfigo\b/i.test(rawInput);
+  const tipoMiomaInventado = [...new Set([...laudo.matchAll(RE_TIPO_MIOMA)].map((m) => m[1]!.toLowerCase()))]
+    .filter((t) => !new RegExp(t.slice(0, 7), "i").test(rawInput));
+  const doDitado = numerosDoDitado(rawInput);
+  // Grupos "A x B x C cm" inteiros (a unidade vem só no fim) + medidas soltas com unidade.
+  const doLaudo = [
+    ...[...laudo.matchAll(/\d+(?:[.,]\d+)?(?:\s*x\s*\d+(?:[.,]\d+)?)+\s*(?:cm|mm)/gi)].flatMap((m) => m[0].match(/\d+(?:[.,]\d+)?/g) ?? []),
+    ...extractMeasureNumbers(laudo),
+  ];
+  const medidasNaoDitadas = [...new Set(doLaudo)].filter(
+    (n) => !doDitado.has(Math.round(parseFloat(n.replace(",", ".")) * 1000) / 1000),
+  );
+  const revisaoPorFalta = RE_REVISAO_POR_FALTA.test(laudo);
+
   return {
     ok:
       missingMeasures.length === 0 &&
       !menopausaSemMarca &&
       !liquidoLivreInventado &&
-      !placeholder,
+      !placeholder &&
+      !figoInventado &&
+      tipoMiomaInventado.length === 0 &&
+      medidasNaoDitadas.length === 0 &&
+      !revisaoPorFalta,
     missingMeasures,
     menopausaSemMarca,
     liquidoLivreInventado,
     placeholder,
+    figoInventado,
+    tipoMiomaInventado,
+    medidasNaoDitadas,
+    revisaoPorFalta,
   };
 }
 
@@ -97,5 +145,9 @@ export function pelveRevisarNote(a: PelveAudit): string | null {
   if (a.menopausaSemMarca) partes.push(`menopausa ditada mas ovários não marcados como "praticamente sem folículos"`);
   if (a.liquidoLivreInventado) partes.push(`"líquido livre" no laudo sem o médico ter ditado (confirmar se não é coleção ovariana)`);
   if (a.placeholder) partes.push(`placeholder "____" no laudo`);
+  if (a.figoInventado) partes.push(`categoria FIGO no laudo sem FIGO no ditado`);
+  if (a.tipoMiomaInventado.length) partes.push(`tipo de mioma não ditado: ${a.tipoMiomaInventado.join(", ")}`);
+  if (a.medidasNaoDitadas.length) partes.push(`medida(s) no laudo que não estão no ditado: ${a.medidasNaoDitadas.join(", ")}`);
+  if (a.revisaoPorFalta) partes.push(`[REVISAR] por dado não ditado (omitir a oração)`);
   return `[REVISAR: ${partes.join(" · ")}]`;
 }

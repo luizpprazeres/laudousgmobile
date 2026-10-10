@@ -1505,20 +1505,20 @@ CORPO (OS SEGUINTES ASPECTOS FORAM OBSERVADOS) — uma linha por item, nesta ord
 4. "Endométrio medindo {N} cm de espessura." (ou a descrição ditada).
 5. Cavidade, se ditado: DIU "Imagem hiperecoica linear na cavidade endometrial, …"; produtos "Imagens hiperecoicas amorfas na cavidade endometrial."; sem gestação "Ausência de saco gestacional intrauterino."
 6. "Miométrio com ecogenicidade e ecotextura normais." Mioma (uma linha cada): "Miométrio apresentando imagem hipoecoica e heterogênea, com margens regulares, medindo {…} cm, situada na {parede}[, abaulando a serosa][, com manto interno de {…} cm]."
-7. "Ovário {direito|esquerdo} medindo {L} x {AP} x {T} cm, apresentando imagens anecoicas." Menopausa: "…apresentando poucas imagens anecoicas." Não visto: "Ovário {lado} não visualizado." Achado ovariano: descreva-o após "apresentando".
+7. "Ovário {direito|esquerdo}[ medindo {L} x {AP} x {T} cm], apresentando imagens anecoicas." (frase de normalidade da casa) Menopausa: "…apresentando poucas imagens anecoicas." Não visto: "Ovário {lado} não visualizado." Achado ovariano: descreva-o após "apresentando".
 8. Outros achados ditados (ex.: Naboth "Imagens anecoicas na topografia do colo uterino.").
 
 CONCLUSÃO — "1)", "2)"…; item único sem número:
 - Com via transabdominal: "Bexiga ecograficamente normal."
-- "Útero de volume normal ({V} cm³)." (ou aumentado/reduzido; volume ditado, sem recalcular). Artérias arqueadas: "Útero de dimensões normais (volume de {V} cm³), apresentando calcificação das artérias arqueadas sem significado patológico."
+- "Útero de volume normal[ ({V} cm³)]." (ou aumentado/reduzido; volume ditado, sem recalcular). Artérias arqueadas: "Útero de dimensões normais (volume de {V} cm³), apresentando calcificação das artérias arqueadas sem significado patológico."
 - Com espessura ditada: "O endométrio tem espessura normal para a fase do ciclo menstrual." (menopausa: "…para a faixa etária da menopausa."). Se o médico ditar que não dá para correlacionar com o ciclo, a frase dele substitui esta, aqui, e o corpo fica só com a medida — ex.: "O endométrio tem espessura normal para a faixa etária. Não foi possível correlacionar com a fase do ciclo menstrual devido à amenorreia." Pós-abortamento: "Ausência de produtos retidos da concepção." ou "Pequena quantidade de produtos retidos da concepção."
-- Um item por mioma: "Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso {tipo} (categoria FIGO {N})." Com mioma, após a conclusão, uma vez e sem número: "FIGO: Federação Internacional de Ginecologia e Obstetrícia."
+- Mioma: "Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso[ {tipo}][ (categoria FIGO {N})]." — tipo e FIGO só se ditados, nunca inferidos; ditados incompatíveis: preserve os dois e sinalize [REVISAR: …]. Um item por mioma, ou um no plural se não diferem ("…duas imagens sólidas, que têm como diagnóstico mais provável nódulos miomatosos."). Com FIGO no laudo, após a conclusão, uma vez e sem número: "FIGO: Federação Internacional de Ginecologia e Obstetrícia."
 - Istmocele: "Nicho de cicatriz cesárea, tipo simples." Naboth: "Cistos de Naboth (provável sequela de cervicite)." DIU: "Dispositivo intrauterino (D.I.U.) normoposicionado."
-- "Ovários ecograficamente normais (o direito com {X} cm³ e o esquerdo {Y} cm³), ambos contendo folículos." (menopausa: "…ambos praticamente sem folículos."; um só visto: "Ovário {lado} ecograficamente normal ({V} cm³), contendo folículos."). Alterado: "Ovário {lado} de volume aumentado ({V} cm³), às custas de {achado}." O-RADS só se o médico disser.
+- "Ovários ecograficamente normais[ (o direito com {X} cm³ e o esquerdo {Y} cm³)], ambos contendo folículos." (menopausa: "…ambos praticamente sem folículos."; um só visto: "Ovário {lado} ecograficamente normal ({V} cm³), contendo folículos."). Alterado: "Ovário {lado} de volume aumentado ({V} cm³), às custas de {achado}." O-RADS só se o médico disser.
 
 REGRAS:
-1. Medidas, volumes e lados exatamente como ditados, com vírgula decimal e a unidade ditada (saco gestacional e folículos costumam vir em mm).
-2. Medida não ditada: nunca invente, nunca "0,0" nem "____" — use [REVISAR: {o que falta}] no ponto.
+1. Medidas, volumes e lados exatamente como ditados, com vírgula decimal e a unidade ditada (saco gestacional e folículos costumam vir em mm). [ ] = só se ditado.
+2. Dado não ditado (eixos, volume, tipo, FIGO): omita a oração correspondente — nunca invente, nunca "0,0", "____" ou [REVISAR] por falta. Ditado ilegível ou ambíguo: [REVISAR: …] no ponto.
 3. Estrutura não citada = normal (frase normal). Não drope nada ditado, não invente achado, não repita item.
 4. Coleção ou cisto no ovário é achado OVARIANO, nunca "líquido livre"; líquido livre só se ditado à parte.
 5. Comandos ("adicione X", "na conclusão Y", "no lugar de Z coloque W") são instruções: execute, nunca transcreva.
