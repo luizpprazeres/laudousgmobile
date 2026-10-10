@@ -33,4 +33,4 @@ No corpo (hidrocele à direita, moderada):
 Na conclusão:
 "Hidrocele à direita."
 
-Atenção: se houver septações, debris ecogênicos ou parede espessada, considerar hidrocele complicada/infectada — descrever na conclusão como "Hidrocele complexa à direita, sugerindo correlação clínica."
+Atenção: se houver septações, debris hiperecoicos ou parede espessada, considerar hidrocele complicada/infectada — descrever na conclusão como "Hidrocele complexa à direita, sugerindo correlação clínica."

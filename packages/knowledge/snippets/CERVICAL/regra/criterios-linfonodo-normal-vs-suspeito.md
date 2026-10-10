@@ -25,9 +25,9 @@ TABELA COMPARATIVA (sinais ecográficos — referência, não gates)
 |---|---|---|
 | Eixo curto (short-axis) | Tipicamente < 10 mm | Tipicamente ≥ 10 mm (referência sujeita a contexto clínico; nível II pode tolerar valores um pouco maiores) |
 | Razão S/L (eixo curto / eixo longo) | Tipicamente < 0,5 (forma oval) | Tipicamente ≥ 0,5 (forma arredondada) |
-| Hilo ecogênico | Presente | Ausente ou apagado |
+| Hilo hiperecoico | Presente | Ausente ou apagado |
 | Cortical | Fina, regular, uniforme | Espessada, assimétrica, ou hipoecoica focal |
-| Ecogenicidade | Cortical hipoecoica + hilo hiperecogênico | Difusamente hipoecoica, perda do hilo |
+| Ecogenicidade | Cortical hipoecoica + hilo hiperecoico | Difusamente hipoecoica, perda do hilo |
 | Necrose central | Ausente | Presente (área anecoica/cística central) |
 | Microcalcificações | Ausentes | Presentes (sugestivas de origem tireoidiana papilar ou metástase) |
 | Padrão vascular Doppler | Hilar central | Periférico, capsular, ou caótico/aberrante |

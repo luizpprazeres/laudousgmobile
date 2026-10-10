@@ -22,7 +22,7 @@ CRITÉRIOS PARA USAR ESTA CONCLUSÃO
 ═══════════════════════════════════════════════════
 
 Linfonodos aumentados (eixo curto > 10 mm em níveis I/III/IV/V/VI ou > 11 mm em nível II) PORÉM com TODAS as características abaixo:
-- Hilo ecogênico preservado.
+- Hilo hiperecoico preservado.
 - Forma OVAL (razão S/L < 0,5).
 - Padrão vascular hilar central.
 - Cortical uniforme, regular.
@@ -38,7 +38,7 @@ CENÁRIO 1 — Linfonodos cervicais bilaterais reacionais:
 "X) Linfonodos cervicais aumentados bilateralmente, mais evidentes nos níveis ___, porém mantendo forma habitual e vascularização normal. O diagnóstico mais provável é de linfadenopatia reacional/inflamatória, sem sinais ecográficos de suspeição."
 
 CENÁRIO 2 — Linfonodo unilateral reacional:
-"X) Linfonodo cervical acima das dimensões habituais no nível ___, à direita/à esquerda, com hilo ecogênico preservado e padrão vascular hilar. O diagnóstico mais provável é padrão reacional, devendo ser correlacionado com a história clínica."
+"X) Linfonodo cervical acima das dimensões habituais no nível ___, à direita/à esquerda, com hilo hiperecoico preservado e padrão vascular hilar. O diagnóstico mais provável é padrão reacional, devendo ser correlacionado com a história clínica."
 
 CENÁRIO 3 — Múltiplos linfonodos, alguns reacionais e outros borderline:
 "X) Múltiplos linfonodos cervicais, predominantemente com características reacionais. Recomenda-se seguimento ecográfico em 3-6 meses para acompanhamento dimensional, conforme avaliação clínica."

@@ -22,7 +22,7 @@ O ultrassom pode ser pouco sensível para pielonefrite não complicada (até 30%
 - Gás no parênquima (pielonefrite enfisematosa — urgência).
 
 Na presença de coleção líquida com debris/gás:
-"No rim direito, observa-se coleção líquida heterogênea, com debris ecogênicos, medindo 3,5 x 2,8 cm, sugestiva de abscesso renal."
+"No rim direito, observa-se coleção líquida heterogênea, com debris hiperecoicos, medindo 3,5 x 2,8 cm, sugestiva de abscesso renal."
 
 Na conclusão:
 "Sinais sugestivos de abscesso renal direito. Encaminhamento urológico em caráter de urgência."

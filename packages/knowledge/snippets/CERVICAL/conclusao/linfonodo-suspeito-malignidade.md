@@ -30,7 +30,7 @@ FRASE VERBATIM
 ═══════════════════════════════════════════════════
 
 CENÁRIO 1 — Linfonodo único suspeito:
-"X) Linfonodo com características ecográficas suspeitas no nível ___, à direita/à esquerda, caracterizado por ___ [DESCREVER OS ACHADOS PRINCIPAIS conforme presentes: perda do hilo ecogênico, forma arredondada, microcalcificações, necrose central, entre outros]."
+"X) Linfonodo com características ecográficas suspeitas no nível ___, à direita/à esquerda, caracterizado por ___ [DESCREVER OS ACHADOS PRINCIPAIS conforme presentes: perda do hilo hiperecoico, forma arredondada, microcalcificações, necrose central, entre outros]."
 
 "X) Convém, a critério clínico, complementar com exames laboratoriais com o objetivo de continuar a investigação."
 
@@ -50,7 +50,7 @@ LISTAR ACHADOS POSITIVOS (entre os critérios encontrados)
 ═══════════════════════════════════════════════════
 
 Critérios a citar conforme presentes nos achados do médico:
-- "Perda do hilo ecogênico"
+- "Perda do hilo hiperecoico"
 - "Forma arredondada (razão eixo curto/longo = ___)"
 - "Cortical hipoecoica difusa, espessada (___ mm)"
 - "Microcalcificações intra-linfonodais"

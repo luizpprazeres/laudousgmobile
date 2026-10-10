@@ -28,7 +28,7 @@ CRITÉRIOS PARA CONSIDERAR NORMAL
 ═══════════════════════════════════════════════════
 
 - Linfonodos cervicais sem aumento volumétrico relevante (eixo curto tipicamente < 10 mm em I/III-VI; valores um pouco maiores podem ser fisiológicos em nível II — referência contextual, não gate rígido), forma oval (S/L tipicamente < 0,5).
-- Hilo ecogênico preservado em todos os linfonodos visualizáveis.
+- Hilo hiperecoico preservado em todos os linfonodos visualizáveis.
 - Padrão vascular hilar central (Doppler).
 - Ausência de microcalcificações, necrose central, vascularização aberrante.
 - Ausência de massas extra-linfonodais.

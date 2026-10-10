@@ -1,0 +1,823 @@
+[
+  {
+    "id": "816bd820-090f-4890-ae15-00616017e73c",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "excecao",
+    "title": "abdomen-superior-excecao-abscesso-hepatico",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicos → hiperecoicos",
+      "ecogenico-sozinho: ecogênicos → hiperecoicos"
+    ]
+  },
+  {
+    "id": "43027170-beb7-455d-9b50-52a42fc14b87",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "excecao",
+    "title": "abdomen-superior-excecao-abscesso-hepatico",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicos → hiperecoicos",
+      "ecogenico-sozinho: ecogênicos → hiperecoicos"
+    ]
+  },
+  {
+    "id": "7a490d2a-d477-4a2a-947a-58385b78fda8",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "excecao",
+    "title": "abdomen-superior-excecao-abscesso-hepatico",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicos → hiperecoicos",
+      "ecogenico-sozinho: ecogênicos → hiperecoicos"
+    ]
+  },
+  {
+    "id": "49a29bb5-8ce8-4e18-a2e0-9756e1d3bf7f",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "OBJETIVO",
+    "kind": "excecao",
+    "title": "abdomen-superior-excecao-abscesso-hepatico",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicos → hiperecoicos",
+      "ecogenico-sozinho: ecogênicos → hiperecoicos"
+    ]
+  },
+  {
+    "id": "0f1ca0b0-e5bd-416b-9f31-4d4e6b99aa1c",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "abdomen-superior-regra-esteatose-hepatica",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "369a052d-ece9-4b33-8714-5f122472d71f",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "abdomen-superior-regra-esteatose-hepatica",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "7e129d28-0ec6-4326-9c50-684f920c06cb",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "abdomen-superior-regra-esteatose-hepatica",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "38045d2e-7d89-4cb6-8598-073f681c2cc2",
+    "cat": "ABDOMEN_SUPERIOR",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "abdomen-superior-regra-esteatose-hepatica",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "197b8dc2-0175-4148-beea-8a0ba9289b8c",
+    "cat": "CERVICAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "modelo",
+    "title": "cervical-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "b78e7737-4a2e-42b8-bf59-59c54862a9d2",
+    "cat": "CERVICAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "modelo",
+    "title": "cervical-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "15b34dfd-21e7-4ab3-bda4-37ba86962eb9",
+    "cat": "CERVICAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "modelo",
+    "title": "cervical-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "94a5d58d-ec4e-4025-bce3-1dc0dba16ee0",
+    "cat": "CERVICAL",
+    "estilo": "OBJETIVO",
+    "kind": "modelo",
+    "title": "cervical-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "c3845acc-0ec7-45ea-b5f1-637f047851ff",
+    "cat": "CERVICAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "63fff88e-ef5b-4362-908e-5b7ef10dda8e",
+    "cat": "CERVICAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "7cd9440a-74e8-497f-b30d-83618e998a90",
+    "cat": "CERVICAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "c90e6293-22d3-49a9-9405-1a6d8be66c16",
+    "cat": "CERVICAL",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "cervical-regra-criterios-linfonodo-normal-vs-suspeito",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "99790b80-7be6-4513-86e4-cf7fcf4cc83e",
+    "cat": "DOPPLER_ARTERIAL_MMII",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "modelo",
+    "title": "doppler-arterial-mmii-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "de38d57f-4542-4ce1-bb63-d1d952ac9687",
+    "cat": "DOPPLER_ARTERIAL_MMII",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "modelo",
+    "title": "doppler-arterial-mmii-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "0c99b5bc-2348-4709-ad2f-cc2b2f333a39",
+    "cat": "DOPPLER_ARTERIAL_MMII",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "modelo",
+    "title": "doppler-arterial-mmii-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "2e986417-2285-4087-9e52-1fb2cdff9f36",
+    "cat": "DOPPLER_ARTERIAL_MMII",
+    "estilo": "OBJETIVO",
+    "kind": "modelo",
+    "title": "doppler-arterial-mmii-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "71ff48a9-ac17-46d8-8445-a4be3fd253aa",
+    "cat": "DOPPLER_FISTULA_AV",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "doppler-fistula-av-regra-trombose-fistula",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "92c35549-8fcb-4120-88db-349d054f86ec",
+    "cat": "DOPPLER_FISTULA_AV",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "doppler-fistula-av-regra-trombose-fistula",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "d88cd6bd-6d43-4d3f-96bb-4eebfdc108b3",
+    "cat": "DOPPLER_FISTULA_AV",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "doppler-fistula-av-regra-trombose-fistula",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "14050ae2-a435-443c-acdc-dfb604d54a04",
+    "cat": "DOPPLER_FISTULA_AV",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "doppler-fistula-av-regra-trombose-fistula",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "7792a490-dc1f-49a3-9e18-8aeab05db2e1",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "doppler-venoso-mmii-conclusao-tvp-aguda",
+    "trocas": [
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: HIPOECOGÊNICO → HIPOECOICO",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "21a9b705-04e2-4afa-ac7e-ace787d609cd",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "doppler-venoso-mmii-conclusao-tvp-aguda",
+    "trocas": [
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: HIPOECOGÊNICO → HIPOECOICO",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "ac86936b-e34b-41d0-ad09-206cb04600f2",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "doppler-venoso-mmii-conclusao-tvp-aguda",
+    "trocas": [
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: HIPOECOGÊNICO → HIPOECOICO",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "3ad683a5-3282-49ff-85b7-a8a6693a12a0",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "doppler-venoso-mmii-conclusao-tvp-aguda",
+    "trocas": [
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: HIPOECOGÊNICO → HIPOECOICO",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "330cc77c-8a47-4b31-a241-f496f8310978",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-cronica",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "b5cca0d1-327b-4fdc-93ba-4968b3a65280",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-cronica",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "e5a7a65b-d4ae-447d-a530-b47d22ba40f3",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-cronica",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "3dcf29ef-47a2-4674-8cca-6875d3fff49a",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "OBJETIVO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-cronica",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "dcae3abd-59e7-4b29-bbde-f8379a4cf55d",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "trocas": [
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "2fe28a1c-4ffa-435f-9516-5f8055caba0d",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "trocas": [
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "d50b5afd-f8ab-4aa5-a7f8-7f44218e5b3d",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "trocas": [
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "8ff638e3-a1e4-4c17-9d5f-963a5f221c2d",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "OBJETIVO",
+    "kind": "excecao",
+    "title": "doppler-venoso-mmii-excecao-tvp-idade-indeterminada",
+    "trocas": [
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-para-ecoico: hiperecogênico → hiperecoico",
+      "ecogenico-para-ecoico: hipoecogênico → hipoecoico",
+      "ecogenico-sozinho: ecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "f1108c96-b03d-432a-a1f1-164c44836a82",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "frase",
+    "title": "doppler-venoso-mmii-frase-achados-descritivos",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "b8a1713c-de6e-4cb3-846f-bd787402faa5",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "frase",
+    "title": "doppler-venoso-mmii-frase-achados-descritivos",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "f175163b-52d3-462c-a410-a7e177a8cff2",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "frase",
+    "title": "doppler-venoso-mmii-frase-achados-descritivos",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "f3722049-7a03-4f55-b23a-395ed7201158",
+    "cat": "DOPPLER_VENOSO_MMII",
+    "estilo": "OBJETIVO",
+    "kind": "frase",
+    "title": "doppler-venoso-mmii-frase-achados-descritivos",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico",
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "a6bf0cf8-ced5-4265-b769-e0afd3699371",
+    "cat": "ESCROTAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "escrotal-regra-hidrocele",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicos → hiperecoicos"
+    ]
+  },
+  {
+    "id": "6546bd02-25ad-4913-aaf9-11da4d90cf19",
+    "cat": "ESCROTAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "escrotal-regra-hidrocele",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicos → hiperecoicos"
+    ]
+  },
+  {
+    "id": "9b4544d0-4881-4524-904a-622cb7d287ad",
+    "cat": "ESCROTAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "escrotal-regra-hidrocele",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicos → hiperecoicos"
+    ]
+  },
+  {
+    "id": "8867d54c-a5b1-478c-b0e1-316151e30211",
+    "cat": "ESCROTAL",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "escrotal-regra-hidrocele",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicos → hiperecoicos"
+    ]
+  },
+  {
+    "id": "499876fd-8c83-44bb-b71c-31b596ab6482",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-calculo-glandular",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "7da620d3-8f57-4e11-b6d2-361d80e7585b",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-calculo-glandular",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "4dc70408-3563-4d08-a208-fb60ecce14aa",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-calculo-glandular",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "c2970571-39ad-4034-b6a8-971715701a0d",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-calculo-glandular",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "43f0bce1-49b2-4c8b-9655-b8792105b934",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-exame-normal",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "9988f5d4-9bf1-4d15-bb58-5bf9a78212f9",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-exame-normal",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "0b3ff64c-68bb-4972-a110-97b9d6e419f0",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-exame-normal",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "bfe49392-27da-439d-b773-1d73439777a3",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-exame-normal",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "154b5289-57a5-4a5a-9bd8-43eca0ce233e",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-sialoadenite",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênicas → hiperecoicas"
+    ]
+  },
+  {
+    "id": "ca410a09-3942-4771-8229-ed8c7c9e45d3",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-sialoadenite",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênicas → hiperecoicas"
+    ]
+  },
+  {
+    "id": "1576f72a-c6e7-4497-84e0-899d0e3598a4",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-sialoadenite",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênicas → hiperecoicas"
+    ]
+  },
+  {
+    "id": "c893fc4b-1c20-48e6-a82d-ee7fb26a8774",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "OBJETIVO",
+    "kind": "conclusao",
+    "title": "glandulas-salivares-conclusao-sialoadenite",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênicas → hiperecoicas"
+    ]
+  },
+  {
+    "id": "3e3cb366-3319-4d8b-8bb9-4850c4990d81",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "modelo",
+    "title": "glandulas-salivares-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "3b169ce7-e9ae-4661-8eec-7036d9eff530",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "modelo",
+    "title": "glandulas-salivares-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "4ba036ae-f3ff-4e0a-a8fb-4ee2d10ffe5b",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "modelo",
+    "title": "glandulas-salivares-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "5a48a1c0-9a69-4bf7-9645-032574cfcee7",
+    "cat": "GLANDULAS_SALIVARES",
+    "estilo": "OBJETIVO",
+    "kind": "modelo",
+    "title": "glandulas-salivares-modelo-template-padrao",
+    "trocas": [
+      "ecogenico-para-ecoico: hiperecogênica → hiperecoica"
+    ]
+  },
+  {
+    "id": "f8043369-e90e-4d5e-92a3-40fd53bab3bf",
+    "cat": "MUSCULOESQUELETICO_V2",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "modelo",
+    "title": "musculoesqueletico-v2-modelo-template-padrao",
+    "trocas": [
+      "compartimento-romano: 1º → I",
+      "bolsa-para-bursa: bolsa → bursa",
+      "bolsa-para-bursa: bolsas → bursas",
+      "bolsa-para-bursa: bolsa → bursa"
+    ]
+  },
+  {
+    "id": "2f87eedf-23c1-4393-8dd0-aa0c00b4e9c9",
+    "cat": "MUSCULOESQUELETICO_V2",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "modelo",
+    "title": "musculoesqueletico-v2-modelo-template-padrao",
+    "trocas": [
+      "compartimento-romano: 1º → I",
+      "bolsa-para-bursa: bolsa → bursa",
+      "bolsa-para-bursa: bolsas → bursas",
+      "bolsa-para-bursa: bolsa → bursa"
+    ]
+  },
+  {
+    "id": "818c0b74-c16c-425b-bee8-3c31d637f7b7",
+    "cat": "MUSCULOESQUELETICO_V2",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "modelo",
+    "title": "musculoesqueletico-v2-modelo-template-padrao",
+    "trocas": [
+      "compartimento-romano: 1º → I",
+      "bolsa-para-bursa: bolsa → bursa",
+      "bolsa-para-bursa: bolsas → bursas",
+      "bolsa-para-bursa: bolsa → bursa"
+    ]
+  },
+  {
+    "id": "d5b2ef5a-c3de-4b6c-aa12-96538a262236",
+    "cat": "MUSCULOESQUELETICO_V2",
+    "estilo": "OBJETIVO",
+    "kind": "modelo",
+    "title": "musculoesqueletico-v2-modelo-template-padrao",
+    "trocas": [
+      "compartimento-romano: 1º → I",
+      "bolsa-para-bursa: bolsa → bursa",
+      "bolsa-para-bursa: bolsas → bursas",
+      "bolsa-para-bursa: bolsa → bursa"
+    ]
+  },
+  {
+    "id": "72735461-a2e8-449b-8def-2c7fcac799fa",
+    "cat": "OCULAR",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "ocular-regra-hemorragia-vitrea",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicas → hiperecoicas"
+    ]
+  },
+  {
+    "id": "af3ca6a0-080d-45c8-a234-94e921b75bc6",
+    "cat": "OCULAR",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "ocular-regra-hemorragia-vitrea",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicas → hiperecoicas"
+    ]
+  },
+  {
+    "id": "36fb8b41-537d-42d4-aeba-da457318a6de",
+    "cat": "OCULAR",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "ocular-regra-hemorragia-vitrea",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicas → hiperecoicas"
+    ]
+  },
+  {
+    "id": "2648ef76-4928-49af-ad34-83a625a60576",
+    "cat": "OCULAR",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "ocular-regra-hemorragia-vitrea",
+    "trocas": [
+      "ecogenico-sozinho: ecogênicas → hiperecoicas"
+    ]
+  },
+  {
+    "id": "eab48eff-be95-49ea-9a18-28d7d11d8856",
+    "cat": "REGIAO_INGUINAL",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "regiao-inguinal-regra-linfonodos-inguinais",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "c76f3deb-1770-4822-bcfb-b77a0543c592",
+    "cat": "REGIAO_INGUINAL",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "regiao-inguinal-regra-linfonodos-inguinais",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "f0f5210b-5350-4e51-a4c8-415bc7d00365",
+    "cat": "REGIAO_INGUINAL",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "regiao-inguinal-regra-linfonodos-inguinais",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "0847e4a4-c251-491e-9cee-f1f0905a6bca",
+    "cat": "REGIAO_INGUINAL",
+    "estilo": "OBJETIVO",
+    "kind": "regra",
+    "title": "regiao-inguinal-regra-linfonodos-inguinais",
+    "trocas": [
+      "ecogenico-sozinho: ecogênico → hiperecoico"
+    ]
+  },
+  {
+    "id": "493c5870-075a-462d-aa7f-24f2089ebb55",
+    "cat": "VIAS_URINARIAS",
+    "estilo": "CLASSICO_COMPLETO",
+    "kind": "regra",
+    "title": "vias-urinarias-regra-patologias-variantes",
+    "trocas": [
+      "ecoico-sem-acento: hiperecóica → hiperecoica",
+      "ecoico-sem-acento: hiperecóica → hiperecoica"
+    ]
+  },
+  {
+    "id": "1ed3f508-5d6f-4ee6-8c18-5503ee690cf6",
+    "cat": "VIAS_URINARIAS",
+    "estilo": "DIRETO_OBJETIVO",
+    "kind": "regra",
+    "title": "vias-urinarias-regra-patologias-variantes",
+    "trocas": [
+      "ecoico-sem-acento: hiperecóica → hiperecoica",
+      "ecoico-sem-acento: hiperecóica → hiperecoica"
+    ]
+  },
+  {
+    "id": "dac6fe10-f116-4e43-bc5f-46e1a4db5ef8",
+    "cat": "VIAS_URINARIAS",
+    "estilo": "DETALHADO_PROTOCOLAR",
+    "kind": "regra",
+    "title": "vias-urinarias-regra-patologias-variantes",
+    "trocas": [
+      "ecoico-sem-acento: hiperecóica → hiperecoica",
+      "ecoico-sem-acento: hiperecóica → hiperecoica"
+    ]
+  }
+]

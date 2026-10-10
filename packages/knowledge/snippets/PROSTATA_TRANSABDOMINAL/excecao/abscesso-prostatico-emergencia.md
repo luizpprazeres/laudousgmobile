@@ -13,10 +13,10 @@ source_extracted_at: 2026-05-25
 
 EXCEÇÃO — ABSCESSO PROSTÁTICO
 
-Coleção líquida heterogênea (com debris ecogênicos, gás ou paredes espessadas) no interior da próstata, em paciente com quadro clínico de prostatite aguda complicada. Configura emergência urológica.
+Coleção líquida heterogênea (com debris hiperecoicos, gás ou paredes espessadas) no interior da próstata, em paciente com quadro clínico de prostatite aguda complicada. Configura emergência urológica.
 
 Descrição obrigatória no corpo:
-"Próstata difusamente aumentada de volume, com ecotextura heterogênea. Identifica-se coleção líquida heterogênea com debris ecogênicos, medindo cerca de 2,5 x 2,0 cm, situada na metade direita do parênquima prostático. Ao Doppler colorido, observa-se hiperemia periférica acentuada."
+"Próstata difusamente aumentada de volume, com ecotextura heterogênea. Identifica-se coleção líquida heterogênea com debris hiperecoicos, medindo cerca de 2,5 x 2,0 cm, situada na metade direita do parênquima prostático. Ao Doppler colorido, observa-se hiperemia periférica acentuada."
 
 Na conclusão (urgência explícita):
 "x) Achados sugestivos de abscesso prostático. Encaminhamento urológico em caráter de urgência."
