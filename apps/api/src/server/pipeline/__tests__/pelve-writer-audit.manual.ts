@@ -153,6 +153,27 @@ function check(name: string, cond: boolean, detail?: string) {
   check("tipo de mioma não ditado acusa", a.tipoMiomaInventado.includes("subseroso"), JSON.stringify(a));
 }
 {
+  const a = auditPelveFacts("mioma intramural de 2 cm", "nódulo miomatoso medindo 2 cm.");
+  check("tipo de mioma ditado e omitido acusa", a.tipoMiomaOmitido.includes("intramural"), JSON.stringify(a));
+}
+{
+  const a = auditPelveFacts("mioma na parede anterior, categoria figo, 5", "nódulo miomatoso intramural (categoria FIGO 5).");
+  check("tipo compatível com FIGO ditado não acusa", a.tipoMiomaInventado.length === 0, JSON.stringify(a));
+  const b = auditPelveFacts("mioma na parede anterior, FIGO 4", "nódulo miomatoso subseroso (categoria FIGO 4).");
+  check("tipo incompatível com FIGO ditado acusa", b.tipoMiomaInventado.includes("subseroso"), JSON.stringify(b));
+}
+{
+  // FIGO × tipo incompatíveis (FIGO 2 é submucoso) — conferência pela tabela do FIGO_RULES.
+  const a = auditPelveFacts("mioma subseroso FIGO 2", "3) Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso subseroso (categoria FIGO 2).");
+  check("FIGO × tipo incompatíveis acusa", a.figoTipoIncompativel.length === 1 && /incompatível com a categoria FIGO/.test(pelveRevisarNote(a) ?? ""), JSON.stringify(a));
+  const b = auditPelveFacts("mioma intramural FIGO 4", "nódulo miomatoso intramural (categoria FIGO 4).");
+  check("FIGO × tipo compatíveis não acusa", b.ok, JSON.stringify(b));
+  const c = auditPelveFacts("mioma subseroso FIGO 2", "nódulo miomatoso subseroso (categoria FIGO 2) [REVISAR — FIGO/tipo].");
+  check("incompatibilidade já sinalizada não duplica", c.figoTipoIncompativel.length === 0, JSON.stringify(c));
+  const d = auditPelveFacts("mioma FIGO 2-5", "nódulo miomatoso submucoso e subseroso (categoria FIGO 2-5).");
+  check("FIGO híbrido 2-5 não acusa", d.figoTipoIncompativel.length === 0, JSON.stringify(d));
+}
+{
   // Decimal separado por espaço no ASR ("volume de 8 4") não é medida inventada.
   const a = auditPelveFacts("ovário direito com volume de 8 4", "Ovário direito ecograficamente normal (8,4 cm³), contendo folículos.");
   check("decimal do ASR com espaço não acusa", a.medidasNaoDitadas.length === 0, JSON.stringify(a));

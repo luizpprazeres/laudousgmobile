@@ -19,11 +19,32 @@ export type PelveAudit = {
   figoInventado: boolean;
   /** Tipo de mioma (intramural/subseroso/submucoso) no laudo sem ter sido ditado (A03). */
   tipoMiomaInventado: string[];
+  /** Tipo de mioma ditado que sumiu do laudo (A03). */
+  tipoMiomaOmitido: string[];
   /** Medida no laudo que não aparece no ditado (eixo ou volume preenchido pelo modelo, A02). */
   medidasNaoDitadas: string[];
   /** [REVISAR] por dado não ditado — a regra manda omitir a oração (A02). */
   revisaoPorFalta: boolean;
+  /** Tipo e categoria FIGO incompatíveis na mesma linha, sem sinalização (A03; tabela do FIGO_RULES). */
+  figoTipoIncompativel: string[];
 };
+
+/** Tipos compatíveis com cada categoria FIGO (espelho do FIGO_RULES do global; 8 = outros, aceita qualquer). */
+const FIGO_TIPOS: Record<string, RegExp> = {
+  "0": /submucos/, "1": /submucos/, "2": /submucos/,
+  "3": /intramural/, "4": /intramural/,
+  "5": /subseros|intramural/, "6": /subseros/, "7": /subseros|pediculad/,
+};
+function figoTipoConflitos(laudo: string): string[] {
+  const out: string[] = [];
+  for (const linha of laudo.split("\n")) {
+    const m = linha.match(/miomatos[oa]s?\s+([a-zà-ú-]+)[^\n]*?FIGO\s+(\d)(?!\s*-\s*\d)/i);
+    if (!m || /\[REVISAR/.test(linha)) continue;
+    const re = FIGO_TIPOS[m[2]!];
+    if (re && /submucos|intramural|subseros|pediculad/i.test(m[1]!) && !re.test(m[1]!.toLowerCase())) out.push(`${m[1]} × FIGO ${m[2]}`);
+  }
+  return out;
+}
 
 const RE_TIPO_MIOMA = /\b(intramural|subseros[oa]|submucos[oa]|pediculad[oa])\b/gi;
 const RE_REVISAO_POR_FALTA = /\[REVISAR[^\]]*(?:n[ãa]o\s+(?:foi\s+)?(?:ditad|informad|mencionad)|ausente|faltando|n[ãa]o\s+consta)/i;
@@ -103,8 +124,13 @@ export function auditPelveFacts(rawInput: string, laudo: string): PelveAudit {
   const placeholder = laudo.includes("____");
 
   const figoInventado = /\bFIGO\s*\d|categoria\s+FIGO/i.test(laudo) && !/\bfigo\b/i.test(rawInput);
+  // Tipo compatível com um FIGO ditado não é invenção (FIGO_RULES: "tipo consistente com o número FIGO").
+  const figosDitados = [...rawInput.matchAll(/fi[gc]o\W{0,15}(\d)/gi)].map((m) => m[1]!);
   const tipoMiomaInventado = [...new Set([...laudo.matchAll(RE_TIPO_MIOMA)].map((m) => m[1]!.toLowerCase()))]
-    .filter((t) => !new RegExp(t.slice(0, 7), "i").test(rawInput));
+    .filter((t) => !new RegExp(t.slice(0, 7), "i").test(rawInput))
+    .filter((t) => !figosDitados.some((n) => FIGO_TIPOS[n]?.test(t)));
+  const tipoMiomaOmitido = [...new Set([...rawInput.matchAll(RE_TIPO_MIOMA)].map((m) => m[1]!.toLowerCase()))]
+    .filter((t) => !new RegExp(t.slice(0, 7), "i").test(laudo));
   const doDitado = numerosDoDitado(rawInput);
   // Grupos "A x B x C cm" inteiros (a unidade vem só no fim) + medidas soltas com unidade.
   const doLaudo = [
@@ -115,6 +141,7 @@ export function auditPelveFacts(rawInput: string, laudo: string): PelveAudit {
     (n) => !doDitado.has(Math.round(parseFloat(n.replace(",", ".")) * 1000) / 1000),
   );
   const revisaoPorFalta = RE_REVISAO_POR_FALTA.test(laudo);
+  const figoTipoIncompativel = figoTipoConflitos(laudo);
 
   return {
     ok:
@@ -124,16 +151,20 @@ export function auditPelveFacts(rawInput: string, laudo: string): PelveAudit {
       !placeholder &&
       !figoInventado &&
       tipoMiomaInventado.length === 0 &&
+      tipoMiomaOmitido.length === 0 &&
       medidasNaoDitadas.length === 0 &&
-      !revisaoPorFalta,
+      !revisaoPorFalta &&
+      figoTipoIncompativel.length === 0,
     missingMeasures,
     menopausaSemMarca,
     liquidoLivreInventado,
     placeholder,
     figoInventado,
     tipoMiomaInventado,
+    tipoMiomaOmitido,
     medidasNaoDitadas,
     revisaoPorFalta,
+    figoTipoIncompativel,
   };
 }
 
@@ -147,7 +178,9 @@ export function pelveRevisarNote(a: PelveAudit): string | null {
   if (a.placeholder) partes.push(`placeholder "____" no laudo`);
   if (a.figoInventado) partes.push(`categoria FIGO no laudo sem FIGO no ditado`);
   if (a.tipoMiomaInventado.length) partes.push(`tipo de mioma não ditado: ${a.tipoMiomaInventado.join(", ")}`);
+  if (a.tipoMiomaOmitido.length) partes.push(`tipo de mioma ditado ausente no laudo: ${a.tipoMiomaOmitido.join(", ")}`);
   if (a.medidasNaoDitadas.length) partes.push(`medida(s) no laudo que não estão no ditado: ${a.medidasNaoDitadas.join(", ")}`);
   if (a.revisaoPorFalta) partes.push(`[REVISAR] por dado não ditado (omitir a oração)`);
+  if (a.figoTipoIncompativel.length) partes.push(`tipo do mioma incompatível com a categoria FIGO: ${a.figoTipoIncompativel.join(", ")}`);
   return `[REVISAR: ${partes.join(" · ")}]`;
 }
