@@ -50,6 +50,12 @@ não há data publicada. A migração não tem prazo duro.
 Frentes novas: W7 regras da casa (terminal W3), W8 MSK Haiku × Sonnet (terminal W4, antes da W6), W1 rodada 3 (Sonnet +
 guard de comandos por laudo).
 
+## Decisões do Dr. Luiz (10/10)
+
+16. MSK: **Haiku 5.5** no writer dedicado com o prompt novo da W9; "sem evidência de rotura" em todo tendão alterado.
+17. Rodada de prompts enxutos (método W9), prioridade: pelve (TA/TV/TA+TV) → abdome → vias urinárias → mamas/axilas →
+    tireoide (W10a/b/c). Depois: revisão de termos (W11, na fila), com cautela no Deepgram.
+
 ## Tabela de roteamento alvo
 
 | Grupo | Categorias | Caminho | Modelo |
@@ -101,6 +107,10 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [x] W7 regras da casa (integrado c79967bf) (prompt "diagnóstico mais provável", mama, Domingos, parede, rim ausente nas vias)
 - [x] W8 MSK, pelve e carótidas Haiku × Sonnet — integrado
 - [x] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo) — integrado ce33d744
+- [x] W9 prompt dedicado do MSK — integrado 83a31a39
+- [ ] W1: MSK no Haiku por configuração
+- [ ] W10a pelve · W10b abdome + vias · W10c mama + tireoide (prompts enxutos)
+- [ ] W11 revisão de termos (fila)
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
 
