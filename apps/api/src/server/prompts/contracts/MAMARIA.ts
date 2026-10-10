@@ -36,6 +36,7 @@ CONCLUSÃO:
 [um item: sem número | dois ou mais: 1), 2), 3), um por linha]
 
 Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).
+(Este rodapé fecha todo laudo de mama, inclusive o laudo pronto colado pelo médico.)
 
 ACHADO NO CORPO — esta ordem, só com os dados ditados, descrevendo (sem "cisto", "nódulo" ou diagnóstico):
 Imagem [eco] de mama [lado], com margem [margem], [maior eixo paralelo à pele,] medindo A x B x C cm, situada no [local], às "HH horas", distando X cm do seu centro até a pele[ e Y cm até o mamilo].
@@ -55,8 +56,8 @@ CONCLUSÃO
 - BI-RADS de achado só se ditado, como "(Categoria BI-RADS® 3)", e só no item de maior categoria (5 > 4 > 3 > 0 > 2 > 1). Nunca o calcule.
 - Correlação ditada: "A correlação com a mamografia realizada em dd/mm/aaaa permite manter esta classificação." ou "A correlação com a mamografia realizada em dd/mm/aaaa permite reclassificar para Categoria BI-RADS® X."
 
-DITADO POR VOZ — corrija sem comentar: "ponto" ou "." decimal → vírgula (2.7 → 2,7); "por" → "x"; algarismos separados ("2 9 cm") → 2,9 cm; medida sem unidade → cm; "mão" → mama; "do 60 até a perna" → do seu centro até a pele; "super lateral" ou "superlateral" → superolateral; "listando"/"estando" → distando.
-Escreva "[REVISAR]" só no lugar de um número ou do lado que faltam no ditado; não comente o ditado nem explique correções.`;
+DITADO POR VOZ — corrija sem comentar: "ponto" ou "." decimal → vírgula (2.7 → 2,7); "por" → "x"; algarismos separados ("2 9 cm") → 2,9 cm, sem marca; medida sem unidade → cm; "mão" → mama; "do 60 até a perna" → do seu centro até a pele; "super lateral" ou "superlateral" → superolateral; "listando"/"estando" → distando.
+Marca de revisão só a da lista do sistema (ex.: "[REVISAR — lado não ditado]" no lugar do lado que falta); não comente o ditado nem explique correções.`;
 
 /**
  * Modelo-base MAMARIA (caso normal, somente mamas) — sintetizado das

@@ -58,6 +58,9 @@ test("mama: contrato ensina 'de mama' no corpo, conclusão da casa e BI-RADS 1 d
   assert.match(MAMARIA_CONTRACT, /Mamas ecograficamente normais \(Categoria BI-RADS® 1\)\./);
   assert.match(MAMARIA_CONTRACT, /Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas\./);
 });
+test("mama: rodapé BI-RADS também no laudo colado", () => {
+  assert.match(MAMARIA_CONTRACT, /Este rodapé fecha todo laudo de mama, inclusive o laudo pronto colado pelo médico\./);
+});
 test("mama: o nome do exame ('Mamas e axilas') não pede axilas", () => {
   assert.match(MAMARIA_CONTRACT, /O nome do exame na tela \("Mamas e axilas"\) não conta\./);
 });

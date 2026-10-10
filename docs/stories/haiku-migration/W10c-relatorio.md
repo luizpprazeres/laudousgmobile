@@ -72,10 +72,33 @@ frase normal alheia + "____" + título errado.
 - **B8 × B9:** sem o SQL da biblioteca, o modelo antigo volta a ensinar "em mama" (8) e as frases normais alheias (2).
   **O ganho completo depende do SQL.**
 
-### Rodada final com juiz
+### Rodada final com juiz — sobre o global final da W10b (`356e0224`, merge em `102bc541`)
 
-Pendente: o orquestrador pediu para medir em cima do global novo da W10b (`GLOBAL-FINAL`), com merge de
-`fix/abdome-vias-prompt`. Resultado será acrescentado aqui.
+Rodada `w10c/2026-10-10T12-17-31-mamaria`, 29 laudos, juiz Opus 5.5 cego, concorrência 2. Com o global novo o system da mama
+cai para **17,8 mil** caracteres só com o contrato e **11,1 mil (~2,8 mil tokens; −69% sobre os 36,1 mil)** com a biblioteca
+proposta. Duas correções depois do merge: a marca de revisão segue a lista fechada do global ("[REVISAR — lado não ditado]"),
+e o rodapé do BI-RADS foi declarado obrigatório também em laudo colado — a regra nova do global ("laudo pronto sai literal,
+sem frases do modelo") o tirava de 3 dos 6 colados, e o médico o pôs em todos.
+
+| Candidato | Nota | ≤ 4 | ≤ 6 | Omissões | Invenções | Medida/lado | Impressão ok |
+|---|---|---|---|---|---|---|---|
+| Produção (gpt-4.1-mini, renderer) | 4,49 | 19 | 21 | 38 | 66 | 10 | 9/29 |
+| Haiku — prompt antigo | 5,93 | 3 | 18 | 37 | 15 | 8 | 19/29 |
+| **Haiku — prompt novo + biblioteca proposta** | **8,42** | **0** | **1** | **10** | **3** | **1** | **28/29** |
+| Haiku — prompt novo, biblioteca atual | 8,09 | 0 | 3 | 13 | 3 | 2 | 28/29 |
+
+Placar da mesma rodada (soma de graves): produção 18 · antigo 25 · **novo + biblioteca 13** · novo sem biblioteca 20; frases
+fixas omitidas 14 · 16 · **2** · 8; "em mama" no corpo 0 · 22 · **1** · 9.
+
+- Os quatro casos abaixo de 8 no candidato novo (conferidos no ditado): "Ambas com imagem…" (transcrição de "mamas com
+  imagem") escrito no plural; "um ponto" na terceira medida (o médico escolheu 1,0) deixado em branco; laudo colado com
+  "em 06 fotos" que o médico manteve; negativa global posta depois do achado da outra mama.
+- A nota da produção caiu em relação ao W7 (5,22) por variação do juiz entre rodadas; a comparação vale dentro da rodada.
+- Um candidato vazio "A" (resíduo da base) foi mostrado ao juiz e levou 0 em todos; não altera a avaliação dos demais.
+- **Recomendação:** prompt novo da mama com o Haiku no writer completo, e o SQL da biblioteca (ganho menor na nota, maior
+  no placar: "em mama" 9 → 1, frases normais alheias 3 → 0, rodapé/frases fixas 8 → 2).
+
+HTML local: `tmp-review/bench-haiku/w10c/2026-10-10T12-17-31-mamaria/relatorio.html`.
 
 ### SQL proposto (NÃO executado — precisa de GO do Luiz)
 
@@ -185,7 +208,7 @@ HTML local: `tmp-review/bench-haiku/w10c/2026-10-10T11-53-39-tireoide/relatorio.
 
 ## Gates
 
-`pnpm -F api typecheck` ok. Testes: `w10c-mama-tireoide.manual.ts` (9, novo), `asr-clinical` (12), `tireoide-23c1-clinical-matrix`
+`pnpm -F api typecheck` ok (depois do merge do global da W10b). Testes: `w10c-mama-tireoide.manual.ts` (10, novo), `morfologicoPercentilRules` (528), `hashimotoPolipoConditional`, `asr-clinical` (12), `tireoide-23c1-clinical-matrix`
 (40), `tireoide-objetivo-golden` (39), `tireoide-pico-null` (12), `tireoide-objetivo-boletim`, `w7-regras-da-casa` (71),
 `alteracoes`, `mamaria-golden` (35), `mamaria-23c2` (6/6), `mamaria-birads-guard` (17), `mamaria-boletim`,
 `mamaria-objetivo-golden` (25), `mamaria-objetivo-boletim` — todos passam. `PROMPT_VERSION` v1.8 → v1.9.
@@ -204,4 +227,4 @@ HTML local: `tmp-review/bench-haiku/w10c/2026-10-10T11-53-39-tireoide/relatorio.
 
 ## Commits
 
-`dfe6ad31` bancada (placares, tamanho, patch de biblioteca) · `7ca763ed` tireoide · `3eb744dd` mama.
+`dfe6ad31` bancada (placares, tamanho, patch de biblioteca) · `7ca763ed` tireoide · `3eb744dd` mama · `ec486423`/`4b75ca18` relatório e revisão · `102bc541` merge do global final da W10b · último commit: contrato da mama ajustado ao global novo.

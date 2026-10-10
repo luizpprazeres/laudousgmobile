@@ -557,8 +557,10 @@ Placares determinísticos novos: `scripts/bench-haiku/placar-mama.ts`, `placar-t
   modelo com axilas): proposta de SQL — modelo normal só das mamas e arquivar os outros 6 (system 36,1 → 28,7 mil, −20%).
 - Contrato 4,8 → 4,2 mil: escopo das axilas como pergunta ao ditado; achado "Imagem … de mama …" com exemplos reais curtos;
   conclusão da casa quando não ditada; correção silenciosa da transcrição.
-- Placar (soma de graves): produção 18 · Haiku prompt atual 25 · **Haiku contrato novo + biblioteca proposta 10** · contrato
-  novo sem a biblioteca 18. Rodada final com juiz: depois do global final da W10b (pedido do orquestrador).
+- Rodada final sobre o global final da W10b (`w10c/2026-10-10T12-17-31-mamaria`, juiz Opus cego): produção 4,49 (≤ 4: 19) ·
+  Haiku prompt antigo 5,93 (3) · **Haiku prompt novo + biblioteca proposta 8,42 (0)** · prompt novo sem a biblioteca 8,09 (0);
+  invenções 66 · 15 · 3 · 3; impressão correta 9 · 19 · 28 · 28 de 29. System da mama: 36,1 → 11,1 mil caracteres.
+- O global novo ("laudo colado sai literal") tirava o rodapé do BI-RADS dos colados; o contrato da mama o declara obrigatório.
 
 ### TIREOIDE (20) — renderer + Haiku extrator
 
