@@ -8,7 +8,7 @@ import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
 import { llmParsed, writerTarget } from "../ai/llm";
 import { stripExtractionMetatext } from "../renderer/extractionMetatext";
-import { reconciliarIgUsPrecoce } from "../renderer/ig";
+import { avisoIgDitadaXCalculadora, reconciliarIgUsPrecoce } from "../renderer/ig";
 import {
   runRendererExtraction,
   type RendererExtractionResult,
@@ -587,6 +587,7 @@ export async function* runRendererStream(args: {
         // IG de hoje da calculadora ("IG pela ultrassonografia precoce: 23s3d") que a
         // extração pôs em primeira_us_ig sem data volta a ser a referência (PACOTE2).
         const obstIg = reconciliarIgUsPrecoce(fnd as ObstetricaFindings, args.rawInput);
+        avisarIgDitadaXCalculadora(obstIg, args.rawInput, args.onReviewNotes);
         const ofnd =
           env().OBST_BIOMETRIA_DET === "true"
             ? reconcileBiometriaUnidade(
@@ -788,8 +789,10 @@ export async function* runRendererStream(args: {
         }
         break;
       }
-      case "MORFOLOGICO":
-        fullText = renderMorfologico(normalizarExtracaoMorfologico(fnd as MorfologicoFindings, args.rawInput), null, {
+      case "MORFOLOGICO": {
+        const mfnd = normalizarExtracaoMorfologico(fnd as MorfologicoFindings, args.rawInput);
+        avisarIgDitadaXCalculadora(mfnd, args.rawInput, args.onReviewNotes);
+        fullText = renderMorfologico(mfnd, null, {
           objetivo,
           igCorrection,
           golfBall,
@@ -797,6 +800,7 @@ export async function* runRendererStream(args: {
           rawInput: args.rawInput,
         });
         break;
+      }
       case "TIREOIDE":
         fullText = renderTireoide(fnd as TireoideFindings, args.rendererPreferences, {
           objetivo,
@@ -1119,4 +1123,14 @@ export async function* runRendererStream(args: {
     extraction,
     freeSlotCount: freeItems.length,
   };
+}
+
+/** PACOTE3: IG de hoje ditada × calculadora → card de pendências (o texto do laudo não muda). */
+function avisarIgDitadaXCalculadora(
+  f: { ig_referencia_hoje_semanas: number | null; ig_referencia_hoje_dias: number | null },
+  rawInput: string,
+  onReviewNotes?: (notes: string[]) => void,
+): void {
+  const aviso = avisoIgDitadaXCalculadora(f, rawInput);
+  if (aviso) onReviewNotes?.([aviso]);
 }

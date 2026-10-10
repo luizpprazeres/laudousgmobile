@@ -575,3 +575,27 @@ export function reconciliarIgUsPrecoce<T extends IgUsPrecoceCampos>(f: T, rawInp
   if (out.referencia_fonte === null) out.referencia_fonte = "usg_precoce";
   return out;
 }
+
+/** Tolerância entre a IG de hoje ditada e a linha da calculadora (arredondamento de fala). */
+const TOLERANCIA_IG_CALCULADORA_DIAS = 3;
+
+/**
+ * PACOTE3 (10/10): "hoje com X" ditado VENCE a projeção (regra `computeRHoje` 1 — o
+ * médico já corrigiu). Em e1f15cab/e5dfd891 o "hoje com" ditado (30s6d, 20s2d) contradiz
+ * a calculadora do app E a projeção da própria 1ª US ditada (32s6d, 26s2d — as duas
+ * concordam): lapso de voz que entrava calado no laudo. A precedência é do Luiz e NÃO
+ * muda aqui; o código só avisa no card de pendências quando as duas fontes divergem.
+ */
+export function avisoIgDitadaXCalculadora(
+  f: Pick<IgUsPrecoceCampos, "ig_referencia_hoje_semanas" | "ig_referencia_hoje_dias">,
+  rawInput: string,
+): string | null {
+  if (f.ig_referencia_hoje_semanas === null) return null;
+  const calc = parseIgUsPrecoceCalculadora(rawInput);
+  if (!calc) return null;
+  const ditada = igDias(f.ig_referencia_hoje_semanas, f.ig_referencia_hoje_dias ?? 0);
+  if (Math.abs(ditada - igDias(calc.semanas, calc.dias)) <= TOLERANCIA_IG_CALCULADORA_DIAS) return null;
+  return `IG de hoje ditada (${formatIgSemanasDias(f.ig_referencia_hoje_semanas, f.ig_referencia_hoje_dias ?? 0)}) ` +
+    `diverge da calculadora do app (IG pela ultrassonografia precoce: ${formatIgSemanasDias(calc.semanas, calc.dias)}); ` +
+    "o laudo usa a ditada — confira.";
+}
