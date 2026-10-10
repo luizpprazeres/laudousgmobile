@@ -657,3 +657,71 @@ Placares determinísticos novos: `scripts/bench-haiku/placar-mama.ts`, `placar-t
   (≤ 4: 8 · 7 · 5; invenções 37 · 27 · 21). Rodada `w10c/2026-10-10T11-53-39-tireoide`.
 - A distância para a produção é quase toda de decisão pendente ou de outro dono: TI-2 (eixo não ditado), TI-5 (frase da cadeia
   I–V), ACR separado (W7), comando copiado na conclusão (W1), dois exames num ditado, e o schema sem imagens múltiplas.
+
+## W14 (W4) — Correções da revisão W13 na pelve e no MSK (10/10/2026)
+
+Achados corrigidos: A02, A03, auditoria da pelve (sonda da W13), A09, M01 (MSK) e a parte do M03 nos dedicados MSK e pelve
+(coordenada com a W10b). A04 e A08 ficaram como estão (pendentes do Luiz). Sem juiz: mudanças enxutas, medidas por cenário
+sintético e placar.
+
+**Pelve (`PELVE_FEMININA.ts`, `pelveFewshots.ts`, `pelveWriterAudit.ts`)**
+- A02: eixos e volumes do útero e dos ovários marcados como opcionais (`[ ]` = só se ditado); dado não ditado omite a
+  oração — nunca "0,0", "____" ou `[REVISAR]` por falta; `[REVISAR]` só para ditado ilegível ou ambíguo. A frase de
+  normalidade do ovário ("apresentando imagens anecoicas" / "contendo folículos") foi mantida: está em 51 de 68 finais,
+  com o ditado citando em 13 — é frase da casa, não invenção.
+- A03: tipo e FIGO ditados entram como ditados; não ditados, nunca inferidos; legenda FIGO só com FIGO no laudo. O
+  few-shot 5 trazia "intramural (FIGO 5)" e "(FIGO 4)" sem tipo nem FIGO no ditado (e FIGO 5 chamado de intramural):
+  virou um item no plural, sem classificação.
+- Auditoria: passa a acusar FIGO não ditado, tipo de mioma não ditado ou omitido, tipo incompatível com a categoria FIGO
+  (tabela do `FIGO_RULES`; aceita tipo compatível com FIGO ditado; 0 falso alarme nos 24 finais com FIGO), medida no laudo
+  que não está no ditado (aceita o decimal do ASR "8 4" = 8,4) e `[REVISAR]` por dado não ditado. A sonda da W13 agora
+  reprova. Os 6 few-shots passam limpos.
+- Dado para a W12: nos 24 finais com FIGO, a classificação está só na conclusão (0 no corpo); o médico acrescentou FIGO em
+  8 e o tipo em 12 que não ditou. A derivação localização ↔ FIGO pedida pelo Luiz é da W12.
+
+**MSK (`MUSCULOESQUELETICO.ts`, `mskFewshots.ts`)**
+- A09: proibido só acrescentar estrutura presumida fora do roteiro; achado ditado fora dele entra em linha própria junto
+  da estrutura vizinha (é o que o médico faz nos finais); conferência final sem "e só elas".
+- M01: o dedicado não recebe o global, então declara a hipótese na conclusão ("…, que tem como diagnóstico mais provável
+  X") e que os exemplos ensinam só o estilo (também na pelve). Few-shots: sem "compatível com alterações degenerativas" no
+  corpo, hipótese na fórmula da casa, "sem evidência de rotura" no singular. O exemplo 5 é laudo colado pelo médico e ficou
+  como ele escreveu.
+- M03: "hipoecoico/a, hiperecoico/a, anecoico/a — nunca hipo/hiper/anecogênico", uma vez em cada dedicado.
+
+**Tamanho:** pelve 5.541 → 5.907 caracteres (+7%), mas a entrada total do modelo foi de 17.343 para 17.519 (+1%) porque o
+few-shot encolheu; MSK 8.100 → 8.510 (+5%).
+
+### Cenários sintéticos do Codex, pela assinatura (`scripts/bench-haiku/cenarios-w14.ts`, 8 cenários, 22 checagens)
+
+| | Haiku 5.5 | Sonnet 5.5 |
+|---|---|---|
+| Código base (cf903353) | 3/8 cenários (16/22) | 2/8 (15/22) |
+| W14 | **8/8 (22/22)** | **8/8 (22/22)** |
+
+No código base: eixos do ovário inventados e `[REVISAR]` por falta (A02), FIGO inventado para mioma sem classificação
+(A03), hipótese em "O diagnóstico mais provável é" (M01), "hipoecogênico" (M03). O P5 (FIGO 2 + subseroso) "passava" no
+base só porque havia `[REVISAR]` de eixos ausentes; na W14 quem sinaliza é a conferência FIGO × tipo.
+
+### Placar nos casos reais (sem juiz; mesma régua da W10a e da W9)
+
+Pelve, 68 laudos (W10a = prompt anterior, W14 = este):
+
+| | Auditoria reprova | FIGO inventado | `[REVISAR]` por falta | Marcas `[REVISAR]` | Frases-padrão faltando |
+|---|---|---|---|---|---|
+| Produção (gpt-4.1) | 12 | 6 | 0 | 6 | 5,3% |
+| Haiku W10a → W14 | 13 → **2** | 6 → **0** | 6 → **0** | 78 → 30 | 7,3% → 8,0% |
+| Sonnet W10a → W14 | 15 → **3** | 6 → **0** | 12 → **1** | — → 35 | 6,0% → 7,3% |
+
+Os `[REVISAR]` que restam apontam ditado ambíguo de verdade ("antever em retroversão", "8 1 x 4 x 5", "ovário direito" duas
+vezes), não dado faltando. A piora pequena nas frases-padrão vem sobretudo da legenda FIGO (4 casos), que o médico pôs onde
+acrescentou FIGO sem ditar — efeito esperado do A03 até a W12; tirando a legenda, o Haiku fica igual (52 × 51 de 699) e o
+Sonnet perde 5 de 699.
+
+MSK, 71 laudos, Haiku (modelo decidido pelo Luiz): frases normais do roteiro omitidas 6,6% (W9) → **4,6%**; frases-padrão
+6,8% → 6,2%; invasão de numeração 0; "O diagnóstico mais provável é" 1 → 0; "sem evidência de roturas" 0. Os "sem sinais de
+rotura" restantes vêm da biblioteca de morfologia canônica (ditado só-diagnóstico, A08 — pendente), que também acrescenta
+"espessamento, perda do padrão fibrilar"; nos dois casos o médico reduziu para "modificação do padrão ecotextural, sem
+evidência de rotura". Dado útil para a decisão do A08.
+
+Gates: golden da pelve 44/44, auditoria da pelve 34/34, golden do MSK 31/31, auditoria do MSK 10/10, formato 6/6,
+typecheck sem erro.
