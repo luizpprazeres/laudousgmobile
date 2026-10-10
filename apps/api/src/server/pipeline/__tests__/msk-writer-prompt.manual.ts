@@ -18,6 +18,8 @@ check("prompt tem o roteiro (título DO JOELHO)", /ULTRASSONOGRAFIA DO JOELHO:/.
 check("roteiro tem pata de ganso", /pata de ganso/.test(p));
 check("roteiro tem os 8 segmentos", ["OMBRO","JOELHO","PÉ","MÃO","PUNHO","COTOVELO","TORNOZELO","QUADRIL"].every((s) => p.includes(s)));
 check("proíbe estrutura fora do roteiro (menisco)", /NÃO cite meniscos/.test(p));
+// W14 (revisão W13, A09): achado ditado fora do roteiro não é dropado.
+check("achado ditado fora do roteiro entra em linha própria", /Achado DITADO de estrutura fora da lista entra em linha própria/.test(p) && /mais os achados ditados fora dele, e nada presumido/.test(p) && !/e só elas/.test(p));
 
 // Regras críticas (corpo≠conclusão, não inventar, não dropar, comandos, garble).
 check("regra corpo=morfologia / conclusão=diagnóstico", /CORPO = MORFOLOGIA/.test(p) && /CONCLUSÃO = DIAGNÓSTICO/.test(p));
@@ -43,6 +45,18 @@ check("'sem evidência de rotura' é padrão da casa, não ressalva proibida", /
 check("numeração só na conclusão e recomeça por laudo", /existe SÓ dentro da CONCLUSÃO e recomeça em "1\)"/.test(p));
 check("conferência final por laudo", /CONFERÊNCIA FINAL, laudo por laudo/.test(p));
 
+// W14 (revisão W13, M01): fórmula da hipótese no dedicado (não recebe o global) e exemplos só de estilo.
+check("hipótese: 'que tem como diagnóstico mais provável'", /na conclusão: "\{achado\}, que tem como diagnóstico mais provável \{X\}/.test(p));
+check("exemplos ensinam só o estilo", /exemplos da conversa ensinam só o estilo; fatos, só do ditado\./.test(p));
+{
+  const { MSK_FEWSHOTS } = require("../../renderer/categories/mskFewshots");
+  const gerados = (MSK_FEWSHOTS as { raw: string; laudo: string }[]).filter((f) => !/^ULTRASSONOGRAFIA/.test(f.raw));
+  check("few-shots: sem 'compatível com' no corpo", gerados.every((f) => !/compatível com/.test(f.laudo.split("CONCLUSÃO:")[0] ?? "")));
+  check("few-shots: hipótese na fórmula da casa", gerados.every((f) => !/O diagnóstico mais provável é/.test(f.laudo)));
+  check("few-shots: 'sem evidência de rotura' (singular)", gerados.every((f) => !/sem evidência de roturas/.test(f.laudo)));
+}
+
+check("léxico da casa (W13 M03): hipoecoico/hiperecoico/anecoico, uma vez", (p.match(/hipoecoico\/a, hiperecoico\/a, anecoico\/a — nunca hipo\/hiper\/anecogênico/g) ?? []).length === 1);
 const pComBiblioteca = buildMskWriterSystemMessage({
   validatedLibrary: "FRASE VALIDADA: Tendão infraespinhal com espessamento.",
 });

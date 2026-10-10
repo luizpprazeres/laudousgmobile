@@ -130,5 +130,60 @@ function check(name: string, cond: boolean, detail?: string) {
   check("cm ditado: drop de 5,4 ainda detecta", !a.ok && a.missingMeasures.includes("5,4"), JSON.stringify(a));
 }
 
+// ── Revisão W13 (Codex) — invenções que a auditoria antiga aprovava (A02/A03) ──
+{
+  // Sonda do Codex: ovários só com volume, mioma intramural sem FIGO; saída com eixos, FIGO e revisão por falta.
+  const raw = "Ovários normais, o direito com 5,2 cm³ e o esquerdo 4,8 cm³. Mioma intramural.";
+  const laudo =
+    "Ovário direito medindo 2,1 x 1,4 x 1,8 cm, apresentando imagens anecoicas.\nCONCLUSÃO:\n" +
+    "1) Útero de volume normal ([REVISAR: volume uterino não ditado] cm³).\n" +
+    "2) Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso intramural (categoria FIGO 4).\n" +
+    "3) Ovários ecograficamente normais (o direito com 5,2 cm³ e o esquerdo 4,8 cm³), ambos contendo folículos.";
+  const a = auditPelveFacts(raw, laudo);
+  check("sonda W13: reprova", !a.ok, JSON.stringify(a));
+  check("sonda W13: FIGO sem FIGO no ditado", a.figoInventado, JSON.stringify(a));
+  check("sonda W13: eixos do ovário não ditados", ["2,1", "1,4", "1,8"].every((n) => a.medidasNaoDitadas.includes(n)), JSON.stringify(a));
+  check("sonda W13: [REVISAR] por dado não ditado", a.revisaoPorFalta, JSON.stringify(a));
+  check("sonda W13: tipo ditado (intramural) não acusa", a.tipoMiomaInventado.length === 0, JSON.stringify(a));
+  check("sonda W13: nota cita FIGO", /FIGO/.test(pelveRevisarNote(a) ?? ""));
+}
+{
+  // Tipo de mioma inferido pelo modelo.
+  const a = auditPelveFacts("mioma de 2 cm na parede anterior", "Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso subseroso.");
+  check("tipo de mioma não ditado acusa", a.tipoMiomaInventado.includes("subseroso"), JSON.stringify(a));
+}
+{
+  const a = auditPelveFacts("mioma intramural de 2 cm", "nódulo miomatoso medindo 2 cm.");
+  check("tipo de mioma ditado e omitido acusa", a.tipoMiomaOmitido.includes("intramural"), JSON.stringify(a));
+}
+{
+  const a = auditPelveFacts("mioma na parede anterior, categoria figo, 5", "nódulo miomatoso intramural (categoria FIGO 5).");
+  check("tipo compatível com FIGO ditado não acusa", a.tipoMiomaInventado.length === 0, JSON.stringify(a));
+  const b = auditPelveFacts("mioma na parede anterior, FIGO 4", "nódulo miomatoso subseroso (categoria FIGO 4).");
+  check("tipo incompatível com FIGO ditado acusa", b.tipoMiomaInventado.includes("subseroso"), JSON.stringify(b));
+}
+{
+  // FIGO × tipo incompatíveis (FIGO 2 é submucoso) — conferência pela tabela do FIGO_RULES.
+  const a = auditPelveFacts("mioma subseroso FIGO 2", "3) Miométrio apresentando imagem sólida, que tem como diagnóstico mais provável nódulo miomatoso subseroso (categoria FIGO 2).");
+  check("FIGO × tipo incompatíveis acusa", a.figoTipoIncompativel.length === 1 && /incompatível com a categoria FIGO/.test(pelveRevisarNote(a) ?? ""), JSON.stringify(a));
+  const b = auditPelveFacts("mioma intramural FIGO 4", "nódulo miomatoso intramural (categoria FIGO 4).");
+  check("FIGO × tipo compatíveis não acusa", b.ok, JSON.stringify(b));
+  const c = auditPelveFacts("mioma subseroso FIGO 2", "nódulo miomatoso subseroso (categoria FIGO 2) [REVISAR — FIGO/tipo].");
+  check("incompatibilidade já sinalizada não duplica", c.figoTipoIncompativel.length === 0, JSON.stringify(c));
+  const d = auditPelveFacts("mioma FIGO 2-5", "nódulo miomatoso submucoso e subseroso (categoria FIGO 2-5).");
+  check("FIGO híbrido 2-5 não acusa", d.figoTipoIncompativel.length === 0, JSON.stringify(d));
+}
+{
+  // Decimal separado por espaço no ASR ("volume de 8 4") não é medida inventada.
+  const a = auditPelveFacts("ovário direito com volume de 8 4", "Ovário direito ecograficamente normal (8,4 cm³), contendo folículos.");
+  check("decimal do ASR com espaço não acusa", a.medidasNaoDitadas.length === 0, JSON.stringify(a));
+}
+{
+  // Os pares ditado → laudo assinado dos few-shots passam limpos.
+  const { PELVE_FEWSHOTS } = require("../../renderer/categories/pelveFewshots");
+  const falhos = (PELVE_FEWSHOTS as { raw: string; laudo: string }[]).filter((f) => !auditPelveFacts(f.raw, f.laudo).ok).length;
+  check("few-shots da pelve passam na auditoria", falhos === 0, `${falhos} falharam`);
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);
