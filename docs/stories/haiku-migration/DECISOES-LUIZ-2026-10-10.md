@@ -49,4 +49,4 @@ Fonte: resposta do Luiz ao consolidado de pendências. Cada item tem dono (frent
   lobos para o volume total. Exemplo: "lobo direito medindo X x Y x Z com volume de V1, lobo esquerdo … com volume de V2, istmo
   medindo A x B x C, calcule o volume" → volume do istmo calculado + VT = V1 + V2 + istmo. Sem o pedido e sem volume ditado, nada
   é inventado (fica como hoje). O caso 42fbb3eb foi esquecimento do volume do istmo, não defeito.
-- **"Correlacionar com dados clínicos" (partes moles)**: ainda sem resposta — fica como está (automático).
+- **"Correlacionar com dados clínicos" (partes moles, A10)**: **só quando o médico ditar** — sai do catálogo (`PARTES_MOLES.ts`: renderer, roteiro do prompt e few-shots) quando não ditado (W10b).
