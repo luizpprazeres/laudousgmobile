@@ -4,6 +4,8 @@ import ts from "typescript";
 import { buildSystemMessage } from "../buildSystemMessage";
 import { OBSTETRICA_PLAIN_WRITER_POLICY, obstetricaPlainConflictWarning, obstetricaPlainOutputWarning, stripDopplerClauses } from "../obstetricaPlainPolicy";
 import { WritingStyleCodeSchema } from "@laudousg/shared";
+import { clinicalRendererFallbackBlocked, earlyWriterV2Allowed } from "../../clinicalReports/fallbackPolicy";
+import { providerForModel } from "../../ai/llm";
 
 const route = readFileSync(new URL("../../../app/api/generate/route.ts", import.meta.url), "utf8");
 const ast = ts.createSourceFile("route.ts", route, ts.ScriptTarget.Latest, true);
@@ -15,15 +17,33 @@ function visit(n: ts.Node) {
   if (ts.isCallExpression(n) && n.expression.getText(ast) === "runWriterStream") {
     const property = (n.arguments[0] as ts.ObjectLiteralExpression).properties.find(p => p.name?.getText(ast) === "includeDoppler") as ts.PropertyAssignment;
     assert.ok(property);
-    const resolvePolicy = new Function("reqInput", `return ${property.initializer.getText(ast)}`);
+    // A rota decide pelo exame selecionado (`selectedHint`); `reqInput` fica para
+    // compatibilidade com a forma antiga da expressão.
+    const resolvePolicy = new Function("reqInput", "selectedHint", `return ${property.initializer.getText(ast)}`);
     for (const category_hint of [undefined, "OBSTETRICA", "DOPPLER_OBSTETRICO", "MORFOLOGICO"]) {
-      assert.equal(resolvePolicy({ category_hint }), category_hint === "OBSTETRICA" ? false : undefined);
+      assert.equal(resolvePolicy({ category_hint }, category_hint), category_hint === "OBSTETRICA" ? false : undefined);
     }
     calls++;
   }
   if (ts.isVariableDeclaration(n) && n.name.getText(ast) === "useWriterV2") {
-    const enabled = new Function("reqInput", "writerV2Categories", "draftCategory", "writerV2UserId", "user", `return ${n.initializer!.getText(ast)}`);
-    assert.equal(enabled({ category_hint: "OBSTETRICA", writer_variant: "v2" }, ["OBSTETRICA"], "OBSTETRICA", "test", { id: "test" }), false);
+    // A expressão real da rota, com as funções reais de que ela depende (a
+    // versão antiga do harness só passava cinco variáveis e quebrava com
+    // `earlyWriterV2Allowed is not defined` desde 14ac4d3f — já em origin/main).
+    const scope = {
+      reqInput: { category_hint: "OBSTETRICA", writer_variant: "v2" },
+      parsed: { data: { category_hint: "OBSTETRICA" } },
+      categoriesInfo: { codes: new Set(["OBSTETRICA", "ABDOMEN_TOTAL"]) },
+      writerV2Categories: ["OBSTETRICA"],
+      draftCategory: "OBSTETRICA",
+      writerV2UserId: "test",
+      writerV2Model: "gpt-5.4-mini",
+      user: { id: "test" },
+      earlyWriterV2Allowed,
+      clinicalRendererFallbackBlocked,
+      providerForModel,
+    };
+    const enabled = new Function(...Object.keys(scope), `return ${n.initializer!.getText(ast)}`);
+    assert.equal(enabled(...Object.values(scope)), false, "obstétrica simples nunca abre o Writer V2");
     v2Guard = true;
   }
   if (ts.isIfStatement(n) && n.expression.getText(ast) === "plainConflict") {

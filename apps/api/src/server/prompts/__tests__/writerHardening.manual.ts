@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { buildSystemMessage } from "../buildSystemMessage";
 import {
   GLOBAL_RULES_BLOCK,
@@ -18,10 +17,14 @@ const explicitlyOff = buildSystemMessage({ ...baseArgs, hardening: false });
 const enabled = buildSystemMessage({ ...baseArgs, hardening: true });
 
 assert.equal(absent, explicitlyOff, "OFF explícito deve ser byte-idêntico ao ausente");
+// O gate antigo fixava o SHA-256 do system inteiro do abdome (baseline de
+// 12/08): qualquer mudança LEGÍTIMA de prompt o quebrava — já falhava em
+// origin/main (09/10). O que ele protegia é estrutural: com a flag desligada o
+// system é o de sempre, e ligada ela só acrescenta o bloco, sem tocar no resto.
 assert.equal(
-  createHash("sha256").update(absent).digest("hex"),
-  "055798dde090f6f214805230c13fc501a01b5729a11b9744e8e7f7a2570cda61",
-  "system message OFF divergiu do baseline anterior ao patch",
+  enabled.replace(`\n\n${WRITER_HARDENING_BLOCK}`, ""),
+  absent,
+  "ON deve ser exatamente OFF + o bloco de reforço (nada mais muda)",
 );
 assert.ok(!absent.includes(WRITER_HARDENING_BLOCK));
 assert.equal(enabled.split(WRITER_HARDENING_BLOCK).length - 1, 1);

@@ -115,6 +115,27 @@ check("avisos úteis removidos do laudo vão para o card de pendências", () => 
   const plain = cleanExtractionMetatext({ observacoes_corpo: "Litíase vesical, conforme conclusão do médico." }, schema);
   assert.deepEqual(plain.warnings, [], "rótulo/cláusula sem aviso não vira pendência");
 });
+check("A13: dado clínico parcialmente ilegível fica no laudo; a incerteza vai ao card", () => {
+  const schema = { type: "object", properties: { achados_adicionais: { type: ["string", "null"] } } };
+  const parcial = cleanExtractionMetatext({ achados_adicionais: "Mioma subseroso de 2,3 cm, segunda medida ilegível." }, schema);
+  assert.deepEqual(parcial.value, { achados_adicionais: "Mioma subseroso de 2,3 cm." });
+  assert.equal(parcial.warnings.length, 1);
+  const marcado = cleanExtractionMetatext(
+    { achados_adicionais: "Imagem hipoecoica no rim direito, medindo 1,2 cm [REVISAR: segunda medida truncada no ditado]. Rim esquerdo sem alterações." },
+    schema,
+  );
+  assert.deepEqual(marcado.value, { achados_adicionais: "Imagem hipoecoica no rim direito, medindo 1,2 cm. Rim esquerdo sem alterações." });
+  assert.equal(marcado.warnings.length, 1);
+  assert.match(marcado.warnings[0]!, /\[REVISAR: segunda medida truncada no ditado\]/);
+  const soMarca = cleanExtractionMetatext({ achados_adicionais: "[REVISAR: lateralidade do nódulo incerta no ditado]" }, schema);
+  assert.deepEqual(soMarca.value, { achados_adicionais: null });
+  assert.equal(soMarca.warnings.length, 1);
+});
+check("A13: frase que começa falando do ditado continua saindo inteira (mas vai ao card)", () => {
+  assert.equal(strip("Ditado com trechos incompreensíveis na descrição do endométrio."), "");
+  const schema = { type: "object", properties: { obs: { type: ["string", "null"] } } };
+  assert.equal(cleanExtractionMetatext({ obs: "Ditado com trechos incompreensíveis na descrição do endométrio." }, schema).warnings.length, 1);
+});
 check("schemas reais: extração sem metatexto passa idêntica", () => {
   const schema = EXTRACTORS.TIREOIDE!.jsonSchema;
   const sample = { achados_adicionais: "Linfonodo reacional no nível III direito, medindo 0,9 x 0,4 cm." };

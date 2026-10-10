@@ -568,8 +568,12 @@ async function* openaiTextStream(opts: LlmTextOptions, client: OpenAIClient): As
  * assinado; como extrator, o Haiku 5.5 escrevia ali comentários sobre o ditado ou
  * o schema (W4: 11/67 saídas; gpt-4.1-mini: 0). O guard determinístico
  * `renderer/extractionMetatext.ts` limpa o que escapar.
+ *
+ * Dado clínico incerto não é ruído (A13 da revisão do Codex): preserva-se a
+ * parte compreensível e marca-se `[REVISAR: …]`, que o guard tira do texto e leva
+ * ao card de pendências — nada some em silêncio.
  */
-export const EXTRACTION_TEXT_RULE = `CAMPOS DE TEXTO LIVRE (regra comum a toda extração): todo texto que você puser em campo de texto (achados adicionais, descrições, observações, conclusões) é colado LITERALMENTE no laudo que o médico assina. Escreva só conteúdo clínico, na redação de laudo. NUNCA escreva comentários sobre o ditado, o schema ou a sua extração — por exemplo "Conclusão do médico:", "conforme ditado", "conforme conclusão do médico", "ditado ilegível/incompreensível", "conferir/confirmar com o médico", "termo fora do léxico do enum", "não cabe no esquema", "sem campo próprio", "campo mantido null". Trecho incompreensível: deixe de fora, sem comentar. Dado clínico sem campo próprio: escreva-o como frase de laudo (ex.: "Índices de resistividade: …"), sem explicar por que está ali.`;
+export const EXTRACTION_TEXT_RULE = `CAMPOS DE TEXTO LIVRE (regra comum a toda extração): todo texto que você puser em campo de texto (achados adicionais, descrições, observações, conclusões) é colado LITERALMENTE no laudo que o médico assina. Escreva só conteúdo clínico, na redação de laudo. NUNCA escreva comentários sobre o ditado, o schema ou a sua extração — por exemplo "Conclusão do médico:", "conforme ditado", "conforme conclusão do médico", "ditado ilegível/incompreensível", "conferir/confirmar com o médico", "termo fora do léxico do enum", "não cabe no esquema", "sem campo próprio", "campo mantido null". Ruído sem conteúdo clínico (hesitação, conversa, fala fora do exame): omita. Dado clínico parcialmente incompreensível (medida truncada, lado ou negação incertos): preserve a parte compreensível, não adivinhe o resto, não transforme a incerteza em normalidade e marque o ponto com [REVISAR: motivo curto] no campo de texto mais próximo — essa marca é a única exceção aos comentários e vai ao card de pendências do médico, fora do texto do laudo. Dado clínico sem campo próprio: escreva-o como frase de laudo (ex.: "Índices de resistividade: …"), sem explicar por que está ali.`;
 
 // ---------------------------------------------------------------------------
 // API pública
