@@ -14,7 +14,8 @@
  *   conduta     "Convém/recomenda/correlacionar/avaliação …" no candidato que não está no final nem no ditado;
  *   dxCorpo     "compatível com / sugestivo de / diagnóstico mais provável" no corpo;
  *   limitacao   "parcialmente visualizado / gases" que não está no final nem no ditado;
- *   markdown    "**", "#" ou bullets.
+ *   markdown    "**", "#" ou bullets;
+ *   revisar     marca "[REVISAR…]" no candidato (o final nunca tem; conta as saídas com alguma).
  *
  * Rodar (de apps/api): pnpm exec tsx scripts/bench-haiku/placar-writer.ts <rodada> [--keys gpt,B,B2] [--detalhe] [--casos]
  * Imprime só agregados, frases do roteiro e ids de 8 caracteres.
@@ -128,7 +129,7 @@ const LIMITACAO = /parcialmente visualizad|interposi[çc][ãa]o (de )?gases|gase
 const PLACEHOLDER = /_{2,}|\bX[.,]X\b|\bx[.,]x\b|\b0,0\b/;
 
 type Tot = Record<string, number> & { casos: number };
-const zero = (): Tot => ({ casos: 0, normaisFinal: 0, omissao: 0, presumida: 0, medidasDitadas: 0, medida: 0, placeholder: 0, estrutura: 0, numeracao: 0, fechamento: 0, conduta: 0, dxCorpo: 0, limitacao: 0, markdown: 0, recusa: 0 });
+const zero = (): Tot => ({ casos: 0, normaisFinal: 0, omissao: 0, presumida: 0, medidasDitadas: 0, medida: 0, placeholder: 0, estrutura: 0, numeracao: 0, fechamento: 0, conduta: 0, dxCorpo: 0, limitacao: 0, markdown: 0, revisar: 0, recusa: 0 });
 
 function main() {
   const rs: Row[] = JSON.parse(readFileSync(join(dir, "results.json"), "utf8"));
@@ -205,17 +206,18 @@ function main() {
         if (cand.some((l) => l.corpo.some((x) => DX_CORPO.test(x)))) { t.dxCorpo++; marcas.push("diagnóstico no corpo"); }
         if (LIMITACAO.test(texto) && !LIMITACAO.test(r.final) && !LIMITACAO.test(dit)) { t.limitacao++; marcas.push("limitação inventada"); }
         if (/\*\*|^\s*#|^\s*[-•]\s/m.test(texto)) { t.markdown++; marcas.push("markdown"); }
+        if (/\[REVISAR/i.test(texto) && !/\[REVISAR/i.test(r.final)) { t.revisar++; marcas.push("[REVISAR]"); }
         if (marcas.length) casos.push(`${cat.slice(0, 6)} ${r.id8} ${k}: ${marcas.join("; ")}`);
       }
     }
     console.log(`\n${cat} · ${dir.split("/").pop()}`);
-    console.log("| candidato | casos | normais do final omitidas | normal presumido | medidas ditadas ausentes | placeholder | estrutura | numeração | fechamento | conduta não ditada | dx no corpo | limitação inventada | markdown | recusa |");
-    console.log("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+    console.log("| candidato | casos | normais do final omitidas | normal presumido | medidas ditadas ausentes | placeholder | estrutura | numeração | fechamento | conduta não ditada | dx no corpo | limitação inventada | markdown | [REVISAR] | recusa |");
+    console.log("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
     for (const k of keys) {
       const t = tot[k];
       if (!t.casos) continue;
       const pct = ((100 * t.omissao) / Math.max(1, t.normaisFinal)).toFixed(1);
-      console.log(`| ${k} | ${t.casos} | ${t.omissao}/${t.normaisFinal} (${pct}%) | ${t.presumida} | ${t.medida}/${t.medidasDitadas} | ${t.placeholder} | ${t.estrutura} | ${t.numeracao} | ${t.fechamento} | ${t.conduta} | ${t.dxCorpo} | ${t.limitacao} | ${t.markdown} | ${t.recusa} |`);
+      console.log(`| ${k} | ${t.casos} | ${t.omissao}/${t.normaisFinal} (${pct}%) | ${t.presumida} | ${t.medida}/${t.medidasDitadas} | ${t.placeholder} | ${t.estrutura} | ${t.numeracao} | ${t.fechamento} | ${t.conduta} | ${t.dxCorpo} | ${t.limitacao} | ${t.markdown} | ${t.revisar} | ${t.recusa} |`);
     }
   }
   if (argv.includes("--detalhe")) {

@@ -124,7 +124,7 @@ const RENAME = new Map(
 );
 const keyOf = (scen: string) => RENAME.get(scen) ?? (scen === "A" ? arg("a-key", "A")! : scen);
 const A_KEY = keyOf("A");
-const SCEN_KEYS = ["R", "A", "AR", "AS", "A2", "AS2", "A3", "AS3", "B", "BS", "L", "B2", "B2S", "B3", "B4", "B5", "B6"];
+const SCEN_KEYS = ["R", "A", "AR", "AS", "A2", "AS2", "A3", "AS3", "B", "BS", "L", "B2", "B2S", "B3", "B4", "B5", "B6", "B7", "B8"];
 const OUT_ROOT = process.env.BENCH_OUT_ROOT ?? join(REPO, "tmp-review/bench-haiku");
 
 const REGRA_ANTIGA_GLOBAL =
@@ -529,9 +529,12 @@ async function main() {
     const o = bibliotecaOverride[cat];
     if (!o) return blocks;
     const titles = new Set(blocks.map((b) => b.title));
-    for (const t of [...(o.drop ?? []), ...Object.keys(o.replace ?? {})]) {
-      if (!titles.has(t)) throw new Error(`BENCH_BIBLIOTECA: bloco "${t}" não existe em ${cat}`);
+    // A variante de modelo (ex.: Doppler esplâncnico no abdome) troca blocos: título ausente é só aviso.
+    const ausentes = [...(o.drop ?? []), ...Object.keys(o.replace ?? {})].filter((t) => !titles.has(t));
+    if (ausentes.length === (o.drop ?? []).length + Object.keys(o.replace ?? {}).length) {
+      throw new Error(`BENCH_BIBLIOTECA: nenhum bloco da proposta existe em ${cat} (títulos mudaram?)`);
     }
+    if (ausentes.length) console.warn(`[bench] BENCH_BIBLIOTECA ${cat}: fora desta variante: ${ausentes.join(", ")}`);
     const out = blocks
       .filter((b) => !(o.drop ?? []).includes(b.title))
       .map((b) => (o.replace?.[b.title] !== undefined ? { ...b, content: o.replace[b.title] } : b));
