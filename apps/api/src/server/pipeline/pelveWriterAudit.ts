@@ -64,19 +64,20 @@ function localizacoes(textoOriginal: string, soAfirmadas: boolean, semFigoAoLado
     .filter((f) => f.length > 0);
 }
 
-/** FIGOs afirmadas no ditado ("figo 5", "FIGO4", "categoria figo, 5", "2-5"). */
+/** Uma categoria ou lista delas: "5", "2-5", "4 e 5", "4, 5 e 6". */
+const LISTA_FIGO = "([0-8](?:\\s*-\\s*[0-8])?(?:\\s*(?:,|e)\\s*[0-8](?:\\s*-\\s*[0-8])?)*)(?!\\d)";
+const daLista = (lista: string) => lista.split(/\s*(?:,|\be\b)\s*/).map((x) => figoNormalizada(x)).filter((f): f is string => !!f);
+
+/** FIGOs afirmadas no ditado ("figo 5", "FIGO4", "categoria figo, 5", "2-5", "FIGO 4 e 5"). */
 function figosDoDitado(raw: string): string[] {
-  return [...raw.matchAll(/fi[gc]o\W{0,20}([0-8](?:\s*-\s*[0-8])?)/gi)]
+  return [...raw.matchAll(new RegExp(`fi[gc]o\\W{0,20}${LISTA_FIGO}`, "gi"))]
     .filter((m) => afirmado(raw, m.index!))
-    .map((m) => figoNormalizada(m[1]))
-    .filter((f): f is string => !!f);
+    .flatMap((m) => daLista(m[1]!));
 }
 
 /** FIGOs escritas no laudo (fora da legenda). */
 function figosDoLaudo(laudo: string): string[] {
-  return [...laudo.matchAll(/FIGO\s*([0-8](?:\s*-\s*[0-8])?)(?!\d)/g)]
-    .map((m) => figoNormalizada(m[1]))
-    .filter((f): f is string => !!f);
+  return [...laudo.matchAll(new RegExp(`FIGO\\s*${LISTA_FIGO}`, "g"))].flatMap((m) => daLista(m[1]!));
 }
 
 /** Por lesão: a localização escrita logo antes de "(categoria FIGO n)" confere com n pela tabela? */

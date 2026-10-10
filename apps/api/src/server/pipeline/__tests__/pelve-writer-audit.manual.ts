@@ -200,6 +200,14 @@ function check(name: string, cond: boolean, detail?: string) {
   check("W12: dois miomas com FIGO por lesão não acusa", i.ok, JSON.stringify(i));
 }
 {
+  // W12 (bancada, 9f5c737b): "categoria FIGO 4 e 5" ditada — as duas valem.
+  const a = auditPelveFacts("nódulos miomatosos intramurais e com mais de 50 x 100 intramural, entre parênteses categoria FIGO 4 e 5.",
+    "nódulos miomatosos intramurais (categoria FIGO 4) e com mais de 50% intramural (categoria FIGO 5).");
+  check("W12: lista de FIGO ditada ('4 e 5') não acusa", !a.figoInventado, JSON.stringify(a));
+  const b = auditPelveFacts("mioma FIGO 4", "nódulos miomatosos (categoria FIGO 4 e 6).");
+  check("W12: lista no laudo com categoria não ditada acusa", a.figosInventados.length === 0 && b.figosInventados.includes("6"), JSON.stringify(b));
+}
+{
   // Decimal separado por espaço no ASR ("volume de 8 4") não é medida inventada.
   const a = auditPelveFacts("ovário direito com volume de 8 4", "Ovário direito ecograficamente normal (8,4 cm³), contendo folículos.");
   check("decimal do ASR com espaço não acusa", a.medidasNaoDitadas.length === 0, JSON.stringify(a));
