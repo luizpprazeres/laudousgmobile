@@ -340,3 +340,85 @@ Resolver primeiro A02–A07, A12 e o congelamento/decisão de baseline A01. W12 
 Após correção pela frente responsável, repetir os gates locais e usar a bancada autorizada via assinatura para os cenários sintéticos de cada achado e comparação clínica. A revisão textual não aprova modelos, hardware, produção nem a biblioteca hospedada. CodeRabbit NÃO EXECUTADO.
 
 Somente documentação foi criada pela W13. Sem push, PR, deploy, `vercel env`, alteração de banco ou de código de produção.
+
+## Rodada 2
+
+Revisão independente das correções W14, em 10/10/2026. Integração solicitada executada com `git fetch .` e `git merge feat/haiku-migration`, por fast-forward de `b13ae622` para **`cc8924cd23e39d077fc4bf6c4611c520741e9d54`**. Comparação: relatório/código da rodada inicial contra esse snapshot. Os números de linha desta seção se referem ao snapshot W14, não aos da primeira rodada.
+
+**Parecer: seis achados resolvidos, sete parcialmente resolvidos e quatro não resolvidos, mantidos de propósito para decisão do Luiz.** A revisão completa do conjunto ainda não está fechada. Foram comprovados dois falsos alertas novos na auditoria pélvica e uma incompatibilidade de integração entre o prompt MSK corrigido e sua auditoria antiga. Nenhuma correção de produção foi feita nesta revisão.
+
+“Resolve” significa que a causa apontada foi retirada das camadas examinadas. Não significa aprovação clínica do modelo. Os resultados de bancada descritos pelas frentes foram lidos como evidência declarada por elas; não foram reproduzidos por esta frente. A validação independente abaixo usa código, testes locais e entradas/saídas sintéticas construídas, sem chamar modelos ou consultar pacientes/banco.
+
+### Resultado por achado
+
+| Achado | Veredito | Evidência e limite |
+| --- | --- | --- |
+| A01 | **Resolve parcialmente; escopo original alterado de propósito.** | `apps/api/src/server/prompts/global.ts:44`, `:328`, `:372`: regras mamárias saíram do global comum e do reforço duplicado; escopo/BI-RADS ficam no contrato. O bloco obstétrico continua diferente de `origin/main`. `docs/stories/haiku-migration/W14-correcoes-revisao.md:9` determina conservar corpo descritivo e hipótese também na obstetrícia, dispensando o congelamento. O vazamento foi resolvido segundo essa decisão; a igualdade byte a byte original não foi implementada e não deve ser anunciada. |
+| A02 | **Resolve parcialmente.** | `apps/api/src/server/renderer/categories/PELVE_FEMININA.ts:1508`, `:1513`, `:1517`, `:1521`: eixos/volumes passam a opcionais e a falta deixa de exigir `[REVISAR]`. Porém, `apresentando imagens anecoicas` e `ambos contendo folículos` continuam obrigatórios sem ditado. `pelveWriterAudit.ts:146` não audita esses fenômenos. A frente W14 declara que os conservou por frequência nos finais, em `docs/reviews/2026-10-revisao-renderers-prompts.md`, seção W14; isso não equivale a retirar essa parte do achado original. |
+| A03 | **Resolve parcialmente.** | `apps/api/src/server/renderer/categories/PELVE_FEMININA.ts:1515` e `pelveFewshots.ts:48`: tipo/FIGO ficam opcionais e o exemplo deixa de ensinar FIGO 5/4 não ditados. `pipeline/pelveWriterAudit.ts:126` verifica presença de “FIGO”, não igualdade das categorias; `:131` ainda admite tipo inferido de FIGO, contra a proibição do prompt dedicado. A tabela em `:36` aceita “intramural” para FIGO 5, diferente da redação `subseroso ≥ 50% intramural` do global em `global.ts:362`. FIGO no corpo continua sem exigência em `PELVE_FEMININA.ts:1507`; a frente declara esse aspecto encaminhado à W12. |
+| A04 | **Não resolve — não tratado de propósito.** | `apps/api/src/server/renderer/categories/PELVE_FEMININA.ts:1514` conserva normalidade do endométrio a partir de espessura ditada. Não foi uma correção esquecida: está entre os pendentes do Luiz em `docs/stories/haiku-migration/W14-correcoes-revisao.md:24`. |
+| A05 | **Resolve.** | `apps/api/src/server/prompts/contracts/MAMARIA.ts:19` a `:21`: exclusão/negação da avaliação vence a menção; alteração axilar substitui a frase normal da axila afetada. Foram retiradas as duas ordens que causavam os cenários originais. Mama normal continua BI-RADS 1 em `:56`. |
+| A06 | **Resolve.** | `apps/api/src/server/prompts/global.ts:372` e `apps/api/src/server/prompts/contracts/MAMARIA.ts:49`: saiu “sempre circunscritas” do global; margens suspeitas ditadas são preservadas e apenas “regular” é padronizada. Não há a ordem oposta no system genérico revisado. |
+| A07 | **Resolve.** | `apps/api/src/server/prompts/contracts/MAMARIA.ts:60` e `:61`: número truncado/eixos ambíguos e falta de unidade recebem revisão. Unidade só é compartilhada com outras medidas do mesmo achado, em vez de assumir cm. Normalização inequívoca de decimal e de “por” foi preservada. |
+| A08 | **Não resolve — não tratado de propósito.** | `apps/api/src/server/renderer/categories/MUSCULOESQUELETICO.ts:585` e `PARTES_MOLES.ts:591`: diagnóstico isolado ainda autoriza morfologia típica. A W14 manda não mexer nessa decisão em `docs/stories/haiku-migration/W14-correcoes-revisao.md:24`. |
+| A09 | **Resolve parcialmente.** | `apps/api/src/server/renderer/categories/MUSCULOESQUELETICO.ts:574`, `:591`, `:595`: prompt e conferência agora preservam achado ditado fora do roteiro. Mas `apps/api/src/server/pipeline/mskWriterAudit.ts:139` ainda acusa qualquer menção às estruturas da lista proibida, mesmo ditada. O writer anexa a nota dessa auditoria ao laudo; a incompatibilidade foi reproduzida abaixo. |
+| A10 | **Não resolve no catálogo — não tratado de propósito; parte global corrigida.** | `apps/api/src/server/prompts/global.ts:343` removeu a delegação de conduta a qualquer contrato. `apps/api/src/server/renderer/categories/PARTES_MOLES.ts:556` a `:558` ainda exigem correlação automática, em conflito com `:594`. O catálogo foi expressamente reservado ao Luiz em `docs/stories/haiku-migration/W14-correcoes-revisao.md:25`; não deve ser dado como corrigido junto com o global. |
+| A11 | **Não resolve — não tratado de propósito.** | `apps/api/src/server/prompts/contracts/ABDOMEN_TOTAL.ts:20` e `:21` mantêm atenuação/visualização parcial e ausência de fenômenos acústicos nos exemplos obrigatórios. Arquivo sem mudança nesta rodada. Pendência deliberada em `docs/stories/haiku-migration/W14-correcoes-revisao.md:26`. |
+| A12 | **Resolve parcialmente.** | `apps/api/src/server/renderer/categories/TIREOIDE.ts:302` a `:304`: “com áreas” incompleto agora vira `ecogenicidade=null`, sem pontuação Domingos inventada. `:793` acrescenta revisão, mas `:790` retorna antes quando há ACR, mesmo sem nota Domingos. A sonda com descrição incompleta e ACR ditado saiu sem aviso. A correção do enum/ponto está resolvida; a promessa de pendência visível não cobre esse caminho. |
+| A13 | **Resolve parcialmente.** | `apps/api/src/server/ai/llm.ts:576` separa ruído de incerteza clínica e manda preservar/sinalizar. `renderer/extractionMetatext.ts:36` retira a marca do texto; `extraction.ts:504` entrega avisos ao callback, conectado em `app/api/generate/route.ts:1131`. Contudo, `extractionMetatext.ts:88` interrompe a frase no primeiro segmento de metatexto, descartando também descritores claros posteriores. Eles ficam no aviso, mas saem do campo clínico renderizado. Não é mais perda silenciosa no caminho conferido; ainda há perda de conteúdo compreensível no laudo. |
+| M01 | **Resolve.** | `apps/api/src/server/renderer/categories/mskFewshots.ts:15`, `:19`, `:23` e `partesMolesFewshots.ts:30`, `:40`: corpo descritivo, hipótese da casa e rotura no singular foram ajustados nos exemplos apontados. `MUSCULOESQUELETICO.ts:584`, `:591`, `PARTES_MOLES.ts:599` e `PELVE_FEMININA.ts:1526` delimitam exemplos como estilo. O exemplo MSK de laudo colado foi mantido como texto do médico, exceção documentada em `mskFewshots.ts:10`; não considero essa preservação uma regressão. |
+| M02 | **Resolve parcialmente.** | `apps/api/src/server/pipeline/writer.ts:320` separa a política não obstétrica e retira dela o exemplo de gestação; `writerOutputGuard.ts:31` remete marcas às regras da categoria. A exigência de somar volumes em `prompts/contracts/TIREOIDE.ts:63` continua oposta ao cálculo só a pedido em `global.ts:331`. O ramo legado sem exame escolhido e o exemplo obstétrico conflitante permanecem em `writer.ts:330`. Não foi resolvida toda a política enumerada no achado. |
+| M03 | **Resolve.** | `apps/api/src/server/pipeline/writerOutputGuard.ts:32` centraliza o vocabulário adjetivo e preserva “ecogenicidade” como propriedade. A regra chega ao writer genérico por `ai/writerClient.ts:74` e aos dedicados por `pipeline/mskWriter.ts:67`, `pelveWriter.ts:49`, `partesMolesWriter.ts:56`, `dopplerRenalWriter.ts:51`, `dopplerVenosoMmiiWriter.ts:48`. Não confundir os nomes técnicos dos enums ACR com redação adjetiva. |
+| B01 | **Resolve.** | `apps/api/src/server/prompts/styles.ts:30` deixa de exigir fechamento normal redundante; `prompts/universalCoreV2.ts:10` documenta o planner/reparo real e as flags. As duas partes do achado foram tratadas. |
+
+### Sondas independentes dos casos parciais
+
+Sondas locais construídas em `tmp-review/w13-w14-probes.ts`, ignorado pelo Git. Foram chamados os auditores/renderers diretamente. Os textos de saída são artificiais: nenhum resultado abaixo é uma geração observada de Haiku/Sonnet.
+
+| Caso sintético | Resultado observado | Implicação |
+| --- | --- | --- |
+| Ovários normais, apenas volumes 5,2/4,8 cm³; saída acrescenta imagens anecoicas/folículos | `auditPelveFacts.ok=true` | A02: fenômeno não ditado continua aceito; a melhora da sonda composta da W14 não testa esse componente isolado. |
+| “Mioma intramural FIGO 3”; saída “intramural FIGO 4” | `ok=true`, `figoInventado=false` | A03: presença da palavra FIGO no ditado basta para a checagem, mesmo com categoria trocada. |
+| “Mioma FIGO 4”; saída acrescenta “intramural” | `ok=true`, `tipoMiomaInventado=[]` | A03: auditor autoriza inferência que o prompt proíbe. Não tratar como implementação da futura W12. |
+| “Mioma intramural FIGO 5”; saída mantém a combinação sem revisão | `ok=true`, `figoTipoIncompativel=[]` | A03: tabela do audit não identifica a mesma inconsistência de redação que originou parte da revisão inicial. |
+| “Mioma FIGO 4”; saída acrescenta medida de 4 cm | `ok=true`, `medidasNaoDitadas=[]` | A02: número de classificação é aceito como se fosse medida; `pelveWriterAudit.ts:53` recolhe qualquer número, com variações ×10/÷10. Isso é limite da nova proteção, não piora demonstrada contra o auditor antigo, que também aceitava. |
+| Nódulo com `ecogenicidade=null`, descrição “isoecoica com áreas”, ACR TI-RADS 3 ditado | Renderer devolve ACR 3 sem `[REVISAR]`, nem Nota Final Domingos | A12: não inventa nota, mas a pendência some pelo retorno antecipado em `TIREOIDE.ts:790`. |
+| “Imagem de 2 cm, segunda medida ilegível, com margens irregulares e sem fluxo.” | Campo limpo vira “Imagem de 2 cm.”; aviso conserva a frase inteira | A13: preserva só o prefixo, perde margens/negação compreensíveis no laudo. Aviso não substitui a descrição clínica. Esse problema é residual; antes a limpeza retirava a frase inteira. |
+
+Para fechar A02/A03, distinguir evidência de medida de número de classificação, comparar os FIGOs informados por lesão e alinhar a permissão de derivar tipo entre prompt e audit. Para A12, fazer a emissão da pendência independente da presença de ACR. Para A13, retirar só o segmento incerto/metatexto e preservar segmentos clínicos claros posteriores. São propostas para os respectivos donos; não foram aplicadas nesta frente.
+
+### Regressões novas e incompatibilidade de integração
+
+**R2-01 — médio: medida corretamente normalizada de número por extenso passa a ser acusada como inventada.** Local: `apps/api/src/server/pipeline/pelveWriterAudit.ts:53`, `:57`, `:140`. Entrada sintética: “Mioma intramural medindo dois centímetros.” Saída correta: “Imagem sólida medindo 2 cm. Nódulo miomatoso intramural.” O auditor da rodada inicial retorna `ok=true`; a W14 retorna `ok=false`, `medidasNaoDitadas=["2"]`. A nova coleta só reconhece algarismos; o prompt promete entender linguagem natural em `PELVE_FEMININA.ts:1493`. Isso gera nota de revisão sem erro no fato. Proposta: reconhecer números por extenso no contexto da medida antes de declarar invenção, ou manter dúvida de correspondência separada de acusação de medida não ditada.
+
+**R2-02 — médio: comando de remoção é tratado como tipo de mioma que precisa aparecer.** Local: `apps/api/src/server/pipeline/pelveWriterAudit.ts:49`, `:132`. Entrada sintética: “Útero normal. Remova a expressão mioma intramural.” Saída correta: “Útero ecograficamente normal.” Auditor anterior: `ok=true`. W14: `ok=false`, `tipoMiomaOmitido=["intramural"]`, produzindo nota “tipo de mioma ditado ausente”. O coletor considera qualquer ocorrência da palavra, sem examinar comando de remoção, negação ou autocorreção. Uma sonda adicional com “Útero normal, sem mioma intramural” também dispara a mesma cobrança, sem distinguir lesão afirmada de negada. Proposta: vincular tipo a mioma afirmado e à versão final do ditado, preservando a conferência de negações em um canal próprio; comando de remoção não é fato clínico a incluir.
+
+**R2-03 — médio, integração de A09: auditor antigo contradiz a permissão nova do prompt.** Local: `apps/api/src/server/renderer/categories/MUSCULOESQUELETICO.ts:574` versus `apps/api/src/server/pipeline/mskWriterAudit.ts:139`. “Joelho direito, menisco medial com imagem hipoecoica de 1 cm”, reproduzido sob título/lado corretos, retorna `extraStructures=["menisco"]` e `ok=false`. O código do auditor não foi alterado pela W14: não é uma regressão nova desse algoritmo. A integração da correção passou a mandar produzir conteúdo que ele marca indevido. `pipeline/mskWriter.ts` anexa a nota ao resultado. Proposta: auditar estrutura extra presumida, levando em conta a menção examinada/ditada. Essa incompatibilidade impede fechar A09 de ponta a ponta.
+
+Os dois primeiros regressivos foram comparados executando também o auditor anterior extraído de `git show b13ae622:apps/api/src/server/pipeline/pelveWriterAudit.ts`, em arquivo temporário ignorado. Não são hipótese baseada apenas em leitura de regex. São falsos alertas determinísticos; não foi demonstrado dano clínico em produção.
+
+### Validação da rodada
+
+`pnpm -F api typecheck` passou. As 13 rotinas abaixo passaram localmente, com `pnpm exec tsx --env-file=../../.env <arquivo>` a partir de `apps/api`. Testes de motor usam clientes falsos; nenhuma assinatura/API de modelo foi consumida.
+
+| Rotina | Resultado |
+| --- | --- |
+| `prompts/__tests__/w14-revisao-global.manual.ts` | 9 verificações |
+| `pipeline/__tests__/pelve-writer-audit.manual.ts` | 34 verificações |
+| `pipeline/__tests__/pelve-writer-prompt.manual.ts` | 44 verificações |
+| `pipeline/__tests__/msk-writer-prompt.manual.ts` | 31 verificações |
+| `pipeline/__tests__/partes-moles-writer-prompt.manual.ts` | 24 verificações |
+| `renderer/__tests__/extraction-metatext.manual.ts` | 13/13 |
+| `renderer/__tests__/w10c-mama-tireoide.manual.ts` | 18 verificações |
+| `prompts/__tests__/writerHardening.manual.ts` | 7/7; falha da primeira rodada corrigida |
+| `prompts/__tests__/obstetricaPlainWriter.manual.ts` | 16 comparações e verificações de rota/rejeição; falha da primeira rodada corrigida |
+| `pipeline/__tests__/writerChosenExam.manual.ts` | 6/6 |
+| `pipeline/__tests__/writerOutputGuard.manual.ts` | 8/8 |
+| `prompts/__tests__/morfologicoPercentilRules.manual.ts` | 528 comparações |
+| `ai/__tests__/llm.manual.ts` | Saída exit 0, casos de motor/extração com clientes falsos |
+
+O global obstétrico agora tem 20.085 bytes e SHA-256 `b64461d62fc35d4211abe835c00ecdfd3c20741291f711c7fd0aad83cb696676`, contra 18.637 bytes / `0c0fca70e3945406680fd5f4e5219b642b9318ca1298aad185b026cd1020d90e` em `origin/main`. Essa diferença é deliberada pela decisão W14 sobre A01; o teste morfológico verde não prova identidade histórica.
+
+A04, A08, A10 no catálogo e A11 permanecem **não tratados de propósito**, conforme a instrução atual do Luiz e o briefing W14. Não são regressões novas nem aprovação tácita dessas regras. A02 também conserva deliberadamente frases ovarianas, mas não está entre os quatro itens expressamente reservados ao Luiz; por isso continua parcial em relação ao achado original. Não encontrei implementação nova da W12 no delta revisado; o encaminhamento não fecha A03 nesta rodada.
+
+Somente esta seção foi acrescentada pela revisão da rodada 2. Código de produção recebido pelo merge não foi editado pela W13. Status externo atualizado para `pronto-para-revisao` após o commit. Sem push, PR, deploy, `vercel env` ou banco. CodeRabbit NÃO EXECUTADO.
