@@ -402,7 +402,7 @@ function renderCervicalClassico(f: CervicalFindings): string {
   // Suspeitos → item factual por nível.
   for (const l of suspeitos) {
     conclusao.push(
-      `Linfonodo de aspecto suspeito no nível ${l.nivel}. Correlacionar com achados clínicos.`,
+      `Linfonodo de aspecto suspeito no nível ${l.nivel}.`,
     );
   }
   // Alterados/proeminentes não suspeitos → item de linfonodomegalia reacional.
@@ -564,7 +564,7 @@ function renderCervicalObjetivo(f: CervicalFindings): string {
 
   for (const l of suspeitos) {
     impressao.push(
-      `Linfonodo de aspecto suspeito no nível ${l.nivel}. Correlacionar com achados clínicos.`,
+      `Linfonodo de aspecto suspeito no nível ${l.nivel}.`,
     );
   }
   if (alteradosNaoSuspeitos.length > 0) {

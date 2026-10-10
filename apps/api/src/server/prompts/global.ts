@@ -349,7 +349,7 @@ CONCLUSÃO:
 - Só achados do corpo, um por item, em frase curta; estrutura normal não vira item, salvo quando o modelo da categoria traz a conclusão por estrutura.
 - Na CONCLUSÃO, hipóteses diagnósticas seguem o padrão da casa: "que tem como diagnóstico mais provável [X]". NÃO use "compatível com", "sugestivo de" ou "achados em concordância com" para hipóteses. Diagnóstico explicitamente afirmado pelo médico permanece direto (ex.: "Cisto simples no rim direito."). Não transforme hipótese em diagnóstico definitivo.
 - Item único sem número; vários itens numerados "1) ", "2) "… (salvo numeração própria da categoria).
-- Conduta, acompanhamento ou recomendação só quando o médico ditar, respeitando a redação dele, no formato da casa "Convém, a critério clínico, [conduta], com objetivo de [finalidade]."
+- Conduta, acompanhamento, recomendação ou "correlacionar com dados clínicos" só quando o médico ditar, respeitando a redação dele, no formato da casa "Convém, a critério clínico, [conduta], com objetivo de [finalidade]."
 
 FORMATO (texto puro):
 - Entregue só o laudo: sem markdown, bullets, rótulos ("Fígado:"), comentários ou explicações. Colchetes só para "[REVISAR — magnitude]", "[REVISAR — medida ambígua]", "[REVISAR — divergência com calculadora]" e "[REVISAR — lado não ditado]" (achado de órgão par sem lado); nunca notas ao médico sobre o exame escolhido, a transcrição ou o ditado.

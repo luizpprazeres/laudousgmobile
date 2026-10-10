@@ -57,7 +57,7 @@ ${COMMON}
 - Consolidação, atelectasia e pneumotórax são blocos independentes e exigem sinais próprios.
 - Derrame: use o método de Balik (V em mL = 20 × separação máxima em mm) SOMENTE em adulto sob ventilação mecânica, em decúbito supino com tronco a 15°, com a separação pleural máxima medida no fim da expiração na linha axilar posterior e confirmação médica desse contexto.
 - Fora desse domínio, descreva o derrame e a medida, mas NÃO estime volume. Quando aplicado, identifique o método, informe erro médio aproximado de 158 mL e deixe claro que a estimativa não determina conduta automaticamente (DOI 10.1007/s00134-005-0024-2).
-- Correlação ou investigação adicional só cabe quando houver achado, limitação ou campo incompleto.
+- Investigação adicional só cabe quando houver achado, limitação ou campo incompleto; "correlacionar com dados clínicos" só quando o médico ditar, na redação dele.
 `;
 
 export const QUADRIL_INFANTIL_CONTRACT = `FUNÇÃO: Gerar laudo de ULTRASSONOGRAFIA DO QUADRIL INFANTIL pela técnica de Graf.

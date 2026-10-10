@@ -135,7 +135,7 @@ const casos: Caso[] = [
   { nome: "colelitíase em mm", patch: { vesicula: { conteudo: ["colelitiase"], "conteudo.colelitiase.dimensao": "12", "conteudo.colelitiase.quantidade": "unico" } }, inclui: ["1,2 centímetros", "Litíase da vesícula biliar."] },
   { nome: "lama biliar", patch: { vesicula: { conteudo: ["lama"] } }, inclui: ["Conteúdo ecogênico móvel, sem sombra acústica.", "Lama biliar."] },
   { nome: "pólipo vesicular", patch: { vesicula: { conteudo: ["polipos"] } }, inclui: ["Imagem polipoide aderida", "Pólipo da vesícula biliar."] },
-  { nome: "parede espessada aguda", patch: { vesicula: { paredes: "espessada_aguda" } }, inclui: ["parede espessada", "demais critérios clínicos e laboratoriais"] },
+  { nome: "parede espessada aguda", patch: { vesicula: { paredes: "espessada_aguda" } }, inclui: ["parede espessada", "Espessamento da parede da vesícula biliar."] }, // correlação clínica só se ditada (10/10)
   { nome: "adenomiomatose", patch: { vesicula: { raros: ["adenomiomatose"] } }, inclui: ["artefatos em cauda de cometa", "Adenomiomatose da vesícula biliar."] },
   { nome: "colesterolose", patch: { vesicula: { raros: ["colesterolose"] } }, inclui: ["Pequenos focos ecogênicos parietais aderidos, sem sombra acústica.", "Colesterolose da vesícula biliar."] },
   { nome: "vesícula em porcelana", patch: { vesicula: { raros: ["porcelana"] } }, inclui: ["Parede difusamente calcificada", "Vesícula em porcelana."] },
