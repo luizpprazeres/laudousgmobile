@@ -543,3 +543,66 @@ Sem os 10 casos expostos ao MK-1 (n = 61): produção 8,36 · Haiku 5,89 → 6,1
 - **Recomendação:** manter o prompt novo com o Sonnet no writer dedicado do MSK. Próximo passo: a conclusão (completar
   os itens e o lado de cada achado) e decidir com o Luiz se "sem evidência de rotura" deve ser sempre usada no tendão
   alterado ou só quando ele ditar.
+
+## W10a — Prompt do writer dedicado da pelve feminina (TA, TV e TA+TV) (10/10/2026)
+
+Método da W9, enxuto: placar determinístico → padrões reais → prompt menor → bancada com `BENCH_MODEL` explícito, juiz
+só na rodada final (concorrência 2). Mesmos 68 laudos do W8.
+
+**Placar genérico** (`scripts/bench-haiku/placar.ts`, generaliza o `placar-msk.ts`): as frases-padrão da categoria são as
+linhas que se repetem nos próprios laudos finais (números normalizados, ≥ 4 finais — 33 na pelve), mais título, técnica,
+"06 fotos", "____"/"0,0", conclusão duplicada, numeração, legenda FIGO e unidade do saco gestacional.
+
+**Padrões reais do médico** (finais de 90 dias) que o prompt antigo contrariava:
+- técnica TV: "…A documentação fotográfica foi obtida segundo protocolo…" — o prompt mandava "obtida **em 06 fotos**";
+  saiu em 15 laudos e o médico **tirou em 11**;
+- ovários: "(o direito com X cm³ e o esquerdo Y cm³)" — a regra da menopausa ensinava "e o esquerdo **com**", e o Haiku
+  espalhava para todos (era a frase que ele mais errava, 15×); um few-shot também;
+- via não ditada → o médico usa **transabdominal + transvaginal** (43 de 68); o Haiku punha `[REVISAR]` no título e na técnica;
+- posição do útero não ditada → **anteversão**;
+- "não é possível correlacionar com o ciclo (amenorreia/contraceptivo)": no final o corpo fica só com a medida e a frase vai
+  para a **conclusão** do endométrio, no lugar da frase padrão;
+- títulos extras: "… PARA CONTAGEM DE FOLÍCULOS"; ausência de gestação ("Ausência de saco gestacional intrauterino." /
+  "Ausência de produtos retidos da concepção.").
+
+**Prompt** (`PELVE_FEMININA.ts`, `buildPelveWriterSystemMessage`): **6.241 → 5.541 caracteres (−11%)**; entrada total
+medida pelo modelo (system + few-shots + ditado) 9.570 → ~9.230 tokens na mediana. Regra positiva + a frase real; corrige
+também PV-5 (medida não ditada → `[REVISAR]`, nunca "0,0"/"____"), PV-3 (endométrio normal só com espessura ditada), PV-2
+(unidade ditada do saco gestacional) e a legenda FIGO (uma vez, sem número). Dois few-shots alinhados ao padrão (técnica TV,
+"e o esquerdo"). Golden do prompt atualizado (37 checagens).
+
+### Resultado — 68 laudos, um juiz para os cinco (rodada `w10a/2026-10-10T11-45-39-pelve_feminina`)
+
+Placar determinístico:
+
+| Candidato | Frases-padrão faltando | Título ≠ | "06 fotos" a mais | "____"/"0,0" | Numeração | Legenda FIGO |
+|---|---|---|---|---|---|---|
+| Produção (gpt-4.1) | 5,3% | 5 | 14 | 2 | 6 | 6 |
+| Haiku — prompt antigo | 11,6% | 11 | 13 | 0 | 8 | 5 |
+| Sonnet — prompt antigo | 6,3% | 10 | 15 | 2 | 6 | 6 |
+| **Haiku — prompt novo** | 7,3% | 6 | 1 | 0 | **0** | **0** |
+| **Sonnet — prompt novo** | **6,0%** | 8 | 1 | 0 | **0** | **0** |
+
+("Técnica diferente do final" fica em 11–12 nos novos contra 15 na produção: parte é variação do próprio médico nos
+finais — "em 06 fotos" em 4, "obtida em segundo protocolo" em 5.)
+
+Juiz (Opus 5.5, cego):
+
+| Candidato | Nota | ≤ 4 | Omissões | Invenções | Medida/lado | Impressão ok |
+|---|---|---|---|---|---|---|
+| Produção (gpt-4.1) | 7,26 | 11 | 20 | 62 | 10 | 45/68 |
+| Haiku — prompt antigo | 6,03 | 15 | 51 | 74 | 10 | 33/68 |
+| Sonnet — prompt antigo | 6,90 | 11 | 34 | 62 | 15 | 44/68 |
+| **Haiku — prompt novo** | **6,96** | **5** | 45 | 46 | 6 | 39/68 |
+| **Sonnet — prompt novo** | **7,36** | **4** | 35 | **38** | 6 | 43/68 |
+
+Comparação pareada (bootstrap, IC95%): Haiku novo − Haiku antigo **+0,93** [+0,48; +1,38]; Sonnet novo − Sonnet antigo
++0,46 [+0,03; +0,88]; **Sonnet novo − Haiku novo +0,40 [+0,06; +0,77]**; Sonnet novo − produção +0,10 [−0,42; +0,63];
+Haiku novo − produção −0,30 [−0,87; +0,25]. Por via, o Sonnet novo é o melhor nas três (TA+TV 7,33 · TV 7,42 · TA 7,40);
+o Haiku novo fica em 6,9–7,1. Latência mediana pela assinatura: Sonnet 6,1 s, Haiku 11,2 s (comparação relativa).
+
+- O prompt novo melhora os dois modelos; com ele, **os dois ficam no nível da produção** (diferença dentro do ruído do
+  juiz), com metade ou menos dos laudos graves (4–5 × 11) e menos invenções e erros de medida/lado.
+- **Não é empate:** o Sonnet fica 0,4 acima do Haiku, com intervalo que exclui zero (pequeno, mas consistente nas três vias).
+- **Recomendação:** **Sonnet 5.5** no writer dedicado da pelve. Se o Luiz preferir o Haiku pelo custo, ele também fica no
+  nível da produção com o prompt novo (−0,30, dentro do ruído) — é uma escolha aceitável, com ~0,4 ponto a menos que o Sonnet.
