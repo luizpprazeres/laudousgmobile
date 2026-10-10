@@ -289,3 +289,48 @@ axilar calibrado: reproduz 7/28 hoje, 2/28 pré-A05 e 4/28 da candidata):
   axila com córtex espessado sem "Linfonodos axilares normais.").
 - Testes: `w10c-mama-tireoide.manual.ts` 22/22 (1 novo); mama golden, 23C2, BI-RADS guard, W7 e typecheck verdes.
 Rodadas locais: `tmp-review/bench-haiku/w10c/axila/`.
+
+## DECISOES — decisões do Luiz de 10/10 (tarde)
+
+Fonte: `docs/stories/haiku-migration/DECISOES-LUIZ-2026-10-10.md`. Branch `fix/decisoes-w10c` (base f7b4b382), PROMPT_VERSION v1.12.
+
+**Mama — "2 9 cm" = 2,9 cm (reverte o A07 nesse caso).** `prompts/contracts/MAMARIA.ts`, linha DITADO POR VOZ: algarismos
+separados antes da unidade → 2,9 cm, sem marca. O [REVISAR — medida ambígua] fica só para o realmente ambíguo: eixo faltando
+("medindo 1,2 x cm") ou achado sem cm/mm em nenhuma das suas medidas. A primeira redação ("medida sem nenhuma unidade no
+achado") fez o Haiku marcar "0.4 por 0.3 por 0.3" num achado com "distando 0,8 cm" (2 de 7 nos sintéticos); a redação final
+zerou isso (0 de 6).
+
+Na bancada, o Haiku passou a completar o "e" solto de "Ultrasonografia das mamas e com imagens…" (0f631dbe) como
+"E REGIÕES AXILARES" no título: 3 de 12 na primeira versão, contra 0 de 5 no contrato da AXILA. O ESCOPO agora diz que um "e"
+solto no ditado não conta, como o nome do exame na tela; depois disso, 1 de 59.
+
+**Tireoide — VT soma lobos + istmo, exceção documentada.** O renderer já somava os três volumes (`volumeTotal`). A exceção à
+regra "só calcule volume se o médico pedir" ficou escrita no contrato (4.1), no prompt do extrator e no comentário do
+`volumeTotal`. O global não mudou (é da W10b). Na bancada da tireoide (20 laudos), o VT gerado bate com o do final em todos os
+que têm o volume do istmo ditado. Ficou "____" em 2:
+- 42fbb3eb: istmo medido sem volume ditado; o médico calculou 0,1 ml pelas medidas e somou. Não estimamos volume não ditado —
+  **pergunta ao Luiz**: calcular o volume do istmo pelo elipsoide (× 0,52) quando só as medidas forem ditadas?
+- 3221ca52: laudo colado que diz "sem incluir o istmo".
+
+Placar dos 29 (Haiku, BENCH_MODEL explícito, biblioteca enxuta do banco, 1ª repetição):
+
+| Candidato | Soma de graves | [REVISAR] | Medida ausente | Frases fixas omitidas | Numeração | Defeito axilar |
+|---|---|---|---|---|---|---|
+| Final W10c (B8) | 13 | 4 | 3 | 2 | 0 | — |
+| AXILA (B3) | 16 | 6 | 5 | 4 | 1 | 0/29 |
+| **DECISOES (B6, redação final)** | **10** | **3** | **2** | **3** | **2** | **0/29** |
+
+- d4a3b676 ("2 9 cm até o mamilo"), 153ac91d ("2,0 x 1 3 cm") e 2f3a039d ("0,5 x 0 9 cm"): resolvidos sem marca em 8 de 8
+  saídas (rodada intermediária com 2 repetições + final).
+- As 3 marcas restantes são legítimas: 2 de lado não ditado e 1 medida embaralhada ("0.60 ponto 0.40 0,5 cm", ffdbf664).
+- Numeração 2: laudos que oscilam entre repetições (710b2fcc, d4a3b676, 6cc6f68a); repetidos, saíram certos em 5 de 6.
+- Rodada intermediária com 2 repetições (58 saídas): 0 defeitos axilares, soma de graves 7.
+
+Sintéticos pelo Haiku (`sinteticos-mama-tireoide.ts`, 6 execuções da redação final): A05 exclusão, A06, unidade do mesmo
+achado 6/6. "2 9" sem unidade nenhuma saiu sem marca 1 vez em 6 (resolvido como 2,9 cm). "A05 axila alterada" recebeu
+"Linfonodos axilares normais." 1 vez em 6. É fragilidade anterior: o contrato da AXILA falhou 3 vezes em 5 no mesmo caso, e o
+13/13 da AXILA foi uma execução só.
+
+Tamanho do system da mama: 11.182 → 11.326 caracteres (+144, +1,3%).
+Testes: `w10c-mama-tireoide.manual.ts` 26/26 (4 novos do VT); mama golden, 23C2, BI-RADS guard, tireoide 23c1, objetivo golden,
+pico-null, W7 e typecheck verdes. Rodadas locais: `tmp-review/bench-haiku/w10c/decisoes/`.
