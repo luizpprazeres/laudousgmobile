@@ -83,6 +83,8 @@ Object.assign(process.env, {
 });
 
 const HAIKU = process.env.BENCH_MODEL ?? "claude-haiku-5-5";
+/** Sem BENCH_MODEL o modelo é o que o motor pede por categoria (Sonnet no MSK/pelve/carótidas desde o W1 r3). */
+const MODELO_EFETIVO = process.env.BENCH_MODEL ?? "roteado pelo motor";
 const JUDGE = process.env.BENCH_JUDGE_MODEL ?? "claude-opus-5-5";
 const EFFORT = (process.env.BENCH_EFFORT ?? "medium") as "low" | "medium" | "high";
 
@@ -492,7 +494,7 @@ async function main() {
   const outDir = join(OUT_ROOT, new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19) + (CATEGORIES.join(",") === "ABDOMEN_TOTAL" ? "" : "-" + CATEGORIES.join("+").toLowerCase()));
   mkdirSync(outDir, { recursive: true });
   const log = join(outDir, "calls.jsonl");
-  console.log(`bench: ${cases.length} casos · modelo ${HAIKU} (effort ${EFFORT}) · reps ${REPS} · juiz ${JUDGE_ON ? JUDGE : "off"}`);
+  console.log(`bench: ${cases.length} casos · modelo ${MODELO_EFETIVO} (effort ${EFFORT}) · reps ${REPS} · juiz ${JUDGE_ON ? JUDGE : "off"}`);
   console.log(`saída: ${outDir}\n`);
 
   const categories = await getKnownCategories();
@@ -725,17 +727,17 @@ async function main() {
       if (WANT.has("A") && !res[A_KEY]) {
         res[A_KEY] = [];
         for (let k = 0; k < REPS; k++) res[A_KEY].push(await runA(r, rawInput, "haiku"));
-        res.modelos[A_KEY] = HAIKU;
+        res.modelos[A_KEY] = MODELO_EFETIVO;
       }
       if (WANT.has("B") && !res[keyOf("B")]) {
         res[keyOf("B")] = [];
         for (let k = 0; k < REPS; k++) res[keyOf("B")].push(await runB(r, rawInput));
-        res.modelos[keyOf("B")] = HAIKU;
+        res.modelos[keyOf("B")] = MODELO_EFETIVO;
       }
       if (WANT.has("B2") && !res[keyOf("B2")]) {
         res[keyOf("B2")] = [];
         for (let k = 0; k < REPS; k++) res[keyOf("B2")].push(await runB(r, rawInput, true));
-        res.modelos[keyOf("B2")] = HAIKU;
+        res.modelos[keyOf("B2")] = MODELO_EFETIVO;
       }
       if (WANT.has("L") && !(old && old.L)) {
         res.L = [];
