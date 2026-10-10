@@ -490,8 +490,10 @@ async function main() {
       .filter((line) => !line.includes("____"))
       .filter((line) => !/Breast Imaging Reporting|Domingos Correia da Rocha|American College of Radiology/i.test(line))
       .join("\n");
-  const universalGuards = (t: string) =>
-    flagImplausibleMeasures(stripInvalidDumLines(normalizeMeasures(sanitizeDictationArtifacts(t))));
+  const { aplicarCorrelacaoDitada } = await import("../../src/server/pipeline/correlacaoClinica");
+  // Como a rota: o guard da correlação clínica (decisão de 10/10) fecha a cadeia universal.
+  const universalGuards = (t: string, ditado: string) =>
+    aplicarCorrelacaoDitada(flagImplausibleMeasures(stripInvalidDumLines(normalizeMeasures(sanitizeDictationArtifacts(t)))), ditado);
 
   const sql = postgres(process.env.DATABASE_URL!, { ssl: "require", max: 2 });
   const rows: Row[] = await sql`
@@ -650,7 +652,7 @@ async function main() {
       text = applyCommandOperations(text, rawInput, { writer: passthrough });
       // Como a rota: "calcule o volume" no writer dedicado (decisão de 10/10).
       if (passthrough) text = applyVolumePolicy(text, rawInput, { soPedido: true });
-      return mode === "replay" ? { text: universalGuards(text) } : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text) });
+      return mode === "replay" ? { text: universalGuards(text, rawInput) } : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, rawInput) });
     });
   }
 
@@ -717,7 +719,7 @@ async function main() {
         text = dedupeConclusionItems(text);
       }
       if (cat === "MUSCULOESQUELETICO_V2") text = normalizeSectionSpacing(text);
-      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text) });
+      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, rawInput) });
     });
   }
 

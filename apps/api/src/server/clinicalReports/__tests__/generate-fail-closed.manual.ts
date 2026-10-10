@@ -17,6 +17,7 @@ import { isDopplerRenalAuditError } from "../../pipeline/dopplerRenalWriterAudit
 import { isLivreRoutingError, LivreRoutingError } from "../../ai/livreProvider";
 import * as livreRouter from "../../pipeline/livreRouter";
 import * as lexicoDaCasa from "../../pipeline/lexicoDaCasa";
+import * as correlacaoClinica from "../../pipeline/correlacaoClinica";
 
 const routePath = resolve(process.cwd(), "apps/api/src/app/api/generate/route.ts");
 const compiled = ts.transpileModule(readFileSync(routePath, "utf8"), {
@@ -76,6 +77,7 @@ async function execute(scenario: Scenario) {
     "@/server/ai/livreProvider": { isLivreRoutingError, LivreRoutingError },
     // Léxico da casa (W11): módulo real, determinístico e sem dependências.
     "@/server/pipeline/lexicoDaCasa": lexicoDaCasa,
+    "@/server/pipeline/correlacaoClinica": correlacaoClinica,
     "@/server/ai/llm": {
       writerTarget: () => ({ model: "synthetic", provider: "test", effort: "medium" }),
       extractionTarget: () => ({ model: "synthetic", provider: "test", effort: "medium" }),
