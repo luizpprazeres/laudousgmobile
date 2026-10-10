@@ -78,6 +78,9 @@ export function figosDaLocalizacao(localizacao: string | null | undefined): stri
   if (/submucos/.test(s) && /subseros/.test(s)) return ["2-5"];
   if (/submucos/.test(s)) return pediculado ? ["0"] : menos ? ["1"] : mais ? ["2"] : [...FIGO_FAMILIAS_GENERICAS.submucoso!];
   if (/subseros/.test(s)) return pediculado ? ["7"] : menos ? ["6"] : mais ? ["5"] : [...FIGO_FAMILIAS_GENERICAS.subseroso!];
+  // "com mais/menos de 50% intramural" sem dizer se é submucoso ou subseroso: ambíguo.
+  if (/intramura/.test(s) && mais) return ["2", "5"];
+  if (/intramura/.test(s) && menos) return ["1", "6"];
   if (/intramura/.test(s)) return /contato|mucosa|endometri|cavidade/.test(s) ? ["3"] : ["4"];
   if (/atipic|cervical|colo|ligamento largo|parasit/.test(s)) return ["8"];
   return [];

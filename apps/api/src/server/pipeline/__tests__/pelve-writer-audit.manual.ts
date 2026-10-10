@@ -141,11 +141,12 @@ function check(name: string, cond: boolean, detail?: string) {
     "3) Ovários ecograficamente normais (o direito com 5,2 cm³ e o esquerdo 4,8 cm³), ambos contendo folículos.";
   const a = auditPelveFacts(raw, laudo);
   check("sonda W13: reprova", !a.ok, JSON.stringify(a));
-  check("sonda W13: FIGO sem FIGO no ditado", a.figoInventado, JSON.stringify(a));
+  // W12: "intramural" é localização unívoca → FIGO 4 pela tabela (vínculo pedido pelo Luiz); não é invenção.
+  check("sonda W13: FIGO 4 derivada de 'intramural' é permitida (W12)", !a.figoInventado, JSON.stringify(a));
   check("sonda W13: eixos do ovário não ditados", ["2,1", "1,4", "1,8"].every((n) => a.medidasNaoDitadas.includes(n)), JSON.stringify(a));
   check("sonda W13: [REVISAR] por dado não ditado", a.revisaoPorFalta, JSON.stringify(a));
   check("sonda W13: tipo ditado (intramural) não acusa", a.tipoMiomaInventado.length === 0, JSON.stringify(a));
-  check("sonda W13: nota cita FIGO", /FIGO/.test(pelveRevisarNote(a) ?? ""));
+  check("sonda W13: nota cita as medidas não ditadas", /2,1/.test(pelveRevisarNote(a) ?? ""));
 }
 {
   // Tipo de mioma inferido pelo modelo.
@@ -157,8 +158,8 @@ function check(name: string, cond: boolean, detail?: string) {
   check("tipo de mioma ditado e omitido acusa", a.tipoMiomaOmitido.includes("intramural"), JSON.stringify(a));
 }
 {
-  const a = auditPelveFacts("mioma na parede anterior, categoria figo, 5", "nódulo miomatoso intramural (categoria FIGO 5).");
-  check("tipo compatível com FIGO ditado não acusa", a.tipoMiomaInventado.length === 0, JSON.stringify(a));
+  const a = auditPelveFacts("mioma na parede anterior, categoria figo, 5", "nódulo miomatoso subseroso com mais de 50% intramural (categoria FIGO 5).");
+  check("localização da tabela para FIGO ditada não acusa", a.ok, JSON.stringify(a));
   const b = auditPelveFacts("mioma na parede anterior, FIGO 4", "nódulo miomatoso subseroso (categoria FIGO 4).");
   check("tipo incompatível com FIGO ditado acusa", b.tipoMiomaInventado.includes("subseroso"), JSON.stringify(b));
 }
@@ -172,6 +173,31 @@ function check(name: string, cond: boolean, detail?: string) {
   check("incompatibilidade já sinalizada não duplica", c.figoTipoIncompativel.length === 0, JSON.stringify(c));
   const d = auditPelveFacts("mioma FIGO 2-5", "nódulo miomatoso submucoso e subseroso (categoria FIGO 2-5).");
   check("FIGO híbrido 2-5 não acusa", d.figoTipoIncompativel.length === 0, JSON.stringify(d));
+}
+// ── Revisão W13, rodada 2 (Codex): sondas da auditoria da pelve ──
+{
+  const a = auditPelveFacts("Mioma intramural FIGO 3 na parede anterior.", "nódulo miomatoso intramural (categoria FIGO 4).");
+  check("R2/A03: FIGO trocada (3 → 4) acusa", a.figosInventados.includes("4"), JSON.stringify(a));
+  const b = auditPelveFacts("Mioma FIGO 4 na parede anterior.", "nódulo miomatoso intramural (categoria FIGO 4).");
+  check("R2/A03: tipo derivado da FIGO pela tabela (W12) não acusa", b.ok, JSON.stringify(b));
+  const b2 = auditPelveFacts("Mioma FIGO 4 na parede anterior.", "nódulo miomatoso subseroso (categoria FIGO 4).");
+  check("R2/A03: tipo que não é o da FIGO ditada acusa", b2.tipoMiomaInventado.includes("subseroso") && b2.figoTipoIncompativel.length === 1, JSON.stringify(b2));
+  const c = auditPelveFacts("Mioma intramural FIGO 5.", "nódulo miomatoso intramural (categoria FIGO 5).");
+  check("R2/A03: intramural + FIGO 5 sem revisão acusa", c.figoTipoIncompativel.length === 1, JSON.stringify(c));
+  const d = auditPelveFacts("Mioma FIGO 4 na parede anterior.", "Miométrio apresentando imagem nodular, medindo 4 cm.\nnódulo miomatoso intramural (categoria FIGO 4).");
+  check("R2/A02: número da FIGO não vale como medida", d.medidasNaoDitadas.includes("4"), JSON.stringify(d));
+  const e = auditPelveFacts("Mioma intramural medindo dois centímetros.", "Imagem sólida medindo 2 cm. Nódulo miomatoso intramural (categoria FIGO 4).");
+  check("R2-01: número por extenso normalizado não acusa", e.ok, JSON.stringify(e));
+  const e2 = auditPelveFacts("Endométrio de dois vírgula cinco milímetros; volume de vinte e cinco.", "Endométrio medindo 0,25 cm.\nÚtero de volume normal (25 cm³).");
+  check("R2-01: 'dois vírgula cinco' e 'vinte e cinco'", e2.missingMeasures.length === 0 && e2.medidasNaoDitadas.length === 0, JSON.stringify(e2));
+  const f = auditPelveFacts("Útero normal. Remova a expressão mioma intramural.", "Útero ecograficamente normal.");
+  check("R2-02: comando de remoção não cobra tipo", f.ok, JSON.stringify(f));
+  const g = auditPelveFacts("Útero normal, sem mioma intramural.", "Útero ecograficamente normal.");
+  check("R2-02: negação não cobra tipo", g.ok, JSON.stringify(g));
+  const h = auditPelveFacts("Mioma subseroso com mais de 50% intramural, estendendo-se desde a mucosa, categoria figo 2-5.", "nódulo miomatoso subseroso com mais de 50% intramural, estendendo-se desde a mucosa (categoria FIGO 2-5).");
+  check("W12: híbrida 2-5 descrita pela parte subserosa não acusa", h.ok, JSON.stringify(h));
+  const i = auditPelveFacts("Dois miomas, o primeiro intramural FIGO 4 e o segundo FIGO 6.", "nódulos miomatosos, o primeiro intramural (categoria FIGO 4) e o segundo subseroso com menos de 50% intramural (categoria FIGO 6).");
+  check("W12: dois miomas com FIGO por lesão não acusa", i.ok, JSON.stringify(i));
 }
 {
   // Decimal separado por espaço no ASR ("volume de 8 4") não é medida inventada.

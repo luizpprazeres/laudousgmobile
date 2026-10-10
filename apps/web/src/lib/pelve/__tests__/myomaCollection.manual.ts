@@ -24,7 +24,7 @@ assert.deepEqual(legacy.items[0], {
   sagittalPoint: null, axialPoint: null,
 })
 assert.equal(legacy.items[1]?.medidas, '4,2')
-assert.equal(legacy.items[1]?.classificacao, 'subseroso')
+assert.equal(legacy.items[1]?.classificacao, 'subseroso com menos de 50% intramural')
 assert.equal(legacy.items[1]?.parede, 'parede posterior')
 
 const collection = readMyomaItems({

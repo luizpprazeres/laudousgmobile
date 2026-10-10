@@ -6,6 +6,7 @@
  */
 import { buildPelveWriterSystemMessage } from "../../renderer/categories/PELVE_FEMININA";
 import { PELVE_FEWSHOTS } from "../../renderer/categories/pelveFewshots";
+import { tabelaFigoParaPrompt } from "@laudousg/schemes";
 import { WRITER_OUTPUT_RULE } from "../writerOutputGuard";
 
 let pass = 0, fail = 0;
@@ -64,7 +65,15 @@ check("ovários 'e o esquerdo {Y} cm³' (sem 'com')", /e o esquerdo \{Y\} cm³/.
 check("dado não ditado: omite a oração, sem 0,0/____/[REVISAR] por falta", /omita a oração — nunca invente, nem "0,0", "____" ou \[REVISAR\] por falta/.test(p));
 check("[REVISAR] só para ditado ilegível ou ambíguo", /\[REVISAR: …\] só para ditado ilegível ou ambíguo/.test(p));
 check("eixos e volumes opcionais ([ ] = só se ditado)", /\[ \] = só se ditado/.test(p) && /Ovário \{direito\|esquerdo\}\[ medindo/.test(p) && /Útero de volume normal\[ \(\{V\} cm³\)\]/.test(p));
-check("tipo e FIGO só se ditados, sem inferir nem corrigir (incompatível: auditoria)", /Tipo e FIGO ditados entram como ditados; não ditados, nunca inferidos/.test(p));
+// W12: localização ↔ FIGO pela tabela única (@laudousg/schemes), nos dois sentidos; nada ditado → nada.
+check("W12: tabela FIGO no prompt, da fonte única", p.includes(tabelaFigoParaPrompt()) && /5 = subseroso com mais de 50% intramural/.test(p));
+check("W12: só a FIGO → localização; localização unívoca → FIGO; genérica → sem FIGO", /Só a FIGO ditada → a localização dela; só a localização, se for uma da tabela → a FIGO dela/.test(p) && /"subseroso" ou "submucoso" sem detalhe → sem FIGO/.test(p));
+check("W12: incompatíveis → como ditadas + [REVISAR]", /as duas incompatíveis → como ditadas \+ \[REVISAR: localização e FIGO não conferem\]/.test(p));
+check("W12: nada ditado → nenhuma das duas", /nada ditado → nenhuma das duas/.test(p));
+check("W12: vários miomas num item só (plural/ordinais)", /Vários miomas, um item só/.test(p) && /o primeiro \{localização\} \(categoria FIGO \{N\}\) e o segundo/.test(p));
+check("W12: corpo de 2–3 numa linha e inúmeros", /Dois ou três, numa linha/.test(p) && /as maiores assim descritas/.test(p) && /impede a avaliação individualizada/.test(p));
+check("W12: FIGO não vai no corpo (0/24 finais)", /FIGO não vai no corpo/.test(p));
+check("W12: 'em região fúndica'", /em região fúndica/.test(p));
 check("legenda FIGO só com FIGO no laudo", /Com FIGO no laudo, após a conclusão, uma vez e sem número/.test(p));
 check("endométrio normal só com espessura ditada", /Com espessura ditada: "O endométrio tem espessura normal/.test(p));
 check("legenda FIGO uma vez e sem número", /uma vez e sem número: "FIGO: Federação/.test(p));

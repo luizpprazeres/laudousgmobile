@@ -17,6 +17,7 @@ const files = [
   'tests/pelvicoTransabdominal.manual.ts',
   'tests/pelvePresets.manual.ts',
   'tests/pelveUnified.manual.ts',
+  'tests/w12FigoMiomas.manual.ts',
   'tests/dopplerPresets.manual.ts',
   'tests/histerossonografiaStructured.manual.ts',
   'tests/hycosyStructured.manual.ts',

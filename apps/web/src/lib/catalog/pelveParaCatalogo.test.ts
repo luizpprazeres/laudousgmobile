@@ -36,7 +36,7 @@ const resultado = adaptarPelve({
 const miomas = resultado.dados.miomas as Array<Record<string, unknown>>
 assert.equal(miomas.length, 3, 'miomas dinâmicos não podem se perder no adaptador canônico')
 assert.deepEqual(miomas[1], {
-  classificacao: 'subseroso',
+  classificacao: 'subseroso com menos de 50% intramural',
   medidas_cm: [4.2],
   parede: 'parede posterior',
   relacao: null,

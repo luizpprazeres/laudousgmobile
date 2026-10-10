@@ -54,6 +54,13 @@ export interface Field {
   halfWidth?: boolean
   /** Oculta o campo antes desta idade gestacional; sem IG informada, mantém visível. */
   minGestationalWeeks?: number
+  /**
+   * Vínculo com um campo irmão (mesmo grupo de subcampos): escolher um valor deste campo
+   * PREENCHE o irmão (string) ou RESTRINGE as opções dele (lista; o valor atual do irmão
+   * fora da lista é limpo). Valor sem entrada no mapa não mexe no irmão.
+   * Ex.: localização do mioma ↔ categoria FIGO.
+   */
+  sync?: { key: string; map: Record<string, string | readonly string[]> }
 }
 
 /** Schema declarativo de um órgão — a UI renderiza a partir disto. */

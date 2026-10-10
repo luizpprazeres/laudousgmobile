@@ -36,6 +36,8 @@ assert.deepEqual(figosDaLocalizacao("subseroso"), ["5", "6", "7"], "família gen
 assert.deepEqual(figosDaLocalizacao("submucoso"), ["0", "1", "2"]);
 assert.deepEqual(figosDaLocalizacao("intramural em contato com o endométrio"), ["3"]);
 assert.deepEqual(figosDaLocalizacao("parede anterior"), []);
+assert.deepEqual(figosDaLocalizacao("com mais de 50% intramural"), ["2", "5"], "sem a família: ambíguo");
+assert.deepEqual(figosDaLocalizacao("com menos de 50% intramural"), ["1", "6"]);
 
 // Os quatro casos do pedido.
 assert.deepEqual(classificarMioma("", "5"), { texto: "subseroso com mais de 50% intramural", plural: "subserosos com mais de 50% intramural", figo: "5", conflito: false }, "só a categoria");

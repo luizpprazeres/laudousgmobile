@@ -33,6 +33,7 @@ import {
 } from "../deterministic/organs/urinaryShared";
 import { pelvePresetDe } from "../deterministic/organs/pelvePresets";
 import { readMyomaItems } from "../pelve/myomaCollection";
+import { classificarMioma, localizacaoDaFigo } from "@laudousg/schemes";
 
 /** O que a tela guarda de uma seção. Nada aqui é tipado pelo compilador. */
 type EstadoDaSecao = Record<string, unknown>;
@@ -255,8 +256,21 @@ export function adaptarPelve(
       bloqueia: true,
     });
   }
+  // Valor antigo "outro" (lista anterior à W12) = localização atípica da tabela FIGO.
+  const localizacao = (valor: string) => (valor === "outro" ? localizacaoDaFigo("8")!.texto : valor);
+  myomaCollection.items.forEach((mioma, i) => {
+    const c = classificarMioma(localizacao(mioma.classificacao), mioma.figo);
+    if (c.conflito) {
+      pendencias.push({
+        onde: "miomas",
+        valor: `${mioma.classificacao} / FIGO ${mioma.figo}`,
+        motivo: `mioma ${i + 1}: a localização "${mioma.classificacao}" não confere com a categoria FIGO ${mioma.figo}; ajuste uma das duas`,
+        bloqueia: true,
+      });
+    }
+  });
   const miomas = myomaCollection.items.map((mioma) => ({
-    classificacao: mioma.classificacao || null,
+    classificacao: localizacao(mioma.classificacao) || null,
     medidas_cm: medidas(mioma.medidas),
     parede: mioma.parede || null,
     relacao: null,
