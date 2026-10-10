@@ -26,13 +26,15 @@ type RendererCategoryConfig = Pick<
  * única com personalização publicada na Biblioteca, que só se aplica no
  * renderer (decisão pendente do Luiz; docs/stories/haiku-migration/W1-relatorio.md).
  * As demais categorias da tabela já são writer hoje e não precisam constar.
+ *
+ * TIREOIDE e PROSTATA_SUPRAPUBICA saíram em 10/10 (bancada W10c/W4): renderer +
+ * Haiku extrator foi melhor que o writer (tireoide: A 5,70 × writer 5,58;
+ * próstata: R 7,33 × writer 5,75). Seguem no renderer.
  */
 export const DEFAULT_FULL_WRITER_CATEGORIES = [
   "ABDOMEN_TOTAL",
   "ABDOMEN_SUPERIOR",
-  "TIREOIDE",
   "MAMARIA",
-  "PROSTATA_SUPRAPUBICA",
   "VIAS_URINARIAS",
   "DOPPLER_CAROTIDAS",
 ] as const;

@@ -8,7 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { LlmOutputError } from "../../ai/llm";
-import { buildRawUserMessage, runWriterStream } from "../writer";
+import { buildRawUserMessage, chosenExamLabel, runWriterStream } from "../writer";
 import { buildSystemMessage } from "../../prompts/buildSystemMessage";
 import { WRITER_OUTPUT_RULE } from "../writerOutputGuard";
 import type { WriterModelConfig } from "../modelResolver";
@@ -75,6 +75,28 @@ async function main() {
     assert.match(user, /laudo\nNORMAL completo deste exame/);
     assert.ok(user.indexOf("EXAME ESCOLHIDO") < user.indexOf("=== DITADO DO MÉDICO"));
     assert.ok(user.includes(NORMAL));
+  });
+
+  await check("MAMARIA: rótulo sem axilas (axilas só quando ditadas); demais categorias com o rótulo do banco", async () => {
+    assert.equal(chosenExamLabel("MAMARIA", "Mamas e axilas"), "Mamas (axilas somente se citadas no ditado)");
+    assert.equal(chosenExamLabel("TIREOIDE", "Tireoide"), "Tireoide");
+    const seen: any[] = [];
+    await drain(
+      runWriterStream({
+        findings: { categoria_detectada: "MAMARIA" } as any,
+        ragBlocks: [],
+        writingStyleCode: "CLASSICO_COMPLETO",
+        categoryCode: "MAMARIA",
+        categoryLabel: "Mamas e axilas",
+        rawUserMessage: NORMAL,
+        sourceTranscript: NORMAL,
+        modelConfig: HAIKU_DEFAULT,
+        anthropicClient: fakeClient("ULTRASSONOGRAFIA MAMÁRIA", "end_turn", seen),
+      }),
+    );
+    const user: string = seen[0].messages[0].content;
+    assert.match(user, /^=== EXAME ESCOLHIDO PELO MÉDICO ===\nMamas \(axilas somente se citadas no ditado\) \(MAMARIA\)\./);
+    assert.equal(user.includes("Mamas e axilas"), false);
   });
 
   await check("sem exame (Livre, modo difícil, TESTE): mensagem idêntica à de antes", () => {

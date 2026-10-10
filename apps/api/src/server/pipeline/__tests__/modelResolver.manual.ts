@@ -15,7 +15,7 @@ const baseEnv = {
   TESTE_CATEGORY_API_KEY: "test-key",
   TESTE_REASONING_EFFORT: "low",
   TESTE_ALLOWED_USER_ID: "luiz",
-  RENDERER_CATEGORIES: "ABDOMEN_TOTAL,TIREOIDE,CERVICAL,OBSTETRICA,PELVE_FEMININA",
+  RENDERER_CATEGORIES: "ABDOMEN_TOTAL,TIREOIDE,CERVICAL,OBSTETRICA,PELVE_FEMININA,MAMARIA,PROSTATA_SUPRAPUBICA",
   DOPPLER_STANDALONE_V2: "true",
   DOPPLER_RENAL_WRITER_ENABLED: "true",
   DOPPLER_VENOSO_MMII_WRITER_ENABLED: "true",
@@ -246,8 +246,10 @@ check(
   abdomeDefault.path === "writer-pure" && abdomeDefault.ragFewShots && abdomeDefault.guardsMode === "full",
 );
 check(
-  "default: TIREOIDE clássico vai ao writer completo",
-  resolveGenerationPath({ mode: "standard", categoryCode: "TIREOIDE" }, baseEnv).path === "writer-pure",
+  "default: MAMARIA clássica vai ao writer completo; TIREOIDE e PROSTATA_SUPRAPUBICA ficam no renderer (10/10)",
+  resolveGenerationPath({ mode: "standard", categoryCode: "MAMARIA" }, baseEnv).path === "writer-pure" &&
+    resolveGenerationPath({ mode: "standard", categoryCode: "TIREOIDE" }, baseEnv).path === "renderer" &&
+    resolveGenerationPath({ mode: "standard", categoryCode: "PROSTATA_SUPRAPUBICA" }, baseEnv).path === "renderer",
 );
 check(
   "estilo objetivo fica no renderer",

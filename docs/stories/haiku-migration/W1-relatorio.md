@@ -16,14 +16,31 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   ele, o código troca por Haiku e avisa no log.
 - **Rollback sem deploy**: cada papel tem a sua env de modelo; pôr ali um modelo da OpenAI (ex.: `gpt-5.4-mini`)
   volta aquele papel para a OpenAI.
-- **Roteamento por env** (`FULL_WRITER_CATEGORIES`): abdome total, abdome superior, tireoide, mama, próstata,
-  vias urinárias e carótidas passam ao writer completo (Haiku) no estilo clássico; obstetrícia, os 5 modelos
+- **Roteamento por env** (`FULL_WRITER_CATEGORIES`): abdome total, abdome superior, mama, vias urinárias e
+  carótidas passam ao writer completo no estilo clássico (tireoide e próstata saíram em 10/10 — ficam no renderer); obstetrícia, os 5 modelos
   clínicos e os writers Doppler ficam onde estão. Esvaziar a env devolve tudo ao renderer.
 - **Achado técnico importante**: a API da Anthropic limita a saída estruturada "estrita" a 16 campos anuláveis
   por pedido; o extrator obstétrico tem 98 e o do abdome, 109. Esses vão por outro mecanismo (ferramenta não
   estrita + validação do nosso schema + uma tentativa de correção). Funciona nos testes e na bancada, mas
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
+
+## Ajustes de 10/10 (bancada W10c/W4)
+
+1. **TIREOIDE e PROSTATA_SUPRAPUBICA saem do default de `FULL_WRITER_CATEGORIES`** — renderer + Haiku extrator foi
+   melhor que o writer na bancada (tireoide: produção 6,50 · A 5,70 · writer 5,58; próstata: produção 6,25 · R 7,33 ·
+   writer 5,75). Ficam no writer completo: ABDOMEN_TOTAL, ABDOMEN_SUPERIOR, MAMARIA, VIAS_URINARIAS e DOPPLER_CAROTIDAS
+   (além das que já eram writer). Para devolvê-las ao writer sem deploy:
+   `FULL_WRITER_CATEGORIES=ABDOMEN_TOTAL,ABDOMEN_SUPERIOR,TIREOIDE,MAMARIA,PROSTATA_SUPRAPUBICA,VIAS_URINARIAS,DOPPLER_CAROTIDAS`.
+2. **Rótulo do exame na MAMARIA** — o bloco "EXAME ESCOLHIDO" usava o rótulo do banco, "Mamas e axilas", que induziu
+   axilas não ditadas em 4 casos. Decisão do Luiz: axilas só quando ditadas. Para MAMARIA o rótulo passa a ser "Mamas
+   (axilas somente se citadas no ditado)" (`chosenExamLabel` em `pipeline/writer.ts`); as demais categorias seguem com o
+   rótulo do banco.
+3. MSK de volta ao Haiku 5.5 no writer dedicado (prompt da W9) — `MUSCULOESQUELETICO_V2` fora do default de
+   `LLM_WRITER_MODEL_BY_CATEGORY` (commit `6f53f066`).
+
+Testes: `modelResolver` 43/43 (mama no writer; tireoide e próstata no renderer), `writerChosenExam` 6/6 (rótulo da
+mama), `llm` 26/26, `livreRouter` 18/18, fail-closed 41/41; typecheck OK.
 
 ## Rodada 3 — Sonnet 5.5 nos writers pesados + guard de comandos por laudo
 
@@ -242,7 +259,7 @@ texto do modelo curado; o renderer decidia essa nota pela preferência `show_dom
 | `LLM_WRITER_EFFORT` | `medium` | também o esforço dos writers dedicados |
 | `LLM_SANITY_MODEL` / `LLM_SANITY_EFFORT` | `claude-haiku-5-5` / `medium` | sanity por IA |
 | `LLM_VISION_MODEL` | `claude-haiku-5-5` | leitura de imagem (esforço = `LLM_EXTRACTION_EFFORT`) |
-| `FULL_WRITER_CATEGORIES` | `ABDOMEN_TOTAL,ABDOMEN_SUPERIOR,TIREOIDE,MAMARIA,PROSTATA_SUPRAPUBICA,VIAS_URINARIAS,DOPPLER_CAROTIDAS` | env **ausente** = default; **vazia** = ninguém sai do renderer |
+| `FULL_WRITER_CATEGORIES` | `ABDOMEN_TOTAL,ABDOMEN_SUPERIOR,MAMARIA,VIAS_URINARIAS,DOPPLER_CAROTIDAS` (TIREOIDE e PROSTATA_SUPRAPUBICA saíram em 10/10) | env **ausente** = default; **vazia** = ninguém sai do renderer |
 | `WRITER_V2_MODEL` | `gpt-5.4-mini` | Writer V2 experimental (OpenAI) |
 | `LLM_WRITER_MODEL_BY_CATEGORY` | ausente = `PELVE_FEMININA`, `DOPPLER_CAROTIDAS` → `claude-sonnet-5-5` (o MSK saiu em 10/10: Haiku 5.5 no writer dedicado, prompt da W9) | modelo do writer por categoria (`CAT=modelo[:esforço]`); vazia = sem exceções; vence `*_WRITER_MODEL`. Voltar o MSK ao Sonnet sem deploy: `MUSCULOESQUELETICO_V2=claude-sonnet-5-5,PELVE_FEMININA=claude-sonnet-5-5,DOPPLER_CAROTIDAS=claude-sonnet-5-5` |
 | `LLM_SONNET_SERVER_FALLBACK` | `true` | rodada 3: fallback de recusa do servidor no Sonnet 5.5; `false` desliga |
@@ -296,9 +313,9 @@ Por categoria (as que mudam de caminho no default):
 |---|---|---|---|
 | ABDOMEN_TOTAL | 39 | nenhum | writer completo (clássico) |
 | ABDOMEN_SUPERIOR | 5 | nenhum | writer completo (clássico) |
-| TIREOIDE | 14 | toggle Domingos (sem uso); sem bundle OBJETIVO | writer completo (clássico); objetivo no renderer |
+| TIREOIDE | 14 | toggle Domingos (sem uso); sem bundle OBJETIVO | **renderer + Haiku extrator** (10/10: bancada W10c/W4, A 5,70 × writer 5,58) |
 | MAMARIA | 13 | toggle conduta (sem uso) | writer completo (clássico) |
-| PROSTATA_SUPRAPUBICA | 2 | nenhum | writer completo (clássico) |
+| PROSTATA_SUPRAPUBICA | 2 | nenhum | **renderer + Haiku extrator** (10/10: bancada W10c/W4, R 7,33 × writer 5,75) |
 | VIAS_URINARIAS | 4 | sem bundle OBJETIVO | writer completo (clássico); objetivo no renderer |
 | DOPPLER_CAROTIDAS | 4 | — (já é writer em produção) | writer completo |
 | **CERVICAL** | 1 | **personalização publicada** | **fica no renderer + Haiku extrator — decisão pendente do Luiz** |
@@ -311,8 +328,8 @@ Por categoria (as que mudam de caminho no default):
 | Clínicos fail-closed | ABDOMEN_TOTAL_DOPPLER, DOPPLER_VENOSO_MMSS, DOPPLER_ARTERIAL_MMSS, TORAX, QUADRIL_INFANTIL | renderer, **travados** (ignorados se listados em `FULL_WRITER_CATEGORIES`) | Haiku extrai |
 | Writers dedicados | MUSCULOESQUELETICO_V2, PARTES_MOLES (flags atuais), DOPPLER_RENAL, DOPPLER_HEPATICO, DOPPLER_VENOSO_MMII(_MEDIDAS) | dedicados; os Doppler travados | Haiku escreve (hepático: Haiku extrai) |
 | Pelve | PELVE_FEMININA | atual (flag `PELVE_WRITER`); writer completo se listada em `FULL_WRITER_CATEGORIES` | Haiku (writer dedicado ou extrator) |
-| Writer completo | ABDOMEN_TOTAL, ABDOMEN_SUPERIOR, TIREOIDE, MAMARIA, PROSTATA_SUPRAPUBICA, VIAS_URINARIAS, DOPPLER_CAROTIDAS — **estilo clássico** | writer (bundle + guards full) | Haiku escreve |
-| Fica no renderer | CERVICAL (personalização) e o estilo OBJETIVO das categorias acima | renderer | Haiku extrai |
+| Writer completo | ABDOMEN_TOTAL, ABDOMEN_SUPERIOR, MAMARIA, VIAS_URINARIAS, DOPPLER_CAROTIDAS — **estilo clássico** | writer (bundle + guards full) | Haiku escreve |
+| Fica no renderer | CERVICAL (personalização), TIREOIDE e PROSTATA_SUPRAPUBICA (bancada, 10/10) e o estilo OBJETIVO das categorias acima | renderer | Haiku extrai |
 | Já writer hoje | ESCROTAL, PAREDE_ABDOMINAL, REGIAO_INGUINAL, PROSTATA_TRANSRETAL e demais sem renderer | writer | Haiku escreve |
 | Livre | LIVRE | inalterado (roteador + writer Haiku) | Haiku |
 | Não mexidos | modo "laudo difícil" (`HARD_MODE_MODEL`, gpt-5.4) e categoria TESTE | inalterados | — |
@@ -375,7 +392,8 @@ de produção atual (writer dedicado da pelve) agora também é Haiku. A bancada
 
 1. **CERVICAL**: fica no renderer por causa da personalização publicada. Mover para o writer completo desativa essa
    personalização (`FULL_WRITER_CATEGORIES` + CERVICAL).
-2. Confirmar que **tireoide, mama, próstata, vias urinárias e abdome superior** vão ao writer completo já neste deploy
+2. Confirmar que **mama, vias urinárias e abdome superior** vão ao writer completo já neste deploy (tireoide e próstata
+   já voltaram ao renderer em 10/10)
    (o default faz isso) ou só depois da bancada do W4 (aí, deploy com
    `FULL_WRITER_CATEGORIES=ABDOMEN_TOTAL,DOPPLER_CAROTIDAS`).
 3. **Estilo OBJETIVO** fica no renderer nessas categorias (regra da casa de PELVE/PARTES_MOLES; tireoide e vias
