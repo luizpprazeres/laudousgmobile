@@ -163,6 +163,10 @@ const KEYS = [
   {k:'L', t:'Cenário L', s:'GPT-6 Luna extrai + renderer atual'},
   {k:'B2', t:'Cenário B2', s:'Haiku escreve tudo + prompt “corpo descritivo”'},
   {k:'AS', t:'Cenário AS', s:'Sonnet 5.5 no caminho atual'},
+  {k:'A2', t:'Cenário A2', s:'Haiku 5.5 no caminho atual, prompt revisado'},
+  {k:'AS2', t:'Cenário AS2', s:'Sonnet 5.5 no caminho atual, prompt revisado'},
+  {k:'A3', t:'Cenário A3', s:'Haiku 5.5 no caminho atual, prompt revisado (2ª iteração)'},
+  {k:'AS3', t:'Cenário AS3', s:'Sonnet 5.5 no caminho atual, prompt revisado (2ª iteração)'},
   {k:'BS', t:'Cenário BS', s:'Sonnet 5.5 escreve o laudo inteiro (writer genérico)'},
   {k:'B2S', t:'Cenário B2S', s:'Sonnet 5.5 escreve tudo + prompt “corpo descritivo”'},
 ].map(x => ({...x, ...((D.rotulos || {})[x.k] || {})})).filter(x => x.k==='gpt' || (x.k==='R' ? D.cases.some(r => r.juiz && r.juiz.R) : D.cases.some(r => r[x.k])));

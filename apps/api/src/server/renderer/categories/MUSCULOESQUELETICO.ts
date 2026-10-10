@@ -566,16 +566,23 @@ OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 (uma linha por estrutura do roteiro do segmento)
 
 CONCLUSÃO:
-(diagnósticos; 1 item = sem número; vários = "1) 2) 3)")
+(diagnósticos deste laudo; 1 item = sem número; vários = "1) 2) 3)")
 
 Linha em branco ANTES de cada cabeçalho (COMENTÁRIOS/OS SEGUINTES/CONCLUSÃO) e entre laudos.
+NUMERAÇÃO: existe SÓ dentro da CONCLUSÃO e recomeça em "1)" na conclusão de CADA laudo. Título, COMENTÁRIOS e corpo nunca são numerados; o laudo seguinte começa pelo título, sem número.
 
-ROTEIRO DA CASA — cubra EXATAMENTE estas estruturas do segmento (nem mais, nem menos). Estrutura NORMAL: use a frase de normalidade abaixo. Estrutura ALTERADA: descreva a MORFOLOGIA. NUNCA inclua estrutura fora desta lista (ex.: NÃO cite meniscos, cartilagem ou ligamentos no joelho — não fazem parte do protocolo):
+ROTEIRO DA CASA — cubra EXATAMENTE estas estruturas do segmento, NA ORDEM abaixo, uma linha cada (nem mais, nem menos). NUNCA inclua estrutura fora desta lista (ex.: NÃO cite meniscos, cartilagem ou ligamentos no joelho — não fazem parte do protocolo):
 ${roteiroParaPrompt()}
+
+COMO ESCREVER CADA LINHA DO CORPO (padrão dos laudos assinados pelo médico):
+a) Estrutura NORMAL ou não citada no ditado: copie a frase do roteiro LITERALMENTE (mesmas palavras, mesma ordem). Nunca pule uma linha do roteiro.
+b) Alteração que NÃO compromete a própria estrutura (osteófito na origem, medida do nervo, etc.): frase do roteiro sem o ponto + ", com <alteração nas palavras do médico>." Ex.: "Tendão patelar de espessura, continuidade e ecotextura preservadas, com irregularidade cortical e osteófitos marginais na origem do tendão patelar." / "Nervo mediano de calibre e ecotextura preservados ao nível do túnel do carpo, com área de secção transversa na entrada do túnel do carpo de 10 mm²."
+c) A PRÓPRIA estrutura alterada: o mesmo sujeito da frase do roteiro + a alteração. Ex.: "Tendão supraespinhal com modificação do padrão ecotextural, sem evidência de rotura." / "Bursa subacromial-subdeltoidea com espessamento e conteúdo anecoico em seu interior." / "Articulação acromioclavicular com irregularidade cortical e osteófitos marginais." Tendão com alteração ecotextural/espessamento e sem rotura ditada termina com ", sem evidência de rotura" (padrão da casa).
+d) Mantenha a ordem e as palavras do ditado na alteração; NÃO parafraseie nem inverta. NÃO invente ressalvas fora do padrão da casa ("sem alteração identificável", graus, qualificadores não ditados).
 
 REGRAS:
 1. CORPO = MORFOLOGIA (o que se vê: espessamento, redução da ecogenicidade, perda do padrão fibrilar, líquido, etc.). CONCLUSÃO = DIAGNÓSTICO. NUNCA escreva o diagnóstico ("Tendinopatia", "Bursite") no corpo, e NÃO escreva "compatível com X" no corpo — só a descrição morfológica; o nome do diagnóstico vai SÓ na conclusão.
-2. Se o médico ditar SÓ o diagnóstico (ex.: "tendinopatia da pata de ganso"), escreva no corpo a morfologia ecográfica típica desse diagnóstico (SEM inventar medida) e o diagnóstico na conclusão.
+2. Se o médico ditar SÓ o diagnóstico (ex.: "tendinopatia da pata de ganso"), escreva no corpo a morfologia ecográfica típica desse diagnóstico na forma (c) (SEM inventar medida) e o diagnóstico na conclusão.
 3. Gere um laudo APENAS para segmentos que o médico examinou/descreveu. Não crie laudo normal para um segmento só citado de passagem.
 4. Preserve TODA medida e lateralidade ditadas, exatamente. Nunca invente medida; nunca escreva "____".
 5. Nomenclatura: polias A1/A2/A3 (nunca "polia a 2"); "quirodáctilo" (não "dedo"); nunca "artrose" isolada → "alterações degenerativas".
@@ -584,6 +591,8 @@ REGRAS:
 8. NÃO invente achados nem estruturas fora do roteiro. NÃO drope NADA que o médico ditou (todo achado e toda medida entram no laudo).
 9. MULTIARTICULAR: cada combinação segmento+lado explicitamente examinada recebe um bloco completo e independente, mesmo quando duas articulações têm o mesmo lado. A presença de "direito" ou "esquerdo" em um bloco nunca cobre outro segmento. Em exames bilaterais, gere um bloco para cada lado.
 10. Se uma frase validada contiver alternativas ou campos entre colchetes, use SOMENTE a alternativa e os dados fornecidos pelo médico. Quando um dado opcional não foi informado, omita a oração correspondente. NUNCA imprima colchetes, alternativas, lacunas ou placeholders.
+
+CONFERÊNCIA FINAL, laudo por laudo, antes de responder: (1) o corpo tem TODAS as estruturas do roteiro do segmento, na ordem, e só elas; (2) toda estrutura não alterada está com a frase do roteiro literal; (3) a conclusão traz só achados deste segmento e lado, numerada a partir de "1)"; (4) nenhum achado ou medida ditado ficou de fora.
 ${validatedLibrary ? `\nBIBLIOTECA CLÍNICA VALIDADA PELO MÉDICO — use estas redações quando o achado correspondente tiver sido informado; elas não autorizam inventar achados:\n${validatedLibrary}` : ""}`;
 }
 
