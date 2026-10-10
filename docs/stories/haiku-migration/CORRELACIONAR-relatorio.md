@@ -93,3 +93,11 @@ mudaria 3, todos com a correlação escrita pelo próprio médico (2 sem ditar, 
 - Doppler testicular na web: a hipótese de **torção** levava "Correlacionar com dados clínicos e avaliação urológica.". A
   frase saiu inteira; a avaliação urológica agora entra pelo painel de Recomendações.
 - O guard vale para toda categoria, inclusive a obstétrica (a correlação com a US precoce não casa).
+
+## Aplicação na Biblioteca (10/10/2026, orquestrador)
+
+`CORRELACIONAR-biblioteca-proposta.sql` aplicado no projeto `yldtkqrsbgcnwlydrrot` (laudousgmobile), numa transação, com as guardas
+de id + status + md5 (geradas depois dos TERMOS, por isso passaram): **74/74 blocos alterados, versão +1, nenhum resta com a
+frase**. Os 20 blocos em comum com os TERMOS mantêm a grafia nova (0 voltaram a "-ecogênico"). Cópia antes da troca:
+`public.knowledge_blocks_bkp_correlacionar_20261010` (RLS ligada, sem acesso de anon/authenticated). Rollback:
+`update knowledge_blocks k set content = b.content, version = b.version, updated_at = now() from knowledge_blocks_bkp_correlacionar_20261010 b where k.id = b.id;`
