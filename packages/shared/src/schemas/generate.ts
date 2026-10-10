@@ -124,6 +124,11 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
     type: z.literal("stage"),
     stage: z.enum(["interpretando", "achado", "calculando", "montando"]),
     label: z.string(),
+    // W16B (flag PROGRESS_ETAPAS): etapa real (1 recebido, 2 lendo o ditado, 3 montando, 4 pronto = done) e
+    // tempo desde o request. Aditivos: o app atual mostra só o label.
+    step: z.number().int().optional(),
+    steps: z.number().int().optional(),
+    elapsed_ms: z.number().int().optional(),
   }),
   z.object({
     ...Base,
@@ -153,6 +158,16 @@ export const GenerateSSEEventSchema = z.discriminatedUnion("type", [
     type: z.literal("done"),
     report_id: z.string().uuid(),
     final_text: z.string(),
+    // W16B (flag PROGRESS_ETAPAS): tempos de cada etapa, em ms desde o request. Aditivo.
+    timings: z
+      .object({
+        recebido_ms: z.number().int(),
+        lendo_ms: z.number().int().nullable(),
+        montando_ms: z.number().int().nullable(),
+        texto_ms: z.number().int().nullable(),
+        total_ms: z.number().int(),
+      })
+      .optional(),
   }),
   z.object({
     ...Base,

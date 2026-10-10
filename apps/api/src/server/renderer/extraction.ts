@@ -397,14 +397,34 @@ export const RENDERER_SUPPORTED_CATEGORIES = new Set(Object.keys(EXTRACTORS));
  */
 const PROGRESS_MILESTONES: { field: string; label: string }[] = [
   { field: '"bcf_bpm"', label: "batimentos" },
+  { field: '"saco_gestacional_mm"', label: "saco gestacional" },
+  { field: '"ccn_mm"', label: "comprimento cabeça-nádega" },
+  { field: '"tn_mm"', label: "translucência nucal" },
   { field: '"dbp_mm"', label: "biometria fetal" },
   { field: '"peso_g"', label: "peso fetal" },
   { field: '"ig_semanas"', label: "idade gestacional" },
   { field: '"primeira_us_data"', label: "1ª ultrassonografia" },
+  { field: '"placenta_localizacao"', label: "placenta" },
+  { field: '"liquido_ila_cm"', label: "líquido amniótico" },
+  { field: '"liquido_mbv_por_feto_cm"', label: "líquido amniótico" },
+  { field: '"ila_cm"', label: "líquido amniótico" },
+  { field: '"mbv_cm"', label: "líquido amniótico" },
+  { field: '"ip_umbilical"', label: "artéria umbilical" },
+  { field: '"ip_acm"', label: "artéria cerebral média" },
+  { field: '"ip_ducto_venoso"', label: "ducto venoso" },
+  { field: '"ip_uterina_dir"', label: "artérias uterinas" },
+  { field: '"uterina_ip_direita"', label: "artérias uterinas" },
+  { field: '"colo_oi_oe_cm"', label: "colo uterino" },
+  { field: '"utero_medidas_cm"', label: "útero" },
+  { field: '"endometrio_espessura_cm"', label: "endométrio" },
+  { field: '"miomas"', label: "miomas" },
   { field: '"prostata_d1_cm"', label: "medidas da próstata" },
   { field: '"ipp_cm"', label: "índice de protrusão" },
   { field: '"birads"', label: "categoria BI-RADS" },
+  { field: '"birads_ditado"', label: "categoria BI-RADS" },
   { field: '"tirads"', label: "categoria TI-RADS" },
+  { field: '"ti_rads_ditado"', label: "categoria TI-RADS" },
+  { field: '"nodulos"', label: "nódulos" },
   { field: '"achados_adicionais"', label: "observações" },
   { field: '"portalVein"', label: "veia porta" },
   { field: '"psvMeasurements"', label: "velocidades arteriais" },
@@ -412,6 +432,21 @@ const PROGRESS_MILESTONES: { field: string; label: string }[] = [
   { field: '"effusion"', label: "derrame pleural" },
   { field: '"alphaDeg"', label: "ângulos de Graf" },
 ];
+
+/**
+ * Marcos de progresso já presentes no JSON parcial da extração, só com VALOR (W16B). O schema exige todos
+ * os campos (null quando não ditado), então o nome do campo sozinho não diz nada: "peso fetal" virava chip
+ * em todo laudo. Vale número, texto não vazio, true, lista ou objeto com conteúdo; null, "", false e [] não.
+ */
+export function marcosComValor(parcial: string, vistos: ReadonlySet<string> = new Set()): string[] {
+  const out: string[] = [];
+  for (const m of PROGRESS_MILESTONES) {
+    if (vistos.has(m.label) || out.includes(m.label)) continue;
+    const re = new RegExp(`${m.field}\\s*:\\s*(?:-?\\d|"[^"]|\\[\\s*[^\\]\\s]|\\{\\s*"|true)`);
+    if (re.test(parcial)) out.push(m.label);
+  }
+  return out;
+}
 
 export async function runRendererExtraction(args: {
   categoryCode: string;
@@ -482,11 +517,9 @@ export async function runRendererExtraction(args: {
     validate: (value) => void extractor.parse(withPlainChoice(value)),
     onPartialJson: args.stream
       ? (acc) => {
-          for (const m of PROGRESS_MILESTONES) {
-            if (!seen.has(m.label) && acc.includes(m.field)) {
-              seen.add(m.label);
-              args.onProgress?.({ stage: "achado", label: m.label });
-            }
+          for (const label of marcosComValor(acc, seen)) {
+            seen.add(label);
+            args.onProgress?.({ stage: "achado", label });
           }
         }
       : undefined,
