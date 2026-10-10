@@ -18,6 +18,7 @@ import { isLivreRoutingError, LivreRoutingError } from "../../ai/livreProvider";
 import * as livreRouter from "../../pipeline/livreRouter";
 import * as lexicoDaCasa from "../../pipeline/lexicoDaCasa";
 import * as tecnicaGuard from "../../pipeline/tecnicaGuard";
+import * as andamento from "../../pipeline/andamento";
 import * as correlacaoClinica from "../../pipeline/correlacaoClinica";
 
 const routePath = resolve(process.cwd(), "apps/api/src/app/api/generate/route.ts");
@@ -80,6 +81,8 @@ async function execute(scenario: Scenario) {
     "@/server/pipeline/lexicoDaCasa": lexicoDaCasa,
     // Técnica por via (W15): módulo real, determinístico; sem nada ditado devolve o texto igual.
     "@/server/pipeline/tecnicaGuard": tecnicaGuard,
+    // Andamento (W16B): módulo real; só emite etapas extras com PROGRESS_ETAPAS ligado.
+    "@/server/pipeline/andamento": andamento,
     "@/server/pipeline/correlacaoClinica": correlacaoClinica,
     "@/server/ai/llm": {
       writerTarget: () => ({ model: "synthetic", provider: "test", effort: "medium" }),
