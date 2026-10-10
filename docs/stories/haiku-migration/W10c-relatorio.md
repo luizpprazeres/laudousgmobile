@@ -302,7 +302,7 @@ zerou isso (0 de 6).
 
 Na bancada, o Haiku passou a completar o "e" solto de "Ultrasonografia das mamas e com imagens…" (0f631dbe) como
 "E REGIÕES AXILARES" no título: 3 de 12 na primeira versão, contra 0 de 5 no contrato da AXILA. O ESCOPO agora diz que um "e"
-solto no ditado não conta, como o nome do exame na tela; depois disso, 1 de 59.
+solto no ditado não conta, como o nome do exame na tela; depois disso, 1 de 99 saídas (gêmeos repetidos + as 3 rodadas dos 29).
 
 **Tireoide — VT soma lobos + istmo, exceção documentada.** O renderer já somava os três volumes (`volumeTotal`). A exceção à
 regra "só calcule volume se o médico pedir" ficou escrita no contrato (4.1), no prompt do extrator e no comentário do
@@ -320,8 +320,8 @@ Placar dos 29 (Haiku, BENCH_MODEL explícito, biblioteca enxuta do banco, 1ª re
 | AXILA (B3) | 16 | 6 | 5 | 4 | 1 | 0/29 |
 | **DECISOES (B6, redação final)** | **10** | **3** | **2** | **3** | **2** | **0/29** |
 
-- d4a3b676 ("2 9 cm até o mamilo"), 153ac91d ("2,0 x 1 3 cm") e 2f3a039d ("0,5 x 0 9 cm"): resolvidos sem marca em 8 de 8
-  saídas (rodada intermediária com 2 repetições + final).
+- d4a3b676 ("2 9 cm até o mamilo"), 153ac91d ("2,0 x 1 3 cm") e 2f3a039d ("0,8 x 0,5 x 0 9 cm"): resolvidos sem marca em 12 de 12
+  saídas (as 3 rodadas dos 29, uma delas com 2 repetições).
 - As 3 marcas restantes são legítimas: 2 de lado não ditado e 1 medida embaralhada ("0.60 ponto 0.40 0,5 cm", ffdbf664).
 - Numeração 2: laudos que oscilam entre repetições (710b2fcc, d4a3b676, 6cc6f68a); repetidos, saíram certos em 5 de 6.
 - Rodada intermediária com 2 repetições (58 saídas): 0 defeitos axilares, soma de graves 7.
