@@ -22,3 +22,19 @@ transdutor. Mais afetada: **obstétrica** (1º trimestre pode ser TA ou TV) e pe
 - Web: o usuário escolhe/edita a frase padrão por categoria e via.
 
 Status em `tmp-review/haiku-migration/status/W15.md`. Nada de push/deploy/banco.
+
+## Respostas do Luiz à fase 1 (10/10/2026) — liberam a fase 2
+
+1. Obstétrica sem via ditada = **transabdominal**; quando fizer TV ou TA+TV, ele dita.
+2. Obstétrica TV: frase **"com a finalidade de realizar a técnica transvaginal"**; o título **não muda** (fica "ULTRASSONOGRAFIA OBSTÉTRICA").
+3. Obstétrica TA+TV: **texto da pelve** ("inicialmente… Após a micção…").
+4. Cervicometria no morfológico/Doppler: **"Foi realizada avaliação complementar do colo uterino pela via transvaginal."**
+5. Contexto clínico: **no fim da seção**; idade **só quando ditada** (nunca do cadastro).
+6. Documentação: **"que possuem várias metodologias"** em todas (unificar).
+7. MSK: padrão = "transdutor linear de alta frequência 12 MHz… Avaliação dinâmica quando aplicável."; "abrangendo a avaliação do
+   {segmento}" é **variante antiga** (sai).
+8. Parede abdominal: **sempre** "linear… com avaliação dinâmica… e manobra de Valsalva".
+9. Próstata: pendente — o Luiz pediu para ver as duas frases (curta do banco × longa dos finais) antes de trocar no banco.
+10. Pelve: "transvaginal" ditado sem "transabdominal" = **só TV**; sem via ditada = **TA+TV** (padrão).
+11. Web: frase padrão editável **por usuário e por categoria**.
+Fotos: "em NN fotos" sai sempre (decisão anterior).
