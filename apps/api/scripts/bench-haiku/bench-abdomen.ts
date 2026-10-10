@@ -521,6 +521,27 @@ async function main() {
     return { cat, hint, dopplerMode, includeDoppler };
   }
 
+  /**
+   * BENCH_BIBLIOTECA=<arquivo.json> (W10): troca blocos da biblioteca SÓ na bancada, para medir uma
+   * proposta de SQL sem alterar o banco. Formato: { "<CATEGORIA>": { "drop": ["título"…],
+   * "replace": { "título": "conteúdo" }, "add": [{ "kind", "title", "content" }] } }.
+   */
+  const bibliotecaOverride: Record<string, { drop?: string[]; replace?: Record<string, string>; add?: { kind: string; title: string; content: string }[] }> =
+    process.env.BENCH_BIBLIOTECA ? JSON.parse(readFileSync(process.env.BENCH_BIBLIOTECA, "utf8")) : {};
+  function applyBibliotecaOverride(cat: string, blocks: any[]): any[] {
+    const o = bibliotecaOverride[cat];
+    if (!o) return blocks;
+    const titles = new Set(blocks.map((b) => b.title));
+    for (const t of [...(o.drop ?? []), ...Object.keys(o.replace ?? {})]) {
+      if (!titles.has(t)) throw new Error(`BENCH_BIBLIOTECA: bloco "${t}" não existe em ${cat}`);
+    }
+    const out = blocks
+      .filter((b) => !(o.drop ?? []).includes(b.title))
+      .map((b) => (o.replace?.[b.title] !== undefined ? { ...b, content: o.replace[b.title] } : b));
+    for (const a of o.add ?? []) out.push({ id: `bench-${a.title}`, priority: 50, similarity: null, ...a });
+    return out;
+  }
+
   async function loadBundle(r: Row, rawInput: string, cat: string, dopplerMode: "combined" | "isolated" | undefined) {
     const writerExam = resolveWriterExam(cat, dopplerMode);
     const { variantKey: accountVariantKey, rendererPreferences } = await resolveAccountReportPreference(r.user_id, cat);
@@ -532,6 +553,7 @@ async function main() {
           rawInput,
           accountVariantKey: writerExam.categoryCode === cat ? accountVariantKey : undefined,
         });
+    if (bundle.blocks) bundle.blocks = applyBibliotecaOverride(writerExam.categoryCode, bundle.blocks);
     // W10: BENCH_BUNDLE_PATCH=<json> troca/remove/acrescenta blocos da biblioteca SÓ na bancada
     // ({"titulo": "conteúdo novo" | null, ...}; título inexistente = bloco novo kind=regra) — o banco não muda.
     if (BUNDLE_PATCH && !bundle.error) {
