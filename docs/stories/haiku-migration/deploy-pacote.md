@@ -311,3 +311,19 @@ Morfológico: a piora (+11 frases, +1 título, +1 lacuna) vem de **dois casos**,
   nível da W5 (274 × 272). Detalhe e dois achados residuais (IG pela US precoce; item livre repetido no 2º tri, ambos resolvidos no PACOTE2) em
   `W1-relatorio.md`, seção MORFO.
 
+
+## Execução (10/10/2026, noite — GO do Luiz)
+
+| # | Resultado |
+|---|---|
+| 0 | Linha de base conferida: API `dpl_88hD8BDPAkPvdWGgZuXfu4bvpM9T`, web `dpl_9f7yhUhNMSZ3YLtdRmvyYMVMWwj2` |
+| 1 | Removidas as 9 + `OPENAI_MODEL_CONSULTANT_FALLBACK`; criada `DEEPGRAM_KEYTERMS_W11_CATEGORIES=MAMARIA` |
+| 2 | Candidato API `dpl_GZQMmivTefJDYphCJGwJUN3EDYis` (`28651596`), Ready, health 200 |
+| 3 | Smoke com a conta demo, 8 famílias + `/api/edit`: todas `done`; auditoria = Haiku 5.5 em tudo, Sonnet 5.5 só no writer da pelve; sem "Correlacionar" não ditado; tireoide "calcule o volume" (istmo 0,2, VT 9,2) |
+| 4 | API promovida; health 200; keyterms em produção: mama 33 (com os quadrantes), abdome 35 (igual) |
+| 5 | Sem tráfego real no intervalo (sábado à noite) — observação segue nos primeiros laudos reais |
+| 6–7 | Web `dpl_DbCMzP17shyeiiHkYWM48X3owT5r` (build `@laudousg/web`), promovida; domínios redirecionam para `www.laudousg.com.br` como antes |
+| 8 | `main` avançada por fast-forward `312c9df8..28651596`; deploys da integração Git: API `dpl_Er53L5XtSLEzeovTv1z77PjVm3Vt`, web `dpl_sDEfDW9jrV1mGK1TVxSDkrE3Z5x9`, ambos Ready e com os domínios; geração no domínio público ok |
+
+Rollback (código antigo + envs antigas): `vercel rollback dpl_88hD8BDPAkPvdWGgZuXfu4bvpM9T` (API) e
+`vercel rollback dpl_9f7yhUhNMSZ3YLtdRmvyYMVMWwj2` (web). Laudos de teste gravados na conta demo (apple-review).
