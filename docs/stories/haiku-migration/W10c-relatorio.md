@@ -262,3 +262,30 @@ correto quanto à Nota de Domingos, que de fato não pode ser calculada.
 Testes: `w10c-mama-tireoide.manual.ts` 21/21 (3 novos: ACR ditado sem ecogenicidade, composição ACR extraída sem ecogenicidade,
 controle com ecogenicidade); tireoide 23c1 (40), objetivo golden (39), pico-null (12), W7 (71), alterações e typecheck verdes.
 M02 (soma automática do volume no contrato da tireoide) ficou para decisão do Luiz, sem alteração.
+
+## AXILA — regressão do A05 na rebancada final (10/10/2026)
+
+A rebancada (`docs/stories/haiku-migration/rebench-final.md`) achou "Linfonodos axilares normais." sumindo da conclusão em 7/28
+saídas (14 laudos com axila, 2 repetições). Causa: o A05 trocou a ação padrão positiva ("Sim: frase axilar + 'Linfonodos
+axilares normais.' (axilas citadas sem achado = normais)") por um par condicional "Sem alteração… / Com alteração… nunca…";
+com o "nunca" no mesmo item, o Haiku passou a omitir a frase normal. Correção (`prompts/contracts/MAMARIA.ts`): volta a ação
+padrão de antes do A05 e a axila alterada vira uma linha de exceção separada; a exclusão explícita do A05 fica no ramo "Não".
+
+Medido nas mesmas condições da rebancada (biblioteca enxuta já no banco, Haiku com `BENCH_MODEL` explícito, contador de defeito
+axilar calibrado: reproduz 7/28 hoje, 2/28 pré-A05 e 4/28 da candidata):
+
+| Candidato | Defeito axilar (14 laudos × 2) | Placar dos 29: soma de graves | Frases fixas omitidas | Numeração |
+|---|---|---|---|---|
+| Final W10c (B8) | 1/14 | 13 | 2 | 0 |
+| Rebancada — integrado (B7) | 7/28 | 16 | 7 | 3 |
+| **Correção AXILA** | **1/28** | **16** | **4** | **1** |
+
+- O único defeito restante é uma saída com fragmento solto ("Imagem Anecoica") num ditado truncado (65fe289c); na outra repetição o
+  laudo saiu certo. Nos 29 (1 repetição), 0 defeitos axilares.
+- Soma de graves igual à da rebancada; a diferença para a final W10c é o A07 (medidas "2 9 / 1 3 / 0 9 cm" marcadas em vez de
+  resolvidas), já registrada na W14. As 2 omissões da frase de fundo (0f631dbe, f5a3fc52, o mesmo ditado) não se repetiram em
+  4 novas execuções — ruído.
+- Cenários sintéticos do A05 pelo Haiku (`sinteticos-mama-tireoide.ts`): 13/13 (exclusão explícita sem axilas e com BI-RADS 1;
+  axila com córtex espessado sem "Linfonodos axilares normais.").
+- Testes: `w10c-mama-tireoide.manual.ts` 22/22 (1 novo); mama golden, 23C2, BI-RADS guard, W7 e typecheck verdes.
+Rodadas locais: `tmp-review/bench-haiku/w10c/axila/`.
