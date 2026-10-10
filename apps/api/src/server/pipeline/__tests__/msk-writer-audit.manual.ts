@@ -44,6 +44,22 @@ function check(name: string, cond: boolean, detail?: string) {
   check("over-coverage (menisco/cartilagem) detectado", !a.ok && a.extraStructures.includes("menisco") && a.extraStructures.includes("cartilagem"), JSON.stringify(a));
 }
 
+// 4b) R2-03: achado DITADO de estrutura fora do roteiro é permitido pelo prompt
+// (A09) → o audit não reprova. Sonda do Codex, rodada 2.
+{
+  const raw = "Joelho direito, menisco medial com imagem hipoecoica de 1 cm";
+  const laudo = "ULTRASSONOGRAFIA DO JOELHO DIREITO\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\nTendão quadricipital de espessura, continuidade e ecotextura preservadas.\nMenisco medial com imagem hipoecoica medindo 1 cm.\n\nCONCLUSÃO:\nImagem hipoecoica no menisco medial.";
+  const a = auditMskFacts(raw, laudo);
+  check("R2-03: menisco ditado não é estrutura fora do protocolo", a.ok && a.extraStructures.length === 0, JSON.stringify(a));
+}
+// 4c) Ditado cita menisco, mas o modelo acrescenta cartilagem por conta própria → só a cartilagem reprova.
+{
+  const raw = "joelho direito, menisco medial com imagem hipoecóica de 1 cm";
+  const laudo = "Menisco medial com imagem hipoecoica de 1 cm. Cartilagem preservada.";
+  const a = auditMskFacts(raw, laudo);
+  check("R2-03: só o acréscimo não ditado reprova (cartilagem), não o menisco ditado", !a.ok && a.extraStructures.join() === "cartilagem", JSON.stringify(a));
+}
+
 // 5) mm² preservado (nervo mediano) → ok.
 {
   const raw = "nervo mediano esquerdo medindo 4 milímetros quadrados";

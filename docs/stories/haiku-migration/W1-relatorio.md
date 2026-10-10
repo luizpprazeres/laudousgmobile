@@ -25,6 +25,26 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## W14b — rodada 2 da revisão do Codex
+
+Branch `fix/w14b-motor` a partir de `feat/haiku-migration` `1d76a830`.
+
+- **R2-03 — auditoria do MSK contradizia o prompt (A09).** `pipeline/mskWriterAudit.ts` reprovava qualquer estrutura fora
+  do roteiro (menisco, cartilagem, ligamentos…) que aparecesse no laudo, mas o prompt agora manda reproduzir o achado
+  **ditado** dessas estruturas em linha própria. A auditoria passa a reprovar só o que aparece no laudo **sem ter sido
+  citado no ditado** (comparação sem acento). Sonda do Codex — "Joelho direito, menisco medial com imagem hipoecoica de
+  1 cm" — agora `ok`; com menisco ditado e cartilagem acrescentada pelo modelo, reprova só a cartilagem. Teste
+  `msk-writer-audit` 12/12.
+- **A13 (residual) — o guard cortava a frase no primeiro trecho ilegível.** `renderer/extractionMetatext.ts` agora tira
+  **só** o segmento de metatexto e mantém todos os segmentos clínicos compreensíveis, antes e depois, com os separadores
+  originais: "Imagem de 2 cm, segunda medida ilegível, com margens irregulares e sem fluxo." → "Imagem de 2 cm, com margens
+  irregulares e sem fluxo." (a frase original vai ao card de pendências). Frase que começa falando do ditado continua
+  saindo inteira. Nos 984 achados salvos em 90 dias, resultado idêntico ao guard integrado. Teste `extraction-metatext`
+  14/14.
+
+Regressão: `msk-writer-prompt` 31, `msk-writer-format` 6, `partes-moles-writer-audit` 14, `llm` 26/26, `writerOutputGuard`
+8/8, `command-guard-por-laudo` 13/13, `writerHardening` 7/7, `obstetricaPlainWriter`, fail-closed 41/41; typecheck OK.
+
 ## W14 — correções da revisão independente (Codex, W13)
 
 Branch `fix/w14-motor` a partir de `feat/haiku-migration` `cf903353`.
