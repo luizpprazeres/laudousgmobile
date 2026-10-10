@@ -528,3 +528,50 @@ function buildFraseReferencia(
   }
   return `Data da última menstruação correspondente a ${fmtR} na data do exame.`;
 }
+
+// ---------------------------------------------------------------------------
+// Linha da calculadora "IG pela ultrassonografia precoce: 23s3d" (PACOTE2, 10/10)
+// ---------------------------------------------------------------------------
+
+type IgUsPrecoceCampos = {
+  primeira_us_data: string | null;
+  primeira_us_ig_semanas: number | null;
+  primeira_us_ig_dias: number | null;
+  ig_referencia_hoje_semanas: number | null;
+  ig_referencia_hoje_dias: number | null;
+  referencia_fonte: IgFonte | null;
+};
+
+/**
+ * A linha é saída de MÁQUINA (calculadora do app): IG de HOJE pela 1ª US. Lê só o
+ * formato da calculadora ("Ns" ou "NsNd"); duas linhas com valores diferentes → null.
+ */
+export function parseIgUsPrecoceCalculadora(rawInput: string): { semanas: number; dias: number } | null {
+  const re = /IG\s+pela\s+(?:ultrassonografia|US|USG)\s+precoce\s*:\s*(\d{1,2})\s*s(?:\s*(\d)\s*d)?\b/gi;
+  const valores = new Set<string>();
+  for (const m of rawInput.matchAll(re)) valores.add(`${Number(m[1])}/${Number(m[2] ?? 0)}`);
+  if (valores.size !== 1) return null;
+  const [semanas, dias] = [...valores][0]!.split("/").map(Number) as [number, number];
+  return { semanas, dias };
+}
+
+/**
+ * Nada ditado some. O extrator às vezes põe a IG de hoje da calculadora em
+ * `primeira_us_ig_*` (IG NA DATA da 1ª US) sem data — o motor não consegue projetá-la
+ * para hoje e a referência desaparece do laudo (a3ea0fea 8/8, 82a7940d, f49dab7a).
+ * Corrige SÓ esse caso: referência de hoje vazia e 1ª US sem data. A data nunca é
+ * inventada: sem ela, a conclusão segue a política da W5 (", corrigida pela
+ * ultrassonografia precoce.") e o corpo usa a prosa sem data.
+ */
+export function reconciliarIgUsPrecoce<T extends IgUsPrecoceCampos>(f: T, rawInput: string): T {
+  if (f.ig_referencia_hoje_semanas !== null || f.primeira_us_data !== null) return f;
+  const v = parseIgUsPrecoceCalculadora(rawInput);
+  if (!v) return f;
+  const out: T = { ...f, ig_referencia_hoje_semanas: v.semanas, ig_referencia_hoje_dias: v.dias };
+  if (f.primeira_us_ig_semanas === v.semanas && (f.primeira_us_ig_dias ?? 0) === v.dias) {
+    out.primeira_us_ig_semanas = null;
+    out.primeira_us_ig_dias = null;
+  }
+  if (out.referencia_fonte === null) out.referencia_fonte = "usg_precoce";
+  return out;
+}

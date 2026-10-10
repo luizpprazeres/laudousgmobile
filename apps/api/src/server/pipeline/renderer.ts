@@ -8,6 +8,7 @@ import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
 import { llmParsed, writerTarget } from "../ai/llm";
 import { stripExtractionMetatext } from "../renderer/extractionMetatext";
+import { reconciliarIgUsPrecoce } from "../renderer/ig";
 import {
   runRendererExtraction,
   type RendererExtractionResult,
@@ -583,13 +584,16 @@ export async function* runRendererStream(args: {
         // Biometria determinística (flag OBST_BIOMETRIA_DET, boletim 02/07): o bloco
         // "Biometria fetal:" da calculadora do app + reconciliação cm→mm de voz
         // VENCEM a extração LLM (mesmo padrão do mergeStructuredIg do Doppler).
+        // IG de hoje da calculadora ("IG pela ultrassonografia precoce: 23s3d") que a
+        // extração pôs em primeira_us_ig sem data volta a ser a referência (PACOTE2).
+        const obstIg = reconciliarIgUsPrecoce(fnd as ObstetricaFindings, args.rawInput);
         const ofnd =
           env().OBST_BIOMETRIA_DET === "true"
             ? reconcileBiometriaUnidade(
-                mergeBiometriaEstruturada(fnd as ObstetricaFindings, args.rawInput),
+                mergeBiometriaEstruturada(obstIg, args.rawInput),
                 args.rawInput,
               )
-            : (fnd as ObstetricaFindings);
+            : obstIg;
         const grannum = env().GRANNUM_PLACENTA === "true";
         const golfBallObst = golfBallSingle(ofnd.numero_fetos);
         const igSanity = env().OBST_IG_SANITY === "true";
