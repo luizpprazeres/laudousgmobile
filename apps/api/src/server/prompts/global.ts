@@ -378,10 +378,8 @@ export const CATEGORY_GLOBAL_RULES: Record<string, string> = {
   PELVE_FEMININA: FIGO_RULES,
   MUSCULOESQUELETICO: MSK_RULES,
   MUSCULOESQUELETICO_V2: MSK_RULES,
-  MAMARIA: `Mamas e axilas:
-- Somente axilas mencionadas/solicitadas no ditado entram no exame. Modelos e exemplos com axilas não autorizam sua inclusão. Ditado apenas "Normal" significa exame só das mamas: título, corpo e conclusão SEM axilas, com (Categoria BI-RADS® 1). Não invente avaliação axilar nem limitação de axilas não avaliadas.
-- Margens de nódulos: sempre "circunscritas" (nunca "regulares")
-- BI-RADS: apenas no item com classificação mais alta (hierarquia: 5 > 4 > 3 > 0 > 2 > 1)`,
+  // MAMARIA: escopo das axilas, margem e hierarquia do BI-RADS vivem só no contrato da mama
+  // (W14/A06: a regra "margens sempre circunscritas" daqui trocava margem suspeita ditada).
   TIREOIDE: `Tireoide:
 - Linfonodos normais → parágrafo no corpo (com linha em branco antes), NÃO na conclusão
 - Linfonodos não mencionados → omitir completamente
