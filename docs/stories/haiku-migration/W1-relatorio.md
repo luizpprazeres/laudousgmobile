@@ -25,6 +25,37 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## GOFINAL — pacote de deploy na HEAD integrada (`docs/go-final`, base `65964d9b`)
+
+Só documento: `deploy-pacote.md` reescrito para o GO final (envs, web, passos com rollback, gates). Vercel só lida:
+`env ls production` dos dois projetos e `inspect` dos deployments no ar.
+
+- **Envs do `laudousgmobile`:**
+  - remover 9 (as 4 `OPENAI_MODEL_*`/`OPENAI_WRITER_REASONING_EFFORT`, `MSK_WRITER_MODEL` e as 4 `LIVRE_ANTHROPIC_*`/`LIVRE_OPENAI_*`),
+    mais 1 opcional (`OPENAI_MODEL_CONSULTANT_FALLBACK`);
+  - criar 1: `DEEPGRAM_KEYTERMS_W11_CATEGORIES=MAMARIA`, por decisão do Luiz;
+  - conferir 6.
+  - As flags novas (`LEXICO_*`, `CORRELACAO_SO_DITADA`, `TECNICA_GUARD`) não se criam: o default é o valor do GO.
+- **Correção dos documentos anteriores:** env na Vercel só vale no deploy seguinte. "Rollback por env" é sem mudar código,
+  mas com `vercel redeploy`.
+- **Web:** nenhuma env. Deploy **depois** da API: a técnica preferida (`tecnica_padrao`) seria descartada em silêncio pela
+  API antiga.
+- **Ordem do deploy:**
+  1. envs;
+  2. candidato da API com `--skip-domain`;
+  3. smoke por família com `vercel curl` (o `/api/health` não testa a Anthropic);
+  4. promote;
+  5. web do mesmo jeito;
+  6. merge na `main`. Antes da promoção, nada na `main`: a integração Git publica direto com domínio.
+- **Gates em `65964d9b`:**
+  - typecheck API e web ✅; web 74 suítes ✅; pacotes 15/15 ✅;
+  - API: 194 de 231 suítes manuais passam offline;
+  - das que não passam, 25 são live (LLM, banco, servidor local) e 11 falham igual na `main` `312c9df8`;
+  - 1 é nova: `flags-de-producao`, caso `IG_REFERENCE_CORRECTION`. O teste é que está desatualizado pela W5/W6: o caminho
+    da Biblioteca e da web força a correção pela datação escolhida.
+- **Cuidado:** `editReport`, `camada-flexivel-corpo-smoke` e `doppler-writer-showcase` carregam o `.env` principal sozinhas
+  e chamam LLM de verdade. Na `main`, foram 3 chamadas à OpenAI nesta rodada. Para gates, rodar com env fictícia.
+
 ## IGCALC — decisão do Luiz: "hoje com" ditado × 1ª US + calculadora → segue a calculadora (`fix/ig-calculadora-vence`)
 
 Decisão (`DECISOES-LUIZ-2026-10-10.md`, seção IG): quando o "hoje com" ditado diverge da 1ª US ditada **e** da linha da
