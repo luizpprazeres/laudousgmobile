@@ -124,8 +124,11 @@ const RENAME = new Map(
 );
 const keyOf = (scen: string) => RENAME.get(scen) ?? (scen === "A" ? arg("a-key", "A")! : scen);
 const A_KEY = keyOf("A");
-const SCEN_KEYS = ["R", "A", "AR", "AS", "A2", "AS2", "A3", "AS3", "A4", "AS4", "B", "BS", "L", "B2", "B2S", "B3", "B4", "B5", "B6", "B7", "B8"];
+const SCEN_KEYS = ["R", "A", "AR", "AS", "A2", "AS2", "A3", "AS3", "A4", "AS4", "B", "BS", "L", "B2", "B2S", "B3", "B4", "B5", "B6", "B7", "B8", "B9"];
 const OUT_ROOT = process.env.BENCH_OUT_ROOT ?? join(REPO, "tmp-review/bench-haiku");
+const BUNDLE_PATCH: Record<string, string | null> | null = process.env.BENCH_BUNDLE_PATCH
+  ? JSON.parse(readFileSync(resolve(process.env.BENCH_BUNDLE_PATCH), "utf8"))
+  : null;
 
 const REGRA_ANTIGA_GLOBAL =
   '- NUNCA fazer diagnóstico definitivo. Use sempre "compatível com X" / "sugestivo de X" / "achados em concordância com X" — nunca "diagnóstico de X" / "trata-se de X".';
@@ -554,6 +557,19 @@ async function main() {
           accountVariantKey: writerExam.categoryCode === cat ? accountVariantKey : undefined,
         });
     if (bundle.blocks) bundle.blocks = applyBibliotecaOverride(writerExam.categoryCode, bundle.blocks);
+    // W10: BENCH_BUNDLE_PATCH=<json> troca/remove/acrescenta blocos da biblioteca SÓ na bancada
+    // ({"titulo": "conteúdo novo" | null, ...}; título inexistente = bloco novo kind=regra) — o banco não muda.
+    if (BUNDLE_PATCH && !bundle.error) {
+      const blocks = (bundle.blocks as any[])
+        .filter((b) => BUNDLE_PATCH![b.title] !== null)
+        .map((b) => (typeof BUNDLE_PATCH![b.title] === "string" ? { ...b, content: BUNDLE_PATCH![b.title] } : b));
+      for (const [title, content] of Object.entries(BUNDLE_PATCH)) {
+        if (typeof content === "string" && !blocks.some((b) => b.title === title)) {
+          blocks.push({ id: `bench-${title}`, kind: "regra", title, content, priority: 50, similarity: null });
+        }
+      }
+      return { bundle: { ...bundle, blocks }, rendererPreferences };
+    }
     return { bundle, rendererPreferences };
   }
 

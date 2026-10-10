@@ -15,6 +15,14 @@ function check(name: string, cond: boolean, detail?: string) {
   const out = normalizeAsrClinical("estímulo medindo 1.4 por 0.3 por 1.3 com volume de 0.3", "TIREOIDE");
   check("estímulo → istmo (TIREOIDE)", /^istmo medindo 1\.4/.test(out), out);
 }
+// W10c (bancada 10/10): garbles da tireoide que deixavam eixo do Domingos nulo ou trocado.
+{
+  check("sem classificações → sem calcificações (TIREOIDE)", normalizeAsrClinical("com margem regular sem classificações, mais larga", "TIREOIDE") === "com margem regular sem calcificações, mais larga");
+  check("anecoico nos ecos → com finos ecos (TIREOIDE)", normalizeAsrClinical("imagem anecoico nos ecos, medindo", "TIREOIDE") === "imagem anecoico com finos ecos, medindo");
+  check("iso ecoica / isso ecoica → isoecoica (TIREOIDE)", normalizeAsrClinical("imagem iso ecoica e imagens isso ecoicas", "TIREOIDE") === "imagem isoecoica e imagens isoecoicas");
+  const raw = "Mama sem classificações, imagem anecoica nos ecos";
+  check("garbles da tireoide intocados fora dela", normalizeAsrClinical(raw, "MAMARIA") === raw, normalizeAsrClinical(raw, "MAMARIA"));
+}
 // CONTROLE (review dex1): "estímulo" fora de TIREOIDE NÃO é tocado (palavra PT legítima).
 {
   const raw = "avaliação da resposta ao estímulo doloroso";

@@ -630,3 +630,30 @@ abdome 8,04 e vias 7,19.
 
 **Pendente com o Luiz:** SQL da biblioteca (`W10b-biblioteca-proposta.sql`, não aplicado: arquiva 7 blocos, reescreve 5 —
 inclui tirar a recomendação clínica automática das vias); "em 06 fotos" nos laudos colados de parede/inguinal.
+
+## W10c — Prompts enxutos de mamas/axilas e tireoide (10/10/2026)
+
+Relatório completo (números, origem de cada grave, SQL proposto): `docs/stories/haiku-migration/W10c-relatorio.md`.
+Placares determinísticos novos: `scripts/bench-haiku/placar-mama.ts`, `placar-tireoide.ts`; tamanho real do system:
+`prompt-tamanho.ts`. Biblioteca proposta medida só na bancada (`BENCH_BUNDLE_PATCH`); banco intacto.
+
+### MAMARIA (29) — writer completo, Haiku 5.5
+
+- **Contradição que o Haiku obedecia:** o contrato obrigava "em 06 fotos" (o global proíbe; 26 de 29 finais não têm). Saiu.
+- **A biblioteca contradiz o contrato** em 6 de 7 blocos (frases normais que não são da casa, "em mama", "nódulo" no corpo,
+  modelo com axilas): proposta de SQL — modelo normal só das mamas e arquivar os outros 6 (system 36,1 → 28,7 mil, −20%).
+- Contrato 4,8 → 4,2 mil: escopo das axilas como pergunta ao ditado; achado "Imagem … de mama …" com exemplos reais curtos;
+  conclusão da casa quando não ditada; correção silenciosa da transcrição.
+- Rodada final sobre o global final da W10b (`w10c/2026-10-10T12-17-31-mamaria`, juiz Opus cego): produção 4,49 (≤ 4: 19) ·
+  Haiku prompt antigo 5,93 (3) · **Haiku prompt novo + biblioteca proposta 8,42 (0)** · prompt novo sem a biblioteca 8,09 (0);
+  invenções 66 · 15 · 3 · 3; impressão correta 9 · 19 · 28 · 28 de 29. System da mama: 36,1 → 11,1 mil caracteres.
+- O global novo ("laudo colado sai literal") tirava o rodapé do BI-RADS dos colados; o contrato da mama o declara obrigatório.
+
+### TIREOIDE (20) — renderer + Haiku extrator
+
+- Prompt de extração 5,0 → 3,3 mil (system real 5,8 → 4,1 mil); garbles de ASR no normalizador ("sem classificações",
+  "nos ecos", "iso ecoica"); renderer: "situada no terço" e TI-3 (rodapé só com imagem nodular).
+- Placar de extração: Haiku 61 → 47 (produção 30). Juiz: produção **6,15** · Haiku antigo 5,50 · **Haiku novo 5,95**
+  (≤ 4: 8 · 7 · 5; invenções 37 · 27 · 21). Rodada `w10c/2026-10-10T11-53-39-tireoide`.
+- A distância para a produção é quase toda de decisão pendente ou de outro dono: TI-2 (eixo não ditado), TI-5 (frase da cadeia
+  I–V), ACR separado (W7), comando copiado na conclusão (W1), dois exames num ditado, e o schema sem imagens múltiplas.
