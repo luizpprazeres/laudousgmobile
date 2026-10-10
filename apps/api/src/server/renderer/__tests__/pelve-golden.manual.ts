@@ -186,7 +186,7 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
   // Decisão do Luiz (10/10): vizinhas ficam como informadas, sem trocar pelo texto da tabela.
   check("FIGO2: vizinha preservada (intramural + 5)", /nódulo miomatoso intramural \(categoria FIGO 5\)\./.test(um(M("intramural", "5"))));
   check("FIGO2: vizinha preservada (submucoso + 3)", /nódulo miomatoso submucoso \(categoria FIGO 3\)\./.test(um(M("submucoso", "3"))));
-  check("W12: híbrida 2-5", /submucoso e subseroso, estendendo-se da mucosa à serosa \(categoria FIGO 2-5\)/.test(um(M(null, "2-5"))));
+  check("W12: híbrida 2-5", /nódulo miomatoso subseroso, estendendo-se desde a mucosa \(categoria FIGO 2-5\)/.test(um(M(null, "2-5"))));
   check("W12: 'em região fúndica'", /situada em região fúndica/.test(um(M("intramural", "4", "região fúndica"))));
   const dois = renderPelveFeminina(F({ miomas: [M(null, "5"), M("subseroso", "5", "parede posterior e lateral direita", [3.1, 2.9, 3.0])] }));
   check("W12: dois iguais → corpo numa frase só", /Miométrio apresentando duas imagens nodulares, a primeira medindo 2 x 1,8 x 1,5 cm, situada na parede anterior; a segunda medindo 3,1 x 2,9 x 3 cm, situada na parede posterior e lateral direita\./.test(dois), dois);
