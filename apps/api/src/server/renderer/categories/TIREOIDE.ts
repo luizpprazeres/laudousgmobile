@@ -286,7 +286,7 @@ GLÂNDULA
 - volume_glandular: "aumentado" (bócio/aumentada), "reduzido" (atrófica/reduzida); senão null. Nunca pelas medidas.
 - tireoidite_tipo: só se o médico NOMEAR — Hashimoto/autoimune → hashimoto; linfocítica → linfocitica;
   granulomatosa/De Quervain/subaguda → granulomatosa; Riedel/fibrosante → riedel. Padrão descrito sem nome = null.
-- lobo_direito, lobo_esquerdo, istmo: medidas_cm (3 medidas em cm) e volume_ml como ditados (nunca calcule);
+- lobo_direito, lobo_esquerdo, istmo: medidas_cm (3 medidas em cm) e volume_ml como ditados (nunca calcule; o código soma lobos + istmo no volume total);
   ecotextura_alterada = cláusula verbatim de alteração DIFUSA ("difusamente heterogênea…"), null se normal;
   nodulos = [] se não houver imagem.
 - Estrutura medida sem nome depois dos dois lobos ("e medindo 2,4 x 0,2 x 2,4") = istmo.
@@ -1146,7 +1146,11 @@ function renderTireoideClassico(
   return corpo.replace(/\n{3,}/g, "\n\n").trim();
 }
 
-/** VT = soma dos volumes (lobos + istmo) — determinístico. null se faltar. */
+/**
+ * VT = soma dos volumes (lobos + istmo) — determinístico. null se faltar.
+ * Exceção aprovada pelo Luiz (10/10/2026) à regra "só calcule volume se o médico pedir": o VT da
+ * tireoide é sempre somado, com o istmo. Volume não ditado continua null (____), nunca estimado.
+ */
 function volumeTotal(f: TireoideFindings): number | null {
   const vols = [f.lobo_direito.volume_ml, f.lobo_esquerdo.volume_ml, f.istmo.volume_ml];
   if (vols.some((v) => v === null)) return null;

@@ -64,7 +64,7 @@ test("mama: rodapé BI-RADS também no laudo colado", () => {
   assert.match(MAMARIA_CONTRACT, /Este rodapé fecha todo laudo de mama, inclusive o laudo pronto colado pelo médico\./);
 });
 test("mama: o nome do exame ('Mamas e axilas') não pede axilas", () => {
-  assert.match(MAMARIA_CONTRACT, /O nome do exame na tela \("Mamas e axilas"\) não conta\./);
+  assert.match(MAMARIA_CONTRACT, /O nome do exame na tela \("Mamas e axilas"\) e um "e" solto no ditado \("mamas e com imagens"\) não contam\./);
 });
 test("mama: estilo objetivo continua recebendo o contrato convertido", () => {
   const obj = getCategoryContract("MAMARIA", "OBJETIVO");
@@ -86,9 +86,10 @@ test("A06: system da mama não manda trocar margem por 'circunscrita'", () => {
   assert.doesNotMatch(sysMama, /sempre "circunscritas"/);
   assert.match(sysMama, /circunscrita, lobulada, microlobulada, irregular ou espiculada; "regular" ditado = circunscrita/);
 });
-test("A07: número truncado e unidade ausente são sinalizados, não resolvidos", () => {
-  assert.doesNotMatch(MAMARIA_CONTRACT, /→ 2,9 cm|sem unidade → cm/);
-  assert.match(MAMARIA_CONTRACT, /Número truncado ou eixos ambíguos \("2 9 cm"\) e medida sem nenhuma unidade no achado: reproduza como falado e marque "\[REVISAR — medida ambígua\]"/);
+test("A07 (decisão do Luiz 10/10): '2 9 cm' = 2,9 cm sem marca; só eixo faltando ou achado sem unidade é sinalizado", () => {
+  assert.match(MAMARIA_CONTRACT, /algarismos separados antes da unidade \("2 9 cm"\) → 2,9 cm, sem marca/);
+  assert.doesNotMatch(MAMARIA_CONTRACT, /sem unidade → cm/);
+  assert.match(MAMARIA_CONTRACT, /Só o realmente ambíguo — eixo faltando \("medindo 1,2 x cm"\) ou achado sem cm\/mm em nenhuma das suas medidas: reproduza como falado e marque "\[REVISAR — medida ambígua\]"/);
 });
 test("A07: mama normal continua BI-RADS 1 no system efetivo", () => {
   assert.match(sysMama, /Mamas ecograficamente normais \(Categoria BI-RADS® 1\)\./);
@@ -123,6 +124,25 @@ test("A12 (rodada 2): com ecogenicidade, ACR sai sem a marca", () => {
   const out = renderTireoide(T({ lobo_direito: L({ nodulos: [N({ ecogenicidade: "isoecoica", ti_rads_ditado: "3" })] }) }));
   assert.match(out, /NOTA FINAL/);
   assert.doesNotMatch(out, /ecogenicidade não ditada/);
+});
+
+// Decisão do Luiz 10/10 — VT da tireoide sempre somado, com o istmo (exceção à regra de não calcular volume).
+test("VT: soma lobo direito + lobo esquerdo + istmo", () => {
+  const out = renderTireoide(T({ lobo_direito: L({ volume_ml: 3.6 }), lobo_esquerdo: L({ volume_ml: 2.8 }), istmo: L({ volume_ml: 0.1 }) }));
+  assert.match(out, /Tireoide de volume normal \(6,5 ml\)/);
+});
+test("VT: istmo sem volume ditado não é estimado — VT fica em aberto", () => {
+  const out = renderTireoide(T({ lobo_direito: L({ volume_ml: 3.6 }), lobo_esquerdo: L({ volume_ml: 2.8 }), istmo: L({ medidas_cm: [0.7, 0.2, 1.6], volume_ml: null }) }));
+  assert.match(out, /Istmo medindo 0,7 x 0,2 x 1,6 cm \(volume de ____ ml\)/);
+  assert.match(out, /Tireoide de volume normal \(____ ml\)/);
+});
+test("VT: objetivo também soma o istmo", () => {
+  const out = renderTireoide(T({ lobo_direito: L({ volume_ml: 3.6 }), lobo_esquerdo: L({ volume_ml: 2.8 }), istmo: L({ volume_ml: 0.1 }) }), undefined, { objetivo: true });
+  assert.match(out, /6,5 ml/);
+});
+test("VT: exceção documentada no contrato e no extrator", () => {
+  assert.match(getCategoryContract("TIREOIDE", "CLASSICO_COMPLETO") ?? "", /exceção aprovada à regra geral de só calcular volume se o médico pedir: o VT da tireoide é sempre somado, com o istmo/);
+  assert.match(TIREOIDE_EXTRACTION_PROMPT, /nunca calcule; o código soma lobos \+ istmo no volume total/);
 });
 
 console.log(`\n${total} verificações W10c passaram.`);
