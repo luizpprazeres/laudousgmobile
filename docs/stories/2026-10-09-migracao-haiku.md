@@ -109,7 +109,7 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [x] W1 rodada 3 (Sonnet 5.5 nos writers pesados + guard de comandos por laudo) — integrado ce33d744
 - [x] W9 prompt dedicado do MSK — integrado 83a31a39
 - [x] W1: MSK no Haiku por configuração (integrado)
-- [ ] W10a pelve (integrada) · W10b abdome + vias · W10c mama + tireoide (prompts enxutos)
+- [x] W10a pelve · W10b abdome + vias + global · W10c mama + tireoide (prompts enxutos) — integradas
 - [ ] W11 revisão de termos (fila)
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
