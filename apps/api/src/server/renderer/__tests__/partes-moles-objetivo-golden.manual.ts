@@ -94,7 +94,7 @@ const render = (f: PartesMolesFindings) => renderPartesMoles(f, { objetivo: true
   check("nódulo: contornos irregulares", /de contornos irregulares/.test(l), l);
   check("nódulo: medidas 1 casa decimal", /2,1 x 1,4 x 1,0 cm/.test(l), l);
   check("nódulo: plano muscular + Doppler", /no plano muscular/.test(l) && /com fluxo ao Doppler colorido/.test(l), l);
-  check("nódulo: IMPRESSÃO 'a esclarecer'", /Imagem nodular sólida na região da coxa esquerda, a esclarecer\. Correlacionar com dados clínicos\./.test(l), l);
+  check("nódulo: IMPRESSÃO 'a esclarecer'", /Imagem nodular sólida na região da coxa esquerda, a esclarecer\.(?! Correlacionar)/.test(l), l);
 }
 
 // ── Lipoma ──
@@ -241,6 +241,17 @@ const render = (f: PartesMolesFindings) => renderPartesMoles(f, { objetivo: true
 {
   const l = render(F({ lesoes: [Les({ tipo: "nodulo_solido", ecogenicidade: "hipoecoica" })] }));
   check("placeholder: '____ x ____ x ____ cm' quando sem medida", /____ x ____ x ____ cm/.test(l), l);
+}
+
+// ── A10: conduta só quando ditada (IMPRESSÃO) ──
+{
+  const sem = renderPartesMoles(F({ lesoes: [Les({ tipo: "linfonodo", medidas_cm: [1.2, 0.6, 0.5], localizacao: "na axila" })] }), { objetivo: true });
+  check("A10 negativo (objetivo): sem 'Correlacionar'", !/correlac/i.test(sem), sem);
+  const com = renderPartesMoles(
+    F({ lesoes: [Les({ tipo: "linfonodo", medidas_cm: [1.2, 0.6, 0.5], localizacao: "na axila" })], conduta: "Correlacionar com dados clínicos." }),
+    { objetivo: true },
+  );
+  check("A10 positivo (objetivo): conduta ditada no fim da IMPRESSÃO", /IMPRESSÃO:\nLinfonodo na axila\.\n\nCorrelacionar com dados clínicos\.$/.test(com), com);
 }
 
 console.log(`\n${pass} passaram, ${fail} falharam`);
