@@ -273,7 +273,7 @@ const axilasModule: OrganModule = {
 }
 
 const TECNICA_COM_AXILAS =
-  'Exame realizado com transdutor de 12 MHz, abrangendo a região retroareolar e todos os quadrantes de ambas as mamas, bem como as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.'
+  'Exame realizado com transdutor de 12 MHz, abrangendo a região retroareolar e todos os quadrantes de ambas as mamas, bem como as regiões axilares.\nA documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
 
 const SECOES: ExamSection[] = [
   { id: 'mamas', label: 'Mamas', group: 'orgaos', module: mamasModule },

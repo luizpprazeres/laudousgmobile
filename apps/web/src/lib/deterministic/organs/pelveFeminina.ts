@@ -14,7 +14,7 @@ import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganModule, OrganSchema, OrganState, OrganComposition } from '../types'
 import { oRadsSpec, figoMiomaSpec } from '../../calculators/specs'
 import { createSharedBladderModule } from './urinaryShared'
-import { FIGO_FAMILIAS_GENERICAS, FIGO_LOCALIZACOES, MyomaFindingSchema, classificarMioma, type MyomaFinding } from '@laudousg/schemes'
+import { FIGO_FAMILIAS_GENERICAS, FIGO_LOCALIZACOES, MyomaFindingSchema, classificarMioma, comentariosPadrao, type MyomaFinding } from '@laudousg/schemes'
 
 // ── Via do exame (controle de categoria) ─────────────────────────────────────
 const VIA_TITULO: Record<string, string> = {
@@ -24,11 +24,11 @@ const VIA_TITULO: Record<string, string> = {
   pos_abortamento: 'ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL PÓS-ABORTAMENTO',
 }
 const VIA_TECNICA: Record<string, string> = {
-  ta_tv:
-    'Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
-  tv: 'Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
-  ta: 'Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
-  pos_abortamento: 'Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal, para avaliação pós-abortamento. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.',
+  // W15: tabela única da técnica (`@laudousg/schemes`).
+  ta_tv: comentariosPadrao('PELVE_FEMININA', { via: 'ta_tv' })!,
+  tv: comentariosPadrao('PELVE_FEMININA', { via: 'tv' })!,
+  ta: comentariosPadrao('PELVE_FEMININA', { via: 'ta' })!,
+  pos_abortamento: 'Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal, para avaliação pós-abortamento. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
 }
 function viaDe(opts?: OrganState): string {
   if (opts?.modo_pelve === 'monitorizacao_folicular') return 'tv'
@@ -425,7 +425,7 @@ export const pelveFeminina: ExamCategory = {
   name: 'Pelve (feminina)',
   title: 'ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL',
   tecnica:
-    'Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
+    comentariosPadrao('PELVE_FEMININA')!,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   // Controles de categoria (acima dos órgãos): via + menopausa global.
   controls: [

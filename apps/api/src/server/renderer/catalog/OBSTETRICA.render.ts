@@ -12,6 +12,7 @@ import { temEmbriaoNaoVisualizado, blocoGestacaoInicial, preambuloGestacaoInicia
 import { buildIgInput, computeIg, dataGeracaoSaoPaulo, type IgRenderOptions } from "../ig";
 import {
   COMENTARIOS_CERVICO,
+  comentariosDaViaObstetrica,
   COMENTARIOS_DOPPLER,
   filterFreeBodyItems,
   filterFreeConclusionItems,
@@ -154,7 +155,7 @@ export function buildObstetricaDoc(args: RenderArgs): { doc: ReportDoc; catalog:
       : undefined,
     // A técnica dos complementos entra DENTRO do parágrafo de comentários — o do
     // catálogo, inclusive quando o médico o personalizou.
-    preambulo: catalog.preambulo ? inserirComentariosExtras(catalog.preambulo, comp.comentarios) : undefined,
+    preambulo: catalog.preambulo ? comentariosDaViaObstetrica(inserirComentariosExtras(catalog.preambulo, comp.comentarios), f.via_exame) : undefined,
     preLinhas: [f.dum ? `\nDUM: ${f.dum}.\n` : "", ig.fraseReferencia ? `${ig.fraseReferencia}\n` : ""],
     customSlots: args.customSlots,
     // Camada flexível (flag FLEXIBLE_CONCLUSION), lado do CORPO: observação

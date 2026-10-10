@@ -19,7 +19,7 @@ TEMPLATE: O template abaixo deve ser reproduzido exatamente, sem qualquer altera
 ULTRASSONOGRAFIA OBSTÉTRICA COM DOPPLER COLORIDO
 
 COMENTÁRIOS:
-Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Feto único, em apresentação __________________, com dorso __________________.

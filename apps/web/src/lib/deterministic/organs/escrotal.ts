@@ -10,6 +10,7 @@
  * cisto exigem medidas; microlitíase exige a contagem de focos.
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory } from './abdomeTotal'
 import type { Field, OrganComposition, OrganModule, OrganState, PendenciaLocal } from '../types'
 import { FALTANDO, pendencia, marcado, medida, medidas, texto, valorNumerico, type Lado } from './superficialShared'
@@ -282,7 +283,7 @@ export const escrotal: ExamCategory = {
   name: 'Escrotal',
   title: 'ULTRASSONOGRAFIA DA BOLSA ESCROTAL COM DOPPLER COLORIDO',
   tecnica:
-    'Exame realizado com transdutor de 12 MHz, abrangendo todo o conteúdo escrotal. Foram realizados múltiplos cortes dos epidídimos, dos testículos e dos plexos pampiniformes. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias. Exame realizado com o paciente em ortostase e com manobra de Valsalva.',
+    comentariosPadrao('ESCROTAL')!,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [
     { id: 'escroto_direito', label: 'Hemiescroto direito', group: 'orgaos', module: escrotoSideModule('direito') },

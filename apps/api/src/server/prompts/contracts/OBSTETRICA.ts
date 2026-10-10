@@ -112,7 +112,7 @@ export const PLACENTA_BLOCK = `PLACENTA — FRASE CANÔNICA CONDICIONAL:
 export const OBSTETRICA_MODELO_PADRAO = `ULTRASSONOGRAFIA OBSTÉTRICA
 
 COMENTÁRIOS:
-Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem que possui várias metodologias.
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Feto único, em apresentação __________________, com dorso __________________.

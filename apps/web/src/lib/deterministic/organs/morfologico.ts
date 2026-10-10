@@ -10,6 +10,7 @@
  * passa ao diagnóstico). PENDENTE: gemelar, percentil de peso.
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory, ExamSection } from './abdomeTotal'
 import type { OrganModule, OrganState, OrganComposition } from '../types'
 import { igModule, numOrNull, ptBr, mm, classeILA } from './obstetrica'
@@ -19,7 +20,7 @@ import { criarFetalGrowthModule } from './fetalGrowth'
 import { preEclampsiaFmfSpec, trisomyFmfSpec } from '../../calculators/specs'
 
 const TECNICA =
-  'Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
+  comentariosPadrao('MORFOLOGICO')!
 
 function is3t(opts?: OrganState): boolean {
   return String(opts?.trimestre ?? '2t') === '3t'

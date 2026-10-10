@@ -7,6 +7,7 @@
  * Grosso: 1 linfonodo alterado. Glândulas salivares/tireoide → curadoria futura.
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory } from './abdomeTotal'
 import type { OrganModule, OrganState, OrganComposition } from '../types'
 
@@ -117,7 +118,7 @@ export const cervical: ExamCategory = {
   name: 'Cervical',
   title: 'ULTRASSONOGRAFIA CERVICAL',
   tecnica:
-    'Exame realizado com transdutor de 12 MHz, abrangendo a avaliação das cadeias ganglionares cervicais. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.',
+    comentariosPadrao('CERVICAL')!,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [{ id: 'cervical', label: 'Cadeias cervicais', group: 'orgaos', module: cervicalModule }],
   conclusionNormal: CONCLUSAO_NORMAL,

@@ -12,11 +12,12 @@
  * lado tem estado próprio (ver `idSecaoMsk`).
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory, ExamSection } from './abdomeTotal'
 import type { Field, FieldOption, OrganModule, OrganState, OrganComposition } from '../types'
 
 const TECNICA =
-  'Exame realizado com transdutor linear de alta frequência (12 MHz), mediante múltiplos cortes longitudinais e transversais do segmento avaliado, com avaliação dinâmica quando aplicável. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.'
+  comentariosPadrao('MUSCULOESQUELETICO_V2')!
 
 function normalizeNomenclatura(s: string): string {
   return s

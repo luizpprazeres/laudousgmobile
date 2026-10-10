@@ -1,3 +1,4 @@
+import { COMPLEMENTO_CERVICOMETRIA, COMPLEMENTO_DOPPLER_FETAL, comentariosPadrao } from "@laudousg/schemes";
 import { filterFreeConclusionItems } from "./OBSTETRICA";
 import { z } from "zod";
 import { buildIgInput, computeIg, reconciliarIgUsPrecoce, type IgRenderOptions, dataGeracaoSaoPaulo, type IgRawFields, type IgComputed } from "../ig";
@@ -1040,12 +1041,11 @@ function anatomiaPrecoceMorfo(f: MorfologicoFindings): {
   };
 }
 
-const COMENTARIOS_1T =
-  "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+const COMENTARIOS_1T = `COMENTÁRIOS:\n${comentariosPadrao("MORFOLOGICO")}`;
 
 /** Complementos DENTRO do parágrafo, como no obstétrico (decisão do médico, 18/09/2026). */
-const COMENTARIOS_DOPPLER = "Foi utilizado Doppler colorido para avaliação hemodinâmica fetal.";
-const COMENTARIOS_CERVICO = "Foi realizada avaliação complementar do colo uterino pela via transvaginal.";
+const COMENTARIOS_DOPPLER = COMPLEMENTO_DOPPLER_FETAL;
+const COMENTARIOS_CERVICO = COMPLEMENTO_CERVICOMETRIA;
 
 function comentariosMorfoCom(extras: Array<string | null>): string {
   const frases = extras.filter((f): f is string => Boolean(f));

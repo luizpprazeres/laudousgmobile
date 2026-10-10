@@ -173,6 +173,9 @@ function check(name: string, cond: boolean, detail?: string) {
   check("incompatibilidade já sinalizada não duplica", c.figoTipoIncompativel.length === 0, JSON.stringify(c));
   const d = auditPelveFacts("mioma FIGO 2-5", "nódulo miomatoso submucoso e subseroso (categoria FIGO 2-5).");
   check("FIGO híbrido 2-5 não acusa", d.figoTipoIncompativel.length === 0, JSON.stringify(d));
+  // Texto aprovado pelo Luiz (rodada 2, 10/10) para a 2-5.
+  const d2 = auditPelveFacts("mioma FIGO 2-5 na parede anterior", "nódulo miomatoso subseroso, estendendo-se desde a mucosa (categoria FIGO 2-5).");
+  check("FIGO 2-5 com o texto da tabela não acusa", d2.ok, JSON.stringify(d2));
 }
 // ── Revisão W13, rodada 2 (Codex): sondas da auditoria da pelve ──
 {

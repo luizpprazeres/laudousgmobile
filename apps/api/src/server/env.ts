@@ -64,6 +64,9 @@ const ServerEnvSchema = z.object({
   // "Correlacionar com dados clínicos" só quando ditado (decisão do Luiz de 10/10): ligado por padrão em
   // todos os caminhos do /api/generate; "false" desliga o guard (rollback sem deploy).
   CORRELACAO_SO_DITADA: z.string().default("true"),
+  // W15 — ajuste da seção COMENTÁRIOS (pipeline/tecnicaGuard.ts): via/transdutor/contexto ditados e
+  // documentação unificada. Ligado por padrão; "false" desliga (rollback).
+  TECNICA_GUARD: z.string().optional(),
   // Pós-validador clínico determinístico. "observe" apenas registra issues no
   // sanity (roda após a entrega do laudo — não altera o texto); "block_critical"
   // interromperia a entrega quando houver issue critical (não usado ainda).

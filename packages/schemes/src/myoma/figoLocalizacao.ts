@@ -4,8 +4,8 @@
  *
  * Textos: FIGO 3, 4, 5 e 6 seguem os laudos finais assinados (90–180 dias: "intramural em contato com a
  * mucosa", "intramural", "subseroso com mais de 50% intramural", "subseroso com menos de 50% intramural");
- * os demais seguem a tabela PALM-COEIN do pedido do Luiz. TEXTOS PROVISÓRIOS até a confirmação dele
- * (status W12) — mudar aqui muda as três superfícies juntas.
+ * os demais seguem a tabela PALM-COEIN do pedido do Luiz. Tabela aprovada por ele em 10/10/2026 (rodada 2),
+ * com a 2-5 = "subseroso, estendendo-se desde a mucosa" — mudar aqui muda as três superfícies juntas.
  *
  * Regras de derivação (do que o médico informa):
  * - só a categoria → a localização sai da tabela;
@@ -39,7 +39,7 @@ export const FIGO_LOCALIZACOES: readonly FigoLocalizacao[] = [
   { figo: "6", familia: "subseroso", texto: "subseroso com menos de 50% intramural", plural: "subserosos com menos de 50% intramural" },
   { figo: "7", familia: "subseroso", texto: "subseroso pediculado", plural: "subserosos pediculados" },
   { figo: "8", familia: "outros", texto: "de localização atípica", plural: "de localização atípica" },
-  { figo: "2-5", familia: "hibrido", texto: "submucoso e subseroso, estendendo-se da mucosa à serosa", plural: "submucosos e subserosos, estendendo-se da mucosa à serosa" },
+  { figo: "2-5", familia: "hibrido", texto: "subseroso, estendendo-se desde a mucosa", plural: "subserosos, estendendo-se desde a mucosa" },
 ];
 
 /** Famílias genéricas: a localização não basta para a categoria, só restringe. */

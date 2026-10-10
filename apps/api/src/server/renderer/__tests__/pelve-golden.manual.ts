@@ -7,6 +7,7 @@
  * Rodar (tsx direto, caminho absoluto):
  *   tsx /Users/luizprazeres/laudousgmobile-def/apps/api/src/server/renderer/__tests__/pelve-golden.manual.ts
  */
+import { comentariosPadrao } from "@laudousg/schemes";
 import {
   renderPelveFeminina,
   mergeMenopausaPelve,
@@ -170,6 +171,15 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
   check("mioma dinâmico: sem placeholders para eixos não coletados", !/4,2 x ____ x ____ cm/.test(l), l);
 }
 
+// ── W15: COMENTÁRIOS pela tabela única, por via ──
+{
+  for (const via of ["ta_tv", "tv", "ta"] as const) {
+    const l = renderPelveFeminina(F({ via }));
+    check(`W15: via ${via} = frase da tabela`, l.includes(`COMENTÁRIOS:\n${comentariosPadrao("PELVE_FEMININA", { via })}`), l.slice(0, 400));
+  }
+  check("W15: via não ditada = TA+TV", renderPelveFeminina(F({ via: null })).includes(`COMENTÁRIOS:\n${comentariosPadrao("PELVE_FEMININA")}`));
+}
+
 // ── W12: miomas no padrão dos laudos finais; localização ↔ FIGO pela tabela única ──
 {
   const M = (classificacao: string | null, figo: string | null, parede: string | null = "parede anterior", medidas_cm: number[] = [2.0, 1.8, 1.5]) =>
@@ -186,7 +196,7 @@ function F(over: Partial<PelveFemininaFindings>): PelveFemininaFindings {
   // Decisão do Luiz (10/10): vizinhas ficam como informadas, sem trocar pelo texto da tabela.
   check("FIGO2: vizinha preservada (intramural + 5)", /nódulo miomatoso intramural \(categoria FIGO 5\)\./.test(um(M("intramural", "5"))));
   check("FIGO2: vizinha preservada (submucoso + 3)", /nódulo miomatoso submucoso \(categoria FIGO 3\)\./.test(um(M("submucoso", "3"))));
-  check("W12: híbrida 2-5", /submucoso e subseroso, estendendo-se da mucosa à serosa \(categoria FIGO 2-5\)/.test(um(M(null, "2-5"))));
+  check("W12: híbrida 2-5", /nódulo miomatoso subseroso, estendendo-se desde a mucosa \(categoria FIGO 2-5\)/.test(um(M(null, "2-5"))));
   check("W12: 'em região fúndica'", /situada em região fúndica/.test(um(M("intramural", "4", "região fúndica"))));
   const dois = renderPelveFeminina(F({ miomas: [M(null, "5"), M("subseroso", "5", "parede posterior e lateral direita", [3.1, 2.9, 3.0])] }));
   check("W12: dois iguais → corpo numa frase só", /Miométrio apresentando duas imagens nodulares, a primeira medindo 2 x 1,8 x 1,5 cm, situada na parede anterior; a segunda medindo 3,1 x 2,9 x 3 cm, situada na parede posterior e lateral direita\./.test(dois), dois);

@@ -57,5 +57,7 @@ assert.equal(figoVizinha(["8"], "7"), false);
 assert.equal(figoVizinha(["0", "1", "2"], "3"), true);
 assert.deepEqual(classificarMioma("", ""), { texto: "", plural: "", figo: null, conflito: false }, "nenhuma: nada");
 assert.equal(localizacaoDaFigo("2-5")!.familia, "hibrido");
+assert.deepEqual(classificarMioma("", "2-5"), { texto: "subseroso, estendendo-se desde a mucosa", plural: "subserosos, estendendo-se desde a mucosa", figo: "2-5", conflito: false }, "2-5 aprovada (rodada 2)");
+assert.deepEqual(figosDaLocalizacao("subseroso, estendendo-se desde a mucosa"), ["2-5"], "texto exato da 2-5");
 
 console.log("figoLocalizacao: ok");

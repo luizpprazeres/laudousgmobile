@@ -7,6 +7,7 @@ import { Digitadoras } from '@/components/preferencias/Digitadoras'
 import { Tema } from '@/components/preferencias/Tema'
 import { FrasesPessoais } from '@/components/preferencias/FrasesPessoais'
 import { ModelosPreferidos } from '@/components/preferencias/ModelosPreferidos'
+import { TecnicaPreferida } from '@/components/preferencias/TecnicaPreferida'
 import { EstiloDeEscrita } from '@/components/preferencias/EstiloDeEscrita'
 import type { Assinatura, PlanoDoBanco } from '@/lib/planos'
 
@@ -101,6 +102,7 @@ export default async function PreferenciasPage({
             <Tema />
             <EstiloDeEscrita initial={perfil?.default_writing_style_id ?? null} />
             <ModelosPreferidos />
+            <TecnicaPreferida />
           </div>
         </div>
       </div>

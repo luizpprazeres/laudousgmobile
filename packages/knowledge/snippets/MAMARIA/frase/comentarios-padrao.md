@@ -16,4 +16,4 @@ COMENTÁRIOS PADRÃO
 Usar exatamente este texto, salvo caso especial abaixo:
 
 Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.
-A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.

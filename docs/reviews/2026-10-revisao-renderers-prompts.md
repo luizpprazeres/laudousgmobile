@@ -788,3 +788,61 @@ web verde; typecheck API e web sem erro.
 sozinho = FIGO 4?; incompatível — manter as duas com `[REVISAR]` ou reescrever a localização pela FIGO, como num final
 dele?; FIGO só na conclusão (como em 24/24 finais)?; três finais dele têm "intramural (FIGO 5)" ou "subseroso com menos de
 50% intramural (FIGO 5)", que a tabela acusa.
+
+## W15 (W4) — Técnica (COMENTÁRIOS) por via e transdutor, tabela única (10/10/2026)
+
+Decisões do Luiz em `docs/stories/haiku-migration/W15-comentarios-tecnica.md` (fim) e na rodada 2 de
+`DECISOES-LUIZ-2026-10-10.md` (próstata = frase longa; FIGO 2-5 = "subseroso, estendendo-se desde a mucosa").
+
+**Fonte única** — `@laudousg/schemes` `tecnica`: categoria × via (TA, TV, TA+TV) → frase, documentação ("que possuem",
+sem "em NN fotos"), complementos (Doppler fetal, cervicometria) e frases fixas. Usada pelos renderers da família
+obstétrica (obstétrica, gestação inicial, morfológico, Doppler isolado), cervicometria e pelve (renderer e prompt do
+writer), e pelas constantes de 12 órgãos da web.
+
+- **Via na obstetrícia** (o que mais fazia o médico editar): sem via ditada = TA; TV ditada → "com a finalidade de realizar
+  a técnica transvaginal" (título não muda); TA+TV → texto da pelve. O renderer usa a via extraída nos dois caminhos
+  (catálogo e não catálogo); TA+TV e a via perdida pelo extrator vêm do ajuste pós-geração.
+- **Ajuste pós-geração** (`pipeline/tecnicaGuard.ts`, logo após o sanitizador; `TECNICA_GUARD=false` desliga): via e MHz
+  ditados, contexto ditado no fim da seção (recém-nascido/criança/adolescente com idade, urgência, mama masculina,
+  estudo comparativo), documentação unificada e variantes antigas (MSK "abrangendo a avaliação do…", parede, próstata
+  curta). Sem nada ditado, o texto sai byte a byte igual. Não é via do exame: cervicometria/colo transvaginal (também
+  "serbicometria", "coluterino" do ASR), recomendação de outro exame ("realizar/complementar com ultrassonografia …
+  transvaginal") e negação.
+- **Frase por usuário:** `renderer_preferences.tecnica_padrao` (jsonb que já existe; sem migração), editável em
+  Preferências na web, aplicada no /api/generate e na prévia da web; troca só a frase da via padrão.
+- **Banco:** `docs/stories/haiku-migration/W15-biblioteca-tecnica.sql` — próstata (aprovada; 8 blocos, md5 e contagem
+  conferidos, aborta se não bater) e parede (só proposta, comentada). Não aplicado.
+
+### Bancada — 148 laudos reais afetados (Haiku 5.5, sem juiz; mesmo cache de modelo nas duas rodadas)
+
+Casos: obstétrica 53, Doppler 17, morfológico 34, pelve 41 (COMENTÁRIOS editados pelo médico, ou via/MHz/contexto
+ditados). Base = `feat/haiku-migration` (e4f62170); W15 = esta branch antes do merge final. Régua: seção COMENTÁRIOS
+igual à do final, normalizado pelas decisões do Luiz (fotos, "possuem", variantes antigas).
+
+| Categoria | Casos | Seção = final (base → W15) | Via = final (base → W15) |
+|---|---|---|---|
+| Obstétrica | 53 | 25 → **28** | 37 → **38** |
+| Doppler obstétrico | 17 | 0 → **10** | 1 → **13** |
+| Morfológico | 34 | 18 → 18 | 29 → 29 |
+| Pelve feminina | 41 | 31 → **34** | 36 → 36 |
+
+Placar geral (frases-padrão faltando, título, "____", conclusão duplicada, numeração): sem piora (2120/3110 nas duas;
+título ≠ 59 → 60 por um caso de pelve só com cervicometria em que o writer, com o prompt novo, usou "CERVICOMETRIA
+TRANSVAGINAL" como título ditado — os COMENTÁRIOS ficaram iguais).
+
+**Defeito dos 3 laudos com via ditada que saíram TA** (produção + ajuste W15): dois TV → TV e um TA+TV → TA+TV, como
+nos finais; título igual. Um deles falha na bancada nas duas rodadas (correção de schema do extrator não passa pelo shim
+`claude -p` — limitação da bancada, não do produto); conferido aplicando o ajuste ao laudo da produção.
+
+**Achados da bancada já corrigidos na W15:** o Doppler isolado (renderer de 30/08) escrevia a frase "clássica" (cortes com
+dispositivo de Doppler), que o médico troca em 108/109 finais — agora a da casa; recomendação de exame transvaginal e
+"serbicometria" do ASR eram lidas como via (falso TV em um obstétrico e um morfológico).
+
+**O que sobra de via ≠ final:** na família obstétrica, quase tudo é TV ou TA+TV no final sem via no ditado (13 obstétricas,
+5 morfológicos, 3 Doppler) — pela decisão 1, sem via ditada sai TA; mais um obstétrico e um Doppler que são outro exame
+(parede, partes moles). Um obstétrico com o modelo de pelve transvaginal colado no ditado sai TV e o final é TA (dois iguais
+saíram TV no final): ambíguo, segue a regra. Na pelve, os 5 são os mesmos da base: 2 "transvaginal" ditado que o médico
+manteve TA+TV, 1 TV ditada com final TA, 1 sem via com final TV e 1 TV ditada que o writer escreveu TA+TV.
+
+Gates: guard 50/50; golden W15 19/19; Doppler 34/34; pelve 86/86; auditoria da pelve 51/51; prompt MSK 32/32; FIGO ok;
+correlação 45/45; web 74 suítes; typecheck API, web e schemes sem erro.

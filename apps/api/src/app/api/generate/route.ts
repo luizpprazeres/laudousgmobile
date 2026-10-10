@@ -28,6 +28,8 @@ import { applyCommandOperations } from "@/server/pipeline/commandOperations";
 import { removeEmptyConclusionItems } from "@/server/pipeline/emptyConclusionItemsGuard";
 import { normalizeSectionSpacing } from "@/server/pipeline/sectionSpacingGuard";
 import { sanitizeDictationArtifacts } from "@/server/pipeline/dictationSanitizer";
+import { ajustarComentarios } from "@/server/pipeline/tecnicaGuard";
+import { aplicarTecnicaPreferida } from "@laudousg/schemes";
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
 import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
@@ -1450,6 +1452,23 @@ export async function POST(req: Request) {
       // (Boletim 2026-06-17: garble em renderer/v1 e writer.)
       if (generationPath.guardsMode === "full") {
       finalText = sanitizeDictationArtifacts(finalText);
+      // W15: COMENTÁRIOS pela tabela única — via (família obstétrica), transdutor e contexto
+      // clínico ditados; documentação unificada; variantes antigas (MSK, parede). Silêncio = intocado.
+      if (env().TECNICA_GUARD !== "false") {
+        const tecnica = ajustarComentarios(finalText, {
+          categoria: effectiveCategory || reqInput.category_hint,
+          ditado: reqInput.consolidated_transcript ?? reqInput.raw_input,
+        });
+        if (tecnica.trocas.length) {
+          console.log(`[generate ${reportId}] técnica: ${tecnica.trocas.join(" | ")}`);
+          finalText = tecnica.texto;
+        }
+        // Frase de técnica preferida da conta (por categoria; a mesma da web).
+        const preferida = rendererPreferences?.tecnica_padrao;
+        if (typeof preferida === "string" && preferida.trim()) {
+          finalText = aplicarTecnicaPreferida(finalText, effectiveCategory || reqInput.category_hint || "", preferida);
+        }
+      }
       // Normalização determinística de medidas (universal): abrevia
       // "centímetros"→"cm" / "milímetros"→"mm" e junta dimensões "A por B"→
       // "A x B". Conservador: não força separador decimal. Roda ANTES do sanity

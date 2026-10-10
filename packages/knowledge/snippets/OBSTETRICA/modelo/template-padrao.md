@@ -23,7 +23,7 @@ NUNCA mova COMENTÁRIOS pra depois dos achados. NUNCA mova CONCLUSÃO pra antes 
 ULTRASSONOGRAFIA OBSTÉTRICA
 
 COMENTÁRIOS:
-Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem que possui várias metodologias.
+Exame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Feto único, em apresentação {cefálica | OU OUTRO se médico falou}{, com dorso à ___[lado se médico falou]___ | OU OMITIR ESSA PARTE}.

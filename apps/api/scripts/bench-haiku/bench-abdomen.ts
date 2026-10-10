@@ -124,7 +124,7 @@ const RENAME = new Map(
 );
 const keyOf = (scen: string) => RENAME.get(scen) ?? (scen === "A" ? arg("a-key", "A")! : scen);
 const A_KEY = keyOf("A");
-const SCEN_KEYS = ["R", "A", "AR", "AS", "A2", "AS2", "A3", "AS3", "A4", "AS4", "A5", "AS5", "A6", "AS6", "B", "BS", "L", "B2", "B2S", "B3", "B4", "B5", "B6", "B7", "B8", "B9"];
+const SCEN_KEYS = ["R", "A", "AR", "AS", "A2", "AS2", "A3", "AS3", "A4", "AS4", "A5", "AS5", "A6", "AS6", "A7", "AS7", "A8", "AS8", "B", "BS", "L", "B2", "B2S", "B3", "B4", "B5", "B6", "B7", "B8", "B9"];
 const OUT_ROOT = process.env.BENCH_OUT_ROOT ?? join(REPO, "tmp-review/bench-haiku");
 const BUNDLE_PATCH: Record<string, string | null> | null = process.env.BENCH_BUNDLE_PATCH
   ? JSON.parse(readFileSync(resolve(process.env.BENCH_BUNDLE_PATCH), "utf8"))
@@ -490,10 +490,17 @@ async function main() {
       .filter((line) => !line.includes("____"))
       .filter((line) => !/Breast Imaging Reporting|Domingos Correia da Rocha|American College of Radiology/i.test(line))
       .join("\n");
+  const { ajustarComentarios } = await import("../../src/server/pipeline/tecnicaGuard");
   const { aplicarCorrelacaoDitada } = await import("../../src/server/pipeline/correlacaoClinica");
-  // Como a rota: o guard da correlação clínica (decisão de 10/10) fecha a cadeia universal.
-  const universalGuards = (t: string, ditado: string) =>
-    aplicarCorrelacaoDitada(flagImplausibleMeasures(stripInvalidDumLines(normalizeMeasures(sanitizeDictationArtifacts(t)))), ditado);
+  // Como a rota: W15 (técnica por via/transdutor/contexto ditados) logo depois do sanitizador, flag TECNICA_GUARD;
+  // o guard da correlação clínica (decisão de 10/10) fecha a cadeia universal.
+  const comTecnica = (t: string, cat?: string, ditado?: string) =>
+    cat && process.env.TECNICA_GUARD !== "false" ? ajustarComentarios(t, { categoria: cat, ditado }).texto : t;
+  const universalGuards = (t: string, ditado: string, cat?: string, ditadoTecnica?: string) =>
+    aplicarCorrelacaoDitada(
+      flagImplausibleMeasures(stripInvalidDumLines(normalizeMeasures(comTecnica(sanitizeDictationArtifacts(t), cat, ditadoTecnica ?? ditado)))),
+      ditado,
+    );
 
   const sql = postgres(process.env.DATABASE_URL!, { ssl: "require", max: 2 });
   const rows: Row[] = await sql`
@@ -646,13 +653,16 @@ async function main() {
           text += n.value;
         }
       } catch (e) {
+        if (process.env.BENCH_STACK) console.error((e as Error).stack, (e as { cause?: unknown }).cause);
         return { text: "", error: `renderer falhou: ${(e as Error).message.slice(0, 300)}` };
       }
       // Como a rota: writer dedicado (passthrough) não recebe acréscimo do guard.
       text = applyCommandOperations(text, rawInput, { writer: passthrough });
       // Como a rota: "calcule o volume" no writer dedicado (decisão de 10/10).
       if (passthrough) text = applyVolumePolicy(text, rawInput, { soPedido: true });
-      return mode === "replay" ? { text: universalGuards(text, rawInput) } : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, rawInput) });
+      return mode === "replay"
+        ? { text: universalGuards(text, rawInput) }
+        : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, rawInput, examOf(r).cat, rawInputCru) });
     });
   }
 
@@ -719,7 +729,7 @@ async function main() {
         text = dedupeConclusionItems(text);
       }
       if (cat === "MUSCULOESQUELETICO_V2") text = normalizeSectionSpacing(text);
-      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, rawInput) });
+      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, rawInput, examOf(r).cat, rawInputCru) });
     });
   }
 

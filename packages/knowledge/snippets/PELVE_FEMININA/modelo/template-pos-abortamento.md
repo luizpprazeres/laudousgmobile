@@ -21,7 +21,7 @@ GATILHOS DE APLICAÇÃO:
 D) ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL – AVALIAÇÃO PÓS-ABORTAMENTO
 
 COMENTÁRIOS:
-Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Bexiga de forma, contorno e ecotextura normais.

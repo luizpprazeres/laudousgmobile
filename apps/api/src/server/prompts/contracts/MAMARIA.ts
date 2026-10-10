@@ -26,7 +26,7 @@ ULTRASSONOGRAFIA DAS MAMAS
 
 COMENTÁRIOS:
 Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.
-A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Mamas com ecotextura de fundo com aspecto heterogêneo.
@@ -76,7 +76,7 @@ export const MAMARIA_MODELO_BASE = `ULTRASSONOGRAFIA DAS MAMAS
 
 COMENTÁRIOS:
 Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.
-A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Mamas com ecotextura de fundo com aspecto heterogêneo.

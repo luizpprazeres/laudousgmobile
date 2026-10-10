@@ -9,6 +9,7 @@
  * Fonte: apps/api/src/server/renderer/categories/ABDOMEN_SUPERIOR.ts.
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { ExamCategory } from './abdomeTotal'
 import { bacoModule } from './baco'
 import { figadoModule } from './figado'
@@ -21,7 +22,7 @@ export const abdomeSuperior: ExamCategory = {
   name: 'Abdome Superior',
   title: 'ULTRASSONOGRAFIA DO ABDOME SUPERIOR',
   tecnica:
-    'Exame realizado com transdutor convexo de 4.0 MHz, com o paciente em jejum, mediante múltiplos cortes do andar superior do abdome em decúbito dorsal e laterais. Documentação fotográfica conforme protocolo.',
+    comentariosPadrao('ABDOMEN_SUPERIOR')!,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [
     { id: 'figado', label: 'Fígado', group: 'orgaos', module: figadoModule },

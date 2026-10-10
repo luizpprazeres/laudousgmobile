@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COMPLEMENTO_CERVICOMETRIA, COMPLEMENTO_DOPPLER_FETAL, comentariosPadrao } from "@laudousg/schemes";
 import {
   CERVICOMETRIA_ADDON_JSON_SCHEMA,
   CervicometriaAddonSchema,
@@ -7,7 +8,6 @@ import {
 import {
   DOPPLER_OBSTETRICO_MODULE_JSON_SCHEMA,
   DOPPLER_MODULE_EXTRACTION_RULES,
-  DOPPLER_TECNICA_CLASSICO,
   DOPPLER_TECNICA_OBJETIVO,
   DopplerObstetricoModuleSchema,
   renderDopplerModule,
@@ -110,7 +110,10 @@ export function renderDopplerObstetrico(
     TITULO,
     "",
     "COMENTÁRIOS:",
-    `${DOPPLER_TECNICA_CLASSICO}${f.cervicometria ? "\nFoi realizada avaliação complementar do colo uterino pela via transvaginal." : ""}`,
+    // W15: frase da casa (108/109 finais), não a "clássica" de cortes com dispositivo de Doppler.
+    comentariosPadrao("DOPPLER_OBSTETRICO", {
+      complementos: [COMPLEMENTO_DOPPLER_FETAL, f.cervicometria ? COMPLEMENTO_CERVICOMETRIA : null],
+    })!,
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",
     ...achados,

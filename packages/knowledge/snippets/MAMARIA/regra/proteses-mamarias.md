@@ -20,7 +20,7 @@ GATILHOS DE APLICAÇÃO:
 
 Se for paciente com prótese, usar exatamente:
 Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas, bem como as regiões axilares. Paciente com próteses mamárias.
-A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 7. PRÓTESES
 Se normais, usar exatamente:

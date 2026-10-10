@@ -3,6 +3,7 @@ import { getDbClient, schema } from "@laudousg/db";
 export { OPTIONS } from "@/server/cors";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { TECNICA_PREFERIDA_MAX } from "@laudousg/schemes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ const UpdateSchema = z.object({
     .object({
       show_domingos_score: z.boolean().optional(),
       show_conduct_recommendation: z.boolean().optional(),
+      // W15: frase de técnica (COMENTÁRIOS) preferida do usuário para a categoria; null = a da casa.
+      tecnica_padrao: z.string().trim().max(TECNICA_PREFERIDA_MAX).nullable().optional(),
     })
     .nullable()
     .optional(),

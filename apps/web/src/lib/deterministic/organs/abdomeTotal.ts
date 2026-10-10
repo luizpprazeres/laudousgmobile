@@ -2,6 +2,7 @@
  * Abdome Total — módulos determinísticos por estrutura.
  */
 
+import { comentariosPadrao } from '@laudousg/schemes'
 import type { Field, OrganModule, OrganState, PendenciaLocal } from '../types'
 import type { CalcSpec } from '../../calculators/specs'
 import { bacoModule } from './baco'
@@ -80,7 +81,7 @@ export const abdomeTotal: ExamCategory = {
   name: 'Abdome Total',
   title: 'ULTRASSONOGRAFIA DO ABDOME TOTAL',
   tecnica:
-    'Exame realizado com transdutor convexo, avaliando o abdome superior em jejum e o abdome inferior com adequada repleção vesical. Documentação fotográfica conforme protocolo.',
+    comentariosPadrao('ABDOMEN_TOTAL')!,
   achadosHeader: 'OS SEGUINTES ASPECTOS FORAM OBSERVADOS:',
   sections: [
     {

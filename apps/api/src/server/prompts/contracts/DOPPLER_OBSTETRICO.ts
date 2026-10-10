@@ -1,3 +1,5 @@
+import { COMPLEMENTO_DOPPLER_FETAL, comentariosPadrao } from "@laudousg/schemes";
+
 /** Contrato de fallback do exame Doppler obstétrico isolado. */
 export const DOPPLER_OBSTETRICO_CONTRACT = `FUNÇÃO: gerar somente a avaliação Doppler obstétrica isolada.
 
@@ -12,7 +14,7 @@ REGRAS:
 export const DOPPLER_OBSTETRICO_MODELO_BASE = `DOPPLERVELOCIMETRIA OBSTÉTRICA
 
 COMENTÁRIOS:
-Foram realizados vários cortes ultrassonográficos com equipamento com dispositivo de Doppler pulsado colorido e imagem bidimensional, de artérias maternas e fetais.
+${comentariosPadrao("DOPPLER_OBSTETRICO", { complementos: [COMPLEMENTO_DOPPLER_FETAL] })}
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Artéria uterina direita com índice de resistividade de ____ e índice de pulsatilidade de ____.
