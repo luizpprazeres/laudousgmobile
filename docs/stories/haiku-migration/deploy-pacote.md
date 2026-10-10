@@ -63,10 +63,10 @@ Morfológico: a piora (+11 frases, +1 título, +1 lacuna) vem de **dois casos**,
 
 - MSK no Haiku: mantém o resultado da W14 (omissão 5,0% × 8,7% da produção; zero invasão de numeração).
 - Obstétrica/Doppler: mantém a W5.
-- Morfológico: dentro da W5 salvo a variação do extrator; **risco aberto:** omissão esporádica de bloco de medidas da
-  calculadora e confusão "ducto venoso do 1º trimestre × módulo Doppler" em ditado colado. Sugestão: rodar 2–3 repetições
-  no morfológico antes do GO, ou aceitar com o card de pendências e a revisão do médico como rede.
-
+- Morfológico: **risco fechado em `fix/morfologico-extracao`** — ossos longos do bloco da calculadora e DV do 1º
+  trimestre agora determinísticos; 4/4 repetições + rodada completa corretas nos dois casos; placar dos 23 volta ao
+  nível da W5 (274 × 272). Detalhe e dois achados residuais (IG pela US precoce; item livre repetido no 2º tri) em
+  `W1-relatorio.md`, seção MORFO.
 
 ## 2. Variáveis de ambiente da Vercel (produção)
 

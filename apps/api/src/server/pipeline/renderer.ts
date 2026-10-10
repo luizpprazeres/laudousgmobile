@@ -39,6 +39,7 @@ import {
 } from "../renderer/categories/biometriaFetal";
 import {
   renderMorfologico,
+  normalizarExtracaoMorfologico,
   type MorfologicoFindings,
 } from "../renderer/categories/MORFOLOGICO";
 import {
@@ -784,7 +785,7 @@ export async function* runRendererStream(args: {
         break;
       }
       case "MORFOLOGICO":
-        fullText = renderMorfologico(fnd as MorfologicoFindings, null, {
+        fullText = renderMorfologico(normalizarExtracaoMorfologico(fnd as MorfologicoFindings, args.rawInput), null, {
           objetivo,
           igCorrection,
           golfBall,

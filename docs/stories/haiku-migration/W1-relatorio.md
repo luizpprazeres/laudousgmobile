@@ -25,6 +25,59 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## MORFO — risco do morfológico fechado antes do GO (`fix/morfologico-extracao`)
+
+**Causa (conferida nas chamadas gravadas):**
+- (a) Ossos longos: o extrator Haiku devolveu `null` em tíbia/fíbula/úmero/rádio/ulna que o bloco da calculadora traz
+  com rótulo e unidade ("Medidas morfológicas: Tíbia: 36,2 mm …"); o renderer escreveu `____`. O prompt já mandava
+  extrair; é omissão esporádica do modelo (1 em 4).
+- (b) Ducto venoso do 1º trimestre: o extrator criou o objeto `doppler` com tudo `null` (só o DV qualitativo, ou nada).
+  Qualquer `doppler` não nulo aciona o módulo: título "COM DOPPLER COLORIDO", seção DOPPLERVELOCIMETRIA e "Dados Doppler
+  insuficientes". Nessas execuções a frase ditada "Dopplervelocimetria normal das artérias uterinas" também não ia para
+  `itens_conclusao_livres`, único canal dela sem IP; numa delas a conclusão se perdeu mesmo **sem** módulo.
+
+**Correção (enxuta, só no `case "MORFOLOGICO"` do pipeline + prompt do morfológico):**
+`normalizarExtracaoMorfologico(f, rawInput)` em `renderer/categories/MORFOLOGICO.ts`, aplicada antes do render:
+1. Lê o bloco "Medidas morfológicas:" (exige o cabeçalho; cm explícito → mm) e preenche **só** o campo que voltou `null`.
+   Nunca sobrescreve valor extraído (correção falada) nem completa o genérico quando um lado foi ditado.
+2. 1º trimestre: módulo `doppler` sem nenhum índice (DV qualitativo não conta) é descartado. Se ele trazia DV
+   reverso/negativo e `ducto_venoso` estava vazio, vira `ducto_venoso = "alterado"`. No 2º/3º trimestre nada muda: lá o
+   módulo vazio ainda sinaliza "Doppler pedido sem índices".
+3. 1º trimestre sem IP nem módulo e sem item de uterinas: a frase qualitativa das uterinas (sem número) volta do ditado
+   para `itens_conclusao_livres`, sem a numeração.
+4. Prompt (regra 3): DV do 1º trimestre é marcador, vai só em `ducto_venoso`; conclusão qualitativa das uterinas vai em
+   `itens_conclusao_livres`.
+
+**Testes determinísticos:** `renderer/__tests__/morfologico-normalizacao-extracao.manual.ts` (6 blocos). Os dois
+cenários reproduzem sem a normalização e passam com ela. A forma "módulo só com DV / módulo vazio / sem módulo e sem itens
+livres" é testada nos dois estilos, e o que fica fora do alvo é verificado sem mudança: 1º tri com IP, módulo vazio no
+2º tri, conclusão já extraída e linha com índice. Os testes do morfológico seguem verdes: contrato do schema, matriz iOS
+89/89, conclusão por sistema 18, lateralidade 265, golden Objetivo 41. Motor 26/26, metatexto 14/14, `tsc` limpo.
+
+**Bancada Haiku pela assinatura (`BENCH_MODEL=claude-haiku-5-5`, sem juiz):**
+
+| Caso | Antes (c7413d0a, 4 execuções) | Depois (4 repetições + rodada dos 23) |
+|---|---|---|
+| `a3ea0fea` ossos longos | 1/4 com `____` | **5/5 com as 5 medidas, 0 `____`** |
+| `c18f149a` DV 1º tri | 2/4 com módulo Doppler/conclusão perdida | **5/5: título sem Doppler, sem seção, DV trifásico no corpo, uterinas 1× na conclusão** |
+
+| Grupo | W5 (A) | c7413d0a (A4) | Depois (A5) |
+|---|---|---|---|
+| Obstétrica + Doppler (46) — frases-padrão faltando | 194/849 | 196/849 | 191/849 (título ≠ 6, `____` 2, sem duplicação) |
+| Morfológico (23) — frases-padrão faltando | 272/627 | 283/627 | **274/627** (título ≠ 1, `____` 4) |
+
+Obstétrica/Doppler: o código desses caminhos não mudou (o pipeline só mudou no `case "MORFOLOGICO"`; o prompt alterado
+é só o `MORFOLOGICO_EXTRACTION_PROMPT`). A rodada nova fica no mesmo nível: 26/46 textos idênticos ao A4, e o restante
+é variação do extrator. Rodadas em `tmp-review/bench-haiku/2026-10-10T15-23-30-morfologico`, `…T15-25-33-obstetrica+doppler_obstetrico`, `…T15-31-14-morfologico`.
+
+**Achados novos, fora desta correção (já presentes em c7413d0a), para a frente obstétrica:**
+- `a3ea0fea`: "IG pela ultrassonografia precoce: 23s3d" sai do laudo em 8/8 execuções do código atual (W5: presente). O
+  extrator põe 23s3d em `primeira_us_ig_*` sem data, e o renderer não escreve nada com isso. O laudo final do médico diz
+  "23 semanas e 3 dias, corrigido pela ultrassonografia precoce". É o domínio do épico IG determinística.
+- 2º trimestre: em 2/23 o extrator copiou frases normais da conclusão para `itens_conclusao_livres`, e o renderer as
+  repete ("Colo uterino ecograficamente normal.", "Morfologia fetal sem evidência…"). Na W5 aconteceu 1×; na produção, 4×.
+  Correção barata possível: deduplicar o item livre igual a um item do renderer.
+
 ## W14b — rodada 2 da revisão do Codex
 
 Branch `fix/w14b-motor` a partir de `feat/haiku-migration` `1d76a830`.
