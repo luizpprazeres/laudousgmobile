@@ -373,6 +373,8 @@ export const CATEGORY_GLOBAL_RULES: Record<string, string> = {
   PELVE_FEMININA: FIGO_RULES,
   MUSCULOESQUELETICO: MSK_RULES,
   MUSCULOESQUELETICO_V2: MSK_RULES,
+  // MAMARIA: escopo das axilas, margem e hierarquia do BI-RADS vivem só no contrato da mama
+  // (W14/A06: a regra "margens sempre circunscritas" daqui trocava margem suspeita ditada).
   TIREOIDE: `Tireoide:
 - Linfonodos normais → parágrafo no corpo (com linha em branco antes), NÃO na conclusão
 - Linfonodos não mencionados → omitir completamente

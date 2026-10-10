@@ -7,6 +7,8 @@ import { F as T, L, N } from "./tireoide-objetivo-fixtures";
 import { renderTireoide } from "../categories/TIREOIDE";
 import { getCategoryContract } from "../../prompts/contracts";
 import { MAMARIA_CONTRACT, MAMARIA_MODELO_BASE } from "../../prompts/contracts/MAMARIA";
+import { buildSystemMessage } from "../../prompts/buildSystemMessage";
+import { TIREOIDE_EXTRACTION_PROMPT } from "../categories/TIREOIDE";
 
 let total = 0;
 function test(name: string, fn: () => void) {
@@ -67,6 +69,41 @@ test("mama: o nome do exame ('Mamas e axilas') não pede axilas", () => {
 test("mama: estilo objetivo continua recebendo o contrato convertido", () => {
   const obj = getCategoryContract("MAMARIA", "OBJETIVO");
   assert.ok(obj && /MODELO BASE OBJETIVO/.test(obj));
+});
+
+// W14 — achados da revisão independente (W13), cenários sintéticos.
+const sysMama = buildSystemMessage({ categoryCode: "MAMARIA", categoryLabel: "Mamas", writingStyleCode: "CLASSICO_COMPLETO", ragBlocks: [], inputMode: "raw" });
+test("A05: exclusão explícita de axilas vence a mera menção", () => {
+  assert.match(MAMARIA_CONTRACT, /Não, ou as exclui \("sem axilas", "só mamas", "axilas não avaliadas"\)/);
+});
+test("A05: axila alterada não recebe a frase normal", () => {
+  assert.match(MAMARIA_CONTRACT, /Com alteração ditada: a descrição dela no lugar da frase normal daquela axila/);
+  assert.match(MAMARIA_CONTRACT, /nunca "Linfonodos axilares normais\." para a axila alterada/);
+});
+test("A06: system da mama não manda trocar margem por 'circunscrita'", () => {
+  assert.doesNotMatch(sysMama, /sempre "circunscritas"/);
+  assert.match(sysMama, /circunscrita, lobulada, microlobulada, irregular ou espiculada; "regular" ditado = circunscrita/);
+});
+test("A07: número truncado e unidade ausente são sinalizados, não resolvidos", () => {
+  assert.doesNotMatch(MAMARIA_CONTRACT, /→ 2,9 cm|sem unidade → cm/);
+  assert.match(MAMARIA_CONTRACT, /Número truncado ou eixos ambíguos \("2 9 cm"\) e medida sem nenhuma unidade no achado: reproduza como falado e marque "\[REVISAR — medida ambígua\]"/);
+});
+test("A07: mama normal continua BI-RADS 1 no system efetivo", () => {
+  assert.match(sysMama, /Mamas ecograficamente normais \(Categoria BI-RADS® 1\)\./);
+});
+test("A12: extração não converte 'com áreas' incompleto em áreas anecoicas", () => {
+  assert.doesNotMatch(TIREOIDE_EXTRACTION_PROMPT, /ou só "… com áreas"/);
+  assert.match(TIREOIDE_EXTRACTION_PROMPT, /"Com áreas" sem dizer de quê:\s+ecogenicidade null/);
+});
+test("A12: imagem sem ecogenicidade não ganha nota e a pendência aparece", () => {
+  const out = renderTireoide(T({ lobo_direito: L({ nodulos: [N({ ecogenicidade: null, margem: "regular", medidas_cm: [1.2, 0.8, 1.0], localizacao: "no terço médio", descricao_raw: "imagem isoecoica com áreas, com margem regular" })] }) }));
+  assert.doesNotMatch(out, /NOTA FINAL/);
+  assert.match(out, /imagem nodular no terço médio \[REVISAR — ecogenicidade não ditada\]/);
+});
+test("A12: nota ditada sem ecogenicidade não recebe a marca", () => {
+  const out = renderTireoide(T({ lobo_direito: L({ nodulos: [N({ ecogenicidade: null, nota_domingos_ditada: "3" })] }) }));
+  assert.match(out, /NOTA FINAL 3/);
+  assert.doesNotMatch(out, /ecogenicidade não ditada/);
 });
 
 console.log(`\n${total} verificações W10c passaram.`);

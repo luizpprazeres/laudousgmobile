@@ -10,14 +10,15 @@
  *  - conclusão da casa (cisto simples / imagem sólida no quadrante / linfonodo intramamário), BI-RADS
  *    só se ditado e só no item de maior categoria; exame normal = (Categoria BI-RADS® 1) (W7);
  *  - axilas só quando ditadas ou pedidas; pedidas sem achado = normais (W7, decisão 12 do Luiz);
- *  - erros de transcrição óbvios corrigidos sem comentário ("0.3 por 0,1" → "0,3 x 0,1").
+ *  - erros de transcrição óbvios corrigidos sem comentário ("0.3 por 0,1" → "0,3 x 0,1"); número truncado
+ *    ou sem unidade no achado é sinalizado (W14/A07).
  */
 
 export const MAMARIA_CONTRACT = `LAUDO DE ULTRASSONOGRAFIA DAS MAMAS — preencha o modelo da casa com o ditado. Saída: somente o laudo, em texto simples, sem markdown, bullets ou comentários.
 
-ESCOPO — decida antes de escrever: a palavra "axila" (ou "axilas", "axilar") aparece no DITADO?
-- Não: título ULTRASSONOGRAFIA DAS MAMAS e nenhuma frase axilar no corpo ou na conclusão. O nome do exame na tela ("Mamas e axilas") não conta.
-- Sim: título ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES, a frase axilar no fim do corpo e "Linfonodos axilares normais." como último item da conclusão (axilas citadas sem achado = normais).
+ESCOPO — decida antes de escrever: o DITADO pede ou descreve axilas (a palavra "axila", "axilas" ou "axilar")?
+- Não, ou as exclui ("sem axilas", "só mamas", "axilas não avaliadas"): título ULTRASSONOGRAFIA DAS MAMAS e nenhuma frase axilar no corpo ou na conclusão. O nome do exame na tela ("Mamas e axilas") não conta.
+- Sim: título ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES. Sem alteração axilar ditada: a frase axilar normal no fim do corpo e "Linfonodos axilares normais." como último item da conclusão. Com alteração ditada: a descrição dela no lugar da frase normal daquela axila e um item próprio na conclusão, nunca "Linfonodos axilares normais." para a axila alterada.
 
 MODELO (frases fixas, copiadas literalmente; título conforme o escopo)
 ULTRASSONOGRAFIA DAS MAMAS
@@ -56,7 +57,8 @@ CONCLUSÃO
 - BI-RADS de achado só se ditado, como "(Categoria BI-RADS® 3)", e só no item de maior categoria (5 > 4 > 3 > 0 > 2 > 1). Nunca o calcule.
 - Correlação ditada: "A correlação com a mamografia realizada em dd/mm/aaaa permite manter esta classificação." ou "A correlação com a mamografia realizada em dd/mm/aaaa permite reclassificar para Categoria BI-RADS® X."
 
-DITADO POR VOZ — corrija sem comentar: "ponto" ou "." decimal → vírgula (2.7 → 2,7); "por" → "x"; algarismos separados ("2 9 cm") → 2,9 cm, sem marca; medida sem unidade → cm; "mão" → mama; "do 60 até a perna" → do seu centro até a pele; "super lateral" ou "superlateral" → superolateral; "listando"/"estando" → distando.
+DITADO POR VOZ — corrija sem comentar: "ponto" ou "." decimal → vírgula (2.7 → 2,7); "por" → "x"; medida sem unidade → a unidade dita para as outras medidas do mesmo achado; "mão" → mama; "do 60 até a perna" → do seu centro até a pele; "super lateral" ou "superlateral" → superolateral; "listando"/"estando" → distando.
+Número truncado ou eixos ambíguos ("2 9 cm") e medida sem nenhuma unidade no achado: reproduza como falado e marque "[REVISAR — medida ambígua]".
 Marca de revisão só a da lista do sistema (ex.: "[REVISAR — lado não ditado]" no lugar do lado que falta); não comente o ditado nem explique correções.`;
 
 /**

@@ -25,6 +25,38 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## W14 — correções da revisão independente (Codex, W13)
+
+Branch `fix/w14-motor` a partir de `feat/haiku-migration` `cf903353`.
+
+**A13 — a regra comum de extração mandava apagar conteúdo incompreensível sem sinalizar.**
+- `ai/llm.ts` (`EXTRACTION_TEXT_RULE`): "Trecho incompreensível: deixe de fora, sem comentar" virou: ruído sem conteúdo
+  clínico é omitido; dado clínico parcialmente incompreensível (medida truncada, lado ou negação incertos) é
+  **preservado na parte compreensível**, sem adivinhar o resto e sem virar normalidade, com a marca `[REVISAR: motivo
+  curto]` no campo de texto mais próximo — a única exceção à proibição de comentários.
+- Canal de revisão já existente, sem campo novo de schema: o guard `renderer/extractionMetatext.ts` tira a marca do texto
+  assinável e a leva ao **card de pendências** (o mesmo canal dos avisos da rodada 3). E o guard deixou de apagar a frase
+  clínica inteira quando ela termina em metatexto: "Mioma subseroso de 2,3 cm, segunda medida ilegível." → fica "Mioma
+  subseroso de 2,3 cm." no laudo, e a frase original vai ao card. Frase que **começa** falando do ditado continua saindo
+  inteira (e vai ao card). Nada some em silêncio.
+- Prova com dado real (só leitura): nos **984** achados que a produção salvou em 90 dias, o guard novo dá resultado
+  **idêntico** ao anterior (age em 2, iguais nos dois) — o caminho do renderer não muda para o que já existe.
+- Testes: `extraction-metatext` 13/13 (casos do A13: medida parcial, marca `[REVISAR]`, campo só com a marca, frase que
+  começa no ditado), `llm` 26/26 (texto da regra).
+
+**Gates que falhavam (confirmado: já falhavam em `origin/main` `312c9df8`, 09/10, num worktree temporário):**
+- `prompts/__tests__/writerHardening.manual.ts`: fixava o SHA-256 do system inteiro do abdome (baseline de 12/08), que
+  qualquer mudança legítima de prompt quebra. Trocado pela invariante que ele protegia: OFF = ausente, e ON = OFF + o
+  bloco de reforço, byte a byte. 7/7.
+- `prompts/__tests__/obstetricaPlainWriter.manual.ts`: o harness avaliava a expressão `useWriterV2` da rota com só cinco
+  variáveis (`earlyWriterV2Allowed is not defined` desde `14ac4d3f`) e o `includeDoppler` sem `selectedHint`. Agora
+  passa as funções reais (`earlyWriterV2Allowed`, `clinicalRendererFallbackBlocked`, `providerForModel`) e o
+  `selectedHint`; a asserção segue a mesma (obstétrica simples nunca abre o Writer V2). 16 comparações + guardas.
+- Os harnesses irmãos `pipeline/__tests__/obstetricaPlainDoppler.manual.ts` e `obstetricDopplerFlow.manual.ts` têm a mesma
+  falha de `selectedHint` (pré-existente, citada na story); não foram atribuídos a esta frente e ficaram como estão.
+
+Pendentes do Luiz (A04, A08, A10, A11): não mexidos.
+
 ## Ajustes de 10/10 (bancada W10c/W4)
 
 1. **TIREOIDE e PROSTATA_SUPRAPUBICA saem do default de `FULL_WRITER_CATEGORIES`** — renderer + Haiku extrator foi

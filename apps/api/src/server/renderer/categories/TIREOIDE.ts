@@ -299,8 +299,9 @@ GLÂNDULA
 CADA IMAGEM (enums do Domingos)
 - ecogenicidade: anecoica_homogenea ("anecoica" sem mais) | anecoica_finos_ecos (inclui área ecogênica com reverberação)
   | anecoica_septos | anecoica_componentes_solidos | hipoecoica | isoecoica | hiperecoica
-  | hipoecoica_areas_anecoicas | isoecoica_areas_anecoicas | hiperecoica_areas_anecoicas ("… com áreas anecoicas",
-  ou só "… com áreas": nunca a base pura) | solida_areas_anecoicas | solida_calcificacao_parede.
+  | hipoecoica_areas_anecoicas | isoecoica_areas_anecoicas | hiperecoica_areas_anecoicas (só com "áreas anecoicas"
+  ditado; nunca a base pura) | solida_areas_anecoicas | solida_calcificacao_parede. "Com áreas" sem dizer de quê:
+  ecogenicidade null, com o trecho em descricao_raw (o código não pontua e pede revisão).
 - margem ("contornos" = margem): regular | irregular | espiculada.
 - halo (só sólida): fino_regular | espesso_irregular | sem_halo.
 - forma: mais_larga_que_alta | mais_alta_que_larga.
@@ -787,6 +788,9 @@ function noduloConclusao(nod: TireoideNodulo, showDomingos: boolean): string {
     return `${base} com NOTA FINAL ${notaTxt}${carac}${acrTxt}`;
   }
   if (acr) return `${base} - ACR TI-RADS ${acr.categoria}`;
+  // A12 (revisão W13): sem ecogenicidade não há Nota de Domingos — a pendência fica visível
+  // em vez de a imagem sair sem nota e sem aviso (ex.: "isoecoica com áreas", sem dizer de quê).
+  if (showDomingos && !nod.ecogenicidade && notaTxt === null) return `${base} [REVISAR — ecogenicidade não ditada]`;
   return base;
 }
 

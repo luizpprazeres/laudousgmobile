@@ -365,6 +365,11 @@ async function main() {
     await llmJson({ target: HAIKU, system: "SANITY", messages: [{ role: "user", content: "u" }], schemaName: "Regra3", schema: SMALL_SCHEMA, reportText: false, anthropicClient: off.client });
     assert.equal(off.calls[0].system[0].text, "SANITY");
     assert.match(EXTRACTION_TEXT_RULE, /Conclusão do médico:/);
+    // A13: ruído sai; dado clínico incerto é preservado e marcado, nunca apagado em silêncio.
+    assert.equal(EXTRACTION_TEXT_RULE.includes("deixe de fora, sem comentar"), false);
+    assert.match(EXTRACTION_TEXT_RULE, /preserve a parte compreensível, não adivinhe/);
+    assert.match(EXTRACTION_TEXT_RULE, /\[REVISAR: motivo curto\]/);
+    assert.match(EXTRACTION_TEXT_RULE, /não transforme a incerteza em normalidade/);
   });
 
   // ---------------- Texto ----------------
