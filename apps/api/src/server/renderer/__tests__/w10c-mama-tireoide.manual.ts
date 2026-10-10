@@ -142,7 +142,7 @@ test("VT: objetivo também soma o istmo", () => {
 });
 test("VT: exceção documentada no contrato e no extrator", () => {
   assert.match(getCategoryContract("TIREOIDE", "CLASSICO_COMPLETO") ?? "", /exceção aprovada à regra geral de só calcular volume se o médico pedir: o VT da tireoide é sempre somado, com o istmo/);
-  assert.match(TIREOIDE_EXTRACTION_PROMPT, /nunca calcule; o código soma lobos \+ istmo no volume total/);
+  assert.match(TIREOIDE_EXTRACTION_PROMPT, /nunca calcule, nem com "calcule o volume" — o código calcula e soma o VT/);
 });
 
 console.log(`\n${total} verificações W10c passaram.`);
