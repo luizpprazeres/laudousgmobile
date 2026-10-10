@@ -64,7 +64,7 @@ test("mama: rodapé BI-RADS também no laudo colado", () => {
   assert.match(MAMARIA_CONTRACT, /Este rodapé fecha todo laudo de mama, inclusive o laudo pronto colado pelo médico\./);
 });
 test("mama: o nome do exame ('Mamas e axilas') não pede axilas", () => {
-  assert.match(MAMARIA_CONTRACT, /O nome do exame na tela \("Mamas e axilas"\) não conta\./);
+  assert.match(MAMARIA_CONTRACT, /O nome do exame na tela \("Mamas e axilas"\) e um "e" solto no ditado \("mamas e com imagens"\) não contam\./);
 });
 test("mama: estilo objetivo continua recebendo o contrato convertido", () => {
   const obj = getCategoryContract("MAMARIA", "OBJETIVO");
@@ -89,7 +89,7 @@ test("A06: system da mama não manda trocar margem por 'circunscrita'", () => {
 test("A07 (decisão do Luiz 10/10): '2 9 cm' = 2,9 cm sem marca; só eixo faltando ou achado sem unidade é sinalizado", () => {
   assert.match(MAMARIA_CONTRACT, /algarismos separados antes da unidade \("2 9 cm"\) → 2,9 cm, sem marca/);
   assert.doesNotMatch(MAMARIA_CONTRACT, /sem unidade → cm/);
-  assert.match(MAMARIA_CONTRACT, /Só o realmente ambíguo — eixo faltando \("medindo 1,2 x cm"\) ou medida sem nenhuma unidade no achado: reproduza como falado e marque "\[REVISAR — medida ambígua\]"/);
+  assert.match(MAMARIA_CONTRACT, /Só o realmente ambíguo — eixo faltando \("medindo 1,2 x cm"\) ou achado sem cm\/mm em nenhuma das suas medidas: reproduza como falado e marque "\[REVISAR — medida ambígua\]"/);
 });
 test("A07: mama normal continua BI-RADS 1 no system efetivo", () => {
   assert.match(sysMama, /Mamas ecograficamente normais \(Categoria BI-RADS® 1\)\./);

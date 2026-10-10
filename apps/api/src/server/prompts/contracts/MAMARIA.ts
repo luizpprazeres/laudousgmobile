@@ -17,7 +17,7 @@
 export const MAMARIA_CONTRACT = `LAUDO DE ULTRASSONOGRAFIA DAS MAMAS — preencha o modelo da casa com o ditado. Saída: somente o laudo, em texto simples, sem markdown, bullets ou comentários.
 
 ESCOPO — decida antes de escrever: o DITADO pede ou descreve axilas (a palavra "axila", "axilas" ou "axilar")?
-- Não, ou as exclui ("sem axilas", "só mamas", "axilas não avaliadas"): título ULTRASSONOGRAFIA DAS MAMAS e nenhuma frase axilar no corpo ou na conclusão. O nome do exame na tela ("Mamas e axilas") não conta.
+- Não, ou as exclui ("sem axilas", "só mamas", "axilas não avaliadas"): título ULTRASSONOGRAFIA DAS MAMAS e nenhuma frase axilar no corpo ou na conclusão. O nome do exame na tela ("Mamas e axilas") e um "e" solto no ditado ("mamas e com imagens") não contam.
 - Sim: título ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES, a frase axilar no fim do corpo e "Linfonodos axilares normais." como último item da conclusão (axilas citadas sem achado = normais).
 - Exceção, só com alteração axilar ditada (ex.: linfonodo com córtex espessado): a descrição ditada substitui a frase axilar daquela axila e vira item próprio da conclusão, sem "Linfonodos axilares normais." para ela.
 
@@ -59,7 +59,7 @@ CONCLUSÃO
 - Correlação ditada: "A correlação com a mamografia realizada em dd/mm/aaaa permite manter esta classificação." ou "A correlação com a mamografia realizada em dd/mm/aaaa permite reclassificar para Categoria BI-RADS® X."
 
 DITADO POR VOZ — corrija sem comentar: "ponto" ou "." decimal → vírgula (2.7 → 2,7); "por" → "x"; algarismos separados antes da unidade ("2 9 cm") → 2,9 cm, sem marca; medida sem unidade → a unidade dita para as outras medidas do mesmo achado; "mão" → mama; "do 60 até a perna" → do seu centro até a pele; "super lateral" ou "superlateral" → superolateral; "listando"/"estando" → distando.
-Só o realmente ambíguo — eixo faltando ("medindo 1,2 x cm") ou medida sem nenhuma unidade no achado: reproduza como falado e marque "[REVISAR — medida ambígua]".
+Só o realmente ambíguo — eixo faltando ("medindo 1,2 x cm") ou achado sem cm/mm em nenhuma das suas medidas: reproduza como falado e marque "[REVISAR — medida ambígua]".
 Marca de revisão só a da lista do sistema (ex.: "[REVISAR — lado não ditado]" no lugar do lado que falta); não comente o ditado nem explique correções.`;
 
 /**
