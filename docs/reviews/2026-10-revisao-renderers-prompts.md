@@ -474,3 +474,72 @@ texto da produção (similaridade 0,98). n = 4: o Sonnet é ligeiramente melhor 
 
 Em todas, o Sonnet é melhor que o Haiku no mesmo writer e, pela assinatura, mais rápido (7,6–7,7 s × 9,9–12 s na
 mediana por chamada; só comparação relativa). O writer genérico não substitui os dedicados (MSK −1,3; pelve bloqueada).
+
+## W9 — Prompt do writer dedicado do MSK: cobertura, sequência descritiva e numeração (10/10/2026)
+
+O Luiz viu no HTML do W8: frases de estruturas normais omitidas (sobretudo no Haiku), sequência descritiva invertida ou
+parafraseada (tendão patelar, 1a704f8c) e a numeração da conclusão invadindo os laudos seguintes.
+
+**Medido antes de mudar** (`scripts/bench-haiku/placar-msk.ts`, determinístico, contra o laudo final, por laudo-bloco):
+no W8 o Haiku omitia 28,7% das frases de normalidade do roteiro que estão no final (Sonnet 13,9%, produção 8,7%) e seguia o
+padrão "frase normal + ', com …'" em 7 de 15 linhas (Sonnet 8/15, produção 15/15). **A invasão de numeração já é
+resolvida pelo guard por laudo do W1 (`ce33d744`):** reaplicado à saída crua do W8, 0 de 69 saídas com invasão, nos dois
+modelos.
+
+**Padrões reais do médico** (laudos finais de MSK, 90 dias): 482 linhas de estrutura normal copiadas literalmente do
+roteiro; 15 no padrão "frase normal + ', com <alteração>'" quando a alteração não compromete a estrutura (nervo mediano com
+a área de secção; tendão patelar com osteófitos na origem); as estruturas alteradas usam o mesmo sujeito da frase do
+roteiro + a alteração; e **"sem evidência de rotura" está em 30 de 78 laudos finais (74 linhas) e nunca foi ditada** — é a
+frase do médico para tendão com alteração ecotextural.
+
+**Prompt reescrito** (`MUSCULOESQUELETICO.ts`, `buildMskWriterSystemMessage`; +~1,3 mil caracteres): estruturas na ordem
+do roteiro, uma linha cada; estrutura normal ou não citada = frase do roteiro literal; as duas formas de estrutura alterada
+com exemplos reais (anonimizados, só a frase); sem paráfrase nem ressalva fora do padrão da casa; numeração só na CONCLUSÃO,
+recomeçando em "1)" em cada laudo; conferência final por laudo. Uma 1ª versão proibia "sem evidência de rotura" como
+ressalva e o Sonnet passou a tirá-la — corrigido com o dado acima.
+
+**Achado de método:** desde o W1 r3 o motor roteia o MSK para o Sonnet por categoria, e a bancada sem `BENCH_MODEL` usa o
+modelo do motor. Duas rodadas que eu tinha rotulado "Haiku" eram Sonnet; foram descartadas, a bancada passou a gravar o
+modelo efetivo e o Haiku foi re-rodado com `BENCH_MODEL` explícito. **Toda rodada de Haiku × Sonnet daqui em diante precisa
+de `BENCH_MODEL` nos dois lados.**
+
+### Resultado — mesmos 71 laudos do W8, um juiz para os cinco (rodada `w9/2026-10-10T10-51-39-musculoesqueletico_v2`)
+
+Placar determinístico:
+
+| Candidato | Frases normais omitidas | Padrão "normal + , com" | Invasão de numeração | Ressalva inventada |
+|---|---|---|---|---|
+| Produção (gpt-4.1) | 8,7% | 15/15 | 4 casos | 0 |
+| Haiku — prompt antigo | 28,7% | 7/15 | 8 casos | 1 |
+| Sonnet — prompt antigo | 13,9% | 8/15 | 8 casos | 0 |
+| **Haiku — prompt novo** | **6,6%** | **14/15** | **0** | **0** |
+| **Sonnet — prompt novo** | **8,7%** | **15/15** | **0** | **0** |
+
+Juiz (Opus 5.5, cego):
+
+| Candidato | Nota | ≤ 4 | Omissões | Invenções | Medida/lado | Impressão ok | Multi-laudo preservado |
+|---|---|---|---|---|---|---|---|
+| Produção (gpt-4.1) | **8,15** | 3 | 14 | 61 | 3 | 64/71 | 37/47 |
+| Haiku — prompt antigo | 5,55 | 22 | 110 | 131 | 10 | 49/71 | 32/47 |
+| Sonnet — prompt antigo | 6,29 | 10 | 53 | 140 | 8 | 53/71 | 33/47 |
+| Haiku — prompt novo | 6,15 | 16 | 74 | 121 | 8 | 49/71 | **41/47** |
+| **Sonnet — prompt novo** | **6,67** | **6** | 68 | **100** | 10 | **55/71** | **40/47** |
+
+Sem os 10 casos expostos ao MK-1 (n = 61): produção 8,36 · Haiku 5,89 → 6,12 · Sonnet 6,66 → 6,70.
+
+- **Os três defeitos que o Luiz viu foram resolvidos:** omissão de frases normais no nível da produção (6,6–8,7%), padrão
+  descritivo da casa em 14–15 de 15 linhas e nenhuma invasão de numeração. No caso 1a704f8c, os dois escrevem agora
+  "Tendão patelar de espessura, continuidade e ecotextura preservadas, com osteófitos marginais na origem do tendão
+  patelar." ("irregularidade cortical" não estava no ditado — foi acréscimo do médico no final).
+- **Nos 8 casos de multi-laudo que a numeração destruía**, os candidatos novos saem com o número certo de laudos em 15 de
+  16 saídas (notas do Sonnet: 5–8, contra 2,5–4,5 antes).
+- **Sonnet + prompt novo é o melhor candidato Claude** (6,67; 6 graves; invenções −29%). Fora dos casos de multi-laudo, a
+  nota fica estável (6,66 → 6,70): o ganho do prompt está em estrutura, cobertura e forma, que o placar mede melhor que a
+  nota. A distância para a produção (~1,5) segue concentrada em conclusão incompleta, normalidade/qualificador não ditado,
+  e estruturas que o médico acrescentou fora do roteiro (compartimentos restantes, ligamentos colaterais, bíceps femoral).
+- Ressalva de método: o juiz conta "sem evidência de rotura" não ditada como invenção (19 apontamentos no Haiku, 14 no
+  Sonnet), embora seja a frase-padrão da casa — parte das invenções restantes é erro do juiz. O médico também nem sempre
+  a usa: os modelos novos a escrevem em ~45 dos 71 casos; os finais, em 22.
+- **Recomendação:** manter o prompt novo com o Sonnet no writer dedicado do MSK. Próximo passo: a conclusão (completar
+  os itens e o lado de cada achado) e decidir com o Luiz se "sem evidência de rotura" deve ser sempre usada no tendão
+  alterado ou só quando ele ditar.
