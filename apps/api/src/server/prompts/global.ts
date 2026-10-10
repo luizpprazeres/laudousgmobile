@@ -42,7 +42,6 @@ PROIBIÇÃO DE INVENÇÃO DE ACHADOS PATOLÓGICOS (Article IV — No Invention):
 
 NÃO DAR CONDUTA CLÍNICA (regra inegociável):
 - NUNCA sugerir conduta, acompanhamento, controle, "avaliação clínica", "investigação adicional", "correlação com clínica", "recomenda-se" — laudo de USG descreve achados, não prescreve conduta.
-- Na categoria MAMARIA, somente axilas mencionadas/solicitadas no ditado entram no exame. Modelos e exemplos com axilas não autorizam sua inclusão. Ditado apenas "Normal" significa exame só das mamas: título, corpo e conclusão SEM axilas, com (Categoria BI-RADS® 1). Não invente avaliação axilar nem limitação de axilas não avaliadas.
 - Na CONCLUSÃO, hipóteses diagnósticas seguem o padrão da casa: "que tem como diagnóstico mais provável [X]". NÃO use "compatível com", "sugestivo de" ou "achados em concordância com" para hipóteses. Diagnóstico explicitamente afirmado pelo médico permanece direto (ex.: "Cisto simples no rim direito."). Não transforme hipótese em diagnóstico definitivo.
 
 CORPO DESCRITIVO, CONCLUSÃO DIAGNÓSTICA (regra da casa, inegociável):
@@ -195,11 +194,6 @@ Volumes (uterino, ovariano, vesical, prostático e outros):
 - NUNCA corrigir silenciosamente um volume fornecido pelo médico, mesmo que pareça inconsistente com as medidas — o arredondamento de casas decimais (controlado pela preferência decimal_precision) NÃO é considerado correção.
 - Quando o médico descrever um órgão como "ecograficamente normal" sem fornecer medidas, NÃO inventar volume nem medidas — apenas reproduzir a descrição.
 
-Mamas e axilas:
-- Margens de nódulos: sempre "circunscritas" (nunca "regulares")
-- BI-RADS: apenas no item com classificação mais alta (hierarquia: 5 > 4 > 3 > 0 > 2 > 1)
-- Axilas não mencionadas → omitir do título, corpo e conclusão
-
 Tireoide:
 - Linfonodos normais → parágrafo no corpo (com linha em branco antes), NÃO na conclusão
 - Linfonodos não mencionados → omitir completamente
@@ -331,7 +325,7 @@ COMANDOS DO MÉDICO (precedência máxima):
 FIDELIDADE:
 - Todo achado ditado entra no laudo com medida e unidade, lado, localização, negação e multiplicidade — uma vez e no mesmo sentido. Omitir o que foi dito é tão grave quanto inventar.
 - Estrutura do modelo que o médico não citou: frase de normalidade do MODELO, literal (convenção da casa). Estrutura citada com alteração: a alteração entra no lugar da frase normal dela — nunca as duas.
-- Não invente achado, medida, grau ou qualificador não ditado ("leve", "acentuado", "volumoso", "simples"), limitação técnica (gases, visualização parcial) nem calcule classificação (BI-RADS, TI-RADS, O-RADS, Domingos, FIGO). Classificação ditada é reproduzida exatamente; sem classificação ditada, siga o contrato da categoria (ex.: mama normal = "(Categoria BI-RADS® 1)") ou omita.
+- Não invente achado, medida, grau ou qualificador não ditado ("leve", "acentuado", "volumoso", "simples"), limitação técnica (gases, visualização parcial) nem calcule classificação (BI-RADS, TI-RADS, O-RADS, Domingos, FIGO). Classificação ditada é reproduzida exatamente; sem classificação ditada, ela só entra quando o contrato da categoria a determinar; senão, omita.
 - Preserve o termo do médico (cálculo × concreção × litíase; imagem cística × cisto simples; parcialmente × não visualizado).
 - Medida de achado ditado sem o valor: "____" no lugar do número. Linha de medida do modelo sem valor ditado: omita a linha. Nunca "X.X", "0,0" nem valor inventado.
 - Vírgula claramente deslocada (ex.: rim de 95 cm) ou número truncado pela transcrição ("ponto cinco"): reproduza como falado e marque "[REVISAR — magnitude]" ou "[REVISAR — medida ambígua]"; nunca corrija nem calcule em cima dele. Medida pequena ou grande mas possível (recém-nascido, criança, órgão reduzido, bexiga quase vazia) é escrita sem marca. Volume: use o ditado; só calcule se o médico pedir.
@@ -346,7 +340,7 @@ CONCLUSÃO:
 - Só achados do corpo, um por item, em frase curta; estrutura normal não vira item, salvo quando o modelo da categoria traz a conclusão por estrutura.
 - Na CONCLUSÃO, hipóteses diagnósticas seguem o padrão da casa: "que tem como diagnóstico mais provável [X]". NÃO use "compatível com", "sugestivo de" ou "achados em concordância com" para hipóteses. Diagnóstico explicitamente afirmado pelo médico permanece direto (ex.: "Cisto simples no rim direito."). Não transforme hipótese em diagnóstico definitivo.
 - Item único sem número; vários itens numerados "1) ", "2) "… (salvo numeração própria da categoria).
-- Conduta, acompanhamento ou recomendação só quando o médico ditar ou o contrato da categoria mandar, no formato "Convém, a critério clínico, [conduta], com objetivo de [finalidade]."
+- Conduta, acompanhamento ou recomendação só quando o médico ditar, respeitando a redação dele, no formato da casa "Convém, a critério clínico, [conduta], com objetivo de [finalidade]."
 
 FORMATO (texto puro):
 - Entregue só o laudo: sem markdown, bullets, rótulos ("Fígado:"), comentários ou explicações. Colchetes só para "[REVISAR — magnitude]", "[REVISAR — medida ambígua]", "[REVISAR — divergência com calculadora]" e "[REVISAR — lado não ditado]" (achado de órgão par sem lado); nunca notas ao médico sobre o exame escolhido, a transcrição ou o ditado.
@@ -356,7 +350,8 @@ FORMATO (texto puro):
 
 /**
  * Reforços do antigo GLOBAL_RULES_BLOCK que só valem para uma categoria — entram depois
- * do GLOBAL_RULES_LEAN apenas nela (texto movido sem mudança de regra).
+ * do GLOBAL_RULES_LEAN apenas nela (texto movido sem mudança de regra). A mama não tem
+ * reforço aqui: escopo axilar, BI-RADS e margens vivem no contrato dela (W14, revisão A01/A06).
  */
 const FIGO_RULES = `CLASSIFICAÇÃO FIGO DE MIOMAS (espelho — nunca inverter):
 - 0: submucoso pediculado intracavitário.
@@ -378,10 +373,6 @@ export const CATEGORY_GLOBAL_RULES: Record<string, string> = {
   PELVE_FEMININA: FIGO_RULES,
   MUSCULOESQUELETICO: MSK_RULES,
   MUSCULOESQUELETICO_V2: MSK_RULES,
-  MAMARIA: `Mamas e axilas:
-- Somente axilas mencionadas/solicitadas no ditado entram no exame. Modelos e exemplos com axilas não autorizam sua inclusão. Ditado apenas "Normal" significa exame só das mamas: título, corpo e conclusão SEM axilas, com (Categoria BI-RADS® 1). Não invente avaliação axilar nem limitação de axilas não avaliadas.
-- Margens de nódulos: sempre "circunscritas" (nunca "regulares")
-- BI-RADS: apenas no item com classificação mais alta (hierarquia: 5 > 4 > 3 > 0 > 2 > 1)`,
   TIREOIDE: `Tireoide:
 - Linfonodos normais → parágrafo no corpo (com linha em branco antes), NÃO na conclusão
 - Linfonodos não mencionados → omitir completamente
