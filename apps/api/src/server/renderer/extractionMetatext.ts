@@ -31,6 +31,9 @@ const LABEL_AT_START_RE =
 
 /** Cláusulas de metatexto dentro de uma frase com conteúdo clínico. */
 const CLAUSES: Array<[RegExp, string]> = [
+  // Marca de revisão pedida pela regra comum de extração: sai do laudo e vai ao
+  // card de pendências (ver cleanExtractionMetatext → warnings).
+  [/\s*\[REVISAR\b[^\]]*\]/gi, ""],
   // parêntese que comenta o ditado / a extração
   [/\s*\([^()]*?(?:ditad|esquema|\benum\b|l[ée]xico|confirmar|conferir|transcri|ileg[ií]vel|incompreens|n[ãa]o identificad|corrigid)[^()]*\)/gi, ""],
   [/,?\s*conforme\s+(?:a\s+|o\s+)?(?:conclus[ãa]o\s+do\s+m[ée]dico|ditado|transcri[çc][ãa]o|solicitado pelo m[ée]dico)/gi, ""],
@@ -66,12 +69,35 @@ const META_SENTENCE_RE = new RegExp(
 
 /** Trecho removido que é aviso útil ao médico (vai ao card de pendências). */
 const REVIEW_RE =
-  /ileg[ií]ve|incompreens|confer|confirm|n[ãa]o\s+identificad|n[ãa]o\s+(?:foi\s+|foram\s+)?(?:extra[íi]d|estruturad|convertid)|amb[ií]gu|repeti[çc][ãa]o|inconsist/i;
+  /\[REVISAR|ileg[ií]ve|incompreens|confer|confirm|n[ãa]o\s+identificad|n[ãa]o\s+(?:foi\s+|foram\s+)?(?:extra[íi]d|estruturad|convertid)|amb[ií]gu|repeti[çc][ãa]o|inconsist/i;
+
+/**
+ * Frase com metatexto: se COMEÇA falando do ditado/extração, sai inteira; se
+ * começa com conteúdo clínico, fica a parte clínica até o primeiro trecho de
+ * metatexto ("Mioma subseroso de 2,3 cm, segunda medida ilegível." → "Mioma
+ * subseroso de 2,3 cm."). Dado clínico nunca some em silêncio (A13): a frase
+ * original vai ao card de pendências.
+ */
+function cleanSentence(sentence: string): string {
+  if (!META_SENTENCE_RE.test(sentence)) return sentence;
+  const end = /[.!?]\s*$/.test(sentence) ? "." : "";
+  const body = sentence.replace(/[.!?]\s*$/, "");
+  const segments = body.split(/;\s+|\s+[—–]\s+|,\s+/);
+  const kept: string[] = [];
+  for (const seg of segments) {
+    if (META_SENTENCE_RE.test(seg)) break;
+    kept.push(seg);
+  }
+  if (kept.length === 0) return "";
+  // Recompõe com o separador original entre os segmentos mantidos.
+  const prefix = body.slice(0, body.indexOf(kept[kept.length - 1]!) + kept[kept.length - 1]!.length);
+  return `${prefix.trim()}${end}`;
+}
 
 function cleanSentences(text: string): string {
-  // Frases: termina em . ! ? ; seguido de espaço e início de frase.
+  // Frases: termina em . ! ? seguido de espaço e início de frase.
   const sentences = text.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ"“(\d])/);
-  return sentences.filter((s) => !META_SENTENCE_RE.test(s)).join(" ");
+  return sentences.map(cleanSentence).filter(Boolean).join(" ");
 }
 
 function tidy(text: string): string {
