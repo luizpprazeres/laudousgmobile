@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./vascular": "./src/vascular/index.ts",
-    "./myoma": "./src/myoma/index.ts"
+    "./myoma": "./src/myoma/index.ts",
+    "./tecnica": "./src/tecnica/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COMPLEMENTO_CERVICOMETRIA, COMPLEMENTO_DOPPLER_FETAL, comentariosPadrao, fraseTecnica } from "@laudousg/schemes";
 import { temEmbriaoNaoVisualizado, renderGestacaoInicial } from "./gestacaoInicial";
 import { applyGolfBall, stripGolfBallEcho, type GolfBall } from "./golfBall";
 import { buildIgInput, computeIg, computeRHoje, type IgRawFields, type IgRenderOptions, dataGeracaoSaoPaulo } from "../ig";
@@ -845,16 +846,28 @@ export function calcDsm(f: ObstetricaFindings): number | null {
 // Render
 // ---------------------------------------------------------------------------
 
-const COMENTARIOS =
-  "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
+/** Tabela única da técnica (W15, `@laudousg/schemes`): obstétrica sem via ditada = transabdominal. */
+const COMENTARIOS = `COMENTÁRIOS:\n${comentariosPadrao("OBSTETRICA")}`;
 
 /**
  * COMENTÁRIOS com os complementos DENTRO do parágrafo (decisão do médico, 18/09/2026):
  * a técnica do Doppler e a da cervicometria entram depois de "abdome da gestante" e
  * antes da documentação fotográfica, como nos laudos dele. Antes eram parágrafos soltos.
  */
-export const COMENTARIOS_DOPPLER = "Foi utilizado Doppler colorido para avaliação hemodinâmica fetal.";
-export const COMENTARIOS_CERVICO = "Foi realizada avaliação complementar do colo uterino pela via transvaginal.";
+export const COMENTARIOS_DOPPLER = COMPLEMENTO_DOPPLER_FETAL;
+export const COMENTARIOS_CERVICO = COMPLEMENTO_CERVICOMETRIA;
+
+/**
+ * W15: via transvaginal extraída → a frase TV da tabela no lugar da TA; o título NÃO muda (decisão do
+ * Luiz, 10/10). Antes `via_exame` só valia com embrião não visualizado e os laudos com "transvaginal"
+ * ditado saíam transabdominais. Preâmbulo personalizado (sem a frase TA da casa) fica como está.
+ * TA+TV não cabe no enum do extrator: vem do ditado, no ajuste pós-geração (tecnicaGuard).
+ */
+export function comentariosDaViaObstetrica(base: string, via: ObstetricaFindings["via_exame"]): string {
+  if (via !== "transvaginal") return base;
+  const ta = fraseTecnica("OBSTETRICA", "ta")!;
+  return base.includes(ta) ? base.replace(ta, fraseTecnica("OBSTETRICA", "tv")!) : base;
+}
 
 /**
  * Insere as frases de técnica dos complementos em UM parágrafo de comentários.
@@ -1462,10 +1475,10 @@ export function renderObstetricaClassico(
     dumLinha,
     igProse,
     [
-      comentariosCom([
+      comentariosDaViaObstetrica(comentariosCom([
         f.doppler ? COMENTARIOS_DOPPLER : null,
         f.cervicometria ? COMENTARIOS_CERVICO : null,
-      ]),
+      ]), f.via_exame),
     ].filter(Boolean).join("\n"),
     "",
     "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:",

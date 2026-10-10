@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { classificarMioma, tabelaFigoParaPrompt } from "@laudousg/schemes";
+import { classificarMioma, comentariosPadrao, tabelaFigoParaPrompt } from "@laudousg/schemes";
 import { renderSharedBladder, SharedBladderSchema } from "./sharedUrinary";
 
 /**
@@ -322,7 +322,8 @@ REGRAS:
    doppler_realizado=true somente quando o estudo Doppler tiver sido realizado.
    via: a TÉCNICA do exame —
    - "ta_tv": transabdominal E transvaginal (default quando ambíguo/não dito).
-   - "tv": somente transvaginal ("apenas transvaginal", "só TV").
+   - "tv": somente transvaginal ("apenas transvaginal", "só TV", "pelve transvaginal" — "transvaginal"
+     ditado SEM transabdominal é só TV; ASR de transabdominal: "transapdominal", "transabdômen", "abdominial").
    - "ta": somente transabdominal ("apenas transabdominal", "endométrio limitado").
    - "pos_abortamento": controle/avaliação pós-abortamento ou produtos retidos.
    Se não for possível determinar, use null (o código assume "ta_tv").
@@ -520,22 +521,8 @@ function comentariosDaVia(via: Via, dopplerRealizado = false): string {
   const complemento = dopplerRealizado
     ? " Foi realizado estudo complementar com Doppler colorido das estruturas pélvicas e lesões individualizadas."
     : "";
-  let base: string;
-  switch (via) {
-    case "tv":
-      base = "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
-      break;
-    case "ta":
-      base = "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
-      break;
-    case "pos_abortamento":
-      base = "COMENTÁRIOS:\nExame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.";
-      break;
-    case "ta_tv":
-    default:
-      base = "COMENTÁRIOS:\nExame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.";
-      break;
-  }
+  // W15: tabela única da técnica (`@laudousg/schemes`); pós-abortamento é TV com a mesma frase.
+  const base = `COMENTÁRIOS:\n${comentariosPadrao("PELVE_FEMININA", { via: via === "pos_abortamento" ? "tv" : via })}`;
   return `${base}${complemento}`;
 }
 
@@ -1518,10 +1505,10 @@ export function buildPelveWriterSystemMessage(): string {
   return `Você é um médico radiologista brasileiro redigindo laudos de ULTRASSONOGRAFIA DA PELVE FEMININA. Escreva o laudo FINAL a partir do ditado do médico, entendendo linguagem natural (medidas, comandos e achados misturados).
 
 TÍTULO E COMENTÁRIOS pela via ditada (copie literalmente):
-- Transabdominal + transvaginal: "ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL" / "Exame realizado inicialmente com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Após a micção, foi introduzido transdutor de 6.5 MHz com a finalidade de realizar a técnica transvaginal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias."
-- Só transvaginal: "ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL" / "Exame realizado com transdutor de 6.5 MHz, pela técnica transvaginal. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias."
-- Só transabdominal: "ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL" / "Exame realizado com transdutor de 4.0 MHz, pela técnica transabdominal com a bexiga repleta e paciente em decúbito dorsal. Foram realizados múltiplos cortes transversais, longitudinais, oblíquos e coronais, abrangendo toda a pelve. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias." — e, no fim do laudo: "Obs.: a avaliação do endométrio é limitada pela via transabdominal."
-- Via não ditada: transabdominal + transvaginal (o padrão). Contagem de folículos: acrescente " PARA CONTAGEM DE FOLÍCULOS" ao título. Título ditado pelo médico vence.
+- Transabdominal + transvaginal: "ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL E TRANSVAGINAL" / "${comentariosPadrao("PELVE_FEMININA", { via: "ta_tv" })}"
+- Só transvaginal: "ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL" / "${comentariosPadrao("PELVE_FEMININA", { via: "tv" })}"
+- Só transabdominal: "ULTRASSONOGRAFIA DA PELVE TRANSABDOMINAL" / "${comentariosPadrao("PELVE_FEMININA", { via: "ta" })}" — e, no fim do laudo: "Obs.: a avaliação do endométrio é limitada pela via transabdominal."
+- Via não ditada: transabdominal + transvaginal (o padrão). "Transvaginal" ditado sem transabdominal = só transvaginal (ASR de transabdominal: "transapdominal", "transabdômen", "abdominial"). Contagem de folículos: acrescente " PARA CONTAGEM DE FOLÍCULOS" ao título. Título ditado pelo médico vence.
 
 CORPO (OS SEGUINTES ASPECTOS FORAM OBSERVADOS) — uma linha por item, nesta ordem; sem alteração, a frase normal literal:
 1. Bexiga (só com via transabdominal): "Bexiga de forma, contorno e ecotextura normais."

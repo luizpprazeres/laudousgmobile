@@ -19,6 +19,7 @@
  * (`obrigatorio`). Dentro disso, a redação é do médico. 50 das 55 variantes
  * são editáveis hoje.
  */
+import { comentariosPadrao } from "@laudousg/schemes";
 import { calcDsm, calcPonderal, ehEmbriao, igDeDatacao, type ObstetricaFindings } from "../categories/OBSTETRICA";
 import type { Catalog, SlotContext } from "./types";
 
@@ -517,8 +518,8 @@ export const OBSTETRICA_CLASSICO: Catalog<F> = {
 
   cabecalhos: { corpo: "OS SEGUINTES ASPECTOS FORAM OBSERVADOS:", conclusao: "CONCLUSÃO:" },
 
-  preambulo:
-    "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.",
+  // W15: tabela única da técnica (`@laudousg/schemes`).
+  preambulo: `COMENTÁRIOS:\n${comentariosPadrao("OBSTETRICA")}`,
 
   numerarConclusao: (i, total) => (total === 1 ? "" : `${i + 1}) `),
 

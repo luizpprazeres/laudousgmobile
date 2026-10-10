@@ -1,3 +1,4 @@
+import { comentariosPadrao } from "@laudousg/schemes";
 import type { ObstetricaFindings } from "./OBSTETRICA";
 
 export const CONCLUSAO_GESTACAO_INICIAL = [
@@ -74,9 +75,8 @@ export function blocoGestacaoInicial(f: ObstetricaFindings): { corpo: string[]; 
 }
 
 export function preambuloGestacaoInicial(f: ObstetricaFindings): string {
-  return f.via_exame === "transvaginal"
-    ? "COMENTÁRIOS:\nExame realizado pela via transvaginal."
-    : f.via_exame === "abdominal" ? "COMENTÁRIOS:\nExame realizado pela via abdominal." : "";
+  // W15: frase da casa pela via; sem via ditada = transabdominal (decisão do Luiz, 10/10).
+  return `COMENTÁRIOS:\n${comentariosPadrao("OBSTETRICA", { via: f.via_exame === "transvaginal" ? "tv" : "ta" })}`;
 }
 
 export function renderGestacaoInicial(f: ObstetricaFindings, objetivo = false): string {

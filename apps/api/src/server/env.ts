@@ -61,6 +61,9 @@ const ServerEnvSchema = z.object({
   LEXICO_DITADO_CATEGORIES: z.string().optional(),
   LEXICO_SAIDA_CATEGORIES: z.string().optional(),
   LEXICO_DESLIGADAS: z.string().optional(),
+  // W15 — ajuste da seção COMENTÁRIOS (pipeline/tecnicaGuard.ts): via/transdutor/contexto ditados e
+  // documentação unificada. Ligado por padrão; "false" desliga (rollback).
+  TECNICA_GUARD: z.string().optional(),
   // Pós-validador clínico determinístico. "observe" apenas registra issues no
   // sanity (roda após a entrega do laudo — não altera o texto); "block_critical"
   // interromperia a entrega quando houver issue critical (não usado ainda).
