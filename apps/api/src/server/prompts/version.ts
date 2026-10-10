@@ -29,9 +29,10 @@ import {
   TIREOIDE_MODELO_BASE,
   TIREOIDE_MODELO_OBJETIVO,
 } from "./contracts/TIREOIDE";
+import { VIAS_URINARIAS_CONTRACT } from "./contracts/VIAS_URINARIAS";
 
 // Bump obrigatório quando qualquer contract, modelo base ou regra global mudar.
-export const PROMPT_VERSION = "v1.8";
+export const PROMPT_VERSION = "v1.9";
 
 const OBJECTIVE_STYLE_ID = "44444444-4444-4444-8444-444444444444";
 
@@ -42,6 +43,7 @@ const CONTRACTS: Record<string, string> = {
   OBSTETRICA: OBSTETRICA_CONTRACT,
   PELVE_FEMININA: PELVE_FEMININA_CONTRACT,
   TIREOIDE: TIREOIDE_CONTRACT,
+  VIAS_URINARIAS: VIAS_URINARIAS_CONTRACT,
 };
 
 const MODELOS_BASE: Record<string, string> = {

@@ -5,7 +5,7 @@ import ts from "typescript";
 import { WritingStyleCodeSchema } from "@laudousg/shared";
 import { buildSystemMessage } from "../buildSystemMessage";
 import { CATEGORY_CONTRACTS } from "../contracts";
-import { GLOBAL_RULES_BLOCK, buildCoTInstruction } from "../global";
+import { GLOBAL_RULES_BLOCK, GLOBAL_RULES_LEAN, OBSTETRIC_GLOBAL_FAMILY, buildCoTInstruction } from "../global";
 
 // Reconstruct the pre-adapter assembly to compare complete prompts byte-for-byte.
 const moduleUrl = new URL("../buildSystemMessage.ts", import.meta.url);
@@ -56,8 +56,11 @@ for (const categoryCode of categories) {
           assert.match(after, /Não arredonde percentis informados/);
         } else {
           assert.equal(after, before, `${categoryCode}/${writingStyleCode}/${dopplerMode}: unchanged bytes`);
-          if (categoryCode !== "LIVRE" && categoryCode !== "TESTE") {
+          if (OBSTETRIC_GLOBAL_FAMILY.has(categoryCode)) {
             assert.ok(after.includes(globalRounding) && after.includes(cotRounding));
+          } else if (categoryCode !== "LIVRE" && categoryCode !== "TESTE" && !after.includes("REGRAS GLOBAIS DO SISTEMA")) {
+            // W10b: fora da família obstétrica (sem Doppler obstétrico) o global é o enxuto.
+            assert.ok(after.includes(GLOBAL_RULES_LEAN.split("\n")[0]!) && !after.includes(globalRounding), `${categoryCode}: global enxuto`);
           }
         }
         assert.equal(buildSystemMessage(args), after, "deterministic repeat");

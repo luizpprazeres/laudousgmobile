@@ -1,20 +1,38 @@
 /**
- * Contrato da categoria ABDOMEN_TOTAL — VERBATIM do LaudoUSG original
- * (lib/categoryDefaults.ts:403-592, DEFAULT_CATEGORY_PROMPTS.ABDOMEN_TOTAL).
+ * Contrato da categoria ABDOMEN_TOTAL. Nasceu VERBATIM do LaudoUSG original
+ * (lib/categoryDefaults.ts:403-592); reescrito enxuto na W10b (10/10/2026) a partir
+ * dos laudos finais assinados (90 dias): o modelo-base e as variantes vêm da
+ * biblioteca; aqui ficam só o que a biblioteca não diz ou diz diferente do médico.
  *
- * Este texto é injetado como o PRIMEIRO bloco do system message, antes do
- * GLOBAL_RULES_BLOCK. Define função, objetivo, regras gerais, modelo-base,
- * modelo alternativo (Doppler) e os 17 ajustes validados.
- *
- * Os 17 ajustes também são exportados como blocos RAG (kind=frase ou excecao)
- * em packages/db/src/seeds/abdomenTotal.ts — o writer recebe ambos: o contrato
- * inteiro como guia + os ajustes específicos retornados pelo retriever
- * com base nos achados atuais.
+ * Este texto é injetado como o PRIMEIRO bloco do system message, antes das
+ * regras globais. Os 17 ajustes abaixo também existem como blocos RAG em
+ * packages/db/src/seeds/abdomenTotal.ts — é de lá que o writer os recebe.
  *
  * Fonte: _extraction/from-laudousg-original/03-models-by-category/ABDOMEN_TOTAL.md
  */
 
-export const ABDOMEN_TOTAL_CONTRACT = `FUNÇÃO:
+export const ABDOMEN_TOTAL_CONTRACT = `FUNÇÃO: laudo de ULTRASSONOGRAFIA DO ABDOME TOTAL a partir do ditado, no MODELO-BASE da biblioteca, usando as variantes da biblioteca para cada achado. Onde a biblioteca divergir, valem as regras abaixo (padrão dos laudos assinados pelo médico).
+
+CORPO:
+- Siga o modelo-base na ordem. Estrutura não citada: a frase dela no modelo-base, literal (não use resumos como "Fígado de dimensões e ecotextura normais.").
+- Estrutura alterada: a mesma abertura da frase do modelo + a alteração, na linha da estrutura. Exemplos reais:
+  "Fígado de dimensões normais, com discreto aumento da ecogenicidade parenquimatosa." (esteatose leve)
+  "Fígado de dimensões normais, com aumento difuso da ecogenicidade parenquimatosa e atenuação sonora." e, NO LUGAR de "Os vasos intra-hepáticos são bem visíveis…", "Os vasos intra-hepáticos e o diafragma foram visualizados parcialmente." (esteatose moderada ou acentuada)
+  "Vesícula biliar de topografia usual e parede fina, apresentando imagem hiperecoica, imóvel à mudança de decúbito, medindo 0,3 cm no seu maior eixo, sem ocasionar fenômenos acústicos."
+- Rim não visualizado, nefrectomia ou agenesia ditados: "Rim esquerdo não visualizado." no lugar da frase do rim; a causa ditada vai à conclusão ("Rim esquerdo não visualizado (paciente refere agenesia renal congênita).").
+- Bexiga pouco repleta ditada: "Bexiga com repleção insuficiente no momento do exame, prejudicando a sua adequada avaliação." (conclusão: "Bexiga com repleção insuficiente para adequada avaliação."). Volume ditado: "Volume pré-miccional de X mL."
+- Segmentos hepáticos em algarismo romano. Doppler esplâncnico só quando ditado.
+
+CONCLUSÃO:
+- Exame normal: "Órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas." (sem número).
+- Com achados: itens numerados "1.", "2."… do mais relevante ao menos, e por último, numerado, "Demais órgãos e estruturas abdominais estudadas sem evidência de alterações ecográficas."
+- Frases reais: "Esteatose hepática, grau leve." · "Litíase da vesícula biliar." · "Litíase renal esquerda." · "Cisto simples no rim direito." · "Imagem hipoecoica no segmento IV hepático, que tem como diagnóstico mais provável área poupada da esteatose."`;
+
+/**
+ * Contrato anterior à W10b, mantido só para o estilo OBJETIVO (que tem modelo e regras de
+ * omissão próprios e não foi medido nesta rodada).
+ */
+export const ABDOMEN_TOTAL_CONTRACT_OBJETIVO = `FUNÇÃO:
 Gerar laudos de ULTRASSONOGRAFIA DO ABDOME TOTAL com redação elegante, neutra, objetiva e tecnicamente coerente, seguindo RIGOROSAMENTE o modelo-base abaixo e realizando apenas os ajustes informados pelo usuário para cada caso.
 
 OBJETIVO:

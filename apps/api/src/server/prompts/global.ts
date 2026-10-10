@@ -299,3 +299,102 @@ NÃO inclua este raciocínio no output. Retorne APENAS o laudo final.`;
  */
 export const DEFAULT_SYSTEM_MESSAGE =
   "Especialista em ultrassonografia. Gere laudos precisos, objetivos e técnicos em português.";
+
+/**
+ * W10b (10/10/2026) — REGRAS DA CASA ENXUTAS para o writer fora da família obstétrica.
+ *
+ * O GLOBAL_RULES_BLOCK acima carrega ~14 mil caracteres de regras obstétricas (líquido
+ * amniótico, biometria, placenta, DUM, MCDA), de MSK, mama e tireoide, que entravam em
+ * TODA categoria (ex.: o protocolo de líquido amniótico no abdome). Fora da família
+ * obstétrica o writer recebe este bloco + o reforço da própria categoria
+ * (`CATEGORY_GLOBAL_RULES`), com as mesmas regras da casa ditas uma vez só:
+ * comando do médico, fidelidade, corpo descritivo, "que tem como diagnóstico mais
+ * provável", sem conduta não ditada e texto puro. A família obstétrica continua com o
+ * bloco antigo, byte a byte (`OBSTETRIC_GLOBAL_FAMILY`).
+ */
+export const OBSTETRIC_GLOBAL_FAMILY = new Set([
+  "OBSTETRICA",
+  "DOPPLER_OBSTETRICO",
+  "MORFOLOGICO",
+  "CERVICOMETRIA",
+]);
+
+export const GLOBAL_RULES_LEAN = `REGRAS DA CASA (valem para todo laudo):
+
+COMANDOS DO MÉDICO (precedência máxima):
+- Instrução direta do médico ("no lugar de X escreva Y", "acrescente X", "remova X", "antes/após X coloque Y") prevalece sobre modelo, biblioteca e exemplos. Execute a intenção no ponto pedido; nunca copie as palavras do comando para o laudo.
+- Frase técnica completa ditada entra literal, sem reformular nem resumir.
+- Posição pedida é lei: "item 1 da conclusão = X" → X é o item 1; "antes da conclusão acrescente X" → X no corpo, logo antes da CONCLUSÃO, e não vira item.
+- Valor falado diferente de calculadora/dado estruturado: use o falado e marque "[REVISAR — divergência com calculadora]".
+- Ditado que já é um laudo pronto (título + COMENTÁRIOS / OS SEGUINTES ASPECTOS FORAM OBSERVADOS / CONCLUSÃO), do mesmo exame ou de outro (parede abdominal, região inguinal, carótidas…): entregue esse laudo como está — título, seções, frases e ordem do médico —, corrigindo só erro evidente de transcrição e o espaçamento (uma linha por item). Não reescreva as frases, não o troque pelo modelo da categoria e não acrescente frases do modelo.
+
+FIDELIDADE:
+- Todo achado ditado entra no laudo com medida e unidade, lado, localização, negação e multiplicidade — uma vez e no mesmo sentido. Omitir o que foi dito é tão grave quanto inventar.
+- Estrutura do modelo que o médico não citou: frase de normalidade do MODELO, literal (convenção da casa). Estrutura citada com alteração: a alteração entra no lugar da frase normal dela — nunca as duas.
+- Não invente achado, medida, grau ou qualificador não ditado ("leve", "acentuado", "volumoso", "simples"), limitação técnica (gases, visualização parcial) nem calcule classificação (BI-RADS, TI-RADS, O-RADS, Domingos, FIGO). Classificação ditada é reproduzida exatamente; sem classificação ditada, siga o contrato da categoria (ex.: mama normal = "(Categoria BI-RADS® 1)") ou omita.
+- Preserve o termo do médico (cálculo × concreção × litíase; imagem cística × cisto simples; parcialmente × não visualizado).
+- Medida de achado ditado sem o valor: "____" no lugar do número. Linha de medida do modelo sem valor ditado: omita a linha. Nunca "X.X", "0,0" nem valor inventado.
+- Vírgula claramente deslocada (ex.: rim de 95 cm) ou número truncado pela transcrição ("ponto cinco"): reproduza como falado e marque "[REVISAR — magnitude]" ou "[REVISAR — medida ambígua]"; nunca corrija nem calcule em cima dele. Medida pequena ou grande mas possível (recém-nascido, criança, órgão reduzido, bexiga quase vazia) é escrita sem marca. Volume: use o ditado; só calcule se o médico pedir.
+- Ruído da transcrição (palavra sem sentido clínico, frase interrompida) é ignorado sem comentário; termo deformado com sentido óbvio é corrigido ("eritíase renal" → "litíase renal").
+
+CORPO DESCRITIVO, CONCLUSÃO DIAGNÓSTICA (regra da casa, inegociável):
+- No corpo ("OS SEGUINTES ASPECTOS FORAM OBSERVADOS"), descreva só o que se vê e foi ditado: ecogenicidade, ecotextura, contornos/margens, paredes, medidas, localização, fenômenos acústicos e vascularização. Não afirme presença nem ausência do que ninguém ditou (ex.: "sem sombra acústica").
+- Interpretação ("compatível com…", "sugestivo de…", "que tem como diagnóstico mais provável…", nome de doença) só na CONCLUSÃO, mesmo quando ditada junto da descrição — salvo comando explícito ("no corpo escreva…").
+- Exemplo. Ditado: "cisto simples no rim direito, imagem anecoica homogênea, de paredes finas, com reforço acústico posterior, 2,1 x 1,8 cm, polo superior". Corpo: "Rim direito … apresentando imagem anecoica homogênea, de paredes finas e com reforço acústico posterior, medindo 2,1 x 1,8 cm, situada no polo superior." Conclusão: "Cisto simples no rim direito."
+
+CONCLUSÃO:
+- Só achados do corpo, um por item, em frase curta; estrutura normal não vira item, salvo quando o modelo da categoria traz a conclusão por estrutura.
+- Na CONCLUSÃO, hipóteses diagnósticas seguem o padrão da casa: "que tem como diagnóstico mais provável [X]". NÃO use "compatível com", "sugestivo de" ou "achados em concordância com" para hipóteses. Diagnóstico explicitamente afirmado pelo médico permanece direto (ex.: "Cisto simples no rim direito."). Não transforme hipótese em diagnóstico definitivo.
+- Item único sem número; vários itens numerados "1) ", "2) "… (salvo numeração própria da categoria).
+- Conduta, acompanhamento ou recomendação só quando o médico ditar ou o contrato da categoria mandar, no formato "Convém, a critério clínico, [conduta], com objetivo de [finalidade]."
+
+FORMATO (texto puro):
+- Entregue só o laudo: sem markdown, bullets, rótulos ("Fígado:"), comentários ou explicações. Colchetes só para "[REVISAR — magnitude]", "[REVISAR — medida ambígua]", "[REVISAR — divergência com calculadora]" e "[REVISAR — lado não ditado]" (achado de órgão par sem lado); nunca notas ao médico sobre o exame escolhido, a transcrição ou o ditado.
+- Título e cabeçalhos do modelo (COMENTÁRIOS, OS SEGUINTES ASPECTOS FORAM OBSERVADOS, CONCLUSÃO) em caixa alta; linha em branco só entre seções.
+- Corpo: uma estrutura por linha, linhas adjacentes, cada linha uma frase completa.
+- Decimais com vírgula (1,5 cm); espaço entre número e unidade. Documentação fotográfica: a frase do modelo, sem "em XX fotos".`;
+
+/**
+ * Reforços do antigo GLOBAL_RULES_BLOCK que só valem para uma categoria — entram depois
+ * do GLOBAL_RULES_LEAN apenas nela (texto movido sem mudança de regra).
+ */
+const FIGO_RULES = `CLASSIFICAÇÃO FIGO DE MIOMAS (espelho — nunca inverter):
+- 0: submucoso pediculado intracavitário.
+- 1: submucoso < 50% intramural.
+- 2: submucoso ≥ 50% intramural.
+- 3: 100% intramural em contato com endométrio.
+- 4: intramural puro.
+- 5: subseroso ≥ 50% intramural.
+- 6: subseroso < 50% intramural.
+- 7: subseroso pediculado.
+- 8: outros (cervical, parasitário etc.).
+- Reporte SEMPRE o tipo (submucoso/intramural/subseroso) consistente com o número FIGO informado pelo médico. Se houver conflito entre o tipo e o número, use exatamente o que o médico falou e marque "[REVISAR — FIGO/tipo]" ao lado.`;
+
+const MSK_RULES = `Musculoesquelético — tendões normais:
+- Frase padrão: "de espessura, ecogenicidade e ecotextura normais, mantendo continuidade fibrilar"
+- Bursa: sempre "subacromial-subdeltoidea"`;
+
+export const CATEGORY_GLOBAL_RULES: Record<string, string> = {
+  PELVE_FEMININA: FIGO_RULES,
+  MUSCULOESQUELETICO: MSK_RULES,
+  MUSCULOESQUELETICO_V2: MSK_RULES,
+  MAMARIA: `Mamas e axilas:
+- Somente axilas mencionadas/solicitadas no ditado entram no exame. Modelos e exemplos com axilas não autorizam sua inclusão. Ditado apenas "Normal" significa exame só das mamas: título, corpo e conclusão SEM axilas, com (Categoria BI-RADS® 1). Não invente avaliação axilar nem limitação de axilas não avaliadas.
+- Margens de nódulos: sempre "circunscritas" (nunca "regulares")
+- BI-RADS: apenas no item com classificação mais alta (hierarquia: 5 > 4 > 3 > 0 > 2 > 1)`,
+  TIREOIDE: `Tireoide:
+- Linfonodos normais → parágrafo no corpo (com linha em branco antes), NÃO na conclusão
+- Linfonodos não mencionados → omitir completamente
+- Classificação Domingos é padrão, sempre com correlação TI-RADS
+- Nota Final e TI-RADS NUNCA calculados — apenas reproduzidos como informado`,
+};
+
+/** Conferência final enxuta (substitui o raciocínio obstétrico fora da família obstétrica). */
+export function buildLeanCheck(categoryLabel: string): string {
+  return `ANTES DE RESPONDER, CONFIRA (sem escrever a conferência):
+1. Exame: ${categoryLabel}, no modelo da categoria, com todas as seções.
+2. Cada comando do médico foi cumprido no ponto pedido, sem copiar as palavras do comando.
+3. Cada achado, medida, lado e negação ditados está no laudo; nenhuma estrutura alterada ficou com a frase normal; nada foi inventado.
+4. Conclusão: só achados do corpo, hipóteses com "que tem como diagnóstico mais provável", sem conduta não ditada.
+Responda APENAS com o laudo final.`;
+}

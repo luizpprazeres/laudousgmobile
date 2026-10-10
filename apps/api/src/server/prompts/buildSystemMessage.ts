@@ -8,6 +8,10 @@ import {
   GLOBAL_RULES_BLOCK,
   buildCoTInstruction,
   DEFAULT_SYSTEM_MESSAGE,
+  OBSTETRIC_GLOBAL_FAMILY,
+  GLOBAL_RULES_LEAN,
+  CATEGORY_GLOBAL_RULES,
+  buildLeanCheck,
 } from "./global";
 import { getCategoryContract } from "./contracts";
 import { PELVE_ANEXIAL_BLOCK } from "./contracts/PELVE_FEMININA";
@@ -43,12 +47,13 @@ function globalSectionForCategory(text: string, categoryCode: string): string {
  *
  *   1. categoryRules            (contrato da categoria — pode ser null)
  *   2. subspecialtyRules        (futuro — detector em prompts/subspecialty.ts)
- *   3. GLOBAL_RULES_BLOCK
+ *   3. GLOBAL_RULES_BLOCK (família obstétrica) ou GLOBAL_RULES_LEAN + reforço da
+ *      categoria (demais — W10b)
  *   4. styleOverlay             (apenas para DIRETO_OBJETIVO/DETALHADO_PROTOCOLAR)
  *   5. fewShots                 (RAG: kind=exemplo)
  *   6. ragOtherBlocks           (RAG: modelo + regra + frase + conclusao + excecao + comentario_tecnico)
- *   7. GLOBAL_PROHIBITIONS
- *   8. CoT instruction
+ *   7. GLOBAL_PROHIBITIONS (só família obstétrica)
+ *   8. CoT instruction (obstétrica) ou conferência enxuta (demais)
  *
  * Se não houver categoryRules nem RAG, fallback para DEFAULT_SYSTEM_MESSAGE.
  *
@@ -152,7 +157,15 @@ export function buildSystemMessage(args: {
 
   // 2. subspecialty — TODO
 
-  sections.push(formatSection(globalSectionForCategory(GLOBAL_RULES_BLOCK, args.categoryCode)));
+  // W10b: fora da família obstétrica, regras da casa enxutas + reforço da categoria.
+  const leanGlobal = !OBSTETRIC_GLOBAL_FAMILY.has(writerExam.categoryCode) && !OBSTETRIC_GLOBAL_FAMILY.has(args.categoryCode);
+  if (leanGlobal) {
+    sections.push(formatSection(GLOBAL_RULES_LEAN));
+    const categoryRules = CATEGORY_GLOBAL_RULES[args.categoryCode];
+    if (categoryRules) sections.push(formatSection(categoryRules));
+  } else {
+    sections.push(formatSection(globalSectionForCategory(GLOBAL_RULES_BLOCK, args.categoryCode)));
+  }
 
   if (styleOverlay) sections.push(styleOverlay);
 
@@ -180,8 +193,12 @@ export function buildSystemMessage(args: {
   }
 
   if (args.hardening) sections.push(formatSection(WRITER_HARDENING_BLOCK));
-  sections.push(formatSection(GLOBAL_PROHIBITIONS));
-  sections.push(formatSection(globalSectionForCategory(buildCoTInstruction(args.categoryLabel), args.categoryCode)));
+  if (leanGlobal) {
+    sections.push(formatSection(buildLeanCheck(args.categoryLabel)));
+  } else {
+    sections.push(formatSection(GLOBAL_PROHIBITIONS));
+    sections.push(formatSection(globalSectionForCategory(buildCoTInstruction(args.categoryLabel), args.categoryCode)));
+  }
 
   if (args.categoryCode === "MORFOLOGICO") {
     sections.push(

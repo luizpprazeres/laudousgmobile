@@ -13,8 +13,10 @@ import type { WritingStyleCode } from "@laudousg/shared";
 import { MORFOLOGICO_CONTRACT } from "./MORFOLOGICO";
 import {
   ABDOMEN_TOTAL_CONTRACT,
+  ABDOMEN_TOTAL_CONTRACT_OBJETIVO,
   ABDOMEN_TOTAL_MODELO_OBJETIVO,
 } from "./ABDOMEN_TOTAL";
+import { VIAS_URINARIAS_CONTRACT } from "./VIAS_URINARIAS";
 import { MAMARIA_CONTRACT, MAMARIA_MODELO_OBJETIVO } from "./MAMARIA";
 import {
   OBSTETRICA_CONTRACT,
@@ -57,6 +59,15 @@ export const CATEGORY_CONTRACTS: Record<string, string> = {
 // em vez de um modelo objetivo "abstrato" próprio que conflitava com o bundle.
 const OBJECTIVE_ONLY_CONTRACTS: Record<string, string> = {};
 
+// W10b: contratos reescritos a partir dos laudos finais do estilo clássico. O estilo
+// OBJETIVO mantém o contrato anterior (abdome) ou nenhum (vias) — não foi medido.
+const CLASSIC_ONLY_CONTRACTS: Record<string, string> = {
+  VIAS_URINARIAS: VIAS_URINARIAS_CONTRACT,
+};
+const OBJECTIVE_CONTRACT_OVERRIDES: Record<string, string> = {
+  ABDOMEN_TOTAL: ABDOMEN_TOTAL_CONTRACT_OBJETIVO,
+};
+
 const OBJECTIVE_MODELS: Record<string, string> = {
   ABDOMEN_TOTAL: ABDOMEN_TOTAL_MODELO_OBJETIVO,
   MAMARIA: MAMARIA_MODELO_OBJETIVO,
@@ -70,8 +81,9 @@ export function getCategoryContract(
   writingStyleCode: WritingStyleCode,
 ): string | null {
   const contract =
-    CATEGORY_CONTRACTS[code] ??
-    (writingStyleCode === "OBJETIVO" ? OBJECTIVE_ONLY_CONTRACTS[code] : null);
+    writingStyleCode === "OBJETIVO"
+      ? OBJECTIVE_CONTRACT_OVERRIDES[code] ?? CATEGORY_CONTRACTS[code] ?? OBJECTIVE_ONLY_CONTRACTS[code] ?? null
+      : CATEGORY_CONTRACTS[code] ?? CLASSIC_ONLY_CONTRACTS[code] ?? null;
   if (!contract) return null;
   if (writingStyleCode !== "OBJETIVO") return contract;
 
