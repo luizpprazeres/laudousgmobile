@@ -2,6 +2,10 @@
  * Golden de integração: épico IG determinística PELO RENDERER (flag ON × OFF).
  * Prova que a correção Domingos atravessa renderObstetrica/renderMorfologico e
  * que com a flag OFF o laudo é byte-idêntico ao legado.
+ * Expectativas na política de datação aprovada na W5 (09/10/2026): com 1ª US válida e sem
+ * pedido explícito, a conclusão usa a IG da 1ª US — ", corrigida pela ultrassonografia
+ * precoce." —, também na divergência leve e no Objetivo (item único). A frase "pela
+ * biometria atual, devendo ser corrigida…" vale no modo "relacionar" (PACOTE3, 10/10).
  * Rodar: tsx src/server/renderer/__tests__/ig-renderer.manual.ts
  */
 import { renderObstetrica, type ObstetricaFindings } from "../categories/OBSTETRICA";
@@ -53,9 +57,15 @@ const COM_REF: Partial<ObstetricaFindings> = {
 {
   const on = renderObstetrica(O(COM_REF), null, { igCorrection: true });
   check(
-    "OBST ON: conclusão com correção",
-    on.includes("Gestação em torno de 19 semanas e 4 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dia."),
+    "OBST ON: conclusão com correção (W5: IG da 1ª US)",
+    on.includes("Gestação em torno de 17 semanas e 1 dia, corrigida pela ultrassonografia precoce."),
     on,
+  );
+  const rel = renderObstetrica(O({ ...COM_REF, datacao_pedido: "relacionar" }), null, { igCorrection: true });
+  check(
+    "OBST ON relacionar: biometria + correção na mesma frase",
+    rel.includes("Gestação em torno de 19 semanas e 4 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dia."),
+    rel,
   );
   check(
     "OBST ON: prosa da 1ª US no corpo",
@@ -69,7 +79,8 @@ const COM_REF: Partial<ObstetricaFindings> = {
     O({ ig_semanas: 17, ig_dias: 4, primeira_us_data: "12/01/2026", primeira_us_ig_semanas: 8, primeira_us_ig_dias: 2, data_exame: "15/03/2026" }),
     null, { igCorrection: true },
   ); // R_hoje 17s1d vs 17s4d → diff 3 → leve
-  check("OBST ON leve: só biometria", on.includes("Gestação em torno de 17 semanas e 4 dias.") && !on.includes("devendo ser corrigida"));
+  // W5: a 1ª US tem prioridade também na divergência leve.
+  check("OBST ON leve: IG da 1ª US (W5)", on.includes("Gestação em torno de 17 semanas e 1 dia, corrigida pela ultrassonografia precoce.") && !on.includes("devendo ser corrigida") && !on.includes("Gestação em torno de 17 semanas e 4 dias"));
 }
 
 // ── OBSTETRICA estilo OBJETIVO ON: 2 itens ──
@@ -78,12 +89,13 @@ const COM_REF: Partial<ObstetricaFindings> = {
   void objWS;
   const on = renderObstetrica(O(COM_REF), null, { igCorrection: true, objetivo: true });
   check(
-    "OBST OBJ ON: item 1 biometria",
-    on.includes("Gestação em torno de 19 semanas e 4 dias pela biometria atual."),
+    "OBST OBJ ON: item único corrigido (W5)",
+    on.includes("1. Gestação em torno de 17 semanas e 1 dia, corrigida pela ultrassonografia precoce."),
+    on,
   );
   check(
-    "OBST OBJ ON: item 2 corrigido",
-    on.includes("Gestação em torno de 17 semanas e 1 dia corrigido pela ultrassonografia precoce."),
+    "OBST OBJ ON: sem item separado da biometria (W5)",
+    !on.includes("pela biometria atual"),
   );
 }
 
@@ -113,8 +125,8 @@ const M = (p: Partial<MorfologicoFindings> = {}): MorfologicoFindings => ({
   check("MORFO OFF: byte-idêntico ao legado", off === semRef);
   const on = renderMorfologico(M(refM), null, { igCorrection: true });
   check(
-    "MORFO ON: conclusão com correção",
-    on.includes("devendo ser corrigida pela ultrassonografia precoce, compatível com 17 semanas e 1 dia."),
+    "MORFO ON: conclusão com correção (W5: IG da 1ª US)",
+    on.includes("Gestação em torno de 17 semanas e 1 dia, corrigida pela ultrassonografia precoce."),
     on,
   );
 }

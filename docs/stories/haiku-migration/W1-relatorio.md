@@ -25,6 +25,56 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## PACOTE3 — IG ditada × calculadora (1ª US com data) e `ig-renderer` na política W5 (`fix/ig-calculadora`)
+
+**1. `e1f15cab` / `e5dfd891`: investigação.** Não é defeito de parse. A 1ª US ditada com data, projetada até a data do
+exame (dd/mm, ano e dias decorridos conferidos), bate **exatamente** com a calculadora do app:
+
+| Caso (exame) | 1ª US ditada | Projeção até o exame | Calculadora | "hoje com" ditado | Final do Luiz |
+|---|---|---|---|---|---|
+| `e1f15cab` (15/09/2026) | 30/03/2026, 8s5d | +169 dias = **32s6d** | **32s6d** | 30s6d | corpo "Hoje com 30s6d"; conclusão "compatível com **32s6d**" |
+| `e5dfd891` (30/09/2026) | 15/07/2026, 15s2d | +77 dias = **26s2d** | **26s2d** | 20s2d | "Hoje com **26s2d**" |
+
+Quem diverge é o **"hoje com" ditado por voz**: lapso ou ASR ("26"→"20"). O extrator o põe em `ig_referencia_hoje`, e a
+regra `computeRHoje` nº 1, "ditado direto vence (o médico já corrigiu)", faz o motor nem projetar. No `e1f15cab` o laudo
+afirma 30s6d **sem aviso nenhum**, porque a divergência com a biometria (31s6d) é leve. O "20s2d" da rodada anterior não
+era projeção da data; era o valor ditado. A diferença de data entre bancada e produção não influi.
+
+- **Decisão do Luiz (não tomada aqui):** quando o "hoje com" ditado diverge da projeção da 1ª US ditada **e** da linha da
+  calculadora, que concordam entre si, qual vence? Hoje vence o ditado.
+- **O que mudou, sem decidir:** `avisoIgDitadaXCalculadora` (`renderer/ig.ts`). Com a linha da calculadora presente e a
+  IG de hoje ditada diferindo dela em mais de 3 dias, vai um aviso ao card de pendências, pelo `onReviewNotes`, já usado
+  pelo guard de metatexto: "IG de hoje ditada (30 semanas e 6 dias) diverge da calculadora do app (IG pela
+  ultrassonografia precoce: 32 semanas e 6 dias); o laudo usa a ditada — confira." O texto do laudo não muda. Ligado nos
+  cases OBSTETRICA e MORFOLOGICO do pipeline.
+- **Falsos positivos:** em todas as extrações gravadas de hoje com a linha da calculadora e "hoje com" (29 casos, até 3
+  execuções cada), a diferença é 0 dia em 27 casos e 14 e 42 dias nos dois casos acima. O aviso só dispara neles.
+
+**2. `ig-renderer.manual.ts`.** As 5 expectativas foram reescritas para a política da W5: com 1ª US válida e sem pedido
+explícito, "Gestação em torno de 17 semanas e 1 dia, corrigida pela ultrassonografia precoce.", também na divergência
+leve e no Objetivo (item único, sem item separado da biometria). A frase antiga continua coberta no modo em que ela vale
+(`datacao_pedido: "relacionar"`). O renderer não mudou. 12/12; as 6 expectativas que já passavam continuam passando
+(OFF ×4, prosa da 1ª US, byte-estabilidade do morfológico).
+
+**Testes:** `renderer/__tests__/pacote3-ig-calculadora.manual.ts` (4 blocos: projeção = calculadora nos dois casos,
+precedência inalterada, aviso, 6 negativos). Ficam verdes:
+- obstétrica: W5 116, catálogo 21600/21600 byte a byte, garantias 76, golden Clássico/Objetivo, matriz;
+- morfológico: matriz 89, golden 41;
+- PACOTE2 6, guard 17/17, `ig` 42, `ig-sanity` 10, `llm` 26/26, `tsc` limpo.
+
+**Bancada Haiku (`BENCH_MODEL=claude-haiku-5-5`, sem juiz):**
+
+| Grupo | W5 (A) | PACOTE2 (A6) | PACOTE3 (A7) |
+|---|---|---|---|
+| Obstétrica + Doppler (46): frases-padrão faltando | 194/849 | 194/849 | 192/849 (título ≠ 7, `____` 2, duplicada 0) |
+| Morfológico (23): frases-padrão faltando | 272/627 | 272/627 | 275/627 (título ≠ 1, `____` 4, duplicada 0) |
+| IG da calculadora no laudo | — | obst 22/24 · morfo 8/8 | obst 22/24 · morfo 8/8 |
+
+O texto dos laudos não muda por esta correção; as diferenças A7 × A6 são variação do extrator (31/46 e 9/23 textos
+idênticos). Um caso da obstétrica (`1304da57`) teve erro de conexão na assinatura e foi repetido. Rodadas:
+`tmp-review/bench-haiku/2026-10-10T17-03-50-obstetrica+doppler_obstetrico-completa` (com o caso repetido) e
+`…T17-09-58-morfologico`.
+
 ## PACOTE2 — IG da US precoce sem data, dedup da conclusão, narração antes do título (`fix/obst-ig-dedup-narracao`)
 
 **1. IG da US precoce que sumia.** "IG pela ultrassonografia precoce: 23s3d" é linha da calculadora do app: IG de **hoje**
