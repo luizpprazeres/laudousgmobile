@@ -1,137 +1,62 @@
 /**
- * Contrato da categoria MAMARIA — derivado do LaudoUSG original, com regras W7
- * (lib/categoryDefaults.ts:3183-3411).
+ * Contrato da categoria MAMARIA — writer completo (Haiku 5.5). Reescrito na W10c (10/10/2026) pelo
+ * método da W9: regras positivas + frases fixas literais + exemplos curtos, medidos contra os laudos
+ * finais de 90 dias (docs/reviews/2026-10-revisao-renderers-prompts.md, seção W10c).
  *
- * Fonte: _extraction/from-laudousg-original/03-models-by-category/MAMARIA.md
- *        _extraction/from-laudousg-original/05-phrases-and-conclusions/MAMAS-birads.md
- *
- * Regras críticas (lembrete):
- *  - Margens de nódulos: SEMPRE "circunscritas" (NUNCA "regulares")
- *  - BI-RADS: apenas no item com classificação mais alta (5 > 4 > 3 > 0 > 2 > 1)
- *  - Axilas não mencionadas → omitir título/corpo/conclusão (título dinâmico)
- *  - BI-RADS de lesões só se informado; exame normal recebe Categoria BI-RADS® 1
- *  - Medidas inválidas → preservar com [?], NÃO inventar
+ * Padrões do médico que o contrato reproduz (finais de 90 dias, 29 laudos):
+ *  - documentação fotográfica SEM "em 06 fotos" (26/29; o contrato antigo obrigava as fotos);
+ *  - achado no corpo: "Imagem anecoica de mama direita, com margem circunscrita, medindo …, situada
+ *    no …, às "HH horas", distando … do seu centro até a pele [e … até o mamilo]";
+ *  - conclusão da casa (cisto simples / imagem sólida no quadrante / linfonodo intramamário), BI-RADS
+ *    só se ditado e só no item de maior categoria; exame normal = (Categoria BI-RADS® 1) (W7);
+ *  - axilas só quando ditadas ou pedidas; pedidas sem achado = normais (W7, decisão 12 do Luiz);
+ *  - erros de transcrição óbvios corrigidos sem comentário ("0.3 por 0,1" → "0,3 x 0,1").
  */
 
-export const MAMARIA_CONTRACT = `PROTOCOLO OBRIGATÓRIO DE GERAÇÃO DE LAUDO
+export const MAMARIA_CONTRACT = `LAUDO DE ULTRASSONOGRAFIA DAS MAMAS — preencha o modelo da casa com o ditado. Saída: somente o laudo, em texto simples, sem markdown, bullets ou comentários.
 
-REGRA PRIORITÁRIA DE ESCOPO — PREVALECE SOBRE MODELOS E EXEMPLOS:
-Apenas o DITADO ou a SOLICITAÇÃO do médico pode incluir axilas. Menções às axilas em modelos, exemplos ou frases da biblioteca NÃO contam como solicitação.
-Se o ditado for apenas "Normal", ou não mencionar/solicitar axilas, o título é ULTRASSONOGRAFIA DAS MAMAS. Remova do modelo toda descrição e conclusão axilar, inclusive frases de axilas não avaliadas.
-Nesse exame normal somente das mamas, concluir: Mamas ecograficamente normais (Categoria BI-RADS® 1).
+ESCOPO — decida antes de escrever: a palavra "axila" (ou "axilas", "axilar") aparece no DITADO?
+- Não: título ULTRASSONOGRAFIA DAS MAMAS e nenhuma frase axilar no corpo ou na conclusão. O nome do exame na tela ("Mamas e axilas") não conta.
+- Sim: título ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES, a frase axilar no fim do corpo e "Linfonodos axilares normais." como último item da conclusão (axilas citadas sem achado = normais).
 
-Sua tarefa é apenas PREENCHER um modelo fixo de laudo.
-Não reescreva o modelo.
-Não resuma.
-Não reorganize.
-Não embeleze.
-Não use sinônimos para frases-base.
-Não use bullets.
-Não escreva texto corrido fora do modelo.
-Não explique nada.
-A saída deve conter SOMENTE o laudo final.
-
-SE A RESPOSTA NÃO SEGUIR EXATAMENTE O FORMATO ABAIXO, ELA ESTÁ ERRADA.
-
-ERROS PROIBIDOS
-É proibido:
-remover o título em caixa alta
-remover os cabeçalhos COMENTÁRIOS / OS SEGUINTES ASPECTOS FORAM OBSERVADOS / CONCLUSÃO
-trocar 06 fotos por outro número
-transformar o laudo em texto corrido
-usar traços, bullets ou listas fora da conclusão
-trocar frases-base por paráfrases
-inferir BI-RADS de lesões sem que o usuário informe; a exceção é o exame normal, que recebe (Categoria BI-RADS® 1)
-inventar medidas, horários, quadrantes, distâncias, datas ou correlações
-escrever "compatível com cisto simples" no corpo do laudo sem solicitação explícita
-trocar "linfonodos axilares normais" por outra frase
-trocar "Mamas com ecotextura de fundo com aspecto heterogêneo" por outra frase, salvo ordem explícita
-trocar "imagem anecoica" por "cisto" no corpo do laudo, salvo ordem explícita
-omitir ou silenciar descritores fornecidos pelo médico (ex: "coalescentes", "heterogêneas", "com reforço acústico posterior")
-publicar medida que contenha caractere inválido sem sinalizá-la com [?]
-
-TÍTULO DINÂMICO
-Somente se as axilas foram ditadas ou solicitadas junto das mamas: ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES
-Se o médico omite axilas, diz "sem axilas", "só mamas", "remover axilas" ou pede título sem regiões axilares: ULTRASSONOGRAFIA DAS MAMAS
-O título deve refletir exatamente o escopo do exame. Sem menção ou solicitação de axilas, usar somente MAMAS; omitir toda descrição e conclusão axilar.
-
-ESTRUTURA FIXA E IMUTÁVEL
-
-[TÍTULO DINÂMICO conforme regra acima]
+MODELO (frases fixas, copiadas literalmente; título conforme o escopo)
+ULTRASSONOGRAFIA DAS MAMAS
 
 COMENTÁRIOS:
-[COMENTÁRIOS EXATOS]
+Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.
+A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
-[TEXTO DE FUNDO]
-[ACHADOS]
-[TEXTO AXILAR]
+Mamas com ecotextura de fundo com aspecto heterogêneo.
+[sem achado nas mamas: Não há sinais evidentes de imagem nodular sólida, cística ou complexa.]
+[achados: uma linha por imagem ou grupo; mama direita antes da esquerda]
+[com axilas: Imagens ovais, com a periferia hipoecoica e o centro hiperecoico, nas axilas.]
 
 CONCLUSÃO:
-[ITENS DA CONCLUSÃO]
+[um item: sem número | dois ou mais: 1), 2), 3), um por linha]
 
-[RODAPÉ FIXO]
-
-COMENTÁRIOS PADRÃO
-Usar exatamente este texto, salvo caso especial abaixo:
-
-Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.
-A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
-
-TEXTO DE FUNDO PADRÃO
-Usar exatamente:
-Mamas com ecotextura de fundo com aspecto heterogêneo.
-
-TEXTO AXILAR PADRÃO
-Se as axilas foram avaliadas e estão normais, usar exatamente:
-Imagens ovais, com a periferia hipoecoica e o centro hiperecoico nas axilas.
-
-Se as axilas não foram mencionadas ou solicitadas, omitir completamente este trecho. Só registrar limitação da avaliação axilar se explicitamente ditada.
-
-CONCLUSÃO AXILAR PADRÃO
-Se as axilas foram avaliadas e estão normais, usar exatamente:
-Linfonodos axilares normais.
-
-Se as axilas não foram mencionadas ou solicitadas, omitir completamente o item axilar.
-
-REGRAS DE CONCLUSÃO
-Exame mamário normal: Mamas ecograficamente normais (Categoria BI-RADS® 1).
-Preserve multiplicidade e referência da medida: "imagens ... a maior medindo" não vira imagem única nem medida de cada imagem.
-Cada grupo de achados deve virar um item próprio.
-Não juntar achados diferentes na mesma frase, exceto quando o usuário pedir explicitamente.
-
-TERMINOLOGIA DE LOCALIZAÇÃO
-Usar somente estas expressões, sem trocar por sinônimos:
-quadrante superolateral
-quadrante superomedial
-quadrante inferolateral
-quadrante inferomedial
-união dos quadrantes laterais
-união dos quadrantes mediais
-união dos quadrantes superiores
-união dos quadrantes inferiores
-
-HORÁRIO
-Escrever sempre exatamente neste formato:
-às "08 horas"
-às "03 horas"
-às "10 horas"
-
-MEDIDAS INVÁLIDAS
-Se uma medida contiver caractere inválido ou ilegível, mantê-la exatamente como fornecida seguida de [?]. Nunca substituir por valor inventado. Nunca omitir a medida.
-
-RODAPÉ FIXO
-Usar exatamente:
 Breast Imaging Reporting and Data System do Colégio Americano de Radiologia (BI-RADS®).
 
-REGRAS FINAIS DE EXECUÇÃO
-Preencha apenas com os dados fornecidos.
-Se um campo não for informado, não invente.
-Não faça interpretação adicional.
-Não reescreva frases fixas.
-Não mude a estrutura.
-Não produza explicações.
-Entregue somente o laudo final.`;
+ACHADO NO CORPO — esta ordem, só com os dados ditados, descrevendo (sem "cisto", "nódulo" ou diagnóstico):
+Imagem [eco] de mama [lado], com margem [margem], [maior eixo paralelo à pele,] medindo A x B x C cm, situada no [local], às "HH horas", distando X cm do seu centro até a pele[ e Y cm até o mamilo].
+Exemplos reais:
+Imagem hipoecoica de mama direita, com margem circunscrita, maior eixo paralelo à pele, medindo 1,2 x 0,8 x 1,0 cm, situada no quadrante superolateral, às "10 horas", distando 0,9 cm do seu centro até a pele e 4,5 cm até o mamilo.
+Imagens anecoicas de mama esquerda, com margens circunscritas, a maior medindo 0,3 x 0,2 x 0,2 cm, situada na união dos quadrantes superiores, às "12 horas", distando 0,5 cm do seu centro até a pele.
+Imagem oval de mama esquerda, com a periferia hipoecoica e o centro hiperecoico, maior eixo paralelo à pele, medindo 0,5 x 0,2 x 0,4 cm, situada no quadrante superolateral, à "01 hora", distando 0,6 cm do seu centro até a pele.
+- Cisto ditado sem ecogenicidade = imagem anecoica. Plural, "a maior medindo" e "em conjunto" só como ditados.
+- Margem: circunscrita, lobulada, microlobulada, irregular ou espiculada; "regular" ditado = circunscrita.
+- Local: quadrante superolateral, superomedial, inferolateral ou inferomedial; união dos quadrantes laterais, mediais, superiores ou inferiores; região retroareolar.
+- Horário com dois dígitos entre aspas: às "02 horas", à "01 hora".
+
+CONCLUSÃO
+- Conclusão ditada: use-a, com a grafia da casa ("em mama direita", "Categoria BI-RADS®").
+- Sem conclusão ditada, um item por grupo: imagem anecoica circunscrita → "Cisto simples em mama direita." / "Cistos simples em mama esquerda."; imagem sólida → "Imagem sólida em mama direita no quadrante superolateral." (nunca "nódulo"); imagem oval com centro hiperecoico → "Linfonodo intramamário em mama esquerda no quadrante superolateral."
+- Exame normal: "Mamas ecograficamente normais (Categoria BI-RADS® 1)."
+- BI-RADS de achado só se ditado, como "(Categoria BI-RADS® 3)", e só no item de maior categoria (5 > 4 > 3 > 0 > 2 > 1). Nunca o calcule.
+- Correlação ditada: "A correlação com a mamografia realizada em dd/mm/aaaa permite manter esta classificação." ou "A correlação com a mamografia realizada em dd/mm/aaaa permite reclassificar para Categoria BI-RADS® X."
+
+DITADO POR VOZ — corrija sem comentar: "ponto" ou "." decimal → vírgula (2.7 → 2,7); "por" → "x"; algarismos separados ("2 9 cm") → 2,9 cm; medida sem unidade → cm; "mão" → mama; "do 60 até a perna" → do seu centro até a pele; "super lateral" ou "superlateral" → superolateral; "listando"/"estando" → distando.
+Escreva "[REVISAR]" só no lugar de um número ou do lado que faltam no ditado; não comente o ditado nem explique correções.`;
 
 /**
  * Modelo-base MAMARIA (caso normal, somente mamas) — sintetizado das
@@ -147,7 +72,7 @@ export const MAMARIA_MODELO_BASE = `ULTRASSONOGRAFIA DAS MAMAS
 
 COMENTÁRIOS:
 Exame realizado com transdutor de 12 MHz, abrangendo todos os quadrantes das mamas.
-A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
+A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possui várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 Mamas com ecotextura de fundo com aspecto heterogêneo.
