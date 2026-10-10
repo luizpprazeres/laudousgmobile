@@ -451,6 +451,19 @@ async function main() {
   const { resolverPersonalizacao } = await import("../../src/server/customization/resolve");
   const { resolverFrasesPersonalizadas } = await import("../../src/server/customization/resolveFrases");
   const { applyCommandOperations } = await import("../../src/server/pipeline/commandOperations");
+  // W11: léxico da casa como na rota (/api/generate): camada "ditado" no ditado de entrada e camada
+  // "saida" depois dos guards finais, com as mesmas flags (ausentes = ligado em todas as categorias).
+  const { aplicarLexico, lexicoAtivo, entradasDesligadas } = await import("../../src/server/pipeline/lexicoDaCasa");
+  const desligadas = entradasDesligadas(process.env.LEXICO_DESLIGADAS);
+  const lexDitado = (cat: string, t: string) =>
+    lexicoAtivo(cat, process.env.LEXICO_DITADO_CATEGORIES) ? aplicarLexico(t, { categoria: cat, camada: "ditado", desligadas }) : { texto: t, trocas: [] };
+  const lexSaida = (cat: string, t: string) =>
+    lexicoAtivo(cat, process.env.LEXICO_SAIDA_CATEGORIES) ? aplicarLexico(t, { categoria: cat, camada: "saida", desligadas }) : { texto: t, trocas: [] };
+  const comLexico = (cat: string, ditado: { trocas: unknown[] }, out: { text: string; error?: string }) => {
+    if (out.error || !out.text) return out;
+    const s = lexSaida(cat, out.text);
+    return { ...out, text: s.texto, lexico: { ditado: ditado.trocas, saida: s.trocas } };
+  };
   const { enforceStatedAmnioticClass, ensureAmnioticConclusionLine } = await import("../../src/server/pipeline/amnioticFluidGuard");
   const { ensurePesoFetalConclusion } = await import("../../src/server/pipeline/pesoFetalGuard");
   const { extractDopplerData, applyDopplerOverlay, correctDopplerConclusion } = await import("../../src/server/pipeline/dopplerOverlay");
@@ -573,11 +586,14 @@ async function main() {
     return { bundle, rendererPreferences };
   }
 
-  async function runA(r: Row, rawInput: string, mode: "replay" | "haiku" | "luna"): Promise<{ text: string; error?: string }> {
+  async function runA(r: Row, rawInputCru: string, mode: "replay" | "haiku" | "luna"): Promise<{ text: string; error?: string }> {
+    // Replay reproduz a produção de antes: sem léxico.
+    const ditadoLex = mode === "replay" ? { texto: rawInputCru, trocas: [] } : lexDitado(examOf(r).cat, rawInputCru);
+    const rawInput = ditadoLex.texto;
     // Categoria cujo caminho de produção é o writer (fora de RENDERER_CATEGORIES): "A" = Haiku no
     // caminho atual, isto é, o writer com o prompt de hoje (sem o patch do B2).
     if (mode !== "replay" && !rendererCategoryEnabled(examOf(r).cat)) {
-      const w = await runB(r, rawInput, false, mode);
+      const w = await runB(r, rawInputCru, false, mode);
       return { ...w, via: "writer" } as { text: string; error?: string };
     }
     return ctx.run({ mode, caseId: r.id, storedFindings: r.structured_output, log }, async () => {
@@ -632,11 +648,13 @@ async function main() {
       }
       // Como a rota: writer dedicado (passthrough) não recebe acréscimo do guard.
       text = applyCommandOperations(text, rawInput, { writer: passthrough });
-      return { text: universalGuards(text) };
+      return mode === "replay" ? { text: universalGuards(text) } : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text) });
     });
   }
 
-  async function runB(r: Row, rawInput: string, promptPatch = false, mode: "haiku" | "luna" = "haiku"): Promise<{ text: string; error?: string }> {
+  async function runB(r: Row, rawInputCru: string, promptPatch = false, mode: "haiku" | "luna" = "haiku"): Promise<{ text: string; error?: string }> {
+    const ditadoLex = lexDitado(examOf(r).cat, rawInputCru);
+    const rawInput = ditadoLex.texto;
     return ctx.run({ mode, promptPatch, caseId: r.id, log }, async () => {
       const { cat, dopplerMode, includeDoppler } = examOf(r);
       const styleRow = (await getWritingStyleById(r.writing_style_id))!;
@@ -697,7 +715,7 @@ async function main() {
         text = dedupeConclusionItems(text);
       }
       if (cat === "MUSCULOESQUELETICO_V2") text = normalizeSectionSpacing(text);
-      return { text: universalGuards(text) };
+      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text) });
     });
   }
 
