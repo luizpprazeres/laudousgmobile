@@ -54,3 +54,11 @@ typecheck api/web/shared ✓ · `lexicoDaCasa` 99 ✓ (positivos e negativos de 
 comparativo, rollback, idempotência) · web `pnpm test` 73 suítes ✓ (5 testes com a frase nova) · shared clinicalModels 3/3 ✓ ·
 `msk-writer-prompt` 31 ✓ · `msk-descritores-lados` 25 ✓ (expectativa atualizada para a frase nova da web) · demais suítes do
 catálogo e do renderer: mesmas falhas da base `f7b4b382` (dependem de banco/servidor local ou já falhavam), nenhuma nova.
+
+## Aplicação na Biblioteca (10/10/2026, orquestrador)
+
+`TERMOS-biblioteca-proposta.sql` aplicado no projeto `yldtkqrsbgcnwlydrrot` (laudousgmobile), numa transação, com as guardas de
+id + status + md5: **75/75 blocos alterados, versão +1 em todos, todos seguem `validated`**. Cópia de segurança antes da troca:
+tabela `public.knowledge_blocks_bkp_termos_20261010` (RLS ligada, sem acesso de anon/authenticated). Restante "-ecogênic" nesses
+blocos = só o comparativo "menos ecogênica que a parótida" (glândulas salivares), mantido de propósito. Rollback:
+`update knowledge_blocks k set content = b.content, version = b.version, updated_at = now() from knowledge_blocks_bkp_termos_20261010 b where k.id = b.id;`
