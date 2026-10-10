@@ -32,6 +32,6 @@ Medidas da próstata: 5,0 x 4,2 x 4,5 cm. Volume estimado em 49,4 mL.
 Ao estudo Doppler colorido, observa-se hiperemia acentuada do parênquima prostático."
 
 Na conclusão (numerada):
-"x) Próstata difusamente aumentada com hiperemia ao Doppler. Convém, a critério clínico, correlacionar com quadro clínico-laboratorial e considerar prostatite aguda como diagnóstico diferencial."
+"x) Próstata difusamente aumentada com hiperemia ao Doppler. Convém, a critério clínico, considerar prostatite aguda como diagnóstico diferencial."
 
 NUNCA escrever "exame sem alterações" em paciente com clínica suspeita de prostatite — sempre mencionar que o ultrassom pode ser falsamente normal nesse contexto.

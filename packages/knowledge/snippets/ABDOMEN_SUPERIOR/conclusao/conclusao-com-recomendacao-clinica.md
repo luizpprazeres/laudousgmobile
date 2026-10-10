@@ -31,7 +31,7 @@ Achados que devem vir acompanhados de recomendação clínica explícita:
    "Convém, a critério clínico, complementação com tomografia computadorizada ou ressonância magnética, com objetivo de melhor avaliar o parênquima pancreático."
 
 6. **Esplenomegalia significativa**:
-   "Convém, a critério clínico, correlacionar com quadro clínico-laboratorial."
+   "Convém, a critério clínico, correlacionar com quadro clínico-laboratorial." — só quando o médico ditar, na redação dele.
 
 7. **Esteatose hepática acentuada em paciente com fatores de risco**:
    "Convém, a critério clínico, correlacionar com perfil metabólico (lipídico, glicemia) e função hepática."

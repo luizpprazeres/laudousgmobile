@@ -59,14 +59,14 @@ DILATAÇÃO DUCTAL — REFERÊNCIAS CONTEXTUAIS (NÃO GATES)
 
 ATENÇÃO: os valores abaixo são REFERÊNCIAS para apoiar interpretação contextual. Diâmetros próximos do limite podem representar variação fisiológica (especialmente pós-estímulo salivar, citrato/limão) — NÃO inferir obstrução automaticamente.
 
-- DUCTO DE STENSEN — comumente considerado dilatado quando > 2 mm. Zona cinzenta 1,5-2 mm: pode ser fisiológica ou inicial de processo obstrutivo, correlacionar com clínica.
+- DUCTO DE STENSEN — comumente considerado dilatado quando > 2 mm. Zona cinzenta 1,5-2 mm: pode ser fisiológica ou inicial de processo obstrutivo.
 - DUCTO DE WHARTON — comumente considerado dilatado quando > 3 mm. Zona cinzenta 2-3 mm: idem.
 
 Quando o médico documentar dilatação ductal e juízo clínico de processo obstrutivo:
 "Ducto de [Stensen/Wharton] de [glândula] dilatado, com calibre máximo de ___ mm. [Quando aplicável: associado a [cálculo / processo inflamatório a jusante / outro], sugerindo processo obstrutivo.]"
 
 Quando só houver dilatação leve sem causa identificada:
-"Ducto de [Stensen/Wharton] de [glândula] com calibre de ___ mm. Convém, a critério clínico, complementar com correlação clínica."
+"Ducto de [Stensen/Wharton] de [glândula] com calibre de ___ mm."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

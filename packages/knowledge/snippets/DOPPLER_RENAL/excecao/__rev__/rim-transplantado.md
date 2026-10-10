@@ -44,7 +44,7 @@ CONCLUSÃO — frase verbatim quando exame normal:
 "X) Enxerto renal em fossa ilíaca [direita/esquerda] com fluxos arterial e venoso preservados, sem sinais ecográficos de estenose de anastomose, trombose ou complicações peri-enxerto."
 
 CONCLUSÃO — frase verbatim quando achado patológico (citar a referência clínica):
-"X) [Achado específico]. Recomenda-se correlação clínica com função renal (creatinina, eletrólitos) e equipe transplantadora."
+"X) [Achado específico]. Recomenda-se correlação com função renal (creatinina, eletrólitos) e equipe transplantadora."
 
 NÃO INVENTAR:
 - Não classificar tipo de rejeição por Doppler (clínico/biópsia confirma).

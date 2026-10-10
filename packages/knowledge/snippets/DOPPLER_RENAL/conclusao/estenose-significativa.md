@@ -36,5 +36,5 @@ CRITÉRIOS DIAGNÓSTICOS (referência):
 
 NÃO INVENTAR:
 - Não citar valores não mencionados pelo médico nos achados.
-- Não recomendar conduta cirúrgica/intervencionista — apenas sugerir correlação clínica quando aplicável.
+- Não recomendar conduta cirúrgica/intervencionista; correlação clínica só quando o médico ditar, na redação dele.
 - Não classificar percentual de estenose por Doppler (não tem precisão suficiente).

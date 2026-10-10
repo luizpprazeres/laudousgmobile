@@ -28,4 +28,4 @@ Na conclusão:
 "Sinais sugestivos de abscesso renal direito. Encaminhamento urológico em caráter de urgência."
 
 NUNCA escrever "exame sem alterações" em paciente com clínica suspeita de pielonefrite — sempre mencionar que o ultrassom pode ser falsamente normal:
-"Ultrassom sem achados específicos. A ausência de alterações ecográficas NÃO descarta pielonefrite aguda — convém, a critério clínico, correlacionar com quadro clínico-laboratorial e considerar tomografia com contraste se necessário."
+"Ultrassom sem achados específicos. A ausência de alterações ecográficas NÃO descarta pielonefrite aguda — convém, a critério clínico, considerar tomografia com contraste se necessário."

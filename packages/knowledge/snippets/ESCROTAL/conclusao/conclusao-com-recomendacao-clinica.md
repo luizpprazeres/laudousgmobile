@@ -25,10 +25,10 @@ Achados que devem vir acompanhados de recomendação clínica explícita:
    "Encaminhamento urológico em caráter de urgência."
 
 4. **Orqui-epididimite aguda**:
-   "Convém, a critério clínico, correlacionar com quadro clínico-laboratorial."
+   "Convém, a critério clínico, correlacionar com quadro clínico-laboratorial." — só quando o médico ditar, na redação dele.
 
 5. **Achado incidental em paciente assintomático** (ex: pequeno cisto, varicocele subclínica):
-   "Achado de provável relevância clínica reduzida — correlacionar com queixa clínica."
+   "Achado de provável relevância clínica reduzida — correlacionar com queixa clínica." — só quando o médico ditar, na redação dele.
 
 6. **Hidrocele complexa / septada**:
    "Convém, a critério clínico, descartar processo inflamatório ou hemorrágico associado."
