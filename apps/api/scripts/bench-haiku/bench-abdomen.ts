@@ -124,7 +124,7 @@ const RENAME = new Map(
 );
 const keyOf = (scen: string) => RENAME.get(scen) ?? (scen === "A" ? arg("a-key", "A")! : scen);
 const A_KEY = keyOf("A");
-const SCEN_KEYS = ["R", "A", "AR", "AS", "A2", "AS2", "A3", "AS3", "B", "BS", "L", "B2", "B2S"];
+const SCEN_KEYS = ["R", "A", "AR", "AS", "A2", "AS2", "A3", "AS3", "A4", "AS4", "B", "BS", "L", "B2", "B2S"];
 const OUT_ROOT = process.env.BENCH_OUT_ROOT ?? join(REPO, "tmp-review/bench-haiku");
 
 const REGRA_ANTIGA_GLOBAL =
@@ -678,8 +678,8 @@ async function main() {
     if (k === "R") return res.replay?.text || `(sem replay: ${res.replay?.error ?? "produção não passou pelo renderer"})`;
     const x = res[k]?.[0];
     // A que falhou no renderer cai no writer (como na rota): usa o writer do MESMO modelo.
-    if (["A", "AR", "AS", "A2", "AS2", "A3", "AS3"].includes(k) && x?.error) {
-      const fb = k === "AS" || k === "AS2" || k === "AS3" ? res.B2S?.[0]?.text || res.BS?.[0]?.text : res.B2?.[0]?.text || res.B?.[0]?.text;
+    if (["A", "AR", "AS", "A2", "AS2", "A3", "AS3", "A4", "AS4"].includes(k) && x?.error) {
+      const fb = k === "AS" || k === "AS2" || k === "AS3" || k === "AS4" ? res.B2S?.[0]?.text || res.BS?.[0]?.text : res.B2?.[0]?.text || res.B?.[0]?.text;
       if (fb) return fb;
     }
     return x?.text || `(falhou: ${x?.error})`;

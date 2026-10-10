@@ -21,7 +21,7 @@ check("via TA com título + obs endométrio limitado", /ULTRASSONOGRAFIA DA PELV
 check("COMENTÁRIOS 4.0 MHz e 6.5 MHz", /transdutor de 4\.0 MHz/.test(p) && /transdutor de 6\.5 MHz/.test(p));
 
 // Ordem do corpo + frases canônicas.
-check("bexiga só com via TA", /Bexiga.*SÓ quando há via transabdominal/.test(p));
+check("bexiga só com via TA", /Bexiga \(só com via transabdominal\)/.test(p));
 check("miométrio normal", /Miométrio com ecogenicidade e ecotextura normais/.test(p));
 check("ovário normal 'imagens anecoicas'", /apresentando imagens anecoicas/.test(p));
 
@@ -29,16 +29,16 @@ check("ovário normal 'imagens anecoicas'", /apresentando imagens anecoicas/.tes
 check("MENOPAUSA: poucas imagens anecoicas", /poucas imagens anecoicas/.test(p));
 check("MENOPAUSA: praticamente sem folículos", /ambos praticamente sem fol[íi]culos/.test(p));
 check("MENOPAUSA: faixa etária da menopausa", /faixa etária da menopausa/.test(p));
-check("ANTI-LÍQUIDO-LIVRE: coleção ovariana não vira líquido livre", /NUNCA a duplique como "líquido livre/.test(p));
+check("ANTI-LÍQUIDO-LIVRE: coleção ovariana não vira líquido livre", /nunca "líquido livre"/.test(p));
 check("FIGO footer", /FIGO: Federação Internacional de Ginecologia e Obstetrícia/.test(p));
 check("Naboth", /Cistos de Naboth/.test(p));
 check("DIU normoposicionado", /Dispositivo intrauterino \(D\.I\.U\.\) normoposicionado/.test(p));
 check("istmocele → nicho de cicatriz cesárea", /Nicho de cicatriz cesárea/.test(p));
 check("pós-aborto → produtos retidos", /produtos retidos da concepção/.test(p));
-check("volume ditado, não recalcular", /VOLUME é o ditado pelo médico \(não recalcular\)/.test(p));
-check("comandos são instruções", /Comandos são INSTRUÇÕES/.test(p));
-check("não drope nada / silêncio = normal", /NÃO drope nada ditado/.test(p));
-check("vírgula decimal", /Vírgula decimal/.test(p));
+check("volume ditado, não recalcular", /volume ditado, sem recalcular/.test(p));
+check("comandos são instruções", /Comandos \(.*\) são instruções: execute, nunca transcreva/.test(p));
+check("não drope nada / silêncio = normal", /Não drope nada ditado/.test(p) && /Estrutura não citada = normal/.test(p));
+check("vírgula decimal", /vírgula decimal/.test(p));
 
 // Few-shots: cobertura dos padrões.
 check("few-shots: ≥6 pares", PELVE_FEWSHOTS.length >= 6);
@@ -53,6 +53,18 @@ check("few-shots: caso FIGO (mioma)", PELVE_FEWSHOTS.some((f) => /categoria FIGO
 check("few-shots: caso pós-abortamento", PELVE_FEWSHOTS.some((f) => /produtos retidos/.test(f.laudo)));
 check("few-shots: TV puro (sem bexiga)", PELVE_FEWSHOTS.some((f) =>
   /^ULTRASSONOGRAFIA PÉLVICA TRANSVAGINAL/.test(f.laudo) && !/Bexiga/.test(f.laudo)));
+
+// W10a (10/10/2026): padrão real dos laudos finais e defeitos da revisão.
+check("técnica TV sem '06 fotos'", /pela técnica transvaginal\. A documentação fotográfica foi obtida segundo protocolo/.test(p) && !/06 fotos/.test(p));
+check("ovários 'e o esquerdo {Y} cm³' (sem 'com')", /e o esquerdo \{Y\} cm³/.test(p) && !/e o esquerdo com/.test(p));
+check("medida não ditada: nunca 0,0 nem ____, usa [REVISAR]", /nunca "0,0" nem "____"/.test(p) && /\[REVISAR:/.test(p));
+check("endométrio normal só com espessura ditada", /Com espessura ditada: "O endométrio tem espessura normal/.test(p));
+check("legenda FIGO uma vez e sem número", /uma vez e sem número: "FIGO: Federação/.test(p));
+check("título de contagem de folículos", /PARA CONTAGEM DE FOLÍCULOS/.test(p));
+check("posição do útero não ditada = anteversão", /\(posição não ditada: anteversão\)/.test(p));
+check("via não ditada = transabdominal + transvaginal", /Via não ditada: transabdominal \+ transvaginal/.test(p));
+check("correlação do ciclo ditada vai na conclusão do endométrio", /a frase dele substitui esta, aqui, e o corpo fica só com a medida/.test(p));
+check("unidade ditada (saco gestacional em mm)", /saco gestacional e folículos costumam vir em mm/.test(p));
 
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);
