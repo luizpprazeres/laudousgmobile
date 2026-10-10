@@ -51,6 +51,17 @@ eq(S("**ULTRASSONOGRAFIA DO ABDOME TOTAL**\n\nCOMENTÁRIOS:"), "ULTRASSONOGRAFIA
 eq(S("CONCLUSÃO:\n1) **Colelitíase.**"), "CONCLUSÃO:\n1) Colelitíase.", "remove **negrito** na conclusão");
 ck(S("*ESCORE DE NÓDULO TIREOIDEANO - Domingos\nACR - American College of Radiology*").startsWith("*ESCORE"), "asterisco simples da nota PRESERVADO");
 
+// "em 06 fotos" → padrão da casa (Luiz, 10/10/2026), inclusive em laudo colado
+eq(S("A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem."),
+   "A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem.",
+   "remove 'em 06 fotos,' da frase de documentação");
+eq(S("A documentação fotográfica foi obtida em 12 fotos segundo protocolo internacional."),
+   "A documentação fotográfica foi obtida segundo protocolo internacional.",
+   "remove 'em N fotos' sem vírgula");
+eq(S("Foram obtidas 6 fotos do nódulo."),
+   "Foram obtidas 6 fotos do nódulo.",
+   "não mexe em 'fotos' fora da frase de documentação");
+
 // idempotência
 {
   const once = S("Você vai escrever nódulo, vírgula, sólido. tchau");

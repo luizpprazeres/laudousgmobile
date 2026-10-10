@@ -573,7 +573,7 @@ FORMATO:
 ULTRASSONOGRAFIA DAS PARTES MOLES {DA REGIÃO/DO/DA …} (com a região ditada; se o médico não disser a região: "ULTRASSONOGRAFIA DE PARTES MOLES")
 
 COMENTÁRIOS:
-Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação {das partes moles da região ditada / da região solicitada}. A documentação fotográfica foi obtida em 06 fotos, segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
+Exame realizado com transdutor linear de alta frequência, abrangendo a avaliação {das partes moles da região ditada / da região solicitada}. A documentação fotográfica foi obtida segundo protocolo internacional de Serviços de Imagem, que possuem várias metodologias.
 
 OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
 (descrição morfológica — uma lesão por parágrafo)

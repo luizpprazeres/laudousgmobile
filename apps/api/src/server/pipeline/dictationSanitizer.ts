@@ -74,9 +74,19 @@ export function stripMarkdownBold(laudo: string): string {
   return laudo.replace(/\*\*([^*\n]+?)\*\*/g, "$1").replace(/^\*\*\s*$/gm, "");
 }
 
+/**
+ * "A documentação fotográfica foi obtida em 06 fotos, segundo protocolo…" é redação
+ * antiga: o padrão da casa é "…foi obtida segundo protocolo…" (decisão do Luiz,
+ * 10/10/2026). Vale também para laudo colado.
+ */
+export function stripPhotoCount(laudo: string): string {
+  return laudo.replace(/\bobtida\s+em\s+\d{1,2}\s+fotos\s*,?\s+segundo\b/gi, "obtida segundo");
+}
+
 export function sanitizeDictationArtifacts(laudo: string): string {
   let s = laudo;
   s = stripMarkdownBold(s);
+  s = stripPhotoCount(s);
   s = fixSpokenPunctuation(s);
   s = stripLeadingCommands(s);
   s = stripItemLabels(s);

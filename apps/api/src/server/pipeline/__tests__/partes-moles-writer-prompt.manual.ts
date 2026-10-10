@@ -34,7 +34,7 @@ check("comandos são instruções (pode colocar/na verdade)", /pode colocar assi
 check("corrige garble sem ecoar", /NUNCA ecoe o garble/.test(p));
 check("não drope nada ditado", /NÃO drope NADA/.test(p));
 check("laudo colado → preservar", /COLAR um laudo já formatado/.test(p));
-check("estilo da conclusão da casa (diagnóstico mais provável)", /O diagnóstico mais provável é/.test(p));
+check("estilo da conclusão da casa (diagnóstico mais provável)", /que tem como diagnóstico mais provável/.test(p));
 check("numeração da conclusão 1) 2) 3)", /"1\) 2\) 3\)"/.test(p));
 
 // Few-shots: pares reais assinados carregados e no estilo da casa.
