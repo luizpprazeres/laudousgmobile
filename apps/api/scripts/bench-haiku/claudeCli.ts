@@ -7,7 +7,8 @@
  * passado aqui (~600 tokens de overhead; sem CLAUDE.md, memória, MCP ou skills).
  */
 import { spawn } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -32,7 +33,24 @@ export type ClaudeResult = {
   thinkingTokens: number;
 };
 
+/**
+ * Cache opcional em disco (BENCH_CACHE_DIR): mesma chamada (modelo, system, user, schema, effort) → mesma
+ * resposta. Serve para comparar duas versões do código com a MESMA saída do modelo onde o prompt não mudou
+ * (W15: base × branch nos renderers); prompt alterado = chave nova = chamada real.
+ */
 export async function callClaude(c: ClaudeCall): Promise<ClaudeResult> {
+  const dir = process.env.BENCH_CACHE_DIR;
+  if (!dir) return callClaudeCli(c);
+  const key = createHash("sha256").update(JSON.stringify([c.model, c.system, c.user, c.schema ?? null, c.effort ?? null])).digest("hex");
+  const file = join(dir, `${key}.json`);
+  if (existsSync(file)) return { ...(JSON.parse(readFileSync(file, "utf8")) as ClaudeResult), ms: 0 };
+  const r = await callClaudeCli(c);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(file, JSON.stringify(r));
+  return r;
+}
+
+async function callClaudeCli(c: ClaudeCall): Promise<ClaudeResult> {
   const args = [
     "-p",
     "--model", c.model,

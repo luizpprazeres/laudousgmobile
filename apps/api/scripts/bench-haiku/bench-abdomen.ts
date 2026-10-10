@@ -490,8 +490,12 @@ async function main() {
       .filter((line) => !line.includes("____"))
       .filter((line) => !/Breast Imaging Reporting|Domingos Correia da Rocha|American College of Radiology/i.test(line))
       .join("\n");
-  const universalGuards = (t: string) =>
-    flagImplausibleMeasures(stripInvalidDumLines(normalizeMeasures(sanitizeDictationArtifacts(t))));
+  const { ajustarComentarios } = await import("../../src/server/pipeline/tecnicaGuard");
+  // Como a rota: W15 (técnica por via/transdutor/contexto ditados) logo depois do sanitizador; flag TECNICA_GUARD.
+  const comTecnica = (t: string, cat?: string, ditado?: string) =>
+    cat && process.env.TECNICA_GUARD !== "false" ? ajustarComentarios(t, { categoria: cat, ditado }).texto : t;
+  const universalGuards = (t: string, cat?: string, ditado?: string) =>
+    flagImplausibleMeasures(stripInvalidDumLines(normalizeMeasures(comTecnica(sanitizeDictationArtifacts(t), cat, ditado))));
 
   const sql = postgres(process.env.DATABASE_URL!, { ssl: "require", max: 2 });
   const rows: Row[] = await sql`
@@ -648,7 +652,7 @@ async function main() {
       }
       // Como a rota: writer dedicado (passthrough) não recebe acréscimo do guard.
       text = applyCommandOperations(text, rawInput, { writer: passthrough });
-      return mode === "replay" ? { text: universalGuards(text) } : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text) });
+      return mode === "replay" ? { text: universalGuards(text) } : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, examOf(r).cat, rawInputCru) });
     });
   }
 
@@ -715,7 +719,7 @@ async function main() {
         text = dedupeConclusionItems(text);
       }
       if (cat === "MUSCULOESQUELETICO_V2") text = normalizeSectionSpacing(text);
-      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text) });
+      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, examOf(r).cat, rawInputCru) });
     });
   }
 
