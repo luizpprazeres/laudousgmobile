@@ -27,6 +27,11 @@ check("via: ASR 'abdominial e transvaginal' = ta_tv", viaDoDitado("Ultrassonogra
 check("via: 'pelve transvaginal' sem TA = tv (decisão 10)", viaDoDitado("Ultrassonografia da pelve transvaginal com útero em anteversão") === "tv");
 check("via: cervicometria transvaginal não é a via do exame", viaDoDitado("Morfológico. Cervicometria transvaginal 3,4 cm.") === null);
 check("via: 'colo uterino pela via transvaginal' não é a via", viaDoDitado("colo uterino avaliado pela via transvaginal medindo 3,1") === null);
+// Bancada W15F2: recomendação de outro exame e grafias do ASR não são a via do exame.
+check("via: recomendação 'realizar ultrassonografia da pelve transvaginal' não é a via", viaDoDitado("Obstétrica 18 semanas. Conclusão: a critério clínico, realizar ultrassonografia da pelve transvaginal com o objetivo de medir o coluterino.") === null);
+check("via: 'complementar com ultrassonografia transvaginal' não é a via", viaDoDitado("Morfológico normal. Convém, a critério clínico, complementar com ultrassonografia transvaginal.") === null);
+check("via: ASR 'serbicometria transvaginal' não é a via", viaDoDitado("placenta anterior, Interserbicometria transvaginal com distância de 3,5 cm") === null);
+check("via: 'realizar a técnica transvaginal' continua tv", viaDoDitado("Obstétrica inicial com a finalidade de realizar a técnica transvaginal") === "tv");
 check("via: 'circunferência abdominal' não é TA", viaDoDitado("circunferência abdominal 30,2") === null);
 check("via: 'sem transvaginal' não é TV", viaDoDitado("pelve transabdominal, sem transvaginal") === "ta");
 

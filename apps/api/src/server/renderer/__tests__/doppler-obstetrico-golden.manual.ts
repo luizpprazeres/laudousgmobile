@@ -237,5 +237,15 @@ const morfoBase = MorfologicoFindingsSchema.parse({
   );
 }
 
+{
+  // W15: técnica da casa (108/109 finais de Doppler), com cervicometria como complemento antes da documentação.
+  const casa = "COMENTÁRIOS:\nExame realizado com transdutor de 4.0 MHz. Foram realizados múltiplos cortes, abrangendo todo o abdome da gestante. Foi utilizado Doppler colorido para avaliação hemodinâmica fetal.";
+  const laudo = renderDopplerObstetrico(ISOLADO(DOPPLER_NORMAL));
+  check("W15 isolado: técnica da casa, sem a frase 'clássica'", laudo.includes(casa) && !/dispositivo de Doppler/.test(laudo), laudo.slice(0, 400));
+  const comColo = renderDopplerObstetrico({ ...ISOLADO(DOPPLER_NORMAL), cervicometria: { colo_oi_oe_cm: 3.4, orificio_interno_fechado: true, placenta_distancia_cm: null, placenta_distante: true, cerclagem: false, observacoes: null } });
+  check("W15 isolado com cervicometria: complemento antes da documentação",
+    comColo.includes("hemodinâmica fetal. Foi realizada avaliação complementar do colo uterino pela via transvaginal. A documentação fotográfica"), comColo.slice(0, 500));
+}
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

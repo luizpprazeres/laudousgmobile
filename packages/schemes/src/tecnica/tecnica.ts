@@ -124,9 +124,20 @@ const sem = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, 
 const RE_TA = /\btrans\s?-?a[bp]d[o]m(?:in\w*|en)\b|\bvia\s+(?:supra\s?pubica|abdominal)\b|\bsuprapubic\w*/;
 const RE_TA_COLADA = /\babdomin\w*\s*(?:,|e)?\s*(?:e\s+)?trans\s?-?vaginal/;
 const RE_TV = /\btrans\s?-?vaginal\b|\bendovaginal\b|\bvia\s+vaginal\b|\bendocavitari\w*/;
-// TV que não é a via do exame: cervicometria/colo pela via transvaginal, negação, comando de remoção.
-const RE_TV_NAO_EXAME =
-  /(?:cervicometria|colo(?:\s+uterino)?|medida\s+do\s+colo)[^.;\n]{0,60}(?:trans\s?-?vaginal|endovaginal|via\s+vaginal|endocavitari\w*)|(?:trans\s?-?vaginal|endovaginal)[^.;\n]{0,30}(?:cervicometria|colo)|(?:nao|sem|remov\w*|tir\w*)\s+(?:\w+\s+){0,3}(?:trans\s?-?vaginal|endovaginal)/g;
+// TV que não é a via do exame: cervicometria/colo pela via transvaginal (com as grafias do ASR: "serbicometria",
+// "coluterino"), recomendação de outro exame ("realizar/complementar com ultrassonografia … transvaginal"),
+// negação, comando de remoção.
+const CERVICO = "(?:[cs]er[vb]i\\w*?metria|colo\\b|coluterin\\w*|medida\\s+do\\s+colo)";
+const TV_PALAVRA = "(?:trans\\s?-?vaginal|endovaginal|via\\s+vaginal|endocavitari\\w*)";
+const RE_TV_NAO_EXAME = new RegExp(
+  [
+    `${CERVICO}[^.;\\n]{0,60}${TV_PALAVRA}`,
+    `${TV_PALAVRA}[^.;\\n]{0,30}${CERVICO}`,
+    `(?:realizar|complementa\\w*|convem|sugir\\w*|suger\\w*|recomend\\w*|solicit\\w*)\\s+(?:\\w+\\s+){0,2}(?:ultrass\\w*|usg|exame|avaliacao)\\s+(?:\\w+\\s+){0,3}${TV_PALAVRA}`,
+    `(?:nao|sem|remov\\w*|tir\\w*)\\s+(?:\\w+\\s+){0,3}(?:trans\\s?-?vaginal|endovaginal)`,
+  ].join("|"),
+  "g",
+);
 
 /**
  * Via do exame ditada, ou null se nada foi dito. "transvaginal" sozinho = TV; com transabdominal = TA+TV.
