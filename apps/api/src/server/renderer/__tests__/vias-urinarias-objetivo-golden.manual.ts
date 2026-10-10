@@ -242,7 +242,7 @@ const render = (f: ViasUrinariasFindings) =>
     F({ rim_direito: Rim({ achados: [Ach({ tipo: "nodulo", medidas_cm: [2.2, 2.0, 1.9], localizacao: "no polo inferior" })] }) }),
   );
   check("nódulo: linha separada imagem nodular sólida", /\nImagem nodular sólida, medindo 2,2 x 2,0 x 1,9 cm, situada no polo inferior\./.test(l), l);
-  check("nódulo: impressão 'a esclarecer'", /Imagem nodular sólida no rim direito, no polo inferior, a esclarecer\. Correlacionar com dados clínicos\./.test(l), l);
+  check("nódulo: impressão 'a esclarecer'", /Imagem nodular sólida no rim direito, no polo inferior, a esclarecer\.(?! Correlacionar)/.test(l) && !/correlac/i.test(l), l); // correlação só se ditada (10/10)
 }
 
 // ── Resíduo pós-miccional + volume pré-miccional ──

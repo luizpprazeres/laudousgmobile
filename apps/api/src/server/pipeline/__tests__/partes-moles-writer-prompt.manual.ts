@@ -51,5 +51,11 @@ check("few-shots: caso normal presente", PARTES_MOLES_FEWSHOTS.some((f) =>
 check("few-shots: medidas com vírgula decimal e 'x'", PARTES_MOLES_FEWSHOTS.some((f) =>
   f.laudo.includes("1,1 x 0,8 x 0,9 cm")));
 
+// A10 (decisão do Luiz, 10/10): "Correlacionar com dados clínicos" só quando ditado.
+const condicional = (p.match(/Correlacionar com dados clínicos\.[^\n]{0,40}/g) ?? []);
+check("A10: roteiro não traz 'Correlacionar' como frase fixa de conclusão", condicional.every((m) => /só quando ele ditar/.test(m)));
+check("A10: regra diz que só entra quando ditado, na redação do médico", /"Correlacionar com dados clínicos\." só quando ele ditar/.test(p) && /na redação do médico/.test(p));
+check("A10: few-shots só têm 'correlac' quando o ditado tem", PARTES_MOLES_FEWSHOTS.every((f) => !/correlac/i.test(f.laudo) || /correlac/i.test(f.raw)));
+
 console.log(`\n${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

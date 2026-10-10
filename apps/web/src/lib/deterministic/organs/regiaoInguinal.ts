@@ -134,7 +134,7 @@ function sideModule(lado: LadoInguinal): OrganModule {
         linhas.push(`Linfonodo inguinal à ${lado} de dimensões aumentadas, medindo ${dims ?? FALTANDO}, ${hilo}.`)
         if (!dims) pendencias.push(pendencia(`linfonodo inguinal à ${lado}`, ['medidas']))
         else conclusion.push(hiloAusente
-          ? `Linfonodo inguinal à ${lado} medindo ${dims}, sem hilo hiperecoico identificável. Correlacionar com dados clínicos.`
+          ? `Linfonodo inguinal à ${lado} medindo ${dims}, sem hilo hiperecoico identificável.`
           : `Linfonodo inguinal proeminente à ${lado}, medindo ${dims}, com hilo hiperecoico mantido.`)
       } else {
         linhas.push(`Linfonodos inguinais à ${lado} de morfologia preservada, com hilo hiperecoico mantido.`)

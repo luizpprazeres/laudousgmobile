@@ -127,7 +127,7 @@ function olhoModule(olho: Olho): OrganModule {
         naoAvaliados.push('nervo óptico')
       } else if (st.nervo === 'bainha_aumentada') {
         lines.push(`Nervo óptico com diâmetro da bainha aumentado, medindo ${bainha ?? `${LACUNA} mm`}.`)
-        conclusion.push(`Aumento do diâmetro da bainha do nervo óptico do ${nome} (${bainha ?? `${LACUNA} mm`}), achado que pode estar associado a hipertensão intracraniana. Correlacionar clinicamente.`)
+        conclusion.push(`Aumento do diâmetro da bainha do nervo óptico do ${nome} (${bainha ?? `${LACUNA} mm`}), achado que pode estar associado a hipertensão intracraniana.`)
       } else if (bainhaValor !== null && !Number.isNaN(bainhaValor) && bainhaValor > BAINHA_LIMITE_MM) {
         // Medida acima do limite com "Habitual" marcado: não afirma normalidade nem diagnostica.
         lines.push(`Nervo óptico com diâmetro da bainha de ${ptBr(bainhaValor)} mm.`)

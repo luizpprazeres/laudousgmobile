@@ -34,6 +34,7 @@ import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
 import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
 import { aplicarLexico, entradasDesligadas, lexicoAtivo } from "@/server/pipeline/lexicoDaCasa";
+import { aplicarCorrelacaoDitada } from "@/server/pipeline/correlacaoClinica";
 import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
 import {
   normalizeDumFormat,
@@ -1435,6 +1436,15 @@ export async function POST(req: Request) {
           reqInput.consolidated_transcript ?? reqInput.raw_input,
           { writer: writerResult?.passthrough === true },
         );
+        // "Calcule o volume" (decisão de 10/10): no writer dedicado a conta é do código,
+        // como no writer completo; sem pedido nada muda (o prompt já proíbe volume não ditado).
+        if (writerResult?.passthrough === true) {
+          finalText = applyVolumePolicy(
+            finalText,
+            reqInput.consolidated_transcript ?? reqInput.raw_input,
+            { soPedido: true },
+          );
+        }
       }
       // Guard de sanitização (universal): remove artefatos de ditado/ASR que
       // vazaram para o texto clínico — "vírgula" falada, "Você vai escrever ...",
@@ -1471,6 +1481,14 @@ export async function POST(req: Request) {
       // improváveis (CCN 0,1mm, resíduo 1019ml, dimensão 0,0cm) sem bloquear nem
       // alterar o valor — o médico revisa. (Boletim 2026-06-17.)
       finalText = flagImplausibleMeasures(finalText);
+      // "Correlacionar com dados clínicos" só quando ditado (decisão de 10/10), em todo caminho:
+      // tira a correlação genérica não ditada e garante a ditada, na redação do médico.
+      if (env().CORRELACAO_SO_DITADA !== "false") {
+        finalText = aplicarCorrelacaoDitada(
+          finalText,
+          reqInput.consolidated_transcript ?? reqInput.raw_input,
+        );
+      }
       }
       // W11: léxico da casa na camada da saída — o que a IA escreve fora da grafia da casa
       // ("hiperecogênico", "4º compartimento"…). Flag LEXICO_SAIDA_CATEGORIES.

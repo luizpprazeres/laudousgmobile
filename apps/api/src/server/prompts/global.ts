@@ -313,6 +313,14 @@ export const OBSTETRIC_GLOBAL_FAMILY = new Set([
   "CERVICOMETRIA",
 ]);
 
+/**
+ * "Calcule o volume" (decisão do Luiz de 10/10/2026, rodada 2) — uma regra só, no global
+ * enxuto (writer completo) e nos writers dedicados. A conta final é do código
+ * (`applyVolumePolicy`); a regra garante o pedido certo, o lugar e o formato que o guard lê.
+ * A família obstétrica segue com o bloco antigo, intocado.
+ */
+export const VOLUME_CALCULO_RULE = `- Volume: use o ditado, sem recalcular. Só calcule quando o médico pedir ("calcule o volume" ou semelhante), da estrutura com os 3 eixos ditados: C x L x AP x 0,52 (elipsoide), em cm³ (ou na unidade que o modelo já usa para ela), com uma casa decimal, logo após as medidas — ex.: "medindo 3,0 x 2,0 x 1,5 cm (volume de 4,7 cm³)". Sem pedido, sem os 3 eixos ou com o volume já ditado, não calcule nem acrescente volume.`;
+
 export const GLOBAL_RULES_LEAN = `REGRAS DA CASA (valem para todo laudo):
 
 COMANDOS DO MÉDICO (precedência máxima):
@@ -328,7 +336,8 @@ FIDELIDADE:
 - Não invente achado, medida, grau ou qualificador não ditado ("leve", "acentuado", "volumoso", "simples"), limitação técnica (gases, visualização parcial) nem calcule classificação (BI-RADS, TI-RADS, O-RADS, Domingos, FIGO). Classificação ditada é reproduzida exatamente; sem classificação ditada, ela só entra quando o contrato da categoria a determinar; senão, omita.
 - Preserve o termo do médico (cálculo × concreção × litíase; imagem cística × cisto simples; parcialmente × não visualizado).
 - Medida de achado ditado sem o valor: "____" no lugar do número. Linha de medida do modelo sem valor ditado: omita a linha. Nunca "X.X", "0,0" nem valor inventado.
-- Vírgula claramente deslocada (ex.: rim de 95 cm) ou número truncado pela transcrição ("ponto cinco"): reproduza como falado e marque "[REVISAR — magnitude]" ou "[REVISAR — medida ambígua]"; nunca corrija nem calcule em cima dele. Medida pequena ou grande mas possível (recém-nascido, criança, órgão reduzido, bexiga quase vazia) é escrita sem marca. Volume: use o ditado; só calcule se o médico pedir.
+- Vírgula claramente deslocada (ex.: rim de 95 cm) ou número truncado pela transcrição ("ponto cinco"): reproduza como falado e marque "[REVISAR — magnitude]" ou "[REVISAR — medida ambígua]"; nunca corrija nem calcule em cima dele. Medida pequena ou grande mas possível (recém-nascido, criança, órgão reduzido, bexiga quase vazia) é escrita sem marca.
+${VOLUME_CALCULO_RULE}
 - Ruído da transcrição (palavra sem sentido clínico, frase interrompida) é ignorado sem comentário; termo deformado com sentido óbvio é corrigido ("eritíase renal" → "litíase renal").
 
 CORPO DESCRITIVO, CONCLUSÃO DIAGNÓSTICA (regra da casa, inegociável):
@@ -340,7 +349,7 @@ CONCLUSÃO:
 - Só achados do corpo, um por item, em frase curta; estrutura normal não vira item, salvo quando o modelo da categoria traz a conclusão por estrutura.
 - Na CONCLUSÃO, hipóteses diagnósticas seguem o padrão da casa: "que tem como diagnóstico mais provável [X]". NÃO use "compatível com", "sugestivo de" ou "achados em concordância com" para hipóteses. Diagnóstico explicitamente afirmado pelo médico permanece direto (ex.: "Cisto simples no rim direito."). Não transforme hipótese em diagnóstico definitivo.
 - Item único sem número; vários itens numerados "1) ", "2) "… (salvo numeração própria da categoria).
-- Conduta, acompanhamento ou recomendação só quando o médico ditar, respeitando a redação dele, no formato da casa "Convém, a critério clínico, [conduta], com objetivo de [finalidade]."
+- Conduta, acompanhamento, recomendação ou "correlacionar com dados clínicos" só quando o médico ditar, respeitando a redação dele, no formato da casa "Convém, a critério clínico, [conduta], com objetivo de [finalidade]."
 
 FORMATO (texto puro):
 - Entregue só o laudo: sem markdown, bullets, rótulos ("Fígado:"), comentários ou explicações. Colchetes só para "[REVISAR — magnitude]", "[REVISAR — medida ambígua]", "[REVISAR — divergência com calculadora]" e "[REVISAR — lado não ditado]" (achado de órgão par sem lado); nunca notas ao médico sobre o exame escolhido, a transcrição ou o ditado.

@@ -334,3 +334,28 @@ achado 6/6. "2 9" sem unidade nenhuma saiu sem marca 1 vez em 6 (resolvido como 
 Tamanho do system da mama: 11.182 → 11.326 caracteres (+144, +1,3%).
 Testes: `w10c-mama-tireoide.manual.ts` 26/26 (4 novos do VT); mama golden, 23C2, BI-RADS guard, tireoide 23c1, objetivo golden,
 pico-null, W7 e typecheck verdes. Rodadas locais: `tmp-review/bench-haiku/w10c/decisoes/`.
+
+## VOLUME — "Calcule o volume" ditado na tireoide (decisões do Luiz, rodada 2)
+
+Branch `fix/tireoide-calcule-volume` (base a0d2dd24), PROMPT_VERSION v1.13. O writer completo e os writers dedicados ficam com a
+W10b (`feat/volume-calcule`: global, `volumeGuard.ts`); a W10c não toca nesses arquivos. A regra do renderer foi combinada com
+a W10b (0,52, uma casa).
+
+- **Pedido lido do ditado, no código** (`pedeCalculoDeVolume`, `renderer/categories/TIREOIDE.ts`): "calcule/calcular/calcula o
+  volume", "calcule os volumes", "volume calculado", "cálculo do volume"; "não calcule" e "sem calcular" não contam. O extrator
+  não decide: um falso positivo do modelo não pode inventar volume. O pipeline passa `rawInput` ao `renderTireoide`.
+- **Com o pedido**: lobo ou istmo com os 3 eixos e sem volume ditado recebe C x L x AP x 0,52 (ml, uma casa decimal), que entra
+  no VT = lobos + istmo. Volume ditado nunca é recalculado; volume devolvido pelo extrator que não aparece escrito no ditado é
+  tratado como não ditado (recalculado, ou descartado sem os 3 eixos).
+- **Sem o pedido**: nada muda ("____" como antes). Extrator: `volume_ml` null se não ditado, mesmo com o pedido. Contrato do
+  writer da tireoide (4.1) documenta a fórmula para o caso de fallback.
+
+Testes: `tireoide-calcule-volume.manual.ts` 13/13 — detector (7 variações positivas; sem pedido, negação, "volume de",
+"calcificações", vazio); positivos (exemplo da decisão: istmo 0,1 ml e VT 6,5; lobo sem volume; estilo objetivo; volume do
+extrator fora do ditado refeito); negativos (sem pedido, sem ditado, "não calcule", volume ditado não trocado, eixos
+incompletos, volume inventado descartado). Tireoide 23c1/objetivo golden/pico-null, W10c, mama golden, W7 e typecheck verdes.
+
+Haiku de ponta a ponta (bancada com `BENCH_DITADO_SUFIXO=", calcule o volume."`, 4 laudos reais x 2 repetições): 42fbb3eb
+(istmo medido sem volume) → istmo 0,1 ml e VT 6,5 ml, igual ao final do médico; 2ff5fa67, c2678ee0 e 84cd3b13 (todos os
+volumes ditados) → volumes e VT intactos, iguais ao final. 8/8. Nos 20 ditados reais de tireoide (90 dias) o detector não
+dispara nenhuma vez. Rodadas: `tmp-review/bench-haiku/w10c/volume/`.

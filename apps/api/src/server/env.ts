@@ -61,6 +61,9 @@ const ServerEnvSchema = z.object({
   LEXICO_DITADO_CATEGORIES: z.string().optional(),
   LEXICO_SAIDA_CATEGORIES: z.string().optional(),
   LEXICO_DESLIGADAS: z.string().optional(),
+  // "Correlacionar com dados clínicos" só quando ditado (decisão do Luiz de 10/10): ligado por padrão em
+  // todos os caminhos do /api/generate; "false" desliga o guard (rollback sem deploy).
+  CORRELACAO_SO_DITADA: z.string().default("true"),
   // W15 — ajuste da seção COMENTÁRIOS (pipeline/tecnicaGuard.ts): via/transdutor/contexto ditados e
   // documentação unificada. Ligado por padrão; "false" desliga (rollback).
   TECNICA_GUARD: z.string().optional(),

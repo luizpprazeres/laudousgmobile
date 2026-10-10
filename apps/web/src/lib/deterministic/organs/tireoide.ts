@@ -135,11 +135,11 @@ const TIREOIDITE_CONCLUSAO: Record<Exclude<TireoiditeTipo, 'nenhuma'>, string> =
   hashimoto:
     'Aspecto ecográfico sugestivo de tireoidite crônica autoimune (Hashimoto). Sugere-se correlação com a dosagem de anticorpos antitireoidianos (anti-TPO e anti-tireoglobulina)',
   linfocitica:
-    'Achados sugestivos de tireoidite linfocítica. Correlacionar com dados clínicos e laboratoriais',
+    'Achados sugestivos de tireoidite linfocítica',
   granulomatosa:
-    'Achados que podem corresponder a tireoidite subaguda granulomatosa (De Quervain), sobretudo em contexto de dor cervical. Correlacionar clinicamente',
+    'Achados que podem corresponder a tireoidite subaguda granulomatosa (De Quervain), sobretudo em contexto de dor cervical',
   riedel:
-    'Achados que podem corresponder a tireoidite de Riedel (fibrosante). Correlacionar clinicamente',
+    'Achados que podem corresponder a tireoidite de Riedel (fibrosante)',
 }
 
 export const ECOGENICIDADES: { value: string; label: string }[] = [

@@ -60,7 +60,7 @@ Tipos de descritores: ecogenicidade (anecoica, hipoecoica, isoecoica, heterogên
 4) CONCLUSÃO
 
 4.1. VOLUME TOTAL
-Somar volumes dos dois lobos e istmo e apresentar no item 1 (exceção aprovada à regra geral de só calcular volume se o médico pedir: o VT da tireoide é sempre somado, com o istmo; volume de lobo ou istmo não ditado = ____, nunca estimado pelas medidas):
+Somar volumes dos dois lobos e istmo e apresentar no item 1 (exceção aprovada à regra geral de só calcular volume se o médico pedir: o VT da tireoide é sempre somado, com o istmo; volume de lobo ou istmo não ditado = ____, nunca estimado pelas medidas, salvo "calcule o volume" ditado: C x L x AP x 0,52, uma casa decimal, somado ao VT):
 "Tireoide de volume normal (VT ml)."
 Em casos normais: "Tireoide de volume normal (VT ml), sem evidência de alteração ecotextural ou de imagem nodular."
 

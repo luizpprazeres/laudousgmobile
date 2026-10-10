@@ -108,6 +108,9 @@ export const PartesMolesFindingsSchema = z.object({
   regiao: z.string().nullable(), // região solicitada (entra no COMENTÁRIOS quando ditada)
   lesoes: z.array(LesaoSchema),
   achados_adicionais: z.string().nullable(),
+  // A10 (decisão do Luiz, 10/10): conduta/recomendação SÓ quando ditada, na redação do
+  // médico (ex.: "Correlacionar com dados clínicos."). Opcional para extrações antigas.
+  conduta: z.string().nullable().optional(),
 });
 
 export type PartesMolesFindings = z.infer<typeof PartesMolesFindingsSchema>;
@@ -165,11 +168,12 @@ const LESAO_JSON = {
 export const PARTES_MOLES_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["regiao", "lesoes", "achados_adicionais"],
+  required: ["regiao", "lesoes", "achados_adicionais", "conduta"],
   properties: {
     regiao: str,
     lesoes: { type: "array", items: LESAO_JSON },
     achados_adicionais: str,
+    conduta: str,
   },
 } as const;
 
@@ -216,7 +220,10 @@ REGRAS:
      ("gordura"/"alça intestinal"), reducao ("redutível"/"irredutível à
      compressão"), tipo_hernia ("incisional"/"epigástrica"/"umbilical").
 6. achados_adicionais: SOMENTE alterações reais fora do padrão acima; null se
-   não houver.`;
+   não houver.
+7. conduta: conduta ou recomendação que o médico DITOU para a conclusão
+   ("correlacionar com dados clínicos", "convém, a critério clínico, …"), na
+   redação dele, como frase; null se não ditou. Nunca crie conduta.`;
 
 // ---------------------------------------------------------------------------
 // Helpers de formatação
@@ -363,19 +370,19 @@ function concluiLesao(les: PartesMolesLesao): string {
   const loc = les.localizacao ? ` ${limpa(les.localizacao)}` : " na região avaliada";
   switch (les.tipo) {
     case "nodulo_solido":
-      return `Imagem nodular sólida${loc}, a esclarecer. Correlacionar com dados clínicos.`;
+      return `Imagem nodular sólida${loc}, a esclarecer.`;
     case "lipoma":
       return `Imagem${loc} que tem como diagnóstico mais provável lipoma.`;
     case "cisto":
-      return `Imagem cística${loc}, que tem como diagnóstico mais provável cisto de inclusão epidérmica. Correlacionar com dados clínicos.`;
+      return `Imagem cística${loc}, que tem como diagnóstico mais provável cisto de inclusão epidérmica.`;
     case "colecao": {
       if (les.natureza_colecao && les.natureza_colecao.trim() !== "") {
-        return `Coleção${loc}, que tem como diagnóstico mais provável ${limpa(les.natureza_colecao)}. Correlacionar com dados clínicos.`;
+        return `Coleção${loc}, que tem como diagnóstico mais provável ${limpa(les.natureza_colecao)}.`;
       }
-      return `Coleção${loc}, a esclarecer. Correlacionar com dados clínicos.`;
+      return `Coleção${loc}, a esclarecer.`;
     }
     case "linfonodo":
-      return `Linfonodo${loc}. Correlacionar com dados clínicos.`;
+      return `Linfonodo${loc}.`;
     case "corpo_estranho":
       return `Imagem${loc} que tem como diagnóstico mais provável corpo estranho.`;
     case "hernia": {
@@ -385,6 +392,17 @@ function concluiLesao(les: PartesMolesLesao): string {
     default:
       return "";
   }
+}
+
+/**
+ * A10: conduta só quando ditada, como parágrafo final da conclusão (como no laudo
+ * assinado do palato duro). Frase do médico, com maiúscula inicial e ponto final.
+ */
+function condutaDitada(f: PartesMolesFindings): string | null {
+  const c = f.conduta?.trim();
+  if (!c) return null;
+  const frase = c.charAt(0).toUpperCase() + c.slice(1);
+  return /[.!?]$/.test(frase) ? frase : `${frase}.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -443,6 +461,8 @@ function renderPartesMolesClassico(f: PartesMolesFindings): string {
   } else {
     conclusaoTxt = conclusaoItens.map((it, i) => `${i + 1}. ${it}`).join("\n");
   }
+  const conduta = condutaDitada(f);
+  if (conduta) conclusaoTxt += `\n\n${conduta}`;
 
   const corpo = [
     TITULO,
@@ -516,6 +536,8 @@ function renderPartesMolesObjetivo(f: PartesMolesFindings): string {
   } else {
     impressaoTxt = impressaoItens.map((it, i) => `${i + 1}. ${it}`).join("\n");
   }
+  const condutaObj = condutaDitada(f);
+  if (condutaObj) impressaoTxt += `\n\n${condutaObj}`;
 
   const corpo = [
     TITULO,
@@ -553,9 +575,9 @@ Não há evidência de coleção, massa ou alteração focal.
 (CONCLUSÃO:) Ausência de alterações detectáveis pelo método.
 
 COMO DESCREVER CADA TIPO DE LESÃO (corpo = morfologia; conclusão = interpretação):
-- Nódulo/massa sólida → corpo: "Imagem nodular sólida, {ecogenicidade}, de contornos {regulares/irregulares}, medindo {A} x {B} x {C} cm, localizada {plano/região}" (+ ", {com/sem} fluxo ao Doppler colorido" SÓ se o médico avaliou o Doppler/vascularização) · conclusão: "Imagem nodular sólida {região}, a esclarecer. Correlacionar com dados clínicos." (ou "Imagem que tem como diagnóstico mais provável lipoma" quando hiperecoico/isoecoico, homogêneo, compressível)
-- Cisto/coleção → corpo: "Imagem cística/Coleção {anecoica/com ecos internos/septada}, de paredes {finas/espessas} e contornos {…}, medindo {A} x {B} x {C} cm, localizada {…}." · conclusão: "Coleção {região}, que tem como diagnóstico mais provável {abscesso/hematoma/cisto de inclusão epidérmica/higroma}. Correlacionar com dados clínicos." — a natureza SÓ quando o médico a disser; senão "a esclarecer".
-- Linfonodo → corpo: características e medida · conclusão: "Linfonodo {região}. Correlacionar com dados clínicos."
+- Nódulo/massa sólida → corpo: "Imagem nodular sólida, {ecogenicidade}, de contornos {regulares/irregulares}, medindo {A} x {B} x {C} cm, localizada {plano/região}" (+ ", {com/sem} fluxo ao Doppler colorido" SÓ se o médico avaliou o Doppler/vascularização) · conclusão: "Imagem nodular sólida {região}, a esclarecer." (ou "Imagem que tem como diagnóstico mais provável lipoma" quando hiperecoico/isoecoico, homogêneo, compressível)
+- Cisto/coleção → corpo: "Imagem cística/Coleção {anecoica/com ecos internos/septada}, de paredes {finas/espessas} e contornos {…}, medindo {A} x {B} x {C} cm, localizada {…}." · conclusão: "Coleção {região}, que tem como diagnóstico mais provável {abscesso/hematoma/cisto de inclusão epidérmica/higroma}." — a natureza SÓ quando o médico a disser; senão "a esclarecer".
+- Linfonodo → corpo: características e medida · conclusão: "Linfonodo {região}."
 - Corpo estranho → corpo: "Imagem linear hiperecoica com reverberação posterior, medindo aproximadamente {C} cm, localizada {…}." · conclusão: "Imagem {região} que tem como diagnóstico mais provável corpo estranho."
 - Hérnia → corpo: "Solução de continuidade na {aponeurose/fáscia} {região}, medindo {C} cm, com herniação de {gordura/alça intestinal}, {redutível/irredutível} à compressão." · conclusão: "Hérnia {incisional/epigástrica/umbilical} {região}."
 - Detalhes que o médico ditar além do catálogo (distância do centro à pele, comunicação com plano ósseo/pele, volume entre parênteses, vascularização periférica…) ENTRAM no corpo, na redação dele.`;
@@ -591,7 +613,7 @@ REGRAS:
 2. Se o médico ditar SÓ o diagnóstico (ex.: "lipoma no dorso"), escreva no corpo a morfologia ecográfica típica desse diagnóstico (SEM inventar medida) e o diagnóstico na conclusão.
 3. Descreva APENAS o que o médico examinou/ditou. NÃO cite tendões, articulações, órgãos ou estruturas que ele não mencionou (partes moles não é exame musculoesquelético). Sem lesão ditada → exame normal do roteiro.
 4. Preserve TODA medida, distância, volume e lateralidade ditados, exatamente, com vírgula decimal e "x" entre eixos (ex.: 1,1 x 0,8 x 0,9 cm). Nunca invente medida; nunca escreva "____". Se o médico NÃO mencionou Doppler/fluxo/vascularização, o laudo NÃO menciona (nem "sem fluxo" — omita a frase).
-5. Estilo da conclusão da casa: "Imagem de aspecto inespecífico que tem como diagnóstico mais provável {X}." quando o médico indicar o diagnóstico provável; conduta apenas se ditada ("Convém, a critério clínico, …" / "Convém correlação com os achados clínicos…").
+5. Estilo da conclusão da casa: "Imagem de aspecto inespecífico que tem como diagnóstico mais provável {X}." quando o médico indicar o diagnóstico provável; conduta apenas se ditada, na redação do médico ("Convém, a critério clínico, …"; "Correlacionar com dados clínicos." só quando ele ditar), em parágrafo próprio no fim da conclusão.
 6. Corrija garble ÓBVIO de transcrição (ex.: "Prefiro as partes moles"→"Partes moles", "supra pública"→"suprapúbica", "listando 1.1 do seu centro"→"distando 1,1 cm do seu centro", "b delimitada"→"bem delimitada"), só o inequívoco. NUNCA ecoe o garble (não escreva o termo errado entre parênteses).
 7. Comandos ditados são INSTRUÇÕES, execute-os e NUNCA os transcreva literalmente: "pode colocar assim" (substitua pelo que segue), "na verdade"/"quer dizer" (correção — use a última versão, descarte a anterior), "na conclusão Y" (Y vai na conclusão), "vírgula"/"ponto"/"entre parênteses" ditados viram pontuação.
 8. NÃO invente achados. NÃO drope NADA que o médico ditou (todo achado, medida e conduta ditados entram no laudo). Se o médico COLAR um laudo já formatado, preserve o texto dele quase idêntico (só padronize cabeçalhos e numeração da conclusão).

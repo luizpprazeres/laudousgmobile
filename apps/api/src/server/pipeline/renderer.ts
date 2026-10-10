@@ -812,6 +812,8 @@ export async function* runRendererStream(args: {
           objetivo,
           // Gap #4 (flag TIREOIDE_PICO_OMIT): omitir linha de pico sem valor ditado.
           omitPicoNull: env().TIREOIDE_PICO_OMIT === "true",
+          // "Calcule o volume" ditado: o pedido é lido do ditado (decisão do Luiz, 10/10).
+          rawInput: args.rawInput,
         });
         break;
       case "MAMARIA":

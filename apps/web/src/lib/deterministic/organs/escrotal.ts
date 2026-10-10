@@ -83,7 +83,7 @@ function epididimo(st: OrganState, lado: Lado, linhas: string[], conclusion: str
   if (estado === 'aumentado') {
     const hiper = marcado(st, 'epididimo.aumentado.hipervascular', 'sim')
     linhas.push(`Epidídimo ${lado} de dimensões aumentadas e ecotextura heterogênea${hiper ? ', com aumento da vascularização ao Doppler colorido' : ''}.`)
-    conclusion.push(`Epidídimo ${lado} aumentado${hiper ? ' e hipervascularizado' : ''}. Correlacionar com dados clínicos.`)
+    conclusion.push(`Epidídimo ${lado} aumentado${hiper ? ' e hipervascularizado' : ''}.`)
     return
   }
   linhas.push(`Cabeça do epidídimo ${lado} apresentando contornos regulares e ecotextura homogênea.`)
@@ -128,7 +128,7 @@ function hidrocele(st: OrganState, lado: Lado, linhas: string[], conclusion: str
     ? `Coleção líquida entre os folhetos da túnica vaginal à ${FEM[lado]}, com septações e/ou ecos em suspensão.`
     : `Imagens anecoicas entre os folhetos da túnica vaginal à ${FEM[lado]}, envolvendo o testículo, sem septações.`)
   conclusion.push(complexa
-    ? `Hidrocele complexa à ${FEM[lado]}${volume ? `, ${volume}` : ''}. Correlacionar com dados clínicos.`
+    ? `Hidrocele complexa à ${FEM[lado]}${volume ? `, ${volume}` : ''}.`
     : `Hidrocele à ${FEM[lado]}${volume ? `, ${volume}` : ''}.`)
 }
 

@@ -65,7 +65,7 @@ NÃO INVENTAR
 
 - NÃO afirmar "linfonodo metastático" ou "linfomatoso" — usar APENAS "características ecográficas suspeitas".
 - NÃO sugerir tipo histológico ("provável carcinoma papilar", "linfoma") sem dado clínico/histológico.
-- A recomendação segue as frases dos cenários (correlação clínica; TC cervical ou biópsia por agulha fina quando aplicável). NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).
+- Recomendação (TC cervical ou biópsia por agulha fina; correlação clínica) só quando o médico ditar, na redação dele. NÃO inventar outras condutas (ex.: exérese, esvaziamento cervical).
 - NÃO estimar grau de risco em porcentagem.
 
 ═══════════════════════════════════════════════════
@@ -73,4 +73,4 @@ LIMITAÇÃO DIAGNÓSTICA — DECLARAR
 ═══════════════════════════════════════════════════
 
 Sempre incluir no escopo da conclusão (frase obrigatória):
-"O diagnóstico definitivo requer correlação clínica e, quando indicado, confirmação histopatológica."
+"O diagnóstico definitivo requer correlação clínica e, quando indicado, confirmação histopatológica." — só quando o médico ditar, na redação dele.

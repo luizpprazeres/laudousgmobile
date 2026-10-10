@@ -25,13 +25,13 @@ Achados que devem vir acompanhados de recomendação clínica explícita:
    "Achados sugerem obstrução infravesical — convém avaliação urológica."
 
 4. **Suspeita de prostatite aguda**:
-   "Convém, a critério clínico, correlacionar com quadro clínico-laboratorial."
+   "Convém, a critério clínico, correlacionar com quadro clínico-laboratorial." — só quando o médico ditar, na redação dele.
 
 5. **Abscesso prostático** (coleção intra-prostática com debris):
    "Encaminhamento urológico em caráter de urgência."
 
 6. **Calcificações prostáticas isoladas** (paciente assintomático):
-   "Achado de provável relevância clínica reduzida — correlacionar com queixa clínica."
+   "Achado de provável relevância clínica reduzida — correlacionar com queixa clínica." — só quando o médico ditar, na redação dele.
 
 7. **Resíduo > 200 mL**:
    "Convém, a critério clínico, correlacionar com sintomas obstrutivos e avaliação urológica."

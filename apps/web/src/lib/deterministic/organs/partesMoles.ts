@@ -126,7 +126,7 @@ const lesaoModule: OrganModule = {
         partes.push(`medindo ${medidas3(g('medidas'))}`, planoLocal(st, p))
         if (doppler) partes.push(doppler)
         body = `${partes.join(', ')}.`
-        conclusion = `Imagem nodular sólida${locConcl}, a esclarecer. Correlacionar com dados clínicos.`
+        conclusion = `Imagem nodular sólida${locConcl}, a esclarecer.`
         break
       }
       case 'lipoma': {
@@ -143,7 +143,7 @@ const lesaoModule: OrganModule = {
         if (g('paredes')) partes.push(limpa(String(g('paredes'))))
         partes.push(`medindo ${medidas3(g('medidas'))}`, planoLocal(st, p))
         body = `${partes.join(', ')}.`
-        conclusion = `Imagem cística${locConcl}, podendo corresponder a cisto de inclusão epidérmica. Correlacionar com dados clínicos.`
+        conclusion = `Imagem cística${locConcl}, podendo corresponder a cisto de inclusão epidérmica.`
         break
       }
       case 'colecao': {
@@ -153,8 +153,8 @@ const lesaoModule: OrganModule = {
         body = `${partes.join(', ')}.`
         const nat = limpa(String(g('natureza') ?? ''))
         conclusion = nat
-          ? `Coleção${locConcl}, podendo corresponder a ${nat}. Correlacionar com dados clínicos.`
-          : `Coleção${locConcl}, a esclarecer. Correlacionar com dados clínicos.`
+          ? `Coleção${locConcl}, podendo corresponder a ${nat}.`
+          : `Coleção${locConcl}, a esclarecer.`
         break
       }
       case 'linfonodo': {
@@ -164,7 +164,7 @@ const lesaoModule: OrganModule = {
         partes.push(`medindo ${medidas3(g('medidas'))}`, `situado ${planoLocal(st, p).replace(/^localizada /, '')}`)
         if (doppler) partes.push(doppler)
         body = `${partes.join(', ')}.`
-        conclusion = `Linfonodo${locConcl}. Correlacionar com dados clínicos.`
+        conclusion = `Linfonodo${locConcl}.`
         break
       }
       case 'corpo_estranho': {

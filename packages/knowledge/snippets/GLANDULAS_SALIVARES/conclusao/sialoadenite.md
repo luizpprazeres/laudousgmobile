@@ -53,7 +53,7 @@ CENÁRIO 2 — Sialoadenite obstrutiva por cálculo:
 CENÁRIO 3 — Sialoadenite crônica (padrão heterogêneo difuso):
 "X) Glândulas [parotídeas / submandibulares] com ecotextura heterogênea, apresentando múltiplas áreas hipoecoicas pseudocísticas difusamente distribuídas, com dimensões preservadas/reduzidas. Achados ecográficos compatíveis com sialoadenite crônica."
 
-"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica."
+"X) Convém, a critério clínico, complementar com correlação clínica para definição etiológica." — só quando o médico ditar, na redação dele.
 
 ATENÇÃO — quando incluir hipótese de Sjögren ou solicitar laboratoriais:
 SOMENTE quando o médico mencionar EXPLICITAMENTE no contexto clínico (ex: queixa de xerostomia/xeroftalmia documentada, suspeita clínica prévia, paciente já em investigação reumatológica). Nestes casos, complementar a conclusão com:

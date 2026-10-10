@@ -605,7 +605,7 @@ function concluiAchado(ach: ViasUrinariasAchado, lado: string): string {
       return `Cisto no rim ${ladoConcl} ${carac}de aspecto inespecífico.`;
     }
     case "nodulo":
-      return `Imagem nodular sólida no rim ${ladoConcl}${loc}, a esclarecer. Correlacionar com dados clínicos.`;
+      return `Imagem nodular sólida no rim ${ladoConcl}${loc}, a esclarecer.`;
     case "ectasia":
       return `Ectasia pielocalicial no rim ${ladoConcl}${loc}.`;
     case "cistos_multiplos":

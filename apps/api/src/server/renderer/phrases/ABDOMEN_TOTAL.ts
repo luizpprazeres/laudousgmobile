@@ -239,12 +239,9 @@ function renderVesicula(state: AbdomenOrganState): OrganRender {
   if (paredeEspessada) {
     const esp = medidasOpcionais(paredeEspessada.medidas_cm, ", medindo ");
     prefixo = `Vesícula biliar de topografia usual, com parede espessada${esp}`;
-    const suspeitaAguda = /agud|inflamat/i.test(paredeEspessada.termo_do_medico ?? "");
-    out.conclusao.push(
-      suspeitaAguda
-        ? "Espessamento da parede da vesícula biliar, a correlacionar com os demais critérios clínicos e laboratoriais de colecistite aguda."
-        : "Espessamento da parede da vesícula biliar.",
-    );
+    // "Correlacionar com dados clínicos" só quando ditado (decisão de 10/10): a suspeita aguda
+    // ditada fica no termo do médico; a correlação clínica automática saiu.
+    out.conclusao.push("Espessamento da parede da vesícula biliar.");
   } else if (contraida) {
     prefixo = "Vesícula biliar contraída, com avaliação do conteúdo parcialmente prejudicada";
     out.conclusao.push("Vesícula biliar contraída, com avaliação do conteúdo parcialmente prejudicada.");

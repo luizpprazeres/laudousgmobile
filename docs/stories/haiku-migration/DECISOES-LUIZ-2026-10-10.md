@@ -49,4 +49,10 @@ Fonte: resposta do Luiz ao consolidado de pendências. Cada item tem dono (frent
   lobos para o volume total. Exemplo: "lobo direito medindo X x Y x Z com volume de V1, lobo esquerdo … com volume de V2, istmo
   medindo A x B x C, calcule o volume" → volume do istmo calculado + VT = V1 + V2 + istmo. Sem o pedido e sem volume ditado, nada
   é inventado (fica como hoje). O caso 42fbb3eb foi esquecimento do volume do istmo, não defeito.
-- **"Correlacionar com dados clínicos" (partes moles)**: ainda sem resposta — fica como está (automático).
+- **"Correlacionar com dados clínicos" (partes moles, A10)**: **só quando o médico ditar** — sai do catálogo (`PARTES_MOLES.ts`: renderer, roteiro do prompt e few-shots) quando não ditado (W10b).
+- **"Correlacionar com dados clínicos" em TODAS as categorias e superfícies** (renderers da API, catálogo, prompts/few-shots, web
+  `apps/web`, shared/snippets, Biblioteca no banco): **só quando o médico ditar**, na redação dele (W10b; SQL da Biblioteca só como
+  proposta com guardas, o orquestrador aplica).
+- **Condutas específicas ligadas a uma alteração** ("correlacionar com as dosagens de TSH / cálcio e PTH / PSA / FSH e LH",
+  "marcadores tumorais", "avaliação urológica"…): **continuam automáticas** conforme o modelo da alteração, mesmo sem ditado. Só a
+  frase genérica "Correlacionar com dados clínicos" depende do ditado (como já implementado).

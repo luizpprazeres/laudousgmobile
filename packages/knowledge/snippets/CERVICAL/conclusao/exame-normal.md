@@ -51,7 +51,7 @@ QUANDO O EXAME É TECNICAMENTE LIMITADO
 
 Se o médico mencionou limitação técnica (cicatriz cirúrgica, biotipo desfavorável, edema), declarar honestamente em vez de afirmar normalidade plena:
 
-"X) Avaliação ultrassonográfica da região cervical, parcialmente limitada por [LIMITAÇÃO], sem identificação de linfonodos com características ecográficas suspeitas nas regiões adequadamente caracterizadas. Sugere-se correlação clínica e, se a suspeita clínica persistir, considerar complementação com tomografia ou ressonância cervical."
+"X) Avaliação ultrassonográfica da região cervical, parcialmente limitada por [LIMITAÇÃO], sem identificação de linfonodos com características ecográficas suspeitas nas regiões adequadamente caracterizadas. Se a suspeita clínica persistir, considerar complementação com tomografia ou ressonância cervical."
 
 ═══════════════════════════════════════════════════
 NÃO INVENTAR

@@ -491,11 +491,16 @@ async function main() {
       .filter((line) => !/Breast Imaging Reporting|Domingos Correia da Rocha|American College of Radiology/i.test(line))
       .join("\n");
   const { ajustarComentarios } = await import("../../src/server/pipeline/tecnicaGuard");
-  // Como a rota: W15 (técnica por via/transdutor/contexto ditados) logo depois do sanitizador; flag TECNICA_GUARD.
+  const { aplicarCorrelacaoDitada } = await import("../../src/server/pipeline/correlacaoClinica");
+  // Como a rota: W15 (técnica por via/transdutor/contexto ditados) logo depois do sanitizador, flag TECNICA_GUARD;
+  // o guard da correlação clínica (decisão de 10/10) fecha a cadeia universal.
   const comTecnica = (t: string, cat?: string, ditado?: string) =>
     cat && process.env.TECNICA_GUARD !== "false" ? ajustarComentarios(t, { categoria: cat, ditado }).texto : t;
-  const universalGuards = (t: string, cat?: string, ditado?: string) =>
-    flagImplausibleMeasures(stripInvalidDumLines(normalizeMeasures(comTecnica(sanitizeDictationArtifacts(t), cat, ditado))));
+  const universalGuards = (t: string, ditado: string, cat?: string, ditadoTecnica?: string) =>
+    aplicarCorrelacaoDitada(
+      flagImplausibleMeasures(stripInvalidDumLines(normalizeMeasures(comTecnica(sanitizeDictationArtifacts(t), cat, ditadoTecnica ?? ditado)))),
+      ditado,
+    );
 
   const sql = postgres(process.env.DATABASE_URL!, { ssl: "require", max: 2 });
   const rows: Row[] = await sql`
@@ -653,7 +658,11 @@ async function main() {
       }
       // Como a rota: writer dedicado (passthrough) não recebe acréscimo do guard.
       text = applyCommandOperations(text, rawInput, { writer: passthrough });
-      return mode === "replay" ? { text: universalGuards(text) } : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, examOf(r).cat, rawInputCru) });
+      // Como a rota: "calcule o volume" no writer dedicado (decisão de 10/10).
+      if (passthrough) text = applyVolumePolicy(text, rawInput, { soPedido: true });
+      return mode === "replay"
+        ? { text: universalGuards(text, rawInput) }
+        : comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, rawInput, examOf(r).cat, rawInputCru) });
     });
   }
 
@@ -720,7 +729,7 @@ async function main() {
         text = dedupeConclusionItems(text);
       }
       if (cat === "MUSCULOESQUELETICO_V2") text = normalizeSectionSpacing(text);
-      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, examOf(r).cat, rawInputCru) });
+      return comLexico(examOf(r).cat, ditadoLex, { text: universalGuards(text, rawInput, examOf(r).cat, rawInputCru) });
     });
   }
 
@@ -756,7 +765,9 @@ async function main() {
     while (idx < cases.length) {
       const r = cases[idx++];
       const id8 = r.id.slice(0, 8);
-      const rawInput = r.consolidated_transcript ?? r.raw_input ?? "";
+      // BENCH_DITADO_SUFIXO: texto acrescentado ao fim de todo ditado (ex.: ", calcule o volume.") para
+      // medir um comando do médico em laudos reais. Só bancada; nunca altera o banco.
+      const rawInput = (r.consolidated_transcript ?? r.raw_input ?? "") + (process.env.BENCH_DITADO_SUFIXO ?? "");
       // Caminho da produção pela auditoria: renderer (extração + renderer), writer_guarded
       // (writer dedicado MSK/PELVE/PARTES_MOLES dentro do renderer), passthrough (MSK colado
       // pronto), hard (gpt-5.4, writer puro) ou writer (writer genérico com bundle).

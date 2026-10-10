@@ -254,9 +254,10 @@ test('sialoadenite bilateral: um item consolidado, recomendação uma vez', () =
   state.parotida_direita = { ...state.parotida_direita, parenquima: 'cronica' }
   state.parotida_esquerda = { ...state.parotida_esquerda, parenquima: 'cronica' }
   let text = composeReport(glandulasSalivares, state).text
-  assert.match(text, /1\. Ecotextura heterogênea com múltiplas áreas hipoecoicas difusas nas glândulas parótidas bilateralmente\. Achados ecográficos compatíveis com sialoadenite crônica\. Convém/)
+  assert.match(text, /1\. Ecotextura heterogênea com múltiplas áreas hipoecoicas difusas nas glândulas parótidas bilateralmente\. Achados ecográficos compatíveis com sialoadenite crônica\.$/m)
+  assert.doesNotMatch(text, /correlação clínica/) // só quando ditada (10/10), pelo painel de Recomendações
   assert.equal(text.match(/sialoadenite crônica/g)?.length, 1)
-  assert.equal(text.match(/definição etiológica/g)?.length, 1)
+  assert.equal(text.match(/definição etiológica/g), null) // a recomendação da crônica era a correlação clínica automática
   assert.match(text, /2\. Demais glândulas salivares maiores avaliadas sem alterações ecográficas\./)
   // Corpo continua descrevendo cada glândula com o lado.
   assert.match(text, /Glândula parótida direita, com ecotextura heterogênea/)
