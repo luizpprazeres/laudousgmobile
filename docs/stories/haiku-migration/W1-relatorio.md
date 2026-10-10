@@ -25,6 +25,70 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## PACOTE2 — IG da US precoce sem data, dedup da conclusão, narração antes do título (`fix/obst-ig-dedup-narracao`)
+
+**1. IG da US precoce que sumia.** "IG pela ultrassonografia precoce: 23s3d" é linha da calculadora do app: IG de **hoje**
+pela 1ª US. O prompt já manda colocá-la em `ig_referencia_hoje_*`, mas o Haiku às vezes a põe em `primeira_us_ig_*` (IG
+**na data** da 1ª US) sem data. Sem data o motor não projeta e a referência some. Medido nas rodadas de hoje: 10 extrações,
+`a3ea0fea` 8/8, `82a7940d` (morfológico) e `f49dab7a` (obstétrica).
+- Correção: `reconciliarIgUsPrecoce` (`renderer/ig.ts`), aplicada na normalização do morfológico e no `ofnd` da obstétrica
+  (alimenta o renderer e o catálogo). Lê só o formato de máquina ("Ns"/"NsNd"; duas linhas diferentes → nada). Age **só**
+  com referência de hoje vazia e 1ª US sem data: preenche a referência de hoje e tira o mesmo valor de `primeira_us_ig`. IG
+  da 1ª US diferente (genuína) fica, e a fonte atribuída pelo médico não é trocada.
+- Escrita: a política aprovada na W5 (prioridade da 1ª US) gera "Gestação em torno de 23 semanas e 3 dias, corrigida pela
+  ultrassonografia precoce.", que é o que o Luiz escreve no final do `a3ea0fea`. **Sem data, nada é inventado.** O corpo
+  usa a prosa já existente sem data ("Primeira ultrassonografia compatível com 23 semanas e 3 dias na data do exame."). Nos
+  finais em que a 1ª US vem com data, o Luiz escreve "Primeira ultrassonografia realizada DD/MM com X. Hoje com Y."; isso
+  continua igual, porque o motor projeta da data.
+
+**2. Item normal repetido na conclusão (morfológico).** `dedupItensLivres` remove o item **livre** igual a um item fixo
+(caixa, espaços e pontuação final), nos dois estilos. Os livres entram antes do Doppler, da cervicometria e do
+crescimento, que o renderer acrescenta depois; por isso o fixo é preservado na sua posição. Conteúdo diferente nunca sai
+(ex.: "Gestação em torno de 20 semanas e 5 dias." × "…20 semanas.").
+
+**3. Narração antes do título.** `stripNarrationBeforeTitle` (`pipeline/writerOutputGuard.ts`, vale para todo writer)
+remove o trecho antes do primeiro título só quando é inequívoco:
+- há depois um título em maiúsculas que não é cabeçalho de seção;
+- o trecho tem até 2 linhas e 400 caracteres;
+- cada linha fala do ditado ou do próprio trabalho do modelo (`META_RE` + "gero/segue/aqui está… laudo");
+- nenhuma linha é rótulo de cabeçalho (Paciente, Data, Indicação…).
+
+A bancada mostrou outra forma, rara (1 em 2.454 saídas de bancada): a primeira linha "TÍTULO: ULTRASSONOGRAFIA…". Sai só o
+rótulo, quando o resto da linha é um título.
+
+**Testes:** `renderer/__tests__/pacote2-ig-dedup.manual.ts` (6 blocos; os defeitos reproduzem sem a correção; fora do
+alvo nada muda) e `pipeline/__tests__/writerOutputGuard.manual.ts` (17/17, com 7 negativos). Ficam verdes:
+- obstétrica: W5 116/116, catálogo 21600/21600 byte a byte, garantias 76, matriz clínica e golden;
+- morfológico: matriz 89, lateralidade 265, golden 41, normalização 6;
+- IG: `ig` 42, `ig-sanity` 10;
+- motor: `llm` 26/26; `tsc` limpo.
+
+`ig-renderer.manual.ts` falha 5 casos **igual na base** (espera a frase anterior à política da W5); não é desta mudança.
+
+**Bancada Haiku pela assinatura (`BENCH_MODEL=claude-haiku-5-5`, sem juiz):**
+
+| Caso | Antes | Depois (4 repetições) |
+|---|---|---|
+| `a3ea0fea` (morfológico) IG 23s3d | 0/8 | **4/4** "23 semanas e 3 dias, corrigida pela ultrassonografia precoce" |
+| `82a7940d` (morfológico) IG 22s3d | ausente | **4/4** |
+| `f49dab7a` (obstétrica) IG 33s1d | ausente | **4/4** |
+| `a840a89f`, `4ee711fe` (2º tri) conclusão duplicada | 2/2 | **0/8** |
+| `ead3b7f4` (abdome, writer) narração antes do título | 1/38 na rebancada | 0/4 narração; 1/4 "TÍTULO:" (agora coberto pelo guard) |
+
+| Grupo | W5 (A) | antes (A5) | depois (A6) |
+|---|---|---|---|
+| Obstétrica + Doppler (46): frases-padrão faltando | 194/849 | 191/849 | 194/849 (título ≠ 7, `____` 2, duplicada 0) |
+| Morfológico (23): frases-padrão faltando | 272/627 | 274/627 | **272/627** (título ≠ 1, `____` 4, **duplicada 0**) |
+| IG da calculadora presente no laudo | — | obst 21/24 · morfo 6/8 | obst **22/24** · morfo **8/8** |
+
+Rodadas: `tmp-review/bench-haiku/2026-10-10T16-43-36-morfologico`, `…T16-46-43-obstetrica+doppler_obstetrico`,
+`…T16-48-05` (abdome), `…T16-48-35-obstetrica+doppler_obstetrico`, `…T16-54-25-morfologico`.
+
+**Achado residual, fora do item 1 e sem mudança por ele (frente de IG):** `e1f15cab` e `e5dfd891` têm a 1ª US **com data**
+e a linha da calculadora. O motor projeta a data para hoje e diverge da calculadora: em `e5dfd891` sai "Hoje com 20s2d"
+com [REVISAR], quando a calculadora e o Luiz dizem 26s2d. A calculadora usa a data real do exame; vale decidir se a linha
+dela deve vencer a projeção quando as duas existem.
+
 ## MORFO — risco do morfológico fechado antes do GO (`fix/morfologico-extracao`)
 
 **Causa (conferida nas chamadas gravadas):**

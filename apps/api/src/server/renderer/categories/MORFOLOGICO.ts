@@ -1,6 +1,6 @@
 import { filterFreeConclusionItems } from "./OBSTETRICA";
 import { z } from "zod";
-import { buildIgInput, computeIg, type IgRenderOptions, dataGeracaoSaoPaulo, type IgRawFields, type IgComputed } from "../ig";
+import { buildIgInput, computeIg, reconciliarIgUsPrecoce, type IgRenderOptions, dataGeracaoSaoPaulo, type IgRawFields, type IgComputed } from "../ig";
 import {
   applyGolfBallMorfologico,
   stripGolfBallEcho,
@@ -259,7 +259,8 @@ export function dopplerSemDadoVascular(d: MorfologicoFindings["doppler"]): boole
 }
 
 export function normalizarExtracaoMorfologico(f: MorfologicoFindings, rawInput: string): MorfologicoFindings {
-  const out: MorfologicoFindings = { ...f };
+  // IG de hoje da calculadora posta em primeira_us_ig sem data (ver reconciliarIgUsPrecoce).
+  const out: MorfologicoFindings = reconciliarIgUsPrecoce({ ...f }, rawInput);
   const bloco = parseMedidasMorfologicas(rawInput);
   for (const [campo, valor] of Object.entries(bloco) as Array<[keyof typeof bloco, number]>) {
     const lados = LADOS[campo];
@@ -1203,6 +1204,34 @@ function tituloComposto(titulo: string, f: MorfologicoFindings, dopplerUterinas 
   return complementos.length > 0 ? `${titulo} COM ${complementos.join(" E ")}` : titulo;
 }
 
+/**
+ * PACOTE2 (10/10): o extrator às vezes copia em `itens_conclusao_livres` um item que o
+ * renderer já escreve ("Colo uterino ecograficamente normal.", "Morfologia fetal sem
+ * evidência…") e ele saía duas vezes (2/23 no 2º trimestre). Remove o item LIVRE igual
+ * a um item fixo — o fixo fica na sua posição. Só igualdade inequívoca (caixa, espaços
+ * e pontuação final); item livre com conteúdo diferente nunca sai.
+ */
+const chaveItem = (s: string) => s.trim().replace(/[.;\s]+$/, "").replace(/\s+/g, " ").toLocaleLowerCase("pt-BR");
+export function dedupItensLivres(conclusao: string[], livres: string[]): string[] {
+  if (livres.length === 0) return conclusao;
+  // Os livres entram como um bloco contíguo, na ordem: acha o bloco a partir do fim.
+  let inicio = -1;
+  for (let i = conclusao.length - livres.length; i >= 0; i -= 1) {
+    if (livres.every((l, j) => conclusao[i + j] === l)) { inicio = i; break; }
+  }
+  if (inicio < 0) return conclusao;
+  const fim = inicio + livres.length;
+  const fixos = new Set(conclusao.filter((_, i) => i < inicio || i >= fim).map(chaveItem));
+  const vistos = new Set<string>();
+  return conclusao.filter((item, i) => {
+    if (i < inicio || i >= fim) return true;
+    const k = chaveItem(item);
+    if (fixos.has(k) || vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
+}
+
 function assemble(
   titulo: string,
   f: MorfologicoFindings,
@@ -1218,6 +1247,7 @@ function assemble(
   acrescentarDoppler(f, aspectos, conclusao, dopplerOptions);
   acrescentarCervicometria(f, aspectos, conclusao);
   acrescentarCrescimentoFetal(f, aspectos, conclusao);
+  conclusao = dedupItensLivres(conclusao, filterFreeConclusionItems(f.itens_conclusao_livres));
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = fraseReferencia ? `${fraseReferencia}\n` : "";
   const conclTxt =
@@ -1341,6 +1371,7 @@ function assembleObj(
   acrescentarDoppler(f, achados, impressao, dopplerOptions);
   acrescentarCervicometria(f, achados, impressao);
   acrescentarCrescimentoFetal(f, achados, impressao);
+  impressao = dedupItensLivres(impressao, filterFreeConclusionItems(f.itens_conclusao_livres));
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = fraseReferencia ? `\n${fraseReferencia}` : "";
   const impressaoTxt =

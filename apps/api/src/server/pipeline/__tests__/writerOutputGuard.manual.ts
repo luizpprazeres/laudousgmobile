@@ -91,6 +91,53 @@ check("idempotente e sem efeito em laudo limpo", () => {
   const once = cleanWriterOutput(PELVE_HAIKU).text;
   assert.equal(cleanWriterOutput(once).text, once);
 });
+// ── Narração antes do título (rebancada final, abdome ead3b7f4) ─────────────
+const ABDOME = `ULTRASSONOGRAFIA DO ABDOME TOTAL
+
+OS SEGUINTES ASPECTOS FORAM OBSERVADOS:
+Fígado com dimensões normais.
+
+CONCLUSÃO:
+Ultrassonografia do abdome total sem alterações.`;
+check("narração do modelo antes do título sai (formato real ead3b7f4)", () => {
+  const r = cleanWriterOutput(`Ultrassonografia do abdômen total normal: ditado de normalidade. Gero o laudo normal completo a partir do modelo da categoria.\n\n${ABDOME}`);
+  assert.equal(r.text, ABDOME);
+  assert.equal(r.removed.length, 1);
+});
+check("narração sem a palavra ditado ('Segue o laudo…') também sai", () => {
+  assert.equal(cleanWriterOutput(`Segue o laudo conforme solicitado.\n${ABDOME}`).text, ABDOME);
+});
+check("negativo: cabeçalho clínico antes do título fica", () => {
+  const t = `Paciente: Maria da Silva\nData: 10/10/2026\n\n${ABDOME}`;
+  assert.equal(cleanWriterOutput(t).text, t);
+  const ind = `Indicação: controle após o ditado do exame anterior.\n\n${ABDOME}`;
+  assert.equal(cleanWriterOutput(ind).text, ind);
+});
+check("negativo: texto clínico antes do título fica", () => {
+  const t = `Exame comparativo com o de 12/05/2026.\n\n${ABDOME}`;
+  assert.equal(cleanWriterOutput(t).text, t);
+});
+check("negativo: sem título em maiúsculas nada sai (título em caixa mista)", () => {
+  const t = `Ultrassonografia do abdome total: ditado de normalidade.\n\nOS SEGUINTES ASPECTOS FORAM OBSERVADOS:\nFígado normal.\n\nCONCLUSÃO:\nNormal.`;
+  assert.equal(cleanWriterOutput(t).text, t);
+});
+check("negativo: mais de duas linhas antes do título fica", () => {
+  const t = `Gero o laudo a partir do ditado.\nUsei o modelo.\nConfirme as medidas.\n${ABDOME}`;
+  assert.equal(cleanWriterOutput(t).text, t);
+});
+check("negativo: 'ditado' no corpo, depois do título, não é mexido por este guard", () => {
+  const t = `${ABDOME}\nFígado ditado como normal no exame anterior.`;
+  assert.equal(cleanWriterOutput(t).text, t);
+});
+
+check("rótulo 'TÍTULO:' na frente do título sai; título fica", () => {
+  assert.equal(cleanWriterOutput(`TÍTULO: ${ABDOME}`).text, ABDOME);
+});
+check("negativo: 'Título:' seguido de texto que não é título fica", () => {
+  const t = `Título: exame de controle\n\n${ABDOME}`;
+  assert.equal(cleanWriterOutput(t).text, t);
+});
+
 check("regra de prompt fala de markdown e do que vem depois da conclusão", () => {
   assert.match(WRITER_OUTPUT_RULE, /sem markdown/);
   assert.match(WRITER_OUTPUT_RULE, /depois da CONCLUSÃO/);
