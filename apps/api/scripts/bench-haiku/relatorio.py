@@ -107,7 +107,7 @@ del{color:var(--del-ink);text-decoration:line-through;opacity:.85}
       <div class="step" id="stepB2" style="display:none"><b>Cenário B2 — B com o prompt corrigido</b><div class="flow">igual ao B, com a regra global reescrita: “compatível com” só na conclusão; corpo descritivo</div>Testa a correção sem alterar o prompt de produção.</div>
       <div class="step"><b>Comparação</b>Cada saída é comparada com o <b>laudo final que o médico salvou</b>. O Opus 5.5 avaliou todas as saídas juntas, sem saber de onde veio cada uma.</div>
     </div>
-    <p style="margin:14px 0 0;font-size:14px;color:var(--muted)">Prova de fidelidade: reprocessando os achados que a produção extraiu, a bancada gerou <span id="replayInfo">o mesmo texto da produção</span>. O Haiku rodou pela assinatura (<code>claude -p</code>), sem API.</p>
+    <p id="provaFidelidade" style="margin:14px 0 0;font-size:14px;color:var(--muted)">Prova de fidelidade: reprocessando os achados que a produção extraiu, a bancada gerou <span id="replayInfo">o mesmo texto da produção</span>. O Haiku rodou pela assinatura (<code>claude -p</code>), sem API.</p>
   </div>
 
   <div class="panel">
@@ -131,9 +131,12 @@ del{color:var(--del-ink);text-decoration:line-through;opacity:.85}
 <script>
 const D = JSON.parse(document.getElementById('data').textContent);
 document.getElementById('rodada').textContent = D.rodada;
-const CATNOME = {ABDOMEN_TOTAL:'abdome total', OBSTETRICA:'obstetrícia', DOPPLER_OBSTETRICO:'Doppler obstétrico'};
+const CATNOME = {ABDOMEN_TOTAL:'abdome total', OBSTETRICA:'obstetrícia', DOPPLER_OBSTETRICO:'Doppler obstétrico',
+  MORFOLOGICO:'morfológico', MUSCULOESQUELETICO_V2:'musculoesquelético', PELVE_FEMININA:'pelve feminina', DOPPLER_CAROTIDAS:'Doppler de carótidas',
+  MAMARIA:'mamas', TIREOIDE:'tireoide', CERVICAL:'cervical', VIAS_URINARIAS:'vias urinárias', PROSTATA_SUPRAPUBICA:'próstata',
+  PAREDE_ABDOMINAL:'parede abdominal', ESCROTAL:'bolsa escrotal', PARTES_MOLES:'partes moles', ABDOMEN_SUPERIOR:'abdome superior'};
 const cats = [...new Set(D.cases.map(r => r.categoria || 'ABDOMEN_TOTAL'))];
-const ehObst = cats.some(c => c !== 'ABDOMEN_TOTAL');
+const ehObst = cats.every(c => ['OBSTETRICA', 'DOPPLER_OBSTETRICO', 'MORFOLOGICO'].includes(c));
 document.getElementById('nCasos').textContent = D.cases.length;
 document.getElementById('exameNome').textContent = ehObst ? 'obstetrícia e Doppler obstétrico' : cats.map(c => CATNOME[c] || c).join(', ');
 const examTag = r => r.categoria === 'DOPPLER_OBSTETRICO' ? 'Doppler isolado' : r.hint === 'DOPPLER_OBSTETRICO' ? 'obstétrico + Doppler' : r.categoria === 'OBSTETRICA' ? 'obstétrico' : '';
@@ -142,18 +145,27 @@ if (!D.cases.some(r => r.B)) document.getElementById("stepB").style.display="non
 document.getElementById("nSemEd").textContent = D.cases.filter(r=>!r.editadoPeloMedico).length;
 if (D.cases.some(r => r.juiz && r.juiz.R)) document.getElementById("stepR").style.display="";
 (function(){ const rp = D.cases.filter(r => r.replay); const eq = rp.filter(r => r.replayIgualProducao).length;
+  if (!rp.length) { document.getElementById('provaFidelidade').style.display = 'none'; return; }
   document.getElementById('replayInfo').textContent = `o mesmo texto da produção em ${eq} de ${rp.length} casos` + (D.replayNota ? ` (${D.replayNota})` : ''); })();
+if (D.titulo) document.title = D.titulo;
 if (ehObst) document.getElementById("titulo").textContent = "Haiku 5.5 na obstetrícia — o que foi testado";
 if (D.cases.some(r => r.L)) { document.getElementById("stepL").style.display=""; document.getElementById("titulo").textContent="Haiku 5.5 e GPT-6 Luna no abdome total — o que foi testado"; }
+if (D.titulo) document.getElementById("titulo").textContent = D.titulo;
+if (D.passos) document.querySelector(".steps").innerHTML = D.passos
+  .map((p) => `<div class="step"><b>${p.t}</b>${p.flow ? `<div class="flow">${p.flow}</div>` : ""}${p.s ?? ""}</div>`).join("");
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const KEYS = [
   {k:'gpt', t:'Produção', s:'o que o app gerou (gpt)'},
   {k:'R', t:'Produção hoje', s:'mesmos achados do gpt-4.1-mini, renderer de hoje'},
-  {k:'A', t:'Cenário A', s:'Haiku extrai + renderer atual'},
+  {k:'A', t:'Cenário A', s:'Haiku no caminho atual (extrai + renderer; ou escreve, no writer dedicado/genérico)'},
+  {k:'AR', t:'Cenário AR', s:'Haiku extrai + renderer (categoria que hoje sai por outro caminho)'},
   {k:'B', t:'Cenário B', s:'Haiku escreve o laudo inteiro'},
   {k:'L', t:'Cenário L', s:'GPT-6 Luna extrai + renderer atual'},
   {k:'B2', t:'Cenário B2', s:'Haiku escreve tudo + prompt “corpo descritivo”'},
-].filter(x => x.k==='gpt' || (x.k==='R' ? D.cases.some(r => r.juiz && r.juiz.R) : D.cases.some(r => r[x.k])));
+  {k:'AS', t:'Cenário AS', s:'Sonnet 5.5 no caminho atual'},
+  {k:'BS', t:'Cenário BS', s:'Sonnet 5.5 escreve o laudo inteiro (writer genérico)'},
+  {k:'B2S', t:'Cenário B2S', s:'Sonnet 5.5 escreve tudo + prompt “corpo descritivo”'},
+].map(x => ({...x, ...((D.rotulos || {})[x.k] || {})})).filter(x => x.k==='gpt' || (x.k==='R' ? D.cases.some(r => r.juiz && r.juiz.R) : D.cases.some(r => r[x.k])));
 const textOf = (r,k) => {
   if (k==='gpt') return r.gpt||'';
   if (k==='R') return r.replay?.text || '(sem replay)';
