@@ -543,3 +543,28 @@ Sem os 10 casos expostos ao MK-1 (n = 61): produção 8,36 · Haiku 5,89 → 6,1
 - **Recomendação:** manter o prompt novo com o Sonnet no writer dedicado do MSK. Próximo passo: a conclusão (completar
   os itens e o lado de cada achado) e decidir com o Luiz se "sem evidência de rotura" deve ser sempre usada no tendão
   alterado ou só quando ele ditar.
+
+## W10c — Prompts enxutos de mamas/axilas e tireoide (10/10/2026)
+
+Relatório completo (números, origem de cada grave, SQL proposto): `docs/stories/haiku-migration/W10c-relatorio.md`.
+Placares determinísticos novos: `scripts/bench-haiku/placar-mama.ts`, `placar-tireoide.ts`; tamanho real do system:
+`prompt-tamanho.ts`. Biblioteca proposta medida só na bancada (`BENCH_BUNDLE_PATCH`); banco intacto.
+
+### MAMARIA (29) — writer completo, Haiku 5.5
+
+- **Contradição que o Haiku obedecia:** o contrato obrigava "em 06 fotos" (o global proíbe; 26 de 29 finais não têm). Saiu.
+- **A biblioteca contradiz o contrato** em 6 de 7 blocos (frases normais que não são da casa, "em mama", "nódulo" no corpo,
+  modelo com axilas): proposta de SQL — modelo normal só das mamas e arquivar os outros 6 (system 36,1 → 28,7 mil, −20%).
+- Contrato 4,8 → 4,2 mil: escopo das axilas como pergunta ao ditado; achado "Imagem … de mama …" com exemplos reais curtos;
+  conclusão da casa quando não ditada; correção silenciosa da transcrição.
+- Placar (soma de graves): produção 18 · Haiku prompt atual 25 · **Haiku contrato novo + biblioteca proposta 10** · contrato
+  novo sem a biblioteca 18. Rodada final com juiz: depois do global final da W10b (pedido do orquestrador).
+
+### TIREOIDE (20) — renderer + Haiku extrator
+
+- Prompt de extração 5,0 → 3,3 mil (system real 5,8 → 4,1 mil); garbles de ASR no normalizador ("sem classificações",
+  "nos ecos", "iso ecoica"); renderer: "situada no terço" e TI-3 (rodapé só com imagem nodular).
+- Placar de extração: Haiku 61 → 47 (produção 30). Juiz: produção **6,15** · Haiku antigo 5,50 · **Haiku novo 5,95**
+  (≤ 4: 8 · 7 · 5; invenções 37 · 27 · 21). Rodada `w10c/2026-10-10T11-53-39-tireoide`.
+- A distância para a produção é quase toda de decisão pendente ou de outro dono: TI-2 (eixo não ditado), TI-5 (frase da cadeia
+  I–V), ACR separado (W7), comando copiado na conclusão (W1), dois exames num ditado, e o schema sem imagens múltiplas.
