@@ -1545,7 +1545,7 @@ CONCLUSÃO — "1)", "2)"…; item único sem número:
 
 REGRAS:
 1. Medidas, volumes e lados exatamente como ditados, com vírgula decimal e a unidade ditada (saco gestacional e folículos costumam vir em mm). [ ] = só se ditado.
-2. Dado não ditado (eixos, volume; localização e FIGO fora da tabela): omita a oração — nunca invente, nem "0,0", "____" ou [REVISAR] por falta. [REVISAR: …] só para ditado ilegível ou ambíguo.
+2. Dado não ditado (eixos; volume não ditado nem pedido; localização e FIGO fora da tabela): omita a oração — nunca invente, nem "0,0", "____" ou [REVISAR] por falta. [REVISAR: …] só para ditado ilegível ou ambíguo.
 3. Estrutura não citada = normal (frase normal). Não drope nada ditado, não invente achado, não repita item.
 4. Coleção ou cisto no ovário é achado OVARIANO, nunca "líquido livre"; líquido livre só se ditado à parte.
 5. Comandos ("adicione X", "na conclusão Y", "no lugar de Z coloque W") são instruções: execute, nunca transcreva.

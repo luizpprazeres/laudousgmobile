@@ -1433,6 +1433,15 @@ export async function POST(req: Request) {
           reqInput.consolidated_transcript ?? reqInput.raw_input,
           { writer: writerResult?.passthrough === true },
         );
+        // "Calcule o volume" (decisão de 10/10): no writer dedicado a conta é do código,
+        // como no writer completo; sem pedido nada muda (o prompt já proíbe volume não ditado).
+        if (writerResult?.passthrough === true) {
+          finalText = applyVolumePolicy(
+            finalText,
+            reqInput.consolidated_transcript ?? reqInput.raw_input,
+            { soPedido: true },
+          );
+        }
       }
       // Guard de sanitização (universal): remove artefatos de ditado/ASR que
       // vazaram para o texto clínico — "vírgula" falada, "Você vai escrever ...",

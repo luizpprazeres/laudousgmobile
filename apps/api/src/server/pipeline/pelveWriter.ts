@@ -9,6 +9,7 @@
  */
 import { dedicatedWriterTarget, llmTextStream } from "../ai/llm";
 import { cleanWriterOutput, WRITER_OUTPUT_RULE } from "./writerOutputGuard";
+import { VOLUME_CALCULO_RULE } from "../prompts/global";
 import { env } from "../env";
 import { buildPelveWriterSystemMessage } from "../renderer/categories/PELVE_FEMININA";
 import { PELVE_FEWSHOTS } from "../renderer/categories/pelveFewshots";
@@ -46,7 +47,7 @@ export async function* runPelveWriterStream(args: {
   // Haiku (a 0.2 só vale no rollback OpenAI).
   const gen = llmTextStream({
     target,
-    system: `${buildPelveWriterSystemMessage()}\n\n${WRITER_OUTPUT_RULE}`,
+    system: `${buildPelveWriterSystemMessage()}\n\n${VOLUME_CALCULO_RULE}\n\n${WRITER_OUTPUT_RULE}`,
     messages: [
       ...fewshotMsgs,
       { role: "user", content: `Ditado do médico:\n${args.rawInput}` },
