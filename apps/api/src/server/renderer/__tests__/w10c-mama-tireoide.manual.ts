@@ -106,4 +106,21 @@ test("A12: nota ditada sem ecogenicidade não recebe a marca", () => {
   assert.doesNotMatch(out, /ecogenicidade não ditada/);
 });
 
+// W14b — rodada 2 da revisão: a pendência do A12 não pode sumir quando há ACR.
+test("A12 (rodada 2): sem ecogenicidade e com ACR TI-RADS ditado, a pendência aparece", () => {
+  const out = renderTireoide(T({ lobo_direito: L({ nodulos: [N({ ecogenicidade: null, margem: "regular", medidas_cm: [1.2, 0.8, 1.0], localizacao: "no terço médio", ti_rads_ditado: "3", descricao_raw: "imagem isoecoica com áreas, TI-RADS 3" })] }) }));
+  assert.doesNotMatch(out, /NOTA FINAL/);
+  assert.match(out, /ACR TI-RADS 3 \[REVISAR — ecogenicidade não ditada\]/);
+});
+test("A12 (rodada 2): sem ecogenicidade e com composição ACR extraída, a pendência aparece", () => {
+  const out = renderTireoide(T({ lobo_direito: L({ nodulos: [N({ ecogenicidade: null, medidas_cm: [1.2, 0.8, 1.0], acr_tirads: { composicao: "misto", ecogenicidade: "hiper_ou_isoecoico", forma: "mais_larga_que_alta", margem: "lisa", focos_ecogenicos: ["nenhum_ou_cauda_cometa"] } })] }) }));
+  assert.doesNotMatch(out, /NOTA FINAL/);
+  assert.match(out, /ACR TI-RADS \d \[REVISAR — ecogenicidade não ditada\]/);
+});
+test("A12 (rodada 2): com ecogenicidade, ACR sai sem a marca", () => {
+  const out = renderTireoide(T({ lobo_direito: L({ nodulos: [N({ ecogenicidade: "isoecoica", ti_rads_ditado: "3" })] }) }));
+  assert.match(out, /NOTA FINAL/);
+  assert.doesNotMatch(out, /ecogenicidade não ditada/);
+});
+
 console.log(`\n${total} verificações W10c passaram.`);
