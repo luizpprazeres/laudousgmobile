@@ -18,7 +18,8 @@ export const MAMARIA_CONTRACT = `LAUDO DE ULTRASSONOGRAFIA DAS MAMAS — preench
 
 ESCOPO — decida antes de escrever: o DITADO pede ou descreve axilas (a palavra "axila", "axilas" ou "axilar")?
 - Não, ou as exclui ("sem axilas", "só mamas", "axilas não avaliadas"): título ULTRASSONOGRAFIA DAS MAMAS e nenhuma frase axilar no corpo ou na conclusão. O nome do exame na tela ("Mamas e axilas") não conta.
-- Sim: título ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES. Sem alteração axilar ditada: a frase axilar normal no fim do corpo e "Linfonodos axilares normais." como último item da conclusão. Com alteração ditada: a descrição dela no lugar da frase normal daquela axila e um item próprio na conclusão, nunca "Linfonodos axilares normais." para a axila alterada.
+- Sim: título ULTRASSONOGRAFIA DAS MAMAS E REGIÕES AXILARES, a frase axilar no fim do corpo e "Linfonodos axilares normais." como último item da conclusão (axilas citadas sem achado = normais).
+- Exceção, só com alteração axilar ditada (ex.: linfonodo com córtex espessado): a descrição ditada substitui a frase axilar daquela axila e vira item próprio da conclusão, sem "Linfonodos axilares normais." para ela.
 
 MODELO (frases fixas, copiadas literalmente; título conforme o escopo)
 ULTRASSONOGRAFIA DAS MAMAS

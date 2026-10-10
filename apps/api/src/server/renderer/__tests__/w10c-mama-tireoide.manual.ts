@@ -76,9 +76,11 @@ const sysMama = buildSystemMessage({ categoryCode: "MAMARIA", categoryLabel: "Ma
 test("A05: exclusão explícita de axilas vence a mera menção", () => {
   assert.match(MAMARIA_CONTRACT, /Não, ou as exclui \("sem axilas", "só mamas", "axilas não avaliadas"\)/);
 });
+test("AXILA: axilas citadas sem achado = normais, com o item na conclusão", () => {
+  assert.match(MAMARIA_CONTRACT, /"Linfonodos axilares normais\." como último item da conclusão \(axilas citadas sem achado = normais\)/);
+});
 test("A05: axila alterada não recebe a frase normal", () => {
-  assert.match(MAMARIA_CONTRACT, /Com alteração ditada: a descrição dela no lugar da frase normal daquela axila/);
-  assert.match(MAMARIA_CONTRACT, /nunca "Linfonodos axilares normais\." para a axila alterada/);
+  assert.match(MAMARIA_CONTRACT, /Exceção, só com alteração axilar ditada .*: a descrição ditada substitui a frase axilar daquela axila e vira item próprio da conclusão, sem "Linfonodos axilares normais\." para ela\./);
 });
 test("A06: system da mama não manda trocar margem por 'circunscrita'", () => {
   assert.doesNotMatch(sysMama, /sempre "circunscritas"/);
