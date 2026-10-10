@@ -163,6 +163,7 @@ async function main() {
   console.log(`\nvolume — Haiku sozinho: ${okModelo}/${nVol} verificações · depois do guard (final): ver total`);
   console.log(`final (volume + demais): ${okFinal}/${nTodos} verificações · ${res.filter((x) => !x.falhasFinal.length).length}/${res.length} saídas sem falha`);
   console.log(`saídas: ${out}/sinteticos-volume.json`);
+  process.exit(0); // o cliente da assinatura deixa handle aberto
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
