@@ -53,3 +53,6 @@ Fonte: resposta do Luiz ao consolidado de pendências. Cada item tem dono (frent
 - **"Correlacionar com dados clínicos" em TODAS as categorias e superfícies** (renderers da API, catálogo, prompts/few-shots, web
   `apps/web`, shared/snippets, Biblioteca no banco): **só quando o médico ditar**, na redação dele (W10b; SQL da Biblioteca só como
   proposta com guardas, o orquestrador aplica).
+- **Condutas específicas ligadas a uma alteração** ("correlacionar com as dosagens de TSH / cálcio e PTH / PSA / FSH e LH",
+  "marcadores tumorais", "avaliação urológica"…): **continuam automáticas** conforme o modelo da alteração, mesmo sem ditado. Só a
+  frase genérica "Correlacionar com dados clínicos" depende do ditado (como já implementado).
