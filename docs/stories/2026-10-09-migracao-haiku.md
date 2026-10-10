@@ -113,7 +113,8 @@ Status de cada frente: `tmp-review/haiku-migration/status/W*.md` no repositório
 - [x] W10a pelve · W10b abdome + vias + global · W10c mama + tireoide (prompts enxutos) — integradas
 - [ ] W11 revisão de termos (fila)
 - [ ] W12 miomas: FIGO ↔ localização, listas na web, 1/múltiplos/miomatoso no prompt (fila)
-- [ ] W13 revisão independente dos prompts (Codex gpt-6.1-sol medium)
+- [x] W13 revisão independente dos prompts (Codex gpt-6.1-sol medium)
+- [x] W14 correções da revisão (W1, W4, W10b, W10c) — integradas; pendentes do Luiz: A04, A08, A10, A11, "2 9 cm", soma do volume da tireoide
 - [x] Smoke real na API (Haiku: 4/4; Sonnet pelve ok) e deploy de produção SEM domínio da branch (`laudousgmobile-4mdtxfkdx`, saúde ok; produção intacta)
 - [ ] Integração das branches em `feat/haiku-migration` + gates + bancada final
 - [ ] GO do Luiz para push/deploy e para as envs da Vercel
