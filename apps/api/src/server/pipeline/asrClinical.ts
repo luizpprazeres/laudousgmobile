@@ -46,6 +46,13 @@ const CLINICAL_GARBLE_BY_CATEGORY: Readonly<
   TIREOIDE: [
     // "istmo" tireoidiano transcrito como "estímulo".
     [/\best[íi]mulos?\b/gi, "istmo"],
+    // W10c (bancada 10/10, laudos reais): "sem calcificações" sai "sem classificações" — o
+    // extrator deixava o eixo nulo. Num US de tireoide "sem classificação(ões)" não é conteúdo.
+    [/\bsem\s+classifica[çc](?:[õo]es|[ãa]o)\b/gi, "sem calcificações"],
+    // "anecoica com finos ecos" sai "anecoico nos ecos" — o extrator escolhia "homogênea".
+    [/\b(anec[oó]ic[oa]s?)\s+nos\s+ecos\b/gi, "$1 com finos ecos"],
+    // "isoecoica" partida em "iso ecoica" / "isso ecoica".
+    [/\bis?so\s+ec[oó]ic([oa]s?)\b/gi, "isoecoic$1"],
   ],
   OBSTETRICA: OBST_MBV_GARBLE,
   DOPPLER_OBSTETRICO: OBST_MBV_GARBLE,

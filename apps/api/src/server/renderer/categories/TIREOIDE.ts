@@ -278,79 +278,44 @@ export const TIREOIDE_JSON_SCHEMA = {
   },
 } as const;
 
-export const TIREOIDE_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO do LaudoUSG para ULTRASSONOGRAFIA DA TIREOIDE.
-Organize o ditado no JSON tipado. NÃO redija laudo. NÃO invente nada. Sua função
-é CLASSIFICAR cada característica de cada imagem nodular nos enums do escore
-Domingos — quem calcula a nota e escreve o laudo é o código.
+export const TIREOIDE_EXTRACTION_PROMPT = `Você é a EXTRAÇÃO do LaudoUSG para ULTRASSONOGRAFIA DA TIREOIDE: organize o ditado no JSON.
+Não redija laudo nem invente. Eixo não dito = null — o código calcula a Nota de Domingos e escreve o laudo.
 
-REGRAS:
-1. com_doppler: true SOMENTE com avaliação Doppler ativa / pico sistólico / fluxo
-   ao Doppler nas artérias tireoidianas. Negações SEMPRE vencem ("sem Doppler",
-   "Doppler não realizado", "sem avaliação Doppler hoje") MESMO que apareça a
-   palavra "vascularização".
-2. volume_glandular: "aumentado" se bócio/glândula aumentada/volume aumentado;
-   "reduzido" se atrófica/reduzida; senão null (= normal). NUNCA classifique pelas
-   medidas.
-3. Cada estrutura (lobo_direito, lobo_esquerdo, istmo):
-   - medidas_cm: as 3 medidas do lobo/istmo em cm; null se não ditas.
-   - volume_ml: volume do lobo/istmo em ml quando ditado; senão null. NUNCA calcule.
-   - tireoidite_tipo: SÓ quando o médico NOMEAR a tireoidite. Mapeie:
-     "Hashimoto" / "crônica autoimune" / "autoimune" -> "hashimoto";
-     "linfocítica" -> "linfocitica";
-     "granulomatosa" / "De Quervain" / "subaguda" -> "granulomatosa";
-     "Riedel" / "fibrosante" -> "riedel".
-     NUNCA infira o tipo a partir da ecotextura, do volume ou do Doppler — a
-     distinção depende de clínica e evolução, que não estão no ditado. Se ele
-     descrever o padrão sem nomear a doença, deixe null: o código escreve
-     "Sinais ecográficos de tireoidopatia", que é a redação da casa.
-   - ecotextura_alterada: SÓ se a ecotextura for DIFUSAMENTE alterada (tireoidite/
-     Graves) — cláusula verbatim do médico ("de ecotextura difusamente
-     heterogênea..."); null se normal. NÃO use para nódulos.
-   - nodulos: lista de imagens nodulares; [] se a estrutura é normal.
-4. Para cada imagem nodular, CLASSIFIQUE nos enums (escolha o mais próximo do
-   descrito; null quando o médico não disser o eixo):
-   - ecogenicidade: anecoica_homogenea | anecoica_finos_ecos | anecoica_septos |
-     anecoica_componentes_solidos | hipoecoica | isoecoica | hiperecoica |
-     isoecoica_areas_anecoicas | hipoecoica_areas_anecoicas | hiperecoica_areas_anecoicas |
-     solida_areas_anecoicas | solida_calcificacao_parede.
-     "Isoecoica com áreas anecoicas" → isoecoica_areas_anecoicas (1 ponto), NUNCA isoecoica (2 pontos).
-     "Hipoecoica com áreas anecoicas" → hipoecoica_areas_anecoicas;
-     "hiperecoica com áreas anecoicas" → hiperecoica_areas_anecoicas. Ambas valem
-     1 ponto pelo componente anecoico; não classifique como hipoecoica/hiperecoica pura.
-     Anecoica com área ecogênica com reverberação → anecoica_finos_ecos (0 pontos).
-   - margem: regular | irregular | espiculada. ("contornos" = margem.)
-   - halo: fino_regular | espesso_irregular | sem_halo (só imagem sólida).
-   - forma: mais_alta_que_larga | mais_larga_que_alta.
-   - calcificacoes: sem | casca_ovo | grosseiras (grosseiras com sombra) |
-     micro (microcalcificações).
-   - vascularizacao (padrão de Chammas, usado SÓ para pontuar): sem | periferica |
-     periferica_maior_central | central_maior_periferica | exclusiva_central.
-     "periférica maior que a central" → periferica_maior_central. Se o médico só
-     citar "Chammas II/III...", traduza para o enum correspondente.
-   - medidas_cm: as 3 medidas do achado em cm; null se não ditas.
-   - diametro_transverso_cm: SÓ quando o médico nomear o diâmetro transverso;
-     senão null (o código usa a maior das medidas).
-   - localizacao: "no terço médio/superior/inferior"...
-   - descricao_raw: a descrição verbatim do médico para esta imagem (auditoria).
-   - nota_domingos_ditada / ti_rads_ditado: SOMENTE se o médico DITAR a nota e/ou
-     o TI-RADS prontos (reproduzir); senão null (o código calcula).
-   - acr_tirads: classifique separadamente pelos cinco grupos oficiais do ACR:
-     composicao = cistico | espongiforme | misto | solido;
-     ecogenicidade = anecoico | hiper_ou_isoecoico | hipoecoico | muito_hipoecoico;
-     forma = mais_larga_que_alta | mais_alta_que_larga;
-     margem = lisa | mal_definida | lobulada_ou_irregular | extensao_extratireoidiana;
-     focos_ecogenicos pode conter mais de um entre macrocalcificacoes,
-     calcificacoes_perifericas e focos_puntiformes. Use
-     nenhum_ou_cauda_cometa somente quando nenhum dos outros estiver presente.
-     Deixe o grupo como null se a descrição não permitir classificá-lo. NUNCA
-     converta a Nota de Domingos em ACR TI-RADS.
-5. picos sistólicos (só Doppler): pico_sistolico_direito_cms /
-   pico_sistolico_esquerdo_cms em cm/s; pico_arteria_direita/esquerda = "inferior"
-   ou "superior" conforme ditado (default inferior se não especificado).
-6. linfonodos_descritos: true se houver descrição de linfonodos cervicais.
-   linfonodos_alterados: true se suspeitos/anormais. linfonodos_descricao: texto
-   do médico quando alterados; null quando normais ou não descritos.
-7. achados_adicionais: SOMENTE alterações reais fora do padrão; null se não houver.`;
+GLÂNDULA
+- com_doppler: true só com Doppler realizado (pico sistólico, fluxo ou vascularização ao Doppler). Negação vence ("sem Doppler").
+- volume_glandular: "aumentado" (bócio/aumentada), "reduzido" (atrófica/reduzida); senão null. Nunca pelas medidas.
+- tireoidite_tipo: só se o médico NOMEAR — Hashimoto/autoimune → hashimoto; linfocítica → linfocitica;
+  granulomatosa/De Quervain/subaguda → granulomatosa; Riedel/fibrosante → riedel. Padrão descrito sem nome = null.
+- lobo_direito, lobo_esquerdo, istmo: medidas_cm (3 medidas em cm) e volume_ml como ditados (nunca calcule);
+  ecotextura_alterada = cláusula verbatim de alteração DIFUSA ("difusamente heterogênea…"), null se normal;
+  nodulos = [] se não houver imagem.
+- Estrutura medida sem nome depois dos dois lobos ("e medindo 2,4 x 0,2 x 2,4") = istmo.
+- Cada imagem pertence ao último lobo/istmo nomeado ("lobo esquerdo apresentando…"); "próxima imagem" continua nele.
+- picos: pico_sistolico_direito_cms / _esquerdo_cms (cm/s); pico_arteria_direita / _esquerda = a artéria nomeada
+  ("tireoidiana superior" → "superior"; "inferior" ou sem nome → "inferior").
+- linfonodos_descritos: true só se o médico descrever linfonodos cervicais; linfonodos_alterados se suspeitos;
+  linfonodos_descricao = texto dele quando alterados. achados_adicionais: só alteração real fora do padrão; senão null.
+
+CADA IMAGEM (enums do Domingos)
+- ecogenicidade: anecoica_homogenea ("anecoica" sem mais) | anecoica_finos_ecos (inclui área ecogênica com reverberação)
+  | anecoica_septos | anecoica_componentes_solidos | hipoecoica | isoecoica | hiperecoica
+  | hipoecoica_areas_anecoicas | isoecoica_areas_anecoicas | hiperecoica_areas_anecoicas ("… com áreas anecoicas",
+  ou só "… com áreas": nunca a base pura) | solida_areas_anecoicas | solida_calcificacao_parede.
+- margem ("contornos" = margem): regular | irregular | espiculada.
+- halo (só sólida): fino_regular | espesso_irregular | sem_halo.
+- forma: mais_larga_que_alta | mais_alta_que_larga.
+- calcificacoes: sem | casca_ovo | grosseiras | micro.
+- vascularizacao (Chammas, só pontua): sem | periferica | periferica_maior_central | central_maior_periferica
+  | exclusiva_central ("Chammas II…" → enum correspondente).
+- medidas_cm: as 3 medidas (da maior, se "a maior medindo"); diametro_transverso_cm só se nomeado.
+- localizacao: com a preposição — "no terço superior" | "no terço médio" | "no terço inferior".
+- descricao_raw: o trecho do ditado desta imagem. nota_domingos_ditada / ti_rads_ditado: só se ditados prontos.
+- acr_tirads (independente do Domingos; null no grupo que a descrição não permite): composicao = cistico | espongiforme
+  | misto | solido; ecogenicidade = anecoico | hiper_ou_isoecoico | hipoecoico | muito_hipoecoico; forma;
+  margem = lisa | mal_definida | lobulada_ou_irregular | extensao_extratireoidiana; focos_ecogenicos = lista de
+  macrocalcificacoes | calcificacoes_perifericas | focos_puntiformes, ou [nenhum_ou_cauda_cometa]. Nunca converta Domingos em ACR.
+
+DITADO POR VOZ: "ponto"/"." decimal = vírgula ("4.1 por 1.7" = 4,1 x 1,7); "por" = "x"; medida sem unidade = cm (lobo e imagem) ou ml (volume).`;
 
 // ---------------------------------------------------------------------------
 // Cálculo determinístico (Domingos → TI-RADS → características → conduta)
@@ -930,8 +895,26 @@ export function renderTireoide(
   opts?: { objetivo?: boolean; omitPicoNull?: boolean },
 ): string {
   const omitPicoNull = opts?.omitPicoNull ?? false;
-  if (opts?.objetivo) return renderTireoideObjetivo(f, prefsInput, omitPicoNull);
-  return renderTireoideClassico(f, prefsInput, omitPicoNull);
+  const g = comLocalizacaoPreposicionada(f);
+  if (opts?.objetivo) return renderTireoideObjetivo(g, prefsInput, omitPicoNull);
+  return renderTireoideClassico(g, prefsInput, omitPicoNull);
+}
+
+/**
+ * "situada terço médio" → "situada no terço médio" (W10c, 10/10/2026). O prompt pede a
+ * preposição, mas o Haiku extrator a omite em ~metade das imagens (9 de 20 laudos na
+ * bancada). O renderer completa só o "terço …" sem preposição; o resto passa intacto.
+ */
+function comLocalizacaoPreposicionada(f: TireoideFindings): TireoideFindings {
+  const fix = (l: TireoideLobo): TireoideLobo => ({
+    ...l,
+    nodulos: l.nodulos.map((n) =>
+      n.localizacao && /^ter[çc]o\b/i.test(n.localizacao.trim())
+        ? { ...n, localizacao: `no ${n.localizacao.trim()}` }
+        : n,
+    ),
+  });
+  return { ...f, lobo_direito: fix(f.lobo_direito), lobo_esquerdo: fix(f.lobo_esquerdo), istmo: fix(f.istmo) };
 }
 
 /**
@@ -1151,8 +1134,9 @@ function renderTireoideClassico(
     "",
     "CONCLUSÃO:",
     conclusaoTxt,
-    "",
-    RODAPE,
+    // TI-3 (W4/W10c): a referência do escore só acompanha imagem nodular — sem imagem o médico
+    // apagou o rodapé em 7 de 10 laudos finais (90 dias); com imagem, manteve em 10 de 10.
+    ...(lobosComAchado.length > 0 ? ["", RODAPE] : []),
   ].join("\n");
 
   return corpo.replace(/\n{3,}/g, "\n\n").trim();
