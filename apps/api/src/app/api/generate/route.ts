@@ -121,6 +121,7 @@ import { isDopplerRenalAuditError } from "@/server/pipeline/dopplerRenalWriterAu
 import { isLivreRoutingError, LivreRoutingError } from "@/server/ai/livreProvider";
 import { extractionTarget, llmTarget, LlmOutputError, providerForModel, writerTarget } from "@/server/ai/llm";
 import { resolveLivreWriterModel } from "@/server/pipeline/modelResolver";
+import { criarAndamento, linhaDeTempos } from "@/server/pipeline/andamento";
 import {
   buildLivreRoutingMetadata,
   eligibleRouterCategories,
@@ -342,8 +343,11 @@ export async function POST(req: Request) {
       emit({ type: "error", ts: nowIso(), code: routingErr.code, message: routingErr.message });
     };
 
+    // W16B: andamento em etapas reais com o tempo (flag PROGRESS_ETAPAS).
+    const andamento = criarAndamento({ emit, t0, ativo: env().PROGRESS_ETAPAS === "true" });
     try {
       emit({ type: "open", ts: nowIso(), report_id: reportId });
+      andamento.recebido();
 
       const plainConflict = obstetricaPlainConflictWarning(
         reqInput.category_hint,
@@ -1124,9 +1128,11 @@ export async function POST(req: Request) {
             rendererPreferences,
             // Sprint 1 — estilo de redação despacha clássico vs objetivo (TIREOIDE).
             writingStyleId: effectiveWritingStyleId,
-            onProgress: progressEnabled
-              ? (e) => emit({ type: "stage", ts: nowIso(), stage: e.stage, label: e.label })
-              : undefined,
+            onProgress: andamento.ativo
+              ? (e) => andamento.progresso(e)
+              : progressEnabled
+                ? (e) => emit({ type: "stage", ts: nowIso(), stage: e.stage, label: e.label })
+                : undefined,
             onSystemMessage: (message) => {
               auditState.systemMessageFull = message;
             },
@@ -1250,6 +1256,8 @@ export async function POST(req: Request) {
             model?: string;
           }
         | undefined;
+      // W16B: no writer o texto sai em tokens; até o primeiro, o relógio corre em "Escrevendo o laudo… N s".
+      if (!useRenderer) andamento.progresso({ stage: "interpretando", label: "Escrevendo o laudo…" });
       try {
         while (true) {
           const next = await writerGen.next();
@@ -1258,7 +1266,10 @@ export async function POST(req: Request) {
             break;
           }
           finalText += next.value;
-          if (selectedHint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
+          if (selectedHint !== "OBSTETRICA") {
+            andamento.texto();
+            emit({ type: "token", ts: nowIso(), delta: next.value });
+          }
         }
       } catch (rendererErr) {
         // A auditoria renal roda antes do primeiro token. Cair no writer genérico
@@ -1310,7 +1321,10 @@ export async function POST(req: Request) {
             break;
           }
           finalText += next.value;
-          if (selectedHint !== "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: next.value });
+          if (selectedHint !== "OBSTETRICA") {
+            andamento.texto();
+            emit({ type: "token", ts: nowIso(), delta: next.value });
+          }
         }
       }
       finalText = writerResult?.fullText ?? finalText;
@@ -1523,6 +1537,16 @@ export async function POST(req: Request) {
       console.log(
         `[generate ${reportId}] writer usage: input=${writerResult?.inputTokens ?? "?"} cached=${writerResult?.cachedInputTokens ?? 0} output=${writerResult?.outputTokens ?? "?"}`,
       );
+      // W16B: na obstétrica o texto só sai depois da checagem fail-closed (obstetricaPlainOutputWarning, logo
+      // abaixo). Com PROGRESS_ETAPAS a mesma checagem (pura) roda aqui e, limpa, o texto sai antes das gravações
+      // no banco (updateRunAfterWriter, finalizeReport, auto_push) em vez de junto do `done`; com aviso, nada sai
+      // e a checagem de baixo derruba a geração como antes.
+      let textoObstetricoEmitido = false;
+      if (andamento.ativo && selectedHint === "OBSTETRICA" && !obstetricaPlainOutputWarning(selectedHint, finalText)) {
+        andamento.texto();
+        emit({ type: "token", ts: nowIso(), delta: finalText });
+        textoObstetricoEmitido = true;
+      }
       await updateRunAfterWriter({
         runId,
         latencyMs: writerResult?.latencyMs ?? 0,
@@ -1597,13 +1621,16 @@ export async function POST(req: Request) {
         }
       }
 
-      if (selectedHint === "OBSTETRICA") emit({ type: "token", ts: nowIso(), delta: finalText });
+      if (selectedHint === "OBSTETRICA" && !textoObstetricoEmitido) emit({ type: "token", ts: nowIso(), delta: finalText });
+      const timings = andamento.ativo ? andamento.fim() : undefined;
       emit({
         type: "done",
         ts: nowIso(),
         report_id: reportId,
         final_text: finalText,
+        ...(timings ? { timings } : {}),
       });
+      if (timings) console.log(`[generate ${reportId}] andamento ${effectiveCategory}: ${linhaDeTempos(timings)}`);
 
       /**
        * O SANITY DETERMINÍSTICO VAI SEMPRE, logo após o `done`.
@@ -1772,6 +1799,7 @@ export async function POST(req: Request) {
         }
       }
     } finally {
+      andamento.parar();
       auditState.totalDurationMs = Date.now() - t0;
       // Custo estimado pela tabela do modelo que escreveu (Haiku 5.5 por padrão;
       // a extração usa o mesmo modelo). A coluna mantém o nome histórico.

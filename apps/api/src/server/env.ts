@@ -342,6 +342,10 @@ const ServerEnvSchema = z.object({
   // idêntico ao atual (sem stage events, extração não-streaming). Ver
   // pipeline/renderer.ts + renderer/extraction.ts.
   RENDERER_PROGRESS: z.string().default("false"),
+  // W16B: andamento em etapas reais com o tempo (pipeline/andamento.ts) — "Ditado recebido" logo no início,
+  // "Lendo o ditado… N s" durante a extração, "Montando o laudo…", tempos no `done`; na obstétrica o texto
+  // sai antes das gravações no banco. Liga também os eventos do renderer. OFF = como antes.
+  PROGRESS_ETAPAS: z.string().default("false"),
   // Camada flexível: quando "true", o renderer insere os `itens_conclusao_livres`
   // (conteúdo clínico extra que o médico ditou e não cabe em campo estruturado —
   // ex.: comparação com exame anterior), após guard de dedup determinístico. OFF =
