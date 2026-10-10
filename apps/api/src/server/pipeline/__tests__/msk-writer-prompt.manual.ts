@@ -32,6 +32,16 @@ check("mesmo lado não encobre outro segmento", /nunca cobre outro segmento/i.te
 check("placeholders da biblioteca não podem vazar", /NUNCA imprima colchetes, alternativas, lacunas ou placeholders/.test(p));
 check("técnica fixa da casa presente", /transdutor linear de alta frequência 12 MHz/.test(p));
 
+// W9 (09/10/2026): cobertura na ordem, frase normal literal, padrão "normal + , com", sem paráfrase/ressalva,
+// numeração por laudo e conferência final.
+check("roteiro na ordem, uma linha por estrutura", /NA ORDEM abaixo, uma linha cada/.test(p));
+check("frase normal copiada literalmente", /copie a frase do roteiro LITERALMENTE/.test(p));
+check("padrão 'frase normal + , com' com exemplo real", /sem o ponto \+ ", com/.test(p) && /preservadas, com irregularidade cortical e osteófitos marginais na origem do tendão patelar/.test(p));
+check("estrutura alterada mantém o sujeito do roteiro", /o mesmo sujeito da frase do roteiro/.test(p));
+check("proíbe paráfrase e ressalva inventada", /NÃO parafraseie nem inverta/.test(p) && /sem alteração identificável/.test(p));
+check("numeração só na conclusão e recomeça por laudo", /existe SÓ dentro da CONCLUSÃO e recomeça em "1\)"/.test(p));
+check("conferência final por laudo", /CONFERÊNCIA FINAL, laudo por laudo/.test(p));
+
 const pComBiblioteca = buildMskWriterSystemMessage({
   validatedLibrary: "FRASE VALIDADA: Tendão infraespinhal com espessamento.",
 });
