@@ -26,6 +26,10 @@ function test(name: string, run: () => void): void {
 
 // SHA-256 da saida completa — guarda de byte-identidade da lateralidade dos ossos.
 //
+// BASE ATUALIZADA EM 11/10/2026 (W16D): os ossos longos laterais ganharam a sigla do
+// laudo do médico ("Comprimento do fêmur direito (CF) de …"). Conferido: tirando as
+// siglas, a saída nova tem exatamente os hashes anteriores (2t/3t, clássico e objetivo).
+//
 // BASE ATUALIZADA EM 06/10/2026: sem percentil informado, o 1T não conclui
 // normalidade das uterinas. Em 18/09/2026 houve a unificação da linha do peso;
 // em 15/09/2026, a decisão de MODELO COMPLETO trouxe de volta as
@@ -36,10 +40,10 @@ function test(name: string, run: () => void): void {
 const LEGACY_HASHES = [
 ["1t", false, "59e79e9157b38affa68898f34e88b61e192c9e97d1df4bd98f71d4d83fad8b74"],
   ["1t", true, "0a157cff761b64cffedc1dde5322f91435b116dc35b509694e8efeb212ce1b27"],
-  ["2t", false, "1c62a353b4cdaae3bcf0f690c76ec5fe68c9b689f92bf8922d7df52cbbbaedfe"],
-  ["2t", true, "c4832a61fcb3c79eab8640242d27eef2361711d8a78477b7d0417700fc844b43"],
-  ["3t", false, "5f6fa03e80448e4f24b42132d0df7d079e058b0e4cd9f2b68c739c9e12db6669"],
-  ["3t", true, "36d9150fa2754b455e9c737425d8777354b83be5230d586d3a593f428f43f0dd"],
+  ["2t", false, "5056e64a9250d8b75b163201f64608936947ac1107b7344b3d3acd6097ca7f1a"],
+  ["2t", true, "198a1fa0326e5dfec9739ba4cefbf49e07d3626e8695dc63ddd0af5a6879ab64"],
+  ["3t", false, "f162919c063153d8b2aec24f8fef433d0ecdb7759a5cd7fff756454e74ff211c"],
+  ["3t", true, "6dc1d3b0a0c889820a9652074c3e3de767c81124af7a79b6313f60f5de276a9a"],
 ] as const;
 for (const [trimestre, objetivo, hash] of LEGACY_HASHES) {
   test(`${trimestre} ${objetivo ? "Objetivo" : "Classico"} legacy six bones byte-identical`, () => {
@@ -91,6 +95,9 @@ test("strict objects recursively require every property and match Zod", () => {
   assert.deepEqual(Object.keys(MorfologicoFindingsSchema.shape).sort(), Object.keys(MORFOLOGICO_JSON_SCHEMA.properties).sort());
 });
 
+/** Sigla de cada osso, como no laudo do médico (W16D). */
+const SIGLA: Record<string, string> = { femur: "CF", tibia: "T", fibula: "F", umero: "U", radio: "R", ulna: "U" };
+
 const scenarios = [
   { name: "asymmetric", generic: null, dir: 42.3, esq: 40.1, right: "42,3", left: "40,1" },
   { name: "specific beats generic", generic: 49.9, dir: 42.3, esq: 40.1, right: "42,3", left: "40,1" },
@@ -121,8 +128,8 @@ for (const trimestre of ["2t", "3t"] as const) {
           const texto = renderMorfologico(parsed, null, { objetivo });
           const linhas = texto.split("\n").filter((line) => line.startsWith(`Comprimento ${label} `));
           assert.deepEqual(linhas, [
-            `Comprimento ${label} ${rightLabel}${sep}${scenario.right} mm.`,
-            `Comprimento ${label} ${leftLabel}${sep}${scenario.left} mm.`,
+            `Comprimento ${label} ${rightLabel} (${SIGLA[osso]})${sep}${scenario.right} mm.`,
+            `Comprimento ${label} ${leftLabel} (${SIGLA[osso]})${sep}${scenario.left} mm.`,
           ]);
           const original = renderMorfologico(legado(trimestre), null, { objetivo });
           const semOsso = (text: string) => text.split("\n").filter((line) => !line.startsWith(`Comprimento ${label} `)).join("\n");
@@ -140,9 +147,9 @@ for (const trimestre of ["2t", "3t"] as const) {
       });
       const parsed = MorfologicoFindingsSchema.parse({ ...legado(trimestre), ...fields });
       const texto = renderMorfologico(parsed, null, { objetivo });
-      OSSOS.forEach(([, label, right, left], index) => {
-        assert.ok(texto.includes(`Comprimento ${label} ${right}${sep}${(40.1 + index).toFixed(1).replace(".", ",")} mm.`));
-        assert.ok(texto.includes(`Comprimento ${label} ${left}${sep}${(38.2 + index).toFixed(1).replace(".", ",")} mm.`));
+      OSSOS.forEach(([osso, label, right, left], index) => {
+        assert.ok(texto.includes(`Comprimento ${label} ${right} (${SIGLA[osso]})${sep}${(40.1 + index).toFixed(1).replace(".", ",")} mm.`));
+        assert.ok(texto.includes(`Comprimento ${label} ${left} (${SIGLA[osso]})${sep}${(38.2 + index).toFixed(1).replace(".", ",")} mm.`));
       });
     });
   }

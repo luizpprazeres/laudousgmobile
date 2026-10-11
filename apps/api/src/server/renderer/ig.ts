@@ -761,3 +761,21 @@ export function preencherIgReferenciaDitada<T extends IgUsPrecoceCampos & { dum?
     aviso: null,
   };
 }
+
+/**
+ * Datação pedida no ditado (regra 7c do prompt), preenchida SÓ quando a extração deixou
+ * vazio (W16D). Sem raciocínio, "corrigido pela ultrassonografia precoce" voltava sem
+ * datacao_pedido e, com corrigir_ig=true, a regra legada escolhia "relacionar" (b95b8f3a,
+ * 85b435c8: "pela biometria atual, devendo ser corrigida…" no lugar de "corrigida pela…").
+ * Mais de um pedido no ditado → nada (ambíguo).
+ */
+export function preencherDatacaoPedidoDitada<T extends { datacao_pedido?: DatacaoPedido | null }>(f: T, rawInput: string): T {
+  if (f.datacao_pedido) return f;
+  const pedidos = new Set<DatacaoPedido>();
+  if (/devendo\s+ser\s+corrigid|\b(?:co)?rrelacion|\brelacion|\bcompar\w*\s+com\s+a\s+primeira/i.test(rawInput)) pedidos.add("relacionar");
+  if (/\bmant(?:er|enha|[ée]m)\s+(?:a\s+)?(?:IG\s+(?:d?a\s+|pela\s+)?)?biometria|\bn[ãa]o\s+corrig/i.test(rawInput)) pedidos.add("manter_biometria");
+  const semRelacionar = rawInput.replace(/devendo\s+ser\s+corrigid[ao]s?/gi, "");
+  if (/\b(?:corrigid[ao]s?|corrija|corrigir|corrige)\s+(?:pela|pelo|com\s+a|de\s+acordo\s+com\s+a)\s+(?:primeira\s+)?(?:ultrassonografia|ultrassom|US|USG)\b/i.test(semRelacionar)) pedidos.add("corrigir");
+  if (pedidos.size !== 1) return f;
+  return { ...f, datacao_pedido: [...pedidos][0]! };
+}

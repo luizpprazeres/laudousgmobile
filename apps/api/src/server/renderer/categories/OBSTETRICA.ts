@@ -2007,3 +2007,16 @@ export function conferirRelacaoPlacenta(f: ObstetricaFindings): { findings: Obst
       `(${PLACENTA_BAIXA_MAX_MM} mm ou mais não é inserção baixa); classificação removida do laudo — confira.`,
   };
 }
+
+/**
+ * Líquido "normal" (análise subjetiva) com MBV ou ILA MEDIDO no ditado (W16D, b80a63e5:
+ * "maior bolsão vertical de 3,6 cm" → "quantidade normal pela análise subjetiva"). Com uma
+ * só medida, o tipo segue a medida; com as duas, fica como veio.
+ */
+export function conferirLiquidoMedido(f: ObstetricaFindings): ObstetricaFindings {
+  if (f.liquido_tipo !== "normal") return f;
+  const mbv = (f.liquido_mbv_por_feto_cm ?? []).some((v) => v != null);
+  const ila = f.liquido_ila_cm != null;
+  if (mbv === ila) return f;
+  return { ...f, liquido_tipo: mbv ? "mbv" : "ila" };
+}

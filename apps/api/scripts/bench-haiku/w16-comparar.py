@@ -72,6 +72,28 @@ if CONFIG == "w16c":
         {"t": "Com raciocínio", "flow": "thinking adaptativo · os mesmos leitores", "s": "A régua: o mesmo código com raciocínio."},
         {"t": "Produção de hoje", "flow": "thinking adaptativo · sem os leitores", "s": "Como está no ar."},
     ]
+if CONFIG == "w16d":
+    ARMS = [
+        ("c/com1r", "A7", "com raciocínio (código W16D)"),
+        ("c/sem5", "A8", "sem raciocínio, ferramenta forçada (W16D)"),
+        ("c/comsemleitor1", "A5", "produção de hoje (com raciocínio, antes da W16C)"),
+    ]
+    HTML_ARMS = {"A7", "A8", "A5"}
+    REPLICAS = [("c/com1r", "c/com2r", "A7"), ("c/sem5", "c/sem6", "A8")]
+    GRUPOS = GRUPOS[:2]
+    SAIDA = "comparacao-w16d.json"
+    MERGED = "merged-w16d"
+    HTML_KEYS = [
+        {"k": "A7", "t": "Com raciocínio", "s": "thinking adaptativo, código da W16D"},
+        {"k": "A8", "t": "Sem raciocínio (W16D)", "s": "thinking desligado, ferramenta forçada, leitores e correções da W16C/W16D"},
+        {"k": "A5", "t": "Produção de hoje", "s": "com raciocínio, antes dos leitores (W16C)"},
+    ]
+    PASSOS = [
+        {"t": "1. Ditado real", "s": "O texto que o médico ditou no app, o mesmo em todos os braços, gerado na data em que o caso foi gerado em produção."},
+        {"t": "Sem raciocínio (W16D)", "flow": "thinking disabled · ferramenta forçada · leitores e conferências determinísticas", "s": "A escolha do Luiz (11/10), com os erros vistos na W16C corrigidos."},
+        {"t": "Com raciocínio", "flow": "thinking adaptativo · o mesmo código", "s": "A régua."},
+        {"t": "Produção de hoje", "flow": "thinking adaptativo · antes da W16C", "s": "Como está no ar."},
+    ]
 BASE = ARMS[0][0]
 
 
@@ -167,12 +189,30 @@ def dorso(t):
     return m.group(2) if m else None
 
 
+FRASES_OBRIGATORIAS = ["Morfologia fetal normal para esta fase da gestação."]
+SIGLA_RE = re.compile(r"^\s*(?:\d+\)\s*)?([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^\n:()]{3,70}?)\s*\(([A-Za-z]{1,4})\)\s*(?:de|:)\s*\d", re.M)
+
+
+def obrigatorias(cand, final):
+    """W16D: frases obrigatórias e siglas do final que faltam no gerado."""
+    frases = sum(1 for f in FRASES_OBRIGATORIAS if f in final and f not in cand)
+    siglas = 0
+    for m in SIGLA_RE.finditer(final):
+        lab, sig = m.group(1).strip(), m.group(2)
+        if re.search(r"^\s*(?:\d+\)\s*)?" + re.escape(lab) + r"\s*(?:de|:)\s*\d", cand, re.M) and not re.search(re.escape(lab) + r"\s*\(" + re.escape(sig) + r"\)", cand):
+            siglas += 1
+    return frases, siglas
+
+
 def clinico(cand, final):
     """Placar clínico do laudo contra o final do médico (determinístico)."""
     fin_ig, cand_ig = igs(conclusao(final)), igs(conclusao(cand))
     nf, nc = numeros(final), numeros(cand)
     df, dc = dorso(final), dorso(cand)
+    fr, sg = obrigatorias(cand, final)
     return {
+        "frase_obrigatoria_faltando": fr,
+        "sigla_faltando": sg,
         "ig_final_ausente": len(fin_ig - igs(cand)),
         "ig_conclusao_extra": len(cand_ig - igs(final)),
         "num_final_ausente": len(nf - nc),
@@ -225,7 +265,7 @@ for sufixo, nome in GRUPOS:
             "falhas": sum(1 for i in base if i in res[arm] and (res[arm][i].get(key) or [{}])[0].get("error")),
             "clinico": {
                 k: sum(clinico(((res[arm][i].get(key) or [{}])[0].get("text") or ""), base[i]["final"] or "")[k] for i in base if i in res[arm])
-                for k in ("ig_final_ausente", "ig_conclusao_extra", "num_final_ausente", "num_extra", "dorso_diverge")
+                for k in ("ig_final_ausente", "ig_conclusao_extra", "num_final_ausente", "num_extra", "dorso_diverge", "frase_obrigatoria_faltando", "sigla_faltando")
             },
             "sim_final": round(statistics.mean(res[arm][i]["m_" + key]["simFinal"] for i in base if i in res[arm] and res[arm][i].get("m_" + key)), 3),
         }
@@ -323,7 +363,7 @@ for a1, a2, key in REPLICAS:
     vals = [[x for x in d if x[3] == "valor"] for d in dd]
     iguais = sum(1 for i in ids if ((r1[i].get(key) or [{}])[0].get("text")) == ((r2[i].get(key) or [{}])[0].get("text")))
     clin2 = {k: sum(clinico(((r2[i].get(key) or [{}])[0].get("text") or ""), r2[i]["final"] or "")[k] for i in ids)
-             for k in ("ig_final_ausente", "ig_conclusao_extra", "num_final_ausente", "num_extra", "dorso_diverge")}
+             for k in ("ig_final_ausente", "ig_conclusao_extra", "num_final_ausente", "num_extra", "dorso_diverge", "frase_obrigatoria_faltando", "sigla_faltando")}
     base_rep[f"{a1}×{a2}"] = {"n": len(ids), "casos_valor": sum(1 for v in vals if v), "campos_valor": sum(len(v) for v in vals), "laudos_iguais": iguais, "clinico_replica": clin2}
     print(f"linha de base {a1}×{a2}: {base_rep[f'{a1}×{a2}']}")
 comparacao["linha_de_base"] = base_rep

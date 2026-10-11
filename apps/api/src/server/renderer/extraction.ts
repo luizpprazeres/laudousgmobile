@@ -453,6 +453,17 @@ export function marcosComValor(parcial: string, vistos: ReadonlySet<string> = ne
   return out;
 }
 
+/**
+ * W16D (bec362d5, sem raciocínio, 2/2): a correção devolveu o feto em `fetos` mas manteve
+ * `numero_fetos: 0`, e a validação reprovava pela contagem — o laudo falhava. Com fetos na
+ * lista, 0 é contagem derivável e vira o tamanho da lista; nada mais muda.
+ */
+function ajustarContagemFetos(v: unknown): unknown {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return v;
+  const o = v as { numero_fetos?: unknown; fetos?: unknown };
+  return Array.isArray(o.fetos) && o.fetos.length > 0 && o.numero_fetos === 0 ? { ...o, numero_fetos: o.fetos.length } : v;
+}
+
 export async function runRendererExtraction(args: {
   categoryCode: string;
   dopplerMode?: "combined" | "isolated";
@@ -528,9 +539,11 @@ export async function runRendererExtraction(args: {
   const seen = new Set<string>();
   // Enforce the explicit choice even if the provider ignores the null-only schema.
   const withPlainChoice = (parsed: unknown) =>
-    plainObstetrica && parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? { ...parsed, doppler: null }
-      : parsed;
+    ajustarContagemFetos(
+      plainObstetrica && parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? { ...parsed, doppler: null }
+        : parsed,
+    );
   const target = extractionTarget(e, args.categoryCode);
   const { raw, usage, mode } = await llmJson({
     target,
