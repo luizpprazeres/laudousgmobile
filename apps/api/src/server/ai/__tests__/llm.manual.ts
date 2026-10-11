@@ -11,6 +11,7 @@ import type OpenAI from "openai";
 import {
   dedicatedWriterTarget,
   EXTRACTION_TEXT_RULE,
+  extractionTarget,
   HAIKU_MODEL,
   writerModelOverrides,
   writerTargetForCategory,
@@ -57,6 +58,7 @@ type Turn =
       content: unknown[];
       stop_reason?: string;
       stop_details?: unknown;
+      usage?: Record<string, number>;
     };
 
 function scripted(turns: Turn[]) {
@@ -76,7 +78,7 @@ function scripted(turns: Turn[]) {
             content: turn.content,
             stop_reason: turn.stop_reason ?? "end_turn",
             stop_details: turn.stop_details ?? null,
-            usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 0 },
+            usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 0, cache_creation_input_tokens: 0, ...(turn as { usage?: object }).usage },
           }),
         };
       },
@@ -285,6 +287,91 @@ async function main() {
     assert.equal("format" in p.output_config, false);
     assert.match(p.system[0].text, /chamando a ferramenta `Grande`/);
   });
+  // ---------------- W16: extração sem raciocínio ----------------
+  await check("extractionTarget: adaptativo por padrão; LLM_EXTRACTION_THINKING=disabled desliga; tool_choice", () => {
+    const base = { LLM_EXTRACTION_MODEL: "claude-haiku-5-5", LLM_EXTRACTION_EFFORT: "medium" };
+    assert.equal(extractionTarget(base).thinking, "adaptive");
+    assert.equal(extractionTarget({ ...base, LLM_EXTRACTION_THINKING: " Disabled " }).thinking, "disabled");
+    assert.equal(extractionTarget({ ...base, LLM_EXTRACTION_THINKING: "adaptive" }).thinking, "adaptive");
+    assert.equal(extractionTarget({ ...base, LLM_EXTRACTION_THINKING: "qualquer" }).thinking, "adaptive");
+    assert.equal(extractionTarget(base).toolChoice, "forced");
+    assert.equal(extractionTarget({ ...base, LLM_EXTRACTION_TOOL_CHOICE: "auto" }).toolChoice, "auto");
+    assert.equal(writerTargetForCategory("OBSTETRICA", { LLM_WRITER_MODEL: "claude-haiku-5-5", LLM_WRITER_EFFORT: "medium" }).thinking, undefined, "writer não muda");
+  });
+  await check("sem raciocínio, ferramenta: thinking disabled, ferramenta forçada, cache lido e gravado", async () => {
+    const tool = toolTurn("Grande", { campo_0: "x" }) as { events: any[]; content: any[]; stop_reason: string };
+    // Sem raciocínio a resposta começa direto na ferramenta (bloco 0).
+    const turn: Turn = {
+      events: tool.events.map((e) => ({ ...e, index: 0 })),
+      content: tool.content.filter((b) => b.type !== "thinking"),
+      stop_reason: tool.stop_reason,
+      usage: { cache_read_input_tokens: 900, cache_creation_input_tokens: 40 },
+    };
+    const { client, calls } = scripted([turn]);
+    const r = await llmJson({
+      target: { ...HAIKU, thinking: "disabled" },
+      system: "sys",
+      messages: [{ role: "user", content: "u" }],
+      schemaName: "Grande",
+      schema: BIG_SCHEMA,
+      anthropicClient: client,
+    });
+    assert.equal(r.mode, "tool");
+    const p = calls[0]!;
+    assert.deepEqual(p.thinking, { type: "disabled" });
+    assert.deepEqual(p.tool_choice, { type: "tool", name: "Grande" });
+    assert.equal(p.output_config.effort, "medium");
+    assert.deepEqual(p.system[0].cache_control, { type: "ephemeral" });
+    assert.equal(r.usage.cachedInputTokens, 900);
+    assert.equal(r.usage.cacheWriteInputTokens, 40);
+    assert.equal(r.usage.inputTokens, 1040);
+  });
+  await check("sem raciocínio + tool_choice auto: ferramenta não é forçada", async () => {
+    const { client, calls } = scripted([toolTurn("Grande", { campo_0: "x" })]);
+    await llmJson({
+      target: { ...HAIKU, thinking: "disabled", toolChoice: "auto" },
+      system: "s",
+      messages: [{ role: "user", content: "u" }],
+      schemaName: "Grande",
+      schema: BIG_SCHEMA,
+      anthropicClient: client,
+    });
+    assert.deepEqual(calls[0]!.thinking, { type: "disabled" });
+    assert.deepEqual(calls[0]!.tool_choice, { type: "auto" });
+  });
+  await check("omitir nulos (experimento): anuláveis saem de required só na ferramenta; o retorno é completado", async () => {
+    const { client, calls } = scripted([toolTurn("Grande", { campo_0: "x" })]);
+    const r = await llmJson({
+      target: HAIKU,
+      system: "s",
+      messages: [{ role: "user", content: "u" }],
+      schemaName: "Grande",
+      schema: BIG_SCHEMA,
+      omitNulls: true,
+      anthropicClient: client,
+    });
+    assert.deepEqual(calls[0]!.tools[0].input_schema.required, []);
+    assert.match(calls[0]!.system[0].text, /Omita da chamada todo campo cujo valor seria null/);
+    assert.equal(JSON.parse(r.raw).campo_19, null);
+    assert.deepEqual(BIG_SCHEMA.required.length, 20, "o schema original não muda");
+  });
+  await check("sem raciocínio, estrito: thinking disabled; xhigh/max descem a high (400 na API)", async () => {
+    for (const [effort, sent] of [["low", "low"], ["high", "high"], ["xhigh", "high"], ["max", "high"]] as const) {
+      const { client, calls } = scripted([textTurn('{"nome":"x","idade":null}')]);
+      await llmJson({
+        target: { ...HAIKU, effort, thinking: "disabled" },
+        system: "s",
+        messages: [{ role: "user", content: "u" }],
+        schemaName: `Pequeno_${effort}`,
+        schema: SMALL_SCHEMA,
+        anthropicClient: client,
+      });
+      assert.deepEqual(calls[0]!.thinking, { type: "disabled" });
+      assert.equal(calls[0]!.output_config.effort, sent);
+      assert.equal("tools" in calls[0]!, false);
+    }
+  });
+
   await check("ferramenta: reprovação no validador volta ao modelo uma vez (append-only, thinking preservado)", async () => {
     const { client, calls } = scripted([toolTurn("Grande", { campo_0: 7 }, "toolu_a"), toolTurn("Grande", { campo_0: "ok" }, "toolu_b")]);
     const { value } = await llmParsed({

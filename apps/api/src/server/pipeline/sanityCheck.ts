@@ -1,6 +1,6 @@
 import type { SanityResult, StructuredFindings } from "@laudousg/shared";
 import { SanityResultSchema } from "@laudousg/shared";
-import { llmParsed, sanityTarget } from "../ai/llm";
+import { llmParsed, sanityTarget, type LlmJsonOptions } from "../ai/llm";
 import { SANITY_JSON_SCHEMA } from "../ai/jsonSchema";
 
 /**
@@ -60,6 +60,8 @@ export async function runSanityCheck(args: {
   /** Texto cru ditado/digitado pelo médico — fonte de verdade primária. */
   rawInput?: string;
   signal?: AbortSignal;
+  /** Só bancada. */
+  anthropicClient?: LlmJsonOptions["anthropicClient"];
 }): Promise<{ result: SanityResult; latencyMs: number }> {
   const t0 = Date.now();
 
@@ -89,6 +91,7 @@ export async function runSanityCheck(args: {
     // Os campos da sanity são comentário sobre o laudo, não texto de laudo.
     reportText: false,
     signal: args.signal,
+    anthropicClient: args.anthropicClient,
   });
 
   return { result, latencyMs: Date.now() - t0 };

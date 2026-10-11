@@ -120,8 +120,9 @@ del{color:var(--del-ink);text-decoration:line-through;opacity:.85}
     <label><input type="checkbox" id="diff" checked> Marcar diferenças em relação ao final</label>
     <label><input type="checkbox" id="onlyEdited"> Só casos que o médico editou</label>
     <label><input type="checkbox" id="onlyProblems"> Só casos com nota ≤ 4</label>
+    <select id="ref" style="display:none" title="Referência das marcas"></select>
     <select id="jump"><option value="">Ir para o caso…</option></select>
-    <span class="legend"><span><ins>texto amarelo</ins> = não está no final</span><span><del>riscado</del> = está no final e faltou</span></span>
+    <span class="legend"><span><ins>texto amarelo</ins> = não está na referência</span><span><del>riscado</del> = está na referência e faltou</span></span>
   </div>
 
   <div id="cases"></div>
@@ -174,6 +175,10 @@ const KEYS = [
   {k:'A4', t:'Cenário A4', s:'caminho atual, prompt revisado (3ª iteração)'},
   ...['B3','B4','B5','B6','B7','B8','B9'].map((k, i) => ({k, t:`Cenário ${k}`, s:`writer, prompt revisado (${i + 1}ª iteração)`})),
 ].map(x => ({...x, ...((D.rotulos || {})[x.k] || {})})).filter(x => x.k==='gpt' || (x.k==='R' ? D.cases.some(r => r.juiz && r.juiz.R) : D.cases.some(r => r[x.k])));
+// meta.json pode fixar as colunas (D.keys: [{k,t,s}]) e as referências do diff (D.refs: [{k,t}], 'final' = laudo do médico).
+if (D.keys) KEYS.splice(0, KEYS.length, ...D.keys);
+const refSel = document.getElementById('ref');
+if (D.refs) { refSel.style.display = ''; refSel.innerHTML = D.refs.map(x => `<option value="${x.k}">Marcar diferenças em relação a: ${x.t}</option>`).join(''); }
 const textOf = (r,k) => {
   if (k==='gpt') return r.gpt||'';
   if (k==='R') return r.replay?.text || '(sem replay)';
@@ -207,7 +212,8 @@ function diff(a, b){ // a = final (referência), b = candidato
 }
 
 // placar
-(function(){
+if (D.placarHtml) document.getElementById('placar').innerHTML = D.placarHtml;
+else (function(){
   const avg = xs => xs.length ? (xs.reduce((a,b)=>a+b,0)/xs.length) : NaN;
   const rows = KEYS.map(({k,t,s}) => {
     const all = D.cases.map(r=>r.juiz?.[k]).filter(Boolean);
@@ -243,9 +249,13 @@ function render(){
       ...KEYS.map(({k,t,s}) => {
         const j = r.juiz?.[k];
         const txt = textOf(r,k);
-        const body = showDiff ? diff(r.final||'', txt) : esc(txt);
+        const ref = refSel.value && refSel.value !== 'final' ? refSel.value : null;
+        const refTxt = ref ? textOf(r, ref) : (r.final || '');
+        const body = showDiff && k !== ref ? diff(refTxt, txt) : esc(txt);
+        const met = (r.metricas?.[k] || []).map(m => `<span class="tag ${m.tone || ''}">${esc(m.t)}</span>`).join('');
         const sub = k==='gpt' ? (r.prodPath==='renderer' ? 'gpt-4.1-mini extraiu + renderer (código da época)' : 'writer gpt-5.4-mini (renderer falhou)') : (k==='A' && fallbackA(r)) ? 'renderer recusou a extração → caiu no Haiku escritor (= B2)' : s;
         return `<div class="col"><div class="col-head"><div class="t">${t}</div><div class="s">${esc(sub)}</div>
+          ${met ? `<div class="score">${met}</div>` : ''}
           ${j ? `<div class="score"><span class="tag ${tone(j.nota)}">nota ${j.nota}</span><span class="tag">estilo ${j.estilo}</span><span class="tag ${j.impressao_ok?'good':'bad'}">impressão ${j.impressao_ok?'igual':'diferente'}</span></div>`:''}
           </div><div class="laudo">${body}</div>${judgeHtml(j)}</div>`;
       })
@@ -260,6 +270,7 @@ function render(){
       <div class="case-body">
         <div class="label">Ditado do médico</div><div class="dictation">${esc(r.ditado)}</div>
         ${nota ? `<div class="nota"><b>Conferido por Claude:</b> ${esc(nota)}</div>` : ''}
+        ${r.notaHtml ? `<div class="nota">${r.notaHtml}</div>` : ''}
         <div class="cols" style="--n:${KEYS.length+1}">${cols}</div>
       </div></section>`;
   }).join('');
@@ -268,7 +279,7 @@ function render(){
 const jump = document.getElementById('jump');
 D.cases.forEach(r => { const o=document.createElement('option'); o.value=r.id8; o.textContent=`${r.id8} · ${r.data.split('-').reverse().join('/')}`; jump.appendChild(o); });
 jump.addEventListener('change', e => { const el=document.getElementById('c-'+e.target.value); if(el) el.scrollIntoView({behavior:'smooth'}); });
-['diff','onlyEdited','onlyProblems'].forEach(id => document.getElementById(id).addEventListener('change', render));
+['diff','onlyEdited','onlyProblems','ref'].forEach(id => document.getElementById(id).addEventListener('change', render));
 render();
 </script>
 </body>

@@ -25,6 +25,124 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## W16A — latência da extração: com × sem raciocínio (`perf/w16a-extracao-sem-raciocinio`, base `6344596b`)
+
+**Veredito: desligar o raciocínio deixa a extração 3× mais rápida, mas piora o laudo.** Nenhuma variante sem raciocínio
+cumpriu a meta "nenhuma piora clínica". Por isso **o padrão do código continua adaptativo** (produção igual à de hoje), e
+desligar fica a uma env de distância (`LLM_EXTRACTION_THINKING=disabled`). A decisão é do Luiz, com o HTML na mão.
+
+**HTML lado a lado** (local; contém ditados reais, não publicar):
+`tmp-review/bench-haiku/w16/html/relatorio.html` no repositório principal. Traz 69 casos (obstétrica, Doppler
+obstétrico e morfológico). Para cada caso:
+- o final do médico e quatro colunas (com raciocínio, sem raciocínio forçado, sem raciocínio auto, raciocínio low);
+- os tokens de saída, os tokens de raciocínio e o tempo de cada coluna;
+- as diferenças campo a campo dos JSONs extraídos;
+- a referência das marcas pode ser o final do médico ou o laudo com raciocínio.
+
+Os 4 casos de IG errada estão anotados.
+
+### Bancada: 46 obstétricos + Doppler, 23 morfológicos e 20 tireoides (os mesmos casos das rodadas anteriores)
+
+Tudo foi rodado pela assinatura (`claude -p`, `BENCH_MODEL=claude-haiku-5-5`), sem API. O tempo é o da extração (1º turno
+na API, medido no proxy). "IG" e "nº" contam as IGs da conclusão e os números do laudo final do médico que faltam no laudo
+gerado; quanto menor, melhor. Entre parênteses, a réplica (a mesma configuração rodada de novo).
+
+| Extração | Obst.: tempo p50 · p90 | Obst.: saída (raciocínio) | Obst.: IG · nº | Morfo: tempo · nº | Tireoide: tempo · nº |
+|---|---|---|---|---|---|
+| com raciocínio (hoje) | 18,3 s · 26,2 s | 5.432 (3.294) | 22 (20) · 125 (129) | 17,9 s · 106 | 7,1 s · 39 |
+| sem raciocínio, ferramenta forçada | 5,8 s · 6,8 s | 1.903 (0) | **26 (27)** · **140 (142)** | 6,1 s · 109 | 3,5 s · 34 |
+| sem raciocínio, `tool_choice` auto | 7,9 s · 9,9 s | 2.487 (0) | 22 · **138** | 8,1 s · 111 | — |
+| adaptativo, esforço low | 16,0 s · 22,0 s | 4.563 (2.357) | 19 · 125 | 15,6 s · 108 | — |
+| sem raciocínio + omitir nulos | 2,6 s · 3,8 s | 697 (0) | 21 · 130 | 3,1 s · 110 | 2,3 s · 33 |
+
+**O que piora, com os casos:**
+
+- **Sem raciocínio (forçado): IG da conclusão errada em 4 obstétricos**, os mesmos nas duas execuções. O extrator deixa de
+  ler a IG de referência ditada (`ig_referencia_hoje_*`, "hoje com X semanas"), e o renderer projeta a 1ª US:
+  - `461296ff`: 32s1d em vez de 30s4d;
+  - `8af4d1cb`: 21s em vez de 19s4d;
+  - `0644bbf0`: 21s2d em vez de 20s5d;
+  - `89d87fca`: 15s5d em vez de 15s (o ditado diz "hoje com 15 semanas").
+
+  Na tireoide, `3221ca52` perdeu a classificação TI-RADS dos nódulos, inclusive um TI-RADS 5 que está no final, porque as
+  características ACR ficaram nulas. Faltam ~15 números do final a mais que no modo com raciocínio; a variação entre
+  execuções é de ±4.
+- **Sem raciocínio, auto:** o modelo escreve um plano curto em texto antes da ferramenta. A IG volta ao nível de hoje, mas
+  ainda faltam ~13 números do final: BCF, peso, CC, percentil das uterinas e a frase da 1ª US.
+- **Omitir nulos: reprovado.** No morfológico o modelo omitiu campos que tinham valor: o BCF ditado sumiu do laudo em 4 dos
+  23 casos, e a vitalidade virou "taquicardia" com BCF de 147. A flag `LLM_EXTRACTION_OMIT_NULLS` fica desligada e
+  documentada no código.
+- **Adaptativo low:** não piora, mas ganha só ~2 s.
+
+**Linha de base (a mesma configuração duas vezes, obstétrica):**
+
+| Comparação | Casos com algum valor diferente | Laudos idênticos |
+|---|---|---|
+| com × com | 27/46 | 29/46 |
+| sem × sem | 29/46 | 27/46 |
+| com × sem | 39/46 (202 campos) | 10/46 |
+
+**Diferenças que não pesam:**
+- `dorso` "à esquerda" × "esquerdo": o `ladoFmt` do renderer normaliza;
+- `placenta_quantidade` 1 × null;
+- `ip_medio_uterinas` calculado × null.
+
+### Itens da W16A
+
+1. **Extração sem raciocínio (pronto, desligado por padrão).**
+   - `LlmTarget` ganha `thinking` e `toolChoice`.
+   - Com `thinking: "disabled"`, o motor manda `thinking: {type: "disabled"}`.
+   - Esforço `xhigh`/`max` desce a `high`, porque dão 400 sem raciocínio no Haiku 5.5 (skill `claude-api`, migração para o
+     Haiku 5.5).
+   - No caminho por ferramenta, a chamada é forçada (`tool_choice: {type: "tool"}`), ou fica `auto` com
+     `LLM_EXTRACTION_TOOL_CHOICE=auto`.
+
+   Vale para todo `extractionTarget()`: renderer, structurer e interpretador de comandos. Writers, Livre e sanity não mudam.
+
+   | Env | Default | Valores |
+   |---|---|---|
+   | `LLM_EXTRACTION_THINKING` | adaptativo | `disabled` |
+   | `LLM_EXTRACTION_TOOL_CHOICE` | `forced` | `auto` |
+   | `LLM_EXTRACTION_OMIT_NULLS` | desligado | `true` (reprovado) |
+2. **Bancada pela assinatura sem raciocínio.**
+   - A doc do Claude Code diz que `MAX_THINKING_TOKENS=0` **não** desliga o raciocínio no Haiku 5.5. Medido: o bloco
+     `thinking` continua vindo.
+   - Solução: `scripts/bench-haiku/thinkingProxy.mjs`, um proxy local via `ANTHROPIC_BASE_URL`. Ele reescreve só o pedido
+     do Haiku (thinking disabled, sem a edição `clear_thinking`, ferramenta forçada no 1º turno), continua na assinatura e
+     mede cada turno no SSE.
+   - O shim (`claudeCli.ts`) falha se vier raciocínio num pedido sem raciocínio. O stream-json fica gravado com
+     `BENCH_CLI_TRACE_DIR`.
+   - Prova no smoke: 1º turno só com `tool_use`, `thinking_tokens: 0`.
+3. **Omitir nulos:** medido (−63% de saída) e reprovado, como acima.
+4. **Cache.**
+   - O system da extração é estável: prompt constante por categoria, sufixos fixos, sem data ou hora, ditado depois do
+     ponto de cache. Na bancada, 85 de 89 extrações leram o prefixo do cache (~90% da entrada).
+   - Em produção: log `[extraction CAT] usage: input= cache_read= cache_write= output= ms= thinking= mode=` e
+     `reports.metadata.extraction_usage` (só números, sem PHI). O `writer usage` do caminho renderer passa a mostrar o
+     `cached` da extração.
+5. **Sanity:** 12 obstétricos, cada um limpo e com um defeito injetado (medida ×1,4 ou lado trocado).
+   - Modo atual (adaptativo medium): 12/12 defeitos viram *critical*; 7 dos 12 limpos também saem *critical*; 3.843 tokens;
+     16,6 s.
+   - Adaptativo low: 12/12; 7/12; 2.644 tokens; 11,6 s.
+   - Sem raciocínio: 12/12; 10/12; 991 tokens; 4,4 s.
+
+   **Proposta:** `LLM_SANITY_EFFORT=low`, só env, mesmo resultado com 31% menos saída. Sem raciocínio, não: aumenta o
+   falso *critical*. A env `LLM_SANITY_THINKING=disabled` existe, mas está desligada.
+
+**Próximo passo que pode destravar o "sem raciocínio":** a piora principal (IG) vem de um campo que o ditado traz pronto
+("hoje com X semanas e Y dias" / "IG pela ultrassonografia precoce: XsYd"). Um leitor determinístico que preencha
+`ig_referencia_hoje_*` quando o modelo o deixar vazio eliminaria os 4 casos. Os números perdidos e o TI-RADS pedem nova
+medição.
+
+**Testes:**
+- `llm` 31/31: thinking disabled, ferramenta forçada ou auto, esforço xhigh→high, cache lido/gravado e omitir nulos;
+- `livreRouter` 18/18;
+- `generate-fail-closed` 41/41;
+- `tsc` limpo.
+
+**Scripts:** `thinkingProxy.mjs`, `sanity-w16.ts` e `w16-comparar.py` (novos); `claudeCli.ts`, `bench-abdomen.ts` e
+`relatorio.py` (colunas, referência do diff e métricas opcionais).
+
 ## GOFINAL — pacote de deploy na HEAD integrada (`docs/go-final`, base `65964d9b`)
 
 Só documento: `deploy-pacote.md` reescrito para o GO final (envs, web, passos com rollback, gates). Vercel só lida:

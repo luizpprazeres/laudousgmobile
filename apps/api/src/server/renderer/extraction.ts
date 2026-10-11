@@ -152,6 +152,11 @@ export type RendererExtractionResult = {
   latencyMs: number;
   inputTokens?: number;
   outputTokens?: number;
+  /** Prompt caching (W16): lidos e gravados no cache nesta extração. */
+  cachedInputTokens?: number;
+  cacheWriteInputTokens?: number;
+  /** Raciocínio usado na extração (W16: "disabled" por padrão). */
+  thinking?: string;
 };
 
 const ABDOMEN_EXTRACTION_PROMPT = `Você é a etapa de EXTRAÇÃO do LaudoUSG (caminho determinístico).
@@ -471,14 +476,16 @@ export async function runRendererExtraction(args: {
     plainObstetrica && parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? { ...parsed, doppler: null }
       : parsed;
-  const { raw, usage } = await llmJson({
-    target: extractionTarget(),
+  const target = extractionTarget();
+  const { raw, usage, mode } = await llmJson({
+    target,
     system,
     messages: [{ role: "user", content: `Ditado do médico:\n${rawInput}` }],
     schemaName: extractor.schemaName,
     schema: jsonSchema as Record<string, unknown>,
     openaiMaxTokens: 8000,
     signal: args.signal,
+    omitNulls: e.LLM_EXTRACTION_OMIT_NULLS === "true",
     validate: (value) => void extractor.parse(withPlainChoice(value)),
     onPartialJson: args.stream
       ? (acc) => {
@@ -493,6 +500,11 @@ export async function runRendererExtraction(args: {
   });
   const inputTokens = usage.inputTokens;
   const outputTokens = usage.outputTokens;
+  // W16: prova do prompt caching em produção (system estável por categoria; o
+  // ditado vem depois do ponto de cache) e do custo de saída sem raciocínio.
+  console.log(
+    `[extraction ${args.categoryCode}] usage: input=${inputTokens ?? "?"} cache_read=${usage.cachedInputTokens ?? 0} cache_write=${usage.cacheWriteInputTokens ?? 0} output=${outputTokens ?? "?"} ms=${Date.now() - t0} thinking=${target.provider === "anthropic" ? (target.thinking ?? "adaptive") : "n/a"} mode=${mode}`,
+  );
 
   if (!raw) throw new Error("renderer extraction: resposta vazia");
   // Metatexto do extrator nos campos livres (o renderer os cola no laudo) sai
@@ -510,5 +522,13 @@ export async function runRendererExtraction(args: {
   }
   const findings = extractor.parse(withPlainChoice(cleaned));
 
-  return { findings, latencyMs: Date.now() - t0, inputTokens, outputTokens };
+  return {
+    findings,
+    latencyMs: Date.now() - t0,
+    inputTokens,
+    outputTokens,
+    cachedInputTokens: usage.cachedInputTokens,
+    cacheWriteInputTokens: usage.cacheWriteInputTokens,
+    thinking: target.provider === "anthropic" ? (target.thinking ?? "adaptive") : undefined,
+  };
 }

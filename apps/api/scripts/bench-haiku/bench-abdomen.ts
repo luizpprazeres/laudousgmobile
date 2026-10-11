@@ -176,10 +176,12 @@ function foldTurns(systemBase: string, turns: any[], text: (content: any) => str
 }
 
 /** Responde uma chamada de modelo pela assinatura (ou replay), igual para os dois provedores. */
-async function answer(c: Ctx, req: { system: string; user: string; schema?: Record<string, unknown>; schemaName: string | null; model?: string }): Promise<Answer> {
+async function answer(c: Ctx, req: { system: string; user: string; schema?: Record<string, unknown>; schemaName: string | null; model?: string; thinking?: "disabled" | "disabled-auto" | "adaptive" }): Promise<Answer> {
   let content: string;
   let usage = { prompt_tokens: 0, completion_tokens: 0 };
   let ms = 0;
+  let thinkingTokens: number | null = null;
+  let api: unknown = null;
   if (c.mode === "replay") {
     if (req.schemaName === "FreeSlots") {
       const n = (req.user.match(/^\d+\./gm) ?? []).length;
@@ -201,14 +203,17 @@ async function answer(c: Ctx, req: { system: string; user: string; schema?: Reco
     // pelve e carótidas); o OpenAI interceptado não traz modelo Claude → HAIKU.
     // BENCH_MODEL explícito força o modelo (comparações Haiku × Sonnet do W8).
     const model = process.env.BENCH_MODEL ? HAIKU : req.model && /^claude-/.test(req.model) ? req.model : HAIKU;
-    const r = await callClaude({ model, system: req.system, user: req.user, schema: req.schema, effort: EFFORT });
+    // W16: o pedido do motor decide o raciocínio (extração sem thinking → proxy da bancada).
+    const r = await callClaude({ model, system: req.system, user: req.user, schema: req.schema, effort: EFFORT, thinking: req.thinking });
     content = r.text;
     usage = { prompt_tokens: r.inputTokens, completion_tokens: r.outputTokens };
     ms = r.ms;
+    thinkingTokens = r.thinkingTokens;
+    api = r.api ? { ...r.api, turns: r.apiTurns } : null;
   }
   appendFileSync(
     c.log,
-    JSON.stringify({ case: c.caseId, mode: c.mode, model: c.mode === "luna" ? "luna" : process.env.BENCH_MODEL ? HAIKU : (req.model ?? HAIKU), schemaName: req.schemaName, ms, usage, system_len: req.system.length, user: req.user, content }) + "\n",
+    JSON.stringify({ case: c.caseId, mode: c.mode, model: c.mode === "luna" ? "luna" : process.env.BENCH_MODEL ? HAIKU : (req.model ?? HAIKU), schemaName: req.schemaName, ms, usage, thinking: req.thinking ?? "adaptive", thinking_tokens: thinkingTokens, api, system_len: req.system.length, user: req.user, content }) + "\n",
   );
   return { content, usage };
 }
@@ -264,11 +269,23 @@ globalThis.fetch = (async (input: any, init?: any) => {
     const schema: Record<string, unknown> | undefined = body.output_config?.format?.schema ?? body.tools?.[0]?.input_schema;
     const schemaName: string | null =
       body.tools?.[0]?.name ?? (schema ? ((schema as any).properties?.itens ? "FreeSlots" : "strict") : null);
-    const systemBase = (Array.isArray(body.system) ? body.system.map((b: any) => b.text).join("\n\n") : String(body.system ?? "")).replace(TOOL_DELIVERY_RE, "");
+    const systemFull = Array.isArray(body.system) ? body.system.map((b: any) => b.text).join("\n\n") : String(body.system ?? "");
+    // W16: a instrução de omitir nulos (LLM_EXTRACTION_OMIT_NULLS) vale também pela assinatura.
+    const omitNulls = / Omita da chamada todo campo cujo valor seria null[^\n]*/.exec(systemFull.match(TOOL_DELIVERY_RE)?.[0] ?? "")?.[0];
+    const systemBase = systemFull.replace(TOOL_DELIVERY_RE, "") + (omitNulls ? `\n\nENTREGA:${omitNulls.replace("da chamada", "do resultado")}` : "");
     const folded = foldTurns(systemBase, body.messages ?? [], textOfContent);
     const system = c.promptPatch && !schema ? patchCorpoDescritivo(folded.system) : folded.system;
     const user = folded.user;
-    return anthropicResponse(body, await answer(c, { system, user, schema, schemaName, model: body.model }));
+    // W16: o proxy mede o 1º turno nos dois modos; BENCH_PROXY=0 volta ao `claude -p` direto (só adaptativo).
+    const thinking =
+      body.thinking?.type === "disabled"
+        ? body.tool_choice?.type === "auto"
+          ? ("disabled-auto" as const)
+          : ("disabled" as const)
+        : process.env.BENCH_PROXY === "0"
+          ? undefined
+          : ("adaptive" as const);
+    return anthropicResponse(body, await answer(c, { system, user, schema, schemaName, model: body.model, thinking }));
   }
 
   const msgs: any[] = body.messages ?? [];
