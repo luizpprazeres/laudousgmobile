@@ -27,8 +27,10 @@ function test(name: string, run: () => void): void {
 // SHA-256 da saida completa — guarda de byte-identidade da lateralidade dos ossos.
 //
 // BASE ATUALIZADA EM 11/10/2026 (W16D): os ossos longos laterais ganharam a sigla do
-// laudo do médico ("Comprimento do fêmur direito (CF) de …"). Conferido: tirando as
-// siglas, a saída nova tem exatamente os hashes anteriores (2t/3t, clássico e objetivo).
+// laudo do médico ("Comprimento do fêmur direito (CF) de …"), assim como cerebelo (MC),
+// cisterna magna (CM), distância binocular (DB) e o fêmur da biometria precoce (CF).
+// Conferido: desfazendo essas trocas, a saída nova tem exatamente os hashes anteriores
+// (1t/2t/3t, clássico e objetivo).
 //
 // BASE ATUALIZADA EM 06/10/2026: sem percentil informado, o 1T não conclui
 // normalidade das uterinas. Em 18/09/2026 houve a unificação da linha do peso;
@@ -38,12 +40,12 @@ function test(name: string, run: () => void): void {
 // no 2t). O texto dos ossos nao mudou; a diferenca e so o modelo ao redor, e foi
 // conferida linha a linha antes de regravar os hashes.
 const LEGACY_HASHES = [
-["1t", false, "59e79e9157b38affa68898f34e88b61e192c9e97d1df4bd98f71d4d83fad8b74"],
-  ["1t", true, "0a157cff761b64cffedc1dde5322f91435b116dc35b509694e8efeb212ce1b27"],
-  ["2t", false, "5056e64a9250d8b75b163201f64608936947ac1107b7344b3d3acd6097ca7f1a"],
-  ["2t", true, "198a1fa0326e5dfec9739ba4cefbf49e07d3626e8695dc63ddd0af5a6879ab64"],
-  ["3t", false, "f162919c063153d8b2aec24f8fef433d0ecdb7759a5cd7fff756454e74ff211c"],
-  ["3t", true, "6dc1d3b0a0c889820a9652074c3e3de767c81124af7a79b6313f60f5de276a9a"],
+["1t", false, "5d11d3938acc8bee613b84f61008a75eca157764d70d61de863e7146cf63c2e8"],
+  ["1t", true, "f1b36a0eb24af2da397128913592512cf400becd9d684d2a1be116ea1b482f4a"],
+  ["2t", false, "45cdb22dc2cef32624b294f5c826f328c96dfefbd702cae0dcdf7a4577a7db38"],
+  ["2t", true, "7e24c2111d9c82dbed33b5072ff6aa33127af0b893e62ae1651b04655d8cbd0f"],
+  ["3t", false, "98f4e33239b3f255b425cfd17dbeb4cf9b62aca0f9aed765f8424cc902b4e44d"],
+  ["3t", true, "d59637534e848891f49e5d55a47e27871267db7f7a3d306bef87ad1db1cc6597"],
 ] as const;
 for (const [trimestre, objetivo, hash] of LEGACY_HASHES) {
   test(`${trimestre} ${objetivo ? "Objetivo" : "Classico"} legacy six bones byte-identical`, () => {

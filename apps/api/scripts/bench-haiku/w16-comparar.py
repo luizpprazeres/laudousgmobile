@@ -75,11 +75,11 @@ if CONFIG == "w16c":
 if CONFIG == "w16d":
     ARMS = [
         ("c/com1r", "A7", "com raciocínio (código W16D)"),
-        ("c/sem5", "A8", "sem raciocínio, ferramenta forçada (W16D)"),
+        ("c/sem7r", "A8", "sem raciocínio, ferramenta forçada (W16D)"),
         ("c/comsemleitor1", "A5", "produção de hoje (com raciocínio, antes da W16C)"),
     ]
     HTML_ARMS = {"A7", "A8", "A5"}
-    REPLICAS = [("c/com1r", "c/com2r", "A7"), ("c/sem5", "c/sem6", "A8")]
+    REPLICAS = [("c/com1r", "c/com2r", "A7"), ("c/sem7r", "c/sem8r", "A8")]
     GRUPOS = GRUPOS[:2]
     SAIDA = "comparacao-w16d.json"
     MERGED = "merged-w16d"

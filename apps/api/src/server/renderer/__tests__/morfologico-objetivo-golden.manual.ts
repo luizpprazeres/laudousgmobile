@@ -100,7 +100,7 @@ const render = (f: MorfologicoFindings) => renderMorfologico(f, null, { objetivo
   check("2t: título 'SEGUNDO TRIMESTRE'", /ULTRASSONOGRAFIA MORFOLÓGICA DO SEGUNDO TRIMESTRE/.test(l), l);
   check("2t: apresentação cefálica (concordância)", /Feto único, em apresentação cefálica, com dorso à esquerda/.test(l), l);
   check("2t: DBP '52,3 mm'", /Diâmetro biparietal \(DBP\): 52,3 mm\./.test(l), l);
-  check("2t: distância binocular presente (2t)", /Distância binocular: 41,2 mm\./.test(l), l);
+  check("2t: distância binocular presente (2t)", /Distância binocular \(DB\): 41,2 mm\./.test(l), l);
   check("2t: ILA 1 casa decimal '14,2 cm'", /Índice de líquido amniótico \(ILA\): 14,2 cm\./.test(l), l);
   check("2t: placenta grau I (romano)", /grau I/.test(l), l);
   check("2t: modelo traz o orifício interno fechado (sem cervicometria)", /Orifício interno do colo uterino fechado\./.test(l), l);

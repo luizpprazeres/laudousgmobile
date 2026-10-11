@@ -9,7 +9,7 @@ import { normalizeAsrClinical } from "../../pipeline/asrClinical";
 import { conferirPercentisDoApp, DopplerObstetricoModuleSchema } from "../categories/dopplerObstetricoModule";
 import { MorfologicoFindingsSchema, normalizarExtracaoMorfologico, normalizarPosicaoFetal, renderMorfologico, type MorfologicoFindings } from "../categories/MORFOLOGICO";
 import { legado } from "./morfologico-lateralidade-fixtures";
-import { conferirLiquidoMedido, type ObstetricaFindings } from "../categories/OBSTETRICA";
+import { conferirLiquidoMedido, restaurarSiglasDitadas, type ObstetricaFindings } from "../categories/OBSTETRICA";
 import { preencherDatacaoPedidoDitada } from "../ig";
 
 let ok = 0;
@@ -108,6 +108,41 @@ check("morfológico 2º tri: siglas dos ossos longos (0b43fad5: 'Comprimento do 
     assert.ok(t.includes(linha), linha);
   }
   assert.ok(renderMorfologico(f, null, { objetivo: true }).includes("Comprimento do fêmur direito (CF): 43,2 mm."));
+});
+
+check("morfológico: cerebelo, cisterna magna e binocular no modelo atual do médico, com sigla; fêmur único com (CF)", () => {
+  const f = MorfologicoFindingsSchema.parse({ ...legado("2t"), cerebelo_mm: 20.1, cisterna_magna_mm: 2.2, binocular_mm: 33.3 });
+  const t = renderMorfologico(f, null);
+  for (const linha of ["Medida do cerebelo (MC) de 20,1 mm.", "Medida da cisterna magna (CM) de 2,2 mm.", "Medida da distância binocular (DB) de 33,3 mm."]) assert.ok(t.includes(linha), linha);
+  assert.ok(renderMorfologico(f, null, { objetivo: true }).includes("Cerebelo (MC): 20,1 mm."));
+  const precoce = MorfologicoFindingsSchema.parse({ ...legado("1t"), femur_mm: 7.2 });
+  const tp = renderMorfologico(precoce, null);
+  if (/Comprimento do fêmur/.test(tp)) assert.ok(/Comprimento do fêmur \(CF\) de 7,2 mm/.test(tp), tp);
+});
+check("morfológico 1º tri: achado só materno não suprime a frase obrigatória (c675f495); achado fetal suprime", () => {
+  const materno = MorfologicoFindingsSchema.parse({ ...legado("1t"), achados_adicionais: "Artéria uterina direita com índice de pulsatilidade alterado (IP 2,38)." });
+  assert.match(renderMorfologico(materno, null), /Morfologia fetal normal para esta fase da gestação\./);
+  const mioma = MorfologicoFindingsSchema.parse({ ...legado("1t"), achados_adicionais: "Nódulo miomatoso na parede anterior, em contato com a face materna placentária." });
+  assert.match(renderMorfologico(mioma, null), /Morfologia fetal normal/);
+  const fetal = MorfologicoFindingsSchema.parse({ ...legado("1t"), achados_adicionais: "Foco ecogênico no ventrículo esquerdo fetal." });
+  assert.doesNotMatch(renderMorfologico(fetal, null), /Morfologia fetal normal/);
+});
+
+check("obstétrica: sigla ditada volta ao texto livre só com o mesmo rótulo e número (61a22347)", () => {
+  const ditado = "Medida do cerebelo (MC) de 20,1 mm.\nMedida da cisterna magna (CM) de 2,2 mm.";
+  assert.equal(restaurarSiglasDitadas("Medida do cerebelo de 20,1 mm.", ditado), "Medida do cerebelo (MC) de 20,1 mm.");
+  assert.equal(restaurarSiglasDitadas("Medida da cisterna magna de 2.2 mm.", ditado), "Medida da cisterna magna (CM) de 2.2 mm.");
+  assert.equal(restaurarSiglasDitadas("Medida do cerebelo de 21,5 mm.", ditado), "Medida do cerebelo de 21,5 mm.", "número diferente: não mexe");
+  assert.equal(restaurarSiglasDitadas("Medida do cerebelo (MC) de 20,1 mm.", ditado), "Medida do cerebelo (MC) de 20,1 mm.", "já com sigla: igual");
+});
+
+check("morfológico: item livre 'uterinas normais' não repete a conclusão do Doppler estruturado (a3ea0fea)", () => {
+  const vazioD = DopplerObstetricoModuleSchema.parse(Object.fromEntries(Object.keys(DopplerObstetricoModuleSchema.shape).map((k) => [k, null])));
+  const f = MorfologicoFindingsSchema.parse({ ...legado("2t"), itens_conclusao_livres: ["Dopplervelocimetria normal das artérias uterinas"],
+    doppler: { ...vazioD, ip_uterina_dir: 0.8, ip_uterina_esq: 0.9, ip_umbilical: 1.0, ip_acm: 1.8 } });
+  assert.doesNotMatch(renderMorfologico(f, null), /Dopplervelocimetria normal das artérias uterinas/);
+  const semModulo = MorfologicoFindingsSchema.parse({ ...legado("1t"), itens_conclusao_livres: ["Dopplervelocimetria normal das artérias uterinas"], doppler: null });
+  assert.match(renderMorfologico(semModulo, null), /Dopplervelocimetria normal das artérias uterinas/, "1º tri sem módulo: único canal, fica");
 });
 
 console.log(`\nw16d-sem-raciocinio: ${ok}/${ok + falhas}`);

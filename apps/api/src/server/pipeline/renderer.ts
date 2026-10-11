@@ -31,6 +31,7 @@ import {
   conferirBcfAlteracao,
   conferirDiametroMedioSaco,
   conferirLiquidoMedido,
+  restaurarSiglasObstetrica,
   conferirInviabilidadeSemEmbriao,
   conferirRelacaoPlacenta,
   igSanityAltera,
@@ -1187,7 +1188,7 @@ function obstConferencia(f: ObstetricaFindings, rawInput: string, onReviewNotes?
   if (env().OBST_CONFERENCIA_DET === "false") return f;
   // W16D: forma da posição fetal, líquido medido e datação ditada.
   const forma = {
-    ...conferirLiquidoMedido(preencherDatacaoPedidoDitada(f, rawInput)),
+    ...conferirLiquidoMedido(preencherDatacaoPedidoDitada(restaurarSiglasObstetrica(f, rawInput), rawInput)),
     fetos: f.fetos.map((ft) => normalizarPosicaoFetal(ft, rawInput, f.fetos.length === 1)),
   };
   const inviab = conferirInviabilidadeSemEmbriao(conferirCrescimentoFetal(conferirDiametroMedioSaco(forma), rawInput));

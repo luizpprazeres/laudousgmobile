@@ -269,6 +269,31 @@ export function dopplerSemDadoVascular(d: MorfologicoFindings["doppler"]): boole
 }
 
 /**
+ * Itens livres da conclusão sem repetir o que o Doppler estruturado já conclui (W16D,
+ * a3ea0fea: "Dopplervelocimetria normal das artérias uterinas" ao lado de "Índice de
+ * pulsatilidade normal nas artérias uterinas, umbilical…"). Sem dado das uterinas no módulo
+ * (1º trimestre), o item livre é o único canal e fica.
+ */
+function itensLivresMorfo(f: MorfologicoFindings): string[] {
+  const itens = filterFreeConclusionItems(f.itens_conclusao_livres);
+  const uterinasNoModulo = f.doppler != null && (f.doppler.ip_uterina_dir != null || f.doppler.ip_uterina_esq != null || f.doppler.ip_medio_uterinas != null);
+  return uterinasNoModulo ? itens.filter((i) => !(/art[ée]rias?\s+uterinas?/i.test(i) && /normal/i.test(i) && !/alterad|aumentad|incisura\s+presente/i.test(i))) : itens;
+}
+
+/**
+ * Achado adicional que pode tocar a morfologia FETAL. Só materno (artérias uterinas, colo,
+ * mioma, ovário, placenta) não nega "Morfologia fetal normal…" (W16D, c675f495: "artéria
+ * uterina direita com IP alterado" nos achados suprimia a frase obrigatória).
+ */
+function achadoFetal(achados: string | null | undefined): boolean {
+  const t = (achados ?? "").trim();
+  if (t === "") return false;
+  const materno = /art[ée]rias?\s+uterinas?|\buterinas?\b|colo\s+uterino|\bmiom|ov[áa]ri|placent/i;
+  const fetal = /\bfet[oa]l?\b|\bfetais\b|\bembri|\bcard[íi]ac|\bcora[çc][ãa]o|\bcr[âa]ni|\bc[ée]rebr|\bencef|\bventr[íi]cul|\bcoluna|\bfac(?:e\s+fetal|ial)|\bl[áa]bio|\bnariz|\brena(?:l|is)\b|\brins?\b|\best[ôo]mago|\bbexiga|\bmembros?\b|\babd[oô]m|\btor[áa]x|\bpulm|\bh[ée]rnia|\bcord[ãa]o|\bnucal|\bosso\s+nasal/i;
+  return !(materno.test(t) && !fetal.test(t));
+}
+
+/**
  * "Morfologia fetal normal para esta fase da gestação." é OBRIGATÓRIA no 1º trimestre
  * (decisão do Luiz, 11/10, W16D) — só a suprime um marcador explicitamente ALTERADO.
  * Marcador não ditado (null) ou "não avaliado" não é alteração: antes, null suprimia a
@@ -652,9 +677,10 @@ function biometriaClassicaMorfo(f: MorfologicoFindings, terceiro: boolean): stri
 
   incluir(f.dbp_mm, () => `Diâmetro biparietal (DBP) de ${mm(f.dbp_mm)} mm.`);
   incluir(f.cc_mm, () => `Circunferência da cabeça (CC) de ${mm(f.cc_mm)} mm.`);
-  incluir(f.cerebelo_mm, () => `Cerebelo mede ${mm(f.cerebelo_mm)} mm.`);
-  incluir(f.cisterna_magna_mm, () => `Cisterna magna mede ${mm(f.cisterna_magna_mm)} mm.`);
-  if (!terceiro) incluir(f.binocular_mm, () => `Distância binocular de ${mm(f.binocular_mm)} mm.`);
+  // Modelo atual do médico, com sigla (W16D): "Medida do cerebelo (MC) de N mm.".
+  incluir(f.cerebelo_mm, () => `Medida do cerebelo (MC) de ${mm(f.cerebelo_mm)} mm.`);
+  incluir(f.cisterna_magna_mm, () => `Medida da cisterna magna (CM) de ${mm(f.cisterna_magna_mm)} mm.`);
+  if (!terceiro) incluir(f.binocular_mm, () => `Medida da distância binocular (DB) de ${mm(f.binocular_mm)} mm.`);
   incluir(f.ca_mm, () => `Circunferência abdominal (CA) de ${mm(f.ca_mm)} mm.`);
   for (const [osso, rotulo, artigo, direito, esquerdo, sigla] of [
     ["femur", "fêmur", "do", "direito", "esquerdo", "CF"],
@@ -1042,7 +1068,7 @@ function biometriaPrecoce(f: MorfologicoFindings, objetivo = false): string[] {
     [objetivo ? "Diâmetro biparietal (DBP)" : "Diâmetro biparietal (DBP) de", f.dbp_mm],
     [objetivo ? "Circunferência cefálica (CC)" : "Circunferência da cabeça (CC) de", f.cc_mm],
     [objetivo ? "Circunferência abdominal (CA)" : "Circunferência abdominal (CA) de", f.ca_mm],
-    [objetivo ? "Comprimento do fêmur" : "Comprimento do fêmur de", f.femur_mm],
+    [objetivo ? "Comprimento do fêmur (CF)" : "Comprimento do fêmur (CF) de", f.femur_mm],
   ] as const;
   const presentes = medidas.filter(([, valor]) => valor !== null);
   if (presentes.length === 0) return [];
@@ -1157,7 +1183,7 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
    * não asseverar normalidade que ninguém verificou, e não negar na conclusão
    * o achado que o corpo descreve.
    */
-  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
+  const temAchado = achadoFetal(f.achados_adicionais);
   const conclusao = [
     ig.conclusaoClassico,
     ...vitalidade.conclusao,
@@ -1172,7 +1198,7 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
     ...(f.anatomia_avaliada === false || (f.anatomia_precoce && !anatomiaPrecoce.completa) || tnConclusao.length > 0 || anatomiaPrecoce.temAlteracaoOuLimitacao || temAchado || sistemasAlterados(f).size > 0 || marcadorPrecoceAlterado(f)
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
-    ...filterFreeConclusionItems(f.itens_conclusao_livres),
+    ...itensLivresMorfo(f),
   ];
   // Sem percentil não é seguro classificar as uterinas como normais. Quando o
   // bloco estruturado existe, ele próprio inclui o item normal ou alterado.
@@ -1224,7 +1250,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
    * ditada pelo médico; `anatomia_alterada` retira a normalidade incompatível
    * do mesmo sistema.
    */
-  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
+  const temAchado = achadoFetal(f.achados_adicionais);
   const temSistemaAlterado = sistemasAlterados(f).size > 0;
   const conclusoesLimitacao = anatomiaLimitadaConclusao(f);
 
@@ -1237,7 +1263,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
     ...conclusoesLimitacao,
-    ...filterFreeConclusionItems(f.itens_conclusao_livres),
+    ...itensLivresMorfo(f),
   ];
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
@@ -1300,7 +1326,7 @@ function assemble(
   acrescentarDoppler(f, aspectos, conclusao, dopplerOptions);
   acrescentarCervicometria(f, aspectos, conclusao);
   acrescentarCrescimentoFetal(f, aspectos, conclusao);
-  conclusao = dedupItensLivres(conclusao, filterFreeConclusionItems(f.itens_conclusao_livres));
+  conclusao = dedupItensLivres(conclusao, itensLivresMorfo(f));
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = fraseReferencia ? `${fraseReferencia}\n` : "";
   const conclTxt =
@@ -1388,9 +1414,9 @@ function biometriaObjetivaMorfo(f: MorfologicoFindings, terceiro: boolean): stri
 
   incluir(f.dbp_mm, () => `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`);
   incluir(f.cc_mm, () => `Circunferência cefálica (CC): ${mm1(f.cc_mm)} mm.`);
-  incluir(f.cerebelo_mm, () => `Cerebelo: ${mm1(f.cerebelo_mm)} mm.`);
-  incluir(f.cisterna_magna_mm, () => `Cisterna magna: ${mm1(f.cisterna_magna_mm)} mm.`);
-  if (!terceiro) incluir(f.binocular_mm, () => `Distância binocular: ${mm1(f.binocular_mm)} mm.`);
+  incluir(f.cerebelo_mm, () => `Cerebelo (MC): ${mm1(f.cerebelo_mm)} mm.`);
+  incluir(f.cisterna_magna_mm, () => `Cisterna magna (CM): ${mm1(f.cisterna_magna_mm)} mm.`);
+  if (!terceiro) incluir(f.binocular_mm, () => `Distância binocular (DB): ${mm1(f.binocular_mm)} mm.`);
   incluir(f.ca_mm, () => `Circunferência abdominal (CA): ${mm1(f.ca_mm)} mm.`);
   for (const [osso, rotulo, artigo, direito, esquerdo, sigla] of [
     ["femur", "fêmur", "do", "direito", "esquerdo", "CF"],
@@ -1424,7 +1450,7 @@ function assembleObj(
   acrescentarDoppler(f, achados, impressao, dopplerOptions);
   acrescentarCervicometria(f, achados, impressao);
   acrescentarCrescimentoFetal(f, achados, impressao);
-  impressao = dedupItensLivres(impressao, filterFreeConclusionItems(f.itens_conclusao_livres));
+  impressao = dedupItensLivres(impressao, itensLivresMorfo(f));
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = fraseReferencia ? `\n${fraseReferencia}` : "";
   const impressaoTxt =
@@ -1516,7 +1542,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
    * não asseverar normalidade que ninguém verificou, e não negar na conclusão
    * o achado que o corpo descreve.
    */
-  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
+  const temAchado = achadoFetal(f.achados_adicionais);
   const impressao = [
     ...ig.conclusaoObjetivo,
     ...vitalidade.conclusao,
@@ -1531,7 +1557,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
     ...(f.anatomia_avaliada === false || (f.anatomia_precoce && !anatomiaPrecoce.completa) || tnConclusao.length > 0 || anatomiaPrecoce.temAlteracaoOuLimitacao || temAchado || sistemasAlterados(f).size > 0 || marcadorPrecoceAlterado(f)
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
-    ...filterFreeConclusionItems(f.itens_conclusao_livres),
+    ...itensLivresMorfo(f),
   ];
   // A conclusão das uterinas vem do bloco estruturado, que conhece o percentil.
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
@@ -1590,7 +1616,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
     ...conclusoesLimitacao,
-    ...filterFreeConclusionItems(f.itens_conclusao_livres),
+    ...itensLivresMorfo(f),
   ];
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
