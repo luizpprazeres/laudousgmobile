@@ -327,3 +327,15 @@ Morfológico: a piora (+11 frases, +1 título, +1 lacuna) vem de **dois casos**,
 
 Rollback (código antigo + envs antigas): `vercel rollback dpl_88hD8BDPAkPvdWGgZuXfu4bvpM9T` (API) e
 `vercel rollback dpl_9f7yhUhNMSZ3YLtdRmvyYMVMWwj2` (web). Laudos de teste gravados na conta demo (apple-review).
+
+## Execução W16 (11/10/2026 — GO do Luiz, direto na main, sem smoke com a conta demo)
+
+| # | Resultado |
+|---|---|
+| 1 | Envs de produção criadas (API): `LLM_EXTRACTION_THINKING=OBSTETRICA,DOPPLER_OBSTETRICO,MORFOLOGICO,CERVICOMETRIA` (sem raciocínio, ferramenta forçada), `PROGRESS_ETAPAS=true`, `LLM_SANITY_EFFORT=low` |
+| 2 | `main` avançada por fast-forward `28651596..5a07cecf` (W16A–D, W16B lado da API, correções do harness) |
+| 3 | Integração Git: API `dpl_C7FcaCDVPP26MaDDoJByvgMaDK6X`, web `dpl_9QjzCXHS4kxNPthMXgCSEHsaEB53`, ambos Ready e com os domínios; `/api/generate` responde 401 sem token |
+| 4 | Teste em uso real pelo Luiz no iOS |
+
+Rollback só da W16 pelas envs (vale no próximo deploy): apagar `LLM_EXTRACTION_THINKING` (volta ao raciocínio adaptativo) e/ou `PROGRESS_ETAPAS=false`
+e redeployar; rollback do código: `vercel rollback dpl_Er53L5XtSLEzeovTv1z77PjVm3Vt` (API) / `dpl_sDEfDW9jrV1mGK1TVxSDkrE3Z5x9` (web).
