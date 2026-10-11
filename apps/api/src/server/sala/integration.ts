@@ -6,7 +6,6 @@ import {
   type SalaReportRow,
 } from "./reportContract";
 
-export const SALA_INTEGRATION_GRANT_TTL_MS = 12 * 60 * 60 * 1000;
 export const SALA_INTEGRATION_RATE_WINDOW_SECONDS = 15 * 60;
 export const SALA_INTEGRATION_IP_LIMIT = 30;
 export const SALA_INTEGRATION_CODE_LIMIT = 8;
@@ -89,10 +88,7 @@ export function grantExpiryMs(grant: IntegrationGrant, nowMs = Date.now()): numb
 }
 
 export function integrationGrantExpiry(room: IntegrationRoom, nowMs = Date.now()): number | null {
-  const roomExpiry = roomExpiryMs(room, nowMs);
-  return roomExpiry === null
-    ? null
-    : Math.min(roomExpiry, nowMs + SALA_INTEGRATION_GRANT_TTL_MS);
+  return roomExpiryMs(room, nowMs);
 }
 
 export function validReportId(value: string | null): value is string {

@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import {
-  SALA_INTEGRATION_GRANT_TTL_MS,
   bearerGrant,
   consumeIntegrationRateLimit,
   grantExpiryMs,
@@ -46,7 +45,12 @@ assert.equal(roomExpiryMs(room({ active: false }), NOW), null);
 assert.equal(roomExpiryMs(room({ revoked_at: "2026-10-08T14:00:00.000Z" }), NOW), null);
 assert.equal(roomExpiryMs(room({ pairing_code_expires_at: "2026-10-08T14:59:59.000Z" }), NOW), null);
 assert.equal(roomExpiryMs(room({ expires_at: "2026-10-08T14:59:59.000Z" }), NOW), null);
-assert.equal(integrationGrantExpiry(room(), NOW), NOW + SALA_INTEGRATION_GRANT_TTL_MS);
+assert.equal(integrationGrantExpiry(room(), NOW), roomExpiryMs(room(), NOW));
+assert.equal(integrationGrantExpiry(room({
+  pairing_code_expires_at: "2027-10-08T15:00:00.000Z",
+  expires_at: "2027-10-08T15:00:00.000Z",
+}), NOW), Date.parse("2027-10-08T15:00:00.000Z"));
+assert.equal(integrationGrantExpiry(room({ active: false }), NOW), null);
 assert.equal(
   integrationGrantExpiry(room({ expires_at: "2026-10-08T16:00:00.000Z" }), NOW),
   Date.parse("2026-10-08T16:00:00.000Z"),
