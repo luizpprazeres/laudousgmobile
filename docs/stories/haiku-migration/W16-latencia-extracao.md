@@ -57,3 +57,21 @@ ficou vazia e o renderer projetou a 1ª US), tireoide perdeu TI-RADS em 1 caso, 
 4. Re-medir pela assinatura (proxy local da W16A): obst+Doppler 46, morfológico 23, 2 execuções; meta = nenhuma piora clínica
    × com raciocínio. Atualizar o HTML `tmp-review/bench-haiku/w16/html/` com a nova coluna.
 Status: linha `W16C: pronto` no `status/W1.md`.
+
+## W16D — corrigir os erros do modo sem raciocínio (decisão do Luiz, 11/10)
+O Luiz gostou do **sem raciocínio com ferramenta forçada** e quer seguir com ele, corrigindo os erros por ajustes pequenos (prompt de
+extração e/ou determinístico). Exemplos que ele viu no HTML da W16C:
+- **Morfológico 1º tri**: acertou a frase do ducto venoso na conclusão (que o médico esqueceu), mas **removeu "Morfologia fetal normal
+  para esta fase da gestação."**, que é **obrigatória** no morfológico mesmo sem ser ditada.
+- **Morfológico 2º tri**: **tirou as siglas** das estruturas — "Comprimento do fêmur direito (CF) de 43,2 mm" virou "Comprimento do
+  fêmur direito de 43,2 mm" — "entre outros detalhes".
+Tarefa (W1):
+1. Ache a causa de cada um (frase fixa do renderer que não saiu porque um campo veio vazio/diferente? texto indo para a camada livre em
+   vez do campo estruturado? regra do prompt de extração?). Corrija na causa, de forma enxuta. A frase obrigatória do morfológico deve
+   ser garantida pelo renderer (determinística), não pelo modelo.
+2. Varra **todas** as diferenças sem raciocínio × com raciocínio × final no HTML (obst 46, Doppler, morfo 23) e classifique: o que é
+   erro corrigível por prompt/determinístico, o que é variação aceitável, o que é melhoria (como o ducto venoso). Corrija os
+   corrigíveis.
+3. Re-medir pela assinatura (proxy sem raciocínio, ferramenta forçada, 2 execuções, data do caso) e atualizar o HTML com a coluna
+   nova; meta: siglas e frases obrigatórias 100%, e nenhuma piora clínica × com raciocínio.
+Status: linha `W16D: pronto` no `status/W1.md`.
