@@ -7,7 +7,9 @@ Lê as rodadas da bancada gravadas em <w16>/com, <w16>/sem e <w16>/nulos (bench-
   <w16>/html/meta.json       colunas, placar e métricas para o relatorio.py
 e roda o relatorio.py → <w16>/html/relatorio.html. Tudo em tmp-review (gitignored: ditados reais).
 
-Uso (de apps/api): python3 scripts/bench-haiku/w16-comparar.py <w16>
+Uso (de apps/api): python3 scripts/bench-haiku/w16-comparar.py <w16> [w16a|w16c]
+  w16c: braços em <w16>/c/{com,sem,comsemleitor}<n> (data do caso + leitores determinísticos);
+        réplicas com1×com2 e sem1×sem2; HTML em <w16>/html (o da W16A fica em <w16>/html-w16a).
 """
 import html
 import json
@@ -29,6 +31,48 @@ ARMS = [
 ]
 HTML_ARMS = {"A7", "A8", "A6", "A5"}
 GRUPOS = [("obstetrica+doppler_obstetrico", "Obstétrica + Doppler"), ("morfologico", "Morfológico"), ("tireoide", "Tireoide")]
+CONFIG = sys.argv[2] if len(sys.argv) > 2 else "w16a"
+REPLICAS = [("com", "com2", "A7"), ("sem", "sem2", "A8")]
+SAIDA = "comparacao.json"
+MERGED = "merged"
+HTML_KEYS = [
+    {"k": "A7", "t": "Com raciocínio", "s": "Haiku 5.5, thinking adaptativo, esforço medium (produção de hoje)"},
+    {"k": "A8", "t": "Sem raciocínio — forçado", "s": "thinking desligado, ferramenta forçada"},
+    {"k": "A6", "t": "Sem raciocínio — auto", "s": "thinking desligado, tool_choice auto (plano curto em texto antes)"},
+    {"k": "A5", "t": "Raciocínio low", "s": "thinking adaptativo, esforço low"},
+]
+PASSOS = [
+    {"t": "1. Ditado real", "s": "O texto que o médico ditou no app (histórico), o mesmo nos três braços."},
+    {"t": "Com raciocínio", "flow": "Haiku 5.5 · thinking adaptativo · tool_choice auto", "s": "Como a produção está hoje."},
+    {"t": "Sem raciocínio — forçado", "flow": "thinking disabled · ferramenta forçada", "s": "A proposta inicial da W16."},
+    {"t": "Sem raciocínio — auto", "flow": "thinking disabled · tool_choice auto", "s": "O modelo escreve um plano curto em texto e depois chama a ferramenta."},
+    {"t": "Raciocínio low", "flow": "thinking adaptativo · esforço low", "s": "Menos raciocínio, sem desligar."},
+]
+if CONFIG == "w16c":
+    ARMS = [
+        # com<N>r = a execução N re-renderizada com o código final (BENCH_REPLAY_CALLS: mesma extração);
+        # sem3/sem4 = execuções novas com o código final (a exigência do módulo Doppler muda a extração).
+        ("c/com1r", "A7", "com raciocínio (+ leitores)"),
+        ("c/sem3r", "A8", "sem raciocínio + leitores (W16C)"),
+        ("c/comsemleitor1", "A5", "com raciocínio, sem os leitores (produção de hoje)"),
+    ]
+    HTML_ARMS = {"A7", "A8", "A5"}
+    REPLICAS = [("c/com1r", "c/com2r", "A7"), ("c/sem3r", "c/sem4r", "A8")]
+    GRUPOS = GRUPOS[:2]
+    SAIDA = "comparacao-w16c.json"
+    MERGED = "merged-w16c"
+    HTML_KEYS = [
+        {"k": "A7", "t": "Com raciocínio", "s": "thinking adaptativo + leitores determinísticos da W16C"},
+        {"k": "A8", "t": "Sem raciocínio + leitores", "s": "W16C: obstétrica, Doppler e morfológico sem raciocínio; IG de referência e bloco Doppler lidos do ditado"},
+        {"k": "A5", "t": "Produção de hoje", "s": "com raciocínio, sem os leitores"},
+    ]
+    PASSOS = [
+        {"t": "1. Ditado real", "s": "O texto que o médico ditou no app (histórico), o mesmo em todos os braços, gerado na data em que o caso foi gerado em produção."},
+        {"t": "Sem raciocínio + leitores (W16C)", "flow": "thinking disabled nas categorias da lista · IG de referência ditada · bloco Doppler do app", "s": "Os leitores determinísticos só preenchem o que a extração deixou vazio; nunca sobrescrevem."},
+        {"t": "Com raciocínio", "flow": "thinking adaptativo · os mesmos leitores", "s": "A régua: o mesmo código com raciocínio."},
+        {"t": "Produção de hoje", "flow": "thinking adaptativo · sem os leitores", "s": "Como está no ar."},
+    ]
+BASE = ARMS[0][0]
 
 
 def rodada(arm, sufixo):
@@ -154,12 +198,12 @@ comparacao = {"grupos": {}, "casos": []}
 casos_html = []
 for sufixo, nome in GRUPOS:
     ds = {arm: rodada(arm, sufixo) for arm, _, _ in ARMS}
-    if not ds["com"] or not ds["sem"]:
+    if not ds[BASE] or not ds[ARMS[1][0]]:
         print(f"{nome}: falta rodada ({ds})")
         continue
     res = {arm: {r["id"]: r for r in json.loads((d / "results.json").read_text())} for arm, d in ds.items() if d}
     ext = {arm: extracoes(d) for arm, d in ds.items() if d}
-    base = res["com"]
+    base = res[BASE]
     merged = []
     g = {"n": 0, "arms": {}, "dif": {}}
     for arm, key, rot in ARMS:
@@ -211,19 +255,19 @@ for sufixo, nome in GRUPOS:
         # campo a campo: com × sem (e com × nulos)
         partes = []
         for arm, key, rot in ARMS[1:]:
-            if arm not in ext or i not in ext[arm] or i not in ext["com"]:
+            if arm not in ext or i not in ext[arm] or i not in ext[BASE]:
                 continue
             mostrar = key in HTML_ARMS
-            d = difs(ext["com"][i]["json"], ext[arm][i]["json"])
+            d = difs(ext[BASE][i]["json"], ext[arm][i]["json"])
             vals = [x for x in d if x[3] == "valor"]
             txts = [x for x in d if x[3] == "texto"]
-            caso[f"dif_{arm}"] = {"valores": len(vals), "textos": len(txts), "laudo_igual": textos.get("com") == textos.get(arm)}
+            caso[f"dif_{arm}"] = {"valores": len(vals), "textos": len(txts), "laudo_igual": textos.get(BASE) == textos.get(arm)}
             g["dif"].setdefault(arm, {"casos_valor": 0, "campos_valor": 0, "casos_texto": 0, "laudos_iguais": 0, "campos": {}})
             gd = g["dif"][arm]
             gd["casos_valor"] += bool(vals)
             gd["campos_valor"] += len(vals)
             gd["casos_texto"] += bool(txts)
-            gd["laudos_iguais"] += textos.get("com") == textos.get(arm)
+            gd["laudos_iguais"] += textos.get(BASE) == textos.get(arm)
             for k, *_ in vals:
                 kk = re.sub(r"\[\d+\]", "[]", k)
                 gd["campos"][kk] = gd["campos"].get(kk, 0) + 1
@@ -236,17 +280,17 @@ for sufixo, nome in GRUPOS:
                 )
                 partes.append(
                     f"<b>Extração: com raciocínio × {html.escape(rot)}</b> — {len(vals)} valor(es), {len(txts)} texto(s) diferente(s)"
-                    + (" · laudo final idêntico" if textos.get("com") == textos.get(arm) else " · laudo muda")
+                    + (" · laudo final idêntico" if textos.get(BASE) == textos.get(arm) else " · laudo muda")
                     + f"<div class='scroll'><table><tr><th>campo</th><th>com raciocínio</th><th>{html.escape(rot)}</th></tr>{lis}</table></div>"
                 )
             else:
-                partes.append(f"<b>Extração: com raciocínio × {html.escape(rot)}</b> — JSON idêntico campo a campo" + (" · laudo idêntico" if textos.get("com") == textos.get(arm) else " · laudo muda (free-slot/ordem)"))
+                partes.append(f"<b>Extração: com raciocínio × {html.escape(rot)}</b> — JSON idêntico campo a campo" + (" · laudo idêntico" if textos.get(BASE) == textos.get(arm) else " · laudo muda (free-slot/ordem)"))
         row["notaHtml"] = "<br>".join(partes)
         g["n"] += 1
         merged.append(row)
         comparacao["casos"].append(caso)
     # placar determinístico (frases-padrão, título, técnica, lacunas…) no conjunto juntado
-    mdir = W / f"merged-{sufixo}"
+    mdir = W / f"{MERGED}-{sufixo}"
     mdir.mkdir(exist_ok=True)
     (mdir / "results.json").write_text(json.dumps(merged, ensure_ascii=False))
     keys = ["gpt"] + [k for a, k, _ in ARMS if a in res]
@@ -262,12 +306,12 @@ for sufixo, nome in GRUPOS:
         print(f"  {a['rotulo']:<32} saída média {a['saida_media']:>5} (p50 {a['saida_p50']}, p90 {a['saida_p90']}) · raciocínio {a['thinking_medio']:>5} · tempo p50 {a['ms_p50'] / 1000:.1f}s p90 {a['ms_p90'] / 1000:.1f}s máx {a['ms_max'] / 1000:.1f}s · reparos {a['reparos']} · falhas {a['falhas']} · sim(final) {a['sim_final']}")
     for arm, d in g["dif"].items():
         top = sorted(d["campos"].items(), key=lambda x: -x[1])[:8]
-        print(f"  com × {arm}: {d['casos_valor']}/{g['n']} casos com valor diferente ({d['campos_valor']} campos) · {d['casos_texto']} com texto livre diferente · laudo idêntico {d['laudos_iguais']}/{g['n']} · campos: {top}")
+        print(f"  {BASE} × {arm}: {d['casos_valor']}/{g['n']} casos com valor diferente ({d['campos_valor']} campos) · {d['casos_texto']} com texto livre diferente · laudo idêntico {d['laudos_iguais']}/{g['n']} · campos: {top}")
     print(saida)
 
 # Linha de base: a mesma configuração rodada duas vezes (obstétrica) — quanto muda só por rodar de novo.
 base_rep = {}
-for a1, a2, key in (("com", "com2", "A7"), ("sem", "sem2", "A8")):
+for a1, a2, key in REPLICAS:
     d1, d2 = rodada(a1, "obstetrica+doppler_obstetrico"), rodada(a2, "obstetrica+doppler_obstetrico")
     if not (d1 and d2):
         continue
@@ -284,7 +328,7 @@ for a1, a2, key in (("com", "com2", "A7"), ("sem", "sem2", "A8")):
     print(f"linha de base {a1}×{a2}: {base_rep[f'{a1}×{a2}']}")
 comparacao["linha_de_base"] = base_rep
 
-(W / "comparacao.json").write_text(json.dumps(comparacao, ensure_ascii=False, indent=1, default=str))
+(W / SAIDA).write_text(json.dumps(comparacao, ensure_ascii=False, indent=1, default=str))
 
 # HTML: obstetrícia, Doppler obstétrico e morfológico
 hdir = W / "html"
@@ -314,25 +358,11 @@ def placar_html():
 
 meta = {
     "titulo": "Extração com × sem raciocínio — W16",
-    "rodada": "W16A · " + " · ".join(f"{nome}" for nome in comparacao["grupos"]),
-    "keys": [
-        x
-        for x in [
-            {"k": "A7", "t": "Com raciocínio", "s": "Haiku 5.5, thinking adaptativo, esforço medium (produção de hoje)"},
-            {"k": "A8", "t": "Sem raciocínio — forçado", "s": "thinking desligado, ferramenta forçada"},
-            {"k": "A6", "t": "Sem raciocínio — auto", "s": "thinking desligado, tool_choice auto (plano curto em texto antes)"},
-            {"k": "A5", "t": "Raciocínio low", "s": "thinking adaptativo, esforço low"},
-        ]
-        if any(r.get(x["k"]) for r in casos_html)
-    ],
+    "rodada": f"{CONFIG.upper()} · " + " · ".join(f"{nome}" for nome in comparacao["grupos"]),
+    "keys": [x for x in HTML_KEYS if any(r.get(x["k"]) for r in casos_html)],
     "refs": [{"k": "final", "t": "laudo final do médico"}, {"k": "A7", "t": "com raciocínio"}],
     "placarHtml": placar_html(),
-    "passos": [
-        {"t": "1. Ditado real", "s": "O texto que o médico ditou no app (histórico), o mesmo nos três braços."},
-        {"t": "Com raciocínio", "flow": "Haiku 5.5 · thinking adaptativo · tool_choice auto", "s": "Como a produção está hoje."},
-        {"t": "Sem raciocínio — forçado", "flow": "thinking disabled · ferramenta forçada", "s": "A proposta inicial da W16."},
-        {"t": "Sem raciocínio — auto", "flow": "thinking disabled · tool_choice auto", "s": "O modelo escreve um plano curto em texto e depois chama a ferramenta."},
-        {"t": "Raciocínio low", "flow": "thinking adaptativo · esforço low", "s": "Menos raciocínio, sem desligar."},
+    "passos": PASSOS + [
         {"t": "Medição", "s": "Pela assinatura (claude -p), com um proxy local que reproduz o pedido da produção e mede o 1º turno na API: tokens de saída, raciocínio e tempo. O mesmo renderer monta os dois laudos."},
         {"t": "Como ler", "s": "Cada caso traz a diferença campo a campo dos JSONs extraídos. Troque a referência das marcas para “com raciocínio” para ver só o que mudou entre os dois."},
     ],

@@ -166,11 +166,26 @@ export function reconcileBiometriaUnidade(
       "i",
     );
     const m = rawInput.match(re);
-    if (!m || m[1] === undefined) continue;
-    const ditadoCm = toNum(m[1]);
-    // Extração ecoou o valor em cm sem converter → aplica o ×10 que faltou.
-    if (Math.abs(atual - ditadoCm) < 0.05) {
-      feto[campo] = r1(ditadoCm * 10);
+    if (m && m[1] !== undefined) {
+      const ditadoCm = toNum(m[1]);
+      // Extração ecoou o valor em cm sem converter → aplica o ×10 que faltou.
+      if (Math.abs(atual - ditadoCm) < 0.05) {
+        feto[campo] = r1(ditadoCm * 10);
+        mudou = true;
+      }
+      continue;
+    }
+    // Sentido inverso (W16C, e664be29): "DBP: 9,90 mm" ditado em mm e a extração aplicou
+    // um ×10 que não existia (99) → volta ao valor ditado. Só esse caso exato.
+    const reMm = new RegExp(
+      `\\b(?:${label.source})\\b[^\\d\\n]{0,25}(\\d+(?:[.,]\\d+)?)\\s*(?:mm|mil[íi]metros?)\\b`,
+      "i",
+    );
+    const mm = rawInput.match(reMm);
+    if (!mm || mm[1] === undefined) continue;
+    const ditadoMm = toNum(mm[1]);
+    if (Math.abs(atual - ditadoMm * 10) < 0.05) {
+      feto[campo] = r1(ditadoMm);
       mudou = true;
     }
   }

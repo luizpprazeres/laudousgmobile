@@ -8,7 +8,9 @@ import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
 import { llmParsed, writerTarget } from "../ai/llm";
 import { stripExtractionMetatext } from "../renderer/extractionMetatext";
-import { reconciliarIgDitadaXCalculadora, reconciliarIgUsPrecoce } from "../renderer/ig";
+import { preencherIgReferenciaDitada, reconciliarIgDitadaXCalculadora, reconciliarIgUsPrecoce } from "../renderer/ig";
+import { conferirPerfilHemodinamico, mergeDopplerBloco, type DopplerObstetricoModule } from "../renderer/categories/dopplerObstetricoModule";
+import { conferirCrescimentoFetal } from "../renderer/categories/fetalGrowthModule";
 import {
   runRendererExtraction,
   type RendererExtractionResult,
@@ -26,6 +28,10 @@ import {
   assembleAbdomenObjetivo,
 } from "../renderer/phrases/ABDOMEN_TOTAL";
 import {
+  conferirBcfAlteracao,
+  conferirDiametroMedioSaco,
+  conferirInviabilidadeSemEmbriao,
+  conferirRelacaoPlacenta,
   igSanityAltera,
   renderObstetrica,
   type ObstetricaFindings,
@@ -40,6 +46,7 @@ import {
 } from "../renderer/categories/biometriaFetal";
 import {
   renderMorfologico,
+  conferirVitalidadeMorfologico,
   normalizarExtracaoMorfologico,
   type MorfologicoFindings,
 } from "../renderer/categories/MORFOLOGICO";
@@ -586,18 +593,22 @@ export async function* runRendererStream(args: {
         // VENCEM a extração LLM (mesmo padrão do mergeStructuredIg do Doppler).
         // IG de hoje da calculadora ("IG pela ultrassonografia precoce: 23s3d") que a
         // extração pôs em primeira_us_ig sem data volta a ser a referência (PACOTE2).
+        // IG de referência ditada ("hoje com X") que a extração deixou vazia (W16C).
         const obstIg = igDitadaXCalculadora(
-          reconciliarIgUsPrecoce(fnd as ObstetricaFindings, args.rawInput),
+          igReferenciaDitada(reconciliarIgUsPrecoce(fnd as ObstetricaFindings, args.rawInput), args.rawInput, args.onReviewNotes),
           args.rawInput,
           args.onReviewNotes,
         );
-        const ofnd =
+        const ofnd = obstConferencia(dopplerBlocoDet(
           env().OBST_BIOMETRIA_DET === "true"
             ? reconcileBiometriaUnidade(
                 mergeBiometriaEstruturada(obstIg, args.rawInput),
                 args.rawInput,
               )
-            : obstIg;
+            : obstIg,
+          args.rawInput,
+          args.onReviewNotes,
+        ), args.rawInput, args.onReviewNotes);
         const grannum = env().GRANNUM_PLACENTA === "true";
         const golfBallObst = golfBallSingle(ofnd.numero_fetos);
         const igSanity = env().OBST_IG_SANITY === "true";
@@ -793,8 +804,16 @@ export async function* runRendererStream(args: {
         break;
       }
       case "MORFOLOGICO": {
-        const mfnd = igDitadaXCalculadora(
-          normalizarExtracaoMorfologico(fnd as MorfologicoFindings, args.rawInput),
+        const mfnd = dopplerBlocoDet(
+          igDitadaXCalculadora(
+            igReferenciaDitada(
+              morfoConferencia(normalizarExtracaoMorfologico(fnd as MorfologicoFindings, args.rawInput), args.rawInput, args.onReviewNotes),
+              args.rawInput,
+              args.onReviewNotes,
+            ),
+            args.rawInput,
+            args.onReviewNotes,
+          ),
           args.rawInput,
           args.onReviewNotes,
         );
@@ -863,7 +882,9 @@ export async function* runRendererStream(args: {
         // Exame Doppler isolado. Obstétrica e Morfológico compõem o mesmo módulo
         // dentro dos respectivos renderers, sem trocar a categoria-base.
         const dfnd = mergeStructuredIg(fnd as DopplerObstetricoFindings, args.rawInput);
-        fullText = renderDopplerObstetrico(dfnd, null, {
+        // W16C: índices do bloco do app que a extração deixou vazios.
+        const dfndBloco = env().DOPPLER_BLOCO_DET === "false" ? dfnd : dopplerIsoladoDet(dfnd, args.rawInput, args.onReviewNotes);
+        fullText = renderDopplerObstetrico(dfndBloco, null, {
           objetivo,
           // SEGURANÇA P0 do módulo v2: diástole zero/IP umbilical elevado nunca
           // vira "IP normal na umbilical" (boletim 03/07).
@@ -1137,6 +1158,69 @@ export async function* runRendererStream(args: {
  * IG de hoje ditada × calculadora (decisão do Luiz, 10/10): com a 1ª US ditada confirmando a
  * calculadora, o laudo segue a calculadora; em qualquer divergência o aviso vai ao card.
  */
+/**
+ * W16C: módulo Doppler do obstétrico/morfológico conferido contra o ditado — índices do
+ * bloco "Doppler obstétrico:" do app que a extração deixou vazios (mergeDopplerBloco; gemelar
+ * não, o bloco não diz de qual feto é) e perfil hemodinâmico que contradiz os IPs
+ * (conferirPerfilHemodinamico). Flag DOPPLER_BLOCO_DET: ligada por padrão; "false" desliga.
+ */
+function dopplerBlocoDet<T extends { doppler?: DopplerObstetricoModule | null; numero_fetos?: number | null }>(
+  f: T,
+  rawInput: string,
+  onReviewNotes?: (notes: string[]) => void,
+): T {
+  if (env().DOPPLER_BLOCO_DET === "false" || !f.doppler) return f;
+  const comBloco = (f.numero_fetos ?? 1) >= 2 ? f.doppler : (mergeDopplerBloco(f.doppler, rawInput) ?? f.doppler);
+  const { modulo, aviso } = conferirPerfilHemodinamico(comBloco);
+  if (aviso) onReviewNotes?.([aviso]);
+  return modulo === f.doppler ? f : { ...f, doppler: modulo };
+}
+
+/**
+ * W16C: conferências determinísticas da extração obstétrica (ver
+ * conferirDiametroMedioSaco, conferirCrescimentoFetal, conferirInviabilidadeSemEmbriao,
+ * conferirBcfAlteracao e conferirRelacaoPlacenta). Flag OBST_CONFERENCIA_DET: ligada por padrão; "false" desliga.
+ */
+function obstConferencia(f: ObstetricaFindings, rawInput: string, onReviewNotes?: (notes: string[]) => void): ObstetricaFindings {
+  if (env().OBST_CONFERENCIA_DET === "false") return f;
+  const inviab = conferirInviabilidadeSemEmbriao(conferirCrescimentoFetal(conferirDiametroMedioSaco(f), rawInput));
+  const bcf = conferirBcfAlteracao(inviab.findings);
+  const placenta = conferirRelacaoPlacenta(bcf.findings);
+  const avisos = [inviab.aviso, bcf.aviso, placenta.aviso].filter((a): a is string => a !== null);
+  if (avisos.length) onReviewNotes?.(avisos);
+  return placenta.findings;
+}
+
+/** W16C: o mesmo para o morfológico (vitalidade × BCF, crescimento fetal sem curva). */
+function morfoConferencia(f: MorfologicoFindings, rawInput: string, onReviewNotes?: (notes: string[]) => void): MorfologicoFindings {
+  if (env().OBST_CONFERENCIA_DET === "false") return f;
+  const { findings, aviso } = conferirVitalidadeMorfologico(conferirCrescimentoFetal(f, rawInput));
+  if (aviso) onReviewNotes?.([aviso]);
+  return findings;
+}
+
+/** W16C: o mesmo do dopplerBlocoDet para o Doppler obstétrico isolado (o módulo é a raiz). */
+function dopplerIsoladoDet<T extends DopplerObstetricoModule>(d: T, rawInput: string, onReviewNotes?: (notes: string[]) => void): T {
+  const { modulo, aviso } = conferirPerfilHemodinamico(mergeDopplerBloco(d, rawInput) ?? d);
+  if (aviso) onReviewNotes?.([aviso]);
+  return modulo;
+}
+
+/**
+ * W16C: IG de referência ditada que a extração deixou vazia (ver preencherIgReferenciaDitada).
+ * Flag IG_REFERENCIA_DITADA: ligada por padrão; "false" desliga.
+ */
+function igReferenciaDitada<T extends Parameters<typeof preencherIgReferenciaDitada>[0]>(
+  f: T,
+  rawInput: string,
+  onReviewNotes?: (notes: string[]) => void,
+): T {
+  if (env().IG_REFERENCIA_DITADA === "false") return f;
+  const { findings, aviso } = preencherIgReferenciaDitada(f, rawInput);
+  if (aviso) onReviewNotes?.([aviso]);
+  return findings;
+}
+
 function igDitadaXCalculadora<T extends Parameters<typeof reconciliarIgDitadaXCalculadora>[0]>(
   f: T,
   rawInput: string,

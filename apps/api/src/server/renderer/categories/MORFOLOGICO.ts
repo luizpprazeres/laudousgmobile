@@ -259,6 +259,21 @@ export function dopplerSemDadoVascular(d: MorfologicoFindings["doppler"]): boole
   return Object.entries(d).every(([k, v]) => v === null || v === undefined || k === "ducto_venoso_qualitativo");
 }
 
+/**
+ * W16C: vitalidade "bradicardia"/"taquicardia" que contradiz o BCF ditado (faixa 110–160)
+ * sai — a extração sem raciocínio inventou "taquicardia" com BCF 147.
+ */
+export function conferirVitalidadeMorfologico(f: MorfologicoFindings): { findings: MorfologicoFindings; aviso: string | null } {
+  const bpm = f.bcf_bpm;
+  if (bpm == null || (f.vitalidade !== "bradicardia" && f.vitalidade !== "taquicardia")) return { findings: f, aviso: null };
+  const contradiz = f.vitalidade === "bradicardia" ? bpm >= 110 : bpm <= 160;
+  if (!contradiz) return { findings: f, aviso: null };
+  return {
+    findings: { ...f, vitalidade: null },
+    aviso: `Classificação do BCF contradiz o valor ditado: "${f.vitalidade}" com BCF de ${bpm} bpm (faixa normal 110–160); removida do laudo — confira.`,
+  };
+}
+
 export function normalizarExtracaoMorfologico(f: MorfologicoFindings, rawInput: string): MorfologicoFindings {
   // IG de hoje da calculadora posta em primeira_us_ig sem data (ver reconciliarIgUsPrecoce).
   const out: MorfologicoFindings = reconciliarIgUsPrecoce({ ...f }, rawInput);
@@ -685,6 +700,8 @@ function dorsoFmt(s: string | null): string | null {
   if (!s) return null;
   const t = s.trim();
   if (/^(direita|esquerda)$/i.test(t)) return `à ${t.toLowerCase()}`;
+  // "esquerdo"/"direito" (extração sem raciocínio, W16C) → a forma da casa.
+  if (/^(direito|esquerdo)$/i.test(t)) return `à ${t.toLowerCase().replace(/o$/, "a")}`;
   return t;
 }
 
@@ -693,6 +710,8 @@ function poloFmt(s: string | null): string | null {
   if (!s) return null;
   const t = s.trim();
   if (/^(direita|esquerda)$/i.test(t)) return `à ${t.toLowerCase()}`;
+  // "esquerdo"/"direito" (extração sem raciocínio, W16C) → a forma da casa.
+  if (/^(direito|esquerdo)$/i.test(t)) return `à ${t.toLowerCase().replace(/o$/, "a")}`;
   return t;
 }
 

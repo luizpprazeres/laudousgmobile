@@ -502,6 +502,26 @@ export async function runRendererExtraction(args: {
       ? "\nEXAME SELECIONADO: obstétrico com Doppler. Preserve toda a biometria e os achados obstétricos ditados. Preencha o módulo doppler, com null para índices e características não informados; não invente medidas ou normalidade vascular."
       : "");
 
+  // W16C: obstétrico COM Doppler cujo ditado traz índices (IP/IR) não pode voltar sem o
+  // módulo doppler — a reprovação vai ao modelo como uma correção (ciclo de reparo do motor;
+  // se persistir, segue como veio). Bancada: sem raciocínio o módulo inteiro sumiu 1×.
+  const exigeDoppler =
+    !plainObstetrica &&
+    // Só o obstétrico com Doppler: no morfológico do 1º trimestre o IP do ducto venoso tem
+    // campo próprio e doppler null é legítimo (b315f01e, 99b92152).
+    args.categoryCode === "OBSTETRICA" &&
+    args.dopplerMode === "combined" &&
+    /\b(?:IP|IR)\b|[íi]ndice\s+de\s+(?:pulsatilidade|resistividade)/i.test(rawInput);
+  const exigirModuloDoppler = (value: unknown) => {
+    if (!exigeDoppler || e.EXTRACAO_DOPPLER_OBRIGATORIO === "false") return;
+    const doppler = value && typeof value === "object" ? (value as { doppler?: unknown }).doppler : undefined;
+    if (doppler === null || doppler === undefined) {
+      throw new Error(
+        "doppler: o exame selecionado tem Doppler e o ditado traz índices (IP/IR) — preencha o módulo doppler com os índices ditados (null só no que não foi informado).",
+      );
+    }
+  };
+
   // Motor único (ai/llm.ts): Claude Haiku 5.5 por padrão. Sempre streamado; os
   // milestones de progresso (flag RENDERER_PROGRESS) leem o JSON parcial e o
   // parse é sempre do JSON completo, igual ao modo sem progresso.
@@ -511,7 +531,7 @@ export async function runRendererExtraction(args: {
     plainObstetrica && parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? { ...parsed, doppler: null }
       : parsed;
-  const target = extractionTarget();
+  const target = extractionTarget(e, args.categoryCode);
   const { raw, usage, mode } = await llmJson({
     target,
     system,
@@ -521,7 +541,10 @@ export async function runRendererExtraction(args: {
     openaiMaxTokens: 8000,
     signal: args.signal,
     omitNulls: e.LLM_EXTRACTION_OMIT_NULLS === "true",
-    validate: (value) => void extractor.parse(withPlainChoice(value)),
+    validate: (value) => {
+      extractor.parse(withPlainChoice(value));
+      exigirModuloDoppler(value);
+    },
     onPartialJson: args.stream
       ? (acc) => {
           for (const label of marcosComValor(acc, seen)) {

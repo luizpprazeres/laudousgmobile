@@ -940,6 +940,8 @@ function ladoFmt(s: string | null): string | null {
   if (!s) return null;
   const t = s.trim();
   if (/^(direita|esquerda)$/i.test(t)) return `à ${t.toLowerCase()}`;
+  // "esquerdo"/"direito" (extração sem raciocínio, W16C) → a forma da casa.
+  if (/^(direito|esquerdo)$/i.test(t)) return `à ${t.toLowerCase().replace(/o$/, "a")}`;
   return t;
 }
 
@@ -1931,4 +1933,77 @@ export function renderObstetricaObjetivo(
   ].join("\n");
 
   return corpo.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/**
+ * `gestacao_inviavel` é o critério de saco gestacional SEM embrião (spec §9). Com embrião
+ * descrito (visualizado, CCN ou BCF) ele é contraditório: o laudo afirmaria "ausência de
+ * embrião… inviabilidade" e "embrião sem vitalidade" juntos — diagnósticos diferentes
+ * (bancada W16C, extração sem raciocínio, bec362d5). O critério sai, com aviso no card.
+ */
+export function conferirInviabilidadeSemEmbriao(f: ObstetricaFindings): { findings: ObstetricaFindings; aviso: string | null } {
+  if (f.gestacao_inviavel !== true) return { findings: f, aviso: null };
+  const ccn = f.fetos.find((ft) => ft.ccn_mm != null)?.ccn_mm;
+  const temEmbriao = f.embriao_visualizado === true || ccn != null || f.fetos.some((ft) => ft.bcf_bpm != null);
+  if (!temEmbriao) return { findings: f, aviso: null };
+  return {
+    findings: { ...f, gestacao_inviavel: null },
+    aviso:
+      "Critério de saco gestacional sem embrião (inviabilidade) contradiz o embrião descrito" +
+      (ccn != null ? ` (CCN ${String(ccn).replace(".", ",")} mm)` : "") +
+      "; o laudo segue o embrião — confira.",
+  };
+}
+
+/**
+ * Contrato da extração: com as 3 medidas do saco, `saco_gestacional_mm` é null e o renderer
+ * calcula o diâmetro médio. Se a extração copiou UMA das medidas como DSM (bancada W16C,
+ * bbabcee3: 37,1 × 45 × 4,3 → "diâmetro médio de 4,3 mm"; o certo é 28,8), o DSM sai.
+ */
+export function conferirDiametroMedioSaco(f: ObstetricaFindings): ObstetricaFindings {
+  const m = (f.saco_gestacional_medidas_mm ?? []).filter((n) => Number.isFinite(n));
+  const dsm = f.saco_gestacional_mm;
+  if (dsm === null || m.length !== 3 || !m.includes(dsm)) return f;
+  const media = m.reduce((a, b) => a + b, 0) / 3;
+  return Math.abs(media - dsm) > 0.5 ? { ...f, saco_gestacional_mm: null } : f;
+}
+
+/** Faixa normal do BCF (bpm): abaixo é bradicardia, acima é taquicardia. */
+const BCF_NORMAL = { min: 110, max: 160 } as const;
+
+/**
+ * `bcf_alteracao` que contradiz o BCF ditado sai (bancada W16C, 68757f57: BCF 125 →
+ * "Bradicardia fetal."). Só com o número presente; a ausência de BCF nunca é tocada.
+ */
+export function conferirBcfAlteracao(f: ObstetricaFindings): { findings: ObstetricaFindings; aviso: string | null } {
+  const avisos: string[] = [];
+  const fetos = f.fetos.map((ft) => {
+    const bpm = ft.bcf_bpm;
+    if (bpm == null || (ft.bcf_alteracao !== "bradicardia" && ft.bcf_alteracao !== "taquicardia")) return ft;
+    const contradiz = ft.bcf_alteracao === "bradicardia" ? bpm >= BCF_NORMAL.min : bpm <= BCF_NORMAL.max;
+    if (!contradiz) return ft;
+    avisos.push(`"${ft.bcf_alteracao}" com BCF de ${bpm} bpm (faixa normal ${BCF_NORMAL.min}–${BCF_NORMAL.max})`);
+    return { ...ft, bcf_alteracao: null };
+  });
+  if (!avisos.length) return { findings: f, aviso: null };
+  return { findings: { ...f, fetos }, aviso: `Classificação do BCF contradiz o valor ditado: ${avisos.join("; ")}; removida do laudo — confira.` };
+}
+
+/** Borda placentária a 20 mm ou mais do orifício interno não é de inserção baixa (ISUOG/SMFM). */
+const PLACENTA_BAIXA_MAX_MM = 20;
+
+/**
+ * Relação "inserção baixa/marginal/prévia" com a distância ditada de 20 mm ou mais é
+ * contraditória (bancada W16C, 61a22347: "distando cerca de 5,4 cm do orifício interno" →
+ * "Placenta de inserção baixa."). A relação sai, com aviso; a distância fica nos achados.
+ */
+export function conferirRelacaoPlacenta(f: ObstetricaFindings): { findings: ObstetricaFindings; aviso: string | null } {
+  const d = f.placenta_distancia_orificio_mm;
+  if (!f.placenta_relacao_orificio || d == null || d < PLACENTA_BAIXA_MAX_MM) return { findings: f, aviso: null };
+  return {
+    findings: { ...f, placenta_relacao_orificio: null },
+    aviso:
+      `Placenta classificada como "${f.placenta_relacao_orificio.replace("_", " ")}" com a borda a ${ptBr(d)} mm do orifício interno ` +
+      `(${PLACENTA_BAIXA_MAX_MM} mm ou mais não é inserção baixa); classificação removida do laudo — confira.`,
+  };
 }

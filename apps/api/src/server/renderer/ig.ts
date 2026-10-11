@@ -47,7 +47,19 @@ export type DatacaoPedido = "corrigir" | "relacionar" | "manter_biometria";
 export type IgRenderOptions = { datacaoConclusao?: DatacaoConclusao; dataGeracao?: string };
 
 /** Data do contexto de geração, explicitamente entregue ao cálculo puro. */
-export function dataGeracaoSaoPaulo(instante = new Date()): string {
+/**
+ * "Agora" da geração. Produção: o relógio. Bancada/replay: a data do caso, para a 1ª US
+ * ser projetada até o dia em que o laudo foi gerado (W16C) — sem isso, um caso de
+ * setembro gerado hoje projeta a IG semanas à frente.
+ */
+let relogioDeGeracao: (() => Date | undefined) | null = null;
+
+/** Só bancada/replay. `null` volta ao relógio. */
+export function definirRelogioDeGeracao(fn: (() => Date | undefined) | null): void {
+  relogioDeGeracao = fn;
+}
+
+export function dataGeracaoSaoPaulo(instante: Date = relogioDeGeracao?.() ?? new Date()): string {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" }).format(instante);
 }
 
@@ -627,5 +639,125 @@ export function reconciliarIgDitadaXCalculadora<T extends IgUsPrecoceCampos & { 
     findings: f,
     aviso: `IG de hoje ditada (${ditada}) diverge da calculadora do app (IG pela ultrassonografia precoce: ${calcTxt}); ` +
       "o laudo usa a ditada — confira.",
+  };
+}
+
+// ---------------------------------------------------------------------------
+// IG de referência DITADA (W16C, 10/10)
+// ---------------------------------------------------------------------------
+
+/**
+ * "hoje com 30 semanas e 4 dias", "hoje está com 15 semanas", "atualmente com 20s5d",
+ * "hoje, dia 12/09, com 28 semanas". Só depois de "hoje"/"atualmente"/"no momento":
+ * a IG NA DATA da 1ª US ("realizada em 14/04 com 6 semanas") nunca casa.
+ */
+const HOJE_COM_RE =
+  /\b(?:hoje|atualmente|no\s+momento)\s*,?\s*(?:\(?\s*(?:dia\s+)?\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\s*\)?\s*,?\s*)?(?:(?:ela|a\s+paciente|a\s+gesta[çc][ãa]o)\s+)?(?:est[áa]\s+)?(?:com|de|em)\s+(\d{1,2})\s*(?:semanas?\b|s(?=\s*\d\s*d\b)|s\b)(?:\s*,?\s*(?:e\s*)?(\d)\s*(?:dias?|d)\b)?/gi;
+
+const IG_DUM_CALC_RE = /IG\s+pela\s+DUM\s*:\s*(\d{1,2})\s*s(?:\s*(\d)\s*d)?\b/gi;
+
+/** Trecho da frase (até ponto final/quebra) em volta de uma posição. */
+function fraseEmVolta(texto: string, inicio: number, fim: number): { antes: string; depois: string } {
+  const ini = Math.max(texto.lastIndexOf(".", inicio - 1), texto.lastIndexOf("\n", inicio - 1)) + 1;
+  const pontos = [texto.indexOf(".", fim), texto.indexOf("\n", fim)].filter((i) => i >= 0);
+  const fimFrase = pontos.length ? Math.min(...pontos) : texto.length;
+  return { antes: texto.slice(ini, inicio), depois: texto.slice(fim, fimFrase) };
+}
+
+export type IgReferenciaDitada = { semanas: number; dias: number; fonte: IgFonte | null };
+
+/**
+ * IG de HOJE pela referência, como o médico a ditou ("hoje com X semanas e Y dias").
+ * null se não há, se há valores diferentes (ambíguo), se a frase é negada ou se é a IG
+ * pela biometria. A fonte sai do contexto da frase (DUM / ultrassonografia), senão null.
+ */
+export function parseIgReferenciaHoje(rawInput: string): IgReferenciaDitada | null {
+  const achados = new Map<string, IgReferenciaDitada>();
+  for (const m of rawInput.matchAll(HOJE_COM_RE)) {
+    const semanas = Number(m[1]);
+    const dias = Number(m[2] ?? 0);
+    if (semanas < 4 || semanas > 43 || dias > 6) continue;
+    const { antes, depois } = fraseEmVolta(rawInput, m.index!, m.index! + m[0].length);
+    const perto = `${antes.slice(-40)} ${depois.slice(0, 40)}`;
+    if (/\bn[ãa]o\b|\bsem\b/i.test(antes.slice(-25))) continue;
+    // IG pela biometria não é referência; "Biometria fetal:" logo depois é só o bloco seguinte.
+    if (/\bpel[ao]s?\s+(?:biometri|medidas|tamanho)/i.test(perto) || /biometri/i.test(antes.slice(-40))) continue;
+    const contexto = `${antes} ${depois}`;
+    const fonte: IgFonte | null = /\bDUM\b|[úu]ltima\s+menstrua/i.test(contexto)
+      ? "dum"
+      : /ultrassom|ultrassonografia|ultra-som|\bUSG?\b|\bUS\s+precoce|primeir[ao]\s+(?:exame|US)/i.test(contexto)
+        ? "usg_precoce"
+        : null;
+    achados.set(`${semanas}/${dias}`, { semanas, dias, fonte });
+  }
+  if (achados.size !== 1) return null;
+  return [...achados.values()][0]!;
+}
+
+/** Linha da calculadora do app "IG pela DUM: 30s4d" (saída de máquina). Valores diferentes → null. */
+export function parseIgDumCalculadora(rawInput: string): { semanas: number; dias: number } | null {
+  const valores = new Set<string>();
+  for (const m of rawInput.matchAll(IG_DUM_CALC_RE)) valores.add(`${Number(m[1])}/${Number(m[2] ?? 0)}`);
+  if (valores.size !== 1) return null;
+  const [semanas, dias] = [...valores][0]!.split("/").map(Number) as [number, number];
+  return { semanas, dias };
+}
+
+/**
+ * Nada ditado some (W16C). O extrator — sobretudo sem raciocínio — às vezes deixa vazia a
+ * IG de referência que o médico ditou pronta; o renderer então projeta a 1ª US e a
+ * conclusão pode sair com outra IG (W16A: 4/46 obstétricos).
+ *
+ * Preenche `ig_referencia_hoje_*` SÓ quando o extrator deixou vazio, nesta ordem:
+ * 1. a frase ditada "hoje com X semanas e Y dias" (ditado direto vence);
+ * 2. a linha da calculadora do app que bate com a fonte da referência
+ *    ("IG pela ultrassonografia precoce: XsYd" para 1ª US; "IG pela DUM: XsYd" para DUM);
+ *    sem fonte explícita, 1ª US vence DUM (a mesma heurística de buildIgInput).
+ * Nunca sobrescreve: se o extraído contradiz a frase ditada, só devolve um aviso para o
+ * card de pendências. A fonte só é preenchida quando estava vazia e o contexto a diz.
+ */
+export function preencherIgReferenciaDitada<T extends IgUsPrecoceCampos & { dum?: string | null }>(
+  f: T,
+  rawInput: string,
+): { findings: T; aviso: string | null } {
+  const hoje = parseIgReferenciaHoje(rawInput);
+  if (f.ig_referencia_hoje_semanas !== null) {
+    if (!hoje) return { findings: f, aviso: null };
+    const extraida = igDias(f.ig_referencia_hoje_semanas, f.ig_referencia_hoje_dias ?? 0);
+    if (extraida === igDias(hoje.semanas, hoje.dias)) return { findings: f, aviso: null };
+    return {
+      findings: f,
+      aviso:
+        `IG de hoje ditada (${formatIgSemanasDias(hoje.semanas, hoje.dias)}) difere da usada no laudo ` +
+        `(${formatIgSemanasDias(f.ig_referencia_hoje_semanas, f.ig_referencia_hoje_dias ?? 0)}) — confira.`,
+    };
+  }
+  if (hoje) {
+    return {
+      findings: {
+        ...f,
+        ig_referencia_hoje_semanas: hoje.semanas,
+        ig_referencia_hoje_dias: hoje.dias,
+        referencia_fonte: f.referencia_fonte ?? hoje.fonte,
+      },
+      aviso: null,
+    };
+  }
+  // Calculadora: só a linha da fonte da referência (a explícita, senão a heurística do motor).
+  const temUs = f.primeira_us_data !== null || f.primeira_us_ig_semanas !== null;
+  const us = parseIgUsPrecoceCalculadora(rawInput);
+  const dum = parseIgDumCalculadora(rawInput);
+  const fonte: IgFonte | null =
+    f.referencia_fonte ?? (temUs || us ? "usg_precoce" : dum ? "dum" : null);
+  const v = fonte === "usg_precoce" ? us : fonte === "dum" ? dum : null;
+  if (!v) return { findings: f, aviso: null };
+  return {
+    findings: {
+      ...f,
+      ig_referencia_hoje_semanas: v.semanas,
+      ig_referencia_hoje_dias: v.dias,
+      referencia_fonte: f.referencia_fonte ?? fonte,
+    },
+    aviso: null,
   };
 }

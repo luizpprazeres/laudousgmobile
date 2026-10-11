@@ -25,6 +25,91 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## W16C — leitores determinísticos e raciocínio por categoria (`perf/w16c-ig-deterministica`, base `750fbda7`)
+
+**Veredito: com os leitores e as conferências determinísticas, a extração sem raciocínio fica perto de empatar com a
+extração com raciocínio, a 1/3 do tempo.** A IG da conclusão e os números a mais empatam, dentro da variação entre
+execuções. Faltam ~7 números do final a mais, concentrados em 3 casos atípicos. As afirmações clínicas falsas que o modo
+sem raciocínio produzia agora são conferidas pelo código e saem com aviso no card.
+
+**Não chega a "nenhuma piora" literal.** Ficam 3 casos, mostrados no HTML:
+- **`89d87fca`:** a IG de referência extraída difere do "hoje com 15 semanas" ditado. O leitor não sobrescreve por
+  regra; só avisa no card.
+- **`61a22347`:** um laudo morfológico inteiro colado como ditado obstétrico. As medidas morfológicas não vão para a camada
+  livre.
+- **`3a270df9`:** perde uma data citada em texto livre.
+
+**Proposta de env**, sem criar nada sem o Luiz: `LLM_EXTRACTION_THINKING=OBSTETRICA,DOPPLER_OBSTETRICO,MORFOLOGICO,CERVICOMETRIA`.
+O padrão do código continua adaptativo. Os leitores e as conferências ficam ligados por padrão e valem também com
+raciocínio: no modo com raciocínio, a produção de hoje tem 123 números faltando, contra 121 com os leitores.
+
+**HTML:** `tmp-review/bench-haiku/w16/html/relatorio.html` no repositório principal. Traz 69 casos e as colunas com
+raciocínio, sem raciocínio + leitores e produção de hoje, com métricas por coluna, diferença campo a campo e 7 casos
+anotados. O HTML da W16A ficou em `html-w16a/`.
+
+### Bancada (pela assinatura, proxy da W16A, `BENCH_MODEL=claude-haiku-5-5`, duas execuções por braço)
+
+Desta vez cada caso foi gerado **na data em que foi gerado em produção** (`BENCH_DATA_DO_CASO=1`). Antes, a 1ª US de um
+caso de setembro era projetada até 10/10, o que inflava os erros de IG da W16A. As execuções com raciocínio foram
+re-renderizadas com o código final reaproveitando a mesma extração (`BENCH_REPLAY_CALLS`); as sem raciocínio foram
+refeitas, porque a exigência do módulo Doppler muda a extração.
+
+"IG" e "nº" contam o que está no laudo final do médico e falta no gerado; "nº a mais" conta os números do gerado que não
+estão no final. Entre parênteses, a réplica.
+
+| Extração | Obst. (46): tempo p50 · p90 | Obst.: saída | Obst.: IG · nº · nº a mais | Morfo (23): tempo · IG · nº |
+|---|---|---|---|---|
+| com raciocínio + leitores | 17,1 s · 26,7 s | 5.171 | 18 (18) · 121 (122) · 88 (86) | 17,5 s · 4 · 104 |
+| **sem raciocínio + leitores** | **5,7 s · 7,3 s** | 1.943 | 19 (20) · 128 (131) · 88 (88) | 6,1 s · 4 · 108 |
+| produção de hoje (com raciocínio, sem leitores) | 17,3 s · 27,2 s | 5.490 | 18 · 123 · 87 | 19,0 s · 4 · 108 |
+
+### O que foi feito
+
+1. **Leitor da IG de referência ditada** (`renderer/ig.ts`, `preencherIgReferenciaDitada`, flag `IG_REFERENCIA_DITADA`).
+   - Preenche `ig_referencia_hoje_*` **só se a extração deixou vazio**. Primeiro pela frase ditada ("hoje com X semanas e
+     Y dias", "hoje está com", "atualmente com 20s5d", "hoje, dia 12/09, com…"); depois pela linha da calculadora que bate
+     com a fonte ("IG pela ultrassonografia precoce" ou "IG pela DUM"; sem fonte, a 1ª US vence a DUM).
+   - Negação, "pela biometria" e valores ambíguos não preenchem.
+   - Extraído diferente do ditado: só aviso no card.
+   - Resolveu os 4 casos de IG errada da W16A (`461296ff`, `8af4d1cb`, `0644bbf0` e o aviso do `89d87fca`).
+2. **Números perdidos.** O padrão principal era o Doppler. Correções, todas determinísticas:
+   - **Bloco "Doppler obstétrico:" do app** (`mergeDopplerBloco`, flag `DOPPLER_BLOCO_DET`): preenche os índices IR/IP
+     vazios; nunca sobrescreve; não age em gemelar.
+   - **IP médio das uterinas** (`completarPercentisBarcelona`): é calculado mesmo quando o percentil veio ditado. Era um
+     defeito do renderer: o percentil copiado sem o IP médio apagava a frase.
+   - **Módulo Doppler obrigatório:** obstétrico com Doppler e índices ditados exige o módulo na extração; uma correção pelo
+     ciclo de reparo (flag `EXTRACAO_DOPPLER_OBRIGATORIO`). Sem raciocínio, o módulo inteiro sumiu uma vez.
+   - **Biometria:** "DBP: 9,90 mm" multiplicado por 10 indevidamente volta ao ditado (`reconcileBiometriaUnidade`, sentido
+     inverso).
+   - **Diâmetro do saco:** um DSM igual a uma das 3 medidas sai e o renderer calcula a média (`bbabcee3`: 4,3 → 28,8 mm,
+     como no final).
+3. **Conferências das afirmações clínicas falsas vistas sem raciocínio** (flag `OBST_CONFERENCIA_DET`, aviso no card):
+   - perfil hemodinâmico que contradiz IP umbilical/IP ACM, como o "menor de 1.0" lido como valor 1, que gerava "alterado"
+     (`conferirPerfilHemodinamico`);
+   - critério de "saco sem embrião" com embrião descrito (CCN 14 mm);
+   - bradicardia ou taquicardia contra o BCF ditado (faixa 110–160);
+   - módulo de crescimento fetal (PIG/RCF) sem curva nomeada no ditado, que é a regra 25 do prompt;
+   - placenta "baixa/marginal/prévia" com a borda a 20 mm ou mais do orifício interno.
+
+   O lado "esquerdo/direito" virou "à esquerda/à direita" (`ladoFmt`/`dorsoFmt`).
+4. **Raciocínio por categoria:** `LLM_EXTRACTION_THINKING` aceita `disabled`, `adaptive` ou uma lista de categorias sem
+   raciocínio (CSV). Quem chama sem categoria (structurer, comandos) segue adaptativo. A tireoide fica adaptativa.
+5. **Bancada:**
+   - `BENCH_DATA_DO_CASO=1`: o relógio de geração (`definirRelogioDeGeracao` em `ig.ts`) vem da data do caso;
+   - `BENCH_REPLAY_CALLS`: re-renderiza a mesma extração com o código novo;
+   - turno de correção no interceptador: antes, a correção do motor quebrava a bancada com "Connection error";
+   - perfil `w16c` no `w16-comparar.py`.
+
+**Testes:**
+- `ig-referencia-ditada` 14/14, `doppler-bloco-det` 9/9 e `obst-conferencia-det` 20/20 (novos);
+- `biometria-fetal-det` 47/47, `llm` 31/31, `livreRouter` 18/18 e `generate-fail-closed` 41/41;
+- `tsc` limpo;
+- regressão de 139 suítes manuais do renderer, catálogo e Doppler/obstetrícia: o mesmo conjunto passa e falha que na base
+  `750fbda7` (23 falhas pré-existentes nas duas).
+
+**Fora desta rodada:** CERVICOMETRIA está na lista proposta, mas não foi medida. Ela vai pelo caminho estrito, com schema
+pequeno.
+
 ## W16A — latência da extração: com × sem raciocínio (`perf/w16a-extracao-sem-raciocinio`, base `6344596b`)
 
 **Veredito: desligar o raciocínio deixa a extração 3× mais rápida, mas piora o laudo.** Nenhuma variante sem raciocínio
