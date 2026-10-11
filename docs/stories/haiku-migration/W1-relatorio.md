@@ -143,6 +143,23 @@ medição.
 **Scripts:** `thinkingProxy.mjs`, `sanity-w16.ts` e `w16-comparar.py` (novos); `claudeCli.ts`, `bench-abdomen.ts` e
 `relatorio.py` (colunas, referência do diff e métricas opcionais).
 
+## FLAGSTEST — `flags-de-producao` na política W5/W6 (`test/flags-de-producao-w5`, base `28651596`)
+
+Só teste; nenhum código de produção mudou. A expectativa antiga ("ligar `IG_REFERENCE_CORRECTION` muda o laudo pelo
+caminho do catálogo") não vale mais. Desde a W5/W6, a datação escolhida (padrão `"biometria"`) força a correção nesse caminho.
+O caso agora confere duas coisas:
+- a frase da 1ª US ("Primeira ultrassonografia realizada em 12/01/2026 com 8 semanas e 2 dias. Hoje com 31 semanas.") sai
+  nos **dois** estados da flag;
+- a conclusão segue o modo escolhido, também nos dois estados:
+  - sem escolha e `biometria`: 32s2d;
+  - `us_precoce`: "31 semanas, corrigida pela ultrassonografia precoce";
+  - `biometria_e_us_precoce`: a frase relacionada.
+
+O caso do Doppler umbilical imprime o mesmo texto de antes; a suíte passa (exit 0); tsc limpo.
+
+As outras 228 suítes manuais da API rodaram nas mesmas condições do GOFINAL, offline. Ficaram de fora as 3 que carregam o
+`.env` sozinhas. A única diferença é `flags-de-producao`, que agora passa.
+
 ## GOFINAL — pacote de deploy na HEAD integrada (`docs/go-final`, base `65964d9b`)
 
 Só documento: `deploy-pacote.md` reescrito para o GO final (envs, web, passos com rollback, gates). Vercel só lida:

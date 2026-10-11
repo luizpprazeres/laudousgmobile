@@ -25,6 +25,7 @@
  */
 
 import { laudoPadraoDe } from "../modeloNormalRegistry";
+import type { DatacaoConclusao } from "../../ig";
 
 type Caso = {
   categoria: string;
@@ -37,6 +38,19 @@ type Caso = {
   semFlag?: string;
   /** Barreira incorporada ao contrato clínico: deve permanecer ativa mesmo com a flag desligada. */
   sempreAtivo?: boolean;
+  /** O que fica ativo nos dois estados (para a mensagem); padrão: a barreira clínica. */
+  oQueFica?: string;
+};
+
+/** 1ª US de 12/01 com 8s2d projetada para 20/06 = 31s; biometria 32s2d (diverge 9 dias). */
+const IG_DADOS = {
+  primeira_us_data: "12/01/2026",
+  primeira_us_ig_semanas: 8,
+  primeira_us_ig_dias: 2,
+  data_exame: "20/06/2026",
+  referencia_fonte: "usg_precoce",
+  ig_semanas: 32,
+  ig_dias: 2,
 };
 
 const CASOS: Caso[] = [
@@ -53,17 +67,11 @@ const CASOS: Caso[] = [
     categoria: "OBSTETRICA",
     flag: "IG_REFERENCE_CORRECTION",
     porque:
-      "a frase da primeira ultrassonografia. A flag está ligada há 65 dias e a frase nunca saía por este caminho.",
-    dados: {
-      primeira_us_data: "12/01/2026",
-      primeira_us_ig_semanas: 8,
-      primeira_us_ig_dias: 2,
-      data_exame: "20/06/2026",
-      referencia_fonte: "usg_precoce",
-      ig_semanas: 32,
-      ig_dias: 2,
-    },
-    comFlag: "12/01/2026",
+      "a frase da primeira ultrassonografia. Desde a W5/W6 a datação escolhida (padrão \"biometria\") força a correção por este caminho: a frase sai com a flag ligada ou desligada, e a conclusão segue o modo escolhido.",
+    dados: IG_DADOS,
+    comFlag: "Primeira ultrassonografia realizada em 12/01/2026 com 8 semanas e 2 dias. Hoje com 31 semanas.",
+    sempreAtivo: true,
+    oQueFica: "a frase da 1ª US (datação escolhida, W5/W6)",
   },
 ];
 
@@ -89,10 +97,10 @@ for (const c of CASOS) {
   }
   if (c.sempreAtivo) {
     if (c.comFlag && (!off.includes(c.comFlag) || !on.includes(c.comFlag))) {
-      console.log(`  ✗ a barreira clínica não permaneceu ativa nos dois estados da flag`);
+      console.log(`  ✗ ${c.oQueFica ?? "a barreira clínica"} não permaneceu ativa nos dois estados da flag`);
       falhas++;
     } else {
-      console.log("  ✓ barreira clínica incorporada ao renderer e ativa nos dois estados da flag");
+      console.log(`  ✓ ${c.oQueFica ?? "barreira clínica"} incorporada ao renderer e ativa nos dois estados da flag`);
     }
     continue;
   }
@@ -116,6 +124,31 @@ for (const c of CASOS) {
       console.log(`      com: ${(b[i] ?? "(ausente)").trim().slice(0, 88)}`);
       break;
     }
+  }
+}
+
+// Política W5/W6 aprovada, pelo caminho do catálogo (Biblioteca e web): a conclusão segue a datação
+// escolhida, com a flag ligada ou desligada; sem escolha, a biometria.
+const DATACAO: Array<[DatacaoConclusao | undefined, string]> = [
+  [undefined, "Gestação em torno de 32 semanas e 2 dias."],
+  ["biometria", "Gestação em torno de 32 semanas e 2 dias."],
+  ["us_precoce", "Gestação em torno de 31 semanas, corrigida pela ultrassonografia precoce."],
+  ["biometria_e_us_precoce", "Gestação em torno de 32 semanas e 2 dias pela biometria atual, devendo ser corrigida pela ultrassonografia precoce, compatível com 31 semanas."],
+];
+console.log("\n▸ OBSTETRICA · datação escolhida (W5/W6) × IG_REFERENCE_CORRECTION");
+for (const [modo, conclusao] of DATACAO) {
+  const ctx = modo ? { datacaoConclusao: modo } : undefined;
+  delete process.env.IG_REFERENCE_CORRECTION;
+  const off = laudoPadraoDe("OBSTETRICA", "CLASSICO_COMPLETO", IG_DADOS, ctx) ?? "";
+  process.env.IG_REFERENCE_CORRECTION = "true";
+  const on = laudoPadraoDe("OBSTETRICA", "CLASSICO_COMPLETO", IG_DADOS, ctx) ?? "";
+  delete process.env.IG_REFERENCE_CORRECTION;
+  const rotulo = modo ?? "sem escolha";
+  if (off.includes(conclusao) && on.includes(conclusao)) {
+    console.log(`  ✓ ${rotulo}: "${conclusao.slice(0, 70)}…" nos dois estados`);
+  } else {
+    console.log(`  ✗ ${rotulo}: conclusão esperada ausente (sem flag: ${off.includes(conclusao)}, com flag: ${on.includes(conclusao)})`);
+    falhas++;
   }
 }
 
