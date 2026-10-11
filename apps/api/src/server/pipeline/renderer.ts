@@ -8,8 +8,8 @@ import { aplicarFrasesPersonalizadas } from "./frasesPersonalizadas";
 import { caminhoDeGeracao } from "./caminhoDeGeracao";
 import { llmParsed, writerTarget } from "../ai/llm";
 import { stripExtractionMetatext } from "../renderer/extractionMetatext";
-import { preencherIgReferenciaDitada, reconciliarIgDitadaXCalculadora, reconciliarIgUsPrecoce } from "../renderer/ig";
-import { conferirPerfilHemodinamico, mergeDopplerBloco, type DopplerObstetricoModule } from "../renderer/categories/dopplerObstetricoModule";
+import { preencherDatacaoPedidoDitada, preencherIgReferenciaDitada, reconciliarIgDitadaXCalculadora, reconciliarIgUsPrecoce } from "../renderer/ig";
+import { conferirPercentisDoApp, conferirPerfilHemodinamico, mergeDopplerBloco, type DopplerObstetricoModule } from "../renderer/categories/dopplerObstetricoModule";
 import { conferirCrescimentoFetal } from "../renderer/categories/fetalGrowthModule";
 import {
   runRendererExtraction,
@@ -30,6 +30,8 @@ import {
 import {
   conferirBcfAlteracao,
   conferirDiametroMedioSaco,
+  conferirLiquidoMedido,
+  restaurarSiglasObstetrica,
   conferirInviabilidadeSemEmbriao,
   conferirRelacaoPlacenta,
   igSanityAltera,
@@ -48,6 +50,7 @@ import {
   renderMorfologico,
   conferirVitalidadeMorfologico,
   normalizarExtracaoMorfologico,
+  normalizarPosicaoFetal,
   type MorfologicoFindings,
 } from "../renderer/categories/MORFOLOGICO";
 import {
@@ -1171,7 +1174,7 @@ function dopplerBlocoDet<T extends { doppler?: DopplerObstetricoModule | null; n
 ): T {
   if (env().DOPPLER_BLOCO_DET === "false" || !f.doppler) return f;
   const comBloco = (f.numero_fetos ?? 1) >= 2 ? f.doppler : (mergeDopplerBloco(f.doppler, rawInput) ?? f.doppler);
-  const { modulo, aviso } = conferirPerfilHemodinamico(comBloco);
+  const { modulo, aviso } = conferirPerfilHemodinamico(conferirPercentisDoApp(comBloco, rawInput));
   if (aviso) onReviewNotes?.([aviso]);
   return modulo === f.doppler ? f : { ...f, doppler: modulo };
 }
@@ -1183,7 +1186,12 @@ function dopplerBlocoDet<T extends { doppler?: DopplerObstetricoModule | null; n
  */
 function obstConferencia(f: ObstetricaFindings, rawInput: string, onReviewNotes?: (notes: string[]) => void): ObstetricaFindings {
   if (env().OBST_CONFERENCIA_DET === "false") return f;
-  const inviab = conferirInviabilidadeSemEmbriao(conferirCrescimentoFetal(conferirDiametroMedioSaco(f), rawInput));
+  // W16D: forma da posição fetal, líquido medido e datação ditada.
+  const forma = {
+    ...conferirLiquidoMedido(preencherDatacaoPedidoDitada(restaurarSiglasObstetrica(f, rawInput), rawInput)),
+    fetos: f.fetos.map((ft) => normalizarPosicaoFetal(ft, rawInput, f.fetos.length === 1)),
+  };
+  const inviab = conferirInviabilidadeSemEmbriao(conferirCrescimentoFetal(conferirDiametroMedioSaco(forma), rawInput));
   const bcf = conferirBcfAlteracao(inviab.findings);
   const placenta = conferirRelacaoPlacenta(bcf.findings);
   const avisos = [inviab.aviso, bcf.aviso, placenta.aviso].filter((a): a is string => a !== null);
@@ -1194,14 +1202,14 @@ function obstConferencia(f: ObstetricaFindings, rawInput: string, onReviewNotes?
 /** W16C: o mesmo para o morfológico (vitalidade × BCF, crescimento fetal sem curva). */
 function morfoConferencia(f: MorfologicoFindings, rawInput: string, onReviewNotes?: (notes: string[]) => void): MorfologicoFindings {
   if (env().OBST_CONFERENCIA_DET === "false") return f;
-  const { findings, aviso } = conferirVitalidadeMorfologico(conferirCrescimentoFetal(f, rawInput));
+  const { findings, aviso } = conferirVitalidadeMorfologico(conferirCrescimentoFetal(preencherDatacaoPedidoDitada(f, rawInput), rawInput));
   if (aviso) onReviewNotes?.([aviso]);
   return findings;
 }
 
 /** W16C: o mesmo do dopplerBlocoDet para o Doppler obstétrico isolado (o módulo é a raiz). */
 function dopplerIsoladoDet<T extends DopplerObstetricoModule>(d: T, rawInput: string, onReviewNotes?: (notes: string[]) => void): T {
-  const { modulo, aviso } = conferirPerfilHemodinamico(mergeDopplerBloco(d, rawInput) ?? d);
+  const { modulo, aviso } = conferirPerfilHemodinamico(conferirPercentisDoApp(mergeDopplerBloco(d, rawInput) ?? d, rawInput));
   if (aviso) onReviewNotes?.([aviso]);
   return modulo;
 }

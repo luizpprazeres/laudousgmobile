@@ -430,3 +430,38 @@ export function conferirPerfilHemodinamico<T extends DopplerObstetricoModule>(d:
       `(umbilical ${fmtIndice(ipu)} / cerebral média ${fmtIndice(ipacm)} = ${fmtIndice(esperado)}); o laudo usa o calculado — confira.`,
   };
 }
+
+/** Vasos da linha "→ Percentis (…): AU IP 0,50 (P7) · ACM IP 0,70 (P6) · Uterinas média IP 0,81 (P52) · …" do app. */
+const LINHA_PERCENTIS: Array<[RegExp, "ip_umbilical" | "ip_acm" | "ip_medio_uterinas" | "ip_ducto_venoso" | "rcp", "perc_umbilical" | "perc_acm" | "perc_medio_uterinas" | "perc_ducto_venoso" | "perc_rcp"]> = [
+  [/\bAU\s+IP\s+(\d+(?:[.,]\d+)?)\s*\(P\s*(\d+(?:[.,]\d+)?)\)/i, "ip_umbilical", "perc_umbilical"],
+  [/\bACM\s+IP\s+(\d+(?:[.,]\d+)?)\s*\(P\s*(\d+(?:[.,]\d+)?)\)/i, "ip_acm", "perc_acm"],
+  [/\bUterinas?\s+m[ée]dia\s+IP\s+(\d+(?:[.,]\d+)?)\s*\(P\s*(\d+(?:[.,]\d+)?)\)/i, "ip_medio_uterinas", "perc_medio_uterinas"],
+  [/\bDV\s+IP\s+(\d+(?:[.,]\d+)?)\s*\(P\s*(\d+(?:[.,]\d+)?)\)/i, "ip_ducto_venoso", "perc_ducto_venoso"],
+  [/\bRCP\s+(\d+(?:[.,]\d+)?)\s*\(P\s*(\d+(?:[.,]\d+)?)\)/i, "rcp", "perc_rcp"],
+];
+
+/**
+ * Regra do prompt: o percentil da linha "→ Percentis" só vale se o IP da linha for IGUAL
+ * ao ditado (o app já a gerou com o IR no lugar do IP). Sem raciocínio a extração copiou
+ * mesmo assim (W16D, 1304da57: IP ditado 0,71, linha "AU IP 0,50 (P7)" → "percentil 7").
+ * Percentil copiado de IP diferente sai; completarPercentisBarcelona o recalcula.
+ */
+export function conferirPercentisDoApp<T extends DopplerObstetricoModule>(d: T, rawInput: string): T {
+  const linha = /→\s*Percentis[^\n]*/i.exec(rawInput)?.[0];
+  if (!linha) return d;
+  let out: T | null = null;
+  for (const [re, campoIp, campoPerc] of LINHA_PERCENTIS) {
+    const m = re.exec(linha);
+    if (!m) continue;
+    const ipLinha = Number(m[1]!.replace(",", "."));
+    const pLinha = Number(m[2]!.replace(",", "."));
+    const perc = d[campoPerc];
+    const ip = campoIp === "ip_medio_uterinas" && d.ip_medio_uterinas == null && d.ip_uterina_dir != null && d.ip_uterina_esq != null
+      ? (d.ip_uterina_dir + d.ip_uterina_esq) / 2
+      : d[campoIp];
+    if (perc == null || perc !== pLinha || ip == null || Math.abs(ip - ipLinha) <= 0.005) continue;
+    out ??= { ...d };
+    (out as DopplerObstetricoModule)[campoPerc] = null;
+  }
+  return out ?? d;
+}

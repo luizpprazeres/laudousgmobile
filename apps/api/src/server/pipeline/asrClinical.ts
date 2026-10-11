@@ -38,6 +38,9 @@ const CLINICAL_GARBLE_GLOBAL: ReadonlyArray<readonly [RegExp, string]> = [
 // "maior vertical média" jamais é conteúdo clínico legítimo em obstetrícia.
 const OBST_MBV_GARBLE: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bmaior\s+vertical\s+m[ée]di[ao]\b/gi, "maior bolsão vertical"],
+  // W16D (71a86d78): "apresentação pélvica, com dor à direita" — "dorso" cortado pelo ASR.
+  // Logo depois da apresentação fetal, "dor à direita/esquerda" nunca é queixa da gestante.
+  [/(\bapresenta[çc][ãa]o\s+\S+\s*,?\s*com\s+)dor\s+((?:à|a)\s+(?:direita|esquerda))\b/gi, "$1dorso $2"],
 ];
 
 const CLINICAL_GARBLE_BY_CATEGORY: Readonly<

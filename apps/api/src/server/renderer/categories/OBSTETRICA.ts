@@ -2007,3 +2007,43 @@ export function conferirRelacaoPlacenta(f: ObstetricaFindings): { findings: Obst
       `(${PLACENTA_BAIXA_MAX_MM} mm ou mais não é inserção baixa); classificação removida do laudo — confira.`,
   };
 }
+
+/**
+ * Líquido "normal" (análise subjetiva) com MBV ou ILA MEDIDO no ditado (W16D, b80a63e5:
+ * "maior bolsão vertical de 3,6 cm" → "quantidade normal pela análise subjetiva"). Com uma
+ * só medida, o tipo segue a medida; com as duas, fica como veio.
+ */
+export function conferirLiquidoMedido(f: ObstetricaFindings): ObstetricaFindings {
+  if (f.liquido_tipo !== "normal") return f;
+  const mbv = (f.liquido_mbv_por_feto_cm ?? []).some((v) => v != null);
+  const ila = f.liquido_ila_cm != null;
+  if (mbv === ila) return f;
+  return { ...f, liquido_tipo: mbv ? "mbv" : "ila" };
+}
+
+/**
+ * Sigla ditada que a extração tirou do texto livre (W16D, 61a22347: "Medida do cerebelo (MC)
+ * de 20,1 mm" ditado → "Medida do cerebelo de 20,1 mm" na camada livre, com e sem
+ * raciocínio). Volta só quando o rótulo e o número são os mesmos do ditado.
+ */
+export function restaurarSiglasDitadas(texto: string, rawInput: string): string {
+  let out = texto;
+  for (const m of rawInput.matchAll(/([A-Za-zÀ-ú][A-Za-zÀ-ú ]{3,60}?)\s+\(([A-Z]{1,4})\)\s+(de|:)\s*(\d+(?:[.,]\d+)?)/g)) {
+    const rotulo = m[1]!.trim();
+    const numero = m[4]!.replace(/[.,]/, "[.,]");
+    const re = new RegExp(`(${rotulo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})\\s+(de|:)\\s*(${numero})(?!\\d)`, "g");
+    out = out.replace(re, (_t, r: string, sep: string, n: string) => `${r} (${m[2]}) ${sep} ${n}`.replace(" : ", ": "));
+  }
+  return out;
+}
+
+/** Aplica restaurarSiglasDitadas aos campos de texto livre da obstétrica. */
+export function restaurarSiglasObstetrica(f: ObstetricaFindings, rawInput: string): ObstetricaFindings {
+  if (!/\([A-Z]{1,4}\)/.test(rawInput)) return f;
+  const livres = (f as { observacoes_corpo_livres?: string[] | null }).observacoes_corpo_livres;
+  return {
+    ...f,
+    achados_adicionais: f.achados_adicionais ? restaurarSiglasDitadas(f.achados_adicionais, rawInput) : f.achados_adicionais,
+    ...(Array.isArray(livres) ? { observacoes_corpo_livres: livres.map((l) => restaurarSiglasDitadas(l, rawInput)) } : {}),
+  } as ObstetricaFindings;
+}

@@ -25,6 +25,80 @@ default de `LLM_WRITER_MODEL_BY_CATEGORY`)
   **não consegui fazer o teste real na API**: a chave do `.env` local é recusada (401). Antes do deploy, alguém
   com a chave de produção precisa rodar o smoke (5 chamadas, ditados sintéticos) — comando na seção "Riscos".
 
+## W16D — erros do modo sem raciocínio corrigidos (`fix/w16d-sem-raciocinio`, base `1880af0b`)
+
+**Meta atingida.** No modo sem raciocínio com ferramenta forçada (escolha do Luiz), as frases obrigatórias e as siglas
+ficam em **0 faltando nas duas execuções** (obstetrícia, Doppler e morfológico). A IG da conclusão e as frases-padrão
+empatam com o modo com raciocínio. Os números ficam dentro da variação entre execuções. A extração cai de p50 17,1 s para
+5,8 s.
+
+**Os dois erros que o Luiz viu eram do renderer e aconteciam também com raciocínio.** A correção vale para os dois modos.
+- **"Morfologia fetal normal para esta fase da gestação."**
+  - No 1º trimestre, a frase sumia quando osso nasal, regurgitação tricúspide e ducto venoso não eram ditados: com o campo
+    nulo contando como alteração, isso deu 4/4 casos nos dois modos.
+  - Também sumia quando o achado adicional era só materno, como a artéria uterina.
+  - Agora é obrigatória; só um marcador explicitamente alterado ou um achado fetal a tira.
+- **Siglas.** As linhas dos ossos longos com lado nunca tiveram sigla. Agora saem fêmur (CF), tíbia (T), fíbula (F),
+  úmero (U), rádio (R) e ulna (U), além do fêmur da biometria precoce (CF). Cerebelo, cisterna magna e binocular seguem o
+  modelo atual do médico: "Medida do cerebelo (MC) de…", em 10 dos 15 finais. Os 5 restantes são laudos antigos sem sigla,
+  e por isso o placar de frases-padrão do morfológico, que compara a linha exata, piora igual nos dois modos.
+
+**Varredura de todas as diferenças** (obstétrica 46 e morfológico 23, as duas execuções de cada modo), classificada.
+
+*Corrigidas, todas de forma determinística:*
+- **Posição fetal na forma da casa** em todo caminho de render: "dorso esquerdo", "dorso dorso" (o ASR quebrou "com dorso,
+  à esquerda"), "situação situação transversa" (também com raciocínio) e polo cefálico com a situação embutida.
+- **ASR "com dor à direita"** logo depois da apresentação fetal → "dorso".
+- **Datação ditada** ("corrigido pela ultrassonografia precoce") preenche `datacao_pedido` quando a extração o deixa
+  vazio. Antes, a regra legada escolhia a datação relacionada.
+- **Líquido "normal" com o MBV ou o ILA medido** segue a medida.
+- **Percentil copiado da linha "→ Percentis" do app** com IP diferente do ditado sai e é recalculado.
+- **CCN ÷10** volta ao valor ditado.
+- **Módulo Doppler que repete as uterinas** do 1º trimestre já extraídas sai; IP só no módulo fica, como já exigia a
+  suíte de normalização.
+- **Conclusão das uterinas em dobro** (item livre mais o Doppler estruturado).
+- **Contagem de fetos zero com o feto na lista:** o laudo falhava na validação.
+- **Sigla ditada que a extração tirou do texto livre** volta, só com o mesmo rótulo e o mesmo número.
+
+*Variação aceitável:*
+- ILA × MBV quando os dois foram ditados;
+- redação de mioma e de datas em texto livre;
+- `89d87fca`, onde os dois modos não extraem líquido.
+
+*Melhorias do modo sem raciocínio:*
+- frase do ducto venoso na conclusão;
+- `372c1abc`: obedeceu ao "no final da conclusão acrescente…", que está no final;
+- `e86ad155`: binocular 35,3 mm, contra 353 mm com raciocínio.
+
+**Bancada** (pela assinatura, proxy sem raciocínio com ferramenta forçada, data do caso). As duas execuções sem raciocínio
+são novas; as com raciocínio foram re-renderizadas com o mesmo código. Entre parênteses, a réplica.
+
+| | com raciocínio | sem raciocínio (W16D) | produção de hoje |
+|---|---|---|---|
+| Obst.: tempo p50 | 17,1 s | **5,8 s** | 17,3 s |
+| Obst.: IG faltando | 18 (18) | 18 (18) | 18 |
+| Obst.: nº faltando / a mais | 121 (122) / 88 (86) | 128 (123) / 91 (89) | 123 / 87 |
+| Obst.: frases-padrão faltando | 192 | 193 | 192 |
+| Morfo: tempo p50 · nº faltando | 17,5 s · 101 | **6,1 s** · 104 | 19,0 s · 108 |
+| Frases obrigatórias faltando (obst + morfo) | 0 | **0 (0)** | 4 |
+| Siglas faltando (obst + morfo) | 0 | **0 (0)** | 98 |
+
+A primeira remedição foi interrompida porque a assinatura deslogou. As falhas "Connection error" daquela rodada foram
+descartadas, e a remedição foi refeita depois do login.
+
+**Testes:**
+- `w16d-sem-raciocinio` 14/14 (novo);
+- hashes de `morfologico-lateralidade` regravados (265/265): desfazendo as siglas, a saída nova reproduz os hashes antigos
+  nos 6 casos;
+- `morfologico-23b4-ios-clinical-matrix` 89/89, `morfologico-objetivo-golden` 41/41 e `morfologico-normalizacao-extracao`;
+- `llm` 31/31, `generate-fail-closed` 41/41;
+- `tsc` limpo;
+- 140 suítes manuais: o mesmo conjunto passa e falha que a base (23 pré-existentes).
+
+**HTML:** `tmp-review/bench-haiku/w16/html/relatorio.html`, com as colunas com raciocínio, sem raciocínio (W16D) e
+produção de hoje, métricas de frases e siglas e 7 casos anotados. Ele substitui o da W16C; o da W16A está em
+`html-w16a/`.
+
 ## W16C — leitores determinísticos e raciocínio por categoria (`perf/w16c-ig-deterministica`, base `750fbda7`)
 
 **Veredito: com os leitores e as conferências determinísticas, a extração sem raciocínio fica perto de empatar com a

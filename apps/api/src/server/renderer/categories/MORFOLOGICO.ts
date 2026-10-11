@@ -253,10 +253,54 @@ const LADOS: Partial<Record<string, [string, string]>> = {
   ulna_mm: ["ulna_dir_mm", "ulna_esq_mm"],
 };
 
+/** Campos do módulo Doppler que no 1º trimestre do morfológico têm canal próprio (uterinas). */
+const CAMPOS_UTERINAS = new Set(["ip_uterina_dir", "ip_uterina_esq", "ir_uterina_dir", "ir_uterina_esq", "ip_medio_uterinas", "perc_medio_uterinas", "uterinas_acima_p95", "incisura"]);
+
+/** Módulo Doppler com dado vascular SÓ das uterinas (o DV qualitativo não conta). */
+function soUterinas(d: NonNullable<MorfologicoFindings["doppler"]>): boolean {
+  const comValor = Object.entries(d).filter(([k, v]) => v !== null && v !== undefined && k !== "ducto_venoso_qualitativo");
+  return comValor.length > 0 && comValor.every(([k]) => CAMPOS_UTERINAS.has(k)) && (d.ip_uterina_dir != null || d.ip_uterina_esq != null);
+}
+
 /** Módulo Doppler sem dado vascular — o DV qualitativo (marcador do 1º trimestre) não conta. */
 export function dopplerSemDadoVascular(d: MorfologicoFindings["doppler"]): boolean {
   if (!d) return true;
   return Object.entries(d).every(([k, v]) => v === null || v === undefined || k === "ducto_venoso_qualitativo");
+}
+
+/**
+ * Itens livres da conclusão sem repetir o que o Doppler estruturado já conclui (W16D,
+ * a3ea0fea: "Dopplervelocimetria normal das artérias uterinas" ao lado de "Índice de
+ * pulsatilidade normal nas artérias uterinas, umbilical…"). Sem dado das uterinas no módulo
+ * (1º trimestre), o item livre é o único canal e fica.
+ */
+function itensLivresMorfo(f: MorfologicoFindings): string[] {
+  const itens = filterFreeConclusionItems(f.itens_conclusao_livres);
+  const uterinasNoModulo = f.doppler != null && (f.doppler.ip_uterina_dir != null || f.doppler.ip_uterina_esq != null || f.doppler.ip_medio_uterinas != null);
+  return uterinasNoModulo ? itens.filter((i) => !(/art[ée]rias?\s+uterinas?/i.test(i) && /normal/i.test(i) && !/alterad|aumentad|incisura\s+presente/i.test(i))) : itens;
+}
+
+/**
+ * Achado adicional que pode tocar a morfologia FETAL. Só materno (artérias uterinas, colo,
+ * mioma, ovário, placenta) não nega "Morfologia fetal normal…" (W16D, c675f495: "artéria
+ * uterina direita com IP alterado" nos achados suprimia a frase obrigatória).
+ */
+function achadoFetal(achados: string | null | undefined): boolean {
+  const t = (achados ?? "").trim();
+  if (t === "") return false;
+  const materno = /art[ée]rias?\s+uterinas?|\buterinas?\b|colo\s+uterino|\bmiom|ov[áa]ri|placent/i;
+  const fetal = /\bfet[oa]l?\b|\bfetais\b|\bembri|\bcard[íi]ac|\bcora[çc][ãa]o|\bcr[âa]ni|\bc[ée]rebr|\bencef|\bventr[íi]cul|\bcoluna|\bfac(?:e\s+fetal|ial)|\bl[áa]bio|\bnariz|\brena(?:l|is)\b|\brins?\b|\best[ôo]mago|\bbexiga|\bmembros?\b|\babd[oô]m|\btor[áa]x|\bpulm|\bh[ée]rnia|\bcord[ãa]o|\bnucal|\bosso\s+nasal/i;
+  return !(materno.test(t) && !fetal.test(t));
+}
+
+/**
+ * "Morfologia fetal normal para esta fase da gestação." é OBRIGATÓRIA no 1º trimestre
+ * (decisão do Luiz, 11/10, W16D) — só a suprime um marcador explicitamente ALTERADO.
+ * Marcador não ditado (null) ou "não avaliado" não é alteração: antes, null suprimia a
+ * frase em todo morfológico precoce sem os três marcadores ditados (4/4 na bancada).
+ */
+function marcadorPrecoceAlterado(f: MorfologicoFindings): boolean {
+  return f.osso_nasal === "ausente" || f.regurgitacao_tricuspide === "presente" || f.ducto_venoso === "alterado";
 }
 
 /**
@@ -283,6 +327,20 @@ export function normalizarExtracaoMorfologico(f: MorfologicoFindings, rawInput: 
     const ladoDitado = lados?.some((l) => (out as Record<string, unknown>)[l] != null);
     if (out[campo] == null && !ladoDitado) (out as Record<string, unknown>)[campo] = valor;
   }
+  // W16D: no 1º trimestre as uterinas têm campos próprios. Módulo Doppler que só REPETE as
+  // uterinas já extraídas nos campos próprios (bancada sem raciocínio, b315f01e) sai — senão
+  // o laudo ganhava uma seção DOPPLERVELOCIMETRIA e a conclusão em dobro. IP só no módulo fica.
+  if (out.trimestre === "1t" && out.doppler && soUterinas(out.doppler)
+    && out.uterina_ip_direita === out.doppler.ip_uterina_dir && out.uterina_ip_esquerda === out.doppler.ip_uterina_esq) {
+    out.doppler = null;
+  }
+  // W16D: CCN ditado sem unidade ou em mm que a extração dividiu por 10 ("CCN de 54,2" → 5,42).
+  const ccnDitado = /\b(?:CCN|comprimento\s+cr[âa]nio[-\s]n[áa]degas)\b[^\d\n]{0,20}(\d+(?:[.,]\d+)?)\s*(cm|mm|mil[íi]metros?|cent[íi]metros?)?/i.exec(rawInput);
+  if (ccnDitado && out.ccn_mm != null && !/^c/i.test(ccnDitado[2] ?? "")) {
+    const v = parseFloat(ccnDitado[1]!.replace(",", "."));
+    if (Math.abs(out.ccn_mm * 10 - v) < 0.05) out.ccn_mm = v;
+  }
+  Object.assign(out, normalizarPosicaoFetal(out, rawInput));
   if (out.trimestre === "1t" && out.doppler && dopplerSemDadoVascular(out.doppler)) {
     const qualitativo = out.doppler.ducto_venoso_qualitativo ?? "";
     if (out.ducto_venoso == null && /revers|negativ|alterad/i.test(qualitativo)) {
@@ -619,21 +677,23 @@ function biometriaClassicaMorfo(f: MorfologicoFindings, terceiro: boolean): stri
 
   incluir(f.dbp_mm, () => `Diâmetro biparietal (DBP) de ${mm(f.dbp_mm)} mm.`);
   incluir(f.cc_mm, () => `Circunferência da cabeça (CC) de ${mm(f.cc_mm)} mm.`);
-  incluir(f.cerebelo_mm, () => `Cerebelo mede ${mm(f.cerebelo_mm)} mm.`);
-  incluir(f.cisterna_magna_mm, () => `Cisterna magna mede ${mm(f.cisterna_magna_mm)} mm.`);
-  if (!terceiro) incluir(f.binocular_mm, () => `Distância binocular de ${mm(f.binocular_mm)} mm.`);
+  // Modelo atual do médico, com sigla (W16D): "Medida do cerebelo (MC) de N mm.".
+  incluir(f.cerebelo_mm, () => `Medida do cerebelo (MC) de ${mm(f.cerebelo_mm)} mm.`);
+  incluir(f.cisterna_magna_mm, () => `Medida da cisterna magna (CM) de ${mm(f.cisterna_magna_mm)} mm.`);
+  if (!terceiro) incluir(f.binocular_mm, () => `Medida da distância binocular (DB) de ${mm(f.binocular_mm)} mm.`);
   incluir(f.ca_mm, () => `Circunferência abdominal (CA) de ${mm(f.ca_mm)} mm.`);
-  for (const [osso, rotulo, artigo, direito, esquerdo] of [
-    ["femur", "fêmur", "do", "direito", "esquerdo"],
-    ["tibia", "tíbia", "da", "direita", "esquerda"],
-    ["fibula", "fíbula", "da", "direita", "esquerda"],
-    ["umero", "úmero", "do", "direito", "esquerdo"],
-    ["radio", "rádio", "do", "direito", "esquerdo"],
-    ["ulna", "ulna", "da", "direita", "esquerda"],
+  for (const [osso, rotulo, artigo, direito, esquerdo, sigla] of [
+    ["femur", "fêmur", "do", "direito", "esquerdo", "CF"],
+    ["tibia", "tíbia", "da", "direita", "esquerda", "T"],
+    ["fibula", "fíbula", "da", "direita", "esquerda", "F"],
+    ["umero", "úmero", "do", "direito", "esquerdo", "U"],
+    ["radio", "rádio", "do", "direito", "esquerdo", "R"],
+    ["ulna", "ulna", "da", "direita", "esquerda", "U"],
   ] as const) {
     for (const [lado, ladoRotulo] of [["dir", direito], ["esq", esquerdo]] as const) {
       const valor = medidaOsso(f, osso, lado);
-      incluir(valor, () => `Comprimento ${artigo} ${rotulo} ${ladoRotulo} de ${mm(valor)} mm.`);
+      // Sigla como no laudo do médico ("Comprimento do fêmur direito (CF) de 43,2 mm"), W16D.
+      incluir(valor, () => `Comprimento ${artigo} ${rotulo} ${ladoRotulo} (${sigla}) de ${mm(valor)} mm.`);
     }
   }
   if (!somentePreenchida || f.peso_g !== null) linhas.push(pesoLinhaMorfo(f));
@@ -1008,7 +1068,7 @@ function biometriaPrecoce(f: MorfologicoFindings, objetivo = false): string[] {
     [objetivo ? "Diâmetro biparietal (DBP)" : "Diâmetro biparietal (DBP) de", f.dbp_mm],
     [objetivo ? "Circunferência cefálica (CC)" : "Circunferência da cabeça (CC) de", f.cc_mm],
     [objetivo ? "Circunferência abdominal (CA)" : "Circunferência abdominal (CA) de", f.ca_mm],
-    [objetivo ? "Comprimento do fêmur" : "Comprimento do fêmur de", f.femur_mm],
+    [objetivo ? "Comprimento do fêmur (CF)" : "Comprimento do fêmur (CF) de", f.femur_mm],
   ] as const;
   const presentes = medidas.filter(([, valor]) => valor !== null);
   if (presentes.length === 0) return [];
@@ -1123,7 +1183,7 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
    * não asseverar normalidade que ninguém verificou, e não negar na conclusão
    * o achado que o corpo descreve.
    */
-  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
+  const temAchado = achadoFetal(f.achados_adicionais);
   const conclusao = [
     ig.conclusaoClassico,
     ...vitalidade.conclusao,
@@ -1135,10 +1195,10 @@ function render1t(f: MorfologicoFindings, igCorrection = false, golfBall: GolfBa
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
     ...anatomiaPrecoce.conclusao,
-    ...(f.anatomia_avaliada === false || (f.anatomia_precoce && !anatomiaPrecoce.completa) || tnConclusao.length > 0 || anatomiaPrecoce.temAlteracaoOuLimitacao || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal !== "presente" || f.regurgitacao_tricuspide !== "ausente" || f.ducto_venoso !== "normal"
+    ...(f.anatomia_avaliada === false || (f.anatomia_precoce && !anatomiaPrecoce.completa) || tnConclusao.length > 0 || anatomiaPrecoce.temAlteracaoOuLimitacao || temAchado || sistemasAlterados(f).size > 0 || marcadorPrecoceAlterado(f)
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
-    ...filterFreeConclusionItems(f.itens_conclusao_livres),
+    ...itensLivresMorfo(f),
   ];
   // Sem percentil não é seguro classificar as uterinas como normais. Quando o
   // bloco estruturado existe, ele próprio inclui o item normal ou alterado.
@@ -1190,7 +1250,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
    * ditada pelo médico; `anatomia_alterada` retira a normalidade incompatível
    * do mesmo sistema.
    */
-  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
+  const temAchado = achadoFetal(f.achados_adicionais);
   const temSistemaAlterado = sistemasAlterados(f).size > 0;
   const conclusoesLimitacao = anatomiaLimitadaConclusao(f);
 
@@ -1203,7 +1263,7 @@ function render2t3t(f: MorfologicoFindings, terceiro: boolean, igCorrection = fa
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
     ...conclusoesLimitacao,
-    ...filterFreeConclusionItems(f.itens_conclusao_livres),
+    ...itensLivresMorfo(f),
   ];
   if (golfBall) applyGolfBallMorfologico(aspectos, conclusao, golfBall);
 
@@ -1266,7 +1326,7 @@ function assemble(
   acrescentarDoppler(f, aspectos, conclusao, dopplerOptions);
   acrescentarCervicometria(f, aspectos, conclusao);
   acrescentarCrescimentoFetal(f, aspectos, conclusao);
-  conclusao = dedupItensLivres(conclusao, filterFreeConclusionItems(f.itens_conclusao_livres));
+  conclusao = dedupItensLivres(conclusao, itensLivresMorfo(f));
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.\n` : "";
   const igProse = fraseReferencia ? `${fraseReferencia}\n` : "";
   const conclTxt =
@@ -1354,21 +1414,21 @@ function biometriaObjetivaMorfo(f: MorfologicoFindings, terceiro: boolean): stri
 
   incluir(f.dbp_mm, () => `Diâmetro biparietal (DBP): ${mm1(f.dbp_mm)} mm.`);
   incluir(f.cc_mm, () => `Circunferência cefálica (CC): ${mm1(f.cc_mm)} mm.`);
-  incluir(f.cerebelo_mm, () => `Cerebelo: ${mm1(f.cerebelo_mm)} mm.`);
-  incluir(f.cisterna_magna_mm, () => `Cisterna magna: ${mm1(f.cisterna_magna_mm)} mm.`);
-  if (!terceiro) incluir(f.binocular_mm, () => `Distância binocular: ${mm1(f.binocular_mm)} mm.`);
+  incluir(f.cerebelo_mm, () => `Cerebelo (MC): ${mm1(f.cerebelo_mm)} mm.`);
+  incluir(f.cisterna_magna_mm, () => `Cisterna magna (CM): ${mm1(f.cisterna_magna_mm)} mm.`);
+  if (!terceiro) incluir(f.binocular_mm, () => `Distância binocular (DB): ${mm1(f.binocular_mm)} mm.`);
   incluir(f.ca_mm, () => `Circunferência abdominal (CA): ${mm1(f.ca_mm)} mm.`);
-  for (const [osso, rotulo, artigo, direito, esquerdo] of [
-    ["femur", "fêmur", "do", "direito", "esquerdo"],
-    ["tibia", "tíbia", "da", "direita", "esquerda"],
-    ["fibula", "fíbula", "da", "direita", "esquerda"],
-    ["umero", "úmero", "do", "direito", "esquerdo"],
-    ["radio", "rádio", "do", "direito", "esquerdo"],
-    ["ulna", "ulna", "da", "direita", "esquerda"],
+  for (const [osso, rotulo, artigo, direito, esquerdo, sigla] of [
+    ["femur", "fêmur", "do", "direito", "esquerdo", "CF"],
+    ["tibia", "tíbia", "da", "direita", "esquerda", "T"],
+    ["fibula", "fíbula", "da", "direita", "esquerda", "F"],
+    ["umero", "úmero", "do", "direito", "esquerdo", "U"],
+    ["radio", "rádio", "do", "direito", "esquerdo", "R"],
+    ["ulna", "ulna", "da", "direita", "esquerda", "U"],
   ] as const) {
     for (const [lado, ladoRotulo] of [["dir", direito], ["esq", esquerdo]] as const) {
       const valor = medidaOsso(f, osso, lado);
-      incluir(valor, () => `Comprimento ${artigo} ${rotulo} ${ladoRotulo}: ${mm1(valor)} mm.`);
+      incluir(valor, () => `Comprimento ${artigo} ${rotulo} ${ladoRotulo} (${sigla}): ${mm1(valor)} mm.`);
     }
   }
   if (!somentePreenchida || f.peso_g !== null) linhas.push(pesoLinhaObj(f));
@@ -1390,7 +1450,7 @@ function assembleObj(
   acrescentarDoppler(f, achados, impressao, dopplerOptions);
   acrescentarCervicometria(f, achados, impressao);
   acrescentarCrescimentoFetal(f, achados, impressao);
-  impressao = dedupItensLivres(impressao, filterFreeConclusionItems(f.itens_conclusao_livres));
+  impressao = dedupItensLivres(impressao, itensLivresMorfo(f));
   const dumLinha = f.dum ? `\nDUM: ${f.dum}.` : "";
   const igProse = fraseReferencia ? `\n${fraseReferencia}` : "";
   const impressaoTxt =
@@ -1482,7 +1542,7 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
    * não asseverar normalidade que ninguém verificou, e não negar na conclusão
    * o achado que o corpo descreve.
    */
-  const temAchado = (f.achados_adicionais ?? "").trim() !== "";
+  const temAchado = achadoFetal(f.achados_adicionais);
   const impressao = [
     ...ig.conclusaoObjetivo,
     ...vitalidade.conclusao,
@@ -1494,10 +1554,10 @@ function render1tObj(f: MorfologicoFindings, igCorrection = false, golfBall: Gol
     ...(f.osso_nasal === "ausente" ? ["Ausência de osso nasal."] : []),
     ...(f.regurgitacao_tricuspide === "presente" ? ["Presença de regurgitação tricúspide."] : []),
     ...anatomiaPrecoce.conclusao,
-    ...(f.anatomia_avaliada === false || (f.anatomia_precoce && !anatomiaPrecoce.completa) || tnConclusao.length > 0 || anatomiaPrecoce.temAlteracaoOuLimitacao || temAchado || sistemasAlterados(f).size > 0 || f.osso_nasal !== "presente" || f.regurgitacao_tricuspide !== "ausente" || f.ducto_venoso !== "normal"
+    ...(f.anatomia_avaliada === false || (f.anatomia_precoce && !anatomiaPrecoce.completa) || tnConclusao.length > 0 || anatomiaPrecoce.temAlteracaoOuLimitacao || temAchado || sistemasAlterados(f).size > 0 || marcadorPrecoceAlterado(f)
       ? []
       : ["Morfologia fetal normal para esta fase da gestação."]),
-    ...filterFreeConclusionItems(f.itens_conclusao_livres),
+    ...itensLivresMorfo(f),
   ];
   // A conclusão das uterinas vem do bloco estruturado, que conhece o percentil.
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
@@ -1556,7 +1616,7 @@ function render2t3tObj(f: MorfologicoFindings, terceiro: boolean, igCorrection =
       ? []
       : ["Morfologia fetal sem evidência de alteração detectável pelo método."]),
     ...conclusoesLimitacao,
-    ...filterFreeConclusionItems(f.itens_conclusao_livres),
+    ...itensLivresMorfo(f),
   ];
   if (golfBall) applyGolfBallMorfologico(achados, impressao, golfBall);
 
@@ -1571,4 +1631,59 @@ export function renderMorfologicoObjetivo(
 ): string {
   if (f.trimestre === "1t") return render1tObj(f, igCorrection, golfBall, dopplerOptions);
   return render2t3tObj(f, f.trimestre === "3t", igCorrection, golfBall, dopplerOptions);
+}
+
+// ---------------------------------------------------------------------------
+// Posição fetal (W16D) — forma da casa, compartilhada com o obstétrico
+// ---------------------------------------------------------------------------
+
+const LADO_CANONICO: Array<[RegExp, string]> = [
+  [/^(?:à|a)?\s*direit[oa]$/i, "à direita"],
+  [/^(?:à|a)?\s*esquerd[oa]$/i, "à esquerda"],
+];
+
+/** "esquerdo" / "a esquerda" / "À esquerda" → "à esquerda"; outros valores voltam como vieram. */
+export function ladoCanonico(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  const t = v.trim();
+  for (const [re, forma] of LADO_CANONICO) if (re.test(t)) return forma;
+  return t;
+}
+
+/**
+ * Campos de posição fetal na forma da casa, para TODO caminho de render (renderer direto e
+ * catálogo). Bancada W16C: "com dorso esquerdo", "dorso dorso" (ASR: "com dorso, À esquerda"),
+ * "situação situação transversa", "polo cefálico transversa, com polo cefálico à direita".
+ * Só mexe na FORMA; o lado vem do próprio campo ou, se o campo ficou sem lado, do ditado
+ * (feto único, um só lado ditado).
+ */
+export function normalizarPosicaoFetal<T extends { apresentacao?: string | null; dorso?: string | null; polo_cefalico?: string | null }>(
+  ft: T,
+  rawInput: string,
+  fetoUnico = true,
+): T {
+  const out = { ...ft };
+  if (out.apresentacao) {
+    out.apresentacao = out.apresentacao.trim().replace(/^(?:em\s+)?(?:situa[çc][ãa]o|apresenta[çc][ãa]o)\s+/i, "");
+  }
+  if (out.polo_cefalico) {
+    // "transversa, com polo cefálico à direita" → apresentação transversa + polo à direita.
+    const polo = out.polo_cefalico.trim();
+    const lado = /(direit|esquerd)[oa]/i.exec(polo);
+    if (/transvers|c[óo]rmic/i.test(polo) && !out.apresentacao) out.apresentacao = "transversa";
+    if (lado && /polo|transvers|situa/i.test(polo)) out.polo_cefalico = lado[1]!.toLowerCase().startsWith("d") ? "à direita" : "à esquerda";
+    out.polo_cefalico = ladoCanonico(out.polo_cefalico);
+  }
+  if (out.dorso != null) {
+    const d = out.dorso.trim().replace(/^dorso\b[\s,]*/i, "");
+    let canonico = ladoCanonico(d === "" ? null : d);
+    if (canonico === null && fetoUnico) {
+      const ditados = new Set(
+        [...rawInput.matchAll(/\bdorso\b[\s,]*(?:(?:à|a)\s+)?(direit[oa]|esquerd[oa]|anterior|posterior)\b/gi)].map((m) => m[1]!.toLowerCase()),
+      );
+      if (ditados.size === 1) canonico = ladoCanonico([...ditados][0]!);
+    }
+    out.dorso = canonico;
+  }
+  return out;
 }

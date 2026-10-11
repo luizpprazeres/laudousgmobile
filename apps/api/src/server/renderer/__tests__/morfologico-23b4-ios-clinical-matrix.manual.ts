@@ -100,7 +100,8 @@ for (const estilo of estilos({
   ] as const) {
     for (const lado of [ladoA, ladoB]) {
       check(`${estilo.nome}: preserva ${osso} ${lado} ${valor} mm`,
-        new RegExp(`${osso} ${lado}(?: de|:) ${valor}(?:,0)? mm`).test(estilo.texto));
+        // W16D: com a sigla do laudo do médico ("fêmur direito (CF) de 41 mm").
+        new RegExp(`${osso} ${lado} \\([A-Z]{1,2}\\)(?: de|:) ${valor}(?:,0)? mm`).test(estilo.texto));
     }
   }
 }
