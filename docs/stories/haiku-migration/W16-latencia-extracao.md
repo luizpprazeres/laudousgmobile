@@ -43,3 +43,17 @@ Junto com os números, um **HTML local** (em `tmp-review/bench-haiku/w16/`) para
 × sem raciocínio**, lado a lado, com as diferenças destacadas e o laudo final do médico como referência: alguns casos de
 **obstétrica, Doppler obstétrico e morfológico** (pode incluir ditados sintéticos simulando o mobile). Mostre por caso os tokens
 de saída e o tempo medido. Reaproveite o `relatorio.py` da bancada.
+
+## W16C — destravar a extração sem raciocínio (W1, depois da W16A)
+Resultado da W16A: sem raciocínio, obstétrica 18,3 s → 5,8 s, mas IG da conclusão errada em 4/46 (IG de referência ditada
+ficou vazia e o renderer projetou a 1ª US), tireoide perdeu TI-RADS em 1 caso, ~15 números a menos.
+1. **Leitor determinístico** (sem LLM) da IG de referência ditada — "hoje com X semanas e Y dias", "IG pela ultrassonografia precoce
+   X semanas", variantes de ASR — preenchendo `ig_referencia_hoje_*` (e afins) **só quando o extrator deixou vazio**; nunca
+   sobrescreve o que veio. Testes positivos/negativos (negação, "na primeira US com…", datas).
+2. Investigue os ~15 números perdidos (BCF, peso, CC…): se for padrão, outro preenchimento determinístico do mesmo tipo (como o
+   bloco da calculadora já faz no morfológico) ou um ajuste curto no prompt de extração.
+3. **Raciocínio por categoria**: `LLM_EXTRACTION_THINKING` aceitar lista (ex.: `OBSTETRICA,DOPPLER_OBSTETRICO,MORFOLOGICO,
+   CERVICOMETRIA` sem raciocínio; o resto adaptativo). Tireoide fica adaptativa.
+4. Re-medir pela assinatura (proxy local da W16A): obst+Doppler 46, morfológico 23, 2 execuções; meta = nenhuma piora clínica
+   × com raciocínio. Atualizar o HTML `tmp-review/bench-haiku/w16/html/` com a nova coluna.
+Status: linha `W16C: pronto` no `status/W1.md`.
