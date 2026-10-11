@@ -966,7 +966,7 @@ export async function* runRendererStream(args: {
       systemMessage,
       inputTokens: extraction.inputTokens,
       outputTokens: extraction.outputTokens,
-      cachedInputTokens: undefined,
+      cachedInputTokens: extraction.cachedInputTokens,
       extraction,
       freeSlotCount: 0,
     };
@@ -1025,7 +1025,7 @@ export async function* runRendererStream(args: {
       systemMessage: systemMessageObj,
       inputTokens: (extraction.inputTokens ?? 0) + freeSlots.inputTokens,
       outputTokens: (extraction.outputTokens ?? 0) + freeSlots.outputTokens,
-      cachedInputTokens: undefined,
+      cachedInputTokens: extraction.cachedInputTokens,
       extraction,
       freeSlotCount: freeItems.length,
     };
@@ -1127,7 +1127,7 @@ export async function* runRendererStream(args: {
     systemMessage,
     inputTokens: (extraction.inputTokens ?? 0) + freeSlots.inputTokens,
     outputTokens: (extraction.outputTokens ?? 0) + freeSlots.outputTokens,
-    cachedInputTokens: undefined,
+    cachedInputTokens: extraction.cachedInputTokens,
     extraction,
     freeSlotCount: freeItems.length,
   };

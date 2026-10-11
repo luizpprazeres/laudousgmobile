@@ -24,6 +24,7 @@ import { openai } from "./openai";
 import {
   fillOmittedNullables,
   fitsAnthropicStrictLimits,
+  relaxNullableRequired,
   toAnthropicStrictSchema,
   toolNameFor,
 } from "./structuredSchema";
@@ -31,11 +32,25 @@ import {
 export const HAIKU_MODEL = "claude-haiku-5-5";
 
 export type LlmProvider = "anthropic" | "openai";
-export type LlmTarget = { provider: LlmProvider; model: string; effort: string };
+export type LlmThinking = "adaptive" | "disabled";
+export type LlmTarget = {
+  provider: LlmProvider;
+  model: string;
+  effort: string;
+  /** Anthropic: raciocínio da chamada. Ausente = adaptativo (o padrão do Haiku 5.5). */
+  thinking?: LlmThinking;
+  /**
+   * Caminho por ferramenta sem raciocínio: "forced" (padrão) força a chamada;
+   * "auto" deixa o modelo escrever antes um plano curto em texto (W16).
+   */
+  toolChoice?: "auto" | "forced";
+};
 export type LlmUsage = {
   inputTokens?: number;
   outputTokens?: number;
   cachedInputTokens?: number;
+  /** Anthropic: tokens gravados no cache nesta chamada (`cache_creation_input_tokens`). */
+  cacheWriteInputTokens?: number;
   /** Modelo que efetivamente respondeu (difere do pedido quando o fallback de recusa atuou). */
   model?: string;
   /** O fallback de recusa do servidor atuou nesta resposta. */
@@ -97,15 +112,37 @@ type TargetEnv = Pick<
   ReturnType<typeof env>,
   | "LLM_EXTRACTION_MODEL"
   | "LLM_EXTRACTION_EFFORT"
+  | "LLM_EXTRACTION_THINKING"
+  | "LLM_EXTRACTION_TOOL_CHOICE"
   | "LLM_WRITER_MODEL"
   | "LLM_WRITER_EFFORT"
   | "LLM_SANITY_MODEL"
   | "LLM_SANITY_EFFORT"
+  | "LLM_SANITY_THINKING"
 >;
 
+/**
+ * Raciocínio da extração (W16). Com o thinking adaptativo o Haiku 5.5 gasta 3–4 mil
+ * tokens de raciocínio por extração obstétrica (p50 18 s na bancada).
+ * `LLM_EXTRACTION_THINKING=disabled` desliga (p50 6 s), mas a bancada de 10/10 mediu
+ * piora clínica sem raciocínio (IG da conclusão errada em 4–5/46 obstétricos, TI-RADS
+ * perdido na tireoide, números do final a menos) — por isso o padrão continua
+ * adaptativo até a decisão do Luiz. Relatório: docs/stories/haiku-migration/W1-relatorio.md (W16A).
+ */
+export function extractionThinking(value: string | undefined): LlmThinking {
+  return value?.trim().toLowerCase() === "disabled" ? "disabled" : "adaptive";
+}
+
 /** Extração estruturada (renderer, structurer, interpretador de comandos, esquemas). */
-export function extractionTarget(config: Pick<TargetEnv, "LLM_EXTRACTION_MODEL" | "LLM_EXTRACTION_EFFORT"> = env()): LlmTarget {
-  return llmTarget(config.LLM_EXTRACTION_MODEL, config.LLM_EXTRACTION_EFFORT, "extraction");
+export function extractionTarget(
+  config: Pick<TargetEnv, "LLM_EXTRACTION_MODEL" | "LLM_EXTRACTION_EFFORT"> &
+    Partial<Pick<TargetEnv, "LLM_EXTRACTION_THINKING" | "LLM_EXTRACTION_TOOL_CHOICE">> = env(),
+): LlmTarget {
+  return {
+    ...llmTarget(config.LLM_EXTRACTION_MODEL, config.LLM_EXTRACTION_EFFORT, "extraction"),
+    thinking: extractionThinking(config.LLM_EXTRACTION_THINKING),
+    toolChoice: config.LLM_EXTRACTION_TOOL_CHOICE?.trim().toLowerCase() === "auto" ? "auto" : "forced",
+  };
 }
 
 /** Escritor (writer completo, free-slots, edição incremental). */
@@ -181,13 +218,31 @@ function wantsServerFallback(model: string): boolean {
   return /^claude-sonnet-5-5$/i.test(model) && env().LLM_SONNET_SERVER_FALLBACK !== "false";
 }
 
-/** Sanity por IA (observacional, roda depois do `done`). */
-export function sanityTarget(config: Pick<TargetEnv, "LLM_SANITY_MODEL" | "LLM_SANITY_EFFORT"> = env()): LlmTarget {
-  return llmTarget(config.LLM_SANITY_MODEL, config.LLM_SANITY_EFFORT, "sanity");
+/**
+ * Sanity por IA (observacional, roda depois do `done`). Raciocínio adaptativo por
+ * padrão; `LLM_SANITY_THINKING=disabled` desliga (W16: proposta medida na bancada).
+ */
+export function sanityTarget(
+  config: Pick<TargetEnv, "LLM_SANITY_MODEL" | "LLM_SANITY_EFFORT"> & Partial<Pick<TargetEnv, "LLM_SANITY_THINKING">> = env(),
+): LlmTarget {
+  const target = llmTarget(config.LLM_SANITY_MODEL, config.LLM_SANITY_EFFORT, "sanity");
+  return config.LLM_SANITY_THINKING?.trim().toLowerCase() === "disabled" ? { ...target, thinking: "disabled" } : target;
 }
 
 function anthropicEffort(effort: string): "low" | "medium" | "high" | "xhigh" | "max" {
   return effort === "low" || effort === "high" || effort === "xhigh" || effort === "max" ? effort : "medium";
+}
+
+/**
+ * `thinking` + esforço da chamada. Haiku 5.5 (skill claude-api): `{type: "disabled"}`
+ * é aceito com esforço low/medium/high e dá 400 com xhigh/max — sem raciocínio,
+ * esses dois descem para high.
+ */
+function anthropicThinking(target: LlmTarget) {
+  const effort = anthropicEffort(target.effort);
+  return target.thinking === "disabled"
+    ? { thinking: { type: "disabled" as const }, effort: effort === "xhigh" || effort === "max" ? ("high" as const) : effort }
+    : { thinking: { type: "adaptive" as const }, effort };
 }
 
 function isOpenAIReasoningModel(model: string): boolean {
@@ -234,6 +289,9 @@ function anthropicUsage(message: Anthropic.Message): LlmUsage {
       (message.usage.cache_read_input_tokens ?? 0),
     outputTokens: message.usage.output_tokens,
     cachedInputTokens: message.usage.cache_read_input_tokens ?? undefined,
+    ...(message.usage.cache_creation_input_tokens != null
+      ? { cacheWriteInputTokens: message.usage.cache_creation_input_tokens }
+      : {}),
   };
 }
 
@@ -262,10 +320,11 @@ function textOf(message: Anthropic.Message): string {
 const strictRejected = new Set<string>();
 
 async function anthropicJson(opts: LlmJsonOptions, client: AnthropicClient): Promise<LlmJsonResult> {
+  const { thinking, effort } = anthropicThinking(opts.target);
   const base = {
     model: opts.target.model,
     max_tokens: opts.maxTokens ?? 16000,
-    thinking: { type: "adaptive" as const },
+    thinking,
     system: [{ type: "text" as const, text: opts.system, cache_control: { type: "ephemeral" as const } }],
     messages: anthropicMessages(opts.messages),
   };
@@ -278,7 +337,7 @@ async function anthropicJson(opts: LlmJsonOptions, client: AnthropicClient): Pro
         {
           ...base,
           output_config: {
-            effort: anthropicEffort(opts.target.effort),
+            effort,
             format: { type: "json_schema", schema: toAnthropicStrictSchema(opts.schema) },
           },
         },
@@ -309,7 +368,8 @@ async function anthropicJson(opts: LlmJsonOptions, client: AnthropicClient): Pro
   }
 
   // Ferramenta NÃO estrita: o schema original vai como input_schema; a validação
-  // é o Zod de quem chama. tool_choice "auto" mantém o thinking (o forçado o pula).
+  // é o Zod de quem chama. Com raciocínio, tool_choice "auto" o mantém (o forçado
+  // o pula); sem raciocínio, a chamada da ferramenta é forçada.
   const toolName = toolNameFor(opts.schemaName);
   const params = {
     ...base,
@@ -318,27 +378,33 @@ async function anthropicJson(opts: LlmJsonOptions, client: AnthropicClient): Pro
         type: "text" as const,
         text:
           `${opts.system}\n\nENTREGA: responda chamando a ferramenta \`${toolName}\` exatamente uma vez, ` +
-          "com o resultado completo. Não escreva o resultado em texto.",
+          "com o resultado completo. Não escreva o resultado em texto." +
+          (opts.omitNulls
+            ? " Omita da chamada todo campo cujo valor seria null (o sistema o completa como null); escreva sempre os que têm valor, inclusive false, 0 e listas."
+            : ""),
         cache_control: { type: "ephemeral" as const },
       },
     ],
-    output_config: { effort: anthropicEffort(opts.target.effort) },
+    output_config: { effort },
     tools: [
       {
         name: toolName,
         description: "Registra o resultado estruturado da tarefa. Chame uma única vez, com todos os campos do schema.",
-        input_schema: opts.schema as Anthropic.Tool.InputSchema,
+        input_schema: (opts.omitNulls ? relaxNullableRequired(opts.schema) : opts.schema) as Anthropic.Tool.InputSchema,
         eager_input_streaming: true,
       },
     ],
-    tool_choice: { type: "auto" as const },
+    tool_choice:
+      thinking.type === "disabled" && opts.target.toolChoice !== "auto"
+        ? { type: "tool" as const, name: toolName }
+        : { type: "auto" as const },
   };
   // Fora da gramática estrita o schema não é imposto na geração. Anuláveis
   // omitidos viram null (fillOmittedNullables) e o que ainda reprovar no
   // validador de quem chama volta ao modelo UMA vez como tool_result de erro —
   // o mesmo ciclo validar→corrigir do `claude -p --json-schema` da bancada.
   let messages: Anthropic.MessageParam[] = base.messages;
-  let usage: LlmUsage = { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0 };
+  let usage: LlmUsage = { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cacheWriteInputTokens: 0 };
   let missingCalls = 0;
   let repairs = 0;
   for (;;) {
@@ -433,6 +499,7 @@ function addUsage(a: LlmUsage, b: LlmUsage): LlmUsage {
     inputTokens: (a.inputTokens ?? 0) + (b.inputTokens ?? 0),
     outputTokens: (a.outputTokens ?? 0) + (b.outputTokens ?? 0),
     cachedInputTokens: (a.cachedInputTokens ?? 0) + (b.cachedInputTokens ?? 0),
+    cacheWriteInputTokens: (a.cacheWriteInputTokens ?? 0) + (b.cacheWriteInputTokens ?? 0),
   };
 }
 
@@ -596,6 +663,14 @@ export type LlmJsonOptions = {
    */
   reportText?: boolean;
   signal?: AbortSignal;
+  /**
+   * W16 (experimento, desligado por padrão): no caminho por ferramenta, pede ao
+   * modelo que omita os campos nulos — `fillOmittedNullables` os completa antes do
+   * validador, então o parser e o renderer não mudam. Menos tokens de saída, mas
+   * REPROVADO na bancada de 10/10: no morfológico o modelo omitiu campos COM valor
+   * (BCF ditado sumiu do laudo em 4/23). Não ligar sem nova medição.
+   */
+  omitNulls?: boolean;
   /** JSON parcial acumulado — só para progresso de UX, nunca para parse. */
   onPartialJson?: (accumulated: string) => void;
   /**

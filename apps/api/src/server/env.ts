@@ -26,6 +26,12 @@ const ServerEnvSchema = z.object({
   // esquema venoso.
   LLM_EXTRACTION_MODEL: z.string().default("claude-haiku-5-5"),
   LLM_EXTRACTION_EFFORT: z.string().default("medium"),
+  // Raciocínio da extração (W16): adaptativo (padrão) ou "disabled" — ver ai/llm.ts.
+  LLM_EXTRACTION_THINKING: z.string().optional(),
+  // Sem raciocínio, caminho por ferramenta: "forced" (padrão) ou "auto" (W16).
+  LLM_EXTRACTION_TOOL_CHOICE: z.string().optional(),
+  // Experimento W16 (desligado; reprovado na bancada — omitiu BCF): omitir nulos.
+  LLM_EXTRACTION_OMIT_NULLS: z.string().optional(),
   // Escritor: writer completo, free-slots do renderer, edição incremental.
   LLM_WRITER_MODEL: z.string().default("claude-haiku-5-5"),
   LLM_WRITER_EFFORT: z.string().default("medium"),
@@ -43,6 +49,8 @@ const ServerEnvSchema = z.object({
   // Sanity por IA (observacional, depois do `done`).
   LLM_SANITY_MODEL: z.string().default("claude-haiku-5-5"),
   LLM_SANITY_EFFORT: z.string().default("medium"),
+  // Raciocínio da sanity: adaptativo por padrão; "disabled" desliga (W16).
+  LLM_SANITY_THINKING: z.string().optional(),
   /**
    * ROTEAMENTO — categorias que saem do renderer para o WRITER COMPLETO (bundle
    * com few-shots + guards full), decisão do Luiz de 09/10. CSV.

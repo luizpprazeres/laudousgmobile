@@ -157,3 +157,28 @@ export function fillOmittedNullables(value: unknown, schema: unknown): unknown {
   }
   return out;
 }
+
+/**
+ * W16 (experimento de omitir nulos): o mesmo schema sem os anuláveis em
+ * `required`, para o modelo poder omiti-los na chamada da ferramenta. A
+ * validação continua sendo o schema ORIGINAL depois de `fillOmittedNullables`.
+ */
+export function relaxNullableRequired(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(relaxNullableRequired);
+  if (!isObject(schema)) return schema;
+  const out: Json = {};
+  for (const [k, v] of Object.entries(schema)) {
+    if (k === "properties" && isObject(v)) {
+      out[k] = Object.fromEntries(Object.entries(v).map(([p, ps]) => [p, relaxNullableRequired(ps)]));
+    } else if (k === "items" || k === "anyOf" || k === "oneOf") {
+      out[k] = relaxNullableRequired(v);
+    } else {
+      out[k] = v;
+    }
+  }
+  if (Array.isArray(schema.required) && isObject(schema.properties)) {
+    const props = schema.properties;
+    out.required = schema.required.filter((key) => !(typeof key === "string" && allowsNull(props[key])));
+  }
+  return out;
+}

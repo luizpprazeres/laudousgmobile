@@ -1254,6 +1254,15 @@ export async function POST(req: Request) {
             passthrough?: boolean;
             /** Modelo que efetivamente escreveu (writer dedicado ou fallback de recusa). */
             model?: string;
+            /** Caminho renderer: uso da extração (W16 — cache e raciocínio). */
+            extraction?: {
+              latencyMs: number;
+              inputTokens?: number;
+              outputTokens?: number;
+              cachedInputTokens?: number;
+              cacheWriteInputTokens?: number;
+              thinking?: string;
+            };
           }
         | undefined;
       // W16B: no writer o texto sai em tokens; até o primeiro, o relógio corre em "Escrevendo o laudo… N s".
@@ -1598,6 +1607,19 @@ export async function POST(req: Request) {
           ...(pipelineWarnings.length > 0 ? { pipeline_warnings: pipelineWarnings } : {}),
           ...(dopplerMode
             ? { selected_category: "DOPPLER_OBSTETRICO", doppler_mode: dopplerMode }
+            : {}),
+          // W16: tempo, tokens e cache da extração (sem PHI), para medir em produção.
+          ...(useRenderer && writerResult?.extraction?.latencyMs
+            ? {
+                extraction_usage: {
+                  ms: writerResult.extraction.latencyMs,
+                  input: writerResult.extraction.inputTokens ?? null,
+                  cache_read: writerResult.extraction.cachedInputTokens ?? null,
+                  cache_write: writerResult.extraction.cacheWriteInputTokens ?? null,
+                  output: writerResult.extraction.outputTokens ?? null,
+                  thinking: writerResult.extraction.thinking ?? null,
+                },
+              }
             : {}),
         }),
       });
