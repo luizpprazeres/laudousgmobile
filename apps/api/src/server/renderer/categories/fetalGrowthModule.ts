@@ -120,3 +120,17 @@ export function renderFetalGrowthModule(
     : [result.conclusion];
   return { achados, conclusao };
 }
+
+/** Curva/protocolo de crescimento nomeado no ditado (regra 25 do prompt obstétrico). */
+const CURVA_NOMEADA = /\b(?:Hadlock|Barcelona|Intergrowth|OMS|WHO|FMF|Gratac[óo]s|Figueras|Fenton|curva\s+(?:de|da|do)\s+\w+)\b/i;
+
+/**
+ * Regra do prompt: o módulo de crescimento só existe quando o médico dá o percentil do PFE
+ * E a curva/fonte. Sem curva nomeada no ditado, a extração o preencheu por conta própria
+ * (bancada W16C sem raciocínio: "pela curva Peso fetal estimado 2776 g… ditado pelo médico",
+ * e a conclusão "pequeno para a idade gestacional" virava "classificação incompleta") → sai.
+ */
+export function conferirCrescimentoFetal<T extends { crescimento_fetal?: unknown }>(f: T, rawInput: string): T {
+  if (!f.crescimento_fetal || CURVA_NOMEADA.test(rawInput)) return f;
+  return { ...f, crescimento_fetal: null };
+}

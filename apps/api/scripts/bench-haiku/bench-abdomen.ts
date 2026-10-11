@@ -148,7 +148,13 @@ function patchCorpoDescritivo(system: string): string {
 
 // ---- Interceptação do fetch
 const schemaNameOf = (body: any): string | null => body.response_format?.json_schema?.name ?? null;
-type Ctx = { mode: "replay" | "haiku" | "luna"; promptPatch?: boolean; caseId: string; storedFindings?: unknown; log: string };
+type Ctx = { mode: "replay" | "haiku" | "luna"; promptPatch?: boolean; caseId: string; storedFindings?: unknown; log: string; dataCaso?: Date };
+/**
+ * BENCH_DATA_DO_CASO=1 (W16C): gera cada caso na data em que foi gerado em produção — a 1ª US
+ * é projetada até aquele dia, como na rota. Sem isso, um caso de setembro gerado hoje projeta a
+ * IG semanas à frente (comparações antigas rodaram assim; por isso é opt-in).
+ */
+const DATA_DO_CASO = process.env.BENCH_DATA_DO_CASO === "1";
 const ctx = new AsyncLocalStorage<Ctx>();
 const realFetch = globalThis.fetch;
 
@@ -175,6 +181,21 @@ function foldTurns(systemBase: string, turns: any[], text: (content: any) => str
   };
 }
 
+/**
+ * BENCH_REPLAY_CALLS=<calls.jsonl>[,<calls.jsonl>…] (W16C): cada chamada do modo "haiku" devolve
+ * a resposta GRAVADA numa rodada anterior para o mesmo caso e o mesmo schema (na ordem), sem
+ * chamar o modelo — re-renderiza a mesma extração com o código de agora. Chamada sem gravação falha.
+ */
+const REPLAY_CALLS = new Map<string, any[]>();
+for (const f of (process.env.BENCH_REPLAY_CALLS ?? "").split(",").filter(Boolean)) {
+  for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
+    const c = JSON.parse(line);
+    if (c.mode !== "haiku") continue;
+    const k = `${c.case}|${c.schemaName ?? ""}`;
+    REPLAY_CALLS.set(k, [...(REPLAY_CALLS.get(k) ?? []), c]);
+  }
+}
+
 /** Responde uma chamada de modelo pela assinatura (ou replay), igual para os dois provedores. */
 async function answer(c: Ctx, req: { system: string; user: string; schema?: Record<string, unknown>; schemaName: string | null; model?: string; thinking?: "disabled" | "disabled-auto" | "adaptive" }): Promise<Answer> {
   let content: string;
@@ -182,6 +203,7 @@ async function answer(c: Ctx, req: { system: string; user: string; schema?: Reco
   let ms = 0;
   let thinkingTokens: number | null = null;
   let api: unknown = null;
+  let gravada: any;
   if (c.mode === "replay") {
     if (req.schemaName === "FreeSlots") {
       const n = (req.user.match(/^\d+\./gm) ?? []).length;
@@ -198,7 +220,20 @@ async function answer(c: Ctx, req: { system: string; user: string; schema?: Reco
     content = r.text;
     usage = { prompt_tokens: r.inputTokens, completion_tokens: r.outputTokens };
     ms = r.ms;
-  } else {
+  } else if (REPLAY_CALLS.size) {
+    gravada = REPLAY_CALLS.get(`${c.caseId}|${req.schemaName ?? ""}`)?.shift();
+    if (gravada) {
+      content = gravada.content;
+      usage = gravada.usage;
+      ms = gravada.ms;
+      thinkingTokens = gravada.thinking_tokens ?? null;
+      api = gravada.api ?? null;
+    } else {
+      // Sem gravação (ex.: turno de correção que o código novo pediu): chamada real, marcada no log.
+      console.warn(`[bench] replay sem gravação para ${c.caseId.slice(0, 8)} ${req.schemaName}: chamada real`);
+    }
+  }
+  if (c.mode === "haiku" && !(REPLAY_CALLS.size && gravada)) {
     // O modelo pedido pelo motor (roteamento por categoria: Sonnet 5.5 no MSK,
     // pelve e carótidas); o OpenAI interceptado não traz modelo Claude → HAIKU.
     // BENCH_MODEL explícito força o modelo (comparações Haiku × Sonnet do W8).
@@ -273,7 +308,23 @@ globalThis.fetch = (async (input: any, init?: any) => {
     // W16: a instrução de omitir nulos (LLM_EXTRACTION_OMIT_NULLS) vale também pela assinatura.
     const omitNulls = / Omita da chamada todo campo cujo valor seria null[^\n]*/.exec(systemFull.match(TOOL_DELIVERY_RE)?.[0] ?? "")?.[0];
     const systemBase = systemFull.replace(TOOL_DELIVERY_RE, "") + (omitNulls ? `\n\nENTREGA:${omitNulls.replace("da chamada", "do resultado")}` : "");
-    const folded = foldTurns(systemBase, body.messages ?? [], textOfContent);
+    // W16C: turno de CORREÇÃO do motor (assistant tool_use + user tool_result de erro): o
+    // `claude -p` não recebe turnos de ferramenta; vai o ditado original + a tentativa + o erro.
+    const turnos: any[] = body.messages ?? [];
+    const ultimo = turnos[turnos.length - 1];
+    const resultados = Array.isArray(ultimo?.content) ? ultimo.content.filter((b: any) => b.type === "tool_result") : [];
+    const folded = resultados.length
+      ? (() => {
+          const tentativa = (turnos[turnos.length - 2]?.content ?? []).find((b: any) => b.type === "tool_use");
+          const erro = resultados.map((b: any) => (typeof b.content === "string" ? b.content : textOfContent(b.content))).join("\n");
+          return {
+            system: systemBase,
+            user:
+              `${textOfContent(turnos[0]?.content)}\n\nTENTATIVA ANTERIOR (reprovada na validação):\n` +
+              `${JSON.stringify(tentativa?.input ?? null)}\n\n${erro}\nDevolva o resultado completo, corrigido.`,
+          };
+        })()
+      : foldTurns(systemBase, turnos, textOfContent);
     const system = c.promptPatch && !schema ? patchCorpoDescritivo(folded.system) : folded.system;
     const user = folded.user;
     // W16: o proxy mede o 1º turno nos dois modos; BENCH_PROXY=0 volta ao `claude -p` direto (só adaptativo).
@@ -486,6 +537,7 @@ async function main() {
   const { extractDopplerData, applyDopplerOverlay, correctDopplerConclusion } = await import("../../src/server/pipeline/dopplerOverlay");
   const { normalizeDumFormat, dedupeConclusionItems } = await import("../../src/server/pipeline/dumFormatGuard");
   const { RENDERER_PROGRAMMATIC_CATEGORIES } = await import("../../src/server/renderer/extraction");
+  if (DATA_DO_CASO) (await import("../../src/server/renderer/ig")).definirRelogioDeGeracao(() => ctx.getStore()?.dataCaso);
   const { stripSpuriousMagnitudeFlags } = await import("../../src/server/pipeline/magnitudeGuard");
   const { applyVolumePolicy } = await import("../../src/server/pipeline/volumeGuard");
   const { applyDsmPolicy } = await import("../../src/server/pipeline/dsmGuard");
@@ -622,7 +674,7 @@ async function main() {
       const w = await runB(r, rawInputCru, false, mode);
       return { ...w, via: "writer" } as { text: string; error?: string };
     }
-    return ctx.run({ mode, caseId: r.id, storedFindings: r.structured_output, log }, async () => {
+    return ctx.run({ mode, caseId: r.id, storedFindings: r.structured_output, log, dataCaso: DATA_DO_CASO ? new Date(r.created_at) : undefined }, async () => {
       const { cat, dopplerMode, includeDoppler } = examOf(r);
       const styleRow = (await getWritingStyleById(r.writing_style_id))!;
       const { bundle, rendererPreferences } = await loadBundle(r, rawInput, cat, dopplerMode);
@@ -686,7 +738,7 @@ async function main() {
   async function runB(r: Row, rawInputCru: string, promptPatch = false, mode: "haiku" | "luna" = "haiku"): Promise<{ text: string; error?: string }> {
     const ditadoLex = lexDitado(examOf(r).cat, rawInputCru);
     const rawInput = ditadoLex.texto;
-    return ctx.run({ mode, promptPatch, caseId: r.id, log }, async () => {
+    return ctx.run({ mode, promptPatch, caseId: r.id, log, dataCaso: DATA_DO_CASO ? new Date(r.created_at) : undefined }, async () => {
       const { cat, dopplerMode, includeDoppler } = examOf(r);
       const styleRow = (await getWritingStyleById(r.writing_style_id))!;
       const { bundle } = await loadBundle(r, rawInput, cat, dopplerMode);

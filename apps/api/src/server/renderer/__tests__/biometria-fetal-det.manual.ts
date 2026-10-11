@@ -164,6 +164,15 @@ Obstétrica com em apresentação cefálica com dorso à esquerda, frequência c
   const f = findings([feto({ cf_mm: 5.76 })]);
   ck(reconcileBiometriaUnidade(f, "CF de 5,76") === f, "voz: sem unidade não mexe");
 }
+{
+  // W16C (e664be29): "DBP: 9,90 mm" ditado em mm e a extração aplicou um ×10 que não existia.
+  const f = findings([feto({ dbp_mm: 99 })]);
+  ck(reconcileBiometriaUnidade(f, "DBP: 9,90 mm").fetos[0]!.dbp_mm === 9.9, "mm: ×10 indevido volta ao ditado");
+  const certo = findings([feto({ dbp_mm: 9.9 })]);
+  ck(reconcileBiometriaUnidade(certo, "DBP: 9,90 mm") === certo, "mm: valor igual ao ditado fica intocado");
+  const ditado99 = findings([feto({ dbp_mm: 99 })]);
+  ck(reconcileBiometriaUnidade(ditado99, "DBP de 99 mm") === ditado99, "mm: 99 ditado fica 99");
+}
 
 // ---------------------------------------------------------------------------
 // 3. measureSanity — check IG×CF (opts.cfIgAware)

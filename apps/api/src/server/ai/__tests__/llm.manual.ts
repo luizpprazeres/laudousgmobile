@@ -295,6 +295,13 @@ async function main() {
     assert.equal(extractionTarget({ ...base, LLM_EXTRACTION_THINKING: "adaptive" }).thinking, "adaptive");
     assert.equal(extractionTarget({ ...base, LLM_EXTRACTION_THINKING: "qualquer" }).thinking, "adaptive");
     assert.equal(extractionTarget(base).toolChoice, "forced");
+    // W16C: lista de categorias sem raciocínio; o resto (e quem chama sem categoria) adaptativo.
+    const lista = { ...base, LLM_EXTRACTION_THINKING: "OBSTETRICA, doppler_obstetrico,MORFOLOGICO,CERVICOMETRIA" };
+    assert.equal(extractionTarget(lista, "OBSTETRICA").thinking, "disabled");
+    assert.equal(extractionTarget(lista, "DOPPLER_OBSTETRICO").thinking, "disabled");
+    assert.equal(extractionTarget(lista, "TIREOIDE").thinking, "adaptive");
+    assert.equal(extractionTarget(lista).thinking, "adaptive", "structurer/comandos: sem categoria");
+    assert.equal(extractionTarget({ ...base, LLM_EXTRACTION_THINKING: "disabled" }, "TIREOIDE").thinking, "disabled");
     assert.equal(extractionTarget({ ...base, LLM_EXTRACTION_TOOL_CHOICE: "auto" }).toolChoice, "auto");
     assert.equal(writerTargetForCategory("OBSTETRICA", { LLM_WRITER_MODEL: "claude-haiku-5-5", LLM_WRITER_EFFORT: "medium" }).thinking, undefined, "writer não muda");
   });

@@ -129,18 +129,28 @@ type TargetEnv = Pick<
  * perdido na tireoide, números do final a menos) — por isso o padrão continua
  * adaptativo até a decisão do Luiz. Relatório: docs/stories/haiku-migration/W1-relatorio.md (W16A).
  */
-export function extractionThinking(value: string | undefined): LlmThinking {
-  return value?.trim().toLowerCase() === "disabled" ? "disabled" : "adaptive";
+export function extractionThinking(value: string | undefined, category?: string): LlmThinking {
+  const v = value?.trim() ?? "";
+  if (/^disabled$/i.test(v)) return "disabled";
+  if (v === "" || /^adaptive$/i.test(v)) return "adaptive";
+  // W16C: lista de categorias sem raciocínio (ex.: OBSTETRICA,DOPPLER_OBSTETRICO,MORFOLOGICO,
+  // CERVICOMETRIA); as demais e quem chama sem categoria seguem adaptativas.
+  const lista = new Set(v.split(",").map((c) => c.trim().toUpperCase()).filter(Boolean));
+  return category && lista.has(category.toUpperCase()) ? "disabled" : "adaptive";
 }
 
-/** Extração estruturada (renderer, structurer, interpretador de comandos, esquemas). */
+/**
+ * Extração estruturada (renderer, structurer, interpretador de comandos, esquemas).
+ * `category`: a do extrator do renderer (raciocínio por categoria, W16C).
+ */
 export function extractionTarget(
   config: Pick<TargetEnv, "LLM_EXTRACTION_MODEL" | "LLM_EXTRACTION_EFFORT"> &
     Partial<Pick<TargetEnv, "LLM_EXTRACTION_THINKING" | "LLM_EXTRACTION_TOOL_CHOICE">> = env(),
+  category?: string,
 ): LlmTarget {
   return {
     ...llmTarget(config.LLM_EXTRACTION_MODEL, config.LLM_EXTRACTION_EFFORT, "extraction"),
-    thinking: extractionThinking(config.LLM_EXTRACTION_THINKING),
+    thinking: extractionThinking(config.LLM_EXTRACTION_THINKING, category),
     toolChoice: config.LLM_EXTRACTION_TOOL_CHOICE?.trim().toLowerCase() === "auto" ? "auto" : "forced",
   };
 }

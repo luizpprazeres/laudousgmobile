@@ -129,9 +129,11 @@ export function completarPercentisBarcelona(
   if (out.perc_umbilical === null && r.arteriaUmbilical) out.perc_umbilical = r.arteriaUmbilical.percentile;
   if (out.perc_acm === null && r.arteriaCerebralMedia) out.perc_acm = r.arteriaCerebralMedia.percentile;
   if (out.perc_ducto_venoso === null && r.ductoVenoso) out.perc_ducto_venoso = r.ductoVenoso.percentile;
-  if (r.arteriasUterinas && out.perc_medio_uterinas === null) {
+  if (r.arteriasUterinas) {
+    // IP médio é a média das duas uterinas: vazio → calculado, mesmo quando o percentil
+    // veio ditado (W16C: o percentil copiado da linha do app sem o IP médio apagava a frase).
     out.ip_medio_uterinas ??= r.arteriasUterinas.ipMedio;
-    out.perc_medio_uterinas = r.arteriasUterinas.percentile;
+    if (out.perc_medio_uterinas === null) out.perc_medio_uterinas = r.arteriasUterinas.percentile;
   }
   return out;
 }
@@ -338,4 +340,93 @@ export function renderDopplerModule(
   }
 
   return { achados, conclusao };
+}
+
+// ---------------------------------------------------------------------------
+// Bloco "Doppler obstétrico:" da calculadora do app (W16C, 10/10)
+// ---------------------------------------------------------------------------
+
+type CampoIndice =
+  | "ir_uterina_dir" | "ip_uterina_dir" | "ir_uterina_esq" | "ip_uterina_esq" | "ip_medio_uterinas"
+  | "ir_umbilical" | "ip_umbilical" | "ir_acm" | "ip_acm" | "ir_ducto_venoso" | "ip_ducto_venoso";
+
+/** Rótulos fixos do app (ImageAnalysisService): "IP uterina direita: 0.95". */
+const ROTULOS_BLOCO: Array<[RegExp, CampoIndice]> = [
+  [/^IR\s+(?:da\s+)?(?:art[ée]ria\s+)?uterina\s+direita$/i, "ir_uterina_dir"],
+  [/^IP\s+(?:da\s+)?(?:art[ée]ria\s+)?uterina\s+direita$/i, "ip_uterina_dir"],
+  [/^IR\s+(?:da\s+)?(?:art[ée]ria\s+)?uterina\s+esquerda$/i, "ir_uterina_esq"],
+  [/^IP\s+(?:da\s+)?(?:art[ée]ria\s+)?uterina\s+esquerda$/i, "ip_uterina_esq"],
+  [/^IP\s+m[ée]dio\s+(?:das\s+)?(?:art[ée]rias\s+)?uterinas$/i, "ip_medio_uterinas"],
+  [/^IR\s+(?:da\s+)?art[ée]ria\s+umbilical$/i, "ir_umbilical"],
+  [/^IP\s+(?:da\s+)?art[ée]ria\s+umbilical$/i, "ip_umbilical"],
+  [/^IR\s+(?:da\s+)?art[ée]ria\s+cerebral\s+m[ée]dia$/i, "ir_acm"],
+  [/^IP\s+(?:da\s+)?art[ée]ria\s+cerebral\s+m[ée]dia$/i, "ip_acm"],
+  [/^IR\s+(?:do\s+)?ducto\s+venoso$/i, "ir_ducto_venoso"],
+  [/^IP\s+(?:do\s+)?ducto\s+venoso$/i, "ip_ducto_venoso"],
+];
+
+/**
+ * Índices do bloco "Doppler obstétrico:" colado pela calculadora do app (saída de
+ * MÁQUINA, rótulos fixos). Exige o cabeçalho; lê as linhas "rótulo: número" logo
+ * abaixo até a primeira linha vazia ou fora do formato. Campo com dois valores
+ * diferentes fica de fora. null se não há bloco ou nenhum índice foi lido.
+ */
+export function parseDopplerObstetricoBloco(rawInput: string): Partial<Record<CampoIndice, number>> | null {
+  const cab = /Doppler\s+obst[ée]trico\s*:\s*\n/i.exec(rawInput);
+  if (!cab) return null;
+  const out: Partial<Record<CampoIndice, number>> = {};
+  const conflito = new Set<CampoIndice>();
+  for (const linha of rawInput.slice(cab.index + cab[0].length).split("\n")) {
+    const m = /^\s*([^:\n]{4,60}?)\s*:\s*(\d+(?:[.,]\d+)?)\s*$/.exec(linha);
+    if (!m) break;
+    const campo = ROTULOS_BLOCO.find(([re]) => re.test(m[1]!.trim()))?.[1];
+    if (!campo) continue;
+    const valor = Number(m[2]!.replace(",", "."));
+    if (out[campo] !== undefined && out[campo] !== valor) conflito.add(campo);
+    out[campo] = valor;
+  }
+  for (const c of conflito) delete out[c];
+  return Object.keys(out).length ? out : null;
+}
+
+/**
+ * Nada ditado some (W16C). O extrator — sobretudo sem raciocínio — às vezes deixa vazio
+ * um índice que veio pronto no bloco do app (W16A: IP médio das uterinas, IP do ducto
+ * venoso). Preenche SÓ campos nulos de um módulo que JÁ EXISTE (obstétrico simples segue
+ * sem Doppler); nunca sobrescreve. Percentis e IP médio continuam com
+ * completarPercentisBarcelona.
+ */
+export function mergeDopplerBloco<T extends DopplerObstetricoModule>(d: T | null | undefined, rawInput: string): T | null | undefined {
+  if (!d) return d;
+  const bloco = parseDopplerObstetricoBloco(rawInput);
+  if (!bloco) return d;
+  let out: T | null = null;
+  for (const [campo, valor] of Object.entries(bloco) as Array<[CampoIndice, number]>) {
+    if (d[campo] !== null && d[campo] !== undefined) continue;
+    out ??= { ...d };
+    (out as DopplerObstetricoModule)[campo] = valor;
+  }
+  return out ?? d;
+}
+
+/** Tolerância entre o perfil extraído e o calculado pelos IPs (arredondamento a 2 casas). */
+const TOLERANCIA_PERFIL = 0.05;
+
+/**
+ * Perfil hemodinâmico (1/RCP = IP umbilical / IP ACM) extraído que CONTRADIZ os IPs medidos
+ * volta a ser calculado pelo código (W16C). Caso real: o ditado "perfil hemodinâmico fetal é
+ * normal, menor de 1.0" virou perfil = 1 e o laudo concluiu "alterado, maior de 1.0", com IPs
+ * que davam 0,66. Só age com os dois IPs presentes; devolve o aviso para o card.
+ */
+export function conferirPerfilHemodinamico<T extends DopplerObstetricoModule>(d: T): { modulo: T; aviso: string | null } {
+  const { perfil_hemodinamico: perfil, ip_umbilical: ipu, ip_acm: ipacm, rcp } = d;
+  if (perfil === null || ipu === null || ipacm === null || ipacm === 0) return { modulo: d, aviso: null };
+  const esperado = rcp !== null && rcp !== 0 ? 1 / rcp : ipu / ipacm;
+  if (Math.abs(perfil - esperado) <= TOLERANCIA_PERFIL) return { modulo: d, aviso: null };
+  return {
+    modulo: { ...d, perfil_hemodinamico: null },
+    aviso:
+      `Perfil hemodinâmico extraído (${fmtIndice(perfil)}) não confere com os índices de pulsatilidade ` +
+      `(umbilical ${fmtIndice(ipu)} / cerebral média ${fmtIndice(ipacm)} = ${fmtIndice(esperado)}); o laudo usa o calculado — confira.`,
+  };
 }

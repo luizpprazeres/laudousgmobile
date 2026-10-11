@@ -26,10 +26,23 @@ const ServerEnvSchema = z.object({
   // esquema venoso.
   LLM_EXTRACTION_MODEL: z.string().default("claude-haiku-5-5"),
   LLM_EXTRACTION_EFFORT: z.string().default("medium"),
-  // Raciocínio da extração (W16): adaptativo (padrão) ou "disabled" — ver ai/llm.ts.
+  // Raciocínio da extração (W16/W16C): adaptativo (padrão), "disabled" ou lista de
+  // categorias sem raciocínio (CSV) — ver ai/llm.ts.
   LLM_EXTRACTION_THINKING: z.string().optional(),
   // Sem raciocínio, caminho por ferramenta: "forced" (padrão) ou "auto" (W16).
   LLM_EXTRACTION_TOOL_CHOICE: z.string().optional(),
+  // W16C: IG de referência ditada ("hoje com X") preenche o campo que a extração
+  // deixou vazio. Ligada por padrão; "false" desliga.
+  IG_REFERENCIA_DITADA: z.string().optional(),
+  // W16C: índices do bloco "Doppler obstétrico:" do app preenchem o que a extração
+  // deixou vazio. Ligada por padrão; "false" desliga.
+  DOPPLER_BLOCO_DET: z.string().optional(),
+  // W16C: conferências determinísticas da extração obstétrica (critério "sem embrião"
+  // com embrião descrito). Ligada por padrão; "false" desliga.
+  OBST_CONFERENCIA_DET: z.string().optional(),
+  // W16C: obstétrico com Doppler com índices ditados exige o módulo doppler
+  // na extração (uma correção pelo ciclo de reparo). Ligada por padrão; "false" desliga.
+  EXTRACAO_DOPPLER_OBRIGATORIO: z.string().optional(),
   // Experimento W16 (desligado; reprovado na bancada — omitiu BCF): omitir nulos.
   LLM_EXTRACTION_OMIT_NULLS: z.string().optional(),
   // Escritor: writer completo, free-slots do renderer, edição incremental.
