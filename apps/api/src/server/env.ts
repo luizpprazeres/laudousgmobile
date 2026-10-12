@@ -157,6 +157,9 @@ const ServerEnvSchema = z.object({
   // W11: ajuste dos keyterms pela grafia que o médico assina (asr/medicalGlossary.ts), por
   // categoria. Ausente/"" = nenhuma (default); "MAMARIA,MUSCULOESQUELETICO_V2" ou "*".
   DEEPGRAM_KEYTERMS_W11_CATEGORIES: z.string().optional(),
+  // Estudo de 12/10: reparos de número/medida no ditado (medida partida pela pausa, "50 por 100" → 50%,
+  // cm/s, ponto decimal). "true" liga; default desligado.
+  ASR_REPARO_NUMEROS: z.string().default("false"),
 
   PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),

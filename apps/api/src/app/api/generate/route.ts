@@ -216,11 +216,11 @@ export async function POST(req: Request) {
   const reqInput = {
     ...parsed.data,
     category_hint: normalizedHint,
-    raw_input: lexicoDitado(normalizeAsrTranscript(parsed.data.raw_input)),
+    raw_input: lexicoDitado(normalizeAsrTranscript(parsed.data.raw_input, { repairNumbers: env().ASR_REPARO_NUMEROS === "true" })),
     consolidated_transcript:
       parsed.data.consolidated_transcript === undefined
         ? undefined
-        : lexicoDitado(normalizeAsrTranscript(parsed.data.consolidated_transcript)),
+        : lexicoDitado(normalizeAsrTranscript(parsed.data.consolidated_transcript, { repairNumbers: env().ASR_REPARO_NUMEROS === "true" })),
   };
   const generationMode = reqInput.mode;
   // LAUDO LIVRE ROTEADO: só com categoria ORIGINAL = LIVRE, opt-in do request
