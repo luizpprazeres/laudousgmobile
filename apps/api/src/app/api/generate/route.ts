@@ -33,6 +33,7 @@ import { aplicarTecnicaPreferida } from "@laudousg/schemes";
 import { flagImplausibleMeasures } from "@/server/pipeline/measureSanity";
 import { normalizeMeasures } from "@/server/pipeline/measureNormalizer";
 import { normalizeAsrTranscript } from "@/server/asr/transcriptNormalizer";
+import { recordAsrCapture } from "@/server/asr/asrCapture";
 import { aplicarLexico, entradasDesligadas, lexicoAtivo } from "@/server/pipeline/lexicoDaCasa";
 import { aplicarCorrelacaoDitada } from "@/server/pipeline/correlacaoClinica";
 import { stripInvalidDumLines } from "@/server/pipeline/dumValidation";
@@ -566,6 +567,16 @@ export async function POST(req: Request) {
           rawInput: reqInput.raw_input,
           consolidatedTranscript: reqInput.consolidated_transcript ?? null,
         });
+        // Opção B (estudo 12/10): o texto do Deepgram antes da edição do médico. Sem bloquear.
+        if (env().ASR_GUARDAR_ORIGINAL === "true" && parsed.data.asr_original) {
+          void recordAsrCapture({
+            reportId,
+            userId: user.id,
+            categoria: draftCategory,
+            asr: parsed.data.asr_original,
+            enviado: parsed.data.consolidated_transcript ?? parsed.data.raw_input,
+          });
+        }
         await recordProductEvent({
           userId: user.id,
           surface: eventSurface,

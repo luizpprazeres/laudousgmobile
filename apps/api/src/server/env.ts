@@ -160,6 +160,9 @@ const ServerEnvSchema = z.object({
   // Estudo de 12/10: reparos de número/medida no ditado (medida partida pela pausa, "50 por 100" → 50%,
   // cm/s, ponto decimal). "true" liga; default desligado.
   ASR_REPARO_NUMEROS: z.string().default("false"),
+  // Opção B: grava em asr_capturas o texto do Deepgram antes da edição + confiança por palavra.
+  // Exige a migração 20261012180000_asr_capturas. Default desligado.
+  ASR_GUARDAR_ORIGINAL: z.string().default("false"),
 
   PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),

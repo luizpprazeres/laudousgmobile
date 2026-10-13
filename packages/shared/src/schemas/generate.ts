@@ -7,6 +7,21 @@ import { SanityResultSchema } from "./sanity";
 /**
  * POST /api/generate — corpo da requisição
  */
+/**
+ * Texto do motor de transcrição ANTES da edição do médico (estudo de 12/10/2026, opção B).
+ * Opcional: clientes antigos não mandam. O servidor só grava com ASR_GUARDAR_ORIGINAL=true.
+ */
+export const AsrOriginalSchema = z.object({
+  provedor: z.enum(["deepgram", "apple", "outro"]),
+  modelo: z.string().max(80).optional(),
+  texto: z.string().max(40_000),
+  palavras: z
+    .array(z.object({ w: z.string().max(80), c: z.number().min(0).max(1), s: z.number().min(0).optional() }))
+    .max(8_000)
+    .optional(),
+});
+export type AsrOriginal = z.infer<typeof AsrOriginalSchema>;
+
 export const GenerateRequestSchema = z.object({
   raw_input: z.string().min(2).max(20_000),
   // Hint de categoria (opcional). O structurer pode discordar.
@@ -48,6 +63,7 @@ export const GenerateRequestSchema = z.object({
   // gera com o modelo da categoria detectada; ambiguidade ou exame não suportado
   // falham explicitamente. Ausente/false = Laudo Livre atual.
   route_free_category: z.boolean().optional(),
+  asr_original: AsrOriginalSchema.optional(),
 });
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
