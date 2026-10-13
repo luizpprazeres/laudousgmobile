@@ -46,4 +46,7 @@ for (const s of ["Rim medindo 10.2. Por 4.5. Por 4.1 cm.", "mais de 50 por 100 i
 
 console.log("numberRepairs: ok");
 assert.equal(on("Ovário direito, 7,0 x 7,0 por, 6.3 com volume"), "Ovário direito, 7,0 x 7,0 x 6,3 com volume");
+assert.equal(on("Os maiores com mais de 50 100 intramural, entre parênteses"), "Os maiores com mais de 50% intramural, entre parênteses");
+assert.equal(on("cisto de 50 100 milímetros"), "cisto de 50 100 milímetros".replace("milímetros", "mm")); // unidade: não é porcentagem
+assert.equal(on("interna normal 70 100 0,60"), "interna normal 70 100 0,60"); // sequência numérica do Doppler fica
 console.log("numberRepairs: extra ok");

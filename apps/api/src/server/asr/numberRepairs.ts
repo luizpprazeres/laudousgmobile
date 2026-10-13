@@ -22,6 +22,8 @@ export function repairNumbers(text: string): string {
   s = s.replace(/\b(\d+)\s+(cm|mm|cent[íi]metros?|mil[íi]metros?)\s+e\s+meio\b/gi, (_m, n: string, u: string) => `${n},5 ${u}`);
   // porcentagem: "50 por 100", "50 x 100", "50 por cento" → "50%" (não quando segue unidade/medida: "50 x 100 mm")
   s = s.replace(/\b(\d+(?:[.,]\d+)?)\s*(?:por|x)\s*(?:100|cem|cento)\b(?!\s*(?:mm|cm|ml|x\b|por\s+\d|[.,]\d))/gi, "$1%");
+  // "50 100 intramural" (o "por" sumiu de "cinquenta por cento"): 1–2 dígitos + 100 + palavra, sem unidade
+  s = s.replace(/\b(\d{1,2})\s+100\b(?!\s*(?:mm|cm|ml|x\b|por|g\b|bpm|%|[.,]\d|mil[íi]metros?|cent[íi]metros?|mililitros?|gramas?|batimentos))(?=\s+\p{L})/giu, "$1%");
   // medida partida pela pausa: "10.2. Por 4.5" / "4,2. Por 5,1" / "1.6, por 1,5" → "… por …"
   for (let k = 0; k < 2; k++) s = s.replace(/(\d)[.,;]?\s+por[.,;]?\s+(?=\d)/gi, "$1 por ");
   // "por" engolido entre dois decimais de UMA casa, dentro de cadeia de medida
