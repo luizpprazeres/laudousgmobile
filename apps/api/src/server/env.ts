@@ -163,6 +163,12 @@ const ServerEnvSchema = z.object({
   // Opção B: grava em asr_capturas o texto do Deepgram antes da edição + confiança por palavra.
   // Exige a migração 20261012180000_asr_capturas. Default desligado.
   ASR_GUARDAR_ORIGINAL: z.string().default("false"),
+  // Opções C+D: /api/ditado/revisar — a Jev arbitra o ditado e o app mostra as trocas (as
+  // automáticas já aplicadas, com desfazer; as demais como sugestão). "true" liga.
+  ASR_JEV_REVISAR: z.string().default("false"),
+  // Chave da TypeSafe (Jev). Sem ela, árbitro e revisão ficam inertes.
+  JEV_API_KEY: z.string().optional(),
+  JEV_MODEL: z.string().default("jev-1.13.0"),
 
   PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
