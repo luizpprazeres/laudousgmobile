@@ -43,6 +43,7 @@ type Measurement = {
   normalized: string;
   raw: string;
   path?: string;
+  value: number;
 };
 
 const MEASURE_RE =
@@ -174,8 +175,12 @@ function checkMeasurements(
     }
   }
 
+  // Estudo de 12/10/2026: esta checagem gerava 62% de todos os avisos e ~95% eram falsos — o número
+  // estava no ditado sem a unidade colada, ou convertido de cm para mm, ou era média/volume calculado.
+  // Agora só avisa número do laudo que não existe no ditado/achados nem é derivável deles.
+  const fontes = numberSources(rawInput, findings);
   for (const measure of uniqueBy(textMeasures, (m) => m.normalized)) {
-    if (!findingMeasureSet.has(measure.normalized)) {
+    if (!findingMeasureSet.has(measure.normalized) && !fontes.covers(measure.value)) {
       issues.push({
         type: "medida_divergente",
         severity: "warning",
@@ -393,6 +398,42 @@ function checkPlaceholders(finalText: string): DeterministicIssue[] {
   }));
 }
 
+/**
+ * Números que o laudo pode legitimamente conter: os do ditado e dos achados (com ou sem unidade),
+ * os mesmos ×10 e ÷10 (cm↔mm), a média de cadeias de 2–3 medidas (diâmetro médio do saco
+ * gestacional) e o volume do elipsoide (0,523 × a × b × c, em cm³ ou convertido de mm).
+ */
+export function numberSources(rawInput: string, findings?: StructuredFindings) {
+  const texto = [rawInput, ...(findings ? flatten(findings.achados).map((e) => String(e.value)) : [])].join("\n");
+  const base: number[] = [];
+  for (const m of texto.matchAll(/(?<![\d,.])\d+(?:[.,]\d+)?(?![\d])/g)) {
+    const n = Number(m[0].replace(",", "."));
+    if (Number.isFinite(n)) base.push(n);
+  }
+  const exatos = new Set<string>();
+  const k = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
+  for (const n of base) for (const f of [1, 10, 0.1]) exatos.add(k(n * f));
+  const derivados: number[] = [];
+  const cadeia = /(\d+(?:[.,]\d+)?)\s*(?:x|×|por)\s*(\d+(?:[.,]\d+)?)(?:\s*(?:x|×|por)\s*(\d+(?:[.,]\d+)?))?/gi;
+  for (const m of texto.matchAll(cadeia)) {
+    const d = [m[1], m[2], m[3]].filter(Boolean).map((x) => Number(x!.replace(",", ".")));
+    const media = d.reduce((a, b) => a + b, 0) / d.length;
+    for (const f of [1, 10, 0.1]) derivados.push(media * f);
+    if (d.length === 3) {
+      const v = 0.5236 * d[0]! * d[1]! * d[2]!;
+      for (const f of [1, 0.001, 1000]) derivados.push(v * f);
+    }
+  }
+  return {
+    covers(value: number): boolean {
+      if (exatos.has(k(value))) return true;
+      // laudo arredondado para inteiro ("16 mm" de 16,47) tolera meia unidade
+      const tol = Number.isInteger(value) ? 0.5 : 0.051;
+      return derivados.some((d) => Math.abs(value - d) <= Math.max(tol, Math.abs(d) * 0.03));
+    },
+  };
+}
+
 function flatten(value: unknown, path = "achados"): FlatFinding[] {
   if (value === null || value === undefined) return [];
   if (typeof value !== "object") return [{ path, value }];
@@ -414,6 +455,7 @@ function extractMeasurements(text: string, path?: string): Measurement[] {
       normalized: `${value} ${unit}`,
       raw,
       path,
+      value: Number(match[1]!.replace(",", ".")),
     });
   }
   return measures;
