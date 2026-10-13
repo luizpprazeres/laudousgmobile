@@ -16,9 +16,10 @@
 import { askJev, type JevQuestion } from "@/server/ai/jev";
 import { hasIdentifierResidue, scrubIdentifiers } from "@/server/privacy/scrub";
 import { suspiciousMeasures } from "./numberRepairs";
+import { normalizeAsrTranscript } from "./transcriptNormalizer";
 import vocabulario from "./vocabulario.json";
 
-export type SuggestionKind = "negacao" | "centena" | "escala" | "grafia" | "medida";
+export type SuggestionKind = "negacao" | "centena" | "escala" | "grafia" | "medida" | "formato" | "lado";
 export type DitadoSuggestion = {
   start: number;
   end: number;
@@ -95,6 +96,14 @@ export function detectCandidates(text: string, categoria: string | null): Candid
     add({ kind: "centena", start: m.index!, end: m.index! + m[0].length, original: m[0], options: [String(100 + Number(m[2]))], legitimate: true });
   for (const m of text.matchAll(/\b(b\s*e\s*r\s*a\s*d\s*s|berads|brads|b\s+rads|q\s*rads|qrads|t\s+rads)\b/giu))
     add({ kind: "escala", start: m.index!, end: m.index! + m[0].length, original: m[0], options: /^[bq]/i.test(m[1]!) ? ["BI-RADS", "TI-RADS"] : ["TI-RADS", "BI-RADS"], legitimate: false });
+  // lado virou número: "ovários 15 medindo" ← "ovário esquerdo" (captura real de 13/10). Só sugestão.
+  const ORGAO: Record<string, [string, "m" | "f"]> = { "ovário": ["ovário", "m"], "ovario": ["ovário", "m"], "ovários": ["ovário", "m"], "ovarios": ["ovário", "m"], rim: ["rim", "m"], rins: ["rim", "m"], lobo: ["lobo", "m"], mama: ["mama", "f"], mamas: ["mama", "f"], axila: ["axila", "f"], "testículo": ["testículo", "m"], testiculo: ["testículo", "m"], joelho: ["joelho", "m"], ombro: ["ombro", "m"], punho: ["punho", "m"], tornozelo: ["tornozelo", "m"] };
+  for (const m of text.matchAll(/\b(ov[aá]rios?|rins?|lobo|mamas?|axila|test[ií]culo|joelho|ombro|punho|tornozelo)\s+(\d{1,3})\s+(?=(?:medindo|mede|com|de|apresenta|apresentando|sem)\b)/giu)) {
+    const [base, g] = ORGAO[m[1]!.toLowerCase()] ?? [m[1]!, "m"];
+    const lados = g === "f" ? ["esquerda", "direita"] : ["esquerdo", "direito"];
+    const original = m[0].trimEnd();
+    add({ kind: "lado", start: m.index!, end: m.index! + original.length, original, options: lados.map((l) => `${base} ${l}`), legitimate: true });
+  }
   // grafia: palavra fora do vocabulário da casa com candidata parecida
   const v = vocab(categoria);
   let n = 0;
@@ -144,6 +153,7 @@ function question(text: string, c: Candidate, exame: string): JevQuestion | null
     c.kind === "negacao" ? "Pense se o médico descrevia a AUSÊNCIA do achado ou contava/afirmava o achado."
     : c.kind === "centena" ? "Pense em qual valor é fisiologicamente plausível para essa medida."
     : c.kind === "escala" ? "Qual escala de classificação faz sentido neste exame?"
+    : c.kind === "lado" ? "O reconhecimento de voz às vezes troca 'esquerdo/direito' por um número. Pelo resto do ditado (o outro lado já descrito?), qual lado é este?"
     : "Prefira 'manter' quando a palavra transcrita já faz sentido clínico.";
   return {
     type: "choice",
@@ -153,7 +163,7 @@ function question(text: string, c: Candidate, exame: string): JevQuestion | null
 }
 
 function automaticFor(c: Candidate, confidence: number, replacement: string): boolean {
-  if (c.kind === "centena" || (c.legitimate && c.kind === "negacao")) return false;
+  if (c.kind === "centena" || c.kind === "lado" || (c.legitimate && c.kind === "negacao")) return false;
   // grafia: só troca sozinha quando a candidata é quase a mesma palavra ("apoplítea" → "poplítea");
   // longe disso ("microcitos" → "microlitíase") pode ser outro achado — vira sugestão.
   if (c.kind === "grafia") return confidence >= 0.7 && sim(chave(c.original), chave(replacement)) >= 0.75 && !SENTIDO.test(chave(replacement));
@@ -161,6 +171,38 @@ function automaticFor(c: Candidate, confidence: number, replacement: string): bo
 }
 
 export type ArbitrateResult = { text: string; suggestions: DitadoSuggestion[]; ms: number; asked: number };
+
+/**
+ * O que o servidor faria com o ditado antes da IA (normalizeAsrTranscript com os reparos de número),
+ * como trechos trocáveis no texto ORIGINAL — para a tela mostrar o mesmo texto que vai para o laudo.
+ * Diferença palavra a palavra; cada trecho alterado vira uma sugestão automática "formato".
+ */
+export function formatSuggestions(text: string): DitadoSuggestion[] {
+  const alvo = normalizeAsrTranscript(text, { repairNumbers: true });
+  if (alvo === text) return [];
+  const tok = (s: string) => Array.from(s.matchAll(/\S+/g), (m) => ({ w: m[0], ini: m.index!, fim: m.index! + m[0].length }));
+  const a = tok(text), b = tok(alvo);
+  if (a.length * b.length > 4_000_000) return [];
+  const L = Array.from({ length: a.length + 1 }, () => new Uint16Array(b.length + 1));
+  for (let i = a.length - 1; i >= 0; i--)
+    for (let j = b.length - 1; j >= 0; j--) L[i]![j] = a[i]!.w === b[j]!.w ? L[i + 1]![j + 1]! + 1 : Math.max(L[i + 1]![j]!, L[i]![j + 1]!);
+  const out: DitadoSuggestion[] = [];
+  let i = 0, j = 0, ra: typeof a = [], rb: typeof b = [];
+  const flush = () => {
+    if (ra.length) {
+      const start = ra[0]!.ini, end = ra[ra.length - 1]!.fim;
+      out.push({ start, end, original: text.slice(start, end), replacement: rb.map((t) => t.w).join(" "), kind: "formato", confidence: 1, automatic: true });
+    }
+    ra = []; rb = [];
+  };
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i]!.w === b[j]!.w) { flush(); i++; j++; }
+    else if (j < b.length && (i >= a.length || L[i]![j + 1]! >= L[i + 1]![j]!)) rb.push(b[j++]!);
+    else ra.push(a[i++]!);
+  }
+  flush();
+  return out;
+}
 
 /**
  * mode "auto": devolve o texto com as trocas automáticas aplicadas (e todas as sugestões).
@@ -193,6 +235,12 @@ export async function arbitrate(
       suggestions.push({ start: c.start, end: c.end, original: c.original, replacement, kind: c.kind, confidence: a.confidence, automatic: automaticFor(c, a.confidence, replacement) });
     }
   }
+  // reparos de formato entram primeiro e vencem qualquer pergunta que caia no mesmo trecho
+  // medida suspeita fica intacta e com o aviso (formatar "7.34 0,1" esconderia o problema)
+  const formato = formatSuggestions(text).filter((f) => !medidas.some((m) => f.start < m.end && m.start < f.end));
+  const final = [...formato, ...suggestions.filter((x) => x.kind === "medida" || !formato.some((f) => f.start < x.end && x.start < f.end))];
+  suggestions.length = 0;
+  suggestions.push(...final);
   suggestions.sort((a, b) => a.start - b.start);
   let out = text;
   if (opts.mode === "auto")

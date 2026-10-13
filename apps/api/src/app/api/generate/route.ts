@@ -55,6 +55,7 @@ import {
   resolveGenerationPath,
 } from "@/server/pipeline/generationPathResolver";
 import { runSanityCheck } from "@/server/pipeline/sanityCheck";
+import { filterAiSanity } from "@/server/pipeline/sanityFilter";
 import {
   runDeterministicSanity,
   type DeterministicIssue,
@@ -1731,8 +1732,26 @@ export async function POST(req: Request) {
          * dos três (exigência do Codex, 19/08: o aviso tem de chegar ao médico,
          * fora do texto copiável).
          */
+        // Estudo dos alertas (12–13/10): tira da sanity por IA os falsos alarmes conferíveis (aviso
+        // que se desmente, frase da Biblioteca chamada de "inventada", padrões medidos) — nunca
+        // omissão, lado, medida, data, comando ou conclusão. Sem Jev, só as regras agem.
+        let aiFiltered = aiSanity;
+        if (env().SANITY_FILTRO_IA === "true") {
+          try {
+            const f = await filterAiSanity({
+              ai: aiSanity,
+              finalText,
+              rawInput: reqInput.consolidated_transcript ?? reqInput.raw_input,
+              categoria: selectedHint ?? findings.categoria_detectada ?? null,
+            });
+            aiFiltered = f.result;
+            console.log(`[sanity_filtro ${reportId}] ${JSON.stringify(f.stats)}`);
+          } catch (e) {
+            console.warn(`[sanity_filtro ${reportId}] falhou, mantém a sanity original: ${(e as Error).message?.slice(0, 120)}`);
+          }
+        }
         const sanity = comAvisosDoPipeline(
-          mergeSanityResults(aiSanity, deterministicSanity),
+          mergeSanityResults(aiFiltered, deterministicSanity),
           pipelineWarnings,
         );
         auditState.sanityDurationMs = sanityMs;

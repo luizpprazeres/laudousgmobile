@@ -46,6 +46,15 @@ const fake = (escolhas: Record<string, [string, number]>): typeof askJev => asyn
   // grafia que vira negação/lado: nunca automática, mesmo com confiança alta
   r = await arbitrate("lesão apoplítea", "MUSCULOESQUELETICO_V2", { mode: "auto", ask: async (_s, qs) => ({ ms: 1, inputTokens: 1, answers: Object.fromEntries(Object.keys(qs).map((id) => [id, { type: "choice" as const, choice: "o0", confidence: 0.99 }])) }) });
   assert.ok(r.suggestions.every((s) => s.replacement !== "ausente" || !s.automatic));
+  // reparos de formato voltam como trocas automáticas no texto original
+  r = await arbitrate("Útero medindo 37.4, por 31.4, por 25.3 centímetros, mais de 50 por 100 intramural.", "PELVE_FEMININA", { mode: "auto", ask: async () => null });
+  assert.equal(r.text, "Útero medindo 37,4 x 31,4 x 25,3 cm, mais de 50% intramural.");
+  assert.ok(r.suggestions.every((s) => s.kind !== "formato" || s.automatic));
+  // lado virou número: só sugestão
+  assert.ok(kinds("ovário direito medindo 2,4 x 1,7 cm, ovários 15 medindo 3,4 x 2,1 cm", "PELVE_FEMININA").includes("lado:ovários 15"));
+  r = await arbitrate("ovário direito medindo 2,4 cm, ovários 15 medindo 3,4 cm", "PELVE_FEMININA", { mode: "auto", ask: async (_s, qs) => ({ ms: 1, inputTokens: 1, answers: Object.fromEntries(Object.keys(qs).map((id) => [id, { type: "choice" as const, choice: "o0", confidence: 0.99 }])) }) });
+  assert.ok(r.text.includes("ovários 15"));
+  assert.ok(r.suggestions.some((s) => s.kind === "lado" && s.replacement === "ovário esquerdo" && !s.automatic));
   // medida fundida → aviso sem troca, mesmo sem Jev
   r = await arbitrate("útero medindo 7.34 0,1 x 5,2", "PELVE_FEMININA", { mode: "suggest", ask: async () => null });
   assert.deepEqual(r.suggestions.map((s) => [s.kind, s.replacement]), [["medida", null]]);

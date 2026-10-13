@@ -169,6 +169,8 @@ const ServerEnvSchema = z.object({
   // Chave da TypeSafe (Jev). Sem ela, árbitro e revisão ficam inertes.
   JEV_API_KEY: z.string().optional(),
   JEV_MODEL: z.string().default("jev-1.13.0"),
+  // Filtro dos falsos alarmes da sanity por IA (sanityFilter.ts). "true" liga.
+  SANITY_FILTRO_IA: z.string().default("false"),
 
   PROMPT_VERSION: z.string().default("v1.3"),
   FINDINGS_SCHEMA_VERSION: z.string().default("v1"),
