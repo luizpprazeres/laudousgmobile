@@ -72,8 +72,8 @@ check("W12: incompatíveis → como ditadas + [REVISAR]", /incompatíveis \(ex\.
 // Decisão do Luiz (10/10): vizinhas (4↔5, 5↔6…) ficam como ditadas, sem aviso.
 check("FIGO2: vizinhas como ditadas, sem aviso", /as duas ditadas → como ditadas: vizinhas \(FIGO adjacente à da localização, ex\.: "intramural \(categoria FIGO 5\)"\) sem aviso/.test(p));
 check("W12: nada ditado → nenhuma das duas", /nada ditado → nenhuma das duas/.test(p));
-check("W12: vários miomas num item só (plural/ordinais)", /Vários miomas, um item só/.test(p) && /o primeiro \{localização\} \(categoria FIGO \{N\}\) e o segundo/.test(p));
-check("W12: corpo de 2–3 numa linha e inúmeros", /Dois ou três, numa linha/.test(p) && /as maiores assim descritas/.test(p) && /impede a avaliação individualizada/.test(p));
+check("miomas M1/M2: vários miomas num item só, com a numeração do corpo", /Vários miomas, um item só, com a mesma numeração do corpo/.test(p) && /nódulos miomatosos: M1 - \{localização\} \(categoria FIGO \{N\}\), M2 - /.test(p));
+check("miomas M1/M2: corpo com uma linha por mioma, (M1) - …, e inúmeros", /Dois ou mais: numere na ordem em que o médico ditou/.test(p) && /UMA LINHA POR MIOMA: "\(M1\) - medindo/.test(p) && /as maiores assim descritas:/.test(p) && /impede a avaliação individualizada/.test(p));
 check("W12: FIGO não vai no corpo (0/24 finais)", /FIGO não vai no corpo/.test(p));
 check("W12: 'em região fúndica'", /em região fúndica/.test(p));
 check("legenda FIGO só com FIGO no laudo", /Com FIGO no laudo, após a conclusão, uma vez e sem número/.test(p));
