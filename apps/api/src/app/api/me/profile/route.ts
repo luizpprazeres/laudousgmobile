@@ -143,6 +143,11 @@ async function loadProfile(userId: string, appleTier: "essencial" | "pro" | null
     default_writing_style_id: row.defaultWritingStyleId,
     crm: row.crm,
     uf: row.uf,
+    terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null,
+    terms_version_accepted: row.termsVersionAccepted ?? null,
+    privacy_version_accepted: row.privacyVersionAccepted ?? null,
+    medical_disclaimer_version_accepted: row.medicalDisclaimerVersionAccepted ?? null,
+    onboarding_completed_at: row.onboardingCompletedAt?.toISOString() ?? null,
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
   });

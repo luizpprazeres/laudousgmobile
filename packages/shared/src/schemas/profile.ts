@@ -16,6 +16,12 @@ export const ProfileSchema = z.object({
   crm: z.string().nullable(),
   /** Sigla da unidade federativa do registro — sempre maiúscula. */
   uf: z.string().nullable(),
+  /** Aceite dos documentos legais e fim do tutorial (o app decide se mostra os termos de novo). */
+  terms_accepted_at: z.string().datetime().nullable().optional(),
+  terms_version_accepted: z.string().nullable().optional(),
+  privacy_version_accepted: z.string().nullable().optional(),
+  medical_disclaimer_version_accepted: z.string().nullable().optional(),
+  onboarding_completed_at: z.string().datetime().nullable().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

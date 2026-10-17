@@ -37,6 +37,17 @@ export const profiles = pgTable(
      */
     crm: text("crm"),
     uf: text("uf"),
+    /**
+     * Aceite dos documentos legais e fim do tutorial — colunas que já existem no banco
+     * (o app iOS grava direto pelo REST do Supabase). Ficaram fora deste schema e, por
+     * isso, fora de `/api/me/profile`: a cada abertura o app achava que faltava o aceite
+     * e mostrava os termos de novo (QA da submissão Apple, 17/10/2026).
+     */
+    termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+    termsVersionAccepted: text("terms_version_accepted"),
+    privacyVersionAccepted: text("privacy_version_accepted"),
+    medicalDisclaimerVersionAccepted: text("medical_disclaimer_version_accepted"),
+    onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
