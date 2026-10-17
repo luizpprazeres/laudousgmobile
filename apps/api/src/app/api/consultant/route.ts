@@ -55,16 +55,12 @@ async function createConsultantStream(args: {
   messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
   signal: AbortSignal;
 }) {
-  const base: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
-    model: args.model,
-    messages: args.messages,
-    temperature: 0.3,
-    max_tokens: 4000,
-    stream: true,
-  };
-  const params = supportsReasoningEffort(args.model)
-    ? { ...base, reasoning_effort: "medium" as const }
-    : base;
+  // gpt-5*/o-series recusam `max_tokens` e `temperature` ≠ 1 (400 "Unsupported parameter: max_tokens…
+  // use max_completion_tokens") — o Consultor quebrava em toda pergunta (QA da submissão Apple, 17/10/2026).
+  // Nesses modelos o raciocínio consome do mesmo limite, por isso ele é maior.
+  const params: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = supportsReasoningEffort(args.model)
+    ? { model: args.model, messages: args.messages, max_completion_tokens: 12000, reasoning_effort: "medium", stream: true }
+    : { model: args.model, messages: args.messages, temperature: 0.3, max_tokens: 4000, stream: true };
   return openai().chat.completions.create(params, { signal: args.signal });
 }
 
