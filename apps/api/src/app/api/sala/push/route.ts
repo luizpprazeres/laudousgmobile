@@ -7,7 +7,9 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/sala/push
- * Body: { reportId: string }
+ * Body: { reportId: string } — ou { report_id: string }: o app iOS codifica as chaves em snake_case
+ * (JSONEncoder.api), e a rota só lia `reportId` → 400 report_id_invalid no "Enviar à sala" do
+ * histórico (QA da submissão Apple, 17/10/2026). Aceita os dois.
  *
  * Re-broadcast de um laudo específico do médico pra sala do auxiliar.
  * Funciona via touch no updated_at — /api/sala/latest ordena por updated_at
@@ -20,14 +22,15 @@ export async function POST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
-  let body: { reportId?: unknown };
+  let body: { reportId?: unknown; report_id?: unknown };
   try {
-    body = (await req.json()) as { reportId?: unknown };
+    body = (await req.json()) as { reportId?: unknown; report_id?: unknown };
   } catch {
     return json({ error: "invalid_json" }, 400);
   }
 
-  const reportId = typeof body.reportId === "string" ? body.reportId : null;
+  const bruto = body.reportId ?? body.report_id;
+  const reportId = typeof bruto === "string" ? bruto : null;
   if (!reportId || !/^[0-9a-f-]{8,}$/i.test(reportId)) {
     return json({ error: "report_id_invalid" }, 400);
   }
