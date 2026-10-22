@@ -11,7 +11,7 @@ import { BUCKET_SOCIAL, urlPublicaSocial } from "./csp";
 import type { Edicao } from "./regras";
 import type { Formato, LinhaItem, LinhaPost, PostImportado, ResultadoImportacao } from "./tipos";
 
-export type ResultadoAcao = "ok" | "nao_encontrado" | "status" | "slide" | "limite" | "sem_imagem" | "slides" | "passado" | "falha";
+export type ResultadoAcao = "ok" | "nao_encontrado" | "status" | "slide" | "limite" | "sem_imagem" | "slides" | "passado" | "mudou" | "ordem" | "falha";
 
 export interface RepositorioSocial {
   formato(id: string): Promise<Formato | null>;
@@ -23,7 +23,7 @@ export interface RepositorioSocial {
   enviarImagem(id: string, posicao: number, bytes: Uint8Array): Promise<ResultadoAcao>;
 }
 
-const ACOES = new Set<ResultadoAcao>(["ok", "nao_encontrado", "status", "slide", "limite", "sem_imagem", "slides", "passado"]);
+const ACOES = new Set<ResultadoAcao>(["ok", "nao_encontrado", "status", "slide", "limite", "sem_imagem", "slides", "passado", "mudou", "ordem"]);
 const acao = (v: unknown): ResultadoAcao => (typeof v === "string" && ACOES.has(v as ResultadoAcao) ? (v as ResultadoAcao) : "falha");
 
 async function apagar(sb: SupabaseClient, caminhos: string[]): Promise<void> {
@@ -73,6 +73,30 @@ export function repositorioSocial(cfg: ConfigServidor, sb: SupabaseClient = clie
       }
       if (r.anterior) await apagar(sb, [r.anterior]);
       return "ok";
+    },
+  };
+}
+
+/** Quadro (story admin-instagram-quadro): aprovar/voltar em lote, reagendar e reordenar. */
+export interface RepositorioLote {
+  mudarStatus(id: string, status: "approved" | "draft"): Promise<ResultadoAcao>;
+  /** Só rascunho, só futuro e só se o horário atual ainda for `de` (senão "mudou"). */
+  reagendar(id: string, de: string, para: string): Promise<ResultadoAcao>;
+  /** ordem[i] = posição atual do slide que vira o i-ésimo (permutação de 1..n). Só rascunho. */
+  reordenar(id: string, ordem: number[]): Promise<ResultadoAcao>;
+}
+
+export function repositorioLote(cfg: ConfigServidor, sb: SupabaseClient = clienteServico(cfg)): RepositorioLote {
+  const base = repositorioSocial(cfg, sb);
+  return {
+    mudarStatus: (id, status) => base.mudarStatus(id, status),
+    async reagendar(id, de, para) {
+      const { data, error } = await sb.rpc("social_reschedule", { p_id: id, p_de: de, p_para: para });
+      return error ? "falha" : acao(data);
+    },
+    async reordenar(id, ordem) {
+      const { data, error } = await sb.rpc("social_reorder_items", { p_id: id, p_ordem: ordem });
+      return error ? "falha" : acao(data);
     },
   };
 }

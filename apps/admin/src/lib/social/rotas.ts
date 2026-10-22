@@ -24,7 +24,7 @@ export interface DependenciasSocial {
   repo: (cfg: ConfigServidor) => RepositorioSocial;
 }
 
-async function autorizarAdmin(req: Request): Promise<Autorizado | null> {
+export async function autorizarAdmin(req: Request): Promise<Autorizado | null> {
   // contextoPost confere a origem do POST (além do SameSite=Strict) e monta a sessão pelos cookies.
   const ctx = contextoPost(req as NextRequest);
   if (!ctx) return null;
@@ -71,6 +71,17 @@ const posicao = (f: FormData, n = "posicao") => {
   return Number.isInteger(p) && p >= 1 && p <= LIMITES.slides ? p : null;
 };
 export const editor = (id: string) => `/instagram/${id}`;
+
+/** O Quadro chama algumas rotas por fetch e quer JSON em vez do redirect 303. */
+export const querJson = (req: Request) => (req.headers.get("accept") ?? "").split(",").some((t) => t.trim().split(";")[0] === "application/json");
+
+const SEM_CACHE_JSON = { "Cache-Control": "no-store", "Content-Type": "application/json; charset=utf-8" };
+export function respostaJson(corpo: unknown, a: Pick<Autorizado, "cookies"> | null, status = 200): NextResponse {
+  const r = new NextResponse(JSON.stringify(corpo), { status, headers: SEM_CACHE_JSON });
+  a?.cookies?.cookies.getAll().forEach((c) => r.cookies.set(c));
+  return r;
+}
+const resultadoJson = (resultado: string, a: Pick<Autorizado, "cookies">) => respostaJson({ resultado }, a);
 
 export function criarRotasSocial(deps: Partial<DependenciasSocial> = {}) {
   const d = { ...padrao, ...deps };
@@ -135,9 +146,15 @@ export function criarRotasSocial(deps: Partial<DependenciasSocial> = {}) {
       return voltar(req, a, editor(id), r === "ok" ? { ok: para === "approved" ? "aprovado" : "rascunho" } : { erro: r });
     }),
 
-    /** Imagem de um slide: só JPEG, até 8 MB, 1080×1350 (feed) ou 1080×1920 (story). */
+    /**
+     * Imagem de um slide: só JPEG, até 8 MB, 1080×1350 (feed) ou 1080×1920 (story).
+     * Com `Accept: application/json` (envio em lote do Quadro) responde `{ resultado }` em vez do
+     * redirect; as checagens são as mesmas.
+     */
     midia: comAdmin(async (req, a) => {
-      if (corpoGrande(req, LIMITES.imagemBytes)) return voltar(req, a, "/instagram", { erro: "grande" });
+      const json = querJson(req);
+      const fim = (caminho: string, r: string) => (json ? resultadoJson(r, a) : voltar(req, a, caminho, r === "ok" ? { ok: "imagem" } : { erro: r }));
+      if (corpoGrande(req, LIMITES.imagemBytes)) return fim("/instagram", "grande");
       const f = await formulario(req);
       const id = f && idValido(f);
       const p = f && posicao(f);
@@ -145,15 +162,15 @@ export function criarRotasSocial(deps: Partial<DependenciasSocial> = {}) {
       const repo = d.repo(a.cfg);
       // O formato vem do banco, nunca do formulário.
       const formato = await repo.formato(id);
-      if (!formato) return voltar(req, a, editor(id), { erro: "nao_encontrado" });
+      if (!formato) return fim(editor(id), "nao_encontrado");
       const arq = f.get("arquivo");
-      if (!arq || typeof arq === "string") return voltar(req, a, editor(id), { erro: "vazio" });
-      if (arq.size > LIMITES.imagemBytes) return voltar(req, a, editor(id), { erro: "grande" });
+      if (!arq || typeof arq === "string") return fim(editor(id), "vazio");
+      if (arq.size > LIMITES.imagemBytes) return fim(editor(id), "grande");
       const bytes = new Uint8Array(await arq.arrayBuffer());
       const v = validarImagem(bytes, arq.type, formato);
-      if (!v.ok) return voltar(req, a, editor(id), { erro: v.erro });
+      if (!v.ok) return fim(editor(id), v.erro);
       const r = await repo.enviarImagem(id, p, bytes);
-      return voltar(req, a, editor(id), r === "ok" ? { ok: "imagem" } : { erro: r });
+      return fim(editor(id), r);
     }),
   };
 }
