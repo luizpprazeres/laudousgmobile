@@ -97,7 +97,7 @@ export const SELECOES = {
     "user_id",
   ],
   iap_notification_attempts: ["notification_uuid", "received_at", "result"],
-  // Instagram F1 (migração 20261022212039_admin_social). social_accounts (token) nunca é lido pelo painel.
+  // Instagram F1 (migração 20261022212039_admin_social).
   social_posts: [
     "id",
     "scheduled_at",
@@ -119,6 +119,9 @@ export const SELECOES = {
     "updated_at",
   ],
   social_media_items: ["post_id", "position", "storage_path", "public_url", "slide_text", "visual_brief", "alt_text"],
+  // Instagram F2: só as colunas da tela. O envelope do token (token_ciphertext) fica fora da allowlist
+  // e só é lido por lib/social/conta.ts (lerComToken), para publicar.
+  social_accounts: ["ig_user_id", "username", "token_expires_at", "connected_at"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type TabelaPermitida = keyof typeof SELECOES;
