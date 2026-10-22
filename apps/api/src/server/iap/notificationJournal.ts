@@ -19,22 +19,41 @@ export interface NotificationJournal {
   record(fact: NotificationFact): Promise<void>;
   result(uuid: string, result: string): Promise<void>;
 }
-/** Facts are insert-only. Replays still apply the idempotent domain operation:
- * a previous delivery may have saved the fact and failed updating subscriptions. */
-export const notificationJournal: NotificationJournal = {
-  async record(fact) {
-    const { error } = await getServiceClient()
-      .from("iap_notifications")
-      .upsert(fact, {
-        onConflict: "notification_uuid",
-        ignoreDuplicates: true,
-      });
-    if (error) throw new Error("iap_journal_unavailable");
-  },
-  async result(notification_uuid, result) {
-    const { error } = await getServiceClient()
-      .from("iap_notification_attempts")
-      .insert({ notification_uuid, result });
-    if (error) throw new Error("iap_journal_result_unavailable");
-  },
-};
+/** Logging must never change webhook/entitlement outcomes or leak payloads. */
+export async function bestEffortJournal(
+  operation: "record" | "result",
+  write: () => Promise<void>,
+): Promise<void> {
+  try {
+    await write();
+  } catch {
+    console.warn(`[iap-journal] ${operation}_failed`);
+  }
+}
+/** Facts remain insert-only; replays still apply the idempotent domain operation. */
+export function createNotificationJournal(
+  client = getServiceClient,
+): NotificationJournal {
+  return {
+    record: (fact) =>
+      bestEffortJournal("record", async () => {
+        const { error } = await client()
+          .from("iap_notifications")
+          .upsert(fact, {
+            onConflict: "notification_uuid",
+            ignoreDuplicates: true,
+          })
+          .abortSignal(AbortSignal.timeout(3000));
+        if (error) throw new Error("iap_journal_unavailable");
+      }),
+    result: (notification_uuid, result) =>
+      bestEffortJournal("result", async () => {
+        const { error } = await client()
+          .from("iap_notification_attempts")
+          .insert({ notification_uuid, result })
+          .abortSignal(AbortSignal.timeout(3000));
+        if (error) throw new Error("iap_journal_result_unavailable");
+      }),
+  };
+}
+export const notificationJournal = createNotificationJournal();

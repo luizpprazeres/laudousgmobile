@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { processNotification } from "../notifications";
+import { createNotificationJournal } from "../notificationJournal";
 import type {
   NotificationFact,
   NotificationJournal,
@@ -111,27 +112,114 @@ async function main() {
     /bad renewal/,
   );
   assert.equal(facts.has("bad-renewal"), false);
-  const blocked = new MemorySubscriptionRepo();
-  blocked.profiles.add(USER_A);
-  await assert.rejects(
-    () =>
-      processNotification({
-        ...args,
-        repo: blocked,
-        journal: {
-          ...journal,
-          record: async () => {
-            throw Error("journal down");
-          },
+  const logMessages: unknown[][] = [];
+  const warn = console.warn;
+  console.warn = (...parts) => {
+    logMessages.push(parts);
+  };
+  try {
+    for (const operation of ["record", "result"] as const) {
+      const available = new MemorySubscriptionRepo();
+      available.profiles.add(USER_A);
+      const failedJournal = {
+        ...journal,
+        [operation]: async () => {
+          throw Error("PRIVATE DB ERROR");
         },
-      }),
-    /journal down/,
-  );
-  assert.equal(
-    blocked.rows.length,
-    0,
-    "journal failure blocks entitlement update, enables 503 replay",
-  );
+      };
+      const applied = await processNotification({
+        ...args,
+        repo: available,
+        journal: failedJournal,
+      });
+      assert.equal(applied.kind, "processed");
+      assert.equal(
+        available.rows.length,
+        1,
+        `${operation} failure must not block applyTransaction`,
+      );
+      for (const [uuid, type, expected] of [
+        ["test-failed", "TEST", "test"],
+        ["ignored-failed", "DID_RENEW", "ignored"],
+      ]) {
+        const result = await processNotification({
+          ...args,
+          repo: available,
+          journal: failedJournal,
+          payload: { notificationUUID: uuid, notificationType: type },
+        });
+        assert.equal(
+          result.kind,
+          expected,
+          `${expected} still returns OK despite ${operation} failure`,
+        );
+      }
+    }
+    // Exercise actual persistence adapter for both PostgREST errors and rejected inserts.
+    for (const rejected of [false, true]) {
+      const adapter = createNotificationJournal((() => ({
+        from: () => ({
+          upsert: () => ({
+            abortSignal: async () => {
+              if (rejected) throw Error("PRIVATE INSERT");
+              return { error: { message: "PRIVATE INSERT" } };
+            },
+          }),
+          insert: () => ({
+            abortSignal: async () => {
+              if (rejected) throw Error("PRIVATE INSERT");
+              return { error: { message: "PRIVATE INSERT" } };
+            },
+          }),
+        }),
+      })) as unknown as Parameters<typeof createNotificationJournal>[0]);
+      const available = new MemorySubscriptionRepo();
+      available.profiles.add(USER_A);
+      assert.equal(
+        (
+          await processNotification({
+            ...args,
+            repo: available,
+            journal: adapter,
+          })
+        ).kind,
+        "processed",
+      );
+      assert.equal(available.rows.length, 1);
+      assert.equal(
+        (
+          await processNotification({
+            ...args,
+            journal: adapter,
+            payload: { notificationUUID: "test-db", notificationType: "TEST" },
+          })
+        ).kind,
+        "test",
+      );
+      assert.equal(
+        (
+          await processNotification({
+            ...args,
+            journal: adapter,
+            payload: {
+              notificationUUID: "ignored-db",
+              notificationType: "DID_RENEW",
+            },
+          })
+        ).kind,
+        "ignored",
+      );
+    }
+    assert.ok(
+      logMessages.some((parts) => parts[0] === "[iap-journal] record_failed"),
+    );
+    assert.ok(
+      logMessages.some((parts) => parts[0] === "[iap-journal] result_failed"),
+    );
+    assert.equal(JSON.stringify(logMessages).includes("PRIVATE"), false);
+  } finally {
+    console.warn = warn;
+  }
   await processNotification({
     ...args,
     payload: { notificationUUID: "test", notificationType: "TEST" },

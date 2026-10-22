@@ -16,7 +16,10 @@
  * A regra de posse do domínio continua valendo: token ≠ dono ⇒ recusa.
  */
 
-import type { NotificationJournal } from "./notificationJournal";
+import {
+  bestEffortJournal,
+  type NotificationJournal,
+} from "./notificationJournal";
 import type {
   JWSRenewalInfoDecodedPayload,
   JWSTransactionDecodedPayload,
@@ -33,7 +36,12 @@ export type NotificationOutcome =
   | { kind: "test" }
   | { kind: "ignored"; reason: string }
   | { kind: "unassigned"; originalTransactionId: string }
-  | { kind: "processed"; notificationType: string; apply: ApplyOutcome; userId: string };
+  | {
+      kind: "processed";
+      notificationType: string;
+      apply: ApplyOutcome;
+      userId: string;
+    };
 
 export type ProcessNotificationArgs = {
   payload: ResponseBodyV2DecodedPayload;
@@ -45,30 +53,64 @@ export type ProcessNotificationArgs = {
   journal?: NotificationJournal;
 };
 
-export async function processNotification(args: ProcessNotificationArgs): Promise<NotificationOutcome> {
+export async function processNotification(
+  args: ProcessNotificationArgs,
+): Promise<NotificationOutcome> {
   const { payload } = args;
   const notificationType = String(payload.notificationType ?? "");
-  async function journal(tx?: JWSTransactionDecodedPayload, renewal?: JWSRenewalInfoDecodedPayload | null, userId: string | null = null) {
+  async function journal(
+    tx?: JWSTransactionDecodedPayload,
+    renewal?: JWSRenewalInfoDecodedPayload | null,
+    userId: string | null = null,
+  ) {
     if (!args.journal) return;
-    if (!payload.notificationUUID || !notificationType) throw new Error("iap_notification_missing_identity");
-    const iso = (n?: number) => n != null && Number.isFinite(n) ? new Date(n).toISOString() : null;
-    await args.journal.record({ notification_uuid: payload.notificationUUID, notification_type: notificationType,
-      subtype: payload.subtype ? String(payload.subtype) : null, signed_date: iso(payload.signedDate),
-      environment: args.environment, user_id: userId, original_tx_id: tx?.originalTransactionId ?? null,
-      product_id: tx?.productId ?? null, offer_type: tx?.offerType ?? null, offer_discount_type: tx?.offerDiscountType ?? null,
-      price_milli: tx?.price ?? null, currency: tx?.currency ?? null, auto_renew_status: renewal?.autoRenewStatus ?? null,
-      expires_at: iso(tx?.expiresDate) });
+    await bestEffortJournal("record", async () => {
+      if (!payload.notificationUUID || !notificationType)
+        throw new Error("iap_notification_missing_identity");
+      const iso = (n?: number) =>
+        n != null && Number.isFinite(n) ? new Date(n).toISOString() : null;
+      await args.journal!.record({
+        notification_uuid: payload.notificationUUID,
+        notification_type: notificationType,
+        subtype: payload.subtype ? String(payload.subtype) : null,
+        signed_date: iso(payload.signedDate),
+        environment: args.environment,
+        user_id: userId,
+        original_tx_id: tx?.originalTransactionId ?? null,
+        product_id: tx?.productId ?? null,
+        offer_type: tx?.offerType ?? null,
+        offer_discount_type: tx?.offerDiscountType ?? null,
+        price_milli: tx?.price ?? null,
+        currency: tx?.currency ?? null,
+        auto_renew_status: renewal?.autoRenewStatus ?? null,
+        expires_at: iso(tx?.expiresDate),
+      });
+    });
+  }
+  async function result(value: string) {
+    if (args.journal)
+      await bestEffortJournal("result", () =>
+        args.journal!.result(payload.notificationUUID!, value),
+      );
   }
   async function done<T extends NotificationOutcome>(outcome: T): Promise<T> {
-    if (args.journal) await args.journal.result(payload.notificationUUID!, outcome.kind === "processed" ? outcome.apply.kind : outcome.kind);
+    await result(
+      outcome.kind === "processed" ? outcome.apply.kind : outcome.kind,
+    );
     return outcome;
   }
-  if (notificationType === "TEST") { await journal(); return done({ kind: "test" }); }
+  if (notificationType === "TEST") {
+    await journal();
+    return done({ kind: "test" });
+  }
 
   const signedTx = payload.data?.signedTransactionInfo;
   if (!signedTx) {
     await journal();
-    return done({ kind: "ignored", reason: `sem signedTransactionInfo (${notificationType || "sem tipo"})` });
+    return done({
+      kind: "ignored",
+      reason: `sem signedTransactionInfo (${notificationType || "sem tipo"})`,
+    });
   }
 
   const tx = await args.verifyTransaction(signedTx);
@@ -78,7 +120,10 @@ export async function processNotification(args: ProcessNotificationArgs): Promis
 
   if (!tx.originalTransactionId) {
     await journal(tx, renewal);
-    return done({ kind: "ignored", reason: "transação sem originalTransactionId" });
+    return done({
+      kind: "ignored",
+      reason: "transação sem originalTransactionId",
+    });
   }
 
   const existing = await args.repo.findByOriginalTxId(tx.originalTransactionId);
@@ -89,7 +134,10 @@ export async function processNotification(args: ProcessNotificationArgs): Promis
   }
   await journal(tx, renewal, userId);
   if (!userId) {
-    return done({ kind: "unassigned", originalTransactionId: tx.originalTransactionId });
+    return done({
+      kind: "unassigned",
+      originalTransactionId: tx.originalTransactionId,
+    });
   }
 
   try {
@@ -109,7 +157,7 @@ export async function processNotification(args: ProcessNotificationArgs): Promis
     return await done({ kind: "processed", notificationType, apply, userId });
   } catch (error) {
     // Append delivery failure without editing the verified fact; Apple retries the domain operation.
-    try { await args.journal?.result(payload.notificationUUID!, "error"); } catch { /* Preserve original failure. */ }
+    await result("error");
     throw error;
   }
 }
