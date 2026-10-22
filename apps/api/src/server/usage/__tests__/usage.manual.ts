@@ -42,6 +42,8 @@ async function main() {
     assert.equal(estimateCost(1000, 1000, "unknown-model"), null);
   });
   check("Luna and Opus have explicit prices", () => {
+    assert.equal(price("gpt-6-luna")?.cache_write_per_million, null);
+    assert.equal(price("gpt-6-luna", 272001)?.cache_write_per_million, null);
     assert.equal(
       calculateCost(price("gpt-6-luna"), {
         inputTokens: 1000,

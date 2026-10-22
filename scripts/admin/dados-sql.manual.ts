@@ -23,6 +23,10 @@ async function main() {
     "utf8",
   );
   await db.exec(sql);
+  const beforeLunaCorrection = (await db.query("SELECT * FROM ai_model_prices WHERE model <> 'gpt-6-luna' ORDER BY provider,model,version")).rows;
+  await db.exec(readFileSync(new URL("../../supabase/migrations/20261022013042_admin_luna_cache_write_correction.sql", import.meta.url), "utf8"));
+  assert.equal((await db.query<{n:number}>("SELECT count(*)::int AS n FROM ai_model_prices WHERE provider='openai' AND model='gpt-6-luna' AND cache_write_per_million IS NULL")).rows[0]?.n, 2);
+  assert.deepEqual((await db.query("SELECT * FROM ai_model_prices WHERE model <> 'gpt-6-luna' ORDER BY provider,model,version")).rows, beforeLunaCorrection);
   const rows = await db.query<Record<string, unknown>>(
     "SELECT * FROM ai_model_prices",
   );
