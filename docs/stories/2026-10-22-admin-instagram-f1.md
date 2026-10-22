@@ -28,18 +28,29 @@ OAuth com a Meta, publicação, cron, Insights (F2–F4). Sem push, deploy, env 
 
 ## Tarefas
 
-- [ ] Migração `admin_social`
-- [ ] Camada de dados `src/lib/social/*`
-- [ ] Importação do JSON
-- [ ] Calendário e editor
-- [ ] Upload para o Storage + CSP
-- [ ] Testes, typecheck, build
-- [ ] Entrega em `docs/admin/entrega-instagram-f1.md`
+- [x] Migração `admin_social`
+- [x] Camada de dados `src/lib/social/*`
+- [x] Importação do JSON
+- [x] Calendário e editor
+- [x] Upload para o Storage + CSP
+- [x] Testes, typecheck, build
+- [x] Entrega em `docs/admin/entrega-instagram-f1.md`
 
 ## File List
 
-(preencher)
+- `supabase/migrations/20261022205957_admin_social.sql` (novo)
+- `apps/admin/src/lib/social/tipos.ts`, `datas.ts`, `calendario.ts`, `regras.ts`, `csp.ts`, `servidor.ts`, `rotas.ts`, `instancia.ts` (novos)
+- `apps/admin/src/app/api/social/{importar,salvar,ordem,status,midia}/route.ts` (novos)
+- `apps/admin/src/app/(painel)/instagram/page.tsx`, `apps/admin/src/app/(painel)/instagram/[id]/page.tsx` (novos)
+- `apps/admin/src/components/Instagram.tsx` (novo)
+- `apps/admin/src/components/Navegacao.tsx` (item Instagram no menu)
+- `apps/admin/src/lib/data/colunas.ts` (allowlist de `social_posts` e `social_media_items`)
+- `apps/admin/src/app/globals.css` (bloco Instagram)
+- `apps/admin/next.config.ts` (CSP `img-src` com o bucket `social`)
+- `apps/admin/tests/social.test.ts`, `apps/admin/tests/fixtures/social/calendario.json` (novos)
+- `docs/admin/entrega-instagram-f1.md` (novo)
 
 ## Change Log
 
 - 22/10/2026 — @dev: Ready → InProgress (branch `feat/admin-instagram`, worktree `~/.worktrees/laudousg-admin-instagram`).
+- 22/10/2026 — @dev: implementação concluída; typecheck, test (58 pass, 1 skip) e build verdes. Aguardando @qa. Entrega em `docs/admin/entrega-instagram-f1.md`.
