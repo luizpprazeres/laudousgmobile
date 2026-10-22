@@ -1,6 +1,6 @@
 # Story admin-instagram F2 — conectar a conta e publicar uma foto sob comando manual
 
-**Status:** InProgress · **Criada:** 22/10/2026 · **Plano aprovado pelo Luiz em 22/10:** `docs/plano-agendador-instagram-2026-10-21.md` · **Fase anterior:** [F1](2026-10-22-admin-instagram-f1.md) (na `main` em `e5aa23d7`)
+**Status:** InReview · **Criada:** 22/10/2026 · **Plano aprovado pelo Luiz em 22/10:** `docs/plano-agendador-instagram-2026-10-21.md` · **Fase anterior:** [F1](2026-10-22-admin-instagram-f1.md) (na `main` em `e5aa23d7`)
 
 ## Contexto
 
@@ -25,22 +25,34 @@ Cron automático, carrossel, stories, renovação automática do token. Sem push
 
 ## Tarefas
 
-- [ ] Conferir a documentação da Meta (OAuth, token longo, perfil, publicação, status do container, limite)
-- [ ] Cifra AES-256-GCM e leitura da chave (`src/lib/social/cifra.ts`)
-- [ ] `state` assinado (`src/lib/social/estado.ts`)
-- [ ] Cliente da API do Instagram com `fetch` injetável (`src/lib/social/instagram.ts`)
-- [ ] Conta: leitura sem token, gravação que substitui, desconexão (`src/lib/social/conta.ts`)
-- [ ] Publicação: trava, container, espera, publish, permalink, transições (`src/lib/social/publicacao.ts`)
-- [ ] Rotas `conectar`, `callback`, `concluir`, `desconectar`, `publicar` + `rotaSemSessao`
-- [ ] Telas: cartão da conta em `/instagram` e "Publicar agora" no editor
-- [ ] `.env.example`
-- [ ] Testes, typecheck, build
-- [ ] Entrega em `docs/admin/entrega-instagram-f2.md`
+- [x] Conferir a documentação da Meta (OAuth, token longo, perfil, publicação, status do container, limite)
+- [x] Cifra AES-256-GCM e leitura da chave (`src/lib/social/cifra.ts`)
+- [x] `state` assinado (`src/lib/social/estado.ts`)
+- [x] Cliente da API do Instagram com `fetch` injetável (`src/lib/social/instagram.ts`)
+- [x] Conta: leitura sem token, gravação que substitui, desconexão (`src/lib/social/conta.ts`)
+- [x] Publicação: trava, container, espera, publish, permalink, transições (`src/lib/social/publicacao.ts`)
+- [x] Rotas `conectar`, `callback`, `concluir`, `desconectar`, `publicar` + `rotaSemSessao`
+- [x] Telas: cartão da conta em `/instagram` e "Publicar agora" no editor
+- [x] `.env.example`
+- [x] Testes, typecheck, build
+- [x] Entrega em `docs/admin/entrega-instagram-f2.md`
 
 ## File List
 
-(preenchida ao longo da implementação)
+- `apps/admin/src/lib/social/cifra.ts`, `config.ts`, `estado.ts`, `instagram.ts`, `conta.ts`, `publicacao.ts`, `rotas-instagram.ts` (novos)
+- `apps/admin/src/app/api/social/{conectar,callback,concluir,desconectar,publicar}/route.ts` (novos)
+- `apps/admin/src/lib/social/rotas.ts` (exporta utilitários reaproveitados), `instancia.ts` (instância `rotasInstagram`)
+- `apps/admin/src/lib/auth/acesso.ts` (`/api/social/callback` em `rotaSemSessao`)
+- `apps/admin/src/lib/data/colunas.ts` (allowlist de `social_accounts`, sem o token)
+- `apps/admin/src/app/(painel)/instagram/page.tsx` (cartão da conta), `apps/admin/src/app/(painel)/instagram/[id]/page.tsx` ("Publicar agora")
+- `apps/admin/src/components/Instagram.tsx` (`CartaoConta`, mensagens), `apps/admin/src/app/globals.css`
+- `apps/admin/.env.example` (`INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `SOCIAL_TOKEN_KEY`)
+- `apps/admin/tests/instagram.test.ts` (novo), `apps/admin/tests/social.test.ts` (ajuste para as rotas da F2)
+- `docs/admin/entrega-instagram-f2.md` (novo)
+- Sem migração nova.
 
 ## Change Log
 
 - 22/10/2026 — @dev: story criada a partir do escopo F2; Draft → InProgress (branch `feat/admin-instagram-f2`, worktree `~/.worktrees/laudousg-admin-instagram-f2`, base `e5aa23d7`).
+- 22/10/2026 — @dev: ajuste do coordenador: `SOCIAL_TOKEN_KEY` aceita base64 com ou sem `=` final (trim), exige 32 bytes; teste para os dois formatos.
+- 22/10/2026 — @dev: implementação concluída; typecheck, test (78 pass, 1 skip) e build verdes; sem migração nova. InProgress → InReview, aguardando @qa. Entrega em `docs/admin/entrega-instagram-f2.md`.
