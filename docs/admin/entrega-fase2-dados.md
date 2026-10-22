@@ -1,6 +1,6 @@
 # ADMIN fase 2 — dados (E1/E2) — entrega de 21/10/2026
 
-**Atualização G3:** conforme o orquestrador, a migração inicial foi aplicada em produção como `20261022011955`, com rename e referências no commit `59ec9003`. Essa aplicação não foi executada nem consultada por este agente. O registro original abaixo descreve a entrega anterior ao GO. A nova migração de fuso `20261022012051_admin_views_sao_paulo_day.sql` permanece somente em arquivo, aguardando revisão e aplicação pelo orquestrador.
+**Atualização G3:** conforme o orquestrador, a migração inicial foi aplicada em produção como `20261022011955`, com rename e referências no commit `59ec9003`. Essa aplicação não foi executada nem consultada por este agente. O registro original abaixo descreve a entrega anterior ao GO. A nova migração de fuso `20261022012304_admin_views_sao_paulo_day.sql` permanece somente em arquivo, aguardando revisão e aplicação pelo orquestrador.
 
 Implementado em `~/.worktrees/laudousg-admin-dados`, branch `feat/admin-dados`, base `3677daf3`. Pronto para revisão do G3. A migração existe somente como arquivo; nenhum banco remoto foi acessado ou alterado. Sem push, deploy ou alteração de variáveis de produção.
 
@@ -232,7 +232,7 @@ COMMIT;
 
 Base local sincronizada com `59ec9003` por fetch local e merge fast-forward (já estava incorporado). A migração original aplicada foi preservada integralmente.
 
-Nova migração: `supabase/migrations/20261022012051_admin_views_sao_paulo_day.sql`. Usa `CREATE OR REPLACE VIEW` em transação nas quatro views, mantém `security_invoker=true`, revoga acesso público/anon/authenticated e conserva SELECT para service_role. Muda somente o fuso de agrupamento nas três views diárias. `admin_iap_stats` usa `received_at`, como antes; as outras duas usam `created_at`. `admin_subscription_stats` continua sendo um snapshot sem coluna de dia, com contrato e dados preservados.
+Nova migração: `supabase/migrations/20261022012304_admin_views_sao_paulo_day.sql`. Usa `CREATE OR REPLACE VIEW` em transação nas quatro views, mantém `security_invoker=true`, revoga acesso público/anon/authenticated e conserva SELECT para service_role. Muda somente o fuso de agrupamento nas três views diárias. `admin_iap_stats` usa `received_at`, como antes; as outras duas usam `created_at`. `admin_subscription_stats` continua sendo um snapshot sem coluna de dia, com contrato e dados preservados.
 
 `pnpm validate:admin-dados:sql` passou em PostgreSQL embutido descartável. O teste verifica a transição de 02:59:59Z para 03:00:00Z em outubro de 2026 e uma transição histórica com horário de verão em 2018, repete as consultas com sessões UTC e Asia/Tokyo e confirma os mesmos dias civis de São Paulo. Também aplica a nova definição duas vezes localmente e compara contratos de colunas, ACLs e security_invoker das quatro views, além de preservar os resultados do snapshot de assinaturas. Os demais checks locais de RLS/ACL e integridade continuam aprovados.
 

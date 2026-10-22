@@ -203,7 +203,7 @@ async function main() {
   const beforeViews = (await viewMetadata()).rows;
   const timezoneSql = readFileSync(
     new URL(
-      "../../supabase/migrations/20261022012051_admin_views_sao_paulo_day.sql",
+      "../../supabase/migrations/20261022012304_admin_views_sao_paulo_day.sql",
       import.meta.url,
     ),
     "utf8",

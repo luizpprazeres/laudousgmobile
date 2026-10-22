@@ -1,4 +1,4 @@
--- [Story admin-fase2] Review only: new migration, not applied by Codex.
+-- [Story admin-fase2] Aplicada em produção em 22/10/2026 (GO G3), versão 20261022012304.
 -- Daily buckets use Sao Paulo civil dates, independent of the database session timezone.
 -- admin_subscription_stats is a current-state snapshot without a daily bucket; preserve its contract.
 BEGIN;
