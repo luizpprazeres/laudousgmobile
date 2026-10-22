@@ -34,9 +34,9 @@ async function autorizarAdmin(req: Request): Promise<Autorizado | null> {
 
 const padrao: DependenciasSocial = { autorizar: autorizarAdmin, repo: (cfg) => repositorioSocial(cfg) };
 
-const naoEncontrado = () => new NextResponse("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+export const naoEncontrado = () => new NextResponse("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
 
-function voltar(req: Request, a: Autorizado, caminho: string, busca: Record<string, string>): NextResponse {
+export function voltar(req: Request, a: Pick<Autorizado, "cfg" | "cookies">, caminho: string, busca: Record<string, string>): NextResponse {
   const url = new URL(comBase(caminho), a.cfg.origemPublica ?? req.url);
   for (const [k, v] of Object.entries(busca)) url.searchParams.set(k, v);
   const r = NextResponse.redirect(url, 303);
@@ -50,7 +50,7 @@ function corpoGrande(req: Request, limite: number): boolean {
   return Number.isFinite(n) && n > limite + 64 * 1024;
 }
 
-async function formulario(req: Request): Promise<FormData | null> {
+export async function formulario(req: Request): Promise<FormData | null> {
   try {
     return await req.formData();
   } catch {
@@ -58,11 +58,11 @@ async function formulario(req: Request): Promise<FormData | null> {
   }
 }
 
-const campo = (f: FormData, n: string) => {
+export const campo = (f: FormData, n: string) => {
   const v = f.get(n);
   return typeof v === "string" ? v.trim() : "";
 };
-const idValido = (f: FormData) => {
+export const idValido = (f: FormData) => {
   const id = campo(f, "id");
   return ID_POST.test(id) ? id : null;
 };
@@ -70,7 +70,7 @@ const posicao = (f: FormData, n = "posicao") => {
   const p = Number(campo(f, n));
   return Number.isInteger(p) && p >= 1 && p <= LIMITES.slides ? p : null;
 };
-const editor = (id: string) => `/instagram/${id}`;
+export const editor = (id: string) => `/instagram/${id}`;
 
 export function criarRotasSocial(deps: Partial<DependenciasSocial> = {}) {
   const d = { ...padrao, ...deps };

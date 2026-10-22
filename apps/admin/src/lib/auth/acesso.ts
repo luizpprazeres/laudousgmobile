@@ -84,7 +84,11 @@ export function origemConfere(origin: string | null, host: string | null, origem
   }
 }
 
-/** Public ingestion bypasses sessions entirely; handlers enforce their own boundaries. */
+/**
+ * Public ingestion bypasses sessions entirely; handlers enforce their own boundaries.
+ * /api/social/callback: a volta do Instagram não traz o cookie SameSite=Strict; a rota não lê
+ * cookie, só valida o formato e devolve a ponte para /api/social/concluir (que exige a sessão).
+ */
 export function rotaSemSessao(caminho: string): boolean {
-  return new Set(["/api/baixar", "/api/collect", "/api/cron/apple"]).has(caminho);
+  return new Set(["/api/baixar", "/api/collect", "/api/cron/apple", "/api/social/callback"]).has(caminho);
 }
