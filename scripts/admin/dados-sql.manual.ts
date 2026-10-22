@@ -17,7 +17,7 @@ async function main() {
   `);
   const sql = readFileSync(
     new URL(
-      "../../supabase/migrations/20261022010003_admin_fase2_dados.sql",
+      "../../supabase/migrations/20261022011955_admin_fase2_dados.sql",
       import.meta.url,
     ),
     "utf8",

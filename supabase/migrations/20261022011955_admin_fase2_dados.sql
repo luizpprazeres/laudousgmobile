@@ -1,4 +1,4 @@
--- [Story admin-fase2] REVIEW ONLY: do not apply before GO G3.
+-- [Story admin-fase2] Aplicada em produção em 22/10/2026 (GO G3 do Luiz), versão 20261022011955.
 -- All rates are USD, standard API; observed 2026-10-21, no retrospective repricing.
 BEGIN;
 CREATE TABLE public.ai_model_prices (

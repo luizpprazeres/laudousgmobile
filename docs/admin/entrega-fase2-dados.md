@@ -83,7 +83,7 @@ A aplicação do SQL em produção permanece pendente do GO G3 separado do Luiz.
 
 ## SQL integral para revisão G3
 
-Arquivo `supabase/migrations/20261022010003_admin_fase2_dados.sql`. O timestamp é UTC; a tarefa e conferência das fontes são de 21/10 no fuso local.
+Arquivo `supabase/migrations/20261022011955_admin_fase2_dados.sql`. O timestamp é UTC; a tarefa e conferência das fontes são de 21/10 no fuso local.
 
 ```sql
 -- [Story admin-fase2] REVIEW ONLY: do not apply before GO G3.
