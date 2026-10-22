@@ -590,7 +590,7 @@ test("desconectar: sem admin → 404; com admin apaga a conta", async () => {
 
 test("código: rotas novas ligadas às instâncias, token só em conta.ts e nenhum log com variável sensível", () => {
   const dir = join(RAIZ, "src", "app", "api", "social");
-  assert.deepEqual(readdirSync(dir).sort(), ["callback", "concluir", "conectar", "desconectar", "destravar", "importar", "manual", "midia", "ordem", "publicar", "salvar", "status"]);
+  assert.deepEqual(readdirSync(dir).sort(), ["callback", "concluir", "conectar", "desconectar", "destravar", "importar", "lote", "manual", "midia", "ordem", "publicar", "salvar", "status"]);
   const metodo: Record<string, string> = { conectar: "GET", callback: "GET", concluir: "GET", desconectar: "POST", publicar: "POST", destravar: "POST", manual: "POST" };
   for (const [r, m] of Object.entries(metodo)) assert.match(readFileSync(join(dir, r, "route.ts"), "utf8"), new RegExp(`export const ${m} = rotasInstagram\\.${r};`), r);
   assert.match(readFileSync(join(dir, "publicar", "route.ts"), "utf8"), /maxDuration = 120/);
