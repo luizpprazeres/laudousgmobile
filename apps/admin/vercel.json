@@ -3,5 +3,9 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "next build",
-  "crons": [{ "path": "/admin/api/cron/apple", "schedule": "15 */3 * * *" }]
+  "crons": [
+    { "path": "/admin/api/cron/apple", "schedule": "15 */3 * * *" },
+    { "path": "/admin/api/cron/social", "schedule": "*/5 * * * *" },
+    { "path": "/admin/api/cron/social-token", "schedule": "0 9 * * *" }
+  ]
 }

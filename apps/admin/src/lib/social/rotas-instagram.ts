@@ -7,7 +7,11 @@
  *                                      devolve uma ponte HTML (meta refresh) para /concluir.
  *  GET  /admin/api/social/concluir     sessão → confere o state → troca o code → grava o token cifrado
  *  POST /admin/api/social/desconectar  sessão + origem → apaga a conta
- *  POST /admin/api/social/publicar     sessão + origem → confirmação digitada → publica
+ *  POST /admin/api/social/publicar     sessão + origem → confirmação digitada → publica (foto, carrossel
+ *                                      ou story; nunca post manual)
+ *  POST /admin/api/social/destravar    sessão + origem → post preso em "Publicando" há mais de 10 min:
+ *                                      acao=aprovado (só sem pedido de media_publish) | acao=publicado (+link)
+ *  POST /admin/api/social/manual       sessão + origem → story manual aprovado marcado como publicado
  *
  * Sem config completa (INSTAGRAM_APP_ID, INSTAGRAM_APP_SECRET, SOCIAL_TOKEN_KEY, ADMIN_PUBLIC_ORIGIN)
  * → 404, como o resto do painel. Token, code e secret nunca vão para log, erro ou URL de retorno.
@@ -23,6 +27,8 @@ import { configInstagram, type ConfigInstagram } from "./config";
 import { repositorioConta, type RepositorioConta } from "./conta";
 import { conferirState, criarState, FORMATO_STATE } from "./estado";
 import { conectarConta, ErroInstagram, FORMATO_CODIGO, limparCodigo, urlAutorizacao, type Buscar, type OpcoesPublicacao } from "./instagram";
+import { repositorioManual, type RepositorioManual } from "./manual";
+import { limitePreso, linkInstagram } from "./politica";
 import { publicarPost, repositorioPublicacao, type RepositorioPublicacao, type ResultadoPublicacao } from "./publicacao";
 import { campo, editor, formulario, idValido, naoEncontrado, voltar } from "./rotas";
 
@@ -40,6 +46,7 @@ export interface DependenciasInstagram {
   instagram: (cfg: ConfigServidor) => ConfigInstagram | null;
   conta: (cfg: ConfigServidor) => RepositorioConta;
   publicacao: (cfg: ConfigServidor) => RepositorioPublicacao;
+  manual: (cfg: ConfigServidor) => RepositorioManual;
   buscar: Buscar;
   opcoes?: Omit<OpcoesPublicacao, "buscar">;
   agora: () => number;
@@ -70,7 +77,10 @@ const padrao: DependenciasInstagram = {
   instagram: (cfg) => configInstagram(cfg.origemPublica),
   conta: (cfg) => repositorioConta(cfg),
   publicacao: (cfg) => repositorioPublicacao(cfg),
+  manual: (cfg) => repositorioManual(cfg),
   buscar: (url, init) => fetch(url, init),
+  // Clique manual: até 80 s esperando o processamento (carrossel com muitos slides); a rota tem 120 s.
+  opcoes: { limiteMs: 80_000 },
   agora: Date.now,
 };
 
@@ -102,6 +112,8 @@ const MENSAGEM_RESULTADO: Record<ResultadoPublicacao, Record<string, string>> = 
   sem_conta: { erro: "pub_sem_conta" },
   token_vencido: { erro: "pub_token_vencido" },
   token_invalido: { erro: "pub_token_invalido" },
+  limite: { erro: "pub_limite" },
+  nova_tentativa: { erro: "pub_falhou" },
   falhou: { erro: "pub_falhou" },
   incerto: { erro: "pub_incerto" },
   registro: { erro: "pub_registro" },
@@ -201,12 +213,53 @@ export function criarRotasInstagram(deps: Partial<DependenciasInstagram> = {}) {
       if (campo(f, "confirmacao") !== id) return voltar(req, a, editor(id), { erro: "confirmacao" });
       let r: Awaited<ReturnType<typeof publicarPost>>;
       try {
-        r = await publicarPost(id, { repo: d.publicacao(a.cfg), conta: d.conta(a.cfg), chave: ig.chave, opcoes: { ...d.opcoes, buscar: d.buscar }, agora: d.agora });
+        r = await publicarPost(id, { repo: d.publicacao(a.cfg), conta: d.conta(a.cfg), chave: ig.chave, opcoes: { ...d.opcoes, buscar: d.buscar }, agora: d.agora, modo: "manual" });
       } catch {
         // Falha do banco antes da trava (conta ilegível ou trava indisponível): nada mudou.
         return voltar(req, a, editor(id), { erro: "falha" });
       }
       return voltar(req, a, editor(id), MENSAGEM_RESULTADO[r.resultado]);
+    },
+
+    /** Post preso em "Publicando" há mais de 10 min. Não exige a config do Instagram (não chama a API). */
+    destravar: async (req: Request): Promise<Response> => {
+      const a = await d.autorizar(req, "POST");
+      if (!a) return naoEncontrado();
+      const f = await formulario(req);
+      const id = f && idValido(f);
+      const acao = f ? campo(f, "acao") : "";
+      if (!f || !id || (acao !== "aprovado" && acao !== "publicado")) return naoEncontrado();
+      const agora = d.agora();
+      const antesDe = limitePreso(agora);
+      let link: string | null = null;
+      if (acao === "publicado") {
+        const bruto = campo(f, "link");
+        link = linkInstagram(bruto);
+        if (bruto && !link) return voltar(req, a, editor(id), { erro: "link" });
+      }
+      try {
+        const repo = d.manual(a.cfg);
+        const ok = acao === "aprovado" ? await repo.voltarParaAprovado(id, antesDe) : await repo.publicadoDestravado(id, link, new Date(agora).toISOString(), antesDe);
+        return voltar(req, a, editor(id), ok ? { ok: acao === "aprovado" ? "destravado" : "marcado" } : { erro: acao === "aprovado" ? "destravar" : "destravar_publicado" });
+      } catch {
+        return voltar(req, a, editor(id), { erro: "falha" });
+      }
+    },
+
+    /** Story manual (sticker) publicado pelo app: approved + manual → published, sem ig_media_id. */
+    manual: async (req: Request): Promise<Response> => {
+      const a = await d.autorizar(req, "POST");
+      if (!a) return naoEncontrado();
+      const f = await formulario(req);
+      const id = f && idValido(f);
+      if (!f || !id) return naoEncontrado();
+      const destino = campo(f, "voltar") === "calendario" ? "/instagram" : editor(id);
+      try {
+        const ok = await d.manual(a.cfg).manualPublicado(id, new Date(d.agora()).toISOString());
+        return voltar(req, a, destino, ok ? { ok: "marcado" } : { erro: "manual_status" });
+      } catch {
+        return voltar(req, a, destino, { erro: "falha" });
+      }
     },
   };
 }

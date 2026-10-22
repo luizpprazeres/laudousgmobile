@@ -105,3 +105,23 @@ export async function proximoPost(cfg: ConfigServidor, desde: string): Promise<s
   if (error || !data?.length) return null;
   return (data[0] as unknown as LinhaPost).scheduled_at;
 }
+
+/** Faixa "Para publicar à mão agora": manuais aprovados com horário entre `desde` e `ate`. */
+export async function listarManuaisAgora(cfg: ConfigServidor, desde: string, ate: string): Promise<{ posts: LinhaPost[]; itens: LinhaItem[] }> {
+  const sb = clienteServico(cfg);
+  const { data, error } = await sb
+    .from("social_posts")
+    .select(colunas("social_posts"))
+    .eq("status", "approved")
+    .eq("manual", true)
+    .gte("scheduled_at", desde)
+    .lte("scheduled_at", ate)
+    .order("scheduled_at")
+    .limit(20);
+  if (error) throw new Error("social_posts indisponível");
+  const posts = (data ?? []) as unknown as LinhaPost[];
+  if (!posts.length) return { posts, itens: [] };
+  const r = await sb.from("social_media_items").select(colunas("social_media_items")).in("post_id", posts.map((p) => p.id)).order("position").limit(100);
+  if (r.error) throw new Error("social_media_items indisponível");
+  return { posts, itens: (r.data ?? []) as unknown as LinhaItem[] };
+}

@@ -88,7 +88,8 @@ export function origemConfere(origin: string | null, host: string | null, origem
  * Public ingestion bypasses sessions entirely; handlers enforce their own boundaries.
  * /api/social/callback: a volta do Instagram não traz o cookie SameSite=Strict; a rota não lê
  * cookie, só valida o formato e devolve a ponte para /api/social/concluir (que exige a sessão).
+ * /api/cron/social e /api/cron/social-token: como o cron da Apple, só com o Bearer do CRON_SECRET.
  */
 export function rotaSemSessao(caminho: string): boolean {
-  return new Set(["/api/baixar", "/api/collect", "/api/cron/apple", "/api/social/callback"]).has(caminho);
+  return new Set(["/api/baixar", "/api/collect", "/api/cron/apple", "/api/cron/social", "/api/cron/social-token", "/api/social/callback"]).has(caminho);
 }
