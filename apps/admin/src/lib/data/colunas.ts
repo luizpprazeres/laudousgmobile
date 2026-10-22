@@ -97,6 +97,28 @@ export const SELECOES = {
     "user_id",
   ],
   iap_notification_attempts: ["notification_uuid", "received_at", "result"],
+  // Instagram F1 (migração 20261022205957_admin_social). social_accounts (token) nunca é lido pelo painel.
+  social_posts: [
+    "id",
+    "scheduled_at",
+    "format",
+    "caption",
+    "hashtags",
+    "alt_text",
+    "status",
+    "manual",
+    "interaction",
+    "pillar",
+    "angle",
+    "title",
+    "notes",
+    "attempts",
+    "last_error",
+    "permalink",
+    "published_at",
+    "updated_at",
+  ],
+  social_media_items: ["post_id", "position", "storage_path", "public_url", "slide_text", "visual_brief", "alt_text"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type TabelaPermitida = keyof typeof SELECOES;
