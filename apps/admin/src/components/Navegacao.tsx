@@ -9,6 +9,7 @@ const ITENS: { href: string; rotulo: string; icone: JSX.Element }[] = [
   { href: "/testflight", rotulo: "TestFlight", icone: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z" /></svg> },
   { href: "/assinaturas", rotulo: "Assinaturas", icone: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg> },
   { href: "/custos", rotulo: "Custos por usuário", icone: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
+  { href: "/instagram", rotulo: "Instagram", icone: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><path d="M17.5 6.5h.01" /></svg> },
   { href: "/saude", rotulo: "Saúde", icone: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg> },
 ];
 
@@ -19,7 +20,7 @@ export function Menu() {
   return (
     <nav className="nav" aria-label="Seções">
       {ITENS.map((i) => (
-        <Link key={i.href} href={p ? `${i.href}?p=${p}` : i.href} aria-current={caminho === i.href ? "page" : undefined}>
+        <Link key={i.href} href={p ? `${i.href}?p=${p}` : i.href} aria-current={caminho === i.href || (i.href !== "/" && caminho.startsWith(`${i.href}/`)) ? "page" : undefined}>
           {i.icone}
           {i.rotulo}
         </Link>

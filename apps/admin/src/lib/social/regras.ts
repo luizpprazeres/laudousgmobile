@@ -103,7 +103,8 @@ export function lerEdicao(form: { get(nome: string): unknown }, posicoes: number
   const alt_text = s("alt");
   if (tamanhoLegenda(caption, hashtags) > LIMITES.legenda) return { ok: false, erro: "legenda" };
   if (contarHashtags(hashtags) > LIMITES.hashtags) return { ok: false, erro: "hashtags" };
-  const slide_alts = posicoes.map((position) => ({ position, alt_text: s(`alt_${position}`) }));
+  // Um slide só (foto ou story): o alt do post é o da imagem.
+  const slide_alts = posicoes.map((position) => ({ position, alt_text: posicoes.length === 1 ? alt_text : s(`alt_${position}`) }));
   if ([alt_text, ...slide_alts.map((a) => a.alt_text)].some((a) => tamanho(a) > LIMITES.alt)) return { ok: false, erro: "alt" };
   return { ok: true, edicao: { scheduled_at, caption, hashtags, alt_text, slide_alts } };
 }

@@ -305,3 +305,73 @@ td code, .mono { font-family: var(--mono); font-size: 12px; }
 .seg a[aria-current="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); outline: 1px solid var(--line); }
 @media (max-width: 560px) { .topbar .seg a { flex: 1; text-align: center; } }
 .aviso-fonte { font-size: 12.5px; color: var(--ink-2); }
+
+/* ---------- Instagram (calendário e editor) ---------- */
+.ig-importar { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.ig-importar .campo { margin: 0; }
+.ig-importar input[type="file"], .ig-upload input[type="file"] { font: inherit; font-size: 12.5px; color: var(--ink-2); max-width: 240px; }
+.ig-barra { display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 12px; font-size: 13px; }
+.ig-nav { display: flex; align-items: center; gap: 6px; }
+.ig-nav .botao.sec { text-decoration: none; }
+.ig-semana { display: grid; grid-template-columns: 70px repeat(7, minmax(120px, 1fr)); gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+.ig-mes { display: grid; grid-template-columns: repeat(7, minmax(110px, 1fr)); gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+.ig-dia-cab { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 2px; }
+.ig-dia-cab b { color: var(--ink-2); }
+.ig-dia-cab.hoje b, .ig-cel-mes.hoje .ig-num { color: var(--brand); }
+.ig-faixa { font-size: 11.5px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding-top: 8px; }
+.ig-cel, .ig-cel-mes { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 6px; min-height: 64px; min-width: 0; }
+.ig-cel-mes { min-height: 96px; }
+.ig-cel-mes.fora { opacity: 0.55; }
+.ig-num { font-size: 12px; font-weight: 650; color: var(--ink-2); }
+.ig-grupo { display: flex; flex-direction: column; gap: 4px; }
+.ig-grupo + .ig-grupo { border-top: 1px dashed var(--line); padding-top: 4px; }
+.ig-rot { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.ig-chip { display: flex; flex-direction: column; gap: 3px; padding: 6px 7px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); text-decoration: none; font-size: 12px; min-width: 0; }
+.ig-chip:hover { border-color: var(--brand-2); }
+.ig-chip.st-approved { border-left: 3px solid var(--brand-2); }
+.ig-chip.st-failed { border-left: 3px solid var(--err); }
+.ig-chip.st-published { border-left: 3px solid var(--ok); }
+.ig-chip-top, .ig-chip-pe { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.ig-chip-fmt { color: var(--muted); }
+.ig-chip-tit { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ig-ok { color: var(--ok); font-size: 11px; }
+.ig-falta { color: var(--warn); font-size: 11px; }
+.ig-voltar { margin: 0 0 6px; font-size: 13px; }
+.ig-meta { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ig-lista { margin: 6px 0 0; padding-left: 18px; }
+.ig-campos { border: 0; margin: 0; padding: 0; min-width: 0; }
+.ig-campos textarea, .ig-slide-txt .campo input { font: inherit; font-weight: 450; font-size: 14px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 9px; padding: 9px 11px; resize: vertical; }
+.ig-campos:disabled { opacity: 0.7; }
+.ig-conta { font-size: 12px; color: var(--muted); margin: -8px 0 14px; display: block; }
+.ig-aprovar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ig-aprovar .botao { width: auto; }
+.ig-aprovar .ig-conta { margin: 0; }
+.ig-aprovar .botao:disabled, .ig-slide-acoes .botao:disabled, .ig-campos .botao:disabled { opacity: 0.5; cursor: not-allowed; }
+.ig-slides { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ig-slide { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; align-items: start; border-top: 1px solid var(--line); padding-top: 10px; }
+.ig-slide:first-child { border-top: 0; padding-top: 0; }
+.ig-thumb { width: 96px; aspect-ratio: 4 / 5; border-radius: 8px; background: var(--surface-2); border: 1px dashed var(--line-strong); display: grid; place-items: center; overflow: hidden; font-size: 11px; color: var(--muted); }
+.ig-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ig-slide-txt p { margin: 4px 0 0; }
+.ig-slide-txt .campo { margin: 8px 0 0; }
+.ig-pre { white-space: pre-wrap; }
+.ig-brief { color: var(--muted); font-size: 12.5px; }
+.ig-slide-acoes { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.ig-ordem { display: flex; gap: 4px; }
+.ig-upload { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.ig-previa { max-width: 340px; margin: 0 auto; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.ig-previa-topo { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 13px; }
+.ig-previa-topo .brand-mark { width: 24px; height: 24px; border-radius: 50%; font-size: 11px; }
+.ig-previa-midia { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+.ig-previa-slide { position: relative; flex: 0 0 100%; margin: 0; aspect-ratio: 4 / 5; scroll-snap-align: start; background: var(--surface-2); }
+.ig-previa.story .ig-previa-slide { aspect-ratio: 9 / 16; }
+.ig-previa-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ig-previa-slide figcaption { position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 11px; border-radius: 999px; padding: 1px 7px; }
+.ig-sem-img { width: 100%; height: 100%; display: grid; place-items: center; padding: 18px; text-align: center; color: var(--muted); white-space: pre-wrap; font-size: 13px; border: 1px dashed var(--line-strong); }
+.ig-previa-legenda { padding: 10px; font-size: 13px; white-space: pre-wrap; max-height: 260px; overflow-y: auto; }
+@media (max-width: 560px) {
+  .ig-slide { grid-template-columns: 72px minmax(0, 1fr); }
+  .ig-thumb { width: 72px; }
+  .ig-slide-acoes { grid-column: 1 / -1; align-items: stretch; }
+  .ig-upload { align-items: stretch; }
+}
