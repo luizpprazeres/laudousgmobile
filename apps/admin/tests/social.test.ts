@@ -21,6 +21,8 @@ import type { Formato, PostImportado } from "../src/lib/social/tipos";
 const RAIZ = join(__dirname, "..");
 const fixture = () => JSON.parse(readFileSync(join(RAIZ, "tests", "fixtures", "social", "calendario.json"), "utf8")) as Record<string, unknown> & { feed: Record<string, unknown>[]; stories: Record<string, unknown>[] };
 const MIGRACAO = "20261022212039_admin_social.sql";
+/** F3: colunas de controle do cron e da renovação (aplicada depois da F1). */
+const MIGRACAO_F3 = "20261022233000_admin_social_f3.sql";
 
 /** JPEG mínimo: SOI, APP0, SOF0 com as dimensões, EOI (só o cabeçalho importa para a validação). */
 function jpeg(largura: number, altura: number, extra = 0): Uint8Array<ArrayBuffer> {
@@ -128,6 +130,7 @@ async function banco() {
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema storage; create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);`);
   await db.exec(readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", MIGRACAO), "utf8"));
+  await db.exec(readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", MIGRACAO_F3), "utf8"));
   return db;
 }
 const importar = async (db: PGlite, posts: PostImportado[]) =>
@@ -162,7 +165,7 @@ test("SQL: RLS sem policies, nada para anon/authenticated, bucket só JPEG e col
     // Token cru não entra; só o envelope cifrado.
     await assert.rejects(db.query("insert into public.social_accounts(ig_user_id,token_ciphertext) values ('1','IGQVJ-token-cru')"));
     await db.query("insert into public.social_accounts(ig_user_id,token_ciphertext) values ('1',$1)", [`v1.${"a".repeat(16)}.${"b".repeat(22)}.${"c".repeat(40)}`]);
-    for (const tabela of ["social_posts", "social_media_items"] as const) {
+    for (const tabela of ["social_posts", "social_media_items", "social_accounts"] as const) {
       const cols = (await db.query<{ c: string }>("select column_name c from information_schema.columns where table_schema='public' and table_name=$1", [tabela])).rows.map((r) => r.c);
       for (const c of SELECOES[tabela]) assert.ok(cols.includes(c), `${tabela}.${c}`);
     }

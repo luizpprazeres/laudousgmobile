@@ -16,30 +16,43 @@ import { colunas, SELECOES } from "../src/lib/data/colunas";
 import type { ConfigServidor } from "../src/lib/env";
 import { cifrar, decifrar, ENVELOPE, lerChaveSocial } from "../src/lib/social/cifra";
 import { configInstagram, type ConfigInstagram } from "../src/lib/social/config";
-import type { ContaComToken, ContaPublica, NovaConta, RepositorioConta } from "../src/lib/social/conta";
+import type { RepositorioConta } from "../src/lib/social/conta";
 import { conferirState, criarState, VALIDADE_STATE_S } from "../src/lib/social/estado";
-import { GRAPH_VERSAO, limpar, type Buscar } from "../src/lib/social/instagram";
-import { publicarPost, repositorioPublicacao, type PostTravado, type RepositorioPublicacao } from "../src/lib/social/publicacao";
+import { limpar } from "../src/lib/social/instagram";
+import { publicarPost, repositorioPublicacao } from "../src/lib/social/publicacao";
 import { criarRotasInstagram, type AdminAutorizado, type DependenciasInstagram } from "../src/lib/social/rotas-instagram";
+import {
+  ADMIN,
+  casa,
+  CFG,
+  CHAVE,
+  CHAVE_B64,
+  CODE,
+  contaMemoria,
+  contaValida,
+  fetchFalso,
+  G,
+  graphFalso,
+  IG,
+  IMG,
+  ORIGEM,
+  postAprovado,
+  publicacaoMemoria,
+  relogio,
+  type Resposta,
+  SECRET,
+  semToken,
+  T0,
+  TOKEN,
+  TOKEN_CURTO,
+} from "./fixtures/instagram";
 
 // O tsx compila o JSX no modo clássico (React.createElement) fora do Next.
 Object.assign(globalThis, { React });
 
 const RAIZ = join(__dirname, "..");
 const MIGRACAO = readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", "20261022212039_admin_social.sql"), "utf8");
-
-const CHAVE = randomBytes(32);
-const CHAVE_B64 = CHAVE.toString("base64");
-const ADMIN = "11111111-2222-3333-4444-555555555555";
-const ORIGEM = "https://app.laudousg.com.br";
-const SECRET = "segredo-do-app-0123456789abcdef";
-const CODE = "AQBx1codigo_de_teste-0123456789";
-const TOKEN_CURTO = "IGAAcurto" + "x".repeat(60);
-const TOKEN = "IGAAlongo" + "y".repeat(120);
-const IG: ConfigInstagram = { appId: "1518730570317495", appSecret: SECRET, chave: CHAVE, redirectUri: `${ORIGEM}/admin/api/social/callback` };
-const CFG = { origemPublica: ORIGEM, supabaseUrl: "https://x.supabase.co" } as ConfigServidor;
-const T0 = Date.parse("2026-10-22T15:00:00Z");
-const IMG = "https://x.supabase.co/storage/v1/object/public/social/posts/s1-01/" + "a".repeat(32) + ".jpg";
+const MIGRACAO_F3 = readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", "20261022233000_admin_social_f3.sql"), "utf8");
 
 // ---------- chave ----------
 
@@ -141,129 +154,6 @@ test("state: válido para o admin certo; adulterado, vencido, de outro admin ou 
   assert.notEqual(criarState(ADMIN, CHAVE, T0), criarState(ADMIN, CHAVE, T0));
 });
 
-// ---------- fetch simulado ----------
-
-interface Chamada {
-  metodo: string;
-  url: string;
-  headers: Record<string, string>;
-  corpo: string;
-}
-type Resposta = { status?: number; json?: unknown } | "rede";
-function fetchFalso(rotas: ((c: Chamada) => Resposta | undefined)[]) {
-  const chamadas: Chamada[] = [];
-  const buscar: Buscar = async (url, init) => {
-    const c: Chamada = { metodo: init?.method ?? "GET", url, headers: Object.fromEntries(new Headers(init?.headers).entries()), corpo: typeof init?.body === "string" ? init.body : "" };
-    chamadas.push(c);
-    for (const r of rotas) {
-      const res = r(c);
-      if (res === "rede") throw new TypeError("fetch failed");
-      if (res) return new Response(JSON.stringify(res.json ?? {}), { status: res.status ?? 200, headers: { "Content-Type": "application/json" } });
-    }
-    throw new Error(`rota inesperada: ${c.metodo} ${url}`);
-  };
-  return { buscar, chamadas };
-}
-const casa = (metodo: string, re: RegExp, r: Resposta) => (c: Chamada) => (c.metodo === metodo && re.test(c.url) ? r : undefined);
-const G = `https://graph\\.instagram\\.com/${GRAPH_VERSAO.replace(".", "\\.")}`;
-
-// ---------- repositórios em memória ----------
-
-function contaMemoria(inicial: ContaComToken & { username?: string } | null = null) {
-  let linha: (NovaConta & { connectedAt: string }) | null = inicial ? { igUserId: inicial.igUserId, username: inicial.username ?? "laudousg", tokenCifrado: inicial.tokenCifrado, expiraEm: inicial.expiraEm, connectedAt: new Date(T0).toISOString() } : null;
-  const log: string[] = [];
-  const repo: RepositorioConta = {
-    ler: async () => (linha ? ({ ig_user_id: linha.igUserId, username: linha.username, token_expires_at: linha.expiraEm, connected_at: linha.connectedAt } satisfies ContaPublica) : null),
-    lerComToken: async () => (linha ? { igUserId: linha.igUserId, tokenCifrado: linha.tokenCifrado, expiraEm: linha.expiraEm } : null),
-    salvar: async (c) => {
-      log.push(`salvar:${c.igUserId}`);
-      linha = { ...c, connectedAt: new Date().toISOString() };
-    },
-    apagar: async () => {
-      log.push("apagar");
-      linha = null;
-    },
-  };
-  return { repo, log, linha: () => linha };
-}
-
-interface PostMem {
-  id: string;
-  format: "image" | "carousel" | "story";
-  status: string;
-  caption: string;
-  hashtags: string;
-  alt_text: string;
-  attempts: number;
-  last_error: string | null;
-  ig_media_id: string | null;
-  permalink: string | null;
-  published_at: string | null;
-}
-/** Mesma semântica do UPDATE condicional do repositório real. */
-function publicacaoMemoria(posts: PostMem[], imagem: string | null = IMG) {
-  const transicoes: string[] = [];
-  const repo: RepositorioPublicacao = {
-    travar: async (id) => {
-      const p = posts.find((x) => x.id === id && x.status === "approved" && x.format === "image");
-      if (!p) return null;
-      p.status = "publishing";
-      transicoes.push(`${id}:publishing`);
-      return { id: p.id, caption: p.caption, hashtags: p.hashtags, alt_text: p.alt_text, attempts: p.attempts } satisfies PostTravado;
-    },
-    imagem: async () => (imagem ? { public_url: imagem, alt_text: "" } : null),
-    concluir: async (id, r) => {
-      const p = posts.find((x) => x.id === id && x.status === "publishing");
-      if (!p) return false;
-      Object.assign(p, { status: "published", ig_media_id: r.mediaId, permalink: r.permalink, published_at: r.publishedAt, last_error: null });
-      transicoes.push(`${id}:published`);
-      return true;
-    },
-    falhar: async (id, erro, n) => {
-      const p = posts.find((x) => x.id === id && x.status === "publishing");
-      if (!p) return;
-      Object.assign(p, { status: "failed", last_error: erro, attempts: n });
-      transicoes.push(`${id}:failed`);
-    },
-  };
-  return { repo, transicoes };
-}
-const postAprovado = (o: Partial<PostMem> = {}): PostMem => ({
-  id: "s1-01",
-  format: "image",
-  status: "approved",
-  caption: "Laudo pela voz.",
-  hashtags: "#ultrassom #laudo",
-  alt_text: "Tela do app",
-  attempts: 0,
-  last_error: null,
-  ig_media_id: null,
-  permalink: null,
-  published_at: null,
-  ...o,
-});
-const contaValida = () => contaMemoria({ igUserId: "17841400000000000", tokenCifrado: cifrar(TOKEN, CHAVE), expiraEm: new Date(T0 + 50 * 86400_000).toISOString() });
-
-/** Graph simulado: limite, container, status (sequência), publish e permalink. */
-function graphFalso(o: { status?: string[]; media?: Resposta; publicar?: Resposta; limite?: unknown } = {}) {
-  const fila = [...(o.status ?? ["FINISHED"])];
-  return fetchFalso([
-    casa("GET", new RegExp(`^${G}/17841400000000000/content_publishing_limit\\?fields=quota_usage,config$`), { json: o.limite ?? { data: [{ quota_usage: 2, config: { quota_total: 50, quota_duration: 86400 } }] } }),
-    casa("POST", new RegExp(`^${G}/17841400000000000/media$`), o.media ?? { json: { id: "17900000000000001" } }),
-    (c) => (c.metodo === "GET" && new RegExp(`^${G}/17900000000000001\\?fields=status_code,status$`).test(c.url) ? { json: { id: "17900000000000001", status_code: fila.length > 1 ? fila.shift() : fila[0] } } : undefined),
-    casa("POST", new RegExp(`^${G}/17841400000000000/media_publish$`), o.publicar ?? { json: { id: "18000000000000009" } }),
-    casa("GET", new RegExp(`^${G}/18000000000000009\\?fields=permalink$`), { json: { permalink: "https://www.instagram.com/p/ABC123/", id: "18000000000000009" } }),
-  ]);
-}
-function relogio() {
-  let t = T0;
-  const esperas: number[] = [];
-  return { agora: () => t, esperar: async (ms: number) => void (esperas.push(ms), (t += ms)), esperas };
-}
-const semToken = (s: string | null | undefined) => {
-  for (const seg of [TOKEN, TOKEN_CURTO, SECRET, CODE, CHAVE_B64]) assert.ok(!(s ?? "").includes(seg), `vazou segredo em: ${s}`);
-};
-
 // ---------- publicação ----------
 
 test("publicação: sucesso percorre approved → publishing → published e grava id, link e data", async () => {
@@ -273,7 +163,8 @@ test("publicação: sucesso percorre approved → publishing → published e gra
   const r = relogio();
   const out = await publicarPost("s1-01", { repo: pub.repo, conta: contaValida().repo, chave: CHAVE, opcoes: { buscar, esperar: r.esperar }, agora: r.agora });
   assert.deepEqual(out, { resultado: "publicado", permalink: "https://www.instagram.com/p/ABC123/" });
-  assert.deepEqual(pub.transicoes, ["s1-01:publishing", "s1-01:published"]);
+  assert.deepEqual(pub.transicoes, ["s1-01:publishing", "s1-01:publish_pedido", "s1-01:published"]);
+  assert.equal(posts[0]!.publish_requested_at, new Date(T0 + 6000).toISOString(), "marcador gravado antes do media_publish");
   assert.equal(posts[0]!.ig_media_id, "18000000000000009");
   assert.equal(posts[0]!.permalink, "https://www.instagram.com/p/ABC123/");
   assert.equal(posts[0]!.published_at, new Date(T0 + 6000).toISOString());
@@ -297,7 +188,7 @@ test("publicação: sucesso percorre approved → publishing → published e gra
   ]);
 });
 
-test("publicação: container ERROR, tempo esgotado, erro HTTP, rede no publish e limite viram failed sem token", async () => {
+test("publicação (manual): container ERROR, tempo esgotado, erro HTTP e rede no publish viram failed sem token", async () => {
   const casos: [string, ReturnType<typeof graphFalso>, RegExp, "falhou" | "incerto"][] = [
     ["container ERROR", graphFalso({ status: ["IN_PROGRESS", "ERROR"] }), /container ERROR/, "falhou"],
     ["container EXPIRED", graphFalso({ status: ["EXPIRED"] }), /container EXPIRED/, "falhou"],
@@ -310,7 +201,6 @@ test("publicação: container ERROR, tempo esgotado, erro HTTP, rede no publish 
     ],
     ["HTTP 500 no publish", graphFalso({ publicar: { status: 500, json: { error: { message: "erro" } } } }), /Resultado incerto.*publicar: HTTP 500/, "incerto"],
     ["rede no publish", graphFalso({ publicar: "rede" }), /Resultado incerto.*publicar: sem resposta/, "incerto"],
-    ["limite atingido", graphFalso({ limite: { data: [{ quota_usage: 50, config: { quota_total: 50, quota_duration: 86400 } }] } }), /limite de publicações em 24 h atingido \(50\/50\)/, "falhou"],
   ];
   for (const [nome, g, erro, resultado] of casos) {
     const posts = [postAprovado({ attempts: 2 })];
@@ -318,7 +208,7 @@ test("publicação: container ERROR, tempo esgotado, erro HTTP, rede no publish 
     const r = relogio();
     const out = await publicarPost("s1-01", { repo: pub.repo, conta: contaValida().repo, chave: CHAVE, opcoes: { buscar: g.buscar, esperar: r.esperar, limiteMs: 15_000, intervaloMs: 3_000 }, agora: r.agora });
     assert.equal(out.resultado, resultado, nome);
-    assert.deepEqual(pub.transicoes, ["s1-01:publishing", "s1-01:failed"], nome);
+    assert.deepEqual(pub.transicoes, resultado === "incerto" ? ["s1-01:publishing", "s1-01:publish_pedido", "s1-01:failed"] : ["s1-01:publishing", "s1-01:failed"], nome);
     assert.equal(posts[0]!.status, "failed", nome);
     assert.equal(posts[0]!.attempts, 3, nome);
     assert.match(posts[0]!.last_error ?? "", erro, nome);
@@ -326,8 +216,20 @@ test("publicação: container ERROR, tempo esgotado, erro HTTP, rede no publish 
     assert.equal(posts[0]!.ig_media_id, null, nome);
     semToken(posts[0]!.last_error);
     if (nome === "tempo esgotado") assert.ok(r.agora() - T0 <= 15_000, "respeita o limite");
-    if (nome === "limite atingido") assert.ok(!g.chamadas.some((c) => c.url.endsWith("/media")), "nem cria container");
   }
+});
+
+test("publicação (F3): limite atingido no clique manual volta para aprovado sem contar tentativa", async () => {
+  const posts = [postAprovado({ attempts: 1 })];
+  const pub = publicacaoMemoria(posts);
+  const g = graphFalso({ limite: { data: [{ quota_usage: 50, config: { quota_total: 50, quota_duration: 86400 } }] } });
+  const out = await publicarPost("s1-01", { repo: pub.repo, conta: contaValida().repo, chave: CHAVE, opcoes: { buscar: g.buscar, esperar: async () => {} }, agora: () => T0 });
+  assert.equal(out.resultado, "limite");
+  assert.deepEqual(pub.transicoes, ["s1-01:publishing", "s1-01:approved"]);
+  assert.equal(posts[0]!.status, "approved");
+  assert.equal(posts[0]!.attempts, 1, "não conta tentativa");
+  assert.match(posts[0]!.last_error ?? "", /Aguardando: limite: limite de publicações em 24 h atingido \(50\/50\)/);
+  assert.ok(!g.chamadas.some((c) => c.url.endsWith("/media")), "nem cria container");
 });
 
 test("publicação: falha só no permalink ainda conta como publicado (nunca volta para failed)", async () => {
@@ -355,8 +257,8 @@ test("trava: o segundo pedido (em série ou simultâneo) não publica de novo", 
   assert.deepEqual([a.resultado, b.resultado].sort(), ["publicado", "status"]);
   assert.equal((await publicarPost("s1-01", deps)).resultado, "status");
   assert.equal(g.chamadas.filter((c) => c.url.endsWith("/media_publish")).length, 1);
-  // rascunho, carrossel e story não travam
-  for (const p of [postAprovado({ id: "d", status: "draft" }), postAprovado({ id: "c", format: "carousel" }), postAprovado({ id: "s", format: "story" }), postAprovado({ id: "f", status: "failed" })]) {
+  // rascunho, falha e post manual (story com sticker) não travam
+  for (const p of [postAprovado({ id: "d", status: "draft" }), postAprovado({ id: "m", format: "story", manual: true }), postAprovado({ id: "f", status: "failed" })]) {
     posts.push(p);
     assert.equal((await publicarPost(p.id, deps)).resultado, "status", p.id);
     assert.equal(p.status, p.id === "f" ? "failed" : p.id === "d" ? "draft" : "approved");
@@ -389,11 +291,11 @@ test("limpar: tira segredos conhecidos e sequências com cara de token", () => {
 
 // ---------- repositório real: o UPDATE condicional (cadeia do PostgREST) ----------
 
-test("repositório: a trava filtra por status approved e formato image; conclusão e falha só saem de publishing", async () => {
+test("repositório: a trava filtra por approved, não manual e os três formatos; conclusão e falha só saem de publishing", async () => {
   const log: string[] = [];
   const cadeia = (rows: unknown[]) => {
     const c: Record<string, unknown> = {};
-    for (const m of ["update", "eq", "select", "maybeSingle"]) {
+    for (const m of ["update", "eq", "in", "is", "lte", "gte", "order", "limit", "select", "maybeSingle"]) {
       c[m] = (...args: unknown[]) => {
         log.push(`${m}(${args.map((a) => JSON.stringify(a)).join(",")})`);
         return m === "maybeSingle" ? Promise.resolve({ data: rows[0] ?? null, error: null }) : c;
@@ -406,7 +308,18 @@ test("repositório: a trava filtra por status approved e formato image; conclus�
   const sb = { from: (t: string) => (log.push(`from(${t})`), cadeia(linhas)) } as unknown as Parameters<typeof repositorioPublicacao>[1];
   const repo = repositorioPublicacao(CFG, sb);
   assert.equal((await repo.travar("s1-01"))?.id, "s1-01");
-  assert.deepEqual(log.splice(0), ['from(social_posts)', 'update({"status":"publishing"})', 'eq("id","s1-01")', 'eq("status","approved")', 'eq("format","image")', `select(${JSON.stringify(colunas("social_posts"))})`]);
+  assert.deepEqual(log.splice(0), [
+    "from(social_posts)",
+    'update({"status":"publishing","publish_requested_at":null})',
+    'eq("id","s1-01")',
+    'eq("status","approved")',
+    'eq("manual",false)',
+    'in("format",["image","carousel","story"])',
+    `select(${JSON.stringify(colunas("social_posts"))})`,
+  ]);
+  // no cron, a trava também exige o horário dentro da janela
+  await repo.travar("s1-01", { ate: "2026-10-22T15:00:00.000Z", desde: "2026-10-22T09:00:00.000Z" });
+  assert.deepEqual(log.splice(0).slice(6, 8), ['lte("scheduled_at","2026-10-22T15:00:00.000Z")', 'gte("scheduled_at","2026-10-22T09:00:00.000Z")']);
   linhas = [];
   assert.equal(await repo.travar("s1-01"), null);
   log.splice(0);
@@ -415,12 +328,19 @@ test("repositório: a trava filtra por status approved e formato image; conclus�
   assert.ok(log.includes('eq("status","publishing")'));
   log.splice(0);
   await repo.falhar("s1-01", "x", 1);
-  assert.deepEqual(log.slice(1), ['update({"status":"failed","last_error":"x","attempts":1})', 'eq("id","s1-01")', 'eq("status","publishing")']);
-  // imagem fora do bucket social é recusada
-  linhas = [{ public_url: "https://evil.example/x.jpg", alt_text: "" }];
-  assert.equal(await repo.imagem("s1-01"), null);
-  linhas = [{ public_url: IMG, alt_text: "a" }];
-  assert.deepEqual(await repo.imagem("s1-01"), { public_url: IMG, alt_text: "a" });
+  assert.deepEqual(log.splice(0).slice(1), ['update({"status":"failed","last_error":"x","attempts":1})', 'eq("id","s1-01")', 'eq("status","publishing")']);
+  // devolver para a fila exige que o media_publish não tenha sido pedido
+  await repo.devolver("s1-01", "y", 2);
+  assert.deepEqual(log.splice(0).slice(1), ['update({"status":"approved","last_error":"y","attempts":2})', 'eq("id","s1-01")', 'eq("status","publishing")', 'is("publish_requested_at",null)']);
+  // o marcador do publish só grava uma vez, e só em publishing
+  linhas = [{ id: "s1-01" }];
+  assert.equal(await repo.marcarPublish("s1-01", "2026-10-22T15:00:00.000Z"), true);
+  assert.deepEqual(log.splice(0).slice(1, 5), ['update({"publish_requested_at":"2026-10-22T15:00:00.000Z"})', 'eq("id","s1-01")', 'eq("status","publishing")', 'is("publish_requested_at",null)']);
+  // imagem fora do bucket social (em qualquer slide) é recusada
+  linhas = [{ position: 1, public_url: IMG, alt_text: "" }, { position: 2, public_url: "https://evil.example/x.jpg", alt_text: "" }];
+  assert.equal(await repo.itens("s1-01"), null);
+  linhas = [{ position: 1, public_url: IMG, alt_text: "a" }];
+  assert.deepEqual(await repo.itens("s1-01"), [{ position: 1, public_url: IMG, alt_text: "a" }]);
 });
 
 test("SQL real (PGlite): trava atômica, colunas gravadas cabem nos CHECKs e o envelope entra em social_accounts", async () => {
@@ -429,21 +349,26 @@ test("SQL real (PGlite): trava atômica, colunas gravadas cabem nos CHECKs e o e
     await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
       create schema storage; create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);`);
     await db.exec(MIGRACAO);
-    await db.query(`insert into public.social_posts(id,scheduled_at,format,status) values ('s1-01', now() + interval '1 day', 'image', 'approved'), ('c1', now() + interval '1 day', 'carousel', 'approved')`);
+    await db.exec(MIGRACAO_F3);
+    await db.query(`insert into public.social_posts(id,scheduled_at,format,status,manual) values ('s1-01', now() + interval '1 day', 'image', 'approved', false), ('c1', now() + interval '1 day', 'carousel', 'approved', false), ('m1', now(), 'story', 'approved', true)`);
     // O mesmo UPDATE que o PostgREST executa para repo.travar.
-    const travar = (id: string) => db.query(`update public.social_posts set status='publishing' where id=$1 and status='approved' and format='image' returning id, attempts`, [id]);
+    const travar = (id: string) =>
+      db.query(`update public.social_posts set status='publishing', publish_requested_at=null where id=$1 and status='approved' and manual=false and format in ('image','carousel','story') returning id, attempts`, [id]);
     const [a, b] = await Promise.all([travar("s1-01"), travar("s1-01")]);
     assert.deepEqual([a.rows.length, b.rows.length].sort(), [0, 1]);
-    assert.equal((await travar("c1")).rows.length, 0);
+    assert.equal((await travar("m1")).rows.length, 0, "story manual não trava");
     await db.query(`update public.social_posts set status='published', ig_media_id='18000000000000009', permalink='https://www.instagram.com/p/ABC123/', published_at=now(), last_error=null where id='s1-01' and status='publishing'`);
     assert.equal((await db.query<{ status: string }>(`select status from public.social_posts where id='s1-01'`)).rows[0]!.status, "published");
     // last_error de até 300 caracteres cabe (CHECK 500)
+    assert.equal((await travar("c1")).rows.length, 1, "carrossel trava na F3");
     await db.query(`update public.social_posts set status='failed', last_error=$1, attempts=attempts+1 where id='c1'`, ["x".repeat(300)]);
     // o envelope real passa no CHECK; o token cru, não
     await db.query(`insert into public.social_accounts(ig_user_id,username,token_ciphertext,token_expires_at) values ('17841400000000000','laudousg',$1, now() + interval '60 days')`, [cifrar(TOKEN, CHAVE)]);
     await assert.rejects(db.query(`insert into public.social_accounts(ig_user_id,token_ciphertext) values ('2',$1)`, [TOKEN]));
     const cols = (await db.query<{ c: string }>(`select column_name c from information_schema.columns where table_schema='public' and table_name='social_accounts'`)).rows.map((r) => r.c);
     for (const c of SELECOES.social_accounts) assert.ok(cols.includes(c), c);
+    const colsPost = (await db.query<{ c: string }>(`select column_name c from information_schema.columns where table_schema='public' and table_name='social_posts'`)).rows.map((r) => r.c);
+    for (const c of SELECOES.social_posts) assert.ok(colsPost.includes(c), c);
     assert.ok(!(SELECOES.social_accounts as readonly string[]).includes("token_ciphertext"), "o token fica fora da allowlist da tela");
   } finally {
     await db.close();
@@ -665,10 +590,10 @@ test("desconectar: sem admin → 404; com admin apaga a conta", async () => {
 
 test("código: rotas novas ligadas às instâncias, token só em conta.ts e nenhum log com variável sensível", () => {
   const dir = join(RAIZ, "src", "app", "api", "social");
-  assert.deepEqual(readdirSync(dir).sort(), ["callback", "concluir", "conectar", "desconectar", "importar", "midia", "ordem", "publicar", "salvar", "status"]);
-  const metodo: Record<string, string> = { conectar: "GET", callback: "GET", concluir: "GET", desconectar: "POST", publicar: "POST" };
+  assert.deepEqual(readdirSync(dir).sort(), ["callback", "concluir", "conectar", "desconectar", "destravar", "importar", "manual", "midia", "ordem", "publicar", "salvar", "status"]);
+  const metodo: Record<string, string> = { conectar: "GET", callback: "GET", concluir: "GET", desconectar: "POST", publicar: "POST", destravar: "POST", manual: "POST" };
   for (const [r, m] of Object.entries(metodo)) assert.match(readFileSync(join(dir, r, "route.ts"), "utf8"), new RegExp(`export const ${m} = rotasInstagram\\.${r};`), r);
-  assert.match(readFileSync(join(dir, "publicar", "route.ts"), "utf8"), /maxDuration = 60/);
+  assert.match(readFileSync(join(dir, "publicar", "route.ts"), "utf8"), /maxDuration = 120/);
   const libDir = join(RAIZ, "src", "lib", "social");
   for (const f of readdirSync(libDir)) {
     const txt = readFileSync(join(libDir, f), "utf8");
