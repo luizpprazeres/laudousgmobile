@@ -31,7 +31,7 @@ async function main() {
   await db.exec(
     readFileSync(
       new URL(
-        "../../supabase/migrations/20261022013042_admin_luna_cache_write_correction.sql",
+        "../../supabase/migrations/20261022013900_admin_luna_cache_write_correction.sql",
         import.meta.url,
       ),
       "utf8",
@@ -56,7 +56,7 @@ async function main() {
   await db.exec(
     readFileSync(
       new URL(
-        "../../supabase/migrations/20261022013044_admin_transcription_audio_prices.sql",
+        "../../supabase/migrations/20261022013904_admin_transcription_audio_prices.sql",
         import.meta.url,
       ),
       "utf8",

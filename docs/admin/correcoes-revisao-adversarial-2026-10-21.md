@@ -27,7 +27,7 @@ Até essa confirmação, a entrada de áudio do Mini fica sem preço (`audio_inp
 
 ## Migrações novas — somente arquivos
 
-`20261022013042_admin_luna_cache_write_correction.sql` corrige apenas `cache_write_per_million` das duas linhas Luna. Não modifica preços de outros modelos nem recalcula eventos históricos.
+`20261022013900_admin_luna_cache_write_correction.sql` corrige apenas `cache_write_per_million` das duas linhas Luna. Não modifica preços de outros modelos nem recalcula eventos históricos.
 
 ```sql
 -- [Story admin-fase2] C3: file only, pending review/application by the orchestrator.
@@ -44,7 +44,7 @@ WHERE provider = 'openai' AND model = 'gpt-6-luna'
 COMMIT;
 ```
 
-`20261022013044_admin_transcription_audio_prices.sql` acrescenta a tarifa por token de áudio e os dois contadores de modalidade, com restrição de coerência do total. Mantém RLS, grants e as views existentes. Deve ser revisada/aplicada pelo orquestrador antes da publicação do código que grava as novas colunas. Não recalcula custos históricos.
+`20261022013904_admin_transcription_audio_prices.sql` acrescenta a tarifa por token de áudio e os dois contadores de modalidade, com restrição de coerência do total. Mantém RLS, grants e as views existentes. Deve ser revisada/aplicada pelo orquestrador antes da publicação do código que grava as novas colunas. Não recalcula custos históricos.
 
 ```sql
 -- [Story admin-fase2] C2: file only, pending review/application; no historical events are rewritten.

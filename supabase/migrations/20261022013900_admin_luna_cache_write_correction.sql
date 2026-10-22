@@ -1,4 +1,4 @@
--- [Story admin-fase2] C3: file only, pending review/application by the orchestrator.
+-- [Story admin-fase2] C3 aplicada em produção em 22/10/2026 (GO G3), versão 20261022013900.
 -- Explicit correction requested by Luiz/orchestrator: OpenAI cache writes have no separate charge.
 -- Keep the verified input/cached/output rates and the two existing price versions intact.
 BEGIN;

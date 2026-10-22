@@ -1,4 +1,4 @@
--- [Story admin-fase2] C2: file only, pending review/application; no historical events are rewritten.
+-- [Story admin-fase2] C2 aplicada em produção em 22/10/2026 (GO G3), versão 20261022013904; eventos antigos não reescritos.
 -- Audio and text input tokens must be measured separately, not charged as all-text input.
 -- Official full-model example: https://developers.openai.com/cookbook/examples/realtime_out_of_band_transcription
 -- Text rates: https://developers.openai.com/api/docs/pricing ; checked 2026-10-21.
