@@ -16,6 +16,7 @@
  * A regra de posse do domínio continua valendo: token ≠ dono ⇒ recusa.
  */
 
+import type { NotificationJournal } from "./notificationJournal";
 import type {
   JWSRenewalInfoDecodedPayload,
   JWSTransactionDecodedPayload,
@@ -41,16 +42,33 @@ export type ProcessNotificationArgs = {
   verifyTransaction: (jws: string) => Promise<JWSTransactionDecodedPayload>;
   verifyRenewalInfo: (jws: string) => Promise<JWSRenewalInfoDecodedPayload>;
   now?: Date;
+  journal?: NotificationJournal;
 };
 
 export async function processNotification(args: ProcessNotificationArgs): Promise<NotificationOutcome> {
   const { payload } = args;
   const notificationType = String(payload.notificationType ?? "");
-  if (notificationType === "TEST") return { kind: "test" };
+  async function journal(tx?: JWSTransactionDecodedPayload, renewal?: JWSRenewalInfoDecodedPayload | null, userId: string | null = null) {
+    if (!args.journal) return;
+    if (!payload.notificationUUID || !notificationType) throw new Error("iap_notification_missing_identity");
+    const iso = (n?: number) => n != null && Number.isFinite(n) ? new Date(n).toISOString() : null;
+    await args.journal.record({ notification_uuid: payload.notificationUUID, notification_type: notificationType,
+      subtype: payload.subtype ? String(payload.subtype) : null, signed_date: iso(payload.signedDate),
+      environment: args.environment, user_id: userId, original_tx_id: tx?.originalTransactionId ?? null,
+      product_id: tx?.productId ?? null, offer_type: tx?.offerType ?? null, offer_discount_type: tx?.offerDiscountType ?? null,
+      price_milli: tx?.price ?? null, currency: tx?.currency ?? null, auto_renew_status: renewal?.autoRenewStatus ?? null,
+      expires_at: iso(tx?.expiresDate) });
+  }
+  async function done<T extends NotificationOutcome>(outcome: T): Promise<T> {
+    if (args.journal) await args.journal.result(payload.notificationUUID!, outcome.kind === "processed" ? outcome.apply.kind : outcome.kind);
+    return outcome;
+  }
+  if (notificationType === "TEST") { await journal(); return done({ kind: "test" }); }
 
   const signedTx = payload.data?.signedTransactionInfo;
   if (!signedTx) {
-    return { kind: "ignored", reason: `sem signedTransactionInfo (${notificationType || "sem tipo"})` };
+    await journal();
+    return done({ kind: "ignored", reason: `sem signedTransactionInfo (${notificationType || "sem tipo"})` });
   }
 
   const tx = await args.verifyTransaction(signedTx);
@@ -59,7 +77,8 @@ export async function processNotification(args: ProcessNotificationArgs): Promis
     : null;
 
   if (!tx.originalTransactionId) {
-    return { kind: "ignored", reason: "transação sem originalTransactionId" };
+    await journal(tx, renewal);
+    return done({ kind: "ignored", reason: "transação sem originalTransactionId" });
   }
 
   const existing = await args.repo.findByOriginalTxId(tx.originalTransactionId);
@@ -68,22 +87,29 @@ export async function processNotification(args: ProcessNotificationArgs): Promis
     const token = normalizeUuid(tx.appAccountToken);
     if (token && (await args.repo.profileExists(token))) userId = token;
   }
+  await journal(tx, renewal, userId);
   if (!userId) {
-    return { kind: "unassigned", originalTransactionId: tx.originalTransactionId };
+    return done({ kind: "unassigned", originalTransactionId: tx.originalTransactionId });
   }
 
-  const apply = await applyTransaction({
-    repo: args.repo,
-    userId,
-    tx,
-    renewal,
-    environment: args.environment,
-    now: args.now,
-    eventSignedDate: payload.signedDate,
-    hint: {
-      notificationType,
-      subtype: payload.subtype ? String(payload.subtype) : undefined,
-    },
-  });
-  return { kind: "processed", notificationType, apply, userId };
+  try {
+    const apply = await applyTransaction({
+      repo: args.repo,
+      userId,
+      tx,
+      renewal,
+      environment: args.environment,
+      now: args.now,
+      eventSignedDate: payload.signedDate,
+      hint: {
+        notificationType,
+        subtype: payload.subtype ? String(payload.subtype) : undefined,
+      },
+    });
+    return await done({ kind: "processed", notificationType, apply, userId });
+  } catch (error) {
+    // Append delivery failure without editing the verified fact; Apple retries the domain operation.
+    try { await args.journal?.result(payload.notificationUUID!, "error"); } catch { /* Preserve original failure. */ }
+    throw error;
+  }
 }

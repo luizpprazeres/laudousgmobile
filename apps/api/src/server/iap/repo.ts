@@ -37,6 +37,8 @@ export function rowToRecord(row: Row): SubscriptionRecord {
     applePurchaseDate: row.applePurchaseDate,
     appleSignedDate: row.appleSignedDate,
     revision: row.revision,
+    autoRenewStatus: row.autoRenewStatus,
+    offerType: row.offerType,
   };
 }
 
@@ -77,6 +79,8 @@ export class DrizzleSubscriptionRepo implements SubscriptionRepo {
           environment: values.environment,
           applePurchaseDate: values.applePurchaseDate,
           appleSignedDate: values.appleSignedDate,
+          autoRenewStatus: values.autoRenewStatus,
+          offerType: values.offerType,
           updatedAt: new Date(),
         })
         .returning();
@@ -106,6 +110,8 @@ export class DrizzleSubscriptionRepo implements SubscriptionRepo {
         ...(patch.environment !== undefined ? { environment: patch.environment } : {}),
         ...(patch.applePurchaseDate !== undefined ? { applePurchaseDate: patch.applePurchaseDate } : {}),
         ...(patch.appleSignedDate !== undefined ? { appleSignedDate: patch.appleSignedDate } : {}),
+        ...(patch.autoRenewStatus !== undefined ? { autoRenewStatus: patch.autoRenewStatus } : {}),
+        ...(patch.offerType !== undefined ? { offerType: patch.offerType } : {}),
         revision: sql`${schema.subscriptions.revision} + 1`,
         updatedAt: new Date(),
       })

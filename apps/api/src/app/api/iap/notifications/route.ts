@@ -19,6 +19,7 @@
  * autenticidade vem da assinatura.
  */
 
+import { notificationJournal } from "@/server/iap/notificationJournal";
 import { env } from "@/server/env";
 import { processNotification } from "@/server/iap/notifications";
 import { getSubscriptionRepo } from "@/server/iap/repo";
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
       payload: verified.payload,
       environment,
       repo: getSubscriptionRepo(),
+      journal: notificationJournal,
       verifyTransaction: async (jws) => (await verifier.verifyTransaction(jws)).payload,
       verifyRenewalInfo: (jws) => verifier.verifyRenewalInfo(jws, environment),
     });
