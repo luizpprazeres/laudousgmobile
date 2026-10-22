@@ -1,3 +1,4 @@
+import { withUsageRequest } from "@/server/usage/context";
 import { EditReportRequestSchema } from "@laudousg/shared";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { env } from "@/server/env";
@@ -20,7 +21,11 @@ function json(body: unknown, status = 200) {
   });
 }
 
-export async function POST(req: Request) {
+export function POST(req: Request) {
+  return withUsageRequest(req, "edit", () => handlePOST(req));
+}
+
+async function handlePOST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 

@@ -1,3 +1,5 @@
+import { withUsageRequest } from "@/server/usage/context";
+import { recordUsage } from "@/server/usage/recordUsage";
 import type OpenAI from "openai";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { OPTIONS } from "@/server/cors";
@@ -61,10 +63,37 @@ async function createConsultantStream(args: {
   const params: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = supportsReasoningEffort(args.model)
     ? { model: args.model, messages: args.messages, max_completion_tokens: 12000, reasoning_effort: "medium", stream: true }
     : { model: args.model, messages: args.messages, temperature: 0.3, max_tokens: 4000, stream: true };
-  return openai().chat.completions.create(params, { signal: args.signal });
+  params.stream_options = { include_usage: true };
+  try {
+    const stream = await openai().chat.completions.create(params, { signal: args.signal });
+    return (async function* () {
+      let measured = false;
+      try {
+        for await (const chunk of stream) {
+          if (chunk.usage) {
+            measured = true;
+            recordUsage({ provider: "openai", model: chunk.model || args.model, stage: "consultant",
+              inputTokens: chunk.usage.prompt_tokens, outputTokens: chunk.usage.completion_tokens,
+              cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens });
+          }
+          yield chunk;
+        }
+      } finally {
+        if (!measured) recordUsage({ provider: "openai", model: args.model, stage: "consultant",
+          ok: false, errorCode: args.signal.aborted ? "aborted" : "provider_error" });
+      }
+    })();
+  } catch (error) {
+    recordUsage({ provider: "openai", model: args.model, stage: "consultant", ok: false, errorCode: "provider_error" });
+    throw error;
+  }
 }
 
-export async function POST(req: Request) {
+export function POST(req: Request) {
+  return withUsageRequest(req, "consultant", () => handlePOST(req));
+}
+
+async function handlePOST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 

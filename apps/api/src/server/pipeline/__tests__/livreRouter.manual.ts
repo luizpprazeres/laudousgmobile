@@ -276,6 +276,13 @@ async function main() {
     assert.equal(p.thinking.type, "adaptive");
     assert.equal("temperature" in p, false);
   });
+  await check("roteador: usage ausente não altera decisão nem códigos de recusa", async () => {
+    const out = await runLivreRouter({ transcript: "Tireoide normal.", categories, config: routerConfig, client: fakeCreate({ ...jsonText(ok), usage: undefined }) });
+    assert.equal(out.decision.category, "TIREOIDE");
+    assert.equal(out.inputTokens, undefined);
+    assert.equal(out.outputTokens, undefined);
+    await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate({ stop_reason: "refusal", usage: undefined }) }), "LIVRE_ROUTER_REFUSED");
+  });
   await check("roteador: recusa, truncamento, stop inesperado e JSON inválido", async () => {
     await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate({ stop_reason: "refusal" }) }), "LIVRE_ROUTER_REFUSED");
     await rejectsWith(runLivreRouter({ transcript: "x", categories, config: routerConfig, client: fakeCreate({ stop_reason: "max_tokens" }) }), "LIVRE_ROUTER_TRUNCATED");

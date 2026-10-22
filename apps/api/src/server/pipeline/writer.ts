@@ -1,3 +1,4 @@
+import { recordUsage } from "../usage/recordUsage";
 import { stripDopplerClauses } from "../prompts/obstetricaPlainPolicy";
 import type {
   RagBlockForPrompt,
@@ -207,43 +208,53 @@ export async function* runWriterStream(args: {
     temperature: temperatureForCategory(effectiveCategoryCode),
   });
   const client = writerClient(modelConfig);
-  const stream = await client.chat.completions.create(
-    reqParams as unknown as Parameters<
-      OpenAIChatCreate
-    >[0] & { stream: true },
-    { signal: args.signal },
-  );
+  let usageRecorded = false;
+  try {
+    const stream = await client.chat.completions.create(
+      reqParams as unknown as Parameters<
+        OpenAIChatCreate
+      >[0] & { stream: true },
+      { signal: args.signal },
+    );
 
-  let full = "";
-  let inputTokens: number | undefined;
-  let outputTokens: number | undefined;
-  let cachedInputTokens: number | undefined;
-  for await (const chunk of stream) {
-    if (chunk.usage) {
-      inputTokens = chunk.usage.prompt_tokens;
-      outputTokens = chunk.usage.completion_tokens;
-      // cached_tokens > 0 confirma o prompt caching ativo (critério de aceite
-      // DET-1: prefixo estável do system message sendo reaproveitado).
-      cachedInputTokens = chunk.usage.prompt_tokens_details?.cached_tokens;
+    let full = "";
+    let inputTokens: number | undefined;
+    let outputTokens: number | undefined;
+    let cachedInputTokens: number | undefined;
+    for await (const chunk of stream) {
+      if (chunk.usage) {
+        usageRecorded = true;
+        recordUsage({ provider: "openai", model: chunk.model || modelConfig.model, stage: "writer",
+          durationMs: Date.now() - t0, inputTokens: chunk.usage.prompt_tokens, outputTokens: chunk.usage.completion_tokens,
+          cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens });
+        inputTokens = chunk.usage.prompt_tokens;
+        outputTokens = chunk.usage.completion_tokens;
+        // cached_tokens > 0 confirma o prompt caching ativo (critério de aceite
+        // DET-1: prefixo estável do system message sendo reaproveitado).
+        cachedInputTokens = chunk.usage.prompt_tokens_details?.cached_tokens;
+      }
+      const delta = chunk.choices[0]?.delta?.content ?? "";
+      if (delta) {
+        full += delta;
+        yield delta;
+      }
     }
-    const delta = chunk.choices[0]?.delta?.content ?? "";
-    if (delta) {
-      full += delta;
-      yield delta;
-    }
+
+    return {
+      // Markdown e comentário do modelo saem do texto final (o stream já foi; o
+      // `done` leva este texto).
+      fullText: cleanWriterOutput(full).text,
+      model: modelConfig.model,
+      latencyMs: Date.now() - t0,
+      systemMessage,
+      inputTokens,
+      outputTokens,
+      cachedInputTokens,
+    };
+  } finally {
+    if (!usageRecorded) recordUsage({ provider: "openai", model: modelConfig.model, stage: "writer", ok: false,
+      errorCode: args.signal?.aborted ? "aborted" : "provider_error", durationMs: Date.now() - t0 });
   }
-
-  return {
-    // Markdown e comentário do modelo saem do texto final (o stream já foi; o
-    // `done` leva este texto).
-    fullText: cleanWriterOutput(full).text,
-    model: modelConfig.model,
-    latencyMs: Date.now() - t0,
-    systemMessage,
-    inputTokens,
-    outputTokens,
-    cachedInputTokens,
-  };
 }
 
 type OpenAIChatCreate = ReturnType<typeof writerClient>["chat"]["completions"]["create"];

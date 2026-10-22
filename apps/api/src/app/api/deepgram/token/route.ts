@@ -1,3 +1,5 @@
+import { recordUsage } from "@/server/usage/recordUsage";
+import { withUsageRequest } from "@/server/usage/context";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { medicalAsrKeytermsForCategory, medicalAsrKeytermsW11, keytermsW11Ativo } from "@/server/asr/medicalGlossary";
 import { env } from "@/server/env";
@@ -62,7 +64,16 @@ function directKeyResponse(category: string | null, reason: DirectKeyReason) {
   );
 }
 
-export async function POST(req: Request) {
+export function POST(req: Request) {
+  return withUsageRequest(req, "deepgram/token", async () => {
+    const response = await handlePOST(req);
+    recordUsage({ provider: "deepgram", model: env().DEEPGRAM_MODEL, stage: "token_grant", ok: response.ok,
+      ...(response.ok ? {} : { errorCode: "provider_error" as const }) });
+    return response;
+  });
+}
+
+async function handlePOST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
   const category = new URL(req.url).searchParams.get("category");

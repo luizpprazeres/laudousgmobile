@@ -1,3 +1,4 @@
+import { withUsageRequest } from "@/server/usage/context";
 import { GenerateRequestSchema } from "@laudousg/shared";
 import { requestedExamCategory, resolveDopplerMode, resolveWriterExam, type DopplerMode } from "@/server/pipeline/requestedExam";
 import { obstetricaPlainConflictWarning, obstetricaPlainOutputWarning } from "@/server/prompts/obstetricaPlainPolicy";
@@ -179,7 +180,11 @@ function formatObjectiveEnumerations(text: string) {
     .join("\n");
 }
 
-export async function POST(req: Request) {
+export function POST(req: Request) {
+  return withUsageRequest(req, "generate", () => handlePOST(req));
+}
+
+async function handlePOST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
@@ -1853,8 +1858,7 @@ export async function POST(req: Request) {
     } finally {
       andamento.parar();
       auditState.totalDurationMs = Date.now() - t0;
-      // Custo estimado pela tabela do modelo que escreveu (Haiku 5.5 por padrão;
-      // a extração usa o mesmo modelo). A coluna mantém o nome histórico.
+      // Preserve the estimate consumed by Lab/dissector/admin audit. Per-call accounting lives in ai_usage_events.
       auditState.openaiCostUsd = estimateCost(
         auditState.openaiInputTokens ?? 0,
         auditState.openaiOutputTokens ?? 0,

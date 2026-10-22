@@ -63,6 +63,8 @@ export type SubscriptionRecord = {
   environment: string;
   applePurchaseDate: Date | null;
   appleSignedDate: Date | null;
+  autoRenewStatus?: number | null;
+  offerType?: number | null;
   revision: number;
 };
 
@@ -300,6 +302,8 @@ async function applyTransactionOnce(args: ApplyArgs): Promise<ApplyOutcome | nul
         environment: args.environment,
         applePurchaseDate,
         appleSignedDate,
+        autoRenewStatus: args.renewal?.autoRenewStatus ?? null,
+        offerType: tx.offerType ?? null,
       });
       return { kind: "applied", changed: true, subscription: inserted };
     } catch (error) {
@@ -345,6 +349,8 @@ async function applyTransactionOnce(args: ApplyArgs): Promise<ApplyOutcome | nul
     environment: args.environment,
     applePurchaseDate,
     appleSignedDate,
+    ...(args.renewal?.autoRenewStatus != null ? { autoRenewStatus: args.renewal.autoRenewStatus } : {}),
+    offerType: tx.offerType ?? null,
   };
   if (!differs(existing, patch)) {
     return { kind: "applied", changed: false, subscription: existing };
@@ -374,6 +380,8 @@ function isStale(existing: SubscriptionRecord, tx: JWSTransactionDecodedPayload,
 
 function differs(existing: SubscriptionRecord, patch: SubscriptionPatch): boolean {
   return (
+    (patch.autoRenewStatus !== undefined && existing.autoRenewStatus !== patch.autoRenewStatus) ||
+    (patch.offerType !== undefined && existing.offerType !== patch.offerType) ||
     existing.productId !== patch.productId ||
     existing.tier !== patch.tier ||
     existing.period !== patch.period ||

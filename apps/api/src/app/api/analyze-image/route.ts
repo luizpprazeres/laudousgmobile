@@ -1,3 +1,4 @@
+import { withUsageRequest } from "@/server/usage/context";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 export { OPTIONS } from "@/server/cors";
 import { analyzeImage, type AnalyzeImageResult } from "@/server/vision/client";
@@ -64,7 +65,11 @@ function isValidModules(value: unknown): value is ImagingModule[] {
   );
 }
 
-export async function POST(req: Request) {
+export function POST(req: Request) {
+  return withUsageRequest(req, "analyze-image", () => handlePOST(req));
+}
+
+async function handlePOST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 

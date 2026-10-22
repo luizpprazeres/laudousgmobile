@@ -42,9 +42,12 @@
     "validate:clinical-review:23c3": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/pelve-23c3-clinical-matrix.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/pelve-golden.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/__tests__/pelve-objetivo-golden.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/renderer/catalog/__tests__/pelve-ponta-a-ponta.manual.ts",
     "validate:fetal-growth": "tsx tests/fetal-growth/runner.ts",
     "generate:fmf:trisomias": "node packages/fmf-trisomy/generate-params.mjs",
-    "diff:bundle": "tsx scripts/diff-bundle-vs-original.ts"
+    "diff:bundle": "tsx scripts/diff-bundle-vs-original.ts",
+    "validate:admin-dados:sql": "tsx scripts/admin/dados-sql.manual.ts",
+    "validate:admin-dados": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/usage/__tests__/usage.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/iap/__tests__/iap-journal.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/usage/__tests__/llm-metering.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/usage/__tests__/direct-routes.manual.ts && tsx scripts/admin/dados-sql.manual.ts"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@types/node": "^22.10.2",
     "dotenv": "^17.4.2",
     "next": "15.5.18",
