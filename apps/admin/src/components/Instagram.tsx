@@ -1,6 +1,9 @@
 /** Peças da seção Instagram (sem JavaScript no navegador). */
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { comBase } from "@/lib/base";
+import { dataHora } from "@/lib/formato";
+import type { ContaPublica } from "@/lib/social/conta";
 import { noFuso } from "@/lib/social/datas";
 import { MENSAGEM_BLOQUEIO, MENSAGEM_IMAGEM } from "@/lib/social/regras";
 import { ROTULO_FORMATO, ROTULO_STATUS, type LinhaItem, type LinhaPost, type StatusPost } from "@/lib/social/tipos";
@@ -15,8 +18,11 @@ export const MENSAGEM_OK: Record<string, string> = {
   salvo: "Alterações salvas.",
   ordem: "Ordem dos slides atualizada.",
   imagem: "Imagem enviada.",
-  aprovado: "Post aprovado. Nada é publicado nesta fase.",
+  aprovado: "Post aprovado. Ele só vai ao ar quando você usar “Publicar agora” (o envio automático chega na F3).",
   rascunho: "Post voltou para rascunho.",
+  conectado: "Conta do Instagram conectada.",
+  desconectado: "Conta do Instagram desconectada.",
+  publicado: "Publicado no Instagram.",
 };
 export const MENSAGEM_ERRO: Record<string, string> = {
   ...MENSAGEM_BLOQUEIO,
@@ -35,6 +41,20 @@ export const MENSAGEM_ERRO: Record<string, string> = {
   json: "O arquivo não é um JSON válido.",
   calendario: "O calendário tem erros; nada foi importado.",
   banco: "A importação falhou no banco; nada foi gravado.",
+  ig_negado: "A conexão foi cancelada no Instagram.",
+  ig_erro: "O Instagram devolveu um erro na autorização. Tente conectar de novo.",
+  state: "Pedido de conexão inválido (assinatura ou outro admin). Comece de novo pelo botão Conectar.",
+  state_vencido: "O pedido de conexão venceu (10 minutos). Comece de novo pelo botão Conectar.",
+  conexao: "O Instagram recusou a troca do código pelo token. Tente conectar de novo.",
+  conta_banco: "O banco não gravou a alteração da conta. Tente de novo.",
+  confirmacao: "Para publicar, digite exatamente o id do post no campo de confirmação.",
+  pub_status: "Só um post aprovado, no formato foto, pode ser publicado (ou ele já está sendo publicado).",
+  pub_sem_conta: "Nenhuma conta do Instagram conectada.",
+  pub_token_vencido: "O token do Instagram venceu. Reconecte a conta.",
+  pub_token_invalido: "Não foi possível abrir o token salvo (a chave mudou?). Reconecte a conta.",
+  pub_falhou: "A publicação falhou; o motivo está no post. Volte para rascunho, corrija e aprove de novo.",
+  pub_incerto: "Resultado incerto: o Instagram pode ter publicado. Confira no perfil antes de tentar de novo.",
+  pub_registro: "Publicado no Instagram, mas o banco não registrou. O post ficou em “Publicando”; não tente de novo.",
 };
 
 export function Aviso({ ok, erro, msg }: { ok?: string; erro?: string; msg?: string }) {
@@ -72,5 +92,46 @@ export function CabecalhoIg({ titulo, children, acoes }: { titulo: string; child
       </div>
       {acoes}
     </div>
+  );
+}
+
+const ETAPA: Record<string, string> = { token: "troca do código", token_longo: "token de longa duração", perfil: "leitura do perfil" };
+export const rotuloEtapa = (e: string | undefined) => (e && ETAPA[e] ? ` (etapa: ${ETAPA[e]})` : "");
+
+/** Estado da conexão. `conta`: undefined = tabela indisponível; null = nenhuma conta. */
+export function CartaoConta({ disponivel, conta, agora = Date.now() }: { disponivel: boolean; conta: ContaPublica | null | undefined; agora?: number }) {
+  const vencido = !!conta?.token_expires_at && Date.parse(conta.token_expires_at) <= agora;
+  return (
+    <section className="card ig-conta-card">
+      <div className="card-body">
+        <div className="card-head">
+          <div>
+            <h3>Conta do Instagram</h3>
+            <div className="sub">Instagram API com login do Instagram. O token fica cifrado no banco e não renova sozinho nesta fase.</div>
+          </div>
+        </div>
+        {!disponivel ? (
+          <p className="ig-conta-linha"><b>Conexão indisponível.</b> Falta configurar o app do Instagram ou a chave de cifra no servidor.</p>
+        ) : conta === undefined ? (
+          <p className="ig-conta-linha"><b>Conta indisponível.</b> O Supabase não respondeu.</p>
+        ) : conta ? (
+          <div className="ig-conta-linha">
+            <span>
+              Conectada: <b>@{conta.username || conta.ig_user_id}</b> · {conta.token_expires_at ? <>token {vencido ? "venceu em" : "válido até"} <b>{dataHora(conta.token_expires_at)}</b></> : "validade do token desconhecida"}
+              {vencido ? <> · <span className="tag err">Vencido</span></> : null}
+            </span>
+            <a className="botao sec" href={comBase("/api/social/conectar")}>Reconectar</a>
+            <form method="post" action={comBase("/api/social/desconectar")}>
+              <button type="submit" className="botao sec">Desconectar</button>
+            </form>
+          </div>
+        ) : (
+          <div className="ig-conta-linha">
+            <span>Nenhuma conta conectada.</span>
+            <a className="botao" href={comBase("/api/social/conectar")}>Conectar Instagram</a>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

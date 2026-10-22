@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Aviso, CabecalhoIg, ChipPost } from "@/components/Instagram";
+import { Aviso, CabecalhoIg, CartaoConta, ChipPost, rotuloEtapa } from "@/components/Instagram";
 import { exigirAdmin } from "@/lib/auth/servidor";
 import { comBase } from "@/lib/base";
+import { configInstagram } from "@/lib/social/config";
+import { repositorioConta, type ContaPublica } from "@/lib/social/conta";
 import { dataValida, diaDaSemana, hojeNoFuso, intervaloCalendario, navegar, noFuso, type Visao } from "@/lib/social/datas";
 import { listarPosts, proximoPost } from "@/lib/social/servidor";
 import type { LinhaItem, LinhaPost } from "@/lib/social/tipos";
@@ -31,6 +33,10 @@ export default async function Instagram({ searchParams }: { searchParams: Busca 
   } catch {
     dados = null;
   }
+  // Conta conectada (sem o token). undefined = tabela indisponível.
+  const disponivel = !!configInstagram(cfg.origemPublica);
+  let conta: ContaPublica | null | undefined = null;
+  if (disponivel) conta = await repositorioConta(cfg).ler().catch(() => undefined);
   const proximo = dados && dados.posts.length === 0 ? await proximoPost(cfg, fim).catch(() => null) : null;
 
   const porDia = new Map<string, { feed: LinhaPost[]; stories: LinhaPost[] }>();
@@ -55,7 +61,7 @@ export default async function Instagram({ searchParams }: { searchParams: Busca 
           </form>
         }
       >
-        Calendário editorial da @laudousg. Nada é publicado nesta fase: aqui você organiza, sobe as artes e aprova. Importar de novo reescreve só os rascunhos; aprovados e publicados ficam como estão.
+        Calendário editorial da @laudousg: organize, suba as artes e aprove. Nesta fase só a foto única vai ao ar, e só quando você usa “Publicar agora” no post aprovado. Importar de novo reescreve só os rascunhos; aprovados e publicados ficam como estão.
       </CabecalhoIg>
 
       {importado.length === 3 && importado.every(Number.isFinite) ? (
@@ -63,7 +69,8 @@ export default async function Instagram({ searchParams }: { searchParams: Busca 
           Importação concluída: <b>{importado[0]}</b> criados, <b>{importado[1]}</b> rascunhos atualizados, <b>{importado[2]}</b> preservados (aprovados ou publicados).
         </div>
       ) : null}
-      <Aviso erro={um(q.erro) || undefined} msg={um(q.msg) || undefined} />
+      <Aviso ok={um(q.ok) || undefined} erro={um(q.erro) || undefined} msg={um(q.msg) || rotuloEtapa(um(q.etapa)) || undefined} />
+      <CartaoConta disponivel={disponivel} conta={conta} />
       {!dados ? (
         <div className="callout warn"><b>Tabelas do Instagram indisponíveis.</b> A migração <code>admin_social</code> ainda não foi aplicada ou o Supabase não respondeu.</div>
       ) : null}

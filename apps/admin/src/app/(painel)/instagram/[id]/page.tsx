@@ -5,6 +5,8 @@ import { Aviso, CabecalhoIg, SeloManual, SeloStatus, tituloPost } from "@/compon
 import { exigirAdmin } from "@/lib/auth/servidor";
 import { comBase } from "@/lib/base";
 import { dataHora } from "@/lib/formato";
+import { configInstagram } from "@/lib/social/config";
+import { repositorioConta, type ContaPublica } from "@/lib/social/conta";
 import { noFuso } from "@/lib/social/datas";
 import { contarHashtags, legendaFinal, MENSAGEM_BLOQUEIO, motivoBloqueioAprovacao, tamanhoLegenda } from "@/lib/social/regras";
 import { lerPost } from "@/lib/social/servidor";
@@ -52,6 +54,20 @@ export default async function EditorPost({ params, searchParams }: { params: Par
   const bloqueio = motivoBloqueioAprovacao(post, itens);
   const dim = DIMENSOES[post.format];
   const feed = post.format !== "story";
+  // "Publicar agora" (F2): só foto única aprovada, com a conta conectada e o token válido.
+  const publicavel = post.status === "approved" && post.format === "image";
+  const igDisponivel = publicavel && !!configInstagram(cfg.origemPublica);
+  const conta: ContaPublica | null | undefined = igDisponivel ? await repositorioConta(cfg).ler().catch(() => undefined) : null;
+  const vencida = !!conta?.token_expires_at && Date.parse(conta.token_expires_at) <= Date.now();
+  const impedimento = !igDisponivel
+    ? "Conexão indisponível: falta configurar o app do Instagram ou a chave de cifra no servidor."
+    : conta === undefined
+      ? "Conta indisponível: o Supabase não respondeu."
+      : !conta
+        ? "Nenhuma conta do Instagram conectada. Conecte na página do calendário."
+        : vencida
+          ? "O token do Instagram venceu. Reconecte a conta na página do calendário."
+          : null;
 
   return (
     <>
@@ -169,10 +185,46 @@ export default async function EditorPost({ params, searchParams }: { params: Par
             </form>
           ) : null}
           <span className="ig-conta">
-            {post.status === "draft" ? (bloqueio ? MENSAGEM_BLOQUEIO[bloqueio] : "Pronto para aprovar. Aprovar não publica nada nesta fase.") : `Status: ${post.status === "approved" ? "aprovado, aguardando a F2 (publicação)" : post.status}.`}
+            {post.status === "draft"
+              ? bloqueio
+                ? MENSAGEM_BLOQUEIO[bloqueio]
+                : "Pronto para aprovar. Aprovar não publica: a foto vai ao ar só com “Publicar agora”."
+              : post.status === "approved"
+                ? post.format === "image"
+                  ? "Aprovado. Publique abaixo quando quiser."
+                  : "Aprovado. Carrossel e story só serão publicados pelo envio automático (F3)."
+                : post.status === "publishing"
+                  ? "Publicando. Se ficar parado aqui, confira no perfil do Instagram antes de qualquer ação."
+                  : `Status: ${post.status}.`}
           </span>
         </div>
       </section>
+
+      {publicavel ? (
+        <section className="card ig-publicar" style={{ marginTop: 14 }}>
+          <div className="card-body">
+            <div className="card-head">
+              <div>
+                <h3>Publicar agora</h3>
+                <div className="sub">Vai ao ar na hora, na conta {conta ? <b>@{conta.username || conta.ig_user_id}</b> : "conectada"}, ignorando o horário agendado. Não dá para desfazer pelo painel.</div>
+              </div>
+            </div>
+            {impedimento ? (
+              <p className="ig-conta-linha"><b>{impedimento}</b></p>
+            ) : (
+              <form method="post" action={comBase("/api/social/publicar")}>
+                <input type="hidden" name="id" value={post.id} />
+                <label className="campo">
+                  Para confirmar, digite o id do post: <code>{post.id}</code>
+                  <input name="confirmacao" autoComplete="off" spellCheck={false} required pattern={post.id} aria-describedby="ig-pub-ajuda" />
+                </label>
+                <button type="submit" className="botao">Publicar agora</button>
+                <span id="ig-pub-ajuda" className="ig-conta">O servidor confere a confirmação de novo.</span>
+              </form>
+            )}
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

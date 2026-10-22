@@ -347,6 +347,14 @@ td code, .mono { font-family: var(--mono); font-size: 12px; }
 .ig-aprovar .botao { width: auto; }
 .ig-aprovar .ig-conta { margin: 0; }
 .ig-aprovar .botao:disabled, .ig-slide-acoes .botao:disabled, .ig-campos .botao:disabled { opacity: 0.5; cursor: not-allowed; }
+.ig-conta-card { margin-bottom: 14px; }
+.ig-conta-linha { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); margin: 0; }
+.ig-conta-linha .botao { width: auto; text-decoration: none; }
+.ig-conta-linha form, .ig-publicar form { margin: 0; }
+.ig-publicar form { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.ig-publicar .campo { margin: 0; }
+.ig-publicar .botao { width: auto; }
+.ig-publicar .botao:disabled { opacity: 0.5; cursor: not-allowed; }
 .ig-slides { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .ig-slide { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; align-items: start; border-top: 1px solid var(--line); padding-top: 10px; }
 .ig-slide:first-child { border-top: 0; padding-top: 0; }
