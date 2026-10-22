@@ -123,6 +123,7 @@ async function banco() {
   for (const file of [
     "20261022173915_admin_landing_daily.sql",
     "20261022173940_admin_apple_daily.sql",
+    "20261022174315_admin_apple_downloads_report_name.sql",
   ])
     await db.exec(
       readFileSync(
