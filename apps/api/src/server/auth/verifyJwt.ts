@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { eq } from "drizzle-orm";
 import { getDbClient, schema } from "@laudousg/db";
+import { setUsageUser } from "../usage/context";
 import { env } from "../env";
 
 /**
@@ -76,6 +77,7 @@ export async function verifyJwt(req: Request): Promise<AuthedUser | null> {
     roleCache.set(cacheKey, { role, expiresAt: now + ROLE_CACHE_TTL_MS });
   }
 
+  setUsageUser(data.user.id);
   return {
     id: data.user.id,
     email: data.user.email ?? null,

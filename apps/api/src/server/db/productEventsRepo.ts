@@ -1,3 +1,4 @@
+import { inferSurface } from "../usage/context";
 import { getDbClient, schema } from "@laudousg/db";
 
 export type ProductEventSurface = "web" | "ios" | "watch";
@@ -14,7 +15,8 @@ export function surfaceFromRequest(
 ): ProductEventSurface {
   const header = req.headers.get("x-laudousg-surface");
   if (header === "web" || header === "ios" || header === "watch") return header;
-  return fallback;
+  const inferred = inferSurface(req);
+  return inferred === "unknown" ? fallback : inferred;
 }
 
 export async function recordProductEvent(args: {

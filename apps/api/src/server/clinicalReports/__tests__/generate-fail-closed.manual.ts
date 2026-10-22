@@ -1,5 +1,6 @@
 /** Executes the actual POST handler; DB/LLM/stream transport are local doubles. */
 import assert from "node:assert/strict";
+import * as usageContext from "../../usage/context";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -58,6 +59,7 @@ async function execute(scenario: Scenario) {
   const mocks: Record<string, Record<string, unknown>> = {
     openai: { default: class SyntheticOpenAI {} },
     "@laudousg/shared": shared,
+    "@/server/usage/context": usageContext,
     "@/server/env": { env: () => config },
     "@/server/auth/verifyJwt": { verifyJwt: async () => ({ id: "synthetic-user" }) },
     "@/server/sse/stream": { nowIso: () => "2026-10-02T15:00:00Z",

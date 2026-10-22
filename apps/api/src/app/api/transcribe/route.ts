@@ -1,3 +1,5 @@
+import { recordUsage } from "@/server/usage/recordUsage";
+import { withUsageRequest } from "@/server/usage/context";
 import { unauthorized, verifyJwt } from "@/server/auth/verifyJwt";
 import { openai } from "@/server/ai/openai";
 import { ALL_MEDICAL_ASR_KEYTERMS } from "@/server/asr/medicalGlossary";
@@ -149,7 +151,11 @@ function stripAsrHallucinations(text: string): {
  *
  * Por que proxy: chaves de IA NUNCA devem sair do servidor.
  */
-export async function POST(req: Request) {
+export function POST(req: Request) {
+  return withUsageRequest(req, "transcribe", () => handlePOST(req));
+}
+
+async function handlePOST(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
@@ -186,7 +192,7 @@ export async function POST(req: Request) {
         file: audio,
         model: TRANSCRIBE_MODEL,
         prompt: MEDICAL_STYLE_PROMPT,
-        response_format: "json",
+        response_format: isWhisper ? "verbose_json" : "json",
         // language/temperature só existem no whisper-1; os gpt-4o-transcribe
         // detectam idioma sozinhos (o prompt em pt-BR ancora o idioma).
         ...(isWhisper ? { language: "pt", temperature: 0 } : {}),
@@ -194,6 +200,10 @@ export async function POST(req: Request) {
       { signal: req.signal },
     );
 
+    const measured = transcription as unknown as { duration?: number; usage?: { type?: string; seconds?: number; input_tokens?: number; output_tokens?: number } };
+    recordUsage({ provider: "openai", model: TRANSCRIBE_MODEL, stage: "transcription",
+      audioSeconds: measured.duration ?? measured.usage?.seconds,
+      inputTokens: measured.usage?.input_tokens, outputTokens: measured.usage?.output_tokens });
     const raw = transcription.text?.trim() ?? "";
     const { clean, removed } = stripAsrHallucinations(raw);
     const normalizedTranscript = normalizeAsrTranscript(clean, { repairNumbers: env().ASR_REPARO_NUMEROS === "true" });
@@ -209,6 +219,7 @@ export async function POST(req: Request) {
       language: "pt",
     });
   } catch (err) {
+    recordUsage({ provider: "openai", model: TRANSCRIBE_MODEL, stage: "transcription", ok: false, errorCode: req.signal.aborted ? "aborted" : "provider_error" });
     if ((err as Error).name === "AbortError") {
       return json({ error: "request_aborted" }, 499);
     }

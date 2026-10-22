@@ -16,6 +16,7 @@
  * streaming e checa `stop_reason` antes de devolver qualquer coisa.
  */
 
+import { recordUsage } from "../usage/recordUsage";
 import Anthropic from "@anthropic-ai/sdk";
 import type OpenAI from "openai";
 import { env } from "../env";
@@ -288,6 +289,31 @@ function anthropicMessages(messages: LlmMessage[]): Anthropic.MessageParam[] {
   );
 }
 
+const metered = new WeakSet<object>();
+const started = new WeakMap<object, number>();
+function usageStage(opts: LlmJsonOptions | LlmTextOptions): string {
+  const label = "schemaName" in opts ? opts.schemaName : opts.label ?? "writer";
+  return /sanity/i.test(label) ? "sanity" : /router|routing/i.test(label) ? "router" :
+    /edit|command|plan/i.test(label) ? "editing" : /vision/i.test(label) ? "vision" :
+    "schemaName" in opts ? "structurer" : "writer";
+}
+function meterLlm(opts: LlmJsonOptions | LlmTextOptions, usage: LlmUsage, ok = true) {
+  metered.add(opts);
+  const durationMs = Date.now() - (started.get(opts) ?? Date.now());
+  started.set(opts, Date.now());
+  const stage = usageStage(opts);
+  recordUsage({ provider: opts.target.provider, model: usage.model ?? opts.target.model, stage, durationMs,
+    inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, cachedInputTokens: usage.cachedInputTokens,
+    cacheWriteInputTokens: usage.cacheWriteInputTokens, ok, ...(ok ? {} : { errorCode: "invalid_output" as const }) });
+}
+function failedLlm(opts: LlmJsonOptions | LlmTextOptions) {
+  if (metered.has(opts)) return;
+  metered.add(opts);
+  recordUsage({ provider: opts.target.provider, model: opts.target.model,
+    stage: usageStage(opts), ok: false, durationMs: Date.now() - (started.get(opts) ?? Date.now()),
+    errorCode: opts.signal?.aborted ? "aborted" : "provider_error" });
+}
+
 function anthropicUsage(message: Anthropic.Message): LlmUsage {
   const iterations = (message.usage as { iterations?: Array<{ type?: string }> | null }).iterations ?? [];
   return {
@@ -343,6 +369,7 @@ async function anthropicJson(opts: LlmJsonOptions, client: AnthropicClient): Pro
 
   if (!strictRejected.has(opts.schemaName) && fitsAnthropicStrictLimits(opts.schema)) {
     try {
+      metered.delete(opts);
       const stream = client.messages.stream(
         {
           ...base,
@@ -361,6 +388,7 @@ async function anthropicJson(opts: LlmJsonOptions, client: AnthropicClient): Pro
         }
       }
       const message = await stream.finalMessage();
+      meterLlm(opts, anthropicUsage(message), message.stop_reason === "end_turn" || message.stop_reason === "tool_use");
       assertAnthropicStop(message, ["end_turn"], what);
       const raw = textOf(message);
       if (!raw.trim()) throw new LlmOutputError("LLM_EMPTY", `${what}: resposta vazia.`);
@@ -418,6 +446,7 @@ async function anthropicJson(opts: LlmJsonOptions, client: AnthropicClient): Pro
   let missingCalls = 0;
   let repairs = 0;
   for (;;) {
+    metered.delete(opts);
     const stream = client.messages.stream({ ...params, messages }, requestOptions);
     let acc = "";
     let toolIndex: number | null = null;
@@ -439,6 +468,7 @@ async function anthropicJson(opts: LlmJsonOptions, client: AnthropicClient): Pro
       }
     }
     const message = await stream.finalMessage();
+    meterLlm(opts, anthropicUsage(message), message.stop_reason === "end_turn" || message.stop_reason === "tool_use");
     usage = addUsage(usage, anthropicUsage(message));
     assertAnthropicStop(message, ["tool_use", "end_turn"], what);
     const call = toolIndex === null ? undefined : message.content[toolIndex];
@@ -545,6 +575,7 @@ async function* anthropicTextStream(opts: LlmTextOptions, client: AnthropicClien
     }
   }
   const message = await stream.finalMessage();
+  meterLlm(opts, anthropicUsage(message), message.stop_reason === "end_turn" || message.stop_reason === "tool_use");
   assertAnthropicStop(message, ["end_turn"], opts.label ?? "writer");
   if (!full.trim()) throw new LlmOutputError("LLM_EMPTY", `${opts.label ?? "writer"}: texto vazio.`);
   return anthropicUsage(message);
@@ -604,12 +635,14 @@ async function openaiJson(opts: LlmJsonOptions, client: OpenAIClient): Promise<L
     finish = chunk.choices[0]?.finish_reason ?? finish;
     if (chunk.usage) {
       usage = {
+        model: chunk.model,
         inputTokens: chunk.usage.prompt_tokens,
         outputTokens: chunk.usage.completion_tokens,
         cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens,
       };
     }
   }
+  meterLlm(opts, usage, finish !== "length" && !!acc.trim());
   if (finish === "length") throw new LlmOutputError("LLM_TRUNCATED", `${opts.schemaName}: resposta truncada.`);
   if (!acc.trim()) throw new LlmOutputError("LLM_EMPTY", `${opts.schemaName}: resposta vazia.`);
   return { raw: acc, usage, mode: "openai" };
@@ -630,12 +663,14 @@ async function* openaiTextStream(opts: LlmTextOptions, client: OpenAIClient): As
     if (delta) yield delta;
     if (chunk.usage) {
       usage = {
+        model: chunk.model,
         inputTokens: chunk.usage.prompt_tokens,
         outputTokens: chunk.usage.completion_tokens,
         cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens,
       };
     }
   }
+  meterLlm(opts, usage);
   return usage;
 }
 
@@ -698,10 +733,14 @@ export type LlmJsonResult = { raw: string; usage: LlmUsage; mode: "strict" | "to
 /** Chamada estruturada: devolve o JSON CRU; quem chama faz o parse com o próprio Zod. */
 export async function llmJson(input: LlmJsonOptions): Promise<LlmJsonResult> {
   const opts =
-    input.reportText === false ? input : { ...input, system: `${input.system}\n\n${EXTRACTION_TEXT_RULE}` };
-  return opts.target.provider === "anthropic"
-    ? anthropicJson(opts, ensureAnthropicConfigured(opts.anthropicClient))
-    : openaiJson(opts, opts.openaiClient ?? openai());
+    input.reportText === false ? { ...input } : { ...input, system: `${input.system}\n\n${EXTRACTION_TEXT_RULE}` };
+  metered.delete(opts);
+  started.set(opts, Date.now());
+  try {
+    return await (opts.target.provider === "anthropic"
+      ? anthropicJson(opts, ensureAnthropicConfigured(opts.anthropicClient))
+      : openaiJson(opts, opts.openaiClient ?? openai()));
+  } catch (error) { failedLlm(opts); throw error; }
 }
 
 /** `llmJson` + `JSON.parse` + parser do chamador. */
@@ -736,10 +775,18 @@ export type LlmTextOptions = {
 };
 
 /** Texto em streaming. Retorna o uso de tokens ao terminar. */
-export async function* llmTextStream(opts: LlmTextOptions): AsyncGenerator<string, LlmUsage, void> {
-  return opts.target.provider === "anthropic"
-    ? yield* anthropicTextStream(opts, ensureAnthropicConfigured(opts.anthropicClient))
-    : yield* openaiTextStream(opts, opts.openaiClient ?? openai());
+export async function* llmTextStream(input: LlmTextOptions): AsyncGenerator<string, LlmUsage, void> {
+  const opts = { ...input };
+  metered.delete(opts);
+  started.set(opts, Date.now());
+  try {
+    return opts.target.provider === "anthropic"
+      ? yield* anthropicTextStream(opts, ensureAnthropicConfigured(opts.anthropicClient))
+      : yield* openaiTextStream(opts, opts.openaiClient ?? openai());
+  } finally {
+    // Includes a consumer closing the generator before the provider sends final usage.
+    failedLlm(opts);
+  }
 }
 
 /** Texto completo (sem streaming para quem chama). */

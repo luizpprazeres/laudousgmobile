@@ -1,3 +1,4 @@
+import { recordUsage } from "../../usage/recordUsage";
 import type OpenAI from "openai";
 import { editPlanSchema, type EditPlan, type ReportSpec } from "./types";
 import { assemble } from "./assemble";
@@ -84,17 +85,30 @@ async function callPlan(openai: OpenAI, model: string, system: string, user: str
   const modelParams = isReasoning
     ? { max_completion_tokens: 1500, reasoning_effort: "none" }
     : { max_tokens: 1500, temperature: 0.2 };
-  const res = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    response_format: { type: "json_schema", json_schema: EDIT_PLAN_JSON_SCHEMA },
-    ...modelParams,
-  } as never);
-  const raw = (res as { choices: { message: { content: string } }[] }).choices[0]?.message?.content ?? "{}";
-  return editPlanSchema.parse(JSON.parse(raw));
+  const started = Date.now();
+  let measured = false;
+  try {
+    const res = await openai.chat.completions.create({
+      model,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      response_format: { type: "json_schema", json_schema: EDIT_PLAN_JSON_SCHEMA },
+      ...modelParams,
+    } as never);
+    measured = true;
+    recordUsage({ provider: "openai", model: res.model || model, stage: "plan", durationMs: Date.now() - started,
+      inputTokens: res.usage?.prompt_tokens, outputTokens: res.usage?.completion_tokens,
+      cachedInputTokens: res.usage?.prompt_tokens_details?.cached_tokens });
+    const raw = (res as { choices: { message: { content: string } }[] }).choices[0]?.message?.content ?? "{}";
+    return editPlanSchema.parse(JSON.parse(raw));
+  } catch (error) {
+    // Provider usage has already been recorded if parsing fails.
+    if (!measured)
+      recordUsage({ provider: "openai", model, stage: "plan", ok: false, errorCode: "provider_error" });
+    throw error;
+  }
 }
 
 export async function generatePlanV2(args: {

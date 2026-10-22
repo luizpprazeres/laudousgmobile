@@ -1,3 +1,4 @@
+import { calculateCost, priceFor, PRICE_SEED } from "../usage/pricing";
 import { getServiceClient } from "../supabaseService";
 
 export type GenerationAuditStage =
@@ -121,21 +122,9 @@ export async function persistAudit(state: GenerationAuditState): Promise<void> {
   }
 }
 
-/**
- * US$ por milhão de tokens (entrada, saída). Haiku 5.5: tabela de prompt até
- * 100 mil tokens (todo laudo cabe); o thinking entra em `output_tokens`. Sonnet
- * 5.5 (MSK, pelve, carótidas): 2 / 10.
- * Modelo fora da tabela usa a tarifa histórica do gpt-4.1-mini, que era a única.
- */
-const PRICE_PER_MTOK: Record<string, { input: number; output: number }> = {
-  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
-  "claude-sonnet-5-5": { input: 2, output: 10 },
-  // Alvo do fallback de recusa do Sonnet 5.5.
-  "claude-sonnet-5": { input: 2, output: 10 },
-};
-const LEGACY_PRICE = { input: 0.4, output: 1.6 };
-
-export function estimateCost(inputTokens = 0, outputTokens = 0, model?: string | null): number {
-  const price = (model && PRICE_PER_MTOK[model]) || LEGACY_PRICE;
-  return (inputTokens * price.input + outputTokens * price.output) / 1_000_000;
+/** Standalone seed estimate. Unknown models stay null; never price mixed legacy audit tokens with it. */
+export function estimateCost(inputTokens = 0, outputTokens = 0, model?: string | null): number | null {
+  if (!model) return null;
+  const provider = model.startsWith("claude-") ? "anthropic" : "openai";
+  return calculateCost(priceFor(PRICE_SEED, provider, model, new Date(), inputTokens), { inputTokens, outputTokens });
 }

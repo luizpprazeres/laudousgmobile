@@ -1,3 +1,4 @@
+import { recordUsage } from "../usage/recordUsage";
 /**
  * LAUDO LIVRE ROTEADO — roteador de exame + contrato de auditoria.
  *
@@ -374,9 +375,15 @@ export async function runLivreRouter(args: {
       { signal: args.signal, timeout: 60_000 },
     );
   } catch (err) {
+    recordUsage({ provider: "anthropic", model, stage: "router", ok: false, errorCode: args.signal?.aborted ? "aborted" : "provider_error", durationMs: Date.now() - t0 });
     throw toLivreFailure(err, "LIVRE_ROUTER_FAILED");
   }
 
+  recordUsage({ provider: "anthropic", model: response.model || model, stage: "router",
+    inputTokens: response.usage.input_tokens + (response.usage.cache_read_input_tokens ?? 0) + (response.usage.cache_creation_input_tokens ?? 0),
+    outputTokens: response.usage.output_tokens, cachedInputTokens: response.usage.cache_read_input_tokens ?? 0,
+    cacheWriteInputTokens: response.usage.cache_creation_input_tokens ?? 0, durationMs: Date.now() - t0,
+    ok: response.stop_reason === "end_turn" });
   if (response.stop_reason === "refusal") {
     throw new LivreRoutingError("LIVRE_ROUTER_REFUSED", "O roteador do Laudo Livre recusou o ditado.");
   }

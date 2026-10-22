@@ -43,7 +43,8 @@
     "validate:fetal-growth": "tsx tests/fetal-growth/runner.ts",
     "generate:fmf:trisomias": "node packages/fmf-trisomy/generate-params.mjs",
     "diff:bundle": "tsx scripts/diff-bundle-vs-original.ts",
-    "validate:admin-dados:sql": "tsx scripts/admin/dados-sql.manual.ts"
+    "validate:admin-dados:sql": "tsx scripts/admin/dados-sql.manual.ts",
+    "validate:admin-dados": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/usage/__tests__/usage.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/usage/__tests__/llm-metering.manual.ts && tsx --tsconfig apps/api/tsconfig.json apps/api/src/server/usage/__tests__/direct-routes.manual.ts && tsx scripts/admin/dados-sql.manual.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.11",
