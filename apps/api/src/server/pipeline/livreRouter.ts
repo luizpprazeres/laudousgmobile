@@ -380,9 +380,9 @@ export async function runLivreRouter(args: {
   }
 
   recordUsage({ provider: "anthropic", model: response.model || model, stage: "router",
-    inputTokens: response.usage.input_tokens + (response.usage.cache_read_input_tokens ?? 0) + (response.usage.cache_creation_input_tokens ?? 0),
-    outputTokens: response.usage.output_tokens, cachedInputTokens: response.usage.cache_read_input_tokens ?? 0,
-    cacheWriteInputTokens: response.usage.cache_creation_input_tokens ?? 0, durationMs: Date.now() - t0,
+    inputTokens: response.usage?.input_tokens == null ? undefined : response.usage.input_tokens + (response.usage.cache_read_input_tokens ?? 0) + (response.usage.cache_creation_input_tokens ?? 0),
+    outputTokens: response.usage?.output_tokens, cachedInputTokens: response.usage?.cache_read_input_tokens ?? undefined,
+    cacheWriteInputTokens: response.usage?.cache_creation_input_tokens ?? undefined, durationMs: Date.now() - t0,
     ok: response.stop_reason === "end_turn" });
   if (response.stop_reason === "refusal") {
     throw new LivreRoutingError("LIVRE_ROUTER_REFUSED", "O roteador do Laudo Livre recusou o ditado.");
@@ -418,7 +418,7 @@ export async function runLivreRouter(args: {
     decision,
     model,
     latencyMs: Date.now() - t0,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    inputTokens: response.usage?.input_tokens,
+    outputTokens: response.usage?.output_tokens,
   };
 }
