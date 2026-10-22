@@ -117,11 +117,23 @@ export const SELECOES = {
     "permalink",
     "published_at",
     "updated_at",
+    // F3 (migração 20261022233000_admin_social_f3): instante em que o media_publish foi pedido.
+    "publish_requested_at",
   ],
   social_media_items: ["post_id", "position", "storage_path", "public_url", "slide_text", "visual_brief", "alt_text"],
   // Instagram F2: só as colunas da tela. O envelope do token (token_ciphertext) fica fora da allowlist
   // e só é lido por lib/social/conta.ts (lerComToken), para publicar.
-  social_accounts: ["ig_user_id", "username", "token_expires_at", "connected_at"],
+  // F3: datas e motivo da renovação automática (sem token).
+  social_accounts: [
+    "ig_user_id",
+    "username",
+    "token_expires_at",
+    "connected_at",
+    "token_issued_at",
+    "token_refreshed_at",
+    "token_refresh_failed_at",
+    "token_refresh_error",
+  ],
 } as const satisfies Record<string, readonly string[]>;
 
 export type TabelaPermitida = keyof typeof SELECOES;

@@ -1,4 +1,4 @@
-/** Tipos do agendador do Instagram (F1: organizar e aprovar; nada é publicado). */
+/** Tipos do agendador do Instagram (F1: organizar e aprovar; F2/F3: publicar). */
 
 export const FUSO = "America/Sao_Paulo";
 export const FORMATOS = ["image", "carousel", "story"] as const;
@@ -50,6 +50,8 @@ export interface LinhaPost {
   permalink: string | null;
   published_at: string | null;
   updated_at: string;
+  /** F3: quando o media_publish foi pedido nesta tentativa (null = não foi). */
+  publish_requested_at: string | null;
 }
 
 /** Linha de social_media_items. */
