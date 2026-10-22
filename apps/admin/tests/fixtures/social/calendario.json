@@ -1,0 +1,130 @@
+{
+ "versao": 1,
+ "periodo": {
+  "inicio": "2026-10-26",
+  "fim": "2026-11-22"
+ },
+ "fuso": "America/Sao_Paulo",
+ "feed": [
+  {
+   "id": "s1-01",
+   "data": "2026-10-26",
+   "hora": "12:15",
+   "formato": "foto",
+   "pilar": "lançamento",
+   "angulo": "achados-na-voz",
+   "titulo": "O LaudoUSG chegou à App Store",
+   "slides": [
+    {
+     "n": 1,
+     "texto": "Dite os achados enquanto examina.\nLaudoUSG para iPhone · na App Store",
+     "visual": "Sala de ultrassonografia em penumbra. Primeiro plano: mão da médica com o transdutor. Segundo plano desfocado: iPhone num suporte ao lado do aparelho, tela acesa (aplicar captura real da transcrição). Lençol branco desfocado, paciente fora de quadro. Espaço negativo no terço superior para o título."
+    }
+   ],
+   "legenda": "O LaudoUSG chegou à App Store.\n\nVocê dita os achados durante o exame, a transcrição aparece na tela do iPhone e o app redige uma minuta do laudo organizada por órgão, no seu estilo.\n\nE você corrige em três momentos: enquanto dita, logo depois da transcrição e no laudo pronto. A revisão final é sempre sua.\n\n34 categorias de exame, do abdome ao Doppler.\n\nBaixe na App Store pelo link da bio. 3 dias grátis; depois, R$ 129,90/mês. Cancele quando quiser nos Ajustes do iPhone.",
+   "hashtags": "#ultrassonografia #ultrassom #laudomedico #usg #medicinadiagnostica",
+   "alt": "Médica faz ultrassom em sala escura; ao lado do aparelho, um iPhone mostra a transcrição do ditado.",
+   "publicacao": "auto",
+   "verificar": [],
+   "dia": "seg"
+  },
+  {
+   "id": "s1-02",
+   "data": "2026-10-27",
+   "hora": "12:15",
+   "formato": "carrossel",
+   "pilar": "mecanismo",
+   "angulo": "corrigir-em-tres-momentos",
+   "titulo": "Ditado você já conhece. A diferença está em onde você corrige.",
+   "slides": [
+    {
+     "n": 1,
+     "texto": "Ditado você já conhece.\nA diferença está em onde você *corrige*.",
+     "visual": "Capa: título grande; “corrige” em Pinyon Script verde."
+    },
+    {
+     "n": 2,
+     "texto": "Quando a correção fica toda para o fim, você relê o laudo inteiro procurando onde o ditado errou.",
+     "visual": "Ícone de laudo longo com uma lupa; tom mais escuro."
+    },
+    {
+     "n": 3,
+     "texto": "1 · Enquanto dita\nA transcrição aparece na tela. Viu algo errado? Corrija ali mesmo, antes de seguir.",
+     "visual": "iPhone com a captura real da transcrição; uma palavra destacada em verde."
+    },
+    {
+     "n": 4,
+     "texto": "2 · Logo depois da transcrição\nConfira o texto ditado antes de tocar em Gerar laudo. É a hora de acertar uma medida ou um termo.",
+     "visual": "iPhone com a captura real da tela de conferência e o botão Gerar laudo."
+    },
+    {
+     "n": 5,
+     "texto": "3 · No laudo pronto\nLeia a minuta e edite o que quiser, durante e depois da geração.\nTrês chances de pegar o erro antes do laudo assinado.\nLaudoUSG para iPhone · 3 dias grátis",
+     "visual": "iPhone com a captura real do laudo gerado em edição; selo App Store."
+    }
+   ],
+   "legenda": "Ditado você já conhece. O que muda o seu dia é onde a correção acontece.\n\nNo LaudoUSG, são três momentos:\n1. enquanto você dita, direto na transcrição;\n2. logo depois, antes de gerar o laudo;\n3. no laudo pronto, durante e depois da geração.\n\nCada etapa pega o erro antes de ele chegar ao texto final. E a revisão final continua sendo sua.\n\nBaixe na App Store pelo link da bio. 3 dias grátis; depois, R$ 129,90/mês. Cancele quando quiser nos Ajustes do iPhone.",
+   "hashtags": "#ultrassonografia #ultrassom #laudomedico #usg #medicinadiagnostica",
+   "alt": "Carrossel explica os três momentos de correção do LaudoUSG: durante o ditado, depois da transcrição e no laudo pronto.",
+   "publicacao": "auto",
+   "verificar": [
+    "Como a correção durante a transcrição é feita no app (toque, voz ou ambos), para a captura do slide 3 mostrar o gesto real."
+   ],
+   "dia": "ter"
+  },
+  {
+   "id": "s1-03",
+   "data": "2026-10-28",
+   "hora": "20:30",
+   "formato": "viral",
+   "pilar": "viral",
+   "angulo": "corrigir-em-tres-momentos",
+   "titulo": "Corrigido antes de virar laudo",
+   "slides": [
+    {
+     "n": 1,
+     "texto": "Eu: “nódulo de 1,3 cm”\nTranscrição: “nódulo de 2,3 cm”\nEu, na mesma hora: corrigido.\nAntes de virar laudo.\n\nExemplo ilustrativo.",
+     "visual": "Print estilo app de Notas do iPhone, fundo claro; a linha “2,3” riscada e “1,3” em verde."
+    }
+   ],
+   "legenda": "Ditado erra. Qualquer ditado. O que muda é quando você pega o erro.\n\nNo LaudoUSG você corrige enquanto dita, logo depois da transcrição e no laudo pronto.\n\nConta aqui: qual palavra o seu ditado sempre erra? 👇\n\nBaixe na App Store pelo link da bio. 3 dias grátis; depois, R$ 129,90/mês. Cancele quando quiser nos Ajustes do iPhone.",
+   "hashtags": "#ultrassonografia #ultrassom #laudomedico #usg #medicinadiagnostica",
+   "alt": "Print de nota: a transcrição escreveu 2,3 cm, o médico corrigiu para 1,3 cm antes de gerar o laudo.",
+   "publicacao": "auto",
+   "verificar": [],
+   "dia": "qua"
+  }
+ ],
+ "stories": [
+  {
+   "id": "st-1026-1",
+   "data": "2026-10-26",
+   "hora": "07:30",
+   "formato": "story",
+   "quadro": "abertura",
+   "texto": "Segunda de agenda cheia? Hoje tem novidade por aqui.",
+   "interacao": null,
+   "publicacao": "auto",
+   "visual": "Template tipográfico.",
+   "dia": "seg"
+  },
+  {
+   "id": "st-1026-3",
+   "data": "2026-10-26",
+   "hora": "18:30",
+   "formato": "story",
+   "quadro": "interação",
+   "texto": "Como você faz seus laudos hoje?",
+   "interacao": {
+    "tipo": "enquete",
+    "opcoes": [
+     "Digito",
+     "Dito"
+    ]
+   },
+   "publicacao": "manual",
+   "visual": "Fundo do template com espaço central para o sticker.",
+   "dia": "seg"
+  }
+ ]
+}
