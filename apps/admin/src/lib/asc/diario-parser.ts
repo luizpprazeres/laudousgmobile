@@ -9,7 +9,7 @@ export const RELATORIOS = {
 export type TipoSales = keyof typeof RELATORIOS;
 export const ANALYTICS = [
   "App Store Discovery and Engagement Standard",
-  "App Store Downloads Standard",
+  "App Downloads Standard",
   "App Sessions Standard",
   "App Crashes",
 ] as const;

@@ -168,7 +168,7 @@ export function montarDiaria(f: FonteDiaria, dias: readonly string[]) {
   if (f.analytics?.length) {
     const downloads = f.analytics.filter(
       (r) =>
-        r.report_name === "App Store Downloads Standard" &&
+        r.report_name === "App Downloads Standard" &&
         r.event === "First-time Download",
     );
     if (downloads.length) {

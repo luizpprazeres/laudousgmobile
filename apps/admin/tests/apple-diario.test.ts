@@ -54,7 +54,7 @@ test("schemas oficiais: SALES 1_0, SUBSCRIPTION/EVENT 1_3; cada parser lê arqui
     2,
   );
   for (const [file, report, count] of [
-    ["downloads", "App Store Downloads Standard", 5],
+    ["downloads", "App Downloads Standard", 5],
     ["discovery", "App Store Discovery and Engagement Standard", 10],
     ["sessions", "App Sessions Standard", 8],
     ["crashes", "App Crashes", 2],
@@ -75,7 +75,7 @@ test("schemas oficiais: SALES 1_0, SUBSCRIPTION/EVENT 1_3; cada parser lê arqui
   );
   assert.equal(
     parseAnalytics(
-      "App Store Downloads Standard",
+      "App Downloads Standard",
       [fixture("downloads"), fixture("downloads")],
       "6770609540",
     )[0]!.counts,
@@ -191,7 +191,7 @@ test("SQL real local: grants, RLS sem policies, incremento atômico e restatemen
       2,
     );
     const analytics = parseAnalytics(
-      "App Store Downloads Standard",
+      "App Downloads Standard",
       [fixture("downloads")],
       "6770609540",
     );
@@ -201,7 +201,7 @@ test("SQL real local: grants, RLS sem policies, incremento atômico e restatemen
       day: "2026-10-22",
       status: "ok",
       rows: [...analytics, ...analytics.map(r => ({...r,country:"PRT",counts:3}))],
-      report_name: "App Store Downloads Standard",
+      report_name: "App Downloads Standard",
     };
     await salvar(db, lote);
     await salvar(db, lote);
@@ -264,7 +264,7 @@ test("cron duas vezes: SQL local não duplica; 404 pendente é repetido sem fabr
         ? [
             {
               id: "report1",
-              attributes: { name: "App Store Downloads Standard" },
+              attributes: { name: "App Downloads Standard" },
             },
             {
               id: "detailed",
@@ -435,7 +435,7 @@ test("painel: vazio mantém exemplo; dia pendente é —; Analytics não usa den
     },
   ];
   f.analytics = parseAnalytics(
-    "App Store Downloads Standard",
+    "App Downloads Standard",
     [fixture("downloads")],
     "6770609540",
   );
