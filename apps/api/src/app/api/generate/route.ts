@@ -110,6 +110,7 @@ import {
 import { env } from "@/server/env";
 import { extractVenousMap } from "@/server/vascular/venousMapService";
 import {
+  estimateCost,
   persistAudit,
   type GenerationAuditStage,
   type GenerationAuditState,
@@ -1857,8 +1858,12 @@ async function handlePOST(req: Request) {
     } finally {
       andamento.parar();
       auditState.totalDurationMs = Date.now() - t0;
-      // Aggregate legacy tokens mix stages/models and omit cache. Per-call costs live in ai_usage_events.
-      auditState.openaiCostUsd = null;
+      // Preserve the estimate consumed by Lab/dissector/admin audit. Per-call accounting lives in ai_usage_events.
+      auditState.openaiCostUsd = estimateCost(
+        auditState.openaiInputTokens ?? 0,
+        auditState.openaiOutputTokens ?? 0,
+        auditState.modelWriter,
+      );
       // Sempre fechar a generation_run pra ter auditoria
       if (runId) {
         try {

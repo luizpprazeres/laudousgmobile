@@ -1,5 +1,6 @@
 /** Executes the actual POST handler; DB/LLM/stream transport are local doubles. */
 import assert from "node:assert/strict";
+import { estimateCost } from "../../db/auditRepo";
 import * as usageContext from "../../usage/context";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -31,7 +32,7 @@ const incompleteAbdomen = { ...shared.createInitialClinicalModelInput(category),
 const incompletePortal = shared.createInitialClinicalModelInput(category);
 const completeAbdomen = { ...incompletePortal, portalVein: { caliberCm: 1.2, velocityCms: 20, flow: "hepatopetal" } };
 type Event = { type: string; code?: string; message?: string; final_text?: string };
-type Scenario = { category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hepaticEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean; routeFree?: boolean; abortWriter?: boolean; fullWriter?: string };
+type Scenario = { costModel?: string; category?: string | null; rawInput?: string; detectedCategory?: string; rendererCategories?: string; renalEnabled?: boolean; hepaticEnabled?: boolean; hard?: boolean; fast?: boolean; extracted?: unknown; writerV2?: boolean; knownStructured?: boolean; routeFree?: boolean; abortWriter?: boolean; fullWriter?: string };
 
 async function execute(scenario: Scenario) {
   const selected = scenario.category === null ? undefined : scenario.category ?? category;
@@ -49,6 +50,7 @@ async function execute(scenario: Scenario) {
   const statuses: string[] = [];
   const statusCalls: Array<{ status: string; metadata?: Record<string, unknown> }> = [];
   const errors: string[] = [];
+  const costEstimates: Array<{model?: string | null; cost: number | null}> = [];
   let writerCalls = 0;
   let writerV2Calls = 0;
   let rendererCalls = 0;
@@ -138,7 +140,9 @@ async function execute(scenario: Scenario) {
     "@/server/db/runsRepo": { insertOpenRun: async () => "synthetic-run", updateRunAfterStructurer: noOp,
       updateRunAfterRetriever: noOp, updateRunAfterWriter: noOp, finalizeRun: noOp },
     "@/server/db/productEventsRepo": { recordProductEvent: noOp, surfaceFromRequest: () => "web" },
-    "@/server/db/auditRepo": { estimateCost: () => 0 },
+    "@/server/db/auditRepo": { estimateCost: (input: number, output: number, model?: string | null) => {
+      const cost = estimateCost(input, output, model); costEstimates.push({ model, cost }); return cost;
+    } },
     "@/server/prompts/version": { contractHashFor: () => "synthetic", PROMPT_VERSION: "test" },
     "@/server/prompts/obstetricaPlainPolicy": { obstetricaPlainConflictWarning: () => null, obstetricaPlainOutputWarning: () => null },
     "@/server/renderer/extraction": { RENDERER_SUPPORTED_CATEGORIES, RENDERER_PROGRAMMATIC_CATEGORIES },
@@ -162,7 +166,7 @@ async function execute(scenario: Scenario) {
         throw Object.assign(new Error("synthetic disconnect"), { name: "AbortError" });
       }
       yield "Synthetic free writer output";
-      return { fullText: "Synthetic free writer output", latencyMs: 0, systemMessage: "synthetic-writer" };
+      return { fullText: "Synthetic free writer output", latencyMs: 0, systemMessage: "synthetic-writer", model: scenario.costModel, inputTokens: 1000, outputTokens: 100 };
     } },
     "@/server/pipeline/deterministicSanity": { runDeterministicSanity: () => ({ issues: [], hardBlocked: false }) },
   };
@@ -181,7 +185,7 @@ async function execute(scenario: Scenario) {
   await commonJsModule.exports.POST(new Request("http://localhost/api/generate", { method: "POST", headers: { "content-type": "application/json" },
     body,
   }));
-  return { events, statuses, statusCalls, writerCalls, writerV2Calls, rendererCalls, errors, requestHadHint: Object.hasOwn(JSON.parse(body), "category_hint") };
+  return { costEstimates, events, statuses, statusCalls, writerCalls, writerV2Calls, rendererCalls, errors, requestHadHint: Object.hasOwn(JSON.parse(body), "category_hint") };
 }
 
 async function main() {
@@ -337,6 +341,13 @@ async function main() {
       assert(ordinary.events.some(e => e.type === "done"));
       checks++;
     }
+  }
+  for (const [model, expected] of [["gpt-5.4-mini", .0012], ["unknown-model", null]] as const) {
+    const result = await execute({ category: "ABDOMEN_TOTAL", rendererCategories: "", costModel: model });
+    assert.equal(result.writerCalls, 1);
+    assert(result.events.some(e => e.type === "done"));
+    assert.deepEqual(result.costEstimates, [{model, cost: expected}], "route must preserve model-priced legacy audit cost");
+    checks++;
   }
   assert(fallbackPolicy.clinicalRendererFallbackBlocked("ABDOME_TOTAL_DOPPLER"));
   assert.equal(fallbackPolicy.earlyWriterV2Allowed(undefined, new Set(["ABDOMEN_TOTAL"])), false);
