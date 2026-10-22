@@ -117,7 +117,7 @@ export const SELECOES = {
     "permalink",
     "published_at",
     "updated_at",
-    // F3 (migração 20261022233000_admin_social_f3): instante em que o media_publish foi pedido.
+    // F3 (migração 20261022225129_admin_social_f3): instante em que o media_publish foi pedido.
     "publish_requested_at",
   ],
   social_media_items: ["post_id", "position", "storage_path", "public_url", "slide_text", "visual_brief", "alt_text"],

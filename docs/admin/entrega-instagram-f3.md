@@ -4,7 +4,7 @@ Pronto para revisão local na branch `feat/admin-instagram-f3`, no worktree `~/.
 
 Não houve push, deploy, env na Vercel, migração aplicada, chamada à API da Meta nem publicação no Instagram. A Meta só foi consultada pela documentação pública. Todo `fetch` dos testes é simulado.
 
-**Há migração nova, não aplicada:** `supabase/migrations/20261022233000_admin_social_f3.sql`. Ela precisa ser aplicada **antes** do deploy da F3, porque o calendário, o editor e o cron leem as colunas novas.
+**Há migração nova, não aplicada:** `supabase/migrations/20261022225129_admin_social_f3.sql`. Ela precisa ser aplicada **antes** do deploy da F3, porque o calendário, o editor e o cron leem as colunas novas.
 
 ## Documentação consultada (22/10/2026)
 
@@ -81,7 +81,7 @@ A volta para `approved` exige `publish_requested_at IS NULL` também no `UPDATE`
 
 ## Migração nova (não aplicada)
 
-`supabase/migrations/20261022233000_admin_social_f3.sql`:
+`supabase/migrations/20261022225129_admin_social_f3.sql`:
 
 ```sql
 BEGIN;

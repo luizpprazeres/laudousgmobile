@@ -44,7 +44,7 @@ import {
 Object.assign(globalThis, { React });
 
 const RAIZ = join(__dirname, "..");
-const MIGRACOES = ["20261022212039_admin_social.sql", "20261022233000_admin_social_f3.sql"].map((f) => readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", f), "utf8"));
+const MIGRACOES = ["20261022212039_admin_social.sql", "20261022225129_admin_social_f3.sql"].map((f) => readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", f), "utf8"));
 const SEGREDO = "cron-secreto-0123456789abcdef";
 const H = 3600_000;
 const iso = (t: number) => new Date(t).toISOString();

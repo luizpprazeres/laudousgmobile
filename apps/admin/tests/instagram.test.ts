@@ -52,7 +52,7 @@ Object.assign(globalThis, { React });
 
 const RAIZ = join(__dirname, "..");
 const MIGRACAO = readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", "20261022212039_admin_social.sql"), "utf8");
-const MIGRACAO_F3 = readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", "20261022233000_admin_social_f3.sql"), "utf8");
+const MIGRACAO_F3 = readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", "20261022225129_admin_social_f3.sql"), "utf8");
 
 // ---------- chave ----------
 

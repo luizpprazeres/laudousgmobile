@@ -41,7 +41,7 @@ Reels, Insights, publicação real no Instagram, chamada real à API da Meta, pu
 
 ## File List
 
-- `supabase/migrations/20261022233000_admin_social_f3.sql` (nova, **não aplicada**: `publish_requested_at` e as colunas da renovação)
+- `supabase/migrations/20261022225129_admin_social_f3.sql` (nova, **não aplicada**: `publish_requested_at` e as colunas da renovação)
 - `apps/admin/src/lib/social/instagram.ts` (`publicarMidia`: foto, carrossel, story; `renovarToken`; `LimiteAtingido`)
 - `apps/admin/src/lib/social/publicacao.ts` (trava dos três formatos, marcador do publish, política de tentativas, `fila`, `devolver`)
 - `apps/admin/src/lib/social/politica.ts` (novo: janelas de 6 h e 2 h, preso, selos, link colado)
@@ -65,5 +65,5 @@ Reels, Insights, publicação real no Instagram, chamada real à API da Meta, pu
 ## Change Log
 
 - 22/10/2026 — @dev: story criada a partir do escopo F3; Draft → InProgress (branch `feat/admin-instagram-f3`, worktree `~/.worktrees/laudousg-admin-instagram-f3`, base `e9395d92`).
-- 22/10/2026 — @dev: documentação da Meta conferida (carrossel, story, refresh_access_token); migração `20261022233000_admin_social_f3` criada e **não aplicada** (aplicar antes do deploy).
+- 22/10/2026 — @dev: documentação da Meta conferida (carrossel, story, refresh_access_token); migração `20261022225129_admin_social_f3` criada e **não aplicada** (aplicar antes do deploy).
 - 22/10/2026 — @dev: implementação concluída; typecheck, test (103 pass, 1 skip) e build verdes. InProgress → InReview, aguardando @qa. Entrega em `docs/admin/entrega-instagram-f3.md`.
