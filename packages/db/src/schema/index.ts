@@ -13,3 +13,5 @@ export * from "./productEvents";
 export * from "./reportTemplateVariants";
 export * from "./accountReportPreferences";
 export * from "./reportModelCustomizations";
+
+export * from "./adminData";

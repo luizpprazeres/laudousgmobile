@@ -40,6 +40,8 @@ export const subscriptions = pgTable(
     environment: text("environment").notNull().default("Production"),
     applePurchaseDate: timestamp("apple_purchase_date", { withTimezone: true }),
     appleSignedDate: timestamp("apple_signed_date", { withTimezone: true }),
+    autoRenewStatus: integer("auto_renew_status"),
+    offerType: integer("offer_type"),
     revision: integer("revision").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
