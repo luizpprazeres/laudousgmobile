@@ -8,6 +8,8 @@ export interface ConfigServidor {
   allowlist: string[];
   permitirCadastroMfa: boolean;
   ascAppId: string;
+  /** Origem pública quando o painel é servido por rewrite (ex.: https://app.laudousg.com.br). */
+  origemPublica: string | null;
 }
 
 /** Devolve null se faltar algo essencial — e aí o painel nega tudo (falha fechada). */
@@ -24,5 +26,19 @@ export function configServidor(env: Record<string, string | undefined> = process
     allowlist,
     permitirCadastroMfa: env.ADMIN_ALLOW_MFA_ENROLL === "true",
     ascAppId: env.ASC_APP_ID?.trim() || "6770609540",
+    origemPublica: lerOrigemPublica(env.ADMIN_PUBLIC_ORIGIN),
   };
+}
+
+/** Só aceita uma origem https sem caminho; qualquer outra coisa é ignorada (fica null). */
+export function lerOrigemPublica(valor: string | undefined): string | null {
+  const v = valor?.trim();
+  if (!v) return null;
+  try {
+    const u = new URL(v);
+    if (u.protocol !== "https:" || (u.pathname !== "/" && u.pathname !== "")) return null;
+    return u.origin;
+  } catch {
+    return null;
+  }
 }

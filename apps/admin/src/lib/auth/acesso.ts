@@ -66,11 +66,16 @@ export function rotaPublica(caminho: string): boolean {
   return PUBLICAS.has(limpo);
 }
 
-/** Compara a origem do POST com o host (proteção extra além de SameSite=Strict). */
-export function origemConfere(origin: string | null, host: string | null): boolean {
-  if (!origin || !host) return false;
+/**
+ * Compara a origem do POST com o host (proteção extra além de SameSite=Strict). Atrás do rewrite da
+ * landing o Host é o do deploy, então a origem pública configurada também vale.
+ */
+export function origemConfere(origin: string | null, host: string | null, origemPublica: string | null = null): boolean {
+  if (!origin) return false;
   try {
-    return new URL(origin).host === host;
+    const o = new URL(origin);
+    if (origemPublica && o.origin === origemPublica) return true;
+    return !!host && o.host === host;
   } catch {
     return false;
   }

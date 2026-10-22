@@ -7,6 +7,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { rotaPublica } from "./lib/auth/acesso";
+import { comBase } from "./lib/base";
 import { verificarSessao } from "./lib/auth/verificar";
 import { configServidor } from "./lib/env";
 import { clienteSessao } from "./lib/supabase/clientes";
@@ -40,9 +41,8 @@ export async function middleware(request: NextRequest) {
   if (decisao === "permitir") return resposta;
   if (caminho.startsWith("/api/")) return naoEncontrado();
   if (decisao === "login" || decisao === "mfa") {
-    const url = request.nextUrl.clone();
-    url.pathname = decisao === "login" ? "/login" : "/mfa";
-    url.search = "";
+    // URL absoluta montada à mão: atrás do rewrite, o host do request é o do deploy, não o público.
+    const url = new URL(comBase(decisao === "login" ? "/login" : "/mfa"), cfg.origemPublica ?? request.url);
     const r = NextResponse.redirect(url);
     resposta.cookies.getAll().forEach((c) => r.cookies.set(c));
     return r;

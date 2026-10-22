@@ -54,4 +54,18 @@ test("POST de outra origem é recusado", () => {
   assert.equal(origemConfere("https://app.laudousg.com.br", "app.laudousg.com.br"), true);
   assert.equal(origemConfere("https://evil.example", "app.laudousg.com.br"), false);
   assert.equal(origemConfere(null, "app.laudousg.com.br"), false);
+  // atrás do rewrite: Host é o do deploy, a origem pública configurada vale; outras não
+  assert.equal(origemConfere("https://app.laudousg.com.br", "laudousg-admin.vercel.app", "https://app.laudousg.com.br"), true);
+  assert.equal(origemConfere("https://evil.example", "laudousg-admin.vercel.app", "https://app.laudousg.com.br"), false);
+  assert.equal(origemConfere("http://app.laudousg.com.br", "laudousg-admin.vercel.app", "https://app.laudousg.com.br"), false);
+});
+
+test("origem pública: só https sem caminho", async () => {
+  const { lerOrigemPublica } = await import("../src/lib/env");
+  assert.equal(lerOrigemPublica("https://app.laudousg.com.br"), "https://app.laudousg.com.br");
+  assert.equal(lerOrigemPublica("https://app.laudousg.com.br/"), "https://app.laudousg.com.br");
+  assert.equal(lerOrigemPublica("http://app.laudousg.com.br"), null);
+  assert.equal(lerOrigemPublica("https://app.laudousg.com.br/admin"), null);
+  assert.equal(lerOrigemPublica("lixo"), null);
+  assert.equal(lerOrigemPublica(undefined), null);
 });
