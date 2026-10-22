@@ -27,14 +27,14 @@ export async function verificarSessao(sessao: SupabaseClient | null, cfg = confi
   const aal = await sessao.auth.mfa.getAuthenticatorAssuranceLevel();
   if (!aal.error) nivel = (aal.data.currentLevel as NivelMfa) ?? null;
 
-  // O papel só é consultado se o e-mail passou na allowlist e a sessão já tem MFA.
+  // O papel só é consultado se o e-mail passou na allowlist e a sessão já tem MFA (quando exigido).
   let papel: string | null = null;
-  if (emailPermitido(email, cfg.allowlist) && nivel === "aal2") {
+  if (emailPermitido(email, cfg.allowlist) && (nivel === "aal2" || !cfg.exigirMfa)) {
     const { data } = await clienteServico(cfg).from("profiles").select("role").eq("id", user.id).maybeSingle();
     papel = (data as { role?: string } | null)?.role ?? null;
   }
   return {
-    decisao: decidirAcesso({ configurado: true, email, nivel, papel, allowlist: cfg.allowlist }),
+    decisao: decidirAcesso({ configurado: true, email, nivel, papel, allowlist: cfg.allowlist, exigirMfa: cfg.exigirMfa }),
     cfg,
     email,
     userId: user.id,

@@ -18,5 +18,5 @@ export async function POST(req: NextRequest) {
 
   const { error } = await ctx.sessao.auth.signInWithPassword({ email, password: senha });
   if (error) return irPara(req, "/login?erro=1");
-  return irPara(req, "/mfa", ctx.carregadora);
+  return irPara(req, ctx.cfg.exigirMfa ? "/mfa" : "/", ctx.carregadora);
 }

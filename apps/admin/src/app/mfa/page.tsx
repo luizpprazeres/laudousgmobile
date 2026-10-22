@@ -13,6 +13,7 @@ export default async function Mfa({ searchParams }: { searchParams: Promise<Reco
   const { erro } = await searchParams;
   const { cfg, sessao } = await sessaoDoServidor();
   if (!cfg || !sessao) notFound();
+  if (!cfg.exigirMfa) redirect("/");
   const { data } = await sessao.auth.getUser();
   if (!data.user) redirect("/login");
   if (!emailPermitido(data.user.email, cfg.allowlist)) notFound();

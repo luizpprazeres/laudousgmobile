@@ -12,6 +12,11 @@ test("admin com MFA, na allowlist e com papel admin: entra", () => {
 test("sem MFA (aal1) NUNCA entra: vai para a etapa de MFA", () => {
   assert.equal(decidirAcesso({ ...base, nivel: "aal1" }), "mfa");
   assert.equal(decidirAcesso({ ...base, nivel: null }), "mfa");
+  // ADMIN_REQUIRE_MFA=false: aal1 passa, mas allowlist e papel continuam valendo
+  assert.equal(decidirAcesso({ ...base, nivel: "aal1", exigirMfa: false }), "permitir");
+  assert.equal(decidirAcesso({ ...base, nivel: "aal1", exigirMfa: false, papel: "user" }), "negar");
+  assert.equal(decidirAcesso({ ...base, nivel: "aal1", exigirMfa: false, email: "outro@exemplo.com" }), "negar");
+  assert.equal(decidirAcesso({ ...base, nivel: "aal1", exigirMfa: true }), "mfa");
 });
 
 test("e-mail fora da allowlist é negado, mesmo com MFA e papel admin", () => {
@@ -43,6 +48,10 @@ test("config do servidor ausente ou sem allowlist → null (painel nega tudo)", 
   assert.equal(configServidor({}), null);
   assert.equal(configServidor({ SUPABASE_URL: "u", SUPABASE_ANON_KEY: "a", SUPABASE_SERVICE_ROLE_KEY: "s", ADMIN_EMAILS: "" }), null);
   assert.ok(configServidor({ SUPABASE_URL: "u", SUPABASE_ANON_KEY: "a", SUPABASE_SERVICE_ROLE_KEY: "s", ADMIN_EMAILS: "a@x.com" }));
+  const env = { SUPABASE_URL: "u", SUPABASE_ANON_KEY: "a", SUPABASE_SERVICE_ROLE_KEY: "s", ADMIN_EMAILS: "a@x.com" };
+  assert.equal(configServidor(env)?.exigirMfa, true);
+  assert.equal(configServidor({ ...env, ADMIN_REQUIRE_MFA: "false" })?.exigirMfa, false);
+  assert.equal(configServidor({ ...env, ADMIN_REQUIRE_MFA: "no" })?.exigirMfa, true);
 });
 
 test("só login, MFA e logout são públicas; o resto exige sessão completa", () => {

@@ -7,6 +7,8 @@ export interface ConfigServidor {
   serviceRoleKey: string;
   allowlist: string[];
   permitirCadastroMfa: boolean;
+  /** MFA obrigatório, salvo ADMIN_REQUIRE_MFA=false. */
+  exigirMfa: boolean;
   ascAppId: string;
   /** Origem pública quando o painel é servido por rewrite (ex.: https://app.laudousg.com.br). */
   origemPublica: string | null;
@@ -25,6 +27,7 @@ export function configServidor(env: Record<string, string | undefined> = process
     serviceRoleKey,
     allowlist,
     permitirCadastroMfa: env.ADMIN_ALLOW_MFA_ENROLL === "true",
+    exigirMfa: env.ADMIN_REQUIRE_MFA?.trim() !== "false",
     ascAppId: env.ASC_APP_ID?.trim() || "6770609540",
     origemPublica: lerOrigemPublica(env.ADMIN_PUBLIC_ORIGIN),
   };

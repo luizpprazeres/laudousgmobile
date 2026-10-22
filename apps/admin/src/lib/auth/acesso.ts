@@ -5,7 +5,8 @@
  *  1. Sem configuração completa no servidor → nega (falha fechada).
  *  2. Sem sessão → manda para o login.
  *  3. E-mail fora da allowlist (ADMIN_EMAILS) → nega, mesmo com MFA e papel admin.
- *  4. Sessão sem MFA (aal1) → manda para a etapa de MFA; nunca libera.
+ *  4. Sessão sem MFA (aal1) → manda para a etapa de MFA; nunca libera. Exceção: o servidor com
+ *     ADMIN_REQUIRE_MFA=false (decisão do Luiz em 22/10/2026: só senha) aceita aal1.
  *  5. profiles.role diferente de 'admin' → nega.
  *  6. Só então libera.
  *
@@ -25,6 +26,8 @@ export interface ContextoAcesso {
   /** profiles.role lido com service role; null se não encontrado. */
   papel: string | null;
   allowlist: readonly string[];
+  /** false só com ADMIN_REQUIRE_MFA=false; ausente = exige MFA. */
+  exigirMfa?: boolean;
 }
 
 export function normalizarEmail(email: string): string {
@@ -53,7 +56,7 @@ export function decidirAcesso(c: ContextoAcesso): Decisao {
   if (!c.configurado) return "negar";
   if (!c.email) return "login";
   if (!emailPermitido(c.email, c.allowlist)) return "negar";
-  if (c.nivel !== "aal2") return "mfa";
+  if (c.exigirMfa !== false && c.nivel !== "aal2") return "mfa";
   if (c.papel !== "admin") return "negar";
   return "permitir";
 }
