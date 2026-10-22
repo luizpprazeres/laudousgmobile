@@ -1,5 +1,7 @@
 # ADMIN fase 2 — dados (E1/E2) — entrega de 21/10/2026
 
+**Revisão adversarial posterior:** o diário Apple passou a best-effort e o custo legado de `generation_audit` foi restaurado. As correções B1/B2/C1/C2/C3/C5, os novos gates e as duas novas migrações ainda não aplicadas estão em [correcoes-revisao-adversarial-2026-10-21.md](correcoes-revisao-adversarial-2026-10-21.md). As descrições anteriores abaixo registram a entrega original; esse relatório posterior prevalece para a semântica atual.
+
 **Atualização G3:** conforme o orquestrador, a migração inicial foi aplicada em produção como `20261022011955`, com rename e referências no commit `59ec9003`. Essa aplicação não foi executada nem consultada por este agente. O registro original abaixo descreve a entrega anterior ao GO. A nova migração de fuso `20261022012304_admin_views_sao_paulo_day.sql` permanece somente em arquivo, aguardando revisão e aplicação pelo orquestrador.
 
 Implementado em `~/.worktrees/laudousg-admin-dados`, branch `feat/admin-dados`, base `3677daf3`. Pronto para revisão do G3. A migração existe somente como arquivo; nenhum banco remoto foi acessado ou alterado. Sem push, deploy ou alteração de variáveis de produção.
