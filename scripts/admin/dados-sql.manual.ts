@@ -187,6 +187,81 @@ async function main() {
     null,
   );
   assert.equal(sql.includes("CREATE POLICY"), false);
+  const viewMetadata = () =>
+    db.query(`SELECT c.relname, c.relacl::text, c.reloptions,
+    (SELECT json_agg(json_build_array(a.attname, a.atttypid) ORDER BY a.attnum)
+     FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped) AS columns
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relname IN ('admin_user_usage','admin_generation_stats','admin_iap_stats','admin_subscription_stats')
+    ORDER BY c.relname`);
+  await db.exec(
+    "INSERT INTO subscriptions(environment,tier,period,status,auto_renew_status) VALUES ('Sandbox','pro','monthly','active',1)",
+  );
+  const originalSnapshot = (
+    await db.query("SELECT * FROM admin_subscription_stats")
+  ).rows;
+  const beforeViews = (await viewMetadata()).rows;
+  const timezoneSql = readFileSync(
+    new URL(
+      "../../supabase/migrations/20261022012051_admin_views_sao_paulo_day.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await db.exec(timezoneSql);
+  await db.exec(timezoneSql); // Replacing the views is safe and does not change their ACLs or schemas.
+  assert.deepEqual((await viewMetadata()).rows, beforeViews);
+  for (const row of (await viewMetadata()).rows)
+    assert.deepEqual(row.reloptions, ["security_invoker=true"]);
+  assert.deepEqual(
+    (await db.query("SELECT * FROM admin_subscription_stats")).rows,
+    originalSnapshot,
+  );
+  // Midnight in 2026 (UTC-3), and historical summer time (UTC-2): IANA rules, not a fixed offset.
+  for (const [index, timestamp] of [
+    "2026-10-22T02:59:59Z",
+    "2026-10-22T03:00:00Z",
+    "2018-12-01T01:59:59Z",
+    "2018-12-01T02:00:00Z",
+  ].entries()) {
+    await db.query(
+      `INSERT INTO ai_usage_events(created_at,route,stage,provider,model,measurement,surface,request_id,ok)
+      VALUES ($1,'timezone-test','writer','openai','gpt-5','unmeasured','web',$2,true)`,
+      [timestamp, request],
+    );
+    await db.query(
+      "INSERT INTO generation_audit(created_at,category,total_duration_ms) VALUES ($1,'TIMEZONE_TEST',100)",
+      [timestamp],
+    );
+    await db.query(
+      "INSERT INTO iap_notifications(notification_uuid,received_at,notification_type,environment,product_id) VALUES ($1,$2,'TEST','Sandbox','timezone-test')",
+      [`timezone-${index}`, timestamp],
+    );
+  }
+  const expectedDays = ["2018-11-30", "2018-12-01", "2026-10-21", "2026-10-22"];
+  for (const timezone of ["UTC", "Asia/Tokyo"]) {
+    await db.exec(`SET TIME ZONE '${timezone}'; SET ROLE service_role`);
+    for (const [view, filter, count] of [
+      ["admin_user_usage", "route='timezone-test'", "events"],
+      ["admin_generation_stats", "category='TIMEZONE_TEST'", "generations"],
+      ["admin_iap_stats", "product_id='timezone-test'", "notifications"],
+    ]) {
+      const buckets = (
+        await db.query<{ day: string; n: number }>(
+          `SELECT day::text, ${count}::int AS n FROM ${view} WHERE ${filter} ORDER BY day`,
+        )
+      ).rows;
+      assert.deepEqual(
+        buckets,
+        expectedDays.map((day) => ({ day, n: 1 })),
+        `${view} civil day with session ${timezone}`,
+      );
+    }
+    await db.exec("RESET ROLE");
+  }
+  console.log(
+    "Admin timezone follow-up: midnight + historical DST + session timezone independence + all four contracts/ACLs/security_invoker preserved",
+  );
   await db.close();
   console.log(
     "Local SQL: migration + seed parity + RLS/ACL + safe views + unknown totals + UUID dedupe + append-only + account deletion passed",
