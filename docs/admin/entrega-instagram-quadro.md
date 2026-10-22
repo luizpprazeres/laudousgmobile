@@ -4,7 +4,7 @@ Pronto para revisão local na branch `feat/admin-instagram-quadro`, no worktree 
 
 Não houve push, deploy, env, migração aplicada, chamada à API da Meta nem publicação. Nada fora de `apps/admin`, `supabase/migrations` e `docs/` foi tocado.
 
-**Há migração nova, não aplicada:** `supabase/migrations/20261022235000_admin_social_quadro.sql`. Ela é posterior à F3. Sem ela, o Quadro abre e aprova em lote, e o envio de imagens funciona. Só **mover** e **reordenar** falham, com a mensagem "O banco não respondeu" (a função não existe, nada é gravado).
+**Há migração nova, não aplicada:** `supabase/migrations/20261022230954_admin_social_quadro.sql`. Ela é posterior à F3. Sem ela, o Quadro abre e aprova em lote, e o envio de imagens funciona. Só **mover** e **reordenar** falham, com a mensagem "O banco não respondeu" (a função não existe, nada é gravado).
 
 ## O que entrou
 
@@ -82,7 +82,7 @@ Só aceita `application/json`, até 16 KB.
 
 ## Migração nova (não aplicada)
 
-`supabase/migrations/20261022235000_admin_social_quadro.sql`:
+`supabase/migrations/20261022230954_admin_social_quadro.sql`:
 
 ```sql
 BEGIN;
@@ -232,7 +232,7 @@ Um teste antigo mudou: `instagram.test.ts` trava a lista exata de rotas em `api/
 
 ## Pendências e riscos
 
-- **Aplicar a migração** `20261022235000_admin_social_quadro.sql` (orquestrador, depois do GO), depois da F3, que já foi aplicada.
+- **Aplicar a migração** `20261022230954_admin_social_quadro.sql` (orquestrador, depois do GO), depois da F3, que já foi aplicada.
 - **Validação visual no navegador com sessão real** não foi feita. Não há Supabase local nem sessão de admin neste ambiente. Os componentes foram renderizados no servidor em teste e o build passou. Vale conferir com o Luiz:
   - arrastar no Safari, no Chrome e no Firefox;
   - soltar a pasta `output/instagram` inteira;

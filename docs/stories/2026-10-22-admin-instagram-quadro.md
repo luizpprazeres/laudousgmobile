@@ -34,7 +34,7 @@ Publicação, chamada à API da Meta, push, deploy, env, migração aplicada. Mu
 
 ## File List
 
-- `supabase/migrations/20261022235000_admin_social_quadro.sql` (nova, **não aplicada**: `social_reschedule` e `social_reorder_items`)
+- `supabase/migrations/20261022230954_admin_social_quadro.sql` (nova, **não aplicada**: `social_reschedule` e `social_reorder_items`)
 - `apps/admin/src/lib/social/quadro.ts` (novo: semanas S1–S4, mover mantendo a hora, permutação, montagem do quadro, nome do arquivo → destino, mensagens)
 - `apps/admin/src/lib/social/lote.ts` (novo: `POST /api/social/lote` — aprovar, rascunho, mover, reordenar)
 - `apps/admin/src/lib/social/servidor.ts` (`RepositorioLote`, `repositorioLote`; `ResultadoAcao` com `mudou` e `ordem`)
@@ -49,5 +49,5 @@ Publicação, chamada à API da Meta, push, deploy, env, migração aplicada. Mu
 ## Change Log
 
 - 22/10/2026 — @dev: story criada a partir do pedido do Luiz; Draft → InProgress (branch `feat/admin-instagram-quadro`, worktree `~/.worktrees/laudousg-admin-instagram-quadro`, base `54522da7` da F3).
-- 22/10/2026 — @dev: rebase sobre `42792955` (migração F3 renomeada para a versão aplicada); migração do Quadro com timestamp `20261022235000`, posterior a ela, **não aplicada**.
+- 22/10/2026 — @dev: rebase sobre `42792955` (migração F3 renomeada para a versão aplicada); migração do Quadro com timestamp `20261022230954`, posterior a ela, **não aplicada**.
 - 22/10/2026 — @dev: implementação concluída; typecheck, test (119 pass, 1 skip) e build verdes; 8 de 8 mutações pegas. InProgress → InReview, aguardando @qa. Entrega em `docs/admin/entrega-instagram-quadro.md`.

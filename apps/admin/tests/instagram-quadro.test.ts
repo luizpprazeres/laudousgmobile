@@ -40,7 +40,7 @@ import type { LinhaItem, LinhaPost, PostImportado } from "../src/lib/social/tipo
 Object.assign(globalThis, { React });
 
 const RAIZ = join(__dirname, "..");
-const MIGRACOES = ["20261022212039_admin_social.sql", "20261022225129_admin_social_f3.sql", "20261022235000_admin_social_quadro.sql"];
+const MIGRACOES = ["20261022212039_admin_social.sql", "20261022225129_admin_social_f3.sql", "20261022230954_admin_social_quadro.sql"];
 const ORIGEM = "https://app.laudousg.com.br";
 const CFG = { origemPublica: ORIGEM, supabaseUrl: "https://x.supabase.co" } as ConfigServidor;
 const T0 = Date.parse("2026-10-22T15:00:00Z");
