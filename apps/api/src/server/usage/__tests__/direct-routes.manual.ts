@@ -24,7 +24,7 @@ function route(
       },
     },
   ).outputText;
-  const module = {
+  const commonJsModule = {
     exports: {} as { POST: (req: Request) => Promise<Response> },
   };
   const common: Record<string, unknown> = {
@@ -41,8 +41,8 @@ function route(
     ...mocks,
   };
   runInNewContext(compiled, {
-    module,
-    exports: module.exports,
+    module: commonJsModule,
+    exports: commonJsModule.exports,
     URL,
     Request,
     Response,
@@ -57,7 +57,7 @@ function route(
     },
     ...extra,
   });
-  return module.exports.POST;
+  return commonJsModule.exports.POST;
 }
 async function main() {
   const rows: Record<string, unknown>[] = [];
