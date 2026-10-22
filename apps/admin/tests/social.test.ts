@@ -20,7 +20,7 @@ import type { Formato, PostImportado } from "../src/lib/social/tipos";
 
 const RAIZ = join(__dirname, "..");
 const fixture = () => JSON.parse(readFileSync(join(RAIZ, "tests", "fixtures", "social", "calendario.json"), "utf8")) as Record<string, unknown> & { feed: Record<string, unknown>[]; stories: Record<string, unknown>[] };
-const MIGRACAO = "20261022205957_admin_social.sql";
+const MIGRACAO = "20261022212039_admin_social.sql";
 
 /** JPEG mínimo: SOI, APP0, SOF0 com as dimensões, EOI (só o cabeçalho importa para a validação). */
 function jpeg(largura: number, altura: number, extra = 0): Uint8Array<ArrayBuffer> {

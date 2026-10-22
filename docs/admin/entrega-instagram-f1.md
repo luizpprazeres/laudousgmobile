@@ -4,7 +4,7 @@ Pronto para revisão local na branch `feat/admin-instagram`, no worktree `~/.wor
 
 ## O que entrou
 
-- **Migração** `supabase/migrations/20261022205957_admin_social.sql` (SQL completo no fim deste documento): `social_posts`, `social_media_items` (PK `(post_id, position)`), `social_accounts` vazia para a F2 e o bucket `social` (público, só `image/jpeg`, até 8 MB). RLS ligado, sem policies, `revoke all` de `PUBLIC`, `anon`, `authenticated`; grants só para `service_role`. Toda escrita passa por funções `SECURITY INVOKER` com `search_path = ''`, executáveis só pelo `service_role`, e que travam o post (`FOR UPDATE`):
+- **Migração** `supabase/migrations/20261022212039_admin_social.sql` (SQL completo no fim deste documento): `social_posts`, `social_media_items` (PK `(post_id, position)`), `social_accounts` vazia para a F2 e o bucket `social` (público, só `image/jpeg`, até 8 MB). RLS ligado, sem policies, `revoke all` de `PUBLIC`, `anon`, `authenticated`; grants só para `service_role`. Toda escrita passa por funções `SECURITY INVOKER` com `search_path = ''`, executáveis só pelo `service_role`, e que travam o post (`FOR UPDATE`):
   - `social_import(jsonb)`: cria o que falta, reescreve só rascunhos, preserva `approved/publishing/published/failed`; slides além do calendário saem e o caminho das imagens órfãs volta para limpeza no Storage.
   - `social_save_post`, `social_move_item`, `social_set_media`: só em rascunho.
   - `social_set_status`: `draft → approved` exige imagem em **todos** os slides (stories manuais incluídos), quantidade coerente com o formato (foto/story: 1; carrossel: 2+) e horário futuro; `approved|failed → draft` zera tentativas e erro.

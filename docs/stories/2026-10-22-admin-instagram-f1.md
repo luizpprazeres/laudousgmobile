@@ -38,7 +38,7 @@ OAuth com a Meta, publicação, cron, Insights (F2–F4). Sem push, deploy, env 
 
 ## File List
 
-- `supabase/migrations/20261022205957_admin_social.sql` (novo)
+- `supabase/migrations/20261022212039_admin_social.sql` (novo)
 - `apps/admin/src/lib/social/tipos.ts`, `datas.ts`, `calendario.ts`, `regras.ts`, `csp.ts`, `servidor.ts`, `rotas.ts`, `instancia.ts` (novos)
 - `apps/admin/src/app/api/social/{importar,salvar,ordem,status,midia}/route.ts` (novos)
 - `apps/admin/src/app/(painel)/instagram/page.tsx`, `apps/admin/src/app/(painel)/instagram/[id]/page.tsx` (novos)
