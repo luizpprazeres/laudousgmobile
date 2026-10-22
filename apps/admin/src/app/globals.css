@@ -383,3 +383,25 @@ td code, .mono { font-family: var(--mono); font-size: 12px; }
   .ig-slide-acoes { grid-column: 1 / -1; align-items: stretch; }
   .ig-upload { align-items: stretch; }
 }
+
+/* Instagram F3: selos, faixa manual, destravar e avisos do token */
+.ig-chip { padding: 0; }
+.ig-chip-link { display: flex; flex-direction: column; gap: 3px; padding: 6px 7px; color: inherit; text-decoration: none; min-width: 0; }
+.ig-chip.st-atrasado { border-left: 3px solid var(--warn); }
+.ig-chip.st-publishing { border-left: 3px solid var(--warn); }
+.ig-chip-erro { color: var(--err); font-size: 11px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ig-chip-ver { font-size: 11px; padding: 0 7px 6px; }
+.ig-token-aviso p { margin: 0 0 4px; }
+.ig-token-aviso p:last-child { margin: 0; }
+.ig-faixa-manual { margin-bottom: 14px; border-left: 3px solid var(--warn); }
+.ig-manual-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ig-manual-item { display: grid; grid-template-columns: 72px 1fr auto; gap: 12px; align-items: center; }
+.ig-manual-img { display: block; width: 72px; aspect-ratio: 9 / 16; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+.ig-manual-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ig-manual-txt { display: flex; flex-direction: column; gap: 3px; font-size: 13px; min-width: 0; }
+.ig-manual-txt .ig-conta { margin: 0; }
+.ig-manual-item form { margin: 0; }
+.ig-manual-item .botao, .ig-destravar .botao { width: auto; }
+.ig-destravar form { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+.ig-destravar .campo { margin: 0; }
+@media (max-width: 640px) { .ig-manual-item { grid-template-columns: 60px 1fr; } .ig-manual-item form { grid-column: 1 / -1; } }

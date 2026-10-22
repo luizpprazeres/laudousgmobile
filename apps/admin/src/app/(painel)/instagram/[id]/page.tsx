@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Aviso, CabecalhoIg, SeloManual, SeloStatus, tituloPost } from "@/components/Instagram";
+import { Aviso, CabecalhoIg, SeloManual, SeloPost, tituloPost } from "@/components/Instagram";
 import { exigirAdmin } from "@/lib/auth/servidor";
 import { comBase } from "@/lib/base";
 import { dataHora } from "@/lib/formato";
 import { configInstagram } from "@/lib/social/config";
 import { repositorioConta, type ContaPublica } from "@/lib/social/conta";
 import { noFuso } from "@/lib/social/datas";
+import { atrasado, MAX_TENTATIVAS, preso } from "@/lib/social/politica";
 import { contarHashtags, legendaFinal, MENSAGEM_BLOQUEIO, motivoBloqueioAprovacao, tamanhoLegenda } from "@/lib/social/regras";
 import { lerPost } from "@/lib/social/servidor";
 import { DIMENSOES, ID_POST, LIMITES, ROTULO_FORMATO, type LinhaItem, type LinhaPost } from "@/lib/social/tipos";
@@ -54,11 +55,14 @@ export default async function EditorPost({ params, searchParams }: { params: Par
   const bloqueio = motivoBloqueioAprovacao(post, itens);
   const dim = DIMENSOES[post.format];
   const feed = post.format !== "story";
-  // "Publicar agora" (F2): só foto única aprovada, com a conta conectada e o token válido.
-  const publicavel = post.status === "approved" && post.format === "image";
+  const agora = Date.now();
+  // "Publicar agora": foto, carrossel ou story aprovado e não manual, com a conta conectada e o token válido.
+  const publicavel = post.status === "approved" && !post.manual;
+  const parado = preso(post, agora);
+  const late = atrasado(post, agora);
   const igDisponivel = publicavel && !!configInstagram(cfg.origemPublica);
   const conta: ContaPublica | null | undefined = igDisponivel ? await repositorioConta(cfg).ler().catch(() => undefined) : null;
-  const vencida = !!conta?.token_expires_at && Date.parse(conta.token_expires_at) <= Date.now();
+  const vencida = !!conta?.token_expires_at && Date.parse(conta.token_expires_at) <= agora;
   const impedimento = !igDisponivel
     ? "Conexão indisponível: falta configurar o app do Instagram ou a chave de cifra no servidor."
     : conta === undefined
@@ -74,7 +78,7 @@ export default async function EditorPost({ params, searchParams }: { params: Par
       <p className="ig-voltar"><Link href={`/instagram?v=semana&d=${data}`}>← Calendário</Link></p>
       <CabecalhoIg titulo={tituloPost(post, itens)}>
         <span className="ig-meta">
-          <code>{post.id}</code> · {ROTULO_FORMATO[post.format]} · {dataHora(post.scheduled_at)} <SeloStatus status={post.status} /> {post.manual ? <SeloManual /> : null}
+          <code>{post.id}</code> · {ROTULO_FORMATO[post.format]} · {dataHora(post.scheduled_at)} <SeloPost post={post} agora={agora} /> {post.manual && post.status !== "approved" ? <SeloManual /> : null}
           {post.pillar ? <> · {post.pillar}</> : null}
           {post.angle ? <> · ângulo {post.angle}</> : null}
         </span>
@@ -91,6 +95,12 @@ export default async function EditorPost({ params, searchParams }: { params: Par
         <div className="callout warn"><b>Verificar antes de aprovar:</b><ul className="ig-lista">{post.notes.map((n) => <li key={n}>{n}</li>)}</ul></div>
       ) : null}
       {post.status === "failed" && post.last_error ? <div className="callout warn"><b>Última falha:</b> {post.last_error}</div> : null}
+      {post.status === "approved" && post.last_error ? (
+        <div className="callout warn"><b>{post.attempts > 0 ? `Tentativa ${post.attempts}/${MAX_TENTATIVAS}:` : "Aviso:"}</b> {post.last_error}</div>
+      ) : null}
+      {late ? (
+        <div className="callout warn"><b>Atrasado.</b> O horário passou há mais de 6 h e o envio automático não publica mais. Publique agora, ou volte para rascunho e reagende.</div>
+      ) : null}
       {post.permalink ? <div className="callout">Publicado: <a href={post.permalink} rel="noreferrer noopener" target="_blank">{post.permalink}</a></div> : null}
 
       <div className="grid g-2">
@@ -190,15 +200,69 @@ export default async function EditorPost({ params, searchParams }: { params: Par
                 ? MENSAGEM_BLOQUEIO[bloqueio]
                 : "Pronto para aprovar. Aprovar não publica: a foto vai ao ar só com “Publicar agora”."
               : post.status === "approved"
-                ? post.format === "image"
-                  ? "Aprovado. Publique abaixo quando quiser."
-                  : "Aprovado. Carrossel e story só serão publicados pelo envio automático (F3)."
+                ? post.manual
+                  ? "Aprovado (manual). Na hora marcada ele aparece em “Para publicar à mão agora”; publique pelo app e marque abaixo."
+                  : late
+                    ? "Aprovado, mas atrasado: só sai se você usar “Publicar agora”."
+                    : "Aprovado. O envio automático publica no horário marcado; ou publique abaixo agora."
                 : post.status === "publishing"
-                  ? "Publicando. Se ficar parado aqui, confira no perfil do Instagram antes de qualquer ação."
+                  ? parado
+                    ? "Parado em Publicando há mais de 10 min. Confira no perfil do Instagram e use as ações abaixo."
+                    : "Publicando. Se ficar parado aqui, confira no perfil do Instagram antes de qualquer ação."
                   : `Status: ${post.status}.`}
           </span>
         </div>
       </section>
+
+      {post.status === "approved" && post.manual ? (
+        <section className="card ig-publicar" style={{ marginTop: 14 }}>
+          <div className="card-body">
+            <div className="card-head">
+              <div>
+                <h3>Publicação manual</h3>
+                <div className="sub">Depois de publicar pelo app do Instagram, marque aqui. O painel não confere no Instagram.</div>
+              </div>
+            </div>
+            <form method="post" action={comBase("/api/social/manual")}>
+              <input type="hidden" name="id" value={post.id} />
+              <button type="submit" className="botao">Marcar como publicado</button>
+            </form>
+          </div>
+        </section>
+      ) : null}
+
+      {parado ? (
+        <section className="card ig-destravar" style={{ marginTop: 14 }}>
+          <div className="card-body">
+            <div className="card-head">
+              <div>
+                <h3>Destravar</h3>
+                <div className="sub">
+                  {post.publish_requested_at
+                    ? <>O pedido de publicação ao Instagram foi feito em <b>{dataHora(post.publish_requested_at)}</b>: o post pode ter saído. Confira no perfil. Voltar para aprovado não é permitido (risco de publicar duas vezes).</>
+                    : <>O pedido de publicação ao Instagram <b>não</b> chegou a ser feito. Pode voltar para aprovado com segurança, ou marcar como publicado se você já o publicou por fora.</>}
+                </div>
+              </div>
+            </div>
+            {!post.publish_requested_at ? (
+              <form method="post" action={comBase("/api/social/destravar")}>
+                <input type="hidden" name="id" value={post.id} />
+                <input type="hidden" name="acao" value="aprovado" />
+                <button type="submit" className="botao sec">Voltar para aprovado</button>
+              </form>
+            ) : null}
+            <form method="post" action={comBase("/api/social/destravar")}>
+              <input type="hidden" name="id" value={post.id} />
+              <input type="hidden" name="acao" value="publicado" />
+              <label className="campo">
+                Link do post no Instagram (opcional)
+                <input name="link" type="url" inputMode="url" placeholder="https://www.instagram.com/p/…" autoComplete="off" />
+              </label>
+              <button type="submit" className="botao">Marcar como publicado</button>
+            </form>
+          </div>
+        </section>
+      ) : null}
 
       {publicavel ? (
         <section className="card ig-publicar" style={{ marginTop: 14 }}>
