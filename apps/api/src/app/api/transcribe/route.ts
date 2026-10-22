@@ -200,10 +200,12 @@ async function handlePOST(req: Request) {
       { signal: req.signal },
     );
 
-    const measured = transcription as unknown as { duration?: number; usage?: { type?: string; seconds?: number; input_tokens?: number; output_tokens?: number } };
+    const measured = transcription as unknown as { duration?: number; usage?: { type?: string; seconds?: number; input_tokens?: number; output_tokens?: number; input_token_details?: { audio_tokens?: number; text_tokens?: number } } };
     recordUsage({ provider: "openai", model: TRANSCRIBE_MODEL, stage: "transcription",
       audioSeconds: measured.duration ?? measured.usage?.seconds,
-      inputTokens: measured.usage?.input_tokens, outputTokens: measured.usage?.output_tokens });
+      inputTokens: measured.usage?.input_tokens, outputTokens: measured.usage?.output_tokens,
+      audioInputTokens: measured.usage?.input_token_details?.audio_tokens,
+      textInputTokens: measured.usage?.input_token_details?.text_tokens });
     const raw = transcription.text?.trim() ?? "";
     const { clean, removed } = stripAsrHallucinations(raw);
     const normalizedTranscript = normalizeAsrTranscript(clean, { repairNumbers: env().ASR_REPARO_NUMEROS === "true" });

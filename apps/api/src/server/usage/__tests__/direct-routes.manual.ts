@@ -105,6 +105,61 @@ async function main() {
       transcript: "Texto fictício",
       language: "pt",
     });
+    for (const [model, details] of [
+      ["gpt-4o-transcribe", true],
+      ["gpt-4o-transcribe", false],
+      ["gpt-4o-mini-transcribe", true],
+    ] as const) {
+      const mixed = route(
+        "transcribe",
+        {
+          "@/server/ai/openai": {
+            openai: () => ({
+              audio: {
+                transcriptions: {
+                  create: async (params: Record<string, unknown>) => {
+                    assert.equal(params.response_format, "json");
+                    return {
+                      text: "Texto fictício",
+                      usage: {
+                        type: "tokens",
+                        input_tokens: 1100,
+                        output_tokens: 100,
+                        ...(details
+                          ? {
+                              input_token_details: {
+                                audio_tokens: 1000,
+                                text_tokens: 100,
+                              },
+                            }
+                          : {}),
+                      },
+                    };
+                  },
+                },
+              },
+            }),
+          },
+          "@/server/asr/medicalGlossary": { ALL_MEDICAL_ASR_KEYTERMS: [] },
+          "@/server/asr/transcriptNormalizer": {
+            normalizeAsrTranscript: (text: string) => text,
+          },
+          "@/server/env": { env: () => ({ ASR_REPARO_NUMEROS: "false" }) },
+        },
+        { process: { env: { TRANSCRIBE_MODEL: model } } },
+      );
+      const response = await mixed(
+        new Request("https://synthetic.invalid/api/transcribe", {
+          method: "POST",
+          body: form,
+        }),
+      );
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), {
+        transcript: "Texto fictício",
+        language: "pt",
+      });
+    }
     const consultant = route("consultant", {
       "@/server/ai/consultantPrompt": {
         CONSULTANT_SYSTEM_PROMPT: "PRIVATE SYSTEM",
@@ -217,7 +272,26 @@ async function main() {
     assert.equal(ttl, 60);
   });
   await new Promise((resolve) => setTimeout(resolve, 10));
-  assert.equal(rows.length, 4);
+  assert.equal(rows.length, 7);
+  const fullMeasured = rows.find(
+    (row) =>
+      row.model === "gpt-4o-transcribe" && row.audio_input_tokens === 1000,
+  )!;
+  assert.equal(fullMeasured.text_input_tokens, 100);
+  assert.equal(fullMeasured.input_tokens, 1100);
+  assert.equal(fullMeasured.cost_usd, 0.00725);
+  assert.equal(
+    rows.find(
+      (row) =>
+        row.model === "gpt-4o-transcribe" &&
+        row.audio_input_tokens === undefined,
+    )?.cost_usd,
+    null,
+  );
+  assert.equal(
+    rows.find((row) => row.model === "gpt-4o-mini-transcribe")?.cost_usd,
+    null,
+  );
   const asr = rows.find((row) => row.stage === "transcription")!;
   assert.equal(asr.audio_seconds, 12.5);
   assert.equal(asr.surface, "ios");

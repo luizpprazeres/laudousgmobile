@@ -73,6 +73,8 @@ export async function persistUsage(
       cachedInputTokens: event.cachedInputTokens,
       cacheWriteInputTokens: event.cacheWriteInputTokens,
       audioSeconds: event.audioSeconds,
+      audioInputTokens: event.audioInputTokens,
+      textInputTokens: event.textInputTokens,
     };
     const cost = calculateCost(price, meter);
     await deps.insert({
@@ -86,6 +88,12 @@ export async function persistUsage(
       cached_input_tokens: event.cachedInputTokens ?? null,
       cache_write_input_tokens: event.cacheWriteInputTokens ?? null,
       audio_seconds: event.audioSeconds ?? null,
+      ...(event.audioInputTokens !== undefined
+        ? { audio_input_tokens: event.audioInputTokens }
+        : {}),
+      ...(event.textInputTokens !== undefined
+        ? { text_input_tokens: event.textInputTokens }
+        : {}),
       cost_usd: cost,
       price_version: cost === null ? null : price!.version,
       measurement:

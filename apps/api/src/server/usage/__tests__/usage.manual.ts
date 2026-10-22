@@ -41,6 +41,54 @@ async function main() {
     );
     assert.equal(estimateCost(1000, 1000, "unknown-model"), null);
   });
+  check(
+    "ASR splits audio/text input and refuses incomplete modality counters",
+    () => {
+      const measured = {
+        inputTokens: 1100,
+        audioInputTokens: 1000,
+        textInputTokens: 100,
+        outputTokens: 100,
+      };
+      assert.equal(
+        calculateCost(price("gpt-4o-transcribe"), measured),
+        0.00725,
+      );
+      assert.equal(
+        calculateCost(price("gpt-4o-transcribe"), {
+          inputTokens: 1100,
+          outputTokens: 100,
+        }),
+        null,
+      );
+      assert.equal(
+        calculateCost(price("gpt-4o-transcribe"), {
+          ...measured,
+          textInputTokens: 99,
+        }),
+        null,
+      );
+      assert.equal(
+        calculateCost(price("gpt-4o-transcribe"), {
+          ...measured,
+          cachedInputTokens: 1,
+        }),
+        null,
+      );
+      assert.equal(
+        calculateCost(
+          { ...price("gpt-4o-transcribe")!, audio_input_per_million: null },
+          measured,
+        ),
+        null,
+      );
+      assert.equal(
+        calculateCost(price("gpt-4o-mini-transcribe"), measured),
+        null,
+        "unknown official mini audio rate never silently uses its text rate",
+      );
+    },
+  );
   check("Luna and Opus have explicit prices", () => {
     assert.equal(price("gpt-6-luna")?.cache_write_per_million, null);
     assert.equal(price("gpt-6-luna", 272001)?.cache_write_per_million, null);

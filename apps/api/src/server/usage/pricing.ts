@@ -11,6 +11,7 @@ export type ModelPrice = {
   cached_per_million: number | null;
   cache_write_per_million: number | null;
   audio_per_minute: number | null;
+  audio_input_per_million: number | null;
   source_url: string;
   checked_on: string;
 };
@@ -20,6 +21,8 @@ export type Meter = {
   cachedInputTokens?: number;
   cacheWriteInputTokens?: number;
   audioSeconds?: number;
+  audioInputTokens?: number;
+  textInputTokens?: number;
 };
 const openai = "https://developers.openai.com/api/docs/models/";
 const claude = "https://platform.claude.com/docs/en/about-claude/pricing";
@@ -44,6 +47,7 @@ function token(
     cached_per_million: cached,
     cache_write_per_million: write,
     audio_per_minute: null,
+    audio_input_per_million: null,
     source_url: source,
     checked_on: "2026-10-21",
   };
@@ -51,15 +55,18 @@ function token(
 export const PRICE_SEED: ModelPrice[] = [
   token("openai", "gpt-5", 1.25, 10, 0.125, null, openai + "gpt-5"),
   token("openai", "gpt-5-2025-08-07", 1.25, 10, 0.125, null, openai + "gpt-5"),
-  token(
-    "openai",
-    "gpt-4o-transcribe",
-    2.5,
-    10,
-    null,
-    null,
-    openai + "gpt-4o-transcribe",
-  ),
+  {
+    ...token(
+      "openai",
+      "gpt-4o-transcribe",
+      2.5,
+      10,
+      null,
+      null,
+      "https://developers.openai.com/cookbook/examples/realtime_out_of_band_transcription",
+    ),
+    audio_input_per_million: 6,
+  },
   token(
     "openai",
     "gpt-4o-mini-transcribe",
@@ -109,7 +116,12 @@ for (const [alias, snapshot] of [
   ["gpt-5.4", "gpt-5.4-2026-03-05"],
   ["gpt-5.4-mini", "gpt-5.4-mini-2026-03-17"],
 ] as const) {
-  PRICE_SEED.push(...PRICE_SEED.filter(p => p.model === alias).map(p => ({ ...p, model: snapshot })));
+  PRICE_SEED.push(
+    ...PRICE_SEED.filter((p) => p.model === alias).map((p) => ({
+      ...p,
+      model: snapshot,
+    })),
+  );
 }
 
 export function priceFor(
@@ -147,6 +159,36 @@ export function calculateCost(
       : (meter.audioSeconds / 60) * price.audio_per_minute;
   if (meter.inputTokens === undefined || meter.outputTokens === undefined)
     return null;
+  // ASR's input_tokens mixes audio and text. Never apply the text rate to that total,
+  // including during a rollout where the stored price row lacks the new audio field.
+  const mixedAudio =
+    price.provider === "openai" &&
+    /^gpt-4o(?:-mini)?-transcribe(?:-|$)/.test(price.model);
+  if (
+    mixedAudio ||
+    meter.audioInputTokens !== undefined ||
+    meter.textInputTokens !== undefined
+  ) {
+    const audio = meter.audioInputTokens,
+      text = meter.textInputTokens;
+    if (
+      audio === undefined ||
+      text === undefined ||
+      audio + text !== meter.inputTokens ||
+      (meter.cachedInputTokens ?? 0) !== 0 ||
+      (meter.cacheWriteInputTokens ?? 0) !== 0 ||
+      price.input_per_million == null ||
+      price.output_per_million == null ||
+      (audio > 0 && price.audio_input_per_million == null)
+    )
+      return null;
+    return (
+      (audio * (price.audio_input_per_million ?? 0) +
+        text * price.input_per_million +
+        meter.outputTokens * price.output_per_million) /
+      1e6
+    );
+  }
   const cached = meter.cachedInputTokens ?? 0,
     write = meter.cacheWriteInputTokens ?? 0;
   if (

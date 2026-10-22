@@ -23,10 +23,45 @@ async function main() {
     "utf8",
   );
   await db.exec(sql);
-  const beforeLunaCorrection = (await db.query("SELECT * FROM ai_model_prices WHERE model <> 'gpt-6-luna' ORDER BY provider,model,version")).rows;
-  await db.exec(readFileSync(new URL("../../supabase/migrations/20261022013042_admin_luna_cache_write_correction.sql", import.meta.url), "utf8"));
-  assert.equal((await db.query<{n:number}>("SELECT count(*)::int AS n FROM ai_model_prices WHERE provider='openai' AND model='gpt-6-luna' AND cache_write_per_million IS NULL")).rows[0]?.n, 2);
-  assert.deepEqual((await db.query("SELECT * FROM ai_model_prices WHERE model <> 'gpt-6-luna' ORDER BY provider,model,version")).rows, beforeLunaCorrection);
+  const beforeLunaCorrection = (
+    await db.query(
+      "SELECT * FROM ai_model_prices WHERE model <> 'gpt-6-luna' ORDER BY provider,model,version",
+    )
+  ).rows;
+  await db.exec(
+    readFileSync(
+      new URL(
+        "../../supabase/migrations/20261022013042_admin_luna_cache_write_correction.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  assert.equal(
+    (
+      await db.query<{ n: number }>(
+        "SELECT count(*)::int AS n FROM ai_model_prices WHERE provider='openai' AND model='gpt-6-luna' AND cache_write_per_million IS NULL",
+      )
+    ).rows[0]?.n,
+    2,
+  );
+  assert.deepEqual(
+    (
+      await db.query(
+        "SELECT * FROM ai_model_prices WHERE model <> 'gpt-6-luna' ORDER BY provider,model,version",
+      )
+    ).rows,
+    beforeLunaCorrection,
+  );
+  await db.exec(
+    readFileSync(
+      new URL(
+        "../../supabase/migrations/20261022013044_admin_transcription_audio_prices.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
   const rows = await db.query<Record<string, unknown>>(
     "SELECT * FROM ai_model_prices",
   );
@@ -45,6 +80,7 @@ async function main() {
       "cached_per_million",
       "cache_write_per_million",
       "audio_per_minute",
+      "audio_input_per_million",
     ] as const)
       assert.equal(
         row[key] === null ? null : Number(row[key]),
@@ -265,6 +301,15 @@ async function main() {
   }
   console.log(
     "Admin timezone follow-up: midnight + historical DST + session timezone independence + all four contracts/ACLs/security_invoker preserved",
+  );
+  await assert.rejects(
+    () =>
+      db.query(
+        `INSERT INTO ai_usage_events(route,stage,provider,model,input_tokens,audio_input_tokens,text_input_tokens,measurement,surface,request_id,ok)
+    VALUES ('transcribe','transcription','openai','gpt-4o-transcribe',1100,1000,99,'unpriced','ios',$1,true)`,
+        [request],
+      ),
+    /ai_usage_input_modalities_check/,
   );
   await db.close();
   console.log(
