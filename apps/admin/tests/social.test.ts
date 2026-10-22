@@ -390,17 +390,20 @@ test("rotas: importar, aprovar, ordenar e enviar imagem com o admin", async () =
 
 test("rotas no código: todas checam a sessão de novo e o service role fica no servidor", () => {
   const dir = join(RAIZ, "src", "app", "api", "social");
-  const rotas = readdirSync(dir);
-  assert.deepEqual(rotas.sort(), ["importar", "midia", "ordem", "salvar", "status"]);
+  // As rotas da F2 (conectar, callback, concluir, desconectar, publicar) têm teste próprio em instagram.test.ts.
+  const rotas = ["importar", "midia", "ordem", "salvar", "status"];
+  for (const r of rotas) assert.ok(readdirSync(dir).includes(r), r);
   for (const r of rotas) assert.match(readFileSync(join(dir, r, "route.ts"), "utf8"), new RegExp(`export const POST = rotasSocial\\.${r};`));
   const fonte = readFileSync(join(RAIZ, "src", "lib", "social", "rotas.ts"), "utf8");
   assert.match(fonte, /contextoPost\(/);
   assert.match(fonte, /verificarSessao\(ctx\.sessao, ctx\.cfg\)/);
   assert.match(fonte, /decisao === "permitir"/);
-  const social = readdirSync(join(RAIZ, "src", "lib", "social")).map((f) => readFileSync(join(RAIZ, "src", "lib", "social", f), "utf8"));
-  for (const txt of social) {
-    assert.doesNotMatch(txt, /NEXT_PUBLIC_|"use client"/);
-    assert.doesNotMatch(txt, /from\("social_accounts"\)/); // token nunca é lido nesta fase
+  const arquivos = readdirSync(join(RAIZ, "src", "lib", "social"));
+  for (const f of arquivos) {
+    const txt = readFileSync(join(RAIZ, "src", "lib", "social", f), "utf8");
+    assert.doesNotMatch(txt, /NEXT_PUBLIC_|"use client"/, f);
+    // F2: a conta (e o envelope do token) só é lida/gravada por conta.ts.
+    if (f !== "conta.ts") assert.doesNotMatch(txt, /from\("social_accounts"\)/, f);
   }
   const telas = [join(RAIZ, "src", "components", "Instagram.tsx"), join(RAIZ, "src", "app", "(painel)", "instagram", "page.tsx"), join(RAIZ, "src", "app", "(painel)", "instagram", "[id]", "page.tsx")];
   for (const t of telas) assert.doesNotMatch(readFileSync(t, "utf8"), /"use client"|SERVICE_ROLE/);
