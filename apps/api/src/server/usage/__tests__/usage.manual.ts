@@ -262,6 +262,36 @@ async function main() {
       assert.equal("prompt" in rows[0]!, false);
     },
   );
+  for (const modalities of [
+    { audioInputTokens: 1000, textInputTokens: 99 },
+    { audioInputTokens: 1000 },
+    { textInputTokens: 100 },
+  ]) {
+    rows = [];
+    await persistUsage({
+      provider: "openai", model: "gpt-4o-transcribe", stage: "transcription",
+      inputTokens: 1100, outputTokens: 100, ...modalities,
+    }, ctx, {
+      ...deps,
+      insert: async row => {
+        // Simulate the SQL CHECK: a divergent pair would reject and lose this event.
+        if (row.audio_input_tokens != null && row.text_input_tokens != null) {
+          assert.equal(Number(row.audio_input_tokens) + Number(row.text_input_tokens), row.input_tokens);
+        }
+        rows.push(row);
+      },
+    });
+    check("inconsistent/incomplete modality row is stored unpriced with both detail fields omitted", () => {
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0]?.input_tokens, 1100);
+      assert.equal(rows[0]?.output_tokens, 100);
+      assert.equal("audio_input_tokens" in rows[0]!, false);
+      assert.equal("text_input_tokens" in rows[0]!, false);
+      assert.equal(rows[0]?.cost_usd, null);
+      assert.equal(rows[0]?.price_version, null);
+      assert.equal(rows[0]?.measurement, "unpriced");
+    });
+  }
   rows = [];
   await persistUsage(
     { provider: "deepgram", model: "nova-3", stage: "token_grant" },
