@@ -6,7 +6,7 @@
  * O layout do painel e as rotas de API checam de novo (defesa em profundidade).
  */
 import { NextResponse, type NextRequest } from "next/server";
-import { rotaPublica } from "./lib/auth/acesso";
+import { rotaPublica, rotaSemSessao } from "./lib/auth/acesso";
 import { comBase } from "./lib/base";
 import { verificarSessao } from "./lib/auth/verificar";
 import { configServidor } from "./lib/env";
@@ -17,6 +17,7 @@ function naoEncontrado(): NextResponse {
 }
 
 export async function middleware(request: NextRequest) {
+  if (rotaSemSessao(request.nextUrl.pathname)) return NextResponse.next();
   const cfg = configServidor();
   if (!cfg) return naoEncontrado();
 

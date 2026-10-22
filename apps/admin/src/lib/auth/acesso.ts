@@ -83,3 +83,8 @@ export function origemConfere(origin: string | null, host: string | null, origem
     return false;
   }
 }
+
+/** Public ingestion bypasses sessions entirely; handlers enforce their own boundaries. */
+export function rotaSemSessao(caminho: string): boolean {
+  return new Set(["/api/baixar", "/api/collect", "/api/cron/apple"]).has(caminho);
+}
