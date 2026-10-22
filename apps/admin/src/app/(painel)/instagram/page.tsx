@@ -83,6 +83,7 @@ export default async function Instagram({ searchParams }: { searchParams: Busca 
         <div className="seg" role="group" aria-label="Visão">
           <Link href={href("semana", ref)} aria-current={visao === "semana" ? "true" : undefined}>Semana</Link>
           <Link href={href("mes", ref)} aria-current={visao === "mes" ? "true" : undefined}>Mês</Link>
+          <Link href={`/instagram/quadro?d=${ref}`}>Quadro</Link>
         </div>
         <div className="ig-nav">
           <Link className="botao sec" href={href(visao, navegar(visao, ref, -1))} aria-label="Anterior">←</Link>
