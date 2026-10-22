@@ -41,6 +41,12 @@ export default async function Assinaturas({ searchParams }: { searchParams: Busc
           <Barras itens={planos} />
         </Cartao>
       </div>
+      <Cartao titulo="Conferência Apple × webhook" m={AS.conciliacao_apple ?? AS.kpis}>
+        {AS.conciliacao_apple ? <>
+          <p>Relatório Apple de {AS.conciliacao_apple.v.day}: {int(AS.conciliacao_apple.v.paid)} pagos, {int(AS.conciliacao_apple.v.trials)} em teste, {int(AS.conciliacao_apple.v.grace)} em carência e {int(AS.conciliacao_apple.v.billing_retry)} em nova tentativa de cobrança.</p>
+          <p>Webhook agora: {int(at.producao.ativos)} pagos, {int(at.producao.em_teste)} em teste e {int(at.producao.grace)} em carência. Eventos no relatório do dia: {int(AS.conciliacao_apple.v.eventos)}.</p>
+        </> : <p>Aguardando primeiro relatório de assinaturas da Apple. Os exemplos do histórico continuam identificados abaixo.</p>}
+      </Cartao>
       <Secao>Histórico e funil de assinatura</Secao>
       <div className="grid g-6">
         <Kpi rotulo="Ativos pagos" valor={int(k.ativos_pagos)} meta={`MRR ${brl(k.ativos_pagos * pr.preco_brl)}`} m={AS.kpis} />

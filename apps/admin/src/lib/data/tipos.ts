@@ -38,6 +38,7 @@ export const exemplo = <T>(go: string, fonte_futura: string, v: T, extra: { nota
 });
 
 export interface SerieComPeriodos {
+  indisponivel?: Partial<Record<Periodo, boolean>>;
   serie: number[];
   today: number;
   d7: number;
@@ -138,6 +139,10 @@ export type ResultadoFonte<T> = { ok: true; dados: T } | { ok: false; motivo: st
 export interface DadosPainel {
   meta: { gerado_em: string; hoje: string; dias: string[]; fuso: string; categorias: Record<string, string> };
   aquisicao: {
+    reinstalacoes?: Metrica<SerieComPeriodos>;
+    qr_aberturas?: Metrica<SerieComPeriodos>;
+    apple_dias?: Metrica<{ day: string; primeiras: number | null; reinstalacoes: number | null }[]>;
+    apple_origens?: Metrica<[string, number][]>;
     visitas_landing: Metrica<SerieComPeriodos>;
     cliques_loja: Metrica<SerieComPeriodos>;
     cliques_por_cta: Metrica<{ ctas: string[]; today: number[]; d7: number[]; d30: number[] }>;
@@ -156,6 +161,7 @@ export interface DadosPainel {
     eventos_produto: Metrica<{ surface: string; n: number }[]>;
   };
   assinaturas: {
+    conciliacao_apple?: Metrica<{ day: string; paid: number; trials: number; grace: number; billing_retry: number; eventos: number | null }>;
     produto: Metrica<{ id: string; nome: string; preco_brl: number; teste_gratis_dias: number }>;
     estado_atual: Metrica<{
       producao: { ativos: number; em_teste: number; grace: number; expirados: number; reembolsados: number; linhas: number };

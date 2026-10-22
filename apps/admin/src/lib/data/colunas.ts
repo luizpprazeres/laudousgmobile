@@ -40,6 +40,12 @@ export const COLUNAS_PROIBIDAS = [
 const PROIBIDAS = new Set<string>(COLUNAS_PROIBIDAS);
 
 export const SELECOES = {
+  landing_daily: ["day", "path", "event", "src", "ref_host", "utm_source", "utm_campaign", "device", "count"],
+  apple_sales_daily: ["day", "product_type", "country", "device", "app_version", "currency", "units", "proceeds"],
+  apple_subscription_daily: ["day", "product_id", "country", "device", "paid", "trials", "billing_retry", "grace"],
+  apple_subscription_events_daily: ["day", "product_id", "event", "country", "device", "quantity"],
+  apple_analytics_daily: ["day", "report_name", "processing_date", "country", "device", "app_version", "source_type", "event", "page_type", "counts", "duration_seconds"],
+  apple_fetch_log: ["source", "report_key", "day", "status", "rows", "fetched_at", "error_code"],
   profiles: ["id", "created_at", "plan", "role", "onboarding_completed_at"],
   reports: ["user_id", "category_code", "created_at"],
   categories: ["code", "label"],

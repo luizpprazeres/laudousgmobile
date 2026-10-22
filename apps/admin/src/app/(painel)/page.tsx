@@ -1,3 +1,5 @@
+import { valorSerie } from "@/lib/data/fonte-diaria";
+import { DiasApple } from "@/components/DiasApple";
 import { GraficoBarras } from "@/components/GraficoBarras";
 import { Barras, Cabecalho, Cartao, Kpi, Secao } from "@/components/ui";
 import { noPeriodo } from "@/lib/data/agregar";
@@ -24,7 +26,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: Busca
       <div className="grid g-6">
         <Kpi rotulo="Visitas na landing" valor={int(A.visitas_landing.v[p])} meta="app.laudousg.com.br" m={A.visitas_landing} />
         <Kpi rotulo="Cliques para a loja" valor={int(A.cliques_loja.v[p])} meta="botões + QR" m={A.cliques_loja} />
-        <Kpi rotulo="Instalações" valor={int(A.instalacoes.v[p])} meta="Apple, até ontem" m={A.instalacoes} />
+        <Kpi rotulo="Primeiras instalações" valor={int(valorSerie(A.instalacoes.v,p))} meta="Primeiras · Apple, até ontem" m={A.instalacoes} />
         <Kpi rotulo="Contas novas" valor={int(A.contas_novas.v[p])} meta={`${int(A.contas_novas.v.total)} contas no total · sem separar iOS/web`} m={A.contas_novas} />
         <Kpi rotulo="Testes grátis" valor={int(noPeriodo(AS.eventos_dia.v.testes, p))} meta="3 dias grátis" m={AS.eventos_dia} />
         <Kpi rotulo="Assinantes ativos" valor={int(AS.estado_atual.v.producao.ativos)} meta="produção, estado atual" m={AS.estado_atual} />
@@ -63,6 +65,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: Busca
         </Cartao>
       </div>
       {d.avisos.length ? <div className="note" style={{ marginTop: 14 }}>{d.avisos.join(" ")}</div> : null}
+      {A.apple_dias ? <DiasApple m={A.apple_dias} /> : null}
     </>
   );
 }

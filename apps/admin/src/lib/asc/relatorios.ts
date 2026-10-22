@@ -45,7 +45,7 @@ export function interpretarVendasTsv(tsv: string, dia: string, appleId?: string)
   return out;
 }
 
-export type EstadoRelatorios = { status: "aguardando_go"; motivo: string } | { status: "ok"; dias: VendasDia[] } | { status: "erro"; motivo: string };
+export type EstadoRelatorios = { status: "aguardando_go"; motivo: string } | { status: "pendente"; motivo: string } | { status: "ok"; dias: VendasDia[] } | { status: "erro"; motivo: string };
 
 export function relatoriosConfigurados(env: Record<string, string | undefined> = process.env): boolean {
   return !!(env.ASC_VENDOR_NUMBER && credenciaisDoEnv("ASC_REPORTS", env));
@@ -65,7 +65,7 @@ export async function baixarVendasDia(dia: string, appleId: string): Promise<Est
     "filter[version]": "1_0",
   });
   const r = await ascGet(cred, `/v1/salesReports?${q.toString()}`, { binario: true });
-  if (r.status === 404) return { status: "ok", dias: [{ dia, primeiras: 0, reinstalacoes: 0, porPais: {} }] };
+  if (r.status === 404) return { status: "pendente", motivo: "Relatório ainda não publicado pela Apple." };
   if (r.status >= 300 || !r.bruto) return { status: "erro", motivo: `salesReports respondeu ${r.status}` };
   const tsv = gunzipSync(Buffer.from(r.bruto)).toString("utf8");
   return { status: "ok", dias: [interpretarVendasTsv(tsv, dia, appleId)] };

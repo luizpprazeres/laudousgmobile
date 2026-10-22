@@ -11,6 +11,7 @@ import { clienteServico } from "../supabase/clientes";
 import { diaBRT, janelaDias } from "./agregar";
 import { gerarExemplos } from "./exemplo";
 import { buscarFase2, montarNotificacoes, montarUso } from "./fonte-fase2";
+import { buscarDiaria, montarDiaria } from "./fonte-diaria";
 import { buscarLinhas, montarReais } from "./fonte-supabase";
 import type { DadosPainel, ResultadoFonte, TestflightDados } from "./tipos";
 
@@ -32,13 +33,15 @@ export async function carregarPainel(cfg: ConfigServidor, agora = new Date()): P
   const dias = janelaDias(hoje, 30);
   const sb = clienteServico(cfg);
 
-  const [linhas, fase2, tf] = await Promise.all([
+  const [linhas, fase2, tf, diaria] = await Promise.all([
     emCache(`sb:linhas:${hoje}`, MIN, () => buscarLinhas(sb, dias)),
     emCache(`sb:fase2:${hoje}`, MIN, () => buscarFase2(sb, dias)),
     testflight(cfg),
+    emCache(`sb:diaria:${hoje}`, MIN, () => buscarDiaria(sb, dias)),
   ]);
   const r = montarReais(linhas, dias);
   const ex = gerarExemplos(dias);
+  const diario = montarDiaria(diaria, dias);
   const uso = fase2.uso ? montarUso(fase2.uso, r.pseudonimos) : {};
   const notif = fase2.notif ? montarNotificacoes(fase2.notif, dias, fase2.tentativas ?? []) : {};
   const avisos: string[] = [];
@@ -47,7 +50,7 @@ export async function carregarPainel(cfg: ConfigServidor, agora = new Date()): P
 
   return {
     meta: { gerado_em: agora.toISOString(), hoje, dias, fuso: "America/Sao_Paulo", categorias: r.categorias },
-    aquisicao: { ...ex.aquisicao, ...r.aquisicao },
+    aquisicao: { ...ex.aquisicao, ...r.aquisicao, ...diario.aquisicao },
     uso: r.uso,
     assinaturas: {
       ...r.assinaturas,
@@ -55,6 +58,7 @@ export async function carregarPainel(cfg: ConfigServidor, agora = new Date()): P
       eventos_dia: notif.eventos ?? ex.assinaturas.eventos_dia,
       linha_do_tempo: ex.assinaturas.linha_do_tempo,
       notificacoes_apple: notif.notificacoes ?? ex.assinaturas.notificacoes_apple,
+      ...diario.assinaturas,
     },
     custos: {
       ...r.custos,
@@ -69,7 +73,7 @@ export async function carregarPainel(cfg: ConfigServidor, agora = new Date()): P
     },
     testflight: tf,
     instalacoes_apple: relatoriosConfigurados()
-      ? { status: "configurado", motivo: "Chave de relatórios presente; falta o job diário que grava apple_sales_daily (E4, depende de G3)." }
+      ? { status: "configurado", motivo: diaria.sales?.length ? "Relatórios diários guardados. Dias ainda não publicados aparecem como —." : "Coleta diária configurada; aguardando migração e primeiros relatórios publicados pela Apple." }
       : { status: "aguardando_go", motivo: "G1 (chave Sales and Reports + vendor number)" },
     avisos,
   };
