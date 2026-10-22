@@ -1,0 +1,28 @@
+{
+  "name": "@laudousg/admin",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3005",
+    "build": "next build",
+    "start": "next start -p 3005",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "check:views": "tsx scripts/check-views-sem-texto-clinico.ts",
+    "clean": "rm -rf .next .turbo"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.47.10",
+    "next": "15.5.18",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "~18.3.12",
+    "@types/react-dom": "~18.3.1",
+    "tsx": "4.20.6",
+    "typescript": "^5.7.2"
+  }
+}

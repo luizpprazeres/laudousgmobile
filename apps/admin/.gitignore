@@ -1,0 +1,4 @@
+.next/
+.env*.local
+.env
+*.p8
