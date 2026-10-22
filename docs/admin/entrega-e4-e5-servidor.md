@@ -12,7 +12,7 @@ Commits de implementação: `a500a1a8` (entrada da landing e contador) e `1e5590
 
 Aparelho é deduzido no servidor. IP é usado exclusivamente no limitador em memória: 120 eventos/minuto por IP, mapa com até 5.000 entradas. Nunca chega ao banco ou aos logs. Esse limite é local a cada instância da função, não um limite global distribuído. Não há cookie, identificador de visitante, User-Agent completo ou corpo bruto persistido. Contagens são eventos, não pessoas únicas; gravação é best-effort, não promessa de contagem exata.
 
-A migração `20261022171125_admin_landing_daily.sql` cria a tabela com dia de São Paulo, PK composta, RLS sem policies e função `landing_increment` com `SECURITY INVOKER` e execução exclusiva do `service_role`. Incremento usa `ON CONFLICT … count + 1` no próprio banco.
+A migração `20261022173915_admin_landing_daily.sql` cria a tabela com dia de São Paulo, PK composta, RLS sem policies e função `landing_increment` com `SECURITY INVOKER` e execução exclusiva do `service_role`. Incremento usa `ON CONFLICT … count + 1` no próprio banco.
 
 O rewrite de `/baixar` e a emissão dos beacons são de ownership do LAND; não foram alterados nesta branch. A origem aceita continua exatamente a do briefing: `https://app.laudousg.com.br`.
 
@@ -26,7 +26,7 @@ SALES, SUBSCRIPTION e SUBSCRIPTION_EVENT buscam os dias faltantes desde 21/10/20
 
 Analytics lê o pedido ONGOING já existente, sem criar pedido novo. Guarda Discovery and Engagement Standard, Downloads Standard, Sessions Standard e App Crashes (este último não tem variante Detailed no esquema documentado). Lê todas as páginas e todos os segmentos da instância DAILY. URLs temporárias são usadas imediatamente, sem encaminhar o JWT; HTTPS, host Apple/AWS, tamanho e MD5 são verificados. Falha em qualquer segmento impede a gravação parcial da instância.
 
-A migração `20261022171451_admin_apple_daily.sql` cria as quatro tabelas de agregados e `apple_fetch_log`. Todas têm RLS sem policies e nenhum grant para PUBLIC, anon ou authenticated. A função `apple_store_batch` usa `SECURITY INVOKER`, execução exclusiva do `service_role`, trava transacional e substituição/gravação do lote junto com o registro de sucesso. Em Analytics, uma `processingDate` mais recente substitui a partição inteira do mesmo relatório/Date; não soma snapshots sobrepostos. Uma execução antiga atrasada não sobrescreve uma partição mais nova. A coleta prioriza Analytics, cujas instâncias expiram após 35 dias.
+A migração `20261022173940_admin_apple_daily.sql` cria as quatro tabelas de agregados e `apple_fetch_log`. Todas têm RLS sem policies e nenhum grant para PUBLIC, anon ou authenticated. A função `apple_store_batch` usa `SECURITY INVOKER`, execução exclusiva do `service_role`, trava transacional e substituição/gravação do lote junto com o registro de sucesso. Em Analytics, uma `processingDate` mais recente substitui a partição inteira do mesmo relatório/Date; não soma snapshots sobrepostos. Uma execução antiga atrasada não sobrescreve uma partição mais nova. A coleta prioriza Analytics, cujas instâncias expiram após 35 dias.
 
 O dia de Sales/Analytics é o dia informado pela Apple, preservado sem conversão arbitrária para Brasília. O dia da landing é São Paulo. Analytics depende de consentimento, limiar de privacidade e prazos de completude; a tela informa que ausência de linha não significa zero. Instâncias ainda preliminares podem ser substituídas pela publicação seguinte.
 
