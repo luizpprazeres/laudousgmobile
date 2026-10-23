@@ -11,6 +11,7 @@ import {
   type ProfilePlan,
 } from "@/server/iap/entitlement";
 import { getSubscriptionRepo } from "@/server/iap/repo";
+import { loadCortesia, maiorTier } from "@/server/iap/cortesia";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,11 +39,12 @@ export async function GET(req: Request) {
   const user = await verifyJwt(req);
   if (!user) return unauthorized();
 
-  const assinatura = await loadAssinatura(user.id);
-  const profile = await loadProfile(user.id, assinatura?.tier ?? null);
+  const [assinatura, cortesia] = await Promise.all([loadAssinatura(user.id), loadCortesia(user.id)]);
+  const profile = await loadProfile(user.id, maiorTier(assinatura?.tier, cortesia?.tier));
   if (!profile) return json({ error: "profile_not_found" }, 404);
 
-  return json({ profile, assinatura });
+  // `cortesia` é chave nova: o iOS decodifica só `profile` do envelope; `assinatura` fica só Apple.
+  return json({ profile, assinatura, cortesia });
 }
 
 export async function PATCH(req: Request) {
@@ -107,7 +109,8 @@ export async function PATCH(req: Request) {
     .set(patch)
     .where(eq(schema.profiles.id, user.id));
 
-  const profile = await loadProfile(user.id, (await loadAssinatura(user.id))?.tier ?? null);
+  const [assinatura, cortesia] = await Promise.all([loadAssinatura(user.id), loadCortesia(user.id)]);
+  const profile = await loadProfile(user.id, maiorTier(assinatura?.tier, cortesia?.tier));
   if (!profile) return json({ error: "profile_not_found" }, 404);
 
   return json({ profile });
@@ -115,7 +118,8 @@ export async function PATCH(req: Request) {
 
 /**
  * `plan` devolvido = PLANO EFETIVO: o maior entre o plano do site
- * (`profiles.plan`) e a assinatura Apple vigente. A Apple não escreve em
+ * (`profiles.plan`) e a assinatura Apple vigente ou a cortesia vigente
+ * (server/iap/cortesia.ts) — quem chama passa o maior dos dois tiers. A Apple não escreve em
  * `profiles.plan` (ver server/iap/entitlement.ts) — por isso expirar ou
  * reembolsar uma assinatura da App Store nunca apaga o que foi comprado no
  * site. A whitelist beta continua valendo por cima de tudo.

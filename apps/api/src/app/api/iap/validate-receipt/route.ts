@@ -28,6 +28,7 @@ import {
   type SubscriptionRecord,
 } from "@/server/iap/entitlement";
 import { getSubscriptionRepo } from "@/server/iap/repo";
+import { loadCortesia, maiorTier } from "@/server/iap/cortesia";
 import { AppleVerificationError, getAppleVerifier } from "@/server/iap/verifier";
 import { ValidateReceiptRequestSchema, type SubscriptionStatusOut } from "@/server/iap/types";
 export { OPTIONS } from "@/server/cors";
@@ -102,7 +103,8 @@ export async function POST(req: Request) {
       .limit(1);
     const now = new Date();
     const appleTier = bestEntitledTier(await repo.listForUser(user.id), now);
-    const plan = resolveEffectivePlan((profile?.plan ?? "free") as ProfilePlan, appleTier);
+    const cortesia = await loadCortesia(user.id, now);
+    const plan = resolveEffectivePlan((profile?.plan ?? "free") as ProfilePlan, maiorTier(appleTier, cortesia?.tier));
 
     return json({
       ok: true,
