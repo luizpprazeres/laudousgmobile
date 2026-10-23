@@ -27,7 +27,7 @@ export default async function LayoutPainel({ children }: { children: ReactNode }
           <Suspense fallback={null}><Menu /></Suspense>
           <div className="side-foot">
             <div><b>Painel interno</b></div>
-            <div>Só leitura. Números com tarja são fictícios até o GO indicado.</div>
+            <div>Só leitura, exceto Instagram e Convites. Números com tarja são fictícios até o GO indicado.</div>
           </div>
         </aside>
         <main id="conteudo" tabIndex={-1}>{children}</main>

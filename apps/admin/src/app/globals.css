@@ -518,3 +518,18 @@ td code, .mono { font-family: var(--mono); font-size: 12px; }
   .qd-luz-seta { width: 32px; height: 32px; font-size: 18px; }
   .qd-lote { bottom: 8px; }
 }
+
+/* Convites (story cortesias) */
+.convite-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0 14px; align-items: end; }
+.convite-form .campo select, .convite-resultado .campo textarea {
+  font: inherit; font-weight: 450; font-size: 15px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-strong);
+  border-radius: 9px; padding: 10px 12px; outline: none;
+}
+.convite-resultado .campo textarea { font-size: 13.5px; font-family: var(--mono); resize: vertical; }
+.convite-enviar { margin-bottom: 14px; }
+.convite-acoes { display: flex; gap: 10px; align-items: center; }
+.convite-acoes .botao { width: auto; }
+.convite-acoes a.botao.sec { text-decoration: none; padding: 10px 14px; }
+.convite-linha-acoes { display: flex; gap: 6px; justify-content: flex-end; }
+.convite-linha-acoes form { margin: 0; }
+.convite-resultado, .convite-form + .callout { margin-top: 14px; }

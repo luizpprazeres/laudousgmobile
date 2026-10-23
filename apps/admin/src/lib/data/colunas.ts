@@ -64,7 +64,9 @@ export const SELECOES = {
     "writer_duration_ms",
   ],
   generation_runs: ["outcome", "created_at"],
-  subscriptions: ["environment", "product_id", "status", "is_trial", "expires_at"],
+  subscriptions: ["environment", "product_id", "status", "is_trial", "expires_at", "user_id"],
+  // Convites (story cortesias, migração 20261023120000). Nome e e-mail vêm do Supabase Auth, não daqui.
+  cortesias: ["id", "user_id", "tier", "origem", "inicio", "fim", "revogada_em", "created_at"],
   user_feedback: ["verdict", "created_at"],
   product_events: ["surface"],
   // Tabelas da FASE 2 (feat/admin-dados, migração 20261022010003). Só existem depois do GO G3.
