@@ -253,7 +253,7 @@ async function banco() {
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create table public.profiles(id uuid primary key, plan text not null default 'free', role text not null default 'user');
     create table public.subscriptions(id uuid primary key default gen_random_uuid(), user_id uuid not null references public.profiles(id), status text not null, expires_at timestamptz not null);`);
-  for (const m of ["20261023013652_cortesias.sql", "20261023013700_cortesias_migrar_pro_manual.sql"])
+  for (const m of ["20261023013652_cortesias.sql", "20261023013937_cortesias_migrar_pro_manual.sql"])
     await db.exec(readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", m), "utf8"));
   return db;
 }
@@ -305,7 +305,7 @@ test("SQL: migração das contas pro manuais vira convite de 30 dias e é idempo
   const db = await banco(); // a migração já rodou uma vez com o banco vazio
   await db.query("insert into public.profiles(id, plan, role) values ($1,'pro','user'),($2,'pro','user'),($3,'pro','user'),($4,'pro','admin'),($5,'free','user')", [U(1), U(2), U(3), U(4), U(5)]);
   await db.query("insert into public.subscriptions(user_id,status,expires_at) values ($1,'active', now() + interval '10 days')", [U(3)]);
-  const migrar = readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", "20261023013700_cortesias_migrar_pro_manual.sql"), "utf8");
+  const migrar = readFileSync(join(RAIZ, "..", "..", "supabase", "migrations", "20261023013937_cortesias_migrar_pro_manual.sql"), "utf8");
   await db.exec(migrar);
   const planos = (await db.query<{ id: string; plan: string }>("select id, plan from public.profiles order by id")).rows.map((r) => r.plan);
   assert.deepEqual(planos, ["free", "free", "pro", "pro", "free"], "só os pro sem assinatura e com role user");
