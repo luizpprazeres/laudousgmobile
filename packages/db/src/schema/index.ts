@@ -7,6 +7,7 @@ export * from "./reports";
 export * from "./generationRuns";
 export * from "./generationAudit";
 export * from "./subscriptions";
+export * from "./cortesias";
 export * from "./goldenCases";
 export * from "./learningSuggestions";
 export * from "./productEvents";
