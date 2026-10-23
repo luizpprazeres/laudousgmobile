@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { repairNumbers, suspiciousMeasures } from "../numberRepairs";
+import { incompleteNumbers, repairNumbers, suspiciousMeasures } from "../numberRepairs";
 import { normalizeAsrTranscript } from "../transcriptNormalizer";
 
 const on = (s: string) => normalizeAsrTranscript(s, { repairNumbers: true });
@@ -28,6 +28,23 @@ assert.equal(repairNumbers("medindo 10,24 0,5 x 4,1 cm"), "medindo 10,24 0,5 x 4
 assert.deepEqual(suspiciousMeasures("útero medindo 7.34 0,1 x 5,2").map((x) => x.text), ["7.34 0,1"]);
 assert.deepEqual(suspiciousMeasures("saco gestacional 37,6 x 24,7 x 20 e 0,5 cm").map((x) => x.text), ["20 e 0,5"]);
 assert.deepEqual(suspiciousMeasures("medindo 7,2 x 4,2 x 5,1 cm"), []);
+
+// ── Casa decimal perdida (mapa 22/10/2026): só aviso, nunca reparo ──
+const inc = (s: string) => incompleteNumbers(s).map((x) => x.text);
+assert.deepEqual(inc("maior bolsão vertical mede 6 ponto"), ["6 ponto"]);
+assert.deepEqual(inc("medindo 1.2 por 0 ponto por 1.1 centímetros"), ["0 ponto"]);
+assert.deepEqual(inc("com volume de 42 ponto\nEndométrio medindo 0,7 cm"), ["42 ponto"]);
+assert.deepEqual(inc("medindo 3.5 por 1.5 por 1 ponto centímetros"), ["1 ponto"]);
+assert.deepEqual(inc("volume de 42 pontos centímetros cúbicos"), ["42 pontos"]);
+assert.deepEqual(inc("medindo 1.4 por 1.1 por 1 vírgula centímetros"), ["1 vírgula"]);
+assert.deepEqual(inc("CCN 63 ponto gestação em torno de 12 semanas"), ["63 ponto"]);
+// não é número incompleto: TI-RADS, decimal inteiro, palavra seguinte
+assert.deepEqual(inc("composição sólida, 2 pontos; ecogenicidade, 1 ponto; total de 4 pontos"), []);
+assert.deepEqual(inc("TI-RADS 3, 1 ponto"), []);
+assert.deepEqual(inc("mede 6.7 centímetros e 6 ponto 7 de novo"), []);
+assert.deepEqual(inc("1.230 ponto de corte"), []);
+assert.deepEqual(inc("volume de 0,4 cm, ponto de referência"), []);
+assert.deepEqual(suspiciousMeasures("endométrio medindo 0 ponto centímetros").map((x) => x.text), ["0 ponto"]);
 
 // ── Unidade, velocidade, meio, decimal ──
 assert.equal(on("volume de 6,8 cm. Cúbicos, sem imagens"), "volume de 6,8 cm cúbicos, sem imagens");

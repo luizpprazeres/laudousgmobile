@@ -223,6 +223,17 @@ for (const item of categoryCases) {
   }
 }
 
+// Casa decimal perdida no ditado ("4 ponto"): aviso, nunca bloqueio; ditado limpo não avisa.
+const incompleto = runDeterministicSanity({
+  findings: baseFindings,
+  finalText: "Fígado com cisto simples no lobo direito medindo 1,2 cm. Exame comparado a 05/05/2026. Recomenda-se controle em 6 meses.",
+  rawInput: "cisto medindo 1.2 cm, útero medindo 6.7 por 2.5 por 4 ponto com volume de 35, recomendar controle em 6 meses",
+});
+const avisoIncompleto = incompleto.issues.filter((i) => i.detail.startsWith("Número incompleto"));
+if (avisoIncompleto.length !== 1 || avisoIncompleto[0]!.severity !== "warning" || !avisoIncompleto[0]!.detail.includes("“4 ponto”"))
+  throw new Error(`número incompleto deveria gerar 1 aviso: ${JSON.stringify(incompleto.issues)}`);
+if (ok.issues.some((i) => i.detail.startsWith("Número incompleto"))) throw new Error("ditado limpo não pode avisar número incompleto");
+
 console.log("deterministicSanity.manual ok", {
   okIssues: ok.issues.length,
   badIssues: bad.issues.map((issue) => issue.type),

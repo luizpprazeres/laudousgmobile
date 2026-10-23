@@ -10,6 +10,7 @@ import type { ExtractedValues, SanityFlag } from "./deterministicSanity/types";
 import { checkAmnioticFluidFidelity } from "./amnioticFluidFidelityGuard";
 import { checkFetalVitality } from "./fetalVitalityGuard";
 import { checkMetaCommandLeaks } from "./metaCommandLeakGuard";
+import { incompleteNumbers } from "../asr/numberRepairs";
 
 export type DeterministicIssue = {
   type:
@@ -110,6 +111,7 @@ export function runDeterministicSanity(args: {
   const rawInput = args.rawInput ?? "";
   const issues: DeterministicIssue[] = [
     ...checkMeasurements(args.findings, args.finalText, rawInput),
+    ...checkIncompleteNumbers(rawInput),
     ...checkLaterality(args.findings, args.finalText),
     ...checkDates(args.findings, args.finalText),
     ...checkCommands(args.findings, args.finalText),
@@ -191,6 +193,16 @@ function checkMeasurements(
   }
 
   return issues;
+}
+
+/** Casa decimal que o reconhecimento perdeu ("4 ponto"): o laudo pode ter saído com "4 cm". */
+function checkIncompleteNumbers(rawInput: string): DeterministicIssue[] {
+  const vistos = new Set(incompleteNumbers(rawInput).map((m) => m.text.replace(/\s+/g, " ")));
+  return [...vistos].map((t) => ({
+    type: "medida_divergente" as const,
+    severity: "warning" as const,
+    detail: `Número incompleto no ditado: “${t}” (a casa decimal não foi reconhecida). Confira a medida no laudo.`,
+  }));
 }
 
 function checkLaterality(

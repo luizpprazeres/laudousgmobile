@@ -47,5 +47,18 @@ export function suspiciousMeasures(text: string): Array<{ start: number; end: nu
     out.push({ start: m.index!, end: m.index! + m[0].length, text: m[0] });
   for (const m of text.matchAll(/\b\d+\s+e\s+0[.,]\d\b/g))
     out.push({ start: m.index!, end: m.index! + m[0].length, text: m[0] });
+  out.push(...incompleteNumbers(text));
   return out.sort((a, b) => a.start - b.start);
+}
+
+/**
+ * Casa decimal perdida pelo reconhecimento: "seis ponto sete" chega como "6 ponto", "zero ponto quatro
+ * centímetros" como "0 ponto centímetros", "um vírgula três" como "1 vírgula centímetros". Some também
+ * com o Deepgram sem formatação (bancada 22/10/2026), então não há o que reparar: só avisar.
+ * Mapa 22/10: 26 laudos desde junho, 10 sem correção do médico, nenhum alarme falso.
+ * "1 ponto" e "N pontos" sem unidade ficam de fora: são pontuação de TI-RADS.
+ */
+export function incompleteNumbers(text: string): Array<{ start: number; end: number; text: string }> {
+  const re = /(?<![\d,.])(?:\d+\s+v[íi]rgula|\d+\s+pontos?(?=\s+(?:cm|mm|ml|cent[íi]metros?|mil[íi]metros?|mililitros?)(?![\p{L}]))|(?:0|[2-9]|\d{2,})\s+ponto)(?![\p{L}\d])(?!\s*\d)/giu;
+  return Array.from(text.matchAll(re), (m) => ({ start: m.index!, end: m.index! + m[0].length, text: m[0] }));
 }
