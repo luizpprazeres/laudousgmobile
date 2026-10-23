@@ -7,7 +7,7 @@
  * ao que era — nada para desfazer.
  *
  * A leitura do banco é fail-soft (igual `loadAssinatura`): entre o deploy e a
- * migração `20261023120000_cortesias` a tabela não existe, e o perfil segue
+ * migração `20261023013652_cortesias` a tabela não existe, e o perfil segue
  * sem cortesia em vez de quebrar.
  */
 

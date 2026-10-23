@@ -3,7 +3,7 @@ import { check, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-cor
 import { profiles } from "./profiles";
 
 /**
- * Pro liberado por convite/cortesia, fora da App Store (migração 20261023120000_cortesias).
+ * Pro liberado por convite/cortesia, fora da App Store (migração 20261023013652_cortesias).
  * Não escreve `profiles.plan`: o plano efetivo é resolvido em LEITURA, como a assinatura Apple.
  * Vigente = não revogada, `inicio` já passou e `fim` nulo (sem prazo) ou no futuro.
  * RLS ligado e sem policies: só o servidor (service role / dono) lê e escreve.

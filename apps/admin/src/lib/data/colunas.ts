@@ -65,7 +65,7 @@ export const SELECOES = {
   ],
   generation_runs: ["outcome", "created_at"],
   subscriptions: ["environment", "product_id", "status", "is_trial", "expires_at", "user_id"],
-  // Convites (story cortesias, migração 20261023120000). Nome e e-mail vêm do Supabase Auth, não daqui.
+  // Convites (story cortesias, migração 20261023013652). Nome e e-mail vêm do Supabase Auth, não daqui.
   cortesias: ["id", "user_id", "tier", "origem", "inicio", "fim", "revogada_em", "created_at"],
   user_feedback: ["verdict", "created_at"],
   product_events: ["surface"],
